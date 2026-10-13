@@ -1,0 +1,28 @@
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+
+const TOKEN_KEY = 'erp_token';
+
+export function middleware(req: NextRequest) {
+  const token = req.cookies.get(TOKEN_KEY)?.value;
+  const { pathname } = req.nextUrl;
+  const isLogin = pathname.startsWith('/login');
+
+  if (!token && !isLogin) {
+    const url = req.nextUrl.clone();
+    url.pathname = '/login';
+    url.search = pathname !== '/' ? `?next=${encodeURIComponent(pathname)}` : '';
+    return NextResponse.redirect(url);
+  }
+  if (token && isLogin) {
+    const url = req.nextUrl.clone();
+    url.pathname = '/';
+    url.search = '';
+    return NextResponse.redirect(url);
+  }
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|icon.svg|.*\\.(?:png|jpg|svg|ico)).*)'],
+};

@@ -1,0 +1,62 @@
+'use client';
+
+import React from 'react';
+import Link from 'next/link';
+import { Button, Table, Tag, Typography } from 'antd';
+import type { TableProps } from 'antd';
+import type { DailyReportDto } from '@erp/shared';
+import { WEATHER_LABELS } from '@erp/shared';
+import { formatDate } from '@/lib/format';
+import { StatusTag } from '@/components/common/StatusTag';
+import { PhotoThumbs } from '@/components/common/AttachmentGallery';
+import { ReviewActions } from '@/components/common/ReviewActions';
+
+export function DprTable({
+  data,
+  loading,
+  showProject,
+  onOpen,
+}: {
+  data: DailyReportDto[];
+  loading?: boolean;
+  showProject?: boolean;
+  onOpen: (id: string) => void;
+}) {
+  const columns: TableProps<DailyReportDto>['columns'] = [
+    { title: 'Date', dataIndex: 'date', width: 110, render: (v, r) => <Typography.Link onClick={() => onOpen(r.id)}>{formatDate(v)}</Typography.Link>, sorter: (a, b) => a.date.localeCompare(b.date), defaultSortOrder: 'descend' },
+    ...(showProject
+      ? [{ title: 'Project', dataIndex: 'projectName', key: 'project', width: 220, ellipsis: true, render: (v: string, r: DailyReportDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> }]
+      : []),
+    { title: 'Weather', dataIndex: 'weather', width: 100, render: (w) => (w ? <Tag style={{ margin: 0 }}>{WEATHER_LABELS[w as keyof typeof WEATHER_LABELS] ?? w}</Tag> : '-') },
+    { title: 'Work executed', dataIndex: 'workExecuted', ellipsis: true },
+    { title: 'Manpower', dataIndex: 'totalManpower', width: 100, align: 'center' },
+    { title: 'Machinery', key: 'mach', width: 100, align: 'center', render: (_, r) => r.machinery.length },
+    { title: 'Photos', dataIndex: 'attachments', width: 140, render: (a) => <PhotoThumbs attachments={a} /> },
+    { title: 'Submitted by', dataIndex: 'submittedByName', width: 140 },
+    { title: 'Status', dataIndex: 'status', width: 140, render: (s) => <StatusTag status={s} /> },
+    {
+      title: '',
+      key: 'actions',
+      width: 190,
+      render: (_, r) => (
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <Button size="small" onClick={() => onOpen(r.id)}>
+            View
+          </Button>
+          <ReviewActions type="dpr" id={r.id} status={r.status} size="small" compact />
+        </div>
+      ),
+    },
+  ];
+  return (
+    <Table<DailyReportDto>
+      rowKey="id"
+      loading={loading}
+      columns={columns}
+      dataSource={data}
+      size="middle"
+      pagination={{ pageSize: 15, hideOnSinglePage: true }}
+      scroll={{ x: showProject ? 1300 : 1100 }}
+    />
+  );
+}
