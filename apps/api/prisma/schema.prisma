@@ -327,8 +327,10 @@ model Attachment {
   fileName          String
   mimeType          String
   size              Int
-  /// Relative storage path, served under /uploads
+  /// Storage key: absolute URL (object storage), "db:<id>" (stored in `data`), or relative path served under /uploads
   storagePath       String
+  /// File bytes when stored in the database (serverless hosts without a disk or object store)
+  data              Bytes?
   uploadedById      String
   uploadedBy        User             @relation(fields: [uploadedById], references: [id])
   progressEntryId   String?
