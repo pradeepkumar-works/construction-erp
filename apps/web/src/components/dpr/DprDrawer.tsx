@@ -3,7 +3,7 @@
 import React from 'react';
 import { App, Button, Card, Descriptions, Divider, Drawer, Skeleton, Space, Table, Tag, Typography } from 'antd';
 import { PrinterOutlined } from '@ant-design/icons';
-import type { ManpowerLine, MachineryLine } from '@erp/shared';
+import type { DailyReportDto, ManpowerLine, MachineryLine } from '@erp/shared';
 import { WEATHER_LABELS } from '@erp/shared';
 import { useDpr } from '@/lib/queries';
 import { useAuth } from '@/lib/auth';
@@ -13,6 +13,7 @@ import { StatusTag } from '@/components/common/StatusTag';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { AuditTrail } from '@/components/common/AuditTrail';
 import { ReviewActions } from '@/components/common/ReviewActions';
+import { EditResubmitButton } from '@/components/common/EditResubmitButton';
 import { submissionMetaItems } from '@/components/common/SubmitterInfo';
 import { openDprPrint } from './dprPrint';
 
@@ -27,7 +28,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-export function DprDrawer({ id, open, onClose }: { id: string | null; open: boolean; onClose: () => void }) {
+export function DprDrawer({ id, open, onClose, onEdit }: { id: string | null; open: boolean; onClose: () => void; onEdit?: (entry: DailyReportDto) => void }) {
   const { data, isLoading, error, refetch } = useDpr(id ?? undefined);
   const { user } = useAuth();
   const { message } = App.useApp();
@@ -58,6 +59,7 @@ export function DprDrawer({ id, open, onClose }: { id: string | null; open: bool
             <Button icon={<PrinterOutlined />} onClick={print}>
               Print / PDF
             </Button>
+            <EditResubmitButton entry={data} onEdit={onEdit} size="small" />
             <ReviewActions type="dpr" id={data.id} status={data.status} size="small" />
           </Space>
         ) : null

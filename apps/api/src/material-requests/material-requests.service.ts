@@ -116,7 +116,7 @@ export class MaterialRequestsService {
         });
       }
     });
-    await this.attachments.link(user, 'materialRequestId', id, dto.attachmentIds);
+    await this.attachments.sync(user, 'materialRequestId', id, dto.attachmentIds);
     await this.audit.log(user, 'MATERIAL_REQUEST', id, 'UPDATED');
     if (dto.submit) await this.lifecycle.submit(user, 'MATERIAL_REQUEST', id);
     return this.get(user, id);

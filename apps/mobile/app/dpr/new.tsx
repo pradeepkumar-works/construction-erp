@@ -1,12 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { MANPOWER_CATEGORIES, WEATHER_LABELS, WEATHER_OPTIONS, type DailyReportDto, type Weather } from '@erp/shared';
-import { useApi } from '../../src/api/hooks';
+import { useApi, useFetch } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
-import { Button, Card, Chips, DatePicker, ErrorBanner, Input, Loading, PhotoPicker, Screen, Select, type LocalPhoto } from '../../src/components';
+import { Button, Card, Chips, DatePicker, ErrorBanner, ErrorState, Input, Loading, PhotoPicker, Screen, Select, type LocalPhoto } from '../../src/components';
 import { attachmentIds, photosFailed, photosUploading, SubmitSuccess, useProjectOptions } from '../../src/forms/common';
+import { attachmentsToPhotos, ReviewerNote } from '../../src/forms/edit';
 import { colors, spacing, typography } from '../../src/theme';
 import { formatDate, isIsoDate, today } from '../../src/utils/format';
 
@@ -25,10 +26,13 @@ const newKey = () => Math.random().toString(36).slice(2, 9);
 const CATEGORY_OPTIONS = MANPOWER_CATEGORIES.map((c) => ({ value: c, label: c }));
 const WEATHER_CHIPS = WEATHER_OPTIONS.map((w) => ({ value: w, label: WEATHER_LABELS[w] }));
 
+/** New DPR, or (with `editId`) edit a draft / rejected / changes-requested DPR and resubmit it. */
 export default function NewDprScreen() {
-  const params = useLocalSearchParams<{ projectId?: string }>();
+  const params = useLocalSearchParams<{ projectId?: string; editId?: string }>();
+  const editId = params.editId ?? null;
   const api = useApi();
   const projects = useProjectOptions();
+  const existing = useFetch<DailyReportDto>((a) => a.get(`/dpr/${editId}`), [editId], { enabled: !!editId, refetchOnFocus: false });
 
   const [projectId, setProjectId] = useState<string | null>(params.projectId ?? null);
   const [date, setDate] = useState(today());
@@ -49,8 +53,27 @@ export default function NewDprScreen() {
   const [created, setCreated] = useState<DailyReportDto | null>(null);
 
   useEffect(() => {
-    if (!projectId && projects.options.length === 1) setProjectId(projects.options[0].value);
-  }, [projects.options, projectId]);
+    if (!editId && !projectId && projects.options.length === 1) setProjectId(projects.options[0].value);
+  }, [editId, projects.options, projectId]);
+
+  // Editing: prefill the form from the loaded report.
+  useEffect(() => {
+    const e = existing.data;
+    if (!e) return;
+    setProjectId(e.projectId);
+    setDate(e.date);
+    setWeather(e.weather);
+    setSiteCondition(e.siteCondition ?? '');
+    setManpower(e.manpower.length ? e.manpower.map((m) => ({ key: newKey(), category: m.category, count: String(m.count) })) : [{ key: newKey(), category: null, count: '' }]);
+    setMachinery(e.machinery.length ? e.machinery.map((m) => ({ key: newKey(), name: m.name, hours: String(m.hours) })) : [{ key: newKey(), name: '', hours: '' }]);
+    setMaterialReceived(e.materialReceived ?? '');
+    setWorkExecuted(e.workExecuted);
+    setTests(e.testsConducted ?? '');
+    setSafety(e.safetyObservations ?? '');
+    setIssues(e.issues ?? '');
+    setNextDayPlan(e.nextDayPlan ?? '');
+    setPhotos(attachmentsToPhotos(e.attachments));
+  }, [existing.data]);
 
   const totalManpower = useMemo(() => manpower.reduce((s, r) => s + (Number(r.count) || 0), 0), [manpower]);
 
@@ -83,22 +106,22 @@ export default function NewDprScreen() {
     if (!validate()) return;
     setBusy(true);
     try {
+      const blank = editId ? null : undefined;
       const body = {
-        projectId,
         date,
-        weather: weather ?? undefined,
-        siteCondition: siteCondition.trim() || undefined,
+        weather: weather ?? blank,
+        siteCondition: siteCondition.trim() || blank,
         manpower: manpower.filter((r) => r.category && r.count.trim()).map((r) => ({ category: r.category as string, count: Number(r.count) })),
         machinery: machinery.filter((r) => r.name.trim() && r.hours.trim()).map((r) => ({ name: r.name.trim(), hours: Number(r.hours) })),
-        materialReceived: materialReceived.trim() || undefined,
+        materialReceived: materialReceived.trim() || blank,
         workExecuted: workExecuted.trim(),
-        testsConducted: tests.trim() || undefined,
-        safetyObservations: safety.trim() || undefined,
-        issues: issues.trim() || undefined,
-        nextDayPlan: nextDayPlan.trim() || undefined,
+        testsConducted: tests.trim() || blank,
+        safetyObservations: safety.trim() || blank,
+        issues: issues.trim() || blank,
+        nextDayPlan: nextDayPlan.trim() || blank,
         attachmentIds: attachmentIds(photos),
       };
-      setCreated(await api.post<DailyReportDto>('/dpr', body));
+      setCreated(editId ? await api.patch<DailyReportDto>(`/dpr/${editId}`, { ...body, submit: true }) : await api.post<DailyReportDto>('/dpr', { projectId, ...body }));
     } catch (e) {
       setSubmitError(errorMessage(e));
     } finally {
@@ -107,15 +130,19 @@ export default function NewDprScreen() {
   };
 
   if (created) {
-    return <SubmitSuccess title="DPR submitted" subtitle={`${created.projectName} · ${formatDate(created.date)} · ${created.totalManpower} manpower. Sent for approval.`} detailHref={`/dpr/${created.id}`} />;
+    return <SubmitSuccess title={editId ? 'DPR resubmitted' : 'DPR submitted'} subtitle={`${created.projectName} · ${formatDate(created.date)} · ${created.totalManpower} manpower. Sent for approval.`} detailHref={`/dpr/${created.id}`} />;
   }
   if (projects.loading && !projects.data) return <Loading />;
+  if (editId && existing.loading && !existing.data) return <Loading />;
+  if (editId && existing.error && !existing.data) return <ErrorState message={existing.error} onRetry={existing.reload} />;
 
   return (
     <Screen keyboard>
+      <Stack.Screen options={{ title: editId ? 'Edit Daily Report' : 'New Daily Report' }} />
       <ErrorBanner message={submitError ?? projects.error} />
+      <ReviewerNote entry={existing.data} />
       <Card>
-        <Select label="Project" required value={projectId} options={projects.options} onChange={setProjectId} placeholder="Choose project" error={errors.projectId} />
+        <Select label="Project" required value={projectId} options={projects.options} onChange={setProjectId} placeholder="Choose project" error={errors.projectId} disabled={!!editId} />
         <DatePicker label="Report date" required value={date} onChange={setDate} error={errors.date} />
         <Chips label="Weather" value={weather} options={WEATHER_CHIPS} onChange={setWeather} />
         <Input label="Site condition" value={siteCondition} onChangeText={setSiteCondition} placeholder="e.g. Workable, waterlogged at Km 16" containerStyle={styles.last} />
@@ -157,7 +184,7 @@ export default function NewDprScreen() {
         <PhotoPicker photos={photos} onChange={setPhotos} />
         {errors.photos ? <Text style={styles.err}>{errors.photos}</Text> : null}
       </Card>
-      <Button title="Submit DPR for approval" icon="send" onPress={submit} loading={busy} />
+      <Button title={editId ? 'Resubmit DPR for approval' : 'Submit DPR for approval'} icon="send" onPress={submit} loading={busy} />
     </Screen>
   );
 }

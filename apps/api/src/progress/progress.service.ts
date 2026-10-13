@@ -102,7 +102,11 @@ export class ProgressService {
     const row = await this.lifecycle.load(user, 'PROGRESS', id);
     await this.lifecycle.assertEditable(user, row);
     const data: Prisma.ProgressEntryUncheckedUpdateInput = {};
-    if (dto.activityId !== undefined) data.activityId = dto.activityId;
+    if (dto.activityId !== undefined) {
+      const activity = await this.prisma.activity.findFirst({ where: { id: dto.activityId, projectId: row.projectId } });
+      if (!activity) throw new NotFoundException('Activity not found in this project');
+      data.activityId = dto.activityId;
+    }
     if (dto.date !== undefined) data.date = parseDate(dto.date);
     if (dto.quantity !== undefined) data.quantity = new Prisma.Decimal(dto.quantity);
     if (dto.remarks !== undefined) data.remarks = dto.remarks;
@@ -110,7 +114,7 @@ export class ProgressService {
     if (dto.manpowerCount !== undefined) data.manpowerCount = dto.manpowerCount;
     if (dto.machineryUsed !== undefined) data.machineryUsed = dto.machineryUsed;
     await this.prisma.progressEntry.update({ where: { id }, data });
-    await this.attachments.link(user, 'progressEntryId', id, dto.attachmentIds);
+    await this.attachments.sync(user, 'progressEntryId', id, dto.attachmentIds);
     await this.audit.log(user, 'PROGRESS', id, 'UPDATED');
     if (dto.submit) await this.lifecycle.submit(user, 'PROGRESS', id);
     return this.get(user, id);

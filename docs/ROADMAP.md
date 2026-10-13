@@ -11,8 +11,9 @@ dashboards, web ERP and site mobile app, hosted on Vercel + Neon.
 Order matters: each item builds on the previous one.
 
 ### A. Finish what v1 started
-1. **Edit and resubmit** a submission after REJECTED / CHANGES_REQUESTED (web + mobile). API already
-   supports PATCH + `/submit`.
+1. ~~**Edit and resubmit** a submission after REJECTED / CHANGES_REQUESTED (web + mobile).~~ Done:
+   `PATCH` + `submit: true` on one record, `RESUBMITTED` audit action, edit button on web tables and
+   drawers and on the mobile detail screens, demo seed includes one entry of each.
 2. **Notifications**: Expo push on approve / reject / changes requested; daily "DPR not submitted"
    reminder; email digest of pending approvals. New `Notification` table + Expo push tokens on `User`.
 3. **Offline entry on mobile**: local queue (SQLite) for progress, DPR, material request; sync on

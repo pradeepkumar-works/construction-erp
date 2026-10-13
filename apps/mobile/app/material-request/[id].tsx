@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { MATERIAL_PRIORITY_LABELS, type MaterialRequestDto } from '@erp/shared';
 import { useFetch } from '../../src/api/hooks';
-import { AttachmentGallery, Button, Card, ErrorState, KeyValue, Loading, Pill, ReviewActions, Screen, SubmissionHeader } from '../../src/components';
+import { AttachmentGallery, Button, Card, ErrorState, KeyValue, Loading, Pill, ReviewActions, Screen, SubmissionHeader, SubmitterActions } from '../../src/components';
 import { colors, spacing, typography } from '../../src/theme';
 import { fmtQty, formatDate } from '../../src/utils/format';
 
@@ -46,6 +46,7 @@ export default function MaterialRequestDetailScreen() {
         ))}
       </Card>
       <AttachmentGallery attachments={data.attachments} />
+      <SubmitterActions type="MATERIAL_REQUEST" item={data} />
       <ReviewActions type="MATERIAL_REQUEST" item={data} onReviewed={setData} />
       <Button title="Open project" variant="ghost" icon="business-outline" onPress={() => router.push(`/project/${data.projectId}`)} />
     </Screen>

@@ -23,6 +23,8 @@ contractors after the first client is live.
   and next-day plan, and **material requests** with line items.
 - One approval workflow for everything: submitted → approved / rejected / changes requested,
   with reviewer note and a full audit trail. Approvers see a single pending queue.
+- Edit and resubmit: a rejected or changes-requested entry is fixed in place (web drawer or site app)
+  and sent back for approval with the reviewer's note shown alongside the form.
 - Dashboards: company (projects, contract value, pending approvals, delayed activities, DPRs
   today) and project (physical progress weighted by BOQ value, BOQ executed amount, activity
   status, recent submissions).
@@ -67,7 +69,9 @@ All passwords are `password123`.
 
 Suggested demo flow: log in to the mobile app as `engineer@demo.com`, submit a progress entry
 with a photo and today's DPR; log in to the web as `pm@demo.com`, open Approvals, approve them,
-and watch the project dashboard and BOQ executed quantities update.
+and watch the project dashboard and BOQ executed quantities update. Then, still as `engineer@demo.com`, open
+"My submissions": the seed includes one progress entry with changes requested and one rejected
+material request; tap "Edit and resubmit", fix them and send them back to the PM's queue.
 
 ## Useful commands
 

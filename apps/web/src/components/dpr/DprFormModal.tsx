@@ -1,15 +1,16 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { App, Button, DatePicker, Form, Input, InputNumber, Modal, Select, Space } from 'antd';
+import { Alert, App, Button, DatePicker, Form, Input, InputNumber, Modal, Select, Space } from 'antd';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import type { AttachmentDto, Weather } from '@erp/shared';
+import type { AttachmentDto, DailyReportDto, Weather } from '@erp/shared';
 import { MANPOWER_CATEGORIES, WEATHER_LABELS, WEATHER_OPTIONS } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, errorMessage } from '@/lib/api';
 import { useProjects } from '@/lib/queries';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
+import { editActionLabel } from '@/components/common/EditResubmitButton';
 
 interface FormValues {
   projectId: string;
@@ -27,15 +28,35 @@ interface FormValues {
   photos?: AttachmentDto[];
 }
 
-export function DprFormModal({ open, onClose, projectId }: { open: boolean; onClose: () => void; projectId?: string }) {
+/** Create a DPR, or (with `entry`) edit a draft / rejected / changes-requested one and resubmit it. */
+export function DprFormModal({ open, onClose, projectId, entry }: { open: boolean; onClose: () => void; projectId?: string; entry?: DailyReportDto | null }) {
   const [form] = Form.useForm<FormValues>();
   const { message } = App.useApp();
   const qc = useQueryClient();
   const { data: projects } = useProjects();
+  const editing = !!entry;
+  const fixedProject = entry?.projectId ?? projectId;
 
   useEffect(() => {
-    if (open) {
-      form.resetFields();
+    if (!open) return;
+    form.resetFields();
+    if (entry) {
+      form.setFieldsValue({
+        projectId: entry.projectId,
+        date: dayjs(entry.date),
+        weather: entry.weather ?? undefined,
+        siteCondition: entry.siteCondition ?? undefined,
+        manpower: entry.manpower,
+        machinery: entry.machinery,
+        materialReceived: entry.materialReceived ?? undefined,
+        workExecuted: entry.workExecuted,
+        testsConducted: entry.testsConducted ?? undefined,
+        safetyObservations: entry.safetyObservations ?? undefined,
+        issues: entry.issues ?? undefined,
+        nextDayPlan: entry.nextDayPlan ?? undefined,
+        photos: entry.attachments,
+      });
+    } else {
       form.setFieldsValue({
         projectId,
         date: dayjs(),
@@ -45,30 +66,30 @@ export function DprFormModal({ open, onClose, projectId }: { open: boolean; onCl
         machinery: [],
       });
     }
-  }, [open, projectId, form]);
+  }, [open, projectId, entry, form]);
 
   const mutation = useMutation({
-    mutationFn: async (v: FormValues) =>
-      (
-        await api.post('/dpr', {
-          projectId: v.projectId,
-          date: v.date.format('YYYY-MM-DD'),
-          weather: v.weather,
-          siteCondition: v.siteCondition || undefined,
-          manpower: (v.manpower ?? []).filter((m) => m && m.category),
-          machinery: (v.machinery ?? []).filter((m) => m && m.name),
-          materialReceived: v.materialReceived || undefined,
-          workExecuted: v.workExecuted,
-          testsConducted: v.testsConducted || undefined,
-          safetyObservations: v.safetyObservations || undefined,
-          issues: v.issues || undefined,
-          nextDayPlan: v.nextDayPlan || undefined,
-          attachmentIds: (v.photos ?? []).map((p) => p.id),
-          submit: true,
-        })
-      ).data,
+    mutationFn: async (v: FormValues) => {
+      const blank = editing ? null : undefined;
+      const body = {
+        date: v.date.format('YYYY-MM-DD'),
+        weather: v.weather ?? blank,
+        siteCondition: v.siteCondition || blank,
+        manpower: (v.manpower ?? []).filter((m) => m && m.category),
+        machinery: (v.machinery ?? []).filter((m) => m && m.name),
+        materialReceived: v.materialReceived || blank,
+        workExecuted: v.workExecuted,
+        testsConducted: v.testsConducted || blank,
+        safetyObservations: v.safetyObservations || blank,
+        issues: v.issues || blank,
+        nextDayPlan: v.nextDayPlan || blank,
+        attachmentIds: (v.photos ?? []).map((p) => p.id),
+        submit: true,
+      };
+      return entry ? (await api.patch(`/dpr/${entry.id}`, body)).data : (await api.post('/dpr', { projectId: v.projectId, ...body })).data;
+    },
     onSuccess: () => {
-      message.success('DPR submitted for approval');
+      message.success(editing ? 'DPR resubmitted for approval' : 'DPR submitted for approval');
       qc.invalidateQueries();
       onClose();
     },
@@ -76,9 +97,12 @@ export function DprFormModal({ open, onClose, projectId }: { open: boolean; onCl
   });
 
   return (
-    <Modal open={open} title="New Daily Progress Report" okText="Submit DPR" onCancel={onClose} onOk={() => form.submit()} confirmLoading={mutation.isPending} width={760} destroyOnHidden styles={{ body: { maxHeight: '70vh', overflowY: 'auto', paddingRight: 8 } }}>
+    <Modal open={open} title={entry ? `${editActionLabel(entry.status)} · DPR ${dayjs(entry.date).format('DD MMM YYYY')}` : 'New Daily Progress Report'} okText={editing ? 'Resubmit DPR' : 'Submit DPR'} onCancel={onClose} onOk={() => form.submit()} confirmLoading={mutation.isPending} width={760} destroyOnHidden styles={{ body: { maxHeight: '70vh', overflowY: 'auto', paddingRight: 8 } }}>
       <Form form={form} layout="vertical" onFinish={(v) => mutation.mutate(v)} style={{ marginTop: 8 }}>
-        <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]} hidden={!!projectId}>
+        {entry?.reviewNote && (
+          <Alert type="warning" showIcon style={{ marginBottom: 16 }} message={`Reviewer note from ${entry.reviewedByName ?? 'approver'}`} description={entry.reviewNote} />
+        )}
+        <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]} hidden={!!fixedProject}>
           <Select showSearch optionFilterProp="label" placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
         </Form.Item>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0 16px' }}>

@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Button, Card } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
-import type { SubmissionStatus } from '@erp/shared';
+import type { ProgressEntryDto, SubmissionStatus } from '@erp/shared';
 import { useProgressList } from '@/lib/queries';
 import { PageHeader } from '@/components/common/PageHeader';
 import { QueryError } from '@/components/common/QueryState';
@@ -17,6 +17,7 @@ export default function ProgressPage() {
   const [status, setStatus] = useState<SubmissionStatus | undefined>();
   const [openId, setOpenId] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<ProgressEntryDto | null>(null);
   const { data, isLoading, error, refetch } = useProgressList({ projectId, status, limit: 200 });
 
   return (
@@ -33,10 +34,10 @@ export default function ProgressPage() {
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       <Card className="table-card" size="small">
         <ListToolbar projectId={projectId} onProject={setProjectId} status={status} onStatus={setStatus} />
-        <ProgressTable data={data ?? []} loading={isLoading} showProject onOpen={setOpenId} />
+        <ProgressTable data={data ?? []} loading={isLoading} showProject onOpen={setOpenId} onEdit={setEditing} />
       </Card>
-      <ProgressDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} />
-      <ProgressFormModal open={formOpen} onClose={() => setFormOpen(false)} />
+      <ProgressDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onEdit={setEditing} />
+      <ProgressFormModal open={formOpen || !!editing} entry={editing} onClose={() => { setFormOpen(false); setEditing(null); }} />
     </div>
   );
 }

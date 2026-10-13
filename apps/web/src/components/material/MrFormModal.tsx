@@ -1,14 +1,15 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { App, AutoComplete, Button, DatePicker, Form, Input, InputNumber, Modal, Select, Space } from 'antd';
+import { Alert, App, AutoComplete, Button, DatePicker, Form, Input, InputNumber, Modal, Select, Space } from 'antd';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import type { MaterialPriority } from '@erp/shared';
+import type { MaterialPriority, MaterialRequestDto } from '@erp/shared';
 import { COMMON_UNITS, MATERIAL_PRIORITIES, MATERIAL_PRIORITY_LABELS } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, errorMessage } from '@/lib/api';
 import { useProjects } from '@/lib/queries';
+import { editActionLabel } from '@/components/common/EditResubmitButton';
 
 interface FormValues {
   projectId: string;
@@ -18,33 +19,44 @@ interface FormValues {
   items: { itemName: string; specification?: string; unit: string; quantity: number }[];
 }
 
-export function MrFormModal({ open, onClose, projectId }: { open: boolean; onClose: () => void; projectId?: string }) {
+/** Create a material request, or (with `entry`) edit a draft / rejected / changes-requested one and resubmit it. */
+export function MrFormModal({ open, onClose, projectId, entry }: { open: boolean; onClose: () => void; projectId?: string; entry?: MaterialRequestDto | null }) {
   const [form] = Form.useForm<FormValues>();
   const { message } = App.useApp();
   const qc = useQueryClient();
   const { data: projects } = useProjects();
+  const editing = !!entry;
+  const fixedProject = entry?.projectId ?? projectId;
 
   useEffect(() => {
-    if (open) {
-      form.resetFields();
+    if (!open) return;
+    form.resetFields();
+    if (entry) {
+      form.setFieldsValue({
+        projectId: entry.projectId,
+        requiredDate: dayjs(entry.requiredDate),
+        priority: entry.priority,
+        remarks: entry.remarks ?? undefined,
+        items: entry.items.map((i) => ({ itemName: i.itemName, specification: i.specification ?? undefined, unit: i.unit, quantity: Number(i.quantity) })),
+      });
+    } else {
       form.setFieldsValue({ projectId, requiredDate: dayjs().add(7, 'day'), priority: 'NORMAL', items: [{ itemName: '', unit: 'Nos', quantity: 1 }] });
     }
-  }, [open, projectId, form]);
+  }, [open, projectId, entry, form]);
 
   const mutation = useMutation({
-    mutationFn: async (v: FormValues) =>
-      (
-        await api.post('/material-requests', {
-          projectId: v.projectId,
-          requiredDate: v.requiredDate.format('YYYY-MM-DD'),
-          priority: v.priority,
-          remarks: v.remarks || undefined,
-          items: v.items.map((i) => ({ itemName: i.itemName, specification: i.specification || undefined, unit: i.unit, quantity: String(i.quantity) })),
-          submit: true,
-        })
-      ).data,
+    mutationFn: async (v: FormValues) => {
+      const body = {
+        requiredDate: v.requiredDate.format('YYYY-MM-DD'),
+        priority: v.priority,
+        remarks: v.remarks || (editing ? null : undefined),
+        items: v.items.map((i) => ({ itemName: i.itemName, specification: i.specification || undefined, unit: i.unit, quantity: String(i.quantity) })),
+        submit: true,
+      };
+      return entry ? (await api.patch(`/material-requests/${entry.id}`, body)).data : (await api.post('/material-requests', { projectId: v.projectId, ...body })).data;
+    },
     onSuccess: () => {
-      message.success('Material request submitted for approval');
+      message.success(editing ? 'Material request resubmitted for approval' : 'Material request submitted for approval');
       qc.invalidateQueries();
       onClose();
     },
@@ -52,9 +64,12 @@ export function MrFormModal({ open, onClose, projectId }: { open: boolean; onClo
   });
 
   return (
-    <Modal open={open} title="New material request" okText="Submit request" onCancel={onClose} onOk={() => form.submit()} confirmLoading={mutation.isPending} width={720} destroyOnHidden>
+    <Modal open={open} title={entry ? `${editActionLabel(entry.status)} · ${entry.requestNo}` : 'New material request'} okText={editing ? 'Resubmit request' : 'Submit request'} onCancel={onClose} onOk={() => form.submit()} confirmLoading={mutation.isPending} width={720} destroyOnHidden>
       <Form form={form} layout="vertical" onFinish={(v) => mutation.mutate(v)} style={{ marginTop: 8 }}>
-        <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]} hidden={!!projectId}>
+        {entry?.reviewNote && (
+          <Alert type="warning" showIcon style={{ marginBottom: 16 }} message={`Reviewer note from ${entry.reviewedByName ?? 'approver'}`} description={entry.reviewNote} />
+        )}
+        <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]} hidden={!!fixedProject}>
           <Select showSearch optionFilterProp="label" placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
         </Form.Item>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>

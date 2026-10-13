@@ -41,6 +41,24 @@ jobs:
           printf '\x89PNG\r\n\x1a\n' > /tmp/t.png; head -c 64 /dev/urandom >> /tmp/t.png
           URL=$(curl -sf -X POST "$API_URL/uploads" -H "authorization: Bearer $TOKEN" -F file=@/tmp/t.png | tee /dev/stderr | jq -r .url)
           echo; curl -sf -o /dev/null -w 'content: %{http_code} %{content_type}\n' "https://construction-erp-api-pradeep15.vercel.app$URL"
+      - name: Edit a draft and resubmit (PATCH + submit)
+        run: |
+          set -e
+          TOKEN=$(curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' \
+            -d '{"email":"engineer@demo.com","password":"password123"}' | jq -r .accessToken)
+          H="authorization: Bearer $TOKEN"
+          PROJECT=$(curl -sf "$API_URL/projects" -H "$H" | jq -r '.[0].id')
+          ACTIVITY=$(curl -sf "$API_URL/projects/$PROJECT/activities" -H "$H" | jq -r '.[0].id')
+          TODAY=$(date -u +%F)
+          ID=$(curl -sf -X POST "$API_URL/progress" -H "$H" -H 'content-type: application/json' \
+            -d "{\"projectId\":\"$PROJECT\",\"activityId\":\"$ACTIVITY\",\"date\":\"$TODAY\",\"quantity\":\"1\",\"remarks\":\"smoke draft\",\"submit\":false}" | jq -r .id)
+          echo "draft $ID"
+          STATUS=$(curl -sf -X PATCH "$API_URL/progress/$ID" -H "$H" -H 'content-type: application/json' \
+            -d '{"quantity":"2","remarks":"smoke draft edited","attachmentIds":[]}' | jq -r '"\(.status) \(.quantity) \(.remarks)"')
+          echo "after edit: $STATUS"; [ "$STATUS" = "DRAFT 2 smoke draft edited" ]
+          curl -sf "$API_URL/approvals/progress/$ID/audit" -H "$H" | jq -r '.[] | .action' | grep -q UPDATED
+          # Clean up: a draft can be deleted by its author
+          curl -sf -X DELETE "$API_URL/progress/$ID" -H "$H" | jq -c .
       - name: Swagger docs and CORS
         run: |
           curl -s -o /dev/null -w 'docs: %{http_code}\n' "$API_URL/docs"

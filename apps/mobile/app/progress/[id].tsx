@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { ProgressEntryDto } from '@erp/shared';
 import { useFetch } from '../../src/api/hooks';
-import { AttachmentGallery, Button, Card, ErrorState, KeyValue, Loading, ReviewActions, Screen, SubmissionHeader } from '../../src/components';
+import { AttachmentGallery, Button, Card, ErrorState, KeyValue, Loading, ReviewActions, Screen, SubmissionHeader, SubmitterActions } from '../../src/components';
 import { colors, spacing, typography } from '../../src/theme';
 import { fmtQty, formatDate } from '../../src/utils/format';
 
@@ -33,6 +33,7 @@ export default function ProgressDetailScreen() {
         <KeyValue label="Remarks" value={data.remarks} multiline />
       </Card>
       <AttachmentGallery attachments={data.attachments} />
+      <SubmitterActions type="PROGRESS" item={data} />
       <ReviewActions type="PROGRESS" item={data} onReviewed={setData} />
       <Button title="Open project" variant="ghost" icon="business-outline" onPress={() => router.push(`/project/${data.projectId}`)} />
     </Screen>
