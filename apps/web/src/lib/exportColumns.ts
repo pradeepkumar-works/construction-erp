@@ -1,4 +1,6 @@
 import {
+  EQUIPMENT_OWNERSHIP_LABELS,
+  EQUIPMENT_RATE_UNIT_LABELS,
   MATERIAL_PRIORITY_LABELS,
   PROJECT_STATUS_LABELS,
   PROJECT_TYPE_LABELS,
@@ -9,6 +11,8 @@ import {
   type AttendanceLineDto,
   type AttendanceSheetDto,
   type DailyReportDto,
+  type EquipmentDto,
+  type MachineryLogDto,
   type MaterialRequestDto,
   type ProgressEntryDto,
   type ProjectSummary,
@@ -184,4 +188,40 @@ export const STOCK_ENTRY_EXPORT: ExportColumn<StockEntryExportRow>[] = [
   { header: 'Activity', value: (r) => r.entry.activityName, width: 24 },
   { header: 'Remarks', value: (r) => r.entry.remarks, width: 30 },
   { header: 'Entered by', value: (r) => r.entry.createdByName, width: 20 },
+];
+
+export const MACHINERY_EXPORT: ExportColumn<MachineryLogDto>[] = [
+  { header: 'Date', value: (r) => r.date, width: 12 },
+  { header: 'Project', value: (r) => r.projectName, width: 34 },
+  { header: 'Code', value: (r) => r.equipmentCode, width: 12 },
+  { header: 'Equipment', value: (r) => r.equipmentName, width: 30 },
+  { header: 'Owned / hired', value: (r) => EQUIPMENT_OWNERSHIP_LABELS[r.ownership] },
+  { header: 'Hours worked', value: (r) => toNumber(r.hoursWorked) },
+  { header: 'Idle hours', value: (r) => toNumber(r.idleHours) },
+  { header: 'Breakdown hours', value: (r) => toNumber(r.breakdownHours) },
+  { header: 'Diesel (L)', value: (r) => (r.dieselLitres === null ? null : toNumber(r.dieselLitres)) },
+  { header: 'Meter start', value: (r) => (r.meterStart === null ? null : toNumber(r.meterStart)) },
+  { header: 'Meter end', value: (r) => (r.meterEnd === null ? null : toNumber(r.meterEnd)) },
+  { header: 'Operator', value: (r) => r.operatorName, width: 20 },
+  { header: 'Activity', value: (r) => r.activityName, width: 28 },
+  { header: 'Work done', value: (r) => r.workDone, width: 30 },
+  { header: 'Breakdown', value: (r) => r.breakdownNote, width: 30 },
+  { header: 'Remarks', value: (r) => r.remarks, width: 30 },
+  { header: 'Submitted by', value: (r) => r.submittedByName, width: 20 },
+  { header: 'Status', value: (r) => status(r.status), width: 18 },
+  ...review,
+];
+
+export const EQUIPMENT_EXPORT: ExportColumn<EquipmentDto>[] = [
+  { header: 'Code', value: (r) => r.code, width: 12 },
+  { header: 'Name', value: (r) => r.name, width: 32 },
+  { header: 'Category', value: (r) => r.category, width: 16 },
+  { header: 'Owned / hired', value: (r) => EQUIPMENT_OWNERSHIP_LABELS[r.ownership] },
+  { header: 'Hire agency', value: (r) => r.supplier, width: 24 },
+  { header: 'Registration', value: (r) => r.registrationNo, width: 16 },
+  { header: 'Rate', value: (r) => (r.rate === null ? null : toNumber(r.rate)) },
+  { header: 'Rate per', value: (r) => EQUIPMENT_RATE_UNIT_LABELS[r.rateUnit] },
+  { header: 'Deployed at', value: (r) => r.projectName ?? 'Yard / unassigned', width: 34 },
+  { header: 'Last log', value: (r) => r.lastLogDate },
+  { header: 'Active', value: (r) => (r.isActive ? 'Yes' : 'No') },
 ];

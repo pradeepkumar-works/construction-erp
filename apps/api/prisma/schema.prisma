@@ -49,6 +49,18 @@ enum StockEntryType {
   ADJUSTMENT
 }
 
+enum EquipmentOwnership {
+  OWNED
+  HIRED
+}
+
+/// What the equipment's rate is quoted per (hire rate for hired machines, internal charge-out rate for owned ones).
+enum EquipmentRateUnit {
+  HOUR
+  DAY
+  MONTH
+}
+
 enum Weather {
   SUNNY
   CLOUDY
@@ -98,6 +110,8 @@ model Organization {
   stockEntries     StockEntry[]
   stockTxns        StockTxn[]
   stockMinLevels   StockMinLevel[]
+  equipment        Equipment[]
+  machineryLogs    MachineryLog[]
 }
 
 model Role {
@@ -145,6 +159,8 @@ model User {
   updatedAttendance   AttendanceSheet[] @relation("AttendanceUpdater")
   stockEntries        StockEntry[]
   stockMinLevels      StockMinLevel[]
+  submittedMachinery  MachineryLog[]    @relation("MachinerySubmitter")
+  reviewedMachinery   MachineryLog[]    @relation("MachineryReviewer")
 
   @@unique([organizationId, email])
   @@index([organizationId])
@@ -184,6 +200,8 @@ model Project {
   stockEntries     StockEntry[]
   stockTxns        StockTxn[]
   stockMinLevels   StockMinLevel[]
+  equipment        Equipment[]
+  machineryLogs    MachineryLog[]
 
   @@unique([organizationId, code])
   @@index([organizationId, status])
@@ -246,6 +264,7 @@ model Activity {
 
   progressEntries ProgressEntry[]
   stockEntries    StockEntry[]
+  machineryLogs   MachineryLog[]
 
   @@index([projectId])
   @@index([organizationId])
@@ -505,6 +524,72 @@ model StockMinLevel {
   @@unique([projectId, itemId])
 }
 
+/// A machine or vehicle: owned by the company or hired. `projectId` is where it is deployed now (null = yard / unassigned).
+model Equipment {
+  id             String             @id @default(uuid())
+  organizationId String
+  organization   Organization       @relation(fields: [organizationId], references: [id])
+  code           String
+  name           String
+  category       String?
+  ownership      EquipmentOwnership @default(OWNED)
+  /// Hire agency for hired machines
+  supplier       String?
+  registrationNo String?
+  rate           Decimal?           @db.Decimal(18, 2)
+  rateUnit       EquipmentRateUnit  @default(HOUR)
+  projectId      String?
+  project        Project?           @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  isActive       Boolean            @default(true)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  logs MachineryLog[]
+
+  @@unique([organizationId, code])
+  @@index([organizationId, projectId])
+}
+
+/// One machine's day at one project: hours worked / idle / breakdown, diesel and hour-meter. Goes through approval.
+model MachineryLog {
+  id             String           @id @default(uuid())
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  equipmentId    String
+  equipment      Equipment        @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  date           DateTime         @db.Date
+  hoursWorked    Decimal          @db.Decimal(18, 2)
+  idleHours      Decimal          @default(0) @db.Decimal(18, 2)
+  breakdownHours Decimal          @default(0) @db.Decimal(18, 2)
+  dieselLitres   Decimal?         @db.Decimal(18, 3)
+  meterStart     Decimal?         @db.Decimal(18, 2)
+  meterEnd       Decimal?         @db.Decimal(18, 2)
+  operatorName   String?
+  activityId     String?
+  activity       Activity?        @relation(fields: [activityId], references: [id], onDelete: SetNull)
+  workDone       String?
+  breakdownNote  String?
+  remarks        String?
+  status         SubmissionStatus @default(DRAFT)
+  submittedById  String
+  submittedBy    User             @relation("MachinerySubmitter", fields: [submittedById], references: [id])
+  submittedAt    DateTime?
+  reviewedById   String?
+  reviewedBy     User?            @relation("MachineryReviewer", fields: [reviewedById], references: [id])
+  reviewedAt     DateTime?
+  reviewNote     String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  attachments Attachment[]
+
+  @@index([projectId, status])
+  @@index([equipmentId, date])
+  @@index([organizationId, status])
+}
+
 model Attachment {
   id                String           @id @default(uuid())
   organizationId    String
@@ -526,6 +611,8 @@ model Attachment {
   materialRequest   MaterialRequest? @relation(fields: [materialRequestId], references: [id], onDelete: Cascade)
   stockEntryId      String?
   stockEntry        StockEntry?      @relation(fields: [stockEntryId], references: [id], onDelete: Cascade)
+  machineryLogId    String?
+  machineryLog      MachineryLog?    @relation(fields: [machineryLogId], references: [id], onDelete: Cascade)
   createdAt         DateTime         @default(now())
 
   @@index([organizationId])

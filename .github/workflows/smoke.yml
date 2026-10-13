@@ -148,6 +148,38 @@ jobs:
           curl -sf "$API_URL/stock/receivable" -H "$H" | jq -r '"approved requests waiting for material: \(length)"'
           cleanup
           curl -sf "$API_URL/stock/items?q=Smoke%20test%20item" -H "$H" | jq -e '.total == 0' > /dev/null
+      - name: Machinery log rules
+        run: |
+          set -e
+          TOKEN=$(curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' \
+            -d '{"email":"pm@demo.com","password":"password123"}' | jq -r .accessToken)
+          H="authorization: Bearer $TOKEN"
+          PROJECT=$(curl -sf "$API_URL/projects" -H "$H" | jq -r '.items[0].id')
+          DAY=2000-01-03
+          cleanup() {
+            for EQ in $(curl -sf "$API_URL/equipment?q=SMOKE-01&includeInactive=true" -H "$H" | jq -r '.items[].id'); do
+              for L in $(curl -sf "$API_URL/machinery-logs?equipmentId=$EQ&pageSize=50" -H "$H" | jq -r '.items[].id'); do curl -sf -X DELETE "$API_URL/machinery-logs/$L" -H "$H" > /dev/null; done
+              curl -sf -X DELETE "$API_URL/equipment/$EQ" -H "$H" > /dev/null
+            done
+          }
+          cleanup
+          EQ=$(curl -sf -X POST "$API_URL/equipment" -H "$H" -H 'content-type: application/json' \
+            -d '{"code":"SMOKE-01","name":"Smoke test machine","ownership":"HIRED","rate":"1000","rateUnit":"HOUR"}' | jq -r .id)
+          CID=$(cat /proc/sys/kernel/random/uuid)
+          # Drafts (submit:false) so the run sends no approval notifications
+          BODY="{\"id\":\"$CID\",\"projectId\":\"$PROJECT\",\"equipmentId\":\"$EQ\",\"date\":\"$DAY\",\"hoursWorked\":\"6.5\",\"idleHours\":\"1\",\"dieselLitres\":\"40\",\"submit\":false}"
+          A=$(curl -sf -X POST "$API_URL/machinery-logs" -H "$H" -H 'content-type: application/json' -d "$BODY" | jq -r '.id + " " + .hoursWorked + " " + .status')
+          B=$(curl -sf -X POST "$API_URL/machinery-logs" -H "$H" -H 'content-type: application/json' -d "$BODY" | jq -r '.id + " " + .hoursWorked + " " + .status')
+          echo "log: $A, retry: $B"; [ "$A" = "$B" ]
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/machinery-logs" -H "$H" -H 'content-type: application/json' \
+            -d "{\"projectId\":\"$PROJECT\",\"equipmentId\":\"$EQ\",\"date\":\"$DAY\",\"hoursWorked\":\"2\",\"submit\":false}")
+          echo "second log same day: $code"; [ "$code" = "409" ]
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/machinery-logs" -H "$H" -H 'content-type: application/json' \
+            -d "{\"projectId\":\"$PROJECT\",\"equipmentId\":\"$EQ\",\"date\":\"2000-01-04\",\"hoursWorked\":\"20\",\"idleHours\":\"5\",\"submit\":false}")
+          echo "25 hours in a day: $code"; [ "$code" = "400" ]
+          curl -sf "$API_URL/equipment/$EQ" -H "$H" | jq -e '.rate == "1000.00" and .lastLogDate == "2000-01-03"' > /dev/null
+          cleanup
+          curl -sf "$API_URL/equipment?q=SMOKE-01&includeInactive=true" -H "$H" | jq -e '.total == 0' > /dev/null
       - name: Paged lists with search and sort
         run: |
           set -e
@@ -162,6 +194,7 @@ jobs:
           curl -sf "$API_URL/attendance?sortBy=totalWorkers&pageSize=1" -H "$H" | jq -r '"attendance sheets: \(.total), largest day \(.items[0].totalWorkers // 0) workers"'
           curl -sf "$API_URL/stock/balances?lowOnly=true&pageSize=5" -H "$H" | jq -r '"items below minimum: \(.total)"'
           curl -sf "$API_URL/stock/entries?sortBy=date&pageSize=1" -H "$H" | jq -r '"stock entries: \(.total), latest \(.items[0].entryNo // "none")"'
+          curl -sf "$API_URL/machinery-logs?breakdownOnly=true&pageSize=1" -H "$H" | jq -r '"machinery logs with a breakdown: \(.total)"'
           code=$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/progress?sortBy=nope" -H "$H"); echo "bad sortBy: $code"; [ "$code" = "400" ]
       - name: Swagger docs and CORS
         run: |

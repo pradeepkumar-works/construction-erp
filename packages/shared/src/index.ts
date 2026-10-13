@@ -5,3 +5,4 @@ export * from './types';
 export * from './paging';
 export * from './attendance';
 export * from './stock';
+export * from './machinery';

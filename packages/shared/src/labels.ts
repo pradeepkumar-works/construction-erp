@@ -1,4 +1,4 @@
-import type { MaterialPriority, NotificationType, ProjectStatus, ProjectType, RoleKey, StockEntryType, SubmissionStatus, SubmissionType, Weather } from './enums';
+import type { EquipmentOwnership, EquipmentRateUnit, MaterialPriority, NotificationType, ProjectStatus, ProjectType, RoleKey, StockEntryType, SubmissionStatus, SubmissionType, Weather } from './enums';
 
 export const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {
   ROAD: 'Road / Infrastructure',
@@ -26,6 +26,7 @@ export const SUBMISSION_TYPE_LABELS: Record<SubmissionType, string> = {
   PROGRESS: 'Daily Progress',
   DPR: 'Daily Progress Report',
   MATERIAL_REQUEST: 'Material Request',
+  MACHINERY: 'Machinery Log',
 };
 
 export const MATERIAL_PRIORITY_LABELS: Record<MaterialPriority, string> = {
@@ -81,3 +82,14 @@ export const MANPOWER_CATEGORIES = ['Mason', 'Carpenter', 'Bar Bender', 'Helper'
 
 /** Contractor name for the company's own (departmental) workers on an attendance sheet. */
 export const DEPARTMENTAL_CONTRACTOR = 'Departmental';
+
+export const EQUIPMENT_OWNERSHIP_LABELS: Record<EquipmentOwnership, string> = {
+  OWNED: 'Owned',
+  HIRED: 'Hired',
+};
+
+export const EQUIPMENT_RATE_UNIT_LABELS: Record<EquipmentRateUnit, string> = {
+  HOUR: 'per hour',
+  DAY: 'per day',
+  MONTH: 'per month',
+};

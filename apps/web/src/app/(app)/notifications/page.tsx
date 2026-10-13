@@ -14,6 +14,7 @@ import { QueryError } from '@/components/common/QueryState';
 import { ProgressDrawer } from '@/components/progress/ProgressDrawer';
 import { DprDrawer } from '@/components/dpr/DprDrawer';
 import { MrDrawer } from '@/components/material/MrDrawer';
+import { MachineryDrawer } from '@/components/machinery/MachineryDrawer';
 import { notificationHref } from '@/components/notifications/notificationTarget';
 
 type Open = { type: SubmissionType; id: string } | null;
@@ -106,6 +107,7 @@ function NotificationsPageInner() {
       <ProgressDrawer id={open?.type === 'PROGRESS' ? open.id : null} open={open?.type === 'PROGRESS'} onClose={closeDrawer} />
       <DprDrawer id={open?.type === 'DPR' ? open.id : null} open={open?.type === 'DPR'} onClose={closeDrawer} />
       <MrDrawer id={open?.type === 'MATERIAL_REQUEST' ? open.id : null} open={open?.type === 'MATERIAL_REQUEST'} onClose={closeDrawer} />
+      <MachineryDrawer id={open?.type === 'MACHINERY' ? open.id : null} open={open?.type === 'MACHINERY'} onClose={closeDrawer} />
     </div>
   );
 }

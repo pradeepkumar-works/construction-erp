@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { APPROVER_ROLES, COMPANY_WIDE_ROLES, isCompanyWide, canAdjustStock, canApprove, canKeepStock, canManageStore, canRecordAttendance } from '@erp/shared';
+import { APPROVER_ROLES, COMPANY_WIDE_ROLES, isCompanyWide, canAdjustStock, canApprove, canKeepStock, canLogMachinery, canManageEquipment, canManageStore, canRecordAttendance } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from './current-user';
 
@@ -81,6 +81,17 @@ export class ProjectAccessService {
   async assertCanManageStore(user: RequestUser, projectId?: string) {
     if (!canManageStore(user.roleKey)) throw new ForbiddenException('Only the store manager or an approver can change the item master or minimum levels');
     if (projectId) await this.assertCanAccessProject(user, projectId);
+  }
+
+  /** File or edit a machinery log: a logger role with access to the project. */
+  async assertCanLogMachinery(user: RequestUser, projectId: string) {
+    if (!canLogMachinery(user.roleKey)) throw new ForbiddenException('Your role cannot log machinery');
+    await this.assertCanAccessProject(user, projectId);
+  }
+
+  /** Equipment master (codes, rates, deployment): approvers only. */
+  assertCanManageEquipment(user: RequestUser) {
+    if (!canManageEquipment(user.roleKey)) throw new ForbiddenException('Only an approver can change the equipment master');
   }
 
   /** Who hears about low stock at a project: its store managers and its project manager. */

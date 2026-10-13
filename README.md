@@ -31,6 +31,9 @@ contractors after the first client is live.
   site and adjusted by approvers. Stock on hand per project and item with minimum levels; falling below
   one alerts the store manager and PM. Web Stock page and project tab with Excel export, and receive /
   issue screens in the site app.
+- Machinery: equipment master (owned / hired, hire rate, where deployed) and a daily log per machine
+  (hours worked, idle, breakdown, hour meter, diesel) filed from the site app, offline too, and
+  approved by the PM like any other submission. Web Machinery page and project tab with Excel export.
 - Edit and resubmit: a rejected or changes-requested entry is fixed in place (web drawer or site app)
   and sent back for approval with the reviewer's note shown alongside the form.
 - Dashboards: company (projects, contract value, pending approvals, delayed activities, DPRs
@@ -123,6 +126,6 @@ pnpm --filter @erp/api prisma studio
 
 ## Not in the MVP (next phases)
 
-Procurement (indent → RFQ → PO), store/GRN and stock, payroll, machinery logs,
+Procurement (indent → RFQ → PO), payroll,
 measurement book and RA billing, finance, HR, quality registers,
 PDF report exports beyond the DPR print view, and tenant self-signup/billing.

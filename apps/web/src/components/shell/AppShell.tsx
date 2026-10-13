@@ -12,6 +12,7 @@ import {
   CheckSquareOutlined,
   FileTextOutlined,
   InboxOutlined,
+  ToolOutlined,
   LineChartOutlined,
   LogoutOutlined,
   MenuOutlined,
@@ -79,6 +80,7 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
       { key: '/progress', icon: <LineChartOutlined />, label: <Link href="/progress">Progress Entries</Link> },
       { key: '/material-requests', icon: <ShoppingCartOutlined />, label: <Link href="/material-requests">Material Requests</Link> },
       { key: '/stock', icon: <InboxOutlined />, label: <Link href="/stock">Stock</Link> },
+      { key: '/machinery', icon: <ToolOutlined />, label: <Link href="/machinery">Machinery</Link> },
       { key: '/notifications', icon: <BellOutlined />, label: <Link href="/notifications">Notifications</Link> },
     ];
     if (canManageUsers(user.roleKey)) {

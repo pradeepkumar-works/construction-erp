@@ -1,4 +1,6 @@
 import type {
+  EquipmentOwnership,
+  EquipmentRateUnit,
   MaterialPriority,
   NotificationType,
   ProjectStatus,
@@ -398,6 +400,47 @@ export interface ReceivableRequestDto {
   requiredDate: string;
   priority: MaterialPriority;
   lines: ReceivableLineDto[];
+}
+
+/* ---------- machinery ---------- */
+
+export interface EquipmentDto {
+  id: string;
+  code: string;
+  name: string;
+  category: string | null;
+  ownership: EquipmentOwnership;
+  supplier: string | null;
+  registrationNo: string | null;
+  /** Only returned to roles that manage equipment (rates are commercial); null otherwise. */
+  rate: string | null;
+  rateUnit: EquipmentRateUnit;
+  projectId: string | null;
+  projectName: string | null;
+  isActive: boolean;
+  /** Date of the latest log, any status except rejected. */
+  lastLogDate: string | null;
+  createdAt: string;
+}
+
+export interface MachineryLogDto extends SubmissionBase {
+  equipmentId: string;
+  equipmentCode: string;
+  equipmentName: string;
+  ownership: EquipmentOwnership;
+  date: string;
+  hoursWorked: string;
+  idleHours: string;
+  breakdownHours: string;
+  dieselLitres: string | null;
+  meterStart: string | null;
+  meterEnd: string | null;
+  operatorName: string | null;
+  activityId: string | null;
+  activityName: string | null;
+  workDone: string | null;
+  breakdownNote: string | null;
+  remarks: string | null;
 }
 
 export interface Paginated<T> {

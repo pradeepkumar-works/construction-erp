@@ -45,8 +45,13 @@ Order matters: each item builds on the previous one.
    and count corrections as adjustments and can delete a wrong entry. Falling below the minimum notifies
    the project's store managers and PM (`LOW_STOCK`). Web Stock page and project tab (stock on hand,
    register, item master, Excel export); site-app Stock, Receive and Issue screens (online only).
-7. **Machinery log**: equipment master, daily hours / idle / diesel / breakdown from mobile; goes
-   through the approval lifecycle.
+7. ~~**Machinery log**: equipment master, daily hours / idle / diesel / breakdown from mobile; goes
+   through the approval lifecycle.~~ Done: `Equipment` master (code, owned / hired, hire agency, rate per
+   hour / day / month, where it is deployed) and `MachineryLog`, a fourth submission type (`MACHINERY`)
+   with hours worked / idle / breakdown (at most 24 a day), hour meter, diesel, operator, activity and
+   photos. One log per machine per day unless rejected. Approvals queue, notifications and audit trail as
+   for the other types. Web Machinery page and project tab (logs, equipment, Excel export); site-app form
+   that also works offline. Rates are shown to approvers only and feed the cost view (item 10).
 8. **Site expenses**: category, amount, GST, receipt photo, approval; posts to project cost.
 9. **Measurement book**: measurements by BOQ item and location with dimensions; rollup to executed
    quantity (replaces or complements activity progress for billing).

@@ -88,9 +88,9 @@ const DECISIONS: { decision: ReviewDecision; label: string; variant: 'success' |
   { decision: 'REJECT', label: 'Reject', variant: 'danger', icon: 'close' },
 ];
 
-const EDIT_PATH: Record<SubmissionType, string> = { PROGRESS: '/progress/new', DPR: '/dpr/new', MATERIAL_REQUEST: '/material-request/new' };
+const EDIT_PATH: Record<SubmissionType, string> = { PROGRESS: '/progress/new', DPR: '/dpr/new', MATERIAL_REQUEST: '/material-request/new', MACHINERY: '/machinery/new' };
 
-const REVIEW_PATH: Record<SubmissionType, string> = { PROGRESS: 'progress', DPR: 'dpr', MATERIAL_REQUEST: 'material_request' };
+const REVIEW_PATH: Record<SubmissionType, string> = { PROGRESS: 'progress', DPR: 'dpr', MATERIAL_REQUEST: 'material_request', MACHINERY: 'machinery' };
 
 /** Approve / request changes / reject with an optional note. Rendered only for approvers on SUBMITTED entries. */
 export function ReviewActions<T extends SubmissionBase>({ type, item, onReviewed }: { type: SubmissionType; item: T; onReviewed: (updated: T) => void }) {
