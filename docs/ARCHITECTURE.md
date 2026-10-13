@@ -43,10 +43,17 @@ shapes of every API response, so web, mobile and API agree on one contract.
 requests:
 
 ```
-DRAFT / CHANGES_REQUESTED --submit--> SUBMITTED --review--> APPROVED | REJECTED | CHANGES_REQUESTED
+DRAFT / REJECTED / CHANGES_REQUESTED --submit--> SUBMITTED --review--> APPROVED | REJECTED | CHANGES_REQUESTED
 ```
 
-Every transition writes an `AuditLog` row (who, what, when, note). Adding a new submission type
+Every transition writes an `AuditLog` row (who, what, when, note). A rejected or changes-requested
+entry is edited in place (`PATCH`, optionally with `submit: true`) and resubmitted on the same record,
+so one id carries the whole history: the resubmission is logged as `RESUBMITTED`, the previous review
+(reviewer, time, note) is cleared, and the entry goes back into the approvers' queue. Who may edit
+and resubmit is decided by `canEditSubmission` / `canResubmit` in `packages/shared/src/permissions.ts`,
+which the API, web and mobile all use: the author while DRAFT / REJECTED / CHANGES_REQUESTED, and
+approvers until APPROVED. On an edit, `attachmentIds` is the complete list of attachments; files left
+out are detached. Adding a new submission type
 (attendance, machinery log, expense, measurement) means adding a table with the same six status
 columns and registering it in the lifecycle service; the approvals queue and audit trail come free.
 

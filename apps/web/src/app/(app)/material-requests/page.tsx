@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Button, Card } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
-import type { SubmissionStatus } from '@erp/shared';
+import type { MaterialRequestDto, SubmissionStatus } from '@erp/shared';
 import { useMaterialRequests } from '@/lib/queries';
 import { PageHeader } from '@/components/common/PageHeader';
 import { QueryError } from '@/components/common/QueryState';
@@ -17,6 +17,7 @@ export default function MaterialRequestsPage() {
   const [status, setStatus] = useState<SubmissionStatus | undefined>();
   const [openId, setOpenId] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<MaterialRequestDto | null>(null);
   const { data, isLoading, error, refetch } = useMaterialRequests({ projectId, status, limit: 200 });
 
   return (
@@ -33,10 +34,10 @@ export default function MaterialRequestsPage() {
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       <Card className="table-card" size="small">
         <ListToolbar projectId={projectId} onProject={setProjectId} status={status} onStatus={setStatus} />
-        <MrTable data={data ?? []} loading={isLoading} showProject onOpen={setOpenId} />
+        <MrTable data={data ?? []} loading={isLoading} showProject onOpen={setOpenId} onEdit={setEditing} />
       </Card>
-      <MrDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} />
-      <MrFormModal open={formOpen} onClose={() => setFormOpen(false)} />
+      <MrDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onEdit={setEditing} />
+      <MrFormModal open={formOpen || !!editing} entry={editing} onClose={() => { setFormOpen(false); setEditing(null); }} />
     </div>
   );
 }

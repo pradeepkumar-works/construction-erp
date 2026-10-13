@@ -22,4 +22,18 @@ export class AttachmentsService {
       data: { [parent]: parentId },
     });
   }
+
+  /**
+   * Make `attachmentIds` the complete set of attachments on a parent (used by edit / resubmit).
+   * Files no longer listed are detached (they stay in storage as orphans); newly listed uploads are linked.
+   * `undefined` leaves the attachments untouched.
+   */
+  async sync(user: RequestUser, parent: Parent, parentId: string, attachmentIds: string[] | undefined) {
+    if (attachmentIds === undefined) return;
+    await this.prisma.attachment.updateMany({
+      where: { [parent]: parentId, organizationId: user.organizationId, id: { notIn: attachmentIds } },
+      data: { [parent]: null },
+    });
+    await this.link(user, parent, parentId, attachmentIds);
+  }
 }

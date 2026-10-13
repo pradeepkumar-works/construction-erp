@@ -1,5 +1,5 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { canApprove, type PendingApprovalDto, type ReviewDecision, type SubmissionType } from '@erp/shared';
+import { canApprove, canEditSubmission, canResubmit, type PendingApprovalDto, type ReviewDecision, type SubmissionStatus, type SubmissionType } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from './current-user';
 import { ProjectAccessService } from './project-access.service';
@@ -9,14 +9,15 @@ interface SubmissionRow {
   id: string;
   organizationId: string;
   projectId: string;
-  status: string;
+  status: SubmissionStatus;
   submittedById: string;
 }
 
 /**
  * One state machine for every site submission:
- *   DRAFT / CHANGES_REQUESTED --submit--> SUBMITTED --review--> APPROVED | REJECTED | CHANGES_REQUESTED
- * Progress entries, DPRs and material requests all go through here so the rules live in one place.
+ *   DRAFT / REJECTED / CHANGES_REQUESTED --submit--> SUBMITTED --review--> APPROVED | REJECTED | CHANGES_REQUESTED
+ * A rejected or changes-requested entry is edited in place and resubmitted (audit action RESUBMITTED), so the
+ * review history stays on one record. Progress entries, DPRs and material requests all go through here.
  */
 @Injectable()
 export class SubmissionLifecycleService {
@@ -40,13 +41,14 @@ export class SubmissionLifecycleService {
     return row;
   }
 
-  /** Owner (or an approver) moves a draft to SUBMITTED. */
+  /** Owner (or an approver) moves a draft, rejected or changes-requested entry to SUBMITTED. */
   async submit(user: RequestUser, type: SubmissionType, id: string) {
     const row = await this.load(user, type, id);
     if (row.submittedById !== user.id && !canApprove(user.roleKey)) throw new ForbiddenException('Only the author can submit this entry');
-    if (!['DRAFT', 'CHANGES_REQUESTED'].includes(row.status)) throw new BadRequestException(`Cannot submit an entry in status ${row.status}`);
+    if (!canResubmit(user, row)) throw new BadRequestException(`Cannot submit an entry in status ${row.status}`);
+    const resubmit = row.status === 'REJECTED' || row.status === 'CHANGES_REQUESTED';
     await this.delegate(type).update({ where: { id }, data: { status: 'SUBMITTED', submittedAt: new Date(), reviewedById: null, reviewedAt: null, reviewNote: null } });
-    await this.audit.log(user, type, id, 'SUBMITTED');
+    await this.audit.log(user, type, id, resubmit ? 'RESUBMITTED' : 'SUBMITTED');
   }
 
   /** Approver decides on a SUBMITTED entry. */
@@ -59,12 +61,13 @@ export class SubmissionLifecycleService {
     await this.audit.log(user, type, id, status, note);
   }
 
-  /** Author can edit only while DRAFT / CHANGES_REQUESTED; approvers may edit at any time before approval. */
+  /** Author can edit while DRAFT / REJECTED / CHANGES_REQUESTED; approvers may edit at any time before approval. */
   async assertEditable(user: RequestUser, row: SubmissionRow) {
-    const isOwner = row.submittedById === user.id;
-    if (!isOwner && !canApprove(user.roleKey)) throw new ForbiddenException('You cannot edit this entry');
+    if (canEditSubmission(user, row)) return;
     if (row.status === 'APPROVED') throw new BadRequestException('Approved entries cannot be edited');
-    if (isOwner && !canApprove(user.roleKey) && row.status === 'SUBMITTED') throw new BadRequestException('Entry is awaiting approval and cannot be edited');
+    if (row.submittedById !== user.id) throw new ForbiddenException('You cannot edit this entry');
+    if (row.status === 'SUBMITTED') throw new BadRequestException('Entry is awaiting approval and cannot be edited');
+    throw new ForbiddenException('You cannot edit this entry');
   }
 
   /** Everything awaiting the current user's approval, across the three submission types. */

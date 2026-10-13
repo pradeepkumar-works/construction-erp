@@ -11,4 +11,4 @@ export { ProgressBar } from './ProgressBar';
 export { SectionTitle, KeyValue, Divider, Stat } from './Layout';
 export { PhotoPicker, type LocalPhoto } from './PhotoPicker';
 export { SubmissionRow, TYPE_ICON, TYPE_SHORT } from './SubmissionRow';
-export { SubmissionHeader, AttachmentGallery, ReviewActions } from './SubmissionDetail';
+export { SubmissionHeader, AttachmentGallery, ReviewActions, SubmitterActions } from './SubmissionDetail';

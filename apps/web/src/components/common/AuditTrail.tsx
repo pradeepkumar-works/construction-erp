@@ -11,6 +11,7 @@ const COLORS: Record<string, string> = {
   APPROVED: 'green',
   REJECTED: 'red',
   CHANGES_REQUESTED: 'orange',
+  RESUBMITTED: 'gold',
   UPDATED: 'blue',
   DELETED: 'red',
 };

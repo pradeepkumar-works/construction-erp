@@ -132,13 +132,16 @@ export class DprService {
     if (dto.issues !== undefined) data.issues = dto.issues;
     if (dto.nextDayPlan !== undefined) data.nextDayPlan = dto.nextDayPlan;
     await this.prisma.dailyReport.update({ where: { id }, data });
-    await this.attachments.link(user, 'dailyReportId', id, dto.attachmentIds);
+    await this.attachments.sync(user, 'dailyReportId', id, dto.attachmentIds);
     await this.audit.log(user, 'DPR', id, 'UPDATED');
-    if (dto.submit) await this.lifecycle.submit(user, 'DPR', id);
+    if (dto.submit) await this.submit(user, id);
     return this.get(user, id);
   }
 
+  /** (Re)submit for approval. A rejected DPR may have been replaced by a newer one for the same day, so re-check. */
   async submit(user: RequestUser, id: string) {
+    const current = await this.get(user, id);
+    if (current.status === 'REJECTED') await this.assertNoDuplicate(current.projectId, parseDate(current.date), id);
     await this.lifecycle.submit(user, 'DPR', id);
     return this.get(user, id);
   }

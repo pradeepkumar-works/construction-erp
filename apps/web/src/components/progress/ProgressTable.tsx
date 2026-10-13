@@ -9,17 +9,21 @@ import { formatDate, formatQty } from '@/lib/format';
 import { StatusTag } from '@/components/common/StatusTag';
 import { PhotoThumbs } from '@/components/common/AttachmentGallery';
 import { ReviewActions } from '@/components/common/ReviewActions';
+import { EditResubmitButton } from '@/components/common/EditResubmitButton';
 
 export function ProgressTable({
   data,
   loading,
   showProject,
   onOpen,
+  onEdit,
 }: {
   data: ProgressEntryDto[];
   loading?: boolean;
   showProject?: boolean;
   onOpen: (id: string) => void;
+  /** Opens the form in edit & resubmit mode; the button shows only for entries the user may resubmit. */
+  onEdit?: (row: ProgressEntryDto) => void;
 }) {
   const columns: TableProps<ProgressEntryDto>['columns'] = [
     { title: 'Date', dataIndex: 'date', width: 110, render: (v) => formatDate(v), sorter: (a, b) => a.date.localeCompare(b.date), defaultSortOrder: 'descend' },
@@ -55,6 +59,7 @@ export function ProgressTable({
             View
           </Button>
           <ReviewActions type="progress" id={r.id} status={r.status} size="small" compact />
+          <EditResubmitButton entry={r} onEdit={onEdit} size="small" compact />
         </div>
       ),
     },
