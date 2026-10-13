@@ -1,8 +1,10 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { canApprove, canEditSubmission, canResubmit, type PendingApprovalDto, type ReviewDecision, type SubmissionStatus, type SubmissionType } from '@erp/shared';
+import { Prisma } from '@prisma/client';
+import { canApprove, canEditSubmission, canResubmit, machineryLogCost, type PendingApprovalDto, type ReviewDecision, type SubmissionStatus, type SubmissionType } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from './current-user';
 import { ProjectAccessService } from './project-access.service';
+import { ApprovalRightsService } from './approval-rights.service';
 import { AuditService } from './audit.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { expenseTitle, machineryTitle, measurementTitle } from './submission-titles';
@@ -23,7 +25,7 @@ interface SubmissionRow {
  */
 @Injectable()
 export class SubmissionLifecycleService {
-  constructor(private prisma: PrismaService, private access: ProjectAccessService, private audit: AuditService, private notifications: NotificationsService) {}
+  constructor(private prisma: PrismaService, private access: ProjectAccessService, private audit: AuditService, private notifications: NotificationsService, private rights: ApprovalRightsService) {}
 
   private delegate(type: SubmissionType): any {
     switch (type) {
@@ -63,7 +65,7 @@ export class SubmissionLifecycleService {
   /** Approver decides on a SUBMITTED entry. */
   async review(user: RequestUser, type: SubmissionType, id: string, decision: ReviewDecision, note?: string | null) {
     const row = await this.load(user, type, id);
-    await this.access.assertCanApprove(user, row.projectId);
+    await this.access.assertCanApproveSubmission(user, type, id, row.projectId);
     if (row.status !== 'SUBMITTED') throw new BadRequestException(`Only submitted entries can be reviewed (current status ${row.status})`);
     const status = decision === 'APPROVE' ? 'APPROVED' : decision === 'REJECT' ? 'REJECTED' : 'CHANGES_REQUESTED';
     await this.delegate(type).update({ where: { id }, data: { status, reviewedById: user.id, reviewedAt: new Date(), reviewNote: note ?? null } });
@@ -80,18 +82,29 @@ export class SubmissionLifecycleService {
     throw new ForbiddenException('You cannot edit this entry');
   }
 
-  /** Everything awaiting the current user's approval, across all submission types. */
+  /**
+   * Everything awaiting the current user's approval, across all submission types: only the types the approval matrix
+   * gives the user's role, and only items within its amount limit (anything above goes to a higher approver).
+   */
   async pending(user: RequestUser): Promise<PendingApprovalDto[]> {
-    if (!canApprove(user.roleKey)) return [];
+    const rights = await this.rights.rightsFor(user.organizationId, user.roleKey);
+    if (!rights.length) return [];
+    const allowed = (t: SubmissionType) => rights.some((r) => r.type === t);
     const where = { ...this.access.submissionWhere(user), status: 'SUBMITTED' as const };
+    const none = Promise.resolve([] as never[]);
     const [progress, dprs, mrs, logs, expenses, mbs] = await Promise.all([
-      this.prisma.progressEntry.findMany({ where, include: { project: true, activity: true, submittedBy: true }, orderBy: { submittedAt: 'asc' } }),
-      this.prisma.dailyReport.findMany({ where, include: { project: true, submittedBy: true }, orderBy: { submittedAt: 'asc' } }),
-      this.prisma.materialRequest.findMany({ where, include: { project: true, submittedBy: true, items: true }, orderBy: { submittedAt: 'asc' } }),
-      this.prisma.machineryLog.findMany({ where, include: { project: true, submittedBy: true, equipment: true }, orderBy: { submittedAt: 'asc' } }),
-      this.prisma.expense.findMany({ where, include: { project: true, submittedBy: true }, orderBy: { submittedAt: 'asc' } }),
-      this.prisma.measurementSheet.findMany({ where, include: { project: true, submittedBy: true, boqItem: true }, orderBy: { submittedAt: 'asc' } }),
+      allowed('PROGRESS') ? this.prisma.progressEntry.findMany({ where, include: { project: true, activity: { include: { boqItem: { select: { rate: true } } } }, submittedBy: true }, orderBy: { submittedAt: 'asc' } }) : none,
+      allowed('DPR') ? this.prisma.dailyReport.findMany({ where, include: { project: true, submittedBy: true }, orderBy: { submittedAt: 'asc' } }) : none,
+      allowed('MATERIAL_REQUEST') ? this.prisma.materialRequest.findMany({ where, include: { project: true, submittedBy: true, items: true }, orderBy: { submittedAt: 'asc' } }) : none,
+      allowed('MACHINERY') ? this.prisma.machineryLog.findMany({ where, include: { project: true, submittedBy: true, equipment: true }, orderBy: { submittedAt: 'asc' } }) : none,
+      allowed('EXPENSE') ? this.prisma.expense.findMany({ where, include: { project: true, submittedBy: true }, orderBy: { submittedAt: 'asc' } }) : none,
+      allowed('MEASUREMENT') ? this.prisma.measurementSheet.findMany({ where, include: { project: true, submittedBy: true, boqItem: true }, orderBy: { submittedAt: 'asc' } }) : none,
     ]);
+    const amt = (d: Prisma.Decimal | null): string | null => (d === null ? null : d.toDecimalPlaces(2).toFixed(2));
+    const machineCost = (l: (typeof logs)[number]) => {
+      const c = machineryLogCost(l.equipment.rate?.toString() ?? null, l.equipment.rateUnit, l.hoursWorked.toString());
+      return c === null ? null : new Prisma.Decimal(c);
+    };
     const out: PendingApprovalDto[] = [
       ...progress.map((p) => ({
         type: 'PROGRESS' as const,
@@ -101,6 +114,7 @@ export class SubmissionLifecycleService {
         title: `${p.activity.name}: ${p.quantity.toString()} ${p.activity.unit} on ${p.date.toISOString().slice(0, 10)}`,
         submittedByName: p.submittedBy.fullName,
         submittedAt: (p.submittedAt ?? p.createdAt).toISOString(),
+        amount: amt(p.activity.boqItem ? p.quantity.mul(p.activity.boqItem.rate) : null),
       })),
       ...dprs.map((d) => ({
         type: 'DPR' as const,
@@ -110,6 +124,7 @@ export class SubmissionLifecycleService {
         title: `DPR for ${d.date.toISOString().slice(0, 10)}`,
         submittedByName: d.submittedBy.fullName,
         submittedAt: (d.submittedAt ?? d.createdAt).toISOString(),
+        amount: null,
       })),
       ...mrs.map((m) => ({
         type: 'MATERIAL_REQUEST' as const,
@@ -119,6 +134,7 @@ export class SubmissionLifecycleService {
         title: `${m.requestNo}: ${m.items.length} item(s), ${m.priority.toLowerCase()} priority`,
         submittedByName: m.submittedBy.fullName,
         submittedAt: (m.submittedAt ?? m.createdAt).toISOString(),
+        amount: null,
       })),
       ...logs.map((l) => ({
         type: 'MACHINERY' as const,
@@ -128,6 +144,7 @@ export class SubmissionLifecycleService {
         title: machineryTitle(l.equipment.code, l.equipment.name, l.hoursWorked.toString(), l.breakdownHours.toString(), l.date.toISOString().slice(0, 10)),
         submittedByName: l.submittedBy.fullName,
         submittedAt: (l.submittedAt ?? l.createdAt).toISOString(),
+        amount: amt(machineCost(l)),
       })),
       ...expenses.map((x) => ({
         type: 'EXPENSE' as const,
@@ -137,6 +154,7 @@ export class SubmissionLifecycleService {
         title: expenseTitle(x.expenseNo, x.totalAmount.toFixed(2), x.description),
         submittedByName: x.submittedBy.fullName,
         submittedAt: (x.submittedAt ?? x.createdAt).toISOString(),
+        amount: amt(x.totalAmount),
       })),
       ...mbs.map((m) => ({
         type: 'MEASUREMENT' as const,
@@ -146,8 +164,11 @@ export class SubmissionLifecycleService {
         title: measurementTitle(m.mbNo, m.boqItem.itemNo, m.totalQty.toString(), m.boqItem.unit, m.location),
         submittedByName: m.submittedBy.fullName,
         submittedAt: (m.submittedAt ?? m.createdAt).toISOString(),
+        amount: amt(m.totalQty.mul(m.boqItem.rate)),
       })),
     ];
-    return out.sort((a, b) => a.submittedAt.localeCompare(b.submittedAt));
+    return out
+      .filter((p) => ApprovalRightsService.within(rights.find((r) => r.type === p.type), p.type, p.amount === null ? null : new Prisma.Decimal(p.amount)))
+      .sort((a, b) => a.submittedAt.localeCompare(b.submittedAt));
   }
 }

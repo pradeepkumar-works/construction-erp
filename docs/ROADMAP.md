@@ -99,7 +99,16 @@ Order matters: each item builds on the previous one.
     form, and "Add from template" on a project's Activities tab for existing projects, schedule them over the
     project dates (stretched or squeezed to fit) and skip names the project already has. Planned quantities
     start at 0 for the planner to fill in or link to BOQ items.
-14. **Configurable approval matrix** with amount limits (table-driven, replaces fixed role rules).
+14. ~~**Configurable approval matrix** with amount limits (table-driven, replaces fixed role rules).~~
+    Done: `ApprovalRule` (role, submission type, optional rupee limit) edited by the admin on the Approval
+    Rules page. Limits apply to progress (quantity at BOQ rate), site expenses (bill total with GST),
+    measurements (quantity at BOQ rate) and machinery logs (day cost at hire rate); anything above a limit
+    leaves that approver's queue and goes to a role with a higher or no limit. Admin always approves
+    everything. An organisation without rules keeps the old fixed rule. The queue, review endpoint, new-
+    submission notifications and the daily digest all follow the matrix; `/auth/me` returns the user's
+    rights for the clients. The demo seeds a matrix (project managers approve site expenses up to ₹25,000,
+    accounts approves any expense). Editing before approval, deleting stock entries and risks stay with
+    the fixed approver roles.
 15. **Organisation onboarding**: create org, invite users by email, default roles; password reset.
 16. **Postgres row-level security** as the second tenant guard.
 

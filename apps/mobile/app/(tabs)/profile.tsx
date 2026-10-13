@@ -1,7 +1,7 @@
 import React from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { ROLE_LABELS, canApprove } from '@erp/shared';
+import { ROLE_LABELS, SUBMISSION_TYPE_LABELS, approvalRightsOf } from '@erp/shared';
 import { useAuth } from '../../src/auth/AuthContext';
 import { useNotifications } from '../../src/notifications/NotificationsContext';
 import { Button, Card, KeyValue, Screen } from '../../src/components';
@@ -40,7 +40,7 @@ export default function ProfileScreen() {
         <KeyValue label="Phone" value={user.phone} />
         <KeyValue label="Role" value={user.roleName} />
         <KeyValue label="Organisation" value={user.organizationName} />
-        <KeyValue label="Can approve" value={canApprove(user.roleKey) ? 'Yes' : 'No'} />
+        <KeyValue label="Can approve" value={approvalRightsLine(user)} />
       </Card>
       <Card title="Notifications">
         <KeyValue label="Push to this device" value={push ? (push.status === 'ready' ? 'On' : push.status === 'denied' ? 'Permission denied' : 'Not available') : 'Checking…'} />
@@ -68,3 +68,10 @@ const styles = StyleSheet.create({
   apiRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
   api: { ...typography.bodyStrong, flex: 1 },
 });
+
+function approvalRightsLine(user: Parameters<typeof approvalRightsOf>[0]): string {
+  const rights = approvalRightsOf(user);
+  if (!rights.length) return 'No';
+  if (rights.length === Object.keys(SUBMISSION_TYPE_LABELS).length && rights.every((r) => r.maxAmount === null)) return 'Everything';
+  return rights.map((r) => `${SUBMISSION_TYPE_LABELS[r.type]}${r.maxAmount === null ? '' : ` up to ₹${Number(r.maxAmount).toLocaleString('en-IN')}`}`).join(', ');
+}

@@ -35,7 +35,7 @@ export function MeasurementDrawer({ id, open, onClose, onEdit }: { id: string | 
         data ? (
           <Space wrap>
             <EditResubmitButton entry={data} onEdit={onEdit} size="small" />
-            <ReviewActions type="measurement" id={data.id} status={data.status} size="small" />
+            <ReviewActions type="measurement" id={data.id} status={data.status} amount={data.amount} size="small" />
           </Space>
         ) : null
       }

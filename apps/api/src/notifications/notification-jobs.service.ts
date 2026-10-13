@@ -69,8 +69,11 @@ export class NotificationJobsService {
   async approvalDigest(date = todayIn()): Promise<NotificationJobResult> {
     const result: NotificationJobResult = { job: 'APPROVAL_DIGEST', date, created: 0, pushed: 0, emailed: 0, skipped: 0 };
     const dedupeKey = `APPROVAL_DIGEST:${date}`;
+    // Everyone whose role appears in an approval matrix, plus the fixed approver roles; pending() then applies each
+    // organisation's actual rights, so a user with nothing to approve gets nothing.
+    const ruleRoles = await this.prisma.approvalRule.findMany({ distinct: ['roleId'], select: { roleId: true } });
     const approvers = await this.prisma.user.findMany({
-      where: { isActive: true, role: { key: { in: APPROVER_ROLES } } },
+      where: { isActive: true, OR: [{ role: { key: { in: APPROVER_ROLES } } }, { roleId: { in: ruleRoles.map((r) => r.roleId) } }] },
       include: { role: { select: { key: true } }, organization: { select: { name: true } } },
     });
     for (const u of approvers) {

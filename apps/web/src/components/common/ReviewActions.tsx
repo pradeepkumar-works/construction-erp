@@ -3,8 +3,8 @@
 import React, { useState } from 'react';
 import { App, Button, Form, Input, Modal, Space, Tooltip } from 'antd';
 import { CheckOutlined, CloseOutlined, EditOutlined } from '@ant-design/icons';
-import type { ReviewDecision, SubmissionStatus } from '@erp/shared';
-import { canApprove } from '@erp/shared';
+import type { ReviewDecision, SubmissionStatus, SubmissionType } from '@erp/shared';
+import { mayApproveType } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { errorMessage } from '@/lib/api';
 import { useReview, type ApprovalTypeParam } from '@/lib/queries';
@@ -21,6 +21,7 @@ export function ReviewActions({
   status,
   size = 'middle',
   compact = false,
+  amount,
   onDone,
 }: {
   type: ApprovalTypeParam;
@@ -29,6 +30,8 @@ export function ReviewActions({
   size?: 'small' | 'middle' | 'large';
   /** Icon-only buttons with tooltips, for table rows. */
   compact?: boolean;
+  /** The amount the approval limit applies to, when the caller knows it (hides the buttons above the user's limit). */
+  amount?: string | null;
   onDone?: () => void;
 }) {
   const { user } = useAuth();
@@ -37,7 +40,7 @@ export function ReviewActions({
   const [decision, setDecision] = useState<ReviewDecision | null>(null);
   const [form] = Form.useForm<{ note?: string }>();
 
-  if (!user || !canApprove(user.roleKey) || status !== 'SUBMITTED') return null;
+  if (!user || !mayApproveType(user, type.toUpperCase() as SubmissionType, amount) || status !== 'SUBMITTED') return null;
 
   const submit = async () => {
     if (!decision) return;

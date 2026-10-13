@@ -16,7 +16,7 @@ import { useApi } from '../api/hooks';
 import { errorMessage } from '../api/client';
 import { ErrorBanner } from './States';
 import { useAuth } from '../auth/AuthContext';
-import { canApprove, canEditSubmission, canResubmit } from '@erp/shared';
+import { canEditSubmission, canResubmit, mayApproveType } from '@erp/shared';
 
 /** Status, project, submitter and reviewer block shared by all three detail screens. */
 export function SubmissionHeader({ item, title, subtitle }: { item: SubmissionBase; title: string; subtitle?: string }) {
@@ -101,7 +101,9 @@ export function ReviewActions<T extends SubmissionBase>({ type, item, onReviewed
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (!user || !canApprove(user.roleKey) || item.status !== 'SUBMITTED') return null;
+  const known = item as unknown as { totalAmount?: string; amount?: string };
+  const amount = type === 'EXPENSE' ? known.totalAmount : type === 'MEASUREMENT' ? known.amount : undefined;
+  if (!user || !mayApproveType(user, type, amount) || item.status !== 'SUBMITTED') return null;
   const meta = DECISIONS.find((d) => d.decision === pending);
 
   const confirm = async () => {

@@ -2,7 +2,7 @@ import React from 'react';
 import type { ColorValue } from 'react-native';
 import { Tabs } from 'expo-router/js-tabs';
 import { Ionicons } from '@expo/vector-icons';
-import { canApprove } from '@erp/shared';
+import { mayApprove } from '@erp/shared';
 import { useAuth } from '../../src/auth/AuthContext';
 import { colors } from '../../src/theme';
 
@@ -14,7 +14,7 @@ function icon(active: IconName, inactive: IconName) {
 
 export default function TabsLayout() {
   const { user } = useAuth();
-  const approver = !!user && canApprove(user.roleKey);
+  const approver = !!user && mayApprove(user);
   return (
     <Tabs
       screenOptions={{

@@ -4,10 +4,11 @@ import * as bcrypt from 'bcryptjs';
 import type { AuthUser, LoginResponse, RoleKey } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
+import { ApprovalRightsService } from '../common/approval-rights.service';
 
 @Injectable()
 export class AuthService {
-  constructor(private prisma: PrismaService, private jwt: JwtService) {}
+  constructor(private prisma: PrismaService, private jwt: JwtService, private rights: ApprovalRightsService) {}
 
   async login(email: string, password: string): Promise<LoginResponse> {
     const user = await this.prisma.user.findFirst({
@@ -18,7 +19,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password');
     }
     const accessToken = await this.jwt.signAsync({ sub: user.id, org: user.organizationId });
-    return { accessToken, user: this.toAuthUser(user) };
+    return { accessToken, user: await this.toAuthUser(user) };
   }
 
   async me(req: RequestUser): Promise<AuthUser> {
@@ -33,7 +34,7 @@ export class AuthService {
     return { ok: true };
   }
 
-  private toAuthUser(user: { id: string; email: string; fullName: string; phone: string | null; organizationId: string; role: { key: string; name: string }; organization: { name: string } }): AuthUser {
+  private async toAuthUser(user: { id: string; email: string; fullName: string; phone: string | null; organizationId: string; role: { key: string; name: string }; organization: { name: string } }): Promise<AuthUser> {
     return {
       id: user.id,
       email: user.email,
@@ -43,6 +44,7 @@ export class AuthService {
       roleName: user.role.name,
       organizationId: user.organizationId,
       organizationName: user.organization.name,
+      approvalRights: await this.rights.rightsFor(user.organizationId, user.role.key as RoleKey),
     };
   }
 }

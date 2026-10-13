@@ -1,3 +1,4 @@
+import type { ApprovalRightDto } from './approvals';
 import type {
   DelayParty,
   RiskCategory,
@@ -30,6 +31,8 @@ export interface AuthUser {
   roleName: string;
   organizationId: string;
   organizationName: string;
+  /** What this user may approve (from the organisation's approval matrix, or the fixed role rule). */
+  approvalRights?: ApprovalRightDto[];
 }
 
 export interface LoginResponse {
@@ -210,6 +213,8 @@ export interface PendingApprovalDto {
   title: string;
   submittedByName: string;
   submittedAt: string;
+  /** Rupees the approval limit is checked against (see APPROVAL_AMOUNT_BASIS); null for types without an amount. */
+  amount: string | null;
 }
 
 export interface AuditLogDto {
@@ -748,4 +753,20 @@ export interface ApplyTemplateResultDto {
   created: number;
   /** Template activities skipped because the project already has an activity with that name. */
   skipped: string[];
+}
+
+/* ---------- approval matrix ---------- */
+
+export interface ApprovalRuleDto {
+  roleKey: RoleKey;
+  type: SubmissionType;
+  /** null = no limit */
+  maxAmount: string | null;
+}
+
+export interface ApprovalMatrixDto {
+  /** False while the organisation uses the fixed rule (admin, management and project managers approve everything). */
+  custom: boolean;
+  roles: { roleKey: RoleKey; roleName: string; users: number }[];
+  rules: ApprovalRuleDto[];
 }

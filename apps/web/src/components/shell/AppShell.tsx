@@ -27,9 +27,10 @@ import {
   UserOutlined,
   AlertOutlined,
   PartitionOutlined,
+  SafetyCertificateOutlined,
 } from '@ant-design/icons';
 import type { AuthUser } from '@erp/shared';
-import { canApprove, canEditProjects, canManageUsers, canViewCost } from '@erp/shared';
+import { canEditProjects, canManageUsers, canViewCost, mayApprove } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { usePendingApprovals } from '@/lib/queries';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
@@ -62,7 +63,7 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
   const isMobile = screens.md === false;
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const approver = canApprove(user.roleKey);
+  const approver = mayApprove(user);
   const { data: pending } = usePendingApprovals(approver);
   const pendingCount = pending?.length ?? 0;
 
@@ -99,9 +100,10 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
     }
     if (canManageUsers(user.roleKey)) {
       base.push({ key: '/users', icon: <TeamOutlined />, label: <Link href="/users">Users</Link> });
+      base.push({ key: '/approval-rules', icon: <SafetyCertificateOutlined />, label: <Link href="/approval-rules">Approval Rules</Link> });
     }
     return base;
-  }, [approver, pendingCount, collapsed, isMobile, user.roleKey]);
+  }, [approver, pendingCount, collapsed, isMobile, user]);
 
   const userMenu: MenuProps['items'] = [
     { key: 'info', icon: <UserOutlined />, label: `${user.email}`, disabled: true },

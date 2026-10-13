@@ -34,7 +34,7 @@ export function ExpenseDrawer({ id, open, onClose, onEdit }: { id: string | null
         data ? (
           <Space wrap>
             <EditResubmitButton entry={data} onEdit={onEdit} size="small" />
-            <ReviewActions type="expense" id={data.id} status={data.status} size="small" />
+            <ReviewActions type="expense" id={data.id} status={data.status} amount={data.totalAmount} size="small" />
           </Space>
         ) : null
       }

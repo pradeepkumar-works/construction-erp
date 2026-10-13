@@ -93,7 +93,7 @@ export function ExpenseTable({
           <Button size="small" onClick={() => onOpen(r.id)}>
             View
           </Button>
-          <ReviewActions type="expense" id={r.id} status={r.status} size="small" compact />
+          <ReviewActions type="expense" id={r.id} status={r.status} amount={r.totalAmount} size="small" compact />
           <EditResubmitButton entry={r} onEdit={onEdit} size="small" compact />
         </div>
       ),
