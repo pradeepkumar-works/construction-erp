@@ -2,7 +2,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { canKeepStock, canLogMachinery, canMeasure, canRecordAttendance, canSubmitExpense } from '@erp/shared';
+import { canKeepStock, canLogMachinery, canMeasure, canRaiseRisk, canRecordAttendance, canSubmitExpense } from '@erp/shared';
 import { useAuth } from '../../src/auth/AuthContext';
 import { Button, Screen } from '../../src/components';
 import { colors, radius, shadow, spacing, typography } from '../../src/theme';
@@ -21,6 +21,8 @@ const EXPENSE = { href: '/expense/new', icon: 'wallet' as const, tone: '#7c3aed'
 
 const MEASUREMENT = { href: '/measurement/new', icon: 'resize' as const, tone: '#0f766e', title: 'Measurement (MB)', text: 'Nos × L × B × D against a BOQ item, with deductions; the billable quantity.' };
 
+const RISK = { href: '/risks', icon: 'alert-circle' as const, tone: colors.danger, title: 'Delays & risks', text: 'Record work held up (days lost, who caused it) or raise a risk; see what is open.' };
+
 const STOCK = [
   { href: '/stock/receive', icon: 'download' as const, tone: colors.success, title: 'Receive material (GRN)', text: 'Delivery against an approved material request, with the challan photo.' },
   { href: '/stock/issue', icon: 'arrow-up-circle' as const, tone: colors.info, title: 'Issue material', text: 'Material handed out at site, from the stock on hand.' },
@@ -36,6 +38,7 @@ export default function SubmitHub() {
     ...(user && canSubmitExpense(user.roleKey) ? [EXPENSE] : []),
     ...(user && canMeasure(user.roleKey) ? [MEASUREMENT] : []),
     ...(user && canKeepStock(user.roleKey) ? STOCK : []),
+    ...(user && canRaiseRisk(user.roleKey) ? [RISK] : []),
   ];
   return (
     <Screen>

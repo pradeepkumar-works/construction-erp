@@ -39,6 +39,9 @@ export const COST_VIEW_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAG
 /** Roles that set labour daily rates for the organisation. */
 export const LABOUR_RATE_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'ACCOUNTS_MANAGER'];
 
+/** Roles that raise delays and risks: site staff, the QS and approvers. Anyone with project access can read the register. */
+export const RISK_RAISER_ROLES: RoleKey[] = ['TEAM_LEADER', 'SITE_ENGINEER', 'QUANTITY_SURVEYOR', 'STORE_MANAGER', 'QA_QC_ENGINEER', 'ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER'];
+
 /** Roles allowed to manage users. */
 export const USER_ADMIN_ROLES: RoleKey[] = ['ADMIN'];
 
@@ -67,6 +70,15 @@ export const canSubmitExpense = (role: RoleKey) => EXPENSE_SUBMITTER_ROLES.inclu
 export const canViewCost = (role: RoleKey) => COST_VIEW_ROLES.includes(role);
 /** Set labour daily rates. */
 export const canSetLabourRates = (role: RoleKey) => LABOUR_RATE_ROLES.includes(role);
+
+/** Raise a delay or risk. */
+export const canRaiseRisk = (role: RoleKey) => RISK_RAISER_ROLES.includes(role);
+/**
+ * Edit or close a register entry: approvers, the person who raised it and its owner.
+ * Deleting one (a wrong entry, not a closed one) is for approvers only.
+ */
+export const canEditRisk = (user: SubmissionActor, r: { raisedById: string; ownerId: string | null }): boolean =>
+  canApprove(user.roleKey) || r.raisedById === user.id || r.ownerId === user.id;
 
 /** Record measurements (MB). */
 export const canMeasure = (role: RoleKey) => MEASUREMENT_ROLES.includes(role);

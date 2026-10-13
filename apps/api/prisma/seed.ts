@@ -104,6 +104,7 @@ async function main() {
     await seedExpenses(org.id);
     await seedMeasurements(org.id);
     await seedCostRates(org.id);
+    await seedRisks(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
   }
@@ -251,6 +252,7 @@ async function main() {
   await seedExpenses(org.id);
   await seedMeasurements(org.id);
   await seedCostRates(org.id);
+  await seedRisks(org.id);
 
   console.log('Seed complete. Login with any of these (password: password123):');
   for (const u of USERS) console.log(`  ${u.email.padEnd(24)} ${u.role}`);
@@ -675,3 +677,98 @@ async function seedCostRates(organizationId: string) {
 main()
   .catch((e) => { console.error(e); process.exit(1); })
   .finally(() => prisma.$disconnect());
+
+type SeedRisk = {
+  kind: 'DELAY' | 'RISK';
+  category: 'LAND' | 'DESIGN' | 'MATERIAL' | 'LABOUR' | 'WEATHER' | 'FINANCE' | 'STATUTORY' | 'SAFETY' | 'UTILITY';
+  title: string;
+  description?: string;
+  activity?: string;
+  p: number;
+  i: number;
+  mitigation: string;
+  /** days from today (negative = overdue) */
+  due: number | null;
+  status: 'OPEN' | 'MONITORING' | 'CLOSED';
+  /** days ago */
+  delayStart?: number;
+  delayEnd?: number;
+  party?: 'CLIENT' | 'CONTRACTOR' | 'THIRD_PARTY' | 'FORCE_MAJEURE';
+  eot?: boolean;
+  closure?: string;
+  /** role key of the owner (PROJECT_MANAGER = the project's manager) */
+  owner: string;
+  raisedAgo: number;
+};
+
+const RISKS: Record<string, SeedRisk[]> = {
+  ROAD: [
+    { kind: 'DELAY', category: 'LAND', title: 'Encroachment at Ch 12+300 to 12+650 holding up embankment', description: 'Shops and a cattle shed inside the ROW on the left side; 350 m of embankment cannot be started.', activity: 'Earthwork embankment', p: 5, i: 4, mitigation: 'Joint inspection with the Tahsildar done; eviction notice served. Work shifted to Ch 13+000 onwards meanwhile.', due: 5, status: 'OPEN', delayStart: 18, party: 'THIRD_PARTY', eot: true, owner: 'PROJECT_MANAGER', raisedAgo: 18 },
+    { kind: 'DELAY', category: 'WEATHER', title: 'Heavy rain stopped GSB laying', activity: 'GSB laying', p: 5, i: 2, mitigation: 'Stockpile kept covered; resume once the subgrade dries.', due: null, status: 'CLOSED', delayStart: 9, delayEnd: 7, party: 'FORCE_MAJEURE', closure: 'Work resumed after the stretch dried; 3 rainy days recorded in the DPRs.', owner: 'SITE_ENGINEER', raisedAgo: 9 },
+    { kind: 'RISK', category: 'UTILITY', title: 'HT line crossing at Ch 14+100 not yet shifted', p: 4, i: 4, mitigation: 'Letter to the power utility for the shifting estimate; follow up every week.', due: -3, status: 'OPEN', owner: 'PROJECT_MANAGER', raisedAgo: 12 },
+    { kind: 'RISK', category: 'MATERIAL', title: 'Bitumen price rise before DBM', activity: 'DBM paving', p: 3, i: 4, mitigation: 'Book VG-30 with the refinery at the current rate for the first 400 MT.', due: 20, status: 'MONITORING', owner: 'QUANTITY_SURVEYOR', raisedAgo: 6 },
+  ],
+  BUILDING: [
+    { kind: 'DELAY', category: 'DESIGN', title: 'GF slab reinforcement drawings revised by the architect', activity: 'RCC slab GF', p: 5, i: 3, mitigation: 'Revised drawings received; bar bending schedule redone.', due: 4, status: 'MONITORING', delayStart: 12, delayEnd: 6, party: 'CLIENT', owner: 'PROJECT_MANAGER', raisedAgo: 12 },
+    { kind: 'RISK', category: 'SAFETY', title: 'Edge protection on the first-floor slab', p: 3, i: 5, mitigation: 'Guard rails before deshuttering; daily toolbox talk.', due: 2, status: 'OPEN', owner: 'QA_QC_ENGINEER', raisedAgo: 3 },
+    { kind: 'RISK', category: 'LABOUR', title: 'Shuttering carpenters leaving for the festival season', p: 4, i: 3, mitigation: 'Book a second gang in advance; stagger leave.', due: 10, status: 'OPEN', owner: 'SITE_ENGINEER', raisedAgo: 5 },
+  ],
+  WATER_SUPPLY: [
+    { kind: 'DELAY', category: 'STATUTORY', title: 'Railway crossing permission for the raw water main pending', description: 'Push-through at the railway crossing needs the railway’s approval; 600 m of main on either side is laid.', activity: 'Raw water main laying', p: 5, i: 5, mitigation: 'Client to follow up with the railway division; push-through design submitted.', due: 7, status: 'OPEN', delayStart: 25, party: 'CLIENT', eot: true, owner: 'PROJECT_MANAGER', raisedAgo: 25 },
+    { kind: 'RISK', category: 'FINANCE', title: 'RA bill 3 payment delayed by the client', p: 3, i: 3, mitigation: 'Escalate to the Executive Engineer; keep supplier credit within limits.', due: 15, status: 'MONITORING', owner: 'PROJECT_MANAGER', raisedAgo: 8 },
+  ],
+};
+
+/** Delay and risk register: a few entries per project, one notification to the PM for each open delay. */
+async function seedRisks(organizationId: string) {
+  const projects = await prisma.project.findMany({
+    where: { organizationId },
+    include: { members: { include: { user: { include: { role: true } } } }, activities: true },
+    orderBy: { code: 'asc' },
+  });
+  const year = new Date().getUTCFullYear();
+  const last = await prisma.risk.findFirst({ where: { organizationId, riskNo: { startsWith: `RISK-${year}-` } }, orderBy: { riskNo: 'desc' }, select: { riskNo: true } });
+  let counter = last ? parseInt(last.riskNo.slice(10), 10) : 0;
+  for (const project of projects) {
+    if ((await prisma.risk.count({ where: { projectId: project.id } })) > 0) continue;
+    const pm = project.projectManagerId;
+    if (!pm) continue;
+    const pick = (role: string) => (role === 'PROJECT_MANAGER' ? pm : project.members.find((m) => m.user.role.key === role)?.userId);
+    const raiser = pick('SITE_ENGINEER') ?? pm;
+    for (const r of RISKS[project.type] ?? []) {
+      counter += 1;
+      const ownerId = pick(r.owner) ?? pm;
+      const delay = r.kind === 'DELAY';
+      const x = await prisma.risk.create({
+        data: {
+          organizationId, projectId: project.id, riskNo: `RISK-${year}-${String(counter).padStart(4, '0')}`,
+          kind: r.kind, category: r.category, title: r.title, description: r.description ?? null,
+          activityId: r.activity ? (project.activities.find((a) => a.name === r.activity)?.id ?? null) : null,
+          ownerId, probability: r.p, impact: r.i, score: r.p * r.i, mitigation: r.mitigation,
+          dueDate: r.due === null ? null : day(r.due), status: r.status,
+          delayStart: delay && r.delayStart !== undefined ? day(-r.delayStart) : null,
+          delayEnd: delay && r.delayEnd !== undefined ? day(-r.delayEnd) : null,
+          responsibleParty: r.party ?? null, eotClaimed: !!r.eot,
+          closedAt: r.status === 'CLOSED' ? day(-(r.delayEnd ?? 0)) : null, closureNote: r.closure ?? null,
+          raisedById: raiser, createdAt: day(-r.raisedAgo),
+        },
+      });
+      await prisma.auditLog.createMany({
+        data: [
+          { organizationId, entityType: 'RISK', entityId: x.id, action: 'CREATED', actorId: raiser, createdAt: day(-r.raisedAgo) },
+          ...(r.status === 'CLOSED' ? [{ organizationId, entityType: 'RISK', entityId: x.id, action: 'CLOSED', actorId: ownerId, note: r.closure ?? null, createdAt: day(-(r.delayEnd ?? 0)) }] : []),
+        ],
+      });
+      if (delay && r.status === 'OPEN' && raiser !== pm) {
+        await prisma.notification.create({
+          data: {
+            organizationId, userId: pm, type: 'RISK_RAISED', projectId: project.id, entityId: x.id, createdAt: day(-r.raisedAgo),
+            title: `Delay raised: ${r.title}`,
+            body: `${x.riskNo} at ${project.name} (since ${x.delayStart!.toISOString().slice(0, 10)}).`,
+            dedupeKey: `RISK_RAISED:${x.id}`,
+          },
+        });
+      }
+    }
+  }
+}

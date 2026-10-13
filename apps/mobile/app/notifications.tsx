@@ -18,6 +18,7 @@ const ICON: Record<NotificationType, { name: keyof typeof Ionicons.glyphMap; col
   DPR_REMINDER: { name: 'alarm', color: colors.primary, bg: colors.primarySoft },
   APPROVAL_DIGEST: { name: 'list-circle', color: colors.accent, bg: colors.accentSoft },
   LOW_STOCK: { name: 'warning', color: colors.danger, bg: colors.dangerSoft },
+  RISK_RAISED: { name: 'alert-circle', color: colors.danger, bg: colors.dangerSoft },
 };
 
 export default function NotificationsScreen() {

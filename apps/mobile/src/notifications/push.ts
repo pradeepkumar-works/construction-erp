@@ -73,6 +73,7 @@ export function notificationRoute(data: Record<string, unknown> | undefined): st
     const path = entityType === 'PROGRESS' ? '/progress/' : entityType === 'DPR' ? '/dpr/' : entityType === 'MATERIAL_REQUEST' ? '/material-request/' : entityType === 'MACHINERY' ? '/machinery/' : entityType === 'EXPENSE' ? '/expense/' : entityType === 'MEASUREMENT' ? '/measurement/' : null;
     if (path) return `${path}${entityId}`;
   }
+  if (data?.type === 'RISK_RAISED' && entityId) return `/risk/${entityId}`;
   const projectId = data?.projectId as string | undefined;
   if (data?.type === 'DPR_REMINDER' && projectId) return `/dpr/new?projectId=${projectId}`;
   if (data?.type === 'LOW_STOCK' && projectId) return `/stock?projectId=${projectId}&low=1`;

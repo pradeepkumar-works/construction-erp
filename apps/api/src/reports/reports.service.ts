@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import type { ProgressReportDto } from '@erp/shared';
+import { MEDIUM_RISK_SCORE, type ProgressReportDto } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -37,7 +37,7 @@ export class ReportsService {
     const inPeriod = { gte: from, lte: to };
     const nextEnd = new Date(to.getTime() + days * DAY);
 
-    const [project, org, activities, boqItems, sheets, attendance, logs, txns, dprs, photos] = await Promise.all([
+    const [project, org, activities, boqItems, sheets, attendance, logs, txns, dprs, photos, register] = await Promise.all([
       this.prisma.project.findUniqueOrThrow({ where: { id: projectId }, include: { projectManager: { select: { fullName: true } } } }),
       this.prisma.organization.findUniqueOrThrow({ where: { id: user.organizationId }, select: { name: true } }),
       this.prisma.activity.findMany({
@@ -60,8 +60,20 @@ export class ReportsService {
         take: MAX_PHOTOS,
         include: { progressEntry: { select: { date: true, activity: { select: { name: true } } } } },
       }),
+      this.prisma.risk.findMany({
+        where: {
+          projectId,
+          OR: [
+            { kind: 'DELAY', delayStart: { lte: to }, OR: [{ delayEnd: null }, { delayEnd: { gte: from } }] },
+            { kind: 'RISK', score: { gte: MEDIUM_RISK_SCORE }, createdAt: { lt: new Date(to.getTime() + 86_400_000) }, OR: [{ closedAt: null }, { closedAt: { gt: to } }] },
+          ],
+        },
+        orderBy: [{ score: 'desc' }, { riskNo: 'asc' }],
+        include: { activity: { select: { name: true } }, owner: { select: { fullName: true } } },
+      }),
     ]);
 
+    const todayUtc = parseDate(new Date().toISOString().slice(0, 10));
     // Activities: this period, cumulative, % and delay at the end of the period.
     const activityRows = activities.map((a) => {
       const cumulative = sum(a.progressEntries, (e) => e.quantity);
@@ -186,6 +198,28 @@ export class ReportsService {
       dpr: { days, approved: approvedDprs.length, rainyDays: approvedDprs.filter((d) => d.weather === 'RAINY').length },
       issues: notes((d) => d.issues),
       safety: notes((d) => d.safetyObservations),
+      delays: register
+        .filter((x) => x.kind === 'DELAY' && x.delayStart)
+        .map((x) => {
+          const start = x.delayStart! < from ? from : x.delayStart!;
+          // An ongoing delay counts to today when the period runs past it.
+          const last = to < todayUtc ? to : todayUtc;
+          const end = x.delayEnd && x.delayEnd < last ? x.delayEnd : last;
+          return {
+            riskNo: x.riskNo,
+            title: x.title,
+            activityName: x.activity?.name ?? null,
+            from: dateOnly(x.delayStart)!,
+            to: dateOnly(x.delayEnd),
+            daysInPeriod: Math.max(0, Math.round((end.getTime() - start.getTime()) / 86_400_000) + 1),
+            responsibleParty: x.responsibleParty,
+            eotClaimed: x.eotClaimed,
+            status: x.status,
+          };
+        }),
+      risks: register
+        .filter((x) => x.kind === 'RISK')
+        .map((x) => ({ riskNo: x.riskNo, title: x.title, score: x.score, mitigation: x.mitigation, ownerName: x.owner?.fullName ?? null, dueDate: dateOnly(x.dueDate) })),
       nextPeriod: activityRows
         .filter((r) => r.pct < 100 && !!r.a.plannedStart && r.a.plannedStart <= nextEnd)
         .map((r) => ({ name: r.a.name, unit: r.a.unit, balanceQty: dec(Prisma.Decimal.max(r.a.plannedQty.minus(r.cumulative), ZERO))!, plannedEnd: dateOnly(r.a.plannedEnd) })),

@@ -1,4 +1,4 @@
-import type { EquipmentOwnership, ExpenseCategory, PaymentMode, EquipmentRateUnit, MaterialPriority, NotificationType, ProjectStatus, ProjectType, RoleKey, StockEntryType, SubmissionStatus, SubmissionType, Weather } from './enums';
+import type { EquipmentOwnership, ExpenseCategory, PaymentMode, EquipmentRateUnit, MaterialPriority, NotificationType, ProjectStatus, ProjectType, DelayParty, RiskCategory, RiskKind, RiskStatus, RoleKey, StockEntryType, SubmissionStatus, SubmissionType, Weather } from './enums';
 
 export const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {
   ROAD: 'Road / Infrastructure',
@@ -68,6 +68,7 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   DPR_REMINDER: 'DPR reminder',
   APPROVAL_DIGEST: 'Pending approvals',
   LOW_STOCK: 'Low stock',
+  RISK_RAISED: 'Delay / risk raised',
 };
 
 export const STOCK_ENTRY_TYPE_LABELS: Record<StockEntryType, string> = {
@@ -116,4 +117,37 @@ export const PAYMENT_MODE_LABELS: Record<PaymentMode, string> = {
   BANK: 'Bank transfer',
   CARD: 'Card',
   CREDIT: 'On credit (to be paid)',
+};
+
+export const RISK_KIND_LABELS: Record<RiskKind, string> = {
+  DELAY: 'Delay',
+  RISK: 'Risk',
+};
+
+export const RISK_CATEGORY_LABELS: Record<RiskCategory, string> = {
+  LAND: 'Land / right of way',
+  DESIGN: 'Drawings & design',
+  CLIENT: 'Client decisions',
+  MATERIAL: 'Material supply',
+  LABOUR: 'Labour',
+  EQUIPMENT: 'Equipment',
+  WEATHER: 'Weather',
+  FINANCE: 'Payments & finance',
+  STATUTORY: 'Permits & statutory',
+  SAFETY: 'Safety',
+  UTILITY: 'Utility shifting',
+  OTHER: 'Other',
+};
+
+export const RISK_STATUS_LABELS: Record<RiskStatus, string> = {
+  OPEN: 'Open',
+  MONITORING: 'Monitoring',
+  CLOSED: 'Closed',
+};
+
+export const DELAY_PARTY_LABELS: Record<DelayParty, string> = {
+  CLIENT: 'Client',
+  CONTRACTOR: 'Contractor (us)',
+  THIRD_PARTY: 'Third party',
+  FORCE_MAJEURE: 'Force majeure',
 };

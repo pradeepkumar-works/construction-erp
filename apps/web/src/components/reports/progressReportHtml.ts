@@ -1,5 +1,5 @@
 import type { ProgressReportDto } from '@erp/shared';
-import { PROJECT_TYPE_LABELS } from '@erp/shared';
+import { DELAY_PARTY_LABELS, PROJECT_TYPE_LABELS } from '@erp/shared';
 import { fileUrl } from '@/lib/api';
 import { formatDate, formatDateTime, formatINR, formatQty } from '@/lib/format';
 
@@ -38,6 +38,15 @@ export function buildProgressReportHtml(r: ProgressReportDto, kind: ReportKind, 
   const materials = r.materials.map((m) => `<tr><td>${esc(m.name)}</td><td class="c">${esc(m.unit)}</td><td class="num">${n(m.received)}</td><td class="num">${n(m.issued)}</td></tr>`).join('');
   const list = (rows: { date: string; text: string }[]) =>
     rows.length ? `<ul>${rows.map((x) => `<li><b>${esc(formatDate(x.date))}:</b> ${esc(x.text).replace(/\n/g, '<br/>')}</li>`).join('')}</ul>` : '<p class="muted">None reported in approved DPRs.</p>';
+  const delays = r.delays
+    .map(
+      (d) =>
+        `<tr><td class="c">${esc(d.riskNo)}</td><td>${esc(d.title)}${d.activityName ? `<br/><span class="muted">${esc(d.activityName)}</span>` : ''}</td><td class="c">${esc(formatDate(d.from))} to ${d.to ? esc(formatDate(d.to)) : 'date'}</td><td class="num">${esc(d.daysInPeriod)}</td><td>${d.responsibleParty ? esc(DELAY_PARTY_LABELS[d.responsibleParty]) : '-'}${d.eotClaimed ? ' (EOT claimed)' : ''}</td></tr>`,
+    )
+    .join('');
+  const risks = r.risks
+    .map((x) => `<tr><td class="c">${esc(x.riskNo)}</td><td>${esc(x.title)}</td><td class="num">${esc(x.score)}</td><td>${esc(x.mitigation ?? '-')}</td><td>${esc(x.ownerName ?? '-')}</td><td class="c">${esc(formatDate(x.dueDate))}</td></tr>`)
+    .join('');
   const next = r.nextPeriod.map((a) => `<tr><td>${esc(a.name)}</td><td class="num">${n(a.balanceQty)} ${esc(a.unit)}</td><td class="c">${esc(formatDate(a.plannedEnd))}</td></tr>`).join('');
   const photos = r.photos.map((ph) => `<figure><img src="${esc(fileUrl(ph.url))}" alt=""/><figcaption>${esc(ph.caption)}</figcaption></figure>`).join('');
 
@@ -142,11 +151,16 @@ export function buildProgressReportHtml(r: ProgressReportDto, kind: ReportKind, 
     <div><h2>8. Safety</h2>${list(r.safety)}</div>
   </div>
 
-  <h2>9. Plan for the next period</h2>
+  <h2>9. Delays and risks</h2>
+  <table><thead><tr><th class="c">No.</th><th>Delay</th><th class="c">Held up</th><th class="num">Days in period</th><th>Caused by</th></tr></thead>
+  <tbody>${delays || none(5, 'No delays recorded')}</tbody></table>
+  ${risks ? `<table style="margin-top:6px"><thead><tr><th class="c">No.</th><th>Open risk</th><th class="num">Score</th><th>Mitigation</th><th>Owner</th><th class="c">Due</th></tr></thead><tbody>${risks}</tbody></table>` : ''}
+
+  <h2>10. Plan for the next period</h2>
   <table><thead><tr><th>Activity</th><th class="num">Balance</th><th class="c">Planned finish</th></tr></thead>
   <tbody>${next || none(3, 'No activities planned')}</tbody></table>
 
-  ${photos ? `<h2>10. Site photographs</h2><div class="photos">${photos}</div>` : ''}
+  ${photos ? `<h2>11. Site photographs</h2><div class="photos">${photos}</div>` : ''}
 
   <div class="sign"><div>Prepared by (Site Engineer)</div><div>Checked by (Project Manager)</div><div>Client / Consultant</div></div>
   <div class="foot">From approved progress entries, DPRs, machinery logs and measurements, plus attendance and the store register. Generated ${esc(formatDateTime(r.generatedAt))}.</div>

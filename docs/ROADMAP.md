@@ -83,7 +83,13 @@ Order matters: each item builds on the previous one.
     blocks. Web Progress Reports page (weekly / monthly / custom, live A4 preview) prints to PDF from the
     browser, like the DPR print view. The layout is a common Indian public-works format; a client's own
     template can replace `progressReportHtml.ts` once we have it.
-12. **Delay and risk register**.
+12. ~~**Delay and risk register**.~~ Done: `Risk` (numbered RISK-<year>-0001) is either a delay (held up
+    since / resumed on, days lost, caused by client / contractor / third party / force majeure, EOT claimed)
+    or a risk (probability × impact, 1 to 5 each), with category, activity, owner, mitigation, due date and
+    open / monitoring / closed with a closure note. A delay or a risk scored 15+ notifies the PM. Activities
+    past their planned finish with no delay recorded are suggested. Web Delays & Risks page and project tab
+    (summary, 5 × 5 heat map, Excel export), a Delays and risks section in the progress report, and site-app
+    screens that raise entries offline too.
 
 ### D. Product / SaaS foundations
 13. **Activity templates per project type** (Road / Building / Water Supply) applied at project creation.

@@ -15,6 +15,7 @@ import { MachineryModule } from './machinery/machinery.module';
 import { ExpensesModule } from './expenses/expenses.module';
 import { CostModule } from './cost/cost.module';
 import { ReportsModule } from './reports/reports.module';
+import { RisksModule } from './risks/risks.module';
 import { MeasurementsModule } from './measurements/measurements.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { MaterialRequestsModule } from './material-requests/material-requests.module';
@@ -43,6 +44,7 @@ import { HealthController } from './health.controller';
     MeasurementsModule,
     CostModule,
     ReportsModule,
+    RisksModule,
     ApprovalsModule,
     DashboardModule,
     UploadsModule,

@@ -19,6 +19,7 @@ import { ProgressList } from '@/components/progress/ProgressList';
 import { DprList } from '@/components/dpr/DprList';
 import { MachineryPanel } from '@/components/machinery/MachineryPanel';
 import { ExpenseList } from '@/components/expenses/ExpenseList';
+import { RiskList } from '@/components/risks/RiskList';
 import { MeasurementList } from '@/components/measurements/MeasurementList';
 import { ProjectCostPanel } from '@/components/cost/ProjectCostPanel';
 import { StockPanel } from '@/components/stock/StockPanel';
@@ -99,6 +100,7 @@ export default function ProjectDetailPage() {
             { key: 'stock', label: 'Stock', children: <StockPanel projectId={project.id} /> },
             { key: 'machinery', label: 'Machinery', children: <MachineryPanel projectId={project.id} /> },
             { key: 'expenses', label: 'Expenses', children: <ExpenseList projectId={project.id} /> },
+            { key: 'risks', label: 'Delays & Risks', children: <RiskList projectId={project.id} /> },
             ...(user && canViewCost(user.roleKey) ? [{ key: 'cost', label: 'Cost', children: <ProjectCostPanel projectId={project.id} /> }] : []),
           ]}
         />

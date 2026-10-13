@@ -9,3 +9,4 @@ export * from './machinery';
 export * from './expense';
 export * from './measurement';
 export * from './cost';
+export * from './risk';
