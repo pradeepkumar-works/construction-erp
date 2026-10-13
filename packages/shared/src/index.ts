@@ -12,3 +12,4 @@ export * from './cost';
 export * from './risk';
 export * from './templates';
 export * from './approvals';
+export * from './onboarding';

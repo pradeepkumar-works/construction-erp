@@ -109,7 +109,14 @@ Order matters: each item builds on the previous one.
     rights for the clients. The demo seeds a matrix (project managers approve site expenses up to ₹25,000,
     accounts approves any expense). Editing before approval, deleting stock entries and risks stay with
     the fixed approver roles.
-15. **Organisation onboarding**: create org, invite users by email, default roles; password reset.
+15. ~~**Organisation onboarding**: create org, invite users by email, default roles; password reset.~~
+    Done: `/signup` creates an organisation with all 11 standard roles and its first admin (only when the API
+    has `ORG_SIGNUP=open`; activity templates and the approval rule start as the built-in defaults).
+    Admins add users with an invite instead of a password: a one-time set-password link (`PasswordToken`,
+    only its SHA-256 stored, 7 days) is emailed through Resend and also shown to the admin to share by
+    WhatsApp or SMS when email is not set up; users show "Invited" until they choose a password. Forgot
+    password on web and mobile emails a 2-hour reset link; an admin can also send a fresh link from the
+    Users page. An email can belong to one user across all organisations, since sign-in is by email.
 16. **Postgres row-level security** as the second tenant guard.
 
 ## v3 – commercial and back office

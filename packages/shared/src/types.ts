@@ -1,6 +1,7 @@
 import type { ApprovalRightDto } from './approvals';
 import type {
   DelayParty,
+  PasswordTokenPurpose,
   RiskCategory,
   RiskKind,
   RiskStatus,
@@ -49,6 +50,37 @@ export interface UserSummary {
   roleKey: RoleKey;
   roleName: string;
   createdAt: string;
+  /** Invited and has not set a password yet. */
+  invitePending: boolean;
+}
+
+/** A set-password link made for a user (invite or reset). `link` is null when the web address is not known. */
+export interface PasswordLinkDto {
+  link: string | null;
+  emailed: boolean;
+  expiresAt: string;
+}
+
+/** POST /users: the new user, plus the invite link when no password was given. */
+export interface CreateUserResultDto extends UserSummary {
+  invite: PasswordLinkDto | null;
+}
+
+/** What the sign-in screens may offer (public). */
+export interface AuthOptionsDto {
+  /** New organisations may sign up (ORG_SIGNUP=open on the API). */
+  signup: boolean;
+  /** Password-reset emails can be sent (email provider and web address configured). */
+  resetByEmail: boolean;
+}
+
+/** Shown on the set-password page before the user chooses a password. */
+export interface PasswordTokenInfoDto {
+  purpose: PasswordTokenPurpose;
+  email: string;
+  fullName: string;
+  organizationName: string;
+  expiresAt: string;
 }
 
 export interface ProjectMemberDto {

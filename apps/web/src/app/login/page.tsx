@@ -1,11 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Alert, Button, Card, Form, Input, Typography, Space, Tag } from 'antd';
 import { LockOutlined, MailOutlined } from '@ant-design/icons';
 import { useAuth } from '@/lib/auth';
 import { errorMessage } from '@/lib/api';
+import { useAuthOptions } from '@/lib/queries';
 
 const DEMO_ACCOUNTS: { email: string; role: string }[] = [
   { email: 'admin@demo.com', role: 'Admin' },
@@ -22,6 +24,7 @@ export default function LoginPage() {
   const [form] = Form.useForm<{ email: string; password: string }>();
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const { data: options } = useAuthOptions();
 
   const onFinish = async (values: { email: string; password: string }) => {
     setError(null);
@@ -63,6 +66,10 @@ export default function LoginPage() {
             Sign in
           </Button>
         </Form>
+        <div style={{ marginTop: 12, display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+          <Link href="/forgot-password">Forgot password?</Link>
+          {options?.signup ? <Link href="/signup">New company? Create an account</Link> : null}
+        </div>
 
         <div style={{ marginTop: 20, background: '#f6f8fb', borderRadius: 8, padding: 12 }}>
           <Typography.Text strong style={{ fontSize: 12 }}>

@@ -1,11 +1,13 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { Prisma } from '@prisma/client';
-import type { Paginated, RoleKey, SortOrder, UserSortField, UserSummary } from '@erp/shared';
+import { randomBytes } from 'crypto';
+import type { CreateUserResultDto, Paginated, PasswordLinkDto, RoleKey, SortOrder, UserSortField, UserSummary } from '@erp/shared';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { CreateUserDto, ListUsersQuery, UpdateUserDto } from './users.dto';
+import { PasswordLinksService } from '../auth/password-links.service';
 
 const ORDER: Record<UserSortField, (o: SortOrder) => Prisma.UserOrderByWithRelationInput[]> = {
   fullName: (o) => [{ fullName: o }],
@@ -17,10 +19,16 @@ const ORDER: Record<UserSortField, (o: SortOrder) => Prisma.UserOrderByWithRelat
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private links: PasswordLinksService) {}
 
-  private toDto(u: { id: string; email: string; fullName: string; phone: string | null; isActive: boolean; createdAt: Date; role: { key: string; name: string } }): UserSummary {
-    return { id: u.id, email: u.email, fullName: u.fullName, phone: u.phone, isActive: u.isActive, roleKey: u.role.key as RoleKey, roleName: u.role.name, createdAt: u.createdAt.toISOString() };
+  private toDto(u: { id: string; email: string; fullName: string; phone: string | null; isActive: boolean; invitedAt: Date | null; createdAt: Date; role: { key: string; name: string } }): UserSummary {
+    return { id: u.id, email: u.email, fullName: u.fullName, phone: u.phone, isActive: u.isActive, roleKey: u.role.key as RoleKey, roleName: u.role.name, createdAt: u.createdAt.toISOString(), invitePending: u.invitedAt !== null };
+  }
+
+  /** Sign-in is by email alone, so an email may belong to one user across all organisations. */
+  private async assertEmailFree(email: string, exceptId?: string) {
+    const exists = await this.prisma.user.findFirst({ where: { email, ...(exceptId ? { id: { not: exceptId } } : {}) }, select: { organizationId: true } });
+    if (exists) throw new ConflictException('A user with this email already exists');
   }
 
   async list(req: RequestUser, q: ListUsersQuery): Promise<Paginated<UserSummary>> {
@@ -43,16 +51,33 @@ export class UsersService {
     return this.prisma.role.findMany({ where: { organizationId: req.organizationId }, select: { id: true, key: true, name: true }, orderBy: { name: 'asc' } });
   }
 
-  async create(req: RequestUser, dto: CreateUserDto): Promise<UserSummary> {
+  /** With a password the user can sign in at once; without one they are invited (set-password link). */
+  async create(req: RequestUser, dto: CreateUserDto, origin?: string): Promise<CreateUserResultDto> {
     const email = dto.email.toLowerCase();
-    const exists = await this.prisma.user.findFirst({ where: { organizationId: req.organizationId, email } });
-    if (exists) throw new ConflictException('A user with this email already exists');
+    await this.assertEmailFree(email);
     const role = await this.prisma.role.findUniqueOrThrow({ where: { organizationId_key: { organizationId: req.organizationId, key: dto.roleKey } } });
+    const invite = !dto.password;
     const user = await this.prisma.user.create({
-      data: { organizationId: req.organizationId, email, fullName: dto.fullName, phone: dto.phone ?? null, roleId: role.id, passwordHash: await bcrypt.hash(dto.password, 10) },
+      data: {
+        organizationId: req.organizationId,
+        email,
+        fullName: dto.fullName,
+        phone: dto.phone ?? null,
+        roleId: role.id,
+        // An invited user gets an unguessable password nobody knows until they use the link.
+        passwordHash: await bcrypt.hash(dto.password || randomBytes(24).toString('base64url'), 10),
+        invitedAt: invite ? new Date() : null,
+      },
       include: { role: true },
     });
-    return this.toDto(user);
+    return { ...this.toDto(user), invite: invite ? await this.links.create(user.id, 'INVITE', origin) : null };
+  }
+
+  async passwordLink(req: RequestUser, id: string, origin?: string): Promise<PasswordLinkDto> {
+    const user = await this.prisma.user.findFirst({ where: { id, organizationId: req.organizationId }, select: { id: true, isActive: true, invitedAt: true } });
+    if (!user) throw new NotFoundException('User not found');
+    if (!user.isActive) throw new BadRequestException('Activate the user first');
+    return this.links.create(user.id, user.invitedAt ? 'INVITE' : 'RESET', origin);
   }
 
   async update(req: RequestUser, id: string, dto: UpdateUserDto): Promise<UserSummary> {
@@ -62,8 +87,14 @@ export class UsersService {
     if (dto.fullName !== undefined) data.fullName = dto.fullName;
     if (dto.phone !== undefined) data.phone = dto.phone;
     if (dto.isActive !== undefined) data.isActive = dto.isActive;
-    if (dto.email !== undefined) data.email = dto.email.toLowerCase();
-    if (dto.password) data.passwordHash = await bcrypt.hash(dto.password, 10);
+    if (dto.email !== undefined) {
+      data.email = dto.email.toLowerCase();
+      await this.assertEmailFree(data.email, id);
+    }
+    if (dto.password) {
+      data.passwordHash = await bcrypt.hash(dto.password, 10);
+      data.invitedAt = null;
+    }
     if (dto.roleKey) {
       const role = await this.prisma.role.findUniqueOrThrow({ where: { organizationId_key: { organizationId: req.organizationId, key: dto.roleKey } } });
       data.roleId = role.id;

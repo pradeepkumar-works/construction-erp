@@ -15,6 +15,7 @@ import type {
   RiskSummaryDto,
   ActivityTemplateDto,
   ApprovalMatrixDto,
+  AuthOptionsDto,
   MeasurementSheetDto,
   LabourRatesDto,
   ProjectCostDto,
@@ -361,6 +362,9 @@ export const useExpense = (id: string | undefined) =>
     queryFn: async () => (await api.get<ExpenseDto>(`/expenses/${id}`)).data,
     enabled: !!id,
   });
+
+export const useAuthOptions = () =>
+  useQuery({ queryKey: ['auth-options'], queryFn: async () => (await api.get<AuthOptionsDto>('/auth/options')).data, staleTime: 5 * 60_000 });
 
 export const useApprovalMatrix = (enabled = true) =>
   useQuery({ queryKey: ['approval-rules'], queryFn: async () => (await api.get<ApprovalMatrixDto>('/approval-rules')).data, enabled });

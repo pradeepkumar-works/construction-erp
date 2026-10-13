@@ -123,6 +123,7 @@ export const USER_EXPORT: ExportColumn<UserSummary>[] = [
   { header: 'Phone', value: (r) => r.phone, width: 14 },
   { header: 'Role', value: (r) => r.roleName, width: 26 },
   { header: 'Active', value: (r) => (r.isActive ? 'Yes' : 'No') },
+  { header: 'Invite pending', value: (r) => (r.invitePending ? 'Yes' : 'No') },
   { header: 'Created', value: (r) => r.createdAt.slice(0, 10), width: 12 },
 ];
 

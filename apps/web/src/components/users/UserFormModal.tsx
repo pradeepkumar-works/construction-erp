@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { App, Form, Input, Modal, Select, Switch, Typography } from 'antd';
-import type { RoleKey, UserSummary } from '@erp/shared';
+import { App, Form, Input, Modal, Radio, Select, Switch, Typography } from 'antd';
+import { MIN_PASSWORD_LENGTH, type CreateUserResultDto, type RoleKey, type UserSummary } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, errorMessage } from '@/lib/api';
 import { useRoles } from '@/lib/queries';
@@ -14,15 +14,17 @@ interface FormValues {
   roleKey: RoleKey;
   password?: string;
   isActive?: boolean;
+  how?: 'invite' | 'password';
 }
 
-export function UserFormModal({ open, onClose, user }: { open: boolean; onClose: () => void; user?: UserSummary | null }) {
+export function UserFormModal({ open, onClose, user, onInvited }: { open: boolean; onClose: () => void; user?: UserSummary | null; onInvited?: (created: CreateUserResultDto) => void }) {
   const [form] = Form.useForm<FormValues>();
   const { message } = App.useApp();
   const qc = useQueryClient();
   const { data: roles } = useRoles();
   const isEdit = !!user;
   const [resetPwd, setResetPwd] = useState(false);
+  const how = Form.useWatch('how', form);
 
   useEffect(() => {
     if (!open) return;
@@ -31,7 +33,7 @@ export function UserFormModal({ open, onClose, user }: { open: boolean; onClose:
       form.setFieldsValue({ email: user.email, fullName: user.fullName, phone: user.phone ?? undefined, roleKey: user.roleKey, isActive: user.isActive, password: undefined });
     } else {
       form.resetFields();
-      form.setFieldsValue({ roleKey: 'SITE_ENGINEER', isActive: true });
+      form.setFieldsValue({ roleKey: 'SITE_ENGINEER', isActive: true, how: 'invite' });
     }
   }, [open, user, form]);
 
@@ -42,10 +44,12 @@ export function UserFormModal({ open, onClose, user }: { open: boolean; onClose:
         if (resetPwd && v.password) body.password = v.password;
         return (await api.patch(`/users/${user.id}`, body)).data;
       }
-      return (await api.post('/users', { email: v.email.trim(), fullName: v.fullName.trim(), phone: v.phone || undefined, roleKey: v.roleKey, password: v.password })).data;
+      return (await api.post<CreateUserResultDto>('/users', { email: v.email.trim(), fullName: v.fullName.trim(), phone: v.phone || undefined, roleKey: v.roleKey, password: v.how === 'password' ? v.password : undefined })).data;
     },
-    onSuccess: () => {
-      message.success(isEdit ? 'User updated' : 'User created');
+    onSuccess: (data) => {
+      const created = data as CreateUserResultDto;
+      message.success(isEdit ? 'User updated' : created.invite ? 'User invited' : 'User created');
+      if (!isEdit && created.invite) onInvited?.(created);
       qc.invalidateQueries({ queryKey: ['users'] });
       onClose();
     },
@@ -53,7 +57,7 @@ export function UserFormModal({ open, onClose, user }: { open: boolean; onClose:
   });
 
   return (
-    <Modal open={open} title={isEdit ? `Edit ${user?.fullName}` : 'New user'} okText={isEdit ? 'Save' : 'Create user'} onCancel={onClose} onOk={() => form.submit()} confirmLoading={mutation.isPending} destroyOnHidden>
+    <Modal open={open} title={isEdit ? `Edit ${user?.fullName}` : 'New user'} okText={isEdit ? 'Save' : how === 'password' ? 'Create user' : 'Invite user'} onCancel={onClose} onOk={() => form.submit()} confirmLoading={mutation.isPending} destroyOnHidden>
       <Form form={form} layout="vertical" onFinish={(v) => mutation.mutate(v)} style={{ marginTop: 8 }}>
         <Form.Item name="fullName" label="Full name" rules={[{ required: true, message: 'Required' }]}>
           <Input />
@@ -74,13 +78,23 @@ export function UserFormModal({ open, onClose, user }: { open: boolean; onClose:
             <Switch />
           </Form.Item>
         )}
-        {isEdit && !resetPwd ? (
-          <Typography.Link onClick={() => setResetPwd(true)}>Reset password</Typography.Link>
-        ) : (
-          <Form.Item name="password" label={isEdit ? 'New password' : 'Password'} rules={[{ required: true, message: 'Required' }, { min: 6, message: 'At least 6 characters' }]}>
-            <Input.Password autoComplete="new-password" />
+        {!isEdit && (
+          <Form.Item name="how" label="How will they sign in?">
+            <Radio.Group
+              options={[
+                { value: 'invite', label: 'Send an invite link (they choose a password)' },
+                { value: 'password', label: 'Set a password now' },
+              ]}
+            />
           </Form.Item>
         )}
+        {isEdit && !resetPwd ? (
+          <Typography.Link onClick={() => setResetPwd(true)}>Set a new password</Typography.Link>
+        ) : isEdit || how === 'password' ? (
+          <Form.Item name="password" label={isEdit ? 'New password' : 'Password'} rules={[{ required: true, message: 'Required' }, { min: MIN_PASSWORD_LENGTH, message: `At least ${MIN_PASSWORD_LENGTH} characters` }]}>
+            <Input.Password autoComplete="new-password" />
+          </Form.Item>
+        ) : null}
       </Form>
     </Modal>
   );

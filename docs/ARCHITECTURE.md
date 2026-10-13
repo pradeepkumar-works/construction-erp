@@ -27,7 +27,11 @@ shapes of every API response, so web, mobile and API agree on one contract.
   organisation is seeded with the default role set; later, tenants can rename or add roles without
   code changes. Permissions derive from the key in `packages/shared/src/permissions.ts`.
 - Postgres row-level security is the planned second line of defence once there is a second tenant.
-- Not built yet, on purpose: self-signup, subscriptions, plan limits, branding.
+- New organisations come from `POST /auth/signup` (off unless `ORG_SIGNUP=open`), which creates the
+  organisation, the standard roles and the first admin in one transaction. Users join by invite: a
+  one-time `PasswordToken` link (SHA-256 stored, invalidated when a newer link is made or one is used).
+  Emails are unique across organisations because sign-in is by email alone.
+- Not built yet, on purpose: subscriptions, plan limits, branding.
 
 ## Access model
 

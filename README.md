@@ -20,6 +20,8 @@ contractors after the first client is live.
 - BOQ items (with Excel import on the web) and activities with planned quantities and dates. A new project
   can start with the standard activities for its type (road, building, water supply), scheduled over its
   dates; each organisation can edit those templates.
+- Onboarding: a new company signs up (when enabled), the admin invites the team by email or a shareable
+  link, and anyone can reset a forgotten password.
 - An approval matrix (admin): which roles approve which submission types, with optional rupee limits;
   anything above a limit goes to a higher approver.
 - Site submissions from mobile or web: **daily progress** against an activity (with photos),
@@ -150,4 +152,4 @@ pnpm --filter @erp/api prisma studio
 
 Procurement (indent → RFQ → PO), payroll,
 RA billing from the measurement book, finance, HR, quality registers,
-a client-specific report template, and tenant self-signup/billing.
+a client-specific report template, and tenant billing.
