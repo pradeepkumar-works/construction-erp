@@ -10,7 +10,7 @@ export { Loading, EmptyState, ErrorState, ErrorBanner } from './States';
 export { ProgressBar } from './ProgressBar';
 export { SectionTitle, KeyValue, Divider, Stat } from './Layout';
 export { PhotoPicker, type LocalPhoto } from './PhotoPicker';
-export { SubmissionRow, TYPE_ICON, TYPE_SHORT } from './SubmissionRow';
+export { SubmissionRow, TYPE_ICON, TYPE_SHORT, type EntryType } from './SubmissionRow';
 export { SubmissionHeader, AttachmentGallery, ReviewActions, SubmitterActions } from './SubmissionDetail';
 export { NotificationBell } from './NotificationBell';
 export { OfflineBanner } from './OfflineBanner';

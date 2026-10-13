@@ -18,6 +18,9 @@ export const PROJECT_EDITOR_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_
 /** Site roles expected to file the daily progress report; they receive the "DPR not submitted" reminder. */
 export const DPR_SUBMITTER_ROLES: RoleKey[] = ['SITE_ENGINEER', 'TEAM_LEADER'];
 
+/** Roles that record daily attendance (site supervisors and engineers) and the approvers who may correct it. */
+export const ATTENDANCE_RECORDER_ROLES: RoleKey[] = ['TEAM_LEADER', 'SITE_ENGINEER', 'ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER'];
+
 /** Roles allowed to manage users. */
 export const USER_ADMIN_ROLES: RoleKey[] = ['ADMIN'];
 
@@ -26,6 +29,13 @@ export const canApprove = (role: RoleKey) => APPROVER_ROLES.includes(role);
 export const canEditProjects = (role: RoleKey) => PROJECT_EDITOR_ROLES.includes(role);
 export const canManageUsers = (role: RoleKey) => USER_ADMIN_ROLES.includes(role);
 export const submitsDpr = (role: RoleKey) => DPR_SUBMITTER_ROLES.includes(role);
+export const canRecordAttendance = (role: RoleKey) => ATTENDANCE_RECORDER_ROLES.includes(role);
+
+/**
+ * Attendance feeds the day's DPR manpower, so a sheet stays editable until that DPR is approved.
+ * Pass the status of the project's DPR for the same date (null when there is none).
+ */
+export const isAttendanceLocked = (dprStatus: SubmissionStatus | null | undefined): boolean => dprStatus === 'APPROVED';
 
 /* ---------- submission editing ---------- */
 

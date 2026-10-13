@@ -2,6 +2,8 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { canRecordAttendance } from '@erp/shared';
+import { useAuth } from '../../src/auth/AuthContext';
 import { Button, Screen } from '../../src/components';
 import { colors, radius, shadow, spacing, typography } from '../../src/theme';
 
@@ -11,13 +13,17 @@ const FORMS = [
   { href: '/material-request/new', icon: 'cube' as const, tone: colors.success, title: 'Material request', text: 'Items needed on site with required date and priority.' },
 ];
 
+const ATTENDANCE = { href: '/attendance', icon: 'people' as const, tone: colors.primaryDark, title: 'Attendance', text: 'Workers on site today by contractor and trade. Fills the DPR manpower.' };
+
 export default function SubmitHub() {
   const router = useRouter();
+  const { user } = useAuth();
+  const forms = user && canRecordAttendance(user.roleKey) ? [ATTENDANCE, ...FORMS] : FORMS;
   return (
     <Screen>
-      <Text style={typography.caption}>Choose what to submit. Entries go straight to your project manager for approval.</Text>
+      <Text style={typography.caption}>Choose what to submit. Progress, DPRs and material requests go straight to your project manager for approval.</Text>
       <View style={styles.list}>
-        {FORMS.map((f) => (
+        {forms.map((f) => (
           <Pressable key={f.href} onPress={() => router.push(f.href)} style={({ pressed }) => [styles.tile, pressed && styles.pressed]}>
             <View style={[styles.icon, { backgroundColor: f.tone }]}>
               <Ionicons name={f.icon} size={28} color="#fff" />

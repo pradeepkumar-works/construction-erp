@@ -25,12 +25,14 @@ contractors after the first client is live.
   with reviewer note and a full audit trail. Approvers see a single pending queue.
 - Lists that scale: progress, DPRs, material requests, projects and users page, search and sort on the
   server, and every list (BOQ and activities too) exports to Excel with the filters on screen.
+- Attendance: the site supervisor records the day's head count by contractor and trade (web or
+  site app, offline too). It fills the manpower of that day's DPR and locks once the DPR is approved.
 - Edit and resubmit: a rejected or changes-requested entry is fixed in place (web drawer or site app)
   and sent back for approval with the reviewer's note shown alongside the form.
 - Dashboards: company (projects, contract value, pending approvals, delayed activities, DPRs
   today) and project (physical progress weighted by BOQ value, BOQ executed amount, activity
   status, recent submissions).
-- Offline entry on the site app: progress, DPR and material requests filed without signal are kept
+- Offline entry on the site app: progress, DPR, material requests and attendance filed without signal are kept
   in an outbox on the phone (photos included) and sent automatically when the connection returns.
   Retries never create duplicates because each entry carries its own id from the phone.
 - Notifications: the author is told when a submission is approved, rejected or sent back, and
@@ -117,6 +119,6 @@ pnpm --filter @erp/api prisma studio
 
 ## Not in the MVP (next phases)
 
-Procurement (indent → RFQ → PO), store/GRN and stock, attendance and payroll, machinery logs,
+Procurement (indent → RFQ → PO), store/GRN and stock, payroll, machinery logs,
 measurement book and RA billing, finance, HR, quality registers,
 PDF report exports beyond the DPR print view, and tenant self-signup/billing.

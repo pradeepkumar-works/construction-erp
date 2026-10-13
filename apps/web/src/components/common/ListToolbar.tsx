@@ -22,7 +22,8 @@ export function ListToolbar({
   projectId?: string;
   onProject: (v?: string) => void;
   status?: SubmissionStatus;
-  onStatus: (v?: SubmissionStatus) => void;
+  /** Omit for lists without an approval status. */
+  onStatus?: (v?: SubmissionStatus) => void;
   search?: string;
   onSearch?: (v: string) => void;
   searchPlaceholder?: string;
@@ -36,7 +37,9 @@ export function ListToolbar({
     <div style={{ padding: 12, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', borderBottom: '1px solid #f0f0f0' }}>
       {onSearch ? <SearchBox value={search ?? ''} onChange={onSearch} placeholder={searchPlaceholder} /> : null}
       {hideProject ? null : <ProjectSelect value={projectId} onChange={(v) => onProject(v)} />}
-      <Select allowClear placeholder="All statuses" value={status} onChange={(v) => onStatus(v)} style={{ width: 180 }} options={SUBMISSION_STATUSES.map((s) => ({ value: s, label: SUBMISSION_STATUS_LABELS[s] }))} />
+      {onStatus ? (
+        <Select allowClear placeholder="All statuses" value={status} onChange={(v) => onStatus(v)} style={{ width: 180 }} options={SUBMISSION_STATUSES.map((s) => ({ value: s, label: SUBMISSION_STATUS_LABELS[s] }))} />
+      ) : null}
       {children}
       {extra ? <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>{extra}</div> : null}
     </div>

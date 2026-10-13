@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { MANPOWER_CATEGORIES, WEATHER_LABELS, WEATHER_OPTIONS, type DailyReportDto, type Weather } from '@erp/shared';
+import { MANPOWER_CATEGORIES, WEATHER_LABELS, WEATHER_OPTIONS, attendanceToManpower, type AttendanceDayDto, type AttendanceLineInput, type DailyReportDto, type ManpowerLine, type Weather } from '@erp/shared';
 import { useApi, useFetch } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
 import { Button, Card, Chips, DatePicker, ErrorBanner, ErrorState, Input, Loading, PhotoPicker, Screen, Select, type LocalPhoto } from '../../src/components';
@@ -25,6 +25,8 @@ interface MachineryRow {
 
 const newKey = () => Math.random().toString(36).slice(2, 9);
 const CATEGORY_OPTIONS = MANPOWER_CATEGORIES.map((c) => ({ value: c, label: c }));
+/** Keep a free-text value (e.g. a trade typed on the web) selectable even when it is not in the standard list. */
+const withValue = (options: { value: string; label: string }[], value: string | null) => (value && !options.some((o) => o.value === value) ? [...options, { value, label: value }] : options);
 const WEATHER_CHIPS = WEATHER_OPTIONS.map((w) => ({ value: w, label: WEATHER_LABELS[w] }));
 
 /** New DPR, or (with `editId`) edit a draft / rejected / changes-requested DPR and resubmit it. */
@@ -80,7 +82,37 @@ export default function NewDprScreen() {
 
   const totalManpower = useMemo(() => manpower.reduce((s, r) => s + (Number(r.count) || 0), 0), [manpower]);
 
-  const updateMan = (key: string, patch: Partial<ManpowerRow>) => setManpower((rows) => rows.map((r) => (r.key === key ? { ...r, ...patch } : r)));
+  // New DPR: manpower comes from the day's attendance (on the server, or still in this phone's outbox)
+  // until the user edits it by hand.
+  const [manpowerEdited, setManpowerEdited] = useState(false);
+  const [filledFrom, setFilledFrom] = useState<string | null>(null);
+  const attendanceDay = useFetch<AttendanceDayDto>((a) => a.get('/attendance/day', { projectId: projectId!, date }), [projectId, date], {
+    enabled: !editId && !!projectId && isIsoDate(date) && online,
+    refetchOnFocus: false,
+  });
+  const attendance = useMemo<{ id: string; manpower: ManpowerLine[]; text: string } | null>(() => {
+    if (editId || !projectId) return null;
+    const sheet = attendanceDay.data?.projectId === projectId && attendanceDay.data.date === date ? attendanceDay.data.sheet : null;
+    if (sheet?.manpower.length) return { id: sheet.id, manpower: sheet.manpower, text: `From attendance: ${sheet.totalWorkers} workers recorded by ${sheet.recordedByName}` };
+    const queuedSheet = outbox.find((i) => i.type === 'ATTENDANCE' && i.payload.projectId === projectId && i.payload.date === date);
+    const lines = (queuedSheet?.payload.lines as AttendanceLineInput[] | undefined) ?? [];
+    if (queuedSheet && lines.length) return { id: queuedSheet.id, manpower: attendanceToManpower(lines), text: 'From attendance saved on this phone' };
+    return null;
+  }, [editId, projectId, date, attendanceDay.data, outbox]);
+  const applyAttendance = (a: NonNullable<typeof attendance>) => {
+    setManpower(a.manpower.map((m) => ({ key: newKey(), category: m.category, count: String(m.count) })));
+    setFilledFrom(a.id);
+    setManpowerEdited(false);
+  };
+  useEffect(() => {
+    if (attendance && !manpowerEdited && filledFrom !== attendance.id) applyAttendance(attendance);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [attendance, manpowerEdited, filledFrom]);
+
+  const updateMan = (key: string, patch: Partial<ManpowerRow>) => {
+    setManpowerEdited(true);
+    setManpower((rows) => rows.map((r) => (r.key === key ? { ...r, ...patch } : r)));
+  };
   const updateMach = (key: string, patch: Partial<MachineryRow>) => setMachinery((rows) => rows.map((r) => (r.key === key ? { ...r, ...patch } : r)));
 
   const validate = () => {
@@ -181,17 +213,38 @@ export default function NewDprScreen() {
       </Card>
 
       <Card title="Manpower" right={<Text style={styles.total}>Total {totalManpower}</Text>}>
+        {attendance ? (
+          filledFrom === attendance.id && !manpowerEdited ? (
+            <Text style={styles.fromAttendance}>{attendance.text}</Text>
+          ) : (
+            <Button title="Use attendance figures" variant="ghost" size="sm" icon="people-outline" onPress={() => applyAttendance(attendance)} />
+          )
+        ) : null}
         {manpower.map((r) => (
           <View key={r.key} style={styles.row}>
             <View style={styles.grow}>
-              <Select value={r.category} options={CATEGORY_OPTIONS} onChange={(v) => updateMan(r.key, { category: v })} placeholder="Category" />
+              <Select value={r.category} options={withValue(CATEGORY_OPTIONS, r.category)} onChange={(v) => updateMan(r.key, { category: v })} placeholder="Category" />
             </View>
             <Input value={r.count} onChangeText={(v) => updateMan(r.key, { count: v })} keyboardType="number-pad" placeholder="Nos" containerStyle={styles.small} />
-            <RemoveBtn onPress={() => setManpower((rows) => rows.filter((x) => x.key !== r.key))} />
+            <RemoveBtn
+              onPress={() => {
+                setManpowerEdited(true);
+                setManpower((rows) => rows.filter((x) => x.key !== r.key));
+              }}
+            />
           </View>
         ))}
         {errors.manpower ? <Text style={styles.err}>{errors.manpower}</Text> : null}
-        <Button title="Add category" variant="ghost" size="sm" icon="add" onPress={() => setManpower((rows) => [...rows, { key: newKey(), category: null, count: '' }])} />
+        <Button
+          title="Add category"
+          variant="ghost"
+          size="sm"
+          icon="add"
+          onPress={() => {
+            setManpowerEdited(true);
+            setManpower((rows) => [...rows, { key: newKey(), category: null, count: '' }]);
+          }}
+        />
       </Card>
 
       <Card title="Machinery">
@@ -237,4 +290,5 @@ const styles = StyleSheet.create({
   small: { width: 84, marginBottom: spacing.sm },
   remove: { width: 44, height: 52, alignItems: 'center', justifyContent: 'center' },
   err: { color: colors.danger, marginBottom: spacing.sm, fontSize: 13 },
+  fromAttendance: { ...typography.caption, color: colors.success, marginBottom: spacing.sm },
 });

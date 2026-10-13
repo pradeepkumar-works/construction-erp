@@ -28,8 +28,13 @@ Order matters: each item builds on the previous one.
    on the server; every list (plus BOQ and activities) exports all matching rows to Excel; the site
    app's My Submissions searches on the server and loads more as you scroll. BOQ and activities stay
    whole-project arrays because forms and progress weighting need every row.
-5. **Attendance by supervisor**: daily worker count by category and contractor per project;
-   feeds DPR manpower automatically.
+5. ~~**Attendance by supervisor**: daily worker count by category and contractor per project;
+   feeds DPR manpower automatically.~~ Done: `AttendanceSheet` (one per project per day) with
+   `AttendanceLine` rows of contractor, trade and head count; web register (page + project tab, Excel
+   export one row per contractor and trade) and a site-app screen that also works offline through the
+   outbox. A new DPR takes its manpower from that day's sheet (filled in the forms, and on the server
+   when a DPR arrives without manpower). The sheet locks once the day's DPR is approved. It is a
+   register, not an approval submission: the DPR it feeds is what gets approved.
 
 ### B. Phase 2 modules (from the client proposal)
 6. **Material receipt and stock**: GRN against an approved material request, issue to site, stock

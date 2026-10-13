@@ -3,6 +3,9 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   ActivityDto,
+  AttendanceDayDto,
+  AttendanceSheetDto,
+  AttendanceSuggestionsDto,
   AttachmentDto,
   AuditLogDto,
   BoqItemDto,
@@ -67,6 +70,12 @@ export interface ProjectFilters extends PageParams {
 export interface UserFilters extends PageParams {
   roleKey?: RoleKey;
   isActive?: boolean;
+}
+
+export interface AttendanceFilters extends PageParams {
+  projectId?: string;
+  from?: string;
+  to?: string;
 }
 
 export const clean = (f?: object) =>
@@ -174,6 +183,28 @@ export const useMaterialRequest = (id: string | undefined) =>
     queryKey: ['material-requests', 'detail', id],
     queryFn: async () => (await api.get<MaterialRequestDto>(`/material-requests/${id}`)).data,
     enabled: !!id,
+  });
+
+export const useAttendanceList = (filters?: AttendanceFilters) =>
+  useQuery({
+    queryKey: ['attendance', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<AttendanceSheetDto>>('/attendance', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+  });
+
+/** The project's attendance for one day (`sheet: null` when not recorded), e.g. to fill DPR manpower. */
+export const useAttendanceDay = (projectId: string | undefined, date: string | undefined) =>
+  useQuery({
+    queryKey: ['attendance', 'day', projectId, date],
+    queryFn: async () => (await api.get<AttendanceDayDto>('/attendance/day', { params: { projectId, date } })).data,
+    enabled: !!projectId && !!date,
+  });
+
+export const useAttendanceSuggestions = (projectId: string | undefined) =>
+  useQuery({
+    queryKey: ['attendance', 'suggestions', projectId ?? 'all'],
+    queryFn: async () => (await api.get<AttendanceSuggestionsDto>('/attendance/suggestions', { params: clean({ projectId }) })).data,
+    staleTime: 5 * 60_000,
   });
 
 export const usePendingApprovals = (enabled = true) =>

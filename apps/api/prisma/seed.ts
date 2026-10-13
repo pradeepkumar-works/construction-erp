@@ -97,6 +97,7 @@ async function main() {
 
   const already = await prisma.project.count({ where: { organizationId: org.id } });
   if (already > 0) {
+    await seedAttendance(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
   }
@@ -238,8 +239,56 @@ async function main() {
     }
   }
 
+  await seedAttendance(org.id);
+
   console.log('Seed complete. Login with any of these (password: password123):');
   for (const u of USERS) console.log(`  ${u.email.padEnd(24)} ${u.role}`);
+}
+
+/** Contractors per project type for the demo attendance register. */
+const CONTRACTORS: Record<string, [string, string]> = {
+  ROAD: ['Sri Jagannath Constructions', 'Maa Tarini Labour Supply'],
+  BUILDING: ['Kalinga Builders', 'Utkal Shuttering Works'],
+  WATER_SUPPLY: ['Biswal Pipeline Contractors', 'Maa Tarini Labour Supply'],
+};
+
+/**
+ * Attendance for the last six days of every project that has none yet (also backfills a database seeded
+ * before attendance existed). Totals by trade match the seeded DPR manpower. The water supply project has
+ * no sheet for today, so recording one can be demoed from the site app.
+ */
+async function seedAttendance(organizationId: string) {
+  const projects = await prisma.project.findMany({
+    where: { organizationId },
+    include: { members: { include: { user: { include: { role: true } } } } },
+    orderBy: { code: 'asc' },
+  });
+  for (const project of projects) {
+    if ((await prisma.attendanceSheet.count({ where: { projectId: project.id } })) > 0) continue;
+    const pick = (role: string) => project.members.find((m) => m.user.role.key === role)?.userId;
+    const recorder = pick('TEAM_LEADER') ?? pick('SITE_ENGINEER') ?? project.projectManagerId;
+    if (!recorder) continue;
+    const [main, helpers] = CONTRACTORS[project.type] ?? ['Labour contractor', 'Labour supply'];
+    for (let i = 5; i >= 0; i--) {
+      if (i === 0 && project.type === 'WATER_SUPPLY') continue;
+      const lines = [
+        { contractor: 'Departmental', category: 'Supervisor', count: 2 },
+        { contractor: 'Departmental', category: 'Operator', count: 4 },
+        { contractor: main, category: 'Mason', count: 8 + i },
+        { contractor: main, category: 'Helper', count: 12 + i },
+        { contractor: helpers, category: 'Helper', count: 8 },
+      ];
+      const total = lines.reduce((s, l) => s + l.count, 0);
+      const sheet = await prisma.attendanceSheet.create({
+        data: {
+          organizationId, projectId: project.id, date: day(-i), totalWorkers: total, recordedById: recorder,
+          remarks: i === 3 ? 'Two helpers left at noon (diesel delay)' : null,
+          lines: { create: lines.map((l, idx) => ({ ...l, sortOrder: idx })) },
+        },
+      });
+      await prisma.auditLog.create({ data: { organizationId, entityType: 'ATTENDANCE', entityId: sheet.id, action: 'CREATED', actorId: recorder, note: `${day(-i).toISOString().slice(0, 10)}: ${total} workers`, createdAt: day(-i) } });
+    }
+  }
 }
 
 main()

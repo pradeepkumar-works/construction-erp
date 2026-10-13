@@ -10,6 +10,7 @@ import { ProjectsModule } from './projects/projects.module';
 import { PlanningModule } from './planning/planning.module';
 import { ProgressModule } from './progress/progress.module';
 import { DprModule } from './dpr/dpr.module';
+import { AttendanceModule } from './attendance/attendance.module';
 import { MaterialRequestsModule } from './material-requests/material-requests.module';
 import { ApprovalsModule } from './approvals/approvals.module';
 import { DashboardModule } from './dashboard/dashboard.module';
@@ -28,6 +29,7 @@ import { HealthController } from './health.controller';
     PlanningModule,
     ProgressModule,
     DprModule,
+    AttendanceModule,
     MaterialRequestsModule,
     ApprovalsModule,
     DashboardModule,

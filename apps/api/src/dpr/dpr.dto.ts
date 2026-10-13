@@ -21,7 +21,7 @@ export class CreateDprDto {
   @ApiProperty({ example: '2026-10-13' }) @IsDateString() date: string;
   @ApiPropertyOptional({ enum: WEATHER_OPTIONS }) @IsOptional() @IsIn(WEATHER_OPTIONS as unknown as string[]) weather?: Weather;
   @ApiPropertyOptional() @IsOptional() @IsString() siteCondition?: string;
-  @ApiPropertyOptional({ type: [ManpowerLineDto] }) @IsOptional() @IsArray() @ValidateNested({ each: true }) @Type(() => ManpowerLineDto) manpower?: ManpowerLineDto[];
+  @ApiPropertyOptional({ type: [ManpowerLineDto], description: 'On create, omit or send [] to take manpower from that day\'s attendance sheet.' }) @IsOptional() @IsArray() @ValidateNested({ each: true }) @Type(() => ManpowerLineDto) manpower?: ManpowerLineDto[];
   @ApiPropertyOptional({ type: [MachineryLineDto] }) @IsOptional() @IsArray() @ValidateNested({ each: true }) @Type(() => MachineryLineDto) machinery?: MachineryLineDto[];
   @ApiPropertyOptional() @IsOptional() @IsString() materialReceived?: string;
   @ApiProperty() @IsString() workExecuted: string;

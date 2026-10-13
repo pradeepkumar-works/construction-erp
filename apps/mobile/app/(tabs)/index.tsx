@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { canRecordAttendance } from '@erp/shared';
 import type { DailyReportDto, MaterialRequestDto, Paginated, ProgressEntryDto, ProjectSummary, SubmissionBase, SubmissionType } from '@erp/shared';
 import { useFetch } from '../../src/api/hooks';
 import { fetchProjects } from '../../src/api/lists';
@@ -82,9 +83,10 @@ export default function HomeScreen() {
 
       <SectionTitle title="Quick actions" />
       <View style={styles.quick}>
-        <QuickAction icon="trending-up" label="Progress" onPress={() => router.push('/progress/new')} tone={colors.primary} />
-        <QuickAction icon="document-text" label="DPR" onPress={() => router.push('/dpr/new')} tone={colors.accent} />
-        <QuickAction icon="cube" label="Material" onPress={() => router.push('/material-request/new')} tone={colors.success} />
+        <QuickAction icon="trending-up" label="New Progress" onPress={() => router.push('/progress/new')} tone={colors.primary} />
+        <QuickAction icon="document-text" label="New DPR" onPress={() => router.push('/dpr/new')} tone={colors.accent} />
+        <QuickAction icon="cube" label="New Material" onPress={() => router.push('/material-request/new')} tone={colors.success} />
+        {user && canRecordAttendance(user.roleKey) ? <QuickAction icon="people" label="Attendance" onPress={() => router.push('/attendance')} tone={colors.primaryDark} /> : null}
       </View>
 
       {loading && !data ? (
@@ -153,7 +155,9 @@ function QuickAction({ icon, label, onPress, tone }: { icon: keyof typeof Ionico
       <View style={[styles.quickIcon, { backgroundColor: tone }]}>
         <Ionicons name={icon} size={24} color="#fff" />
       </View>
-      <Text style={styles.quickLabel}>New {label}</Text>
+      <Text style={styles.quickLabel} numberOfLines={2}>
+        {label}
+      </Text>
     </Pressable>
   );
 }
@@ -165,7 +169,7 @@ const styles = StyleSheet.create({
   quick: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg },
   quickBtn: { flex: 1, backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md, alignItems: 'center', borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, minHeight: 96, justifyContent: 'center' },
   quickIcon: { width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm },
-  quickLabel: { fontSize: 13, fontWeight: '700', color: colors.text },
+  quickLabel: { fontSize: 13, fontWeight: '700', color: colors.text, textAlign: 'center' },
   pressed: { opacity: 0.8 },
   stats: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm },
   dprRow: { flexDirection: 'row', alignItems: 'center' },

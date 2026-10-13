@@ -5,6 +5,8 @@ import {
   SUBMISSION_STATUS_LABELS,
   WEATHER_LABELS,
   type ActivityDto,
+  type AttendanceLineDto,
+  type AttendanceSheetDto,
   type DailyReportDto,
   type MaterialRequestDto,
   type ProgressEntryDto,
@@ -116,4 +118,26 @@ export const ACTIVITY_EXPORT: ExportColumn<ActivityDto>[] = [
   { header: 'Planned end', value: (r) => r.plannedEnd, width: 12 },
   { header: 'Responsible', value: (r) => r.responsibleName, width: 20 },
   { header: 'Delayed', value: (r) => (r.isDelayed ? 'Yes' : 'No') },
+];
+
+/** One row per contractor and trade, so head counts can be pivoted in Excel. */
+export interface AttendanceExportRow {
+  sheet: AttendanceSheetDto;
+  line: AttendanceLineDto | null;
+}
+
+export const attendanceExportRows = (rows: AttendanceSheetDto[]): AttendanceExportRow[] =>
+  rows.flatMap((sheet): AttendanceExportRow[] => (sheet.lines.length ? sheet.lines.map((line) => ({ sheet, line })) : [{ sheet, line: null }]));
+
+export const ATTENDANCE_EXPORT: ExportColumn<AttendanceExportRow>[] = [
+  { header: 'Date', value: (r) => r.sheet.date, width: 12 },
+  { header: 'Project', value: (r) => r.sheet.projectName, width: 34 },
+  { header: 'Contractor', value: (r) => r.line?.contractor, width: 28 },
+  { header: 'Trade', value: (r) => r.line?.category, width: 16 },
+  { header: 'Workers', value: (r) => r.line?.count ?? 0 },
+  { header: 'Day total', value: (r) => r.sheet.totalWorkers },
+  { header: 'Remarks', value: (r) => r.sheet.remarks, width: 30 },
+  { header: 'Recorded by', value: (r) => r.sheet.recordedByName, width: 20 },
+  { header: 'Last changed by', value: (r) => r.sheet.updatedByName, width: 20 },
+  { header: 'DPR status', value: (r) => (r.sheet.dprStatus ? status(r.sheet.dprStatus) : 'No DPR yet'), width: 18 },
 ];

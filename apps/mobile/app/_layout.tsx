@@ -38,6 +38,7 @@ function RootNavigator() {
         <Stack.Screen name="submissions" options={{ title: 'My Submissions' }} />
         <Stack.Screen name="notifications" options={{ title: 'Notifications' }} />
         <Stack.Screen name="outbox" options={{ title: 'Outbox' }} />
+        <Stack.Screen name="attendance" options={{ title: 'Attendance' }} />
       </Stack.Protected>
     </Stack>
   );

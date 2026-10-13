@@ -2,7 +2,8 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { PROJECT_STATUS_LABELS, PROJECT_TYPE_LABELS, type ActivityDto, type ProjectDetail } from '@erp/shared';
+import { PROJECT_STATUS_LABELS, PROJECT_TYPE_LABELS, canRecordAttendance, type ActivityDto, type ProjectDetail } from '@erp/shared';
+import { useAuth } from '../../src/auth/AuthContext';
 import { useFetch } from '../../src/api/hooks';
 import { Button, Card, EmptyState, ErrorState, KeyValue, Loading, Pill, ProgressBar, Screen, SectionTitle, Stat } from '../../src/components';
 import { colors, spacing, typography } from '../../src/theme';
@@ -11,6 +12,7 @@ import { fmtQty, formatDate } from '../../src/utils/format';
 export default function ProjectScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { user } = useAuth();
   const { data, loading, refreshing, error, refresh, reload } = useFetch(
     async (api) => {
       const [project, activities] = await Promise.all([api.get<ProjectDetail>(`/projects/${id}`), api.get<ActivityDto[]>(`/projects/${id}/activities`)]);
@@ -57,6 +59,9 @@ export default function ProjectScreen() {
         <Button title="Add progress" icon="trending-up" onPress={() => router.push(`/progress/new?projectId=${project.id}`)} style={styles.flex} />
         <Button title="New DPR" icon="document-text" variant="secondary" onPress={() => router.push(`/dpr/new?projectId=${project.id}`)} style={styles.flex} />
       </View>
+      {user && canRecordAttendance(user.roleKey) ? (
+        <Button title="Today's attendance" icon="people" variant="secondary" onPress={() => router.push(`/attendance?projectId=${project.id}`)} style={styles.attendance} />
+      ) : null}
 
       <SectionTitle title="Activities" right={<Text style={typography.caption}>planned / executed</Text>} />
       {activities.length === 0 ? (
@@ -100,6 +105,7 @@ const styles = StyleSheet.create({
   bar: { marginVertical: spacing.md },
   stats: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
   actions: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm },
+  attendance: { marginBottom: spacing.sm },
   actTop: { flexDirection: 'row', alignItems: 'flex-start' },
   delayed: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.dangerSoft, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999, marginLeft: spacing.sm },
   delayedText: { color: colors.danger, fontSize: 12, fontWeight: '700' },

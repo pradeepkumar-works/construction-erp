@@ -2,17 +2,17 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { AppState } from 'react-native';
 import * as Network from 'expo-network';
 import * as Crypto from 'expo-crypto';
-import type { AttachmentDto, SubmissionType } from '@erp/shared';
+import type { AttachmentDto } from '@erp/shared';
 import { useAuth } from '../auth/AuthContext';
 import { ApiError, errorMessage, request, uploadFile } from '../api/client';
 import { getStore, type OutboxRow } from './db';
 import { persistPhoto, removePhotos } from './photos';
-import { OUTBOX_PATH, type OutboxItem, type OutboxPhoto, type OutboxStatus } from './types';
+import { OUTBOX_PATH, type OutboxItem, type OutboxPhoto, type OutboxStatus, type OutboxType } from './types';
 
 export interface EnqueueInput {
   /** Pre-generated id (from `newId()`), so the form can reference the entry before it is queued. */
   id?: string;
-  type: SubmissionType;
+  type: OutboxType;
   payload: Record<string, unknown>;
   photos: { uri: string; name: string; type: string; attachmentId?: string }[];
   title: string;
@@ -109,7 +109,7 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
         item.photos = [...photos];
         await save({ ...item });
       }
-      const body = { ...item.payload, id: item.id, attachmentIds: photos.map((p) => p.attachmentId).filter((x): x is string => !!x) };
+      const body = item.type === 'ATTENDANCE' ? { ...item.payload, id: item.id } : { ...item.payload, id: item.id, attachmentIds: photos.map((p) => p.attachmentId).filter((x): x is string => !!x) };
       await request(OUTBOX_PATH[item.type], { method: 'POST', body, token: tok });
       await removePhotos(photos);
       await remove(item.id);
