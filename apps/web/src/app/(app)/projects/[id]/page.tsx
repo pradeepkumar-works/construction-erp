@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Button, Card, Progress, Space, Tabs, Typography } from 'antd';
 import { EditOutlined } from '@ant-design/icons';
-import { canEditProjects } from '@erp/shared';
+import { canEditProjects, canViewCost } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useProject } from '@/lib/queries';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -19,6 +19,7 @@ import { DprList } from '@/components/dpr/DprList';
 import { MachineryPanel } from '@/components/machinery/MachineryPanel';
 import { ExpenseList } from '@/components/expenses/ExpenseList';
 import { MeasurementList } from '@/components/measurements/MeasurementList';
+import { ProjectCostPanel } from '@/components/cost/ProjectCostPanel';
 import { StockPanel } from '@/components/stock/StockPanel';
 import { AttendanceList } from '@/components/attendance/AttendanceList';
 import { MrList } from '@/components/material/MrList';
@@ -94,6 +95,7 @@ export default function ProjectDetailPage() {
             { key: 'stock', label: 'Stock', children: <StockPanel projectId={project.id} /> },
             { key: 'machinery', label: 'Machinery', children: <MachineryPanel projectId={project.id} /> },
             { key: 'expenses', label: 'Expenses', children: <ExpenseList projectId={project.id} /> },
+            ...(user && canViewCost(user.roleKey) ? [{ key: 'cost', label: 'Cost', children: <ProjectCostPanel projectId={project.id} /> }] : []),
           ]}
         />
       </Card>

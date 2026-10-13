@@ -334,6 +334,8 @@ export interface ItemDto {
   name: string;
   unit: string;
   category: string | null;
+  /** Standard rate per unit used to value issues in the cost view. */
+  rate: string | null;
   /** Projects in which this item has stock movements. */
   projectCount: number;
   createdAt: string;
@@ -520,4 +522,70 @@ export interface Paginated<T> {
   total: number;
   page: number;
   pageSize: number;
+}
+
+/* ---------- project cost ---------- */
+
+export interface LabourRateDto {
+  id: string;
+  category: string;
+  dailyRate: string;
+}
+
+export interface LabourRatesDto {
+  rates: LabourRateDto[];
+  /** Trades on attendance sheets that have no rate yet. */
+  unpricedTrades: string[];
+}
+
+export interface CostHeadsDto {
+  expenses: string;
+  material: string;
+  machinery: string;
+  labour: string;
+  total: string;
+}
+
+/** What could not be valued because a rate is missing. */
+export interface UnpricedDto {
+  /** Issued items without a standard rate. */
+  materialItems: number;
+  /** Approved machinery logs of machines without a rate. */
+  machineryLogs: number;
+  /** Attendance man-days of trades without a daily rate. */
+  labourManDays: number;
+}
+
+export interface ProjectCostSummaryDto {
+  projectId: string;
+  projectCode: string;
+  projectName: string;
+  projectType: ProjectType;
+  contractValue: string | null;
+  /** Approved progress × BOQ rate in the period. */
+  executedValue: string;
+  /** Approved measurement sheets × BOQ rate in the period. */
+  measuredValue: string;
+  cost: CostHeadsDto;
+  /** executedValue − cost.total */
+  margin: string;
+  /** cost.total as % of executedValue; null when nothing was executed. */
+  costPct: number | null;
+  unpriced: UnpricedDto;
+}
+
+export interface CostMonthDto extends CostHeadsDto {
+  /** YYYY-MM */
+  month: string;
+  executedValue: string;
+}
+
+export interface ProjectCostDto extends ProjectCostSummaryDto {
+  from: string | null;
+  to: string | null;
+  months: CostMonthDto[];
+  expensesByCategory: { category: ExpenseCategory; count: number; amount: string }[];
+  materialByItem: { itemId: string; name: string; unit: string; quantity: string; rate: string | null; amount: string }[];
+  machineryByEquipment: { equipmentId: string; code: string; name: string; rateUnit: EquipmentRateUnit; rate: string | null; days: number; hours: string; amount: string }[];
+  labourByTrade: { category: string; manDays: number; dailyRate: string | null; amount: string }[];
 }

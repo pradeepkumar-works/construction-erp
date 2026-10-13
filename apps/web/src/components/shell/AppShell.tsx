@@ -15,6 +15,7 @@ import {
   ToolOutlined,
   WalletOutlined,
   CalculatorOutlined,
+  FundOutlined,
   LineChartOutlined,
   LogoutOutlined,
   MenuOutlined,
@@ -25,7 +26,7 @@ import {
   UserOutlined,
 } from '@ant-design/icons';
 import type { AuthUser } from '@erp/shared';
-import { canApprove, canManageUsers } from '@erp/shared';
+import { canApprove, canManageUsers, canViewCost } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { usePendingApprovals } from '@/lib/queries';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
@@ -85,6 +86,7 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
       { key: '/stock', icon: <InboxOutlined />, label: <Link href="/stock">Stock</Link> },
       { key: '/machinery', icon: <ToolOutlined />, label: <Link href="/machinery">Machinery</Link> },
       { key: '/expenses', icon: <WalletOutlined />, label: <Link href="/expenses">Site Expenses</Link> },
+      ...(canViewCost(user.roleKey) ? [{ key: '/cost', icon: <FundOutlined />, label: <Link href="/cost">Project Cost</Link> }] : []),
       { key: '/notifications', icon: <BellOutlined />, label: <Link href="/notifications">Notifications</Link> },
     ];
     if (canManageUsers(user.roleKey)) {

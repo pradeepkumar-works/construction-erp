@@ -8,6 +8,9 @@ import type {
   ExpenseDto,
   ExpenseSummaryDto,
   MeasurementSheetDto,
+  LabourRatesDto,
+  ProjectCostDto,
+  ProjectCostSummaryDto,
   PaymentMode,
   ItemDto,
   MachineryLogDto,
@@ -351,6 +354,35 @@ export const useMeasurement = (id: string | undefined) =>
     queryKey: ['measurements', 'detail', id],
     queryFn: async () => (await api.get<MeasurementSheetDto>(`/measurements/${id}`)).data,
     enabled: !!id,
+  });
+
+/** Cost period; both ends optional. */
+export interface CostPeriod {
+  from?: string;
+  to?: string;
+}
+
+export const useCostSummary = (period: CostPeriod, enabled = true) =>
+  useQuery({
+    queryKey: ['cost', 'projects', clean(period)],
+    queryFn: async () => (await api.get<ProjectCostSummaryDto[]>('/cost/projects', { params: clean(period) })).data,
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+
+export const useProjectCost = (projectId: string | undefined, period: CostPeriod) =>
+  useQuery({
+    queryKey: ['cost', 'project', projectId, clean(period)],
+    queryFn: async () => (await api.get<ProjectCostDto>(`/cost/projects/${projectId}`, { params: clean(period) })).data,
+    placeholderData: keepPreviousData,
+    enabled: !!projectId,
+  });
+
+export const useLabourRates = (enabled = true) =>
+  useQuery({
+    queryKey: ['cost', 'labour-rates'],
+    queryFn: async () => (await api.get<LabourRatesDto>('/cost/labour-rates')).data,
+    enabled,
   });
 
 /** Approved material requests with something still to receive (GRN form). */

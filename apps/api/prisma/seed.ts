@@ -103,6 +103,7 @@ async function main() {
     await seedMachinery(org.id);
     await seedExpenses(org.id);
     await seedMeasurements(org.id);
+    await seedCostRates(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
   }
@@ -249,6 +250,7 @@ async function main() {
   await seedMachinery(org.id);
   await seedExpenses(org.id);
   await seedMeasurements(org.id);
+  await seedCostRates(org.id);
 
   console.log('Seed complete. Login with any of these (password: password123):');
   for (const u of USERS) console.log(`  ${u.email.padEnd(24)} ${u.role}`);
@@ -654,6 +656,20 @@ async function seedMeasurements(organizationId: string) {
       });
     }
   }
+}
+
+// Standard material rates and labour daily rates for the cost view (only where none are set).
+const ITEM_RATES: Record<string, string> = {
+  'Diesel': '92.50', 'Binding wire': '78.00', 'Shuttering plywood 12mm': '1450.00', 'OPC 53 Grade Cement': '395.00', 'TMT Fe500D 12mm': '61500.00',
+  'Emulsion SS-1': '48.00', 'Bitumen VG-30': '52000.00', 'Aggregate 20mm': '1350.00', 'HDPE electrofusion coupler 110mm': '310.00',
+  'Ball valve 50mm': '1850.00', 'HDPE PE100 110mm PN6': '540.00', 'DI K9 pipe 400mm': '5200.00',
+};
+const LABOUR_RATES: [string, string][] = [['Mason', '900.00'], ['Helper', '550.00'], ['Operator', '1100.00'], ['Supervisor', '1300.00'], ['Carpenter', '850.00'], ['Bar Bender', '850.00']];
+
+async function seedCostRates(organizationId: string) {
+  for (const [name, rate] of Object.entries(ITEM_RATES)) await prisma.item.updateMany({ where: { organizationId, name, rate: null }, data: { rate: D(rate) } });
+  if ((await prisma.labourRate.count({ where: { organizationId } })) === 0)
+    await prisma.labourRate.createMany({ data: LABOUR_RATES.map(([category, dailyRate]) => ({ organizationId, category, dailyRate: D(dailyRate) })) });
 }
 
 main()

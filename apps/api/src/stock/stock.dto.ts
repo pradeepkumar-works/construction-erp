@@ -109,12 +109,14 @@ export class CreateItemDto {
   @ApiProperty({ example: 'OPC 53 Grade Cement' }) @IsString() @trim() @MinLength(1) @MaxLength(200) name: string;
   @ApiProperty({ example: 'Bags' }) @IsString() @trim() @MinLength(1) @MaxLength(30) unit: string;
   @ApiPropertyOptional({ example: 'Cement' }) @IsOptional() @IsString() @trim() @MaxLength(60) category?: string | null;
+  @ApiPropertyOptional({ example: '395.00', description: 'Standard rate per unit; values issues in the cost view' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsNumberString() rate?: string | null;
 }
 
 export class UpdateItemDto {
   @ApiPropertyOptional() @IsOptional() @IsString() @trim() @MinLength(1) @MaxLength(200) name?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() @trim() @MinLength(1) @MaxLength(30) unit?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() @trim() @MaxLength(60) category?: string | null;
+  @ApiPropertyOptional({ example: '395.00' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsNumberString() rate?: string | null;
 }
 
 export class SetMinLevelDto {
