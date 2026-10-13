@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { App, Button, Popconfirm, Progress, Space, Table, Tag } from 'antd';
 import type { TableProps } from 'antd';
 import { DeleteOutlined, EditOutlined, PlusOutlined, WarningOutlined } from '@ant-design/icons';
-import type { ActivityDto, ProjectMemberDto } from '@erp/shared';
+import type { ActivityDto, ProjectDetail, ProjectMemberDto } from '@erp/shared';
 import { canEditProjects } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, errorMessage } from '@/lib/api';
@@ -16,14 +16,16 @@ import { ExportButton } from '@/components/common/ExportButton';
 import { downloadXlsx, exportFileName } from '@/lib/exportExcel';
 import { ACTIVITY_EXPORT } from '@/lib/exportColumns';
 import { ActivityFormModal } from './ActivityFormModal';
+import { ApplyTemplateModal } from '@/components/templates/ApplyTemplateModal';
 
-export function ActivitiesTab({ projectId, members }: { projectId: string; members: ProjectMemberDto[] }) {
+export function ActivitiesTab({ projectId, members, project }: { projectId: string; members: ProjectMemberDto[]; project?: ProjectDetail }) {
   const { user } = useAuth();
   const { message } = App.useApp();
   const qc = useQueryClient();
   const { data, isLoading, error, refetch } = useActivities(projectId);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<ActivityDto | null>(null);
+  const [templateOpen, setTemplateOpen] = useState(false);
   const editor = !!user && canEditProjects(user.roleKey);
 
   const del = useMutation({
@@ -109,6 +111,7 @@ export function ActivitiesTab({ projectId, members }: { projectId: string; membe
             return data?.length ?? 0;
           }}
         />
+        {editor && project ? <Button onClick={() => setTemplateOpen(true)}>Add from template</Button> : null}
         {editor && (
           <Button
             type="primary"
@@ -125,6 +128,7 @@ export function ActivitiesTab({ projectId, members }: { projectId: string; membe
       </div>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       <Table<ActivityDto> rowKey="id" loading={isLoading} columns={columns} dataSource={data ?? []} size="middle" pagination={{ pageSize: 25, hideOnSinglePage: true }} scroll={{ x: 1100 }} />
+      {project ? <ApplyTemplateModal open={templateOpen} onClose={() => setTemplateOpen(false)} project={project} existing={(data ?? []).map((a) => a.name)} /> : null}
       <ActivityFormModal open={formOpen} onClose={() => setFormOpen(false)} projectId={projectId} activity={editing} members={members} />
     </div>
   );

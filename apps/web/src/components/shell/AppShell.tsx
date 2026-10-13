@@ -26,9 +26,10 @@ import {
   TeamOutlined,
   UserOutlined,
   AlertOutlined,
+  PartitionOutlined,
 } from '@ant-design/icons';
 import type { AuthUser } from '@erp/shared';
-import { canApprove, canManageUsers, canViewCost } from '@erp/shared';
+import { canApprove, canEditProjects, canManageUsers, canViewCost } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { usePendingApprovals } from '@/lib/queries';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
@@ -93,6 +94,9 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
       ...(canViewCost(user.roleKey) ? [{ key: '/cost', icon: <FundOutlined />, label: <Link href="/cost">Project Cost</Link> }] : []),
       { key: '/notifications', icon: <BellOutlined />, label: <Link href="/notifications">Notifications</Link> },
     ];
+    if (canEditProjects(user.roleKey)) {
+      base.push({ key: '/templates', icon: <PartitionOutlined />, label: <Link href="/templates">Activity Templates</Link> });
+    }
     if (canManageUsers(user.roleKey)) {
       base.push({ key: '/users', icon: <TeamOutlined />, label: <Link href="/users">Users</Link> });
     }

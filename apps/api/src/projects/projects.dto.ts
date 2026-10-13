@@ -1,5 +1,5 @@
-import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { IsDateString, IsIn, IsNumberString, IsOptional, IsString, IsUUID, MinLength } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
+import { IsBoolean, IsDateString, IsIn, IsNumberString, IsOptional, IsString, IsUUID, MinLength } from 'class-validator';
 import { LIST_SORT_FIELDS, PROJECT_STATUSES, PROJECT_TYPES, ProjectStatus, ProjectType, type ProjectSortField } from '@erp/shared';
 import { PageQuery } from '../common/paging';
 
@@ -24,9 +24,13 @@ export class CreateProjectDto {
   @ApiPropertyOptional({ example: '2027-06-30' }) @IsOptional() @IsDateString() endDate?: string;
   @ApiPropertyOptional({ example: '125000000.00' }) @IsOptional() @IsNumberString() contractValue?: string;
   @ApiPropertyOptional() @IsOptional() @IsUUID() projectManagerId?: string;
+  @ApiPropertyOptional({ description: 'Add the standard activities for the project type (see /activity-templates), scheduled over the project dates' })
+  @IsOptional()
+  @IsBoolean()
+  applyTemplate?: boolean;
 }
 
-export class UpdateProjectDto extends PartialType(CreateProjectDto) {}
+export class UpdateProjectDto extends PartialType(OmitType(CreateProjectDto, ['applyTemplate'] as const)) {}
 
 export class AddMemberDto {
   @ApiProperty() @IsUUID() userId: string;

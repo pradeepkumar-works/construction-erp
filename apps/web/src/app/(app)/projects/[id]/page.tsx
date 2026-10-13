@@ -91,7 +91,7 @@ export default function ProjectDetailPage() {
           items={[
             { key: 'overview', label: 'Overview', children: <ProjectOverview project={project} /> },
             { key: 'boq', label: 'BOQ', children: <BoqTab projectId={project.id} /> },
-            { key: 'activities', label: 'Activities', children: <ActivitiesTab projectId={project.id} members={project.members} /> },
+            { key: 'activities', label: 'Activities', children: <ActivitiesTab projectId={project.id} members={project.members} project={project} /> },
             { key: 'mb', label: 'Measurements', children: <MeasurementList projectId={project.id} /> },
             { key: 'progress', label: 'Progress', children: <ProgressList projectId={project.id} newLabel="New progress entry" /> },
             { key: 'dpr', label: 'Daily Reports', children: <DprList projectId={project.id} newLabel="New DPR" /> },
