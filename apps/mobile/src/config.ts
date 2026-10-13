@@ -1,5 +1,8 @@
-/** API base URL. Set EXPO_PUBLIC_API_URL to http://<LAN-IP>:4000/api when testing on a phone. */
-const raw = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000/api';
+/**
+ * API base URL. Defaults to the hosted demo API so the app works in Expo Go without setup.
+ * Set EXPO_PUBLIC_API_URL to http://<LAN-IP>:4000/api to point at a local API instead.
+ */
+const raw = process.env.EXPO_PUBLIC_API_URL || 'https://construction-erp-api-pradeep15.vercel.app/api';
 export const API_URL = raw.replace(/\/+$/, '');
 /** Origin used to resolve relative attachment URLs (e.g. /uploads/...). */
 export const API_ORIGIN = API_URL.replace(/\/api$/, '');

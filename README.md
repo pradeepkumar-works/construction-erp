@@ -27,7 +27,9 @@ contractors after the first client is live.
   today) and project (physical progress weighted by BOQ value, BOQ executed amount, activity
   status, recent submissions).
 
-See `docs/ARCHITECTURE.md` for the data model and the decisions behind it.
+**Live demo**: web ERP at https://construction-erp-web-pradeep15.vercel.app, API at
+https://construction-erp-api-pradeep15.vercel.app/api (Swagger at `/api/docs`), database on Neon.
+See `docs/DEPLOY.md` for how it is hosted and `docs/ARCHITECTURE.md` for the data model.
 
 ## Run it locally
 

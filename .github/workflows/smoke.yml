@@ -1,0 +1,54 @@
+name: Smoke test (production)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/modest-brown-emrt4b]
+    paths: ['.github/workflows/smoke.yml']
+
+env:
+  API_URL: https://construction-erp-api-pradeep15.vercel.app/api
+  WEB_URL: https://construction-erp-web-pradeep15.vercel.app
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for API health
+        run: |
+          for i in $(seq 1 20); do
+            code=$(curl -s -o /tmp/health.json -w '%{http_code}' "$API_URL/health" || true)
+            echo "attempt $i: $code"; cat /tmp/health.json 2>/dev/null; echo
+            [ "$code" = "200" ] && exit 0
+            sleep 15
+          done
+          exit 1
+      - name: Login and read data
+        run: |
+          set -e
+          TOKEN=$(curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' \
+            -d '{"email":"pm@demo.com","password":"password123"}' | jq -r .accessToken)
+          [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ]
+          echo "login ok"
+          curl -sf "$API_URL/projects" -H "authorization: Bearer $TOKEN" | jq -r '.[] | "\(.code)  \(.physicalProgressPct)%  pending=\(.pendingApprovals)"'
+          echo "pending approvals: $(curl -sf "$API_URL/approvals/pending" -H "authorization: Bearer $TOKEN" | jq length)"
+          curl -sf "$API_URL/dashboard/company" -H "authorization: Bearer $TOKEN" | jq 'del(.projects)'
+      - name: Upload a photo and read it back
+        run: |
+          set -e
+          TOKEN=$(curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' \
+            -d '{"email":"engineer@demo.com","password":"password123"}' | jq -r .accessToken)
+          printf '\x89PNG\r\n\x1a\n' > /tmp/t.png; head -c 64 /dev/urandom >> /tmp/t.png
+          URL=$(curl -sf -X POST "$API_URL/uploads" -H "authorization: Bearer $TOKEN" -F file=@/tmp/t.png | tee /dev/stderr | jq -r .url)
+          echo; curl -sf -o /dev/null -w 'content: %{http_code} %{content_type}\n' "https://construction-erp-api-pradeep15.vercel.app$URL"
+      - name: Swagger docs and CORS
+        run: |
+          curl -s -o /dev/null -w 'docs: %{http_code}\n' "$API_URL/docs"
+          curl -s -o /dev/null -D - -X OPTIONS "$API_URL/auth/login" \
+            -H "Origin: $WEB_URL" -H "Access-Control-Request-Method: POST" | grep -i 'HTTP/\|access-control-allow-origin'
+      - name: Web pages
+        run: |
+          curl -s -o /dev/null -w 'login page: %{http_code}\n' "$WEB_URL/login"
+          curl -s -o /dev/null -w 'root redirect: %{http_code} -> %{redirect_url}\n' "$WEB_URL/"
+          curl -s "$WEB_URL/login" | grep -o 'NEXT_PUBLIC_API_URL[^"]*' | head -1 || true
+          curl -s "$WEB_URL/login" | grep -o 'construction-erp-api[^"]*' | head -3 || true
