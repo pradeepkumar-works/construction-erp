@@ -1,13 +1,13 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { App, DatePicker, Form, Input, InputNumber, Modal, Select } from 'antd';
+import { App, Checkbox, DatePicker, Form, Input, InputNumber, Modal, Select } from 'antd';
 import dayjs from 'dayjs';
 import type { ProjectDetail, ProjectStatus, ProjectType } from '@erp/shared';
 import { PROJECT_STATUSES, PROJECT_STATUS_LABELS, PROJECT_TYPES, PROJECT_TYPE_LABELS } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, errorMessage } from '@/lib/api';
-import { useUsers } from '@/lib/queries';
+import { useActivityTemplates, useUsers } from '@/lib/queries';
 
 interface FormValues {
   code: string;
@@ -22,6 +22,7 @@ interface FormValues {
   dates?: [dayjs.Dayjs | null, dayjs.Dayjs | null] | null;
   contractValue?: number | null;
   projectManagerId?: string;
+  applyTemplate?: boolean;
 }
 
 export function ProjectFormModal({
@@ -40,6 +41,9 @@ export function ProjectFormModal({
   const qc = useQueryClient();
   const { data: users } = useUsers();
   const isEdit = !!project;
+  const { data: templates } = useActivityTemplates(open && !project);
+  const type = Form.useWatch('type', form);
+  const template = templates?.find((t) => t.projectType === type);
 
   useEffect(() => {
     if (!open) return;
@@ -60,7 +64,7 @@ export function ProjectFormModal({
       });
     } else {
       form.resetFields();
-      form.setFieldsValue({ status: 'PLANNED', type: 'ROAD' });
+      form.setFieldsValue({ status: 'PLANNED', type: 'ROAD', applyTemplate: true });
     }
   }, [open, project, form]);
 
@@ -80,6 +84,7 @@ export function ProjectFormModal({
         endDate: values.dates?.[1] ? values.dates[1].format('YYYY-MM-DD') : undefined,
         contractValue: values.contractValue !== null && values.contractValue !== undefined ? String(values.contractValue) : undefined,
         projectManagerId: values.projectManagerId || undefined,
+        ...(isEdit ? {} : { applyTemplate: !!values.applyTemplate }),
       };
       if (isEdit && project) return (await api.patch<ProjectDetail>(`/projects/${project.id}`, body)).data;
       return (await api.post<ProjectDetail>('/projects', body)).data;
@@ -149,6 +154,11 @@ export function ProjectFormModal({
         <Form.Item name="description" label="Description">
           <Input.TextArea rows={2} />
         </Form.Item>
+        {!isEdit ? (
+          <Form.Item name="applyTemplate" valuePropName="checked" style={{ marginBottom: 0 }} extra="Scheduled across the start and end dates; planned quantities are filled in later. Templates are under Activity Templates.">
+            <Checkbox>Add the {template ? `${template.items.length} ` : ''}standard {type ? PROJECT_TYPE_LABELS[type as ProjectType].toLowerCase() : ''} activities</Checkbox>
+          </Form.Item>
+        ) : null}
       </Form>
     </Modal>
   );

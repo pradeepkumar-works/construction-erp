@@ -73,6 +73,17 @@ TypeScript flags when a type is added.
   carried by free-text `location` and the activity list, not by schema. A per-type activity template
   is the planned next step so new projects start from a standard list.
 
+### Activity templates
+
+`DEFAULT_ACTIVITY_TEMPLATES` in `packages/shared/src/templates.ts` holds a standard activity list per project
+type (name, unit, start day, duration). An organisation that saves its own list for a type gets
+`ActivityTemplate` rows (unique per organisation, type and name); with no rows the built-in list applies, so a
+new organisation needs no seeding and `PUT /activity-templates/:type` with an empty list resets to it. Admin and
+management edit them (`canManageTemplates`). `scheduleTemplate` (shared, so the web preview matches the API)
+turns a list into planned dates: from the project start, scaled so the template span fills the project when an
+end date is set. `POST /projects` with `applyTemplate: true`, or `POST /projects/:id/activities/from-template`
+(optionally `names`), creates the activities with planned quantity 0, skipping names the project already has.
+
 ## Lists: paging, search, sort and export
 
 `GET /progress`, `/dpr`, `/material-requests`, `/attendance`, `/stock/entries`, `/stock/balances`, `/stock/items`,

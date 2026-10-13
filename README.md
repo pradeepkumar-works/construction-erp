@@ -17,7 +17,9 @@ contractors after the first client is live.
   Team Leader, Site Engineer, Store Manager, QS, Procurement, QA/QC, Accounts, HR).
 - Projects of type Road / Building / Water Supply with client, consultant, dates, contract value,
   project manager and team members. Non-company-wide roles see only projects they belong to.
-- BOQ items (with Excel import on the web) and activities with planned quantities and dates.
+- BOQ items (with Excel import on the web) and activities with planned quantities and dates. A new project
+  can start with the standard activities for its type (road, building, water supply), scheduled over its
+  dates; each organisation can edit those templates.
 - Site submissions from mobile or web: **daily progress** against an activity (with photos),
   **daily progress report (DPR)** with manpower, machinery, work executed, tests, safety, issues
   and next-day plan, and **material requests** with line items.

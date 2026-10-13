@@ -42,6 +42,9 @@ export const LABOUR_RATE_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'ACCOUNTS_MA
 /** Roles that raise delays and risks: site staff, the QS and approvers. Anyone with project access can read the register. */
 export const RISK_RAISER_ROLES: RoleKey[] = ['TEAM_LEADER', 'SITE_ENGINEER', 'QUANTITY_SURVEYOR', 'STORE_MANAGER', 'QA_QC_ENGINEER', 'ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER'];
 
+/** Roles that edit the organisation's activity templates. */
+export const TEMPLATE_ADMIN_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT'];
+
 /** Roles allowed to manage users. */
 export const USER_ADMIN_ROLES: RoleKey[] = ['ADMIN'];
 
@@ -79,6 +82,9 @@ export const canRaiseRisk = (role: RoleKey) => RISK_RAISER_ROLES.includes(role);
  */
 export const canEditRisk = (user: SubmissionActor, r: { raisedById: string; ownerId: string | null }): boolean =>
   canApprove(user.roleKey) || r.raisedById === user.id || r.ownerId === user.id;
+
+/** Edit activity templates per project type. */
+export const canManageTemplates = (role: RoleKey) => TEMPLATE_ADMIN_ROLES.includes(role);
 
 /** Record measurements (MB). */
 export const canMeasure = (role: RoleKey) => MEASUREMENT_ROLES.includes(role);

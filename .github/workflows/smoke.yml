@@ -267,6 +267,15 @@ jobs:
           code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/risks" -H "authorization: Bearer $(login accounts@demo.com)" -H 'content-type: application/json' \
             -d "{\"projectId\":\"$PROJECT\",\"kind\":\"RISK\",\"category\":\"OTHER\",\"title\":\"smoke\",\"impact\":2}")
           echo "accounts raising a risk: $code"; [ "$code" = "403" ]
+      - name: Activity templates
+        run: |
+          set -e
+          login() { curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' -d "{\"email\":\"$1\",\"password\":\"password123\"}" | jq -r .accessToken; }
+          H="authorization: Bearer $(login pm@demo.com)"
+          curl -sf "$API_URL/activity-templates" -H "$H" | jq -e 'length == 3 and all(.[]; (.items | length) > 0 and .spanDays > 0)' > /dev/null
+          curl -sf "$API_URL/activity-templates" -H "$H" | jq -r '.[] | "\(.projectType): \(.items | length) activities over \(.spanDays) days\(if .isDefault then " (standard)" else "" end)"'
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X PUT "$API_URL/activity-templates/ROAD" -H "$H" -H 'content-type: application/json' -d '{"items":[]}')
+          echo "PM changing a template: $code"; [ "$code" = "403" ]
       - name: Paged lists with search and sort
         run: |
           set -e

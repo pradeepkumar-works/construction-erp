@@ -13,6 +13,7 @@ import type {
   RiskKind,
   RiskStatus,
   RiskSummaryDto,
+  ActivityTemplateDto,
   MeasurementSheetDto,
   LabourRatesDto,
   ProjectCostDto,
@@ -359,6 +360,9 @@ export const useExpense = (id: string | undefined) =>
     queryFn: async () => (await api.get<ExpenseDto>(`/expenses/${id}`)).data,
     enabled: !!id,
   });
+
+export const useActivityTemplates = (enabled = true) =>
+  useQuery({ queryKey: ['activity-templates'], queryFn: async () => (await api.get<ActivityTemplateDto[]>('/activity-templates')).data, enabled });
 
 export const useRisks = (filters?: RiskFilters) =>
   useQuery({

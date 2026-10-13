@@ -92,7 +92,13 @@ Order matters: each item builds on the previous one.
     screens that raise entries offline too.
 
 ### D. Product / SaaS foundations
-13. **Activity templates per project type** (Road / Building / Water Supply) applied at project creation.
+13. ~~**Activity templates per project type** (Road / Building / Water Supply) applied at project creation.~~
+    Done: built-in standard lists (10 road, 12 building, 8 water-supply activities with unit, start day and
+    duration) that an organisation can replace per type (`ActivityTemplate`, admin and management, Activity
+    Templates page with a schedule bar, reset to standard). "Add the standard activities" on the new-project
+    form, and "Add from template" on a project's Activities tab for existing projects, schedule them over the
+    project dates (stretched or squeezed to fit) and skip names the project already has. Planned quantities
+    start at 0 for the planner to fill in or link to BOQ items.
 14. **Configurable approval matrix** with amount limits (table-driven, replaces fixed role rules).
 15. **Organisation onboarding**: create org, invite users by email, default roles; password reset.
 16. **Postgres row-level security** as the second tenant guard.

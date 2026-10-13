@@ -7,6 +7,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
+import { TemplatesService } from '../templates/templates.service';
 import { dateOnly, iso, money, parseDate, pct } from '../common/serialize';
 import { AddMemberDto, CreateProjectDto, ListProjectsQuery, UpdateProjectDto } from './projects.dto';
 
@@ -31,7 +32,7 @@ const DESC_DEFAULT = new Set<string>(['startDate', 'endDate', 'contractValue', '
 
 @Injectable()
 export class ProjectsService {
-  constructor(private prisma: PrismaService, private access: ProjectAccessService, private audit: AuditService) {}
+  constructor(private prisma: PrismaService, private access: ProjectAccessService, private audit: AuditService, private templates: TemplatesService) {}
 
   /** Physical progress = weighted by BOQ amount where activities are linked to BOQ, else simple average of activity %. */
   async computeProgress(projectId: string): Promise<number> {
@@ -139,6 +140,7 @@ export class ProjectsService {
     const data = this.toData(dto) as Prisma.ProjectCreateInput;
     const row = await this.prisma.project.create({ data: { ...data, organization: { connect: { id: user.organizationId } } }, include: projectInclude });
     await this.audit.log(user, 'PROJECT', row.id, 'CREATED');
+    if (dto.applyTemplate) await this.templates.applyUnchecked(user, row.id);
     return this.toDetail(row);
   }
 

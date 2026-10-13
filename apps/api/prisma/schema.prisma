@@ -153,28 +153,29 @@ model Organization {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users            User[]
-  roles            Role[]
-  projects         Project[]
-  boqItems         BoqItem[]
-  activities       Activity[]
-  progressEntries  ProgressEntry[]
-  dailyReports     DailyReport[]
-  materialRequests MaterialRequest[]
-  attachments      Attachment[]
-  auditLogs        AuditLog[]
-  notifications    Notification[]
-  attendanceSheets AttendanceSheet[]
-  items            Item[]
-  stockEntries     StockEntry[]
-  stockTxns        StockTxn[]
-  stockMinLevels   StockMinLevel[]
-  equipment        Equipment[]
-  machineryLogs    MachineryLog[]
-  expenses         Expense[]
-  risks            Risk[]
-  measurements     MeasurementSheet[]
-  labourRates      LabourRate[]
+  users             User[]
+  roles             Role[]
+  projects          Project[]
+  boqItems          BoqItem[]
+  activities        Activity[]
+  progressEntries   ProgressEntry[]
+  dailyReports      DailyReport[]
+  materialRequests  MaterialRequest[]
+  attachments       Attachment[]
+  auditLogs         AuditLog[]
+  notifications     Notification[]
+  attendanceSheets  AttendanceSheet[]
+  items             Item[]
+  stockEntries      StockEntry[]
+  stockTxns         StockTxn[]
+  stockMinLevels    StockMinLevel[]
+  equipment         Equipment[]
+  machineryLogs     MachineryLog[]
+  expenses          Expense[]
+  risks             Risk[]
+  activityTemplates ActivityTemplate[]
+  measurements      MeasurementSheet[]
+  labourRates       LabourRate[]
 }
 
 model Role {
@@ -343,6 +344,26 @@ model Activity {
 
   @@index([projectId])
   @@index([organizationId])
+}
+
+/// One line of an organisation's standard activity list for a project type. Applied when a project is created
+/// (or later from the Activities tab); an organisation without rows for a type uses the built-in list in packages/shared.
+model ActivityTemplate {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  projectType    ProjectType
+  name           String
+  unit           String
+  /// Planned start in days from the project start
+  startDay       Int
+  durationDays   Int
+  sortOrder      Int          @default(0)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, projectType, name])
+  @@index([organizationId, projectType])
 }
 
 // ---------- Site submissions (all share the same approval lifecycle) ----------

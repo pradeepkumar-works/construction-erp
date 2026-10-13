@@ -733,3 +733,19 @@ export interface DelaySuggestionDto {
   progressPct: number;
   daysLate: number;
 }
+
+/* ---------- activity templates ---------- */
+
+export interface ActivityTemplateDto {
+  projectType: ProjectType;
+  /** True while the organisation has not saved its own list for this type (the built-in one is shown). */
+  isDefault: boolean;
+  items: { name: string; unit: string; startDay: number; durationDays: number }[];
+  spanDays: number;
+}
+
+export interface ApplyTemplateResultDto {
+  created: number;
+  /** Template activities skipped because the project already has an activity with that name. */
+  skipped: string[];
+}
