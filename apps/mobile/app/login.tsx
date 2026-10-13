@@ -3,7 +3,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../src/auth/AuthContext';
 import { Button, ErrorBanner, Input, Screen } from '../src/components';
-import { errorMessage } from '../src/api/client';
+import { errorMessage, request } from '../src/api/client';
+import type { AuthOptionsDto } from '@erp/shared';
 import { API_URL } from '../src/config';
 import { colors, radius, spacing, typography } from '../src/theme';
 
@@ -22,6 +23,28 @@ export default function LoginScreen() {
   const [showPw, setShowPw] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  /** Ask for a reset email; the link opens the web app, where the new password is chosen. */
+  const forgot = async () => {
+    setError(null);
+    setNotice(null);
+    if (!/^\S+@\S+\.\S+$/.test(email.trim())) {
+      setError('Enter your email above, then tap Forgot password.');
+      return;
+    }
+    try {
+      const options = await request<AuthOptionsDto>('/auth/options');
+      if (!options.resetByEmail) {
+        setNotice('Password emails are not set up. Ask your admin to send you a new password link from the Users page.');
+        return;
+      }
+      await request('/auth/forgot-password', { method: 'POST', body: { email: email.trim() } });
+      setNotice(`If ${email.trim()} has an account, a reset link is on its way. Open it, choose a new password, then sign in here.`);
+    } catch (e) {
+      setError(errorMessage(e));
+    }
+  };
 
   const submit = async () => {
     if (!email.trim() || !password) {
@@ -78,6 +101,10 @@ export default function LoginScreen() {
         }
       />
       <Button title="Sign in" onPress={submit} loading={busy} icon="log-in-outline" />
+      <Pressable onPress={forgot} hitSlop={8} style={styles.forgot} accessibilityRole="button">
+        <Text style={styles.forgotText}>Forgot password?</Text>
+      </Pressable>
+      {notice ? <Text style={styles.notice}>{notice}</Text> : null}
 
       <View style={styles.demo}>
         <Text style={styles.demoTitle}>Demo accounts (password: {DEMO_PASSWORD})</Text>
@@ -110,4 +137,7 @@ const styles = StyleSheet.create({
   demoRow: { paddingVertical: spacing.sm, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.border, minHeight: 44, justifyContent: 'center' },
   demoEmail: { ...typography.bodyStrong, color: colors.primary },
   api: { ...typography.caption, marginTop: spacing.md, fontSize: 12 },
+  forgot: { alignSelf: 'center', paddingVertical: spacing.md, minHeight: 44, justifyContent: 'center' },
+  forgotText: { ...typography.bodyStrong, color: colors.primary },
+  notice: { ...typography.body, color: colors.text, textAlign: 'center' },
 });

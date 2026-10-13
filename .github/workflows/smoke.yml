@@ -288,6 +288,38 @@ jobs:
           curl -sf "$API_URL/approvals/pending" -H "$PM" | jq -e 'all(.[]; has("amount"))' > /dev/null
           code=$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/approval-rules" -H "$PM")
           echo "PM reading the matrix: $code"; [ "$code" = "403" ]
+      - name: Invite, set password and reset
+        run: |
+          set -e
+          login() { curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' -d "{\"email\":\"$1\",\"password\":\"$2\"}" | jq -r .accessToken; }
+          ADMIN="authorization: Bearer $(login admin@demo.com password123)"
+          OPTS=$(curl -sf "$API_URL/auth/options"); echo "auth options: $OPTS"
+          if [ "$(echo "$OPTS" | jq .signup)" = "false" ]; then
+            code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/auth/signup" -H 'content-type: application/json' \
+              -d '{"organizationName":"Smoke Org","fullName":"Smoke","email":"smoke-signup@example.com","password":"smoke-pass-1"}')
+            echo "sign-up while closed: $code"; [ "$code" = "403" ]
+          fi
+          # One reusable smoke user: invite once, later runs ask for a fresh link
+          EMAIL=smoke-invite@demo.com
+          ID=$(curl -sf "$API_URL/users?q=$EMAIL" -H "$ADMIN" | jq -r '.items[0].id // empty')
+          if [ -z "$ID" ]; then
+            LINK=$(curl -sf -X POST "$API_URL/users" -H "$ADMIN" -H "origin: $WEB_URL" -H 'content-type: application/json' \
+              -d "{\"email\":\"$EMAIL\",\"fullName\":\"Smoke Invite\",\"roleKey\":\"SITE_ENGINEER\"}" | jq -r .invite.link)
+          else
+            curl -sf -X PATCH "$API_URL/users/$ID" -H "$ADMIN" -H 'content-type: application/json' -d '{"isActive":true}' > /dev/null
+            LINK=$(curl -sf -X POST "$API_URL/users/$ID/password-link" -H "$ADMIN" -H "origin: $WEB_URL" | jq -r .link)
+          fi
+          TOKEN=${LINK##*token=}; [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ]
+          curl -sf "$API_URL/auth/password-token/$TOKEN" | jq -r '"link for \(.email) (\(.purpose)) at \(.organizationName)"'
+          PW="smoke-$(cat /proc/sys/kernel/random/uuid | cut -c1-12)"
+          curl -sf -X POST "$API_URL/auth/set-password" -H 'content-type: application/json' -d "{\"token\":\"$TOKEN\",\"password\":\"$PW\"}" | jq -e '.user.email == "smoke-invite@demo.com"' > /dev/null
+          [ -n "$(login $EMAIL "$PW")" ]
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/auth/set-password" -H 'content-type: application/json' -d "{\"token\":\"$TOKEN\",\"password\":\"$PW\"}")
+          echo "link used twice: $code"; [ "$code" = "400" ]
+          curl -sf -X POST "$API_URL/auth/forgot-password" -H 'content-type: application/json' -d '{"email":"nobody@example.com"}' | jq -e '.ok' > /dev/null
+          # Leave the smoke user switched off
+          ID=$(curl -sf "$API_URL/users?q=$EMAIL" -H "$ADMIN" | jq -r '.items[0].id')
+          curl -sf -X PATCH "$API_URL/users/$ID" -H "$ADMIN" -H 'content-type: application/json' -d '{"isActive":false}' > /dev/null
       - name: Paged lists with search and sort
         run: |
           set -e

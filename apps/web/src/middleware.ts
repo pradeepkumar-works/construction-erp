@@ -6,7 +6,9 @@ const TOKEN_KEY = 'erp_token';
 export function middleware(req: NextRequest) {
   const token = req.cookies.get(TOKEN_KEY)?.value;
   const { pathname } = req.nextUrl;
-  const isLogin = pathname.startsWith('/login');
+  const isLogin = ['/login', '/signup', '/forgot-password'].some((p) => pathname.startsWith(p));
+  // An invite or reset link works whether or not someone is signed in on this browser.
+  if (pathname.startsWith('/set-password')) return NextResponse.next();
 
   if (!token && !isLogin) {
     const url = req.nextUrl.clone();

@@ -1,4 +1,4 @@
-import type { EquipmentOwnership, ExpenseCategory, PaymentMode, EquipmentRateUnit, MaterialPriority, NotificationType, ProjectStatus, ProjectType, DelayParty, RiskCategory, RiskKind, RiskStatus, RoleKey, StockEntryType, SubmissionStatus, SubmissionType, Weather } from './enums';
+import type { EquipmentOwnership, ExpenseCategory, PaymentMode, EquipmentRateUnit, MaterialPriority, NotificationType, ProjectStatus, ProjectType, DelayParty, PasswordTokenPurpose, RiskCategory, RiskKind, RiskStatus, RoleKey, StockEntryType, SubmissionStatus, SubmissionType, Weather } from './enums';
 
 export const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {
   ROAD: 'Road / Infrastructure',
@@ -150,4 +150,9 @@ export const DELAY_PARTY_LABELS: Record<DelayParty, string> = {
   CONTRACTOR: 'Contractor (us)',
   THIRD_PARTY: 'Third party',
   FORCE_MAJEURE: 'Force majeure',
+};
+
+export const PASSWORD_TOKEN_PURPOSE_LABELS: Record<PasswordTokenPurpose, string> = {
+  INVITE: 'Invitation',
+  RESET: 'Password reset',
 };

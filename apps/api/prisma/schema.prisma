@@ -138,6 +138,11 @@ enum DelayParty {
   FORCE_MAJEURE
 }
 
+enum PasswordTokenPurpose {
+  INVITE
+  RESET
+}
+
 enum PushPlatform {
   IOS
   ANDROID
@@ -175,6 +180,7 @@ model Organization {
   risks             Risk[]
   activityTemplates ActivityTemplate[]
   approvalRules     ApprovalRule[]
+  passwordTokens    PasswordToken[]
   measurements      MeasurementSheet[]
   labourRates       LabourRate[]
 }
@@ -223,6 +229,8 @@ model User {
   fullName       String
   phone          String?
   isActive       Boolean      @default(true)
+  /// Set when invited; cleared once the user chooses a password.
+  invitedAt      DateTime?
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
@@ -239,6 +247,7 @@ model User {
   auditLogs           AuditLog[]
   notifications       Notification[]
   pushTokens          PushToken[]
+  passwordTokens      PasswordToken[]
   recordedAttendance  AttendanceSheet[]  @relation("AttendanceRecorder")
   updatedAttendance   AttendanceSheet[]  @relation("AttendanceUpdater")
   stockEntries        StockEntry[]
@@ -936,6 +945,23 @@ model Notification {
   @@index([userId, readAt])
   @@index([userId, createdAt])
   @@index([organizationId, type, createdAt])
+}
+
+/// One-time set-password link (invite or reset). Only a SHA-256 of the token is stored.
+model PasswordToken {
+  id             String               @id @default(uuid())
+  organizationId String
+  organization   Organization         @relation(fields: [organizationId], references: [id])
+  userId         String
+  user           User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  purpose        PasswordTokenPurpose
+  tokenHash      String               @unique
+  expiresAt      DateTime
+  usedAt         DateTime?
+  createdAt      DateTime             @default(now())
+
+  @@index([userId])
+  @@index([organizationId])
 }
 
 /// Expo push token of one device of one user. A user may have several devices.

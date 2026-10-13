@@ -9,6 +9,8 @@ interface AuthContextValue {
   user: AuthUser | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<AuthUser>;
+  /** Start a session from a sign-up or set-password response. */
+  signIn: (resp: LoginResponse) => void;
   logout: () => void;
   refresh: () => Promise<void>;
 }
@@ -49,13 +51,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return data.user;
   }, []);
 
+  const signIn = useCallback((data: LoginResponse) => {
+    setToken(data.accessToken);
+    setUser(data.user);
+  }, []);
+
   const logout = useCallback(() => {
     setToken(null);
     setUser(null);
     router.replace('/login');
   }, [router]);
 
-  const value = useMemo(() => ({ user, loading, login, logout, refresh }), [user, loading, login, logout, refresh]);
+  const value = useMemo(() => ({ user, loading, login, signIn, logout, refresh }), [user, loading, login, signIn, logout, refresh]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

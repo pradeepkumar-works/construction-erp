@@ -81,3 +81,7 @@ export type RiskStatus = (typeof RISK_STATUSES)[number];
 /** Who a delay is attributable to, which decides whether an extension of time can be claimed. */
 export const DELAY_PARTIES = ['CLIENT', 'CONTRACTOR', 'THIRD_PARTY', 'FORCE_MAJEURE'] as const;
 export type DelayParty = (typeof DELAY_PARTIES)[number];
+
+/** Why a set-password link was made: an invited user's first password, or a forgotten one. */
+export const PASSWORD_TOKEN_PURPOSES = ['INVITE', 'RESET'] as const;
+export type PasswordTokenPurpose = (typeof PASSWORD_TOKEN_PURPOSES)[number];

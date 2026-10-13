@@ -28,8 +28,9 @@ API (`apps/api`):
 | `UPLOAD_DIR` | disk mode only |
 | `CRON_SECRET` | long random string; Vercel Cron sends it as `Authorization: Bearer` to the daily notification jobs. Jobs are disabled when unset. |
 | `NOTIFICATION_TIMEZONE` | IANA zone for "today" in the DPR reminder and digest (default `Asia/Kolkata`) |
-| `RESEND_API_KEY`, `EMAIL_FROM` | email digest of pending approvals through Resend; unset = digest is logged only. `EMAIL_FROM` must be a verified sender/domain in Resend. |
-| `WEB_URL` | web ERP URL used for links in digest emails |
+| `RESEND_API_KEY`, `EMAIL_FROM` | email through Resend: approval digest, user invites and password resets. Unset = nothing is emailed (the digest is logged; invite links are shown to the admin to share; "Forgot password" tells users to ask their admin). `EMAIL_FROM` must be a verified sender/domain in Resend. |
+| `WEB_URL` | web ERP URL used for links in emails (digest, invites, password resets). Password-reset emails need it (or `CORS_ORIGINS`). |
+| `ORG_SIGNUP` | `open` lets new companies create an organisation at `/signup`; unset = closed |
 | `EXPO_ACCESS_TOKEN` | optional; only if push security is enforced on the Expo project |
 | `NOTIFICATION_JOBS_INPROCESS`, `DPR_REMINDER_TIME`, `APPROVAL_DIGEST_TIME` | run the jobs from a timer inside the API (Docker / Railway) instead of Vercel Cron; times are `HH:mm` in `NOTIFICATION_TIMEZONE` |
 | `PUSH_DISABLED`, `EMAIL_DISABLED` | `true` switches a channel off (useful on preview deployments) |
