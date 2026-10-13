@@ -71,3 +71,6 @@ export const COMMON_UNITS = ['Cum', 'Sqm', 'Rmt', 'MT', 'Nos', 'Kg', 'Ltr', 'LS'
 
 /** Manpower categories used in DPR manpower summary. */
 export const MANPOWER_CATEGORIES = ['Mason', 'Carpenter', 'Bar Bender', 'Helper', 'Operator', 'Driver', 'Electrician', 'Plumber', 'Supervisor', 'Other'];
+
+/** Contractor name for the company's own (departmental) workers on an attendance sheet. */
+export const DEPARTMENTAL_CONTRACTOR = 'Departmental';

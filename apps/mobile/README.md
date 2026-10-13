@@ -36,7 +36,7 @@ Tapping a push opens the submission it is about; the bell on Home opens the full
 | Email | Role | Notes |
 | --- | --- | --- |
 | engineer@demo.com | Site Engineer | member of two projects; submits progress / DPR / material requests |
-| tl@demo.com | Team Leader | site submissions |
+| tl@demo.com | Team Leader | site submissions and attendance (Jajpur has no sheet for today, to try it) |
 | pm@demo.com | Project Manager | sees the Approvals tab and can approve / request changes / reject |
 | store@demo.com | Store Manager | |
 
@@ -49,8 +49,9 @@ The login screen lists these; tapping one fills the form.
 - `app/project/[id].tsx` — project summary, activities with planned / executed / % and delayed flag, "add progress" per activity.
 - `app/progress/new.tsx`, `app/dpr/new.tsx`, `app/material-request/new.tsx` — submission forms with photo capture (camera + library), validation, success state.
 - `app/progress/[id].tsx`, `app/dpr/[id].tsx`, `app/material-request/[id].tsx` — detail screens with photos, status, reviewer note and approve / request changes / reject for approvers.
+- `app/attendance.tsx` — the day's attendance by contractor and trade (team leaders, site engineers, approvers). Opens the existing sheet for the chosen day so it can be corrected; locked once that day's DPR is approved. The DPR form fills its manpower from it.
 - `app/submissions.tsx` — my submissions, segmented by type.
-- `app/outbox.tsx` and `src/offline/` — offline entry: new submissions made without a connection are saved in a SQLite outbox (photos copied to the documents folder) and sent automatically on reconnect; failed ones can be retried or discarded. `useFetch(..., { cacheKey })` keeps the last loaded lists on the phone.
+- `app/outbox.tsx` and `src/offline/` — offline entry: new submissions and attendance sheets made without a connection are saved in a SQLite outbox (photos copied to the documents folder) and sent automatically on reconnect; failed ones can be retried or discarded. `useFetch(..., { cacheKey })` keeps the last loaded lists on the phone.
 - `src/theme.ts`, `src/components/` — small design system (Screen, Card, Button, Input, Select, DatePicker, Chips, StatusBadge, PhotoPicker, states).
 - `src/api/` — fetch client with bearer token (401 signs the user out), `useApi` / `useFetch` hooks.
 - `src/auth/AuthContext.tsx` — token in `expo-secure-store` (localStorage on web).

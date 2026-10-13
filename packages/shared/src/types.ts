@@ -270,6 +270,50 @@ export interface NotificationJobResult {
   skipped: number;
 }
 
+export interface AttendanceLineDto {
+  id: string;
+  contractor: string;
+  category: string;
+  count: number;
+}
+
+/** One project's attendance for one day. */
+export interface AttendanceSheetDto {
+  id: string;
+  projectId: string;
+  projectName: string;
+  date: string;
+  remarks: string | null;
+  totalWorkers: number;
+  lines: AttendanceLineDto[];
+  /** Head count per trade across contractors: what the day's DPR manpower is filled with. */
+  manpower: ManpowerLine[];
+  recordedById: string;
+  recordedByName: string;
+  updatedByName: string | null;
+  /** Status of the project's DPR for the same date, if one exists. */
+  dprStatus: SubmissionStatus | null;
+  /** True once that DPR is approved; the sheet can no longer be changed. */
+  locked: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** `GET /attendance/day`: the sheet for a project and date, or null when nothing was recorded. */
+export interface AttendanceDayDto {
+  projectId: string;
+  date: string;
+  sheet: AttendanceSheetDto | null;
+  dprStatus: SubmissionStatus | null;
+  locked: boolean;
+}
+
+/** Names used on earlier sheets of the project, for pickers. */
+export interface AttendanceSuggestionsDto {
+  contractors: string[];
+  categories: string[];
+}
+
 export interface Paginated<T> {
   items: T[];
   total: number;

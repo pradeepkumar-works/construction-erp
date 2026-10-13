@@ -1,14 +1,14 @@
 'use client';
 
-import React, { useEffect } from 'react';
-import { Alert, App, Button, DatePicker, Form, Input, InputNumber, Modal, Select, Space } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { Alert, App, Button, DatePicker, Form, Input, InputNumber, Modal, Select, Space, Typography } from 'antd';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { AttachmentDto, DailyReportDto, Weather } from '@erp/shared';
 import { MANPOWER_CATEGORIES, WEATHER_LABELS, WEATHER_OPTIONS } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, errorMessage } from '@/lib/api';
-import { useProjects } from '@/lib/queries';
+import { useAttendanceDay, useProjects } from '@/lib/queries';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { editActionLabel } from '@/components/common/EditResubmitButton';
 
@@ -37,8 +37,30 @@ export function DprFormModal({ open, onClose, projectId, entry }: { open: boolea
   const editing = !!entry;
   const fixedProject = entry?.projectId ?? projectId;
 
+  // New DPR: manpower comes from the day's attendance sheet until the user edits it by hand.
+  const watchedProject = Form.useWatch('projectId', form);
+  const watchedDate = Form.useWatch('date', form);
+  const dayStr = watchedDate ? dayjs(watchedDate).format('YYYY-MM-DD') : undefined;
+  const attendance = useAttendanceDay(open && !editing ? watchedProject : undefined, open && !editing ? dayStr : undefined);
+  const attendanceSheet = attendance.data?.sheet ?? null;
+  const [manpowerEdited, setManpowerEdited] = useState(false);
+  const [filledFrom, setFilledFrom] = useState<string | null>(null);
+  const applyAttendance = () => {
+    if (!attendanceSheet) return;
+    form.setFieldsValue({ manpower: attendanceSheet.manpower.map((m) => ({ ...m })) });
+    setFilledFrom(attendanceSheet.id);
+    setManpowerEdited(false);
+  };
+  useEffect(() => {
+    if (!open || editing || !attendanceSheet || manpowerEdited || filledFrom === attendanceSheet.id) return;
+    form.setFieldsValue({ manpower: attendanceSheet.manpower.map((m) => ({ ...m })) });
+    setFilledFrom(attendanceSheet.id);
+  }, [open, editing, attendanceSheet, manpowerEdited, filledFrom, form]);
+
   useEffect(() => {
     if (!open) return;
+    setManpowerEdited(false);
+    setFilledFrom(null);
     form.resetFields();
     if (entry) {
       form.setFieldsValue({
@@ -98,7 +120,15 @@ export function DprFormModal({ open, onClose, projectId, entry }: { open: boolea
 
   return (
     <Modal open={open} title={entry ? `${editActionLabel(entry.status)} · DPR ${dayjs(entry.date).format('DD MMM YYYY')}` : 'New Daily Progress Report'} okText={editing ? 'Resubmit DPR' : 'Submit DPR'} onCancel={onClose} onOk={() => form.submit()} confirmLoading={mutation.isPending} width={760} destroyOnHidden styles={{ body: { maxHeight: '70vh', overflowY: 'auto', paddingRight: 8 } }}>
-      <Form form={form} layout="vertical" onFinish={(v) => mutation.mutate(v)} style={{ marginTop: 8 }}>
+      <Form
+        form={form}
+        layout="vertical"
+        onFinish={(v) => mutation.mutate(v)}
+        onValuesChange={(changed) => {
+          if ('manpower' in changed) setManpowerEdited(true);
+        }}
+        style={{ marginTop: 8 }}
+      >
         {entry?.reviewNote && (
           <Alert type="warning" showIcon style={{ marginBottom: 16 }} message={`Reviewer note from ${entry.reviewedByName ?? 'approver'}`} description={entry.reviewNote} />
         )}
@@ -123,6 +153,21 @@ export function DprFormModal({ open, onClose, projectId, entry }: { open: boolea
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
           <div>
             <Form.Item label="Manpower" style={{ marginBottom: 4 }}>
+              {!editing && attendanceSheet ? (
+                filledFrom === attendanceSheet.id && !manpowerEdited ? (
+                  <Typography.Text type="success" style={{ display: 'block', fontSize: 12, marginBottom: 6 }}>
+                    From attendance: {attendanceSheet.totalWorkers} workers recorded by {attendanceSheet.recordedByName}
+                  </Typography.Text>
+                ) : (
+                  <Typography.Link style={{ display: 'block', fontSize: 12, marginBottom: 6 }} onClick={applyAttendance}>
+                    Use attendance ({attendanceSheet.totalWorkers} workers)
+                  </Typography.Link>
+                )
+              ) : !editing && attendance.data && !attendanceSheet ? (
+                <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12, marginBottom: 6 }}>
+                  No attendance recorded for this day yet
+                </Typography.Text>
+              ) : null}
               <Form.List name="manpower">
                 {(fields, { add, remove }) => (
                   <Space orientation="vertical" size={6} style={{ width: '100%' }}>

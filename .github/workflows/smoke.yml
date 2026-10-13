@@ -81,6 +81,33 @@ jobs:
           echo "first $A, retry $B"; [ "$A" = "$CID" ] && [ "$B" = "$CID" ]
           curl -sf "$API_URL/approvals/progress/$CID/audit" -H "$H" | jq -r '[.[] | .action] | join(",")' | grep -qx 'CREATED'
           curl -sf -X DELETE "$API_URL/progress/$CID" -H "$H" | jq -c .
+      - name: Attendance feeds DPR manpower
+        run: |
+          set -e
+          TOKEN=$(curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' \
+            -d '{"email":"tl@demo.com","password":"password123"}' | jq -r .accessToken)
+          H="authorization: Bearer $TOKEN"
+          PROJECT=$(curl -sf "$API_URL/projects" -H "$H" | jq -r '.items[0].id')
+          DAY=2000-01-03   # far in the past so it never touches real days
+          # Leftovers from an interrupted run
+          OLD=$(curl -sf "$API_URL/attendance/day?projectId=$PROJECT&date=$DAY" -H "$H" | jq -r '.sheet.id // empty')
+          [ -n "$OLD" ] && curl -sf -X DELETE "$API_URL/attendance/$OLD" -H "$H" > /dev/null
+          for D in $(curl -sf "$API_URL/dpr?projectId=$PROJECT&q=smoke-attendance&pageSize=50" -H "$H" | jq -r '.items[].id'); do curl -sf -X DELETE "$API_URL/dpr/$D" -H "$H" > /dev/null; done
+          CID=$(cat /proc/sys/kernel/random/uuid)
+          BODY="{\"id\":\"$CID\",\"projectId\":\"$PROJECT\",\"date\":\"$DAY\",\"lines\":[{\"contractor\":\"Departmental\",\"category\":\"Supervisor\",\"count\":1},{\"contractor\":\"Smoke Labour\",\"category\":\"Helper\",\"count\":4},{\"contractor\":\"Smoke Labour 2\",\"category\":\"Helper\",\"count\":3}]}"
+          A=$(curl -sf -X POST "$API_URL/attendance" -H "$H" -H 'content-type: application/json' -d "$BODY" | jq -r '"\(.id) \(.totalWorkers)"')
+          B=$(curl -sf -X POST "$API_URL/attendance" -H "$H" -H 'content-type: application/json' -d "$BODY" | jq -r '"\(.id) \(.totalWorkers)"')
+          echo "attendance: $A, retry: $B"; [ "$A" = "$CID 8" ] && [ "$B" = "$CID 8" ]
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/attendance" -H "$H" -H 'content-type: application/json' -d "{\"projectId\":\"$PROJECT\",\"date\":\"$DAY\",\"lines\":[{\"contractor\":\"X\",\"category\":\"Helper\",\"count\":1}]}")
+          echo "second sheet for the same day: $code"; [ "$code" = "409" ]
+          # A DPR sent without manpower takes it from the attendance sheet
+          DPR=$(curl -sf -X POST "$API_URL/dpr" -H "$H" -H 'content-type: application/json' \
+            -d "{\"projectId\":\"$PROJECT\",\"date\":\"$DAY\",\"workExecuted\":\"smoke-attendance\",\"submit\":false}")
+          echo "$DPR" | jq -c '{manpower, totalManpower}'
+          echo "$DPR" | jq -e '.totalManpower == 8 and ([.manpower[] | select(.category == "Helper") | .count] == [7])' > /dev/null
+          curl -sf -X DELETE "$API_URL/dpr/$(echo "$DPR" | jq -r .id)" -H "$H" > /dev/null
+          curl -sf "$API_URL/attendance?projectId=$PROJECT&from=$DAY&to=$DAY" -H "$H" | jq -e '.total == 1' > /dev/null
+          curl -sf -X DELETE "$API_URL/attendance/$CID" -H "$H" | jq -c .
       - name: Paged lists with search and sort
         run: |
           set -e
@@ -92,6 +119,7 @@ jobs:
           curl -sf "$API_URL/material-requests?q=cement" -H "$H" | jq -r '"MR matching cement: \(.total)"'
           curl -sf "$API_URL/dpr?sortBy=date&pageSize=1" -H "$H" | jq -r '"latest DPR: \(.items[0].date // "none") of \(.total)"'
           curl -sf "$API_URL/users?pageSize=1" -H "$H" | jq -e '.total > 1' > /dev/null
+          curl -sf "$API_URL/attendance?sortBy=totalWorkers&pageSize=1" -H "$H" | jq -r '"attendance sheets: \(.total), largest day \(.items[0].totalWorkers // 0) workers"'
           code=$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/progress?sortBy=nope" -H "$H"); echo "bad sortBy: $code"; [ "$code" = "400" ]
       - name: Swagger docs and CORS
         run: |

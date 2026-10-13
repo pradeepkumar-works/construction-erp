@@ -11,6 +11,7 @@ import { dateOnly, iso, parseDate } from '../common/serialize';
 import { isUniqueViolation } from '../common/idempotency';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import { CreateDprDto, ListDprQuery, UpdateDprDto } from './dpr.dto';
+import { AttendanceService } from '../attendance/attendance.service';
 
 const include = {
   project: { select: { name: true } },
@@ -38,6 +39,7 @@ export class DprService {
     private audit: AuditService,
     private lifecycle: SubmissionLifecycleService,
     private attachments: AttachmentsService,
+    private attendance: AttendanceService,
   ) {}
 
   toDto(r: Row): DailyReportDto {
@@ -120,6 +122,8 @@ export class DprService {
     if (existing) return existing;
     await this.access.assertCanAccessProject(user, dto.projectId);
     await this.assertNoDuplicate(dto.projectId, parseDate(dto.date));
+    // No manpower sent: take it from the day's attendance sheet, if the supervisor recorded one.
+    const manpower = dto.manpower?.length ? dto.manpower : ((await this.attendance.manpowerFor(dto.projectId, parseDate(dto.date))) ?? []);
     let row: { id: string };
     try {
       row = await this.prisma.dailyReport.create({
@@ -130,7 +134,7 @@ export class DprService {
           date: parseDate(dto.date),
           weather: dto.weather ?? null,
           siteCondition: dto.siteCondition ?? null,
-          manpower: (dto.manpower ?? []) as unknown as Prisma.InputJsonValue,
+          manpower: manpower as unknown as Prisma.InputJsonValue,
           machinery: (dto.machinery ?? []) as unknown as Prisma.InputJsonValue,
           materialReceived: dto.materialReceived ?? null,
           workExecuted: dto.workExecuted,

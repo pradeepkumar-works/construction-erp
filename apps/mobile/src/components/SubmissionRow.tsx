@@ -5,20 +5,25 @@ import type { SubmissionStatus, SubmissionType } from '@erp/shared';
 import { colors, radius, spacing, typography } from '../theme';
 import { StatusBadge } from './StatusBadge';
 
-export const TYPE_ICON: Record<SubmissionType, keyof typeof Ionicons.glyphMap> = {
+/** Submissions plus attendance sheets (which can also sit in the outbox). */
+export type EntryType = SubmissionType | 'ATTENDANCE';
+
+export const TYPE_ICON: Record<EntryType, keyof typeof Ionicons.glyphMap> = {
   PROGRESS: 'trending-up',
   DPR: 'document-text',
   MATERIAL_REQUEST: 'cube',
+  ATTENDANCE: 'people',
 };
 
-export const TYPE_SHORT: Record<SubmissionType, string> = {
+export const TYPE_SHORT: Record<EntryType, string> = {
   PROGRESS: 'Progress',
   DPR: 'DPR',
   MATERIAL_REQUEST: 'Material',
+  ATTENDANCE: 'Attendance',
 };
 
 interface Props {
-  type: SubmissionType;
+  type: EntryType;
   title: string;
   subtitle?: string;
   meta?: string;

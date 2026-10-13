@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { APPROVER_ROLES, COMPANY_WIDE_ROLES, isCompanyWide, canApprove } from '@erp/shared';
+import { APPROVER_ROLES, COMPANY_WIDE_ROLES, isCompanyWide, canApprove, canRecordAttendance } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from './current-user';
 
@@ -56,6 +56,12 @@ export class ProjectAccessService {
 
   async assertCanApprove(user: RequestUser, projectId: string) {
     if (!canApprove(user.roleKey)) throw new ForbiddenException('Your role cannot approve submissions');
+    await this.assertCanAccessProject(user, projectId);
+  }
+
+  /** Record or correct attendance: a recorder role with access to the project. */
+  async assertCanRecordAttendance(user: RequestUser, projectId: string) {
+    if (!canRecordAttendance(user.roleKey)) throw new ForbiddenException('Your role cannot record attendance');
     await this.assertCanAccessProject(user, projectId);
   }
 }

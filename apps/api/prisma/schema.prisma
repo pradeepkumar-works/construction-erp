@@ -84,6 +84,7 @@ model Organization {
   attachments      Attachment[]
   auditLogs        AuditLog[]
   notifications    Notification[]
+  attendanceSheets AttendanceSheet[]
 }
 
 model Role {
@@ -127,6 +128,8 @@ model User {
   auditLogs           AuditLog[]
   notifications       Notification[]
   pushTokens          PushToken[]
+  recordedAttendance  AttendanceSheet[] @relation("AttendanceRecorder")
+  updatedAttendance   AttendanceSheet[] @relation("AttendanceUpdater")
 
   @@unique([organizationId, email])
   @@index([organizationId])
@@ -162,6 +165,7 @@ model Project {
   dailyReports     DailyReport[]
   materialRequests MaterialRequest[]
   notifications    Notification[]
+  attendanceSheets AttendanceSheet[]
 
   @@unique([organizationId, code])
   @@index([organizationId, status])
@@ -335,6 +339,48 @@ model MaterialRequestItem {
   unit          String
   quantity      Decimal         @db.Decimal(18, 3)
   sortOrder     Int             @default(0)
+}
+
+// ---------- Attendance (daily register, not an approval submission) ----------
+
+/// Workers present on one project on one day, recorded by the site supervisor. One sheet per project per day.
+/// The day's DPR takes its manpower from here; the sheet locks once that DPR is approved.
+model AttendanceSheet {
+  id             String           @id @default(uuid())
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  date           DateTime         @db.Date
+  remarks        String?
+  /// Sum of the lines' counts, kept in step on every save so lists can sort and total without a join.
+  totalWorkers   Int              @default(0)
+  recordedById   String
+  recordedBy     User             @relation("AttendanceRecorder", fields: [recordedById], references: [id])
+  updatedById    String?
+  updatedBy      User?            @relation("AttendanceUpdater", fields: [updatedById], references: [id])
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  lines AttendanceLine[]
+
+  @@unique([projectId, date])
+  @@index([organizationId, date])
+}
+
+/// Head count of one trade (category) from one contractor on the sheet's day.
+model AttendanceLine {
+  id         String          @id @default(uuid())
+  sheetId    String
+  sheet      AttendanceSheet @relation(fields: [sheetId], references: [id], onDelete: Cascade)
+  /// Labour contractor, or "Departmental" for the company's own workers
+  contractor String
+  /// Trade, e.g. Mason, Helper (MANPOWER_CATEGORIES in shared; free text allowed)
+  category   String
+  count      Int
+  sortOrder  Int             @default(0)
+
+  @@index([sheetId])
 }
 
 // ---------- Attachments and audit ----------

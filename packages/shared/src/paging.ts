@@ -14,6 +14,7 @@ export const LIST_SORT_FIELDS = {
   materialRequests: ['createdAt', 'requestNo', 'requiredDate', 'priority', 'status', 'project', 'submittedBy'],
   projects: ['status', 'code', 'name', 'type', 'startDate', 'endDate', 'contractValue', 'createdAt'],
   users: ['fullName', 'email', 'role', 'isActive', 'createdAt'],
+  attendance: ['date', 'project', 'totalWorkers', 'recordedBy', 'updatedAt'],
 } as const;
 
 export type ProgressSortField = (typeof LIST_SORT_FIELDS.progress)[number];
@@ -21,6 +22,7 @@ export type DprSortField = (typeof LIST_SORT_FIELDS.dpr)[number];
 export type MaterialRequestSortField = (typeof LIST_SORT_FIELDS.materialRequests)[number];
 export type ProjectSortField = (typeof LIST_SORT_FIELDS.projects)[number];
 export type UserSortField = (typeof LIST_SORT_FIELDS.users)[number];
+export type AttendanceSortField = (typeof LIST_SORT_FIELDS.attendance)[number];
 
 /** Query parameters understood by every paged list. */
 export interface ListParams<S extends string = string> {

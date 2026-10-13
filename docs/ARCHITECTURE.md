@@ -54,7 +54,7 @@ and resubmit is decided by `canEditSubmission` / `canResubmit` in `packages/shar
 which the API, web and mobile all use: the author while DRAFT / REJECTED / CHANGES_REQUESTED, and
 approvers until APPROVED. On an edit, `attachmentIds` is the complete list of attachments; files left
 out are detached. Adding a new submission type
-(attendance, machinery log, expense, measurement) means adding a table with the same six status
+(machinery log, expense, measurement) means adding a table with the same six status
 columns and registering it in the lifecycle service; the approvals queue and audit trail come free.
 
 ## Planning and progress
@@ -71,7 +71,7 @@ columns and registering it in the lifecycle service; the approvals queue and aud
 
 ## Lists: paging, search, sort and export
 
-`GET /progress`, `/dpr`, `/material-requests`, `/projects` and `/users` return `Paginated<T>`
+`GET /progress`, `/dpr`, `/material-requests`, `/attendance`, `/projects` and `/users` return `Paginated<T>`
 (`items`, `total`, `page`, `pageSize`). They share `PageQuery` (`apps/api/src/common/paging.ts`):
 
 - `page` (1-based) and `pageSize` (default 25, max 500; `limit` is a deprecated alias).
@@ -91,6 +91,30 @@ material request tables are one `*List` component used both on their own page an
 tabs. Export fetches every matching row page by page with the current filters (not just the visible
 page) and writes `.xlsx` in the browser with SheetJS; column layouts live in `src/lib/exportColumns.ts`.
 Material requests export one row per item so quantities can be summed.
+
+## Attendance
+
+The site supervisor records who worked each day: `AttendanceSheet` (one per project per day, unique on
+`projectId` + `date`) holds `AttendanceLine` rows of contractor (`Departmental` for the company's own
+workers), trade and head count. `totalWorkers` is stored on the sheet so lists sort and total cheaply.
+
+- **Not an approval submission.** Attendance has no status columns and is not in the approvals queue.
+  It feeds the day's DPR, and the DPR is what the PM approves. A sheet stays editable until that DPR is
+  approved, then it locks (`isAttendanceLocked` in `packages/shared/src/permissions.ts`).
+- **Who.** Team leaders, site engineers and approvers record and correct it (`ATTENDANCE_RECORDER_ROLES`,
+  checked by `ProjectAccessService.assertCanRecordAttendance`); everyone who can see the project can
+  read it. Every create, edit and delete is in `AuditLog` as entity type `ATTENDANCE`.
+- **API.** `GET /attendance` (paged; `projectId`, `from`, `to`, `q` over project, recorder, remarks,
+  contractor and trade), `GET /attendance/day?projectId&date` (`sheet: null` when not recorded),
+  `GET /attendance/suggestions` (contractor and trade names used before), `POST` (optional client `id`,
+  idempotent like the submissions; 409 if the day already has a sheet), `PATCH /:id` (`lines` replaces
+  all rows) and `DELETE /:id`. Rows with the same contractor and trade are merged and zero rows dropped
+  (`normalizeAttendanceLines` in shared).
+- **Feeding the DPR.** `attendanceToManpower` adds the rows up by trade. The web and site-app DPR forms
+  fill manpower from the day's sheet (or, offline, from a sheet still in the phone's outbox) until the
+  user edits it, and `POST /dpr` without manpower takes it from the sheet on the server, so a DPR queued
+  offline after the attendance still gets the figures. Editing the sheet later does not change a DPR
+  that already exists.
 
 ## Money and quantities
 
@@ -127,9 +151,9 @@ that device and is deleted on sign-out or when Expo reports it unregistered.
 
 ## Offline entry (mobile)
 
-New progress entries, DPRs and material requests can be filed without a connection.
+New progress entries, DPRs, material requests and attendance sheets can be filed without a connection.
 
-- **Idempotent creates.** `POST /progress`, `/dpr` and `/material-requests` accept an optional
+- **Idempotent creates.** `POST /progress`, `/dpr`, `/material-requests` and `/attendance` accept an optional
   client-generated UUID in `id`. If an entry with that id already exists in the caller's organisation
   the API returns it instead of creating another, and a unique-key race between two retries resolves
   to the first one. So a phone can resend after a lost response without creating duplicates.

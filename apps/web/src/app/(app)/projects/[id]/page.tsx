@@ -16,6 +16,7 @@ import { BoqTab } from '@/components/boq/BoqTab';
 import { ActivitiesTab } from '@/components/activities/ActivitiesTab';
 import { ProgressList } from '@/components/progress/ProgressList';
 import { DprList } from '@/components/dpr/DprList';
+import { AttendanceList } from '@/components/attendance/AttendanceList';
 import { MrList } from '@/components/material/MrList';
 
 export default function ProjectDetailPage() {
@@ -83,6 +84,7 @@ export default function ProjectDetailPage() {
             { key: 'activities', label: 'Activities', children: <ActivitiesTab projectId={project.id} members={project.members} /> },
             { key: 'progress', label: 'Progress', children: <ProgressList projectId={project.id} newLabel="New progress entry" /> },
             { key: 'dpr', label: 'Daily Reports', children: <DprList projectId={project.id} newLabel="New DPR" /> },
+            { key: 'attendance', label: 'Attendance', children: <AttendanceList projectId={project.id} /> },
             { key: 'material', label: 'Material Requests', children: <MrList projectId={project.id} newLabel="New material request" /> },
           ]}
         />

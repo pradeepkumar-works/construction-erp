@@ -2,6 +2,9 @@ import type { SubmissionType } from '@erp/shared';
 
 export type OutboxStatus = 'PENDING' | 'SYNCING' | 'FAILED';
 
+/** What an outbox entry creates: one of the approval submissions, or a day's attendance sheet. */
+export type OutboxType = SubmissionType | 'ATTENDANCE';
+
 export interface OutboxPhoto {
   /** Local file URI (copied into the app's document directory so it survives cache clean-ups). */
   uri: string;
@@ -11,12 +14,12 @@ export interface OutboxPhoto {
   attachmentId?: string;
 }
 
-/** One site submission waiting on this phone to be sent to the API. `id` becomes the server id. */
+/** One site entry waiting on this phone to be sent to the API. `id` becomes the server id. */
 export interface OutboxItem {
   id: string;
   userId: string;
-  type: SubmissionType;
-  /** Request body for POST /progress, /dpr or /material-requests, without id and attachmentIds. */
+  type: OutboxType;
+  /** Request body for POST /progress, /dpr, /material-requests or /attendance, without id and attachmentIds. */
   payload: Record<string, unknown>;
   photos: OutboxPhoto[];
   /** Display strings for the outbox list. */
@@ -28,10 +31,11 @@ export interface OutboxItem {
   createdAt: string;
 }
 
-export const OUTBOX_PATH: Record<SubmissionType, string> = {
+export const OUTBOX_PATH: Record<OutboxType, string> = {
   PROGRESS: '/progress',
   DPR: '/dpr',
   MATERIAL_REQUEST: '/material-requests',
+  ATTENDANCE: '/attendance',
 };
 
 export const OUTBOX_DETAIL: Record<SubmissionType, string> = {
