@@ -550,7 +550,8 @@ async function seedExpenses(organizationId: string) {
   const year = new Date().getUTCFullYear();
   const last = await prisma.expense.findFirst({ where: { organizationId, expenseNo: { startsWith: `EXP-${year}-` } }, orderBy: { expenseNo: 'desc' }, select: { expenseNo: true } });
   let counter = last ? parseInt(last.expenseNo.slice(9), 10) : 0;
-  const bill = billImage();
+  // Prisma Bytes wants a plain Uint8Array (Vercel type-checks this file).
+  const bill = new Uint8Array(billImage());
   for (const project of projects) {
     if ((await prisma.expense.count({ where: { projectId: project.id } })) > 0) continue;
     const pick = (role: string) => project.members.find((m) => m.user.role.key === role)?.userId;
