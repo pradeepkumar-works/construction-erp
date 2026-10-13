@@ -9,6 +9,7 @@ import { SubmissionLifecycleService } from '../common/submission-lifecycle.servi
 import { AttachmentsService } from '../common/attachments.service';
 import { dateOnly, iso, money, parseDate } from '../common/serialize';
 import { isUniqueViolation } from '../common/idempotency';
+import { nextDocNo } from '../common/doc-number';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import { CreateExpenseDto, ListExpensesQuery, UpdateExpenseDto } from './expenses.dto';
 
@@ -190,18 +191,17 @@ export class ExpensesService {
     let id: string | null;
     try {
       id = await this.prisma.$transaction(async (tx) => {
-        // Numbers are allocated one at a time per organisation.
-        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`expense:${user.organizationId}`}))`;
+        const expenseNo = await nextDocNo(tx, user.organizationId, 'EXP', async (prefix) =>
+          (await tx.expense.findFirst({ where: { organizationId: user.organizationId, expenseNo: { startsWith: prefix } }, orderBy: { expenseNo: 'desc' }, select: { expenseNo: true } }))?.expenseNo ?? null,
+        );
+        // A retry of the same offline expense that waited on the lock: the first one already created it.
         if (dto.id && (await tx.expense.count({ where: { id: dto.id } }))) return null;
-        const prefix = `EXP-${new Date().getUTCFullYear()}-`;
-        const last = await tx.expense.findFirst({ where: { organizationId: user.organizationId, expenseNo: { startsWith: prefix } }, orderBy: { expenseNo: 'desc' }, select: { expenseNo: true } });
-        const next = (last ? parseInt(last.expenseNo.slice(prefix.length), 10) : 0) + 1;
         const row = await tx.expense.create({
           data: {
             id: dto.id,
             organizationId: user.organizationId,
             projectId: dto.projectId,
-            expenseNo: `${prefix}${String(next).padStart(4, '0')}`,
+            expenseNo,
             date: parseDate(dto.date),
             category: dto.category,
             description: dto.description,
