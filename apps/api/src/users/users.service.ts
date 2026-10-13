@@ -1,9 +1,19 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
-import type { RoleKey, UserSummary } from '@erp/shared';
+import { Prisma } from '@prisma/client';
+import type { Paginated, RoleKey, SortOrder, UserSortField, UserSummary } from '@erp/shared';
+import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
-import { CreateUserDto, UpdateUserDto } from './users.dto';
+import { CreateUserDto, ListUsersQuery, UpdateUserDto } from './users.dto';
+
+const ORDER: Record<UserSortField, (o: SortOrder) => Prisma.UserOrderByWithRelationInput[]> = {
+  fullName: (o) => [{ fullName: o }],
+  email: (o) => [{ email: o }],
+  role: (o) => [{ role: { name: o } }, { fullName: 'asc' }],
+  isActive: (o) => [{ isActive: o }, { fullName: 'asc' }],
+  createdAt: (o) => [{ createdAt: o }],
+};
 
 @Injectable()
 export class UsersService {
@@ -13,9 +23,20 @@ export class UsersService {
     return { id: u.id, email: u.email, fullName: u.fullName, phone: u.phone, isActive: u.isActive, roleKey: u.role.key as RoleKey, roleName: u.role.name, createdAt: u.createdAt.toISOString() };
   }
 
-  async list(req: RequestUser): Promise<UserSummary[]> {
-    const users = await this.prisma.user.findMany({ where: { organizationId: req.organizationId }, include: { role: true }, orderBy: { fullName: 'asc' } });
-    return users.map((u) => this.toDto(u));
+  async list(req: RequestUser, q: ListUsersQuery): Promise<Paginated<UserSummary>> {
+    const where: Prisma.UserWhereInput = { organizationId: req.organizationId };
+    if (q.roleKey) where.role = { key: q.roleKey };
+    if (q.isActive !== undefined) where.isActive = q.isActive;
+    const words = searchWords(q.q);
+    if (words.length) where.AND = words.map((w) => ({ OR: [{ fullName: ilike(w) }, { email: ilike(w) }, { phone: ilike(w) }] }));
+    const sortBy = q.sortBy ?? 'fullName';
+    const order = q.sortOrder ?? (sortBy === 'createdAt' ? 'desc' : 'asc');
+    const args = pageArgs(q);
+    const [rows, total] = await Promise.all([
+      this.prisma.user.findMany({ where, include: { role: true }, orderBy: [...ORDER[sortBy](order), { id: 'asc' }], skip: args.skip, take: args.take }),
+      this.prisma.user.count({ where }),
+    ]);
+    return paginated(rows.map((u) => this.toDto(u)), total, args);
   }
 
   async roles(req: RequestUser) {

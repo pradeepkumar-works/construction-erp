@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { Button, Table, Typography } from 'antd';
 import type { TableProps } from 'antd';
-import type { MaterialRequestDto } from '@erp/shared';
+import type { MaterialRequestDto, MaterialRequestSortField } from '@erp/shared';
 import { formatDate } from '@/lib/format';
 import { PriorityTag, StatusTag } from '@/components/common/StatusTag';
 import { ReviewActions } from '@/components/common/ReviewActions';
@@ -16,6 +16,8 @@ export function MrTable({
   showProject,
   onOpen,
   onEdit,
+  table,
+  sortOrderFor,
 }: {
   data: MaterialRequestDto[];
   loading?: boolean;
@@ -23,11 +25,15 @@ export function MrTable({
   onOpen: (id: string) => void;
   /** Opens the form in edit & resubmit mode; the button shows only for entries the user may resubmit. */
   onEdit?: (row: MaterialRequestDto) => void;
+  /** Server-side paging and sort (from useListState). */
+  table: Pick<TableProps<MaterialRequestDto>, 'pagination' | 'onChange'>;
+  sortOrderFor: (key: MaterialRequestSortField) => 'ascend' | 'descend' | null;
 }) {
+  const sort = (key: MaterialRequestSortField) => ({ key, sorter: true, sortOrder: sortOrderFor(key), sortDirections: ['descend', 'ascend'] as ('descend' | 'ascend')[] });
   const columns: TableProps<MaterialRequestDto>['columns'] = [
-    { title: 'Request No.', dataIndex: 'requestNo', width: 140, render: (v, r) => <Typography.Link onClick={() => onOpen(r.id)}>{v}</Typography.Link> },
+    { title: 'Request No.', dataIndex: 'requestNo', width: 140, ...sort('requestNo'), render: (v, r) => <Typography.Link onClick={() => onOpen(r.id)}>{v}</Typography.Link> },
     ...(showProject
-      ? [{ title: 'Project', dataIndex: 'projectName', key: 'project', width: 220, ellipsis: true, render: (v: string, r: MaterialRequestDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> }]
+      ? [{ title: 'Project', dataIndex: 'projectName', ...sort('project'), width: 220, ellipsis: true, render: (v: string, r: MaterialRequestDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> }]
       : []),
     {
       title: 'Items',
@@ -43,10 +49,10 @@ export function MrTable({
         </div>
       ),
     },
-    { title: 'Priority', dataIndex: 'priority', width: 100, render: (p) => <PriorityTag priority={p} /> },
-    { title: 'Required by', dataIndex: 'requiredDate', width: 120, render: (v) => formatDate(v), sorter: (a, b) => a.requiredDate.localeCompare(b.requiredDate) },
-    { title: 'Requested by', dataIndex: 'submittedByName', width: 150 },
-    { title: 'Status', dataIndex: 'status', width: 150, render: (s) => <StatusTag status={s} /> },
+    { title: 'Priority', dataIndex: 'priority', width: 100, render: (p) => <PriorityTag priority={p} />, ...sort('priority') },
+    { title: 'Required by', dataIndex: 'requiredDate', width: 120, render: (v) => formatDate(v), ...sort('requiredDate') },
+    { title: 'Requested by', dataIndex: 'submittedByName', width: 150, ...sort('submittedBy') },
+    { title: 'Status', dataIndex: 'status', width: 150, render: (s) => <StatusTag status={s} />, ...sort('status') },
     {
       title: '',
       key: 'actions',
@@ -69,7 +75,7 @@ export function MrTable({
       columns={columns}
       dataSource={data}
       size="middle"
-      pagination={{ pageSize: 15, hideOnSinglePage: true }}
+      {...table}
       scroll={{ x: showProject ? 1200 : 1000 }}
     />
   );

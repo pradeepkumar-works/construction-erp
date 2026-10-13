@@ -22,8 +22,12 @@ Order matters: each item builds on the previous one.
    create endpoints (a repeat returns the existing entry), SQLite outbox with photos copied to the
    app's documents folder, automatic sync on reconnect / app foreground, Outbox screen with retry and
    discard, last-loaded projects, activities and lists cached on the phone.
-4. **Server-side paging, search and sort** on all list endpoints (`Paginated<T>` already in shared);
-   Excel export of each list.
+4. ~~**Server-side paging, search and sort** on all list endpoints (`Paginated<T>` already in shared);
+   Excel export of each list.~~ Done: progress, DPR, material requests, projects and users return
+   `Paginated<T>` with `page`, `pageSize`, `q`, `sortBy`, `sortOrder`; web tables page, search and sort
+   on the server; every list (plus BOQ and activities) exports all matching rows to Excel; the site
+   app's My Submissions searches on the server and loads more as you scroll. BOQ and activities stay
+   whole-project arrays because forms and progress weighting need every row.
 5. **Attendance by supervisor**: daily worker count by category and contractor per project;
    feeds DPR manpower automatically.
 

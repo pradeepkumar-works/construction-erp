@@ -4,13 +4,14 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import type { ProjectSummary } from '@erp/shared';
 import { useFetch } from '../api/hooks';
+import { fetchProjects } from '../api/lists';
 import { Button, Screen, type LocalPhoto, type SelectOption } from '../components';
 import type { OutboxPhoto } from '../offline/types';
 import { colors, spacing, typography } from '../theme';
 
 /** Projects the user can submit against, as Select options (cached on the device for offline use). */
 export function useProjectOptions() {
-  const state = useFetch<ProjectSummary[]>((api) => api.get('/projects'), [], { refetchOnFocus: false, cacheKey: 'projects' });
+  const state = useFetch<ProjectSummary[]>(fetchProjects, [], { refetchOnFocus: false, cacheKey: 'projects' });
   const options = useMemo<SelectOption[]>(() => (state.data ?? []).map((p) => ({ value: p.id, label: p.name, hint: `${p.code} · ${p.location ?? ''}`.replace(/ · $/, '') })), [state.data]);
   return { ...state, options };
 }

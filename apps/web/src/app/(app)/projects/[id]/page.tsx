@@ -3,11 +3,10 @@
 import React, { useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Button, Card, Progress, Space, Tabs, Typography } from 'antd';
-import { EditOutlined, PlusOutlined } from '@ant-design/icons';
+import { EditOutlined } from '@ant-design/icons';
 import { canEditProjects } from '@erp/shared';
-import type { DailyReportDto, MaterialRequestDto, ProgressEntryDto } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
-import { useDprList, useMaterialRequests, useProgressList, useProject } from '@/lib/queries';
+import { useProject } from '@/lib/queries';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Loading, QueryError } from '@/components/common/QueryState';
 import { ProjectStatusTag, ProjectTypeTag } from '@/components/common/StatusTag';
@@ -15,75 +14,9 @@ import { ProjectOverview } from '@/components/projects/ProjectOverview';
 import { ProjectFormModal } from '@/components/projects/ProjectFormModal';
 import { BoqTab } from '@/components/boq/BoqTab';
 import { ActivitiesTab } from '@/components/activities/ActivitiesTab';
-import { ProgressTable } from '@/components/progress/ProgressTable';
-import { ProgressDrawer } from '@/components/progress/ProgressDrawer';
-import { ProgressFormModal } from '@/components/progress/ProgressFormModal';
-import { DprTable } from '@/components/dpr/DprTable';
-import { DprDrawer } from '@/components/dpr/DprDrawer';
-import { DprFormModal } from '@/components/dpr/DprFormModal';
-import { MrTable } from '@/components/material/MrTable';
-import { MrDrawer } from '@/components/material/MrDrawer';
-import { MrFormModal } from '@/components/material/MrFormModal';
-
-function ProgressTab({ projectId }: { projectId: string }) {
-  const { data, isLoading, error, refetch } = useProgressList({ projectId, limit: 200 });
-  const [openId, setOpenId] = useState<string | null>(null);
-  const [formOpen, setFormOpen] = useState(false);
-  const [editing, setEditing] = useState<ProgressEntryDto | null>(null);
-  return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
-          New progress entry
-        </Button>
-      </div>
-      {error && <QueryError error={error} onRetry={() => refetch()} />}
-      <ProgressTable data={data ?? []} loading={isLoading} onOpen={setOpenId} onEdit={setEditing} />
-      <ProgressDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onEdit={setEditing} />
-      <ProgressFormModal open={formOpen || !!editing} entry={editing} onClose={() => { setFormOpen(false); setEditing(null); }} projectId={projectId} />
-    </div>
-  );
-}
-
-function DprTab({ projectId }: { projectId: string }) {
-  const { data, isLoading, error, refetch } = useDprList({ projectId, limit: 200 });
-  const [openId, setOpenId] = useState<string | null>(null);
-  const [formOpen, setFormOpen] = useState(false);
-  const [editing, setEditing] = useState<DailyReportDto | null>(null);
-  return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
-          New DPR
-        </Button>
-      </div>
-      {error && <QueryError error={error} onRetry={() => refetch()} />}
-      <DprTable data={data ?? []} loading={isLoading} onOpen={setOpenId} onEdit={setEditing} />
-      <DprDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onEdit={setEditing} />
-      <DprFormModal open={formOpen || !!editing} entry={editing} onClose={() => { setFormOpen(false); setEditing(null); }} projectId={projectId} />
-    </div>
-  );
-}
-
-function MrTab({ projectId }: { projectId: string }) {
-  const { data, isLoading, error, refetch } = useMaterialRequests({ projectId, limit: 200 });
-  const [openId, setOpenId] = useState<string | null>(null);
-  const [formOpen, setFormOpen] = useState(false);
-  const [editing, setEditing] = useState<MaterialRequestDto | null>(null);
-  return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
-          New material request
-        </Button>
-      </div>
-      {error && <QueryError error={error} onRetry={() => refetch()} />}
-      <MrTable data={data ?? []} loading={isLoading} onOpen={setOpenId} onEdit={setEditing} />
-      <MrDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onEdit={setEditing} />
-      <MrFormModal open={formOpen || !!editing} entry={editing} onClose={() => { setFormOpen(false); setEditing(null); }} projectId={projectId} />
-    </div>
-  );
-}
+import { ProgressList } from '@/components/progress/ProgressList';
+import { DprList } from '@/components/dpr/DprList';
+import { MrList } from '@/components/material/MrList';
 
 export default function ProjectDetailPage() {
   const params = useParams<{ id: string }>();
@@ -148,9 +81,9 @@ export default function ProjectDetailPage() {
             { key: 'overview', label: 'Overview', children: <ProjectOverview project={project} /> },
             { key: 'boq', label: 'BOQ', children: <BoqTab projectId={project.id} /> },
             { key: 'activities', label: 'Activities', children: <ActivitiesTab projectId={project.id} members={project.members} /> },
-            { key: 'progress', label: 'Progress', children: <ProgressTab projectId={project.id} /> },
-            { key: 'dpr', label: 'Daily Reports', children: <DprTab projectId={project.id} /> },
-            { key: 'material', label: 'Material Requests', children: <MrTab projectId={project.id} /> },
+            { key: 'progress', label: 'Progress', children: <ProgressList projectId={project.id} newLabel="New progress entry" /> },
+            { key: 'dpr', label: 'Daily Reports', children: <DprList projectId={project.id} newLabel="New DPR" /> },
+            { key: 'material', label: 'Material Requests', children: <MrList projectId={project.id} newLabel="New material request" /> },
           ]}
         />
       </Card>

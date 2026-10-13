@@ -12,6 +12,9 @@ import { useActivities } from '@/lib/queries';
 import { useAuth } from '@/lib/auth';
 import { formatDate, formatQty } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
+import { ExportButton } from '@/components/common/ExportButton';
+import { downloadXlsx, exportFileName } from '@/lib/exportExcel';
+import { ACTIVITY_EXPORT } from '@/lib/exportColumns';
 import { ActivityFormModal } from './ActivityFormModal';
 
 export function ActivitiesTab({ projectId, members }: { projectId: string; members: ProjectMemberDto[] }) {
@@ -99,6 +102,13 @@ export function ActivitiesTab({ projectId, members }: { projectId: string; membe
         <span className="text-muted">
           {data?.length ?? 0} activities · {data?.filter((a) => a.isDelayed).length ?? 0} delayed · {data?.filter((a) => a.progressPct >= 100).length ?? 0} completed
         </span>
+        <Space>
+        <ExportButton
+          onExport={async () => {
+            downloadXlsx(exportFileName('activities'), 'Activities', ACTIVITY_EXPORT, data ?? []);
+            return data?.length ?? 0;
+          }}
+        />
         {editor && (
           <Button
             type="primary"
@@ -111,6 +121,7 @@ export function ActivitiesTab({ projectId, members }: { projectId: string; membe
             Add activity
           </Button>
         )}
+        </Space>
       </div>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       <Table<ActivityDto> rowKey="id" loading={isLoading} columns={columns} dataSource={data ?? []} size="middle" pagination={{ pageSize: 25, hideOnSinglePage: true }} scroll={{ x: 1100 }} />

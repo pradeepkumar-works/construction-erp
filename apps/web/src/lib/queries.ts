@@ -1,6 +1,6 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   ActivityDto,
   AttachmentDto,
@@ -11,6 +11,7 @@ import type {
   MaterialRequestDto,
   NotificationDto,
   NotificationListDto,
+  Paginated,
   PendingApprovalDto,
   ProgressEntryDto,
   ProjectDashboard,
@@ -20,7 +21,12 @@ import type {
   SubmissionStatus,
   SubmissionType,
   UserSummary,
+  ProjectStatus,
+  ProjectType,
+  RoleKey,
+  SortOrder,
 } from '@erp/shared';
+import { MAX_PAGE_SIZE } from '@erp/shared';
 import { api } from './api';
 
 export interface RoleDto {
@@ -37,15 +43,33 @@ export const approvalTypeParam: Record<SubmissionType, ApprovalTypeParam> = {
   MATERIAL_REQUEST: 'material_request',
 };
 
-export interface ListFilters {
+/** Paging, search and sort understood by every paged list endpoint. */
+export interface PageParams {
+  page?: number;
+  pageSize?: number;
+  q?: string;
+  sortBy?: string;
+  sortOrder?: SortOrder;
+}
+
+export interface ListFilters extends PageParams {
   projectId?: string;
   activityId?: string;
   status?: SubmissionStatus;
   mine?: boolean;
-  limit?: number;
 }
 
-const clean = (f?: ListFilters) =>
+export interface ProjectFilters extends PageParams {
+  status?: ProjectStatus;
+  type?: ProjectType;
+}
+
+export interface UserFilters extends PageParams {
+  roleKey?: RoleKey;
+  isActive?: boolean;
+}
+
+export const clean = (f?: object) =>
   Object.fromEntries(Object.entries(f ?? {}).filter(([, v]) => v !== undefined && v !== null && v !== ''));
 
 /* ---------- queries ---------- */
@@ -60,8 +84,20 @@ export const useProjectDashboard = (id: string | undefined) =>
     enabled: !!id,
   });
 
+/** Every visible project (one large page) for dropdowns and pickers. */
 export const useProjects = () =>
-  useQuery({ queryKey: ['projects'], queryFn: async () => (await api.get<ProjectSummary[]>('/projects')).data });
+  useQuery({
+    queryKey: ['projects', 'all'],
+    queryFn: async () => (await api.get<Paginated<ProjectSummary>>('/projects', { params: { pageSize: MAX_PAGE_SIZE, sortBy: 'code' } })).data.items,
+  });
+
+/** One server-side page of the projects list (search, filters, sort). */
+export const useProjectsPage = (filters: ProjectFilters) =>
+  useQuery({
+    queryKey: ['projects', 'page', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<ProjectSummary>>('/projects', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+  });
 
 export const useProject = (id: string | undefined) =>
   useQuery({
@@ -70,8 +106,16 @@ export const useProject = (id: string | undefined) =>
     enabled: !!id,
   });
 
+/** Every user of the organisation (one large page) for pickers. */
 export const useUsers = () =>
-  useQuery({ queryKey: ['users'], queryFn: async () => (await api.get<UserSummary[]>('/users')).data });
+  useQuery({ queryKey: ['users', 'all'], queryFn: async () => (await api.get<Paginated<UserSummary>>('/users', { params: { pageSize: MAX_PAGE_SIZE } })).data.items });
+
+export const useUsersPage = (filters: UserFilters) =>
+  useQuery({
+    queryKey: ['users', 'page', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<UserSummary>>('/users', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+  });
 
 export const useRoles = () =>
   useQuery({ queryKey: ['users', 'roles'], queryFn: async () => (await api.get<RoleDto[]>('/users/roles')).data });
@@ -93,7 +137,8 @@ export const useActivities = (projectId: string | undefined) =>
 export const useProgressList = (filters?: ListFilters) =>
   useQuery({
     queryKey: ['progress', clean(filters)],
-    queryFn: async () => (await api.get<ProgressEntryDto[]>('/progress', { params: clean(filters) })).data,
+    queryFn: async () => (await api.get<Paginated<ProgressEntryDto>>('/progress', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
   });
 
 export const useProgressEntry = (id: string | undefined) =>
@@ -106,7 +151,8 @@ export const useProgressEntry = (id: string | undefined) =>
 export const useDprList = (filters?: ListFilters) =>
   useQuery({
     queryKey: ['dpr', clean(filters)],
-    queryFn: async () => (await api.get<DailyReportDto[]>('/dpr', { params: clean(filters) })).data,
+    queryFn: async () => (await api.get<Paginated<DailyReportDto>>('/dpr', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
   });
 
 export const useDpr = (id: string | undefined) =>
@@ -119,7 +165,8 @@ export const useDpr = (id: string | undefined) =>
 export const useMaterialRequests = (filters?: ListFilters) =>
   useQuery({
     queryKey: ['material-requests', clean(filters)],
-    queryFn: async () => (await api.get<MaterialRequestDto[]>('/material-requests', { params: clean(filters) })).data,
+    queryFn: async () => (await api.get<Paginated<MaterialRequestDto>>('/material-requests', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
   });
 
 export const useMaterialRequest = (id: string | undefined) =>
@@ -139,8 +186,8 @@ export const usePendingApprovals = (enabled = true) =>
 
 export const useNotifications = (opts?: { unreadOnly?: boolean; limit?: number }) =>
   useQuery({
-    queryKey: ['notifications', clean(opts as ListFilters | undefined)],
-    queryFn: async () => (await api.get<NotificationListDto>('/notifications', { params: clean(opts as ListFilters | undefined) })).data,
+    queryKey: ['notifications', clean(opts)],
+    queryFn: async () => (await api.get<NotificationListDto>('/notifications', { params: clean(opts) })).data,
     refetchInterval: 30_000,
   });
 

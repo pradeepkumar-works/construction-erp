@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import type { ProgressEntryDto } from '@erp/shared';
+import type { Paginated, ProgressEntryDto, ProgressSortField, SortOrder } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -9,6 +9,7 @@ import { SubmissionLifecycleService } from '../common/submission-lifecycle.servi
 import { AttachmentsService } from '../common/attachments.service';
 import { dateOnly, dec, iso, parseDate } from '../common/serialize';
 import { isUniqueViolation } from '../common/idempotency';
+import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import { CreateProgressDto, ListProgressQuery, UpdateProgressDto } from './progress.dto';
 
 const include = {
@@ -19,6 +20,18 @@ const include = {
   attachments: true,
 } satisfies Prisma.ProgressEntryInclude;
 type Row = Prisma.ProgressEntryGetPayload<{ include: typeof include }>;
+
+const ORDER: Record<ProgressSortField, (o: SortOrder) => Prisma.ProgressEntryOrderByWithRelationInput[]> = {
+  date: (o) => [{ date: o }, { createdAt: o }],
+  createdAt: (o) => [{ createdAt: o }],
+  submittedAt: (o) => [{ submittedAt: { sort: o, nulls: 'last' } }],
+  quantity: (o) => [{ quantity: o }],
+  status: (o) => [{ status: o }, { date: 'desc' }],
+  project: (o) => [{ project: { name: o } }, { date: 'desc' }],
+  activity: (o) => [{ activity: { name: o } }, { date: 'desc' }],
+  submittedBy: (o) => [{ submittedBy: { fullName: o } }, { date: 'desc' }],
+};
+const DESC_DEFAULT = new Set<string>(['date', 'createdAt', 'submittedAt', 'quantity']);
 
 @Injectable()
 export class ProgressService {
@@ -58,14 +71,25 @@ export class ProgressService {
     };
   }
 
-  async list(user: RequestUser, q: ListProgressQuery): Promise<ProgressEntryDto[]> {
+  async list(user: RequestUser, q: ListProgressQuery): Promise<Paginated<ProgressEntryDto>> {
     const where: Prisma.ProgressEntryWhereInput = { ...this.access.submissionWhere(user) };
     if (q.projectId) where.projectId = q.projectId;
     if (q.activityId) where.activityId = q.activityId;
     if (q.status) where.status = q.status;
     if (q.mine) where.submittedById = user.id;
-    const rows = await this.prisma.progressEntry.findMany({ where, include, orderBy: [{ date: 'desc' }, { createdAt: 'desc' }], take: q.limit ?? 200 });
-    return rows.map((r) => this.toDto(r));
+    const words = searchWords(q.q);
+    if (words.length)
+      where.AND = words.map((w) => ({
+        OR: [{ activity: { name: ilike(w) } }, { location: ilike(w) }, { remarks: ilike(w) }, { project: { name: ilike(w) } }, { submittedBy: { fullName: ilike(w) } }],
+      }));
+    const sortBy = q.sortBy ?? 'date';
+    const order = q.sortOrder ?? (DESC_DEFAULT.has(sortBy) ? 'desc' : 'asc');
+    const args = pageArgs(q);
+    const [rows, total] = await Promise.all([
+      this.prisma.progressEntry.findMany({ where, include, orderBy: [...ORDER[sortBy](order), { id: 'asc' }], skip: args.skip, take: args.take }),
+      this.prisma.progressEntry.count({ where }),
+    ]);
+    return paginated(rows.map((r) => this.toDto(r)), total, args);
   }
 
   async get(user: RequestUser, id: string): Promise<ProgressEntryDto> {

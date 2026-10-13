@@ -1,7 +1,7 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { UsersService } from './users.service';
-import { CreateUserDto, UpdateUserDto } from './users.dto';
+import { CreateUserDto, ListUsersQuery, UpdateUserDto } from './users.dto';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { Roles } from '../common/decorators';
 import { RolesGuard } from '../common/roles.guard';
@@ -15,8 +15,8 @@ export class UsersController {
 
   /** Any logged-in user may list colleagues (needed for assigning project members / responsible engineers). */
   @Get()
-  list(@CurrentUser() user: RequestUser) {
-    return this.users.list(user);
+  list(@CurrentUser() user: RequestUser, @Query() q: ListUsersQuery) {
+    return this.users.list(user, q);
   }
 
   @Get('roles')

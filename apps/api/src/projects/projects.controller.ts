@@ -1,7 +1,7 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { ProjectsService } from './projects.service';
-import { AddMemberDto, CreateProjectDto, UpdateProjectDto } from './projects.dto';
+import { AddMemberDto, CreateProjectDto, ListProjectsQuery, UpdateProjectDto } from './projects.dto';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { Roles } from '../common/decorators';
 import { RolesGuard } from '../common/roles.guard';
@@ -14,8 +14,8 @@ export class ProjectsController {
   constructor(private projects: ProjectsService) {}
 
   @Get()
-  list(@CurrentUser() user: RequestUser) {
-    return this.projects.list(user);
+  list(@CurrentUser() user: RequestUser, @Query() q: ListProjectsQuery) {
+    return this.projects.list(user, q);
   }
 
   @Get(':id')
