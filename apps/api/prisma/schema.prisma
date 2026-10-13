@@ -1,0 +1,359 @@
+// Construction ERP - MVP data model
+// Multi-tenant from day one: every tenant-scoped table carries organizationId.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Enums (mirrored as string unions in packages/shared) ----------
+
+enum ProjectType {
+  ROAD
+  BUILDING
+  WATER_SUPPLY
+}
+
+enum ProjectStatus {
+  PLANNED
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  CLOSED
+}
+
+enum SubmissionStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+  CHANGES_REQUESTED
+}
+
+enum MaterialPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum Weather {
+  SUNNY
+  CLOUDY
+  RAINY
+  WINDY
+  HOT
+}
+
+// ---------- Tenancy, users, roles ----------
+
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  code      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users            User[]
+  roles            Role[]
+  projects         Project[]
+  boqItems         BoqItem[]
+  activities       Activity[]
+  progressEntries  ProgressEntry[]
+  dailyReports     DailyReport[]
+  materialRequests MaterialRequest[]
+  attachments      Attachment[]
+  auditLogs        AuditLog[]
+}
+
+model Role {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  /// System role key, e.g. ADMIN, PROJECT_MANAGER. Permissions derive from this in code.
+  key            String
+  name           String
+  createdAt      DateTime     @default(now())
+
+  users User[]
+
+  @@unique([organizationId, key])
+}
+
+model User {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  roleId         String
+  role           Role         @relation(fields: [roleId], references: [id])
+  email          String
+  passwordHash   String
+  fullName       String
+  phone          String?
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  memberships         ProjectMember[]
+  managedProjects     Project[]         @relation("ProjectManager")
+  responsibleFor      Activity[]        @relation("ActivityResponsible")
+  submittedProgress   ProgressEntry[]   @relation("ProgressSubmitter")
+  reviewedProgress    ProgressEntry[]   @relation("ProgressReviewer")
+  submittedReports    DailyReport[]     @relation("DprSubmitter")
+  reviewedReports     DailyReport[]     @relation("DprReviewer")
+  submittedRequests   MaterialRequest[] @relation("MrSubmitter")
+  reviewedRequests    MaterialRequest[] @relation("MrReviewer")
+  uploadedAttachments Attachment[]
+  auditLogs           AuditLog[]
+
+  @@unique([organizationId, email])
+  @@index([organizationId])
+}
+
+// ---------- Projects ----------
+
+model Project {
+  id               String        @id @default(uuid())
+  organizationId   String
+  organization     Organization  @relation(fields: [organizationId], references: [id])
+  code             String
+  name             String
+  type             ProjectType
+  status           ProjectStatus @default(PLANNED)
+  clientName       String?
+  consultantName   String?
+  location         String?
+  workOrderNo      String?
+  description      String?
+  startDate        DateTime?     @db.Date
+  endDate          DateTime?     @db.Date
+  contractValue    Decimal?      @db.Decimal(18, 2)
+  projectManagerId String?
+  projectManager   User?         @relation("ProjectManager", fields: [projectManagerId], references: [id])
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  members          ProjectMember[]
+  boqItems         BoqItem[]
+  activities       Activity[]
+  progressEntries  ProgressEntry[]
+  dailyReports     DailyReport[]
+  materialRequests MaterialRequest[]
+
+  @@unique([organizationId, code])
+  @@index([organizationId, status])
+}
+
+model ProjectMember {
+  id        String   @id @default(uuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([projectId, userId])
+  @@index([userId])
+}
+
+// ---------- Planning: BOQ and activities ----------
+
+model BoqItem {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  itemNo         String
+  description    String
+  unit           String
+  rate           Decimal      @db.Decimal(18, 2)
+  originalQty    Decimal      @db.Decimal(18, 3)
+  revisedQty     Decimal?     @db.Decimal(18, 3)
+  sortOrder      Int          @default(0)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  activities Activity[]
+
+  @@unique([projectId, itemNo])
+  @@index([organizationId])
+}
+
+model Activity {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  boqItemId      String?
+  boqItem        BoqItem?     @relation(fields: [boqItemId], references: [id], onDelete: SetNull)
+  name           String
+  unit           String
+  plannedQty     Decimal      @db.Decimal(18, 3)
+  plannedStart   DateTime?    @db.Date
+  plannedEnd     DateTime?    @db.Date
+  responsibleId  String?
+  responsible    User?        @relation("ActivityResponsible", fields: [responsibleId], references: [id])
+  sortOrder      Int          @default(0)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  progressEntries ProgressEntry[]
+
+  @@index([projectId])
+  @@index([organizationId])
+}
+
+// ---------- Site submissions (all share the same approval lifecycle) ----------
+
+model ProgressEntry {
+  id             String           @id @default(uuid())
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  activityId     String
+  activity       Activity         @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  date           DateTime         @db.Date
+  quantity       Decimal          @db.Decimal(18, 3)
+  remarks        String?
+  location       String?
+  manpowerCount  Int?
+  machineryUsed  String?
+  status         SubmissionStatus @default(DRAFT)
+  submittedById  String
+  submittedBy    User             @relation("ProgressSubmitter", fields: [submittedById], references: [id])
+  submittedAt    DateTime?
+  reviewedById   String?
+  reviewedBy     User?            @relation("ProgressReviewer", fields: [reviewedById], references: [id])
+  reviewedAt     DateTime?
+  reviewNote     String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  attachments Attachment[]
+
+  @@index([projectId, status])
+  @@index([activityId, status])
+  @@index([organizationId, status])
+}
+
+model DailyReport {
+  id                 String           @id @default(uuid())
+  organizationId     String
+  organization       Organization     @relation(fields: [organizationId], references: [id])
+  projectId          String
+  project            Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  date               DateTime         @db.Date
+  weather            Weather?
+  siteCondition      String?
+  /// [{ category: string, count: number }]
+  manpower           Json             @default("[]")
+  /// [{ name: string, hours: number }]
+  machinery          Json             @default("[]")
+  materialReceived   String?
+  workExecuted       String
+  testsConducted     String?
+  safetyObservations String?
+  issues             String?
+  nextDayPlan        String?
+  status             SubmissionStatus @default(DRAFT)
+  submittedById      String
+  submittedBy        User             @relation("DprSubmitter", fields: [submittedById], references: [id])
+  submittedAt        DateTime?
+  reviewedById       String?
+  reviewedBy         User?            @relation("DprReviewer", fields: [reviewedById], references: [id])
+  reviewedAt         DateTime?
+  reviewNote         String?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  attachments Attachment[]
+
+  @@index([projectId, date])
+  @@index([organizationId, status])
+}
+
+model MaterialRequest {
+  id             String           @id @default(uuid())
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  requestNo      String
+  requiredDate   DateTime         @db.Date
+  priority       MaterialPriority @default(NORMAL)
+  remarks        String?
+  status         SubmissionStatus @default(DRAFT)
+  submittedById  String
+  submittedBy    User             @relation("MrSubmitter", fields: [submittedById], references: [id])
+  submittedAt    DateTime?
+  reviewedById   String?
+  reviewedBy     User?            @relation("MrReviewer", fields: [reviewedById], references: [id])
+  reviewedAt     DateTime?
+  reviewNote     String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  items       MaterialRequestItem[]
+  attachments Attachment[]
+
+  @@unique([organizationId, requestNo])
+  @@index([projectId, status])
+}
+
+model MaterialRequestItem {
+  id            String          @id @default(uuid())
+  requestId     String
+  request       MaterialRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  itemName      String
+  specification String?
+  unit          String
+  quantity      Decimal         @db.Decimal(18, 3)
+  sortOrder     Int             @default(0)
+}
+
+// ---------- Attachments and audit ----------
+
+model Attachment {
+  id                String           @id @default(uuid())
+  organizationId    String
+  organization      Organization     @relation(fields: [organizationId], references: [id])
+  fileName          String
+  mimeType          String
+  size              Int
+  /// Relative storage path, served under /uploads
+  storagePath       String
+  uploadedById      String
+  uploadedBy        User             @relation(fields: [uploadedById], references: [id])
+  progressEntryId   String?
+  progressEntry     ProgressEntry?   @relation(fields: [progressEntryId], references: [id], onDelete: Cascade)
+  dailyReportId     String?
+  dailyReport       DailyReport?     @relation(fields: [dailyReportId], references: [id], onDelete: Cascade)
+  materialRequestId String?
+  materialRequest   MaterialRequest? @relation(fields: [materialRequestId], references: [id], onDelete: Cascade)
+  createdAt         DateTime         @default(now())
+
+  @@index([organizationId])
+}
+
+model AuditLog {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  entityType     String
+  entityId       String
+  action         String
+  actorId        String
+  actor          User         @relation(fields: [actorId], references: [id])
+  note           String?
+  createdAt      DateTime     @default(now())
+
+  @@index([entityType, entityId])
+  @@index([organizationId, createdAt])
+}

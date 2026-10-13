@@ -1,0 +1,64 @@
+import type { MaterialPriority, ProjectStatus, ProjectType, RoleKey, SubmissionStatus, SubmissionType, Weather } from './enums';
+
+export const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {
+  ROAD: 'Road / Infrastructure',
+  BUILDING: 'Building',
+  WATER_SUPPLY: 'Water Supply',
+};
+
+export const PROJECT_STATUS_LABELS: Record<ProjectStatus, string> = {
+  PLANNED: 'Planned',
+  ACTIVE: 'Active',
+  ON_HOLD: 'On Hold',
+  COMPLETED: 'Completed',
+  CLOSED: 'Closed',
+};
+
+export const SUBMISSION_STATUS_LABELS: Record<SubmissionStatus, string> = {
+  DRAFT: 'Draft',
+  SUBMITTED: 'Pending Approval',
+  APPROVED: 'Approved',
+  REJECTED: 'Rejected',
+  CHANGES_REQUESTED: 'Changes Requested',
+};
+
+export const SUBMISSION_TYPE_LABELS: Record<SubmissionType, string> = {
+  PROGRESS: 'Daily Progress',
+  DPR: 'Daily Progress Report',
+  MATERIAL_REQUEST: 'Material Request',
+};
+
+export const MATERIAL_PRIORITY_LABELS: Record<MaterialPriority, string> = {
+  LOW: 'Low',
+  NORMAL: 'Normal',
+  HIGH: 'High',
+  URGENT: 'Urgent',
+};
+
+export const ROLE_LABELS: Record<RoleKey, string> = {
+  ADMIN: 'Admin',
+  MANAGEMENT: 'Management',
+  PROJECT_MANAGER: 'Project Manager',
+  TEAM_LEADER: 'Team Leader / Site Supervisor',
+  SITE_ENGINEER: 'Site Engineer',
+  STORE_MANAGER: 'Store Manager',
+  QUANTITY_SURVEYOR: 'Quantity Surveyor',
+  PROCUREMENT_MANAGER: 'Procurement Manager',
+  QA_QC_ENGINEER: 'QA/QC Engineer',
+  ACCOUNTS_MANAGER: 'Accounts Manager',
+  HR_MANAGER: 'HR Manager',
+};
+
+export const WEATHER_LABELS: Record<Weather, string> = {
+  SUNNY: 'Sunny',
+  CLOUDY: 'Cloudy',
+  RAINY: 'Rainy',
+  WINDY: 'Windy',
+  HOT: 'Hot',
+};
+
+/** Common units used in BOQ / activities. Free text is still allowed. */
+export const COMMON_UNITS = ['Cum', 'Sqm', 'Rmt', 'MT', 'Nos', 'Kg', 'Ltr', 'LS', 'Km', '%'];
+
+/** Manpower categories used in DPR manpower summary. */
+export const MANPOWER_CATEGORIES = ['Mason', 'Carpenter', 'Bar Bender', 'Helper', 'Operator', 'Driver', 'Electrician', 'Plumber', 'Supervisor', 'Other'];

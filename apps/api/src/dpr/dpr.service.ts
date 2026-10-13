@@ -1,0 +1,140 @@
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import type { DailyReportDto, ManpowerLine, MachineryLine } from '@erp/shared';
+import { PrismaService } from '../prisma/prisma.service';
+import { RequestUser } from '../common/current-user';
+import { ProjectAccessService } from '../common/project-access.service';
+import { AuditService } from '../common/audit.service';
+import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
+import { AttachmentsService } from '../common/attachments.service';
+import { dateOnly, iso, parseDate } from '../common/serialize';
+import { CreateDprDto, ListDprQuery, UpdateDprDto } from './dpr.dto';
+
+const include = {
+  project: { select: { name: true } },
+  submittedBy: { select: { fullName: true } },
+  reviewedBy: { select: { fullName: true } },
+  attachments: true,
+} satisfies Prisma.DailyReportInclude;
+type Row = Prisma.DailyReportGetPayload<{ include: typeof include }>;
+
+@Injectable()
+export class DprService {
+  constructor(
+    private prisma: PrismaService,
+    private access: ProjectAccessService,
+    private audit: AuditService,
+    private lifecycle: SubmissionLifecycleService,
+    private attachments: AttachmentsService,
+  ) {}
+
+  toDto(r: Row): DailyReportDto {
+    const manpower = (r.manpower as unknown as ManpowerLine[]) ?? [];
+    const machinery = (r.machinery as unknown as MachineryLine[]) ?? [];
+    return {
+      id: r.id,
+      projectId: r.projectId,
+      projectName: r.project.name,
+      date: dateOnly(r.date)!,
+      weather: r.weather,
+      siteCondition: r.siteCondition,
+      manpower,
+      machinery,
+      materialReceived: r.materialReceived,
+      workExecuted: r.workExecuted,
+      testsConducted: r.testsConducted,
+      safetyObservations: r.safetyObservations,
+      issues: r.issues,
+      nextDayPlan: r.nextDayPlan,
+      totalManpower: manpower.reduce((s, m) => s + (Number(m.count) || 0), 0),
+      status: r.status,
+      submittedById: r.submittedById,
+      submittedByName: r.submittedBy.fullName,
+      submittedAt: iso(r.submittedAt),
+      reviewedById: r.reviewedById,
+      reviewedByName: r.reviewedBy?.fullName ?? null,
+      reviewedAt: iso(r.reviewedAt),
+      reviewNote: r.reviewNote,
+      attachments: r.attachments.map((a) => this.attachments.toDto(a)),
+      createdAt: iso(r.createdAt)!,
+      updatedAt: iso(r.updatedAt)!,
+    };
+  }
+
+  async list(user: RequestUser, q: ListDprQuery): Promise<DailyReportDto[]> {
+    const where: Prisma.DailyReportWhereInput = { ...this.access.submissionWhere(user) };
+    if (q.projectId) where.projectId = q.projectId;
+    if (q.status) where.status = q.status;
+    if (q.mine) where.submittedById = user.id;
+    const rows = await this.prisma.dailyReport.findMany({ where, include, orderBy: [{ date: 'desc' }, { createdAt: 'desc' }], take: q.limit ?? 200 });
+    return rows.map((r) => this.toDto(r));
+  }
+
+  async get(user: RequestUser, id: string): Promise<DailyReportDto> {
+    const row = await this.prisma.dailyReport.findFirst({ where: { id, ...this.access.submissionWhere(user) }, include });
+    if (!row) throw new NotFoundException('Daily report not found');
+    return this.toDto(row);
+  }
+
+  async create(user: RequestUser, dto: CreateDprDto): Promise<DailyReportDto> {
+    await this.access.assertCanAccessProject(user, dto.projectId);
+    const row = await this.prisma.dailyReport.create({
+      data: {
+        organizationId: user.organizationId,
+        projectId: dto.projectId,
+        date: parseDate(dto.date),
+        weather: dto.weather ?? null,
+        siteCondition: dto.siteCondition ?? null,
+        manpower: (dto.manpower ?? []) as unknown as Prisma.InputJsonValue,
+        machinery: (dto.machinery ?? []) as unknown as Prisma.InputJsonValue,
+        materialReceived: dto.materialReceived ?? null,
+        workExecuted: dto.workExecuted,
+        testsConducted: dto.testsConducted ?? null,
+        safetyObservations: dto.safetyObservations ?? null,
+        issues: dto.issues ?? null,
+        nextDayPlan: dto.nextDayPlan ?? null,
+        submittedById: user.id,
+        status: 'DRAFT',
+      },
+    });
+    await this.attachments.link(user, 'dailyReportId', row.id, dto.attachmentIds);
+    await this.audit.log(user, 'DPR', row.id, 'CREATED');
+    if (dto.submit !== false) await this.lifecycle.submit(user, 'DPR', row.id);
+    return this.get(user, row.id);
+  }
+
+  async update(user: RequestUser, id: string, dto: UpdateDprDto): Promise<DailyReportDto> {
+    const row = await this.lifecycle.load(user, 'DPR', id);
+    await this.lifecycle.assertEditable(user, row);
+    const data: Prisma.DailyReportUncheckedUpdateInput = {};
+    if (dto.date !== undefined) data.date = parseDate(dto.date);
+    if (dto.weather !== undefined) data.weather = dto.weather;
+    if (dto.siteCondition !== undefined) data.siteCondition = dto.siteCondition;
+    if (dto.manpower !== undefined) data.manpower = dto.manpower as unknown as Prisma.InputJsonValue;
+    if (dto.machinery !== undefined) data.machinery = dto.machinery as unknown as Prisma.InputJsonValue;
+    if (dto.materialReceived !== undefined) data.materialReceived = dto.materialReceived;
+    if (dto.workExecuted !== undefined) data.workExecuted = dto.workExecuted;
+    if (dto.testsConducted !== undefined) data.testsConducted = dto.testsConducted;
+    if (dto.safetyObservations !== undefined) data.safetyObservations = dto.safetyObservations;
+    if (dto.issues !== undefined) data.issues = dto.issues;
+    if (dto.nextDayPlan !== undefined) data.nextDayPlan = dto.nextDayPlan;
+    await this.prisma.dailyReport.update({ where: { id }, data });
+    await this.attachments.link(user, 'dailyReportId', id, dto.attachmentIds);
+    await this.audit.log(user, 'DPR', id, 'UPDATED');
+    if (dto.submit) await this.lifecycle.submit(user, 'DPR', id);
+    return this.get(user, id);
+  }
+
+  async submit(user: RequestUser, id: string) {
+    await this.lifecycle.submit(user, 'DPR', id);
+    return this.get(user, id);
+  }
+
+  async remove(user: RequestUser, id: string) {
+    const row = await this.lifecycle.load(user, 'DPR', id);
+    await this.lifecycle.assertEditable(user, row);
+    await this.prisma.dailyReport.delete({ where: { id } });
+    await this.audit.log(user, 'DPR', id, 'DELETED');
+    return { ok: true };
+  }
+}

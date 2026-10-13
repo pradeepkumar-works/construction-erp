@@ -1,0 +1,137 @@
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import type { MaterialRequestDto } from '@erp/shared';
+import { PrismaService } from '../prisma/prisma.service';
+import { RequestUser } from '../common/current-user';
+import { ProjectAccessService } from '../common/project-access.service';
+import { AuditService } from '../common/audit.service';
+import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
+import { AttachmentsService } from '../common/attachments.service';
+import { dateOnly, dec, iso, parseDate } from '../common/serialize';
+import { CreateMaterialRequestDto, ListMaterialRequestQuery, UpdateMaterialRequestDto } from './material-requests.dto';
+
+const include = {
+  project: { select: { name: true } },
+  submittedBy: { select: { fullName: true } },
+  reviewedBy: { select: { fullName: true } },
+  items: { orderBy: { sortOrder: 'asc' as const } },
+  attachments: true,
+} satisfies Prisma.MaterialRequestInclude;
+type Row = Prisma.MaterialRequestGetPayload<{ include: typeof include }>;
+
+@Injectable()
+export class MaterialRequestsService {
+  constructor(
+    private prisma: PrismaService,
+    private access: ProjectAccessService,
+    private audit: AuditService,
+    private lifecycle: SubmissionLifecycleService,
+    private attachments: AttachmentsService,
+  ) {}
+
+  toDto(r: Row): MaterialRequestDto {
+    return {
+      id: r.id,
+      projectId: r.projectId,
+      projectName: r.project.name,
+      requestNo: r.requestNo,
+      requiredDate: dateOnly(r.requiredDate)!,
+      priority: r.priority,
+      remarks: r.remarks,
+      items: r.items.map((i) => ({ id: i.id, itemName: i.itemName, specification: i.specification, unit: i.unit, quantity: dec(i.quantity)! })),
+      status: r.status,
+      submittedById: r.submittedById,
+      submittedByName: r.submittedBy.fullName,
+      submittedAt: iso(r.submittedAt),
+      reviewedById: r.reviewedById,
+      reviewedByName: r.reviewedBy?.fullName ?? null,
+      reviewedAt: iso(r.reviewedAt),
+      reviewNote: r.reviewNote,
+      attachments: r.attachments.map((a) => this.attachments.toDto(a)),
+      createdAt: iso(r.createdAt)!,
+      updatedAt: iso(r.updatedAt)!,
+    };
+  }
+
+  /** MR-YYYY-0001 style numbering, per organisation. */
+  private async nextRequestNo(organizationId: string): Promise<string> {
+    const year = new Date().getUTCFullYear();
+    const prefix = `MR-${year}-`;
+    const last = await this.prisma.materialRequest.findFirst({ where: { organizationId, requestNo: { startsWith: prefix } }, orderBy: { requestNo: 'desc' }, select: { requestNo: true } });
+    const n = last ? parseInt(last.requestNo.slice(prefix.length), 10) + 1 : 1;
+    return `${prefix}${String(n).padStart(4, '0')}`;
+  }
+
+  async list(user: RequestUser, q: ListMaterialRequestQuery): Promise<MaterialRequestDto[]> {
+    const where: Prisma.MaterialRequestWhereInput = { ...this.access.submissionWhere(user) };
+    if (q.projectId) where.projectId = q.projectId;
+    if (q.status) where.status = q.status;
+    if (q.mine) where.submittedById = user.id;
+    const rows = await this.prisma.materialRequest.findMany({ where, include, orderBy: { createdAt: 'desc' }, take: q.limit ?? 200 });
+    return rows.map((r) => this.toDto(r));
+  }
+
+  async get(user: RequestUser, id: string): Promise<MaterialRequestDto> {
+    const row = await this.prisma.materialRequest.findFirst({ where: { id, ...this.access.submissionWhere(user) }, include });
+    if (!row) throw new NotFoundException('Material request not found');
+    return this.toDto(row);
+  }
+
+  async create(user: RequestUser, dto: CreateMaterialRequestDto): Promise<MaterialRequestDto> {
+    await this.access.assertCanAccessProject(user, dto.projectId);
+    const row = await this.prisma.materialRequest.create({
+      data: {
+        organizationId: user.organizationId,
+        projectId: dto.projectId,
+        requestNo: await this.nextRequestNo(user.organizationId),
+        requiredDate: parseDate(dto.requiredDate),
+        priority: dto.priority ?? 'NORMAL',
+        remarks: dto.remarks ?? null,
+        submittedById: user.id,
+        status: 'DRAFT',
+        items: {
+          create: dto.items.map((i, idx) => ({ itemName: i.itemName, specification: i.specification ?? null, unit: i.unit, quantity: new Prisma.Decimal(i.quantity), sortOrder: idx })),
+        },
+      },
+    });
+    await this.attachments.link(user, 'materialRequestId', row.id, dto.attachmentIds);
+    await this.audit.log(user, 'MATERIAL_REQUEST', row.id, 'CREATED', row.requestNo);
+    if (dto.submit !== false) await this.lifecycle.submit(user, 'MATERIAL_REQUEST', row.id);
+    return this.get(user, row.id);
+  }
+
+  async update(user: RequestUser, id: string, dto: UpdateMaterialRequestDto): Promise<MaterialRequestDto> {
+    const row = await this.lifecycle.load(user, 'MATERIAL_REQUEST', id);
+    await this.lifecycle.assertEditable(user, row);
+    const data: Prisma.MaterialRequestUncheckedUpdateInput = {};
+    if (dto.requiredDate !== undefined) data.requiredDate = parseDate(dto.requiredDate);
+    if (dto.priority !== undefined) data.priority = dto.priority;
+    if (dto.remarks !== undefined) data.remarks = dto.remarks;
+    await this.prisma.$transaction(async (tx) => {
+      await tx.materialRequest.update({ where: { id }, data });
+      if (dto.items) {
+        await tx.materialRequestItem.deleteMany({ where: { requestId: id } });
+        await tx.materialRequestItem.createMany({
+          data: dto.items.map((i, idx) => ({ requestId: id, itemName: i.itemName, specification: i.specification ?? null, unit: i.unit, quantity: new Prisma.Decimal(i.quantity), sortOrder: idx })),
+        });
+      }
+    });
+    await this.attachments.link(user, 'materialRequestId', id, dto.attachmentIds);
+    await this.audit.log(user, 'MATERIAL_REQUEST', id, 'UPDATED');
+    if (dto.submit) await this.lifecycle.submit(user, 'MATERIAL_REQUEST', id);
+    return this.get(user, id);
+  }
+
+  async submit(user: RequestUser, id: string) {
+    await this.lifecycle.submit(user, 'MATERIAL_REQUEST', id);
+    return this.get(user, id);
+  }
+
+  async remove(user: RequestUser, id: string) {
+    const row = await this.lifecycle.load(user, 'MATERIAL_REQUEST', id);
+    await this.lifecycle.assertEditable(user, row);
+    await this.prisma.materialRequest.delete({ where: { id } });
+    await this.audit.log(user, 'MATERIAL_REQUEST', id, 'DELETED');
+    return { ok: true };
+  }
+}

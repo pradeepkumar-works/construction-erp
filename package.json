@@ -1,0 +1,30 @@
+{
+  "name": "construction-erp",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@10.28.0",
+  "scripts": {
+    "dev": "turbo run dev --parallel",
+    "dev:api": "pnpm --filter @erp/api dev",
+    "dev:web": "pnpm --filter @erp/web dev",
+    "dev:mobile": "pnpm --filter @erp/mobile start",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "db:migrate": "pnpm --filter @erp/api prisma:migrate",
+    "db:seed": "pnpm --filter @erp/api prisma:seed",
+    "db:reset": "pnpm --filter @erp/api prisma:reset"
+  },
+  "devDependencies": {
+    "turbo": "^2.11.7",
+    "typescript": "^5.9.3"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/client",
+      "@prisma/engines",
+      "prisma",
+      "esbuild",
+      "sharp"
+    ]
+  }
+}
