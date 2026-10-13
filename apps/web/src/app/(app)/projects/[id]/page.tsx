@@ -5,6 +5,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Button, Card, Progress, Space, Tabs, Typography } from 'antd';
 import { EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { canEditProjects } from '@erp/shared';
+import type { DailyReportDto, MaterialRequestDto, ProgressEntryDto } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useDprList, useMaterialRequests, useProgressList, useProject } from '@/lib/queries';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -28,6 +29,7 @@ function ProgressTab({ projectId }: { projectId: string }) {
   const { data, isLoading, error, refetch } = useProgressList({ projectId, limit: 200 });
   const [openId, setOpenId] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<ProgressEntryDto | null>(null);
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
@@ -36,9 +38,9 @@ function ProgressTab({ projectId }: { projectId: string }) {
         </Button>
       </div>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
-      <ProgressTable data={data ?? []} loading={isLoading} onOpen={setOpenId} />
-      <ProgressDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} />
-      <ProgressFormModal open={formOpen} onClose={() => setFormOpen(false)} projectId={projectId} />
+      <ProgressTable data={data ?? []} loading={isLoading} onOpen={setOpenId} onEdit={setEditing} />
+      <ProgressDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onEdit={setEditing} />
+      <ProgressFormModal open={formOpen || !!editing} entry={editing} onClose={() => { setFormOpen(false); setEditing(null); }} projectId={projectId} />
     </div>
   );
 }
@@ -47,6 +49,7 @@ function DprTab({ projectId }: { projectId: string }) {
   const { data, isLoading, error, refetch } = useDprList({ projectId, limit: 200 });
   const [openId, setOpenId] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<DailyReportDto | null>(null);
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
@@ -55,9 +58,9 @@ function DprTab({ projectId }: { projectId: string }) {
         </Button>
       </div>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
-      <DprTable data={data ?? []} loading={isLoading} onOpen={setOpenId} />
-      <DprDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} />
-      <DprFormModal open={formOpen} onClose={() => setFormOpen(false)} projectId={projectId} />
+      <DprTable data={data ?? []} loading={isLoading} onOpen={setOpenId} onEdit={setEditing} />
+      <DprDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onEdit={setEditing} />
+      <DprFormModal open={formOpen || !!editing} entry={editing} onClose={() => { setFormOpen(false); setEditing(null); }} projectId={projectId} />
     </div>
   );
 }
@@ -66,6 +69,7 @@ function MrTab({ projectId }: { projectId: string }) {
   const { data, isLoading, error, refetch } = useMaterialRequests({ projectId, limit: 200 });
   const [openId, setOpenId] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<MaterialRequestDto | null>(null);
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
@@ -74,9 +78,9 @@ function MrTab({ projectId }: { projectId: string }) {
         </Button>
       </div>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
-      <MrTable data={data ?? []} loading={isLoading} onOpen={setOpenId} />
-      <MrDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} />
-      <MrFormModal open={formOpen} onClose={() => setFormOpen(false)} projectId={projectId} />
+      <MrTable data={data ?? []} loading={isLoading} onOpen={setOpenId} onEdit={setEditing} />
+      <MrDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onEdit={setEditing} />
+      <MrFormModal open={formOpen || !!editing} entry={editing} onClose={() => { setFormOpen(false); setEditing(null); }} projectId={projectId} />
     </div>
   );
 }

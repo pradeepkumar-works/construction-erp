@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { App, DatePicker, Form, Input, InputNumber, Modal, Select } from 'antd';
+import { Alert, App, DatePicker, Form, Input, InputNumber, Modal, Select } from 'antd';
 import dayjs from 'dayjs';
-import type { AttachmentDto } from '@erp/shared';
+import type { AttachmentDto, ProgressEntryDto } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, errorMessage } from '@/lib/api';
 import { useActivities, useProjects } from '@/lib/queries';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
+import { editActionLabel } from '@/components/common/EditResubmitButton';
 
 interface FormValues {
   projectId: string;
@@ -21,41 +22,59 @@ interface FormValues {
   photos?: AttachmentDto[];
 }
 
-export function ProgressFormModal({ open, onClose, projectId }: { open: boolean; onClose: () => void; projectId?: string }) {
+/**
+ * Create a progress entry, or (with `entry`) edit an existing draft / rejected / changes-requested
+ * entry and resubmit it for approval in one go.
+ */
+export function ProgressFormModal({ open, onClose, projectId, entry }: { open: boolean; onClose: () => void; projectId?: string; entry?: ProgressEntryDto | null }) {
   const [form] = Form.useForm<FormValues>();
   const { message } = App.useApp();
   const qc = useQueryClient();
   const { data: projects } = useProjects();
-  const selectedProject = Form.useWatch('projectId', form) ?? projectId;
+  const editing = !!entry;
+  const fixedProject = entry?.projectId ?? projectId;
+  const selectedProject = Form.useWatch('projectId', form) ?? fixedProject;
   const { data: activities, isLoading: actLoading } = useActivities(selectedProject);
   const selectedActivity = Form.useWatch('activityId', form);
   const activity = activities?.find((a) => a.id === selectedActivity);
 
   useEffect(() => {
-    if (open) {
-      form.resetFields();
+    if (!open) return;
+    form.resetFields();
+    if (entry) {
+      form.setFieldsValue({
+        projectId: entry.projectId,
+        activityId: entry.activityId,
+        date: dayjs(entry.date),
+        quantity: Number(entry.quantity),
+        location: entry.location ?? undefined,
+        manpowerCount: entry.manpowerCount ?? undefined,
+        machineryUsed: entry.machineryUsed ?? undefined,
+        remarks: entry.remarks ?? undefined,
+        photos: entry.attachments,
+      });
+    } else {
       form.setFieldsValue({ projectId, date: dayjs() });
     }
-  }, [open, projectId, form]);
+  }, [open, projectId, entry, form]);
 
   const mutation = useMutation({
-    mutationFn: async (v: FormValues) =>
-      (
-        await api.post('/progress', {
-          projectId: v.projectId,
-          activityId: v.activityId,
-          date: v.date.format('YYYY-MM-DD'),
-          quantity: String(v.quantity),
-          location: v.location || undefined,
-          manpowerCount: v.manpowerCount ?? undefined,
-          machineryUsed: v.machineryUsed || undefined,
-          remarks: v.remarks || undefined,
-          attachmentIds: (v.photos ?? []).map((p) => p.id),
-          submit: true,
-        })
-      ).data,
+    mutationFn: async (v: FormValues) => {
+      const body = {
+        activityId: v.activityId,
+        date: v.date.format('YYYY-MM-DD'),
+        quantity: String(v.quantity),
+        location: v.location || (editing ? null : undefined),
+        manpowerCount: v.manpowerCount ?? (editing ? null : undefined),
+        machineryUsed: v.machineryUsed || (editing ? null : undefined),
+        remarks: v.remarks || (editing ? null : undefined),
+        attachmentIds: (v.photos ?? []).map((p) => p.id),
+        submit: true,
+      };
+      return entry ? (await api.patch(`/progress/${entry.id}`, body)).data : (await api.post('/progress', { projectId: v.projectId, ...body })).data;
+    },
     onSuccess: () => {
-      message.success('Progress entry submitted for approval');
+      message.success(editing ? 'Progress entry resubmitted for approval' : 'Progress entry submitted for approval');
       qc.invalidateQueries();
       onClose();
     },
@@ -63,9 +82,12 @@ export function ProgressFormModal({ open, onClose, projectId }: { open: boolean;
   });
 
   return (
-    <Modal open={open} title="New progress entry" okText="Submit" onCancel={onClose} onOk={() => form.submit()} confirmLoading={mutation.isPending} width={640} destroyOnHidden>
+    <Modal open={open} title={entry ? `${editActionLabel(entry.status)} · ${entry.activityName}` : 'New progress entry'} okText={editing ? 'Resubmit for approval' : 'Submit'} onCancel={onClose} onOk={() => form.submit()} confirmLoading={mutation.isPending} width={640} destroyOnHidden>
       <Form form={form} layout="vertical" onFinish={(v) => mutation.mutate(v)} style={{ marginTop: 8 }}>
-        <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]} hidden={!!projectId}>
+        {entry?.reviewNote && (
+          <Alert type="warning" showIcon style={{ marginBottom: 16 }} message={`Reviewer note from ${entry.reviewedByName ?? 'approver'}`} description={entry.reviewNote} />
+        )}
+        <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]} hidden={!!fixedProject}>
           <Select showSearch optionFilterProp="label" placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} onChange={() => form.setFieldValue('activityId', undefined)} />
         </Form.Item>
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '0 16px' }}>

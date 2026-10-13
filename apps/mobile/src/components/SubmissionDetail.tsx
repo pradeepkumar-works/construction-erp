@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import type { AttachmentDto, ReviewDecision, SubmissionBase, SubmissionType } from '@erp/shared';
 import { absoluteUrl } from '../config';
@@ -15,7 +16,7 @@ import { useApi } from '../api/hooks';
 import { errorMessage } from '../api/client';
 import { ErrorBanner } from './States';
 import { useAuth } from '../auth/AuthContext';
-import { canApprove } from '@erp/shared';
+import { canApprove, canEditSubmission, canResubmit } from '@erp/shared';
 
 /** Status, project, submitter and reviewer block shared by all three detail screens. */
 export function SubmissionHeader({ item, title, subtitle }: { item: SubmissionBase; title: string; subtitle?: string }) {
@@ -87,6 +88,8 @@ const DECISIONS: { decision: ReviewDecision; label: string; variant: 'success' |
   { decision: 'REJECT', label: 'Reject', variant: 'danger', icon: 'close' },
 ];
 
+const EDIT_PATH: Record<SubmissionType, string> = { PROGRESS: '/progress/new', DPR: '/dpr/new', MATERIAL_REQUEST: '/material-request/new' };
+
 const REVIEW_PATH: Record<SubmissionType, string> = { PROGRESS: 'progress', DPR: 'dpr', MATERIAL_REQUEST: 'material_request' };
 
 /** Approve / request changes / reject with an optional note. Rendered only for approvers on SUBMITTED entries. */
@@ -141,6 +144,28 @@ export function ReviewActions<T extends SubmissionBase>({ type, item, onReviewed
           </View>
         </View>
       </Modal>
+    </Card>
+  );
+}
+
+/**
+ * "Edit and resubmit" for the author of a draft / rejected / changes-requested entry (approvers see it too).
+ * Opens the entry form prefilled; saving there resubmits for approval.
+ */
+export function SubmitterActions({ type, item }: { type: SubmissionType; item: SubmissionBase }) {
+  const { user } = useAuth();
+  const router = useRouter();
+  if (!user || !canEditSubmission(user, item) || !canResubmit(user, item)) return null;
+  const draft = item.status === 'DRAFT';
+  const hint = draft
+    ? 'This entry has not been sent for approval yet.'
+    : item.status === 'REJECTED'
+      ? 'This entry was rejected. Fix it and send it again for approval.'
+      : 'The approver asked for changes. Update the entry and resubmit it.';
+  return (
+    <Card title={draft ? 'Draft' : 'Needs your attention'}>
+      <Text style={[typography.caption, styles.reviewHint]}>{hint}</Text>
+      <Button title={draft ? 'Edit and submit' : 'Edit and resubmit'} icon="create-outline" onPress={() => router.push({ pathname: EDIT_PATH[type], params: { editId: item.id } })} />
     </Card>
   );
 }

@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Descriptions, Divider, Drawer, Skeleton, Typography } from 'antd';
+import { Descriptions, Divider, Drawer, Skeleton, Space, Typography } from 'antd';
+import type { ProgressEntryDto } from '@erp/shared';
 import { useProgressEntry } from '@/lib/queries';
 import { formatDate, formatQty } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
@@ -9,9 +10,10 @@ import { StatusTag } from '@/components/common/StatusTag';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { AuditTrail } from '@/components/common/AuditTrail';
 import { ReviewActions } from '@/components/common/ReviewActions';
+import { EditResubmitButton } from '@/components/common/EditResubmitButton';
 import { submissionMetaItems } from '@/components/common/SubmitterInfo';
 
-export function ProgressDrawer({ id, open, onClose }: { id: string | null; open: boolean; onClose: () => void }) {
+export function ProgressDrawer({ id, open, onClose, onEdit }: { id: string | null; open: boolean; onClose: () => void; onEdit?: (entry: ProgressEntryDto) => void }) {
   const { data, isLoading, error, refetch } = useProgressEntry(id ?? undefined);
   return (
     <Drawer
@@ -27,7 +29,14 @@ export function ProgressDrawer({ id, open, onClose }: { id: string | null; open:
           'Progress entry'
         )
       }
-      extra={data ? <ReviewActions type="progress" id={data.id} status={data.status} size="small" /> : null}
+      extra={
+        data ? (
+          <Space wrap>
+            <EditResubmitButton entry={data} onEdit={onEdit} size="small" />
+            <ReviewActions type="progress" id={data.id} status={data.status} size="small" />
+          </Space>
+        ) : null
+      }
       destroyOnHidden
     >
       {isLoading && <Skeleton active />}

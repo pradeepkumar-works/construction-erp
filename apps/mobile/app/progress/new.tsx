@@ -1,18 +1,22 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import type { ActivityDto, ProgressEntryDto } from '@erp/shared';
 import { useApi, useFetch } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
-import { Button, Card, DatePicker, ErrorBanner, Input, Loading, PhotoPicker, Screen, Select, type LocalPhoto, type SelectOption } from '../../src/components';
+import { Button, Card, DatePicker, ErrorBanner, ErrorState, Input, Loading, PhotoPicker, Screen, Select, type LocalPhoto, type SelectOption } from '../../src/components';
 import { attachmentIds, photosFailed, photosUploading, SubmitSuccess, useProjectOptions } from '../../src/forms/common';
+import { attachmentsToPhotos, ReviewerNote } from '../../src/forms/edit';
 import { colors, spacing, typography } from '../../src/theme';
 import { fmtQty, isIsoDate, today } from '../../src/utils/format';
 
+/** New progress entry, or (with `editId`) edit a draft / rejected / changes-requested entry and resubmit it. */
 export default function NewProgressScreen() {
-  const params = useLocalSearchParams<{ projectId?: string; activityId?: string }>();
+  const params = useLocalSearchParams<{ projectId?: string; activityId?: string; editId?: string }>();
+  const editId = params.editId ?? null;
   const api = useApi();
   const projects = useProjectOptions();
+  const existing = useFetch<ProgressEntryDto>((a) => a.get(`/progress/${editId}`), [editId], { enabled: !!editId, refetchOnFocus: false });
 
   const [projectId, setProjectId] = useState<string | null>(params.projectId ?? null);
   const [activityId, setActivityId] = useState<string | null>(params.activityId ?? null);
@@ -30,8 +34,23 @@ export default function NewProgressScreen() {
 
   // Default to the only project when the user has just one.
   useEffect(() => {
-    if (!projectId && projects.options.length === 1) setProjectId(projects.options[0].value);
-  }, [projects.options, projectId]);
+    if (!editId && !projectId && projects.options.length === 1) setProjectId(projects.options[0].value);
+  }, [editId, projects.options, projectId]);
+
+  // Editing: prefill the form from the loaded entry.
+  useEffect(() => {
+    const e = existing.data;
+    if (!e) return;
+    setProjectId(e.projectId);
+    setActivityId(e.activityId);
+    setDate(e.date);
+    setQuantity(e.quantity);
+    setLocation(e.location ?? '');
+    setManpower(e.manpowerCount === null ? '' : String(e.manpowerCount));
+    setMachinery(e.machineryUsed ?? '');
+    setRemarks(e.remarks ?? '');
+    setPhotos(attachmentsToPhotos(e.attachments));
+  }, [existing.data]);
 
   const activities = useFetch<ActivityDto[]>((a) => a.get(`/projects/${projectId}/activities`), [projectId], { enabled: !!projectId, refetchOnFocus: false });
   const activityOptions = useMemo<SelectOption[]>(
@@ -64,18 +83,18 @@ export default function NewProgressScreen() {
     if (!validate()) return;
     setBusy(true);
     try {
+      const blank = editId ? null : undefined;
       const body = {
-        projectId,
         activityId,
         date,
         quantity: String(Number(quantity)),
-        remarks: remarks.trim() || undefined,
-        location: location.trim() || undefined,
-        manpowerCount: manpower.trim() ? Number(manpower) : undefined,
-        machineryUsed: machinery.trim() || undefined,
+        remarks: remarks.trim() || blank,
+        location: location.trim() || blank,
+        manpowerCount: manpower.trim() ? Number(manpower) : blank,
+        machineryUsed: machinery.trim() || blank,
         attachmentIds: attachmentIds(photos),
       };
-      const res = await api.post<ProgressEntryDto>('/progress', body);
+      const res = editId ? await api.patch<ProgressEntryDto>(`/progress/${editId}`, { ...body, submit: true }) : await api.post<ProgressEntryDto>('/progress', { projectId, ...body });
       setCreated(res);
     } catch (e) {
       setSubmitError(errorMessage(e));
@@ -93,15 +112,26 @@ export default function NewProgressScreen() {
   };
 
   if (created) {
-    return <SubmitSuccess title="Progress submitted" subtitle={`${created.activityName}: ${fmtQty(created.quantity)} ${created.unit} on ${created.date}. Sent for approval.`} detailHref={`/progress/${created.id}`} onAnother={reset} />;
+    return (
+      <SubmitSuccess
+        title={editId ? 'Progress resubmitted' : 'Progress submitted'}
+        subtitle={`${created.activityName}: ${fmtQty(created.quantity)} ${created.unit} on ${created.date}. Sent for approval.`}
+        detailHref={`/progress/${created.id}`}
+        onAnother={editId ? undefined : reset}
+      />
+    );
   }
   if (projects.loading && !projects.data) return <Loading />;
+  if (editId && existing.loading && !existing.data) return <Loading />;
+  if (editId && existing.error && !existing.data) return <ErrorState message={existing.error} onRetry={existing.reload} />;
 
   return (
     <Screen keyboard>
+      <Stack.Screen options={{ title: editId ? 'Edit Progress Entry' : 'New Progress Entry' }} />
       <ErrorBanner message={submitError ?? projects.error} />
+      <ReviewerNote entry={existing.data} />
       <Card>
-        <Select label="Project" required value={projectId} options={projects.options} onChange={changeProject} placeholder="Choose project" error={errors.projectId} />
+        <Select label="Project" required value={projectId} options={projects.options} onChange={changeProject} placeholder="Choose project" error={errors.projectId} disabled={!!editId} />
         <Select
           label="Activity"
           required
@@ -141,7 +171,7 @@ export default function NewProgressScreen() {
         <PhotoPicker photos={photos} onChange={setPhotos} />
         {errors.photos ? <Text style={styles.err}>{errors.photos}</Text> : null}
       </Card>
-      <Button title="Submit for approval" icon="send" onPress={submit} loading={busy} />
+      <Button title={editId ? 'Resubmit for approval' : 'Submit for approval'} icon="send" onPress={submit} loading={busy} />
     </Screen>
   );
 }

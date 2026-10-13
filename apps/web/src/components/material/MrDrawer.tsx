@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Descriptions, Divider, Drawer, Skeleton, Space, Table } from 'antd';
-import type { MaterialRequestItemDto } from '@erp/shared';
+import type { MaterialRequestDto, MaterialRequestItemDto } from '@erp/shared';
 import { useMaterialRequest } from '@/lib/queries';
 import { formatDate, formatQty } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
@@ -10,9 +10,10 @@ import { PriorityTag, StatusTag } from '@/components/common/StatusTag';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { AuditTrail } from '@/components/common/AuditTrail';
 import { ReviewActions } from '@/components/common/ReviewActions';
+import { EditResubmitButton } from '@/components/common/EditResubmitButton';
 import { submissionMetaItems } from '@/components/common/SubmitterInfo';
 
-export function MrDrawer({ id, open, onClose }: { id: string | null; open: boolean; onClose: () => void }) {
+export function MrDrawer({ id, open, onClose, onEdit }: { id: string | null; open: boolean; onClose: () => void; onEdit?: (entry: MaterialRequestDto) => void }) {
   const { data, isLoading, error, refetch } = useMaterialRequest(id ?? undefined);
   return (
     <Drawer
@@ -29,7 +30,14 @@ export function MrDrawer({ id, open, onClose }: { id: string | null; open: boole
           'Material request'
         )
       }
-      extra={data ? <ReviewActions type="material_request" id={data.id} status={data.status} size="small" /> : null}
+      extra={
+        data ? (
+          <Space wrap>
+            <EditResubmitButton entry={data} onEdit={onEdit} size="small" />
+            <ReviewActions type="material_request" id={data.id} status={data.status} size="small" />
+          </Space>
+        ) : null
+      }
       destroyOnHidden
     >
       {isLoading && <Skeleton active />}

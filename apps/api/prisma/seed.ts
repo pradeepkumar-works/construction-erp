@@ -153,6 +153,17 @@ async function main() {
       });
     }
 
+    // One entry sent back with "changes requested" so the edit-and-resubmit flow can be demoed from the site app
+    if (inProgress[0]) {
+      const a = inProgress[0];
+      const sent = await prisma.progressEntry.create({
+        data: { organizationId: org.id, projectId: project.id, activityId: a.id, date: day(-1), quantity: a.plannedQty.mul(0.05).toDecimalPlaces(0), status: 'CHANGES_REQUESTED', submittedById: engineerId, submittedAt: day(-1), reviewedById: pmId, reviewedAt: day(-1), reviewNote: 'Quantity looks high for one day and there is no site photo. Please re-check and attach a photo.', remarks: 'Yesterday\'s work', manpowerCount: 16 },
+      });
+      for (const [actorId, action, note] of [[engineerId, 'CREATED', null], [engineerId, 'SUBMITTED', null], [pmId, 'CHANGES_REQUESTED', 'Quantity looks high for one day and there is no site photo. Please re-check and attach a photo.']] as const) {
+        await prisma.auditLog.create({ data: { organizationId: org.id, entityType: 'PROGRESS', entityId: sent.id, action, actorId, note, createdAt: day(-1) } });
+      }
+    }
+
     // DPRs for the last 5 days (approved) plus today (submitted)
     for (let i = 5; i >= 0; i--) {
       const date = day(-i);
@@ -172,21 +183,29 @@ async function main() {
       });
     }
 
-    // Material requests: one approved, one submitted
     const mrItems = p.type === 'ROAD'
       ? [{ itemName: 'Bitumen VG-30', specification: 'IOCL / HPCL, bulk', unit: 'MT', quantity: '40' }, { itemName: 'Aggregate 20mm', specification: 'Crushed, approved quarry', unit: 'Cum', quantity: '600' }]
       : p.type === 'BUILDING'
         ? [{ itemName: 'OPC 53 Grade Cement', specification: 'UltraTech / ACC, 50kg bags', unit: 'Bags', quantity: '500' }, { itemName: 'TMT Fe500D 12mm', specification: 'Tata / JSW', unit: 'MT', quantity: '10' }]
         : [{ itemName: 'HDPE PE100 110mm PN6', specification: 'IS 4984, 6m lengths', unit: 'Rmt', quantity: '3000' }, { itemName: 'DI K9 pipe 400mm', specification: 'IS 8329', unit: 'Rmt', quantity: '600' }];
-    for (const status of ['APPROVED', 'SUBMITTED'] as const) {
-      await prisma.materialRequest.create({
+    // Material requests: one approved, one submitted, one rejected (to be edited and resubmitted)
+    for (const status of ['APPROVED', 'SUBMITTED', 'REJECTED'] as const) {
+      const reviewed = status !== 'SUBMITTED';
+      const mr = await prisma.materialRequest.create({
         data: {
           organizationId: org.id, projectId: project.id, requestNo: `MR-${new Date().getUTCFullYear()}-${String(mrCounter++).padStart(4, '0')}`,
-          requiredDate: day(status === 'APPROVED' ? -2 : 7), priority: status === 'APPROVED' ? 'HIGH' : 'NORMAL', remarks: status === 'APPROVED' ? 'Urgent for next pour' : 'Regular monthly requirement',
-          status, submittedById: engineerId, submittedAt: day(status === 'APPROVED' ? -6 : 0), reviewedById: status === 'APPROVED' ? pmId : null, reviewedAt: status === 'APPROVED' ? day(-5) : null,
-          items: { create: mrItems.map((it, idx) => ({ ...it, quantity: D(it.quantity), sortOrder: idx })) },
+          requiredDate: day(status === 'APPROVED' ? -2 : status === 'REJECTED' ? 4 : 7), priority: status === 'APPROVED' ? 'HIGH' : 'NORMAL',
+          remarks: status === 'APPROVED' ? 'Urgent for next pour' : status === 'REJECTED' ? 'Extra stock for the weekend' : 'Regular monthly requirement',
+          status, submittedById: engineerId, submittedAt: day(status === 'APPROVED' ? -6 : status === 'REJECTED' ? -1 : 0), reviewedById: reviewed ? pmId : null, reviewedAt: reviewed ? day(status === 'APPROVED' ? -5 : -1) : null,
+          reviewNote: status === 'REJECTED' ? 'Quantities are double what the next fortnight needs. Reduce and resubmit with a required date after the current stock runs out.' : null,
+          items: { create: mrItems.map((it, idx) => ({ ...it, quantity: D(status === 'REJECTED' ? Number(it.quantity) * 2 : it.quantity), sortOrder: idx })) },
         },
       });
+      if (status === 'REJECTED') {
+        for (const [actorId, action, note] of [[engineerId, 'CREATED', mr.requestNo], [engineerId, 'SUBMITTED', null], [pmId, 'REJECTED', mr.reviewNote]] as const) {
+          await prisma.auditLog.create({ data: { organizationId: org.id, entityType: 'MATERIAL_REQUEST', entityId: mr.id, action, actorId, note, createdAt: day(-1) } });
+        }
+      }
     }
   }
 

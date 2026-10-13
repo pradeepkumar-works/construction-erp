@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { COMMON_UNITS, MATERIAL_PRIORITIES, MATERIAL_PRIORITY_LABELS, type MaterialPriority, type MaterialRequestDto } from '@erp/shared';
-import { useApi } from '../../src/api/hooks';
+import { useApi, useFetch } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
-import { Button, Card, Chips, DatePicker, ErrorBanner, Input, Loading, Screen, Select } from '../../src/components';
+import { Button, Card, Chips, DatePicker, ErrorBanner, ErrorState, Input, Loading, Screen, Select } from '../../src/components';
 import { SubmitSuccess, useProjectOptions } from '../../src/forms/common';
+import { ReviewerNote } from '../../src/forms/edit';
 import { colors, spacing, typography } from '../../src/theme';
 import { addDays, formatDate, isIsoDate, today } from '../../src/utils/format';
 
@@ -23,10 +24,13 @@ const UNIT_OPTIONS = [...COMMON_UNITS, 'Bags', 'Trip', 'Box'].map((u) => ({ valu
 const PRIORITY_CHIPS = MATERIAL_PRIORITIES.map((p) => ({ value: p, label: MATERIAL_PRIORITY_LABELS[p] }));
 const emptyItem = (): ItemRow => ({ key: newKey(), itemName: '', specification: '', unit: null, quantity: '' });
 
+/** New material request, or (with `editId`) edit a draft / rejected / changes-requested request and resubmit it. */
 export default function NewMaterialRequestScreen() {
-  const params = useLocalSearchParams<{ projectId?: string }>();
+  const params = useLocalSearchParams<{ projectId?: string; editId?: string }>();
+  const editId = params.editId ?? null;
   const api = useApi();
   const projects = useProjectOptions();
+  const existing = useFetch<MaterialRequestDto>((a) => a.get(`/material-requests/${editId}`), [editId], { enabled: !!editId, refetchOnFocus: false });
 
   const [projectId, setProjectId] = useState<string | null>(params.projectId ?? null);
   const [requiredDate, setRequiredDate] = useState(addDays(today(), 3));
@@ -39,8 +43,19 @@ export default function NewMaterialRequestScreen() {
   const [created, setCreated] = useState<MaterialRequestDto | null>(null);
 
   useEffect(() => {
-    if (!projectId && projects.options.length === 1) setProjectId(projects.options[0].value);
-  }, [projects.options, projectId]);
+    if (!editId && !projectId && projects.options.length === 1) setProjectId(projects.options[0].value);
+  }, [editId, projects.options, projectId]);
+
+  // Editing: prefill the form from the loaded request.
+  useEffect(() => {
+    const e = existing.data;
+    if (!e) return;
+    setProjectId(e.projectId);
+    setRequiredDate(e.requiredDate);
+    setPriority(e.priority);
+    setRemarks(e.remarks ?? '');
+    setItems(e.items.length ? e.items.map((i) => ({ key: newKey(), itemName: i.itemName, specification: i.specification ?? '', unit: i.unit, quantity: i.quantity })) : [emptyItem()]);
+  }, [existing.data]);
 
   const update = (key: string, patch: Partial<ItemRow>) => setItems((rows) => rows.map((r) => (r.key === key ? { ...r, ...patch } : r)));
 
@@ -64,15 +79,14 @@ export default function NewMaterialRequestScreen() {
     setBusy(true);
     try {
       const body = {
-        projectId,
         requiredDate,
         priority: priority ?? 'NORMAL',
-        remarks: remarks.trim() || undefined,
+        remarks: remarks.trim() || (editId ? null : undefined),
         items: items
           .filter((r) => r.itemName.trim())
           .map((r) => ({ itemName: r.itemName.trim(), specification: r.specification.trim() || undefined, unit: r.unit as string, quantity: String(Number(r.quantity)) })),
       };
-      setCreated(await api.post<MaterialRequestDto>('/material-requests', body));
+      setCreated(editId ? await api.patch<MaterialRequestDto>(`/material-requests/${editId}`, { ...body, submit: true }) : await api.post<MaterialRequestDto>('/material-requests', { projectId, ...body }));
     } catch (e) {
       setSubmitError(errorMessage(e));
     } finally {
@@ -81,15 +95,19 @@ export default function NewMaterialRequestScreen() {
   };
 
   if (created) {
-    return <SubmitSuccess title="Request submitted" subtitle={`${created.requestNo} · ${created.items.length} item${created.items.length === 1 ? '' : 's'} needed by ${formatDate(created.requiredDate)}. Sent for approval.`} detailHref={`/material-request/${created.id}`} />;
+    return <SubmitSuccess title={editId ? 'Request resubmitted' : 'Request submitted'} subtitle={`${created.requestNo} · ${created.items.length} item${created.items.length === 1 ? '' : 's'} needed by ${formatDate(created.requiredDate)}. Sent for approval.`} detailHref={`/material-request/${created.id}`} />;
   }
   if (projects.loading && !projects.data) return <Loading />;
+  if (editId && existing.loading && !existing.data) return <Loading />;
+  if (editId && existing.error && !existing.data) return <ErrorState message={existing.error} onRetry={existing.reload} />;
 
   return (
     <Screen keyboard>
+      <Stack.Screen options={{ title: editId ? 'Edit Material Request' : 'New Material Request' }} />
       <ErrorBanner message={submitError ?? projects.error} />
+      <ReviewerNote entry={existing.data} />
       <Card>
-        <Select label="Project" required value={projectId} options={projects.options} onChange={setProjectId} placeholder="Choose project" error={errors.projectId} />
+        <Select label="Project" required value={projectId} options={projects.options} onChange={setProjectId} placeholder="Choose project" error={errors.projectId} disabled={!!editId} />
         <DatePicker label="Required by" required value={requiredDate} onChange={setRequiredDate} error={errors.requiredDate} />
         <Chips label="Priority" value={priority} options={PRIORITY_CHIPS} onChange={setPriority} clearable={false} />
       </Card>
@@ -122,7 +140,7 @@ export default function NewMaterialRequestScreen() {
       <Card>
         <Input label="Remarks" value={remarks} onChangeText={setRemarks} multiline placeholder="Delivery instructions, purpose, etc." containerStyle={styles.field} />
       </Card>
-      <Button title="Submit request" icon="send" onPress={submit} loading={busy} />
+      <Button title={editId ? 'Resubmit request' : 'Submit request'} icon="send" onPress={submit} loading={busy} />
     </Screen>
   );
 }

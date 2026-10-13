@@ -10,17 +10,21 @@ import { formatDate } from '@/lib/format';
 import { StatusTag } from '@/components/common/StatusTag';
 import { PhotoThumbs } from '@/components/common/AttachmentGallery';
 import { ReviewActions } from '@/components/common/ReviewActions';
+import { EditResubmitButton } from '@/components/common/EditResubmitButton';
 
 export function DprTable({
   data,
   loading,
   showProject,
   onOpen,
+  onEdit,
 }: {
   data: DailyReportDto[];
   loading?: boolean;
   showProject?: boolean;
   onOpen: (id: string) => void;
+  /** Opens the form in edit & resubmit mode; the button shows only for entries the user may resubmit. */
+  onEdit?: (row: DailyReportDto) => void;
 }) {
   const columns: TableProps<DailyReportDto>['columns'] = [
     { title: 'Date', dataIndex: 'date', width: 110, render: (v, r) => <Typography.Link onClick={() => onOpen(r.id)}>{formatDate(v)}</Typography.Link>, sorter: (a, b) => a.date.localeCompare(b.date), defaultSortOrder: 'descend' },
@@ -44,6 +48,7 @@ export function DprTable({
             View
           </Button>
           <ReviewActions type="dpr" id={r.id} status={r.status} size="small" compact />
+          <EditResubmitButton entry={r} onEdit={onEdit} size="small" compact />
         </div>
       ),
     },

@@ -8,17 +8,21 @@ import type { MaterialRequestDto } from '@erp/shared';
 import { formatDate } from '@/lib/format';
 import { PriorityTag, StatusTag } from '@/components/common/StatusTag';
 import { ReviewActions } from '@/components/common/ReviewActions';
+import { EditResubmitButton } from '@/components/common/EditResubmitButton';
 
 export function MrTable({
   data,
   loading,
   showProject,
   onOpen,
+  onEdit,
 }: {
   data: MaterialRequestDto[];
   loading?: boolean;
   showProject?: boolean;
   onOpen: (id: string) => void;
+  /** Opens the form in edit & resubmit mode; the button shows only for entries the user may resubmit. */
+  onEdit?: (row: MaterialRequestDto) => void;
 }) {
   const columns: TableProps<MaterialRequestDto>['columns'] = [
     { title: 'Request No.', dataIndex: 'requestNo', width: 140, render: (v, r) => <Typography.Link onClick={() => onOpen(r.id)}>{v}</Typography.Link> },
@@ -53,6 +57,7 @@ export function MrTable({
             View
           </Button>
           <ReviewActions type="material_request" id={r.id} status={r.status} size="small" compact />
+          <EditResubmitButton entry={r} onEdit={onEdit} size="small" compact />
         </div>
       ),
     },
