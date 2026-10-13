@@ -23,6 +23,8 @@ contractors after the first client is live.
   and next-day plan, and **material requests** with line items.
 - One approval workflow for everything: submitted → approved / rejected / changes requested,
   with reviewer note and a full audit trail. Approvers see a single pending queue.
+- Lists that scale: progress, DPRs, material requests, projects and users page, search and sort on the
+  server, and every list (BOQ and activities too) exports to Excel with the filters on screen.
 - Edit and resubmit: a rejected or changes-requested entry is fixed in place (web drawer or site app)
   and sent back for approval with the reviewer's note shown alongside the form.
 - Dashboards: company (projects, contract value, pending approvals, delayed activities, DPRs
@@ -117,4 +119,4 @@ pnpm --filter @erp/api prisma studio
 
 Procurement (indent → RFQ → PO), store/GRN and stock, attendance and payroll, machinery logs,
 measurement book and RA billing, finance, HR, quality registers,
-Excel/PDF report exports beyond the DPR print view, and tenant self-signup/billing.
+PDF report exports beyond the DPR print view, and tenant self-signup/billing.

@@ -1,6 +1,6 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import type { DailyReportDto, ManpowerLine, MachineryLine } from '@erp/shared';
+import type { DailyReportDto, DprSortField, ManpowerLine, MachineryLine, Paginated, SortOrder } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -9,6 +9,7 @@ import { SubmissionLifecycleService } from '../common/submission-lifecycle.servi
 import { AttachmentsService } from '../common/attachments.service';
 import { dateOnly, iso, parseDate } from '../common/serialize';
 import { isUniqueViolation } from '../common/idempotency';
+import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import { CreateDprDto, ListDprQuery, UpdateDprDto } from './dpr.dto';
 
 const include = {
@@ -18,6 +19,16 @@ const include = {
   attachments: true,
 } satisfies Prisma.DailyReportInclude;
 type Row = Prisma.DailyReportGetPayload<{ include: typeof include }>;
+
+const ORDER: Record<DprSortField, (o: SortOrder) => Prisma.DailyReportOrderByWithRelationInput[]> = {
+  date: (o) => [{ date: o }, { createdAt: o }],
+  createdAt: (o) => [{ createdAt: o }],
+  submittedAt: (o) => [{ submittedAt: { sort: o, nulls: 'last' } }],
+  status: (o) => [{ status: o }, { date: 'desc' }],
+  project: (o) => [{ project: { name: o } }, { date: 'desc' }],
+  submittedBy: (o) => [{ submittedBy: { fullName: o } }, { date: 'desc' }],
+};
+const DESC_DEFAULT = new Set<string>(['date', 'createdAt', 'submittedAt']);
 
 @Injectable()
 export class DprService {
@@ -62,13 +73,24 @@ export class DprService {
     };
   }
 
-  async list(user: RequestUser, q: ListDprQuery): Promise<DailyReportDto[]> {
+  async list(user: RequestUser, q: ListDprQuery): Promise<Paginated<DailyReportDto>> {
     const where: Prisma.DailyReportWhereInput = { ...this.access.submissionWhere(user) };
     if (q.projectId) where.projectId = q.projectId;
     if (q.status) where.status = q.status;
     if (q.mine) where.submittedById = user.id;
-    const rows = await this.prisma.dailyReport.findMany({ where, include, orderBy: [{ date: 'desc' }, { createdAt: 'desc' }], take: q.limit ?? 200 });
-    return rows.map((r) => this.toDto(r));
+    const words = searchWords(q.q);
+    if (words.length)
+      where.AND = words.map((w) => ({
+        OR: [{ workExecuted: ilike(w) }, { issues: ilike(w) }, { siteCondition: ilike(w) }, { project: { name: ilike(w) } }, { submittedBy: { fullName: ilike(w) } }],
+      }));
+    const sortBy = q.sortBy ?? 'date';
+    const order = q.sortOrder ?? (DESC_DEFAULT.has(sortBy) ? 'desc' : 'asc');
+    const args = pageArgs(q);
+    const [rows, total] = await Promise.all([
+      this.prisma.dailyReport.findMany({ where, include, orderBy: [...ORDER[sortBy](order), { id: 'asc' }], skip: args.skip, take: args.take }),
+      this.prisma.dailyReport.count({ where }),
+    ]);
+    return paginated(rows.map((r) => this.toDto(r)), total, args);
   }
 
   async get(user: RequestUser, id: string): Promise<DailyReportDto> {

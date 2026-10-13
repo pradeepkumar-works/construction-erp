@@ -69,6 +69,29 @@ columns and registering it in the lifecycle service; the approvals queue and aud
   carried by free-text `location` and the activity list, not by schema. A per-type activity template
   is the planned next step so new projects start from a standard list.
 
+## Lists: paging, search, sort and export
+
+`GET /progress`, `/dpr`, `/material-requests`, `/projects` and `/users` return `Paginated<T>`
+(`items`, `total`, `page`, `pageSize`). They share `PageQuery` (`apps/api/src/common/paging.ts`):
+
+- `page` (1-based) and `pageSize` (default 25, max 500; `limit` is a deprecated alias).
+- `q`: case-insensitive search. Each word must match one of the list's columns (for example progress
+  searches activity, location, remarks, project and submitter), so "cement urgent" narrows rather than widens.
+- `sortBy` from the list's allowed columns in `LIST_SORT_FIELDS` (`packages/shared/src/paging.ts`) and
+  `sortOrder`; an unknown column is a 400. Every sort ends with `id` so pages never overlap.
+- The usual filters still apply (`projectId`, `status`, `mine`, project `type` / `status`, user `roleKey` /
+  `isActive`). Query-string booleans are parsed strictly (`?mine=false` is false).
+
+Visibility rules are unchanged: paging runs on the same `submissionWhere` / `projectWhere` clauses.
+Dropdowns that need every project or user ask for one page of 500. BOQ items and activities stay
+unpaged per-project arrays.
+
+On the web, `useListState` holds a table's page, size, search and sort, and the progress, DPR and
+material request tables are one `*List` component used both on their own page and inside the project
+tabs. Export fetches every matching row page by page with the current filters (not just the visible
+page) and writes `.xlsx` in the browser with SheetJS; column layouts live in `src/lib/exportColumns.ts`.
+Material requests export one row per item so quantities can be summed.
+
 ## Money and quantities
 
 Decimal columns everywhere (`Decimal(18,2)` for money, `Decimal(18,3)` for quantities) and strings

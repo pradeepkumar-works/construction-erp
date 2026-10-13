@@ -2,8 +2,9 @@ import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import type { DailyReportDto, MaterialRequestDto, ProgressEntryDto, ProjectSummary, SubmissionBase, SubmissionType } from '@erp/shared';
+import type { DailyReportDto, MaterialRequestDto, Paginated, ProgressEntryDto, ProjectSummary, SubmissionBase, SubmissionType } from '@erp/shared';
 import { useFetch } from '../../src/api/hooks';
+import { fetchProjects } from '../../src/api/lists';
 import { useAuth } from '../../src/auth/AuthContext';
 import { Button, Card, EmptyState, ErrorState, Loading, NotificationBell, OfflineBanner, Screen, SectionTitle, Stat, SubmissionRow } from '../../src/components';
 import { useOffline } from '../../src/offline';
@@ -26,12 +27,12 @@ export default function HomeScreen() {
   const { data, loading, refreshing, error, refresh, reload } = useFetch<HomeData>(
     async (api) => {
       const [projects, progress, dprs, mrs] = await Promise.all([
-        api.get<ProjectSummary[]>('/projects'),
-        api.get<ProgressEntryDto[]>('/progress', { mine: true, limit: 50 }),
-        api.get<DailyReportDto[]>('/dpr', { mine: true, limit: 50 }),
-        api.get<MaterialRequestDto[]>('/material-requests', { mine: true, limit: 50 }),
+        fetchProjects(api),
+        api.get<Paginated<ProgressEntryDto>>('/progress', { mine: true, pageSize: 50 }),
+        api.get<Paginated<DailyReportDto>>('/dpr', { mine: true, pageSize: 50 }),
+        api.get<Paginated<MaterialRequestDto>>('/material-requests', { mine: true, pageSize: 50 }),
       ]);
-      return { projects, progress, dprs, mrs };
+      return { projects, progress: progress.items, dprs: dprs.items, mrs: mrs.items };
     },
     // Refetch when queued entries reach the server.
     [syncedCount],

@@ -1,6 +1,14 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { IsDateString, IsIn, IsNumberString, IsOptional, IsString, IsUUID, MinLength } from 'class-validator';
-import { PROJECT_STATUSES, PROJECT_TYPES, ProjectStatus, ProjectType } from '@erp/shared';
+import { LIST_SORT_FIELDS, PROJECT_STATUSES, PROJECT_TYPES, ProjectStatus, ProjectType, type ProjectSortField } from '@erp/shared';
+import { PageQuery } from '../common/paging';
+
+/** `q` matches code, name, client, location and work order no. */
+export class ListProjectsQuery extends PageQuery {
+  @ApiPropertyOptional({ enum: PROJECT_STATUSES }) @IsOptional() @IsIn(PROJECT_STATUSES as unknown as string[]) status?: ProjectStatus;
+  @ApiPropertyOptional({ enum: PROJECT_TYPES }) @IsOptional() @IsIn(PROJECT_TYPES as unknown as string[]) type?: ProjectType;
+  @ApiPropertyOptional({ enum: LIST_SORT_FIELDS.projects, default: 'status' }) @IsOptional() @IsIn(LIST_SORT_FIELDS.projects as unknown as string[]) sortBy?: ProjectSortField;
+}
 
 export class CreateProjectDto {
   @ApiProperty({ example: 'RD-001' }) @IsString() @MinLength(2) code: string;
