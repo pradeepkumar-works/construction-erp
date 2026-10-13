@@ -11,6 +11,7 @@ import type {
   LabourRatesDto,
   ProjectCostDto,
   ProjectCostSummaryDto,
+  ProgressReportDto,
   PaymentMode,
   ItemDto,
   MachineryLogDto,
@@ -383,6 +384,14 @@ export const useLabourRates = (enabled = true) =>
     queryKey: ['cost', 'labour-rates'],
     queryFn: async () => (await api.get<LabourRatesDto>('/cost/labour-rates')).data,
     enabled,
+  });
+
+export const useProgressReport = (projectId: string | undefined, from: string, to: string) =>
+  useQuery({
+    queryKey: ['reports', 'progress', projectId, from, to],
+    queryFn: async () => (await api.get<ProgressReportDto>('/reports/progress', { params: { projectId, from, to } })).data,
+    placeholderData: keepPreviousData,
+    enabled: !!projectId,
   });
 
 /** Approved material requests with something still to receive (GRN form). */

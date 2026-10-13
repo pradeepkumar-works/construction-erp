@@ -2,6 +2,7 @@ import { ConflictException, Injectable, NotFoundException } from '@nestjs/common
 import { Prisma } from '@prisma/client';
 import type { Paginated, ProjectDetail, ProjectSortField, ProjectSummary, RoleKey, SortOrder } from '@erp/shared';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
+import { weightedProgress } from '../common/progress';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -38,18 +39,9 @@ export class ProjectsService {
       where: { projectId },
       include: { boqItem: { select: { rate: true } }, progressEntries: { where: { status: 'APPROVED' }, select: { quantity: true } } },
     });
-    if (activities.length === 0) return 0;
-    let weightedDone = new Prisma.Decimal(0);
-    let weightTotal = new Prisma.Decimal(0);
-    for (const a of activities) {
-      const executed = a.progressEntries.reduce((s, e) => s.add(e.quantity), new Prisma.Decimal(0));
-      const weight = a.boqItem ? a.boqItem.rate.mul(a.plannedQty) : a.plannedQty;
-      const activityPct = pct(executed, a.plannedQty) / 100;
-      weightedDone = weightedDone.add(weight.mul(activityPct));
-      weightTotal = weightTotal.add(weight);
-    }
-    if (weightTotal.lte(0)) return 0;
-    return Math.round(weightedDone.div(weightTotal).mul(100).toNumber() * 10) / 10;
+    return weightedProgress(
+      activities.map((a) => ({ plannedQty: a.plannedQty, rate: a.boqItem?.rate ?? null, executed: a.progressEntries.reduce((s, e) => s.add(e.quantity), new Prisma.Decimal(0)) })),
+    );
   }
 
   async pendingApprovalsCount(projectId: string): Promise<number> {

@@ -589,3 +589,72 @@ export interface ProjectCostDto extends ProjectCostSummaryDto {
   machineryByEquipment: { equipmentId: string; code: string; name: string; rateUnit: EquipmentRateUnit; rate: string | null; days: number; hours: string; amount: string }[];
   labourByTrade: { category: string; manDays: number; dailyRate: string | null; amount: string }[];
 }
+
+/* ---------- progress report ---------- */
+
+export interface ReportActivityRowDto {
+  id: string;
+  name: string;
+  unit: string;
+  plannedQty: string;
+  /** Approved progress dated inside the period. */
+  periodQty: string;
+  /** Approved progress up to the end of the period. */
+  cumulativeQty: string;
+  pct: number;
+  plannedStart: string | null;
+  plannedEnd: string | null;
+  /** Planned end on or before the period end and not complete. */
+  delayed: boolean;
+}
+
+export interface ReportBoqRowDto {
+  itemNo: string;
+  description: string;
+  unit: string;
+  rate: string;
+  periodQty: string;
+  periodValue: string;
+  cumulativeQty: string;
+  cumulativeValue: string;
+  /** Approved measurement book quantity dated inside the period. */
+  measuredPeriodQty: string;
+}
+
+/** Weekly or monthly progress report built from approved data. */
+export interface ProgressReportDto {
+  project: {
+    id: string;
+    code: string;
+    name: string;
+    type: ProjectType;
+    clientName: string | null;
+    consultantName: string | null;
+    workOrderNo: string | null;
+    location: string | null;
+    startDate: string | null;
+    endDate: string | null;
+    contractValue: string | null;
+    projectManagerName: string | null;
+  };
+  organizationName: string;
+  from: string;
+  to: string;
+  generatedAt: string;
+  physical: { atStartPct: number; atEndPct: number };
+  /** Share of the contract period elapsed at the end of the report period; null without both dates. */
+  timeElapsedPct: number | null;
+  financial: { periodValue: string; cumulativeValue: string; contractPct: number | null; measuredPeriodValue: string; measuredCumulativeValue: string };
+  activities: ReportActivityRowDto[];
+  boq: ReportBoqRowDto[];
+  manpower: { category: string; manDays: number; avgPerDay: number }[];
+  attendanceDays: number;
+  machinery: { code: string; name: string; days: number; hours: string; idleHours: string; breakdownHours: string }[];
+  materials: { name: string; unit: string; received: string; issued: string }[];
+  dpr: { days: number; approved: number; rainyDays: number };
+  issues: { date: string; text: string }[];
+  safety: { date: string; text: string }[];
+  /** Activities planned to be under way in the next period of the same length and not complete. */
+  nextPeriod: { name: string; unit: string; balanceQty: string; plannedEnd: string | null }[];
+  photos: { url: string; caption: string }[];
+}

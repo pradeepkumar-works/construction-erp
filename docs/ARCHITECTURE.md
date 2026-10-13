@@ -237,6 +237,18 @@ The store register per project, fed by approved material requests:
   `LABOUR_RATE_ROLES` (admin, management, accounts) set labour rates; item rates go with the item master.
 - **API.** `GET /cost/projects?from&to`, `GET /cost/projects/:id?from&to`, `GET`/`PUT /cost/labour-rates`.
 
+## Progress report
+
+`GET /reports/progress?projectId&from&to` (any project member, at most 92 days) returns
+`ProgressReportDto`: physical progress at the start and end of the period (the same BOQ-weighted rule as
+the dashboard, `common/progress.ts`), contract time elapsed, executed value (approved progress × BOQ
+rate) for the period and to date, measured value, activity rows (period, to date, %, delayed at period
+end), BOQ rows with movement, manpower from attendance, machinery from approved logs, material received
+and issued, issues and safety notes from approved DPRs, activities planned to be under way in the next
+period of the same length, and up to eight photos from approved progress. The web renders it to an A4
+HTML document (`components/reports/progressReportHtml.ts`), previews it in an iframe and prints it to
+PDF from the browser.
+
 ## Money and quantities
 
 Decimal columns everywhere (`Decimal(18,2)` for money, `Decimal(18,3)` for quantities) and strings

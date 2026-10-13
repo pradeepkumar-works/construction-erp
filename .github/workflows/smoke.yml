@@ -238,6 +238,20 @@ jobs:
           curl -sf "$API_URL/cost/labour-rates" -H "$H" | jq -r '"labour rates: \(.rates | length), trades without a rate: \(.unpricedTrades | length)"'
           code=$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/cost/projects" -H "authorization: Bearer $(login engineer@demo.com)")
           echo "site engineer: $code"; [ "$code" = "403" ]
+      - name: Progress report
+        run: |
+          set -e
+          TOKEN=$(curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' \
+            -d '{"email":"pm@demo.com","password":"password123"}' | jq -r .accessToken)
+          H="authorization: Bearer $TOKEN"
+          PROJECT=$(curl -sf "$API_URL/projects" -H "$H" | jq -r '.items[0].id')
+          FROM=$(date -u +%Y-%m-01); TO=$(date -u +%Y-%m-%d)
+          curl -sf "$API_URL/reports/progress?projectId=$PROJECT&from=$FROM&to=$TO" -H "$H" \
+            | jq -e '.physical.atEndPct >= .physical.atStartPct and (.activities | length) > 0 and (.financial.cumulativeValue | type) == "string"' > /dev/null
+          curl -sf "$API_URL/reports/progress?projectId=$PROJECT&from=$FROM&to=$TO" -H "$H" \
+            | jq -r '"\(.project.code) \(.from)..\(.to): physical \(.physical.atStartPct)% -> \(.physical.atEndPct)%, executed ₹\(.financial.periodValue)"'
+          code=$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/reports/progress?projectId=$PROJECT&from=2026-01-01&to=2026-12-31" -H "$H")
+          echo "over 92 days: $code"; [ "$code" = "400" ]
       - name: Paged lists with search and sort
         run: |
           set -e

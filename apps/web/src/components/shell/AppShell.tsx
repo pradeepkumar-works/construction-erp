@@ -16,6 +16,7 @@ import {
   WalletOutlined,
   CalculatorOutlined,
   FundOutlined,
+  FilePdfOutlined,
   LineChartOutlined,
   LogoutOutlined,
   MenuOutlined,
@@ -86,6 +87,7 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
       { key: '/stock', icon: <InboxOutlined />, label: <Link href="/stock">Stock</Link> },
       { key: '/machinery', icon: <ToolOutlined />, label: <Link href="/machinery">Machinery</Link> },
       { key: '/expenses', icon: <WalletOutlined />, label: <Link href="/expenses">Site Expenses</Link> },
+      { key: '/reports', icon: <FilePdfOutlined />, label: <Link href="/reports">Progress Reports</Link> },
       ...(canViewCost(user.roleKey) ? [{ key: '/cost', icon: <FundOutlined />, label: <Link href="/cost">Project Cost</Link> }] : []),
       { key: '/notifications', icon: <BellOutlined />, label: <Link href="/notifications">Notifications</Link> },
     ];

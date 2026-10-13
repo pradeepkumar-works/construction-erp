@@ -43,6 +43,9 @@ contractors after the first client is live.
 - Project cost: approved site expenses, material issued at the item's standard rate, approved machinery logs
   at the hire rate and attendance at each trade's daily rate, against the value of approved progress (and of
   approved measurements), by project and month, with margin. For approvers and accounts.
+- Progress reports: weekly, monthly or any period up to three months, from approved data (physical and
+  financial progress, activities, BOQ, manpower, machinery, material, issues, next-period plan, photos),
+  previewed on the web and printed or saved as PDF.
 - Edit and resubmit: a rejected or changes-requested entry is fixed in place (web drawer or site app)
   and sent back for approval with the reviewer's note shown alongside the form.
 - Dashboards: company (projects, contract value, pending approvals, delayed activities, DPRs
@@ -138,4 +141,4 @@ pnpm --filter @erp/api prisma studio
 
 Procurement (indent → RFQ → PO), payroll,
 RA billing from the measurement book, finance, HR, quality registers,
-PDF report exports beyond the DPR print view, and tenant self-signup/billing.
+a client-specific report template, and tenant self-signup/billing.
