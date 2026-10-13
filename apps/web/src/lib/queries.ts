@@ -7,6 +7,7 @@ import type {
   ExpenseCategory,
   ExpenseDto,
   ExpenseSummaryDto,
+  MeasurementSheetDto,
   PaymentMode,
   ItemDto,
   MachineryLogDto,
@@ -50,7 +51,7 @@ export interface RoleDto {
   name: string;
 }
 
-export type ApprovalTypeParam = 'progress' | 'dpr' | 'material_request' | 'machinery' | 'expense';
+export type ApprovalTypeParam = 'progress' | 'dpr' | 'material_request' | 'machinery' | 'expense' | 'measurement';
 
 export const approvalTypeParam: Record<SubmissionType, ApprovalTypeParam> = {
   PROGRESS: 'progress',
@@ -58,6 +59,7 @@ export const approvalTypeParam: Record<SubmissionType, ApprovalTypeParam> = {
   MATERIAL_REQUEST: 'material_request',
   MACHINERY: 'machinery',
   EXPENSE: 'expense',
+  MEASUREMENT: 'measurement',
 };
 
 /** Paging, search and sort understood by every paged list endpoint. */
@@ -126,6 +128,12 @@ export interface ExpenseFilters extends ListFilters {
   from?: string;
   to?: string;
   noReceipt?: boolean;
+}
+
+export interface MeasurementFilters extends ListFilters {
+  boqItemId?: string;
+  from?: string;
+  to?: string;
 }
 
 export const clean = (f?: object) =>
@@ -328,6 +336,20 @@ export const useExpense = (id: string | undefined) =>
   useQuery({
     queryKey: ['expenses', 'detail', id],
     queryFn: async () => (await api.get<ExpenseDto>(`/expenses/${id}`)).data,
+    enabled: !!id,
+  });
+
+export const useMeasurements = (filters?: MeasurementFilters) =>
+  useQuery({
+    queryKey: ['measurements', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<MeasurementSheetDto>>('/measurements', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+  });
+
+export const useMeasurement = (id: string | undefined) =>
+  useQuery({
+    queryKey: ['measurements', 'detail', id],
+    queryFn: async () => (await api.get<MeasurementSheetDto>(`/measurements/${id}`)).data,
     enabled: !!id,
   });
 

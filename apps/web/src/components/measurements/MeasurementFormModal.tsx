@@ -1,0 +1,207 @@
+'use client';
+
+import React, { useEffect } from 'react';
+import { Alert, App, Button, Checkbox, DatePicker, Form, Input, InputNumber, Modal, Select, Typography } from 'antd';
+import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import dayjs from 'dayjs';
+import type { AttachmentDto, MeasurementSheetDto } from '@erp/shared';
+import { hasDimensions, measurementLineQty, measurementTotal } from '@erp/shared';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { api, errorMessage } from '@/lib/api';
+import { useBoq, useProjects } from '@/lib/queries';
+import { formatINR, formatQty, toNumber } from '@/lib/format';
+import { PhotoUpload } from '@/components/common/PhotoUpload';
+import { editActionLabel } from '@/components/common/EditResubmitButton';
+
+interface LineValues {
+  description?: string;
+  nos?: number | null;
+  length?: number | null;
+  breadth?: number | null;
+  depth?: number | null;
+  deduct?: boolean;
+}
+
+interface FormValues {
+  projectId: string;
+  boqItemId: string;
+  date: dayjs.Dayjs;
+  location: string;
+  remarks?: string;
+  lines: LineValues[];
+  photos?: AttachmentDto[];
+}
+
+const LINE_GRID = { display: 'grid', gridTemplateColumns: '2.4fr 0.8fr 1fr 1fr 1fr 0.9fr 1fr 32px', gap: '0 8px', alignItems: 'start' } as const;
+const n = (v: string | null) => (v === null ? null : Number(v));
+const str = (v: number | null | undefined) => (v === null || v === undefined ? null : String(v));
+
+/** Record a measurement sheet against a BOQ item, or (with `sheet`) fix a returned one and resubmit it. */
+export function MeasurementFormModal({ open, onClose, projectId, boqItemId, sheet }: { open: boolean; onClose: () => void; projectId?: string; boqItemId?: string; sheet?: MeasurementSheetDto | null }) {
+  const [form] = Form.useForm<FormValues>();
+  const { message } = App.useApp();
+  const qc = useQueryClient();
+  const { data: projects } = useProjects();
+  const editing = !!sheet;
+  const fixedProject = sheet?.projectId ?? projectId;
+  const selectedProject = Form.useWatch('projectId', form) ?? fixedProject;
+  const { data: boq } = useBoq(selectedProject);
+  const boqId = Form.useWatch('boqItemId', form);
+  const item = boq?.find((b) => b.id === boqId);
+  const lines = (Form.useWatch('lines', form) ?? []) as LineValues[];
+  const total = measurementTotal(lines);
+  const contractQty = item ? toNumber(item.revisedQty ?? item.originalQty) : 0;
+
+  useEffect(() => {
+    if (!open) return;
+    form.resetFields();
+    if (sheet) {
+      form.setFieldsValue({
+        projectId: sheet.projectId,
+        boqItemId: sheet.boqItemId,
+        date: dayjs(sheet.date),
+        location: sheet.location,
+        remarks: sheet.remarks ?? undefined,
+        lines: sheet.lines.map((l) => ({ description: l.description, nos: n(l.nos), length: n(l.length), breadth: n(l.breadth), depth: n(l.depth), deduct: l.deduct })),
+        photos: sheet.attachments,
+      });
+    } else {
+      form.setFieldsValue({ projectId, boqItemId, date: dayjs(), lines: [{ nos: 1 }] });
+    }
+  }, [open, projectId, boqItemId, sheet, form]);
+
+  const mutation = useMutation({
+    mutationFn: async (v: FormValues) => {
+      const body = {
+        boqItemId: v.boqItemId,
+        date: v.date.format('YYYY-MM-DD'),
+        location: v.location.trim(),
+        remarks: v.remarks?.trim() || (editing ? null : undefined),
+        lines: v.lines.map((l) => ({ description: (l.description ?? '').trim(), nos: str(l.nos), length: str(l.length), breadth: str(l.breadth), depth: str(l.depth), deduct: !!l.deduct })),
+        attachmentIds: (v.photos ?? []).map((p) => p.id),
+        submit: true,
+      };
+      return sheet ? (await api.patch(`/measurements/${sheet.id}`, body)).data : (await api.post('/measurements', { projectId: v.projectId, ...body })).data;
+    },
+    onSuccess: (x: MeasurementSheetDto) => {
+      message.success(editing ? `${x.mbNo} resubmitted for approval` : `${x.mbNo} submitted for approval`);
+      qc.invalidateQueries();
+      onClose();
+    },
+    onError: (err) => message.error(errorMessage(err)),
+  });
+
+  return (
+    <Modal
+      open={open}
+      title={sheet ? `${editActionLabel(sheet.status)} · ${sheet.mbNo}` : 'New measurement'}
+      okText={editing ? 'Resubmit for approval' : 'Submit'}
+      onCancel={onClose}
+      onOk={() => form.submit()}
+      confirmLoading={mutation.isPending}
+      width={900}
+      destroyOnHidden
+    >
+      <Form form={form} layout="vertical" onFinish={(v) => mutation.mutate(v)} style={{ marginTop: 8 }}>
+        {sheet?.reviewNote && <Alert type="warning" showIcon style={{ marginBottom: 16 }} message={`Reviewer note from ${sheet.reviewedByName ?? 'approver'}`} description={sheet.reviewNote} />}
+        <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]} hidden={!!fixedProject}>
+          <Select showSearch optionFilterProp="label" placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} onChange={() => form.setFieldValue('boqItemId', undefined)} />
+        </Form.Item>
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '0 16px' }}>
+          <Form.Item
+            name="boqItemId"
+            label="BOQ item"
+            rules={[{ required: true, message: 'Required' }]}
+            extra={item ? `Contract ${formatQty(contractQty)} ${item.unit} · measured ${formatQty(item.measuredQty)} · awaiting approval ${formatQty(item.pendingMeasuredQty)}` : undefined}
+          >
+            <Select showSearch optionFilterProp="label" placeholder="Select BOQ item" disabled={!selectedProject} options={(boq ?? []).map((b) => ({ value: b.id, label: `${b.itemNo} - ${b.description} (${b.unit})` }))} />
+          </Form.Item>
+          <Form.Item name="date" label="Measured on" rules={[{ required: true, message: 'Required' }]}>
+            <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+          </Form.Item>
+        </div>
+        <Form.Item name="location" label="Location" rules={[{ required: true, whitespace: true, message: 'Required' }]}>
+          <Input maxLength={200} placeholder="Chainage, grid, floor or zone, e.g. Ch 2+100 to 2+350 LHS" />
+        </Form.Item>
+        <div style={{ ...LINE_GRID, fontSize: 12, color: 'rgba(0,0,0,0.55)', marginBottom: 4 }}>
+          <span>Description</span>
+          <span>Nos</span>
+          <span>Length</span>
+          <span>Breadth</span>
+          <span>Depth / height</span>
+          <span>Deduct</span>
+          <span style={{ textAlign: 'right' }}>Qty {item ? `(${item.unit})` : ''}</span>
+          <span />
+        </div>
+        <Form.List
+          name="lines"
+          rules={[
+            {
+              validator: async (_, v: LineValues[] | undefined) => {
+                if (!v?.length) throw new Error('Add at least one line');
+                if (measurementTotal(v) <= 0) throw new Error('The total must be greater than zero');
+              },
+            },
+          ]}
+        >
+          {(fields, { add, remove }, { errors }) => (
+            <>
+              {fields.map((f) => {
+                const line = lines[f.name] ?? {};
+                const qty = measurementLineQty(line);
+                return (
+                  <div key={f.key} style={LINE_GRID}>
+                    <Form.Item name={[f.name, 'description']} rules={[{ required: true, whitespace: true, message: 'Required' }]}>
+                      <Input maxLength={200} placeholder="e.g. Footing F1" />
+                    </Form.Item>
+                    <Form.Item name={[f.name, 'nos']}>
+                      <InputNumber style={{ width: '100%' }} min={0} />
+                    </Form.Item>
+                    <Form.Item name={[f.name, 'length']}>
+                      <InputNumber style={{ width: '100%' }} min={0} />
+                    </Form.Item>
+                    <Form.Item name={[f.name, 'breadth']}>
+                      <InputNumber style={{ width: '100%' }} min={0} />
+                    </Form.Item>
+                    <Form.Item
+                      name={[f.name, 'depth']}
+                      rules={[{ validator: async () => (hasDimensions(line) ? undefined : Promise.reject(new Error('Enter nos or a dimension'))) }]}
+                    >
+                      <InputNumber style={{ width: '100%' }} min={0} />
+                    </Form.Item>
+                    <Form.Item name={[f.name, 'deduct']} valuePropName="checked">
+                      <Checkbox />
+                    </Form.Item>
+                    <div className="mono" style={{ textAlign: 'right', lineHeight: '32px', color: qty < 0 ? '#cf1322' : undefined }}>
+                      {formatQty(qty)}
+                    </div>
+                    <Button type="text" icon={<DeleteOutlined />} disabled={fields.length === 1} onClick={() => remove(f.name)} aria-label="Remove line" />
+                  </div>
+                );
+              })}
+              <Form.ErrorList errors={errors} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '4px 0 16px' }}>
+                <Button icon={<PlusOutlined />} onClick={() => add({ nos: 1 })} disabled={fields.length >= 100}>
+                  Add line
+                </Button>
+                <Typography.Text strong style={{ fontSize: 16 }}>
+                  Total {formatQty(total)} {item?.unit ?? ''}
+                  {item ? <span className="text-muted" style={{ fontWeight: 400, fontSize: 13 }}> · {formatINR(total * toNumber(item.rate))}</span> : null}
+                </Typography.Text>
+              </div>
+            </>
+          )}
+        </Form.List>
+        <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginTop: -8 }}>
+          Each line is nos × length × breadth × depth; blank columns count as 1. Tick Deduct for openings and overlaps.
+        </Typography.Paragraph>
+        <Form.Item name="remarks" label="Remarks">
+          <Input.TextArea rows={2} maxLength={1000} />
+        </Form.Item>
+        <Form.Item name="photos" label="Photos or sketch">
+          <PhotoUpload />
+        </Form.Item>
+      </Form>
+    </Modal>
+  );
+}

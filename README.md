@@ -36,6 +36,10 @@ contractors after the first client is live.
   approved by the PM like any other submission. Web Machinery page and project tab with Excel export.
 - Site expenses: bills paid at site with category, vendor GSTIN, taxable value, GST and the bill photo,
   approved by the PM; approved expenses are project cost. Totals by category and status on the web page.
+- Measurement book: the QS or site engineer records measurements against a BOQ item and location as
+  nos × length × breadth × depth lines with deductions; approved sheets give each BOQ item its measured
+  (billable) quantity and value, shown next to executed progress on the BOQ tab. Web page, project tab and
+  site-app form (offline too), Excel export one row per line.
 - Edit and resubmit: a rejected or changes-requested entry is fixed in place (web drawer or site app)
   and sent back for approval with the reviewer's note shown alongside the form.
 - Dashboards: company (projects, contract value, pending approvals, delayed activities, DPRs
@@ -85,7 +89,8 @@ All passwords are `password123`.
 | engineer@demo.com | Site Engineer | road + water projects, submits |
 | engineer2@demo.com | Site Engineer | building + water projects, submits |
 | tl@demo.com | Team Leader | road + water projects |
-| store@demo.com, qs@demo.com, procurement@demo.com, qaqc@demo.com, accounts@demo.com, hr@demo.com | other roles | as per role |
+| qs@demo.com | Quantity Surveyor | road + building projects, records measurements |
+| store@demo.com, procurement@demo.com, qaqc@demo.com, accounts@demo.com, hr@demo.com | other roles | as per role |
 
 Suggested demo flow: log in to the mobile app as `engineer@demo.com`, submit a progress entry
 with a photo and today's DPR; log in to the web as `pm@demo.com`, open Approvals, approve them,
@@ -129,5 +134,5 @@ pnpm --filter @erp/api prisma studio
 ## Not in the MVP (next phases)
 
 Procurement (indent → RFQ → PO), payroll,
-measurement book and RA billing, finance, HR, quality registers,
+RA billing from the measurement book, finance, HR, quality registers,
 PDF report exports beyond the DPR print view, and tenant self-signup/billing.

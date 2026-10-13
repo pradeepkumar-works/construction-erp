@@ -30,6 +30,9 @@ export const MACHINERY_LOGGER_ROLES: RoleKey[] = ['TEAM_LEADER', 'SITE_ENGINEER'
 /** Roles that file site expenses: site staff, the store manager, accounts and approvers. */
 export const EXPENSE_SUBMITTER_ROLES: RoleKey[] = ['TEAM_LEADER', 'SITE_ENGINEER', 'STORE_MANAGER', 'ACCOUNTS_MANAGER', 'ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER'];
 
+/** Roles that record measurement book entries: the QS, site engineers and approvers. */
+export const MEASUREMENT_ROLES: RoleKey[] = ['QUANTITY_SURVEYOR', 'SITE_ENGINEER', 'ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER'];
+
 /** Roles allowed to manage users. */
 export const USER_ADMIN_ROLES: RoleKey[] = ['ADMIN'];
 
@@ -53,6 +56,9 @@ export const canManageEquipment = (role: RoleKey) => canApprove(role);
 
 /** File site expenses. */
 export const canSubmitExpense = (role: RoleKey) => EXPENSE_SUBMITTER_ROLES.includes(role);
+
+/** Record measurements (MB). */
+export const canMeasure = (role: RoleKey) => MEASUREMENT_ROLES.includes(role);
 
 /**
  * Attendance feeds the day's DPR manpower, so a sheet stays editable until that DPR is approved.

@@ -136,6 +136,7 @@ model Organization {
   equipment        Equipment[]
   machineryLogs    MachineryLog[]
   expenses         Expense[]
+  measurements     MeasurementSheet[]
 }
 
 model Role {
@@ -167,26 +168,28 @@ model User {
   updatedAt      DateTime     @updatedAt
 
   memberships         ProjectMember[]
-  managedProjects     Project[]         @relation("ProjectManager")
-  responsibleFor      Activity[]        @relation("ActivityResponsible")
-  submittedProgress   ProgressEntry[]   @relation("ProgressSubmitter")
-  reviewedProgress    ProgressEntry[]   @relation("ProgressReviewer")
-  submittedReports    DailyReport[]     @relation("DprSubmitter")
-  reviewedReports     DailyReport[]     @relation("DprReviewer")
-  submittedRequests   MaterialRequest[] @relation("MrSubmitter")
-  reviewedRequests    MaterialRequest[] @relation("MrReviewer")
+  managedProjects     Project[]          @relation("ProjectManager")
+  responsibleFor      Activity[]         @relation("ActivityResponsible")
+  submittedProgress   ProgressEntry[]    @relation("ProgressSubmitter")
+  reviewedProgress    ProgressEntry[]    @relation("ProgressReviewer")
+  submittedReports    DailyReport[]      @relation("DprSubmitter")
+  reviewedReports     DailyReport[]      @relation("DprReviewer")
+  submittedRequests   MaterialRequest[]  @relation("MrSubmitter")
+  reviewedRequests    MaterialRequest[]  @relation("MrReviewer")
   uploadedAttachments Attachment[]
   auditLogs           AuditLog[]
   notifications       Notification[]
   pushTokens          PushToken[]
-  recordedAttendance  AttendanceSheet[] @relation("AttendanceRecorder")
-  updatedAttendance   AttendanceSheet[] @relation("AttendanceUpdater")
+  recordedAttendance  AttendanceSheet[]  @relation("AttendanceRecorder")
+  updatedAttendance   AttendanceSheet[]  @relation("AttendanceUpdater")
   stockEntries        StockEntry[]
   stockMinLevels      StockMinLevel[]
-  submittedMachinery  MachineryLog[]    @relation("MachinerySubmitter")
-  reviewedMachinery   MachineryLog[]    @relation("MachineryReviewer")
-  submittedExpenses   Expense[]         @relation("ExpenseSubmitter")
-  reviewedExpenses    Expense[]         @relation("ExpenseReviewer")
+  submittedMachinery  MachineryLog[]     @relation("MachinerySubmitter")
+  reviewedMachinery   MachineryLog[]     @relation("MachineryReviewer")
+  submittedExpenses   Expense[]          @relation("ExpenseSubmitter")
+  reviewedExpenses    Expense[]          @relation("ExpenseReviewer")
+  submittedMeasures   MeasurementSheet[] @relation("MeasurementSubmitter")
+  reviewedMeasures    MeasurementSheet[] @relation("MeasurementReviewer")
 
   @@unique([organizationId, email])
   @@index([organizationId])
@@ -229,6 +232,7 @@ model Project {
   equipment        Equipment[]
   machineryLogs    MachineryLog[]
   expenses         Expense[]
+  measurements     MeasurementSheet[]
 
   @@unique([organizationId, code])
   @@index([organizationId, status])
@@ -264,7 +268,8 @@ model BoqItem {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
-  activities Activity[]
+  activities   Activity[]
+  measurements MeasurementSheet[]
 
   @@unique([projectId, itemNo])
   @@index([organizationId])
@@ -661,10 +666,65 @@ model Expense {
   @@index([projectId, date])
 }
 
+/// A measurement book (MB) entry: one BOQ item measured at one location on one day, as dimension lines.
+/// Approved sheets roll up into the BOQ item's measured (billable) quantity.
+model MeasurementSheet {
+  id             String           @id @default(uuid())
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  boqItemId      String
+  boqItem        BoqItem          @relation(fields: [boqItemId], references: [id], onDelete: Cascade)
+  /// MB-<year>-0001 per organisation
+  mbNo           String
+  date           DateTime         @db.Date
+  /// Chainage, grid, floor, zone
+  location       String
+  remarks        String?
+  /// Sum of the lines (deductions negative), in the BOQ item's unit
+  totalQty       Decimal          @db.Decimal(18, 3)
+  status         SubmissionStatus @default(DRAFT)
+  submittedById  String
+  submittedBy    User             @relation("MeasurementSubmitter", fields: [submittedById], references: [id])
+  submittedAt    DateTime?
+  reviewedById   String?
+  reviewedBy     User?            @relation("MeasurementReviewer", fields: [reviewedById], references: [id])
+  reviewedAt     DateTime?
+  reviewNote     String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  lines       MeasurementLine[]
+  attachments Attachment[]
+
+  @@unique([organizationId, mbNo])
+  @@index([projectId, status])
+  @@index([boqItemId, status])
+  @@index([organizationId, status])
+}
+
+/// One row of a measurement: nos × length × breadth × depth (blank dimensions count as 1); a deduction is negative.
+model MeasurementLine {
+  id          String           @id @default(uuid())
+  sheetId     String
+  sheet       MeasurementSheet @relation(fields: [sheetId], references: [id], onDelete: Cascade)
+  description String
+  nos         Decimal?         @db.Decimal(18, 3)
+  length      Decimal?         @db.Decimal(18, 3)
+  breadth     Decimal?         @db.Decimal(18, 3)
+  depth       Decimal?         @db.Decimal(18, 3)
+  deduct      Boolean          @default(false)
+  quantity    Decimal          @db.Decimal(18, 3)
+  sortOrder   Int              @default(0)
+
+  @@index([sheetId])
+}
+
 model Attachment {
-  id                String           @id @default(uuid())
+  id                String            @id @default(uuid())
   organizationId    String
-  organization      Organization     @relation(fields: [organizationId], references: [id])
+  organization      Organization      @relation(fields: [organizationId], references: [id])
   fileName          String
   mimeType          String
   size              Int
@@ -673,20 +733,22 @@ model Attachment {
   /// File bytes when stored in the database (serverless hosts without a disk or object store)
   data              Bytes?
   uploadedById      String
-  uploadedBy        User             @relation(fields: [uploadedById], references: [id])
+  uploadedBy        User              @relation(fields: [uploadedById], references: [id])
   progressEntryId   String?
-  progressEntry     ProgressEntry?   @relation(fields: [progressEntryId], references: [id], onDelete: Cascade)
+  progressEntry     ProgressEntry?    @relation(fields: [progressEntryId], references: [id], onDelete: Cascade)
   dailyReportId     String?
-  dailyReport       DailyReport?     @relation(fields: [dailyReportId], references: [id], onDelete: Cascade)
+  dailyReport       DailyReport?      @relation(fields: [dailyReportId], references: [id], onDelete: Cascade)
   materialRequestId String?
-  materialRequest   MaterialRequest? @relation(fields: [materialRequestId], references: [id], onDelete: Cascade)
+  materialRequest   MaterialRequest?  @relation(fields: [materialRequestId], references: [id], onDelete: Cascade)
   stockEntryId      String?
-  stockEntry        StockEntry?      @relation(fields: [stockEntryId], references: [id], onDelete: Cascade)
+  stockEntry        StockEntry?       @relation(fields: [stockEntryId], references: [id], onDelete: Cascade)
   machineryLogId    String?
-  machineryLog      MachineryLog?    @relation(fields: [machineryLogId], references: [id], onDelete: Cascade)
+  machineryLog      MachineryLog?     @relation(fields: [machineryLogId], references: [id], onDelete: Cascade)
   expenseId         String?
-  expense           Expense?         @relation(fields: [expenseId], references: [id], onDelete: Cascade)
-  createdAt         DateTime         @default(now())
+  expense           Expense?          @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  measurementId     String?
+  measurement       MeasurementSheet? @relation(fields: [measurementId], references: [id], onDelete: Cascade)
+  createdAt         DateTime          @default(now())
 
   @@index([organizationId])
 }

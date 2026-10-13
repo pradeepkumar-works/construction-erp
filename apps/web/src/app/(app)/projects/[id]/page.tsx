@@ -18,6 +18,7 @@ import { ProgressList } from '@/components/progress/ProgressList';
 import { DprList } from '@/components/dpr/DprList';
 import { MachineryPanel } from '@/components/machinery/MachineryPanel';
 import { ExpenseList } from '@/components/expenses/ExpenseList';
+import { MeasurementList } from '@/components/measurements/MeasurementList';
 import { StockPanel } from '@/components/stock/StockPanel';
 import { AttendanceList } from '@/components/attendance/AttendanceList';
 import { MrList } from '@/components/material/MrList';
@@ -85,6 +86,7 @@ export default function ProjectDetailPage() {
             { key: 'overview', label: 'Overview', children: <ProjectOverview project={project} /> },
             { key: 'boq', label: 'BOQ', children: <BoqTab projectId={project.id} /> },
             { key: 'activities', label: 'Activities', children: <ActivitiesTab projectId={project.id} members={project.members} /> },
+            { key: 'mb', label: 'Measurements', children: <MeasurementList projectId={project.id} /> },
             { key: 'progress', label: 'Progress', children: <ProgressList projectId={project.id} newLabel="New progress entry" /> },
             { key: 'dpr', label: 'Daily Reports', children: <DprList projectId={project.id} newLabel="New DPR" /> },
             { key: 'attendance', label: 'Attendance', children: <AttendanceList projectId={project.id} /> },

@@ -20,12 +20,17 @@ export class PlanningService {
     await this.access.assertCanAccessProject(user, projectId);
     const items = await this.prisma.boqItem.findMany({
       where: { projectId },
-      include: { activities: { include: { progressEntries: { where: { status: 'APPROVED' }, select: { quantity: true } } } } },
+      include: {
+        activities: { include: { progressEntries: { where: { status: 'APPROVED' }, select: { quantity: true } } } },
+        measurements: { where: { status: { in: ['APPROVED', 'SUBMITTED'] } }, select: { status: true, totalQty: true } },
+      },
       orderBy: [{ sortOrder: 'asc' }, { itemNo: 'asc' }],
     });
     return items.map((i) => {
       const executed = i.activities.flatMap((a) => a.progressEntries).reduce((s, e) => s.add(e.quantity), D(0));
       const effectiveQty = i.revisedQty ?? i.originalQty;
+      const measured = i.measurements.filter((m) => m.status === 'APPROVED').reduce((s, m) => s.add(m.totalQty), D(0));
+      const pendingMeasured = i.measurements.filter((m) => m.status === 'SUBMITTED').reduce((s, m) => s.add(m.totalQty), D(0));
       return {
         id: i.id,
         projectId: i.projectId,
@@ -38,6 +43,9 @@ export class PlanningService {
         executedQty: dec(executed)!,
         balanceQty: dec(effectiveQty.sub(executed))!,
         amount: money(i.rate.mul(effectiveQty))!,
+        measuredQty: dec(measured)!,
+        measuredAmount: money(i.rate.mul(measured))!,
+        pendingMeasuredQty: dec(pendingMeasured)!,
         sortOrder: i.sortOrder,
       };
     });

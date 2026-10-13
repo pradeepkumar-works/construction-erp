@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import type { DailyReportDto, ExpenseDto, MachineryLogDto, MaterialRequestDto, Paginated, ProgressEntryDto, SubmissionType } from '@erp/shared';
+import type { DailyReportDto, ExpenseDto, MeasurementSheetDto, MachineryLogDto, MaterialRequestDto, Paginated, ProgressEntryDto, SubmissionType } from '@erp/shared';
 import { useApi, useFetch, type Api } from '../src/api/hooks';
 import { errorMessage } from '../src/api/client';
 import { Button, EmptyState, ErrorState, Input, Loading, OfflineBanner, Screen, SubmissionRow } from '../src/components';
@@ -15,6 +15,7 @@ const SEGMENTS: { type: SubmissionType; label: string }[] = [
   { type: 'MATERIAL_REQUEST', label: 'Material' },
   { type: 'MACHINERY', label: 'Machines' },
   { type: 'EXPENSE', label: 'Expenses' },
+  { type: 'MEASUREMENT', label: 'MB' },
 ];
 
 type Row = { id: string; title: string; subtitle: string; status: ProgressEntryDto['status']; createdAt: string };
@@ -36,6 +37,10 @@ async function loadPage(api: Api, type: SubmissionType, page: number, q: string)
   if (type === 'MACHINERY') {
     const res = await api.get<Paginated<MachineryLogDto>>('/machinery-logs', params);
     return { total: res.total, rows: res.items.map((l) => ({ id: l.id, title: `${l.equipmentCode} · ${fmtQty(l.hoursWorked)} h`, subtitle: `${l.projectName} · ${formatDate(l.date)}`, status: l.status, createdAt: l.createdAt })) };
+  }
+  if (type === 'MEASUREMENT') {
+    const res = await api.get<Paginated<MeasurementSheetDto>>('/measurements', params);
+    return { total: res.total, rows: res.items.map((m) => ({ id: m.id, title: `${m.mbNo} · ${fmtQty(m.totalQty)} ${m.unit}`, subtitle: `${m.projectName} · ${m.boqItemNo} · ${m.location}`, status: m.status, createdAt: m.createdAt })) };
   }
   if (type === 'EXPENSE') {
     const res = await api.get<Paginated<ExpenseDto>>('/expenses', params);

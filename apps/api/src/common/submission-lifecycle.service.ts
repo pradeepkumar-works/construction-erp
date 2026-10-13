@@ -5,7 +5,7 @@ import { RequestUser } from './current-user';
 import { ProjectAccessService } from './project-access.service';
 import { AuditService } from './audit.service';
 import { NotificationsService } from '../notifications/notifications.service';
-import { expenseTitle, machineryTitle } from './submission-titles';
+import { expenseTitle, machineryTitle, measurementTitle } from './submission-titles';
 
 interface SubmissionRow {
   id: string;
@@ -19,7 +19,7 @@ interface SubmissionRow {
  * One state machine for every site submission:
  *   DRAFT / REJECTED / CHANGES_REQUESTED --submit--> SUBMITTED --review--> APPROVED | REJECTED | CHANGES_REQUESTED
  * A rejected or changes-requested entry is edited in place and resubmitted (audit action RESUBMITTED), so the
- * review history stays on one record. Progress entries, DPRs, material requests, machinery logs and site expenses all go through here.
+ * review history stays on one record. Progress entries, DPRs, material requests, machinery logs, site expenses and measurements all go through here.
  */
 @Injectable()
 export class SubmissionLifecycleService {
@@ -37,6 +37,8 @@ export class SubmissionLifecycleService {
         return this.prisma.machineryLog;
       case 'EXPENSE':
         return this.prisma.expense;
+      case 'MEASUREMENT':
+        return this.prisma.measurementSheet;
     }
   }
 
@@ -82,12 +84,13 @@ export class SubmissionLifecycleService {
   async pending(user: RequestUser): Promise<PendingApprovalDto[]> {
     if (!canApprove(user.roleKey)) return [];
     const where = { ...this.access.submissionWhere(user), status: 'SUBMITTED' as const };
-    const [progress, dprs, mrs, logs, expenses] = await Promise.all([
+    const [progress, dprs, mrs, logs, expenses, mbs] = await Promise.all([
       this.prisma.progressEntry.findMany({ where, include: { project: true, activity: true, submittedBy: true }, orderBy: { submittedAt: 'asc' } }),
       this.prisma.dailyReport.findMany({ where, include: { project: true, submittedBy: true }, orderBy: { submittedAt: 'asc' } }),
       this.prisma.materialRequest.findMany({ where, include: { project: true, submittedBy: true, items: true }, orderBy: { submittedAt: 'asc' } }),
       this.prisma.machineryLog.findMany({ where, include: { project: true, submittedBy: true, equipment: true }, orderBy: { submittedAt: 'asc' } }),
       this.prisma.expense.findMany({ where, include: { project: true, submittedBy: true }, orderBy: { submittedAt: 'asc' } }),
+      this.prisma.measurementSheet.findMany({ where, include: { project: true, submittedBy: true, boqItem: true }, orderBy: { submittedAt: 'asc' } }),
     ]);
     const out: PendingApprovalDto[] = [
       ...progress.map((p) => ({
@@ -134,6 +137,15 @@ export class SubmissionLifecycleService {
         title: expenseTitle(x.expenseNo, x.totalAmount.toFixed(2), x.description),
         submittedByName: x.submittedBy.fullName,
         submittedAt: (x.submittedAt ?? x.createdAt).toISOString(),
+      })),
+      ...mbs.map((m) => ({
+        type: 'MEASUREMENT' as const,
+        id: m.id,
+        projectId: m.projectId,
+        projectName: m.project.name,
+        title: measurementTitle(m.mbNo, m.boqItem.itemNo, m.totalQty.toString(), m.boqItem.unit, m.location),
+        submittedByName: m.submittedBy.fullName,
+        submittedAt: (m.submittedAt ?? m.createdAt).toISOString(),
       })),
     ];
     return out.sort((a, b) => a.submittedAt.localeCompare(b.submittedAt));

@@ -14,6 +14,7 @@ export const TYPE_ICON: Record<EntryType, keyof typeof Ionicons.glyphMap> = {
   MATERIAL_REQUEST: 'cube',
   MACHINERY: 'construct',
   EXPENSE: 'wallet',
+  MEASUREMENT: 'resize',
   ATTENDANCE: 'people',
 };
 
@@ -23,6 +24,7 @@ export const TYPE_SHORT: Record<EntryType, string> = {
   MATERIAL_REQUEST: 'Material',
   MACHINERY: 'Machinery',
   EXPENSE: 'Expense',
+  MEASUREMENT: 'Measurement',
   ATTENDANCE: 'Attendance',
 };
 

@@ -203,6 +203,29 @@ jobs:
           curl -sf "$API_URL/expenses/summary?q=Smoke%20test%20expense" -H "$H" | jq -e '.count == 1 and .totalAmount == "1180.00" and .approvedTotal == "0.00"' > /dev/null
           cleanup
           curl -sf "$API_URL/expenses/summary?projectId=$PROJECT" -H "$H" | jq -r '"project expenses: \(.count), approved ₹\(.approvedTotal), pending ₹\(.pendingTotal)"'
+      - name: Measurement book
+        run: |
+          set -e
+          TOKEN=$(curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' \
+            -d '{"email":"pm@demo.com","password":"password123"}' | jq -r .accessToken)
+          H="authorization: Bearer $TOKEN"
+          PROJECT=$(curl -sf "$API_URL/projects" -H "$H" | jq -r '.items[0].id')
+          BOQ=$(curl -sf "$API_URL/projects/$PROJECT/boq" -H "$H" | jq -r '.[0].id')
+          cleanup() {
+            for X in $(curl -sf "$API_URL/measurements?q=Smoke%20test%20location&pageSize=50" -H "$H" | jq -r '.items[].id'); do curl -sf -X DELETE "$API_URL/measurements/$X" -H "$H" > /dev/null; done
+          }
+          cleanup
+          CID=$(cat /proc/sys/kernel/random/uuid)
+          # A draft (submit:false): 1 x 10 x 2 x 0.5 less a 0.5 deduction = 9.5
+          BODY="{\"id\":\"$CID\",\"projectId\":\"$PROJECT\",\"boqItemId\":\"$BOQ\",\"date\":\"2000-01-03\",\"location\":\"Smoke test location\",\"lines\":[{\"description\":\"Block\",\"nos\":\"1\",\"length\":\"10\",\"breadth\":\"2\",\"depth\":\"0.5\"},{\"description\":\"Opening\",\"length\":\"1\",\"breadth\":\"1\",\"depth\":\"0.5\",\"deduct\":true}],\"submit\":false}"
+          A=$(curl -sf -X POST "$API_URL/measurements" -H "$H" -H 'content-type: application/json' -d "$BODY" | jq -r '.mbNo + " " + (.totalQty | tonumber | tostring)')
+          B=$(curl -sf -X POST "$API_URL/measurements" -H "$H" -H 'content-type: application/json' -d "$BODY" | jq -r '.mbNo + " " + (.totalQty | tonumber | tostring)')
+          echo "measurement: $A, retry: $B"; [ "$A" = "$B" ]; echo "$A" | grep -q ' 9.5$'
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/measurements" -H "$H" -H 'content-type: application/json' \
+            -d "{\"projectId\":\"$PROJECT\",\"boqItemId\":\"$BOQ\",\"date\":\"2000-01-03\",\"location\":\"Smoke test location\",\"lines\":[{\"description\":\"Nothing\"}],\"submit\":false}")
+          echo "line without dimensions: $code"; [ "$code" = "400" ]
+          cleanup
+          curl -sf "$API_URL/projects/$PROJECT/boq" -H "$H" | jq -r '"measured value on the project: ₹\([.[].measuredAmount | tonumber] | add)"'
       - name: Paged lists with search and sort
         run: |
           set -e
@@ -218,6 +241,7 @@ jobs:
           curl -sf "$API_URL/stock/balances?lowOnly=true&pageSize=5" -H "$H" | jq -r '"items below minimum: \(.total)"'
           curl -sf "$API_URL/stock/entries?sortBy=date&pageSize=1" -H "$H" | jq -r '"stock entries: \(.total), latest \(.items[0].entryNo // "none")"'
           curl -sf "$API_URL/machinery-logs?breakdownOnly=true&pageSize=1" -H "$H" | jq -r '"machinery logs with a breakdown: \(.total)"'
+          curl -sf "$API_URL/measurements?sortBy=totalQty&pageSize=1" -H "$H" | jq -r '"measurement sheets: \(.total)"'
           code=$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/progress?sortBy=nope" -H "$H"); echo "bad sortBy: $code"; [ "$code" = "400" ]
       - name: Swagger docs and CORS
         run: |
