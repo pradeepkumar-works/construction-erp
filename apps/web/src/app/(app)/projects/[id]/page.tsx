@@ -3,7 +3,8 @@
 import React, { useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Button, Card, Progress, Space, Tabs, Typography } from 'antd';
-import { EditOutlined } from '@ant-design/icons';
+import { EditOutlined, FilePdfOutlined } from '@ant-design/icons';
+import Link from 'next/link';
 import { canEditProjects, canViewCost } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useProject } from '@/lib/queries';
@@ -71,6 +72,9 @@ export default function ProjectDetailPage() {
               </Typography.Text>
               <Progress percent={project.physicalProgressPct} size="small" />
             </div>
+            <Link href={`/reports?projectId=${project.id}`}>
+              <Button icon={<FilePdfOutlined />}>Progress report</Button>
+            </Link>
             {editor && (
               <Button icon={<EditOutlined />} onClick={() => setEditOpen(true)}>
                 Edit

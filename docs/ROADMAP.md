@@ -75,7 +75,14 @@ Order matters: each item builds on the previous one.
     with approved measurements alongside; margin and cost %. Anything without a rate is counted and flagged.
     Web Project Cost page (period presets, Excel export, labour rates editor) and project Cost tab, for
     approvers and accounts.
-11. **Weekly / monthly progress report** PDF from approved data, in the client's format.
+11. ~~**Weekly / monthly progress report** PDF from approved data, in the client's format.~~ Done:
+    `GET /reports/progress?projectId&from&to` (up to 92 days) builds the report from approved progress, DPRs,
+    machinery logs and measurements plus attendance and the store register: physical progress at the start
+    and end of the period against time elapsed, value executed and measured, activity and BOQ tables,
+    manpower, machinery, material, issues and safety from DPRs, next-period plan, photos and signature
+    blocks. Web Progress Reports page (weekly / monthly / custom, live A4 preview) prints to PDF from the
+    browser, like the DPR print view. The layout is a common Indian public-works format; a client's own
+    template can replace `progressReportHtml.ts` once we have it.
 12. **Delay and risk register**.
 
 ### D. Product / SaaS foundations
