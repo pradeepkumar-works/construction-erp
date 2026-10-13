@@ -320,6 +320,12 @@ jobs:
           # Leave the smoke user switched off
           ID=$(curl -sf "$API_URL/users?q=$EMAIL" -H "$ADMIN" | jq -r '.items[0].id')
           curl -sf -X PATCH "$API_URL/users/$ID" -H "$ADMIN" -H 'content-type: application/json' -d '{"isActive":false}' > /dev/null
+      - name: Tenant guard (row-level security)
+        run: |
+          set -e
+          G=$(curl -sf "$API_URL/health" | jq -r .tenantGuard)
+          echo "tenant guard: $G"
+          if [ "$G" != "enforced" ]; then echo "::warning::Postgres row-level security is $G (see docs/DEPLOY.md, TENANT_RLS)"; fi
       - name: Paged lists with search and sort
         run: |
           set -e

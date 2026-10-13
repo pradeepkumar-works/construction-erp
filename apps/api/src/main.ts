@@ -5,10 +5,12 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { join } from 'path';
 import { AppModule } from './app.module';
+import { tenantMiddleware } from './prisma/tenant-context';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.setGlobalPrefix('api');
+  app.use(tenantMiddleware);
   // CORS_ORIGINS: comma-separated list of allowed origins; unset = allow any origin (dev / mobile apps)
   const origins = (process.env.CORS_ORIGINS || '').split(',').map((o) => o.trim()).filter(Boolean);
   app.enableCors({ origin: origins.length ? origins : true, credentials: true });

@@ -30,6 +30,7 @@ API (`apps/api`):
 | `NOTIFICATION_TIMEZONE` | IANA zone for "today" in the DPR reminder and digest (default `Asia/Kolkata`) |
 | `RESEND_API_KEY`, `EMAIL_FROM` | email through Resend: approval digest, user invites and password resets. Unset = nothing is emailed (the digest is logged; invite links are shown to the admin to share; "Forgot password" tells users to ask their admin). `EMAIL_FROM` must be a verified sender/domain in Resend. |
 | `WEB_URL` | web ERP URL used for links in emails (digest, invites, password resets). Password-reset emails need it (or `CORS_ORIGINS`). |
+| `TENANT_RLS` | `off` stops the API setting the organisation for Postgres row-level security (kill switch; the policies then allow everything). Unset = on. `GET /api/health` shows `tenantGuard`: `enforced`, `off`, or `bypassed` when the database role has BYPASSRLS or is a superuser (then connect with a role without it). To remove the policies: `psql "$DATABASE_URL" -f apps/api/prisma/rls-rollback.sql`. |
 | `ORG_SIGNUP` | `open` lets new companies create an organisation at `/signup`; unset = closed |
 | `EXPO_ACCESS_TOKEN` | optional; only if push security is enforced on the Expo project |
 | `NOTIFICATION_JOBS_INPROCESS`, `DPR_REMINDER_TIME`, `APPROVAL_DIGEST_TIME` | run the jobs from a timer inside the API (Docker / Railway) instead of Vercel Cron; times are `HH:mm` in `NOTIFICATION_TIMEZONE` |
