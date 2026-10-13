@@ -26,10 +26,19 @@ API (`apps/api`):
 | `SEED_ON_BUILD` | `true` runs the demo seed during the Vercel build (idempotent: refreshes users, never duplicates projects). Set to `false` once real client data exists. |
 | `CORS_ORIGINS` | optional comma-separated allow-list of browser origins; unset = any origin |
 | `UPLOAD_DIR` | disk mode only |
+| `CRON_SECRET` | long random string; Vercel Cron sends it as `Authorization: Bearer` to the daily notification jobs. Jobs are disabled when unset. |
+| `NOTIFICATION_TIMEZONE` | IANA zone for "today" in the DPR reminder and digest (default `Asia/Kolkata`) |
+| `RESEND_API_KEY`, `EMAIL_FROM` | email digest of pending approvals through Resend; unset = digest is logged only. `EMAIL_FROM` must be a verified sender/domain in Resend. |
+| `WEB_URL` | web ERP URL used for links in digest emails |
+| `EXPO_ACCESS_TOKEN` | optional; only if push security is enforced on the Expo project |
+| `NOTIFICATION_JOBS_INPROCESS`, `DPR_REMINDER_TIME`, `APPROVAL_DIGEST_TIME` | run the jobs from a timer inside the API (Docker / Railway) instead of Vercel Cron; times are `HH:mm` in `NOTIFICATION_TIMEZONE` |
+| `PUSH_DISABLED`, `EMAIL_DISABLED` | `true` switches a channel off (useful on preview deployments) |
 
 Web (`apps/web`): `NEXT_PUBLIC_API_URL`, e.g. `https://construction-erp-api-pradeep15.vercel.app/api`.
 
-Mobile (`apps/mobile`): `EXPO_PUBLIC_API_URL`, same value.
+Mobile (`apps/mobile`): `EXPO_PUBLIC_API_URL`, same value. For push notifications the app needs an
+EAS project id (`eas init` writes `extra.eas.projectId` into `app.json`) and a development or
+production build; Expo Go on Android cannot receive remote push.
 
 ## How a deploy works
 
@@ -37,6 +46,11 @@ Mobile (`apps/mobile`): `EXPO_PUBLIC_API_URL`, same value.
   builds `packages/shared`, runs `prisma generate`, `prisma migrate deploy` (applies any new migration
   in `apps/api/prisma/migrations`), optionally seeds, then `nest build`. Vercel serves `dist/main.js`
   as a function.
+- **Scheduled jobs on Vercel**: `apps/api/vercel.json` declares two crons, `03:30 UTC` (09:00 IST)
+  for the approvals digest and `11:30 UTC` (17:00 IST) for the DPR reminder. Vercel calls
+  `GET /api/notifications/jobs/...` with `Authorization: Bearer $CRON_SECRET`; set `CRON_SECRET` in
+  the project's environment variables (Hobby plans allow once-a-day schedules, which these are).
+  Run a job by hand with `curl -H "Authorization: Bearer $CRON_SECRET" $API_URL/notifications/jobs/dpr-reminder`.
 - **Web on Vercel**: root directory `apps/web`; build command builds `packages/shared` then `next build`.
 - **Git auto-deploy**: both Vercel projects are linked to `pradeepkumar-works/construction-erp`.
   Every push to the production branch (`claude/modest-brown-emrt4b` today; change it in each

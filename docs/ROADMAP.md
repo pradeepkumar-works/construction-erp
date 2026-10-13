@@ -13,8 +13,9 @@ Order matters: each item builds on the previous one.
 ### A. Finish what v1 started
 1. **Edit and resubmit** a submission after REJECTED / CHANGES_REQUESTED (web + mobile). API already
    supports PATCH + `/submit`.
-2. **Notifications**: Expo push on approve / reject / changes requested; daily "DPR not submitted"
-   reminder; email digest of pending approvals. New `Notification` table + Expo push tokens on `User`.
+2. **Notifications** (done): in-app + Expo push on approve / reject / changes requested and on new
+   submissions for approvers; daily "DPR not submitted" reminder; email digest of pending approvals.
+   `Notification` and `PushToken` tables, jobs via Vercel Cron.
 3. **Offline entry on mobile**: local queue (SQLite) for progress, DPR, material request; sync on
    reconnect. API: client-generated ids + idempotency on create.
 4. **Server-side paging, search and sort** on all list endpoints (`Paginated<T>` already in shared);

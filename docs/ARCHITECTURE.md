@@ -73,6 +73,28 @@ Uploaded first (`POST /api/uploads`), then linked to the entry by id. This keeps
 and lets a photo be taken before the form is finished. Local disk now, object storage later; only
 `storagePath` changes.
 
+## Notifications
+
+`Notification` is one row per recipient (`userId`) with a `type`, title, body and an optional
+pointer (`projectId`, `entityType` + `entityId`) to the submission it is about. In-app lists read
+the table; push and email are delivery channels for the same row (`pushedAt`, `emailedAt`).
+`PushToken` holds the Expo push tokens of a user's devices; a token moves to whoever signs in on
+that device and is deleted on sign-out or when Expo reports it unregistered.
+
+- `SubmissionLifecycleService` is the only emitter for submission events: `submit` notifies the
+  project's approvers (`ProjectAccessService.approversForProject`, the inverse of the visibility
+  rule), `review` notifies the author. Delivery errors are logged and never fail the transition.
+- `NotificationJobsService` runs the two daily jobs: the "DPR not submitted" reminder (active
+  projects without a non-draft DPR dated today in `NOTIFICATION_TIMEZONE`) and the pending-approvals
+  digest (built from the same `pending()` query that feeds the approvals queue). Each job writes
+  a `dedupeKey` (`DPR_REMINDER:<project>:<date>`, `APPROVAL_DIGEST:<date>`) that is unique per
+  user, so re-running a job never notifies twice.
+- Jobs are triggered by HTTP (`/api/notifications/jobs/*`, guarded by `CRON_SECRET`) so Vercel
+  Cron can call them; an optional in-process timer (`NOTIFICATION_JOBS_INPROCESS=true`) covers
+  long-running hosts. Transports are plain `fetch` calls (Expo push API, Resend) with no SDKs.
+- A new notification type = enum value in `schema.prisma` and `packages/shared` (+ label), a
+  `notify()` call, and a route in the web `notificationHref` / mobile `notificationRoute` helpers.
+
 ## Offline (planned)
 
 Not in the MVP. The API already accepts client-supplied dates and idempotent creates are a small

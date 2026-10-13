@@ -22,6 +22,7 @@ async function bootstrap() {
     .setDescription('MVP API for the Construction ERP and Site Mobile App')
     .setVersion('0.1')
     .addBearerAuth()
+    .addApiKey({ type: 'apiKey', in: 'header', name: 'x-cron-secret', description: 'CRON_SECRET for the scheduled notification jobs' }, 'cron')
     .build();
   SwaggerModule.setup('api/docs', app, SwaggerModule.createDocument(app, config));
 

@@ -49,6 +49,21 @@ enum Weather {
   HOT
 }
 
+enum NotificationType {
+  SUBMISSION_SUBMITTED
+  SUBMISSION_APPROVED
+  SUBMISSION_REJECTED
+  SUBMISSION_CHANGES_REQUESTED
+  DPR_REMINDER
+  APPROVAL_DIGEST
+}
+
+enum PushPlatform {
+  IOS
+  ANDROID
+  WEB
+}
+
 // ---------- Tenancy, users, roles ----------
 
 model Organization {
@@ -68,6 +83,7 @@ model Organization {
   materialRequests MaterialRequest[]
   attachments      Attachment[]
   auditLogs        AuditLog[]
+  notifications    Notification[]
 }
 
 model Role {
@@ -109,6 +125,8 @@ model User {
   reviewedRequests    MaterialRequest[] @relation("MrReviewer")
   uploadedAttachments Attachment[]
   auditLogs           AuditLog[]
+  notifications       Notification[]
+  pushTokens          PushToken[]
 
   @@unique([organizationId, email])
   @@index([organizationId])
@@ -143,6 +161,7 @@ model Project {
   progressEntries  ProgressEntry[]
   dailyReports     DailyReport[]
   materialRequests MaterialRequest[]
+  notifications    Notification[]
 
   @@unique([organizationId, code])
   @@index([organizationId, status])
@@ -358,4 +377,50 @@ model AuditLog {
 
   @@index([entityType, entityId])
   @@index([organizationId, createdAt])
+}
+
+// ---------- Notifications ----------
+
+/// In-app notification for one user. Push and email are delivery channels for the same row.
+model Notification {
+  id             String           @id @default(uuid())
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  userId         String
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type           NotificationType
+  title          String
+  body           String
+  projectId      String?
+  project        Project?         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  /// Submission type (PROGRESS | DPR | MATERIAL_REQUEST) when the notification points at an entry
+  entityType     String?
+  entityId       String?
+  readAt         DateTime?
+  /// When the Expo push was handed to the push service (null = not pushed / no device)
+  pushedAt       DateTime?
+  /// When the email for this notification was handed to the email provider
+  emailedAt      DateTime?
+  /// Scheduled jobs set e.g. "DPR_REMINDER:<projectId>:<date>" so a re-run never notifies twice
+  dedupeKey      String?
+  createdAt      DateTime         @default(now())
+
+  @@unique([userId, dedupeKey])
+  @@index([userId, readAt])
+  @@index([userId, createdAt])
+  @@index([organizationId, type, createdAt])
+}
+
+/// Expo push token of one device of one user. A user may have several devices.
+model PushToken {
+  id         String       @id @default(uuid())
+  userId     String
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token      String       @unique
+  platform   PushPlatform
+  deviceName String?
+  createdAt  DateTime     @default(now())
+  lastSeenAt DateTime     @default(now())
+
+  @@index([userId])
 }

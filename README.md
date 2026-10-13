@@ -26,6 +26,10 @@ contractors after the first client is live.
 - Dashboards: company (projects, contract value, pending approvals, delayed activities, DPRs
   today) and project (physical progress weighted by BOQ value, BOQ executed amount, activity
   status, recent submissions).
+- Notifications: the author is told when a submission is approved, rejected or sent back, and
+  approvers when something new is waiting. In-app on web and mobile (bell + list), Expo push to
+  registered phones, a daily "DPR not submitted" reminder to site staff and a daily email digest of
+  pending approvals. See [Notifications](#notifications) below.
 
 **Live demo**: web ERP at https://construction-erp-web-pradeep15.vercel.app, API at
 https://construction-erp-api-pradeep15.vercel.app/api (Swagger at `/api/docs`), database on Neon.
@@ -69,6 +73,30 @@ Suggested demo flow: log in to the mobile app as `engineer@demo.com`, submit a p
 with a photo and today's DPR; log in to the web as `pm@demo.com`, open Approvals, approve them,
 and watch the project dashboard and BOQ executed quantities update.
 
+## Notifications
+
+| Event | Who | Channels |
+|-------|-----|----------|
+| Submission approved / rejected / changes requested | the author | in-app, push |
+| Submission submitted | approvers who can see the project | in-app, push |
+| Daily "DPR not submitted" reminder (for active projects with no DPR today) | Site Engineers and Team Leaders who are project members (the PM if none) | in-app, push |
+| Daily digest of pending approvals | Admin, Management and Project Managers with something waiting | in-app, push, email |
+
+- API: `GET /api/notifications` (list + unread count), `POST /api/notifications/:id/read`,
+  `POST /api/notifications/read-all`, `POST`/`DELETE /api/notifications/push-tokens`.
+- The two daily jobs are `GET /api/notifications/jobs/dpr-reminder` and
+  `GET /api/notifications/jobs/approval-digest`, protected by `CRON_SECRET`
+  (`Authorization: Bearer <secret>`). On Vercel they are scheduled in `apps/api/vercel.json`
+  (09:00 and 17:00 IST); elsewhere set `NOTIFICATION_JOBS_INPROCESS=true` or call them from any
+  scheduler. Both are idempotent per day. `?date=YYYY-MM-DD` runs a job for another day.
+- Email goes through [Resend](https://resend.com) when `RESEND_API_KEY` is set (`EMAIL_FROM` is
+  the sender, `WEB_URL` the link in the mail); without a key the digest is only logged.
+- Push uses the Expo push service and needs no key by default (`EXPO_ACCESS_TOKEN` is optional).
+  The phone registers its Expo token after sign-in. Remote push requires a development or EAS build
+  with `extra.eas.projectId` in `apps/mobile/app.json` (run `eas init`); Expo Go on Android cannot
+  receive push, and the in-app list still works everywhere.
+- All variables are listed in `.env.example` and `docs/DEPLOY.md`.
+
 ## Useful commands
 
 ```bash
@@ -81,5 +109,5 @@ pnpm --filter @erp/api prisma studio
 ## Not in the MVP (next phases)
 
 Procurement (indent → RFQ → PO), store/GRN and stock, attendance and payroll, machinery logs,
-measurement book and RA billing, finance, HR, quality registers, offline mode, push notifications,
+measurement book and RA billing, finance, HR, quality registers, offline mode,
 Excel/PDF report exports beyond the DPR print view, and tenant self-signup/billing.

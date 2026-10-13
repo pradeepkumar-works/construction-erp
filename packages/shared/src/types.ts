@@ -1,7 +1,9 @@
 import type {
   MaterialPriority,
+  NotificationType,
   ProjectStatus,
   ProjectType,
+  PushPlatform,
   RoleKey,
   SubmissionStatus,
   SubmissionType,
@@ -228,6 +230,44 @@ export interface ProjectDashboard {
   recentProgress: ProgressEntryDto[];
   recentDprs: DailyReportDto[];
   progressByActivity: { activityId: string; name: string; plannedQty: string; executedQty: string; progressPct: number }[];
+}
+
+export interface NotificationDto {
+  id: string;
+  type: NotificationType;
+  title: string;
+  body: string;
+  projectId: string | null;
+  projectName: string | null;
+  /** Set when the notification points at a submission; open it with entityType + entityId. */
+  entityType: SubmissionType | null;
+  entityId: string | null;
+  readAt: string | null;
+  createdAt: string;
+}
+
+export interface NotificationListDto {
+  items: NotificationDto[];
+  unreadCount: number;
+}
+
+export interface PushTokenDto {
+  id: string;
+  token: string;
+  platform: PushPlatform;
+  deviceName: string | null;
+  createdAt: string;
+  lastSeenAt: string;
+}
+
+/** Result of a scheduled notification job (DPR reminder / approval digest). */
+export interface NotificationJobResult {
+  job: 'DPR_REMINDER' | 'APPROVAL_DIGEST';
+  date: string;
+  created: number;
+  pushed: number;
+  emailed: number;
+  skipped: number;
 }
 
 export interface Paginated<T> {

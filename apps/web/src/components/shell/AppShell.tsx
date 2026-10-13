@@ -8,6 +8,7 @@ import type { MenuProps } from 'antd';
 import {
   AppstoreOutlined,
   AuditOutlined,
+  BellOutlined,
   CheckSquareOutlined,
   FileTextOutlined,
   LineChartOutlined,
@@ -22,6 +23,7 @@ import type { AuthUser } from '@erp/shared';
 import { canApprove, canManageUsers } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { usePendingApprovals } from '@/lib/queries';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 
 const { Header, Sider, Content } = Layout;
 
@@ -73,6 +75,7 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
       { key: '/dpr', icon: <FileTextOutlined />, label: <Link href="/dpr">Daily Reports</Link> },
       { key: '/progress', icon: <LineChartOutlined />, label: <Link href="/progress">Progress Entries</Link> },
       { key: '/material-requests', icon: <ShoppingCartOutlined />, label: <Link href="/material-requests">Material Requests</Link> },
+      { key: '/notifications', icon: <BellOutlined />, label: <Link href="/notifications">Notifications</Link> },
     ];
     if (canManageUsers(user.roleKey)) {
       base.push({ key: '/users', icon: <TeamOutlined />, label: <Link href="/users">Users</Link> });
@@ -147,7 +150,9 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
               </Link>
             )}
           </Space>
-          <Dropdown menu={{ items: userMenu }} trigger={['click']}>
+          <Space size={4}>
+            <NotificationBell />
+            <Dropdown menu={{ items: userMenu }} trigger={['click']}>
             <Button type="text" style={{ height: 40, padding: '0 8px' }}>
               <Space>
                 <Avatar size="small" style={{ background: '#1659a8' }}>
@@ -163,7 +168,8 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
                 )}
               </Space>
             </Button>
-          </Dropdown>
+            </Dropdown>
+          </Space>
         </Header>
         <Content>{children}</Content>
       </Layout>

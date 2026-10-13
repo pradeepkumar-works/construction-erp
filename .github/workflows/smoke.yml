@@ -33,6 +33,13 @@ jobs:
           curl -sf "$API_URL/projects" -H "authorization: Bearer $TOKEN" | jq -r '.[] | "\(.code)  \(.physicalProgressPct)%  pending=\(.pendingApprovals)"'
           echo "pending approvals: $(curl -sf "$API_URL/approvals/pending" -H "authorization: Bearer $TOKEN" | jq length)"
           curl -sf "$API_URL/dashboard/company" -H "authorization: Bearer $TOKEN" | jq 'del(.projects)'
+      - name: Notifications
+        run: |
+          set -e
+          TOKEN=$(curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' \
+            -d '{"email":"engineer@demo.com","password":"password123"}' | jq -r .accessToken)
+          curl -sf "$API_URL/notifications?limit=3" -H "authorization: Bearer $TOKEN" | jq '{unreadCount, items: [.items[] | {type, title}]}'
+          curl -s -o /dev/null -w 'cron without secret: %{http_code}\n' "$API_URL/notifications/jobs/dpr-reminder"
       - name: Upload a photo and read it back
         run: |
           set -e

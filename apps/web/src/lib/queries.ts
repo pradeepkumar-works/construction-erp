@@ -9,6 +9,8 @@ import type {
   CompanyDashboard,
   DailyReportDto,
   MaterialRequestDto,
+  NotificationDto,
+  NotificationListDto,
   PendingApprovalDto,
   ProgressEntryDto,
   ProjectDashboard,
@@ -135,6 +137,13 @@ export const usePendingApprovals = (enabled = true) =>
     refetchInterval: 30_000,
   });
 
+export const useNotifications = (opts?: { unreadOnly?: boolean; limit?: number }) =>
+  useQuery({
+    queryKey: ['notifications', clean(opts as ListFilters | undefined)],
+    queryFn: async () => (await api.get<NotificationListDto>('/notifications', { params: clean(opts as ListFilters | undefined) })).data,
+    refetchInterval: 30_000,
+  });
+
 export const useAudit = (type: ApprovalTypeParam, id: string | undefined) =>
   useQuery({
     queryKey: ['audit', type, id],
@@ -155,6 +164,22 @@ export function useReview() {
     mutationFn: async (vars: { type: ApprovalTypeParam; id: string; decision: ReviewDecision; note?: string }) =>
       (await api.post(`/approvals/${vars.type}/${vars.id}/review`, { decision: vars.decision, note: vars.note || undefined })).data,
     onSuccess: () => qc.invalidateQueries(),
+  });
+}
+
+export function useMarkNotificationRead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => (await api.post<NotificationDto>(`/notifications/${id}/read`)).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['notifications'] }),
+  });
+}
+
+export function useMarkAllNotificationsRead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => (await api.post<{ updated: number }>('/notifications/read-all')).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['notifications'] }),
   });
 }
 

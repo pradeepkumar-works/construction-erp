@@ -3,12 +3,14 @@ import { Alert, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ROLE_LABELS, canApprove } from '@erp/shared';
 import { useAuth } from '../../src/auth/AuthContext';
+import { useNotifications } from '../../src/notifications/NotificationsContext';
 import { Button, Card, KeyValue, Screen } from '../../src/components';
 import { API_URL } from '../../src/config';
 import { colors, spacing, typography } from '../../src/theme';
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
+  const { push } = useNotifications();
   if (!user) return null;
   const initials = user.fullName
     .split(' ')
@@ -39,6 +41,11 @@ export default function ProfileScreen() {
         <KeyValue label="Role" value={user.roleName} />
         <KeyValue label="Organisation" value={user.organizationName} />
         <KeyValue label="Can approve" value={canApprove(user.roleKey) ? 'Yes' : 'No'} />
+      </Card>
+      <Card title="Notifications">
+        <KeyValue label="Push to this device" value={push ? (push.status === 'ready' ? 'On' : push.status === 'denied' ? 'Permission denied' : 'Not available') : 'Checking…'} />
+        {push && push.status !== 'ready' && push.reason ? <Text style={typography.caption}>{push.reason}</Text> : null}
+        <Text style={typography.caption}>Approvals, rejections and change requests on your submissions, plus the daily DPR reminder, also appear under Notifications on the Home screen.</Text>
       </Card>
       <Card title="Connection">
         <View style={styles.apiRow}>

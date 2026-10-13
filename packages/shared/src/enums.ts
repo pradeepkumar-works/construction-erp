@@ -35,3 +35,16 @@ export type RoleKey = (typeof ROLE_KEYS)[number];
 
 export const WEATHER_OPTIONS = ['SUNNY', 'CLOUDY', 'RAINY', 'WINDY', 'HOT'] as const;
 export type Weather = (typeof WEATHER_OPTIONS)[number];
+
+export const NOTIFICATION_TYPES = [
+  'SUBMISSION_SUBMITTED',
+  'SUBMISSION_APPROVED',
+  'SUBMISSION_REJECTED',
+  'SUBMISSION_CHANGES_REQUESTED',
+  'DPR_REMINDER',
+  'APPROVAL_DIGEST',
+] as const;
+export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
+
+export const PUSH_PLATFORMS = ['IOS', 'ANDROID', 'WEB'] as const;
+export type PushPlatform = (typeof PUSH_PLATFORMS)[number];

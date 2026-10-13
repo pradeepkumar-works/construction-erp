@@ -14,6 +14,7 @@ import { MaterialRequestsModule } from './material-requests/material-requests.mo
 import { ApprovalsModule } from './approvals/approvals.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { UploadsModule } from './uploads/uploads.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -31,6 +32,7 @@ import { HealthController } from './health.controller';
     ApprovalsModule,
     DashboardModule,
     UploadsModule,
+    NotificationsModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: JwtAuthGuard }],

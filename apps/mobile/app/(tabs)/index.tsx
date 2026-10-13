@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import type { DailyReportDto, MaterialRequestDto, ProgressEntryDto, ProjectSummary, SubmissionBase, SubmissionType } from '@erp/shared';
 import { useFetch } from '../../src/api/hooks';
 import { useAuth } from '../../src/auth/AuthContext';
-import { Button, Card, EmptyState, ErrorState, Loading, Screen, SectionTitle, Stat, SubmissionRow } from '../../src/components';
+import { Button, Card, EmptyState, ErrorState, Loading, NotificationBell, Screen, SectionTitle, Stat, SubmissionRow } from '../../src/components';
 import { colors, radius, spacing, typography } from '../../src/theme';
 import { fmtQty, formatDate, timeAgo, today } from '../../src/utils/format';
 
@@ -60,10 +60,15 @@ export default function HomeScreen() {
 
   return (
     <Screen refreshing={refreshing} onRefresh={refresh}>
-      <Text style={typography.h1}>
-        {greeting}, {firstName}
-      </Text>
-      <Text style={[typography.caption, styles.sub]}>{user?.roleName} · {formatDate(today())}</Text>
+      <View style={styles.topRow}>
+        <View style={styles.flex}>
+          <Text style={typography.h1}>
+            {greeting}, {firstName}
+          </Text>
+          <Text style={[typography.caption, styles.sub]}>{user?.roleName} · {formatDate(today())}</Text>
+        </View>
+        <NotificationBell />
+      </View>
 
       <SectionTitle title="Quick actions" />
       <View style={styles.quick}>
@@ -140,6 +145,7 @@ function QuickAction({ icon, label, onPress, tone }: { icon: keyof typeof Ionico
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
+  topRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   sub: { marginTop: 2, marginBottom: spacing.sm },
   quick: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg },
   quickBtn: { flex: 1, backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md, alignItems: 'center', borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, minHeight: 96, justifyContent: 'center' },
