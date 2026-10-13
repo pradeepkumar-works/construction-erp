@@ -3,7 +3,8 @@ import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'rea
 import { useRouter } from 'expo-router';
 import type { DailyReportDto, MaterialRequestDto, ProgressEntryDto, SubmissionType } from '@erp/shared';
 import { useFetch } from '../src/api/hooks';
-import { EmptyState, ErrorState, Loading, Screen, SubmissionRow } from '../src/components';
+import { EmptyState, ErrorState, Loading, OfflineBanner, Screen, SubmissionRow } from '../src/components';
+import { useOffline } from '../src/offline';
 import { colors, radius, spacing } from '../src/theme';
 import { fmtQty, formatDate, timeAgo } from '../src/utils/format';
 
@@ -18,6 +19,7 @@ type Row = { id: string; title: string; subtitle: string; status: ProgressEntryD
 export default function SubmissionsScreen() {
   const router = useRouter();
   const [type, setType] = useState<SubmissionType>('PROGRESS');
+  const { syncedCount } = useOffline();
   const { data, loading, refreshing, error, refresh, reload } = useFetch<Row[]>(
     async (api) => {
       if (type === 'PROGRESS') {
@@ -31,7 +33,8 @@ export default function SubmissionsScreen() {
       const rows = await api.get<MaterialRequestDto[]>('/material-requests', { mine: true });
       return rows.map((m) => ({ id: m.id, title: `${m.requestNo} · ${m.items.length} item${m.items.length === 1 ? '' : 's'}`, subtitle: `${m.projectName} · needed ${formatDate(m.requiredDate)}`, status: m.status, createdAt: m.createdAt }));
     },
-    [type],
+    [type, syncedCount],
+    { cacheKey: `submissions:${type}` },
   );
 
   const path = type === 'PROGRESS' ? '/progress/' : type === 'DPR' ? '/dpr/' : '/material-request/';
@@ -47,6 +50,9 @@ export default function SubmissionsScreen() {
             </Pressable>
           );
         })}
+      </View>
+      <View style={styles.banner}>
+        <OfflineBanner />
       </View>
       {loading && !data ? (
         <Loading />
@@ -72,5 +78,6 @@ const styles = StyleSheet.create({
   segmentActive: { backgroundColor: colors.surface },
   segmentText: { fontWeight: '600', color: colors.textMuted, fontSize: 15 },
   segmentTextActive: { color: colors.primary },
+  banner: { paddingHorizontal: spacing.lg },
   list: { padding: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.xxl, flexGrow: 1 },
 });

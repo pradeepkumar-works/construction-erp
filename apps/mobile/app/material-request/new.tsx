@@ -6,8 +6,9 @@ import { COMMON_UNITS, MATERIAL_PRIORITIES, MATERIAL_PRIORITY_LABELS, type Mater
 import { useApi, useFetch } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
 import { Button, Card, Chips, DatePicker, ErrorBanner, ErrorState, Input, Loading, Screen, Select } from '../../src/components';
-import { SubmitSuccess, useProjectOptions } from '../../src/forms/common';
+import { QueuedSuccess, SubmitSuccess, useProjectOptions } from '../../src/forms/common';
 import { ReviewerNote } from '../../src/forms/edit';
+import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
 import { colors, spacing, typography } from '../../src/theme';
 import { addDays, formatDate, isIsoDate, today } from '../../src/utils/format';
 
@@ -29,6 +30,7 @@ export default function NewMaterialRequestScreen() {
   const params = useLocalSearchParams<{ projectId?: string; editId?: string }>();
   const editId = params.editId ?? null;
   const api = useApi();
+  const { online, enqueue } = useOffline();
   const projects = useProjectOptions();
   const existing = useFetch<MaterialRequestDto>((a) => a.get(`/material-requests/${editId}`), [editId], { enabled: !!editId, refetchOnFocus: false });
 
@@ -41,6 +43,7 @@ export default function NewMaterialRequestScreen() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [created, setCreated] = useState<MaterialRequestDto | null>(null);
+  const [queued, setQueued] = useState<OutboxItem | null>(null);
 
   useEffect(() => {
     if (!editId && !projectId && projects.options.length === 1) setProjectId(projects.options[0].value);
@@ -86,7 +89,32 @@ export default function NewMaterialRequestScreen() {
           .filter((r) => r.itemName.trim())
           .map((r) => ({ itemName: r.itemName.trim(), specification: r.specification.trim() || undefined, unit: r.unit as string, quantity: String(Number(r.quantity)) })),
       };
-      setCreated(editId ? await api.patch<MaterialRequestDto>(`/material-requests/${editId}`, { ...body, submit: true }) : await api.post<MaterialRequestDto>('/material-requests', { projectId, ...body }));
+      if (editId) {
+        setCreated(await api.patch<MaterialRequestDto>(`/material-requests/${editId}`, { ...body, submit: true }));
+        return;
+      }
+      const queueIt = async () => {
+        const projectName = projects.options.find((o) => o.value === projectId)?.label ?? 'Project';
+        setQueued(
+          await enqueue({
+            type: 'MATERIAL_REQUEST',
+            payload: { projectId, ...body },
+            photos: [],
+            title: `Material request · ${body.items.length} item${body.items.length === 1 ? '' : 's'}`,
+            subtitle: `${projectName} · needed ${formatDate(requiredDate)}`,
+          }),
+        );
+      };
+      if (!online) {
+        await queueIt();
+        return;
+      }
+      try {
+        setCreated(await api.post<MaterialRequestDto>('/material-requests', { projectId, ...body }));
+      } catch (e) {
+        if (!isOfflineError(e)) throw e;
+        await queueIt();
+      }
     } catch (e) {
       setSubmitError(errorMessage(e));
     } finally {
@@ -94,6 +122,9 @@ export default function NewMaterialRequestScreen() {
     }
   };
 
+  if (queued) {
+    return <QueuedSuccess title="Saved on this phone" subtitle={`${queued.title} · ${queued.subtitle}`} />;
+  }
   if (created) {
     return <SubmitSuccess title={editId ? 'Request resubmitted' : 'Request submitted'} subtitle={`${created.requestNo} · ${created.items.length} item${created.items.length === 1 ? '' : 's'} needed by ${formatDate(created.requiredDate)}. Sent for approval.`} detailHref={`/material-request/${created.id}`} />;
   }

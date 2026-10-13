@@ -9,7 +9,7 @@ import { colors, spacing, typography } from '../../src/theme';
 
 export default function ProjectsScreen() {
   const router = useRouter();
-  const { data, loading, refreshing, error, refresh, reload } = useFetch<ProjectSummary[]>((api) => api.get('/projects'), []);
+  const { data, loading, refreshing, error, refresh, reload } = useFetch<ProjectSummary[]>((api) => api.get('/projects'), [], { cacheKey: 'projects' });
 
   if (loading && !data) return <Loading />;
   if (error && !data) return <ErrorState message={error} onRetry={reload} />;

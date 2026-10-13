@@ -6,8 +6,9 @@ import { MANPOWER_CATEGORIES, WEATHER_LABELS, WEATHER_OPTIONS, type DailyReportD
 import { useApi, useFetch } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
 import { Button, Card, Chips, DatePicker, ErrorBanner, ErrorState, Input, Loading, PhotoPicker, Screen, Select, type LocalPhoto } from '../../src/components';
-import { attachmentIds, photosFailed, photosUploading, SubmitSuccess, useProjectOptions } from '../../src/forms/common';
+import { attachmentIds, photosFailed, photosQueued, photosUploading, QueuedSuccess, SubmitSuccess, toOutboxPhotos, useProjectOptions } from '../../src/forms/common';
 import { attachmentsToPhotos, ReviewerNote } from '../../src/forms/edit';
+import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
 import { colors, spacing, typography } from '../../src/theme';
 import { formatDate, isIsoDate, today } from '../../src/utils/format';
 
@@ -31,6 +32,7 @@ export default function NewDprScreen() {
   const params = useLocalSearchParams<{ projectId?: string; editId?: string }>();
   const editId = params.editId ?? null;
   const api = useApi();
+  const { online, enqueue, items: outbox } = useOffline();
   const projects = useProjectOptions();
   const existing = useFetch<DailyReportDto>((a) => a.get(`/dpr/${editId}`), [editId], { enabled: !!editId, refetchOnFocus: false });
 
@@ -51,6 +53,7 @@ export default function NewDprScreen() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [created, setCreated] = useState<DailyReportDto | null>(null);
+  const [queued, setQueued] = useState<OutboxItem | null>(null);
 
   useEffect(() => {
     if (!editId && !projectId && projects.options.length === 1) setProjectId(projects.options[0].value);
@@ -97,6 +100,8 @@ export default function NewDprScreen() {
     if (machinery.some((r) => r.hours.trim() && Number.isNaN(Number(r.hours)))) e.machinery = 'Hours must be a number';
     if (photosUploading(photos)) e.photos = 'Wait for photos to finish uploading';
     else if (photosFailed(photos)) e.photos = 'Remove or retry failed photos';
+    else if (editId && photosQueued(photos)) e.photos = 'Photos need a connection to upload before resubmitting';
+    if (!editId && outbox.some((i) => i.type === 'DPR' && i.payload.projectId === projectId && i.payload.date === date)) e.date = 'A DPR for this date is already waiting in the outbox';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -119,9 +124,33 @@ export default function NewDprScreen() {
         safetyObservations: safety.trim() || blank,
         issues: issues.trim() || blank,
         nextDayPlan: nextDayPlan.trim() || blank,
-        attachmentIds: attachmentIds(photos),
       };
-      setCreated(editId ? await api.patch<DailyReportDto>(`/dpr/${editId}`, { ...body, submit: true }) : await api.post<DailyReportDto>('/dpr', { projectId, ...body }));
+      if (editId) {
+        setCreated(await api.patch<DailyReportDto>(`/dpr/${editId}`, { ...body, attachmentIds: attachmentIds(photos), submit: true }));
+        return;
+      }
+      const queueIt = async () => {
+        const projectName = projects.options.find((o) => o.value === projectId)?.label ?? 'Project';
+        setQueued(
+          await enqueue({
+            type: 'DPR',
+            payload: { projectId, ...body },
+            photos: toOutboxPhotos(photos),
+            title: `DPR · ${formatDate(date)}`,
+            subtitle: `${projectName} · ${totalManpower} manpower`,
+          }),
+        );
+      };
+      if (!online || photosQueued(photos)) {
+        await queueIt();
+        return;
+      }
+      try {
+        setCreated(await api.post<DailyReportDto>('/dpr', { projectId, ...body, attachmentIds: attachmentIds(photos) }));
+      } catch (e) {
+        if (!isOfflineError(e)) throw e;
+        await queueIt();
+      }
     } catch (e) {
       setSubmitError(errorMessage(e));
     } finally {
@@ -129,6 +158,9 @@ export default function NewDprScreen() {
     }
   };
 
+  if (queued) {
+    return <QueuedSuccess title="Saved on this phone" subtitle={`${queued.title} · ${queued.subtitle}`} />;
+  }
   if (created) {
     return <SubmitSuccess title={editId ? 'DPR resubmitted' : 'DPR submitted'} subtitle={`${created.projectName} · ${formatDate(created.date)} · ${created.totalManpower} manpower. Sent for approval.`} detailHref={`/dpr/${created.id}`} />;
   }

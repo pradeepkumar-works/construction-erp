@@ -17,8 +17,11 @@ Order matters: each item builds on the previous one.
 2. **Notifications** (done): in-app + Expo push on approve / reject / changes requested and on new
    submissions for approvers; daily "DPR not submitted" reminder; email digest of pending approvals.
    `Notification` and `PushToken` tables, jobs via Vercel Cron.
-3. **Offline entry on mobile**: local queue (SQLite) for progress, DPR, material request; sync on
-   reconnect. API: client-generated ids + idempotency on create.
+3. ~~**Offline entry on mobile**: local queue (SQLite) for progress, DPR, material request; sync on
+   reconnect. API: client-generated ids + idempotency on create.~~ Done: optional `id` on the three
+   create endpoints (a repeat returns the existing entry), SQLite outbox with photos copied to the
+   app's documents folder, automatic sync on reconnect / app foreground, Outbox screen with retry and
+   discard, last-loaded projects, activities and lists cached on the phone.
 4. **Server-side paging, search and sort** on all list endpoints (`Paginated<T>` already in shared);
    Excel export of each list.
 5. **Attendance by supervisor**: daily worker count by category and contractor per project;

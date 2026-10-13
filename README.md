@@ -28,6 +28,9 @@ contractors after the first client is live.
 - Dashboards: company (projects, contract value, pending approvals, delayed activities, DPRs
   today) and project (physical progress weighted by BOQ value, BOQ executed amount, activity
   status, recent submissions).
+- Offline entry on the site app: progress, DPR and material requests filed without signal are kept
+  in an outbox on the phone (photos included) and sent automatically when the connection returns.
+  Retries never create duplicates because each entry carries its own id from the phone.
 - Notifications: the author is told when a submission is approved, rejected or sent back, and
   approvers when something new is waiting. In-app on web and mobile (bell + list), Expo push to
   registered phones, a daily "DPR not submitted" reminder to site staff and a daily email digest of
@@ -113,5 +116,5 @@ pnpm --filter @erp/api prisma studio
 ## Not in the MVP (next phases)
 
 Procurement (indent → RFQ → PO), store/GRN and stock, attendance and payroll, machinery logs,
-measurement book and RA billing, finance, HR, quality registers, offline mode,
+measurement book and RA billing, finance, HR, quality registers,
 Excel/PDF report exports beyond the DPR print view, and tenant self-signup/billing.

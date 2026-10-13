@@ -5,7 +5,8 @@ import { Ionicons } from '@expo/vector-icons';
 import type { DailyReportDto, MaterialRequestDto, ProgressEntryDto, ProjectSummary, SubmissionBase, SubmissionType } from '@erp/shared';
 import { useFetch } from '../../src/api/hooks';
 import { useAuth } from '../../src/auth/AuthContext';
-import { Button, Card, EmptyState, ErrorState, Loading, NotificationBell, Screen, SectionTitle, Stat, SubmissionRow } from '../../src/components';
+import { Button, Card, EmptyState, ErrorState, Loading, NotificationBell, OfflineBanner, Screen, SectionTitle, Stat, SubmissionRow } from '../../src/components';
+import { useOffline } from '../../src/offline';
 import { colors, radius, spacing, typography } from '../../src/theme';
 import { fmtQty, formatDate, timeAgo, today } from '../../src/utils/format';
 
@@ -21,6 +22,7 @@ type Recent = { type: SubmissionType; item: SubmissionBase; title: string; subti
 export default function HomeScreen() {
   const { user } = useAuth();
   const router = useRouter();
+  const { syncedCount, items: outbox } = useOffline();
   const { data, loading, refreshing, error, refresh, reload } = useFetch<HomeData>(
     async (api) => {
       const [projects, progress, dprs, mrs] = await Promise.all([
@@ -31,7 +33,9 @@ export default function HomeScreen() {
       ]);
       return { projects, progress, dprs, mrs };
     },
-    [],
+    // Refetch when queued entries reach the server.
+    [syncedCount],
+    { cacheKey: 'home' },
   );
 
   const derived = useMemo(() => {
@@ -45,9 +49,13 @@ export default function HomeScreen() {
     const changes = all.filter((r) => r.item.status === 'CHANGES_REQUESTED').length;
     const recent = [...all].sort((a, b) => (b.item.createdAt > a.item.createdAt ? 1 : -1)).slice(0, 8);
     const t = today();
-    const dprToday = data.projects.map((p) => ({ project: p, dpr: data.dprs.find((d) => d.projectId === p.id && d.date === t) ?? null }));
+    const dprToday = data.projects.map((p) => ({
+      project: p,
+      dpr: data.dprs.find((d) => d.projectId === p.id && d.date === t) ?? null,
+      queued: outbox.some((i) => i.type === 'DPR' && i.payload.projectId === p.id && i.payload.date === t),
+    }));
     return { pending, changes, recent, dprToday };
-  }, [data]);
+  }, [data, outbox]);
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
@@ -69,6 +77,7 @@ export default function HomeScreen() {
         </View>
         <NotificationBell />
       </View>
+      <OfflineBanner />
 
       <SectionTitle title="Quick actions" />
       <View style={styles.quick}>
@@ -95,8 +104,8 @@ export default function HomeScreen() {
               <Text style={typography.caption}>You are not assigned to any project yet.</Text>
             </Card>
           ) : (
-            derived.dprToday.map(({ project, dpr }) => (
-              <Card key={project.id} onPress={() => (dpr ? router.push(`/dpr/${dpr.id}`) : router.push(`/dpr/new?projectId=${project.id}`))}>
+            derived.dprToday.map(({ project, dpr, queued }) => (
+              <Card key={project.id} onPress={() => (dpr ? router.push(`/dpr/${dpr.id}`) : queued ? router.push('/outbox') : router.push(`/dpr/new?projectId=${project.id}`))}>
                 <View style={styles.dprRow}>
                   <View style={styles.flex}>
                     <Text style={typography.bodyStrong} numberOfLines={1}>
@@ -108,6 +117,11 @@ export default function HomeScreen() {
                     <View style={[styles.dprState, { backgroundColor: colors.successSoft }]}>
                       <Ionicons name="checkmark-circle" size={18} color={colors.success} />
                       <Text style={[styles.dprStateText, { color: colors.success }]}>Done</Text>
+                    </View>
+                  ) : queued ? (
+                    <View style={[styles.dprState, { backgroundColor: colors.primarySoft }]}>
+                      <Ionicons name="cloud-upload-outline" size={18} color={colors.primary} />
+                      <Text style={[styles.dprStateText, { color: colors.primary }]}>In outbox</Text>
                     </View>
                   ) : (
                     <View style={[styles.dprState, { backgroundColor: colors.warningSoft }]}>

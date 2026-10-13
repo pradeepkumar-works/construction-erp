@@ -102,7 +102,26 @@ that device and is deleted on sign-out or when Expo reports it unregistered.
 - A new notification type = enum value in `schema.prisma` and `packages/shared` (+ label), a
   `notify()` call, and a route in the web `notificationHref` / mobile `notificationRoute` helpers.
 
-## Offline (planned)
+## Offline entry (mobile)
 
-Not in the MVP. The API already accepts client-supplied dates and idempotent creates are a small
-change (client-generated ids), so the mobile app can add a local queue later without API redesign.
+New progress entries, DPRs and material requests can be filed without a connection.
+
+- **Idempotent creates.** `POST /progress`, `/dpr` and `/material-requests` accept an optional
+  client-generated UUID in `id`. If an entry with that id already exists in the caller's organisation
+  the API returns it instead of creating another, and a unique-key race between two retries resolves
+  to the first one. So a phone can resend after a lost response without creating duplicates.
+- **Outbox.** `apps/mobile/src/offline` keeps a SQLite database (`siteapp.db`) with an `outbox` table
+  (one row per queued entry, per user) and a `cache` table. A form submits straight to the API when
+  online; when offline, or when the request fails to reach the server, it saves the entry to the
+  outbox with a fresh UUID. Picked photos are copied into the app's documents folder because the
+  image picker's cache can be purged.
+- **Sync.** `OfflineProvider` flushes the outbox in creation order when the network comes back
+  (expo-network), when the app returns to the foreground and after sign-in. For each entry it uploads
+  any photo without an attachment id (remembering ids as it goes), then posts the entry with its
+  client id. Network errors and 5xx stop the run and keep the entry pending; a 4xx (for example a DPR
+  for a day that already has one) marks it failed, and the Outbox screen offers retry or discard.
+- **Read cache.** `useFetch(..., { cacheKey })` stores the last good response per user, so projects,
+  activities, the home screen and My Submissions open offline with the last loaded data.
+- Edits and resubmits, reviews and approvals still need a connection: they act on server state that
+  may have changed since the phone last saw it.
+- Web (Expo web export) uses a localStorage-backed store instead of SQLite.

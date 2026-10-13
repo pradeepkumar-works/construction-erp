@@ -8,6 +8,7 @@ import { AuditService } from '../common/audit.service';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
 import { AttachmentsService } from '../common/attachments.service';
 import { dateOnly, dec, iso, parseDate } from '../common/serialize';
+import { isUniqueViolation } from '../common/idempotency';
 import { CreateMaterialRequestDto, ListMaterialRequestQuery, UpdateMaterialRequestDto } from './material-requests.dto';
 
 const include = {
@@ -77,23 +78,43 @@ export class MaterialRequestsService {
     return this.toDto(row);
   }
 
+  /** Idempotent create: a request that already exists under the client-supplied id is returned as is. */
+  private async findExisting(user: RequestUser, id: string | undefined) {
+    if (!id) return null;
+    const row = await this.prisma.materialRequest.findFirst({ where: { id, organizationId: user.organizationId }, select: { id: true } });
+    return row ? this.get(user, row.id) : null;
+  }
+
   async create(user: RequestUser, dto: CreateMaterialRequestDto): Promise<MaterialRequestDto> {
+    const existing = await this.findExisting(user, dto.id);
+    if (existing) return existing;
     await this.access.assertCanAccessProject(user, dto.projectId);
-    const row = await this.prisma.materialRequest.create({
-      data: {
-        organizationId: user.organizationId,
-        projectId: dto.projectId,
-        requestNo: await this.nextRequestNo(user.organizationId),
-        requiredDate: parseDate(dto.requiredDate),
-        priority: dto.priority ?? 'NORMAL',
-        remarks: dto.remarks ?? null,
-        submittedById: user.id,
-        status: 'DRAFT',
-        items: {
-          create: dto.items.map((i, idx) => ({ itemName: i.itemName, specification: i.specification ?? null, unit: i.unit, quantity: new Prisma.Decimal(i.quantity), sortOrder: idx })),
+    let row: { id: string; requestNo: string };
+    try {
+      row = await this.prisma.materialRequest.create({
+        data: {
+          id: dto.id,
+          organizationId: user.organizationId,
+          projectId: dto.projectId,
+          requestNo: await this.nextRequestNo(user.organizationId),
+          requiredDate: parseDate(dto.requiredDate),
+          priority: dto.priority ?? 'NORMAL',
+          remarks: dto.remarks ?? null,
+          submittedById: user.id,
+          status: 'DRAFT',
+          items: {
+            create: dto.items.map((i, idx) => ({ itemName: i.itemName, specification: i.specification ?? null, unit: i.unit, quantity: new Prisma.Decimal(i.quantity), sortOrder: idx })),
+          },
         },
-      },
-    });
+        select: { id: true, requestNo: true },
+      });
+    } catch (e) {
+      if (isUniqueViolation(e) && dto.id) {
+        const winner = await this.findExisting(user, dto.id);
+        if (winner) return winner;
+      }
+      throw e;
+    }
     await this.attachments.link(user, 'materialRequestId', row.id, dto.attachmentIds);
     await this.audit.log(user, 'MATERIAL_REQUEST', row.id, 'CREATED', row.requestNo);
     if (dto.submit !== false) await this.lifecycle.submit(user, 'MATERIAL_REQUEST', row.id);

@@ -8,6 +8,7 @@ import { AuditService } from '../common/audit.service';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
 import { AttachmentsService } from '../common/attachments.service';
 import { dateOnly, dec, iso, parseDate } from '../common/serialize';
+import { isUniqueViolation } from '../common/idempotency';
 import { CreateProgressDto, ListProgressQuery, UpdateProgressDto } from './progress.dto';
 
 const include = {
@@ -73,25 +74,46 @@ export class ProgressService {
     return this.toDto(row);
   }
 
+  /** Idempotent create: an entry that already exists under the client-supplied id is returned as is. */
+  private async findExisting(user: RequestUser, id: string | undefined) {
+    if (!id) return null;
+    const row = await this.prisma.progressEntry.findFirst({ where: { id, organizationId: user.organizationId }, select: { id: true } });
+    return row ? this.get(user, row.id) : null;
+  }
+
   async create(user: RequestUser, dto: CreateProgressDto): Promise<ProgressEntryDto> {
+    const existing = await this.findExisting(user, dto.id);
+    if (existing) return existing;
     await this.access.assertCanAccessProject(user, dto.projectId);
     const activity = await this.prisma.activity.findFirst({ where: { id: dto.activityId, projectId: dto.projectId } });
     if (!activity) throw new NotFoundException('Activity not found in this project');
-    const row = await this.prisma.progressEntry.create({
-      data: {
-        organizationId: user.organizationId,
-        projectId: dto.projectId,
-        activityId: dto.activityId,
-        date: parseDate(dto.date),
-        quantity: new Prisma.Decimal(dto.quantity),
-        remarks: dto.remarks ?? null,
-        location: dto.location ?? null,
-        manpowerCount: dto.manpowerCount ?? null,
-        machineryUsed: dto.machineryUsed ?? null,
-        submittedById: user.id,
-        status: 'DRAFT',
-      },
-    });
+    let row: { id: string };
+    try {
+      row = await this.prisma.progressEntry.create({
+        data: {
+          id: dto.id,
+          organizationId: user.organizationId,
+          projectId: dto.projectId,
+          activityId: dto.activityId,
+          date: parseDate(dto.date),
+          quantity: new Prisma.Decimal(dto.quantity),
+          remarks: dto.remarks ?? null,
+          location: dto.location ?? null,
+          manpowerCount: dto.manpowerCount ?? null,
+          machineryUsed: dto.machineryUsed ?? null,
+          submittedById: user.id,
+          status: 'DRAFT',
+        },
+        select: { id: true },
+      });
+    } catch (e) {
+      // Two retries of the same offline entry raced; the first one won.
+      if (isUniqueViolation(e) && dto.id) {
+        const winner = await this.findExisting(user, dto.id);
+        if (winner) return winner;
+      }
+      throw e;
+    }
     await this.attachments.link(user, 'progressEntryId', row.id, dto.attachmentIds);
     await this.audit.log(user, 'PROGRESS', row.id, 'CREATED');
     if (dto.submit !== false) await this.lifecycle.submit(user, 'PROGRESS', row.id);

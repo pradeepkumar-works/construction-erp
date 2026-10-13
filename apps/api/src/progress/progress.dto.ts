@@ -1,8 +1,10 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsNumberString, IsOptional, IsString, IsUUID, Min } from 'class-validator';
 import { SUBMISSION_STATUSES, SubmissionStatus } from '@erp/shared';
+import { CLIENT_ID_DOC } from '../common/idempotency';
 
 export class CreateProgressDto {
+  @ApiPropertyOptional(CLIENT_ID_DOC) @IsOptional() @IsUUID('4') id?: string;
   @ApiProperty() @IsUUID() projectId: string;
   @ApiProperty() @IsUUID() activityId: string;
   @ApiProperty({ example: '2026-10-13' }) @IsDateString() date: string;

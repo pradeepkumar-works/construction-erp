@@ -5,6 +5,7 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useApi } from '../api/hooks';
 import { errorMessage } from '../api/client';
+import { isOfflineError, useOffline } from '../offline/OfflineContext';
 import { colors, radius, spacing, typography } from '../theme';
 
 export interface LocalPhoto {
@@ -16,6 +17,8 @@ export interface LocalPhoto {
   attachmentId?: string;
   uploading: boolean;
   error?: string;
+  /** No connection: kept on the phone and uploaded when the queued entry is sent. */
+  queued?: boolean;
 }
 
 interface Props {
@@ -34,21 +37,33 @@ function guessType(uri: string, mime?: string | null): string {
   return 'image/jpeg';
 }
 
-/** Camera + library picker that uploads each photo immediately and keeps the returned attachment ids. */
+/**
+ * Camera + library picker that uploads each photo immediately and keeps the returned attachment ids.
+ * Without a connection the photo stays on the phone (`queued`) and travels with the entry through the outbox.
+ */
 export function PhotoPicker({ label = 'Photos', photos, onChange, max = 6 }: Props) {
   const api = useApi();
+  const { online } = useOffline();
   const [busy, setBusy] = useState(false);
 
   const upload = useCallback(
     async (photo: LocalPhoto) => {
+      if (!online) {
+        onChange((prev) => prev.map((p) => (p.key === photo.key ? { ...p, uploading: false, queued: true, error: undefined } : p)));
+        return;
+      }
       try {
         const att = await api.upload({ uri: photo.uri, name: photo.name, type: photo.type });
-        onChange((prev) => prev.map((p) => (p.key === photo.key ? { ...p, uploading: false, attachmentId: att.id, error: undefined } : p)));
+        onChange((prev) => prev.map((p) => (p.key === photo.key ? { ...p, uploading: false, attachmentId: att.id, error: undefined, queued: false } : p)));
       } catch (e) {
+        if (isOfflineError(e)) {
+          onChange((prev) => prev.map((p) => (p.key === photo.key ? { ...p, uploading: false, queued: true, error: undefined } : p)));
+          return;
+        }
         onChange((prev) => prev.map((p) => (p.key === photo.key ? { ...p, uploading: false, error: errorMessage(e) } : p)));
       }
     },
-    [api, onChange],
+    [api, online, onChange],
   );
 
   const addAssets = useCallback(
@@ -113,8 +128,8 @@ export function PhotoPicker({ label = 'Photos', photos, onChange, max = 6 }: Pro
 
   const remove = (key: string) => onChange((prev) => prev.filter((p) => p.key !== key));
   const retry = (photo: LocalPhoto) => {
-    onChange((prev) => prev.map((p) => (p.key === photo.key ? { ...p, uploading: true, error: undefined } : p)));
-    void upload({ ...photo, uploading: true, error: undefined });
+    onChange((prev) => prev.map((p) => (p.key === photo.key ? { ...p, uploading: true, error: undefined, queued: false } : p)));
+    void upload({ ...photo, uploading: true, error: undefined, queued: false });
   };
   const full = photos.length >= max;
 
@@ -147,6 +162,10 @@ export function PhotoPicker({ label = 'Photos', photos, onChange, max = 6 }: Pro
                   <Ionicons name="refresh" size={22} color="#fff" />
                   <Text style={styles.overlayText}>Retry</Text>
                 </Pressable>
+              ) : p.queued ? (
+                <Pressable onPress={() => (online ? retry(p) : undefined)} style={styles.okMark} accessibilityLabel="Waiting for connection">
+                  <Ionicons name="cloud-offline" size={18} color={colors.warning} />
+                </Pressable>
               ) : (
                 <View style={styles.okMark}>
                   <Ionicons name="checkmark-circle" size={18} color={colors.success} />
@@ -159,7 +178,7 @@ export function PhotoPicker({ label = 'Photos', photos, onChange, max = 6 }: Pro
           ))}
         </ScrollView>
       ) : (
-        <Text style={styles.hint}>Optional. Photos upload immediately and are attached on submit.</Text>
+        <Text style={styles.hint}>{online ? 'Optional. Photos upload immediately and are attached on submit.' : 'Optional. You are offline: photos stay on the phone and upload with the entry.'}</Text>
       )}
     </View>
   );

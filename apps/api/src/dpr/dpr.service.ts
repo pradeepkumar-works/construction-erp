@@ -8,6 +8,7 @@ import { AuditService } from '../common/audit.service';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
 import { AttachmentsService } from '../common/attachments.service';
 import { dateOnly, iso, parseDate } from '../common/serialize';
+import { isUniqueViolation } from '../common/idempotency';
 import { CreateDprDto, ListDprQuery, UpdateDprDto } from './dpr.dto';
 
 const include = {
@@ -85,28 +86,48 @@ export class DprService {
     if (dup) throw new ConflictException(`A DPR for ${dateOnly(date)} already exists for this project (status ${dup.status}). Edit it instead of creating another.`);
   }
 
+  /** Idempotent create: a DPR that already exists under the client-supplied id is returned as is. */
+  private async findExisting(user: RequestUser, id: string | undefined) {
+    if (!id) return null;
+    const row = await this.prisma.dailyReport.findFirst({ where: { id, organizationId: user.organizationId }, select: { id: true } });
+    return row ? this.get(user, row.id) : null;
+  }
+
   async create(user: RequestUser, dto: CreateDprDto): Promise<DailyReportDto> {
+    const existing = await this.findExisting(user, dto.id);
+    if (existing) return existing;
     await this.access.assertCanAccessProject(user, dto.projectId);
     await this.assertNoDuplicate(dto.projectId, parseDate(dto.date));
-    const row = await this.prisma.dailyReport.create({
-      data: {
-        organizationId: user.organizationId,
-        projectId: dto.projectId,
-        date: parseDate(dto.date),
-        weather: dto.weather ?? null,
-        siteCondition: dto.siteCondition ?? null,
-        manpower: (dto.manpower ?? []) as unknown as Prisma.InputJsonValue,
-        machinery: (dto.machinery ?? []) as unknown as Prisma.InputJsonValue,
-        materialReceived: dto.materialReceived ?? null,
-        workExecuted: dto.workExecuted,
-        testsConducted: dto.testsConducted ?? null,
-        safetyObservations: dto.safetyObservations ?? null,
-        issues: dto.issues ?? null,
-        nextDayPlan: dto.nextDayPlan ?? null,
-        submittedById: user.id,
-        status: 'DRAFT',
-      },
-    });
+    let row: { id: string };
+    try {
+      row = await this.prisma.dailyReport.create({
+        data: {
+          id: dto.id,
+          organizationId: user.organizationId,
+          projectId: dto.projectId,
+          date: parseDate(dto.date),
+          weather: dto.weather ?? null,
+          siteCondition: dto.siteCondition ?? null,
+          manpower: (dto.manpower ?? []) as unknown as Prisma.InputJsonValue,
+          machinery: (dto.machinery ?? []) as unknown as Prisma.InputJsonValue,
+          materialReceived: dto.materialReceived ?? null,
+          workExecuted: dto.workExecuted,
+          testsConducted: dto.testsConducted ?? null,
+          safetyObservations: dto.safetyObservations ?? null,
+          issues: dto.issues ?? null,
+          nextDayPlan: dto.nextDayPlan ?? null,
+          submittedById: user.id,
+          status: 'DRAFT',
+        },
+        select: { id: true },
+      });
+    } catch (e) {
+      if (isUniqueViolation(e) && dto.id) {
+        const winner = await this.findExisting(user, dto.id);
+        if (winner) return winner;
+      }
+      throw e;
+    }
     await this.attachments.link(user, 'dailyReportId', row.id, dto.attachmentIds);
     await this.audit.log(user, 'DPR', row.id, 'CREATED');
     if (dto.submit !== false) await this.lifecycle.submit(user, 'DPR', row.id);
