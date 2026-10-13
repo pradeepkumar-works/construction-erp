@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import type { DailyReportDto, ManpowerLine, MachineryLine } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
@@ -76,8 +76,18 @@ export class DprService {
     return this.toDto(row);
   }
 
+  /** One DPR per project per day (a rejected one may be replaced). */
+  private async assertNoDuplicate(projectId: string, date: Date, excludeId?: string) {
+    const dup = await this.prisma.dailyReport.findFirst({
+      where: { projectId, date, status: { not: 'REJECTED' }, ...(excludeId ? { id: { not: excludeId } } : {}) },
+      select: { id: true, status: true },
+    });
+    if (dup) throw new ConflictException(`A DPR for ${dateOnly(date)} already exists for this project (status ${dup.status}). Edit it instead of creating another.`);
+  }
+
   async create(user: RequestUser, dto: CreateDprDto): Promise<DailyReportDto> {
     await this.access.assertCanAccessProject(user, dto.projectId);
+    await this.assertNoDuplicate(dto.projectId, parseDate(dto.date));
     const row = await this.prisma.dailyReport.create({
       data: {
         organizationId: user.organizationId,
@@ -107,7 +117,10 @@ export class DprService {
     const row = await this.lifecycle.load(user, 'DPR', id);
     await this.lifecycle.assertEditable(user, row);
     const data: Prisma.DailyReportUncheckedUpdateInput = {};
-    if (dto.date !== undefined) data.date = parseDate(dto.date);
+    if (dto.date !== undefined) {
+      await this.assertNoDuplicate(row.projectId, parseDate(dto.date), id);
+      data.date = parseDate(dto.date);
+    }
     if (dto.weather !== undefined) data.weather = dto.weather;
     if (dto.siteCondition !== undefined) data.siteCondition = dto.siteCondition;
     if (dto.manpower !== undefined) data.manpower = dto.manpower as unknown as Prisma.InputJsonValue;
