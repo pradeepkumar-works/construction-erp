@@ -245,9 +245,35 @@ the dashboard, `common/progress.ts`), contract time elapsed, executed value (app
 rate) for the period and to date, measured value, activity rows (period, to date, %, delayed at period
 end), BOQ rows with movement, manpower from attendance, machinery from approved logs, material received
 and issued, issues and safety notes from approved DPRs, activities planned to be under way in the next
-period of the same length, and up to eight photos from approved progress. The web renders it to an A4
+period of the same length, delays that held up work in the period (days counted within it) and risks
+scored 8 or more still open at its end, and up to eight photos from approved progress. The web renders it to an A4
 HTML document (`components/reports/progressReportHtml.ts`), previews it in an iframe and prints it to
 PDF from the browser.
+
+## Delay and risk register
+
+- **Table.** `Risk`: project, `riskNo` (`RISK-<year>-0001` per organisation, `nextDocNo`), `kind` (DELAY |
+  RISK), `category`, title, description, optional activity and owner, `probability` and `impact` (1 to 5)
+  with the stored `score` = their product, mitigation, `dueDate`, `status` (OPEN | MONITORING | CLOSED),
+  `closedAt` / `closureNote`, `raisedById`. A delay also has `delayStart`, `delayEnd` (null while work is
+  still held up), an optional agreed `daysLost` (else counted from the dates, to today while open),
+  `responsibleParty` (CLIENT | CONTRACTOR | THIRD_PARTY | FORCE_MAJEURE) and `eotClaimed`. Photos and
+  letters are attachments (`Attachment.riskId`).
+- **Not a submission.** There is no approval: entries stay open, are followed up by the owner and closed
+  with a note (`CLOSED` / `REOPENED` audit actions). Site roles, the QS, QA/QC and approvers raise them
+  (`RISK_RAISER_ROLES`); the raiser, the owner or an approver edits or closes (`canEditRisk`); only an
+  approver deletes one raised by mistake. Anyone who can see the project reads the register.
+- **API.** `GET /risks` (paged, sorted by score; filters kind, status, `active`, category, owner, `mine`,
+  `minScore`, `overdue`), `GET /risks/summary` (counts, high risks, open delays, overdue actions, days lost
+  and excusable days lost, 5 × 5 heat map of active risks, by category), `GET /risks/suggestions` (activities
+  on active projects past their planned end, approved progress short of plan, with no open delay entry),
+  `GET /risks/:id`, `/:id/history`, `POST` (idempotent with a client id, so the site app can raise one
+  offline), `PATCH` (closing an open delay ends it today unless a date is sent), `DELETE`.
+- **Notifications.** A delay, or a risk scored 15 or more (`HIGH_RISK_SCORE`), notifies the project's
+  approvers and the owner (`RISK_RAISED`, deduped per entry); assigning a new owner notifies them.
+- **Clients.** Web: Delays & Risks page and project tab (summary, heat map, "behind schedule, no delay
+  recorded" prompts, Excel export); the progress report has a Delays and risks section. Site app: register
+  screen per project, form (offline through the outbox) and detail screen with close / reopen.
 
 ## Money and quantities
 
@@ -279,7 +305,8 @@ that device and is deleted on sign-out or when Expo reports it unregistered.
 - Jobs are triggered by HTTP (`/api/notifications/jobs/*`, guarded by `CRON_SECRET`) so Vercel
   Cron can call them; an optional in-process timer (`NOTIFICATION_JOBS_INPROCESS=true`) covers
   long-running hosts. Transports are plain `fetch` calls (Expo push API, Resend) with no SDKs.
-- Stock writes call `notify()` directly for `LOW_STOCK` (see Stock).
+- Stock writes call `notify()` directly for `LOW_STOCK` (see Stock), and the register for `RISK_RAISED`
+  (`entityId` is the register entry; web opens `/risks?id=`, the site app `/risk/<id>`).
 - A new notification type = enum value in `schema.prisma` and `packages/shared` (+ label), a
   `notify()` call, and a route in the web `notificationHref` / mobile `notificationRoute` helpers.
 

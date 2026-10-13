@@ -22,6 +22,7 @@ export const LIST_SORT_FIELDS = {
   equipment: ['code', 'name', 'category', 'ownership', 'project', 'createdAt'],
   measurements: ['date', 'mbNo', 'createdAt', 'submittedAt', 'totalQty', 'boqItem', 'status', 'project', 'submittedBy'],
   expenses: ['date', 'expenseNo', 'createdAt', 'submittedAt', 'totalAmount', 'category', 'status', 'project', 'submittedBy'],
+  risks: ['riskNo', 'score', 'status', 'kind', 'category', 'dueDate', 'project', 'owner', 'createdAt', 'updatedAt'],
 } as const;
 
 export type ProgressSortField = (typeof LIST_SORT_FIELDS.progress)[number];
@@ -37,6 +38,7 @@ export type MachineryLogSortField = (typeof LIST_SORT_FIELDS.machinery)[number];
 export type EquipmentSortField = (typeof LIST_SORT_FIELDS.equipment)[number];
 export type MeasurementSortField = (typeof LIST_SORT_FIELDS.measurements)[number];
 export type ExpenseSortField = (typeof LIST_SORT_FIELDS.expenses)[number];
+export type RiskSortField = (typeof LIST_SORT_FIELDS.risks)[number];
 
 /** Query parameters understood by every paged list. */
 export interface ListParams<S extends string = string> {

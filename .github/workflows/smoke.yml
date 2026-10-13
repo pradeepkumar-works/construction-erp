@@ -252,6 +252,21 @@ jobs:
             | jq -r '"\(.project.code) \(.from)..\(.to): physical \(.physical.atStartPct)% -> \(.physical.atEndPct)%, executed ₹\(.financial.periodValue)"'
           code=$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/reports/progress?projectId=$PROJECT&from=2026-01-01&to=2026-12-31" -H "$H")
           echo "over 92 days: $code"; [ "$code" = "400" ]
+      - name: Delay and risk register
+        run: |
+          set -e
+          login() { curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' -d "{\"email\":\"$1\",\"password\":\"password123\"}" | jq -r .accessToken; }
+          H="authorization: Bearer $(login pm@demo.com)"
+          curl -sf "$API_URL/risks?active=true&pageSize=50" -H "$H" | jq -e '.total > 0 and ([.items[].score] == ([.items[].score] | sort | reverse)) and all(.items[]; .status != "CLOSED")' > /dev/null
+          curl -sf "$API_URL/risks/summary" -H "$H" | jq -e '(.heat | length) == 5 and all(.heat[]; length == 5) and (.daysLost | type) == "number"' > /dev/null
+          curl -sf "$API_URL/risks/summary" -H "$H" | jq -r '"open \(.open), high risks \(.highRisks), delays holding up work \(.openDelays), days lost \(.daysLost) (excusable \(.excusableDaysLost))"'
+          curl -sf "$API_URL/risks/suggestions" -H "$H" | jq -r '"delayed activities without a delay entry: \(length)"'
+          PROJECT=$(curl -sf "$API_URL/projects" -H "$H" | jq -r '.items[0].id')
+          FROM=$(date -u +%Y-%m-01); TO=$(date -u +%Y-%m-%d)
+          curl -sf "$API_URL/reports/progress?projectId=$PROJECT&from=$FROM&to=$TO" -H "$H" | jq -e '(.delays | type) == "array" and (.risks | type) == "array"' > /dev/null
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/risks" -H "authorization: Bearer $(login accounts@demo.com)" -H 'content-type: application/json' \
+            -d "{\"projectId\":\"$PROJECT\",\"kind\":\"RISK\",\"category\":\"OTHER\",\"title\":\"smoke\",\"impact\":2}")
+          echo "accounts raising a risk: $code"; [ "$code" = "403" ]
       - name: Paged lists with search and sort
         run: |
           set -e

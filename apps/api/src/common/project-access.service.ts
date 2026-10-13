@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { APPROVER_ROLES, COMPANY_WIDE_ROLES, isCompanyWide, canAdjustStock, canApprove, canKeepStock, canLogMachinery, canManageEquipment, canManageStore, canMeasure, canRecordAttendance, canSubmitExpense } from '@erp/shared';
+import { APPROVER_ROLES, COMPANY_WIDE_ROLES, isCompanyWide, canAdjustStock, canApprove, canKeepStock, canLogMachinery, canManageEquipment, canManageStore, canMeasure, canRaiseRisk, canRecordAttendance, canSubmitExpense } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from './current-user';
 
@@ -98,6 +98,12 @@ export class ProjectAccessService {
   /** Record a measurement book entry: a measuring role with access to the project. */
   async assertCanMeasure(user: RequestUser, projectId: string) {
     if (!canMeasure(user.roleKey)) throw new ForbiddenException('Your role cannot record measurements');
+    await this.assertCanAccessProject(user, projectId);
+  }
+
+  /** Raise a delay or risk: a raiser role with access to the project. */
+  async assertCanRaiseRisk(user: RequestUser, projectId: string) {
+    if (!canRaiseRisk(user.roleKey)) throw new ForbiddenException('Your role cannot raise delays or risks');
     await this.assertCanAccessProject(user, projectId);
   }
 

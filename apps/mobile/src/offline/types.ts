@@ -2,8 +2,8 @@ import type { SubmissionType } from '@erp/shared';
 
 export type OutboxStatus = 'PENDING' | 'SYNCING' | 'FAILED';
 
-/** What an outbox entry creates: one of the approval submissions, or a day's attendance sheet. */
-export type OutboxType = SubmissionType | 'ATTENDANCE';
+/** What an outbox entry creates: one of the approval submissions, a day's attendance sheet, or a delay / risk register entry. */
+export type OutboxType = SubmissionType | 'ATTENDANCE' | 'RISK';
 
 export interface OutboxPhoto {
   /** Local file URI (copied into the app's document directory so it survives cache clean-ups). */
@@ -19,7 +19,7 @@ export interface OutboxItem {
   id: string;
   userId: string;
   type: OutboxType;
-  /** Request body for POST /progress, /dpr, /material-requests, /machinery-logs, /expenses, /measurements or /attendance, without id and attachmentIds. */
+  /** Request body for POST /progress, /dpr, /material-requests, /machinery-logs, /expenses, /measurements, /attendance or /risks, without id and attachmentIds. */
   payload: Record<string, unknown>;
   photos: OutboxPhoto[];
   /** Display strings for the outbox list. */
@@ -39,6 +39,7 @@ export const OUTBOX_PATH: Record<OutboxType, string> = {
   EXPENSE: '/expenses',
   MEASUREMENT: '/measurements',
   ATTENDANCE: '/attendance',
+  RISK: '/risks',
 };
 
 export const OUTBOX_DETAIL: Record<SubmissionType, string> = {

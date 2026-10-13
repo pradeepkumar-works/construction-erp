@@ -46,6 +46,10 @@ contractors after the first client is live.
 - Progress reports: weekly, monthly or any period up to three months, from approved data (physical and
   financial progress, activities, BOQ, manpower, machinery, material, issues, next-period plan, photos),
   previewed on the web and printed or saved as PDF.
+- Delay and risk register: delays (held up since, days lost, who caused it, extension of time claimed) and
+  risks scored probability × impact, with owner, action and due date, closed with a note. A delay or a high
+  risk alerts the PM; activities past their planned finish with no delay recorded are flagged. Web page,
+  project tab with a heat map and Excel export, site-app screens (offline too), and a section in the progress report.
 - Edit and resubmit: a rejected or changes-requested entry is fixed in place (web drawer or site app)
   and sent back for approval with the reviewer's note shown alongside the form.
 - Dashboards: company (projects, contract value, pending approvals, delayed activities, DPRs
@@ -110,6 +114,7 @@ material request; tap "Edit and resubmit", fix them and send them back to the PM
 |-------|-----|----------|
 | Submission approved / rejected / changes requested | the author | in-app, push |
 | Submission submitted | approvers who can see the project | in-app, push |
+| Delay recorded, or a risk scored 15+ raised | the project's approvers and the owner | in-app, push |
 | Daily "DPR not submitted" reminder (for active projects with no DPR today) | Site Engineers and Team Leaders who are project members (the PM if none) | in-app, push |
 | Daily digest of pending approvals | Admin, Management and Project Managers with something waiting | in-app, push, email |
 

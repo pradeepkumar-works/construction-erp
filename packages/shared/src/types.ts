@@ -1,4 +1,8 @@
 import type {
+  DelayParty,
+  RiskCategory,
+  RiskKind,
+  RiskStatus,
   EquipmentOwnership,
   EquipmentRateUnit,
   ExpenseCategory,
@@ -654,7 +658,78 @@ export interface ProgressReportDto {
   dpr: { days: number; approved: number; rainyDays: number };
   issues: { date: string; text: string }[];
   safety: { date: string; text: string }[];
+  /** Delays that held up work during the period, and risks still open at its end (score 8 or more). */
+  delays: { riskNo: string; title: string; activityName: string | null; from: string; to: string | null; daysInPeriod: number; responsibleParty: DelayParty | null; eotClaimed: boolean; status: RiskStatus }[];
+  risks: { riskNo: string; title: string; score: number; mitigation: string | null; ownerName: string | null; dueDate: string | null }[];
   /** Activities planned to be under way in the next period of the same length and not complete. */
   nextPeriod: { name: string; unit: string; balanceQty: string; plannedEnd: string | null }[];
   photos: { url: string; caption: string }[];
+}
+
+/* ---------- delay and risk register ---------- */
+
+export interface RiskDto {
+  id: string;
+  projectId: string;
+  projectName: string;
+  riskNo: string;
+  kind: RiskKind;
+  category: RiskCategory;
+  title: string;
+  description: string | null;
+  activityId: string | null;
+  activityName: string | null;
+  ownerId: string | null;
+  ownerName: string | null;
+  probability: number;
+  impact: number;
+  score: number;
+  mitigation: string | null;
+  dueDate: string | null;
+  /** Open or monitoring with a due date before today. */
+  overdue: boolean;
+  status: RiskStatus;
+  delayStart: string | null;
+  delayEnd: string | null;
+  /** Days lost as recorded, else counted from the delay dates (to today while the delay is still running). */
+  daysLost: number | null;
+  responsibleParty: DelayParty | null;
+  eotClaimed: boolean;
+  closedAt: string | null;
+  closureNote: string | null;
+  raisedById: string;
+  raisedByName: string;
+  attachments: AttachmentDto[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Register totals for the filters on screen (status filter ignored for the open / closed counts). */
+export interface RiskSummaryDto {
+  open: number;
+  monitoring: number;
+  closed: number;
+  /** Open or monitoring risks (kind RISK) scored HIGH_RISK_SCORE or more. */
+  highRisks: number;
+  /** Open delays (still holding work up or not yet closed). */
+  openDelays: number;
+  overdue: number;
+  /** Days lost over all delays, and those attributable to the client / third parties / force majeure (EOT-eligible). */
+  daysLost: number;
+  excusableDaysLost: number;
+  eotClaimed: number;
+  /** Open and monitoring risks (kind RISK) by probability (row, 1..5) and impact (column, 1..5): heat[p-1][i-1]. */
+  heat: number[][];
+  byCategory: { category: RiskCategory; open: number; total: number; daysLost: number }[];
+}
+
+/** A delayed activity (past planned end, not complete) that has no open delay entry yet. */
+export interface DelaySuggestionDto {
+  activityId: string;
+  activityName: string;
+  projectId: string;
+  projectName: string;
+  plannedEnd: string;
+  progressPct: number;
+  daysLate: number;
 }

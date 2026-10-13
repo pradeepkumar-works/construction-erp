@@ -7,6 +7,12 @@ import type {
   ExpenseCategory,
   ExpenseDto,
   ExpenseSummaryDto,
+  DelaySuggestionDto,
+  RiskCategory,
+  RiskDto,
+  RiskKind,
+  RiskStatus,
+  RiskSummaryDto,
   MeasurementSheetDto,
   LabourRatesDto,
   ProjectCostDto,
@@ -132,6 +138,17 @@ export interface ExpenseFilters extends ListFilters {
   from?: string;
   to?: string;
   noReceipt?: boolean;
+}
+
+export interface RiskFilters extends PageParams {
+  projectId?: string;
+  kind?: RiskKind;
+  status?: RiskStatus;
+  active?: boolean;
+  category?: RiskCategory;
+  mine?: boolean;
+  minScore?: number;
+  overdue?: boolean;
 }
 
 export interface MeasurementFilters extends ListFilters {
@@ -340,6 +357,44 @@ export const useExpense = (id: string | undefined) =>
   useQuery({
     queryKey: ['expenses', 'detail', id],
     queryFn: async () => (await api.get<ExpenseDto>(`/expenses/${id}`)).data,
+    enabled: !!id,
+  });
+
+export const useRisks = (filters?: RiskFilters) =>
+  useQuery({
+    queryKey: ['risks', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<RiskDto>>('/risks', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+  });
+
+/** Totals and heat map for the same filters (paging, sort and status filters are ignored by the API). */
+export const useRiskSummary = (filters?: RiskFilters) => {
+  const params = clean({ ...filters, page: undefined, pageSize: undefined, sortBy: undefined, sortOrder: undefined, status: undefined, active: undefined, overdue: undefined });
+  return useQuery({
+    queryKey: ['risks', 'summary', params],
+    queryFn: async () => (await api.get<RiskSummaryDto>('/risks/summary', { params })).data,
+    placeholderData: keepPreviousData,
+  });
+};
+
+export const useRiskSuggestions = (projectId: string | undefined, enabled = true) =>
+  useQuery({
+    queryKey: ['risks', 'suggestions', projectId ?? 'all'],
+    queryFn: async () => (await api.get<DelaySuggestionDto[]>('/risks/suggestions', { params: clean({ projectId }) })).data,
+    enabled,
+  });
+
+export const useRisk = (id: string | undefined) =>
+  useQuery({
+    queryKey: ['risks', 'detail', id],
+    queryFn: async () => (await api.get<RiskDto>(`/risks/${id}`)).data,
+    enabled: !!id,
+  });
+
+export const useRiskHistory = (id: string | undefined) =>
+  useQuery({
+    queryKey: ['risks', 'history', id],
+    queryFn: async () => (await api.get<AuditLogDto[]>(`/risks/${id}/history`)).data,
     enabled: !!id,
   });
 

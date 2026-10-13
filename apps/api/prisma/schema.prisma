@@ -100,6 +100,42 @@ enum NotificationType {
   DPR_REMINDER
   APPROVAL_DIGEST
   LOW_STOCK
+  RISK_RAISED
+}
+
+/// DELAY = has held up work (days lost, responsible party); RISK = might (probability × impact).
+enum RiskKind {
+  DELAY
+  RISK
+}
+
+enum RiskCategory {
+  LAND
+  DESIGN
+  CLIENT
+  MATERIAL
+  LABOUR
+  EQUIPMENT
+  WEATHER
+  FINANCE
+  STATUTORY
+  SAFETY
+  UTILITY
+  OTHER
+}
+
+enum RiskStatus {
+  OPEN
+  MONITORING
+  CLOSED
+}
+
+/// Who a delay is attributable to (decides whether an extension of time can be claimed).
+enum DelayParty {
+  CLIENT
+  CONTRACTOR
+  THIRD_PARTY
+  FORCE_MAJEURE
 }
 
 enum PushPlatform {
@@ -136,6 +172,7 @@ model Organization {
   equipment        Equipment[]
   machineryLogs    MachineryLog[]
   expenses         Expense[]
+  risks            Risk[]
   measurements     MeasurementSheet[]
   labourRates      LabourRate[]
 }
@@ -191,6 +228,8 @@ model User {
   reviewedExpenses    Expense[]          @relation("ExpenseReviewer")
   submittedMeasures   MeasurementSheet[] @relation("MeasurementSubmitter")
   reviewedMeasures    MeasurementSheet[] @relation("MeasurementReviewer")
+  raisedRisks         Risk[]             @relation("RiskRaiser")
+  ownedRisks          Risk[]             @relation("RiskOwner")
 
   @@unique([organizationId, email])
   @@index([organizationId])
@@ -233,6 +272,7 @@ model Project {
   equipment        Equipment[]
   machineryLogs    MachineryLog[]
   expenses         Expense[]
+  risks            Risk[]
   measurements     MeasurementSheet[]
 
   @@unique([organizationId, code])
@@ -299,6 +339,7 @@ model Activity {
   stockEntries    StockEntry[]
   machineryLogs   MachineryLog[]
   expenses        Expense[]
+  risks           Risk[]
 
   @@index([projectId])
   @@index([organizationId])
@@ -669,6 +710,56 @@ model Expense {
   @@index([projectId, date])
 }
 
+/// Delay and risk register entry. Not an approval submission: it stays open, is reviewed and closed.
+/// A DELAY records days lost and who caused them (for extension-of-time claims); a RISK is scored probability × impact.
+model Risk {
+  id               String       @id @default(uuid())
+  organizationId   String
+  organization     Organization @relation(fields: [organizationId], references: [id])
+  projectId        String
+  project          Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  /// RISK-<year>-0001 per organisation
+  riskNo           String
+  kind             RiskKind
+  category         RiskCategory
+  title            String
+  description      String?
+  activityId       String?
+  activity         Activity?    @relation(fields: [activityId], references: [id], onDelete: SetNull)
+  /// Who is following it up
+  ownerId          String?
+  owner            User?        @relation("RiskOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  /// 1 (very low) to 5 (very high)
+  probability      Int
+  impact           Int
+  /// probability × impact, stored for sorting and the heat map
+  score            Int
+  mitigation       String?
+  /// Target date for the mitigation / next review
+  dueDate          DateTime?    @db.Date
+  status           RiskStatus   @default(OPEN)
+  /// Delay only: when work was held up and when it resumed (null while it is still holding work up)
+  delayStart       DateTime?    @db.Date
+  delayEnd         DateTime?    @db.Date
+  /// Delay only: days lost as agreed; computed from the dates when not given
+  daysLost         Int?
+  responsibleParty DelayParty?
+  /// An extension of time has been claimed from the client for this delay
+  eotClaimed       Boolean      @default(false)
+  closedAt         DateTime?
+  closureNote      String?
+  raisedById       String
+  raisedBy         User         @relation("RiskRaiser", fields: [raisedById], references: [id])
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  attachments Attachment[]
+
+  @@unique([organizationId, riskNo])
+  @@index([projectId, status])
+  @@index([organizationId, status])
+}
+
 /// A measurement book (MB) entry: one BOQ item measured at one location on one day, as dimension lines.
 /// Approved sheets roll up into the BOQ item's measured (billable) quantity.
 model MeasurementSheet {
@@ -751,6 +842,8 @@ model Attachment {
   expense           Expense?          @relation(fields: [expenseId], references: [id], onDelete: Cascade)
   measurementId     String?
   measurement       MeasurementSheet? @relation(fields: [measurementId], references: [id], onDelete: Cascade)
+  riskId            String?
+  risk              Risk?             @relation(fields: [riskId], references: [id], onDelete: Cascade)
   createdAt         DateTime          @default(now())
 
   @@index([organizationId])

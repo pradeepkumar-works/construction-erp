@@ -44,6 +44,7 @@ export const NOTIFICATION_TYPES = [
   'DPR_REMINDER',
   'APPROVAL_DIGEST',
   'LOW_STOCK',
+  'RISK_RAISED',
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
@@ -66,3 +67,17 @@ export type ExpenseCategory = (typeof EXPENSE_CATEGORIES)[number];
 
 export const PAYMENT_MODES = ['CASH', 'UPI', 'BANK', 'CARD', 'CREDIT'] as const;
 export type PaymentMode = (typeof PAYMENT_MODES)[number];
+
+/** DELAY = something that has held up work (days lost, who caused it); RISK = something that might. */
+export const RISK_KINDS = ['DELAY', 'RISK'] as const;
+export type RiskKind = (typeof RISK_KINDS)[number];
+
+export const RISK_CATEGORIES = ['LAND', 'DESIGN', 'CLIENT', 'MATERIAL', 'LABOUR', 'EQUIPMENT', 'WEATHER', 'FINANCE', 'STATUTORY', 'SAFETY', 'UTILITY', 'OTHER'] as const;
+export type RiskCategory = (typeof RISK_CATEGORIES)[number];
+
+export const RISK_STATUSES = ['OPEN', 'MONITORING', 'CLOSED'] as const;
+export type RiskStatus = (typeof RISK_STATUSES)[number];
+
+/** Who a delay is attributable to, which decides whether an extension of time can be claimed. */
+export const DELAY_PARTIES = ['CLIENT', 'CONTRACTOR', 'THIRD_PARTY', 'FORCE_MAJEURE'] as const;
+export type DelayParty = (typeof DELAY_PARTIES)[number];
