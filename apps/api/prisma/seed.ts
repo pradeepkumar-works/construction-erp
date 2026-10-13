@@ -102,6 +102,7 @@ async function main() {
     await seedStock(org.id);
     await seedMachinery(org.id);
     await seedExpenses(org.id);
+    await seedMeasurements(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
   }
@@ -247,6 +248,7 @@ async function main() {
   await seedStock(org.id);
   await seedMachinery(org.id);
   await seedExpenses(org.id);
+  await seedMeasurements(org.id);
 
   console.log('Seed complete. Login with any of these (password: password123):');
   for (const u of USERS) console.log(`  ${u.email.padEnd(24)} ${u.role}`);
@@ -582,6 +584,72 @@ async function seedExpenses(organizationId: string) {
           { organizationId, entityType: 'EXPENSE', entityId: x.id, action: 'CREATED', actorId: filer, createdAt: day(-ago) },
           { organizationId, entityType: 'EXPENSE', entityId: x.id, action: 'SUBMITTED', actorId: filer, createdAt: day(-ago) },
           ...(reviewed ? [{ organizationId, entityType: 'EXPENSE', entityId: x.id, action: status, actorId: pm, note, createdAt: day(Math.min(0, -ago + 1)) }] : []),
+        ],
+      });
+    }
+  }
+}
+
+// Measurement book: [days ago, BOQ item no, location, status, review note, lines of [description, nos, L, B, D, deduct]].
+type MbLine = [string, number | null, number | null, number | null, number | null, boolean?];
+type DemoSheet = [number, string, string, 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'CHANGES_REQUESTED', string | null, MbLine[]];
+const MEASUREMENTS: Record<string, DemoSheet[]> = {
+  ROAD: [
+    [20, '2.01', 'Ch 0+000 to 0+500 LHS', 'APPROVED', null, [['Embankment layers', 1, 500, 12, 1.5], ['Culvert at Ch 0+320', 1, 12, 3, 1.5, true]]],
+    [10, '3.01', 'Ch 0+000 to 0+400', 'APPROVED', null, [['GSB full width', 1, 400, 7.5, 0.2]]],
+    [5, '5.01', 'Ch 1+240', 'CHANGES_REQUESTED', 'Add the culvert at Ch 1+880 measured the same day', [['RCC pipe culvert 1200mm', 1, null, null, null]]],
+    [2, '3.02', 'Ch 0+000 to 0+250', 'SUBMITTED', null, [['WMM base course', 1, 250, 7, 0.25]]],
+  ],
+  BUILDING: [
+    [25, '3.01', 'Grid A1 to C4', 'APPROVED', null, [['Isolated footings F1', 12, 2.4, 2.4, 0.6], ['Columns up to plinth', 12, 0.45, 0.45, 3.2]]],
+    [3, '4.01', 'Ground floor external walls', 'REJECTED', 'Measured on the gross wall length; take it between columns', [['External walls 230mm', 1, 84, 0.23, 3], ['Door openings', 6, 1.2, 0.23, 2.1, true]]],
+    [1, '3.02', 'Ground floor slab, grid A-D / 1-6', 'SUBMITTED', null, [['Slab 150mm', 1, 24, 18, 0.15], ['Beams 300x450', 1, 120, 0.3, 0.45], ['Staircase opening', 1, 4.5, 3, 0.15, true]]],
+  ],
+  WATER_SUPPLY: [
+    [15, '2.01', 'Ch 2+000 to 3+250', 'APPROVED', null, [['DI K9 400mm laid and jointed', 1, 1250, null, null]]],
+    [1, '5.01', 'Ward 4, lanes 1 to 3', 'SUBMITTED', null, [['Lane 1', 1, 420, null, null], ['Lane 2', 1, 365.5, null, null], ['Lane 3', 1, 512, null, null]]],
+  ],
+};
+
+async function seedMeasurements(organizationId: string) {
+  const projects = await prisma.project.findMany({
+    where: { organizationId },
+    include: { members: { include: { user: { include: { role: true } } } }, boqItems: true },
+    orderBy: { code: 'asc' },
+  });
+  const year = new Date().getUTCFullYear();
+  const last = await prisma.measurementSheet.findFirst({ where: { organizationId, mbNo: { startsWith: `MB-${year}-` } }, orderBy: { mbNo: 'desc' }, select: { mbNo: true } });
+  let counter = last ? parseInt(last.mbNo.slice(8), 10) : 0;
+  for (const project of projects) {
+    if ((await prisma.measurementSheet.count({ where: { projectId: project.id } })) > 0) continue;
+    const pick = (role: string) => project.members.find((m) => m.user.role.key === role)?.userId;
+    const filer = pick('QUANTITY_SURVEYOR') ?? pick('SITE_ENGINEER') ?? project.projectManagerId;
+    const pm = project.projectManagerId;
+    if (!filer || !pm) continue;
+    for (const [ago, itemNo, location, status, note, lines] of MEASUREMENTS[project.type] ?? []) {
+      const boq = project.boqItems.find((b) => b.itemNo === itemNo);
+      if (!boq) continue;
+      const rows = lines.map(([description, nos, length, breadth, depth, deduct], i) => {
+        const qty = [nos, length, breadth, depth].reduce<number>((a, v) => a * (v ?? 1), 1);
+        const quantity = D(qty).toDecimalPlaces(3).mul(deduct ? -1 : 1);
+        return { description, nos: nos === null ? null : D(nos), length: length === null ? null : D(length), breadth: breadth === null ? null : D(breadth), depth: depth === null ? null : D(depth), deduct: !!deduct, quantity, sortOrder: i };
+      });
+      const totalQty = rows.reduce((a, r) => a.plus(r.quantity), D(0));
+      counter += 1;
+      const reviewed = status !== 'SUBMITTED';
+      const x = await prisma.measurementSheet.create({
+        data: {
+          organizationId, projectId: project.id, boqItemId: boq.id, mbNo: `MB-${year}-${String(counter).padStart(4, '0')}`, date: day(-ago), location, totalQty,
+          status, submittedById: filer, submittedAt: day(-ago), createdAt: day(-ago),
+          reviewedById: reviewed ? pm : null, reviewedAt: reviewed ? day(Math.min(0, -ago + 1)) : null, reviewNote: note,
+          lines: { create: rows },
+        },
+      });
+      await prisma.auditLog.createMany({
+        data: [
+          { organizationId, entityType: 'MEASUREMENT', entityId: x.id, action: 'CREATED', actorId: filer, createdAt: day(-ago) },
+          { organizationId, entityType: 'MEASUREMENT', entityId: x.id, action: 'SUBMITTED', actorId: filer, createdAt: day(-ago) },
+          ...(reviewed ? [{ organizationId, entityType: 'MEASUREMENT', entityId: x.id, action: status, actorId: pm, note, createdAt: day(Math.min(0, -ago + 1)) }] : []),
         ],
       });
     }

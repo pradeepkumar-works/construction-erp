@@ -40,7 +40,7 @@ shapes of every API response, so web, mobile and API agree on one contract.
 ## One approval workflow
 
 `SubmissionLifecycleService` owns the state machine used by progress entries, DPRs, material
-requests, machinery logs and site expenses:
+requests, machinery logs, site expenses and measurement sheets:
 
 ```
 DRAFT / REJECTED / CHANGES_REQUESTED --submit--> SUBMITTED --review--> APPROVED | REJECTED | CHANGES_REQUESTED
@@ -76,7 +76,7 @@ TypeScript flags when a type is added.
 ## Lists: paging, search, sort and export
 
 `GET /progress`, `/dpr`, `/material-requests`, `/attendance`, `/stock/entries`, `/stock/balances`, `/stock/items`,
-`/machinery-logs`, `/equipment`, `/expenses`,
+`/machinery-logs`, `/equipment`, `/expenses`, `/measurements`,
 `/projects` and `/users` return `Paginated<T>`
 (`items`, `total`, `page`, `pageSize`). They share `PageQuery` (`apps/api/src/common/paging.ts`):
 
@@ -202,6 +202,26 @@ The store register per project, fed by approved material requests:
   audit through `/approvals/expense/:id/...`.
 - **Clients.** Web: Site Expenses page and project tab (totals, category chips, filters, Excel export).
   Site app: `app/expense/new.tsx` (bill photo, GST chips, live total, offline-capable) and `[id].tsx`.
+
+## Measurement book
+
+- **Tables.** `MeasurementSheet`: project, BOQ item, `mbNo` (`MB-<year>-0001` per organisation, from
+  `common/doc-number.ts`, the helper expenses use too), date, location (chainage, grid, floor),
+  remarks, `totalQty` in the BOQ item's unit, photos or sketches and the six status columns.
+  `MeasurementLine`: description, optional nos / length / breadth / depth, `deduct`, signed `quantity`.
+- **Arithmetic.** `measurementLineQty` in shared: nos × L × B × D with blank factors counted as 1,
+  rounded to 3 decimals, negative for a deduction. A line needs nos or at least one dimension and the
+  sheet total must be above zero. The API recomputes every line; what the client sends as quantity is
+  ignored. An edit with `lines` replaces all lines.
+- **Rollup.** `GET /projects/:id/boq` adds `measuredQty` (approved sheets), `measuredAmount` (× rate)
+  and `pendingMeasuredQty` (submitted). The measured quantity is what RA billing (v3) will bill; the
+  activity progress (`executedQty`) stays the site's own count and the two sit side by side on the BOQ tab.
+- **Roles.** Record: `MEASUREMENT_ROLES` (QS, site engineer, PM, management, admin). Approve: approvers.
+- **API.** `/measurements` (paged; `projectId`, `boqItemId`, `status`, `from`, `to`, `mine`, `q`) with
+  create / edit / submit / delete, review and audit through `/approvals/measurement/:id/...`.
+- **Clients.** Web: Measurement Book page and project tab (line editor with live totals, Excel export one
+  row per line), Measured column on the BOQ tab. Site app: `app/measurement/new.tsx` (offline-capable)
+  and `[id].tsx`.
 
 ## Money and quantities
 

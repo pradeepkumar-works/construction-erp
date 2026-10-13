@@ -1,0 +1,261 @@
+import React, { useEffect, useMemo, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Stack, useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import type { BoqItemDto, MeasurementSheetDto } from '@erp/shared';
+import { hasDimensions, measurementLineQty, measurementTotal } from '@erp/shared';
+import { useApi, useFetch } from '../../src/api/hooks';
+import { errorMessage } from '../../src/api/client';
+import { Button, Card, Chips, DatePicker, ErrorBanner, ErrorState, Input, Loading, PhotoPicker, Screen, Select, type LocalPhoto, type SelectOption } from '../../src/components';
+import { attachmentIds, photosFailed, photosQueued, photosUploading, QueuedSuccess, SubmitSuccess, toOutboxPhotos, useProjectOptions } from '../../src/forms/common';
+import { attachmentsToPhotos, ReviewerNote } from '../../src/forms/edit';
+import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
+import { colors, radius, spacing, typography } from '../../src/theme';
+import { fmtQty, formatDate, isIsoDate, today } from '../../src/utils/format';
+
+interface Line {
+  key: string;
+  description: string;
+  nos: string;
+  length: string;
+  breadth: string;
+  depth: string;
+  deduct: boolean;
+}
+
+const NUM = /^\d+(\.\d{1,3})?$/;
+let seq = 0;
+const blankLine = (): Line => ({ key: `l${++seq}`, description: '', nos: '1', length: '', breadth: '', depth: '', deduct: false });
+const dim = (v: string) => (v.trim() === '' ? null : v.trim());
+
+/** Record a measurement against a BOQ item (works offline through the outbox), or (with `editId`) fix and resubmit one. */
+export default function NewMeasurementScreen() {
+  const params = useLocalSearchParams<{ projectId?: string; editId?: string }>();
+  const editId = params.editId ?? null;
+  const api = useApi();
+  const { online, enqueue } = useOffline();
+  const projects = useProjectOptions();
+  const existing = useFetch<MeasurementSheetDto>((a) => a.get(`/measurements/${editId}`), [editId], { enabled: !!editId, refetchOnFocus: false });
+
+  const [projectId, setProjectId] = useState<string | null>(params.projectId ?? null);
+  const [boqItemId, setBoqItemId] = useState<string | null>(null);
+  const [date, setDate] = useState(today());
+  const [location, setLocation] = useState('');
+  const [lines, setLines] = useState<Line[]>([blankLine()]);
+  const [remarks, setRemarks] = useState('');
+  const [photos, setPhotos] = useState<LocalPhoto[]>([]);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [created, setCreated] = useState<MeasurementSheetDto | null>(null);
+  const [queued, setQueued] = useState<OutboxItem | null>(null);
+
+  useEffect(() => {
+    if (!editId && !projectId && projects.options.length === 1) setProjectId(projects.options[0].value);
+  }, [editId, projects.options, projectId]);
+
+  useEffect(() => {
+    const m = existing.data;
+    if (!m) return;
+    setProjectId(m.projectId);
+    setBoqItemId(m.boqItemId);
+    setDate(m.date);
+    setLocation(m.location);
+    setRemarks(m.remarks ?? '');
+    setLines(m.lines.map((l) => ({ key: `l${++seq}`, description: l.description, nos: l.nos ?? '', length: l.length ?? '', breadth: l.breadth ?? '', depth: l.depth ?? '', deduct: l.deduct })));
+    setPhotos(attachmentsToPhotos(m.attachments));
+  }, [existing.data]);
+
+  const boq = useFetch<BoqItemDto[]>((a) => a.get(`/projects/${projectId}/boq`), [projectId], { enabled: !!projectId, refetchOnFocus: false, cacheKey: `boq:${projectId}` });
+  const boqOptions = useMemo<SelectOption[]>(() => (boq.data ?? []).map((b) => ({ value: b.id, label: `${b.itemNo} · ${b.description} (${b.unit})` })), [boq.data]);
+  const item = boq.data?.find((b) => b.id === boqItemId);
+  const asInput = lines.map((l) => ({ nos: dim(l.nos), length: dim(l.length), breadth: dim(l.breadth), depth: dim(l.depth), deduct: l.deduct }));
+  const total = measurementTotal(asInput);
+  const unit = item?.unit ?? existing.data?.unit ?? '';
+
+  const setLine = (key: string, patch: Partial<Line>) => setLines((ls) => ls.map((l) => (l.key === key ? { ...l, ...patch } : l)));
+
+  const validate = () => {
+    const e: Record<string, string> = {};
+    if (!projectId) e.projectId = 'Choose a project';
+    if (!boqItemId) e.boqItemId = 'Choose the BOQ item';
+    if (!isIsoDate(date)) e.date = 'Enter a valid date';
+    if (!location.trim()) e.location = 'Say where, e.g. Ch 2+100 to 2+350 or Grid A1-C4';
+    lines.forEach((l, i) => {
+      if (!l.description.trim()) e[`d${l.key}`] = 'Describe the line';
+      const bad = [l.nos, l.length, l.breadth, l.depth].some((v) => v.trim() !== '' && !NUM.test(v.trim()));
+      if (bad) e[`n${l.key}`] = 'Numbers only, up to 3 decimals';
+      else if (!hasDimensions(asInput[i])) e[`n${l.key}`] = 'Enter nos or a dimension';
+    });
+    if (!e.lines && total <= 0) e.total = 'The total must be more than zero';
+    if (photosUploading(photos)) e.photos = 'Wait for photos to finish uploading';
+    else if (photosFailed(photos)) e.photos = 'Remove or retry failed photos';
+    else if (editId && photosQueued(photos)) e.photos = 'Photos need a connection to upload before resubmitting';
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const submit = async () => {
+    setSubmitError(null);
+    if (!validate()) return;
+    setBusy(true);
+    try {
+      const body = {
+        boqItemId,
+        date,
+        location: location.trim(),
+        remarks: remarks.trim() || (editId ? null : undefined),
+        lines: lines.map((l) => ({ description: l.description.trim(), nos: dim(l.nos), length: dim(l.length), breadth: dim(l.breadth), depth: dim(l.depth), deduct: l.deduct })),
+      };
+      if (editId) {
+        setCreated(await api.patch<MeasurementSheetDto>(`/measurements/${editId}`, { ...body, attachmentIds: attachmentIds(photos), submit: true }));
+        return;
+      }
+      const queueIt = async () => {
+        const projectName = projects.options.find((o) => o.value === projectId)?.label ?? 'Project';
+        setQueued(
+          await enqueue({
+            type: 'MEASUREMENT',
+            payload: { projectId, ...body },
+            photos: toOutboxPhotos(photos),
+            title: `${item ? `${item.itemNo} · ` : ''}${fmtQty(total)} ${unit} · ${location.trim()}`,
+            subtitle: `${projectName} · ${formatDate(date)}`,
+          }),
+        );
+      };
+      if (!online || photosQueued(photos)) {
+        await queueIt();
+        return;
+      }
+      try {
+        setCreated(await api.post<MeasurementSheetDto>('/measurements', { projectId, ...body, attachmentIds: attachmentIds(photos) }));
+      } catch (e) {
+        if (!isOfflineError(e)) throw e;
+        await queueIt();
+      }
+    } catch (e) {
+      setSubmitError(errorMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const reset = () => {
+    setCreated(null);
+    setQueued(null);
+    setLocation('');
+    setLines([blankLine()]);
+    setRemarks('');
+    setPhotos([]);
+    setErrors({});
+  };
+
+  if (queued) return <QueuedSuccess title="Saved on this phone" subtitle={`${queued.title} · ${queued.subtitle}`} onAnother={reset} />;
+  if (created) {
+    return (
+      <SubmitSuccess
+        title={editId ? 'Measurement resubmitted' : 'Measurement submitted'}
+        subtitle={`${created.mbNo}: ${fmtQty(created.totalQty)} ${created.unit} of item ${created.boqItemNo} at ${created.location}. Sent for approval.`}
+        detailHref={`/measurement/${created.id}`}
+        onAnother={editId ? undefined : reset}
+      />
+    );
+  }
+  if (projects.loading && !projects.data) return <Loading />;
+  if (editId && existing.loading && !existing.data) return <Loading />;
+  if (editId && existing.error && !existing.data) return <ErrorState message={existing.error} onRetry={existing.reload} />;
+
+  return (
+    <Screen keyboard>
+      <Stack.Screen options={{ title: editId ? 'Edit Measurement' : 'New Measurement' }} />
+      <ErrorBanner message={submitError ?? projects.error ?? boq.error} />
+      <ReviewerNote entry={existing.data} />
+      <Card>
+        <Select
+          label="Project"
+          required
+          value={projectId}
+          options={projects.options}
+          onChange={(v) => {
+            setProjectId(v);
+            setBoqItemId(null);
+          }}
+          placeholder="Choose project"
+          error={errors.projectId}
+          disabled={!!editId}
+        />
+        <Select label="BOQ item" required value={boqItemId} options={boqOptions} onChange={setBoqItemId} placeholder={projectId ? 'Choose BOQ item' : 'Choose a project first'} disabled={!projectId} error={errors.boqItemId} emptyText="No BOQ items in this project" />
+        {item ? (
+          <Text style={[typography.caption, styles.boqInfo]}>
+            Contract {fmtQty(item.revisedQty ?? item.originalQty)} {item.unit} · measured {fmtQty(item.measuredQty)} · awaiting approval {fmtQty(item.pendingMeasuredQty)}
+          </Text>
+        ) : null}
+        <Input label="Location" required value={location} onChangeText={setLocation} placeholder="Chainage, grid, floor or zone" error={errors.location} />
+        <DatePicker label="Measured on" required value={date} onChange={setDate} error={errors.date} />
+      </Card>
+      {lines.map((l, i) => {
+        const qty = measurementLineQty(asInput[i]);
+        return (
+          <Card key={l.key}>
+            <View style={styles.lineHead}>
+              <Text style={typography.label}>Line {i + 1}</Text>
+              {lines.length > 1 ? (
+                <Pressable onPress={() => setLines((ls) => ls.filter((x) => x.key !== l.key))} hitSlop={10} accessibilityLabel={`Remove line ${i + 1}`}>
+                  <Ionicons name="trash-outline" size={20} color={colors.danger} />
+                </Pressable>
+              ) : null}
+            </View>
+            <Input label="Description" required value={l.description} onChangeText={(v) => setLine(l.key, { description: v })} placeholder="e.g. Footing F1" error={errors[`d${l.key}`]} />
+            <View style={styles.dims}>
+              {(
+                [
+                  ['nos', 'Nos'],
+                  ['length', 'L'],
+                  ['breadth', 'B'],
+                  ['depth', 'D / H'],
+                ] as const
+              ).map(([k, label]) => (
+                <Input key={k} label={label} value={l[k]} onChangeText={(v) => setLine(l.key, { [k]: v })} keyboardType="decimal-pad" containerStyle={styles.dim} />
+              ))}
+            </View>
+            {errors[`n${l.key}`] ? <Text style={styles.err}>{errors[`n${l.key}`]}</Text> : null}
+            <View style={styles.lineFoot}>
+              <Chips value={l.deduct ? 'D' : 'A'} onChange={(v) => setLine(l.key, { deduct: v === 'D' })} clearable={false} options={[{ value: 'A', label: 'Add' }, { value: 'D', label: 'Deduct' }]} />
+              <Text style={[styles.lineQty, qty < 0 && { color: colors.danger }]}>
+                {fmtQty(qty)} {unit}
+              </Text>
+            </View>
+          </Card>
+        );
+      })}
+      <Button title="Add line" variant="ghost" icon="add" onPress={() => setLines((ls) => [...ls, blankLine()])} />
+      <View style={styles.totalBox}>
+        <Text style={typography.caption}>Total (blank sizes count as 1)</Text>
+        <Text style={styles.total}>
+          {fmtQty(total)} {unit}
+        </Text>
+      </View>
+      {errors.total ? <Text style={styles.err}>{errors.total}</Text> : null}
+      <Card title="Photos or sketch">
+        <PhotoPicker photos={photos} onChange={setPhotos} />
+        {errors.photos ? <Text style={styles.err}>{errors.photos}</Text> : null}
+      </Card>
+      <Card>
+        <Input label="Remarks" value={remarks} onChangeText={setRemarks} multiline />
+      </Card>
+      <Button title={editId ? 'Resubmit for approval' : 'Submit for approval'} icon="send" onPress={submit} loading={busy} />
+    </Screen>
+  );
+}
+
+const styles = StyleSheet.create({
+  boqInfo: { marginTop: -spacing.sm, marginBottom: spacing.md },
+  lineHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
+  dims: { flexDirection: 'row', gap: spacing.sm },
+  dim: { flex: 1 },
+  lineFoot: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  lineQty: { fontSize: 18, fontWeight: '700', color: colors.text },
+  totalBox: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: colors.primarySoft, padding: spacing.md, borderRadius: radius.md, marginBottom: spacing.lg },
+  total: { fontSize: 22, fontWeight: '800', color: colors.primaryDark },
+  err: { color: colors.danger, marginTop: -spacing.sm, marginBottom: spacing.sm, fontSize: 13 },
+});

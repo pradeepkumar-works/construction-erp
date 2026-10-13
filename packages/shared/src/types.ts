@@ -90,6 +90,12 @@ export interface BoqItemDto {
   executedQty: string;
   balanceQty: string;
   amount: string;
+  /** Sum of approved measurement book entries: the billable quantity. */
+  measuredQty: string;
+  /** Measured quantity × rate. */
+  measuredAmount: string;
+  /** Measurements waiting for approval. */
+  pendingMeasuredQty: string;
   sortOrder: number;
 }
 
@@ -443,6 +449,36 @@ export interface MachineryLogDto extends SubmissionBase {
   workDone: string | null;
   breakdownNote: string | null;
   remarks: string | null;
+}
+
+/* ---------- measurement book ---------- */
+
+export interface MeasurementLineDto {
+  id: string;
+  description: string;
+  nos: string | null;
+  length: string | null;
+  breadth: string | null;
+  depth: string | null;
+  deduct: boolean;
+  /** Signed: negative for deductions. */
+  quantity: string;
+}
+
+export interface MeasurementSheetDto extends SubmissionBase {
+  mbNo: string;
+  date: string;
+  boqItemId: string;
+  boqItemNo: string;
+  boqDescription: string;
+  unit: string;
+  rate: string;
+  location: string;
+  remarks: string | null;
+  totalQty: string;
+  /** totalQty × BOQ rate */
+  amount: string;
+  lines: MeasurementLineDto[];
 }
 
 /* ---------- site expenses ---------- */

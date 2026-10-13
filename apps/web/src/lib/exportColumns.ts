@@ -15,6 +15,7 @@ import {
   type DailyReportDto,
   type EquipmentDto,
   type ExpenseDto,
+  type MeasurementSheetDto,
   type MachineryLogDto,
   type MaterialRequestDto,
   type ProgressEntryDto,
@@ -250,3 +251,37 @@ export const EXPENSE_EXPORT: ExportColumn<ExpenseDto>[] = [
   { header: 'Status', value: (r) => status(r.status), width: 18 },
   ...review,
 ];
+
+/** One row per measurement line, so the export reads like the measurement book. */
+export interface MeasurementExportRow {
+  sheet: MeasurementSheetDto;
+  line: MeasurementSheetDto['lines'][number] | null;
+}
+
+const dim = (v: string | null | undefined) => (v === null || v === undefined ? null : toNumber(v));
+
+export const MEASUREMENT_EXPORT: ExportColumn<MeasurementExportRow>[] = [
+  { header: 'MB no.', value: (r) => r.sheet.mbNo, width: 14 },
+  { header: 'Date', value: (r) => r.sheet.date, width: 12 },
+  { header: 'Project', value: (r) => r.sheet.projectName, width: 34 },
+  { header: 'BOQ item', value: (r) => r.sheet.boqItemNo, width: 10 },
+  { header: 'BOQ description', value: (r) => r.sheet.boqDescription, width: 36 },
+  { header: 'Location', value: (r) => r.sheet.location, width: 26 },
+  { header: 'Line', value: (r) => r.line?.description ?? null, width: 28 },
+  { header: 'Nos', value: (r) => dim(r.line?.nos) },
+  { header: 'L', value: (r) => dim(r.line?.length) },
+  { header: 'B', value: (r) => dim(r.line?.breadth) },
+  { header: 'D / H', value: (r) => dim(r.line?.depth) },
+  { header: 'Line qty', value: (r) => dim(r.line?.quantity) },
+  { header: 'Unit', value: (r) => r.sheet.unit, width: 8 },
+  { header: 'Sheet total', value: (r) => toNumber(r.sheet.totalQty) },
+  { header: 'Rate', value: (r) => toNumber(r.sheet.rate) },
+  { header: 'Amount', value: (r) => toNumber(r.sheet.amount) },
+  { header: 'Submitted by', value: (r) => r.sheet.submittedByName, width: 20 },
+  { header: 'Status', value: (r) => status(r.sheet.status), width: 18 },
+  { header: 'Reviewed by', value: (r) => r.sheet.reviewedByName, width: 20 },
+  { header: 'Reviewer note', value: (r) => r.sheet.reviewNote, width: 30 },
+];
+
+export const measurementExportRows = (sheets: MeasurementSheetDto[]): MeasurementExportRow[] =>
+  sheets.flatMap<MeasurementExportRow>((sheet) => (sheet.lines.length ? sheet.lines.map((line) => ({ sheet, line })) : [{ sheet, line: null }]));

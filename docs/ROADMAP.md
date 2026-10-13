@@ -58,8 +58,13 @@ Order matters: each item builds on the previous one.
    submission type (`EXPENSE`) in the shared lifecycle. `GET /expenses/summary` gives totals by status
    and category; approved expenses are what the cost view counts. Web Site Expenses page and project tab
    with totals and Excel export; site-app form with bill photo that also works offline.
-9. **Measurement book**: measurements by BOQ item and location with dimensions; rollup to executed
-   quantity (replaces or complements activity progress for billing).
+9. ~~**Measurement book**: measurements by BOQ item and location with dimensions; rollup to executed
+   quantity (replaces or complements activity progress for billing).~~ Done: `MeasurementSheet` (numbered
+   MB-<year>-0001) per BOQ item and location with `MeasurementLine` rows of nos × L × B × D and deductions,
+   a sixth submission type (`MEASUREMENT`). Approved sheets roll up to `measuredQty` / `measuredAmount` on
+   each BOQ item, next to the activity-progress executed quantity, so billing can use measured work while
+   site progress stays as it is. Web Measurement Book page and project tab with a line editor and Excel
+   export, Measured column on the BOQ tab; site-app form that also works offline.
 
 ### C. Management value
 10. **Project cost view**: expenses + material issued + machinery + labour vs BOQ executed value.

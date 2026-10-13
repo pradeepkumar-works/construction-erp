@@ -38,6 +38,7 @@ Tapping a push opens the submission it is about; the bell on Home opens the full
 | engineer@demo.com | Site Engineer | member of two projects; submits progress / DPR / material requests / machinery logs (one road-project log was sent back for changes) |
 | tl@demo.com | Team Leader | site submissions and attendance (Jajpur has no sheet for today, to try it) |
 | pm@demo.com | Project Manager | sees the Approvals tab and can approve / request changes / reject |
+| qs@demo.com | Quantity Surveyor | records measurements (one building-project sheet was rejected, one road sheet sent back) |
 | store@demo.com | Store Manager | stock: receive against approved requests, issue at site (Diesel is below its minimum on two projects) |
 
 The login screen lists these; tapping one fills the form.
@@ -53,6 +54,7 @@ The login screen lists these; tapping one fills the form.
 - `app/stock/` — stock on hand per project (low items flagged, latest entries), `receive.tsx` (GRN against an approved material request, each line defaults to what is pending, challan photo) and `issue.tsx` (items in stock only, issued to a contractor or gang, optional activity). Store manager, site engineers and approvers; online only, since pending and on-hand quantities are checked on the server.
 - `app/machinery/new.tsx`, `app/machinery/[id].tsx` — a machine's day (hours worked / idle / breakdown, hour meter, diesel, operator, photos), sent for approval; works offline through the outbox. Team leaders, site engineers, the store manager and approvers.
 - `app/expense/new.tsx`, `app/expense/[id].tsx` — a site expense with the bill photo, category, GST rate chips and a live total; offline-capable. Site staff, store manager, accounts and approvers.
+- `app/measurement/new.tsx`, `app/measurement/[id].tsx` — a measurement against a BOQ item: location and lines of nos × L × B × D with Add / Deduct, live line and sheet totals in the item's unit, photos; offline-capable. QS, site engineers and approvers.
 - `app/submissions.tsx` — my submissions, segmented by type.
 - `app/outbox.tsx` and `src/offline/` — offline entry: new submissions and attendance sheets made without a connection are saved in a SQLite outbox (photos copied to the documents folder) and sent automatically on reconnect; failed ones can be retried or discarded. `useFetch(..., { cacheKey })` keeps the last loaded lists on the phone.
 - `src/theme.ts`, `src/components/` — small design system (Screen, Card, Button, Input, Select, DatePicker, Chips, StatusBadge, PhotoPicker, states).

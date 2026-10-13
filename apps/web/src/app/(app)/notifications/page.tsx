@@ -16,6 +16,7 @@ import { DprDrawer } from '@/components/dpr/DprDrawer';
 import { MrDrawer } from '@/components/material/MrDrawer';
 import { MachineryDrawer } from '@/components/machinery/MachineryDrawer';
 import { ExpenseDrawer } from '@/components/expenses/ExpenseDrawer';
+import { MeasurementDrawer } from '@/components/measurements/MeasurementDrawer';
 import { notificationHref } from '@/components/notifications/notificationTarget';
 
 type Open = { type: SubmissionType; id: string } | null;
@@ -110,6 +111,7 @@ function NotificationsPageInner() {
       <MrDrawer id={open?.type === 'MATERIAL_REQUEST' ? open.id : null} open={open?.type === 'MATERIAL_REQUEST'} onClose={closeDrawer} />
       <MachineryDrawer id={open?.type === 'MACHINERY' ? open.id : null} open={open?.type === 'MACHINERY'} onClose={closeDrawer} />
       <ExpenseDrawer id={open?.type === 'EXPENSE' ? open.id : null} open={open?.type === 'EXPENSE'} onClose={closeDrawer} />
+      <MeasurementDrawer id={open?.type === 'MEASUREMENT' ? open.id : null} open={open?.type === 'MEASUREMENT'} onClose={closeDrawer} />
     </div>
   );
 }

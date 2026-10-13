@@ -28,6 +28,7 @@ export const SUBMISSION_TYPE_LABELS: Record<SubmissionType, string> = {
   MATERIAL_REQUEST: 'Material Request',
   MACHINERY: 'Machinery Log',
   EXPENSE: 'Site Expense',
+  MEASUREMENT: 'Measurement (MB)',
 };
 
 export const MATERIAL_PRIORITY_LABELS: Record<MaterialPriority, string> = {

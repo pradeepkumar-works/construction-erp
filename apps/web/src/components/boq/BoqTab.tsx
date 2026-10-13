@@ -46,7 +46,8 @@ export function BoqTab({ projectId }: { projectId: string }) {
     const items = data ?? [];
     const amount = items.reduce((s, i) => s + toNumber(i.amount), 0);
     const executed = items.reduce((s, i) => s + toNumber(i.executedQty) * toNumber(i.rate), 0);
-    return { amount, executed, count: items.length };
+    const measured = items.reduce((s, i) => s + toNumber(i.measuredAmount), 0);
+    return { amount, executed, measured, count: items.length };
   }, [data]);
 
   const exportExcel = () => {
@@ -60,6 +61,9 @@ export function BoqTab({ projectId }: { projectId: string }) {
         'Revised Qty': i.revisedQty !== null ? toNumber(i.revisedQty) : '',
         'Executed Qty': toNumber(i.executedQty),
         'Balance Qty': toNumber(i.balanceQty),
+        'Measured Qty': toNumber(i.measuredQty),
+        'Measured awaiting approval': toNumber(i.pendingMeasuredQty),
+        'Measured Value': toNumber(i.measuredAmount),
         Amount: toNumber(i.amount),
       })),
     );
@@ -90,6 +94,23 @@ export function BoqTab({ projectId }: { projectId: string }) {
           </div>
         );
       },
+    },
+    {
+      title: <Tooltip title="Approved measurement book quantity; awaiting approval below it">Measured</Tooltip>,
+      dataIndex: 'measuredQty',
+      width: 110,
+      align: 'right',
+      className: 'mono',
+      render: (v, r) => (
+        <div>
+          <div>{toNumber(v) ? formatQty(v) : <span className="text-muted">-</span>}</div>
+          {toNumber(r.pendingMeasuredQty) ? (
+            <div className="text-muted" style={{ fontSize: 11 }}>
+              +{formatQty(r.pendingMeasuredQty)} pending
+            </div>
+          ) : null}
+        </div>
+      ),
     },
     { title: 'Balance', dataIndex: 'balanceQty', width: 90, align: 'right', className: 'mono', render: (v) => formatQty(v) },
     { title: 'Amount', dataIndex: 'amount', width: 140, align: 'right', className: 'mono', render: (v) => formatINR(v), sorter: (a, b) => toNumber(a.amount) - toNumber(b.amount) },
@@ -128,6 +149,7 @@ export function BoqTab({ projectId }: { projectId: string }) {
           <Statistic title="BOQ items" value={totals.count} styles={{ content: { fontSize: 20 } }} />
           <Statistic title="BOQ amount" value={formatINR(totals.amount)} styles={{ content: { fontSize: 20 } }} />
           <Statistic title="Executed value" value={formatINR(totals.executed)} styles={{ content: { fontSize: 20 } }} />
+          <Statistic title="Measured value (approved MB)" value={formatINR(totals.measured)} styles={{ content: { fontSize: 20 } }} />
         </Space>
         <Space wrap>
           <Input.Search placeholder="Search item / description" allowClear value={search} onChange={(e) => setSearch(e.target.value)} style={{ width: 240 }} />
@@ -161,7 +183,7 @@ export function BoqTab({ projectId }: { projectId: string }) {
         dataSource={filtered}
         size="small"
         pagination={{ pageSize: 25, hideOnSinglePage: true, showSizeChanger: true }}
-        scroll={{ x: 1100 }}
+        scroll={{ x: 1210 }}
         locale={{
           emptyText: (
             <div style={{ padding: 24 }}>
