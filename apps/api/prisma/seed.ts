@@ -105,6 +105,8 @@ async function main() {
     await seedMeasurements(org.id);
     await seedCostRates(org.id);
     await seedRisks(org.id);
+  await seedApprovalRules(org.id);
+    await seedApprovalRules(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
   }
@@ -253,6 +255,7 @@ async function main() {
   await seedMeasurements(org.id);
   await seedCostRates(org.id);
   await seedRisks(org.id);
+  await seedApprovalRules(org.id);
 
   console.log('Seed complete. Login with any of these (password: password123):');
   for (const u of USERS) console.log(`  ${u.email.padEnd(24)} ${u.role}`);
@@ -771,4 +774,24 @@ async function seedRisks(organizationId: string) {
       }
     }
   }
+}
+
+/**
+ * Demo approval matrix: management approves everything, project managers approve everything but site expenses only
+ * up to ₹25,000 (bigger bills go to management), and accounts approves site expenses of any amount. Only written
+ * when the organisation has no matrix yet, so an admin's own changes are never overwritten.
+ */
+async function seedApprovalRules(organizationId: string) {
+  if ((await prisma.approvalRule.count({ where: { organizationId } })) > 0) return;
+  const roles = new Map((await prisma.role.findMany({ where: { organizationId }, select: { id: true, key: true } })).map((r) => [r.key, r.id]));
+  const types = ['PROGRESS', 'DPR', 'MATERIAL_REQUEST', 'MACHINERY', 'EXPENSE', 'MEASUREMENT'];
+  const rows: { roleKey: string; type: string; maxAmount: Prisma.Decimal | null }[] = [
+    ...types.map((type) => ({ roleKey: 'MANAGEMENT', type, maxAmount: null })),
+    ...types.map((type) => ({ roleKey: 'PROJECT_MANAGER', type, maxAmount: type === 'EXPENSE' ? D(25000) : null })),
+    { roleKey: 'ACCOUNTS_MANAGER', type: 'EXPENSE', maxAmount: null },
+  ];
+  await prisma.approvalRule.createMany({
+    data: rows.filter((r) => roles.has(r.roleKey)).map((r) => ({ organizationId, roleId: roles.get(r.roleKey)!, submissionType: r.type, maxAmount: r.maxAmount })),
+    skipDuplicates: true,
+  });
 }

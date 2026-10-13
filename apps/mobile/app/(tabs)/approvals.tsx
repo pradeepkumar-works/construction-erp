@@ -46,7 +46,7 @@ export default function ApprovalsScreen() {
           </View>
         )}
         renderItem={({ item }) => (
-          <SubmissionRow type={item.type} title={item.title} subtitle={item.projectName} meta={`${item.submittedByName} · ${timeAgo(item.submittedAt)}`} onPress={() => router.push(`${DETAIL_PATH[item.type]}${item.id}`)} />
+          <SubmissionRow type={item.type} title={item.title} subtitle={item.projectName} meta={`${item.amount && item.type !== 'EXPENSE' ? `₹${Number(item.amount).toLocaleString('en-IN')} · ` : ''}${item.submittedByName} · ${timeAgo(item.submittedAt)}`} onPress={() => router.push(`${DETAIL_PATH[item.type]}${item.id}`)} />
         )}
       />
     </Screen>

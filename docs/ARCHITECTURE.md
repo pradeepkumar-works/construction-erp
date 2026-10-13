@@ -33,7 +33,13 @@ shapes of every API response, so web, mobile and API agree on one contract.
 
 - Company-wide roles (Admin, Management, Procurement, Accounts, HR) see all projects.
 - Everyone else sees projects they manage or are a member of (`ProjectMember`).
-- Approvers are Admin, Management and Project Manager, limited to projects they can see.
+- Approvers come from the organisation's approval matrix (`ApprovalRule`: role, submission type, optional
+  rupee limit), limited to projects they can see. Without rules the fixed rule applies (Admin, Management
+  and Project Manager approve everything). Admin always approves everything. `ApprovalRightsService`
+  (rights, the amount of a submission, which roles to notify) and
+  `ProjectAccessService.assertCanApproveSubmission` hold this; `packages/shared/src/approvals.ts` mirrors it
+  for the clients from `AuthUser.approvalRights`. Other approver-only actions (editing before approval,
+  stock adjustments, deleting a risk) still use the fixed `APPROVER_ROLES`.
 - A submitter cannot approve their own entry unless they also hold an approver role.
 - `ProjectAccessService` is the single place that encodes these rules; every service calls it.
 

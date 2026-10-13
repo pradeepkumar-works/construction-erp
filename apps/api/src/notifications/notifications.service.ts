@@ -4,6 +4,7 @@ import type { NotificationDto, NotificationListDto, NotificationType, PushTokenD
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
+import { ApprovalRightsService } from '../common/approval-rights.service';
 import { dateOnly, iso } from '../common/serialize';
 import { ExpoPushService } from './expo-push.service';
 import { expenseTitle, machineryTitle, measurementTitle } from '../common/submission-titles';
@@ -36,7 +37,7 @@ const SUBMISSION_LABEL: Record<SubmissionType, string> = { PROGRESS: 'Progress e
 export class NotificationsService {
   private readonly log = new Logger(NotificationsService.name);
 
-  constructor(private prisma: PrismaService, private access: ProjectAccessService, private push: ExpoPushService) {}
+  constructor(private prisma: PrismaService, private access: ProjectAccessService, private push: ExpoPushService, private rights: ApprovalRightsService) {}
 
   /* ---------- reading ---------- */
 
@@ -201,7 +202,7 @@ export class NotificationsService {
     try {
       const s = await this.describeSubmission(type, id);
       if (!s) return;
-      const approvers = await this.access.approversForProject(actor.organizationId, s.projectId);
+      const approvers = await this.access.approversForProject(actor.organizationId, s.projectId, type, await this.rights.amountOf(type, id));
       await this.notify({
         organizationId: actor.organizationId,
         userIds: approvers.map((a) => a.id).filter((uid) => uid !== actor.id),

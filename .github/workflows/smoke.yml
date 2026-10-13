@@ -276,6 +276,18 @@ jobs:
           curl -sf "$API_URL/activity-templates" -H "$H" | jq -r '.[] | "\(.projectType): \(.items | length) activities over \(.spanDays) days\(if .isDefault then " (standard)" else "" end)"'
           code=$(curl -s -o /dev/null -w '%{http_code}' -X PUT "$API_URL/activity-templates/ROAD" -H "$H" -H 'content-type: application/json' -d '{"items":[]}')
           echo "PM changing a template: $code"; [ "$code" = "403" ]
+      - name: Approval matrix
+        run: |
+          set -e
+          login() { curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' -d "{\"email\":\"$1\",\"password\":\"password123\"}" | jq -r .accessToken; }
+          ADMIN="authorization: Bearer $(login admin@demo.com)"
+          PM="authorization: Bearer $(login pm@demo.com)"
+          curl -sf "$API_URL/approval-rules" -H "$ADMIN" | jq -r '"matrix: \(if .custom then "custom" else "standard rule" end), \(.rules | length) rules"'
+          curl -sf "$API_URL/auth/me" -H "$PM" | jq -e '.approvalRights | length > 0' > /dev/null
+          curl -sf "$API_URL/auth/me" -H "$PM" | jq -r '"PM may approve: " + ([.approvalRights[] | .type + (if .maxAmount then " up to " + .maxAmount else "" end)] | join(", "))'
+          curl -sf "$API_URL/approvals/pending" -H "$PM" | jq -e 'all(.[]; has("amount"))' > /dev/null
+          code=$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/approval-rules" -H "$PM")
+          echo "PM reading the matrix: $code"; [ "$code" = "403" ]
       - name: Paged lists with search and sort
         run: |
           set -e

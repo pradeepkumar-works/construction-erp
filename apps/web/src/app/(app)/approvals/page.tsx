@@ -5,10 +5,10 @@ import Link from 'next/link';
 import { Button, Card, Segmented, Table, Tag, Typography, Alert } from 'antd';
 import type { TableProps } from 'antd';
 import type { PendingApprovalDto, SubmissionType } from '@erp/shared';
-import { SUBMISSION_TYPE_LABELS, canApprove } from '@erp/shared';
+import { APPROVAL_AMOUNT_BASIS, SUBMISSION_TYPE_LABELS, approvalRightsOf, mayApprove } from '@erp/shared';
 import { usePendingApprovals } from '@/lib/queries';
 import { useAuth } from '@/lib/auth';
-import { formatDateTime } from '@/lib/format';
+import { formatDateTime, formatINR } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { QueryError } from '@/components/common/QueryState';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
@@ -23,7 +23,9 @@ const TYPE_COLORS: Record<SubmissionType, string> = { PROGRESS: 'blue', DPR: 'pu
 
 export default function ApprovalsPage() {
   const { user } = useAuth();
-  const approver = !!user && canApprove(user.roleKey);
+  const approver = !!user && mayApprove(user);
+  const rights = user ? approvalRightsOf(user) : [];
+  const limited = rights.filter((r) => r.maxAmount !== null && APPROVAL_AMOUNT_BASIS[r.type]);
   const { data, isLoading, error, refetch } = usePendingApprovals(approver);
   const [type, setType] = useState<'ALL' | SubmissionType>('ALL');
   const [projectId, setProjectId] = useState<string | undefined>();
@@ -44,6 +46,7 @@ export default function ApprovalsPage() {
     { title: 'Type', dataIndex: 'type', width: 170, render: (t: SubmissionType) => <Tag color={TYPE_COLORS[t]} style={{ margin: 0 }}>{SUBMISSION_TYPE_LABELS[t]}</Tag> },
     { title: 'Item', dataIndex: 'title', render: (v, r) => <Typography.Link onClick={() => setOpen({ type: r.type, id: r.id })}>{v}</Typography.Link> },
     { title: 'Project', dataIndex: 'projectName', width: 280, ellipsis: true, render: (v, r) => <Link href={`/projects/${r.projectId}`}>{v}</Link> },
+    { title: 'Amount', dataIndex: 'amount', width: 130, align: 'right', render: (v: string | null) => (v === null ? <span className="text-muted">-</span> : <span className="mono">{formatINR(v)}</span>) },
     { title: 'Submitted by', dataIndex: 'submittedByName', width: 160 },
     { title: 'Submitted', dataIndex: 'submittedAt', width: 170, render: (v) => formatDateTime(v), sorter: (a, b) => a.submittedAt.localeCompare(b.submittedAt), defaultSortOrder: 'ascend' },
     { title: '', key: 'a', width: 110, render: (_, r) => <Button type="primary" size="small" onClick={() => setOpen({ type: r.type, id: r.id })}>Review</Button> },
@@ -53,6 +56,14 @@ export default function ApprovalsPage() {
     <div className="page-container">
       <PageHeader title="Approvals" subtitle="Site submissions waiting for your review" />
       {!approver && <Alert type="info" showIcon title="Your role cannot approve submissions. Submissions you create appear in the project pages with their current status." style={{ marginBottom: 16 }} />}
+      {limited.length > 0 && (
+        <Alert
+          type="info"
+          showIcon
+          title={`Your approval limit: ${limited.map((r) => `${SUBMISSION_TYPE_LABELS[r.type].toLowerCase()} up to ${formatINR(r.maxAmount)}`).join(', ')}. Anything above goes to a higher approver.`}
+          style={{ marginBottom: 16 }}
+        />
+      )}
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       <Card className="table-card" size="small">
         <div style={{ padding: 12, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', borderBottom: '1px solid #f0f0f0' }}>
@@ -61,12 +72,18 @@ export default function ApprovalsPage() {
             onChange={(v) => setType(v as 'ALL' | SubmissionType)}
             options={[
               { value: 'ALL', label: `All (${counts.ALL ?? 0})` },
-              { value: 'PROGRESS', label: `Progress (${counts.PROGRESS ?? 0})` },
-              { value: 'DPR', label: `DPR (${counts.DPR ?? 0})` },
-              { value: 'MATERIAL_REQUEST', label: `Material (${counts.MATERIAL_REQUEST ?? 0})` },
-              { value: 'MACHINERY', label: `Machinery (${counts.MACHINERY ?? 0})` },
-              { value: 'EXPENSE', label: `Expenses (${counts.EXPENSE ?? 0})` },
-              { value: 'MEASUREMENT', label: `Measurements (${counts.MEASUREMENT ?? 0})` },
+              ...(
+                [
+                  ['PROGRESS', 'Progress'],
+                  ['DPR', 'DPR'],
+                  ['MATERIAL_REQUEST', 'Material'],
+                  ['MACHINERY', 'Machinery'],
+                  ['EXPENSE', 'Expenses'],
+                  ['MEASUREMENT', 'Measurements'],
+                ] as [SubmissionType, string][]
+              )
+                .filter(([t]) => rights.some((r) => r.type === t))
+                .map(([t, label]) => ({ value: t, label: `${label} (${counts[t] ?? 0})` })),
             ]}
           />
           <ProjectSelect value={projectId} onChange={(v) => setProjectId(v)} />

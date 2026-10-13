@@ -1,7 +1,8 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { APPROVER_ROLES, COMPANY_WIDE_ROLES, isCompanyWide, canAdjustStock, canApprove, canKeepStock, canLogMachinery, canManageEquipment, canManageStore, canMeasure, canRaiseRisk, canRecordAttendance, canSubmitExpense } from '@erp/shared';
+import { APPROVER_ROLES, type SubmissionType, COMPANY_WIDE_ROLES, isCompanyWide, canAdjustStock, canApprove, canKeepStock, canLogMachinery, canManageEquipment, canManageStore, canMeasure, canRaiseRisk, canRecordAttendance, canSubmitExpense } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
+import { ApprovalRightsService } from './approval-rights.service';
 import { RequestUser } from './current-user';
 
 /**
@@ -11,7 +12,7 @@ import { RequestUser } from './current-user';
  */
 @Injectable()
 export class ProjectAccessService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private rights: ApprovalRightsService) {}
 
   /** Prisma where-clause restricting projects to those visible to the user. */
   projectWhere(user: RequestUser): Prisma.ProjectWhereInput {
@@ -36,14 +37,16 @@ export class ProjectAccessService {
 
   /**
    * Inverse of the visibility rule: every active user who may approve submissions of this project
-   * (company-wide approvers plus project managers who manage or are a member of it).
+   * (company-wide approvers plus approvers who manage or are a member of it). With a submission type (and amount),
+   * only the roles the organisation's approval matrix allows for it; without one, the fixed approver roles.
    */
-  async approversForProject(organizationId: string, projectId: string) {
+  async approversForProject(organizationId: string, projectId: string, type?: SubmissionType, amount: Prisma.Decimal | null = null) {
+    const roleKeys = type ? await this.rights.roleKeysFor(organizationId, type, amount) : APPROVER_ROLES;
     return this.prisma.user.findMany({
       where: {
         organizationId,
         isActive: true,
-        role: { key: { in: APPROVER_ROLES } },
+        role: { key: { in: roleKeys } },
         OR: [
           { role: { key: { in: COMPANY_WIDE_ROLES } } },
           { managedProjects: { some: { id: projectId } } },
@@ -56,6 +59,17 @@ export class ProjectAccessService {
 
   async assertCanApprove(user: RequestUser, projectId: string) {
     if (!canApprove(user.roleKey)) throw new ForbiddenException('Your role cannot approve submissions');
+    await this.assertCanAccessProject(user, projectId);
+  }
+
+  /** Review a submission: the approval matrix must give the user's role this type, up to this amount. */
+  async assertCanApproveSubmission(user: RequestUser, type: SubmissionType, id: string, projectId: string) {
+    const right = (await this.rights.rightsFor(user.organizationId, user.roleKey)).find((r) => r.type === type);
+    if (!right) throw new ForbiddenException('Your role cannot approve this type of submission');
+    const amount = await this.rights.amountOf(type, id);
+    if (!ApprovalRightsService.within(right, type, amount)) {
+      throw new ForbiddenException(`This needs a higher approver: ₹${amount!.toFixed(2)} is above your limit of ₹${right.maxAmount}`);
+    }
     await this.assertCanAccessProject(user, projectId);
   }
 

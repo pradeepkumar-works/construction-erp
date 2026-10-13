@@ -174,6 +174,7 @@ model Organization {
   expenses          Expense[]
   risks             Risk[]
   activityTemplates ActivityTemplate[]
+  approvalRules     ApprovalRule[]
   measurements      MeasurementSheet[]
   labourRates       LabourRate[]
 }
@@ -187,9 +188,28 @@ model Role {
   name           String
   createdAt      DateTime     @default(now())
 
-  users User[]
+  users         User[]
+  approvalRules ApprovalRule[]
 
   @@unique([organizationId, key])
+}
+
+/// Approval matrix row: users with this role may approve this submission type up to `maxAmount` (null = no limit).
+/// An organisation with no rows uses the fixed rule (APPROVER_ROLES, no limit). Admin can always approve.
+model ApprovalRule {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  roleId         String
+  role           Role         @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  /// SubmissionType: PROGRESS | DPR | MATERIAL_REQUEST | MACHINERY | EXPENSE | MEASUREMENT
+  submissionType String
+  maxAmount      Decimal?     @db.Decimal(18, 2)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([roleId, submissionType])
+  @@index([organizationId])
 }
 
 model User {

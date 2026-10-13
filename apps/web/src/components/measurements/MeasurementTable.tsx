@@ -73,7 +73,7 @@ export function MeasurementTable({
           <Button size="small" onClick={() => onOpen(r.id)}>
             View
           </Button>
-          <ReviewActions type="measurement" id={r.id} status={r.status} size="small" compact />
+          <ReviewActions type="measurement" id={r.id} status={r.status} amount={r.amount} size="small" compact />
           <EditResubmitButton entry={r} onEdit={onEdit} size="small" compact />
         </div>
       ),

@@ -20,6 +20,8 @@ contractors after the first client is live.
 - BOQ items (with Excel import on the web) and activities with planned quantities and dates. A new project
   can start with the standard activities for its type (road, building, water supply), scheduled over its
   dates; each organisation can edit those templates.
+- An approval matrix (admin): which roles approve which submission types, with optional rupee limits;
+  anything above a limit goes to a higher approver.
 - Site submissions from mobile or web: **daily progress** against an activity (with photos),
   **daily progress report (DPR)** with manpower, machinery, work executed, tests, safety, issues
   and next-day plan, and **material requests** with line items.
