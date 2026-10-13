@@ -8,6 +8,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { CreateUserDto, ListUsersQuery, UpdateUserDto } from './users.dto';
 import { PasswordLinksService } from '../auth/password-links.service';
+import { withoutTenant } from '../prisma/tenant-context';
 
 const ORDER: Record<UserSortField, (o: SortOrder) => Prisma.UserOrderByWithRelationInput[]> = {
   fullName: (o) => [{ fullName: o }],
@@ -27,7 +28,7 @@ export class UsersService {
 
   /** Sign-in is by email alone, so an email may belong to one user across all organisations. */
   private async assertEmailFree(email: string, exceptId?: string) {
-    const exists = await this.prisma.user.findFirst({ where: { email, ...(exceptId ? { id: { not: exceptId } } : {}) }, select: { organizationId: true } });
+    const exists = await withoutTenant(() => this.prisma.user.findFirst({ where: { email, ...(exceptId ? { id: { not: exceptId } } : {}) }, select: { organizationId: true } }));
     if (exists) throw new ConflictException('A user with this email already exists');
   }
 

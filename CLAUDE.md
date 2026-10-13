@@ -25,7 +25,10 @@ cd apps/mobile && npx tsc --noEmit && CI=1 npx expo export --platform android
 
 ## Conventions
 
-- Every tenant table has `organizationId`; every query filters by the caller's org from the JWT.
+- Every tenant table has `organizationId`; every query filters by the caller's org from the JWT. Postgres
+  row-level security backs this up: a new tenant table needs a `tenant_isolation` policy in its migration
+  (copy one from `20261013211500_tenant_rls`) and a line in `prisma/rls-rollback.sql`. Code in a request that
+  must see other organisations uses `withoutTenant` (`src/prisma/tenant-context.ts`).
 - Project visibility and approval rights live only in `apps/api/src/common/project-access.service.ts`
   and `packages/shared/src/permissions.ts`. Do not re-implement role checks elsewhere.
 - All site submissions share `SubmissionLifecycleService` (DRAFT → SUBMITTED → APPROVED /

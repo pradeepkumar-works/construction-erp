@@ -3,6 +3,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import type { RoleKey } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
+import { setTenant } from '../prisma/tenant-context';
 import { RequestUser } from '../common/current-user';
 
 export interface JwtPayload {
@@ -26,6 +27,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       include: { role: true },
     });
     if (!user) throw new UnauthorizedException();
+    setTenant(user.organizationId);
     return { id: user.id, organizationId: user.organizationId, roleKey: user.role.key as RoleKey, email: user.email, fullName: user.fullName };
   }
 }

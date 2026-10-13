@@ -117,7 +117,14 @@ Order matters: each item builds on the previous one.
     WhatsApp or SMS when email is not set up; users show "Invited" until they choose a password. Forgot
     password on web and mobile emails a 2-hour reset link; an admin can also send a fresh link from the
     Users page. An email can belong to one user across all organisations, since sign-in is by email.
-16. **Postgres row-level security** as the second tenant guard.
+16. ~~**Postgres row-level security** as the second tenant guard.~~ Done: every table with `organizationId`
+    (and `Organization` itself) has a `tenant_isolation` policy, forced for the table owner. The API sets
+    `app.org_id` for each query of a signed-in request (`PrismaService`, transaction-local), so a query that
+    forgets its organisation filter still cannot read or write another organisation's rows. Without a
+    signed-in user (sign-in, sign-up, public file links, scheduled jobs, the seed, migrations) nothing is
+    set and the policies let everything through. `GET /api/health` reports `tenantGuard`
+    (`enforced`, `bypassed` when the database role skips row-level security, or `off`). `TENANT_RLS=off`
+    is the kill switch; `prisma/rls-rollback.sql` removes the policies.
 
 ## v3 – commercial and back office
 Procurement (indent → RFQ → comparative → PO → vendor bill), RA billing from the measurement book,

@@ -26,7 +26,13 @@ shapes of every API response, so web, mobile and API agree on one contract.
 - Roles are rows per organisation (`Role.key` is a system key such as `PROJECT_MANAGER`). Each new
   organisation is seeded with the default role set; later, tenants can rename or add roles without
   code changes. Permissions derive from the key in `packages/shared/src/permissions.ts`.
-- Postgres row-level security is the planned second line of defence once there is a second tenant.
+- Postgres row-level security is the second line of defence: policies on every table with
+  `organizationId` compare it with `app.org_id`, which `PrismaService` sets (transaction-local) for each
+  query of a signed-in request (`src/prisma/tenant-context.ts` carries the organisation through the
+  request). Unset means unrestricted, which is what migrations, the seed, scheduled jobs and public
+  endpoints rely on. Code inside a request that must look across organisations (the email-in-use check)
+  wraps itself in `withoutTenant`. Raw SQL is not wrapped; child tables without `organizationId` are
+  reached only through their parent.
 - New organisations come from `POST /auth/signup` (off unless `ORG_SIGNUP=open`), which creates the
   organisation, the standard roles and the first admin in one transaction. Users join by invite: a
   one-time `PasswordToken` link (SHA-256 stored, invalidated when a newer link is made or one is used).
