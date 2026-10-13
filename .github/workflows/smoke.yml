@@ -226,6 +226,18 @@ jobs:
           echo "line without dimensions: $code"; [ "$code" = "400" ]
           cleanup
           curl -sf "$API_URL/projects/$PROJECT/boq" -H "$H" | jq -r '"measured value on the project: ₹\([.[].measuredAmount | tonumber] | add)"'
+      - name: Project cost view
+        run: |
+          set -e
+          login() { curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' -d "{\"email\":\"$1\",\"password\":\"password123\"}" | jq -r .accessToken; }
+          H="authorization: Bearer $(login pm@demo.com)"
+          curl -sf "$API_URL/cost/projects" -H "$H" | jq -e 'length > 0 and all(.[]; (.cost.total | tonumber) >= 0 and (.executedValue | type) == "string")' > /dev/null
+          curl -sf "$API_URL/cost/projects" -H "$H" | jq -r '.[] | "\(.projectCode): executed ₹\(.executedValue), cost ₹\(.cost.total), margin ₹\(.margin)"'
+          PROJECT=$(curl -sf "$API_URL/cost/projects" -H "$H" | jq -r '.[0].projectId')
+          curl -sf "$API_URL/cost/projects/$PROJECT?from=2000-01-01" -H "$H" | jq -e '(.months | type) == "array" and (.labourByTrade | type) == "array"' > /dev/null
+          curl -sf "$API_URL/cost/labour-rates" -H "$H" | jq -r '"labour rates: \(.rates | length), trades without a rate: \(.unpricedTrades | length)"'
+          code=$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/cost/projects" -H "authorization: Bearer $(login engineer@demo.com)")
+          echo "site engineer: $code"; [ "$code" = "403" ]
       - name: Paged lists with search and sort
         run: |
           set -e

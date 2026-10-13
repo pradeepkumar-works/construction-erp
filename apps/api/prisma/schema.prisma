@@ -137,6 +137,7 @@ model Organization {
   machineryLogs    MachineryLog[]
   expenses         Expense[]
   measurements     MeasurementSheet[]
+  labourRates      LabourRate[]
 }
 
 model Role {
@@ -469,6 +470,8 @@ model Item {
   name           String
   unit           String
   category       String?
+  /// Standard rate per unit; values issues in the project cost view
+  rate           Decimal?     @db.Decimal(18, 2)
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
@@ -813,4 +816,20 @@ model PushToken {
   lastSeenAt DateTime     @default(now())
 
   @@index([userId])
+}
+
+// ---------- Cost ----------
+
+/// Daily wage per trade (attendance category), used to value attendance in the project cost view.
+model LabourRate {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  /// Matches AttendanceLine.category (case-insensitive)
+  category       String
+  dailyRate      Decimal      @db.Decimal(18, 2)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, category])
 }

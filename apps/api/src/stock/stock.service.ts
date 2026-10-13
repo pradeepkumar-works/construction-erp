@@ -21,7 +21,7 @@ import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
 import { AttachmentsService } from '../common/attachments.service';
 import { NotificationsService } from '../notifications/notifications.service';
-import { dateOnly, dec, iso, parseDate } from '../common/serialize';
+import { dateOnly, dec, iso, money, parseDate } from '../common/serialize';
 import { isUniqueViolation } from '../common/idempotency';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import {
@@ -619,10 +619,18 @@ export class StockService {
       ? await this.prisma.stockTxn.groupBy({ by: ['itemId', 'projectId'], where: { itemId: { in: rows.map((r) => r.id) } } })
       : [];
     return paginated(
-      rows.map((r) => ({ id: r.id, name: r.name, unit: r.unit, category: r.category, projectCount: used.filter((u) => u.itemId === r.id).length, createdAt: iso(r.createdAt)! })),
+      rows.map((r) => ({ id: r.id, name: r.name, unit: r.unit, category: r.category, rate: money(r.rate), projectCount: used.filter((u) => u.itemId === r.id).length, createdAt: iso(r.createdAt)! })),
       total,
       args,
     );
+  }
+
+  private rate(v: string | null | undefined): Prisma.Decimal | null | undefined {
+    if (v === undefined) return undefined;
+    if (v === null || v === '') return null;
+    const d = new Prisma.Decimal(v);
+    if (d.isNegative()) throw new BadRequestException('Rate cannot be negative');
+    return d.toDecimalPlaces(2);
   }
 
   private async assertItemUnique(organizationId: string, name: string, unit: string, excludeId?: string) {
@@ -637,14 +645,14 @@ export class StockService {
     const r = await this.prisma.item.findFirst({ where: { id, organizationId: user.organizationId } });
     if (!r) throw new NotFoundException('Item not found');
     const used = await this.prisma.stockTxn.groupBy({ by: ['projectId'], where: { itemId: id } });
-    return { id: r.id, name: r.name, unit: r.unit, category: r.category, projectCount: used.length, createdAt: iso(r.createdAt)! };
+    return { id: r.id, name: r.name, unit: r.unit, category: r.category, rate: money(r.rate), projectCount: used.length, createdAt: iso(r.createdAt)! };
   }
 
   async createItem(user: RequestUser, dto: CreateItemDto): Promise<ItemDto> {
     await this.access.assertCanManageStore(user);
     await this.assertItemUnique(user.organizationId, dto.name, dto.unit);
     try {
-      const row = await this.prisma.item.create({ data: { organizationId: user.organizationId, name: dto.name, unit: dto.unit, category: blank(dto.category) } });
+      const row = await this.prisma.item.create({ data: { organizationId: user.organizationId, name: dto.name, unit: dto.unit, category: blank(dto.category), rate: this.rate(dto.rate) ?? null } });
       await this.audit.log(user, 'ITEM', row.id, 'CREATED', `${row.name} (${row.unit})`);
       return this.getItem(user, row.id);
     } catch (e) {
@@ -663,7 +671,7 @@ export class StockService {
       throw new ConflictException('The unit cannot change once the item has stock movements');
     await this.assertItemUnique(user.organizationId, name, unit, id);
     try {
-      await this.prisma.item.update({ where: { id }, data: { name, unit, ...(dto.category !== undefined ? { category: blank(dto.category) } : {}) } });
+      await this.prisma.item.update({ where: { id }, data: { name, unit, ...(dto.category !== undefined ? { category: blank(dto.category) } : {}), ...(dto.rate !== undefined ? { rate: this.rate(dto.rate) } : {}) } });
     } catch (e) {
       if (isUniqueViolation(e)) throw new ConflictException(`${name} (${unit}) is already in the item master`);
       throw e;

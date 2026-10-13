@@ -67,7 +67,14 @@ Order matters: each item builds on the previous one.
    export, Measured column on the BOQ tab; site-app form that also works offline.
 
 ### C. Management value
-10. **Project cost view**: expenses + material issued + machinery + labour vs BOQ executed value.
+10. ~~**Project cost view**: expenses + material issued + machinery + labour vs BOQ executed value.~~ Done:
+    `GET /cost/projects` (every visible project) and `/cost/projects/:id` (cost heads by month, breakdowns by
+    expense category, item, machine and trade) for a period. Cost = approved site expenses + material issued
+    × the item master's standard rate (new `Item.rate`) + approved machinery logs × hire rate + attendance
+    man-days × the trade's daily rate (new `LabourRate` table). Executed value = approved progress × BOQ rate,
+    with approved measurements alongside; margin and cost %. Anything without a rate is counted and flagged.
+    Web Project Cost page (period presets, Excel export, labour rates editor) and project Cost tab, for
+    approvers and accounts.
 11. **Weekly / monthly progress report** PDF from approved data, in the client's format.
 12. **Delay and risk register**.
 

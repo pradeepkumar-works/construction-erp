@@ -40,6 +40,9 @@ contractors after the first client is live.
   nos × length × breadth × depth lines with deductions; approved sheets give each BOQ item its measured
   (billable) quantity and value, shown next to executed progress on the BOQ tab. Web page, project tab and
   site-app form (offline too), Excel export one row per line.
+- Project cost: approved site expenses, material issued at the item's standard rate, approved machinery logs
+  at the hire rate and attendance at each trade's daily rate, against the value of approved progress (and of
+  approved measurements), by project and month, with margin. For approvers and accounts.
 - Edit and resubmit: a rejected or changes-requested entry is fixed in place (web drawer or site app)
   and sent back for approval with the reviewer's note shown alongside the form.
 - Dashboards: company (projects, contract value, pending approvals, delayed activities, DPRs

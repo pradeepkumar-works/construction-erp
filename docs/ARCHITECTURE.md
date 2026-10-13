@@ -223,6 +223,20 @@ The store register per project, fed by approved material requests:
   row per line), Measured column on the BOQ tab. Site app: `app/measurement/new.tsx` (offline-capable)
   and `[id].tsx`.
 
+## Project cost
+
+- **Heads.** Site expenses (`APPROVED`, total incl. GST, by bill date); material issued (`StockTxn` of
+  type `ISSUE` × `Item.rate`, the standard rate in the item master); machinery (`APPROVED` logs: hourly
+  rate × hours worked, daily rate per log, monthly rate ÷ 30 per log, `machineryLogCost` in shared);
+  labour (attendance head count × `LabourRate.dailyRate` of the trade, matched case-insensitively).
+- **Value.** Executed value = `APPROVED` progress quantity × BOQ rate (by progress date); measured value =
+  `APPROVED` measurement sheets × BOQ rate. Margin = executed value − cost.
+- **Missing rates.** Items, machines or trades without a rate add nothing and are counted in `unpriced`,
+  which the web shows as a warning.
+- **Access.** `COST_VIEW_ROLES` (admin, management, PM, accounts) within their visible projects;
+  `LABOUR_RATE_ROLES` (admin, management, accounts) set labour rates; item rates go with the item master.
+- **API.** `GET /cost/projects?from&to`, `GET /cost/projects/:id?from&to`, `GET`/`PUT /cost/labour-rates`.
+
 ## Money and quantities
 
 Decimal columns everywhere (`Decimal(18,2)` for money, `Decimal(18,3)` for quantities) and strings

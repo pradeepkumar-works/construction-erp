@@ -1,0 +1,39 @@
+'use client';
+
+import React from 'react';
+import { Tooltip } from 'antd';
+import { COST_HEADS, COST_HEAD_LABELS, type CostHead, type CostHeadsDto } from '@erp/shared';
+import { formatINR, toNumber } from '@/lib/format';
+
+export const HEAD_COLORS: Record<CostHead, string> = { expenses: '#7c3aed', material: '#1659a8', machinery: '#d97706', labour: '#0f766e' };
+
+/** Horizontal stacked bar of the cost heads; `scale` is the value of a full-width bar. */
+export function CostBar({ cost, scale, height = 14 }: { cost: CostHeadsDto; scale: number; height?: number }) {
+  const max = Math.max(scale, toNumber(cost.total), 1);
+  return (
+    <div style={{ display: 'flex', height, background: '#f0f0f0', borderRadius: 3, overflow: 'hidden' }}>
+      {COST_HEADS.map((h) => {
+        const v = toNumber(cost[h]);
+        if (v <= 0) return null;
+        return (
+          <Tooltip key={h} title={`${COST_HEAD_LABELS[h]}: ${formatINR(v)}`}>
+            <div style={{ width: `${(v / max) * 100}%`, background: HEAD_COLORS[h] }} />
+          </Tooltip>
+        );
+      })}
+    </div>
+  );
+}
+
+export function CostLegend() {
+  return (
+    <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 12 }}>
+      {COST_HEADS.map((h) => (
+        <span key={h} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ width: 10, height: 10, borderRadius: 2, background: HEAD_COLORS[h], display: 'inline-block' }} />
+          {COST_HEAD_LABELS[h]}
+        </span>
+      ))}
+    </div>
+  );
+}

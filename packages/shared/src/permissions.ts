@@ -33,6 +33,12 @@ export const EXPENSE_SUBMITTER_ROLES: RoleKey[] = ['TEAM_LEADER', 'SITE_ENGINEER
 /** Roles that record measurement book entries: the QS, site engineers and approvers. */
 export const MEASUREMENT_ROLES: RoleKey[] = ['QUANTITY_SURVEYOR', 'SITE_ENGINEER', 'ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER'];
 
+/** Roles that see project cost (rates and margins): approvers and accounts. */
+export const COST_VIEW_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER', 'ACCOUNTS_MANAGER'];
+
+/** Roles that set labour daily rates for the organisation. */
+export const LABOUR_RATE_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'ACCOUNTS_MANAGER'];
+
 /** Roles allowed to manage users. */
 export const USER_ADMIN_ROLES: RoleKey[] = ['ADMIN'];
 
@@ -56,6 +62,11 @@ export const canManageEquipment = (role: RoleKey) => canApprove(role);
 
 /** File site expenses. */
 export const canSubmitExpense = (role: RoleKey) => EXPENSE_SUBMITTER_ROLES.includes(role);
+
+/** See the project cost view. */
+export const canViewCost = (role: RoleKey) => COST_VIEW_ROLES.includes(role);
+/** Set labour daily rates. */
+export const canSetLabourRates = (role: RoleKey) => LABOUR_RATE_ROLES.includes(role);
 
 /** Record measurements (MB). */
 export const canMeasure = (role: RoleKey) => MEASUREMENT_ROLES.includes(role);
