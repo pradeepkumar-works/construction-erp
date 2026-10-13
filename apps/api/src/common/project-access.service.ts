@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { APPROVER_ROLES, COMPANY_WIDE_ROLES, isCompanyWide, canApprove, canRecordAttendance } from '@erp/shared';
+import { APPROVER_ROLES, COMPANY_WIDE_ROLES, isCompanyWide, canAdjustStock, canApprove, canKeepStock, canManageStore, canRecordAttendance } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from './current-user';
 
@@ -63,5 +63,35 @@ export class ProjectAccessService {
   async assertCanRecordAttendance(user: RequestUser, projectId: string) {
     if (!canRecordAttendance(user.roleKey)) throw new ForbiddenException('Your role cannot record attendance');
     await this.assertCanAccessProject(user, projectId);
+  }
+
+  /** Receive (GRN) and issue material: a stock-keeper role with access to the project. */
+  async assertCanKeepStock(user: RequestUser, projectId: string) {
+    if (!canKeepStock(user.roleKey)) throw new ForbiddenException('Your role cannot record stock receipts or issues');
+    await this.assertCanAccessProject(user, projectId);
+  }
+
+  /** Adjust stock or delete a stock entry: an approver with access to the project. */
+  async assertCanAdjustStock(user: RequestUser, projectId: string) {
+    if (!canAdjustStock(user.roleKey)) throw new ForbiddenException('Only an approver can adjust stock or delete stock entries');
+    await this.assertCanAccessProject(user, projectId);
+  }
+
+  /** Item master and minimum levels: the store manager or an approver (with access to the project, when one is given). */
+  async assertCanManageStore(user: RequestUser, projectId?: string) {
+    if (!canManageStore(user.roleKey)) throw new ForbiddenException('Only the store manager or an approver can change the item master or minimum levels');
+    if (projectId) await this.assertCanAccessProject(user, projectId);
+  }
+
+  /** Who hears about low stock at a project: its store managers and its project manager. */
+  async stockWatchersForProject(organizationId: string, projectId: string) {
+    return this.prisma.user.findMany({
+      where: {
+        organizationId,
+        isActive: true,
+        OR: [{ managedProjects: { some: { id: projectId } } }, { role: { key: 'STORE_MANAGER' }, memberships: { some: { projectId } } }],
+      },
+      select: { id: true },
+    });
   }
 }

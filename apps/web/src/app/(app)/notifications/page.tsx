@@ -51,7 +51,7 @@ function NotificationsPageInner() {
     <div className="page-container">
       <PageHeader
         title="Notifications"
-        subtitle="Approvals, rejections, change requests, DPR reminders and your daily approvals digest"
+        subtitle="Approvals, rejections, change requests, DPR reminders, low-stock alerts and your daily approvals digest"
         extra={
           <Button icon={<CheckOutlined />} disabled={unread === 0} loading={markAll.isPending} onClick={() => markAll.mutate()}>
             Mark all as read

@@ -27,6 +27,10 @@ contractors after the first client is live.
   server, and every list (BOQ and activities too) exports to Excel with the filters on screen.
 - Attendance: the site supervisor records the day's head count by contractor and trade (web or
   site app, offline too). It fills the manpower of that day's DPR and locks once the DPR is approved.
+- Stock: material is received (GRN, with challan photo) against approved material requests, issued at
+  site and adjusted by approvers. Stock on hand per project and item with minimum levels; falling below
+  one alerts the store manager and PM. Web Stock page and project tab with Excel export, and receive /
+  issue screens in the site app.
 - Edit and resubmit: a rejected or changes-requested entry is fixed in place (web drawer or site app)
   and sent back for approval with the reviewer's note shown alongside the form.
 - Dashboards: company (projects, contract value, pending approvals, delayed activities, DPRs

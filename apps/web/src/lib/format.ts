@@ -1,5 +1,5 @@
 import dayjs from 'dayjs';
-import type { SubmissionStatus, MaterialPriority, NotificationType, ProjectStatus } from '@erp/shared';
+import type { SubmissionStatus, MaterialPriority, NotificationType, ProjectStatus, StockEntryType } from '@erp/shared';
 
 const inr = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 });
 const inr2 = new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -64,6 +64,12 @@ export const PROJECT_STATUS_COLORS: Record<ProjectStatus, string> = {
   CLOSED: 'default',
 };
 
+export const STOCK_ENTRY_COLORS: Record<StockEntryType, string> = {
+  RECEIPT: 'green',
+  ISSUE: 'blue',
+  ADJUSTMENT: 'purple',
+};
+
 export const PRIORITY_COLORS: Record<MaterialPriority, string> = {
   LOW: 'default',
   NORMAL: 'blue',
@@ -78,6 +84,7 @@ export const NOTIFICATION_COLORS: Record<NotificationType, string> = {
   SUBMISSION_CHANGES_REQUESTED: 'orange',
   DPR_REMINDER: 'blue',
   APPROVAL_DIGEST: 'purple',
+  LOW_STOCK: 'volcano',
 };
 
 /** "2 min ago", "3 h ago", "4 d ago", then a date. */

@@ -1,0 +1,164 @@
+'use client';
+
+import React, { useEffect, useMemo } from 'react';
+import { Alert, App, AutoComplete, Button, DatePicker, Form, Input, InputNumber, Modal, Select, Space, Typography } from 'antd';
+import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import dayjs from 'dayjs';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { StockEntryDto } from '@erp/shared';
+import { MAX_PAGE_SIZE } from '@erp/shared';
+import { api, errorMessage } from '@/lib/api';
+import { useActivities, useAttendanceSuggestions, useProjects, useStockBalances } from '@/lib/queries';
+import { formatQty } from '@/lib/format';
+
+interface LineValue {
+  itemId?: string;
+  quantity?: string | null;
+}
+
+interface FormValues {
+  projectId: string;
+  date: dayjs.Dayjs;
+  issuedTo: string;
+  activityId?: string;
+  remarks?: string;
+  lines?: LineValue[];
+}
+
+/** Issue slip: material handed out at site. Items and quantities are limited to what the project has in stock. */
+export function IssueModal({ open, onClose, projectId }: { open: boolean; onClose: () => void; projectId?: string }) {
+  const [form] = Form.useForm<FormValues>();
+  const { message } = App.useApp();
+  const qc = useQueryClient();
+  const { data: projects } = useProjects();
+  const watchedProject = Form.useWatch('projectId', form);
+  const watchedLines = Form.useWatch('lines', form);
+  const scope = projectId ?? watchedProject;
+  const stock = useStockBalances({ projectId: scope, inStock: true, pageSize: MAX_PAGE_SIZE, sortBy: 'item', sortOrder: 'asc' }, open && !!scope);
+  const activities = useActivities(open ? scope : undefined);
+  const suggestions = useAttendanceSuggestions(open ? scope : undefined);
+  const items = useMemo(() => stock.data?.items ?? [], [stock.data]);
+
+  useEffect(() => {
+    if (!open) return;
+    form.resetFields();
+    form.setFieldsValue({ projectId: projectId as string, date: dayjs(), lines: [{}] });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, projectId]);
+
+  const save = useMutation({
+    mutationFn: async (v: FormValues) => {
+      const lines = (v.lines ?? []).filter((l) => l?.itemId && l.quantity && Number(l.quantity) > 0).map((l) => ({ itemId: l.itemId!, quantity: l.quantity! }));
+      if (!lines.length) throw new Error('Add at least one item with a quantity.');
+      const body = { projectId: v.projectId, date: v.date.format('YYYY-MM-DD'), issuedTo: v.issuedTo.trim(), activityId: v.activityId ?? null, remarks: v.remarks?.trim() || null, lines };
+      return (await api.post<StockEntryDto>('/stock/issues', body)).data;
+    },
+    onSuccess: (e) => {
+      message.success(`${e.entryNo} saved: issued to ${e.issuedTo}`);
+      qc.invalidateQueries({ queryKey: ['stock'] });
+      onClose();
+    },
+    onError: (err) => message.error(errorMessage(err)),
+  });
+
+  const chosen = new Set((watchedLines ?? []).map((l) => l?.itemId).filter(Boolean));
+
+  return (
+    <Modal
+      open={open}
+      title="Issue material"
+      onCancel={onClose}
+      onOk={() => form.submit()}
+      okText="Save issue"
+      okButtonProps={{ loading: save.isPending }}
+      width={720}
+      destroyOnHidden
+      styles={{ body: { maxHeight: '70vh', overflowY: 'auto', paddingRight: 8 } }}
+    >
+      <Form form={form} layout="vertical" onFinish={(v) => save.mutate(v)} style={{ marginTop: 8 }}>
+        <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]} hidden={!!projectId}>
+          <Select
+            showSearch
+            optionFilterProp="label"
+            placeholder="Select project"
+            onChange={() => form.setFieldsValue({ lines: [{}], activityId: undefined })}
+            options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))}
+          />
+        </Form.Item>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', columnGap: 12 }}>
+          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Required' }]}>
+            <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+          </Form.Item>
+          <Form.Item name="issuedTo" label="Issued to" rules={[{ required: true, whitespace: true, message: 'Who took the material?' }]}>
+            <AutoComplete
+              placeholder="Contractor, gang or person"
+              options={(suggestions.data?.contractors ?? []).map((c) => ({ value: c }))}
+              filterOption={(input, o) => (o?.value ?? '').toLowerCase().includes(input.toLowerCase())}
+            />
+          </Form.Item>
+          <Form.Item name="activityId" label="For activity">
+            <Select allowClear showSearch optionFilterProp="label" placeholder="Optional" disabled={!scope} options={(activities.data ?? []).map((a) => ({ value: a.id, label: a.name }))} />
+          </Form.Item>
+        </div>
+
+        {scope && !stock.isLoading && !items.length ? (
+          <Alert type="warning" showIcon style={{ marginBottom: 12 }} message="Nothing is in stock at this project yet. Receive material first." />
+        ) : null}
+
+        <Form.Item label="Items" required style={{ marginBottom: 8 }}>
+          <Form.List name="lines">
+            {(fields, { add, remove }) => (
+              <Space orientation="vertical" size={6} style={{ width: '100%' }}>
+                {fields.map((f) => {
+                  const itemId = form.getFieldValue(['lines', f.name, 'itemId']) as string | undefined;
+                  const row = items.find((i) => i.itemId === itemId);
+                  return (
+                    <div key={f.key} style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
+                      <Form.Item name={[f.name, 'itemId']} style={{ flex: 3, marginBottom: 0 }} rules={[{ required: true, message: 'Pick an item' }]}>
+                        <Select
+                          showSearch
+                          optionFilterProp="label"
+                          placeholder={scope ? 'Item' : 'Pick the project first'}
+                          disabled={!scope}
+                          loading={stock.isLoading}
+                          options={items.map((i) => ({
+                            value: i.itemId,
+                            label: `${i.itemName} (${formatQty(i.balance)} ${i.unit} in stock)`,
+                            disabled: chosen.has(i.itemId) && i.itemId !== itemId,
+                          }))}
+                        />
+                      </Form.Item>
+                      <Form.Item
+                        name={[f.name, 'quantity']}
+                        style={{ width: 180, marginBottom: 0 }}
+                        rules={[
+                          { required: true, message: 'Quantity' },
+                          {
+                            validator: (_, v) =>
+                              !v || !row || Number(v) <= Number(row.balance) ? Promise.resolve() : Promise.reject(new Error(`Only ${formatQty(row.balance)} ${row.unit} in stock`)),
+                          },
+                        ]}
+                      >
+                        <InputNumber<string> stringMode min="0" placeholder="Qty" suffix={row?.unit} style={{ width: '100%' }} />
+                      </Form.Item>
+                      <Button icon={<DeleteOutlined />} onClick={() => remove(f.name)} disabled={fields.length === 1} aria-label="Remove item" />
+                    </div>
+                  );
+                })}
+                <Button type="dashed" icon={<PlusOutlined />} size="small" block onClick={() => add({})} disabled={!scope}>
+                  Add item
+                </Button>
+              </Space>
+            )}
+          </Form.List>
+        </Form.Item>
+        <Form.Item name="remarks" label="Remarks">
+          <Input.TextArea rows={2} maxLength={1000} />
+        </Form.Item>
+        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          Items that fall below their minimum level alert the store manager and the project manager.
+        </Typography.Text>
+      </Form>
+    </Modal>
+  );
+}

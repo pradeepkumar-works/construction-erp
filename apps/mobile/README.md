@@ -38,7 +38,7 @@ Tapping a push opens the submission it is about; the bell on Home opens the full
 | engineer@demo.com | Site Engineer | member of two projects; submits progress / DPR / material requests |
 | tl@demo.com | Team Leader | site submissions and attendance (Jajpur has no sheet for today, to try it) |
 | pm@demo.com | Project Manager | sees the Approvals tab and can approve / request changes / reject |
-| store@demo.com | Store Manager | |
+| store@demo.com | Store Manager | stock: receive against approved requests, issue at site (Diesel is below its minimum on two projects) |
 
 The login screen lists these; tapping one fills the form.
 
@@ -50,6 +50,7 @@ The login screen lists these; tapping one fills the form.
 - `app/progress/new.tsx`, `app/dpr/new.tsx`, `app/material-request/new.tsx` — submission forms with photo capture (camera + library), validation, success state.
 - `app/progress/[id].tsx`, `app/dpr/[id].tsx`, `app/material-request/[id].tsx` — detail screens with photos, status, reviewer note and approve / request changes / reject for approvers.
 - `app/attendance.tsx` — the day's attendance by contractor and trade (team leaders, site engineers, approvers). Opens the existing sheet for the chosen day so it can be corrected; locked once that day's DPR is approved. The DPR form fills its manpower from it.
+- `app/stock/` — stock on hand per project (low items flagged, latest entries), `receive.tsx` (GRN against an approved material request, each line defaults to what is pending, challan photo) and `issue.tsx` (items in stock only, issued to a contractor or gang, optional activity). Store manager, site engineers and approvers; online only, since pending and on-hand quantities are checked on the server.
 - `app/submissions.tsx` — my submissions, segmented by type.
 - `app/outbox.tsx` and `src/offline/` — offline entry: new submissions and attendance sheets made without a connection are saved in a SQLite outbox (photos copied to the documents folder) and sent automatically on reconnect; failed ones can be retried or discarded. `useFetch(..., { cacheKey })` keeps the last loaded lists on the phone.
 - `src/theme.ts`, `src/components/` — small design system (Screen, Card, Button, Input, Select, DatePicker, Chips, StatusBadge, PhotoPicker, states).

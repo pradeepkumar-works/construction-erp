@@ -1,0 +1,684 @@
+import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Prisma, StockEntryType } from '@prisma/client';
+import {
+  STOCK_ENTRY_PREFIX,
+  SUBMISSION_STATUS_LABELS,
+  crossesBelowMin,
+  isLowStock,
+  type ItemDto,
+  type ItemSortField,
+  type Paginated,
+  type ReceivableRequestDto,
+  type SortOrder,
+  type StockBalanceDto,
+  type StockBalanceSortField,
+  type StockEntryDto,
+  type StockEntrySortField,
+} from '@erp/shared';
+import { PrismaService } from '../prisma/prisma.service';
+import { RequestUser } from '../common/current-user';
+import { ProjectAccessService } from '../common/project-access.service';
+import { AuditService } from '../common/audit.service';
+import { AttachmentsService } from '../common/attachments.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { dateOnly, dec, iso, parseDate } from '../common/serialize';
+import { isUniqueViolation } from '../common/idempotency';
+import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
+import {
+  CreateAdjustmentDto,
+  CreateIssueDto,
+  CreateItemDto,
+  CreateReceiptDto,
+  ListItemsQuery,
+  ListStockBalancesQuery,
+  ListStockEntriesQuery,
+  ReceivableQuery,
+  SetMinLevelDto,
+  UpdateItemDto,
+} from './stock.dto';
+
+type Tx = Prisma.TransactionClient;
+type Decimal = Prisma.Decimal;
+const D = (v: Prisma.Decimal.Value) => new Prisma.Decimal(v);
+const ZERO = D(0);
+
+const include = {
+  project: { select: { name: true } },
+  createdBy: { select: { fullName: true } },
+  materialRequest: { select: { requestNo: true } },
+  activity: { select: { name: true } },
+  lines: { orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }], include: { item: { select: { name: true, unit: true } } } },
+  attachments: true,
+} satisfies Prisma.StockEntryInclude;
+type Row = Prisma.StockEntryGetPayload<{ include: typeof include }>;
+
+const ENTRY_ORDER: Record<StockEntrySortField, (o: SortOrder) => Prisma.StockEntryOrderByWithRelationInput[]> = {
+  date: (o) => [{ date: o }, { createdAt: o }],
+  entryNo: (o) => [{ entryNo: o }],
+  type: (o) => [{ type: o }, { date: 'desc' }],
+  project: (o) => [{ project: { name: o } }, { date: 'desc' }],
+  createdBy: (o) => [{ createdBy: { fullName: o } }, { date: 'desc' }],
+  createdAt: (o) => [{ createdAt: o }],
+};
+const ENTRY_DESC_DEFAULT = new Set<string>(['date', 'entryNo', 'createdAt']);
+const BALANCE_DESC_DEFAULT = new Set<string>(['balance', 'received', 'issued', 'lastMovement']);
+
+const ITEM_ORDER: Record<ItemSortField, (o: SortOrder) => Prisma.ItemOrderByWithRelationInput[]> = {
+  name: (o) => [{ name: o }, { unit: 'asc' }],
+  unit: (o) => [{ unit: o }, { name: 'asc' }],
+  category: (o) => [{ category: { sort: o, nulls: 'last' } }, { name: 'asc' }],
+  createdAt: (o) => [{ createdAt: o }],
+};
+
+/** A stock line ready to insert; quantity carries its sign. */
+interface Line {
+  itemId: string;
+  quantity: Decimal;
+  materialRequestItemId?: string | null;
+}
+
+interface Header {
+  id?: string;
+  type: StockEntryType;
+  projectId: string;
+  date: Date;
+  materialRequestId?: string | null;
+  supplier?: string | null;
+  challanNo?: string | null;
+  vehicleNo?: string | null;
+  issuedTo?: string | null;
+  activityId?: string | null;
+  remarks?: string | null;
+}
+
+const blank = (s: string | null | undefined) => s?.trim() || null;
+const key = (projectId: string, itemId: string) => `${projectId}|${itemId}`;
+
+/**
+ * Store register per project: goods received (GRN) against approved material requests, material issued at
+ * site, and adjustments. Balances are the sum of signed StockTxn rows. Writes for an organisation run one at
+ * a time under an advisory lock, so two issues can never take the same stock and entry numbers never clash.
+ */
+@Injectable()
+export class StockService {
+  private readonly log = new Logger(StockService.name);
+
+  constructor(
+    private prisma: PrismaService,
+    private access: ProjectAccessService,
+    private audit: AuditService,
+    private attachments: AttachmentsService,
+    private notifications: NotificationsService,
+  ) {}
+
+  /* ---------- helpers ---------- */
+
+  toDto(r: Row): StockEntryDto {
+    return {
+      id: r.id,
+      projectId: r.projectId,
+      projectName: r.project.name,
+      type: r.type,
+      entryNo: r.entryNo,
+      date: dateOnly(r.date)!,
+      materialRequestId: r.materialRequestId,
+      requestNo: r.materialRequest?.requestNo ?? null,
+      supplier: r.supplier,
+      challanNo: r.challanNo,
+      vehicleNo: r.vehicleNo,
+      issuedTo: r.issuedTo,
+      activityId: r.activityId,
+      activityName: r.activity?.name ?? null,
+      remarks: r.remarks,
+      lines: r.lines.map((l) => ({ id: l.id, itemId: l.itemId, itemName: l.item.name, unit: l.item.unit, quantity: dec(l.quantity)!, materialRequestItemId: l.materialRequestItemId })),
+      attachments: r.attachments.map((a) => this.attachments.toDto(a)),
+      createdById: r.createdById,
+      createdByName: r.createdBy.fullName,
+      createdAt: iso(r.createdAt)!,
+    };
+  }
+
+  private parseQty(raw: string, what: string, allowNegative = false): Decimal {
+    let q: Decimal;
+    try {
+      q = D(raw);
+    } catch {
+      throw new BadRequestException(`${what}: "${raw}" is not a number`);
+    }
+    if (!q.isFinite()) throw new BadRequestException(`${what}: "${raw}" is not a number`);
+    if (q.decimalPlaces() > 3) throw new BadRequestException(`${what}: use at most 3 decimals`);
+    if (allowNegative ? q.isZero() : q.lte(0)) throw new BadRequestException(`${what}: the quantity must be ${allowNegative ? 'non-zero' : 'more than zero'}`);
+    if (q.abs().gte(1e15)) throw new BadRequestException(`${what}: the quantity is too large`);
+    return q;
+  }
+
+  /** Entry dates may be back-dated but not set in the future (a day of slack covers time zones). */
+  private entryDate(s: string): Date {
+    const d = parseDate(s);
+    if (d.getTime() > Date.now() + 36 * 3600 * 1000) throw new BadRequestException('The date cannot be in the future');
+    return d;
+  }
+
+  /** Serialise stock writes of one organisation for the rest of the transaction. */
+  private lock(tx: Tx, organizationId: string) {
+    return tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`stock:${organizationId}`}))`;
+  }
+
+  private async inLock<T>(organizationId: string, fn: (tx: Tx) => Promise<T>): Promise<T> {
+    return this.prisma.$transaction(
+      async (tx) => {
+        await this.lock(tx, organizationId);
+        return fn(tx);
+      },
+      { timeout: 20_000, maxWait: 10_000 },
+    );
+  }
+
+  private async balancesOf(db: Tx | PrismaService, projectId: string, itemIds: string[]): Promise<Map<string, Decimal>> {
+    const rows = await db.stockTxn.groupBy({ by: ['itemId'], where: { projectId, itemId: { in: itemIds } }, _sum: { quantity: true } });
+    const out = new Map<string, Decimal>(itemIds.map((id) => [id, ZERO]));
+    for (const r of rows) out.set(r.itemId, r._sum.quantity ?? ZERO);
+    return out;
+  }
+
+  private async nextEntryNo(tx: Tx, organizationId: string, type: StockEntryType): Promise<string> {
+    const prefix = `${STOCK_ENTRY_PREFIX[type]}-${new Date().getUTCFullYear()}-`;
+    const last = await tx.stockEntry.findFirst({ where: { organizationId, entryNo: { startsWith: prefix } }, orderBy: { entryNo: 'desc' }, select: { entryNo: true } });
+    const n = last ? parseInt(last.entryNo.slice(prefix.length), 10) + 1 : 1;
+    return `${prefix}${String(n).padStart(4, '0')}`;
+  }
+
+  /** Item master lookup by name and unit (case-insensitive); adds the item when it is new. */
+  private async resolveItem(tx: Tx, organizationId: string, name: string, unit: string) {
+    const found = await tx.item.findFirst({
+      where: { organizationId, name: { equals: name.trim(), mode: 'insensitive' }, unit: { equals: unit.trim(), mode: 'insensitive' } },
+      select: { id: true, name: true, unit: true },
+    });
+    return found ?? tx.item.create({ data: { organizationId, name: name.trim(), unit: unit.trim() }, select: { id: true, name: true, unit: true } });
+  }
+
+  private mergeLines(lines: Line[]): Line[] {
+    const out = new Map<string, Line>();
+    for (const l of lines) {
+      const k = `${l.itemId}|${l.materialRequestItemId ?? ''}`;
+      const prev = out.get(k);
+      if (prev) prev.quantity = prev.quantity.add(l.quantity);
+      else out.set(k, { ...l });
+    }
+    return [...out.values()].filter((l) => !l.quantity.isZero());
+  }
+
+  private async insertEntry(tx: Tx, user: RequestUser, h: Header, lines: Line[]) {
+    const entryNo = await this.nextEntryNo(tx, user.organizationId, h.type);
+    return tx.stockEntry.create({
+      data: {
+        id: h.id,
+        organizationId: user.organizationId,
+        projectId: h.projectId,
+        type: h.type,
+        entryNo,
+        date: h.date,
+        materialRequestId: h.materialRequestId ?? null,
+        supplier: blank(h.supplier),
+        challanNo: blank(h.challanNo),
+        vehicleNo: blank(h.vehicleNo),
+        issuedTo: blank(h.issuedTo),
+        activityId: h.activityId ?? null,
+        remarks: blank(h.remarks),
+        createdById: user.id,
+        lines: {
+          create: lines.map((l, i) => ({
+            organizationId: user.organizationId,
+            projectId: h.projectId,
+            itemId: l.itemId,
+            type: h.type,
+            date: h.date,
+            quantity: l.quantity,
+            materialRequestItemId: l.materialRequestItemId ?? null,
+            sortOrder: i,
+          })),
+        },
+      },
+      select: { id: true, entryNo: true },
+    });
+  }
+
+  /** Idempotent create: an entry that already exists under the client-supplied id is returned as is. */
+  private async findExisting(user: RequestUser, id: string | undefined) {
+    if (!id) return null;
+    const row = await this.prisma.stockEntry.findFirst({ where: { id, organizationId: user.organizationId }, select: { id: true } });
+    return row ? this.get(user, row.id) : null;
+  }
+
+  /** Runs a create; a unique-id race between two retries of the same request returns the winner. */
+  private async createGuarded(user: RequestUser, id: string | undefined, fn: () => Promise<{ id: string; entryNo: string }>) {
+    try {
+      return await fn();
+    } catch (e) {
+      if (isUniqueViolation(e) && id) {
+        const winner = await this.prisma.stockEntry.findFirst({ where: { id, organizationId: user.organizationId }, select: { id: true, entryNo: true } });
+        if (winner) return { ...winner, existing: true };
+      }
+      throw e;
+    }
+  }
+
+  /** Alert the project's store managers and PM about items this change took below their minimum. */
+  private async alertLowStock(user: RequestUser, projectId: string, before: Map<string, Decimal>, entryId: string, entryNo: string) {
+    try {
+      const itemIds = [...before.keys()];
+      const [after, mins, items, project] = await Promise.all([
+        this.balancesOf(this.prisma, projectId, itemIds),
+        this.prisma.stockMinLevel.findMany({ where: { projectId, itemId: { in: itemIds } } }),
+        this.prisma.item.findMany({ where: { id: { in: itemIds } }, select: { id: true, name: true, unit: true } }),
+        this.prisma.project.findUnique({ where: { id: projectId }, select: { name: true } }),
+      ]);
+      const crossed = mins.filter((m) => crossesBelowMin(before.get(m.itemId)!.toString(), after.get(m.itemId)!.toString(), m.minQty.toString()));
+      if (!crossed.length) return;
+      const watchers = (await this.access.stockWatchersForProject(user.organizationId, projectId)).map((u) => u.id).filter((id) => id !== user.id);
+      for (const m of crossed) {
+        const item = items.find((i) => i.id === m.itemId)!;
+        await this.notifications.notify({
+          organizationId: user.organizationId,
+          userIds: watchers,
+          type: 'LOW_STOCK',
+          title: `Low stock: ${item.name}`,
+          body: `${item.name} at ${project?.name ?? 'the project'} is down to ${dec(after.get(m.itemId))} ${item.unit} after ${entryNo} (minimum ${dec(m.minQty)} ${item.unit}).`,
+          projectId,
+          dedupeKey: `LOW_STOCK:${entryId}:${m.itemId}`,
+        });
+      }
+    } catch (e) {
+      this.log.warn(`Low-stock alert failed: ${(e as Error).message}`);
+    }
+  }
+
+  /* ---------- entries ---------- */
+
+  async list(user: RequestUser, q: ListStockEntriesQuery): Promise<Paginated<StockEntryDto>> {
+    const where: Prisma.StockEntryWhereInput = { ...this.access.submissionWhere(user) };
+    if (q.projectId) where.projectId = q.projectId;
+    if (q.type) where.type = q.type;
+    if (q.materialRequestId) where.materialRequestId = q.materialRequestId;
+    if (q.itemId) where.lines = { some: { itemId: q.itemId } };
+    if (q.from || q.to) where.date = { ...(q.from ? { gte: parseDate(q.from) } : {}), ...(q.to ? { lte: parseDate(q.to) } : {}) };
+    const words = searchWords(q.q);
+    if (words.length)
+      where.AND = words.map((w) => ({
+        OR: [
+          { entryNo: ilike(w) },
+          { project: { name: ilike(w) } },
+          { supplier: ilike(w) },
+          { challanNo: ilike(w) },
+          { issuedTo: ilike(w) },
+          { remarks: ilike(w) },
+          { materialRequest: { requestNo: ilike(w) } },
+          { createdBy: { fullName: ilike(w) } },
+          { lines: { some: { item: { name: ilike(w) } } } },
+        ],
+      }));
+    const sortBy = q.sortBy ?? 'date';
+    const order = q.sortOrder ?? (ENTRY_DESC_DEFAULT.has(sortBy) ? 'desc' : 'asc');
+    const args = pageArgs(q);
+    const [rows, total] = await Promise.all([
+      this.prisma.stockEntry.findMany({ where, include, orderBy: [...ENTRY_ORDER[sortBy](order), { id: 'asc' }], skip: args.skip, take: args.take }),
+      this.prisma.stockEntry.count({ where }),
+    ]);
+    return paginated(rows.map((r) => this.toDto(r)), total, args);
+  }
+
+  async get(user: RequestUser, id: string): Promise<StockEntryDto> {
+    const row = await this.prisma.stockEntry.findFirst({ where: { id, ...this.access.submissionWhere(user) }, include });
+    if (!row) throw new NotFoundException('Stock entry not found');
+    return this.toDto(row);
+  }
+
+  /** GRN: receive material against an approved request, at most what is still pending on each line. */
+  async receive(user: RequestUser, dto: CreateReceiptDto): Promise<StockEntryDto> {
+    const existing = await this.findExisting(user, dto.id);
+    if (existing) return existing;
+    const mr = await this.prisma.materialRequest.findFirst({ where: { id: dto.materialRequestId, ...this.access.submissionWhere(user) }, include: { items: true } });
+    if (!mr) throw new NotFoundException('Material request not found');
+    if (mr.status !== 'APPROVED') throw new ConflictException(`Material can only be received against an approved request. ${mr.requestNo} is ${SUBMISSION_STATUS_LABELS[mr.status].toLowerCase()}.`);
+    await this.access.assertCanKeepStock(user, mr.projectId);
+    const date = this.entryDate(dto.date);
+    const want = new Map<string, Decimal>();
+    for (const l of dto.lines) {
+      const line = mr.items.find((i) => i.id === l.materialRequestItemId);
+      if (!line) throw new BadRequestException(`A line is not part of ${mr.requestNo}`);
+      want.set(line.id, (want.get(line.id) ?? ZERO).add(this.parseQty(l.quantity, line.itemName)));
+    }
+    const saved = await this.createGuarded(user, dto.id, () =>
+      this.inLock(user.organizationId, async (tx) => {
+        const got = await tx.stockTxn.groupBy({ by: ['materialRequestItemId'], where: { materialRequestItemId: { in: [...want.keys()] } }, _sum: { quantity: true } });
+        const lines: Line[] = [];
+        for (const [lineId, quantity] of want) {
+          const line = mr.items.find((i) => i.id === lineId)!;
+          const received = got.find((g) => g.materialRequestItemId === lineId)?._sum.quantity ?? ZERO;
+          const pending = line.quantity.sub(received);
+          if (quantity.gt(pending))
+            throw new ConflictException(
+              pending.lte(0)
+                ? `${line.itemName} on ${mr.requestNo} is already fully received.`
+                : `Only ${dec(pending)} ${line.unit} of ${line.itemName} is still pending on ${mr.requestNo}.`,
+            );
+          const item = await this.resolveItem(tx, user.organizationId, line.itemName, line.unit);
+          lines.push({ itemId: item.id, quantity, materialRequestItemId: line.id });
+        }
+        return this.insertEntry(tx, user, { ...dto, type: 'RECEIPT', projectId: mr.projectId, date, materialRequestId: mr.id }, lines);
+      }),
+    );
+    if ('existing' in saved) return this.get(user, saved.id);
+    await this.attachments.link(user, 'stockEntryId', saved.id, dto.attachmentIds);
+    await this.audit.log(user, 'STOCK', saved.id, 'CREATED', `${saved.entryNo} against ${mr.requestNo}`);
+    return this.get(user, saved.id);
+  }
+
+  /** Issue material at site; each quantity may not exceed the project's stock. */
+  async issue(user: RequestUser, dto: CreateIssueDto): Promise<StockEntryDto> {
+    const existing = await this.findExisting(user, dto.id);
+    if (existing) return existing;
+    await this.access.assertCanKeepStock(user, dto.projectId);
+    const date = this.entryDate(dto.date);
+    if (dto.activityId) {
+      const activity = await this.prisma.activity.findFirst({ where: { id: dto.activityId, projectId: dto.projectId }, select: { id: true } });
+      if (!activity) throw new BadRequestException('The activity is not part of this project');
+    }
+    const items = await this.prisma.item.findMany({ where: { id: { in: dto.lines.map((l) => l.itemId) }, organizationId: user.organizationId }, select: { id: true, name: true, unit: true } });
+    const lines = this.mergeLines(
+      dto.lines.map((l) => {
+        const item = items.find((i) => i.id === l.itemId);
+        if (!item) throw new BadRequestException('Unknown item');
+        return { itemId: item.id, quantity: this.parseQty(l.quantity, item.name) };
+      }),
+    );
+    let before = new Map<string, Decimal>();
+    const saved = await this.createGuarded(user, dto.id, () =>
+      this.inLock(user.organizationId, async (tx) => {
+        before = await this.balancesOf(tx, dto.projectId, lines.map((l) => l.itemId));
+        for (const l of lines) {
+          const have = before.get(l.itemId)!;
+          if (l.quantity.gt(have)) {
+            const item = items.find((i) => i.id === l.itemId)!;
+            throw new ConflictException(have.lte(0) ? `${item.name} is out of stock at this project.` : `Only ${dec(have)} ${item.unit} of ${item.name} is in stock at this project.`);
+          }
+        }
+        return this.insertEntry(tx, user, { ...dto, type: 'ISSUE', date }, lines.map((l) => ({ ...l, quantity: l.quantity.neg() })));
+      }),
+    );
+    if ('existing' in saved) return this.get(user, saved.id);
+    await this.audit.log(user, 'STOCK', saved.id, 'CREATED', `${saved.entryNo} to ${dto.issuedTo}`);
+    await this.alertLowStock(user, dto.projectId, before, saved.id, saved.entryNo);
+    return this.get(user, saved.id);
+  }
+
+  /** Opening stock or a count correction (approvers). A negative line may not take the balance below zero. */
+  async adjust(user: RequestUser, dto: CreateAdjustmentDto): Promise<StockEntryDto> {
+    const existing = await this.findExisting(user, dto.id);
+    if (existing) return existing;
+    await this.access.assertCanAdjustStock(user, dto.projectId);
+    const date = this.entryDate(dto.date);
+    const known = await this.prisma.item.findMany({ where: { id: { in: dto.lines.flatMap((l) => (l.itemId ? [l.itemId] : [])) }, organizationId: user.organizationId }, select: { id: true, name: true, unit: true } });
+    for (const l of dto.lines) if (l.itemId && !known.some((k) => k.id === l.itemId)) throw new BadRequestException('Unknown item');
+    let before = new Map<string, Decimal>();
+    const names = new Map<string, { name: string; unit: string }>(known.map((k) => [k.id, k]));
+    const saved = await this.createGuarded(user, dto.id, () =>
+      this.inLock(user.organizationId, async (tx) => {
+        const raw: Line[] = [];
+        for (const l of dto.lines) {
+          const item = l.itemId ? known.find((k) => k.id === l.itemId)! : await this.resolveItem(tx, user.organizationId, l.itemName!, l.unit!);
+          names.set(item.id, item);
+          raw.push({ itemId: item.id, quantity: this.parseQty(l.quantity, item.name, true) });
+        }
+        const lines = this.mergeLines(raw);
+        if (!lines.length) throw new BadRequestException('The lines cancel out; nothing to adjust');
+        before = await this.balancesOf(tx, dto.projectId, lines.map((l) => l.itemId));
+        for (const l of lines) {
+          const after = before.get(l.itemId)!.add(l.quantity);
+          if (after.lt(0)) {
+            const item = names.get(l.itemId)!;
+            throw new ConflictException(`Only ${dec(before.get(l.itemId))} ${item.unit} of ${item.name} is in stock; the adjustment would take it below zero.`);
+          }
+        }
+        return this.insertEntry(tx, user, { ...dto, type: 'ADJUSTMENT', date }, lines);
+      }),
+    );
+    if ('existing' in saved) return this.get(user, saved.id);
+    await this.audit.log(user, 'STOCK', saved.id, 'CREATED', `${saved.entryNo}: ${dto.remarks}`);
+    await this.alertLowStock(user, dto.projectId, before, saved.id, saved.entryNo);
+    return this.get(user, saved.id);
+  }
+
+  /** Delete a wrong entry (approvers). Refused when the stock it brought in has already been issued. */
+  async remove(user: RequestUser, id: string) {
+    const row = await this.prisma.stockEntry.findFirst({ where: { id, ...this.access.submissionWhere(user) }, include: { lines: { include: { item: { select: { name: true, unit: true } } } } } });
+    if (!row) throw new NotFoundException('Stock entry not found');
+    await this.access.assertCanAdjustStock(user, row.projectId);
+    const itemIds = [...new Set(row.lines.map((l) => l.itemId))];
+    let before = new Map<string, Decimal>();
+    await this.inLock(user.organizationId, async (tx) => {
+      before = await this.balancesOf(tx, row.projectId, itemIds);
+      for (const itemId of itemIds) {
+        const own = row.lines.filter((l) => l.itemId === itemId).reduce((s, l) => s.add(l.quantity), ZERO);
+        const after = before.get(itemId)!.sub(own);
+        if (after.lt(0)) {
+          const item = row.lines.find((l) => l.itemId === itemId)!.item;
+          throw new ConflictException(`Deleting ${row.entryNo} would leave ${item.name} at ${dec(after)} ${item.unit}: part of it has already been issued.`);
+        }
+      }
+      await tx.stockEntry.delete({ where: { id } });
+    });
+    await this.audit.log(user, 'STOCK', id, 'DELETED', row.entryNo);
+    await this.alertLowStock(user, row.projectId, before, id, row.entryNo);
+    return { ok: true };
+  }
+
+  /* ---------- balances ---------- */
+
+  private async buildBalances(organizationId: string, project: Prisma.ProjectWhereInput, projectId?: string, itemId?: string): Promise<StockBalanceDto[]> {
+    const scope = { organizationId, project, ...(projectId ? { projectId } : {}), ...(itemId ? { itemId } : {}) };
+    const [sums, mins] = await Promise.all([
+      this.prisma.stockTxn.groupBy({ by: ['projectId', 'itemId', 'type'], where: scope, _sum: { quantity: true }, _max: { date: true } }),
+      this.prisma.stockMinLevel.findMany({ where: scope }),
+    ]);
+    type Agg = { projectId: string; itemId: string; received: Decimal; issued: Decimal; adjusted: Decimal; last: Date | null; min: Decimal | null };
+    const aggs = new Map<string, Agg>();
+    const agg = (p: string, i: string) => {
+      const k = key(p, i);
+      let a = aggs.get(k);
+      if (!a) aggs.set(k, (a = { projectId: p, itemId: i, received: ZERO, issued: ZERO, adjusted: ZERO, last: null, min: null }));
+      return a;
+    };
+    for (const s of sums) {
+      const a = agg(s.projectId, s.itemId);
+      const q = s._sum.quantity ?? ZERO;
+      if (s.type === 'RECEIPT') a.received = a.received.add(q);
+      else if (s.type === 'ISSUE') a.issued = a.issued.sub(q);
+      else a.adjusted = a.adjusted.add(q);
+      if (s._max.date && (!a.last || s._max.date > a.last)) a.last = s._max.date;
+    }
+    for (const m of mins) agg(m.projectId, m.itemId).min = m.minQty;
+    if (!aggs.size) return [];
+    const all = [...aggs.values()];
+    const [items, projects] = await Promise.all([
+      this.prisma.item.findMany({ where: { id: { in: [...new Set(all.map((a) => a.itemId))] } }, select: { id: true, name: true, unit: true, category: true } }),
+      this.prisma.project.findMany({ where: { id: { in: [...new Set(all.map((a) => a.projectId))] } }, select: { id: true, name: true } }),
+    ]);
+    const itemById = new Map(items.map((i) => [i.id, i]));
+    const projectById = new Map(projects.map((p) => [p.id, p]));
+    return all.map((a) => {
+      const item = itemById.get(a.itemId)!;
+      const balance = a.received.sub(a.issued).add(a.adjusted);
+      return {
+        projectId: a.projectId,
+        projectName: projectById.get(a.projectId)?.name ?? '',
+        itemId: a.itemId,
+        itemName: item.name,
+        unit: item.unit,
+        category: item.category,
+        received: dec(a.received)!,
+        issued: dec(a.issued)!,
+        adjusted: dec(a.adjusted)!,
+        balance: dec(balance)!,
+        minQty: a.min && a.min.gt(0) ? dec(a.min) : null,
+        low: isLowStock(balance.toString(), a.min?.toString()),
+        lastMovement: dateOnly(a.last),
+      };
+    });
+  }
+
+  async balances(user: RequestUser, q: ListStockBalancesQuery): Promise<Paginated<StockBalanceDto>> {
+    if (q.projectId) await this.access.assertCanAccessProject(user, q.projectId);
+    let rows = await this.buildBalances(user.organizationId, this.access.projectWhere(user), q.projectId);
+    const words = searchWords(q.q).map((w) => w.toLowerCase());
+    if (words.length) rows = rows.filter((r) => words.every((w) => [r.itemName, r.category ?? '', r.projectName].some((s) => s.toLowerCase().includes(w))));
+    if (q.lowOnly) rows = rows.filter((r) => r.low);
+    if (q.inStock) rows = rows.filter((r) => Number(r.balance) > 0);
+    const sortBy: StockBalanceSortField = q.sortBy ?? 'item';
+    const dir = (q.sortOrder ?? (BALANCE_DESC_DEFAULT.has(sortBy) ? 'desc' : 'asc')) === 'asc' ? 1 : -1;
+    const text = (a: string, b: string) => a.localeCompare(b, undefined, { sensitivity: 'base' });
+    const primary: Record<StockBalanceSortField, (a: StockBalanceDto, b: StockBalanceDto) => number> = {
+      item: (a, b) => text(a.itemName, b.itemName),
+      project: (a, b) => text(a.projectName, b.projectName),
+      balance: (a, b) => Number(a.balance) - Number(b.balance),
+      received: (a, b) => Number(a.received) - Number(b.received),
+      issued: (a, b) => Number(a.issued) - Number(b.issued),
+      lastMovement: (a, b) => (a.lastMovement ?? '').localeCompare(b.lastMovement ?? ''),
+    };
+    rows.sort((a, b) => dir * primary[sortBy](a, b) || text(a.itemName, b.itemName) || text(a.projectName, b.projectName));
+    const args = pageArgs(q);
+    return paginated(rows.slice(args.skip, args.skip + args.take), rows.length, args);
+  }
+
+  async setMinLevel(user: RequestUser, dto: SetMinLevelDto): Promise<StockBalanceDto> {
+    await this.access.assertCanManageStore(user, dto.projectId);
+    const item = await this.prisma.item.findFirst({ where: { id: dto.itemId, organizationId: user.organizationId }, select: { id: true, name: true } });
+    if (!item) throw new NotFoundException('Item not found');
+    const min = dto.minQty === null || dto.minQty === undefined || dto.minQty === '' ? ZERO : D(dto.minQty);
+    if (min.lt(0) || min.decimalPlaces() > 3) throw new BadRequestException('The minimum must be zero or more, with at most 3 decimals');
+    if (min.isZero()) await this.prisma.stockMinLevel.deleteMany({ where: { projectId: dto.projectId, itemId: dto.itemId } });
+    else
+      await this.prisma.stockMinLevel.upsert({
+        where: { projectId_itemId: { projectId: dto.projectId, itemId: dto.itemId } },
+        update: { minQty: min, updatedById: user.id },
+        create: { organizationId: user.organizationId, projectId: dto.projectId, itemId: dto.itemId, minQty: min, updatedById: user.id },
+      });
+    await this.audit.log(user, 'STOCK_MIN_LEVEL', `${dto.projectId}:${dto.itemId}`, 'UPDATED', `${item.name}: ${min.isZero() ? 'no minimum' : dec(min)}`);
+    const [row] = await this.buildBalances(user.organizationId, this.access.projectWhere(user), dto.projectId, dto.itemId);
+    return row;
+  }
+
+  /** Approved requests with something still to receive, for the GRN form. */
+  async receivable(user: RequestUser, q: ReceivableQuery): Promise<ReceivableRequestDto[]> {
+    if (q.projectId) await this.access.assertCanAccessProject(user, q.projectId);
+    const rows = await this.prisma.materialRequest.findMany({
+      where: { ...this.access.submissionWhere(user), status: 'APPROVED', ...(q.projectId ? { projectId: q.projectId } : {}) },
+      include: { project: { select: { name: true } }, items: { orderBy: { sortOrder: 'asc' }, include: { stockTxns: { select: { quantity: true } } } } },
+      orderBy: [{ requiredDate: 'asc' }, { requestNo: 'asc' }],
+      take: 200,
+    });
+    return rows
+      .map((r) => ({
+        id: r.id,
+        requestNo: r.requestNo,
+        projectId: r.projectId,
+        projectName: r.project.name,
+        requiredDate: dateOnly(r.requiredDate)!,
+        priority: r.priority,
+        lines: r.items.map((i) => {
+          const received = i.stockTxns.reduce((s, t) => s.add(t.quantity), ZERO);
+          const pending = i.quantity.sub(received);
+          return {
+            materialRequestItemId: i.id,
+            itemName: i.itemName,
+            specification: i.specification,
+            unit: i.unit,
+            requested: dec(i.quantity)!,
+            received: dec(received)!,
+            pending: dec(pending.gt(0) ? pending : ZERO)!,
+          };
+        }),
+      }))
+      .filter((r) => r.lines.some((l) => Number(l.pending) > 0));
+  }
+
+  /* ---------- item master ---------- */
+
+  async listItems(user: RequestUser, q: ListItemsQuery): Promise<Paginated<ItemDto>> {
+    const where: Prisma.ItemWhereInput = { organizationId: user.organizationId };
+    const words = searchWords(q.q);
+    if (words.length) where.AND = words.map((w) => ({ OR: [{ name: ilike(w) }, { category: ilike(w) }, { unit: ilike(w) }] }));
+    const sortBy = q.sortBy ?? 'name';
+    const order = q.sortOrder ?? (sortBy === 'createdAt' ? 'desc' : 'asc');
+    const args = pageArgs(q);
+    const [rows, total] = await Promise.all([
+      this.prisma.item.findMany({ where, orderBy: [...ITEM_ORDER[sortBy](order), { id: 'asc' }], skip: args.skip, take: args.take }),
+      this.prisma.item.count({ where }),
+    ]);
+    const used = rows.length
+      ? await this.prisma.stockTxn.groupBy({ by: ['itemId', 'projectId'], where: { itemId: { in: rows.map((r) => r.id) } } })
+      : [];
+    return paginated(
+      rows.map((r) => ({ id: r.id, name: r.name, unit: r.unit, category: r.category, projectCount: used.filter((u) => u.itemId === r.id).length, createdAt: iso(r.createdAt)! })),
+      total,
+      args,
+    );
+  }
+
+  private async assertItemUnique(organizationId: string, name: string, unit: string, excludeId?: string) {
+    const dup = await this.prisma.item.findFirst({
+      where: { organizationId, name: { equals: name, mode: 'insensitive' }, unit: { equals: unit, mode: 'insensitive' }, ...(excludeId ? { id: { not: excludeId } } : {}) },
+      select: { id: true },
+    });
+    if (dup) throw new ConflictException(`${name} (${unit}) is already in the item master`);
+  }
+
+  private async getItem(user: RequestUser, id: string): Promise<ItemDto> {
+    const r = await this.prisma.item.findFirst({ where: { id, organizationId: user.organizationId } });
+    if (!r) throw new NotFoundException('Item not found');
+    const used = await this.prisma.stockTxn.groupBy({ by: ['projectId'], where: { itemId: id } });
+    return { id: r.id, name: r.name, unit: r.unit, category: r.category, projectCount: used.length, createdAt: iso(r.createdAt)! };
+  }
+
+  async createItem(user: RequestUser, dto: CreateItemDto): Promise<ItemDto> {
+    await this.access.assertCanManageStore(user);
+    await this.assertItemUnique(user.organizationId, dto.name, dto.unit);
+    try {
+      const row = await this.prisma.item.create({ data: { organizationId: user.organizationId, name: dto.name, unit: dto.unit, category: blank(dto.category) } });
+      await this.audit.log(user, 'ITEM', row.id, 'CREATED', `${row.name} (${row.unit})`);
+      return this.getItem(user, row.id);
+    } catch (e) {
+      if (isUniqueViolation(e)) throw new ConflictException(`${dto.name} (${dto.unit}) is already in the item master`);
+      throw e;
+    }
+  }
+
+  async updateItem(user: RequestUser, id: string, dto: UpdateItemDto): Promise<ItemDto> {
+    await this.access.assertCanManageStore(user);
+    const row = await this.prisma.item.findFirst({ where: { id, organizationId: user.organizationId } });
+    if (!row) throw new NotFoundException('Item not found');
+    const name = dto.name ?? row.name;
+    const unit = dto.unit ?? row.unit;
+    if (dto.unit !== undefined && dto.unit.toLowerCase() !== row.unit.toLowerCase() && (await this.prisma.stockTxn.count({ where: { itemId: id } })) > 0)
+      throw new ConflictException('The unit cannot change once the item has stock movements');
+    await this.assertItemUnique(user.organizationId, name, unit, id);
+    try {
+      await this.prisma.item.update({ where: { id }, data: { name, unit, ...(dto.category !== undefined ? { category: blank(dto.category) } : {}) } });
+    } catch (e) {
+      if (isUniqueViolation(e)) throw new ConflictException(`${name} (${unit}) is already in the item master`);
+      throw e;
+    }
+    await this.audit.log(user, 'ITEM', id, 'UPDATED', `${name} (${unit})`);
+    return this.getItem(user, id);
+  }
+
+  async removeItem(user: RequestUser, id: string) {
+    await this.access.assertCanManageStore(user);
+    const row = await this.prisma.item.findFirst({ where: { id, organizationId: user.organizationId } });
+    if (!row) throw new NotFoundException('Item not found');
+    if ((await this.prisma.stockTxn.count({ where: { itemId: id } })) > 0) throw new ConflictException(`${row.name} has stock movements and cannot be deleted`);
+    await this.prisma.item.delete({ where: { id } });
+    await this.audit.log(user, 'ITEM', id, 'DELETED', `${row.name} (${row.unit})`);
+    return { ok: true };
+  }
+}

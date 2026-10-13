@@ -43,8 +43,13 @@ export const NOTIFICATION_TYPES = [
   'SUBMISSION_CHANGES_REQUESTED',
   'DPR_REMINDER',
   'APPROVAL_DIGEST',
+  'LOW_STOCK',
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
 export const PUSH_PLATFORMS = ['IOS', 'ANDROID', 'WEB'] as const;
 export type PushPlatform = (typeof PUSH_PLATFORMS)[number];
+
+/** RECEIPT = GRN against an approved material request, ISSUE = handed out at site, ADJUSTMENT = opening stock or count correction. */
+export const STOCK_ENTRY_TYPES = ['RECEIPT', 'ISSUE', 'ADJUSTMENT'] as const;
+export type StockEntryType = (typeof STOCK_ENTRY_TYPES)[number];

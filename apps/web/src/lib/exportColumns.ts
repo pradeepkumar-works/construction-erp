@@ -2,6 +2,7 @@ import {
   MATERIAL_PRIORITY_LABELS,
   PROJECT_STATUS_LABELS,
   PROJECT_TYPE_LABELS,
+  STOCK_ENTRY_TYPE_LABELS,
   SUBMISSION_STATUS_LABELS,
   WEATHER_LABELS,
   type ActivityDto,
@@ -11,6 +12,9 @@ import {
   type MaterialRequestDto,
   type ProgressEntryDto,
   type ProjectSummary,
+  type StockBalanceDto,
+  type StockEntryDto,
+  type StockLineDto,
   type UserSummary,
 } from '@erp/shared';
 import type { ExportColumn } from './exportExcel';
@@ -140,4 +144,44 @@ export const ATTENDANCE_EXPORT: ExportColumn<AttendanceExportRow>[] = [
   { header: 'Recorded by', value: (r) => r.sheet.recordedByName, width: 20 },
   { header: 'Last changed by', value: (r) => r.sheet.updatedByName, width: 20 },
   { header: 'DPR status', value: (r) => (r.sheet.dprStatus ? status(r.sheet.dprStatus) : 'No DPR yet'), width: 18 },
+];
+
+export const STOCK_BALANCE_EXPORT: ExportColumn<StockBalanceDto>[] = [
+  { header: 'Project', value: (r) => r.projectName, width: 34 },
+  { header: 'Item', value: (r) => r.itemName, width: 30 },
+  { header: 'Category', value: (r) => r.category, width: 14 },
+  { header: 'Unit', value: (r) => r.unit },
+  { header: 'Received', value: (r) => toNumber(r.received) },
+  { header: 'Issued', value: (r) => toNumber(r.issued) },
+  { header: 'Adjusted', value: (r) => toNumber(r.adjusted) },
+  { header: 'Balance', value: (r) => toNumber(r.balance) },
+  { header: 'Minimum', value: (r) => (r.minQty === null ? '' : toNumber(r.minQty)) },
+  { header: 'Low', value: (r) => (r.low ? 'Yes' : '') },
+  { header: 'Last movement', value: (r) => r.lastMovement, width: 14 },
+];
+
+/** One row per entry line, so quantities can be summed by item in Excel. */
+export interface StockEntryExportRow {
+  entry: StockEntryDto;
+  line: StockLineDto;
+}
+
+export const stockEntryExportRows = (rows: StockEntryDto[]): StockEntryExportRow[] => rows.flatMap((entry) => entry.lines.map((line) => ({ entry, line })));
+
+export const STOCK_ENTRY_EXPORT: ExportColumn<StockEntryExportRow>[] = [
+  { header: 'Date', value: (r) => r.entry.date, width: 12 },
+  { header: 'Entry no.', value: (r) => r.entry.entryNo, width: 16 },
+  { header: 'Type', value: (r) => STOCK_ENTRY_TYPE_LABELS[r.entry.type], width: 14 },
+  { header: 'Project', value: (r) => r.entry.projectName, width: 34 },
+  { header: 'Item', value: (r) => r.line.itemName, width: 30 },
+  { header: 'Quantity', value: (r) => toNumber(r.line.quantity) },
+  { header: 'Unit', value: (r) => r.line.unit },
+  { header: 'Material request', value: (r) => r.entry.requestNo, width: 16 },
+  { header: 'Supplier', value: (r) => r.entry.supplier, width: 24 },
+  { header: 'Challan no.', value: (r) => r.entry.challanNo, width: 14 },
+  { header: 'Vehicle no.', value: (r) => r.entry.vehicleNo, width: 14 },
+  { header: 'Issued to', value: (r) => r.entry.issuedTo, width: 24 },
+  { header: 'Activity', value: (r) => r.entry.activityName, width: 24 },
+  { header: 'Remarks', value: (r) => r.entry.remarks, width: 30 },
+  { header: 'Entered by', value: (r) => r.entry.createdByName, width: 20 },
 ];
