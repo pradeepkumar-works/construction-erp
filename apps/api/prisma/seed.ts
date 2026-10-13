@@ -209,6 +209,35 @@ async function main() {
     }
   }
 
+  // Notifications: the engineer sees recent reviews, the PM sees what is waiting. Push tokens are registered by the app.
+  const projectsSeeded = await prisma.project.findMany({ where: { organizationId: org.id }, include: { projectManager: true } });
+  for (const project of projectsSeeded) {
+    const [approved, submitted] = await Promise.all([
+      prisma.progressEntry.findFirst({ where: { projectId: project.id, status: 'APPROVED' }, orderBy: { reviewedAt: 'desc' }, include: { activity: true, reviewedBy: true } }),
+      prisma.dailyReport.findFirst({ where: { projectId: project.id, status: 'SUBMITTED' }, include: { submittedBy: true } }),
+    ]);
+    if (approved?.reviewedBy) {
+      await prisma.notification.create({
+        data: {
+          organizationId: org.id, userId: approved.submittedById, type: 'SUBMISSION_APPROVED', projectId: project.id, entityType: 'PROGRESS', entityId: approved.id,
+          title: 'Progress entry approved',
+          body: `${approved.reviewedBy.fullName} approved ${approved.activity.name}: ${approved.quantity.toString()} ${approved.activity.unit} on ${approved.date.toISOString().slice(0, 10)} on ${project.name}. Note: Verified at site`,
+          createdAt: approved.reviewedAt ?? new Date(), readAt: approved.reviewedAt ?? new Date(),
+        },
+      });
+    }
+    if (submitted && project.projectManagerId) {
+      await prisma.notification.create({
+        data: {
+          organizationId: org.id, userId: project.projectManagerId, type: 'SUBMISSION_SUBMITTED', projectId: project.id, entityType: 'DPR', entityId: submitted.id,
+          title: 'DPR awaiting your approval',
+          body: `${submitted.submittedBy.fullName} submitted DPR for ${submitted.date.toISOString().slice(0, 10)} on ${project.name}.`,
+          createdAt: submitted.submittedAt ?? new Date(),
+        },
+      });
+    }
+  }
+
   console.log('Seed complete. Login with any of these (password: password123):');
   for (const u of USERS) console.log(`  ${u.email.padEnd(24)} ${u.role}`);
 }

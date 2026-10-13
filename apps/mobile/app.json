@@ -34,6 +34,13 @@
           "photosPermission": "Site App needs access to your photos to attach site pictures to submissions.",
           "cameraPermission": "Site App uses the camera to capture site photos."
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#1D4ED8",
+          "defaultChannel": "default"
+        }
       ]
     ],
     "splash": {

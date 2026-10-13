@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from '../src/auth/AuthContext';
+import { NotificationsProvider } from '../src/notifications/NotificationsContext';
 import { Loading } from '../src/components';
 import { colors } from '../src/theme';
 
@@ -34,6 +35,7 @@ function RootNavigator() {
         <Stack.Screen name="material-request/new" options={{ title: 'New Material Request' }} />
         <Stack.Screen name="material-request/[id]" options={{ title: 'Material Request' }} />
         <Stack.Screen name="submissions" options={{ title: 'My Submissions' }} />
+        <Stack.Screen name="notifications" options={{ title: 'Notifications' }} />
       </Stack.Protected>
     </Stack>
   );
@@ -44,8 +46,10 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <AuthProvider>
-          <StatusBar style="dark" />
-          <RootNavigator />
+          <NotificationsProvider>
+            <StatusBar style="dark" />
+            <RootNavigator />
+          </NotificationsProvider>
         </AuthProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

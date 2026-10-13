@@ -1,5 +1,5 @@
 import dayjs from 'dayjs';
-import type { SubmissionStatus, MaterialPriority, ProjectStatus } from '@erp/shared';
+import type { SubmissionStatus, MaterialPriority, NotificationType, ProjectStatus } from '@erp/shared';
 
 const inr = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 });
 const inr2 = new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -70,6 +70,30 @@ export const PRIORITY_COLORS: Record<MaterialPriority, string> = {
   HIGH: 'orange',
   URGENT: 'red',
 };
+
+export const NOTIFICATION_COLORS: Record<NotificationType, string> = {
+  SUBMISSION_SUBMITTED: 'gold',
+  SUBMISSION_APPROVED: 'green',
+  SUBMISSION_REJECTED: 'red',
+  SUBMISSION_CHANGES_REQUESTED: 'orange',
+  DPR_REMINDER: 'blue',
+  APPROVAL_DIGEST: 'purple',
+};
+
+/** "2 min ago", "3 h ago", "4 d ago", then a date. */
+export function timeAgo(value: string | null | undefined): string {
+  if (!value) return '-';
+  const d = dayjs(value);
+  if (!d.isValid()) return value;
+  const min = Math.max(0, Math.floor((Date.now() - d.valueOf()) / 60000));
+  if (min < 1) return 'just now';
+  if (min < 60) return `${min} min ago`;
+  const h = Math.floor(min / 60);
+  if (h < 24) return `${h} h ago`;
+  const days = Math.floor(h / 24);
+  if (days < 7) return `${days} d ago`;
+  return d.format('DD MMM YYYY');
+}
 
 export function progressStatus(pct: number): 'success' | 'exception' | 'normal' | 'active' {
   if (pct >= 100) return 'success';

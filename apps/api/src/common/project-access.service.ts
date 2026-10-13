@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { isCompanyWide, canApprove } from '@erp/shared';
+import { APPROVER_ROLES, COMPANY_WIDE_ROLES, isCompanyWide, canApprove } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from './current-user';
 
@@ -32,6 +32,26 @@ export class ProjectAccessService {
     const project = await this.prisma.project.findFirst({ where: { id: projectId, ...this.projectWhere(user) }, select: { id: true } });
     if (!project) throw new NotFoundException('Project not found or not accessible');
     return project;
+  }
+
+  /**
+   * Inverse of the visibility rule: every active user who may approve submissions of this project
+   * (company-wide approvers plus project managers who manage or are a member of it).
+   */
+  async approversForProject(organizationId: string, projectId: string) {
+    return this.prisma.user.findMany({
+      where: {
+        organizationId,
+        isActive: true,
+        role: { key: { in: APPROVER_ROLES } },
+        OR: [
+          { role: { key: { in: COMPANY_WIDE_ROLES } } },
+          { managedProjects: { some: { id: projectId } } },
+          { memberships: { some: { projectId } } },
+        ],
+      },
+      select: { id: true, email: true, fullName: true },
+    });
   }
 
   async assertCanApprove(user: RequestUser, projectId: string) {

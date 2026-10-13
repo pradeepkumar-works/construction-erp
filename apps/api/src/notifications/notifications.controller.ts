@@ -1,0 +1,68 @@
+import { Body, Controller, Delete, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiSecurity, ApiTags } from '@nestjs/swagger';
+import { NotificationsService } from './notifications.service';
+import { NotificationJobsService } from './notification-jobs.service';
+import { JobQuery, ListNotificationsQuery, RegisterPushTokenDto, RemovePushTokenQuery } from './notifications.dto';
+import { CurrentUser, RequestUser } from '../common/current-user';
+import { Public } from '../common/decorators';
+import { CronGuard } from './cron.guard';
+
+@ApiTags('notifications')
+@ApiBearerAuth()
+@Controller('notifications')
+export class NotificationsController {
+  constructor(private notifications: NotificationsService, private jobs: NotificationJobsService) {}
+
+  /** The current user's notifications, newest first, plus the unread count. */
+  @Get()
+  list(@CurrentUser() user: RequestUser, @Query() q: ListNotificationsQuery) {
+    return this.notifications.list(user, q);
+  }
+
+  @Post('read-all')
+  readAll(@CurrentUser() user: RequestUser) {
+    return this.notifications.markAllRead(user);
+  }
+
+  @Get('push-tokens')
+  tokens(@CurrentUser() user: RequestUser) {
+    return this.notifications.listTokens(user);
+  }
+
+  /** Register (or refresh) the Expo push token of this device for the current user. */
+  @Post('push-tokens')
+  registerToken(@CurrentUser() user: RequestUser, @Body() dto: RegisterPushTokenDto) {
+    return this.notifications.registerToken(user, dto);
+  }
+
+  /** Forget a device token (called on sign-out). */
+  @Delete('push-tokens')
+  removeToken(@CurrentUser() user: RequestUser, @Query() q: RemovePushTokenQuery) {
+    return this.notifications.removeToken(user, q.token);
+  }
+
+  @Post(':id/read')
+  read(@CurrentUser() user: RequestUser, @Param('id') id: string) {
+    return this.notifications.markRead(user, id);
+  }
+
+  /* ---------- scheduled jobs (Vercel Cron / curl with CRON_SECRET) ---------- */
+
+  @Public()
+  @UseGuards(CronGuard)
+  @ApiSecurity('cron')
+  @ApiOperation({ summary: 'Daily "DPR not submitted" reminder. Auth: Authorization: Bearer <CRON_SECRET>.' })
+  @Get('jobs/dpr-reminder')
+  dprReminder(@Query() q: JobQuery) {
+    return this.jobs.dprReminder(q.date);
+  }
+
+  @Public()
+  @UseGuards(CronGuard)
+  @ApiSecurity('cron')
+  @ApiOperation({ summary: 'Daily digest of pending approvals (in-app, push and email). Auth: Authorization: Bearer <CRON_SECRET>.' })
+  @Get('jobs/approval-digest')
+  approvalDigest(@Query() q: JobQuery) {
+    return this.jobs.approvalDigest(q.date);
+  }
+}

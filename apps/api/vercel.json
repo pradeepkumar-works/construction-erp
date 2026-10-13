@@ -2,5 +2,9 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nestjs",
   "buildCommand": "sh vercel-build.sh",
-  "regions": ["sin1"]
+  "regions": ["sin1"],
+  "crons": [
+    { "path": "/api/notifications/jobs/approval-digest", "schedule": "30 3 * * *" },
+    { "path": "/api/notifications/jobs/dpr-reminder", "schedule": "30 11 * * *" }
+  ]
 }

@@ -21,6 +21,16 @@ If `EXPO_PUBLIC_API_URL` is not set the app falls back to `http://localhost:4000
 
 Alternatively create `apps/mobile/.env.local` with `EXPO_PUBLIC_API_URL=http://192.168.1.20:4000/api` (ignored by git).
 
+## Push notifications
+
+The app registers its Expo push token with the API after sign-in (`POST /notifications/push-tokens`)
+and forgets it on sign-out. Remote push needs an EAS project id in `app.json`
+(`npx eas-cli@latest init` writes `extra.eas.projectId`) and a development build
+(`npx expo run:android` or `eas build --profile development`); Expo Go on Android cannot receive
+push since SDK 53. The Profile tab shows whether push is on for the device and why not otherwise.
+Tapping a push opens the submission it is about; the bell on Home opens the full list
+(`app/notifications.tsx`), which also works in Expo Go.
+
 ## Demo logins (password `password123`)
 
 | Email | Role | Notes |

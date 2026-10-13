@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from './current-user';
 import { ProjectAccessService } from './project-access.service';
 import { AuditService } from './audit.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 interface SubmissionRow {
   id: string;
@@ -21,7 +22,7 @@ interface SubmissionRow {
  */
 @Injectable()
 export class SubmissionLifecycleService {
-  constructor(private prisma: PrismaService, private access: ProjectAccessService, private audit: AuditService) {}
+  constructor(private prisma: PrismaService, private access: ProjectAccessService, private audit: AuditService, private notifications: NotificationsService) {}
 
   private delegate(type: SubmissionType): any {
     switch (type) {
@@ -49,6 +50,7 @@ export class SubmissionLifecycleService {
     const resubmit = row.status === 'REJECTED' || row.status === 'CHANGES_REQUESTED';
     await this.delegate(type).update({ where: { id }, data: { status: 'SUBMITTED', submittedAt: new Date(), reviewedById: null, reviewedAt: null, reviewNote: null } });
     await this.audit.log(user, type, id, resubmit ? 'RESUBMITTED' : 'SUBMITTED');
+    await this.notifications.onSubmitted(user, type, id);
   }
 
   /** Approver decides on a SUBMITTED entry. */
@@ -59,6 +61,7 @@ export class SubmissionLifecycleService {
     const status = decision === 'APPROVE' ? 'APPROVED' : decision === 'REJECT' ? 'REJECTED' : 'CHANGES_REQUESTED';
     await this.delegate(type).update({ where: { id }, data: { status, reviewedById: user.id, reviewedAt: new Date(), reviewNote: note ?? null } });
     await this.audit.log(user, type, id, status, note);
+    await this.notifications.onReviewed(user, type, id, status, note);
   }
 
   /** Author can edit while DRAFT / REJECTED / CHANGES_REQUESTED; approvers may edit at any time before approval. */
