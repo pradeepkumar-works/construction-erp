@@ -40,7 +40,7 @@ shapes of every API response, so web, mobile and API agree on one contract.
 ## One approval workflow
 
 `SubmissionLifecycleService` owns the state machine used by progress entries, DPRs, material
-requests and machinery logs:
+requests, machinery logs and site expenses:
 
 ```
 DRAFT / REJECTED / CHANGES_REQUESTED --submit--> SUBMITTED --review--> APPROVED | REJECTED | CHANGES_REQUESTED
@@ -54,7 +54,7 @@ and resubmit is decided by `canEditSubmission` / `canResubmit` in `packages/shar
 which the API, web and mobile all use: the author while DRAFT / REJECTED / CHANGES_REQUESTED, and
 approvers until APPROVED. On an edit, `attachmentIds` is the complete list of attachments; files left
 out are detached. Adding a new submission type
-(expense, measurement) means adding a table with the same six status columns, adding the type to
+(for example measurements) means adding a table with the same six status columns, adding the type to
 `SUBMISSION_TYPES` in shared and registering it in the lifecycle service (`delegate`, `pending`) and in
 `NotificationsService.describeSubmission`; the approvals queue, review endpoint and audit trail come
 free. The clients keep a few per-type maps (web drawers on the approvals and notifications pages,
@@ -76,7 +76,7 @@ TypeScript flags when a type is added.
 ## Lists: paging, search, sort and export
 
 `GET /progress`, `/dpr`, `/material-requests`, `/attendance`, `/stock/entries`, `/stock/balances`, `/stock/items`,
-`/machinery-logs`, `/equipment`,
+`/machinery-logs`, `/equipment`, `/expenses`,
 `/projects` and `/users` return `Paginated<T>`
 (`items`, `total`, `page`, `pageSize`). They share `PageQuery` (`apps/api/src/common/paging.ts`):
 
@@ -181,6 +181,27 @@ The store register per project, fed by approved material requests:
 - **Clients.** Web: Machinery page and project tab (daily logs with review, equipment master, Excel
   export of both). Site app: `app/machinery/new.tsx` (offline-capable) and `[id].tsx`, a Submit tile,
   a Machinery segment in My submissions and a section in Approvals.
+
+## Site expenses
+
+- **Table.** `Expense`: project, `expenseNo` (`EXP-<year>-0001` per organisation, allocated under an
+  advisory lock), date, `category` (`ExpenseCategory`), description, vendor, vendor GSTIN, bill number,
+  taxable `amount`, `gstRate`, `gstAmount`, `totalAmount`, `paymentMode`, optional activity, remarks,
+  bill photos and the six status columns.
+- **GST.** The API computes GST as rate × amount (`gstFor` in shared). A bill's own GST may be sent
+  instead and is accepted within ₹1 of the computed figure (bills round per line). Changing the amount
+  or rate on an edit recomputes GST unless the bill's GST comes with it. GSTIN is checked against the
+  15-character pattern.
+- **Roles.** File: `EXPENSE_SUBMITTER_ROLES` (team leader, site engineer, store manager, accounts,
+  approvers). Approve: approvers, as for every submission.
+- **Cost.** Only `APPROVED` expenses are project cost. `GET /expenses/summary` returns, for the same
+  filters as the list, the count, taxable / GST / total, approved and pending totals and totals by
+  category; the web list shows it above the table.
+- **API.** `/expenses` (paged; `projectId`, `status`, `category`, `paymentMode`, `from`, `to`,
+  `noReceipt`, `mine`, `q`) with create / edit / submit / delete, `/expenses/summary`, and review and
+  audit through `/approvals/expense/:id/...`.
+- **Clients.** Web: Site Expenses page and project tab (totals, category chips, filters, Excel export).
+  Site app: `app/expense/new.tsx` (bill photo, GST chips, live total, offline-capable) and `[id].tsx`.
 
 ## Money and quantities
 

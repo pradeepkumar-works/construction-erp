@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import type { DailyReportDto, MachineryLogDto, MaterialRequestDto, Paginated, ProgressEntryDto, SubmissionType } from '@erp/shared';
+import type { DailyReportDto, ExpenseDto, MachineryLogDto, MaterialRequestDto, Paginated, ProgressEntryDto, SubmissionType } from '@erp/shared';
 import { useApi, useFetch, type Api } from '../src/api/hooks';
 import { errorMessage } from '../src/api/client';
 import { Button, EmptyState, ErrorState, Input, Loading, OfflineBanner, Screen, SubmissionRow } from '../src/components';
@@ -13,7 +13,8 @@ const SEGMENTS: { type: SubmissionType; label: string }[] = [
   { type: 'PROGRESS', label: 'Progress' },
   { type: 'DPR', label: 'DPR' },
   { type: 'MATERIAL_REQUEST', label: 'Material' },
-  { type: 'MACHINERY', label: 'Machinery' },
+  { type: 'MACHINERY', label: 'Machines' },
+  { type: 'EXPENSE', label: 'Expenses' },
 ];
 
 type Row = { id: string; title: string; subtitle: string; status: ProgressEntryDto['status']; createdAt: string };
@@ -35,6 +36,10 @@ async function loadPage(api: Api, type: SubmissionType, page: number, q: string)
   if (type === 'MACHINERY') {
     const res = await api.get<Paginated<MachineryLogDto>>('/machinery-logs', params);
     return { total: res.total, rows: res.items.map((l) => ({ id: l.id, title: `${l.equipmentCode} · ${fmtQty(l.hoursWorked)} h`, subtitle: `${l.projectName} · ${formatDate(l.date)}`, status: l.status, createdAt: l.createdAt })) };
+  }
+  if (type === 'EXPENSE') {
+    const res = await api.get<Paginated<ExpenseDto>>('/expenses', params);
+    return { total: res.total, rows: res.items.map((x) => ({ id: x.id, title: `${x.expenseNo} · ₹${Number(x.totalAmount).toLocaleString('en-IN')}`, subtitle: `${x.projectName} · ${x.description}`, status: x.status, createdAt: x.createdAt })) };
   }
   const res = await api.get<Paginated<MaterialRequestDto>>('/material-requests', params);
   return { total: res.total, rows: res.items.map((m) => ({ id: m.id, title: `${m.requestNo} · ${m.items.length} item${m.items.length === 1 ? '' : 's'}`, subtitle: `${m.projectName} · needed ${formatDate(m.requiredDate)}`, status: m.status, createdAt: m.createdAt })) };
@@ -89,7 +94,7 @@ export default function SubmissionsScreen() {
           const active = s.type === type;
           return (
             <Pressable key={s.type} onPress={() => setType(s.type)} style={[styles.segment, active && styles.segmentActive]}>
-              <Text style={[styles.segmentText, active && styles.segmentTextActive]}>{s.label}</Text>
+              <Text numberOfLines={1} adjustsFontSizeToFit style={[styles.segmentText, active && styles.segmentTextActive]}>{s.label}</Text>
             </Pressable>
           );
         })}
@@ -130,7 +135,7 @@ const styles = StyleSheet.create({
   segments: { flexDirection: 'row', margin: spacing.lg, marginBottom: spacing.sm, backgroundColor: colors.neutralSoft, borderRadius: radius.md, padding: 4 },
   segment: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: radius.sm },
   segmentActive: { backgroundColor: colors.surface },
-  segmentText: { fontWeight: '600', color: colors.textMuted, fontSize: 15 },
+  segmentText: { fontWeight: '600', color: colors.textMuted, fontSize: 13 },
   segmentTextActive: { color: colors.primary },
   banner: { paddingHorizontal: spacing.lg },
   search: { marginBottom: 0 },

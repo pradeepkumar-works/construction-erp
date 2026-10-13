@@ -61,6 +61,29 @@ enum EquipmentRateUnit {
   MONTH
 }
 
+/// Site expense heads. Kept short so the accounts team can map them to ledgers.
+enum ExpenseCategory {
+  FUEL
+  TRANSPORT
+  REPAIRS
+  MATERIAL_LOCAL
+  LABOUR
+  FOOD_WELFARE
+  TRAVEL
+  RENT_UTILITIES
+  OFFICE
+  SAFETY
+  OTHER
+}
+
+enum PaymentMode {
+  CASH
+  UPI
+  BANK
+  CARD
+  CREDIT
+}
+
 enum Weather {
   SUNNY
   CLOUDY
@@ -112,6 +135,7 @@ model Organization {
   stockMinLevels   StockMinLevel[]
   equipment        Equipment[]
   machineryLogs    MachineryLog[]
+  expenses         Expense[]
 }
 
 model Role {
@@ -161,6 +185,8 @@ model User {
   stockMinLevels      StockMinLevel[]
   submittedMachinery  MachineryLog[]    @relation("MachinerySubmitter")
   reviewedMachinery   MachineryLog[]    @relation("MachineryReviewer")
+  submittedExpenses   Expense[]         @relation("ExpenseSubmitter")
+  reviewedExpenses    Expense[]         @relation("ExpenseReviewer")
 
   @@unique([organizationId, email])
   @@index([organizationId])
@@ -202,6 +228,7 @@ model Project {
   stockMinLevels   StockMinLevel[]
   equipment        Equipment[]
   machineryLogs    MachineryLog[]
+  expenses         Expense[]
 
   @@unique([organizationId, code])
   @@index([organizationId, status])
@@ -265,6 +292,7 @@ model Activity {
   progressEntries ProgressEntry[]
   stockEntries    StockEntry[]
   machineryLogs   MachineryLog[]
+  expenses        Expense[]
 
   @@index([projectId])
   @@index([organizationId])
@@ -590,6 +618,49 @@ model MachineryLog {
   @@index([organizationId, status])
 }
 
+/// A site expense paid at the project (bill with GST), approved like other submissions. Approved expenses are project cost.
+model Expense {
+  id             String           @id @default(uuid())
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  /// EXP-<year>-0001 per organisation
+  expenseNo      String
+  date           DateTime         @db.Date
+  category       ExpenseCategory
+  description    String
+  vendor         String?
+  vendorGstin    String?
+  billNo         String?
+  /// Taxable value
+  amount         Decimal          @db.Decimal(18, 2)
+  gstRate        Decimal          @default(0) @db.Decimal(5, 2)
+  gstAmount      Decimal          @default(0) @db.Decimal(18, 2)
+  totalAmount    Decimal          @db.Decimal(18, 2)
+  paymentMode    PaymentMode      @default(CASH)
+  activityId     String?
+  activity       Activity?        @relation(fields: [activityId], references: [id], onDelete: SetNull)
+  remarks        String?
+  status         SubmissionStatus @default(DRAFT)
+  submittedById  String
+  submittedBy    User             @relation("ExpenseSubmitter", fields: [submittedById], references: [id])
+  submittedAt    DateTime?
+  reviewedById   String?
+  reviewedBy     User?            @relation("ExpenseReviewer", fields: [reviewedById], references: [id])
+  reviewedAt     DateTime?
+  reviewNote     String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  attachments Attachment[]
+
+  @@unique([organizationId, expenseNo])
+  @@index([projectId, status])
+  @@index([organizationId, status])
+  @@index([projectId, date])
+}
+
 model Attachment {
   id                String           @id @default(uuid())
   organizationId    String
@@ -613,6 +684,8 @@ model Attachment {
   stockEntry        StockEntry?      @relation(fields: [stockEntryId], references: [id], onDelete: Cascade)
   machineryLogId    String?
   machineryLog      MachineryLog?    @relation(fields: [machineryLogId], references: [id], onDelete: Cascade)
+  expenseId         String?
+  expense           Expense?         @relation(fields: [expenseId], references: [id], onDelete: Cascade)
   createdAt         DateTime         @default(now())
 
   @@index([organizationId])

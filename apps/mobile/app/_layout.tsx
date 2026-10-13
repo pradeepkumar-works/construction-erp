@@ -44,6 +44,8 @@ function RootNavigator() {
         <Stack.Screen name="stock/issue" options={{ title: 'Issue Material' }} />
         <Stack.Screen name="machinery/new" options={{ title: 'Log Machinery' }} />
         <Stack.Screen name="machinery/[id]" options={{ title: 'Machinery Log' }} />
+        <Stack.Screen name="expense/new" options={{ title: 'New Site Expense' }} />
+        <Stack.Screen name="expense/[id]" options={{ title: 'Site Expense' }} />
       </Stack.Protected>
     </Stack>
   );

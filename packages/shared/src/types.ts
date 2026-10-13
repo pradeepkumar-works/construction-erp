@@ -1,6 +1,8 @@
 import type {
   EquipmentOwnership,
   EquipmentRateUnit,
+  ExpenseCategory,
+  PaymentMode,
   MaterialPriority,
   NotificationType,
   ProjectStatus,
@@ -441,6 +443,40 @@ export interface MachineryLogDto extends SubmissionBase {
   workDone: string | null;
   breakdownNote: string | null;
   remarks: string | null;
+}
+
+/* ---------- site expenses ---------- */
+
+export interface ExpenseDto extends SubmissionBase {
+  expenseNo: string;
+  date: string;
+  category: ExpenseCategory;
+  description: string;
+  vendor: string | null;
+  vendorGstin: string | null;
+  billNo: string | null;
+  /** Taxable value */
+  amount: string;
+  gstRate: string;
+  gstAmount: string;
+  totalAmount: string;
+  paymentMode: PaymentMode;
+  activityId: string | null;
+  activityName: string | null;
+  remarks: string | null;
+}
+
+/** Totals for the expenses matching a list filter, split by category; amounts are totals including GST. */
+export interface ExpenseSummaryDto {
+  count: number;
+  amount: string;
+  gstAmount: string;
+  totalAmount: string;
+  /** Approved only: what counts as project cost. */
+  approvedTotal: string;
+  /** Submitted and waiting for approval. */
+  pendingTotal: string;
+  byCategory: { category: ExpenseCategory; count: number; totalAmount: string }[];
 }
 
 export interface Paginated<T> {

@@ -13,6 +13,7 @@ export const TYPE_ICON: Record<EntryType, keyof typeof Ionicons.glyphMap> = {
   DPR: 'document-text',
   MATERIAL_REQUEST: 'cube',
   MACHINERY: 'construct',
+  EXPENSE: 'wallet',
   ATTENDANCE: 'people',
 };
 
@@ -21,6 +22,7 @@ export const TYPE_SHORT: Record<EntryType, string> = {
   DPR: 'DPR',
   MATERIAL_REQUEST: 'Material',
   MACHINERY: 'Machinery',
+  EXPENSE: 'Expense',
   ATTENDANCE: 'Attendance',
 };
 

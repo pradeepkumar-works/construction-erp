@@ -12,6 +12,7 @@ import { ProgressModule } from './progress/progress.module';
 import { DprModule } from './dpr/dpr.module';
 import { StockModule } from './stock/stock.module';
 import { MachineryModule } from './machinery/machinery.module';
+import { ExpensesModule } from './expenses/expenses.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { MaterialRequestsModule } from './material-requests/material-requests.module';
 import { ApprovalsModule } from './approvals/approvals.module';
@@ -35,6 +36,7 @@ import { HealthController } from './health.controller';
     MaterialRequestsModule,
     StockModule,
     MachineryModule,
+    ExpensesModule,
     ApprovalsModule,
     DashboardModule,
     UploadsModule,

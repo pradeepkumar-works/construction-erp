@@ -34,6 +34,8 @@ contractors after the first client is live.
 - Machinery: equipment master (owned / hired, hire rate, where deployed) and a daily log per machine
   (hours worked, idle, breakdown, hour meter, diesel) filed from the site app, offline too, and
   approved by the PM like any other submission. Web Machinery page and project tab with Excel export.
+- Site expenses: bills paid at site with category, vendor GSTIN, taxable value, GST and the bill photo,
+  approved by the PM; approved expenses are project cost. Totals by category and status on the web page.
 - Edit and resubmit: a rejected or changes-requested entry is fixed in place (web drawer or site app)
   and sent back for approval with the reviewer's note shown alongside the form.
 - Dashboards: company (projects, contract value, pending approvals, delayed activities, DPRs

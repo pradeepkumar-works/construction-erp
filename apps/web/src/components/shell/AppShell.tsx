@@ -13,6 +13,7 @@ import {
   FileTextOutlined,
   InboxOutlined,
   ToolOutlined,
+  WalletOutlined,
   LineChartOutlined,
   LogoutOutlined,
   MenuOutlined,
@@ -81,6 +82,7 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
       { key: '/material-requests', icon: <ShoppingCartOutlined />, label: <Link href="/material-requests">Material Requests</Link> },
       { key: '/stock', icon: <InboxOutlined />, label: <Link href="/stock">Stock</Link> },
       { key: '/machinery', icon: <ToolOutlined />, label: <Link href="/machinery">Machinery</Link> },
+      { key: '/expenses', icon: <WalletOutlined />, label: <Link href="/expenses">Site Expenses</Link> },
       { key: '/notifications', icon: <BellOutlined />, label: <Link href="/notifications">Notifications</Link> },
     ];
     if (canManageUsers(user.roleKey)) {

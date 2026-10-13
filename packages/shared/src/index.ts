@@ -6,3 +6,4 @@ export * from './paging';
 export * from './attendance';
 export * from './stock';
 export * from './machinery';
+export * from './expense';

@@ -52,7 +52,12 @@ Order matters: each item builds on the previous one.
    photos. One log per machine per day unless rejected. Approvals queue, notifications and audit trail as
    for the other types. Web Machinery page and project tab (logs, equipment, Excel export); site-app form
    that also works offline. Rates are shown to approvers only and feed the cost view (item 10).
-8. **Site expenses**: category, amount, GST, receipt photo, approval; posts to project cost.
+8. ~~**Site expenses**: category, amount, GST, receipt photo, approval; posts to project cost.~~ Done:
+   `Expense` (numbered EXP-<year>-0001) with category, vendor and GSTIN, bill number, taxable value, GST
+   rate and amount (typed GST accepted within ₹1 of the rate), payment mode and bill photos. Fifth
+   submission type (`EXPENSE`) in the shared lifecycle. `GET /expenses/summary` gives totals by status
+   and category; approved expenses are what the cost view counts. Web Site Expenses page and project tab
+   with totals and Excel export; site-app form with bill photo that also works offline.
 9. **Measurement book**: measurements by BOQ item and location with dimensions; rollup to executed
    quantity (replaces or complements activity progress for billing).
 

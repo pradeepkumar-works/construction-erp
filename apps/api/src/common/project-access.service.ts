@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { APPROVER_ROLES, COMPANY_WIDE_ROLES, isCompanyWide, canAdjustStock, canApprove, canKeepStock, canLogMachinery, canManageEquipment, canManageStore, canRecordAttendance } from '@erp/shared';
+import { APPROVER_ROLES, COMPANY_WIDE_ROLES, isCompanyWide, canAdjustStock, canApprove, canKeepStock, canLogMachinery, canManageEquipment, canManageStore, canRecordAttendance, canSubmitExpense } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from './current-user';
 
@@ -86,6 +86,12 @@ export class ProjectAccessService {
   /** File or edit a machinery log: a logger role with access to the project. */
   async assertCanLogMachinery(user: RequestUser, projectId: string) {
     if (!canLogMachinery(user.roleKey)) throw new ForbiddenException('Your role cannot log machinery');
+    await this.assertCanAccessProject(user, projectId);
+  }
+
+  /** File or edit a site expense: an expense role with access to the project. */
+  async assertCanSubmitExpense(user: RequestUser, projectId: string) {
+    if (!canSubmitExpense(user.roleKey)) throw new ForbiddenException('Your role cannot file site expenses');
     await this.assertCanAccessProject(user, projectId);
   }
 
