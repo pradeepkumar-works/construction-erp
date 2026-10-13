@@ -1,0 +1,9 @@
+**/node_modules
+**/dist
+**/.next
+**/.expo
+**/.turbo
+**/uploads
+apps/mobile
+apps/web
+.git

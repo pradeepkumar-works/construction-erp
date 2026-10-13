@@ -1,16 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import type { AttachmentDto } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
+import { StorageService } from './storage.service';
 import { RequestUser } from './current-user';
 
 type Parent = 'progressEntryId' | 'dailyReportId' | 'materialRequestId';
 
 @Injectable()
 export class AttachmentsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private storage: StorageService) {}
 
   toDto(a: { id: string; fileName: string; mimeType: string; size: number; storagePath: string; createdAt: Date }): AttachmentDto {
-    return { id: a.id, fileName: a.fileName, mimeType: a.mimeType, size: a.size, url: `/uploads/${a.storagePath}`, createdAt: a.createdAt.toISOString() };
+    return { id: a.id, fileName: a.fileName, mimeType: a.mimeType, size: a.size, url: this.storage.toUrl(a.storagePath), createdAt: a.createdAt.toISOString() };
   }
 
   /** Link previously uploaded (orphan) attachments to a parent entity. Only the uploader's own files within the org. */
