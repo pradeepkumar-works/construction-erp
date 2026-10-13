@@ -2,7 +2,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { canKeepStock, canLogMachinery, canRecordAttendance } from '@erp/shared';
+import { canKeepStock, canLogMachinery, canRecordAttendance, canSubmitExpense } from '@erp/shared';
 import { useAuth } from '../../src/auth/AuthContext';
 import { Button, Screen } from '../../src/components';
 import { colors, radius, shadow, spacing, typography } from '../../src/theme';
@@ -17,6 +17,8 @@ const ATTENDANCE = { href: '/attendance', icon: 'people' as const, tone: colors.
 
 const MACHINERY = { href: '/machinery/new', icon: 'construct' as const, tone: '#b45309', title: 'Machinery log', text: 'A machine’s day: hours worked, idle, breakdown and diesel.' };
 
+const EXPENSE = { href: '/expense/new', icon: 'wallet' as const, tone: '#7c3aed', title: 'Site expense', text: 'A bill paid at site, with GST and the bill photo.' };
+
 const STOCK = [
   { href: '/stock/receive', icon: 'download' as const, tone: colors.success, title: 'Receive material (GRN)', text: 'Delivery against an approved material request, with the challan photo.' },
   { href: '/stock/issue', icon: 'arrow-up-circle' as const, tone: colors.info, title: 'Issue material', text: 'Material handed out at site, from the stock on hand.' },
@@ -29,11 +31,12 @@ export default function SubmitHub() {
     ...(user && canRecordAttendance(user.roleKey) ? [ATTENDANCE] : []),
     ...FORMS,
     ...(user && canLogMachinery(user.roleKey) ? [MACHINERY] : []),
+    ...(user && canSubmitExpense(user.roleKey) ? [EXPENSE] : []),
     ...(user && canKeepStock(user.roleKey) ? STOCK : []),
   ];
   return (
     <Screen>
-      <Text style={typography.caption}>Choose what to submit. Progress, DPRs, material requests and machinery logs go straight to your project manager for approval.</Text>
+      <Text style={typography.caption}>Choose what to submit. Progress, DPRs, material requests, machinery logs and expenses go straight to your project manager for approval.</Text>
       <View style={styles.list}>
         {forms.map((f) => (
           <Pressable key={f.href} onPress={() => router.push(f.href)} style={({ pressed }) => [styles.tile, pressed && styles.pressed]}>

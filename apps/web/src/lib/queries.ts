@@ -4,6 +4,10 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import type {
   EquipmentDto,
   EquipmentOwnership,
+  ExpenseCategory,
+  ExpenseDto,
+  ExpenseSummaryDto,
+  PaymentMode,
   ItemDto,
   MachineryLogDto,
   ReceivableRequestDto,
@@ -46,13 +50,14 @@ export interface RoleDto {
   name: string;
 }
 
-export type ApprovalTypeParam = 'progress' | 'dpr' | 'material_request' | 'machinery';
+export type ApprovalTypeParam = 'progress' | 'dpr' | 'material_request' | 'machinery' | 'expense';
 
 export const approvalTypeParam: Record<SubmissionType, ApprovalTypeParam> = {
   PROGRESS: 'progress',
   DPR: 'dpr',
   MATERIAL_REQUEST: 'material_request',
   MACHINERY: 'machinery',
+  EXPENSE: 'expense',
 };
 
 /** Paging, search and sort understood by every paged list endpoint. */
@@ -113,6 +118,14 @@ export interface EquipmentFilters extends PageParams {
   projectId?: string;
   ownership?: EquipmentOwnership;
   includeInactive?: boolean;
+}
+
+export interface ExpenseFilters extends ListFilters {
+  category?: ExpenseCategory;
+  paymentMode?: PaymentMode;
+  from?: string;
+  to?: string;
+  noReceipt?: boolean;
 }
 
 export const clean = (f?: object) =>
@@ -294,6 +307,28 @@ export const useEquipment = (filters?: EquipmentFilters, enabled = true) =>
     queryFn: async () => (await api.get<Paginated<EquipmentDto>>('/equipment', { params: clean(filters) })).data,
     placeholderData: keepPreviousData,
     enabled,
+  });
+
+export const useExpenses = (filters?: ExpenseFilters) =>
+  useQuery({
+    queryKey: ['expenses', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<ExpenseDto>>('/expenses', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+  });
+
+/** Totals for the same filters as the list (paging and sort are ignored by the API). */
+export const useExpenseSummary = (filters?: ExpenseFilters) =>
+  useQuery({
+    queryKey: ['expenses', 'summary', clean({ ...filters, page: undefined, pageSize: undefined, sortBy: undefined, sortOrder: undefined })],
+    queryFn: async () => (await api.get<ExpenseSummaryDto>('/expenses/summary', { params: clean({ ...filters, page: undefined, pageSize: undefined, sortBy: undefined, sortOrder: undefined }) })).data,
+    placeholderData: keepPreviousData,
+  });
+
+export const useExpense = (id: string | undefined) =>
+  useQuery({
+    queryKey: ['expenses', 'detail', id],
+    queryFn: async () => (await api.get<ExpenseDto>(`/expenses/${id}`)).data,
+    enabled: !!id,
   });
 
 /** Approved material requests with something still to receive (GRN form). */

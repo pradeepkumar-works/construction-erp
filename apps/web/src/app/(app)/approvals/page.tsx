@@ -16,8 +16,9 @@ import { ProgressDrawer } from '@/components/progress/ProgressDrawer';
 import { DprDrawer } from '@/components/dpr/DprDrawer';
 import { MrDrawer } from '@/components/material/MrDrawer';
 import { MachineryDrawer } from '@/components/machinery/MachineryDrawer';
+import { ExpenseDrawer } from '@/components/expenses/ExpenseDrawer';
 
-const TYPE_COLORS: Record<SubmissionType, string> = { PROGRESS: 'blue', DPR: 'purple', MATERIAL_REQUEST: 'cyan', MACHINERY: 'orange' };
+const TYPE_COLORS: Record<SubmissionType, string> = { PROGRESS: 'blue', DPR: 'purple', MATERIAL_REQUEST: 'cyan', MACHINERY: 'orange', EXPENSE: 'gold' };
 
 export default function ApprovalsPage() {
   const { user } = useAuth();
@@ -63,6 +64,7 @@ export default function ApprovalsPage() {
               { value: 'DPR', label: `DPR (${counts.DPR ?? 0})` },
               { value: 'MATERIAL_REQUEST', label: `Material (${counts.MATERIAL_REQUEST ?? 0})` },
               { value: 'MACHINERY', label: `Machinery (${counts.MACHINERY ?? 0})` },
+              { value: 'EXPENSE', label: `Expenses (${counts.EXPENSE ?? 0})` },
             ]}
           />
           <ProjectSelect value={projectId} onChange={(v) => setProjectId(v)} />
@@ -82,6 +84,7 @@ export default function ApprovalsPage() {
       <DprDrawer id={open?.type === 'DPR' ? open.id : null} open={open?.type === 'DPR'} onClose={() => setOpen(null)} />
       <MrDrawer id={open?.type === 'MATERIAL_REQUEST' ? open.id : null} open={open?.type === 'MATERIAL_REQUEST'} onClose={() => setOpen(null)} />
       <MachineryDrawer id={open?.type === 'MACHINERY' ? open.id : null} open={open?.type === 'MACHINERY'} onClose={() => setOpen(null)} />
+      <ExpenseDrawer id={open?.type === 'EXPENSE' ? open.id : null} open={open?.type === 'EXPENSE'} onClose={() => setOpen(null)} />
     </div>
   );
 }

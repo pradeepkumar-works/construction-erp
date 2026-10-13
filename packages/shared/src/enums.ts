@@ -15,7 +15,7 @@ export type ReviewDecision = (typeof REVIEW_DECISIONS)[number];
 export const MATERIAL_PRIORITIES = ['LOW', 'NORMAL', 'HIGH', 'URGENT'] as const;
 export type MaterialPriority = (typeof MATERIAL_PRIORITIES)[number];
 
-export const SUBMISSION_TYPES = ['PROGRESS', 'DPR', 'MATERIAL_REQUEST', 'MACHINERY'] as const;
+export const SUBMISSION_TYPES = ['PROGRESS', 'DPR', 'MATERIAL_REQUEST', 'MACHINERY', 'EXPENSE'] as const;
 export type SubmissionType = (typeof SUBMISSION_TYPES)[number];
 
 export const ROLE_KEYS = [
@@ -60,3 +60,9 @@ export type EquipmentOwnership = (typeof EQUIPMENT_OWNERSHIPS)[number];
 /** What an equipment rate is quoted per. */
 export const EQUIPMENT_RATE_UNITS = ['HOUR', 'DAY', 'MONTH'] as const;
 export type EquipmentRateUnit = (typeof EQUIPMENT_RATE_UNITS)[number];
+
+export const EXPENSE_CATEGORIES = ['FUEL', 'TRANSPORT', 'REPAIRS', 'MATERIAL_LOCAL', 'LABOUR', 'FOOD_WELFARE', 'TRAVEL', 'RENT_UTILITIES', 'OFFICE', 'SAFETY', 'OTHER'] as const;
+export type ExpenseCategory = (typeof EXPENSE_CATEGORIES)[number];
+
+export const PAYMENT_MODES = ['CASH', 'UPI', 'BANK', 'CARD', 'CREDIT'] as const;
+export type PaymentMode = (typeof PAYMENT_MODES)[number];

@@ -180,6 +180,29 @@ jobs:
           curl -sf "$API_URL/equipment/$EQ" -H "$H" | jq -e '.rate == "1000.00" and .lastLogDate == "2000-01-03"' > /dev/null
           cleanup
           curl -sf "$API_URL/equipment?q=SMOKE-01&includeInactive=true" -H "$H" | jq -e '.total == 0' > /dev/null
+      - name: Site expense with GST
+        run: |
+          set -e
+          TOKEN=$(curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' \
+            -d '{"email":"pm@demo.com","password":"password123"}' | jq -r .accessToken)
+          H="authorization: Bearer $TOKEN"
+          PROJECT=$(curl -sf "$API_URL/projects" -H "$H" | jq -r '.items[0].id')
+          cleanup() {
+            for X in $(curl -sf "$API_URL/expenses?q=Smoke%20test%20expense&pageSize=50" -H "$H" | jq -r '.items[].id'); do curl -sf -X DELETE "$API_URL/expenses/$X" -H "$H" > /dev/null; done
+          }
+          cleanup
+          CID=$(cat /proc/sys/kernel/random/uuid)
+          # A draft (submit:false) so the run sends no approval notifications
+          BODY="{\"id\":\"$CID\",\"projectId\":\"$PROJECT\",\"date\":\"2000-01-03\",\"category\":\"REPAIRS\",\"description\":\"Smoke test expense\",\"amount\":\"1000\",\"gstRate\":\"18\",\"submit\":false}"
+          A=$(curl -sf -X POST "$API_URL/expenses" -H "$H" -H 'content-type: application/json' -d "$BODY" | jq -r '.expenseNo + " " + .gstAmount + " " + .totalAmount')
+          B=$(curl -sf -X POST "$API_URL/expenses" -H "$H" -H 'content-type: application/json' -d "$BODY" | jq -r '.expenseNo + " " + .gstAmount + " " + .totalAmount')
+          echo "expense: $A, retry: $B"; [ "$A" = "$B" ]; echo "$A" | grep -q ' 180.00 1180.00$'
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/expenses" -H "$H" -H 'content-type: application/json' \
+            -d "{\"projectId\":\"$PROJECT\",\"date\":\"2000-01-03\",\"category\":\"REPAIRS\",\"description\":\"Smoke test expense\",\"amount\":\"1000\",\"gstRate\":\"18\",\"gstAmount\":\"150\",\"submit\":false}")
+          echo "GST not matching the rate: $code"; [ "$code" = "400" ]
+          curl -sf "$API_URL/expenses/summary?q=Smoke%20test%20expense" -H "$H" | jq -e '.count == 1 and .totalAmount == "1180.00" and .approvedTotal == "0.00"' > /dev/null
+          cleanup
+          curl -sf "$API_URL/expenses/summary?projectId=$PROJECT" -H "$H" | jq -r '"project expenses: \(.count), approved ₹\(.approvedTotal), pending ₹\(.pendingTotal)"'
       - name: Paged lists with search and sort
         run: |
           set -e

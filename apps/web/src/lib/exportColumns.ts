@@ -1,6 +1,8 @@
 import {
   EQUIPMENT_OWNERSHIP_LABELS,
   EQUIPMENT_RATE_UNIT_LABELS,
+  EXPENSE_CATEGORY_LABELS,
+  PAYMENT_MODE_LABELS,
   MATERIAL_PRIORITY_LABELS,
   PROJECT_STATUS_LABELS,
   PROJECT_TYPE_LABELS,
@@ -12,6 +14,7 @@ import {
   type AttendanceSheetDto,
   type DailyReportDto,
   type EquipmentDto,
+  type ExpenseDto,
   type MachineryLogDto,
   type MaterialRequestDto,
   type ProgressEntryDto,
@@ -224,4 +227,26 @@ export const EQUIPMENT_EXPORT: ExportColumn<EquipmentDto>[] = [
   { header: 'Deployed at', value: (r) => r.projectName ?? 'Yard / unassigned', width: 34 },
   { header: 'Last log', value: (r) => r.lastLogDate },
   { header: 'Active', value: (r) => (r.isActive ? 'Yes' : 'No') },
+];
+
+export const EXPENSE_EXPORT: ExportColumn<ExpenseDto>[] = [
+  { header: 'Expense no.', value: (r) => r.expenseNo, width: 15 },
+  { header: 'Date', value: (r) => r.date, width: 12 },
+  { header: 'Project', value: (r) => r.projectName, width: 34 },
+  { header: 'Category', value: (r) => EXPENSE_CATEGORY_LABELS[r.category], width: 22 },
+  { header: 'Description', value: (r) => r.description, width: 36 },
+  { header: 'Vendor', value: (r) => r.vendor, width: 24 },
+  { header: 'Vendor GSTIN', value: (r) => r.vendorGstin, width: 18 },
+  { header: 'Bill no.', value: (r) => r.billNo, width: 12 },
+  { header: 'Taxable', value: (r) => toNumber(r.amount) },
+  { header: 'GST %', value: (r) => toNumber(r.gstRate) },
+  { header: 'GST', value: (r) => toNumber(r.gstAmount) },
+  { header: 'Total', value: (r) => toNumber(r.totalAmount) },
+  { header: 'Paid by', value: (r) => PAYMENT_MODE_LABELS[r.paymentMode], width: 18 },
+  { header: 'Activity', value: (r) => r.activityName, width: 26 },
+  { header: 'Bill photos', value: (r) => r.attachments.length },
+  { header: 'Remarks', value: (r) => r.remarks, width: 30 },
+  { header: 'Submitted by', value: (r) => r.submittedByName, width: 20 },
+  { header: 'Status', value: (r) => status(r.status), width: 18 },
+  ...review,
 ];

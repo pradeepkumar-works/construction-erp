@@ -17,6 +17,7 @@ import { ActivitiesTab } from '@/components/activities/ActivitiesTab';
 import { ProgressList } from '@/components/progress/ProgressList';
 import { DprList } from '@/components/dpr/DprList';
 import { MachineryPanel } from '@/components/machinery/MachineryPanel';
+import { ExpenseList } from '@/components/expenses/ExpenseList';
 import { StockPanel } from '@/components/stock/StockPanel';
 import { AttendanceList } from '@/components/attendance/AttendanceList';
 import { MrList } from '@/components/material/MrList';
@@ -90,6 +91,7 @@ export default function ProjectDetailPage() {
             { key: 'material', label: 'Material Requests', children: <MrList projectId={project.id} newLabel="New material request" /> },
             { key: 'stock', label: 'Stock', children: <StockPanel projectId={project.id} /> },
             { key: 'machinery', label: 'Machinery', children: <MachineryPanel projectId={project.id} /> },
+            { key: 'expenses', label: 'Expenses', children: <ExpenseList projectId={project.id} /> },
           ]}
         />
       </Card>

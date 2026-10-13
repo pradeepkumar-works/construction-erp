@@ -6,7 +6,7 @@ import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { dateOnly, iso } from '../common/serialize';
 import { ExpoPushService } from './expo-push.service';
-import { machineryTitle } from '../common/machinery-title';
+import { expenseTitle, machineryTitle } from '../common/submission-titles';
 import { ListNotificationsQuery, RegisterPushTokenDto } from './notifications.dto';
 
 export interface NotifyInput {
@@ -25,7 +25,7 @@ export interface NotifyInput {
 const include = { project: { select: { name: true } } } satisfies Prisma.NotificationInclude;
 type Row = Prisma.NotificationGetPayload<{ include: typeof include }>;
 
-const SUBMISSION_LABEL: Record<SubmissionType, string> = { PROGRESS: 'Progress entry', DPR: 'DPR', MATERIAL_REQUEST: 'Material request', MACHINERY: 'Machinery log' };
+const SUBMISSION_LABEL: Record<SubmissionType, string> = { PROGRESS: 'Progress entry', DPR: 'DPR', MATERIAL_REQUEST: 'Material request', MACHINERY: 'Machinery log', EXPENSE: 'Site expense' };
 
 /**
  * Creates in-app notifications and pushes them to the users' devices.
@@ -184,6 +184,10 @@ export class NotificationsService {
         return l
           ? { title: machineryTitle(l.equipment.code, l.equipment.name, l.hoursWorked.toString(), l.breakdownHours.toString(), dateOnly(l.date)!), projectId: l.projectId, projectName: l.project.name, submittedById: l.submittedById }
           : null;
+      }
+      case 'EXPENSE': {
+        const x = await this.prisma.expense.findUnique({ where: { id }, include: { project: { select: { name: true } } } });
+        return x ? { title: expenseTitle(x.expenseNo, x.totalAmount.toFixed(2), x.description), projectId: x.projectId, projectName: x.project.name, submittedById: x.submittedById } : null;
       }
     }
   }

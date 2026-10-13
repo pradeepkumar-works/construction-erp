@@ -19,7 +19,7 @@ export interface OutboxItem {
   id: string;
   userId: string;
   type: OutboxType;
-  /** Request body for POST /progress, /dpr, /material-requests, /machinery-logs or /attendance, without id and attachmentIds. */
+  /** Request body for POST /progress, /dpr, /material-requests, /machinery-logs, /expenses or /attendance, without id and attachmentIds. */
   payload: Record<string, unknown>;
   photos: OutboxPhoto[];
   /** Display strings for the outbox list. */
@@ -36,6 +36,7 @@ export const OUTBOX_PATH: Record<OutboxType, string> = {
   DPR: '/dpr',
   MATERIAL_REQUEST: '/material-requests',
   MACHINERY: '/machinery-logs',
+  EXPENSE: '/expenses',
   ATTENDANCE: '/attendance',
 };
 
@@ -44,4 +45,5 @@ export const OUTBOX_DETAIL: Record<SubmissionType, string> = {
   DPR: '/dpr/',
   MATERIAL_REQUEST: '/material-request/',
   MACHINERY: '/machinery/',
+  EXPENSE: '/expense/',
 };

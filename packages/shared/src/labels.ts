@@ -1,4 +1,4 @@
-import type { EquipmentOwnership, EquipmentRateUnit, MaterialPriority, NotificationType, ProjectStatus, ProjectType, RoleKey, StockEntryType, SubmissionStatus, SubmissionType, Weather } from './enums';
+import type { EquipmentOwnership, ExpenseCategory, PaymentMode, EquipmentRateUnit, MaterialPriority, NotificationType, ProjectStatus, ProjectType, RoleKey, StockEntryType, SubmissionStatus, SubmissionType, Weather } from './enums';
 
 export const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {
   ROAD: 'Road / Infrastructure',
@@ -27,6 +27,7 @@ export const SUBMISSION_TYPE_LABELS: Record<SubmissionType, string> = {
   DPR: 'Daily Progress Report',
   MATERIAL_REQUEST: 'Material Request',
   MACHINERY: 'Machinery Log',
+  EXPENSE: 'Site Expense',
 };
 
 export const MATERIAL_PRIORITY_LABELS: Record<MaterialPriority, string> = {
@@ -92,4 +93,26 @@ export const EQUIPMENT_RATE_UNIT_LABELS: Record<EquipmentRateUnit, string> = {
   HOUR: 'per hour',
   DAY: 'per day',
   MONTH: 'per month',
+};
+
+export const EXPENSE_CATEGORY_LABELS: Record<ExpenseCategory, string> = {
+  FUEL: 'Fuel',
+  TRANSPORT: 'Transport / hiring',
+  REPAIRS: 'Repairs & maintenance',
+  MATERIAL_LOCAL: 'Local material purchase',
+  LABOUR: 'Labour payment',
+  FOOD_WELFARE: 'Food & welfare',
+  TRAVEL: 'Travel',
+  RENT_UTILITIES: 'Rent & utilities',
+  OFFICE: 'Site office',
+  SAFETY: 'Safety items',
+  OTHER: 'Other',
+};
+
+export const PAYMENT_MODE_LABELS: Record<PaymentMode, string> = {
+  CASH: 'Cash (petty cash)',
+  UPI: 'UPI',
+  BANK: 'Bank transfer',
+  CARD: 'Card',
+  CREDIT: 'On credit (to be paid)',
 };

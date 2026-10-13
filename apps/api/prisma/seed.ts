@@ -2,6 +2,7 @@
  * activities, approved and pending progress, DPRs and material requests. Safe to re-run. */
 import { PrismaClient, Prisma } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
+import { deflateSync } from 'zlib';
 
 const prisma = new PrismaClient();
 const D = (v: string | number) => new Prisma.Decimal(v);
@@ -100,6 +101,7 @@ async function main() {
     await seedAttendance(org.id);
     await seedStock(org.id);
     await seedMachinery(org.id);
+    await seedExpenses(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
   }
@@ -244,6 +246,7 @@ async function main() {
   await seedAttendance(org.id);
   await seedStock(org.id);
   await seedMachinery(org.id);
+  await seedExpenses(org.id);
 
   console.log('Seed complete. Login with any of these (password: password123):');
   for (const u of USERS) console.log(`  ${u.email.padEnd(24)} ${u.role}`);
@@ -476,6 +479,112 @@ async function seedMachinery(organizationId: string) {
     // One idle machine at the yard, never logged
     if (project.type === 'ROAD' && !(await prisma.equipment.count({ where: { organizationId, code: 'TIP-07' } })))
       await prisma.equipment.create({ data: { organizationId, code: 'TIP-07', name: 'Tipper 16 cum', category: 'Transport', ownership: 'OWNED', rate: D('9000'), rateUnit: 'DAY', registrationNo: 'OD-02-AK-4471' } });
+  }
+}
+
+/** A small PNG that looks like a printed bill (white slip, grey text lines, a total bar). No image library needed. */
+function billImage(): Buffer {
+  const w = 120, h = 160;
+  const raw = Buffer.alloc((w * 3 + 1) * h);
+  for (let y = 0; y < h; y++) {
+    raw[y * (w * 3 + 1)] = 0;
+    for (let x = 0; x < w; x++) {
+      const margin = x < 10 || x >= w - 10 || y < 10 || y >= h - 10;
+      const line = !margin && y >= 24 && y < 120 && y % 12 < 3 && x < (y % 24 < 12 ? 100 : 80);
+      const header = !margin && y >= 12 && y < 18 && x > 30 && x < 90;
+      const total = !margin && y >= 130 && y < 138 && x > 60;
+      const [r, g, b] = margin ? [226, 232, 240] : header || total ? [30, 64, 120] : line ? [148, 163, 184] : [255, 255, 255];
+      const o = y * (w * 3 + 1) + 1 + x * 3;
+      raw[o] = r; raw[o + 1] = g; raw[o + 2] = b;
+    }
+  }
+  const crcTable = Array.from({ length: 256 }, (_, n) => { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; return c >>> 0; });
+  const crc = (buf: Buffer) => { let c = 0xffffffff; for (const byte of buf) c = crcTable[(c ^ byte) & 0xff] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; };
+  const chunk = (type: string, data: Buffer) => {
+    const len = Buffer.alloc(4); len.writeUInt32BE(data.length);
+    const td = Buffer.concat([Buffer.from(type), data]);
+    const c = Buffer.alloc(4); c.writeUInt32BE(crc(td));
+    return Buffer.concat([len, td, c]);
+  };
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(w, 0); ihdr.writeUInt32BE(h, 4); ihdr[8] = 8; ihdr[9] = 2;
+  return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', ihdr), chunk('IDAT', deflateSync(raw)), chunk('IEND', Buffer.alloc(0))]);
+}
+
+/** [days ago, category, description, vendor, taxable amount, GST %, payment mode, status, bill photo?] */
+type DemoExpense = [number, string, string, string | null, string, number, 'CASH' | 'UPI' | 'BANK' | 'CREDIT', 'APPROVED' | 'SUBMITTED' | 'REJECTED' | 'CHANGES_REQUESTED', boolean];
+const EXPENSES: Record<string, DemoExpense[]> = {
+  ROAD: [
+    [9, 'REPAIRS', 'Hydraulic hose and fittings for grader GRD-01', 'Sahoo Auto Parts', '2400', 18, 'CASH', 'APPROVED', true],
+    [8, 'TRANSPORT', 'Tractor hire for water sprinkling (2 days)', 'Maa Mangala Transport', '5000', 0, 'UPI', 'APPROVED', true],
+    [6, 'SAFETY', 'Reflective jackets and helmets (20 nos)', 'Kalinga Safety Store', '6200', 12, 'BANK', 'APPROVED', true],
+    [5, 'FOOD_WELFARE', 'Drinking water cans for the gang', null, '900', 0, 'CASH', 'APPROVED', false],
+    [3, 'MATERIAL_LOCAL', 'Binding wire and nails, local purchase', 'Jagannath Hardware', '1850', 18, 'CASH', 'REJECTED', true],
+    [1, 'FUEL', 'Petrol for site motorcycle', 'IOCL Pipili', '700', 0, 'UPI', 'SUBMITTED', true],
+    [0, 'REPAIRS', 'Roller vibrator bearing replacement', 'Sahoo Auto Parts', '4800', 18, 'CREDIT', 'SUBMITTED', true],
+  ],
+  BUILDING: [
+    [7, 'RENT_UTILITIES', 'Site office electricity bill, September', 'TPCODL', '3800', 0, 'BANK', 'APPROVED', true],
+    [4, 'MATERIAL_LOCAL', 'Cover blocks and PVC spacers', 'Utkal Cement Traders', '2250', 18, 'CASH', 'APPROVED', true],
+    [2, 'OFFICE', 'Printer cartridge and A3 paper', 'Bhubaneswar Stationers', '1600', 18, 'UPI', 'CHANGES_REQUESTED', false],
+    [0, 'LABOUR', 'Extra shuttering carpenters, Sunday (6 nos)', 'Utkal Shuttering Works', '5400', 0, 'CASH', 'SUBMITTED', false],
+  ],
+  WATER_SUPPLY: [
+    [6, 'TRANSPORT', 'Pipe unloading crane, 4 hours', 'Kalinga Cranes', '3600', 18, 'BANK', 'APPROVED', true],
+    [3, 'TRAVEL', 'Engineer travel to Cuttack for pipe inspection', null, '1200', 0, 'CASH', 'APPROVED', true],
+    [1, 'FOOD_WELFARE', 'Tea and snacks during hydro test', null, '650', 0, 'CASH', 'SUBMITTED', false],
+  ],
+};
+
+/**
+ * Site expenses for the last ten days per project (skipped for projects that already have some, so it also
+ * backfills older databases). Most are approved; the newest wait for the PM, one was rejected and one
+ * (building project) was sent back for changes.
+ */
+async function seedExpenses(organizationId: string) {
+  const projects = await prisma.project.findMany({
+    where: { organizationId },
+    include: { members: { include: { user: { include: { role: true } } } } },
+    orderBy: { code: 'asc' },
+  });
+  const year = new Date().getUTCFullYear();
+  const last = await prisma.expense.findFirst({ where: { organizationId, expenseNo: { startsWith: `EXP-${year}-` } }, orderBy: { expenseNo: 'desc' }, select: { expenseNo: true } });
+  let counter = last ? parseInt(last.expenseNo.slice(9), 10) : 0;
+  // Prisma Bytes wants a plain Uint8Array (Vercel type-checks this file).
+  const bill = new Uint8Array(billImage());
+  for (const project of projects) {
+    if ((await prisma.expense.count({ where: { projectId: project.id } })) > 0) continue;
+    const pick = (role: string) => project.members.find((m) => m.user.role.key === role)?.userId;
+    const filer = pick('SITE_ENGINEER') ?? pick('TEAM_LEADER') ?? project.projectManagerId;
+    const pm = project.projectManagerId;
+    if (!filer || !pm) continue;
+    for (const [ago, category, description, vendor, amount, rate, paymentMode, status, receipt] of EXPENSES[project.type] ?? []) {
+      counter += 1;
+      const gst = D(amount).mul(rate).div(100).toDecimalPlaces(2);
+      const reviewed = status !== 'SUBMITTED';
+      const note = status === 'REJECTED' ? 'Binding wire is in stock at the store; issue from there instead of buying locally' : status === 'CHANGES_REQUESTED' ? 'Please attach the bill photo' : null;
+      const x = await prisma.expense.create({
+        data: {
+          organizationId, projectId: project.id, expenseNo: `EXP-${year}-${String(counter).padStart(4, '0')}`, date: day(-ago), category: category as never, description, vendor,
+          vendorGstin: rate > 0 ? '21AAKFS1234M1Z' + String((counter % 9) + 1) : null, billNo: vendor ? `B-${3100 + counter}` : null,
+          amount: D(amount), gstRate: D(rate), gstAmount: gst, totalAmount: D(amount).plus(gst), paymentMode,
+          status, submittedById: filer, submittedAt: day(-ago), createdAt: day(-ago),
+          reviewedById: reviewed ? pm : null, reviewedAt: reviewed ? day(Math.min(0, -ago + 1)) : null, reviewNote: note,
+        },
+      });
+      // A generated placeholder "bill" stored in the database, so it shows on every host.
+      if (receipt)
+        await prisma.attachment.create({
+          data: { organizationId, fileName: `bill-${x.expenseNo}.png`, mimeType: 'image/png', size: bill.length, storagePath: `db:seed/bill-${x.expenseNo}.png`, data: bill, uploadedById: filer, expenseId: x.id, createdAt: day(-ago) },
+        });
+      await prisma.auditLog.createMany({
+        data: [
+          { organizationId, entityType: 'EXPENSE', entityId: x.id, action: 'CREATED', actorId: filer, createdAt: day(-ago) },
+          { organizationId, entityType: 'EXPENSE', entityId: x.id, action: 'SUBMITTED', actorId: filer, createdAt: day(-ago) },
+          ...(reviewed ? [{ organizationId, entityType: 'EXPENSE', entityId: x.id, action: status, actorId: pm, note, createdAt: day(Math.min(0, -ago + 1)) }] : []),
+        ],
+      });
+    }
   }
 }
 
