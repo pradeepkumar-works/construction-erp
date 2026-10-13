@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import type { ProgressEntryDto } from '@erp/shared';
+import type { Paginated, ProgressEntryDto, ProgressSortField, SortOrder } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -8,6 +8,8 @@ import { AuditService } from '../common/audit.service';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
 import { AttachmentsService } from '../common/attachments.service';
 import { dateOnly, dec, iso, parseDate } from '../common/serialize';
+import { isUniqueViolation } from '../common/idempotency';
+import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import { CreateProgressDto, ListProgressQuery, UpdateProgressDto } from './progress.dto';
 
 const include = {
@@ -18,6 +20,18 @@ const include = {
   attachments: true,
 } satisfies Prisma.ProgressEntryInclude;
 type Row = Prisma.ProgressEntryGetPayload<{ include: typeof include }>;
+
+const ORDER: Record<ProgressSortField, (o: SortOrder) => Prisma.ProgressEntryOrderByWithRelationInput[]> = {
+  date: (o) => [{ date: o }, { createdAt: o }],
+  createdAt: (o) => [{ createdAt: o }],
+  submittedAt: (o) => [{ submittedAt: { sort: o, nulls: 'last' } }],
+  quantity: (o) => [{ quantity: o }],
+  status: (o) => [{ status: o }, { date: 'desc' }],
+  project: (o) => [{ project: { name: o } }, { date: 'desc' }],
+  activity: (o) => [{ activity: { name: o } }, { date: 'desc' }],
+  submittedBy: (o) => [{ submittedBy: { fullName: o } }, { date: 'desc' }],
+};
+const DESC_DEFAULT = new Set<string>(['date', 'createdAt', 'submittedAt', 'quantity']);
 
 @Injectable()
 export class ProgressService {
@@ -57,14 +71,25 @@ export class ProgressService {
     };
   }
 
-  async list(user: RequestUser, q: ListProgressQuery): Promise<ProgressEntryDto[]> {
+  async list(user: RequestUser, q: ListProgressQuery): Promise<Paginated<ProgressEntryDto>> {
     const where: Prisma.ProgressEntryWhereInput = { ...this.access.submissionWhere(user) };
     if (q.projectId) where.projectId = q.projectId;
     if (q.activityId) where.activityId = q.activityId;
     if (q.status) where.status = q.status;
     if (q.mine) where.submittedById = user.id;
-    const rows = await this.prisma.progressEntry.findMany({ where, include, orderBy: [{ date: 'desc' }, { createdAt: 'desc' }], take: q.limit ?? 200 });
-    return rows.map((r) => this.toDto(r));
+    const words = searchWords(q.q);
+    if (words.length)
+      where.AND = words.map((w) => ({
+        OR: [{ activity: { name: ilike(w) } }, { location: ilike(w) }, { remarks: ilike(w) }, { project: { name: ilike(w) } }, { submittedBy: { fullName: ilike(w) } }],
+      }));
+    const sortBy = q.sortBy ?? 'date';
+    const order = q.sortOrder ?? (DESC_DEFAULT.has(sortBy) ? 'desc' : 'asc');
+    const args = pageArgs(q);
+    const [rows, total] = await Promise.all([
+      this.prisma.progressEntry.findMany({ where, include, orderBy: [...ORDER[sortBy](order), { id: 'asc' }], skip: args.skip, take: args.take }),
+      this.prisma.progressEntry.count({ where }),
+    ]);
+    return paginated(rows.map((r) => this.toDto(r)), total, args);
   }
 
   async get(user: RequestUser, id: string): Promise<ProgressEntryDto> {
@@ -73,25 +98,46 @@ export class ProgressService {
     return this.toDto(row);
   }
 
+  /** Idempotent create: an entry that already exists under the client-supplied id is returned as is. */
+  private async findExisting(user: RequestUser, id: string | undefined) {
+    if (!id) return null;
+    const row = await this.prisma.progressEntry.findFirst({ where: { id, organizationId: user.organizationId }, select: { id: true } });
+    return row ? this.get(user, row.id) : null;
+  }
+
   async create(user: RequestUser, dto: CreateProgressDto): Promise<ProgressEntryDto> {
+    const existing = await this.findExisting(user, dto.id);
+    if (existing) return existing;
     await this.access.assertCanAccessProject(user, dto.projectId);
     const activity = await this.prisma.activity.findFirst({ where: { id: dto.activityId, projectId: dto.projectId } });
     if (!activity) throw new NotFoundException('Activity not found in this project');
-    const row = await this.prisma.progressEntry.create({
-      data: {
-        organizationId: user.organizationId,
-        projectId: dto.projectId,
-        activityId: dto.activityId,
-        date: parseDate(dto.date),
-        quantity: new Prisma.Decimal(dto.quantity),
-        remarks: dto.remarks ?? null,
-        location: dto.location ?? null,
-        manpowerCount: dto.manpowerCount ?? null,
-        machineryUsed: dto.machineryUsed ?? null,
-        submittedById: user.id,
-        status: 'DRAFT',
-      },
-    });
+    let row: { id: string };
+    try {
+      row = await this.prisma.progressEntry.create({
+        data: {
+          id: dto.id,
+          organizationId: user.organizationId,
+          projectId: dto.projectId,
+          activityId: dto.activityId,
+          date: parseDate(dto.date),
+          quantity: new Prisma.Decimal(dto.quantity),
+          remarks: dto.remarks ?? null,
+          location: dto.location ?? null,
+          manpowerCount: dto.manpowerCount ?? null,
+          machineryUsed: dto.machineryUsed ?? null,
+          submittedById: user.id,
+          status: 'DRAFT',
+        },
+        select: { id: true },
+      });
+    } catch (e) {
+      // Two retries of the same offline entry raced; the first one won.
+      if (isUniqueViolation(e) && dto.id) {
+        const winner = await this.findExisting(user, dto.id);
+        if (winner) return winner;
+      }
+      throw e;
+    }
     await this.attachments.link(user, 'progressEntryId', row.id, dto.attachmentIds);
     await this.audit.log(user, 'PROGRESS', row.id, 'CREATED');
     if (dto.submit !== false) await this.lifecycle.submit(user, 'PROGRESS', row.id);

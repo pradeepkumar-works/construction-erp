@@ -30,7 +30,7 @@ jobs:
             -d '{"email":"pm@demo.com","password":"password123"}' | jq -r .accessToken)
           [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ]
           echo "login ok"
-          curl -sf "$API_URL/projects" -H "authorization: Bearer $TOKEN" | jq -r '.[] | "\(.code)  \(.physicalProgressPct)%  pending=\(.pendingApprovals)"'
+          curl -sf "$API_URL/projects" -H "authorization: Bearer $TOKEN" | jq -r '.items[] | "\(.code)  \(.physicalProgressPct)%  pending=\(.pendingApprovals)"'
           echo "pending approvals: $(curl -sf "$API_URL/approvals/pending" -H "authorization: Bearer $TOKEN" | jq length)"
           curl -sf "$API_URL/dashboard/company" -H "authorization: Bearer $TOKEN" | jq 'del(.projects)'
       - name: Notifications
@@ -54,7 +54,7 @@ jobs:
           TOKEN=$(curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' \
             -d '{"email":"engineer@demo.com","password":"password123"}' | jq -r .accessToken)
           H="authorization: Bearer $TOKEN"
-          PROJECT=$(curl -sf "$API_URL/projects" -H "$H" | jq -r '.[0].id')
+          PROJECT=$(curl -sf "$API_URL/projects" -H "$H" | jq -r '.items[0].id')
           ACTIVITY=$(curl -sf "$API_URL/projects/$PROJECT/activities" -H "$H" | jq -r '.[0].id')
           TODAY=$(date -u +%F)
           ID=$(curl -sf -X POST "$API_URL/progress" -H "$H" -H 'content-type: application/json' \
@@ -66,6 +66,33 @@ jobs:
           curl -sf "$API_URL/approvals/progress/$ID/audit" -H "$H" | jq -r '.[] | .action' | grep -q UPDATED
           # Clean up: a draft can be deleted by its author
           curl -sf -X DELETE "$API_URL/progress/$ID" -H "$H" | jq -c .
+      - name: Idempotent create with a client id (offline sync)
+        run: |
+          set -e
+          TOKEN=$(curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' \
+            -d '{"email":"engineer@demo.com","password":"password123"}' | jq -r .accessToken)
+          H="authorization: Bearer $TOKEN"
+          PROJECT=$(curl -sf "$API_URL/projects" -H "$H" | jq -r '.items[0].id')
+          ACTIVITY=$(curl -sf "$API_URL/projects/$PROJECT/activities" -H "$H" | jq -r '.[0].id')
+          CID=$(cat /proc/sys/kernel/random/uuid)
+          BODY="{\"id\":\"$CID\",\"projectId\":\"$PROJECT\",\"activityId\":\"$ACTIVITY\",\"date\":\"$(date -u +%F)\",\"quantity\":\"1\",\"remarks\":\"smoke offline\",\"submit\":false}"
+          A=$(curl -sf -X POST "$API_URL/progress" -H "$H" -H 'content-type: application/json' -d "$BODY" | jq -r .id)
+          B=$(curl -sf -X POST "$API_URL/progress" -H "$H" -H 'content-type: application/json' -d "$BODY" | jq -r .id)
+          echo "first $A, retry $B"; [ "$A" = "$CID" ] && [ "$B" = "$CID" ]
+          curl -sf "$API_URL/approvals/progress/$CID/audit" -H "$H" | jq -r '[.[] | .action] | join(",")' | grep -qx 'CREATED'
+          curl -sf -X DELETE "$API_URL/progress/$CID" -H "$H" | jq -c .
+      - name: Paged lists with search and sort
+        run: |
+          set -e
+          TOKEN=$(curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' \
+            -d '{"email":"pm@demo.com","password":"password123"}' | jq -r .accessToken)
+          H="authorization: Bearer $TOKEN"
+          curl -sf "$API_URL/progress?page=1&pageSize=5&sortBy=quantity&sortOrder=desc" -H "$H" | jq -e '(.items | length) <= 5 and .page == 1 and .pageSize == 5 and (.total | type) == "number"' > /dev/null
+          curl -sf "$API_URL/progress?pageSize=5&sortBy=quantity&sortOrder=desc" -H "$H" | jq -r '"progress total=\(.total) top qty=\([.items[].quantity] | join(","))"'
+          curl -sf "$API_URL/material-requests?q=cement" -H "$H" | jq -r '"MR matching cement: \(.total)"'
+          curl -sf "$API_URL/dpr?sortBy=date&pageSize=1" -H "$H" | jq -r '"latest DPR: \(.items[0].date // "none") of \(.total)"'
+          curl -sf "$API_URL/users?pageSize=1" -H "$H" | jq -e '.total > 1' > /dev/null
+          code=$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/progress?sortBy=nope" -H "$H"); echo "bad sortBy: $code"; [ "$code" = "400" ]
       - name: Swagger docs and CORS
         run: |
           curl -s -o /dev/null -w 'docs: %{http_code}\n' "$API_URL/docs"

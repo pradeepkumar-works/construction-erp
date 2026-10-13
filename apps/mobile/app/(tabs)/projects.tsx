@@ -4,12 +4,13 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { PROJECT_STATUS_LABELS, PROJECT_TYPE_LABELS, type ProjectSummary } from '@erp/shared';
 import { useFetch } from '../../src/api/hooks';
+import { fetchProjects } from '../../src/api/lists';
 import { Card, EmptyState, ErrorState, Loading, Pill, ProgressBar, Screen } from '../../src/components';
 import { colors, spacing, typography } from '../../src/theme';
 
 export default function ProjectsScreen() {
   const router = useRouter();
-  const { data, loading, refreshing, error, refresh, reload } = useFetch<ProjectSummary[]>((api) => api.get('/projects'), []);
+  const { data, loading, refreshing, error, refresh, reload } = useFetch<ProjectSummary[]>(fetchProjects, [], { cacheKey: 'projects' });
 
   if (loading && !data) return <Loading />;
   if (error && !data) return <ErrorState message={error} onRetry={reload} />;

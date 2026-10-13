@@ -3,6 +3,7 @@ import { useFocusEffect } from 'expo-router';
 import type { AttachmentDto } from '@erp/shared';
 import { useAuth } from '../auth/AuthContext';
 import { errorMessage, request, uploadFile, type RequestOptions, type UploadFile } from './client';
+import { readCache, writeCache } from '../offline/cache';
 
 /** Small fetch wrapper bound to the current bearer token. */
 export function useApi() {
@@ -26,6 +27,8 @@ export interface FetchState<T> {
   loading: boolean;
   refreshing: boolean;
   error: string | null;
+  /** True while `data` is the last cached response (the live request failed or is still running). */
+  fromCache: boolean;
   refresh: () => Promise<void>;
   reload: () => Promise<void>;
   setData: React.Dispatch<React.SetStateAction<T | null>>;
@@ -36,6 +39,11 @@ interface UseFetchOptions {
   refetchOnFocus?: boolean;
   /** Skip loading (e.g. until an id is known). */
   enabled?: boolean;
+  /**
+   * Keep the last successful result on the device under this key (scoped to the signed-in user).
+   * On the next load the cached copy is shown immediately and kept if the request fails offline.
+   */
+  cacheKey?: string;
 }
 
 /**
@@ -44,11 +52,14 @@ interface UseFetchOptions {
  */
 export function useFetch<T>(loader: (api: Api) => Promise<T>, deps: React.DependencyList, opts: UseFetchOptions = {}): FetchState<T> {
   const api = useApi();
+  const { user } = useAuth();
   const { refetchOnFocus = true, enabled = true } = opts;
+  const cacheKey = opts.cacheKey ? `${user?.id ?? 'anon'}:${opts.cacheKey}` : null;
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(enabled);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fromCache, setFromCache] = useState(false);
   const loaderRef = useRef(loader);
   loaderRef.current = loader;
   const hasLoaded = useRef(false);
@@ -60,16 +71,30 @@ export function useFetch<T>(loader: (api: Api) => Promise<T>, deps: React.Depend
       const id = ++seq.current;
       if (mode === 'load') setLoading(true);
       if (mode === 'refresh') setRefreshing(true);
+      let servedFromCache = false;
+      if (cacheKey && mode === 'load' && !hasLoaded.current) {
+        const cached = await readCache<T>(cacheKey);
+        if (id !== seq.current) return;
+        if (cached !== null) {
+          servedFromCache = true;
+          setData(cached);
+          setFromCache(true);
+          setError(null);
+          setLoading(false);
+        }
+      }
       try {
         const result = await loaderRef.current(api);
         if (id !== seq.current) return;
         setData(result);
+        setFromCache(false);
         setError(null);
         hasLoaded.current = true;
+        if (cacheKey) void writeCache(cacheKey, result);
       } catch (e) {
         if (id !== seq.current) return;
-        // On a silent refetch keep showing stale data rather than an error screen.
-        if (mode !== 'silent' || !hasLoaded.current) setError(errorMessage(e));
+        // On a silent refetch, or when a cached copy is on screen, keep showing data rather than an error screen.
+        if (!servedFromCache && (mode !== 'silent' || !hasLoaded.current)) setError(errorMessage(e));
       } finally {
         if (id === seq.current) {
           setLoading(false);
@@ -78,7 +103,7 @@ export function useFetch<T>(loader: (api: Api) => Promise<T>, deps: React.Depend
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [api, enabled, ...deps],
+    [api, enabled, cacheKey, ...deps],
   );
 
   useEffect(() => {
@@ -97,6 +122,7 @@ export function useFetch<T>(loader: (api: Api) => Promise<T>, deps: React.Depend
     loading,
     refreshing,
     error,
+    fromCache,
     refresh: () => run('refresh'),
     reload: () => run('load'),
     setData,

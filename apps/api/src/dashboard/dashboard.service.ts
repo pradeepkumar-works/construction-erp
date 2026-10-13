@@ -24,7 +24,7 @@ export class DashboardService {
   ) {}
 
   async company(user: RequestUser): Promise<CompanyDashboard> {
-    const projects = await this.projects.list(user);
+    const projects = await this.projects.listAll(user);
     const today = new Date(new Date().toISOString().slice(0, 10) + 'T00:00:00.000Z');
     const projectIds = projects.map((p) => p.id);
     const [pending, dprsToday, activities] = await Promise.all([
@@ -49,13 +49,13 @@ export class DashboardService {
   }
 
   async project(user: RequestUser, projectId: string): Promise<ProjectDashboard> {
-    const project = (await this.projects.list(user)).find((p) => p.id === projectId);
+    const project = (await this.projects.listAll(user)).find((p) => p.id === projectId);
     if (!project) throw new NotFoundException('Project not found');
     const [boq, activities, recentProgress, recentDprs, openMaterialRequests, lastDpr] = await Promise.all([
       this.planning.listBoq(user, projectId),
       this.planning.listActivities(user, projectId),
-      this.progress.list(user, { projectId, limit: 10 }),
-      this.dpr.list(user, { projectId, limit: 5 }),
+      this.progress.list(user, { projectId, pageSize: 10 }).then((p) => p.items),
+      this.dpr.list(user, { projectId, pageSize: 5 }).then((p) => p.items),
       this.prisma.materialRequest.count({ where: { projectId, status: { in: ['SUBMITTED', 'APPROVED'] } } }),
       this.prisma.dailyReport.findFirst({ where: { projectId }, orderBy: { date: 'desc' }, select: { date: true } }),
     ]);

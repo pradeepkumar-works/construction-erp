@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import type { MaterialRequestDto } from '@erp/shared';
+import type { MaterialRequestDto, MaterialRequestSortField, Paginated, SortOrder } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -8,6 +8,8 @@ import { AuditService } from '../common/audit.service';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
 import { AttachmentsService } from '../common/attachments.service';
 import { dateOnly, dec, iso, parseDate } from '../common/serialize';
+import { isUniqueViolation } from '../common/idempotency';
+import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import { CreateMaterialRequestDto, ListMaterialRequestQuery, UpdateMaterialRequestDto } from './material-requests.dto';
 
 const include = {
@@ -18,6 +20,17 @@ const include = {
   attachments: true,
 } satisfies Prisma.MaterialRequestInclude;
 type Row = Prisma.MaterialRequestGetPayload<{ include: typeof include }>;
+
+const ORDER: Record<MaterialRequestSortField, (o: SortOrder) => Prisma.MaterialRequestOrderByWithRelationInput[]> = {
+  createdAt: (o) => [{ createdAt: o }],
+  requestNo: (o) => [{ requestNo: o }],
+  requiredDate: (o) => [{ requiredDate: o }, { createdAt: 'desc' }],
+  priority: (o) => [{ priority: o }, { requiredDate: 'asc' }],
+  status: (o) => [{ status: o }, { createdAt: 'desc' }],
+  project: (o) => [{ project: { name: o } }, { createdAt: 'desc' }],
+  submittedBy: (o) => [{ submittedBy: { fullName: o } }, { createdAt: 'desc' }],
+};
+const DESC_DEFAULT = new Set<string>(['createdAt', 'requestNo', 'requiredDate', 'priority']);
 
 @Injectable()
 export class MaterialRequestsService {
@@ -62,13 +75,24 @@ export class MaterialRequestsService {
     return `${prefix}${String(n).padStart(4, '0')}`;
   }
 
-  async list(user: RequestUser, q: ListMaterialRequestQuery): Promise<MaterialRequestDto[]> {
+  async list(user: RequestUser, q: ListMaterialRequestQuery): Promise<Paginated<MaterialRequestDto>> {
     const where: Prisma.MaterialRequestWhereInput = { ...this.access.submissionWhere(user) };
     if (q.projectId) where.projectId = q.projectId;
     if (q.status) where.status = q.status;
     if (q.mine) where.submittedById = user.id;
-    const rows = await this.prisma.materialRequest.findMany({ where, include, orderBy: { createdAt: 'desc' }, take: q.limit ?? 200 });
-    return rows.map((r) => this.toDto(r));
+    const words = searchWords(q.q);
+    if (words.length)
+      where.AND = words.map((w) => ({
+        OR: [{ requestNo: ilike(w) }, { remarks: ilike(w) }, { items: { some: { itemName: ilike(w) } } }, { project: { name: ilike(w) } }, { submittedBy: { fullName: ilike(w) } }],
+      }));
+    const sortBy = q.sortBy ?? 'createdAt';
+    const order = q.sortOrder ?? (DESC_DEFAULT.has(sortBy) ? 'desc' : 'asc');
+    const args = pageArgs(q);
+    const [rows, total] = await Promise.all([
+      this.prisma.materialRequest.findMany({ where, include, orderBy: [...ORDER[sortBy](order), { id: 'asc' }], skip: args.skip, take: args.take }),
+      this.prisma.materialRequest.count({ where }),
+    ]);
+    return paginated(rows.map((r) => this.toDto(r)), total, args);
   }
 
   async get(user: RequestUser, id: string): Promise<MaterialRequestDto> {
@@ -77,23 +101,43 @@ export class MaterialRequestsService {
     return this.toDto(row);
   }
 
+  /** Idempotent create: a request that already exists under the client-supplied id is returned as is. */
+  private async findExisting(user: RequestUser, id: string | undefined) {
+    if (!id) return null;
+    const row = await this.prisma.materialRequest.findFirst({ where: { id, organizationId: user.organizationId }, select: { id: true } });
+    return row ? this.get(user, row.id) : null;
+  }
+
   async create(user: RequestUser, dto: CreateMaterialRequestDto): Promise<MaterialRequestDto> {
+    const existing = await this.findExisting(user, dto.id);
+    if (existing) return existing;
     await this.access.assertCanAccessProject(user, dto.projectId);
-    const row = await this.prisma.materialRequest.create({
-      data: {
-        organizationId: user.organizationId,
-        projectId: dto.projectId,
-        requestNo: await this.nextRequestNo(user.organizationId),
-        requiredDate: parseDate(dto.requiredDate),
-        priority: dto.priority ?? 'NORMAL',
-        remarks: dto.remarks ?? null,
-        submittedById: user.id,
-        status: 'DRAFT',
-        items: {
-          create: dto.items.map((i, idx) => ({ itemName: i.itemName, specification: i.specification ?? null, unit: i.unit, quantity: new Prisma.Decimal(i.quantity), sortOrder: idx })),
+    let row: { id: string; requestNo: string };
+    try {
+      row = await this.prisma.materialRequest.create({
+        data: {
+          id: dto.id,
+          organizationId: user.organizationId,
+          projectId: dto.projectId,
+          requestNo: await this.nextRequestNo(user.organizationId),
+          requiredDate: parseDate(dto.requiredDate),
+          priority: dto.priority ?? 'NORMAL',
+          remarks: dto.remarks ?? null,
+          submittedById: user.id,
+          status: 'DRAFT',
+          items: {
+            create: dto.items.map((i, idx) => ({ itemName: i.itemName, specification: i.specification ?? null, unit: i.unit, quantity: new Prisma.Decimal(i.quantity), sortOrder: idx })),
+          },
         },
-      },
-    });
+        select: { id: true, requestNo: true },
+      });
+    } catch (e) {
+      if (isUniqueViolation(e) && dto.id) {
+        const winner = await this.findExisting(user, dto.id);
+        if (winner) return winner;
+      }
+      throw e;
+    }
     await this.attachments.link(user, 'materialRequestId', row.id, dto.attachmentIds);
     await this.audit.log(user, 'MATERIAL_REQUEST', row.id, 'CREATED', row.requestNo);
     if (dto.submit !== false) await this.lifecycle.submit(user, 'MATERIAL_REQUEST', row.id);

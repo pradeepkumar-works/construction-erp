@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import type { DailyReportDto, MaterialRequestDto, ProgressEntryDto, SubmissionType } from '@erp/shared';
-import { useFetch } from '../src/api/hooks';
-import { EmptyState, ErrorState, Loading, Screen, SubmissionRow } from '../src/components';
+import type { DailyReportDto, MaterialRequestDto, Paginated, ProgressEntryDto, SubmissionType } from '@erp/shared';
+import { useApi, useFetch, type Api } from '../src/api/hooks';
+import { errorMessage } from '../src/api/client';
+import { Button, EmptyState, ErrorState, Input, Loading, OfflineBanner, Screen, SubmissionRow } from '../src/components';
+import { useOffline } from '../src/offline';
 import { colors, radius, spacing } from '../src/theme';
 import { fmtQty, formatDate, timeAgo } from '../src/utils/format';
 
@@ -14,25 +16,64 @@ const SEGMENTS: { type: SubmissionType; label: string }[] = [
 ];
 
 type Row = { id: string; title: string; subtitle: string; status: ProgressEntryDto['status']; createdAt: string };
+type Page = { rows: Row[]; total: number };
+
+const PAGE_SIZE = 30;
+
+/** One page of the user's own submissions of a type, mapped to list rows. Server-side search with `q`. */
+async function loadPage(api: Api, type: SubmissionType, page: number, q: string): Promise<Page> {
+  const params = { mine: true, page, pageSize: PAGE_SIZE, q: q || undefined };
+  if (type === 'PROGRESS') {
+    const res = await api.get<Paginated<ProgressEntryDto>>('/progress', params);
+    return { total: res.total, rows: res.items.map((p) => ({ id: p.id, title: `${p.activityName} · ${fmtQty(p.quantity)} ${p.unit}`, subtitle: `${p.projectName} · ${formatDate(p.date)}`, status: p.status, createdAt: p.createdAt })) };
+  }
+  if (type === 'DPR') {
+    const res = await api.get<Paginated<DailyReportDto>>('/dpr', params);
+    return { total: res.total, rows: res.items.map((d) => ({ id: d.id, title: `DPR · ${formatDate(d.date)}`, subtitle: `${d.projectName} · ${d.totalManpower} manpower`, status: d.status, createdAt: d.createdAt })) };
+  }
+  const res = await api.get<Paginated<MaterialRequestDto>>('/material-requests', params);
+  return { total: res.total, rows: res.items.map((m) => ({ id: m.id, title: `${m.requestNo} · ${m.items.length} item${m.items.length === 1 ? '' : 's'}`, subtitle: `${m.projectName} · needed ${formatDate(m.requiredDate)}`, status: m.status, createdAt: m.createdAt })) };
+}
 
 export default function SubmissionsScreen() {
   const router = useRouter();
+  const api = useApi();
   const [type, setType] = useState<SubmissionType>('PROGRESS');
-  const { data, loading, refreshing, error, refresh, reload } = useFetch<Row[]>(
-    async (api) => {
-      if (type === 'PROGRESS') {
-        const rows = await api.get<ProgressEntryDto[]>('/progress', { mine: true });
-        return rows.map((p) => ({ id: p.id, title: `${p.activityName} · ${fmtQty(p.quantity)} ${p.unit}`, subtitle: `${p.projectName} · ${formatDate(p.date)}`, status: p.status, createdAt: p.createdAt }));
-      }
-      if (type === 'DPR') {
-        const rows = await api.get<DailyReportDto[]>('/dpr', { mine: true });
-        return rows.map((d) => ({ id: d.id, title: `DPR · ${formatDate(d.date)}`, subtitle: `${d.projectName} · ${d.totalManpower} manpower`, status: d.status, createdAt: d.createdAt }));
-      }
-      const rows = await api.get<MaterialRequestDto[]>('/material-requests', { mine: true });
-      return rows.map((m) => ({ id: m.id, title: `${m.requestNo} · ${m.items.length} item${m.items.length === 1 ? '' : 's'}`, subtitle: `${m.projectName} · needed ${formatDate(m.requiredDate)}`, status: m.status, createdAt: m.createdAt }));
-    },
-    [type],
-  );
+  const [text, setText] = useState('');
+  const [q, setQ] = useState('');
+  const { syncedCount } = useOffline();
+  // Debounce the search box.
+  useEffect(() => {
+    const t = setTimeout(() => setQ(text.trim()), 400);
+    return () => clearTimeout(t);
+  }, [text]);
+  // First page via useFetch (cached for offline when not searching); "Load more" appends further pages.
+  const first = useFetch<Page>((a) => loadPage(a, type, 1, q), [type, q, syncedCount], { cacheKey: q ? undefined : `submissions:${type}:v2` });
+  const [more, setMore] = useState<{ rows: Row[]; page: number }>({ rows: [], page: 1 });
+  const [moreBusy, setMoreBusy] = useState(false);
+  const [moreError, setMoreError] = useState<string | null>(null);
+  useEffect(() => {
+    setMore({ rows: [], page: 1 });
+    setMoreError(null);
+  }, [first.data]);
+
+  const data = first.data ? [...first.data.rows, ...more.rows] : null;
+  const total = first.data?.total ?? 0;
+  const { loading, refreshing, error, refresh, reload } = first;
+
+  const loadMore = async () => {
+    if (moreBusy || !data || data.length >= total) return;
+    setMoreBusy(true);
+    setMoreError(null);
+    try {
+      const next = await loadPage(api, type, more.page + 1, q);
+      setMore((m) => ({ rows: [...m.rows, ...next.rows], page: m.page + 1 }));
+    } catch (e) {
+      setMoreError(errorMessage(e));
+    } finally {
+      setMoreBusy(false);
+    }
+  };
 
   const path = type === 'PROGRESS' ? '/progress/' : type === 'DPR' ? '/dpr/' : '/material-request/';
 
@@ -48,6 +89,10 @@ export default function SubmissionsScreen() {
           );
         })}
       </View>
+      <View style={styles.banner}>
+        <OfflineBanner />
+        <Input value={text} onChangeText={setText} placeholder="Search" returnKeyType="search" autoCapitalize="none" containerStyle={styles.search} />
+      </View>
       {loading && !data ? (
         <Loading />
       ) : error && !data ? (
@@ -58,7 +103,17 @@ export default function SubmissionsScreen() {
           keyExtractor={(r) => r.id}
           contentContainerStyle={styles.list}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.primary} />}
-          ListEmptyComponent={<EmptyState title="Nothing here yet" subtitle="Your submissions of this type will appear here." icon="file-tray-outline" />}
+          ListEmptyComponent={q ? <EmptyState title="No matches" subtitle={`Nothing matches "${q}".`} icon="search-outline" /> : <EmptyState title="Nothing here yet" subtitle="Your submissions of this type will appear here." icon="file-tray-outline" />}
+          onEndReached={() => void loadMore()}
+          onEndReachedThreshold={0.4}
+          ListFooterComponent={
+            data && data.length < total ? (
+              <View style={styles.footer}>
+                {moreError ? <ErrorBannerText text={moreError} /> : null}
+                <Button title={`Load more (${data.length} of ${total})`} variant="ghost" loading={moreBusy} onPress={() => void loadMore()} />
+              </View>
+            ) : null
+          }
           renderItem={({ item }) => <SubmissionRow type={type} title={item.title} subtitle={item.subtitle} status={item.status} meta={timeAgo(item.createdAt)} onPress={() => router.push(`${path}${item.id}`)} />}
         />
       )}
@@ -72,5 +127,13 @@ const styles = StyleSheet.create({
   segmentActive: { backgroundColor: colors.surface },
   segmentText: { fontWeight: '600', color: colors.textMuted, fontSize: 15 },
   segmentTextActive: { color: colors.primary },
+  banner: { paddingHorizontal: spacing.lg },
+  search: { marginBottom: 0 },
+  footer: { paddingVertical: spacing.sm },
+  moreError: { color: colors.danger, fontSize: 13, textAlign: 'center', marginBottom: spacing.xs },
   list: { padding: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.xxl, flexGrow: 1 },
 });
+
+function ErrorBannerText({ text }: { text: string }) {
+  return <Text style={styles.moreError}>{text}</Text>;
+}

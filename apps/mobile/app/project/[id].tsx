@@ -17,7 +17,7 @@ export default function ProjectScreen() {
       return { project, activities };
     },
     [id],
-    { enabled: !!id },
+    { enabled: !!id, cacheKey: `project:${id}` },
   );
 
   if (loading && !data) return <Loading />;

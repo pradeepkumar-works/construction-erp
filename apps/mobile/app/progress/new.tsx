@@ -5,16 +5,18 @@ import type { ActivityDto, ProgressEntryDto } from '@erp/shared';
 import { useApi, useFetch } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
 import { Button, Card, DatePicker, ErrorBanner, ErrorState, Input, Loading, PhotoPicker, Screen, Select, type LocalPhoto, type SelectOption } from '../../src/components';
-import { attachmentIds, photosFailed, photosUploading, SubmitSuccess, useProjectOptions } from '../../src/forms/common';
+import { attachmentIds, photosFailed, photosQueued, photosUploading, QueuedSuccess, SubmitSuccess, toOutboxPhotos, useProjectOptions } from '../../src/forms/common';
 import { attachmentsToPhotos, ReviewerNote } from '../../src/forms/edit';
+import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
 import { colors, spacing, typography } from '../../src/theme';
-import { fmtQty, isIsoDate, today } from '../../src/utils/format';
+import { fmtQty, formatDate, isIsoDate, today } from '../../src/utils/format';
 
 /** New progress entry, or (with `editId`) edit a draft / rejected / changes-requested entry and resubmit it. */
 export default function NewProgressScreen() {
   const params = useLocalSearchParams<{ projectId?: string; activityId?: string; editId?: string }>();
   const editId = params.editId ?? null;
   const api = useApi();
+  const { online, enqueue } = useOffline();
   const projects = useProjectOptions();
   const existing = useFetch<ProgressEntryDto>((a) => a.get(`/progress/${editId}`), [editId], { enabled: !!editId, refetchOnFocus: false });
 
@@ -31,6 +33,7 @@ export default function NewProgressScreen() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [created, setCreated] = useState<ProgressEntryDto | null>(null);
+  const [queued, setQueued] = useState<OutboxItem | null>(null);
 
   // Default to the only project when the user has just one.
   useEffect(() => {
@@ -52,7 +55,7 @@ export default function NewProgressScreen() {
     setPhotos(attachmentsToPhotos(e.attachments));
   }, [existing.data]);
 
-  const activities = useFetch<ActivityDto[]>((a) => a.get(`/projects/${projectId}/activities`), [projectId], { enabled: !!projectId, refetchOnFocus: false });
+  const activities = useFetch<ActivityDto[]>((a) => a.get(`/projects/${projectId}/activities`), [projectId], { enabled: !!projectId, refetchOnFocus: false, cacheKey: `activities:${projectId}` });
   const activityOptions = useMemo<SelectOption[]>(
     () => (activities.data ?? []).map((a) => ({ value: a.id, label: `${a.boqItemNo ? `${a.boqItemNo} · ` : ''}${a.name}`, hint: `${a.unit} · ${fmtQty(a.executedQty)} of ${fmtQty(a.plannedQty)} done (${Math.round(a.progressPct)}%)` })),
     [activities.data],
@@ -74,6 +77,7 @@ export default function NewProgressScreen() {
     if (manpower.trim() && (!/^\d+$/.test(manpower.trim()) || Number(manpower) < 0)) e.manpower = 'Whole number';
     if (photosUploading(photos)) e.photos = 'Wait for photos to finish uploading';
     else if (photosFailed(photos)) e.photos = 'Remove or retry failed photos';
+    else if (editId && photosQueued(photos)) e.photos = 'Photos need a connection to upload before resubmitting';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -92,10 +96,34 @@ export default function NewProgressScreen() {
         location: location.trim() || blank,
         manpowerCount: manpower.trim() ? Number(manpower) : blank,
         machineryUsed: machinery.trim() || blank,
-        attachmentIds: attachmentIds(photos),
       };
-      const res = editId ? await api.patch<ProgressEntryDto>(`/progress/${editId}`, { ...body, submit: true }) : await api.post<ProgressEntryDto>('/progress', { projectId, ...body });
-      setCreated(res);
+      if (editId) {
+        setCreated(await api.patch<ProgressEntryDto>(`/progress/${editId}`, { ...body, attachmentIds: attachmentIds(photos), submit: true }));
+        return;
+      }
+      // New entry: save to the outbox when offline (or when a photo is still on the phone); otherwise send now.
+      const queueIt = async () => {
+        const projectName = projects.options.find((o) => o.value === projectId)?.label ?? 'Project';
+        setQueued(
+          await enqueue({
+            type: 'PROGRESS',
+            payload: { projectId, ...body },
+            photos: toOutboxPhotos(photos),
+            title: `${activity?.name ?? 'Progress'} · ${fmtQty(Number(quantity))} ${activity?.unit ?? ''}`.trim(),
+            subtitle: `${projectName} · ${formatDate(date)}`,
+          }),
+        );
+      };
+      if (!online || photosQueued(photos)) {
+        await queueIt();
+        return;
+      }
+      try {
+        setCreated(await api.post<ProgressEntryDto>('/progress', { projectId, ...body, attachmentIds: attachmentIds(photos) }));
+      } catch (e) {
+        if (!isOfflineError(e)) throw e;
+        await queueIt();
+      }
     } catch (e) {
       setSubmitError(errorMessage(e));
     } finally {
@@ -105,12 +133,16 @@ export default function NewProgressScreen() {
 
   const reset = () => {
     setCreated(null);
+    setQueued(null);
     setQuantity('');
     setRemarks('');
     setPhotos([]);
     setErrors({});
   };
 
+  if (queued) {
+    return <QueuedSuccess title="Saved on this phone" subtitle={`${queued.title} · ${queued.subtitle}`} onAnother={reset} />;
+  }
   if (created) {
     return (
       <SubmitSuccess

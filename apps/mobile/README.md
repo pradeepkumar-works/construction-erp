@@ -50,6 +50,7 @@ The login screen lists these; tapping one fills the form.
 - `app/progress/new.tsx`, `app/dpr/new.tsx`, `app/material-request/new.tsx` — submission forms with photo capture (camera + library), validation, success state.
 - `app/progress/[id].tsx`, `app/dpr/[id].tsx`, `app/material-request/[id].tsx` — detail screens with photos, status, reviewer note and approve / request changes / reject for approvers.
 - `app/submissions.tsx` — my submissions, segmented by type.
+- `app/outbox.tsx` and `src/offline/` — offline entry: new submissions made without a connection are saved in a SQLite outbox (photos copied to the documents folder) and sent automatically on reconnect; failed ones can be retried or discarded. `useFetch(..., { cacheKey })` keeps the last loaded lists on the phone.
 - `src/theme.ts`, `src/components/` — small design system (Screen, Card, Button, Input, Select, DatePicker, Chips, StatusBadge, PhotoPicker, states).
 - `src/api/` — fetch client with bearer token (401 signs the user out), `useApi` / `useFetch` hooks.
 - `src/auth/AuthContext.tsx` — token in `expo-secure-store` (localStorage on web).

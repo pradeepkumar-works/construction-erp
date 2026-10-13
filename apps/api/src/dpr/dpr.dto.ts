@@ -1,7 +1,9 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsNumber, IsOptional, IsString, IsUUID, Min, ValidateNested } from 'class-validator';
-import { SUBMISSION_STATUSES, SubmissionStatus, WEATHER_OPTIONS, Weather } from '@erp/shared';
+import { LIST_SORT_FIELDS, SUBMISSION_STATUSES, SubmissionStatus, WEATHER_OPTIONS, Weather, type DprSortField } from '@erp/shared';
+import { PageQuery, QueryBool } from '../common/paging';
+import { CLIENT_ID_DOC } from '../common/idempotency';
 
 export class ManpowerLineDto {
   @ApiProperty({ example: 'Mason' }) @IsString() category: string;
@@ -14,6 +16,7 @@ export class MachineryLineDto {
 }
 
 export class CreateDprDto {
+  @ApiPropertyOptional(CLIENT_ID_DOC) @IsOptional() @IsUUID('4') id?: string;
   @ApiProperty() @IsUUID() projectId: string;
   @ApiProperty({ example: '2026-10-13' }) @IsDateString() date: string;
   @ApiPropertyOptional({ enum: WEATHER_OPTIONS }) @IsOptional() @IsIn(WEATHER_OPTIONS as unknown as string[]) weather?: Weather;
@@ -32,9 +35,10 @@ export class CreateDprDto {
 
 export class UpdateDprDto extends PartialType(CreateDprDto) {}
 
-export class ListDprQuery {
+/** `q` matches work executed, issues, site condition, project and submitter names. */
+export class ListDprQuery extends PageQuery {
   @ApiPropertyOptional() @IsOptional() @IsUUID() projectId?: string;
   @ApiPropertyOptional({ enum: SUBMISSION_STATUSES }) @IsOptional() @IsIn(SUBMISSION_STATUSES as unknown as string[]) status?: SubmissionStatus;
-  @ApiPropertyOptional() @IsOptional() @IsBoolean() mine?: boolean;
-  @ApiPropertyOptional() @IsOptional() @IsInt() @Min(1) limit?: number;
+  @ApiPropertyOptional() @IsOptional() @QueryBool() @IsBoolean() mine?: boolean;
+  @ApiPropertyOptional({ enum: LIST_SORT_FIELDS.dpr, default: 'date' }) @IsOptional() @IsIn(LIST_SORT_FIELDS.dpr as unknown as string[]) sortBy?: DprSortField;
 }

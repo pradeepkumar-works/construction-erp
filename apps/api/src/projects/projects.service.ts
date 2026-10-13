@@ -1,12 +1,13 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import type { ProjectDetail, ProjectSummary, RoleKey } from '@erp/shared';
+import type { Paginated, ProjectDetail, ProjectSortField, ProjectSummary, RoleKey, SortOrder } from '@erp/shared';
+import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
 import { dateOnly, iso, money, parseDate, pct } from '../common/serialize';
-import { AddMemberDto, CreateProjectDto, UpdateProjectDto } from './projects.dto';
+import { AddMemberDto, CreateProjectDto, ListProjectsQuery, UpdateProjectDto } from './projects.dto';
 
 const projectInclude = {
   projectManager: { select: { id: true, fullName: true } },
@@ -14,6 +15,18 @@ const projectInclude = {
 } satisfies Prisma.ProjectInclude;
 
 type ProjectRow = Prisma.ProjectGetPayload<{ include: typeof projectInclude }>;
+
+const ORDER: Record<ProjectSortField, (o: SortOrder) => Prisma.ProjectOrderByWithRelationInput[]> = {
+  status: (o) => [{ status: o }, { code: 'asc' }],
+  code: (o) => [{ code: o }],
+  name: (o) => [{ name: o }],
+  type: (o) => [{ type: o }, { code: 'asc' }],
+  startDate: (o) => [{ startDate: { sort: o, nulls: 'last' } }],
+  endDate: (o) => [{ endDate: { sort: o, nulls: 'last' } }],
+  contractValue: (o) => [{ contractValue: { sort: o, nulls: 'last' } }],
+  createdAt: (o) => [{ createdAt: o }],
+};
+const DESC_DEFAULT = new Set<string>(['startDate', 'endDate', 'contractValue', 'createdAt']);
 
 @Injectable()
 export class ProjectsService {
@@ -81,9 +94,27 @@ export class ProjectsService {
     };
   }
 
-  async list(user: RequestUser): Promise<ProjectSummary[]> {
+  /** Every visible project, unpaged (dashboards). */
+  async listAll(user: RequestUser): Promise<ProjectSummary[]> {
     const rows = await this.prisma.project.findMany({ where: this.access.projectWhere(user), include: projectInclude, orderBy: [{ status: 'asc' }, { code: 'asc' }] });
     return Promise.all(rows.map((r) => this.toSummary(r)));
+  }
+
+  async list(user: RequestUser, q: ListProjectsQuery): Promise<Paginated<ProjectSummary>> {
+    const where: Prisma.ProjectWhereInput = { ...this.access.projectWhere(user) };
+    if (q.status) where.status = q.status;
+    if (q.type) where.type = q.type;
+    const words = searchWords(q.q);
+    if (words.length)
+      where.AND = words.map((w) => ({ OR: [{ code: ilike(w) }, { name: ilike(w) }, { clientName: ilike(w) }, { location: ilike(w) }, { workOrderNo: ilike(w) }] }));
+    const sortBy = q.sortBy ?? 'status';
+    const order = q.sortOrder ?? (DESC_DEFAULT.has(sortBy) ? 'desc' : 'asc');
+    const args = pageArgs(q);
+    const [rows, total] = await Promise.all([
+      this.prisma.project.findMany({ where, include: projectInclude, orderBy: [...ORDER[sortBy](order), { id: 'asc' }], skip: args.skip, take: args.take }),
+      this.prisma.project.count({ where }),
+    ]);
+    return paginated(await Promise.all(rows.map((r) => this.toSummary(r))), total, args);
   }
 
   async get(user: RequestUser, id: string): Promise<ProjectDetail> {

@@ -1,6 +1,14 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { IsBoolean, IsEmail, IsIn, IsOptional, IsString, MinLength } from 'class-validator';
-import { ROLE_KEYS, RoleKey } from '@erp/shared';
+import { LIST_SORT_FIELDS, ROLE_KEYS, RoleKey, type UserSortField } from '@erp/shared';
+import { PageQuery, QueryBool } from '../common/paging';
+
+/** `q` matches name, email and phone. */
+export class ListUsersQuery extends PageQuery {
+  @ApiPropertyOptional({ enum: ROLE_KEYS }) @IsOptional() @IsIn(ROLE_KEYS as unknown as string[]) roleKey?: RoleKey;
+  @ApiPropertyOptional() @IsOptional() @QueryBool() @IsBoolean() isActive?: boolean;
+  @ApiPropertyOptional({ enum: LIST_SORT_FIELDS.users, default: 'fullName' }) @IsOptional() @IsIn(LIST_SORT_FIELDS.users as unknown as string[]) sortBy?: UserSortField;
+}
 
 export class CreateUserDto {
   @ApiProperty() @IsEmail() email: string;
@@ -11,5 +19,5 @@ export class CreateUserDto {
 }
 
 export class UpdateUserDto extends PartialType(CreateUserDto) {
-  @ApiPropertyOptional() @IsOptional() @IsBoolean() isActive?: boolean;
+  @ApiPropertyOptional() @IsOptional() @QueryBool() @IsBoolean() isActive?: boolean;
 }

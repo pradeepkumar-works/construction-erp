@@ -1,8 +1,11 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsNumberString, IsOptional, IsString, IsUUID, Min } from 'class-validator';
-import { SUBMISSION_STATUSES, SubmissionStatus } from '@erp/shared';
+import { LIST_SORT_FIELDS, SUBMISSION_STATUSES, SubmissionStatus, type ProgressSortField } from '@erp/shared';
+import { PageQuery, QueryBool } from '../common/paging';
+import { CLIENT_ID_DOC } from '../common/idempotency';
 
 export class CreateProgressDto {
+  @ApiPropertyOptional(CLIENT_ID_DOC) @IsOptional() @IsUUID('4') id?: string;
   @ApiProperty() @IsUUID() projectId: string;
   @ApiProperty() @IsUUID() activityId: string;
   @ApiProperty({ example: '2026-10-13' }) @IsDateString() date: string;
@@ -18,10 +21,11 @@ export class CreateProgressDto {
 
 export class UpdateProgressDto extends PartialType(CreateProgressDto) {}
 
-export class ListProgressQuery {
+/** `q` matches activity, location, remarks, project and submitter names. */
+export class ListProgressQuery extends PageQuery {
   @ApiPropertyOptional() @IsOptional() @IsUUID() projectId?: string;
   @ApiPropertyOptional() @IsOptional() @IsUUID() activityId?: string;
   @ApiPropertyOptional({ enum: SUBMISSION_STATUSES }) @IsOptional() @IsIn(SUBMISSION_STATUSES as unknown as string[]) status?: SubmissionStatus;
-  @ApiPropertyOptional({ description: 'Only entries created by the current user' }) @IsOptional() @IsBoolean() mine?: boolean;
-  @ApiPropertyOptional() @IsOptional() @IsInt() @Min(1) limit?: number;
+  @ApiPropertyOptional({ description: 'Only entries created by the current user' }) @IsOptional() @QueryBool() @IsBoolean() mine?: boolean;
+  @ApiPropertyOptional({ enum: LIST_SORT_FIELDS.progress, default: 'date' }) @IsOptional() @IsIn(LIST_SORT_FIELDS.progress as unknown as string[]) sortBy?: ProgressSortField;
 }

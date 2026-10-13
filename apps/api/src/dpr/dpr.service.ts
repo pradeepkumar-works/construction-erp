@@ -1,6 +1,6 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import type { DailyReportDto, ManpowerLine, MachineryLine } from '@erp/shared';
+import type { DailyReportDto, DprSortField, ManpowerLine, MachineryLine, Paginated, SortOrder } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -8,6 +8,8 @@ import { AuditService } from '../common/audit.service';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
 import { AttachmentsService } from '../common/attachments.service';
 import { dateOnly, iso, parseDate } from '../common/serialize';
+import { isUniqueViolation } from '../common/idempotency';
+import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import { CreateDprDto, ListDprQuery, UpdateDprDto } from './dpr.dto';
 
 const include = {
@@ -17,6 +19,16 @@ const include = {
   attachments: true,
 } satisfies Prisma.DailyReportInclude;
 type Row = Prisma.DailyReportGetPayload<{ include: typeof include }>;
+
+const ORDER: Record<DprSortField, (o: SortOrder) => Prisma.DailyReportOrderByWithRelationInput[]> = {
+  date: (o) => [{ date: o }, { createdAt: o }],
+  createdAt: (o) => [{ createdAt: o }],
+  submittedAt: (o) => [{ submittedAt: { sort: o, nulls: 'last' } }],
+  status: (o) => [{ status: o }, { date: 'desc' }],
+  project: (o) => [{ project: { name: o } }, { date: 'desc' }],
+  submittedBy: (o) => [{ submittedBy: { fullName: o } }, { date: 'desc' }],
+};
+const DESC_DEFAULT = new Set<string>(['date', 'createdAt', 'submittedAt']);
 
 @Injectable()
 export class DprService {
@@ -61,13 +73,24 @@ export class DprService {
     };
   }
 
-  async list(user: RequestUser, q: ListDprQuery): Promise<DailyReportDto[]> {
+  async list(user: RequestUser, q: ListDprQuery): Promise<Paginated<DailyReportDto>> {
     const where: Prisma.DailyReportWhereInput = { ...this.access.submissionWhere(user) };
     if (q.projectId) where.projectId = q.projectId;
     if (q.status) where.status = q.status;
     if (q.mine) where.submittedById = user.id;
-    const rows = await this.prisma.dailyReport.findMany({ where, include, orderBy: [{ date: 'desc' }, { createdAt: 'desc' }], take: q.limit ?? 200 });
-    return rows.map((r) => this.toDto(r));
+    const words = searchWords(q.q);
+    if (words.length)
+      where.AND = words.map((w) => ({
+        OR: [{ workExecuted: ilike(w) }, { issues: ilike(w) }, { siteCondition: ilike(w) }, { project: { name: ilike(w) } }, { submittedBy: { fullName: ilike(w) } }],
+      }));
+    const sortBy = q.sortBy ?? 'date';
+    const order = q.sortOrder ?? (DESC_DEFAULT.has(sortBy) ? 'desc' : 'asc');
+    const args = pageArgs(q);
+    const [rows, total] = await Promise.all([
+      this.prisma.dailyReport.findMany({ where, include, orderBy: [...ORDER[sortBy](order), { id: 'asc' }], skip: args.skip, take: args.take }),
+      this.prisma.dailyReport.count({ where }),
+    ]);
+    return paginated(rows.map((r) => this.toDto(r)), total, args);
   }
 
   async get(user: RequestUser, id: string): Promise<DailyReportDto> {
@@ -85,28 +108,48 @@ export class DprService {
     if (dup) throw new ConflictException(`A DPR for ${dateOnly(date)} already exists for this project (status ${dup.status}). Edit it instead of creating another.`);
   }
 
+  /** Idempotent create: a DPR that already exists under the client-supplied id is returned as is. */
+  private async findExisting(user: RequestUser, id: string | undefined) {
+    if (!id) return null;
+    const row = await this.prisma.dailyReport.findFirst({ where: { id, organizationId: user.organizationId }, select: { id: true } });
+    return row ? this.get(user, row.id) : null;
+  }
+
   async create(user: RequestUser, dto: CreateDprDto): Promise<DailyReportDto> {
+    const existing = await this.findExisting(user, dto.id);
+    if (existing) return existing;
     await this.access.assertCanAccessProject(user, dto.projectId);
     await this.assertNoDuplicate(dto.projectId, parseDate(dto.date));
-    const row = await this.prisma.dailyReport.create({
-      data: {
-        organizationId: user.organizationId,
-        projectId: dto.projectId,
-        date: parseDate(dto.date),
-        weather: dto.weather ?? null,
-        siteCondition: dto.siteCondition ?? null,
-        manpower: (dto.manpower ?? []) as unknown as Prisma.InputJsonValue,
-        machinery: (dto.machinery ?? []) as unknown as Prisma.InputJsonValue,
-        materialReceived: dto.materialReceived ?? null,
-        workExecuted: dto.workExecuted,
-        testsConducted: dto.testsConducted ?? null,
-        safetyObservations: dto.safetyObservations ?? null,
-        issues: dto.issues ?? null,
-        nextDayPlan: dto.nextDayPlan ?? null,
-        submittedById: user.id,
-        status: 'DRAFT',
-      },
-    });
+    let row: { id: string };
+    try {
+      row = await this.prisma.dailyReport.create({
+        data: {
+          id: dto.id,
+          organizationId: user.organizationId,
+          projectId: dto.projectId,
+          date: parseDate(dto.date),
+          weather: dto.weather ?? null,
+          siteCondition: dto.siteCondition ?? null,
+          manpower: (dto.manpower ?? []) as unknown as Prisma.InputJsonValue,
+          machinery: (dto.machinery ?? []) as unknown as Prisma.InputJsonValue,
+          materialReceived: dto.materialReceived ?? null,
+          workExecuted: dto.workExecuted,
+          testsConducted: dto.testsConducted ?? null,
+          safetyObservations: dto.safetyObservations ?? null,
+          issues: dto.issues ?? null,
+          nextDayPlan: dto.nextDayPlan ?? null,
+          submittedById: user.id,
+          status: 'DRAFT',
+        },
+        select: { id: true },
+      });
+    } catch (e) {
+      if (isUniqueViolation(e) && dto.id) {
+        const winner = await this.findExisting(user, dto.id);
+        if (winner) return winner;
+      }
+      throw e;
+    }
     await this.attachments.link(user, 'dailyReportId', row.id, dto.attachmentIds);
     await this.audit.log(user, 'DPR', row.id, 'CREATED');
     if (dto.submit !== false) await this.lifecycle.submit(user, 'DPR', row.id);

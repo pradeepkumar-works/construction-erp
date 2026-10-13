@@ -69,6 +69,29 @@ columns and registering it in the lifecycle service; the approvals queue and aud
   carried by free-text `location` and the activity list, not by schema. A per-type activity template
   is the planned next step so new projects start from a standard list.
 
+## Lists: paging, search, sort and export
+
+`GET /progress`, `/dpr`, `/material-requests`, `/projects` and `/users` return `Paginated<T>`
+(`items`, `total`, `page`, `pageSize`). They share `PageQuery` (`apps/api/src/common/paging.ts`):
+
+- `page` (1-based) and `pageSize` (default 25, max 500; `limit` is a deprecated alias).
+- `q`: case-insensitive search. Each word must match one of the list's columns (for example progress
+  searches activity, location, remarks, project and submitter), so "cement urgent" narrows rather than widens.
+- `sortBy` from the list's allowed columns in `LIST_SORT_FIELDS` (`packages/shared/src/paging.ts`) and
+  `sortOrder`; an unknown column is a 400. Every sort ends with `id` so pages never overlap.
+- The usual filters still apply (`projectId`, `status`, `mine`, project `type` / `status`, user `roleKey` /
+  `isActive`). Query-string booleans are parsed strictly (`?mine=false` is false).
+
+Visibility rules are unchanged: paging runs on the same `submissionWhere` / `projectWhere` clauses.
+Dropdowns that need every project or user ask for one page of 500. BOQ items and activities stay
+unpaged per-project arrays.
+
+On the web, `useListState` holds a table's page, size, search and sort, and the progress, DPR and
+material request tables are one `*List` component used both on their own page and inside the project
+tabs. Export fetches every matching row page by page with the current filters (not just the visible
+page) and writes `.xlsx` in the browser with SheetJS; column layouts live in `src/lib/exportColumns.ts`.
+Material requests export one row per item so quantities can be summed.
+
 ## Money and quantities
 
 Decimal columns everywhere (`Decimal(18,2)` for money, `Decimal(18,3)` for quantities) and strings
@@ -102,7 +125,26 @@ that device and is deleted on sign-out or when Expo reports it unregistered.
 - A new notification type = enum value in `schema.prisma` and `packages/shared` (+ label), a
   `notify()` call, and a route in the web `notificationHref` / mobile `notificationRoute` helpers.
 
-## Offline (planned)
+## Offline entry (mobile)
 
-Not in the MVP. The API already accepts client-supplied dates and idempotent creates are a small
-change (client-generated ids), so the mobile app can add a local queue later without API redesign.
+New progress entries, DPRs and material requests can be filed without a connection.
+
+- **Idempotent creates.** `POST /progress`, `/dpr` and `/material-requests` accept an optional
+  client-generated UUID in `id`. If an entry with that id already exists in the caller's organisation
+  the API returns it instead of creating another, and a unique-key race between two retries resolves
+  to the first one. So a phone can resend after a lost response without creating duplicates.
+- **Outbox.** `apps/mobile/src/offline` keeps a SQLite database (`siteapp.db`) with an `outbox` table
+  (one row per queued entry, per user) and a `cache` table. A form submits straight to the API when
+  online; when offline, or when the request fails to reach the server, it saves the entry to the
+  outbox with a fresh UUID. Picked photos are copied into the app's documents folder because the
+  image picker's cache can be purged.
+- **Sync.** `OfflineProvider` flushes the outbox in creation order when the network comes back
+  (expo-network), when the app returns to the foreground and after sign-in. For each entry it uploads
+  any photo without an attachment id (remembering ids as it goes), then posts the entry with its
+  client id. Network errors and 5xx stop the run and keep the entry pending; a 4xx (for example a DPR
+  for a day that already has one) marks it failed, and the Outbox screen offers retry or discard.
+- **Read cache.** `useFetch(..., { cacheKey })` stores the last good response per user, so projects,
+  activities, the home screen and My Submissions open offline with the last loaded data.
+- Edits and resubmits, reviews and approvals still need a connection: they act on server state that
+  may have changed since the phone last saw it.
+- Web (Expo web export) uses a localStorage-backed store instead of SQLite.
