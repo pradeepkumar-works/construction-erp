@@ -12,6 +12,7 @@ export const TYPE_ICON: Record<EntryType, keyof typeof Ionicons.glyphMap> = {
   PROGRESS: 'trending-up',
   DPR: 'document-text',
   MATERIAL_REQUEST: 'cube',
+  MACHINERY: 'construct',
   ATTENDANCE: 'people',
 };
 
@@ -19,6 +20,7 @@ export const TYPE_SHORT: Record<EntryType, string> = {
   PROGRESS: 'Progress',
   DPR: 'DPR',
   MATERIAL_REQUEST: 'Material',
+  MACHINERY: 'Machinery',
   ATTENDANCE: 'Attendance',
 };
 

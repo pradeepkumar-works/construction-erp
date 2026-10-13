@@ -7,8 +7,8 @@ import { EmptyState, ErrorState, Loading, Screen, SubmissionRow } from '../../sr
 import { colors, spacing, typography } from '../../src/theme';
 import { timeAgo } from '../../src/utils/format';
 
-const ORDER: SubmissionType[] = ['DPR', 'PROGRESS', 'MATERIAL_REQUEST'];
-const DETAIL_PATH: Record<SubmissionType, string> = { PROGRESS: '/progress/', DPR: '/dpr/', MATERIAL_REQUEST: '/material-request/' };
+const ORDER: SubmissionType[] = ['DPR', 'PROGRESS', 'MATERIAL_REQUEST', 'MACHINERY'];
+const DETAIL_PATH: Record<SubmissionType, string> = { PROGRESS: '/progress/', DPR: '/dpr/', MATERIAL_REQUEST: '/material-request/', MACHINERY: '/machinery/' };
 
 export default function ApprovalsScreen() {
   const router = useRouter();

@@ -99,6 +99,7 @@ async function main() {
   if (already > 0) {
     await seedAttendance(org.id);
     await seedStock(org.id);
+    await seedMachinery(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
   }
@@ -242,6 +243,7 @@ async function main() {
 
   await seedAttendance(org.id);
   await seedStock(org.id);
+  await seedMachinery(org.id);
 
   console.log('Seed complete. Login with any of these (password: password123):');
   for (const u of USERS) console.log(`  ${u.email.padEnd(24)} ${u.role}`);
@@ -385,6 +387,95 @@ async function seedStock(organizationId: string) {
         },
       });
     }
+  }
+}
+
+/** [code, name, category, ownership, supplier, rate, rateUnit, hours per day, diesel litres per hour] by project type. */
+type Machine = [string, string, string, 'OWNED' | 'HIRED', string | null, string, 'HOUR' | 'DAY' | 'MONTH', number, number];
+const FLEET: Record<string, Machine[]> = {
+  ROAD: [
+    ['EXC-01', 'Excavator (Tata Hitachi EX200)', 'Earthmoving', 'OWNED', null, '1800', 'HOUR', 8, 14],
+    ['GRD-01', 'Motor grader (Caterpillar 120)', 'Earthmoving', 'HIRED', 'Mahalaxmi Earthmovers', '2200', 'HOUR', 7, 12],
+    ['RLR-01', 'Vibratory roller 10 t', 'Compaction', 'HIRED', 'Mahalaxmi Earthmovers', '14000', 'DAY', 8, 6],
+  ],
+  BUILDING: [
+    ['TC-01', 'Tower crane (Potain 6 t)', 'Lifting', 'HIRED', 'Kalinga Cranes', '450000', 'MONTH', 9, 0],
+    ['MIX-01', 'Concrete mixer with hopper', 'Concreting', 'OWNED', null, '450', 'HOUR', 6, 3],
+  ],
+  WATER_SUPPLY: [
+    ['JCB-01', 'Backhoe loader (JCB 3DX)', 'Earthmoving', 'OWNED', null, '1200', 'HOUR', 8, 7],
+    ['DG-01', 'DG set 62.5 kVA', 'Power', 'OWNED', null, '600', 'HOUR', 6, 9],
+  ],
+};
+
+/**
+ * Equipment and the last five days of machinery logs per project (skipped for projects that already have
+ * equipment, so it also backfills older databases). Older days are approved; yesterday's and today's are
+ * waiting for the PM; one log on the road project has a breakdown and one was sent back for changes.
+ */
+async function seedMachinery(organizationId: string) {
+  const projects = await prisma.project.findMany({
+    where: { organizationId },
+    include: { members: { include: { user: { include: { role: true } } } }, activities: { orderBy: { sortOrder: 'asc' } } },
+    orderBy: { code: 'asc' },
+  });
+  for (const project of projects) {
+    if ((await prisma.equipment.count({ where: { projectId: project.id } })) > 0) continue;
+    const fleet = FLEET[project.type] ?? [];
+    const pick = (role: string) => project.members.find((m) => m.user.role.key === role)?.userId;
+    const logger = pick('SITE_ENGINEER') ?? pick('TEAM_LEADER') ?? project.projectManagerId;
+    const pm = project.projectManagerId;
+    if (!logger || !pm || !fleet.length) continue;
+    const activity = project.activities.find((a) => a.plannedStart && a.plannedEnd && a.plannedStart <= day(0) && a.plannedEnd >= day(-5)) ?? project.activities[0];
+    for (const [mi, [code, name, category, ownership, supplier, rate, rateUnit, hours, dieselPerHour]] of fleet.entries()) {
+      // Codes are unique per organisation; prefix with the project when the plain code is taken.
+      const taken = await prisma.equipment.count({ where: { organizationId, code } });
+      const eq = await prisma.equipment.create({
+        data: {
+          organizationId, projectId: project.id, code: taken ? `${project.code.slice(0, 2)}-${code}` : code, name, category, ownership, supplier, rate: D(rate), rateUnit,
+          registrationNo: category === 'Earthmoving' ? `OD-02-E-${4100 + mi * 37 + projects.indexOf(project) * 11}` : null, createdAt: day(-30),
+        },
+      });
+      let meter = 1200 + mi * 850 + projects.indexOf(project) * 300;
+      for (let i = 5; i >= 0; i--) {
+        const breakdown = project.type === 'ROAD' && mi === 1 && i === 2 ? 3 : 0;
+        const idle = i === 3 ? 1.5 : 0.5;
+        const worked = Math.max(hours - breakdown - idle, 0);
+        const status = i >= 2 ? 'APPROVED' : 'SUBMITTED';
+        const changes = project.type === 'ROAD' && mi === 0 && i === 1;
+        const finalStatus = changes ? 'CHANGES_REQUESTED' : status;
+        const reviewed = finalStatus !== 'SUBMITTED';
+        const log = await prisma.machineryLog.create({
+          data: {
+            organizationId, projectId: project.id, equipmentId: eq.id, date: day(-i), hoursWorked: D(worked), idleHours: D(idle), breakdownHours: D(breakdown),
+            dieselLitres: dieselPerHour ? D(Math.round(worked * dieselPerHour)) : null, meterStart: D(meter), meterEnd: D(meter + worked + idle),
+            operatorName: ['Ramesh Behera', 'Sanjay Nayak', 'Pradip Sahoo'][mi % 3], activityId: activity?.id ?? null,
+            workDone: activity ? `${activity.name}` : null, breakdownNote: breakdown ? 'Hydraulic hose burst; replaced by the hire agency mechanic' : null,
+            status: finalStatus, submittedById: logger, submittedAt: day(-i), createdAt: day(-i),
+            reviewedById: reviewed ? pm : null, reviewedAt: reviewed ? day(-i + 1 > 0 ? 0 : -i + 1) : null,
+            reviewNote: changes ? 'Hour-meter closing reading does not match the photo; please recheck' : null,
+          },
+        });
+        meter += worked + idle;
+        await prisma.auditLog.createMany({
+          data: [
+            { organizationId, entityType: 'MACHINERY', entityId: log.id, action: 'CREATED', actorId: logger, createdAt: day(-i) },
+            { organizationId, entityType: 'MACHINERY', entityId: log.id, action: 'SUBMITTED', actorId: logger, createdAt: day(-i) },
+            ...(reviewed ? [{ organizationId, entityType: 'MACHINERY', entityId: log.id, action: finalStatus, actorId: pm, note: log.reviewNote, createdAt: day(-i + 1 > 0 ? 0 : -i + 1) }] : []),
+          ],
+        });
+        if (changes)
+          await prisma.notification.create({
+            data: {
+              organizationId, userId: logger, type: 'SUBMISSION_CHANGES_REQUESTED', projectId: project.id, entityType: 'MACHINERY', entityId: log.id, createdAt: day(0),
+              title: 'Machinery log needs changes', body: `The PM requested changes to ${eq.code} ${eq.name} on ${day(-i).toISOString().slice(0, 10)}. Note: ${log.reviewNote}`,
+            },
+          });
+      }
+    }
+    // One idle machine at the yard, never logged
+    if (project.type === 'ROAD' && !(await prisma.equipment.count({ where: { organizationId, code: 'TIP-07' } })))
+      await prisma.equipment.create({ data: { organizationId, code: 'TIP-07', name: 'Tipper 16 cum', category: 'Transport', ownership: 'OWNED', rate: D('9000'), rateUnit: 'DAY', registrationNo: 'OD-02-AK-4471' } });
   }
 }
 

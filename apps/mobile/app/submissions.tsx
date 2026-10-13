@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import type { DailyReportDto, MaterialRequestDto, Paginated, ProgressEntryDto, SubmissionType } from '@erp/shared';
+import type { DailyReportDto, MachineryLogDto, MaterialRequestDto, Paginated, ProgressEntryDto, SubmissionType } from '@erp/shared';
 import { useApi, useFetch, type Api } from '../src/api/hooks';
 import { errorMessage } from '../src/api/client';
 import { Button, EmptyState, ErrorState, Input, Loading, OfflineBanner, Screen, SubmissionRow } from '../src/components';
-import { useOffline } from '../src/offline';
+import { OUTBOX_DETAIL, useOffline } from '../src/offline';
 import { colors, radius, spacing } from '../src/theme';
 import { fmtQty, formatDate, timeAgo } from '../src/utils/format';
 
@@ -13,6 +13,7 @@ const SEGMENTS: { type: SubmissionType; label: string }[] = [
   { type: 'PROGRESS', label: 'Progress' },
   { type: 'DPR', label: 'DPR' },
   { type: 'MATERIAL_REQUEST', label: 'Material' },
+  { type: 'MACHINERY', label: 'Machinery' },
 ];
 
 type Row = { id: string; title: string; subtitle: string; status: ProgressEntryDto['status']; createdAt: string };
@@ -30,6 +31,10 @@ async function loadPage(api: Api, type: SubmissionType, page: number, q: string)
   if (type === 'DPR') {
     const res = await api.get<Paginated<DailyReportDto>>('/dpr', params);
     return { total: res.total, rows: res.items.map((d) => ({ id: d.id, title: `DPR · ${formatDate(d.date)}`, subtitle: `${d.projectName} · ${d.totalManpower} manpower`, status: d.status, createdAt: d.createdAt })) };
+  }
+  if (type === 'MACHINERY') {
+    const res = await api.get<Paginated<MachineryLogDto>>('/machinery-logs', params);
+    return { total: res.total, rows: res.items.map((l) => ({ id: l.id, title: `${l.equipmentCode} · ${fmtQty(l.hoursWorked)} h`, subtitle: `${l.projectName} · ${formatDate(l.date)}`, status: l.status, createdAt: l.createdAt })) };
   }
   const res = await api.get<Paginated<MaterialRequestDto>>('/material-requests', params);
   return { total: res.total, rows: res.items.map((m) => ({ id: m.id, title: `${m.requestNo} · ${m.items.length} item${m.items.length === 1 ? '' : 's'}`, subtitle: `${m.projectName} · needed ${formatDate(m.requiredDate)}`, status: m.status, createdAt: m.createdAt })) };
@@ -75,7 +80,7 @@ export default function SubmissionsScreen() {
     }
   };
 
-  const path = type === 'PROGRESS' ? '/progress/' : type === 'DPR' ? '/dpr/' : '/material-request/';
+  const path = OUTBOX_DETAIL[type];
 
   return (
     <Screen scroll={false} padded={false}>

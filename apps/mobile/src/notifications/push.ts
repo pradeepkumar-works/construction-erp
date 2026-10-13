@@ -70,7 +70,7 @@ export function notificationRoute(data: Record<string, unknown> | undefined): st
   const entityType = data?.entityType as string | undefined;
   const entityId = data?.entityId as string | undefined;
   if (entityType && entityId) {
-    const path = entityType === 'PROGRESS' ? '/progress/' : entityType === 'DPR' ? '/dpr/' : entityType === 'MATERIAL_REQUEST' ? '/material-request/' : null;
+    const path = entityType === 'PROGRESS' ? '/progress/' : entityType === 'DPR' ? '/dpr/' : entityType === 'MATERIAL_REQUEST' ? '/material-request/' : entityType === 'MACHINERY' ? '/machinery/' : null;
     if (path) return `${path}${entityId}`;
   }
   const projectId = data?.projectId as string | undefined;

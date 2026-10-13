@@ -5,6 +5,7 @@ import { RequestUser } from './current-user';
 import { ProjectAccessService } from './project-access.service';
 import { AuditService } from './audit.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { machineryTitle } from './machinery-title';
 
 interface SubmissionRow {
   id: string;
@@ -18,7 +19,7 @@ interface SubmissionRow {
  * One state machine for every site submission:
  *   DRAFT / REJECTED / CHANGES_REQUESTED --submit--> SUBMITTED --review--> APPROVED | REJECTED | CHANGES_REQUESTED
  * A rejected or changes-requested entry is edited in place and resubmitted (audit action RESUBMITTED), so the
- * review history stays on one record. Progress entries, DPRs and material requests all go through here.
+ * review history stays on one record. Progress entries, DPRs, material requests and machinery logs all go through here.
  */
 @Injectable()
 export class SubmissionLifecycleService {
@@ -32,6 +33,8 @@ export class SubmissionLifecycleService {
         return this.prisma.dailyReport;
       case 'MATERIAL_REQUEST':
         return this.prisma.materialRequest;
+      case 'MACHINERY':
+        return this.prisma.machineryLog;
     }
   }
 
@@ -73,14 +76,15 @@ export class SubmissionLifecycleService {
     throw new ForbiddenException('You cannot edit this entry');
   }
 
-  /** Everything awaiting the current user's approval, across the three submission types. */
+  /** Everything awaiting the current user's approval, across all submission types. */
   async pending(user: RequestUser): Promise<PendingApprovalDto[]> {
     if (!canApprove(user.roleKey)) return [];
     const where = { ...this.access.submissionWhere(user), status: 'SUBMITTED' as const };
-    const [progress, dprs, mrs] = await Promise.all([
+    const [progress, dprs, mrs, logs] = await Promise.all([
       this.prisma.progressEntry.findMany({ where, include: { project: true, activity: true, submittedBy: true }, orderBy: { submittedAt: 'asc' } }),
       this.prisma.dailyReport.findMany({ where, include: { project: true, submittedBy: true }, orderBy: { submittedAt: 'asc' } }),
       this.prisma.materialRequest.findMany({ where, include: { project: true, submittedBy: true, items: true }, orderBy: { submittedAt: 'asc' } }),
+      this.prisma.machineryLog.findMany({ where, include: { project: true, submittedBy: true, equipment: true }, orderBy: { submittedAt: 'asc' } }),
     ]);
     const out: PendingApprovalDto[] = [
       ...progress.map((p) => ({
@@ -109,6 +113,15 @@ export class SubmissionLifecycleService {
         title: `${m.requestNo}: ${m.items.length} item(s), ${m.priority.toLowerCase()} priority`,
         submittedByName: m.submittedBy.fullName,
         submittedAt: (m.submittedAt ?? m.createdAt).toISOString(),
+      })),
+      ...logs.map((l) => ({
+        type: 'MACHINERY' as const,
+        id: l.id,
+        projectId: l.projectId,
+        projectName: l.project.name,
+        title: machineryTitle(l.equipment.code, l.equipment.name, l.hoursWorked.toString(), l.breakdownHours.toString(), l.date.toISOString().slice(0, 10)),
+        submittedByName: l.submittedBy.fullName,
+        submittedAt: (l.submittedAt ?? l.createdAt).toISOString(),
       })),
     ];
     return out.sort((a, b) => a.submittedAt.localeCompare(b.submittedAt));

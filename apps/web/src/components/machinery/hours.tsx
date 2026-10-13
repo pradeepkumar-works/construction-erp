@@ -1,0 +1,35 @@
+'use client';
+
+import React from 'react';
+import { Tag, Tooltip } from 'antd';
+import type { EquipmentOwnership, MachineryLogDto } from '@erp/shared';
+import { EQUIPMENT_OWNERSHIP_LABELS } from '@erp/shared';
+import { formatQty, toNumber } from '@/lib/format';
+
+export const OwnershipTag = ({ ownership }: { ownership: EquipmentOwnership }) => (
+  <Tag color={ownership === 'HIRED' ? 'orange' : 'geekblue'} style={{ margin: 0 }}>
+    {EQUIPMENT_OWNERSHIP_LABELS[ownership]}
+  </Tag>
+);
+
+/** "7.5 h" plus idle / breakdown when there are any. */
+export function HoursCell({ log }: { log: Pick<MachineryLogDto, 'hoursWorked' | 'idleHours' | 'breakdownHours' | 'breakdownNote'> }) {
+  const idle = toNumber(log.idleHours);
+  const down = toNumber(log.breakdownHours);
+  return (
+    <div>
+      <span className="mono">{formatQty(log.hoursWorked)} h</span>
+      {idle > 0 || down > 0 ? (
+        <div style={{ fontSize: 12 }}>
+          {idle > 0 ? <span className="text-muted">{formatQty(idle)} idle</span> : null}
+          {idle > 0 && down > 0 ? <span className="text-muted"> · </span> : null}
+          {down > 0 ? (
+            <Tooltip title={log.breakdownNote}>
+              <span style={{ color: '#cf1322' }}>{formatQty(down)} breakdown</span>
+            </Tooltip>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}

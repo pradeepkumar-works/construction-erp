@@ -16,6 +16,7 @@ import { BoqTab } from '@/components/boq/BoqTab';
 import { ActivitiesTab } from '@/components/activities/ActivitiesTab';
 import { ProgressList } from '@/components/progress/ProgressList';
 import { DprList } from '@/components/dpr/DprList';
+import { MachineryPanel } from '@/components/machinery/MachineryPanel';
 import { StockPanel } from '@/components/stock/StockPanel';
 import { AttendanceList } from '@/components/attendance/AttendanceList';
 import { MrList } from '@/components/material/MrList';
@@ -88,6 +89,7 @@ export default function ProjectDetailPage() {
             { key: 'attendance', label: 'Attendance', children: <AttendanceList projectId={project.id} /> },
             { key: 'material', label: 'Material Requests', children: <MrList projectId={project.id} newLabel="New material request" /> },
             { key: 'stock', label: 'Stock', children: <StockPanel projectId={project.id} /> },
+            { key: 'machinery', label: 'Machinery', children: <MachineryPanel projectId={project.id} /> },
           ]}
         />
       </Card>

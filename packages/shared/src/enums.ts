@@ -15,7 +15,7 @@ export type ReviewDecision = (typeof REVIEW_DECISIONS)[number];
 export const MATERIAL_PRIORITIES = ['LOW', 'NORMAL', 'HIGH', 'URGENT'] as const;
 export type MaterialPriority = (typeof MATERIAL_PRIORITIES)[number];
 
-export const SUBMISSION_TYPES = ['PROGRESS', 'DPR', 'MATERIAL_REQUEST'] as const;
+export const SUBMISSION_TYPES = ['PROGRESS', 'DPR', 'MATERIAL_REQUEST', 'MACHINERY'] as const;
 export type SubmissionType = (typeof SUBMISSION_TYPES)[number];
 
 export const ROLE_KEYS = [
@@ -53,3 +53,10 @@ export type PushPlatform = (typeof PUSH_PLATFORMS)[number];
 /** RECEIPT = GRN against an approved material request, ISSUE = handed out at site, ADJUSTMENT = opening stock or count correction. */
 export const STOCK_ENTRY_TYPES = ['RECEIPT', 'ISSUE', 'ADJUSTMENT'] as const;
 export type StockEntryType = (typeof STOCK_ENTRY_TYPES)[number];
+
+export const EQUIPMENT_OWNERSHIPS = ['OWNED', 'HIRED'] as const;
+export type EquipmentOwnership = (typeof EQUIPMENT_OWNERSHIPS)[number];
+
+/** What an equipment rate is quoted per. */
+export const EQUIPMENT_RATE_UNITS = ['HOUR', 'DAY', 'MONTH'] as const;
+export type EquipmentRateUnit = (typeof EQUIPMENT_RATE_UNITS)[number];

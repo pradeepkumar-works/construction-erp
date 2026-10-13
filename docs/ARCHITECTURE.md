@@ -39,8 +39,8 @@ shapes of every API response, so web, mobile and API agree on one contract.
 
 ## One approval workflow
 
-`SubmissionLifecycleService` owns the state machine used by progress entries, DPRs and material
-requests:
+`SubmissionLifecycleService` owns the state machine used by progress entries, DPRs, material
+requests and machinery logs:
 
 ```
 DRAFT / REJECTED / CHANGES_REQUESTED --submit--> SUBMITTED --review--> APPROVED | REJECTED | CHANGES_REQUESTED
@@ -54,8 +54,12 @@ and resubmit is decided by `canEditSubmission` / `canResubmit` in `packages/shar
 which the API, web and mobile all use: the author while DRAFT / REJECTED / CHANGES_REQUESTED, and
 approvers until APPROVED. On an edit, `attachmentIds` is the complete list of attachments; files left
 out are detached. Adding a new submission type
-(machinery log, expense, measurement) means adding a table with the same six status
-columns and registering it in the lifecycle service; the approvals queue and audit trail come free.
+(expense, measurement) means adding a table with the same six status columns, adding the type to
+`SUBMISSION_TYPES` in shared and registering it in the lifecycle service (`delegate`, `pending`) and in
+`NotificationsService.describeSubmission`; the approvals queue, review endpoint and audit trail come
+free. The clients keep a few per-type maps (web drawers on the approvals and notifications pages,
+`approvalTypeParam`; mobile `TYPE_ICON`, `EDIT_PATH`, `REVIEW_PATH`, `OUTBOX_PATH`, push routes) that
+TypeScript flags when a type is added.
 
 ## Planning and progress
 
@@ -72,6 +76,7 @@ columns and registering it in the lifecycle service; the approvals queue and aud
 ## Lists: paging, search, sort and export
 
 `GET /progress`, `/dpr`, `/material-requests`, `/attendance`, `/stock/entries`, `/stock/balances`, `/stock/items`,
+`/machinery-logs`, `/equipment`,
 `/projects` and `/users` return `Paginated<T>`
 (`items`, `total`, `page`, `pageSize`). They share `PageQuery` (`apps/api/src/common/paging.ts`):
 
@@ -151,6 +156,31 @@ The store register per project, fed by approved material requests:
   master) and a Stock tab per project; the material request drawer shows received quantities and a
   Receive button. Site app: `app/stock/` (stock on hand, receive, issue), online only because the
   pending and on-hand checks need the server.
+
+## Machinery
+
+- **Tables.** `Equipment` is the organisation's fleet: unique `code`, name, category, `ownership`
+  (`OWNED` / `HIRED`, with the hire agency in `supplier`), registration number, `rate` per `rateUnit`
+  (`HOUR` / `DAY` / `MONTH`) and the project it is deployed at now (`projectId`, null = yard). A machine
+  with logs cannot be deleted, only marked inactive; inactive machines cannot be logged.
+  `MachineryLog` is one machine's day at one project: hours worked, idle and breakdown, hour meter
+  start / end, diesel litres, operator, optional activity, work done, breakdown note and photos, plus
+  the six status columns.
+- **Rules.** Worked + idle + breakdown may not exceed 24, the meter may not run backwards and breakdown
+  hours need a note (`machineryLogProblem` in shared, used by the API and both clients). A machine has
+  at most one log per day that is not rejected; creates and edits check this under a per-machine
+  advisory lock, so two phones logging the same machine cannot both succeed, and resubmitting a rejected
+  log is refused once another log took its day. Creates take an optional client `id` (offline outbox).
+- **Roles.** Log: `MACHINERY_LOGGER_ROLES` (team leader, site engineer, store manager, approvers) on
+  projects they can see. Review: approvers, as for every submission. Equipment master: approvers
+  (`canManageEquipment`); the `rate` field is returned to approvers only.
+- **API.** `/equipment` (paged; `projectId`, `ownership`, `includeInactive`, `q`) with POST / PATCH /
+  DELETE, and `/machinery-logs` (paged; `projectId`, `equipmentId`, `status`, `from`, `to`,
+  `breakdownOnly`, `mine`, `q`) with the usual create / edit / submit / delete. Review and audit go
+  through `/approvals/machinery/:id/...`.
+- **Clients.** Web: Machinery page and project tab (daily logs with review, equipment master, Excel
+  export of both). Site app: `app/machinery/new.tsx` (offline-capable) and `[id].tsx`, a Submit tile,
+  a Machinery segment in My submissions and a section in Approvals.
 
 ## Money and quantities
 

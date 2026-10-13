@@ -24,6 +24,9 @@ export const ATTENDANCE_RECORDER_ROLES: RoleKey[] = ['TEAM_LEADER', 'SITE_ENGINE
 /** Roles that receive material (GRN) and issue it at site. Adjustments, deletions and the item master need an approver. */
 export const STOCK_KEEPER_ROLES: RoleKey[] = ['STORE_MANAGER', 'SITE_ENGINEER', 'ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER'];
 
+/** Roles that log a machine's day (hours, idle, breakdown, diesel). Approvers review the logs. */
+export const MACHINERY_LOGGER_ROLES: RoleKey[] = ['TEAM_LEADER', 'SITE_ENGINEER', 'STORE_MANAGER', 'ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER'];
+
 /** Roles allowed to manage users. */
 export const USER_ADMIN_ROLES: RoleKey[] = ['ADMIN'];
 
@@ -39,6 +42,11 @@ export const canKeepStock = (role: RoleKey) => STOCK_KEEPER_ROLES.includes(role)
 export const canManageStore = (role: RoleKey) => role === 'STORE_MANAGER' || canApprove(role);
 /** Adjust stock (opening balance, count correction), delete stock entries and edit the item master: approvers only. */
 export const canAdjustStock = (role: RoleKey) => canApprove(role);
+
+/** File machinery logs. */
+export const canLogMachinery = (role: RoleKey) => MACHINERY_LOGGER_ROLES.includes(role);
+/** Equipment master (codes, ownership, hire rates, deployment): approvers only, since rates are commercial. */
+export const canManageEquipment = (role: RoleKey) => canApprove(role);
 
 /**
  * Attendance feeds the day's DPR manpower, so a sheet stays editable until that DPR is approved.

@@ -2,7 +2,10 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
+  EquipmentDto,
+  EquipmentOwnership,
   ItemDto,
+  MachineryLogDto,
   ReceivableRequestDto,
   StockBalanceDto,
   StockEntryDto,
@@ -43,12 +46,13 @@ export interface RoleDto {
   name: string;
 }
 
-export type ApprovalTypeParam = 'progress' | 'dpr' | 'material_request';
+export type ApprovalTypeParam = 'progress' | 'dpr' | 'material_request' | 'machinery';
 
 export const approvalTypeParam: Record<SubmissionType, ApprovalTypeParam> = {
   PROGRESS: 'progress',
   DPR: 'dpr',
   MATERIAL_REQUEST: 'material_request',
+  MACHINERY: 'machinery',
 };
 
 /** Paging, search and sort understood by every paged list endpoint. */
@@ -96,6 +100,19 @@ export interface StockBalanceFilters extends PageParams {
   projectId?: string;
   lowOnly?: boolean;
   inStock?: boolean;
+}
+
+export interface MachineryFilters extends ListFilters {
+  equipmentId?: string;
+  from?: string;
+  to?: string;
+  breakdownOnly?: boolean;
+}
+
+export interface EquipmentFilters extends PageParams {
+  projectId?: string;
+  ownership?: EquipmentOwnership;
+  includeInactive?: boolean;
 }
 
 export const clean = (f?: object) =>
@@ -255,6 +272,28 @@ export const useStockItems = (filters?: PageParams) =>
     queryKey: ['stock', 'items', clean(filters)],
     queryFn: async () => (await api.get<Paginated<ItemDto>>('/stock/items', { params: clean(filters) })).data,
     placeholderData: keepPreviousData,
+  });
+
+export const useMachineryLogs = (filters?: MachineryFilters) =>
+  useQuery({
+    queryKey: ['machinery', 'logs', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<MachineryLogDto>>('/machinery-logs', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+  });
+
+export const useMachineryLog = (id: string | undefined) =>
+  useQuery({
+    queryKey: ['machinery', 'logs', 'detail', id],
+    queryFn: async () => (await api.get<MachineryLogDto>(`/machinery-logs/${id}`)).data,
+    enabled: !!id,
+  });
+
+export const useEquipment = (filters?: EquipmentFilters, enabled = true) =>
+  useQuery({
+    queryKey: ['machinery', 'equipment', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<EquipmentDto>>('/equipment', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+    enabled,
   });
 
 /** Approved material requests with something still to receive (GRN form). */
