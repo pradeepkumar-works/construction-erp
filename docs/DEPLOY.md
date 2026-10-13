@@ -5,8 +5,8 @@ Current demo deployment (October 2026):
 | Piece | Where | URL / id |
 |-------|-------|----------|
 | Database | Neon Postgres 16, Singapore (`aws-ap-southeast-1`) | project `construction-erp` (`lucky-wind-88524683`), database `construction_erp` |
-| API | Vercel project `construction-erp-api` (NestJS preset, region `sin1`) | https://construction-erp-api.vercel.app/api (docs at `/api/docs`) |
-| Web ERP | Vercel project `construction-erp-web` (Next.js) | https://construction-erp-web.vercel.app |
+| API | Vercel project `construction-erp-api` (NestJS preset, region `sin1`) | https://construction-erp-api-pradeep15.vercel.app/api (docs at `/api/docs`) |
+| Web ERP | Vercel project `construction-erp-web` (Next.js) | https://construction-erp-web-pradeep15.vercel.app |
 | Mobile | Expo Go / EAS build, pointed at the API URL above | not hosted |
 | Photos | stored in Postgres (`Attachment.data`) because Vercel functions have no disk | switch to Vercel Blob by setting `BLOB_READ_WRITE_TOKEN` |
 
@@ -27,7 +27,7 @@ API (`apps/api`):
 | `CORS_ORIGINS` | optional comma-separated allow-list of browser origins; unset = any origin |
 | `UPLOAD_DIR` | disk mode only |
 
-Web (`apps/web`): `NEXT_PUBLIC_API_URL`, e.g. `https://construction-erp-api.vercel.app/api`.
+Web (`apps/web`): `NEXT_PUBLIC_API_URL`, e.g. `https://construction-erp-api-pradeep15.vercel.app/api`.
 
 Mobile (`apps/mobile`): `EXPO_PUBLIC_API_URL`, same value.
 
@@ -38,12 +38,10 @@ Mobile (`apps/mobile`): `EXPO_PUBLIC_API_URL`, same value.
   in `apps/api/prisma/migrations`), optionally seeds, then `nest build`. Vercel serves `dist/main.js`
   as a function.
 - **Web on Vercel**: root directory `apps/web`; build command builds `packages/shared` then `next build`.
-- **Git auto-deploy**: the Vercel projects were created without a Git link because the Vercel GitHub
-  App does not yet have access to this repository. To enable deploy-on-push: on GitHub go to
-  Settings → Applications → Vercel → Repository access and add `construction-erp`, then in each Vercel
-  project's Settings → Git connect `pradeepkumar-works/construction-erp` with the matching root
-  directory and production branch. Until then, redeploy by running `vercel deploy --prod` from
-  `apps/api` or `apps/web` with the Vercel CLI, or ask for a redeploy.
+- **Git auto-deploy**: both Vercel projects are linked to `pradeepkumar-works/construction-erp`.
+  Every push to the production branch (`claude/modest-brown-emrt4b` today; change it in each
+  project's Settings → Git when you adopt `main`) builds and deploys automatically. Other branches
+  get preview deployments.
 
 ## Database
 
