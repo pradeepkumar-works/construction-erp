@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { canRecordAttendance } from '@erp/shared';
+import { canKeepStock, canRecordAttendance } from '@erp/shared';
 import type { DailyReportDto, MaterialRequestDto, Paginated, ProgressEntryDto, ProjectSummary, SubmissionBase, SubmissionType } from '@erp/shared';
 import { useFetch } from '../../src/api/hooks';
 import { fetchProjects } from '../../src/api/lists';
@@ -87,6 +87,8 @@ export default function HomeScreen() {
         <QuickAction icon="document-text" label="New DPR" onPress={() => router.push('/dpr/new')} tone={colors.accent} />
         <QuickAction icon="cube" label="New Material" onPress={() => router.push('/material-request/new')} tone={colors.success} />
         {user && canRecordAttendance(user.roleKey) ? <QuickAction icon="people" label="Attendance" onPress={() => router.push('/attendance')} tone={colors.primaryDark} /> : null}
+        {/* Four tiles fit a phone row: the store manager gets Stock where site supervisors get Attendance. */}
+        {user && canKeepStock(user.roleKey) && !canRecordAttendance(user.roleKey) ? <QuickAction icon="file-tray-stacked" label="Stock" onPress={() => router.push('/stock')} tone={colors.info} /> : null}
       </View>
 
       {loading && !data ? (

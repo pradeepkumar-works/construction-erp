@@ -11,6 +11,7 @@ import {
   BellOutlined,
   CheckSquareOutlined,
   FileTextOutlined,
+  InboxOutlined,
   LineChartOutlined,
   LogoutOutlined,
   MenuOutlined,
@@ -77,6 +78,7 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
       { key: '/attendance', icon: <ScheduleOutlined />, label: <Link href="/attendance">Attendance</Link> },
       { key: '/progress', icon: <LineChartOutlined />, label: <Link href="/progress">Progress Entries</Link> },
       { key: '/material-requests', icon: <ShoppingCartOutlined />, label: <Link href="/material-requests">Material Requests</Link> },
+      { key: '/stock', icon: <InboxOutlined />, label: <Link href="/stock">Stock</Link> },
       { key: '/notifications', icon: <BellOutlined />, label: <Link href="/notifications">Notifications</Link> },
     ];
     if (canManageUsers(user.roleKey)) {

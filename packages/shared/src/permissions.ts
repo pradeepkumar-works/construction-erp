@@ -21,6 +21,9 @@ export const DPR_SUBMITTER_ROLES: RoleKey[] = ['SITE_ENGINEER', 'TEAM_LEADER'];
 /** Roles that record daily attendance (site supervisors and engineers) and the approvers who may correct it. */
 export const ATTENDANCE_RECORDER_ROLES: RoleKey[] = ['TEAM_LEADER', 'SITE_ENGINEER', 'ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER'];
 
+/** Roles that receive material (GRN) and issue it at site. Adjustments, deletions and the item master need an approver. */
+export const STOCK_KEEPER_ROLES: RoleKey[] = ['STORE_MANAGER', 'SITE_ENGINEER', 'ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER'];
+
 /** Roles allowed to manage users. */
 export const USER_ADMIN_ROLES: RoleKey[] = ['ADMIN'];
 
@@ -30,6 +33,12 @@ export const canEditProjects = (role: RoleKey) => PROJECT_EDITOR_ROLES.includes(
 export const canManageUsers = (role: RoleKey) => USER_ADMIN_ROLES.includes(role);
 export const submitsDpr = (role: RoleKey) => DPR_SUBMITTER_ROLES.includes(role);
 export const canRecordAttendance = (role: RoleKey) => ATTENDANCE_RECORDER_ROLES.includes(role);
+/** Record goods received and material issued. */
+export const canKeepStock = (role: RoleKey) => STOCK_KEEPER_ROLES.includes(role);
+/** Store master data (item master, minimum stock levels): the store manager and approvers. */
+export const canManageStore = (role: RoleKey) => role === 'STORE_MANAGER' || canApprove(role);
+/** Adjust stock (opening balance, count correction), delete stock entries and edit the item master: approvers only. */
+export const canAdjustStock = (role: RoleKey) => canApprove(role);
 
 /**
  * Attendance feeds the day's DPR manpower, so a sheet stays editable until that DPR is approved.

@@ -5,6 +5,7 @@ import type {
   ProjectType,
   PushPlatform,
   RoleKey,
+  StockEntryType,
   SubmissionStatus,
   SubmissionType,
   Weather,
@@ -175,6 +176,8 @@ export interface MaterialRequestItemDto {
   specification: string | null;
   unit: string;
   quantity: string;
+  /** Quantity received so far on GRNs against this line ("0" until the first receipt). */
+  receivedQty: string;
 }
 
 export interface MaterialRequestDto extends SubmissionBase {
@@ -312,6 +315,89 @@ export interface AttendanceDayDto {
 export interface AttendanceSuggestionsDto {
   contractors: string[];
   categories: string[];
+}
+
+/* ---------- stock ---------- */
+
+export interface ItemDto {
+  id: string;
+  name: string;
+  unit: string;
+  category: string | null;
+  /** Projects in which this item has stock movements. */
+  projectCount: number;
+  createdAt: string;
+}
+
+export interface StockLineDto {
+  id: string;
+  itemId: string;
+  itemName: string;
+  unit: string;
+  /** Signed: positive into the store, negative out of it. */
+  quantity: string;
+  materialRequestItemId: string | null;
+}
+
+export interface StockEntryDto {
+  id: string;
+  projectId: string;
+  projectName: string;
+  type: StockEntryType;
+  entryNo: string;
+  date: string;
+  materialRequestId: string | null;
+  requestNo: string | null;
+  supplier: string | null;
+  challanNo: string | null;
+  vehicleNo: string | null;
+  issuedTo: string | null;
+  activityId: string | null;
+  activityName: string | null;
+  remarks: string | null;
+  lines: StockLineDto[];
+  attachments: AttachmentDto[];
+  createdById: string;
+  createdByName: string;
+  createdAt: string;
+}
+
+/** Stock of one item at one project. */
+export interface StockBalanceDto {
+  projectId: string;
+  projectName: string;
+  itemId: string;
+  itemName: string;
+  unit: string;
+  category: string | null;
+  received: string;
+  issued: string;
+  adjusted: string;
+  balance: string;
+  minQty: string | null;
+  low: boolean;
+  lastMovement: string | null;
+}
+
+/** An approved material request line with what is still to be received. */
+export interface ReceivableLineDto {
+  materialRequestItemId: string;
+  itemName: string;
+  specification: string | null;
+  unit: string;
+  requested: string;
+  received: string;
+  pending: string;
+}
+
+export interface ReceivableRequestDto {
+  id: string;
+  requestNo: string;
+  projectId: string;
+  projectName: string;
+  requiredDate: string;
+  priority: MaterialPriority;
+  lines: ReceivableLineDto[];
 }
 
 export interface Paginated<T> {

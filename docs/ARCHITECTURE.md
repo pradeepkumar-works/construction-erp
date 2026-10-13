@@ -71,7 +71,8 @@ columns and registering it in the lifecycle service; the approvals queue and aud
 
 ## Lists: paging, search, sort and export
 
-`GET /progress`, `/dpr`, `/material-requests`, `/attendance`, `/projects` and `/users` return `Paginated<T>`
+`GET /progress`, `/dpr`, `/material-requests`, `/attendance`, `/stock/entries`, `/stock/balances`, `/stock/items`,
+`/projects` and `/users` return `Paginated<T>`
 (`items`, `total`, `page`, `pageSize`). They share `PageQuery` (`apps/api/src/common/paging.ts`):
 
 - `page` (1-based) and `pageSize` (default 25, max 500; `limit` is a deprecated alias).
@@ -116,6 +117,41 @@ workers), trade and head count. `totalWorkers` is stored on the sheet so lists s
   offline after the attendance still gets the figures. Editing the sheet later does not change a DPR
   that already exists.
 
+## Stock
+
+The store register per project, fed by approved material requests:
+
+- **Tables.** `Item` is the organisation's material master (unique on name + unit). `StockEntry` is one
+  document: a `RECEIPT` (GRN), `ISSUE` or `ADJUSTMENT`, numbered `GRN-` / `ISS-` / `ADJ-<year>-0001`
+  per organisation. Its lines are `StockTxn` rows with a signed quantity (receipts positive, issues
+  negative) plus copies of project, item, type and date, so a balance is a `groupBy` sum without joins.
+  `StockMinLevel` holds the minimum of an item at a project.
+- **Rules.** A GRN is against an `APPROVED` material request; each line may take up to what is still
+  pending on it (`StockTxn.materialRequestItemId` records which line), and the request line's name and
+  unit find or create the `Item`. An issue may not exceed the stock on hand, an adjustment may not take
+  it below zero, and deleting an entry is refused when its stock has since been issued. Every stock write
+  of an organisation runs in a transaction under a Postgres advisory lock, so two issues racing for the
+  same stock cannot both pass and entry numbers never collide. Creates take an optional client `id`
+  like the submissions. Dates may be back-dated, not set in the future.
+- **Roles.** Receive and issue: `STOCK_KEEPER_ROLES` (store manager, site engineer, approvers). Item
+  master and minimum levels: store manager or approver (`canManageStore`). Adjustments and deleting
+  entries: approvers (`canAdjustStock`). Checks live in `ProjectAccessService.assertCanKeepStock` /
+  `assertCanManageStore` / `assertCanAdjustStock`; anyone who sees the project can read its stock.
+- **Not an approval submission.** Entries have no status; the approval happened on the material request.
+- **Low stock.** When an issue, adjustment or deletion takes an item from at-or-above its minimum to
+  below it (`crossesBelowMin` in shared), the project's store managers and its PM get a `LOW_STOCK`
+  notification (in-app and push), deduplicated per entry and item. Balances carry a `low` flag and the
+  list filters on it.
+- **API.** `GET /stock/balances` (paged in memory after the sums; `projectId`, `lowOnly`, `inStock`, `q`),
+  `GET /stock/entries` (paged; `projectId`, `type`, `itemId`, `materialRequestId`, `from`, `to`, `q`),
+  `GET /stock/receivable` (approved requests with pending quantities), `POST /stock/receipts`,
+  `/stock/issues`, `/stock/adjustments`, `DELETE /stock/entries/:id`, `PUT /stock/min-levels`, and the
+  item master under `/stock/items`. Material request lines now carry `receivedQty`.
+- **Clients.** Web: Stock page (stock on hand with minimum editor and item ledger, register, item
+  master) and a Stock tab per project; the material request drawer shows received quantities and a
+  Receive button. Site app: `app/stock/` (stock on hand, receive, issue), online only because the
+  pending and on-hand checks need the server.
+
 ## Money and quantities
 
 Decimal columns everywhere (`Decimal(18,2)` for money, `Decimal(18,3)` for quantities) and strings
@@ -146,6 +182,7 @@ that device and is deleted on sign-out or when Expo reports it unregistered.
 - Jobs are triggered by HTTP (`/api/notifications/jobs/*`, guarded by `CRON_SECRET`) so Vercel
   Cron can call them; an optional in-process timer (`NOTIFICATION_JOBS_INPROCESS=true`) covers
   long-running hosts. Transports are plain `fetch` calls (Expo push API, Resend) with no SDKs.
+- Stock writes call `notify()` directly for `LOW_STOCK` (see Stock).
 - A new notification type = enum value in `schema.prisma` and `packages/shared` (+ label), a
   `notify()` call, and a route in the web `notificationHref` / mobile `notificationRoute` helpers.
 

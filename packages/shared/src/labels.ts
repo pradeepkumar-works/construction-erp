@@ -1,4 +1,4 @@
-import type { MaterialPriority, NotificationType, ProjectStatus, ProjectType, RoleKey, SubmissionStatus, SubmissionType, Weather } from './enums';
+import type { MaterialPriority, NotificationType, ProjectStatus, ProjectType, RoleKey, StockEntryType, SubmissionStatus, SubmissionType, Weather } from './enums';
 
 export const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {
   ROAD: 'Road / Infrastructure',
@@ -64,6 +64,13 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   SUBMISSION_CHANGES_REQUESTED: 'Changes requested',
   DPR_REMINDER: 'DPR reminder',
   APPROVAL_DIGEST: 'Pending approvals',
+  LOW_STOCK: 'Low stock',
+};
+
+export const STOCK_ENTRY_TYPE_LABELS: Record<StockEntryType, string> = {
+  RECEIPT: 'Receipt (GRN)',
+  ISSUE: 'Issue',
+  ADJUSTMENT: 'Adjustment',
 };
 
 /** Common units used in BOQ / activities. Free text is still allowed. */

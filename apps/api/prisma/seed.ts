@@ -98,6 +98,7 @@ async function main() {
   const already = await prisma.project.count({ where: { organizationId: org.id } });
   if (already > 0) {
     await seedAttendance(org.id);
+    await seedStock(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
   }
@@ -240,6 +241,7 @@ async function main() {
   }
 
   await seedAttendance(org.id);
+  await seedStock(org.id);
 
   console.log('Seed complete. Login with any of these (password: password123):');
   for (const u of USERS) console.log(`  ${u.email.padEnd(24)} ${u.role}`);
@@ -287,6 +289,101 @@ async function seedAttendance(organizationId: string) {
         },
       });
       await prisma.auditLog.create({ data: { organizationId, entityType: 'ATTENDANCE', entityId: sheet.id, action: 'CREATED', actorId: recorder, note: `${day(-i).toISOString().slice(0, 10)}: ${total} workers`, createdAt: day(-i) } });
+    }
+  }
+}
+
+/** Opening stock per project type: [item, unit, quantity, minimum, issued per day for the last three days]. */
+const OPENING_STOCK: Record<string, [string, string, number, number, number][]> = {
+  ROAD: [['Diesel', 'Ltr', 2400, 1000, 520], ['OPC 53 Grade Cement', 'Bags', 300, 100, 40], ['Emulsion SS-1', 'Ltr', 1800, 500, 150]],
+  BUILDING: [['Diesel', 'Ltr', 900, 300, 80], ['Binding wire', 'Kg', 250, 50, 20], ['Shuttering plywood 12mm', 'Nos', 120, 40, 10]],
+  WATER_SUPPLY: [['Diesel', 'Ltr', 1600, 600, 360], ['HDPE electrofusion coupler 110mm', 'Nos', 400, 100, 45], ['Ball valve 50mm', 'Nos', 60, 20, 4]],
+};
+
+/**
+ * Store register for every project that has none yet (also backfills an older database): opening stock
+ * ten days ago, a GRN against the approved material request (second line half received), issues over the
+ * last three days and minimum levels. Diesel on the road project ends below its minimum with an alert.
+ */
+async function seedStock(organizationId: string) {
+  const year = new Date().getUTCFullYear();
+  const counters: Record<string, number> = {};
+  const nextNo = async (prefix: string) => {
+    if (counters[prefix] === undefined) {
+      const last = await prisma.stockEntry.findFirst({ where: { organizationId, entryNo: { startsWith: `${prefix}-${year}-` } }, orderBy: { entryNo: 'desc' }, select: { entryNo: true } });
+      counters[prefix] = last ? parseInt(last.entryNo.slice(prefix.length + 6), 10) : 0;
+    }
+    counters[prefix] += 1;
+    return `${prefix}-${year}-${String(counters[prefix]).padStart(4, '0')}`;
+  };
+  const item = async (name: string, unit: string, category: string | null = null) =>
+    (await prisma.item.findFirst({ where: { organizationId, name, unit } })) ?? prisma.item.create({ data: { organizationId, name, unit, category } });
+
+  const projects = await prisma.project.findMany({
+    where: { organizationId },
+    include: { members: { include: { user: { include: { role: true } } } }, activities: { orderBy: { sortOrder: 'asc' } } },
+    orderBy: { code: 'asc' },
+  });
+  for (const project of projects) {
+    if ((await prisma.stockEntry.count({ where: { projectId: project.id } })) > 0) continue;
+    const pick = (role: string) => project.members.find((m) => m.user.role.key === role)?.userId;
+    const keeper = pick('STORE_MANAGER') ?? pick('SITE_ENGINEER') ?? project.projectManagerId;
+    const pm = project.projectManagerId ?? keeper;
+    if (!keeper || !pm) continue;
+    const entry = async (type: 'RECEIPT' | 'ISSUE' | 'ADJUSTMENT', offset: number, by: string, data: Partial<Prisma.StockEntryUncheckedCreateInput>, lines: { itemId: string; quantity: Prisma.Decimal; materialRequestItemId?: string }[]) => {
+      const e = await prisma.stockEntry.create({
+        data: {
+          organizationId, projectId: project.id, type, entryNo: await nextNo(type === 'RECEIPT' ? 'GRN' : type === 'ISSUE' ? 'ISS' : 'ADJ'), date: day(offset), createdById: by, createdAt: day(offset), ...data,
+          lines: { create: lines.map((l, i) => ({ organizationId, projectId: project.id, itemId: l.itemId, type, date: day(offset), quantity: l.quantity, materialRequestItemId: l.materialRequestItemId ?? null, sortOrder: i })) },
+        },
+      });
+      await prisma.auditLog.create({ data: { organizationId, entityType: 'STOCK', entityId: e.id, action: 'CREATED', actorId: by, note: e.entryNo, createdAt: day(offset) } });
+      return e;
+    };
+
+    // Opening stock, entered by the PM
+    const opening = OPENING_STOCK[project.type] ?? [];
+    const openingItems = [];
+    for (const [name, unit, qty, min, perDay] of opening) openingItems.push({ row: await item(name, unit, name === 'Diesel' ? 'Fuel' : null), qty, min, perDay });
+    await entry('ADJUSTMENT', -10, pm, { remarks: 'Opening stock as per physical count' }, openingItems.map((o) => ({ itemId: o.row.id, quantity: D(o.qty) })));
+    for (const o of openingItems)
+      await prisma.stockMinLevel.create({ data: { organizationId, projectId: project.id, itemId: o.row.id, minQty: D(o.min), updatedById: pm } });
+
+    // GRN against the approved material request: first line in full, second line half
+    const mr = await prisma.materialRequest.findFirst({ where: { projectId: project.id, status: 'APPROVED' }, include: { items: { orderBy: { sortOrder: 'asc' } } }, orderBy: { createdAt: 'asc' } });
+    const received: { itemId: string; qty: Prisma.Decimal }[] = [];
+    if (mr && mr.items.length) {
+      const lines = [];
+      for (const [idx, l] of mr.items.entries()) {
+        const row = await item(l.itemName, l.unit);
+        const qty = idx === 0 ? l.quantity : l.quantity.div(2).toDecimalPlaces(0);
+        lines.push({ itemId: row.id, quantity: qty, materialRequestItemId: l.id });
+        received.push({ itemId: row.id, qty });
+      }
+      await entry('RECEIPT', -4, keeper, { materialRequestId: mr.id, supplier: project.type === 'ROAD' ? 'Kalinga Bitumen & Aggregates' : project.type === 'BUILDING' ? 'Utkal Cement Traders' : 'Jagannath Pipes & Fittings', challanNo: `CH-${1180 + projects.indexOf(project)}`, vehicleNo: 'OD-02-AK-4471' }, lines);
+      if (received[0]) await prisma.stockMinLevel.create({ data: { organizationId, projectId: project.id, itemId: received[0].itemId, minQty: received[0].qty.div(5).toDecimalPlaces(0), updatedById: keeper } });
+    }
+
+    // Issues over the last three days
+    const [main] = CONTRACTORS[project.type] ?? ['Labour contractor'];
+    const activity = project.activities.find((a) => a.plannedStart && a.plannedEnd && a.plannedStart <= day(0) && a.plannedEnd >= day(-5)) ?? project.activities[0];
+    for (let i = 3; i >= 1; i--) {
+      const lines = openingItems.map((o) => ({ itemId: o.row.id, quantity: D(-o.perDay) }));
+      if (received[0]) lines.push({ itemId: received[0].itemId, quantity: received[0].qty.div(4).toDecimalPlaces(0).neg() });
+      await entry('ISSUE', -i, keeper, { issuedTo: i === 2 ? 'Departmental (machinery)' : main, activityId: activity?.id ?? null, remarks: i === 2 ? 'Diesel for grader, roller and tippers' : null }, lines);
+    }
+
+    // Alert for whatever ended below its minimum
+    const low = openingItems.filter((o) => o.qty - 3 * o.perDay < o.min);
+    for (const o of low) {
+      const balance = o.qty - 3 * o.perDay;
+      await prisma.notification.create({
+        data: {
+          organizationId, userId: keeper, type: 'LOW_STOCK', projectId: project.id, createdAt: day(-1),
+          title: `Low stock: ${o.row.name}`,
+          body: `${o.row.name} at ${project.name} is down to ${balance} ${o.row.unit} (minimum ${o.min} ${o.row.unit}).`,
+        },
+      });
     }
   }
 }

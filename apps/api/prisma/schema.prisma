@@ -41,6 +41,14 @@ enum MaterialPriority {
   URGENT
 }
 
+/// RECEIPT = goods received (GRN) against an approved material request, ISSUE = handed out for use at site,
+/// ADJUSTMENT = opening stock or a physical-count correction (either sign).
+enum StockEntryType {
+  RECEIPT
+  ISSUE
+  ADJUSTMENT
+}
+
 enum Weather {
   SUNNY
   CLOUDY
@@ -56,6 +64,7 @@ enum NotificationType {
   SUBMISSION_CHANGES_REQUESTED
   DPR_REMINDER
   APPROVAL_DIGEST
+  LOW_STOCK
 }
 
 enum PushPlatform {
@@ -85,6 +94,10 @@ model Organization {
   auditLogs        AuditLog[]
   notifications    Notification[]
   attendanceSheets AttendanceSheet[]
+  items            Item[]
+  stockEntries     StockEntry[]
+  stockTxns        StockTxn[]
+  stockMinLevels   StockMinLevel[]
 }
 
 model Role {
@@ -130,6 +143,8 @@ model User {
   pushTokens          PushToken[]
   recordedAttendance  AttendanceSheet[] @relation("AttendanceRecorder")
   updatedAttendance   AttendanceSheet[] @relation("AttendanceUpdater")
+  stockEntries        StockEntry[]
+  stockMinLevels      StockMinLevel[]
 
   @@unique([organizationId, email])
   @@index([organizationId])
@@ -166,6 +181,9 @@ model Project {
   materialRequests MaterialRequest[]
   notifications    Notification[]
   attendanceSheets AttendanceSheet[]
+  stockEntries     StockEntry[]
+  stockTxns        StockTxn[]
+  stockMinLevels   StockMinLevel[]
 
   @@unique([organizationId, code])
   @@index([organizationId, status])
@@ -227,6 +245,7 @@ model Activity {
   updatedAt      DateTime     @updatedAt
 
   progressEntries ProgressEntry[]
+  stockEntries    StockEntry[]
 
   @@index([projectId])
   @@index([organizationId])
@@ -323,8 +342,9 @@ model MaterialRequest {
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
 
-  items       MaterialRequestItem[]
-  attachments Attachment[]
+  items        MaterialRequestItem[]
+  attachments  Attachment[]
+  stockEntries StockEntry[]
 
   @@unique([organizationId, requestNo])
   @@index([projectId, status])
@@ -339,6 +359,8 @@ model MaterialRequestItem {
   unit          String
   quantity      Decimal         @db.Decimal(18, 3)
   sortOrder     Int             @default(0)
+
+  stockTxns StockTxn[]
 }
 
 // ---------- Attendance (daily register, not an approval submission) ----------
@@ -346,21 +368,21 @@ model MaterialRequestItem {
 /// Workers present on one project on one day, recorded by the site supervisor. One sheet per project per day.
 /// The day's DPR takes its manpower from here; the sheet locks once that DPR is approved.
 model AttendanceSheet {
-  id             String           @id @default(uuid())
+  id             String       @id @default(uuid())
   organizationId String
-  organization   Organization     @relation(fields: [organizationId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id])
   projectId      String
-  project        Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  date           DateTime         @db.Date
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  date           DateTime     @db.Date
   remarks        String?
   /// Sum of the lines' counts, kept in step on every save so lists can sort and total without a join.
-  totalWorkers   Int              @default(0)
+  totalWorkers   Int          @default(0)
   recordedById   String
-  recordedBy     User             @relation("AttendanceRecorder", fields: [recordedById], references: [id])
+  recordedBy     User         @relation("AttendanceRecorder", fields: [recordedById], references: [id])
   updatedById    String?
-  updatedBy      User?            @relation("AttendanceUpdater", fields: [updatedById], references: [id])
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
+  updatedBy      User?        @relation("AttendanceUpdater", fields: [updatedById], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
   lines AttendanceLine[]
 
@@ -385,6 +407,104 @@ model AttendanceLine {
 
 // ---------- Attachments and audit ----------
 
+// ---------- Stock ----------
+
+/// Material master per organisation. Receipts create items from the material request lines (same name and unit).
+model Item {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  name           String
+  unit           String
+  category       String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  txns      StockTxn[]
+  minLevels StockMinLevel[]
+
+  @@unique([organizationId, name, unit])
+}
+
+/// One document in the store register: a GRN, an issue slip or a stock adjustment. Its lines are StockTxn rows.
+model StockEntry {
+  id                String           @id @default(uuid())
+  organizationId    String
+  organization      Organization     @relation(fields: [organizationId], references: [id])
+  projectId         String
+  project           Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  type              StockEntryType
+  /// GRN-2026-0001, ISS-2026-0001 or ADJ-2026-0001, numbered per organisation and type
+  entryNo           String
+  date              DateTime         @db.Date
+  /// Receipts: the approved material request this GRN is against
+  materialRequestId String?
+  materialRequest   MaterialRequest? @relation(fields: [materialRequestId], references: [id])
+  supplier          String?
+  challanNo         String?
+  vehicleNo         String?
+  /// Issues: who took the material (contractor, gang or person)
+  issuedTo          String?
+  /// Issues: the activity the material is for
+  activityId        String?
+  activity          Activity?        @relation(fields: [activityId], references: [id], onDelete: SetNull)
+  remarks           String?
+  createdById       String
+  createdBy         User             @relation(fields: [createdById], references: [id])
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  lines       StockTxn[]
+  attachments Attachment[]
+
+  @@unique([organizationId, entryNo])
+  @@index([projectId, date])
+  @@index([organizationId, type, date])
+}
+
+/// Stock movement of one item in one project. Quantity is signed: receipts positive, issues negative.
+/// The balance of an item in a project is the sum of its rows.
+model StockTxn {
+  id                    String               @id @default(uuid())
+  organizationId        String
+  organization          Organization         @relation(fields: [organizationId], references: [id])
+  projectId             String
+  project               Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  entryId               String
+  entry                 StockEntry           @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  itemId                String
+  item                  Item                 @relation(fields: [itemId], references: [id])
+  /// Copy of the entry's type so balances can be summed by kind without a join
+  type                  StockEntryType
+  date                  DateTime             @db.Date
+  quantity              Decimal              @db.Decimal(18, 3)
+  /// Receipts: the material request line this quantity was received against
+  materialRequestItemId String?
+  materialRequestItem   MaterialRequestItem? @relation(fields: [materialRequestItemId], references: [id])
+  sortOrder             Int                  @default(0)
+
+  @@index([projectId, itemId])
+  @@index([entryId])
+  @@index([materialRequestItemId])
+}
+
+/// Minimum stock of an item at a project. Falling below it raises a low-stock alert.
+model StockMinLevel {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  itemId         String
+  item           Item         @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  minQty         Decimal      @db.Decimal(18, 3)
+  updatedById    String
+  updatedBy      User         @relation(fields: [updatedById], references: [id])
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([projectId, itemId])
+}
+
 model Attachment {
   id                String           @id @default(uuid())
   organizationId    String
@@ -404,6 +524,8 @@ model Attachment {
   dailyReport       DailyReport?     @relation(fields: [dailyReportId], references: [id], onDelete: Cascade)
   materialRequestId String?
   materialRequest   MaterialRequest? @relation(fields: [materialRequestId], references: [id], onDelete: Cascade)
+  stockEntryId      String?
+  stockEntry        StockEntry?      @relation(fields: [stockEntryId], references: [id], onDelete: Cascade)
   createdAt         DateTime         @default(now())
 
   @@index([organizationId])

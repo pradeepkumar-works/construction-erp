@@ -16,7 +16,7 @@ const include = {
   project: { select: { name: true } },
   submittedBy: { select: { fullName: true } },
   reviewedBy: { select: { fullName: true } },
-  items: { orderBy: { sortOrder: 'asc' as const } },
+  items: { orderBy: { sortOrder: 'asc' as const }, include: { stockTxns: { select: { quantity: true } } } },
   attachments: true,
 } satisfies Prisma.MaterialRequestInclude;
 type Row = Prisma.MaterialRequestGetPayload<{ include: typeof include }>;
@@ -51,7 +51,14 @@ export class MaterialRequestsService {
       requiredDate: dateOnly(r.requiredDate)!,
       priority: r.priority,
       remarks: r.remarks,
-      items: r.items.map((i) => ({ id: i.id, itemName: i.itemName, specification: i.specification, unit: i.unit, quantity: dec(i.quantity)! })),
+      items: r.items.map((i) => ({
+        id: i.id,
+        itemName: i.itemName,
+        specification: i.specification,
+        unit: i.unit,
+        quantity: dec(i.quantity)!,
+        receivedQty: dec(i.stockTxns.reduce((s, t) => s.add(t.quantity), new Prisma.Decimal(0)))!,
+      })),
       status: r.status,
       submittedById: r.submittedById,
       submittedByName: r.submittedBy.fullName,

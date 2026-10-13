@@ -37,8 +37,14 @@ Order matters: each item builds on the previous one.
    register, not an approval submission: the DPR it feeds is what gets approved.
 
 ### B. Phase 2 modules (from the client proposal)
-6. **Material receipt and stock**: GRN against an approved material request, issue to site, stock
-   balance per project and item, minimum-stock alerts. Tables: `Item` master, `StockTxn`.
+6. ~~**Material receipt and stock**: GRN against an approved material request, issue to site, stock
+   balance per project and item, minimum-stock alerts. Tables: `Item` master, `StockTxn`.~~ Done:
+   `Item` master, `StockEntry` (a GRN, issue slip or adjustment, numbered GRN- / ISS- / ADJ-) with signed
+   `StockTxn` lines, and `StockMinLevel` per project and item. A GRN can take up to what is still pending
+   on each line of an approved request; an issue up to the stock on hand. Approvers enter opening stock
+   and count corrections as adjustments and can delete a wrong entry. Falling below the minimum notifies
+   the project's store managers and PM (`LOW_STOCK`). Web Stock page and project tab (stock on hand,
+   register, item master, Excel export); site-app Stock, Receive and Issue screens (online only).
 7. **Machinery log**: equipment master, daily hours / idle / diesel / breakdown from mobile; goes
    through the approval lifecycle.
 8. **Site expenses**: category, amount, GST, receipt photo, approval; posts to project cost.

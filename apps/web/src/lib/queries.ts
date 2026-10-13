@@ -2,6 +2,11 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
+  ItemDto,
+  ReceivableRequestDto,
+  StockBalanceDto,
+  StockEntryDto,
+  StockEntryType,
   ActivityDto,
   AttendanceDayDto,
   AttendanceSheetDto,
@@ -76,6 +81,21 @@ export interface AttendanceFilters extends PageParams {
   projectId?: string;
   from?: string;
   to?: string;
+}
+
+export interface StockEntryFilters extends PageParams {
+  projectId?: string;
+  type?: StockEntryType;
+  itemId?: string;
+  materialRequestId?: string;
+  from?: string;
+  to?: string;
+}
+
+export interface StockBalanceFilters extends PageParams {
+  projectId?: string;
+  lowOnly?: boolean;
+  inStock?: boolean;
 }
 
 export const clean = (f?: object) =>
@@ -205,6 +225,44 @@ export const useAttendanceSuggestions = (projectId: string | undefined) =>
     queryKey: ['attendance', 'suggestions', projectId ?? 'all'],
     queryFn: async () => (await api.get<AttendanceSuggestionsDto>('/attendance/suggestions', { params: clean({ projectId }) })).data,
     staleTime: 5 * 60_000,
+  });
+
+export const useStockBalances = (filters?: StockBalanceFilters, enabled = true) =>
+  useQuery({
+    queryKey: ['stock', 'balances', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<StockBalanceDto>>('/stock/balances', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+
+export const useStockEntries = (filters?: StockEntryFilters, enabled = true) =>
+  useQuery({
+    queryKey: ['stock', 'entries', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<StockEntryDto>>('/stock/entries', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+
+export const useStockEntry = (id: string | undefined) =>
+  useQuery({
+    queryKey: ['stock', 'entry', id],
+    queryFn: async () => (await api.get<StockEntryDto>(`/stock/entries/${id}`)).data,
+    enabled: !!id,
+  });
+
+export const useStockItems = (filters?: PageParams) =>
+  useQuery({
+    queryKey: ['stock', 'items', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<ItemDto>>('/stock/items', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+  });
+
+/** Approved material requests with something still to receive (GRN form). */
+export const useReceivable = (projectId: string | undefined, enabled = true) =>
+  useQuery({
+    queryKey: ['stock', 'receivable', projectId ?? 'all'],
+    queryFn: async () => (await api.get<ReceivableRequestDto[]>('/stock/receivable', { params: clean({ projectId }) })).data,
+    enabled,
   });
 
 export const usePendingApprovals = (enabled = true) =>

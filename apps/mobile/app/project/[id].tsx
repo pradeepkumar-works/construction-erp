@@ -62,6 +62,7 @@ export default function ProjectScreen() {
       {user && canRecordAttendance(user.roleKey) ? (
         <Button title="Today's attendance" icon="people" variant="secondary" onPress={() => router.push(`/attendance?projectId=${project.id}`)} style={styles.attendance} />
       ) : null}
+      <Button title="Stock" icon="cube-outline" variant="secondary" onPress={() => router.push(`/stock?projectId=${project.id}`)} style={styles.attendance} />
 
       <SectionTitle title="Activities" right={<Text style={typography.caption}>planned / executed</Text>} />
       {activities.length === 0 ? (
