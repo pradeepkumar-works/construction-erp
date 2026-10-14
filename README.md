@@ -68,10 +68,10 @@ demo seed at 1280 × 800, scale 1.25, saved as WebP).
 - Payroll inputs: per employee per month the days on the rolls, present, leave by type, absent, overtime, loss of
   pay and paid days, and per labour contractor the man-days by project and trade at the daily rates, both exported
   to Excel for the payroll provider (no statutory calculations). Web: People → Payroll Inputs.
-- WhatsApp and SMS: approval requests, send-backs and the DPR reminder on each user's phone when they switch it on
-  (WhatsApp first, SMS as the fallback), invites to the number the admin enters, and a message log for management.
-  Needs a WhatsApp Business account and a DLT-registered SMS provider (docs/DEPLOY.md); until then messages are
-  logged, not sent. Web: Notifications → WhatsApp & SMS; site app: Profile.
+- WhatsApp and SMS: approval requests, send-backs, the DPR reminder, the morning approvals digest, test-due and
+  payments-due reminders on each user's phone when they switch it on (WhatsApp first, SMS as the fallback), invites to
+  the number the admin enters, and a message log for management. WhatsApp goes through WATI (or Meta's Cloud API),
+  SMS through a DLT-registered provider (docs/DEPLOY.md); until they are set up messages are logged, not sent. Web: Notifications → WhatsApp & SMS; site app: Profile.
 - Project cost: approved site expenses, material issued at the item's standard rate, approved machinery logs
   at the hire rate and attendance at each trade's daily rate, against the value of approved progress (and of
   approved measurements), by project and month, with margin. For approvers and accounts.

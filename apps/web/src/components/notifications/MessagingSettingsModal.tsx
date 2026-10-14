@@ -9,7 +9,7 @@ import { useMessagingPrefs, useSendTestMessage, useUpdateMessagingPrefs } from '
 
 type Values = { phone: string; whatsapp: boolean; sms: boolean };
 
-/** The user's own opt-in for alerts on WhatsApp and by SMS: approval requests, send-backs and the DPR reminder. */
+/** The user's own opt-in for alerts on WhatsApp and by SMS: approval requests, send-backs, the daily reminders and digest. */
 export function MessagingSettingsModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { message } = App.useApp();
   const { refresh } = useAuth();
@@ -62,8 +62,8 @@ export function MessagingSettingsModal({ open, onClose }: { open: boolean; onClo
     <Modal open={open} title="WhatsApp and SMS alerts" onCancel={onClose} onOk={() => form.submit()} okText="Save" confirmLoading={update.isPending} destroyOnHidden loading={isLoading}>
       <Space orientation="vertical" size={12} style={{ width: '100%' }}>
         <Typography.Text type="secondary">
-          Get approval requests, send-backs on your submissions and the daily DPR reminder on your phone, as well as in the app. WhatsApp goes first; SMS is used when WhatsApp is off or
-          does not get through.
+          Get approval requests, send-backs on your submissions, the morning approvals digest and the DPR, test and payment reminders on your phone, as well as in the app. WhatsApp
+          goes first; SMS is used when WhatsApp is off or does not get through.
         </Typography.Text>
         {notReady ? <Alert type="info" showIcon title="WhatsApp and SMS are not set up on this server yet" description="You can switch alerts on now; they start once your company's account is connected." /> : null}
         <Form<Values> form={form} layout="vertical" onFinish={save} requiredMark={false} initialValues={{ phone: '', whatsapp: false, sms: false }}>

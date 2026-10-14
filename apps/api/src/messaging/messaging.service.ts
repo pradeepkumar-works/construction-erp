@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { normalisePhone, renderMessage, type MessageChannel, type MessageTemplate, type MessagingPrefsDto, type OutboundMessageDto, type Paginated } from '@erp/shared';
+import { normalisePhone, renderMessage, WATI_PARAM_NAMES, type MessageChannel, type MessageTemplate, type MessagingPrefsDto, type OutboundMessageDto, type Paginated, type WhatsAppProvider } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -20,7 +20,7 @@ interface SendResult {
 }
 
 /** The parameter (1-based) of each template that is a link: SMS keeps it whole, other SMS parameters are cut to 30 characters (the DLT limit). */
-const LINK_PARAM: Partial<Record<MessageTemplate, number>> = { APPROVAL_REQUEST: 4, SENT_BACK: 6, DPR_REMINDER: 2, INVITE: 2 };
+const LINK_PARAM: Partial<Record<MessageTemplate, number>> = { APPROVAL_REQUEST: 4, SENT_BACK: 6, DPR_REMINDER: 2, APPROVAL_DIGEST: 4, TEST_DUE: 5, BILLS_DUE: 3, INVITE: 2 };
 const SMS_VAR_MAX = 30;
 const TIMEOUT_MS = 8000;
 
@@ -37,7 +37,11 @@ const cut = (s: string, max: number) => (s.length > max ? `${s.slice(0, max - 3)
  * OutboundMessage, the company's message log. Nothing here throws into the caller: an outage must not fail an approval.
  *
  * Providers come from the environment (see docs/DEPLOY.md):
- *   WhatsApp Business Platform (Cloud API): WHATSAPP_ACCESS_TOKEN + WHATSAPP_PHONE_NUMBER_ID, templates named
+ *   WhatsApp through WATI: WATI_API_ENDPOINT (the "API Endpoint" on WATI's API Docs page, with the account number) +
+ *     WATI_ACCESS_TOKEN, optional WATI_CHANNEL_NUMBER when the WATI account has more than one number. Templates are
+ *     named `nirmaan_<template>` (WHATSAPP_TEMPLATE_PREFIX) with the variable names in WATI_PARAM_NAMES. WATI wins
+ *     when both it and the Cloud API keys are set.
+ *   WhatsApp Business Platform (Cloud API) directly: WHATSAPP_ACCESS_TOKEN + WHATSAPP_PHONE_NUMBER_ID, templates named
  *     `nirmaan_<template>` (WHATSAPP_TEMPLATE_PREFIX) in WHATSAPP_TEMPLATE_LANGUAGE (default en).
  *   SMS through MSG91 (DLT templates): MSG91_AUTH_KEY + MSG91_TEMPLATE_IDS ("APPROVAL_REQUEST=<id>,SENT_BACK=<id>,…"),
  *     parameters as var1, var2…
@@ -52,6 +56,10 @@ export class MessagingService {
   private readonly waApi = (process.env.WHATSAPP_API_URL || 'https://graph.facebook.com/v21.0').replace(/\/+$/, '');
   private readonly waLang = process.env.WHATSAPP_TEMPLATE_LANGUAGE || 'en';
   private readonly waPrefix = process.env.WHATSAPP_TEMPLATE_PREFIX ?? 'nirmaan_';
+  private readonly watiApi = (process.env.WATI_API_ENDPOINT || '').trim().replace(/\/+$/, '').replace(/\/api\/v\d+$/, '');
+  /** WATI shows the token as "Bearer eyJ…"; either form works here. */
+  private readonly watiToken = (process.env.WATI_ACCESS_TOKEN || '').trim().replace(/^Bearer\s+/i, '');
+  private readonly watiChannel = process.env.WATI_CHANNEL_NUMBER?.replace(/\D/g, '') || undefined;
   private readonly smsKey = process.env.MSG91_AUTH_KEY;
   private readonly smsApi = (process.env.MSG91_API_URL || 'https://control.msg91.com/api/v5').replace(/\/+$/, '');
   private readonly smsTemplates: Partial<Record<MessageTemplate, string>> = Object.fromEntries(
@@ -67,10 +75,17 @@ export class MessagingService {
     return process.env.MESSAGING_DISABLED === 'true';
   }
 
+  /** Who sends WhatsApp from this server, if anyone. */
+  get whatsappProvider(): WhatsAppProvider | null {
+    if (this.watiApi && this.watiToken) return 'WATI';
+    if (this.waToken && this.waPhoneId) return 'META';
+    return null;
+  }
+
   /** The channel can send this template from this server. */
   ready(channel: MessageChannel, template?: MessageTemplate): boolean {
     if (this.disabled) return false;
-    if (channel === 'WHATSAPP') return !!(this.waToken && this.waPhoneId);
+    if (channel === 'WHATSAPP') return this.whatsappProvider !== null;
     return !!this.smsKey && (template ? !!this.smsTemplates[template] : Object.keys(this.smsTemplates).length > 0);
   }
 
@@ -84,7 +99,7 @@ export class MessagingService {
 
   async prefs(user: RequestUser): Promise<MessagingPrefsDto> {
     const u = await this.prisma.user.findUniqueOrThrow({ where: { id: user.id }, select: { phone: true, whatsappAlerts: true, smsAlerts: true } });
-    return { phone: u.phone, sendTo: normalisePhone(u.phone), whatsapp: u.whatsappAlerts, sms: u.smsAlerts, whatsappReady: this.ready('WHATSAPP'), smsReady: this.ready('SMS') };
+    return { phone: u.phone, sendTo: normalisePhone(u.phone), whatsapp: u.whatsappAlerts, sms: u.smsAlerts, whatsappReady: this.ready('WHATSAPP'), whatsappProvider: this.disabled ? null : this.whatsappProvider, smsReady: this.ready('SMS') };
   }
 
   async updatePrefs(user: RequestUser, dto: UpdateMessagingPrefsDto): Promise<MessagingPrefsDto> {
@@ -194,7 +209,7 @@ export class MessagingService {
       this.log.log(`[${channel} not set up] to=${target.to}: ${body}`);
     } else {
       try {
-        result = channel === 'WHATSAPP' ? await this.sendWhatsApp(target.to, msg.template, params) : await this.sendSms(target.to, msg.template, params);
+        result = channel === 'SMS' ? await this.sendSms(target.to, msg.template, params) : this.whatsappProvider === 'WATI' ? await this.sendWati(target.to, msg.template, params) : await this.sendWhatsApp(target.to, msg.template, params);
       } catch (e) {
         result = { ok: false, error: (e as Error).message };
       }
@@ -204,6 +219,44 @@ export class MessagingService {
     return this.prisma.outboundMessage.create({
       data: { organizationId: target.organizationId, userId: target.userId, notificationId: target.notificationId, channel, template: msg.template, to: target.to, body, status, providerRef: result.providerRef ?? null, error: result.error?.slice(0, 500) ?? null },
     });
+  }
+
+  /**
+   * WATI template message (POST {endpoint}/api/v2/sendTemplateMessage?whatsappNumber=…). WATI answers 200 with
+   * `result: false` and an `info` when it refuses (template not approved, number not on WhatsApp…). Each day's sends of
+   * a template are one broadcast in WATI's reports.
+   */
+  private async sendWati(to: string, template: MessageTemplate, params: string[]): Promise<SendResult> {
+    const name = `${this.waPrefix}${template.toLowerCase()}`;
+    const body = {
+      template_name: name,
+      broadcast_name: `${name}_${new Date().toISOString().slice(0, 10)}`,
+      parameters: WATI_PARAM_NAMES[template].map((n, i) => ({ name: n, value: params[i] ?? '-' })),
+      ...(this.watiChannel ? { channel_number: this.watiChannel } : {}),
+    };
+    const res = await fetch(`${this.watiApi}/api/v2/sendTemplateMessage?whatsappNumber=${to}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', accept: 'application/json', authorization: `Bearer ${this.watiToken}` },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+    const text = await res.text();
+    let json: { result?: boolean | string; info?: string; message?: string; error?: string | null; validWhatsAppNumber?: boolean; localMessageId?: string; receivers?: { localMessageId?: string; isValidWhatsAppNumber?: boolean; errors?: string[] }[] } | null = null;
+    try {
+      json = JSON.parse(text);
+    } catch {
+      /* WATI answers HTML or plain text for a wrong endpoint or token */
+    }
+    const ok = res.ok && (json?.result === true || json?.result === 'success');
+    const r = json?.receivers?.[0];
+    if (!ok || r?.isValidWhatsAppNumber === false || json?.validWhatsAppNumber === false) {
+      const why =
+        r?.isValidWhatsAppNumber === false || json?.validWhatsAppNumber === false
+          ? 'not a WhatsApp number'
+          : json?.info || json?.message || json?.error || r?.errors?.join('; ') || (res.status === 401 ? 'WATI refused the access token' : text.slice(0, 200) || 'no response');
+      return { ok: false, error: `${res.status}: ${why}` };
+    }
+    return { ok: true, providerRef: r?.localMessageId ?? json?.localMessageId ?? null };
   }
 
   /** WhatsApp Cloud API template message. TEST uses Meta's own hello_world template, which every account has. */

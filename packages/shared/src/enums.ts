@@ -50,6 +50,7 @@ export const NOTIFICATION_TYPES = [
   'NCR',
   'DOCUMENT_ISSUED',
   'LEAVE',
+  'BILLS_DUE',
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 

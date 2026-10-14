@@ -339,7 +339,7 @@ export interface PushTokenDto {
 
 /** Result of a scheduled notification job (DPR reminder / approval digest). */
 export interface NotificationJobResult {
-  job: 'DPR_REMINDER' | 'APPROVAL_DIGEST' | 'TESTS_DUE';
+  job: 'DPR_REMINDER' | 'APPROVAL_DIGEST' | 'TESTS_DUE' | 'BILLS_DUE';
   date: string;
   created: number;
   pushed: number;

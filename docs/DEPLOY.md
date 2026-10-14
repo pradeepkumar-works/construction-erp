@@ -36,8 +36,9 @@ API (`apps/api`):
 | `ORG_SIGNUP` | `open` lets new companies create an organisation at `/signup`; unset = closed |
 | `EXPO_ACCESS_TOKEN` | optional; only if push security is enforced on the Expo project |
 | `NOTIFICATION_JOBS_INPROCESS`, `DPR_REMINDER_TIME`, `APPROVAL_DIGEST_TIME` | run the jobs from a timer inside the API (Docker / Railway) instead of Vercel Cron; times are `HH:mm` in `NOTIFICATION_TIMEZONE` |
-| `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID` | WhatsApp alerts through the WhatsApp Business Platform (Cloud API), see "WhatsApp and SMS" below. `WHATSAPP_TEMPLATE_LANGUAGE` (default `en`), `WHATSAPP_TEMPLATE_PREFIX` (default `nirmaan_`) and `WHATSAPP_API_URL` (default `https://graph.facebook.com/v21.0`) are optional. |
-| `MSG91_AUTH_KEY`, `MSG91_TEMPLATE_IDS` | SMS alerts through MSG91 with DLT-registered templates: `MSG91_TEMPLATE_IDS=APPROVAL_REQUEST=<id>,SENT_BACK=<id>,DPR_REMINDER=<id>,INVITE=<id>,TEST=<id>`. A message without an id is not sent by SMS. `MSG91_API_URL` overrides the service URL. |
+| `WATI_API_ENDPOINT`, `WATI_ACCESS_TOKEN` | WhatsApp alerts through WATI, see "WhatsApp and SMS" below: the API endpoint (`https://live-mt-server.wati.io/<account number>`) and access token from WATI's API Docs page. `WATI_CHANNEL_NUMBER` is only needed when the WATI account has more than one WhatsApp number. WATI is used when both it and the Cloud API keys are set. |
+| `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID` | Alternative to WATI: WhatsApp through Meta's Cloud API directly. `WHATSAPP_TEMPLATE_LANGUAGE` (default `en`), `WHATSAPP_TEMPLATE_PREFIX` (default `nirmaan_`) and `WHATSAPP_API_URL` (default `https://graph.facebook.com/v21.0`) are optional. |
+| `MSG91_AUTH_KEY`, `MSG91_TEMPLATE_IDS` | SMS alerts through MSG91 with DLT-registered templates: `MSG91_TEMPLATE_IDS=APPROVAL_REQUEST=<id>,SENT_BACK=<id>,DPR_REMINDER=<id>,APPROVAL_DIGEST=<id>,TEST_DUE=<id>,BILLS_DUE=<id>,INVITE=<id>,TEST=<id>`. A message without an id is not sent by SMS. `MSG91_API_URL` overrides the service URL. |
 | `PUSH_DISABLED`, `EMAIL_DISABLED`, `MESSAGING_DISABLED` | `true` switches a channel off (useful on preview deployments); `MESSAGING_DISABLED` stops WhatsApp and SMS |
 
 Web (`apps/web`): `NEXT_PUBLIC_API_URL`, e.g. `https://construction-erp-api-pradeep15.vercel.app/api`.
@@ -49,22 +50,42 @@ production build; Expo Go on Android cannot receive remote push.
 ## WhatsApp and SMS
 
 Users switch alerts on for themselves (Notifications → WhatsApp & SMS on the web, Profile in the site app); nothing
-goes to anyone who has not. Approval requests, send-backs (rejected or changes requested) and the DPR reminder go on
-WhatsApp first and by SMS when WhatsApp is off, not set up or fails; invites go to the phone the admin entered. Without
-the keys below nothing is sent and each message is logged as "Not set up" with its text (Notifications → WhatsApp &
-SMS log, for admins and management).
+goes to anyone who has not. Approval requests, send-backs (rejected or changes requested), the DPR reminder, the
+morning approvals digest, test readings falling due and payments due (admin, management and accounts, when an approved
+bill falls due within 3 days) go on WhatsApp first and by SMS when WhatsApp is off, not set up or fails; invites go to
+the phone the admin entered. Without the keys below nothing is sent and each message is logged as "Not set up" with
+its text (Notifications → WhatsApp & SMS log, for admins and management).
 
-WhatsApp (Meta charges per conversation):
+WhatsApp through WATI (the default; WATI bills its plan plus Meta's per-message charge):
+1. In WATI, connect the company's WhatsApp Business number (WATI walks through Meta's business verification).
+2. Open **API Docs** in WATI's left menu. Copy the **API Endpoint** (`https://live-mt-server.wati.io/<number>`) into
+   `WATI_API_ENDPOINT` and the **Access Token** into `WATI_ACCESS_TOKEN` (with or without the leading `Bearer`).
+3. Under Broadcast → Template Messages, create these templates, category **Utility**, language **English**, with the
+   exact names and bodies below (the variables are WATI's named variables), and submit each for approval. Approval
+   by Meta usually takes minutes to a day. The text is `watiTemplateText()` in `packages/shared/src/messaging.ts`.
+
+| Template name | Body |
+|---|---|
+| `nirmaan_approval_request` | Approval needed: {{item}} on {{project}}, submitted by {{submitted_by}}. Open {{link}} to review it in Nirmaan. |
+| `nirmaan_sent_back` | Your {{item}} on {{project}} was {{outcome}} by {{reviewer}}. Note: {{note}}. Open {{link}} to see it in Nirmaan. |
+| `nirmaan_dpr_reminder` | Reminder: today's daily progress report for {{project}} has not been submitted. Please submit it at {{link}} before end of day. |
+| `nirmaan_approval_digest` | Good morning {{name}}. {{count}} waiting for your approval: {{summary}}. Open {{link}} to review them in Nirmaan. |
+| `nirmaan_test_due` | Test reminder: the {{reading}} result of {{test}} at {{project}} is {{due}}. Enter it at {{link}} once tested. |
+| `nirmaan_bills_due` | Payments due: {{due_soon}} in the next 3 days, {{overdue}} overdue. See the due list at {{link}} in Nirmaan. |
+| `nirmaan_invite` | You have been invited to {{company}} on Nirmaan. Choose a password to sign in: {{link}} The link works once and expires in {{expires_in}}. |
+| `nirmaan_test` | Test message from Nirmaan: your alerts on this number are working. |
+
+Until a template is approved, WATI refuses that message and the log shows it as Failed with WATI's reason.
+
+WhatsApp through Meta's Cloud API directly (instead of WATI):
 1. Create a Meta Business account and, in Meta for Developers, an app with the WhatsApp product; add and verify the
    business phone number. Copy its **Phone number ID** into `WHATSAPP_PHONE_NUMBER_ID`.
 2. Create a system user with a permanent access token (`whatsapp_business_messaging` permission) and put it in
    `WHATSAPP_ACCESS_TOKEN`.
-3. Submit these utility templates in English (`en`) and wait for approval. The wording is in
-   `packages/shared/src/messaging.ts` (`MESSAGE_TEMPLATE_TEXT`); parameters are `{{1}}`, `{{2}}`… in that order.
-   `nirmaan_approval_request` (4), `nirmaan_sent_back` (6), `nirmaan_dpr_reminder` (2), `nirmaan_invite` (3).
-   The test button uses Meta's own `hello_world`.
+3. Submit the same templates in English (`en`) with `{{1}}`, `{{2}}`… in place of the named variables
+   (`MESSAGE_TEMPLATE_TEXT`). The test button uses Meta's own `hello_world`.
 
-SMS (India): register the sender ID and the same five texts on a DLT portal (each parameter as `{#var#}`, at most
+SMS (India): register the sender ID and the same eight texts on a DLT portal (each parameter as `{#var#}`, at most
 30 characters; links whitelisted), add them as MSG91 templates with variables `var1`, `var2`…, then set
 `MSG91_AUTH_KEY` and `MSG91_TEMPLATE_IDS`.
 

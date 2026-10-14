@@ -251,8 +251,9 @@ relative to a v2 item (S about one, M about two, L about three). The full draft 
     WhatsApp Business Platform (Meta-approved templates), SMS fallback (DLT registration); channels per user.~~
     Done: each user switches WhatsApp and SMS on for their own number (web Notifications, app Profile) and can send a
     test. Approval requests, send-backs and the DPR reminder go on WhatsApp, falling back to SMS; invites go to the
-    number the admin enters; every message is in a log for management. Sending starts once the Meta and MSG91 (DLT)
-    keys are set (docs/DEPLOY.md); until then messages are logged as not set up.
+    number the admin enters; every message is in a log for management. WhatsApp goes through WATI (Meta's Cloud API
+    is the alternative), which also carries the morning approvals digest, test-due and payments-due reminders. Sending
+    starts once the WATI and MSG91 (DLT) keys are set (docs/DEPLOY.md); until then messages are logged as not set up.
 32. **Client and consultant portal** (M). Guest login for the client's engineer or PMC on their projects:
     approved progress, DPRs, reports, certify RA bills, attend inspections. Access only through
     `project-access.service.ts` and `permissions.ts`.

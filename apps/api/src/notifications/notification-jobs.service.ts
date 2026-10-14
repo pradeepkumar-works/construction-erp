@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { APPROVER_ROLES, DPR_SUBMITTER_ROLES, SPECIALIST_APPROVERS, SUBMISSION_TYPE_LABELS, TEST_KIND_LABELS, type NotificationJobResult, type PendingApprovalDto, type RoleKey } from '@erp/shared';
+import { APPROVER_ROLES, DPR_SUBMITTER_ROLES, PAYMENT_ROLES, SPECIALIST_APPROVERS, SUBMISSION_TYPE_LABELS, TEST_KIND_LABELS, type NotificationJobResult, type PendingApprovalDto, type RoleKey } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -8,10 +8,15 @@ import { parseDate } from '../common/serialize';
 import { NotificationsService } from './notifications.service';
 import { EmailService, escapeHtml } from './email.service';
 import { MessagingService } from '../messaging/messaging.service';
+import { PayablesService } from '../payables/payables.service';
 import { EMAIL_COLORS, emailButton, emailLayout } from './email-layout';
 import { JOB_TIMEZONE, todayIn } from './time';
 
 const WEB_URL = (process.env.WEB_URL || '').replace(/\/+$/, '');
+/** Bills falling due within this many days (today included) trigger the payments-due alert. */
+const BILLS_DUE_DAYS = 3;
+const inr = (n: number) => `₹${n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const cut = (s: string, max: number) => (s.length > max ? `${s.slice(0, max - 3)}...` : s);
 
 /**
  * Scheduled notifications. Both jobs are idempotent for a given day: running them twice sends nothing twice.
@@ -28,6 +33,7 @@ export class NotificationJobsService {
     private email: EmailService,
     private access: ProjectAccessService,
     private messaging: MessagingService,
+    private payables: PayablesService,
   ) {}
 
   /**
@@ -79,7 +85,7 @@ export class NotificationJobsService {
    * something waiting, listing the items by project.
    */
   async approvalDigest(date = todayIn()): Promise<NotificationJobResult> {
-    const result: NotificationJobResult = { job: 'APPROVAL_DIGEST', date, created: 0, pushed: 0, emailed: 0, skipped: 0 };
+    const result: NotificationJobResult = { job: 'APPROVAL_DIGEST', date, created: 0, pushed: 0, emailed: 0, messaged: 0, skipped: 0 };
     const dedupeKey = `APPROVAL_DIGEST:${date}`;
     // Everyone whose role appears in an approval matrix, plus the fixed approver roles; pending() then applies each
     // organisation's actual rights, so a user with nothing to approve gets nothing.
@@ -108,6 +114,10 @@ export class NotificationJobsService {
         title: `${pending.length} submission${pending.length === 1 ? '' : 's'} waiting for your approval`,
         body: summary.text,
         dedupeKey,
+        message: {
+          template: 'APPROVAL_DIGEST',
+          params: [u.fullName.split(' ')[0], `${pending.length} submission${pending.length === 1 ? ' is' : 's are'}`, cut(summary.text, 300), this.messaging.webUrl('/approvals')],
+        },
       });
       if (r.created === 0) {
         result.skipped++;
@@ -115,6 +125,7 @@ export class NotificationJobsService {
       }
       result.created += r.created;
       result.pushed += r.pushed;
+      result.messaged! += r.messaged;
       const sent = await this.email.send({
         to: u.email,
         subject: `[${u.organization.name}] ${pending.length} submission${pending.length === 1 ? '' : 's'} waiting for your approval`,
@@ -135,7 +146,7 @@ export class NotificationJobsService {
    * on a test still pending, goes once to whoever recorded the test and the QA/QC on the project. Runs with the digest.
    */
   async testsDue(date = todayIn()): Promise<NotificationJobResult> {
-    const result: NotificationJobResult = { job: 'TESTS_DUE', date, created: 0, pushed: 0, emailed: 0, skipped: 0 };
+    const result: NotificationJobResult = { job: 'TESTS_DUE', date, created: 0, pushed: 0, emailed: 0, messaged: 0, skipped: 0 };
     const readings = await this.prisma.qualityTestReading.findMany({
       where: { value: null, dueOn: { lte: parseDate(date) }, test: { result: 'PENDING', project: { status: 'ACTIVE' } } },
       include: { test: { include: { project: { select: { name: true } } } } },
@@ -155,12 +166,60 @@ export class NotificationJobsService {
         projectId: t.projectId,
         entityId: t.id,
         dedupeKey: `TEST_DUE:${r.id}`,
+        message: {
+          template: 'TEST_DUE',
+          params: [r.label.toLowerCase(), `${t.testNo} (${t.title})`, t.project.name, due < date ? `overdue since ${due}` : 'due today', this.messaging.webUrl(`/inspections?tab=tests&id=${t.id}`)],
+        },
       });
       result.created += n.created;
       result.pushed += n.pushed;
+      result.messaged! += n.messaged;
       result.skipped += n.skipped;
     }
     this.log.log(`Tests due ${date}: ${JSON.stringify(result)}`);
+    return result;
+  }
+
+  /**
+   * Payments due: once a day, to each admin, management and accounts user, the approved vendor and subcontractor bills
+   * still unpaid on their projects, when at least one falls due within BILLS_DUE_DAYS (overdue ones alone do not
+   * repeat the alert every day). In-app, push, and WhatsApp / SMS for those who switched it on. Runs with the digest.
+   */
+  async billsDue(date = todayIn()): Promise<NotificationJobResult> {
+    const result: NotificationJobResult = { job: 'BILLS_DUE', date, created: 0, pushed: 0, emailed: 0, messaged: 0, skipped: 0 };
+    const dedupeKey = `BILLS_DUE:${date}`;
+    const day = parseDate(date).getTime();
+    const users = await this.prisma.user.findMany({ where: { isActive: true, role: { key: { in: PAYMENT_ROLES } } }, include: { role: { select: { key: true } } } });
+    for (const u of users) {
+      const reqUser: RequestUser = { id: u.id, organizationId: u.organizationId, roleKey: u.role.key as RoleKey, email: u.email, fullName: u.fullName };
+      const open = (await this.payables.summary(reqUser)).openBills
+        .map((b) => ({ ...b, days: Math.round((parseDate(b.dueDate).getTime() - day) / 86_400_000) }))
+        .filter((b) => Number(b.outstanding) > 0);
+      const soon = open.filter((b) => b.days >= 0 && b.days <= BILLS_DUE_DAYS).sort((a, b) => a.days - b.days);
+      const overdue = open.filter((b) => b.days < 0);
+      if (!soon.length) {
+        result.skipped++;
+        continue;
+      }
+      const sum = (bills: typeof open) => (bills.length ? `${bills.length} bill${bills.length === 1 ? '' : 's'}, ${inr(bills.reduce((s, b) => s + Number(b.outstanding), 0))}` : 'none');
+      const r = await this.notifications.notify({
+        organizationId: u.organizationId,
+        userIds: [u.id],
+        type: 'BILLS_DUE',
+        title: `Payments due in the next ${BILLS_DUE_DAYS} days: ${sum(soon)}`,
+        body: `${soon
+          .slice(0, 5)
+          .map((b) => `${b.vendorName} ${b.billLabel} ${inr(Number(b.outstanding))} due ${b.days === 0 ? 'today' : `on ${b.dueDate}`}`)
+          .join(' · ')}${soon.length > 5 ? ` and ${soon.length - 5} more` : ''}. Overdue: ${sum(overdue)}.`,
+        dedupeKey,
+        message: { template: 'BILLS_DUE', params: [sum(soon), sum(overdue), this.messaging.webUrl('/payables')] },
+      });
+      result.created += r.created;
+      result.pushed += r.pushed;
+      result.messaged! += r.messaged;
+      result.skipped += r.skipped;
+    }
+    this.log.log(`Bills due ${date}: ${JSON.stringify(result)}`);
     return result;
   }
 
