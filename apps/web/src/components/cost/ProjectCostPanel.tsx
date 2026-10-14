@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { Alert, Button, Card, Col, Empty, Row, Skeleton, Statistic, Table, Tabs, Typography } from 'antd';
 import { TeamOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -62,6 +63,12 @@ export function ProjectCostPanel({ projectId }: { projectId: string }) {
             </Col>
             <Col xs={12} md={6}>
               <Statistic title="Cash in from the client" value={formatINR(data.cashIn)} styles={{ content: { fontSize: 16 } }} />
+            </Col>
+            <Col xs={12} md={6}>
+              <Statistic title="Vendor and subcontractor bills (incl. GST)" value={formatINR(data.payableBilled)} styles={{ content: { fontSize: 16 } }} />
+            </Col>
+            <Col xs={12} md={6}>
+              <Statistic title="Cash out to them" value={formatINR(data.cashOut)} styles={{ content: { fontSize: 16 } }} />
             </Col>
           </Row>
           <Card size="small" style={{ marginTop: 16 }} title="Cost heads" extra={<CostLegend />}>
@@ -173,6 +180,25 @@ export function ProjectCostPanel({ projectId }: { projectId: string }) {
                         { title: 'Man-days', dataIndex: 'manDays', width: 100, align: 'right' },
                         { title: 'Daily rate', dataIndex: 'dailyRate', width: 150, align: 'right', render: (v) => rateOrDash(v, '/ day') },
                         { title: 'Amount', dataIndex: 'amount', width: 140, align: 'right', render: money },
+                      ]}
+                    />
+                  ),
+                },
+                {
+                  key: 'subcontract',
+                  label: `Subcontractors (${data.subcontractByOrder.length})`,
+                  children: (
+                    <Table
+                      rowKey="workOrderId"
+                      size="small"
+                      pagination={false}
+                      dataSource={data.subcontractByOrder}
+                      locale={{ emptyText: 'No approved subcontractor bill in this period' }}
+                      columns={[
+                        { title: 'Work order', dataIndex: 'woNo', width: 150, render: (v, r) => <Link href={`/work-orders?id=${r.workOrderId}`} className="mono">{v}</Link> },
+                        { title: 'Subcontractor', dataIndex: 'vendorName' },
+                        { title: 'Bills', dataIndex: 'bills', width: 80, align: 'right' },
+                        { title: 'Work value', dataIndex: 'amount', width: 140, align: 'right', render: money },
                       ]}
                     />
                   ),

@@ -108,6 +108,11 @@ export const VENDOR_BILL_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROCUREMENT
 export const canRecordVendorBill = (role: RoleKey) => VENDOR_BILL_ROLES.includes(role);
 /** See vendor bills: those who record them and project managers. */
 export const canViewVendorBills = (role: RoleKey) => VENDOR_BILL_ROLES.includes(role) || role === 'PROJECT_MANAGER';
+/** Record payments to vendors and subcontractors: admin, management and accounts. */
+export const PAYMENT_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'ACCOUNTS_MANAGER'];
+export const canRecordPayment = (role: RoleKey) => PAYMENT_ROLES.includes(role);
+/** See payables (what is owed to vendors and subcontractors, and when): those who pay and project managers. */
+export const canViewPayables = (role: RoleKey) => PAYMENT_ROLES.includes(role) || role === 'PROJECT_MANAGER';
 /** Issue work orders to subcontractors and labour contractors. */
 export const WORK_ORDER_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER', 'PROCUREMENT_MANAGER', 'QUANTITY_SURVEYOR'];
 export const canIssueWorkOrder = (role: RoleKey) => WORK_ORDER_ROLES.includes(role);

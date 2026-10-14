@@ -6,7 +6,7 @@ import { COST_HEADS, COST_HEAD_LABELS, type CostHead, type CostHeadsDto } from '
 import { formatINR, toNumber } from '@/lib/format';
 import { BRAND } from '@/lib/brand';
 
-export const HEAD_COLORS: Record<CostHead, string> = { expenses: '#7c3aed', material: BRAND.colors.primary, machinery: '#d97706', labour: '#0f766e' };
+export const HEAD_COLORS: Record<CostHead, string> = { expenses: '#7c3aed', material: BRAND.colors.primary, machinery: '#d97706', labour: '#0f766e', subcontract: '#be185d' };
 
 /** Horizontal stacked bar of the cost heads; `scale` is the value of a full-width bar. */
 export function CostBar({ cost, scale, height = 14 }: { cost: CostHeadsDto; scale: number; height?: number }) {

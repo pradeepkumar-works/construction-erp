@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Button, Select, Table, Tag, Typography } from 'antd';
+import { Button, Select, Space, Table, Tag, Typography } from 'antd';
 import type { TableProps } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import type { SubcontractBillDto, SubcontractBillSortField, SubmissionStatus } from '@erp/shared';
@@ -16,6 +16,7 @@ import { formatDate, formatINR } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { ListToolbar } from '@/components/common/ListToolbar';
 import { ExportButton } from '@/components/common/ExportButton';
+import { PaidTag } from '@/components/payables/BillPayments';
 import { StatusTag } from '@/components/common/StatusTag';
 import { ReviewActions } from '@/components/common/ReviewActions';
 import { overdueDays } from '@/components/purchasing/VendorBillDrawer';
@@ -108,7 +109,18 @@ export function SubBillList({ projectId: fixedProject, openId: initialOpen }: { 
         );
       },
     },
-    { title: 'Status', dataIndex: 'status', width: 140, ...sort('status'), render: (s) => <StatusTag status={s} /> },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      width: 140,
+      ...sort('status'),
+      render: (s, r) => (
+        <Space size={4} wrap>
+          <StatusTag status={s} />
+          <PaidTag bill={r} />
+        </Space>
+      ),
+    },
     {
       title: '',
       key: 'actions',

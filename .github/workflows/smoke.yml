@@ -108,6 +108,18 @@ jobs:
           ENG=$(curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' -d '{"email":"engineer@demo.com","password":"password123"}' | jq -r .accessToken)
           code=$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/work-orders/margin?projectId=$PRJ" -H "authorization: Bearer $ENG")
           echo "margin as a site engineer: $code"; [ "$code" = "403" ]
+      - name: Payables
+        run: |
+          set -e
+          TOKEN=$(curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' \
+            -d '{"email":"accounts@demo.com","password":"password123"}' | jq -r .accessToken)
+          H="authorization: Bearer $TOKEN"
+          curl -sf "$API_URL/payables" -H "$H" | jq -c '.totals | {billed, paid, outstanding, overdue, msmeAtRisk, retentionHeld}'
+          curl -sf "$API_URL/payables" -H "$H" | jq -e '(.vendors | length > 0) and (.totals.billed | tonumber > 0)' > /dev/null
+          curl -sf "$API_URL/vendor-payments" -H "$H" | jq -e '.total >= 1' > /dev/null
+          ENG=$(curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' -d '{"email":"engineer@demo.com","password":"password123"}' | jq -r .accessToken)
+          code=$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/payables" -H "authorization: Bearer $ENG")
+          echo "payables as a site engineer: $code"; [ "$code" = "403" ]
       - name: Notifications
         run: |
           set -e

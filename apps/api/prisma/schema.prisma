@@ -215,6 +215,7 @@ model Organization {
   subcontractBills  SubcontractBill[]
   raBills           RaBill[]
   receipts          Receipt[]
+  vendorPayments    VendorPayment[]
 }
 
 model Role {
@@ -293,6 +294,7 @@ model User {
   submittedBills       RaBill[]           @relation("BillSubmitter")
   reviewedBills        RaBill[]           @relation("BillReviewer")
   receiptsRecorded     Receipt[]          @relation("ReceiptCreator")
+  vendorPaymentsMade   VendorPayment[]    @relation("VendorPaymentCreator")
   quotationsEntered    Quotation[]        @relation("QuotationCreator")
   submittedPos         PurchaseOrder[]    @relation("PoSubmitter")
   reviewedPos          PurchaseOrder[]    @relation("PoReviewer")
@@ -375,6 +377,7 @@ model Project {
   measurements     MeasurementSheet[]
   raBills          RaBill[]
   receipts         Receipt[]
+  vendorPayments   VendorPayment[]
   quotations       Quotation[]
   purchaseOrders   PurchaseOrder[]
   vendorBills      VendorBill[]
@@ -446,6 +449,7 @@ model Vendor {
   vendorBills    VendorBill[]
   workOrders     WorkOrder[]
   attendance     AttendanceLine[]
+  payments       VendorPayment[]
 
   @@unique([organizationId, name])
 }
@@ -595,6 +599,10 @@ model VendorBill {
   subtotal        Decimal          @default(0) @db.Decimal(18, 2)
   gstAmount       Decimal          @default(0) @db.Decimal(18, 2)
   total           Decimal          @default(0) @db.Decimal(18, 2)
+  /// Settled by payments so far (paid + deducted at payment), kept in step by payables
+  paidAmount      Decimal          @default(0) @db.Decimal(18, 2)
+  /// The day the last payment settled it in full; null while anything is outstanding
+  paidDate        DateTime?        @db.Date
   /// Three-way match: no exceptions
   matched         Boolean          @default(true)
   /// What does not match (quantity over received, rate over PO, ...), one line each
@@ -613,6 +621,7 @@ model VendorBill {
 
   lines       VendorBillLine[]
   attachments Attachment[]
+  payments    VendorPayment[]
 
   @@unique([organizationId, billNo])
   @@unique([vendorId, invoiceNo])
@@ -753,6 +762,10 @@ model SubcontractBill {
   totalDeductions       Decimal          @db.Decimal(18, 2)
   /// gross + GST - deductions
   netPayable            Decimal          @db.Decimal(18, 2)
+  /// Settled by payments so far (paid + deducted at payment), kept in step by payables
+  paidAmount            Decimal          @default(0) @db.Decimal(18, 2)
+  /// The day the last payment settled it in full; null while anything is outstanding
+  paidDate              DateTime?        @db.Date
   remarks               String?
   status                SubmissionStatus @default(DRAFT)
   submittedById         String
@@ -770,6 +783,7 @@ model SubcontractBill {
   measurements MeasurementSheet[]
   issues       StockEntry[]
   attachments  Attachment[]
+  payments     VendorPayment[]
 
   @@unique([workOrderId, billNo])
   @@index([organizationId, status])
@@ -1542,6 +1556,44 @@ model Receipt {
   @@index([organizationId, receiptDate])
   @@index([projectId])
   @@index([billId])
+}
+
+/// Money paid to a vendor or subcontractor against an approved bill (payables, v3 item 23). A bill is paid once its
+/// payments (amount paid plus what was deducted at payment) settle what it says is payable.
+model VendorPayment {
+  id                 String           @id @default(uuid())
+  organizationId     String
+  organization       Organization     @relation(fields: [organizationId], references: [id])
+  projectId          String
+  project            Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  vendorId           String
+  vendor             Vendor           @relation(fields: [vendorId], references: [id])
+  /// Exactly one of the two bills
+  vendorBillId       String?
+  vendorBill         VendorBill?      @relation(fields: [vendorBillId], references: [id], onDelete: Restrict)
+  subcontractBillId  String?
+  subcontractBill    SubcontractBill? @relation(fields: [subcontractBillId], references: [id], onDelete: Restrict)
+  paymentDate        DateTime         @db.Date
+  /// Paid out of the bank (or cash)
+  amount             Decimal          @db.Decimal(18, 2)
+  mode               PaymentMode      @default(BANK)
+  /// UTR, cheque or voucher number
+  reference          String?
+  /// TDS deducted at payment (vendor bills: section 194Q or 194C); a subcontractor bill's TDS is already in its net payable
+  tdsAmount          Decimal          @default(0) @db.Decimal(18, 2)
+  otherDeduction     Decimal          @default(0) @db.Decimal(18, 2)
+  otherDeductionNote String?
+  remarks            String?
+  createdById        String
+  createdBy          User             @relation("VendorPaymentCreator", fields: [createdById], references: [id])
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  @@index([organizationId, paymentDate])
+  @@index([projectId])
+  @@index([vendorId])
+  @@index([vendorBillId])
+  @@index([subcontractBillId])
 }
 
 model Attachment {

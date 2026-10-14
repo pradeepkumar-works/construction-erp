@@ -113,6 +113,7 @@ async function main() {
     await seedVendors(org.id);
     await seedPurchasing(org.id);
     await seedSubcontracts(org.id);
+    await seedPayables(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
   }
@@ -268,6 +269,7 @@ async function main() {
   await seedVendors(org.id);
   await seedPurchasing(org.id);
   await seedSubcontracts(org.id);
+  await seedPayables(org.id);
 
   console.log('Seed complete. Login with any of these (password: password123):');
   for (const u of USERS) console.log(`  ${u.email.padEnd(24)} ${u.role}`);
@@ -1163,4 +1165,59 @@ async function seedSubcontracts(organizationId: string) {
   await prisma.measurementSheet.updateMany({ where: { projectId: project.id, boqItemId: { in: [gsb.id, wmm.id] }, status: 'APPROVED' }, data: { workOrderId: wo.id } });
   const issue = await prisma.stockEntry.findFirst({ where: { projectId: project.id, type: 'ISSUE', issuedTo: name }, orderBy: { date: 'desc' } });
   if (issue) await prisma.stockEntry.update({ where: { id: issue.id }, data: { workOrderId: wo.id } });
+}
+
+/**
+ * Demo payables: the road project's supplier (Kalinga Bitumen & Aggregates, a small enterprise) billed what was received
+ * against its PO 40 days ago on 30 days' credit; the bill was approved and about half of it paid, so the due list shows
+ * it overdue and flagged under the MSMED Act. Only when the organisation has no payments yet.
+ */
+async function seedPayables(organizationId: string) {
+  if ((await prisma.vendorPayment.count({ where: { organizationId } })) > 0) return;
+  const userOf = async (role: string) => (await prisma.user.findFirst({ where: { organizationId, role: { key: role } }, select: { id: true } }))?.id;
+  const [md, accounts] = [await userOf('MANAGEMENT'), await userOf('ACCOUNTS_MANAGER')];
+  const po = await prisma.purchaseOrder.findFirst({
+    where: { organizationId, status: 'APPROVED', project: { type: 'ROAD' }, vendorBills: { none: {} } },
+    include: { lines: { orderBy: { sortOrder: 'asc' } }, vendor: true },
+    orderBy: { createdAt: 'asc' },
+  });
+  if (!md || !accounts || !po) return;
+  const received = await prisma.stockTxn.groupBy({ by: ['purchaseOrderLineId'], where: { purchaseOrderLineId: { in: po.lines.map((l) => l.id) } }, _sum: { quantity: true } });
+  const lines = po.lines.flatMap((l) => {
+    const qty = received.find((r) => r.purchaseOrderLineId === l.id)?._sum.quantity;
+    if (!qty || qty.lte(0)) return [];
+    const amount = qty.mul(l.rate).toDecimalPlaces(2);
+    return [{ purchaseOrderLineId: l.id, quantity: qty, rate: l.rate, gstRate: l.gstRate, amount, gstAmount: amount.mul(l.gstRate).div(100).toDecimalPlaces(2), sortOrder: l.sortOrder }];
+  });
+  if (!lines.length) return;
+  if (!po.vendor.msmeCategory) await prisma.vendor.update({ where: { id: po.vendorId }, data: { msmeCategory: 'SMALL', udyamNo: 'UDYAM-OD-19-0042871' } });
+  const year = new Date().getUTCFullYear();
+  const count = await prisma.vendorBill.count({ where: { organizationId, billNo: { startsWith: `VB-${year}-` } } });
+  const subtotal = lines.reduce((t, l) => t.add(l.amount), D(0));
+  const gstAmount = lines.reduce((t, l) => t.add(l.gstAmount), D(0));
+  const total = subtotal.add(gstAmount).add(po.freight);
+  const paid = total.div(2).toDecimalPlaces(0);
+  const bill = await prisma.vendorBill.create({
+    data: {
+      organizationId, projectId: po.projectId, vendorId: po.vendorId, purchaseOrderId: po.id, billNo: `VB-${year}-${String(count + 1).padStart(4, '0')}`, invoiceNo: 'KBA/26-27/0213',
+      invoiceDate: day(-40), dueDate: day(-40 + Math.min(po.paymentDays ?? 30, 45)), freight: po.freight, subtotal, gstAmount, total, matched: true, exceptions: [],
+      status: 'APPROVED', submittedById: accounts, submittedAt: day(-39), reviewedById: md, reviewedAt: day(-38), createdAt: day(-39), paidAmount: paid,
+      lines: { create: lines },
+    },
+  });
+  const payment = await prisma.vendorPayment.create({
+    data: {
+      organizationId, projectId: po.projectId, vendorId: po.vendorId, vendorBillId: bill.id, paymentDate: day(-12), amount: paid, mode: 'BANK', reference: 'SBIN526287700412',
+      remarks: 'Part payment; balance after the bitumen test certificates', createdById: accounts, createdAt: day(-12),
+    },
+  });
+  await prisma.auditLog.createMany({
+    data: [
+      { organizationId, entityType: 'VENDOR_BILL', entityId: bill.id, action: 'CREATED', actorId: accounts, createdAt: day(-39) },
+      { organizationId, entityType: 'VENDOR_BILL', entityId: bill.id, action: 'SUBMITTED', actorId: accounts, createdAt: day(-39) },
+      { organizationId, entityType: 'VENDOR_BILL', entityId: bill.id, action: 'APPROVED', actorId: md, createdAt: day(-38) },
+      { organizationId, entityType: 'VENDOR_PAYMENT', entityId: payment.id, action: 'CREATED', actorId: accounts, createdAt: day(-12) },
+      { organizationId, entityType: 'VENDOR_BILL', entityId: bill.id, action: 'PAYMENT_MADE', actorId: accounts, note: `₹${paid.toFixed(2)} paid (SBIN526287700412)`, createdAt: day(-12) },
+    ],
+  });
 }

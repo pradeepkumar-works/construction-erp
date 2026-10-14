@@ -18,11 +18,12 @@ export function machineryLogCost(rate: string | number | null | undefined, unit:
 }
 
 /** Cost heads, in the order they are shown. */
-export const COST_HEADS = ['expenses', 'material', 'machinery', 'labour'] as const;
+export const COST_HEADS = ['expenses', 'material', 'machinery', 'labour', 'subcontract'] as const;
 export type CostHead = (typeof COST_HEADS)[number];
 export const COST_HEAD_LABELS: Record<CostHead, string> = {
   expenses: 'Site expenses',
   material: 'Material issued',
   machinery: 'Machinery',
   labour: 'Labour',
+  subcontract: 'Subcontractors',
 };

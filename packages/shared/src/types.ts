@@ -616,9 +616,13 @@ export interface LabourRatesDto {
 
 export interface CostHeadsDto {
   expenses: string;
+  /** Material issued at the item rate, less what subcontractors' approved bills recovered */
   material: string;
   machinery: string;
+  /** Attendance man-days, except gangs of a subcontractor with a work order on the project (paid through its bills) */
   labour: string;
+  /** Subcontractors' approved bills: value of work (before GST) */
+  subcontract: string;
   total: string;
 }
 
@@ -651,6 +655,10 @@ export interface ProjectCostSummaryDto {
   billedValue: string;
   /** Received from the client in the period (bank credits, all receipts) */
   cashIn: string;
+  /** Approved vendor and subcontractor bills dated in the period (what they are owed with GST) */
+  payableBilled: string;
+  /** Paid to vendors and subcontractors in the period */
+  cashOut: string;
   unpriced: UnpricedDto;
 }
 
@@ -668,6 +676,8 @@ export interface ProjectCostDto extends ProjectCostSummaryDto {
   materialByItem: { itemId: string; name: string; unit: string; quantity: string; rate: string | null; amount: string }[];
   machineryByEquipment: { equipmentId: string; code: string; name: string; rateUnit: EquipmentRateUnit; rate: string | null; days: number; hours: string; amount: string }[];
   labourByTrade: { category: string; manDays: number; dailyRate: string | null; amount: string }[];
+  /** Subcontractors' approved bills in the period, per work order */
+  subcontractByOrder: { workOrderId: string; woNo: string; vendorName: string; bills: number; amount: string }[];
 }
 
 /* ---------- progress report ---------- */
@@ -1309,6 +1319,12 @@ export interface VendorBillDto extends SubmissionBase {
   exceptions: string[];
   remarks: string | null;
   lines: VendorBillLineDto[];
+  /** Settled by payments (paid plus deducted at payment) */
+  paidAmount: string;
+  /** What is still to pay: total less paidAmount */
+  outstanding: string;
+  /** The day it was paid in full */
+  paidDate: string | null;
 }
 
 /* ---------- subcontractor work orders and bills (v3 item 22) ---------- */
@@ -1432,6 +1448,12 @@ export interface SubcontractBillDto extends SubmissionBase {
   deductions: SubcontractBillDeductionDto[];
   totalDeductions: string;
   netPayable: string;
+  /** Settled by payments (paid plus deducted at payment) */
+  paidAmount: string;
+  /** What is still to pay: net payable less paidAmount */
+  outstanding: string;
+  /** The day it was paid in full */
+  paidDate: string | null;
   remarks: string | null;
   measurementCount: number;
   issueCount: number;
@@ -1456,4 +1478,107 @@ export interface WorkOrderMarginDto {
   /** Margin as a share of the client rate */
   marginPct: number;
   workOrders: { id: string; woNo: string; vendorName: string; quantity: string; rate: string }[];
+}
+
+/* ---------- payables (v3 item 23) ---------- */
+
+export type PayableBillType = 'VENDOR_BILL' | 'SUBCONTRACT_BILL';
+
+export interface VendorPaymentDto {
+  id: string;
+  projectId: string;
+  projectCode: string;
+  projectName: string;
+  vendorId: string;
+  vendorName: string;
+  billType: PayableBillType;
+  vendorBillId: string | null;
+  subcontractBillId: string | null;
+  /** "VB-2026-0004" or "WO-2026-0002 bill 3" */
+  billLabel: string;
+  paymentDate: string;
+  amount: string;
+  mode: PaymentMode;
+  reference: string | null;
+  tdsAmount: string;
+  otherDeduction: string;
+  otherDeductionNote: string | null;
+  /** amount + tdsAmount + otherDeduction */
+  settledAmount: string;
+  remarks: string | null;
+  createdByName: string;
+  createdAt: string;
+}
+
+/** Outstanding by how far past its due date: not yet due, then days overdue. */
+export interface PayableAgeingDto {
+  notDue: string;
+  days1to30: string;
+  days31to60: string;
+  days61to90: string;
+  over90: string;
+}
+
+export interface PayableTotalsDto {
+  /** Approved bills: what they say is payable */
+  billed: string;
+  paid: string;
+  /** Deducted at payment (TDS and other) */
+  deducted: string;
+  outstanding: string;
+  overdue: string;
+  /** Falls due in the next 7 days */
+  dueSoon: string;
+  ageing: PayableAgeingDto;
+  /** Outstanding to micro and small enterprises due within 7 days or overdue (MSMED Act: 45 days at most) */
+  msmeAtRisk: string;
+  /** Retention kept from subcontractors on their approved bills */
+  retentionHeld: string;
+  /** TDS deducted: on subcontractor bills and at payment */
+  tdsDeducted: string;
+}
+
+export interface VendorPayableDto extends PayableTotalsDto {
+  vendorId: string;
+  vendorName: string;
+  vendorMsme: MsmeCategory | null;
+  openBills: number;
+}
+
+export interface ProjectPayableDto extends PayableTotalsDto {
+  projectId: string;
+  projectCode: string;
+  projectName: string;
+}
+
+/** An approved bill with something still to pay: the due list. */
+export interface PayableBillDto {
+  billType: PayableBillType;
+  billId: string;
+  billLabel: string;
+  vendorId: string;
+  vendorName: string;
+  vendorMsme: MsmeCategory | null;
+  projectId: string;
+  projectCode: string;
+  projectName: string;
+  /** Invoice date (vendor bills) or bill date (subcontractor bills) */
+  billDate: string;
+  dueDate: string;
+  payable: string;
+  paid: string;
+  outstanding: string;
+  /** Days until due; negative when overdue */
+  daysToDue: number;
+  /** A micro or small enterprise whose bill is due within 7 days or overdue */
+  msmeFlag: boolean;
+}
+
+export interface PayablesDto {
+  asOf: string;
+  totals: PayableTotalsDto;
+  vendors: VendorPayableDto[];
+  projects: ProjectPayableDto[];
+  /** Most urgent first: overdue longest, then due soonest */
+  openBills: PayableBillDto[];
 }

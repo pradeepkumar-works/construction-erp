@@ -190,8 +190,12 @@ relative to a v2 item (S about one, M about two, L about three). The full draft 
     measurements and unrecovered issues up to a date, recover material at `Item.rate`, cap advance recovery at
     what is outstanding, and keep one open bill per order. TDS defaults from the PAN (1% individual or HUF, else 2%).
     Attendance contractor names link to the vendor master. Margin per BOQ item on the project's Subcontracts tab.
-23. **Payables** (M). Payments against approved bills, ageing, due list, micro and small enterprise bills
-    flagged as they near 45 days; the cost view uses actual bills where they exist.
+23. ~~**Payables** (M). Payments against approved bills, ageing, due list, micro and small enterprise bills
+    flagged as they near 45 days; the cost view uses actual bills where they exist.~~
+    Done: payments against approved vendor and subcontractor bills (part payments, TDS and other deductions at
+    payment, ₹1 tolerance), a due list with ageing by days past due, per vendor and project, MSME bills flagged 7 days
+    before the due date. Project cost gains a subcontractors head from approved bills (replacing the material they
+    were charged for and their gangs' attendance), vendor bills and cash out.
 
 ### C. Accounts bridge
 24. **Tally export** (M). Monthly Tally XML of RA bills, vendor and subcontractor bills, approved expenses,

@@ -20,10 +20,18 @@ interface Heads {
   material: D;
   machinery: D;
   labour: D;
+  subcontract: D;
 }
-const emptyHeads = (): Heads => ({ expenses: ZERO, material: ZERO, machinery: ZERO, labour: ZERO });
-const total = (h: Heads) => h.expenses.plus(h.material).plus(h.machinery).plus(h.labour);
-const headsDto = (h: Heads): CostHeadsDto => ({ expenses: money(h.expenses)!, material: money(h.material)!, machinery: money(h.machinery)!, labour: money(h.labour)!, total: money(total(h))! });
+const emptyHeads = (): Heads => ({ expenses: ZERO, material: ZERO, machinery: ZERO, labour: ZERO, subcontract: ZERO });
+const total = (h: Heads) => h.expenses.plus(h.material).plus(h.machinery).plus(h.labour).plus(h.subcontract);
+const headsDto = (h: Heads): CostHeadsDto => ({
+  expenses: money(h.expenses)!,
+  material: money(h.material)!,
+  machinery: money(h.machinery)!,
+  labour: money(h.labour)!,
+  subcontract: money(h.subcontract)!,
+  total: money(total(h))!,
+});
 
 /** Everything the cost view needs for one project, before it is turned into DTOs. */
 interface Acc {
@@ -32,11 +40,14 @@ interface Acc {
   measured: D;
   billed: D;
   cashIn: D;
+  payableBilled: D;
+  cashOut: D;
   months: Map<string, { heads: Heads; executed: D }>;
   expenses: Map<string, { count: number; amount: D }>;
   material: Map<string, { name: string; unit: string; qty: D; rate: D | null; amount: D }>;
   machinery: Map<string, { code: string; name: string; rateUnit: 'HOUR' | 'DAY' | 'MONTH'; rate: D | null; days: number; hours: D; amount: D }>;
   labour: Map<string, { category: string; manDays: number; rate: D | null; amount: D }>;
+  subcontract: Map<string, { woNo: string; vendorName: string; bills: number; amount: D }>;
   unpricedItems: Set<string>;
   unpricedLogs: number;
   unpricedManDays: number;
@@ -48,18 +59,22 @@ const newAcc = (): Acc => ({
   measured: ZERO,
   billed: ZERO,
   cashIn: ZERO,
+  payableBilled: ZERO,
+  cashOut: ZERO,
   months: new Map(),
   expenses: new Map(),
   material: new Map(),
   machinery: new Map(),
   labour: new Map(),
+  subcontract: new Map(),
   unpricedItems: new Set(),
   unpricedLogs: 0,
   unpricedManDays: 0,
 });
 
 /**
- * Project cost view: approved site expenses, material issued at the item's standard rate, approved
+ * Project cost view: approved site expenses, material issued at the item's standard rate (less what subcontractors' bills
+ * recovered), approved subcontractor bills, approved
  * machinery logs at the machine's hire rate and attendance man-days at the trade's daily rate, set
  * against the value of approved progress (and of approved measurements) in the same period, with what was billed
  * (approved RA bills) and received from the client.
@@ -119,6 +134,10 @@ export class CostService {
       labourByTrade: [...acc.labour.values()]
         .sort((a, b) => sortAmount(a, b) || b.manDays - a.manDays)
         .map((v) => ({ category: v.category, manDays: v.manDays, dailyRate: money(v.rate), amount: money(v.amount)! })),
+      subcontractByOrder: [...acc.subcontract.entries()]
+        .map(([workOrderId, v]) => ({ workOrderId, ...v }))
+        .sort((a, b) => sortAmount(a, b) || a.woNo.localeCompare(b.woNo))
+        .map((v) => ({ workOrderId: v.workOrderId, woNo: v.woNo, vendorName: v.vendorName, bills: v.bills, amount: money(v.amount)! })),
     };
   }
 
@@ -137,6 +156,8 @@ export class CostService {
       costPct: acc.executed.gt(0) ? Math.round(cost.div(acc.executed).mul(1000).toNumber()) / 10 : null,
       billedValue: money(acc.billed)!,
       cashIn: money(acc.cashIn)!,
+      payableBilled: money(acc.payableBilled)!,
+      cashOut: money(acc.cashOut)!,
       unpriced: { materialItems: acc.unpricedItems.size, machineryLogs: acc.unpricedLogs, labourManDays: acc.unpricedManDays },
     };
   }
@@ -146,20 +167,35 @@ export class CostService {
     if (!projectIds.length) return out;
     const scope = { organizationId, projectId: { in: projectIds }, ...(date ? { date } : {}) };
     const inProjects = { organizationId, projectId: { in: projectIds } };
-    const [progress, measurements, expenses, issues, logs, attendance, rates, bills, receipts] = await Promise.all([
+    const [progress, measurements, expenses, issues, logs, attendance, rates, bills, receipts, subBills, vendorBills, payments, subVendors] = await Promise.all([
       this.prisma.progressEntry.findMany({ where: { ...scope, status: 'APPROVED' }, select: { projectId: true, date: true, quantity: true, activity: { select: { boqItem: { select: { rate: true } } } } } }),
       this.prisma.measurementSheet.findMany({ where: { ...scope, status: 'APPROVED' }, select: { projectId: true, totalQty: true, boqItem: { select: { rate: true } } } }),
       this.prisma.expense.findMany({ where: { ...scope, status: 'APPROVED' }, select: { projectId: true, date: true, category: true, totalAmount: true } }),
-      this.prisma.stockTxn.findMany({ where: { ...scope, type: 'ISSUE' }, select: { projectId: true, date: true, quantity: true, item: { select: { id: true, name: true, unit: true, rate: true } } } }),
+      // Material issued to a subcontractor and recovered in their approved bill is in that bill's work value instead.
+      this.prisma.stockTxn.findMany({
+        where: { ...scope, type: 'ISSUE', NOT: { entry: { subcontractBill: { status: 'APPROVED' } } } },
+        select: { projectId: true, date: true, quantity: true, item: { select: { id: true, name: true, unit: true, rate: true } } },
+      }),
       this.prisma.machineryLog.findMany({ where: { ...scope, status: 'APPROVED' }, select: { projectId: true, date: true, hoursWorked: true, equipment: { select: { id: true, code: true, name: true, rate: true, rateUnit: true } } } }),
       this.prisma.attendanceLine.findMany({
         where: { sheet: { organizationId, projectId: { in: projectIds }, ...(date ? { date } : {}) } },
-        select: { category: true, count: true, sheet: { select: { projectId: true, date: true } } },
+        select: { category: true, count: true, vendorId: true, sheet: { select: { projectId: true, date: true } } },
       }),
       this.prisma.labourRate.findMany({ where: { organizationId } }),
       this.prisma.raBill.groupBy({ by: ['projectId'], where: { ...inProjects, status: 'APPROVED', ...(date ? { billDate: date } : {}) }, _sum: { grossAmount: true } }),
       this.prisma.receipt.groupBy({ by: ['projectId'], where: { ...inProjects, ...(date ? { receiptDate: date } : {}) }, _sum: { amount: true } }),
+      this.prisma.subcontractBill.findMany({
+        where: { ...inProjects, status: 'APPROVED', ...(date ? { billDate: date } : {}) },
+        select: { projectId: true, billDate: true, grossAmount: true, gstAmount: true, workOrderId: true, workOrder: { select: { woNo: true, vendor: { select: { name: true } } } } },
+      }),
+      this.prisma.vendorBill.groupBy({ by: ['projectId'], where: { ...inProjects, status: 'APPROVED', ...(date ? { invoiceDate: date } : {}) }, _sum: { total: true } }),
+      this.prisma.vendorPayment.groupBy({ by: ['projectId'], where: { ...inProjects, ...(date ? { paymentDate: date } : {}) }, _sum: { amount: true } }),
+      // Gangs of a subcontractor with an approved work order on the project are paid through its bills, not as labour.
+      this.prisma.workOrder.findMany({ where: { ...inProjects, status: 'APPROVED' }, select: { projectId: true, vendorId: true }, distinct: ['projectId', 'vendorId'] }),
     ]);
+    for (const b of vendorBills) out.get(b.projectId)!.payableBilled = b._sum.total ?? ZERO;
+    for (const p of payments) out.get(p.projectId)!.cashOut = p._sum.amount ?? ZERO;
+    const contracted = new Set(subVendors.map((w) => `${w.projectId}:${w.vendorId}`));
     for (const b of bills) out.get(b.projectId)!.billed = b._sum.grossAmount ?? ZERO;
     for (const r of receipts) out.get(r.projectId)!.cashIn = r._sum.amount ?? ZERO;
     const month = (acc: Acc, d: Date) => {
@@ -211,8 +247,16 @@ export class CostService {
       const r = acc.machinery.get(l.equipment.id) ?? { code: l.equipment.code, name: l.equipment.name, rateUnit: l.equipment.rateUnit, rate: l.equipment.rate, days: 0, hours: ZERO, amount: ZERO };
       acc.machinery.set(l.equipment.id, { ...r, days: r.days + 1, hours: r.hours.plus(l.hoursWorked), amount: r.amount.plus(amount) });
     }
+    for (const b of subBills) {
+      const acc = out.get(b.projectId)!;
+      add(acc, b.billDate, 'subcontract', b.grossAmount);
+      acc.payableBilled = acc.payableBilled.plus(b.grossAmount).plus(b.gstAmount);
+      const r = acc.subcontract.get(b.workOrderId) ?? { woNo: b.workOrder.woNo, vendorName: b.workOrder.vendor.name, bills: 0, amount: ZERO };
+      acc.subcontract.set(b.workOrderId, { ...r, bills: r.bills + 1, amount: r.amount.plus(b.grossAmount) });
+    }
     const rateOf = new Map(rates.map((r) => [key(r.category), r.dailyRate]));
     for (const a of attendance) {
+      if (a.vendorId && contracted.has(`${a.sheet.projectId}:${a.vendorId}`)) continue;
       const acc = out.get(a.sheet.projectId)!;
       const rate = rateOf.get(key(a.category)) ?? null;
       const amount = rate ? rate.mul(a.count) : ZERO;
