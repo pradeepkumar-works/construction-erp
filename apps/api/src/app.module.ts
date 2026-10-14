@@ -22,6 +22,7 @@ import { ClientsModule } from './clients/clients.module';
 import { ContractsModule } from './contracts/contracts.module';
 import { RaBillsModule } from './ra-bills/ra-bills.module';
 import { ReceivablesModule } from './receivables/receivables.module';
+import { VendorsModule } from './vendors/vendors.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { MaterialRequestsModule } from './material-requests/material-requests.module';
 import { ApprovalsModule } from './approvals/approvals.module';
@@ -51,6 +52,7 @@ import { HealthController } from './health.controller';
     ContractsModule,
     RaBillsModule,
     ReceivablesModule,
+    VendorsModule,
     CostModule,
     ReportsModule,
     RisksModule,

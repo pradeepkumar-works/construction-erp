@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsDateString, IsIn, IsNumberString, IsOptional, IsString, IsUUID, Matches, MaxLength, MinLength, ValidateIf, ValidateNested } from 'class-validator';
+import { VENDOR_ID_DOC } from '../vendors/vendors.dto';
 import { LIST_SORT_FIELDS, STOCK_ENTRY_TYPES, type ItemSortField, type StockBalanceSortField, type StockEntrySortField, type StockEntryType } from '@erp/shared';
 import { PageQuery, QueryBool } from '../common/paging';
 import { CLIENT_ID_DOC } from '../common/idempotency';
@@ -23,6 +24,7 @@ export class CreateReceiptDto {
   @ApiProperty({ description: 'An approved material request' }) @IsUUID() materialRequestId: string;
   @ApiProperty({ example: '2026-10-13' }) @IsDateString() @dateOnly() date: string;
   @ApiPropertyOptional({ example: 'Maa Tarini Traders' }) @IsOptional() @IsString() @trim() @MaxLength(200) supplier?: string | null;
+  @ApiPropertyOptional(VENDOR_ID_DOC) @IsOptional() @ValidateIf((_, v) => v !== null) @IsUUID() vendorId?: string | null;
   @ApiPropertyOptional({ example: 'CH-1182' }) @IsOptional() @IsString() @trim() @MaxLength(60) challanNo?: string | null;
   @ApiPropertyOptional({ example: 'OD-02-AB-1234' }) @IsOptional() @IsString() @trim() @MaxLength(30) vehicleNo?: string | null;
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(1000) remarks?: string | null;

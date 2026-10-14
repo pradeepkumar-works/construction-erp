@@ -76,6 +76,21 @@ enum ExpenseCategory {
   OTHER
 }
 
+enum VendorKind {
+  SUPPLIER
+  HIRE_AGENCY
+  SUBCONTRACTOR
+  LABOUR_CONTRACTOR
+  SERVICE
+}
+
+/// MSME (Udyam) category; bills of micro and small enterprises are due within 45 days
+enum MsmeCategory {
+  MICRO
+  SMALL
+  MEDIUM
+}
+
 enum PaymentMode {
   CASH
   UPI
@@ -192,6 +207,7 @@ model Organization {
   measurements      MeasurementSheet[]
   labourRates       LabourRate[]
   clients           Client[]
+  vendors           Vendor[]
   raBills           RaBill[]
   receipts          Receipt[]
 }
@@ -371,6 +387,41 @@ model Client {
   updatedAt      DateTime     @updatedAt
 
   projects Project[]
+
+  @@unique([organizationId, name])
+}
+
+/// Vendor master: suppliers, hire agencies, subcontractors, labour contractors and service providers.
+/// Expenses, machines and GRNs link to a vendor and keep a copy of its name.
+model Vendor {
+  id              String        @id @default(uuid())
+  organizationId  String
+  organization    Organization  @relation(fields: [organizationId], references: [id])
+  name            String
+  kinds           VendorKind[]
+  gstin           String?
+  pan             String?
+  /// GST state code (first two digits of the GSTIN, or set by hand)
+  stateCode       String?
+  address         String?
+  contactPerson   String?
+  email           String?
+  phone           String?
+  bankAccountName String?
+  bankAccountNo   String?
+  bankIfsc        String?
+  bankName        String?
+  msmeCategory    MsmeCategory?
+  /// Udyam registration number, UDYAM-XX-00-0000000
+  udyamNo         String?
+  remarks         String?
+  isActive        Boolean       @default(true)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  expenses     Expense[]
+  equipment    Equipment[]
+  stockEntries StockEntry[]
 
   @@unique([organizationId, name])
 }
@@ -654,6 +705,8 @@ model StockEntry {
   materialRequestId String?
   materialRequest   MaterialRequest? @relation(fields: [materialRequestId], references: [id])
   supplier          String?
+  vendorId          String?
+  vendor            Vendor?          @relation(fields: [vendorId], references: [id], onDelete: SetNull)
   challanNo         String?
   vehicleNo         String?
   /// Issues: who took the material (contractor, gang or person)
@@ -729,6 +782,8 @@ model Equipment {
   ownership      EquipmentOwnership @default(OWNED)
   /// Hire agency for hired machines
   supplier       String?
+  vendorId       String?
+  vendor         Vendor?            @relation(fields: [vendorId], references: [id], onDelete: SetNull)
   registrationNo String?
   rate           Decimal?           @db.Decimal(18, 2)
   rateUnit       EquipmentRateUnit  @default(HOUR)
@@ -798,6 +853,8 @@ model Expense {
   description    String
   vendor         String?
   vendorGstin    String?
+  vendorId       String?
+  vendorRef      Vendor?          @relation(fields: [vendorId], references: [id], onDelete: SetNull)
   billNo         String?
   /// Taxable value
   amount         Decimal          @db.Decimal(18, 2)

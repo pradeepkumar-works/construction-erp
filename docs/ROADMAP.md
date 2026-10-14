@@ -164,8 +164,13 @@ relative to a v2 item (S about one, M about two, L about three). The full draft 
     register; "Record payment" on the bill; a dashboard tile; billed value and cash in on the cost view.
 
 ### B. Pay others
-20. **Vendors** (S). One master for suppliers, hire agencies and subcontractors (GSTIN, PAN, bank, MSME Udyam
-    number); expenses, equipment and POs pick from it instead of free text.
+20. ~~**Vendors** (S). One master for suppliers, hire agencies and subcontractors (GSTIN, PAN, bank, MSME Udyam
+    number); expenses, equipment and POs pick from it instead of free text.~~
+    Done: `Vendor` with kinds (supplier, hire agency, subcontractor, labour contractor, services), GSTIN / PAN / state,
+    contact, MSME category and Udyam number, bank account (shown only to admin, management, procurement and
+    accounts). Expenses, machines and GRNs link to it: picked from suggestions on the web, and a name typed anywhere
+    (site app included) links to the vendor of that name. A "Not in the master" list shows names typed that match
+    no vendor, with "Add to master". POs (item 21) will pick from it too.
 21. **Purchase orders** (L). Material request → quotes → comparative statement → PO (approval matrix with
     limits) → GRN against PO lines → vendor bill with a three-way match. Screens for `PROCUREMENT_MANAGER`.
     `Item.rate` becomes the last PO rate.

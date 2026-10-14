@@ -15,6 +15,7 @@ import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
+import { VendorsService } from '../vendors/vendors.service';
 import { AttachmentsService } from '../common/attachments.service';
 import { dateOnly, dec, iso, money, parseDate } from '../common/serialize';
 import { isUniqueViolation } from '../common/idempotency';
@@ -74,6 +75,7 @@ export class MachineryService {
     private audit: AuditService,
     private lifecycle: SubmissionLifecycleService,
     private attachments: AttachmentsService,
+    private vendors: VendorsService,
   ) {}
 
   /* ---------- equipment ---------- */
@@ -86,6 +88,7 @@ export class MachineryService {
       category: r.category,
       ownership: r.ownership,
       supplier: r.supplier,
+      vendorId: r.vendorId,
       registrationNo: r.registrationNo,
       rate: canManageEquipment(user.roleKey) ? money(r.rate) : null,
       rateUnit: r.rateUnit,
@@ -129,7 +132,8 @@ export class MachineryService {
     if (dto.name !== undefined) data.name = dto.name;
     if (dto.category !== undefined) data.category = dto.category || null;
     if (dto.ownership !== undefined) data.ownership = dto.ownership;
-    if (dto.supplier !== undefined) data.supplier = dto.supplier || null;
+    const vendor = await this.vendors.resolve(user, dto.vendorId, dto.supplier);
+    if (vendor) Object.assign(data, { supplier: vendor.name, vendorId: vendor.vendorId });
     if (dto.registrationNo !== undefined) data.registrationNo = dto.registrationNo || null;
     if (dto.rate !== undefined) {
       const rate = decimalOrNull(dto.rate);

@@ -2,6 +2,8 @@ import type { ApprovalRightDto } from './approvals';
 import type {
   BillStage,
   ReceiptKind,
+  VendorKind,
+  MsmeCategory,
   DelayParty,
   PasswordTokenPurpose,
   RiskCategory,
@@ -408,6 +410,8 @@ export interface StockEntryDto {
   materialRequestId: string | null;
   requestNo: string | null;
   supplier: string | null;
+  /** The supplier in the vendor master, when linked */
+  vendorId: string | null;
   challanNo: string | null;
   vehicleNo: string | null;
   issuedTo: string | null;
@@ -468,6 +472,8 @@ export interface EquipmentDto {
   category: string | null;
   ownership: EquipmentOwnership;
   supplier: string | null;
+  /** The hire agency in the vendor master, when linked */
+  vendorId: string | null;
   registrationNo: string | null;
   /** Only returned to roles that manage equipment (rates are commercial); null otherwise. */
   rate: string | null;
@@ -542,6 +548,8 @@ export interface ExpenseDto extends SubmissionBase {
   description: string;
   vendor: string | null;
   vendorGstin: string | null;
+  /** The vendor in the vendor master, when linked */
+  vendorId: string | null;
   billNo: string | null;
   /** Taxable value */
   amount: string;
@@ -819,6 +827,45 @@ export interface ApprovalMatrixDto {
 }
 
 /* ---------- clients and contracts ---------- */
+
+export interface VendorDto {
+  id: string;
+  name: string;
+  kinds: VendorKind[];
+  gstin: string | null;
+  pan: string | null;
+  stateCode: string | null;
+  address: string | null;
+  contactPerson: string | null;
+  email: string | null;
+  phone: string | null;
+  /** Bank details: only for roles that pay vendors (`canSeeVendorBank`); null otherwise. */
+  bankAccountName: string | null;
+  bankAccountNo: string | null;
+  bankIfsc: string | null;
+  bankName: string | null;
+  msmeCategory: MsmeCategory | null;
+  udyamNo: string | null;
+  remarks: string | null;
+  isActive: boolean;
+  /** Where it is used: expenses, machines and GRNs linked to it */
+  expenseCount: number;
+  equipmentCount: number;
+  grnCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** A vendor name typed on expenses, machines or GRNs that matches no vendor in the master. */
+export interface UnlistedVendorDto {
+  name: string;
+  /** What it was typed on, which suggests its kind */
+  expenseCount: number;
+  equipmentCount: number;
+  grnCount: number;
+  /** A GSTIN typed with it on an expense, if any */
+  gstin: string | null;
+}
 
 export interface ClientDto {
   id: string;

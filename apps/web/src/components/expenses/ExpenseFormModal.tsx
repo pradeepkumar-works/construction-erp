@@ -11,6 +11,7 @@ import { useActivities, useProjects } from '@/lib/queries';
 import { formatINR } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { editActionLabel } from '@/components/common/EditResubmitButton';
+import { VendorPicker } from '@/components/vendors/VendorPicker';
 
 interface FormValues {
   projectId: string;
@@ -131,7 +132,7 @@ export function ExpenseFormModal({ open, onClose, projectId, expense }: { open: 
         </Form.Item>
         <div style={grid('2fr 1.4fr 1fr')}>
           <Form.Item name="vendor" label="Vendor">
-            <Input maxLength={120} />
+            <VendorPicker onPick={(v) => v.gstin && !form.getFieldValue('vendorGstin') && form.setFieldValue('vendorGstin', v.gstin)} />
           </Form.Item>
           <Form.Item name="vendorGstin" label="Vendor GSTIN" rules={[{ validator: async (_, v) => (!v || GSTIN_PATTERN.test(String(v).trim().toUpperCase()) ? undefined : Promise.reject(new Error('Not a valid GSTIN'))) }]}>
             <Input maxLength={15} style={{ textTransform: 'uppercase' }} />

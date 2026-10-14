@@ -97,6 +97,12 @@ export const canViewContract = (role: RoleKey) => BILLING_ROLES.includes(role);
 /** Record money received from clients: admin, management and accounts. */
 export const RECEIPT_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'ACCOUNTS_MANAGER'];
 export const canRecordReceipt = (role: RoleKey) => RECEIPT_ROLES.includes(role);
+/** Add and edit vendors: admin, management, project managers, procurement, accounts and stores. */
+export const VENDOR_EDITOR_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER', 'PROCUREMENT_MANAGER', 'ACCOUNTS_MANAGER', 'STORE_MANAGER'];
+export const canEditVendors = (role: RoleKey) => VENDOR_EDITOR_ROLES.includes(role);
+/** A vendor's bank account is shown only to those who pay vendors. */
+export const VENDOR_BANK_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROCUREMENT_MANAGER', 'ACCOUNTS_MANAGER'];
+export const canSeeVendorBank = (role: RoleKey) => VENDOR_BANK_ROLES.includes(role);
 /** Prepare RA bills and record them as sent and certified: the billing roles. */
 export const canPrepareBill = (role: RoleKey) => BILLING_ROLES.includes(role);
 /** Change the client master and a project's contract terms. */

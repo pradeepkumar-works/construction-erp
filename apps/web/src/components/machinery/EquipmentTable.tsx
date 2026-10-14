@@ -18,6 +18,7 @@ import { QueryError } from '@/components/common/QueryState';
 import { ListToolbar } from '@/components/common/ListToolbar';
 import { ExportButton } from '@/components/common/ExportButton';
 import { OwnershipTag } from './hours';
+import { VendorPicker } from '@/components/vendors/VendorPicker';
 
 interface EquipmentForm {
   code: string;
@@ -219,7 +220,7 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
               <Select options={EQUIPMENT_OWNERSHIPS.map((o) => ({ value: o, label: EQUIPMENT_OWNERSHIP_LABELS[o] }))} />
             </Form.Item>
             <Form.Item name="supplier" label="Hire agency" hidden={formOwnership !== 'HIRED'}>
-              <Input maxLength={120} />
+              <VendorPicker kind="HIRE_AGENCY" />
             </Form.Item>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
