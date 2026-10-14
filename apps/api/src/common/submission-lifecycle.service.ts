@@ -7,7 +7,7 @@ import { ProjectAccessService } from './project-access.service';
 import { ApprovalRightsService } from './approval-rights.service';
 import { AuditService } from './audit.service';
 import { NotificationsService } from '../notifications/notifications.service';
-import { dprTitle, expenseTitle, machineryTitle, measurementTitle, progressTitle, billTitle, poTitle, vendorBillTitle } from './submission-titles';
+import { dprTitle, expenseTitle, machineryTitle, measurementTitle, progressTitle, billTitle, poTitle, vendorBillTitle, woTitle, subBillTitle } from './submission-titles';
 
 interface SubmissionRow {
   id: string;
@@ -49,6 +49,10 @@ export class SubmissionLifecycleService {
         return this.prisma.purchaseOrder;
       case 'VENDOR_BILL':
         return this.prisma.vendorBill;
+      case 'WORK_ORDER':
+        return this.prisma.workOrder;
+      case 'SUBCONTRACT_BILL':
+        return this.prisma.subcontractBill;
     }
   }
 
@@ -106,7 +110,7 @@ export class SubmissionLifecycleService {
     const allowed = (t: SubmissionType) => rights.some((r) => r.type === t);
     const where = { ...this.access.submissionWhere(user), status: 'SUBMITTED' as const };
     const none = Promise.resolve([] as never[]);
-    const [progress, dprs, mrs, logs, expenses, mbs, bills, pos, vbills] = await Promise.all([
+    const [progress, dprs, mrs, logs, expenses, mbs, bills, pos, vbills, wos, sbills] = await Promise.all([
       allowed('PROGRESS') ? this.prisma.progressEntry.findMany({ where, include: { project: true, activity: { include: { boqItem: { select: { rate: true } } } }, submittedBy: true }, orderBy: { submittedAt: 'asc' } }) : none,
       allowed('DPR') ? this.prisma.dailyReport.findMany({ where, include: { project: true, submittedBy: true }, orderBy: { submittedAt: 'asc' } }) : none,
       allowed('MATERIAL_REQUEST') ? this.prisma.materialRequest.findMany({ where, include: { project: true, submittedBy: true, items: true }, orderBy: { submittedAt: 'asc' } }) : none,
@@ -116,6 +120,10 @@ export class SubmissionLifecycleService {
       allowed('BILL') ? this.prisma.raBill.findMany({ where, include: { project: true, submittedBy: true }, orderBy: { submittedAt: 'asc' } }) : none,
       allowed('PURCHASE_ORDER') ? this.prisma.purchaseOrder.findMany({ where, include: { project: true, submittedBy: true, vendor: { select: { name: true } } }, orderBy: { submittedAt: 'asc' } }) : none,
       allowed('VENDOR_BILL') ? this.prisma.vendorBill.findMany({ where, include: { project: true, submittedBy: true, vendor: { select: { name: true } } }, orderBy: { submittedAt: 'asc' } }) : none,
+      allowed('WORK_ORDER') ? this.prisma.workOrder.findMany({ where, include: { project: true, submittedBy: true, vendor: { select: { name: true } } }, orderBy: { submittedAt: 'asc' } }) : none,
+      allowed('SUBCONTRACT_BILL')
+        ? this.prisma.subcontractBill.findMany({ where, include: { project: true, submittedBy: true, workOrder: { select: { woNo: true, vendor: { select: { name: true } } } } }, orderBy: { submittedAt: 'asc' } })
+        : none,
     ]);
     const amt = (d: Prisma.Decimal | null): string | null => (d === null ? null : d.toDecimalPlaces(2).toFixed(2));
     const machineCost = (l: (typeof logs)[number]) => {
@@ -212,6 +220,26 @@ export class SubmissionLifecycleService {
         submittedByName: v.submittedBy.fullName,
         submittedAt: (v.submittedAt ?? v.createdAt).toISOString(),
         amount: amt(v.total),
+      })),
+      ...wos.map((w) => ({
+        type: 'WORK_ORDER' as const,
+        id: w.id,
+        projectId: w.projectId,
+        projectName: w.project.name,
+        title: woTitle(w.woNo, w.title, w.value.toFixed(2), w.vendor.name),
+        submittedByName: w.submittedBy.fullName,
+        submittedAt: (w.submittedAt ?? w.createdAt).toISOString(),
+        amount: amt(w.value),
+      })),
+      ...sbills.map((b) => ({
+        type: 'SUBCONTRACT_BILL' as const,
+        id: b.id,
+        projectId: b.projectId,
+        projectName: b.project.name,
+        title: subBillTitle(b.workOrder.woNo, b.billNo, b.isFinal, b.workOrder.vendor.name, b.grossAmount.toFixed(2)),
+        submittedByName: b.submittedBy.fullName,
+        submittedAt: (b.submittedAt ?? b.createdAt).toISOString(),
+        amount: amt(b.grossAmount),
       })),
     ];
     return out

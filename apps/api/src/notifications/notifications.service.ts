@@ -7,7 +7,7 @@ import { ProjectAccessService } from '../common/project-access.service';
 import { ApprovalRightsService } from '../common/approval-rights.service';
 import { dateOnly, iso } from '../common/serialize';
 import { ExpoPushService } from './expo-push.service';
-import { dprTitle, expenseTitle, machineryTitle, measurementTitle, progressTitle, billTitle, poTitle, vendorBillTitle } from '../common/submission-titles';
+import { dprTitle, expenseTitle, machineryTitle, measurementTitle, progressTitle, billTitle, poTitle, vendorBillTitle, woTitle, subBillTitle } from '../common/submission-titles';
 import { ListNotificationsQuery, RegisterPushTokenDto } from './notifications.dto';
 
 export interface NotifyInput {
@@ -26,7 +26,7 @@ export interface NotifyInput {
 const include = { project: { select: { name: true } } } satisfies Prisma.NotificationInclude;
 type Row = Prisma.NotificationGetPayload<{ include: typeof include }>;
 
-const SUBMISSION_LABEL: Record<SubmissionType, string> = { PROGRESS: 'Progress entry', DPR: 'DPR', MATERIAL_REQUEST: 'Material request', MACHINERY: 'Machinery log', EXPENSE: 'Site expense', MEASUREMENT: 'Measurement', BILL: 'RA bill', PURCHASE_ORDER: 'Purchase order', VENDOR_BILL: 'Vendor bill' };
+const SUBMISSION_LABEL: Record<SubmissionType, string> = { PROGRESS: 'Progress entry', DPR: 'DPR', MATERIAL_REQUEST: 'Material request', MACHINERY: 'Machinery log', EXPENSE: 'Site expense', MEASUREMENT: 'Measurement', BILL: 'RA bill', PURCHASE_ORDER: 'Purchase order', VENDOR_BILL: 'Vendor bill', WORK_ORDER: 'Work order', SUBCONTRACT_BILL: 'Subcontractor bill' };
 
 /**
  * Creates in-app notifications and pushes them to the users' devices.
@@ -205,6 +205,16 @@ export class NotificationsService {
       case 'VENDOR_BILL': {
         const v = await this.prisma.vendorBill.findUnique({ where: { id }, include: { project: { select: { name: true } }, vendor: { select: { name: true } } } });
         return v ? { title: vendorBillTitle(v.billNo, v.invoiceNo, v.vendor.name, v.total.toFixed(2)), projectId: v.projectId, projectName: v.project.name, submittedById: v.submittedById } : null;
+      }
+      case 'WORK_ORDER': {
+        const w = await this.prisma.workOrder.findUnique({ where: { id }, include: { project: { select: { name: true } }, vendor: { select: { name: true } } } });
+        return w ? { title: woTitle(w.woNo, w.title, w.value.toFixed(2), w.vendor.name), projectId: w.projectId, projectName: w.project.name, submittedById: w.submittedById } : null;
+      }
+      case 'SUBCONTRACT_BILL': {
+        const b = await this.prisma.subcontractBill.findUnique({ where: { id }, include: { project: { select: { name: true } }, workOrder: { select: { woNo: true, vendor: { select: { name: true } } } } } });
+        return b
+          ? { title: subBillTitle(b.workOrder.woNo, b.billNo, b.isFinal, b.workOrder.vendor.name, b.grossAmount.toFixed(2)), projectId: b.projectId, projectName: b.project.name, submittedById: b.submittedById }
+          : null;
       }
     }
   }

@@ -31,5 +31,12 @@ const inr = (v: string) => `₹${Number(v).toLocaleString('en-IN', { minimumFrac
 /** "PO-2026-0004: ₹2,45,000.00 to Utkal Cement Traders". */
 export const poTitle = (poNo: string, total: string, vendor: string) => `${poNo}: ${inr(total)} to ${vendor}`;
 
+/** "WO-2026-0003: Brickwork, Block A, ₹8,40,000.00 to Mahanadi Builders". */
+export const woTitle = (woNo: string, title: string, value: string, vendor: string) => `${woNo}: ${title}, ${inr(value)} to ${vendor}`;
+
+/** "WO-2026-0003 bill 2 of Mahanadi Builders: ₹1,20,000.00 of work". */
+export const subBillTitle = (woNo: string, billNo: number, isFinal: boolean, vendor: string, gross: string) =>
+  `${woNo} bill ${billNo}${isFinal ? ' (final)' : ''} of ${vendor}: ${inr(gross)} of work`;
+
 /** "VB-2026-0002: invoice UCT/551 of Utkal Cement Traders, ₹1,20,000.00". */
 export const vendorBillTitle = (billNo: string, invoiceNo: string, vendor: string, total: string) => `${billNo}: invoice ${invoiceNo} of ${vendor}, ${inr(total)}`;

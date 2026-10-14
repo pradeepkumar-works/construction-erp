@@ -360,6 +360,50 @@ three-way match (`apps/api/src/purchasing`).
   approved material request the comparative with "Raise PO"; PO print view in `components/purchasing/poPrint.ts`.
   The GRN form picks a PO or a request. Site app: approve POs and vendor bills, and receive against a PO.
 
+## Subcontracts
+
+Work order → their work in the measurement book under it → material issued to them → their running bill with
+retention, advance, TDS and material recovery (`apps/api/src/subcontracts`).
+
+- **Tables** (tenant tables). `WorkOrder` + `WorkOrderLine` (numbered `WO-<year>-0001`; a line is a BOQ item of the
+  project, at most once per order, or the order's own item with description and unit; terms: GST rate, retention %,
+  advance and its recovery %, TDS %, payment days; `closedAt` / `closeNote`). `SubcontractBill` (numbered 1, 2, …
+  per order, `isFinal`) + `SubcontractBillLine` (previous / this / up-to-date quantity per order line) +
+  `SubcontractBillMaterial` (material recovered per item). `MeasurementSheet.workOrderId` and
+  `StockEntry.workOrderId` tag work and issues to an order; `subcontractBillId` on both records which bill took
+  them. `AttendanceLine.vendorId` links a contractor's gang to the vendor master. Work orders and their bills are
+  approval submissions (`WORK_ORDER`, `SUBCONTRACT_BILL`); the matrix amount is the order value and the bill's work
+  value.
+- **Measurements are shared.** A sheet tagged to a work order still counts for the client's RA bill: the same work
+  is billed to the client at the BOQ rate and paid to the subcontractor at the order rate. Tagging is allowed only
+  for an approved, open order with a line on that BOQ item in the same project (`assertOpenWorkOrder`).
+- **The bill** (`SubcontractBillsService.recompute`). BOQ lines take approved measurements tagged to the order up to
+  "measured up to" that no earlier bill took; own items take the quantity entered on the bill (a BOQ line given a
+  quantity is refused). Material: ISSUE entries tagged to the order up to the same day and not yet recovered, valued
+  at `Item.rate` (the last PO rate) when the bill is saved. Deductions in order: retention %, advance recovery %
+  (capped at what is still outstanding), TDS % on the work value, material, other (with a note). Net payable = work
+  + GST − deductions. Due date = bill date + the order's payment days (default 30, at most 45 for a micro or small
+  enterprise). One open bill per order and nothing after the final bill, under advisory lock `SB:<workOrderId>`;
+  a draft is recomputed on every save. An issue recovered in an approved bill cannot be deleted.
+- **Defaults.** TDS under section 194C from the PAN: 1% when its fourth letter is P or H, else 2% (no PAN is
+  shown as a 20% warning, not defaulted). GST 18% when the vendor has a GSTIN, else 0.
+- **Margin.** `GET /work-orders/margin?projectId=` gives, per BOQ item on approved orders, the client rate against
+  the order rate weighted by order quantity (billing roles only).
+- **Roles.** `canIssueWorkOrder` (admin, management, PM, procurement, QS) issues orders; `canViewWorkOrders` adds site
+  engineers, the store and accounts (they tag work and issues). `canPrepareSubcontractBill` (the billing roles)
+  prepares bills; approvers with a `SUBCONTRACT_BILL` rule see them too. Demo matrix: PM up to ₹5 lakh, management
+  without limit.
+- **Attendance.** A contractor name on attendance links to an active subcontractor or labour contractor of that name
+  (case-insensitive, "Departmental" excepted); vendor adopt and rename carry the link. Attendance suggestions list
+  those vendors.
+- **API.** `/work-orders` (paged; `projectId`, `vendorId`, `status`, `open`, `boqItemId`, `q`),
+  `GET /work-orders/margin`, `POST /work-orders/:id/submit|close`, `/subcontract-bills` (paged; `projectId`,
+  `vendorId`, `workOrderId`, `status`, `q`), `POST /subcontract-bills/:id/submit`. `/measurements` and
+  `/stock/issues` take `workOrderId`; an issue against an order defaults "issued to" to the subcontractor.
+- **Clients.** Web: Purchases → Work Orders and Subcontractor Bills, a Subcontracts tab per project (orders, bills,
+  margin), print views of the order and the bill (`components/subcontracts/subcontractPrint.ts`), and a work order
+  picker on the measurement and issue forms. Site app: approve orders and bills, and tag measurements and issues.
+
 ## Receivables
 
 - **Table.** `Receipt` (tenant table): `kind` BILL / RETENTION_RELEASE / DEPOSIT_RELEASE, `billId` for a bill payment,

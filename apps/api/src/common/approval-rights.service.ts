@@ -78,6 +78,14 @@ export class ApprovalRightsService {
         const v = await this.prisma.vendorBill.findUnique({ where: { id }, select: { total: true } });
         return v?.total ?? null;
       }
+      case 'WORK_ORDER': {
+        const w = await this.prisma.workOrder.findUnique({ where: { id }, select: { value: true } });
+        return w?.value ?? null;
+      }
+      case 'SUBCONTRACT_BILL': {
+        const b = await this.prisma.subcontractBill.findUnique({ where: { id }, select: { grossAmount: true } });
+        return b?.grossAmount ?? null;
+      }
       default:
         return null;
     }

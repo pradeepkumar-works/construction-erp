@@ -5,10 +5,11 @@ import { Alert, App, Button, Checkbox, DatePicker, Form, Input, InputNumber, Mod
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { AttachmentDto, MeasurementSheetDto } from '@erp/shared';
-import { hasDimensions, measurementLineQty, measurementTotal } from '@erp/shared';
+import { canViewWorkOrders, hasDimensions, measurementLineQty, measurementTotal } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, errorMessage } from '@/lib/api';
-import { useBoq, useProjects } from '@/lib/queries';
+import { useBoq, useProjects, useWorkOrders } from '@/lib/queries';
+import { useAuth } from '@/lib/auth';
 import { formatINR, formatQty, toNumber } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { editActionLabel } from '@/components/common/EditResubmitButton';
@@ -25,6 +26,7 @@ interface LineValues {
 interface FormValues {
   projectId: string;
   boqItemId: string;
+  workOrderId?: string | null;
   date: dayjs.Dayjs;
   location: string;
   remarks?: string;
@@ -51,6 +53,11 @@ export function MeasurementFormModal({ open, onClose, projectId, boqItemId, shee
   const lines = (Form.useWatch('lines', form) ?? []) as LineValues[];
   const total = measurementTotal(lines);
   const contractQty = item ? toNumber(item.revisedQty ?? item.originalQty) : 0;
+  const { user } = useAuth();
+  const seesWos = !!user && canViewWorkOrders(user.roleKey);
+  const { data: wos } = useWorkOrders({ projectId: selectedProject, boqItemId: boqId, open: true, pageSize: 50 }, open && seesWos && !!selectedProject && !!boqId);
+  const woOptions = (wos?.items ?? []).map((w) => ({ value: w.id, label: `${w.woNo} · ${w.vendorName}` }));
+  if (sheet?.workOrderId && sheet.woNo && !woOptions.some((o) => o.value === sheet.workOrderId)) woOptions.push({ value: sheet.workOrderId, label: `${sheet.woNo} · ${sheet.contractorName ?? ''}` });
 
   useEffect(() => {
     if (!open) return;
@@ -59,6 +66,7 @@ export function MeasurementFormModal({ open, onClose, projectId, boqItemId, shee
       form.setFieldsValue({
         projectId: sheet.projectId,
         boqItemId: sheet.boqItemId,
+        workOrderId: sheet.workOrderId,
         date: dayjs(sheet.date),
         location: sheet.location,
         remarks: sheet.remarks ?? undefined,
@@ -74,6 +82,7 @@ export function MeasurementFormModal({ open, onClose, projectId, boqItemId, shee
     mutationFn: async (v: FormValues) => {
       const body = {
         boqItemId: v.boqItemId,
+        workOrderId: v.workOrderId ?? (editing ? null : undefined),
         date: v.date.format('YYYY-MM-DD'),
         location: v.location.trim(),
         remarks: v.remarks?.trim() || (editing ? null : undefined),
@@ -105,7 +114,7 @@ export function MeasurementFormModal({ open, onClose, projectId, boqItemId, shee
       <Form form={form} layout="vertical" onFinish={(v) => mutation.mutate(v)} style={{ marginTop: 8 }}>
         {sheet?.reviewNote && <Alert type="warning" showIcon style={{ marginBottom: 16 }} message={`Reviewer note from ${sheet.reviewedByName ?? 'approver'}`} description={sheet.reviewNote} />}
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]} hidden={!!fixedProject}>
-          <Select showSearch optionFilterProp="label" placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} onChange={() => form.setFieldValue('boqItemId', undefined)} />
+          <Select showSearch optionFilterProp="label" placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} onChange={() => form.setFieldsValue({ boqItemId: undefined, workOrderId: undefined })} />
         </Form.Item>
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '0 16px' }}>
           <Form.Item
@@ -114,12 +123,24 @@ export function MeasurementFormModal({ open, onClose, projectId, boqItemId, shee
             rules={[{ required: true, message: 'Required' }]}
             extra={item ? `Contract ${formatQty(contractQty)} ${item.unit} · measured ${formatQty(item.measuredQty)} · awaiting approval ${formatQty(item.pendingMeasuredQty)}` : undefined}
           >
-            <Select showSearch optionFilterProp="label" placeholder="Select BOQ item" disabled={!selectedProject} options={(boq ?? []).map((b) => ({ value: b.id, label: `${b.itemNo} - ${b.description} (${b.unit})` }))} />
+            <Select
+              showSearch
+              optionFilterProp="label"
+              placeholder="Select BOQ item"
+              disabled={!selectedProject}
+              options={(boq ?? []).map((b) => ({ value: b.id, label: `${b.itemNo} - ${b.description} (${b.unit})` }))}
+              onChange={() => form.setFieldValue('workOrderId', undefined)}
+            />
           </Form.Item>
           <Form.Item name="date" label="Measured on" rules={[{ required: true, message: 'Required' }]}>
             <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
         </div>
+        {woOptions.length > 0 && (
+          <Form.Item name="workOrderId" label="Done by (work order)" extra="Tag the subcontractor's work so it goes in their bill. Leave empty for departmental work.">
+            <Select allowClear placeholder="Departmental (no work order)" options={woOptions} />
+          </Form.Item>
+        )}
         <Form.Item name="location" label="Location" rules={[{ required: true, whitespace: true, message: 'Required' }]}>
           <Input maxLength={200} placeholder="Chainage, grid, floor or zone, e.g. Ch 2+100 to 2+350 LHS" />
         </Form.Item>

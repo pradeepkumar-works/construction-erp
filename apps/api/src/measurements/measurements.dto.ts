@@ -21,6 +21,11 @@ export class CreateMeasurementDto {
   @ApiPropertyOptional(CLIENT_ID_DOC) @IsOptional() @IsUUID('4') id?: string;
   @ApiProperty() @IsUUID() projectId: string;
   @ApiProperty() @IsUUID() boqItemId: string;
+  @ApiPropertyOptional({ description: "Work done by a subcontractor: their approved, open work order with a line on this BOQ item; null for the company's own work" })
+  @IsOptional()
+  @ValidateIf((_, v) => v !== null)
+  @IsUUID()
+  workOrderId?: string | null;
   @ApiProperty({ example: '2026-10-13' }) @IsDateString() date: string;
   @ApiProperty({ example: 'Km 14+200 to 14+400' }) @trim() @IsString() @IsNotEmpty() @MaxLength(200) location: string;
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(1000) remarks?: string | null;
@@ -42,6 +47,7 @@ export class UpdateMeasurementDto extends PartialType(CreateMeasurementDto) {}
 export class ListMeasurementsQuery extends PageQuery {
   @ApiPropertyOptional() @IsOptional() @IsUUID() projectId?: string;
   @ApiPropertyOptional() @IsOptional() @IsUUID() boqItemId?: string;
+  @ApiPropertyOptional({ description: 'Only work under this work order' }) @IsOptional() @IsUUID() workOrderId?: string;
   @ApiPropertyOptional({ enum: SUBMISSION_STATUSES }) @IsOptional() @IsIn(SUBMISSION_STATUSES as unknown as string[]) status?: SubmissionStatus;
   @ApiPropertyOptional({ example: '2026-10-01' }) @IsOptional() @IsDateString() from?: string;
   @ApiPropertyOptional({ example: '2026-10-31' }) @IsOptional() @IsDateString() to?: string;

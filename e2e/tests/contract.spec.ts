@@ -10,7 +10,7 @@ test('the project manager sees the client master and the road contract', async (
 
   await page.goto('/projects');
   await page.getByText('RD-2026-01').first().click();
-  await page.getByRole('tab', { name: 'Contract' }).click();
+  await page.getByRole('tab', { name: 'Contract', exact: true }).click();
   await expect(page.getByText('04/EE/R&B/2025-26', { exact: false })).toBeVisible();
   await expect(page.getByText('Extensions of time')).toBeVisible();
   await page.getByRole('button', { name: 'Edit contract' }).click();
@@ -24,5 +24,5 @@ test('a site engineer has no Contract tab', async ({ page }) => {
   await page.goto('/projects');
   await page.getByText('RD-2026-01').first().click();
   await expect(page.getByRole('tab', { name: 'BOQ' })).toBeVisible();
-  await expect(page.getByRole('tab', { name: 'Contract' })).toHaveCount(0);
+  await expect(page.getByRole('tab', { name: 'Contract', exact: true })).toHaveCount(0);
 });

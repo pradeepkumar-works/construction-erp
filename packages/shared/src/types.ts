@@ -339,6 +339,8 @@ export interface NotificationJobResult {
 export interface AttendanceLineDto {
   id: string;
   contractor: string;
+  /** The labour contractor in the vendor master, when the name matches one */
+  vendorId: string | null;
   category: string;
   count: number;
 }
@@ -424,6 +426,10 @@ export interface StockEntryDto {
   issuedTo: string | null;
   activityId: string | null;
   activityName: string | null;
+  /** Issues to a subcontractor: their work order, and the bill that recovered the material */
+  workOrderId: string | null;
+  woNo: string | null;
+  subcontractBillId: string | null;
   remarks: string | null;
   lines: StockLineDto[];
   attachments: AttachmentDto[];
@@ -532,6 +538,11 @@ export interface MeasurementSheetDto extends SubmissionBase {
   /** The RA bill that billed it (it cannot be billed again) */
   raBillId: string | null;
   raBillNo: number | null;
+  /** Work by a subcontractor: their work order, and the subcontractor bill that paid it */
+  workOrderId: string | null;
+  woNo: string | null;
+  contractorName: string | null;
+  subcontractBillId: string | null;
   date: string;
   boqItemId: string;
   boqItemNo: string;
@@ -1298,4 +1309,151 @@ export interface VendorBillDto extends SubmissionBase {
   exceptions: string[];
   remarks: string | null;
   lines: VendorBillLineDto[];
+}
+
+/* ---------- subcontractor work orders and bills (v3 item 22) ---------- */
+
+export interface WorkOrderLineDto {
+  id: string;
+  /** The BOQ item it is measured against; null for the work order's own item */
+  boqItemId: string | null;
+  itemNo: string | null;
+  description: string;
+  unit: string;
+  quantity: string;
+  rate: string;
+  amount: string;
+  /** BOQ items: approved measurements of their work under this order */
+  measuredQty: string;
+  /** Up to date on their bills that are not rejected */
+  billedQty: string;
+}
+
+export interface WorkOrderDto extends SubmissionBase {
+  woNo: string;
+  woDate: string;
+  vendorId: string;
+  vendorName: string;
+  vendorGstin: string | null;
+  vendorPan: string | null;
+  vendorMsme: MsmeCategory | null;
+  title: string;
+  startDate: string | null;
+  endDate: string | null;
+  gstRate: string;
+  retentionPct: string;
+  advanceAmount: string;
+  advanceRecoveryPct: string;
+  /** Advance recovered on their bills so far (not rejected) */
+  advanceRecovered: string;
+  tdsPct: string;
+  paymentDays: number | null;
+  /** Sum of the lines before GST */
+  value: string;
+  terms: string | null;
+  remarks: string | null;
+  closedAt: string | null;
+  closeNote: string | null;
+  /** Approved and not closed: measurements, issues and bills can be made against it */
+  open: boolean;
+  /** Work value billed so far (bills not rejected), and as a share of the order value */
+  billedAmount: string;
+  billedPct: number;
+  lines: WorkOrderLineDto[];
+  /** Only on GET /work-orders/:id */
+  bills?: { id: string; billNo: number; label: string; isFinal: boolean; billDate: string; grossAmount: string; netPayable: string; status: SubmissionStatus }[];
+}
+
+export interface SubcontractBillLineDto {
+  id: string;
+  workOrderLineId: string;
+  boqItemId: string | null;
+  itemNo: string | null;
+  description: string;
+  unit: string;
+  /** Quantity on the work order */
+  woQty: string;
+  rate: string;
+  prevQty: string;
+  thisQty: string;
+  uptoQty: string;
+  prevAmount: string;
+  amount: string;
+  uptoAmount: string;
+  /** Up to date beyond the work order quantity ("0" when within it) */
+  excessQty: string;
+}
+
+export interface SubcontractBillMaterialDto {
+  itemId: string;
+  itemName: string;
+  unit: string;
+  quantity: string;
+  rate: string;
+  amount: string;
+}
+
+export interface SubcontractBillDeductionDto {
+  key: 'retention' | 'advanceRecovery' | 'tds' | 'material' | 'other';
+  label: string;
+  /** Percentage of the work value, for the percentage deductions */
+  pct: string | null;
+  amount: string;
+}
+
+export interface SubcontractBillDto extends SubmissionBase {
+  billNo: number;
+  /** "WO-2026-0003 bill 2" */
+  label: string;
+  isFinal: boolean;
+  workOrderId: string;
+  woNo: string;
+  woTitle: string;
+  vendorId: string;
+  vendorName: string;
+  vendorGstin: string | null;
+  vendorPan: string | null;
+  vendorMsme: MsmeCategory | null;
+  billDate: string;
+  measuredUpTo: string;
+  invoiceNo: string | null;
+  dueDate: string;
+  grossPrevious: string;
+  grossAmount: string;
+  grossUpto: string;
+  gstRate: string;
+  gstAmount: string;
+  retentionPct: string;
+  advanceRecoveryPct: string;
+  tdsPct: string;
+  materialRecovery: string;
+  otherDeduction: string;
+  otherDeductionNote: string | null;
+  deductions: SubcontractBillDeductionDto[];
+  totalDeductions: string;
+  netPayable: string;
+  remarks: string | null;
+  measurementCount: number;
+  issueCount: number;
+  lines: SubcontractBillLineDto[];
+  materials: SubcontractBillMaterialDto[];
+  /** Only on GET /subcontract-bills/:id: the measurements and issues it took */
+  measurements?: { id: string; mbNo: string; date: string; boqItemNo: string; unit: string; location: string; totalQty: string }[];
+  issues?: { id: string; entryNo: string; date: string; lines: number }[];
+}
+
+/** Client rate against the subcontract rate of one BOQ item, from approved work orders. */
+export interface WorkOrderMarginDto {
+  boqItemId: string;
+  itemNo: string;
+  description: string;
+  unit: string;
+  boqQty: string;
+  clientRate: string;
+  /** Average subcontract rate, weighted by work order quantity */
+  subRate: string;
+  margin: string;
+  /** Margin as a share of the client rate */
+  marginPct: number;
+  workOrders: { id: string; woNo: string; vendorName: string; quantity: string; rate: string }[];
 }

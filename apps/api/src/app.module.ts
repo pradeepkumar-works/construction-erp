@@ -24,6 +24,7 @@ import { RaBillsModule } from './ra-bills/ra-bills.module';
 import { ReceivablesModule } from './receivables/receivables.module';
 import { VendorsModule } from './vendors/vendors.module';
 import { PurchasingModule } from './purchasing/purchasing.module';
+import { SubcontractsModule } from './subcontracts/subcontracts.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { MaterialRequestsModule } from './material-requests/material-requests.module';
 import { ApprovalsModule } from './approvals/approvals.module';
@@ -55,6 +56,7 @@ import { HealthController } from './health.controller';
     ReceivablesModule,
     VendorsModule,
     PurchasingModule,
+    SubcontractsModule,
     CostModule,
     ReportsModule,
     RisksModule,

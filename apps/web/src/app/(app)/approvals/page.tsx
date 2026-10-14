@@ -21,8 +21,10 @@ import { MeasurementDrawer } from '@/components/measurements/MeasurementDrawer';
 import { BillDrawer } from '@/components/bills/BillDrawer';
 import { PurchaseOrderDrawer } from '@/components/purchasing/PurchaseOrderDrawer';
 import { VendorBillDrawer } from '@/components/purchasing/VendorBillDrawer';
+import { WorkOrderDrawer } from '@/components/subcontracts/WorkOrderDrawer';
+import { SubBillDrawer } from '@/components/subcontracts/SubBillDrawer';
 
-const TYPE_COLORS: Record<SubmissionType, string> = { PROGRESS: 'blue', DPR: 'purple', MATERIAL_REQUEST: 'cyan', MACHINERY: 'magenta', EXPENSE: 'default', MEASUREMENT: 'geekblue', BILL: 'gold', PURCHASE_ORDER: 'orange', VENDOR_BILL: 'volcano' };
+const TYPE_COLORS: Record<SubmissionType, string> = { PROGRESS: 'blue', DPR: 'purple', MATERIAL_REQUEST: 'cyan', MACHINERY: 'magenta', EXPENSE: 'default', MEASUREMENT: 'geekblue', BILL: 'gold', PURCHASE_ORDER: 'orange', VENDOR_BILL: 'volcano', WORK_ORDER: 'lime', SUBCONTRACT_BILL: 'green' };
 
 export default function ApprovalsPage() {
   const { user } = useAuth();
@@ -86,6 +88,8 @@ export default function ApprovalsPage() {
                   ['BILL', 'RA bills'],
                   ['PURCHASE_ORDER', 'POs'],
                   ['VENDOR_BILL', 'Vendor bills'],
+                  ['WORK_ORDER', 'Work orders'],
+                  ['SUBCONTRACT_BILL', 'Sub bills'],
                 ] as [SubmissionType, string][]
               )
                 .filter(([t]) => rights.some((r) => r.type === t))
@@ -114,6 +118,8 @@ export default function ApprovalsPage() {
       <BillDrawer id={open?.type === 'BILL' ? open.id : null} open={open?.type === 'BILL'} onClose={() => setOpen(null)} />
       <PurchaseOrderDrawer id={open?.type === 'PURCHASE_ORDER' ? open.id : null} open={open?.type === 'PURCHASE_ORDER'} onClose={() => setOpen(null)} />
       <VendorBillDrawer id={open?.type === 'VENDOR_BILL' ? open.id : null} open={open?.type === 'VENDOR_BILL'} onClose={() => setOpen(null)} />
+      <WorkOrderDrawer id={open?.type === 'WORK_ORDER' ? open.id : null} open={open?.type === 'WORK_ORDER'} onClose={() => setOpen(null)} />
+      <SubBillDrawer id={open?.type === 'SUBCONTRACT_BILL' ? open.id : null} open={open?.type === 'SUBCONTRACT_BILL'} onClose={() => setOpen(null)} />
     </div>
   );
 }

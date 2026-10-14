@@ -211,6 +211,8 @@ model Organization {
   quotations        Quotation[]
   purchaseOrders    PurchaseOrder[]
   vendorBills       VendorBill[]
+  workOrders        WorkOrder[]
+  subcontractBills  SubcontractBill[]
   raBills           RaBill[]
   receipts          Receipt[]
 }
@@ -296,6 +298,10 @@ model User {
   reviewedPos          PurchaseOrder[]    @relation("PoReviewer")
   submittedVendorBills VendorBill[]       @relation("VendorBillSubmitter")
   reviewedVendorBills  VendorBill[]       @relation("VendorBillReviewer")
+  submittedWorkOrders  WorkOrder[]        @relation("WorkOrderSubmitter")
+  reviewedWorkOrders   WorkOrder[]        @relation("WorkOrderReviewer")
+  submittedSubBills    SubcontractBill[]  @relation("SubBillSubmitter")
+  reviewedSubBills     SubcontractBill[]  @relation("SubBillReviewer")
   raisedRisks          Risk[]             @relation("RiskRaiser")
   ownedRisks           Risk[]             @relation("RiskOwner")
 
@@ -372,6 +378,8 @@ model Project {
   quotations       Quotation[]
   purchaseOrders   PurchaseOrder[]
   vendorBills      VendorBill[]
+  workOrders       WorkOrder[]
+  subcontractBills SubcontractBill[]
 
   @@unique([organizationId, code])
   @@index([organizationId, status])
@@ -436,6 +444,8 @@ model Vendor {
   quotations     Quotation[]
   purchaseOrders PurchaseOrder[]
   vendorBills    VendorBill[]
+  workOrders     WorkOrder[]
+  attendance     AttendanceLine[]
 
   @@unique([organizationId, name])
 }
@@ -626,6 +636,178 @@ model VendorBillLine {
   @@index([purchaseOrderLineId])
 }
 
+/// Work order to a subcontractor or labour contractor (v3 item 22): rates per BOQ item or for its own items, with the
+/// retention, advance and TDS their bills are made with. Approved through the approval matrix (submission type WORK_ORDER).
+model WorkOrder {
+  id                 String           @id @default(uuid())
+  organizationId     String
+  organization       Organization     @relation(fields: [organizationId], references: [id])
+  projectId          String
+  project            Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  vendorId           String
+  vendor             Vendor           @relation(fields: [vendorId], references: [id])
+  /// WO-<year>-0001 per organisation
+  woNo               String
+  woDate             DateTime         @db.Date
+  /// What the work order is for, e.g. "Brickwork and plaster, Block A"
+  title              String
+  startDate          DateTime?        @db.Date
+  endDate            DateTime?        @db.Date
+  /// GST the subcontractor charges on their bills (0 when they are not registered)
+  gstRate            Decimal          @default(0) @db.Decimal(5, 2)
+  retentionPct       Decimal          @default(0) @db.Decimal(5, 2)
+  /// Mobilisation advance paid to them, recovered from their bills at advanceRecoveryPct
+  advanceAmount      Decimal          @default(0) @db.Decimal(18, 2)
+  advanceRecoveryPct Decimal          @default(0) @db.Decimal(5, 2)
+  /// Income-tax TDS on their bills (section 194C: 1% for an individual or HUF, 2% otherwise)
+  tdsPct             Decimal          @default(0) @db.Decimal(5, 2)
+  /// Days from their bill to payment; micro and small enterprises are capped at 45
+  paymentDays        Int?
+  /// Sum of line amounts (quantity × rate), before GST
+  value              Decimal          @default(0) @db.Decimal(18, 2)
+  terms              String?
+  remarks            String?
+  /// Closed: no more measurements, issues or bills against it
+  closedAt           DateTime?
+  closeNote          String?
+  status             SubmissionStatus @default(DRAFT)
+  submittedById      String
+  submittedBy        User             @relation("WorkOrderSubmitter", fields: [submittedById], references: [id])
+  submittedAt        DateTime?
+  reviewedById       String?
+  reviewedBy         User?            @relation("WorkOrderReviewer", fields: [reviewedById], references: [id])
+  reviewedAt         DateTime?
+  reviewNote         String?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  lines        WorkOrderLine[]
+  bills        SubcontractBill[]
+  measurements MeasurementSheet[]
+  issues       StockEntry[]
+  attachments  Attachment[]
+
+  @@unique([organizationId, woNo])
+  @@index([organizationId, status])
+  @@index([projectId, status])
+  @@index([vendorId])
+}
+
+/// One item of a work order: a BOQ item of the project (measured in the measurement book) or the work order's own item
+/// (quantity entered on each bill).
+model WorkOrderLine {
+  id          String    @id @default(uuid())
+  workOrderId String
+  workOrder   WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  boqItemId   String?
+  boqItem     BoqItem?  @relation(fields: [boqItemId], references: [id], onDelete: Restrict)
+  description String
+  unit        String
+  quantity    Decimal   @db.Decimal(18, 3)
+  rate        Decimal   @db.Decimal(18, 2)
+  amount      Decimal   @db.Decimal(18, 2)
+  sortOrder   Int       @default(0)
+
+  billLines SubcontractBillLine[]
+
+  @@unique([workOrderId, boqItemId])
+  @@index([boqItemId])
+}
+
+/// Running bill N of a subcontractor under a work order: measured work (or quantities entered for the work order's own
+/// items) at the work order rates, GST, and the recoveries: retention, advance, TDS, material issued to them. Approved
+/// through the approval matrix (submission type SUBCONTRACT_BILL); paid in payables.
+model SubcontractBill {
+  id                    String           @id @default(uuid())
+  organizationId        String
+  organization          Organization     @relation(fields: [organizationId], references: [id])
+  projectId             String
+  project               Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  workOrderId           String
+  workOrder             WorkOrder        @relation(fields: [workOrderId], references: [id])
+  /// 1, 2, 3 ... per work order
+  billNo                Int
+  isFinal               Boolean          @default(false)
+  billDate              DateTime         @db.Date
+  /// Approved measurements and material issues up to this day, not taken by an earlier bill
+  measuredUpTo          DateTime         @db.Date
+  /// The subcontractor's own invoice number, when they give one
+  invoiceNo             String?
+  /// Bill date + the work order's payment days (45 at most for micro and small enterprises)
+  dueDate               DateTime         @db.Date
+  grossPrevious         Decimal          @db.Decimal(18, 2)
+  grossAmount           Decimal          @db.Decimal(18, 2)
+  grossUpto             Decimal          @db.Decimal(18, 2)
+  gstRate               Decimal          @db.Decimal(5, 2)
+  gstAmount             Decimal          @db.Decimal(18, 2)
+  retentionPct          Decimal          @db.Decimal(5, 2)
+  advanceRecoveryPct    Decimal          @db.Decimal(5, 2)
+  tdsPct                Decimal          @db.Decimal(5, 2)
+  retentionAmount       Decimal          @db.Decimal(18, 2)
+  advanceRecoveryAmount Decimal          @db.Decimal(18, 2)
+  tdsAmount             Decimal          @db.Decimal(18, 2)
+  /// Material issued to them from stock, at the item's rate
+  materialRecovery      Decimal          @db.Decimal(18, 2)
+  otherDeduction        Decimal          @default(0) @db.Decimal(18, 2)
+  otherDeductionNote    String?
+  totalDeductions       Decimal          @db.Decimal(18, 2)
+  /// gross + GST - deductions
+  netPayable            Decimal          @db.Decimal(18, 2)
+  remarks               String?
+  status                SubmissionStatus @default(DRAFT)
+  submittedById         String
+  submittedBy           User             @relation("SubBillSubmitter", fields: [submittedById], references: [id])
+  submittedAt           DateTime?
+  reviewedById          String?
+  reviewedBy            User?            @relation("SubBillReviewer", fields: [reviewedById], references: [id])
+  reviewedAt            DateTime?
+  reviewNote            String?
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+
+  lines        SubcontractBillLine[]
+  materials    SubcontractBillMaterial[]
+  measurements MeasurementSheet[]
+  issues       StockEntry[]
+  attachments  Attachment[]
+
+  @@unique([workOrderId, billNo])
+  @@index([organizationId, status])
+  @@index([projectId, status])
+}
+
+/// One work order item on a subcontractor bill: quantity up to the previous bill, in this bill and up to date.
+model SubcontractBillLine {
+  id              String          @id @default(uuid())
+  billId          String
+  bill            SubcontractBill @relation(fields: [billId], references: [id], onDelete: Cascade)
+  workOrderLineId String
+  workOrderLine   WorkOrderLine   @relation(fields: [workOrderLineId], references: [id], onDelete: Restrict)
+  rate            Decimal         @db.Decimal(18, 2)
+  prevQty         Decimal         @db.Decimal(18, 3)
+  thisQty         Decimal         @db.Decimal(18, 3)
+  uptoQty         Decimal         @db.Decimal(18, 3)
+  amount          Decimal         @db.Decimal(18, 2)
+  sortOrder       Int             @default(0)
+
+  @@unique([billId, workOrderLineId])
+  @@index([workOrderLineId])
+}
+
+/// Material issued to the subcontractor and recovered in a bill: quantity of one item at its rate when the bill was made.
+model SubcontractBillMaterial {
+  id       String          @id @default(uuid())
+  billId   String
+  bill     SubcontractBill @relation(fields: [billId], references: [id], onDelete: Cascade)
+  itemId   String
+  item     Item            @relation(fields: [itemId], references: [id])
+  quantity Decimal         @db.Decimal(18, 3)
+  rate     Decimal         @db.Decimal(18, 2)
+  amount   Decimal         @db.Decimal(18, 2)
+
+  @@unique([billId, itemId])
+}
+
 model ProjectMember {
   id        String   @id @default(uuid())
   projectId String
@@ -656,9 +838,10 @@ model BoqItem {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
-  activities   Activity[]
-  measurements MeasurementSheet[]
-  billItems    RaBillItem[]
+  activities     Activity[]
+  measurements   MeasurementSheet[]
+  billItems      RaBillItem[]
+  workOrderLines WorkOrderLine[]
 
   @@unique([projectId, itemNo])
   @@index([organizationId])
@@ -863,12 +1046,16 @@ model AttendanceLine {
   sheet      AttendanceSheet @relation(fields: [sheetId], references: [id], onDelete: Cascade)
   /// Labour contractor, or "Departmental" for the company's own workers
   contractor String
+  /// The labour contractor in the vendor master, linked by name (null for departmental workers or a name not in it)
+  vendorId   String?
+  vendor     Vendor?         @relation(fields: [vendorId], references: [id], onDelete: SetNull)
   /// Trade, e.g. Mason, Helper (MANPOWER_CATEGORIES in shared; free text allowed)
   category   String
   count      Int
   sortOrder  Int             @default(0)
 
   @@index([sheetId])
+  @@index([vendorId])
 }
 
 // ---------- Attachments and audit ----------
@@ -888,8 +1075,9 @@ model Item {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
-  txns      StockTxn[]
-  minLevels StockMinLevel[]
+  txns       StockTxn[]
+  minLevels  StockMinLevel[]
+  recoveries SubcontractBillMaterial[]
 
   @@unique([organizationId, name, unit])
 }
@@ -921,6 +1109,12 @@ model StockEntry {
   /// Issues: the activity the material is for
   activityId        String?
   activity          Activity?        @relation(fields: [activityId], references: [id], onDelete: SetNull)
+  /// Issues: the subcontractor's work order the material went to; recovered in their next bill
+  workOrderId       String?
+  workOrder         WorkOrder?       @relation(fields: [workOrderId], references: [id])
+  /// Issues against a work order: the subcontractor bill that recovered it
+  subcontractBillId String?
+  subcontractBill   SubcontractBill? @relation(fields: [subcontractBillId], references: [id], onDelete: SetNull)
   remarks           String?
   createdById       String
   createdBy         User             @relation(fields: [createdById], references: [id])
@@ -1150,34 +1344,40 @@ model Risk {
 /// A measurement book (MB) entry: one BOQ item measured at one location on one day, as dimension lines.
 /// Approved sheets roll up into the BOQ item's measured (billable) quantity.
 model MeasurementSheet {
-  id             String           @id @default(uuid())
-  organizationId String
-  organization   Organization     @relation(fields: [organizationId], references: [id])
-  projectId      String
-  project        Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  boqItemId      String
-  boqItem        BoqItem          @relation(fields: [boqItemId], references: [id], onDelete: Cascade)
+  id                String           @id @default(uuid())
+  organizationId    String
+  organization      Organization     @relation(fields: [organizationId], references: [id])
+  projectId         String
+  project           Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  boqItemId         String
+  boqItem           BoqItem          @relation(fields: [boqItemId], references: [id], onDelete: Cascade)
   /// MB-<year>-0001 per organisation
-  mbNo           String
-  date           DateTime         @db.Date
+  mbNo              String
+  date              DateTime         @db.Date
   /// Chainage, grid, floor, zone
-  location       String
-  remarks        String?
+  location          String
+  remarks           String?
   /// Sum of the lines (deductions negative), in the BOQ item's unit
-  totalQty       Decimal          @db.Decimal(18, 3)
-  status         SubmissionStatus @default(DRAFT)
-  submittedById  String
-  submittedBy    User             @relation("MeasurementSubmitter", fields: [submittedById], references: [id])
-  submittedAt    DateTime?
-  reviewedById   String?
-  reviewedBy     User?            @relation("MeasurementReviewer", fields: [reviewedById], references: [id])
-  reviewedAt     DateTime?
-  reviewNote     String?
+  totalQty          Decimal          @db.Decimal(18, 3)
+  status            SubmissionStatus @default(DRAFT)
+  submittedById     String
+  submittedBy       User             @relation("MeasurementSubmitter", fields: [submittedById], references: [id])
+  submittedAt       DateTime?
+  reviewedById      String?
+  reviewedBy        User?            @relation("MeasurementReviewer", fields: [reviewedById], references: [id])
+  reviewedAt        DateTime?
+  reviewNote        String?
   /// The RA bill this measurement was billed in (set when a bill takes it; it cannot go into another bill)
-  raBillId       String?
-  raBill         RaBill?          @relation(fields: [raBillId], references: [id], onDelete: SetNull)
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
+  raBillId          String?
+  raBill            RaBill?          @relation(fields: [raBillId], references: [id], onDelete: SetNull)
+  /// Work done by a subcontractor under this work order (the same measurement also goes to the client's RA bill)
+  workOrderId       String?
+  workOrder         WorkOrder?       @relation(fields: [workOrderId], references: [id])
+  /// The subcontractor bill this measurement was paid in
+  subcontractBillId String?
+  subcontractBill   SubcontractBill? @relation(fields: [subcontractBillId], references: [id], onDelete: SetNull)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
 
   lines       MeasurementLine[]
   attachments Attachment[]
@@ -1186,6 +1386,7 @@ model MeasurementSheet {
   @@index([projectId, status])
   @@index([boqItemId, status])
   @@index([organizationId, status])
+  @@index([workOrderId])
 }
 
 /// One row of a measurement: nos × length × breadth × depth (blank dimensions count as 1); a deduction is negative.
@@ -1378,6 +1579,10 @@ model Attachment {
   purchaseOrder     PurchaseOrder?    @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
   vendorBillId      String?
   vendorBill        VendorBill?       @relation(fields: [vendorBillId], references: [id], onDelete: Cascade)
+  workOrderId       String?
+  workOrder         WorkOrder?        @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  subcontractBillId String?
+  subcontractBill   SubcontractBill?  @relation(fields: [subcontractBillId], references: [id], onDelete: Cascade)
   createdAt         DateTime          @default(now())
 
   @@index([organizationId])

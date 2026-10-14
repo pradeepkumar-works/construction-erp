@@ -94,6 +94,20 @@ jobs:
           ENG=$(curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' -d '{"email":"engineer@demo.com","password":"password123"}' | jq -r .accessToken)
           code=$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/vendor-bills" -H "authorization: Bearer $ENG")
           echo "vendor bills as a site engineer: $code"; [ "$code" = "403" ]
+      - name: Subcontracts
+        run: |
+          set -e
+          TOKEN=$(curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' \
+            -d '{"email":"qs@demo.com","password":"password123"}' | jq -r .accessToken)
+          H="authorization: Bearer $TOKEN"
+          curl -sf "$API_URL/work-orders" -H "$H" | jq -c '.total, [.items[] | {woNo, vendorName, status, value, billedPct, tdsPct}]'
+          curl -sf "$API_URL/work-orders" -H "$H" | jq -e '.total >= 1' > /dev/null
+          PRJ=$(curl -sf "$API_URL/work-orders" -H "$H" | jq -r '.items[0].projectId')
+          curl -sf "$API_URL/work-orders/margin?projectId=$PRJ" -H "$H" | jq -c '[.[] | {itemNo, clientRate, subRate, marginPct}]'
+          curl -sf "$API_URL/subcontract-bills" -H "$H" | jq -c '.total, [.items[] | {label, vendorName, status, grossAmount, netPayable, dueDate}]'
+          ENG=$(curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' -d '{"email":"engineer@demo.com","password":"password123"}' | jq -r .accessToken)
+          code=$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/work-orders/margin?projectId=$PRJ" -H "authorization: Bearer $ENG")
+          echo "margin as a site engineer: $code"; [ "$code" = "403" ]
       - name: Notifications
         run: |
           set -e

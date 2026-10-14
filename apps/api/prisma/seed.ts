@@ -112,6 +112,7 @@ async function main() {
     await seedReceipts(org.id);
     await seedVendors(org.id);
     await seedPurchasing(org.id);
+    await seedSubcontracts(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
   }
@@ -266,6 +267,7 @@ async function main() {
   await seedReceipts(org.id);
   await seedVendors(org.id);
   await seedPurchasing(org.id);
+  await seedSubcontracts(org.id);
 
   console.log('Seed complete. Login with any of these (password: password123):');
   for (const u of USERS) console.log(`  ${u.email.padEnd(24)} ${u.role}`);
@@ -846,11 +848,17 @@ const PURCHASE_RULES: typeof BILL_RULES = ['PURCHASE_ORDER', 'VENDOR_BILL'].flat
   { roleKey: 'PROJECT_MANAGER', type, maxAmount: D(500000) },
 ]);
 
+/** Work orders and subcontractor bills: management approves any, project managers up to ₹5 lakh. */
+const SUBCONTRACT_RULES: typeof BILL_RULES = ['WORK_ORDER', 'SUBCONTRACT_BILL'].flatMap((type) => [
+  { roleKey: 'MANAGEMENT', type, maxAmount: null },
+  { roleKey: 'PROJECT_MANAGER', type, maxAmount: D(500000) },
+]);
+
 /**
  * Demo approval matrix: management approves everything, project managers approve everything but site expenses only
  * up to ₹25,000 (bigger bills go to management) and RA bills up to ₹50 lakh, and accounts approves site expenses of any
- * amount, and purchase orders and vendor bills up to ₹5 lakh. Only written when the organisation has no matrix yet, so an
- * admin's own changes are never overwritten; a matrix made before RA bills or purchasing existed gets those rules once,
+ * amount, and purchase orders, vendor bills, work orders and subcontractor bills up to ₹5 lakh. Only written when the organisation has no matrix yet, so an
+ * admin's own changes are never overwritten; a matrix made before RA bills, purchasing or subcontracts existed gets those rules once,
  * for each type it has no rule for.
  */
 async function seedApprovalRules(organizationId: string) {
@@ -861,8 +869,9 @@ async function seedApprovalRules(organizationId: string) {
       skipDuplicates: true,
     });
   if ((await prisma.approvalRule.count({ where: { organizationId } })) > 0) {
-    for (const type of ['BILL', 'PURCHASE_ORDER', 'VENDOR_BILL'])
-      if ((await prisma.approvalRule.count({ where: { organizationId, submissionType: type } })) === 0) await write([...BILL_RULES, ...PURCHASE_RULES].filter((r) => r.type === type));
+    for (const type of ['BILL', 'PURCHASE_ORDER', 'VENDOR_BILL', 'WORK_ORDER', 'SUBCONTRACT_BILL'])
+      if ((await prisma.approvalRule.count({ where: { organizationId, submissionType: type } })) === 0)
+        await write([...BILL_RULES, ...PURCHASE_RULES, ...SUBCONTRACT_RULES].filter((r) => r.type === type));
     return;
   }
   const types = ['PROGRESS', 'DPR', 'MATERIAL_REQUEST', 'MACHINERY', 'EXPENSE', 'MEASUREMENT'];
@@ -872,6 +881,7 @@ async function seedApprovalRules(organizationId: string) {
     { roleKey: 'ACCOUNTS_MANAGER', type: 'EXPENSE', maxAmount: null },
     ...BILL_RULES,
     ...PURCHASE_RULES,
+    ...SUBCONTRACT_RULES,
   ];
   await write(rows);
 }
@@ -1099,4 +1109,58 @@ async function seedPurchasing(organizationId: string) {
       ],
     });
   }
+}
+
+/**
+ * Demo subcontract on the road project: Sri Jagannath Constructions (an individual's firm, so 1% TDS, and a micro
+ * enterprise) gets an approved work order for GSB and WMM at subcontract rates, plus its own item for shoulder dressing.
+ * The approved measurements of those items and the latest material issue to them are put under the order, so its first
+ * bill can be prepared straight away; their attendance rows link to the vendor. Only when the organisation has no
+ * work orders yet.
+ */
+async function seedSubcontracts(organizationId: string) {
+  if ((await prisma.workOrder.count({ where: { organizationId } })) > 0) return;
+  const userOf = async (role: string) => (await prisma.user.findFirst({ where: { organizationId, role: { key: role } }, select: { id: true } }))?.id;
+  const [pm, md] = [await userOf('PROJECT_MANAGER'), await userOf('MANAGEMENT')];
+  const project = await prisma.project.findFirst({ where: { organizationId, type: 'ROAD' }, include: { boqItems: true }, orderBy: { createdAt: 'asc' } });
+  if (!pm || !md || !project) return;
+  const name = 'Sri Jagannath Constructions';
+  const vendor =
+    (await prisma.vendor.findFirst({ where: { organizationId, name } })) ??
+    (await prisma.vendor.create({
+      data: {
+        organizationId, name, kinds: ['SUBCONTRACTOR', 'LABOUR_CONTRACTOR'], gstin: '21AKPPM3321H1Z7', pan: 'AKPPM3321H', stateCode: '21', msmeCategory: 'MICRO', udyamNo: 'UDYAM-OD-19-0115566',
+        bankAccountName: name, bankAccountNo: '40112233445', bankIfsc: 'SBIN0009911', bankName: 'State Bank of India, Khordha', contactPerson: 'J. Mohapatra', phone: '9437345678', address: 'Khordha, Odisha',
+      },
+    }));
+  await prisma.attendanceLine.updateMany({ where: { sheet: { organizationId }, vendorId: null, contractor: { equals: name, mode: 'insensitive' } }, data: { vendorId: vendor.id } });
+  const boq = (itemNo: string) => project.boqItems.find((b) => b.itemNo === itemNo);
+  const gsb = boq('3.01');
+  const wmm = boq('3.02');
+  if (!gsb || !wmm) return;
+  const lines = [
+    { boqItemId: gsb.id, description: `${gsb.itemNo} ${gsb.description}`, unit: gsb.unit, quantity: gsb.revisedQty ?? gsb.originalQty, rate: D(1390) },
+    { boqItemId: wmm.id, description: `${wmm.itemNo} ${wmm.description}`, unit: wmm.unit, quantity: wmm.revisedQty ?? wmm.originalQty, rate: D(1780) },
+    { boqItemId: null, description: 'Shoulder dressing and side slopes, both sides', unit: 'Km', quantity: D(12), rate: D(18500) },
+  ].map((l, i) => ({ ...l, amount: l.quantity.mul(l.rate).toDecimalPlaces(2), sortOrder: i }));
+  const value = lines.reduce((t, l) => t.add(l.amount), D(0));
+  const wo = await prisma.workOrder.create({
+    data: {
+      organizationId, projectId: project.id, vendorId: vendor.id, woNo: `WO-${new Date().getUTCFullYear()}-0001`, woDate: day(-20), title: 'GSB and WMM, Km 10 to 22',
+      startDate: day(-18), endDate: day(160), gstRate: D(18), retentionPct: D(5), advanceAmount: D(200000), advanceRecoveryPct: D(10), tdsPct: D(1), paymentDays: 30, value,
+      terms: 'Rates include labour, machinery and transport. Bitumen, cement and diesel issued from our store are recovered at the store rate.',
+      status: 'APPROVED', submittedById: pm, submittedAt: day(-20), reviewedById: md, reviewedAt: day(-19), createdAt: day(-20),
+      lines: { create: lines },
+    },
+  });
+  await prisma.auditLog.createMany({
+    data: [
+      { organizationId, entityType: 'WORK_ORDER', entityId: wo.id, action: 'CREATED', actorId: pm, createdAt: day(-20) },
+      { organizationId, entityType: 'WORK_ORDER', entityId: wo.id, action: 'SUBMITTED', actorId: pm, createdAt: day(-20) },
+      { organizationId, entityType: 'WORK_ORDER', entityId: wo.id, action: 'APPROVED', actorId: md, createdAt: day(-19) },
+    ],
+  });
+  await prisma.measurementSheet.updateMany({ where: { projectId: project.id, boqItemId: { in: [gsb.id, wmm.id] }, status: 'APPROVED' }, data: { workOrderId: wo.id } });
+  const issue = await prisma.stockEntry.findFirst({ where: { projectId: project.id, type: 'ISSUE', issuedTo: name }, orderBy: { date: 'desc' } });
+  if (issue) await prisma.stockEntry.update({ where: { id: issue.id }, data: { workOrderId: wo.id } });
 }

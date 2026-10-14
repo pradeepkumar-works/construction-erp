@@ -93,12 +93,13 @@ export class VendorsService {
     return gstStateCode(gstin) ?? stateCode;
   }
 
-  /** Expenses, machines and GRNs that typed this vendor's name without linking it now link to it. */
+  /** Expenses, machines, GRNs and attendance rows that typed this vendor's name without linking it now link to it. */
   private async adopt(tx: Tx, organizationId: string, vendorId: string, name: string) {
     const match = { equals: name, mode: 'insensitive' as const };
     await tx.expense.updateMany({ where: { organizationId, vendorId: null, vendor: match }, data: { vendorId, vendor: name } });
     await tx.equipment.updateMany({ where: { organizationId, vendorId: null, supplier: match }, data: { vendorId, supplier: name } });
     await tx.stockEntry.updateMany({ where: { organizationId, vendorId: null, supplier: match }, data: { vendorId, supplier: name } });
+    await tx.attendanceLine.updateMany({ where: { sheet: { organizationId }, vendorId: null, contractor: match }, data: { vendorId, contractor: name } });
   }
 
   async create(user: RequestUser, dto: CreateVendorDto): Promise<VendorDto> {
@@ -162,6 +163,7 @@ export class VendorsService {
           await tx.expense.updateMany({ where: { vendorId: id }, data: { vendor: dto.name } });
           await tx.equipment.updateMany({ where: { vendorId: id }, data: { supplier: dto.name } });
           await tx.stockEntry.updateMany({ where: { vendorId: id }, data: { supplier: dto.name } });
+          await tx.attendanceLine.updateMany({ where: { vendorId: id }, data: { contractor: dto.name } });
           await this.adopt(tx, user.organizationId, id, dto.name!);
         }
       });

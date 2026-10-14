@@ -1,0 +1,92 @@
+import React from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import type { SubcontractBillDto } from '@erp/shared';
+import { useFetch } from '../../src/api/hooks';
+import { AttachmentGallery, Button, Card, ErrorState, KeyValue, Loading, ReviewActions, Screen, SubmissionHeader } from '../../src/components';
+import { colors, spacing, typography } from '../../src/theme';
+import { fmtQty, formatDate } from '../../src/utils/format';
+
+const rupees = (v: string | number) => `₹${Number(v).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+/** A subcontractor's bill on the phone: work as measured, the recoveries, the net payable, and approval. Bills are prepared on the web. */
+export default function SubcontractBillScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
+  const { data, loading, refreshing, error, refresh, reload, setData } = useFetch<SubcontractBillDto>((api) => api.get(`/subcontract-bills/${id}`), [id], { enabled: !!id });
+
+  if (loading && !data) return <Loading />;
+  if (error && !data) return <ErrorState message={error} onRetry={reload} />;
+  if (!data) return null;
+  const excess = data.lines.filter((l) => Number(l.excessQty) > 0);
+
+  return (
+    <Screen refreshing={refreshing} onRefresh={refresh}>
+      <SubmissionHeader item={data} title={`${data.label} · ${data.vendorName}`} subtitle={`${data.woTitle} · measured up to ${formatDate(data.measuredUpTo)}`} />
+      <Card>
+        <View style={styles.box}>
+          <Text style={styles.total}>{rupees(data.netPayable)}</Text>
+          <Text style={typography.caption}>net payable, due {formatDate(data.dueDate)}</Text>
+        </View>
+        {excess.length > 0 ? (
+          <View style={styles.warn}>
+            <Text style={styles.warnText}>Billed beyond the work order: {excess.map((l) => `${l.itemNo ?? l.description} ${fmtQty(l.uptoQty)} of ${fmtQty(l.woQty)} ${l.unit}`).join(', ')}</Text>
+          </View>
+        ) : null}
+        <KeyValue label="Work in this bill" value={rupees(data.grossAmount)} />
+        <KeyValue label={`GST ${data.gstRate}%`} value={rupees(data.gstAmount)} />
+        {data.deductions
+          .filter((d) => Number(d.amount) > 0)
+          .map((d) => (
+            <KeyValue key={d.key} label={`Less ${d.label}${d.pct ? ` @ ${d.pct}%` : ''}`} value={`(${rupees(d.amount)})`} />
+          ))}
+        <KeyValue label="Their invoice" value={data.invoiceNo} />
+        <KeyValue label="Remarks" value={data.remarks} multiline />
+      </Card>
+      <Card title={`Work (${data.lines.length})`}>
+        {data.lines.map((l) => (
+          <View key={l.id} style={styles.line}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.lineTitle} numberOfLines={2}>
+                {l.itemNo ? `${l.itemNo} ` : ''}
+                {l.description}
+              </Text>
+              <Text style={typography.caption}>
+                {fmtQty(l.thisQty)} {l.unit} @ {rupees(l.rate)} · {fmtQty(l.uptoQty)} to date
+              </Text>
+            </View>
+            <Text style={styles.amount}>{rupees(l.amount)}</Text>
+          </View>
+        ))}
+      </Card>
+      {data.materials.length > 0 ? (
+        <Card title="Material issued to them">
+          {data.materials.map((m) => (
+            <View key={m.itemId} style={styles.line}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.lineTitle}>{m.itemName}</Text>
+                <Text style={typography.caption}>
+                  {fmtQty(m.quantity)} {m.unit} @ {rupees(m.rate)}
+                </Text>
+              </View>
+              <Text style={styles.amount}>{rupees(m.amount)}</Text>
+            </View>
+          ))}
+        </Card>
+      ) : null}
+      <AttachmentGallery attachments={data.attachments} />
+      <ReviewActions type="SUBCONTRACT_BILL" item={data} onReviewed={setData} />
+      <Button title="Open work order" variant="ghost" icon="hammer-outline" onPress={() => router.push(`/work-order/${data.workOrderId}`)} />
+    </Screen>
+  );
+}
+
+const styles = StyleSheet.create({
+  box: { alignItems: 'center', paddingVertical: spacing.md, marginBottom: spacing.sm, backgroundColor: colors.primarySoft, borderRadius: 12 },
+  total: { fontSize: 28, fontWeight: '800', color: colors.primaryDark },
+  warn: { padding: spacing.sm, borderRadius: 10, marginBottom: spacing.sm, backgroundColor: colors.dangerSoft },
+  warnText: { fontSize: 13, color: colors.danger },
+  line: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
+  lineTitle: { fontSize: 15, fontWeight: '600', color: colors.text },
+  amount: { fontSize: 15, fontWeight: '700', color: colors.text, marginLeft: spacing.md },
+});

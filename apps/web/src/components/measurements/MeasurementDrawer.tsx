@@ -53,6 +53,7 @@ export function MeasurementDrawer({ id, open, onClose, onEdit }: { id: string | 
               { key: 'boq', label: 'BOQ item', children: `${data.boqItemNo} - ${data.boqDescription}`, span: 2 },
               { key: 'date', label: 'Date', children: formatDate(data.date) },
               { key: 'loc', label: 'Location', children: data.location },
+              ...(data.woNo ? [{ key: 'wo', label: 'Done by', children: `${data.contractorName ?? ''} (${data.woNo})` }] : []),
               { key: 'qty', label: 'Quantity', children: <strong>{`${formatQty(data.totalQty)} ${data.unit}`}</strong> },
               { key: 'amount', label: `Value at ${formatINR(data.rate, true)} / ${data.unit}`, children: <strong>{formatINR(data.amount, true)}</strong> },
               ...(data.raBillNo !== null ? [{ key: 'bill', label: 'Billed in', children: `RA bill ${data.raBillNo}`, span: 2 }] : []),

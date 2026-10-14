@@ -6,9 +6,10 @@ import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { StockEntryDto } from '@erp/shared';
-import { MAX_PAGE_SIZE } from '@erp/shared';
+import { MAX_PAGE_SIZE, canViewWorkOrders } from '@erp/shared';
 import { api, errorMessage } from '@/lib/api';
-import { useActivities, useAttendanceSuggestions, useProjects, useStockBalances } from '@/lib/queries';
+import { useActivities, useAttendanceSuggestions, useProjects, useStockBalances, useWorkOrders } from '@/lib/queries';
+import { useAuth } from '@/lib/auth';
 import { formatQty } from '@/lib/format';
 
 interface LineValue {
@@ -19,7 +20,8 @@ interface LineValue {
 interface FormValues {
   projectId: string;
   date: dayjs.Dayjs;
-  issuedTo: string;
+  issuedTo?: string;
+  workOrderId?: string;
   activityId?: string;
   remarks?: string;
   lines?: LineValue[];
@@ -38,6 +40,9 @@ export function IssueModal({ open, onClose, projectId }: { open: boolean; onClos
   const activities = useActivities(open ? scope : undefined);
   const suggestions = useAttendanceSuggestions(open ? scope : undefined);
   const items = useMemo(() => stock.data?.items ?? [], [stock.data]);
+  const { user } = useAuth();
+  const wos = useWorkOrders({ projectId: scope, open: true, pageSize: 50 }, open && !!scope && !!user && canViewWorkOrders(user.roleKey));
+  const workOrderId = Form.useWatch('workOrderId', form);
 
   useEffect(() => {
     if (!open) return;
@@ -50,7 +55,7 @@ export function IssueModal({ open, onClose, projectId }: { open: boolean; onClos
     mutationFn: async (v: FormValues) => {
       const lines = (v.lines ?? []).filter((l) => l?.itemId && l.quantity && Number(l.quantity) > 0).map((l) => ({ itemId: l.itemId!, quantity: l.quantity! }));
       if (!lines.length) throw new Error('Add at least one item with a quantity.');
-      const body = { projectId: v.projectId, date: v.date.format('YYYY-MM-DD'), issuedTo: v.issuedTo.trim(), activityId: v.activityId ?? null, remarks: v.remarks?.trim() || null, lines };
+      const body = { projectId: v.projectId, date: v.date.format('YYYY-MM-DD'), issuedTo: v.issuedTo?.trim() || undefined, workOrderId: v.workOrderId, activityId: v.activityId ?? null, remarks: v.remarks?.trim() || null, lines };
       return (await api.post<StockEntryDto>('/stock/issues', body)).data;
     },
     onSuccess: (e) => {
@@ -81,7 +86,7 @@ export function IssueModal({ open, onClose, projectId }: { open: boolean; onClos
             showSearch
             optionFilterProp="label"
             placeholder="Select project"
-            onChange={() => form.setFieldsValue({ lines: [{}], activityId: undefined })}
+            onChange={() => form.setFieldsValue({ lines: [{}], activityId: undefined, workOrderId: undefined })}
             options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))}
           />
         </Form.Item>
@@ -89,7 +94,20 @@ export function IssueModal({ open, onClose, projectId }: { open: boolean; onClos
           <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Required' }]}>
             <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
-          <Form.Item name="issuedTo" label="Issued to" rules={[{ required: true, whitespace: true, message: 'Who took the material?' }]}>
+          {(wos.data?.items.length ?? 0) > 0 && (
+            <Form.Item name="workOrderId" label="To a subcontractor" tooltip="Material issued against a work order is recovered from the subcontractor's next bill">
+              <Select
+                allowClear
+                placeholder="No (departmental)"
+                options={(wos.data?.items ?? []).map((w) => ({ value: w.id, label: `${w.woNo} · ${w.vendorName}` }))}
+                onChange={(id) => {
+                  const w = wos.data?.items.find((x) => x.id === id);
+                  if (w) form.setFieldValue('issuedTo', w.vendorName);
+                }}
+              />
+            </Form.Item>
+          )}
+          <Form.Item name="issuedTo" label="Issued to" rules={[{ required: !workOrderId, whitespace: true, message: 'Who took the material?' }]}>
             <AutoComplete
               placeholder="Contractor, gang or person"
               options={(suggestions.data?.contractors ?? []).map((c) => ({ value: c }))}

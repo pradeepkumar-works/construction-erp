@@ -18,6 +18,8 @@ export const TYPE_ICON: Record<EntryType, keyof typeof Ionicons.glyphMap> = {
   BILL: 'receipt',
   PURCHASE_ORDER: 'cart',
   VENDOR_BILL: 'document-attach',
+  WORK_ORDER: 'hammer',
+  SUBCONTRACT_BILL: 'reader',
   ATTENDANCE: 'people',
   RISK: 'alert-circle',
 };
@@ -32,6 +34,8 @@ export const TYPE_SHORT: Record<EntryType, string> = {
   BILL: 'RA bill',
   PURCHASE_ORDER: 'PO',
   VENDOR_BILL: 'Vendor bill',
+  WORK_ORDER: 'Work order',
+  SUBCONTRACT_BILL: 'Sub bill',
   ATTENDANCE: 'Attendance',
   RISK: 'Delay / risk',
 };
