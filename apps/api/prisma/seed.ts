@@ -115,7 +115,7 @@ async function main() {
     await seedPurchasing(org.id);
     await seedSubcontracts(org.id);
     await seedPayables(org.id);
-  await seedQuality(org.id);
+    await seedQuality(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
   }
@@ -272,6 +272,7 @@ async function main() {
   await seedPurchasing(org.id);
   await seedSubcontracts(org.id);
   await seedPayables(org.id);
+  await seedQuality(org.id);
 
   console.log('Seed complete. Login with any of these (password: password123):');
   for (const u of USERS) console.log(`  ${u.email.padEnd(24)} ${u.role}`);
