@@ -11,6 +11,10 @@ contractors after the first client is live.
 | Site mobile app | `apps/mobile` | Expo SDK 57, React Native, expo-router | Expo Go |
 | Shared | `packages/shared` | Enums, labels, permissions, API types | - |
 
+The public product page is `/welcome` in the web app; signed-out visitors to `/` land there. Its copy is in
+`apps/web/src/app/(public)/welcome/content.tsx` and its screenshots in `apps/web/public/landing/` (taken from the
+demo seed at 1280 × 800, scale 1.25, saved as WebP).
+
 ## What the MVP does
 
 - Login with JWT; one organisation; a role per user (Admin, Management, Project Manager,

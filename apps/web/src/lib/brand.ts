@@ -9,7 +9,7 @@ export const BRAND = {
   name: PRODUCT_NAME,
   /** The name as set in the wordmark (condensed capitals). */
   wordmark: 'NIRMAAN',
-  description: 'Projects, BOQ, site progress, DPR and approvals for construction contractors',
+  description: 'Site progress, billing, purchases, quality and approvals for construction contractors',
   colors: {
     /** Signboard black: antd primary (checkboxes, tabs, progress bars), sidebar, headings in printed reports. */
     primary: '#1C1F1E',
@@ -34,6 +34,7 @@ export const BRAND = {
 /** CSS custom properties for globals.css; set on <html> by the root layout. */
 export const brandCssVars: Record<string, string> = {
   '--brand-primary': BRAND.colors.primary,
+  '--brand-primary-deep': BRAND.colors.primaryDeep,
   '--brand-ink': BRAND.colors.ink,
   '--brand-ink-deep': BRAND.colors.inkDeep,
   '--brand-accent': BRAND.colors.accent,
