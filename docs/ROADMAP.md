@@ -124,7 +124,9 @@ Order matters: each item builds on the previous one.
     signed-in user (sign-in, sign-up, public file links, scheduled jobs, the seed, migrations) nothing is
     set and the policies let everything through. `GET /api/health` reports `tenantGuard`
     (`enforced`, `bypassed` when the database role skips row-level security, or `off`). `TENANT_RLS=off`
-    is the kill switch; `prisma/rls-rollback.sql` removes the policies.
+    is the kill switch; `prisma/rls-rollback.sql` removes the policies. Follow-up: an `erp_runtime` role (no
+    `BYPASSRLS`, created by a migration) for the API to connect as, with migrations and the seed on the owner
+    connection in `MIGRATE_DATABASE_URL`, so the guard is enforced on Neon too.
 
 ## v3 – commercial and back office
 Procurement (indent → RFQ → comparative → PO → vendor bill), RA billing from the measurement book,

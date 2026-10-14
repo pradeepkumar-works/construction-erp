@@ -22,5 +22,5 @@ ENV UPLOAD_DIR=/app/uploads
 RUN mkdir -p /app/uploads
 EXPOSE 4000
 WORKDIR /app/apps/api
-# Apply pending migrations, then start
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]
+# Apply pending migrations (as the owner in MIGRATE_DATABASE_URL when set), then start
+CMD ["sh", "-c", "DATABASE_URL=\"${MIGRATE_DATABASE_URL:-$DATABASE_URL}\" npx prisma migrate deploy && node dist/main.js"]

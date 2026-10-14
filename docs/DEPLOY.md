@@ -19,7 +19,8 @@ API (`apps/api`):
 
 | Variable | Purpose |
 |----------|---------|
-| `DATABASE_URL` | Postgres connection string (Neon direct, non-pooled host) |
+| `DATABASE_URL` | Postgres connection string the API runs with (Neon direct, non-pooled host). In production use the `erp_runtime` role so row-level security applies (see "Database roles" below). |
+| `MIGRATE_DATABASE_URL` | the owner's connection string; the build runs `prisma migrate deploy` and the seed with it. Unset = `DATABASE_URL` is used for both. |
 | `JWT_SECRET` | long random string; rotate to log everyone out |
 | `JWT_EXPIRES_IN` | e.g. `7d` |
 | `STORAGE_MODE` | `db` on serverless hosts; unset = local disk; `BLOB_READ_WRITE_TOKEN` set = Vercel Blob |
@@ -30,7 +31,7 @@ API (`apps/api`):
 | `NOTIFICATION_TIMEZONE` | IANA zone for "today" in the DPR reminder and digest (default `Asia/Kolkata`) |
 | `RESEND_API_KEY`, `EMAIL_FROM` | email through Resend: approval digest, user invites and password resets. Unset = nothing is emailed (the digest is logged; invite links are shown to the admin to share; "Forgot password" tells users to ask their admin). `EMAIL_FROM` must be a verified sender/domain in Resend. |
 | `WEB_URL` | web ERP URL used for links in emails (digest, invites, password resets). Password-reset emails need it (or `CORS_ORIGINS`). |
-| `TENANT_RLS` | `off` stops the API setting the organisation for Postgres row-level security (kill switch; the policies then allow everything). Unset = on. `GET /api/health` shows `tenantGuard`: `enforced`, `off`, or `bypassed` when the database role has BYPASSRLS or is a superuser (then connect with a role without it). To remove the policies: `psql "$DATABASE_URL" -f apps/api/prisma/rls-rollback.sql`. |
+| `TENANT_RLS` | `off` stops the API setting the organisation for Postgres row-level security (kill switch; the policies then allow everything). Unset = on. `GET /api/health` shows `tenantGuard`: `enforced`, `off`, or `bypassed` when the database role has BYPASSRLS or is a superuser (then connect as `erp_runtime`, see "Database roles"). To remove the policies: `psql "$DATABASE_URL" -f apps/api/prisma/rls-rollback.sql`. |
 | `ORG_SIGNUP` | `open` lets new companies create an organisation at `/signup`; unset = closed |
 | `EXPO_ACCESS_TOKEN` | optional; only if push security is enforced on the Expo project |
 | `NOTIFICATION_JOBS_INPROCESS`, `DPR_REMINDER_TIME`, `APPROVAL_DIGEST_TIME` | run the jobs from a timer inside the API (Docker / Railway) instead of Vercel Cron; times are `HH:mm` in `NOTIFICATION_TIMEZONE` |
@@ -63,6 +64,17 @@ production build; Expo Go on Android cannot receive remote push.
 
 - Schema is managed by Prisma migrations in `apps/api/prisma/migrations`. Never edit the Neon schema
   by hand; add a migration locally (`pnpm db:migrate`) and deploy.
+- **Database roles.** The owner role (`erp_app` on Neon, created with `BYPASSRLS`) runs migrations and the
+  seed and skips row-level security. The API itself should connect as `erp_runtime`, which migration
+  `20261014073000_runtime_role` creates without a login and grants row read/write on every table (and on
+  tables later migrations create); it has no `BYPASSRLS` and cannot change the schema. To switch an
+  environment over, once:
+  1. In the Neon SQL Editor (database `construction_erp`) run
+     `ALTER ROLE erp_runtime LOGIN PASSWORD '<a long random password>';`
+  2. On the Vercel API project add `MIGRATE_DATABASE_URL` with the current `DATABASE_URL` value, then change
+     `DATABASE_URL` to the same string with `erp_app:<owner password>` replaced by `erp_runtime:<new password>`.
+  3. Redeploy and check that `GET /api/health` shows `"tenantGuard":"enforced"`. To go back, set
+     `DATABASE_URL` to the owner string again (or `TENANT_RLS=off`) and redeploy.
 - Neon's free tier scales the compute to zero when idle; the first request after a pause takes a
   second or two. Fine for a demo.
 - Take a Neon snapshot or branch before loading real client data.
