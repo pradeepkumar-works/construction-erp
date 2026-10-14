@@ -234,8 +234,12 @@ relative to a v2 item (S about one, M about two, L about three). The full draft 
     each other and link to a delay (shown on the delay). Site app: Drawings, current revisions only, saved offline.
 
 ### E. People
-29. **Staff and leave** (M). Staff master separate from contractor labour, staff attendance from the site app,
-    leave approved by `HR_MANAGER` or the project manager, holidays per site.
+29. ~~**Staff and leave** (M). Staff master separate from contractor labour, staff attendance from the site app,
+    leave approved by `HR_MANAGER` or the project manager, holidays per site.~~
+    Done: People → Staff & Leave and My attendance & leave / Staff register in the site app. Employees (with or
+    without a login) are posted at a site or head office; they check in and out themselves or the site in-charge marks
+    the register. Leave (casual 12, sick 12, earned 15 a year, comp-off for off days worked, unpaid) skips Sundays and
+    holidays, is checked against the balance and decided by HR or the site's project manager, never the employee.
 30. **Payroll inputs** (S). Monthly days present, leave and overtime per employee for the payroll provider,
     and a monthly summary per labour contractor. No statutory payroll calculations.
 

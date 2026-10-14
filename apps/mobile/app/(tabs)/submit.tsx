@@ -2,7 +2,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { canKeepStock, canLogMachinery, canMeasure, canRaiseRisk, canRecordAttendance, canRequestInspection, canSubmitExpense } from '@erp/shared';
+import { canMarkStaff, canKeepStock, canLogMachinery, canMeasure, canRaiseRisk, canRecordAttendance, canRequestInspection, canSubmitExpense } from '@erp/shared';
 import { useAuth } from '../../src/auth/AuthContext';
 import { Button, Screen } from '../../src/components';
 import { colors, radius, shadow, spacing, typography } from '../../src/theme';
@@ -27,6 +27,10 @@ const QUALITY = { href: '/quality', icon: 'flask' as const, tone: '#0e7490', tit
 
 const DRAWINGS = { href: '/documents', icon: 'document-text-outline' as const, tone: '#334155', title: 'Drawings', text: 'The current revision of every drawing on your project; save them to open without a signal.' };
 
+const MY_STAFF = { href: '/staff', icon: 'calendar' as const, tone: '#4d7c0f', title: 'My attendance & leave', text: 'Check in and out, see your leave balance and apply for leave.' };
+
+const STAFF_REGISTER = { href: '/staff-register', icon: 'id-card' as const, tone: '#365314', title: 'Staff register', text: 'Mark the company staff at your site present, half day or absent.' };
+
 const RISK = { href: '/risks', icon: 'alert-circle' as const, tone: colors.danger, title: 'Delays & risks', text: 'Record work held up (days lost, who caused it) or raise a risk; see what is open.' };
 
 const STOCK = [
@@ -39,6 +43,8 @@ export default function SubmitHub() {
   const { user } = useAuth();
   const forms = [
     ...(user && canRecordAttendance(user.roleKey) ? [ATTENDANCE] : []),
+    MY_STAFF,
+    ...(user && canMarkStaff(user.roleKey) ? [STAFF_REGISTER] : []),
     ...FORMS,
     DRAWINGS,
     ...(user && canLogMachinery(user.roleKey) ? [MACHINERY] : []),

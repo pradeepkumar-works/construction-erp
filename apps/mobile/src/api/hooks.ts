@@ -12,6 +12,7 @@ export function useApi() {
     () => ({
       get: <T,>(path: string, query?: RequestOptions['query']) => request<T>(path, { token, query }),
       post: <T,>(path: string, body?: unknown) => request<T>(path, { method: 'POST', body, token }),
+      put: <T,>(path: string, body?: unknown) => request<T>(path, { method: 'PUT', body, token }),
       patch: <T,>(path: string, body?: unknown) => request<T>(path, { method: 'PATCH', body, token }),
       del: <T,>(path: string) => request<T>(path, { method: 'DELETE', token }),
       upload: (file: UploadFile) => uploadFile<AttachmentDto>(file, token),

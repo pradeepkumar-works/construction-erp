@@ -2,6 +2,7 @@ import type { InspectionCheck, NcrSeverity, NcrStatus, TestKind, TestResult } fr
 import type { ApprovalRightDto } from './approvals';
 import type { TallyVoucherKind } from './tally';
 import type { DocumentDiscipline, DocumentKind, LetterDirection, RevisionStatus, TransmittalPurpose } from './documents';
+import type { LeaveStatus, LeaveType, StaffAttendanceStatus } from './staff';
 import type {
   BillStage,
   ReceiptKind,
@@ -1988,4 +1989,127 @@ export interface DocumentSummaryDto {
   /** Letters received that need a reply (null when the user cannot see letters) */
   lettersAwaitingReply: number | null;
   lettersOverdue: number | null;
+}
+
+/* ---------- staff and leave (v3 item 29) ---------- */
+
+export interface EmployeeDto {
+  id: string;
+  employeeCode: string;
+  fullName: string;
+  designation: string;
+  department: string | null;
+  phone: string | null;
+  /** Their login, when they have one */
+  userId: string | null;
+  userEmail: string | null;
+  /** Posting; null = head office */
+  projectId: string | null;
+  projectName: string | null;
+  joinedOn: string | null;
+  leftOn: string | null;
+  isActive: boolean;
+}
+
+export interface StaffAttendanceDto {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  employeeCode: string;
+  date: string;
+  projectId: string | null;
+  projectName: string | null;
+  status: StaffAttendanceStatus;
+  /** ISO timestamps when they checked in and out themselves */
+  checkIn: string | null;
+  checkOut: string | null;
+  /** Decimal(4,1) as a string */
+  overtimeHours: string | null;
+  note: string | null;
+  markedByName: string;
+}
+
+export interface StaffRegisterRowDto {
+  employee: EmployeeDto;
+  attendance: StaffAttendanceDto | null;
+  /** Approved or waiting leave covering the day */
+  leave: { id: string; type: LeaveType; status: LeaveStatus; halfDay: boolean } | null;
+}
+
+/** One site's staff for one day. */
+export interface StaffRegisterDto {
+  date: string;
+  projectId: string;
+  /** Holiday name when the day is a holiday at this site */
+  holiday: string | null;
+  weeklyOff: boolean;
+  rows: StaffRegisterRowDto[];
+}
+
+export interface LeaveRequestDto {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  employeeCode: string;
+  designation: string;
+  /** The employee's posting */
+  projectId: string | null;
+  projectName: string | null;
+  type: LeaveType;
+  fromDate: string;
+  toDate: string;
+  halfDay: boolean;
+  /** Working days, Decimal(4,1) as a string */
+  days: string;
+  reason: string;
+  status: LeaveStatus;
+  appliedByName: string;
+  decidedByName: string | null;
+  decidedAt: string | null;
+  decisionNote: string | null;
+  createdAt: string;
+  /** The caller may approve or reject it */
+  canDecide: boolean;
+  /** The caller may cancel it (their own or a staff admin, before it starts) */
+  canCancel: boolean;
+}
+
+export interface LeaveBalanceDto {
+  type: LeaveType;
+  /** Days for the year; comp-off = weekly offs and holidays worked; null = no limit */
+  entitled: number | null;
+  taken: number;
+  pending: number;
+  /** null = no limit */
+  left: number | null;
+}
+
+export interface HolidayDto {
+  id: string;
+  /** null = every site */
+  projectId: string | null;
+  projectName: string | null;
+  date: string;
+  name: string;
+}
+
+/** The signed-in user's own staff record: today's attendance, leave balances and requests. */
+export interface MyStaffDto {
+  /** null when the login is not linked to an employee */
+  employee: EmployeeDto | null;
+  today: StaffAttendanceDto | null;
+  /** Holiday name or 'Sunday' when today is off */
+  todayOff: string | null;
+  year: number;
+  balances: LeaveBalanceDto[];
+  leave: LeaveRequestDto[];
+  holidays: HolidayDto[];
+}
+
+export interface StaffSummaryDto {
+  /** Leave requests waiting on the caller */
+  leaveToDecide: number;
+  /** Active employees the caller can see (null when they cannot see the staff list) */
+  employees: number | null;
+  onLeaveToday: number | null;
 }

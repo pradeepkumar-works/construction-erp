@@ -120,6 +120,7 @@ enum NotificationType {
   TEST_FAILED
   NCR
   DOCUMENT_ISSUED
+  LEAVE
 }
 
 /// What a quality test is of. CONCRETE_CUBE gets 7 and 28-day readings; the others one result.
@@ -198,6 +199,27 @@ enum TransmittalPurpose {
 enum LetterDirection {
   IN
   OUT
+}
+
+enum StaffAttendanceStatus {
+  PRESENT
+  HALF_DAY
+  ABSENT
+}
+
+enum LeaveType {
+  CASUAL
+  SICK
+  EARNED
+  COMP_OFF
+  UNPAID
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
 }
 
 enum RiskKind {
@@ -306,6 +328,10 @@ model Organization {
   documents         Document[]
   transmittals      Transmittal[]
   letters           Letter[]
+  employees         Employee[]
+  staffAttendance   StaffAttendance[]
+  leaveRequests     LeaveRequest[]
+  holidays          Holiday[]
 }
 
 model Role {
@@ -405,6 +431,10 @@ model User {
   revisionsIssued      DocumentRevision[] @relation("RevisionIssuer")
   transmittalsSent     Transmittal[]      @relation("TransmittalSender")
   lettersRecorded      Letter[]           @relation("LetterRecorder")
+  employee             Employee?          @relation("EmployeeLogin")
+  staffMarked          StaffAttendance[]  @relation("StaffAttendanceMarker")
+  leaveDecided         LeaveRequest[]     @relation("LeaveDecider")
+  leaveApplied         LeaveRequest[]     @relation("LeaveApplicant")
   raisedRisks          Risk[]             @relation("RiskRaiser")
   ownedRisks           Risk[]             @relation("RiskOwner")
 
@@ -490,6 +520,9 @@ model Project {
   documents        Document[]
   transmittals     Transmittal[]
   letters          Letter[]
+  staff            Employee[]
+  staffAttendance  StaffAttendance[]
+  holidays         Holiday[]
 
   @@unique([organizationId, code])
   @@index([organizationId, status])
@@ -2208,4 +2241,102 @@ model Letter {
   @@unique([organizationId, letterNo])
   @@index([projectId, letterDate])
   @@index([riskId])
+}
+
+/// The company's own staff (not contractor labour), with or without a login. Posted at one site at a time.
+model Employee {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  /// EMP-001 or the company's own code; unique per organisation
+  employeeCode   String
+  fullName       String
+  designation    String
+  department     String?
+  phone          String?
+  /// Their login, when they have one (self check-in and leave from the app)
+  userId         String?      @unique
+  user           User?        @relation("EmployeeLogin", fields: [userId], references: [id], onDelete: SetNull)
+  /// The site they are posted at; null = head office
+  projectId      String?
+  project        Project?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  joinedOn       DateTime?    @db.Date
+  leftOn         DateTime?    @db.Date
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  attendance StaffAttendance[]
+  leave      LeaveRequest[]
+
+  @@unique([organizationId, employeeCode])
+  @@index([organizationId, projectId])
+}
+
+/// One employee's day: marked by the site in-charge or by themselves (check in / check out).
+model StaffAttendance {
+  id             String                @id @default(uuid())
+  organizationId String
+  organization   Organization          @relation(fields: [organizationId], references: [id])
+  employeeId     String
+  employee       Employee              @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  date           DateTime              @db.Date
+  /// Where they worked that day (their posting unless marked elsewhere)
+  projectId      String?
+  project        Project?              @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  status         StaffAttendanceStatus
+  checkIn        DateTime?
+  checkOut       DateTime?
+  overtimeHours  Decimal?              @db.Decimal(4, 1)
+  note           String?
+  markedById     String
+  markedBy       User                  @relation("StaffAttendanceMarker", fields: [markedById], references: [id])
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  @@unique([employeeId, date])
+  @@index([organizationId, date])
+  @@index([projectId, date])
+}
+
+model LeaveRequest {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  employeeId     String
+  employee       Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  type           LeaveType
+  fromDate       DateTime     @db.Date
+  toDate         DateTime     @db.Date
+  /// A single half day
+  halfDay        Boolean      @default(false)
+  /// Working days taken: weekly offs (Sunday) and the site's holidays are not counted
+  days           Decimal      @db.Decimal(4, 1)
+  reason         String
+  status         LeaveStatus  @default(PENDING)
+  appliedById    String
+  appliedBy      User         @relation("LeaveApplicant", fields: [appliedById], references: [id])
+  decidedById    String?
+  decidedBy      User?        @relation("LeaveDecider", fields: [decidedById], references: [id])
+  decidedAt      DateTime?
+  decisionNote   String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId, status])
+  @@index([employeeId, fromDate])
+}
+
+/// A holiday for every site (projectId null) or one site.
+model Holiday {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  projectId      String?
+  project        Project?     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  date           DateTime     @db.Date
+  name           String
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId, date])
 }

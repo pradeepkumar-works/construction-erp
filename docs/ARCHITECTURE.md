@@ -338,6 +338,37 @@ Registers, not approval submissions (`DocumentsService`; `/documents`, `/transmi
   (Android: a PDF viewer through `expo-intent-launcher`; iOS: the preview sheet through `expo-sharing`), images in the
   app; unsaved files open online.
 
+## Staff and leave
+
+The company's own staff, separate from contractor labour (`StaffService`; `/staff/*`). Leave has its own approval
+flow, not `SubmissionLifecycleService`: it is a person's request, not site data a manager signs off.
+
+- **Tables** (tenant tables). `Employee`: `employeeCode` (unique per organisation, `EMP-001` when left blank), name,
+  designation, department, phone, `userId` (their login, unique; optional), `projectId` (posting; null = head
+  office), `joinedOn`, `leftOn` / `isActive` (records are never deleted). `StaffAttendance`: one row per employee per
+  day (`status` PRESENT / HALF_DAY / ABSENT, the site worked at, `checkIn` / `checkOut` when they checked in
+  themselves, `overtimeHours`, note, who marked it). `LeaveRequest`: `type` (`LeaveType`), from / to, `halfDay`,
+  `days` (working days), reason, `status` (`LeaveStatus`), who applied and decided, decision note. `Holiday`: a date
+  for every site (`projectId` null) or one site.
+- **Calendar.** Sunday is the weekly off everywhere; leave days skip Sundays and the employee's site holidays
+  (`leaveDays` in `packages/shared/src/staff.ts`, also used by the web and app forms). A standard day is 9 hours:
+  check-out records overtime past it in half hours, and under half a day marks a half day.
+- **Balances** are per calendar year (leave counts in the year it starts; a request cannot span two years): casual
+  12, sick 12, earned 15 (`LEAVE_ENTITLEMENT`), comp-off = weekly offs and holidays worked (half a day earns half),
+  unpaid without limit. Waiting and approved requests both count. Applying or approving beyond the balance, or
+  overlapping other waiting or approved leave, is refused; an advisory lock per employee serialises the check.
+- **Who.** `STAFF_ADMIN_ROLES` (admin, management, HR) keep the staff master and holidays, see everyone and decide
+  anyone's leave. Attendance recorders (`canMarkStaff`) see and mark the staff posted at their projects. Leave is
+  decided by a staff admin or the manager of the employee's posting project, never by the employee
+  (`ProjectAccessService.canDecideLeave` / `leaveDeciderWhere`). Everyone checks in and applies for their own leave
+  once HR links their login; a staff admin can apply for someone else. The employee (before it starts) or a staff
+  admin (any time) cancels.
+- **Notification.** `LEAVE`: an application goes to HR managers and the posting's project manager (admins and
+  management when the company has no HR); a decision goes to the employee and whoever applied.
+- **Clients.** Web: People → Staff & Leave with tabs My attendance & leave, Leave (`?leave=` opens one), Staff
+  register, Staff and Holidays. Site app: My attendance & leave (`app/staff.tsx`: check in and out, balances, apply,
+  leave waiting on you) and Staff register (`app/staff-register.tsx`).
+
 ## Clients and contracts
 
 - **Tables.** `Client` is the organisation's client master (unique name; department, GSTIN, PAN, GST `stateCode`,

@@ -64,6 +64,8 @@ function RootNavigator() {
         <Stack.Screen name="risk/[id]" options={{ title: 'Delay / Risk' }} />
         <Stack.Screen name="quality" options={{ title: 'Tests & NCRs' }} />
         <Stack.Screen name="documents" options={{ title: 'Drawings' }} />
+        <Stack.Screen name="staff" options={{ title: 'Attendance & leave' }} />
+        <Stack.Screen name="staff-register" options={{ title: 'Staff register' }} />
         <Stack.Screen name="ncr/[id]" options={{ title: 'NCR' }} />
         <Stack.Screen name="test/[id]" options={{ title: 'Test' }} />
       </Stack.Protected>

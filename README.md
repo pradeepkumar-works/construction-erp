@@ -57,6 +57,10 @@ contractors after the first client is live.
   superseded), transmittals of revisions with a printable cover sheet and the receiver's acknowledgement, and letters
   in and out (`IN-` / `OUT-` numbers) linked as replies and to delays. Web: Site → Documents and a project tab; site
   app: Drawings, the current revision of every drawing, saved on the phone to open without a signal.
+- Staff and leave: the company's own staff (separate from contractor labour) posted at a site or head office,
+  check in and out from the app or the site register (overtime past a 9-hour day), leave with yearly balances
+  approved by HR or the site's project manager, and holidays per site. Web: People → Staff & Leave; site app: My
+  attendance & leave and Staff register.
 - Project cost: approved site expenses, material issued at the item's standard rate, approved machinery logs
   at the hire rate and attendance at each trade's daily rate, against the value of approved progress (and of
   approved measurements), by project and month, with margin. For approvers and accounts.

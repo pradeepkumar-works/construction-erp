@@ -19,3 +19,4 @@ export * from './subcontract';
 export * from './tally';
 export * from './quality';
 export * from './documents';
+export * from './staff';

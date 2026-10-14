@@ -98,6 +98,16 @@ import type {
   GstRegistersDto,
   TallyPreviewDto,
   TallySettingsDto,
+  EmployeeDto,
+  HolidayDto,
+  LeaveBalanceDto,
+  LeaveRequestDto,
+  LeaveStatus,
+  LeaveType,
+  MyStaffDto,
+  StaffAttendanceDto,
+  StaffRegisterDto,
+  StaffSummaryDto,
 } from '@erp/shared';
 import { MAX_PAGE_SIZE } from '@erp/shared';
 import { api } from './api';
@@ -647,6 +657,112 @@ export const useLetter = (id: string | undefined) =>
     queryKey: ['documents', 'letters', 'detail', id],
     queryFn: async () => (await api.get<LetterDto>(`/letters/${id}`)).data,
     enabled: !!id,
+  });
+
+/* ---------- staff and leave ---------- */
+
+export const useStaffSummary = () =>
+  useQuery({
+    queryKey: ['staff', 'summary'],
+    queryFn: async () => (await api.get<StaffSummaryDto>('/staff/summary')).data,
+  });
+
+export const useMyStaff = () =>
+  useQuery({
+    queryKey: ['staff', 'me'],
+    queryFn: async () => (await api.get<MyStaffDto>('/staff/me')).data,
+  });
+
+export interface EmployeeFilters extends PageParams {
+  projectId?: string;
+  includeInactive?: boolean;
+}
+
+export const useEmployees = (filters?: EmployeeFilters, enabled = true) =>
+  useQuery({
+    queryKey: ['staff', 'employees', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<EmployeeDto>>('/staff/employees', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+
+export const useEmployee = (id: string | undefined) =>
+  useQuery({
+    queryKey: ['staff', 'employees', 'detail', id],
+    queryFn: async () => (await api.get<EmployeeDto>(`/staff/employees/${id}`)).data,
+    enabled: !!id,
+  });
+
+export const useLinkableUsers = (employeeId: string | undefined, enabled = true) =>
+  useQuery({
+    queryKey: ['staff', 'users', employeeId ?? null],
+    queryFn: async () => (await api.get<{ id: string; fullName: string; email: string; roleName: string }[]>('/staff/users', { params: clean({ employeeId }) })).data,
+    enabled,
+  });
+
+export const useStaffAttendance = (employeeId: string | undefined, from: string, to: string) =>
+  useQuery({
+    queryKey: ['staff', 'attendance', employeeId, from, to],
+    queryFn: async () => (await api.get<StaffAttendanceDto[]>('/staff/attendance', { params: { employeeId, from, to } })).data,
+    enabled: !!employeeId,
+  });
+
+export const useStaffRegister = (projectId: string | undefined, date: string) =>
+  useQuery({
+    queryKey: ['staff', 'register', projectId, date],
+    queryFn: async () => (await api.get<StaffRegisterDto>('/staff/register', { params: { projectId, date } })).data,
+    enabled: !!projectId,
+  });
+
+export interface LeaveFilters extends PageParams {
+  status?: LeaveStatus;
+  type?: LeaveType;
+  employeeId?: string;
+  projectId?: string;
+  toDecide?: boolean;
+  on?: string;
+}
+
+export const useLeave = (filters?: LeaveFilters, enabled = true) =>
+  useQuery({
+    queryKey: ['staff', 'leave', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<LeaveRequestDto>>('/staff/leave', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+
+export const useLeaveRequest = (id: string | undefined) =>
+  useQuery({
+    queryKey: ['staff', 'leave', 'detail', id],
+    queryFn: async () => (await api.get<LeaveRequestDto>(`/staff/leave/${id}`)).data,
+    enabled: !!id,
+  });
+
+export const useLeaveHistory = (id: string | undefined) =>
+  useQuery({
+    queryKey: ['staff', 'leave', 'history', id],
+    queryFn: async () => (await api.get<AuditLogDto[]>(`/staff/leave/${id}/history`)).data,
+    enabled: !!id,
+  });
+
+export const useEmployeeHistory = (id: string | undefined, enabled = true) =>
+  useQuery({
+    queryKey: ['staff', 'employees', 'history', id],
+    queryFn: async () => (await api.get<AuditLogDto[]>(`/staff/employees/${id}/history`)).data,
+    enabled: !!id && enabled,
+  });
+
+export const useLeaveBalances = (employeeId: string | undefined, year?: number, enabled = true) =>
+  useQuery({
+    queryKey: ['staff', 'balances', employeeId ?? 'me', year ?? null],
+    queryFn: async () => (await api.get<LeaveBalanceDto[]>('/staff/leave/balances', { params: clean({ employeeId, year }) })).data,
+    enabled,
+  });
+
+export const useHolidays = (year?: number, projectId?: string) =>
+  useQuery({
+    queryKey: ['staff', 'holidays', year ?? null, projectId ?? null],
+    queryFn: async () => (await api.get<HolidayDto[]>('/staff/holidays', { params: clean({ year, projectId }) })).data,
   });
 
 export interface BillFilters extends PageParams {
