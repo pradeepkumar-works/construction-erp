@@ -5,6 +5,7 @@ import { ProjectsModule } from '../projects/projects.module';
 import { PlanningModule } from '../planning/planning.module';
 import { ProgressModule } from '../progress/progress.module';
 import { DprModule } from '../dpr/dpr.module';
+import { ReceivablesModule } from '../receivables/receivables.module';
 
-@Module({ imports: [ProjectsModule, PlanningModule, ProgressModule, DprModule], controllers: [DashboardController], providers: [DashboardService] })
+@Module({ imports: [ProjectsModule, PlanningModule, ProgressModule, DprModule, ReceivablesModule], controllers: [DashboardController], providers: [DashboardService] })
 export class DashboardModule {}

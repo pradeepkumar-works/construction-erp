@@ -30,6 +30,8 @@ interface Acc {
   heads: Heads;
   executed: D;
   measured: D;
+  billed: D;
+  cashIn: D;
   months: Map<string, { heads: Heads; executed: D }>;
   expenses: Map<string, { count: number; amount: D }>;
   material: Map<string, { name: string; unit: string; qty: D; rate: D | null; amount: D }>;
@@ -44,6 +46,8 @@ const newAcc = (): Acc => ({
   heads: emptyHeads(),
   executed: ZERO,
   measured: ZERO,
+  billed: ZERO,
+  cashIn: ZERO,
   months: new Map(),
   expenses: new Map(),
   material: new Map(),
@@ -57,7 +61,8 @@ const newAcc = (): Acc => ({
 /**
  * Project cost view: approved site expenses, material issued at the item's standard rate, approved
  * machinery logs at the machine's hire rate and attendance man-days at the trade's daily rate, set
- * against the value of approved progress (and of approved measurements) in the same period.
+ * against the value of approved progress (and of approved measurements) in the same period, with what was billed
+ * (approved RA bills) and received from the client.
  */
 @Injectable()
 export class CostService {
@@ -130,6 +135,8 @@ export class CostService {
       cost: headsDto(acc.heads),
       margin: money(acc.executed.minus(cost))!,
       costPct: acc.executed.gt(0) ? Math.round(cost.div(acc.executed).mul(1000).toNumber()) / 10 : null,
+      billedValue: money(acc.billed)!,
+      cashIn: money(acc.cashIn)!,
       unpriced: { materialItems: acc.unpricedItems.size, machineryLogs: acc.unpricedLogs, labourManDays: acc.unpricedManDays },
     };
   }
@@ -138,7 +145,8 @@ export class CostService {
     const out = new Map(projectIds.map((id) => [id, newAcc()]));
     if (!projectIds.length) return out;
     const scope = { organizationId, projectId: { in: projectIds }, ...(date ? { date } : {}) };
-    const [progress, measurements, expenses, issues, logs, attendance, rates] = await Promise.all([
+    const inProjects = { organizationId, projectId: { in: projectIds } };
+    const [progress, measurements, expenses, issues, logs, attendance, rates, bills, receipts] = await Promise.all([
       this.prisma.progressEntry.findMany({ where: { ...scope, status: 'APPROVED' }, select: { projectId: true, date: true, quantity: true, activity: { select: { boqItem: { select: { rate: true } } } } } }),
       this.prisma.measurementSheet.findMany({ where: { ...scope, status: 'APPROVED' }, select: { projectId: true, totalQty: true, boqItem: { select: { rate: true } } } }),
       this.prisma.expense.findMany({ where: { ...scope, status: 'APPROVED' }, select: { projectId: true, date: true, category: true, totalAmount: true } }),
@@ -149,7 +157,11 @@ export class CostService {
         select: { category: true, count: true, sheet: { select: { projectId: true, date: true } } },
       }),
       this.prisma.labourRate.findMany({ where: { organizationId } }),
+      this.prisma.raBill.groupBy({ by: ['projectId'], where: { ...inProjects, status: 'APPROVED', ...(date ? { billDate: date } : {}) }, _sum: { grossAmount: true } }),
+      this.prisma.receipt.groupBy({ by: ['projectId'], where: { ...inProjects, ...(date ? { receiptDate: date } : {}) }, _sum: { amount: true } }),
     ]);
+    for (const b of bills) out.get(b.projectId)!.billed = b._sum.grossAmount ?? ZERO;
+    for (const r of receipts) out.get(r.projectId)!.cashIn = r._sum.amount ?? ZERO;
     const month = (acc: Acc, d: Date) => {
       const k = monthOf(d);
       let m = acc.months.get(k);

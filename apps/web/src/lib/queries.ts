@@ -21,6 +21,9 @@ import type {
   AuthOptionsDto,
   MeasurementSheetDto,
   RaBillDto,
+  ReceiptDto,
+  ReceivablesDto,
+  ReceiptKind,
   BillStage,
   LabourRatesDto,
   ProjectCostDto,
@@ -452,6 +455,29 @@ export const useBill = (id: string | undefined) =>
     queryKey: ['bills', 'detail', id],
     queryFn: async () => (await api.get<RaBillDto>(`/ra-bills/${id}`)).data,
     enabled: !!id,
+  });
+
+export interface ReceiptFilters extends PageParams {
+  projectId?: string;
+  billId?: string;
+  kind?: ReceiptKind;
+  from?: string;
+  to?: string;
+}
+
+export const useReceipts = (filters: ReceiptFilters, enabled = true) =>
+  useQuery({
+    queryKey: ['receipts', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<ReceiptDto>>('/receipts', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+
+export const useReceivables = (projectId?: string, enabled = true) =>
+  useQuery({
+    queryKey: ['receivables', projectId ?? 'all'],
+    queryFn: async () => (await api.get<ReceivablesDto>('/receivables', { params: clean({ projectId }) })).data,
+    enabled,
   });
 
 export interface ClientFilters extends PageParams {

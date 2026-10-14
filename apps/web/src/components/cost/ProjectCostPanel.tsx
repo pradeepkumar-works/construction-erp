@@ -56,6 +56,14 @@ export function ProjectCostPanel({ projectId }: { projectId: string }) {
               />
             </Col>
           </Row>
+          <Row gutter={[16, 16]} style={{ marginTop: 8 }}>
+            <Col xs={12} md={6}>
+              <Statistic title="Billed (approved RA bills)" value={formatINR(data.billedValue)} styles={{ content: { fontSize: 16 } }} />
+            </Col>
+            <Col xs={12} md={6}>
+              <Statistic title="Cash in from the client" value={formatINR(data.cashIn)} styles={{ content: { fontSize: 16 } }} />
+            </Col>
+          </Row>
           <Card size="small" style={{ marginTop: 16 }} title="Cost heads" extra={<CostLegend />}>
             <CostBar cost={data.cost} scale={toNumber(data.cost.total)} height={18} />
             <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap', marginTop: 12 }}>

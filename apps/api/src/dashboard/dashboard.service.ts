@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { seesGettingStarted, type CompanyDashboard, type GettingStartedDto, type GettingStartedStep, type ProjectDashboard, type ProjectType } from '@erp/shared';
+import { canViewContract, seesGettingStarted, type CompanyDashboard, type GettingStartedDto, type GettingStartedStep, type ProjectDashboard, type ProjectType } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -8,6 +8,7 @@ import { ProjectsService } from '../projects/projects.service';
 import { PlanningService } from '../planning/planning.service';
 import { ProgressService } from '../progress/progress.service';
 import { DprService } from '../dpr/dpr.service';
+import { ReceivablesService } from '../receivables/receivables.service';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
 import { dateOnly, money } from '../common/serialize';
 
@@ -21,6 +22,7 @@ export class DashboardService {
     private progress: ProgressService,
     private dpr: DprService,
     private lifecycle: SubmissionLifecycleService,
+    private receivables: ReceivablesService,
   ) {}
 
   /** Which first-week setup steps the organisation has done, from what is in its data. */
@@ -62,10 +64,11 @@ export class DashboardService {
     const projects = await this.projects.listAll(user);
     const today = new Date(new Date().toISOString().slice(0, 10) + 'T00:00:00.000Z');
     const projectIds = projects.map((p) => p.id);
-    const [pending, dprsToday, activities] = await Promise.all([
+    const [pending, dprsToday, activities, receivables] = await Promise.all([
       this.lifecycle.pending(user),
       this.prisma.dailyReport.count({ where: { projectId: { in: projectIds }, date: today } }),
       this.prisma.activity.findMany({ where: { projectId: { in: projectIds }, plannedEnd: { lt: today } }, include: { progressEntries: { where: { status: 'APPROVED' }, select: { quantity: true } } } }),
+      canViewContract(user.roleKey) ? this.receivables.summary(user) : null,
     ]);
     const delayedActivities = activities.filter((a) => a.progressEntries.reduce((s, e) => s.add(e.quantity), new Prisma.Decimal(0)).lt(a.plannedQty)).length;
     const byType = new Map<ProjectType, number>();
@@ -79,6 +82,9 @@ export class DashboardService {
       pendingApprovals: pending.length,
       delayedActivities,
       dprsToday,
+      ...(receivables
+        ? { receivables: { outstanding: receivables.totals.outstanding, over90: receivables.totals.ageing.over90, openBills: receivables.openBills.length } }
+        : {}),
       projects,
     };
   }
