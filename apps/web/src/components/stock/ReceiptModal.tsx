@@ -10,6 +10,7 @@ import { api, errorMessage } from '@/lib/api';
 import { useProjects, useReceivable } from '@/lib/queries';
 import { formatDate, formatQty } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
+import { VendorPicker } from '@/components/vendors/VendorPicker';
 
 interface FormValues {
   projectId?: string;
@@ -156,7 +157,7 @@ export function ReceiptModal({ open, onClose, projectId, materialRequestId }: { 
             <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
           <Form.Item name="supplier" label="Supplier">
-            <Input maxLength={200} />
+            <VendorPicker kind="SUPPLIER" />
           </Form.Item>
           <Form.Item name="challanNo" label="Challan / invoice no.">
             <Input maxLength={60} />

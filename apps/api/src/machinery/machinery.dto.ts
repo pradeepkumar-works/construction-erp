@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsArray, IsBoolean, IsDateString, IsIn, IsNotEmpty, IsNumberString, IsOptional, IsString, IsUUID, MaxLength, ValidateIf } from 'class-validator';
+import { VENDOR_ID_DOC } from '../vendors/vendors.dto';
 import {
   EQUIPMENT_OWNERSHIPS,
   EQUIPMENT_RATE_UNITS,
@@ -26,7 +27,8 @@ export class CreateEquipmentDto {
   @ApiProperty({ example: 'Excavator (Tata Hitachi EX200)' }) @trim() @IsString() @IsNotEmpty() @MaxLength(120) name: string;
   @ApiPropertyOptional({ example: 'Earthmoving' }) @IsOptional() @trim() @IsString() @MaxLength(60) category?: string | null;
   @ApiPropertyOptional({ enum: EQUIPMENT_OWNERSHIPS, default: 'OWNED' }) @IsOptional() @IsIn(EQUIPMENT_OWNERSHIPS as unknown as string[]) ownership?: EquipmentOwnership;
-  @ApiPropertyOptional({ description: 'Hire agency for hired machines' }) @IsOptional() @trim() @IsString() @MaxLength(120) supplier?: string | null;
+  @ApiPropertyOptional({ description: 'Hire agency for hired machines' }) @IsOptional() @trim() @IsString() @MaxLength(200) supplier?: string | null;
+  @ApiPropertyOptional(VENDOR_ID_DOC) @IsOptional() @ValidateIf((_, v) => v !== null) @IsUUID() vendorId?: string | null;
   @ApiPropertyOptional({ example: 'OD-02-AB-1234' }) @IsOptional() @trim() @IsString() @MaxLength(40) registrationNo?: string | null;
   @ApiPropertyOptional({ example: '1800', description: 'Hire rate (hired) or internal charge-out rate (owned)' })
   @IsOptional()

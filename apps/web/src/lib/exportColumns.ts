@@ -1,4 +1,6 @@
 import {
+  VENDOR_KIND_LABELS,
+  MSME_CATEGORY_LABELS,
   EQUIPMENT_OWNERSHIP_LABELS,
   EQUIPMENT_RATE_UNIT_LABELS,
   EXPENSE_CATEGORY_LABELS,
@@ -37,6 +39,7 @@ import {
   type StockEntryDto,
   type StockLineDto,
   type UserSummary,
+  type VendorDto,
 } from '@erp/shared';
 import type { ExportColumn } from './exportExcel';
 import { formatDateTime, toNumber } from './format';
@@ -421,4 +424,26 @@ export const OPEN_BILL_EXPORT: ExportColumn<OpenBillDto>[] = [
   { header: 'Settled', value: (r) => toNumber(r.settledAmount) },
   { header: 'Outstanding', value: (r) => toNumber(r.outstanding) },
   { header: 'Days since sent', value: (r) => r.daysOutstanding },
+];
+
+export const VENDOR_EXPORT: ExportColumn<VendorDto>[] = [
+  { header: 'Vendor', value: (r) => r.name, width: 34 },
+  { header: 'Supplies', value: (r) => r.kinds.map((k) => VENDOR_KIND_LABELS[k]).join(', '), width: 30 },
+  { header: 'GSTIN', value: (r) => r.gstin, width: 18 },
+  { header: 'PAN', value: (r) => r.pan, width: 12 },
+  { header: 'State code', value: (r) => r.stateCode, width: 10 },
+  { header: 'MSME', value: (r) => (r.msmeCategory ? MSME_CATEGORY_LABELS[r.msmeCategory] : null), width: 10 },
+  { header: 'Udyam no.', value: (r) => r.udyamNo, width: 22 },
+  { header: 'Contact person', value: (r) => r.contactPerson, width: 20 },
+  { header: 'Phone', value: (r) => r.phone, width: 14 },
+  { header: 'Email', value: (r) => r.email, width: 24 },
+  { header: 'Address', value: (r) => r.address, width: 30 },
+  { header: 'Account name', value: (r) => r.bankAccountName, width: 24 },
+  { header: 'Account no.', value: (r) => r.bankAccountNo, width: 20 },
+  { header: 'IFSC', value: (r) => r.bankIfsc, width: 13 },
+  { header: 'Bank', value: (r) => r.bankName, width: 26 },
+  { header: 'Expenses', value: (r) => r.expenseCount },
+  { header: 'Machines', value: (r) => r.equipmentCount },
+  { header: 'GRNs', value: (r) => r.grnCount },
+  { header: 'Active', value: (r) => (r.isActive ? 'Yes' : 'No'), width: 8 },
 ];

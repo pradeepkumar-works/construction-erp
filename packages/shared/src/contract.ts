@@ -3,6 +3,12 @@
 /** 10-character PAN: five letters, four digits, a letter. */
 export const PAN_PATTERN = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
 
+/** IFSC: four letters, a zero, six letters or digits. */
+export const IFSC_PATTERN = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+
+/** Udyam (MSME) registration number, e.g. UDYAM-OD-19-0012345. */
+export const UDYAM_PATTERN = /^UDYAM-[A-Z]{2}-[0-9]{2}-[0-9]{7}$/;
+
 /** GST state code (first two digits of a GSTIN), or null when the GSTIN is missing or malformed. */
 export const gstStateCode = (gstin: string | null | undefined): string | null => (gstin && /^[0-9]{2}/.test(gstin) ? gstin.slice(0, 2) : null);
 

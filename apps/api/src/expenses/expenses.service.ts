@@ -6,6 +6,7 @@ import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
+import { VendorsService } from '../vendors/vendors.service';
 import { AttachmentsService } from '../common/attachments.service';
 import { dateOnly, iso, money, parseDate } from '../common/serialize';
 import { isUniqueViolation } from '../common/idempotency';
@@ -55,6 +56,7 @@ export class ExpensesService {
     private audit: AuditService,
     private lifecycle: SubmissionLifecycleService,
     private attachments: AttachmentsService,
+    private vendors: VendorsService,
   ) {}
 
   toDto(r: Row): ExpenseDto {
@@ -68,6 +70,7 @@ export class ExpensesService {
       description: r.description,
       vendor: r.vendor,
       vendorGstin: r.vendorGstin,
+      vendorId: r.vendorId,
       billNo: r.billNo,
       amount: money(r.amount)!,
       gstRate: r.gstRate.toString(),
@@ -188,6 +191,7 @@ export class ExpensesService {
     await this.assertActivity(dto.projectId, dto.activityId);
     this.checkDate(dto.date);
     const amounts = this.amounts(dto.amount, dto.gstRate, dto.gstAmount);
+    const vendor = await this.vendors.resolve(user, dto.vendorId, dto.vendor);
     let id: string | null;
     try {
       id = await this.prisma.$transaction(async (tx) => {
@@ -205,8 +209,9 @@ export class ExpensesService {
             date: parseDate(dto.date),
             category: dto.category,
             description: dto.description,
-            vendor: dto.vendor || null,
-            vendorGstin: dto.vendorGstin || null,
+            vendor: vendor?.name ?? null,
+            vendorGstin: dto.vendorGstin || vendor?.gstin || null,
+            vendorId: vendor?.vendorId ?? null,
             billNo: dto.billNo || null,
             ...amounts,
             paymentMode: dto.paymentMode ?? 'CASH',
@@ -249,8 +254,12 @@ export class ExpensesService {
     if (dto.date !== undefined) data.date = parseDate(dto.date);
     if (dto.category !== undefined) data.category = dto.category;
     if (dto.description !== undefined) data.description = dto.description;
-    if (dto.vendor !== undefined) data.vendor = dto.vendor || null;
     if (dto.vendorGstin !== undefined) data.vendorGstin = dto.vendorGstin || null;
+    const vendor = await this.vendors.resolve(user, dto.vendorId, dto.vendor);
+    if (vendor) {
+      Object.assign(data, { vendor: vendor.name, vendorId: vendor.vendorId });
+      if (dto.vendorGstin === undefined && vendor.gstin && !current.vendorGstin) data.vendorGstin = vendor.gstin;
+    }
     if (dto.billNo !== undefined) data.billNo = dto.billNo || null;
     if (dto.paymentMode !== undefined) data.paymentMode = dto.paymentMode;
     if (dto.activityId !== undefined) data.activityId = dto.activityId || null;

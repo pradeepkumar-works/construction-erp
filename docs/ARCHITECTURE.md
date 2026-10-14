@@ -301,6 +301,23 @@ The store register per project, fed by approved material requests:
   deductions, measurements and stage actions, print view in `components/bills/billPrint.ts`, Excel export). The
   measurement book shows which bill took each sheet. Site app: `app/bill/[id].tsx` to read and approve.
 
+## Vendors
+
+- **Table.** `Vendor` (tenant table, name unique per organisation, case-insensitive in the service): `kinds`
+  (SUPPLIER, HIRE_AGENCY, SUBCONTRACTOR, LABOUR_CONTRACTOR, SERVICE), GSTIN, PAN and state code (both taken from the
+  GSTIN), address and contact, `msmeCategory` and `udyamNo`, bank account name / number / IFSC / bank. `Expense`,
+  `Equipment` and `StockEntry` have a `vendorId` and keep their text field (`vendor`, `supplier`) as a copy of the name.
+- **Linking** (`VendorsService.resolve`). A `vendorId` links and sets the name (and an expense's GSTIN when none is
+  given); `vendorId: null` unlinks and keeps the typed name; a typed name without an id links to the active vendor of
+  that name. Adding or renaming a vendor links the unlinked entries that typed its name, and a rename updates the copy
+  on linked entries. A vendor in use cannot be deleted, only made inactive.
+- **Roles.** Everyone reads the master (pickers); `canEditVendors` (admin, management, PM, procurement, accounts,
+  stores) edits it; bank details are returned to and changed by `canSeeVendorBank` (admin, management, procurement,
+  accounts) only.
+- **API.** `/vendors` (paged; `kind`, `msme`, `includeInactive`, `q`), `GET /vendors/unlisted` (names in use that are
+  not in the master), `GET|PATCH|DELETE /vendors/:id`. Web: Materials & Plant → Vendors; `VendorPicker` on the expense,
+  machine and GRN forms.
+
 ## Receivables
 
 - **Table.** `Receipt` (tenant table): `kind` BILL / RETENTION_RELEASE / DEPOSIT_RELEASE, `billId` for a bill payment,

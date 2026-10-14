@@ -94,4 +94,10 @@ export type BillStage = (typeof BILL_STAGES)[number];
 export const RECEIPT_KINDS = ['BILL', 'RETENTION_RELEASE', 'DEPOSIT_RELEASE'] as const;
 export type ReceiptKind = (typeof RECEIPT_KINDS)[number];
 /** How a client pays: the payment modes that make sense for money coming in. */
+export const VENDOR_KINDS = ['SUPPLIER', 'HIRE_AGENCY', 'SUBCONTRACTOR', 'LABOUR_CONTRACTOR', 'SERVICE'] as const;
+export type VendorKind = (typeof VENDOR_KINDS)[number];
+
+export const MSME_CATEGORIES = ['MICRO', 'SMALL', 'MEDIUM'] as const;
+export type MsmeCategory = (typeof MSME_CATEGORIES)[number];
+
 export const RECEIPT_MODES = ['BANK', 'UPI', 'CASH'] as const satisfies readonly PaymentMode[];

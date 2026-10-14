@@ -19,6 +19,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
+import { VendorsService } from '../vendors/vendors.service';
 import { AttachmentsService } from '../common/attachments.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { dateOnly, dec, iso, money, parseDate } from '../common/serialize';
@@ -84,6 +85,7 @@ interface Header {
   date: Date;
   materialRequestId?: string | null;
   supplier?: string | null;
+  vendorId?: string | null;
   challanNo?: string | null;
   vehicleNo?: string | null;
   issuedTo?: string | null;
@@ -109,6 +111,7 @@ export class StockService {
     private audit: AuditService,
     private attachments: AttachmentsService,
     private notifications: NotificationsService,
+    private vendors: VendorsService,
   ) {}
 
   /* ---------- helpers ---------- */
@@ -124,6 +127,7 @@ export class StockService {
       materialRequestId: r.materialRequestId,
       requestNo: r.materialRequest?.requestNo ?? null,
       supplier: r.supplier,
+      vendorId: r.vendorId,
       challanNo: r.challanNo,
       vehicleNo: r.vehicleNo,
       issuedTo: r.issuedTo,
@@ -220,6 +224,7 @@ export class StockService {
         date: h.date,
         materialRequestId: h.materialRequestId ?? null,
         supplier: blank(h.supplier),
+        vendorId: h.vendorId ?? null,
         challanNo: blank(h.challanNo),
         vehicleNo: blank(h.vehicleNo),
         issuedTo: blank(h.issuedTo),
@@ -342,6 +347,7 @@ export class StockService {
     if (mr.status !== 'APPROVED') throw new ConflictException(`Material can only be received against an approved request. ${mr.requestNo} is ${SUBMISSION_STATUS_LABELS[mr.status].toLowerCase()}.`);
     await this.access.assertCanKeepStock(user, mr.projectId);
     const date = this.entryDate(dto.date);
+    const vendor = await this.vendors.resolve(user, dto.vendorId, dto.supplier);
     const want = new Map<string, Decimal>();
     for (const l of dto.lines) {
       const line = mr.items.find((i) => i.id === l.materialRequestItemId);
@@ -365,7 +371,7 @@ export class StockService {
           const item = await this.resolveItem(tx, user.organizationId, line.itemName, line.unit);
           lines.push({ itemId: item.id, quantity, materialRequestItemId: line.id });
         }
-        return this.insertEntry(tx, user, { ...dto, type: 'RECEIPT', projectId: mr.projectId, date, materialRequestId: mr.id }, lines);
+        return this.insertEntry(tx, user, { ...dto, supplier: vendor?.name ?? null, vendorId: vendor?.vendorId ?? null, type: 'RECEIPT', projectId: mr.projectId, date, materialRequestId: mr.id }, lines);
       }),
     );
     if ('existing' in saved) return this.get(user, saved.id);

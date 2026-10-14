@@ -110,6 +110,7 @@ async function main() {
     await seedApprovalRules(org.id);
     await seedBills(org.id);
     await seedReceipts(org.id);
+    await seedVendors(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
   }
@@ -262,6 +263,7 @@ async function main() {
   await seedApprovalRules(org.id);
   await seedBills(org.id);
   await seedReceipts(org.id);
+  await seedVendors(org.id);
 
   console.log('Seed complete. Login with any of these (password: password123):');
   for (const u of USERS) console.log(`  ${u.email.padEnd(24)} ${u.role}`);
@@ -921,6 +923,40 @@ async function seedBills(organizationId: string) {
         { organizationId, entityType: 'BILL', entityId: bill.id, action: 'SENT', actorId: qs, note: `Sent to the client on ${day(-sentAgo).toISOString().slice(0, 10)}`, createdAt: day(-sentAgo) },
       ],
     });
+  }
+}
+
+/** [name, kinds, GSTIN, MSME category, Udyam no., bank account, IFSC, bank, contact, phone] */
+type DemoVendor = [string, string[], string, 'MICRO' | 'SMALL' | 'MEDIUM' | null, string | null, string, string, string, string, string];
+const VENDORS: DemoVendor[] = [
+  ['Kalinga Bitumen & Aggregates', ['SUPPLIER'], '21AAKFK4521B1Z3', 'SMALL', 'UDYAM-OD-19-0012345', '39281726354', 'SBIN0001234', 'State Bank of India, Khordha', 'R. K. Mohanty', '9437012345'],
+  ['Utkal Cement Traders', ['SUPPLIER'], '21ABCPU7788C1Z1', 'MICRO', 'UDYAM-OD-19-0045678', '50200012345678', 'HDFC0001842', 'HDFC Bank, Saheed Nagar', 'S. Patnaik', '9861023456'],
+  ['Jagannath Pipes & Fittings', ['SUPPLIER'], '21AAGFJ3344D1Z6', null, null, '1234002100045678', 'PUNB0123400', 'Punjab National Bank, Cuttack', 'B. Das', '9437234567'],
+  ['Mahalaxmi Earthmovers', ['HIRE_AGENCY'], '21AARFM9087E1Z2', 'SMALL', 'UDYAM-OD-19-0078901', '920020034567891', 'UTIB0000123', 'Axis Bank, Bhubaneswar', 'P. Sahu', '9938045678'],
+  ['Kalinga Cranes', ['HIRE_AGENCY', 'SERVICE'], '21AAHFK2211G1Z8', null, null, '0123102000034567', 'IBKL0000123', 'IDBI Bank, Bhubaneswar', 'A. Nayak', '9437456789'],
+  ['Sahoo Auto Parts', ['SUPPLIER', 'SERVICE'], '21BXRPS6612K1Z4', 'MICRO', 'UDYAM-OD-19-0091234', '34567812345', 'SBIN0004321', 'State Bank of India, Pipili', 'D. Sahoo', '9861567890'],
+  ['Kalinga Safety Store', ['SUPPLIER'], '21AALFK7720P1Z9', null, null, '50100098765432', 'HDFC0002211', 'HDFC Bank, Unit 4', 'M. Behera', '9437678901'],
+  ['Utkal Shuttering Works', ['SUBCONTRACTOR', 'LABOUR_CONTRACTOR'], '21CQDPS4410L1Z5', 'MICRO', 'UDYAM-OD-19-0102345', '11223344556', 'SBIN0007788', 'State Bank of India, Patia', 'G. Swain', '9938789012'],
+];
+
+/**
+ * Demo vendor master: the regular suppliers, hire agencies and the shuttering subcontractor, linked to the expenses,
+ * machines and GRNs that name them. Petty vendors (fuel pump, electricity, stationery) stay as typed, so the "not in
+ * the master" list has something to show. Only when the organisation has no vendors yet.
+ */
+async function seedVendors(organizationId: string) {
+  if ((await prisma.vendor.count({ where: { organizationId } })) > 0) return;
+  for (const [name, kinds, gstin, msmeCategory, udyamNo, bankAccountNo, bankIfsc, bankName, contactPerson, phone] of VENDORS) {
+    const v = await prisma.vendor.create({
+      data: {
+        organizationId, name, kinds: kinds as never, gstin, pan: gstin.slice(2, 12), stateCode: gstin.slice(0, 2), msmeCategory, udyamNo,
+        bankAccountName: name, bankAccountNo, bankIfsc, bankName, contactPerson, phone, address: 'Odisha',
+      },
+    });
+    const match = { equals: name, mode: 'insensitive' as const };
+    await prisma.expense.updateMany({ where: { organizationId, vendorId: null, vendor: match }, data: { vendorId: v.id } });
+    await prisma.equipment.updateMany({ where: { organizationId, vendorId: null, supplier: match }, data: { vendorId: v.id } });
+    await prisma.stockEntry.updateMany({ where: { organizationId, vendorId: null, supplier: match }, data: { vendorId: v.id } });
   }
 }
 

@@ -1,4 +1,4 @@
-import type { BillStage, ReceiptKind, EquipmentOwnership, ExpenseCategory, PaymentMode, EquipmentRateUnit, MaterialPriority, NotificationType, ProjectStatus, ProjectType, DelayParty, PasswordTokenPurpose, RiskCategory, RiskKind, RiskStatus, RoleKey, StockEntryType, SubmissionStatus, SubmissionType, Weather } from './enums';
+import type { BillStage, ReceiptKind, VendorKind, MsmeCategory, EquipmentOwnership, ExpenseCategory, PaymentMode, EquipmentRateUnit, MaterialPriority, NotificationType, ProjectStatus, ProjectType, DelayParty, PasswordTokenPurpose, RiskCategory, RiskKind, RiskStatus, RoleKey, StockEntryType, SubmissionStatus, SubmissionType, Weather } from './enums';
 
 export const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {
   ROAD: 'Road / Infrastructure',
@@ -163,6 +163,20 @@ export const BILL_STAGE_LABELS: Record<BillStage, string> = {
   SENT: 'Sent to client',
   CERTIFIED: 'Certified',
   PAID: 'Paid',
+};
+
+export const VENDOR_KIND_LABELS: Record<VendorKind, string> = {
+  SUPPLIER: 'Material supplier',
+  HIRE_AGENCY: 'Machinery hire',
+  SUBCONTRACTOR: 'Subcontractor',
+  LABOUR_CONTRACTOR: 'Labour contractor',
+  SERVICE: 'Services',
+};
+
+export const MSME_CATEGORY_LABELS: Record<MsmeCategory, string> = {
+  MICRO: 'Micro',
+  SMALL: 'Small',
+  MEDIUM: 'Medium',
 };
 
 export const RECEIPT_KIND_LABELS: Record<ReceiptKind, string> = {

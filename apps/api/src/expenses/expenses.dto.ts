@@ -13,6 +13,7 @@ import {
   type SubmissionStatus,
 } from '@erp/shared';
 import { PageQuery, QueryBool } from '../common/paging';
+import { VENDOR_ID_DOC } from '../vendors/vendors.dto';
 import { CLIENT_ID_DOC } from '../common/idempotency';
 
 const trim = () => Transform(({ value }) => (typeof value === 'string' ? value.trim() : value));
@@ -25,7 +26,8 @@ export class CreateExpenseDto {
   @ApiProperty({ example: '2026-10-13' }) @IsDateString() date: string;
   @ApiProperty({ enum: EXPENSE_CATEGORIES }) @IsIn(EXPENSE_CATEGORIES as unknown as string[]) category: ExpenseCategory;
   @ApiProperty({ example: 'Hydraulic hose for grader GRD-01' }) @trim() @IsString() @IsNotEmpty() @MaxLength(300) description: string;
-  @ApiPropertyOptional({ example: 'Sahoo Auto Parts' }) @IsOptional() @trim() @IsString() @MaxLength(120) vendor?: string | null;
+  @ApiPropertyOptional({ example: 'Sahoo Auto Parts' }) @IsOptional() @trim() @IsString() @MaxLength(200) vendor?: string | null;
+  @ApiPropertyOptional(VENDOR_ID_DOC) @IsOptional() @ValidateIf((_, v) => v !== null) @IsUUID() vendorId?: string | null;
   @ApiPropertyOptional({ example: '21ABCDE1234F1Z5' })
   @IsOptional()
   @upper()

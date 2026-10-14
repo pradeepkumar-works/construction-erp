@@ -65,6 +65,8 @@ contractors after the first client is live.
   (previous / this bill / up to date per BOQ item, excess and extra items flagged), GST and the contract
   deductions. Approved through the approval matrix, then recorded as sent, certified (the client's cuts are kept
   against the claim) and paid. Printable bill with the measurement annex, Excel export, and approval from the site app.
+- Vendors: one master of suppliers, hire agencies, subcontractors and service providers with GSTIN, MSME (Udyam)
+  and bank details; expenses, machines and GRNs pick from it, and names typed elsewhere link to it.
 - Receivables: money received against each bill with what the client deducted (TDS, GST TDS, retention, deposit,
   cess), part payments, retention and deposit releases, ageing per project and client, the retention due date,
   a dashboard tile, and billed value and cash in on project cost.

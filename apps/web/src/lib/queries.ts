@@ -3,6 +3,10 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   ClientDto,
+  MsmeCategory,
+  UnlistedVendorDto,
+  VendorDto,
+  VendorKind,
   ProjectContractDto,
   GettingStartedDto,
   EquipmentDto,
@@ -492,6 +496,35 @@ export const useClientsPage = (filters: ClientFilters) =>
   });
 
 /** Every active client (one large page) for pickers. */
+export interface VendorFilters extends PageParams {
+  kind?: VendorKind;
+  msme?: MsmeCategory;
+  includeInactive?: boolean;
+}
+
+export const useVendorsPage = (filters: VendorFilters) =>
+  useQuery({
+    queryKey: ['vendors', 'page', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<VendorDto>>('/vendors', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+  });
+
+/** Active vendors for pickers. */
+export const useVendors = (enabled = true) =>
+  useQuery({
+    queryKey: ['vendors', 'all'],
+    queryFn: async () => (await api.get<Paginated<VendorDto>>('/vendors', { params: { pageSize: MAX_PAGE_SIZE } })).data.items,
+    enabled,
+    staleTime: 60_000,
+  });
+
+export const useUnlistedVendors = (enabled = true) =>
+  useQuery({
+    queryKey: ['vendors', 'unlisted'],
+    queryFn: async () => (await api.get<UnlistedVendorDto[]>('/vendors/unlisted')).data,
+    enabled,
+  });
+
 export const useClients = (enabled = true) =>
   useQuery({
     queryKey: ['clients', 'all'],
