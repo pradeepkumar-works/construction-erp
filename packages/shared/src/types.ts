@@ -66,6 +66,8 @@ export interface UserSummary {
 export interface PasswordLinkDto {
   link: string | null;
   emailed: boolean;
+  /** Also sent to the user's phone on WhatsApp or SMS (invites only), else null */
+  messaged?: 'WHATSAPP' | 'SMS' | null;
   expiresAt: string;
 }
 
@@ -342,6 +344,8 @@ export interface NotificationJobResult {
   created: number;
   pushed: number;
   emailed: number;
+  /** Sent on WhatsApp or SMS */
+  messaged?: number;
   skipped: number;
 }
 

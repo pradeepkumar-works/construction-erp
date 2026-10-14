@@ -7,6 +7,7 @@ import { RequestUser } from '../common/current-user';
 import { parseDate } from '../common/serialize';
 import { NotificationsService } from './notifications.service';
 import { EmailService, escapeHtml } from './email.service';
+import { MessagingService } from '../messaging/messaging.service';
 import { EMAIL_COLORS, emailButton, emailLayout } from './email-layout';
 import { JOB_TIMEZONE, todayIn } from './time';
 
@@ -26,6 +27,7 @@ export class NotificationJobsService {
     private notifications: NotificationsService,
     private email: EmailService,
     private access: ProjectAccessService,
+    private messaging: MessagingService,
   ) {}
 
   /**
@@ -33,7 +35,7 @@ export class NotificationJobsService {
    * notify the project's site staff (Site Engineers and Team Leaders who are members; the PM when there are none).
    */
   async dprReminder(date = todayIn()): Promise<NotificationJobResult> {
-    const result: NotificationJobResult = { job: 'DPR_REMINDER', date, created: 0, pushed: 0, emailed: 0, skipped: 0 };
+    const result: NotificationJobResult = { job: 'DPR_REMINDER', date, created: 0, pushed: 0, emailed: 0, messaged: 0, skipped: 0 };
     const projects = await this.prisma.project.findMany({
       where: { status: 'ACTIVE' },
       include: {
@@ -61,9 +63,11 @@ export class NotificationJobsService {
         body: `No daily progress report has been submitted for ${p.name} (${p.code}) today. Please submit it before end of day.`,
         projectId: p.id,
         dedupeKey: `DPR_REMINDER:${p.id}:${date}`,
+        message: { template: 'DPR_REMINDER', params: [`${p.name} (${p.code})`, this.messaging.webUrl('/dpr')] },
       });
       result.created += r.created;
       result.pushed += r.pushed;
+      result.messaged! += r.messaged;
       result.skipped += r.skipped;
     }
     this.log.log(`DPR reminder ${date}: ${JSON.stringify(result)}`);

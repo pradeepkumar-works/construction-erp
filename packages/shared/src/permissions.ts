@@ -88,6 +88,9 @@ export const canRecordTest = (role: RoleKey) => QUALITY_TEST_ROLES.includes(role
 export const canRaiseNcr = (role: RoleKey) => NCR_ROLES.includes(role);
 export const canManageDocuments = (role: RoleKey) => DOCUMENT_CONTROL_ROLES.includes(role);
 export const canViewLetters = (role: RoleKey) => CORRESPONDENCE_ROLES.includes(role);
+/** Who sees the company's WhatsApp and SMS log. */
+export const MESSAGE_LOG_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT'];
+export const canViewMessageLog = (role: RoleKey) => MESSAGE_LOG_ROLES.includes(role);
 export const canManageStaff = (role: RoleKey) => STAFF_ADMIN_ROLES.includes(role);
 export const canViewPayroll = (role: RoleKey) => PAYROLL_ROLES.includes(role);
 /** The monthly labour contractor summary: payroll roles and those who see project cost. */

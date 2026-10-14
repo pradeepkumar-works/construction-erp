@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { ROLE_LABELS, SUBMISSION_TYPE_LABELS, approvalRightsOf } from '@erp/shared';
 import { useAuth } from '../../src/auth/AuthContext';
 import { useNotifications } from '../../src/notifications/NotificationsContext';
+import { MessagingCard } from '../../src/notifications/MessagingCard';
 import { Button, Card, KeyValue, Screen } from '../../src/components';
 import { API_URL } from '../../src/config';
 import { colors, spacing, typography } from '../../src/theme';
@@ -47,6 +48,7 @@ export default function ProfileScreen() {
         {push && push.status !== 'ready' && push.reason ? <Text style={typography.caption}>{push.reason}</Text> : null}
         <Text style={typography.caption}>Approvals, rejections and change requests on your submissions, plus the daily DPR reminder, also appear under Notifications on the Home screen.</Text>
       </Card>
+      <MessagingCard />
       <Card title="Connection">
         <View style={styles.apiRow}>
           <Ionicons name="server-outline" size={18} color={colors.textMuted} />

@@ -110,6 +110,10 @@ import type {
   StaffSummaryDto,
   PayrollDto,
   ContractorMonthDto,
+  MessageChannel,
+  MessagingPrefsDto,
+  OutboundMessageDto,
+  OutboundMessageStatus,
 } from '@erp/shared';
 import { MAX_PAGE_SIZE } from '@erp/shared';
 import { api } from './api';
@@ -1106,6 +1110,45 @@ export const useNotifications = (opts?: { unreadOnly?: boolean; limit?: number }
     queryKey: ['notifications', clean(opts)],
     queryFn: async () => (await api.get<NotificationListDto>('/notifications', { params: clean(opts) })).data,
     refetchInterval: 30_000,
+  });
+
+/* ---------- WhatsApp and SMS ---------- */
+
+export const useMessagingPrefs = (enabled = true) =>
+  useQuery({ queryKey: ['messaging', 'me'], queryFn: async () => (await api.get<MessagingPrefsDto>('/messaging/me')).data, enabled });
+
+export function useUpdateMessagingPrefs() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: { phone?: string | null; whatsapp?: boolean; sms?: boolean }) => (await api.put<MessagingPrefsDto>('/messaging/me', body)).data,
+    onSuccess: (d) => {
+      qc.setQueryData(['messaging', 'me'], d);
+    },
+  });
+}
+
+export function useSendTestMessage() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (channel: MessageChannel) => (await api.post<OutboundMessageDto>('/messaging/me/test', { channel })).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['messaging', 'log'] }),
+  });
+}
+
+export interface MessageLogFilters {
+  page?: number;
+  pageSize?: number;
+  q?: string;
+  status?: OutboundMessageStatus;
+  channel?: MessageChannel;
+}
+
+export const useMessageLog = (filters?: MessageLogFilters, enabled = true) =>
+  useQuery({
+    queryKey: ['messaging', 'log', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<OutboundMessageDto>>('/messaging/log', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+    enabled,
   });
 
 export const useAudit = (type: ApprovalTypeParam, id: string | undefined) =>
