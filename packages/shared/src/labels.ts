@@ -78,6 +78,7 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   TEST_DUE: 'Test due',
   TEST_FAILED: 'Test failed',
   NCR: 'Non-conformance',
+  DOCUMENT_ISSUED: 'Drawing issued',
 };
 
 export const STOCK_ENTRY_TYPE_LABELS: Record<StockEntryType, string> = {

@@ -8,6 +8,7 @@ export function notificationHref(n: NotificationDto): string {
   if (n.type === 'RISK_RAISED' && n.entityId) return `/risks?id=${n.entityId}`;
   if ((n.type === 'TEST_DUE' || n.type === 'TEST_FAILED') && n.entityId) return `/inspections?tab=tests&id=${n.entityId}`;
   if (n.type === 'NCR' && n.entityId) return `/inspections?tab=ncrs&id=${n.entityId}`;
+  if (n.type === 'DOCUMENT_ISSUED' && n.entityId) return `/documents?id=${n.entityId}`;
   if (n.type === 'LOW_STOCK' && n.projectId) return `/stock?projectId=${n.projectId}&low=1`;
   return '/notifications';
 }

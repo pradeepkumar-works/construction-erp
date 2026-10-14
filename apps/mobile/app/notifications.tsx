@@ -21,6 +21,7 @@ const ICON: Record<NotificationType, { name: keyof typeof Ionicons.glyphMap; col
   RISK_RAISED: { name: 'alert-circle', color: colors.danger, bg: colors.dangerSoft },
   TEST_DUE: { name: 'flask', color: colors.info, bg: colors.infoSoft },
   TEST_FAILED: { name: 'flask', color: colors.danger, bg: colors.dangerSoft },
+  DOCUMENT_ISSUED: { name: 'document-text', color: colors.success, bg: colors.successSoft },
   NCR: { name: 'warning', color: colors.warning, bg: colors.warningSoft },
 };
 

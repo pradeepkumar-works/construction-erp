@@ -25,6 +25,8 @@ const INSPECTION = { href: '/inspection/new', icon: 'shield-checkmark' as const,
 
 const QUALITY = { href: '/quality', icon: 'flask' as const, tone: '#0e7490', title: 'Tests & NCRs', text: 'Enter cube and other test results; record the action taken on an NCR.' };
 
+const DRAWINGS = { href: '/documents', icon: 'document-text-outline' as const, tone: '#334155', title: 'Drawings', text: 'The current revision of every drawing on your project; save them to open without a signal.' };
+
 const RISK = { href: '/risks', icon: 'alert-circle' as const, tone: colors.danger, title: 'Delays & risks', text: 'Record work held up (days lost, who caused it) or raise a risk; see what is open.' };
 
 const STOCK = [
@@ -38,6 +40,7 @@ export default function SubmitHub() {
   const forms = [
     ...(user && canRecordAttendance(user.roleKey) ? [ATTENDANCE] : []),
     ...FORMS,
+    DRAWINGS,
     ...(user && canLogMachinery(user.roleKey) ? [MACHINERY] : []),
     ...(user && canSubmitExpense(user.roleKey) ? [EXPENSE] : []),
     ...(user && canMeasure(user.roleKey) ? [MEASUREMENT] : []),

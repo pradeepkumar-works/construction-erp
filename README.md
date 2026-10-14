@@ -53,6 +53,10 @@ contractors after the first client is live.
   reminded when due; compaction, soil, bricks, steel and others one result), pass or fail decided by the last
   reading. Non-conformance reports raised by QA/QC (from a failed test or inspection), the cause and corrective
   action recorded by site, then closed or reopened by QA/QC. Web: Site → Quality; site app: Tests & NCRs.
+- Document register: drawings and documents with their revisions and files (the latest issued is current, the rest
+  superseded), transmittals of revisions with a printable cover sheet and the receiver's acknowledgement, and letters
+  in and out (`IN-` / `OUT-` numbers) linked as replies and to delays. Web: Site → Documents and a project tab; site
+  app: Drawings, the current revision of every drawing, saved on the phone to open without a signal.
 - Project cost: approved site expenses, material issued at the item's standard rate, approved machinery logs
   at the hire rate and attendance at each trade's daily rate, against the value of approved progress (and of
   approved measurements), by project and month, with margin. For approvers and accounts.
@@ -162,6 +166,7 @@ material request; tap "Edit and resubmit", fix them and send them back to the PM
 | Test reading due (cubes at 7 and 28 days, other tests' result) | whoever recorded the test and the QA/QC on the project | in-app, push |
 | Test failed | the project's QA/QC, its PM and whoever recorded it | in-app, push |
 | NCR raised, action taken, closed or reopened | the person to rectify it and the PM (major and critical: the approvers too); the raiser on action | in-app, push |
+| Drawing revision issued good for construction | everyone on the project (manager and members) | in-app, push |
 
 - API: `GET /api/notifications` (list + unread count), `POST /api/notifications/:id/read`,
   `POST /api/notifications/read-all`, `POST`/`DELETE /api/notifications/push-tokens`.

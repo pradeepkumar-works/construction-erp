@@ -8,7 +8,7 @@ Current demo deployment (October 2026):
 | API | Vercel project `construction-erp-api` (NestJS preset, region `sin1`) | https://construction-erp-api-pradeep15.vercel.app/api (docs at `/api/docs`) |
 | Web ERP | Vercel project `construction-erp-web` (Next.js) | https://construction-erp-web-pradeep15.vercel.app |
 | Mobile | Expo Go / EAS build, pointed at the API URL above | not hosted |
-| Photos | stored in Postgres (`Attachment.data`) because Vercel functions have no disk | switch to Vercel Blob by setting `BLOB_READ_WRITE_TOKEN` |
+| Photos and drawings | stored in Postgres (`Attachment.data`) because Vercel functions have no disk | switch to Vercel Blob by setting `BLOB_READ_WRITE_TOKEN`. Uploads pass through the API either way, and Vercel caps a request at about 4.5 MB, so a larger drawing PDF must be reduced (or the API hosted elsewhere) |
 
 Railway was the first choice for the API (Dockerfile and `railway.json` are in `apps/api`) but the
 Railway account's trial has expired; the API runs on Vercel instead until a Railway plan is chosen.

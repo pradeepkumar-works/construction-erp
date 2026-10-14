@@ -119,6 +119,7 @@ enum NotificationType {
   TEST_DUE
   TEST_FAILED
   NCR
+  DOCUMENT_ISSUED
 }
 
 /// What a quality test is of. CONCRETE_CUBE gets 7 and 28-day readings; the others one result.
@@ -154,6 +155,51 @@ enum NcrStatus {
 }
 
 /// DELAY = has held up work (days lost, responsible party); RISK = might (probability × impact).
+enum DocumentKind {
+  DRAWING
+  SPECIFICATION
+  REPORT
+  METHOD_STATEMENT
+  CONTRACT
+  OTHER
+}
+
+enum DocumentDiscipline {
+  GENERAL
+  ARCHITECTURAL
+  STRUCTURAL
+  ROAD
+  WATER
+  ELECTRICAL
+  MECHANICAL
+  PLUMBING
+}
+
+/// Status of one revision of a drawing or document
+enum RevisionStatus {
+  FOR_INFORMATION
+  FOR_APPROVAL
+  APPROVED
+  APPROVED_WITH_COMMENTS
+  REJECTED
+  FOR_CONSTRUCTION
+  AS_BUILT
+  WITHDRAWN
+}
+
+enum TransmittalPurpose {
+  FOR_CONSTRUCTION
+  FOR_APPROVAL
+  FOR_INFORMATION
+  FOR_REVIEW
+  AS_REQUESTED
+}
+
+enum LetterDirection {
+  IN
+  OUT
+}
+
 enum RiskKind {
   DELAY
   RISK
@@ -257,6 +303,9 @@ model Organization {
   inspections       Inspection[]
   qualityTests      QualityTest[]
   ncrs              Ncr[]
+  documents         Document[]
+  transmittals      Transmittal[]
+  letters           Letter[]
 }
 
 model Role {
@@ -352,6 +401,10 @@ model User {
   ncrsRaised           Ncr[]              @relation("NcrRaiser")
   ncrsToAct            Ncr[]              @relation("NcrActionBy")
   ncrsClosed           Ncr[]              @relation("NcrCloser")
+  documentsCreated     Document[]         @relation("DocumentCreator")
+  revisionsIssued      DocumentRevision[] @relation("RevisionIssuer")
+  transmittalsSent     Transmittal[]      @relation("TransmittalSender")
+  lettersRecorded      Letter[]           @relation("LetterRecorder")
   raisedRisks          Risk[]             @relation("RiskRaiser")
   ownedRisks           Risk[]             @relation("RiskOwner")
 
@@ -434,6 +487,9 @@ model Project {
   inspections      Inspection[]
   qualityTests     QualityTest[]
   ncrs             Ncr[]
+  documents        Document[]
+  transmittals     Transmittal[]
+  letters          Letter[]
 
   @@unique([organizationId, code])
   @@index([organizationId, status])
@@ -1420,6 +1476,7 @@ model Risk {
   updatedAt        DateTime     @updatedAt
 
   attachments Attachment[]
+  letters     Letter[]
 
   @@unique([organizationId, riskNo])
   @@index([projectId, status])
@@ -1724,6 +1781,10 @@ model Attachment {
   qualityTest       QualityTest?      @relation(fields: [qualityTestId], references: [id], onDelete: Cascade)
   ncrId             String?
   ncr               Ncr?              @relation(fields: [ncrId], references: [id], onDelete: Cascade)
+  revisionId        String?
+  revision          DocumentRevision? @relation(fields: [revisionId], references: [id], onDelete: Cascade)
+  letterId          String?
+  letter            Letter?           @relation(fields: [letterId], references: [id], onDelete: Cascade)
   createdAt         DateTime          @default(now())
 
   @@index([organizationId])
@@ -2019,4 +2080,132 @@ model Ncr {
   @@unique([organizationId, ncrNo])
   @@index([projectId, status])
   @@index([organizationId, status])
+}
+
+/// A drawing or document in the project's register; its revisions carry the files and status.
+model Document {
+  id                String             @id @default(uuid())
+  organizationId    String
+  organization      Organization       @relation(fields: [organizationId], references: [id])
+  projectId         String
+  project           Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  /// The drawing or document number as issued, e.g. "STR-GA-101"; unique within the project
+  docNo             String
+  title             String
+  kind              DocumentKind       @default(DRAWING)
+  discipline        DocumentDiscipline @default(GENERAL)
+  remarks           String?
+  /// The revision in force: the latest issued (kept in step by the service; filters and sorts by it)
+  currentRevisionId String?            @unique
+  currentRevision   DocumentRevision?  @relation("CurrentRevision", fields: [currentRevisionId], references: [id], onDelete: SetNull)
+  createdById       String
+  createdBy         User               @relation("DocumentCreator", fields: [createdById], references: [id])
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  revisions DocumentRevision[] @relation("DocumentRevisions")
+
+  @@unique([projectId, docNo])
+  @@index([organizationId, kind])
+}
+
+/// One revision of a document. The latest one added is the current revision; earlier ones are superseded.
+model DocumentRevision {
+  id           String         @id @default(uuid())
+  documentId   String
+  document     Document       @relation("DocumentRevisions", fields: [documentId], references: [id], onDelete: Cascade)
+  /// "R0", "A", "P2": as printed on the title block
+  revision     String
+  issuedOn     DateTime       @db.Date
+  status       RevisionStatus
+  /// Architect, consultant or client who issued it
+  receivedFrom String?
+  remarks      String?
+  issuedById   String
+  issuedBy     User           @relation("RevisionIssuer", fields: [issuedById], references: [id])
+  createdAt    DateTime       @default(now())
+
+  attachments  Attachment[]
+  transmittals TransmittalItem[]
+  currentOf    Document?         @relation("CurrentRevision")
+
+  @@unique([documentId, revision])
+  @@index([documentId, createdAt])
+}
+
+/// A numbered cover sheet listing the revisions sent to someone, and their acknowledgement.
+model Transmittal {
+  id             String             @id @default(uuid())
+  organizationId String
+  organization   Organization       @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  /// TRN-2026-0001 per organisation
+  transmittalNo  String
+  toParty        String
+  attention      String?
+  purpose        TransmittalPurpose
+  sentOn         DateTime           @db.Date
+  remarks        String?
+  /// Received and signed for
+  acknowledgedOn DateTime?          @db.Date
+  acknowledgedBy String?
+  sentById       String
+  sentBy         User               @relation("TransmittalSender", fields: [sentById], references: [id])
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  items TransmittalItem[]
+
+  @@unique([organizationId, transmittalNo])
+  @@index([projectId, sentOn])
+}
+
+model TransmittalItem {
+  id            String           @id @default(uuid())
+  transmittalId String
+  transmittal   Transmittal      @relation(fields: [transmittalId], references: [id], onDelete: Cascade)
+  revisionId    String
+  revision      DocumentRevision @relation(fields: [revisionId], references: [id], onDelete: Restrict)
+  copies        Int              @default(1)
+  sortOrder     Int              @default(0)
+
+  @@unique([transmittalId, revisionId])
+  @@index([revisionId])
+}
+
+/// Correspondence in and out, numbered IN- / OUT-<year>-0001 per organisation. A letter can answer another
+/// and can be linked to a delay in the risk register (notices, extension of time claims).
+model Letter {
+  id             String          @id @default(uuid())
+  organizationId String
+  organization   Organization    @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  direction      LetterDirection
+  letterNo       String
+  /// The other side's reference number
+  theirRef       String?
+  letterDate     DateTime        @db.Date
+  /// Received from (IN) or addressed to (OUT)
+  party          String
+  subject        String
+  summary        String?
+  /// IN only: when a reply is due
+  replyBy        DateTime?       @db.Date
+  inReplyToId    String?
+  inReplyTo      Letter?         @relation("LetterReply", fields: [inReplyToId], references: [id], onDelete: SetNull)
+  replies        Letter[]        @relation("LetterReply")
+  riskId         String?
+  risk           Risk?           @relation(fields: [riskId], references: [id], onDelete: SetNull)
+  createdById    String
+  createdBy      User            @relation("LetterRecorder", fields: [createdById], references: [id])
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  attachments Attachment[]
+
+  @@unique([organizationId, letterNo])
+  @@index([projectId, letterDate])
+  @@index([riskId])
 }

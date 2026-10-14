@@ -1,6 +1,7 @@
 import type { InspectionCheck, NcrSeverity, NcrStatus, TestKind, TestResult } from './quality';
 import type { ApprovalRightDto } from './approvals';
 import type { TallyVoucherKind } from './tally';
+import type { DocumentDiscipline, DocumentKind, LetterDirection, RevisionStatus, TransmittalPurpose } from './documents';
 import type {
   BillStage,
   ReceiptKind,
@@ -1864,4 +1865,127 @@ export interface QualitySummaryDto {
   testsFailed: number;
   ncrsOpen: number;
   ncrsOverdue: number;
+}
+
+/* ---------- document register ---------- */
+
+/** One revision of a drawing or document with its files. */
+export interface DocumentRevisionDto {
+  id: string;
+  documentId: string;
+  revision: string;
+  issuedOn: string;
+  status: RevisionStatus;
+  receivedFrom: string | null;
+  remarks: string | null;
+  issuedById: string;
+  issuedByName: string;
+  /** The latest revision added; the others are superseded */
+  current: boolean;
+  attachments: AttachmentDto[];
+  /** Transmittals it was sent on (document detail only) */
+  transmittals: { id: string; transmittalNo: string; toParty: string; sentOn: string }[];
+  createdAt: string;
+}
+
+export interface DocumentDto {
+  id: string;
+  projectId: string;
+  projectName: string;
+  docNo: string;
+  title: string;
+  kind: DocumentKind;
+  discipline: DocumentDiscipline;
+  remarks: string | null;
+  /** The current revision, null until the first one is added */
+  current: DocumentRevisionDto | null;
+  revisionCount: number;
+  createdById: string;
+  createdByName: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DocumentDetailDto extends DocumentDto {
+  /** Newest first */
+  revisions: DocumentRevisionDto[];
+}
+
+export interface TransmittalItemDto {
+  id: string;
+  revisionId: string;
+  documentId: string;
+  docNo: string;
+  title: string;
+  revision: string;
+  status: RevisionStatus;
+  copies: number;
+}
+
+export interface TransmittalDto {
+  id: string;
+  projectId: string;
+  projectName: string;
+  projectCode: string;
+  transmittalNo: string;
+  toParty: string;
+  attention: string | null;
+  purpose: TransmittalPurpose;
+  sentOn: string;
+  remarks: string | null;
+  acknowledgedOn: string | null;
+  acknowledgedBy: string | null;
+  sentById: string;
+  sentByName: string;
+  items: TransmittalItemDto[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LetterRefDto {
+  id: string;
+  letterNo: string;
+  direction: LetterDirection;
+  letterDate: string;
+  subject: string;
+}
+
+export interface LetterDto {
+  id: string;
+  projectId: string;
+  projectName: string;
+  direction: LetterDirection;
+  letterNo: string;
+  theirRef: string | null;
+  letterDate: string;
+  party: string;
+  subject: string;
+  summary: string | null;
+  replyBy: string | null;
+  /** Received, a reply is due and none has been sent */
+  awaitingReply: boolean;
+  /** Awaiting a reply past `replyBy` */
+  overdue: boolean;
+  inReplyTo: LetterRefDto | null;
+  replies: LetterRefDto[];
+  riskId: string | null;
+  riskNo: string | null;
+  riskTitle: string | null;
+  createdById: string;
+  createdByName: string;
+  attachments: AttachmentDto[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Counts for the Documents page and the project tab. */
+export interface DocumentSummaryDto {
+  documents: number;
+  /** Current revision is for approval: waiting on the consultant or client */
+  awaitingApproval: number;
+  /** Transmittals not yet acknowledged */
+  unacknowledged: number;
+  /** Letters received that need a reply (null when the user cannot see letters) */
+  lettersAwaitingReply: number | null;
+  lettersOverdue: number | null;
 }

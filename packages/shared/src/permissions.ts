@@ -55,6 +55,12 @@ export const QUALITY_TEST_ROLES: RoleKey[] = INSPECTION_REQUEST_ROLES;
 export const NCR_ROLES: RoleKey[] = CHECKLIST_ADMIN_ROLES;
 
 /** Roles that see contract terms and bills: approvers, the QS who prepares bills, and accounts. */
+/** Keep the document register: add drawings and revisions, send transmittals. Everyone on a project reads it. */
+export const DOCUMENT_CONTROL_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER', 'QUANTITY_SURVEYOR', 'QA_QC_ENGINEER'];
+
+/** Read and record letters in and out (contractual correspondence). */
+export const CORRESPONDENCE_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER', 'QUANTITY_SURVEYOR'];
+
 export const BILLING_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER', 'QUANTITY_SURVEYOR', 'ACCOUNTS_MANAGER'];
 
 /** Roles that change the client master and a project's contract terms. */
@@ -74,6 +80,8 @@ export const canRequestInspection = (role: RoleKey) => INSPECTION_REQUEST_ROLES.
 export const canManageChecklists = (role: RoleKey) => CHECKLIST_ADMIN_ROLES.includes(role);
 export const canRecordTest = (role: RoleKey) => QUALITY_TEST_ROLES.includes(role);
 export const canRaiseNcr = (role: RoleKey) => NCR_ROLES.includes(role);
+export const canManageDocuments = (role: RoleKey) => DOCUMENT_CONTROL_ROLES.includes(role);
+export const canViewLetters = (role: RoleKey) => CORRESPONDENCE_ROLES.includes(role);
 export const canEditProjects = (role: RoleKey) => PROJECT_EDITOR_ROLES.includes(role);
 export const canManageUsers = (role: RoleKey) => USER_ADMIN_ROLES.includes(role);
 export const seesGettingStarted = (role: RoleKey) => GETTING_STARTED_ROLES.includes(role);
