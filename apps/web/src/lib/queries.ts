@@ -77,6 +77,7 @@ import type {
   RoleKey,
   SortOrder,
   TallyExportDto,
+  GstRegistersDto,
   TallyPreviewDto,
   TallySettingsDto,
 } from '@erp/shared';
@@ -538,6 +539,13 @@ export const useTallyPreview = (range: { upTo: string; from?: string }, enabled 
 
 export const useTallyExports = (enabled = true) =>
   useQuery({ queryKey: ['tally', 'exports'], queryFn: async () => (await api.get<TallyExportDto[]>('/tally/exports')).data, enabled });
+
+export const useGstRegisters = (range: { from: string; to: string }) =>
+  useQuery({
+    queryKey: ['gst', range],
+    queryFn: async () => (await api.get<GstRegistersDto>('/gst/registers', { params: range })).data,
+    placeholderData: keepPreviousData,
+  });
 
 export interface ClientFilters extends PageParams {
   includeInactive?: boolean;

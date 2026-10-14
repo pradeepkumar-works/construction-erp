@@ -1667,3 +1667,78 @@ export interface TallySettingsDto {
   costCentres: boolean;
   ledgers: TallyLedgerRowDto[];
 }
+
+// ----- GST registers -----
+
+/** GSTR-1 section an RA bill falls in: B2B to a registered client, B2CS (small, unregistered) otherwise. */
+export type GstOutwardSection = 'B2B' | 'B2CS';
+
+/** An approved RA bill as an outward supply (one row per bill: a bill has one GST rate). */
+export interface GstOutwardRowDto {
+  billId: string;
+  projectId: string;
+  projectCode: string;
+  projectName: string;
+  /** "RA/BL-2026-02/3", the number the Tally export uses (GST allows at most 16 characters) */
+  invoiceNo: string;
+  invoiceDate: string;
+  section: GstOutwardSection;
+  recipientGstin: string | null;
+  recipientName: string;
+  /** GST state code of the place of supply (where the site is) */
+  placeOfSupply: string | null;
+  rate: string;
+  taxable: string;
+  igst: string;
+  cgst: string;
+  sgst: string;
+  invoiceValue: string;
+}
+
+export type GstInwardSource = 'VENDOR_BILL' | 'SUBCONTRACT_BILL' | 'EXPENSE';
+
+/** A purchase with GST, one row per invoice and rate, laid out like GSTR-2B. */
+export interface GstInwardRowDto {
+  key: string;
+  source: GstInwardSource;
+  sourceId: string;
+  /** Nirmaan number: VB-2026-0004, "WO-2026-0001 bill 2", EXP-2026-0012 */
+  ref: string;
+  projectCode: string;
+  projectName: string;
+  supplierGstin: string | null;
+  supplierName: string;
+  invoiceNo: string | null;
+  invoiceDate: string;
+  invoiceValue: string;
+  rate: string;
+  taxable: string;
+  igst: string;
+  cgst: string;
+  sgst: string;
+  /** Input tax can be claimed only on an invoice with the supplier's GSTIN */
+  itcEligible: boolean;
+}
+
+export interface GstTaxTotalsDto {
+  taxable: string;
+  igst: string;
+  cgst: string;
+  sgst: string;
+  tax: string;
+}
+
+export interface GstRegistersDto {
+  from: string;
+  to: string;
+  /** GST state code the company bills from (Tally settings); null when not set */
+  stateCode: string | null;
+  outward: GstOutwardRowDto[];
+  outwardTotals: GstTaxTotalsDto;
+  inward: GstInwardRowDto[];
+  /** Eligible input tax only */
+  inwardTotals: GstTaxTotalsDto;
+  /** GST paid on purchases without the supplier's GSTIN (not claimable) */
+  ineligibleTax: string;
+  warnings: string[];
+}

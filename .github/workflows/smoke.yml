@@ -134,6 +134,16 @@ jobs:
           ENG=$(curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' -d '{"email":"engineer@demo.com","password":"password123"}' | jq -r .accessToken)
           code=$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/tally/preview?upTo=$UPTO" -H "authorization: Bearer $ENG")
           echo "tally as a site engineer: $code"; [ "$code" = "403" ]
+      - name: GST registers
+        run: |
+          set -e
+          TOKEN=$(curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' \
+            -d '{"email":"accounts@demo.com","password":"password123"}' | jq -r .accessToken)
+          FROM=$(date -u -d '-90 days' +%Y-%m-%d); TO=$(date -u +%Y-%m-%d)
+          curl -sf "$API_URL/gst/registers?from=$FROM&to=$TO" -H "authorization: Bearer $TOKEN" | jq -c '{outward: (.outward | length), inward: (.inward | length), outwardTotals, inwardTotals, warnings}'
+          ENG=$(curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' -d '{"email":"engineer@demo.com","password":"password123"}' | jq -r .accessToken)
+          code=$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/gst/registers?from=$FROM&to=$TO" -H "authorization: Bearer $ENG")
+          echo "gst registers as a site engineer: $code"; [ "$code" = "403" ]
       - name: Notifications
         run: |
           set -e

@@ -80,6 +80,8 @@ contractors after the first client is live.
   45 days run out, and actual subcontractor bills and cash out on project cost.
 - Tally export: certified RA bills, money received, vendor and subcontractor bills, payments and site expenses as
   TallyPrime vouchers each month, with the Tally ledger names set once and every record sent only once.
+- GST registers: outward supplies from RA bills in the GSTR-1 layout (b2b, b2cs, HSN) and input tax from vendor
+  bills, subcontractor bills and expenses for GSTR-2B matching, as one Excel workbook.
 - Receivables: money received against each bill with what the client deducted (TDS, GST TDS, retention, deposit,
   cess), part payments, retention and deposit releases, ageing per project and client, the retention due date,
   a dashboard tile, and billed value and cash in on project cost.

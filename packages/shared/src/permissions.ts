@@ -116,6 +116,8 @@ export const canViewPayables = (role: RoleKey) => PAYMENT_ROLES.includes(role) |
 /** Export vouchers to Tally and set the ledger names: those who keep the books. */
 export const TALLY_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'ACCOUNTS_MANAGER'];
 export const canExportTally = (role: RoleKey) => TALLY_ROLES.includes(role);
+/** See the GST registers (outward supplies and input tax): those who keep the books. */
+export const canViewGstRegisters = (role: RoleKey) => TALLY_ROLES.includes(role);
 /** Issue work orders to subcontractors and labour contractors. */
 export const WORK_ORDER_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER', 'PROCUREMENT_MANAGER', 'QUANTITY_SURVEYOR'];
 export const canIssueWorkOrder = (role: RoleKey) => WORK_ORDER_ROLES.includes(role);

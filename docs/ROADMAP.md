@@ -206,8 +206,12 @@ relative to a v2 item (S about one, M about two, L about three). The full draft 
     up to a month end; a ledger screen with default names, the company and GST state, projects as cost centres, and
     a ledger masters file to import once. Each record goes once; exported receipts and payments are locked until the
     export is undone. Receipts against a bill not yet certified wait for the certificate.
-25. **GST registers** (S). Outward supplies from RA bills (GSTR-1 layout) and input tax from vendor bills and
-    expenses for GSTR-2B reconciliation, as Excel. E-invoicing only when a customer must, through a GSP.
+25. ~~**GST registers** (S). Outward supplies from RA bills (GSTR-1 layout) and input tax from vendor bills and
+    expenses for GSTR-2B reconciliation, as Excel. E-invoicing only when a customer must, through a GSP.~~
+    Done: Billing → GST Registers for a range of months: approved RA bills as B2B or B2CS supplies with the HSN (SAC
+    9954) summary, input tax from vendor bills (per rate), subcontractor bills and site expenses with claimable and
+    not claimable apart, output less input tax, and one Excel workbook with the GSTR-1 offline tool's b2b, b2cs and
+    hsn sheets plus the input register in the GSTR-2B layout. No e-invoicing yet.
 
 ### D. Quality and documents
 26. **Inspections** (M). Inspection request from site per activity and location, passed or failed by
