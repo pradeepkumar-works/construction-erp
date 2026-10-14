@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
+import { GuestGuard } from './common/guest.guard';
+import { PortalModule } from './portal/portal.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { CommonModule } from './common/common.module';
 import { AuthModule } from './auth/auth.module';
@@ -79,8 +81,12 @@ import { HealthController } from './health.controller';
     DashboardModule,
     UploadsModule,
     NotificationsModule,
+    PortalModule,
   ],
   controllers: [HealthController],
-  providers: [{ provide: APP_GUARD, useClass: JwtAuthGuard }],
+  providers: [
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
+    { provide: APP_GUARD, useClass: GuestGuard },
+  ],
 })
 export class AppModule {}

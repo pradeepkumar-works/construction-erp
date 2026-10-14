@@ -3,6 +3,7 @@
 import React, { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Spin } from 'antd';
+import { isGuest } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { AppShell } from '@/components/shell/AppShell';
 
@@ -17,7 +18,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }
   }, [loading, user, router, pathname]);
 
-  if (loading || !user) {
+  // The client's engineer and consultant only have the portal (and their notifications).
+  const guestAway = !!user && isGuest(user.roleKey) && !pathname.startsWith('/portal') && !pathname.startsWith('/notifications');
+  useEffect(() => {
+    if (guestAway) router.replace('/portal');
+  }, [guestAway, router]);
+
+  if (loading || !user || guestAway) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <Spin size="large" />

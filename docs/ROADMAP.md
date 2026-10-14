@@ -254,9 +254,14 @@ relative to a v2 item (S about one, M about two, L about three). The full draft 
     number the admin enters; every message is in a log for management. WhatsApp goes through WATI (Meta's Cloud API
     is the alternative), which also carries the morning approvals digest, test-due and payments-due reminders. Sending
     starts once the WATI and MSG91 (DLT) keys are set (docs/DEPLOY.md); until then messages are logged as not set up.
-32. **Client and consultant portal** (M). Guest login for the client's engineer or PMC on their projects:
+32. ~~**Client and consultant portal** (M). Guest login for the client's engineer or PMC on their projects:
     approved progress, DPRs, reports, certify RA bills, attend inspections. Access only through
-    `project-access.service.ts` and `permissions.ts`.
+    `project-access.service.ts` and `permissions.ts`.~~
+    Done: two guest roles (Client's Engineer, Consultant / PMC) the admin invites and puts on projects like anyone
+    else. They sign in on the web and land in the portal: approved progress by activity, approved DPRs, the progress
+    report, RA bills once sent (certify with cuts, which tells the QS and bill approvers) and inspections (record that
+    they attended, with remarks). They are told when a bill is sent or an inspection requested. Every other route
+    refuses them, and the site app sends them to the web.
 
 ### G. Running Nirmaan as a business
 33. **Data export and privacy** (S). Full company export (Excel per module, photos zipped), company deletion on

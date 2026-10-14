@@ -2,7 +2,7 @@ import { Body, Controller, Get, HttpCode, Param, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { ChangePasswordDto, ForgotPasswordDto, LoginDto, SetPasswordDto, SignupDto } from './auth.dto';
-import { Public } from '../common/decorators';
+import { GuestAllowed, Public } from '../common/decorators';
 import { CurrentUser, RequestUser } from '../common/current-user';
 
 @ApiTags('auth')
@@ -54,12 +54,14 @@ export class AuthController {
   }
 
   @ApiBearerAuth()
+  @GuestAllowed()
   @Get('me')
   me(@CurrentUser() user: RequestUser) {
     return this.auth.me(user);
   }
 
   @ApiBearerAuth()
+  @GuestAllowed()
   @Post('change-password')
   changePassword(@CurrentUser() user: RequestUser, @Body() dto: ChangePasswordDto) {
     return this.auth.changePassword(user, dto.currentPassword, dto.newPassword);

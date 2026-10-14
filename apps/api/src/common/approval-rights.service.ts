@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { ALL_APPROVAL_RIGHTS, ROLE_KEYS, SUBMISSION_TYPES, defaultApprovalRights, defaultApproverRoles, hasAmount, machineryLogCost, type ApprovalRightDto, type RoleKey, type SubmissionType } from '@erp/shared';
+import { ALL_APPROVAL_RIGHTS, ROLE_KEYS, SUBMISSION_TYPES, defaultApprovalRights, defaultApproverRoles, hasAmount, isGuest, machineryLogCost, type ApprovalRightDto, type RoleKey, type SubmissionType } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { money } from './serialize';
 
@@ -20,6 +20,7 @@ export class ApprovalRightsService {
 
   async rightsFor(organizationId: string, roleKey: RoleKey): Promise<ApprovalRightDto[]> {
     if (roleKey === 'ADMIN') return ALL_APPROVAL_RIGHTS;
+    if (isGuest(roleKey)) return [];
     const rules = await this.prisma.approvalRule.findMany({ where: { organizationId }, include: { role: { select: { key: true } } } });
     if (!rules.length) return defaultApprovalRights(roleKey);
     return rules
@@ -35,7 +36,7 @@ export class ApprovalRightsService {
     const keys = rules
       .filter((r) => r.submissionType === type && (r.maxAmount === null || amount === null || !hasAmount(type) || amount.lte(r.maxAmount)))
       .map((r) => r.role.key as RoleKey)
-      .filter((k) => (ROLE_KEYS as readonly string[]).includes(k));
+      .filter((k) => (ROLE_KEYS as readonly string[]).includes(k) && !isGuest(k));
     return [...new Set<RoleKey>(['ADMIN', ...keys])];
   }
 

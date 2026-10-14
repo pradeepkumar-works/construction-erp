@@ -114,6 +114,11 @@ import type {
   MessagingPrefsDto,
   OutboundMessageDto,
   OutboundMessageStatus,
+  PortalBillDto,
+  PortalDprDto,
+  PortalInspectionDto,
+  PortalProjectDetailDto,
+  PortalProjectDto,
 } from '@erp/shared';
 import { MAX_PAGE_SIZE } from '@erp/shared';
 import { api } from './api';
@@ -1111,6 +1116,54 @@ export const useNotifications = (opts?: { unreadOnly?: boolean; limit?: number }
     queryFn: async () => (await api.get<NotificationListDto>('/notifications', { params: clean(opts) })).data,
     refetchInterval: 30_000,
   });
+
+/* ---------- Client portal ---------- */
+
+export const usePortalProjects = () => useQuery({ queryKey: ['portal', 'projects'], queryFn: async () => (await api.get<PortalProjectDto[]>('/portal/projects')).data });
+
+export const usePortalProject = (id: string | undefined) =>
+  useQuery({ queryKey: ['portal', 'project', id], queryFn: async () => (await api.get<PortalProjectDetailDto>(`/portal/projects/${id}`)).data, enabled: !!id });
+
+export const usePortalDprs = (projectId: string | undefined, page: number, pageSize: number) =>
+  useQuery({
+    queryKey: ['portal', 'dprs', projectId, page, pageSize],
+    queryFn: async () => (await api.get<Paginated<PortalDprDto>>(`/portal/projects/${projectId}/dprs`, { params: { page, pageSize } })).data,
+    placeholderData: keepPreviousData,
+    enabled: !!projectId,
+  });
+
+export const usePortalReport = (projectId: string | undefined, from: string, to: string) =>
+  useQuery({
+    queryKey: ['portal', 'report', projectId, from, to],
+    queryFn: async () => (await api.get<ProgressReportDto>(`/portal/projects/${projectId}/report`, { params: { from, to } })).data,
+    enabled: !!projectId && !!from && !!to,
+  });
+
+export const usePortalBills = (projectId: string | undefined) =>
+  useQuery({ queryKey: ['portal', 'bills', projectId], queryFn: async () => (await api.get<PortalBillDto[]>(`/portal/projects/${projectId}/bills`)).data, enabled: !!projectId });
+
+export const usePortalBill = (id: string | null) =>
+  useQuery({ queryKey: ['portal', 'bill', id], queryFn: async () => (await api.get<PortalBillDto>(`/portal/bills/${id}`)).data, enabled: !!id });
+
+export const usePortalInspections = (projectId: string | undefined) =>
+  useQuery({ queryKey: ['portal', 'inspections', projectId], queryFn: async () => (await api.get<PortalInspectionDto[]>(`/portal/projects/${projectId}/inspections`)).data, enabled: !!projectId });
+
+export function useCertifyAsClient() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...body }: { id: string; date: string; certificateNo?: string | null; items?: { boqItemId: string; certifiedQty: string }[] }) =>
+      (await api.post<PortalBillDto>(`/portal/bills/${id}/certify`, body)).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['portal'] }),
+  });
+}
+
+export function useWitnessInspection() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, note }: { id: string; note: string | null }) => (await api.post<PortalInspectionDto>(`/portal/inspections/${id}/witness`, { note })).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['portal'] }),
+  });
+}
 
 /* ---------- WhatsApp and SMS ---------- */
 

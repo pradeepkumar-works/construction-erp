@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { ROLE_KEYS, SUBMISSION_TYPES, defaultApprovalRights, hasAmount, type ApprovalMatrixDto, type ApprovalRuleDto, type RoleKey, type SubmissionType } from '@erp/shared';
+import { ROLE_KEYS, SUBMISSION_TYPES, defaultApprovalRights, hasAmount, isGuest, type ApprovalMatrixDto, type ApprovalRuleDto, type RoleKey, type SubmissionType } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { money } from '../common/serialize';
@@ -18,13 +18,14 @@ export class ApprovalRulesService {
       this.prisma.role.findMany({ where: { organizationId: user.organizationId }, include: { _count: { select: { users: { where: { isActive: true } } } } } }),
       this.prisma.approvalRule.findMany({ where: { organizationId: user.organizationId }, include: { role: { select: { key: true } } } }),
     ]);
-    const known = roles.filter((r) => (ROLE_KEYS as readonly string[]).includes(r.key)).sort((a, b) => ROLE_KEYS.indexOf(a.key as RoleKey) - ROLE_KEYS.indexOf(b.key as RoleKey));
+    // Guests (client, consultant) never approve, so the matrix leaves them out.
+    const known = roles.filter((r) => (ROLE_KEYS as readonly string[]).includes(r.key) && !isGuest(r.key as RoleKey)).sort((a, b) => ROLE_KEYS.indexOf(a.key as RoleKey) - ROLE_KEYS.indexOf(b.key as RoleKey));
     const custom = rules.length > 0;
     const list: ApprovalRuleDto[] = custom
       ? rules
           .filter((r) => r.role.key !== 'ADMIN' && (SUBMISSION_TYPES as readonly string[]).includes(r.submissionType))
           .map((r) => ({ roleKey: r.role.key as RoleKey, type: r.submissionType as SubmissionType, maxAmount: money(r.maxAmount) }))
-      : ROLE_KEYS.filter((k) => k !== 'ADMIN').flatMap((roleKey) => defaultApprovalRights(roleKey).map((r) => ({ roleKey, type: r.type, maxAmount: null })));
+      : ROLE_KEYS.filter((k) => k !== 'ADMIN' && !isGuest(k)).flatMap((roleKey) => defaultApprovalRights(roleKey).map((r) => ({ roleKey, type: r.type, maxAmount: null })));
     return {
       custom,
       roles: known.map((r) => ({ roleKey: r.key as RoleKey, roleName: r.name, users: r._count.users })),
@@ -40,6 +41,7 @@ export class ApprovalRulesService {
     const data: Prisma.ApprovalRuleCreateManyInput[] = [];
     for (const r of dto.rules) {
       if (r.roleKey === 'ADMIN') continue;
+      if (isGuest(r.roleKey)) throw new BadRequestException('Client and consultant guests cannot approve submissions');
       const id = roleId.get(r.roleKey);
       if (!id) throw new BadRequestException(`Role ${r.roleKey} does not exist in this organisation`);
       const key = `${r.roleKey}:${r.type}`;

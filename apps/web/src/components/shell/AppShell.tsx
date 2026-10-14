@@ -44,6 +44,7 @@ import {
   CarryOutOutlined,
 } from '@ant-design/icons';
 import type { AuthUser } from '@erp/shared';
+import { isGuest } from '@erp/shared';
 import { approvalRightsOf, canViewPurchaseOrders, canViewVendorBills, canViewWorkOrders, canViewPayables, canExportTally, canViewGstRegisters, canPrepareSubcontractBill, canEditContract, canEditProjects, canEditVendors, canManageUsers, canSeeVendorBank, canPrepareBill, canViewContract, canViewCost, mayApprove, canViewPayroll, canViewLabourSummary } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { usePendingApprovals } from '@/lib/queries';
@@ -87,6 +88,8 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
     const narrow = collapsed && !isMobile;
     const showBadge = approver && pendingCount > 0 && !narrow;
     const link = (href: string, label: string, Icon: React.ComponentType) => ({ key: href, icon: <Icon />, label: <Link href={href}>{label}</Link> });
+    // The client's engineer and consultant have the portal only.
+    if (isGuest(user.roleKey)) return [link('/portal', 'My projects', ProjectOutlined), link('/notifications', 'Notifications', AuditOutlined)];
     const sections: { title?: string; items: NonNullable<MenuProps['items']> }[] = [
       {
         items: [

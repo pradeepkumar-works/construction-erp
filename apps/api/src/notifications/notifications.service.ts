@@ -249,6 +249,20 @@ export class NotificationsService {
         entityId: id,
         message: { template: 'APPROVAL_REQUEST', params: [this.subject(type, s.title), s.projectName, actor.fullName, this.messaging.webUrl(`/notifications?type=${type}&id=${id}`)] },
       });
+      // The client's engineer and consultant on the project may attend: it shows in their portal.
+      if (type === 'INSPECTION') {
+        const guests = await this.access.projectGuests(actor.organizationId, s.projectId);
+        if (guests.length)
+          await this.notify({
+            organizationId: actor.organizationId,
+            userIds: guests.map((g) => g.id),
+            type: 'PORTAL',
+            title: `Inspection requested: ${s.title}`,
+            body: `${actor.fullName} requested ${s.title} on ${s.projectName}. Attend it and record your remarks in the client portal.`,
+            projectId: s.projectId,
+            entityId: id,
+          });
+      }
     } catch (e) {
       this.log.warn(`onSubmitted(${type}, ${id}) failed: ${(e as Error).message}`);
     }

@@ -9,6 +9,13 @@ export const COMPANY_WIDE_ROLES: RoleKey[] = [
   'HR_MANAGER',
 ];
 
+/**
+ * Guests from outside the company: the client's engineer and the consultant (PMC). They only use the client portal,
+ * on projects they are a member of, and see approved work only. The API refuses every other route for them.
+ */
+export const GUEST_ROLES: RoleKey[] = ['CLIENT_ENGINEER', 'CONSULTANT'];
+export const isGuest = (role: RoleKey) => GUEST_ROLES.includes(role);
+
 /** Roles allowed to approve / reject site submissions (within their accessible projects). */
 export const APPROVER_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER'];
 
