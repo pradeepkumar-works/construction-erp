@@ -8,6 +8,8 @@ export interface RequestUser {
   roleKey: RoleKey;
   email: string;
   fullName: string;
+  /** A read-only Nirmaan support session: `id` is the staff member, acting as an admin of `organizationId` */
+  support?: { staffName: string; expiresAt: string };
 }
 
 export const CurrentUser = createParamDecorator((_data: unknown, ctx: ExecutionContext): RequestUser => {

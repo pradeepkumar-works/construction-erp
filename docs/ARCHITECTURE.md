@@ -730,6 +730,22 @@ PDF from the browser.
 - **Privacy page.** `/privacy` (public, in the `(public)` group, allowed by the middleware) describes all this; keep it
   true when data handling changes.
 
+## Platform admin and support access
+
+- **Staff.** A user whose email is in `PLATFORM_ADMIN_EMAILS` (`common/platform-admin.ts`) gets `platformAdmin` on
+  `/auth/me` and the `/api/platform` endpoints (`PlatformService`, which reads across organisations with
+  `withoutTenant`). Staff are ordinary users of their own organisation otherwise.
+- **Suspension.** `Organization.suspendedAt` stops sign-in (`AuthService.issue`) and every existing token
+  (`JwtStrategy` requires an unsuspended organisation). Data is kept. Staff cannot suspend their own organisation.
+- **Support access.** A company admin sets `Organization.supportAccessUntil` (7 days, `SUPPORT_ACCESS_DAYS`) under Data &
+  Privacy, or clears it. While it is set, staff can ask for a support token (`sup: true`, at most 2 hours,
+  `SUPPORT_SESSION_HOURS`, and never beyond the consent). `JwtStrategy.support` turns it into an `ADMIN` request user in
+  that organisation with `support` set, re-checking the consent and the staff member on every request, so withdrawing
+  consent ends the session at once. `SupportReadOnlyGuard` (global) refuses anything but `GET`. The web keeps the staff
+  token aside while the support token is in use (`lib/api.ts`) and shows a banner with Exit.
+- **Company log.** Consent, withdrawal, each support visit (`SUPPORT_VIEW`), suspensions, exports and deletion requests
+  are `AuditLog` rows with `entityType` `COMPANY`; `GET /api/company-data/log` shows them to the company's admins.
+
 ## Money and quantities
 
 Decimal columns everywhere (`Decimal(18,2)` for money, `Decimal(18,3)` for quantities) and strings

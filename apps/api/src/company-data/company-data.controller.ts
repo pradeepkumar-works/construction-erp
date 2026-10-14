@@ -39,6 +39,31 @@ export class CompanyDataController {
     return this.data.table(user, name, q.page ?? 1, q.pageSize ?? 1000);
   }
 
+  @ApiOperation({ summary: 'The company log: exports, deletion requests, support access and visits, suspensions' })
+  @Get('log')
+  log(@CurrentUser() user: RequestUser) {
+    return this.data.companyLog(user);
+  }
+
+  @ApiOperation({ summary: 'Whether support may open the company read-only, and until when' })
+  @Get('support-access')
+  supportAccess(@CurrentUser() user: RequestUser) {
+    return this.data.supportAccess(user);
+  }
+
+  @ApiOperation({ summary: 'Let support open the company read-only for a week (audited)' })
+  @HttpCode(200)
+  @Post('support-access')
+  grantSupportAccess(@CurrentUser() user: RequestUser) {
+    return this.data.grantSupportAccess(user);
+  }
+
+  @ApiOperation({ summary: 'Withdraw support access; an open support session ends at its next request' })
+  @Delete('support-access')
+  revokeSupportAccess(@CurrentUser() user: RequestUser) {
+    return this.data.revokeSupportAccess(user);
+  }
+
   @ApiOperation({ summary: 'Whether the company is set to be deleted, and when' })
   @Get('deletion')
   deletion(@CurrentUser() user: RequestUser) {

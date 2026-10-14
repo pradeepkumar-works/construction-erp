@@ -316,6 +316,13 @@ model Organization {
   deletionRequestedByName String?
   deletionScheduledFor    DateTime? @db.Date
 
+  /// Suspended by Nirmaan staff (platform admin): nobody can sign in until it is lifted
+  suspendedAt     DateTime?
+  suspendedReason String?
+  /// An admin let Nirmaan support open the company read-only until this time
+  supportAccessUntil         DateTime?
+  supportAccessGrantedByName String?
+
   users             User[]
   roles             Role[]
   projects          Project[]

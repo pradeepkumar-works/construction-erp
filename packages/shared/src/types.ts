@@ -42,6 +42,10 @@ export interface AuthUser {
   organizationName: string;
   /** What this user may approve (from the organisation's approval matrix, or the fixed role rule). */
   approvalRights?: ApprovalRightDto[];
+  /** Nirmaan staff who may use the platform console (PLATFORM_ADMIN_EMAILS) */
+  platformAdmin?: boolean;
+  /** Set when this is a read-only support session: who from Nirmaan is looking, and until when */
+  support?: { staffName: string; expiresAt: string };
 }
 
 export interface LoginResponse {

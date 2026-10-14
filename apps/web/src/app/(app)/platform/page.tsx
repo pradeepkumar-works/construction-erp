@@ -1,0 +1,210 @@
+'use client';
+
+import React, { useMemo, useState } from 'react';
+import { Alert, App, Button, Descriptions, Divider, Drawer, Input, Modal, Space, Table, Tag, Tooltip, Typography } from 'antd';
+import { CheckCircleOutlined, EyeOutlined, StopOutlined } from '@ant-design/icons';
+import type { PlatformCompanyDto, PlatformUserDto } from '@erp/shared';
+import { PRODUCT_NAME, SUPPORT_SESSION_HOURS } from '@erp/shared';
+import { useAuth } from '@/lib/auth';
+import { errorMessage, startSupportSession } from '@/lib/api';
+import { useOpenSupportSession, usePlatformCompanies, usePlatformCompany, useSuspendCompany } from '@/lib/queries';
+import { formatDate, formatDateTime } from '@/lib/format';
+import { PageHeader } from '@/components/common/PageHeader';
+import { QueryError } from '@/components/common/QueryState';
+
+const bytes = (n: number) => (n < 1024 * 1024 ? `${Math.round(n / 1024)} KB` : `${(n / 1024 / 1024).toFixed(1)} MB`);
+const supportOpen = (c: Pick<PlatformCompanyDto, 'supportAccessUntil'>) => !!c.supportAccessUntil && new Date(c.supportAccessUntil) > new Date();
+
+function StatusTags({ c }: { c: PlatformCompanyDto }) {
+  return (
+    <Space size={4} wrap>
+      {c.suspendedAt ? <Tag color="red">Suspended</Tag> : <Tag color="green">Active</Tag>}
+      {c.deletionScheduledFor && <Tag color="volcano">Deleting {formatDate(c.deletionScheduledFor)}</Tag>}
+      {supportOpen(c) && <Tag color="blue">Support allowed</Tag>}
+    </Space>
+  );
+}
+
+/** The console for staff: every company, how much it is used, and suspension and support access. */
+export default function PlatformPage() {
+  const { user } = useAuth();
+  const staff = !!user?.platformAdmin && !user.support;
+  const { data, isLoading, error, refetch } = usePlatformCompanies(staff);
+  const [q, setQ] = useState('');
+  const [openId, setOpenId] = useState<string | null>(null);
+  const rows = useMemo(() => {
+    const t = q.trim().toLowerCase();
+    return (data ?? []).filter((c) => !t || c.name.toLowerCase().includes(t) || c.code.toLowerCase().includes(t));
+  }, [data, q]);
+
+  if (!user) return null;
+  if (!staff) return <Alert type="info" message={`This page is for ${PRODUCT_NAME} staff.`} />;
+  const active = data?.filter((c) => !c.suspendedAt && c.actions30d > 0).length ?? 0;
+
+  return (
+    <div className="page-container">
+      <PageHeader
+        title={`${PRODUCT_NAME} console`}
+        subtitle={data ? `${data.length} companies, ${active} active in the last 30 days` : 'Every company on the platform'}
+        extra={<Input.Search allowClear placeholder="Search name or code" style={{ width: 240 }} onChange={(e) => setQ(e.target.value)} />}
+      />
+      {error && <QueryError error={error} onRetry={() => refetch()} />}
+      <Table<PlatformCompanyDto>
+        rowKey="id"
+        size="small"
+        loading={isLoading}
+        dataSource={rows}
+        scroll={{ x: 1000 }}
+        pagination={{ pageSize: 50, hideOnSinglePage: true }}
+        onRow={(r) => ({ onClick: () => setOpenId(r.id), style: { cursor: 'pointer' } })}
+        columns={[
+          {
+            title: 'Company',
+            dataIndex: 'name',
+            sorter: (a, b) => a.name.localeCompare(b.name),
+            render: (v: string, r) => (
+              <div>
+                {v}
+                <div className="text-muted" style={{ fontSize: 12 }}>
+                  {r.code}, since {formatDate(r.createdAt)}
+                </div>
+              </div>
+            ),
+          },
+          { title: 'Users', dataIndex: 'activeUsers', width: 80, align: 'right', sorter: (a, b) => a.activeUsers - b.activeUsers },
+          { title: 'Projects', dataIndex: 'projects', width: 90, align: 'right', sorter: (a, b) => a.projects - b.projects },
+          {
+            title: 'Last activity',
+            dataIndex: 'lastActivityAt',
+            width: 160,
+            sorter: (a, b) => (a.lastActivityAt ?? '').localeCompare(b.lastActivityAt ?? ''),
+            defaultSortOrder: 'descend',
+            render: (v: string | null) => (v ? formatDateTime(v) : '-'),
+          },
+          { title: 'Actions (30 days)', dataIndex: 'actions30d', width: 140, align: 'right', sorter: (a, b) => a.actions30d - b.actions30d },
+          { title: 'Storage', key: 'storage', width: 130, align: 'right', sorter: (a, b) => a.storageBytes - b.storageBytes, render: (_, r) => `${bytes(r.storageBytes)} (${r.files})` },
+          { title: 'Status', key: 'status', width: 220, render: (_, r) => <StatusTags c={r} /> },
+        ]}
+      />
+      <CompanyDrawer id={openId} ownOrgId={user.organizationId} onClose={() => setOpenId(null)} />
+    </div>
+  );
+}
+
+function CompanyDrawer({ id, ownOrgId, onClose }: { id: string | null; ownOrgId: string; onClose: () => void }) {
+  const { message } = App.useApp();
+  const { data, error, refetch } = usePlatformCompany(id);
+  const suspend = useSuspendCompany();
+  const open = useOpenSupportSession();
+  const [asking, setAsking] = useState(false);
+  const [reason, setReason] = useState('');
+  const c = data?.id === id ? data : undefined;
+
+  const doSuspend = async (lift: boolean) => {
+    if (!c) return;
+    try {
+      await suspend.mutateAsync({ id: c.id, reason: lift ? null : reason.trim() });
+      message.success(lift ? `${c.name} can sign in again` : `${c.name} is suspended`);
+      setAsking(false);
+      setReason('');
+    } catch (e) {
+      message.error(errorMessage(e));
+    }
+  };
+
+  const view = async () => {
+    if (!c) return;
+    try {
+      const s = await open.mutateAsync(c.id);
+      startSupportSession(s.accessToken);
+      window.location.href = '/';
+    } catch (e) {
+      message.error(errorMessage(e));
+    }
+  };
+
+  return (
+    <Drawer open={!!id} onClose={onClose} width={760} title={c ? c.name : 'Company'} destroyOnHidden>
+      {error && <QueryError error={error} onRetry={() => refetch()} />}
+      {c && (
+        <>
+          <Space wrap style={{ marginBottom: 16 }}>
+            <Tooltip title={supportOpen(c) ? `Read-only for ${SUPPORT_SESSION_HOURS} hours; the visit goes in the company's log` : "The company's admin has not allowed support access"}>
+              <Button type="primary" icon={<EyeOutlined />} disabled={!supportOpen(c)} loading={open.isPending} onClick={view}>
+                Open read-only
+              </Button>
+            </Tooltip>
+            {c.suspendedAt ? (
+              <Button icon={<CheckCircleOutlined />} loading={suspend.isPending} onClick={() => doSuspend(true)}>
+                Lift suspension
+              </Button>
+            ) : (
+              <Button danger icon={<StopOutlined />} disabled={c.id === ownOrgId} onClick={() => setAsking(true)}>
+                Suspend
+              </Button>
+            )}
+          </Space>
+          {c.suspendedAt && <Alert type="error" showIcon style={{ marginBottom: 16 }} message={`Suspended ${formatDateTime(c.suspendedAt)}: ${c.suspendedReason ?? ''}`} />}
+          <Descriptions
+            size="small"
+            column={2}
+            bordered
+            items={[
+              { key: 'code', label: 'Code', children: c.code },
+              { key: 'since', label: 'Signed up', children: formatDate(c.createdAt) },
+              { key: 'users', label: 'Active users', children: c.activeUsers },
+              { key: 'projects', label: 'Projects', children: c.projects },
+              { key: 'last', label: 'Last activity', children: c.lastActivityAt ? formatDateTime(c.lastActivityAt) : '-' },
+              { key: 'acts', label: 'Actions (30 days)', children: c.actions30d },
+              { key: 'storage', label: 'Storage', children: `${bytes(c.storageBytes)} in ${c.files} files` },
+              { key: 'status', label: 'Status', children: <StatusTags c={c} /> },
+              {
+                key: 'support',
+                label: 'Support access',
+                span: 2,
+                children: supportOpen(c) ? `Allowed until ${formatDateTime(c.supportAccessUntil!)}${c.supportAccessGrantedByName ? ` by ${c.supportAccessGrantedByName}` : ''}` : 'Not allowed',
+              },
+            ]}
+          />
+          <Divider titlePlacement="start" plain>
+            Users ({c.users.length})
+          </Divider>
+          <Table<PlatformUserDto>
+            rowKey="id"
+            size="small"
+            dataSource={c.users}
+            pagination={{ pageSize: 20, hideOnSinglePage: true }}
+            columns={[
+              {
+                title: 'Name',
+                dataIndex: 'fullName',
+                render: (v: string, u) => (
+                  <div>
+                    {v} {!u.isActive && <Tag>Inactive</Tag>}
+                    <div className="text-muted" style={{ fontSize: 12 }}>
+                      {u.email}
+                    </div>
+                  </div>
+                ),
+              },
+              { title: 'Role', dataIndex: 'roleName', width: 160 },
+              { title: 'Last activity', dataIndex: 'lastActivityAt', width: 160, render: (v: string | null) => (v ? formatDateTime(v) : '-') },
+            ]}
+          />
+        </>
+      )}
+      <Modal
+        open={asking}
+        title={c ? `Suspend ${c.name}` : 'Suspend'}
+        okText="Suspend"
+        okButtonProps={{ danger: true, disabled: reason.trim().length < 3, loading: suspend.isPending }}
+        onOk={() => doSuspend(false)}
+        onCancel={() => setAsking(false)}
+        destroyOnHidden
+      >
+        <Typography.Paragraph>Nobody in the company can sign in until the suspension is lifted. Their data is kept. The reason goes in the company's log, which their admins can read.</Typography.Paragraph>
+        <Input.TextArea rows={3} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason, e.g. payment overdue" aria-label="Reason" maxLength={300} />
+      </Modal>
+    </Drawer>
+  );
+}

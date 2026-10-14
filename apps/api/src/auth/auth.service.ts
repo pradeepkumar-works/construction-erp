@@ -1,10 +1,11 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
-import { ROLE_KEYS, ROLE_LABELS, orgCodeFrom, type AuthOptionsDto, type AuthUser, type LoginResponse, type PasswordTokenInfoDto, type RoleKey } from '@erp/shared';
+import { PRODUCT_NAME, ROLE_KEYS, ROLE_LABELS, orgCodeFrom, type AuthOptionsDto, type AuthUser, type LoginResponse, type PasswordTokenInfoDto, type RoleKey } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ApprovalRightsService } from '../common/approval-rights.service';
+import { isPlatformAdmin } from '../common/platform-admin';
 import { PasswordLinksService } from './password-links.service';
 import { SignupDto } from './auth.dto';
 
@@ -25,6 +26,7 @@ export class AuthService {
 
   private async issue(userId: string): Promise<LoginResponse> {
     const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId }, include: { role: true, organization: true } });
+    if (user.organization.suspendedAt) throw new ForbiddenException(`${user.organization.name} is suspended on ${PRODUCT_NAME}. Please contact ${PRODUCT_NAME} support.`);
     const accessToken = await this.jwt.signAsync({ sub: user.id, org: user.organizationId });
     return { accessToken, user: await this.toAuthUser(user) };
   }
@@ -77,6 +79,21 @@ export class AuthService {
   }
 
   async me(req: RequestUser): Promise<AuthUser> {
+    if (req.support) {
+      const org = await this.prisma.organization.findUniqueOrThrow({ where: { id: req.organizationId } });
+      return {
+        id: req.id,
+        email: req.email,
+        fullName: req.fullName,
+        phone: null,
+        roleKey: 'ADMIN',
+        roleName: `${PRODUCT_NAME} support (read-only)`,
+        organizationId: org.id,
+        organizationName: org.name,
+        approvalRights: [],
+        support: req.support,
+      };
+    }
     const user = await this.prisma.user.findUniqueOrThrow({ where: { id: req.id }, include: { role: true, organization: true } });
     return this.toAuthUser(user);
   }
@@ -99,6 +116,7 @@ export class AuthService {
       organizationId: user.organizationId,
       organizationName: user.organization.name,
       approvalRights: await this.rights.rightsFor(user.organizationId, user.role.key as RoleKey),
+      ...(isPlatformAdmin(user.email) ? { platformAdmin: true } : {}),
     };
   }
 }
