@@ -713,6 +713,23 @@ PDF from the browser.
   progress report, RA bills, inspections; `?tab=` and `?open=` deep links); any other page redirects there. The site
   app refuses guest sign-in.
 
+## Company data (export and deletion)
+
+- **Export.** `CompanyDataService` works out every table and how its rows belong to an organisation from the Prisma
+  schema (`organizationId`, or a parent's for line tables such as `RaBillItem`), so a new table is exported without a
+  change. `/api/company-data/export/tables/:name` pages a table as columns and plain values (sign-in secrets, push
+  tokens and file bytes left out); `/export/files` lists stored files with the folder they go in (the kind of record
+  they are attached to). The web builds the zip in the browser (`lib/companyExport.ts`, `lib/zip.ts`), so no API
+  response gets large on Vercel. Admins only (`canManageCompanyData`); each download is audited `EXPORTED`.
+- **Deletion.** An admin types the company name to set `Organization.deletionScheduledFor` 30 days out
+  (`DELETION_GRACE_DAYS`); admins are emailed, see a banner, and any of them can cancel. The approval-digest cron
+  then runs `purgeDue`: in one transaction per company it clears optional links between the company's rows, deletes
+  table by table until nothing is left (a table still referenced waits for the next pass, using savepoints), and
+  deletes the organisation; stored files (Blob, disk) are removed after. `PROTECTED_ORG_CODES` (default `DEMO`) can
+  never be deleted. `GET /api/company-data/jobs/purge` runs it by hand with `CRON_SECRET`.
+- **Privacy page.** `/privacy` (public, in the `(public)` group, allowed by the middleware) describes all this; keep it
+  true when data handling changes.
+
 ## Money and quantities
 
 Decimal columns everywhere (`Decimal(18,2)` for money, `Decimal(18,3)` for quantities) and strings

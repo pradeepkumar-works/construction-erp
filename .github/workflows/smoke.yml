@@ -497,6 +497,22 @@ jobs:
           done
           code=$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/portal/projects" -H "authorization: Bearer $(login pm@demo.com)")
           echo "staff on the portal: $code"; [ "$code" = "403" ]
+      - name: Data export and privacy
+        run: |
+          set -e
+          login() { curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' -d "{\"email\":\"$1\",\"password\":\"password123\"}" | jq -r .accessToken; }
+          A="authorization: Bearer $(login admin@demo.com)"
+          curl -sf "$API_URL/company-data/export" -H "$A" | jq -e '(.tables | length) > 10 and any(.tables[]; .name == "Project") and all(.tables[]; .name != "PasswordToken")' > /dev/null
+          curl -sf "$API_URL/company-data/export" -H "$A" | jq -r '"export: \(.tables | length) tables, \([.tables[].rows] | add) rows, \(.files) files"'
+          curl -sf "$API_URL/company-data/export/tables/User?pageSize=5" -H "$A" | jq -e '(.columns | index("passwordHash")) == null and (.rows | length) > 0' > /dev/null
+          curl -sf "$API_URL/company-data/export/files?pageSize=1" -H "$A" | jq -e '.total >= 0' > /dev/null
+          curl -sf "$API_URL/company-data/deletion" -H "$A" | jq -e '.protected and .scheduledFor == null' > /dev/null
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/company-data/deletion" -H "$A" -H 'content-type: application/json' -d '{"companyName":"Demo Infra Projects Pvt Ltd"}')
+          echo "deleting the demo company: $code"; [ "$code" = "400" ]
+          code=$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/company-data/export" -H "authorization: Bearer $(login md@demo.com)")
+          echo "management exporting: $code"; [ "$code" = "403" ]
+          code=$(curl -s -o /dev/null -w '%{http_code}' "$WEB_URL/privacy")
+          echo "privacy page: $code"; [ "$code" = "200" ]
       - name: Project cost view
         run: |
           set -e

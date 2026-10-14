@@ -281,6 +281,7 @@ export default function WelcomePage() {
             <a href="#money">Billing and Tally</a>
             <a href="#site-app">Site app</a>
             <a href="#faq">Questions</a>
+            <Link href="/privacy">Privacy</Link>
             <Link href="/login">Sign in</Link>
           </nav>
           <span>

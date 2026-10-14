@@ -311,6 +311,11 @@ model Organization {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  /// An admin asked for the company and all its data to be erased (cancellable until deletionScheduledFor)
+  deletionRequestedAt     DateTime?
+  deletionRequestedByName String?
+  deletionScheduledFor    DateTime? @db.Date
+
   users             User[]
   roles             Role[]
   projects          Project[]

@@ -2,6 +2,8 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
+  CompanyDeletionDto,
+  CompanyExportManifestDto,
   ComparativeStatementDto,
   PurchaseOrderDto,
   QuotationDto,
@@ -1248,4 +1250,28 @@ export async function uploadFile(file: File): Promise<AttachmentDto> {
   fd.append('file', file);
   const { data } = await api.post<AttachmentDto>('/uploads', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
   return data;
+}
+
+/* ---------- Company data (export and deletion) ---------- */
+
+export const useCompanyExportManifest = (enabled = true) =>
+  useQuery({ queryKey: ['company-data', 'export'], queryFn: async () => (await api.get<CompanyExportManifestDto>('/company-data/export')).data, enabled });
+
+export const useCompanyDeletion = (enabled = true) =>
+  useQuery({ queryKey: ['company-data', 'deletion'], queryFn: async () => (await api.get<CompanyDeletionDto>('/company-data/deletion')).data, enabled, staleTime: 5 * 60_000 });
+
+export function useRequestCompanyDeletion() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (companyName: string) => (await api.post<CompanyDeletionDto>('/company-data/deletion', { companyName })).data,
+    onSuccess: (d) => qc.setQueryData(['company-data', 'deletion'], d),
+  });
+}
+
+export function useCancelCompanyDeletion() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => (await api.delete<CompanyDeletionDto>('/company-data/deletion')).data,
+    onSuccess: (d) => qc.setQueryData(['company-data', 'deletion'], d),
+  });
 }

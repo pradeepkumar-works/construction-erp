@@ -264,8 +264,12 @@ relative to a v2 item (S about one, M about two, L about three). The full draft 
     refuses them, and the site app sends them to the web.
 
 ### G. Running Nirmaan as a business
-33. **Data export and privacy** (S). Full company export (Excel per module, photos zipped), company deletion on
-    request, `/privacy` page.
+33. ~~**Data export and privacy** (S). Full company export (Excel per module, photos zipped), company deletion on
+    request, `/privacy` page.~~
+    Done: Admin > Data & Privacy downloads one zip with an Excel file per table and every stored file, built in the
+    browser and recorded in the audit log. An admin can ask for the company to be deleted: after 30 days (cancellable,
+    every admin emailed, a banner on every page meanwhile) the daily job erases all its rows and files. The demo
+    company is protected. A public `/privacy` page says what is kept, where and who sees it.
 34. **Plans and billing** (M). Trial, plans by active projects or users, Razorpay subscriptions with GST
     invoices; an unpaid company goes read-only, never deleted.
 35. **Platform admin** (S). Console for Nirmaan staff (companies, users, activity, storage, plan, suspend);

@@ -6,12 +6,13 @@ import { JobQuery, ListNotificationsQuery, RegisterPushTokenDto, RemovePushToken
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { GuestAllowed, Public } from '../common/decorators';
 import { CronGuard } from './cron.guard';
+import { CompanyDataService } from '../company-data/company-data.service';
 
 @ApiTags('notifications')
 @ApiBearerAuth()
 @Controller('notifications')
 export class NotificationsController {
-  constructor(private notifications: NotificationsService, private jobs: NotificationJobsService) {}
+  constructor(private notifications: NotificationsService, private jobs: NotificationJobsService, private companyData: CompanyDataService) {}
 
   /** The current user's notifications, newest first, plus the unread count. */
   @GuestAllowed()
@@ -73,6 +74,8 @@ export class NotificationsController {
     // Vercel Hobby allows two crons, so the daily test and payment reminders ride on the digest's.
     await this.jobs.testsDue(q.date).catch(() => undefined);
     await this.jobs.billsDue(q.date).catch(() => undefined);
+    // ...and so does erasing companies whose deletion date has come.
+    await this.companyData.purgeDue(q.date).catch(() => undefined);
     return digest;
   }
 
