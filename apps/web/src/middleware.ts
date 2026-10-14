@@ -11,6 +11,13 @@ export function middleware(req: NextRequest) {
   // The product page is open to everyone too.
   if (pathname.startsWith('/set-password') || pathname === '/welcome') return NextResponse.next();
 
+  // A signed-out visitor to the bare domain gets the product page, which has "Sign in" at the top.
+  if (!token && pathname === '/') {
+    const url = req.nextUrl.clone();
+    url.pathname = '/welcome';
+    url.search = '';
+    return NextResponse.redirect(url);
+  }
   if (!token && !isLogin) {
     const url = req.nextUrl.clone();
     url.pathname = '/login';
