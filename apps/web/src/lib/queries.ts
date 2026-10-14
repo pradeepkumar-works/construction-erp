@@ -108,6 +108,8 @@ import type {
   StaffAttendanceDto,
   StaffRegisterDto,
   StaffSummaryDto,
+  PayrollDto,
+  ContractorMonthDto,
 } from '@erp/shared';
 import { MAX_PAGE_SIZE } from '@erp/shared';
 import { api } from './api';
@@ -763,6 +765,22 @@ export const useHolidays = (year?: number, projectId?: string) =>
   useQuery({
     queryKey: ['staff', 'holidays', year ?? null, projectId ?? null],
     queryFn: async () => (await api.get<HolidayDto[]>('/staff/holidays', { params: clean({ year, projectId }) })).data,
+  });
+
+export const usePayroll = (month: string, projectId?: string, enabled = true) =>
+  useQuery({
+    queryKey: ['payroll', 'staff', month, projectId ?? null],
+    queryFn: async () => (await api.get<PayrollDto>('/payroll/staff', { params: clean({ month, projectId }) })).data,
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+
+export const useContractorMonth = (month: string, projectId?: string, enabled = true) =>
+  useQuery({
+    queryKey: ['payroll', 'contractors', month, projectId ?? null],
+    queryFn: async () => (await api.get<ContractorMonthDto>('/payroll/contractors', { params: clean({ month, projectId }) })).data,
+    placeholderData: keepPreviousData,
+    enabled,
   });
 
 export interface BillFilters extends PageParams {

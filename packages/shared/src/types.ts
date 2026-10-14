@@ -2113,3 +2113,68 @@ export interface StaffSummaryDto {
   employees: number | null;
   onLeaveToday: number | null;
 }
+
+/* ---------- payroll inputs (v3 item 30) ---------- */
+
+/** One employee's month, as the payroll provider needs it. Days are numbers (halves allowed). */
+export interface PayrollRowDto {
+  employeeId: string;
+  employeeCode: string;
+  fullName: string;
+  designation: string;
+  department: string | null;
+  projectId: string | null;
+  projectName: string | null;
+  joinedOn: string | null;
+  leftOn: string | null;
+  /** Days of the month they were on the rolls */
+  calendarDays: number;
+  /** Sundays and holidays among them */
+  offDays: number;
+  workingDays: number;
+  present: number;
+  /** Approved leave days by type (working days only) */
+  leave: Record<LeaveType, number>;
+  absent: number;
+  /** Working days up to today with neither attendance nor approved leave (not deducted) */
+  notMarked: number;
+  /** Sundays and holidays worked (comp-off earned) */
+  offDaysWorked: number;
+  overtimeHours: number;
+  /** Loss of pay: absent, unpaid leave and the other half of half days */
+  lopDays: number;
+  /** calendarDays - lopDays */
+  paidDays: number;
+}
+
+export interface PayrollDto {
+  month: string;
+  from: string;
+  to: string;
+  rows: PayrollRowDto[];
+}
+
+/** Man-days of one trade from one labour contractor at one project in a month (from the attendance register). */
+export interface ContractorMonthRowDto {
+  contractor: string;
+  vendorId: string | null;
+  projectId: string;
+  projectCode: string;
+  projectName: string;
+  category: string;
+  manDays: number;
+  /** Days with a sheet that had this trade */
+  days: number;
+  /** The organisation's daily rate for the trade (null = no rate set) */
+  dailyRate: string | null;
+  amount: string | null;
+  /** The contractor has an approved work order on the project, so they are paid through their bills */
+  onWorkOrder: boolean;
+}
+
+export interface ContractorMonthDto {
+  month: string;
+  from: string;
+  to: string;
+  rows: ContractorMonthRowDto[];
+}

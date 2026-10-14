@@ -41,9 +41,10 @@ import {
   SolutionOutlined,
   ProfileOutlined,
   IdcardOutlined,
+  CarryOutOutlined,
 } from '@ant-design/icons';
 import type { AuthUser } from '@erp/shared';
-import { approvalRightsOf, canViewPurchaseOrders, canViewVendorBills, canViewWorkOrders, canViewPayables, canExportTally, canViewGstRegisters, canPrepareSubcontractBill, canEditContract, canEditProjects, canEditVendors, canManageUsers, canSeeVendorBank, canPrepareBill, canViewContract, canViewCost, mayApprove } from '@erp/shared';
+import { approvalRightsOf, canViewPurchaseOrders, canViewVendorBills, canViewWorkOrders, canViewPayables, canExportTally, canViewGstRegisters, canPrepareSubcontractBill, canEditContract, canEditProjects, canEditVendors, canManageUsers, canSeeVendorBank, canPrepareBill, canViewContract, canViewCost, mayApprove, canViewPayroll, canViewLabourSummary } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { usePendingApprovals } from '@/lib/queries';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
@@ -143,7 +144,7 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
       },
       {
         title: 'People',
-        items: [link('/staff', 'Staff & Leave', IdcardOutlined)],
+        items: [link('/staff', 'Staff & Leave', IdcardOutlined), ...(canViewPayroll(user.roleKey) || canViewLabourSummary(user.roleKey) ? [link('/payroll', 'Payroll Inputs', CarryOutOutlined)] : [])],
       },
       {
         title: 'Reports',

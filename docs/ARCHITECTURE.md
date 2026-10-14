@@ -369,6 +369,25 @@ flow, not `SubmissionLifecycleService`: it is a person's request, not site data 
   register, Staff and Holidays. Site app: My attendance & leave (`app/staff.tsx`: check in and out, balances, apply,
   leave waiting on you) and Staff register (`app/staff-register.tsx`).
 
+## Payroll inputs
+
+Read-only reports (`PayrollService`; `GET /payroll/staff`, `GET /payroll/contractors`, `?month=YYYY-MM&projectId=`).
+Nirmaan hands the payroll provider its inputs; PF, ESI, professional tax and salary TDS are worked out there.
+
+- **Staff month.** Per employee on the rolls for any part of the month (`joinedOn` / `leftOn`): days on the rolls,
+  Sundays and holidays (at their site), working days, present (a half day counts half), approved leave by type
+  (working days only; a half-day leave counts half and the other half follows the attendance), absent, days not
+  marked (working days up to today with neither attendance nor leave; not deducted, flagged for checking), Sundays
+  and holidays worked (comp-off earned), overtime hours, loss-of-pay days (absent, leave without pay, the unworked
+  half of a half day without leave) and paid days = days on the rolls - loss of pay. For `PAYROLL_ROLES` (admin,
+  management, HR, accounts).
+- **Labour contractors' month.** Attendance lines summed by contractor, project and trade: days with a sheet,
+  man-days, the trade's `LabourRate` and amount. A contractor with an approved work order on the project is marked,
+  since they are paid through its bills (and project cost leaves them out of labour). For payroll roles and
+  `COST_VIEW_ROLES`, limited to the projects the user can see.
+- **Client.** Web: People → Payroll Inputs, tabs Staff and Labour contractors, a month picker (the month just ended
+  until the 10th) and Excel export of each.
+
 ## Clients and contracts
 
 - **Tables.** `Client` is the organisation's client master (unique name; department, GSTIN, PAN, GST `stateCode`,
