@@ -45,6 +45,18 @@ jobs:
           ENG=$(curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' -d '{"email":"engineer@demo.com","password":"password123"}' | jq -r .accessToken)
           code=$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/projects/$PROJECT/contract" -H "authorization: Bearer $ENG")
           echo "contract as a site engineer: $code"; [ "$code" = "403" ]
+      - name: RA bills
+        run: |
+          set -e
+          TOKEN=$(curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' \
+            -d '{"email":"qs@demo.com","password":"password123"}' | jq -r .accessToken)
+          H="authorization: Bearer $TOKEN"
+          curl -sf "$API_URL/ra-bills?sortBy=billNo&sortOrder=asc" -H "$H" | jq -c '.items[] | {billLabel, projectCode, grossAmount, netPayable, status, stage, measurementCount}'
+          BILL=$(curl -sf "$API_URL/ra-bills?sortBy=billNo&sortOrder=asc" -H "$H" | jq -r '.items[0].id')
+          curl -sf "$API_URL/ra-bills/$BILL" -H "$H" | jq -e '.items | length > 0' > /dev/null
+          ENG=$(curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' -d '{"email":"engineer@demo.com","password":"password123"}' | jq -r .accessToken)
+          code=$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/ra-bills" -H "authorization: Bearer $ENG")
+          echo "bills as a site engineer: $code"; [ "$code" = "403" ]
       - name: Notifications
         run: |
           set -e

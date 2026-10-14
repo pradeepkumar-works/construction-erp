@@ -20,6 +20,7 @@ const include = {
   submittedBy: { select: { fullName: true } },
   reviewedBy: { select: { fullName: true } },
   attachments: true,
+  raBill: { select: { billNo: true } },
 } satisfies Prisma.MeasurementSheetInclude;
 type Row = Prisma.MeasurementSheetGetPayload<{ include: typeof include }>;
 
@@ -58,6 +59,8 @@ export class MeasurementsService {
       projectId: r.projectId,
       projectName: r.project.name,
       mbNo: r.mbNo,
+      raBillId: r.raBillId,
+      raBillNo: r.raBill?.billNo ?? null,
       date: dateOnly(r.date)!,
       boqItemId: r.boqItemId,
       boqItemNo: r.boqItem.itemNo,

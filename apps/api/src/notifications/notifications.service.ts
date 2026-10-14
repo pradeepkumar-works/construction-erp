@@ -7,7 +7,7 @@ import { ProjectAccessService } from '../common/project-access.service';
 import { ApprovalRightsService } from '../common/approval-rights.service';
 import { dateOnly, iso } from '../common/serialize';
 import { ExpoPushService } from './expo-push.service';
-import { dprTitle, expenseTitle, machineryTitle, measurementTitle, progressTitle } from '../common/submission-titles';
+import { dprTitle, expenseTitle, machineryTitle, measurementTitle, progressTitle, billTitle } from '../common/submission-titles';
 import { ListNotificationsQuery, RegisterPushTokenDto } from './notifications.dto';
 
 export interface NotifyInput {
@@ -26,7 +26,7 @@ export interface NotifyInput {
 const include = { project: { select: { name: true } } } satisfies Prisma.NotificationInclude;
 type Row = Prisma.NotificationGetPayload<{ include: typeof include }>;
 
-const SUBMISSION_LABEL: Record<SubmissionType, string> = { PROGRESS: 'Progress entry', DPR: 'DPR', MATERIAL_REQUEST: 'Material request', MACHINERY: 'Machinery log', EXPENSE: 'Site expense', MEASUREMENT: 'Measurement' };
+const SUBMISSION_LABEL: Record<SubmissionType, string> = { PROGRESS: 'Progress entry', DPR: 'DPR', MATERIAL_REQUEST: 'Material request', MACHINERY: 'Machinery log', EXPENSE: 'Site expense', MEASUREMENT: 'Measurement', BILL: 'RA bill' };
 
 /**
  * Creates in-app notifications and pushes them to the users' devices.
@@ -193,6 +193,10 @@ export class NotificationsService {
       case 'MEASUREMENT': {
         const m = await this.prisma.measurementSheet.findUnique({ where: { id }, include: { project: { select: { name: true } }, boqItem: { select: { itemNo: true, unit: true } } } });
         return m ? { title: measurementTitle(m.mbNo, m.boqItem.itemNo, m.totalQty.toString(), m.boqItem.unit, m.location), projectId: m.projectId, projectName: m.project.name, submittedById: m.submittedById } : null;
+      }
+      case 'BILL': {
+        const b = await this.prisma.raBill.findUnique({ where: { id }, include: { project: { select: { name: true } } } });
+        return b ? { title: billTitle(b.billNo, b.isFinal, b.grossAmount.toFixed(2)), projectId: b.projectId, projectName: b.project.name, submittedById: b.submittedById } : null;
       }
     }
   }

@@ -18,8 +18,9 @@ import { MrDrawer } from '@/components/material/MrDrawer';
 import { MachineryDrawer } from '@/components/machinery/MachineryDrawer';
 import { ExpenseDrawer } from '@/components/expenses/ExpenseDrawer';
 import { MeasurementDrawer } from '@/components/measurements/MeasurementDrawer';
+import { BillDrawer } from '@/components/bills/BillDrawer';
 
-const TYPE_COLORS: Record<SubmissionType, string> = { PROGRESS: 'blue', DPR: 'purple', MATERIAL_REQUEST: 'cyan', MACHINERY: 'magenta', EXPENSE: 'default', MEASUREMENT: 'geekblue' };
+const TYPE_COLORS: Record<SubmissionType, string> = { PROGRESS: 'blue', DPR: 'purple', MATERIAL_REQUEST: 'cyan', MACHINERY: 'magenta', EXPENSE: 'default', MEASUREMENT: 'geekblue', BILL: 'gold' };
 
 export default function ApprovalsPage() {
   const { user } = useAuth();
@@ -80,6 +81,7 @@ export default function ApprovalsPage() {
                   ['MACHINERY', 'Machinery'],
                   ['EXPENSE', 'Expenses'],
                   ['MEASUREMENT', 'Measurements'],
+                  ['BILL', 'RA bills'],
                 ] as [SubmissionType, string][]
               )
                 .filter(([t]) => rights.some((r) => r.type === t))
@@ -105,6 +107,7 @@ export default function ApprovalsPage() {
       <MachineryDrawer id={open?.type === 'MACHINERY' ? open.id : null} open={open?.type === 'MACHINERY'} onClose={() => setOpen(null)} />
       <ExpenseDrawer id={open?.type === 'EXPENSE' ? open.id : null} open={open?.type === 'EXPENSE'} onClose={() => setOpen(null)} />
       <MeasurementDrawer id={open?.type === 'MEASUREMENT' ? open.id : null} open={open?.type === 'MEASUREMENT'} onClose={() => setOpen(null)} />
+      <BillDrawer id={open?.type === 'BILL' ? open.id : null} open={open?.type === 'BILL'} onClose={() => setOpen(null)} />
     </div>
   );
 }

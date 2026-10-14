@@ -14,6 +14,7 @@ import {
   PROJECT_TYPE_LABELS,
   STOCK_ENTRY_TYPE_LABELS,
   SUBMISSION_STATUS_LABELS,
+  BILL_STAGE_LABELS,
   WEATHER_LABELS,
   type ActivityDto,
   type AttendanceLineDto,
@@ -23,6 +24,7 @@ import {
   type ExpenseDto,
   type RiskDto,
   type MeasurementSheetDto,
+  type RaBillDto,
   type MachineryLogDto,
   type MaterialRequestDto,
   type ProgressEntryDto,
@@ -322,3 +324,40 @@ export const MEASUREMENT_EXPORT: ExportColumn<MeasurementExportRow>[] = [
 
 export const measurementExportRows = (sheets: MeasurementSheetDto[]): MeasurementExportRow[] =>
   sheets.flatMap<MeasurementExportRow>((sheet) => (sheet.lines.length ? sheet.lines.map((line) => ({ sheet, line })) : [{ sheet, line: null }]));
+
+const deduction = (b: RaBillDto, key: string) => toNumber(b.deductions.find((d) => d.key === key)?.amount ?? 0);
+
+/** One row per RA bill, with each deduction in its own column for the accounts team. */
+export const BILL_EXPORT: ExportColumn<RaBillDto>[] = [
+  { header: 'Bill', value: (b) => b.billLabel, width: 18 },
+  { header: 'Bill date', value: (b) => b.billDate, width: 12 },
+  { header: 'Measured up to', value: (b) => b.measuredUpTo, width: 14 },
+  { header: 'Project code', value: (b) => b.projectCode, width: 14 },
+  { header: 'Project', value: (b) => b.projectName, width: 34 },
+  { header: 'Client', value: (b) => b.clientName, width: 30 },
+  { header: 'Client GSTIN', value: (b) => b.client?.gstin ?? null, width: 18 },
+  { header: 'Work up to previous', value: (b) => toNumber(b.grossPrevious) },
+  { header: 'Work in this bill', value: (b) => toNumber(b.grossAmount) },
+  { header: 'Work up to date', value: (b) => toNumber(b.grossUpto) },
+  { header: 'GST %', value: (b) => toNumber(b.gstRate) },
+  { header: 'GST', value: (b) => toNumber(b.gstAmount) },
+  { header: 'Retention', value: (b) => deduction(b, 'retention') },
+  { header: 'Security deposit', value: (b) => deduction(b, 'securityDeposit') },
+  { header: 'Advance recovery', value: (b) => deduction(b, 'advanceRecovery') },
+  { header: 'TDS', value: (b) => deduction(b, 'tds') },
+  { header: 'GST TDS', value: (b) => deduction(b, 'gstTds') },
+  { header: 'Labour cess', value: (b) => deduction(b, 'labourCess') },
+  { header: 'Other deduction', value: (b) => toNumber(b.otherDeduction) },
+  { header: 'Other deduction for', value: (b) => b.otherDeductionNote, width: 20 },
+  { header: 'Total deductions', value: (b) => toNumber(b.totalDeductions) },
+  { header: 'Net payable', value: (b) => toNumber(b.netPayable) },
+  { header: 'Claimed net', value: (b) => (b.claimedNet === null ? null : toNumber(b.claimedNet)) },
+  { header: 'Status', value: (b) => status(b.status), width: 18 },
+  { header: 'With client', value: (b) => (b.status === 'APPROVED' ? BILL_STAGE_LABELS[b.stage] : null), width: 14 },
+  { header: 'Sent', value: (b) => b.sentDate, width: 12 },
+  { header: 'Certified', value: (b) => b.certifiedDate, width: 12 },
+  { header: 'Certificate no.', value: (b) => b.certificateNo, width: 18 },
+  { header: 'Paid', value: (b) => b.paidDate, width: 12 },
+  { header: 'Prepared by', value: (b) => b.submittedByName, width: 20 },
+  { header: 'Approved by', value: (b) => b.reviewedByName, width: 20 },
+];

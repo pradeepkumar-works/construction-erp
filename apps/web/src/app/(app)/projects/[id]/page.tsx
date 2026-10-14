@@ -23,6 +23,7 @@ import { RiskList } from '@/components/risks/RiskList';
 import { MeasurementList } from '@/components/measurements/MeasurementList';
 import { ProjectCostPanel } from '@/components/cost/ProjectCostPanel';
 import { ContractPanel } from '@/components/contracts/ContractPanel';
+import { BillList } from '@/components/bills/BillList';
 import { StockPanel } from '@/components/stock/StockPanel';
 import { AttendanceList } from '@/components/attendance/AttendanceList';
 import { MrList } from '@/components/material/MrList';
@@ -92,6 +93,7 @@ export default function ProjectDetailPage() {
           items={[
             { key: 'overview', label: 'Overview', children: <ProjectOverview project={project} /> },
             ...(user && canViewContract(user.roleKey) ? [{ key: 'contract', label: 'Contract', children: <ContractPanel projectId={project.id} /> }] : []),
+            ...(user && canViewContract(user.roleKey) ? [{ key: 'bills', label: 'RA Bills', children: <BillList projectId={project.id} /> }] : []),
             { key: 'boq', label: 'BOQ', children: <BoqTab projectId={project.id} /> },
             { key: 'activities', label: 'Activities', children: <ActivitiesTab projectId={project.id} members={project.members} project={project} /> },
             { key: 'mb', label: 'Measurements', children: <MeasurementList projectId={project.id} /> },

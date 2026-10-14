@@ -113,6 +113,9 @@ export class PlanningService {
 
   async deleteBoq(user: RequestUser, projectId: string, id: string) {
     await this.access.assertCanAccessProject(user, projectId);
+    if (await this.prisma.raBillItem.count({ where: { boqItemId: id, bill: { projectId } } })) {
+      throw new ConflictException('This BOQ item has been billed in an RA bill and cannot be deleted');
+    }
     await this.prisma.boqItem.deleteMany({ where: { id, projectId } });
     await this.audit.log(user, 'BOQ_ITEM', id, 'DELETED');
     return { ok: true };

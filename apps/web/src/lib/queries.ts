@@ -20,6 +20,8 @@ import type {
   ApprovalMatrixDto,
   AuthOptionsDto,
   MeasurementSheetDto,
+  RaBillDto,
+  BillStage,
   LabourRatesDto,
   ProjectCostDto,
   ProjectCostSummaryDto,
@@ -67,7 +69,7 @@ export interface RoleDto {
   name: string;
 }
 
-export type ApprovalTypeParam = 'progress' | 'dpr' | 'material_request' | 'machinery' | 'expense' | 'measurement';
+export type ApprovalTypeParam = 'progress' | 'dpr' | 'material_request' | 'machinery' | 'expense' | 'measurement' | 'bill';
 
 export const approvalTypeParam: Record<SubmissionType, ApprovalTypeParam> = {
   PROGRESS: 'progress',
@@ -76,6 +78,7 @@ export const approvalTypeParam: Record<SubmissionType, ApprovalTypeParam> = {
   MACHINERY: 'machinery',
   EXPENSE: 'expense',
   MEASUREMENT: 'measurement',
+  BILL: 'bill',
 };
 
 /** Paging, search and sort understood by every paged list endpoint. */
@@ -427,6 +430,27 @@ export const useMeasurement = (id: string | undefined) =>
   useQuery({
     queryKey: ['measurements', 'detail', id],
     queryFn: async () => (await api.get<MeasurementSheetDto>(`/measurements/${id}`)).data,
+    enabled: !!id,
+  });
+
+export interface BillFilters extends PageParams {
+  projectId?: string;
+  status?: SubmissionStatus;
+  stage?: BillStage;
+}
+
+export const useBills = (filters: BillFilters, enabled = true) =>
+  useQuery({
+    queryKey: ['bills', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<RaBillDto>>('/ra-bills', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+
+export const useBill = (id: string | undefined) =>
+  useQuery({
+    queryKey: ['bills', 'detail', id],
+    queryFn: async () => (await api.get<RaBillDto>(`/ra-bills/${id}`)).data,
     enabled: !!id,
   });
 

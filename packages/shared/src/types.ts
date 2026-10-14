@@ -1,5 +1,6 @@
 import type { ApprovalRightDto } from './approvals';
 import type {
+  BillStage,
   DelayParty,
   PasswordTokenPurpose,
   RiskCategory,
@@ -512,6 +513,9 @@ export interface MeasurementLineDto {
 
 export interface MeasurementSheetDto extends SubmissionBase {
   mbNo: string;
+  /** The RA bill that billed it (it cannot be billed again) */
+  raBillId: string | null;
+  raBillNo: number | null;
   date: string;
   boqItemId: string;
   boqItemNo: string;
@@ -872,4 +876,94 @@ export interface ProjectContractDto {
   gstTdsPct: string;
   labourCessPct: string;
   updatedAt: string;
+}
+
+/* ---------- RA bills ---------- */
+
+export interface RaBillItemDto {
+  id: string;
+  boqItemId: string;
+  itemNo: string;
+  description: string;
+  unit: string;
+  /** BOQ quantity (revised, else original) and rate when the bill was prepared */
+  boqQty: string;
+  rate: string;
+  prevQty: string;
+  /** Claimed in this bill */
+  thisQty: string;
+  uptoQty: string;
+  /** This bill's quantity as certified by the client (null until certified) */
+  certifiedQty: string | null;
+  prevAmount: string;
+  /** (certifiedQty ?? thisQty) × rate */
+  amount: string;
+  uptoAmount: string;
+  /** Up-to-date quantity beyond the BOQ quantity (a deviation), "0" when within it */
+  excessQty: string;
+  /** Not in the original BOQ (BOQ quantity 0): an extra item */
+  extraItem: boolean;
+}
+
+export type BillDeductionKey = 'retention' | 'securityDeposit' | 'advanceRecovery' | 'tds' | 'gstTds' | 'labourCess' | 'other';
+
+export interface RaBillDeductionDto {
+  key: BillDeductionKey;
+  label: string;
+  /** % of the work value; null for the other deduction */
+  pct: string | null;
+  amount: string;
+}
+
+/** A measurement billed in the bill, with its lines (measurement annex of the print). */
+export interface RaBillMeasurementDto {
+  id: string;
+  mbNo: string;
+  date: string;
+  boqItemNo: string;
+  unit: string;
+  location: string;
+  totalQty: string;
+  lines: MeasurementLineDto[];
+}
+
+export interface RaBillDto extends SubmissionBase {
+  billNo: number;
+  /** "RA bill 3", or "RA bill 7 (final)" */
+  billLabel: string;
+  isFinal: boolean;
+  billDate: string;
+  measuredUpTo: string;
+  remarks: string | null;
+  projectCode: string;
+  workOrderNo: string | null;
+  agreementNo: string | null;
+  agreementDate: string | null;
+  client: { name: string; department: string | null; gstin: string | null; billingAddress: string | null; stateCode: string | null } | null;
+  clientName: string | null;
+  grossPrevious: string;
+  /** Value of work in this bill (taxable value) */
+  grossAmount: string;
+  grossUpto: string;
+  gstRate: string;
+  gstAmount: string;
+  /** Retention, security deposit, advance recovery, TDS, GST TDS, labour cess and any other deduction, in that order (zero ones left out) */
+  deductions: RaBillDeductionDto[];
+  otherDeduction: string;
+  otherDeductionNote: string | null;
+  totalDeductions: string;
+  /** gross + GST - deductions */
+  netPayable: string;
+  /** What was claimed, when the certified amount differs */
+  claimedGross: string | null;
+  claimedNet: string | null;
+  stage: BillStage;
+  sentDate: string | null;
+  certifiedDate: string | null;
+  certificateNo: string | null;
+  paidDate: string | null;
+  measurementCount: number;
+  items: RaBillItemDto[];
+  /** Only on GET /ra-bills/:id */
+  measurements?: RaBillMeasurementDto[];
 }

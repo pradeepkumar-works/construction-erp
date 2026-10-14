@@ -108,6 +108,7 @@ async function main() {
     await seedRisks(org.id);
     await seedContracts(org.id);
     await seedApprovalRules(org.id);
+    await seedBills(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
   }
@@ -258,6 +259,7 @@ async function main() {
   await seedRisks(org.id);
   await seedContracts(org.id);
   await seedApprovalRules(org.id);
+  await seedBills(org.id);
 
   console.log('Seed complete. Login with any of these (password: password123):');
   for (const u of USERS) console.log(`  ${u.email.padEnd(24)} ${u.role}`);
@@ -826,22 +828,85 @@ async function seedContracts(organizationId: string) {
   }
 }
 
+/** RA bills: management approves any bill, project managers bills of up to ₹50 lakh of work. */
+const BILL_RULES: { roleKey: string; type: string; maxAmount: Prisma.Decimal | null }[] = [
+  { roleKey: 'MANAGEMENT', type: 'BILL', maxAmount: null },
+  { roleKey: 'PROJECT_MANAGER', type: 'BILL', maxAmount: D(5000000) },
+];
+
 /**
  * Demo approval matrix: management approves everything, project managers approve everything but site expenses only
- * up to ₹25,000 (bigger bills go to management), and accounts approves site expenses of any amount. Only written
- * when the organisation has no matrix yet, so an admin's own changes are never overwritten.
+ * up to ₹25,000 (bigger bills go to management) and RA bills up to ₹50 lakh, and accounts approves site expenses of any
+ * amount. Only written when the organisation has no matrix yet, so an admin's own changes are never overwritten; a matrix
+ * made before RA bills existed gets the bill rules once, as long as it has no rule for bills.
  */
 async function seedApprovalRules(organizationId: string) {
-  if ((await prisma.approvalRule.count({ where: { organizationId } })) > 0) return;
   const roles = new Map((await prisma.role.findMany({ where: { organizationId }, select: { id: true, key: true } })).map((r) => [r.key, r.id]));
+  const write = (rows: typeof BILL_RULES) =>
+    prisma.approvalRule.createMany({
+      data: rows.filter((r) => roles.has(r.roleKey)).map((r) => ({ organizationId, roleId: roles.get(r.roleKey)!, submissionType: r.type, maxAmount: r.maxAmount })),
+      skipDuplicates: true,
+    });
+  if ((await prisma.approvalRule.count({ where: { organizationId } })) > 0) {
+    if ((await prisma.approvalRule.count({ where: { organizationId, submissionType: 'BILL' } })) === 0) await write(BILL_RULES);
+    return;
+  }
   const types = ['PROGRESS', 'DPR', 'MATERIAL_REQUEST', 'MACHINERY', 'EXPENSE', 'MEASUREMENT'];
   const rows: { roleKey: string; type: string; maxAmount: Prisma.Decimal | null }[] = [
     ...types.map((type) => ({ roleKey: 'MANAGEMENT', type, maxAmount: null })),
     ...types.map((type) => ({ roleKey: 'PROJECT_MANAGER', type, maxAmount: type === 'EXPENSE' ? D(25000) : null })),
     { roleKey: 'ACCOUNTS_MANAGER', type: 'EXPENSE', maxAmount: null },
+    ...BILL_RULES,
   ];
-  await prisma.approvalRule.createMany({
-    data: rows.filter((r) => roles.has(r.roleKey)).map((r) => ({ organizationId, roleId: roles.get(r.roleKey)!, submissionType: r.type, maxAmount: r.maxAmount })),
-    skipDuplicates: true,
+  await write(rows);
+}
+
+/**
+ * Demo RA bill 1 of the road project: the approved measurements of more than a fortnight ago, approved and sent to the
+ * client. Later approved measurements are left for RA bill 2. Only when the organisation has no bills yet.
+ */
+async function seedBills(organizationId: string) {
+  if ((await prisma.raBill.count({ where: { organizationId } })) > 0) return;
+  const project = await prisma.project.findFirst({ where: { organizationId, type: 'ROAD', agreementNo: { not: null } }, include: { members: { include: { user: { include: { role: true } } } } }, orderBy: { code: 'asc' } });
+  if (!project?.projectManagerId) return;
+  const qs = project.members.find((m) => m.user.role.key === 'QUANTITY_SURVEYOR')?.userId ?? project.projectManagerId;
+  const upTo = day(-15);
+  const sheets = await prisma.measurementSheet.findMany({ where: { projectId: project.id, status: 'APPROVED', raBillId: null, date: { lte: upTo } }, include: { boqItem: true } });
+  if (!sheets.length) return;
+  const r2 = (v: Prisma.Decimal) => v.toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+  const byItem = new Map<string, { boq: (typeof sheets)[number]['boqItem']; qty: Prisma.Decimal }>();
+  for (const s of sheets) byItem.set(s.boqItemId, { boq: s.boqItem, qty: (byItem.get(s.boqItemId)?.qty ?? D(0)).add(s.totalQty) });
+  const lines = [...byItem.values()].sort((a, b) => a.boq.sortOrder - b.boq.sortOrder).map(({ boq, qty }) => ({ boq, qty, amount: r2(qty.mul(boq.rate)) }));
+  const gross = lines.reduce((a, l) => a.add(l.amount), D(0));
+  const of = (pct: Prisma.Decimal) => r2(gross.mul(pct).div(100));
+  const amounts = {
+    retentionAmount: of(project.retentionPct),
+    securityDepositAmount: of(project.securityDepositPct),
+    advanceRecoveryAmount: Prisma.Decimal.min(of(project.advanceRecoveryPct), project.mobilisationAdvance),
+    tdsAmount: of(project.tdsPct),
+    gstTdsAmount: of(project.gstTdsPct),
+    labourCessAmount: of(project.labourCessPct),
+  };
+  const gst = of(project.gstRate);
+  const totalDeductions = Object.values(amounts).reduce((a, v) => a.add(v), D(0));
+  const bill = await prisma.raBill.create({
+    data: {
+      organizationId, projectId: project.id, billNo: 1, billDate: day(-14), measuredUpTo: upTo, remarks: 'Earthwork in embankment, first reach',
+      grossPrevious: D(0), grossAmount: gross, grossUpto: gross, gstRate: project.gstRate, gstAmount: gst,
+      retentionPct: project.retentionPct, securityDepositPct: project.securityDepositPct, advanceRecoveryPct: project.advanceRecoveryPct,
+      tdsPct: project.tdsPct, gstTdsPct: project.gstTdsPct, labourCessPct: project.labourCessPct, ...amounts,
+      totalDeductions, netPayable: gross.add(gst).sub(totalDeductions), stage: 'SENT', sentDate: day(-12),
+      status: 'APPROVED', submittedById: qs, submittedAt: day(-14), reviewedById: project.projectManagerId, reviewedAt: day(-13), createdAt: day(-14),
+      items: { create: lines.map((l, i) => ({ boqItemId: l.boq.id, boqQty: l.boq.revisedQty ?? l.boq.originalQty, rate: l.boq.rate, prevQty: D(0), thisQty: l.qty, uptoQty: l.qty, amount: l.amount, sortOrder: i })) },
+    },
+  });
+  await prisma.measurementSheet.updateMany({ where: { id: { in: sheets.map((s) => s.id) } }, data: { raBillId: bill.id } });
+  await prisma.auditLog.createMany({
+    data: [
+      { organizationId, entityType: 'BILL', entityId: bill.id, action: 'CREATED', actorId: qs, createdAt: day(-14) },
+      { organizationId, entityType: 'BILL', entityId: bill.id, action: 'SUBMITTED', actorId: qs, createdAt: day(-14) },
+      { organizationId, entityType: 'BILL', entityId: bill.id, action: 'APPROVED', actorId: project.projectManagerId, createdAt: day(-13) },
+      { organizationId, entityType: 'BILL', entityId: bill.id, action: 'SENT', actorId: qs, note: `Sent to the client on ${day(-12).toISOString().slice(0, 10)}`, createdAt: day(-12) },
+    ],
   });
 }

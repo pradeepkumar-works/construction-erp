@@ -274,6 +274,33 @@ The store register per project, fed by approved material requests:
 - **Clients.** Web: Billing → Clients page, a Contract tab on each project (agreement, bill percentages, extensions
   from the delay register) with an edit form, a client picker on the project form, and "EOT granted" on delays.
 
+## RA bills
+
+- **Tables.** `RaBill` (number per project, `isFinal`, `billDate`, `measuredUpTo`; work value previous / this bill /
+  up to date; `gstRate` / `gstAmount`; the six deduction percentages copied from the project and their amounts, an
+  `otherDeduction` with a note, `totalDeductions`, `netPayable`; `claimedGross` / `claimedNet`; `stage` NOT_SENT →
+  SENT → CERTIFIED → PAID with their dates and the certificate number; the six submission status columns).
+  `RaBillItem` per BOQ item: BOQ quantity and rate at the time, `prevQty`, `thisQty`, `uptoQty`, `certifiedQty`,
+  `amount`. `MeasurementSheet.raBillId` says which bill took a sheet; `Attachment.raBillId` holds documents.
+- **Building a bill** (`RaBillsService.recompute`, in one transaction). The bill takes every `APPROVED` sheet of the
+  project with no bill and a date up to `measuredUpTo`. Up to date quantity per BOQ item = all sheets in earlier bills
+  and this one; previous = what earlier bills passed (`certifiedQty`, else `thisQty`); this bill = the difference, so a
+  quantity the client cut comes back in the next bill. Amounts are quantity × rate rounded to paise; each deduction is
+  its percentage of this bill's work value, advance recovery capped at the advance not yet recovered; net = work + GST
+  − deductions. A draft or returned bill is rebuilt on every edit and on submit, so measurements approved meanwhile are
+  included. Only one bill per project may be unapproved (advisory lock `RA:<projectId>`), and nothing follows a final bill.
+- **After approval** the bill is recorded as sent, certified and paid (`POST /ra-bills/:id/send|certify|paid`, billing
+  roles). Certifying with lower quantities keeps the first claim, re-prices the bill on the certified quantities and
+  rebuilds the next bill if it is still open. Payments become receipts with item 19.
+- **Roles.** Prepared and moved along by `BILLING_ROLES`; seen by them and by any role the approval matrix lets
+  approve `BILL` (amount basis: the work value before GST and deductions). A BOQ item that has been billed cannot be deleted.
+- **API.** `/ra-bills` (paged; `projectId`, `status`, `stage`, `q`), `GET /ra-bills/:id` (with the measurements and
+  their lines), `POST` (draft unless `submit`), `PATCH`, `POST /:id/submit`, `DELETE` (not approved only); review
+  and audit through `/approvals/bill/:id/...`.
+- **Clients.** Web: Billing → RA Bills and an RA Bills tab on each project (prepare form, drawer with the abstract,
+  deductions, measurements and stage actions, print view in `components/bills/billPrint.ts`, Excel export). The
+  measurement book shows which bill took each sheet. Site app: `app/bill/[id].tsx` to read and approve.
+
 ## Project cost
 
 - **Heads.** Site expenses (`APPROVED`, total incl. GST, by bill date); material issued (`StockTxn` of
