@@ -11,6 +11,7 @@ import { dateOnly, dec, iso, money, parseDate } from '../common/serialize';
 import { isUniqueViolation } from '../common/idempotency';
 import { nextDocNo } from '../common/doc-number';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
+import { assertOpenWorkOrder } from '../subcontracts/work-orders.service';
 import { CreateMeasurementDto, ListMeasurementsQuery, MeasurementLineInputDto, UpdateMeasurementDto } from './measurements.dto';
 
 const include = {
@@ -21,6 +22,7 @@ const include = {
   reviewedBy: { select: { fullName: true } },
   attachments: true,
   raBill: { select: { billNo: true } },
+  workOrder: { select: { woNo: true, vendor: { select: { name: true } } } },
 } satisfies Prisma.MeasurementSheetInclude;
 type Row = Prisma.MeasurementSheetGetPayload<{ include: typeof include }>;
 
@@ -61,6 +63,10 @@ export class MeasurementsService {
       mbNo: r.mbNo,
       raBillId: r.raBillId,
       raBillNo: r.raBill?.billNo ?? null,
+      workOrderId: r.workOrderId,
+      woNo: r.workOrder?.woNo ?? null,
+      contractorName: r.workOrder?.vendor.name ?? null,
+      subcontractBillId: r.subcontractBillId,
       date: dateOnly(r.date)!,
       boqItemId: r.boqItemId,
       boqItemNo: r.boqItem.itemNo,
@@ -99,6 +105,7 @@ export class MeasurementsService {
     const where: Prisma.MeasurementSheetWhereInput = { ...this.access.submissionWhere(user) };
     if (q.projectId) where.projectId = q.projectId;
     if (q.boqItemId) where.boqItemId = q.boqItemId;
+    if (q.workOrderId) where.workOrderId = q.workOrderId;
     if (q.status) where.status = q.status;
     if (q.mine) where.submittedById = user.id;
     if (q.from || q.to) where.date = { ...(q.from ? { gte: parseDate(q.from) } : {}), ...(q.to ? { lte: parseDate(q.to) } : {}) };
@@ -108,6 +115,8 @@ export class MeasurementsService {
         OR: [
           { mbNo: ilike(w) },
           { location: ilike(w) },
+          { workOrder: { woNo: ilike(w) } },
+          { workOrder: { vendor: { name: ilike(w) } } },
           { remarks: ilike(w) },
           { boqItem: { itemNo: ilike(w) } },
           { boqItem: { description: ilike(w) } },
@@ -172,6 +181,7 @@ export class MeasurementsService {
     if (existing) return existing;
     await this.access.assertCanMeasure(user, dto.projectId);
     await this.assertBoqItem(dto.projectId, dto.boqItemId);
+    if (dto.workOrderId) await assertOpenWorkOrder(this.prisma, user.organizationId, dto.workOrderId, dto.projectId, dto.boqItemId);
     this.checkDate(dto.date);
     const { lines, total } = this.lines(dto.lines);
     let id: string | null;
@@ -187,6 +197,7 @@ export class MeasurementsService {
             organizationId: user.organizationId,
             projectId: dto.projectId,
             boqItemId: dto.boqItemId,
+            workOrderId: dto.workOrderId || null,
             mbNo,
             date: parseDate(dto.date),
             location: dto.location,
@@ -222,6 +233,12 @@ export class MeasurementsService {
     if (dto.date !== undefined) this.checkDate(dto.date);
     const data: Prisma.MeasurementSheetUncheckedUpdateInput = {};
     if (dto.boqItemId !== undefined) data.boqItemId = dto.boqItemId;
+    if (dto.workOrderId !== undefined || dto.boqItemId !== undefined) {
+      const cur = await this.prisma.measurementSheet.findUniqueOrThrow({ where: { id }, select: { workOrderId: true, boqItemId: true } });
+      const workOrderId = dto.workOrderId !== undefined ? dto.workOrderId : cur.workOrderId;
+      if (workOrderId) await assertOpenWorkOrder(this.prisma, user.organizationId, workOrderId, row.projectId, dto.boqItemId ?? cur.boqItemId);
+      data.workOrderId = workOrderId || null;
+    }
     if (dto.date !== undefined) data.date = parseDate(dto.date);
     if (dto.location !== undefined) data.location = dto.location;
     if (dto.remarks !== undefined) data.remarks = dto.remarks || null;

@@ -108,6 +108,14 @@ export const VENDOR_BILL_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROCUREMENT
 export const canRecordVendorBill = (role: RoleKey) => VENDOR_BILL_ROLES.includes(role);
 /** See vendor bills: those who record them and project managers. */
 export const canViewVendorBills = (role: RoleKey) => VENDOR_BILL_ROLES.includes(role) || role === 'PROJECT_MANAGER';
+/** Issue work orders to subcontractors and labour contractors. */
+export const WORK_ORDER_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER', 'PROCUREMENT_MANAGER', 'QUANTITY_SURVEYOR'];
+export const canIssueWorkOrder = (role: RoleKey) => WORK_ORDER_ROLES.includes(role);
+/** See work orders: those who issue them, the site (measures their work), the store (issues them material) and accounts. */
+export const WORK_ORDER_VIEW_ROLES: RoleKey[] = [...WORK_ORDER_ROLES, 'SITE_ENGINEER', 'STORE_MANAGER', 'ACCOUNTS_MANAGER'];
+export const canViewWorkOrders = (role: RoleKey) => WORK_ORDER_VIEW_ROLES.includes(role);
+/** Prepare subcontractor bills and see the margin per BOQ item: the billing roles. */
+export const canPrepareSubcontractBill = (role: RoleKey) => BILLING_ROLES.includes(role);
 /** Add and edit vendors: admin, management, project managers, procurement, accounts and stores. */
 export const VENDOR_EDITOR_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER', 'PROCUREMENT_MANAGER', 'ACCOUNTS_MANAGER', 'STORE_MANAGER'];
 export const canEditVendors = (role: RoleKey) => VENDOR_EDITOR_ROLES.includes(role);

@@ -33,9 +33,11 @@ import {
   ContainerOutlined,
   ReconciliationOutlined,
   ShopOutlined,
+  SolutionOutlined,
+  ProfileOutlined,
 } from '@ant-design/icons';
 import type { AuthUser } from '@erp/shared';
-import { approvalRightsOf, canViewPurchaseOrders, canViewVendorBills, canEditContract, canEditProjects, canEditVendors, canManageUsers, canSeeVendorBank, canPrepareBill, canViewContract, canViewCost, mayApprove } from '@erp/shared';
+import { approvalRightsOf, canViewPurchaseOrders, canViewVendorBills, canViewWorkOrders, canPrepareSubcontractBill, canEditContract, canEditProjects, canEditVendors, canManageUsers, canSeeVendorBank, canPrepareBill, canViewContract, canViewCost, mayApprove } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { usePendingApprovals } from '@/lib/queries';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
@@ -115,6 +117,8 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
         items: [
           ...(canViewPurchaseOrders(user.roleKey) ? [link('/purchase-orders', 'Purchase Orders', ContainerOutlined)] : []),
           ...(canViewVendorBills(user.roleKey) ? [link('/vendor-bills', 'Vendor Bills', ReconciliationOutlined)] : []),
+          ...(canViewWorkOrders(user.roleKey) ? [link('/work-orders', 'Work Orders', SolutionOutlined)] : []),
+          ...(canPrepareSubcontractBill(user.roleKey) || approvalRightsOf(user).some((r) => r.type === 'SUBCONTRACT_BILL') ? [link('/subcontract-bills', 'Subcontractor Bills', ProfileOutlined)] : []),
           ...(canEditVendors(user.roleKey) || canSeeVendorBank(user.roleKey) ? [link('/vendors', 'Vendors', ShopOutlined)] : []),
         ],
       },

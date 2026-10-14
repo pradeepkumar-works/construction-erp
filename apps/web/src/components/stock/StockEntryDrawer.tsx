@@ -81,6 +81,7 @@ export function StockEntryDrawer({ id, onClose }: { id: string | null; onClose: 
               ...(data.type === 'ISSUE'
                 ? [
                     { key: 'to', label: 'Issued to', children: data.issuedTo ?? '-' },
+                    ...(data.woNo ? [{ key: 'wo', label: 'Work order', children: `${data.woNo}${data.subcontractBillId ? ', recovered in their bill' : ', to be recovered from their next bill'}` }] : []),
                     { key: 'activity', label: 'Activity', children: data.activityName ?? '-' },
                   ]
                 : []),

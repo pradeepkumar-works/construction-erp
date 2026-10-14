@@ -7,6 +7,9 @@ import type {
   QuotationDto,
   ReceivableOrderDto,
   VendorBillDto,
+  WorkOrderDto,
+  WorkOrderMarginDto,
+  SubcontractBillDto,
   ClientDto,
   MsmeCategory,
   UnlistedVendorDto,
@@ -81,7 +84,7 @@ export interface RoleDto {
   name: string;
 }
 
-export type ApprovalTypeParam = 'progress' | 'dpr' | 'material_request' | 'machinery' | 'expense' | 'measurement' | 'bill' | 'purchase_order' | 'vendor_bill';
+export type ApprovalTypeParam = 'progress' | 'dpr' | 'material_request' | 'machinery' | 'expense' | 'measurement' | 'bill' | 'purchase_order' | 'vendor_bill' | 'work_order' | 'subcontract_bill';
 
 export const approvalTypeParam: Record<SubmissionType, ApprovalTypeParam> = {
   PROGRESS: 'progress',
@@ -93,6 +96,8 @@ export const approvalTypeParam: Record<SubmissionType, ApprovalTypeParam> = {
   BILL: 'bill',
   PURCHASE_ORDER: 'purchase_order',
   VENDOR_BILL: 'vendor_bill',
+  WORK_ORDER: 'work_order',
+  SUBCONTRACT_BILL: 'subcontract_bill',
 };
 
 /** Paging, search and sort understood by every paged list endpoint. */
@@ -597,6 +602,59 @@ export const useVendorBill = (id: string | undefined) =>
   useQuery({
     queryKey: ['vendor-bills', 'detail', id],
     queryFn: async () => (await api.get<VendorBillDto>(`/vendor-bills/${id}`)).data,
+    enabled: !!id,
+  });
+
+export interface WorkOrderFilters extends PageParams {
+  projectId?: string;
+  vendorId?: string;
+  status?: SubmissionStatus;
+  open?: boolean;
+  boqItemId?: string;
+}
+
+export const useWorkOrders = (filters: WorkOrderFilters, enabled = true) =>
+  useQuery({
+    queryKey: ['work-orders', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<WorkOrderDto>>('/work-orders', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+
+export const useWorkOrder = (id: string | undefined) =>
+  useQuery({
+    queryKey: ['work-orders', 'detail', id],
+    queryFn: async () => (await api.get<WorkOrderDto>(`/work-orders/${id}`)).data,
+    enabled: !!id,
+  });
+
+/** Client rate against subcontract rate per BOQ item of a project (billing roles). */
+export const useWorkOrderMargin = (projectId: string | undefined, enabled = true) =>
+  useQuery({
+    queryKey: ['work-orders', 'margin', projectId],
+    queryFn: async () => (await api.get<WorkOrderMarginDto[]>('/work-orders/margin', { params: { projectId } })).data,
+    enabled: enabled && !!projectId,
+  });
+
+export interface SubcontractBillFilters extends PageParams {
+  projectId?: string;
+  vendorId?: string;
+  workOrderId?: string;
+  status?: SubmissionStatus;
+}
+
+export const useSubcontractBills = (filters: SubcontractBillFilters, enabled = true) =>
+  useQuery({
+    queryKey: ['subcontract-bills', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<SubcontractBillDto>>('/subcontract-bills', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+
+export const useSubcontractBill = (id: string | undefined) =>
+  useQuery({
+    queryKey: ['subcontract-bills', 'detail', id],
+    queryFn: async () => (await api.get<SubcontractBillDto>(`/subcontract-bills/${id}`)).data,
     enabled: !!id,
   });
 

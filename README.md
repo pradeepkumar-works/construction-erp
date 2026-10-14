@@ -71,6 +71,10 @@ contractors after the first client is live.
   (or any) quotation, approved through the approval matrix with limits and printed; GRNs against PO lines; vendor
   bills matched three ways against the PO and what was received, with due dates kept within 45 days for micro and
   small enterprises.
+- Subcontracts: work orders on subcontractors at agreed rates per BOQ item (or their own items), their work tagged
+  in the measurement book and material issued to them, and running bills with retention, advance recovery, TDS
+  (194C, from the PAN) and material recovered at our rates; margin per BOQ item against the client rate; printable
+  order and bill.
 - Receivables: money received against each bill with what the client deducted (TDS, GST TDS, retention, deposit,
   cess), part payments, retention and deposit releases, ageing per project and client, the retention due date,
   a dashboard tile, and billed value and cash in on project cost.

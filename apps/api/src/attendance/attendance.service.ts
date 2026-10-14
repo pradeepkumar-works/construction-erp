@@ -57,7 +57,7 @@ export class AttendanceService {
   ) {}
 
   toDto(r: Row, dprStatus: SubmissionStatus | null): AttendanceSheetDto {
-    const lines = r.lines.map((l) => ({ id: l.id, contractor: l.contractor, category: l.category, count: l.count }));
+    const lines = r.lines.map((l) => ({ id: l.id, contractor: l.contractor, vendorId: l.vendorId, category: l.category, count: l.count }));
     return {
       id: r.id,
       projectId: r.projectId,
@@ -119,6 +119,18 @@ export class AttendanceService {
     return clean;
   }
 
+  /** A contractor named like an active vendor links to it and takes its spelling; other names are kept as typed. */
+  private async linkVendors(organizationId: string, lines: AttendanceLineInput[]) {
+    const names = [...new Set(lines.map((l) => l.contractor).filter((c) => c.toLowerCase() !== DEPARTMENTAL_CONTRACTOR.toLowerCase()))];
+    const vendors = names.length
+      ? await this.prisma.vendor.findMany({ where: { organizationId, isActive: true, OR: names.map((n) => ({ name: { equals: n, mode: 'insensitive' as const } })) }, select: { id: true, name: true } })
+      : [];
+    return lines.map((l) => {
+      const v = vendors.find((x) => x.name.toLowerCase() === l.contractor.toLowerCase());
+      return v ? { ...l, contractor: v.name, vendorId: v.id } : { ...l, vendorId: null };
+    });
+  }
+
   private visibleWhere(user: RequestUser): Prisma.AttendanceSheetWhereInput {
     return { ...this.access.submissionWhere(user) };
   }
@@ -168,9 +180,15 @@ export class AttendanceService {
   async suggestions(user: RequestUser, q: AttendanceSuggestionsQuery): Promise<AttendanceSuggestionsDto> {
     if (q.projectId) await this.access.assertCanAccessProject(user, q.projectId);
     const sheet: Prisma.AttendanceSheetWhereInput = { ...this.visibleWhere(user), ...(q.projectId ? { projectId: q.projectId } : {}) };
-    const [contractors, categories] = await Promise.all([
+    const [contractors, categories, vendors] = await Promise.all([
       this.prisma.attendanceLine.groupBy({ by: ['contractor'], where: { sheet }, _count: { _all: true }, orderBy: { _count: { contractor: 'desc' } }, take: 50 }),
       this.prisma.attendanceLine.groupBy({ by: ['category'], where: { sheet }, _count: { _all: true }, orderBy: { _count: { category: 'desc' } }, take: 50 }),
+      this.prisma.vendor.findMany({
+        where: { organizationId: user.organizationId, isActive: true, kinds: { hasSome: ['LABOUR_CONTRACTOR', 'SUBCONTRACTOR'] } },
+        select: { name: true },
+        orderBy: { name: 'asc' },
+        take: 100,
+      }),
     ]);
     const uniq = (xs: string[]) => {
       const seen = new Set<string>();
@@ -182,7 +200,7 @@ export class AttendanceService {
       });
     };
     return {
-      contractors: uniq([DEPARTMENTAL_CONTRACTOR, ...contractors.map((c) => c.contractor)]),
+      contractors: uniq([DEPARTMENTAL_CONTRACTOR, ...contractors.map((c) => c.contractor), ...vendors.map((v) => v.name)]),
       categories: uniq([...categories.map((c) => c.category), ...MANPOWER_CATEGORIES]),
     };
   }
@@ -206,7 +224,7 @@ export class AttendanceService {
     if (existing) return existing;
     await this.access.assertCanRecordAttendance(user, dto.projectId);
     const date = parseDate(dto.date);
-    const lines = this.cleanLines(dto.lines, dto.remarks);
+    const lines = await this.linkVendors(user.organizationId, this.cleanLines(dto.lines, dto.remarks));
     await this.assertUnlocked(dto.projectId, date);
     await this.assertNoDuplicate(dto.projectId, date);
     let id: string;
@@ -259,9 +277,9 @@ export class AttendanceService {
     }
     if (dto.remarks !== undefined) data.remarks = dto.remarks?.trim() || null;
     const remarks = dto.remarks !== undefined ? dto.remarks : row.remarks;
-    let lines: AttendanceLineInput[] | null = null;
+    let lines: (AttendanceLineInput & { vendorId: string | null })[] | null = null;
     if (dto.lines !== undefined) {
-      lines = this.cleanLines(dto.lines, remarks);
+      lines = await this.linkVendors(user.organizationId, this.cleanLines(dto.lines, remarks));
       data.totalWorkers = totalWorkers(lines);
     }
     try {

@@ -2,8 +2,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import type { BoqItemDto, MeasurementSheetDto } from '@erp/shared';
-import { hasDimensions, measurementLineQty, measurementTotal } from '@erp/shared';
+import type { BoqItemDto, MeasurementSheetDto, Paginated, WorkOrderDto } from '@erp/shared';
+import { canViewWorkOrders, hasDimensions, measurementLineQty, measurementTotal } from '@erp/shared';
+import { useAuth } from '../../src/auth/AuthContext';
 import { useApi, useFetch } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
 import { Button, Card, Chips, DatePicker, ErrorBanner, ErrorState, Input, Loading, PhotoPicker, Screen, Select, type LocalPhoto, type SelectOption } from '../../src/components';
@@ -39,6 +40,7 @@ export default function NewMeasurementScreen() {
 
   const [projectId, setProjectId] = useState<string | null>(params.projectId ?? null);
   const [boqItemId, setBoqItemId] = useState<string | null>(null);
+  const [workOrderId, setWorkOrderId] = useState<string>('');
   const [date, setDate] = useState(today());
   const [location, setLocation] = useState('');
   const [lines, setLines] = useState<Line[]>([blankLine()]);
@@ -59,6 +61,7 @@ export default function NewMeasurementScreen() {
     if (!m) return;
     setProjectId(m.projectId);
     setBoqItemId(m.boqItemId);
+    setWorkOrderId(m.workOrderId ?? '');
     setDate(m.date);
     setLocation(m.location);
     setRemarks(m.remarks ?? '');
@@ -69,6 +72,14 @@ export default function NewMeasurementScreen() {
   const boq = useFetch<BoqItemDto[]>((a) => a.get(`/projects/${projectId}/boq`), [projectId], { enabled: !!projectId, refetchOnFocus: false, cacheKey: `boq:${projectId}` });
   const boqOptions = useMemo<SelectOption[]>(() => (boq.data ?? []).map((b) => ({ value: b.id, label: `${b.itemNo} · ${b.description} (${b.unit})` })), [boq.data]);
   const item = boq.data?.find((b) => b.id === boqItemId);
+  const { user } = useAuth();
+  const wos = useFetch<Paginated<WorkOrderDto>>((a) => a.get('/work-orders', { projectId: projectId!, boqItemId: boqItemId!, open: true, pageSize: 50 }), [projectId, boqItemId], {
+    enabled: !!projectId && !!boqItemId && !!user && canViewWorkOrders(user.roleKey),
+    refetchOnFocus: false,
+    cacheKey: projectId && boqItemId ? `work-orders:${projectId}:${boqItemId}` : undefined,
+  });
+  const woOptions = (wos.data?.items ?? []).map((w) => ({ value: w.id, label: `${w.woNo} · ${w.vendorName}` }));
+  if (existing.data?.workOrderId && !woOptions.some((o) => o.value === existing.data?.workOrderId)) woOptions.push({ value: existing.data.workOrderId, label: `${existing.data.woNo} · ${existing.data.contractorName ?? ''}` });
   const asInput = lines.map((l) => ({ nos: dim(l.nos), length: dim(l.length), breadth: dim(l.breadth), depth: dim(l.depth), deduct: l.deduct }));
   const total = measurementTotal(asInput);
   const unit = item?.unit ?? existing.data?.unit ?? '';
@@ -102,6 +113,7 @@ export default function NewMeasurementScreen() {
     try {
       const body = {
         boqItemId,
+        workOrderId: workOrderId || (editId ? null : undefined),
         date,
         location: location.trim(),
         remarks: remarks.trim() || (editId ? null : undefined),
@@ -179,16 +191,23 @@ export default function NewMeasurementScreen() {
           onChange={(v) => {
             setProjectId(v);
             setBoqItemId(null);
+            setWorkOrderId('');
           }}
           placeholder="Choose project"
           error={errors.projectId}
           disabled={!!editId}
         />
-        <Select label="BOQ item" required value={boqItemId} options={boqOptions} onChange={setBoqItemId} placeholder={projectId ? 'Choose BOQ item' : 'Choose a project first'} disabled={!projectId} error={errors.boqItemId} emptyText="No BOQ items in this project" />
+        <Select label="BOQ item" required value={boqItemId} options={boqOptions} onChange={(v) => {
+            setBoqItemId(v);
+            setWorkOrderId('');
+          }} placeholder={projectId ? 'Choose BOQ item' : 'Choose a project first'} disabled={!projectId} error={errors.boqItemId} emptyText="No BOQ items in this project" />
         {item ? (
           <Text style={[typography.caption, styles.boqInfo]}>
             Contract {fmtQty(item.revisedQty ?? item.originalQty)} {item.unit} · measured {fmtQty(item.measuredQty)} · awaiting approval {fmtQty(item.pendingMeasuredQty)}
           </Text>
+        ) : null}
+        {woOptions.length ? (
+          <Select label="Done by (work order)" value={workOrderId} options={[{ value: '', label: 'Departmental (no work order)' }, ...woOptions]} onChange={setWorkOrderId} placeholder="Departmental (no work order)" />
         ) : null}
         <Input label="Location" required value={location} onChangeText={setLocation} placeholder="Chainage, grid, floor or zone" error={errors.location} />
         <DatePicker label="Measured on" required value={date} onChange={setDate} error={errors.date} />

@@ -32,6 +32,7 @@ export default function MeasurementScreen() {
           </Text>
         </View>
         <KeyValue label="Location" value={data.location} />
+        {data.woNo ? <KeyValue label="Done by" value={`${data.contractorName ?? ''} (${data.woNo})`} /> : null}
         <KeyValue label="Remarks" value={data.remarks} multiline />
       </Card>
       <Card title={`Measurements (${data.lines.length})`}>

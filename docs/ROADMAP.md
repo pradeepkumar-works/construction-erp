@@ -181,9 +181,15 @@ relative to a v2 item (S about one, M about two, L about three). The full draft 
     against a PO with the three-way match (quantity received and not yet billed, PO rate, GST, freight); exceptions
     are flagged for the approver rather than blocking. Approving a PO sets `Item.rate`. Approval of POs and bills
     from the site app.
-22. **Subcontractor work orders and bills** (L). Work order with rates per BOQ item or own items; their work in
+22. ~~**Subcontractor work orders and bills** (L). Work order with rates per BOQ item or own items; their work in
     the measurement book with a contractor field; their RA bill with retention, advance and material-issued
-    recovery and TDS; attendance contractors linked to the vendor master; margin per BOQ item.
+    recovery and TDS; attendance contractors linked to the vendor master; margin per BOQ item.~~
+    Done: work orders (BOQ items or own items; GST, retention, advance, TDS and payment terms; approval through the
+    matrix, print, close). Measurements and material issues are tagged to an open order on the web and in the site
+    app; the same measurement still counts for the client's RA bill. Running bills take the approved tagged
+    measurements and unrecovered issues up to a date, recover material at `Item.rate`, cap advance recovery at
+    what is outstanding, and keep one open bill per order. TDS defaults from the PAN (1% individual or HUF, else 2%).
+    Attendance contractor names link to the vendor master. Margin per BOQ item on the project's Subcontracts tab.
 23. **Payables** (M). Payments against approved bills, ageing, due list, micro and small enterprise bills
     flagged as they near 45 days; the cost view uses actual bills where they exist.
 

@@ -14,12 +14,14 @@ import {
   type StockBalanceSortField,
   type StockEntryDto,
   type StockEntrySortField,
+  subBillLabel,
 } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
 import { VendorsService } from '../vendors/vendors.service';
+import { assertOpenWorkOrder } from '../subcontracts/work-orders.service';
 import { AttachmentsService } from '../common/attachments.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { dateOnly, dec, iso, money, parseDate } from '../common/serialize';
@@ -49,6 +51,7 @@ const include = {
   materialRequest: { select: { requestNo: true } },
   purchaseOrder: { select: { poNo: true } },
   activity: { select: { name: true } },
+  workOrder: { select: { woNo: true } },
   lines: { orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }], include: { item: { select: { name: true, unit: true } } } },
   attachments: true,
 } satisfies Prisma.StockEntryInclude;
@@ -93,6 +96,7 @@ interface Header {
   vehicleNo?: string | null;
   issuedTo?: string | null;
   activityId?: string | null;
+  workOrderId?: string | null;
   remarks?: string | null;
 }
 
@@ -138,6 +142,9 @@ export class StockService {
       issuedTo: r.issuedTo,
       activityId: r.activityId,
       activityName: r.activity?.name ?? null,
+      workOrderId: r.workOrderId,
+      woNo: r.workOrder?.woNo ?? null,
+      subcontractBillId: r.subcontractBillId,
       remarks: r.remarks,
       lines: r.lines.map((l) => ({ id: l.id, itemId: l.itemId, itemName: l.item.name, unit: l.item.unit, quantity: dec(l.quantity)!, materialRequestItemId: l.materialRequestItemId, purchaseOrderLineId: l.purchaseOrderLineId })),
       attachments: r.attachments.map((a) => this.attachments.toDto(a)),
@@ -235,6 +242,7 @@ export class StockService {
         vehicleNo: blank(h.vehicleNo),
         issuedTo: blank(h.issuedTo),
         activityId: h.activityId ?? null,
+        workOrderId: h.workOrderId ?? null,
         remarks: blank(h.remarks),
         createdById: user.id,
         lines: {
@@ -312,6 +320,7 @@ export class StockService {
     if (q.projectId) where.projectId = q.projectId;
     if (q.type) where.type = q.type;
     if (q.materialRequestId) where.materialRequestId = q.materialRequestId;
+    if (q.workOrderId) where.workOrderId = q.workOrderId;
     if (q.itemId) where.lines = { some: { itemId: q.itemId } };
     if (q.from || q.to) where.date = { ...(q.from ? { gte: parseDate(q.from) } : {}), ...(q.to ? { lte: parseDate(q.to) } : {}) };
     const words = searchWords(q.q);
@@ -445,6 +454,8 @@ export class StockService {
       const activity = await this.prisma.activity.findFirst({ where: { id: dto.activityId, projectId: dto.projectId }, select: { id: true } });
       if (!activity) throw new BadRequestException('The activity is not part of this project');
     }
+    const issuedTo = dto.workOrderId ? dto.issuedTo || (await assertOpenWorkOrder(this.prisma, user.organizationId, dto.workOrderId, dto.projectId)).vendorName : dto.issuedTo;
+    if (!issuedTo) throw new BadRequestException('Say who took the material');
     const items = await this.prisma.item.findMany({ where: { id: { in: dto.lines.map((l) => l.itemId) }, organizationId: user.organizationId }, select: { id: true, name: true, unit: true } });
     const lines = this.mergeLines(
       dto.lines.map((l) => {
@@ -464,11 +475,11 @@ export class StockService {
             throw new ConflictException(have.lte(0) ? `${item.name} is out of stock at this project.` : `Only ${dec(have)} ${item.unit} of ${item.name} is in stock at this project.`);
           }
         }
-        return this.insertEntry(tx, user, { ...dto, type: 'ISSUE', date }, lines.map((l) => ({ ...l, quantity: l.quantity.neg() })));
+        return this.insertEntry(tx, user, { ...dto, issuedTo, type: 'ISSUE', date }, lines.map((l) => ({ ...l, quantity: l.quantity.neg() })));
       }),
     );
     if ('existing' in saved) return this.get(user, saved.id);
-    await this.audit.log(user, 'STOCK', saved.id, 'CREATED', `${saved.entryNo} to ${dto.issuedTo}`);
+    await this.audit.log(user, 'STOCK', saved.id, 'CREATED', `${saved.entryNo} to ${issuedTo}`);
     await this.alertLowStock(user, dto.projectId, before, saved.id, saved.entryNo);
     return this.get(user, saved.id);
   }
@@ -515,6 +526,10 @@ export class StockService {
     const row = await this.prisma.stockEntry.findFirst({ where: { id, ...this.access.submissionWhere(user) }, include: { lines: { include: { item: { select: { name: true, unit: true } } } } } });
     if (!row) throw new NotFoundException('Stock entry not found');
     await this.access.assertCanAdjustStock(user, row.projectId);
+    if (row.subcontractBillId) {
+      const bill = await this.prisma.subcontractBill.findUnique({ where: { id: row.subcontractBillId }, select: { status: true, billNo: true, workOrder: { select: { woNo: true } } } });
+      if (bill?.status === 'APPROVED') throw new ConflictException(`${row.entryNo} was recovered in ${subBillLabel(bill.workOrder.woNo, bill.billNo, false)}; it cannot be deleted`);
+    }
     const itemIds = [...new Set(row.lines.map((l) => l.itemId))];
     let before = new Map<string, Decimal>();
     await this.inLock(user.organizationId, async (tx) => {

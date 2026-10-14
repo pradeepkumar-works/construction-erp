@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { canKeepStock, type ActivityDto, type AttendanceSuggestionsDto, type Paginated, type StockBalanceDto, type StockEntryDto } from '@erp/shared';
+import { canKeepStock, canViewWorkOrders, type ActivityDto, type AttendanceSuggestionsDto, type Paginated, type StockBalanceDto, type StockEntryDto, type WorkOrderDto } from '@erp/shared';
 import { useAuth } from '../../src/auth/AuthContext';
 import { useApi, useFetch } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
@@ -31,6 +31,7 @@ export default function IssueScreen() {
   const [projectId, setProjectId] = useState<string | null>(params.projectId ?? null);
   const [date, setDate] = useState(today());
   const [issuedTo, setIssuedTo] = useState('');
+  const [workOrderId, setWorkOrderId] = useState<string>('');
   const [activityId, setActivityId] = useState<string | null>(null);
   const [rows, setRows] = useState<Row[]>([{ key: newKey(), itemId: null, quantity: '' }]);
   const [remarks, setRemarks] = useState('');
@@ -54,6 +55,11 @@ export default function IssueScreen() {
     cacheKey: projectId ? `attendance-suggestions:${projectId}` : undefined,
   });
 
+  const wos = useFetch<Paginated<WorkOrderDto>>((a) => a.get('/work-orders', { projectId: projectId!, open: true, pageSize: 50 }), [projectId], {
+    enabled: !!projectId && !!user && canViewWorkOrders(user.roleKey),
+    refetchOnFocus: false,
+  });
+  const woOptions = (wos.data?.items ?? []).map((w) => ({ value: w.id, label: `${w.woNo} · ${w.vendorName}` }));
   const items = useMemo(() => stock.data?.items ?? [], [stock.data]);
   const byId = useMemo(() => new Map(items.map((i) => [i.itemId, i])), [items]);
   const updateRow = (key: string, patch: Partial<Row>) => setRows((rs) => rs.map((r) => (r.key === key ? { ...r, ...patch } : r)));
@@ -82,7 +88,7 @@ export default function IssueScreen() {
     setBusy(true);
     try {
       const lines = rows.filter((r) => r.itemId && r.quantity.trim()).map((r) => ({ itemId: r.itemId, quantity: r.quantity.trim() }));
-      setSaved(await api.post<StockEntryDto>('/stock/issues', { projectId, date, issuedTo: issuedTo.trim(), activityId, remarks: remarks.trim() || null, lines }));
+      setSaved(await api.post<StockEntryDto>('/stock/issues', { projectId, date, issuedTo: issuedTo.trim(), workOrderId: workOrderId || undefined, activityId, remarks: remarks.trim() || null, lines }));
     } catch (e) {
       setSubmitError(errorMessage(e));
     } finally {
@@ -123,12 +129,26 @@ export default function IssueScreen() {
           onChange={(v) => {
             setProjectId(v);
             setActivityId(null);
+            setWorkOrderId('');
             setRows([{ key: newKey(), itemId: null, quantity: '' }]);
           }}
           placeholder="Choose project"
           error={errors.projectId}
         />
         <DatePicker label="Date" required value={date} onChange={setDate} error={errors.date} />
+        {woOptions.length ? (
+          <Select
+            label="To a subcontractor"
+            value={workOrderId}
+            options={[{ value: '', label: 'No (departmental)' }, ...woOptions]}
+            onChange={(v) => {
+              setWorkOrderId(v);
+              const w = wos.data?.items.find((x) => x.id === v);
+              if (w) setIssuedTo(w.vendorName);
+            }}
+            placeholder="No (departmental)"
+          />
+        ) : null}
         <Input label="Issued to" required value={issuedTo} onChangeText={setIssuedTo} placeholder="Contractor, gang or person" error={errors.issuedTo} />
         {contractors.length ? <Chips value={null} clearable={false} options={contractors.map((c) => ({ value: c, label: c }))} onChange={(v) => v && setIssuedTo(v)} /> : null}
         <Select label="For activity" value={activityId} options={(activities.data ?? []).map((a) => ({ value: a.id, label: a.name }))} onChange={setActivityId} placeholder="Optional" disabled={!projectId} />

@@ -54,7 +54,17 @@ export class CreateIssueDto {
   @ApiPropertyOptional(CLIENT_ID_DOC) @IsOptional() @IsUUID('4') id?: string;
   @ApiProperty() @IsUUID() projectId: string;
   @ApiProperty({ example: '2026-10-13' }) @IsDateString() @dateOnly() date: string;
-  @ApiProperty({ example: 'Kalinga Builders (slab gang)', description: 'Who took the material' }) @IsString() @trim() @MinLength(1) @MaxLength(200) issuedTo: string;
+  @ApiPropertyOptional({ example: 'Kalinga Builders (slab gang)', description: 'Who took the material; the contractor when left out with a work order' })
+  @ValidateIf((o: CreateIssueDto) => !o.workOrderId || o.issuedTo != null)
+  @IsString()
+  @trim()
+  @MinLength(1)
+  @MaxLength(200)
+  issuedTo?: string;
+  @ApiPropertyOptional({ description: "Material for a subcontractor's work: their approved, open work order. It is recovered from their next bill." })
+  @IsOptional()
+  @IsUUID()
+  workOrderId?: string;
   @ApiPropertyOptional({ description: 'Activity the material is used for' }) @IsOptional() @IsUUID() activityId?: string | null;
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(1000) remarks?: string | null;
 
@@ -92,6 +102,7 @@ export class ListStockEntriesQuery extends PageQuery {
   @ApiPropertyOptional({ enum: STOCK_ENTRY_TYPES }) @IsOptional() @IsIn(STOCK_ENTRY_TYPES as unknown as string[]) type?: StockEntryType;
   @ApiPropertyOptional({ description: 'Entries that move this item' }) @IsOptional() @IsUUID() itemId?: string;
   @ApiPropertyOptional({ description: 'Receipts against this material request' }) @IsOptional() @IsUUID() materialRequestId?: string;
+  @ApiPropertyOptional({ description: 'Issues against this work order' }) @IsOptional() @IsUUID() workOrderId?: string;
   @ApiPropertyOptional({ example: '2026-10-01' }) @IsOptional() @IsDateString() @dateOnly() from?: string;
   @ApiPropertyOptional({ example: '2026-10-31' }) @IsOptional() @IsDateString() @dateOnly() to?: string;
   @ApiPropertyOptional({ enum: LIST_SORT_FIELDS.stockEntries, default: 'date' }) @IsOptional() @IsIn(LIST_SORT_FIELDS.stockEntries as unknown as string[]) sortBy?: StockEntrySortField;
