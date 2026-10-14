@@ -60,9 +60,21 @@ export class NotificationsController {
   @Public()
   @UseGuards(CronGuard)
   @ApiSecurity('cron')
-  @ApiOperation({ summary: 'Daily digest of pending approvals (in-app, push and email). Auth: Authorization: Bearer <CRON_SECRET>.' })
+  @ApiOperation({ summary: 'Daily digest of pending approvals (in-app, push and email); also sends the test-due reminders. Auth: Authorization: Bearer <CRON_SECRET>.' })
   @Get('jobs/approval-digest')
-  approvalDigest(@Query() q: JobQuery) {
-    return this.jobs.approvalDigest(q.date);
+  async approvalDigest(@Query() q: JobQuery) {
+    const digest = await this.jobs.approvalDigest(q.date);
+    // Vercel Hobby allows two crons, so the daily test reminders ride on the digest's.
+    await this.jobs.testsDue(q.date).catch(() => undefined);
+    return digest;
+  }
+
+  @Public()
+  @UseGuards(CronGuard)
+  @ApiSecurity('cron')
+  @ApiOperation({ summary: 'Test readings due or overdue (cubes at 7 and 28 days), reminded once each. Auth: Authorization: Bearer <CRON_SECRET>.' })
+  @Get('jobs/tests-due')
+  testsDue(@Query() q: JobQuery) {
+    return this.jobs.testsDue(q.date);
   }
 }

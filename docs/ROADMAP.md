@@ -221,8 +221,11 @@ relative to a v2 item (S about one, M about two, L about three). The full draft 
     QA/QC marks each checklist point OK / Not OK / N/A and passes, fails or asks for re-inspection. Organisation
     checklists (eight standard ones to start from), a default checklist per activity, and hold points: a hold-point
     activity's progress is approved only after a passed inspection at that location.
-27. **Tests and NCRs** (M). Tests with result against specification (concrete cubes with 7 and 28-day
-    reminders, compaction, others); non-conformance reports with cause, corrective action and closure.
+27. ~~**Tests and NCRs** (M). Tests with result against specification (concrete cubes with 7 and 28-day
+    reminders, compaction, others); non-conformance reports with cause, corrective action and closure.~~
+    Done: Site → Quality (Tests and NCRs tabs) and Tests & NCRs in the site app. Cubes get 7 and 28-day readings,
+    reminded when due; the last reading decides pass or fail against the specification. QA/QC raises an NCR (from a
+    failed test or inspection), site records the cause and corrective action, QA/QC closes or reopens it.
 28. **Document register** (M). Drawings and documents with revision and status, current revision only (and
     offline) on the site app, transmittals, numbered letters in and out linked to delays.
 

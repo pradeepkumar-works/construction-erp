@@ -18,7 +18,7 @@ test.describe.serial('inspection from request to pass', () => {
 
   test('the site engineer requests an inspection', async ({ page }) => {
     await signIn(page, 'engineer@demo.com');
-    await page.getByRole('link', { name: 'Inspections' }).click();
+    await page.getByRole('link', { name: 'Quality' }).click();
     await page.getByRole('button', { name: 'Request inspection' }).click();
     const modal = page.locator('.ant-modal').filter({ hasText: 'Request inspection' });
     await chooseOption(modal.getByLabel('Project'), 'RD-2026-01');

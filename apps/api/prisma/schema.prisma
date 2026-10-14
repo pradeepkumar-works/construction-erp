@@ -116,6 +116,41 @@ enum NotificationType {
   APPROVAL_DIGEST
   LOW_STOCK
   RISK_RAISED
+  TEST_DUE
+  TEST_FAILED
+  NCR
+}
+
+/// What a quality test is of. CONCRETE_CUBE gets 7 and 28-day readings; the others one result.
+enum TestKind {
+  CONCRETE_CUBE
+  FIELD_DENSITY
+  SOIL
+  AGGREGATE
+  BITUMEN
+  BRICK
+  STEEL
+  WATER
+  OTHER
+}
+
+enum TestResult {
+  PENDING
+  PASS
+  FAIL
+}
+
+enum NcrSeverity {
+  MINOR
+  MAJOR
+  CRITICAL
+}
+
+/// OPEN = raised, ACTION_TAKEN = site has answered with cause and corrective action, CLOSED = QA/QC accepted it.
+enum NcrStatus {
+  OPEN
+  ACTION_TAKEN
+  CLOSED
 }
 
 /// DELAY = has held up work (days lost, responsible party); RISK = might (probability × impact).
@@ -220,6 +255,8 @@ model Organization {
   tallyExports      TallyExport[]
   checklists        ChecklistTemplate[]
   inspections       Inspection[]
+  qualityTests      QualityTest[]
+  ncrs              Ncr[]
 }
 
 model Role {
@@ -311,6 +348,10 @@ model User {
   reviewedSubBills     SubcontractBill[]  @relation("SubBillReviewer")
   requestedInspections Inspection[]       @relation("InspectionRequester")
   inspectionsDone      Inspection[]       @relation("InspectionInspector")
+  qualityTests         QualityTest[]      @relation("TestCreator")
+  ncrsRaised           Ncr[]              @relation("NcrRaiser")
+  ncrsToAct            Ncr[]              @relation("NcrActionBy")
+  ncrsClosed           Ncr[]              @relation("NcrCloser")
   raisedRisks          Risk[]             @relation("RiskRaiser")
   ownedRisks           Risk[]             @relation("RiskOwner")
 
@@ -391,6 +432,8 @@ model Project {
   workOrders       WorkOrder[]
   subcontractBills SubcontractBill[]
   inspections      Inspection[]
+  qualityTests     QualityTest[]
+  ncrs             Ncr[]
 
   @@unique([organizationId, code])
   @@index([organizationId, status])
@@ -907,6 +950,8 @@ model Activity {
   expenses        Expense[]
   risks           Risk[]
   inspections     Inspection[]
+  qualityTests    QualityTest[]
+  ncrs            Ncr[]
 
   @@index([projectId])
   @@index([organizationId])
@@ -1675,6 +1720,10 @@ model Attachment {
   subcontractBill   SubcontractBill?  @relation(fields: [subcontractBillId], references: [id], onDelete: Cascade)
   inspectionId      String?
   inspection        Inspection?       @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+  qualityTestId     String?
+  qualityTest       QualityTest?      @relation(fields: [qualityTestId], references: [id], onDelete: Cascade)
+  ncrId             String?
+  ncr               Ncr?              @relation(fields: [ncrId], references: [id], onDelete: Cascade)
   createdAt         DateTime          @default(now())
 
   @@index([organizationId])
@@ -1865,9 +1914,109 @@ model Inspection {
   updatedAt      DateTime         @updatedAt
 
   attachments Attachment[]
+  ncrs        Ncr[]
 
   @@unique([organizationId, inspectionNo])
   @@index([projectId, status])
   @@index([activityId, status])
+  @@index([organizationId, status])
+}
+
+/// A quality test: a sample taken on a date, the specification and its readings (cubes at 7 and 28 days).
+/// The result is decided by the last reading: against specMin / specMax when given, else as recorded.
+model QualityTest {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  activityId     String?
+  activity       Activity?    @relation(fields: [activityId], references: [id], onDelete: SetNull)
+  /// TST-2026-0001
+  testNo         String
+  kind           TestKind
+  /// e.g. "M25 cubes, GF slab bays 1 to 4"
+  title          String
+  location       String?
+  sampledOn      DateTime     @db.Date
+  /// As written in the contract, e.g. "Not less than 25 N/mm2 at 28 days"
+  specification  String?
+  unit           String?
+  specMin        Decimal?     @db.Decimal(18, 3)
+  specMax        Decimal?     @db.Decimal(18, 3)
+  result         TestResult   @default(PENDING)
+  remarks        String?
+  createdById    String
+  createdBy      User         @relation("TestCreator", fields: [createdById], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  readings    QualityTestReading[]
+  attachments Attachment[]
+  ncrs        Ncr[]
+
+  @@unique([organizationId, testNo])
+  @@index([projectId, result])
+  @@index([organizationId, kind])
+}
+
+/// One reading of a test: "7 days", "28 days" or "Result", due on a date, with the value once tested.
+model QualityTestReading {
+  id        String      @id @default(uuid())
+  testId    String
+  test      QualityTest @relation(fields: [testId], references: [id], onDelete: Cascade)
+  label     String
+  dueOn     DateTime?   @db.Date
+  value     Decimal?    @db.Decimal(18, 3)
+  testedOn  DateTime?   @db.Date
+  remarks   String?
+  sortOrder Int         @default(0)
+
+  @@index([testId])
+  @@index([dueOn])
+}
+
+/// Non-conformance report: what is wrong, then site's cause and corrective action, then QA/QC's closure.
+model Ncr {
+  id               String       @id @default(uuid())
+  organizationId   String
+  organization     Organization @relation(fields: [organizationId], references: [id])
+  projectId        String
+  project          Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  activityId       String?
+  activity         Activity?    @relation(fields: [activityId], references: [id], onDelete: SetNull)
+  inspectionId     String?
+  inspection       Inspection?  @relation(fields: [inspectionId], references: [id], onDelete: SetNull)
+  qualityTestId    String?
+  qualityTest      QualityTest? @relation(fields: [qualityTestId], references: [id], onDelete: SetNull)
+  /// NCR-2026-0001
+  ncrNo            String
+  raisedOn         DateTime     @db.Date
+  title            String
+  description      String
+  location         String?
+  severity         NcrSeverity  @default(MINOR)
+  status           NcrStatus    @default(OPEN)
+  raisedById       String
+  raisedBy         User         @relation("NcrRaiser", fields: [raisedById], references: [id])
+  /// Who is to rectify it
+  actionById       String?
+  actionBy         User?        @relation("NcrActionBy", fields: [actionById], references: [id])
+  dueDate          DateTime?    @db.Date
+  cause            String?
+  correctiveAction String?
+  preventiveAction String?
+  actionAt         DateTime?
+  closedById       String?
+  closedBy         User?        @relation("NcrCloser", fields: [closedById], references: [id])
+  closedAt         DateTime?
+  closureNote      String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  attachments Attachment[]
+
+  @@unique([organizationId, ncrNo])
+  @@index([projectId, status])
   @@index([organizationId, status])
 }

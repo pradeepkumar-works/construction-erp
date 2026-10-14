@@ -1,7 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { APPROVER_ROLES, DPR_SUBMITTER_ROLES, SPECIALIST_APPROVERS, SUBMISSION_TYPE_LABELS, type NotificationJobResult, type PendingApprovalDto, type RoleKey } from '@erp/shared';
+import { APPROVER_ROLES, DPR_SUBMITTER_ROLES, SPECIALIST_APPROVERS, SUBMISSION_TYPE_LABELS, TEST_KIND_LABELS, type NotificationJobResult, type PendingApprovalDto, type RoleKey } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
+import { ProjectAccessService } from '../common/project-access.service';
 import { RequestUser } from '../common/current-user';
 import { parseDate } from '../common/serialize';
 import { NotificationsService } from './notifications.service';
@@ -19,7 +20,13 @@ const WEB_URL = (process.env.WEB_URL || '').replace(/\/+$/, '');
 export class NotificationJobsService {
   private readonly log = new Logger(NotificationJobsService.name);
 
-  constructor(private prisma: PrismaService, private lifecycle: SubmissionLifecycleService, private notifications: NotificationsService, private email: EmailService) {}
+  constructor(
+    private prisma: PrismaService,
+    private lifecycle: SubmissionLifecycleService,
+    private notifications: NotificationsService,
+    private email: EmailService,
+    private access: ProjectAccessService,
+  ) {}
 
   /**
    * "DPR not submitted" reminder: for every ACTIVE project without a DPR for today (drafts don't count),
@@ -116,6 +123,40 @@ export class NotificationJobsService {
       }
     }
     this.log.log(`Approval digest ${date}: ${JSON.stringify(result)}`);
+    return result;
+  }
+
+  /**
+   * Test readings falling due: every reading due on or before `date` with no value yet (the 7-day and 28-day cubes),
+   * on a test still pending, goes once to whoever recorded the test and the QA/QC on the project. Runs with the digest.
+   */
+  async testsDue(date = todayIn()): Promise<NotificationJobResult> {
+    const result: NotificationJobResult = { job: 'TESTS_DUE', date, created: 0, pushed: 0, emailed: 0, skipped: 0 };
+    const readings = await this.prisma.qualityTestReading.findMany({
+      where: { value: null, dueOn: { lte: parseDate(date) }, test: { result: 'PENDING', project: { status: 'ACTIVE' } } },
+      include: { test: { include: { project: { select: { name: true } } } } },
+      orderBy: [{ dueOn: 'asc' }, { sortOrder: 'asc' }],
+    });
+    const watchers = new Map<string, string[]>();
+    for (const r of readings) {
+      const t = r.test;
+      if (!watchers.has(t.projectId)) watchers.set(t.projectId, (await this.access.qualityWatchers(t.organizationId, t.projectId, { onProjectOnly: true })).map((u) => u.id));
+      const due = r.dueOn!.toISOString().slice(0, 10);
+      const n = await this.notifications.notify({
+        organizationId: t.organizationId,
+        userIds: [...new Set([t.createdById, ...watchers.get(t.projectId)!])],
+        type: 'TEST_DUE',
+        title: `${r.label} test ${due < date ? 'overdue' : 'due today'}: ${t.title}`,
+        body: `${t.testNo} (${TEST_KIND_LABELS[t.kind]}) at ${t.project.name}, sampled ${t.sampledOn.toISOString().slice(0, 10)}. Enter the ${r.label.toLowerCase()} result once tested.`,
+        projectId: t.projectId,
+        entityId: t.id,
+        dedupeKey: `TEST_DUE:${r.id}`,
+      });
+      result.created += n.created;
+      result.pushed += n.pushed;
+      result.skipped += n.skipped;
+    }
+    this.log.log(`Tests due ${date}: ${JSON.stringify(result)}`);
     return result;
   }
 

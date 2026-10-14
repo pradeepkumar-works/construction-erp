@@ -1,4 +1,4 @@
-import type { InspectionCheck } from './quality';
+import type { InspectionCheck, NcrSeverity, NcrStatus, TestKind, TestResult } from './quality';
 import type { ApprovalRightDto } from './approvals';
 import type { TallyVoucherKind } from './tally';
 import type {
@@ -335,7 +335,7 @@ export interface PushTokenDto {
 
 /** Result of a scheduled notification job (DPR reminder / approval digest). */
 export interface NotificationJobResult {
-  job: 'DPR_REMINDER' | 'APPROVAL_DIGEST';
+  job: 'DPR_REMINDER' | 'APPROVAL_DIGEST' | 'TESTS_DUE';
   date: string;
   created: number;
   pushed: number;
@@ -1773,4 +1773,95 @@ export interface InspectionDto extends SubmissionBase {
   remarks: string | null;
   checklistName: string | null;
   checklist: InspectionCheck[];
+}
+
+export interface QualityTestReadingDto {
+  id: string;
+  /** "7 days", "28 days" or "Result" */
+  label: string;
+  dueOn: string | null;
+  /** Decimal string, empty until tested */
+  value: string | null;
+  testedOn: string | null;
+  remarks: string | null;
+  /** Due before today and not recorded yet */
+  overdue: boolean;
+}
+
+/** A quality test: a sample, its specification and readings. The last reading decides the result. */
+export interface QualityTestDto {
+  id: string;
+  projectId: string;
+  projectName: string;
+  activityId: string | null;
+  activityName: string | null;
+  testNo: string;
+  kind: TestKind;
+  title: string;
+  location: string | null;
+  sampledOn: string;
+  specification: string | null;
+  unit: string | null;
+  specMin: string | null;
+  specMax: string | null;
+  result: TestResult;
+  remarks: string | null;
+  readings: QualityTestReadingDto[];
+  /** The earliest reading still to be recorded */
+  nextDueOn: string | null;
+  overdue: boolean;
+  openNcrs: number;
+  createdById: string;
+  createdByName: string;
+  attachments: AttachmentDto[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Non-conformance report: raised by QA/QC, cause and corrective action recorded by site, closed by QA/QC. */
+export interface NcrDto {
+  id: string;
+  projectId: string;
+  projectName: string;
+  ncrNo: string;
+  raisedOn: string;
+  title: string;
+  description: string;
+  location: string | null;
+  severity: NcrSeverity;
+  status: NcrStatus;
+  activityId: string | null;
+  activityName: string | null;
+  inspectionId: string | null;
+  inspectionNo: string | null;
+  qualityTestId: string | null;
+  testNo: string | null;
+  raisedById: string;
+  raisedByName: string;
+  actionById: string | null;
+  actionByName: string | null;
+  dueDate: string | null;
+  /** Not closed and past its due date */
+  overdue: boolean;
+  cause: string | null;
+  correctiveAction: string | null;
+  preventiveAction: string | null;
+  actionAt: string | null;
+  closedById: string | null;
+  closedByName: string | null;
+  closedAt: string | null;
+  closureNote: string | null;
+  attachments: AttachmentDto[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Counts for the Quality page tabs and the project. */
+export interface QualitySummaryDto {
+  inspectionsWaiting: number;
+  testsPending: number;
+  testsOverdue: number;
+  testsFailed: number;
+  ncrsOpen: number;
+  ncrsOverdue: number;
 }

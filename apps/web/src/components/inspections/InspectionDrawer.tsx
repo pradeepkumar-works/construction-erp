@@ -2,10 +2,10 @@
 
 import React, { useEffect, useState } from 'react';
 import { App, Button, Descriptions, Divider, Drawer, Input, Modal, Segmented, Skeleton, Space, Table, Tag, Typography } from 'antd';
-import { CheckOutlined, CloseOutlined, RedoOutlined } from '@ant-design/icons';
+import { CheckOutlined, CloseOutlined, RedoOutlined, WarningOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, InspectionDto, InspectionResult, ReviewDecision } from '@erp/shared';
-import { INSPECTION_RESULT_LABELS, INSPECTION_STATUS_LABELS, checklistCounts, mayApproveType } from '@erp/shared';
+import { INSPECTION_RESULT_LABELS, INSPECTION_STATUS_LABELS, canRaiseNcr, checklistCounts, mayApproveType } from '@erp/shared';
 import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useInspection } from '@/lib/queries';
@@ -18,6 +18,7 @@ import { AuditTrail } from '@/components/common/AuditTrail';
 import { EditResubmitButton } from '@/components/common/EditResubmitButton';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { submissionMetaItems } from '@/components/common/SubmitterInfo';
+import { NcrFormModal, type NcrPrefill } from '@/components/quality/NcrFormModal';
 
 const RESULT_COLORS: Record<InspectionResult, string> = { PASS: 'green', FAIL: 'red', NA: 'default' };
 
@@ -147,6 +148,21 @@ export function InspectionDrawer({ id, open, onClose, onEdit }: { id: string | n
   const { data, isLoading, error, refetch } = useInspection(id ?? undefined);
   const inspector = !!user && !!data && data.status === 'SUBMITTED' && mayApproveType(user, 'INSPECTION');
   const counts = data ? checklistCounts(data.checklist) : null;
+  const [ncr, setNcr] = useState<NcrPrefill | null>(null);
+  // A failed inspection, or one sent back, can be recorded as a non-conformance.
+  const mayRaise = !!user && !!data && canRaiseNcr(user.roleKey) && (data.status === 'REJECTED' || data.status === 'CHANGES_REQUESTED');
+  const raise = (x: InspectionDto) => {
+    const notOk = x.checklist.filter((c) => c.result === 'FAIL').map((c) => `${c.item}${c.remark ? ` (${c.remark})` : ''}`);
+    setNcr({
+      projectId: x.projectId,
+      inspectionId: x.id,
+      activityId: x.activityId,
+      location: x.location,
+      source: `${x.inspectionNo}, ${x.activityName}`,
+      title: `${x.activityName} at ${x.location}`,
+      description: [notOk.length ? `Not OK: ${notOk.join('; ')}.` : null, x.reviewNote].filter(Boolean).join(' '),
+    });
+  };
   return (
     <Drawer
       open={open}
@@ -161,7 +177,18 @@ export function InspectionDrawer({ id, open, onClose, onEdit }: { id: string | n
           'Inspection'
         )
       }
-      extra={data ? <EditResubmitButton entry={data} onEdit={onEdit} size="small" /> : null}
+      extra={
+        data ? (
+          <Space>
+            {mayRaise ? (
+              <Button size="small" danger icon={<WarningOutlined />} onClick={() => raise(data)}>
+                Raise NCR
+              </Button>
+            ) : null}
+            <EditResubmitButton entry={data} onEdit={onEdit} size="small" />
+          </Space>
+        ) : null
+      }
       destroyOnHidden
     >
       {isLoading && <Skeleton active />}
@@ -218,6 +245,7 @@ export function InspectionDrawer({ id, open, onClose, onEdit }: { id: string | n
           </Typography.Text>
         </>
       )}
+      <NcrFormModal open={!!ncr} onClose={() => setNcr(null)} prefill={ncr} />
     </Drawer>
   );
 }

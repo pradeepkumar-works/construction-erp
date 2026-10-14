@@ -116,6 +116,7 @@ async function main() {
     await seedSubcontracts(org.id);
     await seedPayables(org.id);
     await seedQuality(org.id);
+    await seedTestsAndNcrs(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
   }
@@ -273,6 +274,7 @@ async function main() {
   await seedSubcontracts(org.id);
   await seedPayables(org.id);
   await seedQuality(org.id);
+  await seedTestsAndNcrs(org.id);
 
   console.log('Seed complete. Login with any of these (password: password123):');
   for (const u of USERS) console.log(`  ${u.email.padEnd(24)} ${u.role}`);
@@ -1290,5 +1292,102 @@ async function seedQuality(organizationId: string) {
         ...(reviewed ? [{ organizationId, entityType: 'INSPECTION', entityId: x.id, action: status, actorId: qa.id, note, createdAt: day(Math.min(0, -ago + 1)) }] : []),
       ],
     });
+  }
+}
+
+type DemoTest = {
+  type: 'BUILDING' | 'ROAD';
+  activity: string;
+  kind: 'CONCRETE_CUBE' | 'FIELD_DENSITY' | 'BRICK';
+  title: string;
+  location: string;
+  ago: number;
+  spec: string;
+  unit: string;
+  min: string;
+  /** [label, days after sampling, value] */
+  readings: [string, number, string | null][];
+};
+
+/** Demo tests: cubes passed, cubes waiting for their 7 and 28-day results, a failed brick test and two compaction tests. */
+const DEMO_TESTS: DemoTest[] = [
+  { type: 'BUILDING', activity: 'RCC slab GF', kind: 'CONCRETE_CUBE', title: 'M25 cubes, GF slab bays 1 to 4', location: 'Ground floor slab', ago: 34, spec: 'Not less than 25 N/mm² at 28 days (IS 456)', unit: 'N/mm²', min: '25', readings: [['7 days', 7, '18.9'], ['28 days', 28, '28.6']] },
+  { type: 'BUILDING', activity: 'RCC footings and columns', kind: 'CONCRETE_CUBE', title: 'M25 cubes, columns C1 to C8', location: 'Columns, ground to first floor', ago: 10, spec: 'Not less than 25 N/mm² at 28 days (IS 456)', unit: 'N/mm²', min: '25', readings: [['7 days', 7, '17.6'], ['28 days', 28, null]] },
+  { type: 'BUILDING', activity: 'RCC footings and columns', kind: 'CONCRETE_CUBE', title: 'M25 cubes, plinth beams', location: 'Plinth beams, grid A to D', ago: 7, spec: 'Not less than 25 N/mm² at 28 days (IS 456)', unit: 'N/mm²', min: '25', readings: [['7 days', 7, null], ['28 days', 28, null]] },
+  { type: 'BUILDING', activity: 'Brick masonry', kind: 'BRICK', title: 'Fly ash bricks, lot 3 (Sai Bricks)', location: 'Stack at gate 2', ago: 6, spec: 'Compressive strength not less than 3.5 N/mm² (IS 1077)', unit: 'N/mm²', min: '3.5', readings: [['Result', 3, '2.9']] },
+  { type: 'ROAD', activity: 'Earthwork embankment', kind: 'FIELD_DENSITY', title: 'Embankment top layer compaction, sand replacement', location: 'Km 12+000 to 12+500, LHS', ago: 12, spec: 'Not less than 97% of MDD for the top 500 mm (MoRTH 305)', unit: '%', min: '97', readings: [['Result', 0, '98.2']] },
+  { type: 'ROAD', activity: 'Earthwork embankment', kind: 'FIELD_DENSITY', title: 'Embankment top layer compaction, sand replacement', location: 'Km 12+500 to 13+000, LHS', ago: 4, spec: 'Not less than 97% of MDD for the top 500 mm (MoRTH 305)', unit: '%', min: '97', readings: [['Result', 0, '95.4']] },
+];
+
+/**
+ * Demo tests and NCRs: the tests above, and three NCRs (bricks below strength still open, low compaction with the
+ * corrective action recorded, honeycombing closed). Only where none exist yet.
+ */
+async function seedTestsAndNcrs(organizationId: string) {
+  if ((await prisma.qualityTest.count({ where: { organizationId } })) > 0) return;
+  const qa = await prisma.user.findFirst({ where: { organizationId, email: 'qaqc@demo.com' } });
+  if (!qa) return;
+  const year = new Date().getUTCFullYear();
+  const tests = new Map<string, { id: string; projectId: string; activityId: string; testNo: string }>();
+  let n = 0;
+  for (const t of DEMO_TESTS) {
+    const project = await prisma.project.findFirst({ where: { organizationId, type: t.type }, include: { activities: { where: { name: t.activity } } }, orderBy: { code: 'asc' } });
+    const activity = project?.activities[0];
+    const by = project ? await prisma.user.findFirst({ where: { organizationId, role: { key: 'SITE_ENGINEER' }, memberships: { some: { projectId: project.id } } } }) : null;
+    if (!project || !activity || !by) continue;
+    const last = t.readings[t.readings.length - 1][2];
+    const result = last === null ? 'PENDING' : Number(last) < Number(t.min) ? 'FAIL' : 'PASS';
+    n += 1;
+    const testNo = `TST-${year}-${String(n).padStart(4, '0')}`;
+    const row = await prisma.qualityTest.create({
+      data: {
+        organizationId, projectId: project.id, activityId: activity.id, testNo, kind: t.kind, title: t.title, location: t.location, sampledOn: day(-t.ago),
+        specification: t.spec, unit: t.unit, specMin: D(t.min), result, createdById: by.id, createdAt: day(-t.ago),
+        readings: {
+          create: t.readings.map(([label, after, value], i) => ({ label, dueOn: day(-t.ago + after), value: value === null ? null : D(value), testedOn: value === null ? null : day(-t.ago + after), sortOrder: i })),
+        },
+      },
+    });
+    await prisma.auditLog.create({ data: { organizationId, entityType: 'QUALITY_TEST', entityId: row.id, action: 'CREATED', actorId: by.id, createdAt: day(-t.ago) } });
+    tests.set(t.location, { id: row.id, projectId: project.id, activityId: activity.id, testNo });
+  }
+
+  const engineerOf = async (projectId: string) => prisma.user.findFirst({ where: { organizationId, role: { key: 'SITE_ENGINEER' }, memberships: { some: { projectId } } } });
+  const bricks = tests.get('Stack at gate 2');
+  const compaction = tests.get('Km 12+500 to 13+000, LHS');
+  const columns = tests.get('Columns, ground to first floor');
+  const ncrs: Prisma.NcrUncheckedCreateInput[] = [];
+  if (bricks) {
+    const se = await engineerOf(bricks.projectId);
+    ncrs.push({
+      organizationId, projectId: bricks.projectId, ncrNo: '', raisedOn: day(-3), title: 'Fly ash bricks below specified strength', severity: 'MAJOR', status: 'OPEN',
+      description: `Lot 3 from Sai Bricks tested 2.9 N/mm² against 3.5 N/mm² required (IS 1077), ${bricks.testNo}. Do not use the lot; segregate it and ask the supplier to replace it.`,
+      location: 'Stack at gate 2', raisedById: qa.id, actionById: se?.id ?? null, dueDate: day(4), activityId: bricks.activityId, qualityTestId: bricks.id, createdAt: day(-3),
+    });
+  }
+  if (compaction) {
+    const se = await engineerOf(compaction.projectId);
+    ncrs.push({
+      organizationId, projectId: compaction.projectId, ncrNo: '', raisedOn: day(-3), title: 'Embankment compaction below 97% at Km 12+500 to 13+000', severity: 'MINOR', status: 'ACTION_TAKEN',
+      description: `Field density 95.4% of MDD against 97% required, ${compaction.testNo}. Rework the layer and test again before GSB.`,
+      location: 'Km 12+500 to 13+000, LHS', raisedById: qa.id, actionById: se?.id ?? null, dueDate: day(2), activityId: compaction.activityId, qualityTestId: compaction.id,
+      cause: 'Moisture below optimum after two dry days; the roller made fewer passes than the trial stretch.',
+      correctiveAction: 'Layer scarified, water added to OMC and recompacted with 8 passes of the 10 t roller. Retest requested.',
+      preventiveAction: 'Moisture checked before rolling; pass count recorded in the DPR.', actionAt: day(-1), createdAt: day(-3),
+    });
+  }
+  if (columns) {
+    ncrs.push({
+      organizationId, projectId: columns.projectId, ncrNo: '', raisedOn: day(-8), title: 'Honeycombing at the base of column C4', severity: 'MINOR', status: 'CLOSED',
+      description: 'Honeycombing about 150 mm high at the base of C4 after deshuttering; reinforcement not exposed.',
+      location: 'Column C4, ground floor', raisedById: qa.id, activityId: columns.activityId, dueDate: day(-5),
+      cause: 'Grout loss at the kicker joint; the needle vibrator did not reach the bottom lift.',
+      correctiveAction: 'Loose concrete chipped out and the area repaired with polymer-modified mortar.', actionAt: day(-6),
+      closedById: qa.id, closedAt: day(-5), closureNote: 'Repair checked by hammer test; acceptable.', createdAt: day(-8),
+    });
+  }
+  for (const [i, x] of ncrs.entries()) {
+    const row = await prisma.ncr.create({ data: { ...x, ncrNo: `NCR-${year}-${String(i + 1).padStart(4, '0')}` } });
+    await prisma.auditLog.create({ data: { organizationId, entityType: 'NCR', entityId: row.id, action: 'CREATED', actorId: qa.id, createdAt: x.createdAt as Date } });
   }
 }

@@ -29,6 +29,7 @@ import { PayablesModule } from './payables/payables.module';
 import { TallyModule } from './tally/tally.module';
 import { GstModule } from './gst/gst.module';
 import { InspectionsModule } from './inspections/inspections.module';
+import { QualityModule } from './quality/quality.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { MaterialRequestsModule } from './material-requests/material-requests.module';
 import { ApprovalsModule } from './approvals/approvals.module';
@@ -65,6 +66,7 @@ import { HealthController } from './health.controller';
     TallyModule,
     GstModule,
     InspectionsModule,
+    QualityModule,
     CostModule,
     ReportsModule,
     RisksModule,
