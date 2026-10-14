@@ -76,6 +76,9 @@ import type {
   ProjectType,
   RoleKey,
   SortOrder,
+  TallyExportDto,
+  TallyPreviewDto,
+  TallySettingsDto,
 } from '@erp/shared';
 import { MAX_PAGE_SIZE } from '@erp/shared';
 import { api } from './api';
@@ -521,6 +524,20 @@ export const usePayables = (filters: { projectId?: string; vendorId?: string } =
     queryFn: async () => (await api.get<PayablesDto>('/payables', { params: clean(filters) })).data,
     enabled,
   });
+
+export const useTallySettings = (enabled = true) =>
+  useQuery({ queryKey: ['tally', 'settings'], queryFn: async () => (await api.get<TallySettingsDto>('/tally/settings')).data, enabled });
+
+export const useTallyPreview = (range: { upTo: string; from?: string }, enabled = true) =>
+  useQuery({
+    queryKey: ['tally', 'preview', clean(range)],
+    queryFn: async () => (await api.get<TallyPreviewDto>('/tally/preview', { params: clean(range) })).data,
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+
+export const useTallyExports = (enabled = true) =>
+  useQuery({ queryKey: ['tally', 'exports'], queryFn: async () => (await api.get<TallyExportDto[]>('/tally/exports')).data, enabled });
 
 export interface ClientFilters extends PageParams {
   includeInactive?: boolean;

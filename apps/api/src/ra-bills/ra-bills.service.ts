@@ -14,6 +14,7 @@ import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import { BillDateDto, CertifyBillDto, CreateRaBillDto, ListRaBillsQuery, UpdateRaBillDto } from './ra-bills.dto';
 import { invoiceOf, RECEIPT_SUMS, settlement, syncBillStage } from '../receivables/bill-settlement';
 import { ReceivablesService } from '../receivables/receivables.service';
+import { assertNotExported } from '../tally/exported';
 
 const D = (v: Prisma.Decimal.Value) => new Prisma.Decimal(v);
 const ZERO = D(0);
@@ -147,6 +148,7 @@ export class RaBillsService {
       claimedGross: money(r.claimedGross),
       claimedNet: money(r.claimedNet),
       stage: r.stage,
+      exportedToTally: !!r.tallyExportId,
       sentDate: dateOnly(r.sentDate),
       certifiedDate: dateOnly(r.certifiedDate),
       certificateNo: r.certificateNo,
@@ -475,6 +477,7 @@ export class RaBillsService {
    */
   async certify(user: RequestUser, id: string, dto: CertifyBillDto) {
     const bill = await this.approvedBill(user, id);
+    assertNotExported(bill, 'This bill');
     if (bill.stage !== 'SENT' && bill.stage !== 'CERTIFIED') throw new BadRequestException(bill.stage === 'PAID' ? 'This bill is already paid' : 'Record the bill as sent first');
     checkNotFuture(dto.date, 'certificate date');
     if (bill.sentDate && dto.date < dateOnly(bill.sentDate)!) throw new BadRequestException('The certificate date cannot be before the date the bill was sent');

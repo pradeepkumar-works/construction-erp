@@ -26,6 +26,7 @@ import { VendorsModule } from './vendors/vendors.module';
 import { PurchasingModule } from './purchasing/purchasing.module';
 import { SubcontractsModule } from './subcontracts/subcontracts.module';
 import { PayablesModule } from './payables/payables.module';
+import { TallyModule } from './tally/tally.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { MaterialRequestsModule } from './material-requests/material-requests.module';
 import { ApprovalsModule } from './approvals/approvals.module';
@@ -59,6 +60,7 @@ import { HealthController } from './health.controller';
     PurchasingModule,
     SubcontractsModule,
     PayablesModule,
+    TallyModule,
     CostModule,
     ReportsModule,
     RisksModule,

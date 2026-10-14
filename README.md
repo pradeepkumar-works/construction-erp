@@ -78,6 +78,8 @@ contractors after the first client is live.
 - Payables: payments to vendors and subcontractors against their approved bills (part payments, TDS at payment),
   a due list by due date with ageing per vendor and project, micro and small enterprise bills flagged before their
   45 days run out, and actual subcontractor bills and cash out on project cost.
+- Tally export: certified RA bills, money received, vendor and subcontractor bills, payments and site expenses as
+  TallyPrime vouchers each month, with the Tally ledger names set once and every record sent only once.
 - Receivables: money received against each bill with what the client deducted (TDS, GST TDS, retention, deposit,
   cess), part payments, retention and deposit releases, ageing per project and client, the retention due date,
   a dashboard tile, and billed value and cash in on project cost.

@@ -13,6 +13,8 @@ import {
   InboxOutlined,
   ToolOutlined,
   WalletOutlined,
+  PayCircleOutlined,
+  ExportOutlined,
   CalculatorOutlined,
   FundOutlined,
   FilePdfOutlined,
@@ -37,7 +39,7 @@ import {
   ProfileOutlined,
 } from '@ant-design/icons';
 import type { AuthUser } from '@erp/shared';
-import { approvalRightsOf, canViewPurchaseOrders, canViewVendorBills, canViewWorkOrders, canViewPayables, canPrepareSubcontractBill, canEditContract, canEditProjects, canEditVendors, canManageUsers, canSeeVendorBank, canPrepareBill, canViewContract, canViewCost, mayApprove } from '@erp/shared';
+import { approvalRightsOf, canViewPurchaseOrders, canViewVendorBills, canViewWorkOrders, canViewPayables, canExportTally, canPrepareSubcontractBill, canEditContract, canEditProjects, canEditVendors, canManageUsers, canSeeVendorBank, canPrepareBill, canViewContract, canViewCost, mayApprove } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { usePendingApprovals } from '@/lib/queries';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
@@ -119,7 +121,7 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
           ...(canViewVendorBills(user.roleKey) ? [link('/vendor-bills', 'Vendor Bills', ReconciliationOutlined)] : []),
           ...(canViewWorkOrders(user.roleKey) ? [link('/work-orders', 'Work Orders', SolutionOutlined)] : []),
           ...(canPrepareSubcontractBill(user.roleKey) || approvalRightsOf(user).some((r) => r.type === 'SUBCONTRACT_BILL') ? [link('/subcontract-bills', 'Subcontractor Bills', ProfileOutlined)] : []),
-          ...(canViewPayables(user.roleKey) ? [link('/payables', 'Payables', WalletOutlined)] : []),
+          ...(canViewPayables(user.roleKey) ? [link('/payables', 'Payables', PayCircleOutlined)] : []),
           ...(canEditVendors(user.roleKey) || canSeeVendorBank(user.roleKey) ? [link('/vendors', 'Vendors', ShopOutlined)] : []),
         ],
       },
@@ -129,6 +131,7 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
           ...(canPrepareBill(user.roleKey) || approvalRightsOf(user).some((r) => r.type === 'BILL') ? [link('/bills', 'RA Bills', FileDoneOutlined)] : []),
           ...(canViewContract(user.roleKey) ? [link('/receivables', 'Receivables', AccountBookOutlined)] : []),
           ...(canViewContract(user.roleKey) || canEditContract(user.roleKey) ? [link('/clients', 'Clients', BankOutlined)] : []),
+          ...(canExportTally(user.roleKey) ? [link('/tally', 'Tally Export', ExportOutlined)] : []),
         ],
       },
       {

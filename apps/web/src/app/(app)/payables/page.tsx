@@ -23,6 +23,7 @@ import { ExportButton } from '@/components/common/ExportButton';
 import { VendorBillDrawer } from '@/components/purchasing/VendorBillDrawer';
 import { SubBillDrawer } from '@/components/subcontracts/SubBillDrawer';
 import { PAYMENT_QUERY_KEYS, PaymentFormModal, type PayTarget } from '@/components/payables/PaymentFormModal';
+import { InTallyTag } from '@/components/tally/InTallyTag';
 
 const money = (v: string, strong?: boolean) => (strong ? <strong className="mono">{formatINR(v)}</strong> : <span className="mono">{formatINR(v)}</span>);
 const late = (v: string) => (toNumber(v) > 0 ? <span className="mono" style={{ color: '#cf1322' }}>{formatINR(v)}</span> : <span className="mono text-muted">-</span>);
@@ -110,17 +111,20 @@ function PaymentsTab({ projectId, vendorId, onBill }: { projectId?: string; vend
             key: 'actions',
             fixed: 'right' as const,
             width: 140,
-            render: (_: unknown, r: VendorPaymentDto) => (
-              <Space size={4}>
-                <Button size="small" onClick={() => setEditing(r)}>
-                  Edit
-                </Button>
-                <Popconfirm title="Delete this payment?" description="The bill goes back to outstanding." onConfirm={() => remove.mutate(r.id)}>
-                  <Button size="small" danger>
-                    Delete
+            render: (_: unknown, r: VendorPaymentDto) =>
+              r.exportedToTally ? (
+                <InTallyTag />
+              ) : (
+                <Space size={4}>
+                  <Button size="small" onClick={() => setEditing(r)}>
+                    Edit
                   </Button>
-                </Popconfirm>
-              </Space>
+                  <Popconfirm title="Delete this payment?" description="The bill goes back to outstanding." onConfirm={() => remove.mutate(r.id)}>
+                    <Button size="small" danger>
+                      Delete
+                    </Button>
+                  </Popconfirm>
+                </Space>
             ),
           },
         ]

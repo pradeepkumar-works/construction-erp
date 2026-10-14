@@ -198,9 +198,14 @@ relative to a v2 item (S about one, M about two, L about three). The full draft 
     were charged for and their gangs' attendance), vendor bills and cash out.
 
 ### C. Accounts bridge
-24. **Tally export** (M). Monthly Tally XML of RA bills, vendor and subcontractor bills, approved expenses,
+24. ~~**Tally export** (M). Monthly Tally XML of RA bills, vendor and subcontractor bills, approved expenses,
     receipts and payments; ledger mapping screen; vouchers marked exported so none goes twice. Tally stays the
-    books; no general ledger in Nirmaan.
+    books; no general ledger in Nirmaan.~~
+    Done: TallyPrime XML (the open question's recommendation) of certified RA bills (sales), receipts with the
+    client's deductions, vendor bills (purchase), subcontractor bills (journal), vendor payments and site expenses,
+    up to a month end; a ledger screen with default names, the company and GST state, projects as cost centres, and
+    a ledger masters file to import once. Each record goes once; exported receipts and payments are locked until the
+    export is undone. Receipts against a bill not yet certified wait for the certificate.
 25. **GST registers** (S). Outward supplies from RA bills (GSTR-1 layout) and input tax from vendor bills and
     expenses for GSTR-2B reconciliation, as Excel. E-invoicing only when a customer must, through a GSP.
 

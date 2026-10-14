@@ -1,4 +1,5 @@
 import type { ApprovalRightDto } from './approvals';
+import type { TallyVoucherKind } from './tally';
 import type {
   BillStage,
   ReceiptKind,
@@ -1011,6 +1012,8 @@ export interface RaBillMeasurementDto {
 
 export interface RaBillDto extends SubmissionBase {
   billNo: number;
+  /** In a Tally export: cannot be changed until that export is undone */
+  exportedToTally: boolean;
   /** "RA bill 3", or "RA bill 7 (final)" */
   billLabel: string;
   isFinal: boolean;
@@ -1066,6 +1069,8 @@ export type ReceiptDeductionKey = 'tds' | 'gstTds' | 'retention' | 'securityDepo
 
 export interface ReceiptDto {
   id: string;
+  /** In a Tally export: cannot be changed until that export is undone */
+  exportedToTally: boolean;
   kind: ReceiptKind;
   projectId: string;
   projectCode: string;
@@ -1486,6 +1491,8 @@ export type PayableBillType = 'VENDOR_BILL' | 'SUBCONTRACT_BILL';
 
 export interface VendorPaymentDto {
   id: string;
+  /** In a Tally export: cannot be changed until that export is undone */
+  exportedToTally: boolean;
   projectId: string;
   projectCode: string;
   projectName: string;
@@ -1581,4 +1588,82 @@ export interface PayablesDto {
   projects: ProjectPayableDto[];
   /** Most urgent first: overdue longest, then due soonest */
   openBills: PayableBillDto[];
+}
+
+// ----- Tally export -----
+
+export interface TallyEntryDto {
+  ledgerKey: string;
+  ledger: string;
+  debit: string | null;
+  credit: string | null;
+}
+
+/** A Nirmaan record as the Tally voucher it becomes. */
+export interface TallyVoucherDto {
+  /** `<kind>:<source id>` */
+  key: string;
+  kind: TallyVoucherKind;
+  sourceId: string;
+  date: string;
+  /** Voucher number: the bill number, or a number made from the receipt or payment */
+  number: string;
+  party: string;
+  projectCode: string;
+  projectName: string;
+  /** Total of the debits (= the credits) */
+  amount: string;
+  narration: string;
+  entries: TallyEntryDto[];
+}
+
+/** A record that cannot go yet, and why. */
+export interface TallyHeldDto {
+  kind: TallyVoucherKind;
+  sourceId: string;
+  date: string;
+  number: string;
+  party: string;
+  reason: string;
+}
+
+export interface TallyPreviewDto {
+  upTo: string;
+  from: string | null;
+  /** Not yet exported, dated in the range, oldest first */
+  vouchers: TallyVoucherDto[];
+  held: TallyHeldDto[];
+  counts: Partial<Record<TallyVoucherKind, number>>;
+  /** Approved RA bills not yet certified by the client: they go once certified */
+  awaitingCertification: number;
+}
+
+export interface TallyExportDto {
+  id: string;
+  upTo: string;
+  fromDate: string | null;
+  voucherCount: number;
+  counts: Partial<Record<TallyVoucherKind, number>>;
+  createdByName: string;
+  createdAt: string;
+}
+
+export type TallyLedgerKind = 'FIXED' | 'CLIENT' | 'VENDOR' | 'EXPENSE';
+
+export interface TallyLedgerRowDto {
+  key: string;
+  kind: TallyLedgerKind;
+  /** What Nirmaan posts to it, or the client, vendor or category it stands for */
+  use: string;
+  defaultName: string;
+  /** The Tally ledger name set for it; null uses the default */
+  name: string | null;
+  group: string;
+}
+
+export interface TallySettingsDto {
+  companyName: string | null;
+  stateCode: string | null;
+  costCentres: boolean;
+  ledgers: TallyLedgerRowDto[];
 }

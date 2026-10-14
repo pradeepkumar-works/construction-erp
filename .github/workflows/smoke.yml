@@ -120,6 +120,20 @@ jobs:
           ENG=$(curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' -d '{"email":"engineer@demo.com","password":"password123"}' | jq -r .accessToken)
           code=$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/payables" -H "authorization: Bearer $ENG")
           echo "payables as a site engineer: $code"; [ "$code" = "403" ]
+      - name: Tally export
+        run: |
+          set -e
+          TOKEN=$(curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' \
+            -d '{"email":"accounts@demo.com","password":"password123"}' | jq -r .accessToken)
+          H="authorization: Bearer $TOKEN"
+          UPTO=$(date -u +%Y-%m-%d)
+          curl -sf "$API_URL/tally/preview?upTo=$UPTO" -H "$H" | jq -c '{counts, held: (.held | length), awaitingCertification}'
+          curl -sf "$API_URL/tally/settings" -H "$H" | jq -e '.ledgers | length > 20' > /dev/null
+          curl -sf "$API_URL/tally/masters.xml" -H "$H" | grep -q '<LEDGER NAME='
+          curl -sf "$API_URL/tally/exports" -H "$H" | jq -c 'length'
+          ENG=$(curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' -d '{"email":"engineer@demo.com","password":"password123"}' | jq -r .accessToken)
+          code=$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/tally/preview?upTo=$UPTO" -H "authorization: Bearer $ENG")
+          echo "tally as a site engineer: $code"; [ "$code" = "403" ]
       - name: Notifications
         run: |
           set -e

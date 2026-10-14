@@ -24,6 +24,7 @@ import { dateOnly, iso, money, parseDate } from '../common/serialize';
 import { isUniqueViolation } from '../common/idempotency';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import { CreatePaymentDto, ListPaymentsQuery, PayablesQuery, UpdatePaymentDto } from './payables.dto';
+import { assertNotExported } from '../tally/exported';
 
 const D = (v: Prisma.Decimal.Value) => new Prisma.Decimal(v);
 const ZERO = D(0);
@@ -157,6 +158,7 @@ export class PayablesService {
       remarks: r.remarks,
       createdByName: r.createdBy.fullName,
       createdAt: iso(r.createdAt)!,
+      exportedToTally: !!r.tallyExportId,
     };
   }
 
@@ -322,6 +324,7 @@ export class PayablesService {
 
   async update(user: RequestUser, id: string, dto: UpdatePaymentDto): Promise<VendorPaymentDto> {
     const { row, bill } = await this.load(user, id);
+    assertNotExported(row, 'This payment');
     if (dto.paymentDate !== undefined) this.checkDate(dto.paymentDate, bill);
     const a = this.amounts(bill, dto, row);
     await this.prisma.$transaction(async (tx) => {
@@ -347,6 +350,7 @@ export class PayablesService {
   /** Take off a payment entered by mistake; its bill goes back to unpaid if it no longer settles. */
   async remove(user: RequestUser, id: string) {
     const { row, bill } = await this.load(user, id);
+    assertNotExported(row, 'This payment');
     await this.prisma.$transaction(async (tx) => {
       await this.lock(tx, bill);
       await tx.vendorPayment.delete({ where: { id } });

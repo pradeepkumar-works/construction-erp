@@ -449,6 +449,41 @@ retention, advance, TDS and material recovery (`apps/api/src/subcontracts`).
   `q`), `GET|PATCH|DELETE /vendor-payments/:id`, `GET /payables`. Web: Purchases → Payables (KPIs, due list with
   Pay, by vendor, by project, payments), and the payments list with "Record payment" in both bill drawers.
 
+## Tally export
+
+Tally stays the books; Nirmaan sends it vouchers as TallyPrime "Import Data" XML (`src/tally/vouchers.ts`) and keeps
+no ledger of its own.
+
+- **Vouchers** (`src/tally/tally.service.ts`, `build`). Every record not yet exported and dated up to the chosen day:
+  - RA bill, approved and certified (amounts are final once certified): **Sales**. Dr client (work + GST), Cr works
+    receipts, Cr output CGST + SGST (works on a site are supplied where the site is).
+  - Receipt: **Receipt**. Dr bank or cash, Dr each deduction the client made (TDS, GST TDS, retention, security
+    deposit, advance recovered, labour cess, other), Cr the client against the bill (`Agst Ref`); a retention or deposit
+    release credits the retention or deposit held. A receipt whose bill is not yet certified is held back.
+  - Vendor bill: **Purchase**. Dr purchases, freight, input GST; Cr the vendor (`New Ref` = their invoice number).
+  - Subcontractor bill: **Journal**. Dr subcontract charges and input GST; Cr the subcontractor with the net payable,
+    and retention, advance, TDS, material recovered and other deductions to their ledgers.
+  - Vendor payment: **Payment**. Dr the vendor (paid + deducted), Cr bank or cash, TDS payable, other deductions.
+  - Site expense: **Payment**. Dr the category (input GST apart only with the vendor's GSTIN), Cr cash or bank, or the
+    vendor (or "Site creditors") when on credit.
+
+  Input GST is IGST when the vendor's GST state differs from the company's (`TallyConfig.stateCode`), else CGST + SGST
+  (half each, the odd paisa to SGST). Income and expense lines carry the project as cost centre when
+  `costCentres` is on. A voucher whose debits and credits differ is held, never exported. `REMOTEID` is
+  `nirmaan-<kind>-<id>`.
+- **Ledgers.** `TallyConfig` (one row per organisation): company name for `SVCURRENTCOMPANY`, GST state code,
+  cost centres on or off, and `ledgers` = overrides of the default names in `TALLY_FIXED_LEDGERS`
+  (`packages/shared/src/tally.ts`) and of clients, vendors (their names) and expense categories ("Site <category>").
+  `GET /tally/masters.xml` creates those ledgers (with their Tally group, GST duty head, bill-wise for parties) and a
+  cost centre per project.
+- **Once only.** `TallyExport` keeps the XML, counts and range; each exported record's `tallyExportId` points at it.
+  The export runs under advisory lock `TALLY:<org>`. Receipts and vendor payments in an export cannot be changed or
+  deleted and a bill's certificate cannot be corrected (`assertNotExported`) until the export is undone; undoing deletes
+  the `TallyExport` and the foreign keys clear (`ON DELETE SET NULL`). DTOs show `exportedToTally`.
+- **Roles.** Admin, management and accounts (`canExportTally`).
+- **API.** `GET|PUT /tally/settings`, `GET /tally/masters.xml`, `GET /tally/preview?upTo&from`, `GET|POST /tally/exports`,
+  `GET /tally/exports/:id/xml`, `DELETE /tally/exports/:id`. Web: Billing → Tally Export (to export, exports, ledgers).
+
 ## Project cost
 
 - **Heads.** Site expenses (`APPROVED`, total incl. GST, by bill date); material issued (`StockTxn` of
