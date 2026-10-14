@@ -508,7 +508,7 @@ that device and is deleted on sign-out or when Expo reports it unregistered.
   user, so re-running a job never notifies twice.
 - Jobs are triggered by HTTP (`/api/notifications/jobs/*`, guarded by `CRON_SECRET`) so Vercel
   Cron can call them; an optional in-process timer (`NOTIFICATION_JOBS_INPROCESS=true`) covers
-  long-running hosts. Transports are plain `fetch` calls (Expo push API, Resend) with no SDKs.
+  long-running hosts. Transports are plain `fetch` calls (Expo push API, the Cogitrex mail API or Resend) with no SDKs.
 - Stock writes call `notify()` directly for `LOW_STOCK` (see Stock), and the register for `RISK_RAISED`
   (`entityId` is the register entry; web opens `/risks?id=`, the site app `/risk/<id>`).
 - A new notification type = enum value in `schema.prisma` and `packages/shared` (+ label), a

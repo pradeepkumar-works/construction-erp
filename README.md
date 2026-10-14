@@ -153,8 +153,10 @@ material request; tap "Edit and resubmit", fix them and send them back to the PM
   (`Authorization: Bearer <secret>`). On Vercel they are scheduled in `apps/api/vercel.json`
   (09:00 and 17:00 IST); elsewhere set `NOTIFICATION_JOBS_INPROCESS=true` or call them from any
   scheduler. Both are idempotent per day. `?date=YYYY-MM-DD` runs a job for another day.
-- Email goes through [Resend](https://resend.com) when `RESEND_API_KEY` is set (`EMAIL_FROM` is
-  the sender, `WEB_URL` the link in the mail); without a key the digest is only logged.
+- Email goes through the Cogitrex mail service (`communication.cogitrex.com`, sending from
+  `notifications@cogitrex.com`) when `MAIL_API_KEY` is set, or through [Resend](https://resend.com) when
+  `RESEND_API_KEY` is set (`EMAIL_FROM` is the sender, `WEB_URL` the link in the mail); without a key the
+  digest is only logged.
 - Push uses the Expo push service and needs no key by default (`EXPO_ACCESS_TOKEN` is optional).
   The phone registers its Expo token after sign-in. Remote push requires a development or EAS build
   with `extra.eas.projectId` in `apps/mobile/app.json` (run `eas init`); Expo Go on Android cannot
