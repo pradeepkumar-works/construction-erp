@@ -31,6 +31,8 @@ const EXPORT: ExportColumn<ProjectCostSummaryDto>[] = [
   { header: 'Labour', value: (r) => toNumber(r.cost.labour), width: 14 },
   { header: 'Total cost', value: (r) => toNumber(r.cost.total), width: 14 },
   { header: 'Margin', value: (r) => toNumber(r.margin), width: 16 },
+  { header: 'Billed (RA bills)', value: (r) => toNumber(r.billedValue), width: 16 },
+  { header: 'Cash in', value: (r) => toNumber(r.cashIn), width: 16 },
   { header: 'Cost % of executed', value: (r) => r.costPct, width: 12 },
   { header: 'Missing rates', value: (r) => unpricedText(r.unpriced).join('; '), width: 40 },
 ];
@@ -44,7 +46,7 @@ export function CostOverview() {
   const rows = data ?? [];
   const totals = useMemo(() => {
     const sum = (f: (r: ProjectCostSummaryDto) => string) => rows.reduce((s, r) => s + toNumber(f(r)), 0);
-    return { executed: sum((r) => r.executedValue), measured: sum((r) => r.measuredValue), cost: sum((r) => r.cost.total), margin: sum((r) => r.margin) };
+    return { executed: sum((r) => r.executedValue), measured: sum((r) => r.measuredValue), cost: sum((r) => r.cost.total), margin: sum((r) => r.margin), billed: sum((r) => r.billedValue), cashIn: sum((r) => r.cashIn) };
   }, [rows]);
   const scale = Math.max(1, ...rows.map((r) => toNumber(r.cost.total)));
 
@@ -86,6 +88,8 @@ export function CostOverview() {
       sorter: (a, b) => toNumber(a.margin) - toNumber(b.margin),
       render: (v) => <span className="mono" style={{ color: toNumber(v) < 0 ? '#cf1322' : '#1f9d55' }}>{formatINR(v)}</span>,
     },
+    { title: 'Billed', dataIndex: 'billedValue', width: 130, align: 'right', render: money, sorter: (a, b) => toNumber(a.billedValue) - toNumber(b.billedValue) },
+    { title: 'Cash in', dataIndex: 'cashIn', width: 130, align: 'right', render: money, sorter: (a, b) => toNumber(a.cashIn) - toNumber(b.cashIn) },
     { title: 'Cost %', dataIndex: 'costPct', width: 90, align: 'right', render: (v: number | null) => (v === null ? <span className="text-muted">-</span> : `${v}%`), sorter: (a, b) => (a.costPct ?? 0) - (b.costPct ?? 0) },
   ];
 
@@ -111,14 +115,17 @@ export function CostOverview() {
         <Statistic title="Measured (approved MB)" value={formatINR(totals.measured)} styles={{ content: { fontSize: 18 } }} />
         <Statistic title="Cost" value={formatINR(totals.cost)} styles={{ content: { fontSize: 18 } }} />
         <Statistic title="Margin" value={formatINR(totals.margin)} styles={{ content: { fontSize: 18, color: totals.margin < 0 ? '#cf1322' : '#1f9d55' } }} />
+        <Statistic title="Billed (RA bills)" value={formatINR(totals.billed)} styles={{ content: { fontSize: 18 } }} />
+        <Statistic title="Cash in" value={formatINR(totals.cashIn)} styles={{ content: { fontSize: 18 } }} />
         <div style={{ alignSelf: 'flex-end', marginLeft: 'auto' }}>
           <CostLegend />
         </div>
       </div>
-      <Table<ProjectCostSummaryDto> rowKey="projectId" size="middle" loading={isLoading || isFetching} columns={columns} dataSource={rows} pagination={false} scroll={{ x: 1000 }} />
+      <Table<ProjectCostSummaryDto> rowKey="projectId" size="middle" loading={isLoading || isFetching} columns={columns} dataSource={rows} pagination={false} scroll={{ x: 1260 }} />
       <Typography.Paragraph type="secondary" style={{ fontSize: 12, padding: '8px 16px 0' }}>
         {periodLabel(period)}. Cost is approved site expenses, material issued at the item master rate, approved machinery logs at the hire rate and attendance at the
-        trade&apos;s daily rate. Executed value is approved progress at BOQ rates.
+        trade&apos;s daily rate. Executed value is approved progress at BOQ rates. Billed is the work value of approved RA bills dated in the
+        period; cash in is what clients paid into the bank in it.
       </Typography.Paragraph>
       <LabourRatesModal open={ratesOpen} onClose={() => setRatesOpen(false)} />
     </>

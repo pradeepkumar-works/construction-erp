@@ -10,11 +10,12 @@ import {
   FileTextOutlined,
   FundProjectionScreenOutlined,
   ProjectOutlined,
+  WalletOutlined,
 } from '@ant-design/icons';
 import type { ProjectSummary } from '@erp/shared';
 import { PROJECT_TYPE_LABELS, isCompanyWide, mayApprove } from '@erp/shared';
 import { useCompanyDashboard } from '@/lib/queries';
-import { formatINR, formatINRCompact, formatDate, progressStatus } from '@/lib/format';
+import { formatINR, formatINRCompact, formatDate, progressStatus, toNumber } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Loading, QueryError } from '@/components/common/QueryState';
 import { ProjectStatusTag, ProjectTypeTag } from '@/components/common/StatusTag';
@@ -112,6 +113,20 @@ export default function DashboardPage() {
             <KpiTile href="/dpr">
               <Statistic title="DPRs Today" value={data.dprsToday} prefix={<FileTextOutlined />} />
             </KpiTile>
+            {data.receivables && (
+              <KpiTile href="/receivables">
+                <Statistic
+                  title="Receivables"
+                  value={formatINRCompact(data.receivables.outstanding)}
+                  prefix={<WalletOutlined />}
+                  styles={{ content: { color: toNumber(data.receivables.over90) > 0 ? '#cf1322' : undefined } }}
+                />
+                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                  {data.receivables.openBills} open bill{data.receivables.openBills === 1 ? '' : 's'}
+                  {toNumber(data.receivables.over90) > 0 ? ` · ${formatINRCompact(data.receivables.over90)} over 90 days` : ''}
+                </Typography.Text>
+              </KpiTile>
+            )}
           </Row>
 
           <Row gutter={[16, 16]} style={{ marginTop: 16 }}>

@@ -89,3 +89,9 @@ export type PasswordTokenPurpose = (typeof PASSWORD_TOKEN_PURPOSES)[number];
 /** Where an approved RA bill is with the client. */
 export const BILL_STAGES = ['NOT_SENT', 'SENT', 'CERTIFIED', 'PAID'] as const;
 export type BillStage = (typeof BILL_STAGES)[number];
+
+/** What a receipt from the client is for: a bill, or the release of retention or security deposit it held. */
+export const RECEIPT_KINDS = ['BILL', 'RETENTION_RELEASE', 'DEPOSIT_RELEASE'] as const;
+export type ReceiptKind = (typeof RECEIPT_KINDS)[number];
+/** How a client pays: the payment modes that make sense for money coming in. */
+export const RECEIPT_MODES = ['BANK', 'UPI', 'CASH'] as const satisfies readonly PaymentMode[];

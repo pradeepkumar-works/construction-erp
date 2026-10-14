@@ -65,6 +65,9 @@ contractors after the first client is live.
   (previous / this bill / up to date per BOQ item, excess and extra items flagged), GST and the contract
   deductions. Approved through the approval matrix, then recorded as sent, certified (the client's cuts are kept
   against the claim) and paid. Printable bill with the measurement annex, Excel export, and approval from the site app.
+- Receivables: money received against each bill with what the client deducted (TDS, GST TDS, retention, deposit,
+  cess), part payments, retention and deposit releases, ageing per project and client, the retention due date,
+  a dashboard tile, and billed value and cash in on project cost.
 - Edit and resubmit: a rejected or changes-requested entry is fixed in place (web drawer or site app)
   and sent back for approval with the reviewer's note shown alongside the form.
 - Dashboards: company (projects, contract value, pending approvals, delayed activities, DPRs

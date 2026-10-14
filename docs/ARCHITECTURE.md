@@ -289,9 +289,9 @@ The store register per project, fed by approved material requests:
   its percentage of this bill's work value, advance recovery capped at the advance not yet recovered; net = work + GST
   − deductions. A draft or returned bill is rebuilt on every edit and on submit, so measurements approved meanwhile are
   included. Only one bill per project may be unapproved (advisory lock `RA:<projectId>`), and nothing follows a final bill.
-- **After approval** the bill is recorded as sent, certified and paid (`POST /ra-bills/:id/send|certify|paid`, billing
-  roles). Certifying with lower quantities keeps the first claim, re-prices the bill on the certified quantities and
-  rebuilds the next bill if it is still open. Payments become receipts with item 19.
+- **After approval** the bill is recorded as sent and certified (`POST /ra-bills/:id/send|certify`, billing roles).
+  Certifying with lower quantities keeps the first claim, re-prices the bill on the certified quantities and
+  rebuilds the next bill if it is still open. It becomes paid through receipts (below).
 - **Roles.** Prepared and moved along by `BILLING_ROLES`; seen by them and by any role the approval matrix lets
   approve `BILL` (amount basis: the work value before GST and deductions). A BOQ item that has been billed cannot be deleted.
 - **API.** `/ra-bills` (paged; `projectId`, `status`, `stage`, `q`), `GET /ra-bills/:id` (with the measurements and
@@ -300,6 +300,29 @@ The store register per project, fed by approved material requests:
 - **Clients.** Web: Billing → RA Bills and an RA Bills tab on each project (prepare form, drawer with the abstract,
   deductions, measurements and stage actions, print view in `components/bills/billPrint.ts`, Excel export). The
   measurement book shows which bill took each sheet. Site app: `app/bill/[id].tsx` to read and approve.
+
+## Receivables
+
+- **Table.** `Receipt` (tenant table): `kind` BILL / RETENTION_RELEASE / DEPOSIT_RELEASE, `billId` for a bill payment,
+  `projectId`, `receiptDate`, `amount` credited to the bank, `mode` and `reference` (UTR, cheque), and what the client
+  deducted on that payment: `tdsAmount`, `gstTdsAmount`, `retentionAmount`, `securityDepositAmount`,
+  `advanceRecoveryAmount`, `labourCessAmount`, `otherDeduction` with a note.
+- **Settling a bill** (`src/receivables/bill-settlement.ts`). A bill's invoice is work + GST; a receipt settles its
+  amount plus its deductions. Payments go only against approved bills that were sent, and may not settle more than
+  is outstanding (₹1 tolerance), under advisory lock `RCPT:<projectId>`. `syncBillStage` moves the bill to PAID (paid
+  date = last receipt) once settled ≥ invoice, and back to CERTIFIED / SENT when a receipt is corrected or taken off
+  or a certificate raises the amount. A first payment is pre-filled with the bill's own deductions.
+- **Releases.** Retention or deposit released is recorded against the project and may not exceed what payments
+  deducted less what was released; a bill receipt cannot be changed so that releases would exceed it.
+- **Summary** (`GET /receivables`, optional `projectId`). Per project, per client and in total: billed (sent bills),
+  received, deducted, outstanding, ageing 0-30 / 31-60 / 61-90 / over 90 days from the date sent, approved bills not
+  yet sent, retention and deposit held, TDS and GST TDS deducted; retention due = revised completion date + defect
+  liability months; the open bills with days outstanding. The company dashboard shows outstanding and over 90 days;
+  project cost shows billed value (approved bills by bill date) and cash in (receipts by date).
+- **Roles.** Seen by `BILLING_ROLES` (`canViewContract`); recorded, corrected and deleted by admin, management and
+  accounts (`canRecordReceipt`). Each change is in the audit log of the receipt and of its bill.
+- **API.** `/receipts` (paged; `projectId`, `billId`, `kind`, `from`, `to`, `q`), `GET|PATCH|DELETE /receipts/:id`,
+  `GET /receivables`. Web: Billing → Receivables, "Record payment" and the payments list in the bill drawer.
 
 ## Project cost
 

@@ -193,6 +193,7 @@ model Organization {
   labourRates       LabourRate[]
   clients           Client[]
   raBills           RaBill[]
+  receipts          Receipt[]
 }
 
 model Role {
@@ -270,6 +271,7 @@ model User {
   reviewedMeasures    MeasurementSheet[] @relation("MeasurementReviewer")
   submittedBills      RaBill[]           @relation("BillSubmitter")
   reviewedBills       RaBill[]           @relation("BillReviewer")
+  receiptsRecorded    Receipt[]          @relation("ReceiptCreator")
   raisedRisks         Risk[]             @relation("RiskRaiser")
   ownedRisks          Risk[]             @relation("RiskOwner")
 
@@ -280,50 +282,50 @@ model User {
 // ---------- Projects ----------
 
 model Project {
-  id               String        @id @default(uuid())
-  organizationId   String
-  organization     Organization  @relation(fields: [organizationId], references: [id])
-  code             String
-  name             String
-  type             ProjectType
-  status           ProjectStatus @default(PLANNED)
-  clientName       String?
-  consultantName   String?
-  location         String?
-  workOrderNo      String?
-  description      String?
-  startDate        DateTime?     @db.Date
-  endDate          DateTime?     @db.Date
-  contractValue    Decimal?      @db.Decimal(18, 2)
-  projectManagerId String?
-  projectManager   User?         @relation("ProjectManager", fields: [projectManagerId], references: [id])
+  id                    String        @id @default(uuid())
+  organizationId        String
+  organization          Organization  @relation(fields: [organizationId], references: [id])
+  code                  String
+  name                  String
+  type                  ProjectType
+  status                ProjectStatus @default(PLANNED)
+  clientName            String?
+  consultantName        String?
+  location              String?
+  workOrderNo           String?
+  description           String?
+  startDate             DateTime?     @db.Date
+  endDate               DateTime?     @db.Date
+  contractValue         Decimal?      @db.Decimal(18, 2)
+  projectManagerId      String?
+  projectManager        User?         @relation("ProjectManager", fields: [projectManagerId], references: [id])
   /// Client from the client master; `clientName` keeps a copy of its name (and stays free text without one)
   clientId              String?
-  client                Client?   @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  client                Client?       @relation(fields: [clientId], references: [id], onDelete: SetNull)
   // ----- Contract terms (what RA bills are built on) -----
   agreementNo           String?
-  agreementDate         DateTime? @db.Date
+  agreementDate         DateTime?     @db.Date
   /// Retention money deducted from each bill, % of the work value; released after the defect liability period
-  retentionPct          Decimal   @default(0) @db.Decimal(5, 2)
+  retentionPct          Decimal       @default(0) @db.Decimal(5, 2)
   /// Security deposit deducted from each bill, % of the work value
-  securityDepositPct    Decimal   @default(0) @db.Decimal(5, 2)
+  securityDepositPct    Decimal       @default(0) @db.Decimal(5, 2)
   /// Mobilisation advance paid by the client, recovered from bills
-  mobilisationAdvance   Decimal   @default(0) @db.Decimal(18, 2)
+  mobilisationAdvance   Decimal       @default(0) @db.Decimal(18, 2)
   /// Advance recovered from each bill, % of the work value, until all of it is recovered
-  advanceRecoveryPct    Decimal   @default(0) @db.Decimal(5, 2)
+  advanceRecoveryPct    Decimal       @default(0) @db.Decimal(5, 2)
   defectLiabilityMonths Int?
   /// The contract has a price variation (escalation) clause
-  priceVariation        Boolean   @default(false)
+  priceVariation        Boolean       @default(false)
   /// GST charged on bills, % of the work value
-  gstRate               Decimal   @default(18) @db.Decimal(5, 2)
+  gstRate               Decimal       @default(18) @db.Decimal(5, 2)
   /// Income-tax TDS the client deducts (section 194C), % of the work value
-  tdsPct                Decimal   @default(0) @db.Decimal(5, 2)
+  tdsPct                Decimal       @default(0) @db.Decimal(5, 2)
   /// GST TDS a government client deducts, % of the work value
-  gstTdsPct             Decimal   @default(0) @db.Decimal(5, 2)
+  gstTdsPct             Decimal       @default(0) @db.Decimal(5, 2)
   /// Building and other construction workers' welfare cess, % of the work value
-  labourCessPct         Decimal   @default(0) @db.Decimal(5, 2)
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
+  labourCessPct         Decimal       @default(0) @db.Decimal(5, 2)
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
 
   members          ProjectMember[]
   boqItems         BoqItem[]
@@ -342,6 +344,7 @@ model Project {
   risks            Risk[]
   measurements     MeasurementSheet[]
   raBills          RaBill[]
+  receipts         Receipt[]
 
   @@unique([organizationId, code])
   @@index([organizationId, status])
@@ -997,6 +1000,7 @@ model RaBill {
   items        RaBillItem[]
   measurements MeasurementSheet[]
   attachments  Attachment[]
+  receipts     Receipt[]
 
   @@unique([projectId, billNo])
   @@index([organizationId, status])
@@ -1025,6 +1029,50 @@ model RaBillItem {
 
   @@unique([billId, boqItemId])
   @@index([boqItemId])
+}
+
+/// What a receipt is for: a bill, or the release of retention or security deposit the client held
+enum ReceiptKind {
+  BILL
+  RETENTION_RELEASE
+  DEPOSIT_RELEASE
+}
+
+/// Money received from the client, with the deductions it actually made (v3 item 19)
+model Receipt {
+  id                    String       @id @default(uuid())
+  organizationId        String
+  organization          Organization @relation(fields: [organizationId], references: [id])
+  projectId             String
+  project               Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  kind                  ReceiptKind  @default(BILL)
+  /// The bill paid (kind BILL only)
+  billId                String?
+  bill                  RaBill?      @relation(fields: [billId], references: [id], onDelete: Restrict)
+  receiptDate           DateTime     @db.Date
+  /// Credited to the bank
+  amount                Decimal      @db.Decimal(18, 2)
+  mode                  PaymentMode  @default(BANK)
+  /// UTR, cheque or advice number
+  reference             String?
+  // Deducted by the client on this payment (kind BILL)
+  tdsAmount             Decimal      @default(0) @db.Decimal(18, 2)
+  gstTdsAmount          Decimal      @default(0) @db.Decimal(18, 2)
+  retentionAmount       Decimal      @default(0) @db.Decimal(18, 2)
+  securityDepositAmount Decimal      @default(0) @db.Decimal(18, 2)
+  advanceRecoveryAmount Decimal      @default(0) @db.Decimal(18, 2)
+  labourCessAmount      Decimal      @default(0) @db.Decimal(18, 2)
+  otherDeduction        Decimal      @default(0) @db.Decimal(18, 2)
+  otherDeductionNote    String?
+  remarks               String?
+  createdById           String
+  createdBy             User         @relation("ReceiptCreator", fields: [createdById], references: [id])
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+
+  @@index([organizationId, receiptDate])
+  @@index([projectId])
+  @@index([billId])
 }
 
 model Attachment {

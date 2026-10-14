@@ -1,6 +1,7 @@
 import type { ApprovalRightDto } from './approvals';
 import type {
   BillStage,
+  ReceiptKind,
   DelayParty,
   PasswordTokenPurpose,
   RiskCategory,
@@ -270,6 +271,8 @@ export interface CompanyDashboard {
   pendingApprovals: number;
   delayedActivities: number;
   dprsToday: number;
+  /** Only for roles that see bills */
+  receivables?: { outstanding: string; over90: string; openBills: number };
   projects: ProjectSummary[];
 }
 
@@ -618,6 +621,10 @@ export interface ProjectCostSummaryDto {
   margin: string;
   /** cost.total as % of executedValue; null when nothing was executed. */
   costPct: number | null;
+  /** Approved RA bills dated in the period: value of work (before GST) */
+  billedValue: string;
+  /** Received from the client in the period (bank credits, all receipts) */
+  cashIn: string;
   unpriced: UnpricedDto;
 }
 
@@ -963,7 +970,116 @@ export interface RaBillDto extends SubmissionBase {
   certificateNo: string | null;
   paidDate: string | null;
   measurementCount: number;
+  /** Work value + GST: what the client owes before its deductions */
+  invoiceAmount: string;
+  /** Received in the bank against this bill */
+  receivedAmount: string;
+  /** Received plus what the client deducted on its payments */
+  settledAmount: string;
+  /** invoiceAmount − settledAmount */
+  outstanding: string;
   items: RaBillItemDto[];
   /** Only on GET /ra-bills/:id */
   measurements?: RaBillMeasurementDto[];
+  /** Only on GET /ra-bills/:id */
+  receipts?: ReceiptDto[];
+}
+
+/* ---------- Receivables ---------- */
+
+export type ReceiptDeductionKey = 'tds' | 'gstTds' | 'retention' | 'securityDeposit' | 'advanceRecovery' | 'labourCess' | 'other';
+
+export interface ReceiptDto {
+  id: string;
+  kind: ReceiptKind;
+  projectId: string;
+  projectCode: string;
+  projectName: string;
+  clientName: string | null;
+  billId: string | null;
+  /** "RA bill 3" for a bill payment */
+  billLabel: string | null;
+  receiptDate: string;
+  /** Credited to the bank */
+  amount: string;
+  mode: PaymentMode;
+  reference: string | null;
+  tdsAmount: string;
+  gstTdsAmount: string;
+  retentionAmount: string;
+  securityDepositAmount: string;
+  advanceRecoveryAmount: string;
+  labourCessAmount: string;
+  otherDeduction: string;
+  otherDeductionNote: string | null;
+  /** Sum of the deductions above */
+  deductedAmount: string;
+  remarks: string | null;
+  createdByName: string;
+  createdAt: string;
+}
+
+/** Outstanding by age, counted from the day the bill was sent to the client. */
+export interface AgeingDto {
+  current: string;
+  days31to60: string;
+  days61to90: string;
+  over90: string;
+}
+
+/** Receivable totals for a project, a client, or everything. */
+export interface ReceivableTotalsDto {
+  /** Approved bills sent to the client: work + GST */
+  billed: string;
+  received: string;
+  deducted: string;
+  outstanding: string;
+  ageing: AgeingDto;
+  /** Approved bills not yet sent */
+  notSent: string;
+  /** Retention and security deposit deducted on payments, less what was released */
+  retentionHeld: string;
+  depositHeld: string;
+  tdsDeducted: string;
+  gstTdsDeducted: string;
+}
+
+export interface ProjectReceivableDto extends ReceivableTotalsDto {
+  projectId: string;
+  projectCode: string;
+  projectName: string;
+  clientName: string | null;
+  /** When retention falls due: revised completion + defect liability period; null when either is unknown */
+  retentionReleaseDate: string | null;
+}
+
+export interface ClientReceivableDto extends ReceivableTotalsDto {
+  clientName: string;
+  projectCount: number;
+}
+
+/** A sent bill not fully settled. */
+export interface OpenBillDto {
+  billId: string;
+  billLabel: string;
+  projectId: string;
+  projectCode: string;
+  projectName: string;
+  clientName: string | null;
+  stage: BillStage;
+  billDate: string;
+  sentDate: string;
+  certifiedDate: string | null;
+  invoiceAmount: string;
+  settledAmount: string;
+  outstanding: string;
+  daysOutstanding: number;
+}
+
+export interface ReceivablesDto {
+  asOf: string;
+  totals: ReceivableTotalsDto;
+  projects: ProjectReceivableDto[];
+  clients: ClientReceivableDto[];
+  openBills: OpenBillDto[];
 }

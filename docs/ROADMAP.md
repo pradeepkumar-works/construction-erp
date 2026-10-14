@@ -155,8 +155,13 @@ relative to a v2 item (S about one, M about two, L about three). The full draft 
     PM up to ₹50 lakh); then sent → certified (quantity cuts re-price the bill, keep the claim and come back in the
     next bill) → paid. Billing → RA Bills, a project tab, the print view with measurement annex, Excel export and a
     read-and-approve screen in the site app.
-19. **Receivables** (M). Receipts against certified bills (amount, date, UTR, deductions actually made), ageing
-    per client and project, retention held and its release date, a dashboard tile, cash in on the cost view.
+19. ~~**Receivables** (M). Receipts against certified bills (amount, date, UTR, deductions actually made), ageing
+    per client and project, retention held and its release date, a dashboard tile, cash in on the cost view.~~
+    Done: `Receipt` against a bill sent to the client (part payments, with the deductions the client actually made),
+    or a retention / security deposit release against the project; a bill is paid once its receipts settle work +
+    GST. Billing → Receivables with ageing from the date sent, per project and client, open bills, retention and
+    deposit held with the retention due date (revised completion + defect liability), TDS deducted, and the receipts
+    register; "Record payment" on the bill; a dashboard tile; billed value and cash in on the cost view.
 
 ### B. Pay others
 20. **Vendors** (S). One master for suppliers, hire agencies and subcontractors (GSTIN, PAN, bank, MSME Udyam

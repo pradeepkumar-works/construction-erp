@@ -94,7 +94,10 @@ export const canEditRisk = (user: SubmissionActor, r: { raisedById: string; owne
 
 /** See a project's contract terms (retention, advance, deductions) and its bills. */
 export const canViewContract = (role: RoleKey) => BILLING_ROLES.includes(role);
-/** Prepare RA bills and record them as sent, certified and paid: the billing roles. */
+/** Record money received from clients: admin, management and accounts. */
+export const RECEIPT_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'ACCOUNTS_MANAGER'];
+export const canRecordReceipt = (role: RoleKey) => RECEIPT_ROLES.includes(role);
+/** Prepare RA bills and record them as sent and certified: the billing roles. */
 export const canPrepareBill = (role: RoleKey) => BILLING_ROLES.includes(role);
 /** Change the client master and a project's contract terms. */
 export const canEditContract = (role: RoleKey) => CONTRACT_EDITOR_ROLES.includes(role);

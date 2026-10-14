@@ -6,8 +6,8 @@ import { Alert, App, Button, Card, DatePicker, Descriptions, Divider, Drawer, Fo
 import { PrinterOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { RaBillDto, RaBillItemDto } from '@erp/shared';
-import { GST_STATES, canEditSubmission, canPrepareBill, canResubmit } from '@erp/shared';
+import type { RaBillDto, RaBillItemDto, ReceiptDto } from '@erp/shared';
+import { GST_STATES, RECEIPT_MODE_LABELS, canEditSubmission, canPrepareBill, canRecordReceipt, canResubmit } from '@erp/shared';
 import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useBill } from '@/lib/queries';
@@ -21,9 +21,10 @@ import { EditResubmitButton } from '@/components/common/EditResubmitButton';
 import { submissionMetaItems } from '@/components/common/SubmitterInfo';
 import { BillStageTag } from './billUi';
 import { openBillPrint } from './billPrint';
+import { ReceiptFormModal } from '@/components/receivables/ReceiptFormModal';
 
-type StageAction = 'send' | 'certify' | 'paid';
-const ACTION_TITLES: Record<StageAction, string> = { send: 'Record as sent to the client', certify: 'Record the client’s certificate', paid: 'Record as paid' };
+type StageAction = 'send' | 'certify';
+const ACTION_TITLES: Record<StageAction, string> = { send: 'Record as sent to the client', certify: 'Record the client’s certificate' };
 
 const money = (v: string) => <span className="mono">{formatINR(v, true)}</span>;
 
@@ -45,6 +46,9 @@ export function BillDrawer({ id, open, onClose, onEdit }: { id: string | null; o
   const [action, setAction] = useState<StageAction | null>(null);
   const [form] = Form.useForm<{ date: dayjs.Dayjs; certificateNo?: string; qty: Record<string, number | null> }>();
   const preparer = !!user && canPrepareBill(user.roleKey);
+  const accounts = !!user && canRecordReceipt(user.roleKey);
+  const [paying, setPaying] = useState(false);
+  const [correcting, setCorrecting] = useState<ReceiptDto | null>(null);
 
   const done = (text: string) => {
     message.success(text);
@@ -54,7 +58,7 @@ export function BillDrawer({ id, open, onClose, onEdit }: { id: string | null; o
   const stage = useMutation({
     mutationFn: async ({ act, body }: { act: StageAction; body: object }) => (await api.post<RaBillDto>(`/ra-bills/${id}/${act}`, body)).data,
     onSuccess: (b, { act }) => {
-      done(act === 'send' ? `${b.billLabel} recorded as sent` : act === 'certify' ? `${b.billLabel} certified for ${formatINR(b.netPayable, true)} net` : `${b.billLabel} recorded as paid`);
+      done(act === 'send' ? `${b.billLabel} recorded as sent` : `${b.billLabel} certified for ${formatINR(b.netPayable, true)} net`);
       setAction(null);
     },
     onError: (e) => message.error(errorMessage(e)),
@@ -140,9 +144,9 @@ export function BillDrawer({ id, open, onClose, onEdit }: { id: string | null; o
                 {data.stage === 'SENT' ? 'Record certificate' : 'Correct certificate'}
               </Button>
             ) : null}
-            {approved && preparer && (data.stage === 'SENT' || data.stage === 'CERTIFIED') ? (
-              <Button size="small" onClick={() => openAction('paid', data)}>
-                Mark paid
+            {approved && accounts && (data.stage === 'SENT' || data.stage === 'CERTIFIED') ? (
+              <Button size="small" onClick={() => setPaying(true)}>
+                Record payment
               </Button>
             ) : null}
             {editable ? (
@@ -244,6 +248,14 @@ export function BillDrawer({ id, open, onClose, onEdit }: { id: string | null; o
               <Row label="Less deductions" value={data.totalDeductions} />
               <Divider style={{ margin: '6px 0' }} />
               <Row label={<span style={{ fontSize: 15 }}>Net payable</span>} value={data.netPayable} strong />
+              {approved && data.stage !== 'NOT_SENT' && (
+                <>
+                  <Divider style={{ margin: '6px 0' }} />
+                  <Row label="Received in the bank" value={data.receivedAmount} />
+                  <Row label="Settled (received + deducted)" value={data.settledAmount} muted />
+                  <Row label="Outstanding" value={data.outstanding} strong />
+                </>
+              )}
               {data.claimedNet !== null && (
                 <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                   Claimed {formatINR(data.claimedGross, true)} of work, {formatINR(data.claimedNet, true)} net. The client passed {formatINR(toNumber(data.claimedNet) - toNumber(data.netPayable), true)} less; the quantities it cut come back in the next bill.
@@ -263,6 +275,31 @@ export function BillDrawer({ id, open, onClose, onEdit }: { id: string | null; o
               )}
             </Card>
           </div>
+          {approved && data.receipts && data.stage !== 'NOT_SENT' && (
+            <>
+              <Divider titlePlacement="start" plain>
+                Payments received ({data.receipts.length})
+              </Divider>
+              <Table<ReceiptDto>
+                rowKey="id"
+                size="small"
+                pagination={false}
+                dataSource={data.receipts}
+                locale={{ emptyText: 'No payment recorded yet' }}
+                columns={[
+                  { title: 'Date', dataIndex: 'receiptDate', width: 110, render: (v) => formatDate(v) },
+                  { title: 'Mode', dataIndex: 'mode', width: 80, render: (v: ReceiptDto['mode']) => RECEIPT_MODE_LABELS[v] },
+                  { title: 'Reference', dataIndex: 'reference', render: (v) => (v ? <span className="mono">{v}</span> : '-') },
+                  { title: 'Received', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <strong className="mono">{formatINR(v, true)}</strong> },
+                  { title: 'Deducted', dataIndex: 'deductedAmount', width: 130, align: 'right', render: (v) => <span className="mono">{formatINR(v, true)}</span> },
+                  { title: 'By', dataIndex: 'createdByName', width: 140 },
+                  ...(accounts
+                    ? [{ title: '', key: 'edit', width: 70, render: (_: unknown, r: ReceiptDto) => <Button size="small" type="link" onClick={() => setCorrecting(r)}>Edit</Button> }]
+                    : []),
+                ]}
+              />
+            </>
+          )}
           <Divider titlePlacement="start" plain>
             Measurements billed ({data.measurements?.length ?? 0})
           </Divider>
@@ -301,7 +338,7 @@ export function BillDrawer({ id, open, onClose, onEdit }: { id: string | null; o
       >
         <Form form={form} layout="vertical" style={{ marginTop: 8 }}>
           <div style={{ display: 'grid', gridTemplateColumns: action === 'certify' ? '1fr 1fr' : '1fr', gap: '0 16px' }}>
-            <Form.Item name="date" label={action === 'send' ? 'Date sent' : action === 'certify' ? 'Certificate date' : 'Date received'} rules={[{ required: true, message: 'Required' }]}>
+            <Form.Item name="date" label={action === 'send' ? 'Date sent' : 'Certificate date'} rules={[{ required: true, message: 'Required' }]}>
               <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
             </Form.Item>
             {action === 'certify' && (
@@ -334,9 +371,9 @@ export function BillDrawer({ id, open, onClose, onEdit }: { id: string | null; o
               />
             </>
           )}
-          {action === 'paid' && <Typography.Paragraph type="secondary">Record the payment once the money is in the bank. Receipts with part payments and the deductions the client actually made come with the receivables register.</Typography.Paragraph>}
         </Form>
       </Modal>
+      <ReceiptFormModal open={paying || !!correcting} bill={correcting ? null : data} receipt={correcting} onClose={() => { setPaying(false); setCorrecting(null); }} />
     </Drawer>
   );
 }

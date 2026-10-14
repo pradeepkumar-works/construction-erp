@@ -57,12 +57,6 @@ export class RaBillsController {
     return this.bills.certify(user, id, dto);
   }
 
-  @ApiOperation({ summary: 'Record a sent or certified bill as paid' })
-  @Post(':id/paid')
-  paid(@CurrentUser() user: RequestUser, @Param('id') id: string, @Body() dto: BillDateDto) {
-    return this.bills.paid(user, id, dto);
-  }
-
   @ApiOperation({ summary: 'Delete a bill that is not approved', description: 'Its measurements become billable again.' })
   @Delete(':id')
   remove(@CurrentUser() user: RequestUser, @Param('id') id: string) {

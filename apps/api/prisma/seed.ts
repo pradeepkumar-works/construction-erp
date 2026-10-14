@@ -109,6 +109,7 @@ async function main() {
     await seedContracts(org.id);
     await seedApprovalRules(org.id);
     await seedBills(org.id);
+    await seedReceipts(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
   }
@@ -260,6 +261,7 @@ async function main() {
   await seedContracts(org.id);
   await seedApprovalRules(org.id);
   await seedBills(org.id);
+  await seedReceipts(org.id);
 
   console.log('Seed complete. Login with any of these (password: password123):');
   for (const u of USERS) console.log(`  ${u.email.padEnd(24)} ${u.role}`);
@@ -861,52 +863,95 @@ async function seedApprovalRules(organizationId: string) {
   await write(rows);
 }
 
+/** Demo first bills: [project type, measurements up to (days ago), bill date, sent, remarks]. */
+const DEMO_BILLS: [string, number, number, number, string][] = [
+  ['ROAD', 15, 14, 12, 'Earthwork in embankment, first reach'],
+  ['BUILDING', 20, 19, 18, 'Foundations and columns up to plinth'],
+];
+
 /**
- * Demo RA bill 1 of the road project: the approved measurements of more than a fortnight ago, approved and sent to the
- * client. Later approved measurements are left for RA bill 2. Only when the organisation has no bills yet.
+ * Demo RA bill 1 of the road and building projects: their approved measurements of a while ago, approved and sent to
+ * the client. Later approved measurements are left for bill 2. Only for a project with no bills yet.
  */
 async function seedBills(organizationId: string) {
-  if ((await prisma.raBill.count({ where: { organizationId } })) > 0) return;
-  const project = await prisma.project.findFirst({ where: { organizationId, type: 'ROAD', agreementNo: { not: null } }, include: { members: { include: { user: { include: { role: true } } } } }, orderBy: { code: 'asc' } });
-  if (!project?.projectManagerId) return;
-  const qs = project.members.find((m) => m.user.role.key === 'QUANTITY_SURVEYOR')?.userId ?? project.projectManagerId;
-  const upTo = day(-15);
-  const sheets = await prisma.measurementSheet.findMany({ where: { projectId: project.id, status: 'APPROVED', raBillId: null, date: { lte: upTo } }, include: { boqItem: true } });
-  if (!sheets.length) return;
-  const r2 = (v: Prisma.Decimal) => v.toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
-  const byItem = new Map<string, { boq: (typeof sheets)[number]['boqItem']; qty: Prisma.Decimal }>();
-  for (const s of sheets) byItem.set(s.boqItemId, { boq: s.boqItem, qty: (byItem.get(s.boqItemId)?.qty ?? D(0)).add(s.totalQty) });
-  const lines = [...byItem.values()].sort((a, b) => a.boq.sortOrder - b.boq.sortOrder).map(({ boq, qty }) => ({ boq, qty, amount: r2(qty.mul(boq.rate)) }));
-  const gross = lines.reduce((a, l) => a.add(l.amount), D(0));
-  const of = (pct: Prisma.Decimal) => r2(gross.mul(pct).div(100));
-  const amounts = {
-    retentionAmount: of(project.retentionPct),
-    securityDepositAmount: of(project.securityDepositPct),
-    advanceRecoveryAmount: Prisma.Decimal.min(of(project.advanceRecoveryPct), project.mobilisationAdvance),
-    tdsAmount: of(project.tdsPct),
-    gstTdsAmount: of(project.gstTdsPct),
-    labourCessAmount: of(project.labourCessPct),
-  };
-  const gst = of(project.gstRate);
-  const totalDeductions = Object.values(amounts).reduce((a, v) => a.add(v), D(0));
-  const bill = await prisma.raBill.create({
+  for (const [type, upToAgo, billAgo, sentAgo, remarks] of DEMO_BILLS) {
+    const project = await prisma.project.findFirst({
+      where: { organizationId, type: type as 'ROAD' | 'BUILDING', agreementNo: { not: null } },
+      include: { members: { include: { user: { include: { role: true } } } } },
+      orderBy: { code: 'asc' },
+    });
+    if (!project?.projectManagerId || (await prisma.raBill.count({ where: { projectId: project.id } })) > 0) continue;
+    const qs = project.members.find((m) => m.user.role.key === 'QUANTITY_SURVEYOR')?.userId ?? project.projectManagerId;
+    const upTo = day(-upToAgo);
+    const sheets = await prisma.measurementSheet.findMany({ where: { projectId: project.id, status: 'APPROVED', raBillId: null, date: { lte: upTo } }, include: { boqItem: true } });
+    if (!sheets.length) continue;
+    const r2 = (v: Prisma.Decimal) => v.toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+    const byItem = new Map<string, { boq: (typeof sheets)[number]['boqItem']; qty: Prisma.Decimal }>();
+    for (const s of sheets) byItem.set(s.boqItemId, { boq: s.boqItem, qty: (byItem.get(s.boqItemId)?.qty ?? D(0)).add(s.totalQty) });
+    const lines = [...byItem.values()].sort((a, b) => a.boq.sortOrder - b.boq.sortOrder).map(({ boq, qty }) => ({ boq, qty, amount: r2(qty.mul(boq.rate)) }));
+    const gross = lines.reduce((a, l) => a.add(l.amount), D(0));
+    const of = (pct: Prisma.Decimal) => r2(gross.mul(pct).div(100));
+    const amounts = {
+      retentionAmount: of(project.retentionPct),
+      securityDepositAmount: of(project.securityDepositPct),
+      advanceRecoveryAmount: Prisma.Decimal.min(of(project.advanceRecoveryPct), project.mobilisationAdvance),
+      tdsAmount: of(project.tdsPct),
+      gstTdsAmount: of(project.gstTdsPct),
+      labourCessAmount: of(project.labourCessPct),
+    };
+    const gst = of(project.gstRate);
+    const totalDeductions = Object.values(amounts).reduce((a, v) => a.add(v), D(0));
+    const bill = await prisma.raBill.create({
+      data: {
+        organizationId, projectId: project.id, billNo: 1, billDate: day(-billAgo), measuredUpTo: upTo, remarks,
+        grossPrevious: D(0), grossAmount: gross, grossUpto: gross, gstRate: project.gstRate, gstAmount: gst,
+        retentionPct: project.retentionPct, securityDepositPct: project.securityDepositPct, advanceRecoveryPct: project.advanceRecoveryPct,
+        tdsPct: project.tdsPct, gstTdsPct: project.gstTdsPct, labourCessPct: project.labourCessPct, ...amounts,
+        totalDeductions, netPayable: gross.add(gst).sub(totalDeductions), stage: 'SENT', sentDate: day(-sentAgo),
+        status: 'APPROVED', submittedById: qs, submittedAt: day(-billAgo), reviewedById: project.projectManagerId, reviewedAt: day(-billAgo + 1), createdAt: day(-billAgo),
+        items: { create: lines.map((l, i) => ({ boqItemId: l.boq.id, boqQty: l.boq.revisedQty ?? l.boq.originalQty, rate: l.boq.rate, prevQty: D(0), thisQty: l.qty, uptoQty: l.qty, amount: l.amount, sortOrder: i })) },
+      },
+    });
+    await prisma.measurementSheet.updateMany({ where: { id: { in: sheets.map((s) => s.id) } }, data: { raBillId: bill.id } });
+    await prisma.auditLog.createMany({
+      data: [
+        { organizationId, entityType: 'BILL', entityId: bill.id, action: 'CREATED', actorId: qs, createdAt: day(-billAgo) },
+        { organizationId, entityType: 'BILL', entityId: bill.id, action: 'SUBMITTED', actorId: qs, createdAt: day(-billAgo) },
+        { organizationId, entityType: 'BILL', entityId: bill.id, action: 'APPROVED', actorId: project.projectManagerId, createdAt: day(-billAgo + 1) },
+        { organizationId, entityType: 'BILL', entityId: bill.id, action: 'SENT', actorId: qs, note: `Sent to the client on ${day(-sentAgo).toISOString().slice(0, 10)}`, createdAt: day(-sentAgo) },
+      ],
+    });
+  }
+}
+
+/**
+ * Demo receivables: the road project's bill 1 certified as claimed and paid in full with the client's deductions (so
+ * retention and TDS show as held), the building bill left outstanding. Only when the organisation has no receipts yet.
+ */
+async function seedReceipts(organizationId: string) {
+  if ((await prisma.receipt.count({ where: { organizationId } })) > 0) return;
+  const bill = await prisma.raBill.findFirst({ where: { organizationId, billNo: 1, stage: 'SENT', status: 'APPROVED', project: { type: 'ROAD' } }, include: { items: true } });
+  const accounts = await prisma.user.findFirst({ where: { organizationId, role: { key: 'ACCOUNTS_MANAGER' } }, select: { id: true } });
+  if (!bill || !accounts) return;
+  for (const i of bill.items) await prisma.raBillItem.update({ where: { id: i.id }, data: { certifiedQty: i.thisQty } });
+  const paidOn = day(-3);
+  await prisma.raBill.update({
+    where: { id: bill.id },
+    data: { stage: 'PAID', certifiedDate: day(-8), certificateNo: 'EE/RD/2026/101', claimedGross: bill.grossAmount, claimedNet: bill.netPayable, paidDate: paidOn },
+  });
+  const receipt = await prisma.receipt.create({
     data: {
-      organizationId, projectId: project.id, billNo: 1, billDate: day(-14), measuredUpTo: upTo, remarks: 'Earthwork in embankment, first reach',
-      grossPrevious: D(0), grossAmount: gross, grossUpto: gross, gstRate: project.gstRate, gstAmount: gst,
-      retentionPct: project.retentionPct, securityDepositPct: project.securityDepositPct, advanceRecoveryPct: project.advanceRecoveryPct,
-      tdsPct: project.tdsPct, gstTdsPct: project.gstTdsPct, labourCessPct: project.labourCessPct, ...amounts,
-      totalDeductions, netPayable: gross.add(gst).sub(totalDeductions), stage: 'SENT', sentDate: day(-12),
-      status: 'APPROVED', submittedById: qs, submittedAt: day(-14), reviewedById: project.projectManagerId, reviewedAt: day(-13), createdAt: day(-14),
-      items: { create: lines.map((l, i) => ({ boqItemId: l.boq.id, boqQty: l.boq.revisedQty ?? l.boq.originalQty, rate: l.boq.rate, prevQty: D(0), thisQty: l.qty, uptoQty: l.qty, amount: l.amount, sortOrder: i })) },
+      organizationId, projectId: bill.projectId, billId: bill.id, kind: 'BILL', receiptDate: paidOn, amount: bill.netPayable, mode: 'BANK', reference: 'SBIN526281904417',
+      tdsAmount: bill.tdsAmount, gstTdsAmount: bill.gstTdsAmount, retentionAmount: bill.retentionAmount, securityDepositAmount: bill.securityDepositAmount,
+      advanceRecoveryAmount: bill.advanceRecoveryAmount, labourCessAmount: bill.labourCessAmount, otherDeduction: bill.otherDeduction, otherDeductionNote: bill.otherDeductionNote,
+      remarks: 'RTGS from the Executive Engineer, R&B Division', createdById: accounts.id, createdAt: paidOn,
     },
   });
-  await prisma.measurementSheet.updateMany({ where: { id: { in: sheets.map((s) => s.id) } }, data: { raBillId: bill.id } });
   await prisma.auditLog.createMany({
     data: [
-      { organizationId, entityType: 'BILL', entityId: bill.id, action: 'CREATED', actorId: qs, createdAt: day(-14) },
-      { organizationId, entityType: 'BILL', entityId: bill.id, action: 'SUBMITTED', actorId: qs, createdAt: day(-14) },
-      { organizationId, entityType: 'BILL', entityId: bill.id, action: 'APPROVED', actorId: project.projectManagerId, createdAt: day(-13) },
-      { organizationId, entityType: 'BILL', entityId: bill.id, action: 'SENT', actorId: qs, note: `Sent to the client on ${day(-12).toISOString().slice(0, 10)}`, createdAt: day(-12) },
+      { organizationId, entityType: 'BILL', entityId: bill.id, action: 'CERTIFIED', actorId: accounts.id, note: 'Certificate EE/RD/2026/101', createdAt: day(-8) },
+      { organizationId, entityType: 'BILL', entityId: bill.id, action: 'PAYMENT_RECEIVED', actorId: accounts.id, note: `₹${bill.netPayable.toFixed(2)} received`, createdAt: paidOn },
+      { organizationId, entityType: 'RECEIPT', entityId: receipt.id, action: 'CREATED', actorId: accounts.id, createdAt: paidOn },
     ],
   });
 }

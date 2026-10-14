@@ -1,0 +1,207 @@
+'use client';
+
+import React, { useEffect, useMemo } from 'react';
+import { Alert, App, Collapse, DatePicker, Form, Input, InputNumber, Modal, Segmented, Select, Typography } from 'antd';
+import dayjs from 'dayjs';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { OpenBillDto, PaymentMode, RaBillDto, ReceiptDto, ReceiptKind } from '@erp/shared';
+import { RECEIPT_KIND_LABELS, RECEIPT_MODES, RECEIPT_MODE_LABELS } from '@erp/shared';
+import { api, errorMessage } from '@/lib/api';
+import { useBill, useProjects, useReceivables } from '@/lib/queries';
+import { formatDate, formatINR, toNumber } from '@/lib/format';
+
+const DEDUCTIONS = [
+  ['tdsAmount', 'TDS (income tax)', 'tds'],
+  ['gstTdsAmount', 'GST TDS', 'gstTds'],
+  ['retentionAmount', 'Retention', 'retention'],
+  ['securityDepositAmount', 'Security deposit', 'securityDeposit'],
+  ['advanceRecoveryAmount', 'Advance recovery', 'advanceRecovery'],
+  ['labourCessAmount', 'Labour welfare cess', 'labourCess'],
+  ['otherDeduction', 'Other deduction', 'other'],
+] as const;
+type DeductionField = (typeof DEDUCTIONS)[number][0];
+
+interface FormValues extends Partial<Record<DeductionField, number | null>> {
+  kind: ReceiptKind;
+  billId?: string;
+  projectId?: string;
+  receiptDate: dayjs.Dayjs;
+  amount: number | null;
+  mode: PaymentMode;
+  reference?: string;
+  otherDeductionNote?: string;
+  remarks?: string;
+}
+
+const r2 = (n: number) => Math.round(n * 100) / 100;
+
+/**
+ * Record money received from a client: a payment against a bill (with what the client deducted), or retention / security
+ * deposit released. With `bill`, the payment is for that bill; with `receipt`, an existing receipt is corrected.
+ */
+export function ReceiptFormModal({ open, onClose, bill, receipt }: { open: boolean; onClose: () => void; bill?: RaBillDto | null; receipt?: ReceiptDto | null }) {
+  const [form] = Form.useForm<FormValues>();
+  const { message } = App.useApp();
+  const qc = useQueryClient();
+  const { data: projects } = useProjects();
+  const { data: receivables } = useReceivables(undefined, open && !bill && !receipt);
+  const watchedKind = Form.useWatch('kind', form) as ReceiptKind | undefined;
+  // The kind switch is only shown for a new receipt without a bill; onFinish leaves out fields that are not shown.
+  const kind: ReceiptKind = receipt ? receipt.kind : bill ? 'BILL' : (watchedKind ?? 'BILL');
+  const billId = Form.useWatch('billId', form) as string | undefined;
+  const { data: chosen } = useBill(open && !bill && billId ? billId : undefined);
+  const target = bill ?? chosen;
+  const values = Form.useWatch([], form) as FormValues | undefined;
+  const deducted = DEDUCTIONS.reduce((s, [k]) => s + toNumber(values?.[k] ?? 0), 0);
+  const settles = toNumber(values?.amount ?? 0) + deducted;
+  const editing = !!receipt;
+
+  useEffect(() => {
+    if (!open) return;
+    form.resetFields();
+    if (receipt) {
+      form.setFieldsValue({
+        kind: receipt.kind,
+        billId: receipt.billId ?? undefined,
+        projectId: receipt.projectId,
+        receiptDate: dayjs(receipt.receiptDate),
+        amount: toNumber(receipt.amount),
+        mode: receipt.mode,
+        reference: receipt.reference ?? undefined,
+        otherDeductionNote: receipt.otherDeductionNote ?? undefined,
+        remarks: receipt.remarks ?? undefined,
+        ...Object.fromEntries(DEDUCTIONS.map(([k]) => [k, toNumber(receipt[k]) || null])),
+      });
+    } else form.setFieldsValue({ kind: 'BILL', billId: bill?.id, receiptDate: dayjs(), mode: 'BANK' });
+  }, [open, bill, receipt, form]);
+
+  // A first payment usually carries the bill's own deductions; a later one is the balance.
+  useEffect(() => {
+    if (!open || editing || !target || kind !== 'BILL') return;
+    const first = toNumber(target.settledAmount) === 0;
+    const fill: Partial<FormValues> = Object.fromEntries(DEDUCTIONS.map(([k, , key]) => [k, first ? toNumber(target.deductions.find((d) => d.key === key)?.amount ?? 0) || null : null]));
+    if (first) fill.otherDeductionNote = target.otherDeductionNote ?? undefined;
+    fill.amount = r2(first ? toNumber(target.netPayable) : toNumber(target.outstanding));
+    form.setFieldsValue(fill);
+  }, [open, editing, target, kind, form]);
+
+  const openBills: OpenBillDto[] = useMemo(() => receivables?.openBills ?? [], [receivables]);
+
+  const mutation = useMutation({
+    mutationFn: async (v: FormValues) => {
+      const body = {
+        receiptDate: v.receiptDate.format('YYYY-MM-DD'),
+        amount: String(v.amount ?? 0),
+        mode: v.mode,
+        reference: v.reference?.trim() || null,
+        remarks: v.remarks?.trim() || null,
+        otherDeductionNote: v.otherDeductionNote?.trim() || null,
+        ...(kind === 'BILL' ? Object.fromEntries(DEDUCTIONS.map(([k]) => [k, String(v[k] ?? 0)])) : {}),
+      };
+      if (receipt) return (await api.patch<ReceiptDto>(`/receipts/${receipt.id}`, body)).data;
+      return (await api.post<ReceiptDto>('/receipts', { ...body, kind, ...(kind === 'BILL' ? { billId: bill?.id ?? v.billId } : { projectId: v.projectId }) })).data;
+    },
+    onSuccess: (r) => {
+      message.success(`${formatINR(r.amount, true)} ${editing ? 'updated' : 'recorded'}${r.billLabel ? ` against ${r.billLabel}` : ''}`);
+      qc.invalidateQueries({ queryKey: ['receipts'] });
+      qc.invalidateQueries({ queryKey: ['receivables'] });
+      qc.invalidateQueries({ queryKey: ['bills'] });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
+      qc.invalidateQueries({ queryKey: ['cost'] });
+      onClose();
+    },
+    onError: (e) => message.error(errorMessage(e)),
+  });
+
+  const over = kind === 'BILL' && target && !editing ? settles - toNumber(target.outstanding) : 0;
+
+  return (
+    <Modal
+      open={open}
+      title={editing ? 'Correct receipt' : bill ? `Payment received · ${bill.billLabel}` : 'Record money received'}
+      okText={editing ? 'Save' : 'Record'}
+      onCancel={onClose}
+      onOk={() => form.submit()}
+      confirmLoading={mutation.isPending}
+      width={680}
+      destroyOnHidden
+    >
+      <Form form={form} layout="vertical" onFinish={(v) => mutation.mutate(v)} style={{ marginTop: 8 }}>
+        {!bill && !editing && (
+          <Form.Item name="kind">
+            <Segmented options={(['BILL', 'RETENTION_RELEASE', 'DEPOSIT_RELEASE'] as ReceiptKind[]).map((k) => ({ value: k, label: RECEIPT_KIND_LABELS[k] }))} />
+          </Form.Item>
+        )}
+        {kind === 'BILL' ? (
+          <Form.Item name="billId" label="Bill" rules={[{ required: true, message: 'Choose the bill' }]} hidden={!!bill || editing}>
+            <Select
+              showSearch
+              optionFilterProp="label"
+              placeholder="Bills sent and not yet settled"
+              options={openBills.map((b) => ({ value: b.billId, label: `${b.projectCode} · ${b.billLabel} · ${formatINR(b.outstanding)} outstanding` }))}
+              notFoundContent="No bill is waiting for payment"
+            />
+          </Form.Item>
+        ) : (
+          <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={editing}>
+            <Select showSearch optionFilterProp="label" placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
+          </Form.Item>
+        )}
+        {kind === 'BILL' && target && !editing && (
+          <Typography.Paragraph type="secondary">
+            {target.billLabel} of {formatDate(target.billDate)}: work + GST {formatINR(target.invoiceAmount, true)}, settled so far {formatINR(target.settledAmount, true)}, outstanding{' '}
+            <strong>{formatINR(target.outstanding, true)}</strong>.
+          </Typography.Paragraph>
+        )}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0 16px' }}>
+          <Form.Item name="receiptDate" label="Received on" rules={[{ required: true, message: 'Required' }]}>
+            <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+          </Form.Item>
+          <Form.Item name="amount" label="Amount received (₹)" rules={[{ required: true, message: 'Required' }]}>
+            <InputNumber style={{ width: '100%' }} min={0} precision={2} />
+          </Form.Item>
+          <Form.Item name="mode" label="Mode">
+            <Select options={RECEIPT_MODES.map((m) => ({ value: m, label: RECEIPT_MODE_LABELS[m] }))} />
+          </Form.Item>
+        </div>
+        <Form.Item name="reference" label="UTR / cheque / advice no.">
+          <Input maxLength={100} placeholder="e.g. SBIN526291234567" />
+        </Form.Item>
+        {kind === 'BILL' && (
+          <Collapse
+            size="small"
+            style={{ marginBottom: 16 }}
+            defaultActiveKey={['d']}
+            items={[
+              {
+                key: 'd',
+                label: `Deducted by the client: ${formatINR(deducted, true)}`,
+                children: (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0 16px' }}>
+                    {DEDUCTIONS.map(([k, label]) => (
+                      <Form.Item key={k} name={k} label={`${label} (₹)`}>
+                        <InputNumber style={{ width: '100%' }} min={0} precision={2} />
+                      </Form.Item>
+                    ))}
+                    <Form.Item name="otherDeductionNote" label="Other deduction for">
+                      <Input maxLength={200} />
+                    </Form.Item>
+                  </div>
+                ),
+              },
+            ]}
+          />
+        )}
+        {kind === 'BILL' && (
+          <Typography.Paragraph>
+            This settles <strong>{formatINR(settles, true)}</strong> of the bill (received plus deducted).
+          </Typography.Paragraph>
+        )}
+        {over > 1 && <Alert type="warning" showIcon style={{ marginBottom: 12 }} title={`That is ${formatINR(over, true)} more than the bill has outstanding.`} />}
+        <Form.Item name="remarks" label="Remarks">
+          <Input.TextArea rows={2} maxLength={1000} />
+        </Form.Item>
+      </Form>
+    </Modal>
+  );
+}

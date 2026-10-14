@@ -12,6 +12,8 @@ import { dateOnly, dec, iso, money, parseDate } from '../common/serialize';
 import { isUniqueViolation } from '../common/idempotency';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import { BillDateDto, CertifyBillDto, CreateRaBillDto, ListRaBillsQuery, UpdateRaBillDto } from './ra-bills.dto';
+import { invoiceOf, RECEIPT_SUMS, settlement, syncBillStage } from '../receivables/bill-settlement';
+import { ReceivablesService } from '../receivables/receivables.service';
 
 const D = (v: Prisma.Decimal.Value) => new Prisma.Decimal(v);
 const ZERO = D(0);
@@ -35,6 +37,7 @@ const include = {
   submittedBy: { select: { fullName: true } },
   reviewedBy: { select: { fullName: true } },
   attachments: true,
+  receipts: { select: RECEIPT_SUMS },
   _count: { select: { measurements: true } },
 } satisfies Prisma.RaBillInclude;
 type Row = Prisma.RaBillGetPayload<{ include: typeof include }>;
@@ -86,8 +89,9 @@ const checkNotFuture = (date: string, what: string) => {
  * Running-account bills (v3 item 18). A bill takes the approved measurements up to a date that no earlier bill took, and
  * prices them at the BOQ rates: previous / this bill / up-to-date quantities per BOQ item, GST on the work value, and the
  * contract's deductions (retention, security deposit, advance recovery capped at the advance still outstanding, TDS, GST
- * TDS, labour cess, any other). It is approved like any submission, then recorded as sent, certified (the client may cut
- * quantities; the claim is kept) and paid. One bill per project is open at a time, so "previous" is always well defined.
+ * TDS, labour cess, any other). It is approved like any submission, then recorded as sent and certified (the client may
+ * cut quantities; the claim is kept); receipts (`ReceivablesService`) mark it paid once they settle it. One bill per project
+ * is open at a time, so "previous" is always well defined.
  */
 @Injectable()
 export class RaBillsService {
@@ -98,9 +102,12 @@ export class RaBillsService {
     private audit: AuditService,
     private lifecycle: SubmissionLifecycleService,
     private attachments: AttachmentsService,
+    private receivables: ReceivablesService,
   ) {}
 
-  toDto(r: Row, sheets?: SheetRow[]): RaBillDto {
+  toDto(r: Row, sheets?: SheetRow[], receipts?: RaBillDto['receipts']): RaBillDto {
+    const { received, settled } = settlement(r.receipts);
+    const invoice = invoiceOf(r);
     const deductions: RaBillDeductionDto[] = [];
     for (const [key, pctKey, amountKey] of PCT_DEDUCTIONS) {
       if (r[amountKey].isZero()) continue;
@@ -145,6 +152,11 @@ export class RaBillsService {
       certificateNo: r.certificateNo,
       paidDate: dateOnly(r.paidDate),
       measurementCount: r._count.measurements,
+      invoiceAmount: money(invoice)!,
+      receivedAmount: money(received)!,
+      settledAmount: money(settled)!,
+      outstanding: money(Prisma.Decimal.max(invoice.sub(settled), ZERO))!,
+      receipts,
       items: r.items.map((i) => {
         const prevAmount = round2(i.prevQty.mul(i.rate));
         const extraItem = i.boqQty.isZero();
@@ -245,8 +257,11 @@ export class RaBillsService {
     await this.assertCanSee(user);
     const row = await this.prisma.raBill.findFirst({ where: { id, ...this.access.submissionWhere(user) }, include });
     if (!row) throw new NotFoundException('RA bill not found');
-    const sheets = await this.prisma.measurementSheet.findMany({ where: { raBillId: id }, include: sheetInclude, orderBy: [{ date: 'asc' }, { mbNo: 'asc' }] });
-    return this.toDto(row, sheets);
+    const [sheets, receipts] = await Promise.all([
+      this.prisma.measurementSheet.findMany({ where: { raBillId: id }, include: sheetInclude, orderBy: [{ date: 'asc' }, { mbNo: 'asc' }] }),
+      this.receivables.list(user, { billId: id, pageSize: 100, sortBy: 'receiptDate', sortOrder: 'asc' }).catch(() => null),
+    ]);
+    return this.toDto(row, sheets, receipts?.items);
   }
 
   /** Work value, GST, deductions and net payable of a set of lines priced on certified (else claimed) quantities. */
@@ -439,7 +454,7 @@ export class RaBillsService {
   private async approvedBill(user: RequestUser, id: string) {
     const row = await this.lifecycle.load(user, 'BILL', id);
     await this.assertCanPrepare(user, row.projectId);
-    if (row.status !== 'APPROVED') throw new BadRequestException('Only an approved bill can be sent, certified or marked paid');
+    if (row.status !== 'APPROVED') throw new BadRequestException('Only an approved bill can be sent or certified');
     return this.prisma.raBill.findUniqueOrThrow({ where: { id }, include: { items: true, project: { select: { mobilisationAdvance: true } } } });
   }
 
@@ -486,6 +501,7 @@ export class RaBillsService {
           ...(bill.claimedGross === null ? { claimedGross: bill.grossAmount, claimedNet: bill.netPayable } : {}),
         },
       });
+      await syncBillStage(tx, id);
       const next = await tx.raBill.findFirst({ where: { projectId: bill.projectId, billNo: bill.billNo + 1, status: { not: 'APPROVED' } }, select: { id: true } });
       if (next) await this.recompute(tx, next.id, false);
     });
@@ -493,14 +509,4 @@ export class RaBillsService {
     return this.get(user, id);
   }
 
-  async paid(user: RequestUser, id: string, dto: BillDateDto) {
-    const bill = await this.approvedBill(user, id);
-    if (bill.stage === 'NOT_SENT') throw new BadRequestException('Record the bill as sent first');
-    checkNotFuture(dto.date, 'payment date');
-    const after = bill.certifiedDate ?? bill.sentDate;
-    if (after && dto.date < dateOnly(after)!) throw new BadRequestException('The payment date cannot be before the bill was sent or certified');
-    await this.prisma.raBill.update({ where: { id }, data: { stage: 'PAID', paidDate: parseDate(dto.date) } });
-    await this.audit.log(user, 'BILL', id, 'PAID', `Paid on ${dto.date}`);
-    return this.get(user, id);
-  }
 }

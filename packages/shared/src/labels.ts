@@ -1,4 +1,4 @@
-import type { BillStage, EquipmentOwnership, ExpenseCategory, PaymentMode, EquipmentRateUnit, MaterialPriority, NotificationType, ProjectStatus, ProjectType, DelayParty, PasswordTokenPurpose, RiskCategory, RiskKind, RiskStatus, RoleKey, StockEntryType, SubmissionStatus, SubmissionType, Weather } from './enums';
+import type { BillStage, ReceiptKind, EquipmentOwnership, ExpenseCategory, PaymentMode, EquipmentRateUnit, MaterialPriority, NotificationType, ProjectStatus, ProjectType, DelayParty, PasswordTokenPurpose, RiskCategory, RiskKind, RiskStatus, RoleKey, StockEntryType, SubmissionStatus, SubmissionType, Weather } from './enums';
 
 export const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {
   ROAD: 'Road / Infrastructure',
@@ -164,3 +164,12 @@ export const BILL_STAGE_LABELS: Record<BillStage, string> = {
   CERTIFIED: 'Certified',
   PAID: 'Paid',
 };
+
+export const RECEIPT_KIND_LABELS: Record<ReceiptKind, string> = {
+  BILL: 'Bill payment',
+  RETENTION_RELEASE: 'Retention released',
+  DEPOSIT_RELEASE: 'Security deposit released',
+};
+
+/** Payment modes as they read on a receipt from a client. */
+export const RECEIPT_MODE_LABELS: Partial<Record<PaymentMode, string>> = { BANK: 'Bank (RTGS / NEFT / cheque)', UPI: 'UPI', CASH: 'Cash' };

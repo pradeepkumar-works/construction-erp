@@ -29,6 +29,7 @@ import {
   SafetyCertificateOutlined,
   BankOutlined,
   FileDoneOutlined,
+  AccountBookOutlined,
 } from '@ant-design/icons';
 import type { AuthUser } from '@erp/shared';
 import { approvalRightsOf, canEditContract, canEditProjects, canManageUsers, canPrepareBill, canViewContract, canViewCost, mayApprove } from '@erp/shared';
@@ -110,6 +111,7 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
         title: 'Billing',
         items: [
           ...(canPrepareBill(user.roleKey) || approvalRightsOf(user).some((r) => r.type === 'BILL') ? [link('/bills', 'RA Bills', FileDoneOutlined)] : []),
+          ...(canViewContract(user.roleKey) ? [link('/receivables', 'Receivables', AccountBookOutlined)] : []),
           ...(canViewContract(user.roleKey) || canEditContract(user.roleKey) ? [link('/clients', 'Clients', BankOutlined)] : []),
         ],
       },
