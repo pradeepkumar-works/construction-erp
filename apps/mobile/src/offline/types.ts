@@ -19,7 +19,7 @@ export interface OutboxItem {
   id: string;
   userId: string;
   type: OutboxType;
-  /** Request body for POST /progress, /dpr, /material-requests, /machinery-logs, /expenses, /measurements, /attendance or /risks, without id and attachmentIds. */
+  /** Request body for POST /progress, /dpr, /material-requests, /machinery-logs, /expenses, /measurements, /inspections, /attendance or /risks, without id and attachmentIds. */
   payload: Record<string, unknown>;
   photos: OutboxPhoto[];
   /** Display strings for the outbox list. */
@@ -43,6 +43,7 @@ export const OUTBOX_PATH: Record<OutboxType, string> = {
   VENDOR_BILL: '/vendor-bills',
   WORK_ORDER: '/work-orders',
   SUBCONTRACT_BILL: '/subcontract-bills',
+  INSPECTION: '/inspections',
   ATTENDANCE: '/attendance',
   RISK: '/risks',
 };
@@ -59,4 +60,5 @@ export const OUTBOX_DETAIL: Record<SubmissionType, string> = {
   VENDOR_BILL: '/vendor-bill/',
   WORK_ORDER: '/work-order/',
   SUBCONTRACT_BILL: '/subcontract-bill/',
+  INSPECTION: '/inspection/',
 };

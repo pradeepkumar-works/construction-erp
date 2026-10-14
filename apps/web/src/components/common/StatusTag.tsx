@@ -6,10 +6,11 @@ import type { MaterialPriority, ProjectStatus, ProjectType, SubmissionStatus } f
 import { MATERIAL_PRIORITY_LABELS, PROJECT_STATUS_LABELS, PROJECT_TYPE_LABELS, SUBMISSION_STATUS_LABELS } from '@erp/shared';
 import { PRIORITY_COLORS, PROJECT_STATUS_COLORS, STATUS_COLORS } from '@/lib/format';
 
-export function StatusTag({ status }: { status: SubmissionStatus }) {
+/** `labels` words the status for one kind of entry (an inspection is "Passed" rather than "Approved"). */
+export function StatusTag({ status, labels = SUBMISSION_STATUS_LABELS }: { status: SubmissionStatus; labels?: Record<SubmissionStatus, string> }) {
   return (
     <Tag color={STATUS_COLORS[status] ?? 'default'} style={{ margin: 0 }}>
-      {SUBMISSION_STATUS_LABELS[status] ?? status}
+      {labels[status] ?? status}
     </Tag>
   );
 }

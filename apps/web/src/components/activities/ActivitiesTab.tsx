@@ -50,9 +50,14 @@ export function ActivitiesTab({ projectId, members, project }: { projectId: stri
               Delayed
             </Tag>
           )}
-          {r.boqItemNo && (
+          {r.holdPoint && (
+            <Tag color="orange" style={{ marginLeft: 4 }}>
+              Hold point
+            </Tag>
+          )}
+          {(r.boqItemNo || r.checklistName) && (
             <div className="text-muted" style={{ fontSize: 12 }}>
-              BOQ {r.boqItemNo}
+              {[r.boqItemNo && `BOQ ${r.boqItemNo}`, r.checklistName && `Checklist: ${r.checklistName}`].filter(Boolean).join(' · ')}
             </div>
           )}
         </div>

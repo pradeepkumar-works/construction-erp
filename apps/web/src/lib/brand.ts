@@ -24,6 +24,8 @@ export const BRAND = {
     link: '#8A5A00',
     /** Pending and alerts (brick orange; yellow is the brand, so it cannot also mean "pending"). */
     pending: '#C2410C',
+    /** Approve and pass buttons. */
+    success: '#1F9D55',
     canvas: '#F4F3EF',
     border: '#E3E1DA',
   },

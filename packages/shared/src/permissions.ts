@@ -42,6 +42,12 @@ export const LABOUR_RATE_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'ACCOUNTS_MA
 /** Roles that raise delays and risks: site staff, the QS and approvers. Anyone with project access can read the register. */
 export const RISK_RAISER_ROLES: RoleKey[] = ['TEAM_LEADER', 'SITE_ENGINEER', 'QUANTITY_SURVEYOR', 'STORE_MANAGER', 'QA_QC_ENGINEER', 'ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER'];
 
+/** Roles that request inspections from site: site staff, QA/QC and approvers. */
+export const INSPECTION_REQUEST_ROLES: RoleKey[] = ['TEAM_LEADER', 'SITE_ENGINEER', 'QA_QC_ENGINEER', 'ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER'];
+
+/** Roles that keep the organisation's inspection checklists. */
+export const CHECKLIST_ADMIN_ROLES: RoleKey[] = ['QA_QC_ENGINEER', 'ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER'];
+
 /** Roles that see contract terms and bills: approvers, the QS who prepares bills, and accounts. */
 export const BILLING_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER', 'QUANTITY_SURVEYOR', 'ACCOUNTS_MANAGER'];
 
@@ -58,6 +64,8 @@ export const GETTING_STARTED_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT'];
 
 export const isCompanyWide = (role: RoleKey) => COMPANY_WIDE_ROLES.includes(role);
 export const canApprove = (role: RoleKey) => APPROVER_ROLES.includes(role);
+export const canRequestInspection = (role: RoleKey) => INSPECTION_REQUEST_ROLES.includes(role);
+export const canManageChecklists = (role: RoleKey) => CHECKLIST_ADMIN_ROLES.includes(role);
 export const canEditProjects = (role: RoleKey) => PROJECT_EDITOR_ROLES.includes(role);
 export const canManageUsers = (role: RoleKey) => USER_ADMIN_ROLES.includes(role);
 export const seesGettingStarted = (role: RoleKey) => GETTING_STARTED_ROLES.includes(role);

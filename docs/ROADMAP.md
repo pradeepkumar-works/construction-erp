@@ -214,9 +214,13 @@ relative to a v2 item (S about one, M about two, L about three). The full draft 
     hsn sheets plus the input register in the GSTR-2B layout. No e-invoicing yet.
 
 ### D. Quality and documents
-26. **Inspections** (M). Inspection request from site per activity and location, passed or failed by
+26. ~~**Inspections** (M). Inspection request from site per activity and location, passed or failed by
     `QA_QC_ENGINEER` against a checklist template with photos; reuses the submission lifecycle (pass =
-    approved, fail = rejected, re-inspect = changes requested); optional hold points on progress.
+    approved, fail = rejected, re-inspect = changes requested); optional hold points on progress.~~
+    Done: Site → Inspections and the site app. Site requests an inspection of an activity at a location with photos;
+    QA/QC marks each checklist point OK / Not OK / N/A and passes, fails or asks for re-inspection. Organisation
+    checklists (eight standard ones to start from), a default checklist per activity, and hold points: a hold-point
+    activity's progress is approved only after a passed inspection at that location.
 27. **Tests and NCRs** (M). Tests with result against specification (concrete cubes with 7 and 28-day
     reminders, compaction, others); non-conformance reports with cause, corrective action and closure.
 28. **Document register** (M). Drawings and documents with revision and status, current revision only (and

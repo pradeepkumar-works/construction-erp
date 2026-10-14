@@ -123,7 +123,7 @@ export class PlanningService {
 
   // ---------- Activities ----------
 
-  private toActivityDto(a: Prisma.ActivityGetPayload<{ include: { boqItem: true; responsible: true; progressEntries: { select: { quantity: true } } } }>): ActivityDto {
+  private toActivityDto(a: Prisma.ActivityGetPayload<{ include: { boqItem: true; responsible: true; checklistTemplate: { select: { name: true } }; progressEntries: { select: { quantity: true } } } }>): ActivityDto {
     const executed = a.progressEntries.reduce((s, e) => s.add(e.quantity), D(0));
     const progressPct = pct(executed, a.plannedQty);
     const today = new Date();
@@ -144,10 +144,13 @@ export class PlanningService {
       responsibleName: a.responsible?.fullName ?? null,
       isDelayed,
       sortOrder: a.sortOrder,
+      checklistTemplateId: a.checklistTemplateId,
+      checklistName: a.checklistTemplate?.name ?? null,
+      holdPoint: a.holdPoint,
     };
   }
 
-  private activityInclude = { boqItem: true, responsible: true, progressEntries: { where: { status: 'APPROVED' as const }, select: { quantity: true } } };
+  private activityInclude = { boqItem: true, responsible: true, checklistTemplate: { select: { name: true } }, progressEntries: { where: { status: 'APPROVED' as const }, select: { quantity: true } } };
 
   async listActivities(user: RequestUser, projectId: string): Promise<ActivityDto[]> {
     await this.access.assertCanAccessProject(user, projectId);
@@ -157,6 +160,7 @@ export class PlanningService {
 
   async createActivity(user: RequestUser, projectId: string, dto: CreateActivityDto): Promise<ActivityDto> {
     await this.access.assertCanAccessProject(user, projectId);
+    await this.assertChecklist(user, dto.checklistTemplateId);
     const row = await this.prisma.activity.create({
       data: {
         organizationId: user.organizationId,
@@ -168,6 +172,8 @@ export class PlanningService {
         plannedStart: dto.plannedStart ? parseDate(dto.plannedStart) : null,
         plannedEnd: dto.plannedEnd ? parseDate(dto.plannedEnd) : null,
         responsibleId: dto.responsibleId ?? null,
+        checklistTemplateId: dto.checklistTemplateId ?? null,
+        holdPoint: dto.holdPoint ?? false,
         sortOrder: dto.sortOrder ?? 0,
       },
       include: this.activityInclude,
@@ -180,6 +186,7 @@ export class PlanningService {
     await this.access.assertCanAccessProject(user, projectId);
     const existing = await this.prisma.activity.findFirst({ where: { id, projectId } });
     if (!existing) throw new NotFoundException('Activity not found');
+    await this.assertChecklist(user, dto.checklistTemplateId);
     const data: Prisma.ActivityUncheckedUpdateInput = {};
     if (dto.name !== undefined) data.name = dto.name;
     if (dto.unit !== undefined) data.unit = dto.unit;
@@ -188,10 +195,16 @@ export class PlanningService {
     if (dto.plannedStart !== undefined) data.plannedStart = dto.plannedStart ? parseDate(dto.plannedStart) : null;
     if (dto.plannedEnd !== undefined) data.plannedEnd = dto.plannedEnd ? parseDate(dto.plannedEnd) : null;
     if (dto.responsibleId !== undefined) data.responsibleId = dto.responsibleId;
+    if (dto.checklistTemplateId !== undefined) data.checklistTemplateId = dto.checklistTemplateId;
+    if (dto.holdPoint !== undefined) data.holdPoint = dto.holdPoint;
     if (dto.sortOrder !== undefined) data.sortOrder = dto.sortOrder;
     const row = await this.prisma.activity.update({ where: { id }, data, include: this.activityInclude });
     await this.audit.log(user, 'ACTIVITY', id, 'UPDATED');
     return this.toActivityDto(row);
+  }
+
+  private async assertChecklist(user: RequestUser, id: string | null | undefined) {
+    if (id && !(await this.prisma.checklistTemplate.count({ where: { id, organizationId: user.organizationId } }))) throw new NotFoundException('Checklist not found');
   }
 
   async deleteActivity(user: RequestUser, projectId: string, id: string) {

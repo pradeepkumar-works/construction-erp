@@ -17,3 +17,4 @@ export * from './onboarding';
 export * from './brand';
 export * from './subcontract';
 export * from './tally';
+export * from './quality';

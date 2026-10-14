@@ -2,7 +2,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { canKeepStock, canLogMachinery, canMeasure, canRaiseRisk, canRecordAttendance, canSubmitExpense } from '@erp/shared';
+import { canKeepStock, canLogMachinery, canMeasure, canRaiseRisk, canRecordAttendance, canRequestInspection, canSubmitExpense } from '@erp/shared';
 import { useAuth } from '../../src/auth/AuthContext';
 import { Button, Screen } from '../../src/components';
 import { colors, radius, shadow, spacing, typography } from '../../src/theme';
@@ -21,6 +21,8 @@ const EXPENSE = { href: '/expense/new', icon: 'wallet' as const, tone: '#7c3aed'
 
 const MEASUREMENT = { href: '/measurement/new', icon: 'resize' as const, tone: '#0f766e', title: 'Measurement (MB)', text: 'Nos × L × B × D against a BOQ item, with deductions; the billable quantity.' };
 
+const INSPECTION = { href: '/inspection/new', icon: 'shield-checkmark' as const, tone: colors.warning, title: 'Request inspection', text: 'Work ready for QA/QC to check against the checklist, with photos.' };
+
 const RISK = { href: '/risks', icon: 'alert-circle' as const, tone: colors.danger, title: 'Delays & risks', text: 'Record work held up (days lost, who caused it) or raise a risk; see what is open.' };
 
 const STOCK = [
@@ -37,6 +39,7 @@ export default function SubmitHub() {
     ...(user && canLogMachinery(user.roleKey) ? [MACHINERY] : []),
     ...(user && canSubmitExpense(user.roleKey) ? [EXPENSE] : []),
     ...(user && canMeasure(user.roleKey) ? [MEASUREMENT] : []),
+    ...(user && canRequestInspection(user.roleKey) ? [INSPECTION] : []),
     ...(user && canKeepStock(user.roleKey) ? STOCK : []),
     ...(user && canRaiseRisk(user.roleKey) ? [RISK] : []),
   ];

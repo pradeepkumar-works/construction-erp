@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import type { DailyReportDto, ExpenseDto, MeasurementSheetDto, MachineryLogDto, MaterialRequestDto, Paginated, ProgressEntryDto, SubmissionType } from '@erp/shared';
+import type { DailyReportDto, ExpenseDto, InspectionDto, MeasurementSheetDto, MachineryLogDto, MaterialRequestDto, Paginated, ProgressEntryDto, SubmissionType } from '@erp/shared';
 import { useApi, useFetch, type Api } from '../src/api/hooks';
 import { errorMessage } from '../src/api/client';
 import { Button, EmptyState, ErrorState, Input, Loading, OfflineBanner, Screen, SubmissionRow } from '../src/components';
@@ -16,6 +16,7 @@ const SEGMENTS: { type: SubmissionType; label: string }[] = [
   { type: 'MACHINERY', label: 'Machines' },
   { type: 'EXPENSE', label: 'Expenses' },
   { type: 'MEASUREMENT', label: 'MB' },
+  { type: 'INSPECTION', label: 'QA/QC' },
 ];
 
 type Row = { id: string; title: string; subtitle: string; status: ProgressEntryDto['status']; createdAt: string };
@@ -41,6 +42,10 @@ async function loadPage(api: Api, type: SubmissionType, page: number, q: string)
   if (type === 'MEASUREMENT') {
     const res = await api.get<Paginated<MeasurementSheetDto>>('/measurements', params);
     return { total: res.total, rows: res.items.map((m) => ({ id: m.id, title: `${m.mbNo} · ${fmtQty(m.totalQty)} ${m.unit}`, subtitle: `${m.projectName} · ${m.boqItemNo} · ${m.location}`, status: m.status, createdAt: m.createdAt })) };
+  }
+  if (type === 'INSPECTION') {
+    const res = await api.get<Paginated<InspectionDto>>('/inspections', params);
+    return { total: res.total, rows: res.items.map((i) => ({ id: i.id, title: `${i.inspectionNo} · ${i.activityName}`, subtitle: `${i.projectName} · ${i.location}`, status: i.status, createdAt: i.createdAt })) };
   }
   if (type === 'EXPENSE') {
     const res = await api.get<Paginated<ExpenseDto>>('/expenses', params);

@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { ALL_APPROVAL_RIGHTS, APPROVER_ROLES, ROLE_KEYS, SUBMISSION_TYPES, defaultApprovalRights, hasAmount, machineryLogCost, type ApprovalRightDto, type RoleKey, type SubmissionType } from '@erp/shared';
+import { ALL_APPROVAL_RIGHTS, ROLE_KEYS, SUBMISSION_TYPES, defaultApprovalRights, defaultApproverRoles, hasAmount, machineryLogCost, type ApprovalRightDto, type RoleKey, type SubmissionType } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { money } from './serialize';
 
 /**
  * Who may approve what, from the organisation's approval matrix (`ApprovalRule`). An organisation without rules
- * uses the fixed rule (APPROVER_ROLES approve every type, no limit). Admin always may approve everything, so a
+ * uses the fixed rule (APPROVER_ROLES approve every type, no limit; QA/QC also passes inspections). Admin always may approve everything, so a
  * submission can never be left without anyone able to approve it. Project visibility still comes from
  * ProjectAccessService: a right only counts on projects the user can see.
  */
@@ -31,7 +31,7 @@ export class ApprovalRightsService {
   /** Role keys that may approve this type at this amount (for notifying the right people). */
   async roleKeysFor(organizationId: string, type: SubmissionType, amount: Prisma.Decimal | null): Promise<RoleKey[]> {
     const rules = await this.prisma.approvalRule.findMany({ where: { organizationId }, include: { role: { select: { key: true } } } });
-    if (!rules.length) return APPROVER_ROLES;
+    if (!rules.length) return defaultApproverRoles(type);
     const keys = rules
       .filter((r) => r.submissionType === type && (r.maxAmount === null || amount === null || !hasAmount(type) || amount.lte(r.maxAmount)))
       .map((r) => r.role.key as RoleKey)

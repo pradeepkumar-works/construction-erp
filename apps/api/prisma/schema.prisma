@@ -218,6 +218,8 @@ model Organization {
   vendorPayments    VendorPayment[]
   tallyConfig       TallyConfig?
   tallyExports      TallyExport[]
+  checklists        ChecklistTemplate[]
+  inspections       Inspection[]
 }
 
 model Role {
@@ -243,7 +245,7 @@ model ApprovalRule {
   organization   Organization @relation(fields: [organizationId], references: [id])
   roleId         String
   role           Role         @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  /// SubmissionType: PROGRESS | DPR | MATERIAL_REQUEST | MACHINERY | EXPENSE | MEASUREMENT | BILL | PURCHASE_ORDER | VENDOR_BILL
+  /// SubmissionType: PROGRESS | DPR | MATERIAL_REQUEST | MACHINERY | EXPENSE | MEASUREMENT | BILL | PURCHASE_ORDER | VENDOR_BILL | WORK_ORDER | SUBCONTRACT_BILL | INSPECTION
   submissionType String
   maxAmount      Decimal?     @db.Decimal(18, 2)
   createdAt      DateTime     @default(now())
@@ -307,6 +309,8 @@ model User {
   reviewedWorkOrders   WorkOrder[]        @relation("WorkOrderReviewer")
   submittedSubBills    SubcontractBill[]  @relation("SubBillSubmitter")
   reviewedSubBills     SubcontractBill[]  @relation("SubBillReviewer")
+  requestedInspections Inspection[]       @relation("InspectionRequester")
+  inspectionsDone      Inspection[]       @relation("InspectionInspector")
   raisedRisks          Risk[]             @relation("RiskRaiser")
   ownedRisks           Risk[]             @relation("RiskOwner")
 
@@ -386,6 +390,7 @@ model Project {
   vendorBills      VendorBill[]
   workOrders       WorkOrder[]
   subcontractBills SubcontractBill[]
+  inspections      Inspection[]
 
   @@unique([organizationId, code])
   @@index([organizationId, status])
@@ -873,29 +878,35 @@ model BoqItem {
 }
 
 model Activity {
-  id             String       @id @default(uuid())
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  projectId      String
-  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  boqItemId      String?
-  boqItem        BoqItem?     @relation(fields: [boqItemId], references: [id], onDelete: SetNull)
-  name           String
-  unit           String
-  plannedQty     Decimal      @db.Decimal(18, 3)
-  plannedStart   DateTime?    @db.Date
-  plannedEnd     DateTime?    @db.Date
-  responsibleId  String?
-  responsible    User?        @relation("ActivityResponsible", fields: [responsibleId], references: [id])
-  sortOrder      Int          @default(0)
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  id                  String             @id @default(uuid())
+  organizationId      String
+  organization        Organization       @relation(fields: [organizationId], references: [id])
+  projectId           String
+  project             Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  boqItemId           String?
+  boqItem             BoqItem?           @relation(fields: [boqItemId], references: [id], onDelete: SetNull)
+  name                String
+  unit                String
+  plannedQty          Decimal            @db.Decimal(18, 3)
+  plannedStart        DateTime?          @db.Date
+  plannedEnd          DateTime?          @db.Date
+  responsibleId       String?
+  responsible         User?              @relation("ActivityResponsible", fields: [responsibleId], references: [id])
+  /// Checklist a new inspection of this activity starts from
+  checklistTemplateId String?
+  checklistTemplate   ChecklistTemplate? @relation(fields: [checklistTemplateId], references: [id], onDelete: SetNull)
+  /// Hold point: progress is approved only after a passed inspection (at the same location, when the entry gives one)
+  holdPoint           Boolean            @default(false)
+  sortOrder           Int                @default(0)
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
 
   progressEntries ProgressEntry[]
   stockEntries    StockEntry[]
   machineryLogs   MachineryLog[]
   expenses        Expense[]
   risks           Risk[]
+  inspections     Inspection[]
 
   @@index([projectId])
   @@index([organizationId])
@@ -1662,6 +1673,8 @@ model Attachment {
   workOrder         WorkOrder?        @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
   subcontractBillId String?
   subcontractBill   SubcontractBill?  @relation(fields: [subcontractBillId], references: [id], onDelete: Cascade)
+  inspectionId      String?
+  inspection        Inspection?       @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
   createdAt         DateTime          @default(now())
 
   @@index([organizationId])
@@ -1801,4 +1814,60 @@ model TallyExport {
   expenses         Expense[]
 
   @@index([organizationId, createdAt])
+}
+
+// ---------- Quality ----------
+
+/// A standard inspection checklist ("Reinforcement before concreting"): the points an inspector checks.
+model ChecklistTemplate {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  name           String
+  items          String[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  activities Activity[]
+
+  @@unique([organizationId, name])
+}
+
+/// Inspection request from site for an activity at a location, passed or failed by QA/QC against a checklist.
+/// A submission: SUBMITTED = requested, APPROVED = passed, REJECTED = failed, CHANGES_REQUESTED = re-inspect after rectification.
+model Inspection {
+  id             String           @id @default(uuid())
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  activityId     String
+  activity       Activity         @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  /// INS-2026-0001
+  inspectionNo   String
+  /// The date the work is ready for inspection
+  date           DateTime         @db.Date
+  location       String
+  remarks        String?
+  /// Name of the checklist the points were copied from
+  checklistName  String?
+  /// [{ item, result: PASS | FAIL | NA | null, remark }], copied from the template when requested and filled in by the inspector
+  checklist      Json             @default("[]")
+  status         SubmissionStatus @default(DRAFT)
+  submittedById  String
+  submittedBy    User             @relation("InspectionRequester", fields: [submittedById], references: [id])
+  submittedAt    DateTime?
+  reviewedById   String?
+  reviewedBy     User?            @relation("InspectionInspector", fields: [reviewedById], references: [id])
+  reviewedAt     DateTime?
+  reviewNote     String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  attachments Attachment[]
+
+  @@unique([organizationId, inspectionNo])
+  @@index([projectId, status])
+  @@index([activityId, status])
+  @@index([organizationId, status])
 }

@@ -7,7 +7,7 @@ import { ProjectAccessService } from './project-access.service';
 import { ApprovalRightsService } from './approval-rights.service';
 import { AuditService } from './audit.service';
 import { NotificationsService } from '../notifications/notifications.service';
-import { dprTitle, expenseTitle, machineryTitle, measurementTitle, progressTitle, billTitle, poTitle, vendorBillTitle, woTitle, subBillTitle } from './submission-titles';
+import { dprTitle, expenseTitle, machineryTitle, measurementTitle, progressTitle, billTitle, poTitle, vendorBillTitle, woTitle, subBillTitle, inspectionTitle } from './submission-titles';
 
 interface SubmissionRow {
   id: string;
@@ -21,11 +21,12 @@ interface SubmissionRow {
  * One state machine for every site submission:
  *   DRAFT / REJECTED / CHANGES_REQUESTED --submit--> SUBMITTED --review--> APPROVED | REJECTED | CHANGES_REQUESTED
  * A rejected or changes-requested entry is edited in place and resubmitted (audit action RESUBMITTED), so the
- * review history stays on one record. Progress entries, DPRs, material requests, machinery logs, site expenses, measurements and RA bills all go through here.
+ * review history stays on one record. Every submission type (progress, DPRs, material requests, machinery logs, expenses, measurements, bills, orders, inspections) goes through here.
  */
 @Injectable()
 export class SubmissionLifecycleService {
   private readonly approvedHooks = new Map<SubmissionType, (user: RequestUser, id: string) => Promise<void>>();
+  private readonly beforeApproveHooks = new Map<SubmissionType, (user: RequestUser, id: string) => Promise<void>>();
 
   constructor(private prisma: PrismaService, private access: ProjectAccessService, private audit: AuditService, private notifications: NotificationsService, private rights: ApprovalRightsService) {}
 
@@ -53,12 +54,19 @@ export class SubmissionLifecycleService {
         return this.prisma.workOrder;
       case 'SUBCONTRACT_BILL':
         return this.prisma.subcontractBill;
+      case 'INSPECTION':
+        return this.prisma.inspection;
     }
   }
 
   /** Run `hook` after an entry of `type` is approved (e.g. a purchase order updates item rates). One per type. */
   onApproved(type: SubmissionType, hook: (user: RequestUser, id: string) => Promise<void>) {
     this.approvedHooks.set(type, hook);
+  }
+
+  /** Run `check` before an entry of `type` is approved; it throws to stop the approval (e.g. a hold point). One per type. */
+  beforeApprove(type: SubmissionType, check: (user: RequestUser, id: string) => Promise<void>) {
+    this.beforeApproveHooks.set(type, check);
   }
 
   async load(user: RequestUser, type: SubmissionType, id: string): Promise<SubmissionRow> {
@@ -85,6 +93,7 @@ export class SubmissionLifecycleService {
     await this.access.assertCanApproveSubmission(user, type, id, row.projectId);
     if (row.status !== 'SUBMITTED') throw new BadRequestException(`Only submitted entries can be reviewed (current status ${row.status})`);
     const status = decision === 'APPROVE' ? 'APPROVED' : decision === 'REJECT' ? 'REJECTED' : 'CHANGES_REQUESTED';
+    if (status === 'APPROVED') await this.beforeApproveHooks.get(type)?.(user, id);
     await this.delegate(type).update({ where: { id }, data: { status, reviewedById: user.id, reviewedAt: new Date(), reviewNote: note ?? null } });
     await this.audit.log(user, type, id, status, note);
     if (status === 'APPROVED') await this.approvedHooks.get(type)?.(user, id);
@@ -110,7 +119,7 @@ export class SubmissionLifecycleService {
     const allowed = (t: SubmissionType) => rights.some((r) => r.type === t);
     const where = { ...this.access.submissionWhere(user), status: 'SUBMITTED' as const };
     const none = Promise.resolve([] as never[]);
-    const [progress, dprs, mrs, logs, expenses, mbs, bills, pos, vbills, wos, sbills] = await Promise.all([
+    const [progress, dprs, mrs, logs, expenses, mbs, bills, pos, vbills, wos, sbills, inspections] = await Promise.all([
       allowed('PROGRESS') ? this.prisma.progressEntry.findMany({ where, include: { project: true, activity: { include: { boqItem: { select: { rate: true } } } }, submittedBy: true }, orderBy: { submittedAt: 'asc' } }) : none,
       allowed('DPR') ? this.prisma.dailyReport.findMany({ where, include: { project: true, submittedBy: true }, orderBy: { submittedAt: 'asc' } }) : none,
       allowed('MATERIAL_REQUEST') ? this.prisma.materialRequest.findMany({ where, include: { project: true, submittedBy: true, items: true }, orderBy: { submittedAt: 'asc' } }) : none,
@@ -124,6 +133,7 @@ export class SubmissionLifecycleService {
       allowed('SUBCONTRACT_BILL')
         ? this.prisma.subcontractBill.findMany({ where, include: { project: true, submittedBy: true, workOrder: { select: { woNo: true, vendor: { select: { name: true } } } } }, orderBy: { submittedAt: 'asc' } })
         : none,
+      allowed('INSPECTION') ? this.prisma.inspection.findMany({ where, include: { project: true, submittedBy: true, activity: { select: { name: true } } }, orderBy: { submittedAt: 'asc' } }) : none,
     ]);
     const amt = (d: Prisma.Decimal | null): string | null => (d === null ? null : d.toDecimalPlaces(2).toFixed(2));
     const machineCost = (l: (typeof logs)[number]) => {
@@ -240,6 +250,16 @@ export class SubmissionLifecycleService {
         submittedByName: b.submittedBy.fullName,
         submittedAt: (b.submittedAt ?? b.createdAt).toISOString(),
         amount: amt(b.grossAmount),
+      })),
+      ...inspections.map((i) => ({
+        type: 'INSPECTION' as const,
+        id: i.id,
+        projectId: i.projectId,
+        projectName: i.project.name,
+        title: inspectionTitle(i.inspectionNo, i.activity.name, i.location),
+        submittedByName: i.submittedBy.fullName,
+        submittedAt: (i.submittedAt ?? i.createdAt).toISOString(),
+        amount: null,
       })),
     ];
     return out

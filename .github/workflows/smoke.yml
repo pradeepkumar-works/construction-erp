@@ -337,6 +337,26 @@ jobs:
           echo "line without dimensions: $code"; [ "$code" = "400" ]
           cleanup
           curl -sf "$API_URL/projects/$PROJECT/boq" -H "$H" | jq -r '"measured value on the project: ₹\([.[].measuredAmount | tonumber] | add)"'
+      - name: Inspections
+        run: |
+          set -e
+          login() { curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' -d "{\"email\":\"$1\",\"password\":\"password123\"}" | jq -r .accessToken; }
+          QA="authorization: Bearer $(login qaqc@demo.com)"; ADMIN="authorization: Bearer $(login admin@demo.com)"
+          cleanup() {
+            for X in $(curl -sf "$API_URL/inspections?q=Smoke%20test%20inspection&pageSize=50" -H "$ADMIN" | jq -r '.items[].id'); do curl -sf -X DELETE "$API_URL/inspections/$X" -H "$ADMIN" > /dev/null; done
+          }
+          cleanup
+          curl -sf "$API_URL/inspections/checklists" -H "$QA" | jq -c '{checklists: length}'
+          PROJECT=$(curl -sf "$API_URL/projects" -H "$QA" | jq -r '.items[0].id')
+          ACTIVITY=$(curl -sf "$API_URL/projects/$PROJECT/activities" -H "$QA" | jq -r '.[0].id')
+          ID=$(curl -sf -X POST "$API_URL/inspections" -H "$QA" -H 'content-type: application/json' \
+            -d "{\"projectId\":\"$PROJECT\",\"activityId\":\"$ACTIVITY\",\"date\":\"$(date -u +%F)\",\"location\":\"Smoke test inspection\",\"items\":[\"Smoke point\"]}" | jq -r '.id')
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/approvals/inspection/$ID/review" -H "$QA" -H 'content-type: application/json' -d '{"decision":"APPROVE"}')
+          echo "generic review of an inspection: $code"; [ "$code" = "400" ]
+          STATUS=$(curl -sf -X POST "$API_URL/inspections/$ID/inspect" -H "$QA" -H 'content-type: application/json' \
+            -d '{"decision":"REQUEST_CHANGES","results":[{"result":"FAIL","remark":"smoke"}]}' | jq -r '"\(.status) \(.checklist[0].result)"')
+          echo "after inspection: $STATUS"; [ "$STATUS" = "CHANGES_REQUESTED FAIL" ]
+          curl -sf -X DELETE "$API_URL/inspections/$ID" -H "$QA" | jq -c .
       - name: Project cost view
         run: |
           set -e

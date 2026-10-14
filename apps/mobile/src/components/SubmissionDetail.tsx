@@ -19,7 +19,7 @@ import { useAuth } from '../auth/AuthContext';
 import { canEditSubmission, canResubmit, mayApproveType } from '@erp/shared';
 
 /** Status, project, submitter and reviewer block shared by all three detail screens. */
-export function SubmissionHeader({ item, title, subtitle }: { item: SubmissionBase; title: string; subtitle?: string }) {
+export function SubmissionHeader({ item, title, subtitle, labels }: { item: SubmissionBase; title: string; subtitle?: string; labels?: Record<SubmissionBase['status'], string> }) {
   return (
     <Card>
       <View style={styles.headRow}>
@@ -29,7 +29,7 @@ export function SubmissionHeader({ item, title, subtitle }: { item: SubmissionBa
         </View>
       </View>
       <View style={styles.statusRow}>
-        <StatusBadge status={item.status} size="lg" />
+        <StatusBadge status={item.status} size="lg" labels={labels} />
       </View>
       <KeyValue label="Project" value={item.projectName} />
       <KeyValue label="Submitted by" value={item.submittedByName} />
@@ -89,9 +89,9 @@ const DECISIONS: { decision: ReviewDecision; label: string; variant: 'success' |
 ];
 
 /** Entry forms on the phone; RA bills, purchase orders and vendor bills are prepared on the web. */
-const EDIT_PATH: Partial<Record<SubmissionType, string>> = { PROGRESS: '/progress/new', DPR: '/dpr/new', MATERIAL_REQUEST: '/material-request/new', MACHINERY: '/machinery/new', EXPENSE: '/expense/new', MEASUREMENT: '/measurement/new' };
+const EDIT_PATH: Partial<Record<SubmissionType, string>> = { PROGRESS: '/progress/new', DPR: '/dpr/new', MATERIAL_REQUEST: '/material-request/new', MACHINERY: '/machinery/new', EXPENSE: '/expense/new', MEASUREMENT: '/measurement/new', INSPECTION: '/inspection/new' };
 
-const REVIEW_PATH: Record<SubmissionType, string> = { PROGRESS: 'progress', DPR: 'dpr', MATERIAL_REQUEST: 'material_request', MACHINERY: 'machinery', EXPENSE: 'expense', MEASUREMENT: 'measurement', BILL: 'bill', PURCHASE_ORDER: 'purchase_order', VENDOR_BILL: 'vendor_bill', WORK_ORDER: 'work_order', SUBCONTRACT_BILL: 'subcontract_bill' };
+const REVIEW_PATH: Record<SubmissionType, string> = { PROGRESS: 'progress', DPR: 'dpr', MATERIAL_REQUEST: 'material_request', MACHINERY: 'machinery', EXPENSE: 'expense', MEASUREMENT: 'measurement', BILL: 'bill', PURCHASE_ORDER: 'purchase_order', VENDOR_BILL: 'vendor_bill', WORK_ORDER: 'work_order', SUBCONTRACT_BILL: 'subcontract_bill', INSPECTION: 'inspection' };
 
 /** The detail endpoint each type is read back from after a review. */
 const DETAIL_API: Record<SubmissionType, string> = {
@@ -106,6 +106,7 @@ const DETAIL_API: Record<SubmissionType, string> = {
   VENDOR_BILL: 'vendor-bills',
   WORK_ORDER: 'work-orders',
   SUBCONTRACT_BILL: 'subcontract-bills',
+  INSPECTION: 'inspections',
 };
 
 /** Approve / request changes / reject with an optional note. Rendered only for approvers on SUBMITTED entries. */
@@ -119,7 +120,8 @@ export function ReviewActions<T extends SubmissionBase>({ type, item, onReviewed
 
   const known = item as unknown as { totalAmount?: string; amount?: string; grossAmount?: string };
   const amount = type === 'EXPENSE' ? known.totalAmount : type === 'MEASUREMENT' ? known.amount : type === 'BILL' ? known.grossAmount : undefined;
-  if (!user || !mayApproveType(user, type, amount) || item.status !== 'SUBMITTED') return null;
+  // An inspection is reviewed with its checklist on its own screen.
+  if (!user || type === 'INSPECTION' || !mayApproveType(user, type, amount) || item.status !== 'SUBMITTED') return null;
   const meta = DECISIONS.find((d) => d.decision === pending);
 
   const confirm = async () => {
