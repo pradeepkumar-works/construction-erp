@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { existsSync, mkdirSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, rmSync, writeFileSync } from 'fs';
 import { extname, join } from 'path';
 import { randomUUID } from 'crypto';
 
@@ -48,6 +48,17 @@ export class StorageService {
         return { storagePath: key, data: null };
       }
     }
+  }
+
+  /** Remove stored files (company deletion). Files kept in the database go with their rows. */
+  async remove(storagePaths: string[]): Promise<void> {
+    const urls = storagePaths.filter((p) => /^https?:\/\//.test(p));
+    if (urls.length && process.env.BLOB_READ_WRITE_TOKEN) {
+      const { del } = await import('@vercel/blob');
+      for (let i = 0; i < urls.length; i += 500) await del(urls.slice(i, i + 500));
+    }
+    const root = join(process.cwd(), process.env.UPLOAD_DIR || './uploads');
+    for (const p of storagePaths.filter((x) => !x.startsWith('db:') && !/^https?:\/\//.test(x))) rmSync(join(root, p), { force: true });
   }
 
   /** Absolute URLs pass through; db-stored files are served by the API; disk files under /uploads. */

@@ -8,8 +8,8 @@ export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const isLogin = ['/login', '/signup', '/forgot-password'].some((p) => pathname.startsWith(p));
   // An invite or reset link works whether or not someone is signed in on this browser.
-  // The product page is open to everyone too.
-  if (pathname.startsWith('/set-password') || pathname === '/welcome') return NextResponse.next();
+  // The product page and the privacy page are open to everyone too.
+  if (pathname.startsWith('/set-password') || pathname === '/welcome' || pathname === '/privacy') return NextResponse.next();
 
   // A signed-out visitor to the bare domain gets the product page, which has "Sign in" at the top.
   if (!token && pathname === '/') {

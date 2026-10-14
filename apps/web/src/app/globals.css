@@ -263,3 +263,13 @@ h4.ant-typography,
 .row-muted td {
   color: rgba(0, 0, 0, 0.45);
 }
+
+/* Text pages under the product page (privacy) */
+.lp-doc { max-width: 760px; padding-top: 48px; padding-bottom: 64px; font-size: 16px; line-height: 1.65; }
+.lp-doc h1 { font-size: 44px; font-weight: 800; margin-bottom: 6px; }
+.lp-doc h2 { font-size: 24px; font-weight: 800; margin: 32px 0 10px; }
+.lp-doc p { margin: 0 0 12px; }
+.lp-doc ul { padding-left: 20px; margin: 0 0 12px; }
+.lp-doc li { margin-bottom: 6px; }
+.lp-doc a { color: var(--brand-link); }
+.lp-doc-meta { opacity: .65; font-size: 13px; margin-bottom: 24px !important; }

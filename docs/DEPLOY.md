@@ -40,8 +40,11 @@ API (`apps/api`):
 | `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID` | Alternative to WATI: WhatsApp through Meta's Cloud API directly. `WHATSAPP_TEMPLATE_LANGUAGE` (default `en`), `WHATSAPP_TEMPLATE_PREFIX` (default `nirmaan_`) and `WHATSAPP_API_URL` (default `https://graph.facebook.com/v21.0`) are optional. |
 | `MSG91_AUTH_KEY`, `MSG91_TEMPLATE_IDS` | SMS alerts through MSG91 with DLT-registered templates: `MSG91_TEMPLATE_IDS=APPROVAL_REQUEST=<id>,SENT_BACK=<id>,DPR_REMINDER=<id>,APPROVAL_DIGEST=<id>,TEST_DUE=<id>,BILLS_DUE=<id>,INVITE=<id>,TEST=<id>`. A message without an id is not sent by SMS. `MSG91_API_URL` overrides the service URL. |
 | `PUSH_DISABLED`, `EMAIL_DISABLED`, `MESSAGING_DISABLED` | `true` switches a channel off (useful on preview deployments); `MESSAGING_DISABLED` stops WhatsApp and SMS |
+| `PROTECTED_ORG_CODES` | comma-separated organisation codes that can never be deleted (default `DEMO`, the public demo company) |
 
-Web (`apps/web`): `NEXT_PUBLIC_API_URL`, e.g. `https://construction-erp-api-pradeep15.vercel.app/api`.
+Web (`apps/web`): `NEXT_PUBLIC_API_URL`, e.g. `https://construction-erp-api-pradeep15.vercel.app/api`, and
+`NEXT_PUBLIC_PRIVACY_EMAIL`, the address the `/privacy` page gives for questions (without it the page sends people to
+their company's admin).
 
 Mobile (`apps/mobile`): `EXPO_PUBLIC_API_URL`, same value. For push notifications the app needs an
 EAS project id (`eas init` writes `extra.eas.projectId` into `app.json`) and a development or

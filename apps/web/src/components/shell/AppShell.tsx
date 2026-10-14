@@ -3,7 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Avatar, Badge, Button, Drawer, Dropdown, Grid, Layout, Menu, Space, Tag, Typography } from 'antd';
+import { Alert, Avatar, Badge, Button, Drawer, Dropdown, Grid, Layout, Menu, Space, Tag, Typography } from 'antd';
 import type { MenuProps } from 'antd';
 import {
   AppstoreOutlined,
@@ -42,12 +42,14 @@ import {
   ProfileOutlined,
   IdcardOutlined,
   CarryOutOutlined,
+  DatabaseOutlined,
 } from '@ant-design/icons';
 import type { AuthUser } from '@erp/shared';
 import { isGuest } from '@erp/shared';
-import { approvalRightsOf, canViewPurchaseOrders, canViewVendorBills, canViewWorkOrders, canViewPayables, canExportTally, canViewGstRegisters, canPrepareSubcontractBill, canEditContract, canEditProjects, canEditVendors, canManageUsers, canSeeVendorBank, canPrepareBill, canViewContract, canViewCost, mayApprove, canViewPayroll, canViewLabourSummary } from '@erp/shared';
+import { approvalRightsOf, canViewPurchaseOrders, canViewVendorBills, canViewWorkOrders, canViewPayables, canExportTally, canViewGstRegisters, canPrepareSubcontractBill, canEditContract, canEditProjects, canEditVendors, canManageUsers, canSeeVendorBank, canPrepareBill, canViewContract, canViewCost, mayApprove, canViewPayroll, canViewLabourSummary, canManageCompanyData } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
-import { usePendingApprovals } from '@/lib/queries';
+import { useCompanyDeletion, usePendingApprovals } from '@/lib/queries';
+import { formatDate } from '@/lib/format';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { BRAND } from '@/lib/brand';
 import { BrandMark, Wordmark } from './BrandMark';
@@ -158,6 +160,7 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
         items: [
           ...(canEditProjects(user.roleKey) ? [link('/templates', 'Activity Templates', PartitionOutlined)] : []),
           ...(canManageUsers(user.roleKey) ? [link('/users', 'Users', TeamOutlined), link('/approval-rules', 'Approval Rules', SafetyCertificateOutlined)] : []),
+          ...(canManageCompanyData(user.roleKey) ? [link('/company-data', 'Data & Privacy', DatabaseOutlined)] : []),
         ],
       },
     ];
@@ -257,8 +260,34 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
             </Dropdown>
           </Space>
         </Header>
-        <Content>{children}</Content>
+        <Content>
+          <DeletionBanner user={user} />
+          {children}
+        </Content>
       </Layout>
     </Layout>
+  );
+}
+
+/** Admins are reminded on every page while the company is set to be deleted. */
+function DeletionBanner({ user }: { user: AuthUser }) {
+  const admin = canManageCompanyData(user.roleKey);
+  const { data } = useCompanyDeletion(admin);
+  if (!admin || !data?.scheduledFor) return null;
+  return (
+    <div className="page-container" style={{ paddingBottom: 0 }}>
+      <Alert
+        type="error"
+        showIcon
+        message={`This company and all its data will be deleted on ${formatDate(data.scheduledFor)}.`}
+        action={
+          <Link href="/company-data">
+            <Button size="small" danger>
+              Review or cancel
+            </Button>
+          </Link>
+        }
+      />
+    </div>
   );
 }
