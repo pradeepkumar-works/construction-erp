@@ -7,7 +7,7 @@ import { ProjectAccessService } from '../common/project-access.service';
 import { ApprovalRightsService } from '../common/approval-rights.service';
 import { dateOnly, iso } from '../common/serialize';
 import { ExpoPushService } from './expo-push.service';
-import { dprTitle, expenseTitle, machineryTitle, measurementTitle, progressTitle, billTitle } from '../common/submission-titles';
+import { dprTitle, expenseTitle, machineryTitle, measurementTitle, progressTitle, billTitle, poTitle, vendorBillTitle } from '../common/submission-titles';
 import { ListNotificationsQuery, RegisterPushTokenDto } from './notifications.dto';
 
 export interface NotifyInput {
@@ -26,7 +26,7 @@ export interface NotifyInput {
 const include = { project: { select: { name: true } } } satisfies Prisma.NotificationInclude;
 type Row = Prisma.NotificationGetPayload<{ include: typeof include }>;
 
-const SUBMISSION_LABEL: Record<SubmissionType, string> = { PROGRESS: 'Progress entry', DPR: 'DPR', MATERIAL_REQUEST: 'Material request', MACHINERY: 'Machinery log', EXPENSE: 'Site expense', MEASUREMENT: 'Measurement', BILL: 'RA bill' };
+const SUBMISSION_LABEL: Record<SubmissionType, string> = { PROGRESS: 'Progress entry', DPR: 'DPR', MATERIAL_REQUEST: 'Material request', MACHINERY: 'Machinery log', EXPENSE: 'Site expense', MEASUREMENT: 'Measurement', BILL: 'RA bill', PURCHASE_ORDER: 'Purchase order', VENDOR_BILL: 'Vendor bill' };
 
 /**
  * Creates in-app notifications and pushes them to the users' devices.
@@ -197,6 +197,14 @@ export class NotificationsService {
       case 'BILL': {
         const b = await this.prisma.raBill.findUnique({ where: { id }, include: { project: { select: { name: true } } } });
         return b ? { title: billTitle(b.billNo, b.isFinal, b.grossAmount.toFixed(2)), projectId: b.projectId, projectName: b.project.name, submittedById: b.submittedById } : null;
+      }
+      case 'PURCHASE_ORDER': {
+        const o = await this.prisma.purchaseOrder.findUnique({ where: { id }, include: { project: { select: { name: true } }, vendor: { select: { name: true } } } });
+        return o ? { title: poTitle(o.poNo, o.total.toFixed(2), o.vendor.name), projectId: o.projectId, projectName: o.project.name, submittedById: o.submittedById } : null;
+      }
+      case 'VENDOR_BILL': {
+        const v = await this.prisma.vendorBill.findUnique({ where: { id }, include: { project: { select: { name: true } }, vendor: { select: { name: true } } } });
+        return v ? { title: vendorBillTitle(v.billNo, v.invoiceNo, v.vendor.name, v.total.toFixed(2)), projectId: v.projectId, projectName: v.project.name, submittedById: v.submittedById } : null;
       }
     }
   }

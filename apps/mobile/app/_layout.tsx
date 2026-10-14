@@ -53,6 +53,8 @@ function RootNavigator() {
         <Stack.Screen name="measurement/new" options={{ title: 'New Measurement' }} />
         <Stack.Screen name="measurement/[id]" options={{ title: 'Measurement' }} />
         <Stack.Screen name="bill/[id]" options={{ title: 'RA Bill' }} />
+        <Stack.Screen name="purchase-order/[id]" options={{ title: 'Purchase Order' }} />
+        <Stack.Screen name="vendor-bill/[id]" options={{ title: 'Vendor Bill' }} />
         <Stack.Screen name="risks" options={{ title: 'Delays & Risks' }} />
         <Stack.Screen name="risk/new" options={{ title: 'Delay or Risk' }} />
         <Stack.Screen name="risk/[id]" options={{ title: 'Delay / Risk' }} />

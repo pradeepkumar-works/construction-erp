@@ -25,3 +25,11 @@ export const measurementTitle = (mbNo: string, itemNo: string, qty: string, unit
 /** "RA bill 3: ₹48,25,000.00 of work" (the final bill says so). */
 export const billTitle = (billNo: number, isFinal: boolean, gross: string) =>
   `RA bill ${billNo}${isFinal ? ' (final)' : ''}: ₹${Number(gross).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} of work`;
+
+const inr = (v: string) => `₹${Number(v).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+/** "PO-2026-0004: ₹2,45,000.00 to Utkal Cement Traders". */
+export const poTitle = (poNo: string, total: string, vendor: string) => `${poNo}: ${inr(total)} to ${vendor}`;
+
+/** "VB-2026-0002: invoice UCT/551 of Utkal Cement Traders, ₹1,20,000.00". */
+export const vendorBillTitle = (billNo: string, invoiceNo: string, vendor: string, total: string) => `${billNo}: invoice ${invoiceNo} of ${vendor}, ${inr(total)}`;

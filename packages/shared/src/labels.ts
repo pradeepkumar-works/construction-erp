@@ -30,6 +30,8 @@ export const SUBMISSION_TYPE_LABELS: Record<SubmissionType, string> = {
   EXPENSE: 'Site Expense',
   MEASUREMENT: 'Measurement (MB)',
   BILL: 'RA Bill',
+  PURCHASE_ORDER: 'Purchase Order',
+  VENDOR_BILL: 'Vendor Bill',
 };
 
 export const MATERIAL_PRIORITY_LABELS: Record<MaterialPriority, string> = {

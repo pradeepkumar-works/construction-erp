@@ -47,6 +47,7 @@ const include = {
   project: { select: { name: true } },
   createdBy: { select: { fullName: true } },
   materialRequest: { select: { requestNo: true } },
+  purchaseOrder: { select: { poNo: true } },
   activity: { select: { name: true } },
   lines: { orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }], include: { item: { select: { name: true, unit: true } } } },
   attachments: true,
@@ -76,6 +77,7 @@ interface Line {
   itemId: string;
   quantity: Decimal;
   materialRequestItemId?: string | null;
+  purchaseOrderLineId?: string | null;
 }
 
 interface Header {
@@ -84,6 +86,7 @@ interface Header {
   projectId: string;
   date: Date;
   materialRequestId?: string | null;
+  purchaseOrderId?: string | null;
   supplier?: string | null;
   vendorId?: string | null;
   challanNo?: string | null;
@@ -126,6 +129,8 @@ export class StockService {
       date: dateOnly(r.date)!,
       materialRequestId: r.materialRequestId,
       requestNo: r.materialRequest?.requestNo ?? null,
+      purchaseOrderId: r.purchaseOrderId,
+      poNo: r.purchaseOrder?.poNo ?? null,
       supplier: r.supplier,
       vendorId: r.vendorId,
       challanNo: r.challanNo,
@@ -134,7 +139,7 @@ export class StockService {
       activityId: r.activityId,
       activityName: r.activity?.name ?? null,
       remarks: r.remarks,
-      lines: r.lines.map((l) => ({ id: l.id, itemId: l.itemId, itemName: l.item.name, unit: l.item.unit, quantity: dec(l.quantity)!, materialRequestItemId: l.materialRequestItemId })),
+      lines: r.lines.map((l) => ({ id: l.id, itemId: l.itemId, itemName: l.item.name, unit: l.item.unit, quantity: dec(l.quantity)!, materialRequestItemId: l.materialRequestItemId, purchaseOrderLineId: l.purchaseOrderLineId })),
       attachments: r.attachments.map((a) => this.attachments.toDto(a)),
       createdById: r.createdById,
       createdByName: r.createdBy.fullName,
@@ -204,7 +209,7 @@ export class StockService {
   private mergeLines(lines: Line[]): Line[] {
     const out = new Map<string, Line>();
     for (const l of lines) {
-      const k = `${l.itemId}|${l.materialRequestItemId ?? ''}`;
+      const k = `${l.itemId}|${l.materialRequestItemId ?? ''}|${l.purchaseOrderLineId ?? ''}`;
       const prev = out.get(k);
       if (prev) prev.quantity = prev.quantity.add(l.quantity);
       else out.set(k, { ...l });
@@ -223,6 +228,7 @@ export class StockService {
         entryNo,
         date: h.date,
         materialRequestId: h.materialRequestId ?? null,
+        purchaseOrderId: h.purchaseOrderId ?? null,
         supplier: blank(h.supplier),
         vendorId: h.vendorId ?? null,
         challanNo: blank(h.challanNo),
@@ -240,6 +246,7 @@ export class StockService {
             date: h.date,
             quantity: l.quantity,
             materialRequestItemId: l.materialRequestItemId ?? null,
+            purchaseOrderLineId: l.purchaseOrderLineId ?? null,
             sortOrder: i,
           })),
         },
@@ -338,10 +345,11 @@ export class StockService {
     return this.toDto(row);
   }
 
-  /** GRN: receive material against an approved request, at most what is still pending on each line. */
+  /** GRN: receive material against an approved request or purchase order, at most what is still pending on each line. */
   async receive(user: RequestUser, dto: CreateReceiptDto): Promise<StockEntryDto> {
     const existing = await this.findExisting(user, dto.id);
     if (existing) return existing;
+    if (dto.purchaseOrderId) return this.receiveAgainstPo(user, dto, dto.purchaseOrderId);
     const mr = await this.prisma.materialRequest.findFirst({ where: { id: dto.materialRequestId, ...this.access.submissionWhere(user) }, include: { items: true } });
     if (!mr) throw new NotFoundException('Material request not found');
     if (mr.status !== 'APPROVED') throw new ConflictException(`Material can only be received against an approved request. ${mr.requestNo} is ${SUBMISSION_STATUS_LABELS[mr.status].toLowerCase()}.`);
@@ -351,6 +359,7 @@ export class StockService {
     const want = new Map<string, Decimal>();
     for (const l of dto.lines) {
       const line = mr.items.find((i) => i.id === l.materialRequestItemId);
+      if (l.purchaseOrderLineId) throw new BadRequestException('Receive PO lines with purchaseOrderId');
       if (!line) throw new BadRequestException(`A line is not part of ${mr.requestNo}`);
       want.set(line.id, (want.get(line.id) ?? ZERO).add(this.parseQty(l.quantity, line.itemName)));
     }
@@ -377,6 +386,52 @@ export class StockService {
     if ('existing' in saved) return this.get(user, saved.id);
     await this.attachments.link(user, 'stockEntryId', saved.id, dto.attachmentIds);
     await this.audit.log(user, 'STOCK', saved.id, 'CREATED', `${saved.entryNo} against ${mr.requestNo}`);
+    return this.get(user, saved.id);
+  }
+
+  /**
+   * GRN against an approved purchase order: the supplier is the PO's vendor, each line at most what is still pending on
+   * the PO line. A PO line raised from a request line counts against that request line too.
+   */
+  private async receiveAgainstPo(user: RequestUser, dto: CreateReceiptDto, purchaseOrderId: string): Promise<StockEntryDto> {
+    const po = await this.prisma.purchaseOrder.findFirst({ where: { id: purchaseOrderId, ...this.access.submissionWhere(user) }, include: { lines: true, vendor: { select: { name: true } } } });
+    if (!po) throw new NotFoundException('Purchase order not found');
+    if (po.status !== 'APPROVED') throw new ConflictException(`Material can only be received against an approved PO. ${po.poNo} is ${SUBMISSION_STATUS_LABELS[po.status].toLowerCase()}.`);
+    if (po.closedAt) throw new ConflictException(`${po.poNo} is closed; nothing more can be received against it.`);
+    await this.access.assertCanKeepStock(user, po.projectId);
+    const date = this.entryDate(dto.date);
+    const want = new Map<string, Decimal>();
+    for (const l of dto.lines) {
+      const line = po.lines.find((i) => i.id === l.purchaseOrderLineId);
+      if (!line) throw new BadRequestException(`A line is not part of ${po.poNo}`);
+      want.set(line.id, (want.get(line.id) ?? ZERO).add(this.parseQty(l.quantity, line.itemName)));
+    }
+    const saved = await this.createGuarded(user, dto.id, () =>
+      this.inLock(user.organizationId, async (tx) => {
+        const got = await tx.stockTxn.groupBy({ by: ['purchaseOrderLineId'], where: { purchaseOrderLineId: { in: [...want.keys()] } }, _sum: { quantity: true } });
+        const lines: Line[] = [];
+        for (const [lineId, quantity] of want) {
+          const line = po.lines.find((i) => i.id === lineId)!;
+          const received = got.find((g) => g.purchaseOrderLineId === lineId)?._sum.quantity ?? ZERO;
+          const pending = line.quantity.sub(received);
+          if (quantity.gt(pending))
+            throw new ConflictException(
+              pending.lte(0) ? `${line.itemName} on ${po.poNo} is already fully received.` : `Only ${dec(pending)} ${line.unit} of ${line.itemName} is still pending on ${po.poNo}.`,
+            );
+          const item = await this.resolveItem(tx, user.organizationId, line.itemName, line.unit);
+          lines.push({ itemId: item.id, quantity, materialRequestItemId: line.materialRequestItemId, purchaseOrderLineId: line.id });
+        }
+        return this.insertEntry(
+          tx,
+          user,
+          { ...dto, supplier: po.vendor.name, vendorId: po.vendorId, type: 'RECEIPT', projectId: po.projectId, date, materialRequestId: po.materialRequestId, purchaseOrderId: po.id },
+          lines,
+        );
+      }),
+    );
+    if ('existing' in saved) return this.get(user, saved.id);
+    await this.attachments.link(user, 'stockEntryId', saved.id, dto.attachmentIds);
+    await this.audit.log(user, 'STOCK', saved.id, 'CREATED', `${saved.entryNo} against ${po.poNo}`);
     return this.get(user, saved.id);
   }
 
@@ -472,11 +527,28 @@ export class StockService {
           throw new ConflictException(`Deleting ${row.entryNo} would leave ${item.name} at ${dec(after)} ${item.unit}: part of it has already been issued.`);
         }
       }
+      await this.assertNotBilled(tx, row.entryNo, row.lines);
       await tx.stockEntry.delete({ where: { id } });
     });
     await this.audit.log(user, 'STOCK', id, 'DELETED', row.entryNo);
     await this.alertLowStock(user, row.projectId, before, id, row.entryNo);
     return { ok: true };
+  }
+
+  /** A GRN against a PO cannot be deleted when vendor bills (not rejected) already count on what it received. */
+  private async assertNotBilled(tx: Tx, entryNo: string, lines: { purchaseOrderLineId: string | null; quantity: Decimal }[]) {
+    const poLineIds = [...new Set(lines.map((l) => l.purchaseOrderLineId).filter((x): x is string => !!x))];
+    if (!poLineIds.length) return;
+    const [received, billed] = await Promise.all([
+      tx.stockTxn.groupBy({ by: ['purchaseOrderLineId'], where: { purchaseOrderLineId: { in: poLineIds } }, _sum: { quantity: true } }),
+      tx.vendorBillLine.groupBy({ by: ['purchaseOrderLineId'], where: { purchaseOrderLineId: { in: poLineIds }, bill: { status: { not: 'REJECTED' } } }, _sum: { quantity: true } }),
+    ]);
+    for (const lineId of poLineIds) {
+      const own = lines.filter((l) => l.purchaseOrderLineId === lineId).reduce((s, l) => s.add(l.quantity), ZERO);
+      const left = (received.find((r) => r.purchaseOrderLineId === lineId)?._sum.quantity ?? ZERO).sub(own);
+      const onBills = billed.find((b) => b.purchaseOrderLineId === lineId)?._sum.quantity ?? ZERO;
+      if (onBills.gt(left)) throw new ConflictException(`${entryNo} cannot be deleted: vendor bills already count on what it received. Reject or correct the bill first.`);
+    }
   }
 
   /* ---------- balances ---------- */

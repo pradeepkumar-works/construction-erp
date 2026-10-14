@@ -11,12 +11,22 @@ import { dateOnly, dec, iso, parseDate } from '../common/serialize';
 import { isUniqueViolation } from '../common/idempotency';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import { CreateMaterialRequestDto, ListMaterialRequestQuery, UpdateMaterialRequestDto } from './material-requests.dto';
+import { orderedOn, sum } from '../purchasing/purchase-math';
 
 const include = {
   project: { select: { name: true } },
   submittedBy: { select: { fullName: true } },
   reviewedBy: { select: { fullName: true } },
-  items: { orderBy: { sortOrder: 'asc' as const }, include: { stockTxns: { select: { quantity: true } } } },
+  items: {
+    orderBy: { sortOrder: 'asc' as const },
+    include: {
+      stockTxns: { select: { quantity: true, purchaseOrderLineId: true } },
+      poLines: {
+        where: { purchaseOrder: { status: { not: 'REJECTED' as const } } },
+        select: { quantity: true, purchaseOrder: { select: { closedAt: true } }, stockTxns: { select: { quantity: true } } },
+      },
+    },
+  },
   attachments: true,
 } satisfies Prisma.MaterialRequestInclude;
 type Row = Prisma.MaterialRequestGetPayload<{ include: typeof include }>;
@@ -58,6 +68,8 @@ export class MaterialRequestsService {
         unit: i.unit,
         quantity: dec(i.quantity)!,
         receivedQty: dec(i.stockTxns.reduce((s, t) => s.add(t.quantity), new Prisma.Decimal(0)))!,
+        orderedQty: dec(sum(i.poLines, orderedOn))!,
+        toOrderQty: dec(Prisma.Decimal.max(0, i.quantity.sub(sum(i.poLines, orderedOn)).sub(sum(i.stockTxns.filter((t) => !t.purchaseOrderLineId), (t) => t.quantity))))!,
       })),
       status: r.status,
       submittedById: r.submittedById,

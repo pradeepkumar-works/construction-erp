@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Button, Descriptions, Divider, Drawer, Skeleton, Space, Table, Typography } from 'antd';
 import { ImportOutlined } from '@ant-design/icons';
 import type { MaterialRequestDto, MaterialRequestItemDto } from '@erp/shared';
-import { canKeepStock } from '@erp/shared';
+import { canKeepStock, canViewPurchaseOrders } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useMaterialRequest } from '@/lib/queries';
 import { formatDate, formatQty } from '@/lib/format';
@@ -16,6 +16,7 @@ import { ReviewActions } from '@/components/common/ReviewActions';
 import { EditResubmitButton } from '@/components/common/EditResubmitButton';
 import { submissionMetaItems } from '@/components/common/SubmitterInfo';
 import { ReceiptModal } from '@/components/stock/ReceiptModal';
+import { QuotationsPanel } from '@/components/purchasing/QuotationsPanel';
 
 export function MrDrawer({ id, open, onClose, onEdit }: { id: string | null; open: boolean; onClose: () => void; onEdit?: (entry: MaterialRequestDto) => void }) {
   const { data, isLoading, error, refetch } = useMaterialRequest(id ?? undefined);
@@ -23,12 +24,13 @@ export function MrDrawer({ id, open, onClose, onEdit }: { id: string | null; ope
   const [receiving, setReceiving] = useState(false);
   const pending = data?.status === 'APPROVED' && data.items.some((i) => Number(i.receivedQty) < Number(i.quantity));
   const mayReceive = pending && !!user && canKeepStock(user.roleKey);
+  const purchasing = data?.status === 'APPROVED' && !!user && canViewPurchaseOrders(user.roleKey);
   return (
     <>
       <Drawer
         open={open}
         onClose={onClose}
-        width={680}
+        width={purchasing ? 960 : 680}
         title={
           data ? (
             <Space>
@@ -86,6 +88,13 @@ export function MrDrawer({ id, open, onClose, onEdit }: { id: string | null; ope
                 ...(data.status === 'APPROVED'
                   ? [
                       {
+                        title: 'Ordered',
+                        dataIndex: 'orderedQty',
+                        align: 'right' as const,
+                        width: 100,
+                        render: (v: string) => (Number(v) > 0 ? formatQty(v) : <span className="text-muted">0</span>),
+                      },
+                      {
                         title: 'Received',
                         dataIndex: 'receivedQty',
                         align: 'right' as const,
@@ -103,6 +112,14 @@ export function MrDrawer({ id, open, onClose, onEdit }: { id: string | null; ope
                   : []),
               ]}
             />
+            {purchasing && (
+              <>
+                <Divider titlePlacement="start" plain>
+                  Quotations and purchase orders
+                </Divider>
+                <QuotationsPanel request={data} />
+              </>
+            )}
             {data.attachments.length > 0 && (
               <>
                 <Divider titlePlacement="start" plain>

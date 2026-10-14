@@ -111,6 +111,7 @@ async function main() {
     await seedBills(org.id);
     await seedReceipts(org.id);
     await seedVendors(org.id);
+    await seedPurchasing(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
   }
@@ -264,6 +265,7 @@ async function main() {
   await seedBills(org.id);
   await seedReceipts(org.id);
   await seedVendors(org.id);
+  await seedPurchasing(org.id);
 
   console.log('Seed complete. Login with any of these (password: password123):');
   for (const u of USERS) console.log(`  ${u.email.padEnd(24)} ${u.role}`);
@@ -838,11 +840,18 @@ const BILL_RULES: { roleKey: string; type: string; maxAmount: Prisma.Decimal | n
   { roleKey: 'PROJECT_MANAGER', type: 'BILL', maxAmount: D(5000000) },
 ];
 
+/** Purchase orders and vendor bills: management approves any, project managers up to ₹5 lakh. */
+const PURCHASE_RULES: typeof BILL_RULES = ['PURCHASE_ORDER', 'VENDOR_BILL'].flatMap((type) => [
+  { roleKey: 'MANAGEMENT', type, maxAmount: null },
+  { roleKey: 'PROJECT_MANAGER', type, maxAmount: D(500000) },
+]);
+
 /**
  * Demo approval matrix: management approves everything, project managers approve everything but site expenses only
  * up to ₹25,000 (bigger bills go to management) and RA bills up to ₹50 lakh, and accounts approves site expenses of any
- * amount. Only written when the organisation has no matrix yet, so an admin's own changes are never overwritten; a matrix
- * made before RA bills existed gets the bill rules once, as long as it has no rule for bills.
+ * amount, and purchase orders and vendor bills up to ₹5 lakh. Only written when the organisation has no matrix yet, so an
+ * admin's own changes are never overwritten; a matrix made before RA bills or purchasing existed gets those rules once,
+ * for each type it has no rule for.
  */
 async function seedApprovalRules(organizationId: string) {
   const roles = new Map((await prisma.role.findMany({ where: { organizationId }, select: { id: true, key: true } })).map((r) => [r.key, r.id]));
@@ -852,7 +861,8 @@ async function seedApprovalRules(organizationId: string) {
       skipDuplicates: true,
     });
   if ((await prisma.approvalRule.count({ where: { organizationId } })) > 0) {
-    if ((await prisma.approvalRule.count({ where: { organizationId, submissionType: 'BILL' } })) === 0) await write(BILL_RULES);
+    for (const type of ['BILL', 'PURCHASE_ORDER', 'VENDOR_BILL'])
+      if ((await prisma.approvalRule.count({ where: { organizationId, submissionType: type } })) === 0) await write([...BILL_RULES, ...PURCHASE_RULES].filter((r) => r.type === type));
     return;
   }
   const types = ['PROGRESS', 'DPR', 'MATERIAL_REQUEST', 'MACHINERY', 'EXPENSE', 'MEASUREMENT'];
@@ -861,6 +871,7 @@ async function seedApprovalRules(organizationId: string) {
     ...types.map((type) => ({ roleKey: 'PROJECT_MANAGER', type, maxAmount: type === 'EXPENSE' ? D(25000) : null })),
     { roleKey: 'ACCOUNTS_MANAGER', type: 'EXPENSE', maxAmount: null },
     ...BILL_RULES,
+    ...PURCHASE_RULES,
   ];
   await write(rows);
 }
@@ -990,4 +1001,102 @@ async function seedReceipts(organizationId: string) {
       { organizationId, entityType: 'RECEIPT', entityId: receipt.id, action: 'CREATED', actorId: accounts.id, createdAt: paidOn },
     ],
   });
+}
+
+/** Demo purchase: [project type, vendor, freight, payment days, rate and GST % per request line, quotes from others]. */
+const DEMO_POS: [string, string, number, number, [number, number][], [string, number, [number, number][]][]][] = [
+  ['BUILDING', 'Utkal Cement Traders', 2500, 45, [[385, 28], [58500, 18]], [['Odisha Steel & Cement Depot', 4000, [[392, 28], [57900, 18]]]]],
+  ['ROAD', 'Kalinga Bitumen & Aggregates', 0, 30, [[48500, 18], [1150, 5]], []],
+];
+
+/**
+ * Demo purchasing on the first approved request of the building and road projects: quotations (the building one from
+ * two vendors, for the comparative statement), an approved PO to the vendor that supplied it, and the GRN already
+ * received against the request moved onto that PO. The building PO has a vendor bill waiting for approval whose
+ * steel rate is above the PO, so the match shows an exception. Only when the organisation has no POs yet.
+ */
+async function seedPurchasing(organizationId: string) {
+  if ((await prisma.purchaseOrder.count({ where: { organizationId } })) > 0) return;
+  const userOf = async (role: string) => (await prisma.user.findFirst({ where: { organizationId, role: { key: role } }, select: { id: true } }))?.id;
+  const [buyer, md, accounts] = [await userOf('PROCUREMENT_MANAGER'), await userOf('MANAGEMENT'), await userOf('ACCOUNTS_MANAGER')];
+  if (!buyer || !md || !accounts) return;
+  const vendorOf = async (name: string) =>
+    (await prisma.vendor.findFirst({ where: { organizationId, name } })) ??
+    prisma.vendor.create({ data: { organizationId, name, kinds: ['SUPPLIER'], gstin: '21AAECO5521R1Z2', pan: 'AAECO5521R', stateCode: '21', contactPerson: 'N. Mishra', phone: '9437890123', address: 'Rasulgarh, Bhubaneswar' } });
+  const year = new Date().getUTCFullYear();
+  let n = 0;
+  for (const [type, vendorName, freight, paymentDays, prices, others] of DEMO_POS) {
+    const mr = await prisma.materialRequest.findFirst({ where: { organizationId, status: 'APPROVED', project: { type: type as never } }, include: { items: { orderBy: { sortOrder: 'asc' } } }, orderBy: { createdAt: 'asc' } });
+    if (!mr || mr.items.length < prices.length) continue;
+    const vendor = await vendorOf(vendorName);
+    const quote = async (v: { id: string }, f: number, rates: [number, number][], offset: number) =>
+      prisma.quotation.create({
+        data: {
+          organizationId, projectId: mr.projectId, materialRequestId: mr.id, vendorId: v.id, quoteDate: day(offset), validUntil: day(offset + 30), deliveryDays: 3, freight: D(f),
+          paymentTerms: '45 days from invoice', createdById: buyer, createdAt: day(offset),
+          lines: { create: rates.map(([rate, gst], i) => ({ materialRequestItemId: mr.items[i].id, rate: D(rate), gstRate: D(gst) })) },
+        },
+      });
+    const q = await quote(vendor, freight, prices, -9);
+    for (const [other, f, rates] of others) await quote(await vendorOf(other), f, rates, -9);
+    const lines = mr.items.slice(0, prices.length).map((it, i) => {
+      const [rate, gst] = prices[i];
+      const amount = it.quantity.mul(rate).toDecimalPlaces(2);
+      return { materialRequestItemId: it.id, itemName: it.itemName, specification: it.specification, unit: it.unit, quantity: it.quantity, rate: D(rate), gstRate: D(gst), amount, gstAmount: amount.mul(gst).div(100).toDecimalPlaces(2), sortOrder: i };
+    });
+    const subtotal = lines.reduce((t, l) => t.add(l.amount), D(0));
+    const gstAmount = lines.reduce((t, l) => t.add(l.gstAmount), D(0));
+    const poNo = `PO-${year}-${String(++n).padStart(4, '0')}`;
+    const po = await prisma.purchaseOrder.create({
+      data: {
+        organizationId, projectId: mr.projectId, vendorId: vendor.id, poNo, poDate: day(-8), materialRequestId: mr.id, quotationId: q.id, deliveryBy: day(-3),
+        deliveryAddress: 'Site store', paymentTerms: `${paymentDays} days from invoice`, paymentDays, freight: D(freight), subtotal, gstAmount, total: subtotal.add(gstAmount).add(freight),
+        status: 'APPROVED', submittedById: buyer, submittedAt: day(-8), reviewedById: md, reviewedAt: day(-8), createdAt: day(-8),
+        lines: { create: lines },
+      },
+      include: { lines: true },
+    });
+    await prisma.auditLog.createMany({
+      data: [
+        { organizationId, entityType: 'PURCHASE_ORDER', entityId: po.id, action: 'CREATED', actorId: buyer, createdAt: day(-8) },
+        { organizationId, entityType: 'PURCHASE_ORDER', entityId: po.id, action: 'SUBMITTED', actorId: buyer, createdAt: day(-8) },
+        { organizationId, entityType: 'PURCHASE_ORDER', entityId: po.id, action: 'APPROVED', actorId: md, createdAt: day(-8) },
+      ],
+    });
+    for (const l of po.lines) {
+      const item = await prisma.item.findFirst({ where: { organizationId, name: l.itemName, unit: l.unit } });
+      if (item) await prisma.item.update({ where: { id: item.id }, data: { rate: l.rate } });
+      await prisma.stockTxn.updateMany({ where: { materialRequestItemId: l.materialRequestItemId, type: 'RECEIPT' }, data: { purchaseOrderLineId: l.id } });
+    }
+    await prisma.stockEntry.updateMany({ where: { materialRequestId: mr.id, type: 'RECEIPT' }, data: { purchaseOrderId: po.id, vendorId: vendor.id, supplier: vendor.name } });
+
+    if (type !== 'BUILDING') continue;
+    // The vendor's invoice for what was received, steel billed above the PO rate
+    const received = await prisma.stockTxn.groupBy({ by: ['purchaseOrderLineId'], where: { purchaseOrderLineId: { in: po.lines.map((l) => l.id) } }, _sum: { quantity: true } });
+    const billLines = po.lines.flatMap((l) => {
+      const qty = received.find((r) => r.purchaseOrderLineId === l.id)?._sum.quantity;
+      if (!qty || qty.lte(0)) return [];
+      const rate = l.sortOrder === 1 ? l.rate.add(700) : l.rate;
+      const amount = qty.mul(rate).toDecimalPlaces(2);
+      return [{ purchaseOrderLineId: l.id, quantity: qty, rate, gstRate: l.gstRate, amount, gstAmount: amount.mul(l.gstRate).div(100).toDecimalPlaces(2), sortOrder: l.sortOrder }];
+    });
+    const steel = po.lines.find((l) => l.sortOrder === 1)!;
+    const bSub = billLines.reduce((t, l) => t.add(l.amount), D(0));
+    const bGst = billLines.reduce((t, l) => t.add(l.gstAmount), D(0));
+    const bill = await prisma.vendorBill.create({
+      data: {
+        organizationId, projectId: po.projectId, vendorId: vendor.id, purchaseOrderId: po.id, billNo: `VB-${year}-0001`, invoiceNo: 'UCT/2026/551', invoiceDate: day(-2),
+        dueDate: day(-2 + paymentDays), freight: D(freight), subtotal: bSub, gstAmount: bGst, total: bSub.add(bGst).add(freight),
+        matched: false, exceptions: [`${steel.itemName}: rate ₹${steel.rate.add(700).toFixed(2)} is above the PO rate ₹${steel.rate.toFixed(2)}`],
+        remarks: 'Vendor says the steel rate was revised on the day of dispatch', status: 'SUBMITTED', submittedById: accounts, submittedAt: day(-1), createdAt: day(-1),
+        lines: { create: billLines },
+      },
+    });
+    await prisma.auditLog.createMany({
+      data: [
+        { organizationId, entityType: 'VENDOR_BILL', entityId: bill.id, action: 'CREATED', actorId: accounts, createdAt: day(-1) },
+        { organizationId, entityType: 'VENDOR_BILL', entityId: bill.id, action: 'SUBMITTED', actorId: accounts, createdAt: day(-1) },
+      ],
+    });
+  }
 }

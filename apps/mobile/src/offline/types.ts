@@ -39,6 +39,8 @@ export const OUTBOX_PATH: Record<OutboxType, string> = {
   EXPENSE: '/expenses',
   MEASUREMENT: '/measurements',
   BILL: '/ra-bills',
+  PURCHASE_ORDER: '/purchase-orders',
+  VENDOR_BILL: '/vendor-bills',
   ATTENDANCE: '/attendance',
   RISK: '/risks',
 };
@@ -51,4 +53,6 @@ export const OUTBOX_DETAIL: Record<SubmissionType, string> = {
   EXPENSE: '/expense/',
   MEASUREMENT: '/measurement/',
   BILL: '/bill/',
+  PURCHASE_ORDER: '/purchase-order/',
+  VENDOR_BILL: '/vendor-bill/',
 };

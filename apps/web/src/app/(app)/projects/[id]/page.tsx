@@ -5,7 +5,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Button, Card, Progress, Space, Tabs, Typography } from 'antd';
 import { EditOutlined, FilePdfOutlined } from '@ant-design/icons';
 import Link from 'next/link';
-import { canEditProjects, canViewContract, canViewCost } from '@erp/shared';
+import { canEditProjects, canViewContract, canViewCost, canViewPurchaseOrders } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useProject } from '@/lib/queries';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -27,6 +27,7 @@ import { BillList } from '@/components/bills/BillList';
 import { StockPanel } from '@/components/stock/StockPanel';
 import { AttendanceList } from '@/components/attendance/AttendanceList';
 import { MrList } from '@/components/material/MrList';
+import { PurchaseOrderList } from '@/components/purchasing/PurchaseOrderList';
 
 export default function ProjectDetailPage() {
   const params = useParams<{ id: string }>();
@@ -101,6 +102,7 @@ export default function ProjectDetailPage() {
             { key: 'dpr', label: 'Daily Reports', children: <DprList projectId={project.id} newLabel="New DPR" /> },
             { key: 'attendance', label: 'Attendance', children: <AttendanceList projectId={project.id} /> },
             { key: 'material', label: 'Material Requests', children: <MrList projectId={project.id} newLabel="New material request" /> },
+            ...(user && canViewPurchaseOrders(user.roleKey) ? [{ key: 'po', label: 'Purchase Orders', children: <PurchaseOrderList projectId={project.id} /> }] : []),
             { key: 'stock', label: 'Stock', children: <StockPanel projectId={project.id} /> },
             { key: 'machinery', label: 'Machinery', children: <MachineryPanel projectId={project.id} /> },
             { key: 'expenses', label: 'Expenses', children: <ExpenseList projectId={project.id} /> },

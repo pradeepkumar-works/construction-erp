@@ -208,6 +208,9 @@ model Organization {
   labourRates       LabourRate[]
   clients           Client[]
   vendors           Vendor[]
+  quotations        Quotation[]
+  purchaseOrders    PurchaseOrder[]
+  vendorBills       VendorBill[]
   raBills           RaBill[]
   receipts          Receipt[]
 }
@@ -235,7 +238,7 @@ model ApprovalRule {
   organization   Organization @relation(fields: [organizationId], references: [id])
   roleId         String
   role           Role         @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  /// SubmissionType: PROGRESS | DPR | MATERIAL_REQUEST | MACHINERY | EXPENSE | MEASUREMENT | BILL
+  /// SubmissionType: PROGRESS | DPR | MATERIAL_REQUEST | MACHINERY | EXPENSE | MEASUREMENT | BILL | PURCHASE_ORDER | VENDOR_BILL
   submissionType String
   maxAmount      Decimal?     @db.Decimal(18, 2)
   createdAt      DateTime     @default(now())
@@ -261,35 +264,40 @@ model User {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
-  memberships         ProjectMember[]
-  managedProjects     Project[]          @relation("ProjectManager")
-  responsibleFor      Activity[]         @relation("ActivityResponsible")
-  submittedProgress   ProgressEntry[]    @relation("ProgressSubmitter")
-  reviewedProgress    ProgressEntry[]    @relation("ProgressReviewer")
-  submittedReports    DailyReport[]      @relation("DprSubmitter")
-  reviewedReports     DailyReport[]      @relation("DprReviewer")
-  submittedRequests   MaterialRequest[]  @relation("MrSubmitter")
-  reviewedRequests    MaterialRequest[]  @relation("MrReviewer")
-  uploadedAttachments Attachment[]
-  auditLogs           AuditLog[]
-  notifications       Notification[]
-  pushTokens          PushToken[]
-  passwordTokens      PasswordToken[]
-  recordedAttendance  AttendanceSheet[]  @relation("AttendanceRecorder")
-  updatedAttendance   AttendanceSheet[]  @relation("AttendanceUpdater")
-  stockEntries        StockEntry[]
-  stockMinLevels      StockMinLevel[]
-  submittedMachinery  MachineryLog[]     @relation("MachinerySubmitter")
-  reviewedMachinery   MachineryLog[]     @relation("MachineryReviewer")
-  submittedExpenses   Expense[]          @relation("ExpenseSubmitter")
-  reviewedExpenses    Expense[]          @relation("ExpenseReviewer")
-  submittedMeasures   MeasurementSheet[] @relation("MeasurementSubmitter")
-  reviewedMeasures    MeasurementSheet[] @relation("MeasurementReviewer")
-  submittedBills      RaBill[]           @relation("BillSubmitter")
-  reviewedBills       RaBill[]           @relation("BillReviewer")
-  receiptsRecorded    Receipt[]          @relation("ReceiptCreator")
-  raisedRisks         Risk[]             @relation("RiskRaiser")
-  ownedRisks          Risk[]             @relation("RiskOwner")
+  memberships          ProjectMember[]
+  managedProjects      Project[]          @relation("ProjectManager")
+  responsibleFor       Activity[]         @relation("ActivityResponsible")
+  submittedProgress    ProgressEntry[]    @relation("ProgressSubmitter")
+  reviewedProgress     ProgressEntry[]    @relation("ProgressReviewer")
+  submittedReports     DailyReport[]      @relation("DprSubmitter")
+  reviewedReports      DailyReport[]      @relation("DprReviewer")
+  submittedRequests    MaterialRequest[]  @relation("MrSubmitter")
+  reviewedRequests     MaterialRequest[]  @relation("MrReviewer")
+  uploadedAttachments  Attachment[]
+  auditLogs            AuditLog[]
+  notifications        Notification[]
+  pushTokens           PushToken[]
+  passwordTokens       PasswordToken[]
+  recordedAttendance   AttendanceSheet[]  @relation("AttendanceRecorder")
+  updatedAttendance    AttendanceSheet[]  @relation("AttendanceUpdater")
+  stockEntries         StockEntry[]
+  stockMinLevels       StockMinLevel[]
+  submittedMachinery   MachineryLog[]     @relation("MachinerySubmitter")
+  reviewedMachinery    MachineryLog[]     @relation("MachineryReviewer")
+  submittedExpenses    Expense[]          @relation("ExpenseSubmitter")
+  reviewedExpenses     Expense[]          @relation("ExpenseReviewer")
+  submittedMeasures    MeasurementSheet[] @relation("MeasurementSubmitter")
+  reviewedMeasures     MeasurementSheet[] @relation("MeasurementReviewer")
+  submittedBills       RaBill[]           @relation("BillSubmitter")
+  reviewedBills        RaBill[]           @relation("BillReviewer")
+  receiptsRecorded     Receipt[]          @relation("ReceiptCreator")
+  quotationsEntered    Quotation[]        @relation("QuotationCreator")
+  submittedPos         PurchaseOrder[]    @relation("PoSubmitter")
+  reviewedPos          PurchaseOrder[]    @relation("PoReviewer")
+  submittedVendorBills VendorBill[]       @relation("VendorBillSubmitter")
+  reviewedVendorBills  VendorBill[]       @relation("VendorBillReviewer")
+  raisedRisks          Risk[]             @relation("RiskRaiser")
+  ownedRisks           Risk[]             @relation("RiskOwner")
 
   @@unique([organizationId, email])
   @@index([organizationId])
@@ -361,6 +369,9 @@ model Project {
   measurements     MeasurementSheet[]
   raBills          RaBill[]
   receipts         Receipt[]
+  quotations       Quotation[]
+  purchaseOrders   PurchaseOrder[]
+  vendorBills      VendorBill[]
 
   @@unique([organizationId, code])
   @@index([organizationId, status])
@@ -419,11 +430,200 @@ model Vendor {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
-  expenses     Expense[]
-  equipment    Equipment[]
-  stockEntries StockEntry[]
+  expenses       Expense[]
+  equipment      Equipment[]
+  stockEntries   StockEntry[]
+  quotations     Quotation[]
+  purchaseOrders PurchaseOrder[]
+  vendorBills    VendorBill[]
 
   @@unique([organizationId, name])
+}
+
+/// A vendor's quotation for an approved material request: a rate per request line. The comparative statement puts
+/// the quotations of one request side by side.
+model Quotation {
+  id                String          @id @default(uuid())
+  organizationId    String
+  organization      Organization    @relation(fields: [organizationId], references: [id])
+  projectId         String
+  project           Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  materialRequestId String
+  materialRequest   MaterialRequest @relation(fields: [materialRequestId], references: [id], onDelete: Cascade)
+  vendorId          String
+  vendor            Vendor          @relation(fields: [vendorId], references: [id])
+  /// The vendor's own quotation number
+  quoteRef          String?
+  quoteDate         DateTime        @db.Date
+  validUntil        DateTime?       @db.Date
+  deliveryDays      Int?
+  paymentTerms      String?
+  freight           Decimal         @default(0) @db.Decimal(18, 2)
+  remarks           String?
+  createdById       String
+  createdBy         User            @relation("QuotationCreator", fields: [createdById], references: [id])
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  lines          QuotationLine[]
+  purchaseOrders PurchaseOrder[]
+
+  @@unique([materialRequestId, vendorId])
+  @@index([organizationId])
+}
+
+model QuotationLine {
+  id                    String              @id @default(uuid())
+  quotationId           String
+  quotation             Quotation           @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  materialRequestItemId String
+  materialRequestItem   MaterialRequestItem @relation(fields: [materialRequestItemId], references: [id], onDelete: Cascade)
+  /// Rate per unit before GST
+  rate                  Decimal             @db.Decimal(18, 2)
+  gstRate               Decimal             @default(0) @db.Decimal(5, 2)
+  remarks               String?
+
+  @@unique([quotationId, materialRequestItemId])
+}
+
+/// Purchase order to a vendor, approved through the approval matrix (submission type PURCHASE_ORDER). GRNs receive
+/// against its lines and vendor bills are matched to it.
+model PurchaseOrder {
+  id                String           @id @default(uuid())
+  organizationId    String
+  organization      Organization     @relation(fields: [organizationId], references: [id])
+  projectId         String
+  project           Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  vendorId          String
+  vendor            Vendor           @relation(fields: [vendorId], references: [id])
+  /// PO-<year>-0001 per organisation
+  poNo              String
+  poDate            DateTime         @db.Date
+  materialRequestId String?
+  materialRequest   MaterialRequest? @relation(fields: [materialRequestId], references: [id], onDelete: SetNull)
+  quotationId       String?
+  quotation         Quotation?       @relation(fields: [quotationId], references: [id], onDelete: SetNull)
+  deliveryBy        DateTime?        @db.Date
+  deliveryAddress   String?
+  paymentTerms      String?
+  /// Days from the vendor's invoice to payment; micro and small enterprises are capped at 45
+  paymentDays       Int?
+  freight           Decimal          @default(0) @db.Decimal(18, 2)
+  /// Sum of line amounts (quantity × rate)
+  subtotal          Decimal          @default(0) @db.Decimal(18, 2)
+  gstAmount         Decimal          @default(0) @db.Decimal(18, 2)
+  /// subtotal + freight + GST
+  total             Decimal          @default(0) @db.Decimal(18, 2)
+  remarks           String?
+  /// Short-closed: no more GRNs or bills against it
+  closedAt          DateTime?
+  closeNote         String?
+  status            SubmissionStatus @default(DRAFT)
+  submittedById     String
+  submittedBy       User             @relation("PoSubmitter", fields: [submittedById], references: [id])
+  submittedAt       DateTime?
+  reviewedById      String?
+  reviewedBy        User?            @relation("PoReviewer", fields: [reviewedById], references: [id])
+  reviewedAt        DateTime?
+  reviewNote        String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  lines        PurchaseOrderLine[]
+  stockEntries StockEntry[]
+  vendorBills  VendorBill[]
+  attachments  Attachment[]
+
+  @@unique([organizationId, poNo])
+  @@index([organizationId, status])
+  @@index([projectId, status])
+}
+
+model PurchaseOrderLine {
+  id                    String               @id @default(uuid())
+  purchaseOrderId       String
+  purchaseOrder         PurchaseOrder        @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  /// The material request line it orders, when raised from a request
+  materialRequestItemId String?
+  materialRequestItem   MaterialRequestItem? @relation(fields: [materialRequestItemId], references: [id], onDelete: SetNull)
+  itemName              String
+  specification         String?
+  unit                  String
+  quantity              Decimal              @db.Decimal(18, 3)
+  rate                  Decimal              @db.Decimal(18, 2)
+  gstRate               Decimal              @default(0) @db.Decimal(5, 2)
+  amount                Decimal              @db.Decimal(18, 2)
+  gstAmount             Decimal              @db.Decimal(18, 2)
+  sortOrder             Int                  @default(0)
+
+  stockTxns StockTxn[]
+  billLines VendorBillLine[]
+
+  @@index([purchaseOrderId])
+}
+
+/// A vendor's invoice against a purchase order, matched three ways: rates to the PO, quantities to what GRNs received.
+/// Approved through the approval matrix (submission type VENDOR_BILL); paid in payables.
+model VendorBill {
+  id              String           @id @default(uuid())
+  organizationId  String
+  organization    Organization     @relation(fields: [organizationId], references: [id])
+  projectId       String
+  project         Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  vendorId        String
+  vendor          Vendor           @relation(fields: [vendorId], references: [id])
+  purchaseOrderId String
+  purchaseOrder   PurchaseOrder    @relation(fields: [purchaseOrderId], references: [id])
+  /// VB-<year>-0001 per organisation
+  billNo          String
+  /// The vendor's invoice number and date
+  invoiceNo       String
+  invoiceDate     DateTime         @db.Date
+  /// When payment falls due: invoice date + the PO's payment days (45 at most for micro and small enterprises)
+  dueDate         DateTime         @db.Date
+  freight         Decimal          @default(0) @db.Decimal(18, 2)
+  subtotal        Decimal          @default(0) @db.Decimal(18, 2)
+  gstAmount       Decimal          @default(0) @db.Decimal(18, 2)
+  total           Decimal          @default(0) @db.Decimal(18, 2)
+  /// Three-way match: no exceptions
+  matched         Boolean          @default(true)
+  /// What does not match (quantity over received, rate over PO, ...), one line each
+  exceptions      String[]
+  remarks         String?
+  status          SubmissionStatus @default(DRAFT)
+  submittedById   String
+  submittedBy     User             @relation("VendorBillSubmitter", fields: [submittedById], references: [id])
+  submittedAt     DateTime?
+  reviewedById    String?
+  reviewedBy      User?            @relation("VendorBillReviewer", fields: [reviewedById], references: [id])
+  reviewedAt      DateTime?
+  reviewNote      String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  lines       VendorBillLine[]
+  attachments Attachment[]
+
+  @@unique([organizationId, billNo])
+  @@unique([vendorId, invoiceNo])
+  @@index([organizationId, status])
+  @@index([projectId, status])
+}
+
+model VendorBillLine {
+  id                  String            @id @default(uuid())
+  billId              String
+  bill                VendorBill        @relation(fields: [billId], references: [id], onDelete: Cascade)
+  purchaseOrderLineId String
+  purchaseOrderLine   PurchaseOrderLine @relation(fields: [purchaseOrderLineId], references: [id])
+  quantity            Decimal           @db.Decimal(18, 3)
+  rate                Decimal           @db.Decimal(18, 2)
+  gstRate             Decimal           @default(0) @db.Decimal(5, 2)
+  amount              Decimal           @db.Decimal(18, 2)
+  gstAmount           Decimal           @db.Decimal(18, 2)
+  sortOrder           Int               @default(0)
+
+  @@index([purchaseOrderLineId])
 }
 
 model ProjectMember {
@@ -604,9 +804,11 @@ model MaterialRequest {
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
 
-  items        MaterialRequestItem[]
-  attachments  Attachment[]
-  stockEntries StockEntry[]
+  items          MaterialRequestItem[]
+  attachments    Attachment[]
+  stockEntries   StockEntry[]
+  quotations     Quotation[]
+  purchaseOrders PurchaseOrder[]
 
   @@unique([organizationId, requestNo])
   @@index([projectId, status])
@@ -622,7 +824,9 @@ model MaterialRequestItem {
   quantity      Decimal         @db.Decimal(18, 3)
   sortOrder     Int             @default(0)
 
-  stockTxns StockTxn[]
+  stockTxns      StockTxn[]
+  quotationLines QuotationLine[]
+  poLines        PurchaseOrderLine[]
 }
 
 // ---------- Attendance (daily register, not an approval submission) ----------
@@ -704,6 +908,9 @@ model StockEntry {
   /// Receipts: the approved material request this GRN is against
   materialRequestId String?
   materialRequest   MaterialRequest? @relation(fields: [materialRequestId], references: [id])
+  /// Receipts: the approved purchase order this GRN is against
+  purchaseOrderId   String?
+  purchaseOrder     PurchaseOrder?   @relation(fields: [purchaseOrderId], references: [id])
   supplier          String?
   vendorId          String?
   vendor            Vendor?          @relation(fields: [vendorId], references: [id], onDelete: SetNull)
@@ -747,11 +954,15 @@ model StockTxn {
   /// Receipts: the material request line this quantity was received against
   materialRequestItemId String?
   materialRequestItem   MaterialRequestItem? @relation(fields: [materialRequestItemId], references: [id])
+  /// Receipts against a PO: the PO line received
+  purchaseOrderLineId   String?
+  purchaseOrderLine     PurchaseOrderLine?   @relation(fields: [purchaseOrderLineId], references: [id])
   sortOrder             Int                  @default(0)
 
   @@index([projectId, itemId])
   @@index([entryId])
   @@index([materialRequestItemId])
+  @@index([purchaseOrderLineId])
 }
 
 /// Minimum stock of an item at a project. Falling below it raises a low-stock alert.
@@ -1163,6 +1374,10 @@ model Attachment {
   risk              Risk?             @relation(fields: [riskId], references: [id], onDelete: Cascade)
   raBillId          String?
   raBill            RaBill?           @relation(fields: [raBillId], references: [id], onDelete: Cascade)
+  purchaseOrderId   String?
+  purchaseOrder     PurchaseOrder?    @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  vendorBillId      String?
+  vendorBill        VendorBill?       @relation(fields: [vendorBillId], references: [id], onDelete: Cascade)
   createdAt         DateTime          @default(now())
 
   @@index([organizationId])

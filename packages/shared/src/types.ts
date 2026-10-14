@@ -233,6 +233,10 @@ export interface MaterialRequestItemDto {
   quantity: string;
   /** Quantity received so far on GRNs against this line ("0" until the first receipt). */
   receivedQty: string;
+  /** Quantity on purchase orders that are not rejected ("0" when none); a closed order counts what it received */
+  orderedQty: string;
+  /** Still to be ordered: requested less what orders hold and what was received without an order */
+  toOrderQty: string;
 }
 
 export interface MaterialRequestDto extends SubmissionBase {
@@ -398,6 +402,7 @@ export interface StockLineDto {
   /** Signed: positive into the store, negative out of it. */
   quantity: string;
   materialRequestItemId: string | null;
+  purchaseOrderLineId: string | null;
 }
 
 export interface StockEntryDto {
@@ -409,6 +414,8 @@ export interface StockEntryDto {
   date: string;
   materialRequestId: string | null;
   requestNo: string | null;
+  purchaseOrderId: string | null;
+  poNo: string | null;
   supplier: string | null;
   /** The supplier in the vendor master, when linked */
   vendorId: string | null;
@@ -1129,4 +1136,166 @@ export interface ReceivablesDto {
   projects: ProjectReceivableDto[];
   clients: ClientReceivableDto[];
   openBills: OpenBillDto[];
+}
+
+/* ---------- purchasing (v3 item 21) ---------- */
+
+export interface QuotationLineDto {
+  materialRequestItemId: string;
+  itemName: string;
+  unit: string;
+  quantity: string;
+  rate: string;
+  gstRate: string;
+  /** quantity × rate */
+  amount: string;
+  remarks: string | null;
+}
+
+export interface QuotationDto {
+  id: string;
+  materialRequestId: string;
+  requestNo: string;
+  projectId: string;
+  vendorId: string;
+  vendorName: string;
+  quoteRef: string | null;
+  quoteDate: string;
+  validUntil: string | null;
+  deliveryDays: number | null;
+  paymentTerms: string | null;
+  freight: string;
+  remarks: string | null;
+  lines: QuotationLineDto[];
+  /** Lines quoted, before GST */
+  subtotal: string;
+  gstAmount: string;
+  /** subtotal + freight + GST */
+  total: string;
+  /** Lines of the request it has no rate for */
+  missingLines: number;
+  createdByName: string;
+  createdAt: string;
+}
+
+/** Quotations of one request side by side: per line, each vendor's rate and the lowest. */
+export interface ComparativeStatementDto {
+  materialRequestId: string;
+  requestNo: string;
+  projectId: string;
+  projectName: string;
+  quotations: QuotationDto[];
+  lines: {
+    materialRequestItemId: string;
+    itemName: string;
+    specification: string | null;
+    unit: string;
+    quantity: string;
+    orderedQty: string;
+    /** quotationId → rate, gstRate and amount for this line */
+    rates: Record<string, { rate: string; gstRate: string; amount: string } | null>;
+    /** The quotation with the lowest landed rate (rate + GST) for this line, if any quoted */
+    lowestQuotationId: string | null;
+  }[];
+  /** The quotation with the lowest total among those quoting every line */
+  lowestQuotationId: string | null;
+}
+
+export interface PurchaseOrderLineDto {
+  id: string;
+  materialRequestItemId: string | null;
+  itemName: string;
+  specification: string | null;
+  unit: string;
+  quantity: string;
+  rate: string;
+  gstRate: string;
+  amount: string;
+  gstAmount: string;
+  /** On GRNs against this line */
+  receivedQty: string;
+  /** On vendor bills against this line that are not rejected */
+  billedQty: string;
+}
+
+export interface PurchaseOrderDto extends SubmissionBase {
+  poNo: string;
+  poDate: string;
+  vendorId: string;
+  vendorName: string;
+  vendorGstin: string | null;
+  vendorMsme: MsmeCategory | null;
+  materialRequestId: string | null;
+  requestNo: string | null;
+  quotationId: string | null;
+  deliveryBy: string | null;
+  deliveryAddress: string | null;
+  paymentTerms: string | null;
+  paymentDays: number | null;
+  freight: string;
+  subtotal: string;
+  gstAmount: string;
+  total: string;
+  remarks: string | null;
+  closedAt: string | null;
+  closeNote: string | null;
+  /** Approved, not closed, and something still to receive */
+  open: boolean;
+  /** Share of the order value received, 0 to 100 */
+  receivedPct: number;
+  lines: PurchaseOrderLineDto[];
+  /** Only on GET /purchase-orders/:id */
+  grns?: { id: string; entryNo: string; date: string; lines: number }[];
+  bills?: { id: string; billNo: string; invoiceNo: string; invoiceDate: string; total: string; status: SubmissionStatus; matched: boolean }[];
+}
+
+/** An approved, open PO line with what is still to be received (GRN against a PO). */
+export interface ReceivableOrderDto {
+  id: string;
+  poNo: string;
+  projectId: string;
+  projectName: string;
+  vendorId: string;
+  vendorName: string;
+  deliveryBy: string | null;
+  lines: { purchaseOrderLineId: string; itemName: string; specification: string | null; unit: string; ordered: string; received: string; pending: string }[];
+}
+
+export interface VendorBillLineDto {
+  id: string;
+  purchaseOrderLineId: string;
+  itemName: string;
+  unit: string;
+  quantity: string;
+  rate: string;
+  gstRate: string;
+  amount: string;
+  gstAmount: string;
+  /** From the PO and its GRNs, for the match */
+  poRate: string;
+  poGstRate: string;
+  receivedQty: string;
+  /** Billed on the vendor's other bills against this line (not rejected) */
+  billedElsewhere: string;
+}
+
+export interface VendorBillDto extends SubmissionBase {
+  billNo: string;
+  vendorId: string;
+  vendorName: string;
+  vendorGstin: string | null;
+  vendorMsme: MsmeCategory | null;
+  purchaseOrderId: string;
+  poNo: string;
+  invoiceNo: string;
+  invoiceDate: string;
+  dueDate: string;
+  freight: string;
+  subtotal: string;
+  gstAmount: string;
+  total: string;
+  matched: boolean;
+  exceptions: string[];
+  remarks: string | null;
+  lines: VendorBillLineDto[];
 }

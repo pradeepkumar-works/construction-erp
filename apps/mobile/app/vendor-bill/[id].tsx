@@ -1,0 +1,78 @@
+import React from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import type { VendorBillDto } from '@erp/shared';
+import { useFetch } from '../../src/api/hooks';
+import { AttachmentGallery, Button, Card, ErrorState, KeyValue, Loading, ReviewActions, Screen, SubmissionHeader } from '../../src/components';
+import { colors, spacing, typography } from '../../src/theme';
+import { fmtQty, formatDate } from '../../src/utils/format';
+
+const rupees = (v: string) => `₹${Number(v).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+/** A vendor's invoice on the phone: the match against its PO and GRNs, and approval. Bills are entered on the web. */
+export default function VendorBillScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
+  const { data, loading, refreshing, error, refresh, reload, setData } = useFetch<VendorBillDto>((api) => api.get(`/vendor-bills/${id}`), [id], { enabled: !!id });
+
+  if (loading && !data) return <Loading />;
+  if (error && !data) return <ErrorState message={error} onRetry={reload} />;
+  if (!data) return null;
+
+  return (
+    <Screen refreshing={refreshing} onRefresh={refresh}>
+      <SubmissionHeader item={data} title={`${data.billNo} · ${data.vendorName}`} subtitle={`Invoice ${data.invoiceNo} of ${formatDate(data.invoiceDate)} · ${data.poNo}`} />
+      <Card>
+        <View style={styles.box}>
+          <Text style={styles.total}>{rupees(data.total)}</Text>
+          <Text style={typography.caption}>due {formatDate(data.dueDate)}</Text>
+        </View>
+        <View style={[styles.match, { backgroundColor: data.matched ? colors.successSoft : colors.dangerSoft }]}>
+          <Ionicons name={data.matched ? 'checkmark-circle' : 'alert-circle'} size={18} color={data.matched ? colors.success : colors.danger} />
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.matchTitle, { color: data.matched ? colors.success : colors.danger }]}>{data.matched ? 'Matches the PO and what was received' : 'Does not match'}</Text>
+            {data.exceptions.map((e) => (
+              <Text key={e} style={styles.exception}>
+                {e}
+              </Text>
+            ))}
+          </View>
+        </View>
+        <KeyValue label="Before GST" value={rupees(data.subtotal)} />
+        <KeyValue label="GST" value={rupees(data.gstAmount)} />
+        {Number(data.freight) > 0 ? <KeyValue label="Freight" value={rupees(data.freight)} /> : null}
+        <KeyValue label="Remarks" value={data.remarks} multiline />
+      </Card>
+      <Card title={`Items (${data.lines.length})`}>
+        {data.lines.map((l) => (
+          <View key={l.id} style={styles.line}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.lineTitle} numberOfLines={2}>
+                {l.itemName}
+              </Text>
+              <Text style={typography.caption}>
+                {fmtQty(l.quantity)} {l.unit} @ {rupees(l.rate)} (PO {rupees(l.poRate)}) · {fmtQty(l.receivedQty)} received
+              </Text>
+            </View>
+            <Text style={styles.amount}>{rupees(l.amount)}</Text>
+          </View>
+        ))}
+      </Card>
+      <AttachmentGallery attachments={data.attachments} />
+      <ReviewActions type="VENDOR_BILL" item={data} onReviewed={setData} />
+      <Button title="Open project" variant="ghost" icon="business-outline" onPress={() => router.push(`/project/${data.projectId}`)} />
+    </Screen>
+  );
+}
+
+const styles = StyleSheet.create({
+  box: { alignItems: 'center', paddingVertical: spacing.md, marginBottom: spacing.sm, backgroundColor: colors.primarySoft, borderRadius: 12 },
+  total: { fontSize: 28, fontWeight: '800', color: colors.primaryDark },
+  match: { flexDirection: 'row', gap: spacing.sm, padding: spacing.sm, borderRadius: 10, marginBottom: spacing.sm },
+  matchTitle: { fontSize: 14, fontWeight: '700' },
+  exception: { fontSize: 13, color: colors.text, marginTop: 2 },
+  line: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
+  lineTitle: { fontSize: 15, fontWeight: '600', color: colors.text },
+  amount: { fontSize: 15, fontWeight: '700', color: colors.text, marginLeft: spacing.md },
+});

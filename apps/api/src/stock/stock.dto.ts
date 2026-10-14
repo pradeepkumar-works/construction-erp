@@ -15,13 +15,21 @@ const qty = () => Transform(({ value }) => (typeof value === 'number' ? String(v
 /* ---------- receipts (GRN) ---------- */
 
 export class ReceiptLineDto {
-  @ApiProperty({ description: 'Line of the approved material request being received' }) @IsUUID() materialRequestItemId: string;
+  @ApiPropertyOptional({ description: 'Line of the approved material request being received (GRN against a request)' })
+  @ValidateIf((o: ReceiptLineDto) => !o.purchaseOrderLineId)
+  @IsUUID()
+  materialRequestItemId?: string;
+  @ApiPropertyOptional({ description: 'Line of the approved purchase order being received (GRN against a PO)' }) @IsOptional() @IsUUID() purchaseOrderLineId?: string;
   @ApiProperty({ example: '250' }) @qty() @IsNumberString() quantity: string;
 }
 
 export class CreateReceiptDto {
   @ApiPropertyOptional(CLIENT_ID_DOC) @IsOptional() @IsUUID('4') id?: string;
-  @ApiProperty({ description: 'An approved material request' }) @IsUUID() materialRequestId: string;
+  @ApiPropertyOptional({ description: 'An approved material request. Send this or `purchaseOrderId`.' })
+  @ValidateIf((o: CreateReceiptDto) => !o.purchaseOrderId)
+  @IsUUID()
+  materialRequestId?: string;
+  @ApiPropertyOptional({ description: 'An approved, open purchase order; the supplier is its vendor' }) @IsOptional() @IsUUID() purchaseOrderId?: string;
   @ApiProperty({ example: '2026-10-13' }) @IsDateString() @dateOnly() date: string;
   @ApiPropertyOptional({ example: 'Maa Tarini Traders' }) @IsOptional() @IsString() @trim() @MaxLength(200) supplier?: string | null;
   @ApiPropertyOptional(VENDOR_ID_DOC) @IsOptional() @ValidateIf((_, v) => v !== null) @IsUUID() vendorId?: string | null;
@@ -30,7 +38,7 @@ export class CreateReceiptDto {
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(1000) remarks?: string | null;
   @ApiPropertyOptional({ type: [String], description: 'Uploaded challan / invoice photos' }) @IsOptional() @IsArray() @IsUUID('all', { each: true }) attachmentIds?: string[];
 
-  @ApiProperty({ type: [ReceiptLineDto], description: 'Quantities received now. Each may not exceed what is still pending on that request line.' })
+  @ApiProperty({ type: [ReceiptLineDto], description: 'Quantities received now. Each may not exceed what is still pending on that request or PO line.' })
   @IsArray() @ArrayMinSize(1) @ArrayMaxSize(100) @ValidateNested({ each: true }) @Type(() => ReceiptLineDto)
   lines: ReceiptLineDto[];
 }

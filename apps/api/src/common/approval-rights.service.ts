@@ -70,6 +70,14 @@ export class ApprovalRightsService {
         const b = await this.prisma.raBill.findUnique({ where: { id }, select: { grossAmount: true } });
         return b?.grossAmount ?? null;
       }
+      case 'PURCHASE_ORDER': {
+        const o = await this.prisma.purchaseOrder.findUnique({ where: { id }, select: { total: true } });
+        return o?.total ?? null;
+      }
+      case 'VENDOR_BILL': {
+        const v = await this.prisma.vendorBill.findUnique({ where: { id }, select: { total: true } });
+        return v?.total ?? null;
+      }
       default:
         return null;
     }

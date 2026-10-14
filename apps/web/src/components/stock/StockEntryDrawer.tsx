@@ -71,6 +71,7 @@ export function StockEntryDrawer({ id, onClose }: { id: string | null; onClose: 
               { key: 'project', label: 'Project', children: <Link href={`/projects/${data.projectId}?tab=stock`}>{data.projectName}</Link> },
               ...(data.type === 'RECEIPT'
                 ? [
+                    ...(data.poNo ? [{ key: 'po', label: 'Purchase order', children: data.poNo }] : []),
                     { key: 'mr', label: 'Material request', children: data.requestNo ?? '-' },
                     { key: 'supplier', label: 'Supplier', children: data.supplier ?? '-' },
                     { key: 'challan', label: 'Challan no.', children: data.challanNo ?? '-' },
