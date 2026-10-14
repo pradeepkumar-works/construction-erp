@@ -135,6 +135,7 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
           {
             title: '',
             key: 'actions',
+            fixed: 'right' as const,
             width: 90,
             render: (_: unknown, r: EquipmentDto) => (
               <Space size={2}>

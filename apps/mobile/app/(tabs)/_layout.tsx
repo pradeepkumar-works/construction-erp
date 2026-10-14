@@ -27,7 +27,7 @@ export default function TabsLayout() {
         headerShadowVisible: false,
       }}
     >
-      <Tabs.Screen name="index" options={{ title: 'Home', tabBarIcon: icon('home', 'home-outline') }} />
+      <Tabs.Screen name="index" options={{ title: 'Home', headerShown: false, tabBarIcon: icon('home', 'home-outline') }} />
       <Tabs.Screen name="projects" options={{ title: 'Projects', tabBarIcon: icon('business', 'business-outline') }} />
       <Tabs.Screen name="submit" options={{ title: 'Submit', tabBarIcon: icon('add-circle', 'add-circle-outline') }} />
       <Tabs.Screen name="approvals" options={{ title: 'Approvals', tabBarIcon: icon('checkmark-done-circle', 'checkmark-done-circle-outline'), href: approver ? undefined : null }} />

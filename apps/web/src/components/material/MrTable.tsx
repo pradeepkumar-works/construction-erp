@@ -52,10 +52,11 @@ export function MrTable({
     { title: 'Priority', dataIndex: 'priority', width: 100, render: (p) => <PriorityTag priority={p} />, ...sort('priority') },
     { title: 'Required by', dataIndex: 'requiredDate', width: 120, render: (v) => formatDate(v), ...sort('requiredDate') },
     { title: 'Requested by', dataIndex: 'submittedByName', width: 150, ...sort('submittedBy') },
-    { title: 'Status', dataIndex: 'status', width: 150, render: (s) => <StatusTag status={s} />, ...sort('status') },
+    { title: 'Status', fixed: 'right' as const, dataIndex: 'status', width: 150, render: (s) => <StatusTag status={s} />, ...sort('status') },
     {
       title: '',
       key: 'actions',
+      fixed: 'right' as const,
       width: 190,
       render: (_, r) => (
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -76,7 +77,7 @@ export function MrTable({
       dataSource={data}
       size="middle"
       {...table}
-      scroll={{ x: showProject ? 1200 : 1000 }}
+      scroll={{ x: showProject ? 1300 : 1100 }}
     />
   );
 }

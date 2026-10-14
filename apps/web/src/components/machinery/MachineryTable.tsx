@@ -52,10 +52,11 @@ export function MachineryTable({
     { title: 'Hours', width: 150, ...sort('hoursWorked'), render: (_, r) => <HoursCell log={r} /> },
     { title: 'Diesel', dataIndex: 'dieselLitres', width: 90, align: 'right', className: 'mono', render: (v) => (v === null ? '-' : `${formatQty(v)} L`) },
     { title: 'Submitted by', dataIndex: 'submittedByName', width: 140, ...sort('submittedBy') },
-    { title: 'Status', dataIndex: 'status', width: 140, render: (s) => <StatusTag status={s} />, ...sort('status') },
+    { title: 'Status', fixed: 'right' as const, dataIndex: 'status', width: 140, render: (s) => <StatusTag status={s} />, ...sort('status') },
     {
       title: '',
       key: 'actions',
+      fixed: 'right' as const,
       width: 190,
       render: (_, r) => (
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>

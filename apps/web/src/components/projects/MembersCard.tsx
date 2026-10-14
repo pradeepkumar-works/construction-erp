@@ -9,6 +9,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, errorMessage } from '@/lib/api';
 import { useUsers } from '@/lib/queries';
 import { useAuth } from '@/lib/auth';
+import { BRAND } from '@/lib/brand';
 
 export function MembersCard({ project }: { project: ProjectDetail }) {
   const { user } = useAuth();
@@ -86,7 +87,7 @@ export function MembersCard({ project }: { project: ProjectDetail }) {
           >
             <List.Item.Meta
               avatar={
-                <Avatar size="small" style={{ background: m.isPm ? '#d97706' : '#1659a8' }}>
+                <Avatar size="small" style={{ background: m.isPm ? BRAND.colors.accentDeep : BRAND.colors.primary }}>
                   {m.fullName
                     .split(' ')
                     .map((s) => s[0])

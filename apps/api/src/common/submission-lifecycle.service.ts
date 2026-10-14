@@ -7,7 +7,7 @@ import { ProjectAccessService } from './project-access.service';
 import { ApprovalRightsService } from './approval-rights.service';
 import { AuditService } from './audit.service';
 import { NotificationsService } from '../notifications/notifications.service';
-import { expenseTitle, machineryTitle, measurementTitle } from './submission-titles';
+import { dprTitle, expenseTitle, machineryTitle, measurementTitle, progressTitle } from './submission-titles';
 
 interface SubmissionRow {
   id: string;
@@ -111,7 +111,7 @@ export class SubmissionLifecycleService {
         id: p.id,
         projectId: p.projectId,
         projectName: p.project.name,
-        title: `${p.activity.name}: ${p.quantity.toString()} ${p.activity.unit} on ${p.date.toISOString().slice(0, 10)}`,
+        title: progressTitle(p.activity.name, p.quantity.toString(), p.activity.unit, p.date),
         submittedByName: p.submittedBy.fullName,
         submittedAt: (p.submittedAt ?? p.createdAt).toISOString(),
         amount: amt(p.activity.boqItem ? p.quantity.mul(p.activity.boqItem.rate) : null),
@@ -121,7 +121,7 @@ export class SubmissionLifecycleService {
         id: d.id,
         projectId: d.projectId,
         projectName: d.project.name,
-        title: `DPR for ${d.date.toISOString().slice(0, 10)}`,
+        title: dprTitle(d.date),
         submittedByName: d.submittedBy.fullName,
         submittedAt: (d.submittedAt ?? d.createdAt).toISOString(),
         amount: null,
@@ -141,7 +141,7 @@ export class SubmissionLifecycleService {
         id: l.id,
         projectId: l.projectId,
         projectName: l.project.name,
-        title: machineryTitle(l.equipment.code, l.equipment.name, l.hoursWorked.toString(), l.breakdownHours.toString(), l.date.toISOString().slice(0, 10)),
+        title: machineryTitle(l.equipment.code, l.equipment.name, l.hoursWorked.toString(), l.breakdownHours.toString(), l.date),
         submittedByName: l.submittedBy.fullName,
         submittedAt: (l.submittedAt ?? l.createdAt).toISOString(),
         amount: amt(machineCost(l)),

@@ -1,6 +1,17 @@
-/** "EXC-01 Excavator: 7.5 h on 2026-10-13 (2 h breakdown)". Used in the approval queue and notifications. */
-export const machineryTitle = (code: string, name: string, worked: string, breakdown: string, date: string) =>
-  `${code} ${name}: ${Number(worked)} h on ${date}${Number(breakdown) > 0 ? ` (${Number(breakdown)} h breakdown)` : ''}`;
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** "13 Oct 2026". Dates are stored as UTC midnight, so the UTC fields are the calendar day. */
+export const titleDate = (d: Date): string => `${String(d.getUTCDate()).padStart(2, '0')} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+
+/** "GSB laying: 392 Cum on 13 Oct 2026". */
+export const progressTitle = (activity: string, qty: string, unit: string, date: Date) => `${activity}: ${Number(qty)} ${unit} on ${titleDate(date)}`;
+
+/** "DPR for 13 Oct 2026". */
+export const dprTitle = (date: Date) => `DPR for ${titleDate(date)}`;
+
+/** "EXC-01 Excavator: 7.5 h on 13 Oct 2026 (2 h breakdown)". Used in the approval queue and notifications. */
+export const machineryTitle = (code: string, name: string, worked: string, breakdown: string, date: Date) =>
+  `${code} ${name}: ${Number(worked)} h on ${titleDate(date)}${Number(breakdown) > 0 ? ` (${Number(breakdown)} h breakdown)` : ''}`;
 
 
 /** "EXP-2026-0007: ₹2,832.00 · Hydraulic hose for grader". */

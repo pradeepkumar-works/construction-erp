@@ -7,7 +7,7 @@ import { ProjectAccessService } from '../common/project-access.service';
 import { ApprovalRightsService } from '../common/approval-rights.service';
 import { dateOnly, iso } from '../common/serialize';
 import { ExpoPushService } from './expo-push.service';
-import { expenseTitle, machineryTitle, measurementTitle } from '../common/submission-titles';
+import { dprTitle, expenseTitle, machineryTitle, measurementTitle, progressTitle } from '../common/submission-titles';
 import { ListNotificationsQuery, RegisterPushTokenDto } from './notifications.dto';
 
 export interface NotifyInput {
@@ -165,16 +165,16 @@ export class NotificationsService {
 
   /* ---------- submission events (called by SubmissionLifecycleService) ---------- */
 
-  /** Short human description of a submission, e.g. "GSB laying: 2400 Cum on 2026-10-13". */
+  /** Short human description of a submission, e.g. "GSB laying: 2400 Cum on 13 Oct 2026". */
   async describeSubmission(type: SubmissionType, id: string): Promise<{ title: string; projectId: string; projectName: string; submittedById: string } | null> {
     switch (type) {
       case 'PROGRESS': {
         const p = await this.prisma.progressEntry.findUnique({ where: { id }, include: { activity: { select: { name: true, unit: true } }, project: { select: { name: true } } } });
-        return p ? { title: `${p.activity.name}: ${p.quantity.toString()} ${p.activity.unit} on ${dateOnly(p.date)}`, projectId: p.projectId, projectName: p.project.name, submittedById: p.submittedById } : null;
+        return p ? { title: progressTitle(p.activity.name, p.quantity.toString(), p.activity.unit, p.date), projectId: p.projectId, projectName: p.project.name, submittedById: p.submittedById } : null;
       }
       case 'DPR': {
         const d = await this.prisma.dailyReport.findUnique({ where: { id }, include: { project: { select: { name: true } } } });
-        return d ? { title: `DPR for ${dateOnly(d.date)}`, projectId: d.projectId, projectName: d.project.name, submittedById: d.submittedById } : null;
+        return d ? { title: dprTitle(d.date), projectId: d.projectId, projectName: d.project.name, submittedById: d.submittedById } : null;
       }
       case 'MATERIAL_REQUEST': {
         const m = await this.prisma.materialRequest.findUnique({ where: { id }, include: { project: { select: { name: true } }, items: { select: { id: true } } } });
@@ -183,7 +183,7 @@ export class NotificationsService {
       case 'MACHINERY': {
         const l = await this.prisma.machineryLog.findUnique({ where: { id }, include: { project: { select: { name: true } }, equipment: { select: { code: true, name: true } } } });
         return l
-          ? { title: machineryTitle(l.equipment.code, l.equipment.name, l.hoursWorked.toString(), l.breakdownHours.toString(), dateOnly(l.date)!), projectId: l.projectId, projectName: l.project.name, submittedById: l.submittedById }
+          ? { title: machineryTitle(l.equipment.code, l.equipment.name, l.hoursWorked.toString(), l.breakdownHours.toString(), l.date), projectId: l.projectId, projectName: l.project.name, submittedById: l.submittedById }
           : null;
       }
       case 'EXPENSE': {

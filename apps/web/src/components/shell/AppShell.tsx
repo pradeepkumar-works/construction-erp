@@ -8,7 +8,6 @@ import type { MenuProps } from 'antd';
 import {
   AppstoreOutlined,
   AuditOutlined,
-  BellOutlined,
   CheckSquareOutlined,
   FileTextOutlined,
   InboxOutlined,
@@ -34,6 +33,8 @@ import { canEditProjects, canManageUsers, canViewCost, mayApprove } from '@erp/s
 import { useAuth } from '@/lib/auth';
 import { usePendingApprovals } from '@/lib/queries';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
+import { BRAND } from '@/lib/brand';
+import { BrandMark } from './BrandMark';
 
 const { Header, Sider, Content } = Layout;
 
@@ -45,10 +46,10 @@ function selectedKey(pathname: string): string {
 function Brand({ user, collapsed }: { user: AuthUser; collapsed: boolean }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: collapsed ? '16px 0' : '16px 20px', justifyContent: collapsed ? 'center' : 'flex-start', overflow: 'hidden' }}>
-      <span className="brand-mark">CE</span>
+      <BrandMark />
       {!collapsed && (
         <div style={{ lineHeight: 1.15, whiteSpace: 'nowrap' }}>
-          <div style={{ color: '#fff', fontWeight: 700, fontSize: 15 }}>Construction ERP</div>
+          <div style={{ color: '#fff', fontWeight: 700, fontSize: 15 }}>{BRAND.name}</div>
           <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11 }}>{user.organizationName}</div>
         </div>
       )}
@@ -68,41 +69,61 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
   const pendingCount = pending?.length ?? 0;
 
   const items: MenuProps['items'] = useMemo(() => {
-    const showBadge = approver && pendingCount > 0 && (isMobile || !collapsed);
-    const base: MenuProps['items'] = [
-      { key: '/', icon: <AppstoreOutlined />, label: <Link href="/">Dashboard</Link> },
-      { key: '/projects', icon: <ProjectOutlined />, label: <Link href="/projects">Projects</Link> },
+    const narrow = collapsed && !isMobile;
+    const showBadge = approver && pendingCount > 0 && !narrow;
+    const link = (href: string, label: string, Icon: React.ComponentType) => ({ key: href, icon: <Icon />, label: <Link href={href}>{label}</Link> });
+    const sections: { title?: string; items: NonNullable<MenuProps['items']> }[] = [
       {
-        key: '/approvals',
-        icon: <CheckSquareOutlined />,
-        label: (
-          <Link href="/approvals" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span>Approvals</span>
-            {showBadge && <Badge count={pendingCount} size="small" style={{ boxShadow: 'none' }} />}
-          </Link>
-        ),
+        items: [
+          link('/', 'Dashboard', AppstoreOutlined),
+          link('/projects', 'Projects', ProjectOutlined),
+          {
+            key: '/approvals',
+            icon: <CheckSquareOutlined />,
+            label: (
+              <Link href="/approvals" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span>Approvals</span>
+                {showBadge && <Badge count={pendingCount} size="small" style={{ boxShadow: 'none' }} />}
+              </Link>
+            ),
+          },
+        ],
       },
-      { key: '/dpr', icon: <FileTextOutlined />, label: <Link href="/dpr">Daily Reports</Link> },
-      { key: '/attendance', icon: <ScheduleOutlined />, label: <Link href="/attendance">Attendance</Link> },
-      { key: '/progress', icon: <LineChartOutlined />, label: <Link href="/progress">Progress Entries</Link> },
-      { key: '/measurements', icon: <CalculatorOutlined />, label: <Link href="/measurements">Measurement Book</Link> },
-      { key: '/material-requests', icon: <ShoppingCartOutlined />, label: <Link href="/material-requests">Material Requests</Link> },
-      { key: '/stock', icon: <InboxOutlined />, label: <Link href="/stock">Stock</Link> },
-      { key: '/machinery', icon: <ToolOutlined />, label: <Link href="/machinery">Machinery</Link> },
-      { key: '/expenses', icon: <WalletOutlined />, label: <Link href="/expenses">Site Expenses</Link> },
-      { key: '/risks', icon: <AlertOutlined />, label: <Link href="/risks">Delays & Risks</Link> },
-      { key: '/reports', icon: <FilePdfOutlined />, label: <Link href="/reports">Progress Reports</Link> },
-      ...(canViewCost(user.roleKey) ? [{ key: '/cost', icon: <FundOutlined />, label: <Link href="/cost">Project Cost</Link> }] : []),
-      { key: '/notifications', icon: <BellOutlined />, label: <Link href="/notifications">Notifications</Link> },
+      {
+        title: 'Site',
+        items: [
+          link('/dpr', 'Daily Reports', FileTextOutlined),
+          link('/attendance', 'Attendance', ScheduleOutlined),
+          link('/progress', 'Progress Entries', LineChartOutlined),
+          link('/measurements', 'Measurement Book', CalculatorOutlined),
+          link('/expenses', 'Site Expenses', WalletOutlined),
+          link('/risks', 'Delays & Risks', AlertOutlined),
+        ],
+      },
+      {
+        title: 'Materials & plant',
+        items: [link('/material-requests', 'Material Requests', ShoppingCartOutlined), link('/stock', 'Stock', InboxOutlined), link('/machinery', 'Machinery', ToolOutlined)],
+      },
+      {
+        title: 'Reports',
+        items: [link('/reports', 'Progress Reports', FilePdfOutlined), ...(canViewCost(user.roleKey) ? [link('/cost', 'Project Cost', FundOutlined)] : [])],
+      },
+      {
+        title: 'Admin',
+        items: [
+          ...(canEditProjects(user.roleKey) ? [link('/templates', 'Activity Templates', PartitionOutlined)] : []),
+          ...(canManageUsers(user.roleKey) ? [link('/users', 'Users', TeamOutlined), link('/approval-rules', 'Approval Rules', SafetyCertificateOutlined)] : []),
+        ],
+      },
     ];
-    if (canEditProjects(user.roleKey)) {
-      base.push({ key: '/templates', icon: <PartitionOutlined />, label: <Link href="/templates">Activity Templates</Link> });
-    }
-    if (canManageUsers(user.roleKey)) {
-      base.push({ key: '/users', icon: <TeamOutlined />, label: <Link href="/users">Users</Link> });
-      base.push({ key: '/approval-rules', icon: <SafetyCertificateOutlined />, label: <Link href="/approval-rules">Approval Rules</Link> });
-    }
-    return base;
+    // Collapsed to icons there is no room for section titles, so sections are separated by a rule instead.
+    return sections
+      .filter((sec) => sec.items.length > 0)
+      .flatMap((sec, i): NonNullable<MenuProps['items']> => {
+        if (!sec.title) return sec.items;
+        if (narrow) return [{ type: 'divider', key: `d${i}`, style: { borderColor: 'rgba(255,255,255,0.12)', margin: '6px 12px' } }, ...sec.items];
+        return [{ type: 'group', key: `g${i}`, label: sec.title, children: sec.items }];
+      });
   }, [approver, pendingCount, collapsed, isMobile, user]);
 
   const userMenu: MenuProps['items'] = [
@@ -129,7 +150,7 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
         </Sider>
       )}
       {isMobile && (
-        <Drawer open={mobileOpen} onClose={() => setMobileOpen(false)} placement="left" width={260} closable={false} styles={{ body: { padding: 0, background: '#0f2a4d' } }}>
+        <Drawer open={mobileOpen} onClose={() => setMobileOpen(false)} placement="left" width={260} closable={false} styles={{ body: { padding: 0, background: BRAND.colors.ink } }}>
           <Brand user={user} collapsed={false} />
           {menu}
         </Drawer>
@@ -141,7 +162,7 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
             alignItems: 'center',
             justifyContent: 'space-between',
             padding: isMobile ? '0 12px' : '0 24px',
-            borderBottom: '1px solid #e6e9ef',
+            borderBottom: `1px solid ${BRAND.colors.border}`,
             position: 'sticky',
             top: 0,
             zIndex: 10,
@@ -154,13 +175,11 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
             {isMobile ? (
               <>
                 <Button type="text" icon={<MenuOutlined />} onClick={() => setMobileOpen(true)} aria-label="Open menu" />
-                <span className="brand-mark" style={{ width: 28, height: 28, fontSize: 13 }}>
-                  CE
-                </span>
+                <BrandMark size={28} />
               </>
             ) : (
               <>
-                <AuditOutlined style={{ color: '#1659a8' }} />
+                <AuditOutlined style={{ color: BRAND.colors.primary }} />
                 <Typography.Text strong>{user.organizationName}</Typography.Text>
               </>
             )}
@@ -177,7 +196,7 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
             <Dropdown menu={{ items: userMenu }} trigger={['click']}>
             <Button type="text" style={{ height: 40, padding: '0 8px' }}>
               <Space>
-                <Avatar size="small" style={{ background: '#1659a8' }}>
+                <Avatar size="small" style={{ background: BRAND.colors.primary }}>
                   {initials}
                 </Avatar>
                 {!isMobile && (
