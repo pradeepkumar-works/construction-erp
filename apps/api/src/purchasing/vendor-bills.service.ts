@@ -113,6 +113,9 @@ export class VendorBillsService {
       total: money(r.total)!,
       matched: r.matched,
       exceptions: r.exceptions,
+      paidAmount: money(r.paidAmount)!,
+      outstanding: money(Prisma.Decimal.max(r.total.sub(r.paidAmount), 0))!,
+      paidDate: dateOnly(r.paidDate),
       remarks: r.remarks,
       lines: r.lines.map((l) => ({
         id: l.id,

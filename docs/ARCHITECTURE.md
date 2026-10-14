@@ -427,12 +427,39 @@ retention, advance, TDS and material recovery (`apps/api/src/subcontracts`).
 - **API.** `/receipts` (paged; `projectId`, `billId`, `kind`, `from`, `to`, `q`), `GET|PATCH|DELETE /receipts/:id`,
   `GET /receivables`. Web: Billing → Receivables, "Record payment" and the payments list in the bill drawer.
 
+## Payables
+
+- **Table.** `VendorPayment` (tenant table): against exactly one approved bill, `vendorBillId` or
+  `subcontractBillId` (a CHECK constraint), with `projectId`, `vendorId`, `paymentDate`, `amount` paid, `mode`,
+  `reference` (UTR, cheque, voucher), and what was deducted at payment: `tdsAmount` (vendor bills only; a
+  subcontractor bill already deducts its TDS), `otherDeduction` with a note. `VendorBill` and `SubcontractBill` keep
+  `paidAmount` (settled = paid + deducted) and `paidDate` (the last payment once settled in full).
+- **Settling a bill** (`src/payables/payables.service.ts`). A vendor bill's payable is its invoice total; a
+  subcontractor bill's is its net payable. Payments go only against approved bills, are not dated before the bill or
+  in the future, and may not settle more than is outstanding (₹1 tolerance), under advisory lock `PAY:<billId>`.
+- **Due list** (`GET /payables`, optional `projectId`, `vendorId`). Per vendor, per project and in total: billed,
+  paid, deducted, outstanding, ageing (not yet due, then 1-30 / 31-60 / 61-90 / over 90 days past the due date),
+  overdue, due in the next 7 days, retention held on subcontractor bills and TDS deducted; the open bills most urgent
+  first. Bills of micro and small enterprises due within 7 days or late are flagged (`msmeFlag`, "MSME at risk"):
+  the MSMED Act allows 45 days at most, and PO payment days are already capped at that.
+- **Roles.** Seen by admin, management, accounts and project managers in their visible projects (`canViewPayables`);
+  recorded, corrected and deleted by admin, management and accounts (`canRecordPayment`). Each change is in the
+  audit log of the payment and of its bill.
+- **API.** `/vendor-payments` (paged; `projectId`, `vendorId`, `vendorBillId`, `subcontractBillId`, `from`, `to`,
+  `q`), `GET|PATCH|DELETE /vendor-payments/:id`, `GET /payables`. Web: Purchases → Payables (KPIs, due list with
+  Pay, by vendor, by project, payments), and the payments list with "Record payment" in both bill drawers.
+
 ## Project cost
 
 - **Heads.** Site expenses (`APPROVED`, total incl. GST, by bill date); material issued (`StockTxn` of
   type `ISSUE` × `Item.rate`, the standard rate in the item master); machinery (`APPROVED` logs: hourly
   rate × hours worked, daily rate per log, monthly rate ÷ 30 per log, `machineryLogCost` in shared);
-  labour (attendance head count × `LabourRate.dailyRate` of the trade, matched case-insensitively).
+  labour (attendance head count × `LabourRate.dailyRate` of the trade, matched case-insensitively);
+  subcontractors (work value of `APPROVED` subcontractor bills, by bill date). Where a subcontractor bill exists the
+  actual bill replaces the estimate: issues recovered on an approved subcontractor bill drop out of material, and
+  attendance of a contractor with an approved work order on the project drops out of labour.
+- **Cash.** Billed and cash in from receivables; vendor and subcontractor bills (approved, with GST, by bill date)
+  and cash out (payments by date) from payables.
 - **Value.** Executed value = `APPROVED` progress quantity × BOQ rate (by progress date); measured value =
   `APPROVED` measurement sheets × BOQ rate. Margin = executed value − cost.
 - **Missing rates.** Items, machines or trades without a rate add nothing and are counted in `unpriced`,

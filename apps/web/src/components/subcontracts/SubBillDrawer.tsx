@@ -19,6 +19,7 @@ import { ReviewActions } from '@/components/common/ReviewActions';
 import { EditResubmitButton } from '@/components/common/EditResubmitButton';
 import { submissionMetaItems } from '@/components/common/SubmitterInfo';
 import { overdueDays } from '@/components/purchasing/VendorBillDrawer';
+import { BillPayments, PaidTag } from '@/components/payables/BillPayments';
 import { openSubBillPrint } from './subcontractPrint';
 
 const money = (v: string | number) => <span className="mono">{formatINR(v, true)}</span>;
@@ -62,7 +63,7 @@ export function SubBillDrawer({ id, open, onClose, onEdit }: { id: string | null
       title={
         data ? (
           <Space wrap>
-            {data.label} · {data.vendorName} <StatusTag status={data.status} />
+            {data.label} · {data.vendorName} <StatusTag status={data.status} /> <PaidTag bill={data} />
           </Space>
         ) : (
           'Subcontractor bill'
@@ -246,6 +247,20 @@ export function SubBillDrawer({ id, open, onClose, onEdit }: { id: string | null
               </div>
             </Card>
           </div>
+          <BillPayments
+            approved={data.status === 'APPROVED'}
+            target={{
+              billType: 'SUBCONTRACT_BILL',
+              billId: data.id,
+              billLabel: data.label,
+              vendorName: data.vendorName,
+              billDate: data.billDate,
+              dueDate: data.dueDate,
+              payable: data.netPayable,
+              outstanding: data.outstanding,
+              paidAmount: data.paidAmount,
+            }}
+          />
           <Divider titlePlacement="start" plain>
             Measurements ({data.measurementCount})
           </Divider>

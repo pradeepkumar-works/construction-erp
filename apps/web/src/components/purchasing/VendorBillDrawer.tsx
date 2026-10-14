@@ -18,15 +18,16 @@ import { AuditTrail } from '@/components/common/AuditTrail';
 import { ReviewActions } from '@/components/common/ReviewActions';
 import { EditResubmitButton } from '@/components/common/EditResubmitButton';
 import { submissionMetaItems } from '@/components/common/SubmitterInfo';
+import { BillPayments, PaidTag } from '@/components/payables/BillPayments';
 
 const money = (v: string | number) => <span className="mono">{formatINR(v, true)}</span>;
 
 export const MatchTag = ({ matched }: { matched: boolean }) => (matched ? <Tag color="green" style={{ margin: 0 }}>Matches PO</Tag> : <Tag color="red" style={{ margin: 0 }}>Exceptions</Tag>);
 
-/** Days past the due date of an approved bill; null when it is not yet due. */
-export const overdueDays = (b: Pick<VendorBillDto, 'dueDate' | 'status'>) => {
+/** Days past the due date of an approved bill not yet paid in full; null when it is not yet due or is settled. */
+export const overdueDays = (b: Pick<VendorBillDto, 'dueDate' | 'status' | 'paidDate'>) => {
   const d = dayjs().startOf('day').diff(dayjs(b.dueDate), 'day');
-  return b.status === 'APPROVED' && d > 0 ? d : null;
+  return b.status === 'APPROVED' && !b.paidDate && d > 0 ? d : null;
 };
 
 /** A vendor bill with its three-way match against the purchase order and the GRNs. */
@@ -67,7 +68,7 @@ export function VendorBillDrawer({ id, open, onClose, onEdit }: { id: string | n
       title={
         data ? (
           <Space wrap>
-            {data.billNo} · {data.vendorName} <StatusTag status={data.status} /> <MatchTag matched={data.matched} />
+            {data.billNo} · {data.vendorName} <StatusTag status={data.status} /> <MatchTag matched={data.matched} /> <PaidTag bill={data} />
           </Space>
         ) : (
           'Vendor bill'
@@ -222,6 +223,20 @@ export function VendorBillDrawer({ id, open, onClose, onEdit }: { id: string | n
               </div>
             </Card>
           </div>
+          <BillPayments
+            approved={data.status === 'APPROVED'}
+            target={{
+              billType: 'VENDOR_BILL',
+              billId: data.id,
+              billLabel: data.billNo,
+              vendorName: data.vendorName,
+              billDate: data.invoiceDate,
+              dueDate: data.dueDate,
+              payable: data.total,
+              outstanding: data.outstanding,
+              paidAmount: data.paidAmount,
+            }}
+          />
           <Divider titlePlacement="start" plain>
             Invoice ({data.attachments.length})
           </Divider>

@@ -1,0 +1,112 @@
+'use client';
+
+import React, { useState } from 'react';
+import { App, Button, Divider, Popconfirm, Space, Table, Tag, Typography } from 'antd';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { PayableBillType, VendorPaymentDto } from '@erp/shared';
+import { RECEIPT_MODE_LABELS, canRecordPayment, canViewPayables } from '@erp/shared';
+import { api, errorMessage } from '@/lib/api';
+import { useAuth } from '@/lib/auth';
+import { useVendorPayments } from '@/lib/queries';
+import { formatDate, formatINR, toNumber } from '@/lib/format';
+import { PAYMENT_QUERY_KEYS, PaymentFormModal, type PayTarget } from './PaymentFormModal';
+
+/** Tag for how much of an approved bill is paid. */
+export function PaidTag({ bill }: { bill: { status: string; paidAmount: string; outstanding: string; paidDate: string | null } }) {
+  if (bill.status !== 'APPROVED') return null;
+  if (bill.paidDate) return <Tag color="green" style={{ margin: 0 }}>Paid</Tag>;
+  if (toNumber(bill.paidAmount) > 0) return <Tag color="gold" style={{ margin: 0 }}>Part paid</Tag>;
+  return <Tag style={{ margin: 0 }}>Unpaid</Tag>;
+}
+
+/** Payments against one approved bill, with "Record payment" for accounts. Shown in the vendor and subcontractor bill drawers. */
+export function BillPayments({ target, approved }: { target: PayTarget & { paidAmount: string }; approved: boolean }) {
+  const { user } = useAuth();
+  const { message } = App.useApp();
+  const qc = useQueryClient();
+  const [paying, setPaying] = useState(false);
+  const [editing, setEditing] = useState<VendorPaymentDto | null>(null);
+  const visible = approved && !!user && canViewPayables(user.roleKey);
+  const filter = target.billType === 'VENDOR_BILL' ? { vendorBillId: target.billId } : { subcontractBillId: target.billId };
+  const { data } = useVendorPayments({ ...filter, pageSize: 100, sortBy: 'paymentDate', sortOrder: 'asc' }, visible);
+  const accounts = !!user && canRecordPayment(user.roleKey);
+  const remove = useMutation({
+    mutationFn: async (id: string) => (await api.delete(`/vendor-payments/${id}`)).data,
+    onSuccess: () => {
+      message.success('Payment deleted');
+      for (const k of PAYMENT_QUERY_KEYS) qc.invalidateQueries({ queryKey: [k] });
+    },
+    onError: (e) => message.error(errorMessage(e)),
+  });
+  if (!visible) return null;
+  const outstanding = toNumber(target.outstanding);
+
+  return (
+    <>
+      <Divider titlePlacement="start" plain>
+        Payments ({data?.total ?? 0})
+      </Divider>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, gap: 8, flexWrap: 'wrap' }}>
+        <Typography.Text>
+          Paid {formatINR(target.paidAmount, true)} of {formatINR(target.payable, true)} ·{' '}
+          {outstanding > 0 ? (
+            <strong>
+              {formatINR(outstanding, true)} outstanding, due {formatDate(target.dueDate)}
+            </strong>
+          ) : (
+            <Typography.Text type="success">settled</Typography.Text>
+          )}
+        </Typography.Text>
+        {accounts && outstanding > 0 ? (
+          <Button size="small" type="primary" onClick={() => setPaying(true)}>
+            Record payment
+          </Button>
+        ) : null}
+      </div>
+      <Table<VendorPaymentDto>
+        rowKey="id"
+        size="small"
+        pagination={false}
+        dataSource={data?.items ?? []}
+        locale={{ emptyText: 'Nothing paid yet' }}
+        columns={[
+          { title: 'Date', dataIndex: 'paymentDate', width: 110, render: (v) => formatDate(v) },
+          { title: 'Paid', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <strong className="mono">{formatINR(v, true)}</strong> },
+          { title: 'Deducted', key: 'ded', width: 120, align: 'right', render: (_, p) => <span className="mono">{formatINR(toNumber(p.tdsAmount) + toNumber(p.otherDeduction), true)}</span> },
+          {
+            title: 'Mode / reference',
+            key: 'ref',
+            render: (_, p) => (
+              <span>
+                {RECEIPT_MODE_LABELS[p.mode]}
+                {p.reference ? <span className="mono text-muted"> · {p.reference}</span> : null}
+              </span>
+            ),
+          },
+          ...(accounts
+            ? [
+                {
+                  title: '',
+                  key: 'x',
+                  width: 130,
+                  render: (_: unknown, p: VendorPaymentDto) => (
+                    <Space size={4}>
+                      <Button size="small" onClick={() => setEditing(p)}>
+                        Edit
+                      </Button>
+                      <Popconfirm title="Delete this payment?" description="The bill goes back to outstanding." onConfirm={() => remove.mutate(p.id)}>
+                        <Button size="small" danger>
+                          Delete
+                        </Button>
+                      </Popconfirm>
+                    </Space>
+                  ),
+                },
+              ]
+            : []),
+        ]}
+      />
+      <PaymentFormModal open={paying || !!editing} bill={paying ? target : null} payment={editing} onClose={() => (setPaying(false), setEditing(null))} />
+    </>
+  );
+}

@@ -75,6 +75,9 @@ contractors after the first client is live.
   in the measurement book and material issued to them, and running bills with retention, advance recovery, TDS
   (194C, from the PAN) and material recovered at our rates; margin per BOQ item against the client rate; printable
   order and bill.
+- Payables: payments to vendors and subcontractors against their approved bills (part payments, TDS at payment),
+  a due list by due date with ageing per vendor and project, micro and small enterprise bills flagged before their
+  45 days run out, and actual subcontractor bills and cash out on project cost.
 - Receivables: money received against each bill with what the client deducted (TDS, GST TDS, retention, deposit,
   cess), part payments, retention and deposit releases, ageing per project and client, the retention due date,
   a dashboard tile, and billed value and cash in on project cost.

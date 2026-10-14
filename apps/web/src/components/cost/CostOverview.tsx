@@ -29,10 +29,13 @@ const EXPORT: ExportColumn<ProjectCostSummaryDto>[] = [
   { header: 'Material issued', value: (r) => toNumber(r.cost.material), width: 14 },
   { header: 'Machinery', value: (r) => toNumber(r.cost.machinery), width: 14 },
   { header: 'Labour', value: (r) => toNumber(r.cost.labour), width: 14 },
+  { header: 'Subcontractors', value: (r) => toNumber(r.cost.subcontract), width: 14 },
   { header: 'Total cost', value: (r) => toNumber(r.cost.total), width: 14 },
   { header: 'Margin', value: (r) => toNumber(r.margin), width: 16 },
   { header: 'Billed (RA bills)', value: (r) => toNumber(r.billedValue), width: 16 },
   { header: 'Cash in', value: (r) => toNumber(r.cashIn), width: 16 },
+  { header: 'Vendor bills (incl. GST)', value: (r) => toNumber(r.payableBilled), width: 16 },
+  { header: 'Cash out', value: (r) => toNumber(r.cashOut), width: 16 },
   { header: 'Cost % of executed', value: (r) => r.costPct, width: 12 },
   { header: 'Missing rates', value: (r) => unpricedText(r.unpriced).join('; '), width: 40 },
 ];
@@ -46,7 +49,7 @@ export function CostOverview() {
   const rows = data ?? [];
   const totals = useMemo(() => {
     const sum = (f: (r: ProjectCostSummaryDto) => string) => rows.reduce((s, r) => s + toNumber(f(r)), 0);
-    return { executed: sum((r) => r.executedValue), measured: sum((r) => r.measuredValue), cost: sum((r) => r.cost.total), margin: sum((r) => r.margin), billed: sum((r) => r.billedValue), cashIn: sum((r) => r.cashIn) };
+    return { executed: sum((r) => r.executedValue), measured: sum((r) => r.measuredValue), cost: sum((r) => r.cost.total), margin: sum((r) => r.margin), billed: sum((r) => r.billedValue), cashIn: sum((r) => r.cashIn), cashOut: sum((r) => r.cashOut) };
   }, [rows]);
   const scale = Math.max(1, ...rows.map((r) => toNumber(r.cost.total)));
 
@@ -90,6 +93,7 @@ export function CostOverview() {
     },
     { title: 'Billed', dataIndex: 'billedValue', width: 130, align: 'right', render: money, sorter: (a, b) => toNumber(a.billedValue) - toNumber(b.billedValue) },
     { title: 'Cash in', dataIndex: 'cashIn', width: 130, align: 'right', render: money, sorter: (a, b) => toNumber(a.cashIn) - toNumber(b.cashIn) },
+    { title: 'Cash out', dataIndex: 'cashOut', width: 130, align: 'right', render: money, sorter: (a, b) => toNumber(a.cashOut) - toNumber(b.cashOut) },
     { title: 'Cost %', dataIndex: 'costPct', width: 90, align: 'right', render: (v: number | null) => (v === null ? <span className="text-muted">-</span> : `${v}%`), sorter: (a, b) => (a.costPct ?? 0) - (b.costPct ?? 0) },
   ];
 
@@ -117,15 +121,17 @@ export function CostOverview() {
         <Statistic title="Margin" value={formatINR(totals.margin)} styles={{ content: { fontSize: 18, color: totals.margin < 0 ? '#cf1322' : '#1f9d55' } }} />
         <Statistic title="Billed (RA bills)" value={formatINR(totals.billed)} styles={{ content: { fontSize: 18 } }} />
         <Statistic title="Cash in" value={formatINR(totals.cashIn)} styles={{ content: { fontSize: 18 } }} />
+        <Statistic title="Cash out" value={formatINR(totals.cashOut)} styles={{ content: { fontSize: 18 } }} />
         <div style={{ alignSelf: 'flex-end', marginLeft: 'auto' }}>
           <CostLegend />
         </div>
       </div>
-      <Table<ProjectCostSummaryDto> rowKey="projectId" size="middle" loading={isLoading || isFetching} columns={columns} dataSource={rows} pagination={false} scroll={{ x: 1260 }} />
+      <Table<ProjectCostSummaryDto> rowKey="projectId" size="middle" loading={isLoading || isFetching} columns={columns} dataSource={rows} pagination={false} scroll={{ x: 1390 }} />
       <Typography.Paragraph type="secondary" style={{ fontSize: 12, padding: '8px 16px 0' }}>
-        {periodLabel(period)}. Cost is approved site expenses, material issued at the item master rate, approved machinery logs at the hire rate and attendance at the
-        trade&apos;s daily rate. Executed value is approved progress at BOQ rates. Billed is the work value of approved RA bills dated in the
-        period; cash in is what clients paid into the bank in it.
+        {periodLabel(period)}. Cost is approved site expenses, material issued at the item master rate, approved machinery logs at the hire rate, attendance at the
+        trade&apos;s daily rate and the work value of approved subcontractor bills (their gangs and the material they were charged for are not counted
+        again). Executed value is approved progress at BOQ rates. Billed is the work value of approved RA bills dated in the period; cash in is what
+        clients paid into the bank in it and cash out what was paid to vendors and subcontractors.
       </Typography.Paragraph>
       <LabourRatesModal open={ratesOpen} onClose={() => setRatesOpen(false)} />
     </>

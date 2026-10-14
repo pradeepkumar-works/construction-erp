@@ -141,5 +141,8 @@ DROP POLICY IF EXISTS tenant_isolation ON "WorkOrder";
 ALTER TABLE "SubcontractBill" NO FORCE ROW LEVEL SECURITY;
 ALTER TABLE "SubcontractBill" DISABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS tenant_isolation ON "SubcontractBill";
+ALTER TABLE "VendorPayment" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "VendorPayment" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "VendorPayment";
 
 DROP FUNCTION IF EXISTS app_current_org();

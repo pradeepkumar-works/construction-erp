@@ -12,7 +12,7 @@ export default function Page() {
   if (user && !canViewCost(user.roleKey)) return <Result status="403" title="Project cost is for approvers and accounts" />;
   return (
     <div className="page-container">
-      <PageHeader title="Project Cost" subtitle="Expenses, material, machinery and labour against the value of work executed." />
+      <PageHeader title="Project Cost" subtitle="Expenses, material, machinery, labour and subcontractors against the value of work executed." />
       <Card className="table-card" size="small">
         <CostOverview />
       </Card>

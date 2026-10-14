@@ -11,6 +11,7 @@ import {
   riskLevel,
   RISK_LEVEL_LABELS,
   PAYMENT_MODE_LABELS,
+  RECEIPT_MODE_LABELS,
   MATERIAL_PRIORITY_LABELS,
   PROJECT_STATUS_LABELS,
   PROJECT_TYPE_LABELS,
@@ -36,6 +37,9 @@ import {
   type ReceiptDto,
   type ProjectReceivableDto,
   type OpenBillDto,
+  type PayableBillDto,
+  type VendorPayableDto,
+  type VendorPaymentDto,
   type MachineryLogDto,
   type MaterialRequestDto,
   type ProgressEntryDto,
@@ -433,6 +437,60 @@ export const OPEN_BILL_EXPORT: ExportColumn<OpenBillDto>[] = [
   { header: 'Settled', value: (r) => toNumber(r.settledAmount) },
   { header: 'Outstanding', value: (r) => toNumber(r.outstanding) },
   { header: 'Days since sent', value: (r) => r.daysOutstanding },
+];
+
+const billKind = (t: PayableBillDto['billType']) => (t === 'VENDOR_BILL' ? 'Vendor bill' : 'Subcontractor bill');
+
+export const PAYABLE_BILL_EXPORT: ExportColumn<PayableBillDto>[] = [
+  { header: 'Bill', value: (r) => r.billLabel, width: 22 },
+  { header: 'Type', value: (r) => billKind(r.billType), width: 18 },
+  { header: 'Vendor', value: (r) => r.vendorName, width: 30 },
+  { header: 'MSME', value: (r) => (r.vendorMsme ? MSME_CATEGORY_LABELS[r.vendorMsme] : null), width: 10 },
+  { header: 'Project code', value: (r) => r.projectCode, width: 14 },
+  { header: 'Project', value: (r) => r.projectName, width: 34 },
+  { header: 'Bill date', value: (r) => r.billDate, width: 12 },
+  { header: 'Due date', value: (r) => r.dueDate, width: 12 },
+  { header: 'Payable', value: (r) => toNumber(r.payable) },
+  { header: 'Paid', value: (r) => toNumber(r.paid) },
+  { header: 'Outstanding', value: (r) => toNumber(r.outstanding) },
+  { header: 'Days to due', value: (r) => r.daysToDue },
+  { header: 'MSME at risk', value: (r) => (r.msmeFlag ? 'Yes' : null), width: 12 },
+];
+
+export const PAYABLE_VENDOR_EXPORT: ExportColumn<VendorPayableDto>[] = [
+  { header: 'Vendor', value: (r) => r.vendorName, width: 34 },
+  { header: 'MSME', value: (r) => (r.vendorMsme ? MSME_CATEGORY_LABELS[r.vendorMsme] : null), width: 10 },
+  { header: 'Open bills', value: (r) => r.openBills },
+  { header: 'Billed', value: (r) => toNumber(r.billed) },
+  { header: 'Paid', value: (r) => toNumber(r.paid) },
+  { header: 'Deducted', value: (r) => toNumber(r.deducted) },
+  { header: 'Outstanding', value: (r) => toNumber(r.outstanding) },
+  { header: 'Not due', value: (r) => toNumber(r.ageing.notDue) },
+  { header: '1-30 days late', value: (r) => toNumber(r.ageing.days1to30) },
+  { header: '31-60 days late', value: (r) => toNumber(r.ageing.days31to60) },
+  { header: '61-90 days late', value: (r) => toNumber(r.ageing.days61to90) },
+  { header: 'Over 90 days late', value: (r) => toNumber(r.ageing.over90) },
+  { header: 'MSME at risk', value: (r) => toNumber(r.msmeAtRisk) },
+  { header: 'Retention held', value: (r) => toNumber(r.retentionHeld) },
+  { header: 'TDS deducted', value: (r) => toNumber(r.tdsDeducted) },
+];
+
+export const VENDOR_PAYMENT_EXPORT: ExportColumn<VendorPaymentDto>[] = [
+  { header: 'Date', value: (r) => r.paymentDate, width: 12 },
+  { header: 'Vendor', value: (r) => r.vendorName, width: 30 },
+  { header: 'Bill', value: (r) => r.billLabel, width: 22 },
+  { header: 'Type', value: (r) => billKind(r.billType), width: 18 },
+  { header: 'Project code', value: (r) => r.projectCode, width: 14 },
+  { header: 'Project', value: (r) => r.projectName, width: 34 },
+  { header: 'Paid', value: (r) => toNumber(r.amount) },
+  { header: 'TDS', value: (r) => toNumber(r.tdsAmount) },
+  { header: 'Other deduction', value: (r) => toNumber(r.otherDeduction) },
+  { header: 'Deducted for', value: (r) => r.otherDeductionNote, width: 24 },
+  { header: 'Settled', value: (r) => toNumber(r.settledAmount) },
+  { header: 'Mode', value: (r) => RECEIPT_MODE_LABELS[r.mode] ?? PAYMENT_MODE_LABELS[r.mode], width: 16 },
+  { header: 'Reference', value: (r) => r.reference, width: 22 },
+  { header: 'Remarks', value: (r) => r.remarks, width: 30 },
+  { header: 'Recorded by', value: (r) => r.createdByName, width: 20 },
 ];
 
 export const VENDOR_EXPORT: ExportColumn<VendorDto>[] = [

@@ -10,6 +10,8 @@ import type {
   WorkOrderDto,
   WorkOrderMarginDto,
   SubcontractBillDto,
+  PayablesDto,
+  VendorPaymentDto,
   ClientDto,
   MsmeCategory,
   UnlistedVendorDto,
@@ -493,6 +495,30 @@ export const useReceivables = (projectId?: string, enabled = true) =>
   useQuery({
     queryKey: ['receivables', projectId ?? 'all'],
     queryFn: async () => (await api.get<ReceivablesDto>('/receivables', { params: clean({ projectId }) })).data,
+    enabled,
+  });
+
+export interface VendorPaymentFilters extends PageParams {
+  projectId?: string;
+  vendorId?: string;
+  vendorBillId?: string;
+  subcontractBillId?: string;
+  from?: string;
+  to?: string;
+}
+
+export const useVendorPayments = (filters: VendorPaymentFilters, enabled = true) =>
+  useQuery({
+    queryKey: ['vendor-payments', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<VendorPaymentDto>>('/vendor-payments', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+
+export const usePayables = (filters: { projectId?: string; vendorId?: string } = {}, enabled = true) =>
+  useQuery({
+    queryKey: ['payables', clean(filters)],
+    queryFn: async () => (await api.get<PayablesDto>('/payables', { params: clean(filters) })).data,
     enabled,
   });
 
