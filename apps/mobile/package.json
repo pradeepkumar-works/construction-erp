@@ -46,7 +46,8 @@
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "export:android": "expo export --platform android",
-    "export:web": "expo export --platform web"
+    "export:web": "expo export --platform web",
+    "eas-build-post-install": "pnpm --filter @erp/shared build"
   },
   "private": true
 }
