@@ -71,7 +71,7 @@ export default function DashboardPage() {
       width: 80,
       align: 'center',
       fixed: 'right',
-      render: (v: number) => (v > 0 ? <Badge count={v} color="gold" /> : <span className="text-muted">0</span>),
+      render: (v: number) => (v > 0 ? <Badge count={v} color={BRAND.colors.pending} /> : <span className="text-muted">0</span>),
     },
   ];
 
@@ -101,7 +101,7 @@ export default function DashboardPage() {
             </KpiTile>
             {approver && (
               <KpiTile href="/approvals">
-                <Statistic title="Pending Approvals" value={data.pendingApprovals} prefix={<CheckSquareOutlined />} styles={{ content: { color: data.pendingApprovals > 0 ? '#d48806' : undefined } }} />
+                <Statistic title="Pending Approvals" value={data.pendingApprovals} prefix={<CheckSquareOutlined />} styles={{ content: { color: data.pendingApprovals > 0 ? BRAND.colors.pending : undefined } }} />
               </KpiTile>
             )}
             <KpiTile>

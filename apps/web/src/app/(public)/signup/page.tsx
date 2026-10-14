@@ -10,6 +10,7 @@ import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useAuthOptions } from '@/lib/queries';
 import { AuthCard } from '@/components/auth/AuthCard';
+import { BRAND } from '@/lib/brand';
 
 interface Values {
   organizationName: string;
@@ -46,7 +47,7 @@ export default function SignupPage() {
     <AuthCard subtitle="Set up your company. You become its admin and can invite your team next." width={460}>
       {isLoading ? <Skeleton active /> : null}
       {options && !options.signup ? (
-        <Alert type="info" showIcon title="Sign-up is closed on this server." description="Ask whoever runs your Construction ERP to create your organisation, or sign in if you already have an account." style={{ marginBottom: 16 }} />
+        <Alert type="info" showIcon title="Sign-up is closed on this server." description={`Ask whoever runs your ${BRAND.name} to create your organisation, or sign in if you already have an account.`} style={{ marginBottom: 16 }} />
       ) : null}
       {error && <Alert type="error" showIcon title={error} style={{ marginBottom: 16 }} />}
       {options?.signup ? (

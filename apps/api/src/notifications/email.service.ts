@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { PRODUCT_NAME } from '@erp/shared';
 
 export interface EmailMessage {
   to: string;
@@ -11,12 +12,12 @@ export interface EmailMessage {
  * Outbound email. Provider is picked from the environment:
  *   RESEND_API_KEY set  -> Resend HTTPS API (works on Vercel, no SMTP needed)
  *   otherwise           -> messages are logged, nothing is sent (local development)
- * EMAIL_FROM is the sender, e.g. "Construction ERP <no-reply@yourdomain.com>". EMAIL_DISABLED=true turns email off.
+ * EMAIL_FROM is the sender, e.g. "Nirmaan <no-reply@yourdomain.com>". EMAIL_DISABLED=true turns email off.
  */
 @Injectable()
 export class EmailService {
   private readonly log = new Logger(EmailService.name);
-  private readonly from = process.env.EMAIL_FROM || 'Construction ERP <onboarding@resend.dev>';
+  private readonly from = process.env.EMAIL_FROM || `${PRODUCT_NAME} <onboarding@resend.dev>`;
   private readonly resendKey = process.env.RESEND_API_KEY;
 
   get provider(): 'resend' | 'log' {

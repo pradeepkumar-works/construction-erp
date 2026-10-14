@@ -7,6 +7,7 @@ import { parseDate } from '../common/serialize';
 import { NotificationsService } from './notifications.service';
 import { EmailService, escapeHtml } from './email.service';
 import { JOB_TIMEZONE, todayIn } from './time';
+import { PRODUCT_NAME } from '@erp/shared';
 
 const WEB_URL = (process.env.WEB_URL || '').replace(/\/+$/, '');
 
@@ -138,12 +139,12 @@ export class NotificationJobsService {
     const sections = [...groups.entries()]
       .map(
         ([project, items]) => `
-        <h3 style="margin:20px 0 6px;font-size:15px;color:#0f2a4d">${escapeHtml(project)} <span style="color:#6b7280;font-weight:normal">(${items.length})</span></h3>
+        <h3 style="margin:20px 0 6px;font-size:15px;color:#1C1F1E">${escapeHtml(project)} <span style="color:#6b7280;font-weight:normal">(${items.length})</span></h3>
         <table cellpadding="0" cellspacing="0" style="border-collapse:collapse;width:100%;font-size:14px">
           ${items
             .map(
               (i) => `<tr>
-                <td style="padding:6px 8px;border-bottom:1px solid #eef0f3;white-space:nowrap;color:#1659a8">${escapeHtml(SUBMISSION_TYPE_LABELS[i.type])}</td>
+                <td style="padding:6px 8px;border-bottom:1px solid #eef0f3;white-space:nowrap;color:#8A5A00">${escapeHtml(SUBMISSION_TYPE_LABELS[i.type])}</td>
                 <td style="padding:6px 8px;border-bottom:1px solid #eef0f3">${escapeHtml(i.title)}</td>
                 <td style="padding:6px 8px;border-bottom:1px solid #eef0f3;color:#6b7280;white-space:nowrap">${escapeHtml(i.submittedByName)}</td>
               </tr>`,
@@ -153,14 +154,14 @@ export class NotificationJobsService {
       )
       .join('');
     const link = WEB_URL
-      ? `<p style="margin:24px 0"><a href="${escapeHtml(WEB_URL)}/approvals" style="background:#1659a8;color:#fff;text-decoration:none;padding:10px 18px;border-radius:6px;font-weight:600">Open approvals</a></p>`
+      ? `<p style="margin:24px 0"><a href="${escapeHtml(WEB_URL)}/approvals" style="background:#FFC20E;color:#1C1F1E;font-weight:600;text-decoration:none;padding:10px 18px;border-radius:4px">Open approvals</a></p>`
       : '';
     return `<!doctype html><html><body style="font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#111827;max-width:640px;margin:0 auto;padding:24px">
       <p>Hello ${escapeHtml(name)},</p>
       <p><strong>${pending.length}</strong> site submission${pending.length === 1 ? ' is' : 's are'} waiting for your review.</p>
       ${sections}
       ${link}
-      <p style="color:#6b7280;font-size:12px">Sent by Construction ERP at ${escapeHtml(new Date().toLocaleString('en-IN', { timeZone: JOB_TIMEZONE }))} (${escapeHtml(JOB_TIMEZONE)}).</p>
+      <p style="color:#6b7280;font-size:12px">Sent by ${PRODUCT_NAME} at ${escapeHtml(new Date().toLocaleString('en-IN', { timeZone: JOB_TIMEZONE }))} (${escapeHtml(JOB_TIMEZONE)}).</p>
     </body></html>`;
   }
 }

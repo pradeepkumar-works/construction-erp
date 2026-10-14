@@ -7,18 +7,22 @@ import { AuthProvider, useAuth } from '../src/auth/AuthContext';
 import { NotificationsProvider } from '../src/notifications/NotificationsContext';
 import { OfflineProvider } from '../src/offline';
 import { Loading } from '../src/components';
+import { useFonts, Archivo_700Bold, Archivo_800ExtraBold } from '@expo-google-fonts/archivo';
+import { PRODUCT_NAME } from '@erp/shared';
 import { colors } from '../src/theme';
 
 function RootNavigator() {
   const { user, ready } = useAuth();
-  if (!ready) return <Loading text="Starting Site App…" />;
+  // If the fonts fail to load the app carries on with the system font.
+  const [fontsLoaded, fontError] = useFonts({ Archivo_700Bold, Archivo_800ExtraBold });
+  if (!ready || (!fontsLoaded && !fontError)) return <Loading text={`Starting ${PRODUCT_NAME}…`} />;
   const signedIn = !!user;
   return (
     <Stack
       screenOptions={{
         headerStyle: { backgroundColor: colors.surface },
         headerTintColor: colors.text,
-        headerTitleStyle: { fontWeight: '700' },
+        headerTitleStyle: { fontFamily: 'Archivo_700Bold' },
         headerBackButtonDisplayMode: 'minimal',
         contentStyle: { backgroundColor: colors.bg },
       }}

@@ -83,7 +83,7 @@ export default function HomeScreen() {
 
       <SectionTitle title="New entry" />
       <View style={styles.quick}>
-        <QuickAction icon="trending-up" label="Progress" onPress={() => router.push('/progress/new')} tone={colors.primary} />
+        <QuickAction icon="trending-up" label="Progress" onPress={() => router.push('/progress/new')} tone={colors.brand} iconColor={colors.onBrand} />
         <QuickAction icon="document-text" label="DPR" onPress={() => router.push('/dpr/new')} tone={colors.accent} />
         <QuickAction icon="cube" label="Material" onPress={() => router.push('/material-request/new')} tone={colors.success} />
         {user && canRecordAttendance(user.roleKey) ? <QuickAction icon="people" label="Attendance" onPress={() => router.push('/attendance')} tone={colors.primaryDark} /> : null}
@@ -151,11 +151,11 @@ export default function HomeScreen() {
   );
 }
 
-function QuickAction({ icon, label, onPress, tone }: { icon: keyof typeof Ionicons.glyphMap; label: string; onPress: () => void; tone: string }) {
+function QuickAction({ icon, label, onPress, tone, iconColor = '#fff' }: { icon: keyof typeof Ionicons.glyphMap; label: string; onPress: () => void; tone: string; iconColor?: string }) {
   return (
     <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={`New ${label}`} style={({ pressed }) => [styles.quickBtn, pressed && styles.pressed]}>
       <View style={[styles.quickIcon, { backgroundColor: tone }]}>
-        <Ionicons name={icon} size={24} color="#fff" />
+        <Ionicons name={icon} size={24} color={iconColor} />
       </View>
       <Text style={styles.quickLabel} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
         {label}

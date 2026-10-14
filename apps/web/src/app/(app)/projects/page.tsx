@@ -21,6 +21,7 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { QueryError } from '@/components/common/QueryState';
 import { ProjectStatusTag, ProjectTypeTag } from '@/components/common/StatusTag';
 import { ProjectFormModal } from '@/components/projects/ProjectFormModal';
+import { BRAND } from '@/lib/brand';
 
 export default function ProjectsPage() {
   const { user } = useAuth();
@@ -62,7 +63,7 @@ export default function ProjectsPage() {
     { title: 'Contract Value', dataIndex: 'contractValue', width: 150, align: 'right', className: 'mono', render: (v) => (v ? formatINR(v) : '-'), ...sort('contractValue') },
     { title: 'Progress', dataIndex: 'physicalProgressPct', width: 160, render: (v: number) => <Progress percent={Math.round(v * 10) / 10} size="small" status={progressStatus(v)} /> },
     { title: 'End Date', dataIndex: 'endDate', width: 120, render: (v) => formatDate(v), ...sort('endDate') },
-    { title: 'Pending', dataIndex: 'pendingApprovals', width: 80, align: 'center', fixed: 'right', render: (v: number) => (v > 0 ? <Badge count={v} color="gold" /> : <span className="text-muted">0</span>) },
+    { title: 'Pending', dataIndex: 'pendingApprovals', width: 80, align: 'center', fixed: 'right', render: (v: number) => (v > 0 ? <Badge count={v} color={BRAND.colors.pending} /> : <span className="text-muted">0</span>) },
   ];
 
   return (

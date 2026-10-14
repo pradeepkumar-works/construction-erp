@@ -34,7 +34,7 @@ import { useAuth } from '@/lib/auth';
 import { usePendingApprovals } from '@/lib/queries';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { BRAND } from '@/lib/brand';
-import { BrandMark } from './BrandMark';
+import { BrandMark, Wordmark } from './BrandMark';
 
 const { Header, Sider, Content } = Layout;
 
@@ -49,8 +49,8 @@ function Brand({ user, collapsed }: { user: AuthUser; collapsed: boolean }) {
       <BrandMark />
       {!collapsed && (
         <div style={{ lineHeight: 1.15, whiteSpace: 'nowrap' }}>
-          <div style={{ color: '#fff', fontWeight: 700, fontSize: 15 }}>{BRAND.name}</div>
-          <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11 }}>{user.organizationName}</div>
+          <Wordmark color={BRAND.colors.accent} size={19} />
+          <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11, marginTop: 4 }}>{user.organizationName}</div>
         </div>
       )}
     </div>
@@ -179,13 +179,13 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
               </>
             ) : (
               <>
-                <AuditOutlined style={{ color: BRAND.colors.primary }} />
+                <AuditOutlined style={{ color: BRAND.colors.link }} />
                 <Typography.Text strong>{user.organizationName}</Typography.Text>
               </>
             )}
             {approver && pendingCount > 0 && (
               <Link href="/approvals">
-                <Tag color="gold" style={{ margin: 0 }}>
+                <Tag color="orange" style={{ margin: 0 }}>
                   {pendingCount} pending{isMobile ? '' : ` approval${pendingCount === 1 ? '' : 's'}`}
                 </Tag>
               </Link>
@@ -196,7 +196,7 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
             <Dropdown menu={{ items: userMenu }} trigger={['click']}>
             <Button type="text" style={{ height: 40, padding: '0 8px' }}>
               <Space>
-                <Avatar size="small" style={{ background: BRAND.colors.primary }}>
+                <Avatar size="small" style={{ background: BRAND.colors.accent, color: BRAND.colors.ink, fontWeight: 700 }}>
                   {initials}
                 </Avatar>
                 {!isMobile && (

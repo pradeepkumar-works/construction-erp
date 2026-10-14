@@ -7,11 +7,11 @@ import { formatDateTime } from '@/lib/format';
 
 const COLORS: Record<string, string> = {
   CREATED: 'gray',
-  SUBMITTED: 'gold',
+  SUBMITTED: 'orange',
   APPROVED: 'green',
   REJECTED: 'red',
-  CHANGES_REQUESTED: 'orange',
-  RESUBMITTED: 'gold',
+  CHANGES_REQUESTED: 'purple',
+  RESUBMITTED: 'orange',
   UPDATED: 'blue',
   DELETED: 'red',
 };

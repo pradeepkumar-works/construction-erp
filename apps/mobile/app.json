@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Site App",
+    "name": "Nirmaan",
     "slug": "site-app",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -12,7 +12,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#FFC20E",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -31,14 +31,14 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Site App needs access to your photos to attach site pictures to submissions.",
-          "cameraPermission": "Site App uses the camera to capture site photos."
+          "photosPermission": "Nirmaan needs access to your photos to attach site pictures to submissions.",
+          "cameraPermission": "Nirmaan uses the camera to capture site photos."
         }
       ],
       [
         "expo-notifications",
         {
-          "color": "#1D4ED8",
+          "color": "#FFC20E",
           "defaultChannel": "default"
         }
       ]
@@ -46,7 +46,7 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0F2A4A"
+      "backgroundColor": "#1C1F1E"
     }
   }
 }

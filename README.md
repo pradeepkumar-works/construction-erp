@@ -1,4 +1,4 @@
-# Construction ERP & Site Mobile App
+# Nirmaan: construction ERP & site app
 
 MVP of a construction ERP for road, building and water-supply contractors, with a role-based
 mobile app for site staff. Built multi-tenant from day one so it can be offered to several

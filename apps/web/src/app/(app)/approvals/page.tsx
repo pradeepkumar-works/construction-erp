@@ -19,7 +19,7 @@ import { MachineryDrawer } from '@/components/machinery/MachineryDrawer';
 import { ExpenseDrawer } from '@/components/expenses/ExpenseDrawer';
 import { MeasurementDrawer } from '@/components/measurements/MeasurementDrawer';
 
-const TYPE_COLORS: Record<SubmissionType, string> = { PROGRESS: 'blue', DPR: 'purple', MATERIAL_REQUEST: 'cyan', MACHINERY: 'orange', EXPENSE: 'gold', MEASUREMENT: 'geekblue' };
+const TYPE_COLORS: Record<SubmissionType, string> = { PROGRESS: 'blue', DPR: 'purple', MATERIAL_REQUEST: 'cyan', MACHINERY: 'magenta', EXPENSE: 'default', MEASUREMENT: 'geekblue' };
 
 export default function ApprovalsPage() {
   const { user } = useAuth();
