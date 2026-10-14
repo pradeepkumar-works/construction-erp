@@ -48,6 +48,12 @@ export const INSPECTION_REQUEST_ROLES: RoleKey[] = ['TEAM_LEADER', 'SITE_ENGINEE
 /** Roles that keep the organisation's inspection checklists. */
 export const CHECKLIST_ADMIN_ROLES: RoleKey[] = ['QA_QC_ENGINEER', 'ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER'];
 
+/** Roles that record quality tests (samples, specification, readings): as for inspections. */
+export const QUALITY_TEST_ROLES: RoleKey[] = INSPECTION_REQUEST_ROLES;
+
+/** Roles that raise and close non-conformance reports: QA/QC and approvers. */
+export const NCR_ROLES: RoleKey[] = CHECKLIST_ADMIN_ROLES;
+
 /** Roles that see contract terms and bills: approvers, the QS who prepares bills, and accounts. */
 export const BILLING_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER', 'QUANTITY_SURVEYOR', 'ACCOUNTS_MANAGER'];
 
@@ -66,6 +72,8 @@ export const isCompanyWide = (role: RoleKey) => COMPANY_WIDE_ROLES.includes(role
 export const canApprove = (role: RoleKey) => APPROVER_ROLES.includes(role);
 export const canRequestInspection = (role: RoleKey) => INSPECTION_REQUEST_ROLES.includes(role);
 export const canManageChecklists = (role: RoleKey) => CHECKLIST_ADMIN_ROLES.includes(role);
+export const canRecordTest = (role: RoleKey) => QUALITY_TEST_ROLES.includes(role);
+export const canRaiseNcr = (role: RoleKey) => NCR_ROLES.includes(role);
 export const canEditProjects = (role: RoleKey) => PROJECT_EDITOR_ROLES.includes(role);
 export const canManageUsers = (role: RoleKey) => USER_ADMIN_ROLES.includes(role);
 export const seesGettingStarted = (role: RoleKey) => GETTING_STARTED_ROLES.includes(role);
@@ -97,6 +105,11 @@ export const canRaiseRisk = (role: RoleKey) => RISK_RAISER_ROLES.includes(role);
  * Edit or close a register entry: approvers, the person who raised it and its owner.
  * Deleting one (a wrong entry, not a closed one) is for approvers only.
  */
+/** Record the cause and corrective action of an NCR: the person it is assigned to, site staff and approvers. */
+export const canActOnNcr = (user: SubmissionActor, n: { actionById: string | null }): boolean => n.actionById === user.id || INSPECTION_REQUEST_ROLES.includes(user.roleKey);
+/** Change or delete a test: whoever recorded it, QA/QC and approvers. */
+export const canEditTest = (user: SubmissionActor, t: { createdById: string }): boolean => t.createdById === user.id || NCR_ROLES.includes(user.roleKey);
+
 export const canEditRisk = (user: SubmissionActor, r: { raisedById: string; ownerId: string | null }): boolean =>
   canApprove(user.roleKey) || r.raisedById === user.id || r.ownerId === user.id;
 

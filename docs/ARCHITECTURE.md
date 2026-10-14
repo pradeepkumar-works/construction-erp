@@ -280,6 +280,36 @@ The store register per project, fed by approved material requests:
   activity form fields. Site app: request (`app/inspection/new.tsx`, offline-capable) and `[id].tsx`, where QA/QC
   records the checklist.
 
+## Tests and NCRs
+
+Registers, not approval submissions (`QualityService`, `/quality/...`).
+
+- **Tables.** `QualityTest`: project, optional activity, `testNo` (`TST-<year>-0001`), `kind` (`TestKind`), what was
+  sampled, location, `sampledOn`, the specification as written plus `specMin` / `specMax` / `unit`, `result`
+  (PENDING / PASS / FAIL), remarks, photos (`Attachment.qualityTestId`). `QualityTestReading` (child, no
+  `organizationId`, so no RLS policy of its own): label, `dueOn`, `value`, `testedOn`, in `sortOrder`. A new test gets
+  its kind's readings from `TEST_KIND_DEFAULTS` (cubes: 7 and 28 days after sampling). `Ncr`: `ncrNo`
+  (`NCR-<year>-0001`), title, description, location, `severity`, `status` (OPEN / ACTION_TAKEN / CLOSED), raiser,
+  `actionById` (who rectifies) and `dueDate`, `cause` / `correctiveAction` / `preventiveAction` / `actionAt`,
+  `closedById` / `closedAt` / `closureNote`, optional links to the activity, the inspection and the test, photos
+  (`Attachment.ncrId`).
+- **Result.** `judgeTest` (shared): with a specification the last reading decides (the 28-day cubes, not the 7-day
+  ones); PENDING until it has a value. Without one the result is as recorded. A change to FAIL sends `TEST_FAILED`.
+- **NCR flow.** Raise (QA/QC or an approver, `NCR_ROLES`) → site records the cause and corrective action
+  (`POST /quality/ncrs/:id/action`; the assignee or `INSPECTION_REQUEST_ROLES`, `canActOnNcr`) → QA/QC closes it
+  (`/close`, only from ACTION_TAKEN) or reopens it with a note (`/reopen`). Every step writes `AuditLog` (`NCR`) and
+  notifies (`NCR`). An NCR is deleted only while OPEN with no action, by its raiser or an approver.
+- **Who.** Record tests and readings: `QUALITY_TEST_ROLES` (as for inspections) with project access. The
+  specification, kind and a recorded result: whoever recorded the test, QA/QC or an approver (`canEditTest`).
+- **Reminders.** `NotificationJobsService.testsDue` sends `TEST_DUE` once per reading due on or before the day with
+  no value, to the test's recorder and the project's quality approvers who are on the project
+  (`ProjectAccessService.qualityWatchers`). It runs after the approval digest (same cron), in-process with it, or
+  alone at `jobs/tests-due`.
+- **Clients.** Web: Site → Quality has tabs Inspections / Tests / NCRs / Checklists (`?tab=`, `?id=` opens a test or
+  NCR from a notification); a project's Quality tab shows the first three. Raise NCR from a failed test or an
+  inspection that failed or was sent back. Site app: `app/quality.tsx` (open NCRs, pending tests), `ncr/[id].tsx`
+  (record the action with photos; QA/QC closes or reopens) and `test/[id].tsx` (enter readings).
+
 ## Clients and contracts
 
 - **Tables.** `Client` is the organisation's client master (unique name; department, GSTIN, PAN, GST `stateCode`,

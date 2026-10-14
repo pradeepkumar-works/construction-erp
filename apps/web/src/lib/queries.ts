@@ -58,6 +58,13 @@ import type {
   AttendanceSuggestionsDto,
   AttachmentDto,
   AuditLogDto,
+  NcrDto,
+  NcrSeverity,
+  NcrStatus,
+  QualitySummaryDto,
+  QualityTestDto,
+  TestKind,
+  TestResult,
   BoqItemDto,
   CompanyDashboard,
   DailyReportDto,
@@ -484,6 +491,67 @@ export const useChecklists = () =>
   useQuery({
     queryKey: ['inspections', 'checklists'],
     queryFn: async () => (await api.get<ChecklistTemplateDto[]>('/inspections/checklists')).data,
+  });
+
+export interface TestFilters extends PageParams {
+  projectId?: string;
+  kind?: TestKind;
+  result?: TestResult;
+  overdue?: boolean;
+  from?: string;
+  to?: string;
+}
+
+export const useQualityTests = (filters?: TestFilters) =>
+  useQuery({
+    queryKey: ['quality', 'tests', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<QualityTestDto>>('/quality/tests', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+  });
+
+export const useQualityTest = (id: string | undefined) =>
+  useQuery({
+    queryKey: ['quality', 'tests', 'detail', id],
+    queryFn: async () => (await api.get<QualityTestDto>(`/quality/tests/${id}`)).data,
+    enabled: !!id,
+  });
+
+export interface NcrFilters extends PageParams {
+  projectId?: string;
+  status?: NcrStatus;
+  severity?: NcrSeverity;
+  active?: boolean;
+  overdue?: boolean;
+  mine?: boolean;
+  qualityTestId?: string;
+  inspectionId?: string;
+}
+
+export const useNcrs = (filters?: NcrFilters) =>
+  useQuery({
+    queryKey: ['quality', 'ncrs', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<NcrDto>>('/quality/ncrs', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+  });
+
+export const useNcr = (id: string | undefined) =>
+  useQuery({
+    queryKey: ['quality', 'ncrs', 'detail', id],
+    queryFn: async () => (await api.get<NcrDto>(`/quality/ncrs/${id}`)).data,
+    enabled: !!id,
+  });
+
+export const useNcrHistory = (id: string | undefined) =>
+  useQuery({
+    queryKey: ['quality', 'ncrs', 'history', id],
+    queryFn: async () => (await api.get<AuditLogDto[]>(`/quality/ncrs/${id}/history`)).data,
+    enabled: !!id,
+  });
+
+export const useQualitySummary = (projectId?: string) =>
+  useQuery({
+    queryKey: ['quality', 'summary', projectId ?? null],
+    queryFn: async () => (await api.get<QualitySummaryDto>('/quality/summary', { params: clean({ projectId }) })).data,
   });
 
 export interface BillFilters extends PageParams {

@@ -45,6 +45,9 @@ export const NOTIFICATION_TYPES = [
   'APPROVAL_DIGEST',
   'LOW_STOCK',
   'RISK_RAISED',
+  'TEST_DUE',
+  'TEST_FAILED',
+  'NCR',
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 

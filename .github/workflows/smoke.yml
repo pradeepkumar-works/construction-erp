@@ -357,6 +357,31 @@ jobs:
             -d '{"decision":"REQUEST_CHANGES","results":[{"result":"FAIL","remark":"smoke"}]}' | jq -r '"\(.status) \(.checklist[0].result)"')
           echo "after inspection: $STATUS"; [ "$STATUS" = "CHANGES_REQUESTED FAIL" ]
           curl -sf -X DELETE "$API_URL/inspections/$ID" -H "$QA" | jq -c .
+      - name: Tests and NCRs
+        run: |
+          set -e
+          login() { curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' -d "{\"email\":\"$1\",\"password\":\"password123\"}" | jq -r .accessToken; }
+          QA="authorization: Bearer $(login qaqc@demo.com)"; ADMIN="authorization: Bearer $(login admin@demo.com)"
+          cleanup() {
+            for X in $(curl -sf "$API_URL/quality/ncrs?q=Smoke%20test%20NCR&status=OPEN&pageSize=50" -H "$ADMIN" | jq -r '.items[].id'); do curl -sf -X DELETE "$API_URL/quality/ncrs/$X" -H "$ADMIN" > /dev/null; done
+            for X in $(curl -sf "$API_URL/quality/tests?q=Smoke%20test%20cubes&pageSize=50" -H "$ADMIN" | jq -r '.items[].id'); do curl -sf -X DELETE "$API_URL/quality/tests/$X" -H "$ADMIN" > /dev/null; done
+          }
+          cleanup
+          curl -sf "$API_URL/quality/summary" -H "$QA" | jq -c .
+          PROJECT=$(curl -sf "$API_URL/projects" -H "$QA" | jq -r '.items[0].id')
+          T=$(curl -sf -X POST "$API_URL/quality/tests" -H "$QA" -H 'content-type: application/json' \
+            -d "{\"projectId\":\"$PROJECT\",\"kind\":\"CONCRETE_CUBE\",\"title\":\"Smoke test cubes\",\"sampledOn\":\"$(date -u +%F)\",\"specMin\":\"25\"}")
+          ID=$(echo "$T" | jq -r .id); R28=$(echo "$T" | jq -r '.readings[1].id')
+          echo "$T" | jq -c '{testNo, result, readings: [.readings[].label]}'
+          RESULT=$(curl -sf -X POST "$API_URL/quality/tests/$ID/readings/$R28" -H "$QA" -H 'content-type: application/json' -d '{"value":"20"}' | jq -r .result)
+          echo "after a 28-day result of 20 against 25: $RESULT"; [ "$RESULT" = "FAIL" ]
+          N=$(curl -sf -X POST "$API_URL/quality/ncrs" -H "$QA" -H 'content-type: application/json' \
+            -d "{\"projectId\":\"$PROJECT\",\"title\":\"Smoke test NCR\",\"description\":\"smoke\",\"qualityTestId\":\"$ID\"}" | jq -r '"\(.id) \(.status) \(.testNo != null)"')
+          echo "NCR: $N"; [ "${N#* }" = "OPEN true" ]
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/quality/ncrs/${N%% *}/close" -H "$QA" -H 'content-type: application/json' -d '{}')
+          echo "closing before the action is recorded: $code"; [ "$code" = "400" ]
+          curl -sf -X DELETE "$API_URL/quality/ncrs/${N%% *}" -H "$QA" | jq -c .
+          curl -sf -X DELETE "$API_URL/quality/tests/$ID" -H "$QA" | jq -c .
       - name: Project cost view
         run: |
           set -e

@@ -87,6 +87,9 @@ export const NOTIFICATION_COLORS: Record<NotificationType, string> = {
   APPROVAL_DIGEST: 'purple',
   LOW_STOCK: 'volcano',
   RISK_RAISED: 'magenta',
+  TEST_DUE: 'geekblue',
+  TEST_FAILED: 'red',
+  NCR: 'volcano',
 };
 
 /** "2 min ago", "3 h ago", "4 d ago", then a date. */

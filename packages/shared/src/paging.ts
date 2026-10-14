@@ -31,6 +31,8 @@ export const LIST_SORT_FIELDS = {
   workOrders: ['woDate', 'woNo', 'value', 'status', 'project', 'vendor', 'createdAt'],
   subcontractBills: ['billDate', 'grossAmount', 'netPayable', 'dueDate', 'status', 'project', 'vendor', 'createdAt'],
   inspections: ['date', 'inspectionNo', 'createdAt', 'submittedAt', 'status', 'project', 'activity', 'submittedBy'],
+  qualityTests: ['sampledOn', 'testNo', 'kind', 'result', 'project', 'createdAt'],
+  ncrs: ['raisedOn', 'ncrNo', 'severity', 'status', 'dueDate', 'project', 'createdAt'],
   risks: ['riskNo', 'score', 'status', 'kind', 'category', 'dueDate', 'project', 'owner', 'createdAt', 'updatedAt'],
 } as const;
 
@@ -49,6 +51,8 @@ export type MeasurementSortField = (typeof LIST_SORT_FIELDS.measurements)[number
 export type ExpenseSortField = (typeof LIST_SORT_FIELDS.expenses)[number];
 export type RiskSortField = (typeof LIST_SORT_FIELDS.risks)[number];
 export type InspectionSortField = (typeof LIST_SORT_FIELDS.inspections)[number];
+export type QualityTestSortField = (typeof LIST_SORT_FIELDS.qualityTests)[number];
+export type NcrSortField = (typeof LIST_SORT_FIELDS.ncrs)[number];
 export type BillSortField = (typeof LIST_SORT_FIELDS.bills)[number];
 export type ReceiptSortField = (typeof LIST_SORT_FIELDS.receipts)[number];
 export type VendorPaymentSortField = (typeof LIST_SORT_FIELDS.vendorPayments)[number];

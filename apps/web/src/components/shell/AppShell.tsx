@@ -108,7 +108,7 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
           link('/attendance', 'Attendance', ScheduleOutlined),
           link('/progress', 'Progress Entries', LineChartOutlined),
           link('/measurements', 'Measurement Book', CalculatorOutlined),
-          link('/inspections', 'Inspections', SafetyOutlined),
+          link('/inspections', 'Quality', SafetyOutlined),
           link('/expenses', 'Site Expenses', WalletOutlined),
           link('/risks', 'Delays & Risks', AlertOutlined),
         ],

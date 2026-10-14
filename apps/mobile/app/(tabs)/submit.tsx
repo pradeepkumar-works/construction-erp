@@ -23,6 +23,8 @@ const MEASUREMENT = { href: '/measurement/new', icon: 'resize' as const, tone: '
 
 const INSPECTION = { href: '/inspection/new', icon: 'shield-checkmark' as const, tone: colors.warning, title: 'Request inspection', text: 'Work ready for QA/QC to check against the checklist, with photos.' };
 
+const QUALITY = { href: '/quality', icon: 'flask' as const, tone: '#0e7490', title: 'Tests & NCRs', text: 'Enter cube and other test results; record the action taken on an NCR.' };
+
 const RISK = { href: '/risks', icon: 'alert-circle' as const, tone: colors.danger, title: 'Delays & risks', text: 'Record work held up (days lost, who caused it) or raise a risk; see what is open.' };
 
 const STOCK = [
@@ -39,7 +41,7 @@ export default function SubmitHub() {
     ...(user && canLogMachinery(user.roleKey) ? [MACHINERY] : []),
     ...(user && canSubmitExpense(user.roleKey) ? [EXPENSE] : []),
     ...(user && canMeasure(user.roleKey) ? [MEASUREMENT] : []),
-    ...(user && canRequestInspection(user.roleKey) ? [INSPECTION] : []),
+    ...(user && canRequestInspection(user.roleKey) ? [INSPECTION, QUALITY] : []),
     ...(user && canKeepStock(user.roleKey) ? STOCK : []),
     ...(user && canRaiseRisk(user.roleKey) ? [RISK] : []),
   ];

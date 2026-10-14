@@ -75,6 +75,9 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   APPROVAL_DIGEST: 'Pending approvals',
   LOW_STOCK: 'Low stock',
   RISK_RAISED: 'Delay / risk raised',
+  TEST_DUE: 'Test due',
+  TEST_FAILED: 'Test failed',
+  NCR: 'Non-conformance',
 };
 
 export const STOCK_ENTRY_TYPE_LABELS: Record<StockEntryType, string> = {

@@ -53,7 +53,8 @@ production build; Expo Go on Android cannot receive remote push.
 - **Scheduled jobs on Vercel**: `apps/api/vercel.json` declares two crons, `03:30 UTC` (09:00 IST)
   for the approvals digest and `11:30 UTC` (17:00 IST) for the DPR reminder. Vercel calls
   `GET /api/notifications/jobs/...` with `Authorization: Bearer $CRON_SECRET`; set `CRON_SECRET` in
-  the project's environment variables (Hobby plans allow once-a-day schedules, which these are).
+  the project's environment variables (Hobby plans allow once-a-day schedules, which these are). The digest run
+  also sends the quality test-due reminders, so no third cron is needed.
   Run a job by hand with `curl -H "Authorization: Bearer $CRON_SECRET" $API_URL/notifications/jobs/dpr-reminder`.
 - **Web on Vercel**: root directory `apps/web`; build command builds `packages/shared` then `next build`.
 - **Git auto-deploy**: both Vercel projects are linked to `pradeepkumar-works/construction-erp`.

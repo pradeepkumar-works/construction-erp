@@ -49,6 +49,10 @@ contractors after the first client is live.
 - Inspections: site requests an inspection of an activity at a location with photos; QA/QC checks it against the
   checklist point by point and passes it, fails it or asks for re-inspection. Checklists per organisation, a default
   one per activity, and hold points that keep the activity's progress from approval until an inspection passes.
+- Tests and NCRs: material and field tests against their specification (concrete cubes get 7 and 28-day readings,
+  reminded when due; compaction, soil, bricks, steel and others one result), pass or fail decided by the last
+  reading. Non-conformance reports raised by QA/QC (from a failed test or inspection), the cause and corrective
+  action recorded by site, then closed or reopened by QA/QC. Web: Site → Quality; site app: Tests & NCRs.
 - Project cost: approved site expenses, material issued at the item's standard rate, approved machinery logs
   at the hire rate and attendance at each trade's daily rate, against the value of approved progress (and of
   approved measurements), by project and month, with margin. For approvers and accounts.
@@ -155,6 +159,9 @@ material request; tap "Edit and resubmit", fix them and send them back to the PM
 | Delay recorded, or a risk scored 15+ raised | the project's approvers and the owner | in-app, push |
 | Daily "DPR not submitted" reminder (for active projects with no DPR today) | Site Engineers and Team Leaders who are project members (the PM if none) | in-app, push |
 | Daily digest of pending approvals | Admin, Management and Project Managers with something waiting | in-app, push, email |
+| Test reading due (cubes at 7 and 28 days, other tests' result) | whoever recorded the test and the QA/QC on the project | in-app, push |
+| Test failed | the project's QA/QC, its PM and whoever recorded it | in-app, push |
+| NCR raised, action taken, closed or reopened | the person to rectify it and the PM (major and critical: the approvers too); the raiser on action | in-app, push |
 
 - API: `GET /api/notifications` (list + unread count), `POST /api/notifications/:id/read`,
   `POST /api/notifications/read-all`, `POST`/`DELETE /api/notifications/push-tokens`.
@@ -163,6 +170,8 @@ material request; tap "Edit and resubmit", fix them and send them back to the PM
   (`Authorization: Bearer <secret>`). On Vercel they are scheduled in `apps/api/vercel.json`
   (09:00 and 17:00 IST); elsewhere set `NOTIFICATION_JOBS_INPROCESS=true` or call them from any
   scheduler. Both are idempotent per day. `?date=YYYY-MM-DD` runs a job for another day.
+  The approval-digest run also sends the test-due reminders (`GET /api/notifications/jobs/tests-due` runs them
+  alone); each reading is reminded once.
 - Email goes through the Cogitrex mail service (`communication.cogitrex.com`, sending from
   `notifications@cogitrex.com`) when `MAIL_API_KEY` is set, or through [Resend](https://resend.com) when
   `RESEND_API_KEY` is set (`EMAIL_FROM` is the sender, `WEB_URL` the link in the mail); without a key the
