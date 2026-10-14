@@ -76,6 +76,7 @@ export function ActivitiesTab({ projectId, members, project }: { projectId: stri
           {
             title: '',
             key: 'actions',
+            fixed: 'right' as const,
             width: 90,
             render: (_: unknown, r: ActivityDto) => (
               <Space size={4}>

@@ -43,10 +43,11 @@ export function DprTable({
     { title: 'Machinery', key: 'mach', width: 100, align: 'center', render: (_, r) => r.machinery.length },
     { title: 'Photos', dataIndex: 'attachments', width: 140, render: (a) => <PhotoThumbs attachments={a} /> },
     { title: 'Submitted by', dataIndex: 'submittedByName', width: 140, ...sort('submittedBy') },
-    { title: 'Status', dataIndex: 'status', width: 140, render: (s) => <StatusTag status={s} />, ...sort('status') },
+    { title: 'Status', fixed: 'right' as const, dataIndex: 'status', width: 140, render: (s) => <StatusTag status={s} />, ...sort('status') },
     {
       title: '',
       key: 'actions',
+      fixed: 'right' as const,
       width: 190,
       render: (_, r) => (
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -67,7 +68,7 @@ export function DprTable({
       dataSource={data}
       size="middle"
       {...table}
-      scroll={{ x: showProject ? 1300 : 1100 }}
+      scroll={{ x: showProject ? 1400 : 1200 }}
     />
   );
 }

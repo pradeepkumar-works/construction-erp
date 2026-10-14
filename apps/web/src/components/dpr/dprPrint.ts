@@ -1,6 +1,7 @@
 import type { DailyReportDto } from '@erp/shared';
 import { WEATHER_LABELS } from '@erp/shared';
 import { fileUrl } from '@/lib/api';
+import { BRAND } from '@/lib/brand';
 import { formatDate, formatDateTime } from '@/lib/format';
 
 const esc = (v: unknown) =>
@@ -27,14 +28,14 @@ export function buildDprPrintHtml(d: DailyReportDto, orgName: string): string {
   @page { size: A4; margin: 16mm; }
   * { box-sizing: border-box; }
   body { font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #111; font-size: 12px; margin: 0; padding: 24px; }
-  .head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0f2a4d; padding-bottom: 10px; margin-bottom: 14px; }
-  .brand { font-size: 18px; font-weight: 700; color: #0f2a4d; }
+  .head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid ${BRAND.colors.ink}; padding-bottom: 10px; margin-bottom: 14px; }
+  .brand { font-size: 18px; font-weight: 700; color: ${BRAND.colors.ink}; }
   .org { color: #555; font-size: 12px; }
   h1 { font-size: 16px; margin: 0 0 2px; }
   .status { display: inline-block; padding: 2px 8px; border: 1px solid #999; border-radius: 10px; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
   .meta { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px 16px; margin-bottom: 14px; }
   .meta div b { display: block; font-size: 10px; color: #666; text-transform: uppercase; letter-spacing: .04em; }
-  h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: #0f2a4d; border-bottom: 1px solid #ddd; margin: 14px 0 6px; padding-bottom: 3px; }
+  h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: ${BRAND.colors.ink}; border-bottom: 1px solid #ddd; margin: 14px 0 6px; padding-bottom: 3px; }
   table { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
   th, td { border: 1px solid #ccc; padding: 4px 6px; text-align: left; vertical-align: top; }
   th { background: #f1f4f8; font-size: 11px; }
@@ -52,7 +53,7 @@ export function buildDprPrintHtml(d: DailyReportDto, orgName: string): string {
 </style></head>
 <body>
   <div class="head">
-    <div><div class="brand">Construction ERP</div><div class="org">${esc(orgName)}</div></div>
+    <div><div class="brand">${esc(BRAND.name)}</div><div class="org">${esc(orgName)}</div></div>
     <div style="text-align:right"><h1>Daily Progress Report</h1><div>${esc(formatDate(d.date))}</div><div style="margin-top:4px" class="status">${esc(status)}</div></div>
   </div>
   <div class="meta">
@@ -90,7 +91,7 @@ export function buildDprPrintHtml(d: DailyReportDto, orgName: string): string {
   ${photos ? `<h2>Site photos</h2><div class="photos">${photos}</div>` : ''}
 
   <div class="sign"><div>Prepared by: ${esc(d.submittedByName)}</div><div>Reviewed by: ${esc(d.reviewedByName ?? '')}</div></div>
-  <div class="foot">Generated from Construction ERP on ${esc(formatDateTime(new Date().toISOString()))} · Report ID ${esc(d.id)}</div>
+  <div class="foot">Generated from ${esc(BRAND.name)} on ${esc(formatDateTime(new Date().toISOString()))} · Report ID ${esc(d.id)}</div>
   <script>
     window.addEventListener('load', function () {
       var imgs = Array.prototype.slice.call(document.images);

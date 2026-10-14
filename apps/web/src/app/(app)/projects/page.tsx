@@ -47,7 +47,7 @@ export default function ProjectsPage() {
       width: 320,
       render: (_, p) => (
         <div>
-          <Link href={`/projects/${p.id}`} style={{ color: '#1659a8', fontWeight: 600 }}>
+          <Link href={`/projects/${p.id}`} className="link-strong">
             {p.name}
           </Link>
           <div className="text-muted" style={{ fontSize: 12 }}>
@@ -62,7 +62,7 @@ export default function ProjectsPage() {
     { title: 'Contract Value', dataIndex: 'contractValue', width: 150, align: 'right', className: 'mono', render: (v) => (v ? formatINR(v) : '-'), ...sort('contractValue') },
     { title: 'Progress', dataIndex: 'physicalProgressPct', width: 160, render: (v: number) => <Progress percent={Math.round(v * 10) / 10} size="small" status={progressStatus(v)} /> },
     { title: 'End Date', dataIndex: 'endDate', width: 120, render: (v) => formatDate(v), ...sort('endDate') },
-    { title: 'Pending', dataIndex: 'pendingApprovals', width: 80, align: 'center', render: (v: number) => (v > 0 ? <Badge count={v} color="gold" /> : <span className="text-muted">0</span>) },
+    { title: 'Pending', dataIndex: 'pendingApprovals', width: 80, align: 'center', fixed: 'right', render: (v: number) => (v > 0 ? <Badge count={v} color="gold" /> : <span className="text-muted">0</span>) },
   ];
 
   return (

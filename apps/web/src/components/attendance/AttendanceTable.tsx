@@ -60,6 +60,7 @@ export function AttendanceTable({
     { title: 'Recorded by', dataIndex: 'recordedByName', width: 150, ...sort('recordedBy') },
     {
       title: 'DPR',
+      fixed: 'right' as const,
       key: 'dpr',
       width: 170,
       render: (_, r) => (
@@ -76,6 +77,7 @@ export function AttendanceTable({
     {
       title: '',
       key: 'actions',
+      fixed: 'right' as const,
       width: 90,
       render: (_, r) => (
         <Button size="small" onClick={() => onOpen(r)}>

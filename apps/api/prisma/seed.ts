@@ -3,6 +3,7 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { deflateSync } from 'zlib';
+import { dprTitle, progressTitle, titleDate } from '../src/common/submission-titles';
 
 const prisma = new PrismaClient();
 const D = (v: string | number) => new Prisma.Decimal(v);
@@ -231,7 +232,7 @@ async function main() {
         data: {
           organizationId: org.id, userId: approved.submittedById, type: 'SUBMISSION_APPROVED', projectId: project.id, entityType: 'PROGRESS', entityId: approved.id,
           title: 'Progress entry approved',
-          body: `${approved.reviewedBy.fullName} approved ${approved.activity.name}: ${approved.quantity.toString()} ${approved.activity.unit} on ${approved.date.toISOString().slice(0, 10)} on ${project.name}. Note: Verified at site`,
+          body: `${approved.reviewedBy.fullName} approved ${progressTitle(approved.activity.name, approved.quantity.toString(), approved.activity.unit, approved.date)} on ${project.name}. Note: Verified at site`,
           createdAt: approved.reviewedAt ?? new Date(), readAt: approved.reviewedAt ?? new Date(),
         },
       });
@@ -241,7 +242,7 @@ async function main() {
         data: {
           organizationId: org.id, userId: project.projectManagerId, type: 'SUBMISSION_SUBMITTED', projectId: project.id, entityType: 'DPR', entityId: submitted.id,
           title: 'DPR awaiting your approval',
-          body: `${submitted.submittedBy.fullName} submitted DPR for ${submitted.date.toISOString().slice(0, 10)} on ${project.name}.`,
+          body: `${submitted.submittedBy.fullName} submitted ${dprTitle(submitted.date)} on ${project.name}.`,
           createdAt: submitted.submittedAt ?? new Date(),
         },
       });
@@ -480,7 +481,7 @@ async function seedMachinery(organizationId: string) {
           await prisma.notification.create({
             data: {
               organizationId, userId: logger, type: 'SUBMISSION_CHANGES_REQUESTED', projectId: project.id, entityType: 'MACHINERY', entityId: log.id, createdAt: day(0),
-              title: 'Machinery log needs changes', body: `The PM requested changes to ${eq.code} ${eq.name} on ${day(-i).toISOString().slice(0, 10)}. Note: ${log.reviewNote}`,
+              title: 'Machinery log needs changes', body: `The PM requested changes to ${eq.code} ${eq.name} on ${titleDate(day(-i))}. Note: ${log.reviewNote}`,
             },
           });
       }

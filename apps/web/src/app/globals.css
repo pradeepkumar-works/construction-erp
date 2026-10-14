@@ -3,7 +3,7 @@ body {
   margin: 0;
   padding: 0;
   min-height: 100%;
-  background: #f3f5f8;
+  background: var(--brand-canvas, #f3f5f8);
 }
 
 * {
@@ -42,7 +42,7 @@ a {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(circle at 20% 20%, #1659a8 0%, #0f2a4d 55%, #091a30 100%);
+  background: radial-gradient(circle at 20% 20%, var(--brand-primary) 0%, var(--brand-ink) 55%, var(--brand-ink-deep) 100%);
   padding: 24px;
 }
 
@@ -53,11 +53,22 @@ a {
   width: 34px;
   height: 34px;
   border-radius: 8px;
-  background: linear-gradient(135deg, #f59e0b, #d97706);
+  background: linear-gradient(135deg, var(--brand-accent), var(--brand-accent-deep));
   color: #fff;
   font-weight: 700;
   font-size: 16px;
   flex: 0 0 auto;
+  letter-spacing: 0.02em;
+}
+
+/* Primary links inside tables and cards (Next <Link> inherits colour from the reset above). */
+.link-strong {
+  color: var(--brand-primary);
+  font-weight: 600;
+}
+
+.link-strong:hover {
+  text-decoration: underline;
 }
 
 .text-muted {
@@ -72,4 +83,11 @@ a {
   .page-container {
     padding: 16px;
   }
+}
+
+.ant-menu-dark .ant-menu-item-group-title {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  padding-top: 14px;
 }

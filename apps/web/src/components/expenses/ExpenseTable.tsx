@@ -83,10 +83,11 @@ export function ExpenseTable({
         ),
     },
     { title: 'Submitted by', dataIndex: 'submittedByName', width: 140, ...sort('submittedBy') },
-    { title: 'Status', dataIndex: 'status', width: 140, render: (s) => <StatusTag status={s} />, ...sort('status') },
+    { title: 'Status', fixed: 'right' as const, dataIndex: 'status', width: 140, render: (s) => <StatusTag status={s} />, ...sort('status') },
     {
       title: '',
       key: 'actions',
+      fixed: 'right' as const,
       width: 190,
       render: (_, r) => (
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -99,5 +100,5 @@ export function ExpenseTable({
       ),
     },
   ];
-  return <Table<ExpenseDto> rowKey="id" loading={loading} columns={columns} dataSource={data} size="middle" {...table} scroll={{ x: showProject ? 1550 : 1350 }} />;
+  return <Table<ExpenseDto> rowKey="id" loading={loading} columns={columns} dataSource={data} size="middle" {...table} scroll={{ x: showProject ? 1700 : 1500 }} />;
 }

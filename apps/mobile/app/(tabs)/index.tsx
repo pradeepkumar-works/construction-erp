@@ -69,7 +69,7 @@ export default function HomeScreen() {
   };
 
   return (
-    <Screen refreshing={refreshing} onRefresh={refresh}>
+    <Screen refreshing={refreshing} onRefresh={refresh} edges={['top', 'left', 'right', 'bottom']}>
       <View style={styles.topRow}>
         <View style={styles.flex}>
           <Text style={typography.h1}>
@@ -81,11 +81,11 @@ export default function HomeScreen() {
       </View>
       <OfflineBanner />
 
-      <SectionTitle title="Quick actions" />
+      <SectionTitle title="New entry" />
       <View style={styles.quick}>
-        <QuickAction icon="trending-up" label="New Progress" onPress={() => router.push('/progress/new')} tone={colors.primary} />
-        <QuickAction icon="document-text" label="New DPR" onPress={() => router.push('/dpr/new')} tone={colors.accent} />
-        <QuickAction icon="cube" label="New Material" onPress={() => router.push('/material-request/new')} tone={colors.success} />
+        <QuickAction icon="trending-up" label="Progress" onPress={() => router.push('/progress/new')} tone={colors.primary} />
+        <QuickAction icon="document-text" label="DPR" onPress={() => router.push('/dpr/new')} tone={colors.accent} />
+        <QuickAction icon="cube" label="Material" onPress={() => router.push('/material-request/new')} tone={colors.success} />
         {user && canRecordAttendance(user.roleKey) ? <QuickAction icon="people" label="Attendance" onPress={() => router.push('/attendance')} tone={colors.primaryDark} /> : null}
         {/* Four tiles fit a phone row: the store manager gets Stock where site supervisors get Attendance. */}
         {user && canKeepStock(user.roleKey) && !canRecordAttendance(user.roleKey) ? <QuickAction icon="file-tray-stacked" label="Stock" onPress={() => router.push('/stock')} tone={colors.info} /> : null}
@@ -153,11 +153,11 @@ export default function HomeScreen() {
 
 function QuickAction({ icon, label, onPress, tone }: { icon: keyof typeof Ionicons.glyphMap; label: string; onPress: () => void; tone: string }) {
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.quickBtn, pressed && styles.pressed]}>
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={`New ${label}`} style={({ pressed }) => [styles.quickBtn, pressed && styles.pressed]}>
       <View style={[styles.quickIcon, { backgroundColor: tone }]}>
         <Ionicons name={icon} size={24} color="#fff" />
       </View>
-      <Text style={styles.quickLabel} numberOfLines={2}>
+      <Text style={styles.quickLabel} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
         {label}
       </Text>
     </Pressable>
@@ -169,7 +169,7 @@ const styles = StyleSheet.create({
   topRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   sub: { marginTop: 2, marginBottom: spacing.sm },
   quick: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg },
-  quickBtn: { flex: 1, backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md, alignItems: 'center', borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, minHeight: 96, justifyContent: 'center' },
+  quickBtn: { flex: 1, backgroundColor: colors.surface, borderRadius: radius.lg, paddingVertical: spacing.md, paddingHorizontal: spacing.xs, alignItems: 'center', borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, minHeight: 96, justifyContent: 'center' },
   quickIcon: { width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm },
   quickLabel: { fontSize: 13, fontWeight: '700', color: colors.text, textAlign: 'center' },
   pressed: { opacity: 0.8 },

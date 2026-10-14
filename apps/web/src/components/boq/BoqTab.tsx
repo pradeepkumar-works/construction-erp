@@ -15,6 +15,7 @@ import { formatINR, formatQty, toNumber } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { BoqFormModal } from './BoqFormModal';
 import { BoqImportModal, downloadBoqTemplate } from './BoqImportModal';
+import { BRAND } from '@/lib/brand';
 
 export function BoqTab({ projectId }: { projectId: string }) {
   const { user } = useAuth();
@@ -90,7 +91,7 @@ export function BoqTab({ projectId }: { projectId: string }) {
         return (
           <div>
             <div style={{ textAlign: 'right' }}>{formatQty(v)}</div>
-            <Progress percent={pct} size="small" showInfo={false} strokeColor={pct >= 100 ? '#52c41a' : '#1659a8'} />
+            <Progress percent={pct} size="small" showInfo={false} strokeColor={pct >= 100 ? '#52c41a' : BRAND.colors.primary} />
           </div>
         );
       },

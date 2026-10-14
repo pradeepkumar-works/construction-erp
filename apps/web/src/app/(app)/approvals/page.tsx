@@ -43,13 +43,13 @@ export default function ApprovalsPage() {
   }, [data]);
 
   const columns: TableProps<PendingApprovalDto>['columns'] = [
-    { title: 'Type', dataIndex: 'type', width: 170, render: (t: SubmissionType) => <Tag color={TYPE_COLORS[t]} style={{ margin: 0 }}>{SUBMISSION_TYPE_LABELS[t]}</Tag> },
+    { title: 'Type', dataIndex: 'type', width: 150, render: (t: SubmissionType) => <Tag color={TYPE_COLORS[t]} style={{ margin: 0 }}>{SUBMISSION_TYPE_LABELS[t]}</Tag> },
     { title: 'Item', dataIndex: 'title', render: (v, r) => <Typography.Link onClick={() => setOpen({ type: r.type, id: r.id })}>{v}</Typography.Link> },
-    { title: 'Project', dataIndex: 'projectName', width: 280, ellipsis: true, render: (v, r) => <Link href={`/projects/${r.projectId}`}>{v}</Link> },
-    { title: 'Amount', dataIndex: 'amount', width: 130, align: 'right', render: (v: string | null) => (v === null ? <span className="text-muted">-</span> : <span className="mono">{formatINR(v)}</span>) },
-    { title: 'Submitted by', dataIndex: 'submittedByName', width: 160 },
-    { title: 'Submitted', dataIndex: 'submittedAt', width: 170, render: (v) => formatDateTime(v), sorter: (a, b) => a.submittedAt.localeCompare(b.submittedAt), defaultSortOrder: 'ascend' },
-    { title: '', key: 'a', width: 110, render: (_, r) => <Button type="primary" size="small" onClick={() => setOpen({ type: r.type, id: r.id })}>Review</Button> },
+    { title: 'Project', dataIndex: 'projectName', width: 200, ellipsis: { showTitle: true }, render: (v, r) => <Link href={`/projects/${r.projectId}`}>{v}</Link> },
+    { title: 'Amount', dataIndex: 'amount', width: 120, align: 'right', render: (v: string | null) => (v === null ? <span className="text-muted">-</span> : <span className="mono">{formatINR(v)}</span>) },
+    { title: 'Submitted by', dataIndex: 'submittedByName', width: 140 },
+    { title: 'Submitted', dataIndex: 'submittedAt', width: 150, render: (v) => formatDateTime(v), sorter: (a, b) => a.submittedAt.localeCompare(b.submittedAt), defaultSortOrder: 'ascend' },
+    { title: '', key: 'a', width: 96, fixed: 'right', render: (_, r) => <Button type="primary" size="small" onClick={() => setOpen({ type: r.type, id: r.id })}>Review</Button> },
   ];
 
   return (
@@ -95,7 +95,7 @@ export default function ApprovalsPage() {
           dataSource={filtered}
           size="middle"
           pagination={{ pageSize: 20, hideOnSinglePage: true }}
-          scroll={{ x: 1000 }}
+          scroll={{ x: 1120 }}
           locale={{ emptyText: approver ? 'Nothing waiting for approval. Great work!' : 'No pending approvals' }}
         />
       </Card>

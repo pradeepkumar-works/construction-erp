@@ -77,10 +77,11 @@ export function RiskTable({
       ...sort('dueDate'),
       render: (v, r) => (v ? <span style={r.overdue ? { color: '#cf1322', fontWeight: 600 } : undefined}>{formatDate(v)}{r.overdue ? ' (overdue)' : ''}</span> : '-'),
     },
-    { title: 'Status', dataIndex: 'status', width: 110, ...sort('status'), render: (s) => <RiskStatusTag status={s} /> },
+    { title: 'Status', fixed: 'right' as const, dataIndex: 'status', width: 110, ...sort('status'), render: (s) => <RiskStatusTag status={s} /> },
     {
       title: '',
       key: 'actions',
+      fixed: 'right' as const,
       width: 130,
       render: (_, r) => (
         <div style={{ display: 'flex', gap: 8 }}>

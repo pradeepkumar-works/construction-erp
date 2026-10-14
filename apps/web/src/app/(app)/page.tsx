@@ -12,17 +12,20 @@ import {
   ProjectOutlined,
 } from '@ant-design/icons';
 import type { ProjectSummary } from '@erp/shared';
-import { PROJECT_TYPE_LABELS } from '@erp/shared';
+import { PROJECT_TYPE_LABELS, isCompanyWide, mayApprove } from '@erp/shared';
 import { useCompanyDashboard } from '@/lib/queries';
 import { formatINR, formatINRCompact, formatDate, progressStatus } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Loading, QueryError } from '@/components/common/QueryState';
 import { ProjectStatusTag, ProjectTypeTag } from '@/components/common/StatusTag';
 import { useAuth } from '@/lib/auth';
+import { BRAND } from '@/lib/brand';
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const { data, isLoading, error, refetch } = useCompanyDashboard();
+  const companyWide = !!user && isCompanyWide(user.roleKey);
+  const approver = !!user && mayApprove(user);
 
   const columns: TableProps<ProjectSummary>['columns'] = [
     {
@@ -32,7 +35,7 @@ export default function DashboardPage() {
       width: 320,
       render: (_, p) => (
         <div>
-          <Link href={`/projects/${p.id}`} style={{ color: '#1659a8', fontWeight: 600 }}>
+          <Link href={`/projects/${p.id}`} className="link-strong">
             {p.name}
           </Link>
           <div className="text-muted" style={{ fontSize: 12 }}>
@@ -67,50 +70,46 @@ export default function DashboardPage() {
       key: 'pending',
       width: 80,
       align: 'center',
+      fixed: 'right',
       render: (v: number) => (v > 0 ? <Badge count={v} color="gold" /> : <span className="text-muted">0</span>),
     },
   ];
 
   return (
     <div className="page-container">
-      <PageHeader title={`Welcome, ${user?.fullName.split(' ')[0] ?? ''}`} subtitle="Company-wide overview of projects, site progress and approvals" />
+      <PageHeader
+        title={`Welcome, ${user?.fullName.split(' ')[0] ?? ''}`}
+        subtitle={
+          companyWide
+            ? 'Company-wide overview of projects, site progress and approvals'
+            : `Site progress and approvals on your ${data ? `${data.totalProjects} ` : ''}project${data?.totalProjects === 1 ? '' : 's'}`
+        }
+      />
       {isLoading && <Loading />}
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {data && (
         <>
           <Row gutter={[16, 16]}>
-            <Col xs={12} md={8} xl={4}>
-              <Card className="kpi-card">
-                <Statistic title="Active Projects" value={data.activeProjects} suffix={<span className="text-muted" style={{ fontSize: 14 }}>/ {data.totalProjects}</span>} prefix={<ProjectOutlined />} />
-              </Card>
-            </Col>
-            <Col xs={12} md={8} xl={5}>
-              <Card className="kpi-card">
-                <Statistic title="Total Contract Value" value={formatINRCompact(data.totalContractValue)} prefix={<FundProjectionScreenOutlined />} />
-                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  {formatINR(data.totalContractValue)}
-                </Typography.Text>
-              </Card>
-            </Col>
-            <Col xs={12} md={8} xl={5}>
-              <Link href="/approvals">
-                <Card className="kpi-card" hoverable>
-                  <Statistic title="Pending Approvals" value={data.pendingApprovals} prefix={<CheckSquareOutlined />} styles={{ content: { color: data.pendingApprovals > 0 ? '#d48806' : undefined } }} />
-                </Card>
-              </Link>
-            </Col>
-            <Col xs={12} md={8} xl={5}>
-              <Card className="kpi-card">
-                <Statistic title="Delayed Activities" value={data.delayedActivities} prefix={<AlertOutlined />} styles={{ content: { color: data.delayedActivities > 0 ? '#cf1322' : undefined } }} />
-              </Card>
-            </Col>
-            <Col xs={12} md={8} xl={5}>
-              <Link href="/dpr">
-                <Card className="kpi-card" hoverable>
-                  <Statistic title="DPRs Today" value={data.dprsToday} prefix={<FileTextOutlined />} />
-                </Card>
-              </Link>
-            </Col>
+            <KpiTile>
+              <Statistic title="Active Projects" value={data.activeProjects} suffix={<span className="text-muted" style={{ fontSize: 14 }}>/ {data.totalProjects}</span>} prefix={<ProjectOutlined />} />
+            </KpiTile>
+            <KpiTile>
+              <Statistic title="Total Contract Value" value={formatINRCompact(data.totalContractValue)} prefix={<FundProjectionScreenOutlined />} />
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                {formatINR(data.totalContractValue)}
+              </Typography.Text>
+            </KpiTile>
+            {approver && (
+              <KpiTile href="/approvals">
+                <Statistic title="Pending Approvals" value={data.pendingApprovals} prefix={<CheckSquareOutlined />} styles={{ content: { color: data.pendingApprovals > 0 ? '#d48806' : undefined } }} />
+              </KpiTile>
+            )}
+            <KpiTile>
+              <Statistic title="Delayed Activities" value={data.delayedActivities} prefix={<AlertOutlined />} styles={{ content: { color: data.delayedActivities > 0 ? '#cf1322' : undefined } }} />
+            </KpiTile>
+            <KpiTile href="/dpr">
+              <Statistic title="DPRs Today" value={data.dprsToday} prefix={<FileTextOutlined />} />
+            </KpiTile>
           </Row>
 
           <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
@@ -128,7 +127,7 @@ export default function DashboardPage() {
                             {t.count} project{t.count === 1 ? '' : 's'}
                           </Tag>
                         </div>
-                        <Progress percent={data.totalProjects ? Math.round((t.count / data.totalProjects) * 100) : 0} size="small" showInfo={false} strokeColor="#1659a8" />
+                        <Progress percent={data.totalProjects ? Math.round((t.count / data.totalProjects) * 100) : 0} size="small" showInfo={false} strokeColor={BRAND.colors.primary} />
                       </Col>
                     ))}
                   </Row>
@@ -151,5 +150,25 @@ export default function DashboardPage() {
         </>
       )}
     </div>
+  );
+}
+
+/** One KPI card; every card in the row stretches to the tallest so the row reads as one band. */
+function KpiTile({ href, children }: { href?: string; children: React.ReactNode }) {
+  const card = (
+    <Card className="kpi-card" hoverable={!!href} style={{ height: '100%' }}>
+      {children}
+    </Card>
+  );
+  return (
+    <Col flex="1 1 160px">
+      {href ? (
+        <Link href={href} style={{ display: 'block', height: '100%' }}>
+          {card}
+        </Link>
+      ) : (
+        card
+      )}
+    </Col>
   );
 }

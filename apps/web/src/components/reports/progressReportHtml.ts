@@ -1,6 +1,7 @@
 import type { ProgressReportDto } from '@erp/shared';
 import { DELAY_PARTY_LABELS, PROJECT_TYPE_LABELS } from '@erp/shared';
 import { fileUrl } from '@/lib/api';
+import { BRAND } from '@/lib/brand';
 import { formatDate, formatDateTime, formatINR, formatQty } from '@/lib/format';
 
 const esc = (v: unknown) =>
@@ -57,20 +58,20 @@ export function buildProgressReportHtml(r: ProgressReportDto, kind: ReportKind, 
   @page { size: A4; margin: 14mm; }
   * { box-sizing: border-box; }
   body { font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #111; font-size: 11px; margin: 0; padding: 24px; background: #fff; }
-  .head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0f2a4d; padding-bottom: 8px; margin-bottom: 12px; }
-  .brand { font-size: 16px; font-weight: 700; color: #0f2a4d; }
+  .head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid ${BRAND.colors.ink}; padding-bottom: 8px; margin-bottom: 12px; }
+  .brand { font-size: 16px; font-weight: 700; color: ${BRAND.colors.ink}; }
   .org { color: #555; }
-  h1 { font-size: 16px; margin: 0 0 2px; color: #0f2a4d; }
-  h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: #0f2a4d; border-bottom: 1px solid #ddd; margin: 14px 0 6px; padding-bottom: 3px; page-break-after: avoid; }
+  h1 { font-size: 16px; margin: 0 0 2px; color: ${BRAND.colors.ink}; }
+  h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: ${BRAND.colors.ink}; border-bottom: 1px solid #ddd; margin: 14px 0 6px; padding-bottom: 3px; page-break-after: avoid; }
   .meta { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px 14px; margin-bottom: 10px; }
   .meta div b { display: block; font-size: 9px; color: #666; text-transform: uppercase; letter-spacing: .04em; }
   .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 6px 0 4px; }
   .kpi { border: 1px solid #d6dde8; border-radius: 4px; padding: 6px 8px; }
   .kpi b { display: block; font-size: 9px; color: #666; text-transform: uppercase; letter-spacing: .04em; }
-  .kpi span { font-size: 15px; font-weight: 700; color: #0f2a4d; }
+  .kpi span { font-size: 15px; font-weight: 700; color: ${BRAND.colors.ink}; }
   .kpi small { color: #555; display: block; }
   .bar { height: 6px; background: #e8edf3; border-radius: 3px; margin-top: 4px; position: relative; overflow: hidden; }
-  .bar i { position: absolute; left: 0; top: 0; bottom: 0; background: #1659a8; }
+  .bar i { position: absolute; left: 0; top: 0; bottom: 0; background: ${BRAND.colors.primary}; }
   .bar i.t { background: #f0a020; height: 2px; top: auto; }
   table { width: 100%; border-collapse: collapse; margin-bottom: 4px; page-break-inside: auto; }
   tr { page-break-inside: avoid; }

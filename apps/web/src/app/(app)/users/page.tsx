@@ -84,6 +84,7 @@ export default function UsersPage() {
       title: '',
       key: 'a',
       width: 130,
+      fixed: 'right' as const,
       render: (_, r) => (
         <Space size={4}>
           <Button

@@ -8,6 +8,7 @@ import { formatDate, formatINR, formatINRCompact, formatQty, toNumber } from '@/
 import { ProjectStatusTag, ProjectTypeTag } from '@/components/common/StatusTag';
 import { QueryError } from '@/components/common/QueryState';
 import { MembersCard } from './MembersCard';
+import { BRAND } from '@/lib/brand';
 
 export function ProjectOverview({ project }: { project: ProjectDetail }) {
   const { data: dash, isLoading, error, refetch } = useProjectDashboard(project.id);
@@ -29,7 +30,7 @@ export function ProjectOverview({ project }: { project: ProjectDetail }) {
           <Col xs={12} md={6}>
             <Card size="small" loading={isLoading}>
               <Statistic title="Financial progress" value={finPct} suffix="%" precision={1} />
-              <Progress percent={finPct} size="small" showInfo={false} strokeColor="#d97706" />
+              <Progress percent={finPct} size="small" showInfo={false} strokeColor={BRAND.colors.accentDeep} />
             </Card>
           </Col>
           <Col xs={12} md={6}>
