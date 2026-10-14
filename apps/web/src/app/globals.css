@@ -37,33 +37,52 @@ a {
   white-space: nowrap;
 }
 
+/* Sign-in pages: hi-vis yellow with a hazard-tape band along the bottom edge. */
 .login-bg {
+  position: relative;
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(circle at 20% 20%, var(--brand-primary) 0%, var(--brand-ink) 55%, var(--brand-ink-deep) 100%);
-  padding: 24px;
+  background: var(--brand-accent);
+  padding: 24px 24px 48px;
 }
 
-.brand-mark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, var(--brand-accent), var(--brand-accent-deep));
-  color: #fff;
-  font-weight: 700;
-  font-size: 16px;
-  flex: 0 0 auto;
-  letter-spacing: 0.02em;
+.login-bg::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 14px;
+  background: repeating-linear-gradient(-45deg, var(--brand-ink) 0 14px, var(--brand-accent) 14px 28px);
+}
+
+/* Headings and the wordmark use the condensed display face; figures line up in tables and statistics. */
+h1.ant-typography,
+h2.ant-typography,
+h3.ant-typography,
+h4.ant-typography,
+.wordmark {
+  font-family: var(--font-display), 'Arial Narrow', Arial, sans-serif;
+  font-stretch: 88%;
+}
+
+.wordmark {
+  font-stretch: 80%;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  line-height: 1;
+}
+
+.ant-table,
+.ant-statistic-content {
+  font-variant-numeric: tabular-nums;
 }
 
 /* Primary links inside tables and cards (Next <Link> inherits colour from the reset above). */
 .link-strong {
-  color: var(--brand-primary);
+  color: var(--brand-link);
   font-weight: 600;
 }
 
@@ -82,6 +101,10 @@ a {
 @media (max-width: 768px) {
   .page-container {
     padding: 16px;
+  }
+  /* KPI tiles sit two to a row on phones; keep "₹ 59.27 Cr" on one line. */
+  .ant-card .ant-statistic .ant-statistic-content {
+    font-size: 20px;
   }
 }
 

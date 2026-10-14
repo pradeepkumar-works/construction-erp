@@ -50,10 +50,11 @@ export function formatPct(value: number | null | undefined): string {
 
 export const STATUS_COLORS: Record<SubmissionStatus, string> = {
   DRAFT: 'default',
-  SUBMITTED: 'gold',
+  // Yellow is the brand colour, so pending is orange and changes-requested purple (as in the site app).
+  SUBMITTED: 'orange',
   APPROVED: 'green',
   REJECTED: 'red',
-  CHANGES_REQUESTED: 'orange',
+  CHANGES_REQUESTED: 'purple',
 };
 
 export const PROJECT_STATUS_COLORS: Record<ProjectStatus, string> = {
@@ -78,10 +79,10 @@ export const PRIORITY_COLORS: Record<MaterialPriority, string> = {
 };
 
 export const NOTIFICATION_COLORS: Record<NotificationType, string> = {
-  SUBMISSION_SUBMITTED: 'gold',
+  SUBMISSION_SUBMITTED: 'orange',
   SUBMISSION_APPROVED: 'green',
   SUBMISSION_REJECTED: 'red',
-  SUBMISSION_CHANGES_REQUESTED: 'orange',
+  SUBMISSION_CHANGES_REQUESTED: 'purple',
   DPR_REMINDER: 'blue',
   APPROVAL_DIGEST: 'purple',
   LOW_STOCK: 'volcano',

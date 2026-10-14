@@ -4,6 +4,7 @@ import * as bcrypt from 'bcryptjs';
 import { INVITE_LINK_HOURS, RESET_LINK_HOURS, type PasswordLinkDto, type PasswordTokenInfoDto, type PasswordTokenPurpose } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService, escapeHtml } from '../notifications/email.service';
+import { PRODUCT_NAME } from '@erp/shared';
 
 const hash = (token: string) => createHash('sha256').update(token).digest('hex');
 const trimUrl = (u: string) => u.trim().replace(/\/+$/, '');
@@ -48,12 +49,12 @@ export class PasswordLinksService {
       const invite = purpose === 'INVITE';
       const org = user.organization.name;
       const hours = invite ? `${INVITE_LINK_HOURS / 24} days` : `${RESET_LINK_HOURS} hours`;
-      const lead = invite ? `You have been invited to ${org} on Construction ERP. Choose a password to sign in.` : `Someone asked to reset your Construction ERP password for ${org}. If it was not you, ignore this email.`;
+      const lead = invite ? `You have been invited to ${org} on ${PRODUCT_NAME}. Choose a password to sign in.` : `Someone asked to reset your ${PRODUCT_NAME} password for ${org}. If it was not you, ignore this email.`;
       emailed = await this.email.send({
         to: user.email,
-        subject: invite ? `[${org}] You are invited to Construction ERP` : `[${org}] Reset your Construction ERP password`,
+        subject: invite ? `[${org}] You are invited to ${PRODUCT_NAME}` : `[${org}] Reset your ${PRODUCT_NAME} password`,
         text: `Hello ${user.fullName},\n\n${lead}\n\n${link}\n\nThe link works once and expires in ${hours}.\n`,
-        html: `<p>Hello ${escapeHtml(user.fullName)},</p><p>${escapeHtml(lead)}</p><p><a href="${link}" style="display:inline-block;padding:10px 18px;background:#1659a8;color:#fff;border-radius:6px;text-decoration:none">${invite ? 'Accept invitation' : 'Choose a new password'}</a></p><p style="color:#666;font-size:12px">The link works once and expires in ${hours}. If the button does not work, open ${escapeHtml(link)}</p>`,
+        html: `<p>Hello ${escapeHtml(user.fullName)},</p><p>${escapeHtml(lead)}</p><p><a href="${link}" style="display:inline-block;padding:10px 18px;background:#FFC20E;color:#1C1F1E;font-weight:600;border-radius:4px;text-decoration:none">${invite ? 'Accept invitation' : 'Choose a new password'}</a></p><p style="color:#666;font-size:12px">The link works once and expires in ${hours}. If the button does not work, open ${escapeHtml(link)}</p>`,
       });
     } else if (!link) {
       this.log.warn(`No WEB_URL or CORS_ORIGINS: cannot build a ${purpose} link for user ${userId}`);

@@ -51,7 +51,7 @@ export function ProjectOverview({ project }: { project: ProjectDetail }) {
           </Col>
           <Col xs={12} md={6}>
             <Card size="small" loading={isLoading}>
-              <Statistic title="Pending approvals" value={dash?.pendingApprovals ?? project.pendingApprovals} styles={{ content: { color: (dash?.pendingApprovals ?? 0) > 0 ? '#d48806' : undefined } }} />
+              <Statistic title="Pending approvals" value={dash?.pendingApprovals ?? project.pendingApprovals} styles={{ content: { color: (dash?.pendingApprovals ?? 0) > 0 ? BRAND.colors.pending : undefined } }} />
             </Card>
           </Col>
           <Col xs={12} md={6}>

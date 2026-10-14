@@ -6,6 +6,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { join } from 'path';
 import { AppModule } from './app.module';
 import { tenantMiddleware } from './prisma/tenant-context';
+import { PRODUCT_NAME } from '@erp/shared';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -20,8 +21,8 @@ async function bootstrap() {
   app.useStaticAssets(join(process.cwd(), uploadDir), { prefix: '/uploads/' });
 
   const config = new DocumentBuilder()
-    .setTitle('Construction ERP API')
-    .setDescription('MVP API for the Construction ERP and Site Mobile App')
+    .setTitle(`${PRODUCT_NAME} API`)
+    .setDescription(`API for the ${PRODUCT_NAME} construction ERP and its site app`)
     .setVersion('0.1')
     .addBearerAuth()
     .addApiKey({ type: 'apiKey', in: 'header', name: 'x-cron-secret', description: 'CRON_SECRET for the scheduled notification jobs' }, 'cron')

@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../src/auth/AuthContext';
 import { Button, ErrorBanner, Input, Screen } from '../src/components';
 import { errorMessage, request } from '../src/api/client';
 import type { AuthOptionsDto } from '@erp/shared';
+import { PRODUCT_NAME } from '@erp/shared';
 import { API_URL } from '../src/config';
 import { colors, radius, spacing, typography } from '../src/theme';
 
@@ -66,10 +67,10 @@ export default function LoginScreen() {
   return (
     <Screen keyboard edges={['top', 'left', 'right', 'bottom']} style={styles.content}>
       <View style={styles.brand}>
-        <View style={styles.logo}>
-          <Ionicons name="construct" size={34} color={colors.textOnPrimary} />
-        </View>
-        <Text style={typography.h1}>Site App</Text>
+        <Image source={require('../assets/splash-icon.png')} style={styles.logo} accessibilityIgnoresInvertColors />
+        <Text style={typography.wordmark} accessibilityRole="header">
+          {PRODUCT_NAME.toUpperCase()}
+        </Text>
         <Text style={typography.caption}>Daily progress, DPRs and material requests from site</Text>
       </View>
 
@@ -131,7 +132,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   content: { justifyContent: 'center', flexGrow: 1 },
   brand: { alignItems: 'center', marginBottom: spacing.xl, gap: spacing.xs },
-  logo: { width: 68, height: 68, borderRadius: 20, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm },
+  logo: { width: 72, height: 72, marginBottom: spacing.sm },
   demo: { marginTop: spacing.xl, backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
   demoTitle: { ...typography.label, marginBottom: spacing.sm },
   demoRow: { paddingVertical: spacing.sm, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.border, minHeight: 44, justifyContent: 'center' },

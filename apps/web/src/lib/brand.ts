@@ -3,24 +3,29 @@
  * the printable DPR and progress report and the CSS variables in globals.css all read from here, so a
  * rebrand is a change to this file, `BrandMark` and `app/icon.svg`.
  */
+import { PRODUCT_NAME } from '@erp/shared';
+
 export const BRAND = {
-  name: 'Construction ERP',
+  name: PRODUCT_NAME,
+  /** The name as set in the wordmark (condensed capitals). */
+  wordmark: 'NIRMAAN',
   description: 'Projects, BOQ, site progress, DPR and approvals for construction contractors',
-  /** Letters on the square mark until a logo replaces them. */
-  monogram: 'CE',
   colors: {
-    /** Buttons, links, selected menu item, progress bars. */
-    primary: '#1659a8',
+    /** Signboard black: antd primary (checkboxes, tabs, progress bars), sidebar, headings in printed reports. */
+    primary: '#1C1F1E',
     /** Menu hover on the dark sidebar. */
-    primaryDeep: '#163a68',
-    /** Sidebar, headings in printed reports. */
-    ink: '#0f2a4d',
-    inkDeep: '#091a30',
-    /** The mark and highlights. */
-    accent: '#f59e0b',
-    accentDeep: '#d97706',
-    canvas: '#f3f5f8',
-    border: '#e6e9ef',
+    primaryDeep: '#2E3230',
+    ink: '#1C1F1E',
+    inkDeep: '#0E100F',
+    /** Hi-vis yellow: the mark, primary buttons, the selected menu item. Text on it is `ink`. */
+    accent: '#FFC20E',
+    accentDeep: '#E0A800',
+    /** Links: a dark amber that reads on white. */
+    link: '#8A5A00',
+    /** Pending and alerts (brick orange; yellow is the brand, so it cannot also mean "pending"). */
+    pending: '#C2410C',
+    canvas: '#F4F3EF',
+    border: '#E3E1DA',
   },
 } as const;
 
@@ -31,6 +36,7 @@ export const brandCssVars: Record<string, string> = {
   '--brand-ink-deep': BRAND.colors.inkDeep,
   '--brand-accent': BRAND.colors.accent,
   '--brand-accent-deep': BRAND.colors.accentDeep,
+  '--brand-link': BRAND.colors.link,
   '--brand-canvas': BRAND.colors.canvas,
   '--brand-border': BRAND.colors.border,
 };

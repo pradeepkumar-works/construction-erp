@@ -1,21 +1,29 @@
 import type { SubmissionStatus } from '@erp/shared';
 
+/**
+ * Nirmaan palette (same as the web app's src/lib/brand.ts). `primary` is signboard black for text, icons and
+ * selection; `brand` is hi-vis yellow for the mark and primary buttons, always with `onBrand` text. Yellow is the
+ * brand, so "pending" uses brick orange (`warning`).
+ */
 export const colors = {
-  primary: '#1D4ED8',
-  primaryDark: '#1E3A8A',
-  primarySoft: '#DBEAFE',
-  accent: '#F97316',
+  primary: '#1C1F1E',
+  primaryDark: '#0E100F',
+  primarySoft: '#ECEBE6',
+  brand: '#FFC20E',
+  brandSoft: '#FFF4CC',
+  onBrand: '#1C1F1E',
+  accent: '#EA580C',
   accentSoft: '#FFEDD5',
-  bg: '#F3F4F6',
+  bg: '#F4F3EF',
   surface: '#FFFFFF',
-  border: '#E5E7EB',
-  text: '#111827',
-  textMuted: '#6B7280',
+  border: '#E3E1DA',
+  text: '#1C1F1E',
+  textMuted: '#5E625F',
   textOnPrimary: '#FFFFFF',
-  success: '#16A34A',
-  successSoft: '#DCFCE7',
-  warning: '#D97706',
-  warningSoft: '#FEF3C7',
+  success: '#1B7F4B',
+  successSoft: '#E2F3E9',
+  warning: '#C2410C',
+  warningSoft: '#FDE9DD',
   danger: '#DC2626',
   dangerSoft: '#FEE2E2',
   info: '#7C3AED',
@@ -28,9 +36,13 @@ export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 };
 
 export const radius = { sm: 6, md: 10, lg: 16, pill: 999 };
 
+/** Archivo for headings and the wordmark, loaded in app/_layout.tsx; body text stays on the system font. */
+export const fonts = { display: 'Archivo_700Bold', displayHeavy: 'Archivo_800ExtraBold' };
+
 export const typography = {
-  h1: { fontSize: 26, fontWeight: '700' as const, color: colors.text },
-  h2: { fontSize: 20, fontWeight: '700' as const, color: colors.text },
+  h1: { fontSize: 26, fontFamily: fonts.display, color: colors.text },
+  h2: { fontSize: 20, fontFamily: fonts.display, color: colors.text },
+  wordmark: { fontSize: 30, fontFamily: fonts.displayHeavy, letterSpacing: 3, color: colors.text },
   h3: { fontSize: 16, fontWeight: '600' as const, color: colors.text },
   body: { fontSize: 15, color: colors.text },
   bodyStrong: { fontSize: 15, fontWeight: '600' as const, color: colors.text },

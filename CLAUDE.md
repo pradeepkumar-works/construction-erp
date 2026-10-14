@@ -39,8 +39,9 @@ cd apps/mobile && npx tsc --noEmit && CI=1 npx expo export --platform android
   cloud DB by hand. The Vercel build runs `prisma migrate deploy`.
 - Add new enums to both `schema.prisma` and `packages/shared/src/enums.ts` (+ labels).
 - Web: `'use client'` components, `App.useApp()` for message/modal, data via hooks in
-  `src/lib/queries.ts`, formatting in `src/lib/format.ts`. Product name and brand colours live only in
-  `src/lib/brand.ts` (plus `BrandMark` and `app/icon.svg`); use `BRAND.colors` instead of hex literals.
+  `src/lib/queries.ts`, formatting in `src/lib/format.ts`. The product name (Nirmaan) is `PRODUCT_NAME` in
+  `packages/shared/src/brand.ts`; web brand colours live only in `src/lib/brand.ts` (plus `BrandMark` and
+  `app/icon.svg`), mobile ones in `src/theme.ts`. Use `BRAND.colors` instead of hex literals.
   Check antd 6 typings in node_modules before using a prop you are unsure of.
 - Mobile: screens in `app/`, shared UI in `src/components`, API in `src/api`, no new native deps
   without checking `node_modules/expo/bundledNativeModules.json` for the SDK-pinned version.

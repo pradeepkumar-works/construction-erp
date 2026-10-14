@@ -17,7 +17,7 @@ interface Props {
 }
 
 const palette: Record<Variant, { bg: string; fg: string; border: string }> = {
-  primary: { bg: colors.primary, fg: colors.textOnPrimary, border: colors.primary },
+  primary: { bg: colors.brand, fg: colors.onBrand, border: colors.brand },
   accent: { bg: colors.accent, fg: colors.textOnPrimary, border: colors.accent },
   success: { bg: colors.success, fg: colors.textOnPrimary, border: colors.success },
   danger: { bg: colors.danger, fg: colors.textOnPrimary, border: colors.danger },
