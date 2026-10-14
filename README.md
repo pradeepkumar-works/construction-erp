@@ -56,6 +56,11 @@ contractors after the first client is live.
   risks scored probability × impact, with owner, action and due date, closed with a note. A delay or a high
   risk alerts the PM; activities past their planned finish with no delay recorded are flagged. Web page,
   project tab with a heat map and Excel export, site-app screens (offline too), and a section in the progress report.
+- Clients and contracts: a client master (department, GSTIN, state, billing address) and per project the
+  agreement, contract value, completion date with the extensions of time granted in the delay register, and
+  the retention, security deposit, mobilisation advance and recovery, TDS, GST TDS, labour cess and GST
+  percentages bills are built with. Billing → Clients and a Contract tab on each project, for approvers, the
+  QS and accounts.
 - Edit and resubmit: a rejected or changes-requested entry is fixed in place (web drawer or site app)
   and sent back for approval with the reviewer's note shown alongside the form.
 - Dashboards: company (projects, contract value, pending approvals, delayed activities, DPRs
@@ -150,6 +155,5 @@ pnpm --filter @erp/api prisma studio
 
 ## Not in the MVP (next phases)
 
-Procurement (indent → RFQ → PO), payroll,
-RA billing from the measurement book, finance, HR, quality registers,
-a client-specific report template, and tenant billing.
+See `docs/ROADMAP.md` (v3): RA bills from the measurement book, receivables, purchase orders,
+subcontractor bills, payables, the Tally export, quality, people and reach.

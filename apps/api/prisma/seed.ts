@@ -106,7 +106,7 @@ async function main() {
     await seedMeasurements(org.id);
     await seedCostRates(org.id);
     await seedRisks(org.id);
-  await seedApprovalRules(org.id);
+    await seedContracts(org.id);
     await seedApprovalRules(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
@@ -256,6 +256,7 @@ async function main() {
   await seedMeasurements(org.id);
   await seedCostRates(org.id);
   await seedRisks(org.id);
+  await seedContracts(org.id);
   await seedApprovalRules(org.id);
 
   console.log('Seed complete. Login with any of these (password: password123):');
@@ -774,6 +775,54 @@ async function seedRisks(organizationId: string) {
         });
       }
     }
+  }
+}
+
+// Client master and contract terms per project type (v3 item 17). Government clients: retention, GST TDS and labour cess.
+const CONTRACTS: Record<string, {
+  client: { name: string; department: string; gstin: string; address: string; contact: string; email: string; phone: string };
+  agreementNo: string; agreementAgo: number; retention: string; sd: string; advancePct: string | null; recovery: string; tds: string; gstTds: string; cess: string; gst: string; dlp: number; pv: boolean;
+  /** EOT granted for the delay with this title */
+  eot?: [string, number];
+}> = {
+  ROAD: {
+    client: { name: 'Odisha Works Department', department: 'Roads Division, Khordha', gstin: '21AAAGO1234F1Z5', address: 'Office of the Executive Engineer, R&B Division, Khordha, Odisha 752055', contact: 'Er. S. K. Panda, Executive Engineer', email: 'ee.khordha@example.gov.in', phone: '0674-2000001' },
+    agreementNo: '04/EE/R&B/2025-26', agreementAgo: 130, retention: '5', sd: '0', advancePct: '5', recovery: '10', tds: '2', gstTds: '2', cess: '1', gst: '18', dlp: 24, pv: true,
+  },
+  BUILDING: {
+    client: { name: 'Dept. of Health & Family Welfare', department: 'Office of the CDMO, Cuttack', gstin: '21AAAGD5678H1Z2', address: 'Chief District Medical Office, Cuttack, Odisha 753001', contact: 'Dr. M. Sahoo, CDMO', email: 'cdmo.cuttack@example.gov.in', phone: '0671-2000002' },
+    agreementNo: '17/CDMO/2025-26', agreementAgo: 100, retention: '5', sd: '2.5', advancePct: null, recovery: '0', tds: '2', gstTds: '2', cess: '1', gst: '18', dlp: 12, pv: false,
+    eot: ['GF slab reinforcement drawings revised by the architect', 7],
+  },
+  WATER_SUPPLY: {
+    client: { name: 'RWSS Odisha (Jal Jeevan Mission)', department: 'RWSS Division, Jajpur', gstin: '21AAAGR9012K1Z8', address: 'Office of the Executive Engineer, RWSS Division, Jajpur, Odisha 755001', contact: 'Er. P. Mishra, Executive Engineer', email: 'ee.rwss.jajpur@example.gov.in', phone: '06728-200003' },
+    agreementNo: '09/EE/RWSS/2025-26', agreementAgo: 160, retention: '5', sd: '0', advancePct: '10', recovery: '12', tds: '2', gstTds: '2', cess: '1', gst: '18', dlp: 12, pv: true,
+  },
+};
+
+/** Clients from the projects' client names, and contract terms for projects that have none yet. */
+async function seedContracts(organizationId: string) {
+  const projects = await prisma.project.findMany({ where: { organizationId }, orderBy: { code: 'asc' } });
+  for (const project of projects) {
+    const c = CONTRACTS[project.type];
+    if (!c || project.agreementNo) continue;
+    const client = await prisma.client.upsert({
+      where: { organizationId_name: { organizationId, name: project.clientName ?? c.client.name } },
+      update: {},
+      create: {
+        organizationId, name: project.clientName ?? c.client.name, department: c.client.department, gstin: c.client.gstin, pan: c.client.gstin.slice(2, 12), stateCode: c.client.gstin.slice(0, 2),
+        billingAddress: c.client.address, contactPerson: c.client.contact, email: c.client.email, phone: c.client.phone,
+      },
+    });
+    await prisma.project.update({
+      where: { id: project.id },
+      data: {
+        clientId: client.id, clientName: client.name, agreementNo: c.agreementNo, agreementDate: day(-c.agreementAgo),
+        retentionPct: D(c.retention), securityDepositPct: D(c.sd), mobilisationAdvance: c.advancePct && project.contractValue ? project.contractValue.mul(c.advancePct).div(100).toDecimalPlaces(2) : D(0),
+        advanceRecoveryPct: D(c.recovery), tdsPct: D(c.tds), gstTdsPct: D(c.gstTds), labourCessPct: D(c.cess), gstRate: D(c.gst), defectLiabilityMonths: c.dlp, priceVariation: c.pv,
+      },
+    });
+    if (c.eot) await prisma.risk.updateMany({ where: { projectId: project.id, kind: 'DELAY', title: c.eot[0], eotGrantedDays: null }, data: { eotClaimed: true, eotGrantedDays: c.eot[1] } });
   }
 }
 

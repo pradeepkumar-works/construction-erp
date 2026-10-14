@@ -33,6 +33,18 @@ jobs:
           curl -sf "$API_URL/projects" -H "authorization: Bearer $TOKEN" | jq -r '.items[] | "\(.code)  \(.physicalProgressPct)%  pending=\(.pendingApprovals)"'
           echo "pending approvals: $(curl -sf "$API_URL/approvals/pending" -H "authorization: Bearer $TOKEN" | jq length)"
           curl -sf "$API_URL/dashboard/company" -H "authorization: Bearer $TOKEN" | jq 'del(.projects)'
+      - name: Clients and contract terms
+        run: |
+          set -e
+          TOKEN=$(curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' \
+            -d '{"email":"pm@demo.com","password":"password123"}' | jq -r .accessToken)
+          H="authorization: Bearer $TOKEN"
+          curl -sf "$API_URL/clients" -H "$H" | jq -r '.items[] | "\(.name)  GSTIN \(.gstin)  projects=\(.projectCount)"'
+          PROJECT=$(curl -sf "$API_URL/projects?sortBy=code" -H "$H" | jq -r '.items[0].id')
+          curl -sf "$API_URL/projects/$PROJECT/contract" -H "$H" | jq -c '{agreementNo, client: .client.name, endDate, extensionDays, revisedEndDate, retentionPct, gstRate}'
+          ENG=$(curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' -d '{"email":"engineer@demo.com","password":"password123"}' | jq -r .accessToken)
+          code=$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/projects/$PROJECT/contract" -H "authorization: Bearer $ENG")
+          echo "contract as a site engineer: $code"; [ "$code" = "403" ]
       - name: Notifications
         run: |
           set -e

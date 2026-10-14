@@ -5,7 +5,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Button, Card, Progress, Space, Tabs, Typography } from 'antd';
 import { EditOutlined, FilePdfOutlined } from '@ant-design/icons';
 import Link from 'next/link';
-import { canEditProjects, canViewCost } from '@erp/shared';
+import { canEditProjects, canViewContract, canViewCost } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useProject } from '@/lib/queries';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -22,6 +22,7 @@ import { ExpenseList } from '@/components/expenses/ExpenseList';
 import { RiskList } from '@/components/risks/RiskList';
 import { MeasurementList } from '@/components/measurements/MeasurementList';
 import { ProjectCostPanel } from '@/components/cost/ProjectCostPanel';
+import { ContractPanel } from '@/components/contracts/ContractPanel';
 import { StockPanel } from '@/components/stock/StockPanel';
 import { AttendanceList } from '@/components/attendance/AttendanceList';
 import { MrList } from '@/components/material/MrList';
@@ -90,6 +91,7 @@ export default function ProjectDetailPage() {
           onChange={(k) => router.replace(`/projects/${project.id}${k === 'overview' ? '' : `?tab=${k}`}`)}
           items={[
             { key: 'overview', label: 'Overview', children: <ProjectOverview project={project} /> },
+            ...(user && canViewContract(user.roleKey) ? [{ key: 'contract', label: 'Contract', children: <ContractPanel projectId={project.id} /> }] : []),
             { key: 'boq', label: 'BOQ', children: <BoqTab projectId={project.id} /> },
             { key: 'activities', label: 'Activities', children: <ActivitiesTab projectId={project.id} members={project.members} project={project} /> },
             { key: 'mb', label: 'Measurements', children: <MeasurementList projectId={project.id} /> },

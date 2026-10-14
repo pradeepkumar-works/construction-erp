@@ -109,6 +109,8 @@ export interface ProjectSummary {
 }
 
 export interface ProjectDetail extends ProjectSummary {
+  /** Client from the client master (`clientName` is its name, or free text without one) */
+  clientId: string | null;
   consultantName: string | null;
   workOrderNo: string | null;
   description: string | null;
@@ -732,6 +734,8 @@ export interface RiskDto {
   daysLost: number | null;
   responsibleParty: DelayParty | null;
   eotClaimed: boolean;
+  /** Days of extension the client granted for this delay */
+  eotGrantedDays: number | null;
   closedAt: string | null;
   closureNote: string | null;
   raisedById: string;
@@ -801,4 +805,71 @@ export interface ApprovalMatrixDto {
   custom: boolean;
   roles: { roleKey: RoleKey; roleName: string; users: number }[];
   rules: ApprovalRuleDto[];
+}
+
+/* ---------- clients and contracts ---------- */
+
+export interface ClientDto {
+  id: string;
+  name: string;
+  department: string | null;
+  gstin: string | null;
+  pan: string | null;
+  billingAddress: string | null;
+  /** GST state code, e.g. "21" (Odisha) */
+  stateCode: string | null;
+  contactPerson: string | null;
+  email: string | null;
+  phone: string | null;
+  isActive: boolean;
+  /** Projects of this client */
+  projectCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** An extension of time granted (or claimed) for a delay in the register. */
+export interface ContractExtensionDto {
+  riskId: string;
+  riskNo: string;
+  title: string;
+  delayStart: string | null;
+  delayEnd: string | null;
+  daysLost: number | null;
+  responsibleParty: DelayParty | null;
+  eotClaimed: boolean;
+  eotGrantedDays: number | null;
+}
+
+/** A project's contract with its client: what RA bills are built on. Percentages are of the work value. */
+export interface ProjectContractDto {
+  projectId: string;
+  projectCode: string;
+  projectName: string;
+  client: ClientDto | null;
+  /** Free-text client name when no client from the master is linked */
+  clientName: string | null;
+  workOrderNo: string | null;
+  agreementNo: string | null;
+  agreementDate: string | null;
+  contractValue: string | null;
+  startDate: string | null;
+  /** Completion date in the agreement */
+  endDate: string | null;
+  /** Extensions of time granted, days (sum over the delay register) */
+  extensionDays: number;
+  /** endDate + extensionDays */
+  revisedEndDate: string | null;
+  extensions: ContractExtensionDto[];
+  retentionPct: string;
+  securityDepositPct: string;
+  mobilisationAdvance: string;
+  advanceRecoveryPct: string;
+  defectLiabilityMonths: number | null;
+  priceVariation: boolean;
+  gstRate: string;
+  tdsPct: string;
+  gstTdsPct: string;
+  labourCessPct: string;
+  updatedAt: string;
 }

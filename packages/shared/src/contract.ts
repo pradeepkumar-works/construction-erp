@@ -1,0 +1,39 @@
+/** Clients and contract terms shared by the API and the clients (v3 item 17). */
+
+/** 10-character PAN: five letters, four digits, a letter. */
+export const PAN_PATTERN = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
+
+/** GST state code (first two digits of a GSTIN), or null when the GSTIN is missing or malformed. */
+export const gstStateCode = (gstin: string | null | undefined): string | null => (gstin && /^[0-9]{2}/.test(gstin) ? gstin.slice(0, 2) : null);
+
+/** Indian states and union territories by GST state code, for the client form and bill headers. */
+export const GST_STATES: Record<string, string> = {
+  '01': 'Jammu and Kashmir', '02': 'Himachal Pradesh', '03': 'Punjab', '04': 'Chandigarh', '05': 'Uttarakhand', '06': 'Haryana',
+  '07': 'Delhi', '08': 'Rajasthan', '09': 'Uttar Pradesh', '10': 'Bihar', '11': 'Sikkim', '12': 'Arunachal Pradesh', '13': 'Nagaland',
+  '14': 'Manipur', '15': 'Mizoram', '16': 'Tripura', '17': 'Meghalaya', '18': 'Assam', '19': 'West Bengal', '20': 'Jharkhand',
+  '21': 'Odisha', '22': 'Chhattisgarh', '23': 'Madhya Pradesh', '24': 'Gujarat', '26': 'Dadra and Nagar Haveli and Daman and Diu',
+  '27': 'Maharashtra', '29': 'Karnataka', '30': 'Goa', '31': 'Lakshadweep', '32': 'Kerala', '33': 'Tamil Nadu', '34': 'Puducherry',
+  '35': 'Andaman and Nicobar Islands', '36': 'Telangana', '37': 'Andhra Pradesh', '38': 'Ladakh',
+};
+
+/** The bill deductions and GST that are percentages of the work value, in the order a bill shows them. */
+export const CONTRACT_PERCENT_FIELDS = ['retentionPct', 'securityDepositPct', 'advanceRecoveryPct', 'tdsPct', 'gstTdsPct', 'labourCessPct', 'gstRate'] as const;
+export type ContractPercentField = (typeof CONTRACT_PERCENT_FIELDS)[number];
+
+export const CONTRACT_PERCENT_LABELS: Record<ContractPercentField, string> = {
+  retentionPct: 'Retention',
+  securityDepositPct: 'Security deposit',
+  advanceRecoveryPct: 'Advance recovery',
+  tdsPct: 'TDS (income tax)',
+  gstTdsPct: 'GST TDS',
+  labourCessPct: 'Labour welfare cess',
+  gstRate: 'GST',
+};
+
+/** Completion date after the extensions of time granted (days), as YYYY-MM-DD. */
+export function revisedCompletion(endDate: string | null, extensionDays: number): string | null {
+  if (!endDate) return null;
+  const d = new Date(`${endDate}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + extensionDays);
+  return d.toISOString().slice(0, 10);
+}

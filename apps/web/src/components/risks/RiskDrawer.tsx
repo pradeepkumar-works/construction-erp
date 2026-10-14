@@ -127,7 +127,7 @@ export function RiskDrawer({ id, open, onClose, onEdit }: { id: string | null; o
                     { key: 'to', label: 'Resumed on', children: data.delayEnd ? formatDate(data.delayEnd) : <Typography.Text type="danger">still held up</Typography.Text> },
                     { key: 'days', label: 'Days lost', children: <strong>{data.daysLost ?? 0}</strong> },
                     { key: 'party', label: 'Caused by', children: data.responsibleParty ? DELAY_PARTY_LABELS[data.responsibleParty] : '-' },
-                    { key: 'eot', label: 'Extension of time', children: data.eotClaimed ? 'Claimed' : 'Not claimed', span: 2 },
+                    { key: 'eot', label: 'Extension of time', children: data.eotGrantedDays !== null ? `${data.eotGrantedDays} days granted` : data.eotClaimed ? 'Claimed' : 'Not claimed', span: 2 },
                   ]
                 : []),
               { key: 'mit', label: data.kind === 'DELAY' ? 'Action' : 'Mitigation', children: data.mitigation ?? '-', span: 2 },

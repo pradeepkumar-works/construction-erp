@@ -42,6 +42,12 @@ export const LABOUR_RATE_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'ACCOUNTS_MA
 /** Roles that raise delays and risks: site staff, the QS and approvers. Anyone with project access can read the register. */
 export const RISK_RAISER_ROLES: RoleKey[] = ['TEAM_LEADER', 'SITE_ENGINEER', 'QUANTITY_SURVEYOR', 'STORE_MANAGER', 'QA_QC_ENGINEER', 'ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER'];
 
+/** Roles that see contract terms and bills: approvers, the QS who prepares bills, and accounts. */
+export const BILLING_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER', 'QUANTITY_SURVEYOR', 'ACCOUNTS_MANAGER'];
+
+/** Roles that change the client master and a project's contract terms. */
+export const CONTRACT_EDITOR_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER', 'ACCOUNTS_MANAGER'];
+
 /** Roles that edit the organisation's activity templates. */
 export const TEMPLATE_ADMIN_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT'];
 
@@ -85,6 +91,11 @@ export const canRaiseRisk = (role: RoleKey) => RISK_RAISER_ROLES.includes(role);
  */
 export const canEditRisk = (user: SubmissionActor, r: { raisedById: string; ownerId: string | null }): boolean =>
   canApprove(user.roleKey) || r.raisedById === user.id || r.ownerId === user.id;
+
+/** See a project's contract terms (retention, advance, deductions) and its bills. */
+export const canViewContract = (role: RoleKey) => BILLING_ROLES.includes(role);
+/** Change the client master and a project's contract terms. */
+export const canEditContract = (role: RoleKey) => CONTRACT_EDITOR_ROLES.includes(role);
 
 /** Edit activity templates per project type. */
 export const canManageTemplates = (role: RoleKey) => TEMPLATE_ADMIN_ROLES.includes(role);

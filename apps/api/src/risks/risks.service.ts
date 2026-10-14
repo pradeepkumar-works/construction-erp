@@ -105,6 +105,7 @@ export class RisksService {
       daysLost: r.kind === 'DELAY' ? (r.daysLost ?? delayDays(delayStart, delayEnd, today)) : null,
       responsibleParty: r.responsibleParty,
       eotClaimed: r.eotClaimed,
+      eotGrantedDays: r.eotGrantedDays,
       closedAt: iso(r.closedAt),
       closureNote: r.closureNote,
       raisedById: r.raisedById,
@@ -240,8 +241,8 @@ export class RisksService {
   }
 
   /** Validated delay fields; risks keep none of them. */
-  private delayFields(kind: string, v: { delayStart?: string | null; delayEnd?: string | null; daysLost?: number | null; responsibleParty?: DelayParty | null; eotClaimed?: boolean }) {
-    if (kind !== 'DELAY') return { delayStart: null, delayEnd: null, daysLost: null, responsibleParty: null, eotClaimed: false };
+  private delayFields(kind: string, v: { delayStart?: string | null; delayEnd?: string | null; daysLost?: number | null; responsibleParty?: DelayParty | null; eotClaimed?: boolean; eotGrantedDays?: number | null }) {
+    if (kind !== 'DELAY') return { delayStart: null, delayEnd: null, daysLost: null, responsibleParty: null, eotClaimed: false, eotGrantedDays: null };
     if (!v.delayStart) throw new BadRequestException('A delay needs the date work was first held up');
     const today = todayStr();
     if (v.delayStart > today) throw new BadRequestException('A delay cannot start in the future; raise it as a risk');
@@ -253,6 +254,7 @@ export class RisksService {
       daysLost: v.daysLost ?? null,
       responsibleParty: v.responsibleParty ?? null,
       eotClaimed: v.eotClaimed ?? false,
+      eotGrantedDays: v.eotGrantedDays ?? null,
     };
   }
 
@@ -350,6 +352,7 @@ export class RisksService {
         daysLost: dto.daysLost !== undefined ? dto.daysLost : current.daysLost,
         responsibleParty: dto.responsibleParty !== undefined ? dto.responsibleParty : current.responsibleParty,
         eotClaimed: dto.eotClaimed ?? current.eotClaimed,
+        eotGrantedDays: dto.eotGrantedDays !== undefined ? dto.eotGrantedDays : current.eotGrantedDays,
       }),
     );
     if (dto.status !== undefined) {
