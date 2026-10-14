@@ -25,6 +25,7 @@ import { isUniqueViolation } from '../common/idempotency';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import { deductedOn, invoiceOf, RECEIPT_SUMS, settlement, syncBillStage } from './bill-settlement';
 import { CreateReceiptDto, ListReceiptsQuery, ReceivablesQuery, UpdateReceiptDto } from './receivables.dto';
+import { assertNotExported } from '../tally/exported';
 
 const D = (v: Prisma.Decimal.Value) => new Prisma.Decimal(v);
 const ZERO = D(0);
@@ -140,6 +141,7 @@ export class ReceivablesService {
       remarks: r.remarks,
       createdByName: r.createdBy.fullName,
       createdAt: iso(r.createdAt)!,
+      exportedToTally: !!r.tallyExportId,
     };
   }
 
@@ -309,6 +311,7 @@ export class ReceivablesService {
 
   async update(user: RequestUser, id: string, dto: UpdateReceiptDto): Promise<ReceiptDto> {
     const row = await this.load(user, id);
+    assertNotExported(row, 'This receipt');
     const a = this.amounts(dto, row);
     if (row.kind !== 'BILL' && DEDUCTION_FIELDS.some((k) => !a[k].isZero())) throw new BadRequestException('A release has no deductions');
     if (dto.receiptDate !== undefined) this.checkDate(dto.receiptDate, row.bill?.sentDate ?? null, 'the date the bill was sent');
@@ -344,6 +347,7 @@ export class ReceivablesService {
   /** Take a receipt off (entered by mistake); its bill goes back to unpaid if it no longer settles. */
   async remove(user: RequestUser, id: string) {
     const row = await this.load(user, id);
+    assertNotExported(row, 'This receipt');
     await this.prisma.$transaction(async (tx) => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`RCPT:${row.projectId}`}))`;
       await tx.receipt.delete({ where: { id } });

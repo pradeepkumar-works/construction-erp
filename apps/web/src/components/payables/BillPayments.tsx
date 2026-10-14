@@ -10,6 +10,7 @@ import { useAuth } from '@/lib/auth';
 import { useVendorPayments } from '@/lib/queries';
 import { formatDate, formatINR, toNumber } from '@/lib/format';
 import { PAYMENT_QUERY_KEYS, PaymentFormModal, type PayTarget } from './PaymentFormModal';
+import { InTallyTag } from '@/components/tally/InTallyTag';
 
 /** Tag for how much of an approved bill is paid. */
 export function PaidTag({ bill }: { bill: { status: string; paidAmount: string; outstanding: string; paidDate: string | null } }) {
@@ -89,17 +90,20 @@ export function BillPayments({ target, approved }: { target: PayTarget & { paidA
                   title: '',
                   key: 'x',
                   width: 130,
-                  render: (_: unknown, p: VendorPaymentDto) => (
-                    <Space size={4}>
-                      <Button size="small" onClick={() => setEditing(p)}>
-                        Edit
-                      </Button>
-                      <Popconfirm title="Delete this payment?" description="The bill goes back to outstanding." onConfirm={() => remove.mutate(p.id)}>
-                        <Button size="small" danger>
-                          Delete
+                  render: (_: unknown, p: VendorPaymentDto) =>
+                    p.exportedToTally ? (
+                      <InTallyTag />
+                    ) : (
+                      <Space size={4}>
+                        <Button size="small" onClick={() => setEditing(p)}>
+                          Edit
                         </Button>
-                      </Popconfirm>
-                    </Space>
+                        <Popconfirm title="Delete this payment?" description="The bill goes back to outstanding." onConfirm={() => remove.mutate(p.id)}>
+                          <Button size="small" danger>
+                            Delete
+                          </Button>
+                        </Popconfirm>
+                      </Space>
                   ),
                 },
               ]

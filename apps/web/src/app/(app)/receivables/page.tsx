@@ -23,6 +23,7 @@ import { ExportButton } from '@/components/common/ExportButton';
 import { BillStageTag } from '@/components/bills/billUi';
 import { BillDrawer } from '@/components/bills/BillDrawer';
 import { ReceiptFormModal } from '@/components/receivables/ReceiptFormModal';
+import { InTallyTag } from '@/components/tally/InTallyTag';
 
 const money = (v: string, strong?: boolean) => (strong ? <strong className="mono">{formatINR(v)}</strong> : <span className="mono">{formatINR(v)}</span>);
 const late = (v: string) => (toNumber(v) > 0 ? <span className="mono" style={{ color: '#cf1322' }}>{formatINR(v)}</span> : <span className="mono text-muted">-</span>);
@@ -120,17 +121,20 @@ function ReceiptsTab({ projectId }: { projectId?: string }) {
             key: 'actions',
             fixed: 'right' as const,
             width: 140,
-            render: (_: unknown, r: ReceiptDto) => (
-              <Space size={4}>
-                <Button size="small" onClick={() => setEditing(r)}>
-                  Edit
-                </Button>
-                <Popconfirm title="Delete this receipt?" description={r.billId ? 'The bill goes back to outstanding.' : undefined} onConfirm={() => remove.mutate(r.id)}>
-                  <Button size="small" danger>
-                    Delete
+            render: (_: unknown, r: ReceiptDto) =>
+              r.exportedToTally ? (
+                <InTallyTag />
+              ) : (
+                <Space size={4}>
+                  <Button size="small" onClick={() => setEditing(r)}>
+                    Edit
                   </Button>
-                </Popconfirm>
-              </Space>
+                  <Popconfirm title="Delete this receipt?" description={r.billId ? 'The bill goes back to outstanding.' : undefined} onConfirm={() => remove.mutate(r.id)}>
+                    <Button size="small" danger>
+                      Delete
+                    </Button>
+                  </Popconfirm>
+                </Space>
             ),
           },
         ]

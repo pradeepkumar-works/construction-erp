@@ -113,6 +113,9 @@ export const PAYMENT_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'ACCOUNTS_MANAGE
 export const canRecordPayment = (role: RoleKey) => PAYMENT_ROLES.includes(role);
 /** See payables (what is owed to vendors and subcontractors, and when): those who pay and project managers. */
 export const canViewPayables = (role: RoleKey) => PAYMENT_ROLES.includes(role) || role === 'PROJECT_MANAGER';
+/** Export vouchers to Tally and set the ledger names: those who keep the books. */
+export const TALLY_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'ACCOUNTS_MANAGER'];
+export const canExportTally = (role: RoleKey) => TALLY_ROLES.includes(role);
 /** Issue work orders to subcontractors and labour contractors. */
 export const WORK_ORDER_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER', 'PROCUREMENT_MANAGER', 'QUANTITY_SURVEYOR'];
 export const canIssueWorkOrder = (role: RoleKey) => WORK_ORDER_ROLES.includes(role);

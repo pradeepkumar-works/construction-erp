@@ -16,3 +16,4 @@ export * from './approvals';
 export * from './onboarding';
 export * from './brand';
 export * from './subcontract';
+export * from './tally';

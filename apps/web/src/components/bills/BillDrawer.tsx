@@ -22,6 +22,7 @@ import { submissionMetaItems } from '@/components/common/SubmitterInfo';
 import { BillStageTag } from './billUi';
 import { openBillPrint } from './billPrint';
 import { ReceiptFormModal } from '@/components/receivables/ReceiptFormModal';
+import { InTallyTag } from '@/components/tally/InTallyTag';
 
 type StageAction = 'send' | 'certify';
 const ACTION_TITLES: Record<StageAction, string> = { send: 'Record as sent to the client', certify: 'Record the client’s certificate' };
@@ -139,7 +140,7 @@ export function BillDrawer({ id, open, onClose, onEdit }: { id: string | null; o
                 {data.stage === 'NOT_SENT' ? 'Mark sent' : 'Change date sent'}
               </Button>
             ) : null}
-            {approved && preparer && (data.stage === 'SENT' || data.stage === 'CERTIFIED') ? (
+            {approved && preparer && !data.exportedToTally && (data.stage === 'SENT' || data.stage === 'CERTIFIED') ? (
               <Button size="small" type={data.stage === 'SENT' ? 'primary' : 'default'} onClick={() => openAction('certify', data)}>
                 {data.stage === 'SENT' ? 'Record certificate' : 'Correct certificate'}
               </Button>
@@ -294,7 +295,7 @@ export function BillDrawer({ id, open, onClose, onEdit }: { id: string | null; o
                   { title: 'Deducted', dataIndex: 'deductedAmount', width: 130, align: 'right', render: (v) => <span className="mono">{formatINR(v, true)}</span> },
                   { title: 'By', dataIndex: 'createdByName', width: 140 },
                   ...(accounts
-                    ? [{ title: '', key: 'edit', width: 70, render: (_: unknown, r: ReceiptDto) => <Button size="small" type="link" onClick={() => setCorrecting(r)}>Edit</Button> }]
+                    ? [{ title: '', key: 'edit', width: 70, render: (_: unknown, r: ReceiptDto) => (r.exportedToTally ? <InTallyTag /> : <Button size="small" type="link" onClick={() => setCorrecting(r)}>Edit</Button>) }]
                     : []),
                 ]}
               />
