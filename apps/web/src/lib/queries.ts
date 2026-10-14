@@ -3,6 +3,11 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   CompanyDeletionDto,
+  CompanyLogEntryDto,
+  PlatformCompanyDetailDto,
+  PlatformCompanyDto,
+  SupportAccessDto,
+  SupportSessionDto,
   CompanyExportManifestDto,
   ComparativeStatementDto,
   PurchaseOrderDto,
@@ -1275,3 +1280,42 @@ export function useCancelCompanyDeletion() {
     onSuccess: (d) => qc.setQueryData(['company-data', 'deletion'], d),
   });
 }
+
+// ---- Support access and the company log (v3 item 35) ----
+
+export const useCompanyLog = () => useQuery({ queryKey: ['company-data', 'log'], queryFn: async () => (await api.get<CompanyLogEntryDto[]>('/company-data/log')).data });
+
+export const useSupportAccess = () => useQuery({ queryKey: ['company-data', 'support-access'], queryFn: async () => (await api.get<SupportAccessDto>('/company-data/support-access')).data });
+
+export function useSetSupportAccess() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (allow: boolean) => (allow ? await api.post<SupportAccessDto>('/company-data/support-access') : await api.delete<SupportAccessDto>('/company-data/support-access')).data,
+    onSuccess: (d) => {
+      qc.setQueryData(['company-data', 'support-access'], d);
+      void qc.invalidateQueries({ queryKey: ['company-data', 'log'] });
+    },
+  });
+}
+
+// ---- Platform console for staff (v3 item 35) ----
+
+export const usePlatformCompanies = (enabled = true) =>
+  useQuery({ queryKey: ['platform', 'companies'], queryFn: async () => (await api.get<PlatformCompanyDto[]>('/platform/companies')).data, enabled });
+
+export const usePlatformCompany = (id: string | null) =>
+  useQuery({ queryKey: ['platform', 'companies', id], queryFn: async () => (await api.get<PlatformCompanyDetailDto>(`/platform/companies/${id}`)).data, enabled: !!id });
+
+export function useSuspendCompany() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, reason }: { id: string; reason: string | null }) =>
+      (reason === null ? await api.post<PlatformCompanyDetailDto>(`/platform/companies/${id}/unsuspend`) : await api.post<PlatformCompanyDetailDto>(`/platform/companies/${id}/suspend`, { reason })).data,
+    onSuccess: (d) => {
+      qc.setQueryData(['platform', 'companies', d.id], d);
+      void qc.invalidateQueries({ queryKey: ['platform', 'companies'], exact: true });
+    },
+  });
+}
+
+export const useOpenSupportSession = () => useMutation({ mutationFn: async (id: string) => (await api.post<SupportSessionDto>(`/platform/companies/${id}/support-session`)).data });

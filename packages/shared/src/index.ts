@@ -23,3 +23,4 @@ export * from './staff';
 export * from './messaging';
 export * from './portal';
 export * from './company-data';
+export * from './platform';

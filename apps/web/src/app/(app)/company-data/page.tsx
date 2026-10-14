@@ -2,12 +2,13 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Alert, App, Button, Card, Input, Modal, Progress, Skeleton, Space, Typography } from 'antd';
-import { DeleteOutlined, DownloadOutlined, UndoOutlined } from '@ant-design/icons';
-import { DELETION_GRACE_DAYS, canManageCompanyData } from '@erp/shared';
+import { Alert, App, Button, Card, Input, Modal, Progress, Skeleton, Space, Table, Tag, Typography } from 'antd';
+import { CustomerServiceOutlined, DeleteOutlined, DownloadOutlined, StopOutlined, UndoOutlined } from '@ant-design/icons';
+import type { CompanyLogEntryDto } from '@erp/shared';
+import { DELETION_GRACE_DAYS, PRODUCT_NAME, SUPPORT_ACCESS_DAYS, canManageCompanyData } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { errorMessage } from '@/lib/api';
-import { useCancelCompanyDeletion, useCompanyDeletion, useCompanyExportManifest, useRequestCompanyDeletion } from '@/lib/queries';
+import { useCancelCompanyDeletion, useCompanyDeletion, useCompanyExportManifest, useCompanyLog, useRequestCompanyDeletion, useSetSupportAccess, useSupportAccess } from '@/lib/queries';
 import { buildCompanyExport, type ExportProgress } from '@/lib/companyExport';
 import { formatDate, formatDateTime } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -159,6 +160,89 @@ function DeletionCard() {
   );
 }
 
+/** The company admin decides whether support may look inside, for how long, and can take it back. */
+function SupportAccessCard() {
+  const { message } = App.useApp();
+  const { data, isLoading, error, refetch } = useSupportAccess();
+  const set = useSetSupportAccess();
+  const active = !!data?.until && new Date(data.until) > new Date();
+
+  const change = async (allow: boolean) => {
+    try {
+      await set.mutateAsync(allow);
+      message.success(allow ? `${PRODUCT_NAME} support can view the company for ${SUPPORT_ACCESS_DAYS} days` : 'Support access withdrawn');
+    } catch (e) {
+      message.error(errorMessage(e));
+    }
+  };
+
+  return (
+    <Card title={`${PRODUCT_NAME} support access`} style={{ marginBottom: 16 }}>
+      {error && <QueryError error={error} onRetry={() => refetch()} />}
+      {isLoading ? (
+        <Skeleton active paragraph={{ rows: 1 }} />
+      ) : (
+        <>
+          <Typography.Paragraph>
+            {PRODUCT_NAME} staff cannot see your company unless you allow it here. When you do, support can open it read-only for {SUPPORT_ACCESS_DAYS} days to
+            help with a problem; they cannot change anything, and every visit is recorded in the log below.
+          </Typography.Paragraph>
+          {active ? (
+            <Space wrap>
+              <Tag color="blue" icon={<CustomerServiceOutlined />}>
+                Allowed until {formatDateTime(data!.until!)}
+                {data?.grantedByName ? ` by ${data.grantedByName}` : ''}
+              </Tag>
+              <Button icon={<StopOutlined />} loading={set.isPending} onClick={() => change(false)}>
+                Withdraw access
+              </Button>
+            </Space>
+          ) : (
+            <Button icon={<CustomerServiceOutlined />} loading={set.isPending} onClick={() => change(true)}>
+              Allow support for {SUPPORT_ACCESS_DAYS} days
+            </Button>
+          )}
+        </>
+      )}
+    </Card>
+  );
+}
+
+const LOG_LABELS: Record<string, string> = {
+  EXPORTED: 'Data exported',
+  DELETION_REQUESTED: 'Deletion requested',
+  DELETION_CANCELLED: 'Deletion cancelled',
+  SUPPORT_ACCESS_GRANTED: 'Support allowed',
+  SUPPORT_ACCESS_REVOKED: 'Support withdrawn',
+  SUPPORT_VIEW: 'Support visit',
+  SUSPENDED: 'Suspended',
+  UNSUSPENDED: 'Suspension lifted',
+};
+
+function CompanyLogCard() {
+  const { data, isLoading, error, refetch } = useCompanyLog();
+  return (
+    <Card title="Company log" style={{ marginBottom: 16 }}>
+      {error && <QueryError error={error} onRetry={() => refetch()} />}
+      <Table<CompanyLogEntryDto>
+        rowKey="id"
+        size="small"
+        loading={isLoading}
+        dataSource={data ?? []}
+        locale={{ emptyText: 'Nothing yet' }}
+        pagination={{ pageSize: 10, hideOnSinglePage: true }}
+        scroll={{ x: 640 }}
+        columns={[
+          { title: 'When', dataIndex: 'createdAt', width: 170, render: (v: string) => formatDateTime(v) },
+          { title: 'What', dataIndex: 'action', width: 160, render: (a: string) => LOG_LABELS[a] ?? a },
+          { title: 'Who', dataIndex: 'actorName', width: 180 },
+          { title: 'Detail', dataIndex: 'note', render: (v: string | null) => v ?? '-' },
+        ]}
+      />
+    </Card>
+  );
+}
+
 export default function CompanyDataPage() {
   const { user } = useAuth();
   if (!user) return null;
@@ -174,7 +258,9 @@ export default function CompanyDataPage() {
         }
       />
       <ExportCard />
+      <SupportAccessCard />
       <DeletionCard />
+      <CompanyLogCard />
     </div>
   );
 }

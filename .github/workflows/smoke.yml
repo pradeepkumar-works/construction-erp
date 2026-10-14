@@ -513,6 +513,17 @@ jobs:
           echo "management exporting: $code"; [ "$code" = "403" ]
           code=$(curl -s -o /dev/null -w '%{http_code}' "$WEB_URL/privacy")
           echo "privacy page: $code"; [ "$code" = "200" ]
+      - name: Platform console and support access
+        run: |
+          set -e
+          login() { curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' -d "{\"email\":\"$1\",\"password\":\"password123\"}" | jq -r .accessToken; }
+          A="authorization: Bearer $(login admin@demo.com)"
+          curl -sf "$API_URL/company-data/support-access" -H "$A" | jq -r '"support access: \(if .until then "allowed until \(.until)" else "not allowed" end)"'
+          curl -sf "$API_URL/company-data/log" -H "$A" | jq -r '"company log: \(length) entries"'
+          curl -sf "$API_URL/auth/me" -H "$A" | jq -e '(.platformAdmin // false) == false' > /dev/null
+          # Demo accounts are public, so none may be staff (PLATFORM_ADMIN_EMAILS)
+          code=$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/platform/companies" -H "$A")
+          echo "demo admin on the console: $code"; [ "$code" = "403" ]
       - name: Project cost view
         run: |
           set -e

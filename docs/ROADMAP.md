@@ -272,8 +272,12 @@ relative to a v2 item (S about one, M about two, L about three). The full draft 
     company is protected. A public `/privacy` page says what is kept, where and who sees it.
 34. **Plans and billing** (M). Trial, plans by active projects or users, Razorpay subscriptions with GST
     invoices; an unpaid company goes read-only, never deleted.
-35. **Platform admin** (S). Console for Nirmaan staff (companies, users, activity, storage, plan, suspend);
-    read-only support access only with consent, written to the audit log.
+35. ~~**Platform admin** (S). Console for Nirmaan staff (companies, users, activity, storage, plan, suspend);
+    read-only support access only with consent, written to the audit log.~~
+    Done: staff (emails in `PLATFORM_ADMIN_EMAILS`) get a console listing every company with users, projects, last
+    activity, storage and status, and can suspend a company (nobody in it can sign in) or lift it. A company admin can
+    allow support for 7 days under Data & Privacy; staff then open the company read-only for 2 hours, with a banner and
+    an Exit, and every visit, consent and suspension shows in the company's log. Plan is added with item 34.
 
 Not in v3: a general ledger, statutory payroll, tendering, critical-path scheduling, BIM.
 

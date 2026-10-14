@@ -7,6 +7,8 @@ import { Alert, Avatar, Badge, Button, Drawer, Dropdown, Grid, Layout, Menu, Spa
 import type { MenuProps } from 'antd';
 import {
   AppstoreOutlined,
+  CloudServerOutlined,
+  CustomerServiceOutlined,
   AuditOutlined,
   CheckSquareOutlined,
   FileTextOutlined,
@@ -45,11 +47,13 @@ import {
   DatabaseOutlined,
 } from '@ant-design/icons';
 import type { AuthUser } from '@erp/shared';
+import { PRODUCT_NAME } from '@erp/shared';
 import { isGuest } from '@erp/shared';
 import { approvalRightsOf, canViewPurchaseOrders, canViewVendorBills, canViewWorkOrders, canViewPayables, canExportTally, canViewGstRegisters, canPrepareSubcontractBill, canEditContract, canEditProjects, canEditVendors, canManageUsers, canSeeVendorBank, canPrepareBill, canViewContract, canViewCost, mayApprove, canViewPayroll, canViewLabourSummary, canManageCompanyData } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useCompanyDeletion, usePendingApprovals } from '@/lib/queries';
-import { formatDate } from '@/lib/format';
+import { formatDate, formatDateTime } from '@/lib/format';
+import { endSupportSession } from '@/lib/api';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { BRAND } from '@/lib/brand';
 import { BrandMark, Wordmark } from './BrandMark';
@@ -161,6 +165,7 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
           ...(canEditProjects(user.roleKey) ? [link('/templates', 'Activity Templates', PartitionOutlined)] : []),
           ...(canManageUsers(user.roleKey) ? [link('/users', 'Users', TeamOutlined), link('/approval-rules', 'Approval Rules', SafetyCertificateOutlined)] : []),
           ...(canManageCompanyData(user.roleKey) ? [link('/company-data', 'Data & Privacy', DatabaseOutlined)] : []),
+          ...(user.platformAdmin ? [link('/platform', `${PRODUCT_NAME} console`, CloudServerOutlined)] : []),
         ],
       },
     ];
@@ -261,11 +266,36 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
           </Space>
         </Header>
         <Content>
+          <SupportBanner user={user} />
           <DeletionBanner user={user} />
           {children}
         </Content>
       </Layout>
     </Layout>
+  );
+}
+
+/** Staff viewing a company for support see, on every page, whose data it is and how to leave. */
+function SupportBanner({ user }: { user: AuthUser }) {
+  if (!user.support) return null;
+  const exit = () => {
+    endSupportSession();
+    window.location.href = '/platform';
+  };
+  return (
+    <div className="page-container" style={{ paddingBottom: 0 }}>
+      <Alert
+        type="warning"
+        showIcon
+        icon={<CustomerServiceOutlined />}
+        message={`Viewing ${user.organizationName} as ${PRODUCT_NAME} support, read-only, until ${formatDateTime(user.support.expiresAt)}. The visit is in the company's log.`}
+        action={
+          <Button size="small" onClick={exit}>
+            Exit
+          </Button>
+        }
+      />
+    </div>
   );
 }
 

@@ -1,5 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
+import { SUPPORT_ACCESS_DAYS } from '@erp/shared';
 import { BRAND } from '@/lib/brand';
 import { BrandMark, Wordmark } from '@/components/shell/BrandMark';
 
@@ -55,7 +56,10 @@ export default function PrivacyPage() {
             reports, bills once sent, and inspections.
           </li>
           <li>Every company&apos;s data is kept apart, and the database itself refuses to show one company&apos;s rows to another.</li>
-          <li>{name} staff look at a company&apos;s data only when that company asks for help.</li>
+          <li>
+            {name} staff can open a company&apos;s data only after its admin allows support access under Admin, Data &amp; Privacy. It lasts
+            {SUPPORT_ACCESS_DAYS} days, is read-only, can be withdrawn at any time, and every visit is recorded in the company&apos;s log.
+          </li>
         </ul>
 
         <h2>Where it is kept, and who helps</h2>

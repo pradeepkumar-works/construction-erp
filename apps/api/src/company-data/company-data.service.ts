@@ -1,7 +1,7 @@
 import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import type { CompanyDeletionDto, CompanyExportFileDto, CompanyExportManifestDto, CompanyExportPageDto } from '@erp/shared';
-import { DELETION_GRACE_DAYS, canManageCompanyData } from '@erp/shared';
+import type { CompanyDeletionDto, CompanyExportFileDto, CompanyExportManifestDto, CompanyExportPageDto, CompanyLogEntryDto, SupportAccessDto } from '@erp/shared';
+import { DELETION_GRACE_DAYS, PRODUCT_NAME, SUPPORT_ACCESS_DAYS, canManageCompanyData } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { withoutTenant } from '../prisma/tenant-context';
 import { AuditService } from '../common/audit.service';
@@ -156,6 +156,41 @@ export class CompanyDataService {
         return { id: r.id, fileName: r.fileName, mimeType: r.mimeType, size: r.size, url: this.storage.toUrl(r.id, r.storagePath), folder: link?.folder ?? 'unlinked', createdAt: r.createdAt.toISOString() };
       }),
     };
+  }
+
+  /** What happened to the company as a whole, newest first. Actors can be platform staff from another organisation. */
+  async companyLog(user: RequestUser): Promise<CompanyLogEntryDto[]> {
+    this.assertAdmin(user);
+    const rows = await this.prisma.auditLog.findMany({ where: { organizationId: user.organizationId, entityType: 'COMPANY', entityId: user.organizationId }, orderBy: { createdAt: 'desc' }, take: 50 });
+    const ids = [...new Set(rows.map((r) => r.actorId))];
+    const actors = await withoutTenant(async () => await this.prisma.user.findMany({ where: { id: { in: ids } }, select: { id: true, fullName: true, organizationId: true } }));
+    const name = new Map(actors.map((a) => [a.id, a.organizationId === user.organizationId ? a.fullName : `${a.fullName} (${PRODUCT_NAME})`]));
+    return rows.map((r) => ({ id: r.id, action: r.action, actorName: name.get(r.actorId) ?? '-', note: r.note, createdAt: r.createdAt.toISOString() }));
+  }
+
+  /* ---------- support access (consent for the platform admin) ---------- */
+
+  async supportAccess(user: RequestUser): Promise<SupportAccessDto> {
+    this.assertAdmin(user);
+    const org = await this.prisma.organization.findUniqueOrThrow({ where: { id: user.organizationId }, select: { supportAccessUntil: true, supportAccessGrantedByName: true } });
+    const live = org.supportAccessUntil && org.supportAccessUntil > new Date();
+    return { until: live ? org.supportAccessUntil!.toISOString() : null, grantedByName: live ? org.supportAccessGrantedByName : null };
+  }
+
+  /** Let support open the company read-only for SUPPORT_ACCESS_DAYS; asking again restarts the period. */
+  async grantSupportAccess(user: RequestUser): Promise<SupportAccessDto> {
+    this.assertAdmin(user);
+    const until = new Date(Date.now() + SUPPORT_ACCESS_DAYS * 24 * 3600_000);
+    await this.prisma.organization.update({ where: { id: user.organizationId }, data: { supportAccessUntil: until, supportAccessGrantedByName: user.fullName } });
+    await this.audit.log(user, 'COMPANY', user.organizationId, 'SUPPORT_ACCESS_GRANTED', `${PRODUCT_NAME} support may view the company read-only for ${SUPPORT_ACCESS_DAYS} days`);
+    return this.supportAccess(user);
+  }
+
+  async revokeSupportAccess(user: RequestUser): Promise<SupportAccessDto> {
+    this.assertAdmin(user);
+    await this.prisma.organization.update({ where: { id: user.organizationId }, data: { supportAccessUntil: null, supportAccessGrantedByName: null } });
+    await this.audit.log(user, 'COMPANY', user.organizationId, 'SUPPORT_ACCESS_REVOKED', `${PRODUCT_NAME} support access withdrawn`);
+    return this.supportAccess(user);
   }
 
   /* ---------- deletion ---------- */
