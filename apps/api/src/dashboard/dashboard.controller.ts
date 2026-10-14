@@ -14,6 +14,12 @@ export class DashboardController {
     return this.dashboard.company(user);
   }
 
+  /** First-week setup checklist for admin and management (403 for other roles). */
+  @Get('getting-started')
+  gettingStarted(@CurrentUser() user: RequestUser) {
+    return this.dashboard.gettingStarted(user);
+  }
+
   @Get('projects/:id')
   project(@CurrentUser() user: RequestUser, @Param('id') id: string) {
     return this.dashboard.project(user, id);

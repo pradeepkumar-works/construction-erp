@@ -2,6 +2,7 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
+  GettingStartedDto,
   EquipmentDto,
   EquipmentOwnership,
   ExpenseCategory,
@@ -167,6 +168,9 @@ export const clean = (f?: object) =>
 
 export const useCompanyDashboard = () =>
   useQuery({ queryKey: ['dashboard', 'company'], queryFn: async () => (await api.get<CompanyDashboard>('/dashboard/company')).data });
+
+export const useGettingStarted = (enabled: boolean) =>
+  useQuery({ queryKey: ['dashboard', 'getting-started'], queryFn: async () => (await api.get<GettingStartedDto>('/dashboard/getting-started')).data, enabled });
 
 export const useProjectDashboard = (id: string | undefined) =>
   useQuery({

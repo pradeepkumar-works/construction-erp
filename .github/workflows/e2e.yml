@@ -45,7 +45,7 @@ jobs:
         working-directory: apps/api
         run: |
           pnpm build
-          DATABASE_URL="$RUNTIME_URL" JWT_SECRET=e2e-secret PORT=4000 STORAGE_MODE=db PUSH_DISABLED=true EMAIL_DISABLED=true nohup node dist/main.js > /tmp/api.log 2>&1 &
+          DATABASE_URL="$RUNTIME_URL" JWT_SECRET=e2e-secret PORT=4000 STORAGE_MODE=db ORG_SIGNUP=open PUSH_DISABLED=true EMAIL_DISABLED=true nohup node dist/main.js > /tmp/api.log 2>&1 &
           for i in $(seq 1 30); do curl -sf "$E2E_API_URL/health" > /tmp/health.json && break; sleep 2; done
           cat /tmp/health.json; echo
           [ "$(jq -r .tenantGuard /tmp/health.json)" = "enforced" ]

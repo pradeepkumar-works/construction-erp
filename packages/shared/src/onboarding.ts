@@ -15,3 +15,15 @@ export function orgCodeFrom(name: string): string {
   const code = words.join('').slice(0, 10);
   return code.length >= 3 ? code : (code + 'ORG').slice(0, 10);
 }
+
+/** The first-week checklist an admin sees on the dashboard until every step is done (GET /dashboard/getting-started). */
+export const GETTING_STARTED_STEPS = ['PROJECT', 'BOQ', 'ACTIVITIES', 'TEAM', 'MEMBERS', 'APPROVAL_RULES', 'FIRST_ENTRY', 'FIRST_APPROVAL'] as const;
+export type GettingStartedStep = (typeof GETTING_STARTED_STEPS)[number];
+
+export interface GettingStartedDto {
+  steps: { key: GettingStartedStep; done: boolean }[];
+  done: number;
+  total: number;
+  /** When the organisation was created, for "day N of your first week". */
+  organizationCreatedAt: string;
+}
