@@ -270,8 +270,14 @@ relative to a v2 item (S about one, M about two, L about three). The full draft 
     browser and recorded in the audit log. An admin can ask for the company to be deleted: after 30 days (cancellable,
     every admin emailed, a banner on every page meanwhile) the daily job erases all its rows and files. The demo
     company is protected. A public `/privacy` page says what is kept, where and who sees it.
-34. **Plans and billing** (M). Trial, plans by active projects or users, Razorpay subscriptions with GST
-    invoices; an unpaid company goes read-only, never deleted.
+34. ~~**Plans and billing** (M). Trial, plans by active projects or users, Razorpay subscriptions with GST
+    invoices; an unpaid company goes read-only, never deleted.~~
+    Done, switched off until configured: a free trial (30 days), then a monthly price per active project (or per user,
+    `BILLING_UNIT`), paid a month or a year ahead (a year charges ten months) through Razorpay Checkout, with a numbered
+    GST tax invoice per payment. When the trial or paid period ends the company is read-only (402 on writes, banner
+    for everyone, entries wait on the phone); nothing is deleted. Admins are emailed 7 days and 1 day before. Staff
+    can move a trial's end from the console. Prepaid periods rather than auto-debit: UPI autopay mandates add caps and
+    failed-debit handling, so auto-renewal can follow once there are paying customers.
 35. ~~**Platform admin** (S). Console for Nirmaan staff (companies, users, activity, storage, plan, suspend);
     read-only support access only with consent, written to the audit log.~~
     Done: staff (emails in `PLATFORM_ADMIN_EMAILS`) get a console listing every company with users, projects, last

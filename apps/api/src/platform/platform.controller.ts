@@ -2,11 +2,13 @@ import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Post } from '@ne
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { PlatformService } from './platform.service';
-import { SuspendDto } from './platform.dto';
+import { SuspendDto, TrialDto } from './platform.dto';
+import { AllowWhenUnpaid } from '../common/billing';
 
 /** The console for Nirmaan staff (users whose email is in PLATFORM_ADMIN_EMAILS). */
 @ApiTags('platform')
 @ApiBearerAuth()
+@AllowWhenUnpaid()
 @Controller('platform')
 export class PlatformController {
   constructor(private platform: PlatformService) {}
@@ -28,6 +30,13 @@ export class PlatformController {
   @Post('companies/:id/suspend')
   suspend(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: SuspendDto) {
     return this.platform.suspend(user, id, dto.reason);
+  }
+
+  @ApiOperation({ summary: 'Set when the free trial ends (billing on only; audited in the company)' })
+  @HttpCode(200)
+  @Post('companies/:id/trial')
+  setTrial(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: TrialDto) {
+    return this.platform.setTrial(user, id, dto.until);
   }
 
   @ApiOperation({ summary: 'Lift a suspension' })

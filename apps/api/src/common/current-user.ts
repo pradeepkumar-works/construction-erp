@@ -10,6 +10,8 @@ export interface RequestUser {
   fullName: string;
   /** A read-only Nirmaan support session: `id` is the staff member, acting as an admin of `organizationId` */
   support?: { staffName: string; expiresAt: string };
+  /** The company's trial or subscription has ended: reads only (BillingReadOnlyGuard) */
+  billingReadOnly?: boolean;
 }
 
 export const CurrentUser = createParamDecorator((_data: unknown, ctx: ExecutionContext): RequestUser => {

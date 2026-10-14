@@ -4,9 +4,11 @@ import { CurrentUser, RequestUser } from '../common/current-user';
 import { GuestAllowed } from '../common/decorators';
 import { MessagingService } from './messaging.service';
 import { ListMessagesQuery, TestMessageDto, UpdateMessagingPrefsDto } from './messaging.dto';
+import { AllowWhenUnpaid } from '../common/billing';
 
 @ApiTags('messaging')
 @ApiBearerAuth()
+@AllowWhenUnpaid()
 @Controller('messaging')
 export class MessagingController {
   constructor(private messaging: MessagingService) {}

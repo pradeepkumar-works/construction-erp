@@ -524,6 +524,19 @@ jobs:
           # Demo accounts are public, so none may be staff (PLATFORM_ADMIN_EMAILS)
           code=$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/platform/companies" -H "$A")
           echo "demo admin on the console: $code"; [ "$code" = "403" ]
+      - name: Plans and billing
+        run: |
+          set -e
+          login() { curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' -d "{\"email\":\"$1\",\"password\":\"password123\"}" | jq -r .accessToken; }
+          A="authorization: Bearer $(login admin@demo.com)"
+          code=$(curl -s -o /tmp/billing.json -w '%{http_code}' "$API_URL/billing" -H "$A")
+          if [ "$code" = "404" ]; then echo "billing: switched off (no Razorpay keys, price or seller GSTIN)"; else
+            [ "$code" = "200" ]; jq -r '"billing: on, \(.unit) at ₹\(.unitPrice)/month, demo company \(.status)"' /tmp/billing.json
+            jq -e '.status == "EXEMPT"' /tmp/billing.json > /dev/null
+          fi
+          curl -sf "$API_URL/auth/me" -H "$A" | jq -e '(.billing.status // "EXEMPT") == "EXEMPT"' > /dev/null
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/billing/webhook" -H 'content-type: application/json' -H 'x-razorpay-signature: forged' -d '{}')
+          echo "forged webhook: $code"; [ "$code" = "400" ] || [ "$code" = "404" ]
       - name: Project cost view
         run: |
           set -e

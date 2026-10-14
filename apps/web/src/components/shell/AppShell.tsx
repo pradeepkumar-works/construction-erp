@@ -7,6 +7,7 @@ import { Alert, Avatar, Badge, Button, Drawer, Dropdown, Grid, Layout, Menu, Spa
 import type { MenuProps } from 'antd';
 import {
   AppstoreOutlined,
+  CreditCardOutlined,
   CloudServerOutlined,
   CustomerServiceOutlined,
   AuditOutlined,
@@ -47,9 +48,9 @@ import {
   DatabaseOutlined,
 } from '@ant-design/icons';
 import type { AuthUser } from '@erp/shared';
-import { PRODUCT_NAME } from '@erp/shared';
+import { BILLING_REMIND_DAYS, PRODUCT_NAME } from '@erp/shared';
 import { isGuest } from '@erp/shared';
-import { approvalRightsOf, canViewPurchaseOrders, canViewVendorBills, canViewWorkOrders, canViewPayables, canExportTally, canViewGstRegisters, canPrepareSubcontractBill, canEditContract, canEditProjects, canEditVendors, canManageUsers, canSeeVendorBank, canPrepareBill, canViewContract, canViewCost, mayApprove, canViewPayroll, canViewLabourSummary, canManageCompanyData } from '@erp/shared';
+import { approvalRightsOf, canViewPurchaseOrders, canViewVendorBills, canViewWorkOrders, canViewPayables, canExportTally, canViewGstRegisters, canPrepareSubcontractBill, canEditContract, canEditProjects, canEditVendors, canManageUsers, canSeeVendorBank, canPrepareBill, canViewContract, canViewCost, mayApprove, canViewPayroll, canViewLabourSummary, canManageCompanyData, canManageBilling } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useCompanyDeletion, usePendingApprovals } from '@/lib/queries';
 import { formatDate, formatDateTime } from '@/lib/format';
@@ -165,6 +166,7 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
           ...(canEditProjects(user.roleKey) ? [link('/templates', 'Activity Templates', PartitionOutlined)] : []),
           ...(canManageUsers(user.roleKey) ? [link('/users', 'Users', TeamOutlined), link('/approval-rules', 'Approval Rules', SafetyCertificateOutlined)] : []),
           ...(canManageCompanyData(user.roleKey) ? [link('/company-data', 'Data & Privacy', DatabaseOutlined)] : []),
+          ...(user.billing && canManageBilling(user.roleKey) ? [link('/billing', 'Billing', CreditCardOutlined)] : []),
           ...(user.platformAdmin ? [link('/platform', `${PRODUCT_NAME} console`, CloudServerOutlined)] : []),
         ],
       },
@@ -267,6 +269,7 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
         </Header>
         <Content>
           <SupportBanner user={user} />
+          <BillingBanner user={user} />
           <DeletionBanner user={user} />
           {children}
         </Content>
@@ -294,6 +297,46 @@ function SupportBanner({ user }: { user: AuthUser }) {
             Exit
           </Button>
         }
+      />
+    </div>
+  );
+}
+
+/** Everyone sees when the company is read-only for want of payment; admins also see the trial or period running out. */
+function BillingBanner({ user }: { user: AuthUser }) {
+  const b = user.billing;
+  if (!b || user.support) return null;
+  const admin = canManageBilling(user.roleKey);
+  const renew = admin && (
+    <Link href="/billing">
+      <Button size="small" type="primary">
+        {b.status === 'READ_ONLY' ? 'Renew' : 'Subscribe'}
+      </Button>
+    </Link>
+  );
+  if (b.status === 'READ_ONLY') {
+    return (
+      <div className="page-container" style={{ paddingBottom: 0 }}>
+        <Alert
+          type="error"
+          showIcon
+          message={`${user.organizationName} is read-only: the ${PRODUCT_NAME} ${b.paidUntil ? 'subscription' : 'free trial'} has ended. You can still see and export everything.${admin ? '' : ' Ask your admin to renew.'}`}
+          action={renew}
+        />
+      </div>
+    );
+  }
+  const ends = b.status === 'TRIAL' ? b.trialEndsAt : b.status === 'ACTIVE' ? b.paidUntil : null;
+  if (!admin || !ends || b.status === 'EXEMPT') return null;
+  const daysLeft = Math.round((Date.parse(`${ends}T00:00:00Z`) - Date.parse(`${new Date().toISOString().slice(0, 10)}T00:00:00Z`)) / 86_400_000);
+  if (daysLeft > BILLING_REMIND_DAYS) return null;
+  return (
+    <div className="page-container" style={{ paddingBottom: 0 }}>
+      <Alert
+        type="info"
+        showIcon
+        message={`Your ${b.status === 'TRIAL' ? 'free trial' : 'subscription'} ends on ${formatDate(ends)}. After that the company becomes read-only until it is paid.`}
+        action={renew}
       />
     </div>
   );

@@ -217,6 +217,8 @@ const LOG_LABELS: Record<string, string> = {
   SUPPORT_VIEW: 'Support visit',
   SUSPENDED: 'Suspended',
   UNSUSPENDED: 'Suspension lifted',
+  SUBSCRIPTION_PAID: 'Subscription paid',
+  TRIAL_CHANGED: 'Trial changed',
 };
 
 function CompanyLogCard() {

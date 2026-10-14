@@ -9,7 +9,8 @@ import { tenantMiddleware } from './prisma/tenant-context';
 import { PRODUCT_NAME } from '@erp/shared';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  // rawBody: the Razorpay webhook signature is over the exact bytes sent
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, { rawBody: true });
   app.setGlobalPrefix('api');
   app.use(tenantMiddleware);
   // CORS_ORIGINS: comma-separated list of allowed origins; unset = allow any origin (dev / mobile apps)

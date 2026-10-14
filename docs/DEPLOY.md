@@ -41,6 +41,7 @@ API (`apps/api`):
 | `MSG91_AUTH_KEY`, `MSG91_TEMPLATE_IDS` | SMS alerts through MSG91 with DLT-registered templates: `MSG91_TEMPLATE_IDS=APPROVAL_REQUEST=<id>,SENT_BACK=<id>,DPR_REMINDER=<id>,APPROVAL_DIGEST=<id>,TEST_DUE=<id>,BILLS_DUE=<id>,INVITE=<id>,TEST=<id>`. A message without an id is not sent by SMS. `MSG91_API_URL` overrides the service URL. |
 | `PUSH_DISABLED`, `EMAIL_DISABLED`, `MESSAGING_DISABLED` | `true` switches a channel off (useful on preview deployments); `MESSAGING_DISABLED` stops WhatsApp and SMS |
 | `PLATFORM_ADMIN_EMAILS` | comma-separated emails of staff who get the console at `/platform` (all companies, suspend, read-only support views). Use staff's own accounts, never a demo account: demo passwords are public. Unset = nobody. |
+| `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, `BILLING_PRICE`, `BILLING_SELLER_NAME`, `BILLING_SELLER_GSTIN`, `BILLING_SELLER_ADDRESS` | Plans and billing, see "Billing" below. Billing is off (nobody is charged or restricted) until the key id and secret, the price and the seller's name and GSTIN are all set. |
 | `PROTECTED_ORG_CODES` | comma-separated organisation codes that can never be deleted (default `DEMO`, the public demo company) |
 
 Web (`apps/web`): `NEXT_PUBLIC_API_URL`, e.g. `https://construction-erp-api-pradeep15.vercel.app/api`, and
@@ -140,3 +141,24 @@ Each user's **Send a test** button shows whether a channel works end to end.
    `BLOB_READ_WRITE_TOKEN` / keep `STORAGE_MODE=db`.
 3. Generate a domain, then point `NEXT_PUBLIC_API_URL` (Vercel web) and `EXPO_PUBLIC_API_URL`
    (mobile) at it.
+
+## Billing
+
+Companies get a free trial, then pay a month or a year ahead through Razorpay; each payment gets a GST tax invoice
+under Admin > Billing. When the trial or paid period ends, the company is read-only until it pays. To switch it on,
+set these on the API project and redeploy:
+
+| Variable | Value |
+| --- | --- |
+| `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET` | Razorpay Dashboard > Account & Settings > API Keys (test keys first, `rzp_test_...`) |
+| `RAZORPAY_WEBHOOK_SECRET` | Dashboard > Webhooks: add `https://<api host>/api/billing/webhook` with events `payment.captured` and `order.paid`, and the secret you choose there. Records payments whose browser closed before returning. |
+| `BILLING_PRICE` | rupees per unit per month before GST, e.g. `1999` |
+| `BILLING_UNIT` | `project` (default: projects in Active status, unlimited users) or `user` (active staff, guests free) |
+| `BILLING_TRIAL_DAYS` | default `30`; existing companies get a full trial from the day billing is switched on |
+| `BILLING_SELLER_NAME`, `BILLING_SELLER_GSTIN`, `BILLING_SELLER_ADDRESS` | the legal name, GSTIN and address printed on invoices; the GSTIN's state decides CGST + SGST or IGST |
+| `BILLING_SAC` | SAC code on invoices, default `998314`; confirm with your CA |
+| `BILLING_INVOICE_PREFIX` | default `NIR`, giving invoice numbers like `NIR2627-00001` (per financial year) |
+| `BILLING_EXEMPT_ORG_CODES` | comma-separated organisation codes never charged, default `DEMO`; add your own company's code |
+
+Staff can move a company's trial end in the platform console (for a pilot, or to end it).
+

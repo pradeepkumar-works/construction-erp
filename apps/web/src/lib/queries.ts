@@ -2,6 +2,10 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
+  BillingDetailsDto,
+  BillingInvoiceDto,
+  BillingOrderDto,
+  BillingSummaryDto,
   CompanyDeletionDto,
   CompanyLogEntryDto,
   PlatformCompanyDetailDto,
@@ -1319,3 +1323,42 @@ export function useSuspendCompany() {
 }
 
 export const useOpenSupportSession = () => useMutation({ mutationFn: async (id: string) => (await api.post<SupportSessionDto>(`/platform/companies/${id}/support-session`)).data });
+
+// ---- Plans and billing (v3 item 34) ----
+
+export const useBilling = (enabled = true) => useQuery({ queryKey: ['billing'], queryFn: async () => (await api.get<BillingSummaryDto>('/billing')).data, enabled });
+
+export const useBillingInvoices = (enabled = true) =>
+  useQuery({ queryKey: ['billing', 'invoices'], queryFn: async () => (await api.get<BillingInvoiceDto[]>('/billing/invoices')).data, enabled });
+
+export function useUpdateBillingDetails() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (d: BillingDetailsDto) => (await api.put<BillingSummaryDto>('/billing/details', d)).data,
+    onSuccess: (d) => qc.setQueryData(['billing'], d),
+  });
+}
+
+export const useCreateBillingOrder = () => useMutation({ mutationFn: async (months: 1 | 12) => (await api.post<BillingOrderDto>('/billing/orders', { months })).data });
+
+export function useVerifyBillingPayment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (p: { orderId: string; paymentId: string; signature: string }) => (await api.post<BillingSummaryDto>('/billing/verify', p)).data,
+    onSuccess: (d) => {
+      qc.setQueryData(['billing'], d);
+      void qc.invalidateQueries({ queryKey: ['billing', 'invoices'] });
+    },
+  });
+}
+
+export function useSetTrialEnd() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, until }: { id: string; until: string }) => (await api.post<PlatformCompanyDetailDto>(`/platform/companies/${id}/trial`, { until })).data,
+    onSuccess: (d) => {
+      qc.setQueryData(['platform', 'companies', d.id], d);
+      void qc.invalidateQueries({ queryKey: ['platform', 'companies'], exact: true });
+    },
+  });
+}

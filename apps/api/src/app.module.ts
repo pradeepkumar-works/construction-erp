@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { GuestGuard } from './common/guest.guard';
 import { SupportReadOnlyGuard } from './common/support.guard';
+import { BillingReadOnlyGuard } from './common/billing';
 import { PortalModule } from './portal/portal.module';
 import { PlatformModule } from './platform/platform.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -91,6 +92,7 @@ import { HealthController } from './health.controller';
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: GuestGuard },
     { provide: APP_GUARD, useClass: SupportReadOnlyGuard },
+    { provide: APP_GUARD, useClass: BillingReadOnlyGuard },
   ],
 })
 export class AppModule {}

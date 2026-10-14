@@ -6,10 +6,12 @@ import { CronGuard } from '../notifications/cron.guard';
 import { JobQuery } from '../notifications/notifications.dto';
 import { CompanyDataService } from './company-data.service';
 import { ExportPageQuery, RequestDeletionDto } from './company-data.dto';
+import { AllowWhenUnpaid } from '../common/billing';
 
 /** Data export and company deletion (admins). */
 @ApiTags('company-data')
 @ApiBearerAuth()
+@AllowWhenUnpaid()
 @Controller('company-data')
 export class CompanyDataController {
   constructor(private data: CompanyDataService) {}

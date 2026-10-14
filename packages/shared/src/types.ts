@@ -46,6 +46,19 @@ export interface AuthUser {
   platformAdmin?: boolean;
   /** Set when this is a read-only support session: who from Nirmaan is looking, and until when */
   support?: { staffName: string; expiresAt: string };
+  /** The company's subscription, only when billing is switched on for this server */
+  billing?: BillingStateDto;
+}
+
+/** Where a company stands with its subscription. READ_ONLY: trial over and nothing paid, so it can read but not write. */
+export type BillingStatus = 'TRIAL' | 'ACTIVE' | 'READ_ONLY' | 'EXEMPT';
+
+export interface BillingStateDto {
+  status: BillingStatus;
+  /** Last day of the free trial (null until the trial starts) */
+  trialEndsAt: string | null;
+  /** Last day paid for (null if never paid) */
+  paidUntil: string | null;
 }
 
 export interface LoginResponse {

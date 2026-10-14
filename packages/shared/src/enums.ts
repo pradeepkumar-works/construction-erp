@@ -110,3 +110,7 @@ export const MSME_CATEGORIES = ['MICRO', 'SMALL', 'MEDIUM'] as const;
 export type MsmeCategory = (typeof MSME_CATEGORIES)[number];
 
 export const RECEIPT_MODES = ['BANK', 'UPI', 'CASH'] as const satisfies readonly PaymentMode[];
+
+/** A payment for the Nirmaan subscription (v3 item 34): created with a Razorpay order, paid once Razorpay confirms it. */
+export const BILLING_PAYMENT_STATUSES = ['CREATED', 'PAID'] as const;
+export type BillingPaymentStatus = (typeof BILLING_PAYMENT_STATUSES)[number];

@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { Alert, App, Button, Descriptions, Divider, Drawer, Input, Modal, Space, Table, Tag, Tooltip, Typography } from 'antd';
+import { Alert, App, Button, DatePicker, Descriptions, Divider, Drawer, Input, Modal, Space, Table, Tag, Tooltip, Typography } from 'antd';
+import dayjs from 'dayjs';
 import { CheckCircleOutlined, EyeOutlined, StopOutlined } from '@ant-design/icons';
 import type { PlatformCompanyDto, PlatformUserDto } from '@erp/shared';
-import { PRODUCT_NAME, SUPPORT_SESSION_HOURS } from '@erp/shared';
+import { BILLING_STATUS_LABELS, PRODUCT_NAME, SUPPORT_SESSION_HOURS } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { errorMessage, startSupportSession } from '@/lib/api';
-import { useOpenSupportSession, usePlatformCompanies, usePlatformCompany, useSuspendCompany } from '@/lib/queries';
+import { useOpenSupportSession, usePlatformCompanies, usePlatformCompany, useSetTrialEnd, useSuspendCompany } from '@/lib/queries';
 import { formatDate, formatDateTime } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { QueryError } from '@/components/common/QueryState';
@@ -21,6 +22,13 @@ function StatusTags({ c }: { c: PlatformCompanyDto }) {
       {c.suspendedAt ? <Tag color="red">Suspended</Tag> : <Tag color="green">Active</Tag>}
       {c.deletionScheduledFor && <Tag color="volcano">Deleting {formatDate(c.deletionScheduledFor)}</Tag>}
       {supportOpen(c) && <Tag color="blue">Support allowed</Tag>}
+      {c.billing && (
+        <Tag color={c.billing.status === 'READ_ONLY' ? 'red' : c.billing.status === 'ACTIVE' ? 'green' : 'default'}>
+          {BILLING_STATUS_LABELS[c.billing.status]}
+          {c.billing.status === 'ACTIVE' && c.billing.paidUntil ? ` to ${formatDate(c.billing.paidUntil)}` : ''}
+          {c.billing.status === 'TRIAL' && c.billing.trialEndsAt ? ` to ${formatDate(c.billing.trialEndsAt)}` : ''}
+        </Tag>
+      )}
     </Space>
   );
 }
@@ -95,6 +103,7 @@ function CompanyDrawer({ id, ownOrgId, onClose }: { id: string | null; ownOrgId:
   const { message } = App.useApp();
   const { data, error, refetch } = usePlatformCompany(id);
   const suspend = useSuspendCompany();
+  const trial = useSetTrialEnd();
   const open = useOpenSupportSession();
   const [asking, setAsking] = useState(false);
   const [reason, setReason] = useState('');
@@ -107,6 +116,16 @@ function CompanyDrawer({ id, ownOrgId, onClose }: { id: string | null; ownOrgId:
       message.success(lift ? `${c.name} can sign in again` : `${c.name} is suspended`);
       setAsking(false);
       setReason('');
+    } catch (e) {
+      message.error(errorMessage(e));
+    }
+  };
+
+  const setTrial = async (until: string) => {
+    if (!c) return;
+    try {
+      await trial.mutateAsync({ id: c.id, until });
+      message.success(`Free trial for ${c.name} ends on ${formatDate(until)}`);
     } catch (e) {
       message.error(errorMessage(e));
     }
@@ -164,6 +183,25 @@ function CompanyDrawer({ id, ownOrgId, onClose }: { id: string | null; ownOrgId:
                 span: 2,
                 children: supportOpen(c) ? `Allowed until ${formatDateTime(c.supportAccessUntil!)}${c.supportAccessGrantedByName ? ` by ${c.supportAccessGrantedByName}` : ''}` : 'Not allowed',
               },
+              ...(c.billing
+                ? [
+                    { key: 'paid', label: 'Paid until', children: c.billing.paidUntil ? formatDate(c.billing.paidUntil) : 'Never paid' },
+                    {
+                      key: 'trial',
+                      label: 'Free trial ends',
+                      children: (
+                        <DatePicker
+                          size="small"
+                          allowClear={false}
+                          aria-label="Free trial ends"
+                          disabled={c.billing.status === 'EXEMPT' || trial.isPending}
+                          value={c.billing.trialEndsAt ? dayjs(c.billing.trialEndsAt) : null}
+                          onChange={(d) => d && setTrial(d.format('YYYY-MM-DD'))}
+                        />
+                      ),
+                    },
+                  ]
+                : []),
             ]}
           />
           <Divider titlePlacement="start" plain>

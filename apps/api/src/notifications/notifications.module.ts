@@ -10,16 +10,18 @@ import { MessagingController } from '../messaging/messaging.controller';
 import { PayablesModule } from '../payables/payables.module';
 import { CompanyDataService } from '../company-data/company-data.service';
 import { CompanyDataController } from '../company-data/company-data.controller';
+import { BillingService } from '../billing/billing.service';
+import { BillingController } from '../billing/billing.controller';
 
 /**
  * Global so SubmissionLifecycleService (CommonModule) can emit notifications, and invites send WhatsApp / SMS, without an import cycle.
- * Company data lives here too: it emails admins and its purge rides on the daily digest cron.
+ * Company data and billing live here too: they email admins, and their daily jobs ride on the digest cron.
  */
 @Global()
 @Module({
   imports: [PayablesModule],
-  controllers: [NotificationsController, MessagingController, CompanyDataController],
-  providers: [NotificationsService, NotificationJobsService, NotificationSchedulerService, ExpoPushService, EmailService, MessagingService, CompanyDataService],
+  controllers: [NotificationsController, MessagingController, CompanyDataController, BillingController],
+  providers: [NotificationsService, NotificationJobsService, NotificationSchedulerService, ExpoPushService, EmailService, MessagingService, CompanyDataService, BillingService],
   exports: [NotificationsService, NotificationJobsService, EmailService, MessagingService],
 })
 export class NotificationsModule {}

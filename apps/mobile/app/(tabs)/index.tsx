@@ -7,7 +7,7 @@ import type { DailyReportDto, MaterialRequestDto, Paginated, ProgressEntryDto, P
 import { useFetch } from '../../src/api/hooks';
 import { fetchProjects } from '../../src/api/lists';
 import { useAuth } from '../../src/auth/AuthContext';
-import { Button, Card, EmptyState, ErrorState, Loading, NotificationBell, OfflineBanner, Screen, SectionTitle, Stat, SubmissionRow } from '../../src/components';
+import { BillingBanner, Button, Card, EmptyState, ErrorState, Loading, NotificationBell, OfflineBanner, Screen, SectionTitle, Stat, SubmissionRow } from '../../src/components';
 import { useOffline } from '../../src/offline';
 import { colors, radius, spacing, typography } from '../../src/theme';
 import { fmtQty, formatDate, timeAgo, today } from '../../src/utils/format';
@@ -79,6 +79,7 @@ export default function HomeScreen() {
         </View>
         <NotificationBell />
       </View>
+      <BillingBanner />
       <OfflineBanner />
 
       <SectionTitle title="New entry" />

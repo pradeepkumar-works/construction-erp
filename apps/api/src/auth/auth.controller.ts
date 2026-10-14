@@ -4,8 +4,10 @@ import { AuthService } from './auth.service';
 import { ChangePasswordDto, ForgotPasswordDto, LoginDto, SetPasswordDto, SignupDto } from './auth.dto';
 import { GuestAllowed, Public } from '../common/decorators';
 import { CurrentUser, RequestUser } from '../common/current-user';
+import { AllowWhenUnpaid } from '../common/billing';
 
 @ApiTags('auth')
+@AllowWhenUnpaid()
 @Controller('auth')
 export class AuthController {
   constructor(private auth: AuthService) {}
