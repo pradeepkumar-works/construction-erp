@@ -222,6 +222,28 @@ enum LeaveStatus {
   CANCELLED
 }
 
+/// Outbound phone channels for alerts, on top of in-app, push and email.
+enum MessageChannel {
+  WHATSAPP
+  SMS
+}
+
+/// Which pre-approved template a WhatsApp or SMS message uses (WhatsApp and DLT both need registered templates).
+enum MessageTemplate {
+  APPROVAL_REQUEST
+  SENT_BACK
+  DPR_REMINDER
+  INVITE
+  TEST
+}
+
+/// SKIPPED: the channel is not set up on this server, so nothing left it (the row shows what would have gone).
+enum OutboundMessageStatus {
+  SENT
+  FAILED
+  SKIPPED
+}
+
 enum RiskKind {
   DELAY
   RISK
@@ -332,6 +354,7 @@ model Organization {
   staffAttendance   StaffAttendance[]
   leaveRequests     LeaveRequest[]
   holidays          Holiday[]
+  outboundMessages  OutboundMessage[]
 }
 
 model Role {
@@ -377,6 +400,9 @@ model User {
   passwordHash   String
   fullName       String
   phone          String?
+  /// The user's own opt-in for alerts on WhatsApp and by SMS (WhatsApp first, SMS as the fallback).
+  whatsappAlerts Boolean      @default(false)
+  smsAlerts      Boolean      @default(false)
   isActive       Boolean      @default(true)
   /// Set when invited; cleared once the user chooses a password.
   invitedAt      DateTime?
@@ -396,6 +422,7 @@ model User {
   auditLogs            AuditLog[]
   notifications        Notification[]
   pushTokens           PushToken[]
+  outboundMessages     OutboundMessage[]
   passwordTokens       PasswordToken[]
   recordedAttendance   AttendanceSheet[]  @relation("AttendanceRecorder")
   updatedAttendance    AttendanceSheet[]  @relation("AttendanceUpdater")
@@ -1886,6 +1913,31 @@ model PasswordToken {
 
   @@index([userId])
   @@index([organizationId])
+}
+
+/// One WhatsApp or SMS message handed (or not) to the provider. Kept as the company's message log.
+model OutboundMessage {
+  id             String                @id @default(uuid())
+  organizationId String
+  organization   Organization          @relation(fields: [organizationId], references: [id])
+  userId         String?
+  user           User?                 @relation(fields: [userId], references: [id], onDelete: SetNull)
+  /// The in-app notification this message carries, when there is one
+  notificationId String?
+  channel        MessageChannel
+  template       MessageTemplate
+  /// Number in international form without "+", e.g. 919876543210
+  to             String
+  /// The text as the recipient reads it
+  body           String
+  status         OutboundMessageStatus
+  /// The provider's message id when sent
+  providerRef    String?
+  error          String?
+  createdAt      DateTime              @default(now())
+
+  @@index([organizationId, createdAt])
+  @@index([userId])
 }
 
 /// Expo push token of one device of one user. A user may have several devices.

@@ -4,6 +4,7 @@ import * as bcrypt from 'bcryptjs';
 import { INVITE_LINK_HOURS, RESET_LINK_HOURS, type PasswordLinkDto, type PasswordTokenInfoDto, type PasswordTokenPurpose } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService, escapeHtml } from '../notifications/email.service';
+import { MessagingService } from '../messaging/messaging.service';
 import { EMAIL_COLORS, emailButton, emailLayout } from '../notifications/email-layout';
 import { PRODUCT_NAME } from '@erp/shared';
 
@@ -18,7 +19,7 @@ const trimUrl = (u: string) => u.trim().replace(/\/+$/, '');
 @Injectable()
 export class PasswordLinksService {
   private readonly log = new Logger(PasswordLinksService.name);
-  constructor(private prisma: PrismaService, private email: EmailService) {}
+  constructor(private prisma: PrismaService, private email: EmailService, private messaging: MessagingService) {}
 
   /** The web address links point at, from configuration only (safe for public endpoints). */
   configuredWebUrl(): string | null {
@@ -64,7 +65,9 @@ export class PasswordLinksService {
     } else if (!link) {
       this.log.warn(`No WEB_URL or CORS_ORIGINS: cannot build a ${purpose} link for user ${userId}`);
     }
-    return { link, emailed, expiresAt: expiresAt.toISOString() };
+    // An invite also goes to the phone the admin entered, on WhatsApp or SMS when either is set up.
+    const messaged = link && purpose === 'INVITE' ? await this.messaging.direct({ organizationId: user.organizationId, userId: user.id, phone: user.phone }, { template: 'INVITE', params: [user.organization.name, link, `${INVITE_LINK_HOURS / 24} days`] }) : null;
+    return { link, emailed, messaged, expiresAt: expiresAt.toISOString() };
   }
 
   private async valid(token: string) {

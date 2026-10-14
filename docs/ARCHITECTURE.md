@@ -726,6 +726,14 @@ that device and is deleted on sign-out or when Expo reports it unregistered.
   (`entityId` is the register entry; web opens `/risks?id=`, the site app `/risk/<id>`).
 - A new notification type = enum value in `schema.prisma` and `packages/shared` (+ label), a
   `notify()` call, and a route in the web `notificationHref` / mobile `notificationRoute` helpers.
+- WhatsApp and SMS (`MessagingService`) are opt-in per user (`User.whatsappAlerts`, `User.smsAlerts`, to
+  `User.phone` normalised to `91XXXXXXXXXX`). A `notify()` call that passes `message: { template, params }` also
+  sends that template to the recipients who opted in: WhatsApp first, SMS when WhatsApp is off, not set up or fails.
+  Only approval requests, send-backs and the DPR reminder carry one; invites call `MessagingService.direct` for the
+  number the admin entered. Templates are fixed (`MessageTemplate`; WhatsApp and DLT both need them registered),
+  their text lives in `packages/shared/src/messaging.ts`, and each attempt is an `OutboundMessage` row (SENT,
+  FAILED, or SKIPPED when the channel is not set up), which is the company's message log. A new message = a template
+  value in both enums, its text, a Meta and DLT registration, and a `message` on the `notify()` call.
 
 ## Offline entry (mobile)
 

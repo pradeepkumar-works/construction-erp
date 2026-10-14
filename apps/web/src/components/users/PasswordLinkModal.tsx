@@ -4,6 +4,7 @@ import React from 'react';
 import { Alert, App, Button, Input, Modal, Space, Typography } from 'antd';
 import { CopyOutlined } from '@ant-design/icons';
 import type { PasswordLinkDto } from '@erp/shared';
+import { MESSAGE_CHANNEL_LABELS } from '@erp/shared';
 import { formatDateTime } from '@/lib/format';
 
 /** Shows a set-password link after an invite or reset, for the admin to share if it was not emailed. */
@@ -28,6 +29,7 @@ export function PasswordLinkModal({ result, onClose }: { result: { name: string;
           ) : (
             <Alert type="info" showIcon title="Not emailed" description={`Email is not set up on this server, so send this link to ${result.email} yourself (WhatsApp, SMS or email).`} />
           )}
+          {link.messaged ? <Alert type="success" showIcon title={`Also sent on ${MESSAGE_CHANNEL_LABELS[link.messaged]} to their mobile number.`} /> : null}
           {link.link ? (
             <Space.Compact style={{ width: '100%' }}>
               <Input readOnly value={link.link} aria-label="Set-password link" onFocus={(e) => e.target.select()} />

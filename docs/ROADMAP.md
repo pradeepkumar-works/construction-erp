@@ -247,8 +247,12 @@ relative to a v2 item (S about one, M about two, L about three). The full draft 
     by project and trade from the attendance register at the daily rates, marking contractors paid through work orders.
 
 ### F. Reach
-31. **WhatsApp and SMS** (M). Approval requests, send-backs, DPR reminders and invite links through the
-    WhatsApp Business Platform (Meta-approved templates), SMS fallback (DLT registration); channels per user.
+31. ~~**WhatsApp and SMS** (M). Approval requests, send-backs, DPR reminders and invite links through the
+    WhatsApp Business Platform (Meta-approved templates), SMS fallback (DLT registration); channels per user.~~
+    Done: each user switches WhatsApp and SMS on for their own number (web Notifications, app Profile) and can send a
+    test. Approval requests, send-backs and the DPR reminder go on WhatsApp, falling back to SMS; invites go to the
+    number the admin enters; every message is in a log for management. Sending starts once the Meta and MSG91 (DLT)
+    keys are set (docs/DEPLOY.md); until then messages are logged as not set up.
 32. **Client and consultant portal** (M). Guest login for the client's engineer or PMC on their projects:
     approved progress, DPRs, reports, certify RA bills, attend inspections. Access only through
     `project-access.service.ts` and `permissions.ts`.

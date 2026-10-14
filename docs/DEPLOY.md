@@ -36,13 +36,39 @@ API (`apps/api`):
 | `ORG_SIGNUP` | `open` lets new companies create an organisation at `/signup`; unset = closed |
 | `EXPO_ACCESS_TOKEN` | optional; only if push security is enforced on the Expo project |
 | `NOTIFICATION_JOBS_INPROCESS`, `DPR_REMINDER_TIME`, `APPROVAL_DIGEST_TIME` | run the jobs from a timer inside the API (Docker / Railway) instead of Vercel Cron; times are `HH:mm` in `NOTIFICATION_TIMEZONE` |
-| `PUSH_DISABLED`, `EMAIL_DISABLED` | `true` switches a channel off (useful on preview deployments) |
+| `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID` | WhatsApp alerts through the WhatsApp Business Platform (Cloud API), see "WhatsApp and SMS" below. `WHATSAPP_TEMPLATE_LANGUAGE` (default `en`), `WHATSAPP_TEMPLATE_PREFIX` (default `nirmaan_`) and `WHATSAPP_API_URL` (default `https://graph.facebook.com/v21.0`) are optional. |
+| `MSG91_AUTH_KEY`, `MSG91_TEMPLATE_IDS` | SMS alerts through MSG91 with DLT-registered templates: `MSG91_TEMPLATE_IDS=APPROVAL_REQUEST=<id>,SENT_BACK=<id>,DPR_REMINDER=<id>,INVITE=<id>,TEST=<id>`. A message without an id is not sent by SMS. `MSG91_API_URL` overrides the service URL. |
+| `PUSH_DISABLED`, `EMAIL_DISABLED`, `MESSAGING_DISABLED` | `true` switches a channel off (useful on preview deployments); `MESSAGING_DISABLED` stops WhatsApp and SMS |
 
 Web (`apps/web`): `NEXT_PUBLIC_API_URL`, e.g. `https://construction-erp-api-pradeep15.vercel.app/api`.
 
 Mobile (`apps/mobile`): `EXPO_PUBLIC_API_URL`, same value. For push notifications the app needs an
 EAS project id (`eas init` writes `extra.eas.projectId` into `app.json`) and a development or
 production build; Expo Go on Android cannot receive remote push.
+
+## WhatsApp and SMS
+
+Users switch alerts on for themselves (Notifications → WhatsApp & SMS on the web, Profile in the site app); nothing
+goes to anyone who has not. Approval requests, send-backs (rejected or changes requested) and the DPR reminder go on
+WhatsApp first and by SMS when WhatsApp is off, not set up or fails; invites go to the phone the admin entered. Without
+the keys below nothing is sent and each message is logged as "Not set up" with its text (Notifications → WhatsApp &
+SMS log, for admins and management).
+
+WhatsApp (Meta charges per conversation):
+1. Create a Meta Business account and, in Meta for Developers, an app with the WhatsApp product; add and verify the
+   business phone number. Copy its **Phone number ID** into `WHATSAPP_PHONE_NUMBER_ID`.
+2. Create a system user with a permanent access token (`whatsapp_business_messaging` permission) and put it in
+   `WHATSAPP_ACCESS_TOKEN`.
+3. Submit these utility templates in English (`en`) and wait for approval. The wording is in
+   `packages/shared/src/messaging.ts` (`MESSAGE_TEMPLATE_TEXT`); parameters are `{{1}}`, `{{2}}`… in that order.
+   `nirmaan_approval_request` (4), `nirmaan_sent_back` (6), `nirmaan_dpr_reminder` (2), `nirmaan_invite` (3).
+   The test button uses Meta's own `hello_world`.
+
+SMS (India): register the sender ID and the same five texts on a DLT portal (each parameter as `{#var#}`, at most
+30 characters; links whitelisted), add them as MSG91 templates with variables `var1`, `var2`…, then set
+`MSG91_AUTH_KEY` and `MSG91_TEMPLATE_IDS`.
+
+Each user's **Send a test** button shows whether a channel works end to end.
 
 ## How a deploy works
 

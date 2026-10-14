@@ -460,6 +460,23 @@ jobs:
           echo "site engineer: $code"; [ "$code" = "403" ]
           code=$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/payroll/staff?month=2026-13" -H "$AC")
           echo "bad month: $code"; [ "$code" = "400" ]
+      - name: WhatsApp and SMS
+        run: |
+          set -e
+          login() { curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' -d "{\"email\":\"$1\",\"password\":\"password123\"}" | jq -r .accessToken; }
+          QS="authorization: Bearer $(login qs@demo.com)"; J='content-type: application/json'
+          ME=$(curl -sf "$API_URL/messaging/me" -H "$QS")
+          echo "$ME" | jq -r '"whatsapp set up: \(.whatsappReady), sms set up: \(.smsReady)"'
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X PUT "$API_URL/messaging/me" -H "$QS" -H "$J" -d '{"phone":"12345","whatsapp":true}')
+          echo "bad number: $code"; [ "$code" = "400" ]
+          curl -sf -X PUT "$API_URL/messaging/me" -H "$QS" -H "$J" -d '{"phone":"9800000099","whatsapp":true}' | jq -e '.whatsapp and .sendTo == "919800000099"' > /dev/null
+          curl -sf -X POST "$API_URL/messaging/me/test" -H "$QS" -H "$J" -d '{"channel":"WHATSAPP"}' | jq -e '.template == "TEST" and (.status | IN("SENT","FAILED","SKIPPED"))' > /dev/null
+          # Put the demo user back as it was.
+          echo "$ME" | jq '{phone, whatsapp, sms}' | curl -sf -X PUT "$API_URL/messaging/me" -H "$QS" -H "$J" -d @- > /dev/null
+          curl -sf "$API_URL/messaging/log?pageSize=1" -H "authorization: Bearer $(login admin@demo.com)" | jq -e '.total > 0' > /dev/null
+          curl -sf "$API_URL/messaging/log?pageSize=1" -H "authorization: Bearer $(login admin@demo.com)" | jq -r '.items[0] | "last message: \(.channel) \(.template) \(.status) \(.error // "")"'
+          code=$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/messaging/log" -H "authorization: Bearer $(login engineer@demo.com)")
+          echo "site engineer log: $code"; [ "$code" = "403" ]
       - name: Project cost view
         run: |
           set -e

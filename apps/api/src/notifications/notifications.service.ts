@@ -9,6 +9,7 @@ import { dateOnly, iso } from '../common/serialize';
 import { ExpoPushService } from './expo-push.service';
 import { dprTitle, expenseTitle, machineryTitle, measurementTitle, progressTitle, billTitle, poTitle, vendorBillTitle, woTitle, subBillTitle, inspectionTitle } from '../common/submission-titles';
 import { ListNotificationsQuery, RegisterPushTokenDto } from './notifications.dto';
+import { MessagingService, type OutgoingMessage } from '../messaging/messaging.service';
 
 export interface NotifyInput {
   organizationId: string;
@@ -21,6 +22,8 @@ export interface NotifyInput {
   entityId?: string | null;
   /** Per-user idempotency key (unique with userId); users that already have it are skipped. */
   dedupeKey?: string;
+  /** Also sent on WhatsApp / SMS to the users who switched those on */
+  message?: OutgoingMessage;
 }
 
 const include = { project: { select: { name: true } } } satisfies Prisma.NotificationInclude;
@@ -37,7 +40,7 @@ const SUBMISSION_LABEL: Record<SubmissionType, string> = { PROGRESS: 'Progress e
 export class NotificationsService {
   private readonly log = new Logger(NotificationsService.name);
 
-  constructor(private prisma: PrismaService, private access: ProjectAccessService, private push: ExpoPushService, private rights: ApprovalRightsService) {}
+  constructor(private prisma: PrismaService, private access: ProjectAccessService, private push: ExpoPushService, private rights: ApprovalRightsService, private messaging: MessagingService) {}
 
   /* ---------- reading ---------- */
 
@@ -111,7 +114,7 @@ export class NotificationsService {
    * Creates one notification per user and pushes it to all their devices.
    * With a dedupeKey, users who already hold that key are skipped (the unique index makes re-runs safe).
    */
-  async notify(input: NotifyInput): Promise<{ created: number; pushed: number; skipped: number }> {
+  async notify(input: NotifyInput): Promise<{ created: number; pushed: number; skipped: number; messaged: number }> {
     let userIds = [...new Set(input.userIds)];
     if (input.dedupeKey && userIds.length) {
       const existing = await this.prisma.notification.findMany({ where: { dedupeKey: input.dedupeKey, userId: { in: userIds } }, select: { userId: true } });
@@ -119,7 +122,7 @@ export class NotificationsService {
       userIds = userIds.filter((id) => !done.has(id));
     }
     const skipped = new Set(input.userIds).size - userIds.length;
-    if (userIds.length === 0) return { created: 0, pushed: 0, skipped };
+    if (userIds.length === 0) return { created: 0, pushed: 0, skipped, messaged: 0 };
     const data = userIds.map((userId) => ({
       organizationId: input.organizationId,
       userId,
@@ -133,7 +136,8 @@ export class NotificationsService {
     }));
     const rows = await this.prisma.notification.createManyAndReturn({ data, skipDuplicates: true });
     const pushed = await this.deliverPush(rows);
-    return { created: rows.length, pushed, skipped: skipped + (userIds.length - rows.length) };
+    const messaged = input.message ? await this.messaging.forNotifications(rows, input.message) : 0;
+    return { created: rows.length, pushed, skipped: skipped + (userIds.length - rows.length), messaged };
   }
 
   private async deliverPush(rows: { id: string; userId: string; title: string; body: string; type: NotificationType; projectId: string | null; entityType: string | null; entityId: string | null }[]): Promise<number> {
@@ -223,6 +227,11 @@ export class NotificationsService {
     }
   }
 
+  /** "Progress entry (GSB laying: 2400 Cum on 13 Oct 2026)", "DPR for 13 Oct 2026": what a WhatsApp / SMS names. */
+  private subject(type: SubmissionType, title: string) {
+    return title.startsWith(SUBMISSION_LABEL[type]) ? title : `${SUBMISSION_LABEL[type]} (${title})`;
+  }
+
   /** Tell the project's approvers that something new is waiting for them. */
   async onSubmitted(actor: RequestUser, type: SubmissionType, id: string) {
     try {
@@ -238,6 +247,7 @@ export class NotificationsService {
         projectId: s.projectId,
         entityType: type,
         entityId: id,
+        message: { template: 'APPROVAL_REQUEST', params: [this.subject(type, s.title), s.projectName, actor.fullName, this.messaging.webUrl(`/notifications?type=${type}&id=${id}`)] },
       });
     } catch (e) {
       this.log.warn(`onSubmitted(${type}, ${id}) failed: ${(e as Error).message}`);
@@ -266,6 +276,21 @@ export class NotificationsService {
         projectId: s.projectId,
         entityType: type,
         entityId: id,
+        // Send-backs go out on WhatsApp / SMS too; approvals stay in-app and push.
+        message:
+          status === 'APPROVED'
+            ? undefined
+            : {
+                template: 'SENT_BACK',
+                params: [
+                  this.subject(type, s.title),
+                  s.projectName,
+                  type === 'INSPECTION' ? (status === 'REJECTED' ? 'failed' : 'sent back for re-inspection') : status === 'REJECTED' ? 'rejected' : 'sent back for changes',
+                  actor.fullName,
+                  note || 'none',
+                  this.messaging.webUrl(`/notifications?type=${type}&id=${id}`),
+                ],
+              },
       });
     } catch (e) {
       this.log.warn(`onReviewed(${type}, ${id}) failed: ${(e as Error).message}`);

@@ -183,5 +183,8 @@ DROP POLICY IF EXISTS tenant_isolation ON "LeaveRequest";
 ALTER TABLE "Holiday" NO FORCE ROW LEVEL SECURITY;
 ALTER TABLE "Holiday" DISABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS tenant_isolation ON "Holiday";
+ALTER TABLE "OutboundMessage" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "OutboundMessage" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "OutboundMessage";
 
 DROP FUNCTION IF EXISTS app_current_org();
