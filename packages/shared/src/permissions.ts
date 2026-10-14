@@ -61,6 +61,9 @@ export const DOCUMENT_CONTROL_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJEC
 /** Keep the staff master and holidays, see every employee, decide anyone's leave. */
 export const STAFF_ADMIN_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'HR_MANAGER'];
 
+/** Monthly payroll inputs (days, leave, overtime per employee) for the payroll provider: staff admins and accounts. */
+export const PAYROLL_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'HR_MANAGER', 'ACCOUNTS_MANAGER'];
+
 /** Read and record letters in and out (contractual correspondence). */
 export const CORRESPONDENCE_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER', 'QUANTITY_SURVEYOR'];
 
@@ -86,6 +89,9 @@ export const canRaiseNcr = (role: RoleKey) => NCR_ROLES.includes(role);
 export const canManageDocuments = (role: RoleKey) => DOCUMENT_CONTROL_ROLES.includes(role);
 export const canViewLetters = (role: RoleKey) => CORRESPONDENCE_ROLES.includes(role);
 export const canManageStaff = (role: RoleKey) => STAFF_ADMIN_ROLES.includes(role);
+export const canViewPayroll = (role: RoleKey) => PAYROLL_ROLES.includes(role);
+/** The monthly labour contractor summary: payroll roles and those who see project cost. */
+export const canViewLabourSummary = (role: RoleKey) => PAYROLL_ROLES.includes(role) || COST_VIEW_ROLES.includes(role);
 /** See the staff posted at their projects and mark their attendance: staff admins and attendance recorders. */
 export const canMarkStaff = (role: RoleKey) => STAFF_ADMIN_ROLES.includes(role) || ATTENDANCE_RECORDER_ROLES.includes(role);
 export const canEditProjects = (role: RoleKey) => PROJECT_EDITOR_ROLES.includes(role);

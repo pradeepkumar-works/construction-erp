@@ -240,8 +240,11 @@ relative to a v2 item (S about one, M about two, L about three). The full draft 
     without a login) are posted at a site or head office; they check in and out themselves or the site in-charge marks
     the register. Leave (casual 12, sick 12, earned 15 a year, comp-off for off days worked, unpaid) skips Sundays and
     holidays, is checked against the balance and decided by HR or the site's project manager, never the employee.
-30. **Payroll inputs** (S). Monthly days present, leave and overtime per employee for the payroll provider,
-    and a monthly summary per labour contractor. No statutory payroll calculations.
+30. ~~**Payroll inputs** (S). Monthly days present, leave and overtime per employee for the payroll provider,
+    and a monthly summary per labour contractor. No statutory payroll calculations.~~
+    Done: People → Payroll Inputs. Staff: days on the rolls, Sundays and holidays, present, leave by type, absent,
+    days not marked, comp-off earned, overtime, loss of pay and paid days, exported to Excel. Labour contractors: man-days
+    by project and trade from the attendance register at the daily rates, marking contractors paid through work orders.
 
 ### F. Reach
 31. **WhatsApp and SMS** (M). Approval requests, send-backs, DPR reminders and invite links through the

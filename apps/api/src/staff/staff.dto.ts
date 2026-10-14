@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
-import { ArrayMaxSize, IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, Max, MaxLength, Min, ValidateIf, ValidateNested } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, Matches, Max, MaxLength, Min, ValidateIf, ValidateNested } from 'class-validator';
 import { LEAVE_STATUSES, LEAVE_TYPES, LIST_SORT_FIELDS, STAFF_ATTENDANCE_STATUSES, type EmployeeSortField, type LeaveSortField, type LeaveStatus, type LeaveType, type StaffAttendanceStatus } from '@erp/shared';
 import { PageQuery, QueryBool } from '../common/paging';
 
@@ -110,4 +110,11 @@ export class HolidayQuery {
 
 export class UsersQuery {
   @ApiPropertyOptional({ description: 'Include the login already linked to this employee' }) @IsOptional() @IsUUID() employeeId?: string;
+}
+
+/* ---------- payroll inputs ---------- */
+
+export class PayrollQuery {
+  @ApiProperty({ example: '2026-10' }) @IsString() @Matches(/^\d{4}-(0[1-9]|1[0-2])$/, { message: 'month must be YYYY-MM' }) month: string;
+  @ApiPropertyOptional() @IsOptional() @IsUUID() projectId?: string;
 }

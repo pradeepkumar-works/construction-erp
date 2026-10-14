@@ -61,6 +61,9 @@ contractors after the first client is live.
   check in and out from the app or the site register (overtime past a 9-hour day), leave with yearly balances
   approved by HR or the site's project manager, and holidays per site. Web: People → Staff & Leave; site app: My
   attendance & leave and Staff register.
+- Payroll inputs: per employee per month the days on the rolls, present, leave by type, absent, overtime, loss of
+  pay and paid days, and per labour contractor the man-days by project and trade at the daily rates, both exported
+  to Excel for the payroll provider (no statutory calculations). Web: People → Payroll Inputs.
 - Project cost: approved site expenses, material issued at the item's standard rate, approved machinery logs
   at the hire rate and attendance at each trade's daily rate, against the value of approved progress (and of
   approved measurements), by project and month, with margin. For approvers and accounts.

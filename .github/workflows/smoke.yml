@@ -446,6 +446,20 @@ jobs:
           PROJECT=$(curl -sf "$API_URL/staff/me" -H "$SE" | jq -r .employee.projectId)
           curl -sf "$API_URL/staff/register?projectId=$PROJECT&date=$(date -u +%F)" -H "$SE" | jq -e '(.rows | length) > 0' > /dev/null
           curl -sf "$API_URL/staff/holidays" -H "$SE" | jq -r '"holidays this year: \(length)"'
+      - name: Payroll inputs
+        run: |
+          set -e
+          login() { curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' -d "{\"email\":\"$1\",\"password\":\"password123\"}" | jq -r .accessToken; }
+          AC="authorization: Bearer $(login accounts@demo.com)"; PM="authorization: Bearer $(login pm@demo.com)"
+          M=$(date -u +%Y-%m)
+          curl -sf "$API_URL/payroll/staff?month=$M" -H "$AC" \
+            | jq -e '(.rows | length) > 0 and all(.rows[]; .paidDays <= .calendarDays and .paidDays == .calendarDays - .lopDays and .workingDays + .offDays == .calendarDays)' > /dev/null
+          curl -sf "$API_URL/payroll/staff?month=$M" -H "$AC" | jq -r '"staff on the rolls in \(.month): \(.rows | length), overtime \([.rows[].overtimeHours] | add) h"'
+          curl -sf "$API_URL/payroll/contractors?month=$M" -H "$PM" | jq -r '"contractor lines: \(.rows | length), man-days \([.rows[].manDays] | add // 0)"'
+          code=$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/payroll/staff?month=$M" -H "authorization: Bearer $(login engineer@demo.com)")
+          echo "site engineer: $code"; [ "$code" = "403" ]
+          code=$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/payroll/staff?month=2026-13" -H "$AC")
+          echo "bad month: $code"; [ "$code" = "400" ]
       - name: Project cost view
         run: |
           set -e
