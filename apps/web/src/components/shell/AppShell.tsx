@@ -40,6 +40,7 @@ import {
   ShopOutlined,
   SolutionOutlined,
   ProfileOutlined,
+  IdcardOutlined,
 } from '@ant-design/icons';
 import type { AuthUser } from '@erp/shared';
 import { approvalRightsOf, canViewPurchaseOrders, canViewVendorBills, canViewWorkOrders, canViewPayables, canExportTally, canViewGstRegisters, canPrepareSubcontractBill, canEditContract, canEditProjects, canEditVendors, canManageUsers, canSeeVendorBank, canPrepareBill, canViewContract, canViewCost, mayApprove } from '@erp/shared';
@@ -139,6 +140,10 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
           ...(canViewGstRegisters(user.roleKey) ? [link('/gst', 'GST Registers', PercentageOutlined)] : []),
           ...(canExportTally(user.roleKey) ? [link('/tally', 'Tally Export', ExportOutlined)] : []),
         ],
+      },
+      {
+        title: 'People',
+        items: [link('/staff', 'Staff & Leave', IdcardOutlined)],
       },
       {
         title: 'Reports',

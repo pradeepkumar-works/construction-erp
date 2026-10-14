@@ -58,6 +58,9 @@ export const NCR_ROLES: RoleKey[] = CHECKLIST_ADMIN_ROLES;
 /** Keep the document register: add drawings and revisions, send transmittals. Everyone on a project reads it. */
 export const DOCUMENT_CONTROL_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER', 'QUANTITY_SURVEYOR', 'QA_QC_ENGINEER'];
 
+/** Keep the staff master and holidays, see every employee, decide anyone's leave. */
+export const STAFF_ADMIN_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'HR_MANAGER'];
+
 /** Read and record letters in and out (contractual correspondence). */
 export const CORRESPONDENCE_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER', 'QUANTITY_SURVEYOR'];
 
@@ -82,6 +85,9 @@ export const canRecordTest = (role: RoleKey) => QUALITY_TEST_ROLES.includes(role
 export const canRaiseNcr = (role: RoleKey) => NCR_ROLES.includes(role);
 export const canManageDocuments = (role: RoleKey) => DOCUMENT_CONTROL_ROLES.includes(role);
 export const canViewLetters = (role: RoleKey) => CORRESPONDENCE_ROLES.includes(role);
+export const canManageStaff = (role: RoleKey) => STAFF_ADMIN_ROLES.includes(role);
+/** See the staff posted at their projects and mark their attendance: staff admins and attendance recorders. */
+export const canMarkStaff = (role: RoleKey) => STAFF_ADMIN_ROLES.includes(role) || ATTENDANCE_RECORDER_ROLES.includes(role);
 export const canEditProjects = (role: RoleKey) => PROJECT_EDITOR_ROLES.includes(role);
 export const canManageUsers = (role: RoleKey) => USER_ADMIN_ROLES.includes(role);
 export const seesGettingStarted = (role: RoleKey) => GETTING_STARTED_ROLES.includes(role);

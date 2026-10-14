@@ -418,6 +418,34 @@ jobs:
           code=$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/letters" -H "$SE")
           echo "site engineer reading letters: $code"; [ "$code" = "403" ]
           cleanup
+      - name: Staff and leave
+        run: |
+          set -e
+          login() { curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' -d "{\"email\":\"$1\",\"password\":\"password123\"}" | jq -r .accessToken; }
+          HR="authorization: Bearer $(login hr@demo.com)"; PM="authorization: Bearer $(login pm@demo.com)"; SE="authorization: Bearer $(login engineer@demo.com)"
+          curl -sf "$API_URL/staff/summary" -H "$HR" | jq -c .
+          curl -sf "$API_URL/staff/me" -H "$SE" | jq -c '{employee: .employee.employeeCode, balances: [.balances[] | "\(.type) \(.left)"]}'
+          # Leave for the managing director (head office, no site manager): HR is the only approver, so nobody else is told.
+          MD=$(curl -sf "$API_URL/staff/employees?q=EMP-001" -H "$HR" | jq -r '.items[0].id'); [ "$MD" != "null" ]
+          for X in $(curl -sf "$API_URL/staff/leave?employeeId=$MD&q=Smoke&status=PENDING" -H "$HR" | jq -r '.items[].id'); do curl -sf -X POST "$API_URL/staff/leave/$X/cancel" -H "$HR" > /dev/null; done
+          L=""
+          for i in 60 61 62 63 64; do
+            D=$(date -u -d "+$i days" +%F)
+            L=$(curl -s -X POST "$API_URL/staff/leave" -H "$HR" -H 'content-type: application/json' -d "{\"employeeId\":\"$MD\",\"type\":\"UNPAID\",\"fromDate\":\"$D\",\"toDate\":\"$D\",\"reason\":\"Smoke test\"}")
+            [ "$(echo "$L" | jq -r .status)" = "PENDING" ] && break
+          done
+          echo "$L" | jq -c '{fromDate, days, status, canDecide}'; [ "$(echo "$L" | jq -r .status)" = "PENDING" ]
+          ID=$(echo "$L" | jq -r .id)
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/staff/leave" -H "$HR" -H 'content-type: application/json' -d "{\"employeeId\":\"$MD\",\"type\":\"UNPAID\",\"fromDate\":\"$D\",\"toDate\":\"$D\",\"reason\":\"Smoke test\"}")
+          echo "overlapping leave: $code"; [ "$code" = "400" ]
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/staff/leave/$ID/approve" -H "$PM" -H 'content-type: application/json' -d '{}')
+          echo "a project manager deciding head office leave: $code"; [ "$code" = "404" ] || [ "$code" = "403" ]
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/staff/employees" -H "$SE" -H 'content-type: application/json' -d '{"fullName":"Smoke","designation":"Smoke"}')
+          echo "site engineer adding staff: $code"; [ "$code" = "403" ]
+          curl -sf -X POST "$API_URL/staff/leave/$ID/cancel" -H "$HR" | jq -e '.status == "CANCELLED"' > /dev/null
+          PROJECT=$(curl -sf "$API_URL/staff/me" -H "$SE" | jq -r .employee.projectId)
+          curl -sf "$API_URL/staff/register?projectId=$PROJECT&date=$(date -u +%F)" -H "$SE" | jq -e '(.rows | length) > 0' > /dev/null
+          curl -sf "$API_URL/staff/holidays" -H "$SE" | jq -r '"holidays this year: \(length)"'
       - name: Project cost view
         run: |
           set -e

@@ -80,6 +80,7 @@ export function notificationRoute(data: Record<string, unknown> | undefined): st
   const projectId = data?.projectId as string | undefined;
   if (data?.type === 'DPR_REMINDER' && projectId) return `/dpr/new?projectId=${projectId}`;
   if (data?.type === 'DOCUMENT_ISSUED' && projectId) return `/documents?projectId=${projectId}`;
+  if (data?.type === 'LEAVE') return '/staff';
   if (data?.type === 'LOW_STOCK' && projectId) return `/stock?projectId=${projectId}&low=1`;
   if (data?.type === 'APPROVAL_DIGEST') return '/(tabs)/approvals';
   return '/notifications';

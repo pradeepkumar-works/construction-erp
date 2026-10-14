@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { APPROVER_ROLES, type SubmissionType, COMPANY_WIDE_ROLES, isCompanyWide, canAdjustStock, canApprove, canKeepStock, canLogMachinery, canManageEquipment, canManageStore, canMeasure, canRaiseRisk, canRecordAttendance, canRequestInspection, canSubmitExpense, canRecordTest, canRaiseNcr, canManageDocuments, canViewLetters } from '@erp/shared';
+import { APPROVER_ROLES, type SubmissionType, COMPANY_WIDE_ROLES, isCompanyWide, canAdjustStock, canApprove, canKeepStock, canLogMachinery, canManageEquipment, canManageStore, canMeasure, canRaiseRisk, canRecordAttendance, canRequestInspection, canSubmitExpense, canRecordTest, canRaiseNcr, canManageDocuments, canViewLetters, canManageStaff, canMarkStaff } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { ApprovalRightsService } from './approval-rights.service';
 import { RequestUser } from './current-user';
@@ -144,6 +144,53 @@ export class ProjectAccessService {
   async assertCanUseLetters(user: RequestUser, projectId?: string) {
     if (!canViewLetters(user.roleKey)) throw new ForbiddenException('Your role cannot see project correspondence');
     if (projectId) await this.assertCanAccessProject(user, projectId);
+  }
+
+  /** Staff master and holidays: staff admins (admin, management, HR). */
+  assertCanManageStaff(user: RequestUser) {
+    if (!canManageStaff(user.roleKey)) throw new ForbiddenException('Only HR, management or an admin can change staff records');
+  }
+
+  /**
+   * Employees the user may see: staff admins see everyone; attendance recorders see the staff posted at their projects;
+   * anyone else only themselves.
+   */
+  staffWhere(user: RequestUser): Prisma.EmployeeWhereInput {
+    if (canManageStaff(user.roleKey)) return { organizationId: user.organizationId };
+    if (canMarkStaff(user.roleKey)) return { organizationId: user.organizationId, OR: [{ userId: user.id }, { project: this.projectWhere(user) }] };
+    return { organizationId: user.organizationId, userId: user.id };
+  }
+
+  /** Mark the staff register of a site: staff admins, or attendance recorders on the project. */
+  async assertCanMarkStaff(user: RequestUser, projectId: string) {
+    if (!canMarkStaff(user.roleKey)) throw new ForbiddenException('Your role cannot mark staff attendance');
+    await this.assertCanAccessProject(user, projectId);
+  }
+
+  /** Approve or reject leave: a staff admin, or the manager of the project the employee is posted at; never their own. */
+  canDecideLeave(user: RequestUser, employee: { userId: string | null; project: { projectManagerId: string | null } | null }) {
+    if (employee.userId === user.id) return false;
+    return canManageStaff(user.roleKey) || (!!employee.project && employee.project.projectManagerId === user.id);
+  }
+
+  /** Leave waiting on this user: the same rule as canDecideLeave, as a where-clause on the employee. */
+  leaveDeciderWhere(user: RequestUser): Prisma.EmployeeWhereInput {
+    const notSelf: Prisma.EmployeeWhereInput = { OR: [{ userId: null }, { userId: { not: user.id } }] };
+    if (canManageStaff(user.roleKey)) return notSelf;
+    return { AND: [notSelf, { project: { projectManagerId: user.id } }] };
+  }
+
+  /** Who decides an employee's leave: HR managers and the manager of their site (admins and management when there is no HR). */
+  async leaveApprovers(organizationId: string, projectId: string | null) {
+    const pm = projectId ? (await this.prisma.project.findUnique({ where: { id: projectId }, select: { projectManagerId: true } }))?.projectManagerId : null;
+    const hr = await this.prisma.user.findMany({ where: { organizationId, isActive: true, role: { key: 'HR_MANAGER' } }, select: { id: true } });
+    const ids = hr.map((u) => u.id);
+    if (!ids.length) {
+      const admins = await this.prisma.user.findMany({ where: { organizationId, isActive: true, role: { key: { in: ['ADMIN', 'MANAGEMENT'] } } }, select: { id: true } });
+      ids.push(...admins.map((u) => u.id));
+    }
+    if (pm) ids.push(pm);
+    return [...new Set(ids)];
   }
 
   /** Everyone on a project: its manager and members. */

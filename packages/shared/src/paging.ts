@@ -36,6 +36,8 @@ export const LIST_SORT_FIELDS = {
   documents: ['docNo', 'title', 'kind', 'discipline', 'issuedOn', 'status', 'project', 'updatedAt'],
   transmittals: ['sentOn', 'transmittalNo', 'toParty', 'project', 'createdAt'],
   letters: ['letterDate', 'letterNo', 'party', 'replyBy', 'project', 'createdAt'],
+  employees: ['employeeCode', 'fullName', 'designation', 'project', 'createdAt'],
+  leave: ['fromDate', 'createdAt', 'employee', 'status', 'type'],
   risks: ['riskNo', 'score', 'status', 'kind', 'category', 'dueDate', 'project', 'owner', 'createdAt', 'updatedAt'],
 } as const;
 
@@ -59,6 +61,8 @@ export type NcrSortField = (typeof LIST_SORT_FIELDS.ncrs)[number];
 export type DocumentSortField = (typeof LIST_SORT_FIELDS.documents)[number];
 export type TransmittalSortField = (typeof LIST_SORT_FIELDS.transmittals)[number];
 export type LetterSortField = (typeof LIST_SORT_FIELDS.letters)[number];
+export type EmployeeSortField = (typeof LIST_SORT_FIELDS.employees)[number];
+export type LeaveSortField = (typeof LIST_SORT_FIELDS.leave)[number];
 export type BillSortField = (typeof LIST_SORT_FIELDS.bills)[number];
 export type ReceiptSortField = (typeof LIST_SORT_FIELDS.receipts)[number];
 export type VendorPaymentSortField = (typeof LIST_SORT_FIELDS.vendorPayments)[number];

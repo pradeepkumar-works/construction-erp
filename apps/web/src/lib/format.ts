@@ -91,6 +91,7 @@ export const NOTIFICATION_COLORS: Record<NotificationType, string> = {
   TEST_FAILED: 'red',
   NCR: 'volcano',
   DOCUMENT_ISSUED: 'cyan',
+  LEAVE: 'lime',
 };
 
 /** "2 min ago", "3 h ago", "4 d ago", then a date. */

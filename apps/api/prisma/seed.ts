@@ -4,7 +4,7 @@ import { PrismaClient, Prisma } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { deflateSync } from 'zlib';
 import { dprTitle, progressTitle, titleDate } from '../src/common/submission-titles';
-import { STANDARD_CHECKLISTS } from '@erp/shared';
+import { STANDARD_CHECKLISTS, isWeeklyOff, leaveDays } from '@erp/shared';
 
 const prisma = new PrismaClient();
 const D = (v: string | number) => new Prisma.Decimal(v);
@@ -118,6 +118,7 @@ async function main() {
     await seedQuality(org.id);
     await seedTestsAndNcrs(org.id);
     await seedDocuments(org.id);
+    await seedStaff(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
   }
@@ -277,6 +278,7 @@ async function main() {
   await seedQuality(org.id);
   await seedTestsAndNcrs(org.id);
   await seedDocuments(org.id);
+  await seedStaff(org.id);
 
   console.log('Seed complete. Login with any of these (password: password123):');
   for (const u of USERS) console.log(`  ${u.email.padEnd(24)} ${u.role}`);
@@ -1522,4 +1524,142 @@ async function seedDocuments(organizationId: string) {
   await letter({ direction: 'OUT', ago: 4, party: ee, subject: 'Request for extension of time: encroachment at Ch 12+300', summary: 'Claiming the days lost from the hindrance notice until the stretch is handed over.', risk: true });
   await letter({ direction: 'IN', ago: 3, party: 'LEA Associates (Authority Engineer)', theirRef: 'LEA/BBSR-PURI/AE/322', subject: 'Comments on the GSB trial stretch', summary: 'Gradation of the trial stretch on the coarse side; submit the revised job mix with fresh test results.', replyBy: 4 });
   await letter({ direction: 'IN', ago: 9, party: 'LEA Associates (Authority Engineer)', theirRef: 'LEA/BBSR-PURI/AE/309', subject: 'Monthly progress report format', summary: 'Use the Authority format for the monthly report from this month; confirm by return.', replyBy: -2 });
+}
+
+/** Company staff: [code, name, designation, department, login email or null, posting project code or null (head office)]. */
+const DEMO_STAFF: [string, string, string, string, string | null, string | null][] = [
+  ['EMP-001', 'Rajesh Patnaik', 'Managing Director', 'Management', 'md@demo.com', null],
+  ['EMP-002', 'Arun Sharma', 'IT and systems head', 'Administration', 'admin@demo.com', null],
+  ['EMP-003', 'Suresh Nair', 'Project manager', 'Execution', 'pm@demo.com', 'RD-2026-01'],
+  ['EMP-004', 'Kavita Rao', 'Project manager', 'Execution', 'pm2@demo.com', 'BL-2026-02'],
+  ['EMP-005', 'Manoj Das', 'Site supervisor', 'Execution', 'tl@demo.com', 'RD-2026-01'],
+  ['EMP-006', 'Priya Mohanty', 'Site engineer', 'Execution', 'engineer@demo.com', 'RD-2026-01'],
+  ['EMP-007', 'Vikram Singh', 'Site engineer', 'Execution', 'engineer2@demo.com', 'BL-2026-02'],
+  ['EMP-008', 'Ramesh Behera', 'Store keeper', 'Stores', 'store@demo.com', 'RD-2026-01'],
+  ['EMP-009', 'Anita Verma', 'Quantity surveyor', 'Contracts', 'qs@demo.com', null],
+  ['EMP-010', 'Deepak Kumar', 'Procurement manager', 'Purchase', 'procurement@demo.com', null],
+  ['EMP-011', 'Sneha Iyer', 'QA/QC engineer', 'Quality', 'qaqc@demo.com', null],
+  ['EMP-012', 'Mahesh Gupta', 'Accounts manager', 'Accounts', 'accounts@demo.com', null],
+  ['EMP-013', 'Pooja Reddy', 'HR manager', 'Human resources', 'hr@demo.com', null],
+  ['EMP-014', 'Bikash Swain', 'Surveyor', 'Execution', null, 'RD-2026-01'],
+  ['EMP-015', 'Sanjay Pradhan', 'Site supervisor', 'Execution', null, 'RD-2026-01'],
+  ['EMP-016', 'Laxmidhar Nayak', 'Driver', 'Plant and machinery', null, 'RD-2026-01'],
+  ['EMP-017', 'Gopal Mishra', 'Site supervisor', 'Execution', null, 'BL-2026-02'],
+  ['EMP-018', 'Rina Sahu', 'Safety officer', 'Safety', null, 'BL-2026-02'],
+  ['EMP-019', 'Prakash Jena', 'Site engineer', 'Execution', null, 'WS-2026-03'],
+  ['EMP-020', 'Ajit Rout', 'Pump operator', 'Plant and machinery', null, 'WS-2026-03'],
+  ['EMP-021', 'Debasish Mallick', 'Store keeper', 'Stores', null, 'WS-2026-03'],
+];
+
+/**
+ * Staff and leave for an organisation that has none yet: employees (most demo logins plus site staff without one),
+ * national and site holidays for the year, the last 30 days of attendance at the sites (today is left unmarked so
+ * check-in and the register can be demoed) and leave in every state. Priya worked a Sunday, so she has a comp-off.
+ */
+async function seedStaff(organizationId: string) {
+  if ((await prisma.employee.count({ where: { organizationId } })) > 0) return;
+  const year = new Date().getUTCFullYear();
+  const projects = new Map((await prisma.project.findMany({ where: { organizationId }, select: { id: true, code: true, projectManagerId: true } })).map((p) => [p.code, p]));
+  const users = new Map((await prisma.user.findMany({ where: { organizationId }, select: { id: true, email: true } })).map((u) => [u.email, u.id]));
+  const hr = users.get('hr@demo.com')!;
+  const projectById = new Map([...projects.values()].map((p) => [p.id, p]));
+
+  const holidays: [string, string, string | null][] = [
+    [`${year}-01-26`, 'Republic Day', null],
+    [`${year}-03-04`, 'Holi', null],
+    [`${year}-06-15`, 'Raja Sankranti', 'RD-2026-01'],
+    [`${year}-08-15`, 'Independence Day', null],
+    [`${year}-10-02`, 'Gandhi Jayanti', null],
+    [`${year}-10-20`, 'Dussehra', null],
+    [`${year}-11-08`, 'Diwali', null],
+    [`${year}-11-24`, 'Bali Jatra', 'BL-2026-02'],
+    [`${year}-12-25`, 'Christmas', null],
+  ];
+  for (const [date, name, code] of holidays) {
+    const projectId = code ? projects.get(code)?.id ?? null : null;
+    if (code && !projectId) continue;
+    await prisma.holiday.create({ data: { organizationId, date: new Date(`${date}T00:00:00Z`), name, projectId } });
+  }
+  const offFor = (projectId: string | null) => new Set(holidays.filter(([, , c]) => !c || projects.get(c)?.id === projectId).map(([d]) => d));
+
+  const employees = new Map<string, { id: string; projectId: string | null; userId: string | null }>();
+  for (const [code, fullName, designation, department, email, posting] of DEMO_STAFF) {
+    const userId = email ? users.get(email) ?? null : null;
+    const projectId = posting ? projects.get(posting)?.id ?? null : null;
+    const e = await prisma.employee.create({
+      data: { organizationId, employeeCode: code, fullName, designation, department, phone: null, userId, projectId, joinedOn: day(-400 - Number(code.slice(4)) * 15) },
+    });
+    employees.set(code, { id: e.id, projectId, userId });
+  }
+
+  // Leave: [employee, type, from (days from today), to, half day, status, reason, decision note]
+  const leave: [string, 'CASUAL' | 'SICK' | 'EARNED' | 'COMP_OFF', number, number, boolean, 'PENDING' | 'APPROVED' | 'REJECTED', string, string | null][] = [
+    ['EMP-006', 'CASUAL', -12, -11, false, 'APPROVED', 'Sister’s wedding at Berhampur', null],
+    ['EMP-005', 'SICK', -6, -6, false, 'APPROVED', 'Fever', 'Get well soon'],
+    ['EMP-015', 'CASUAL', -3, -3, true, 'APPROVED', 'Bank work in the morning', null],
+    ['EMP-007', 'CASUAL', -8, -7, false, 'REJECTED', 'Personal work', 'Slab casting on those days; please take it next week'],
+    ['EMP-006', 'EARNED', 8, 10, false, 'PENDING', 'Family trip to Puri', null],
+    ['EMP-014', 'CASUAL', 3, 3, false, 'PENDING', 'Land registration at the tahsil office', null],
+    ['EMP-017', 'EARNED', 15, 19, false, 'APPROVED', 'Going home to Balasore', null],
+  ];
+  const onLeave = new Map<string, Set<string>>();
+  for (const [code, type, start, end, halfDay, status, reason, note] of leave) {
+    const e = employees.get(code)!;
+    // Start on a working day whatever today is, keeping the length.
+    let from = start;
+    while (isWeeklyOff(day(from).toISOString().slice(0, 10)) || offFor(e.projectId).has(day(from).toISOString().slice(0, 10))) from += 1;
+    const to = from + (end - start);
+    const fromDate = day(from).toISOString().slice(0, 10);
+    const toDate = day(to).toISOString().slice(0, 10);
+    const days = leaveDays(fromDate, toDate, halfDay, offFor(e.projectId));
+    if (!days || fromDate.slice(0, 4) !== toDate.slice(0, 4)) continue;
+    const decider = e.projectId ? projectById.get(e.projectId)?.projectManagerId : hr;
+    const appliedById = e.userId ?? hr;
+    const decided = status !== 'PENDING' && decider && decider !== e.userId ? decider : status !== 'PENDING' ? hr : null;
+    const created = day(Math.min(from, 0) - 2);
+    const l = await prisma.leaveRequest.create({
+      data: {
+        organizationId, employeeId: e.id, type, fromDate: day(from), toDate: day(to), halfDay, days: D(days), reason, status, appliedById,
+        decidedById: decided, decidedAt: decided ? day(Math.min(from, 0) - 1) : null, decisionNote: note, createdAt: created,
+      },
+    });
+    await prisma.auditLog.create({ data: { organizationId, entityType: 'LEAVE', entityId: l.id, action: 'CREATED', actorId: appliedById, note: `${days} day(s)`, createdAt: created } });
+    if (decided) await prisma.auditLog.create({ data: { organizationId, entityType: 'LEAVE', entityId: l.id, action: status, actorId: decided, note, createdAt: day(Math.min(from, 0) - 1) } });
+    if (status === 'APPROVED' && !halfDay) {
+      const set = onLeave.get(code) ?? new Set<string>();
+      for (let i = from; i <= to; i++) set.add(day(i).toISOString().slice(0, 10));
+      onLeave.set(code, set);
+    }
+  }
+
+  // The last 30 days at the sites (head office staff do not mark attendance in the demo).
+  for (const [code, e] of employees) {
+    if (!e.projectId) continue;
+    const markedBy = projectById.get(e.projectId)?.projectManagerId ?? hr;
+    const off = offFor(e.projectId);
+    const n = Number(code.slice(4));
+    const rows: Prisma.StaffAttendanceCreateManyInput[] = [];
+    for (let i = 30; i >= 1; i--) {
+      const date = day(-i);
+      const d = date.toISOString().slice(0, 10);
+      const sundayShift = code === 'EMP-006' && i === 9 && isWeeklyOff(d);
+      if ((isWeeklyOff(d) || off.has(d)) && !sundayShift) continue;
+      if (onLeave.get(code)?.has(d)) continue;
+      const roll = (n * 7 + i * 13) % 23;
+      const status = roll === 0 ? 'ABSENT' : roll === 5 || (code === 'EMP-015' && i === 3) ? 'HALF_DAY' : 'PRESENT';
+      const overtime = status === 'PRESENT' && roll % 6 === 1 ? D(roll % 4 === 1 ? '2' : '1.5') : null;
+      rows.push({ organizationId, employeeId: e.id, date, projectId: e.projectId, status, overtimeHours: overtime, note: sundayShift ? 'Sunday pour, comp-off' : null, markedById: markedBy, createdAt: date });
+    }
+    // Make sure Priya has a Sunday worked for the comp-off demo even when day -9 was not a Sunday.
+    if (code === 'EMP-006' && !rows.some((r) => r.note)) {
+      for (let i = 30; i >= 1; i--) {
+        const d = day(-i).toISOString().slice(0, 10);
+        if (isWeeklyOff(d)) {
+          rows.push({ organizationId, employeeId: e.id, date: day(-i), projectId: e.projectId, status: 'PRESENT', note: 'Sunday pour, comp-off', markedById: markedBy, createdAt: day(-i) });
+          break;
+        }
+      }
+    }
+    await prisma.staffAttendance.createMany({ data: rows });
+  }
 }

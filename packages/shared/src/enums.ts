@@ -49,6 +49,7 @@ export const NOTIFICATION_TYPES = [
   'TEST_FAILED',
   'NCR',
   'DOCUMENT_ISSUED',
+  'LEAVE',
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
