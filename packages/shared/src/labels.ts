@@ -80,6 +80,7 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   NCR: 'Non-conformance',
   DOCUMENT_ISSUED: 'Drawing issued',
   LEAVE: 'Leave',
+  BILLS_DUE: 'Payments due',
 };
 
 export const STOCK_ENTRY_TYPE_LABELS: Record<StockEntryType, string> = {

@@ -121,6 +121,7 @@ enum NotificationType {
   NCR
   DOCUMENT_ISSUED
   LEAVE
+  BILLS_DUE
 }
 
 /// What a quality test is of. CONCRETE_CUBE gets 7 and 28-day readings; the others one result.
@@ -233,6 +234,9 @@ enum MessageTemplate {
   APPROVAL_REQUEST
   SENT_BACK
   DPR_REMINDER
+  APPROVAL_DIGEST
+  TEST_DUE
+  BILLS_DUE
   INVITE
   TEST
 }

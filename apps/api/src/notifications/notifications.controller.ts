@@ -60,12 +60,13 @@ export class NotificationsController {
   @Public()
   @UseGuards(CronGuard)
   @ApiSecurity('cron')
-  @ApiOperation({ summary: 'Daily digest of pending approvals (in-app, push and email); also sends the test-due reminders. Auth: Authorization: Bearer <CRON_SECRET>.' })
+  @ApiOperation({ summary: 'Daily digest of pending approvals (in-app, push, email and WhatsApp); also sends the test-due and payments-due reminders. Auth: Authorization: Bearer <CRON_SECRET>.' })
   @Get('jobs/approval-digest')
   async approvalDigest(@Query() q: JobQuery) {
     const digest = await this.jobs.approvalDigest(q.date);
-    // Vercel Hobby allows two crons, so the daily test reminders ride on the digest's.
+    // Vercel Hobby allows two crons, so the daily test and payment reminders ride on the digest's.
     await this.jobs.testsDue(q.date).catch(() => undefined);
+    await this.jobs.billsDue(q.date).catch(() => undefined);
     return digest;
   }
 
@@ -76,5 +77,14 @@ export class NotificationsController {
   @Get('jobs/tests-due')
   testsDue(@Query() q: JobQuery) {
     return this.jobs.testsDue(q.date);
+  }
+
+  @Public()
+  @UseGuards(CronGuard)
+  @ApiSecurity('cron')
+  @ApiOperation({ summary: 'Payments due: unpaid approved bills falling due within 3 days, once a day to admin, management and accounts. Auth: Authorization: Bearer <CRON_SECRET>.' })
+  @Get('jobs/bills-due')
+  billsDue(@Query() q: JobQuery) {
+    return this.jobs.billsDue(q.date);
   }
 }

@@ -466,7 +466,10 @@ jobs:
           login() { curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' -d "{\"email\":\"$1\",\"password\":\"password123\"}" | jq -r .accessToken; }
           QS="authorization: Bearer $(login qs@demo.com)"; J='content-type: application/json'
           ME=$(curl -sf "$API_URL/messaging/me" -H "$QS")
-          echo "$ME" | jq -r '"whatsapp set up: \(.whatsappReady), sms set up: \(.smsReady)"'
+          echo "$ME" | jq -r '"whatsapp set up: \(.whatsappReady) (\(.whatsappProvider // "no provider")), sms set up: \(.smsReady)"'
+          echo "$ME" | jq -e 'has("whatsappProvider")' > /dev/null
+          code=$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/notifications/jobs/bills-due")
+          echo "bills-due job without the cron secret: $code"; [ "$code" = "401" ] || [ "$code" = "503" ]
           code=$(curl -s -o /dev/null -w '%{http_code}' -X PUT "$API_URL/messaging/me" -H "$QS" -H "$J" -d '{"phone":"12345","whatsapp":true}')
           echo "bad number: $code"; [ "$code" = "400" ]
           curl -sf -X PUT "$API_URL/messaging/me" -H "$QS" -H "$J" -d '{"phone":"9800000099","whatsapp":true}' | jq -e '.whatsapp and .sendTo == "919800000099"' > /dev/null

@@ -63,7 +63,7 @@ export function MessagingCard() {
 
   return (
     <Card title="WhatsApp and SMS">
-      <Text style={[typography.caption, styles.gap]}>Approval requests, send-backs on your submissions and the DPR reminder on your phone. WhatsApp first; SMS when WhatsApp does not get through.</Text>
+      <Text style={[typography.caption, styles.gap]}>Approval requests, send-backs, the morning digest and the DPR, test and payment reminders on your phone. WhatsApp first; SMS when WhatsApp does not get through.</Text>
       <ErrorBanner message={error ?? prefs.error} />
       <Input
         label="Mobile number"
