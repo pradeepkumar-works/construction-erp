@@ -15,6 +15,7 @@ import {
   WalletOutlined,
   PayCircleOutlined,
   ExportOutlined,
+  PercentageOutlined,
   CalculatorOutlined,
   FundOutlined,
   FilePdfOutlined,
@@ -39,7 +40,7 @@ import {
   ProfileOutlined,
 } from '@ant-design/icons';
 import type { AuthUser } from '@erp/shared';
-import { approvalRightsOf, canViewPurchaseOrders, canViewVendorBills, canViewWorkOrders, canViewPayables, canExportTally, canPrepareSubcontractBill, canEditContract, canEditProjects, canEditVendors, canManageUsers, canSeeVendorBank, canPrepareBill, canViewContract, canViewCost, mayApprove } from '@erp/shared';
+import { approvalRightsOf, canViewPurchaseOrders, canViewVendorBills, canViewWorkOrders, canViewPayables, canExportTally, canViewGstRegisters, canPrepareSubcontractBill, canEditContract, canEditProjects, canEditVendors, canManageUsers, canSeeVendorBank, canPrepareBill, canViewContract, canViewCost, mayApprove } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { usePendingApprovals } from '@/lib/queries';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
@@ -131,6 +132,7 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
           ...(canPrepareBill(user.roleKey) || approvalRightsOf(user).some((r) => r.type === 'BILL') ? [link('/bills', 'RA Bills', FileDoneOutlined)] : []),
           ...(canViewContract(user.roleKey) ? [link('/receivables', 'Receivables', AccountBookOutlined)] : []),
           ...(canViewContract(user.roleKey) || canEditContract(user.roleKey) ? [link('/clients', 'Clients', BankOutlined)] : []),
+          ...(canViewGstRegisters(user.roleKey) ? [link('/gst', 'GST Registers', PercentageOutlined)] : []),
           ...(canExportTally(user.roleKey) ? [link('/tally', 'Tally Export', ExportOutlined)] : []),
         ],
       },

@@ -484,6 +484,21 @@ no ledger of its own.
 - **API.** `GET|PUT /tally/settings`, `GET /tally/masters.xml`, `GET /tally/preview?upTo&from`, `GET|POST /tally/exports`,
   `GET /tally/exports/:id/xml`, `DELETE /tally/exports/:id`. Web: Billing → Tally Export (to export, exports, ledgers).
 
+## GST registers
+
+- **Outward** (`src/gst/gst.service.ts`). Approved RA bills by bill date, one row each: invoice number as the Tally
+  export numbers it (`RA/<project code>/<bill no.>`, flagged above GST's 16 characters), the client's GSTIN (B2B) or
+  none (B2CS), place of supply = the company's GST state (Tally settings) else the client's, rate, taxable value =
+  work value, CGST + SGST (works on a site are supplied where it is).
+- **Input tax.** Approved vendor bills by invoice date, one row per GST rate of their lines; approved subcontractor
+  bills and site expenses with GST. IGST when the supplier's GST state (from the GSTIN) differs from the company's,
+  else CGST + SGST. Only rows with the supplier's GSTIN count as claimable; the rest show as not claimable.
+- **Excel** (`apps/web/src/lib/gstExport.ts`). One workbook: `b2b`, `b2cs` (summed by place of supply and rate) and
+  `hsn` (SAC 9954 by rate) with the GSTR-1 offline tool's column headers, and `input tax` laid out like GSTR-2B for
+  matching on GSTIN and invoice number. No e-invoicing (IRN); that waits for a customer who must, through a GSP.
+- **Roles and API.** Admin, management and accounts (`canViewGstRegisters`). `GET /gst/registers?from&to`. Web:
+  Billing → GST Registers (`?from=YYYY-MM&to=YYYY-MM`).
+
 ## Project cost
 
 - **Heads.** Site expenses (`APPROVED`, total incl. GST, by bill date); material issued (`StockTxn` of
