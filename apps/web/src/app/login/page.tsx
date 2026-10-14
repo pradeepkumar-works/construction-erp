@@ -58,7 +58,7 @@ export default function LoginPage() {
       </Form>
       <div style={{ marginTop: 12, display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
         <Link href="/forgot-password">Forgot password?</Link>
-        {options?.signup ? <Link href="/signup">New company? Create an account</Link> : null}
+        {options?.signup ? <Link href="/signup">New company? Create an account</Link> : <Link href="/welcome">What is Nirmaan?</Link>}
       </div>
 
       <div style={{ marginTop: 20, background: '#f6f8fb', borderRadius: 8, padding: 12 }}>

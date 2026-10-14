@@ -8,7 +8,8 @@ export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const isLogin = ['/login', '/signup', '/forgot-password'].some((p) => pathname.startsWith(p));
   // An invite or reset link works whether or not someone is signed in on this browser.
-  if (pathname.startsWith('/set-password')) return NextResponse.next();
+  // The product page is open to everyone too.
+  if (pathname.startsWith('/set-password') || pathname === '/welcome') return NextResponse.next();
 
   if (!token && !isLogin) {
     const url = req.nextUrl.clone();
@@ -26,5 +27,5 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|icon.svg|.*\\.(?:png|jpg|svg|ico)).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|icon.svg|.*\\.(?:png|jpg|svg|ico|webp)).*)'],
 };
