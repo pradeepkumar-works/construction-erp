@@ -93,6 +93,7 @@ export const NOTIFICATION_COLORS: Record<NotificationType, string> = {
   DOCUMENT_ISSUED: 'cyan',
   LEAVE: 'lime',
   BILLS_DUE: 'gold',
+  PORTAL: 'geekblue',
 };
 
 /** "2 min ago", "3 h ago", "4 d ago", then a date. */

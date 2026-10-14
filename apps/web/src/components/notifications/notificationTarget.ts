@@ -9,6 +9,8 @@ export function notificationHref(n: NotificationDto): string {
   if ((n.type === 'TEST_DUE' || n.type === 'TEST_FAILED') && n.entityId) return `/inspections?tab=tests&id=${n.entityId}`;
   if (n.type === 'NCR' && n.entityId) return `/inspections?tab=ncrs&id=${n.entityId}`;
   if (n.type === 'DOCUMENT_ISSUED' && n.entityId) return `/documents?id=${n.entityId}`;
+  // A bill sent or an inspection requested, for the client's engineer or consultant: their portal opens it.
+  if (n.type === 'PORTAL' && n.projectId) return `/portal/${n.projectId}${n.entityId ? `?open=${n.entityId}` : ''}`;
   if (n.type === 'LEAVE' && n.entityId) return `/staff?tab=leave&leave=${n.entityId}`;
   if (n.type === 'BILLS_DUE') return '/payables';
   if (n.type === 'LOW_STOCK' && n.projectId) return `/stock?projectId=${n.projectId}&low=1`;

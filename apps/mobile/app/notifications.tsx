@@ -25,6 +25,7 @@ const ICON: Record<NotificationType, { name: keyof typeof Ionicons.glyphMap; col
   LEAVE: { name: 'calendar', color: colors.info, bg: colors.infoSoft },
   NCR: { name: 'warning', color: colors.warning, bg: colors.warningSoft },
   BILLS_DUE: { name: 'wallet', color: colors.accent, bg: colors.accentSoft },
+  PORTAL: { name: 'business', color: colors.info, bg: colors.infoSoft },
 };
 
 export default function NotificationsScreen() {

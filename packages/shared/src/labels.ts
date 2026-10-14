@@ -56,6 +56,8 @@ export const ROLE_LABELS: Record<RoleKey, string> = {
   QA_QC_ENGINEER: 'QA/QC Engineer',
   ACCOUNTS_MANAGER: 'Accounts Manager',
   HR_MANAGER: 'HR Manager',
+  CLIENT_ENGINEER: "Client's Engineer (guest)",
+  CONSULTANT: 'Consultant / PMC (guest)',
 };
 
 export const WEATHER_LABELS: Record<Weather, string> = {
@@ -81,6 +83,7 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   DOCUMENT_ISSUED: 'Drawing issued',
   LEAVE: 'Leave',
   BILLS_DUE: 'Payments due',
+  PORTAL: 'Client portal',
 };
 
 export const STOCK_ENTRY_TYPE_LABELS: Record<StockEntryType, string> = {

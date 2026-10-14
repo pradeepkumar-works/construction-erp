@@ -480,6 +480,23 @@ jobs:
           curl -sf "$API_URL/messaging/log?pageSize=1" -H "authorization: Bearer $(login admin@demo.com)" | jq -r '.items[0] | "last message: \(.channel) \(.template) \(.status) \(.error // "")"'
           code=$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/messaging/log" -H "authorization: Bearer $(login engineer@demo.com)")
           echo "site engineer log: $code"; [ "$code" = "403" ]
+      - name: Client portal
+        run: |
+          set -e
+          login() { curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' -d "{\"email\":\"$1\",\"password\":\"password123\"}" | jq -r .accessToken; }
+          C="authorization: Bearer $(login client@demo.com)"
+          curl -sf "$API_URL/portal/projects" -H "$C" | jq -e 'length == 1 and .[0].code == "RD-2026-01"' > /dev/null
+          PROJECT=$(curl -sf "$API_URL/portal/projects" -H "$C" | jq -r '.[0].id')
+          curl -sf "$API_URL/portal/projects/$PROJECT" -H "$C" | jq -r '"\(.code): physical \(.physicalProgressPct)%, activities \(.activities | length), bills to certify \(.billsToCertify)"'
+          curl -sf "$API_URL/portal/projects/$PROJECT/dprs?pageSize=1" -H "$C" | jq -r '"approved daily reports: \(.total)"'
+          curl -sf "$API_URL/portal/projects/$PROJECT/bills" -H "$C" | jq -e 'all(.[]; .status == "APPROVED" and .stage != "NOT_SENT")' > /dev/null
+          curl -sf "$API_URL/portal/projects/$PROJECT/inspections" -H "$C" | jq -e 'all(.[]; .status != "DRAFT")' > /dev/null
+          for path in projects approvals/pending "ra-bills?projectId=$PROJECT"; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/$path" -H "$C")
+            echo "client on /$path: $code"; [ "$code" = "403" ]
+          done
+          code=$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/portal/projects" -H "authorization: Bearer $(login pm@demo.com)")
+          echo "staff on the portal: $code"; [ "$code" = "403" ]
       - name: Project cost view
         run: |
           set -e

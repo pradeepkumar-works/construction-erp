@@ -121,6 +121,7 @@ enum NotificationType {
   NCR
   DOCUMENT_ISSUED
   LEAVE
+  PORTAL
   BILLS_DUE
 }
 
@@ -454,6 +455,7 @@ model User {
   reviewedSubBills     SubcontractBill[]  @relation("SubBillReviewer")
   requestedInspections Inspection[]       @relation("InspectionRequester")
   inspectionsDone      Inspection[]       @relation("InspectionInspector")
+  inspectionsWitnessed Inspection[]       @relation("InspectionWitness")
   qualityTests         QualityTest[]      @relation("TestCreator")
   ncrsRaised           Ncr[]              @relation("NcrRaiser")
   ncrsToAct            Ncr[]              @relation("NcrActionBy")
@@ -2060,6 +2062,11 @@ model Inspection {
   reviewedBy     User?            @relation("InspectionInspector", fields: [reviewedById], references: [id])
   reviewedAt     DateTime?
   reviewNote     String?
+  /// The client's engineer or consultant who attended the inspection (client portal), with their remarks
+  witnessedById  String?
+  witnessedBy    User?            @relation("InspectionWitness", fields: [witnessedById], references: [id])
+  witnessedAt    DateTime?
+  witnessNote    String?
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
 

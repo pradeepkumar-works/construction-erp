@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { APPROVER_ROLES, type SubmissionType, COMPANY_WIDE_ROLES, isCompanyWide, canAdjustStock, canApprove, canKeepStock, canLogMachinery, canManageEquipment, canManageStore, canMeasure, canRaiseRisk, canRecordAttendance, canRequestInspection, canSubmitExpense, canRecordTest, canRaiseNcr, canManageDocuments, canViewLetters, canManageStaff, canMarkStaff, canViewMessageLog } from '@erp/shared';
+import { APPROVER_ROLES, type SubmissionType, COMPANY_WIDE_ROLES, isCompanyWide, canAdjustStock, canApprove, canKeepStock, canLogMachinery, canManageEquipment, canManageStore, canMeasure, canRaiseRisk, canRecordAttendance, canRequestInspection, canSubmitExpense, canRecordTest, canRaiseNcr, canManageDocuments, canViewLetters, canManageStaff, canMarkStaff, canViewMessageLog, GUEST_ROLES, isGuest } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { ApprovalRightsService } from './approval-rights.service';
 import { RequestUser } from './current-user';
@@ -147,6 +147,23 @@ export class ProjectAccessService {
   }
 
   /** Staff master and holidays: staff admins (admin, management, HR). */
+  /**
+   * The client portal: certify a bill or record attending an inspection. Only the client's engineer or the consultant,
+   * and only on projects they are a member of (guests are never company-wide).
+   */
+  async assertCanActAsClient(user: RequestUser, projectId: string) {
+    if (!isGuest(user.roleKey)) throw new ForbiddenException("Only the client's engineer or the consultant does this, from the client portal");
+    await this.assertCanAccessProject(user, projectId);
+  }
+
+  /** The client's engineers and consultants on a project: told when a bill is sent or an inspection requested. */
+  projectGuests(organizationId: string, projectId: string) {
+    return this.prisma.user.findMany({
+      where: { organizationId, isActive: true, role: { key: { in: GUEST_ROLES } }, OR: [{ managedProjects: { some: { id: projectId } } }, { memberships: { some: { projectId } } }] },
+      select: { id: true, fullName: true },
+    });
+  }
+
   assertCanViewMessageLog(user: RequestUser) {
     if (!canViewMessageLog(user.roleKey)) throw new ForbiddenException('Only management or an admin can see the message log');
   }

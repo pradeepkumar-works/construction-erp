@@ -692,6 +692,27 @@ PDF from the browser.
   recorded" prompts, Excel export); the progress report has a Delays and risks section. Site app: register
   screen per project, form (offline through the outbox) and detail screen with close / reopen.
 
+## Client portal
+
+- **Who.** Two guest roles, `CLIENT_ENGINEER` and `CONSULTANT` (`GUEST_ROLES`, `isGuest`), invited and put on projects
+  like staff, so `projectWhere` and `assertCanAccessProject` scope them as usual. They have no approval rights
+  (`ApprovalRightsService` gives them none; the approval matrix hides them).
+- **Deny by default.** `GuestGuard` (an app guard after `JwtAuthGuard`) refuses a guest on any route not marked
+  `@GuestAllowed()`: only the portal, their account (`auth/me`, change password), notifications and their WhatsApp/SMS
+  settings. `PortalController` is also `@GuestOnly()`, so staff keep their full screens and never see the cut-down
+  views. A new route is closed to guests unless it is marked.
+- **What they see** (`/api/portal/*`, `PortalService`): their projects with approved progress by activity, approved
+  DPRs, the progress report (`ReportsService.progress`), bills once sent (`RaBillsService.listForClient`, status
+  APPROVED and stage past NOT_SENT) and non-draft inspections.
+- **What they do.** Certify a SENT bill (`RaBillsService.certifyAsClient`, the same certificate logic as staff
+  recording one, audited "by the client in the portal") and record attending an inspection (`Inspection.witnessedById`,
+  `witnessedAt`, `witnessNote`; audit WITNESSED). Both need `assertCanActAsClient` (a guest on the project). Sending a
+  bill and requesting an inspection notify the project's guests, and their actions notify the QS / bill approvers or
+  the requester / quality watchers, all as `PORTAL` notifications.
+- **Clients.** Web: guests get a two-item menu and `/portal` (project cards, then tabs: progress, daily reports,
+  progress report, RA bills, inspections; `?tab=` and `?open=` deep links); any other page redirects there. The site
+  app refuses guest sign-in.
+
 ## Money and quantities
 
 Decimal columns everywhere (`Decimal(18,2)` for money, `Decimal(18,3)` for quantities) and strings

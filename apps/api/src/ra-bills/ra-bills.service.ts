@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { BILL_DEDUCTION_LABELS, billLabel, canPrepareBill, type BillDeductionKey, type BillSortField, type Paginated, type RaBillDeductionDto, type RaBillDto, type SortOrder } from '@erp/shared';
+import { BILL_DEDUCTION_LABELS, billLabel, canPrepareBill, isGuest, type BillDeductionKey, type BillSortField, type Paginated, type RaBillDeductionDto, type RaBillDto, type SortOrder } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -15,6 +15,7 @@ import { BillDateDto, CertifyBillDto, CreateRaBillDto, ListRaBillsQuery, UpdateR
 import { invoiceOf, RECEIPT_SUMS, settlement, syncBillStage } from '../receivables/bill-settlement';
 import { ReceivablesService } from '../receivables/receivables.service';
 import { assertNotExported } from '../tally/exported';
+import { NotificationsService } from '../notifications/notifications.service';
 
 const D = (v: Prisma.Decimal.Value) => new Prisma.Decimal(v);
 const ZERO = D(0);
@@ -104,6 +105,7 @@ export class RaBillsService {
     private lifecycle: SubmissionLifecycleService,
     private attachments: AttachmentsService,
     private receivables: ReceivablesService,
+    private notifications: NotificationsService,
   ) {}
 
   toDto(r: Row, sheets?: SheetRow[], receipts?: RaBillDto['receipts']): RaBillDto {
@@ -467,7 +469,22 @@ export class RaBillsService {
     if (dto.date < dateOnly(bill.billDate)!) throw new BadRequestException('A bill cannot be sent before its bill date');
     await this.prisma.raBill.update({ where: { id }, data: { stage: 'SENT', sentDate: parseDate(dto.date) } });
     await this.audit.log(user, 'BILL', id, 'SENT', `Sent to the client on ${dto.date}`);
-    return this.get(user, id);
+    const out = await this.get(user, id);
+    // The client's engineer and consultant on the project get it in their portal.
+    if (bill.stage === 'NOT_SENT') {
+      const guests = await this.access.projectGuests(user.organizationId, bill.projectId);
+      if (guests.length)
+        await this.notifications.notify({
+          organizationId: user.organizationId,
+          userIds: guests.map((g) => g.id),
+          type: 'PORTAL',
+          title: `${out.billLabel} sent for your certificate`,
+          body: `${out.projectName}: work value ₹${out.grossAmount}, net payable ₹${out.netPayable}. Check the quantities and certify it in the client portal.`,
+          projectId: bill.projectId,
+          entityId: id,
+        });
+    }
+    return out;
   }
 
   /**
@@ -477,6 +494,56 @@ export class RaBillsService {
    */
   async certify(user: RequestUser, id: string, dto: CertifyBillDto) {
     const bill = await this.approvedBill(user, id);
+    await this.applyCertificate(user, bill, dto);
+    return this.get(user, id);
+  }
+
+  /* ---------- the client portal ---------- */
+
+  private clientWhere(user: RequestUser): Prisma.RaBillWhereInput {
+    return { organizationId: user.organizationId, status: 'APPROVED', stage: { not: 'NOT_SENT' }, project: this.access.projectWhere(user) };
+  }
+
+  /** Bills sent to the client (and later stages) on a project the user can see, newest first: the client portal's list. */
+  async listForClient(user: RequestUser, projectId: string): Promise<RaBillDto[]> {
+    await this.access.assertCanAccessProject(user, projectId);
+    const rows = await this.prisma.raBill.findMany({ where: { ...this.clientWhere(user), projectId }, include, orderBy: { billNo: 'desc' } });
+    return rows.map((r) => this.toDto(r));
+  }
+
+  /** One bill as the client sees it: only once sent, with its measurements. */
+  async getForClient(user: RequestUser, id: string): Promise<RaBillDto> {
+    const row = await this.prisma.raBill.findFirst({ where: { id, ...this.clientWhere(user) }, include });
+    if (!row) throw new NotFoundException('RA bill not found');
+    const sheets = await this.prisma.measurementSheet.findMany({ where: { raBillId: id }, include: sheetInclude, orderBy: [{ date: 'asc' }, { mbNo: 'asc' }] });
+    return this.toDto(row, sheets);
+  }
+
+  /** The client's engineer or consultant certifies a sent bill from the portal; the QS and approvers are told. */
+  async certifyAsClient(user: RequestUser, id: string, dto: CertifyBillDto) {
+    const row = await this.prisma.raBill.findFirst({ where: { id, ...this.clientWhere(user) }, select: { projectId: true } });
+    if (!row) throw new NotFoundException('RA bill not found');
+    await this.access.assertCanActAsClient(user, row.projectId);
+    const bill = await this.prisma.raBill.findUniqueOrThrow({ where: { id }, include: { items: true, project: { select: { mobilisationAdvance: true } } } });
+    if (bill.stage !== 'SENT') throw new BadRequestException(bill.stage === 'PAID' ? 'This bill is already paid' : 'This bill is already certified');
+    await this.applyCertificate(user, bill, dto);
+    const dtoOut = await this.getForClient(user, id);
+    const told = await this.access.approversForProject(user.organizationId, bill.projectId, 'BILL');
+    await this.notifications.notify({
+      organizationId: user.organizationId,
+      userIds: [...new Set([bill.submittedById, ...told.map((u) => u.id)])],
+      type: 'PORTAL',
+      title: `${dtoOut.billLabel} certified by the client`,
+      body: `${user.fullName} certified ${dtoOut.billLabel} on ${dtoOut.projectName}${dto.certificateNo ? ` (certificate ${dto.certificateNo})` : ''}: work value ₹${dtoOut.grossAmount}${dtoOut.claimedGross && dtoOut.claimedGross !== dtoOut.grossAmount ? ` against ₹${dtoOut.claimedGross} claimed` : ''}.`,
+      projectId: bill.projectId,
+      entityType: 'BILL',
+      entityId: id,
+    });
+    return dtoOut;
+  }
+
+  private async applyCertificate(user: RequestUser, bill: Awaited<ReturnType<RaBillsService['approvedBill']>>, dto: CertifyBillDto) {
+    const id = bill.id;
     assertNotExported(bill, 'This bill');
     if (bill.stage !== 'SENT' && bill.stage !== 'CERTIFIED') throw new BadRequestException(bill.stage === 'PAID' ? 'This bill is already paid' : 'Record the bill as sent first');
     checkNotFuture(dto.date, 'certificate date');
@@ -508,8 +575,8 @@ export class RaBillsService {
       const next = await tx.raBill.findFirst({ where: { projectId: bill.projectId, billNo: bill.billNo + 1, status: { not: 'APPROVED' } }, select: { id: true } });
       if (next) await this.recompute(tx, next.id, false);
     });
-    await this.audit.log(user, 'BILL', id, 'CERTIFIED', dto.certificateNo ? `Certificate ${dto.certificateNo} of ${dto.date}` : `Certified on ${dto.date}`);
-    return this.get(user, id);
+    const by = isGuest(user.roleKey) ? ' by the client in the portal' : '';
+    await this.audit.log(user, 'BILL', id, 'CERTIFIED', dto.certificateNo ? `Certificate ${dto.certificateNo} of ${dto.date}${by}` : `Certified on ${dto.date}${by}`);
   }
 
 }

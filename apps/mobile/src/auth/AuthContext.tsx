@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import type { AuthUser, LoginResponse } from '@erp/shared';
+import { isGuest } from '@erp/shared';
 import { request, setUnauthorizedHandler } from '../api/client';
 
 const TOKEN_KEY = 'siteapp.token';
@@ -114,6 +115,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = useCallback(async (email: string, password: string) => {
     const res = await request<LoginResponse>('/auth/login', { method: 'POST', body: { email: email.trim(), password } });
+    // Client and consultant guests only have the web portal.
+    if (isGuest(res.user.roleKey)) throw new Error('Client and consultant accounts use the client portal on the web.');
     setToken(res.accessToken);
     setUser(res.user);
     await Promise.all([storage.set(TOKEN_KEY, res.accessToken), storage.set(USER_KEY, JSON.stringify(res.user))]);

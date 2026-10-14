@@ -27,6 +27,8 @@ const ROLES: [string, string][] = [
   ['QA_QC_ENGINEER', 'QA/QC Engineer'],
   ['ACCOUNTS_MANAGER', 'Accounts Manager'],
   ['HR_MANAGER', 'HR Manager'],
+  ['CLIENT_ENGINEER', "Client's Engineer (guest)"],
+  ['CONSULTANT', 'Consultant / PMC (guest)'],
 ];
 
 const USERS: { email: string; name: string; role: string; phone: string }[] = [
@@ -43,7 +45,23 @@ const USERS: { email: string; name: string; role: string; phone: string }[] = [
   { email: 'qaqc@demo.com', name: 'Sneha Iyer', role: 'QA_QC_ENGINEER', phone: '9800000011' },
   { email: 'accounts@demo.com', name: 'Mahesh Gupta', role: 'ACCOUNTS_MANAGER', phone: '9800000012' },
   { email: 'hr@demo.com', name: 'Pooja Reddy', role: 'HR_MANAGER', phone: '9800000013' },
+  // Guests from outside the company: they use the client portal only, on the projects below (seedGuests).
+  { email: 'client@demo.com', name: 'Er. Bijay Kumar Panda', role: 'CLIENT_ENGINEER', phone: '9800000014' },
+  { email: 'pmc@demo.com', name: 'Lakshmi Menon', role: 'CONSULTANT', phone: '9800000015' },
 ];
+
+/** The client's engineer (Executive Engineer's office, road) and the consultant (PMC, building) on their projects. */
+const GUEST_PROJECTS: [string, string][] = [
+  ['client@demo.com', 'RD-2026-01'],
+  ['pmc@demo.com', 'BL-2026-02'],
+];
+
+async function seedGuests(organizationId: string) {
+  for (const [email, code] of GUEST_PROJECTS) {
+    const [user, project] = await Promise.all([prisma.user.findFirst({ where: { organizationId, email } }), prisma.project.findFirst({ where: { organizationId, code } })]);
+    if (user && project) await prisma.projectMember.upsert({ where: { projectId_userId: { projectId: project.id, userId: user.id } }, update: {}, create: { projectId: project.id, userId: user.id } });
+  }
+}
 
 interface BoqSeed { itemNo: string; description: string; unit: string; rate: string; qty: string; activity: string; start: number; end: number; done: string[] }
 
@@ -119,6 +137,7 @@ async function main() {
     await seedTestsAndNcrs(org.id);
     await seedDocuments(org.id);
     await seedStaff(org.id);
+    await seedGuests(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
   }
@@ -279,6 +298,7 @@ async function main() {
   await seedTestsAndNcrs(org.id);
   await seedDocuments(org.id);
   await seedStaff(org.id);
+  await seedGuests(org.id);
 
   console.log('Seed complete. Login with any of these (password: password123):');
   for (const u of USERS) console.log(`  ${u.email.padEnd(24)} ${u.role}`);

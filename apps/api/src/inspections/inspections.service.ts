@@ -1,6 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { STANDARD_CHECKLISTS, sameLocation, type ChecklistTemplateDto, type InspectionCheck, type InspectionDto, type InspectionSortField, type Paginated, type SortOrder } from '@erp/shared';
+import { STANDARD_CHECKLISTS, sameLocation, type ChecklistTemplateDto, type InspectionCheck, type InspectionDto, type InspectionSortField, type Paginated, type PortalInspectionDto, type SortOrder } from '@erp/shared';
+import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -51,6 +52,7 @@ export class InspectionsService {
     private audit: AuditService,
     private lifecycle: SubmissionLifecycleService,
     private attachments: AttachmentsService,
+    private notifications: NotificationsService,
   ) {
     lifecycle.beforeApprove('PROGRESS', (_user, id) => this.assertHoldPointCleared(id));
   }
@@ -111,6 +113,73 @@ export class InspectionsService {
       this.prisma.inspection.count({ where }),
     ]);
     return paginated(rows.map((r) => this.toDto(r)), total, args);
+  }
+
+  /* ---------- the client portal ---------- */
+
+  private portalDto(r: Row & { witnessedBy: { fullName: string } | null }): PortalInspectionDto {
+    const d = this.toDto(r);
+    return {
+      id: d.id,
+      projectId: d.projectId,
+      inspectionNo: d.inspectionNo,
+      activityName: d.activityName,
+      holdPoint: d.holdPoint,
+      date: d.date,
+      location: d.location,
+      remarks: d.remarks,
+      checklistName: d.checklistName,
+      checklist: d.checklist,
+      status: d.status,
+      submittedByName: d.submittedByName,
+      reviewedByName: d.reviewedByName,
+      reviewedAt: d.reviewedAt,
+      reviewNote: d.reviewNote,
+      attachments: d.attachments,
+      witnessedByName: r.witnessedBy?.fullName ?? null,
+      witnessedAt: iso(r.witnessedAt),
+      witnessNote: r.witnessNote,
+    };
+  }
+
+  /** Inspections requested on a project (drafts left out), newest first: the client portal's list. */
+  async listForClient(user: RequestUser, projectId: string): Promise<PortalInspectionDto[]> {
+    await this.access.assertCanAccessProject(user, projectId);
+    const rows = await this.prisma.inspection.findMany({
+      where: { projectId, organizationId: user.organizationId, status: { not: 'DRAFT' } },
+      include: { ...include, witnessedBy: { select: { fullName: true } } },
+      orderBy: [{ date: 'desc' }, { inspectionNo: 'desc' }],
+      take: 200,
+    });
+    return rows.map((r) => this.portalDto(r));
+  }
+
+  /**
+   * The client's engineer or consultant records attending an inspection, with remarks; whoever requested it and QA/QC
+   * are told. Recording again replaces the remarks.
+   */
+  async witness(user: RequestUser, id: string, note: string | null): Promise<PortalInspectionDto> {
+    const row = await this.prisma.inspection.findFirst({ where: { id, organizationId: user.organizationId, status: { not: 'DRAFT' } }, select: { projectId: true, submittedById: true, inspectionNo: true } });
+    if (!row) throw new NotFoundException('Inspection not found');
+    await this.access.assertCanActAsClient(user, row.projectId);
+    const updated = await this.prisma.inspection.update({
+      where: { id },
+      data: { witnessedById: user.id, witnessedAt: new Date(), witnessNote: note?.trim() || null },
+      include: { ...include, witnessedBy: { select: { fullName: true } } },
+    });
+    await this.audit.log(user, 'INSPECTION', id, 'WITNESSED', note?.trim() ? `Attended for the client: ${note.trim()}` : 'Attended for the client');
+    const watchers = await this.access.qualityWatchers(user.organizationId, row.projectId, { onProjectOnly: true });
+    await this.notifications.notify({
+      organizationId: user.organizationId,
+      userIds: [...new Set([row.submittedById, ...watchers.map((w) => w.id)])],
+      type: 'PORTAL',
+      title: `${row.inspectionNo}: ${user.fullName} attended for the client`,
+      body: `${updated.activity.name} at ${updated.location}, ${updated.project.name}.${note?.trim() ? ` Remarks: ${note.trim()}` : ''}`,
+      projectId: row.projectId,
+      entityType: 'INSPECTION',
+      entityId: id,
+    });
+    return this.portalDto(updated);
   }
 
   async get(user: RequestUser, id: string): Promise<InspectionDto> {
