@@ -82,6 +82,18 @@ jobs:
           curl -sf "$API_URL/vendors" -H "authorization: Bearer $ENG" | jq -e '[.items[].bankAccountNo] | all(. == null)' > /dev/null
           code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/vendors" -H "authorization: Bearer $ENG" -H 'content-type: application/json' -d '{"name":"Smoke test vendor"}')
           echo "add vendor as a site engineer: $code"; [ "$code" = "403" ]
+      - name: Purchasing
+        run: |
+          set -e
+          TOKEN=$(curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' \
+            -d '{"email":"procurement@demo.com","password":"password123"}' | jq -r .accessToken)
+          H="authorization: Bearer $TOKEN"
+          curl -sf "$API_URL/purchase-orders" -H "$H" | jq -c '.total, [.items[] | {poNo, vendorName, status, total, receivedPct, closedAt}]'
+          curl -sf "$API_URL/purchase-orders" -H "$H" | jq -e '.total >= 1' > /dev/null
+          curl -sf "$API_URL/vendor-bills" -H "$H" | jq -c '.total, [.items[] | {billNo, vendorName, status, matched, dueDate}]'
+          ENG=$(curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' -d '{"email":"engineer@demo.com","password":"password123"}' | jq -r .accessToken)
+          code=$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/vendor-bills" -H "authorization: Bearer $ENG")
+          echo "vendor bills as a site engineer: $code"; [ "$code" = "403" ]
       - name: Notifications
         run: |
           set -e

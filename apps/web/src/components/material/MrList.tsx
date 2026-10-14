@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import type { MaterialRequestDto, MaterialRequestSortField, SubmissionStatus } from '@erp/shared';
@@ -19,11 +19,14 @@ import { MrFormModal } from './MrFormModal';
  * Server-paged list with search, project / status filters, sortable columns and Excel export of every
  * matching row. With `projectId` it is the project page's tab (project fixed); without, the top-level page.
  */
-export function MrList({ projectId: fixedProject, newLabel }: { projectId?: string; newLabel?: string }) {
+export function MrList({ projectId: fixedProject, newLabel, openId: initialOpen }: { projectId?: string; newLabel?: string; openId?: string | null }) {
   const list = useListState<MaterialRequestSortField>({ sortBy: 'createdAt', sortOrder: 'desc' });
   const [projectFilter, setProjectFilter] = useState<string | undefined>();
   const [status, setStatus] = useState<SubmissionStatus | undefined>();
-  const [openId, setOpenId] = useState<string | null>(null);
+  const [openId, setOpenId] = useState<string | null>(initialOpen ?? null);
+  useEffect(() => {
+    if (initialOpen) setOpenId(initialOpen);
+  }, [initialOpen]);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<MaterialRequestDto | null>(null);
   const projectId = fixedProject ?? projectFilter;

@@ -67,6 +67,10 @@ contractors after the first client is live.
   against the claim) and paid. Printable bill with the measurement annex, Excel export, and approval from the site app.
 - Vendors: one master of suppliers, hire agencies, subcontractors and service providers with GSTIN, MSME (Udyam)
   and bank details; expenses, machines and GRNs pick from it, and names typed elsewhere link to it.
+- Purchase orders: vendor quotations on an approved material request side by side, a PO raised from the lowest
+  (or any) quotation, approved through the approval matrix with limits and printed; GRNs against PO lines; vendor
+  bills matched three ways against the PO and what was received, with due dates kept within 45 days for micro and
+  small enterprises.
 - Receivables: money received against each bill with what the client deducted (TDS, GST TDS, retention, deposit,
   cess), part payments, retention and deposit releases, ageing per project and client, the retention due date,
   a dashboard tile, and billed value and cash in on project cost.

@@ -25,6 +25,8 @@ export const LIST_SORT_FIELDS = {
   bills: ['billDate', 'billNo', 'grossAmount', 'netPayable', 'status', 'stage', 'project', 'createdAt'],
   receipts: ['receiptDate', 'amount', 'project', 'kind', 'createdAt'],
   vendors: ['name', 'createdAt'],
+  purchaseOrders: ['poDate', 'poNo', 'total', 'status', 'project', 'vendor', 'createdAt'],
+  vendorBills: ['invoiceDate', 'billNo', 'dueDate', 'total', 'status', 'project', 'vendor', 'createdAt'],
   risks: ['riskNo', 'score', 'status', 'kind', 'category', 'dueDate', 'project', 'owner', 'createdAt', 'updatedAt'],
 } as const;
 
@@ -45,6 +47,8 @@ export type RiskSortField = (typeof LIST_SORT_FIELDS.risks)[number];
 export type BillSortField = (typeof LIST_SORT_FIELDS.bills)[number];
 export type ReceiptSortField = (typeof LIST_SORT_FIELDS.receipts)[number];
 export type VendorSortField = (typeof LIST_SORT_FIELDS.vendors)[number];
+export type PurchaseOrderSortField = (typeof LIST_SORT_FIELDS.purchaseOrders)[number];
+export type VendorBillSortField = (typeof LIST_SORT_FIELDS.vendorBills)[number];
 
 /** Query parameters understood by every paged list. */
 export interface ListParams<S extends string = string> {

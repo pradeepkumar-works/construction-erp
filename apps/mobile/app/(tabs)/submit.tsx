@@ -24,7 +24,7 @@ const MEASUREMENT = { href: '/measurement/new', icon: 'resize' as const, tone: '
 const RISK = { href: '/risks', icon: 'alert-circle' as const, tone: colors.danger, title: 'Delays & risks', text: 'Record work held up (days lost, who caused it) or raise a risk; see what is open.' };
 
 const STOCK = [
-  { href: '/stock/receive', icon: 'download' as const, tone: colors.success, title: 'Receive material (GRN)', text: 'Delivery against an approved material request, with the challan photo.' },
+  { href: '/stock/receive', icon: 'download' as const, tone: colors.success, title: 'Receive material (GRN)', text: 'Delivery against a purchase order or an approved material request, with the challan photo.' },
   { href: '/stock/issue', icon: 'arrow-up-circle' as const, tone: colors.info, title: 'Issue material', text: 'Material handed out at site, from the stock on hand.' },
 ];
 

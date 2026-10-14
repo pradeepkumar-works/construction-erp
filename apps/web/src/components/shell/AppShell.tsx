@@ -30,10 +30,12 @@ import {
   BankOutlined,
   FileDoneOutlined,
   AccountBookOutlined,
+  ContainerOutlined,
+  ReconciliationOutlined,
   ShopOutlined,
 } from '@ant-design/icons';
 import type { AuthUser } from '@erp/shared';
-import { approvalRightsOf, canEditContract, canEditProjects, canEditVendors, canManageUsers, canSeeVendorBank, canPrepareBill, canViewContract, canViewCost, mayApprove } from '@erp/shared';
+import { approvalRightsOf, canViewPurchaseOrders, canViewVendorBills, canEditContract, canEditProjects, canEditVendors, canManageUsers, canSeeVendorBank, canPrepareBill, canViewContract, canViewCost, mayApprove } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { usePendingApprovals } from '@/lib/queries';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
@@ -106,7 +108,15 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
       },
       {
         title: 'Materials & plant',
-        items: [link('/material-requests', 'Material Requests', ShoppingCartOutlined), link('/stock', 'Stock', InboxOutlined), link('/machinery', 'Machinery', ToolOutlined), ...(canEditVendors(user.roleKey) || canSeeVendorBank(user.roleKey) ? [link('/vendors', 'Vendors', ShopOutlined)] : [])],
+        items: [link('/material-requests', 'Material Requests', ShoppingCartOutlined), link('/stock', 'Stock', InboxOutlined), link('/machinery', 'Machinery', ToolOutlined)],
+      },
+      {
+        title: 'Purchases',
+        items: [
+          ...(canViewPurchaseOrders(user.roleKey) ? [link('/purchase-orders', 'Purchase Orders', ContainerOutlined)] : []),
+          ...(canViewVendorBills(user.roleKey) ? [link('/vendor-bills', 'Vendor Bills', ReconciliationOutlined)] : []),
+          ...(canEditVendors(user.roleKey) || canSeeVendorBank(user.roleKey) ? [link('/vendors', 'Vendors', ShopOutlined)] : []),
+        ],
       },
       {
         title: 'Billing',

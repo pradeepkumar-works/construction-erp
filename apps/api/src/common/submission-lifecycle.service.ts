@@ -7,7 +7,7 @@ import { ProjectAccessService } from './project-access.service';
 import { ApprovalRightsService } from './approval-rights.service';
 import { AuditService } from './audit.service';
 import { NotificationsService } from '../notifications/notifications.service';
-import { dprTitle, expenseTitle, machineryTitle, measurementTitle, progressTitle, billTitle } from './submission-titles';
+import { dprTitle, expenseTitle, machineryTitle, measurementTitle, progressTitle, billTitle, poTitle, vendorBillTitle } from './submission-titles';
 
 interface SubmissionRow {
   id: string;
@@ -25,6 +25,8 @@ interface SubmissionRow {
  */
 @Injectable()
 export class SubmissionLifecycleService {
+  private readonly approvedHooks = new Map<SubmissionType, (user: RequestUser, id: string) => Promise<void>>();
+
   constructor(private prisma: PrismaService, private access: ProjectAccessService, private audit: AuditService, private notifications: NotificationsService, private rights: ApprovalRightsService) {}
 
   private delegate(type: SubmissionType): any {
@@ -43,7 +45,16 @@ export class SubmissionLifecycleService {
         return this.prisma.measurementSheet;
       case 'BILL':
         return this.prisma.raBill;
+      case 'PURCHASE_ORDER':
+        return this.prisma.purchaseOrder;
+      case 'VENDOR_BILL':
+        return this.prisma.vendorBill;
     }
+  }
+
+  /** Run `hook` after an entry of `type` is approved (e.g. a purchase order updates item rates). One per type. */
+  onApproved(type: SubmissionType, hook: (user: RequestUser, id: string) => Promise<void>) {
+    this.approvedHooks.set(type, hook);
   }
 
   async load(user: RequestUser, type: SubmissionType, id: string): Promise<SubmissionRow> {
@@ -72,6 +83,7 @@ export class SubmissionLifecycleService {
     const status = decision === 'APPROVE' ? 'APPROVED' : decision === 'REJECT' ? 'REJECTED' : 'CHANGES_REQUESTED';
     await this.delegate(type).update({ where: { id }, data: { status, reviewedById: user.id, reviewedAt: new Date(), reviewNote: note ?? null } });
     await this.audit.log(user, type, id, status, note);
+    if (status === 'APPROVED') await this.approvedHooks.get(type)?.(user, id);
     await this.notifications.onReviewed(user, type, id, status, note);
   }
 
@@ -94,7 +106,7 @@ export class SubmissionLifecycleService {
     const allowed = (t: SubmissionType) => rights.some((r) => r.type === t);
     const where = { ...this.access.submissionWhere(user), status: 'SUBMITTED' as const };
     const none = Promise.resolve([] as never[]);
-    const [progress, dprs, mrs, logs, expenses, mbs, bills] = await Promise.all([
+    const [progress, dprs, mrs, logs, expenses, mbs, bills, pos, vbills] = await Promise.all([
       allowed('PROGRESS') ? this.prisma.progressEntry.findMany({ where, include: { project: true, activity: { include: { boqItem: { select: { rate: true } } } }, submittedBy: true }, orderBy: { submittedAt: 'asc' } }) : none,
       allowed('DPR') ? this.prisma.dailyReport.findMany({ where, include: { project: true, submittedBy: true }, orderBy: { submittedAt: 'asc' } }) : none,
       allowed('MATERIAL_REQUEST') ? this.prisma.materialRequest.findMany({ where, include: { project: true, submittedBy: true, items: true }, orderBy: { submittedAt: 'asc' } }) : none,
@@ -102,6 +114,8 @@ export class SubmissionLifecycleService {
       allowed('EXPENSE') ? this.prisma.expense.findMany({ where, include: { project: true, submittedBy: true }, orderBy: { submittedAt: 'asc' } }) : none,
       allowed('MEASUREMENT') ? this.prisma.measurementSheet.findMany({ where, include: { project: true, submittedBy: true, boqItem: true }, orderBy: { submittedAt: 'asc' } }) : none,
       allowed('BILL') ? this.prisma.raBill.findMany({ where, include: { project: true, submittedBy: true }, orderBy: { submittedAt: 'asc' } }) : none,
+      allowed('PURCHASE_ORDER') ? this.prisma.purchaseOrder.findMany({ where, include: { project: true, submittedBy: true, vendor: { select: { name: true } } }, orderBy: { submittedAt: 'asc' } }) : none,
+      allowed('VENDOR_BILL') ? this.prisma.vendorBill.findMany({ where, include: { project: true, submittedBy: true, vendor: { select: { name: true } } }, orderBy: { submittedAt: 'asc' } }) : none,
     ]);
     const amt = (d: Prisma.Decimal | null): string | null => (d === null ? null : d.toDecimalPlaces(2).toFixed(2));
     const machineCost = (l: (typeof logs)[number]) => {
@@ -178,6 +192,26 @@ export class SubmissionLifecycleService {
         submittedByName: b.submittedBy.fullName,
         submittedAt: (b.submittedAt ?? b.createdAt).toISOString(),
         amount: amt(b.grossAmount),
+      })),
+      ...pos.map((o) => ({
+        type: 'PURCHASE_ORDER' as const,
+        id: o.id,
+        projectId: o.projectId,
+        projectName: o.project.name,
+        title: poTitle(o.poNo, o.total.toFixed(2), o.vendor.name),
+        submittedByName: o.submittedBy.fullName,
+        submittedAt: (o.submittedAt ?? o.createdAt).toISOString(),
+        amount: amt(o.total),
+      })),
+      ...vbills.map((v) => ({
+        type: 'VENDOR_BILL' as const,
+        id: v.id,
+        projectId: v.projectId,
+        projectName: v.project.name,
+        title: `${vendorBillTitle(v.billNo, v.invoiceNo, v.vendor.name, v.total.toFixed(2))}${v.matched ? '' : ' (does not match the PO)'}`,
+        submittedByName: v.submittedBy.fullName,
+        submittedAt: (v.submittedAt ?? v.createdAt).toISOString(),
+        amount: amt(v.total),
       })),
     ];
     return out

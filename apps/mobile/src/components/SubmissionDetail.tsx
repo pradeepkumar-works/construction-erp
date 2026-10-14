@@ -88,10 +88,10 @@ const DECISIONS: { decision: ReviewDecision; label: string; variant: 'success' |
   { decision: 'REJECT', label: 'Reject', variant: 'danger', icon: 'close' },
 ];
 
-/** Entry forms on the phone; RA bills are prepared on the web. */
+/** Entry forms on the phone; RA bills, purchase orders and vendor bills are prepared on the web. */
 const EDIT_PATH: Partial<Record<SubmissionType, string>> = { PROGRESS: '/progress/new', DPR: '/dpr/new', MATERIAL_REQUEST: '/material-request/new', MACHINERY: '/machinery/new', EXPENSE: '/expense/new', MEASUREMENT: '/measurement/new' };
 
-const REVIEW_PATH: Record<SubmissionType, string> = { PROGRESS: 'progress', DPR: 'dpr', MATERIAL_REQUEST: 'material_request', MACHINERY: 'machinery', EXPENSE: 'expense', MEASUREMENT: 'measurement', BILL: 'bill' };
+const REVIEW_PATH: Record<SubmissionType, string> = { PROGRESS: 'progress', DPR: 'dpr', MATERIAL_REQUEST: 'material_request', MACHINERY: 'machinery', EXPENSE: 'expense', MEASUREMENT: 'measurement', BILL: 'bill', PURCHASE_ORDER: 'purchase_order', VENDOR_BILL: 'vendor_bill' };
 
 /** The detail endpoint each type is read back from after a review. */
 const DETAIL_API: Record<SubmissionType, string> = {
@@ -102,6 +102,8 @@ const DETAIL_API: Record<SubmissionType, string> = {
   EXPENSE: 'expenses',
   MEASUREMENT: 'measurements',
   BILL: 'ra-bills',
+  PURCHASE_ORDER: 'purchase-orders',
+  VENDOR_BILL: 'vendor-bills',
 };
 
 /** Approve / request changes / reject with an optional note. Rendered only for approvers on SUBMITTED entries. */

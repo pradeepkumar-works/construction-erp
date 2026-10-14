@@ -19,8 +19,10 @@ import { MachineryDrawer } from '@/components/machinery/MachineryDrawer';
 import { ExpenseDrawer } from '@/components/expenses/ExpenseDrawer';
 import { MeasurementDrawer } from '@/components/measurements/MeasurementDrawer';
 import { BillDrawer } from '@/components/bills/BillDrawer';
+import { PurchaseOrderDrawer } from '@/components/purchasing/PurchaseOrderDrawer';
+import { VendorBillDrawer } from '@/components/purchasing/VendorBillDrawer';
 
-const TYPE_COLORS: Record<SubmissionType, string> = { PROGRESS: 'blue', DPR: 'purple', MATERIAL_REQUEST: 'cyan', MACHINERY: 'magenta', EXPENSE: 'default', MEASUREMENT: 'geekblue', BILL: 'gold' };
+const TYPE_COLORS: Record<SubmissionType, string> = { PROGRESS: 'blue', DPR: 'purple', MATERIAL_REQUEST: 'cyan', MACHINERY: 'magenta', EXPENSE: 'default', MEASUREMENT: 'geekblue', BILL: 'gold', PURCHASE_ORDER: 'orange', VENDOR_BILL: 'volcano' };
 
 export default function ApprovalsPage() {
   const { user } = useAuth();
@@ -82,6 +84,8 @@ export default function ApprovalsPage() {
                   ['EXPENSE', 'Expenses'],
                   ['MEASUREMENT', 'Measurements'],
                   ['BILL', 'RA bills'],
+                  ['PURCHASE_ORDER', 'POs'],
+                  ['VENDOR_BILL', 'Vendor bills'],
                 ] as [SubmissionType, string][]
               )
                 .filter(([t]) => rights.some((r) => r.type === t))
@@ -108,6 +112,8 @@ export default function ApprovalsPage() {
       <ExpenseDrawer id={open?.type === 'EXPENSE' ? open.id : null} open={open?.type === 'EXPENSE'} onClose={() => setOpen(null)} />
       <MeasurementDrawer id={open?.type === 'MEASUREMENT' ? open.id : null} open={open?.type === 'MEASUREMENT'} onClose={() => setOpen(null)} />
       <BillDrawer id={open?.type === 'BILL' ? open.id : null} open={open?.type === 'BILL'} onClose={() => setOpen(null)} />
+      <PurchaseOrderDrawer id={open?.type === 'PURCHASE_ORDER' ? open.id : null} open={open?.type === 'PURCHASE_ORDER'} onClose={() => setOpen(null)} />
+      <VendorBillDrawer id={open?.type === 'VENDOR_BILL' ? open.id : null} open={open?.type === 'VENDOR_BILL'} onClose={() => setOpen(null)} />
     </div>
   );
 }

@@ -13,8 +13,8 @@ export const StockTypeTag = ({ type }: { type: StockEntryType }) => (
 );
 
 /** One line of what an entry was about: supplier and request for a GRN, who took it for an issue, the reason for an adjustment. */
-export function entrySummary(e: { type: StockEntryType; supplier: string | null; requestNo: string | null; challanNo: string | null; issuedTo: string | null; activityName: string | null; remarks: string | null }): string {
-  if (e.type === 'RECEIPT') return [e.supplier, e.requestNo && `against ${e.requestNo}`, e.challanNo && `challan ${e.challanNo}`].filter(Boolean).join(', ') || '-';
+export function entrySummary(e: { type: StockEntryType; supplier: string | null; requestNo: string | null; poNo?: string | null; challanNo: string | null; issuedTo: string | null; activityName: string | null; remarks: string | null }): string {
+  if (e.type === 'RECEIPT') return [e.supplier, (e.poNo ?? e.requestNo) && `against ${e.poNo ?? e.requestNo}`, e.challanNo && `challan ${e.challanNo}`].filter(Boolean).join(', ') || '-';
   if (e.type === 'ISSUE') return [e.issuedTo && `to ${e.issuedTo}`, e.activityName && `for ${e.activityName}`].filter(Boolean).join(' ') || '-';
   return e.remarks ?? '-';
 }

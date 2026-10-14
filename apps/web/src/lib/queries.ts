@@ -2,6 +2,11 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
+  ComparativeStatementDto,
+  PurchaseOrderDto,
+  QuotationDto,
+  ReceivableOrderDto,
+  VendorBillDto,
   ClientDto,
   MsmeCategory,
   UnlistedVendorDto,
@@ -76,7 +81,7 @@ export interface RoleDto {
   name: string;
 }
 
-export type ApprovalTypeParam = 'progress' | 'dpr' | 'material_request' | 'machinery' | 'expense' | 'measurement' | 'bill';
+export type ApprovalTypeParam = 'progress' | 'dpr' | 'material_request' | 'machinery' | 'expense' | 'measurement' | 'bill' | 'purchase_order' | 'vendor_bill';
 
 export const approvalTypeParam: Record<SubmissionType, ApprovalTypeParam> = {
   PROGRESS: 'progress',
@@ -86,6 +91,8 @@ export const approvalTypeParam: Record<SubmissionType, ApprovalTypeParam> = {
   EXPENSE: 'expense',
   MEASUREMENT: 'measurement',
   BILL: 'bill',
+  PURCHASE_ORDER: 'purchase_order',
+  VENDOR_BILL: 'vendor_bill',
 };
 
 /** Paging, search and sort understood by every paged list endpoint. */
@@ -523,6 +530,74 @@ export const useUnlistedVendors = (enabled = true) =>
     queryKey: ['vendors', 'unlisted'],
     queryFn: async () => (await api.get<UnlistedVendorDto[]>('/vendors/unlisted')).data,
     enabled,
+  });
+
+export interface PurchaseOrderFilters extends PageParams {
+  projectId?: string;
+  vendorId?: string;
+  materialRequestId?: string;
+  status?: SubmissionStatus;
+  open?: boolean;
+}
+
+export const usePurchaseOrders = (filters: PurchaseOrderFilters, enabled = true) =>
+  useQuery({
+    queryKey: ['purchase-orders', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<PurchaseOrderDto>>('/purchase-orders', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+
+export const usePurchaseOrder = (id: string | undefined) =>
+  useQuery({
+    queryKey: ['purchase-orders', 'detail', id],
+    queryFn: async () => (await api.get<PurchaseOrderDto>(`/purchase-orders/${id}`)).data,
+    enabled: !!id,
+  });
+
+/** Approved, open purchase orders with something still to receive (GRN form). */
+export const useReceivableOrders = (projectId: string | undefined, enabled = true) =>
+  useQuery({
+    queryKey: ['purchase-orders', 'receivable', projectId ?? 'all'],
+    queryFn: async () => (await api.get<ReceivableOrderDto[]>('/purchase-orders/receivable', { params: clean({ projectId }) })).data,
+    enabled,
+  });
+
+export const useQuotations = (materialRequestId: string | undefined, enabled = true) =>
+  useQuery({
+    queryKey: ['quotations', materialRequestId],
+    queryFn: async () => (await api.get<QuotationDto[]>(`/material-requests/${materialRequestId}/quotations`)).data,
+    enabled: enabled && !!materialRequestId,
+  });
+
+export const useComparative = (materialRequestId: string | undefined, enabled = true) =>
+  useQuery({
+    queryKey: ['quotations', 'comparative', materialRequestId],
+    queryFn: async () => (await api.get<ComparativeStatementDto>(`/material-requests/${materialRequestId}/comparative`)).data,
+    enabled: enabled && !!materialRequestId,
+  });
+
+export interface VendorBillFilters extends PageParams {
+  projectId?: string;
+  vendorId?: string;
+  purchaseOrderId?: string;
+  status?: SubmissionStatus;
+  exceptions?: boolean;
+}
+
+export const useVendorBills = (filters: VendorBillFilters, enabled = true) =>
+  useQuery({
+    queryKey: ['vendor-bills', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<VendorBillDto>>('/vendor-bills', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+
+export const useVendorBill = (id: string | undefined) =>
+  useQuery({
+    queryKey: ['vendor-bills', 'detail', id],
+    queryFn: async () => (await api.get<VendorBillDto>(`/vendor-bills/${id}`)).data,
+    enabled: !!id,
   });
 
 export const useClients = (enabled = true) =>

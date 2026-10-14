@@ -58,7 +58,7 @@ shapes of every API response, so web, mobile and API agree on one contract.
 ## One approval workflow
 
 `SubmissionLifecycleService` owns the state machine used by progress entries, DPRs, material
-requests, machinery logs, site expenses and measurement sheets:
+requests, machinery logs, site expenses, measurement sheets, RA bills, purchase orders and vendor bills:
 
 ```
 DRAFT / REJECTED / CHANGES_REQUESTED --submit--> SUBMITTED --review--> APPROVED | REJECTED | CHANGES_REQUESTED
@@ -315,8 +315,50 @@ The store register per project, fed by approved material requests:
   stores) edits it; bank details are returned to and changed by `canSeeVendorBank` (admin, management, procurement,
   accounts) only.
 - **API.** `/vendors` (paged; `kind`, `msme`, `includeInactive`, `q`), `GET /vendors/unlisted` (names in use that are
-  not in the master), `GET|PATCH|DELETE /vendors/:id`. Web: Materials & Plant → Vendors; `VendorPicker` on the expense,
-  machine and GRN forms.
+  not in the master), `GET|PATCH|DELETE /vendors/:id`. Web: Purchases → Vendors; `VendorPicker` on the expense, machine and GRN
+  forms.
+
+## Purchasing
+
+Material request → quotations → comparative statement → purchase order → GRN against the PO → vendor bill with a
+three-way match (`apps/api/src/purchasing`).
+
+- **Tables** (tenant tables). `Quotation` + `QuotationLine` (a vendor's rate and GST per line of an approved
+  material request; one quotation per vendor per request). `PurchaseOrder` + `PurchaseOrderLine` (numbered
+  `PO-<year>-0001`, optional `materialRequestId` / `quotationId`, freight, payment days, delivery date,
+  `closedAt` / `closeNote`). `VendorBill` + `VendorBillLine` (numbered `VB-<year>-0001`, the vendor's invoice number
+  unique per vendor, lines against PO lines, `matched` and `exceptions` stored at save). `StockEntry.purchaseOrderId`
+  and `StockTxn.purchaseOrderLineId` tie a GRN to the PO. POs and vendor bills are approval submissions
+  (`PURCHASE_ORDER`, `VENDOR_BILL`) with the six status columns; their amount for the approval matrix is the total.
+- **Comparative.** `GET /material-requests/:id/comparative` puts the quotations side by side; the lowest landed rate
+  (rate with GST) per line is marked, and `lowestQuotationId` is the cheapest quotation that covers every line.
+- **Ordering.** An MR-linked PO line may order at most what the request line still needs: requested less what other
+  POs hold (a closed PO holds only what it received) less what was received directly against the request.
+  `MaterialRequestItemDto.toOrderQty` carries that. Editing a PO is allowed until it is approved; an approved PO
+  is closed short (with a note) instead of edited or deleted. Approving a PO sets `Item.rate` of each line's item
+  (found or created by name and unit) through the lifecycle's `onApproved` hook.
+- **Receiving.** `POST /stock/receipts` with `purchaseOrderId` receives against an approved, open PO: supplier,
+  vendor and request come from the PO, each line may take up to what is still pending on its PO line, and the stock
+  line also counts against the request line. Receipts against a request without a PO work as before.
+- **Three-way match** (`VendorBillsService.match`). Per line: quantity billed against received less billed on
+  other non-rejected bills; rate against the PO rate (higher is an exception); GST rate against the PO's. Freight
+  against what is left of the PO's freight; freight carries no GST. Exceptions are recorded and shown, not
+  blocking: the approver decides. A closed PO can still be billed for what was received. A GRN cannot be deleted
+  once bills need its quantity.
+- **MSME.** Payment days default to 30 and may not exceed 45 for a micro or small vendor (MSMED Act s.15); a bill's
+  due date is invoice date + the PO's payment days, capped at 45 for such vendors.
+- **Roles.** `canPurchase` (admin, management, PM, procurement) enters quotations and raises POs;
+  `canViewPurchaseOrders` adds the store, accounts and site engineers; `canRecordVendorBill` (admin, management,
+  procurement, accounts) records bills, and `canViewVendorBills` adds PMs. The demo seed's approval matrix lets PMs
+  approve POs and vendor bills up to ₹5 lakh and management without limit. An organisation that already has its own
+  matrix needs rules for the two new types; until then only Admin approves them.
+- **API.** `GET /material-requests/:id/quotations`, `/quotations` (`POST`, `GET|PATCH|DELETE /:id`),
+  `/purchase-orders` (paged; `projectId`, `vendorId`, `materialRequestId`, `status`, `open`, `q`),
+  `GET /purchase-orders/receivable`, `POST /purchase-orders/:id/submit|close`, `/vendor-bills` (paged; `projectId`,
+  `vendorId`, `purchaseOrderId`, `status`, `exceptions`, `q`), `POST /vendor-bills/:id/submit`.
+- **Clients.** Web: Purchases → Purchase Orders and Vendor Bills, a Purchase Orders tab per project, and on an
+  approved material request the comparative with "Raise PO"; PO print view in `components/purchasing/poPrint.ts`.
+  The GRN form picks a PO or a request. Site app: approve POs and vendor bills, and receive against a PO.
 
 ## Receivables
 

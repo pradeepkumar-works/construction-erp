@@ -171,9 +171,16 @@ relative to a v2 item (S about one, M about two, L about three). The full draft 
     accounts). Expenses, machines and GRNs link to it: picked from suggestions on the web, and a name typed anywhere
     (site app included) links to the vendor of that name. A "Not in the master" list shows names typed that match
     no vendor, with "Add to master". POs (item 21) will pick from it too.
-21. **Purchase orders** (L). Material request → quotes → comparative statement → PO (approval matrix with
+21. ~~**Purchase orders** (L). Material request → quotes → comparative statement → PO (approval matrix with
     limits) → GRN against PO lines → vendor bill with a three-way match. Screens for `PROCUREMENT_MANAGER`.
-    `Item.rate` becomes the last PO rate.
+    `Item.rate` becomes the last PO rate.~~
+    Done: quotations on an approved material request and the comparative (lowest landed rate marked), "Raise PO"
+    from a quotation or without one, PO numbering, freight, payment days (45 at most for micro and small vendors),
+    print view, approval through the matrix (demo: PM up to ₹5 lakh, management without limit), close short. GRNs
+    against PO lines (web and site app); ordering beyond what the request still needs is refused. Vendor bills
+    against a PO with the three-way match (quantity received and not yet billed, PO rate, GST, freight); exceptions
+    are flagged for the approver rather than blocking. Approving a PO sets `Item.rate`. Approval of POs and bills
+    from the site app.
 22. **Subcontractor work orders and bills** (L). Work order with rates per BOQ item or own items; their work in
     the measurement book with a contractor field; their RA bill with retention, advance and material-issued
     recovery and TDS; attendance contractors linked to the vendor master; margin per BOQ item.

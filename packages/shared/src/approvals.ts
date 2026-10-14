@@ -19,6 +19,8 @@ export const APPROVAL_AMOUNT_BASIS: Partial<Record<SubmissionType, string>> = {
   MEASUREMENT: 'measured quantity at the BOQ rate',
   MACHINERY: 'machine cost for the day at its hire rate',
   BILL: 'value of work in the bill, before GST and deductions',
+  PURCHASE_ORDER: 'order total including freight and GST',
+  VENDOR_BILL: 'invoice total including freight and GST',
 };
 
 export const hasAmount = (type: SubmissionType): boolean => type in APPROVAL_AMOUNT_BASIS;

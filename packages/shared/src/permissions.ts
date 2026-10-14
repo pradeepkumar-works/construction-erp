@@ -97,6 +97,17 @@ export const canViewContract = (role: RoleKey) => BILLING_ROLES.includes(role);
 /** Record money received from clients: admin, management and accounts. */
 export const RECEIPT_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'ACCOUNTS_MANAGER'];
 export const canRecordReceipt = (role: RoleKey) => RECEIPT_ROLES.includes(role);
+/** Enter vendor quotations and raise purchase orders: procurement and approvers. */
+export const PURCHASE_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER', 'PROCUREMENT_MANAGER'];
+export const canPurchase = (role: RoleKey) => PURCHASE_ROLES.includes(role);
+/** See purchase orders: purchasers, the store (receives against them) and accounts (matches bills). */
+export const PO_VIEW_ROLES: RoleKey[] = [...PURCHASE_ROLES, 'STORE_MANAGER', 'ACCOUNTS_MANAGER', 'SITE_ENGINEER'];
+export const canViewPurchaseOrders = (role: RoleKey) => PO_VIEW_ROLES.includes(role);
+/** Record vendor invoices against purchase orders: accounts, procurement and management. */
+export const VENDOR_BILL_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROCUREMENT_MANAGER', 'ACCOUNTS_MANAGER'];
+export const canRecordVendorBill = (role: RoleKey) => VENDOR_BILL_ROLES.includes(role);
+/** See vendor bills: those who record them and project managers. */
+export const canViewVendorBills = (role: RoleKey) => VENDOR_BILL_ROLES.includes(role) || role === 'PROJECT_MANAGER';
 /** Add and edit vendors: admin, management, project managers, procurement, accounts and stores. */
 export const VENDOR_EDITOR_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER', 'PROCUREMENT_MANAGER', 'ACCOUNTS_MANAGER', 'STORE_MANAGER'];
 export const canEditVendors = (role: RoleKey) => VENDOR_EDITOR_ROLES.includes(role);
