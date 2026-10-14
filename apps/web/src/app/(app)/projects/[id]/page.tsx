@@ -22,6 +22,7 @@ import { ExpenseList } from '@/components/expenses/ExpenseList';
 import { RiskList } from '@/components/risks/RiskList';
 import { MeasurementList } from '@/components/measurements/MeasurementList';
 import { ProjectQualityTab } from '@/components/quality/QualityTabs';
+import { ProjectDocumentsTab } from '@/components/documents/DocumentTabs';
 import { ProjectCostPanel } from '@/components/cost/ProjectCostPanel';
 import { ContractPanel } from '@/components/contracts/ContractPanel';
 import { BillList } from '@/components/bills/BillList';
@@ -101,6 +102,7 @@ export default function ProjectDetailPage() {
             { key: 'activities', label: 'Activities', children: <ActivitiesTab projectId={project.id} members={project.members} project={project} /> },
             { key: 'mb', label: 'Measurements', children: <MeasurementList projectId={project.id} /> },
             { key: 'inspections', label: 'Quality', children: <ProjectQualityTab projectId={project.id} /> },
+            { key: 'documents', label: 'Documents', children: <ProjectDocumentsTab projectId={project.id} /> },
             { key: 'progress', label: 'Progress', children: <ProgressList projectId={project.id} newLabel="New progress entry" /> },
             { key: 'dpr', label: 'Daily Reports', children: <DprList projectId={project.id} newLabel="New DPR" /> },
             { key: 'attendance', label: 'Attendance', children: <AttendanceList projectId={project.id} /> },

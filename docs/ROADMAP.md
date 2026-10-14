@@ -226,8 +226,12 @@ relative to a v2 item (S about one, M about two, L about three). The full draft 
     Done: Site → Quality (Tests and NCRs tabs) and Tests & NCRs in the site app. Cubes get 7 and 28-day readings,
     reminded when due; the last reading decides pass or fail against the specification. QA/QC raises an NCR (from a
     failed test or inspection), site records the cause and corrective action, QA/QC closes or reopens it.
-28. **Document register** (M). Drawings and documents with revision and status, current revision only (and
-    offline) on the site app, transmittals, numbered letters in and out linked to delays.
+28. ~~**Document register** (M). Drawings and documents with revision and status, current revision only (and
+    offline) on the site app, transmittals, numbered letters in and out linked to delays.~~
+    Done: Site → Documents (Register, Transmittals, Letters) and a project tab. Each revision carries its status and
+    files; the latest issued is current and a revision good for construction notifies the project. Transmittals list
+    revisions with copies, print a cover sheet and record who signed for them. Letters in and out are numbered, answer
+    each other and link to a delay (shown on the delay). Site app: Drawings, current revisions only, saved offline.
 
 ### E. People
 29. **Staff and leave** (M). Staff master separate from contractor labour, staff attendance from the site app,

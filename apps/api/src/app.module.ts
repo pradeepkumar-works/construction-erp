@@ -30,6 +30,7 @@ import { TallyModule } from './tally/tally.module';
 import { GstModule } from './gst/gst.module';
 import { InspectionsModule } from './inspections/inspections.module';
 import { QualityModule } from './quality/quality.module';
+import { DocumentsModule } from './documents/documents.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { MaterialRequestsModule } from './material-requests/material-requests.module';
 import { ApprovalsModule } from './approvals/approvals.module';
@@ -67,6 +68,7 @@ import { HealthController } from './health.controller';
     GstModule,
     InspectionsModule,
     QualityModule,
+    DocumentsModule,
     CostModule,
     ReportsModule,
     RisksModule,

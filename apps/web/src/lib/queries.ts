@@ -59,6 +59,15 @@ import type {
   AttachmentDto,
   AuditLogDto,
   NcrDto,
+  DocumentDto,
+  DocumentDetailDto,
+  DocumentSummaryDto,
+  DocumentKind,
+  DocumentDiscipline,
+  RevisionStatus,
+  TransmittalDto,
+  LetterDto,
+  LetterDirection,
   NcrSeverity,
   NcrStatus,
   QualitySummaryDto,
@@ -416,11 +425,12 @@ export const useApprovalMatrix = (enabled = true) =>
 export const useActivityTemplates = (enabled = true) =>
   useQuery({ queryKey: ['activity-templates'], queryFn: async () => (await api.get<ActivityTemplateDto[]>('/activity-templates')).data, enabled });
 
-export const useRisks = (filters?: RiskFilters) =>
+export const useRisks = (filters?: RiskFilters, enabled = true) =>
   useQuery({
     queryKey: ['risks', clean(filters)],
     queryFn: async () => (await api.get<Paginated<RiskDto>>('/risks', { params: clean(filters) })).data,
     placeholderData: keepPreviousData,
+    enabled,
   });
 
 /** Totals and heat map for the same filters (paging, sort and status filters are ignored by the API). */
@@ -552,6 +562,91 @@ export const useQualitySummary = (projectId?: string) =>
   useQuery({
     queryKey: ['quality', 'summary', projectId ?? null],
     queryFn: async () => (await api.get<QualitySummaryDto>('/quality/summary', { params: clean({ projectId }) })).data,
+  });
+
+export interface DocumentFilters extends PageParams {
+  projectId?: string;
+  kind?: DocumentKind;
+  discipline?: DocumentDiscipline;
+  status?: RevisionStatus;
+}
+
+export const useDocuments = (filters?: DocumentFilters, enabled = true) =>
+  useQuery({
+    queryKey: ['documents', 'list', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<DocumentDto>>('/documents', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+
+export const useDocument = (id: string | undefined) =>
+  useQuery({
+    queryKey: ['documents', 'detail', id],
+    queryFn: async () => (await api.get<DocumentDetailDto>(`/documents/${id}`)).data,
+    enabled: !!id,
+  });
+
+export const useDocumentHistory = (id: string | undefined) =>
+  useQuery({
+    queryKey: ['documents', 'history', id],
+    queryFn: async () => (await api.get<AuditLogDto[]>(`/documents/${id}/history`)).data,
+    enabled: !!id,
+  });
+
+/** Every document of a project with its current revision (to pick revisions for a transmittal). */
+export const useSiteDocuments = (projectId: string | undefined) =>
+  useQuery({
+    queryKey: ['documents', 'site', projectId],
+    queryFn: async () => (await api.get<DocumentDto[]>('/documents/site', { params: { projectId } })).data,
+    enabled: !!projectId,
+  });
+
+export const useDocumentSummary = (projectId?: string) =>
+  useQuery({
+    queryKey: ['documents', 'summary', projectId ?? null],
+    queryFn: async () => (await api.get<DocumentSummaryDto>('/documents/summary', { params: clean({ projectId }) })).data,
+  });
+
+export interface TransmittalFilters extends PageParams {
+  projectId?: string;
+  unacknowledged?: boolean;
+  documentId?: string;
+}
+
+export const useTransmittals = (filters?: TransmittalFilters) =>
+  useQuery({
+    queryKey: ['documents', 'transmittals', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<TransmittalDto>>('/transmittals', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+  });
+
+export const useTransmittal = (id: string | undefined) =>
+  useQuery({
+    queryKey: ['documents', 'transmittals', 'detail', id],
+    queryFn: async () => (await api.get<TransmittalDto>(`/transmittals/${id}`)).data,
+    enabled: !!id,
+  });
+
+export interface LetterFilters extends PageParams {
+  projectId?: string;
+  direction?: LetterDirection;
+  riskId?: string;
+  awaitingReply?: boolean;
+}
+
+export const useLetters = (filters?: LetterFilters, enabled = true) =>
+  useQuery({
+    queryKey: ['documents', 'letters', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<LetterDto>>('/letters', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+
+export const useLetter = (id: string | undefined) =>
+  useQuery({
+    queryKey: ['documents', 'letters', 'detail', id],
+    queryFn: async () => (await api.get<LetterDto>(`/letters/${id}`)).data,
+    enabled: !!id,
   });
 
 export interface BillFilters extends PageParams {

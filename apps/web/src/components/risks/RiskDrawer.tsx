@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { App, Button, Descriptions, Divider, Drawer, Input, Modal, Popconfirm, Skeleton, Space, Timeline, Typography } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { RiskDto } from '@erp/shared';
-import { DELAY_PARTY_LABELS, RISK_CATEGORY_LABELS, RISK_RATING_LABELS, canApprove, canEditRisk } from '@erp/shared';
+import { DELAY_PARTY_LABELS, RISK_CATEGORY_LABELS, RISK_RATING_LABELS, canApprove, canEditRisk, canViewLetters, LETTER_DIRECTION_LABELS } from '@erp/shared';
 import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
-import { useRisk, useRiskHistory } from '@/lib/queries';
+import { useLetters, useRisk, useRiskHistory } from '@/lib/queries';
 import { formatDate, formatDateTime } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
@@ -24,6 +25,8 @@ export function RiskDrawer({ id, open, onClose, onEdit }: { id: string | null; o
   const [closing, setClosing] = useState(false);
   const [note, setNote] = useState('');
   const mayEdit = !!user && !!data && canEditRisk(user, data);
+  const seesLetters = !!user && canViewLetters(user.roleKey);
+  const { data: letters } = useLetters({ riskId: id ?? undefined, pageSize: 50, sortBy: 'letterDate', sortOrder: 'asc' }, open && !!id && seesLetters);
 
   const patch = useMutation({
     mutationFn: async (body: Record<string, unknown>) => (await api.patch<RiskDto>(`/risks/${id}`, body)).data,
@@ -145,6 +148,30 @@ export function RiskDrawer({ id, open, onClose, onEdit }: { id: string | null; o
             Photos / letters ({data.attachments.length})
           </Divider>
           <AttachmentGallery attachments={data.attachments} />
+          {seesLetters ? (
+            <>
+              <Divider titlePlacement="start" plain>
+                Correspondence ({letters?.total ?? 0})
+              </Divider>
+              {letters?.items.length ? (
+                letters.items.map((l) => (
+                  <div key={l.id} style={{ display: 'flex', gap: 8, padding: '2px 0' }}>
+                    <span className="text-muted" style={{ width: 90, flex: 'none' }}>
+                      {formatDate(l.letterDate)}
+                    </span>
+                    <Link href={`/documents?tab=letters&letter=${l.id}`} style={{ flex: 'none' }}>
+                      {l.letterNo}
+                    </Link>
+                    <span>
+                      {LETTER_DIRECTION_LABELS[l.direction]}: {l.subject}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <Typography.Text type="secondary">No letters linked. Link hindrance notices and extension claims from Documents → Letters.</Typography.Text>
+              )}
+            </>
+          ) : null}
           <Divider titlePlacement="start" plain>
             History
           </Divider>

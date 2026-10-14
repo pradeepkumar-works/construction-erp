@@ -117,6 +117,7 @@ async function main() {
     await seedPayables(org.id);
     await seedQuality(org.id);
     await seedTestsAndNcrs(org.id);
+    await seedDocuments(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
   }
@@ -275,6 +276,7 @@ async function main() {
   await seedPayables(org.id);
   await seedQuality(org.id);
   await seedTestsAndNcrs(org.id);
+  await seedDocuments(org.id);
 
   console.log('Seed complete. Login with any of these (password: password123):');
   for (const u of USERS) console.log(`  ${u.email.padEnd(24)} ${u.role}`);
@@ -1390,4 +1392,134 @@ async function seedTestsAndNcrs(organizationId: string) {
     const row = await prisma.ncr.create({ data: { ...x, ncrNo: `NCR-${year}-${String(i + 1).padStart(4, '0')}` } });
     await prisma.auditLog.create({ data: { organizationId, entityType: 'NCR', entityId: row.id, action: 'CREATED', actorId: qa.id, createdAt: x.createdAt as Date } });
   }
+}
+
+/** A one-page placeholder drawing (A4 landscape PDF with a border and title block), so documents open on every host. */
+function drawingPdf(docNo: string, title: string, revision: string, project: string): Uint8Array<ArrayBuffer> {
+  const esc = (t: string) => t.replace(/[\\()]/g, (c) => `\\${c}`).replace(/[^\x20-\x7e]/g, '-');
+  const text = (x: number, y: number, size: number, t: string) => `BT /F1 ${size} Tf ${x} ${y} Td (${esc(t)}) Tj ET`;
+  const body = [
+    '1 w 20 20 802 555 re S 0.5 w 522 20 300 110 re S 522 95 m 822 95 l S 522 60 m 822 60 l S 722 20 m 722 60 l S',
+    '0.6 G 60 200 m 460 200 l 460 480 l 60 480 l h S 60 340 m 460 340 l S 260 200 m 260 480 l S 0 G',
+    text(60, 520, 22, title),
+    text(60, 160, 11, 'Placeholder drawing created by the Nirmaan demo data.'),
+    text(530, 110, 9, project),
+    text(530, 75, 12, title.length > 44 ? `${title.slice(0, 43)}...` : title),
+    text(530, 35, 14, docNo),
+    text(730, 35, 14, `Rev ${revision}`),
+  ].join('\n');
+  const objects = [
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 842 595] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>',
+    `<< /Length ${Buffer.byteLength(body)} >>\nstream\n${body}\nendstream`,
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+  ];
+  let pdf = '%PDF-1.4\n';
+  const offsets: number[] = [];
+  objects.forEach((o, i) => {
+    offsets.push(Buffer.byteLength(pdf));
+    pdf += `${i + 1} 0 obj\n${o}\nendobj\n`;
+  });
+  const xref = Buffer.byteLength(pdf);
+  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n${offsets.map((o) => `${String(o).padStart(10, '0')} 00000 n \n`).join('')}`;
+  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
+  return new Uint8Array(Buffer.from(pdf, 'latin1'));
+}
+
+type DemoRevision = [string, number, 'FOR_CONSTRUCTION' | 'FOR_APPROVAL' | 'APPROVED_WITH_COMMENTS', string | null];
+type DemoDocument = { docNo: string; title: string; kind: 'DRAWING' | 'METHOD_STATEMENT' | 'SPECIFICATION'; discipline: 'ARCHITECTURAL' | 'STRUCTURAL' | 'PLUMBING' | 'ROAD' | 'WATER' | 'GENERAL'; from: string; revisions: DemoRevision[] };
+// Revisions are [revision, days ago, status, remarks], oldest first.
+const DEMO_DOCUMENTS: Record<string, DemoDocument[]> = {
+  BUILDING: [
+    { docNo: 'ARC-101', title: 'Ground floor plan', kind: 'DRAWING', discipline: 'ARCHITECTURAL', from: 'Shilpa Architects', revisions: [['R0', 40, 'FOR_APPROVAL', null], ['R1', 25, 'FOR_CONSTRUCTION', 'OPD waiting area enlarged; toilet block moved to grid 5']] },
+    { docNo: 'STR-201', title: 'Foundation layout and footing details', kind: 'DRAWING', discipline: 'STRUCTURAL', from: 'Shilpa Architects (structural)', revisions: [['R0', 45, 'FOR_CONSTRUCTION', null]] },
+    { docNo: 'STR-205', title: 'First floor slab reinforcement', kind: 'DRAWING', discipline: 'STRUCTURAL', from: 'Shilpa Architects (structural)', revisions: [['R0', 20, 'FOR_CONSTRUCTION', null], ['R1', 2, 'FOR_CONSTRUCTION', 'Extra bars around the lift cut-out between grids C and D']] },
+    { docNo: 'PLB-301', title: 'Plumbing riser diagram', kind: 'DRAWING', discipline: 'PLUMBING', from: 'Plumbing subcontractor', revisions: [['R0', 6, 'FOR_APPROVAL', 'Sent to the architect for approval']] },
+    { docNo: 'MS-01', title: 'Method statement for concreting of slabs', kind: 'METHOD_STATEMENT', discipline: 'GENERAL', from: 'Site QA/QC', revisions: [['R0', 30, 'APPROVED_WITH_COMMENTS', 'Curing by ponding for 14 days, not 7']] },
+  ],
+  ROAD: [
+    { docNo: 'RD-PP-03', title: 'Plan and profile Km 12 to Km 16', kind: 'DRAWING', discipline: 'ROAD', from: 'LEA Associates', revisions: [['R0', 60, 'FOR_CONSTRUCTION', null], ['R1', 12, 'FOR_CONSTRUCTION', 'Grade line revised at Km 12+300 to 12+650 (encroachment stretch)']] },
+    { docNo: 'RD-TCS-01', title: 'Typical cross sections', kind: 'DRAWING', discipline: 'ROAD', from: 'LEA Associates', revisions: [['R0', 60, 'FOR_CONSTRUCTION', null]] },
+    { docNo: 'RD-CD-07', title: 'Pipe culvert at Km 13+420', kind: 'DRAWING', discipline: 'STRUCTURAL', from: 'Design office', revisions: [['R0', 8, 'FOR_APPROVAL', 'Submitted to the Authority Engineer']] },
+    { docNo: 'SP-ROAD', title: 'Technical specifications (MoRTH 5th revision, contract volume III)', kind: 'SPECIFICATION', discipline: 'GENERAL', from: 'Odisha Works Department', revisions: [['R0', 90, 'APPROVED_WITH_COMMENTS', 'As in the agreement']] },
+  ],
+};
+
+async function seedDocuments(organizationId: string) {
+  if ((await prisma.document.count({ where: { organizationId } })) > 0) return;
+  const pmFor = async (projectId: string) => (await prisma.project.findUnique({ where: { id: projectId }, select: { projectManagerId: true } }))?.projectManagerId;
+  const year = new Date().getUTCFullYear();
+  let trn = 0;
+  for (const [type, docs] of Object.entries(DEMO_DOCUMENTS)) {
+    const project = await prisma.project.findFirst({ where: { organizationId, type: type as never }, orderBy: { code: 'asc' } });
+    const by = project ? await pmFor(project.id) : null;
+    if (!project || !by) continue;
+    const revisions = new Map<string, string>();
+    for (const d of docs) {
+      const first = d.revisions[0][1];
+      const doc = await prisma.document.create({
+        data: { organizationId, projectId: project.id, docNo: d.docNo, title: d.title, kind: d.kind, discipline: d.discipline, createdById: by, createdAt: day(-first) },
+      });
+      let last = '';
+      for (const [revision, ago, status, remarks] of d.revisions) {
+        const rev = await prisma.documentRevision.create({
+          data: { documentId: doc.id, revision, issuedOn: day(-ago), status, receivedFrom: d.from, remarks, issuedById: by, createdAt: day(-ago) },
+        });
+        const pdf = drawingPdf(d.docNo, d.title, revision, `${project.code} ${project.name}`);
+        await prisma.attachment.create({
+          data: { organizationId, fileName: `${d.docNo}-${revision}.pdf`, mimeType: 'application/pdf', size: pdf.length, storagePath: `db:seed/${d.docNo}-${revision}.pdf`, data: pdf, uploadedById: by, revisionId: rev.id, createdAt: day(-ago) },
+        });
+        revisions.set(`${d.docNo} ${revision}`, rev.id);
+        last = rev.id;
+        await prisma.auditLog.create({ data: { organizationId, entityType: 'DOCUMENT', entityId: doc.id, action: revision === d.revisions[0][0] ? 'CREATED' : 'REVISION_ADDED', actorId: by, note: `Rev ${revision}`, createdAt: day(-ago) } });
+      }
+      await prisma.document.update({ where: { id: doc.id }, data: { currentRevisionId: last } });
+    }
+
+    // Transmittals: drawings to the subcontractor (signed for) and one waiting on the consultant.
+    const sends: { to: string; purpose: 'FOR_CONSTRUCTION' | 'FOR_APPROVAL'; ago: number; ack: number | null; items: string[] }[] =
+      type === 'ROAD'
+        ? [
+            { to: 'Sri Jagannath Constructions (earthwork subcontractor)', purpose: 'FOR_CONSTRUCTION', ago: 11, ack: 10, items: ['RD-PP-03 R1', 'RD-TCS-01 R0'] },
+            { to: 'LEA Associates (Authority Engineer)', purpose: 'FOR_APPROVAL', ago: 8, ack: null, items: ['RD-CD-07 R0'] },
+          ]
+        : [{ to: 'Shilpa Architects', purpose: 'FOR_APPROVAL', ago: 6, ack: null, items: ['PLB-301 R0'] }];
+    for (const t of sends) {
+      trn += 1;
+      const row = await prisma.transmittal.create({
+        data: {
+          organizationId, projectId: project.id, transmittalNo: `TRN-${year}-${String(trn).padStart(4, '0')}`, toParty: t.to, purpose: t.purpose, sentOn: day(-t.ago),
+          acknowledgedOn: t.ack === null ? null : day(-t.ack), acknowledgedBy: t.ack === null ? null : 'Site in-charge', sentById: by, createdAt: day(-t.ago),
+          items: { create: t.items.map((k, i) => ({ revisionId: revisions.get(k)!, copies: t.purpose === 'FOR_CONSTRUCTION' ? 2 : 1, sortOrder: i })) },
+        },
+      });
+      await prisma.auditLog.create({ data: { organizationId, entityType: 'TRANSMITTAL', entityId: row.id, action: 'CREATED', actorId: by, createdAt: day(-t.ago) } });
+    }
+  }
+
+  // Letters on the road project: the hindrance notice for the encroachment delay, the reply and the extension claim.
+  const road = await prisma.project.findFirst({ where: { organizationId, type: 'ROAD' }, orderBy: { code: 'asc' } });
+  const pm = road ? await pmFor(road.id) : null;
+  if (!road || !pm) return;
+  const delay = await prisma.risk.findFirst({ where: { projectId: road.id, kind: 'DELAY', title: { startsWith: 'Encroachment' } } });
+  const counters = { IN: 0, OUT: 0 };
+  const letter = async (l: { direction: 'IN' | 'OUT'; ago: number; party: string; subject: string; summary: string; theirRef?: string; replyBy?: number; inReplyToId?: string; risk?: boolean }) => {
+    counters[l.direction] += 1;
+    const row = await prisma.letter.create({
+      data: {
+        organizationId, projectId: road.id, direction: l.direction, letterNo: `${l.direction}-${year}-${String(counters[l.direction]).padStart(4, '0')}`, theirRef: l.theirRef ?? null,
+        letterDate: day(-l.ago), party: l.party, subject: l.subject, summary: l.summary, replyBy: l.replyBy === undefined ? null : day(l.replyBy),
+        inReplyToId: l.inReplyToId ?? null, riskId: l.risk && delay ? delay.id : null, createdById: pm, createdAt: day(-l.ago),
+      },
+    });
+    await prisma.auditLog.create({ data: { organizationId, entityType: 'LETTER', entityId: row.id, action: 'CREATED', actorId: pm, createdAt: day(-l.ago) } });
+    return row;
+  };
+  const ee = 'Executive Engineer, R&B Division, Khordha';
+  const notice = await letter({ direction: 'OUT', ago: 17, party: ee, subject: 'Hindrance: encroachment inside the ROW at Ch 12+300 to 12+650', summary: 'Shops and a cattle shed inside the ROW stop 350 m of embankment. Requested removal; time lost will be claimed as an extension.', risk: true });
+  await letter({ direction: 'IN', ago: 10, party: ee, theirRef: 'EE/RB/KHD/2026/1184', subject: 'Re: encroachment at Ch 12+300 to 12+650', summary: 'Eviction notice served by the Tahsildar; site to be handed over after the removal drive.', inReplyToId: notice.id, risk: true });
+  await letter({ direction: 'OUT', ago: 4, party: ee, subject: 'Request for extension of time: encroachment at Ch 12+300', summary: 'Claiming the days lost from the hindrance notice until the stretch is handed over.', risk: true });
+  await letter({ direction: 'IN', ago: 3, party: 'LEA Associates (Authority Engineer)', theirRef: 'LEA/BBSR-PURI/AE/322', subject: 'Comments on the GSB trial stretch', summary: 'Gradation of the trial stretch on the coarse side; submit the revised job mix with fresh test results.', replyBy: 4 });
+  await letter({ direction: 'IN', ago: 9, party: 'LEA Associates (Authority Engineer)', theirRef: 'LEA/BBSR-PURI/AE/309', subject: 'Monthly progress report format', summary: 'Use the Authority format for the monthly report from this month; confirm by return.', replyBy: -2 });
 }

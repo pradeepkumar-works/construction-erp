@@ -310,6 +310,34 @@ Registers, not approval submissions (`QualityService`, `/quality/...`).
   inspection that failed or was sent back. Site app: `app/quality.tsx` (open NCRs, pending tests), `ncr/[id].tsx`
   (record the action with photos; QA/QC closes or reopens) and `test/[id].tsx` (enter readings).
 
+## Document register
+
+Registers, not approval submissions (`DocumentsService`; `/documents`, `/transmittals`, `/letters`).
+
+- **Tables.** `Document`: project, `docNo` (as issued, unique per project), title, `kind`, `discipline`, remarks and
+  `currentRevisionId`. `DocumentRevision` (child, no RLS policy of its own): `revision` (unique per document),
+  `issuedOn`, `status` (`RevisionStatus`), who issued it, remarks, files (`Attachment.revisionId`). The current
+  revision is the latest issued (then the latest added); the service keeps `currentRevisionId` in step on every
+  add, change and delete, so lists filter and sort by it. `Transmittal` (`TRN-<year>-0001`): to, attention,
+  `purpose`, `sentOn`, remarks, `acknowledgedOn` / `acknowledgedBy`; `TransmittalItem` (child) lists revisions with
+  copies. `Letter`: `direction` IN / OUT numbered `IN-` / `OUT-<year>-0001`, their reference, date, party, subject,
+  gist, `replyBy` (IN only), `inReplyToId` (another letter), `riskId` (a delay or risk), files (`Attachment.letterId`).
+- **Rules.** A revision sent on a transmittal is kept (`onDelete: Restrict`), so is its document; withdraw it with a
+  new revision marked Withdrawn. An acknowledged transmittal keeps its list and cannot be deleted. A received letter
+  awaits a reply while it has `replyBy` and no OUT letter answers it.
+- **Who.** Anyone with project access reads the register and transmittals. `DOCUMENT_CONTROL_ROLES` (admin,
+  management, PM, QS, QA/QC) change them. Letters are contractual: `CORRESPONDENCE_ROLES` (admin, management, PM, QS)
+  read and record them; others get 403 and no Letters tab.
+- **Notification.** A revision that becomes current with status `FOR_CONSTRUCTION` sends `DOCUMENT_ISSUED` to the
+  project's manager and members (`ProjectAccessService.projectPeople`), once per revision.
+- **Clients.** Web: Site → Documents with tabs Register / Transmittals / Letters (`?tab=`, `?id=` opens a document,
+  `&letter=` a letter) and a project Documents tab; the document drawer sends its current revision on a transmittal;
+  the transmittal prints a cover sheet; a delay's drawer lists its letters. Site app: `app/documents.tsx` lists a
+  project's current revisions (`GET /documents/site`, cached for offline) and "Save offline" downloads their files to
+  the app's document directory (`src/offline/drawings.ts`, removing superseded ones). Saved PDFs open from the phone
+  (Android: a PDF viewer through `expo-intent-launcher`; iOS: the preview sheet through `expo-sharing`), images in the
+  app; unsaved files open online.
+
 ## Clients and contracts
 
 - **Tables.** `Client` is the organisation's client master (unique name; department, GSTIN, PAN, GST `stateCode`,

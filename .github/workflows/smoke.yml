@@ -382,6 +382,42 @@ jobs:
           echo "closing before the action is recorded: $code"; [ "$code" = "400" ]
           curl -sf -X DELETE "$API_URL/quality/ncrs/${N%% *}" -H "$QA" | jq -c .
           curl -sf -X DELETE "$API_URL/quality/tests/$ID" -H "$QA" | jq -c .
+      - name: Document register
+        run: |
+          set -e
+          login() { curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' -d "{\"email\":\"$1\",\"password\":\"password123\"}" | jq -r .accessToken; }
+          PM="authorization: Bearer $(login pm@demo.com)"; SE="authorization: Bearer $(login engineer@demo.com)"
+          cleanup() {
+            for X in $(curl -sf "$API_URL/transmittals?q=Smoke%20test&unacknowledged=true&pageSize=50" -H "$PM" | jq -r '.items[].id'); do curl -sf -X DELETE "$API_URL/transmittals/$X" -H "$PM" > /dev/null; done
+            for X in $(curl -sf "$API_URL/documents?q=SMOKE-DOC&pageSize=50" -H "$PM" | jq -r '.items[].id'); do curl -sf -X DELETE "$API_URL/documents/$X" -H "$PM" > /dev/null; done
+            for X in $(curl -sf "$API_URL/letters?q=Smoke%20test%20letter&pageSize=50" -H "$PM" | jq -r '.items[].id'); do curl -sf -X DELETE "$API_URL/letters/$X" -H "$PM" > /dev/null; done
+          }
+          cleanup
+          curl -sf "$API_URL/documents/summary" -H "$PM" | jq -c .
+          PROJECT=$(curl -sf "$API_URL/projects" -H "$PM" | jq -r '.items[0].id'); TODAY=$(date -u +%F)
+          # For approval only, so nobody on the project is notified of a smoke drawing.
+          D=$(curl -sf -X POST "$API_URL/documents" -H "$PM" -H 'content-type: application/json' \
+            -d "{\"projectId\":\"$PROJECT\",\"docNo\":\"SMOKE-DOC\",\"title\":\"Smoke test drawing\",\"revision\":{\"revision\":\"R0\",\"issuedOn\":\"$TODAY\",\"status\":\"FOR_APPROVAL\"}}" | jq -r .id)
+          CUR=$(curl -sf -X POST "$API_URL/documents/$D/revisions" -H "$PM" -H 'content-type: application/json' -d "{\"revision\":\"R1\",\"issuedOn\":\"$TODAY\",\"status\":\"FOR_APPROVAL\"}" | jq -r '"\(.current.revision) \(.revisions | length)"')
+          echo "current after R1: $CUR"; [ "$CUR" = "R1 2" ]
+          curl -sf "$API_URL/documents/site?projectId=$PROJECT" -H "$SE" | jq -e "any(.[]; .id == \"$D\" and .current.revision == \"R1\")" > /dev/null
+          REV=$(curl -sf "$API_URL/documents/$D" -H "$PM" | jq -r .current.id)
+          T=$(curl -sf -X POST "$API_URL/transmittals" -H "$PM" -H 'content-type: application/json' \
+            -d "{\"projectId\":\"$PROJECT\",\"toParty\":\"Smoke test\",\"purpose\":\"FOR_INFORMATION\",\"sentOn\":\"$TODAY\",\"items\":[{\"revisionId\":\"$REV\"}]}")
+          echo "$T" | jq -c '{transmittalNo, items: [.items[] | "\(.docNo) \(.revision)"]}'
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X DELETE "$API_URL/documents/$D/revisions/$REV" -H "$PM")
+          echo "deleting a revision sent on a transmittal: $code"; [ "$code" = "400" ]
+          curl -sf -X DELETE "$API_URL/transmittals/$(echo "$T" | jq -r .id)" -H "$PM" > /dev/null
+          IN=$(curl -sf -X POST "$API_URL/letters" -H "$PM" -H 'content-type: application/json' \
+            -d "{\"projectId\":\"$PROJECT\",\"direction\":\"IN\",\"letterDate\":\"$TODAY\",\"party\":\"Smoke\",\"subject\":\"Smoke test letter\",\"replyBy\":\"$TODAY\"}")
+          echo "$IN" | jq -c '{letterNo, awaitingReply}'; [ "$(echo "$IN" | jq -r .awaitingReply)" = "true" ]
+          curl -sf -X POST "$API_URL/letters" -H "$PM" -H 'content-type: application/json' \
+            -d "{\"projectId\":\"$PROJECT\",\"direction\":\"OUT\",\"letterDate\":\"$TODAY\",\"party\":\"Smoke\",\"subject\":\"Smoke test letter reply\",\"inReplyToId\":\"$(echo "$IN" | jq -r .id)\"}" | jq -c '{letterNo}'
+          REPLIED=$(curl -sf "$API_URL/letters/$(echo "$IN" | jq -r .id)" -H "$PM" | jq -r '"\(.awaitingReply) \(.replies | length)"')
+          echo "after the reply: $REPLIED"; [ "$REPLIED" = "false 1" ]
+          code=$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/letters" -H "$SE")
+          echo "site engineer reading letters: $code"; [ "$code" = "403" ]
+          cleanup
       - name: Project cost view
         run: |
           set -e

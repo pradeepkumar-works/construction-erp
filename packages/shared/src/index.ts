@@ -18,3 +18,4 @@ export * from './brand';
 export * from './subcontract';
 export * from './tally';
 export * from './quality';
+export * from './documents';
