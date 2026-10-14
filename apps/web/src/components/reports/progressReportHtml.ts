@@ -2,6 +2,7 @@ import type { ProgressReportDto } from '@erp/shared';
 import { DELAY_PARTY_LABELS, PROJECT_TYPE_LABELS } from '@erp/shared';
 import { fileUrl } from '@/lib/api';
 import { BRAND } from '@/lib/brand';
+import { AUTO_PRINT_SCRIPT, brandFooter, PRINT_BRAND_CSS, PRINT_FONT_LINKS } from '@/components/print/printBrand';
 import { formatDate, formatDateTime, formatINR, formatQty } from '@/lib/format';
 
 const esc = (v: unknown) =>
@@ -53,6 +54,7 @@ export function buildProgressReportHtml(r: ProgressReportDto, kind: ReportKind, 
 
   return `<!doctype html>
 <html><head><meta charset="utf-8"/>
+${PRINT_FONT_LINKS}
 <title>${esc(title)} ${esc(p.code)} ${esc(r.from)} to ${esc(r.to)}</title>
 <style>
   @page { size: A4; margin: 14mm; }
@@ -90,8 +92,8 @@ export function buildProgressReportHtml(r: ProgressReportDto, kind: ReportKind, 
   figcaption { font-size: 9px; color: #666; margin-top: 2px; }
   .sign { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 36px; }
   .sign div { border-top: 1px solid #333; padding-top: 4px; font-size: 10px; }
-  .foot { margin-top: 14px; color: #888; font-size: 9px; }
   @media print { body { padding: 0; } }
+  ${PRINT_BRAND_CSS}
 </style></head>
 <body>
   <div class="head">
@@ -164,16 +166,10 @@ export function buildProgressReportHtml(r: ProgressReportDto, kind: ReportKind, 
   ${photos ? `<h2>11. Site photographs</h2><div class="photos">${photos}</div>` : ''}
 
   <div class="sign"><div>Prepared by (Site Engineer)</div><div>Checked by (Project Manager)</div><div>Client / Consultant</div></div>
-  <div class="foot">From approved progress entries, DPRs, machinery logs and measurements, plus attendance and the store register. Generated ${esc(formatDateTime(r.generatedAt))}.</div>
+  ${brandFooter(`From approved progress entries, DPRs, machinery logs and measurements, plus attendance and the store register. Generated ${esc(formatDateTime(r.generatedAt))}.`)}
   ${
     autoPrint
-      ? `<script>
-    window.addEventListener('load', function () {
-      var imgs = Array.prototype.slice.call(document.images);
-      Promise.all(imgs.map(function (i) { return i.complete ? Promise.resolve() : new Promise(function (r) { i.onload = r; i.onerror = r; }); }))
-        .then(function () { setTimeout(function () { window.print(); }, 150); });
-    });
-  </script>`
+      ? AUTO_PRINT_SCRIPT
       : ''
   }
 </body></html>`;

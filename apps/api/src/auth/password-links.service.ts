@@ -4,6 +4,7 @@ import * as bcrypt from 'bcryptjs';
 import { INVITE_LINK_HOURS, RESET_LINK_HOURS, type PasswordLinkDto, type PasswordTokenInfoDto, type PasswordTokenPurpose } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService, escapeHtml } from '../notifications/email.service';
+import { EMAIL_COLORS, emailButton, emailLayout } from '../notifications/email-layout';
 import { PRODUCT_NAME } from '@erp/shared';
 
 const hash = (token: string) => createHash('sha256').update(token).digest('hex');
@@ -54,7 +55,11 @@ export class PasswordLinksService {
         to: user.email,
         subject: invite ? `[${org}] You are invited to ${PRODUCT_NAME}` : `[${org}] Reset your ${PRODUCT_NAME} password`,
         text: `Hello ${user.fullName},\n\n${lead}\n\n${link}\n\nThe link works once and expires in ${hours}.\n`,
-        html: `<p>Hello ${escapeHtml(user.fullName)},</p><p>${escapeHtml(lead)}</p><p><a href="${link}" style="display:inline-block;padding:10px 18px;background:#FFC20E;color:#1C1F1E;font-weight:600;border-radius:4px;text-decoration:none">${invite ? 'Accept invitation' : 'Choose a new password'}</a></p><p style="color:#666;font-size:12px">The link works once and expires in ${hours}. If the button does not work, open ${escapeHtml(link)}</p>`,
+        html: emailLayout({
+          preheader: lead,
+          orgName: org,
+          body: `<p style="margin:0 0 12px">Hello ${escapeHtml(user.fullName)},</p><p style="margin:0">${escapeHtml(lead)}</p>${emailButton(link, invite ? 'Accept invitation' : 'Choose a new password')}<p style="margin:0;color:${EMAIL_COLORS.muted};font-size:13px">The link works once and expires in ${hours}. If the button does not work, open <a href="${escapeHtml(link)}" style="color:${EMAIL_COLORS.link};word-break:break-all">${escapeHtml(link)}</a></p>`,
+        }),
       });
     } else if (!link) {
       this.log.warn(`No WEB_URL or CORS_ORIGINS: cannot build a ${purpose} link for user ${userId}`);
