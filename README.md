@@ -71,7 +71,7 @@ contractors after the first client is live.
 
 **Live demo**: web ERP at https://construction-erp-web-pradeep15.vercel.app, API at
 https://construction-erp-api-pradeep15.vercel.app/api (Swagger at `/api/docs`), database on Neon.
-See `docs/DEPLOY.md` for how it is hosted and `docs/ARCHITECTURE.md` for the data model.
+See `docs/DEPLOY.md` for how it is hosted, `docs/ARCHITECTURE.md` for the data model and `docs/TESTING.md` for the tests and the phone checklist.
 
 ## Run it locally
 

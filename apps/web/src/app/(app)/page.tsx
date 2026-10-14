@@ -20,6 +20,7 @@ import { Loading, QueryError } from '@/components/common/QueryState';
 import { ProjectStatusTag, ProjectTypeTag } from '@/components/common/StatusTag';
 import { useAuth } from '@/lib/auth';
 import { BRAND } from '@/lib/brand';
+import { GettingStartedCard } from '@/components/dashboard/GettingStartedCard';
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -85,6 +86,7 @@ export default function DashboardPage() {
             : `Site progress and approvals on your ${data ? `${data.totalProjects} ` : ''}project${data?.totalProjects === 1 ? '' : 's'}`
         }
       />
+      <GettingStartedCard />
       {isLoading && <Loading />}
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {data && (

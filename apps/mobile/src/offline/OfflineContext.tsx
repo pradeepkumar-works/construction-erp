@@ -6,7 +6,7 @@ import type { AttachmentDto } from '@erp/shared';
 import { useAuth } from '../auth/AuthContext';
 import { ApiError, errorMessage, request, uploadFile } from '../api/client';
 import { getStore, type OutboxRow } from './db';
-import { persistPhoto, removePhotos } from './photos';
+import { persistPhoto, photoExists, removePhotos } from './photos';
 import { OUTBOX_PATH, type OutboxItem, type OutboxPhoto, type OutboxStatus, type OutboxType } from './types';
 
 export interface EnqueueInput {
@@ -103,6 +103,8 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
       const photos: OutboxPhoto[] = [...item.photos];
       for (let i = 0; i < photos.length; i++) {
         if (photos[i].attachmentId) continue;
+        // A missing file would fail as "cannot reach the server" and hold up every entry behind this one.
+        if (!(await photoExists(photos[i].uri))) throw new Error(`Photo ${photos[i].name} is no longer on this phone. Discard this entry and enter it again.`);
         const att = await uploadFile<AttachmentDto>({ uri: photos[i].uri, name: photos[i].name, type: photos[i].type }, tok);
         photos[i] = { ...photos[i], attachmentId: att.id };
         // Keep uploaded ids on the item so a failure later in this attempt never re-uploads them.

@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useApi } from '../api/hooks';
 import { errorMessage } from '../api/client';
 import { isOfflineError, useOffline } from '../offline/OfflineContext';
+import { shrinkPhoto } from '../offline/shrink';
 import { colors, radius, spacing, typography } from '../theme';
 
 export interface LocalPhoto {
@@ -67,19 +68,15 @@ export function PhotoPicker({ label = 'Photos', photos, onChange, max = 6 }: Pro
   );
 
   const addAssets = useCallback(
-    (assets: ImagePicker.ImagePickerAsset[]) => {
+    async (assets: ImagePicker.ImagePickerAsset[]) => {
       const room = Math.max(0, max - photos.length);
-      const fresh: LocalPhoto[] = assets.slice(0, room).map((a, i) => {
+      const fresh: LocalPhoto[] = [];
+      for (const [i, a] of assets.slice(0, room).entries()) {
         const type = guessType(a.uri, a.mimeType);
         const ext = type.split('/')[1] === 'jpeg' ? 'jpg' : type.split('/')[1];
-        return {
-          key: `${Date.now()}-${i}-${Math.random().toString(36).slice(2, 8)}`,
-          uri: a.uri,
-          name: a.fileName ?? `site-photo-${Date.now()}-${i}.${ext}`,
-          type,
-          uploading: true,
-        };
-      });
+        const small = await shrinkPhoto({ uri: a.uri, width: a.width, height: a.height, name: a.fileName ?? `site-photo-${Date.now()}-${i}.${ext}`, type });
+        fresh.push({ key: `${Date.now()}-${i}-${Math.random().toString(36).slice(2, 8)}`, uri: small.uri, name: small.name, type: small.type, uploading: true });
+      }
       if (!fresh.length) return;
       onChange((prev) => [...prev, ...fresh]);
       fresh.forEach((p) => void upload(p));
@@ -96,7 +93,7 @@ export function PhotoPicker({ label = 'Photos', photos, onChange, max = 6 }: Pro
         return;
       }
       const res = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.6 });
-      if (!res.canceled) addAssets(res.assets);
+      if (!res.canceled) await addAssets(res.assets);
     } catch (e) {
       Alert.alert('Camera unavailable', errorMessage(e));
     } finally {
@@ -118,7 +115,7 @@ export function PhotoPicker({ label = 'Photos', photos, onChange, max = 6 }: Pro
         allowsMultipleSelection: true,
         selectionLimit: Math.max(1, max - photos.length),
       });
-      if (!res.canceled) addAssets(res.assets);
+      if (!res.canceled) await addAssets(res.assets);
     } catch (e) {
       Alert.alert('Could not open photos', errorMessage(e));
     } finally {

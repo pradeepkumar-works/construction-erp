@@ -1,6 +1,7 @@
 import type { DailyReportDto } from '@erp/shared';
 import { WEATHER_LABELS } from '@erp/shared';
 import { fileUrl } from '@/lib/api';
+import { AUTO_PRINT_SCRIPT, brandFooter, PRINT_BRAND_CSS, PRINT_FONT_LINKS } from '@/components/print/printBrand';
 import { BRAND } from '@/lib/brand';
 import { formatDate, formatDateTime } from '@/lib/format';
 
@@ -23,6 +24,7 @@ export function buildDprPrintHtml(d: DailyReportDto, orgName: string): string {
 
   return `<!doctype html>
 <html><head><meta charset="utf-8"/>
+${PRINT_FONT_LINKS}
 <title>DPR ${esc(formatDate(d.date))} - ${esc(d.projectName)}</title>
 <style>
   @page { size: A4; margin: 16mm; }
@@ -48,12 +50,12 @@ export function buildDprPrintHtml(d: DailyReportDto, orgName: string): string {
   figcaption { font-size: 10px; color: #666; margin-top: 2px; }
   .sign { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 32px; }
   .sign div { border-top: 1px solid #333; padding-top: 4px; font-size: 11px; }
-  .foot { margin-top: 18px; color: #888; font-size: 10px; }
   @media print { body { padding: 0; } .noprint { display: none; } }
+  ${PRINT_BRAND_CSS}
 </style></head>
 <body>
   <div class="head">
-    <div><div class="brand">${esc(BRAND.name)}</div><div class="org">${esc(orgName)}</div></div>
+    <div><div class="brand">${esc(orgName)}</div><div class="org">${esc(d.projectName)}</div></div>
     <div style="text-align:right"><h1>Daily Progress Report</h1><div>${esc(formatDate(d.date))}</div><div style="margin-top:4px" class="status">${esc(status)}</div></div>
   </div>
   <div class="meta">
@@ -91,14 +93,8 @@ export function buildDprPrintHtml(d: DailyReportDto, orgName: string): string {
   ${photos ? `<h2>Site photos</h2><div class="photos">${photos}</div>` : ''}
 
   <div class="sign"><div>Prepared by: ${esc(d.submittedByName)}</div><div>Reviewed by: ${esc(d.reviewedByName ?? '')}</div></div>
-  <div class="foot">Generated from ${esc(BRAND.name)} on ${esc(formatDateTime(new Date().toISOString()))} · Report ID ${esc(d.id)}</div>
-  <script>
-    window.addEventListener('load', function () {
-      var imgs = Array.prototype.slice.call(document.images);
-      Promise.all(imgs.map(function (i) { return i.complete ? Promise.resolve() : new Promise(function (r) { i.onload = r; i.onerror = r; }); }))
-        .then(function () { setTimeout(function () { window.print(); }, 150); });
-    });
-  </script>
+  ${brandFooter(`Generated from ${esc(BRAND.name)} on ${esc(formatDateTime(new Date().toISOString()))} · Report ID ${esc(d.id)}`)}
+  ${AUTO_PRINT_SCRIPT}
 </body></html>`;
 }
 

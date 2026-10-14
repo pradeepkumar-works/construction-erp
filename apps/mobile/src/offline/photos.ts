@@ -31,3 +31,13 @@ export async function removePhotos(photos: OutboxPhoto[]) {
       .map((p) => FileSystem.deleteAsync(p.uri, { idempotent: true }).catch(() => undefined)),
   );
 }
+
+/** Is the queued photo still on the phone? (A copy that failed falls back to the picker's cache, which the OS may clear.) */
+export async function photoExists(uri: string) {
+  if (Platform.OS === 'web' || !uri.startsWith('file:')) return true;
+  try {
+    return (await FileSystem.getInfoAsync(uri)).exists;
+  } catch {
+    return true;
+  }
+}

@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import type { CompanyDashboard, ProjectDashboard, ProjectType } from '@erp/shared';
+import { seesGettingStarted, type CompanyDashboard, type GettingStartedDto, type GettingStartedStep, type ProjectDashboard, type ProjectType } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -22,6 +22,41 @@ export class DashboardService {
     private dpr: DprService,
     private lifecycle: SubmissionLifecycleService,
   ) {}
+
+  /** Which first-week setup steps the organisation has done, from what is in its data. */
+  async gettingStarted(user: RequestUser): Promise<GettingStartedDto> {
+    if (!seesGettingStarted(user.roleKey)) throw new ForbiddenException('Only admin and management see the setup checklist');
+    const organizationId = user.organizationId;
+    const org = { organizationId };
+    const submitted = { ...org, status: { not: 'DRAFT' as const } };
+    const approved = { ...org, status: 'APPROVED' as const };
+    const [organization, projects, boq, activities, users, members, rules, progress, dprs, progressOk, dprsOk, mrsOk] = await Promise.all([
+      this.prisma.organization.findUniqueOrThrow({ where: { id: organizationId }, select: { createdAt: true } }),
+      this.prisma.project.count({ where: org }),
+      this.prisma.boqItem.count({ where: org }),
+      this.prisma.activity.count({ where: org }),
+      this.prisma.user.count({ where: org }),
+      this.prisma.projectMember.count({ where: { project: org } }),
+      this.prisma.approvalRule.count({ where: org }),
+      this.prisma.progressEntry.count({ where: submitted }),
+      this.prisma.dailyReport.count({ where: submitted }),
+      this.prisma.progressEntry.count({ where: approved }),
+      this.prisma.dailyReport.count({ where: approved }),
+      this.prisma.materialRequest.count({ where: approved }),
+    ]);
+    const done: Record<GettingStartedStep, boolean> = {
+      PROJECT: projects > 0,
+      BOQ: boq > 0,
+      ACTIVITIES: activities > 0,
+      TEAM: users > 1,
+      MEMBERS: members > 0,
+      APPROVAL_RULES: rules > 0,
+      FIRST_ENTRY: progress + dprs > 0,
+      FIRST_APPROVAL: progressOk + dprsOk + mrsOk > 0,
+    };
+    const steps = (Object.keys(done) as GettingStartedStep[]).map((key) => ({ key, done: done[key] }));
+    return { steps, done: steps.filter((s) => s.done).length, total: steps.length, organizationCreatedAt: organization.createdAt.toISOString() };
+  }
 
   async company(user: RequestUser): Promise<CompanyDashboard> {
     const projects = await this.projects.listAll(user);

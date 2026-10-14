@@ -1,0 +1,68 @@
+name: End-to-end tests
+
+# Runs the API and the web app against a fresh Postgres with the demo seed, the API connected as the
+# erp_runtime role (row-level security enforced, as in production), then the Playwright browser tests.
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      OWNER_URL: postgresql://erp_owner:owner@localhost:5432/erp?schema=public
+      RUNTIME_URL: postgresql://erp_runtime:runtime@localhost:5432/erp?schema=public
+      E2E_API_URL: http://localhost:4000/api
+      E2E_WEB_URL: http://localhost:3000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: CI=true pnpm install --frozen-lockfile
+      - name: Database owner like Neon's (BYPASSRLS, not superuser)
+        run: |
+          psql "postgresql://postgres:postgres@localhost:5432/postgres" -c "CREATE ROLE erp_owner LOGIN PASSWORD 'owner' CREATEROLE BYPASSRLS" -c "CREATE DATABASE erp OWNER erp_owner"
+      - name: Migrate and seed as the owner, then give erp_runtime a login
+        working-directory: apps/api
+        run: |
+          pnpm --filter @erp/shared build
+          DATABASE_URL="$OWNER_URL" npx prisma migrate deploy
+          DATABASE_URL="$OWNER_URL" npx tsx prisma/seed.ts > /dev/null
+          psql "postgresql://erp_owner:owner@localhost:5432/erp" -c "ALTER ROLE erp_runtime LOGIN PASSWORD 'runtime'"
+      - name: Start the API as erp_runtime
+        working-directory: apps/api
+        run: |
+          pnpm build
+          DATABASE_URL="$RUNTIME_URL" JWT_SECRET=e2e-secret PORT=4000 STORAGE_MODE=db ORG_SIGNUP=open PUSH_DISABLED=true EMAIL_DISABLED=true nohup node dist/main.js > /tmp/api.log 2>&1 &
+          for i in $(seq 1 30); do curl -sf "$E2E_API_URL/health" > /tmp/health.json && break; sleep 2; done
+          cat /tmp/health.json; echo
+          [ "$(jq -r .tenantGuard /tmp/health.json)" = "enforced" ]
+      - name: Build and start the web app
+        working-directory: apps/web
+        run: |
+          NEXT_PUBLIC_API_URL="$E2E_API_URL" npx next build
+          nohup npx next start -p 3000 > /tmp/web.log 2>&1 &
+          for i in $(seq 1 30); do curl -sf -o /dev/null "$E2E_WEB_URL/login" && break; sleep 2; done
+      - run: npx playwright install --with-deps chromium
+        working-directory: e2e
+      - run: pnpm --filter @erp/e2e test
+      - if: failure()
+        run: tail -100 /tmp/api.log; tail -50 /tmp/web.log
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: e2e/playwright-report
+          retention-days: 7

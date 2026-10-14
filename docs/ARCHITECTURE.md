@@ -32,7 +32,9 @@ shapes of every API response, so web, mobile and API agree on one contract.
   request). Unset means unrestricted, which is what migrations, the seed, scheduled jobs and public
   endpoints rely on. Code inside a request that must look across organisations (the email-in-use check)
   wraps itself in `withoutTenant`. Raw SQL is not wrapped; child tables without `organizationId` are
-  reached only through their parent.
+  reached only through their parent. The policies only bind a role without `BYPASSRLS`, so in production
+  the API connects as `erp_runtime` (created by a migration: row read/write rights, owns nothing) while
+  migrations and the seed run as the owner from `MIGRATE_DATABASE_URL`.
 - New organisations come from `POST /auth/signup` (off unless `ORG_SIGNUP=open`), which creates the
   organisation, the standard roles and the first admin in one transaction. Users join by invite: a
   one-time `PasswordToken` link (SHA-256 stored, invalidated when a newer link is made or one is used).
