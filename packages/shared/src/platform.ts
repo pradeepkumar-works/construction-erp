@@ -1,4 +1,5 @@
 /** Platform admin: the console for Nirmaan staff (v3 item 35). */
+import type { BillingStateDto } from './types';
 
 /** How long a company admin's consent lets Nirmaan support open the company read-only. */
 export const SUPPORT_ACCESS_DAYS = 7;
@@ -23,6 +24,8 @@ export interface PlatformCompanyDto {
   /** Read-only support access allowed until (company admin's consent), null if not allowed */
   supportAccessUntil: string | null;
   deletionScheduledFor: string | null;
+  /** Trial or subscription (v3 item 34), only when billing is switched on */
+  billing?: BillingStateDto;
 }
 
 export interface PlatformUserDto {

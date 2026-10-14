@@ -6,6 +6,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { setTenant, withoutTenant } from '../prisma/tenant-context';
 import { isPlatformAdmin } from '../common/platform-admin';
 import { RequestUser } from '../common/current-user';
+import { billingConfig, billingState } from '../common/billing';
+import { todayIn } from '../notifications/time';
 
 export interface JwtPayload {
   sub: string;
@@ -29,11 +31,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (payload.sup) return this.support(payload);
     const user = await this.prisma.user.findFirst({
       where: { id: payload.sub, organizationId: payload.org, isActive: true, organization: { suspendedAt: null } },
-      include: { role: true },
+      include: { role: true, organization: { select: { code: true, trialEndsAt: true, paidUntil: true } } },
     });
     if (!user) throw new UnauthorizedException();
     setTenant(user.organizationId);
-    return { id: user.id, organizationId: user.organizationId, roleKey: user.role.key as RoleKey, email: user.email, fullName: user.fullName };
+    const billing = billingConfig();
+    const readOnly = !!billing && billingState(billing, user.organization, todayIn()).status === 'READ_ONLY';
+    return { id: user.id, organizationId: user.organizationId, roleKey: user.role.key as RoleKey, email: user.email, fullName: user.fullName, ...(readOnly ? { billingReadOnly: true } : {}) };
   }
 
   /** Staff still on the platform list, and the company's consent still running: act as a read-only admin there. */

@@ -317,11 +317,24 @@ model Organization {
   deletionScheduledFor    DateTime? @db.Date
 
   /// Suspended by Nirmaan staff (platform admin): nobody can sign in until it is lifted
-  suspendedAt     DateTime?
-  suspendedReason String?
+  suspendedAt                DateTime?
+  suspendedReason            String?
   /// An admin let Nirmaan support open the company read-only until this time
   supportAccessUntil         DateTime?
   supportAccessGrantedByName String?
+
+  /// Subscription (v3 item 34). Last day of the free trial; set when billing is on (at sign-up, or by the daily job)
+  trialEndsAt        DateTime? @db.Date
+  /// Last day paid for
+  paidUntil          DateTime? @db.Date
+  /// Who the subscription invoices are made out to
+  billingName        String?
+  billingGstin       String?
+  billingAddress     String?
+  /// GST state code of the place of supply
+  billingStateCode   String?
+  /// The last billing reminder sent, so each is sent once (e.g. "TRIAL:2026-11-13:7")
+  billingRemindedFor String?
 
   users             User[]
   roles             Role[]
@@ -372,6 +385,7 @@ model Organization {
   leaveRequests     LeaveRequest[]
   holidays          Holiday[]
   outboundMessages  OutboundMessage[]
+  billingPayments   BillingPayment[]
 }
 
 model Role {
@@ -2414,4 +2428,48 @@ model Holiday {
   createdAt      DateTime     @default(now())
 
   @@index([organizationId, date])
+}
+
+enum BillingPaymentStatus {
+  CREATED
+  PAID
+}
+
+/// One payment for the subscription: a Razorpay order, and once paid, the GST invoice for it.
+model BillingPayment {
+  id                String               @id @default(uuid())
+  organizationId    String
+  organization      Organization         @relation(fields: [organizationId], references: [id])
+  status            BillingPaymentStatus @default(CREATED)
+  razorpayOrderId   String               @unique
+  razorpayPaymentId String?              @unique
+  /// PROJECT or USER: what units counts
+  unit              String
+  units             Int
+  /// 1 or 12
+  months            Int
+  chargedMonths     Int
+  /// Price per unit per month, before GST
+  rate              Decimal              @db.Decimal(18, 2)
+  taxable           Decimal              @db.Decimal(18, 2)
+  cgst              Decimal              @db.Decimal(18, 2)
+  sgst              Decimal              @db.Decimal(18, 2)
+  igst              Decimal              @db.Decimal(18, 2)
+  total             Decimal              @db.Decimal(18, 2)
+  buyerName         String
+  buyerGstin        String?
+  buyerAddress      String?
+  buyerStateCode    String
+  sellerStateCode   String
+  createdById       String
+  createdByEmail    String
+  createdAt         DateTime             @default(now())
+  /// Set when paid
+  paidAt            DateTime?
+  invoiceNo         String?              @unique
+  invoiceDate       DateTime?            @db.Date
+  periodFrom        DateTime?            @db.Date
+  periodTo          DateTime?            @db.Date
+
+  @@index([organizationId, createdAt])
 }

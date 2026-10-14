@@ -146,7 +146,8 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
               await save({ ...sending, status: 'PENDING', error: null });
               break;
             }
-            if (e instanceof ApiError && e.status === 401) {
+            // Signed out, or the company is read-only until it pays: keep it for later rather than failing it.
+            if (e instanceof ApiError && (e.status === 401 || e.status === 402)) {
               await save({ ...sending, status: 'PENDING', error: null });
               break;
             }

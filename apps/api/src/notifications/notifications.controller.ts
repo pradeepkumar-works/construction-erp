@@ -7,12 +7,15 @@ import { CurrentUser, RequestUser } from '../common/current-user';
 import { GuestAllowed, Public } from '../common/decorators';
 import { CronGuard } from './cron.guard';
 import { CompanyDataService } from '../company-data/company-data.service';
+import { BillingService } from '../billing/billing.service';
+import { AllowWhenUnpaid } from '../common/billing';
 
 @ApiTags('notifications')
 @ApiBearerAuth()
+@AllowWhenUnpaid()
 @Controller('notifications')
 export class NotificationsController {
-  constructor(private notifications: NotificationsService, private jobs: NotificationJobsService, private companyData: CompanyDataService) {}
+  constructor(private notifications: NotificationsService, private jobs: NotificationJobsService, private companyData: CompanyDataService, private billing: BillingService) {}
 
   /** The current user's notifications, newest first, plus the unread count. */
   @GuestAllowed()
@@ -76,6 +79,8 @@ export class NotificationsController {
     await this.jobs.billsDue(q.date).catch(() => undefined);
     // ...and so does erasing companies whose deletion date has come.
     await this.companyData.purgeDue(q.date).catch(() => undefined);
+    // ...and starting trials and billing reminders.
+    await this.billing.daily(q.date).catch(() => undefined);
     return digest;
   }
 

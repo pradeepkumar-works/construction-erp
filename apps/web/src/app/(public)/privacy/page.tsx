@@ -43,6 +43,10 @@ export default function PrivacyPage() {
           <li>An audit log of who submitted, approved, changed or exported what, and when.</li>
           <li>Notifications, and a log of the WhatsApp and SMS messages sent (to whom, which message, whether it went).</li>
           <li>Push tokens for the phones where someone is signed in to the site app, removed when they sign out.</li>
+          <li>
+            For a paying company: who its invoices are made out to (name, GSTIN, address) and its payments. Card, UPI and bank details are entered with Razorpay,
+            the payment provider, and never reach {name}; we keep only Razorpay&apos;s payment reference.
+          </li>
         </ul>
         <p>
           {name} does not sell data, show advertising, or use a company&apos;s records for anything except running the service for that company.

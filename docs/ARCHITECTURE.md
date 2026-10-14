@@ -746,6 +746,25 @@ PDF from the browser.
 - **Company log.** Consent, withdrawal, each support visit (`SUPPORT_VIEW`), suspensions, exports and deletion requests
   are `AuditLog` rows with `entityType` `COMPANY`; `GET /api/company-data/log` shows them to the company's admins.
 
+## Plans and billing
+
+- **Switch.** `common/billing.ts` `billingConfig()` is null unless Razorpay keys, `BILLING_PRICE` and the seller's name and
+  GSTIN are set; with it null nothing below happens. `billingState()` gives EXEMPT (`BILLING_EXEMPT_ORG_CODES`), ACTIVE
+  (`Organization.paidUntil` today or later), TRIAL (`trialEndsAt` today or later, or not set yet) or READ_ONLY.
+- **Read-only.** `JwtStrategy` marks the request user `billingReadOnly`; `BillingReadOnlyGuard` (global) answers 402 to
+  anything but reads, except controllers marked `@AllowWhenUnpaid()` (auth, notifications, messaging preferences,
+  company data, billing, platform). `/auth/me` carries `billing` for the web banner and the mobile notice; the mobile
+  outbox keeps entries pending on 402.
+- **Paying.** `POST /billing/orders` prices the next month or year (units: active projects or staff users, at least
+  one; GST split by the buyer's state against the seller's), creates a Razorpay order and a `BillingPayment` row (tenant
+  table). Checkout in the browser pays it; `POST /billing/verify` checks the signature, and `POST /billing/webhook`
+  (Razorpay's signed `payment.captured` / `order.paid`) does the same for a closed browser. `markPaid` runs once per
+  payment under an advisory lock: the period starts the day after the trial or the paid period ends (or today),
+  `paidUntil` moves to its end, the invoice is numbered `<prefix><FY>-<n>` without gaps, and `SUBSCRIPTION_PAID` goes in
+  the company log.
+- **Daily job** (with the digest cron): companies without `trialEndsAt` start their trial; admins are emailed once 7
+  days and 1 day before the trial or paid period ends, and when it has (`billingRemindedFor`).
+
 ## Money and quantities
 
 Decimal columns everywhere (`Decimal(18,2)` for money, `Decimal(18,3)` for quantities) and strings

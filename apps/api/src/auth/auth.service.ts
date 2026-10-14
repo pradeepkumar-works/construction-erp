@@ -6,6 +6,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ApprovalRightsService } from '../common/approval-rights.service';
 import { isPlatformAdmin } from '../common/platform-admin';
+import { billingConfig, billingState } from '../common/billing';
+import { todayIn } from '../notifications/time';
 import { PasswordLinksService } from './password-links.service';
 import { SignupDto } from './auth.dto';
 
@@ -48,7 +50,9 @@ export class AuthService {
     for (let i = 2; await this.prisma.organization.findUnique({ where: { code }, select: { id: true } }); i++) code = `${base}${i}`;
     const passwordHash = await bcrypt.hash(dto.password, 10);
     const userId = await this.prisma.$transaction(async (tx) => {
-      const org = await tx.organization.create({ data: { name: dto.organizationName.trim(), code } });
+      const billing = billingConfig();
+      const trialEndsAt = billing ? new Date(Date.parse(`${todayIn()}T00:00:00Z`) + billing.trialDays * 86_400_000) : null;
+      const org = await tx.organization.create({ data: { name: dto.organizationName.trim(), code, trialEndsAt } });
       await tx.role.createMany({ data: ROLE_KEYS.map((key) => ({ organizationId: org.id, key, name: ROLE_LABELS[key] })) });
       const admin = await tx.role.findUniqueOrThrow({ where: { organizationId_key: { organizationId: org.id, key: 'ADMIN' } } });
       const u = await tx.user.create({ data: { organizationId: org.id, roleId: admin.id, email, fullName: dto.fullName.trim(), phone: dto.phone?.trim() || null, passwordHash } });
@@ -92,6 +96,7 @@ export class AuthService {
         organizationName: org.name,
         approvalRights: [],
         support: req.support,
+        ...billingOf(org),
       };
     }
     const user = await this.prisma.user.findUniqueOrThrow({ where: { id: req.id }, include: { role: true, organization: true } });
@@ -105,7 +110,7 @@ export class AuthService {
     return { ok: true };
   }
 
-  private async toAuthUser(user: { id: string; email: string; fullName: string; phone: string | null; organizationId: string; role: { key: string; name: string }; organization: { name: string } }): Promise<AuthUser> {
+  private async toAuthUser(user: { id: string; email: string; fullName: string; phone: string | null; organizationId: string; role: { key: string; name: string }; organization: BillingOrg & { name: string } }): Promise<AuthUser> {
     return {
       id: user.id,
       email: user.email,
@@ -117,8 +122,16 @@ export class AuthService {
       organizationName: user.organization.name,
       approvalRights: await this.rights.rightsFor(user.organizationId, user.role.key as RoleKey),
       ...(isPlatformAdmin(user.email) ? { platformAdmin: true } : {}),
+      ...billingOf(user.organization),
     };
   }
 }
+
+type BillingOrg = { code: string; trialEndsAt: Date | null; paidUntil: Date | null };
+/** The company's subscription state, when billing is on. */
+const billingOf = (org: BillingOrg): Pick<AuthUser, 'billing'> => {
+  const cfg = billingConfig();
+  return cfg ? { billing: billingState(cfg, org, todayIn()) } : {};
+};
 
 const signupOpen = () => process.env.ORG_SIGNUP === 'open';

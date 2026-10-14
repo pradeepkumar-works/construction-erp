@@ -6,6 +6,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { withoutTenant } from '../prisma/tenant-context';
 import { RequestUser } from '../common/current-user';
 import { isPlatformAdmin } from '../common/platform-admin';
+import { billingConfig, billingState } from '../common/billing';
+import { todayIn } from '../notifications/time';
 
 const DAY = 24 * 3600_000;
 
@@ -36,6 +38,8 @@ export class PlatformService {
       ]);
       const by = <T extends { organizationId: string }>(rows: T[]) => new Map(rows.map((r) => [r.organizationId, r]));
       const u = by(users), p = by(projects), l = by(last), r = by(recent), f = by(files);
+      const billing = billingConfig();
+      const today = todayIn();
       return orgs.map((o) => ({
         id: o.id,
         name: o.name,
@@ -51,6 +55,7 @@ export class PlatformService {
         suspendedReason: o.suspendedReason,
         supportAccessUntil: o.supportAccessUntil && o.supportAccessUntil > new Date() ? o.supportAccessUntil.toISOString() : null,
         deletionScheduledFor: o.deletionScheduledFor?.toISOString().slice(0, 10) ?? null,
+        ...(billing ? { billing: billingState(billing, o, today) } : {}),
       }));
     });
   }
@@ -90,6 +95,19 @@ export class PlatformService {
       if (!org) throw new NotFoundException('Company not found');
       await this.prisma.organization.update({ where: { id }, data: { suspendedAt: new Date(), suspendedReason: reason.trim() } });
       await this.prisma.auditLog.create({ data: { organizationId: id, actorId: user.id, entityType: 'COMPANY', entityId: id, action: 'SUSPENDED', note: `Suspended by ${PRODUCT_NAME} (${user.fullName}): ${reason.trim()}` } });
+    });
+    return this.company(user, id);
+  }
+
+  /** Set when a company's free trial ends: longer for a pilot, or today to end it (audited in the company). */
+  async setTrial(user: RequestUser, id: string, until: string) {
+    this.assertStaff(user);
+    if (!billingConfig()) throw new BadRequestException('Billing is not switched on');
+    await withoutTenant(async () => {
+      const org = await this.prisma.organization.findUnique({ where: { id } });
+      if (!org) throw new NotFoundException('Company not found');
+      await this.prisma.organization.update({ where: { id }, data: { trialEndsAt: new Date(`${until}T00:00:00Z`), billingRemindedFor: null } });
+      await this.prisma.auditLog.create({ data: { organizationId: id, actorId: user.id, entityType: 'COMPANY', entityId: id, action: 'TRIAL_CHANGED', note: `Free trial set to end on ${until} by ${PRODUCT_NAME} (${user.fullName})` } });
     });
     return this.company(user, id);
   }
