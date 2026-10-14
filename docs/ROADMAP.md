@@ -128,10 +128,76 @@ Order matters: each item builds on the previous one.
     `BYPASSRLS`, created by a migration) for the API to connect as, with migrations and the seed on the owner
     connection in `MIGRATE_DATABASE_URL`, so the guard is enforced on Neon too.
 
-## v3 – commercial and back office
-Procurement (indent → RFQ → comparative → PO → vendor bill), RA billing from the measurement book,
-receivables / payables with Tally export, HR and leave, payroll export, QA/QC inspections and tests,
-document register with revisions, WhatsApp / SMS alerts.
+## v3 – make money move through Nirmaan
+
+v2 records what happened on site and what it cost at standard rates; nothing is billed, bought or paid
+through it yet. v3 builds each money flow on data v2 already captures and ends it in a Tally voucher. Order:
+A, then B, then C; D to F after; G alongside (33 first, the store listings need the privacy page). Sizes are
+relative to a v2 item (S about one, M about two, L about three). The full draft with the open questions is
+[Nirmaan v3 roadmap (draft)](https://claude.ai/code/artifact/750a4e2d-379f-42f1-8d5d-9206495467b6).
+
+### A. Get paid
+17. **Contracts and clients** (S). `Client` master (name, GSTIN, billing address, department); per project the
+    agreement number and date, contract value, extensions granted (from the delay register), retention %,
+    security deposit, mobilisation advance and recovery %, defect liability months, price variation flag.
+18. **RA bills** (L). Bill N per project from approved measurements: per BOQ item up to previous / this bill /
+    up to date quantity and amount, quantities beyond the BOQ flagged as deviation or extra item, deductions
+    (retention, advance recovery, TDS, labour cess, security deposit) and GST as per-project settings. A seventh
+    submission type (`BILL`) through the lifecycle and the approval matrix, then sent → certified (client's
+    certified quantity per item) → paid. Abstract + measurement print view; measurements lock once billed.
+19. **Receivables** (M). Receipts against certified bills (amount, date, UTR, deductions actually made), ageing
+    per client and project, retention held and its release date, a dashboard tile, cash in on the cost view.
+
+### B. Pay others
+20. **Vendors** (S). One master for suppliers, hire agencies and subcontractors (GSTIN, PAN, bank, MSME Udyam
+    number); expenses, equipment and POs pick from it instead of free text.
+21. **Purchase orders** (L). Material request → quotes → comparative statement → PO (approval matrix with
+    limits) → GRN against PO lines → vendor bill with a three-way match. Screens for `PROCUREMENT_MANAGER`.
+    `Item.rate` becomes the last PO rate.
+22. **Subcontractor work orders and bills** (L). Work order with rates per BOQ item or own items; their work in
+    the measurement book with a contractor field; their RA bill with retention, advance and material-issued
+    recovery and TDS; attendance contractors linked to the vendor master; margin per BOQ item.
+23. **Payables** (M). Payments against approved bills, ageing, due list, micro and small enterprise bills
+    flagged as they near 45 days; the cost view uses actual bills where they exist.
+
+### C. Accounts bridge
+24. **Tally export** (M). Monthly Tally XML of RA bills, vendor and subcontractor bills, approved expenses,
+    receipts and payments; ledger mapping screen; vouchers marked exported so none goes twice. Tally stays the
+    books; no general ledger in Nirmaan.
+25. **GST registers** (S). Outward supplies from RA bills (GSTR-1 layout) and input tax from vendor bills and
+    expenses for GSTR-2B reconciliation, as Excel. E-invoicing only when a customer must, through a GSP.
+
+### D. Quality and documents
+26. **Inspections** (M). Inspection request from site per activity and location, passed or failed by
+    `QA_QC_ENGINEER` against a checklist template with photos; reuses the submission lifecycle (pass =
+    approved, fail = rejected, re-inspect = changes requested); optional hold points on progress.
+27. **Tests and NCRs** (M). Tests with result against specification (concrete cubes with 7 and 28-day
+    reminders, compaction, others); non-conformance reports with cause, corrective action and closure.
+28. **Document register** (M). Drawings and documents with revision and status, current revision only (and
+    offline) on the site app, transmittals, numbered letters in and out linked to delays.
+
+### E. People
+29. **Staff and leave** (M). Staff master separate from contractor labour, staff attendance from the site app,
+    leave approved by `HR_MANAGER` or the project manager, holidays per site.
+30. **Payroll inputs** (S). Monthly days present, leave and overtime per employee for the payroll provider,
+    and a monthly summary per labour contractor. No statutory payroll calculations.
+
+### F. Reach
+31. **WhatsApp and SMS** (M). Approval requests, send-backs, DPR reminders and invite links through the
+    WhatsApp Business Platform (Meta-approved templates), SMS fallback (DLT registration); channels per user.
+32. **Client and consultant portal** (M). Guest login for the client's engineer or PMC on their projects:
+    approved progress, DPRs, reports, certify RA bills, attend inspections. Access only through
+    `project-access.service.ts` and `permissions.ts`.
+
+### G. Running Nirmaan as a business
+33. **Data export and privacy** (S). Full company export (Excel per module, photos zipped), company deletion on
+    request, `/privacy` page.
+34. **Plans and billing** (M). Trial, plans by active projects or users, Razorpay subscriptions with GST
+    invoices; an unpaid company goes read-only, never deleted.
+35. **Platform admin** (S). Console for Nirmaan staff (companies, users, activity, storage, plan, suspend);
+    read-only support access only with consent, written to the audit log.
+
+Not in v3: a general ledger, statutory payroll, tendering, critical-path scheduling, BIM.
 
 ## Definition of done for every item
 Prisma migration, API endpoints with Swagger, shared types, web screen, mobile screen where site
