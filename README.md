@@ -46,6 +46,9 @@ contractors after the first client is live.
   nos × length × breadth × depth lines with deductions; approved sheets give each BOQ item its measured
   (billable) quantity and value, shown next to executed progress on the BOQ tab. Web page, project tab and
   site-app form (offline too), Excel export one row per line.
+- Inspections: site requests an inspection of an activity at a location with photos; QA/QC checks it against the
+  checklist point by point and passes it, fails it or asks for re-inspection. Checklists per organisation, a default
+  one per activity, and hold points that keep the activity's progress from approval until an inspection passes.
 - Project cost: approved site expenses, material issued at the item's standard rate, approved machinery logs
   at the hire rate and attendance at each trade's daily rate, against the value of approved progress (and of
   approved measurements), by project and month, with margin. For approvers and accounts.

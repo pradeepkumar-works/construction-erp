@@ -40,3 +40,6 @@ export const subBillTitle = (woNo: string, billNo: number, isFinal: boolean, ven
 
 /** "VB-2026-0002: invoice UCT/551 of Utkal Cement Traders, ₹1,20,000.00". */
 export const vendorBillTitle = (billNo: string, invoiceNo: string, vendor: string, total: string) => `${billNo}: invoice ${invoiceNo} of ${vendor}, ${inr(total)}`;
+
+/** "INS-2026-0004: Reinforcement for slab, at Block A, 2nd floor". */
+export const inspectionTitle = (inspectionNo: string, activity: string, location: string) => `${inspectionNo}: ${activity}, at ${location}`;

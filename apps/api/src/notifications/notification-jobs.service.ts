@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { APPROVER_ROLES, DPR_SUBMITTER_ROLES, SUBMISSION_TYPE_LABELS, type NotificationJobResult, type PendingApprovalDto, type RoleKey } from '@erp/shared';
+import { APPROVER_ROLES, DPR_SUBMITTER_ROLES, SPECIALIST_APPROVERS, SUBMISSION_TYPE_LABELS, type NotificationJobResult, type PendingApprovalDto, type RoleKey } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
 import { RequestUser } from '../common/current-user';
@@ -74,7 +74,7 @@ export class NotificationJobsService {
     // organisation's actual rights, so a user with nothing to approve gets nothing.
     const ruleRoles = await this.prisma.approvalRule.findMany({ distinct: ['roleId'], select: { roleId: true } });
     const approvers = await this.prisma.user.findMany({
-      where: { isActive: true, OR: [{ role: { key: { in: APPROVER_ROLES } } }, { roleId: { in: ruleRoles.map((r) => r.roleId) } }] },
+      where: { isActive: true, OR: [{ role: { key: { in: [...APPROVER_ROLES, ...Object.values(SPECIALIST_APPROVERS).flat()] } } }, { roleId: { in: ruleRoles.map((r) => r.roleId) } }] },
       include: { role: { select: { key: true } }, organization: { select: { name: true } } },
     });
     for (const u of approvers) {

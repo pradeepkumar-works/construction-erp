@@ -7,7 +7,7 @@ import { ProjectAccessService } from '../common/project-access.service';
 import { ApprovalRightsService } from '../common/approval-rights.service';
 import { dateOnly, iso } from '../common/serialize';
 import { ExpoPushService } from './expo-push.service';
-import { dprTitle, expenseTitle, machineryTitle, measurementTitle, progressTitle, billTitle, poTitle, vendorBillTitle, woTitle, subBillTitle } from '../common/submission-titles';
+import { dprTitle, expenseTitle, machineryTitle, measurementTitle, progressTitle, billTitle, poTitle, vendorBillTitle, woTitle, subBillTitle, inspectionTitle } from '../common/submission-titles';
 import { ListNotificationsQuery, RegisterPushTokenDto } from './notifications.dto';
 
 export interface NotifyInput {
@@ -26,7 +26,7 @@ export interface NotifyInput {
 const include = { project: { select: { name: true } } } satisfies Prisma.NotificationInclude;
 type Row = Prisma.NotificationGetPayload<{ include: typeof include }>;
 
-const SUBMISSION_LABEL: Record<SubmissionType, string> = { PROGRESS: 'Progress entry', DPR: 'DPR', MATERIAL_REQUEST: 'Material request', MACHINERY: 'Machinery log', EXPENSE: 'Site expense', MEASUREMENT: 'Measurement', BILL: 'RA bill', PURCHASE_ORDER: 'Purchase order', VENDOR_BILL: 'Vendor bill', WORK_ORDER: 'Work order', SUBCONTRACT_BILL: 'Subcontractor bill' };
+const SUBMISSION_LABEL: Record<SubmissionType, string> = { PROGRESS: 'Progress entry', DPR: 'DPR', MATERIAL_REQUEST: 'Material request', MACHINERY: 'Machinery log', EXPENSE: 'Site expense', MEASUREMENT: 'Measurement', BILL: 'RA bill', PURCHASE_ORDER: 'Purchase order', VENDOR_BILL: 'Vendor bill', WORK_ORDER: 'Work order', SUBCONTRACT_BILL: 'Subcontractor bill', INSPECTION: 'Inspection' };
 
 /**
  * Creates in-app notifications and pushes them to the users' devices.
@@ -216,6 +216,10 @@ export class NotificationsService {
           ? { title: subBillTitle(b.workOrder.woNo, b.billNo, b.isFinal, b.workOrder.vendor.name, b.grossAmount.toFixed(2)), projectId: b.projectId, projectName: b.project.name, submittedById: b.submittedById }
           : null;
       }
+      case 'INSPECTION': {
+        const i = await this.prisma.inspection.findUnique({ where: { id }, include: { project: { select: { name: true } }, activity: { select: { name: true } } } });
+        return i ? { title: inspectionTitle(i.inspectionNo, i.activity.name, i.location), projectId: i.projectId, projectName: i.project.name, submittedById: i.submittedById } : null;
+      }
     }
   }
 
@@ -229,8 +233,8 @@ export class NotificationsService {
         organizationId: actor.organizationId,
         userIds: approvers.map((a) => a.id).filter((uid) => uid !== actor.id),
         type: 'SUBMISSION_SUBMITTED',
-        title: `${SUBMISSION_LABEL[type]} awaiting your approval`,
-        body: `${actor.fullName} submitted ${s.title} on ${s.projectName}.`,
+        title: type === 'INSPECTION' ? 'Inspection requested' : `${SUBMISSION_LABEL[type]} awaiting your approval`,
+        body: `${actor.fullName} ${type === 'INSPECTION' ? 'requested' : 'submitted'} ${s.title} on ${s.projectName}.`,
         projectId: s.projectId,
         entityType: type,
         entityId: id,
@@ -250,12 +254,14 @@ export class NotificationsService {
         REJECTED: { type: 'SUBMISSION_REJECTED', verb: 'rejected' },
         CHANGES_REQUESTED: { type: 'SUBMISSION_CHANGES_REQUESTED', verb: 'requested changes to' },
       };
+      // An inspection is passed, failed or sent back for re-inspection rather than approved or rejected.
+      if (type === 'INSPECTION') map[status].verb = { APPROVED: 'passed', REJECTED: 'failed', CHANGES_REQUESTED: 'asked for re-inspection of' }[status];
       const m = map[status];
       await this.notify({
         organizationId: actor.organizationId,
         userIds: [s.submittedById],
         type: m.type,
-        title: `${SUBMISSION_LABEL[type]} ${status === 'CHANGES_REQUESTED' ? 'needs changes' : m.verb}`,
+        title: `${SUBMISSION_LABEL[type]} ${status === 'CHANGES_REQUESTED' ? (type === 'INSPECTION' ? 'to be re-inspected' : 'needs changes') : m.verb}`,
         body: `${actor.fullName} ${m.verb} ${s.title} on ${s.projectName}.${note ? ` Note: ${note}` : ''}`,
         projectId: s.projectId,
         entityType: type,

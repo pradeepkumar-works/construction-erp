@@ -27,9 +27,15 @@ export const APPROVAL_AMOUNT_BASIS: Partial<Record<SubmissionType, string>> = {
 
 export const hasAmount = (type: SubmissionType): boolean => type in APPROVAL_AMOUNT_BASIS;
 
+/** Under the fixed rule, specialists who approve one type besides the approvers: QA/QC passes or fails inspections. */
+export const SPECIALIST_APPROVERS: Partial<Record<SubmissionType, RoleKey[]>> = { INSPECTION: ['QA_QC_ENGINEER'] };
+
+/** Roles that approve `type` under the fixed rule. */
+export const defaultApproverRoles = (type: SubmissionType): RoleKey[] => [...APPROVER_ROLES, ...(SPECIALIST_APPROVERS[type] ?? [])];
+
 /** The fixed rule used until an organisation saves a matrix. */
 export const defaultApprovalRights = (role: RoleKey): ApprovalRightDto[] =>
-  APPROVER_ROLES.includes(role) ? SUBMISSION_TYPES.map((type) => ({ type, maxAmount: null })) : [];
+  SUBMISSION_TYPES.filter((type) => defaultApproverRoles(type).includes(role)).map((type) => ({ type, maxAmount: null }));
 
 export const ALL_APPROVAL_RIGHTS: ApprovalRightDto[] = SUBMISSION_TYPES.map((type) => ({ type, maxAmount: null }));
 

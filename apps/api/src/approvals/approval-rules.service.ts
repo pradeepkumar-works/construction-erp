@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { APPROVER_ROLES, ROLE_KEYS, SUBMISSION_TYPES, hasAmount, type ApprovalMatrixDto, type ApprovalRuleDto, type RoleKey, type SubmissionType } from '@erp/shared';
+import { ROLE_KEYS, SUBMISSION_TYPES, defaultApprovalRights, hasAmount, type ApprovalMatrixDto, type ApprovalRuleDto, type RoleKey, type SubmissionType } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { money } from '../common/serialize';
@@ -24,7 +24,7 @@ export class ApprovalRulesService {
       ? rules
           .filter((r) => r.role.key !== 'ADMIN' && (SUBMISSION_TYPES as readonly string[]).includes(r.submissionType))
           .map((r) => ({ roleKey: r.role.key as RoleKey, type: r.submissionType as SubmissionType, maxAmount: money(r.maxAmount) }))
-      : APPROVER_ROLES.filter((k) => k !== 'ADMIN').flatMap((roleKey) => SUBMISSION_TYPES.map((type) => ({ roleKey, type, maxAmount: null })));
+      : ROLE_KEYS.filter((k) => k !== 'ADMIN').flatMap((roleKey) => defaultApprovalRights(roleKey).map((r) => ({ roleKey, type: r.type, maxAmount: null })));
     return {
       custom,
       roles: known.map((r) => ({ roleKey: r.key as RoleKey, roleName: r.name, users: r._count.users })),

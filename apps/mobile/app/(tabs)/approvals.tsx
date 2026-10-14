@@ -7,8 +7,8 @@ import { EmptyState, ErrorState, Loading, Screen, SubmissionRow } from '../../sr
 import { colors, spacing, typography } from '../../src/theme';
 import { timeAgo } from '../../src/utils/format';
 
-const ORDER: SubmissionType[] = ['DPR', 'PROGRESS', 'MATERIAL_REQUEST', 'MACHINERY', 'EXPENSE', 'MEASUREMENT', 'BILL', 'PURCHASE_ORDER', 'VENDOR_BILL', 'WORK_ORDER', 'SUBCONTRACT_BILL'];
-const DETAIL_PATH: Record<SubmissionType, string> = { PROGRESS: '/progress/', DPR: '/dpr/', MATERIAL_REQUEST: '/material-request/', MACHINERY: '/machinery/', EXPENSE: '/expense/', MEASUREMENT: '/measurement/', BILL: '/bill/', PURCHASE_ORDER: '/purchase-order/', VENDOR_BILL: '/vendor-bill/', WORK_ORDER: '/work-order/', SUBCONTRACT_BILL: '/subcontract-bill/' };
+const ORDER: SubmissionType[] = ['DPR', 'PROGRESS', 'MATERIAL_REQUEST', 'MACHINERY', 'EXPENSE', 'MEASUREMENT', 'BILL', 'PURCHASE_ORDER', 'VENDOR_BILL', 'WORK_ORDER', 'SUBCONTRACT_BILL', 'INSPECTION'];
+const DETAIL_PATH: Record<SubmissionType, string> = { PROGRESS: '/progress/', DPR: '/dpr/', MATERIAL_REQUEST: '/material-request/', MACHINERY: '/machinery/', EXPENSE: '/expense/', MEASUREMENT: '/measurement/', BILL: '/bill/', PURCHASE_ORDER: '/purchase-order/', VENDOR_BILL: '/vendor-bill/', WORK_ORDER: '/work-order/', SUBCONTRACT_BILL: '/subcontract-bill/', INSPECTION: '/inspection/' };
 
 export default function ApprovalsScreen() {
   const router = useRouter();

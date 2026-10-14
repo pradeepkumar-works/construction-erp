@@ -1,3 +1,4 @@
+import type { InspectionCheck } from './quality';
 import type { ApprovalRightDto } from './approvals';
 import type { TallyVoucherKind } from './tally';
 import type {
@@ -161,6 +162,11 @@ export interface ActivityDto {
   responsibleName: string | null;
   isDelayed: boolean;
   sortOrder: number;
+  /** Checklist a new inspection of this activity starts from */
+  checklistTemplateId: string | null;
+  checklistName: string | null;
+  /** Progress is approved only after a passed inspection */
+  holdPoint: boolean;
 }
 
 export interface AttachmentDto {
@@ -1741,4 +1747,30 @@ export interface GstRegistersDto {
   /** GST paid on purchases without the supplier's GSTIN (not claimable) */
   ineligibleTax: string;
   warnings: string[];
+}
+
+/* ---------- Quality ---------- */
+
+export interface ChecklistTemplateDto {
+  id: string;
+  name: string;
+  items: string[];
+  /** Activities (across projects) that start their inspections from it */
+  activityCount: number;
+  updatedAt: string;
+}
+
+/** Inspection request: SUBMITTED = requested, APPROVED = passed, REJECTED = failed, CHANGES_REQUESTED = re-inspect. */
+export interface InspectionDto extends SubmissionBase {
+  inspectionNo: string;
+  activityId: string;
+  activityName: string;
+  /** The activity is a hold point: its progress waits for a passed inspection */
+  holdPoint: boolean;
+  /** The date the work is ready for inspection */
+  date: string;
+  location: string;
+  remarks: string | null;
+  checklistName: string | null;
+  checklist: InspectionCheck[];
 }

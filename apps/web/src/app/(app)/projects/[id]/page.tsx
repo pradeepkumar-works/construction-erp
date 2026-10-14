@@ -21,6 +21,7 @@ import { MachineryPanel } from '@/components/machinery/MachineryPanel';
 import { ExpenseList } from '@/components/expenses/ExpenseList';
 import { RiskList } from '@/components/risks/RiskList';
 import { MeasurementList } from '@/components/measurements/MeasurementList';
+import { InspectionList } from '@/components/inspections/InspectionList';
 import { ProjectCostPanel } from '@/components/cost/ProjectCostPanel';
 import { ContractPanel } from '@/components/contracts/ContractPanel';
 import { BillList } from '@/components/bills/BillList';
@@ -99,6 +100,7 @@ export default function ProjectDetailPage() {
             { key: 'boq', label: 'BOQ', children: <BoqTab projectId={project.id} /> },
             { key: 'activities', label: 'Activities', children: <ActivitiesTab projectId={project.id} members={project.members} project={project} /> },
             { key: 'mb', label: 'Measurements', children: <MeasurementList projectId={project.id} /> },
+            { key: 'inspections', label: 'Inspections', children: <InspectionList projectId={project.id} /> },
             { key: 'progress', label: 'Progress', children: <ProgressList projectId={project.id} newLabel="New progress entry" /> },
             { key: 'dpr', label: 'Daily Reports', children: <DprList projectId={project.id} newLabel="New DPR" /> },
             { key: 'attendance', label: 'Attendance', children: <AttendanceList projectId={project.id} /> },

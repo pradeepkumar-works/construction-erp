@@ -34,6 +34,8 @@ import type {
   ApprovalMatrixDto,
   AuthOptionsDto,
   MeasurementSheetDto,
+  InspectionDto,
+  ChecklistTemplateDto,
   RaBillDto,
   ReceiptDto,
   ReceivablesDto,
@@ -90,7 +92,7 @@ export interface RoleDto {
   name: string;
 }
 
-export type ApprovalTypeParam = 'progress' | 'dpr' | 'material_request' | 'machinery' | 'expense' | 'measurement' | 'bill' | 'purchase_order' | 'vendor_bill' | 'work_order' | 'subcontract_bill';
+export type ApprovalTypeParam = 'progress' | 'dpr' | 'material_request' | 'machinery' | 'expense' | 'measurement' | 'bill' | 'purchase_order' | 'vendor_bill' | 'work_order' | 'subcontract_bill' | 'inspection';
 
 export const approvalTypeParam: Record<SubmissionType, ApprovalTypeParam> = {
   PROGRESS: 'progress',
@@ -104,6 +106,7 @@ export const approvalTypeParam: Record<SubmissionType, ApprovalTypeParam> = {
   VENDOR_BILL: 'vendor_bill',
   WORK_ORDER: 'work_order',
   SUBCONTRACT_BILL: 'subcontract_bill',
+  INSPECTION: 'inspection',
 };
 
 /** Paging, search and sort understood by every paged list endpoint. */
@@ -456,6 +459,31 @@ export const useMeasurement = (id: string | undefined) =>
     queryKey: ['measurements', 'detail', id],
     queryFn: async () => (await api.get<MeasurementSheetDto>(`/measurements/${id}`)).data,
     enabled: !!id,
+  });
+
+export interface InspectionFilters extends ListFilters {
+  from?: string;
+  to?: string;
+}
+
+export const useInspections = (filters?: InspectionFilters) =>
+  useQuery({
+    queryKey: ['inspections', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<InspectionDto>>('/inspections', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+  });
+
+export const useInspection = (id: string | undefined) =>
+  useQuery({
+    queryKey: ['inspections', 'detail', id],
+    queryFn: async () => (await api.get<InspectionDto>(`/inspections/${id}`)).data,
+    enabled: !!id,
+  });
+
+export const useChecklists = () =>
+  useQuery({
+    queryKey: ['inspections', 'checklists'],
+    queryFn: async () => (await api.get<ChecklistTemplateDto[]>('/inspections/checklists')).data,
   });
 
 export interface BillFilters extends PageParams {

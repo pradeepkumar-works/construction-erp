@@ -18,6 +18,7 @@ export function ListToolbar({
   hideProject,
   children,
   extra,
+  statusLabels = SUBMISSION_STATUS_LABELS,
 }: {
   projectId?: string;
   onProject: (v?: string) => void;
@@ -32,13 +33,15 @@ export function ListToolbar({
   children?: React.ReactNode;
   /** Right-aligned actions such as Export. */
   extra?: React.ReactNode;
+  /** Status wording for this kind of entry. */
+  statusLabels?: Record<SubmissionStatus, string>;
 }) {
   return (
     <div style={{ padding: 12, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', borderBottom: '1px solid #f0f0f0' }}>
       {onSearch ? <SearchBox value={search ?? ''} onChange={onSearch} placeholder={searchPlaceholder} /> : null}
       {hideProject ? null : <ProjectSelect value={projectId} onChange={(v) => onProject(v)} />}
       {onStatus ? (
-        <Select allowClear placeholder="All statuses" value={status} onChange={(v) => onStatus(v)} style={{ width: 180 }} options={SUBMISSION_STATUSES.map((s) => ({ value: s, label: SUBMISSION_STATUS_LABELS[s] }))} />
+        <Select allowClear placeholder="All statuses" value={status} onChange={(v) => onStatus(v)} style={{ width: 180 }} options={SUBMISSION_STATUSES.map((s) => ({ value: s, label: statusLabels[s] }))} />
       ) : null}
       {children}
       {extra ? <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>{extra}</div> : null}

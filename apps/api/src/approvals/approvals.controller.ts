@@ -19,11 +19,12 @@ export class ApprovalsController {
     return this.lifecycle.pending(user);
   }
 
-  /** Generic review endpoint: type is PROGRESS | DPR | MATERIAL_REQUEST | MACHINERY | EXPENSE | MEASUREMENT | BILL. */
+  /** Generic review endpoint for every submission type except INSPECTION, which is reviewed with its checklist. */
   @Post(':type/:id/review')
   async review(@CurrentUser() user: RequestUser, @Param('type') type: string, @Param('id') id: string, @Body() dto: ReviewDto) {
     const t = type.toUpperCase() as SubmissionType;
     if (!SUBMISSION_TYPES.includes(t)) throw new BadRequestException('Unknown submission type');
+    if (t === 'INSPECTION') throw new BadRequestException('Record the checklist with the inspection: POST /inspections/:id/inspect');
     await this.lifecycle.review(user, t, id, dto.decision, dto.note);
     return { ok: true };
   }

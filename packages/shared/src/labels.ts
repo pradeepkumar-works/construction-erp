@@ -34,6 +34,7 @@ export const SUBMISSION_TYPE_LABELS: Record<SubmissionType, string> = {
   VENDOR_BILL: 'Vendor Bill',
   WORK_ORDER: 'Work Order',
   SUBCONTRACT_BILL: 'Subcontractor Bill',
+  INSPECTION: 'Inspection',
 };
 
 export const MATERIAL_PRIORITY_LABELS: Record<MaterialPriority, string> = {

@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { APPROVER_ROLES, type SubmissionType, COMPANY_WIDE_ROLES, isCompanyWide, canAdjustStock, canApprove, canKeepStock, canLogMachinery, canManageEquipment, canManageStore, canMeasure, canRaiseRisk, canRecordAttendance, canSubmitExpense } from '@erp/shared';
+import { APPROVER_ROLES, type SubmissionType, COMPANY_WIDE_ROLES, isCompanyWide, canAdjustStock, canApprove, canKeepStock, canLogMachinery, canManageEquipment, canManageStore, canMeasure, canRaiseRisk, canRecordAttendance, canRequestInspection, canSubmitExpense } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { ApprovalRightsService } from './approval-rights.service';
 import { RequestUser } from './current-user';
@@ -112,6 +112,12 @@ export class ProjectAccessService {
   /** Record a measurement book entry: a measuring role with access to the project. */
   async assertCanMeasure(user: RequestUser, projectId: string) {
     if (!canMeasure(user.roleKey)) throw new ForbiddenException('Your role cannot record measurements');
+    await this.assertCanAccessProject(user, projectId);
+  }
+
+  /** Request an inspection: site staff, QA/QC or an approver with access to the project. */
+  async assertCanRequestInspection(user: RequestUser, projectId: string) {
+    if (!canRequestInspection(user.roleKey)) throw new ForbiddenException('Your role cannot request inspections');
     await this.assertCanAccessProject(user, projectId);
   }
 

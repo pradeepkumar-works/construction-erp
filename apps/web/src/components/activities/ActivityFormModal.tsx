@@ -1,13 +1,13 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { App, AutoComplete, DatePicker, Form, Input, InputNumber, Modal, Select } from 'antd';
+import { App, AutoComplete, Checkbox, DatePicker, Form, Input, InputNumber, Modal, Select } from 'antd';
 import dayjs from 'dayjs';
 import type { ActivityDto, ProjectMemberDto } from '@erp/shared';
 import { COMMON_UNITS } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, errorMessage } from '@/lib/api';
-import { useBoq } from '@/lib/queries';
+import { useBoq, useChecklists } from '@/lib/queries';
 
 interface FormValues {
   name: string;
@@ -16,6 +16,8 @@ interface FormValues {
   plannedQty: number;
   dates?: [dayjs.Dayjs | null, dayjs.Dayjs | null] | null;
   responsibleId?: string | null;
+  checklistTemplateId?: string | null;
+  holdPoint?: boolean;
 }
 
 export function ActivityFormModal({
@@ -35,6 +37,7 @@ export function ActivityFormModal({
   const { message } = App.useApp();
   const qc = useQueryClient();
   const { data: boq } = useBoq(projectId);
+  const { data: checklists } = useChecklists();
   const isEdit = !!activity;
 
   useEffect(() => {
@@ -47,6 +50,8 @@ export function ActivityFormModal({
         plannedQty: Number(activity.plannedQty),
         dates: [activity.plannedStart ? dayjs(activity.plannedStart) : null, activity.plannedEnd ? dayjs(activity.plannedEnd) : null],
         responsibleId: activity.responsibleId,
+        checklistTemplateId: activity.checklistTemplateId,
+        holdPoint: activity.holdPoint,
       });
     } else {
       form.resetFields();
@@ -63,6 +68,8 @@ export function ActivityFormModal({
         plannedStart: v.dates?.[0] ? v.dates[0].format('YYYY-MM-DD') : null,
         plannedEnd: v.dates?.[1] ? v.dates[1].format('YYYY-MM-DD') : null,
         responsibleId: v.responsibleId || null,
+        checklistTemplateId: v.checklistTemplateId || null,
+        holdPoint: !!v.holdPoint,
       };
       if (isEdit && activity) return (await api.patch(`/projects/${projectId}/activities/${activity.id}`, body)).data;
       return (await api.post(`/projects/${projectId}/activities`, body)).data;
@@ -108,6 +115,14 @@ export function ActivityFormModal({
         <Form.Item name="responsibleId" label="Responsible">
           <Select allowClear showSearch optionFilterProp="label" placeholder="Project member" options={members.map((m) => ({ value: m.userId, label: `${m.fullName} (${m.roleName})` }))} />
         </Form.Item>
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '0 16px', alignItems: 'end' }}>
+          <Form.Item name="checklistTemplateId" label="Inspection checklist">
+            <Select allowClear placeholder={checklists?.length ? 'None' : 'No checklist yet (Inspections > Checklists)'} options={(checklists ?? []).map((c) => ({ value: c.id, label: c.name }))} />
+          </Form.Item>
+          <Form.Item name="holdPoint" valuePropName="checked" tooltip="Progress of this activity is approved only after a passed inspection at the same location">
+            <Checkbox>Hold point</Checkbox>
+          </Form.Item>
+        </div>
       </Form>
     </Modal>
   );

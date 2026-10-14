@@ -22,6 +22,7 @@ import { PurchaseOrderDrawer } from '@/components/purchasing/PurchaseOrderDrawer
 import { VendorBillDrawer } from '@/components/purchasing/VendorBillDrawer';
 import { WorkOrderDrawer } from '@/components/subcontracts/WorkOrderDrawer';
 import { SubBillDrawer } from '@/components/subcontracts/SubBillDrawer';
+import { InspectionDrawer } from '@/components/inspections/InspectionDrawer';
 import { notificationHref } from '@/components/notifications/notificationTarget';
 
 type Open = { type: SubmissionType; id: string } | null;
@@ -122,6 +123,7 @@ function NotificationsPageInner() {
       <VendorBillDrawer id={open?.type === 'VENDOR_BILL' ? open.id : null} open={open?.type === 'VENDOR_BILL'} onClose={closeDrawer} />
       <WorkOrderDrawer id={open?.type === 'WORK_ORDER' ? open.id : null} open={open?.type === 'WORK_ORDER'} onClose={closeDrawer} />
       <SubBillDrawer id={open?.type === 'SUBCONTRACT_BILL' ? open.id : null} open={open?.type === 'SUBCONTRACT_BILL'} onClose={closeDrawer} />
+      <InspectionDrawer id={open?.type === 'INSPECTION' ? open.id : null} open={open?.type === 'INSPECTION'} onClose={closeDrawer} />
     </div>
   );
 }

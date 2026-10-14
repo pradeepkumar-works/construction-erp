@@ -4,6 +4,7 @@ import { PrismaClient, Prisma } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { deflateSync } from 'zlib';
 import { dprTitle, progressTitle, titleDate } from '../src/common/submission-titles';
+import { STANDARD_CHECKLISTS } from '@erp/shared';
 
 const prisma = new PrismaClient();
 const D = (v: string | number) => new Prisma.Decimal(v);
@@ -114,6 +115,7 @@ async function main() {
     await seedPurchasing(org.id);
     await seedSubcontracts(org.id);
     await seedPayables(org.id);
+    await seedQuality(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
   }
@@ -270,6 +272,7 @@ async function main() {
   await seedPurchasing(org.id);
   await seedSubcontracts(org.id);
   await seedPayables(org.id);
+  await seedQuality(org.id);
 
   console.log('Seed complete. Login with any of these (password: password123):');
   for (const u of USERS) console.log(`  ${u.email.padEnd(24)} ${u.role}`);
@@ -855,6 +858,8 @@ const SUBCONTRACT_RULES: typeof BILL_RULES = ['WORK_ORDER', 'SUBCONTRACT_BILL'].
   { roleKey: 'MANAGEMENT', type, maxAmount: null },
   { roleKey: 'PROJECT_MANAGER', type, maxAmount: D(500000) },
 ]);
+/** QA/QC passes inspections; management and project managers can too. */
+const QUALITY_RULES: typeof BILL_RULES = ['MANAGEMENT', 'PROJECT_MANAGER', 'QA_QC_ENGINEER'].map((roleKey) => ({ roleKey, type: 'INSPECTION', maxAmount: null }));
 
 /**
  * Demo approval matrix: management approves everything, project managers approve everything but site expenses only
@@ -871,9 +876,9 @@ async function seedApprovalRules(organizationId: string) {
       skipDuplicates: true,
     });
   if ((await prisma.approvalRule.count({ where: { organizationId } })) > 0) {
-    for (const type of ['BILL', 'PURCHASE_ORDER', 'VENDOR_BILL', 'WORK_ORDER', 'SUBCONTRACT_BILL'])
+    for (const type of ['BILL', 'PURCHASE_ORDER', 'VENDOR_BILL', 'WORK_ORDER', 'SUBCONTRACT_BILL', 'INSPECTION'])
       if ((await prisma.approvalRule.count({ where: { organizationId, submissionType: type } })) === 0)
-        await write([...BILL_RULES, ...PURCHASE_RULES, ...SUBCONTRACT_RULES].filter((r) => r.type === type));
+        await write([...BILL_RULES, ...PURCHASE_RULES, ...SUBCONTRACT_RULES, ...QUALITY_RULES].filter((r) => r.type === type));
     return;
   }
   const types = ['PROGRESS', 'DPR', 'MATERIAL_REQUEST', 'MACHINERY', 'EXPENSE', 'MEASUREMENT'];
@@ -884,6 +889,7 @@ async function seedApprovalRules(organizationId: string) {
     ...BILL_RULES,
     ...PURCHASE_RULES,
     ...SUBCONTRACT_RULES,
+    ...QUALITY_RULES,
   ];
   await write(rows);
 }
@@ -1220,4 +1226,69 @@ async function seedPayables(organizationId: string) {
       { organizationId, entityType: 'VENDOR_BILL', entityId: bill.id, action: 'PAYMENT_MADE', actorId: accounts, note: `₹${paid.toFixed(2)} paid (SBIN526287700412)`, createdAt: day(-12) },
     ],
   });
+}
+
+/** Which standard checklist each demo activity inspects against; `true` marks a hold point. */
+const ACTIVITY_CHECKLISTS: Record<string, [string, boolean?]> = {
+  'Earthwork embankment': ['Subgrade and embankment layer'],
+  Subgrade: ['Subgrade and embankment layer'],
+  'GSB laying': ['GSB / WMM layer'],
+  'WMM laying': ['GSB / WMM layer', true],
+  'DBM paving': ['Bituminous layer'],
+  'BC paving': ['Bituminous layer'],
+  'RCC footings and columns': ['Reinforcement before concreting'],
+  'RCC slab GF': ['Reinforcement before concreting'],
+  'RCC slab FF': ['Reinforcement before concreting', true],
+  'Brick masonry': ['Brickwork'],
+  'Raw water main laying': ['Pipe laying and hydro test'],
+  'Distribution network': ['Pipe laying and hydro test'],
+};
+
+/** Demo inspections: [project type, activity, location, days ago, status, inspector's note, points not OK]. */
+const DEMO_INSPECTIONS: [string, string, string, number, 'SUBMITTED' | 'APPROVED' | 'CHANGES_REQUESTED', string | null, number[]][] = [
+  ['BUILDING', 'RCC slab GF', 'Ground floor slab, bays 1 to 4', 6, 'APPROVED', 'Cover and laps fine. Proceed with the pour.', []],
+  ['BUILDING', 'RCC footings and columns', 'Columns C1 to C8, ground to first floor', 1, 'SUBMITTED', null, []],
+  ['ROAD', 'GSB laying', 'Km 12+000 to 12+500, LHS', 3, 'CHANGES_REQUESTED', 'Rework the low patch at Km 12+300 and call for re-inspection.', [3]],
+];
+
+/**
+ * The standard inspection checklists, linked to the demo activities they fit (two of them hold points), and a few
+ * inspections: one passed, one waiting for QA/QC and one sent back for re-inspection. Only where none exist yet.
+ */
+async function seedQuality(organizationId: string) {
+  await prisma.checklistTemplate.createMany({ data: STANDARD_CHECKLISTS.map((c) => ({ organizationId, name: c.name, items: c.items })), skipDuplicates: true });
+  const checklists = new Map((await prisma.checklistTemplate.findMany({ where: { organizationId } })).map((c) => [c.name, c]));
+  for (const [activity, [checklist, holdPoint]] of Object.entries(ACTIVITY_CHECKLISTS)) {
+    const c = checklists.get(checklist);
+    if (c) await prisma.activity.updateMany({ where: { organizationId, name: activity, checklistTemplateId: null }, data: { checklistTemplateId: c.id, holdPoint: !!holdPoint } });
+  }
+  if ((await prisma.inspection.count({ where: { organizationId } })) > 0) return;
+  const qa = await prisma.user.findFirst({ where: { organizationId, email: 'qaqc@demo.com' } });
+  if (!qa) return;
+  const year = new Date().getUTCFullYear();
+  let counter = 0;
+  for (const [type, activityName, location, ago, status, note, failed] of DEMO_INSPECTIONS) {
+    const project = await prisma.project.findFirst({ where: { organizationId, type: type as Prisma.ProjectWhereInput['type'] }, include: { activities: { where: { name: activityName } } }, orderBy: { code: 'asc' } });
+    const activity = project?.activities[0];
+    const items = activity?.checklistTemplateId ? [...checklists.values()].find((c) => c.id === activity.checklistTemplateId) : undefined;
+    const by = project ? await prisma.user.findFirst({ where: { organizationId, role: { key: 'SITE_ENGINEER' }, memberships: { some: { projectId: project.id } } } }) : null;
+    if (!project || !activity || !items || !by) continue;
+    const reviewed = status !== 'SUBMITTED';
+    const checklist = items.items.map((item, i) => ({ item, result: reviewed ? (failed.includes(i) ? 'FAIL' : 'PASS') : null, remark: failed.includes(i) ? 'Level low by 25 mm over 6 m' : null }));
+    counter += 1;
+    const x = await prisma.inspection.create({
+      data: {
+        organizationId, projectId: project.id, activityId: activity.id, inspectionNo: `INS-${year}-${String(counter).padStart(4, '0')}`, date: day(-ago), location,
+        checklistName: items.name, checklist, status, submittedById: by.id, submittedAt: day(-ago), createdAt: day(-ago),
+        reviewedById: reviewed ? qa.id : null, reviewedAt: reviewed ? day(Math.min(0, -ago + 1)) : null, reviewNote: note,
+      },
+    });
+    await prisma.auditLog.createMany({
+      data: [
+        { organizationId, entityType: 'INSPECTION', entityId: x.id, action: 'CREATED', actorId: by.id, createdAt: day(-ago) },
+        { organizationId, entityType: 'INSPECTION', entityId: x.id, action: 'SUBMITTED', actorId: by.id, createdAt: day(-ago) },
+        ...(reviewed ? [{ organizationId, entityType: 'INSPECTION', entityId: x.id, action: status, actorId: qa.id, note, createdAt: day(Math.min(0, -ago + 1)) }] : []),
+      ],
+    });
+  }
 }

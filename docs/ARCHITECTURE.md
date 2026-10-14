@@ -58,7 +58,8 @@ shapes of every API response, so web, mobile and API agree on one contract.
 ## One approval workflow
 
 `SubmissionLifecycleService` owns the state machine used by progress entries, DPRs, material
-requests, machinery logs, site expenses, measurement sheets, RA bills, purchase orders and vendor bills:
+requests, machinery logs, site expenses, measurement sheets, RA bills, purchase orders, vendor bills, work orders,
+subcontractor bills and inspections:
 
 ```
 DRAFT / REJECTED / CHANGES_REQUESTED --submit--> SUBMITTED --review--> APPROVED | REJECTED | CHANGES_REQUESTED
@@ -75,7 +76,8 @@ out are detached. Adding a new submission type
 (for example measurements) means adding a table with the same six status columns, adding the type to
 `SUBMISSION_TYPES` in shared and registering it in the lifecycle service (`delegate`, `pending`) and in
 `NotificationsService.describeSubmission`; the approvals queue, review endpoint and audit trail come
-free. The clients keep a few per-type maps (web drawers on the approvals and notifications pages,
+free. A type can register `onApproved` (run after approval) and `beforeApprove` (throw to refuse it) hooks; inspection
+hold points use the latter on progress. The clients keep a few per-type maps (web drawers on the approvals and notifications pages,
 `approvalTypeParam`; mobile `TYPE_ICON`, `EDIT_PATH`, `REVIEW_PATH`, `OUTBOX_PATH`, push routes) that
 TypeScript flags when a type is added.
 
@@ -251,6 +253,32 @@ The store register per project, fed by approved material requests:
 - **Clients.** Web: Measurement Book page and project tab (line editor with live totals, Excel export one
   row per line), Measured column on the BOQ tab. Site app: `app/measurement/new.tsx` (offline-capable)
   and `[id].tsx`.
+
+## Inspections
+
+- **Tables.** `ChecklistTemplate`: a named list of points per organisation (`items` String[]); "Add standard
+  checklists" copies `STANDARD_CHECKLISTS` from `packages/shared/src/quality.ts`. `Activity` gains
+  `checklistTemplateId` (the checklist its inspections start from) and `holdPoint`. `Inspection`: project, activity,
+  `inspectionNo` (`INS-<year>-0001`), the date the work is ready, location, remarks, `checklistName` and `checklist`
+  (JSON copy of the points, `[{ item, result: PASS | FAIL | NA | null, remark }]`, so editing a template never changes
+  an inspection), photos (`Attachment.inspectionId`) and the six status columns.
+- **Lifecycle.** A submission of type `INSPECTION`: requested = SUBMITTED, passed = APPROVED, failed = REJECTED,
+  re-inspect = CHANGES_REQUESTED (site rectifies, edits if needed and requests again on the same record). Labels for
+  this wording are `INSPECTION_STATUS_LABELS`; notifications say "requested", "passed", "failed".
+- **Inspecting.** `POST /inspections/:id/inspect` takes one result per point, a note, extra photos and the decision,
+  saves the results and calls `lifecycle.review`. Pass needs no point Not OK; fail and re-inspect need a point Not OK
+  or a note (the points Not OK are appended to the review note). The generic `/approvals/inspection/:id/review`
+  refuses, so an inspection is never passed without its checklist.
+- **Who.** Request: `INSPECTION_REQUEST_ROLES` (team leader, site engineer, QA/QC, approvers). Inspect: the approval
+  matrix; under the fixed rule `SPECIALIST_APPROVERS` adds QA/QC to the approvers for `INSPECTION` only
+  (`defaultApproverRoles`). Checklists: `CHECKLIST_ADMIN_ROLES` (QA/QC, PM, management, admin). The activity's
+  checklist and hold point are set with the activity (project editors).
+- **Hold points.** `InspectionsService` registers `beforeApprove('PROGRESS')`: progress of a hold-point activity is
+  approved only when a passed inspection of that activity exists at the same location (case and spacing ignored;
+  `sameLocation`), or any passed inspection when the progress entry gives no location.
+- **Clients.** Web: Site → Inspections (list, checklists tab), project tab, drawer with the inspector's checklist,
+  activity form fields. Site app: request (`app/inspection/new.tsx`, offline-capable) and `[id].tsx`, where QA/QC
+  records the checklist.
 
 ## Clients and contracts
 
