@@ -21,6 +21,7 @@ pnpm dev:api | pnpm dev:web | pnpm dev:mobile
 pnpm typecheck                        # all packages, must pass before committing
 cd apps/web && npx next build         # web must build clean
 cd apps/mobile && npx tsc --noEmit && CI=1 npx expo export --platform android
+cd e2e && npx playwright test         # browser tests; needs API + web running (docs/TESTING.md), CI runs them on PRs
 ```
 
 ## Conventions
