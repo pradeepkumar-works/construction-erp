@@ -37,3 +37,17 @@ export function revisedCompletion(endDate: string | null, extensionDays: number)
   d.setUTCDate(d.getUTCDate() + extensionDays);
   return d.toISOString().slice(0, 10);
 }
+
+/** "RA bill 3", or "RA bill 7 (final)". */
+export const billLabel = (billNo: number, isFinal: boolean): string => `RA bill ${billNo}${isFinal ? ' (final)' : ''}`;
+
+/** The deductions on an RA bill, in the order the bill shows them. */
+export const BILL_DEDUCTION_LABELS = {
+  retention: 'Retention',
+  securityDeposit: 'Security deposit',
+  advanceRecovery: 'Mobilisation advance recovery',
+  tds: 'TDS (income tax)',
+  gstTds: 'GST TDS',
+  labourCess: 'Labour welfare cess',
+  other: 'Other deduction',
+} as const;

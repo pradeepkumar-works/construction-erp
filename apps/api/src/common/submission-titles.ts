@@ -21,3 +21,7 @@ export const expenseTitle = (expenseNo: string, total: string, description: stri
 /** "MB-2026-0003: item 2.1, 1250.5 Cum at Km 14+200 to 14+400". */
 export const measurementTitle = (mbNo: string, itemNo: string, qty: string, unit: string, location: string) =>
   `${mbNo}: item ${itemNo}, ${Number(qty)} ${unit} at ${location}`;
+
+/** "RA bill 3: ₹48,25,000.00 of work" (the final bill says so). */
+export const billTitle = (billNo: number, isFinal: boolean, gross: string) =>
+  `RA bill ${billNo}${isFinal ? ' (final)' : ''}: ₹${Number(gross).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} of work`;

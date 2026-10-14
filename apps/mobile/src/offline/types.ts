@@ -38,6 +38,7 @@ export const OUTBOX_PATH: Record<OutboxType, string> = {
   MACHINERY: '/machinery-logs',
   EXPENSE: '/expenses',
   MEASUREMENT: '/measurements',
+  BILL: '/ra-bills',
   ATTENDANCE: '/attendance',
   RISK: '/risks',
 };
@@ -49,4 +50,5 @@ export const OUTBOX_DETAIL: Record<SubmissionType, string> = {
   MACHINERY: '/machinery/',
   EXPENSE: '/expense/',
   MEASUREMENT: '/measurement/',
+  BILL: '/bill/',
 };

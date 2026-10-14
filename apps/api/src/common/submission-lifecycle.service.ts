@@ -7,7 +7,7 @@ import { ProjectAccessService } from './project-access.service';
 import { ApprovalRightsService } from './approval-rights.service';
 import { AuditService } from './audit.service';
 import { NotificationsService } from '../notifications/notifications.service';
-import { dprTitle, expenseTitle, machineryTitle, measurementTitle, progressTitle } from './submission-titles';
+import { dprTitle, expenseTitle, machineryTitle, measurementTitle, progressTitle, billTitle } from './submission-titles';
 
 interface SubmissionRow {
   id: string;
@@ -21,7 +21,7 @@ interface SubmissionRow {
  * One state machine for every site submission:
  *   DRAFT / REJECTED / CHANGES_REQUESTED --submit--> SUBMITTED --review--> APPROVED | REJECTED | CHANGES_REQUESTED
  * A rejected or changes-requested entry is edited in place and resubmitted (audit action RESUBMITTED), so the
- * review history stays on one record. Progress entries, DPRs, material requests, machinery logs, site expenses and measurements all go through here.
+ * review history stays on one record. Progress entries, DPRs, material requests, machinery logs, site expenses, measurements and RA bills all go through here.
  */
 @Injectable()
 export class SubmissionLifecycleService {
@@ -41,6 +41,8 @@ export class SubmissionLifecycleService {
         return this.prisma.expense;
       case 'MEASUREMENT':
         return this.prisma.measurementSheet;
+      case 'BILL':
+        return this.prisma.raBill;
     }
   }
 
@@ -92,13 +94,14 @@ export class SubmissionLifecycleService {
     const allowed = (t: SubmissionType) => rights.some((r) => r.type === t);
     const where = { ...this.access.submissionWhere(user), status: 'SUBMITTED' as const };
     const none = Promise.resolve([] as never[]);
-    const [progress, dprs, mrs, logs, expenses, mbs] = await Promise.all([
+    const [progress, dprs, mrs, logs, expenses, mbs, bills] = await Promise.all([
       allowed('PROGRESS') ? this.prisma.progressEntry.findMany({ where, include: { project: true, activity: { include: { boqItem: { select: { rate: true } } } }, submittedBy: true }, orderBy: { submittedAt: 'asc' } }) : none,
       allowed('DPR') ? this.prisma.dailyReport.findMany({ where, include: { project: true, submittedBy: true }, orderBy: { submittedAt: 'asc' } }) : none,
       allowed('MATERIAL_REQUEST') ? this.prisma.materialRequest.findMany({ where, include: { project: true, submittedBy: true, items: true }, orderBy: { submittedAt: 'asc' } }) : none,
       allowed('MACHINERY') ? this.prisma.machineryLog.findMany({ where, include: { project: true, submittedBy: true, equipment: true }, orderBy: { submittedAt: 'asc' } }) : none,
       allowed('EXPENSE') ? this.prisma.expense.findMany({ where, include: { project: true, submittedBy: true }, orderBy: { submittedAt: 'asc' } }) : none,
       allowed('MEASUREMENT') ? this.prisma.measurementSheet.findMany({ where, include: { project: true, submittedBy: true, boqItem: true }, orderBy: { submittedAt: 'asc' } }) : none,
+      allowed('BILL') ? this.prisma.raBill.findMany({ where, include: { project: true, submittedBy: true }, orderBy: { submittedAt: 'asc' } }) : none,
     ]);
     const amt = (d: Prisma.Decimal | null): string | null => (d === null ? null : d.toDecimalPlaces(2).toFixed(2));
     const machineCost = (l: (typeof logs)[number]) => {
@@ -165,6 +168,16 @@ export class SubmissionLifecycleService {
         submittedByName: m.submittedBy.fullName,
         submittedAt: (m.submittedAt ?? m.createdAt).toISOString(),
         amount: amt(m.totalQty.mul(m.boqItem.rate)),
+      })),
+      ...bills.map((b) => ({
+        type: 'BILL' as const,
+        id: b.id,
+        projectId: b.projectId,
+        projectName: b.project.name,
+        title: billTitle(b.billNo, b.isFinal, b.grossAmount.toFixed(2)),
+        submittedByName: b.submittedBy.fullName,
+        submittedAt: (b.submittedAt ?? b.createdAt).toISOString(),
+        amount: amt(b.grossAmount),
       })),
     ];
     return out

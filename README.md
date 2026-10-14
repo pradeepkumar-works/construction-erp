@@ -61,6 +61,10 @@ contractors after the first client is live.
   the retention, security deposit, mobilisation advance and recovery, TDS, GST TDS, labour cess and GST
   percentages bills are built with. Billing → Clients and a Contract tab on each project, for approvers, the
   QS and accounts.
+- RA bills: the next running-account bill of a project from the approved measurements, with the abstract
+  (previous / this bill / up to date per BOQ item, excess and extra items flagged), GST and the contract
+  deductions. Approved through the approval matrix, then recorded as sent, certified (the client's cuts are kept
+  against the claim) and paid. Printable bill with the measurement annex, Excel export, and approval from the site app.
 - Edit and resubmit: a rejected or changes-requested entry is fixed in place (web drawer or site app)
   and sent back for approval with the reviewer's note shown alongside the form.
 - Dashboards: company (projects, contract value, pending approvals, delayed activities, DPRs
@@ -155,5 +159,5 @@ pnpm --filter @erp/api prisma studio
 
 ## Not in the MVP (next phases)
 
-See `docs/ROADMAP.md` (v3): RA bills from the measurement book, receivables, purchase orders,
+See `docs/ROADMAP.md` (v3): receivables, purchase orders,
 subcontractor bills, payables, the Tally export, quality, people and reach.

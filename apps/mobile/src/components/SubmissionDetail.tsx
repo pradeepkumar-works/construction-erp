@@ -88,9 +88,21 @@ const DECISIONS: { decision: ReviewDecision; label: string; variant: 'success' |
   { decision: 'REJECT', label: 'Reject', variant: 'danger', icon: 'close' },
 ];
 
-const EDIT_PATH: Record<SubmissionType, string> = { PROGRESS: '/progress/new', DPR: '/dpr/new', MATERIAL_REQUEST: '/material-request/new', MACHINERY: '/machinery/new', EXPENSE: '/expense/new', MEASUREMENT: '/measurement/new' };
+/** Entry forms on the phone; RA bills are prepared on the web. */
+const EDIT_PATH: Partial<Record<SubmissionType, string>> = { PROGRESS: '/progress/new', DPR: '/dpr/new', MATERIAL_REQUEST: '/material-request/new', MACHINERY: '/machinery/new', EXPENSE: '/expense/new', MEASUREMENT: '/measurement/new' };
 
-const REVIEW_PATH: Record<SubmissionType, string> = { PROGRESS: 'progress', DPR: 'dpr', MATERIAL_REQUEST: 'material_request', MACHINERY: 'machinery', EXPENSE: 'expense', MEASUREMENT: 'measurement' };
+const REVIEW_PATH: Record<SubmissionType, string> = { PROGRESS: 'progress', DPR: 'dpr', MATERIAL_REQUEST: 'material_request', MACHINERY: 'machinery', EXPENSE: 'expense', MEASUREMENT: 'measurement', BILL: 'bill' };
+
+/** The detail endpoint each type is read back from after a review. */
+const DETAIL_API: Record<SubmissionType, string> = {
+  PROGRESS: 'progress',
+  DPR: 'dpr',
+  MATERIAL_REQUEST: 'material-requests',
+  MACHINERY: 'machinery-logs',
+  EXPENSE: 'expenses',
+  MEASUREMENT: 'measurements',
+  BILL: 'ra-bills',
+};
 
 /** Approve / request changes / reject with an optional note. Rendered only for approvers on SUBMITTED entries. */
 export function ReviewActions<T extends SubmissionBase>({ type, item, onReviewed }: { type: SubmissionType; item: T; onReviewed: (updated: T) => void }) {
@@ -101,8 +113,8 @@ export function ReviewActions<T extends SubmissionBase>({ type, item, onReviewed
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const known = item as unknown as { totalAmount?: string; amount?: string };
-  const amount = type === 'EXPENSE' ? known.totalAmount : type === 'MEASUREMENT' ? known.amount : undefined;
+  const known = item as unknown as { totalAmount?: string; amount?: string; grossAmount?: string };
+  const amount = type === 'EXPENSE' ? known.totalAmount : type === 'MEASUREMENT' ? known.amount : type === 'BILL' ? known.grossAmount : undefined;
   if (!user || !mayApproveType(user, type, amount) || item.status !== 'SUBMITTED') return null;
   const meta = DECISIONS.find((d) => d.decision === pending);
 
@@ -112,8 +124,7 @@ export function ReviewActions<T extends SubmissionBase>({ type, item, onReviewed
     setError(null);
     try {
       await api.post(`/approvals/${REVIEW_PATH[type]}/${item.id}/review`, { decision: pending, note: note.trim() || undefined });
-      const detailPath = type === 'PROGRESS' ? 'progress' : type === 'DPR' ? 'dpr' : 'material-requests';
-      const updated = await api.get<T>(`/${detailPath}/${item.id}`);
+      const updated = await api.get<T>(`/${DETAIL_API[type]}/${item.id}`);
       setPending(null);
       setNote('');
       onReviewed(updated);
@@ -157,7 +168,8 @@ export function ReviewActions<T extends SubmissionBase>({ type, item, onReviewed
 export function SubmitterActions({ type, item }: { type: SubmissionType; item: SubmissionBase }) {
   const { user } = useAuth();
   const router = useRouter();
-  if (!user || !canEditSubmission(user, item) || !canResubmit(user, item)) return null;
+  const path = EDIT_PATH[type];
+  if (!user || !path || !canEditSubmission(user, item) || !canResubmit(user, item)) return null;
   const draft = item.status === 'DRAFT';
   const hint = draft
     ? 'This entry has not been sent for approval yet.'
@@ -167,7 +179,7 @@ export function SubmitterActions({ type, item }: { type: SubmissionType; item: S
   return (
     <Card title={draft ? 'Draft' : 'Needs your attention'}>
       <Text style={[typography.caption, styles.reviewHint]}>{hint}</Text>
-      <Button title={draft ? 'Edit and submit' : 'Edit and resubmit'} icon="create-outline" onPress={() => router.push({ pathname: EDIT_PATH[type], params: { editId: item.id } })} />
+      <Button title={draft ? 'Edit and submit' : 'Edit and resubmit'} icon="create-outline" onPress={() => router.push({ pathname: path, params: { editId: item.id } })} />
     </Card>
   );
 }

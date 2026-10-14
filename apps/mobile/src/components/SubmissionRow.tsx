@@ -15,6 +15,7 @@ export const TYPE_ICON: Record<EntryType, keyof typeof Ionicons.glyphMap> = {
   MACHINERY: 'construct',
   EXPENSE: 'wallet',
   MEASUREMENT: 'resize',
+  BILL: 'receipt',
   ATTENDANCE: 'people',
   RISK: 'alert-circle',
 };
@@ -26,6 +27,7 @@ export const TYPE_SHORT: Record<EntryType, string> = {
   MACHINERY: 'Machinery',
   EXPENSE: 'Expense',
   MEASUREMENT: 'Measurement',
+  BILL: 'RA bill',
   ATTENDANCE: 'Attendance',
   RISK: 'Delay / risk',
 };

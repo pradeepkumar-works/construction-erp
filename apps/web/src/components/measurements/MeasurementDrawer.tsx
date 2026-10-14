@@ -55,6 +55,7 @@ export function MeasurementDrawer({ id, open, onClose, onEdit }: { id: string | 
               { key: 'loc', label: 'Location', children: data.location },
               { key: 'qty', label: 'Quantity', children: <strong>{`${formatQty(data.totalQty)} ${data.unit}`}</strong> },
               { key: 'amount', label: `Value at ${formatINR(data.rate, true)} / ${data.unit}`, children: <strong>{formatINR(data.amount, true)}</strong> },
+              ...(data.raBillNo !== null ? [{ key: 'bill', label: 'Billed in', children: `RA bill ${data.raBillNo}`, span: 2 }] : []),
               { key: 'remarks', label: 'Remarks', children: data.remarks ?? '-', span: 2 },
               ...submissionMetaItems(data).filter((i) => i.key !== 'status').map((i) => ({ ...i, span: 2 })),
             ]}

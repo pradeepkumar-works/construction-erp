@@ -144,11 +144,17 @@ relative to a v2 item (S about one, M about two, L about three). The full draft 
     Billing → Clients page; per project the agreement, value and dates, and the retention, security deposit,
     advance recovery, TDS, GST TDS, labour cess and GST percentages bills use, edited on a Contract tab. A delay
     records the days of extension granted (`eotGrantedDays`), which move the contract's completion date.
-18. **RA bills** (L). Bill N per project from approved measurements: per BOQ item up to previous / this bill /
+18. ~~**RA bills** (L). Bill N per project from approved measurements: per BOQ item up to previous / this bill /
     up to date quantity and amount, quantities beyond the BOQ flagged as deviation or extra item, deductions
     (retention, advance recovery, TDS, labour cess, security deposit) and GST as per-project settings. A seventh
     submission type (`BILL`) through the lifecycle and the approval matrix, then sent → certified (client's
-    certified quantity per item) → paid. Abstract + measurement print view; measurements lock once billed.
+    certified quantity per item) → paid. Abstract + measurement print view; measurements lock once billed.~~
+    Done: `RaBill` takes the approved measurements up to a date that no earlier bill took, with the abstract per
+    BOQ item, GST and the contract deductions (advance recovery capped at the advance outstanding, plus an "other"
+    deduction); one open bill per project; `BILL` in the lifecycle and approval matrix (seed: management any amount,
+    PM up to ₹50 lakh); then sent → certified (quantity cuts re-price the bill, keep the claim and come back in the
+    next bill) → paid. Billing → RA Bills, a project tab, the print view with measurement annex, Excel export and a
+    read-and-approve screen in the site app.
 19. **Receivables** (M). Receipts against certified bills (amount, date, UTR, deductions actually made), ageing
     per client and project, retention held and its release date, a dashboard tile, cash in on the cost view.
 

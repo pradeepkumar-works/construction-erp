@@ -19,7 +19,7 @@ export class ApprovalsController {
     return this.lifecycle.pending(user);
   }
 
-  /** Generic review endpoint: type is PROGRESS | DPR | MATERIAL_REQUEST | MACHINERY | EXPENSE | MEASUREMENT. */
+  /** Generic review endpoint: type is PROGRESS | DPR | MATERIAL_REQUEST | MACHINERY | EXPENSE | MEASUREMENT | BILL. */
   @Post(':type/:id/review')
   async review(@CurrentUser() user: RequestUser, @Param('type') type: string, @Param('id') id: string, @Body() dto: ReviewDto) {
     const t = type.toUpperCase() as SubmissionType;

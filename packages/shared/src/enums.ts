@@ -15,7 +15,7 @@ export type ReviewDecision = (typeof REVIEW_DECISIONS)[number];
 export const MATERIAL_PRIORITIES = ['LOW', 'NORMAL', 'HIGH', 'URGENT'] as const;
 export type MaterialPriority = (typeof MATERIAL_PRIORITIES)[number];
 
-export const SUBMISSION_TYPES = ['PROGRESS', 'DPR', 'MATERIAL_REQUEST', 'MACHINERY', 'EXPENSE', 'MEASUREMENT'] as const;
+export const SUBMISSION_TYPES = ['PROGRESS', 'DPR', 'MATERIAL_REQUEST', 'MACHINERY', 'EXPENSE', 'MEASUREMENT', 'BILL'] as const;
 export type SubmissionType = (typeof SUBMISSION_TYPES)[number];
 
 export const ROLE_KEYS = [
@@ -85,3 +85,7 @@ export type DelayParty = (typeof DELAY_PARTIES)[number];
 /** Why a set-password link was made: an invited user's first password, or a forgotten one. */
 export const PASSWORD_TOKEN_PURPOSES = ['INVITE', 'RESET'] as const;
 export type PasswordTokenPurpose = (typeof PASSWORD_TOKEN_PURPOSES)[number];
+
+/** Where an approved RA bill is with the client. */
+export const BILL_STAGES = ['NOT_SENT', 'SENT', 'CERTIFIED', 'PAID'] as const;
+export type BillStage = (typeof BILL_STAGES)[number];

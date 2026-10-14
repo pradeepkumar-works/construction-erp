@@ -28,9 +28,10 @@ import {
   PartitionOutlined,
   SafetyCertificateOutlined,
   BankOutlined,
+  FileDoneOutlined,
 } from '@ant-design/icons';
 import type { AuthUser } from '@erp/shared';
-import { canEditContract, canEditProjects, canManageUsers, canViewContract, canViewCost, mayApprove } from '@erp/shared';
+import { approvalRightsOf, canEditContract, canEditProjects, canManageUsers, canPrepareBill, canViewContract, canViewCost, mayApprove } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { usePendingApprovals } from '@/lib/queries';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
@@ -107,7 +108,10 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
       },
       {
         title: 'Billing',
-        items: [...(canViewContract(user.roleKey) || canEditContract(user.roleKey) ? [link('/clients', 'Clients', BankOutlined)] : [])],
+        items: [
+          ...(canPrepareBill(user.roleKey) || approvalRightsOf(user).some((r) => r.type === 'BILL') ? [link('/bills', 'RA Bills', FileDoneOutlined)] : []),
+          ...(canViewContract(user.roleKey) || canEditContract(user.roleKey) ? [link('/clients', 'Clients', BankOutlined)] : []),
+        ],
       },
       {
         title: 'Reports',

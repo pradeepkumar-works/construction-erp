@@ -3,6 +3,7 @@ import Constants, { ExecutionEnvironment } from 'expo-constants';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import type { PushPlatform } from '@erp/shared';
+import { OUTBOX_DETAIL } from '../offline/types';
 
 export type PushStatus =
   /** Token obtained and ready to be registered with the API. */
@@ -70,7 +71,7 @@ export function notificationRoute(data: Record<string, unknown> | undefined): st
   const entityType = data?.entityType as string | undefined;
   const entityId = data?.entityId as string | undefined;
   if (entityType && entityId) {
-    const path = entityType === 'PROGRESS' ? '/progress/' : entityType === 'DPR' ? '/dpr/' : entityType === 'MATERIAL_REQUEST' ? '/material-request/' : entityType === 'MACHINERY' ? '/machinery/' : entityType === 'EXPENSE' ? '/expense/' : entityType === 'MEASUREMENT' ? '/measurement/' : null;
+    const path = (OUTBOX_DETAIL as Record<string, string | undefined>)[entityType];
     if (path) return `${path}${entityId}`;
   }
   if (data?.type === 'RISK_RAISED' && entityId) return `/risk/${entityId}`;

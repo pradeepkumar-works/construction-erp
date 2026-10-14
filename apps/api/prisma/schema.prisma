@@ -143,6 +143,14 @@ enum PasswordTokenPurpose {
   RESET
 }
 
+/// Where an approved RA bill is with the client: prepared and approved (NOT_SENT), sent, certified, paid.
+enum BillStage {
+  NOT_SENT
+  SENT
+  CERTIFIED
+  PAID
+}
+
 enum PushPlatform {
   IOS
   ANDROID
@@ -184,6 +192,7 @@ model Organization {
   measurements      MeasurementSheet[]
   labourRates       LabourRate[]
   clients           Client[]
+  raBills           RaBill[]
 }
 
 model Role {
@@ -209,7 +218,7 @@ model ApprovalRule {
   organization   Organization @relation(fields: [organizationId], references: [id])
   roleId         String
   role           Role         @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  /// SubmissionType: PROGRESS | DPR | MATERIAL_REQUEST | MACHINERY | EXPENSE | MEASUREMENT
+  /// SubmissionType: PROGRESS | DPR | MATERIAL_REQUEST | MACHINERY | EXPENSE | MEASUREMENT | BILL
   submissionType String
   maxAmount      Decimal?     @db.Decimal(18, 2)
   createdAt      DateTime     @default(now())
@@ -259,6 +268,8 @@ model User {
   reviewedExpenses    Expense[]          @relation("ExpenseReviewer")
   submittedMeasures   MeasurementSheet[] @relation("MeasurementSubmitter")
   reviewedMeasures    MeasurementSheet[] @relation("MeasurementReviewer")
+  submittedBills      RaBill[]           @relation("BillSubmitter")
+  reviewedBills       RaBill[]           @relation("BillReviewer")
   raisedRisks         Risk[]             @relation("RiskRaiser")
   ownedRisks          Risk[]             @relation("RiskOwner")
 
@@ -330,6 +341,7 @@ model Project {
   expenses         Expense[]
   risks            Risk[]
   measurements     MeasurementSheet[]
+  raBills          RaBill[]
 
   @@unique([organizationId, code])
   @@index([organizationId, status])
@@ -392,6 +404,7 @@ model BoqItem {
 
   activities   Activity[]
   measurements MeasurementSheet[]
+  billItems    RaBillItem[]
 
   @@unique([projectId, itemNo])
   @@index([organizationId])
@@ -889,6 +902,9 @@ model MeasurementSheet {
   reviewedBy     User?            @relation("MeasurementReviewer", fields: [reviewedById], references: [id])
   reviewedAt     DateTime?
   reviewNote     String?
+  /// The RA bill this measurement was billed in (set when a bill takes it; it cannot go into another bill)
+  raBillId       String?
+  raBill         RaBill?          @relation(fields: [raBillId], references: [id], onDelete: SetNull)
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
 
@@ -916,6 +932,99 @@ model MeasurementLine {
   sortOrder   Int              @default(0)
 
   @@index([sheetId])
+}
+
+/// Running account (RA) bill N of a project to its client, built from approved measurements (v3 item 18).
+/// A submission like the others (six status columns, approval matrix); once approved it is sent, certified, paid.
+/// Amounts are on the claimed quantities until the client certifies, then on the certified ones (claimed* keep the claim).
+model RaBill {
+  id                    String           @id @default(uuid())
+  organizationId        String
+  organization          Organization     @relation(fields: [organizationId], references: [id])
+  projectId             String
+  project               Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  /// 1, 2, 3 ... per project
+  billNo                Int
+  isFinal               Boolean          @default(false)
+  billDate              DateTime         @db.Date
+  /// Approved measurements dated up to this day and not in an earlier bill are billed
+  measuredUpTo          DateTime         @db.Date
+  remarks               String?
+  /// Value of work up to the previous bill / in this bill (taxable) / up to date
+  grossPrevious         Decimal          @db.Decimal(18, 2)
+  grossAmount           Decimal          @db.Decimal(18, 2)
+  grossUpto             Decimal          @db.Decimal(18, 2)
+  gstRate               Decimal          @db.Decimal(5, 2)
+  gstAmount             Decimal          @db.Decimal(18, 2)
+  // Contract percentages taken when the bill was prepared, and the deductions they give
+  retentionPct          Decimal          @db.Decimal(5, 2)
+  securityDepositPct    Decimal          @db.Decimal(5, 2)
+  advanceRecoveryPct    Decimal          @db.Decimal(5, 2)
+  tdsPct                Decimal          @db.Decimal(5, 2)
+  gstTdsPct             Decimal          @db.Decimal(5, 2)
+  labourCessPct         Decimal          @db.Decimal(5, 2)
+  retentionAmount       Decimal          @db.Decimal(18, 2)
+  securityDepositAmount Decimal          @db.Decimal(18, 2)
+  advanceRecoveryAmount Decimal          @db.Decimal(18, 2)
+  tdsAmount             Decimal          @db.Decimal(18, 2)
+  gstTdsAmount          Decimal          @db.Decimal(18, 2)
+  labourCessAmount      Decimal          @db.Decimal(18, 2)
+  otherDeduction        Decimal          @default(0) @db.Decimal(18, 2)
+  otherDeductionNote    String?
+  totalDeductions       Decimal          @db.Decimal(18, 2)
+  /// gross + GST - deductions
+  netPayable            Decimal          @db.Decimal(18, 2)
+  /// What was claimed, kept when the client certifies a different amount
+  claimedGross          Decimal?         @db.Decimal(18, 2)
+  claimedNet            Decimal?         @db.Decimal(18, 2)
+  stage                 BillStage        @default(NOT_SENT)
+  sentDate              DateTime?        @db.Date
+  certifiedDate         DateTime?        @db.Date
+  /// The client's certificate / measurement check reference
+  certificateNo         String?
+  paidDate              DateTime?        @db.Date
+  status                SubmissionStatus @default(DRAFT)
+  submittedById         String
+  submittedBy           User             @relation("BillSubmitter", fields: [submittedById], references: [id])
+  submittedAt           DateTime?
+  reviewedById          String?
+  reviewedBy            User?            @relation("BillReviewer", fields: [reviewedById], references: [id])
+  reviewedAt            DateTime?
+  reviewNote            String?
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+
+  items        RaBillItem[]
+  measurements MeasurementSheet[]
+  attachments  Attachment[]
+
+  @@unique([projectId, billNo])
+  @@index([organizationId, status])
+  @@index([projectId, status])
+}
+
+/// One BOQ item on an RA bill: quantity up to the previous bill, in this bill and up to date, at the BOQ rate.
+model RaBillItem {
+  id           String   @id @default(uuid())
+  billId       String
+  bill         RaBill   @relation(fields: [billId], references: [id], onDelete: Cascade)
+  boqItemId    String
+  boqItem      BoqItem  @relation(fields: [boqItemId], references: [id], onDelete: Restrict)
+  /// BOQ quantity (revised, else original) and rate when the bill was prepared
+  boqQty       Decimal  @db.Decimal(18, 3)
+  rate         Decimal  @db.Decimal(18, 2)
+  prevQty      Decimal  @db.Decimal(18, 3)
+  /// Claimed in this bill (up to date measured - previous bills)
+  thisQty      Decimal  @db.Decimal(18, 3)
+  uptoQty      Decimal  @db.Decimal(18, 3)
+  /// This bill's quantity as the client certified it (null until certified)
+  certifiedQty Decimal? @db.Decimal(18, 3)
+  /// (certifiedQty ?? thisQty) × rate
+  amount       Decimal  @db.Decimal(18, 2)
+  sortOrder    Int      @default(0)
+
+  @@unique([billId, boqItemId])
+  @@index([boqItemId])
 }
 
 model Attachment {
@@ -947,6 +1056,8 @@ model Attachment {
   measurement       MeasurementSheet? @relation(fields: [measurementId], references: [id], onDelete: Cascade)
   riskId            String?
   risk              Risk?             @relation(fields: [riskId], references: [id], onDelete: Cascade)
+  raBillId          String?
+  raBill            RaBill?           @relation(fields: [raBillId], references: [id], onDelete: Cascade)
   createdAt         DateTime          @default(now())
 
   @@index([organizationId])

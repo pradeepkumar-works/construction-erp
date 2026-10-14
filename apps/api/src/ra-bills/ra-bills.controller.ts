@@ -1,0 +1,71 @@
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { CurrentUser, RequestUser } from '../common/current-user';
+import { RaBillsService } from './ra-bills.service';
+import { BillDateDto, CertifyBillDto, CreateRaBillDto, ListRaBillsQuery, UpdateRaBillDto } from './ra-bills.dto';
+
+@ApiTags('ra-bills')
+@ApiBearerAuth()
+@Controller('ra-bills')
+export class RaBillsController {
+  constructor(private bills: RaBillsService) {}
+
+  @ApiOperation({ summary: 'RA bills (paged)', description: 'Billing roles, and roles the approval matrix lets approve bills.' })
+  @Get()
+  list(@CurrentUser() user: RequestUser, @Query() q: ListRaBillsQuery) {
+    return this.bills.list(user, q);
+  }
+
+  @ApiOperation({ summary: 'An RA bill with its abstract, deductions and the measurements it bills' })
+  @Get(':id')
+  get(@CurrentUser() user: RequestUser, @Param('id') id: string) {
+    return this.bills.get(user, id);
+  }
+
+  @ApiOperation({
+    summary: 'Prepare the next RA bill of a project',
+    description:
+      'Takes the approved measurements dated up to `measuredUpTo` that no earlier bill took, priced at the BOQ rates, with GST and the ' +
+      'contract deductions. Refused while another bill of the project is not approved. Saved as a draft unless `submit: true`.',
+  })
+  @Post()
+  create(@CurrentUser() user: RequestUser, @Body() dto: CreateRaBillDto) {
+    return this.bills.create(user, dto);
+  }
+
+  @ApiOperation({ summary: 'Edit a bill that is not approved', description: 'Re-takes the measurements and re-prices the bill. `submit: true` submits it.' })
+  @Patch(':id')
+  update(@CurrentUser() user: RequestUser, @Param('id') id: string, @Body() dto: UpdateRaBillDto) {
+    return this.bills.update(user, id, dto);
+  }
+
+  @ApiOperation({ summary: 'Submit or resubmit a bill for approval', description: 'Measurements approved since the bill was prepared are taken in first.' })
+  @Post(':id/submit')
+  submit(@CurrentUser() user: RequestUser, @Param('id') id: string) {
+    return this.bills.submit(user, id);
+  }
+
+  @ApiOperation({ summary: 'Record an approved bill as sent to the client' })
+  @Post(':id/send')
+  send(@CurrentUser() user: RequestUser, @Param('id') id: string, @Body() dto: BillDateDto) {
+    return this.bills.send(user, id, dto);
+  }
+
+  @ApiOperation({ summary: 'Record the client’s certificate', description: 'List only the items the client cut; the rest pass as claimed. Can be repeated to correct it.' })
+  @Post(':id/certify')
+  certify(@CurrentUser() user: RequestUser, @Param('id') id: string, @Body() dto: CertifyBillDto) {
+    return this.bills.certify(user, id, dto);
+  }
+
+  @ApiOperation({ summary: 'Record a sent or certified bill as paid' })
+  @Post(':id/paid')
+  paid(@CurrentUser() user: RequestUser, @Param('id') id: string, @Body() dto: BillDateDto) {
+    return this.bills.paid(user, id, dto);
+  }
+
+  @ApiOperation({ summary: 'Delete a bill that is not approved', description: 'Its measurements become billable again.' })
+  @Delete(':id')
+  remove(@CurrentUser() user: RequestUser, @Param('id') id: string) {
+    return this.bills.remove(user, id);
+  }
+}

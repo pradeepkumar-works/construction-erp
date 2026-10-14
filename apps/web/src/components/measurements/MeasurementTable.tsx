@@ -63,7 +63,23 @@ export function MeasurementTable({
     },
     { title: 'Value', dataIndex: 'amount', width: 140, align: 'right', render: (v) => <span className="mono">{formatINR(v)}</span> },
     { title: 'Submitted by', dataIndex: 'submittedByName', width: 140, ...sort('submittedBy') },
-    { title: 'Status', fixed: 'right' as const, dataIndex: 'status', width: 140, render: (s) => <StatusTag status={s} />, ...sort('status') },
+    {
+      title: 'Status',
+      fixed: 'right' as const,
+      dataIndex: 'status',
+      width: 140,
+      ...sort('status'),
+      render: (s, r) => (
+        <div>
+          <StatusTag status={s} />
+          {r.raBillNo !== null && (
+            <div className="text-muted" style={{ fontSize: 12 }}>
+              in RA bill {r.raBillNo}
+            </div>
+          )}
+        </div>
+      ),
+    },
     {
       title: '',
       key: 'actions',

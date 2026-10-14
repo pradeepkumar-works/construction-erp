@@ -1,0 +1,342 @@
+'use client';
+
+import React, { useState } from 'react';
+import Link from 'next/link';
+import { Alert, App, Button, Card, DatePicker, Descriptions, Divider, Drawer, Form, Input, InputNumber, Modal, Popconfirm, Skeleton, Space, Table, Tag, Typography } from 'antd';
+import { PrinterOutlined } from '@ant-design/icons';
+import dayjs from 'dayjs';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { RaBillDto, RaBillItemDto } from '@erp/shared';
+import { GST_STATES, canEditSubmission, canPrepareBill, canResubmit } from '@erp/shared';
+import { api, errorMessage } from '@/lib/api';
+import { useAuth } from '@/lib/auth';
+import { useBill } from '@/lib/queries';
+import { formatDate, formatINR, formatQty, toNumber } from '@/lib/format';
+import { QueryError } from '@/components/common/QueryState';
+import { StatusTag } from '@/components/common/StatusTag';
+import { AttachmentGallery } from '@/components/common/AttachmentGallery';
+import { AuditTrail } from '@/components/common/AuditTrail';
+import { ReviewActions } from '@/components/common/ReviewActions';
+import { EditResubmitButton } from '@/components/common/EditResubmitButton';
+import { submissionMetaItems } from '@/components/common/SubmitterInfo';
+import { BillStageTag } from './billUi';
+import { openBillPrint } from './billPrint';
+
+type StageAction = 'send' | 'certify' | 'paid';
+const ACTION_TITLES: Record<StageAction, string> = { send: 'Record as sent to the client', certify: 'Record the client’s certificate', paid: 'Record as paid' };
+
+const money = (v: string) => <span className="mono">{formatINR(v, true)}</span>;
+
+function Row({ label, value, strong, muted }: { label: React.ReactNode; value: string; strong?: boolean; muted?: boolean }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '3px 0', fontWeight: strong ? 600 : undefined, color: muted ? 'rgba(0,0,0,0.55)' : undefined }}>
+      <span>{label}</span>
+      {money(value)}
+    </div>
+  );
+}
+
+/** An RA bill: abstract, deductions, the measurements it bills, approval and where it is with the client. */
+export function BillDrawer({ id, open, onClose, onEdit }: { id: string | null; open: boolean; onClose: () => void; onEdit?: (b: RaBillDto) => void }) {
+  const { user } = useAuth();
+  const { message } = App.useApp();
+  const qc = useQueryClient();
+  const { data, isLoading, error, refetch } = useBill(id ?? undefined);
+  const [action, setAction] = useState<StageAction | null>(null);
+  const [form] = Form.useForm<{ date: dayjs.Dayjs; certificateNo?: string; qty: Record<string, number | null> }>();
+  const preparer = !!user && canPrepareBill(user.roleKey);
+
+  const done = (text: string) => {
+    message.success(text);
+    qc.invalidateQueries({ queryKey: ['bills'] });
+    qc.invalidateQueries({ queryKey: ['measurements'] });
+  };
+  const stage = useMutation({
+    mutationFn: async ({ act, body }: { act: StageAction; body: object }) => (await api.post<RaBillDto>(`/ra-bills/${id}/${act}`, body)).data,
+    onSuccess: (b, { act }) => {
+      done(act === 'send' ? `${b.billLabel} recorded as sent` : act === 'certify' ? `${b.billLabel} certified for ${formatINR(b.netPayable, true)} net` : `${b.billLabel} recorded as paid`);
+      setAction(null);
+    },
+    onError: (e) => message.error(errorMessage(e)),
+  });
+  const submit = useMutation({
+    mutationFn: async () => (await api.post<RaBillDto>(`/ra-bills/${id}/submit`)).data,
+    onSuccess: (b) => done(`${b.billLabel} submitted for approval`),
+    onError: (e) => message.error(errorMessage(e)),
+  });
+  const remove = useMutation({
+    mutationFn: async () => (await api.delete(`/ra-bills/${id}`)).data,
+    onSuccess: () => {
+      done('Bill deleted. Its measurements can be billed again.');
+      onClose();
+    },
+    onError: (e) => message.error(errorMessage(e)),
+  });
+
+  const openAction = (act: StageAction, b: RaBillDto) => {
+    form.resetFields();
+    form.setFieldsValue({
+      date: dayjs(),
+      certificateNo: b.certificateNo ?? undefined,
+      qty: Object.fromEntries(b.items.map((i) => [i.boqItemId, toNumber(i.certifiedQty ?? i.thisQty)])),
+    });
+    setAction(act);
+  };
+  const confirmAction = async () => {
+    if (!action || !data) return;
+    const v = await form.validateFields();
+    const date = v.date.format('YYYY-MM-DD');
+    if (action !== 'certify') return stage.mutate({ act: action, body: { date } });
+    const items = data.items
+      .filter((i) => v.qty?.[i.boqItemId] !== undefined && v.qty[i.boqItemId] !== null && v.qty[i.boqItemId] !== toNumber(i.thisQty))
+      .map((i) => ({ boqItemId: i.boqItemId, certifiedQty: String(v.qty[i.boqItemId]) }));
+    stage.mutate({ act: 'certify', body: { date, certificateNo: v.certificateNo?.trim() || null, items } });
+  };
+
+  const editable = !!data && !!user && preparer && canEditSubmission(user, data);
+  const approved = data?.status === 'APPROVED';
+  const certified = !!data?.items.some((i) => i.certifiedQty !== null);
+
+  return (
+    <Drawer
+      open={open}
+      onClose={onClose}
+      width={1000}
+      title={
+        data ? (
+          <Space wrap>
+            {data.billLabel} <StatusTag status={data.status} /> {approved && <BillStageTag stage={data.stage} />}
+          </Space>
+        ) : (
+          'RA bill'
+        )
+      }
+      extra={
+        data ? (
+          <Space wrap>
+            <Button size="small" icon={<PrinterOutlined />} onClick={() => !openBillPrint(data, user?.organizationName ?? '') && message.warning('Pop-up blocked. Allow pop-ups to print the bill.')}>
+              Print
+            </Button>
+            {editable && data.status === 'DRAFT' && user && canResubmit(user, data) ? (
+              <Button size="small" type="primary" loading={submit.isPending} onClick={() => submit.mutate()}>
+                Submit for approval
+              </Button>
+            ) : null}
+            {editable && data.status === 'DRAFT' ? (
+              <Button size="small" onClick={() => onEdit?.(data)}>
+                Edit
+              </Button>
+            ) : (
+              preparer && <EditResubmitButton entry={data} onEdit={onEdit} size="small" />
+            )}
+            <ReviewActions type="bill" id={data.id} status={data.status} amount={data.grossAmount} size="small" />
+            {approved && preparer && (data.stage === 'NOT_SENT' || data.stage === 'SENT') ? (
+              <Button size="small" type={data.stage === 'NOT_SENT' ? 'primary' : 'default'} onClick={() => openAction('send', data)}>
+                {data.stage === 'NOT_SENT' ? 'Mark sent' : 'Change date sent'}
+              </Button>
+            ) : null}
+            {approved && preparer && (data.stage === 'SENT' || data.stage === 'CERTIFIED') ? (
+              <Button size="small" type={data.stage === 'SENT' ? 'primary' : 'default'} onClick={() => openAction('certify', data)}>
+                {data.stage === 'SENT' ? 'Record certificate' : 'Correct certificate'}
+              </Button>
+            ) : null}
+            {approved && preparer && (data.stage === 'SENT' || data.stage === 'CERTIFIED') ? (
+              <Button size="small" onClick={() => openAction('paid', data)}>
+                Mark paid
+              </Button>
+            ) : null}
+            {editable ? (
+              <Popconfirm title="Delete this bill?" description="Its measurements become billable again." onConfirm={() => remove.mutate()}>
+                <Button size="small" danger loading={remove.isPending}>
+                  Delete
+                </Button>
+              </Popconfirm>
+            ) : null}
+          </Space>
+        ) : null
+      }
+      destroyOnHidden
+    >
+      {isLoading && <Skeleton active />}
+      {error && <QueryError error={error} onRetry={() => refetch()} />}
+      {data && (
+        <>
+          {data.status === 'DRAFT' && (
+            <Alert
+              type="info"
+              showIcon
+              style={{ marginBottom: 12 }}
+              title="Draft: check the abstract, then submit it for approval. Measurements approved in the meantime are added when it is submitted."
+            />
+          )}
+          <Descriptions
+            size="small"
+            column={{ xs: 1, sm: 2, lg: 3 }}
+            bordered
+            items={[
+              { key: 'project', label: 'Project', children: <Link href={`/projects/${data.projectId}?tab=bills`}>{data.projectName}</Link>, span: 2 },
+              { key: 'billDate', label: 'Bill date', children: formatDate(data.billDate) },
+              {
+                key: 'client',
+                label: 'Client',
+                span: 2,
+                children: data.client ? (
+                  <span>
+                    {data.client.name}
+                    {data.client.gstin && <span className="text-muted"> · GSTIN {data.client.gstin}{data.client.stateCode ? ` (${GST_STATES[data.client.stateCode] ?? data.client.stateCode})` : ''}</span>}
+                  </span>
+                ) : (
+                  data.clientName ?? '-'
+                ),
+              },
+              { key: 'upto', label: 'Measurements up to', children: formatDate(data.measuredUpTo) },
+              { key: 'agreement', label: 'Agreement', children: data.agreementNo ? `${data.agreementNo}${data.agreementDate ? `, ${formatDate(data.agreementDate)}` : ''}` : '-' },
+              { key: 'wo', label: 'Work order', children: data.workOrderNo ?? '-' },
+              { key: 'sheets', label: 'Measurement sheets', children: data.measurementCount },
+              ...(approved
+                ? [
+                    { key: 'sent', label: 'Sent', children: data.sentDate ? formatDate(data.sentDate) : '-' },
+                    { key: 'cert', label: 'Certified', children: data.certifiedDate ? `${formatDate(data.certifiedDate)}${data.certificateNo ? ` (${data.certificateNo})` : ''}` : '-' },
+                    { key: 'paid', label: 'Paid', children: data.paidDate ? formatDate(data.paidDate) : '-' },
+                  ]
+                : []),
+              ...(data.remarks ? [{ key: 'remarks', label: 'Remarks', children: data.remarks, span: 3 }] : []),
+              ...submissionMetaItems(data).filter((i) => i.key !== 'status' && i.key !== 'project'),
+            ]}
+          />
+          <Divider titlePlacement="start" plain>
+            Abstract of cost
+          </Divider>
+          <Table<RaBillItemDto>
+            rowKey="id"
+            size="small"
+            pagination={false}
+            dataSource={data.items}
+            scroll={{ x: 1100 }}
+            columns={[
+              {
+                title: 'Item',
+                render: (_, i) => (
+                  <div>
+                    <span className="mono">{i.itemNo}</span> {i.description}
+                    {i.extraItem ? <Tag color="orange" style={{ marginLeft: 6 }}>Extra item</Tag> : toNumber(i.excessQty) > 0 ? <Tag color="red" style={{ marginLeft: 6 }}>Excess {formatQty(i.excessQty)} {i.unit}</Tag> : null}
+                  </div>
+                ),
+              },
+              { title: 'BOQ qty', dataIndex: 'boqQty', width: 100, align: 'right', render: (v, i) => <span className="mono">{formatQty(v)} {i.unit}</span> },
+              { title: 'Rate', dataIndex: 'rate', width: 100, align: 'right', render: (v) => <span className="mono">{formatINR(v, true)}</span> },
+              { title: 'Previous', dataIndex: 'prevQty', width: 90, align: 'right', render: (v) => <span className="mono">{formatQty(v)}</span> },
+              { title: 'This bill', dataIndex: 'thisQty', width: 90, align: 'right', render: (v) => <strong className="mono">{formatQty(v)}</strong> },
+              ...(certified
+                ? [{ title: 'Certified', dataIndex: 'certifiedQty', width: 90, align: 'right' as const, render: (v: string | null, i: RaBillItemDto) => <span className="mono" style={v !== null && v !== i.thisQty ? { color: '#cf1322' } : undefined}>{formatQty(v)}</span> }]
+                : []),
+              { title: 'Up to date', dataIndex: 'uptoQty', width: 100, align: 'right', render: (v) => <span className="mono">{formatQty(v)}</span> },
+              { title: 'Amount', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <strong className="mono">{formatINR(v, true)}</strong> },
+            ]}
+          />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12, marginTop: 12 }}>
+            <Card size="small" title="Bill amount">
+              <Row label="Work up to the previous bill" value={data.grossPrevious} muted />
+              <Row label="Work in this bill" value={data.grossAmount} strong />
+              <Row label="Work up to date" value={data.grossUpto} muted />
+              <Divider style={{ margin: '6px 0' }} />
+              <Row label={`GST @ ${data.gstRate}%`} value={data.gstAmount} />
+              <Row label="Less deductions" value={data.totalDeductions} />
+              <Divider style={{ margin: '6px 0' }} />
+              <Row label={<span style={{ fontSize: 15 }}>Net payable</span>} value={data.netPayable} strong />
+              {data.claimedNet !== null && (
+                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                  Claimed {formatINR(data.claimedGross, true)} of work, {formatINR(data.claimedNet, true)} net. The client passed {formatINR(toNumber(data.claimedNet) - toNumber(data.netPayable), true)} less; the quantities it cut come back in the next bill.
+                </Typography.Text>
+              )}
+            </Card>
+            <Card size="small" title="Deductions">
+              {data.deductions.length === 0 && <Typography.Text type="secondary">None</Typography.Text>}
+              {data.deductions.map((d) => (
+                <Row key={d.key} label={d.pct !== null ? `${d.label} @ ${d.pct}%` : d.label} value={d.amount} />
+              ))}
+              {data.deductions.length > 0 && (
+                <>
+                  <Divider style={{ margin: '6px 0' }} />
+                  <Row label="Total" value={data.totalDeductions} strong />
+                </>
+              )}
+            </Card>
+          </div>
+          <Divider titlePlacement="start" plain>
+            Measurements billed ({data.measurements?.length ?? 0})
+          </Divider>
+          <Table
+            rowKey="id"
+            size="small"
+            pagination={false}
+            dataSource={data.measurements ?? []}
+            columns={[
+              { title: 'MB no.', dataIndex: 'mbNo', width: 130, className: 'mono' },
+              { title: 'Date', dataIndex: 'date', width: 110, render: (v) => formatDate(v) },
+              { title: 'Item', dataIndex: 'boqItemNo', width: 80, className: 'mono' },
+              { title: 'Location', dataIndex: 'location' },
+              { title: 'Quantity', dataIndex: 'totalQty', width: 130, align: 'right', render: (v, m) => <span className="mono">{formatQty(v)} {m.unit}</span> },
+            ]}
+          />
+          <Divider titlePlacement="start" plain>
+            Documents ({data.attachments.length})
+          </Divider>
+          <AttachmentGallery attachments={data.attachments} />
+          <Divider titlePlacement="start" plain>
+            Audit trail
+          </Divider>
+          <AuditTrail type="bill" id={data.id} />
+        </>
+      )}
+      <Modal
+        open={!!action}
+        title={action ? ACTION_TITLES[action] : ''}
+        okText="Save"
+        onCancel={() => setAction(null)}
+        onOk={confirmAction}
+        confirmLoading={stage.isPending}
+        width={action === 'certify' ? 760 : 420}
+        destroyOnHidden
+      >
+        <Form form={form} layout="vertical" style={{ marginTop: 8 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: action === 'certify' ? '1fr 1fr' : '1fr', gap: '0 16px' }}>
+            <Form.Item name="date" label={action === 'send' ? 'Date sent' : action === 'certify' ? 'Certificate date' : 'Date received'} rules={[{ required: true, message: 'Required' }]}>
+              <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+            </Form.Item>
+            {action === 'certify' && (
+              <Form.Item name="certificateNo" label="Certificate / MB check reference">
+                <Input maxLength={100} placeholder="e.g. EE/RD/2026/114" />
+              </Form.Item>
+            )}
+          </div>
+          {action === 'certify' && data && (
+            <>
+              <Typography.Paragraph type="secondary">Change only the quantities the client cut. The bill is re-priced on what it passed and the claim is kept for reference.</Typography.Paragraph>
+              <Table<RaBillItemDto>
+                rowKey="boqItemId"
+                size="small"
+                pagination={false}
+                dataSource={data.items.filter((i) => toNumber(i.thisQty) > 0)}
+                columns={[
+                  { title: 'Item', render: (_, i) => <span><span className="mono">{i.itemNo}</span> {i.description}</span> },
+                  { title: 'Claimed', dataIndex: 'thisQty', width: 120, align: 'right', render: (v, i) => <span className="mono">{formatQty(v)} {i.unit}</span> },
+                  {
+                    title: 'Certified',
+                    width: 150,
+                    render: (_, i) => (
+                      <Form.Item name={['qty', i.boqItemId]} noStyle rules={[{ required: true }]}>
+                        <InputNumber style={{ width: '100%' }} min={0} max={toNumber(i.thisQty)} precision={3} aria-label={`Certified quantity of ${i.itemNo}`} />
+                      </Form.Item>
+                    ),
+                  },
+                ]}
+              />
+            </>
+          )}
+          {action === 'paid' && <Typography.Paragraph type="secondary">Record the payment once the money is in the bank. Receipts with part payments and the deductions the client actually made come with the receivables register.</Typography.Paragraph>}
+        </Form>
+      </Modal>
+    </Drawer>
+  );
+}

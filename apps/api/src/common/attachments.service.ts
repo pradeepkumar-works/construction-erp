@@ -4,7 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from './storage.service';
 import { RequestUser } from './current-user';
 
-type Parent = 'progressEntryId' | 'dailyReportId' | 'materialRequestId' | 'stockEntryId' | 'machineryLogId' | 'expenseId' | 'measurementId' | 'riskId';
+type Parent = 'progressEntryId' | 'dailyReportId' | 'materialRequestId' | 'stockEntryId' | 'machineryLogId' | 'expenseId' | 'measurementId' | 'riskId' | 'raBillId';
 
 @Injectable()
 export class AttachmentsService {
@@ -18,7 +18,7 @@ export class AttachmentsService {
   async link(user: RequestUser, parent: Parent, parentId: string, attachmentIds: string[] | undefined) {
     if (!attachmentIds || attachmentIds.length === 0) return;
     await this.prisma.attachment.updateMany({
-      where: { id: { in: attachmentIds }, organizationId: user.organizationId, progressEntryId: null, dailyReportId: null, materialRequestId: null, stockEntryId: null, machineryLogId: null, expenseId: null, measurementId: null, riskId: null },
+      where: { id: { in: attachmentIds }, organizationId: user.organizationId, progressEntryId: null, dailyReportId: null, materialRequestId: null, stockEntryId: null, machineryLogId: null, expenseId: null, measurementId: null, riskId: null, raBillId: null },
       data: { [parent]: parentId },
     });
   }

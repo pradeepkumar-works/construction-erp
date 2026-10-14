@@ -66,6 +66,10 @@ export class ApprovalRightsService {
         const c = l ? machineryLogCost(l.equipment.rate?.toString() ?? null, l.equipment.rateUnit, l.hoursWorked.toString()) : null;
         return c === null ? null : new Prisma.Decimal(c).toDecimalPlaces(2);
       }
+      case 'BILL': {
+        const b = await this.prisma.raBill.findUnique({ where: { id }, select: { grossAmount: true } });
+        return b?.grossAmount ?? null;
+      }
       default:
         return null;
     }
