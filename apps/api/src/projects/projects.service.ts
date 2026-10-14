@@ -78,6 +78,7 @@ export class ProjectsService {
     const summary = await this.toSummary(p);
     return {
       ...summary,
+      clientId: p.clientId,
       consultantName: p.consultantName,
       workOrderNo: p.workOrderNo,
       description: p.description,
@@ -134,10 +135,25 @@ export class ProjectsService {
     return data;
   }
 
+  /** A client from the master sets the project's client name too; null unlinks it and keeps the name as text. */
+  private async withClient(user: RequestUser, dto: CreateProjectDto | UpdateProjectDto, data: Prisma.ProjectUpdateInput) {
+    if (dto.clientId === undefined) return;
+    if (dto.clientId === null) {
+      data.client = { disconnect: true };
+      return;
+    }
+    const client = await this.prisma.client.findFirst({ where: { id: dto.clientId, organizationId: user.organizationId }, select: { id: true, name: true } });
+    if (!client) throw new NotFoundException('Client not found');
+    data.client = { connect: { id: client.id } };
+    data.clientName = client.name;
+  }
+
   async create(user: RequestUser, dto: CreateProjectDto): Promise<ProjectDetail> {
     const dup = await this.prisma.project.findFirst({ where: { organizationId: user.organizationId, code: dto.code } });
     if (dup) throw new ConflictException(`Project code ${dto.code} already exists`);
     const data = this.toData(dto) as Prisma.ProjectCreateInput;
+    await this.withClient(user, dto, data);
+    if (dto.clientId === null) delete data.client;
     const row = await this.prisma.project.create({ data: { ...data, organization: { connect: { id: user.organizationId } } }, include: projectInclude });
     await this.audit.log(user, 'PROJECT', row.id, 'CREATED');
     if (dto.applyTemplate) await this.templates.applyUnchecked(user, row.id);
@@ -146,7 +162,9 @@ export class ProjectsService {
 
   async update(user: RequestUser, id: string, dto: UpdateProjectDto): Promise<ProjectDetail> {
     await this.access.assertCanAccessProject(user, id);
-    const row = await this.prisma.project.update({ where: { id }, data: this.toData(dto), include: projectInclude });
+    const data = this.toData(dto);
+    await this.withClient(user, dto, data);
+    const row = await this.prisma.project.update({ where: { id }, data, include: projectInclude });
     await this.audit.log(user, 'PROJECT', row.id, 'UPDATED');
     return this.toDetail(row);
   }

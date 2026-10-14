@@ -18,6 +18,8 @@ import { ReportsModule } from './reports/reports.module';
 import { RisksModule } from './risks/risks.module';
 import { TemplatesModule } from './templates/templates.module';
 import { MeasurementsModule } from './measurements/measurements.module';
+import { ClientsModule } from './clients/clients.module';
+import { ContractsModule } from './contracts/contracts.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { MaterialRequestsModule } from './material-requests/material-requests.module';
 import { ApprovalsModule } from './approvals/approvals.module';
@@ -43,6 +45,8 @@ import { HealthController } from './health.controller';
     MachineryModule,
     ExpensesModule,
     MeasurementsModule,
+    ClientsModule,
+    ContractsModule,
     CostModule,
     ReportsModule,
     RisksModule,

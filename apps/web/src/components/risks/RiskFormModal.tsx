@@ -28,6 +28,7 @@ interface FormValues {
   daysLost?: number | null;
   responsibleParty?: DelayParty;
   eotClaimed?: boolean;
+  eotGrantedDays?: number | null;
   status?: RiskStatus;
   closureNote?: string;
   photos?: AttachmentDto[];
@@ -61,6 +62,7 @@ export function RiskFormModal({ open, onClose, projectId, risk, prefill }: { ope
   const delayStart = Form.useWatch('delayStart', form);
   const delayEnd = Form.useWatch('delayEnd', form);
   const status = Form.useWatch('status', form);
+  const eotClaimed = Form.useWatch('eotClaimed', form);
   const isDelay = kind === 'DELAY';
   const score = probability && impact ? riskScore(probability, impact) : null;
   const counted = isDelay ? delayDays(ymd(delayStart), ymd(delayEnd), dayjs().format('YYYY-MM-DD')) : null;
@@ -97,6 +99,7 @@ export function RiskFormModal({ open, onClose, projectId, risk, prefill }: { ope
         daysLost: risk.kind === 'DELAY' && risk.daysLost !== delayDays(risk.delayStart, risk.delayEnd, dayjs().format('YYYY-MM-DD')) ? risk.daysLost : null,
         responsibleParty: risk.responsibleParty ?? undefined,
         eotClaimed: risk.eotClaimed,
+        eotGrantedDays: risk.eotGrantedDays,
         status: risk.status,
         closureNote: risk.closureNote ?? undefined,
         photos: risk.attachments,
@@ -136,6 +139,7 @@ export function RiskFormModal({ open, onClose, projectId, risk, prefill }: { ope
         daysLost: delay && v.daysLost !== undefined && v.daysLost !== null ? v.daysLost : null,
         responsibleParty: delay ? (v.responsibleParty ?? null) : null,
         eotClaimed: delay ? !!v.eotClaimed : false,
+        eotGrantedDays: delay && v.eotClaimed && v.eotGrantedDays !== undefined && v.eotGrantedDays !== null ? v.eotGrantedDays : null,
         attachmentIds: (v.photos ?? []).map((p) => p.id),
         ...(editing ? { status: v.status, closureNote: t(v.closureNote) } : {}),
       };
@@ -214,12 +218,15 @@ export function RiskFormModal({ open, onClose, projectId, risk, prefill }: { ope
                 <InputNumber style={{ width: '100%' }} min={0} max={3650} precision={0} placeholder={counted !== null ? `${counted} (counted)` : undefined} />
               </Form.Item>
             </div>
-            <div style={grid('1fr 1fr')}>
+            <div style={grid('1fr 1fr 0.8fr')}>
               <Form.Item name="responsibleParty" label="Caused by">
                 <Select allowClear placeholder="Select" options={DELAY_PARTIES.map((p) => ({ value: p, label: DELAY_PARTY_LABELS[p] }))} />
               </Form.Item>
               <Form.Item name="eotClaimed" label="Extension of time" valuePropName="checked">
                 <Checkbox>EOT claimed from the client</Checkbox>
+              </Form.Item>
+              <Form.Item name="eotGrantedDays" label="EOT granted (days)" tooltip="Once the client grants it; moves the contract completion date">
+                <InputNumber style={{ width: '100%' }} min={0} max={3650} precision={0} disabled={!eotClaimed} placeholder={eotClaimed ? 'Not yet' : undefined} />
               </Form.Item>
             </div>
           </>

@@ -277,6 +277,7 @@ export const RISK_EXPORT: ExportColumn<RiskDto>[] = [
   { header: 'Days lost', value: (r) => r.daysLost },
   { header: 'Responsible', value: (r) => (r.responsibleParty ? DELAY_PARTY_LABELS[r.responsibleParty] : ''), width: 16 },
   { header: 'EOT claimed', value: (r) => (r.kind === 'DELAY' ? (r.eotClaimed ? 'Yes' : 'No') : ''), width: 11 },
+  { header: 'EOT granted (days)', value: (r) => r.eotGrantedDays ?? '', width: 12 },
   { header: 'Mitigation / action', value: (r) => r.mitigation, width: 40 },
   { header: 'Owner', value: (r) => r.ownerName, width: 20 },
   { header: 'Due', value: (r) => r.dueDate, width: 12 },

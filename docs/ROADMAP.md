@@ -137,9 +137,13 @@ relative to a v2 item (S about one, M about two, L about three). The full draft 
 [Nirmaan v3 roadmap (draft)](https://claude.ai/code/artifact/750a4e2d-379f-42f1-8d5d-9206495467b6).
 
 ### A. Get paid
-17. **Contracts and clients** (S). `Client` master (name, GSTIN, billing address, department); per project the
+17. ~~**Contracts and clients** (S). `Client` master (name, GSTIN, billing address, department); per project the
     agreement number and date, contract value, extensions granted (from the delay register), retention %,
-    security deposit, mobilisation advance and recovery %, defect liability months, price variation flag.
+    security deposit, mobilisation advance and recovery %, defect liability months, price variation flag.~~
+    Done: `Client` master (department, GSTIN with state code and PAN taken from it, billing address, contact) on a
+    Billing → Clients page; per project the agreement, value and dates, and the retention, security deposit,
+    advance recovery, TDS, GST TDS, labour cess and GST percentages bills use, edited on a Contract tab. A delay
+    records the days of extension granted (`eotGrantedDays`), which move the contract's completion date.
 18. **RA bills** (L). Bill N per project from approved measurements: per BOQ item up to previous / this bill /
     up to date quantity and amount, quantities beyond the BOQ flagged as deviation or extra item, deductions
     (retention, advance recovery, TDS, labour cess, security deposit) and GST as per-project settings. A seventh

@@ -252,6 +252,28 @@ The store register per project, fed by approved material requests:
   row per line), Measured column on the BOQ tab. Site app: `app/measurement/new.tsx` (offline-capable)
   and `[id].tsx`.
 
+## Clients and contracts
+
+- **Tables.** `Client` is the organisation's client master (unique name; department, GSTIN, PAN, GST `stateCode`,
+  billing address, contact, `isActive`). The state code and PAN follow the GSTIN when one is given. A project
+  links to it with `Project.clientId`; `Project.clientName` keeps a copy of the name (renaming the client renames
+  it on its projects) so lists, search and reports work unchanged, and stays free text on projects without one.
+- **Contract terms** are columns on `Project`: `agreementNo` / `agreementDate` (next to the existing work order,
+  contract value and dates), `retentionPct`, `securityDepositPct`, `mobilisationAdvance` with `advanceRecoveryPct`,
+  `defectLiabilityMonths`, `priceVariation`, and the bill rates `gstRate`, `tdsPct`, `gstTdsPct`, `labourCessPct`
+  (all percentages of the work value, `Decimal(5,2)`, 0 by default except GST 18). Settings, not code, because they
+  differ by client and change with the rules.
+- **Extensions of time** come from the delay register: a delay has `eotClaimed` and, once the client grants it,
+  `eotGrantedDays`. The contract's revised completion is the agreement's end date plus the days granted.
+- **Roles.** Contract terms and bills are seen by `BILLING_ROLES` (admin, management, PM, QS, accounts) on projects
+  they can see; the client master and contract terms are changed by `CONTRACT_EDITOR_ROLES` (admin, management, PM,
+  accounts). The client list itself is readable by anyone signed in (pickers).
+- **API.** `/clients` (paged; `q`, `includeInactive`) with POST / PATCH / DELETE (a client with projects is made
+  inactive instead), `GET` / `PUT /projects/:id/contract` (`ProjectContractDto`, only the fields sent change), and
+  `clientId` on `POST` / `PATCH /projects`.
+- **Clients.** Web: Billing → Clients page, a Contract tab on each project (agreement, bill percentages, extensions
+  from the delay register) with an edit form, a client picker on the project form, and "EOT granted" on delays.
+
 ## Project cost
 
 - **Heads.** Site expenses (`APPROVED`, total incl. GST, by bill date); material issued (`StockTxn` of

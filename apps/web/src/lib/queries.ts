@@ -2,6 +2,8 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
+  ClientDto,
+  ProjectContractDto,
   GettingStartedDto,
   EquipmentDto,
   EquipmentOwnership,
@@ -426,6 +428,32 @@ export const useMeasurement = (id: string | undefined) =>
     queryKey: ['measurements', 'detail', id],
     queryFn: async () => (await api.get<MeasurementSheetDto>(`/measurements/${id}`)).data,
     enabled: !!id,
+  });
+
+export interface ClientFilters extends PageParams {
+  includeInactive?: boolean;
+}
+
+export const useClientsPage = (filters: ClientFilters) =>
+  useQuery({
+    queryKey: ['clients', 'page', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<ClientDto>>('/clients', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+  });
+
+/** Every active client (one large page) for pickers. */
+export const useClients = (enabled = true) =>
+  useQuery({
+    queryKey: ['clients', 'all'],
+    queryFn: async () => (await api.get<Paginated<ClientDto>>('/clients', { params: { pageSize: MAX_PAGE_SIZE } })).data.items,
+    enabled,
+  });
+
+export const useContract = (projectId: string | undefined, enabled = true) =>
+  useQuery({
+    queryKey: ['contract', projectId],
+    queryFn: async () => (await api.get<ProjectContractDto>(`/projects/${projectId}/contract`)).data,
+    enabled: !!projectId && enabled,
   });
 
 /** Cost period; both ends optional. */

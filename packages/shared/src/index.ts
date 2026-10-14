@@ -8,6 +8,7 @@ export * from './stock';
 export * from './machinery';
 export * from './expense';
 export * from './measurement';
+export * from './contract';
 export * from './cost';
 export * from './risk';
 export * from './templates';

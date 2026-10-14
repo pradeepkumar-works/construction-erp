@@ -47,6 +47,14 @@ export class CreateRiskDto {
   @ApiPropertyOptional({ description: 'Delay only: days lost as agreed; counted from the dates when empty' }) @IsOptional() @int() @ValidateIf((_, v) => v !== null) @IsInt() @Min(0) @Max(3650) daysLost?: number | null;
   @ApiPropertyOptional({ enum: DELAY_PARTIES, description: 'Delay only: who caused it' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsIn(DELAY_PARTIES as unknown as string[]) responsibleParty?: DelayParty | null;
   @ApiPropertyOptional({ description: 'Delay only: an extension of time has been claimed' }) @IsOptional() @IsBoolean() eotClaimed?: boolean;
+  @ApiPropertyOptional({ description: 'Delay only: days of extension the client granted (adds to the contract completion date)' })
+  @IsOptional()
+  @int()
+  @ValidateIf((_, v) => v !== null)
+  @IsInt()
+  @Min(0)
+  @Max(3650)
+  eotGrantedDays?: number | null;
   @ApiPropertyOptional({ type: [String], description: 'Photos / letters as evidence' }) @IsOptional() @IsArray() @IsUUID('4', { each: true }) attachmentIds?: string[];
 }
 

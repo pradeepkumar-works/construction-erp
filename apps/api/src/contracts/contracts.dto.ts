@@ -1,0 +1,37 @@
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
+import { IsBoolean, IsDateString, IsInt, IsNumberString, IsOptional, IsString, IsUUID, Max, MaxLength, Min, ValidateIf } from 'class-validator';
+
+const blankNull = () => Transform(({ value }) => (typeof value === 'string' ? value.trim() || null : value));
+const num = () => Transform(({ value }) => (typeof value === 'number' ? String(value) : typeof value === 'string' ? value.trim() || null : value));
+const int = () => Transform(({ value }) => (typeof value === 'string' && value.trim() !== '' ? Number(value) : value === '' ? null : value));
+const pct = (example: string, description: string) => ApiPropertyOptional({ example, description: `${description}, % of the work value (0 to 100)` });
+
+/** Every field optional: only what is sent changes. Percentages are strings like "5" or "2.5". */
+export class UpdateContractDto {
+  @ApiPropertyOptional({ description: 'Client from the client master (null unlinks; the project keeps the name as text)' })
+  @IsOptional()
+  @ValidateIf((_, v) => v !== null)
+  @IsUUID()
+  clientId?: string | null;
+  @ApiPropertyOptional({ example: 'WO/OWD/2025/0417' }) @IsOptional() @blankNull() @IsString() @MaxLength(100) workOrderNo?: string | null;
+  @ApiPropertyOptional({ example: '12/EE/2025-26' }) @IsOptional() @blankNull() @IsString() @MaxLength(100) agreementNo?: string | null;
+  @ApiPropertyOptional({ example: '2025-06-12' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsDateString() agreementDate?: string | null;
+  @ApiPropertyOptional({ example: '186500000.00' }) @IsOptional() @num() @ValidateIf((_, v) => v !== null) @IsNumberString() contractValue?: string | null;
+  @ApiPropertyOptional({ example: '2025-06-15' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsDateString() startDate?: string | null;
+  @ApiPropertyOptional({ example: '2027-06-14', description: 'Completion date in the agreement (extensions come from the delay register)' })
+  @IsOptional()
+  @ValidateIf((_, v) => v !== null)
+  @IsDateString()
+  endDate?: string | null;
+  @pct('5', 'Retention money held from each bill') @IsOptional() @num() @IsNumberString() retentionPct?: string;
+  @pct('2.5', 'Security deposit deducted from each bill') @IsOptional() @num() @IsNumberString() securityDepositPct?: string;
+  @ApiPropertyOptional({ example: '9325000.00', description: 'Mobilisation advance received from the client' }) @IsOptional() @num() @IsNumberString() mobilisationAdvance?: string;
+  @pct('10', 'Advance recovered from each bill until the whole advance is back') @IsOptional() @num() @IsNumberString() advanceRecoveryPct?: string;
+  @ApiPropertyOptional({ example: 12 }) @IsOptional() @int() @ValidateIf((_, v) => v !== null) @IsInt() @Min(0) @Max(120) defectLiabilityMonths?: number | null;
+  @ApiPropertyOptional({ description: 'The contract has a price variation (escalation) clause' }) @IsOptional() @IsBoolean() priceVariation?: boolean;
+  @pct('18', 'GST charged on bills') @IsOptional() @num() @IsNumberString() gstRate?: string;
+  @pct('2', 'Income-tax TDS (section 194C) the client deducts') @IsOptional() @num() @IsNumberString() tdsPct?: string;
+  @pct('2', 'GST TDS a government client deducts') @IsOptional() @num() @IsNumberString() gstTdsPct?: string;
+  @pct('1', 'Labour welfare cess') @IsOptional() @num() @IsNumberString() labourCessPct?: string;
+}

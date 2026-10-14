@@ -7,14 +7,14 @@ import type { ProjectDetail, ProjectStatus, ProjectType } from '@erp/shared';
 import { PROJECT_STATUSES, PROJECT_STATUS_LABELS, PROJECT_TYPES, PROJECT_TYPE_LABELS } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, errorMessage } from '@/lib/api';
-import { useActivityTemplates, useUsers } from '@/lib/queries';
+import { useActivityTemplates, useClients, useUsers } from '@/lib/queries';
 
 interface FormValues {
   code: string;
   name: string;
   type: ProjectType;
   status?: ProjectStatus;
-  clientName?: string;
+  clientId?: string | null;
   consultantName?: string;
   location?: string;
   workOrderNo?: string;
@@ -40,6 +40,7 @@ export function ProjectFormModal({
   const { message } = App.useApp();
   const qc = useQueryClient();
   const { data: users } = useUsers();
+  const { data: clients } = useClients(open);
   const isEdit = !!project;
   const { data: templates } = useActivityTemplates(open && !project);
   const type = Form.useWatch('type', form);
@@ -53,7 +54,7 @@ export function ProjectFormModal({
         name: project.name,
         type: project.type,
         status: project.status,
-        clientName: project.clientName ?? undefined,
+        clientId: project.clientId,
         consultantName: project.consultantName ?? undefined,
         location: project.location ?? undefined,
         workOrderNo: project.workOrderNo ?? undefined,
@@ -75,7 +76,8 @@ export function ProjectFormModal({
         name: values.name.trim(),
         type: values.type,
         status: values.status,
-        clientName: values.clientName || undefined,
+        // Without a client from the master an older free-text client name is left as it is.
+        ...(values.clientId ? { clientId: values.clientId } : isEdit && project?.clientId ? { clientId: null } : {}),
         consultantName: values.consultantName || undefined,
         location: values.location || undefined,
         workOrderNo: values.workOrderNo || undefined,
@@ -132,8 +134,8 @@ export function ProjectFormModal({
           </Form.Item>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
-          <Form.Item name="clientName" label="Client">
-            <Input />
+          <Form.Item name="clientId" label="Client" extra={!project?.clientId && project?.clientName ? `Now: ${project.clientName} (not in the client master)` : 'Add clients under Billing → Clients, or from the Contract tab.'}>
+            <Select allowClear showSearch optionFilterProp="label" placeholder="Select a client" options={(clients ?? []).map((c) => ({ value: c.id, label: c.department ? `${c.name} · ${c.department}` : c.name }))} />
           </Form.Item>
           <Form.Item name="consultantName" label="Consultant / PMC">
             <Input />

@@ -183,6 +183,7 @@ model Organization {
   passwordTokens    PasswordToken[]
   measurements      MeasurementSheet[]
   labourRates       LabourRate[]
+  clients           Client[]
 }
 
 model Role {
@@ -285,6 +286,31 @@ model Project {
   contractValue    Decimal?      @db.Decimal(18, 2)
   projectManagerId String?
   projectManager   User?         @relation("ProjectManager", fields: [projectManagerId], references: [id])
+  /// Client from the client master; `clientName` keeps a copy of its name (and stays free text without one)
+  clientId              String?
+  client                Client?   @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  // ----- Contract terms (what RA bills are built on) -----
+  agreementNo           String?
+  agreementDate         DateTime? @db.Date
+  /// Retention money deducted from each bill, % of the work value; released after the defect liability period
+  retentionPct          Decimal   @default(0) @db.Decimal(5, 2)
+  /// Security deposit deducted from each bill, % of the work value
+  securityDepositPct    Decimal   @default(0) @db.Decimal(5, 2)
+  /// Mobilisation advance paid by the client, recovered from bills
+  mobilisationAdvance   Decimal   @default(0) @db.Decimal(18, 2)
+  /// Advance recovered from each bill, % of the work value, until all of it is recovered
+  advanceRecoveryPct    Decimal   @default(0) @db.Decimal(5, 2)
+  defectLiabilityMonths Int?
+  /// The contract has a price variation (escalation) clause
+  priceVariation        Boolean   @default(false)
+  /// GST charged on bills, % of the work value
+  gstRate               Decimal   @default(18) @db.Decimal(5, 2)
+  /// Income-tax TDS the client deducts (section 194C), % of the work value
+  tdsPct                Decimal   @default(0) @db.Decimal(5, 2)
+  /// GST TDS a government client deducts, % of the work value
+  gstTdsPct             Decimal   @default(0) @db.Decimal(5, 2)
+  /// Building and other construction workers' welfare cess, % of the work value
+  labourCessPct         Decimal   @default(0) @db.Decimal(5, 2)
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
 
@@ -307,6 +333,31 @@ model Project {
 
   @@unique([organizationId, code])
   @@index([organizationId, status])
+}
+
+/// A client (employer) the organisation builds for: a government department or a private owner.
+model Client {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  name           String
+  /// Department, division or circle that issues the work orders, e.g. "Roads Division, Khordha"
+  department     String?
+  gstin          String?
+  pan            String?
+  billingAddress String?
+  /// GST state code (first two digits of the GSTIN, or set by hand)
+  stateCode      String?
+  contactPerson  String?
+  email          String?
+  phone          String?
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  projects Project[]
+
+  @@unique([organizationId, name])
 }
 
 model ProjectMember {
@@ -796,6 +847,8 @@ model Risk {
   responsibleParty DelayParty?
   /// An extension of time has been claimed from the client for this delay
   eotClaimed       Boolean      @default(false)
+  /// Days of extension the client granted for this delay (adds to the project's completion date)
+  eotGrantedDays   Int?
   closedAt         DateTime?
   closureNote      String?
   raisedById       String

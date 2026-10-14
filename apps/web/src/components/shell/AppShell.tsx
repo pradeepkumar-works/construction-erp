@@ -27,9 +27,10 @@ import {
   AlertOutlined,
   PartitionOutlined,
   SafetyCertificateOutlined,
+  BankOutlined,
 } from '@ant-design/icons';
 import type { AuthUser } from '@erp/shared';
-import { canEditProjects, canManageUsers, canViewCost, mayApprove } from '@erp/shared';
+import { canEditContract, canEditProjects, canManageUsers, canViewContract, canViewCost, mayApprove } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { usePendingApprovals } from '@/lib/queries';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
@@ -103,6 +104,10 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
       {
         title: 'Materials & plant',
         items: [link('/material-requests', 'Material Requests', ShoppingCartOutlined), link('/stock', 'Stock', InboxOutlined), link('/machinery', 'Machinery', ToolOutlined)],
+      },
+      {
+        title: 'Billing',
+        items: [...(canViewContract(user.roleKey) || canEditContract(user.roleKey) ? [link('/clients', 'Clients', BankOutlined)] : [])],
       },
       {
         title: 'Reports',

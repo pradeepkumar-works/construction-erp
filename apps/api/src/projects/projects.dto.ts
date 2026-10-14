@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
-import { IsBoolean, IsDateString, IsIn, IsNumberString, IsOptional, IsString, IsUUID, MinLength } from 'class-validator';
+import { IsBoolean, IsDateString, IsIn, IsNumberString, IsOptional, IsString, IsUUID, MinLength, ValidateIf } from 'class-validator';
 import { LIST_SORT_FIELDS, PROJECT_STATUSES, PROJECT_TYPES, ProjectStatus, ProjectType, type ProjectSortField } from '@erp/shared';
 import { PageQuery } from '../common/paging';
 
@@ -15,7 +15,8 @@ export class CreateProjectDto {
   @ApiProperty() @IsString() @MinLength(2) name: string;
   @ApiProperty({ enum: PROJECT_TYPES }) @IsIn(PROJECT_TYPES as unknown as string[]) type: ProjectType;
   @ApiPropertyOptional({ enum: PROJECT_STATUSES }) @IsOptional() @IsIn(PROJECT_STATUSES as unknown as string[]) status?: ProjectStatus;
-  @ApiPropertyOptional() @IsOptional() @IsString() clientName?: string;
+  @ApiPropertyOptional({ description: 'Client from the client master; sets clientName to its name' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsUUID() clientId?: string | null;
+  @ApiPropertyOptional({ description: 'Free-text client name, used when no clientId is given' }) @IsOptional() @IsString() clientName?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() consultantName?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() location?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() workOrderNo?: string;
