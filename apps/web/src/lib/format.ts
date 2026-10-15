@@ -50,7 +50,7 @@ export function formatPct(value: number | null | undefined): string {
 
 export const STATUS_COLORS: Record<SubmissionStatus, string> = {
   DRAFT: 'default',
-  // Yellow is the brand colour, so pending is orange and changes-requested purple (as in the site app).
+  // Pending is orange and changes-requested purple (as in the site app), so neither reads as the brand blue.
   SUBMITTED: 'orange',
   APPROVED: 'green',
   REJECTED: 'red',

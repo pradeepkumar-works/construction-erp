@@ -72,7 +72,7 @@ function Brand({ user, collapsed }: { user: AuthUser; collapsed: boolean }) {
       <BrandMark />
       {!collapsed && (
         <div style={{ lineHeight: 1.15, whiteSpace: 'nowrap' }}>
-          <Wordmark color={BRAND.colors.accent} size={19} />
+          <Wordmark color={BRAND.colors.onAccent} size={19} />
           <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11, marginTop: 4 }}>{user.organizationName}</div>
         </div>
       )}
@@ -251,7 +251,7 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
             <Dropdown menu={{ items: userMenu }} trigger={['click']}>
             <Button type="text" style={{ height: 40, padding: '0 8px' }}>
               <Space>
-                <Avatar size="small" style={{ background: BRAND.colors.accent, color: BRAND.colors.ink, fontWeight: 700 }}>
+                <Avatar size="small" style={{ background: BRAND.colors.accent, color: BRAND.colors.onAccent, fontWeight: 700 }}>
                   {initials}
                 </Avatar>
                 {!isMobile && (
