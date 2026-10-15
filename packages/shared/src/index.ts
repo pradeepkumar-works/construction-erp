@@ -30,3 +30,4 @@ export * from './safety';
 export * from './sector';
 export * from './maintenance';
 export * from './schedule';
+export * from './workers';

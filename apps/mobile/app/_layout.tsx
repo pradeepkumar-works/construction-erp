@@ -44,6 +44,7 @@ function RootNavigator() {
         <Stack.Screen name="notifications" options={{ title: 'Notifications' }} />
         <Stack.Screen name="outbox" options={{ title: 'Outbox' }} />
         <Stack.Screen name="attendance" options={{ title: 'Attendance' }} />
+        <Stack.Screen name="roll-call" options={{ title: 'Roll call' }} />
         <Stack.Screen name="stock/index" options={{ title: 'Stock' }} />
         <Stack.Screen name="stock/receive" options={{ title: 'Receive Material' }} />
         <Stack.Screen name="stock/issue" options={{ title: 'Issue Material' }} />

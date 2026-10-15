@@ -32,7 +32,7 @@ import { ContractPanel } from '@/components/contracts/ContractPanel';
 import { VariationsPanel } from '@/components/variations/VariationsPanel';
 import { BillList } from '@/components/bills/BillList';
 import { StockPanel } from '@/components/stock/StockPanel';
-import { AttendanceList } from '@/components/attendance/AttendanceList';
+import { AttendancePanel } from '@/components/workers/AttendancePanel';
 import { MrList } from '@/components/material/MrList';
 import { PurchaseOrderList } from '@/components/purchasing/PurchaseOrderList';
 import { SubcontractsPanel } from '@/components/subcontracts/SubcontractsPanel';
@@ -113,7 +113,7 @@ export default function ProjectDetailPage() {
             { key: 'documents', label: 'Documents', children: <ProjectDocumentsTab projectId={project.id} /> },
             { key: 'progress', label: 'Progress', children: <ProgressList projectId={project.id} newLabel="New progress entry" /> },
             { key: 'dpr', label: 'Daily Reports', children: <DprList projectId={project.id} newLabel="New DPR" /> },
-            { key: 'attendance', label: 'Attendance', children: <AttendanceList projectId={project.id} /> },
+            { key: 'attendance', label: 'Attendance', children: <AttendancePanel projectId={project.id} /> },
             { key: 'material', label: 'Material Requests', children: <MrList projectId={project.id} newLabel="New material request" /> },
             ...(user && canViewPurchaseOrders(user.roleKey) ? [{ key: 'po', label: 'Purchase Orders', children: <PurchaseOrderList projectId={project.id} /> }] : []),
             ...(user && canViewWorkOrders(user.roleKey) ? [{ key: 'subcontracts', label: 'Subcontracts', children: <SubcontractsPanel projectId={project.id} /> }] : []),

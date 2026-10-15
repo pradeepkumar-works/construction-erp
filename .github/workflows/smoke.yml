@@ -687,6 +687,21 @@ jobs:
           curl -sf "$API_URL/projects/$P/milestones" -H "$H" | jq -e 'type == "array"' > /dev/null
           code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/projects/$P/baseline" -H "authorization: Bearer $(login qs@demo.com)" -H 'content-type: application/json' -d '{}')
           echo "QS freezing the baseline: $code"; [ "$code" = "403" ]
+      - name: Worker register
+        run: |
+          set -e
+          login() { curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' -d "{\"email\":\"$1\",\"password\":\"password123\"}" | jq -r .accessToken; }
+          H="authorization: Bearer $(login tl@demo.com)"
+          P=$(curl -sf "$API_URL/projects" -H "$H" | jq -r '.items[0].id')
+          D=$(TZ=Asia/Kolkata date +%F); M=$(TZ=Asia/Kolkata date +%Y-%m); F=$(TZ=Asia/Kolkata date -d '-6 days' +%F)
+          curl -sf "$API_URL/workers?projectId=$P" -H "$H" | jq -e '(.items | type) == "array" and (.total | type) == "number"' > /dev/null
+          curl -sf "$API_URL/workers/roll-call?projectId=$P&date=$D" -H "$H" > /tmp/roll.json
+          jq -e '(.rows | type) == "array" and (.locked | type) == "boolean" and (.totals.workers == (.rows | length))' /tmp/roll.json > /dev/null
+          jq -r '"roll call \(.date): \(.totals.workers) workers, \(.totals.present) present, \(.totals.unmarked) not marked"' /tmp/roll.json
+          curl -sf "$API_URL/workers/muster?projectId=$P&month=$M" -H "$H" | jq -r '"muster \(.month): \(.totals.workers) workers, \(.totals.manDays) man-days, wages \(.totals.wages)"'
+          curl -sf "$API_URL/workers/output?projectId=$P&from=$F&to=$D" -H "$H" | jq -e '(.rows | type) == "array" and (.totalManDays | type) == "number"' > /dev/null
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X PUT "$API_URL/workers/roll-call" -H "authorization: Bearer $(login qs@demo.com)" -H 'content-type: application/json' -d "{\"projectId\":\"$P\",\"date\":\"$D\",\"entries\":[]}")
+          echo "QS marking the roll call: $code"; [ "$code" = "403" ]
       - name: Activity templates
         run: |
           set -e

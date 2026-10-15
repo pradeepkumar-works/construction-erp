@@ -122,6 +122,11 @@ export const canManageBilling = (role: RoleKey) => role === 'ADMIN';
 export const seesGettingStarted = (role: RoleKey) => GETTING_STARTED_ROLES.includes(role);
 export const submitsDpr = (role: RoleKey) => DPR_SUBMITTER_ROLES.includes(role);
 export const canRecordAttendance = (role: RoleKey) => ATTENDANCE_RECORDER_ROLES.includes(role);
+/** Keep the named worker register and its roll call: the attendance recorders. */
+export const canManageWorkers = (role: RoleKey) => ATTENDANCE_RECORDER_ROLES.includes(role);
+/** See the worker register, the muster and output per man-day: recorders, quantity surveyors and accounts. */
+export const WORKER_VIEW_ROLES: RoleKey[] = [...ATTENDANCE_RECORDER_ROLES, 'QUANTITY_SURVEYOR', 'ACCOUNTS_MANAGER'];
+export const canViewWorkers = (role: RoleKey) => WORKER_VIEW_ROLES.includes(role);
 /** Record goods received and material issued. */
 export const canKeepStock = (role: RoleKey) => STOCK_KEEPER_ROLES.includes(role);
 /** Store master data (item master, minimum stock levels): the store manager and approvers. */

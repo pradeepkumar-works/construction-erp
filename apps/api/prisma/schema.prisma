@@ -351,6 +351,8 @@ model Organization {
   boqItems          BoqItem[]
   activities        Activity[]
   milestones        Milestone[]
+  workers           Worker[]
+  workerAttendance  WorkerAttendance[]
   progressEntries   ProgressEntry[]
   dailyReports      DailyReport[]
   materialRequests  MaterialRequest[]
@@ -522,6 +524,7 @@ model User {
   maintenanceClosed    MaintenanceJob[]   @relation("MaintenanceCloser")
   employee             Employee?          @relation("EmployeeLogin")
   staffMarked          StaffAttendance[]  @relation("StaffAttendanceMarker")
+  workerDaysMarked     WorkerAttendance[] @relation("WorkerAttendanceMarker")
   leaveDecided         LeaveRequest[]     @relation("LeaveDecider")
   leaveApplied         LeaveRequest[]     @relation("LeaveApplicant")
   raisedRisks          Risk[]             @relation("RiskRaiser")
@@ -597,6 +600,8 @@ model Project {
   boqItems         BoqItem[]
   activities       Activity[]
   milestones       Milestone[]
+  workers          Worker[]
+  workerAttendance WorkerAttendance[]
   progressEntries  ProgressEntry[]
   dailyReports     DailyReport[]
   materialRequests MaterialRequest[]
@@ -700,6 +705,7 @@ model Vendor {
   vendorBills    VendorBill[]
   workOrders     WorkOrder[]
   attendance     AttendanceLine[]
+  workers        Worker[]
   payments       VendorPayment[]
 
   @@unique([organizationId, name])
@@ -1158,6 +1164,7 @@ model Activity {
   inspections     Inspection[]
   qualityTests    QualityTest[]
   ncrs            Ncr[]
+  workerDays      WorkerAttendance[]
 
   @@index([projectId])
   @@index([organizationId])
@@ -2481,6 +2488,89 @@ model Employee {
 
   @@unique([organizationId, employeeCode])
   @@index([organizationId, projectId])
+}
+
+enum WorkerSkill {
+  UNSKILLED
+  SEMI_SKILLED
+  SKILLED
+  HIGHLY_SKILLED
+}
+
+enum WorkerIdType {
+  AADHAAR
+  VOTER_ID
+  DRIVING_LICENCE
+  PAN
+  OTHER
+}
+
+/// A named worker of a labour contractor (or departmental) at site (v4 item 44). Not an employee: no PF, ESI or
+/// payroll. The wage is what the contractor is paid per man-day for them, for checking the contractor's bill.
+model Worker {
+  id             String        @id @default(uuid())
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id])
+  /// W-0001, unique per organisation
+  workerNo       String
+  name           String
+  fatherName     String?
+  phone          String?
+  /// Labour contractor as on the head-count sheet, or "Departmental"
+  contractor     String
+  vendorId       String?
+  vendor         Vendor?       @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  /// Trade, e.g. Mason, Helper (same names as the head-count sheet)
+  trade          String
+  skill          WorkerSkill   @default(UNSKILLED)
+  idType         WorkerIdType?
+  /// For Aadhaar only the last four digits are kept (XXXX-XXXX-1234)
+  idNumber       String?
+  dailyWage      Decimal       @db.Decimal(18, 2)
+  /// Paid per overtime hour; when empty, the daily wage / 8
+  otRate         Decimal?      @db.Decimal(18, 2)
+  /// The project they work at now; the roll call lists them there
+  projectId      String?
+  project        Project?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  joinedOn       DateTime?     @db.Date
+  leftOn         DateTime?     @db.Date
+  isActive       Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  attendance WorkerAttendance[]
+
+  @@unique([organizationId, workerNo])
+  @@index([organizationId, projectId])
+}
+
+/// One named worker's day at a project: present, half day or absent, in and out, overtime, and the activity worked on.
+/// Saving a roll call also sets the head-count sheet's rows for the contractors and trades it covers.
+model WorkerAttendance {
+  id             String                @id @default(uuid())
+  organizationId String
+  organization   Organization          @relation(fields: [organizationId], references: [id])
+  workerId       String
+  worker         Worker                @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  projectId      String
+  project        Project               @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  date           DateTime              @db.Date
+  status         StaffAttendanceStatus
+  /// HH:mm, site local time
+  inTime         String?
+  outTime        String?
+  otHours        Decimal?              @db.Decimal(4, 1)
+  activityId     String?
+  activity       Activity?             @relation(fields: [activityId], references: [id], onDelete: SetNull)
+  note           String?
+  markedById     String
+  markedBy       User                  @relation("WorkerAttendanceMarker", fields: [markedById], references: [id])
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  @@unique([workerId, date])
+  @@index([projectId, date])
+  @@index([organizationId, date])
 }
 
 /// One employee's day: marked by the site in-charge or by themselves (check in / check out).

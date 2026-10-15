@@ -2,7 +2,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { canMarkStaff, canKeepStock, canLogMachinery, canManageMaintenance, canMeasure, canRaiseRisk, canRecordAttendance, canReportSafety, canRequestInspection, canSubmitExpense } from '@erp/shared';
+import { canManageWorkers, canMarkStaff, canKeepStock, canLogMachinery, canManageMaintenance, canMeasure, canRaiseRisk, canRecordAttendance, canReportSafety, canRequestInspection, canSubmitExpense } from '@erp/shared';
 import { useAuth } from '../../src/auth/AuthContext';
 import { Button, Screen } from '../../src/components';
 import { colors, radius, shadow, spacing, typography } from '../../src/theme';
@@ -29,6 +29,8 @@ const QUALITY = { href: '/quality', icon: 'flask' as const, tone: '#0e7490', tit
 
 const DRAWINGS = { href: '/documents', icon: 'document-text-outline' as const, tone: '#334155', title: 'Drawings', text: 'The current revision of every drawing on your project; save them to open without a signal.' };
 
+const ROLL_CALL = { href: '/roll-call', icon: 'checkbox-outline' as const, tone: '#1d4ed8', title: 'Roll call', text: 'Mark the contractors\u2019 workers by name: present, half day or absent, with overtime.' };
+
 const MY_STAFF = { href: '/staff', icon: 'calendar' as const, tone: '#4d7c0f', title: 'My attendance & leave', text: 'Check in and out, see your leave balance and apply for leave.' };
 
 const STAFF_REGISTER = { href: '/staff-register', icon: 'id-card' as const, tone: '#365314', title: 'Staff register', text: 'Mark the company staff at your site present, half day or absent.' };
@@ -47,6 +49,7 @@ export default function SubmitHub() {
   const { user } = useAuth();
   const forms = [
     ...(user && canRecordAttendance(user.roleKey) ? [ATTENDANCE] : []),
+    ...(user && canManageWorkers(user.roleKey) ? [ROLL_CALL] : []),
     MY_STAFF,
     ...(user && canMarkStaff(user.roleKey) ? [STAFF_REGISTER] : []),
     ...FORMS,

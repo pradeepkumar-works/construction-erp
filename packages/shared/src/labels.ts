@@ -1,4 +1,4 @@
-import type { EquipmentDocType, MaintenanceKind, MaintenanceStatus, BillStage, ReceiptKind, VendorKind, MsmeCategory, EquipmentOwnership, ExpenseCategory, PaymentMode, EquipmentRateUnit, MaterialPriority, NotificationType, ProjectStatus, ProjectType, DelayParty, PasswordTokenPurpose, RiskCategory, RiskKind, RiskStatus, RoleKey, SafetyIncidentStatus, SafetyIncidentType, StockEntryType, SubmissionStatus, SubmissionType, Weather, WorkPermitStatus, WorkPermitType } from './enums';
+import type { WorkerIdType, WorkerSkill, EquipmentDocType, MaintenanceKind, MaintenanceStatus, BillStage, ReceiptKind, VendorKind, MsmeCategory, EquipmentOwnership, ExpenseCategory, PaymentMode, EquipmentRateUnit, MaterialPriority, NotificationType, ProjectStatus, ProjectType, DelayParty, PasswordTokenPurpose, RiskCategory, RiskKind, RiskStatus, RoleKey, SafetyIncidentStatus, SafetyIncidentType, StockEntryType, SubmissionStatus, SubmissionType, Weather, WorkPermitStatus, WorkPermitType } from './enums';
 
 export const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {
   ROAD: 'Road / Infrastructure',
@@ -257,5 +257,20 @@ export const EQUIPMENT_DOC_TYPE_LABELS: Record<EquipmentDocType, string> = {
   PUC: 'PUC (pollution)',
   ROAD_TAX: 'Road tax',
   REGISTRATION: 'Registration (RC)',
+  OTHER: 'Other',
+};
+
+export const WORKER_SKILL_LABELS: Record<WorkerSkill, string> = {
+  UNSKILLED: 'Unskilled',
+  SEMI_SKILLED: 'Semi-skilled',
+  SKILLED: 'Skilled',
+  HIGHLY_SKILLED: 'Highly skilled',
+};
+
+export const WORKER_ID_TYPE_LABELS: Record<WorkerIdType, string> = {
+  AADHAAR: 'Aadhaar',
+  VOTER_ID: 'Voter ID',
+  DRIVING_LICENCE: 'Driving licence',
+  PAN: 'PAN',
   OTHER: 'Other',
 };
