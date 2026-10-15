@@ -146,6 +146,7 @@ async function main() {
     await seedSafety(org.id);
     await seedSectors(org.id);
     await seedMaintenance(org.id);
+    await seedSchedule(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
   }
@@ -313,6 +314,7 @@ async function main() {
   await seedSafety(org.id);
   await seedSectors(org.id);
   await seedMaintenance(org.id);
+  await seedSchedule(org.id);
 
   console.log('Seed complete. Login with any of these (password: password123):');
   for (const u of USERS) console.log(`  ${u.email.padEnd(24)} ${u.role}`);
@@ -324,6 +326,61 @@ async function main() {
  * open breakdown on the backhoe, vehicle papers (the tipper's insurance expiring and its PUC lapsed) and drivers (one
  * licence expiring, one expired). Only when the organisation has no job card yet.
  */
+async function seedSchedule(organizationId: string) {
+  if (await prisma.milestone.count({ where: { organizationId } })) return;
+  const plus = (d: Date, n: number) => new Date(d.getTime() + n * 86_400_000);
+  // Days each activity's finish has moved since the baseline was frozen (by sort order), and the project's milestones:
+  // [name, due (days from today, or the project end), days the due date has moved since the baseline, achieved (days after the start)].
+  const plans: Record<'ROAD' | 'BUILDING' | 'WATER_SUPPLY', { slip: Record<number, number>; milestones: [string, number | 'end', number, number | null][] }> = {
+    ROAD: {
+      slip: { 1: 8, 2: 12, 3: 15, 4: 20, 5: 20, 7: 20 },
+      milestones: [
+        ['Mobilisation complete', -92, 0, 26],
+        ['Embankment complete, Km 12 to Km 20', -30, 0, 101],
+        ['GSB complete, Km 12 to Km 20', 10, 15, null],
+        ['Bituminous surface complete', 95, 20, null],
+        ['Road opened to traffic', 'end', 0, null],
+      ],
+    },
+    BUILDING: {
+      slip: { 3: 6, 4: 10, 5: 10, 6: 14, 7: 14 },
+      milestones: [
+        ['Foundations complete', -30, 0, 62],
+        ['Ground floor slab cast', -3, 6, null],
+        ['Roof slab cast', 150, 10, null],
+        ['Block B handed over', 'end', 0, null],
+      ],
+    },
+    WATER_SUPPLY: {
+      slip: { 2: 10, 3: 18, 4: 18, 5: 25 },
+      milestones: [
+        ['Intake well complete', -40, 5, 115],
+        ['WTP trial run', 95, 10, null],
+        ['Water supplied to the first village', 140, 18, null],
+        ['Scheme commissioned', 'end', 0, null],
+      ],
+    },
+  };
+  for (const [type, plan] of Object.entries(plans) as [keyof typeof plans, (typeof plans)[keyof typeof plans]][]) {
+    const project = await prisma.project.findFirst({ where: { organizationId, type }, orderBy: { code: 'asc' }, include: { activities: true } });
+    if (!project?.startDate || !project.endDate || !project.projectManagerId) continue;
+    for (const a of project.activities) {
+      if (!a.plannedStart || !a.plannedEnd) continue;
+      const slip = plan.slip[a.sortOrder] ?? 0;
+      await prisma.activity.update({ where: { id: a.id }, data: { baselineStart: plus(a.plannedStart, -Math.round(slip / 2)), baselineEnd: plus(a.plannedEnd, -slip) } });
+    }
+    for (const [i, [name, due, slip, achieved]] of plan.milestones.entries()) {
+      const dueDate = due === 'end' ? project.endDate : day(due);
+      await prisma.milestone.create({
+        data: { organizationId, projectId: project.id, name, dueDate, baselineDate: plus(dueDate, -slip), achievedOn: achieved === null ? null : plus(project.startDate, achieved), sortOrder: i },
+      });
+    }
+    const frozen = plus(project.startDate, 14);
+    await prisma.project.update({ where: { id: project.id }, data: { baselineAt: frozen, baselineById: project.projectManagerId, baselineNote: 'Programme submitted with the agreement' } });
+    await prisma.auditLog.create({ data: { organizationId, entityType: 'PROJECT', entityId: project.id, action: 'BASELINE_FROZEN', actorId: project.projectManagerId, note: 'Programme submitted with the agreement', createdAt: frozen } });
+  }
+}
+
 async function seedMaintenance(organizationId: string) {
   if (await prisma.maintenanceJob.count({ where: { organizationId } })) return;
   const eq = async (code: string) => prisma.equipment.findFirst({ where: { organizationId, code } });

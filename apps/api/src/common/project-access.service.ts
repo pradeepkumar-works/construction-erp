@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { APPROVER_ROLES, type SubmissionType, COMPANY_WIDE_ROLES, isCompanyWide, canAdjustStock, canApprove, canKeepStock, canLogMachinery, canManageEquipment, canManageStore, canMeasure, canRaiseRisk, canRecordAttendance, canRequestInspection, canSubmitExpense, canRecordTest, canRaiseNcr, canManageDocuments, canViewLetters, canManageStaff, canMarkStaff, canViewMessageLog, canReportSafety, canManageSafety, canManageMaintenance, GUEST_ROLES, isGuest } from '@erp/shared';
+import { APPROVER_ROLES, type SubmissionType, COMPANY_WIDE_ROLES, isCompanyWide, canAdjustStock, canApprove, canKeepStock, canLogMachinery, canManageEquipment, canManageStore, canMeasure, canRaiseRisk, canRecordAttendance, canRequestInspection, canSubmitExpense, canRecordTest, canRaiseNcr, canManageDocuments, canViewLetters, canManageStaff, canMarkStaff, canViewMessageLog, canReportSafety, canManageSafety, canManageMaintenance, canFreezeBaseline, GUEST_ROLES, isGuest } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { ApprovalRightsService } from './approval-rights.service';
 import { RequestUser } from './current-user';
@@ -255,6 +255,12 @@ export class ProjectAccessService {
   async assertCanManageMaintenance(user: RequestUser, projectId: string | null) {
     if (!canManageMaintenance(user.roleKey)) throw new ForbiddenException('Only the store manager or an approver can do this');
     if (projectId) await this.assertCanAccessProject(user, projectId);
+  }
+
+  /** Freeze or replace a project's schedule baseline: the project's managers, with access to the project. */
+  async assertCanFreezeBaseline(user: RequestUser, projectId: string) {
+    if (!canFreezeBaseline(user.roleKey)) throw new ForbiddenException('Only a project manager, management or an admin can freeze the baseline');
+    await this.assertCanAccessProject(user, projectId);
   }
 
   /** Job cards a user sees: company-wide roles all; others those at their projects, plus machines in the yard for maintenance managers. */

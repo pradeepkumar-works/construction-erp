@@ -674,6 +674,19 @@ jobs:
           curl -sf "$API_URL/notifications?limit=100" -H "$S" | jq -e 'all(.items[]; .type != "MACHINERY")' > /dev/null
           code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/drivers" -H "authorization: Bearer $(login engineer@demo.com)" -H 'content-type: application/json' -d '{"name":"smoke"}')
           echo "site engineer adding a driver: $code"; [ "$code" = "403" ]
+      - name: Gantt and baseline
+        run: |
+          set -e
+          login() { curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' -d "{\"email\":\"$1\",\"password\":\"password123\"}" | jq -r .accessToken; }
+          H="authorization: Bearer $(login pm@demo.com)"
+          P=$(curl -sf "$API_URL/projects" -H "$H" | jq -r '.items[0].id')
+          curl -sf "$API_URL/projects/$P/gantt" -H "$H" > /tmp/gantt.json
+          jq -e '(.activities | type) == "array" and (.milestones | type) == "array" and (.summary.activities | type) == "number"' /tmp/gantt.json > /dev/null
+          jq -e 'all(.activities[]; .state == "UNSCHEDULED" or .state == "NOT_STARTED" or .state == "ON_TRACK" or .state == "BEHIND" or .state == "LATE" or .state == "DONE")' /tmp/gantt.json > /dev/null
+          jq -r '"baseline \(.baselineAt // "not frozen"); \(.summary.activities) activities, \(.summary.behind) behind, \(.summary.slipped) slipped; milestones \(.summary.milestonesAchieved)/\(.summary.milestones) achieved, \(.summary.milestonesMissed) missed; finish \(.summary.plannedFinish)"' /tmp/gantt.json
+          curl -sf "$API_URL/projects/$P/milestones" -H "$H" | jq -e 'type == "array"' > /dev/null
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/projects/$P/baseline" -H "authorization: Bearer $(login qs@demo.com)" -H 'content-type: application/json' -d '{}')
+          echo "QS freezing the baseline: $code"; [ "$code" = "403" ]
       - name: Activity templates
         run: |
           set -e

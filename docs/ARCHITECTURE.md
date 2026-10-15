@@ -104,6 +104,26 @@ turns a list into planned dates: from the project start, scaled so the template 
 end date is set. `POST /projects` with `applyTemplate: true`, or `POST /projects/:id/activities/from-template`
 (optionally `names`), creates the activities with planned quantity 0, skipping names the project already has.
 
+### Gantt, milestones and baseline
+
+- **Tables.** `Milestone`: project, name, `dueDate`, `baselineDate`, `achievedOn`, note (with a `tenant_isolation`
+  policy). `Activity` gained `baselineStart` and `baselineEnd`; `Project` gained `baselineAt`, `baselineById` and
+  `baselineNote`. Freezing (`POST /projects/:id/baseline`, `canFreezeBaseline`: admin, management, project
+  manager) copies every activity's planned dates and every milestone's due date to the baseline columns in one
+  transaction; re-freezing replaces them and writes `BASELINE_REPLACED` to the audit log. An activity added later
+  has no baseline dates until the next freeze.
+- **Gantt.** `GET /projects/:id/gantt` (anyone who sees the project): per activity the plan, the baseline, the
+  actual start (first approved progress) and end (the approved entry that reached 100%), progress, the
+  straight-line `expectedPct` for today and a `ScheduleState` (UNSCHEDULED, NOT_STARTED, ON_TRACK, BEHIND when
+  progress trails the expected line by more than `BEHIND_TOLERANCE_PCT` (10) points, LATE past its planned end,
+  DONE), plus finish slip in days against the baseline; milestones with a `MilestoneState` (UPCOMING, DUE_SOON
+  within 14 days, MISSED, ACHIEVED, ACHIEVED_LATE). Helpers in `packages/shared/src/schedule.ts`.
+- **Milestones.** `/projects/:id/milestones` CRUD for project editors; achieving one is a `PATCH` with
+  `achievedOn`. Dependencies and the critical path are not modelled yet.
+- **Web.** Project tab Gantt: summary, baseline banner with Freeze / Re-baseline, a week or month scale with the
+  plan bar filled to progress, the baseline as a grey bar under it, milestones as diamonds and a line for today,
+  and the milestone list. The Activities tab shows the baseline end under a moved planned end.
+
 ## Lists: paging, search, sort and export
 
 `GET /progress`, `/dpr`, `/material-requests`, `/attendance`, `/stock/entries`, `/stock/balances`, `/stock/items`,

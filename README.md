@@ -83,6 +83,8 @@ demo seed at 1280 × 800, scale 1.25, saved as WebP).
 - Machinery maintenance: breakdowns reported from site, service and repair job cards with spares issued from the
   store, a service schedule by hours or days, vehicle papers (insurance, fitness, permit, PUC, road tax) and driving
   licences with expiry alerts.
+- Gantt and baseline: a Gantt of each project's activities and milestones against a frozen baseline, with
+  what is behind plan and how far each finish has moved.
 - Sector progress: progress and measurements tagged with chainage (road), floor (building) or village (water
   supply); a road strip chart per layer, a floor by activity matrix, and pipe ordered, supplied, laid and tested
   village by village.

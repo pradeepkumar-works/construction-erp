@@ -337,7 +337,11 @@ preview deployments run them against the production database before a PR is merg
     against them, a service schedule by working hours or days that a closed service restarts, insurance, fitness,
     permit, PUC, road tax and RC with renewals, and drivers with their licence. A daily alert tells admins and the
     store team of services falling due and papers or licences expiring within 30 days.
-43. **Gantt and baseline** (M). Gantt with milestones and a frozen baseline.
+43. ~~**Gantt and baseline** (M). Gantt with milestones and a frozen baseline.~~
+    Done: a Gantt tab per project (weeks or months) with the plan filled to progress, the frozen baseline under it,
+    milestones and today; milestones with due, baseline and achieved dates; freezing or replacing the baseline by
+    the project's managers, with each activity's and milestone's slip against it. Dependencies and critical path
+    later.
 44. **Named worker register** (M). Workers per labour contractor, attendance per worker, output per man-day.
 45. **Site imprest** (S). Petty cash float, balance and top-ups.
 46. **Guarantees, insurance and licences register** (S) with expiry reminders.
