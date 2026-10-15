@@ -1,6 +1,7 @@
 import type { InspectionCheck, NcrSeverity, NcrStatus, TestKind, TestResult } from './quality';
 import type { ApprovalRightDto } from './approvals';
 import type { TallyVoucherKind } from './tally';
+import type { BillingUnit } from './billing';
 import type { DocumentDiscipline, DocumentKind, LetterDirection, RevisionStatus, TransmittalPurpose } from './documents';
 import type { LeaveStatus, LeaveType, StaffAttendanceStatus } from './staff';
 import type {
@@ -99,6 +100,8 @@ export interface AuthOptionsDto {
   signup: boolean;
   /** Password-reset emails can be sent (email provider and web address configured). */
   resetByEmail: boolean;
+  /** The public price for the product page, or null while billing is switched off. */
+  pricing: { unit: BillingUnit; /** Rupees per unit per month, before GST */ price: string; trialDays: number; yearChargedMonths: number } | null;
 }
 
 /** Shown on the set-password page before the user chooses a password. */

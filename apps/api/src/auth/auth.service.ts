@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
-import { PRODUCT_NAME, ROLE_KEYS, ROLE_LABELS, orgCodeFrom, type AuthOptionsDto, type AuthUser, type LoginResponse, type PasswordTokenInfoDto, type RoleKey } from '@erp/shared';
+import { BILLING_YEAR_CHARGED_MONTHS, PRODUCT_NAME, ROLE_KEYS, ROLE_LABELS, orgCodeFrom, type AuthOptionsDto, type AuthUser, type LoginResponse, type PasswordTokenInfoDto, type RoleKey } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ApprovalRightsService } from '../common/approval-rights.service';
@@ -34,7 +34,12 @@ export class AuthService {
   }
 
   options(): AuthOptionsDto {
-    return { signup: signupOpen(), resetByEmail: this.links.canEmail && !!this.links.configuredWebUrl() };
+    const billing = billingConfig();
+    return {
+      signup: signupOpen(),
+      resetByEmail: this.links.canEmail && !!this.links.configuredWebUrl(),
+      pricing: billing ? { unit: billing.unit, price: billing.price, trialDays: billing.trialDays, yearChargedMonths: BILLING_YEAR_CHARGED_MONTHS } : null,
+    };
   }
 
   /**

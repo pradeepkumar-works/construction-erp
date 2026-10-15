@@ -24,7 +24,7 @@ test('a signed-out visitor is sent to the login page', async ({ page }) => {
 test('the product page is open to visitors and leads to the demo', async ({ page }) => {
   await page.goto('/welcome');
   await expect(page.getByRole('heading', { name: 'From site to Tally, in one place.' })).toBeVisible();
-  await page.getByRole('button', { name: 'Try the demo' }).first().click();
+  await page.getByRole('link', { name: 'Try the demo' }).first().click();
   await expect(page).toHaveURL(/\/login/);
 });
 
