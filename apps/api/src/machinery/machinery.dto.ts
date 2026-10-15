@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsArray, IsBoolean, IsDateString, IsIn, IsNotEmpty, IsNumberString, IsOptional, IsString, IsUUID, MaxLength, ValidateIf } from 'class-validator';
+import { IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsNotEmpty, IsNumberString, IsOptional, IsString, IsUUID, Max, MaxLength, Min, ValidateIf } from 'class-validator';
 import { VENDOR_ID_DOC } from '../vendors/vendors.dto';
 import {
   EQUIPMENT_OWNERSHIPS,
@@ -38,6 +38,26 @@ export class CreateEquipmentDto {
   rate?: string | null;
   @ApiPropertyOptional({ enum: EQUIPMENT_RATE_UNITS, default: 'HOUR' }) @IsOptional() @IsIn(EQUIPMENT_RATE_UNITS as unknown as string[]) rateUnit?: EquipmentRateUnit;
   @ApiPropertyOptional({ description: 'Project it is deployed at now; null = yard / unassigned' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsUUID() projectId?: string | null;
+  @ApiPropertyOptional({ example: '250', description: 'Service every so many working hours (from the daily logs); null = no hour schedule' })
+  @IsOptional()
+  @num()
+  @ValidateIf((_, v) => v !== null)
+  @IsNumberString()
+  serviceIntervalHours?: string | null;
+  @ApiPropertyOptional({ example: 90, description: 'Service every so many days; null = no calendar schedule' })
+  @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' && value.trim() !== '' ? Number(value) : value))
+  @ValidateIf((_, v) => v !== null)
+  @IsInt()
+  @Min(1)
+  @Max(3650)
+  serviceIntervalDays?: number | null;
+  @ApiPropertyOptional({ example: '2026-09-20', description: 'Last service before job cards were kept here; closing a service job card sets it' })
+  @IsOptional()
+  @ValidateIf((_, v) => v !== null)
+  @IsDateString()
+  lastServiceDate?: string | null;
+  @ApiPropertyOptional({ example: '2150' }) @IsOptional() @num() @ValidateIf((_, v) => v !== null) @IsNumberString() lastServiceMeter?: string | null;
 }
 
 export class UpdateEquipmentDto extends PartialType(CreateEquipmentDto) {

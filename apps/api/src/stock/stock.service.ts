@@ -116,6 +116,8 @@ interface Header {
   toProjectId?: string | null;
   transferOutId?: string | null;
   remarks?: string | null;
+  /** Issues: spares for this maintenance job card */
+  maintenanceJobId?: string | null;
 }
 
 const blank = (s: string | null | undefined) => s?.trim() || null;
@@ -271,6 +273,7 @@ export class StockService {
         toProjectId: h.toProjectId ?? null,
         transferOutId: h.transferOutId ?? null,
         remarks: blank(h.remarks),
+        maintenanceJobId: h.maintenanceJobId ?? null,
         createdById: user.id,
         lines: {
           create: lines.map((l, i) => ({
@@ -472,8 +475,8 @@ export class StockService {
     return this.get(user, saved.id);
   }
 
-  /** Issue material at site; each quantity may not exceed the project's stock. */
-  async issue(user: RequestUser, dto: CreateIssueDto): Promise<StockEntryDto> {
+  /** Issue material at site; each quantity may not exceed the project's stock. `link` ties the issue to a maintenance job card. */
+  async issue(user: RequestUser, dto: CreateIssueDto, link?: { maintenanceJobId: string }): Promise<StockEntryDto> {
     const existing = await this.findExisting(user, dto.id);
     if (existing) return existing;
     await this.access.assertCanKeepStock(user, dto.projectId);
@@ -503,7 +506,7 @@ export class StockService {
             throw new ConflictException(have.lte(0) ? `${item.name} is out of stock at this project.` : `Only ${dec(have)} ${item.unit} of ${item.name} is in stock at this project.`);
           }
         }
-        return this.insertEntry(tx, user, { ...dto, issuedTo, type: 'ISSUE', date }, lines.map((l) => ({ ...l, quantity: l.quantity.neg() })));
+        return this.insertEntry(tx, user, { ...dto, ...link, issuedTo, type: 'ISSUE', date }, lines.map((l) => ({ ...l, quantity: l.quantity.neg() })));
       }),
     );
     if ('existing' in saved) return this.get(user, saved.id);

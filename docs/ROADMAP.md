@@ -331,8 +331,12 @@ preview deployments run them against the production database before a PR is merg
     project's sector settings. A project tab (Chainage, Floors, or Villages & Pipeline) and a phone screen show a strip
     chart of each road layer along the stretch, a floor by activity matrix, and for water supply pipe ordered,
     supplied, laid and tested with a village by village table.
-42. **Machinery maintenance and vehicle documents** (M). Service schedule, breakdown work orders, spares, expiry
-    alerts, drivers.
+42. ~~**Machinery maintenance and vehicle documents** (M). Service schedule, breakdown work orders, spares, expiry
+    alerts, drivers.~~
+    Done: job cards for services and breakdowns (reported from the phone), spares issued from the project store
+    against them, a service schedule by working hours or days that a closed service restarts, insurance, fitness,
+    permit, PUC, road tax and RC with renewals, and drivers with their licence. A daily alert tells admins and the
+    store team of services falling due and papers or licences expiring within 30 days.
 43. **Gantt and baseline** (M). Gantt with milestones and a frozen baseline.
 44. **Named worker register** (M). Workers per labour contractor, attendance per worker, output per man-day.
 45. **Site imprest** (S). Petty cash float, balance and top-ups.

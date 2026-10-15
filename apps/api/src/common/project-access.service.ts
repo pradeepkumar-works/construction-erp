@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { APPROVER_ROLES, type SubmissionType, COMPANY_WIDE_ROLES, isCompanyWide, canAdjustStock, canApprove, canKeepStock, canLogMachinery, canManageEquipment, canManageStore, canMeasure, canRaiseRisk, canRecordAttendance, canRequestInspection, canSubmitExpense, canRecordTest, canRaiseNcr, canManageDocuments, canViewLetters, canManageStaff, canMarkStaff, canViewMessageLog, canReportSafety, canManageSafety, GUEST_ROLES, isGuest } from '@erp/shared';
+import { APPROVER_ROLES, type SubmissionType, COMPANY_WIDE_ROLES, isCompanyWide, canAdjustStock, canApprove, canKeepStock, canLogMachinery, canManageEquipment, canManageStore, canMeasure, canRaiseRisk, canRecordAttendance, canRequestInspection, canSubmitExpense, canRecordTest, canRaiseNcr, canManageDocuments, canViewLetters, canManageStaff, canMarkStaff, canViewMessageLog, canReportSafety, canManageSafety, canManageMaintenance, GUEST_ROLES, isGuest } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { ApprovalRightsService } from './approval-rights.service';
 import { RequestUser } from './current-user';
@@ -244,6 +244,28 @@ export class ProjectAccessService {
     if (!canManageEquipment(user.roleKey)) throw new ForbiddenException('Only an approver can change the equipment master');
   }
 
+  /** Report a breakdown: a machinery logger with access to the machine's project; for a machine in the yard, a maintenance manager. */
+  async assertCanReportBreakdown(user: RequestUser, projectId: string | null) {
+    if (!projectId) return this.assertCanManageMaintenance(user, null);
+    if (!canLogMachinery(user.roleKey) && !canManageMaintenance(user.roleKey)) throw new ForbiddenException('Your role cannot report breakdowns');
+    await this.assertCanAccessProject(user, projectId);
+  }
+
+  /** Raise or close job cards, issue spares, keep vehicle papers and drivers: the store manager or an approver (with access to the machine's project). */
+  async assertCanManageMaintenance(user: RequestUser, projectId: string | null) {
+    if (!canManageMaintenance(user.roleKey)) throw new ForbiddenException('Only the store manager or an approver can do this');
+    if (projectId) await this.assertCanAccessProject(user, projectId);
+  }
+
+  /** Job cards a user sees: company-wide roles all; others those at their projects, plus machines in the yard for maintenance managers. */
+  maintenanceWhere(user: RequestUser): Prisma.MaintenanceJobWhereInput {
+    if (isCompanyWide(user.roleKey)) return { organizationId: user.organizationId };
+    return {
+      organizationId: user.organizationId,
+      OR: [{ project: this.projectWhere(user) }, ...(canManageMaintenance(user.roleKey) ? [{ projectId: null }] : [])],
+    };
+  }
+
   /** Report an incident, record a toolbox talk or request a permit: site roles with access to the project. */
   async assertCanReportSafety(user: RequestUser, projectId: string) {
     if (!canReportSafety(user.roleKey)) throw new ForbiddenException('Your role cannot record safety entries');
@@ -266,6 +288,14 @@ export class ProjectAccessService {
     });
     const others = approvers ? await this.approversForProject(organizationId, projectId) : [];
     return [...new Set([...officers, ...others].map((u) => u.id))];
+  }
+
+  /** Who hears about a machine's breakdown and its papers: the project's manager and store managers; for a machine in the yard, store managers and admins. */
+  async maintenanceWatchers(organizationId: string, projectId: string | null): Promise<string[]> {
+    const users = projectId
+      ? await this.stockWatchersForProject(organizationId, projectId)
+      : await this.prisma.user.findMany({ where: { organizationId, isActive: true, role: { key: { in: ['STORE_MANAGER', 'ADMIN'] } } }, select: { id: true } });
+    return users.map((u) => u.id);
   }
 
   /** Who hears about low stock at a project: its store managers and its project manager. */

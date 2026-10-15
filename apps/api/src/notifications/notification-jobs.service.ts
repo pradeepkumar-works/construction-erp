@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { APPROVER_ROLES, DPR_SUBMITTER_ROLES, PAYMENT_ROLES, SPECIALIST_APPROVERS, SUBMISSION_TYPE_LABELS, TEST_KIND_LABELS, type NotificationJobResult, type PendingApprovalDto, type RoleKey } from '@erp/shared';
+import { EQUIPMENT_DOC_TYPE_LABELS, SERVICE_STATE_LABELS, expiryState, APPROVER_ROLES, DPR_SUBMITTER_ROLES, PAYMENT_ROLES, SPECIALIST_APPROVERS, SUBMISSION_TYPE_LABELS, TEST_KIND_LABELS, type NotificationJobResult, type PendingApprovalDto, type RoleKey } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -11,6 +11,7 @@ import { MessagingService } from '../messaging/messaging.service';
 import { PayablesService } from '../payables/payables.service';
 import { EMAIL_COLORS, emailButton, emailLayout } from './email-layout';
 import { JOB_TIMEZONE, todayIn } from './time';
+import { latestDocIds, serviceStatuses } from '../maintenance/service-status';
 
 const WEB_URL = (process.env.WEB_URL || '').replace(/\/+$/, '');
 /** Bills falling due within this many days (today included) trigger the payments-due alert. */
@@ -220,6 +221,91 @@ export class NotificationJobsService {
       result.skipped += r.skipped;
     }
     this.log.log(`Bills due ${date}: ${JSON.stringify(result)}`);
+    return result;
+  }
+
+  /**
+   * Machinery due (v4 item 42): machines falling due for service (with no open service job card), and vehicle papers
+   * and driving licences expiring within 30 days or expired. Each is alerted once as it becomes due and once more
+   * when it is overdue or expired, to admins and management and to the store managers and manager of the project the
+   * machine is at. Runs with the digest.
+   */
+  async machineryDue(date = todayIn()): Promise<NotificationJobResult> {
+    const result: NotificationJobResult = { job: 'MACHINERY_DUE', date, created: 0, pushed: 0, emailed: 0, messaged: 0, skipped: 0 };
+    const soon = parseDate(date);
+    soon.setUTCDate(soon.getUTCDate() + 30);
+    type Alert = { organizationId: string; projectId: string | null; title: string; body: string; entityType: 'EQUIPMENT' | 'EQUIPMENT_DOCUMENT' | 'DRIVER'; entityId: string; dedupeKey: string };
+    const alerts: Alert[] = [];
+    const orgs = await this.prisma.equipment.findMany({ where: { isActive: true }, distinct: ['organizationId'], select: { organizationId: true } });
+    for (const { organizationId } of orgs) {
+      for (const m of await serviceStatuses(this.prisma, { organizationId }, date)) {
+        if ((m.state !== 'DUE_SOON' && m.state !== 'OVERDUE') || m.openServiceJobId) continue;
+        const over = m.state === 'OVERDUE';
+        const left = [
+          m.hoursLeft !== null && (!over || m.hoursLeft <= 0) ? `${Math.abs(m.hoursLeft)} h` : null,
+          m.daysLeft !== null && (!over || m.daysLeft <= 0) ? `${Math.abs(m.daysLeft)} days` : null,
+        ]
+          .filter(Boolean)
+          .join(' or ');
+        alerts.push({
+          organizationId,
+          projectId: m.projectId,
+          title: `Service ${SERVICE_STATE_LABELS[m.state].toLowerCase()}: ${m.equipmentCode} ${m.equipmentName}`,
+          body: `${m.hoursSince} h worked since the last service${m.lastServiceDate ? ` on ${m.lastServiceDate}` : ''}; ${over ? 'overdue by' : 'due in'} ${left}${m.projectName ? ` · at ${m.projectName}` : ''}.`,
+          entityType: 'EQUIPMENT',
+          entityId: m.equipmentId,
+          dedupeKey: `SERVICE:${m.equipmentId}:${m.lastServiceDate ?? 'never'}:${m.state}`,
+        });
+      }
+    }
+    const docs = await this.prisma.equipmentDocument.findMany({
+      where: { id: { in: await latestDocIds(this.prisma) }, validTo: { lte: soon }, equipment: { isActive: true } },
+      include: { equipment: { select: { code: true, name: true, projectId: true, project: { select: { name: true } } } } },
+    });
+    for (const d of docs) {
+      const e = expiryState(d.validTo.toISOString().slice(0, 10), date)!;
+      const what = `${EQUIPMENT_DOC_TYPE_LABELS[d.type]} of ${d.equipment.code} ${d.equipment.name}`;
+      alerts.push({
+        organizationId: d.organizationId,
+        projectId: d.equipment.projectId,
+        title: e.state === 'EXPIRED' ? `${what} has expired` : `${what} expires in ${e.daysLeft} day${e.daysLeft === 1 ? '' : 's'}`,
+        body: `${d.number ? `No. ${d.number}, ` : ''}valid to ${d.validTo.toISOString().slice(0, 10)}${d.equipment.project ? ` · at ${d.equipment.project.name}` : ''}. Renew it and add the new paper on the Machinery page.`,
+        entityType: 'EQUIPMENT_DOCUMENT',
+        entityId: d.id,
+        dedupeKey: `EQUIPMENT_DOC:${d.id}:${e.state}`,
+      });
+    }
+    const drivers = await this.prisma.driver.findMany({
+      where: { isActive: true, licenceValidTo: { lte: soon } },
+      include: { equipment: { select: { code: true, projectId: true } } },
+    });
+    for (const d of drivers) {
+      const validTo = d.licenceValidTo!.toISOString().slice(0, 10);
+      const e = expiryState(validTo, date)!;
+      alerts.push({
+        organizationId: d.organizationId,
+        projectId: d.equipment?.projectId ?? null,
+        title: e.state === 'EXPIRED' ? `Driving licence of ${d.name} has expired` : `Driving licence of ${d.name} expires in ${e.daysLeft} day${e.daysLeft === 1 ? '' : 's'}`,
+        body: `${d.licenceNo ? `${d.licenceNo}, ` : ''}valid to ${validTo}${d.equipment ? ` · drives ${d.equipment.code}` : ''}.`,
+        entityType: 'DRIVER',
+        entityId: d.id,
+        dedupeKey: `LICENCE:${d.id}:${validTo}:${e.state}`,
+      });
+    }
+    const heads = new Map<string, string[]>();
+    for (const a of alerts) {
+      if (!heads.has(a.organizationId))
+        heads.set(
+          a.organizationId,
+          (await this.prisma.user.findMany({ where: { organizationId: a.organizationId, isActive: true, role: { key: { in: ['ADMIN', 'MANAGEMENT'] } } }, select: { id: true } })).map((u) => u.id),
+        );
+      const userIds = [...heads.get(a.organizationId)!, ...(await this.access.maintenanceWatchers(a.organizationId, a.projectId))];
+      const r = await this.notifications.notify({ organizationId: a.organizationId, userIds, type: 'MACHINERY', title: a.title, body: a.body, projectId: a.projectId, entityType: a.entityType, entityId: a.entityId, dedupeKey: a.dedupeKey });
+      result.created += r.created;
+      result.pushed += r.pushed;
+      result.skipped += r.skipped;
+    }
+    this.log.log(`Machinery due ${date}: ${JSON.stringify(result)}`);
     return result;
   }
 

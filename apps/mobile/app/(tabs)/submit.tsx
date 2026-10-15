@@ -2,7 +2,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { canMarkStaff, canKeepStock, canLogMachinery, canMeasure, canRaiseRisk, canRecordAttendance, canReportSafety, canRequestInspection, canSubmitExpense } from '@erp/shared';
+import { canMarkStaff, canKeepStock, canLogMachinery, canManageMaintenance, canMeasure, canRaiseRisk, canRecordAttendance, canReportSafety, canRequestInspection, canSubmitExpense } from '@erp/shared';
 import { useAuth } from '../../src/auth/AuthContext';
 import { Button, Screen } from '../../src/components';
 import { colors, radius, shadow, spacing, typography } from '../../src/theme';
@@ -14,6 +14,8 @@ const FORMS = [
 ];
 
 const ATTENDANCE = { href: '/attendance', icon: 'people' as const, tone: colors.primaryDark, title: 'Attendance', text: 'Workers on site today by contractor and trade. Fills the DPR manpower.' };
+
+const BREAKDOWN = { href: '/breakdown/new', icon: 'build' as const, tone: '#c2410c', title: 'Report a breakdown', text: 'A machine has stopped at site: the store manager and the project manager are told at once.' };
 
 const MACHINERY = { href: '/machinery/new', icon: 'construct' as const, tone: '#b45309', title: 'Machinery log', text: 'A machine’s day: hours worked, idle, breakdown and diesel.' };
 
@@ -50,6 +52,7 @@ export default function SubmitHub() {
     ...FORMS,
     DRAWINGS,
     ...(user && canLogMachinery(user.roleKey) ? [MACHINERY] : []),
+    ...(user && (canLogMachinery(user.roleKey) || canManageMaintenance(user.roleKey)) ? [BREAKDOWN] : []),
     ...(user && canSubmitExpense(user.roleKey) ? [EXPENSE] : []),
     ...(user && canMeasure(user.roleKey) ? [MEASUREMENT] : []),
     ...(user && canRequestInspection(user.roleKey) ? [INSPECTION, QUALITY] : []),

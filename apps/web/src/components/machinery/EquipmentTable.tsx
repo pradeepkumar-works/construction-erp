@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Checkbox, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Table, Tag } from 'antd';
+import { App, Button, Checkbox, DatePicker, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Table, Tag } from 'antd';
+import dayjs from 'dayjs';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import type { TableProps } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -31,6 +32,9 @@ interface EquipmentForm {
   rateUnit: EquipmentRateUnit;
   projectId?: string;
   isActive?: boolean;
+  serviceIntervalHours?: number | null;
+  serviceIntervalDays?: number | null;
+  lastServiceDate?: dayjs.Dayjs | null;
 }
 
 /** Equipment master. Everyone sees the fleet and where it is deployed; approvers add machines, set rates and move them. */
@@ -63,6 +67,9 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
         rate: v.rate === undefined || v.rate === null ? null : String(v.rate),
         rateUnit: v.rateUnit,
         projectId: v.projectId ?? null,
+        serviceIntervalHours: v.serviceIntervalHours ? String(v.serviceIntervalHours) : null,
+        serviceIntervalDays: v.serviceIntervalDays || null,
+        lastServiceDate: v.lastServiceDate ? v.lastServiceDate.format('YYYY-MM-DD') : null,
         ...(editing && editing !== 'new' ? { isActive: v.isActive ?? true } : {}),
       };
       return editing && editing !== 'new' ? (await api.patch<EquipmentDto>(`/equipment/${editing.id}`, body)).data : (await api.post<EquipmentDto>('/equipment', body)).data;
@@ -99,6 +106,9 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
         rateUnit: e.rateUnit,
         projectId: e.projectId ?? undefined,
         isActive: e.isActive,
+        serviceIntervalHours: e.serviceIntervalHours === null ? null : Number(e.serviceIntervalHours),
+        serviceIntervalDays: e.serviceIntervalDays,
+        lastServiceDate: e.lastServiceDate ? dayjs(e.lastServiceDate) : null,
       });
   };
 
@@ -234,6 +244,17 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
           <Form.Item name="projectId" label="Deployed at">
             <Select allowClear showSearch optionFilterProp="label" placeholder="Yard / unassigned" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
           </Form.Item>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0 16px' }}>
+            <Form.Item name="serviceIntervalHours" label="Service every (hours)" tooltip="Working hours from the daily logs; leave blank for no hour schedule">
+              <InputNumber style={{ width: '100%' }} min={1} />
+            </Form.Item>
+            <Form.Item name="serviceIntervalDays" label="or every (days)">
+              <InputNumber style={{ width: '100%' }} min={1} max={3650} precision={0} />
+            </Form.Item>
+            <Form.Item name="lastServiceDate" label="Last service" tooltip="Closing a service job card updates it">
+              <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+            </Form.Item>
+          </div>
           {editing && editing !== 'new' ? (
             <Form.Item name="isActive" valuePropName="checked">
               <Checkbox>Active (inactive machines cannot be logged)</Checkbox>

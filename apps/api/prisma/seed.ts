@@ -145,6 +145,7 @@ async function main() {
     await seedStoreMoves(org.id);
     await seedSafety(org.id);
     await seedSectors(org.id);
+    await seedMaintenance(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
   }
@@ -311,9 +312,103 @@ async function main() {
   await seedStoreMoves(org.id);
   await seedSafety(org.id);
   await seedSectors(org.id);
+  await seedMaintenance(org.id);
 
   console.log('Seed complete. Login with any of these (password: password123):');
   for (const u of USERS) console.log(`  ${u.email.padEnd(24)} ${u.role}`);
+}
+
+/**
+ * Machinery maintenance demo (v4 item 42): service schedules (the excavator due soon, the backhoe overdue, the mixer
+ * fine), a closed service with spares issued from the road store, the grader's breakdown fixed by the hire agency, an
+ * open breakdown on the backhoe, vehicle papers (the tipper's insurance expiring and its PUC lapsed) and drivers (one
+ * licence expiring, one expired). Only when the organisation has no job card yet.
+ */
+async function seedMaintenance(organizationId: string) {
+  if (await prisma.maintenanceJob.count({ where: { organizationId } })) return;
+  const eq = async (code: string) => prisma.equipment.findFirst({ where: { organizationId, code } });
+  const [exc, grd, jcb, dg, mix, tc, tip] = await Promise.all(['EXC-01', 'GRD-01', 'JCB-01', 'DG-01', 'MIX-01', 'TC-01', 'TIP-07'].map(eq));
+  const keeper = await prisma.user.findFirst({ where: { organizationId, email: 'store@demo.com' } });
+  const engineer = await prisma.user.findFirst({ where: { organizationId, email: 'engineer@demo.com' } });
+  const engineer2 = await prisma.user.findFirst({ where: { organizationId, email: 'engineer2@demo.com' } });
+  if (!exc || !grd || !jcb || !dg || !mix || !tc || !tip || !keeper || !engineer || !engineer2 || !exc.projectId) return;
+  const year = new Date().getUTCFullYear();
+  const audit = (entityType: string, entityId: string, action: string, actorId: string, at: Date, note?: string) =>
+    prisma.auditLog.create({ data: { organizationId, entityType, entityId, action, actorId, note: note ?? null, createdAt: at } });
+
+  const schedules: [typeof exc, number | null, number | null, number, number][] = [
+    [exc, 250, 90, -86, 1150],
+    [jcb, 250, 90, -95, 2010],
+    [dg, 40, 30, -4, 3120],
+    [mix, 500, 180, -30, 1800],
+    [tip, null, 120, -60, 48200],
+  ];
+  for (const [m, hours, days, last, meter] of schedules)
+    await prisma.equipment.update({ where: { id: m.id }, data: { serviceIntervalHours: hours ? D(hours) : null, serviceIntervalDays: days, lastServiceDate: day(last), lastServiceMeter: D(meter) } });
+
+  // Spares at the road store: an opening count, then the excavator's service issue against its job card.
+  const spare = (name: string, unit: string, rate: string) =>
+    prisma.item.upsert({ where: { organizationId_name_unit: { organizationId, name, unit } }, update: {}, create: { organizationId, name, unit, rate: D(rate), category: 'Spares & lubricants' } });
+  const [oil, filter, grease, hyd] = await Promise.all([spare('Engine oil 15W-40', 'Ltr', '310'), spare('Oil filter (EX200)', 'Nos', '850'), spare('Grease (lithium)', 'Kg', '260'), spare('Hydraulic oil 68', 'Ltr', '240')]);
+  const nextNo = async (prefix: string) => {
+    const last = await prisma.stockEntry.findFirst({ where: { organizationId, entryNo: { startsWith: `${prefix}-${year}-` } }, orderBy: { entryNo: 'desc' }, select: { entryNo: true } });
+    return `${prefix}-${year}-${String((last ? parseInt(last.entryNo.slice(prefix.length + 6), 10) : 0) + 1).padStart(4, '0')}`;
+  };
+  const stockEntry = async (type: 'ADJUSTMENT' | 'ISSUE', offset: number, data: Partial<Prisma.StockEntryUncheckedCreateInput>, lines: [string, number][]) => {
+    const e = await prisma.stockEntry.create({
+      data: {
+        organizationId, projectId: exc.projectId!, type, entryNo: await nextNo(type === 'ISSUE' ? 'ISS' : 'ADJ'), date: day(offset), createdById: keeper.id, createdAt: day(offset), ...data,
+        lines: { create: lines.map(([itemId, q], i) => ({ organizationId, projectId: exc.projectId!, itemId, type, date: day(offset), quantity: D(q), sortOrder: i })) },
+      },
+    });
+    await audit('STOCK', e.id, 'CREATED', keeper.id, day(offset), e.entryNo);
+    return e;
+  };
+  await stockEntry('ADJUSTMENT', -90, { remarks: 'Opening stock of spares and lubricants' }, [[oil.id, 60], [filter.id, 4], [grease.id, 10], [hyd.id, 40]]);
+
+  const jobs = [
+    { m: exc, kind: 'SERVICE', by: keeper, open: -86, close: -86, meter: 1150, description: '250-hour service due', workshop: 'Own mechanic (Bhagaban Sethi)', workDone: 'Engine oil and filter changed, fuel filter cleaned, all points greased.', labour: 1800, parts: 0, down: 6, spares: [[oil.id, -24], [filter.id, -1], [grease.id, -2]] as [string, number][] },
+    { m: grd, kind: 'BREAKDOWN', by: engineer, open: -2, close: -2, meter: null, description: 'Hydraulic hose burst on the blade lift; machine stopped at Ch 14+600.', workshop: 'Mahalaxmi Earthmovers (hire agency)', workDone: 'Hose replaced by the agency mechanic at their cost.', labour: 0, parts: 0, down: 3, spares: [] },
+    { m: mix, kind: 'BREAKDOWN', by: engineer2, open: -9, close: -8, meter: null, description: 'Drum motor not starting; concreting of the lift shaft wall held up.', workshop: 'Sri Durga Electricals', workDone: 'Motor rewound and starter contactor replaced.', labour: 2500, parts: 1800, down: 7, spares: [] },
+    { m: jcb, kind: 'BREAKDOWN', by: engineer, open: 0, close: null, meter: 2240, description: 'Loader arm cylinder leaking oil; machine parked at the pipe yard.', workshop: null, workDone: null, labour: 0, parts: 0, down: null, spares: [] },
+  ] as const;
+  let n = 0;
+  for (const j of jobs) {
+    const job = await prisma.maintenanceJob.create({
+      data: {
+        organizationId, equipmentId: j.m.id, projectId: j.m.projectId, jobNo: `MNT-${year}-${String(++n).padStart(4, '0')}`, kind: j.kind, date: day(j.open),
+        meterReading: j.meter ? D(j.meter) : null, description: j.description, workshop: j.workshop, reportedById: j.by.id, createdAt: day(j.open),
+        ...(j.close !== null ? { status: 'CLOSED' as const, closedDate: day(j.close), workDone: j.workDone, labourCost: D(j.labour), partsCost: D(j.parts), downtimeHours: j.down ? D(j.down) : null, closedById: keeper.id } : {}),
+      },
+    });
+    await audit('MAINTENANCE_JOB', job.id, 'CREATED', j.by.id, day(j.open));
+    if (j.close !== null) await audit('MAINTENANCE_JOB', job.id, 'CLOSED', keeper.id, day(j.close), j.workDone);
+    if (j.spares.length) await stockEntry('ISSUE', j.open, { issuedTo: `${j.m.code} (${job.jobNo})`, remarks: `Spares for service ${job.jobNo}`, maintenanceJobId: job.id }, [...j.spares]);
+  }
+
+  const docs: [typeof exc, 'INSURANCE' | 'FITNESS' | 'PERMIT' | 'PUC' | 'ROAD_TAX' | 'REGISTRATION' | 'OTHER', string | null, string | null, number, string | null][] = [
+    [tip, 'INSURANCE', 'OG-25-2401-1801-00004471', 'New India Assurance', -353, null],
+    [tip, 'INSURANCE', 'OG-26-2401-1801-00009120', 'New India Assurance', 12, 'Comprehensive, IDV ₹28 lakh'],
+    [tip, 'FITNESS', 'FC/OD02/2026/1187', 'RTO Bhubaneswar', 210, null],
+    [tip, 'PERMIT', 'NP/OD/2026/0420', 'STA Odisha', 150, 'Goods carriage, Odisha'],
+    [tip, 'PUC', 'PUC-OD02-77812', 'Pipili emission test centre', -3, null],
+    [tip, 'ROAD_TAX', 'TAX/OD02/26-27/5531', 'RTO Bhubaneswar', 170, 'Paid for the year'],
+    [exc, 'INSURANCE', 'CE-26-3310-0000-2214', 'United India Insurance', 140, 'Contractor’s plant and machinery policy'],
+    [jcb, 'INSURANCE', 'CE-26-3310-0000-2251', 'United India Insurance', 25, null],
+    [jcb, 'PUC', 'PUC-OD02-77901', 'Pipili emission test centre', 60, null],
+    [tc, 'OTHER', 'LT/KC/2026/031', 'Competent person (Factories Act)', 45, 'Load test certificate of the tower crane'],
+  ];
+  for (const [m, type, number, issuer, validTo, notes] of docs)
+    await prisma.equipmentDocument.create({ data: { organizationId, equipmentId: m.id, type, number, issuer, validFrom: day(validTo - 365), validTo: day(validTo), notes, createdAt: day(-30) } });
+
+  const drivers: [string, string, string, string, number, typeof exc][] = [
+    ['Sukanta Behera', '9437012345', 'OD0220190012345', 'HMV', 20, tip],
+    ['Sanjay Nayak', '9437023456', 'OD0220170045678', 'HMV, excavator operator', 640, exc],
+    ['Pradip Sahoo', '9437034567', 'OD1920180078123', 'HMV', 400, jcb],
+    ['Bikash Mallick', '9437045678', 'OD0520150011223', 'Crane operator', -10, tc],
+  ];
+  for (const [name, phone, licenceNo, licenceClass, validTo, m] of drivers)
+    await prisma.driver.create({ data: { organizationId, name, phone, licenceNo, licenceClass, licenceValidTo: day(validTo), equipmentId: m.id, notes: m === tc ? 'From Kalinga Cranes with the hired crane' : null } });
 }
 
 /**

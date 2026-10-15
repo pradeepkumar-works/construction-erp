@@ -131,6 +131,7 @@ enum NotificationType {
   PORTAL
   BILLS_DUE
   SAFETY
+  MACHINERY
 }
 
 /// What a quality test is of. CONCRETE_CUBE gets 7 and 28-day readings; the others one result.
@@ -400,6 +401,9 @@ model Organization {
   toolboxTalks      ToolboxTalk[]
   workPermits       WorkPermit[]
   variationLines    VariationLine[]
+  maintenanceJobs   MaintenanceJob[]
+  equipmentDocs     EquipmentDocument[]
+  drivers           Driver[]
 }
 
 model Role {
@@ -512,6 +516,8 @@ model User {
   permitsRequested     WorkPermit[]       @relation("PermitRequester")
   permitsIssued        WorkPermit[]       @relation("PermitIssuer")
   permitsClosed        WorkPermit[]       @relation("PermitCloser")
+  maintenanceReported  MaintenanceJob[]   @relation("MaintenanceReporter")
+  maintenanceClosed    MaintenanceJob[]   @relation("MaintenanceCloser")
   employee             Employee?          @relation("EmployeeLogin")
   staffMarked          StaffAttendance[]  @relation("StaffAttendanceMarker")
   leaveDecided         LeaveRequest[]     @relation("LeaveDecider")
@@ -619,6 +625,7 @@ model Project {
   safetyIncidents  SafetyIncident[]
   toolboxTalks     ToolboxTalk[]
   workPermits      WorkPermit[]
+  maintenanceJobs  MaintenanceJob[]
 
   @@unique([organizationId, code])
   @@index([organizationId, status])
@@ -1397,6 +1404,9 @@ model StockEntry {
   transferOut       StockEntry?      @relation("StockTransfer", fields: [transferOutId], references: [id], onDelete: SetNull)
   transferIn        StockEntry?      @relation("StockTransfer")
   remarks           String?
+  /// Issues: spares for this maintenance job
+  maintenanceJobId  String?
+  maintenanceJob    MaintenanceJob?  @relation(fields: [maintenanceJobId], references: [id], onDelete: SetNull)
   createdById       String
   createdBy         User             @relation(fields: [createdById], references: [id])
   createdAt         DateTime         @default(now())
@@ -1460,27 +1470,35 @@ model StockMinLevel {
 
 /// A machine or vehicle: owned by the company or hired. `projectId` is where it is deployed now (null = yard / unassigned).
 model Equipment {
-  id             String             @id @default(uuid())
-  organizationId String
-  organization   Organization       @relation(fields: [organizationId], references: [id])
-  code           String
-  name           String
-  category       String?
-  ownership      EquipmentOwnership @default(OWNED)
+  id                   String             @id @default(uuid())
+  organizationId       String
+  organization         Organization       @relation(fields: [organizationId], references: [id])
+  code                 String
+  name                 String
+  category             String?
+  ownership            EquipmentOwnership @default(OWNED)
   /// Hire agency for hired machines
-  supplier       String?
-  vendorId       String?
-  vendor         Vendor?            @relation(fields: [vendorId], references: [id], onDelete: SetNull)
-  registrationNo String?
-  rate           Decimal?           @db.Decimal(18, 2)
-  rateUnit       EquipmentRateUnit  @default(HOUR)
-  projectId      String?
-  project        Project?           @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  isActive       Boolean            @default(true)
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
+  supplier             String?
+  vendorId             String?
+  vendor               Vendor?            @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  registrationNo       String?
+  rate                 Decimal?           @db.Decimal(18, 2)
+  rateUnit             EquipmentRateUnit  @default(HOUR)
+  projectId            String?
+  project              Project?           @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  isActive             Boolean            @default(true)
+  /// Service every so many working hours and / or days (v4 item 42); the last service resets both
+  serviceIntervalHours Decimal?           @db.Decimal(18, 2)
+  serviceIntervalDays  Int?
+  lastServiceDate      DateTime?          @db.Date
+  lastServiceMeter     Decimal?           @db.Decimal(18, 2)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
 
-  logs MachineryLog[]
+  logs            MachineryLog[]
+  maintenanceJobs MaintenanceJob[]
+  documents       EquipmentDocument[]
+  drivers         Driver[]
 
   @@unique([organizationId, code])
   @@index([organizationId, projectId])
@@ -1887,9 +1905,9 @@ model VendorPayment {
 }
 
 model Attachment {
-  id                String            @id @default(uuid())
+  id                String             @id @default(uuid())
   organizationId    String
-  organization      Organization      @relation(fields: [organizationId], references: [id])
+  organization      Organization       @relation(fields: [organizationId], references: [id])
   fileName          String
   mimeType          String
   size              Int
@@ -1898,52 +1916,56 @@ model Attachment {
   /// File bytes when stored in the database (serverless hosts without a disk or object store)
   data              Bytes?
   uploadedById      String
-  uploadedBy        User              @relation(fields: [uploadedById], references: [id])
+  uploadedBy        User               @relation(fields: [uploadedById], references: [id])
   progressEntryId   String?
-  progressEntry     ProgressEntry?    @relation(fields: [progressEntryId], references: [id], onDelete: Cascade)
+  progressEntry     ProgressEntry?     @relation(fields: [progressEntryId], references: [id], onDelete: Cascade)
   dailyReportId     String?
-  dailyReport       DailyReport?      @relation(fields: [dailyReportId], references: [id], onDelete: Cascade)
+  dailyReport       DailyReport?       @relation(fields: [dailyReportId], references: [id], onDelete: Cascade)
   materialRequestId String?
-  materialRequest   MaterialRequest?  @relation(fields: [materialRequestId], references: [id], onDelete: Cascade)
+  materialRequest   MaterialRequest?   @relation(fields: [materialRequestId], references: [id], onDelete: Cascade)
   stockEntryId      String?
-  stockEntry        StockEntry?       @relation(fields: [stockEntryId], references: [id], onDelete: Cascade)
+  stockEntry        StockEntry?        @relation(fields: [stockEntryId], references: [id], onDelete: Cascade)
   machineryLogId    String?
-  machineryLog      MachineryLog?     @relation(fields: [machineryLogId], references: [id], onDelete: Cascade)
+  machineryLog      MachineryLog?      @relation(fields: [machineryLogId], references: [id], onDelete: Cascade)
   expenseId         String?
-  expense           Expense?          @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  expense           Expense?           @relation(fields: [expenseId], references: [id], onDelete: Cascade)
   measurementId     String?
-  measurement       MeasurementSheet? @relation(fields: [measurementId], references: [id], onDelete: Cascade)
+  measurement       MeasurementSheet?  @relation(fields: [measurementId], references: [id], onDelete: Cascade)
   riskId            String?
-  risk              Risk?             @relation(fields: [riskId], references: [id], onDelete: Cascade)
+  risk              Risk?              @relation(fields: [riskId], references: [id], onDelete: Cascade)
   raBillId          String?
-  raBill            RaBill?           @relation(fields: [raBillId], references: [id], onDelete: Cascade)
+  raBill            RaBill?            @relation(fields: [raBillId], references: [id], onDelete: Cascade)
   purchaseOrderId   String?
-  purchaseOrder     PurchaseOrder?    @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  purchaseOrder     PurchaseOrder?     @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
   vendorBillId      String?
-  vendorBill        VendorBill?       @relation(fields: [vendorBillId], references: [id], onDelete: Cascade)
+  vendorBill        VendorBill?        @relation(fields: [vendorBillId], references: [id], onDelete: Cascade)
   workOrderId       String?
-  workOrder         WorkOrder?        @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  workOrder         WorkOrder?         @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
   subcontractBillId String?
-  subcontractBill   SubcontractBill?  @relation(fields: [subcontractBillId], references: [id], onDelete: Cascade)
+  subcontractBill   SubcontractBill?   @relation(fields: [subcontractBillId], references: [id], onDelete: Cascade)
   inspectionId      String?
-  inspection        Inspection?       @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+  inspection        Inspection?        @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
   qualityTestId     String?
-  qualityTest       QualityTest?      @relation(fields: [qualityTestId], references: [id], onDelete: Cascade)
+  qualityTest       QualityTest?       @relation(fields: [qualityTestId], references: [id], onDelete: Cascade)
   ncrId             String?
-  ncr               Ncr?              @relation(fields: [ncrId], references: [id], onDelete: Cascade)
+  ncr               Ncr?               @relation(fields: [ncrId], references: [id], onDelete: Cascade)
   revisionId        String?
-  revision          DocumentRevision? @relation(fields: [revisionId], references: [id], onDelete: Cascade)
+  revision          DocumentRevision?  @relation(fields: [revisionId], references: [id], onDelete: Cascade)
   letterId          String?
-  letter            Letter?           @relation(fields: [letterId], references: [id], onDelete: Cascade)
+  letter            Letter?            @relation(fields: [letterId], references: [id], onDelete: Cascade)
   variationId       String?
-  variation         Variation?        @relation(fields: [variationId], references: [id], onDelete: Cascade)
+  variation         Variation?         @relation(fields: [variationId], references: [id], onDelete: Cascade)
   safetyIncidentId  String?
-  safetyIncident    SafetyIncident?   @relation(fields: [safetyIncidentId], references: [id], onDelete: Cascade)
+  safetyIncident    SafetyIncident?    @relation(fields: [safetyIncidentId], references: [id], onDelete: Cascade)
   toolboxTalkId     String?
-  toolboxTalk       ToolboxTalk?      @relation(fields: [toolboxTalkId], references: [id], onDelete: Cascade)
+  toolboxTalk       ToolboxTalk?       @relation(fields: [toolboxTalkId], references: [id], onDelete: Cascade)
   workPermitId      String?
-  workPermit        WorkPermit?       @relation(fields: [workPermitId], references: [id], onDelete: Cascade)
-  createdAt         DateTime          @default(now())
+  workPermit        WorkPermit?        @relation(fields: [workPermitId], references: [id], onDelete: Cascade)
+  maintenanceJobId  String?
+  maintenanceJob    MaintenanceJob?    @relation(fields: [maintenanceJobId], references: [id], onDelete: Cascade)
+  equipmentDocId    String?
+  equipmentDoc      EquipmentDocument? @relation(fields: [equipmentDocId], references: [id], onDelete: Cascade)
+  createdAt         DateTime           @default(now())
 
   @@index([organizationId])
 }
@@ -2786,4 +2808,110 @@ model WorkPermit {
 
   @@unique([organizationId, permitNo])
   @@index([projectId, status])
+}
+
+/// Scheduled service or breakdown repair of a machine (v4 item 42).
+enum MaintenanceKind {
+  SERVICE
+  BREAKDOWN
+}
+
+enum MaintenanceStatus {
+  OPEN
+  CLOSED
+}
+
+/// A machine or vehicle document with an expiry date.
+enum EquipmentDocType {
+  INSURANCE
+  FITNESS
+  PERMIT
+  PUC
+  ROAD_TAX
+  REGISTRATION
+  OTHER
+}
+
+/// A maintenance job card: a service when due, or a breakdown reported from site, closed with the work done and its cost.
+model MaintenanceJob {
+  id             String            @id @default(uuid())
+  organizationId String
+  organization   Organization      @relation(fields: [organizationId], references: [id])
+  equipmentId    String
+  equipment      Equipment         @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  /// Where the machine was; null for one in the yard
+  projectId      String?
+  project        Project?          @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  /// MNT-<year>-0001 per organisation
+  jobNo          String
+  kind           MaintenanceKind
+  status         MaintenanceStatus @default(OPEN)
+  date           DateTime          @db.Date
+  meterReading   Decimal?          @db.Decimal(18, 2)
+  description    String
+  /// Workshop or mechanic doing the job
+  workshop       String?
+  workDone       String?
+  closedDate     DateTime?         @db.Date
+  downtimeHours  Decimal?          @db.Decimal(18, 2)
+  labourCost     Decimal           @default(0) @db.Decimal(18, 2)
+  /// Parts bought outside (spares from the store are stock issues linked to the job)
+  partsCost      Decimal           @default(0) @db.Decimal(18, 2)
+  reportedById   String
+  reportedBy     User              @relation("MaintenanceReporter", fields: [reportedById], references: [id])
+  closedById     String?
+  closedBy       User?             @relation("MaintenanceCloser", fields: [closedById], references: [id])
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  spareIssues StockEntry[]
+  attachments Attachment[]
+
+  @@unique([organizationId, jobNo])
+  @@index([organizationId, status])
+  @@index([equipmentId, date])
+  @@index([projectId])
+}
+
+/// Insurance, fitness, permit, PUC, road tax or registration of a machine or vehicle, with its validity.
+model EquipmentDocument {
+  id             String           @id @default(uuid())
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  equipmentId    String
+  equipment      Equipment        @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  type           EquipmentDocType
+  number         String?
+  issuer         String?
+  validFrom      DateTime?        @db.Date
+  validTo        DateTime         @db.Date
+  notes          String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  attachments Attachment[]
+
+  @@index([organizationId, validTo])
+  @@index([equipmentId])
+}
+
+/// A driver or operator with a licence, optionally assigned to a machine.
+model Driver {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  name           String
+  phone          String?
+  licenceNo      String?
+  /// Licence class, e.g. HMV, LMV, crane operator
+  licenceClass   String?
+  licenceValidTo DateTime?    @db.Date
+  equipmentId    String?
+  equipment      Equipment?   @relation(fields: [equipmentId], references: [id], onDelete: SetNull)
+  isActive       Boolean      @default(true)
+  notes          String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId, isActive])
 }

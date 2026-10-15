@@ -2,6 +2,14 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
+  DriverDto,
+  EquipmentDocType,
+  EquipmentDocumentDto,
+  ExpiryState,
+  MaintenanceJobDto,
+  MaintenanceKind,
+  MaintenanceStatus,
+  MaintenanceSummaryDto,
   SectorProgressDto,
   VariationDto,
   VariationStatus,
@@ -1508,4 +1516,56 @@ export const useSectorProgress = (projectId: string | undefined) =>
     queryKey: ['sector', projectId],
     queryFn: async () => (await api.get<SectorProgressDto>(`/projects/${projectId}/sector-progress`)).data,
     enabled: !!projectId,
+  });
+
+/* ---------- Maintenance (v4 item 42) ---------- */
+
+export interface JobFilters extends PageParams {
+  projectId?: string;
+  equipmentId?: string;
+  kind?: MaintenanceKind;
+  status?: MaintenanceStatus;
+}
+
+export interface DocumentFilters extends PageParams {
+  equipmentId?: string;
+  type?: EquipmentDocType;
+  state?: ExpiryState;
+  latestOnly?: boolean;
+}
+
+export interface DriverFilters extends PageParams {
+  equipmentId?: string;
+  includeInactive?: boolean;
+}
+
+export const useMaintenanceSummary = (projectId?: string) =>
+  useQuery({
+    queryKey: ['maintenance', 'summary', projectId ?? 'all'],
+    queryFn: async () => (await api.get<MaintenanceSummaryDto>('/maintenance/summary', { params: clean({ projectId }) })).data,
+    placeholderData: keepPreviousData,
+  });
+
+export const useMaintenanceJobs = (filters?: JobFilters) =>
+  useQuery({
+    queryKey: ['maintenance', 'jobs', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<MaintenanceJobDto>>('/maintenance/jobs', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+  });
+
+export const useMaintenanceJob = (id: string | undefined) =>
+  useQuery({ queryKey: ['maintenance', 'job', id], queryFn: async () => (await api.get<MaintenanceJobDto>(`/maintenance/jobs/${id}`)).data, enabled: !!id });
+
+export const useEquipmentDocuments = (filters?: DocumentFilters) =>
+  useQuery({
+    queryKey: ['maintenance', 'documents', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<EquipmentDocumentDto>>('/equipment-documents', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+  });
+
+export const useDrivers = (filters?: DriverFilters) =>
+  useQuery({
+    queryKey: ['maintenance', 'drivers', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<DriverDto>>('/drivers', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
   });

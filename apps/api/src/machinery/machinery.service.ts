@@ -96,6 +96,10 @@ export class MachineryService {
       projectName: r.project?.name ?? null,
       isActive: r.isActive,
       lastLogDate: dateOnly(r.logs[0]?.date),
+      serviceIntervalHours: dec(r.serviceIntervalHours),
+      serviceIntervalDays: r.serviceIntervalDays,
+      lastServiceDate: dateOnly(r.lastServiceDate),
+      lastServiceMeter: dec(r.lastServiceMeter),
       createdAt: iso(r.createdAt)!,
     };
   }
@@ -146,6 +150,17 @@ export class MachineryService {
       data.projectId = dto.projectId;
     }
     if (dto.isActive !== undefined) data.isActive = dto.isActive;
+    if (dto.serviceIntervalHours !== undefined) {
+      const h = decimalOrNull(dto.serviceIntervalHours);
+      if (h && h.lte(0)) throw new BadRequestException('Service interval must be more than 0 hours');
+      data.serviceIntervalHours = h;
+    }
+    if (dto.serviceIntervalDays !== undefined) data.serviceIntervalDays = dto.serviceIntervalDays;
+    if (dto.lastServiceDate !== undefined) {
+      if (dto.lastServiceDate && parseDate(dto.lastServiceDate).getTime() > Date.now() + 36 * 3600 * 1000) throw new BadRequestException('The last service date cannot be in the future');
+      data.lastServiceDate = dto.lastServiceDate ? parseDate(dto.lastServiceDate) : null;
+    }
+    if (dto.lastServiceMeter !== undefined) data.lastServiceMeter = decimalOrNull(dto.lastServiceMeter);
     return data;
   }
 

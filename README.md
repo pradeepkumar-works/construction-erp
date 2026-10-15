@@ -80,6 +80,9 @@ demo seed at 1280 × 800, scale 1.25, saved as WebP).
 - Project cost: approved site expenses, material issued at the item's standard rate, approved machinery logs
   at the hire rate and attendance at each trade's daily rate, against the value of approved progress (and of
   approved measurements), by project and month, with margin. For approvers and accounts.
+- Machinery maintenance: breakdowns reported from site, service and repair job cards with spares issued from the
+  store, a service schedule by hours or days, vehicle papers (insurance, fitness, permit, PUC, road tax) and driving
+  licences with expiry alerts.
 - Sector progress: progress and measurements tagged with chainage (road), floor (building) or village (water
   supply); a road strip chart per layer, a floor by activity matrix, and pipe ordered, supplied, laid and tested
   village by village.
