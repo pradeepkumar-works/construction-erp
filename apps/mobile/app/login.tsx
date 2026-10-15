@@ -7,6 +7,7 @@ import { errorMessage, request } from '../src/api/client';
 import type { AuthOptionsDto } from '@erp/shared';
 import { PRODUCT_NAME } from '@erp/shared';
 import { API_URL } from '../src/config';
+import { useT } from '../src/i18n/LanguageContext';
 import { colors, fonts, radius, spacing, touch, typography } from '../src/theme';
 
 const DEMO_ACCOUNTS = [
@@ -19,6 +20,7 @@ const DEMO_PASSWORD = 'password123';
 
 export default function LoginScreen() {
   const { signIn } = useAuth();
+  const t = useT();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
@@ -37,17 +39,17 @@ export default function LoginScreen() {
     setError(null);
     setNotice(null);
     if (!/^\S+@\S+\.\S+$/.test(email.trim())) {
-      setError('Enter your email above, then tap Forgot password.');
+      setError(t('Enter your email above, then tap Forgot password.'));
       return;
     }
     try {
       const options = await request<AuthOptionsDto>('/auth/options');
       if (!options.resetByEmail) {
-        setNotice('Password emails are not set up. Ask your admin to send you a new password link from the Users page.');
+        setNotice(t('Password emails are not set up. Ask your admin to send you a new password link from the Users page.'));
         return;
       }
       await request('/auth/forgot-password', { method: 'POST', body: { email: email.trim() } });
-      setNotice(`If ${email.trim()} has an account, a reset link is on its way. Open it, choose a new password, then sign in here.`);
+      setNotice(t('If {email} has an account, a reset link is on its way. Open it, choose a new password, then sign in here.', { email: email.trim() }));
     } catch (e) {
       setError(errorMessage(e));
     }
@@ -55,7 +57,7 @@ export default function LoginScreen() {
 
   const submit = async () => {
     if (!email.trim() || !password) {
-      setError('Enter your email and password.');
+      setError(t('Enter your email and password.'));
       return;
     }
     setBusy(true);
@@ -83,14 +85,14 @@ export default function LoginScreen() {
         </View>
 
         <Text style={styles.title} accessibilityRole="header">
-          Sign in
+          {t('Sign in')}
         </Text>
-        <Text style={styles.subtitle}>Welcome back. Report progress, DPRs and material requests from site.</Text>
+        <Text style={styles.subtitle}>{t('Welcome back. Report progress, DPRs and material requests from site.')}</Text>
 
         <ErrorBanner message={error} />
-        <Text style={styles.label}>Email</Text>
+        <Text style={styles.label}>{t('Email')}</Text>
         <Input
-          accessibilityLabel="Email"
+          accessibilityLabel={t('Email')}
           value={email}
           onChangeText={setEmail}
           autoCapitalize="none"
@@ -101,32 +103,32 @@ export default function LoginScreen() {
           returnKeyType="next"
         />
         <View style={styles.labelRow}>
-          <Text style={styles.label}>Password</Text>
+          <Text style={styles.label}>{t('Password')}</Text>
           <Pressable onPress={forgot} hitSlop={12} accessibilityRole="button">
-            <Text style={styles.link}>Forgot password?</Text>
+            <Text style={styles.link}>{t('Forgot password?')}</Text>
           </Pressable>
         </View>
         <Input
-          accessibilityLabel="Password"
+          accessibilityLabel={t('Password')}
           value={password}
           onChangeText={setPassword}
           secureTextEntry={!showPw}
           textContentType="password"
-          placeholder="Your password"
+          placeholder={t('Your password')}
           returnKeyType="go"
           onSubmitEditing={submit}
           right={
-            <Pressable onPress={() => setShowPw((s) => !s)} hitSlop={10} accessibilityLabel={showPw ? 'Hide password' : 'Show password'}>
+            <Pressable onPress={() => setShowPw((s) => !s)} hitSlop={10} accessibilityLabel={showPw ? t('Hide password') : t('Show password')}>
               <Ionicons name={showPw ? 'eye-off-outline' : 'eye-outline'} size={22} color={colors.textMuted} />
             </Pressable>
           }
         />
         {notice ? <Text style={styles.notice}>{notice}</Text> : null}
-        <Button title="Sign in" onPress={submit} loading={busy} style={styles.submit} />
+        <Button title={t('Sign in')} onPress={submit} loading={busy} style={styles.submit} />
 
         <View style={styles.divider}>
           <View style={styles.rule} />
-          <Text style={styles.dividerText}>Try a demo account</Text>
+          <Text style={styles.dividerText}>{t('Try a demo account')}</Text>
           <View style={styles.rule} />
         </View>
         <View style={styles.chips}>
@@ -142,15 +144,15 @@ export default function LoginScreen() {
                 }}
                 accessibilityRole="button"
                 accessibilityState={{ selected: on }}
-                accessibilityHint={`Fills in ${a.email}`}
+                accessibilityHint={t('Fills in {email}', { email: a.email })}
                 style={({ pressed }) => [styles.chip, on && styles.chipOn, pressed && styles.pressed]}
               >
-                <Text style={[styles.chipText, on && styles.chipTextOn]}>{a.role}</Text>
+                <Text style={[styles.chipText, on && styles.chipTextOn]}>{t(a.role)}</Text>
               </Pressable>
             );
           })}
         </View>
-        <Text style={styles.demoNote}>Fills in the form. Every demo account uses the password {DEMO_PASSWORD}.</Text>
+        <Text style={styles.demoNote}>{t('Fills in the form. Every demo account uses the password {password}.', { password: DEMO_PASSWORD })}</Text>
         <Text style={styles.api}>{API_URL}</Text>
       </Animated.View>
     </Screen>

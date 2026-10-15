@@ -367,7 +367,10 @@ preview deployments run them against the production database before a PR is merg
     Delivery status tab: approved orders with what has arrived and what is still to come, late ones flagged, a vendor
     summary and Excel export. A unit master (Stock → Units) feeds every unit field, and date filters offer this
     month, last month and the last three financial years.
-49. **Hindi on the phone app** (M).
+49. ~~**Hindi on the phone app** (M).~~
+    Done: every screen of the site app in Hindi, picked under Profile > Language (English stays the default on every
+    phone). Shared labels, statuses and the standard permit precautions and toolbox topics are translated too; data
+    and server messages stay as entered. Other Indian languages can follow the same files.
 50. **Delay penalties and escalation** (S + M). Liquidated damages exposure, then price variation on RA bills.
 
 ## Definition of done for every item

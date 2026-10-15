@@ -147,6 +147,8 @@ demo seed at 1280 × 800, scale 1.25, saved as WebP).
 - Offline entry on the site app: progress, DPR, material requests and attendance filed without signal are kept
   in an outbox on the phone (photos included) and sent automatically when the connection returns.
   Retries never create duplicates because each entry carries its own id from the phone.
+- Hindi on the site app: every screen of the phone app in Hindi, chosen under Profile > Language. English stays
+  the default.
 - Notifications: the author is told when a submission is approved, rejected or sent back, and
   approvers when something new is waiting. In-app on web and mobile (bell + list), Expo push to
   registered phones, a daily "DPR not submitted" reminder to site staff and a daily email digest of

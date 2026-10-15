@@ -6,18 +6,20 @@ import { useFetch } from '../../src/api/hooks';
 import { EmptyState, ErrorState, Loading, Screen, SubmissionRow } from '../../src/components';
 import { colors, spacing, typography } from '../../src/theme';
 import { timeAgo } from '../../src/utils/format';
+import { useT } from '../../src/i18n/LanguageContext';
 
 const ORDER: SubmissionType[] = ['DPR', 'PROGRESS', 'MATERIAL_REQUEST', 'MACHINERY', 'EXPENSE', 'MEASUREMENT', 'BILL', 'PURCHASE_ORDER', 'VENDOR_BILL', 'WORK_ORDER', 'SUBCONTRACT_BILL', 'INSPECTION'];
 const DETAIL_PATH: Record<SubmissionType, string> = { PROGRESS: '/progress/', DPR: '/dpr/', MATERIAL_REQUEST: '/material-request/', MACHINERY: '/machinery/', EXPENSE: '/expense/', MEASUREMENT: '/measurement/', BILL: '/bill/', PURCHASE_ORDER: '/purchase-order/', VENDOR_BILL: '/vendor-bill/', WORK_ORDER: '/work-order/', SUBCONTRACT_BILL: '/subcontract-bill/', INSPECTION: '/inspection/' };
 
 export default function ApprovalsScreen() {
   const router = useRouter();
+  const t = useT();
   const { data, loading, refreshing, error, refresh, reload } = useFetch<PendingApprovalDto[]>((api) => api.get('/approvals/pending'), []);
 
   const sections = useMemo(
     () =>
-      ORDER.map((type) => ({ type, title: SUBMISSION_TYPE_LABELS[type], data: (data ?? []).filter((p) => p.type === type) })).filter((s) => s.data.length > 0),
-    [data],
+      ORDER.map((type) => ({ type, title: t(SUBMISSION_TYPE_LABELS[type]), data: (data ?? []).filter((p) => p.type === type) })).filter((s) => s.data.length > 0),
+    [data, t],
   );
 
   if (loading && !data) return <Loading />;
@@ -34,11 +36,11 @@ export default function ApprovalsScreen() {
         ListHeaderComponent={
           data && data.length ? (
             <Text style={styles.summary}>
-              {data.length} item{data.length === 1 ? '' : 's'} waiting for your review
+              {data.length === 1 ? t('1 item waiting for your review') : t('{n} items waiting for your review', { n: data.length })}
             </Text>
           ) : null
         }
-        ListEmptyComponent={<EmptyState title="All caught up" subtitle="Nothing is waiting for your approval." icon="checkmark-done-circle-outline" art="approved" />}
+        ListEmptyComponent={<EmptyState title={t('All caught up')} subtitle={t('Nothing is waiting for your approval.')} icon="checkmark-done-circle-outline" art="approved" />}
         renderSectionHeader={({ section }) => (
           <View style={styles.header}>
             <Text style={typography.h3}>{section.title}</Text>

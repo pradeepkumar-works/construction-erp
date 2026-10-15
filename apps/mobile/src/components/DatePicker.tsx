@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radius, spacing, touch, typography } from '../theme';
 import { addDays, formatDate, isIsoDate, today } from '../utils/format';
+import { useT } from '../i18n/LanguageContext';
 
 interface Props {
   label?: string;
@@ -15,6 +16,7 @@ interface Props {
 /** Simple, dependency-free date field: YYYY-MM-DD text plus quick -1 / today / +1 day buttons. */
 export function DatePicker({ label, value, onChange, error, required }: Props) {
   const valid = isIsoDate(value);
+  const t = useT();
   return (
     <View style={styles.container}>
       {label ? (
@@ -24,7 +26,7 @@ export function DatePicker({ label, value, onChange, error, required }: Props) {
         </Text>
       ) : null}
       <View style={styles.row}>
-        <Pressable onPress={() => onChange(addDays(value, -1))} style={styles.stepBtn} accessibilityLabel="Previous day">
+        <Pressable onPress={() => onChange(addDays(value, -1))} style={styles.stepBtn} accessibilityLabel={t('Previous day')}>
           <Ionicons name="chevron-back" size={22} color={colors.primary} />
         </Pressable>
         <View style={[styles.inputWrap, (!valid || !!error) && styles.inputError]}>
@@ -40,19 +42,19 @@ export function DatePicker({ label, value, onChange, error, required }: Props) {
             style={styles.input}
           />
         </View>
-        <Pressable onPress={() => onChange(addDays(value, 1))} style={styles.stepBtn} accessibilityLabel="Next day">
+        <Pressable onPress={() => onChange(addDays(value, 1))} style={styles.stepBtn} accessibilityLabel={t('Next day')}>
           <Ionicons name="chevron-forward" size={22} color={colors.primary} />
         </Pressable>
         <Pressable onPress={() => onChange(today())} style={styles.todayBtn}>
-          <Text style={styles.todayText}>Today</Text>
+          <Text style={styles.todayText}>{t('Today')}</Text>
         </Pressable>
       </View>
       {error ? (
         <Text style={styles.error}>{error}</Text>
       ) : !valid ? (
-        <Text style={styles.error}>Enter a date as YYYY-MM-DD</Text>
+        <Text style={styles.error}>{t('Enter a date as YYYY-MM-DD')}</Text>
       ) : (
-        <Text style={styles.hint}>{value === today() ? `Today, ${formatDate(value)}` : formatDate(value)}</Text>
+        <Text style={styles.hint}>{value === today() ? t('Today, {date}', { date: formatDate(value) }) : formatDate(value)}</Text>
       )}
     </View>
   );

@@ -8,6 +8,7 @@ import { useApi, useFetch } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
 import { Button, Card, Chips, DatePicker, EmptyState, ErrorBanner, Input, Loading, Screen, Select } from '../../src/components';
 import { SubmitSuccess, useProjectOptions } from '../../src/forms/common';
+import { useT } from '../../src/i18n/LanguageContext';
 import { useOffline } from '../../src/offline';
 import { colors, spacing, typography } from '../../src/theme';
 import { fmtQty, isIsoDate, today } from '../../src/utils/format';
@@ -25,6 +26,7 @@ interface Row {
 export default function IssueScreen() {
   const params = useLocalSearchParams<{ projectId?: string }>();
   const { user } = useAuth();
+  const t = useT();
   const api = useApi();
   const { online } = useOffline();
   const projects = useProjectOptions();
@@ -66,17 +68,17 @@ export default function IssueScreen() {
 
   const validate = () => {
     const e: Record<string, string> = {};
-    if (!projectId) e.projectId = 'Choose a project';
-    if (!isIsoDate(date)) e.date = 'Enter a valid date';
-    else if (date > today()) e.date = 'The date cannot be in the future';
-    if (!issuedTo.trim()) e.issuedTo = 'Who took the material?';
+    if (!projectId) e.projectId = t('Choose a project');
+    if (!isIsoDate(date)) e.date = t('Enter a valid date');
+    else if (date > today()) e.date = t('The date cannot be in the future');
+    if (!issuedTo.trim()) e.issuedTo = t('Who took the material?');
     const used = rows.filter((r) => r.itemId || r.quantity.trim());
-    if (!used.length) e.lines = 'Add at least one item';
+    if (!used.length) e.lines = t('Add at least one item');
     for (const r of used) {
       const item = r.itemId ? byId.get(r.itemId) : undefined;
-      if (!item) e[r.key] = 'Choose the item';
-      else if (!QTY.test(r.quantity.trim()) || Number(r.quantity) <= 0) e[r.key] = 'Enter a quantity (up to 3 decimals)';
-      else if (Number(r.quantity) > Number(item.balance)) e[r.key] = `Only ${fmtQty(item.balance)} ${item.unit} in stock`;
+      if (!item) e[r.key] = t('Choose the item');
+      else if (!QTY.test(r.quantity.trim()) || Number(r.quantity) <= 0) e[r.key] = t('Enter a quantity (up to 3 decimals)');
+      else if (Number(r.quantity) > Number(item.balance)) e[r.key] = t('Only {qty} {unit} in stock', { qty: fmtQty(item.balance), unit: item.unit });
     }
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -99,8 +101,8 @@ export default function IssueScreen() {
   if (saved) {
     return (
       <SubmitSuccess
-        title={`${saved.entryNo} saved`}
-        subtitle={`${saved.lines.map((l) => `${l.itemName} ${fmtQty(Math.abs(Number(l.quantity)))} ${l.unit}`).join(', ')} issued to ${saved.issuedTo}.`}
+        title={t('{no} saved', { no: saved.entryNo })}
+        subtitle={t('{lines} issued to {name}.', { lines: saved.lines.map((l) => `${l.itemName} ${fmtQty(Math.abs(Number(l.quantity)))} ${l.unit}`).join(', '), name: saved.issuedTo })}
         onAnother={() => {
           setSaved(null);
           setRows([{ key: newKey(), itemId: null, quantity: '' }]);
@@ -111,18 +113,18 @@ export default function IssueScreen() {
     );
   }
   if (projects.loading && !projects.data) return <Loading />;
-  if (user && !canKeepStock(user.roleKey)) return <EmptyState title="Not available for your role" subtitle="The store manager, site engineers and approvers issue material." icon="lock-closed-outline" />;
+  if (user && !canKeepStock(user.roleKey)) return <EmptyState title={t('Not available for your role')} subtitle={t('The store manager, site engineers and approvers issue material.')} icon="lock-closed-outline" />;
 
   const chosen = new Set(rows.map((r) => r.itemId).filter(Boolean));
   const contractors = (suggestions.data?.contractors ?? []).slice(0, 8);
 
   return (
     <Screen keyboard>
-      <Stack.Screen options={{ title: 'Issue Material' }} />
-      <ErrorBanner message={submitError ?? projects.error ?? (online ? stock.error : 'You are offline. Issuing material needs a connection.')} />
+      <Stack.Screen options={{ title: t('Issue Material') }} />
+      <ErrorBanner message={submitError ?? projects.error ?? (online ? stock.error : t('You are offline. Issuing material needs a connection.'))} />
       <Card>
         <Select
-          label="Project"
+          label={t('Project')}
           required
           value={projectId}
           options={projects.options}
@@ -132,30 +134,30 @@ export default function IssueScreen() {
             setWorkOrderId('');
             setRows([{ key: newKey(), itemId: null, quantity: '' }]);
           }}
-          placeholder="Choose project"
+          placeholder={t('Choose project')}
           error={errors.projectId}
         />
-        <DatePicker label="Date" required value={date} onChange={setDate} error={errors.date} />
+        <DatePicker label={t('Date')} required value={date} onChange={setDate} error={errors.date} />
         {woOptions.length ? (
           <Select
-            label="To a subcontractor"
+            label={t('To a subcontractor')}
             value={workOrderId}
-            options={[{ value: '', label: 'No (departmental)' }, ...woOptions]}
+            options={[{ value: '', label: t('No (departmental)') }, ...woOptions]}
             onChange={(v) => {
               setWorkOrderId(v);
               const w = wos.data?.items.find((x) => x.id === v);
               if (w) setIssuedTo(w.vendorName);
             }}
-            placeholder="No (departmental)"
+            placeholder={t('No (departmental)')}
           />
         ) : null}
-        <Input label="Issued to" required value={issuedTo} onChangeText={setIssuedTo} placeholder="Contractor, gang or person" error={errors.issuedTo} />
+        <Input label={t('Issued to')} required value={issuedTo} onChangeText={setIssuedTo} placeholder={t('Contractor, gang or person')} error={errors.issuedTo} />
         {contractors.length ? <Chips value={null} clearable={false} options={contractors.map((c) => ({ value: c, label: c }))} onChange={(v) => v && setIssuedTo(v)} /> : null}
-        <Select label="For activity" value={activityId} options={(activities.data ?? []).map((a) => ({ value: a.id, label: a.name }))} onChange={setActivityId} placeholder="Optional" disabled={!projectId} />
+        <Select label={t('For activity')} value={activityId} options={(activities.data ?? []).map((a) => ({ value: a.id, label: a.name }))} onChange={setActivityId} placeholder={t('Optional')} disabled={!projectId} />
       </Card>
 
-      <Card title="Items">
-        {projectId && !stock.loading && !items.length ? <Text style={typography.caption}>Nothing is in stock at this project yet.</Text> : null}
+      <Card title={t('Items')}>
+        {projectId && !stock.loading && !items.length ? <Text style={typography.caption}>{t('Nothing is in stock at this project yet.')}</Text> : null}
         {rows.map((r) => {
           const item = r.itemId ? byId.get(r.itemId) : undefined;
           return (
@@ -163,24 +165,24 @@ export default function IssueScreen() {
               <View style={styles.grow}>
                 <Select
                   value={r.itemId}
-                  options={items.filter((i) => i.itemId === r.itemId || !chosen.has(i.itemId)).map((i) => ({ value: i.itemId, label: i.itemName, hint: `${fmtQty(i.balance)} ${i.unit} in stock` }))}
+                  options={items.filter((i) => i.itemId === r.itemId || !chosen.has(i.itemId)).map((i) => ({ value: i.itemId, label: i.itemName, hint: t('{qty} {unit} in stock', { qty: fmtQty(i.balance), unit: i.unit }) }))}
                   onChange={(v) => updateRow(r.key, { itemId: v })}
-                  placeholder={stock.loading ? 'Loading…' : 'Item'}
+                  placeholder={stock.loading ? t('Loading…') : t('Item')}
                   disabled={!projectId}
                 />
                 <Input
                   value={r.quantity}
                   onChangeText={(v) => updateRow(r.key, { quantity: v })}
                   keyboardType="decimal-pad"
-                  placeholder="Quantity"
+                  placeholder={t('Quantity')}
                   right={item ? <Text style={typography.caption}>{item.unit}</Text> : undefined}
-                  hint={item ? `${fmtQty(item.balance)} ${item.unit} in stock` : undefined}
+                  hint={item ? t('{qty} {unit} in stock', { qty: fmtQty(item.balance), unit: item.unit }) : undefined}
                   error={errors[r.key]}
                   containerStyle={styles.qty}
                 />
               </View>
               {rows.length > 1 ? (
-                <Pressable onPress={() => setRows((rs) => rs.filter((x) => x.key !== r.key))} style={styles.remove} hitSlop={8} accessibilityLabel="Remove item">
+                <Pressable onPress={() => setRows((rs) => rs.filter((x) => x.key !== r.key))} style={styles.remove} hitSlop={8} accessibilityLabel={t('Remove item')}>
                   <Ionicons name="close-circle-outline" size={22} color={colors.textMuted} />
                 </Pressable>
               ) : null}
@@ -188,10 +190,10 @@ export default function IssueScreen() {
           );
         })}
         {errors.lines ? <Text style={styles.err}>{errors.lines}</Text> : null}
-        <Button title="Add item" variant="ghost" size="sm" icon="add" onPress={() => setRows((rs) => [...rs, { key: newKey(), itemId: null, quantity: '' }])} disabled={!projectId} />
-        <Input label="Remarks" value={remarks} onChangeText={setRemarks} multiline containerStyle={styles.last} />
+        <Button title={t('Add item')} variant="ghost" size="sm" icon="add" onPress={() => setRows((rs) => [...rs, { key: newKey(), itemId: null, quantity: '' }])} disabled={!projectId} />
+        <Input label={t('Remarks')} value={remarks} onChangeText={setRemarks} multiline containerStyle={styles.last} />
       </Card>
-      <Button title="Save issue" icon="checkmark" onPress={save} loading={busy} disabled={!online} />
+      <Button title={t('Save issue')} icon="checkmark" onPress={save} loading={busy} disabled={!online} />
     </Screen>
   );
 }

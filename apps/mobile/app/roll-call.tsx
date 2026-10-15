@@ -6,6 +6,7 @@ import { useApi, useFetch } from '../src/api/hooks';
 import { errorMessage } from '../src/api/client';
 import { Button, Card, Chips, DatePicker, EmptyState, ErrorBanner, Input, Loading, Screen, Select } from '../src/components';
 import { useProjectOptions } from '../src/forms/common';
+import { useT } from '../src/i18n/LanguageContext';
 import { colors, spacing, typography } from '../src/theme';
 import { isIsoDate, today } from '../src/utils/format';
 
@@ -22,6 +23,7 @@ const fromRow = (r: RollCallRowDto): Mark => ({ status: r.status, ot: r.otHours 
  */
 export default function RollCallScreen() {
   const api = useApi();
+  const t = useT();
   const params = useLocalSearchParams<{ projectId?: string }>();
   const projects = useProjectOptions();
   const [projectId, setProjectId] = useState<string | null>(params.projectId ?? null);
@@ -70,7 +72,7 @@ export default function RollCallScreen() {
       const d = await api.put<RollCallDto>('/workers/roll-call', { projectId, date, entries });
       roll.setData(d);
       const head = (d.headCount ?? []).reduce((s, l) => s + l.count, 0);
-      Alert.alert('Roll call saved', `Head count for the day: ${head}`);
+      Alert.alert(t('Roll call saved'), t('Head count for the day: {n}', { n: head }));
     } catch (e) {
       setError(errorMessage(e));
     } finally {
@@ -93,10 +95,10 @@ export default function RollCallScreen() {
         <Chips
           value={m?.status ?? null}
           onChange={(v) => !locked && set(r.workerId, { status: v })}
-          options={STAFF_ATTENDANCE_STATUSES.map((s) => ({ value: s, label: STAFF_ATTENDANCE_LABELS[s] }))}
+          options={STAFF_ATTENDANCE_STATUSES.map((s) => ({ value: s, label: t(STAFF_ATTENDANCE_LABELS[s]) }))}
         />
         {m && m.status && m.status !== 'ABSENT' ? (
-          <Input label="Overtime hours" value={m.ot} onChangeText={(t) => set(r.workerId, { ot: t.replace(/[^0-9.]/g, '') })} keyboardType="decimal-pad" placeholder="0" editable={!locked} containerStyle={styles.ot} />
+          <Input label={t('Overtime hours')} value={m.ot} onChangeText={(v) => set(r.workerId, { ot: v.replace(/[^0-9.]/g, '') })} keyboardType="decimal-pad" placeholder="0" editable={!locked} containerStyle={styles.ot} />
         ) : null}
       </View>
     );
@@ -104,34 +106,41 @@ export default function RollCallScreen() {
 
   return (
     <Screen refreshing={roll.refreshing} onRefresh={roll.refresh}>
-      <Select label="Project" value={projectId} options={projects.options} onChange={setProjectId} searchable />
-      <DatePicker label="Date" value={date} onChange={setDate} error={isIsoDate(date) && date > today() ? 'Not a future day' : null} />
+      <Select label={t('Project')} value={projectId} options={projects.options} onChange={setProjectId} searchable />
+      <DatePicker label={t('Date')} value={date} onChange={setDate} error={isIsoDate(date) && date > today() ? t('Not a future day') : null} />
       <Select
-        label="Working on (for those you mark)"
+        label={t('Working on (for those you mark)')}
         value={activityId}
         options={(activities.data ?? []).map((a) => ({ value: a.id, label: a.name }))}
         onChange={setActivityId}
         searchable
-        placeholder="Keep each worker's activity"
+        placeholder={t("Keep each worker's activity")}
       />
       <ErrorBanner message={error ?? roll.error} />
       {locked ? (
         <Card>
-          <Text style={typography.caption}>The DPR for this day is approved, so its roll call can no longer change.</Text>
+          <Text style={typography.caption}>{t('The DPR for this day is approved, so its roll call can no longer change.')}</Text>
         </Card>
       ) : null}
       {roll.data ? (
         <Text style={[typography.caption, styles.summary]}>
-          {rows.length} on the roll · {count('PRESENT')} present · {count('HALF_DAY')} half day · {count('ABSENT')} absent · {count(null)} not marked · {live.reduce((s, x) => s + manDays(x), 0)} man-days
+          {t('{total} on the roll · {present} present · {half} half day · {absent} absent · {unmarked} not marked · {md} man-days', {
+            total: rows.length,
+            present: count('PRESENT'),
+            half: count('HALF_DAY'),
+            absent: count('ABSENT'),
+            unmarked: count(null),
+            md: live.reduce((s, x) => s + manDays(x), 0),
+          })}
         </Text>
       ) : null}
       {roll.loading && !roll.data ? <Loading /> : null}
-      {roll.data && !rows.length ? <EmptyState title="No workers posted to this site" subtitle="Add the contractors' workers by name on the web, under Attendance." icon="people-outline" /> : null}
+      {roll.data && !rows.length ? <EmptyState title={t('No workers posted to this site')} subtitle={t("Add the contractors' workers by name on the web, under Attendance.")} icon="people-outline" /> : null}
       {rows.map(row)}
       {rows.length && !locked ? (
         <View style={styles.actions}>
-          <Button title="Mark the rest present" variant="secondary" onPress={restPresent} />
-          <Button title={changed.length ? `Save (${changed.length})` : 'Save'} loading={busy} disabled={!changed.length} onPress={() => void save()} />
+          <Button title={t('Mark the rest present')} variant="secondary" onPress={restPresent} />
+          <Button title={changed.length ? t('Save ({n})', { n: changed.length }) : t('Save')} loading={busy} disabled={!changed.length} onPress={() => void save()} />
         </View>
       ) : null}
     </Screen>

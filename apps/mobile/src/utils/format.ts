@@ -1,3 +1,5 @@
+import { translate } from '../i18n/translate';
+
 function pad(n: number) {
   return n < 10 ? `0${n}` : String(n);
 }
@@ -40,18 +42,24 @@ export function formatDateTime(value: string | null | undefined): string {
   return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}, ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+/** The app's language for text built outside components; LanguageProvider keeps it in step (v4 item 49). */
+let language = 'en';
+export function setFormatLanguage(code: string) {
+  language = code;
+}
+
 export function timeAgo(value: string | null | undefined): string {
   if (!value) return '';
   const t = new Date(value).getTime();
   if (Number.isNaN(t)) return '';
   const diff = Math.max(0, Date.now() - t);
   const min = Math.floor(diff / 60000);
-  if (min < 1) return 'just now';
-  if (min < 60) return `${min} min ago`;
+  if (min < 1) return translate(language, 'just now');
+  if (min < 60) return translate(language, '{n} min ago', { n: min });
   const h = Math.floor(min / 60);
-  if (h < 24) return `${h} h ago`;
+  if (h < 24) return translate(language, '{n} h ago', { n: h });
   const d = Math.floor(h / 24);
-  if (d < 7) return `${d} d ago`;
+  if (d < 7) return translate(language, '{n} d ago', { n: d });
   return formatDate(value);
 }
 

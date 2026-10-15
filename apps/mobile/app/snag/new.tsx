@@ -10,6 +10,7 @@ import { attachmentIds, photosFailed, photosQueued, photosUploading, SubmitSucce
 import { useOffline } from '../../src/offline';
 import { colors, spacing } from '../../src/theme';
 import { isIsoDate, today } from '../../src/utils/format';
+import { useT } from '../../src/i18n/LanguageContext';
 
 /**
  * Report a snag (before handover) or a defect (in the defect liability period) with photos (v4 item 47). Which one it is
@@ -18,6 +19,7 @@ import { isIsoDate, today } from '../../src/utils/format';
 export default function ReportSnagScreen() {
   const params = useLocalSearchParams<{ projectId?: string }>();
   const api = useApi();
+  const t = useT();
   const { online } = useOffline();
   const projects = useProjectOptions();
   const [projectId, setProjectId] = useState<string | null>(params.projectId ?? null);
@@ -40,11 +42,11 @@ export default function ReportSnagScreen() {
 
   const validate = () => {
     const e: Record<string, string> = {};
-    if (!projectId) e.projectId = 'Choose a project';
-    if (!title.trim()) e.title = 'Say what is wrong';
-    if (dueDate && !isIsoDate(dueDate)) e.dueDate = 'Enter a date';
-    if (photosUploading(photos)) e.photos = 'Wait for photos to finish uploading';
-    else if (photosFailed(photos) || photosQueued(photos)) e.photos = 'Photos need a connection; remove them or try again';
+    if (!projectId) e.projectId = t('Choose a project');
+    if (!title.trim()) e.title = t('Say what is wrong');
+    if (dueDate && !isIsoDate(dueDate)) e.dueDate = t('Enter a date');
+    if (photosUploading(photos)) e.photos = t('Wait for photos to finish uploading');
+    else if (photosFailed(photos) || photosQueued(photos)) e.photos = t('Photos need a connection; remove them or try again');
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -84,28 +86,28 @@ export default function ReportSnagScreen() {
     setErrors({});
   };
 
-  if (saved) return <SubmitSuccess title={`${DEFECT_PHASE_LABELS[saved.phase]} reported`} subtitle={`${saved.defectNo}: ${saved.title}. The project manager has been told.`} onAnother={reset} />;
+  if (saved) return <SubmitSuccess title={t('{phase} reported', { phase: t(DEFECT_PHASE_LABELS[saved.phase]) })} subtitle={`${saved.defectNo}: ${saved.title}. ${t('The project manager has been told.')}`} onAnother={reset} />;
   if (projects.loading && !projects.data) return <Loading />;
 
   return (
     <Screen keyboard>
-      <Stack.Screen options={{ title: 'Report Snag' }} />
-      <ErrorBanner message={submitError ?? projects.error ?? (online ? null : 'You are offline. A snag is sent straight away, so it needs a connection.')} />
+      <Stack.Screen options={{ title: t('Report Snag') }} />
+      <ErrorBanner message={submitError ?? projects.error ?? (online ? null : t('You are offline. A snag is sent straight away, so it needs a connection.'))} />
       <Card>
-        <Select label="Project" required value={projectId} options={projects.options} onChange={setProjectId} placeholder="Choose project" error={errors.projectId} />
-        <Input label="What is wrong" required value={title} onChangeText={setTitle} maxLength={200} placeholder="Toilet floor slopes away from the drain" error={errors.title} />
-        <Input label="Where" value={location} onChangeText={setLocation} maxLength={200} placeholder="Block B, 2nd floor, toilet T4" />
-        <Input label="Trade" value={trade} onChangeText={setTrade} maxLength={80} placeholder="Tiling, plaster, plumbing..." />
-        <Chips label="Priority" value={priority} clearable={false} onChange={(v) => v && setPriority(v)} options={DEFECT_PRIORITIES.map((p) => ({ value: p, label: DEFECT_PRIORITY_LABELS[p] }))} />
-        <Input label="Subcontractor to put it right" value={contractor} onChangeText={setContractor} maxLength={160} />
-        <DatePicker label="Put right by" value={dueDate} onChange={setDueDate} error={errors.dueDate} />
-        <Input label="Details" value={description} onChangeText={setDescription} multiline maxLength={2000} />
+        <Select label={t('Project')} required value={projectId} options={projects.options} onChange={setProjectId} placeholder={t('Choose project')} error={errors.projectId} />
+        <Input label={t('What is wrong')} required value={title} onChangeText={setTitle} maxLength={200} placeholder={t('Toilet floor slopes away from the drain')} error={errors.title} />
+        <Input label={t('Where')} value={location} onChangeText={setLocation} maxLength={200} placeholder={t('Block B, 2nd floor, toilet T4')} />
+        <Input label={t('Trade')} value={trade} onChangeText={setTrade} maxLength={80} placeholder={t('Tiling, plaster, plumbing...')} />
+        <Chips label={t('Priority')} value={priority} clearable={false} onChange={(v) => v && setPriority(v)} options={DEFECT_PRIORITIES.map((p) => ({ value: p, label: t(DEFECT_PRIORITY_LABELS[p]) }))} />
+        <Input label={t('Subcontractor to put it right')} value={contractor} onChangeText={setContractor} maxLength={160} />
+        <DatePicker label={t('Put right by')} value={dueDate} onChange={setDueDate} error={errors.dueDate} />
+        <Input label={t('Details')} value={description} onChangeText={setDescription} multiline maxLength={2000} />
       </Card>
-      <Card title="Photos">
+      <Card title={t('Photos')}>
         <PhotoPicker photos={photos} onChange={setPhotos} />
         {errors.photos ? <Text style={styles.err}>{errors.photos}</Text> : null}
       </Card>
-      <Button title="Report" icon="send" onPress={submit} loading={busy} disabled={!online} />
+      <Button title={t('Report')} icon="send" onPress={submit} loading={busy} disabled={!online} />
     </Screen>
   );
 }

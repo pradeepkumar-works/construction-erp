@@ -1,0 +1,42 @@
+// Lists English text passed to t() with no Hindi, keys whose Hindi differs between files, and translations whose
+// {placeholders} do not match the English (v4 item 49). Run: npm run i18n:check
+import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { join } from 'node:path';
+
+const root = new URL('..', import.meta.url).pathname;
+const walk = (dir) => readdirSync(dir).flatMap((f) => (statSync(join(dir, f)).isDirectory() ? walk(join(dir, f)) : [join(dir, f)]));
+const unquote = (q, s) => (q === "'" ? s.replace(/\\'/g, "'") : q === '"' ? s.replace(/\\"/g, '"') : s).replace(/\\\\/g, '\\');
+const str = String.raw`(['"\x60])((?:\\.|(?!\1).)*)\1`;
+
+const dict = new Map();
+const problems = [];
+for (const file of walk(join(root, 'src/i18n/hi')).filter((f) => !f.endsWith('index.ts'))) {
+  const text = readFileSync(file, 'utf8');
+  for (const m of text.matchAll(new RegExp(String.raw`^\s*(?:${str}|([A-Za-z_]\w*))\s*:\s*${str.replaceAll('\\1', '\\4')}\s*,?\s*$`, 'gm'))) {
+    const en = m[3] ?? unquote(m[1], m[2]);
+    const hi = unquote(m[4], m[5]);
+    const prev = dict.get(en);
+    if (prev && prev.hi !== hi) problems.push(`different Hindi for "${en}" in ${prev.file} and ${file.replace(root, '')}`);
+    dict.set(en, { hi, file: file.replace(root, '') });
+    const ph = (s) => [...s.matchAll(/\{(\w+)\}/g)].map((x) => x[1]).sort().join(',');
+    if (ph(en) !== ph(hi)) problems.push(`placeholders differ for "${en}"`);
+  }
+}
+
+const missing = new Map();
+for (const file of [...walk(join(root, 'app')), ...walk(join(root, 'src'))].filter((f) => /\.tsx?$/.test(f) && !f.includes('/i18n/'))) {
+  const text = readFileSync(file, 'utf8');
+  for (const m of text.matchAll(new RegExp(String.raw`\bt\(\s*${str}`, 'g'))) {
+    if (m[1] === '`' && m[2].includes('${')) {
+      problems.push(`template literal in t() at ${file.replace(root, '')}: use {placeholders}`);
+      continue;
+    }
+    const en = unquote(m[1], m[2]);
+    if (!dict.has(en)) missing.set(en, file.replace(root, ''));
+  }
+}
+
+for (const [en, file] of missing) console.log(`no Hindi: "${en}" (${file})`);
+for (const p of problems) console.log(p);
+console.log(`${dict.size} Hindi strings, ${missing.size} missing, ${problems.length} other problems`);
+process.exit(missing.size || problems.length ? 1 : 0);

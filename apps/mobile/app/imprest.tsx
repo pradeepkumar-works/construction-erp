@@ -6,6 +6,7 @@ import { errorMessage } from '../src/api/client';
 import { Button, Card, EmptyState, ErrorBanner, Input, KeyValue, Loading, Pill, ProgressBar, Screen, SectionTitle } from '../src/components';
 import { colors, spacing, typography } from '../src/theme';
 import { formatDate } from '../src/utils/format';
+import { useT } from '../src/i18n/LanguageContext';
 
 const rupees = (v: string | number) => `₹${Number(v).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -14,12 +15,13 @@ const rupees = (v: string | number) => `₹${Number(v).toLocaleString('en-IN', {
  * the top-up that brings it back. Needs a connection.
  */
 export default function ImprestScreen() {
+  const t = useT();
   const list = useFetch<ImprestDto[]>((a) => a.get('/imprests', { mine: true }), []);
   return (
     <Screen refreshing={list.refreshing} onRefresh={list.refresh}>
       <ErrorBanner message={list.error} />
       {list.loading && !list.data ? <Loading /> : null}
-      {list.data && !list.data.length ? <EmptyState title="You hold no imprest" subtitle="Accounts open one to give you a petty cash float for the site." icon="cash-outline" /> : null}
+      {list.data && !list.data.length ? <EmptyState title={t('You hold no imprest')} subtitle={t('Accounts open one to give you a petty cash float for the site.')} icon="cash-outline" /> : null}
       {list.data?.map((i) => <ImprestCard key={i.id} imprest={i} onChanged={() => void list.reload()} />)}
     </Screen>
   );
@@ -27,6 +29,7 @@ export default function ImprestScreen() {
 
 function ImprestCard({ imprest: i, onChanged }: { imprest: ImprestDto; onChanged: () => void }) {
   const api = useApi();
+  const t = useT();
   const [asking, setAsking] = useState(false);
   const [amount, setAmount] = useState('');
   const [reason, setReason] = useState('');
@@ -39,7 +42,7 @@ function ImprestCard({ imprest: i, onChanged }: { imprest: ImprestDto; onChanged
     setError(null);
     try {
       const d = await api.post<ImprestDetailDto>(`/imprests/${i.id}/top-ups`, { amount: amount.trim() || undefined, reason: reason.trim() || undefined });
-      Alert.alert('Top-up asked for', `${rupees(d.openRequest?.amount ?? 0)}. Accounts have been told.`);
+      Alert.alert(t('Top-up asked for'), t('{amount}. Accounts have been told.', { amount: rupees(d.openRequest?.amount ?? 0) }));
       setAsking(false);
       setAmount('');
       setReason('');
@@ -55,35 +58,35 @@ function ImprestCard({ imprest: i, onChanged }: { imprest: ImprestDto; onChanged
     <Card style={styles.card}>
       <SectionTitle title={i.projectName} />
       <Text style={[typography.h2, i.low ? { color: colors.danger } : null]}>{rupees(i.cashInHand)}</Text>
-      <Text style={typography.caption}>in hand of a {rupees(i.floatAmount)} float</Text>
+      <Text style={typography.caption}>{t('in hand of a {float} float', { float: rupees(i.floatAmount) })}</Text>
       <ProgressBar value={pct} showLabel={false} color={i.low ? colors.danger : undefined} />
       <View style={styles.kv}>
-        <KeyValue label="Spent, approved" value={rupees(i.approvedSpend)} />
-        <KeyValue label="Awaiting approval" value={rupees(i.pendingSpend)} />
-        {Number(i.disallowed) ? <KeyValue label="Turned down (to account for)" value={rupees(i.disallowed)} /> : null}
-        <KeyValue label="Top-up due" value={rupees(i.topUpDue)} />
-        {i.lastAdvanceOn ? <KeyValue label="Last cash received" value={formatDate(i.lastAdvanceOn)} /> : null}
+        <KeyValue label={t('Spent, approved')} value={rupees(i.approvedSpend)} />
+        <KeyValue label={t('Awaiting approval')} value={rupees(i.pendingSpend)} />
+        {Number(i.disallowed) ? <KeyValue label={t('Turned down (to account for)')} value={rupees(i.disallowed)} /> : null}
+        <KeyValue label={t('Top-up due')} value={rupees(i.topUpDue)} />
+        {i.lastAdvanceOn ? <KeyValue label={t('Last cash received')} value={formatDate(i.lastAdvanceOn)} /> : null}
       </View>
       {i.openRequest ? (
         <View style={styles.request}>
-          <Pill text={IMPREST_ENTRY_STATUS_LABELS[i.openRequest.status]} fg={colors.warning} bg={colors.warningSoft} />
+          <Pill text={t(IMPREST_ENTRY_STATUS_LABELS[i.openRequest.status])} fg={colors.warning} bg={colors.warningSoft} />
           <Text style={typography.body}>
-            {IMPREST_ENTRY_KIND_LABELS[i.openRequest.kind]}: {rupees(i.openRequest.amount)} on {formatDate(i.openRequest.date)}
+            {t('{kind}: {amount} on {date}', { kind: t(IMPREST_ENTRY_KIND_LABELS[i.openRequest.kind]), amount: rupees(i.openRequest.amount), date: formatDate(i.openRequest.date) })}
             {i.openRequest.reason ? `. ${i.openRequest.reason}` : ''}
           </Text>
         </View>
       ) : asking ? (
         <View>
           <ErrorBanner message={error} />
-          <Input label="Amount (₹)" value={amount} onChangeText={(t) => setAmount(t.replace(/[^0-9.]/g, ''))} keyboardType="decimal-pad" placeholder={Number(i.topUpDue) ? i.topUpDue : '0'} hint="Empty: what brings the cash back to the float" />
-          <Input label="What for" value={reason} onChangeText={setReason} placeholder="Diesel for the DG, the week's tea" />
+          <Input label={t('Amount (₹)')} value={amount} onChangeText={(v) => setAmount(v.replace(/[^0-9.]/g, ''))} keyboardType="decimal-pad" placeholder={Number(i.topUpDue) ? i.topUpDue : '0'} hint={t('Empty: what brings the cash back to the float')} />
+          <Input label={t('What for')} value={reason} onChangeText={setReason} placeholder={t("Diesel for the DG, the week's tea")} />
           <View style={styles.actions}>
-            <Button title="Cancel" variant="ghost" onPress={() => setAsking(false)} />
-            <Button title="Ask for top-up" loading={busy} onPress={() => void ask()} />
+            <Button title={t('Cancel')} variant="ghost" onPress={() => setAsking(false)} />
+            <Button title={t('Ask for top-up')} loading={busy} onPress={() => void ask()} />
           </View>
         </View>
       ) : i.isActive ? (
-        <Button title="Ask for a top-up" icon="cash-outline" variant="secondary" onPress={() => setAsking(true)} />
+        <Button title={t('Ask for a top-up')} icon="cash-outline" variant="secondary" onPress={() => setAsking(true)} />
       ) : null}
     </Card>
   );

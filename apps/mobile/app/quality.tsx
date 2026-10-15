@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { NCR_SEVERITY_LABELS, NCR_STATUS_LABELS, TEST_KIND_LABELS, TEST_RESULT_LABELS, type NcrDto, type Paginated, type QualityTestDto } from '@erp/shared';
 import { useFetch } from '../src/api/hooks';
+import { useT } from '../src/i18n/LanguageContext';
 import { Chips, EmptyState, ErrorBanner, Loading, Pill, Screen, SectionTitle } from '../src/components';
 import { NCR_STATUS_TONE, SEVERITY_TONE, TEST_RESULT_TONE } from '../src/components/qualityTone';
 import { colors, radius, spacing, typography } from '../src/theme';
@@ -13,6 +14,7 @@ type Show = 'ncrs' | 'tests';
 /** Quality on site: open NCRs to act on, and tests with their readings due. */
 export default function QualityScreen() {
   const router = useRouter();
+  const t = useT();
   const [show, setShow] = useState<Show>('ncrs');
   const ncrs = useFetch<Paginated<NcrDto>>((a) => a.get('/quality/ncrs', { active: true, sortBy: 'dueDate', sortOrder: 'asc', pageSize: 100 }), [], { cacheKey: 'ncrs:active' });
   const tests = useFetch<Paginated<QualityTestDto>>((a) => a.get('/quality/tests', { result: 'PENDING', pageSize: 100 }), [], { cacheKey: 'tests:pending', enabled: show === 'tests' });
@@ -30,8 +32,8 @@ export default function QualityScreen() {
         clearable={false}
         onChange={(v) => v && setShow(v)}
         options={[
-          { value: 'ncrs', label: 'Open NCRs' },
-          { value: 'tests', label: 'Tests pending' },
+          { value: 'ncrs', label: t('Open NCRs') },
+          { value: 'tests', label: t('Tests pending') },
         ]}
       />
       <ErrorBanner message={list.error} />
@@ -39,10 +41,10 @@ export default function QualityScreen() {
         <Loading />
       ) : show === 'ncrs' ? (
         (ncrs.data?.items ?? []).length === 0 ? (
-          <EmptyState title="No open NCR" subtitle="Non-conformances raised by QA/QC on your projects show here." icon="shield-checkmark-outline" />
+          <EmptyState title={t('No open NCR')} subtitle={t('Non-conformances raised by QA/QC on your projects show here.')} icon="shield-checkmark-outline" />
         ) : (
           <>
-            <SectionTitle title={`${ncrs.data?.total ?? 0} open`} />
+            <SectionTitle title={t('{n} open', { n: ncrs.data?.total ?? 0 })} />
             {ncrs.data!.items.map((n) => (
               <Pressable key={n.id} onPress={() => router.push(`/ncr/${n.id}`)} style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
                 <View style={styles.flex}>
@@ -53,36 +55,36 @@ export default function QualityScreen() {
                     {n.title}
                   </Text>
                   <Text style={[typography.caption, n.overdue && styles.overdue]} numberOfLines={1}>
-                    {[n.location, n.dueDate ? `rectify by ${formatDate(n.dueDate)}` : null, n.actionByName].filter(Boolean).join(' · ')}
+                    {[n.location, n.dueDate ? t('rectify by {date}', { date: formatDate(n.dueDate) }) : null, n.actionByName].filter(Boolean).join(' · ')}
                   </Text>
                 </View>
                 <View style={styles.side}>
-                  <Pill text={NCR_STATUS_LABELS[n.status]} {...NCR_STATUS_TONE[n.status]} />
-                  <Pill text={NCR_SEVERITY_LABELS[n.severity]} {...SEVERITY_TONE[n.severity]} />
+                  <Pill text={t(NCR_STATUS_LABELS[n.status])} {...NCR_STATUS_TONE[n.status]} />
+                  <Pill text={t(NCR_SEVERITY_LABELS[n.severity])} {...SEVERITY_TONE[n.severity]} />
                 </View>
               </Pressable>
             ))}
           </>
         )
       ) : (tests.data?.items ?? []).length === 0 ? (
-        <EmptyState title="No test pending" subtitle="Tests waiting for their results show here." icon="flask-outline" />
+        <EmptyState title={t('No test pending')} subtitle={t('Tests waiting for their results show here.')} icon="flask-outline" />
       ) : (
         <>
-          <SectionTitle title={`${tests.data?.total ?? 0} pending`} />
-          {tests.data!.items.map((t) => (
-            <Pressable key={t.id} onPress={() => router.push(`/test/${t.id}`)} style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
+          <SectionTitle title={t('{n} pending', { n: tests.data?.total ?? 0 })} />
+          {tests.data!.items.map((x) => (
+            <Pressable key={x.id} onPress={() => router.push(`/test/${x.id}`)} style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
               <View style={styles.flex}>
                 <Text style={typography.caption}>
-                  {t.testNo} · {TEST_KIND_LABELS[t.kind]}
+                  {x.testNo} · {t(TEST_KIND_LABELS[x.kind])}
                 </Text>
                 <Text style={styles.title} numberOfLines={2}>
-                  {t.title}
+                  {x.title}
                 </Text>
-                <Text style={[typography.caption, t.overdue && styles.overdue]} numberOfLines={1}>
-                  {t.nextDueOn ? `${t.overdue ? 'Result overdue since' : 'Next result due'} ${formatDate(t.nextDueOn)}` : `Sampled ${formatDate(t.sampledOn)}`}
+                <Text style={[typography.caption, x.overdue && styles.overdue]} numberOfLines={1}>
+                  {x.nextDueOn ? t(x.overdue ? 'Result overdue since {date}' : 'Next result due {date}', { date: formatDate(x.nextDueOn) }) : t('Sampled {date}', { date: formatDate(x.sampledOn) })}
                 </Text>
               </View>
-              <Pill text={TEST_RESULT_LABELS[t.result]} {...TEST_RESULT_TONE[t.result]} />
+              <Pill text={t(TEST_RESULT_LABELS[x.result])} {...TEST_RESULT_TONE[x.result]} />
             </Pressable>
           ))}
         </>

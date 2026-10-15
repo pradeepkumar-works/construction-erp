@@ -5,6 +5,7 @@ import type { AttachmentDto, SubmissionBase } from '@erp/shared';
 import { absoluteUrl } from '../config';
 import type { LocalPhoto } from '../components';
 import { colors, radius, spacing, typography } from '../theme';
+import { useT } from '../i18n/LanguageContext';
 
 /** Existing attachments shown in the PhotoPicker as already-uploaded photos (so they can be kept or removed). */
 export function attachmentsToPhotos(attachments: AttachmentDto[]): LocalPhoto[] {
@@ -13,12 +14,13 @@ export function attachmentsToPhotos(attachments: AttachmentDto[]): LocalPhoto[] 
 
 /** The approver's note shown above the form while editing a rejected / changes-requested entry. */
 export function ReviewerNote({ entry }: { entry: SubmissionBase | null }) {
+  const t = useT();
   if (!entry?.reviewNote) return null;
   return (
     <View style={styles.note}>
       <Ionicons name="chatbox-ellipses-outline" size={18} color={colors.warning} />
       <View style={styles.body}>
-        <Text style={styles.label}>{entry.reviewedByName ? `${entry.reviewedByName} asked` : 'Reviewer note'}</Text>
+        <Text style={styles.label}>{entry.reviewedByName ? t('{name} asked', { name: entry.reviewedByName }) : t('Reviewer note')}</Text>
         <Text style={typography.body}>{entry.reviewNote}</Text>
       </View>
     </View>

@@ -4,16 +4,18 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useOffline } from '../offline/OfflineContext';
 import { colors, radius, spacing } from '../theme';
+import { useT } from '../i18n/LanguageContext';
 
 /** Shows when the phone is offline or has entries waiting in the outbox; taps through to the outbox. */
 export function OfflineBanner() {
   const router = useRouter();
   const { online, pendingCount, failedCount, syncing } = useOffline();
+  const t = useT();
   if (online && pendingCount === 0 && failedCount === 0) return null;
   const parts: string[] = [];
-  if (!online) parts.push('Offline');
-  if (pendingCount) parts.push(`${pendingCount} waiting to send${syncing ? ' (sending…)' : ''}`);
-  if (failedCount) parts.push(`${failedCount} need attention`);
+  if (!online) parts.push(t('Offline'));
+  if (pendingCount) parts.push(syncing ? t('{n} waiting to send (sending…)', { n: pendingCount }) : t('{n} waiting to send', { n: pendingCount }));
+  if (failedCount) parts.push(t('{n} need attention', { n: failedCount }));
   const tone = failedCount ? colors.danger : colors.warning;
   return (
     <Pressable onPress={() => router.push('/outbox')} style={[styles.banner, { borderColor: tone }]} accessibilityRole="button">

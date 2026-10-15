@@ -5,6 +5,7 @@ import type { EquipmentDto, MaintenanceJobDto, Paginated } from '@erp/shared';
 import { MAX_PAGE_SIZE } from '@erp/shared';
 import { useApi, useFetch } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
+import { useT } from '../../src/i18n/LanguageContext';
 import { Button, Card, DatePicker, ErrorBanner, ErrorState, Input, Loading, PhotoPicker, Screen, Select, type LocalPhoto, type SelectOption } from '../../src/components';
 import { attachmentIds, photosFailed, photosQueued, photosUploading, SubmitSuccess } from '../../src/forms/common';
 import { useOffline } from '../../src/offline';
@@ -20,6 +21,7 @@ const NUM = /^\d+(\.\d+)?$/;
 export default function BreakdownScreen() {
   const params = useLocalSearchParams<{ equipmentId?: string; projectId?: string }>();
   const api = useApi();
+  const t = useT();
   const { online } = useOffline();
   const fleet = useFetch<Paginated<EquipmentDto>>((a) => a.get('/equipment', { pageSize: MAX_PAGE_SIZE }), [], { refetchOnFocus: false, cacheKey: 'equipment:v1' });
 
@@ -37,17 +39,17 @@ export default function BreakdownScreen() {
   const options = useMemo<SelectOption[]>(() => {
     const all = fleet.data?.items ?? [];
     const rank = (e: EquipmentDto) => (params.projectId && e.projectId === params.projectId ? 0 : e.projectId ? 1 : 2);
-    return [...all].sort((a, b) => rank(a) - rank(b) || a.code.localeCompare(b.code)).map((e) => ({ value: e.id, label: `${e.code} · ${e.name}`, hint: e.projectName ?? 'Yard' }));
-  }, [fleet.data, params.projectId]);
+    return [...all].sort((a, b) => rank(a) - rank(b) || a.code.localeCompare(b.code)).map((e) => ({ value: e.id, label: `${e.code} · ${e.name}`, hint: e.projectName ?? t('Yard') }));
+  }, [fleet.data, params.projectId, t]);
 
   const validate = () => {
     const e: Record<string, string> = {};
-    if (!equipmentId) e.equipmentId = 'Choose the machine';
-    if (!isIsoDate(date) || date > today()) e.date = 'Enter a date up to today';
-    if (meter.trim() && !NUM.test(meter.trim())) e.meter = 'Enter a number';
-    if (!description.trim()) e.description = 'Say what broke down';
-    if (photosUploading(photos)) e.photos = 'Wait for photos to finish uploading';
-    else if (photosFailed(photos) || photosQueued(photos)) e.photos = 'Photos need a connection; remove them or try again';
+    if (!equipmentId) e.equipmentId = t('Choose the machine');
+    if (!isIsoDate(date) || date > today()) e.date = t('Enter a date up to today');
+    if (meter.trim() && !NUM.test(meter.trim())) e.meter = t('Enter a number');
+    if (!description.trim()) e.description = t('Say what broke down');
+    if (photosUploading(photos)) e.photos = t('Wait for photos to finish uploading');
+    else if (photosFailed(photos) || photosQueued(photos)) e.photos = t('Photos need a connection; remove them or try again');
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -86,8 +88,8 @@ export default function BreakdownScreen() {
   if (saved)
     return (
       <SubmitSuccess
-        title="Breakdown reported"
-        subtitle={`${saved.jobNo} for ${saved.equipmentCode}. The store manager and the project manager have been told.`}
+        title={t('Breakdown reported')}
+        subtitle={t('{job} for {code}. The store manager and the project manager have been told.', { job: saved.jobNo, code: saved.equipmentCode })}
         onAnother={reset}
       />
     );
@@ -96,19 +98,19 @@ export default function BreakdownScreen() {
 
   return (
     <Screen keyboard>
-      <Stack.Screen options={{ title: 'Report Breakdown' }} />
-      <ErrorBanner message={submitError ?? (online ? null : 'You are offline. A breakdown is sent straight away, so it needs a connection.')} />
+      <Stack.Screen options={{ title: t('Report Breakdown') }} />
+      <ErrorBanner message={submitError ?? (online ? null : t('You are offline. A breakdown is sent straight away, so it needs a connection.'))} />
       <Card>
-        <Select label="Machine" required value={equipmentId} options={options} onChange={setEquipmentId} placeholder="Choose the machine" error={errors.equipmentId} />
-        <DatePicker label="Stopped on" required value={date} onChange={setDate} error={errors.date} />
-        <Input label="Hour meter / km" value={meter} onChangeText={setMeter} keyboardType="decimal-pad" maxLength={12} error={errors.meter} />
-        <Input label="What broke down" required value={description} onChangeText={setDescription} multiline maxLength={2000} placeholder="Hydraulic hose burst on the boom; machine stopped at Ch 14+600" error={errors.description} />
+        <Select label={t('Machine')} required value={equipmentId} options={options} onChange={setEquipmentId} placeholder={t('Choose the machine')} error={errors.equipmentId} />
+        <DatePicker label={t('Stopped on')} required value={date} onChange={setDate} error={errors.date} />
+        <Input label={t('Hour meter / km')} value={meter} onChangeText={setMeter} keyboardType="decimal-pad" maxLength={12} error={errors.meter} />
+        <Input label={t('What broke down')} required value={description} onChangeText={setDescription} multiline maxLength={2000} placeholder={t('Hydraulic hose burst on the boom; machine stopped at Ch 14+600')} error={errors.description} />
       </Card>
-      <Card title="Photos">
+      <Card title={t('Photos')}>
         <PhotoPicker photos={photos} onChange={setPhotos} />
         {errors.photos ? <Text style={styles.err}>{errors.photos}</Text> : null}
       </Card>
-      <Button title="Report breakdown" icon="send" onPress={submit} loading={busy} disabled={!online} />
+      <Button title={t('Report breakdown')} icon="send" onPress={submit} loading={busy} disabled={!online} />
     </Screen>
   );
 }

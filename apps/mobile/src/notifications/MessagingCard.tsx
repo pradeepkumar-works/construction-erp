@@ -6,10 +6,12 @@ import { errorMessage } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import { Button, Card, ErrorBanner, Input } from '../components';
 import { colors, spacing, typography } from '../theme';
+import { useT } from '../i18n/LanguageContext';
 
 /** The user's own opt-in for alerts on WhatsApp and by SMS, with a test message. */
 export function MessagingCard() {
   const api = useApi();
+  const t = useT();
   const { refreshUser } = useAuth();
   const prefs = useFetch<MessagingPrefsDto>((a) => a.get('/messaging/me'), [], { refetchOnFocus: false });
   const [phone, setPhone] = useState('');
@@ -37,7 +39,7 @@ export function MessagingCard() {
     try {
       prefs.setData(await api.put<MessagingPrefsDto>('/messaging/me', { phone: phone.trim() || null, whatsapp, sms }));
       await refreshUser();
-      Alert.alert('Saved', whatsapp || sms ? `Your alerts will also come on ${[whatsapp && 'WhatsApp', sms && 'SMS'].filter(Boolean).join(' and ')}.` : 'WhatsApp and SMS alerts are off.');
+      Alert.alert(t('Saved'), whatsapp && sms ? t('Your alerts will also come on WhatsApp and SMS.') : whatsapp ? t('Your alerts will also come on WhatsApp.') : sms ? t('Your alerts will also come on SMS.') : t('WhatsApp and SMS alerts are off.'));
     } catch (e) {
       setError(errorMessage(e));
     } finally {
@@ -51,7 +53,7 @@ export function MessagingCard() {
     try {
       if ((prefs.data?.phone ?? '') !== phone.trim()) prefs.setData(await api.put<MessagingPrefsDto>('/messaging/me', { phone: phone.trim() || null }));
       const m = await api.post<OutboundMessageDto>('/messaging/me/test', { channel });
-      Alert.alert(m.status === 'SENT' ? 'Test sent' : 'Not sent', m.status === 'SENT' ? `Sent on ${MESSAGE_CHANNEL_LABELS[channel]} to ${formatPhone(m.to)}.` : (m.error ?? 'The message did not go.'));
+      Alert.alert(m.status === 'SENT' ? t('Test sent') : t('Not sent'), m.status === 'SENT' ? t('Sent on {channel} to {phone}.', { channel: t(MESSAGE_CHANNEL_LABELS[channel]), phone: formatPhone(m.to) }) : (m.error ?? t('The message did not go.')));
     } catch (e) {
       setError(errorMessage(e));
     } finally {
@@ -62,32 +64,32 @@ export function MessagingCard() {
   const notReady = prefs.data && !prefs.data.whatsappReady && !prefs.data.smsReady;
 
   return (
-    <Card title="WhatsApp and SMS">
-      <Text style={[typography.caption, styles.gap]}>Approval requests, send-backs, the morning digest and the DPR, test and payment reminders on your phone. WhatsApp first; SMS when WhatsApp does not get through.</Text>
+    <Card title={t('WhatsApp and SMS')}>
+      <Text style={[typography.caption, styles.gap]}>{t('Approval requests, send-backs, the morning digest and the DPR, test and payment reminders on your phone. WhatsApp first; SMS when WhatsApp does not get through.')}</Text>
       <ErrorBanner message={error ?? prefs.error} />
       <Input
-        label="Mobile number"
+        label={t('Mobile number')}
         value={phone}
         onChangeText={setPhone}
         keyboardType="phone-pad"
         maxLength={20}
         placeholder="98765 43210"
-        error={phone.trim() && !sendTo ? 'Not a mobile number' : null}
-        hint={sendTo ? `Messages go to ${formatPhone(sendTo)}` : undefined}
+        error={phone.trim() && !sendTo ? t('Not a mobile number') : null}
+        hint={sendTo ? t('Messages go to {phone}', { phone: formatPhone(sendTo) }) : undefined}
       />
       <View style={styles.row}>
-        <Text style={typography.body}>Alerts on WhatsApp</Text>
-        <Switch value={whatsapp} onValueChange={setWhatsapp} trackColor={{ true: colors.success }} accessibilityLabel="Alerts on WhatsApp" />
+        <Text style={typography.body}>{t('Alerts on WhatsApp')}</Text>
+        <Switch value={whatsapp} onValueChange={setWhatsapp} trackColor={{ true: colors.success }} accessibilityLabel={t('Alerts on WhatsApp')} />
       </View>
       <View style={styles.row}>
-        <Text style={typography.body}>Alerts by SMS</Text>
-        <Switch value={sms} onValueChange={setSms} trackColor={{ true: colors.success }} accessibilityLabel="Alerts by SMS" />
+        <Text style={typography.body}>{t('Alerts by SMS')}</Text>
+        <Switch value={sms} onValueChange={setSms} trackColor={{ true: colors.success }} accessibilityLabel={t('Alerts by SMS')} />
       </View>
-      {notReady ? <Text style={[typography.caption, styles.gap]}>WhatsApp and SMS are not set up on the server yet. Alerts start once your company's account is connected.</Text> : null}
-      <Button title="Save" onPress={() => void save()} loading={busy === 'save'} disabled={!dirty || ((whatsapp || sms) && !sendTo)} />
+      {notReady ? <Text style={[typography.caption, styles.gap]}>{t("WhatsApp and SMS are not set up on the server yet. Alerts start once your company's account is connected.")}</Text> : null}
+      <Button title={t('Save')} onPress={() => void save()} loading={busy === 'save'} disabled={!dirty || ((whatsapp || sms) && !sendTo)} />
       <View style={styles.tests}>
-        <Button title="Test WhatsApp" variant="secondary" onPress={() => void test('WHATSAPP')} loading={busy === 'WHATSAPP'} disabled={!sendTo} />
-        <Button title="Test SMS" variant="secondary" onPress={() => void test('SMS')} loading={busy === 'SMS'} disabled={!sendTo} />
+        <Button title={t('Test WhatsApp')} variant="secondary" onPress={() => void test('WHATSAPP')} loading={busy === 'WHATSAPP'} disabled={!sendTo} />
+        <Button title={t('Test SMS')} variant="secondary" onPress={() => void test('SMS')} loading={busy === 'SMS'} disabled={!sendTo} />
       </View>
     </Card>
   );

@@ -1089,6 +1089,18 @@ that device and is deleted on sign-out or when Expo reports it unregistered.
   value in both enums, its text, its WATI variable names (`WATI_PARAM_NAMES`), a WhatsApp and DLT registration, and a `message` on the `notify()`
   call. WhatsApp goes through WATI when `WATI_API_ENDPOINT` is set, else Meta's Cloud API.
 
+## Languages (mobile)
+
+The site app opens in English on every phone, whatever the device language, and a user switches to Hindi under
+Profile > Language; the choice stays on the phone (`LanguageProvider`, `src/i18n/LanguageContext.tsx`). Screens call
+`const t = useT()` and wrap every piece of text they show: `t('Submit for approval')`, `t('{n} workers present', { n })`,
+and shared labels as `t(SUBMISSION_STATUS_LABELS[s])`. The English text is the key; Hindi lives in
+`src/i18n/hi/*.ts` (shared labels and everyday words in `common.ts`, the rest by group of screens), and text without
+Hindi falls back to English. Text built outside components takes `t` as a parameter; `timeAgo` follows the app language
+through `setFormatLanguage`. Server messages, names and other data stay as entered. `npm run i18n:check` in
+`apps/mobile` (also run in CI) lists text passed to `t()` without Hindi, keys whose Hindi differs between files and
+placeholders that do not match. Another language is another folder next to `hi` and a row in `LANGUAGES`.
+
 ## Offline entry (mobile)
 
 New progress entries, DPRs, material requests and attendance sheets can be filed without a connection.

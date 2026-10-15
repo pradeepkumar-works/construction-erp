@@ -5,6 +5,7 @@ import type { ActivityDto, EquipmentDto, MachineryLogDto, Paginated } from '@erp
 import { MAX_PAGE_SIZE, machineryLogProblem } from '@erp/shared';
 import { useApi, useFetch } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
+import { useT } from '../../src/i18n/LanguageContext';
 import { Button, Card, DatePicker, ErrorBanner, ErrorState, Input, Loading, PhotoPicker, Screen, Select, type LocalPhoto, type SelectOption } from '../../src/components';
 import { attachmentIds, photosFailed, photosQueued, photosUploading, QueuedSuccess, SubmitSuccess, toOutboxPhotos, useProjectOptions } from '../../src/forms/common';
 import { attachmentsToPhotos, ReviewerNote } from '../../src/forms/edit';
@@ -19,6 +20,7 @@ export default function NewMachineryLogScreen() {
   const params = useLocalSearchParams<{ projectId?: string; equipmentId?: string; editId?: string }>();
   const editId = params.editId ?? null;
   const api = useApi();
+  const t = useT();
   const { online, enqueue } = useOffline();
   const projects = useProjectOptions();
   const existing = useFetch<MachineryLogDto>((a) => a.get(`/machinery-logs/${editId}`), [editId], { enabled: !!editId, refetchOnFocus: false });
@@ -78,8 +80,8 @@ export default function NewMachineryLogScreen() {
     const all = fleet.data?.items ?? [];
     const here = all.filter((e) => e.projectId === projectId);
     const other = all.filter((e) => e.projectId !== projectId);
-    return [...here, ...other].map((e) => ({ value: e.id, label: `${e.code} · ${e.name}`, hint: e.projectId === projectId ? 'At this project' : e.projectName ?? 'Yard / unassigned' }));
-  }, [fleet.data, projectId]);
+    return [...here, ...other].map((e) => ({ value: e.id, label: `${e.code} · ${e.name}`, hint: e.projectId === projectId ? t('At this project') : e.projectName ?? t('Yard / unassigned') }));
+  }, [fleet.data, projectId, t]);
   const machine = fleet.data?.items.find((e) => e.id === equipmentId) ?? null;
 
   const changeProject = (id: string) => {
@@ -89,18 +91,18 @@ export default function NewMachineryLogScreen() {
 
   const validate = () => {
     const e: Record<string, string> = {};
-    if (!projectId) e.projectId = 'Choose a project';
-    if (!equipmentId) e.equipmentId = 'Choose a machine';
-    if (!isIsoDate(date)) e.date = 'Enter a valid date';
-    if (!NUM.test(worked.trim())) e.worked = 'Enter the hours worked (0 if it did not work)';
-    for (const [k, v] of [['idle', idle], ['down', down], ['meterStart', meterStart], ['meterEnd', meterEnd], ['diesel', diesel]] as const) if (v.trim() && !NUM.test(v.trim())) e[k] = 'Enter a number';
+    if (!projectId) e.projectId = t('Choose a project');
+    if (!equipmentId) e.equipmentId = t('Choose a machine');
+    if (!isIsoDate(date)) e.date = t('Enter a valid date');
+    if (!NUM.test(worked.trim())) e.worked = t('Enter the hours worked (0 if it did not work)');
+    for (const [k, v] of [['idle', idle], ['down', down], ['meterStart', meterStart], ['meterEnd', meterEnd], ['diesel', diesel]] as const) if (v.trim() && !NUM.test(v.trim())) e[k] = t('Enter a number');
     if (Object.keys(e).length === 0) {
       const problem = machineryLogProblem({ hoursWorked: worked, idleHours: idle || 0, breakdownHours: down || 0, meterStart: meterStart || null, meterEnd: meterEnd || null, breakdownNote });
-      if (problem) e.worked = problem;
+      if (problem) e.worked = t(problem);
     }
-    if (photosUploading(photos)) e.photos = 'Wait for photos to finish uploading';
-    else if (photosFailed(photos)) e.photos = 'Remove or retry failed photos';
-    else if (editId && photosQueued(photos)) e.photos = 'Photos need a connection to upload before resubmitting';
+    if (photosUploading(photos)) e.photos = t('Wait for photos to finish uploading');
+    else if (photosFailed(photos)) e.photos = t('Remove or retry failed photos');
+    else if (editId && photosQueued(photos)) e.photos = t('Photos need a connection to upload before resubmitting');
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -112,7 +114,7 @@ export default function NewMachineryLogScreen() {
     try {
       const blank = editId ? null : undefined;
       const n = (v: string) => (v.trim() ? v.trim() : blank);
-      const t = (v: string) => v.trim() || blank;
+      const txt = (v: string) => v.trim() || blank;
       const body = {
         equipmentId,
         date,
@@ -123,23 +125,23 @@ export default function NewMachineryLogScreen() {
         meterStart: n(meterStart),
         meterEnd: n(meterEnd),
         dieselLitres: n(diesel),
-        operatorName: t(operator),
+        operatorName: txt(operator),
         activityId: activityId ?? blank,
-        workDone: t(workDone),
-        remarks: t(remarks),
+        workDone: txt(workDone),
+        remarks: txt(remarks),
       };
       if (editId) {
         setCreated(await api.patch<MachineryLogDto>(`/machinery-logs/${editId}`, { ...body, attachmentIds: attachmentIds(photos), submit: true }));
         return;
       }
       const queueIt = async () => {
-        const projectName = projects.options.find((o) => o.value === projectId)?.label ?? 'Project';
+        const projectName = projects.options.find((o) => o.value === projectId)?.label ?? t('Project');
         setQueued(
           await enqueue({
             type: 'MACHINERY',
             payload: { projectId, ...body },
             photos: toOutboxPhotos(photos),
-            title: `${machine?.code ?? 'Machine'} · ${fmtQty(worked)} h`,
+            title: `${machine?.code ?? t('Machine')} · ${fmtQty(worked)} h`,
             subtitle: `${projectName} · ${formatDate(date)}`,
           }),
         );
@@ -179,12 +181,12 @@ export default function NewMachineryLogScreen() {
     setErrors({});
   };
 
-  if (queued) return <QueuedSuccess title="Saved on this phone" subtitle={`${queued.title} · ${queued.subtitle}`} onAnother={reset} />;
+  if (queued) return <QueuedSuccess title={t('Saved on this phone')} subtitle={`${queued.title} · ${queued.subtitle}`} onAnother={reset} />;
   if (created) {
     return (
       <SubmitSuccess
-        title={editId ? 'Machinery log resubmitted' : 'Machinery log submitted'}
-        subtitle={`${created.equipmentCode}: ${fmtQty(created.hoursWorked)} h on ${created.date}. Sent for approval.`}
+        title={editId ? t('Machinery log resubmitted') : t('Machinery log submitted')}
+        subtitle={t('{code}: {hours} h on {date}. Sent for approval.', { code: created.equipmentCode, hours: fmtQty(created.hoursWorked), date: created.date })}
         detailHref={`/machinery/${created.id}`}
         onAnother={editId ? undefined : reset}
       />
@@ -196,56 +198,56 @@ export default function NewMachineryLogScreen() {
 
   return (
     <Screen keyboard>
-      <Stack.Screen options={{ title: editId ? 'Edit Machinery Log' : 'Log Machinery' }} />
+      <Stack.Screen options={{ title: editId ? t('Edit Machinery Log') : t('Log Machinery') }} />
       <ErrorBanner message={submitError ?? projects.error ?? fleet.error} />
       <ReviewerNote entry={existing.data} />
       <Card>
-        <Select label="Project" required value={projectId} options={projects.options} onChange={changeProject} placeholder="Choose project" error={errors.projectId} disabled={!!editId} />
+        <Select label={t('Project')} required value={projectId} options={projects.options} onChange={changeProject} placeholder={t('Choose project')} error={errors.projectId} disabled={!!editId} />
         <Select
-          label="Machine"
+          label={t('Machine')}
           required
           searchable
           value={equipmentId}
           options={equipmentOptions}
           onChange={setEquipmentId}
-          placeholder={fleet.loading && !fleet.data ? 'Loading equipment…' : 'Choose machine'}
+          placeholder={fleet.loading && !fleet.data ? t('Loading equipment…') : t('Choose machine')}
           error={errors.equipmentId}
-          emptyText="No equipment yet; ask the PM to add it"
+          emptyText={t('No equipment yet; ask the PM to add it')}
         />
-        <DatePicker label="Date" required value={date} onChange={setDate} error={errors.date} />
+        <DatePicker label={t('Date')} required value={date} onChange={setDate} error={errors.date} />
         <View style={styles.row}>
           <View style={styles.cell}>
-            <Input label="Worked (h)" required value={worked} onChangeText={setWorked} keyboardType="decimal-pad" placeholder="8" error={errors.worked} style={styles.bigInput} />
+            <Input label={t('Worked (h)')} required value={worked} onChangeText={setWorked} keyboardType="decimal-pad" placeholder="8" error={errors.worked} style={styles.bigInput} />
           </View>
           <View style={styles.cell}>
-            <Input label="Idle (h)" value={idle} onChangeText={setIdle} keyboardType="decimal-pad" placeholder="0" error={errors.idle} />
+            <Input label={t('Idle (h)')} value={idle} onChangeText={setIdle} keyboardType="decimal-pad" placeholder="0" error={errors.idle} />
           </View>
           <View style={styles.cell}>
-            <Input label="Breakdown (h)" value={down} onChangeText={setDown} keyboardType="decimal-pad" placeholder="0" error={errors.down} />
+            <Input label={t('Breakdown (h)')} value={down} onChangeText={setDown} keyboardType="decimal-pad" placeholder="0" error={errors.down} />
           </View>
         </View>
-        {Number(down) > 0 ? <Input label="What broke down" required value={breakdownNote} onChangeText={setBreakdownNote} placeholder="e.g. Hydraulic hose burst" /> : null}
+        {Number(down) > 0 ? <Input label={t('What broke down')} required value={breakdownNote} onChangeText={setBreakdownNote} placeholder={t('e.g. Hydraulic hose burst')} /> : null}
       </Card>
-      <Card title="Meter and diesel">
+      <Card title={t('Meter and diesel')}>
         <View style={styles.row}>
           <View style={styles.cell}>
-            <Input label="Meter start" value={meterStart} onChangeText={setMeterStart} keyboardType="decimal-pad" error={errors.meterStart} />
+            <Input label={t('Meter start')} value={meterStart} onChangeText={setMeterStart} keyboardType="decimal-pad" error={errors.meterStart} />
           </View>
           <View style={styles.cell}>
-            <Input label="Meter end" value={meterEnd} onChangeText={setMeterEnd} keyboardType="decimal-pad" error={errors.meterEnd} />
+            <Input label={t('Meter end')} value={meterEnd} onChangeText={setMeterEnd} keyboardType="decimal-pad" error={errors.meterEnd} />
           </View>
         </View>
-        <Input label="Diesel filled (litres)" value={diesel} onChangeText={setDiesel} keyboardType="decimal-pad" placeholder="e.g. 60" error={errors.diesel} />
+        <Input label={t('Diesel filled (litres)')} value={diesel} onChangeText={setDiesel} keyboardType="decimal-pad" placeholder={t('e.g. 60')} error={errors.diesel} />
       </Card>
-      <Card title="Details (optional)">
-        <Input label="Operator" value={operator} onChangeText={setOperator} />
-        <Select label="Activity" value={activityId} options={activityOptions} onChange={setActivityId} placeholder={projectId ? 'Choose activity' : 'Choose a project first'} disabled={!projectId} emptyText="No activities in this project" />
-        <Input label="Work done" value={workDone} onChangeText={setWorkDone} placeholder="e.g. Excavation for drain Ch. 2+400" />
-        <Input label="Remarks" value={remarks} onChangeText={setRemarks} multiline />
+      <Card title={t('Details (optional)')}>
+        <Input label={t('Operator')} value={operator} onChangeText={setOperator} />
+        <Select label={t('Activity')} value={activityId} options={activityOptions} onChange={setActivityId} placeholder={projectId ? t('Choose activity') : t('Choose a project first')} disabled={!projectId} emptyText={t('No activities in this project')} />
+        <Input label={t('Work done')} value={workDone} onChangeText={setWorkDone} placeholder={t('e.g. Excavation for drain Ch. 2+400')} />
+        <Input label={t('Remarks')} value={remarks} onChangeText={setRemarks} multiline />
         <PhotoPicker photos={photos} onChange={setPhotos} />
         {errors.photos ? <Text style={styles.err}>{errors.photos}</Text> : null}
       </Card>
-      <Button title={editId ? 'Resubmit for approval' : 'Submit for approval'} icon="send" onPress={submit} loading={busy} />
+      <Button title={editId ? t('Resubmit for approval') : t('Submit for approval')} icon="send" onPress={submit} loading={busy} />
     </Screen>
   );
 }

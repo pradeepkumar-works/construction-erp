@@ -11,8 +11,10 @@ import { attachmentsToPhotos } from '../../src/forms/edit';
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
 import { colors, radius, spacing, typography } from '../../src/theme';
 import { addDays, formatDate, isIsoDate, today } from '../../src/utils/format';
+import { useT } from '../../src/i18n/LanguageContext';
 
 const RATINGS = ['1', '2', '3', '4', '5'].map((v) => ({ value: v, label: v }));
+/** English labels; shown through t(). */
 const DUE_PRESETS = [
   { value: '3', label: 'In 3 days' },
   { value: '7', label: '1 week' },
@@ -26,6 +28,7 @@ export default function RiskFormScreen() {
   const params = useLocalSearchParams<{ projectId?: string; editId?: string; kind?: RiskKind; activityId?: string; title?: string }>();
   const editId = params.editId ?? null;
   const api = useApi();
+  const t = useT();
   const { online, enqueue } = useOffline();
   const projects = useProjectOptions();
   const existing = useFetch<RiskDto>((a) => a.get(`/risks/${editId}`), [editId], { enabled: !!editId, refetchOnFocus: false });
@@ -85,7 +88,7 @@ export default function RiskFormScreen() {
   const activities = useFetch<ActivityDto[]>((a) => a.get(`/projects/${projectId}/activities`), [projectId], { enabled: !!projectId, refetchOnFocus: false, cacheKey: `activities:${projectId}` });
   const project = useFetch<ProjectDetail>((a) => a.get(`/projects/${projectId}`), [projectId], { enabled: !!projectId, refetchOnFocus: false, cacheKey: `project:${projectId}` });
   const activityOptions = useMemo<SelectOption[]>(() => (activities.data ?? []).map((a) => ({ value: a.id, label: a.name })), [activities.data]);
-  const categoryOptions = useMemo<SelectOption<RiskCategory>[]>(() => RISK_CATEGORIES.map((c) => ({ value: c, label: RISK_CATEGORY_LABELS[c] })), []);
+  const categoryOptions = useMemo<SelectOption<RiskCategory>[]>(() => RISK_CATEGORIES.map((c) => ({ value: c, label: t(RISK_CATEGORY_LABELS[c]) })), [t]);
   const ownerOptions = useMemo<SelectOption[]>(() => {
     const p = project.data;
     if (!p) return [];
@@ -103,17 +106,17 @@ export default function RiskFormScreen() {
 
   const validate = () => {
     const e: Record<string, string> = {};
-    if (!projectId) e.projectId = 'Choose a project';
-    if (!title.trim()) e.title = isDelay ? 'Say what is holding up work' : 'Say what might happen';
-    if (!category) e.category = 'Choose a category';
+    if (!projectId) e.projectId = t('Choose a project');
+    if (!title.trim()) e.title = t(isDelay ? 'Say what is holding up work' : 'Say what might happen');
+    if (!category) e.category = t('Choose a category');
     if (isDelay) {
-      if (!isIsoDate(delayStart) || delayStart > today()) e.delayStart = 'Enter a date up to today';
-      if (resumed && (!isIsoDate(delayEnd) || delayEnd < delayStart || delayEnd > today())) e.delayEnd = 'Between the start and today';
+      if (!isIsoDate(delayStart) || delayStart > today()) e.delayStart = t('Enter a date up to today');
+      if (resumed && (!isIsoDate(delayEnd) || delayEnd < delayStart || delayEnd > today())) e.delayEnd = t('Between the start and today');
     }
-    if (editId && status === 'CLOSED' && !closureNote.trim()) e.closureNote = 'Say how it was resolved';
-    if (photosUploading(photos)) e.photos = 'Wait for photos to finish uploading';
-    else if (photosFailed(photos)) e.photos = 'Remove or retry failed photos';
-    else if (editId && photosQueued(photos)) e.photos = 'Photos need a connection to upload before saving';
+    if (editId && status === 'CLOSED' && !closureNote.trim()) e.closureNote = t('Say how it was resolved');
+    if (photosUploading(photos)) e.photos = t('Wait for photos to finish uploading');
+    else if (photosFailed(photos)) e.photos = t('Remove or retry failed photos');
+    else if (editId && photosQueued(photos)) e.photos = t('Photos need a connection to upload before saving');
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -124,34 +127,34 @@ export default function RiskFormScreen() {
     setBusy(true);
     try {
       const blank = editId ? null : undefined;
-      const t = (v: string) => v.trim() || blank;
+      const opt = (v: string) => v.trim() || blank;
       const body = {
         kind,
         category,
         title: title.trim(),
-        description: t(description),
+        description: opt(description),
         activityId: activityId ?? blank,
         ownerId: ownerId ?? blank,
         probability: Number(probability),
         impact: Number(impact),
-        mitigation: t(mitigation),
+        mitigation: opt(mitigation),
         dueDate: due ?? blank,
         delayStart: isDelay ? delayStart : null,
         delayEnd: isDelay && resumed ? delayEnd : null,
         responsibleParty: isDelay ? party : null,
       };
       if (editId) {
-        setSaved(await api.patch<RiskDto>(`/risks/${editId}`, { ...body, status, closureNote: status === 'CLOSED' ? closureNote.trim() : t(closureNote), attachmentIds: attachmentIds(photos) }));
+        setSaved(await api.patch<RiskDto>(`/risks/${editId}`, { ...body, status, closureNote: status === 'CLOSED' ? closureNote.trim() : opt(closureNote), attachmentIds: attachmentIds(photos) }));
         return;
       }
       const queueIt = async () => {
-        const projectName = projects.options.find((o) => o.value === projectId)?.label ?? 'Project';
+        const projectName = projects.options.find((o) => o.value === projectId)?.label ?? t('Project');
         setQueued(
           await enqueue({
             type: 'RISK',
             payload: { projectId, ...body },
             photos: toOutboxPhotos(photos),
-            title: `${isDelay ? 'Delay' : 'Risk'} · ${title.trim()}`,
+            title: `${t(isDelay ? 'Delay' : 'Risk')} · ${title.trim()}`,
             subtitle: `${projectName} · ${formatDate(today())}`,
           }),
         );
@@ -184,12 +187,12 @@ export default function RiskFormScreen() {
     setErrors({});
   };
 
-  if (queued) return <QueuedSuccess title="Saved on this phone" subtitle={`${queued.title} · ${queued.subtitle}`} onAnother={reset} />;
+  if (queued) return <QueuedSuccess title={t('Saved on this phone')} subtitle={`${queued.title} · ${queued.subtitle}`} onAnother={reset} />;
   if (saved) {
     return (
       <SubmitSuccess
-        title={editId ? 'Entry updated' : isDelay ? 'Delay recorded' : 'Risk raised'}
-        subtitle={`${saved.riskNo}: ${saved.title}.${!editId && (isDelay || level === 'HIGH') ? ' The project manager has been told.' : ''}`}
+        title={t(editId ? 'Entry updated' : isDelay ? 'Delay recorded' : 'Risk raised')}
+        subtitle={`${saved.riskNo}: ${saved.title}.${!editId && (isDelay || level === 'HIGH') ? ` ${t('The project manager has been told.')}` : ''}`}
         detailHref={`/risk/${saved.id}`}
         onAnother={editId ? undefined : reset}
       />
@@ -201,11 +204,11 @@ export default function RiskFormScreen() {
 
   return (
     <Screen keyboard>
-      <Stack.Screen options={{ title: editId ? `Update ${existing.data?.riskNo ?? ''}` : isDelay ? 'Record a Delay' : 'Raise a Risk' }} />
+      <Stack.Screen options={{ title: editId ? t('Update {no}', { no: existing.data?.riskNo ?? '' }) : t(isDelay ? 'Record a Delay' : 'Raise a Risk') }} />
       <ErrorBanner message={submitError ?? projects.error} />
       <Card>
         <Chips
-          label="This is"
+          label={t('This is')}
           value={kind}
           clearable={false}
           onChange={(v) => {
@@ -214,59 +217,59 @@ export default function RiskFormScreen() {
             if (!editId) setProbability(k === 'DELAY' ? '5' : '3');
           }}
           options={[
-            { value: 'DELAY', label: 'A delay: work held up' },
-            { value: 'RISK', label: 'A risk: might happen' },
+            { value: 'DELAY', label: t('A delay: work held up') },
+            { value: 'RISK', label: t('A risk: might happen') },
           ]}
         />
-        <Select label="Project" required value={projectId} options={projects.options} onChange={(v) => { setProjectId(v); setActivityId(null); setOwnerId(null); }} placeholder="Choose project" error={errors.projectId} disabled={!!editId} />
-        <Input label={isDelay ? 'What is holding up work' : 'What might happen'} required value={title} onChangeText={setTitle} placeholder={isDelay ? 'e.g. Encroachment at Ch 12+300' : 'e.g. HT line not shifted before WMM'} error={errors.title} />
-        <Select label="Category" required value={category} options={categoryOptions} onChange={setCategory} placeholder="Choose category" error={errors.category} />
-        <Select label="Activity affected" value={activityId} options={activityOptions} onChange={setActivityId} placeholder={projectId ? 'Choose activity (optional)' : 'Choose a project first'} disabled={!projectId} emptyText="No activities in this project" />
-        <Input label="Details" value={description} onChangeText={setDescription} multiline />
+        <Select label={t('Project')} required value={projectId} options={projects.options} onChange={(v) => { setProjectId(v); setActivityId(null); setOwnerId(null); }} placeholder={t('Choose project')} error={errors.projectId} disabled={!!editId} />
+        <Input label={t(isDelay ? 'What is holding up work' : 'What might happen')} required value={title} onChangeText={setTitle} placeholder={t(isDelay ? 'e.g. Encroachment at Ch 12+300' : 'e.g. HT line not shifted before WMM')} error={errors.title} />
+        <Select label={t('Category')} required value={category} options={categoryOptions} onChange={setCategory} placeholder={t('Choose category')} error={errors.category} />
+        <Select label={t('Activity affected')} value={activityId} options={activityOptions} onChange={setActivityId} placeholder={t(projectId ? 'Choose activity (optional)' : 'Choose a project first')} disabled={!projectId} emptyText={t('No activities in this project')} />
+        <Input label={t('Details')} value={description} onChangeText={setDescription} multiline />
       </Card>
       {isDelay ? (
-        <Card title="Delay">
-          <DatePicker label="Held up since" required value={delayStart} onChange={setDelayStart} error={errors.delayStart} />
-          <Chips label="Work" value={resumed ? 'yes' : 'no'} clearable={false} onChange={(v) => setResumed(v === 'yes')} options={[{ value: 'no', label: 'Still held up' }, { value: 'yes', label: 'Has resumed' }]} />
-          {resumed ? <DatePicker label="Resumed on" required value={delayEnd} onChange={setDelayEnd} error={errors.delayEnd} /> : null}
-          {days !== null ? <Text style={styles.days}>{days} day{days === 1 ? '' : 's'} lost{resumed ? '' : ' so far'}</Text> : null}
-          <Chips label="Caused by" value={party} onChange={setParty} options={DELAY_PARTIES.map((p) => ({ value: p, label: DELAY_PARTY_LABELS[p] }))} />
+        <Card title={t('Delay')}>
+          <DatePicker label={t('Held up since')} required value={delayStart} onChange={setDelayStart} error={errors.delayStart} />
+          <Chips label={t('Work')} value={resumed ? 'yes' : 'no'} clearable={false} onChange={(v) => setResumed(v === 'yes')} options={[{ value: 'no', label: t('Still held up') }, { value: 'yes', label: t('Has resumed') }]} />
+          {resumed ? <DatePicker label={t('Resumed on')} required value={delayEnd} onChange={setDelayEnd} error={errors.delayEnd} /> : null}
+          {days !== null ? <Text style={styles.days}>{days === 1 ? t(resumed ? '1 day lost' : '1 day lost so far') : t(resumed ? '{n} days lost' : '{n} days lost so far', { n: days })}</Text> : null}
+          <Chips label={t('Caused by')} value={party} onChange={setParty} options={DELAY_PARTIES.map((p) => ({ value: p, label: t(DELAY_PARTY_LABELS[p]) }))} />
         </Card>
       ) : null}
-      <Card title="Rating">
-        <Chips label="Probability (1 very low to 5 very high)" value={probability} clearable={false} onChange={(v) => setProbability(v ?? '3')} options={RATINGS} />
-        <Chips label="Impact on time / cost" value={impact} clearable={false} onChange={(v) => setImpact(v ?? '3')} options={RATINGS} />
+      <Card title={t('Rating')}>
+        <Chips label={t('Probability (1 very low to 5 very high)')} value={probability} clearable={false} onChange={(v) => setProbability(v ?? '3')} options={RATINGS} />
+        <Chips label={t('Impact on time / cost')} value={impact} clearable={false} onChange={(v) => setImpact(v ?? '3')} options={RATINGS} />
         <View style={[styles.scoreBox, { borderColor: LEVEL_TONE[level] }]}>
-          <Text style={typography.caption}>Score</Text>
+          <Text style={typography.caption}>{t('Score')}</Text>
           <Text style={[styles.score, { color: LEVEL_TONE[level] }]}>
-            {score} · {RISK_LEVEL_LABELS[level]}
+            {score} · {t(RISK_LEVEL_LABELS[level])}
           </Text>
         </View>
       </Card>
-      <Card title="Follow-up">
-        <Input label={isDelay ? 'Action being taken' : 'Mitigation'} value={mitigation} onChangeText={setMitigation} multiline />
-        <Select label="Owner" value={ownerId} options={ownerOptions} onChange={setOwnerId} placeholder={projectId ? 'Who follows it up (optional)' : 'Choose a project first'} disabled={!projectId} emptyText="No team members" />
+      <Card title={t('Follow-up')}>
+        <Input label={t(isDelay ? 'Action being taken' : 'Mitigation')} value={mitigation} onChangeText={setMitigation} multiline />
+        <Select label={t('Owner')} value={ownerId} options={ownerOptions} onChange={setOwnerId} placeholder={t(projectId ? 'Who follows it up (optional)' : 'Choose a project first')} disabled={!projectId} emptyText={t('No team members')} />
         <Chips
-          label={`Action due${due ? `: ${formatDate(due)}` : ''}`}
+          label={`${t('Action due')}${due ? `: ${formatDate(due)}` : ''}`}
           value={dueIn}
           onChange={(v) => {
             setDueIn(v);
             if (!v) setDueDate(null);
           }}
-          options={DUE_PRESETS}
+          options={DUE_PRESETS.map((p) => ({ ...p, label: t(p.label) }))}
         />
       </Card>
       {editId ? (
-        <Card title="Status">
-          <Chips value={status} clearable={false} onChange={(v) => setStatus(v ?? 'OPEN')} options={RISK_STATUSES.map((s) => ({ value: s, label: RISK_STATUS_LABELS[s] }))} />
-          {status === 'CLOSED' ? <Input label="How was it resolved" required value={closureNote} onChangeText={setClosureNote} multiline error={errors.closureNote} /> : null}
+        <Card title={t('Status')}>
+          <Chips value={status} clearable={false} onChange={(v) => setStatus(v ?? 'OPEN')} options={RISK_STATUSES.map((s) => ({ value: s, label: t(RISK_STATUS_LABELS[s]) }))} />
+          {status === 'CLOSED' ? <Input label={t('How was it resolved')} required value={closureNote} onChangeText={setClosureNote} multiline error={errors.closureNote} /> : null}
         </Card>
       ) : null}
-      <Card title="Photos / letters">
+      <Card title={t('Photos / letters')}>
         <PhotoPicker photos={photos} onChange={setPhotos} />
         {errors.photos ? <Text style={styles.err}>{errors.photos}</Text> : null}
       </Card>
-      <Button title={editId ? 'Save' : isDelay ? 'Record delay' : 'Raise risk'} icon="send" onPress={submit} loading={busy} />
+      <Button title={t(editId ? 'Save' : isDelay ? 'Record delay' : 'Raise risk')} icon="send" onPress={submit} loading={busy} />
     </Screen>
   );
 }

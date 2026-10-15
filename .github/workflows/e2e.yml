@@ -31,6 +31,8 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: CI=true pnpm install --frozen-lockfile
+      - name: Phone app has Hindi for every string it shows
+        run: node apps/mobile/scripts/check-i18n.mjs
       - name: Database owner like Neon's (BYPASSRLS, not superuser)
         run: |
           psql "postgresql://postgres:postgres@localhost:5432/postgres" -c "CREATE ROLE erp_owner LOGIN PASSWORD 'owner' CREATEROLE BYPASSRLS" -c "CREATE DATABASE erp OWNER erp_owner"

@@ -3,6 +3,7 @@ import { Alert, StyleSheet, Text, View } from 'react-native';
 import { LEAVE_TYPE_LABELS, STAFF_ATTENDANCE_LABELS, STAFF_ATTENDANCE_STATUSES, type StaffAttendanceStatus, type StaffRegisterDto, type StaffRegisterRowDto } from '@erp/shared';
 import { useApi, useFetch } from '../src/api/hooks';
 import { errorMessage } from '../src/api/client';
+import { useT } from '../src/i18n/LanguageContext';
 import { Button, Card, Chips, DatePicker, EmptyState, ErrorBanner, Loading, Screen, Select } from '../src/components';
 import { useProjectOptions } from '../src/forms/common';
 import { colors, spacing, typography } from '../src/theme';
@@ -14,6 +15,7 @@ import { isIsoDate, today } from '../src/utils/format';
  */
 export default function StaffRegisterScreen() {
   const api = useApi();
+  const t = useT();
   const projects = useProjectOptions();
   const [projectId, setProjectId] = useState<string | null>(null);
   const [date, setDate] = useState(today());
@@ -46,7 +48,7 @@ export default function StaffRegisterScreen() {
     try {
       const d = await api.put<StaffRegisterDto>('/staff/register', { projectId, date, entries: changed.map((r) => ({ employeeId: r.employee.id, status: marks[r.employee.id] ?? null })) });
       reg.setData(d);
-      Alert.alert('Register saved');
+      Alert.alert(t('Register saved'));
     } catch (e) {
       setError(errorMessage(e));
     } finally {
@@ -59,30 +61,32 @@ export default function StaffRegisterScreen() {
       <Text style={typography.bodyStrong}>{r.employee.fullName}</Text>
       <Text style={typography.caption}>
         {r.employee.designation}
-        {r.leave ? ` · ${LEAVE_TYPE_LABELS[r.leave.type]}${r.leave.halfDay ? ', half day' : ''}${r.leave.status === 'PENDING' ? ' (waiting)' : ''}` : ''}
-        {r.attendance?.checkIn ? ` · checked in ${new Date(r.attendance.checkIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : ''}
+        {r.leave ? ` · ${t(LEAVE_TYPE_LABELS[r.leave.type])}${r.leave.halfDay ? `, ${t('half day')}` : ''}${r.leave.status === 'PENDING' ? ` (${t('waiting')})` : ''}` : ''}
+        {r.attendance?.checkIn ? ` · ${t('checked in {time}', { time: new Date(r.attendance.checkIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) })}` : ''}
       </Text>
-      <Chips value={marks[r.employee.id] ?? null} onChange={(v) => setMarks((m) => ({ ...m, [r.employee.id]: v }))} options={STAFF_ATTENDANCE_STATUSES.map((s) => ({ value: s, label: STAFF_ATTENDANCE_LABELS[s] }))} />
+      <Chips value={marks[r.employee.id] ?? null} onChange={(v) => setMarks((m) => ({ ...m, [r.employee.id]: v }))} options={STAFF_ATTENDANCE_STATUSES.map((s) => ({ value: s, label: t(STAFF_ATTENDANCE_LABELS[s]) }))} />
     </View>
   );
 
   return (
     <Screen refreshing={reg.refreshing} onRefresh={reg.refresh}>
-      <Select label="Project" value={projectId} options={projects.options} onChange={setProjectId} searchable />
-      <DatePicker label="Date" value={date} onChange={setDate} error={isIsoDate(date) && date > today() ? 'Not a future day' : null} />
+      <Select label={t('Project')} value={projectId} options={projects.options} onChange={setProjectId} searchable />
+      <DatePicker label={t('Date')} value={date} onChange={setDate} error={isIsoDate(date) && date > today() ? t('Not a future day') : null} />
       <ErrorBanner message={error ?? reg.error} />
       {reg.data && (reg.data.holiday || reg.data.weeklyOff) ? (
         <Card>
-          <Text style={typography.caption}>{reg.data.holiday ? `Holiday: ${reg.data.holiday}.` : 'Sunday, the weekly off.'} Anyone marked present earns a comp-off.</Text>
+          <Text style={typography.caption}>
+            {reg.data.holiday ? t('Holiday: {name}.', { name: reg.data.holiday }) : t('Sunday, the weekly off.')} {t('Anyone marked present earns a comp-off.')}
+          </Text>
         </Card>
       ) : null}
       {reg.loading && !reg.data ? <Loading /> : null}
-      {reg.data && !reg.data.rows.length ? <EmptyState title="No staff posted at this site" icon="people-outline" /> : null}
+      {reg.data && !reg.data.rows.length ? <EmptyState title={t('No staff posted at this site')} icon="people-outline" /> : null}
       {reg.data?.rows.map(row)}
       {reg.data?.rows.length ? (
         <View style={styles.actions}>
-          <Button title="Mark the rest present" variant="secondary" onPress={restPresent} />
-          <Button title={changed.length ? `Save (${changed.length})` : 'Save'} loading={busy} disabled={!changed.length} onPress={() => void save()} />
+          <Button title={t('Mark the rest present')} variant="secondary" onPress={restPresent} />
+          <Button title={changed.length ? t('Save ({n})', { n: changed.length }) : t('Save')} loading={busy} disabled={!changed.length} onPress={() => void save()} />
         </View>
       ) : null}
     </Screen>

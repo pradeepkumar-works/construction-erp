@@ -8,6 +8,7 @@ import { errorMessage } from '../api/client';
 import { isOfflineError, useOffline } from '../offline/OfflineContext';
 import { shrinkPhoto } from '../offline/shrink';
 import { colors, radius, spacing, typography } from '../theme';
+import { useT } from '../i18n/LanguageContext';
 
 export interface LocalPhoto {
   key: string;
@@ -42,8 +43,9 @@ function guessType(uri: string, mime?: string | null): string {
  * Camera + library picker that uploads each photo immediately and keeps the returned attachment ids.
  * Without a connection the photo stays on the phone (`queued`) and travels with the entry through the outbox.
  */
-export function PhotoPicker({ label = 'Photos', photos, onChange, max = 6 }: Props) {
+export function PhotoPicker({ label, photos, onChange, max = 6 }: Props) {
   const api = useApi();
+  const t = useT();
   const { online } = useOffline();
   const [busy, setBusy] = useState(false);
 
@@ -89,24 +91,24 @@ export function PhotoPicker({ label = 'Photos', photos, onChange, max = 6 }: Pro
     try {
       const perm = await ImagePicker.requestCameraPermissionsAsync();
       if (!perm.granted) {
-        Alert.alert('Camera permission needed', 'Allow camera access to take site photos.');
+        Alert.alert(t('Camera permission needed'), t('Allow camera access to take site photos.'));
         return;
       }
       const res = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.6 });
       if (!res.canceled) await addAssets(res.assets);
     } catch (e) {
-      Alert.alert('Camera unavailable', errorMessage(e));
+      Alert.alert(t('Camera unavailable'), errorMessage(e));
     } finally {
       setBusy(false);
     }
-  }, [addAssets]);
+  }, [addAssets, t]);
 
   const pickFromLibrary = useCallback(async () => {
     setBusy(true);
     try {
       const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!perm.granted) {
-        Alert.alert('Photos permission needed', 'Allow photo library access to attach pictures.');
+        Alert.alert(t('Photos permission needed'), t('Allow photo library access to attach pictures.'));
         return;
       }
       const res = await ImagePicker.launchImageLibraryAsync({
@@ -117,11 +119,11 @@ export function PhotoPicker({ label = 'Photos', photos, onChange, max = 6 }: Pro
       });
       if (!res.canceled) await addAssets(res.assets);
     } catch (e) {
-      Alert.alert('Could not open photos', errorMessage(e));
+      Alert.alert(t('Could not open photos'), errorMessage(e));
     } finally {
       setBusy(false);
     }
-  }, [addAssets, max, photos.length]);
+  }, [addAssets, max, photos.length, t]);
 
   const remove = (key: string) => onChange((prev) => prev.filter((p) => p.key !== key));
   const retry = (photo: LocalPhoto) => {
@@ -133,16 +135,16 @@ export function PhotoPicker({ label = 'Photos', photos, onChange, max = 6 }: Pro
   return (
     <View style={styles.container}>
       <Text style={styles.label}>
-        {label} <Text style={styles.count}>({photos.length}/{max})</Text>
+        {label ?? t('Photos')} <Text style={styles.count}>({photos.length}/{max})</Text>
       </Text>
       <View style={styles.actions}>
         <Pressable onPress={takePhoto} disabled={busy || full} style={[styles.actionBtn, (busy || full) && styles.disabled]}>
           <Ionicons name="camera" size={22} color={colors.primary} />
-          <Text style={styles.actionText}>Camera</Text>
+          <Text style={styles.actionText}>{t('Camera')}</Text>
         </Pressable>
         <Pressable onPress={pickFromLibrary} disabled={busy || full} style={[styles.actionBtn, (busy || full) && styles.disabled]}>
           <Ionicons name="images" size={22} color={colors.primary} />
-          <Text style={styles.actionText}>Library</Text>
+          <Text style={styles.actionText}>{t('Library')}</Text>
         </Pressable>
       </View>
       {photos.length ? (
@@ -157,10 +159,10 @@ export function PhotoPicker({ label = 'Photos', photos, onChange, max = 6 }: Pro
               ) : p.error ? (
                 <Pressable onPress={() => retry(p)} style={[styles.overlay, styles.overlayError]}>
                   <Ionicons name="refresh" size={22} color="#fff" />
-                  <Text style={styles.overlayText}>Retry</Text>
+                  <Text style={styles.overlayText}>{t('Retry')}</Text>
                 </Pressable>
               ) : p.queued ? (
-                <Pressable onPress={() => (online ? retry(p) : undefined)} style={styles.okMark} accessibilityLabel="Waiting for connection">
+                <Pressable onPress={() => (online ? retry(p) : undefined)} style={styles.okMark} accessibilityLabel={t('Waiting for connection')}>
                   <Ionicons name="cloud-offline" size={18} color={colors.warning} />
                 </Pressable>
               ) : (
@@ -168,14 +170,14 @@ export function PhotoPicker({ label = 'Photos', photos, onChange, max = 6 }: Pro
                   <Ionicons name="checkmark-circle" size={18} color={colors.success} />
                 </View>
               )}
-              <Pressable onPress={() => remove(p.key)} style={styles.removeBtn} hitSlop={8} accessibilityLabel="Remove photo">
+              <Pressable onPress={() => remove(p.key)} style={styles.removeBtn} hitSlop={8} accessibilityLabel={t('Remove photo')}>
                 <Ionicons name="close" size={16} color="#fff" />
               </Pressable>
             </View>
           ))}
         </ScrollView>
       ) : (
-        <Text style={styles.hint}>{online ? 'Optional. Photos upload immediately and are attached on submit.' : 'Optional. You are offline: photos stay on the phone and upload with the entry.'}</Text>
+        <Text style={styles.hint}>{online ? t('Optional. Photos upload immediately and are attached on submit.') : t('Optional. You are offline: photos stay on the phone and upload with the entry.')}</Text>
       )}
     </View>
   );

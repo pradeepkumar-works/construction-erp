@@ -2,14 +2,16 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { SUBMISSION_STATUS_LABELS, type SubmissionStatus } from '@erp/shared';
 import { radius, spacing, statusTone } from '../theme';
+import { useT } from '../i18n/LanguageContext';
 
 /** `labels` words the status for one kind of entry (an inspection is "Passed" rather than "Approved"). */
 export function StatusBadge({ status, size = 'md', labels = SUBMISSION_STATUS_LABELS }: { status: SubmissionStatus; size?: 'md' | 'lg'; labels?: Record<SubmissionStatus, string> }) {
   const tone = statusTone[status] ?? statusTone.DRAFT;
+  const t = useT();
   return (
     <View style={[styles.badge, { backgroundColor: tone.bg }, size === 'lg' && styles.lg]}>
       <View style={[styles.dot, { backgroundColor: tone.fg }]} />
-      <Text style={[styles.text, { color: tone.fg }, size === 'lg' && styles.lgText]}>{labels[status] ?? status}</Text>
+      <Text style={[styles.text, { color: tone.fg }, size === 'lg' && styles.lgText]}>{labels[status] ? t(labels[status]) : status}</Text>
     </View>
   );
 }

@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { RaBillDto } from '@erp/shared';
 import { BILL_STAGE_LABELS } from '@erp/shared';
 import { useFetch } from '../../src/api/hooks';
+import { useT } from '../../src/i18n/LanguageContext';
 import { AttachmentGallery, Button, Card, ErrorState, KeyValue, Loading, ReviewActions, Screen, SubmissionHeader } from '../../src/components';
 import { colors, spacing, typography } from '../../src/theme';
 import { fmtQty, formatDate } from '../../src/utils/format';
@@ -14,6 +15,7 @@ const rupees = (v: string) => `₹${Number(v).toLocaleString('en-IN', { minimumF
 export default function BillScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const t = useT();
   const { data, loading, refreshing, error, refresh, reload, setData } = useFetch<RaBillDto>((api) => api.get(`/ra-bills/${id}`), [id], { enabled: !!id });
 
   if (loading && !data) return <Loading />;
@@ -22,23 +24,23 @@ export default function BillScreen() {
 
   return (
     <Screen refreshing={refreshing} onRefresh={refresh}>
-      <SubmissionHeader item={data} title={data.billLabel} subtitle={`${formatDate(data.billDate)} · measurements up to ${formatDate(data.measuredUpTo)}`} />
+      <SubmissionHeader item={data} title={data.billLabel} subtitle={t('{date} · measurements up to {upto}', { date: formatDate(data.billDate), upto: formatDate(data.measuredUpTo) })} />
       <Card>
         <View style={styles.box}>
           <Text style={styles.total}>{rupees(data.netPayable)}</Text>
-          <Text style={typography.caption}>net payable</Text>
+          <Text style={typography.caption}>{t('net payable')}</Text>
         </View>
-        <KeyValue label="Client" value={data.clientName} />
-        <KeyValue label="Work in this bill" value={rupees(data.grossAmount)} />
-        <KeyValue label="Work up to date" value={rupees(data.grossUpto)} />
-        <KeyValue label={`GST @ ${data.gstRate}%`} value={rupees(data.gstAmount)} />
+        <KeyValue label={t('Client')} value={data.clientName} />
+        <KeyValue label={t('Work in this bill')} value={rupees(data.grossAmount)} />
+        <KeyValue label={t('Work up to date')} value={rupees(data.grossUpto)} />
+        <KeyValue label={t('GST @ {rate}%', { rate: data.gstRate })} value={rupees(data.gstAmount)} />
         {data.deductions.map((d) => (
-          <KeyValue key={d.key} label={d.pct !== null ? `${d.label} @ ${d.pct}%` : d.label} value={`- ${rupees(d.amount)}`} />
+          <KeyValue key={d.key} label={d.pct !== null ? t('{label} @ {pct}%', { label: t(d.label), pct: d.pct }) : t(d.label)} value={`- ${rupees(d.amount)}`} />
         ))}
-        {data.status === 'APPROVED' ? <KeyValue label="With client" value={BILL_STAGE_LABELS[data.stage]} /> : null}
-        <KeyValue label="Remarks" value={data.remarks} multiline />
+        {data.status === 'APPROVED' ? <KeyValue label={t('With client')} value={t(BILL_STAGE_LABELS[data.stage])} /> : null}
+        <KeyValue label={t('Remarks')} value={data.remarks} multiline />
       </Card>
-      <Card title={`Abstract (${data.items.length} items)`}>
+      <Card title={t('Abstract ({n} items)', { n: data.items.length })}>
         {data.items.map((i) => (
           <View key={i.id} style={styles.line}>
             <View style={{ flex: 1 }}>
@@ -46,8 +48,8 @@ export default function BillScreen() {
                 {i.itemNo} · {i.description}
               </Text>
               <Text style={typography.caption}>
-                {fmtQty(i.thisQty)} {i.unit} this bill · {fmtQty(i.uptoQty)} up to date
-                {Number(i.excessQty) > 0 ? <Text style={{ color: colors.danger }}> · {fmtQty(i.excessQty)} over BOQ</Text> : null}
+                {t('{qty} {unit} this bill · {upto} up to date', { qty: fmtQty(i.thisQty), unit: i.unit, upto: fmtQty(i.uptoQty) })}
+                {Number(i.excessQty) > 0 ? <Text style={{ color: colors.danger }}> · {t('{qty} over BOQ', { qty: fmtQty(i.excessQty) })}</Text> : null}
               </Text>
             </View>
             <Text style={styles.amount}>{rupees(i.amount)}</Text>
@@ -56,7 +58,7 @@ export default function BillScreen() {
       </Card>
       <AttachmentGallery attachments={data.attachments} />
       <ReviewActions type="BILL" item={data} onReviewed={setData} />
-      <Button title="Open project" variant="ghost" icon="business-outline" onPress={() => router.push(`/project/${data.projectId}`)} />
+      <Button title={t('Open project')} variant="ghost" icon="business-outline" onPress={() => router.push(`/project/${data.projectId}`)} />
     </Screen>
   );
 }

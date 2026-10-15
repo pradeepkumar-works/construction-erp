@@ -18,6 +18,7 @@ import { useApi, useFetch } from '../src/api/hooks';
 import { errorMessage } from '../src/api/client';
 import { Button, Card, Chips, DatePicker, ErrorBanner, Input, Loading, Screen, Select } from '../src/components';
 import { QueuedSuccess, SubmitSuccess, useProjectOptions } from '../src/forms/common';
+import { useT } from '../src/i18n/LanguageContext';
 import { isOfflineError, useOffline, type OutboxItem } from '../src/offline';
 import { colors, radius, spacing, typography } from '../src/theme';
 import { formatDate, isIsoDate, today } from '../src/utils/format';
@@ -61,6 +62,7 @@ const toLines = (groups: Group[]) =>
 export default function AttendanceScreen() {
   const params = useLocalSearchParams<{ projectId?: string; date?: string }>();
   const { user } = useAuth();
+  const t = useT();
   const api = useApi();
   const { online, enqueue, items: outbox } = useOffline();
   const projects = useProjectOptions();
@@ -112,8 +114,8 @@ export default function AttendanceScreen() {
 
   const categoryOptions = useMemo(() => {
     const names = suggestions.data?.categories?.length ? suggestions.data.categories : MANPOWER_CATEGORIES;
-    return names.map((c) => ({ value: c, label: c }));
-  }, [suggestions.data]);
+    return names.map((c) => ({ value: c, label: t(c) }));
+  }, [suggestions.data, t]);
   const contractorNames = suggestions.data?.contractors ?? [DEPARTMENTAL_CONTRACTOR];
 
   const updateGroup = (key: string, patch: Partial<Group>) => setGroups((gs) => gs.map((g) => (g.key === key ? { ...g, ...patch } : g)));
@@ -122,17 +124,17 @@ export default function AttendanceScreen() {
 
   const validate = () => {
     const e: Record<string, string> = {};
-    if (!projectId) e.projectId = 'Choose a project';
-    if (!isIsoDate(date)) e.date = 'Enter a valid date';
-    else if (date > today()) e.date = 'Attendance cannot be recorded for a future date';
+    if (!projectId) e.projectId = t('Choose a project');
+    if (!isIsoDate(date)) e.date = t('Enter a valid date');
+    else if (date > today()) e.date = t('Attendance cannot be recorded for a future date');
     for (const g of groups) {
       const used = g.rows.some((r) => r.category || r.count.trim());
-      if (used && !g.contractor.trim()) e[`c-${g.key}`] = 'Enter the contractor';
-      if (g.rows.some((r) => (r.category && !r.count.trim()) || (!r.category && r.count.trim()))) e[`r-${g.key}`] = 'Each row needs a trade and a count';
-      if (g.rows.some((r) => r.count.trim() && !/^\d+$/.test(r.count.trim()))) e[`r-${g.key}`] = 'Counts must be whole numbers';
+      if (used && !g.contractor.trim()) e[`c-${g.key}`] = t('Enter the contractor');
+      if (g.rows.some((r) => (r.category && !r.count.trim()) || (!r.category && r.count.trim()))) e[`r-${g.key}`] = t('Each row needs a trade and a count');
+      if (g.rows.some((r) => r.count.trim() && !/^\d+$/.test(r.count.trim()))) e[`r-${g.key}`] = t('Counts must be whole numbers');
     }
-    if (!lines.length && !remarks.trim()) e.lines = 'Enter at least one worker count, or a remark such as "Holiday"';
-    if (!sheet && queuedForDay) e.date = 'Attendance for this day is already waiting in the outbox';
+    if (!lines.length && !remarks.trim()) e.lines = t('Enter at least one worker count, or a remark such as "Holiday"');
+    if (!sheet && queuedForDay) e.date = t('Attendance for this day is already waiting in the outbox');
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -148,8 +150,8 @@ export default function AttendanceScreen() {
         return;
       }
       const queueIt = async () => {
-        const projectName = projects.options.find((o) => o.value === projectId)?.label ?? 'Project';
-        setQueued(await enqueue({ type: 'ATTENDANCE', payload: { projectId, ...body }, photos: [], title: `Attendance · ${formatDate(date)}`, subtitle: `${projectName} · ${total} workers` }));
+        const projectName = projects.options.find((o) => o.value === projectId)?.label ?? t('Project');
+        setQueued(await enqueue({ type: 'ATTENDANCE', payload: { projectId, ...body }, photos: [], title: `${t('Attendance')} · ${formatDate(date)}`, subtitle: `${projectName} · ${t('{n} workers', { n: total })}` }));
       };
       if (!online) {
         await queueIt();
@@ -169,13 +171,13 @@ export default function AttendanceScreen() {
   };
 
   if (queued) {
-    return <QueuedSuccess title="Saved on this phone" subtitle={`${queued.title} · ${queued.subtitle}`} note="It will be sent automatically as soon as the phone is back online. You can check it under Outbox." />;
+    return <QueuedSuccess title={t('Saved on this phone')} subtitle={`${queued.title} · ${queued.subtitle}`} note={t('It will be sent automatically as soon as the phone is back online. You can check it under Outbox.')} />;
   }
   if (saved) {
     return (
       <SubmitSuccess
-        title="Attendance saved"
-        subtitle={`${saved.projectName} · ${formatDate(saved.date)} · ${saved.totalWorkers} workers. The day's DPR takes its manpower from this sheet.`}
+        title={t('Attendance saved')}
+        subtitle={`${saved.projectName} · ${formatDate(saved.date)} · ${t("{n} workers. The day's DPR takes its manpower from this sheet.", { n: saved.totalWorkers })}`}
         onAnother={() => {
           setSaved(null);
           day.reload();
@@ -190,19 +192,20 @@ export default function AttendanceScreen() {
 
   return (
     <Screen keyboard>
-      <Stack.Screen options={{ title: sheet ? 'Edit Attendance' : 'Attendance' }} />
+      <Stack.Screen options={{ title: sheet ? t('Edit Attendance') : t('Attendance') }} />
       <ErrorBanner message={submitError ?? projects.error} />
-      {!mayRecord ? <Notice icon="eye-outline" text="Your role can view attendance but not record it." /> : null}
-      {locked ? <Notice icon="lock-closed-outline" text="The DPR for this day is approved, so its attendance is locked." /> : null}
-      {offlineUnknown ? <Notice icon="cloud-offline-outline" text="Offline: a new sheet will wait in the outbox. If this day was already recorded, it will be refused when the phone reconnects." /> : null}
+      {!mayRecord ? <Notice icon="eye-outline" text={t('Your role can view attendance but not record it.')} /> : null}
+      {locked ? <Notice icon="lock-closed-outline" text={t('The DPR for this day is approved, so its attendance is locked.')} /> : null}
+      {offlineUnknown ? <Notice icon="cloud-offline-outline" text={t('Offline: a new sheet will wait in the outbox. If this day was already recorded, it will be refused when the phone reconnects.')} /> : null}
       <Card>
-        <Select label="Project" required value={projectId} options={projects.options} onChange={setProjectId} placeholder="Choose project" error={errors.projectId} />
-        <DatePicker label="Date" required value={date} onChange={setDate} error={errors.date} />
-        {validDay && day.loading ? <Text style={typography.caption}>Checking this day…</Text> : null}
+        <Select label={t('Project')} required value={projectId} options={projects.options} onChange={setProjectId} placeholder={t('Choose project')} error={errors.projectId} />
+        <DatePicker label={t('Date')} required value={date} onChange={setDate} error={errors.date} />
+        {validDay && day.loading ? <Text style={typography.caption}>{t('Checking this day…')}</Text> : null}
         {sheet ? (
           <Text style={typography.caption}>
-            Recorded by {sheet.recordedByName}
-            {sheet.updatedByName ? `, last changed by ${sheet.updatedByName}` : ''}. Saving updates this sheet.
+            {sheet.updatedByName
+              ? t('Recorded by {name}, last changed by {editor}. Saving updates this sheet.', { name: sheet.recordedByName, editor: sheet.updatedByName })
+              : t('Recorded by {name}. Saving updates this sheet.', { name: sheet.recordedByName })}
           </Text>
         ) : null}
       </Card>
@@ -210,39 +213,39 @@ export default function AttendanceScreen() {
       {groups.map((g) => (
         <Card
           key={g.key}
-          title={g.contractor.trim() === DEPARTMENTAL_CONTRACTOR ? 'Own workers' : 'Contractor workers'}
+          title={g.contractor.trim() === DEPARTMENTAL_CONTRACTOR ? t('Own workers') : t('Contractor workers')}
           right={
             groups.length > 1 && !readOnly ? (
-              <Pressable onPress={() => setGroups((gs) => gs.filter((x) => x.key !== g.key))} hitSlop={8} accessibilityLabel="Remove contractor">
+              <Pressable onPress={() => setGroups((gs) => gs.filter((x) => x.key !== g.key))} hitSlop={8} accessibilityLabel={t('Remove contractor')}>
                 <Ionicons name="trash-outline" size={20} color={colors.danger} />
               </Pressable>
             ) : null
           }
         >
-          <Input label="Contractor" value={g.contractor} onChangeText={(v) => updateGroup(g.key, { contractor: v })} placeholder="Labour contractor" error={errors[`c-${g.key}`]} editable={!readOnly} />
+          <Input label={t('Contractor')} value={g.contractor} onChangeText={(v) => updateGroup(g.key, { contractor: v })} placeholder={t('Labour contractor')} error={errors[`c-${g.key}`]} editable={!readOnly} />
           {!readOnly && contractorNames.length > 1 ? (
             <Chips value={null} clearable={false} options={contractorNames.filter((c) => !groups.some((x) => x.contractor.trim() === c)).slice(0, 8).map((c) => ({ value: c, label: c }))} onChange={(v) => v && updateGroup(g.key, { contractor: v })} />
           ) : null}
           {g.rows.map((r) => (
             <View key={r.key} style={styles.row}>
               <View style={styles.grow}>
-                <Select value={r.category} options={r.category && !categoryOptions.some((o) => o.value === r.category) ? [...categoryOptions, { value: r.category, label: r.category }] : categoryOptions} onChange={(v) => updateRow(g.key, r.key, { category: v })} placeholder="Trade" disabled={readOnly} />
+                <Select value={r.category} options={r.category && !categoryOptions.some((o) => o.value === r.category) ? [...categoryOptions, { value: r.category, label: r.category }] : categoryOptions} onChange={(v) => updateRow(g.key, r.key, { category: v })} placeholder={t('Trade')} disabled={readOnly} />
               </View>
               <Input value={r.count} onChangeText={(v) => updateRow(g.key, r.key, { count: v })} keyboardType="number-pad" placeholder="Nos" containerStyle={styles.small} editable={!readOnly} />
               {!readOnly ? (
-                <Pressable onPress={() => updateGroup(g.key, { rows: g.rows.filter((x) => x.key !== r.key) })} style={styles.remove} hitSlop={8} accessibilityLabel="Remove row">
+                <Pressable onPress={() => updateGroup(g.key, { rows: g.rows.filter((x) => x.key !== r.key) })} style={styles.remove} hitSlop={8} accessibilityLabel={t('Remove row')}>
                   <Ionicons name="close-circle-outline" size={22} color={colors.textMuted} />
                 </Pressable>
               ) : null}
             </View>
           ))}
           {errors[`r-${g.key}`] ? <Text style={styles.err}>{errors[`r-${g.key}`]}</Text> : null}
-          {!readOnly ? <Button title="Add trade" variant="ghost" size="sm" icon="add" onPress={() => updateGroup(g.key, { rows: [...g.rows, emptyRow()] })} /> : null}
+          {!readOnly ? <Button title={t('Add trade')} variant="ghost" size="sm" icon="add" onPress={() => updateGroup(g.key, { rows: [...g.rows, emptyRow()] })} /> : null}
         </Card>
       ))}
       {!readOnly ? (
         <Button
-          title="Add contractor"
+          title={t('Add contractor')}
           variant="secondary"
           icon="people-outline"
           size="sm"
@@ -251,23 +254,23 @@ export default function AttendanceScreen() {
         />
       ) : null}
 
-      <Card title="Total" right={<Text style={styles.total}>{total} workers</Text>}>
+      <Card title={t('Total')} right={<Text style={styles.total}>{t('{n} workers', { n: total })}</Text>}>
         {byTrade.length ? (
           <View style={styles.tags}>
             {byTrade.map((m) => (
               <View key={m.category} style={styles.tag}>
                 <Text style={styles.tagText}>
-                  {m.category} {m.count}
+                  {t(m.category)} {m.count}
                 </Text>
               </View>
             ))}
           </View>
         ) : null}
-        <Text style={[typography.caption, styles.hint]}>These totals fill the manpower of this day's DPR.</Text>
+        <Text style={[typography.caption, styles.hint]}>{t("These totals fill the manpower of this day's DPR.")}</Text>
         {errors.lines ? <Text style={styles.err}>{errors.lines}</Text> : null}
-        <Input label="Remarks" value={remarks} onChangeText={setRemarks} multiline placeholder="e.g. Holiday, rain stopped work at 3 pm" containerStyle={styles.last} editable={!readOnly} />
+        <Input label={t('Remarks')} value={remarks} onChangeText={setRemarks} multiline placeholder={t('e.g. Holiday, rain stopped work at 3 pm')} containerStyle={styles.last} editable={!readOnly} />
       </Card>
-      {!readOnly ? <Button title={sheet ? 'Update attendance' : 'Save attendance'} icon="checkmark" onPress={save} loading={busy} disabled={validDay && day.loading} /> : null}
+      {!readOnly ? <Button title={sheet ? t('Update attendance') : t('Save attendance')} icon="checkmark" onPress={save} loading={busy} disabled={validDay && day.loading} /> : null}
     </Screen>
   );
 }

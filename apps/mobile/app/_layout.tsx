@@ -6,7 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from '../src/auth/AuthContext';
 import { NotificationsProvider } from '../src/notifications/NotificationsContext';
 import { OfflineProvider } from '../src/offline';
-import { LanguageProvider } from '../src/i18n/LanguageContext';
+import { LanguageProvider, useT } from '../src/i18n/LanguageContext';
 import { Loading } from '../src/components';
 import { useFonts, Archivo_700Bold, Archivo_800ExtraBold } from '@expo-google-fonts/archivo';
 import { PRODUCT_NAME } from '@erp/shared';
@@ -16,7 +16,8 @@ function RootNavigator() {
   const { user, ready } = useAuth();
   // If the fonts fail to load the app carries on with the system font.
   const [fontsLoaded, fontError] = useFonts({ Archivo_700Bold, Archivo_800ExtraBold });
-  if (!ready || (!fontsLoaded && !fontError)) return <Loading text={`Starting ${PRODUCT_NAME}…`} />;
+  const t = useT();
+  if (!ready || (!fontsLoaded && !fontError)) return <Loading text={t('Starting {product}…', { product: PRODUCT_NAME })} />;
   const signedIn = !!user;
   return (
     <Stack
@@ -33,55 +34,55 @@ function RootNavigator() {
       </Stack.Protected>
       <Stack.Protected guard={signedIn}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="project/[id]" options={{ title: 'Project' }} />
-        <Stack.Screen name="progress/new" options={{ title: 'New Progress Entry' }} />
-        <Stack.Screen name="progress/[id]" options={{ title: 'Progress Entry' }} />
-        <Stack.Screen name="dpr/new" options={{ title: 'New Daily Report' }} />
-        <Stack.Screen name="dpr/[id]" options={{ title: 'Daily Report' }} />
-        <Stack.Screen name="material-request/new" options={{ title: 'New Material Request' }} />
-        <Stack.Screen name="material-request/[id]" options={{ title: 'Material Request' }} />
-        <Stack.Screen name="submissions" options={{ title: 'My Submissions' }} />
-        <Stack.Screen name="notifications" options={{ title: 'Notifications' }} />
-        <Stack.Screen name="outbox" options={{ title: 'Outbox' }} />
-        <Stack.Screen name="attendance" options={{ title: 'Attendance' }} />
-        <Stack.Screen name="roll-call" options={{ title: 'Roll call' }} />
-        <Stack.Screen name="imprest" options={{ title: 'My imprest' }} />
-        <Stack.Screen name="stock/index" options={{ title: 'Stock' }} />
-        <Stack.Screen name="stock/receive" options={{ title: 'Receive Material' }} />
-        <Stack.Screen name="stock/issue" options={{ title: 'Issue Material' }} />
-        <Stack.Screen name="machinery/new" options={{ title: 'Log Machinery' }} />
-        <Stack.Screen name="machinery/[id]" options={{ title: 'Machinery Log' }} />
-        <Stack.Screen name="breakdown/new" options={{ title: 'Report Breakdown' }} />
-        <Stack.Screen name="expense/new" options={{ title: 'New Site Expense' }} />
-        <Stack.Screen name="expense/[id]" options={{ title: 'Site Expense' }} />
-        <Stack.Screen name="measurement/new" options={{ title: 'New Measurement' }} />
-        <Stack.Screen name="measurement/[id]" options={{ title: 'Measurement' }} />
-        <Stack.Screen name="bill/[id]" options={{ title: 'RA Bill' }} />
-        <Stack.Screen name="purchase-order/[id]" options={{ title: 'Purchase Order' }} />
-        <Stack.Screen name="vendor-bill/[id]" options={{ title: 'Vendor Bill' }} />
-        <Stack.Screen name="work-order/[id]" options={{ title: 'Work Order' }} />
-        <Stack.Screen name="subcontract-bill/[id]" options={{ title: 'Subcontractor Bill' }} />
-        <Stack.Screen name="inspection/new" options={{ title: 'Request Inspection' }} />
-        <Stack.Screen name="inspection/[id]" options={{ title: 'Inspection' }} />
-        <Stack.Screen name="risks" options={{ title: 'Delays & Risks' }} />
-        <Stack.Screen name="risk/new" options={{ title: 'Delay or Risk' }} />
-        <Stack.Screen name="risk/[id]" options={{ title: 'Delay / Risk' }} />
-        <Stack.Screen name="sector" options={{ title: 'Sector Progress' }} />
-        <Stack.Screen name="safety" options={{ title: 'Safety' }} />
-        <Stack.Screen name="incident/new" options={{ title: 'Report an Incident' }} />
-        <Stack.Screen name="incident/[id]" options={{ title: 'Incident' }} />
-        <Stack.Screen name="snags" options={{ title: 'Snags & Defects' }} />
-        <Stack.Screen name="snag/new" options={{ title: 'Report Snag' }} />
-        <Stack.Screen name="snag/[id]" options={{ title: 'Snag' }} />
-        <Stack.Screen name="talk/new" options={{ title: 'Toolbox Talk' }} />
-        <Stack.Screen name="permit/new" options={{ title: 'Ask for a Permit' }} />
-        <Stack.Screen name="permit/[id]" options={{ title: 'Permit to Work' }} />
-        <Stack.Screen name="quality" options={{ title: 'Tests & NCRs' }} />
-        <Stack.Screen name="documents" options={{ title: 'Drawings' }} />
-        <Stack.Screen name="staff" options={{ title: 'Attendance & leave' }} />
-        <Stack.Screen name="staff-register" options={{ title: 'Staff register' }} />
-        <Stack.Screen name="ncr/[id]" options={{ title: 'NCR' }} />
-        <Stack.Screen name="test/[id]" options={{ title: 'Test' }} />
+        <Stack.Screen name="project/[id]" options={{ title: t('Project') }} />
+        <Stack.Screen name="progress/new" options={{ title: t('New Progress Entry') }} />
+        <Stack.Screen name="progress/[id]" options={{ title: t('Progress Entry') }} />
+        <Stack.Screen name="dpr/new" options={{ title: t('New Daily Report') }} />
+        <Stack.Screen name="dpr/[id]" options={{ title: t('Daily Report') }} />
+        <Stack.Screen name="material-request/new" options={{ title: t('New Material Request') }} />
+        <Stack.Screen name="material-request/[id]" options={{ title: t('Material Request') }} />
+        <Stack.Screen name="submissions" options={{ title: t('My Submissions') }} />
+        <Stack.Screen name="notifications" options={{ title: t('Notifications') }} />
+        <Stack.Screen name="outbox" options={{ title: t('Outbox') }} />
+        <Stack.Screen name="attendance" options={{ title: t('Attendance') }} />
+        <Stack.Screen name="roll-call" options={{ title: t('Roll call') }} />
+        <Stack.Screen name="imprest" options={{ title: t('My imprest') }} />
+        <Stack.Screen name="stock/index" options={{ title: t('Stock') }} />
+        <Stack.Screen name="stock/receive" options={{ title: t('Receive Material') }} />
+        <Stack.Screen name="stock/issue" options={{ title: t('Issue Material') }} />
+        <Stack.Screen name="machinery/new" options={{ title: t('Log Machinery') }} />
+        <Stack.Screen name="machinery/[id]" options={{ title: t('Machinery Log') }} />
+        <Stack.Screen name="breakdown/new" options={{ title: t('Report Breakdown') }} />
+        <Stack.Screen name="expense/new" options={{ title: t('New Site Expense') }} />
+        <Stack.Screen name="expense/[id]" options={{ title: t('Site Expense') }} />
+        <Stack.Screen name="measurement/new" options={{ title: t('New Measurement') }} />
+        <Stack.Screen name="measurement/[id]" options={{ title: t('Measurement') }} />
+        <Stack.Screen name="bill/[id]" options={{ title: t('RA Bill') }} />
+        <Stack.Screen name="purchase-order/[id]" options={{ title: t('Purchase Order') }} />
+        <Stack.Screen name="vendor-bill/[id]" options={{ title: t('Vendor Bill') }} />
+        <Stack.Screen name="work-order/[id]" options={{ title: t('Work Order') }} />
+        <Stack.Screen name="subcontract-bill/[id]" options={{ title: t('Subcontractor Bill') }} />
+        <Stack.Screen name="inspection/new" options={{ title: t('Request Inspection') }} />
+        <Stack.Screen name="inspection/[id]" options={{ title: t('Inspection') }} />
+        <Stack.Screen name="risks" options={{ title: t('Delays & Risks') }} />
+        <Stack.Screen name="risk/new" options={{ title: t('Delay or Risk') }} />
+        <Stack.Screen name="risk/[id]" options={{ title: t('Delay / Risk') }} />
+        <Stack.Screen name="sector" options={{ title: t('Sector Progress') }} />
+        <Stack.Screen name="safety" options={{ title: t('Safety') }} />
+        <Stack.Screen name="incident/new" options={{ title: t('Report an Incident') }} />
+        <Stack.Screen name="incident/[id]" options={{ title: t('Incident') }} />
+        <Stack.Screen name="snags" options={{ title: t('Snags & Defects') }} />
+        <Stack.Screen name="snag/new" options={{ title: t('Report Snag') }} />
+        <Stack.Screen name="snag/[id]" options={{ title: t('Snag') }} />
+        <Stack.Screen name="talk/new" options={{ title: t('Toolbox Talk') }} />
+        <Stack.Screen name="permit/new" options={{ title: t('Ask for a Permit') }} />
+        <Stack.Screen name="permit/[id]" options={{ title: t('Permit to Work') }} />
+        <Stack.Screen name="quality" options={{ title: t('Tests & NCRs') }} />
+        <Stack.Screen name="documents" options={{ title: t('Drawings') }} />
+        <Stack.Screen name="staff" options={{ title: t('Attendance & leave') }} />
+        <Stack.Screen name="staff-register" options={{ title: t('Staff register') }} />
+        <Stack.Screen name="ncr/[id]" options={{ title: t('NCR') }} />
+        <Stack.Screen name="test/[id]" options={{ title: t('Test') }} />
       </Stack.Protected>
     </Stack>
   );

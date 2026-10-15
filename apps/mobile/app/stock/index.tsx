@@ -7,6 +7,7 @@ import { useAuth } from '../../src/auth/AuthContext';
 import { useFetch } from '../../src/api/hooks';
 import { Button, Card, Chips, EmptyState, ErrorBanner, Loading, Pill, Screen, SectionTitle, Select } from '../../src/components';
 import { useProjectOptions } from '../../src/forms/common';
+import { useT } from '../../src/i18n/LanguageContext';
 import { useOffline } from '../../src/offline';
 import { colors, spacing, typography } from '../../src/theme';
 import { formatDate, fmtQty } from '../../src/utils/format';
@@ -27,6 +28,7 @@ const TYPE_TONE: Record<StockEntryType, { fg: string; bg: string }> = {
 export default function StockScreen() {
   const params = useLocalSearchParams<{ projectId?: string; low?: string }>();
   const router = useRouter();
+  const t = useT();
   const { user } = useAuth();
   const { online } = useOffline();
   const projects = useProjectOptions();
@@ -60,50 +62,50 @@ export default function StockScreen() {
         entries.refresh();
       }}
     >
-      <Stack.Screen options={{ title: 'Stock' }} />
+      <Stack.Screen options={{ title: t('Stock') }} />
       <ErrorBanner message={projects.error ?? (balances.data ? null : balances.error)} />
       <Card>
-        <Select label="Project" value={projectId} options={projects.options} onChange={setProjectId} placeholder="Choose project" />
+        <Select label={t('Project')} value={projectId} options={projects.options} onChange={setProjectId} placeholder={t('Choose project')} />
         <Chips
           value={filter}
           clearable={false}
           options={[
-            { value: 'all', label: 'All items' },
-            { value: 'low', label: 'Low stock' },
+            { value: 'all', label: t('All items') },
+            { value: 'low', label: t('Low stock') },
           ]}
           onChange={(v) => v && setFilter(v)}
         />
         {keeper ? (
           <View style={styles.actions}>
-            <Button title="Receive" icon="download-outline" onPress={() => router.push(`/stock/receive${projectId ? `?projectId=${projectId}` : ''}`)} style={styles.flex} disabled={!online} />
-            <Button title="Issue" icon="arrow-up-circle-outline" variant="secondary" onPress={() => router.push(`/stock/issue${projectId ? `?projectId=${projectId}` : ''}`)} style={styles.flex} disabled={!online} />
+            <Button title={t('Receive')} icon="download-outline" onPress={() => router.push(`/stock/receive${projectId ? `?projectId=${projectId}` : ''}`)} style={styles.flex} disabled={!online} />
+            <Button title={t('Issue')} icon="arrow-up-circle-outline" variant="secondary" onPress={() => router.push(`/stock/issue${projectId ? `?projectId=${projectId}` : ''}`)} style={styles.flex} disabled={!online} />
           </View>
         ) : null}
-        {keeper && !online ? <Text style={[typography.caption, styles.offline]}>Receipts and issues need a connection: the stock must be checked on the server.</Text> : null}
+        {keeper && !online ? <Text style={[typography.caption, styles.offline]}>{t('Receipts and issues need a connection: the stock must be checked on the server.')}</Text> : null}
       </Card>
 
       {!projectId ? (
-        <EmptyState title="Choose a project" subtitle="Stock is kept per project." icon="cube-outline" />
+        <EmptyState title={t('Choose a project')} subtitle={t('Stock is kept per project.')} icon="cube-outline" />
       ) : balances.loading && !balances.data ? (
         <Loading />
       ) : rows.length === 0 ? (
         <EmptyState
-          title={filter === 'low' ? 'Nothing is low' : 'No stock yet'}
-          subtitle={filter === 'low' ? 'Every item is at or above its minimum level.' : 'Material appears here once it is received against an approved request.'}
+          title={filter === 'low' ? t('Nothing is low') : t('No stock yet')}
+          subtitle={filter === 'low' ? t('Every item is at or above its minimum level.') : t('Material appears here once it is received against an approved request.')}
           icon="cube-outline"
         />
       ) : (
         <>
-          <SectionTitle title={`${rows.length} item${rows.length === 1 ? '' : 's'}`} right={lowCount && filter === 'all' ? <Text style={styles.lowText}>{lowCount} low</Text> : null} />
+          <SectionTitle title={rows.length === 1 ? t('{n} item', { n: 1 }) : t('{n} items', { n: rows.length })} right={lowCount && filter === 'all' ? <Text style={styles.lowText}>{t('{n} low', { n: lowCount })}</Text> : null} />
           {rows.map((r) => (
             <Card key={r.itemId}>
               <View style={styles.itemRow}>
                 <View style={styles.flex}>
                   <Text style={typography.bodyStrong}>{r.itemName}</Text>
                   <Text style={typography.caption}>
-                    In {fmtQty(r.received)} · out {fmtQty(r.issued)}
-                    {Number(r.adjusted) !== 0 ? ` · adj ${fmtQty(r.adjusted)}` : ''}
-                    {r.minQty ? ` · min ${fmtQty(r.minQty)}` : ''}
+                    {t('In {in} · out {out}', { in: fmtQty(r.received), out: fmtQty(r.issued) })}
+                    {Number(r.adjusted) !== 0 ? ` · ${t('adj {n}', { n: fmtQty(r.adjusted) })}` : ''}
+                    {r.minQty ? ` · ${t('min {n}', { n: fmtQty(r.minQty) })}` : ''}
                   </Text>
                 </View>
                 <View style={styles.balance}>
@@ -113,7 +115,7 @@ export default function StockScreen() {
                   {r.low ? (
                     <View style={styles.lowTag}>
                       <Ionicons name="warning" size={12} color={colors.danger} />
-                      <Text style={styles.lowTagText}>Low</Text>
+                      <Text style={styles.lowTagText}>{t('Low')}</Text>
                     </View>
                   ) : null}
                 </View>
@@ -125,17 +127,17 @@ export default function StockScreen() {
 
       {projectId && entries.data?.items.length ? (
         <>
-          <SectionTitle title="Latest entries" />
+          <SectionTitle title={t('Latest entries')} />
           {entries.data.items.map((e) => (
             <Card key={e.id}>
               <View style={styles.entryHead}>
                 <Text style={typography.bodyStrong}>{e.entryNo}</Text>
-                <Pill text={STOCK_ENTRY_TYPE_LABELS[e.type]} fg={TYPE_TONE[e.type].fg} bg={TYPE_TONE[e.type].bg} />
+                <Pill text={t(STOCK_ENTRY_TYPE_LABELS[e.type])} fg={TYPE_TONE[e.type].fg} bg={TYPE_TONE[e.type].bg} />
               </View>
               <Text style={typography.caption}>
                 {formatDate(e.date)} · {e.createdByName}
                 {e.type === 'RECEIPT' && e.requestNo ? ` · ${e.requestNo}` : ''}
-                {(e.type === 'ISSUE' || e.type === 'TRANSFER_OUT') && e.issuedTo ? ` · to ${e.issuedTo}` : ''}
+                {(e.type === 'ISSUE' || e.type === 'TRANSFER_OUT') && e.issuedTo ? ` · ${t('to {name}', { name: e.issuedTo })}` : ''}
               </Text>
               <Text style={[typography.body, styles.lines]}>{e.lines.map((l) => `${l.itemName} ${Number(l.quantity) > 0 ? '+' : ''}${fmtQty(l.quantity)} ${l.unit}`).join('\n')}</Text>
             </Card>

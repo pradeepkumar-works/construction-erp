@@ -6,6 +6,7 @@ import { PRODUCT_NAME } from '@erp/shared';
 import { ILLUSTRATIONS } from '../illustrations';
 import { colors, radius, spacing, typography } from '../theme';
 import { Button } from './Button';
+import { useT } from '../i18n/LanguageContext';
 
 const SEEN_KEY = 'nirmaan.introSeen';
 
@@ -45,6 +46,7 @@ export function useIntroSeen(): [boolean | null, () => void] {
 /** Three slides shown before the first sign-in on a phone. */
 export function Intro({ onDone }: { onDone: () => void }) {
   const { width } = useWindowDimensions();
+  const t = useT();
   const scroller = useRef<ScrollView>(null);
   const [page, setPage] = useState(0);
   const [pagerHeight, setPagerHeight] = useState(0);
@@ -62,7 +64,7 @@ export function Intro({ onDone }: { onDone: () => void }) {
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right', 'bottom']}>
       <View style={styles.top}>
         <Text style={styles.brand}>{PRODUCT_NAME.toUpperCase()}</Text>
-        {!last ? <Button title="Skip" variant="ghost" size="sm" onPress={onDone} /> : null}
+        {!last ? <Button title={t('Skip')} variant="ghost" size="sm" onPress={onDone} /> : null}
       </View>
       <ScrollView
         ref={scroller}
@@ -77,19 +79,19 @@ export function Intro({ onDone }: { onDone: () => void }) {
           <View key={s.title} style={[styles.slide, { width, height: pagerHeight || undefined }]}>
             <Image source={s.art} style={{ width: art, height: art }} accessibilityIgnoresInvertColors />
             <Text style={styles.title} accessibilityRole="header">
-              {s.title}
+              {t(s.title)}
             </Text>
-            <Text style={styles.text}>{s.text}</Text>
+            <Text style={styles.text}>{t(s.text)}</Text>
           </View>
         ))}
       </ScrollView>
-      <View style={styles.dots} accessibilityLabel={`Page ${page + 1} of ${SLIDES.length}`}>
+      <View style={styles.dots} accessibilityLabel={t('Page {n} of {total}', { n: page + 1, total: SLIDES.length })}>
         {SLIDES.map((s, i) => (
           <View key={s.title} style={[styles.dot, i === page && styles.dotOn]} />
         ))}
       </View>
       <View style={styles.footer}>
-        <Button title={last ? 'Get started' : 'Next'} onPress={next} icon={last ? 'log-in-outline' : 'arrow-forward'} />
+        <Button title={last ? t('Get started') : t('Next')} onPress={next} icon={last ? 'log-in-outline' : 'arrow-forward'} />
       </View>
     </SafeAreaView>
   );

@@ -47,6 +47,8 @@ cd e2e && npx playwright test         # browser tests; needs API + web running (
   Check antd 6 typings in node_modules before using a prop you are unsure of.
 - Mobile: screens in `app/`, shared UI in `src/components`, API in `src/api`, no new native deps
   without checking `node_modules/expo/bundledNativeModules.json` for the SDK-pinned version.
+- Mobile text: wrap everything a screen shows in `t()` from `useT()` (English is the key, `{placeholders}` for values)
+  and add its Hindi to `src/i18n/hi/` (see ARCHITECTURE, Languages); `npm run i18n:check` in `apps/mobile` must pass.
 
 ## Gotchas
 

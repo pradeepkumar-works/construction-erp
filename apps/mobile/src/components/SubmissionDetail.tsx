@@ -17,9 +17,11 @@ import { errorMessage } from '../api/client';
 import { ErrorBanner } from './States';
 import { useAuth } from '../auth/AuthContext';
 import { canEditSubmission, canResubmit, mayApproveType } from '@erp/shared';
+import { useT } from '../i18n/LanguageContext';
 
 /** Status, project, submitter and reviewer block shared by all three detail screens. */
 export function SubmissionHeader({ item, title, subtitle, labels }: { item: SubmissionBase; title: string; subtitle?: string; labels?: Record<SubmissionBase['status'], string> }) {
+  const t = useT();
   return (
     <Card>
       <View style={styles.headRow}>
@@ -31,15 +33,15 @@ export function SubmissionHeader({ item, title, subtitle, labels }: { item: Subm
       <View style={styles.statusRow}>
         <StatusBadge status={item.status} size="lg" labels={labels} />
       </View>
-      <KeyValue label="Project" value={item.projectName} />
-      <KeyValue label="Submitted by" value={item.submittedByName} />
-      <KeyValue label="Submitted at" value={formatDateTime(item.submittedAt)} />
-      {item.reviewedByName ? <KeyValue label="Reviewed by" value={`${item.reviewedByName} · ${formatDateTime(item.reviewedAt)}`} /> : null}
+      <KeyValue label={t('Project')} value={item.projectName} />
+      <KeyValue label={t('Submitted by')} value={item.submittedByName} />
+      <KeyValue label={t('Submitted at')} value={formatDateTime(item.submittedAt)} />
+      {item.reviewedByName ? <KeyValue label={t('Reviewed by')} value={`${item.reviewedByName} · ${formatDateTime(item.reviewedAt)}`} /> : null}
       {item.reviewNote ? (
         <View style={styles.note}>
           <Ionicons name="chatbox-ellipses-outline" size={18} color={colors.info} />
           <View style={styles.flex}>
-            <Text style={styles.noteLabel}>Reviewer note</Text>
+            <Text style={styles.noteLabel}>{t('Reviewer note')}</Text>
             <Text style={styles.noteText}>{item.reviewNote}</Text>
           </View>
         </View>
@@ -50,11 +52,12 @@ export function SubmissionHeader({ item, title, subtitle, labels }: { item: Subm
 
 export function AttachmentGallery({ attachments }: { attachments: AttachmentDto[] }) {
   const [open, setOpen] = useState<AttachmentDto | null>(null);
+  const t = useT();
   if (!attachments.length) return null;
   const images = attachments.filter((a) => a.mimeType.startsWith('image/'));
   const files = attachments.filter((a) => !a.mimeType.startsWith('image/'));
   return (
-    <Card title={`Photos (${attachments.length})`}>
+    <Card title={t('Photos ({n})', { n: attachments.length })}>
       <View style={styles.grid}>
         {images.map((a) => (
           <Pressable key={a.id} onPress={() => setOpen(a)} style={styles.thumbWrap}>
@@ -82,10 +85,10 @@ export function AttachmentGallery({ attachments }: { attachments: AttachmentDto[
   );
 }
 
-const DECISIONS: { decision: ReviewDecision; label: string; variant: 'success' | 'accent' | 'danger'; icon: 'checkmark' | 'create-outline' | 'close' }[] = [
-  { decision: 'APPROVE', label: 'Approve', variant: 'success', icon: 'checkmark' },
-  { decision: 'REQUEST_CHANGES', label: 'Request changes', variant: 'accent', icon: 'create-outline' },
-  { decision: 'REJECT', label: 'Reject', variant: 'danger', icon: 'close' },
+const DECISIONS: { decision: ReviewDecision; label: string; confirm: string; variant: 'success' | 'accent' | 'danger'; icon: 'checkmark' | 'create-outline' | 'close' }[] = [
+  { decision: 'APPROVE', label: 'Approve', confirm: 'Confirm approve', variant: 'success', icon: 'checkmark' },
+  { decision: 'REQUEST_CHANGES', label: 'Request changes', confirm: 'Confirm request changes', variant: 'accent', icon: 'create-outline' },
+  { decision: 'REJECT', label: 'Reject', confirm: 'Confirm reject', variant: 'danger', icon: 'close' },
 ];
 
 /** Entry forms on the phone; RA bills, purchase orders and vendor bills are prepared on the web. */
@@ -117,6 +120,7 @@ export function ReviewActions<T extends SubmissionBase>({ type, item, onReviewed
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const t = useT();
 
   const known = item as unknown as { totalAmount?: string; amount?: string; grossAmount?: string };
   const amount = type === 'EXPENSE' ? known.totalAmount : type === 'MEASUREMENT' ? known.amount : type === 'BILL' ? known.grossAmount : undefined;
@@ -142,23 +146,23 @@ export function ReviewActions<T extends SubmissionBase>({ type, item, onReviewed
   };
 
   return (
-    <Card title="Review">
-      <Text style={[typography.caption, styles.reviewHint]}>This entry is awaiting your decision.</Text>
+    <Card title={t('Review')}>
+      <Text style={[typography.caption, styles.reviewHint]}>{t('This entry is awaiting your decision.')}</Text>
       <View style={styles.actions}>
         {DECISIONS.map((d) => (
-          <Button key={d.decision} title={d.label} variant={d.variant} icon={d.icon} onPress={() => setPending(d.decision)} style={styles.actionBtn} />
+          <Button key={d.decision} title={t(d.label)} variant={d.variant} icon={d.icon} onPress={() => setPending(d.decision)} style={styles.actionBtn} />
         ))}
       </View>
       <Modal visible={!!pending} transparent animationType="fade" onRequestClose={() => !busy && setPending(null)}>
         <View style={styles.backdrop}>
           <View style={styles.sheet}>
-            <Text style={typography.h2}>{meta?.label}</Text>
-            <Text style={[typography.caption, styles.sheetSub]}>Add an optional note for the submitter.</Text>
-            <Input value={note} onChangeText={setNote} placeholder="Note (optional)" multiline autoFocus />
+            <Text style={typography.h2}>{meta ? t(meta.label) : null}</Text>
+            <Text style={[typography.caption, styles.sheetSub]}>{t('Add an optional note for the submitter.')}</Text>
+            <Input value={note} onChangeText={setNote} placeholder={t('Note (optional)')} multiline autoFocus />
             <ErrorBanner message={error} />
             <View style={styles.sheetBtns}>
-              <Button title="Cancel" variant="ghost" onPress={() => setPending(null)} disabled={busy} style={styles.flex} />
-              <Button title={`Confirm ${meta?.label.toLowerCase() ?? ''}`} variant={meta?.variant ?? 'primary'} onPress={confirm} loading={busy} style={styles.flex2} />
+              <Button title={t('Cancel')} variant="ghost" onPress={() => setPending(null)} disabled={busy} style={styles.flex} />
+              <Button title={meta ? t(meta.confirm) : ''} variant={meta?.variant ?? 'primary'} onPress={confirm} loading={busy} style={styles.flex2} />
             </View>
           </View>
         </View>
@@ -174,18 +178,19 @@ export function ReviewActions<T extends SubmissionBase>({ type, item, onReviewed
 export function SubmitterActions({ type, item }: { type: SubmissionType; item: SubmissionBase }) {
   const { user } = useAuth();
   const router = useRouter();
+  const t = useT();
   const path = EDIT_PATH[type];
   if (!user || !path || !canEditSubmission(user, item) || !canResubmit(user, item)) return null;
   const draft = item.status === 'DRAFT';
   const hint = draft
-    ? 'This entry has not been sent for approval yet.'
+    ? t('This entry has not been sent for approval yet.')
     : item.status === 'REJECTED'
-      ? 'This entry was rejected. Fix it and send it again for approval.'
-      : 'The approver asked for changes. Update the entry and resubmit it.';
+      ? t('This entry was rejected. Fix it and send it again for approval.')
+      : t('The approver asked for changes. Update the entry and resubmit it.');
   return (
-    <Card title={draft ? 'Draft' : 'Needs your attention'}>
+    <Card title={draft ? t('Draft') : t('Needs your attention')}>
       <Text style={[typography.caption, styles.reviewHint]}>{hint}</Text>
-      <Button title={draft ? 'Edit and submit' : 'Edit and resubmit'} icon="create-outline" onPress={() => router.push({ pathname: path, params: { editId: item.id } })} />
+      <Button title={draft ? t('Edit and submit') : t('Edit and resubmit')} icon="create-outline" onPress={() => router.push({ pathname: path, params: { editId: item.id } })} />
     </Card>
   );
 }

@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { PurchaseOrderDto } from '@erp/shared';
 import { MSME_CATEGORY_LABELS } from '@erp/shared';
 import { useFetch } from '../../src/api/hooks';
+import { useT } from '../../src/i18n/LanguageContext';
 import { AttachmentGallery, Button, Card, ErrorState, KeyValue, Loading, ReviewActions, Screen, SubmissionHeader } from '../../src/components';
 import { colors, spacing, typography } from '../../src/theme';
 import { fmtQty, formatDate } from '../../src/utils/format';
@@ -14,6 +15,7 @@ const rupees = (v: string) => `₹${Number(v).toLocaleString('en-IN', { minimumF
 export default function PurchaseOrderScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const t = useT();
   const { data, loading, refreshing, error, refresh, reload, setData } = useFetch<PurchaseOrderDto>((api) => api.get(`/purchase-orders/${id}`), [id], { enabled: !!id });
 
   if (loading && !data) return <Loading />;
@@ -22,24 +24,24 @@ export default function PurchaseOrderScreen() {
 
   return (
     <Screen refreshing={refreshing} onRefresh={refresh}>
-      <SubmissionHeader item={data} title={`${data.poNo} · ${data.vendorName}`} subtitle={`${formatDate(data.poDate)}${data.requestNo ? ` · for ${data.requestNo}` : ''}`} />
+      <SubmissionHeader item={data} title={`${data.poNo} · ${data.vendorName}`} subtitle={`${formatDate(data.poDate)}${data.requestNo ? ` · ${t('for {request}', { request: data.requestNo })}` : ''}`} />
       <Card>
         <View style={styles.box}>
           <Text style={styles.total}>{rupees(data.total)}</Text>
-          <Text style={typography.caption}>order total with GST and freight</Text>
+          <Text style={typography.caption}>{t('order total with GST and freight')}</Text>
         </View>
-        <KeyValue label="Vendor" value={data.vendorName} />
-        <KeyValue label="GSTIN" value={data.vendorGstin} />
-        {data.vendorMsme ? <KeyValue label="MSME" value={MSME_CATEGORY_LABELS[data.vendorMsme]} /> : null}
-        <KeyValue label="Before GST" value={rupees(data.subtotal)} />
-        <KeyValue label="GST" value={rupees(data.gstAmount)} />
-        {Number(data.freight) > 0 ? <KeyValue label="Freight" value={rupees(data.freight)} /> : null}
-        <KeyValue label="Deliver by" value={data.deliveryBy ? formatDate(data.deliveryBy) : null} />
-        <KeyValue label="Payment" value={data.paymentTerms ?? (data.paymentDays !== null ? `${data.paymentDays} days from invoice` : null)} />
-        {data.status === 'APPROVED' ? <KeyValue label="Received" value={data.closedAt ? `${data.receivedPct}% (closed)` : `${data.receivedPct}%`} /> : null}
-        <KeyValue label="Remarks" value={data.remarks} multiline />
+        <KeyValue label={t('Vendor')} value={data.vendorName} />
+        <KeyValue label={t('GSTIN')} value={data.vendorGstin} />
+        {data.vendorMsme ? <KeyValue label={t('MSME')} value={t(MSME_CATEGORY_LABELS[data.vendorMsme])} /> : null}
+        <KeyValue label={t('Before GST')} value={rupees(data.subtotal)} />
+        <KeyValue label={t('GST')} value={rupees(data.gstAmount)} />
+        {Number(data.freight) > 0 ? <KeyValue label={t('Freight')} value={rupees(data.freight)} /> : null}
+        <KeyValue label={t('Deliver by')} value={data.deliveryBy ? formatDate(data.deliveryBy) : null} />
+        <KeyValue label={t('Payment')} value={data.paymentTerms ?? (data.paymentDays !== null ? t('{n} days from invoice', { n: data.paymentDays }) : null)} />
+        {data.status === 'APPROVED' ? <KeyValue label={t('Received')} value={data.closedAt ? t('{pct}% (closed)', { pct: data.receivedPct }) : `${data.receivedPct}%`} /> : null}
+        <KeyValue label={t('Remarks')} value={data.remarks} multiline />
       </Card>
-      <Card title={`Items (${data.lines.length})`}>
+      <Card title={t('Items ({n})', { n: data.lines.length })}>
         {data.lines.map((l) => (
           <View key={l.id} style={styles.line}>
             <View style={{ flex: 1 }}>
@@ -48,7 +50,7 @@ export default function PurchaseOrderScreen() {
               </Text>
               <Text style={typography.caption}>
                 {fmtQty(l.quantity)} {l.unit} @ {rupees(l.rate)} + {l.gstRate}% GST
-                {Number(l.receivedQty) > 0 ? ` · ${fmtQty(l.receivedQty)} received` : ''}
+                {Number(l.receivedQty) > 0 ? ` · ${t('{qty} received', { qty: fmtQty(l.receivedQty) })}` : ''}
               </Text>
             </View>
             <Text style={styles.amount}>{rupees(l.amount)}</Text>
@@ -57,7 +59,7 @@ export default function PurchaseOrderScreen() {
       </Card>
       <AttachmentGallery attachments={data.attachments} />
       <ReviewActions type="PURCHASE_ORDER" item={data} onReviewed={setData} />
-      <Button title="Open project" variant="ghost" icon="business-outline" onPress={() => router.push(`/project/${data.projectId}`)} />
+      <Button title={t('Open project')} variant="ghost" icon="business-outline" onPress={() => router.push(`/project/${data.projectId}`)} />
     </Screen>
   );
 }
