@@ -144,6 +144,7 @@ async function main() {
     await seedBudgets(org.id);
     await seedStoreMoves(org.id);
     await seedSafety(org.id);
+    await seedSectors(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
   }
@@ -309,6 +310,7 @@ async function main() {
   await seedBudgets(org.id);
   await seedStoreMoves(org.id);
   await seedSafety(org.id);
+  await seedSectors(org.id);
 
   console.log('Seed complete. Login with any of these (password: password123):');
   for (const u of USERS) console.log(`  ${u.email.padEnd(24)} ${u.role}`);
@@ -319,6 +321,85 @@ async function main() {
  * the water supply project already received there, a second one still in transit, and material returned to the
  * supplier of the GRN. Only when the organisation has no transfer yet.
  */
+/**
+ * Sector progress demo (v4 item 41): the road's chainage range with the approved progress placed along it, the
+ * hospital's floors, and the water scheme's villages, its raw water main along a chainage and a pipe testing activity.
+ * Only fills what is still empty, so re-running it changes nothing.
+ */
+async function seedSectors(organizationId: string) {
+  const find = (code: string) => prisma.project.findFirst({ where: { organizationId, code } });
+  const approved = (projectId: string, activityName: string) =>
+    prisma.progressEntry.findMany({ where: { projectId, activity: { name: activityName }, status: 'APPROVED' }, orderBy: { date: 'asc' }, include: { activity: true } });
+
+  const road = await find('RD-2026-01');
+  if (road) {
+    if (road.chainageStart === null) await prisma.project.update({ where: { id: road.id }, data: { chainageStart: 12000, chainageEnd: 28000 } });
+    for (const layer of ['Earthwork embankment', 'GSB laying', 'WMM laying', 'DBM paving']) {
+      let at = 12000;
+      for (const e of await approved(road.id, layer)) {
+        const len = Math.max(50, Math.round((Number(e.quantity) / Number(e.activity.plannedQty)) * 16000));
+        if (e.chainageFrom === null) await prisma.progressEntry.update({ where: { id: e.id }, data: { chainageFrom: at, chainageTo: Math.min(at + len, 28000), location: e.location ?? `Ch ${Math.floor(at / 1000)}+${String(at % 1000).padStart(3, '0')}` } });
+        at = Math.min(at + len, 28000);
+      }
+    }
+    const culverts = [13420, 17880, 21150, 24600];
+    for (const [i, e] of (await approved(road.id, 'Pipe culverts')).entries()) {
+      if (e.chainageFrom === null && culverts[i] !== undefined) await prisma.progressEntry.update({ where: { id: e.id }, data: { chainageFrom: culverts[i], chainageTo: culverts[i] } });
+    }
+    await prisma.progressEntry.updateMany({ where: { projectId: road.id, status: 'SUBMITTED', location: 'Ch. 14+200 to 14+650', chainageFrom: null }, data: { chainageFrom: 14200, chainageTo: 14650 } });
+  }
+
+  const hospital = await find('BL-2026-02');
+  if (hospital) {
+    if (!hospital.floors.length) await prisma.project.update({ where: { id: hospital.id }, data: { floors: ['Foundation', 'Plinth', 'Ground floor', 'First floor', 'Second floor', 'Third floor', 'Terrace'] } });
+    const floorOf: Record<string, string[]> = {
+      'Foundation excavation': ['Foundation'],
+      'PCC bed': ['Foundation'],
+      'RCC footings and columns': ['Foundation', 'Plinth', 'Ground floor'],
+      'RCC slab GF': ['Ground floor', 'Ground floor'],
+      'Brick masonry': ['Ground floor'],
+    };
+    for (const [activity, floors] of Object.entries(floorOf)) {
+      for (const [i, e] of (await approved(hospital.id, activity)).entries()) {
+        if (e.floor === null) await prisma.progressEntry.update({ where: { id: e.id }, data: { floor: floors[Math.min(i, floors.length - 1)] } });
+      }
+    }
+  }
+
+  const water = await find('WS-2026-03');
+  if (water) {
+    const villages = ['Barabati', 'Rampur', 'Kesarpada', 'Sonepur', 'Gopalpur', 'Tentulia'];
+    if (!water.villages.length) await prisma.project.update({ where: { id: water.id }, data: { villages, chainageStart: 0, chainageEnd: 8200 } });
+    let at = 0;
+    for (const e of await approved(water.id, 'Raw water main laying')) {
+      const len = Math.round(Number(e.quantity));
+      if (e.chainageFrom === null) await prisma.progressEntry.update({ where: { id: e.id }, data: { chainageFrom: at, chainageTo: Math.min(at + len, 8200) } });
+      at = Math.min(at + len, 8200);
+    }
+    for (const [i, e] of (await approved(water.id, 'Distribution network')).entries()) {
+      if (e.village === null) await prisma.progressEntry.update({ where: { id: e.id }, data: { village: villages[i % villages.length] } });
+    }
+    await prisma.progressEntry.updateMany({ where: { projectId: water.id, location: 'Zone 3, Village Barabati', village: null }, data: { village: 'Barabati' } });
+    let testing = await prisma.activity.findFirst({ where: { projectId: water.id, name: 'Hydraulic testing of pipelines' } });
+    if (!testing) {
+      const network = await prisma.activity.findFirst({ where: { projectId: water.id, name: 'Distribution network' } });
+      const engineer = await prisma.user.findFirst({ where: { organizationId, email: 'engineer@demo.com' } });
+      const pm = await prisma.user.findFirst({ where: { organizationId, email: 'pm@demo.com' } });
+      if (network && engineer && pm) {
+        testing = await prisma.activity.create({
+          data: { organizationId, projectId: water.id, name: 'Hydraulic testing of pipelines', unit: 'Rmt', plannedQty: D('54200'), plannedStart: network.plannedStart, plannedEnd: network.plannedEnd, sortOrder: network.sortOrder },
+        });
+        for (const [daysAgo, qty, village] of [[12, '3200', 'Barabati'], [5, '2600', 'Rampur']] as const) {
+          const date = day(-daysAgo);
+          await prisma.progressEntry.create({
+            data: { organizationId, projectId: water.id, activityId: testing.id, date, quantity: D(qty), village, location: village, status: 'APPROVED', submittedById: engineer.id, submittedAt: date, reviewedById: pm.id, reviewedAt: date, reviewNote: 'Test pressure held for 2 hours', remarks: 'Hydro test at 1.5 times working pressure' },
+          });
+        }
+      }
+    }
+  }
+}
+
 /**
  * Demo safety (v4 item 40): the safety officer joins the road and building projects; a few incidents and near misses
  * (one closed with its root cause), toolbox talks, and permits to work (one waiting, one live, one closed). Only when

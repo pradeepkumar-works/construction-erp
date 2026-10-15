@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import type { Paginated, ProgressEntryDto, ProgressSortField, SortOrder } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
+import { SECTOR_SELECT, locationOr, resolveSector } from '../common/sector';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
@@ -55,6 +56,10 @@ export class ProgressService {
       quantity: dec(r.quantity)!,
       remarks: r.remarks,
       location: r.location,
+      chainageFrom: r.chainageFrom,
+      chainageTo: r.chainageTo,
+      floor: r.floor,
+      village: r.village,
       manpowerCount: r.manpowerCount,
       machineryUsed: r.machineryUsed,
       status: r.status,
@@ -111,6 +116,7 @@ export class ProgressService {
     await this.access.assertCanAccessProject(user, dto.projectId);
     const activity = await this.prisma.activity.findFirst({ where: { id: dto.activityId, projectId: dto.projectId } });
     if (!activity) throw new NotFoundException('Activity not found in this project');
+    const sector = await resolveSector(this.prisma, dto.projectId, dto);
     let row: { id: string };
     try {
       row = await this.prisma.progressEntry.create({
@@ -122,7 +128,8 @@ export class ProgressService {
           date: parseDate(dto.date),
           quantity: new Prisma.Decimal(dto.quantity),
           remarks: dto.remarks ?? null,
-          location: dto.location ?? null,
+          location: locationOr(dto.location, sector) ?? null,
+          ...sector,
           manpowerCount: dto.manpowerCount ?? null,
           machineryUsed: dto.machineryUsed ?? null,
           submittedById: user.id,
@@ -156,7 +163,9 @@ export class ProgressService {
     if (dto.date !== undefined) data.date = parseDate(dto.date);
     if (dto.quantity !== undefined) data.quantity = new Prisma.Decimal(dto.quantity);
     if (dto.remarks !== undefined) data.remarks = dto.remarks;
-    if (dto.location !== undefined) data.location = dto.location;
+    const sector = await resolveSector(this.prisma, row.projectId, dto, (await this.prisma.progressEntry.findUnique({ where: { id }, select: SECTOR_SELECT }))!);
+    Object.assign(data, sector);
+    if (dto.location !== undefined) data.location = locationOr(dto.location, sector) ?? null;
     if (dto.manpowerCount !== undefined) data.manpowerCount = dto.manpowerCount;
     if (dto.machineryUsed !== undefined) data.machineryUsed = dto.machineryUsed;
     await this.prisma.progressEntry.update({ where: { id }, data });

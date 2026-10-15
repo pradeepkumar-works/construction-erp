@@ -149,6 +149,11 @@ export interface ProjectDetail extends ProjectSummary {
   consultantName: string | null;
   workOrderNo: string | null;
   description: string | null;
+  /** Sector settings (v4 item 41): road / pipeline length in metres, building floors bottom up, water supply villages */
+  chainageStart: number | null;
+  chainageEnd: number | null;
+  floors: string[];
+  villages: string[];
   members: ProjectMemberDto[];
   createdAt: string;
   updatedAt: string;
@@ -234,6 +239,10 @@ export interface ProgressEntryDto extends SubmissionBase {
   manpowerCount: number | null;
   machineryUsed: string | null;
   location: string | null;
+  chainageFrom: number | null;
+  chainageTo: number | null;
+  floor: string | null;
+  village: string | null;
 }
 
 export interface ManpowerLine {
@@ -644,6 +653,10 @@ export interface MeasurementSheetDto extends SubmissionBase {
   unit: string;
   rate: string;
   location: string;
+  chainageFrom: number | null;
+  chainageTo: number | null;
+  floor: string | null;
+  village: string | null;
   remarks: string | null;
   totalQty: string;
   /** totalQty × BOQ rate */

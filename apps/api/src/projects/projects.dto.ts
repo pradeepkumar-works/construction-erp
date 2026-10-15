@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
-import { IsBoolean, IsDateString, IsIn, IsNumberString, IsOptional, IsString, IsUUID, MinLength, ValidateIf } from 'class-validator';
-import { LIST_SORT_FIELDS, PROJECT_STATUSES, PROJECT_TYPES, ProjectStatus, ProjectType, type ProjectSortField } from '@erp/shared';
+import { Transform } from 'class-transformer';
+import { ArrayMaxSize, IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsNumberString, IsOptional, IsString, IsUUID, Max, MaxLength, Min, MinLength, ValidateIf } from 'class-validator';
+import { MAX_CHAINAGE_M, MAX_SECTOR_NAMES, LIST_SORT_FIELDS, PROJECT_STATUSES, PROJECT_TYPES, ProjectStatus, ProjectType, type ProjectSortField } from '@erp/shared';
 import { PageQuery } from '../common/paging';
 
 /** `q` matches code, name, client, location and work order no. */
@@ -25,6 +26,24 @@ export class CreateProjectDto {
   @ApiPropertyOptional({ example: '2027-06-30' }) @IsOptional() @IsDateString() endDate?: string;
   @ApiPropertyOptional({ example: '125000000.00' }) @IsOptional() @IsNumberString() contractValue?: string;
   @ApiPropertyOptional() @IsOptional() @IsUUID() projectManagerId?: string;
+  @ApiPropertyOptional({ description: 'Road / pipeline start, metres (0+000 = 0)', nullable: true }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsInt() @Min(0) @Max(MAX_CHAINAGE_M) chainageStart?: number | null;
+  @ApiPropertyOptional({ description: 'Road / pipeline end, metres', nullable: true }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsInt() @Min(0) @Max(MAX_CHAINAGE_M) chainageEnd?: number | null;
+  @ApiPropertyOptional({ type: [String], description: 'Building floors, bottom up' })
+  @IsOptional()
+  @Transform(({ value }) => (Array.isArray(value) ? [...new Set(value.map((v) => (typeof v === 'string' ? v.trim() : v)).filter(Boolean))] : value))
+  @IsArray()
+  @ArrayMaxSize(MAX_SECTOR_NAMES)
+  @IsString({ each: true })
+  @MaxLength(80, { each: true })
+  floors?: string[];
+  @ApiPropertyOptional({ type: [String], description: 'Water supply villages / habitations' })
+  @IsOptional()
+  @Transform(({ value }) => (Array.isArray(value) ? [...new Set(value.map((v) => (typeof v === 'string' ? v.trim() : v)).filter(Boolean))] : value))
+  @IsArray()
+  @ArrayMaxSize(MAX_SECTOR_NAMES)
+  @IsString({ each: true })
+  @MaxLength(120, { each: true })
+  villages?: string[];
   @ApiPropertyOptional({ description: 'Add the standard activities for the project type (see /activity-templates), scheduled over the project dates' })
   @IsOptional()
   @IsBoolean()

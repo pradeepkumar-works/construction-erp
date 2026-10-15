@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import type { Paginated, ProjectDetail, ProjectSortField, ProjectSummary, RoleKey, SortOrder } from '@erp/shared';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
@@ -87,6 +87,10 @@ export class ProjectsService {
       consultantName: p.consultantName,
       workOrderNo: p.workOrderNo,
       description: p.description,
+      chainageStart: p.chainageStart,
+      chainageEnd: p.chainageEnd,
+      floors: p.floors,
+      villages: p.villages,
       members: p.members.map((m) => ({ id: m.id, userId: m.userId, fullName: m.user.fullName, roleKey: m.user.role.key as RoleKey, roleName: m.user.role.name })),
       createdAt: iso(p.createdAt)!,
       updatedAt: iso(p.updatedAt)!,
@@ -136,8 +140,16 @@ export class ProjectsService {
     if (dto.startDate !== undefined) data.startDate = dto.startDate ? parseDate(dto.startDate) : null;
     if (dto.endDate !== undefined) data.endDate = dto.endDate ? parseDate(dto.endDate) : null;
     if (dto.contractValue !== undefined) data.contractValue = dto.contractValue ? new Prisma.Decimal(dto.contractValue) : null;
+    if (dto.chainageStart !== undefined) data.chainageStart = dto.chainageStart;
+    if (dto.chainageEnd !== undefined) data.chainageEnd = dto.chainageEnd;
+    if (dto.floors !== undefined) data.floors = dto.floors;
+    if (dto.villages !== undefined) data.villages = dto.villages;
     if (dto.projectManagerId !== undefined) data.projectManager = dto.projectManagerId ? { connect: { id: dto.projectManagerId } } : { disconnect: true };
     return data;
+  }
+
+  private checkChainage(start: number | null, end: number | null) {
+    if (start !== null && end !== null && end <= start) throw new BadRequestException('The chainage must end after it starts');
   }
 
   /** A client from the master sets the project's client name too; null unlinks it and keeps the name as text. */
@@ -156,6 +168,7 @@ export class ProjectsService {
   async create(user: RequestUser, dto: CreateProjectDto): Promise<ProjectDetail> {
     const dup = await this.prisma.project.findFirst({ where: { organizationId: user.organizationId, code: dto.code } });
     if (dup) throw new ConflictException(`Project code ${dto.code} already exists`);
+    this.checkChainage(dto.chainageStart ?? null, dto.chainageEnd ?? null);
     const data = this.toData(dto) as Prisma.ProjectCreateInput;
     await this.withClient(user, dto, data);
     if (dto.clientId === null) delete data.client;
@@ -167,6 +180,10 @@ export class ProjectsService {
 
   async update(user: RequestUser, id: string, dto: UpdateProjectDto): Promise<ProjectDetail> {
     await this.access.assertCanAccessProject(user, id);
+    if (dto.chainageStart !== undefined || dto.chainageEnd !== undefined) {
+      const cur = await this.prisma.project.findUniqueOrThrow({ where: { id }, select: { chainageStart: true, chainageEnd: true } });
+      this.checkChainage(dto.chainageStart !== undefined ? dto.chainageStart : cur.chainageStart, dto.chainageEnd !== undefined ? dto.chainageEnd : cur.chainageEnd);
+    }
     const data = this.toData(dto);
     await this.withClient(user, dto, data);
     const row = await this.prisma.project.update({ where: { id }, data, include: projectInclude });

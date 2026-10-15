@@ -9,8 +9,9 @@ import { api, errorMessage } from '@/lib/api';
 import { useActivities, useProjects } from '@/lib/queries';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { editActionLabel } from '@/components/common/EditResubmitButton';
+import { SectorInputs, sectorBody, sectorFormValues, typedLocation, type SectorFormValues } from '@/components/sector/SectorInputs';
 
-interface FormValues {
+interface FormValues extends SectorFormValues {
   projectId: string;
   activityId: string;
   date: dayjs.Dayjs;
@@ -47,7 +48,8 @@ export function ProgressFormModal({ open, onClose, projectId, entry }: { open: b
         activityId: entry.activityId,
         date: dayjs(entry.date),
         quantity: Number(entry.quantity),
-        location: entry.location ?? undefined,
+        location: typedLocation(entry),
+        ...sectorFormValues(entry),
         manpowerCount: entry.manpowerCount ?? undefined,
         machineryUsed: entry.machineryUsed ?? undefined,
         remarks: entry.remarks ?? undefined,
@@ -65,6 +67,7 @@ export function ProgressFormModal({ open, onClose, projectId, entry }: { open: b
         date: v.date.format('YYYY-MM-DD'),
         quantity: String(v.quantity),
         location: v.location || (editing ? null : undefined),
+        ...sectorBody(v, editing),
         manpowerCount: v.manpowerCount ?? (editing ? null : undefined),
         machineryUsed: v.machineryUsed || (editing ? null : undefined),
         remarks: v.remarks || (editing ? null : undefined),
@@ -112,10 +115,11 @@ export function ProgressFormModal({ open, onClose, projectId, entry }: { open: b
           <Form.Item name="manpowerCount" label="Manpower">
             <InputNumber style={{ width: '100%' }} min={0} precision={0} />
           </Form.Item>
-          <Form.Item name="location" label="Location / chainage">
-            <Input placeholder="Km 14+200 to 14+600" />
+          <Form.Item name="location" label="Location">
+            <Input placeholder="Grid, side, structure" />
           </Form.Item>
         </div>
+        <SectorInputs projectId={selectedProject} />
         <Form.Item name="machineryUsed" label="Machinery used">
           <Input placeholder="Excavator x1, Tipper x4" />
         </Form.Item>

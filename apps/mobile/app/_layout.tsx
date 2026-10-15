@@ -63,6 +63,7 @@ function RootNavigator() {
         <Stack.Screen name="risks" options={{ title: 'Delays & Risks' }} />
         <Stack.Screen name="risk/new" options={{ title: 'Delay or Risk' }} />
         <Stack.Screen name="risk/[id]" options={{ title: 'Delay / Risk' }} />
+        <Stack.Screen name="sector" options={{ title: 'Sector Progress' }} />
         <Stack.Screen name="safety" options={{ title: 'Safety' }} />
         <Stack.Screen name="incident/new" options={{ title: 'Report an Incident' }} />
         <Stack.Screen name="incident/[id]" options={{ title: 'Incident' }} />

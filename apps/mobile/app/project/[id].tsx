@@ -63,6 +63,7 @@ export default function ProjectScreen() {
         <Button title="Today's attendance" icon="people" variant="secondary" onPress={() => router.push(`/attendance?projectId=${project.id}`)} style={styles.attendance} />
       ) : null}
       <Button title="Stock" icon="cube-outline" variant="secondary" onPress={() => router.push(`/stock?projectId=${project.id}`)} style={styles.attendance} />
+      <Button title={project.type === 'ROAD' ? 'Progress by chainage' : project.type === 'BUILDING' ? 'Progress by floor' : 'Villages & pipeline'} icon="map-outline" variant="secondary" onPress={() => router.push(`/sector?projectId=${project.id}`)} style={styles.attendance} />
       <Button title="Delays & risks" icon="alert-circle-outline" variant="secondary" onPress={() => router.push(`/risks?projectId=${project.id}`)} style={styles.attendance} />
       <Button title="Safety" icon="medkit-outline" variant="secondary" onPress={() => router.push(`/safety?projectId=${project.id}`)} style={styles.attendance} />
 

@@ -4,6 +4,7 @@ import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsDateString, IsIn, IsN
 import { LIST_SORT_FIELDS, SUBMISSION_STATUSES, type MeasurementSortField, type SubmissionStatus } from '@erp/shared';
 import { PageQuery, QueryBool } from '../common/paging';
 import { CLIENT_ID_DOC } from '../common/idempotency';
+import { ChainageField, FloorField, VillageField } from '../common/sector';
 
 const trim = () => Transform(({ value }) => (typeof value === 'string' ? value.trim() : value));
 const num = () => Transform(({ value }) => (typeof value === 'number' ? String(value) : typeof value === 'string' ? value.trim() || null : value));
@@ -27,7 +28,16 @@ export class CreateMeasurementDto {
   @IsUUID()
   workOrderId?: string | null;
   @ApiProperty({ example: '2026-10-13' }) @IsDateString() date: string;
-  @ApiProperty({ example: 'Km 14+200 to 14+400' }) @trim() @IsString() @IsNotEmpty() @MaxLength(200) location: string;
+  @ApiProperty({ example: 'Km 14+200 to 14+400', description: 'Required unless a chainage, floor or village is given (it is then made from them)' })
+  @IsOptional()
+  @trim()
+  @IsString()
+  @MaxLength(200)
+  location?: string;
+  @ChainageField('Road / pipeline: metres from 0+000 where the measured work starts') chainageFrom?: number | null;
+  @ChainageField('Where it ends (same as the start for work at one point)') chainageTo?: number | null;
+  @FloorField() floor?: string | null;
+  @VillageField() village?: string | null;
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(1000) remarks?: string | null;
   @ApiProperty({ type: [MeasurementLineInputDto] })
   @IsArray()
