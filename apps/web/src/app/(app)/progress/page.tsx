@@ -9,7 +9,7 @@ export default function Page() {
   return (
     <div className="page-container">
       <PageHeader title="Progress Entries" subtitle="Quantity-wise daily progress reported from site against activities" />
-      <Card className="table-card" size="small">
+      <Card size="small">
         <ProgressList newLabel="New progress entry" />
       </Card>
     </div>

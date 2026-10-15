@@ -11,7 +11,7 @@ function MaterialRequestsPage() {
   return (
     <div className="page-container">
       <PageHeader title="Material Requests" subtitle="Material indents raised from site, with vendor quotations and the purchase orders raised on them" />
-      <Card className="table-card" size="small">
+      <Card size="small">
         <MrList newLabel="New material request" openId={search.get('id')} />
       </Card>
     </div>

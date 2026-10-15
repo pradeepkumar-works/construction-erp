@@ -204,7 +204,7 @@ export default function DashboardPage() {
               </Card>
             </Col>
             <Col xs={24}>
-              <Card title="Projects" size="small" className="table-card" extra={<Link href="/projects">View all</Link>}>
+              <Card title="Projects" size="small" extra={<Link href="/projects">View all</Link>}>
                 <Table<ProjectSummary>
                   rowKey="id"
                   columns={columns}
@@ -231,7 +231,7 @@ function monthName(month: string) {
 /** One KPI card; every card in the row stretches to the tallest so the row reads as one band. */
 function KpiTile({ href, children }: { href?: string; children: React.ReactNode }) {
   const card = (
-    <Card className="kpi-card" hoverable={!!href} style={{ height: '100%' }}>
+    <Card hoverable={!!href} style={{ height: '100%' }}>
       {children}
     </Card>
   );

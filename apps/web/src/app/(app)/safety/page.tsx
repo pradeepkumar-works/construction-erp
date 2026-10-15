@@ -14,7 +14,7 @@ function SafetyPage() {
   return (
     <div className="page-container">
       <PageHeader title="Safety" subtitle="Incidents and near misses with their root cause and corrective action, toolbox talks, and permits to work for risky jobs." />
-      <Card className="table-card" size="small">
+      <Card size="small">
         <SafetyPanel key={`${tab ?? ''}|${id ?? ''}`} initialTab={tab} initialId={id} />
       </Card>
     </div>

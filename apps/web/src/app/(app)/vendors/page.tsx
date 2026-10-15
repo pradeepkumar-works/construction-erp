@@ -231,7 +231,7 @@ export default function VendorsPage() {
           ) : null
         }
       />
-      <Card className="table-card" size="small">
+      <Card size="small">
         <Tabs
           tabBarStyle={{ padding: '0 12px', marginBottom: 0 }}
           items={[

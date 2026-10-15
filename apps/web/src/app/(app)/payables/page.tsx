@@ -308,7 +308,7 @@ export default function PayablesPage() {
       {t && (
         <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
           <Col flex="1 1 180px">
-            <Card className="kpi-card" style={{ height: '100%' }}>
+            <Card style={{ height: '100%' }}>
               <Statistic title="Outstanding" value={formatINRCompact(t.outstanding)} />
               <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                 {data.openBills.length} open bill{data.openBills.length === 1 ? '' : 's'} · paid so far {formatINR(t.paid)}
@@ -316,7 +316,7 @@ export default function PayablesPage() {
             </Card>
           </Col>
           <Col flex="1 1 180px">
-            <Card className="kpi-card" style={{ height: '100%' }}>
+            <Card style={{ height: '100%' }}>
               <Statistic title="Overdue" value={formatINRCompact(t.overdue)} styles={{ content: { color: toNumber(t.overdue) > 0 ? '#cf1322' : undefined } }} />
               <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                 Due in the next 7 days: {formatINR(t.dueSoon)}
@@ -324,7 +324,7 @@ export default function PayablesPage() {
             </Card>
           </Col>
           <Col flex="1 1 180px">
-            <Card className="kpi-card" style={{ height: '100%' }}>
+            <Card style={{ height: '100%' }}>
               <Statistic title="MSME at risk" value={formatINRCompact(t.msmeAtRisk)} styles={{ content: { color: toNumber(t.msmeAtRisk) > 0 ? '#cf1322' : undefined } }} />
               <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                 Micro and small enterprises due within 7 days or late
@@ -332,7 +332,7 @@ export default function PayablesPage() {
             </Card>
           </Col>
           <Col flex="1 1 180px">
-            <Card className="kpi-card" style={{ height: '100%' }}>
+            <Card style={{ height: '100%' }}>
               <Statistic title="Retention held" value={formatINRCompact(t.retentionHeld)} />
               <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                 TDS deducted {formatINR(t.tdsDeducted)}
@@ -341,7 +341,7 @@ export default function PayablesPage() {
           </Col>
         </Row>
       )}
-      <Card className="table-card" size="small">
+      <Card size="small">
         <Tabs
           tabBarStyle={{ padding: '0 12px', marginBottom: 0 }}
           items={[

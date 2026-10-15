@@ -9,7 +9,7 @@ export default function Page() {
   return (
     <div className="page-container">
       <PageHeader title="Attendance" subtitle="Daily head count by contractor and trade, which fills the manpower of that day's DPR, and the named worker register with its roll call and muster." />
-      <Card className="table-card" size="small">
+      <Card size="small">
         <AttendancePanel />
       </Card>
     </div>

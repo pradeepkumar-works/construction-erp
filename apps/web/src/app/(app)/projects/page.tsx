@@ -81,7 +81,7 @@ export default function ProjectsPage() {
         }
       />
       {error && <QueryError error={error} onRetry={() => refetch()} />}
-      <Card className="table-card" size="small">
+      <Card size="small">
         <div style={{ padding: 12, display: 'flex', gap: 8, flexWrap: 'wrap', borderBottom: '1px solid #f0f0f0' }}>
           <SearchBox value={list.search} onChange={list.setSearch} placeholder="Search by name, code, client, location" width={320} />
           <Select allowClear placeholder="All types" value={type} onChange={(v) => { setType(v); list.resetPage(); }} style={{ width: 180 }} options={PROJECT_TYPES.map((t) => ({ value: t, label: PROJECT_TYPE_LABELS[t] }))} />

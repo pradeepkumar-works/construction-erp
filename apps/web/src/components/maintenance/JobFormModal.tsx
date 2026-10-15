@@ -100,8 +100,7 @@ export function JobFormModal({
         <div style={grid}>
           <Form.Item name="equipmentId" label="Machine" rules={[{ required: true, message: 'Pick the machine' }]}>
             <Select
-              showSearch
-              optionFilterProp="label"
+              showSearch={{ optionFilterProp: 'label' }}
               disabled={editing}
               placeholder="Machine or vehicle"
               options={(equipment?.items ?? []).map((e) => ({ value: e.id, label: `${e.code} · ${e.name}${e.projectName && !projectId ? ` (${e.projectName})` : ''}` }))}

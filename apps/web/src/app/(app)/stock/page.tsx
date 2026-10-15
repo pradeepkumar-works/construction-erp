@@ -14,7 +14,7 @@ function StockPage() {
   return (
     <div className="page-container">
       <PageHeader title="Stock" subtitle="Material received against approved requests, issued at site, and the balance per project." extra={<StockActions />} />
-      <Card className="table-card" size="small">
+      <Card size="small">
         <StockPanel key={`${projectId ?? ''}|${low}`} initialLow={low} initialProject={projectId} />
       </Card>
     </div>

@@ -111,7 +111,7 @@ export function JobDrawer({ id, open, onClose, onEdit }: { id: string | null; op
     <Drawer
       open={open}
       onClose={onClose}
-      width={680}
+      size={680}
       className="job-drawer"
       title={
         j ? (
@@ -220,7 +220,7 @@ export function JobDrawer({ id, open, onClose, onEdit }: { id: string | null; op
 
       <Modal open={closing} title={`Close ${j?.jobNo ?? ''}`} onCancel={() => setClosing(false)} onOk={() => closeForm.submit()} okText="Close job" okButtonProps={{ loading: close.isPending }} destroyOnHidden width={620}>
         <Form form={closeForm} layout="vertical" onFinish={(v) => close.mutate(v)}>
-          {j?.kind === 'SERVICE' ? <Alert type="info" showIcon style={{ marginBottom: 12 }} message="Closing a service restarts the machine's service schedule from this date." /> : null}
+          {j?.kind === 'SERVICE' ? <Alert type="info" showIcon style={{ marginBottom: 12 }} title="Closing a service restarts the machine's service schedule from this date." /> : null}
           <div style={grid}>
             <Form.Item name="closedDate" label="Back in work on" rules={[{ required: true, message: 'Required' }]}>
               <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day') || (!!j && d.isBefore(dayjs(j.date), 'day'))} allowClear={false} />
@@ -255,7 +255,7 @@ export function JobDrawer({ id, open, onClose, onEdit }: { id: string | null; op
           <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Required' }]} style={{ maxWidth: 220 }}>
             <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} allowClear={false} />
           </Form.Item>
-          {!stock.isLoading && !items.length ? <Alert type="warning" showIcon style={{ marginBottom: 12 }} message="Nothing is in stock at this project." /> : null}
+          {!stock.isLoading && !items.length ? <Alert type="warning" showIcon style={{ marginBottom: 12 }} title="Nothing is in stock at this project." /> : null}
           <Form.List name="lines">
             {(fields, { add, remove: drop }) => (
               <Space orientation="vertical" size={6} style={{ width: '100%' }}>
@@ -266,8 +266,7 @@ export function JobDrawer({ id, open, onClose, onEdit }: { id: string | null; op
                     <div key={f.key} style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
                       <Form.Item name={[f.name, 'itemId']} style={{ flex: 3, marginBottom: 0 }} rules={[{ required: true, message: 'Pick a spare' }]}>
                         <Select
-                          showSearch
-                          optionFilterProp="label"
+                          showSearch={{ optionFilterProp: 'label' }}
                           placeholder="Spare or lubricant"
                           loading={stock.isLoading}
                           aria-label="Spare"

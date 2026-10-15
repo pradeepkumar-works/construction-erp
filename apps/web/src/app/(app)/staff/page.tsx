@@ -41,7 +41,7 @@ function StaffPage() {
   return (
     <div className="page-container">
       <PageHeader title="Staff & leave" subtitle="Check in, apply for leave and see your balance. Site in-charges mark the staff register; HR keeps staff records and holidays." />
-      <Card className="table-card" size="small">
+      <Card size="small">
         <Tabs
           activeKey={tab}
           onChange={(k) => router.replace(`${pathname}?tab=${k}`, { scroll: false })}

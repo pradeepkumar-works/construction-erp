@@ -11,7 +11,7 @@ function PurchaseOrdersPage() {
   return (
     <div className="page-container">
       <PageHeader title="Purchase Orders" subtitle="Orders on vendors from approved material requests and their quotations, through approval, receipt at site (GRN) and the vendor's bill." />
-      <Card className="table-card" size="small">
+      <Card size="small">
         <PurchaseOrderList openId={search.get('id')} />
       </Card>
     </div>

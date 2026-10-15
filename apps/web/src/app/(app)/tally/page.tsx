@@ -368,7 +368,7 @@ export default function TallyPage() {
         the file (Import → Transactions). Exported receipts and payments are locked in <Link href="/receivables">Receivables</Link> and{' '}
         <Link href="/payables">Payables</Link> until their export is undone.
       </Typography.Paragraph>
-      <Card className="table-card" size="small">
+      <Card size="small">
         <Tabs
           tabBarStyle={{ padding: '0 12px', marginBottom: 0 }}
           items={[

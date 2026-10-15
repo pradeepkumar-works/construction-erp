@@ -133,7 +133,7 @@ function GstRegistersPage() {
         <>
           <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
             <Col flex="1 1 180px">
-              <Card className="kpi-card" style={{ height: '100%' }}>
+              <Card style={{ height: '100%' }}>
                 <Statistic title="Output tax" value={formatINRCompact(data.outwardTotals.tax)} />
                 <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                   On {formatINR(data.outwardTotals.taxable)} billed, {data.outward.length} invoice{data.outward.length === 1 ? '' : 's'}
@@ -141,7 +141,7 @@ function GstRegistersPage() {
               </Card>
             </Col>
             <Col flex="1 1 180px">
-              <Card className="kpi-card" style={{ height: '100%' }}>
+              <Card style={{ height: '100%' }}>
                 <Statistic title="Input tax" value={formatINRCompact(data.inwardTotals.tax)} />
                 <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                   On {formatINR(data.inwardTotals.taxable)} bought with a GSTIN
@@ -149,7 +149,7 @@ function GstRegistersPage() {
               </Card>
             </Col>
             <Col flex="1 1 180px">
-              <Card className="kpi-card" style={{ height: '100%' }}>
+              <Card style={{ height: '100%' }}>
                 <Statistic title={net >= 0 ? 'Net GST to pay' : 'Input tax carried forward'} value={formatINRCompact(Math.abs(net))} />
                 <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                   Before TDS credits and the electronic ledgers
@@ -157,7 +157,7 @@ function GstRegistersPage() {
               </Card>
             </Col>
             <Col flex="1 1 180px">
-              <Card className="kpi-card" style={{ height: '100%' }}>
+              <Card style={{ height: '100%' }}>
                 <Statistic title="Not claimable" value={formatINRCompact(data.ineligibleTax)} />
                 <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                   GST paid where the supplier&apos;s GSTIN is missing
@@ -181,7 +181,7 @@ function GstRegistersPage() {
           )}
         </>
       )}
-      <Card className="table-card" size="small">
+      <Card size="small">
         <Tabs
           tabBarStyle={{ padding: '0 12px', marginBottom: 0 }}
           tabBarExtraContent={

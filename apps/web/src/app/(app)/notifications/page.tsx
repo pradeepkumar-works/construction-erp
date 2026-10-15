@@ -138,7 +138,7 @@ function NotificationsPageInner() {
         }
       />
       {error && <QueryError error={error} onRetry={() => refetch()} />}
-      <Card className="table-card" size="small">
+      <Card size="small">
         {showLog ? (
           <Tabs
             activeKey={tab}

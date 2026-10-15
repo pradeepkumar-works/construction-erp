@@ -52,7 +52,7 @@ function PortalProject() {
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {isLoading ? <Skeleton active /> : null}
       {data ? (
-        <Card className="table-card" size="small">
+        <Card size="small">
           <Tabs
             activeKey={tab}
             onChange={(k) => go(k as Tab)}

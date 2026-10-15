@@ -14,7 +14,7 @@ function RisksPage() {
   return (
     <div className="page-container">
       <PageHeader title="Delays & Risks" subtitle="What has held up work (days lost, who caused it, extension of time) and what might, scored probability × impact, with owners and due dates." />
-      <Card className="table-card" size="small">
+      <Card size="small">
         <RiskList key={`${id ?? ''}|${projectId ?? ''}`} initialOpenId={id} initialProject={projectId} />
       </Card>
     </div>

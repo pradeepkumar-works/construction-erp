@@ -289,7 +289,7 @@ export default function ReceivablesPage() {
       {t && (
         <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
           <Col flex="1 1 180px">
-            <Card className="kpi-card" style={{ height: '100%' }}>
+            <Card style={{ height: '100%' }}>
               <Statistic title="Outstanding" value={formatINRCompact(t.outstanding)} />
               <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                 {data.openBills.length} open bill{data.openBills.length === 1 ? '' : 's'} · {formatINR(t.notSent)} approved, not sent
@@ -297,7 +297,7 @@ export default function ReceivablesPage() {
             </Card>
           </Col>
           <Col flex="1 1 180px">
-            <Card className="kpi-card" style={{ height: '100%' }}>
+            <Card style={{ height: '100%' }}>
               <Statistic title="Over 90 days" value={formatINRCompact(t.ageing.over90)} styles={{ content: { color: toNumber(t.ageing.over90) > 0 ? '#cf1322' : undefined } }} />
               <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                 61-90 days: {formatINR(t.ageing.days61to90)}
@@ -305,7 +305,7 @@ export default function ReceivablesPage() {
             </Card>
           </Col>
           <Col flex="1 1 180px">
-            <Card className="kpi-card" style={{ height: '100%' }}>
+            <Card style={{ height: '100%' }}>
               <Statistic title="Retention + deposit held" value={formatINRCompact(toNumber(t.retentionHeld) + toNumber(t.depositHeld))} />
               <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                 Retention {formatINR(t.retentionHeld)} · deposit {formatINR(t.depositHeld)}
@@ -313,7 +313,7 @@ export default function ReceivablesPage() {
             </Card>
           </Col>
           <Col flex="1 1 180px">
-            <Card className="kpi-card" style={{ height: '100%' }}>
+            <Card style={{ height: '100%' }}>
               <Statistic title="TDS deducted" value={formatINRCompact(toNumber(t.tdsDeducted) + toNumber(t.gstTdsDeducted))} />
               <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                 Income tax {formatINR(t.tdsDeducted)} · GST {formatINR(t.gstTdsDeducted)}
@@ -322,7 +322,7 @@ export default function ReceivablesPage() {
           </Col>
         </Row>
       )}
-      <Card className="table-card" size="small">
+      <Card size="small">
         <Tabs
           tabBarStyle={{ padding: '0 12px', marginBottom: 0 }}
           items={[

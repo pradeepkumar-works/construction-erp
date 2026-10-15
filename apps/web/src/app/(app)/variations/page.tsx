@@ -11,7 +11,7 @@ function VariationsPage() {
   return (
     <div className="page-container">
       <PageHeader title="Variations" subtitle="Extra items and quantity changes claimed from the client. Approved variations update the BOQ and the revised contract value." />
-      <Card className="table-card" size="small">
+      <Card size="small">
         <VariationsPanel openId={search.get('id')} />
       </Card>
     </div>

@@ -14,7 +14,7 @@ export default function Page() {
   return (
     <div className="page-container">
       <PageHeader title="Project Cost" subtitle="Cost against the value of work executed, and the cash expected in and out over the coming months." />
-      <Card className="table-card" size="small">
+      <Card size="small">
         <Tabs
           style={{ padding: '0 12px' }}
           items={[

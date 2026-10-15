@@ -263,7 +263,7 @@ export function PapersPanel() {
       >
         <Select allowClear placeholder="All papers" style={{ width: 170 }} value={docType} onChange={(v) => { setDocType(v); docList.resetPage(); }} options={EQUIPMENT_DOC_TYPES.map((x) => ({ value: x, label: EQUIPMENT_DOC_TYPE_LABELS[x] }))} />
         <Select allowClear placeholder="Any validity" style={{ width: 150 }} value={docState} onChange={(v) => { setDocState(v); docList.resetPage(); }} options={EXPIRY_STATES.map((x) => ({ value: x, label: EXPIRY_STATE_LABELS[x] }))} />
-        <Select allowClear showSearch optionFilterProp="label" placeholder="All machines" style={{ width: 220 }} value={docMachine} onChange={(v) => { setDocMachine(v); docList.resetPage(); }} options={machines} />
+        <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="All machines" style={{ width: 220 }} value={docMachine} onChange={(v) => { setDocMachine(v); docList.resetPage(); }} options={machines} />
         <Checkbox checked={showOld} onChange={(e) => { setShowOld(e.target.checked); docList.resetPage(); }}>
           Show renewed ones too
         </Checkbox>
@@ -300,7 +300,7 @@ export function PapersPanel() {
         <Form form={docForm} layout="vertical" onFinish={(v) => saveDoc.mutate(v)}>
           <div style={grid}>
             <Form.Item name="equipmentId" label="Machine" rules={[{ required: true, message: 'Pick the machine' }]}>
-              <Select showSearch optionFilterProp="label" disabled={docEditing !== 'new'} options={machines} />
+              <Select showSearch={{ optionFilterProp: 'label' }} disabled={docEditing !== 'new'} options={machines} />
             </Form.Item>
             <Form.Item name="type" label="Paper" rules={[{ required: true, message: 'Which paper?' }]}>
               <Select options={EQUIPMENT_DOC_TYPES.map((x) => ({ value: x, label: EQUIPMENT_DOC_TYPE_LABELS[x] }))} />
@@ -348,7 +348,7 @@ export function PapersPanel() {
             </Form.Item>
           </div>
           <Form.Item name="equipmentId" label="Drives">
-            <Select allowClear showSearch optionFilterProp="label" placeholder="Machine or vehicle" options={machines} />
+            <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Machine or vehicle" options={machines} />
           </Form.Item>
           <Form.Item name="notes" label="Notes">
             <Input maxLength={1000} />
