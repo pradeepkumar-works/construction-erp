@@ -127,6 +127,11 @@ export const canManageWorkers = (role: RoleKey) => ATTENDANCE_RECORDER_ROLES.inc
 /** See the worker register, the muster and output per man-day: recorders, quantity surveyors and accounts. */
 export const WORKER_VIEW_ROLES: RoleKey[] = [...ATTENDANCE_RECORDER_ROLES, 'QUANTITY_SURVEYOR', 'ACCOUNTS_MANAGER'];
 export const canViewWorkers = (role: RoleKey) => WORKER_VIEW_ROLES.includes(role);
+/** Open imprests, set the float, pay or turn down top-ups and take back cash: accounts and the company's admins. */
+export const IMPREST_ADMIN_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'ACCOUNTS_MANAGER'];
+export const canManageImprest = (role: RoleKey) => IMPREST_ADMIN_ROLES.includes(role);
+/** Hold an imprest: anyone who pays site expenses. */
+export const canHoldImprest = (role: RoleKey) => EXPENSE_SUBMITTER_ROLES.includes(role);
 /** Record goods received and material issued. */
 export const canKeepStock = (role: RoleKey) => STOCK_KEEPER_ROLES.includes(role);
 /** Store master data (item master, minimum stock levels): the store manager and approvers. */

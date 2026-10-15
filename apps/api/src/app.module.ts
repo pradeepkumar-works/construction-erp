@@ -43,6 +43,7 @@ import { DocumentsModule } from './documents/documents.module';
 import { StaffModule } from './staff/staff.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { WorkersModule } from './workers/workers.module';
+import { ImprestModule } from './imprest/imprest.module';
 import { MaterialRequestsModule } from './material-requests/material-requests.module';
 import { ApprovalsModule } from './approvals/approvals.module';
 import { DashboardModule } from './dashboard/dashboard.module';
@@ -63,6 +64,7 @@ import { HealthController } from './health.controller';
     DprModule,
     AttendanceModule,
     WorkersModule,
+    ImprestModule,
     MaterialRequestsModule,
     StockModule,
     MachineryModule,

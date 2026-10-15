@@ -84,6 +84,8 @@ import type {
   AttendanceDayDto,
   AttendanceSheetDto,
   AttendanceSuggestionsDto,
+  ImprestDetailDto,
+  ImprestDto,
   MusterDto,
   OutputDto,
   RollCallDto,
@@ -1616,4 +1618,19 @@ export const useDrivers = (filters?: DriverFilters) =>
     queryKey: ['maintenance', 'drivers', clean(filters)],
     queryFn: async () => (await api.get<Paginated<DriverDto>>('/drivers', { params: clean(filters) })).data,
     placeholderData: keepPreviousData,
+  });
+
+/* Site imprest (v4 item 45) */
+export const useImprests = (filters?: { projectId?: string; active?: boolean; mine?: boolean }) =>
+  useQuery({
+    queryKey: ['imprests', 'list', clean(filters)],
+    queryFn: async () => (await api.get<ImprestDto[]>('/imprests', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+  });
+
+export const useImprest = (id: string | null | undefined) =>
+  useQuery({
+    queryKey: ['imprests', 'one', id],
+    queryFn: async () => (await api.get<ImprestDetailDto>(`/imprests/${id}`)).data,
+    enabled: !!id,
   });

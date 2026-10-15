@@ -4,6 +4,7 @@
  */
 import type React from 'react';
 import {
+  MoneyCollectOutlined,
   AccountBookOutlined,
   AlertOutlined,
   AppstoreOutlined,
@@ -70,6 +71,9 @@ import {
   canViewVariations,
   canViewVendorBills,
   canViewWorkOrders,
+  canHoldImprest,
+  canManageImprest,
+  canApprove,
   isGuest,
 } from '@erp/shared';
 
@@ -133,6 +137,7 @@ export function navFor(user: AuthUser): NavSection[] {
         { href: '/inspections', label: 'Quality', icon: SafetyOutlined, keywords: 'qa qc inspections tests ncr hold point' },
         { href: '/documents', label: 'Documents', icon: FolderOpenOutlined, keywords: 'drawings files rfi' },
         { href: '/expenses', label: 'Site Expenses', icon: WalletOutlined, keywords: 'petty cash imprest' },
+        ...when(canHoldImprest(role) || canManageImprest(role) || canApprove(role), { href: '/imprest', label: 'Site Imprest', icon: MoneyCollectOutlined, keywords: 'petty cash float top-up' }),
         { href: '/risks', label: 'Delays & Risks', icon: AlertOutlined, keywords: 'hindrance issues' },
         { href: '/safety', label: 'Safety', icon: MedicineBoxOutlined, keywords: 'incident near miss toolbox talk permit to work ppe accident' },
       ],

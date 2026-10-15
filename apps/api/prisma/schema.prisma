@@ -132,6 +132,7 @@ enum NotificationType {
   BILLS_DUE
   SAFETY
   MACHINERY
+  IMPREST
 }
 
 /// What a quality test is of. CONCRETE_CUBE gets 7 and 28-day readings; the others one result.
@@ -353,6 +354,8 @@ model Organization {
   milestones        Milestone[]
   workers           Worker[]
   workerAttendance  WorkerAttendance[]
+  imprests          Imprest[]
+  imprestEntries    ImprestEntry[]
   progressEntries   ProgressEntry[]
   dailyReports      DailyReport[]
   materialRequests  MaterialRequest[]
@@ -525,6 +528,10 @@ model User {
   employee             Employee?          @relation("EmployeeLogin")
   staffMarked          StaffAttendance[]  @relation("StaffAttendanceMarker")
   workerDaysMarked     WorkerAttendance[] @relation("WorkerAttendanceMarker")
+  imprestsHeld         Imprest[]          @relation("ImprestHolder")
+  imprestsOpened       Imprest[]          @relation("ImprestOpener")
+  imprestRequests      ImprestEntry[]     @relation("ImprestRequester")
+  imprestDecisions     ImprestEntry[]     @relation("ImprestDecider")
   leaveDecided         LeaveRequest[]     @relation("LeaveDecider")
   leaveApplied         LeaveRequest[]     @relation("LeaveApplicant")
   raisedRisks          Risk[]             @relation("RiskRaiser")
@@ -602,6 +609,7 @@ model Project {
   milestones       Milestone[]
   workers          Worker[]
   workerAttendance WorkerAttendance[]
+  imprests         Imprest[]
   progressEntries  ProgressEntry[]
   dailyReports     DailyReport[]
   materialRequests MaterialRequest[]
@@ -3037,4 +3045,74 @@ model Driver {
   updatedAt      DateTime     @updatedAt
 
   @@index([organizationId, isActive])
+}
+
+/// Cash advanced to the site, or handed back by the site in-charge
+enum ImprestEntryKind {
+  ADVANCE
+  RETURN
+}
+
+/// A top-up is asked for (REQUESTED), then paid or turned down; returns and direct advances are PAID at once
+enum ImprestEntryStatus {
+  REQUESTED
+  PAID
+  REJECTED
+}
+
+/// Site imprest (v4 item 45): a petty cash float held by one person at one project. Their cash site expenses spend it.
+model Imprest {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  holderId       String
+  holder         User         @relation("ImprestHolder", fields: [holderId], references: [id])
+  /// The float: what the cash in hand is topped back up to
+  floatAmount    Decimal      @db.Decimal(18, 2)
+  /// Cash expenses from this day on count against the float
+  openedOn       DateTime     @db.Date
+  closedOn       DateTime?    @db.Date
+  isActive       Boolean      @default(true)
+  note           String?
+  createdById    String
+  createdBy      User         @relation("ImprestOpener", fields: [createdById], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  entries ImprestEntry[]
+
+  @@unique([projectId, holderId])
+  @@index([organizationId, isActive])
+  @@index([holderId])
+}
+
+model ImprestEntry {
+  id             String             @id @default(uuid())
+  organizationId String
+  organization   Organization       @relation(fields: [organizationId], references: [id])
+  imprestId      String
+  imprest        Imprest            @relation(fields: [imprestId], references: [id], onDelete: Cascade)
+  kind           ImprestEntryKind
+  status         ImprestEntryStatus
+  amount         Decimal            @db.Decimal(18, 2)
+  /// Asked for on (a request), else paid or returned on
+  date           DateTime           @db.Date
+  reason         String?
+  paidOn         DateTime?          @db.Date
+  paymentMode    PaymentMode?
+  /// Cheque, UTR or voucher number
+  reference      String?
+  requestedById  String?
+  requestedBy    User?              @relation("ImprestRequester", fields: [requestedById], references: [id])
+  decidedById    String?
+  decidedBy      User?              @relation("ImprestDecider", fields: [decidedById], references: [id])
+  decidedAt      DateTime?
+  decisionNote   String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@index([imprestId, status])
+  @@index([organizationId, status])
 }

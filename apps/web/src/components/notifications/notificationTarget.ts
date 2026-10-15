@@ -5,6 +5,7 @@ export function notificationHref(n: NotificationDto): string {
   if (n.type === 'SAFETY') return `/safety?tab=${n.entityType === 'WORK_PERMIT' ? 'permits' : 'incidents'}${n.entityId ? `&id=${n.entityId}` : ''}`;
   if (n.type === 'MACHINERY')
     return n.entityType === 'EQUIPMENT_DOCUMENT' || n.entityType === 'DRIVER' ? '/machinery?tab=papers' : `/machinery?tab=maintenance${n.entityType === 'MAINTENANCE_JOB' && n.entityId ? `&id=${n.entityId}` : ''}`;
+  if (n.type === 'IMPREST') return `/imprest${n.entityId ? `?id=${n.entityId}` : ''}`;
   if (n.entityType && n.entityId) return `/notifications?type=${n.entityType}&id=${n.entityId}`;
   if (n.type === 'APPROVAL_DIGEST') return '/approvals';
   if (n.type === 'DPR_REMINDER' && n.projectId) return `/projects/${n.projectId}?tab=dpr`;

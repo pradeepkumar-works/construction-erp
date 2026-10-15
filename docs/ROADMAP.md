@@ -347,7 +347,10 @@ preview deployments run them against the production database before a PR is merg
     daily roll call per site (present, half day, absent, in and out, overtime, activity) on the web and the site app
     that keeps the day's head count in step; a monthly muster with wages per worker and contractor; and output per
     man-day against approved progress. No PF or ESI.
-45. **Site imprest** (S). Petty cash float, balance and top-ups.
+45. ~~**Site imprest** (S). Petty cash float, balance and top-ups.~~
+    Done: a petty cash float per site in-charge and project, the cash in hand after their cash expenses (with turned
+    down bills shown as cash to account for), top-ups asked for from the phone or the web and paid by accounts,
+    cash returned, and a cash ledger with a running balance.
 46. **Guarantees, insurance and licences register** (S) with expiry reminders.
 47. **Handover and defects** (M). Snag list, completion certificate, defect log, close-out checklist.
 48. **Small items** (S each). QA/QC acceptance on a GRN, procurement status report, unit master, financial-year

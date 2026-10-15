@@ -57,6 +57,7 @@ export const NOTIFICATION_TYPES = [
   'PORTAL',
   'SAFETY',
   'MACHINERY',
+  'IMPREST',
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
@@ -151,3 +152,11 @@ export type WorkerSkill = (typeof WORKER_SKILLS)[number];
 /** Identity document of a named worker; for Aadhaar only the last four digits are kept. */
 export const WORKER_ID_TYPES = ['AADHAAR', 'VOTER_ID', 'DRIVING_LICENCE', 'PAN', 'OTHER'] as const;
 export type WorkerIdType = (typeof WORKER_ID_TYPES)[number];
+
+/** Site imprest (v4 item 45): cash advanced to the site, or handed back. */
+export const IMPREST_ENTRY_KINDS = ['ADVANCE', 'RETURN'] as const;
+export type ImprestEntryKind = (typeof IMPREST_ENTRY_KINDS)[number];
+
+/** A top-up asked for, then paid or turned down; returns and direct advances are paid at once. */
+export const IMPREST_ENTRY_STATUSES = ['REQUESTED', 'PAID', 'REJECTED'] as const;
+export type ImprestEntryStatus = (typeof IMPREST_ENTRY_STATUSES)[number];

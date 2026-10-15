@@ -148,6 +148,7 @@ async function main() {
     await seedMaintenance(org.id);
     await seedSchedule(org.id);
     await seedWorkers(org.id);
+    await seedImprests(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
   }
@@ -317,9 +318,41 @@ async function main() {
   await seedMaintenance(org.id);
   await seedSchedule(org.id);
   await seedWorkers(org.id);
+  await seedImprests(org.id);
 
   console.log('Seed complete. Login with any of these (password: password123):');
   for (const u of USERS) console.log(`  ${u.email.padEnd(24)} ${u.role}`);
+}
+
+/**
+ * Site imprest demo (v4 item 45): the road project's site engineer holds a ₹10,000 float, paid when it was opened 20
+ * days ago. Their cash expenses since spend it (one turned down), and today they have asked for the top-up that brings
+ * it back to the float. Only when the organisation has no imprest yet.
+ */
+async function seedImprests(organizationId: string) {
+  if (await prisma.imprest.count({ where: { organizationId } })) return;
+  const project = await prisma.project.findFirst({ where: { organizationId, type: 'ROAD' }, orderBy: { code: 'asc' } });
+  const holder = await prisma.user.findFirst({ where: { organizationId, email: 'engineer@demo.com' } });
+  const accounts = await prisma.user.findFirst({ where: { organizationId, role: { key: 'ACCOUNTS_MANAGER' } } });
+  if (!project || !holder || !accounts) return;
+  const opened = day(-20);
+  const imprest = await prisma.imprest.create({
+    data: { organizationId, projectId: project.id, holderId: holder.id, floatAmount: D('10000'), openedOn: opened, createdById: accounts.id, note: 'Petty cash for the site office and small repairs', createdAt: opened },
+  });
+  await prisma.imprestEntry.create({
+    data: { organizationId, imprestId: imprest.id, kind: 'ADVANCE', status: 'PAID', amount: D('10000'), date: opened, paidOn: opened, paymentMode: 'BANK', reference: 'NEFT 0412', reason: 'Float', decidedById: accounts.id, decidedAt: opened, createdAt: opened },
+  });
+  const spent = await prisma.expense.aggregate({
+    where: { organizationId, projectId: project.id, submittedById: holder.id, paymentMode: 'CASH', status: { in: ['SUBMITTED', 'APPROVED', 'CHANGES_REQUESTED'] }, date: { gte: opened } },
+    _sum: { totalAmount: true },
+  });
+  const due = spent._sum.totalAmount ?? D(0);
+  if (due.gt(0)) {
+    await prisma.imprestEntry.create({
+      data: { organizationId, imprestId: imprest.id, kind: 'ADVANCE', status: 'REQUESTED', amount: due, date: day(0), reason: 'Bills for the grader hose and drinking water are in', requestedById: holder.id },
+    });
+  }
+  await prisma.auditLog.create({ data: { organizationId, entityType: 'IMPREST', entityId: imprest.id, action: 'OPENED', actorId: accounts.id, note: `${holder.fullName}, float ₹10,000, paid`, createdAt: opened } });
 }
 
 /**
