@@ -6,10 +6,14 @@ import { Card, Col, Progress, Row, Statistic, Table, Tag, Typography, Badge } fr
 import type { TableProps } from 'antd';
 import {
   AlertOutlined,
+  AuditOutlined,
   CheckSquareOutlined,
+  CreditCardOutlined,
   FileTextOutlined,
   FundProjectionScreenOutlined,
+  PieChartOutlined,
   ProjectOutlined,
+  ShoppingCartOutlined,
   WalletOutlined,
 } from '@ant-design/icons';
 import type { ProjectSummary } from '@erp/shared';
@@ -113,21 +117,69 @@ export default function DashboardPage() {
             <KpiTile href="/dpr">
               <Statistic title="DPRs Today" value={data.dprsToday} prefix={<FileTextOutlined />} />
             </KpiTile>
-            {data.receivables && (
-              <KpiTile href="/receivables">
-                <Statistic
-                  title="Receivables"
-                  value={formatINRCompact(data.receivables.outstanding)}
-                  prefix={<WalletOutlined />}
-                  styles={{ content: { color: toNumber(data.receivables.over90) > 0 ? '#cf1322' : undefined } }}
-                />
-                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  {data.receivables.openBills} open bill{data.receivables.openBills === 1 ? '' : 's'}
-                  {toNumber(data.receivables.over90) > 0 ? ` · ${formatINRCompact(data.receivables.over90)} over 90 days` : ''}
-                </Typography.Text>
-              </KpiTile>
-            )}
           </Row>
+
+          {(data.receivables || data.payables || data.monthCost || data.monthBilling || data.financialProgress) && (
+            <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+              {data.receivables && (
+                <KpiTile href="/receivables">
+                  <Statistic
+                    title="Receivables"
+                    value={formatINRCompact(data.receivables.outstanding)}
+                    prefix={<WalletOutlined />}
+                    styles={{ content: { color: toNumber(data.receivables.over90) > 0 ? '#cf1322' : undefined } }}
+                  />
+                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                    {data.receivables.openBills} open bill{data.receivables.openBills === 1 ? '' : 's'}
+                    {toNumber(data.receivables.over90) > 0 ? ` · ${formatINRCompact(data.receivables.over90)} over 90 days` : ''}
+                  </Typography.Text>
+                </KpiTile>
+              )}
+              {data.payables && (
+                <KpiTile href="/payables">
+                  <Statistic
+                    title="Vendor Payable"
+                    value={formatINRCompact(data.payables.outstanding)}
+                    prefix={<CreditCardOutlined />}
+                    styles={{ content: { color: toNumber(data.payables.overdue) > 0 ? '#cf1322' : undefined } }}
+                  />
+                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                    {data.payables.openBills} open bill{data.payables.openBills === 1 ? '' : 's'}
+                    {toNumber(data.payables.overdue) > 0 ? ` · ${formatINRCompact(data.payables.overdue)} overdue` : ''}
+                  </Typography.Text>
+                </KpiTile>
+              )}
+              {data.monthCost && (
+                <KpiTile href="/cost">
+                  <Statistic title={`Expense in ${monthName(data.monthCost.month)}`} value={formatINRCompact(data.monthCost.total)} prefix={<ShoppingCartOutlined />} />
+                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                    incl. {formatINRCompact(data.monthCost.expenses)} site expenses
+                  </Typography.Text>
+                </KpiTile>
+              )}
+              {data.monthBilling && (
+                <KpiTile href="/bills">
+                  <Statistic title={`Billed in ${monthName(data.monthBilling.month)}`} value={formatINRCompact(data.monthBilling.gross)} prefix={<AuditOutlined />} />
+                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                    {data.monthBilling.bills} RA bill{data.monthBilling.bills === 1 ? '' : 's'}, before GST
+                  </Typography.Text>
+                </KpiTile>
+              )}
+              {data.financialProgress && (
+                <KpiTile>
+                  <Statistic
+                    title="Financial Progress"
+                    value={data.financialProgress.pct ?? '-'}
+                    suffix={data.financialProgress.pct === null ? undefined : '%'}
+                    prefix={<PieChartOutlined />}
+                  />
+                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                    {formatINRCompact(data.financialProgress.billed)} billed of {formatINRCompact(data.financialProgress.contractValue)}
+                  </Typography.Text>
+                </KpiTile>
+              )}
+            </Row>
+          )}
 
           <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
             <Col xs={24}>
@@ -168,6 +220,12 @@ export default function DashboardPage() {
       )}
     </div>
   );
+}
+
+/** "2026-10" → "Oct 2026" */
+function monthName(month: string) {
+  const [y, m] = month.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString('en-IN', { month: 'short', year: 'numeric', timeZone: 'UTC' });
 }
 
 /** One KPI card; every card in the row stretches to the tallest so the row reads as one band. */
