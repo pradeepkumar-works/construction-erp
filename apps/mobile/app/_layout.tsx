@@ -6,6 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from '../src/auth/AuthContext';
 import { NotificationsProvider } from '../src/notifications/NotificationsContext';
 import { OfflineProvider } from '../src/offline';
+import { LanguageProvider } from '../src/i18n/LanguageContext';
 import { Loading } from '../src/components';
 import { useFonts, Archivo_700Bold, Archivo_800ExtraBold } from '@expo-google-fonts/archivo';
 import { PRODUCT_NAME } from '@erp/shared';
@@ -77,14 +78,16 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <AuthProvider>
-          <OfflineProvider>
-            <NotificationsProvider>
-              <StatusBar style="dark" />
-              <RootNavigator />
-            </NotificationsProvider>
-          </OfflineProvider>
-        </AuthProvider>
+        <LanguageProvider>
+          <AuthProvider>
+            <OfflineProvider>
+              <NotificationsProvider>
+                <StatusBar style="dark" />
+                <RootNavigator />
+              </NotificationsProvider>
+            </OfflineProvider>
+          </AuthProvider>
+        </LanguageProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
