@@ -264,10 +264,11 @@ export const useProjectDashboard = (id: string | undefined) =>
   });
 
 /** Every visible project (one large page) for dropdowns and pickers. */
-export const useProjects = () =>
+export const useProjects = (enabled = true) =>
   useQuery({
     queryKey: ['projects', 'all'],
     queryFn: async () => (await api.get<Paginated<ProjectSummary>>('/projects', { params: { pageSize: MAX_PAGE_SIZE, sortBy: 'code' } })).data.items,
+    enabled,
   });
 
 /** One server-side page of the projects list (search, filters, sort). */
