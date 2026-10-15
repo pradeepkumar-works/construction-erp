@@ -137,6 +137,13 @@ export const COMPLIANCE_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'ACCOUNTS_MAN
 export const canManageCompliance = (role: RoleKey) => COMPLIANCE_ROLES.includes(role);
 /** See the register: its keepers, and project managers for the entries of their projects. */
 export const canViewCompliance = (role: RoleKey) => canManageCompliance(role) || role === 'PROJECT_MANAGER';
+/** Report snags and defects and mark them fixed: the project's site and office staff. */
+export const DEFECT_REPORTER_ROLES: RoleKey[] = ['TEAM_LEADER', 'SITE_ENGINEER', 'QA_QC_ENGINEER', 'QUANTITY_SURVEYOR', 'SAFETY_OFFICER', 'STORE_MANAGER', 'ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER'];
+export const canReportDefect = (role: RoleKey) => DEFECT_REPORTER_ROLES.includes(role);
+/** Close (accept) or reopen a fixed snag or defect: QA/QC and the approvers. */
+export const canCloseDefect = (role: RoleKey) => role === 'QA_QC_ENGINEER' || APPROVER_ROLES.includes(role);
+/** Record the completion certificate and keep the close-out checklist: project managers and the company's admins. */
+export const canManageHandover = (role: RoleKey) => APPROVER_ROLES.includes(role);
 /** Record goods received and material issued. */
 export const canKeepStock = (role: RoleKey) => STOCK_KEEPER_ROLES.includes(role);
 /** Store master data (item master, minimum stock levels): the store manager and approvers. */

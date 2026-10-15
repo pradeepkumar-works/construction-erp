@@ -5,7 +5,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Button, Card, Progress, Space, Tabs, Typography } from 'antd';
 import { EditOutlined, FilePdfOutlined } from '@ant-design/icons';
 import Link from 'next/link';
-import { canEditProjects, canViewContract, canViewVariations, canViewCost, canViewPurchaseOrders, canViewWorkOrders } from '@erp/shared';
+import { canEditProjects, isGuest, canViewContract, canViewVariations, canViewCost, canViewPurchaseOrders, canViewWorkOrders } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useProject } from '@/lib/queries';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -36,6 +36,7 @@ import { AttendancePanel } from '@/components/workers/AttendancePanel';
 import { MrList } from '@/components/material/MrList';
 import { PurchaseOrderList } from '@/components/purchasing/PurchaseOrderList';
 import { SubcontractsPanel } from '@/components/subcontracts/SubcontractsPanel';
+import { HandoverPanel } from '@/components/handover/HandoverPanel';
 
 export default function ProjectDetailPage() {
   const params = useParams<{ id: string }>();
@@ -122,6 +123,7 @@ export default function ProjectDetailPage() {
             { key: 'expenses', label: 'Expenses', children: <ExpenseList projectId={project.id} /> },
             { key: 'risks', label: 'Delays & Risks', children: <RiskList projectId={project.id} /> },
             { key: 'safety', label: 'Safety', children: <SafetyPanel projectId={project.id} /> },
+            ...(user && !isGuest(user.roleKey) ? [{ key: 'handover', label: 'Handover', children: <HandoverPanel projectId={project.id} members={project.members} initialDefectId={search.get('defect') ?? undefined} /> }] : []),
             ...(user && canViewCost(user.roleKey) ? [{ key: 'cost', label: 'Cost', children: <ProjectCostPanel projectId={project.id} /> }] : []),
             ...(user && canViewCost(user.roleKey) ? [{ key: 'budget', label: 'Budget & Cash Flow', children: <ProjectBudgetPanel projectId={project.id} /> }] : []),
           ]}

@@ -45,6 +45,7 @@ import { AttendanceModule } from './attendance/attendance.module';
 import { WorkersModule } from './workers/workers.module';
 import { ImprestModule } from './imprest/imprest.module';
 import { ComplianceModule } from './compliance/compliance.module';
+import { HandoverModule } from './handover/handover.module';
 import { MaterialRequestsModule } from './material-requests/material-requests.module';
 import { ApprovalsModule } from './approvals/approvals.module';
 import { DashboardModule } from './dashboard/dashboard.module';
@@ -67,6 +68,7 @@ import { HealthController } from './health.controller';
     WorkersModule,
     ImprestModule,
     ComplianceModule,
+    HandoverModule,
     MaterialRequestsModule,
     StockModule,
     MachineryModule,

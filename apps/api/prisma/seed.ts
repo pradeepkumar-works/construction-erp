@@ -4,7 +4,7 @@ import { PrismaClient, Prisma } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { deflateSync } from 'zlib';
 import { dprTitle, progressTitle, titleDate } from '../src/common/submission-titles';
-import { PERMIT_PRECAUTIONS, STANDARD_CHECKLISTS, isWeeklyOff, leaveDays } from '@erp/shared';
+import { DEFAULT_CLOSEOUT_ITEMS, PERMIT_PRECAUTIONS, STANDARD_CHECKLISTS, isWeeklyOff, leaveDays } from '@erp/shared';
 
 const prisma = new PrismaClient();
 const D = (v: string | number) => new Prisma.Decimal(v);
@@ -150,6 +150,7 @@ async function main() {
     await seedWorkers(org.id);
     await seedImprests(org.id);
     await seedCompliance(org.id);
+    await seedHandover(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
   }
@@ -321,6 +322,7 @@ async function main() {
   await seedWorkers(org.id);
   await seedImprests(org.id);
   await seedCompliance(org.id);
+  await seedHandover(org.id);
 
   console.log('Seed complete. Login with any of these (password: password123):');
   for (const u of USERS) console.log(`  ${u.email.padEnd(24)} ${u.role}`);
@@ -366,6 +368,65 @@ async function seedCompliance(organizationId: string) {
       },
     });
     await prisma.auditLog.create({ data: { organizationId, entityType: 'COMPLIANCE_DOC', entityId: doc.id, action: 'CREATED', actorId: accounts.id, note: `${r.category} ${r.reference}` } });
+  }
+}
+
+/** Snags on the hospital block before handover, and its close-out checklist started (v4 item 47). */
+async function seedHandover(organizationId: string) {
+  if (await prisma.defect.count({ where: { organizationId } })) return;
+  const building = await prisma.project.findFirst({ where: { organizationId, type: 'BUILDING' }, orderBy: { code: 'asc' } });
+  if (!building) return;
+  const engineer = await prisma.user.findFirst({ where: { organizationId, role: { key: 'SITE_ENGINEER' }, memberships: { some: { projectId: building.id } } } });
+  const qa = await prisma.user.findFirst({ where: { organizationId, role: { key: 'QA_QC_ENGINEER' } } });
+  if (!engineer) return;
+  const year = new Date().getUTCFullYear();
+  const rows = [
+    { title: 'Parapet plaster cracked', location: 'Terrace, east parapet', trade: 'Plaster', priority: 'MEDIUM', reportedOn: -9, dueDate: -2, contractor: 'Maa Tarini Plastering Works' },
+    { title: 'Toilet floor slopes away from the drain', location: '2nd floor, ward toilet T4', trade: 'Tiling', priority: 'HIGH', reportedOn: -6, dueDate: 4, assigned: true },
+    { title: 'Door closer missing on OT corridor door', location: '1st floor, OT corridor', trade: 'Joinery', priority: 'LOW', reportedOn: -12, dueDate: 3, fixed: -1 },
+    { title: 'Paint touch-up after electrical chasing', location: 'Ground floor, OPD waiting hall', trade: 'Painting', priority: 'LOW', reportedOn: -20, dueDate: -10, fixed: -12, closed: true },
+  ] as const;
+  for (const [i, r] of rows.entries()) {
+    const fixed = 'fixed' in r;
+    const closed = 'closed' in r;
+    const d = await prisma.defect.create({
+      data: {
+        organizationId,
+        projectId: building.id,
+        defectNo: `SNG-${year}-${String(i + 1).padStart(4, '0')}`,
+        phase: 'SNAG',
+        title: r.title,
+        location: r.location,
+        trade: r.trade,
+        priority: r.priority,
+        status: closed ? 'CLOSED' : fixed ? 'FIXED' : 'OPEN',
+        reportedOn: day(r.reportedOn),
+        reportedByName: i === 0 ? "Er. S. Das (client's AE), joint inspection" : null,
+        reportedById: engineer.id,
+        assignedToId: 'assigned' in r ? engineer.id : null,
+        contractor: 'contractor' in r ? r.contractor : null,
+        dueDate: day(r.dueDate),
+        fixedOn: fixed ? day(r.fixed) : null,
+        fixNote: fixed ? 'Put right and checked on site' : null,
+        fixedById: fixed ? engineer.id : null,
+        closedAt: closed ? new Date() : null,
+        closedById: closed ? (qa?.id ?? engineer.id) : null,
+      },
+    });
+    await prisma.auditLog.create({ data: { organizationId, entityType: 'DEFECT', entityId: d.id, action: 'CREATED', actorId: engineer.id } });
+  }
+  if (!(await prisma.closeoutItem.count({ where: { projectId: building.id } }))) {
+    await prisma.closeoutItem.createMany({
+      data: DEFAULT_CLOSEOUT_ITEMS.map((c, n) => ({
+        organizationId,
+        projectId: building.id,
+        category: c.category,
+        title: c.title,
+        sortOrder: (n + 1) * 10,
+        doneOn: n === 2 ? day(-5) : null,
+        doneById: n === 2 ? engineer.id : null,
+      })),
+    });
   }
 }
 

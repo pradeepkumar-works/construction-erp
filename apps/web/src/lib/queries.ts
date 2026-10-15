@@ -2,6 +2,9 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
+  DefectDto,
+  DefectPhase,
+  HandoverSummaryDto,
   DriverDto,
   GanttDto,
   EquipmentDocType,
@@ -1651,5 +1654,26 @@ export const useComplianceDoc = (id: string | null | undefined) =>
   useQuery({
     queryKey: ['compliance', 'one', id],
     queryFn: async () => (await api.get<ComplianceDocDetailDto>(`/compliance-docs/${id}`)).data,
+    enabled: !!id,
+  });
+
+export const useHandover = (projectId: string | undefined) =>
+  useQuery({
+    queryKey: ['handover', projectId],
+    queryFn: async () => (await api.get<HandoverSummaryDto>(`/projects/${projectId}/handover`)).data,
+    enabled: !!projectId,
+  });
+
+export const useDefects = (filters: { projectId?: string; phase?: DefectPhase; status?: 'OPEN' | 'FIXED' | 'CLOSED' | 'PENDING'; overdue?: boolean; q?: string; page?: number; pageSize?: number }) =>
+  useQuery({
+    queryKey: ['defects', 'list', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<DefectDto>>('/defects', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+  });
+
+export const useDefect = (id: string | null | undefined) =>
+  useQuery({
+    queryKey: ['defects', 'one', id],
+    queryFn: async () => (await api.get<DefectDto>(`/defects/${id}`)).data,
     enabled: !!id,
   });

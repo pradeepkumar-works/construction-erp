@@ -134,6 +134,7 @@ enum NotificationType {
   MACHINERY
   IMPREST
   COMPLIANCE
+  DEFECT
 }
 
 /// What a quality test is of. CONCRETE_CUBE gets 7 and 28-day readings; the others one result.
@@ -358,6 +359,9 @@ model Organization {
   imprests          Imprest[]
   imprestEntries    ImprestEntry[]
   complianceDocs    ComplianceDoc[]
+  handovers         ProjectHandover[]
+  defects           Defect[]
+  closeoutItems     CloseoutItem[]
   progressEntries   ProgressEntry[]
   dailyReports      DailyReport[]
   materialRequests  MaterialRequest[]
@@ -535,6 +539,12 @@ model User {
   imprestRequests      ImprestEntry[]     @relation("ImprestRequester")
   imprestDecisions     ImprestEntry[]     @relation("ImprestDecider")
   complianceDocs       ComplianceDoc[]
+  handoversRecorded    ProjectHandover[]
+  defectsReported      Defect[]           @relation("DefectReporter")
+  defectsAssigned      Defect[]           @relation("DefectAssignee")
+  defectsFixed         Defect[]           @relation("DefectFixer")
+  defectsClosed        Defect[]           @relation("DefectCloser")
+  closeoutItemsDone    CloseoutItem[]
   leaveDecided         LeaveRequest[]     @relation("LeaveDecider")
   leaveApplied         LeaveRequest[]     @relation("LeaveApplicant")
   raisedRisks          Risk[]             @relation("RiskRaiser")
@@ -614,6 +624,9 @@ model Project {
   workerAttendance WorkerAttendance[]
   imprests         Imprest[]
   complianceDocs   ComplianceDoc[]
+  handover         ProjectHandover?
+  defects          Defect[]
+  closeoutItems    CloseoutItem[]
   progressEntries  ProgressEntry[]
   dailyReports     DailyReport[]
   materialRequests MaterialRequest[]
@@ -2019,6 +2032,10 @@ model Attachment {
   equipmentDoc      EquipmentDocument? @relation(fields: [equipmentDocId], references: [id], onDelete: Cascade)
   complianceDocId   String?
   complianceDoc     ComplianceDoc?     @relation(fields: [complianceDocId], references: [id], onDelete: Cascade)
+  defectId          String?
+  defect            Defect?            @relation(fields: [defectId], references: [id], onDelete: Cascade)
+  handoverId        String?
+  handover          ProjectHandover?   @relation(fields: [handoverId], references: [id], onDelete: Cascade)
   createdAt         DateTime           @default(now())
 
   @@index([organizationId])
@@ -3181,4 +3198,118 @@ model ComplianceDoc {
 
   @@index([organizationId, status, expiresOn])
   @@index([projectId])
+}
+
+/// Handover and defects (v4 item 47). SNAG = found before handover (punch list); DEFECT = reported in the defect
+/// liability period.
+enum DefectPhase {
+  SNAG
+  DEFECT
+}
+
+enum DefectPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+/// OPEN = to be put right, FIXED = the site says it is done, CLOSED = checked and accepted (a reopen sends it back
+/// to OPEN).
+enum DefectStatus {
+  OPEN
+  FIXED
+  CLOSED
+}
+
+/// The project's completion: the completion (taking-over) certificate and the defect liability period it starts.
+model ProjectHandover {
+  id              String       @id @default(uuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  projectId       String       @unique
+  project         Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  /// Date of completion the certificate states; the defect liability period runs from it
+  completedOn     DateTime     @db.Date
+  certificateNo   String?
+  certificateDate DateTime?    @db.Date
+  /// Who certified it, e.g. the client's Executive Engineer
+  certifiedBy     String?
+  dlpMonths       Int
+  dlpEndsOn       DateTime     @db.Date
+  note            String?
+  recordedById    String
+  recordedBy      User         @relation(fields: [recordedById], references: [id])
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  attachments Attachment[]
+
+  @@index([organizationId, dlpEndsOn])
+}
+
+/// A snag before handover or a defect in the defect liability period, put right by the site and closed once checked.
+model Defect {
+  id             String         @id @default(uuid())
+  organizationId String
+  organization   Organization   @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  /// SNG-2026-0001 or DEF-2026-0001
+  defectNo       String
+  phase          DefectPhase
+  title          String
+  description    String?
+  location       String?
+  /// Trade or kind of work, e.g. Plaster, Plumbing, Road marking
+  trade          String?
+  priority       DefectPriority @default(MEDIUM)
+  status         DefectStatus   @default(OPEN)
+  reportedOn     DateTime       @db.Date
+  /// Who found it when not one of us, e.g. the client's engineer on a joint walk-through
+  reportedByName String?
+  reportedById   String
+  reportedBy     User           @relation("DefectReporter", fields: [reportedById], references: [id])
+  assignedToId   String?
+  assignedTo     User?          @relation("DefectAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  /// Subcontractor who is to put it right, when not our own team
+  contractor     String?
+  dueDate        DateTime?      @db.Date
+  fixedOn        DateTime?      @db.Date
+  fixNote        String?
+  /// What putting it right cost (defects in the liability period are at the contractor's cost)
+  cost           Decimal?       @db.Decimal(18, 2)
+  fixedById      String?
+  fixedBy        User?          @relation("DefectFixer", fields: [fixedById], references: [id], onDelete: SetNull)
+  closedAt       DateTime?
+  closedById     String?
+  closedBy       User?          @relation("DefectCloser", fields: [closedById], references: [id], onDelete: SetNull)
+  closeNote      String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  attachments Attachment[]
+
+  @@unique([organizationId, defectNo])
+  @@index([projectId, status])
+}
+
+/// One line of a project's close-out checklist (as-built drawings, final bill, retention release, ...).
+model CloseoutItem {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  /// DOCUMENTS, COMMERCIAL, SITE or STATUTORY
+  category       String
+  title          String
+  sortOrder      Int          @default(0)
+  doneOn         DateTime?    @db.Date
+  doneById       String?
+  doneBy         User?        @relation(fields: [doneById], references: [id], onDelete: SetNull)
+  note           String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([projectId, sortOrder])
 }

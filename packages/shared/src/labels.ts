@@ -1,4 +1,4 @@
-import type { ComplianceDocKind, ComplianceDocStatus, ImprestEntryKind, ImprestEntryStatus, WorkerIdType, WorkerSkill, EquipmentDocType, MaintenanceKind, MaintenanceStatus, BillStage, ReceiptKind, VendorKind, MsmeCategory, EquipmentOwnership, ExpenseCategory, PaymentMode, EquipmentRateUnit, MaterialPriority, NotificationType, ProjectStatus, ProjectType, DelayParty, PasswordTokenPurpose, RiskCategory, RiskKind, RiskStatus, RoleKey, SafetyIncidentStatus, SafetyIncidentType, StockEntryType, SubmissionStatus, SubmissionType, Weather, WorkPermitStatus, WorkPermitType } from './enums';
+import type { ComplianceDocKind, ComplianceDocStatus, DefectPhase, DefectPriority, DefectStatus, ImprestEntryKind, ImprestEntryStatus, WorkerIdType, WorkerSkill, EquipmentDocType, MaintenanceKind, MaintenanceStatus, BillStage, ReceiptKind, VendorKind, MsmeCategory, EquipmentOwnership, ExpenseCategory, PaymentMode, EquipmentRateUnit, MaterialPriority, NotificationType, ProjectStatus, ProjectType, DelayParty, PasswordTokenPurpose, RiskCategory, RiskKind, RiskStatus, RoleKey, SafetyIncidentStatus, SafetyIncidentType, StockEntryType, SubmissionStatus, SubmissionType, Weather, WorkPermitStatus, WorkPermitType } from './enums';
 
 export const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {
   ROAD: 'Road / Infrastructure',
@@ -89,6 +89,7 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   MACHINERY: 'Machinery',
   IMPREST: 'Site imprest',
   COMPLIANCE: 'Guarantees & licences',
+  DEFECT: 'Snags & defects',
 };
 
 export const STOCK_ENTRY_TYPE_LABELS: Record<StockEntryType, string> = {
@@ -282,3 +283,6 @@ export const IMPREST_ENTRY_STATUS_LABELS: Record<ImprestEntryStatus, string> = {
 
 export const COMPLIANCE_DOC_KIND_LABELS: Record<ComplianceDocKind, string> = { BANK_GUARANTEE: 'Bank guarantee', EMD: 'EMD', INSURANCE: 'Insurance', LICENCE: 'Licence' };
 export const COMPLIANCE_DOC_STATUS_LABELS: Record<ComplianceDocStatus, string> = { ACTIVE: 'Active', RENEWED: 'Renewed', RELEASED: 'Released', INVOKED: 'Invoked' };
+export const DEFECT_PHASE_LABELS: Record<DefectPhase, string> = { SNAG: 'Snag', DEFECT: 'Defect (DLP)' };
+export const DEFECT_PRIORITY_LABELS: Record<DefectPriority, string> = { LOW: 'Low', MEDIUM: 'Medium', HIGH: 'High' };
+export const DEFECT_STATUS_LABELS: Record<DefectStatus, string> = { OPEN: 'Open', FIXED: 'Fixed', CLOSED: 'Closed' };
