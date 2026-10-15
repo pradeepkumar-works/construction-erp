@@ -351,7 +351,10 @@ preview deployments run them against the production database before a PR is merg
     Done: a petty cash float per site in-charge and project, the cash in hand after their cash expenses (with turned
     down bills shown as cash to account for), top-ups asked for from the phone or the web and paid by accounts,
     cash returned, and a cash ledger with a running balance.
-46. **Guarantees, insurance and licences register** (S) with expiry reminders.
+46. ~~**Guarantees, insurance and licences register** (S) with expiry reminders.~~
+    Done: bank guarantees (with margin money and claim period), EMDs, insurance policies and licences, company-wide
+    or per project, with scans; renewals that keep the earlier periods; release and invocation; totals of money tied
+    up; and reminders 30 days before expiry and on expiry.
 47. **Handover and defects** (M). Snag list, completion certificate, defect log, close-out checklist.
 48. **Small items** (S each). QA/QC acceptance on a GRN, procurement status report, unit master, financial-year
     filters.

@@ -84,7 +84,7 @@ export const permitExpired = (p: { status: WorkPermitStatus; validTo: string }, 
  * Notification types older phone builds know. `GET /notifications` lists only these unless the client asks for
  * `allTypes`, because those builds crash on a type they have no icon for.
  */
-export const LEGACY_NOTIFICATION_TYPES: NotificationType[] = NOTIFICATION_TYPES.filter((t) => t !== 'SAFETY' && t !== 'MACHINERY' && t !== 'IMPREST');
+export const LEGACY_NOTIFICATION_TYPES: NotificationType[] = NOTIFICATION_TYPES.filter((t) => t !== 'SAFETY' && t !== 'MACHINERY' && t !== 'IMPREST' && t !== 'COMPLIANCE');
 
 export interface SafetyIncidentDto {
   id: string;

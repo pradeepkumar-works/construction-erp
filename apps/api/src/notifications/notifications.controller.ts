@@ -70,7 +70,7 @@ export class NotificationsController {
   @Public()
   @UseGuards(CronGuard)
   @ApiSecurity('cron')
-  @ApiOperation({ summary: 'Daily digest of pending approvals (in-app, push, email and WhatsApp); also sends the test-due, payments-due and machinery-due reminders. Auth: Authorization: Bearer <CRON_SECRET>.' })
+  @ApiOperation({ summary: 'Daily digest of pending approvals (in-app, push, email and WhatsApp); also sends the test-due, payments-due, machinery-due and guarantee and licence expiry reminders. Auth: Authorization: Bearer <CRON_SECRET>.' })
   @Get('jobs/approval-digest')
   async approvalDigest(@Query() q: JobQuery) {
     const digest = await this.jobs.approvalDigest(q.date);
@@ -78,6 +78,7 @@ export class NotificationsController {
     await this.jobs.testsDue(q.date).catch(() => undefined);
     await this.jobs.billsDue(q.date).catch(() => undefined);
     await this.jobs.machineryDue(q.date).catch(() => undefined);
+    await this.jobs.complianceDue(q.date).catch(() => undefined);
     // ...and so does erasing companies whose deletion date has come.
     await this.companyData.purgeDue(q.date).catch(() => undefined);
     // ...and starting trials and billing reminders.
@@ -110,5 +111,14 @@ export class NotificationsController {
   @Get('jobs/machinery-due')
   machineryDue(@Query() q: JobQuery) {
     return this.jobs.machineryDue(q.date);
+  }
+
+  @Public()
+  @UseGuards(CronGuard)
+  @ApiSecurity('cron')
+  @ApiOperation({ summary: 'Guarantees, EMDs, insurance policies and licences expiring within 30 days or expired, each alerted once per stage. Auth: Authorization: Bearer <CRON_SECRET>.' })
+  @Get('jobs/compliance-due')
+  complianceDue(@Query() q: JobQuery) {
+    return this.jobs.complianceDue(q.date);
   }
 }

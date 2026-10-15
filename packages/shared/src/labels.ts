@@ -1,4 +1,4 @@
-import type { ImprestEntryKind, ImprestEntryStatus, WorkerIdType, WorkerSkill, EquipmentDocType, MaintenanceKind, MaintenanceStatus, BillStage, ReceiptKind, VendorKind, MsmeCategory, EquipmentOwnership, ExpenseCategory, PaymentMode, EquipmentRateUnit, MaterialPriority, NotificationType, ProjectStatus, ProjectType, DelayParty, PasswordTokenPurpose, RiskCategory, RiskKind, RiskStatus, RoleKey, SafetyIncidentStatus, SafetyIncidentType, StockEntryType, SubmissionStatus, SubmissionType, Weather, WorkPermitStatus, WorkPermitType } from './enums';
+import type { ComplianceDocKind, ComplianceDocStatus, ImprestEntryKind, ImprestEntryStatus, WorkerIdType, WorkerSkill, EquipmentDocType, MaintenanceKind, MaintenanceStatus, BillStage, ReceiptKind, VendorKind, MsmeCategory, EquipmentOwnership, ExpenseCategory, PaymentMode, EquipmentRateUnit, MaterialPriority, NotificationType, ProjectStatus, ProjectType, DelayParty, PasswordTokenPurpose, RiskCategory, RiskKind, RiskStatus, RoleKey, SafetyIncidentStatus, SafetyIncidentType, StockEntryType, SubmissionStatus, SubmissionType, Weather, WorkPermitStatus, WorkPermitType } from './enums';
 
 export const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {
   ROAD: 'Road / Infrastructure',
@@ -88,6 +88,7 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   SAFETY: 'Safety',
   MACHINERY: 'Machinery',
   IMPREST: 'Site imprest',
+  COMPLIANCE: 'Guarantees & licences',
 };
 
 export const STOCK_ENTRY_TYPE_LABELS: Record<StockEntryType, string> = {
@@ -278,3 +279,6 @@ export const WORKER_ID_TYPE_LABELS: Record<WorkerIdType, string> = {
 
 export const IMPREST_ENTRY_KIND_LABELS: Record<ImprestEntryKind, string> = { ADVANCE: 'Cash advanced', RETURN: 'Cash returned' };
 export const IMPREST_ENTRY_STATUS_LABELS: Record<ImprestEntryStatus, string> = { REQUESTED: 'Top-up asked for', PAID: 'Paid', REJECTED: 'Turned down' };
+
+export const COMPLIANCE_DOC_KIND_LABELS: Record<ComplianceDocKind, string> = { BANK_GUARANTEE: 'Bank guarantee', EMD: 'EMD', INSURANCE: 'Insurance', LICENCE: 'Licence' };
+export const COMPLIANCE_DOC_STATUS_LABELS: Record<ComplianceDocStatus, string> = { ACTIVE: 'Active', RENEWED: 'Renewed', RELEASED: 'Released', INVOKED: 'Invoked' };

@@ -166,6 +166,24 @@ A site labour register, not HR: no PF, ESI or payslips (those stay with Payroll 
 - **Web and mobile.** A Site Imprest page with each float's cash in hand and the top-ups waiting; the site app's My
   imprest screen shows the holder's balance and asks for a top-up.
 
+### Guarantees, insurance and licences
+
+- **Table.** `ComplianceDoc`: kind (`BANK_GUARANTEE`, `EMD`, `INSURANCE`, `LICENCE`), a free-text type
+  (suggestions in `COMPLIANCE_CATEGORIES`), number, issuer, an optional project (none = company-wide), beneficiary,
+  amount (sum insured for a policy), margin money for a guarantee, issue and expiry dates, a guarantee's claim
+  period, and status `ACTIVE` / `RENEWED` / `RELEASED` / `INVOKED`. Scans are attachments (`complianceDocId`).
+  `tenant_isolation` policy as usual.
+- **Renewal** creates a new entry pointing back at the old one (`renewedFromId`), which becomes `RENEWED`; the
+  detail lists the earlier periods. Deleting a renewal makes the entry it replaced active again. Release (returned,
+  refunded, cancelled, surrendered) and invoke (encashed, forfeited; guarantees and EMDs only) close an entry.
+- **API.** `/compliance-docs` with totals (guarantees out, margin blocked, EMD out, expiring, expired). Accounts,
+  admins and management keep it (`canManageCompliance`); project managers read their projects' entries.
+- **Reminders.** `NotificationJobsService.complianceDue` (with the daily digest, or `GET
+  /notifications/jobs/compliance-due`) alerts active entries once when they come within 30 days of expiry and
+  once when expired, to the keepers and the project's manager (`COMPLIANCE` notification, hidden from older phone
+  builds).
+- **Web.** A Guarantees & Licences page under Billing; no phone screen (an office register).
+
 ## Lists: paging, search, sort and export
 
 `GET /progress`, `/dpr`, `/material-requests`, `/attendance`, `/stock/entries`, `/stock/balances`, `/stock/items`,

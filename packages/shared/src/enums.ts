@@ -58,6 +58,7 @@ export const NOTIFICATION_TYPES = [
   'SAFETY',
   'MACHINERY',
   'IMPREST',
+  'COMPLIANCE',
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
@@ -160,3 +161,11 @@ export type ImprestEntryKind = (typeof IMPREST_ENTRY_KINDS)[number];
 /** A top-up asked for, then paid or turned down; returns and direct advances are paid at once. */
 export const IMPREST_ENTRY_STATUSES = ['REQUESTED', 'PAID', 'REJECTED'] as const;
 export type ImprestEntryStatus = (typeof IMPREST_ENTRY_STATUSES)[number];
+
+/** Guarantees, insurance and licences register (v4 item 46). */
+export const COMPLIANCE_DOC_KINDS = ['BANK_GUARANTEE', 'EMD', 'INSURANCE', 'LICENCE'] as const;
+export type ComplianceDocKind = (typeof COMPLIANCE_DOC_KINDS)[number];
+
+/** Active until renewed, released (returned, refunded, cancelled, surrendered) or invoked (encashed, forfeited). */
+export const COMPLIANCE_DOC_STATUSES = ['ACTIVE', 'RENEWED', 'RELEASED', 'INVOKED'] as const;
+export type ComplianceDocStatus = (typeof COMPLIANCE_DOC_STATUSES)[number];

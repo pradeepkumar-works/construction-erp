@@ -231,5 +231,8 @@ DROP POLICY IF EXISTS tenant_isolation ON "Imprest";
 ALTER TABLE "ImprestEntry" NO FORCE ROW LEVEL SECURITY;
 ALTER TABLE "ImprestEntry" DISABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS tenant_isolation ON "ImprestEntry";
+ALTER TABLE "ComplianceDoc" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "ComplianceDoc" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "ComplianceDoc";
 
 DROP FUNCTION IF EXISTS app_current_org();

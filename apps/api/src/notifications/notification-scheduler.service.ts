@@ -36,6 +36,7 @@ export class NotificationSchedulerService implements OnModuleInit, OnModuleDestr
     await this.runIfDue('TESTS_DUE', digestAt, now, today, () => this.jobs.testsDue(today));
     await this.runIfDue('BILLS_DUE', digestAt, now, today, () => this.jobs.billsDue(today));
     await this.runIfDue('MACHINERY_DUE', digestAt, now, today, () => this.jobs.machineryDue(today));
+    await this.runIfDue('COMPLIANCE_DUE', digestAt, now, today, () => this.jobs.complianceDue(today));
   }
 
   private async runIfDue(key: string, at: string, now: string, today: string, run: () => Promise<unknown>) {

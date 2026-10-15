@@ -89,6 +89,8 @@ demo seed at 1280 × 800, scale 1.25, saved as WebP).
   keeps the head count in step, a monthly muster with wages, and output per man-day.
 - Site imprest: petty cash floats for site in-charges, spent by their cash expenses, with top-ups asked for from
   the phone and paid by accounts.
+- Guarantees and licences: bank guarantees, EMDs, insurance policies and licences with renewals and reminders
+  before they expire.
 - Sector progress: progress and measurements tagged with chainage (road), floor (building) or village (water
   supply); a road strip chart per layer, a floor by activity matrix, and pipe ordered, supplied, laid and tested
   village by village.
