@@ -19,6 +19,7 @@ import { useAuth } from '@/lib/auth';
 import { formatDate, formatINR, progressStatus } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { QueryError } from '@/components/common/QueryState';
+import { EmptyArt } from '@/components/common/EmptyArt';
 import { ProjectStatusTag, ProjectTypeTag } from '@/components/common/StatusTag';
 import { ProjectFormModal } from '@/components/projects/ProjectFormModal';
 import { BRAND } from '@/lib/brand';
@@ -97,6 +98,7 @@ export default function ProjectsPage() {
           size="middle"
           {...list.tableProps<ProjectSummary>(data?.total)}
           scroll={{ x: 1150 }}
+          locale={{ emptyText: <EmptyArt art="projects" title={list.search || type || status ? 'No project matches these filters' : 'No projects yet'} /> }}
           onRow={(p) => ({ onClick: (e) => { if ((e.target as HTMLElement).closest('a')) return; router.push(`/projects/${p.id}`); }, style: { cursor: 'pointer' } })}
         />
       </Card>

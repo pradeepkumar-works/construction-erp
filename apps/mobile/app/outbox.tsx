@@ -37,7 +37,7 @@ export default function OutboxScreen() {
             {items.length ? <Button title="Send now" icon="cloud-upload-outline" variant="secondary" onPress={() => void sync()} disabled={!online || syncing} /> : null}
           </Card>
         }
-        ListEmptyComponent={<EmptyState title="Outbox is empty" subtitle="Entries you save without a connection wait here until they are sent." icon="cloud-done-outline" />}
+        ListEmptyComponent={<EmptyState title="Outbox is empty" subtitle="Entries you save without a connection wait here until they are sent." icon="cloud-done-outline" art="approved" />}
         renderItem={({ item }) => (
           <View>
             <SubmissionRow type={item.type} title={item.title} subtitle={item.subtitle} meta={`${STATUS_TEXT[item.status]} · saved ${timeAgo(item.createdAt)}`} onPress={() => (item.status === 'FAILED' ? confirmDiscard(item) : undefined)} />

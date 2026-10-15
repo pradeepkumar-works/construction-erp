@@ -1,7 +1,8 @@
 import React from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '../theme';
+import { ILLUSTRATIONS, type EmptyArt } from '../illustrations';
 import { Button } from './Button';
 
 export function Loading({ text = 'Loading…' }: { text?: string }) {
@@ -13,10 +14,27 @@ export function Loading({ text = 'Loading…' }: { text?: string }) {
   );
 }
 
-export function EmptyState({ title, subtitle, icon = 'file-tray-outline', action }: { title: string; subtitle?: string; icon?: keyof typeof Ionicons.glyphMap; action?: React.ReactNode }) {
+/** `art` shows an illustration in place of the icon, for the screens people land on most. */
+export function EmptyState({
+  title,
+  subtitle,
+  icon = 'file-tray-outline',
+  art,
+  action,
+}: {
+  title: string;
+  subtitle?: string;
+  icon?: keyof typeof Ionicons.glyphMap;
+  art?: EmptyArt;
+  action?: React.ReactNode;
+}) {
   return (
     <View style={styles.center}>
-      <Ionicons name={icon} size={44} color={colors.textMuted} />
+      {art ? (
+        <Image source={ILLUSTRATIONS[art]} style={styles.art} accessibilityIgnoresInvertColors />
+      ) : (
+        <Ionicons name={icon} size={44} color={colors.textMuted} />
+      )}
       <Text style={styles.title}>{title}</Text>
       {subtitle ? <Text style={styles.text}>{subtitle}</Text> : null}
       {action ? <View style={styles.action}>{action}</View> : null}
@@ -52,6 +70,7 @@ export function ErrorBanner({ message }: { message: string | null }) {
 
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl, minHeight: 220 },
+  art: { width: 240, height: 180 },
   title: { ...typography.h3, marginTop: spacing.md, textAlign: 'center' },
   text: { ...typography.caption, marginTop: spacing.sm, textAlign: 'center' },
   action: { marginTop: spacing.lg, alignSelf: 'stretch' },

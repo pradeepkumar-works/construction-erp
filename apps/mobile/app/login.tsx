@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../src/auth/AuthContext';
-import { Button, ErrorBanner, Input, Screen } from '../src/components';
+import { Button, ErrorBanner, Input, Intro, Screen, useIntroSeen } from '../src/components';
 import { errorMessage, request } from '../src/api/client';
 import type { AuthOptionsDto } from '@erp/shared';
 import { PRODUCT_NAME } from '@erp/shared';
@@ -25,6 +25,7 @@ export default function LoginScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [introSeen, markIntroSeen] = useIntroSeen();
 
   /** Ask for a reset email; the link opens the web app, where the new password is chosen. */
   const forgot = async () => {
@@ -63,6 +64,10 @@ export default function LoginScreen() {
       setBusy(false);
     }
   };
+
+  // First launch on this phone: three slides on what the app does, then the sign-in form.
+  if (introSeen === null) return <View style={styles.blank} />;
+  if (!introSeen) return <Intro onDone={markIntroSeen} />;
 
   return (
     <Screen keyboard edges={['top', 'left', 'right', 'bottom']} style={styles.content}>
@@ -131,6 +136,7 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   content: { justifyContent: 'center', flexGrow: 1 },
+  blank: { flex: 1, backgroundColor: colors.bg },
   brand: { alignItems: 'center', marginBottom: spacing.xl, gap: spacing.xs },
   logo: { width: 72, height: 72, marginBottom: spacing.sm },
   demo: { marginTop: spacing.xl, backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border },

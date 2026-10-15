@@ -123,7 +123,7 @@ export default function SubmissionsScreen() {
           keyExtractor={(r) => r.id}
           contentContainerStyle={styles.list}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.primary} />}
-          ListEmptyComponent={q ? <EmptyState title="No matches" subtitle={`Nothing matches "${q}".`} icon="search-outline" /> : <EmptyState title="Nothing here yet" subtitle="Your submissions of this type will appear here." icon="file-tray-outline" />}
+          ListEmptyComponent={q ? <EmptyState title="No matches" subtitle={`Nothing matches "${q}".`} icon="search-outline" /> : <EmptyState title="Nothing here yet" subtitle="Your submissions of this type will appear here." icon="file-tray-outline" art="entries" />}
           onEndReached={() => void loadMore()}
           onEndReachedThreshold={0.4}
           ListFooterComponent={
