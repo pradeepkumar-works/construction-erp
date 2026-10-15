@@ -176,8 +176,7 @@ export function MaintenancePanel({ projectId: fixedProject, initialOpenId }: { p
         />
         <Select
           allowClear
-          showSearch
-          optionFilterProp="label"
+          showSearch={{ optionFilterProp: 'label' }}
           placeholder="All machines"
           style={{ width: 220 }}
           value={equipmentId}

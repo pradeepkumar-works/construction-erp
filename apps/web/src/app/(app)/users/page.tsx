@@ -134,7 +134,7 @@ export default function UsersPage() {
         />
       )}
       {error && <QueryError error={error} onRetry={() => refetch()} />}
-      <Card className="table-card" size="small">
+      <Card size="small">
         <div style={{ padding: 12, display: 'flex', gap: 8, flexWrap: 'wrap', borderBottom: '1px solid #f0f0f0' }}>
           <SearchBox value={list.search} onChange={list.setSearch} placeholder="Search name, email, phone" width={300} />
           <Select allowClear placeholder="All roles" value={roleKey} onChange={(v) => { setRoleKey(v); list.resetPage(); }} style={{ width: 220 }} options={ROLE_KEYS.map((r) => ({ value: r, label: ROLE_LABELS[r] }))} />

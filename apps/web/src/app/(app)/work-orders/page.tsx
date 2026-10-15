@@ -11,7 +11,7 @@ function WorkOrdersPage() {
   return (
     <div className="page-container">
       <PageHeader title="Work Orders" subtitle="Work given to subcontractors at agreed rates, with the retention, advance and TDS terms their bills follow." />
-      <Card className="table-card" size="small">
+      <Card size="small">
         <WorkOrderList openId={search.get('id')} />
       </Card>
     </div>

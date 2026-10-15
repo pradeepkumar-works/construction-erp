@@ -11,7 +11,7 @@ function VendorBillsPage() {
   return (
     <div className="page-container">
       <PageHeader title="Vendor Bills" subtitle="Suppliers' invoices matched against the purchase order and what was received, with the due date (45 days at most for micro and small enterprises)." />
-      <Card className="table-card" size="small">
+      <Card size="small">
         <VendorBillList openId={search.get('id')} />
       </Card>
     </div>

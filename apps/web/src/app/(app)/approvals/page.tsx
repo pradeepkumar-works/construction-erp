@@ -72,7 +72,7 @@ export default function ApprovalsPage() {
         />
       )}
       {error && <QueryError error={error} onRetry={() => refetch()} />}
-      <Card className="table-card" size="small">
+      <Card size="small">
         <div style={{ padding: 12, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', borderBottom: '1px solid #f0f0f0' }}>
           <Segmented
             value={type}

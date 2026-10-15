@@ -11,7 +11,7 @@ function BillsPage() {
   return (
     <div className="page-container">
       <PageHeader title="RA Bills" subtitle="Running-account bills from the approved measurements, with GST and the contract deductions, through approval, the client's certificate and payment." />
-      <Card className="table-card" size="small">
+      <Card size="small">
         <BillList openId={search.get('id')} />
       </Card>
     </div>

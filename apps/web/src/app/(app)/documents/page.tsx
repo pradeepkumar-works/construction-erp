@@ -19,7 +19,7 @@ function DocumentsPage() {
   return (
     <div className="page-container">
       <PageHeader title="Documents" subtitle="Drawings and documents with their current revision, transmittals sent with what was signed for, and letters in and out." />
-      <Card className="table-card" size="small">
+      <Card size="small">
         <DocumentTabs key={`${id ?? ''}:${letter ?? ''}`} tab={tab} onTab={(t) => router.replace(`${pathname}?tab=${t}`, { scroll: false })} openId={id} openLetterId={letter} />
       </Card>
     </div>

@@ -204,7 +204,7 @@ export default function DashboardPage() {
               </Card>
             </Col>
             <Col xs={24}>
-              <Card title="Projects" size="small" className="table-card" extra={<Link href="/projects">View all</Link>}>
+              <Card title="Projects" size="small" extra={<Link href="/projects">View all</Link>}>
                 <Table<ProjectSummary>
                   rowKey="id"
                   columns={columns}

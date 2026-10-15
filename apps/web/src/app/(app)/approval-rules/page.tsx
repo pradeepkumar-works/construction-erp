@@ -163,7 +163,7 @@ export default function ApprovalRulesPage() {
           title={`Only admin can approve: ${noApprover.map((t) => SUBMISSION_TYPE_LABELS[t]).join(', ')}.`}
         />
       ) : null}
-      <Card className="table-card" size="small">
+      <Card size="small">
         {isLoading ? <Skeleton active style={{ padding: 16 }} /> : null}
         {data ? (
           <Table

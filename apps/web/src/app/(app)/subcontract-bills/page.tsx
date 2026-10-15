@@ -11,7 +11,7 @@ function SubcontractBillsPage() {
   return (
     <div className="page-container">
       <PageHeader title="Subcontractor Bills" subtitle="Running bills on work orders: work as measured, less retention, advance, TDS and material issued to them." />
-      <Card className="table-card" size="small">
+      <Card size="small">
         <SubBillList openId={search.get('id')} />
       </Card>
     </div>

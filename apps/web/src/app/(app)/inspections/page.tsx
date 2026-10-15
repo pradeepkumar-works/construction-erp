@@ -20,7 +20,7 @@ function QualityPage() {
         title="Quality"
         subtitle="Inspections requested by site and passed by QA/QC, material and field tests against their specification, and non-conformance reports through to closure."
       />
-      <Card className="table-card" size="small">
+      <Card size="small">
         <QualityTabs key={id ?? ''} tab={tab} onTab={(t) => router.replace(`${pathname}?tab=${t}`, { scroll: false })} openId={id} withChecklists />
       </Card>
     </div>

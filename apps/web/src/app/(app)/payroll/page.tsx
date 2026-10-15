@@ -27,7 +27,7 @@ function PayrollPage() {
   return (
     <div className="page-container">
       <PageHeader title="Payroll inputs" subtitle="The month's days present, leave and overtime per employee, and man-days per labour contractor, to send on." />
-      <Card className="table-card" size="small">
+      <Card size="small">
         <div style={{ padding: '12px 12px 0', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <DatePicker picker="month" format="MMM YYYY" allowClear={false} value={month} onChange={(d) => d && setMonth(d.startOf('month'))} disabledDate={(d) => d.isAfter(dayjs(), 'month')} aria-label="Month" />
           <ProjectSelect value={projectId} onChange={(v) => setProjectId(v)} />

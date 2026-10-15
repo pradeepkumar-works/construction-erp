@@ -14,7 +14,7 @@ function MachineryPage() {
   return (
     <div className="page-container">
       <PageHeader title="Machinery" subtitle="Daily hours, idle time, breakdowns and diesel per machine; job cards, service schedule, vehicle papers and drivers; and the equipment master." />
-      <Card className="table-card" size="small">
+      <Card size="small">
         <MachineryPanel key={`${tab ?? ''}|${id ?? ''}`} initialTab={tab} initialId={id} />
       </Card>
     </div>

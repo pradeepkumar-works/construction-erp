@@ -3,7 +3,7 @@ body {
   margin: 0;
   padding: 0;
   min-height: 100%;
-  background: var(--brand-canvas, #f3f5f8);
+  background: var(--ant-color-bg-layout);
 }
 
 * {
@@ -21,28 +21,12 @@ a {
   margin: 0 auto;
 }
 
-.kpi-card .ant-statistic-title {
-  font-size: 13px;
-}
-
-.table-card .ant-card-body {
-  padding: 0;
-}
-
-.table-card .ant-table-wrapper {
-  padding: 0;
-}
-
-.ant-table-thead > tr > th {
-  white-space: nowrap;
-}
-
 /* Sign-in, sign-up and password pages: a navy brand panel beside the form on white. */
 .auth {
   min-height: 100vh;
   display: grid;
   grid-template-columns: minmax(380px, 5fr) 7fr;
-  background: #fff;
+  background: var(--ant-color-bg-container);
 }
 
 .auth-aside {
@@ -56,7 +40,7 @@ a {
   justify-content: space-between;
   gap: 48px;
   padding: 40px 56px;
-  color: #fff;
+  color: var(--ant-color-text-light-solid);
   background-color: var(--brand-ink);
 }
 
@@ -66,11 +50,11 @@ a {
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(rgba(110, 168, 255, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(110, 168, 255, 0.08) 1px, transparent 1px);
+    linear-gradient(color-mix(in srgb, var(--brand-accent-light) 8%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--brand-accent-light) 8%, transparent) 1px, transparent 1px);
   background-size: 32px 32px;
-  -webkit-mask-image: linear-gradient(to top, #000 0%, transparent 70%);
-  mask-image: linear-gradient(to top, #000 0%, transparent 70%);
+  -webkit-mask-image: linear-gradient(to top, var(--ant-color-text-base) 0%, transparent 70%);
+  mask-image: linear-gradient(to top, var(--ant-color-text-base) 0%, transparent 70%);
   pointer-events: none;
 }
 
@@ -107,7 +91,7 @@ a {
   line-height: 1.04;
   letter-spacing: -0.01em;
   text-wrap: balance;
-  color: #fff;
+  color: var(--ant-color-text-light-solid);
 }
 
 /* The datum line from the logo, under the headline. */
@@ -128,7 +112,7 @@ a {
   gap: 14px;
   font-size: 15px;
   line-height: 1.45;
-  color: rgba(255, 255, 255, 0.72);
+  color: color-mix(in srgb, var(--ant-color-white) 72%, transparent);
 }
 
 .auth-points li {
@@ -149,7 +133,7 @@ a {
 .auth-aside-foot {
   margin: 0;
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.45);
+  color: color-mix(in srgb, var(--ant-color-white) 45%, transparent);
 }
 
 .auth-main {
@@ -265,7 +249,7 @@ a {
   padding: 6px 12px;
   border: 1px solid var(--brand-border);
   border-radius: 999px;
-  background: #fff;
+  background: var(--ant-color-bg-container);
   font: inherit;
   font-size: 13px;
   color: var(--brand-muted);
@@ -357,7 +341,7 @@ a {
   }
 }
 
-/* Headings and the wordmark use the condensed display face; figures line up in tables and statistics. */
+/* Headings and the wordmark use the condensed display face (antd has no heading font token). */
 h1.ant-typography,
 h2.ant-typography,
 h3.ant-typography,
@@ -374,11 +358,6 @@ h4.ant-typography,
   line-height: 1;
 }
 
-.ant-table,
-.ant-statistic-content {
-  font-variant-numeric: tabular-nums;
-}
-
 /* Primary links inside tables and cards (Next <Link> inherits colour from the reset above). */
 .link-strong {
   color: var(--brand-link);
@@ -390,7 +369,7 @@ h4.ant-typography,
 }
 
 .text-muted {
-  color: rgba(0, 0, 0, 0.45);
+  color: var(--ant-color-text-tertiary);
 }
 
 .text-danger {
@@ -414,5 +393,5 @@ h4.ant-typography,
 
 /* Superseded revisions and other rows that are on record but not in force */
 .row-muted td {
-  color: rgba(0, 0, 0, 0.45);
+  color: var(--ant-color-text-tertiary);
 }

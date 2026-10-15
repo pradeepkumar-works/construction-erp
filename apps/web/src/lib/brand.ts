@@ -1,7 +1,7 @@
 /**
- * Product name and brand colours in one place. The antd theme (providers.tsx), the shell, the sign-in pages,
- * the printable DPR and progress report and the CSS variables in globals.css all read from here, so a
- * rebrand is a change to this file, `BrandMark` and `app/icon.svg`.
+ * Product name and brand colours in one place. The antd theme (`lib/theme.ts`), the shell, the sign-in pages,
+ * the printable DPR and progress report all read from here, and `lib/theme.ts` declares each colour as a
+ * `--brand-*` CSS variable for the CSS files, so a rebrand is a change to this file, `BrandMark` and `app/icon.svg`.
  */
 import { PRODUCT_NAME } from '@erp/shared';
 
@@ -37,24 +37,10 @@ export const BRAND = {
     subtle: '#8A94A3',
     /** A pale blue fill behind a selected chip. */
     accentSoft: '#EEF4FD',
+    /** The website's body text, captions, hairlines and the browser-frame bar on its screenshots. */
+    siteText: '#3B4A5F',
+    siteMuted: '#64748B',
+    siteRule: '#E3E9F1',
+    siteFrame: '#F7F9FC',
   },
 } as const;
-
-/** CSS custom properties for globals.css; set on <html> by the root layout. */
-export const brandCssVars: Record<string, string> = {
-  '--brand-primary': BRAND.colors.primary,
-  '--brand-primary-deep': BRAND.colors.primaryDeep,
-  '--brand-ink': BRAND.colors.ink,
-  '--brand-ink-deep': BRAND.colors.inkDeep,
-  '--brand-accent': BRAND.colors.accent,
-  '--brand-accent-deep': BRAND.colors.accentDeep,
-  '--brand-accent-light': BRAND.colors.accentLight,
-  '--brand-on-accent': BRAND.colors.onAccent,
-  '--brand-link': BRAND.colors.link,
-  '--brand-pending': BRAND.colors.pending,
-  '--brand-canvas': BRAND.colors.canvas,
-  '--brand-border': BRAND.colors.border,
-  '--brand-muted': BRAND.colors.muted,
-  '--brand-subtle': BRAND.colors.subtle,
-  '--brand-accent-soft': BRAND.colors.accentSoft,
-};
