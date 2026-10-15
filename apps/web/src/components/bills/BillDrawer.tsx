@@ -23,6 +23,7 @@ import { BillStageTag } from './billUi';
 import { openBillPrint } from './billPrint';
 import { ReceiptFormModal } from '@/components/receivables/ReceiptFormModal';
 import { InTallyTag } from '@/components/tally/InTallyTag';
+import { BillPriceVariation } from './BillPriceVariation';
 
 type StageAction = 'send' | 'certify';
 const ACTION_TITLES: Record<StageAction, string> = { send: 'Record as sent to the client', certify: 'Record the client’s certificate' };
@@ -248,11 +249,13 @@ export function BillDrawer({ id, open, onClose, onEdit }: { id: string | null; o
               { title: 'Amount', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <strong className="mono">{formatINR(v, true)}</strong> },
             ]}
           />
+          <BillPriceVariation bill={data} editable={editable} />
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12, marginTop: 12 }}>
             <Card size="small" title="Bill amount">
               <Row label="Work up to the previous bill" value={data.grossPrevious} muted />
               <Row label="Work in this bill" value={data.grossAmount} strong />
               <Row label="Work up to date" value={data.grossUpto} muted />
+              {data.pvLines.length ? <Row label="Price variation" value={data.pvAmount} strong /> : null}
               <Divider style={{ margin: '6px 0' }} />
               <Row label={`GST @ ${data.gstRate}%`} value={data.gstAmount} />
               <Row label="Less deductions" value={data.totalDeductions} />

@@ -22,6 +22,7 @@ export const COMMERCIAL: Record<string, string> = {
   'Work ({n})': 'काम ({n})',
   'Scope ({n})': 'काम का दायरा ({n})',
   'Work in this bill': 'इस बिल का काम',
+  'Price variation': 'मूल्य परिवर्तन (एस्केलेशन)',
   '{qty} received': '{qty} प्राप्त',
   '{from} to {to}': '{from} से {to} तक',
 

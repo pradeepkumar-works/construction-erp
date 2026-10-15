@@ -128,6 +128,9 @@ async function main() {
     await seedCostRates(org.id);
     await seedRisks(org.id);
     await seedContracts(org.id);
+    await seedLdTerms(org.id);
+  await seedPriceVariation(org.id);
+    await seedPriceVariation(org.id);
     await seedApprovalRules(org.id);
     await seedBills(org.id);
     await seedReceipts(org.id);
@@ -300,6 +303,8 @@ async function main() {
   await seedCostRates(org.id);
   await seedRisks(org.id);
   await seedContracts(org.id);
+  await seedLdTerms(org.id);
+  await seedPriceVariation(org.id);
   await seedApprovalRules(org.id);
   await seedBills(org.id);
   await seedReceipts(org.id);
@@ -1536,6 +1541,31 @@ async function seedContracts(organizationId: string) {
       },
     });
     if (c.eot) await prisma.risk.updateMany({ where: { projectId: project.id, kind: 'DELAY', title: c.eot[0], eotGrantedDays: null }, data: { eotClaimed: true, eotGrantedDays: c.eot[1] } });
+  }
+}
+
+/** Liquidated damages terms (v4 item 50) on seeded contracts that have none: 0.5% of the contract value per week, capped at 10%. */
+async function seedLdTerms(organizationId: string) {
+  await prisma.project.updateMany({ where: { organizationId, agreementNo: { not: null }, ldRatePct: 0 }, data: { ldRatePct: D('0.5'), ldPeriod: 'WEEK', ldCapPct: D(10) } });
+}
+
+/** Price variation formulas (v4 item 50) by project type: component, share of the work value (%), base index (WPI-like). */
+const PV_FORMULAS: Partial<Record<string, [string, string, string][]>> = {
+  ROAD: [['Bitumen', '15', '612.4'], ['Fuel (HSD)', '10', '158.3'], ['Cement', '10', '139.8'], ['Steel', '5', '141.2'], ['Labour', '25', '412']],
+  WATER_SUPPLY: [['Pipes and steel', '25', '141.2'], ['Cement', '10', '139.8'], ['Fuel (HSD)', '5', '158.3'], ['Labour', '20', '412']],
+};
+
+/** The formula on seeded contracts with a price variation clause and no components yet; base date a month before the agreement. */
+async function seedPriceVariation(organizationId: string) {
+  const projects = await prisma.project.findMany({ where: { organizationId, priceVariation: true, pvComponents: { none: {} } }, select: { id: true, type: true, agreementDate: true } });
+  for (const p of projects) {
+    const formula = PV_FORMULAS[p.type];
+    if (!formula) continue;
+    const base = p.agreementDate ? new Date(Date.UTC(p.agreementDate.getUTCFullYear(), p.agreementDate.getUTCMonth() - 1, 1)) : null;
+    await prisma.project.update({ where: { id: p.id }, data: { pvBaseDate: base } });
+    await prisma.priceVariationComponent.createMany({
+      data: formula.map(([name, share, index], i) => ({ organizationId, projectId: p.id, name, sharePct: D(share), baseIndex: D(index), sortOrder: i })),
+    });
   }
 }
 

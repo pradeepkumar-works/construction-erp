@@ -782,6 +782,33 @@ jobs:
           fi
           code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/units" -H "$E" -H 'content-type: application/json' -d '{"code":"smoke","name":"smoke"}')
           echo "site engineer adding a unit: $code"; [ "$code" = "403" ]
+      - name: Liquidated damages exposure
+        run: |
+          set -e
+          login() { curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' -d "{\"email\":\"$1\",\"password\":\"password123\"}" | jq -r .accessToken; }
+          H="authorization: Bearer $(login pm@demo.com)"
+          curl -sf "$API_URL/ld-exposure" -H "$H" > /tmp/ld.json
+          jq -e 'type == "array" and all(.[]; .daysLate >= 0 and .forecastDaysLate >= .daysLate and (.ldToDate | tonumber) <= (.ldCap | tonumber) and (.ldForecast | tonumber) <= (.ldCap | tonumber) and .eotPendingDays >= 0)' /tmp/ld.json > /dev/null
+          jq -r '.[] | "\(.projectCode): \(.daysLate) days late, LD to date \(.ldToDate), forecast \(.ldForecast) of cap \(.ldCap)"' /tmp/ld.json
+          P=$(curl -sf "$API_URL/projects" -H "$H" | jq -r '.items[0].id')
+          if [ -n "$P" ] && [ "$P" != "null" ]; then curl -sf "$API_URL/projects/$P/contract" -H "$H" | jq -e 'has("ldRatePct") and has("ldPeriod") and has("ld")' > /dev/null; fi
+          code=$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/ld-exposure" -H "authorization: Bearer $(login engineer@demo.com)")
+          echo "site engineer reading LD exposure: $code"; [ "$code" = "403" ]
+      - name: Price variation on RA bills
+        run: |
+          set -e
+          login() { curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' -d "{\"email\":\"$1\",\"password\":\"password123\"}" | jq -r .accessToken; }
+          H="authorization: Bearer $(login pm@demo.com)"
+          P=$(curl -sf "$API_URL/projects" -H "$H" | jq -r '.items[0].id')
+          if [ -n "$P" ] && [ "$P" != "null" ]; then
+            curl -sf "$API_URL/projects/$P/contract" -H "$H" | jq -e 'has("pvBaseDate") and (.pvComponents | type == "array")' > /dev/null
+            code=$(curl -s -o /dev/null -w '%{http_code}' -X PUT "$API_URL/projects/$P/contract/price-variation" -H 'content-type: application/json' -d '{"components":[]}' -H "authorization: Bearer $(login engineer@demo.com)")
+            echo "site engineer changing the price variation formula: $code"; [ "$code" = "403" ]
+          fi
+          curl -sf "$API_URL/ra-bills?pageSize=50" -H "$H" > /tmp/bills.json
+          # Net payable = work + price variation + GST - deductions on every bill.
+          jq -e 'all(.items[]; has("pvAmount") and (.pvLines | type == "array") and (((.grossAmount | tonumber) + (.pvAmount | tonumber) + (.gstAmount | tonumber) - (.totalDeductions | tonumber) - (.netPayable | tonumber)) | fabs) < 0.02)' /tmp/bills.json > /dev/null
+          jq -r '"\(.items | length) bills, \([.items[] | select((.pvAmount | tonumber) != 0)] | length) with price variation"' /tmp/bills.json
       - name: Invite, set password and reset
         run: |
           set -e

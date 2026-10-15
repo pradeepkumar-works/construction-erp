@@ -362,6 +362,7 @@ export const BILL_EXPORT: ExportColumn<RaBillDto>[] = [
   { header: 'Work up to previous', value: (b) => toNumber(b.grossPrevious) },
   { header: 'Work in this bill', value: (b) => toNumber(b.grossAmount) },
   { header: 'Work up to date', value: (b) => toNumber(b.grossUpto) },
+  { header: 'Price variation', value: (b) => toNumber(b.pvAmount) },
   { header: 'GST %', value: (b) => toNumber(b.gstRate) },
   { header: 'GST', value: (b) => toNumber(b.gstAmount) },
   { header: 'Retention', value: (b) => deduction(b, 'retention') },

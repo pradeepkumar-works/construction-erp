@@ -1,22 +1,36 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { CONTRACT_PERCENT_FIELDS, MAX_GST_RATE, canEditContract, canViewContract, delayDays, revisedCompletion, type ProjectContractDto } from '@erp/shared';
+import { CONTRACT_PERCENT_FIELDS, LD_PERIOD_DAYS, MAX_GST_RATE, canEditContract, canViewContract, delayDays, revisedCompletion, type DelayParty, type LdExposureDto, type ProjectContractDto } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
 import { ClientsService } from '../clients/clients.service';
 import { dateOnly, iso, money, parseDate } from '../common/serialize';
-import { UpdateContractDto } from './contracts.dto';
+import { todayIn } from '../notifications/time';
+import { PriceVariationDto, UpdateContractDto } from './contracts.dto';
 
 const include = {
   client: { include: { _count: { select: { projects: true } } } },
   risks: { where: { kind: 'DELAY' as const, OR: [{ eotClaimed: true }, { eotGrantedDays: { not: null } }] }, orderBy: { delayStart: 'asc' as const } },
   variations: { where: { status: 'APPROVED' as const }, select: { approvedAmount: true } },
+  handover: { select: { completedOn: true } },
+  pvComponents: { orderBy: [{ sortOrder: 'asc' as const }, { createdAt: 'asc' as const }] },
 } satisfies Prisma.ProjectInclude;
 type Row = Prisma.ProjectGetPayload<{ include: typeof include }>;
 
-const pctStr = (d: Prisma.Decimal) => d.toFixed(2).replace(/\.?0+$/, '') || '0';
+const pctStr = (d: Prisma.Decimal) => d.toFixed(3).replace(/\.?0+$/, '') || '0';
+const ZERO = new Prisma.Decimal(0);
+const EXCUSABLE: DelayParty[] = ['CLIENT', 'THIRD_PARTY', 'FORCE_MAJEURE'];
+const DAY_MS = 86_400_000;
+/** Whole days from a to b (YYYY-MM-DD), 0 when b is not after a. */
+const daysAfter = (a: string, b: string) => Math.max(0, Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / DAY_MS));
+
+/** What liquidated damages need besides the contract row: delays in the register and the schedule's last planned finish. */
+export interface LdInputs {
+  delays: { daysLost: number | null; delayStart: Date | null; delayEnd: Date | null; responsibleParty: DelayParty | null }[];
+  scheduleFinish: string | null;
+}
 
 /**
  * A project's contract with its client (v3 item 17): agreement, value, dates with the extensions of time granted in the
@@ -26,7 +40,7 @@ const pctStr = (d: Prisma.Decimal) => d.toFixed(2).replace(/\.?0+$/, '') || '0';
 export class ContractsService {
   constructor(private prisma: PrismaService, private access: ProjectAccessService, private audit: AuditService) {}
 
-  toDto(p: Row): ProjectContractDto {
+  toDto(p: Row, ld?: LdInputs): ProjectContractDto {
     const today = new Date().toISOString().slice(0, 10);
     const extensions = p.risks.map((r) => ({
       riskId: r.id,
@@ -66,12 +80,105 @@ export class ContractsService {
       defectLiabilityMonths: p.defectLiabilityMonths,
       clientPaymentDays: p.clientPaymentDays,
       priceVariation: p.priceVariation,
+      pvBaseDate: dateOnly(p.pvBaseDate),
+      pvComponents: p.pvComponents.map((c) => ({ id: c.id, name: c.name, sharePct: pctStr(c.sharePct), baseIndex: c.baseIndex.toFixed(3).replace(/\.?0+$/, '') })),
       gstRate: pctStr(p.gstRate),
       tdsPct: pctStr(p.tdsPct),
       gstTdsPct: pctStr(p.gstTdsPct),
       labourCessPct: pctStr(p.labourCessPct),
+      ldRatePct: pctStr(p.ldRatePct),
+      ldPeriod: p.ldPeriod,
+      ldCapPct: pctStr(p.ldCapPct),
+      ld: ld ? ContractsService.ldExposure(p, approvedVariations, extensionDays, ld) : null,
       updatedAt: iso(p.updatedAt)!,
     };
+  }
+
+  /**
+   * Liquidated damages (v4 item 50): days past the completion date after extensions of time, at the contract's rate
+   * per day, week or month (part periods pro rata) of the revised contract value, up to the cap. Also the forecast to
+   * the schedule's last planned finish, and that forecast if the excusable days not yet granted are granted.
+   */
+  static ldExposure(
+    p: Pick<Row, 'id' | 'code' | 'name' | 'status' | 'contractValue' | 'endDate' | 'ldRatePct' | 'ldPeriod' | 'ldCapPct' | 'handover'>,
+    approvedVariations: Prisma.Decimal,
+    extensionDays: number,
+    inputs: LdInputs,
+  ): LdExposureDto | null {
+    const endDate = dateOnly(p.endDate);
+    if (!p.contractValue || !endDate) return null;
+    const today = todayIn();
+    const value = p.contractValue.add(approvedVariations);
+    const revisedEndDate = revisedCompletion(endDate, extensionDays)!;
+    const completedOn = dateOnly(p.handover?.completedOn ?? null);
+    const forecastFinish = completedOn ?? (inputs.scheduleFinish && inputs.scheduleFinish > today ? inputs.scheduleFinish : today);
+    let excusable = 0;
+    let contractor = 0;
+    for (const d of inputs.delays) {
+      const lost = d.daysLost ?? delayDays(dateOnly(d.delayStart), dateOnly(d.delayEnd), today) ?? 0;
+      if (d.responsibleParty && EXCUSABLE.includes(d.responsibleParty)) excusable += lost;
+      else if (d.responsibleParty === 'CONTRACTOR') contractor += lost;
+    }
+    const daysLate = daysAfter(revisedEndDate, completedOn ?? today);
+    const forecastDaysLate = daysAfter(revisedEndDate, forecastFinish);
+    const eotPendingDays = Math.max(0, excusable - extensionDays);
+    const cap = value.mul(p.ldCapPct).div(100).toDecimalPlaces(2);
+    const ld = (days: number) => Prisma.Decimal.min(value.mul(p.ldRatePct).div(100).mul(days).div(LD_PERIOD_DAYS[p.ldPeriod]).toDecimalPlaces(2), cap);
+    const forecast = ld(forecastDaysLate);
+    return {
+      projectId: p.id,
+      projectCode: p.code,
+      projectName: p.name,
+      projectStatus: p.status,
+      ldRatePct: pctStr(p.ldRatePct),
+      ldPeriod: p.ldPeriod,
+      ldCapPct: pctStr(p.ldCapPct),
+      contractValue: money(value)!,
+      endDate,
+      extensionDays,
+      revisedEndDate,
+      completedOn,
+      forecastFinish,
+      daysLate,
+      forecastDaysLate,
+      excusableDaysLost: excusable,
+      contractorDaysLost: contractor,
+      eotPendingDays,
+      ldToDate: money(ld(daysLate))!,
+      ldForecast: money(forecast)!,
+      ldForecastWithEot: money(ld(Math.max(0, forecastDaysLate - eotPendingDays)))!,
+      ldCap: money(cap)!,
+      capReached: p.ldRatePct.gt(0) && forecast.gte(cap) && cap.gt(0),
+    };
+  }
+
+  /** Delays and the last planned finish per project, for liquidated damages. */
+  private async ldInputs(projectIds: string[]): Promise<Map<string, LdInputs>> {
+    const [delays, finishes] = await Promise.all([
+      this.prisma.risk.findMany({ where: { projectId: { in: projectIds }, kind: 'DELAY' }, select: { projectId: true, daysLost: true, delayStart: true, delayEnd: true, responsibleParty: true } }),
+      this.prisma.activity.groupBy({ by: ['projectId'], where: { projectId: { in: projectIds } }, _max: { plannedEnd: true } }),
+    ]);
+    const out = new Map<string, LdInputs>(projectIds.map((id) => [id, { delays: [], scheduleFinish: null }]));
+    for (const d of delays) out.get(d.projectId)!.delays.push(d);
+    for (const f of finishes) out.get(f.projectId)!.scheduleFinish = dateOnly(f._max.plannedEnd);
+    return out;
+  }
+
+  /** Liquidated damages exposure of every project the user can see that has a contract value and completion date, largest forecast first. */
+  async ldExposureList(user: RequestUser): Promise<LdExposureDto[]> {
+    if (!canViewContract(user.roleKey)) throw new ForbiddenException('Your role cannot see contract terms');
+    const rows = await this.prisma.project.findMany({
+      where: { ...this.access.projectWhere(user), contractValue: { not: null }, endDate: { not: null }, status: { in: ['ACTIVE', 'ON_HOLD', 'COMPLETED'] } },
+      include,
+    });
+    const inputs = await this.ldInputs(rows.map((r) => r.id));
+    return rows
+      .map((p) => {
+        const dto = this.toDto(p, inputs.get(p.id)!);
+        return dto.ld;
+      })
+      .filter((x): x is LdExposureDto => !!x)
+      .sort((a, b) => Number(b.ldForecast) - Number(a.ldForecast) || b.forecastDaysLate - a.forecastDaysLate || a.projectName.localeCompare(b.projectName));
   }
 
   async get(user: RequestUser, projectId: string): Promise<ProjectContractDto> {
@@ -79,7 +186,7 @@ export class ContractsService {
     await this.access.assertCanAccessProject(user, projectId);
     const row = await this.prisma.project.findFirst({ where: { id: projectId, organizationId: user.organizationId }, include });
     if (!row) throw new NotFoundException('Project not found');
-    return this.toDto(row);
+    return this.toDto(row, (await this.ldInputs([row.id])).get(row.id));
   }
 
   async update(user: RequestUser, projectId: string, dto: UpdateContractDto): Promise<ProjectContractDto> {
@@ -115,6 +222,14 @@ export class ContractsService {
     if (dto.defectLiabilityMonths !== undefined) data.defectLiabilityMonths = dto.defectLiabilityMonths;
     if (dto.clientPaymentDays !== undefined) data.clientPaymentDays = dto.clientPaymentDays;
     if (dto.priceVariation !== undefined) data.priceVariation = dto.priceVariation;
+    for (const k of ['ldRatePct', 'ldCapPct'] as const) {
+      const v = dto[k];
+      if (v === undefined) continue;
+      const n = new Prisma.Decimal(v);
+      if (n.lt(0) || n.gt(100)) throw new BadRequestException(`${k} must be between 0 and 100`);
+      data[k] = n;
+    }
+    if (dto.ldPeriod !== undefined) data.ldPeriod = dto.ldPeriod;
     const start = dto.startDate !== undefined ? dto.startDate : undefined;
     const end = dto.endDate !== undefined ? dto.endDate : undefined;
     if (start !== undefined || end !== undefined) {
@@ -125,6 +240,32 @@ export class ContractsService {
     }
     await this.prisma.project.update({ where: { id: projectId }, data });
     await this.audit.log(user, 'PROJECT', projectId, 'CONTRACT_UPDATED');
+    return this.get(user, projectId);
+  }
+
+  /**
+   * The price variation formula (v4 item 50): the base date and the components, each a share of the work value that
+   * moves with an index. Replaces the whole list; bills already prepared keep the components they copied until they
+   * are filled in again.
+   */
+  async setPriceVariation(user: RequestUser, projectId: string, dto: PriceVariationDto): Promise<ProjectContractDto> {
+    if (!canEditContract(user.roleKey)) throw new ForbiddenException('Your role cannot change contract terms');
+    await this.access.assertCanAccessProject(user, projectId);
+    const rows = dto.components.map((c, i) => ({ name: c.name.trim(), sharePct: new Prisma.Decimal(c.sharePct), baseIndex: new Prisma.Decimal(c.baseIndex), sortOrder: i }));
+    for (const r of rows) {
+      if (!r.name) throw new BadRequestException('Each component needs a name');
+      if (r.sharePct.lte(0) || r.sharePct.gt(100)) throw new BadRequestException(`${r.name}: the share must be more than 0 and at most 100%`);
+      if (r.baseIndex.lte(0)) throw new BadRequestException(`${r.name}: the base index must be more than 0`);
+    }
+    if (new Set(rows.map((r) => r.name.toLowerCase())).size < rows.length) throw new BadRequestException('Two components have the same name');
+    const total = rows.reduce((s, r) => s.add(r.sharePct), ZERO);
+    if (total.gt(100)) throw new BadRequestException(`The shares add up to ${total.toFixed(2)}%; they cannot pass 100%`);
+    await this.prisma.$transaction(async (tx) => {
+      await tx.project.update({ where: { id: projectId }, data: { pvBaseDate: dto.pvBaseDate ? parseDate(dto.pvBaseDate) : null } });
+      await tx.priceVariationComponent.deleteMany({ where: { projectId } });
+      await tx.priceVariationComponent.createMany({ data: rows.map((r) => ({ ...r, organizationId: user.organizationId, projectId })) });
+    });
+    await this.audit.log(user, 'PROJECT', projectId, 'PRICE_VARIATION_UPDATED');
     return this.get(user, projectId);
   }
 }

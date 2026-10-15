@@ -44,6 +44,21 @@ export class CertifiedItemDto {
   @ApiProperty({ example: '120.5', description: 'Quantity of this bill the client passed' }) @num() @IsNumberString() certifiedQty: string;
 }
 
+export class PvIndexDto {
+  @ApiProperty({ description: "A component of the contract's price variation formula" }) @IsUUID() componentId!: string;
+  @ApiProperty({ example: '151.2', description: "The component's index for this bill" })
+  @Transform(({ value }) => (typeof value === 'number' ? String(value) : value))
+  @IsNumberString()
+  currentIndex!: string;
+}
+
+/** This bill's index for each component; an empty list clears the price variation. */
+export class BillPriceVariationDto {
+  @ApiPropertyOptional({ example: '2026-03-01', description: 'The month the indices are for' }) @IsOptional() @IsDateString() indexMonth?: string | null;
+  @ApiPropertyOptional({ example: 'RBI WPI, March 2026 (provisional)' }) @IsOptional() @trim() @IsString() @MaxLength(300) note?: string | null;
+  @ApiProperty({ type: [PvIndexDto] }) @IsArray() @ArrayMaxSize(12) @ValidateNested({ each: true }) @Type(() => PvIndexDto) indices!: PvIndexDto[];
+}
+
 export class CertifyBillDto extends BillDateDto {
   @ApiPropertyOptional({ example: 'EE/RD/2026/114' }) @IsOptional() @trim() @IsString() @MaxLength(100) certificateNo?: string | null;
   @ApiPropertyOptional({ type: [CertifiedItemDto], description: 'Items the client cut; items left out are certified as claimed' })

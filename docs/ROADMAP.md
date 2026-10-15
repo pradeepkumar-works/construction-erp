@@ -371,7 +371,12 @@ preview deployments run them against the production database before a PR is merg
     Done: every screen of the site app in Hindi, picked under Profile > Language (English stays the default on every
     phone). Shared labels, statuses and the standard permit precautions and toolbox topics are translated too; data
     and server messages stay as entered. Other Indian languages can follow the same files.
-50. **Delay penalties and escalation** (S + M). Liquidated damages exposure, then price variation on RA bills.
+50. ~~**Delay penalties and escalation** (S + M).~~
+    Done: liquidated damages exposure per project from the contract's rate, period and cap and the delay register (days
+    late after extensions granted, to date and forecast, excusable days not yet granted), on the Contract tab and a
+    Liquidated damages tab on Delays & Risks. Price variation on RA bills: the contract's formula (components with a
+    share of the work value and a base index), this month's indices on each bill, and GST and deductions on work value
+    plus price variation.
 
 ## Definition of done for every item
 Prisma migration, API endpoints with Swagger, shared types, web screen, mobile screen where site

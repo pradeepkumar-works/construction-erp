@@ -1,3 +1,4 @@
+import dayjs from 'dayjs';
 import type { RaBillDto } from '@erp/shared';
 import { BILL_STAGE_LABELS, GST_STATES } from '@erp/shared';
 import { AUTO_PRINT_SCRIPT, brandFooter, PRINT_BRAND_CSS, PRINT_FONT_LINKS } from '@/components/print/printBrand';
@@ -134,14 +135,28 @@ ${PRINT_FONT_LINKS}
       <tr class="total"><td colspan="${cols - 3}">Value of work done</td><td class="num">${inr(b.grossPrevious)}</td><td class="num">${inr(b.grossAmount)}</td><td class="num">${inr(b.grossUpto)}</td></tr>
     </tbody>
   </table>
+${
+  b.pvLines.length
+    ? `
+  <h2>Price variation</h2>
+  <table>
+    <thead><tr><th>Component</th><th class="num">Share (%)</th><th class="num">Base index</th><th class="num">Current index</th><th class="num">Amount (₹)</th></tr></thead>
+    <tbody>
+      ${b.pvLines.map((l) => `<tr><td>${esc(l.name)}</td><td class="num">${esc(l.sharePct)}</td><td class="num">${esc(l.baseIndex)}</td><td class="num">${esc(l.currentIndex)}</td><td class="num">${inr(l.amount)}</td></tr>`).join('')}
+      <tr class="total"><td colspan="4">On work of ₹ ${inr(b.grossAmount)}${b.pvNote ? ` (${esc(b.pvNote)})` : ''}</td><td class="num">${inr(b.pvAmount)}</td></tr>
+    </tbody>
+  </table>`
+    : ''
+}
 
   <div class="summary">
     <div>
       <h2>Bill amount</h2>
       <table>
         <tr><td>Value of work in this bill</td><td class="num">${inr(b.grossAmount)}</td></tr>
+        ${b.pvLines.length ? `<tr><td>Price variation${b.pvIndexMonth ? ` (indices for ${esc(dayjs(b.pvIndexMonth).format('MMM YYYY'))})` : ''}</td><td class="num">${inr(b.pvAmount)}</td></tr>` : ''}
         <tr><td>GST @ ${esc(b.gstRate)}%</td><td class="num">${inr(b.gstAmount)}</td></tr>
-        <tr class="total"><td>Gross bill amount</td><td class="num">${inr(String(toNumber(b.grossAmount) + toNumber(b.gstAmount)))}</td></tr>
+        <tr class="total"><td>Gross bill amount</td><td class="num">${inr(b.invoiceAmount)}</td></tr>
         <tr><td>Less deductions</td><td class="num">${inr(b.totalDeductions)}</td></tr>
         <tr class="total"><td>Net payable</td><td class="num">${inr(b.netPayable)}</td></tr>
       </table>

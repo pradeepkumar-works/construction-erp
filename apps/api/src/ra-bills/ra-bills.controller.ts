@@ -1,8 +1,8 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { RaBillsService } from './ra-bills.service';
-import { BillDateDto, CertifyBillDto, CreateRaBillDto, ListRaBillsQuery, UpdateRaBillDto } from './ra-bills.dto';
+import { BillDateDto, BillPriceVariationDto, CertifyBillDto, CreateRaBillDto, ListRaBillsQuery, UpdateRaBillDto } from './ra-bills.dto';
 
 @ApiTags('ra-bills')
 @ApiBearerAuth()
@@ -37,6 +37,17 @@ export class RaBillsController {
   @Patch(':id')
   update(@CurrentUser() user: RequestUser, @Param('id') id: string, @Body() dto: UpdateRaBillDto) {
     return this.bills.update(user, id, dto);
+  }
+
+  @ApiOperation({
+    summary: "Set a bill's price variation",
+    description:
+      "This bill's index for each component of the contract's price variation formula, while the bill is not approved. Amount per component = " +
+      'work value × share % × (current − base) / base; GST and the deductions are then on work value + price variation. No indices clears it.',
+  })
+  @Put(':id/price-variation')
+  setPriceVariation(@CurrentUser() user: RequestUser, @Param('id') id: string, @Body() dto: BillPriceVariationDto) {
+    return this.bills.setPriceVariation(user, id, dto);
   }
 
   @ApiOperation({ summary: 'Submit or resubmit a bill for approval', description: 'Measurements approved since the bill was prepared are taken in first.' })

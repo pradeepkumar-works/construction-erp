@@ -11,6 +11,8 @@ import { useContract } from '@/lib/queries';
 import { formatDate, formatINR, toNumber } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { ContractFormModal } from './ContractFormModal';
+import { LdExposureCard } from './LdExposure';
+import { PriceVariationCard } from './PriceVariation';
 
 /** A project's contract with its client: the Contract tab of a project. */
 export function ContractPanel({ projectId }: { projectId: string }) {
@@ -117,6 +119,16 @@ export function ContractPanel({ projectId }: { projectId: string }) {
           }
         />
       </Card>
+      {c.priceVariation ? (
+        <Card size="small" title="Price variation">
+          <PriceVariationCard contract={c} editable={editable} />
+        </Card>
+      ) : null}
+      {c.ld ? (
+        <Card size="small" title="Liquidated damages">
+          <LdExposureCard ld={c.ld} />
+        </Card>
+      ) : null}
       {editable && <ContractFormModal open={editing} contract={c} onClose={() => setEditing(false)} />}
     </Space>
   );

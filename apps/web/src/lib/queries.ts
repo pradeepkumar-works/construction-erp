@@ -6,6 +6,7 @@ import type {
   DefectPhase,
   HandoverSummaryDto,
   GrnQcStatus,
+  LdExposureDto,
   ProcurementStatusDto,
   UnitDto,
   DriverDto,
@@ -1694,4 +1695,12 @@ export const useProcurementStatus = (filters: { projectId?: string; vendorId?: s
     queryKey: ['purchase-orders', 'status', clean(filters)],
     queryFn: async () => (await api.get<ProcurementStatusDto>('/purchase-orders/status', { params: clean(filters) })).data,
     placeholderData: keepPreviousData,
+  });
+
+/* Liquidated damages exposure (v4 item 50) */
+export const useLdExposure = (enabled = true) =>
+  useQuery({
+    queryKey: ['ld-exposure'],
+    queryFn: async () => (await api.get<LdExposureDto[]>('/ld-exposure')).data,
+    enabled,
   });

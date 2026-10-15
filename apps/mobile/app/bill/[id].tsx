@@ -33,6 +33,7 @@ export default function BillScreen() {
         <KeyValue label={t('Client')} value={data.clientName} />
         <KeyValue label={t('Work in this bill')} value={rupees(data.grossAmount)} />
         <KeyValue label={t('Work up to date')} value={rupees(data.grossUpto)} />
+        {data.pvLines?.length ? <KeyValue label={t('Price variation')} value={rupees(data.pvAmount)} /> : null}
         <KeyValue label={t('GST @ {rate}%', { rate: data.gstRate })} value={rupees(data.gstAmount)} />
         {data.deductions.map((d) => (
           <KeyValue key={d.key} label={d.pct !== null ? t('{label} @ {pct}%', { label: t(d.label), pct: d.pct }) : t(d.label)} value={`- ${rupees(d.amount)}`} />

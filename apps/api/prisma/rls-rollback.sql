@@ -246,5 +246,8 @@ DROP POLICY IF EXISTS tenant_isolation ON "CloseoutItem";
 ALTER TABLE "Unit" NO FORCE ROW LEVEL SECURITY;
 ALTER TABLE "Unit" DISABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS tenant_isolation ON "Unit";
+ALTER TABLE "PriceVariationComponent" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "PriceVariationComponent" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "PriceVariationComponent";
 
 DROP FUNCTION IF EXISTS app_current_org();

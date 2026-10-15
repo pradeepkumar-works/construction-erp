@@ -1,4 +1,4 @@
-import type { GrnQcStatus, ComplianceDocKind, ComplianceDocStatus, DefectPhase, DefectPriority, DefectStatus, ImprestEntryKind, ImprestEntryStatus, WorkerIdType, WorkerSkill, EquipmentDocType, MaintenanceKind, MaintenanceStatus, BillStage, ReceiptKind, VendorKind, MsmeCategory, EquipmentOwnership, ExpenseCategory, PaymentMode, EquipmentRateUnit, MaterialPriority, NotificationType, ProjectStatus, ProjectType, DelayParty, PasswordTokenPurpose, RiskCategory, RiskKind, RiskStatus, RoleKey, SafetyIncidentStatus, SafetyIncidentType, StockEntryType, SubmissionStatus, SubmissionType, Weather, WorkPermitStatus, WorkPermitType } from './enums';
+import type { LdPeriod, GrnQcStatus, ComplianceDocKind, ComplianceDocStatus, DefectPhase, DefectPriority, DefectStatus, ImprestEntryKind, ImprestEntryStatus, WorkerIdType, WorkerSkill, EquipmentDocType, MaintenanceKind, MaintenanceStatus, BillStage, ReceiptKind, VendorKind, MsmeCategory, EquipmentOwnership, ExpenseCategory, PaymentMode, EquipmentRateUnit, MaterialPriority, NotificationType, ProjectStatus, ProjectType, DelayParty, PasswordTokenPurpose, RiskCategory, RiskKind, RiskStatus, RoleKey, SafetyIncidentStatus, SafetyIncidentType, StockEntryType, SubmissionStatus, SubmissionType, Weather, WorkPermitStatus, WorkPermitType } from './enums';
 
 export const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {
   ROAD: 'Road / Infrastructure',
@@ -287,3 +287,7 @@ export const DEFECT_PHASE_LABELS: Record<DefectPhase, string> = { SNAG: 'Snag', 
 export const DEFECT_PRIORITY_LABELS: Record<DefectPriority, string> = { LOW: 'Low', MEDIUM: 'Medium', HIGH: 'High' };
 export const DEFECT_STATUS_LABELS: Record<DefectStatus, string> = { OPEN: 'Open', FIXED: 'Fixed', CLOSED: 'Closed' };
 export const GRN_QC_STATUS_LABELS: Record<GrnQcStatus, string> = { ACCEPTED: 'Accepted', PARTLY_ACCEPTED: 'Partly accepted', REJECTED: 'Rejected' };
+
+export const LD_PERIOD_LABELS: Record<LdPeriod, string> = { DAY: 'per day', WEEK: 'per week', MONTH: 'per month' };
+/** Days in one LD period: part periods count pro rata. */
+export const LD_PERIOD_DAYS: Record<LdPeriod, number> = { DAY: 1, WEEK: 7, MONTH: 30 };

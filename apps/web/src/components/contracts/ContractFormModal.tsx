@@ -5,8 +5,8 @@ import { App, Button, Checkbox, DatePicker, Divider, Form, Input, InputNumber, M
 import { PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { ContractPercentField, ProjectContractDto } from '@erp/shared';
-import { CONTRACT_PERCENT_FIELDS, CONTRACT_PERCENT_LABELS, MAX_GST_RATE } from '@erp/shared';
+import type { ContractPercentField, LdPeriod, ProjectContractDto } from '@erp/shared';
+import { CONTRACT_PERCENT_FIELDS, CONTRACT_PERCENT_LABELS, LD_PERIODS, LD_PERIOD_LABELS, MAX_GST_RATE } from '@erp/shared';
 import { api, errorMessage } from '@/lib/api';
 import { useClients } from '@/lib/queries';
 import { ClientFormModal } from '@/components/clients/ClientFormModal';
@@ -22,6 +22,9 @@ type FormValues = {
   defectLiabilityMonths?: number | null;
   clientPaymentDays?: number | null;
   priceVariation?: boolean;
+  ldRatePct?: number | null;
+  ldPeriod?: LdPeriod;
+  ldCapPct?: number | null;
 } & Partial<Record<ContractPercentField, number | null>>;
 
 const PCT_HELP: Record<ContractPercentField, string> = {
@@ -58,6 +61,9 @@ export function ContractFormModal({ open, contract, onClose }: { open: boolean; 
       defectLiabilityMonths: contract.defectLiabilityMonths,
       clientPaymentDays: contract.clientPaymentDays,
       priceVariation: contract.priceVariation,
+      ldRatePct: Number(contract.ldRatePct),
+      ldPeriod: contract.ldPeriod,
+      ldCapPct: Number(contract.ldCapPct),
       ...Object.fromEntries(CONTRACT_PERCENT_FIELDS.map((k) => [k, Number(contract[k])])),
     });
   }, [open, contract, form]);
@@ -76,6 +82,9 @@ export function ContractFormModal({ open, contract, onClose }: { open: boolean; 
         defectLiabilityMonths: v.defectLiabilityMonths ?? null,
         clientPaymentDays: v.clientPaymentDays ?? null,
         priceVariation: !!v.priceVariation,
+        ldRatePct: String(v.ldRatePct ?? 0),
+        ldPeriod: v.ldPeriod ?? 'WEEK',
+        ldCapPct: String(v.ldCapPct ?? 0),
         ...Object.fromEntries(CONTRACT_PERCENT_FIELDS.map((k) => [k, String(v[k] ?? 0)])),
       };
       return (await api.put<ProjectContractDto>(`/projects/${contract.projectId}/contract`, body)).data;
@@ -148,6 +157,20 @@ export function ContractFormModal({ open, contract, onClose }: { open: boolean; 
             </Form.Item>
             <Form.Item name="clientPaymentDays" label="Client pays within (days)" tooltip="Days the client takes to pay a bill once it is sent. The cash-flow forecast assumes 30 when left empty.">
               <InputNumber<number> style={{ width: '100%' }} min={0} max={365} placeholder="30" />
+            </Form.Item>
+          </div>
+          <Divider titlePlacement="start" plain style={{ margin: '4px 0 12px' }}>
+            <Typography.Text type="secondary">Liquidated damages for late completion</Typography.Text>
+          </Divider>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0 16px' }}>
+            <Form.Item name="ldRatePct" label="LD rate (% of contract value)" tooltip="Leave at 0 if the contract has no liquidated damages clause">
+              <InputNumber<number> style={{ width: '100%' }} min={0} max={100} step={0.05} />
+            </Form.Item>
+            <Form.Item name="ldPeriod" label="For each">
+              <Select<LdPeriod> options={LD_PERIODS.map((p) => ({ value: p, label: LD_PERIOD_LABELS[p].replace('per ', '') }))} />
+            </Form.Item>
+            <Form.Item name="ldCapPct" label="LD cap (% of contract value)" tooltip="Usually 10%">
+              <InputNumber<number> style={{ width: '100%' }} min={0} max={100} />
             </Form.Item>
           </div>
           <Form.Item name="priceVariation" label="Price variation" valuePropName="checked">

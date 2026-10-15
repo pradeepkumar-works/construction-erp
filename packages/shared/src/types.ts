@@ -6,6 +6,7 @@ import type { DocumentDiscipline, DocumentKind, LetterDirection, RevisionStatus,
 import type { LeaveStatus, LeaveType, StaffAttendanceStatus } from './staff';
 import type { CostHead } from './cost';
 import type {
+  LdPeriod,
   BillStage,
   ReceiptKind,
   VendorKind,
@@ -777,7 +778,7 @@ export interface ProjectCostSummaryDto {
   margin: string;
   /** cost.total as % of executedValue; null when nothing was executed. */
   costPct: number | null;
-  /** Approved RA bills dated in the period: value of work (before GST) */
+  /** Approved RA bills dated in the period: value of work plus price variation (before GST) */
   billedValue: string;
   /** Received from the client in the period (bank credits, all receipts) */
   cashIn: string;
@@ -1169,6 +1170,16 @@ export interface ContractExtensionDto {
 }
 
 /** A project's contract with its client: what RA bills are built on. Percentages are of the work value. */
+/** One component of a contract's price variation formula (v4 item 50). */
+export interface PriceVariationComponentDto {
+  id: string;
+  name: string;
+  /** % of the work value that moves with this index */
+  sharePct: string;
+  /** Index on the base date */
+  baseIndex: string;
+}
+
 export interface ProjectContractDto {
   projectId: string;
   projectCode: string;
@@ -1200,11 +1211,59 @@ export interface ProjectContractDto {
   /** Days the client takes to pay a bill once sent; null = not set (the cash-flow forecast assumes 30) */
   clientPaymentDays: number | null;
   priceVariation: boolean;
+  /** Price variation: the date the base indices are taken at */
+  pvBaseDate: string | null;
+  /** The price variation formula: each component's share of the work value and its base index; the rest is fixed */
+  pvComponents: PriceVariationComponentDto[];
   gstRate: string;
   tdsPct: string;
   gstTdsPct: string;
   labourCessPct: string;
+  /** Liquidated damages: % of the contract value per `ldPeriod` late, capped at `ldCapPct` */
+  ldRatePct: string;
+  ldPeriod: LdPeriod;
+  ldCapPct: string;
+  /** Exposure to liquidated damages; null without a contract value and completion date */
+  ld: LdExposureDto | null;
   updatedAt: string;
+}
+
+/**
+ * A project's exposure to liquidated damages (v4 item 50): how late it is against the completion date after the
+ * extensions of time granted, and the LD that gives at the contract's rate, up to its cap.
+ */
+export interface LdExposureDto {
+  projectId: string;
+  projectCode: string;
+  projectName: string;
+  projectStatus: ProjectStatus;
+  ldRatePct: string;
+  ldPeriod: LdPeriod;
+  ldCapPct: string;
+  /** Revised contract value (with approved variations) LD is worked out on */
+  contractValue: string;
+  endDate: string;
+  extensionDays: number;
+  revisedEndDate: string;
+  /** From the handover record, once the project is complete */
+  completedOn: string | null;
+  /** completedOn, else the later of today and the last planned finish of the schedule */
+  forecastFinish: string;
+  /** Days past the revised completion date, to completion or today */
+  daysLate: number;
+  forecastDaysLate: number;
+  /** Days lost in the delay register to the client, third parties and force majeure, and to us */
+  excusableDaysLost: number;
+  contractorDaysLost: number;
+  /** Excusable days lost not yet covered by extensions granted: a claim to pursue */
+  eotPendingDays: number;
+  /** LD on daysLate, on forecastDaysLate, and on forecastDaysLate less eotPendingDays (if the claims are granted) */
+  ldToDate: string;
+  ldForecast: string;
+  ldForecastWithEot: string;
+  /** ldCapPct of the contract value */
+  ldCap: string;
+  capReached: boolean;
 }
 
 /* ---------- RA bills ---------- */
@@ -1256,6 +1315,16 @@ export interface RaBillMeasurementDto {
   lines: MeasurementLineDto[];
 }
 
+/** One component of the price variation on an RA bill. */
+export interface RaBillPvLineDto {
+  id: string;
+  name: string;
+  sharePct: string;
+  baseIndex: string;
+  currentIndex: string;
+  amount: string;
+}
+
 export interface RaBillDto extends SubmissionBase {
   billNo: number;
   /**
@@ -1281,6 +1350,15 @@ export interface RaBillDto extends SubmissionBase {
   /** Value of work in this bill (taxable value) */
   grossAmount: string;
   grossUpto: string;
+  /**
+   * Price variation on this bill's work value (v4 item 50): work value × Σ share × (current − base) / base over the
+   * contract's components. Negative when the indices fell. GST and the deductions are on work value + price variation.
+   */
+  pvAmount: string;
+  /** The month the current indices are for (YYYY-MM-01) */
+  pvIndexMonth: string | null;
+  pvNote: string | null;
+  pvLines: RaBillPvLineDto[];
   gstRate: string;
   gstAmount: string;
   /** Retention, security deposit, advance recovery, TDS, GST TDS, labour cess and any other deduction, in that order (zero ones left out) */
@@ -1288,7 +1366,7 @@ export interface RaBillDto extends SubmissionBase {
   otherDeduction: string;
   otherDeductionNote: string | null;
   totalDeductions: string;
-  /** gross + GST - deductions */
+  /** gross + price variation + GST - deductions */
   netPayable: string;
   /** What was claimed, when the certified amount differs */
   claimedGross: string | null;
@@ -1299,7 +1377,7 @@ export interface RaBillDto extends SubmissionBase {
   certificateNo: string | null;
   paidDate: string | null;
   measurementCount: number;
-  /** Work value + GST: what the client owes before its deductions */
+  /** Work value + price variation + GST: what the client owes before its deductions */
   invoiceAmount: string;
   /** Received in the bank against this bill */
   receivedAmount: string;

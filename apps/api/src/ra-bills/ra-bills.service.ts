@@ -12,7 +12,7 @@ import { BILLABLE_BOQ_ITEM, UNAPPROVED_EXTRA_ITEM } from '../variations/variatio
 import { dateOnly, dec, iso, money, parseDate } from '../common/serialize';
 import { isUniqueViolation } from '../common/idempotency';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
-import { BillDateDto, CertifyBillDto, CreateRaBillDto, ListRaBillsQuery, UpdateRaBillDto } from './ra-bills.dto';
+import { BillDateDto, BillPriceVariationDto, CertifyBillDto, CreateRaBillDto, ListRaBillsQuery, UpdateRaBillDto } from './ra-bills.dto';
 import { invoiceOf, RECEIPT_SUMS, settlement, syncBillStage } from '../receivables/bill-settlement';
 import { ReceivablesService } from '../receivables/receivables.service';
 import { assertNotExported } from '../tally/exported';
@@ -37,6 +37,7 @@ const include = {
     },
   },
   items: { include: { boqItem: { select: { itemNo: true, description: true, unit: true } } }, orderBy: { sortOrder: 'asc' } },
+  pvLines: { orderBy: { sortOrder: 'asc' } },
   submittedBy: { select: { fullName: true } },
   reviewedBy: { select: { fullName: true } },
   attachments: true,
@@ -71,6 +72,17 @@ const PCT_DEDUCTIONS = [
 ] as const;
 
 type Percentages = Record<(typeof PCT_DEDUCTIONS)[number][1] | 'gstRate', Prisma.Decimal>;
+
+/** One price variation component on a bill: a share of the work value that moves with an index. */
+interface PvLine {
+  sharePct: Prisma.Decimal;
+  baseIndex: Prisma.Decimal;
+  currentIndex: Prisma.Decimal;
+}
+
+/** Work value × share % × (current − base) / base, to the paisa. Negative when the index fell. */
+export const pvLineAmount = (work: Prisma.Decimal, l: PvLine) => round2(work.mul(l.sharePct).div(100).mul(l.currentIndex.sub(l.baseIndex)).div(l.baseIndex));
+const idx = (d: Prisma.Decimal) => d.toFixed(3).replace(/\.?0+$/, '');
 
 interface Line {
   boqItemId: string;
@@ -141,6 +153,10 @@ export class RaBillsService {
       grossPrevious: money(r.grossPrevious)!,
       grossAmount: money(r.grossAmount)!,
       grossUpto: money(r.grossUpto)!,
+      pvAmount: money(r.pvAmount)!,
+      pvIndexMonth: dateOnly(r.pvIndexMonth),
+      pvNote: r.pvNote,
+      pvLines: r.pvLines.map((l) => ({ id: l.id, name: l.name, sharePct: pctStr(l.sharePct), baseIndex: idx(l.baseIndex), currentIndex: idx(l.currentIndex), amount: money(l.amount)! })),
       gstRate: pctStr(r.gstRate),
       gstAmount: money(r.gstAmount)!,
       deductions,
@@ -278,18 +294,28 @@ export class RaBillsService {
     return { ...this.toDto(row, sheets, receipts?.items), ...(row.status === 'APPROVED' ? {} : { heldExtraItems }) };
   }
 
-  /** Work value, GST, deductions and net payable of a set of lines priced on certified (else claimed) quantities. */
+  /**
+   * Work value, price variation, GST, deductions and net payable of a set of lines priced on certified (else claimed)
+   * quantities. GST and the deductions are on work value + price variation.
+   */
   private async totals(tx: Prisma.TransactionClient, bill: { id: string; projectId: string; billNo: number; otherDeduction: Prisma.Decimal }, lines: Line[], pcts: Percentages, advance: Prisma.Decimal) {
     const amounts = lines.map((l) => round2((l.certifiedQty ?? l.thisQty).mul(l.rate)));
     const grossAmount = amounts.reduce((s, a) => s.add(a), ZERO);
     const grossPrevious = lines.reduce((s, l) => s.add(round2(l.prevQty.mul(l.rate))), ZERO);
-    const recovered = await tx.raBill.aggregate({ where: { projectId: bill.projectId, billNo: { lt: bill.billNo } }, _sum: { advanceRecoveryAmount: true } });
+    const [recovered, pvLines] = await Promise.all([
+      tx.raBill.aggregate({ where: { projectId: bill.projectId, billNo: { lt: bill.billNo } }, _sum: { advanceRecoveryAmount: true } }),
+      tx.raBillPvLine.findMany({ where: { billId: bill.id }, select: { id: true, sharePct: true, baseIndex: true, currentIndex: true } }),
+    ]);
     const outstanding = Prisma.Decimal.max(advance.sub(recovered._sum.advanceRecoveryAmount ?? ZERO), ZERO);
-    const base = Prisma.Decimal.max(grossAmount, ZERO);
+    const pvAmounts = pvLines.map((l) => ({ id: l.id, amount: pvLineAmount(grossAmount, l) }));
+    const pvAmount = pvAmounts.reduce((s, l) => s.add(l.amount), ZERO);
+    for (const l of pvAmounts) await tx.raBillPvLine.update({ where: { id: l.id }, data: { amount: l.amount } });
+    const base = Prisma.Decimal.max(grossAmount.add(pvAmount), ZERO);
     const data = {
       grossPrevious,
       grossAmount,
       grossUpto: grossPrevious.add(grossAmount),
+      pvAmount,
       gstRate: pcts.gstRate,
       gstAmount: pctOf(base, pcts.gstRate),
       retentionPct: pcts.retentionPct,
@@ -306,7 +332,7 @@ export class RaBillsService {
       labourCessAmount: pctOf(base, pcts.labourCessPct),
     };
     const totalDeductions = PCT_DEDUCTIONS.reduce((s, [, , k]) => s.add(data[k]), ZERO).add(bill.otherDeduction);
-    return { amounts, data: { ...data, totalDeductions, netPayable: grossAmount.add(data.gstAmount).sub(totalDeductions) } };
+    return { amounts, data: { ...data, totalDeductions, netPayable: grossAmount.add(pvAmount).add(data.gstAmount).sub(totalDeductions) } };
   }
 
   /**
@@ -446,6 +472,42 @@ export class RaBillsService {
     await this.attachments.sync(user, 'raBillId', id, dto.attachmentIds);
     await this.audit.log(user, 'BILL', id, 'UPDATED');
     if (dto.submit) await this.lifecycle.submit(user, 'BILL', id);
+    return this.get(user, id);
+  }
+
+  /**
+   * The price variation on a bill not yet approved (v4 item 50): this bill's index for each component of the contract's
+   * formula. The components are copied from the contract so later changes to it leave this bill alone. No indices
+   * clears it.
+   */
+  async setPriceVariation(user: RequestUser, id: string, dto: BillPriceVariationDto): Promise<RaBillDto> {
+    const row = await this.lifecycle.load(user, 'BILL', id);
+    await this.assertCanPrepare(user, row.projectId);
+    await this.lifecycle.assertEditable(user, row);
+    const project = await this.prisma.project.findUniqueOrThrow({
+      where: { id: row.projectId },
+      select: { priceVariation: true, pvComponents: { orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }] } },
+    });
+    const indices = dto.indices ?? [];
+    if (indices.length && !project.priceVariation) throw new BadRequestException("This project's contract has no price variation clause");
+    const lines = indices.map((x) => {
+      const c = project.pvComponents.find((p) => p.id === x.componentId);
+      if (!c) throw new BadRequestException('A component is not in the contract\'s price variation formula; reload and try again');
+      const currentIndex = D(x.currentIndex);
+      if (currentIndex.lte(0)) throw new BadRequestException(`${c.name}: the current index must be more than 0`);
+      return { name: c.name, sharePct: c.sharePct, baseIndex: c.baseIndex, currentIndex, sortOrder: c.sortOrder };
+    });
+    if (new Set(indices.map((x) => x.componentId)).size < indices.length) throw new BadRequestException('A component is listed twice');
+    await this.prisma.$transaction(async (tx) => {
+      await tx.raBillPvLine.deleteMany({ where: { billId: id } });
+      await tx.raBillPvLine.createMany({ data: lines.map((l) => ({ ...l, billId: id, amount: ZERO })) });
+      await tx.raBill.update({
+        where: { id },
+        data: lines.length ? { pvIndexMonth: dto.indexMonth ? parseDate(dto.indexMonth) : null, pvNote: dto.note || null } : { pvIndexMonth: null, pvNote: null, pvAmount: ZERO },
+      });
+      await this.recompute(tx, id, false);
+    });
+    await this.audit.log(user, 'BILL', id, 'PRICE_VARIATION', lines.length ? `${lines.length} component${lines.length === 1 ? '' : 's'}` : 'Cleared');
     return this.get(user, id);
   }
 
