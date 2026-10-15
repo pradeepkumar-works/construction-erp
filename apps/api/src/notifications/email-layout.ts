@@ -2,12 +2,12 @@ import { PRODUCT_NAME } from '@erp/shared';
 import { escapeHtml } from './email.service';
 
 /**
- * The Nirmaan frame for every email: a black header with the yellow N mark and wordmark, a yellow datum line,
+ * The Nirmaan frame for every email: a navy header with the blue N mark and wordmark, a blue datum line,
  * the message on white, and a short footer. Tables and inline styles only, and the mark is drawn in HTML rather
  * than an image, so it shows in Gmail and Outlook with images blocked. Same colours as the web brand
  * (apps/web/src/lib/brand.ts).
  */
-export const EMAIL_COLORS = { ink: '#1C1F1E', accent: '#FFC20E', canvas: '#F4F3EF', border: '#E3E1DA', muted: '#6B6F6C', link: '#8A5A00' } as const;
+export const EMAIL_COLORS = { ink: '#0B1F3A', accent: '#1E63D6', onAccent: '#FFFFFF', canvas: '#F3F6FA', border: '#DCE3ED', muted: '#5B6779', link: '#1A56BF' } as const;
 
 const DISPLAY = `Archivo,'Arial Narrow','Helvetica Neue',Arial,sans-serif`;
 const BODY = `-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif`;
@@ -23,15 +23,15 @@ export interface EmailLayout {
   footnote?: string;
 }
 
-/** A call-to-action button on the brand yellow. */
+/** A call-to-action button on the brand blue. */
 export function emailButton(href: string, label: string) {
   return `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0"><tr><td style="background:${EMAIL_COLORS.accent};border-radius:4px">
-    <a href="${escapeHtml(href)}" style="display:inline-block;padding:11px 20px;font-family:${BODY};font-size:15px;font-weight:700;color:${EMAIL_COLORS.ink};text-decoration:none">${escapeHtml(label)}</a>
+    <a href="${escapeHtml(href)}" style="display:inline-block;padding:11px 20px;font-family:${BODY};font-size:15px;font-weight:700;color:${EMAIL_COLORS.onAccent};text-decoration:none">${escapeHtml(label)}</a>
   </td></tr></table>`;
 }
 
 export function emailLayout({ preheader, body, orgName, footnote }: EmailLayout) {
-  const mark = `<td style="width:28px;height:28px;background:${EMAIL_COLORS.accent};border-radius:6px;text-align:center;vertical-align:middle;font-family:${DISPLAY};font-size:19px;font-weight:800;line-height:28px;color:${EMAIL_COLORS.ink}">N</td>`;
+  const mark = `<td style="width:28px;height:28px;background:${EMAIL_COLORS.accent};border-radius:6px;text-align:center;vertical-align:middle;font-family:${DISPLAY};font-size:19px;font-weight:800;line-height:28px;color:${EMAIL_COLORS.onAccent}">N</td>`;
   const wordmark = `<td style="padding-left:10px;font-family:${DISPLAY};font-size:17px;font-weight:800;letter-spacing:2px;color:#FFFFFF">${escapeHtml(PRODUCT_NAME.toUpperCase())}</td>`;
   return `<!doctype html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><meta name="color-scheme" content="light"/></head>
 <body style="margin:0;padding:0;background:${EMAIL_COLORS.canvas}">

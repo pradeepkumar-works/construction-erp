@@ -87,7 +87,7 @@ export function MembersCard({ project }: { project: ProjectDetail }) {
           >
             <List.Item.Meta
               avatar={
-                <Avatar size="small" style={{ background: m.isPm ? BRAND.colors.accentDeep : BRAND.colors.primary }}>
+                <Avatar size="small" style={{ background: m.isPm ? BRAND.colors.ink : BRAND.colors.primary }}>
                   {m.fullName
                     .split(' ')
                     .map((s) => s[0])

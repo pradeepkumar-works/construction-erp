@@ -11,23 +11,27 @@ export const BRAND = {
   wordmark: 'NIRMAAN',
   description: 'Site progress, billing, purchases, quality and approvals for construction contractors',
   colors: {
-    /** Signboard black: antd primary (checkboxes, tabs, progress bars), sidebar, headings in printed reports. */
-    primary: '#1C1F1E',
-    /** Menu hover on the dark sidebar. */
-    primaryDeep: '#2E3230',
-    ink: '#1C1F1E',
-    inkDeep: '#0E100F',
-    /** Hi-vis yellow: the mark, primary buttons, the selected menu item. Text on it is `ink`. */
-    accent: '#FFC20E',
-    accentDeep: '#E0A800',
-    /** Links: a dark amber that reads on white. */
-    link: '#8A5A00',
-    /** Pending and alerts (brick orange; yellow is the brand, so it cannot also mean "pending"). */
+    /** Nirmaan blue: antd primary (buttons, checkboxes, tabs, progress bars, the selected menu item). */
+    primary: '#1E63D6',
+    /** Menu hover on the navy sidebar. */
+    primaryDeep: '#17345E',
+    /** Blueprint navy: the sidebar, the sign-in page, headings in printed reports. */
+    ink: '#0B1F3A',
+    inkDeep: '#061328',
+    /** Nirmaan blue: the mark, primary buttons, the selected menu item. Text on it is `onAccent`. */
+    accent: '#1E63D6',
+    accentDeep: '#164FB3',
+    /** A lighter blue for text and icons on the navy (the wordmark's surroundings, landing page highlights). */
+    accentLight: '#6EA8FF',
+    onAccent: '#FFFFFF',
+    /** Links: a deeper blue that reads on white. */
+    link: '#1A56BF',
+    /** Pending and alerts (brick orange, so it never reads as the brand blue). */
     pending: '#C2410C',
     /** Approve and pass buttons. */
     success: '#1F9D55',
-    canvas: '#F4F3EF',
-    border: '#E3E1DA',
+    canvas: '#F3F6FA',
+    border: '#DCE3ED',
   },
 } as const;
 
@@ -39,6 +43,8 @@ export const brandCssVars: Record<string, string> = {
   '--brand-ink-deep': BRAND.colors.inkDeep,
   '--brand-accent': BRAND.colors.accent,
   '--brand-accent-deep': BRAND.colors.accentDeep,
+  '--brand-accent-light': BRAND.colors.accentLight,
+  '--brand-on-accent': BRAND.colors.onAccent,
   '--brand-link': BRAND.colors.link,
   '--brand-canvas': BRAND.colors.canvas,
   '--brand-border': BRAND.colors.border,

@@ -4,6 +4,7 @@ import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import type { PushPlatform } from '@erp/shared';
 import { OUTBOX_DETAIL } from '../offline/types';
+import { colors } from '../theme';
 
 export type PushStatus =
   /** Token obtained and ready to be registered with the API. */
@@ -53,7 +54,7 @@ export async function getPushRegistration(): Promise<PushRegistration> {
         name: 'Site updates',
         importance: Notifications.AndroidImportance.HIGH,
         vibrationPattern: [0, 250, 250, 250],
-        lightColor: '#1D4ED8',
+        lightColor: colors.brand,
       });
     }
     let { status } = await Notifications.getPermissionsAsync();

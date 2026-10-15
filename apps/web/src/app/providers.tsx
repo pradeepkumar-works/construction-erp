@@ -32,14 +32,14 @@ export function Providers({ children }: { children: React.ReactNode }) {
           fontFamily: "var(--font-body), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif",
         },
         components: {
-          Layout: { headerBg: '#ffffff', siderBg: c.ink, bodyBg: c.canvas, triggerBg: c.inkDeep, triggerColor: c.accent },
-          // Primary buttons are hi-vis yellow with black text; everything else that is "primary" stays black.
-          Button: { colorPrimary: c.accent, colorPrimaryHover: c.accentDeep, colorPrimaryActive: c.accentDeep, primaryColor: c.ink, primaryShadow: 'none', fontWeight: 600 },
+          Layout: { headerBg: '#ffffff', siderBg: c.ink, bodyBg: c.canvas, triggerBg: c.inkDeep, triggerColor: c.accentLight },
+          // Primary buttons are Nirmaan blue with white text.
+          Button: { colorPrimary: c.accent, colorPrimaryHover: c.accentDeep, colorPrimaryActive: c.accentDeep, primaryColor: c.onAccent, primaryShadow: 'none', fontWeight: 600 },
           Menu: {
             darkItemBg: c.ink,
             darkSubMenuItemBg: c.ink,
             darkItemSelectedBg: c.accent,
-            darkItemSelectedColor: c.ink,
+            darkItemSelectedColor: c.onAccent,
             darkItemHoverBg: c.primaryDeep,
             darkGroupTitleColor: 'rgba(255,255,255,0.45)',
             itemHeight: 36,

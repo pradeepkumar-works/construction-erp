@@ -30,7 +30,7 @@ export function ProjectOverview({ project }: { project: ProjectDetail }) {
           <Col xs={12} md={6}>
             <Card size="small" loading={isLoading}>
               <Statistic title="Financial progress" value={finPct} suffix="%" precision={1} />
-              <Progress percent={finPct} size="small" showInfo={false} strokeColor={BRAND.colors.accentDeep} />
+              <Progress percent={finPct} size="small" showInfo={false} strokeColor={BRAND.colors.ink} />
             </Card>
           </Col>
           <Col xs={12} md={6}>

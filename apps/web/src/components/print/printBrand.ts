@@ -1,8 +1,8 @@
 import { BRAND } from '@/lib/brand';
 
 /**
- * The Nirmaan look for the printable documents (DPR, progress report): Archivo headings, the black rule with
- * the yellow datum line under the header, and a footer with the N mark. The organisation's own name stays the
+ * The Nirmaan look for the printable documents (DPR, progress report): Archivo headings, the navy rule with
+ * the blue datum line under the header, and a footer with the N mark. The organisation's own name stays the
  * main heading, since the report is theirs; Nirmaan signs the footer.
  */
 
@@ -14,7 +14,7 @@ const DISPLAY = `"Archivo", "Arial Narrow", "Helvetica Neue", Arial, sans-serif`
 
 /** The mark as inline SVG (same drawing as app/icon.svg and BrandMark). */
 export function markSvg(size: number) {
-  return `<svg width="${size}" height="${size}" viewBox="0 0 64 64" aria-hidden="true" style="display:block;flex:0 0 auto"><rect width="64" height="64" rx="12" fill="${BRAND.colors.accent}"/><path d="M15 46V12h9.5l15 20.5V12H49v34h-9.5L24.5 25.5V46z" fill="${BRAND.colors.ink}"/><rect x="15" y="50" width="34" height="3" rx="1.5" fill="${BRAND.colors.ink}"/></svg>`;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 64 64" aria-hidden="true" style="display:block;flex:0 0 auto"><rect width="64" height="64" rx="12" fill="${BRAND.colors.accent}"/><path d="M15 46V12h9.5l15 20.5V12H49v34h-9.5L24.5 25.5V46z" fill="${BRAND.colors.onAccent}"/><rect x="15" y="50" width="34" height="3" rx="1.5" fill="${BRAND.colors.onAccent}"/></svg>`;
 }
 
 /** Styles shared by both documents; each document keeps its own layout CSS. */

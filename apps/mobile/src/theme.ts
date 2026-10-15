@@ -1,24 +1,24 @@
 import type { SubmissionStatus } from '@erp/shared';
 
 /**
- * Nirmaan palette (same as the web app's src/lib/brand.ts). `primary` is signboard black for text, icons and
- * selection; `brand` is hi-vis yellow for the mark and primary buttons, always with `onBrand` text. Yellow is the
- * brand, so "pending" uses brick orange (`warning`).
+ * Nirmaan palette (same as the web app's src/lib/brand.ts). `primary` is Nirmaan blue for links, icons and
+ * selection, `primaryDark` the blueprint navy for big figures; `brand` is the same blue for the mark and primary
+ * buttons, always with `onBrand` (white) text. "Pending" uses brick orange (`warning`) so it never reads as the brand.
  */
 export const colors = {
-  primary: '#1C1F1E',
-  primaryDark: '#0E100F',
-  primarySoft: '#ECEBE6',
-  brand: '#FFC20E',
-  brandSoft: '#FFF4CC',
-  onBrand: '#1C1F1E',
+  primary: '#1E63D6',
+  primaryDark: '#0B1F3A',
+  primarySoft: '#E6EEFB',
+  brand: '#1E63D6',
+  brandSoft: '#DCE8FB',
+  onBrand: '#FFFFFF',
   accent: '#EA580C',
   accentSoft: '#FFEDD5',
-  bg: '#F4F3EF',
+  bg: '#F3F6FA',
   surface: '#FFFFFF',
-  border: '#E3E1DA',
-  text: '#1C1F1E',
-  textMuted: '#5E625F',
+  border: '#DCE3ED',
+  text: '#0F1B2D',
+  textMuted: '#5B6779',
   textOnPrimary: '#FFFFFF',
   success: '#1B7F4B',
   successSoft: '#E2F3E9',
