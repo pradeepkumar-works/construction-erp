@@ -30,7 +30,7 @@ export function RiskHeatMap({ heat }: { heat: number[][] }) {
                         width: cell,
                         height: cell,
                         borderRadius: 4,
-                        background: n ? color : `${color}26`,
+                        background: n ? color : `color-mix(in srgb, ${color} 15%, transparent)`,
                         color: n ? themeColor('colorTextLightSolid') : 'transparent',
                         fontWeight: 600,
                         fontSize: 13,

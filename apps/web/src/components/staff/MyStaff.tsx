@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Alert, App, Button, Card, Col, Empty, List, Popconfirm, Row, Space, Statistic, Table, Typography } from 'antd';
+import { Alert, App, Button, Card, Col, Empty, Flex, Listy, Popconfirm, Row, Space, Statistic, Table, Typography } from 'antd';
 import type { TableProps } from 'antd';
 import { LoginOutlined, LogoutOutlined, PlusOutlined } from '@ant-design/icons';
 import type { LeaveRequestDto } from '@erp/shared';
@@ -129,15 +129,20 @@ export function MyStaff() {
         <Col xs={24} lg={8}>
           <Card size="small" title="Coming holidays">
             {data.holidays.length ? (
-              <List size="small" dataSource={data.holidays} renderItem={(h) => (
-                  <List.Item>
+              <Listy
+                items={data.holidays}
+                rowKey="id"
+                styles={{ item: { padding: '8px 16px', background: 'transparent' } }}
+                itemRender={(h) => (
+                  <Flex justify="space-between" align="center" gap="small">
                     <span>
                       {h.name}
                       {h.projectName ? <Typography.Text type="secondary"> ({h.projectName})</Typography.Text> : null}
                     </span>
                     <Typography.Text type="secondary">{formatDate(h.date)}</Typography.Text>
-                  </List.Item>
-                )} />
+                  </Flex>
+                )}
+              />
             ) : (
               <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="None listed" />
             )}

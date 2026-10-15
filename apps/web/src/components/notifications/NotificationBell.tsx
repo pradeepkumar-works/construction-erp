@@ -3,13 +3,14 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Badge, Button, List, Popover, Typography } from 'antd';
+import { Badge, Button, Empty, Flex, Listy, Popover, Typography } from 'antd';
 import { BellOutlined, CheckOutlined } from '@ant-design/icons';
 import type { NotificationDto } from '@erp/shared';
 import { useMarkAllNotificationsRead, useMarkNotificationRead, useNotifications } from '@/lib/queries';
 import { timeAgo } from '@/lib/format';
 import { notificationHref } from './notificationTarget';
 import { themeColor } from '@/lib/theme';
+import { ListRowMeta } from '@/components/common/ListRowMeta';
 
 /** Header bell: unread badge, the latest notifications in a popover, and a link to the full page. */
 export function NotificationBell() {
@@ -34,28 +35,31 @@ export function NotificationBell() {
           Mark all read
         </Button>
       </div>
-      <List<NotificationDto>
-        size="small"
-        dataSource={data?.items ?? []}
-        locale={{ emptyText: 'No notifications yet' }}
-        style={{ maxHeight: 380, overflow: 'auto' }}
-        renderItem={(n) => (
-          <List.Item onClick={() => openItem(n)} style={{ cursor: 'pointer', padding: '8px 4px', background: n.readAt ? undefined : themeColor('colorPrimaryBg'), borderRadius: 4 }}>
-            <List.Item.Meta
-              avatar={<Badge dot={!n.readAt} offset={[-2, 6]} />}
-              title={<span style={{ fontWeight: n.readAt ? 500 : 700, fontSize: 13 }}>{n.title}</span>}
-              description={
-                <>
-                  <div style={{ fontSize: 12, color: themeColor('colorTextSecondary') }}>{n.body}</div>
-                  <div className="text-muted" style={{ fontSize: 11, marginTop: 2 }}>
-                    {timeAgo(n.createdAt)}
-                  </div>
-                </>
-              }
-            />
-          </List.Item>
-        )}
-      />
+      {data?.items.length ? (
+        <Listy<NotificationDto>
+          items={data.items}
+          rowKey="id"
+          styles={{ root: { maxHeight: 380, overflow: 'auto' }, item: { padding: 0, border: 0 } }}
+          itemRender={(n) => (
+            <Flex onClick={() => openItem(n)} style={{ cursor: 'pointer', padding: '8px 4px', background: n.readAt ? undefined : themeColor('colorPrimaryBg'), borderRadius: 4, borderBottom: `1px solid ${themeColor('colorSplit')}` }}>
+              <ListRowMeta
+                avatar={<Badge dot={!n.readAt} offset={[-2, 6]} />}
+                title={<span style={{ fontWeight: n.readAt ? 500 : 700, fontSize: 13 }}>{n.title}</span>}
+                description={
+                  <>
+                    <div style={{ fontSize: 12, color: themeColor('colorTextSecondary') }}>{n.body}</div>
+                    <div className="text-muted" style={{ fontSize: 11, marginTop: 2 }}>
+                      {timeAgo(n.createdAt)}
+                    </div>
+                  </>
+                }
+              />
+            </Flex>
+          )}
+        />
+      ) : (
+        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No notifications yet" />
+      )}
       <div style={{ textAlign: 'center', borderTop: `1px solid ${themeColor('colorBorderSecondary')}`, paddingTop: 8, marginTop: 4 }}>
         <Link href="/notifications" onClick={() => setOpen(false)}>
           View all notifications

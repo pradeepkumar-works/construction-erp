@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Avatar, Button, Card, List, Popconfirm, Select, Space, Tag, Typography } from 'antd';
+import { App, Avatar, Button, Card, Empty, Flex, Listy, Popconfirm, Select, Space, Tag, Typography } from 'antd';
 import { DeleteOutlined, UserAddOutlined } from '@ant-design/icons';
 import type { ProjectDetail } from '@erp/shared';
 import { canEditProjects } from '@erp/shared';
@@ -10,6 +10,7 @@ import { api, errorMessage } from '@/lib/api';
 import { useUsers } from '@/lib/queries';
 import { useAuth } from '@/lib/auth';
 import { BRAND } from '@/lib/brand';
+import { ListRowMeta } from '@/components/common/ListRowMeta';
 
 export function MembersCard({ project }: { project: ProjectDetail }) {
   const { user } = useAuth();
@@ -42,6 +43,13 @@ export function MembersCard({ project }: { project: ProjectDetail }) {
   const memberIds = new Set(project.members.map((m) => m.userId));
   const candidates = (users ?? []).filter((u) => u.isActive && !memberIds.has(u.id) && u.id !== project.projectManagerId);
 
+  const members = [
+    ...(project.projectManagerName
+      ? [{ id: 'pm', userId: project.projectManagerId ?? '', fullName: project.projectManagerName, roleKey: 'PROJECT_MANAGER' as const, roleName: 'Project Manager', isPm: true }]
+      : []),
+    ...project.members.map((m) => ({ ...m, isPm: false })),
+  ];
+
   return (
     <Card
       size="small"
@@ -63,49 +71,42 @@ export function MembersCard({ project }: { project: ProjectDetail }) {
           <Button onClick={() => setAdding(false)}>Cancel</Button>
         </Space.Compact>
       )}
-      <List
-        size="small"
-        dataSource={[
-          ...(project.projectManagerName
-            ? [{ id: 'pm', userId: project.projectManagerId ?? '', fullName: project.projectManagerName, roleKey: 'PROJECT_MANAGER' as const, roleName: 'Project Manager', isPm: true }]
-            : []),
-          ...project.members.map((m) => ({ ...m, isPm: false })),
-        ]}
-        locale={{ emptyText: 'No team members yet' }}
-        renderItem={(m) => (
-          <List.Item
-            style={{ paddingInline: 0 }}
-            actions={
-              editor && !m.isPm
-                ? [
-                    <Popconfirm key="rm" title={`Remove ${m.fullName} from the project?`} okText="Remove" okButtonProps={{ danger: true }} onConfirm={() => remove.mutate(m.userId)}>
-                      <Button size="small" type="text" danger icon={<DeleteOutlined />} />
-                    </Popconfirm>,
-                  ]
-                : undefined
-            }
-          >
-            <List.Item.Meta
-              avatar={
-                <Avatar size="small" style={{ background: m.isPm ? BRAND.colors.ink : BRAND.colors.primary }}>
-                  {m.fullName
-                    .split(' ')
-                    .map((s) => s[0])
-                    .join('')
-                    .slice(0, 2)
-                    .toUpperCase()}
-                </Avatar>
-              }
-              title={
-                <span style={{ fontSize: 13 }}>
-                  {m.fullName} {m.isPm && <Tag color="gold" style={{ marginLeft: 4 }}>PM</Tag>}
-                </span>
-              }
-              description={<Typography.Text type="secondary" style={{ fontSize: 12 }}>{m.roleName}</Typography.Text>}
-            />
-          </List.Item>
-        )}
-      />
+      {members.length ? (
+        <Listy
+          items={members}
+          rowKey="id"
+          styles={{ item: { padding: '8px 0', background: 'transparent' } }}
+          itemRender={(m) => (
+            <Flex gap="middle" align="center">
+              <ListRowMeta
+                avatar={
+                  <Avatar size="small" style={{ background: m.isPm ? BRAND.colors.ink : BRAND.colors.primary }}>
+                    {m.fullName
+                      .split(' ')
+                      .map((s) => s[0])
+                      .join('')
+                      .slice(0, 2)
+                      .toUpperCase()}
+                  </Avatar>
+                }
+                title={
+                  <span style={{ fontSize: 13 }}>
+                    {m.fullName} {m.isPm && <Tag color="gold" style={{ marginLeft: 4 }}>PM</Tag>}
+                  </span>
+                }
+                description={<Typography.Text type="secondary" style={{ fontSize: 12 }}>{m.roleName}</Typography.Text>}
+              />
+              {editor && !m.isPm ? (
+                <Popconfirm title={`Remove ${m.fullName} from the project?`} okText="Remove" okButtonProps={{ danger: true }} onConfirm={() => remove.mutate(m.userId)}>
+                  <Button size="small" type="text" danger icon={<DeleteOutlined />} />
+                </Popconfirm>
+              ) : null}
+            </Flex>
+          )}
+        />
+      ) : (
+        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No team members yet" />
+      )}
     </Card>
   );
 }
