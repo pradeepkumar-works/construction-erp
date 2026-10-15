@@ -139,6 +139,30 @@ export const ROLES: { who: string; what: string }[] = [
   { who: 'Procurement', what: 'Quotes, comparatives, purchase orders and subcontract work orders.' },
   { who: 'Accounts', what: 'Vendor bills, payments, receipts, the Tally export and the GST registers.' },
   { who: 'Management', what: 'Every project\'s progress, cost, cash and pending approvals the same day.' },
+  { who: 'Client\'s engineer and PMC', what: 'Their own login to see approved progress, certify RA bills and record that they attended an inspection.' },
+];
+
+/** One working day in the demo company, as the product records it. Places, items and figures follow the demo data (seed.ts) and the screenshots. */
+export const DAY: { time: string; what: string; where: string; detail: string }[] = [
+  { time: '07:50', what: 'Attendance marked', where: 'Jajpur water supply scheme', detail: 'Masons, helpers and fitters by labour contractor, from the site in-charge\'s phone.' },
+  { time: '11:30', what: 'Cube test due', where: 'District Hospital Block B, Cuttack', detail: 'The 28-day result for the M25 ground floor slab is due, and QA/QC has already been reminded.' },
+  { time: '17:45', what: 'Progress sent without signal', where: 'Ch. 14+300, Bhubaneswar to Puri highway', detail: 'WMM laying, 296 cum, with photos. It waits on the phone and sends itself when the network is back.' },
+  { time: '18:40', what: 'Approved on the phone', where: 'Project manager, on the way home', detail: '₹6,36,400 of work done now counts in the project\'s progress and in its cost against work done.' },
+];
+
+/** The demo company's three works, as seeded (apps/api/prisma/seed.ts). */
+export const DEMO_PROJECTS: { type: string; code: string; name: string; client: string; place: string }[] = [
+  { type: 'Road', code: 'RD-2026-01', name: 'Bhubaneswar to Puri highway widening, Km 12 to Km 28', client: 'Odisha Works Department', place: 'Khordha' },
+  { type: 'Building', code: 'BL-2026-02', name: 'District Hospital Block B, G+3', client: 'Dept. of Health & Family Welfare', place: 'Cuttack' },
+  { type: 'Water supply', code: 'WS-2026-03', name: 'Jajpur rural piped water supply scheme', client: 'RWSS Odisha, Jal Jeevan Mission', place: 'Jajpur' },
+];
+
+/** What a company can check for itself, rather than take on trust. */
+export const TRUST: { title: string; text: string }[] = [
+  { title: 'Every approval on record', text: 'Who entered it, who approved or sent it back, when, and the reason, in the audit trail.' },
+  { title: 'Your company kept apart', text: 'Each company\'s records are separated down to the database, and site staff see only their own projects.' },
+  { title: 'Take everything out, any day', text: 'One zip with an Excel file for every register and every photo and document you stored.' },
+  { title: 'Tally stays your books', text: 'Vouchers go to TallyPrime once each, with projects as cost centres. Nothing is entered twice.' },
 ];
 
 export const FAQ: { q: string; a: string }[] = [
@@ -153,6 +177,14 @@ export const FAQ: { q: string; a: string }[] = [
   {
     q: 'What kind of projects is it for?',
     a: 'Contractors on road, building and water supply works start with a standard activity list for each. Any project can import its BOQ from Excel.',
+  },
+  {
+    q: 'Can approvals and reminders come on WhatsApp?',
+    a: 'Yes. Approval requests, send-backs, the DPR reminder and the morning approvals digest can go on WhatsApp, with SMS when WhatsApp does not go through. Each person switches it on for their own number.',
+  },
+  {
+    q: 'Can our client see progress?',
+    a: 'Yes, if you invite them. The client\'s engineer and the consultant or PMC get their own login for your projects with them. They see only approved progress, DPRs and reports, certify the RA bills you send, and record that they attended an inspection.',
   },
   {
     q: 'Can we set our own approval limits?',

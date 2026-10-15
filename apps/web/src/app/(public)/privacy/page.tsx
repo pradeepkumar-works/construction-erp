@@ -2,7 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import { SUPPORT_ACCESS_DAYS } from '@erp/shared';
 import { BRAND } from '@/lib/brand';
-import { BrandMark, Wordmark } from '@/components/shell/BrandMark';
+import { SiteFooter, SiteHeader } from '@/components/site/SiteChrome';
 
 /** Where privacy questions go; set NEXT_PUBLIC_PRIVACY_EMAIL on the web project. */
 const CONTACT = process.env.NEXT_PUBLIC_PRIVACY_EMAIL;
@@ -12,16 +12,14 @@ export default function PrivacyPage() {
   const name = BRAND.name;
   return (
     <div className="lp">
-      <header className="lp-nav">
-        <Link href="/welcome" className="lp-brand" aria-label={name}>
-          <BrandMark size={34} />
-          <Wordmark color="#fff" size={20} />
+      <SiteHeader>
+        <Link href="/welcome" className="lp-nav-signin">
+          Product
         </Link>
-        <nav>
-          <Link href="/welcome">Product</Link>
-          <Link href="/login">Sign in</Link>
-        </nav>
-      </header>
+        <Link href="/login" className="lp-btn lp-btn-primary lp-btn-sm">
+          Sign in
+        </Link>
+      </SiteHeader>
 
       <main className="lp-wrap lp-doc">
         <h1>Privacy</h1>
@@ -101,17 +99,7 @@ export default function PrivacyPage() {
         </p>
       </main>
 
-      <footer className="lp-foot">
-        <div className="lp-wrap lp-foot-inner">
-          <span className="lp-brand">
-            <BrandMark size={22} />
-            <Wordmark color="#fff" size={14} />
-          </span>
-          <span>
-            © {new Date().getFullYear()} {name}. {BRAND.description}.
-          </span>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
