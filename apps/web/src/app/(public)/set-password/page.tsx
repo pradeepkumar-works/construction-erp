@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Alert, Button, Descriptions, Form, Input, Result, Skeleton } from 'antd';
-import { LockOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import { MIN_PASSWORD_LENGTH, type LoginResponse, type PasswordTokenInfoDto } from '@erp/shared';
 import { api, errorMessage } from '@/lib/api';
@@ -42,7 +41,7 @@ export default function SetPasswordPage() {
 
   const invite = info.data?.purpose === 'INVITE';
   return (
-    <AuthCard subtitle={invite ? 'Welcome! Choose a password to finish setting up your account.' : 'Choose a new password.'}>
+    <AuthCard title={invite ? 'Set up your account' : 'Choose a new password'} subtitle={invite ? 'Welcome! Choose a password to finish setting up your account.' : 'Pick a new password, then you are signed in.'}>
       {!token || info.error ? (
         <Result
           status="warning"
@@ -68,7 +67,7 @@ export default function SetPasswordPage() {
           <Form layout="vertical" onFinish={onFinish} requiredMark={false}>
             <input type="email" name="username" autoComplete="username" value={info.data.email} readOnly hidden />
             <Form.Item name="password" label="New password" rules={[{ required: true, min: MIN_PASSWORD_LENGTH, message: `At least ${MIN_PASSWORD_LENGTH} characters` }]}>
-              <Input.Password prefix={<LockOutlined />} autoComplete="new-password" size="large" />
+              <Input.Password autoComplete="new-password" size="large" />
             </Form.Item>
             <Form.Item
               name="confirm"
@@ -76,7 +75,7 @@ export default function SetPasswordPage() {
               dependencies={['password']}
               rules={[{ required: true, message: 'Type the password again' }, ({ getFieldValue }) => ({ validator: (_, v) => (!v || v === getFieldValue('password') ? Promise.resolve() : Promise.reject(new Error('The passwords do not match'))) })]}
             >
-              <Input.Password prefix={<LockOutlined />} autoComplete="new-password" size="large" />
+              <Input.Password autoComplete="new-password" size="large" />
             </Form.Item>
             <Button type="primary" htmlType="submit" block size="large" loading={submitting}>
               {invite ? 'Set password and sign in' : 'Save new password and sign in'}

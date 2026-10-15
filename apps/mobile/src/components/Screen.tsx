@@ -14,9 +14,11 @@ interface Props {
   padded?: boolean;
   style?: ViewStyle;
   edges?: ('top' | 'bottom' | 'left' | 'right')[];
+  /** Page colour behind everything (default the app canvas). */
+  background?: string;
 }
 
-export function Screen({ children, scroll = true, keyboard = false, refreshing = false, onRefresh, padded = true, style, edges = ['left', 'right', 'bottom'] }: Props) {
+export function Screen({ children, scroll = true, keyboard = false, refreshing = false, onRefresh, padded = true, style, edges = ['left', 'right', 'bottom'], background }: Props) {
   const body = scroll ? (
     <ScrollView
       style={styles.flex}
@@ -30,7 +32,7 @@ export function Screen({ children, scroll = true, keyboard = false, refreshing =
     <View style={[styles.flex, padded && styles.padded, style]}>{children}</View>
   );
   return (
-    <SafeAreaView style={styles.safe} edges={edges}>
+    <SafeAreaView style={[styles.safe, background ? { backgroundColor: background } : null]} edges={edges}>
       {keyboard ? (
         <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}>
           {body}

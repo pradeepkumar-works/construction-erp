@@ -3,13 +3,13 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Alert, Button, Form, Input, Typography, Tag } from 'antd';
-import { LockOutlined, MailOutlined } from '@ant-design/icons';
+import { Alert, Button, Form, Input } from 'antd';
 import { useAuth } from '@/lib/auth';
 import { errorMessage } from '@/lib/api';
 import { useAuthOptions } from '@/lib/queries';
 import { AuthCard } from '@/components/auth/AuthCard';
 
+const DEMO_PASSWORD = 'password123';
 const DEMO_ACCOUNTS: { email: string; role: string }[] = [
   { email: 'admin@demo.com', role: 'Admin' },
   { email: 'md@demo.com', role: 'Management' },
@@ -23,6 +23,7 @@ export default function LoginPage() {
   const router = useRouter();
   const params = useSearchParams();
   const [form] = Form.useForm<{ email: string; password: string }>();
+  const email = Form.useWatch('email', form);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const { data: options } = useAuthOptions();
@@ -42,40 +43,64 @@ export default function LoginPage() {
   };
 
   return (
-    <AuthCard subtitle="Sign in to manage projects, site progress and approvals.">
-      {error && <Alert type="error" showIcon title={error} style={{ marginBottom: 16 }} />}
+    <AuthCard title="Sign in" subtitle="Welcome back. Manage projects, site progress and approvals.">
+      {error && <Alert type="error" showIcon title={error} style={{ marginBottom: 24 }} />}
 
-      <Form form={form} layout="vertical" onFinish={onFinish} initialValues={{ email: 'pm@demo.com', password: 'password123' }} requiredMark={false}>
+      <Form form={form} layout="vertical" onFinish={onFinish} initialValues={{ email: 'pm@demo.com', password: DEMO_PASSWORD }} requiredMark={false}>
         <Form.Item name="email" label="Email" rules={[{ required: true, message: 'Email is required' }, { type: 'email', message: 'Enter a valid email' }]}>
-          <Input prefix={<MailOutlined />} placeholder="you@company.com" autoComplete="username" size="large" />
+          <Input placeholder="you@company.com" autoComplete="username" size="large" autoFocus />
         </Form.Item>
-        <Form.Item name="password" label="Password" rules={[{ required: true, message: 'Password is required' }]}>
-          <Input.Password prefix={<LockOutlined />} placeholder="Password" autoComplete="current-password" size="large" />
-        </Form.Item>
-        <Button type="primary" htmlType="submit" block size="large" loading={submitting}>
+        <div className="auth-field">
+          <Form.Item name="password" label="Password" rules={[{ required: true, message: 'Password is required' }]}>
+            <Input.Password placeholder="Your password" autoComplete="current-password" size="large" />
+          </Form.Item>
+          <Link href="/forgot-password" className="auth-link auth-field-aside">
+            Forgot password?
+          </Link>
+        </div>
+        <Button type="primary" htmlType="submit" block size="large" loading={submitting} style={{ marginTop: 8 }}>
           Sign in
         </Button>
       </Form>
-      <div style={{ marginTop: 12, display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
-        <Link href="/forgot-password">Forgot password?</Link>
-        {options?.signup ? <Link href="/signup">New company? Create an account</Link> : <Link href="/welcome">What is Nirmaan?</Link>}
-      </div>
 
-      <div style={{ marginTop: 20, background: '#f6f8fb', borderRadius: 8, padding: 12 }}>
-        <Typography.Text strong style={{ fontSize: 12 }}>
-          Demo accounts (password: <code>password123</code>)
-        </Typography.Text>
-        <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {DEMO_ACCOUNTS.map((a) => (
-            <div key={a.email} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-              <Typography.Link onClick={() => form.setFieldsValue({ email: a.email, password: 'password123' })} style={{ fontSize: 12 }}>
-                {a.email}
-              </Typography.Link>
-              <Tag style={{ margin: 0, fontSize: 11 }}>{a.role}</Tag>
-            </div>
-          ))}
-        </div>
+      <p className="auth-alt">
+        {options?.signup ? (
+          <>
+            New company?{' '}
+            <Link href="/signup" className="auth-link">
+              Create an account
+            </Link>
+          </>
+        ) : (
+          <>
+            New here?{' '}
+            <Link href="/welcome" className="auth-link">
+              See what Nirmaan does
+            </Link>
+          </>
+        )}
+      </p>
+
+      <div className="auth-divider">Try a demo account</div>
+      <div className="auth-demo" role="group" aria-label="Demo accounts">
+        {DEMO_ACCOUNTS.map((a) => (
+          <button
+            key={a.email}
+            type="button"
+            title={a.email}
+            aria-pressed={email === a.email}
+            onClick={() => {
+              setError(null);
+              form.setFieldsValue({ email: a.email, password: DEMO_PASSWORD });
+            }}
+          >
+            {a.role}
+          </button>
+        ))}
       </div>
+      <p className="auth-demo-note">
+        Fills in the form. Every demo account uses the password <code>{DEMO_PASSWORD}</code>.
+      </p>
     </AuthCard>
   );
 }

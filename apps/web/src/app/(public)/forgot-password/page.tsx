@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Alert, Button, Form, Input, Result } from 'antd';
-import { MailOutlined } from '@ant-design/icons';
 import { api, errorMessage } from '@/lib/api';
 import { useAuthOptions } from '@/lib/queries';
 import { AuthCard } from '@/components/auth/AuthCard';
@@ -28,7 +27,7 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <AuthCard subtitle="Reset your password">
+    <AuthCard title="Reset your password" subtitle="Enter the email you sign in with and we will send you a link to choose a new password.">
       {sentTo ? (
         <Result
           status="success"
@@ -50,15 +49,17 @@ export default function ForgotPasswordPage() {
           {error && <Alert type="error" showIcon title={error} style={{ marginBottom: 16 }} />}
           <Form layout="vertical" onFinish={onFinish} requiredMark={false}>
             <Form.Item name="email" label="Email" rules={[{ required: true, message: 'Email is required' }, { type: 'email', message: 'Enter a valid email' }]}>
-              <Input prefix={<MailOutlined />} autoComplete="username" size="large" placeholder="you@company.com" />
+              <Input autoComplete="username" size="large" placeholder="you@company.com" autoFocus />
             </Form.Item>
             <Button type="primary" htmlType="submit" block size="large" loading={submitting}>
               Email me a reset link
             </Button>
           </Form>
-          <div style={{ marginTop: 16, textAlign: 'center' }}>
-            <Link href="/login">Back to sign in</Link>
-          </div>
+          <p className="auth-alt">
+            <Link href="/login" className="auth-link">
+              Back to sign in
+            </Link>
+          </p>
         </>
       )}
     </AuthCard>

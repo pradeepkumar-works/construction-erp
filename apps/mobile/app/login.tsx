@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Animated, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../src/auth/AuthContext';
 import { Button, ErrorBanner, Input, Intro, Screen, useIntroSeen } from '../src/components';
@@ -7,12 +7,12 @@ import { errorMessage, request } from '../src/api/client';
 import type { AuthOptionsDto } from '@erp/shared';
 import { PRODUCT_NAME } from '@erp/shared';
 import { API_URL } from '../src/config';
-import { colors, radius, spacing, typography } from '../src/theme';
+import { colors, fonts, radius, spacing, touch, typography } from '../src/theme';
 
 const DEMO_ACCOUNTS = [
   { email: 'engineer@demo.com', role: 'Site Engineer' },
   { email: 'tl@demo.com', role: 'Team Leader' },
-  { email: 'pm@demo.com', role: 'Project Manager (approver)' },
+  { email: 'pm@demo.com', role: 'Project Manager' },
   { email: 'store@demo.com', role: 'Store Manager' },
 ];
 const DEMO_PASSWORD = 'password123';
@@ -26,6 +26,11 @@ export default function LoginScreen() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [introSeen, markIntroSeen] = useIntroSeen();
+  // The form settles into place once, after the intro check.
+  const rise = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (introSeen) Animated.timing(rise, { toValue: 1, duration: 450, useNativeDriver: true }).start();
+  }, [introSeen, rise]);
 
   /** Ask for a reset email; the link opens the web app, where the new password is chosen. */
   const forgot = async () => {
@@ -70,81 +75,110 @@ export default function LoginScreen() {
   if (!introSeen) return <Intro onDone={markIntroSeen} />;
 
   return (
-    <Screen keyboard edges={['top', 'left', 'right', 'bottom']} style={styles.content}>
-      <View style={styles.brand}>
-        <Image source={require('../assets/splash-icon.png')} style={styles.logo} accessibilityIgnoresInvertColors />
-        <Text style={typography.wordmark} accessibilityRole="header">
-          {PRODUCT_NAME.toUpperCase()}
+    <Screen keyboard edges={['top', 'left', 'right', 'bottom']} style={styles.content} background={colors.surface}>
+      <Animated.View style={{ opacity: rise, transform: [{ translateY: rise.interpolate({ inputRange: [0, 1], outputRange: [8, 0] }) }] }}>
+        <View style={styles.brand}>
+          <Image source={require('../assets/splash-icon.png')} style={styles.logo} accessibilityIgnoresInvertColors />
+          <Text style={styles.wordmark}>{PRODUCT_NAME.toUpperCase()}</Text>
+        </View>
+
+        <Text style={styles.title} accessibilityRole="header">
+          Sign in
         </Text>
-        <Text style={typography.caption}>Daily progress, DPRs and material requests from site</Text>
-      </View>
+        <Text style={styles.subtitle}>Welcome back. Report progress, DPRs and material requests from site.</Text>
 
-      <ErrorBanner message={error} />
-      <Input
-        label="Email"
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
-        autoCorrect={false}
-        keyboardType="email-address"
-        textContentType="emailAddress"
-        placeholder="you@company.com"
-        returnKeyType="next"
-      />
-      <Input
-        label="Password"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry={!showPw}
-        textContentType="password"
-        placeholder="••••••••"
-        returnKeyType="go"
-        onSubmitEditing={submit}
-        right={
-          <Pressable onPress={() => setShowPw((s) => !s)} hitSlop={10} accessibilityLabel="Toggle password visibility">
-            <Ionicons name={showPw ? 'eye-off-outline' : 'eye-outline'} size={22} color={colors.textMuted} />
+        <ErrorBanner message={error} />
+        <Text style={styles.label}>Email</Text>
+        <Input
+          accessibilityLabel="Email"
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          autoCorrect={false}
+          keyboardType="email-address"
+          textContentType="emailAddress"
+          placeholder="you@company.com"
+          returnKeyType="next"
+        />
+        <View style={styles.labelRow}>
+          <Text style={styles.label}>Password</Text>
+          <Pressable onPress={forgot} hitSlop={12} accessibilityRole="button">
+            <Text style={styles.link}>Forgot password?</Text>
           </Pressable>
-        }
-      />
-      <Button title="Sign in" onPress={submit} loading={busy} icon="log-in-outline" />
-      <Pressable onPress={forgot} hitSlop={8} style={styles.forgot} accessibilityRole="button">
-        <Text style={styles.forgotText}>Forgot password?</Text>
-      </Pressable>
-      {notice ? <Text style={styles.notice}>{notice}</Text> : null}
+        </View>
+        <Input
+          accessibilityLabel="Password"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry={!showPw}
+          textContentType="password"
+          placeholder="Your password"
+          returnKeyType="go"
+          onSubmitEditing={submit}
+          right={
+            <Pressable onPress={() => setShowPw((s) => !s)} hitSlop={10} accessibilityLabel={showPw ? 'Hide password' : 'Show password'}>
+              <Ionicons name={showPw ? 'eye-off-outline' : 'eye-outline'} size={22} color={colors.textMuted} />
+            </Pressable>
+          }
+        />
+        {notice ? <Text style={styles.notice}>{notice}</Text> : null}
+        <Button title="Sign in" onPress={submit} loading={busy} style={styles.submit} />
 
-      <View style={styles.demo}>
-        <Text style={styles.demoTitle}>Demo accounts (password: {DEMO_PASSWORD})</Text>
-        {DEMO_ACCOUNTS.map((a) => (
-          <Pressable
-            key={a.email}
-            onPress={() => {
-              setEmail(a.email);
-              setPassword(DEMO_PASSWORD);
-              setError(null);
-            }}
-            style={styles.demoRow}
-          >
-            <Text style={styles.demoEmail}>{a.email}</Text>
-            <Text style={typography.caption}>{a.role}</Text>
-          </Pressable>
-        ))}
-        <Text style={styles.api}>API: {API_URL}</Text>
-      </View>
+        <View style={styles.divider}>
+          <View style={styles.rule} />
+          <Text style={styles.dividerText}>Try a demo account</Text>
+          <View style={styles.rule} />
+        </View>
+        <View style={styles.chips}>
+          {DEMO_ACCOUNTS.map((a) => {
+            const on = email.trim().toLowerCase() === a.email;
+            return (
+              <Pressable
+                key={a.email}
+                onPress={() => {
+                  setEmail(a.email);
+                  setPassword(DEMO_PASSWORD);
+                  setError(null);
+                }}
+                accessibilityRole="button"
+                accessibilityState={{ selected: on }}
+                accessibilityHint={`Fills in ${a.email}`}
+                style={({ pressed }) => [styles.chip, on && styles.chipOn, pressed && styles.pressed]}
+              >
+                <Text style={[styles.chipText, on && styles.chipTextOn]}>{a.role}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+        <Text style={styles.demoNote}>Fills in the form. Every demo account uses the password {DEMO_PASSWORD}.</Text>
+        <Text style={styles.api}>{API_URL}</Text>
+      </Animated.View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { justifyContent: 'center', flexGrow: 1 },
-  blank: { flex: 1, backgroundColor: colors.bg },
-  brand: { alignItems: 'center', marginBottom: spacing.xl, gap: spacing.xs },
-  logo: { width: 72, height: 72, marginBottom: spacing.sm },
-  demo: { marginTop: spacing.xl, backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
-  demoTitle: { ...typography.label, marginBottom: spacing.sm },
-  demoRow: { paddingVertical: spacing.sm, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.border, minHeight: 44, justifyContent: 'center' },
-  demoEmail: { ...typography.bodyStrong, color: colors.primary },
-  api: { ...typography.caption, marginTop: spacing.md, fontSize: 12 },
-  forgot: { alignSelf: 'center', paddingVertical: spacing.md, minHeight: 44, justifyContent: 'center' },
-  forgotText: { ...typography.bodyStrong, color: colors.primary },
-  notice: { ...typography.body, color: colors.text, textAlign: 'center' },
+  content: { justifyContent: 'center', flexGrow: 1, paddingHorizontal: spacing.xl, paddingTop: spacing.xxl },
+  blank: { flex: 1, backgroundColor: colors.surface },
+  brand: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: 40 },
+  logo: { width: 36, height: 36 },
+  wordmark: { ...typography.wordmark, fontSize: 20, letterSpacing: 1.5, color: colors.primaryDark },
+  title: { fontFamily: fonts.display, fontSize: 32, color: colors.primaryDark, marginBottom: spacing.sm },
+  subtitle: { fontSize: 15, lineHeight: 22, color: colors.textMuted, marginBottom: spacing.xxl },
+  label: { fontSize: 14, fontWeight: '600', color: colors.primaryDark, marginBottom: spacing.sm },
+  labelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
+  link: { fontSize: 14, fontWeight: '600', color: colors.primary },
+  notice: { ...typography.body, color: colors.text, marginBottom: spacing.lg },
+  submit: { marginTop: spacing.xs },
+  divider: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: 40, marginBottom: spacing.lg },
+  rule: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: colors.border },
+  dividerText: { fontSize: 12, fontWeight: '600', letterSpacing: 0.8, textTransform: 'uppercase', color: colors.textMuted },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  chip: { minHeight: touch.heightSm, justifyContent: 'center', paddingHorizontal: spacing.lg, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+  chipOn: { borderColor: colors.brand, backgroundColor: colors.primarySoft },
+  chipText: { fontSize: 14, color: colors.text },
+  chipTextOn: { color: colors.brand, fontWeight: '600' },
+  pressed: { opacity: 0.7 },
+  demoNote: { ...typography.caption, marginTop: spacing.md },
+  api: { ...typography.caption, fontSize: 11, marginTop: spacing.xl, textAlign: 'center' },
 });

@@ -32,6 +32,11 @@ export const BRAND = {
     success: '#1F9D55',
     canvas: '#F3F6FA',
     border: '#DCE3ED',
+    /** Secondary text on white (subtitles), and quieter captions and footers. */
+    muted: '#5B6779',
+    subtle: '#8A94A3',
+    /** A pale blue fill behind a selected chip. */
+    accentSoft: '#EEF4FD',
   },
 } as const;
 
@@ -48,4 +53,7 @@ export const brandCssVars: Record<string, string> = {
   '--brand-link': BRAND.colors.link,
   '--brand-canvas': BRAND.colors.canvas,
   '--brand-border': BRAND.colors.border,
+  '--brand-muted': BRAND.colors.muted,
+  '--brand-subtle': BRAND.colors.subtle,
+  '--brand-accent-soft': BRAND.colors.accentSoft,
 };

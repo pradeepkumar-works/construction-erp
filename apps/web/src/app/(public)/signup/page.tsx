@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Alert, Button, Form, Input, Skeleton } from 'antd';
-import { BankOutlined, LockOutlined, MailOutlined, PhoneOutlined, UserOutlined } from '@ant-design/icons';
 import { MIN_PASSWORD_LENGTH, type LoginResponse } from '@erp/shared';
 import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
@@ -44,7 +43,7 @@ export default function SignupPage() {
   };
 
   return (
-    <AuthCard subtitle="Set up your company. You become its admin and can invite your team next." width={460}>
+    <AuthCard title="Create your company" subtitle="You become its admin and can invite your team next." width={440}>
       {isLoading ? <Skeleton active /> : null}
       {options && !options.signup ? (
         <Alert type="info" showIcon title="Sign-up is closed on this server." description={`Ask whoever runs your ${BRAND.name} to create your organisation, or sign in if you already have an account.`} style={{ marginBottom: 16 }} />
@@ -53,19 +52,19 @@ export default function SignupPage() {
       {options?.signup ? (
         <Form<Values> layout="vertical" onFinish={onFinish} requiredMark={false}>
           <Form.Item name="organizationName" label="Company name" rules={[{ required: true, whitespace: true, min: 3, message: 'Enter your company name' }]}>
-            <Input prefix={<BankOutlined />} placeholder="Sai Ram Constructions Pvt Ltd" size="large" maxLength={120} />
+            <Input placeholder="Sai Ram Constructions Pvt Ltd" size="large" maxLength={120} />
           </Form.Item>
           <Form.Item name="fullName" label="Your name" rules={[{ required: true, whitespace: true, min: 2, message: 'Enter your name' }]}>
-            <Input prefix={<UserOutlined />} autoComplete="name" size="large" maxLength={80} />
+            <Input autoComplete="name" size="large" maxLength={80} />
           </Form.Item>
           <Form.Item name="email" label="Work email" rules={[{ required: true, message: 'Email is required' }, { type: 'email', message: 'Enter a valid email' }]}>
-            <Input prefix={<MailOutlined />} autoComplete="username" size="large" />
+            <Input autoComplete="username" size="large" />
           </Form.Item>
           <Form.Item name="phone" label="Mobile (optional)">
-            <Input prefix={<PhoneOutlined />} autoComplete="tel" size="large" maxLength={20} />
+            <Input autoComplete="tel" size="large" maxLength={20} />
           </Form.Item>
           <Form.Item name="password" label="Password" rules={[{ required: true, min: MIN_PASSWORD_LENGTH, message: `At least ${MIN_PASSWORD_LENGTH} characters` }]}>
-            <Input.Password prefix={<LockOutlined />} autoComplete="new-password" size="large" />
+            <Input.Password autoComplete="new-password" size="large" />
           </Form.Item>
           <Form.Item
             name="confirm"
@@ -73,16 +72,19 @@ export default function SignupPage() {
             dependencies={['password']}
             rules={[{ required: true, message: 'Type the password again' }, ({ getFieldValue }) => ({ validator: (_, v) => (!v || v === getFieldValue('password') ? Promise.resolve() : Promise.reject(new Error('The passwords do not match'))) })]}
           >
-            <Input.Password prefix={<LockOutlined />} autoComplete="new-password" size="large" />
+            <Input.Password autoComplete="new-password" size="large" />
           </Form.Item>
           <Button type="primary" htmlType="submit" block size="large" loading={submitting}>
             Create organisation
           </Button>
         </Form>
       ) : null}
-      <div style={{ marginTop: 16, textAlign: 'center' }}>
-        Already have an account? <Link href="/login">Sign in</Link>
-      </div>
+      <p className="auth-alt">
+        Already have an account?{' '}
+        <Link href="/login" className="auth-link">
+          Sign in
+        </Link>
+      </p>
     </AuthCard>
   );
 }
