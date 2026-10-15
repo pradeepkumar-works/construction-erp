@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import type { ActivityDto, BoqItemDto } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
@@ -9,6 +9,8 @@ import { dateOnly, dec, money, parseDate, pct } from '../common/serialize';
 import { BulkBoqDto, CreateActivityDto, CreateBoqItemDto, UpdateActivityDto, UpdateBoqItemDto } from './planning.dto';
 
 const D = (v: string | number | Prisma.Decimal) => new Prisma.Decimal(v);
+
+const EXTRA_QTY = 'An extra item gets its quantity from a variation the client approves (Billing > Variations), not from the BOQ';
 
 @Injectable()
 export class PlanningService {
@@ -55,6 +57,7 @@ export class PlanningService {
     await this.access.assertCanAccessProject(user, projectId);
     const dup = await this.prisma.boqItem.findFirst({ where: { projectId, itemNo: dto.itemNo } });
     if (dup) throw new ConflictException(`BOQ item ${dto.itemNo} already exists`);
+    if (D(dto.originalQty).isZero() && dto.revisedQty && !D(dto.revisedQty).isZero()) throw new BadRequestException(EXTRA_QTY);
     const row = await this.prisma.boqItem.create({
       data: {
         organizationId: user.organizationId,
@@ -106,6 +109,11 @@ export class PlanningService {
     if (dto.originalQty !== undefined) data.originalQty = D(dto.originalQty);
     if (dto.revisedQty !== undefined) data.revisedQty = dto.revisedQty ? D(dto.revisedQty) : null;
     if (dto.sortOrder !== undefined) data.sortOrder = dto.sortOrder;
+    // An extra item (no original quantity) gets its quantity only from an approved variation.
+    const original = dto.originalQty !== undefined ? D(dto.originalQty) : item.originalQty;
+    const revised = dto.revisedQty !== undefined ? (dto.revisedQty ? D(dto.revisedQty) : null) : item.revisedQty;
+    const wasExtra = (item.revisedQty ?? item.originalQty).isZero();
+    if (wasExtra && original.isZero() && revised && !revised.isZero()) throw new BadRequestException(EXTRA_QTY);
     await this.prisma.boqItem.update({ where: { id }, data });
     await this.audit.log(user, 'BOQ_ITEM', id, 'UPDATED');
     return (await this.listBoq(user, projectId)).find((i) => i.id === id);

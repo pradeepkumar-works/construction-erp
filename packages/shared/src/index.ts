@@ -25,3 +25,4 @@ export * from './portal';
 export * from './company-data';
 export * from './platform';
 export * from './billing';
+export * from './variation';

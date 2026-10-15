@@ -113,6 +113,8 @@ demo seed at 1280 × 800, scale 1.25, saved as WebP).
   a dashboard tile, and billed value and cash in on project cost.
 - Edit and resubmit: a rejected or changes-requested entry is fixed in place (web drawer or site app)
   and sent back for approval with the reviewer's note shown alongside the form.
+- Variations: extra items and quantity changes claimed from the client, sent and decided with the client's
+  reference; approval updates the BOQ and the revised contract value, and unapproved extra items stay out of RA bills.
 - Dashboards: company (projects, contract value, pending approvals, delayed activities, DPRs
   today; for finance roles receivables, vendor payable, this month's expense and billing, and financial
   progress) and project (physical progress weighted by BOQ value, BOQ executed amount, activity

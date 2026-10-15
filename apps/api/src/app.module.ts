@@ -24,6 +24,7 @@ import { RisksModule } from './risks/risks.module';
 import { TemplatesModule } from './templates/templates.module';
 import { MeasurementsModule } from './measurements/measurements.module';
 import { ClientsModule } from './clients/clients.module';
+import { VariationsModule } from './variations/variations.module';
 import { ContractsModule } from './contracts/contracts.module';
 import { RaBillsModule } from './ra-bills/ra-bills.module';
 import { ReceivablesModule } from './receivables/receivables.module';
@@ -63,6 +64,7 @@ import { HealthController } from './health.controller';
     ExpensesModule,
     MeasurementsModule,
     ClientsModule,
+    VariationsModule,
     ContractsModule,
     RaBillsModule,
     ReceivablesModule,

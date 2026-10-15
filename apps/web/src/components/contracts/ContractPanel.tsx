@@ -8,7 +8,7 @@ import type { ContractExtensionDto } from '@erp/shared';
 import { CONTRACT_PERCENT_FIELDS, CONTRACT_PERCENT_LABELS, DELAY_PARTY_LABELS, GST_STATES, canEditContract } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useContract } from '@/lib/queries';
-import { formatDate, formatINR } from '@/lib/format';
+import { formatDate, formatINR, toNumber } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { ContractFormModal } from './ContractFormModal';
 
@@ -60,6 +60,14 @@ export function ContractPanel({ projectId }: { projectId: string }) {
           <Descriptions.Item label="Work order">{c.workOrderNo ?? '-'}</Descriptions.Item>
           <Descriptions.Item label="Agreement">{c.agreementNo ? `${c.agreementNo}${c.agreementDate ? `, ${formatDate(c.agreementDate)}` : ''}` : '-'}</Descriptions.Item>
           <Descriptions.Item label="Contract value">{c.contractValue ? formatINR(c.contractValue) : '-'}</Descriptions.Item>
+          <Descriptions.Item label="Revised contract value">
+            {c.revisedContractValue ? formatINR(c.revisedContractValue) : '-'}
+            {toNumber(c.approvedVariations) !== 0 && (
+              <div className="text-muted" style={{ fontSize: 12 }}>
+                <Link href={`/projects/${c.projectId}?tab=variations`}>{formatINR(c.approvedVariations)} in approved variations</Link>
+              </div>
+            )}
+          </Descriptions.Item>
           <Descriptions.Item label="Start">{formatDate(c.startDate)}</Descriptions.Item>
           <Descriptions.Item label="Completion (agreement)">{formatDate(c.endDate)}</Descriptions.Item>
           <Descriptions.Item label="Completion (with extensions)">

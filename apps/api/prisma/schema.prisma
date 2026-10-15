@@ -386,6 +386,8 @@ model Organization {
   holidays          Holiday[]
   outboundMessages  OutboundMessage[]
   billingPayments   BillingPayment[]
+  variations        Variation[]
+  variationLines    VariationLine[]
 }
 
 model Role {
@@ -490,6 +492,7 @@ model User {
   revisionsIssued      DocumentRevision[] @relation("RevisionIssuer")
   transmittalsSent     Transmittal[]      @relation("TransmittalSender")
   lettersRecorded      Letter[]           @relation("LetterRecorder")
+  variationsCreated    Variation[]        @relation("VariationCreator")
   employee             Employee?          @relation("EmployeeLogin")
   staffMarked          StaffAttendance[]  @relation("StaffAttendanceMarker")
   leaveDecided         LeaveRequest[]     @relation("LeaveDecider")
@@ -582,6 +585,7 @@ model Project {
   staff            Employee[]
   staffAttendance  StaffAttendance[]
   holidays         Holiday[]
+  variations       Variation[]
 
   @@unique([organizationId, code])
   @@index([organizationId, status])
@@ -1063,6 +1067,7 @@ model BoqItem {
   measurements   MeasurementSheet[]
   billItems      RaBillItem[]
   workOrderLines WorkOrderLine[]
+  variationLines VariationLine[]
 
   @@unique([projectId, itemNo])
   @@index([organizationId])
@@ -1877,6 +1882,8 @@ model Attachment {
   revision          DocumentRevision? @relation(fields: [revisionId], references: [id], onDelete: Cascade)
   letterId          String?
   letter            Letter?           @relation(fields: [letterId], references: [id], onDelete: Cascade)
+  variationId       String?
+  variation         Variation?        @relation(fields: [variationId], references: [id], onDelete: Cascade)
   createdAt         DateTime          @default(now())
 
   @@index([organizationId])
@@ -2472,4 +2479,86 @@ model BillingPayment {
   periodTo          DateTime?            @db.Date
 
   @@index([organizationId, createdAt])
+}
+
+// ----- Variations (v4 item 37) -----
+
+/// Where a variation stands with the client. Only an approved variation changes the BOQ and the contract value.
+enum VariationStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+enum VariationCause {
+  CLIENT_INSTRUCTION
+  DESIGN_CHANGE
+  SITE_CONDITION
+  QUANTITY_DEVIATION
+  OTHER
+}
+
+/// A change to the contract claimed from the client: extra items and quantity changes, with the client's decision.
+model Variation {
+  id             String          @id @default(uuid())
+  organizationId String
+  organization   Organization    @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  /// Numbered per project: V-1, V-2, ...
+  varNo          Int
+  title          String
+  cause          VariationCause
+  description    String?
+  status         VariationStatus @default(DRAFT)
+  /// Sum of the lines: quantity × rate as claimed
+  claimedAmount  Decimal         @db.Decimal(18, 2)
+  /// Sum of the lines as the client approved them (set on approval)
+  approvedAmount Decimal?        @db.Decimal(18, 2)
+  /// Sent to the client: date and our letter reference
+  submittedDate  DateTime?       @db.Date
+  submittedRef   String?
+  /// Client's decision: date, their order or letter reference, and a note
+  decidedDate    DateTime?       @db.Date
+  clientRef      String?
+  decisionNote   String?
+  createdById    String
+  createdBy      User            @relation("VariationCreator", fields: [createdById], references: [id])
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  lines       VariationLine[]
+  attachments Attachment[]
+
+  @@unique([projectId, varNo])
+  @@index([organizationId, status])
+}
+
+/// One item of a variation: a quantity change on an existing BOQ item, or a new (extra) item.
+model VariationLine {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  variationId    String
+  variation      Variation    @relation(fields: [variationId], references: [id], onDelete: Cascade)
+  /// The existing BOQ item changed; for a new item, the BOQ item created when the variation is approved
+  boqItemId      String?
+  boqItem        BoqItem?     @relation(fields: [boqItemId], references: [id], onDelete: Restrict)
+  isNewItem      Boolean      @default(false)
+  itemNo         String
+  description    String
+  unit           String
+  /// Quantity added (negative: omitted); a new item's whole quantity
+  qty            Decimal      @db.Decimal(18, 3)
+  /// BOQ rate for an existing item; the proposed rate for a new item
+  rate           Decimal      @db.Decimal(18, 2)
+  /// As the client approved it (set on approval)
+  approvedQty    Decimal?     @db.Decimal(18, 3)
+  approvedRate   Decimal?     @db.Decimal(18, 2)
+  sortOrder      Int          @default(0)
+
+  @@index([variationId])
+  @@index([boqItemId])
+  @@index([organizationId])
 }

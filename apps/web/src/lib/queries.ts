@@ -2,6 +2,9 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
+  VariationDto,
+  VariationStatus,
+  VariationSummaryDto,
   BillingDetailsDto,
   BillingInvoiceDto,
   BillingOrderDto,
@@ -1362,3 +1365,32 @@ export function useSetTrialEnd() {
     },
   });
 }
+
+/* ---------- variations (v4 item 37) ---------- */
+
+export interface VariationFilters extends PageParams {
+  projectId?: string;
+  status?: VariationStatus;
+}
+
+export const useVariations = (filters?: VariationFilters, enabled = true) =>
+  useQuery({
+    queryKey: ['variations', 'list', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<VariationDto>>('/variations', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+
+export const useVariation = (id: string | undefined) =>
+  useQuery({
+    queryKey: ['variations', 'detail', id],
+    queryFn: async () => (await api.get<VariationDto>(`/variations/${id}`)).data,
+    enabled: !!id,
+  });
+
+export const useVariationSummary = (projectId?: string, enabled = true) =>
+  useQuery({
+    queryKey: ['variations', 'summary', projectId ?? 'all'],
+    queryFn: async () => (await api.get<VariationSummaryDto[]>('/variations/summary', { params: clean({ projectId }) })).data,
+    enabled,
+  });
