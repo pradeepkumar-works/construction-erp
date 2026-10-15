@@ -136,8 +136,7 @@ export function SubBillFormModal({
         {!bill && !workOrderId && (
           <Form.Item name="workOrderId" label="Work order" rules={[{ required: true, message: 'Choose the work order' }]}>
             <Select
-              showSearch
-              optionFilterProp="label"
+              showSearch={{ optionFilterProp: 'label' }}
               loading={orders.isLoading}
               placeholder="An approved, open work order"
               options={(orders.data?.items ?? []).map((o) => ({ value: o.id, label: `${o.woNo} · ${o.vendorName} · ${o.title}` }))}

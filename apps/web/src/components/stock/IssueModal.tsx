@@ -83,8 +83,7 @@ export function IssueModal({ open, onClose, projectId }: { open: boolean; onClos
       <Form form={form} layout="vertical" onFinish={(v) => save.mutate(v)} style={{ marginTop: 8 }}>
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]} hidden={!!projectId}>
           <Select
-            showSearch
-            optionFilterProp="label"
+            showSearch={{ optionFilterProp: 'label' }}
             placeholder="Select project"
             onChange={() => form.setFieldsValue({ lines: [{}], activityId: undefined, workOrderId: undefined })}
             options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))}
@@ -111,16 +110,16 @@ export function IssueModal({ open, onClose, projectId }: { open: boolean; onClos
             <AutoComplete
               placeholder="Contractor, gang or person"
               options={(suggestions.data?.contractors ?? []).map((c) => ({ value: c }))}
-              filterOption={(input, o) => (o?.value ?? '').toLowerCase().includes(input.toLowerCase())}
+              showSearch={{ filterOption: (input, o) => (o?.value ?? '').toLowerCase().includes(input.toLowerCase()) }}
             />
           </Form.Item>
           <Form.Item name="activityId" label="For activity">
-            <Select allowClear showSearch optionFilterProp="label" placeholder="Optional" disabled={!scope} options={(activities.data ?? []).map((a) => ({ value: a.id, label: a.name }))} />
+            <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Optional" disabled={!scope} options={(activities.data ?? []).map((a) => ({ value: a.id, label: a.name }))} />
           </Form.Item>
         </div>
 
         {scope && !stock.isLoading && !items.length ? (
-          <Alert type="warning" showIcon style={{ marginBottom: 12 }} message="Nothing is in stock at this project yet. Receive material first." />
+          <Alert type="warning" showIcon style={{ marginBottom: 12 }} title="Nothing is in stock at this project yet. Receive material first." />
         ) : null}
 
         <Form.Item label="Items" required style={{ marginBottom: 8 }}>
@@ -134,8 +133,7 @@ export function IssueModal({ open, onClose, projectId }: { open: boolean; onClos
                     <div key={f.key} style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
                       <Form.Item name={[f.name, 'itemId']} style={{ flex: 3, marginBottom: 0 }} rules={[{ required: true, message: 'Pick an item' }]}>
                         <Select
-                          showSearch
-                          optionFilterProp="label"
+                          showSearch={{ optionFilterProp: 'label' }}
                           placeholder={scope ? 'Item' : 'Pick the project first'}
                           disabled={!scope}
                           loading={stock.isLoading}

@@ -179,8 +179,7 @@ export function RiskFormModal({ open, onClose, projectId, risk, prefill }: { ope
         </Form.Item>
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]} hidden={!!fixedProject}>
           <Select
-            showSearch
-            optionFilterProp="label"
+            showSearch={{ optionFilterProp: 'label' }}
             placeholder="Select project"
             options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))}
             onChange={() => form.setFieldsValue({ activityId: undefined, ownerId: undefined })}
@@ -194,7 +193,7 @@ export function RiskFormModal({ open, onClose, projectId, risk, prefill }: { ope
             <Select placeholder="Select" options={RISK_CATEGORIES.map((c) => ({ value: c, label: RISK_CATEGORY_LABELS[c] }))} />
           </Form.Item>
           <Form.Item name="activityId" label="Activity affected (optional)">
-            <Select allowClear showSearch optionFilterProp="label" disabled={!selectedProject} options={(activities ?? []).map((a) => ({ value: a.id, label: a.name }))} />
+            <Select allowClear showSearch={{ optionFilterProp: 'label' }} disabled={!selectedProject} options={(activities ?? []).map((a) => ({ value: a.id, label: a.name }))} />
           </Form.Item>
         </div>
         <Form.Item name="description" label="Details">
@@ -253,7 +252,7 @@ export function RiskFormModal({ open, onClose, projectId, risk, prefill }: { ope
         </Form.Item>
         <div style={grid('1fr 1fr')}>
           <Form.Item name="ownerId" label="Owner (follows it up)">
-            <Select allowClear showSearch optionFilterProp="label" disabled={!selectedProject} options={owners} />
+            <Select allowClear showSearch={{ optionFilterProp: 'label' }} disabled={!selectedProject} options={owners} />
           </Form.Item>
           <Form.Item name="dueDate" label="Action due / next review">
             <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" />

@@ -32,7 +32,7 @@ export function SectorPanel({ project, editable }: { project: ProjectDetail; edi
     <div className="sector-panel" style={{ padding: 16, display: 'grid', gap: 16 }}>
       {editable || missing ? (
         <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-          {missing ? <Alert style={{ flex: 1 }} type="info" showIcon message={missing} /> : <div style={{ flex: 1 }} />}
+          {missing ? <Alert style={{ flex: 1 }} type="info" showIcon title={missing} /> : <div style={{ flex: 1 }} />}
           {editable ? (
             <Button icon={<SettingOutlined />} onClick={() => setSettings(true)}>
               Sector settings

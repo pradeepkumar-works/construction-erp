@@ -23,7 +23,7 @@ export function MachineryDrawer({ id, open, onClose, onEdit }: { id: string | nu
     <Drawer
       open={open}
       onClose={onClose}
-      width={640}
+      size={640}
       title={
         data ? (
           <span>

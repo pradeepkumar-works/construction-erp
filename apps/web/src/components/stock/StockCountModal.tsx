@@ -97,8 +97,7 @@ export function StockCountModal({ open, onClose, projectId: fixedProject }: { op
         {!fixedProject && (
           <Form.Item label="Project" layout="vertical">
             <Select
-              showSearch
-              optionFilterProp="label"
+              showSearch={{ optionFilterProp: 'label' }}
               placeholder="Select project"
               value={projectFilter}
               onChange={setProjectFilter}

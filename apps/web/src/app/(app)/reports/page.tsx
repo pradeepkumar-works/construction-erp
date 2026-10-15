@@ -31,8 +31,7 @@ function Reports() {
         projectId={projectId}
         picker={
           <Select
-            showSearch
-            optionFilterProp="label"
+            showSearch={{ optionFilterProp: 'label' }}
             style={{ width: 340 }}
             placeholder="Project"
             value={projectId}

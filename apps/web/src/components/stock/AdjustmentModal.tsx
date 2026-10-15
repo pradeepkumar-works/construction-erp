@@ -77,7 +77,7 @@ export function AdjustmentModal({ open, onClose, projectId }: { open: boolean; o
     >
       <Form form={form} layout="vertical" onFinish={(v) => save.mutate(v)} style={{ marginTop: 8 }}>
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]} hidden={!!projectId}>
-          <Select showSearch optionFilterProp="label" placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
+          <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
         </Form.Item>
         <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', columnGap: 12 }}>
           <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Required' }]}>
@@ -98,8 +98,7 @@ export function AdjustmentModal({ open, onClose, projectId }: { open: boolean; o
                     <div key={f.key} style={{ display: 'flex', gap: 6, alignItems: 'flex-start', flexWrap: 'wrap' }}>
                       <Form.Item name={[f.name, 'itemId']} style={{ flex: '3 1 220px', marginBottom: 0 }} rules={[{ required: true, message: 'Pick an item' }]}>
                         <Select
-                          showSearch
-                          optionFilterProp="label"
+                          showSearch={{ optionFilterProp: 'label' }}
                           placeholder="Item"
                           loading={items.isLoading}
                           onChange={() => form.setFieldValue(['lines', f.name, 'quantity'], null)}

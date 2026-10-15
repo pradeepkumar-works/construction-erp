@@ -43,7 +43,7 @@ export function DprDrawer({ id, open, onClose, onEdit }: { id: string | null; op
     <Drawer
       open={open}
       onClose={onClose}
-      width={820}
+      size={820}
       title={
         data ? (
           <Space>

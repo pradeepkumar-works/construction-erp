@@ -82,7 +82,7 @@ export function StaffPayroll({ month, projectId }: { month: string; projectId?: 
         </Button>
       </div>
       {unmarked > 0 && (
-        <Alert type="warning" showIcon style={{ margin: '0 12px 12px' }} message={`${unmarked} ${unmarked === 1 ? 'person has' : 'people have'} working days with no attendance or leave. Those days are not deducted; check them before sending.`} />
+        <Alert type="warning" showIcon style={{ margin: '0 12px 12px' }} title={`${unmarked} ${unmarked === 1 ? 'person has' : 'people have'} working days with no attendance or leave. Those days are not deducted; check them before sending.`} />
       )}
       <Table<PayrollRowDto>
         rowKey="employeeId"

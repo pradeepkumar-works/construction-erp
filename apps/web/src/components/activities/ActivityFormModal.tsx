@@ -96,7 +96,7 @@ export function ActivityFormModal({
     <Modal open={open} title={isEdit ? 'Edit activity' : 'Add activity'} okText={isEdit ? 'Save' : 'Add activity'} onCancel={onClose} onOk={() => form.submit()} confirmLoading={mutation.isPending} width={640} destroyOnHidden>
       <Form form={form} layout="vertical" onFinish={(v) => mutation.mutate(v)} style={{ marginTop: 8 }}>
         <Form.Item name="boqItemId" label="Linked BOQ item">
-          <Select allowClear showSearch optionFilterProp="label" placeholder="Optional - pick a BOQ item to link" onChange={onBoqChange} options={(boq ?? []).map((b) => ({ value: b.id, label: `${b.itemNo} - ${b.description}` }))} />
+          <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Optional - pick a BOQ item to link" onChange={onBoqChange} options={(boq ?? []).map((b) => ({ value: b.id, label: `${b.itemNo} - ${b.description}` }))} />
         </Form.Item>
         <Form.Item name="name" label="Activity name" rules={[{ required: true, message: 'Required' }]}>
           <Input placeholder="GSB laying" />
@@ -113,7 +113,7 @@ export function ActivityFormModal({
           </Form.Item>
         </div>
         <Form.Item name="responsibleId" label="Responsible">
-          <Select allowClear showSearch optionFilterProp="label" placeholder="Project member" options={members.map((m) => ({ value: m.userId, label: `${m.fullName} (${m.roleName})` }))} />
+          <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Project member" options={members.map((m) => ({ value: m.userId, label: `${m.fullName} (${m.roleName})` }))} />
         </Form.Item>
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '0 16px', alignItems: 'end' }}>
           <Form.Item name="checklistTemplateId" label="Inspection checklist">

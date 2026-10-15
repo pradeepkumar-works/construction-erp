@@ -142,16 +142,16 @@ export function AttendanceFormModal({ open, onClose, projectId, sheet: initial }
     <Modal open={open} title={title} onCancel={onClose} footer={footer} width={720} destroyOnHidden styles={{ body: { maxHeight: '70vh', overflowY: 'auto', paddingRight: 8 } }}>
       <Form form={form} layout="vertical" onFinish={(v) => save.mutate(v)} disabled={readOnly} style={{ marginTop: 8 }}>
         {editing && sheet.locked ? (
-          <Alert type="info" showIcon style={{ marginBottom: 12 }} message="Locked: the DPR for this day is approved." />
+          <Alert type="info" showIcon style={{ marginBottom: 12 }} title="Locked: the DPR for this day is approved." />
         ) : !editing && locked ? (
-          <Alert type="warning" showIcon style={{ marginBottom: 12 }} message="The DPR for this day is already approved, so attendance can no longer be recorded for it." />
+          <Alert type="warning" showIcon style={{ marginBottom: 12 }} title="The DPR for this day is already approved, so attendance can no longer be recorded for it." />
         ) : null}
         {existingForDay ? (
           <Alert
             type="warning"
             showIcon
             style={{ marginBottom: 12 }}
-            message={`Attendance for ${formatDate(existingForDay.date)} is already recorded (${existingForDay.totalWorkers} workers, by ${existingForDay.recordedByName}).`}
+            title={`Attendance for ${formatDate(existingForDay.date)} is already recorded (${existingForDay.totalWorkers} workers, by ${existingForDay.recordedByName}).`}
             action={
               <Button size="small" onClick={() => load(existingForDay)}>
                 Open it
@@ -159,10 +159,10 @@ export function AttendanceFormModal({ open, onClose, projectId, sheet: initial }
             }
           />
         ) : null}
-        {movedOnto ? <Alert type="warning" showIcon style={{ marginBottom: 12 }} message={`${formatDate(movedOnto.date)} already has its own sheet. Pick another date.`} /> : null}
+        {movedOnto ? <Alert type="warning" showIcon style={{ marginBottom: 12 }} title={`${formatDate(movedOnto.date)} already has its own sheet. Pick another date.`} /> : null}
 
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]} hidden={!!fixedProject}>
-          <Select showSearch optionFilterProp="label" placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
+          <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
         </Form.Item>
         <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Required' }]} style={{ maxWidth: 240 }}>
           <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
@@ -181,10 +181,10 @@ export function AttendanceFormModal({ open, onClose, projectId, sheet: initial }
                 {fields.map((f) => (
                   <div key={f.key} style={{ display: 'flex', gap: 6 }}>
                     <Form.Item name={[f.name, 'contractor']} noStyle rules={[{ required: true, whitespace: true, message: '' }]}>
-                      <AutoComplete style={{ flex: 3 }} options={contractorOptions} placeholder="Contractor" filterOption={(input, o) => (o?.value ?? '').toLowerCase().includes(input.toLowerCase())} />
+                      <AutoComplete style={{ flex: 3 }} options={contractorOptions} placeholder="Contractor" showSearch={{ filterOption: (input, o) => (o?.value ?? '').toLowerCase().includes(input.toLowerCase()) }} />
                     </Form.Item>
                     <Form.Item name={[f.name, 'category']} noStyle rules={[{ required: true, whitespace: true, message: '' }]}>
-                      <AutoComplete style={{ flex: 2 }} options={categoryOptions} placeholder="Trade" filterOption={(input, o) => (o?.value ?? '').toLowerCase().includes(input.toLowerCase())} />
+                      <AutoComplete style={{ flex: 2 }} options={categoryOptions} placeholder="Trade" showSearch={{ filterOption: (input, o) => (o?.value ?? '').toLowerCase().includes(input.toLowerCase()) }} />
                     </Form.Item>
                     <Form.Item name={[f.name, 'count']} noStyle rules={[{ required: true, message: '' }]}>
                       <InputNumber min={0} precision={0} placeholder="Nos" style={{ width: 90 }} />

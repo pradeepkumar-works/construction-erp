@@ -37,7 +37,7 @@ export function EmployeeDrawer({ id, open, onClose, onOpenLeave }: { id: string 
     <Drawer
       open={open}
       onClose={onClose}
-      width={760}
+      size={760}
       title={data ? `${data.fullName} (${data.employeeCode})` : 'Staff'}
       extra={admin && data ? <Button onClick={() => setEditing(true)}>Edit</Button> : null}
     >

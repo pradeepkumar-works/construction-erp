@@ -292,8 +292,7 @@ export default function PayablesPage() {
           <Space wrap>
             <Select
               allowClear
-              showSearch
-              optionFilterProp="label"
+              showSearch={{ optionFilterProp: 'label' }}
               placeholder="Any vendor"
               style={{ width: 220 }}
               value={vendorId}

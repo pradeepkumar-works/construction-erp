@@ -52,7 +52,7 @@ export function PortalDprs({ projectId }: { projectId: string }) {
           { title: 'Photos', key: 'photos', width: 80, align: 'right', render: (_, r) => r.attachments.length || '-' },
         ]}
       />
-      <Drawer open={!!open} onClose={() => setOpen(null)} width={820} title={open ? `Daily report, ${formatDate(open.date)}` : ''} destroyOnHidden>
+      <Drawer open={!!open} onClose={() => setOpen(null)} size={820} title={open ? `Daily report, ${formatDate(open.date)}` : ''} destroyOnHidden>
         {open ? (
           <>
             <Descriptions

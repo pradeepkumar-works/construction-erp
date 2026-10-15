@@ -139,7 +139,7 @@ export function TemplateEditor({ template, editable }: { template: ActivityTempl
           </Space>
         ) : null}
       </div>
-      {problems.length && dirty ? <Alert type="error" showIcon style={{ marginBottom: 12 }} message={problems.join(' ')} /> : null}
+      {problems.length && dirty ? <Alert type="error" showIcon style={{ marginBottom: 12 }} title={problems.join(' ')} /> : null}
       <Table<Row> rowKey="key" columns={columns} dataSource={rows} size="small" pagination={false} scroll={{ x: 900 }} />
     </div>
   );

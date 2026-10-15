@@ -81,11 +81,11 @@ export function LeaveFormModal({ open, onClose, employeeId: fixedEmployee, onSav
   const noRecord = open && !admin && me && !me.employee;
   return (
     <Modal open={open} title="Apply for leave" okText="Apply" onCancel={onClose} onOk={() => form.submit()} okButtonProps={{ disabled: !!noRecord }} confirmLoading={mutation.isPending} width={560} destroyOnHidden>
-      {noRecord && <Alert type="warning" showIcon style={{ marginBottom: 12 }} message="Your login is not linked to a staff record. Ask HR to link it." />}
+      {noRecord && <Alert type="warning" showIcon style={{ marginBottom: 12 }} title="Your login is not linked to a staff record. Ask HR to link it." />}
       <Form form={form} layout="vertical" onFinish={(v) => mutation.mutate(v)} style={{ marginTop: 8 }}>
         {admin && !fixedEmployee && (
           <Form.Item name="employeeId" label="Employee" extra="Leave blank to apply for yourself">
-            <Select allowClear showSearch optionFilterProp="label" options={(staff?.items ?? []).map((e) => ({ value: e.id, label: `${e.fullName} (${e.employeeCode})` }))} />
+            <Select allowClear showSearch={{ optionFilterProp: 'label' }} options={(staff?.items ?? []).map((e) => ({ value: e.id, label: `${e.fullName} (${e.employeeCode})` }))} />
           </Form.Item>
         )}
         <Form.Item name="type" label="Leave" rules={[{ required: true, message: 'Required' }]}>

@@ -70,7 +70,7 @@ export function DocumentFormModal({ open, onClose, projectId, doc, onSaved }: { 
     <Modal open={open} title={doc ? `Edit ${doc.docNo}` : 'Add drawing or document'} okText={editing ? 'Save' : 'Add'} onCancel={onClose} onOk={() => form.submit()} confirmLoading={mutation.isPending} width={680} destroyOnHidden>
       <Form form={form} layout="vertical" onFinish={(v) => mutation.mutate(v)} style={{ marginTop: 8 }}>
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]} hidden={!!(doc || projectId)}>
-          <Select showSearch optionFilterProp="label" placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
+          <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
         </Form.Item>
         <div style={grid('1fr 2fr')}>
           <Form.Item name="docNo" label="Number" rules={[{ required: true, whitespace: true, message: 'Required' }]}>

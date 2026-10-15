@@ -52,7 +52,7 @@ function PortalBillDrawer({ id, onClose }: { id: string | null; onClose: () => v
     <Drawer
       open={!!id}
       onClose={onClose}
-      width={980}
+      size={980}
       title={data ? `${data.billLabel}: ${data.projectName}` : 'RA bill'}
       extra={
         canCertify ? (

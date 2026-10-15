@@ -135,8 +135,7 @@ export function ReceiptFormModal({ open, onClose, bill, receipt }: { open: boole
         {kind === 'BILL' ? (
           <Form.Item name="billId" label="Bill" rules={[{ required: true, message: 'Choose the bill' }]} hidden={!!bill || editing}>
             <Select
-              showSearch
-              optionFilterProp="label"
+              showSearch={{ optionFilterProp: 'label' }}
               placeholder="Bills sent and not yet settled"
               options={openBills.map((b) => ({ value: b.billId, label: `${b.projectCode} · ${b.billLabel} · ${formatINR(b.outstanding)} outstanding` }))}
               notFoundContent="No bill is waiting for payment"
@@ -144,7 +143,7 @@ export function ReceiptFormModal({ open, onClose, bill, receipt }: { open: boole
           </Form.Item>
         ) : (
           <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={editing}>
-            <Select showSearch optionFilterProp="label" placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
+            <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
           </Form.Item>
         )}
         {kind === 'BILL' && target && !editing && (

@@ -51,7 +51,7 @@ export function RiskDrawer({ id, open, onClose, onEdit }: { id: string | null; o
     <Drawer
       open={open}
       onClose={onClose}
-      width={660}
+      size={660}
       title={
         data ? (
           <Space>

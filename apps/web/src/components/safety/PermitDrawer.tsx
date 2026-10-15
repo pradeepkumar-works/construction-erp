@@ -56,7 +56,7 @@ export function PermitDrawer({ id, open, onClose, onEdit }: { id: string | null;
     <Drawer
       open={open}
       onClose={onClose}
-      width={660}
+      size={660}
       className="permit-drawer"
       title={
         data ? (

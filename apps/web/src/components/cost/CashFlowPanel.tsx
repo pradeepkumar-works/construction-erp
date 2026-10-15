@@ -90,8 +90,7 @@ export function CashFlowPanel({ projectId: fixedProject }: { projectId?: string 
         {!fixedProject && (
           <Select
             allowClear
-            showSearch
-            optionFilterProp="label"
+            showSearch={{ optionFilterProp: 'label' }}
             placeholder="All projects"
             value={projectFilter}
             onChange={setProjectFilter}

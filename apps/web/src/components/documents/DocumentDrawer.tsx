@@ -50,7 +50,7 @@ export function DocumentDrawer({ id, open, onClose, onSend, onOpenTransmittal }:
     <Drawer
       open={open}
       onClose={onClose}
-      width={760}
+      size={760}
       title={data ? `${data.docNo} ${data.title}` : 'Document'}
       extra={
         data && manage ? (

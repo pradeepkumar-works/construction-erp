@@ -121,8 +121,7 @@ export function PaymentFormModal({ open, onClose, bill, payment }: { open: boole
         {!bill && !editing && (
           <Form.Item name="billKey" label="Bill" rules={[{ required: true, message: 'Choose the bill' }]}>
             <Select
-              showSearch
-              optionFilterProp="label"
+              showSearch={{ optionFilterProp: 'label' }}
               placeholder="Approved bills with something to pay"
               options={openBills.map((b) => ({ value: keyOf(b), label: `${b.billLabel} · ${b.vendorName} · ${formatINR(b.outstanding)} due ${formatDate(b.dueDate)}` }))}
               notFoundContent="Nothing is waiting to be paid"

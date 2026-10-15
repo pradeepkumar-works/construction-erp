@@ -93,13 +93,12 @@ export function InspectionFormModal({ open, onClose, projectId, inspection }: { 
       <Form form={form} layout="vertical" onFinish={(v) => mutation.mutate(v)} style={{ marginTop: 8 }}>
         {inspection?.reviewNote && <Alert type="warning" showIcon style={{ marginBottom: 16 }} title={`Note from ${inspection.reviewedByName ?? 'the inspector'}`} description={inspection.reviewNote} />}
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]} hidden={!!fixedProject}>
-          <Select showSearch optionFilterProp="label" placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} onChange={() => form.setFieldsValue({ activityId: undefined })} />
+          <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} onChange={() => form.setFieldsValue({ activityId: undefined })} />
         </Form.Item>
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '0 16px' }}>
           <Form.Item name="activityId" label="Activity" rules={[{ required: true, message: 'Required' }]} extra={activity?.holdPoint ? 'Hold point: its progress is approved after this passes.' : undefined}>
             <Select
-              showSearch
-              optionFilterProp="label"
+              showSearch={{ optionFilterProp: 'label' }}
               placeholder="Select activity"
               disabled={!selectedProject}
               options={(activities ?? []).map((a) => ({ value: a.id, label: a.holdPoint ? `${a.name} (hold point)` : a.name }))}

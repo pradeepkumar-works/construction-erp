@@ -130,8 +130,7 @@ export function InspectionList({ projectId: fixedProject }: { projectId?: string
       >
         <Select
           allowClear
-          showSearch
-          optionFilterProp="label"
+          showSearch={{ optionFilterProp: 'label' }}
           placeholder={projectId ? 'All activities' : 'Pick a project to filter by activity'}
           disabled={!projectId}
           style={{ width: 240 }}

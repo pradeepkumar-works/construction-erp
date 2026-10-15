@@ -136,7 +136,7 @@ export function VendorBillList({ projectId: fixedProject, openId: initialOpen }:
           </>
         }
       >
-        <Select allowClear showSearch optionFilterProp="label" placeholder="Any vendor" style={{ width: 220 }} value={vendorId} onChange={reset(setVendorId)} options={(vendors ?? []).map((v) => ({ value: v.id, label: v.name }))} />
+        <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Any vendor" style={{ width: 220 }} value={vendorId} onChange={reset(setVendorId)} options={(vendors ?? []).map((v) => ({ value: v.id, label: v.name }))} />
         <Checkbox checked={exceptions} onChange={(e) => reset(setExceptions)(e.target.checked)}>
           Not matching the PO
         </Checkbox>

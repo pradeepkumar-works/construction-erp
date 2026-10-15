@@ -22,7 +22,7 @@ export function MeasurementDrawer({ id, open, onClose, onEdit }: { id: string | 
     <Drawer
       open={open}
       onClose={onClose}
-      width={760}
+      size={760}
       title={
         data ? (
           <span>

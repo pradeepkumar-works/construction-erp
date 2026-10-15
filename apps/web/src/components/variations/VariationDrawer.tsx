@@ -89,7 +89,7 @@ export function VariationDrawer({ id, open, onClose }: { id: string | null; open
     <Drawer
       open={open}
       onClose={onClose}
-      width={860}
+      size={860}
       title={
         data ? (
           <span>

@@ -115,9 +115,9 @@ export function ExpenseFormModal({ open, onClose, projectId, expense }: { open: 
       destroyOnHidden
     >
       <Form form={form} layout="vertical" onFinish={(v) => mutation.mutate(v)} style={{ marginTop: 8 }}>
-        {expense?.reviewNote && <Alert type="warning" showIcon style={{ marginBottom: 16 }} message={`Reviewer note from ${expense.reviewedByName ?? 'approver'}`} description={expense.reviewNote} />}
+        {expense?.reviewNote && <Alert type="warning" showIcon style={{ marginBottom: 16 }} title={`Reviewer note from ${expense.reviewedByName ?? 'approver'}`} description={expense.reviewNote} />}
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]} hidden={!!fixedProject}>
-          <Select showSearch optionFilterProp="label" placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} onChange={() => form.setFieldValue('activityId', undefined)} />
+          <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} onChange={() => form.setFieldValue('activityId', undefined)} />
         </Form.Item>
         <div style={grid('1fr 1fr')}>
           <Form.Item name="category" label="Category" rules={[{ required: true, message: 'Required' }]}>
@@ -167,7 +167,7 @@ export function ExpenseFormModal({ open, onClose, projectId, expense }: { open: 
             <Select options={PAYMENT_MODES.map((m) => ({ value: m, label: PAYMENT_MODE_LABELS[m] }))} />
           </Form.Item>
           <Form.Item name="activityId" label="Activity (optional)">
-            <Select allowClear showSearch optionFilterProp="label" disabled={!selectedProject} options={(activities ?? []).map((a) => ({ value: a.id, label: a.name }))} />
+            <Select allowClear showSearch={{ optionFilterProp: 'label' }} disabled={!selectedProject} options={(activities ?? []).map((a) => ({ value: a.id, label: a.name }))} />
           </Form.Item>
         </div>
         <Form.Item name="remarks" label="Remarks">

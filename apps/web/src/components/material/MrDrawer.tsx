@@ -30,7 +30,7 @@ export function MrDrawer({ id, open, onClose, onEdit }: { id: string | null; ope
       <Drawer
         open={open}
         onClose={onClose}
-        width={purchasing ? 960 : 680}
+        size={purchasing ? 960 : 680}
         title={
           data ? (
             <Space>

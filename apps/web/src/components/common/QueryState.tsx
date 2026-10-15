@@ -25,7 +25,7 @@ export function QueryError({ error, onRetry }: { error: unknown; onRetry?: () =>
 export function Loading({ tip }: { tip?: string }) {
   return (
     <div style={{ padding: 48, textAlign: 'center' }}>
-      <Spin size="large" tip={tip}>
+      <Spin size="large" description={tip}>
         <div style={{ height: 40 }} />
       </Spin>
     </div>

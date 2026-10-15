@@ -9,9 +9,8 @@ export function ProjectSelect(props: SelectProps<string>) {
   const { data, isLoading } = useProjects();
   return (
     <Select<string>
-      showSearch
+      showSearch={{ optionFilterProp: 'label' }}
       allowClear
-      optionFilterProp="label"
       placeholder="All projects"
       loading={isLoading}
       options={(data ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))}

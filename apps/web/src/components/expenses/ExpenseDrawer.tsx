@@ -20,7 +20,7 @@ export function ExpenseDrawer({ id, open, onClose, onEdit }: { id: string | null
     <Drawer
       open={open}
       onClose={onClose}
-      width={640}
+      size={640}
       title={
         data ? (
           <span>

@@ -113,7 +113,7 @@ function DeletionCard() {
         <Alert
           type="error"
           showIcon
-          message={`${company} and all its data will be deleted on ${formatDate(data.scheduledFor)}.`}
+          title={`${company} and all its data will be deleted on ${formatDate(data.scheduledFor)}.`}
           description={
             <>
               Asked for by {data.requestedByName ?? 'an admin'} on {formatDateTime(data.requestedAt)}. Until then everything works as usual. On that day all
@@ -248,7 +248,7 @@ function CompanyLogCard() {
 export default function CompanyDataPage() {
   const { user } = useAuth();
   if (!user) return null;
-  if (!canManageCompanyData(user.roleKey)) return <Alert type="info" message="Only an admin can export or delete company data." />;
+  if (!canManageCompanyData(user.roleKey)) return <Alert type="info" title="Only an admin can export or delete company data." />;
   return (
     <div className="page-container" style={{ maxWidth: 948, marginLeft: 0 }}>
       <PageHeader

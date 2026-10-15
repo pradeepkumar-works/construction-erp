@@ -65,7 +65,7 @@ export function TransmittalDrawer({ id, open, onClose, onOpenDocument }: { id: s
     <Drawer
       open={open}
       onClose={onClose}
-      width={720}
+      size={720}
       title={data ? `Transmittal ${data.transmittalNo}` : 'Transmittal'}
       extra={
         data ? (

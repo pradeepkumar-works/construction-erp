@@ -197,7 +197,7 @@ export function PurchaseOrderFormModal({
       <Form form={form} layout="vertical" style={{ marginTop: 8 }}>
         <div style={grid}>
           <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]}>
-            <Select showSearch optionFilterProp="label" disabled={!!order || !!start?.projectId} options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
+            <Select showSearch={{ optionFilterProp: 'label' }} disabled={!!order || !!start?.projectId} options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
           </Form.Item>
           <Form.Item
             name="vendorId"
@@ -205,7 +205,7 @@ export function PurchaseOrderFormModal({
             rules={[{ required: true, message: 'Pick the vendor from the master' }]}
             extra={vendor ? [vendor.gstin ? `GSTIN ${vendor.gstin}` : 'No GSTIN', vendor.msmeCategory ? MSME_CATEGORY_LABELS[vendor.msmeCategory] : null].filter(Boolean).join(' · ') : undefined}
           >
-            <Select showSearch optionFilterProp="label" placeholder="Vendor master" options={vendorOptions} />
+            <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Vendor master" options={vendorOptions} />
           </Form.Item>
           <Form.Item name="poDate" label="PO date" rules={[{ required: true, message: 'Required' }]}>
             <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" />

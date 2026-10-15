@@ -64,7 +64,7 @@ export function VendorBillDrawer({ id, open, onClose, onEdit }: { id: string | n
     <Drawer
       open={open}
       onClose={onClose}
-      width={980}
+      size={980}
       title={
         data ? (
           <Space wrap>

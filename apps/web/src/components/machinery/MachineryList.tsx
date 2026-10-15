@@ -81,8 +81,7 @@ export function MachineryList({ projectId: fixedProject }: { projectId?: string 
       >
         <Select
           allowClear
-          showSearch
-          optionFilterProp="label"
+          showSearch={{ optionFilterProp: 'label' }}
           placeholder="All equipment"
           style={{ width: 220 }}
           value={equipmentId}

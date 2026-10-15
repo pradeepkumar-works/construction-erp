@@ -104,8 +104,7 @@ export function TestFormModal({ open, onClose, projectId, test }: { open: boolea
       <Form form={form} layout="vertical" onFinish={(v) => mutation.mutate(v)} style={{ marginTop: 8 }}>
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]} hidden={!!fixedProject}>
           <Select
-            showSearch
-            optionFilterProp="label"
+            showSearch={{ optionFilterProp: 'label' }}
             placeholder="Select project"
             options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))}
             onChange={() => form.setFieldsValue({ activityId: undefined })}
@@ -131,7 +130,7 @@ export function TestFormModal({ open, onClose, projectId, test }: { open: boolea
         </Form.Item>
         <div style={grid('1fr 1fr')}>
           <Form.Item name="activityId" label="Activity (optional)">
-            <Select allowClear showSearch optionFilterProp="label" disabled={!selectedProject} options={(activities ?? []).map((a) => ({ value: a.id, label: a.name }))} />
+            <Select allowClear showSearch={{ optionFilterProp: 'label' }} disabled={!selectedProject} options={(activities ?? []).map((a) => ({ value: a.id, label: a.name }))} />
           </Form.Item>
           <Form.Item name="location" label="Location">
             <Input maxLength={200} placeholder="Chainage, grid, floor or pour" />

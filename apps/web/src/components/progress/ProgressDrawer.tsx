@@ -20,7 +20,7 @@ export function ProgressDrawer({ id, open, onClose, onEdit }: { id: string | nul
     <Drawer
       open={open}
       onClose={onClose}
-      width={640}
+      size={640}
       title={
         data ? (
           <span>

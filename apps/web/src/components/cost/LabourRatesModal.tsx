@@ -57,7 +57,7 @@ export function LabourRatesModal({ open, onClose }: { open: boolean; onClose: ()
           type="warning"
           showIcon
           style={{ marginBottom: 12 }}
-          message="Trades on attendance sheets without a rate"
+          title="Trades on attendance sheets without a rate"
           description={
             <span>
               {data.unpricedTrades.map((t) => (
