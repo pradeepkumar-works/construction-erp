@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { api, apiToken, chooseOption, signIn } from './helpers';
+import { api, apiToken, chooseOption, localToday, signIn } from './helpers';
 
 interface Page<T> {
   items: T[];
@@ -12,7 +12,7 @@ type Summary = { documentsDue: Doc[]; service: { equipmentCode: string; state: s
 type Note = { type: string; title: string; entityType: string | null; entityId: string | null };
 
 const machine = async (token: string, code: string) => (await api<Page<Equipment>>(token, `/equipment?q=${code}&includeInactive=true`)).items.find((e) => e.code === code)!;
-const today = () => new Date().toISOString().slice(0, 10);
+const today = localToday;
 
 /**
  * Maintenance (v4 item 42): a site engineer reports a breakdown; the store manager hears of it, issues spares from the
