@@ -231,7 +231,7 @@ function monthName(month: string) {
 /** One KPI card; every card in the row stretches to the tallest so the row reads as one band. */
 function KpiTile({ href, children }: { href?: string; children: React.ReactNode }) {
   const card = (
-    <Card hoverable={!!href} style={{ height: '100%' }}>
+    <Card className="kpi-card" hoverable={!!href} style={{ height: '100%' }}>
       {children}
     </Card>
   );
