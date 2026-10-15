@@ -72,6 +72,10 @@ export type StockEntryType = (typeof STOCK_ENTRY_TYPES)[number];
 export const GRN_QC_STATUSES = ['ACCEPTED', 'PARTLY_ACCEPTED', 'REJECTED'] as const;
 export type GrnQcStatus = (typeof GRN_QC_STATUSES)[number];
 
+/** How a contract's liquidated damages rate is expressed (v4 item 50). */
+export const LD_PERIODS = ['DAY', 'WEEK', 'MONTH'] as const;
+export type LdPeriod = (typeof LD_PERIODS)[number];
+
 export const EQUIPMENT_OWNERSHIPS = ['OWNED', 'HIRED'] as const;
 export type EquipmentOwnership = (typeof EQUIPMENT_OWNERSHIPS)[number];
 

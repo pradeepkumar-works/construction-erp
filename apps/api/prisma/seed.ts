@@ -128,6 +128,7 @@ async function main() {
     await seedCostRates(org.id);
     await seedRisks(org.id);
     await seedContracts(org.id);
+    await seedLdTerms(org.id);
     await seedApprovalRules(org.id);
     await seedBills(org.id);
     await seedReceipts(org.id);
@@ -300,6 +301,7 @@ async function main() {
   await seedCostRates(org.id);
   await seedRisks(org.id);
   await seedContracts(org.id);
+  await seedLdTerms(org.id);
   await seedApprovalRules(org.id);
   await seedBills(org.id);
   await seedReceipts(org.id);
@@ -1537,6 +1539,11 @@ async function seedContracts(organizationId: string) {
     });
     if (c.eot) await prisma.risk.updateMany({ where: { projectId: project.id, kind: 'DELAY', title: c.eot[0], eotGrantedDays: null }, data: { eotClaimed: true, eotGrantedDays: c.eot[1] } });
   }
+}
+
+/** Liquidated damages terms (v4 item 50) on seeded contracts that have none: 0.5% of the contract value per week, capped at 10%. */
+async function seedLdTerms(organizationId: string) {
+  await prisma.project.updateMany({ where: { organizationId, agreementNo: { not: null }, ldRatePct: 0 }, data: { ldRatePct: D('0.5'), ldPeriod: 'WEEK', ldCapPct: D(10) } });
 }
 
 /** RA bills: management approves any bill, project managers bills of up to ₹50 lakh of work. */

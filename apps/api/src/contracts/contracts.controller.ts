@@ -28,3 +28,22 @@ export class ContractsController {
     return this.contracts.update(user, id, dto);
   }
 }
+
+@ApiTags('contracts')
+@ApiBearerAuth()
+@Controller('ld-exposure')
+export class LdExposureController {
+  constructor(private contracts: ContractsService) {}
+
+  @ApiOperation({
+    summary: 'Liquidated damages exposure across projects',
+    description:
+      'Active, on-hold and completed projects with a contract value and completion date: days past the completion date after extensions of ' +
+      'time, LD to date and forecast at the contract rate up to its cap, and excusable days lost not yet granted. Billing roles only. ' +
+      'Largest forecast first.',
+  })
+  @Get()
+  list(@CurrentUser() user: RequestUser) {
+    return this.contracts.ldExposureList(user);
+  }
+}

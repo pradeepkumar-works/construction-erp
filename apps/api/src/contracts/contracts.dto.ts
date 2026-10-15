@@ -1,6 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsBoolean, IsDateString, IsInt, IsNumberString, IsOptional, IsString, IsUUID, Max, MaxLength, Min, ValidateIf } from 'class-validator';
+import { LD_PERIODS, type LdPeriod } from '@erp/shared';
+import { IsBoolean, IsDateString, IsIn, IsInt, IsNumberString, IsOptional, IsString, IsUUID, Max, MaxLength, Min, ValidateIf } from 'class-validator';
 
 const blankNull = () => Transform(({ value }) => (typeof value === 'string' ? value.trim() || null : value));
 const num = () => Transform(({ value }) => (typeof value === 'number' ? String(value) : typeof value === 'string' ? value.trim() || null : value));
@@ -35,4 +36,11 @@ export class UpdateContractDto {
   @pct('2', 'Income-tax TDS (section 194C) the client deducts') @IsOptional() @num() @IsNumberString() tdsPct?: string;
   @pct('2', 'GST TDS a government client deducts') @IsOptional() @num() @IsNumberString() gstTdsPct?: string;
   @pct('1', 'Labour welfare cess') @IsOptional() @num() @IsNumberString() labourCessPct?: string;
+  @ApiPropertyOptional({ example: '0.5', description: 'Liquidated damages, % of the contract value per `ldPeriod` past the revised completion date (0 to 100)' })
+  @IsOptional()
+  @num()
+  @IsNumberString()
+  ldRatePct?: string;
+  @ApiPropertyOptional({ enum: LD_PERIODS, example: 'WEEK' }) @IsOptional() @IsIn(LD_PERIODS) ldPeriod?: LdPeriod;
+  @ApiPropertyOptional({ example: '10', description: 'Liquidated damages cap, % of the contract value (0 to 100)' }) @IsOptional() @num() @IsNumberString() ldCapPct?: string;
 }

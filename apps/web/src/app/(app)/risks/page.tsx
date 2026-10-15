@@ -1,21 +1,41 @@
 'use client';
 
 import React, { Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { Card } from 'antd';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Card, Tabs } from 'antd';
+import { canViewContract } from '@erp/shared';
+import { useAuth } from '@/lib/auth';
 import { PageHeader } from '@/components/common/PageHeader';
 import { RiskList } from '@/components/risks/RiskList';
+import { LdExposureTable } from '@/components/contracts/LdExposure';
 
 function RisksPage() {
   const search = useSearchParams();
+  const router = useRouter();
+  const { user } = useAuth();
   // A "delay / risk raised" notification links here with ?id=...
   const id = search.get('id') ?? undefined;
   const projectId = search.get('projectId') ?? undefined;
+  const register = <RiskList key={`${id ?? ''}|${projectId ?? ''}`} initialOpenId={id} initialProject={projectId} />;
+  const seesLd = !!user && canViewContract(user.roleKey);
   return (
     <div className="page-container">
       <PageHeader title="Delays & Risks" subtitle="What has held up work (days lost, who caused it, extension of time) and what might, scored probability × impact, with owners and due dates." />
       <Card size="small">
-        <RiskList key={`${id ?? ''}|${projectId ?? ''}`} initialOpenId={id} initialProject={projectId} />
+        {seesLd ? (
+          <Tabs
+            activeKey={search.get('tab') === 'ld' ? 'ld' : 'register'}
+            onChange={(k) => router.replace(k === 'ld' ? '/risks?tab=ld' : '/risks')}
+            tabBarStyle={{ padding: '0 12px', marginBottom: 0 }}
+            destroyOnHidden
+            items={[
+              { key: 'register', label: 'Register', children: register },
+              { key: 'ld', label: 'Liquidated damages', children: <LdExposureTable /> },
+            ]}
+          />
+        ) : (
+          register
+        )}
       </Card>
     </div>
   );

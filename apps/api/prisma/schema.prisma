@@ -44,6 +44,13 @@ enum MaterialPriority {
 /// RECEIPT = goods received (GRN) against an approved material request, ISSUE = handed out for use at site,
 /// ADJUSTMENT = opening stock or a physical-count correction (either sign).
 /// QA/QC's check of material received on a GRN (v4 item 48)
+/// How a liquidated damages rate is expressed in the contract (v4 item 50)
+enum LdPeriod {
+  DAY
+  WEEK
+  MONTH
+}
+
 enum GrnQcStatus {
   ACCEPTED
   PARTLY_ACCEPTED
@@ -607,6 +614,11 @@ model Project {
   defectLiabilityMonths Int?
   /// The contract has a price variation (escalation) clause
   priceVariation        Boolean       @default(false)
+  /// Liquidated damages for late completion: % of the contract value per day, week or month past the revised completion date
+  ldRatePct             Decimal       @default(0) @db.Decimal(6, 3)
+  ldPeriod              LdPeriod      @default(WEEK)
+  /// Liquidated damages are capped at this % of the contract value
+  ldCapPct              Decimal       @default(10) @db.Decimal(5, 2)
   /// GST charged on bills, % of the work value
   gstRate               Decimal       @default(18) @db.Decimal(5, 2)
   /// Income-tax TDS the client deducts (section 194C), % of the work value

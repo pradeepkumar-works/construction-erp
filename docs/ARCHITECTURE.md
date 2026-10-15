@@ -879,6 +879,18 @@ PDF from the browser.
   recorded" prompts, Excel export); the progress report has a Delays and risks section. Site app: register
   screen per project, form (offline through the outbox) and detail screen with close / reopen.
 
+### Liquidated damages
+
+The contract carries an LD rate (`Project.ldRatePct`, % of the contract value), the period it is per (`ldPeriod`:
+day, week or month of 30 days, part periods pro rata) and a cap (`ldCapPct`, default 10%). `ContractsService.ldExposure`
+works out, on the revised contract value (with approved variations): days past the completion date after the extensions
+granted in the delay register, to the handover's completion date or today; the forecast to the schedule's last planned
+finish; the excusable days lost (client, third party, force majeure) not yet covered by extensions granted, as a claim to
+pursue; and LD to date, forecast and forecast if those claims are granted, each capped. `GET /projects/:id/contract`
+returns it as `ld`; `GET /ld-exposure` lists every visible active, on-hold or completed project with a contract value
+and completion date, largest forecast first. Both are for contract viewers (`canViewContract`). Web: a Liquidated damages
+card on the Contract tab and a Liquidated damages tab on Delays & Risks.
+
 ## Sector progress
 
 - **Fields.** `Project.chainageStart` / `chainageEnd` (metres from 0+000; roads, and water mains when set),
