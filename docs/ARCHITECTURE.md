@@ -187,6 +187,21 @@ The store register per project, fed by approved material requests:
   master) and a Stock tab per project; the material request drawer shows received quantities and a
   Receive button. Site app: `app/stock/` (stock on hand, receive, issue), online only because the
   pending and on-hand checks need the server.
+- **Transfers, returns and counts.** Four more entry types: `TRANSFER_OUT` (`TRO-`) takes stock out of one
+  project's store with `toProjectId`; the receiving store books a `TRANSFER_IN` (`TRI-`, linked by
+  `transferOutId`) for the full quantities, once, on or after the sent date. Until then the transfer is "on the
+  way" (`GET /stock/transfers/incoming`) and the sender cannot delete it once received. `RETURN_TO_VENDOR`
+  (`RTV-`, supplier and reason required) takes stock out; `RETURN_FROM_SITE` (`RFS-`) brings unused material
+  back, up to what is out on site (issued net of returns), and comes off the project's material cost. A stock
+  count (`POST /stock/counts`) posts the differences between counted and book quantities as one adjustment and
+  returns `{counted, entry}` (`entry` null when everything matched). Balances show transfers in their own
+  column; returns from site net off issued, returns to vendor off received.
+- **Valuation.** `GET /stock/valuation` values stock on hand at the item master rate and ages it first in,
+  first out over the inward movements (0-30, 31-90, 91-180, over 180 days). Store managers, approvers and
+  anyone who sees project cost.
+- **Older phones.** Installed site-app builds only know the first three types, so `GET /stock/entries` lists
+  receipts, issues and adjustments unless `allTypes=true` or a `type` is asked for. Current web and app send
+  `allTypes`.
 
 ## Machinery
 

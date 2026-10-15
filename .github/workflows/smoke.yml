@@ -268,7 +268,7 @@ jobs:
             for I in $(curl -sf "$API_URL/stock/items?q=Smoke%20test%20item" -H "$H" | jq -r '.items[].id'); do
               curl -sf -X PUT "$API_URL/stock/min-levels" -H "$H" -H 'content-type: application/json' -d "{\"projectId\":\"$PROJECT\",\"itemId\":\"$I\",\"minQty\":null}" > /dev/null
             done
-            for T in ISSUE ADJUSTMENT; do
+            for T in RETURN_FROM_SITE ISSUE ADJUSTMENT; do
               for E in $(curl -sf "$API_URL/stock/entries?projectId=$PROJECT&type=$T&q=Smoke%20test%20item&pageSize=50" -H "$H" | jq -r '.items[].id'); do
                 curl -sf -X DELETE "$API_URL/stock/entries/$E" -H "$H" > /dev/null
               done
@@ -292,6 +292,20 @@ jobs:
             -d "{\"projectId\":\"$PROJECT\",\"date\":\"$DAY\",\"issuedTo\":\"Smoke gang\",\"lines\":[{\"itemId\":\"$ITEM\",\"quantity\":\"7\"}]}")
           echo "issue above stock: $code"; [ "$code" = "409" ]
           curl -sf "$API_URL/stock/receivable" -H "$H" | jq -r '"approved requests waiting for material: \(length)"'
+          # Stores round-out: material back from site, the legacy list older phones read, transfers on the way, valuation
+          curl -sf -X POST "$API_URL/stock/site-returns" -H "$H" -H 'content-type: application/json' \
+            -d "{\"projectId\":\"$PROJECT\",\"date\":\"$DAY\",\"issuedTo\":\"Smoke gang\",\"lines\":[{\"itemId\":\"$ITEM\",\"quantity\":\"5\"}]}" > /dev/null && { echo "return above issued accepted"; exit 1; } || true
+          curl -sf -X POST "$API_URL/stock/site-returns" -H "$H" -H 'content-type: application/json' \
+            -d "{\"projectId\":\"$PROJECT\",\"date\":\"$DAY\",\"issuedTo\":\"Smoke gang\",\"lines\":[{\"itemId\":\"$ITEM\",\"quantity\":\"1\"}]}" | jq -e '.entryNo | startswith("RFS-")'
+          curl -sf "$API_URL/stock/balances?projectId=$PROJECT&q=Smoke%20test%20item" -H "$H" | jq -e '.items[0].balance == "7" and .items[0].issued == "3"' > /dev/null
+          curl -sf "$API_URL/stock/entries?projectId=$PROJECT&q=Smoke%20test%20item&pageSize=50" -H "$H" | jq -e '[.items[].type] | all(. == "RECEIPT" or . == "ISSUE" or . == "ADJUSTMENT")' > /dev/null
+          curl -sf "$API_URL/stock/entries?projectId=$PROJECT&q=Smoke%20test%20item&pageSize=50&allTypes=true" -H "$H" | jq -e '[.items[].type] | index("RETURN_FROM_SITE") != null' > /dev/null
+          curl -sf "$API_URL/stock/transfers/incoming" -H "$H" | jq -r '"transfers on the way: \(length)"'
+          curl -sf "$API_URL/stock/valuation?projectId=$PROJECT" -H "$H" | jq -c '{totalValue, ageingValue, unpricedItems}'
+          ENG=$(curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' \
+            -d '{"email":"engineer@demo.com","password":"password123"}' | jq -r .accessToken)
+          code=$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/stock/valuation" -H "authorization: Bearer $ENG")
+          echo "valuation as site engineer: $code"; [ "$code" = "403" ]
           cleanup
           curl -sf "$API_URL/stock/items?q=Smoke%20test%20item" -H "$H" | jq -e '.total == 0' > /dev/null
       - name: Machinery log rules

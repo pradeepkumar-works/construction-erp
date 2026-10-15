@@ -41,6 +41,8 @@ demo seed at 1280 × 800, scale 1.25, saved as WebP).
   site and adjusted by approvers. Stock on hand per project and item with minimum levels; falling below
   one alerts the store manager and PM. Web Stock page and project tab with Excel export, and receive /
   issue screens in the site app.
+- Stores: transfers between project stores (sent, on the way, received), returns from site and to the
+  supplier, stock count with a printable sheet, and stock value with ageing.
 - Machinery: equipment master (owned / hired, hire rate, where deployed) and a daily log per machine
   (hours worked, idle, breakdown, hour meter, diesel) filed from the site app, offline too, and
   approved by the PM like any other submission. Web Machinery page and project tab with Excel export.

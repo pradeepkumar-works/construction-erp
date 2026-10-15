@@ -69,6 +69,10 @@ export const STOCK_ENTRY_COLORS: Record<StockEntryType, string> = {
   RECEIPT: 'green',
   ISSUE: 'blue',
   ADJUSTMENT: 'purple',
+  TRANSFER_OUT: 'gold',
+  TRANSFER_IN: 'cyan',
+  RETURN_TO_VENDOR: 'volcano',
+  RETURN_FROM_SITE: 'geekblue',
 };
 
 export const PRIORITY_COLORS: Record<MaterialPriority, string> = {

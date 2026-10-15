@@ -314,8 +314,12 @@ preview deployments run them against the production database before a PR is merg
     variance per head, and the forecast at completion and forecast margin. The cash-flow forecast covers six months or
     twelve weeks: unpaid RA bills, retention releases and work still to bill coming in; unpaid vendor bills and the
     cost still to spend going out. The client's payment days are a contract term.
-39. **Stores round-out** (M). Site-to-site transfers, returns to vendor and from site, stock count sheet, valuation
-    and ageing.
+39. ~~**Stores round-out** (M). Site-to-site transfers, returns to vendor and from site, stock count sheet, valuation
+    and ageing.~~
+    Done: from the Stock tab's More menu a store can transfer material to another project (it shows as on the way
+    until the other store receives it), take back unused material from site (off the project's material cost),
+    return material to the supplier, and run a stock count (blank sheet to print, counted quantities posted as one
+    adjustment). A Value & ageing tab values stock at item rates and shows how long it has sat in the store.
 40. **Safety** (M). Incidents and near misses, toolbox talks, permits to work, from the phone.
 41. **Sector progress views** (L). Road chainage strip chart, building floor by activity matrix, water supply
     village-wise laid and tested.

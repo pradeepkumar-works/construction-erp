@@ -1,7 +1,24 @@
 import type { StockEntryType } from './enums';
 
-/** Entry number prefix per type: GRN-2026-0001, ISS-2026-0001, ADJ-2026-0001. */
-export const STOCK_ENTRY_PREFIX: Record<StockEntryType, string> = { RECEIPT: 'GRN', ISSUE: 'ISS', ADJUSTMENT: 'ADJ' };
+/** Entry number prefix per type: GRN-2026-0001, ISS-2026-0001, ADJ-2026-0001, TRO-, TRI-, RTV-, RFS-. */
+export const STOCK_ENTRY_PREFIX: Record<StockEntryType, string> = {
+  RECEIPT: 'GRN',
+  ISSUE: 'ISS',
+  ADJUSTMENT: 'ADJ',
+  TRANSFER_OUT: 'TRO',
+  TRANSFER_IN: 'TRI',
+  RETURN_TO_VENDOR: 'RTV',
+  RETURN_FROM_SITE: 'RFS',
+};
+
+/** The types the store register had before v4 item 39; older phone builds only know these. */
+export const LEGACY_STOCK_ENTRY_TYPES: StockEntryType[] = ['RECEIPT', 'ISSUE', 'ADJUSTMENT'];
+
+/** Days of the stock ageing buckets: up to 30, 31 to 90, 91 to 180, over 180. */
+export const STOCK_AGEING_BUCKETS = ['0-30 days', '31-90 days', '91-180 days', 'Over 180 days'] as const;
+
+/** Bucket index for stock received `days` ago. */
+export const stockAgeingBucket = (days: number): number => (days <= 30 ? 0 : days <= 90 ? 1 : days <= 180 ? 2 : 3);
 
 /**
  * An item is low when a minimum is set and the balance is below it. A minimum of 0 never alerts.

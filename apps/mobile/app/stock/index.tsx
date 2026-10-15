@@ -17,6 +17,10 @@ const TYPE_TONE: Record<StockEntryType, { fg: string; bg: string }> = {
   RECEIPT: { fg: colors.success, bg: colors.successSoft },
   ISSUE: { fg: colors.primary, bg: colors.primarySoft },
   ADJUSTMENT: { fg: colors.info, bg: colors.infoSoft },
+  TRANSFER_OUT: { fg: colors.warning, bg: colors.warningSoft },
+  TRANSFER_IN: { fg: colors.success, bg: colors.successSoft },
+  RETURN_TO_VENDOR: { fg: colors.warning, bg: colors.warningSoft },
+  RETURN_FROM_SITE: { fg: colors.primary, bg: colors.primarySoft },
 };
 
 /** Stock on hand at one project, low items first when filtered, plus the latest store entries. */
@@ -39,7 +43,7 @@ export default function StockScreen() {
     [projectId, filter],
     { enabled: !!projectId, cacheKey: projectId ? `stock:${projectId}:${filter}` : undefined },
   );
-  const entries = useFetch<Paginated<StockEntryDto>>((a) => a.get('/stock/entries', { projectId: projectId!, pageSize: 10 }), [projectId], {
+  const entries = useFetch<Paginated<StockEntryDto>>((a) => a.get('/stock/entries', { projectId: projectId!, pageSize: 10, allTypes: true }), [projectId], {
     enabled: !!projectId,
     cacheKey: projectId ? `stock-entries:${projectId}` : undefined,
   });
@@ -131,7 +135,7 @@ export default function StockScreen() {
               <Text style={typography.caption}>
                 {formatDate(e.date)} · {e.createdByName}
                 {e.type === 'RECEIPT' && e.requestNo ? ` · ${e.requestNo}` : ''}
-                {e.type === 'ISSUE' && e.issuedTo ? ` · to ${e.issuedTo}` : ''}
+                {(e.type === 'ISSUE' || e.type === 'TRANSFER_OUT') && e.issuedTo ? ` · to ${e.issuedTo}` : ''}
               </Text>
               <Text style={[typography.body, styles.lines]}>{e.lines.map((l) => `${l.itemName} ${Number(l.quantity) > 0 ? '+' : ''}${fmtQty(l.quantity)} ${l.unit}`).join('\n')}</Text>
             </Card>

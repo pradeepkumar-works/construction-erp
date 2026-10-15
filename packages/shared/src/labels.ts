@@ -90,6 +90,10 @@ export const STOCK_ENTRY_TYPE_LABELS: Record<StockEntryType, string> = {
   RECEIPT: 'Receipt (GRN)',
   ISSUE: 'Issue',
   ADJUSTMENT: 'Adjustment',
+  TRANSFER_OUT: 'Transfer out',
+  TRANSFER_IN: 'Transfer in',
+  RETURN_TO_VENDOR: 'Return to supplier',
+  RETURN_FROM_SITE: 'Return from site',
 };
 
 /** Common units used in BOQ / activities. Free text is still allowed. */

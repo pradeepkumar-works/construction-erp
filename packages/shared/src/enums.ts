@@ -61,7 +61,7 @@ export const PUSH_PLATFORMS = ['IOS', 'ANDROID', 'WEB'] as const;
 export type PushPlatform = (typeof PUSH_PLATFORMS)[number];
 
 /** RECEIPT = GRN against an approved material request, ISSUE = handed out at site, ADJUSTMENT = opening stock or count correction. */
-export const STOCK_ENTRY_TYPES = ['RECEIPT', 'ISSUE', 'ADJUSTMENT'] as const;
+export const STOCK_ENTRY_TYPES = ['RECEIPT', 'ISSUE', 'ADJUSTMENT', 'TRANSFER_OUT', 'TRANSFER_IN', 'RETURN_TO_VENDOR', 'RETURN_FROM_SITE'] as const;
 export type StockEntryType = (typeof STOCK_ENTRY_TYPES)[number];
 
 export const EQUIPMENT_OWNERSHIPS = ['OWNED', 'HIRED'] as const;

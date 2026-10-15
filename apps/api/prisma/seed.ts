@@ -140,6 +140,7 @@ async function main() {
     await seedGuests(org.id);
     await seedVariations(org.id);
     await seedBudgets(org.id);
+    await seedStoreMoves(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
   }
@@ -303,9 +304,56 @@ async function main() {
   await seedGuests(org.id);
   await seedVariations(org.id);
   await seedBudgets(org.id);
+  await seedStoreMoves(org.id);
 
   console.log('Seed complete. Login with any of these (password: password123):');
   for (const u of USERS) console.log(`  ${u.email.padEnd(24)} ${u.role}`);
+}
+
+/**
+ * Demo transfers and returns (v4 item 39) on the road project's store: unused material back from site, a transfer to
+ * the water supply project already received there, a second one still in transit, and material returned to the
+ * supplier of the GRN. Only when the organisation has no transfer yet.
+ */
+async function seedStoreMoves(organizationId: string) {
+  if (await prisma.stockEntry.count({ where: { organizationId, type: 'TRANSFER_OUT' } })) return;
+  const road = await prisma.project.findFirst({ where: { organizationId, type: 'ROAD' }, orderBy: { code: 'asc' } });
+  const other = await prisma.project.findFirst({ where: { organizationId, type: 'WATER_SUPPLY' }, orderBy: { code: 'asc' } });
+  const keeper = await prisma.user.findFirst({ where: { organizationId, email: 'store@demo.com' } });
+  if (!road || !other || !keeper) return;
+  const year = new Date().getUTCFullYear();
+  const nextNo = async (prefix: string) => {
+    const last = await prisma.stockEntry.findFirst({ where: { organizationId, entryNo: { startsWith: `${prefix}-${year}-` } }, orderBy: { entryNo: 'desc' }, select: { entryNo: true } });
+    return `${prefix}-${year}-${String((last ? parseInt(last.entryNo.slice(prefix.length + 6), 10) : 0) + 1).padStart(4, '0')}`;
+  };
+  type Move = 'TRANSFER_OUT' | 'TRANSFER_IN' | 'RETURN_TO_VENDOR' | 'RETURN_FROM_SITE';
+  const PREFIX: Record<Move, string> = { TRANSFER_OUT: 'TRO', TRANSFER_IN: 'TRI', RETURN_TO_VENDOR: 'RTV', RETURN_FROM_SITE: 'RFS' };
+  const entry = async (projectId: string, type: Move, offset: number, data: Partial<Prisma.StockEntryUncheckedCreateInput>, lines: { itemId: string; quantity: Prisma.Decimal }[]) => {
+    const e = await prisma.stockEntry.create({
+      data: {
+        organizationId, projectId, type, entryNo: await nextNo(PREFIX[type]), date: day(offset), createdById: keeper.id, createdAt: day(offset), ...data,
+        lines: { create: lines.map((l, i) => ({ organizationId, projectId, itemId: l.itemId, type, date: day(offset), quantity: l.quantity, sortOrder: i })) },
+      },
+    });
+    await prisma.auditLog.create({ data: { organizationId, entityType: 'STOCK', entityId: e.id, action: 'CREATED', actorId: keeper.id, note: e.entryNo, createdAt: day(offset) } });
+    return e;
+  };
+  const sums = await prisma.stockTxn.groupBy({ by: ['itemId', 'type'], where: { projectId: road.id }, _sum: { quantity: true } });
+  const of = (itemId: string, type: string) => sums.find((x) => x.itemId === itemId && x.type === type)?._sum.quantity ?? D(0);
+  const itemIds = [...new Set(sums.map((x) => x.itemId))];
+  const balance = (itemId: string) => sums.filter((x) => x.itemId === itemId).reduce((t, x) => t.add(x._sum.quantity ?? 0), D(0));
+  const issued = itemIds.filter((id) => of(id, 'ISSUE').lt(0) && balance(id).gt(0));
+  if (issued.length < 2) return;
+  const [a, b] = issued;
+  await entry(road.id, 'RETURN_FROM_SITE', -1, { issuedTo: 'Departmental (machinery)', remarks: 'Unused after the WMM stretch was closed for the day' }, [{ itemId: a, quantity: of(a, 'ISSUE').neg().div(10).toDecimalPlaces(0, Prisma.Decimal.ROUND_DOWN).add(1) }]);
+  const sent = balance(b).div(10).toDecimalPlaces(0, Prisma.Decimal.ROUND_DOWN).add(1);
+  const out = await entry(road.id, 'TRANSFER_OUT', -2, { toProjectId: other.id, issuedTo: other.name, vehicleNo: 'OD-02-BK-2290', challanNo: 'DC-311' }, [{ itemId: b, quantity: sent.neg() }]);
+  await entry(other.id, 'TRANSFER_IN', -1, { transferOutId: out.id, supplier: road.name, vehicleNo: 'OD-02-BK-2290', challanNo: 'DC-311' }, [{ itemId: b, quantity: sent }]);
+  await entry(road.id, 'TRANSFER_OUT', 0, { toProjectId: other.id, issuedTo: other.name, vehicleNo: 'OD-02-BK-2290', challanNo: 'DC-318', remarks: 'Urgent: their pipe bedding stretch' }, [{ itemId: a, quantity: D(-1) }]);
+  const grn = await prisma.stockEntry.findFirst({ where: { projectId: road.id, type: 'RECEIPT' }, include: { lines: true }, orderBy: { date: 'asc' } });
+  const line = grn?.lines.find((l) => balance(l.itemId).gt(2));
+  if (grn && line)
+    await entry(road.id, 'RETURN_TO_VENDOR', 0, { supplier: grn.supplier, vendorId: grn.vendorId, challanNo: 'DN-07', remarks: 'Part of the load was below the specified grade' }, [{ itemId: line.itemId, quantity: D(-1) }]);
 }
 
 /**

@@ -47,6 +47,13 @@ enum StockEntryType {
   RECEIPT
   ISSUE
   ADJUSTMENT
+  /// Sent to another project's store (negative here); received there as TRANSFER_IN
+  TRANSFER_OUT
+  TRANSFER_IN
+  /// Sent back to the supplier (negative)
+  RETURN_TO_VENDOR
+  /// Issued material that came back to the store unused (positive)
+  RETURN_FROM_SITE
 }
 
 enum EquipmentOwnership {
@@ -564,7 +571,8 @@ model Project {
   materialRequests MaterialRequest[]
   notifications    Notification[]
   attendanceSheets AttendanceSheet[]
-  stockEntries     StockEntry[]
+  stockEntries     StockEntry[]       @relation("StockEntryProject")
+  transfersIn      StockEntry[]       @relation("StockTransferTo")
   stockTxns        StockTxn[]
   stockMinLevels   StockMinLevel[]
   equipment        Equipment[]
@@ -1329,9 +1337,9 @@ model StockEntry {
   organizationId    String
   organization      Organization     @relation(fields: [organizationId], references: [id])
   projectId         String
-  project           Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project           Project          @relation("StockEntryProject", fields: [projectId], references: [id], onDelete: Cascade)
   type              StockEntryType
-  /// GRN-2026-0001, ISS-2026-0001 or ADJ-2026-0001, numbered per organisation and type
+  /// GRN-2026-0001, ISS-2026-0001, ADJ-2026-0001 (TRO, TRI, RTV, RFS for transfers and returns), numbered per organisation and type
   entryNo           String
   date              DateTime         @db.Date
   /// Receipts: the approved material request this GRN is against
@@ -1356,6 +1364,13 @@ model StockEntry {
   /// Issues against a work order: the subcontractor bill that recovered it
   subcontractBillId String?
   subcontractBill   SubcontractBill? @relation(fields: [subcontractBillId], references: [id], onDelete: SetNull)
+  /// Transfers out: the project the material is going to
+  toProjectId       String?
+  toProject         Project?         @relation("StockTransferTo", fields: [toProjectId], references: [id], onDelete: SetNull)
+  /// Transfers in: the transfer out it receives (one receipt per transfer)
+  transferOutId     String?          @unique
+  transferOut       StockEntry?      @relation("StockTransfer", fields: [transferOutId], references: [id], onDelete: SetNull)
+  transferIn        StockEntry?      @relation("StockTransfer")
   remarks           String?
   createdById       String
   createdBy         User             @relation(fields: [createdById], references: [id])
@@ -1368,6 +1383,7 @@ model StockEntry {
   @@unique([organizationId, entryNo])
   @@index([projectId, date])
   @@index([organizationId, type, date])
+  @@index([toProjectId])
 }
 
 /// Stock movement of one item in one project. Quantity is signed: receipts positive, issues negative.

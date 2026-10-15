@@ -12,8 +12,25 @@ export const StockTypeTag = ({ type }: { type: StockEntryType }) => (
   </Tag>
 );
 
-/** One line of what an entry was about: supplier and request for a GRN, who took it for an issue, the reason for an adjustment. */
-export function entrySummary(e: { type: StockEntryType; supplier: string | null; requestNo: string | null; poNo?: string | null; challanNo: string | null; issuedTo: string | null; activityName: string | null; remarks: string | null }): string {
+/** One line of what an entry was about: supplier and request for a GRN, who took it for an issue, where a transfer went, the reason for an adjustment. */
+export function entrySummary(e: {
+  type: StockEntryType;
+  supplier: string | null;
+  requestNo: string | null;
+  poNo?: string | null;
+  challanNo: string | null;
+  issuedTo: string | null;
+  activityName: string | null;
+  remarks: string | null;
+  toProjectName?: string | null;
+  transferInNo?: string | null;
+  fromProjectName?: string | null;
+  transferOutNo?: string | null;
+}): string {
+  if (e.type === 'TRANSFER_OUT') return [`to ${e.toProjectName ?? e.issuedTo ?? '-'}`, e.transferInNo ? `received as ${e.transferInNo}` : 'in transit'].join(', ');
+  if (e.type === 'TRANSFER_IN') return [`from ${e.fromProjectName ?? e.supplier ?? '-'}`, e.transferOutNo && `sent as ${e.transferOutNo}`].filter(Boolean).join(', ');
+  if (e.type === 'RETURN_TO_VENDOR') return [e.supplier && `back to ${e.supplier}`, e.remarks].filter(Boolean).join(': ') || '-';
+  if (e.type === 'RETURN_FROM_SITE') return [e.issuedTo && `from ${e.issuedTo}`, e.activityName && `(${e.activityName})`].filter(Boolean).join(' ') || '-';
   if (e.type === 'RECEIPT') return [e.supplier, (e.poNo ?? e.requestNo) && `against ${e.poNo ?? e.requestNo}`, e.challanNo && `challan ${e.challanNo}`].filter(Boolean).join(', ') || '-';
   if (e.type === 'ISSUE') return [e.issuedTo && `to ${e.issuedTo}`, e.activityName && `for ${e.activityName}`].filter(Boolean).join(' ') || '-';
   return e.remarks ?? '-';
