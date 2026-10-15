@@ -377,6 +377,10 @@ preview deployments run them against the production database before a PR is merg
     Liquidated damages tab on Delays & Risks. Price variation on RA bills: the contract's formula (components with a
     share of the work value and a base index), this month's indices on each bill, and GST and deductions on work value
     plus price variation.
+51. ~~**Product tour** (S).~~
+    Done: an antd Tour over the web app's shell (pages, search, approvals, notifications, account) the first time
+    someone signs in on a browser, and again from the account menu (Take the tour). The repo carries the antd MCP
+    server and llms.txt references for working on the web app.
 
 ## Definition of done for every item
 Prisma migration, API endpoints with Swagger, shared types, web screen, mobile screen where site

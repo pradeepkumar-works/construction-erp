@@ -45,6 +45,14 @@ cd e2e && npx playwright test         # browser tests; needs API + web running (
   `packages/shared/src/brand.ts`; web brand colours live only in `src/lib/brand.ts` (plus `BrandMark` and
   `app/icon.svg`), mobile ones in `src/theme.ts`. Use `BRAND.colors` instead of hex literals.
   Check antd 6 typings in node_modules before using a prop you are unsure of.
+- antd reference: the `antd` MCP server in `.mcp.json` (`@ant-design/cli mcp`: component docs, props, tokens for the
+  installed version), and https://ant.design/llms.txt (index) or https://ant.design/llms-full.txt (every component with
+  examples). Use antd components and theme tokens before custom CSS, and the antd 6 props (Select
+  `showSearch={{ optionFilterProp }}`, Alert `title`, Drawer `size`, Space `orientation`, Spin `description`, Statistic
+  `styles.content`). Run `npx @ant-design/cli lint apps/web/src/<folder>` on the folders you changed before committing.
+- Product tour: `src/components/shell/ProductTour.tsx` (antd `Tour`) steps over shell elements marked `data-tour="…"`;
+  it starts once per user per browser and again from the account menu. Test browsers (`navigator.webdriver`) never
+  get it by themselves.
 - Mobile: screens in `app/`, shared UI in `src/components`, API in `src/api`, no new native deps
   without checking `node_modules/expo/bundledNativeModules.json` for the SDK-pinned version.
 - Mobile text: wrap everything a screen shows in `t()` from `useT()` (English is the key, `{placeholders}` for values)

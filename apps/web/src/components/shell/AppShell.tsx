@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Alert, Avatar, Button, Drawer, Dropdown, Grid, Layout, Space, Tag, Typography } from 'antd';
 import type { MenuProps } from 'antd';
-import { AuditOutlined, CustomerServiceOutlined, LogoutOutlined, MenuOutlined, SearchOutlined, UserOutlined } from '@ant-design/icons';
+import { AuditOutlined, CompassOutlined, CustomerServiceOutlined, LogoutOutlined, MenuOutlined, SearchOutlined, UserOutlined } from '@ant-design/icons';
 import type { AuthUser } from '@erp/shared';
 import { BILLING_REMIND_DAYS, PRODUCT_NAME, canManageBilling, canManageCompanyData, isGuest, mayApprove } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
@@ -18,6 +18,7 @@ import { BrandMark } from './BrandMark';
 import { CommandPalette } from './CommandPalette';
 import { navFor } from './nav';
 import { PREF_RAIL, Sidebar, readPref, writePref } from './Sidebar';
+import { ProductTour, shouldAutoStartTour } from './ProductTour';
 import s from './Sidebar.module.css';
 
 const { Header, Content } = Layout;
@@ -39,6 +40,14 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
   const pendingCount = approver ? (pending?.length ?? 0) : 0;
   const sections = useMemo(() => navFor(user), [user]);
   const guest = isGuest(user.roleKey);
+  const [touring, setTouring] = useState(false);
+
+  // The first time someone signs in on this browser, once the shell has laid out.
+  useEffect(() => {
+    if (!shouldAutoStartTour(user)) return;
+    const t = window.setTimeout(() => setTouring(true), 600);
+    return () => window.clearTimeout(t);
+  }, [user]);
 
   const toggleRail = useCallback(() => {
     setRail((r) => {
@@ -76,6 +85,15 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
   const userMenu: MenuProps['items'] = [
     { key: 'info', icon: <UserOutlined />, label: `${user.email}`, disabled: true },
     { type: 'divider' },
+    {
+      key: 'tour',
+      icon: <CompassOutlined />,
+      label: 'Take the tour',
+      onClick: () => {
+        setMobileOpen(false);
+        setTouring(true);
+      },
+    },
     { key: 'logout', icon: <LogoutOutlined />, label: 'Sign out', onClick: logout },
   ];
 
@@ -89,7 +107,7 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
   return (
     <Layout hasSider style={{ minHeight: '100vh' }}>
       {!isMobile && (
-        <aside className={`${s.aside} ${rail ? s.asideRail : ''}`}>
+        <aside className={`${s.aside} ${rail ? s.asideRail : ''}`} data-tour="sidebar">
           <Sidebar user={user} sections={sections} pendingCount={pendingCount} rail={rail} onToggleRail={toggleRail} onSearch={openSearch} />
         </aside>
       )}
@@ -99,6 +117,7 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
         </Drawer>
       )}
       {!guest && <CommandPalette open={searchOpen} onClose={() => setSearchOpen(false)} sections={sections} withProjects />}
+      <ProductTour user={user} mobile={isMobile} open={touring} onClose={() => setTouring(false)} />
       <Layout>
         <Header
           style={{
@@ -118,7 +137,7 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
           <Space size={12} style={{ minWidth: 0 }}>
             {isMobile ? (
               <>
-                <Button type="text" icon={<MenuOutlined />} onClick={() => setMobileOpen(true)} aria-label="Open menu" />
+                <Button type="text" icon={<MenuOutlined />} onClick={() => setMobileOpen(true)} aria-label="Open menu" data-tour="menu" />
                 <BrandMark size={28} />
               </>
             ) : (
@@ -136,10 +155,12 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
             )}
           </Space>
           <Space size={4}>
-            {isMobile && openSearch && <Button type="text" icon={<SearchOutlined />} onClick={openSearch} aria-label="Search pages and projects" />}
-            <NotificationBell />
+            {isMobile && openSearch && <Button type="text" icon={<SearchOutlined />} onClick={openSearch} aria-label="Search pages and projects" data-tour="search" />}
+            <span data-tour="notifications">
+              <NotificationBell />
+            </span>
             <Dropdown menu={{ items: userMenu }} trigger={['click']}>
-            <Button type="text" style={{ height: 40, padding: '0 8px' }}>
+            <Button type="text" style={{ height: 40, padding: '0 8px' }} data-tour="account">
               <Space>
                 <Avatar size="small" style={{ background: BRAND.colors.accent, color: BRAND.colors.onAccent, fontWeight: 700 }}>
                   {initials}
