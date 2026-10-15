@@ -87,6 +87,8 @@ demo seed at 1280 × 800, scale 1.25, saved as WebP).
   what is behind plan and how far each finish has moved.
 - Named worker register: contractor labour by name with a daily roll call (on the web and the site app) that
   keeps the head count in step, a monthly muster with wages, and output per man-day.
+- Site imprest: petty cash floats for site in-charges, spent by their cash expenses, with top-ups asked for from
+  the phone and paid by accounts.
 - Sector progress: progress and measurements tagged with chainage (road), floor (building) or village (water
   supply); a road strip chart per layer, a floor by activity matrix, and pipe ordered, supplied, laid and tested
   village by village.

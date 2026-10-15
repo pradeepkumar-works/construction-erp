@@ -148,6 +148,24 @@ A site labour register, not HR: no PF, ESI or payslips (those stay with Payroll 
 - **Web and mobile.** The Attendance page and project tab gain Roll call, Workers and Muster & output beside the
   head count. The site app has an online Roll call screen.
 
+### Site imprest
+
+- **Tables.** `Imprest`: project, holder (a user who pays site expenses), `floatAmount`, `openedOn`, `closedOn`,
+  `isActive`; one per holder per project. `ImprestEntry`: `ADVANCE` or `RETURN`, `REQUESTED` / `PAID` / `REJECTED`,
+  amount, dates, payment mode and reference, who asked and who decided. Both have a `tenant_isolation` policy.
+- **Cash in hand** = advances paid - returns - the holder's cash expenses at that project since `openedOn` that are
+  submitted, approved or sent back (`imprestFigures` in `packages/shared/src/imprest.ts`). A turned-down cash
+  expense does not reduce it; it shows as disallowed, cash the holder has to account for. The top-up due is the
+  float less the cash in hand; under 20% of the float is low.
+- **API.** `/imprests` (accounts and approvers see their projects' imprests, others only their own). Accounts,
+  admins and management (`canManageImprest`) open one (optionally paying the float), advance cash, pay or turn down
+  a top-up, take cash back, change the float and close it (only with nil cash in hand and no top-up waiting). The
+  holder asks for a top-up (one waiting at a time), which notifies accounts (`IMPREST` notification, hidden from
+  older phone builds); paying or turning it down notifies the holder. `GET /imprests/:id` adds the cash ledger with
+  a running balance.
+- **Web and mobile.** A Site Imprest page with each float's cash in hand and the top-ups waiting; the site app's My
+  imprest screen shows the holder's balance and asks for a top-up.
+
 ## Lists: paging, search, sort and export
 
 `GET /progress`, `/dpr`, `/material-requests`, `/attendance`, `/stock/entries`, `/stock/balances`, `/stock/items`,

@@ -31,6 +31,8 @@ const DRAWINGS = { href: '/documents', icon: 'document-text-outline' as const, t
 
 const ROLL_CALL = { href: '/roll-call', icon: 'checkbox-outline' as const, tone: '#1d4ed8', title: 'Roll call', text: 'Mark the contractors\u2019 workers by name: present, half day or absent, with overtime.' };
 
+const IMPREST = { href: '/imprest', icon: 'cash' as const, tone: '#a16207', title: 'My imprest', text: 'Petty cash in hand after your cash expenses; ask accounts for a top-up.' };
+
 const MY_STAFF = { href: '/staff', icon: 'calendar' as const, tone: '#4d7c0f', title: 'My attendance & leave', text: 'Check in and out, see your leave balance and apply for leave.' };
 
 const STAFF_REGISTER = { href: '/staff-register', icon: 'id-card' as const, tone: '#365314', title: 'Staff register', text: 'Mark the company staff at your site present, half day or absent.' };
@@ -56,7 +58,7 @@ export default function SubmitHub() {
     DRAWINGS,
     ...(user && canLogMachinery(user.roleKey) ? [MACHINERY] : []),
     ...(user && (canLogMachinery(user.roleKey) || canManageMaintenance(user.roleKey)) ? [BREAKDOWN] : []),
-    ...(user && canSubmitExpense(user.roleKey) ? [EXPENSE] : []),
+    ...(user && canSubmitExpense(user.roleKey) ? [EXPENSE, IMPREST] : []),
     ...(user && canMeasure(user.roleKey) ? [MEASUREMENT] : []),
     ...(user && canRequestInspection(user.roleKey) ? [INSPECTION, QUALITY] : []),
     ...(user && canKeepStock(user.roleKey) ? STOCK : []),

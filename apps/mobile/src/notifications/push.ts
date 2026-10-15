@@ -85,5 +85,6 @@ export function notificationRoute(data: Record<string, unknown> | undefined): st
   if (data?.type === 'LEAVE') return '/staff';
   if (data?.type === 'LOW_STOCK' && projectId) return `/stock?projectId=${projectId}&low=1`;
   if (data?.type === 'APPROVAL_DIGEST') return '/(tabs)/approvals';
+  if (data?.type === 'IMPREST') return '/imprest';
   return '/notifications';
 }

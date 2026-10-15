@@ -702,6 +702,18 @@ jobs:
           curl -sf "$API_URL/workers/output?projectId=$P&from=$F&to=$D" -H "$H" | jq -e '(.rows | type) == "array" and (.totalManDays | type) == "number"' > /dev/null
           code=$(curl -s -o /dev/null -w '%{http_code}' -X PUT "$API_URL/workers/roll-call" -H "authorization: Bearer $(login qs@demo.com)" -H 'content-type: application/json' -d "{\"projectId\":\"$P\",\"date\":\"$D\",\"entries\":[]}")
           echo "QS marking the roll call: $code"; [ "$code" = "403" ]
+      - name: Site imprest
+        run: |
+          set -e
+          login() { curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' -d "{\"email\":\"$1\",\"password\":\"password123\"}" | jq -r .accessToken; }
+          H="authorization: Bearer $(login accounts@demo.com)"
+          curl -sf "$API_URL/imprests" -H "$H" > /tmp/imprests.json
+          jq -e 'type == "array" and all(.[]; (.cashInHand | type) == "string" and (.floatAmount | type) == "string" and (.low | type) == "boolean")' /tmp/imprests.json > /dev/null
+          jq -r '.[] | "\(.holderName) at \(.projectName): \(.cashInHand) in hand of \(.floatAmount)\(if .openRequest then ", top-up of \(.openRequest.amount) waiting" else "" end)"' /tmp/imprests.json
+          I=$(jq -r '.[0].id // empty' /tmp/imprests.json)
+          if [ -n "$I" ]; then curl -sf "$API_URL/imprests/$I" -H "$H" | jq -e '(.ledger | type) == "array" and (.entries | type) == "array"' > /dev/null; fi
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/imprests" -H "authorization: Bearer $(login engineer@demo.com)" -H 'content-type: application/json' -d '{"projectId":"00000000-0000-4000-8000-000000000000","holderId":"00000000-0000-4000-8000-000000000000","floatAmount":"1000"}')
+          echo "site engineer opening an imprest: $code"; [ "$code" = "403" ]
       - name: Activity templates
         run: |
           set -e
