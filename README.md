@@ -115,6 +115,8 @@ demo seed at 1280 × 800, scale 1.25, saved as WebP).
   and sent back for approval with the reviewer's note shown alongside the form.
 - Variations: extra items and quantity changes claimed from the client, sent and decided with the client's
   reference; approval updates the BOQ and the revised contract value, and unapproved extra items stay out of RA bills.
+- Budget and cash flow: a project budget by cost head and BOQ budget rates against actual cost, the forecast to
+  complete and forecast margin, and a six-month or twelve-week cash-flow forecast from bills, receivables and budgets.
 - Dashboards: company (projects, contract value, pending approvals, delayed activities, DPRs
   today; for finance roles receivables, vendor payable, this month's expense and billing, and financial
   progress) and project (physical progress weighted by BOQ value, BOQ executed amount, activity

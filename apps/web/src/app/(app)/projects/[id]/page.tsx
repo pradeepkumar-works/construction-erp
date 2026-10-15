@@ -24,6 +24,7 @@ import { MeasurementList } from '@/components/measurements/MeasurementList';
 import { ProjectQualityTab } from '@/components/quality/QualityTabs';
 import { ProjectDocumentsTab } from '@/components/documents/DocumentTabs';
 import { ProjectCostPanel } from '@/components/cost/ProjectCostPanel';
+import { ProjectBudgetPanel } from '@/components/cost/ProjectBudgetPanel';
 import { ContractPanel } from '@/components/contracts/ContractPanel';
 import { VariationsPanel } from '@/components/variations/VariationsPanel';
 import { BillList } from '@/components/bills/BillList';
@@ -116,6 +117,7 @@ export default function ProjectDetailPage() {
             { key: 'expenses', label: 'Expenses', children: <ExpenseList projectId={project.id} /> },
             { key: 'risks', label: 'Delays & Risks', children: <RiskList projectId={project.id} /> },
             ...(user && canViewCost(user.roleKey) ? [{ key: 'cost', label: 'Cost', children: <ProjectCostPanel projectId={project.id} /> }] : []),
+            ...(user && canViewCost(user.roleKey) ? [{ key: 'budget', label: 'Budget & Cash Flow', children: <ProjectBudgetPanel projectId={project.id} /> }] : []),
           ]}
         />
       </Card>

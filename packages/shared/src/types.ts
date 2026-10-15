@@ -4,6 +4,7 @@ import type { TallyVoucherKind } from './tally';
 import type { BillingUnit } from './billing';
 import type { DocumentDiscipline, DocumentKind, LetterDirection, RevisionStatus, TransmittalPurpose } from './documents';
 import type { LeaveStatus, LeaveType, StaffAttendanceStatus } from './staff';
+import type { CostHead } from './cost';
 import type {
   BillStage,
   ReceiptKind,
@@ -725,6 +726,121 @@ export interface ProjectCostDto extends ProjectCostSummaryDto {
   subcontractByOrder: { workOrderId: string; woNo: string; vendorName: string; bills: number; amount: string }[];
 }
 
+/* ---------- budget and forecast ---------- */
+
+/** One cost head: budget, actual to date, the budget earned by the work done, and the forecast at completion. */
+export interface BudgetHeadDto {
+  head: CostHead;
+  /** null when the project has no cost-head budget */
+  budget: string | null;
+  actual: string;
+  /** budget × % complete */
+  earned: string | null;
+  /** actual + budget × (1 − % complete) */
+  forecast: string | null;
+  /** earned − actual: negative is an overrun */
+  variance: string | null;
+}
+
+/** One BOQ item with its budgeted cost per unit. */
+export interface BudgetBoqItemDto {
+  boqItemId: string;
+  itemNo: string;
+  description: string;
+  unit: string;
+  /** Revised quantity, else the original */
+  qty: string;
+  /** Client's rate */
+  rate: string;
+  amount: string;
+  /** Budgeted cost per unit; null when not set */
+  budgetRate: string | null;
+  /** qty × budgetRate */
+  budgetAmount: string | null;
+  /** (rate − budgetRate) ÷ rate, % */
+  plannedMarginPct: number | null;
+  /** Approved progress to date */
+  executedQty: string;
+  /** executedQty × budgetRate */
+  earnedBudget: string | null;
+}
+
+/**
+ * A project's budget against actual cost to date, and the forecast to complete. % complete is executed value (approved
+ * progress × BOQ rate) over the BOQ value; the forecast at completion is actual cost plus the budget for the work left.
+ */
+export interface ProjectBudgetDto {
+  projectId: string;
+  projectCode: string;
+  projectName: string;
+  /** The cost-head budget is set */
+  hasHeadBudget: boolean;
+  heads: BudgetHeadDto[];
+  /** Σ BOQ qty × budget rate over the items that have one; null when none has */
+  boqBudget: string | null;
+  boqItems: BudgetBoqItemDto[];
+  /** BOQ items (with a quantity) that have no budget rate */
+  itemsWithoutBudgetRate: number;
+  /** Σ BOQ qty × rate */
+  boqValue: string;
+  executedValue: string;
+  /** 0 to 100, one decimal */
+  pctComplete: number;
+  /** The cost-head budget total, else the BOQ budget; null when neither is set */
+  budgetAtCompletion: string | null;
+  earnedBudget: string | null;
+  actualCost: string;
+  /** earnedBudget − actualCost: negative is an overrun */
+  costVariance: string | null;
+  forecastAtCompletion: string | null;
+  /** forecastAtCompletion − actualCost */
+  forecastToComplete: string | null;
+  revisedContractValue: string | null;
+  /** revisedContractValue − forecastAtCompletion */
+  forecastMargin: string | null;
+  notes: string | null;
+  updatedAt: string | null;
+  updatedByName: string | null;
+}
+
+export type CashFlowGranularity = 'MONTH' | 'WEEK';
+
+/** Money expected in and out in one week or month. The first period also holds everything overdue. */
+export interface CashFlowPeriodDto {
+  /** First day, YYYY-MM-DD */
+  start: string;
+  /** Last day, YYYY-MM-DD */
+  end: string;
+  /** RA bills approved and not yet paid, expected the client's payment days after they were sent (or billed, when not sent) */
+  clientBills: string;
+  /** Retention and security deposit held by the client, at the end of the defect liability period */
+  retentionRelease: string;
+  /** Work still to bill (revised contract value less billed), billed evenly to completion, net of the client's deductions, with GST */
+  futureBilling: string;
+  inTotal: string;
+  /** Approved vendor and subcontractor bills not yet paid, by due date */
+  vendorBills: string;
+  /** Forecast to complete, spent evenly to completion */
+  remainingBudget: string;
+  outTotal: string;
+  net: string;
+  cumulative: string;
+}
+
+export interface CashFlowDto {
+  asOf: string;
+  granularity: CashFlowGranularity;
+  projectId: string | null;
+  periods: CashFlowPeriodDto[];
+  /** Amounts due before today, already counted in the first period */
+  overdueIn: string;
+  overdueOut: string;
+  /** Projects whose remaining work is not in the forecast because they have no budget */
+  projectsWithoutBudget: { projectId: string; projectCode: string }[];
+  /** Projects past (or without) a completion date: their remaining billing and budget are spread over the next 3 months */
+  projectsWithoutEndDate: { projectId: string; projectCode: string }[];
+}
+
 /* ---------- progress report ---------- */
 
 export interface ReportActivityRowDto {
@@ -1001,6 +1117,8 @@ export interface ProjectContractDto {
   mobilisationAdvance: string;
   advanceRecoveryPct: string;
   defectLiabilityMonths: number | null;
+  /** Days the client takes to pay a bill once sent; null = not set (the cash-flow forecast assumes 30) */
+  clientPaymentDays: number | null;
   priceVariation: boolean;
   gstRate: string;
   tdsPct: string;

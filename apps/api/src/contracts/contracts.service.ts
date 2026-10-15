@@ -64,6 +64,7 @@ export class ContractsService {
       mobilisationAdvance: money(p.mobilisationAdvance)!,
       advanceRecoveryPct: pctStr(p.advanceRecoveryPct),
       defectLiabilityMonths: p.defectLiabilityMonths,
+      clientPaymentDays: p.clientPaymentDays,
       priceVariation: p.priceVariation,
       gstRate: pctStr(p.gstRate),
       tdsPct: pctStr(p.tdsPct),
@@ -112,6 +113,7 @@ export class ContractsService {
       data.mobilisationAdvance = new Prisma.Decimal(dto.mobilisationAdvance);
     }
     if (dto.defectLiabilityMonths !== undefined) data.defectLiabilityMonths = dto.defectLiabilityMonths;
+    if (dto.clientPaymentDays !== undefined) data.clientPaymentDays = dto.clientPaymentDays;
     if (dto.priceVariation !== undefined) data.priceVariation = dto.priceVariation;
     const start = dto.startDate !== undefined ? dto.startDate : undefined;
     const end = dto.endDate !== undefined ? dto.endDate : undefined;

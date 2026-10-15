@@ -139,6 +139,7 @@ async function main() {
     await seedStaff(org.id);
     await seedGuests(org.id);
     await seedVariations(org.id);
+    await seedBudgets(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
   }
@@ -301,9 +302,38 @@ async function main() {
   await seedStaff(org.id);
   await seedGuests(org.id);
   await seedVariations(org.id);
+  await seedBudgets(org.id);
 
   console.log('Seed complete. Login with any of these (password: password123):');
   for (const u of USERS) console.log(`  ${u.email.padEnd(24)} ${u.role}`);
+}
+
+/**
+ * Demo budgets (v4 item 38): the first road and building projects get a budget rate on every BOQ item (78 to 88% of the
+ * client's rate) and a cost-head budget split from that total; the road's client pays in 45 days. Other projects are left
+ * without a budget. Only when the organisation has no budget yet.
+ */
+async function seedBudgets(organizationId: string) {
+  if (await prisma.projectBudget.count({ where: { organizationId } })) return;
+  const pm = await prisma.user.findFirst({ where: { organizationId, email: 'pm@demo.com' } });
+  if (!pm) return;
+  const split = { material: 0.44, subcontract: 0.2, machinery: 0.16, labour: 0.12, expenses: 0.08 };
+  for (const type of ['ROAD', 'BUILDING'] as const) {
+    const project = await prisma.project.findFirst({ where: { organizationId, type }, orderBy: { code: 'asc' } });
+    if (!project) continue;
+    const items = await prisma.boqItem.findMany({ where: { projectId: project.id }, orderBy: [{ sortOrder: 'asc' }, { itemNo: 'asc' }] });
+    let total = D(0);
+    for (const [i, b] of items.entries()) {
+      const budgetRate = b.rate.mul(0.78 + (i % 6) * 0.02).toDecimalPlaces(2);
+      await prisma.boqItem.update({ where: { id: b.id }, data: { budgetRate } });
+      total = total.add((b.revisedQty ?? b.originalQty).mul(budgetRate));
+    }
+    const heads = Object.fromEntries(Object.entries(split).map(([k, f]) => [k, total.mul(f).div(1000).toDecimalPlaces(0).mul(1000)])) as Record<keyof typeof split, Prisma.Decimal>;
+    await prisma.projectBudget.create({
+      data: { organizationId, projectId: project.id, ...heads, notes: 'Budget from the tender rate analysis, revised after award.', updatedById: pm.id },
+    });
+    if (type === 'ROAD') await prisma.project.update({ where: { id: project.id }, data: { clientPaymentDays: 45 } });
+  }
 }
 
 /**

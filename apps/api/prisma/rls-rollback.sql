@@ -195,5 +195,8 @@ DROP POLICY IF EXISTS tenant_isolation ON "Variation";
 ALTER TABLE "VariationLine" NO FORCE ROW LEVEL SECURITY;
 ALTER TABLE "VariationLine" DISABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS tenant_isolation ON "VariationLine";
+ALTER TABLE "ProjectBudget" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "ProjectBudget" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "ProjectBudget";
 
 DROP FUNCTION IF EXISTS app_current_org();

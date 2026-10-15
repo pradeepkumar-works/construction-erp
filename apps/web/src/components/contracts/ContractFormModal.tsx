@@ -20,6 +20,7 @@ type FormValues = {
   dates?: [dayjs.Dayjs | null, dayjs.Dayjs | null] | null;
   mobilisationAdvance?: number | null;
   defectLiabilityMonths?: number | null;
+  clientPaymentDays?: number | null;
   priceVariation?: boolean;
 } & Partial<Record<ContractPercentField, number | null>>;
 
@@ -55,6 +56,7 @@ export function ContractFormModal({ open, contract, onClose }: { open: boolean; 
       dates: [contract.startDate ? dayjs(contract.startDate) : null, contract.endDate ? dayjs(contract.endDate) : null],
       mobilisationAdvance: Number(contract.mobilisationAdvance),
       defectLiabilityMonths: contract.defectLiabilityMonths,
+      clientPaymentDays: contract.clientPaymentDays,
       priceVariation: contract.priceVariation,
       ...Object.fromEntries(CONTRACT_PERCENT_FIELDS.map((k) => [k, Number(contract[k])])),
     });
@@ -72,6 +74,7 @@ export function ContractFormModal({ open, contract, onClose }: { open: boolean; 
         endDate: v.dates?.[1] ? v.dates[1].format('YYYY-MM-DD') : null,
         mobilisationAdvance: String(v.mobilisationAdvance ?? 0),
         defectLiabilityMonths: v.defectLiabilityMonths ?? null,
+        clientPaymentDays: v.clientPaymentDays ?? null,
         priceVariation: !!v.priceVariation,
         ...Object.fromEntries(CONTRACT_PERCENT_FIELDS.map((k) => [k, String(v[k] ?? 0)])),
       };
@@ -144,10 +147,13 @@ export function ContractFormModal({ open, contract, onClose }: { open: boolean; 
             <Form.Item name="defectLiabilityMonths" label="Defect liability (months)">
               <InputNumber<number> style={{ width: '100%' }} min={0} max={120} />
             </Form.Item>
-            <Form.Item name="priceVariation" label="Price variation" valuePropName="checked">
-              <Checkbox>Contract has a price variation clause</Checkbox>
+            <Form.Item name="clientPaymentDays" label="Client pays within (days)" tooltip="Days the client takes to pay a bill once it is sent. The cash-flow forecast assumes 30 when left empty.">
+              <InputNumber<number> style={{ width: '100%' }} min={0} max={365} placeholder="30" />
             </Form.Item>
           </div>
+          <Form.Item name="priceVariation" label="Price variation" valuePropName="checked">
+            <Checkbox>Contract has a price variation clause</Checkbox>
+          </Form.Item>
         </Form>
       </Modal>
       <ClientFormModal open={newClient} onClose={() => setNewClient(false)} onSaved={(c) => form.setFieldValue('clientId', c.id)} />

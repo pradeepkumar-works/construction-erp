@@ -387,6 +387,7 @@ model Organization {
   outboundMessages  OutboundMessage[]
   billingPayments   BillingPayment[]
   variations        Variation[]
+  projectBudgets    ProjectBudget[]
   variationLines    VariationLine[]
 }
 
@@ -493,6 +494,7 @@ model User {
   transmittalsSent     Transmittal[]      @relation("TransmittalSender")
   lettersRecorded      Letter[]           @relation("LetterRecorder")
   variationsCreated    Variation[]        @relation("VariationCreator")
+  budgetsUpdated       ProjectBudget[]    @relation("BudgetUpdater")
   employee             Employee?          @relation("EmployeeLogin")
   staffMarked          StaffAttendance[]  @relation("StaffAttendanceMarker")
   leaveDecided         LeaveRequest[]     @relation("LeaveDecider")
@@ -549,6 +551,8 @@ model Project {
   gstTdsPct             Decimal       @default(0) @db.Decimal(5, 2)
   /// Building and other construction workers' welfare cess, % of the work value
   labourCessPct         Decimal       @default(0) @db.Decimal(5, 2)
+  /// Days the client takes to pay a bill once it is sent; the cash-flow forecast assumes 30 when not set
+  clientPaymentDays     Int?
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
 
@@ -586,6 +590,7 @@ model Project {
   staffAttendance  StaffAttendance[]
   holidays         Holiday[]
   variations       Variation[]
+  budget           ProjectBudget?
 
   @@unique([organizationId, code])
   @@index([organizationId, status])
@@ -1059,6 +1064,8 @@ model BoqItem {
   rate           Decimal      @db.Decimal(18, 2)
   originalQty    Decimal      @db.Decimal(18, 3)
   revisedQty     Decimal?     @db.Decimal(18, 3)
+  /// Budgeted cost per unit (our cost, not the client's rate): the item's planned margin and its share of the budget
+  budgetRate     Decimal?     @db.Decimal(18, 2)
   sortOrder      Int          @default(0)
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
@@ -2560,5 +2567,26 @@ model VariationLine {
 
   @@index([variationId])
   @@index([boqItemId])
+  @@index([organizationId])
+}
+
+/// A project's cost budget by cost head (the heads of the cost view). One per project.
+model ProjectBudget {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  projectId      String       @unique
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  expenses       Decimal      @default(0) @db.Decimal(18, 2)
+  material       Decimal      @default(0) @db.Decimal(18, 2)
+  machinery      Decimal      @default(0) @db.Decimal(18, 2)
+  labour         Decimal      @default(0) @db.Decimal(18, 2)
+  subcontract    Decimal      @default(0) @db.Decimal(18, 2)
+  notes          String?
+  updatedById    String
+  updatedBy      User         @relation("BudgetUpdater", fields: [updatedById], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
   @@index([organizationId])
 }
