@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { APPROVER_ROLES, type SubmissionType, COMPANY_WIDE_ROLES, isCompanyWide, canAdjustStock, canApprove, canKeepStock, canLogMachinery, canManageEquipment, canManageStore, canMeasure, canRaiseRisk, canRecordAttendance, canRequestInspection, canSubmitExpense, canRecordTest, canRaiseNcr, canManageDocuments, canViewLetters, canManageStaff, canMarkStaff, canViewMessageLog, GUEST_ROLES, isGuest } from '@erp/shared';
+import { APPROVER_ROLES, type SubmissionType, COMPANY_WIDE_ROLES, isCompanyWide, canAdjustStock, canApprove, canKeepStock, canLogMachinery, canManageEquipment, canManageStore, canMeasure, canRaiseRisk, canRecordAttendance, canRequestInspection, canSubmitExpense, canRecordTest, canRaiseNcr, canManageDocuments, canViewLetters, canManageStaff, canMarkStaff, canViewMessageLog, canReportSafety, canManageSafety, GUEST_ROLES, isGuest } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { ApprovalRightsService } from './approval-rights.service';
 import { RequestUser } from './current-user';
@@ -242,6 +242,30 @@ export class ProjectAccessService {
   /** Equipment master (codes, rates, deployment): approvers only. */
   assertCanManageEquipment(user: RequestUser) {
     if (!canManageEquipment(user.roleKey)) throw new ForbiddenException('Only an approver can change the equipment master');
+  }
+
+  /** Report an incident, record a toolbox talk or request a permit: site roles with access to the project. */
+  async assertCanReportSafety(user: RequestUser, projectId: string) {
+    if (!canReportSafety(user.roleKey)) throw new ForbiddenException('Your role cannot record safety entries');
+    await this.assertCanAccessProject(user, projectId);
+  }
+
+  /** Issue or reject a permit, close an incident: the safety officer or an approver, with access to the project. */
+  async assertCanManageSafety(user: RequestUser, projectId: string) {
+    if (!canManageSafety(user.roleKey)) throw new ForbiddenException('Only the safety officer or an approver can do this');
+    await this.assertCanAccessProject(user, projectId);
+  }
+
+  /**
+   * Who hears about safety at a project: its safety officers always, and (with `approvers`) the approvers who see it.
+   */
+  async safetyWatchersForProject(organizationId: string, projectId: string, approvers: boolean) {
+    const officers = await this.prisma.user.findMany({
+      where: { organizationId, isActive: true, role: { key: 'SAFETY_OFFICER' }, OR: [{ managedProjects: { some: { id: projectId } } }, { memberships: { some: { projectId } } }] },
+      select: { id: true },
+    });
+    const others = approvers ? await this.approversForProject(organizationId, projectId) : [];
+    return [...new Set([...officers, ...others].map((u) => u.id))];
   }
 
   /** Who hears about low stock at a project: its store managers and its project manager. */

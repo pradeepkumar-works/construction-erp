@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import type { NotificationDto, NotificationListDto, NotificationType, PushTokenDto, SubmissionType } from '@erp/shared';
+import { LEGACY_NOTIFICATION_TYPES, type NotificationDto, type NotificationListDto, type NotificationType, type PushTokenDto, type SubmissionType } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -18,7 +18,7 @@ export interface NotifyInput {
   title: string;
   body: string;
   projectId?: string | null;
-  entityType?: SubmissionType | null;
+  entityType?: NotificationDto['entityType'];
   entityId?: string | null;
   /** Per-user idempotency key (unique with userId); users that already have it are skipped. */
   dedupeKey?: string;
@@ -52,7 +52,7 @@ export class NotificationsService {
       body: r.body,
       projectId: r.projectId,
       projectName: r.project?.name ?? null,
-      entityType: (r.entityType as SubmissionType | null) ?? null,
+      entityType: (r.entityType as NotificationDto['entityType']) ?? null,
       entityId: r.entityId,
       readAt: iso(r.readAt),
       createdAt: iso(r.createdAt)!,
@@ -60,11 +60,13 @@ export class NotificationsService {
   }
 
   async list(user: RequestUser, q: ListNotificationsQuery): Promise<NotificationListDto> {
-    const where: Prisma.NotificationWhereInput = { userId: user.id, organizationId: user.organizationId };
+    // Older phone builds crash on a type they have no icon for, so they get only the types they know.
+    const types = q.allTypes ? {} : { type: { in: LEGACY_NOTIFICATION_TYPES } };
+    const where: Prisma.NotificationWhereInput = { userId: user.id, organizationId: user.organizationId, ...types };
     if (q.unreadOnly) where.readAt = null;
     const [rows, unreadCount] = await Promise.all([
       this.prisma.notification.findMany({ where, include, orderBy: { createdAt: 'desc' }, take: q.limit ?? 50 }),
-      this.prisma.notification.count({ where: { userId: user.id, readAt: null } }),
+      this.prisma.notification.count({ where: { userId: user.id, readAt: null, ...types } }),
     ]);
     return { items: rows.map((r) => this.toDto(r)), unreadCount };
   }

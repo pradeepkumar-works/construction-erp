@@ -752,6 +752,40 @@ PDF from the browser.
   recorded" prompts, Excel export); the progress report has a Delays and risks section. Site app: register
   screen per project, form (offline through the outbox) and detail screen with close / reopen.
 
+## Safety
+
+- **Tables.** `SafetyIncident` (`INC-<year>-0001`): project, `type` (NEAR_MISS | FIRST_AID | MEDICAL_TREATMENT |
+  LOST_TIME | PROPERTY_DAMAGE | FATALITY), date and optional time, location, description, people hurt and their
+  names, contractor, immediate action, root cause, corrective action, `daysLost` (lost time only), `status`
+  (OPEN | CLOSED) with closer and note. `ToolboxTalk` (`TBT-`): date, topic, who gave it, contractor, number
+  attended and names, minutes, notes. `WorkPermit` (`PTW-`): `type` (HOT_WORK | WORK_AT_HEIGHT | EXCAVATION |
+  CONFINED_SPACE | ELECTRICAL | LIFTING | OTHER), location, the work, contractor and workers, `validFrom` /
+  `validTo` (at most `PERMIT_MAX_DAYS` = 7 days), `precautions` (text array; the standard ones per type are
+  `PERMIT_PRECAUTIONS` in `packages/shared/src/safety.ts`), `status` (REQUESTED | ISSUED | REJECTED | CLOSED)
+  with who asked, issued or rejected (`issueNote`) and closed. Photos are attachments on each. All three have
+  `tenant_isolation` policies.
+- **Who.** A new `SAFETY_OFFICER` role (added to every organisation by the migration). Site roles, the QS,
+  QA/QC, the safety officer and approvers report incidents, record talks and ask for permits
+  (`canReportSafety`); the safety officer and approvers close or reopen incidents, issue or reject permits and
+  delete records (`canManageSafety`, project-checked in `ProjectAccessService.assertCanManageSafety`); whoever
+  asked for a permit closes it when the work is done. Not a submission: no approval chain.
+- **API.** `GET /safety/summary` (days since the last lost-time injury or fatality, incidents and near misses
+  this month, open incidents, people hurt and lost-time cases this year, talks and attendance this month,
+  permits waiting, live and run out, count by type); `/safety/incidents` (paged; `POST`, `PATCH`, `DELETE`,
+  `/:id/history`, `/:id/close` needs the root cause and corrective action, `/:id/reopen`); `/safety/talks`;
+  `/safety/permits` (`active` = waiting or issued; `/:id/issue` with conditions and the precautions checked,
+  `/:id/reject` with a reason, `/:id/close`). Creates are idempotent with a client id for the phone outbox.
+- **Notifications.** Type `SAFETY`, with `entityType` SAFETY_INCIDENT or WORK_PERMIT. An incident tells the
+  project's safety officers, and its approvers unless it is a near miss; a permit request tells both; issue or
+  reject tells the requester.
+- **Older phones.** Builds before this one crash on a notification type they have no icon for, so
+  `GET /notifications` lists only `LEGACY_NOTIFICATION_TYPES` (and counts only those as unread) unless the
+  client sends `allTypes=true`, as the web and newer phone builds do.
+- **Clients.** Web: Safety page and project tab (summary strip, incident register, toolbox talks, permits with
+  Excel export). Site app: Safety screen per project with the same summary, report incident / near miss, toolbox
+  talk and permit forms (offline through the outbox), incident detail with close / reopen and permit detail
+  with issue, reject and close.
+
 ## Client portal
 
 - **Who.** Two guest roles, `CLIENT_ENGINEER` and `CONSULTANT` (`GUEST_ROLES`, `isGuest`), invited and put on projects

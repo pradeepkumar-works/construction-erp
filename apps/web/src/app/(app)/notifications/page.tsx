@@ -58,7 +58,7 @@ function NotificationsPageInner() {
 
   const onClick = (n: NotificationDto) => {
     if (!n.readAt) markRead.mutate(n.id);
-    if (n.entityType && n.entityId) setOpen({ type: n.entityType, id: n.entityId });
+    if (n.entityType && n.entityId && (SUBMISSION_TYPES as readonly string[]).includes(n.entityType)) setOpen({ type: n.entityType as SubmissionType, id: n.entityId });
     else router.push(notificationHref(n));
   };
 

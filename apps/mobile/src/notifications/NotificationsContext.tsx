@@ -75,7 +75,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
   const refreshUnread = useCallback(async () => {
     if (!token) return;
     try {
-      const res = await request<NotificationListDto>('/notifications', { token, query: { unreadOnly: true, limit: 1 } });
+      const res = await request<NotificationListDto>('/notifications', { token, query: { unreadOnly: true, limit: 1, allTypes: true } });
       setUnreadCount(res.unreadCount);
     } catch {
       // keep the previous count

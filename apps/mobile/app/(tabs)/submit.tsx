@@ -2,7 +2,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { canMarkStaff, canKeepStock, canLogMachinery, canMeasure, canRaiseRisk, canRecordAttendance, canRequestInspection, canSubmitExpense } from '@erp/shared';
+import { canMarkStaff, canKeepStock, canLogMachinery, canMeasure, canRaiseRisk, canRecordAttendance, canReportSafety, canRequestInspection, canSubmitExpense } from '@erp/shared';
 import { useAuth } from '../../src/auth/AuthContext';
 import { Button, Screen } from '../../src/components';
 import { colors, radius, shadow, spacing, typography } from '../../src/theme';
@@ -33,6 +33,8 @@ const STAFF_REGISTER = { href: '/staff-register', icon: 'id-card' as const, tone
 
 const RISK = { href: '/risks', icon: 'alert-circle' as const, tone: colors.danger, title: 'Delays & risks', text: 'Record work held up (days lost, who caused it) or raise a risk; see what is open.' };
 
+const SAFETY = { href: '/safety', icon: 'medkit' as const, tone: '#b91c1c', title: 'Safety', text: 'Report an incident or near miss, record a toolbox talk, ask for a permit to work.' };
+
 const STOCK = [
   { href: '/stock/receive', icon: 'download' as const, tone: colors.success, title: 'Receive material (GRN)', text: 'Delivery against a purchase order or an approved material request, with the challan photo.' },
   { href: '/stock/issue', icon: 'arrow-up-circle' as const, tone: colors.info, title: 'Issue material', text: 'Material handed out at site, from the stock on hand.' },
@@ -53,6 +55,7 @@ export default function SubmitHub() {
     ...(user && canRequestInspection(user.roleKey) ? [INSPECTION, QUALITY] : []),
     ...(user && canKeepStock(user.roleKey) ? STOCK : []),
     ...(user && canRaiseRisk(user.roleKey) ? [RISK] : []),
+    ...(user && canReportSafety(user.roleKey) ? [SAFETY] : []),
   ];
   return (
     <Screen>

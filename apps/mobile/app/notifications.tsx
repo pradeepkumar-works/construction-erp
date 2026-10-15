@@ -26,6 +26,7 @@ const ICON: Record<NotificationType, { name: keyof typeof Ionicons.glyphMap; col
   NCR: { name: 'warning', color: colors.warning, bg: colors.warningSoft },
   BILLS_DUE: { name: 'wallet', color: colors.accent, bg: colors.accentSoft },
   PORTAL: { name: 'business', color: colors.info, bg: colors.infoSoft },
+  SAFETY: { name: 'medkit', color: colors.danger, bg: colors.dangerSoft },
 };
 
 export default function NotificationsScreen() {
@@ -33,7 +34,7 @@ export default function NotificationsScreen() {
   const api = useApi();
   const { refreshUnread } = useNotifications();
   const [busy, setBusy] = useState(false);
-  const { data, loading, refreshing, error, refresh, reload, setData } = useFetch<NotificationListDto>((a) => a.get('/notifications', { limit: 100 }), []);
+  const { data, loading, refreshing, error, refresh, reload, setData } = useFetch<NotificationListDto>((a) => a.get('/notifications', { limit: 100, allTypes: true }), []);
 
   const open = useCallback(
     async (n: NotificationDto) => {

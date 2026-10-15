@@ -63,6 +63,12 @@ function RootNavigator() {
         <Stack.Screen name="risks" options={{ title: 'Delays & Risks' }} />
         <Stack.Screen name="risk/new" options={{ title: 'Delay or Risk' }} />
         <Stack.Screen name="risk/[id]" options={{ title: 'Delay / Risk' }} />
+        <Stack.Screen name="safety" options={{ title: 'Safety' }} />
+        <Stack.Screen name="incident/new" options={{ title: 'Report an Incident' }} />
+        <Stack.Screen name="incident/[id]" options={{ title: 'Incident' }} />
+        <Stack.Screen name="talk/new" options={{ title: 'Toolbox Talk' }} />
+        <Stack.Screen name="permit/new" options={{ title: 'Ask for a Permit' }} />
+        <Stack.Screen name="permit/[id]" options={{ title: 'Permit to Work' }} />
         <Stack.Screen name="quality" options={{ title: 'Tests & NCRs' }} />
         <Stack.Screen name="documents" options={{ title: 'Drawings' }} />
         <Stack.Screen name="staff" options={{ title: 'Attendance & leave' }} />

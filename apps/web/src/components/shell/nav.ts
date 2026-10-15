@@ -28,6 +28,7 @@ import {
   IdcardOutlined,
   InboxOutlined,
   LineChartOutlined,
+  MedicineBoxOutlined,
   PartitionOutlined,
   PayCircleOutlined,
   PercentageOutlined,
@@ -133,6 +134,7 @@ export function navFor(user: AuthUser): NavSection[] {
         { href: '/documents', label: 'Documents', icon: FolderOpenOutlined, keywords: 'drawings files rfi' },
         { href: '/expenses', label: 'Site Expenses', icon: WalletOutlined, keywords: 'petty cash imprest' },
         { href: '/risks', label: 'Delays & Risks', icon: AlertOutlined, keywords: 'hindrance issues' },
+        { href: '/safety', label: 'Safety', icon: MedicineBoxOutlined, keywords: 'incident near miss toolbox talk permit to work ppe accident' },
       ],
     },
     {

@@ -1,4 +1,4 @@
-import type { BillStage, ReceiptKind, VendorKind, MsmeCategory, EquipmentOwnership, ExpenseCategory, PaymentMode, EquipmentRateUnit, MaterialPriority, NotificationType, ProjectStatus, ProjectType, DelayParty, PasswordTokenPurpose, RiskCategory, RiskKind, RiskStatus, RoleKey, StockEntryType, SubmissionStatus, SubmissionType, Weather } from './enums';
+import type { BillStage, ReceiptKind, VendorKind, MsmeCategory, EquipmentOwnership, ExpenseCategory, PaymentMode, EquipmentRateUnit, MaterialPriority, NotificationType, ProjectStatus, ProjectType, DelayParty, PasswordTokenPurpose, RiskCategory, RiskKind, RiskStatus, RoleKey, SafetyIncidentStatus, SafetyIncidentType, StockEntryType, SubmissionStatus, SubmissionType, Weather, WorkPermitStatus, WorkPermitType } from './enums';
 
 export const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {
   ROAD: 'Road / Infrastructure',
@@ -54,6 +54,7 @@ export const ROLE_LABELS: Record<RoleKey, string> = {
   QUANTITY_SURVEYOR: 'Quantity Surveyor',
   PROCUREMENT_MANAGER: 'Procurement Manager',
   QA_QC_ENGINEER: 'QA/QC Engineer',
+  SAFETY_OFFICER: 'Safety Officer',
   ACCOUNTS_MANAGER: 'Accounts Manager',
   HR_MANAGER: 'HR Manager',
   CLIENT_ENGINEER: "Client's Engineer (guest)",
@@ -84,6 +85,7 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   LEAVE: 'Leave',
   BILLS_DUE: 'Payments due',
   PORTAL: 'Client portal',
+  SAFETY: 'Safety',
 };
 
 export const STOCK_ENTRY_TYPE_LABELS: Record<StockEntryType, string> = {
@@ -205,3 +207,34 @@ export const RECEIPT_KIND_LABELS: Record<ReceiptKind, string> = {
 
 /** Payment modes as they read on a receipt from a client. */
 export const RECEIPT_MODE_LABELS: Partial<Record<PaymentMode, string>> = { BANK: 'Bank (RTGS / NEFT / cheque)', UPI: 'UPI', CASH: 'Cash' };
+
+export const SAFETY_INCIDENT_TYPE_LABELS: Record<SafetyIncidentType, string> = {
+  NEAR_MISS: 'Near miss',
+  FIRST_AID: 'First aid case',
+  MEDICAL_TREATMENT: 'Medical treatment',
+  LOST_TIME: 'Lost time injury',
+  PROPERTY_DAMAGE: 'Property damage',
+  FATALITY: 'Fatality',
+};
+
+export const SAFETY_INCIDENT_STATUS_LABELS: Record<SafetyIncidentStatus, string> = {
+  OPEN: 'Open',
+  CLOSED: 'Closed',
+};
+
+export const WORK_PERMIT_TYPE_LABELS: Record<WorkPermitType, string> = {
+  HOT_WORK: 'Hot work (welding, cutting)',
+  WORK_AT_HEIGHT: 'Work at height',
+  EXCAVATION: 'Excavation / trench',
+  CONFINED_SPACE: 'Confined space',
+  ELECTRICAL: 'Electrical work',
+  LIFTING: 'Crane / heavy lift',
+  OTHER: 'Other',
+};
+
+export const WORK_PERMIT_STATUS_LABELS: Record<WorkPermitStatus, string> = {
+  REQUESTED: 'Requested',
+  ISSUED: 'Issued',
+  REJECTED: 'Rejected',
+  CLOSED: 'Closed',
+};
