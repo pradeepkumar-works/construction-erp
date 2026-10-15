@@ -80,8 +80,7 @@ export function MeasurementList({ projectId: fixedProject }: { projectId?: strin
       >
         <Select
           allowClear
-          showSearch
-          optionFilterProp="label"
+          showSearch={{ optionFilterProp: 'label' }}
           placeholder={projectId ? 'All BOQ items' : 'Pick a project to filter by BOQ item'}
           disabled={!projectId}
           style={{ width: 260 }}

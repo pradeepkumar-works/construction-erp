@@ -120,7 +120,7 @@ export function RiskList({ projectId: fixedProject, initialProject, initialOpenI
           type="warning"
           showIcon
           style={{ margin: '12px 16px 0' }}
-          message={`${suggestions.length} activit${suggestions.length === 1 ? 'y is' : 'ies are'} past the planned finish with no delay recorded`}
+          title={`${suggestions.length} activit${suggestions.length === 1 ? 'y is' : 'ies are'} past the planned finish with no delay recorded`}
           description={
             <Space size={[6, 6]} wrap>
               {suggestions.slice(0, 8).map((s) => (

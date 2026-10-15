@@ -55,7 +55,7 @@ export function LetterDrawer({ id, open, onClose, onOpen }: { id: string | null;
     <Drawer
       open={open}
       onClose={onClose}
-      width={680}
+      size={680}
       title={
         data ? (
           <span>

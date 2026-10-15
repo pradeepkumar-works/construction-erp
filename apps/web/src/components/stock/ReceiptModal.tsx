@@ -142,8 +142,7 @@ export function ReceiptModal({
           <Form.Item name="projectId" label="Project">
             <Select
               allowClear
-              showSearch
-              optionFilterProp="label"
+              showSearch={{ optionFilterProp: 'label' }}
               placeholder="All projects"
               onChange={() => form.setFieldValue('source', undefined)}
               options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))}
@@ -152,8 +151,7 @@ export function ReceiptModal({
         )}
         <Form.Item name="source" label="Against" rules={[{ required: true, message: 'Pick the purchase order or request this delivery is against' }]}>
           <Select
-            showSearch
-            optionFilterProp="label"
+            showSearch={{ optionFilterProp: 'label' }}
             loading={loading}
             placeholder={sources.length || loading ? 'Select purchase order or request' : 'No purchase order or request is waiting for material'}
             notFoundContent={loading ? undefined : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Nothing pending to receive" />}

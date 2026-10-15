@@ -78,7 +78,7 @@ export function WorkOrderDrawer({ id, open, onClose, onEdit }: { id: string | nu
     <Drawer
       open={open}
       onClose={onClose}
-      width={1000}
+      size={1000}
       title={
         data ? (
           <Space wrap>

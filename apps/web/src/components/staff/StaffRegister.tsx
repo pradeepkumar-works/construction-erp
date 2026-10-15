@@ -154,7 +154,7 @@ export function StaffRegister() {
       </div>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {data && (data.holiday || data.weeklyOff) && (
-        <Alert type="info" showIcon style={{ margin: 12 }} message={`${data.holiday ? `Holiday: ${data.holiday}` : 'Sunday, the weekly off'}. Anyone marked present earns a comp-off.`} />
+        <Alert type="info" showIcon style={{ margin: 12 }} title={`${data.holiday ? `Holiday: ${data.holiday}` : 'Sunday, the weekly off'}. Anyone marked present earns a comp-off.`} />
       )}
       <Table<StaffRegisterRowDto>
         rowKey={(r) => r.employee.id}

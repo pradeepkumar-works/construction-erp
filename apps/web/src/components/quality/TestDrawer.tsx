@@ -67,7 +67,7 @@ export function TestDrawer({ id, open, onClose, onOpenNcr }: { id: string | null
     <Drawer
       open={open}
       onClose={onClose}
-      width={720}
+      size={720}
       title={
         data ? (
           <span>

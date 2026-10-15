@@ -45,7 +45,7 @@ export function ApplyTemplateModal({ open, onClose, project, existing }: { open:
       width={760}
       destroyOnHidden
     >
-      {!project.startDate ? <Alert type="info" showIcon style={{ marginBottom: 12 }} message="The project has no start date, so the activities are added without planned dates." /> : null}
+      {!project.startDate ? <Alert type="info" showIcon style={{ marginBottom: 12 }} title="The project has no start date, so the activities are added without planned dates." /> : null}
       <Table
         rowKey="name"
         size="small"

@@ -181,7 +181,7 @@ function SupportBanner({ user }: { user: AuthUser }) {
         type="warning"
         showIcon
         icon={<CustomerServiceOutlined />}
-        message={`Viewing ${user.organizationName} as ${PRODUCT_NAME} support, read-only, until ${formatDateTime(user.support.expiresAt)}. The visit is in the company's log.`}
+        title={`Viewing ${user.organizationName} as ${PRODUCT_NAME} support, read-only, until ${formatDateTime(user.support.expiresAt)}. The visit is in the company's log.`}
         action={
           <Button size="small" onClick={exit}>
             Exit
@@ -210,7 +210,7 @@ function BillingBanner({ user }: { user: AuthUser }) {
         <Alert
           type="error"
           showIcon
-          message={`${user.organizationName} is read-only: the ${PRODUCT_NAME} ${b.paidUntil ? 'subscription' : 'free trial'} has ended. You can still see and export everything.${admin ? '' : ' Ask your admin to renew.'}`}
+          title={`${user.organizationName} is read-only: the ${PRODUCT_NAME} ${b.paidUntil ? 'subscription' : 'free trial'} has ended. You can still see and export everything.${admin ? '' : ' Ask your admin to renew.'}`}
           action={renew}
         />
       </div>
@@ -225,7 +225,7 @@ function BillingBanner({ user }: { user: AuthUser }) {
       <Alert
         type="info"
         showIcon
-        message={`Your ${b.status === 'TRIAL' ? 'free trial' : 'subscription'} ends on ${formatDate(ends)}. After that the company becomes read-only until it is paid.`}
+        title={`Your ${b.status === 'TRIAL' ? 'free trial' : 'subscription'} ends on ${formatDate(ends)}. After that the company becomes read-only until it is paid.`}
         action={renew}
       />
     </div>
@@ -242,7 +242,7 @@ function DeletionBanner({ user }: { user: AuthUser }) {
       <Alert
         type="error"
         showIcon
-        message={`This company and all its data will be deleted on ${formatDate(data.scheduledFor)}.`}
+        title={`This company and all its data will be deleted on ${formatDate(data.scheduledFor)}.`}
         action={
           <Link href="/company-data">
             <Button size="small" danger>

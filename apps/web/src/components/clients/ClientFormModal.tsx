@@ -96,8 +96,7 @@ export function ClientFormModal({ open, client, onClose, onSaved }: { open: bool
           <Form.Item name="stateCode" label="State (GST)">
             <Select
               allowClear
-              showSearch
-              optionFilterProp="label"
+              showSearch={{ optionFilterProp: 'label' }}
               disabled={!!fromGstin}
               placeholder="Select"
               options={Object.entries(GST_STATES).map(([code, name]) => ({ value: code, label: `${code} ${name}` }))}

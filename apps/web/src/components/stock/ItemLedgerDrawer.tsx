@@ -15,7 +15,7 @@ export function ItemLedgerDrawer({ row, onClose }: { row: StockBalanceDto | null
   const { data, isLoading } = useStockEntries(row ? { projectId: row.projectId, itemId: row.itemId, page, pageSize: 20, sortBy: 'date', sortOrder: 'desc' } : undefined, !!row);
   const qtyOf = (e: StockEntryDto) => e.lines.filter((l) => l.itemId === row?.itemId).reduce((s, l) => s + Number(l.quantity), 0);
   return (
-    <Drawer open={!!row} onClose={onClose} width={720} title={row ? `${row.itemName} · ${row.projectName}` : 'Item'} destroyOnHidden>
+    <Drawer open={!!row} onClose={onClose} size={720} title={row ? `${row.itemName} · ${row.projectName}` : 'Item'} destroyOnHidden>
       {row ? (
         <>
           <Descriptions

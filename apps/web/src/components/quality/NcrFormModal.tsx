@@ -119,8 +119,7 @@ export function NcrFormModal({ open, onClose, projectId, ncr, prefill, onSaved }
         {prefill?.source ? <Typography.Paragraph type="secondary">From {prefill.source}.</Typography.Paragraph> : null}
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]} hidden={!!fixedProject}>
           <Select
-            showSearch
-            optionFilterProp="label"
+            showSearch={{ optionFilterProp: 'label' }}
             placeholder="Select project"
             options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))}
             onChange={() => form.setFieldsValue({ activityId: undefined, actionById: undefined })}
@@ -137,7 +136,7 @@ export function NcrFormModal({ open, onClose, projectId, ncr, prefill, onSaved }
         </Form.Item>
         <div style={grid('1fr 1fr')}>
           <Form.Item name="activityId" label="Activity (optional)">
-            <Select allowClear showSearch optionFilterProp="label" disabled={!selectedProject} options={(activities ?? []).map((a) => ({ value: a.id, label: a.name }))} />
+            <Select allowClear showSearch={{ optionFilterProp: 'label' }} disabled={!selectedProject} options={(activities ?? []).map((a) => ({ value: a.id, label: a.name }))} />
           </Form.Item>
           <Form.Item name="location" label="Location">
             <Input maxLength={200} placeholder="Chainage, grid, floor or zone" />
@@ -145,7 +144,7 @@ export function NcrFormModal({ open, onClose, projectId, ncr, prefill, onSaved }
         </div>
         <div style={grid('1fr 1fr')}>
           <Form.Item name="actionById" label="To be rectified by">
-            <Select allowClear showSearch optionFilterProp="label" disabled={!selectedProject} options={people} placeholder="Site engineer or contractor's in-charge" />
+            <Select allowClear showSearch={{ optionFilterProp: 'label' }} disabled={!selectedProject} options={people} placeholder="Site engineer or contractor's in-charge" />
           </Form.Item>
           <Form.Item name="dueDate" label="Rectify by">
             <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" />

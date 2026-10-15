@@ -59,7 +59,7 @@ export function SubBillDrawer({ id, open, onClose, onEdit }: { id: string | null
     <Drawer
       open={open}
       onClose={onClose}
-      width={1040}
+      size={1040}
       title={
         data ? (
           <Space wrap>

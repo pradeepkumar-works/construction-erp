@@ -46,7 +46,7 @@ export default function PlatformPage() {
   }, [data, q]);
 
   if (!user) return null;
-  if (!staff) return <Alert type="info" message={`This page is for ${PRODUCT_NAME} staff.`} />;
+  if (!staff) return <Alert type="info" title={`This page is for ${PRODUCT_NAME} staff.`} />;
   const active = data?.filter((c) => !c.suspendedAt && c.actions30d > 0).length ?? 0;
 
   return (
@@ -143,7 +143,7 @@ function CompanyDrawer({ id, ownOrgId, onClose }: { id: string | null; ownOrgId:
   };
 
   return (
-    <Drawer open={!!id} onClose={onClose} width={760} title={c ? c.name : 'Company'} destroyOnHidden>
+    <Drawer open={!!id} onClose={onClose} size={760} title={c ? c.name : 'Company'} destroyOnHidden>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {c && (
         <>
@@ -163,7 +163,7 @@ function CompanyDrawer({ id, ownOrgId, onClose }: { id: string | null; ownOrgId:
               </Button>
             )}
           </Space>
-          {c.suspendedAt && <Alert type="error" showIcon style={{ marginBottom: 16 }} message={`Suspended ${formatDateTime(c.suspendedAt)}: ${c.suspendedReason ?? ''}`} />}
+          {c.suspendedAt && <Alert type="error" showIcon style={{ marginBottom: 16 }} title={`Suspended ${formatDateTime(c.suspendedAt)}: ${c.suspendedReason ?? ''}`} />}
           <Descriptions
             size="small"
             column={2}

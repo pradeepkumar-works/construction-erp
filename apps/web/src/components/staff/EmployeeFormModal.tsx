@@ -95,14 +95,14 @@ export function EmployeeFormModal({ open, onClose, employee, onSaved }: { open: 
         </div>
         <div style={grid('1fr 1fr')}>
           <Form.Item name="projectId" label="Posted at" extra="Blank for head office">
-            <Select allowClear showSearch optionFilterProp="label" placeholder="Head office" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
+            <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Head office" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
           </Form.Item>
           <Form.Item name="phone" label="Phone">
             <Input maxLength={20} />
           </Form.Item>
         </div>
         <Form.Item name="userId" label="Login" extra="Linking a login lets them check in and apply for leave themselves">
-          <Select allowClear showSearch optionFilterProp="label" placeholder="No login" options={(users ?? []).map((u) => ({ value: u.id, label: `${u.fullName} (${u.email}, ${u.roleName})` }))} />
+          <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="No login" options={(users ?? []).map((u) => ({ value: u.id, label: `${u.fullName} (${u.email}, ${u.roleName})` }))} />
         </Form.Item>
         <div style={grid('1fr 1fr')}>
           <Form.Item name="joinedOn" label="Joined on">

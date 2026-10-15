@@ -140,8 +140,7 @@ export function WorkOrderList({ projectId: fixedProject, openId: initialOpen }: 
       >
         <Select
           allowClear
-          showSearch
-          optionFilterProp="label"
+          showSearch={{ optionFilterProp: 'label' }}
           placeholder="Any subcontractor"
           style={{ width: 220 }}
           value={vendorId}

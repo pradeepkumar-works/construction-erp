@@ -71,7 +71,7 @@ export function UserFormModal({ open, onClose, user, onInvited }: { open: boolea
           </Form.Item>
         </div>
         <Form.Item name="roleKey" label="Role" rules={[{ required: true, message: 'Required' }]}>
-          <Select showSearch optionFilterProp="label" options={(roles ?? []).map((r) => ({ value: r.key, label: r.name }))} />
+          <Select showSearch={{ optionFilterProp: 'label' }} options={(roles ?? []).map((r) => ({ value: r.key, label: r.name }))} />
         </Form.Item>
         {isEdit && (
           <Form.Item name="isActive" label="Active" valuePropName="checked">

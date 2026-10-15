@@ -130,12 +130,12 @@ export function ProjectFormModal({
             <Select options={PROJECT_STATUSES.map((s) => ({ value: s, label: PROJECT_STATUS_LABELS[s] }))} />
           </Form.Item>
           <Form.Item name="projectManagerId" label="Project manager">
-            <Select allowClear showSearch optionFilterProp="label" placeholder="Select" options={managers.map((u) => ({ value: u.id, label: `${u.fullName} (${u.roleName})` }))} />
+            <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Select" options={managers.map((u) => ({ value: u.id, label: `${u.fullName} (${u.roleName})` }))} />
           </Form.Item>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
           <Form.Item name="clientId" label="Client" extra={!project?.clientId && project?.clientName ? `Now: ${project.clientName} (not in the client master)` : 'Add clients under Billing → Clients, or from the Contract tab.'}>
-            <Select allowClear showSearch optionFilterProp="label" placeholder="Select a client" options={(clients ?? []).map((c) => ({ value: c.id, label: c.department ? `${c.name} · ${c.department}` : c.name }))} />
+            <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Select a client" options={(clients ?? []).map((c) => ({ value: c.id, label: c.department ? `${c.name} · ${c.department}` : c.name }))} />
           </Form.Item>
           <Form.Item name="consultantName" label="Consultant / PMC">
             <Input />

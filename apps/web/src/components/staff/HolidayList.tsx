@@ -100,7 +100,7 @@ export function HolidayList() {
             <Input maxLength={100} placeholder="Ratha Yatra" />
           </Form.Item>
           <Form.Item name="projectId" label="Where" extra="Blank for every site">
-            <Select allowClear showSearch optionFilterProp="label" placeholder="Every site" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
+            <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Every site" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
           </Form.Item>
         </Form>
       </Modal>

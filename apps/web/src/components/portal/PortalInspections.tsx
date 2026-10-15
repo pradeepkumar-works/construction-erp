@@ -81,7 +81,7 @@ function PortalInspectionDrawer({ data, onClose }: { data: PortalInspectionDto |
     <Drawer
       open={!!data}
       onClose={onClose}
-      width={720}
+      size={720}
       title={
         data ? (
           <span>

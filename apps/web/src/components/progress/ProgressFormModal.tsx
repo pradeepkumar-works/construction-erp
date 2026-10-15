@@ -88,16 +88,15 @@ export function ProgressFormModal({ open, onClose, projectId, entry }: { open: b
     <Modal open={open} title={entry ? `${editActionLabel(entry.status)} · ${entry.activityName}` : 'New progress entry'} okText={editing ? 'Resubmit for approval' : 'Submit'} onCancel={onClose} onOk={() => form.submit()} confirmLoading={mutation.isPending} width={640} destroyOnHidden>
       <Form form={form} layout="vertical" onFinish={(v) => mutation.mutate(v)} style={{ marginTop: 8 }}>
         {entry?.reviewNote && (
-          <Alert type="warning" showIcon style={{ marginBottom: 16 }} message={`Reviewer note from ${entry.reviewedByName ?? 'approver'}`} description={entry.reviewNote} />
+          <Alert type="warning" showIcon style={{ marginBottom: 16 }} title={`Reviewer note from ${entry.reviewedByName ?? 'approver'}`} description={entry.reviewNote} />
         )}
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]} hidden={!!fixedProject}>
-          <Select showSearch optionFilterProp="label" placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} onChange={() => form.setFieldValue('activityId', undefined)} />
+          <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} onChange={() => form.setFieldValue('activityId', undefined)} />
         </Form.Item>
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '0 16px' }}>
           <Form.Item name="activityId" label="Activity" rules={[{ required: true, message: 'Required' }]}>
             <Select
-              showSearch
-              optionFilterProp="label"
+              showSearch={{ optionFilterProp: 'label' }}
               loading={actLoading}
               disabled={!selectedProject}
               placeholder={selectedProject ? 'Select activity' : 'Select a project first'}

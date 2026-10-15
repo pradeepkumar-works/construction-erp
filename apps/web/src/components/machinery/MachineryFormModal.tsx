@@ -135,13 +135,13 @@ export function MachineryFormModal({ open, onClose, projectId, log }: { open: bo
       destroyOnHidden
     >
       <Form form={form} layout="vertical" onFinish={onFinish} style={{ marginTop: 8 }}>
-        {log?.reviewNote && <Alert type="warning" showIcon style={{ marginBottom: 16 }} message={`Reviewer note from ${log.reviewedByName ?? 'approver'}`} description={log.reviewNote} />}
+        {log?.reviewNote && <Alert type="warning" showIcon style={{ marginBottom: 16 }} title={`Reviewer note from ${log.reviewedByName ?? 'approver'}`} description={log.reviewNote} />}
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]} hidden={!!fixedProject}>
-          <Select showSearch optionFilterProp="label" placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} onChange={() => form.setFieldValue('activityId', undefined)} />
+          <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} onChange={() => form.setFieldValue('activityId', undefined)} />
         </Form.Item>
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '0 16px' }}>
           <Form.Item name="equipmentId" label="Equipment" rules={[{ required: true, message: 'Required' }]}>
-            <Select showSearch optionFilterProp="label" loading={eqLoading} placeholder="Select machine" options={equipmentOptions} />
+            <Select showSearch={{ optionFilterProp: 'label' }} loading={eqLoading} placeholder="Select machine" options={equipmentOptions} />
           </Form.Item>
           <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Required' }]}>
             <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
@@ -179,7 +179,7 @@ export function MachineryFormModal({ open, onClose, projectId, log }: { open: bo
             <Input maxLength={80} />
           </Form.Item>
           <Form.Item name="activityId" label="Activity">
-            <Select allowClear showSearch optionFilterProp="label" disabled={!selectedProject} options={(activities ?? []).map((a) => ({ value: a.id, label: a.name }))} />
+            <Select allowClear showSearch={{ optionFilterProp: 'label' }} disabled={!selectedProject} options={(activities ?? []).map((a) => ({ value: a.id, label: a.name }))} />
           </Form.Item>
         </div>
         <Form.Item name="workDone" label="Work done">

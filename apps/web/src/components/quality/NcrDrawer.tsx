@@ -109,7 +109,7 @@ export function NcrDrawer({ id, open, onClose }: { id: string | null; open: bool
     <Drawer
       open={open}
       onClose={onClose}
-      width={720}
+      size={720}
       title={
         data ? (
           <span>

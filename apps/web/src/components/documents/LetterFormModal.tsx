@@ -118,8 +118,7 @@ export function LetterFormModal({ open, onClose, projectId, letter, prefill, onS
       <Form form={form} layout="vertical" onFinish={(v) => mutation.mutate(v)} style={{ marginTop: 8 }}>
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]} hidden={!!fixedProject}>
           <Select
-            showSearch
-            optionFilterProp="label"
+            showSearch={{ optionFilterProp: 'label' }}
             placeholder="Select project"
             options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))}
             onChange={() => form.setFieldsValue({ inReplyToId: undefined, riskId: undefined })}
@@ -147,7 +146,7 @@ export function LetterFormModal({ open, onClose, projectId, letter, prefill, onS
         </Form.Item>
         <div style={grid('1fr 1fr')}>
           <Form.Item name="inReplyToId" label="In reply to">
-            <Select allowClear showSearch optionFilterProp="label" disabled={!selectedProject} options={letterOptions} />
+            <Select allowClear showSearch={{ optionFilterProp: 'label' }} disabled={!selectedProject} options={letterOptions} />
           </Form.Item>
           {direction === 'IN' ? (
             <Form.Item name="replyBy" label="Reply needed by">
@@ -158,7 +157,7 @@ export function LetterFormModal({ open, onClose, projectId, letter, prefill, onS
           )}
         </div>
         <Form.Item name="riskId" label="About a delay or risk" tooltip="Hindrance notices, extension of time claims and their replies, so the delay register shows the correspondence">
-          <Select allowClear showSearch optionFilterProp="label" disabled={!selectedProject} options={riskOptions} />
+          <Select allowClear showSearch={{ optionFilterProp: 'label' }} disabled={!selectedProject} options={riskOptions} />
         </Form.Item>
         <Form.Item name="files" label="Scanned letter">
           <PhotoUpload />

@@ -138,7 +138,7 @@ export function VendorFormModal({
             <Input placeholder="ABCPT1234F" style={{ textTransform: 'uppercase' }} />
           </Form.Item>
           <Form.Item name="stateCode" label="State (GST)">
-            <Select allowClear showSearch optionFilterProp="label" disabled={!!fromGstin} placeholder="Select" options={Object.entries(GST_STATES).map(([code, name]) => ({ value: code, label: `${code} ${name}` }))} />
+            <Select allowClear showSearch={{ optionFilterProp: 'label' }} disabled={!!fromGstin} placeholder="Select" options={Object.entries(GST_STATES).map(([code, name]) => ({ value: code, label: `${code} ${name}` }))} />
           </Form.Item>
         </div>
         <Form.Item name="address" label="Address">

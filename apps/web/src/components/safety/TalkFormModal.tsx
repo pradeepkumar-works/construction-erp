@@ -90,10 +90,10 @@ export function TalkFormModal({ open, onClose, projectId, talk }: { open: boolea
     >
       <Form form={form} layout="vertical" onFinish={(v) => save.mutate(v)}>
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]} hidden={!!projectId || !!talk}>
-          <Select showSearch optionFilterProp="label" placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
+          <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
         </Form.Item>
         <Form.Item name="topic" label="Topic" rules={[{ required: true, whitespace: true, message: 'What was it about?' }]}>
-          <AutoComplete options={TOOLBOX_TOPICS.map((t) => ({ value: t }))} filterOption={(input, o) => (o?.value ?? '').toLowerCase().includes(input.toLowerCase())} placeholder="Pick or type a topic" />
+          <AutoComplete options={TOOLBOX_TOPICS.map((t) => ({ value: t }))} showSearch={{ filterOption: (input, o) => (o?.value ?? '').toLowerCase().includes(input.toLowerCase()) }} placeholder="Pick or type a topic" />
         </Form.Item>
         <div style={grid}>
           <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Required' }]}>

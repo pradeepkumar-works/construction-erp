@@ -67,10 +67,10 @@ export function MrFormModal({ open, onClose, projectId, entry }: { open: boolean
     <Modal open={open} title={entry ? `${editActionLabel(entry.status)} · ${entry.requestNo}` : 'New material request'} okText={editing ? 'Resubmit request' : 'Submit request'} onCancel={onClose} onOk={() => form.submit()} confirmLoading={mutation.isPending} width={720} destroyOnHidden>
       <Form form={form} layout="vertical" onFinish={(v) => mutation.mutate(v)} style={{ marginTop: 8 }}>
         {entry?.reviewNote && (
-          <Alert type="warning" showIcon style={{ marginBottom: 16 }} message={`Reviewer note from ${entry.reviewedByName ?? 'approver'}`} description={entry.reviewNote} />
+          <Alert type="warning" showIcon style={{ marginBottom: 16 }} title={`Reviewer note from ${entry.reviewedByName ?? 'approver'}`} description={entry.reviewNote} />
         )}
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]} hidden={!!fixedProject}>
-          <Select showSearch optionFilterProp="label" placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
+          <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
         </Form.Item>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
           <Form.Item name="requiredDate" label="Required by" rules={[{ required: true, message: 'Required' }]}>

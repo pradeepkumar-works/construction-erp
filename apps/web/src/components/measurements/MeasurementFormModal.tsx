@@ -115,9 +115,9 @@ export function MeasurementFormModal({ open, onClose, projectId, boqItemId, shee
       destroyOnHidden
     >
       <Form form={form} layout="vertical" onFinish={(v) => mutation.mutate(v)} style={{ marginTop: 8 }}>
-        {sheet?.reviewNote && <Alert type="warning" showIcon style={{ marginBottom: 16 }} message={`Reviewer note from ${sheet.reviewedByName ?? 'approver'}`} description={sheet.reviewNote} />}
+        {sheet?.reviewNote && <Alert type="warning" showIcon style={{ marginBottom: 16 }} title={`Reviewer note from ${sheet.reviewedByName ?? 'approver'}`} description={sheet.reviewNote} />}
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]} hidden={!!fixedProject}>
-          <Select showSearch optionFilterProp="label" placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} onChange={() => form.setFieldsValue({ boqItemId: undefined, workOrderId: undefined })} />
+          <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} onChange={() => form.setFieldsValue({ boqItemId: undefined, workOrderId: undefined })} />
         </Form.Item>
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '0 16px' }}>
           <Form.Item
@@ -127,8 +127,7 @@ export function MeasurementFormModal({ open, onClose, projectId, boqItemId, shee
             extra={item ? `Contract ${formatQty(contractQty)} ${item.unit} · measured ${formatQty(item.measuredQty)} · awaiting approval ${formatQty(item.pendingMeasuredQty)}` : undefined}
           >
             <Select
-              showSearch
-              optionFilterProp="label"
+              showSearch={{ optionFilterProp: 'label' }}
               placeholder="Select BOQ item"
               disabled={!selectedProject}
               options={(boq ?? []).map((b) => ({ value: b.id, label: `${b.itemNo} - ${b.description} (${b.unit})` }))}

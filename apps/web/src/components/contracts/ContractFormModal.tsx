@@ -99,8 +99,7 @@ export function ContractFormModal({ open, contract, onClose }: { open: boolean; 
               <Form.Item name="clientId" noStyle>
                 <Select
                   allowClear
-                  showSearch
-                  optionFilterProp="label"
+                  showSearch={{ optionFilterProp: 'label' }}
                   placeholder={contract.clientName ? `${contract.clientName} (not in the client master)` : 'Select a client'}
                   style={{ flex: 1 }}
                   options={(clients ?? []).map((c) => ({ value: c.id, label: c.department ? `${c.name} · ${c.department}` : c.name }))}

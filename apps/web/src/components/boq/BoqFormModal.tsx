@@ -68,7 +68,7 @@ export function BoqFormModal({ open, onClose, projectId, item }: { open: boolean
             <Input placeholder="1.01" />
           </Form.Item>
           <Form.Item name="unit" label="Unit" rules={[{ required: true, message: 'Required' }]}>
-            <AutoComplete options={COMMON_UNITS.map((u) => ({ value: u }))} placeholder="Cum" filterOption={(input, opt) => String(opt?.value ?? '').toLowerCase().includes(input.toLowerCase())} />
+            <AutoComplete options={COMMON_UNITS.map((u) => ({ value: u }))} placeholder="Cum" showSearch={{ filterOption: (input, opt) => String(opt?.value ?? '').toLowerCase().includes(input.toLowerCase()) }} />
           </Form.Item>
         </div>
         <Form.Item name="description" label="Description" rules={[{ required: true, message: 'Required' }]}>

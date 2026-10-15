@@ -183,8 +183,7 @@ export function VendorBillFormModal({
               <Select disabled options={po ? [{ value: po.id, label: `${po.poNo} · ${po.vendorName}` }] : []} />
             ) : (
               <Select
-                showSearch
-                optionFilterProp="label"
+                showSearch={{ optionFilterProp: 'label' }}
                 loading={orders.isLoading}
                 placeholder="Approved purchase order"
                 onChange={() => setLines({})}

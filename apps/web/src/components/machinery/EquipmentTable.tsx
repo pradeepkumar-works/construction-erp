@@ -242,7 +242,7 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
             </Form.Item>
           </div>
           <Form.Item name="projectId" label="Deployed at">
-            <Select allowClear showSearch optionFilterProp="label" placeholder="Yard / unassigned" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
+            <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Yard / unassigned" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
           </Form.Item>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0 16px' }}>
             <Form.Item name="serviceIntervalHours" label="Service every (hours)" tooltip="Working hours from the daily logs; leave blank for no hour schedule">

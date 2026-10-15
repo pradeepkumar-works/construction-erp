@@ -56,7 +56,7 @@ export function IncidentDrawer({ id, open, onClose, onEdit }: { id: string | nul
     <Drawer
       open={open}
       onClose={onClose}
-      width={660}
+      size={660}
       className="incident-drawer"
       title={
         data ? (

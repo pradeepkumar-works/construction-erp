@@ -36,7 +36,7 @@ export function MyStaff() {
   if (!data.employee)
     return (
       <div style={{ padding: 16 }}>
-        <Alert type="info" showIcon message="Your login is not linked to a staff record" description="HR links logins to staff records under Staff. Once linked you can check in and apply for leave here." />
+        <Alert type="info" showIcon title="Your login is not linked to a staff record" description="HR links logins to staff records under Staff. Once linked you can check in and apply for leave here." />
       </div>
     );
 
@@ -70,7 +70,7 @@ export function MyStaff() {
               <Typography.Paragraph type="secondary">{data.todayOff === 'Sunday' ? 'Sunday, the weekly off.' : `Holiday: ${data.todayOff}.`} Working today counts towards a comp-off.</Typography.Paragraph>
             ) : null}
             {t ? (
-              <Space direction="vertical" size={4}>
+              <Space orientation="vertical" size={4}>
                 <Space>
                   <AttendanceTag status={t.status} />
                   {t.projectName && <Typography.Text type="secondary">{t.projectName}</Typography.Text>}

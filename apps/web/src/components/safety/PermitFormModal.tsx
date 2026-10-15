@@ -110,11 +110,11 @@ export function PermitFormModal({ open, onClose, projectId, permit }: { open: bo
     >
       <Form form={form} layout="vertical" onFinish={(v) => save.mutate(v)}>
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]} hidden={!!projectId || !!permit}>
-          <Select showSearch optionFilterProp="label" placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
+          <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
         </Form.Item>
         <div style={grid}>
           <Form.Item name="type" label="Work" rules={[{ required: true, message: 'Pick the kind of work' }]}>
-            <Select showSearch optionFilterProp="label" placeholder="Hot work, height..." options={WORK_PERMIT_TYPES.map((t) => ({ value: t, label: WORK_PERMIT_TYPE_LABELS[t] }))} onChange={() => form.setFieldsValue({ precautions: [] })} />
+            <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Hot work, height..." options={WORK_PERMIT_TYPES.map((t) => ({ value: t, label: WORK_PERMIT_TYPE_LABELS[t] }))} onChange={() => form.setFieldsValue({ precautions: [] })} />
           </Form.Item>
           <Form.Item name="location" label="Where" rules={[{ required: true, whitespace: true, message: 'Where is the work?' }]}>
             <Input maxLength={200} />

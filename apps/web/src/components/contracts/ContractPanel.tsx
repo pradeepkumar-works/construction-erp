@@ -24,9 +24,9 @@ export function ContractPanel({ projectId }: { projectId: string }) {
 
   const missing = [!c.client && 'a client from the client master', !c.agreementNo && 'the agreement number', !c.contractValue && 'the contract value'].filter(Boolean);
   return (
-    <Space direction="vertical" size={16} style={{ width: '100%' }}>
+    <Space orientation="vertical" size={16} style={{ width: '100%' }}>
       {missing.length > 0 && (
-        <Alert type="info" showIcon message={`Bills print better with ${missing.join(', ')}.`} action={editable ? <Button size="small" onClick={() => setEditing(true)}>Fill in</Button> : undefined} />
+        <Alert type="info" showIcon title={`Bills print better with ${missing.join(', ')}.`} action={editable ? <Button size="small" onClick={() => setEditing(true)}>Fill in</Button> : undefined} />
       )}
       <Card
         size="small"

@@ -90,10 +90,10 @@ export function ExpenseList({ projectId: fixedProject }: { projectId?: string })
       </ListToolbar>
       {summary ? (
         <div style={{ padding: '12px 16px', display: 'flex', gap: 32, flexWrap: 'wrap', alignItems: 'flex-start', borderBottom: '1px solid #f0f0f0' }}>
-          <Statistic title={`Total (${summary.count})`} value={formatINR(summary.totalAmount, true)} valueStyle={{ fontSize: 18 }} />
-          <Statistic title="GST in it" value={formatINR(summary.gstAmount, true)} valueStyle={{ fontSize: 18 }} />
-          <Statistic title="Approved (project cost)" value={formatINR(summary.approvedTotal, true)} valueStyle={{ fontSize: 18, color: '#1f9d55' }} />
-          <Statistic title="Waiting for approval" value={formatINR(summary.pendingTotal, true)} valueStyle={{ fontSize: 18, color: BRAND.colors.pending }} />
+          <Statistic title={`Total (${summary.count})`} value={formatINR(summary.totalAmount, true)} styles={{ content: { fontSize: 18 } }} />
+          <Statistic title="GST in it" value={formatINR(summary.gstAmount, true)} styles={{ content: { fontSize: 18 } }} />
+          <Statistic title="Approved (project cost)" value={formatINR(summary.approvedTotal, true)} styles={{ content: { fontSize: 18, color: '#1f9d55' } }} />
+          <Statistic title="Waiting for approval" value={formatINR(summary.pendingTotal, true)} styles={{ content: { fontSize: 18, color: BRAND.colors.pending } }} />
           <Space size={[4, 4]} wrap style={{ flex: 1, minWidth: 240 }}>
             {summary.byCategory.slice(0, 6).map((c) => (
               <Tooltip key={c.category} title={`${c.count} expense(s)`}>

@@ -29,8 +29,8 @@ export default function BillingPage() {
   const [paying, setPaying] = useState(false);
 
   if (!user) return null;
-  if (!user.billing) return <Alert type="info" message={`Billing is not switched on for this ${PRODUCT_NAME} server.`} />;
-  if (!admin) return <Alert type="info" message="Only an admin can see and pay for the subscription." />;
+  if (!user.billing) return <Alert type="info" title={`Billing is not switched on for this ${PRODUCT_NAME} server.`} />;
+  if (!admin) return <Alert type="info" title="Only an admin can see and pay for the subscription." />;
 
   const pay = async () => {
     setPaying(true);
@@ -75,7 +75,7 @@ export default function BillingPage() {
                 style={{ marginTop: 12 }}
                 type="error"
                 showIcon
-                message="The company is read-only"
+                title="The company is read-only"
                 description="Everyone can still see and export everything, but nothing new can be entered until the subscription is paid. Nothing has been deleted."
               />
             )}
@@ -104,7 +104,7 @@ export default function BillingPage() {
                       { key: 'total', label: 'Total', children: <b>{formatINR(amount.total, true)}</b> },
                     ]}
                   />
-                  {!data.detailsComplete && <Alert style={{ marginTop: 12 }} type="warning" showIcon message="Fill in who the invoice is made out to before paying." />}
+                  {!data.detailsComplete && <Alert style={{ marginTop: 12 }} type="warning" showIcon title="Fill in who the invoice is made out to before paying." />}
                   <Button type="primary" icon={<CreditCardOutlined />} style={{ marginTop: 12 }} disabled={!data.detailsComplete} loading={paying} onClick={pay}>
                     Pay {formatINR(amount.total, true)}
                   </Button>
@@ -180,7 +180,7 @@ function DetailsCard({ details }: { details: BillingDetailsDto }) {
           <Input.TextArea rows={2} maxLength={500} />
         </Form.Item>
         <Form.Item name="stateCode" label="State (place of supply)" extra="Taken from the GSTIN when one is given.">
-          <Select showSearch optionFilterProp="label" options={STATE_OPTIONS} allowClear />
+          <Select showSearch={{ optionFilterProp: 'label' }} options={STATE_OPTIONS} allowClear />
         </Form.Item>
         <Button htmlType="submit" loading={save.isPending}>
           Save details

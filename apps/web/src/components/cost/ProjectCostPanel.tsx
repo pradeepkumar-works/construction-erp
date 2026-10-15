@@ -38,7 +38,7 @@ export function ProjectCostPanel({ projectId }: { projectId: string }) {
       {isLoading && <Skeleton active />}
       {data && (
         <>
-          {missing.length ? <Alert type="warning" showIcon style={{ marginBottom: 12 }} message="Part of the cost is not counted because a rate is missing" description={missing.join('; ') + '. Set rates in the item master, the equipment master or Labour rates.'} /> : null}
+          {missing.length ? <Alert type="warning" showIcon style={{ marginBottom: 12 }} title="Part of the cost is not counted because a rate is missing" description={missing.join('; ') + '. Set rates in the item master, the equipment master or Labour rates.'} /> : null}
           <Row gutter={[16, 16]}>
             <Col xs={12} md={6}>
               <Statistic title="Executed value" value={formatINR(data.executedValue)} styles={{ content: { fontSize: 20 } }} />

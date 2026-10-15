@@ -104,8 +104,7 @@ export function TransmittalFormModal({
       <Form form={form} layout="vertical" onFinish={(v) => mutation.mutate(v)} style={{ marginTop: 8 }}>
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]} hidden={!!fixedProject}>
           <Select
-            showSearch
-            optionFilterProp="label"
+            showSearch={{ optionFilterProp: 'label' }}
             placeholder="Select project"
             options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))}
             onChange={() => form.setFieldsValue({ items: [] })}
@@ -147,7 +146,7 @@ export function TransmittalFormModal({
               {fields.map((f) => (
                 <div key={f.key} style={{ display: 'grid', gridTemplateColumns: '1fr 90px 32px', gap: 8, alignItems: 'start' }}>
                   <Form.Item name={[f.name, 'revisionId']} rules={[{ required: true, message: 'Pick a document' }]} style={{ marginBottom: 8 }}>
-                    <Select showSearch optionFilterProp="label" disabled={locked} aria-label="Document" options={options.map((o) => ({ ...o, disabled: chosen.has(o.value) && items?.[f.name]?.revisionId !== o.value }))} />
+                    <Select showSearch={{ optionFilterProp: 'label' }} disabled={locked} aria-label="Document" options={options.map((o) => ({ ...o, disabled: chosen.has(o.value) && items?.[f.name]?.revisionId !== o.value }))} />
                   </Form.Item>
                   <Form.Item name={[f.name, 'copies']} initialValue={1} style={{ marginBottom: 8 }}>
                     <InputNumber min={1} max={99} style={{ width: '100%' }} disabled={locked} aria-label="Copies" />

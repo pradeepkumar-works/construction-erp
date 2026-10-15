@@ -56,7 +56,7 @@ export function MembersCard({ project }: { project: ProjectDetail }) {
     >
       {adding && (
         <Space.Compact style={{ width: '100%', marginBottom: 12 }}>
-          <Select showSearch optionFilterProp="label" placeholder="Select user" value={userId} onChange={setUserId} style={{ flex: 1 }} options={candidates.map((u) => ({ value: u.id, label: `${u.fullName} · ${u.roleName}` }))} />
+          <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select user" value={userId} onChange={setUserId} style={{ flex: 1 }} options={candidates.map((u) => ({ value: u.id, label: `${u.fullName} · ${u.roleName}` }))} />
           <Button type="primary" disabled={!userId} loading={add.isPending} onClick={() => userId && add.mutate(userId)}>
             Add
           </Button>

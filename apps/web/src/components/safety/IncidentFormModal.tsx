@@ -107,11 +107,11 @@ export function IncidentFormModal({ open, onClose, projectId, incident, nearMiss
     >
       <Form form={form} layout="vertical" onFinish={(v) => save.mutate(v)}>
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]} hidden={!!projectId || editing}>
-          <Select showSearch optionFilterProp="label" placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
+          <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
         </Form.Item>
         <div style={grid}>
           <Form.Item name="type" label="Type" rules={[{ required: true, message: 'Pick one' }]}>
-            <Select showSearch optionFilterProp="label" placeholder="Near miss, first aid..." options={SAFETY_INCIDENT_TYPES.map((t) => ({ value: t, label: SAFETY_INCIDENT_TYPE_LABELS[t] }))} />
+            <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Near miss, first aid..." options={SAFETY_INCIDENT_TYPES.map((t) => ({ value: t, label: SAFETY_INCIDENT_TYPE_LABELS[t] }))} />
           </Form.Item>
           <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Required' }]}>
             <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} allowClear={false} />

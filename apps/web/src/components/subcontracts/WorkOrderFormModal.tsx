@@ -181,8 +181,7 @@ export function WorkOrderFormModal({
         <div style={grid}>
           <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]}>
             <Select
-              showSearch
-              optionFilterProp="label"
+              showSearch={{ optionFilterProp: 'label' }}
               disabled={!!order || !!fixedProject}
               onChange={() => form.setFieldValue('lines', [{}])}
               options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))}
@@ -200,7 +199,7 @@ export function WorkOrderFormModal({
                 : undefined
             }
           >
-            <Select showSearch optionFilterProp="label" placeholder="Vendor master" options={vendorOptions} onChange={onVendor} />
+            <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Vendor master" options={vendorOptions} onChange={onVendor} />
           </Form.Item>
           <Form.Item name="woDate" label="Work order date" rules={[{ required: true, message: 'Required' }]}>
             <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" />
@@ -236,8 +235,7 @@ export function WorkOrderFormModal({
                       <Form.Item name={[f.name, 'boqItemId']} noStyle>
                         <Select
                           allowClear
-                          showSearch
-                          optionFilterProp="label"
+                          showSearch={{ optionFilterProp: 'label' }}
                           placeholder="Own item"
                           style={{ width: '100%' }}
                           aria-label={`BOQ item of line ${f.name + 1}`}

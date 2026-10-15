@@ -51,7 +51,7 @@ export function StockEntryDrawer({ id, onClose }: { id: string | null; onClose: 
     <Drawer
       open={!!id}
       onClose={onClose}
-      width={640}
+      size={640}
       title={data ? <Space>{`${kind} · ${data.entryNo}`}<StockTypeTag type={data.type} /></Space> : 'Stock entry'}
       extra={
         <Space>

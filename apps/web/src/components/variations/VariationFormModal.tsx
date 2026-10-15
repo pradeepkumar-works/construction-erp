@@ -121,7 +121,7 @@ export function VariationFormModal({ open, onClose, projectId, variation, onSave
     >
       <Form form={form} layout="vertical" onFinish={(v) => mutation.mutate(v)} style={{ marginTop: 8 }}>
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]} hidden={!!fixedProject}>
-          <Select showSearch optionFilterProp="label" placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} onChange={() => form.setFieldsValue({ lines: [{}] })} />
+          <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} onChange={() => form.setFieldsValue({ lines: [{}] })} />
         </Form.Item>
         <div style={grid('2fr 1fr')}>
           <Form.Item name="title" label="Title" rules={[{ required: true, whitespace: true, message: 'Required' }]}>
@@ -152,7 +152,7 @@ export function VariationFormModal({ open, onClose, projectId, variation, onSave
                   <div key={f.key} className="variation-line" style={{ border: '1px solid var(--ant-color-border-secondary, #f0f0f0)', borderRadius: 8, padding: '12px 12px 0', marginBottom: 8 }}>
                     <div style={grid('minmax(0, 1fr) 32px')}>
                       <Form.Item name={[f.name, 'boqItemId']} label="BOQ item" rules={[{ required: true, message: 'Pick an item or "New item"' }]}>
-                        <Select showSearch optionFilterProp="label" placeholder="Pick a BOQ item" options={itemOptions} disabled={!selectedProject} popupMatchSelectWidth={false} />
+                        <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Pick a BOQ item" options={itemOptions} disabled={!selectedProject} popupMatchSelectWidth={false} />
                       </Form.Item>
                       <Button type="text" danger icon={<DeleteOutlined />} onClick={() => remove(f.name)} aria-label="Remove item" style={{ marginTop: 30 }} />
                     </div>

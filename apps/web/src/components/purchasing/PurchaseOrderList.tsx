@@ -137,7 +137,7 @@ export function PurchaseOrderList({ projectId: fixedProject, openId: initialOpen
           </>
         }
       >
-        <Select allowClear showSearch optionFilterProp="label" placeholder="Any vendor" style={{ width: 220 }} value={vendorId} onChange={reset(setVendorId)} options={(vendors ?? []).map((v) => ({ value: v.id, label: v.name }))} />
+        <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Any vendor" style={{ width: 220 }} value={vendorId} onChange={reset(setVendorId)} options={(vendors ?? []).map((v) => ({ value: v.id, label: v.name }))} />
         <Checkbox checked={onlyOpen} onChange={(e) => reset(setOnlyOpen)(e.target.checked)}>
           Open orders only
         </Checkbox>

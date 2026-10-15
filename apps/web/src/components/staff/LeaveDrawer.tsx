@@ -36,7 +36,7 @@ export function LeaveDrawer({ id, open, onClose }: { id: string | null; open: bo
     <Drawer
       open={open}
       onClose={onClose}
-      width={620}
+      size={620}
       title={data ? `${LEAVE_TYPE_LABELS[data.type]}: ${data.employeeName}` : 'Leave'}
       extra={
         data && (

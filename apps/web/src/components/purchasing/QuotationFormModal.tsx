@@ -99,8 +99,7 @@ export function QuotationFormModal({ open, request, quotation, onClose }: { open
         <div style={grid}>
           <Form.Item name="vendorId" label="Vendor" rules={[{ required: true, message: 'Pick the vendor' }]}>
             <Select
-              showSearch
-              optionFilterProp="label"
+              showSearch={{ optionFilterProp: 'label' }}
               disabled={!!quotation}
               placeholder="Vendor master"
               options={(vendors ?? []).filter((v) => v.isActive).map((v) => ({ value: v.id, label: v.name }))}
