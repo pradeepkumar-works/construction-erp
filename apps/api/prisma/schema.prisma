@@ -536,6 +536,13 @@ model Project {
   clientName            String?
   consultantName        String?
   location              String?
+  /// Road or pipeline length the sector view draws, in metres from the start (chainage 0+000 = 0)
+  chainageStart         Int?
+  chainageEnd           Int?
+  /// Building floors in order, bottom up; progress and measurements pick one
+  floors                String[]      @default([])
+  /// Water supply: villages / habitations served; progress and measurements pick one
+  villages              String[]      @default([])
   workOrderNo           String?
   description           String?
   startDate             DateTime?     @db.Date
@@ -1172,6 +1179,11 @@ model ProgressEntry {
   quantity       Decimal          @db.Decimal(18, 3)
   remarks        String?
   location       String?
+  /// Structured location for the sector views (v4 item 41): chainage in metres, a floor of the project, a village
+  chainageFrom   Int?
+  chainageTo     Int?
+  floor          String?
+  village        String?
   manpowerCount  Int?
   machineryUsed  String?
   status         SubmissionStatus @default(DRAFT)
@@ -1631,6 +1643,11 @@ model MeasurementSheet {
   date              DateTime         @db.Date
   /// Chainage, grid, floor, zone
   location          String
+  /// Structured location for the sector views (v4 item 41): chainage in metres, a floor of the project, a village
+  chainageFrom      Int?
+  chainageTo        Int?
+  floor             String?
+  village           String?
   remarks           String?
   /// Sum of the lines (deductions negative), in the BOQ item's unit
   totalQty          Decimal          @db.Decimal(18, 3)

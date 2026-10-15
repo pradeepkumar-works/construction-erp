@@ -22,6 +22,7 @@ import { CostModule } from './cost/cost.module';
 import { ReportsModule } from './reports/reports.module';
 import { RisksModule } from './risks/risks.module';
 import { SafetyModule } from './safety/safety.module';
+import { SectorModule } from './sector/sector.module';
 import { TemplatesModule } from './templates/templates.module';
 import { MeasurementsModule } from './measurements/measurements.module';
 import { ClientsModule } from './clients/clients.module';
@@ -83,6 +84,7 @@ import { HealthController } from './health.controller';
     ReportsModule,
     RisksModule,
     SafetyModule,
+    SectorModule,
     TemplatesModule,
     ApprovalsModule,
     DashboardModule,

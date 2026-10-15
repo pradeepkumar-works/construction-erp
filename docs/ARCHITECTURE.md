@@ -752,6 +752,28 @@ PDF from the browser.
   recorded" prompts, Excel export); the progress report has a Delays and risks section. Site app: register
   screen per project, form (offline through the outbox) and detail screen with close / reopen.
 
+## Sector progress
+
+- **Fields.** `Project.chainageStart` / `chainageEnd` (metres from 0+000; roads, and water mains when set),
+  `floors` (bottom up) and `villages` (text arrays), set from the project's Sector settings by its editors.
+  `ProgressEntry` and `MeasurementSheet` carry `chainageFrom`, `chainageTo`, `floor` and `village`, all optional so
+  older phone builds keep working. `resolveSector` (`src/common/sector.ts`) checks them: from ≤ to (a point when
+  only "from" is given), inside the project's range, floor and village from the project's lists when it keeps
+  them. When no location is typed it is made from them (`sectorLocation`, e.g. "Ch 26+100 to 26+400"), so the
+  free-text location that hold points, reports and searches read stays filled. Chainage is typed as km+m
+  (`parseChainage` / `formatChainage` in `packages/shared/src/sector.ts`).
+- **View.** `GET /projects/:id/sector-progress` from approved and submitted progress entries. Road (and water
+  supply with a chainage range): a strip row per activity with each entry's stretch, the length covered by
+  approved entries with overlaps counted once (`coveredLength`), the length only waiting for approval, and the
+  approved quantity with no chainage. Building: floor × activity approved and waiting quantities. Water supply:
+  village × activity, plus pipe in metres: ordered (approved purchase order lines for items in metres named as
+  pipe, `isPipeItem`), supplied (receipts less returns to the supplier), laid and tested (activities in metres
+  count as laid, or tested when the name says test: `pipelineStageOf`), and laid and tested per village. The
+  water template gained "Hydraulic testing of pipelines".
+- **Clients.** Web: Chainage / Floors / Villages & Pipeline project tab with Sector settings; chainage, floor and
+  village fields on the progress and measurement forms. Site app: the same fields on the progress and measurement
+  forms, and a sector screen from the project page.
+
 ## Safety
 
 - **Tables.** `SafetyIncident` (`INC-<year>-0001`): project, `type` (NEAR_MISS | FIRST_AID | MEDICAL_TREATMENT |

@@ -13,6 +13,7 @@ import { Loading, QueryError } from '@/components/common/QueryState';
 import { ProjectStatusTag, ProjectTypeTag } from '@/components/common/StatusTag';
 import { ProjectOverview } from '@/components/projects/ProjectOverview';
 import { ProjectFormModal } from '@/components/projects/ProjectFormModal';
+import { SectorPanel, sectorTabLabel } from '@/components/sector/SectorPanel';
 import { BoqTab } from '@/components/boq/BoqTab';
 import { ActivitiesTab } from '@/components/activities/ActivitiesTab';
 import { ProgressList } from '@/components/progress/ProgressList';
@@ -104,6 +105,7 @@ export default function ProjectDetailPage() {
             ...(user && canViewVariations(user.roleKey) ? [{ key: 'variations', label: 'Variations', children: <VariationsPanel projectId={project.id} /> }] : []),
             { key: 'boq', label: 'BOQ', children: <BoqTab projectId={project.id} /> },
             { key: 'activities', label: 'Activities', children: <ActivitiesTab projectId={project.id} members={project.members} project={project} /> },
+            { key: 'sector', label: sectorTabLabel(project.type), children: <SectorPanel project={project} editable={editor} /> },
             { key: 'mb', label: 'Measurements', children: <MeasurementList projectId={project.id} /> },
             { key: 'inspections', label: 'Quality', children: <ProjectQualityTab projectId={project.id} /> },
             { key: 'documents', label: 'Documents', children: <ProjectDocumentsTab projectId={project.id} /> },

@@ -3,6 +3,7 @@
 import React from 'react';
 import { Descriptions, Divider, Drawer, Skeleton, Space, Table, Tag, Typography } from 'antd';
 import type { MeasurementSheetDto } from '@erp/shared';
+import { sectorLocation } from '@erp/shared';
 import { useMeasurement } from '@/lib/queries';
 import { formatDate, formatINR, formatQty } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
@@ -52,7 +53,7 @@ export function MeasurementDrawer({ id, open, onClose, onEdit }: { id: string | 
             items={[
               { key: 'boq', label: 'BOQ item', children: `${data.boqItemNo} - ${data.boqDescription}`, span: 2 },
               { key: 'date', label: 'Date', children: formatDate(data.date) },
-              { key: 'loc', label: 'Location', children: data.location },
+              { key: 'loc', label: 'Location', children: [data.location, sectorLocation(data)].filter((x, i, a) => x && a.indexOf(x) === i).join(' · ') },
               ...(data.woNo ? [{ key: 'wo', label: 'Done by', children: `${data.contractorName ?? ''} (${data.woNo})` }] : []),
               { key: 'qty', label: 'Quantity', children: <strong>{`${formatQty(data.totalQty)} ${data.unit}`}</strong> },
               { key: 'amount', label: `Value at ${formatINR(data.rate, true)} / ${data.unit}`, children: <strong>{formatINR(data.amount, true)}</strong> },

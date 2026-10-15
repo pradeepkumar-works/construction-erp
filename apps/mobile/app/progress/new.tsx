@@ -2,11 +2,13 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import type { ActivityDto, ProgressEntryDto } from '@erp/shared';
+import { sectorLocation } from '@erp/shared';
 import { useApi, useFetch } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
 import { Button, Card, DatePicker, ErrorBanner, ErrorState, Input, Loading, PhotoPicker, Screen, Select, type LocalPhoto, type SelectOption } from '../../src/components';
 import { attachmentIds, photosFailed, photosQueued, photosUploading, QueuedSuccess, SubmitSuccess, toOutboxPhotos, useProjectOptions } from '../../src/forms/common';
 import { attachmentsToPhotos, ReviewerNote } from '../../src/forms/edit';
+import { useSectorInputs } from '../../src/forms/sector';
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
 import { colors, spacing, typography } from '../../src/theme';
 import { fmtQty, formatDate, isIsoDate, today } from '../../src/utils/format';
@@ -34,6 +36,7 @@ export default function NewProgressScreen() {
   const [busy, setBusy] = useState(false);
   const [created, setCreated] = useState<ProgressEntryDto | null>(null);
   const [queued, setQueued] = useState<OutboxItem | null>(null);
+  const sector = useSectorInputs(projectId);
 
   // Default to the only project when the user has just one.
   useEffect(() => {
@@ -48,7 +51,8 @@ export default function NewProgressScreen() {
     setActivityId(e.activityId);
     setDate(e.date);
     setQuantity(e.quantity);
-    setLocation(e.location ?? '');
+    setLocation(e.location && e.location !== sectorLocation(e) ? e.location : '');
+    sector.load(e);
     setManpower(e.manpowerCount === null ? '' : String(e.manpowerCount));
     setMachinery(e.machineryUsed ?? '');
     setRemarks(e.remarks ?? '');
@@ -74,6 +78,7 @@ export default function NewProgressScreen() {
     if (!isIsoDate(date)) e.date = 'Enter a valid date';
     const q = Number(quantity);
     if (!quantity.trim() || Number.isNaN(q) || q <= 0) e.quantity = 'Enter a quantity greater than 0';
+    sector.validate(e);
     if (manpower.trim() && (!/^\d+$/.test(manpower.trim()) || Number(manpower) < 0)) e.manpower = 'Whole number';
     if (photosUploading(photos)) e.photos = 'Wait for photos to finish uploading';
     else if (photosFailed(photos)) e.photos = 'Remove or retry failed photos';
@@ -94,6 +99,7 @@ export default function NewProgressScreen() {
         quantity: String(Number(quantity)),
         remarks: remarks.trim() || blank,
         location: location.trim() || blank,
+        ...sector.body(!!editId),
         manpowerCount: manpower.trim() ? Number(manpower) : blank,
         machineryUsed: machinery.trim() || blank,
       };
@@ -136,6 +142,7 @@ export default function NewProgressScreen() {
     setQueued(null);
     setQuantity('');
     setRemarks('');
+    sector.clear();
     setPhotos([]);
     setErrors({});
   };
@@ -194,9 +201,10 @@ export default function NewProgressScreen() {
           error={errors.quantity}
           style={styles.bigInput}
         />
+        {sector.fields(errors)}
       </Card>
       <Card title="Details (optional)">
-        <Input label="Location / chainage" value={location} onChangeText={setLocation} placeholder="e.g. Km 14+200 to 14+600" />
+        <Input label="Location" value={location} onChangeText={setLocation} placeholder="e.g. LHS, grid C4-D7" />
         <Input label="Manpower count" value={manpower} onChangeText={setManpower} keyboardType="number-pad" placeholder="e.g. 18" error={errors.manpower} />
         <Input label="Machinery used" value={machinery} onChangeText={setMachinery} placeholder="e.g. Grader, Roller" />
         <Input label="Remarks" value={remarks} onChangeText={setRemarks} multiline placeholder="Anything the PM should know" />

@@ -2,6 +2,7 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
+  SectorProgressDto,
   VariationDto,
   VariationStatus,
   VariationSummaryDto,
@@ -1500,3 +1501,11 @@ export const useWorkPermit = (id: string | undefined) =>
 
 export const useWorkPermitHistory = (id: string | undefined) =>
   useQuery({ queryKey: ['safety', 'permit-history', id], queryFn: async () => (await api.get<AuditLogDto[]>(`/safety/permits/${id}/history`)).data, enabled: !!id });
+
+/** Chainage strip, floor / village matrix and pipeline stages of a project (v4 item 41). */
+export const useSectorProgress = (projectId: string | undefined) =>
+  useQuery({
+    queryKey: ['sector', projectId],
+    queryFn: async () => (await api.get<SectorProgressDto>(`/projects/${projectId}/sector-progress`)).data,
+    enabled: !!projectId,
+  });

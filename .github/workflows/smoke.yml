@@ -627,6 +627,22 @@ jobs:
           code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/risks" -H "authorization: Bearer $(login accounts@demo.com)" -H 'content-type: application/json' \
             -d "{\"projectId\":\"$PROJECT\",\"kind\":\"RISK\",\"category\":\"OTHER\",\"title\":\"smoke\",\"impact\":2}")
           echo "accounts raising a risk: $code"; [ "$code" = "403" ]
+      - name: Sector progress
+        run: |
+          set -e
+          login() { curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' -d "{\"email\":\"$1\",\"password\":\"password123\"}" | jq -r .accessToken; }
+          H="authorization: Bearer $(login pm@demo.com)"
+          curl -sf "$API_URL/projects?pageSize=100" -H "$H" | jq -r '.items[] | "\(.id) \(.type) \(.code)"' | while read -r ID TYPE CODE; do
+            curl -sf "$API_URL/projects/$ID/sector-progress" -H "$H" > /tmp/sector.json
+            case "$TYPE" in
+              ROAD) jq -e '(.strip | type) == "array" and .matrix == null and .pipeline == null' /tmp/sector.json > /dev/null
+                jq -r --arg c "$CODE" '"\($c): " + ([.strip[] | select(.coveredM > 0) | "\(.name) \((.coveredM / 10 | round) / 100) km"] | join(", "))' /tmp/sector.json ;;
+              BUILDING) jq -e '.matrix.rowLabel == "Floor" and .pipeline == null' /tmp/sector.json > /dev/null
+                jq -r --arg c "$CODE" '"\($c): \(.matrix.rows | length) floors, \(.matrix.cells | length) floor/activity cells"' /tmp/sector.json ;;
+              WATER_SUPPLY) jq -e '.matrix.rowLabel == "Village" and (.pipeline.stages | has("laidM") and has("testedM"))' /tmp/sector.json > /dev/null
+                jq -r --arg c "$CODE" '"\($c): pipe laid \(.pipeline.stages.laidM) m, tested \(.pipeline.stages.testedM) m, \(.pipeline.villages | length) villages"' /tmp/sector.json ;;
+            esac
+          done
       - name: Safety
         run: |
           set -e
@@ -634,11 +650,11 @@ jobs:
           H="authorization: Bearer $(login pm@demo.com)"
           curl -sf "$API_URL/safety/summary" -H "$H" | jq -e '(.openIncidents | type) == "number" and (.byType | type) == "array"' > /dev/null
           curl -sf "$API_URL/safety/summary" -H "$H" | jq -r '"days without a lost-time injury \(.daysSinceLostTime // "n/a"), incidents this month \(.incidentsThisMonth), open \(.openIncidents), talks this month \(.toolboxTalksThisMonth), permits waiting/live \(.permitsRequested)/\(.permitsActive)"'
-          S="authorization: Bearer $(login safety@demo.com)"
-          curl -sf "$API_URL/safety/incidents?pageSize=5" -H "$S" | jq -e '.total > 0' > /dev/null
-          curl -sf "$API_URL/safety/permits?active=true" -H "$S" | jq -e 'all(.items[]; .status == "REQUESTED" or .status == "ISSUED")' > /dev/null
-          curl -sf "$API_URL/safety/talks?pageSize=5" -H "$S" | jq -e '.total > 0' > /dev/null
-          curl -sf "$API_URL/notifications?limit=100" -H "$S" | jq -e 'all(.items[]; .type != "SAFETY")' > /dev/null
+          # Shapes only: production may run without the demo seed (SEED_ON_BUILD unset), so no seeded rows are assumed.
+          curl -sf "$API_URL/safety/incidents?pageSize=5" -H "$H" | jq -e '(.total | type) == "number"' > /dev/null
+          curl -sf "$API_URL/safety/permits?active=true" -H "$H" | jq -e 'all(.items[]; .status == "REQUESTED" or .status == "ISSUED")' > /dev/null
+          curl -sf "$API_URL/safety/talks?pageSize=5" -H "$H" | jq -e '(.total | type) == "number"' > /dev/null
+          curl -sf "$API_URL/notifications?limit=100" -H "$H" | jq -e 'all(.items[]; .type != "SAFETY")' > /dev/null
           PROJECT=$(curl -sf "$API_URL/projects" -H "$H" | jq -r '.items[0].id')
           code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/safety/talks" -H "authorization: Bearer $(login accounts@demo.com)" -H 'content-type: application/json' \
             -d "{\"projectId\":\"$PROJECT\",\"date\":\"$(date -u +%Y-%m-%d)\",\"topic\":\"smoke\",\"conductedBy\":\"smoke\",\"attendeeCount\":1}")

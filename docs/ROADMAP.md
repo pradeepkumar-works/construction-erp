@@ -325,8 +325,12 @@ preview deployments run them against the production database before a PR is merg
     offline too), record toolbox talks and ask for a permit to work with the standard precautions for the kind of
     work. A new Safety Officer role is told of each, closes incidents with the root cause and corrective action, and
     issues or rejects permits; the summary counts days without a lost-time injury.
-41. **Sector progress views** (L). Road chainage strip chart, building floor by activity matrix, water supply
-    village-wise laid and tested.
+41. ~~**Sector progress views** (L). Road chainage strip chart, building floor by activity matrix, water supply
+    village-wise laid and tested.~~
+    Done: progress entries and measurements take a chainage from and to, a floor or a village, picked from the
+    project's sector settings. A project tab (Chainage, Floors, or Villages & Pipeline) and a phone screen show a strip
+    chart of each road layer along the stretch, a floor by activity matrix, and for water supply pipe ordered,
+    supplied, laid and tested with a village by village table.
 42. **Machinery maintenance and vehicle documents** (M). Service schedule, breakdown work orders, spares, expiry
     alerts, drivers.
 43. **Gantt and baseline** (M). Gantt with milestones and a frozen baseline.

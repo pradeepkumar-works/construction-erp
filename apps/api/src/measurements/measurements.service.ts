@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { hasDimensions, measurementLineQty, type MeasurementSheetDto, type MeasurementSortField, type Paginated, type SortOrder } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
+import { SECTOR_SELECT, locationOr, resolveSector } from '../common/sector';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
@@ -74,6 +75,10 @@ export class MeasurementsService {
       unit: r.boqItem.unit,
       rate: money(r.boqItem.rate)!,
       location: r.location,
+      chainageFrom: r.chainageFrom,
+      chainageTo: r.chainageTo,
+      floor: r.floor,
+      village: r.village,
       remarks: r.remarks,
       totalQty: dec(r.totalQty)!,
       amount: money(r.totalQty.mul(r.boqItem.rate))!,
@@ -184,6 +189,9 @@ export class MeasurementsService {
     if (dto.workOrderId) await assertOpenWorkOrder(this.prisma, user.organizationId, dto.workOrderId, dto.projectId, dto.boqItemId);
     this.checkDate(dto.date);
     const { lines, total } = this.lines(dto.lines);
+    const sector = await resolveSector(this.prisma, dto.projectId, dto);
+    const location = locationOr(dto.location, sector);
+    if (!location) throw new BadRequestException('Say where it was measured');
     let id: string | null;
     try {
       id = await this.prisma.$transaction(async (tx) => {
@@ -200,7 +208,8 @@ export class MeasurementsService {
             workOrderId: dto.workOrderId || null,
             mbNo,
             date: parseDate(dto.date),
-            location: dto.location,
+            location,
+            ...sector,
             remarks: dto.remarks || null,
             totalQty: total,
             submittedById: user.id,
@@ -240,7 +249,13 @@ export class MeasurementsService {
       data.workOrderId = workOrderId || null;
     }
     if (dto.date !== undefined) data.date = parseDate(dto.date);
-    if (dto.location !== undefined) data.location = dto.location;
+    const sector = await resolveSector(this.prisma, row.projectId, dto, (await this.prisma.measurementSheet.findUnique({ where: { id }, select: SECTOR_SELECT }))!);
+    Object.assign(data, sector);
+    if (dto.location !== undefined) {
+      const location = locationOr(dto.location, sector);
+      if (!location) throw new BadRequestException('Say where it was measured');
+      data.location = location;
+    }
     if (dto.remarks !== undefined) data.remarks = dto.remarks || null;
     await this.prisma.$transaction(async (tx) => {
       if (dto.lines !== undefined) {

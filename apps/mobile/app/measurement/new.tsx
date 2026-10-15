@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import type { BoqItemDto, MeasurementSheetDto, Paginated, WorkOrderDto } from '@erp/shared';
+import { sectorLocation } from '@erp/shared';
 import { canViewWorkOrders, hasDimensions, measurementLineQty, measurementTotal } from '@erp/shared';
 import { useAuth } from '../../src/auth/AuthContext';
 import { useApi, useFetch } from '../../src/api/hooks';
@@ -10,6 +11,7 @@ import { errorMessage } from '../../src/api/client';
 import { Button, Card, Chips, DatePicker, ErrorBanner, ErrorState, Input, Loading, PhotoPicker, Screen, Select, type LocalPhoto, type SelectOption } from '../../src/components';
 import { attachmentIds, photosFailed, photosQueued, photosUploading, QueuedSuccess, SubmitSuccess, toOutboxPhotos, useProjectOptions } from '../../src/forms/common';
 import { attachmentsToPhotos, ReviewerNote } from '../../src/forms/edit';
+import { useSectorInputs } from '../../src/forms/sector';
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
 import { colors, radius, spacing, typography } from '../../src/theme';
 import { fmtQty, formatDate, isIsoDate, today } from '../../src/utils/format';
@@ -51,6 +53,7 @@ export default function NewMeasurementScreen() {
   const [busy, setBusy] = useState(false);
   const [created, setCreated] = useState<MeasurementSheetDto | null>(null);
   const [queued, setQueued] = useState<OutboxItem | null>(null);
+  const sector = useSectorInputs(projectId);
 
   useEffect(() => {
     if (!editId && !projectId && projects.options.length === 1) setProjectId(projects.options[0].value);
@@ -63,7 +66,8 @@ export default function NewMeasurementScreen() {
     setBoqItemId(m.boqItemId);
     setWorkOrderId(m.workOrderId ?? '');
     setDate(m.date);
-    setLocation(m.location);
+    setLocation(m.location !== sectorLocation(m) ? m.location : '');
+    sector.load(m);
     setRemarks(m.remarks ?? '');
     setLines(m.lines.map((l) => ({ key: `l${++seq}`, description: l.description, nos: l.nos ?? '', length: l.length ?? '', breadth: l.breadth ?? '', depth: l.depth ?? '', deduct: l.deduct })));
     setPhotos(attachmentsToPhotos(m.attachments));
@@ -91,7 +95,9 @@ export default function NewMeasurementScreen() {
     if (!projectId) e.projectId = 'Choose a project';
     if (!boqItemId) e.boqItemId = 'Choose the BOQ item';
     if (!isIsoDate(date)) e.date = 'Enter a valid date';
-    if (!location.trim()) e.location = 'Say where, e.g. Ch 2+100 to 2+350 or Grid A1-C4';
+    sector.validate(e);
+    const tagged = sector.body(false);
+    if (!location.trim() && tagged.chainageFrom === undefined && !tagged.floor && !tagged.village) e.location = 'Say where, e.g. Ch 2+100 to 2+350 or Grid A1-C4';
     lines.forEach((l, i) => {
       if (!l.description.trim()) e[`d${l.key}`] = 'Describe the line';
       const bad = [l.nos, l.length, l.breadth, l.depth].some((v) => v.trim() !== '' && !NUM.test(v.trim()));
@@ -115,7 +121,8 @@ export default function NewMeasurementScreen() {
         boqItemId,
         workOrderId: workOrderId || (editId ? null : undefined),
         date,
-        location: location.trim(),
+        location: location.trim() || (editId ? '' : undefined),
+        ...sector.body(!!editId),
         remarks: remarks.trim() || (editId ? null : undefined),
         lines: lines.map((l) => ({ description: l.description.trim(), nos: dim(l.nos), length: dim(l.length), breadth: dim(l.breadth), depth: dim(l.depth), deduct: l.deduct })),
       };
@@ -130,7 +137,7 @@ export default function NewMeasurementScreen() {
             type: 'MEASUREMENT',
             payload: { projectId, ...body },
             photos: toOutboxPhotos(photos),
-            title: `${item ? `${item.itemNo} · ` : ''}${fmtQty(total)} ${unit} · ${location.trim()}`,
+            title: `${item ? `${item.itemNo} · ` : ''}${fmtQty(total)} ${unit} · ${location.trim() || sectorLocation(sector.body(false)) || ''}`,
             subtitle: `${projectName} · ${formatDate(date)}`,
           }),
         );
@@ -156,6 +163,7 @@ export default function NewMeasurementScreen() {
     setCreated(null);
     setQueued(null);
     setLocation('');
+    sector.clear();
     setLines([blankLine()]);
     setRemarks('');
     setPhotos([]);
@@ -209,7 +217,8 @@ export default function NewMeasurementScreen() {
         {woOptions.length ? (
           <Select label="Done by (work order)" value={workOrderId} options={[{ value: '', label: 'Departmental (no work order)' }, ...woOptions]} onChange={setWorkOrderId} placeholder="Departmental (no work order)" />
         ) : null}
-        <Input label="Location" required value={location} onChangeText={setLocation} placeholder="Chainage, grid, floor or zone" error={errors.location} />
+        {sector.fields(errors)}
+        <Input label="Location" value={location} onChangeText={setLocation} placeholder="Grid, side or zone" error={errors.location} />
         <DatePicker label="Measured on" required value={date} onChange={setDate} error={errors.date} />
       </Card>
       {lines.map((l, i) => {

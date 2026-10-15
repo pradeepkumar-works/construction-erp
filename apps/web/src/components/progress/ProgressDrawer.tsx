@@ -3,6 +3,7 @@
 import React from 'react';
 import { Descriptions, Divider, Drawer, Skeleton, Space, Typography } from 'antd';
 import type { ProgressEntryDto } from '@erp/shared';
+import { sectorLocation } from '@erp/shared';
 import { useProgressEntry } from '@/lib/queries';
 import { formatDate, formatQty } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
@@ -51,7 +52,7 @@ export function ProgressDrawer({ id, open, onClose, onEdit }: { id: string | nul
               { key: 'date', label: 'Date', children: formatDate(data.date) },
               { key: 'qty', label: 'Quantity', children: `${formatQty(data.quantity)} ${data.unit}` },
               { key: 'activity', label: 'Activity', children: data.activityName, span: 2 },
-              { key: 'location', label: 'Location / Chainage', children: data.location ?? '-' },
+              { key: 'location', label: 'Location / Chainage', children: [data.location, sectorLocation(data)].filter((x, i, a) => x && a.indexOf(x) === i).join(' · ') || '-' },
               { key: 'manpower', label: 'Manpower', children: data.manpowerCount ?? '-' },
               { key: 'machinery', label: 'Machinery used', children: data.machineryUsed ?? '-', span: 2 },
               { key: 'remarks', label: 'Remarks', children: data.remarks ?? '-', span: 2 },

@@ -13,6 +13,7 @@ import { useAuth } from '@/lib/auth';
 import { formatINR, formatQty, toNumber } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { editActionLabel } from '@/components/common/EditResubmitButton';
+import { SectorInputs, sectorBody, sectorFormValues, typedLocation, type SectorFormValues } from '@/components/sector/SectorInputs';
 
 interface LineValues {
   description?: string;
@@ -23,12 +24,12 @@ interface LineValues {
   deduct?: boolean;
 }
 
-interface FormValues {
+interface FormValues extends SectorFormValues {
   projectId: string;
   boqItemId: string;
   workOrderId?: string | null;
   date: dayjs.Dayjs;
-  location: string;
+  location?: string;
   remarks?: string;
   lines: LineValues[];
   photos?: AttachmentDto[];
@@ -68,7 +69,8 @@ export function MeasurementFormModal({ open, onClose, projectId, boqItemId, shee
         boqItemId: sheet.boqItemId,
         workOrderId: sheet.workOrderId,
         date: dayjs(sheet.date),
-        location: sheet.location,
+        location: typedLocation(sheet),
+        ...sectorFormValues(sheet),
         remarks: sheet.remarks ?? undefined,
         lines: sheet.lines.map((l) => ({ description: l.description, nos: n(l.nos), length: n(l.length), breadth: n(l.breadth), depth: n(l.depth), deduct: l.deduct })),
         photos: sheet.attachments,
@@ -84,7 +86,8 @@ export function MeasurementFormModal({ open, onClose, projectId, boqItemId, shee
         boqItemId: v.boqItemId,
         workOrderId: v.workOrderId ?? (editing ? null : undefined),
         date: v.date.format('YYYY-MM-DD'),
-        location: v.location.trim(),
+        location: v.location?.trim() || (editing ? '' : undefined),
+        ...sectorBody(v, editing),
         remarks: v.remarks?.trim() || (editing ? null : undefined),
         lines: v.lines.map((l) => ({ description: (l.description ?? '').trim(), nos: str(l.nos), length: str(l.length), breadth: str(l.breadth), depth: str(l.depth), deduct: !!l.deduct })),
         attachmentIds: (v.photos ?? []).map((p) => p.id),
@@ -141,8 +144,18 @@ export function MeasurementFormModal({ open, onClose, projectId, boqItemId, shee
             <Select allowClear placeholder="Departmental (no work order)" options={woOptions} />
           </Form.Item>
         )}
-        <Form.Item name="location" label="Location" rules={[{ required: true, whitespace: true, message: 'Required' }]}>
-          <Input maxLength={200} placeholder="Chainage, grid, floor or zone, e.g. Ch 2+100 to 2+350 LHS" />
+        <SectorInputs projectId={selectedProject} />
+        <Form.Item
+          name="location"
+          label="Location"
+          dependencies={['chainageFrom', 'floor', 'village']}
+          rules={[
+            ({ getFieldValue }) => ({
+              validator: (_, v?: string) => (v?.trim() || getFieldValue('chainageFrom') || getFieldValue('floor') || getFieldValue('village') ? Promise.resolve() : Promise.reject(new Error('Required'))),
+            }),
+          ]}
+        >
+          <Input maxLength={200} placeholder="Grid, side or zone, e.g. LHS, grid C4-D7" />
         </Form.Item>
         <div style={{ ...LINE_GRID, fontSize: 12, color: 'rgba(0,0,0,0.55)', marginBottom: 4 }}>
           <span>Description</span>

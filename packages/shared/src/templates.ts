@@ -47,6 +47,7 @@ export const DEFAULT_ACTIVITY_TEMPLATES: Record<ProjectType, ActivityTemplateIte
     { name: 'WTP civil works', unit: 'LS', startDay: 60, durationDays: 240 },
     { name: 'ESR construction', unit: 'Nos', startDay: 60, durationDays: 270 },
     { name: 'Distribution network', unit: 'Rmt', startDay: 120, durationDays: 240 },
+    { name: 'Hydraulic testing of pipelines', unit: 'Rmt', startDay: 150, durationDays: 240 },
     { name: 'House connections', unit: 'Nos', startDay: 240, durationDays: 150 },
     { name: 'Trial run and commissioning', unit: 'LS', startDay: 330, durationDays: 60 },
   ],

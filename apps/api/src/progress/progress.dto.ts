@@ -3,6 +3,7 @@ import { IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsNumberString, IsOption
 import { LIST_SORT_FIELDS, SUBMISSION_STATUSES, SubmissionStatus, type ProgressSortField } from '@erp/shared';
 import { PageQuery, QueryBool } from '../common/paging';
 import { CLIENT_ID_DOC } from '../common/idempotency';
+import { ChainageField, FloorField, VillageField } from '../common/sector';
 
 export class CreateProgressDto {
   @ApiPropertyOptional(CLIENT_ID_DOC) @IsOptional() @IsUUID('4') id?: string;
@@ -11,7 +12,11 @@ export class CreateProgressDto {
   @ApiProperty({ example: '2026-10-13' }) @IsDateString() date: string;
   @ApiProperty({ example: '45.5' }) @IsNumberString() quantity: string;
   @ApiPropertyOptional() @IsOptional() @IsString() remarks?: string;
-  @ApiPropertyOptional({ example: 'Ch. 2+400 to 2+600' }) @IsOptional() @IsString() location?: string;
+  @ApiPropertyOptional({ example: 'Ch. 2+400 to 2+600', description: 'Free text; made from the chainage, floor or village when left out' }) @IsOptional() @IsString() location?: string;
+  @ChainageField('Road / pipeline: metres from 0+000 where the work starts') chainageFrom?: number | null;
+  @ChainageField('Where it ends (same as the start for work at one point)') chainageTo?: number | null;
+  @FloorField() floor?: string | null;
+  @VillageField() village?: string | null;
   @ApiPropertyOptional() @IsOptional() @IsInt() @Min(0) manpowerCount?: number;
   @ApiPropertyOptional() @IsOptional() @IsString() machineryUsed?: string;
   @ApiPropertyOptional({ type: [String] }) @IsOptional() @IsArray() @IsUUID('4', { each: true }) attachmentIds?: string[];
