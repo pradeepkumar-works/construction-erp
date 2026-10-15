@@ -2,11 +2,11 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { DatePicker, Select, Table, Typography } from 'antd';
+import { DatePicker, Select, Space, Table, Typography } from 'antd';
 import type { TableProps } from 'antd';
 import type { Dayjs } from 'dayjs';
-import type { StockEntryDto, StockEntrySortField, StockEntryType } from '@erp/shared';
-import { STOCK_ENTRY_TYPES, STOCK_ENTRY_TYPE_LABELS } from '@erp/shared';
+import type { GrnQcStatus, StockEntryDto, StockEntrySortField, StockEntryType } from '@erp/shared';
+import { GRN_QC_STATUSES, GRN_QC_STATUS_LABELS, STOCK_ENTRY_TYPES, STOCK_ENTRY_TYPE_LABELS } from '@erp/shared';
 import { useStockEntries } from '@/lib/queries';
 import { useListState } from '@/lib/listState';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
@@ -17,16 +17,19 @@ import { ListToolbar } from '@/components/common/ListToolbar';
 import { ExportButton } from '@/components/common/ExportButton';
 import { StockTypeTag, entrySummary } from './StockTypeTag';
 import { StockEntryDrawer } from './StockEntryDrawer';
+import { GrnQcTag } from './GrnQc';
+import { rangePresets } from '@/lib/dates';
 
 /** Store register: GRNs, issues and adjustments, server-paged with type and date filters and Excel export (one row per line). */
 export function StockEntries({ projectId: fixedProject }: { projectId?: string }) {
   const list = useListState<StockEntrySortField>({ sortBy: 'date', sortOrder: 'desc' });
   const [projectFilter, setProjectFilter] = useState<string | undefined>();
   const [type, setType] = useState<StockEntryType | undefined>();
+  const [qcFilter, setQcFilter] = useState<GrnQcStatus | 'PENDING' | undefined>();
   const [range, setRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
   const [opened, setOpened] = useState<string | null>(null);
   const projectId = fixedProject ?? projectFilter;
-  const filters = { ...list.params, projectId, type, from: range?.[0]?.format('YYYY-MM-DD'), to: range?.[1]?.format('YYYY-MM-DD') };
+  const filters = { ...list.params, projectId, type, qc: qcFilter, from: range?.[0]?.format('YYYY-MM-DD'), to: range?.[1]?.format('YYYY-MM-DD') };
   const { data, isLoading, isFetching, error, refetch } = useStockEntries(filters);
 
   const exportRows = async () => {
@@ -39,7 +42,18 @@ export function StockEntries({ projectId: fixedProject }: { projectId?: string }
   const columns: TableProps<StockEntryDto>['columns'] = [
     { title: 'Date', dataIndex: 'date', width: 120, ...sort('date'), render: (v) => formatDate(v) },
     { title: 'Entry no.', dataIndex: 'entryNo', width: 140, ...sort('entryNo'), render: (v, r) => <Typography.Link onClick={() => setOpened(r.id)}>{v}</Typography.Link> },
-    { title: 'Type', dataIndex: 'type', width: 130, ...sort('type'), render: (v) => <StockTypeTag type={v} /> },
+    {
+      title: 'Type',
+      dataIndex: 'type',
+      width: 170,
+      ...sort('type'),
+      render: (v, r) => (
+        <Space orientation="vertical" size={2}>
+          <StockTypeTag type={v} />
+          {r.type === 'RECEIPT' ? <GrnQcTag status={r.qcStatus} /> : null}
+        </Space>
+      ),
+    },
     ...(fixedProject
       ? []
       : [{ title: 'Project', dataIndex: 'projectName', ...sort('project'), width: 220, ellipsis: true, render: (v: string, r: StockEntryDto) => <Link href={`/projects/${r.projectId}?tab=stock`}>{v}</Link> }]),
@@ -88,7 +102,20 @@ export function StockEntries({ projectId: fixedProject }: { projectId?: string }
           style={{ width: 160 }}
           options={STOCK_ENTRY_TYPES.map((t) => ({ value: t, label: STOCK_ENTRY_TYPE_LABELS[t] }))}
         />
+        <Select
+          allowClear
+          placeholder="QA/QC"
+          value={qcFilter}
+          onChange={(v) => {
+            setQcFilter(v);
+            list.resetPage();
+          }}
+          style={{ width: 170 }}
+          aria-label="QA/QC"
+          options={[{ value: 'PENDING', label: 'Awaiting QA/QC' }, ...GRN_QC_STATUSES.map((q) => ({ value: q, label: GRN_QC_STATUS_LABELS[q] }))]}
+        />
         <DatePicker.RangePicker
+          presets={rangePresets()}
           value={range}
           onChange={(v) => {
             setRange(v as [Dayjs | null, Dayjs | null] | null);

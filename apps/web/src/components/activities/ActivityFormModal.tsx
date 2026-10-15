@@ -1,13 +1,13 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { App, AutoComplete, Checkbox, DatePicker, Form, Input, InputNumber, Modal, Select } from 'antd';
+import { App, Checkbox, DatePicker, Form, Input, InputNumber, Modal, Select } from 'antd';
 import dayjs from 'dayjs';
 import type { ActivityDto, ProjectMemberDto } from '@erp/shared';
-import { COMMON_UNITS } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, errorMessage } from '@/lib/api';
 import { useBoq, useChecklists } from '@/lib/queries';
+import { UnitInput } from '@/components/common/UnitInput';
 
 interface FormValues {
   name: string;
@@ -103,7 +103,7 @@ export function ActivityFormModal({
         </Form.Item>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr', gap: '0 16px' }}>
           <Form.Item name="unit" label="Unit" rules={[{ required: true, message: 'Required' }]}>
-            <AutoComplete options={COMMON_UNITS.map((u) => ({ value: u }))} placeholder="Cum" />
+            <UnitInput placeholder="Cum" />
           </Form.Item>
           <Form.Item name="plannedQty" label="Planned qty" rules={[{ required: true, message: 'Required' }]}>
             <InputNumber style={{ width: '100%' }} min={0} />

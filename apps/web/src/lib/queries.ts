@@ -5,6 +5,9 @@ import type {
   DefectDto,
   DefectPhase,
   HandoverSummaryDto,
+  GrnQcStatus,
+  ProcurementStatusDto,
+  UnitDto,
   DriverDto,
   GanttDto,
   EquipmentDocType,
@@ -240,6 +243,8 @@ export interface StockEntryFilters extends PageParams {
   materialRequestId?: string;
   from?: string;
   to?: string;
+  /** Receipts by QA/QC check; PENDING = not checked yet */
+  qc?: GrnQcStatus | 'PENDING';
 }
 
 export interface StockBalanceFilters extends PageParams {
@@ -1676,4 +1681,17 @@ export const useDefect = (id: string | null | undefined) =>
     queryKey: ['defects', 'one', id],
     queryFn: async () => (await api.get<DefectDto>(`/defects/${id}`)).data,
     enabled: !!id,
+  });
+export const useUnits = () =>
+  useQuery({
+    queryKey: ['units'],
+    queryFn: async () => (await api.get<UnitDto[]>('/units')).data,
+    staleTime: 5 * 60_000,
+  });
+
+export const useProcurementStatus = (filters: { projectId?: string; vendorId?: string; show?: 'PENDING' | 'LATE' | 'ALL'; from?: string; to?: string }) =>
+  useQuery({
+    queryKey: ['purchase-orders', 'status', clean(filters)],
+    queryFn: async () => (await api.get<ProcurementStatusDto>('/purchase-orders/status', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
   });

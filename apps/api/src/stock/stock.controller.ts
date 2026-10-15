@@ -3,6 +3,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { StockService } from './stock.service';
 import {
+  CheckGrnDto,
   CreateAdjustmentDto,
   CreateIssueDto,
   CreateItemDto,
@@ -118,6 +119,15 @@ export class StockController {
   @Get('valuation')
   valuation(@CurrentUser() user: RequestUser, @Query() q: StockValuationQuery) {
     return this.stock.valuation(user, q);
+  }
+
+  @ApiOperation({
+    summary: "QA/QC's check of a GRN: accepted, partly accepted (rejected quantity per line) or rejected",
+    description: 'QA/QC or an approver. Can be recorded again to correct it. Stock is not changed; rejected material goes back with a return to vendor.',
+  })
+  @Post('entries/:id/qc')
+  checkGrn(@CurrentUser() user: RequestUser, @Param('id') id: string, @Body() dto: CheckGrnDto) {
+    return this.stock.checkGrn(user, id, dto);
   }
 
   @ApiOperation({ summary: 'Delete a stock entry', description: 'Approvers only. Refused (409) when material it brought in has already been issued.' })

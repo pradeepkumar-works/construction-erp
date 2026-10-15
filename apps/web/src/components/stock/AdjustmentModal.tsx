@@ -1,15 +1,16 @@
 'use client';
 
 import React, { useEffect, useMemo } from 'react';
-import { App, AutoComplete, Button, DatePicker, Form, Input, InputNumber, Modal, Select, Space, Typography } from 'antd';
+import { App, Button, DatePicker, Form, Input, InputNumber, Modal, Select, Space, Typography } from 'antd';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { StockEntryDto } from '@erp/shared';
-import { COMMON_UNITS, MAX_PAGE_SIZE } from '@erp/shared';
+import { MAX_PAGE_SIZE } from '@erp/shared';
 import { api, errorMessage } from '@/lib/api';
 import { useProjects, useStockBalances, useStockItems } from '@/lib/queries';
 import { formatQty } from '@/lib/format';
+import { UnitInput } from '@/components/common/UnitInput';
 
 const NEW = '__new__';
 
@@ -117,7 +118,7 @@ export function AdjustmentModal({ open, onClose, projectId }: { open: boolean; o
                             <Input placeholder="Item name" maxLength={200} />
                           </Form.Item>
                           <Form.Item name={[f.name, 'unit']} style={{ width: 100, marginBottom: 0 }} rules={[{ required: true, whitespace: true, message: 'Unit' }]}>
-                            <AutoComplete placeholder="Unit" options={[...COMMON_UNITS, 'Bags', 'Ltr'].map((u) => ({ value: u }))} />
+                            <UnitInput />
                           </Form.Item>
                         </>
                       ) : null}

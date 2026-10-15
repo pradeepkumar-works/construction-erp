@@ -662,6 +662,27 @@ three-way match (`apps/api/src/purchasing`).
   approved material request the comparative with "Raise PO"; PO print view in `components/purchasing/poPrint.ts`.
   The GRN form picks a PO or a request. Site app: approve POs and vendor bills, and receive against a PO.
 
+### GRN QA/QC, delivery status, units and financial years
+
+`POST /stock/entries/:id/qc` records QA/QC's check of a GRN (`canCheckGrn`: QA/QC and approvers, through
+`assertCanCheckGrn`): `StockEntry.qcStatus` ACCEPTED, PARTLY_ACCEPTED or REJECTED with `qcAt`, `qcById` and a note,
+which is required unless accepted. Partly accepted takes a rejected quantity per line (`StockTxn.rejectedQty`, at most
+the quantity received); rejected marks every line in full. It can be recorded again to correct it and is audited as
+`QC_<status>`. Stock is not changed: rejected material goes back with a return to vendor. `GET /stock/entries?qc=`
+filters by result, with `PENDING` for receipts not yet checked.
+
+`GET /purchase-orders/status` (purchase order viewers; `show` PENDING, LATE or ALL, `projectId`, `vendorId`, PO date
+`from`/`to`) lists approved orders with ordered, received and pending quantity and value per line from the receipts
+against each PO line, the delivery state (nothing received, partly received, received, closed short), days late
+against `deliveryBy`, the last receipt and GRNs awaiting QA/QC, plus totals and a per-vendor summary. The web shows it
+as the Delivery status tab on Purchase Orders (`?tab=status`).
+
+`Unit` is a per-organisation list of unit codes (RLS-protected). Units stay free text on items and lines; the list
+is what `UnitInput` suggests on every quantity form. `GET /units` seeds `DEFAULT_UNITS` the first time, store
+managers and approvers add, rename (only while no item uses the code), switch off and delete units that no item uses.
+`rangePresets()` (`apps/web/src/lib/dates.ts`) gives date-range filters This month, Last month and the last three
+financial years (April to March, `recentFinancialYears` in shared).
+
 ## Subcontracts
 
 Work order → their work in the measurement book under it → material issued to them → their running bill with

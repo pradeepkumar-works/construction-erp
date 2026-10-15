@@ -1,14 +1,15 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Alert, App, AutoComplete, Button, Input, InputNumber, Popconfirm, Space, Table, Tag, Typography } from 'antd';
+import { Alert, App, Button, Input, InputNumber, Popconfirm, Space, Table, Tag, Typography } from 'antd';
 import { ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import type { TableProps } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ActivityTemplateDto, ActivityTemplateItem } from '@erp/shared';
-import { COMMON_UNITS, MAX_TEMPLATE_DAYS, MAX_TEMPLATE_ITEMS, PROJECT_TYPE_LABELS, templateSpan } from '@erp/shared';
+import { MAX_TEMPLATE_DAYS, MAX_TEMPLATE_ITEMS, PROJECT_TYPE_LABELS, templateSpan } from '@erp/shared';
 import { api, errorMessage } from '@/lib/api';
 import { TimelineBar } from './TimelineBar';
+import { UnitInput } from '@/components/common/UnitInput';
 
 type Row = ActivityTemplateItem & { key: number };
 let seq = 0;
@@ -66,7 +67,7 @@ export function TemplateEditor({ template, editable }: { template: ActivityTempl
       title: 'Unit',
       dataIndex: 'unit',
       width: 110,
-      render: (v, r) => (editable ? <AutoComplete value={v} options={COMMON_UNITS.map((u) => ({ value: u }))} onChange={(u) => update(r.key, { unit: u })} style={{ width: '100%' }} /> : v),
+      render: (v, r) => (editable ? <UnitInput value={v} onChange={(u) => update(r.key, { unit: u })} style={{ width: '100%' }} /> : v),
     },
     {
       title: 'Starts on day',

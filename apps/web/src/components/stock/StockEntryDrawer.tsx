@@ -3,10 +3,10 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { App, Button, Descriptions, Divider, Drawer, Popconfirm, Skeleton, Space, Table, Typography } from 'antd';
-import { DeleteOutlined, ImportOutlined } from '@ant-design/icons';
+import { DeleteOutlined, ImportOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { StockEntryType, StockLineDto } from '@erp/shared';
-import { canAdjustStock, canKeepStock } from '@erp/shared';
+import { canAdjustStock, canCheckGrn, canKeepStock } from '@erp/shared';
 import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useStockEntry } from '@/lib/queries';
@@ -15,6 +15,7 @@ import { QueryError } from '@/components/common/QueryState';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { StockTypeTag } from './StockTypeTag';
 import { ReceiveTransferModal } from './ReceiveTransferModal';
+import { GrnQcModal, GrnQcTag } from './GrnQc';
 
 const KIND: Record<StockEntryType, string> = {
   RECEIPT: 'Goods received note',
@@ -45,6 +46,9 @@ export function StockEntryDrawer({ id, onClose }: { id: string | null; onClose: 
   const mayDelete = !!user && canAdjustStock(user.roleKey);
   const kind = data ? KIND[data.type] : '';
   const [receiving, setReceiving] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const mayCheck = !!data && data.type === 'RECEIPT' && !!user && canCheckGrn(user.roleKey);
+  const anyRejected = !!data && data.lines.some((l) => l.rejectedQty && Number(l.rejectedQty) > 0);
   const canReceive = !!data && data.type === 'TRANSFER_OUT' && !data.transferInId && !!user && canKeepStock(user.roleKey);
 
   return (
@@ -55,6 +59,11 @@ export function StockEntryDrawer({ id, onClose }: { id: string | null; onClose: 
       title={data ? <Space>{`${kind} · ${data.entryNo}`}<StockTypeTag type={data.type} /></Space> : 'Stock entry'}
       extra={
         <Space>
+          {mayCheck ? (
+            <Button type={data!.qcStatus ? 'default' : 'primary'} size="small" icon={<SafetyCertificateOutlined />} onClick={() => setChecking(true)}>
+              {data!.qcStatus ? 'Change QA/QC check' : 'QA/QC check'}
+            </Button>
+          ) : null}
           {canReceive ? (
             <Button type="primary" size="small" icon={<ImportOutlined />} onClick={() => setReceiving(true)}>
               Receive at {data!.toProjectName}
@@ -96,6 +105,18 @@ export function StockEntryDrawer({ id, onClose }: { id: string | null; onClose: 
                     { key: 'supplier', label: 'Supplier', children: data.supplier ?? '-' },
                     { key: 'challan', label: 'Challan no.', children: data.challanNo ?? '-' },
                     { key: 'vehicle', label: 'Vehicle no.', children: data.vehicleNo ?? '-' },
+                    {
+                      key: 'qc',
+                      label: 'QA/QC',
+                      span: 2,
+                      children: (
+                        <Space wrap size={4}>
+                          <GrnQcTag status={data.qcStatus} />
+                          {data.qcByName ? <Typography.Text type="secondary">{`${data.qcByName}, ${formatDateTime(data.qcAt)}`}</Typography.Text> : null}
+                          {data.qcNote ? <span>{data.qcNote}</span> : null}
+                        </Space>
+                      ),
+                    },
                   ]
                 : []),
               ...(data.type === 'TRANSFER_OUT'
@@ -145,6 +166,9 @@ export function StockEntryDrawer({ id, onClose }: { id: string | null; onClose: 
                 render: (v: string) => <Typography.Text type={Number(v) < 0 ? 'danger' : 'success'}>{`${Number(v) > 0 ? '+' : ''}${formatQty(v)}`}</Typography.Text>,
               },
               { title: 'Unit', dataIndex: 'unit', width: 80 },
+              ...(anyRejected
+                ? [{ title: 'Rejected', dataIndex: 'rejectedQty', align: 'right' as const, width: 110, render: (v: string | null) => (v && Number(v) > 0 ? <Typography.Text type="danger">{formatQty(v)}</Typography.Text> : '-') }]
+                : []),
             ]}
           />
           {data.attachments.length > 0 && (
@@ -157,6 +181,7 @@ export function StockEntryDrawer({ id, onClose }: { id: string | null; onClose: 
           )}
         </>
       )}
+      {data && mayCheck ? <GrnQcModal entry={data} open={checking} onClose={() => setChecking(false)} /> : null}
       {data && canReceive ? <ReceiveTransferModal open={receiving} onClose={() => setReceiving(false)} transfer={data} /> : null}
     </Drawer>
   );

@@ -1,15 +1,16 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { Alert, App, AutoComplete, Button, DatePicker, Form, Input, InputNumber, Modal, Select, Space } from 'antd';
+import { Alert, App, Button, DatePicker, Form, Input, InputNumber, Modal, Select, Space } from 'antd';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { MaterialPriority, MaterialRequestDto } from '@erp/shared';
-import { COMMON_UNITS, MATERIAL_PRIORITIES, MATERIAL_PRIORITY_LABELS } from '@erp/shared';
+import { MATERIAL_PRIORITIES, MATERIAL_PRIORITY_LABELS } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, errorMessage } from '@/lib/api';
 import { useProjects } from '@/lib/queries';
 import { editActionLabel } from '@/components/common/EditResubmitButton';
+import { UnitInput } from '@/components/common/UnitInput';
 
 interface FormValues {
   projectId: string;
@@ -103,7 +104,7 @@ export function MrFormModal({ open, onClose, projectId, entry }: { open: boolean
                       <InputNumber min={0} style={{ width: '100%' }} />
                     </Form.Item>
                     <Form.Item name={[f.name, 'unit']} noStyle rules={[{ required: true, message: 'Unit' }]}>
-                      <AutoComplete placeholder="Unit" options={[...COMMON_UNITS, 'Bags', 'Trips'].map((u) => ({ value: u }))} />
+                      <UnitInput />
                     </Form.Item>
                     <Button icon={<DeleteOutlined />} onClick={() => remove(f.name)} disabled={fields.length === 1} />
                   </div>

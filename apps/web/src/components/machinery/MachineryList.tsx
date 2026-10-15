@@ -17,6 +17,7 @@ import { ExportButton } from '@/components/common/ExportButton';
 import { MachineryTable } from './MachineryTable';
 import { MachineryDrawer } from './MachineryDrawer';
 import { MachineryFormModal } from './MachineryFormModal';
+import { rangePresets } from '@/lib/dates';
 
 /** Daily machinery logs: paged, searchable, filtered by project, machine, status, dates and breakdowns; Excel export. */
 export function MachineryList({ projectId: fixedProject }: { projectId?: string }) {
@@ -91,7 +92,7 @@ export function MachineryList({ projectId: fixedProject }: { projectId?: string 
           }}
           options={(equipment?.items ?? []).filter((e) => !projectId || e.projectId === projectId || e.id === equipmentId).map((e) => ({ value: e.id, label: `${e.code} · ${e.name}` }))}
         />
-        <DatePicker.RangePicker
+        <DatePicker.RangePicker presets={rangePresets()}
           value={range}
           onChange={(v) => {
             setRange(v as [Dayjs | null, Dayjs | null] | null);

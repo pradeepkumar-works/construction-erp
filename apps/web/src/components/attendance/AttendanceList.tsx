@@ -16,6 +16,7 @@ import { ListToolbar } from '@/components/common/ListToolbar';
 import { ExportButton } from '@/components/common/ExportButton';
 import { AttendanceTable } from './AttendanceTable';
 import { AttendanceFormModal } from './AttendanceFormModal';
+import { rangePresets } from '@/lib/dates';
 
 /** Server-paged attendance register with project and date-range filters and Excel export (one row per contractor and trade). */
 export function AttendanceList({ projectId: fixedProject }: { projectId?: string }) {
@@ -61,7 +62,7 @@ export function AttendanceList({ projectId: fixedProject }: { projectId?: string
           </>
         }
       >
-        <DatePicker.RangePicker
+        <DatePicker.RangePicker presets={rangePresets()}
           value={range}
           onChange={(v) => {
             setRange(v as [Dayjs | null, Dayjs | null] | null);

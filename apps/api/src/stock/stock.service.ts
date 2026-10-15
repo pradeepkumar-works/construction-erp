@@ -34,6 +34,7 @@ import { dateOnly, dec, iso, money, parseDate } from '../common/serialize';
 import { isUniqueViolation } from '../common/idempotency';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import {
+  CheckGrnDto,
   CreateAdjustmentDto,
   CreateIssueDto,
   CreateSiteReturnDto,
@@ -69,6 +70,7 @@ const include = {
   transferIn: { select: { id: true, entryNo: true } },
   transferOut: { select: { entryNo: true, project: { select: { name: true } } } },
   lines: { orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }], include: { item: { select: { name: true, unit: true } } } },
+  qcBy: { select: { fullName: true } },
   attachments: true,
 } satisfies Prisma.StockEntryInclude;
 type Row = Prisma.StockEntryGetPayload<{ include: typeof include }>;
@@ -173,7 +175,20 @@ export class StockService {
       transferOutNo: r.transferOut?.entryNo ?? null,
       fromProjectName: r.transferOut?.project.name ?? null,
       remarks: r.remarks,
-      lines: r.lines.map((l) => ({ id: l.id, itemId: l.itemId, itemName: l.item.name, unit: l.item.unit, quantity: dec(l.quantity)!, materialRequestItemId: l.materialRequestItemId, purchaseOrderLineId: l.purchaseOrderLineId })),
+      qcStatus: r.qcStatus,
+      qcAt: iso(r.qcAt),
+      qcByName: r.qcBy?.fullName ?? null,
+      qcNote: r.qcNote,
+      lines: r.lines.map((l) => ({
+        id: l.id,
+        itemId: l.itemId,
+        itemName: l.item.name,
+        unit: l.item.unit,
+        quantity: dec(l.quantity)!,
+        materialRequestItemId: l.materialRequestItemId,
+        purchaseOrderLineId: l.purchaseOrderLineId,
+        rejectedQty: dec(l.rejectedQty),
+      })),
       attachments: r.attachments.map((a) => this.attachments.toDto(a)),
       createdById: r.createdById,
       createdByName: r.createdBy.fullName,
@@ -353,6 +368,7 @@ export class StockService {
     if (q.materialRequestId) where.materialRequestId = q.materialRequestId;
     if (q.workOrderId) where.workOrderId = q.workOrderId;
     if (q.itemId) where.lines = { some: { itemId: q.itemId } };
+    if (q.qc) Object.assign(where, { type: 'RECEIPT', qcStatus: q.qc === 'PENDING' ? null : q.qc });
     if (q.from || q.to) where.date = { ...(q.from ? { gte: parseDate(q.from) } : {}), ...(q.to ? { lte: parseDate(q.to) } : {}) };
     const words = searchWords(q.q);
     if (words.length)
@@ -583,6 +599,41 @@ export class StockService {
     await this.audit.log(user, 'STOCK', id, 'DELETED', row.entryNo);
     await this.alertLowStock(user, row.projectId, before, id, row.entryNo);
     return { ok: true };
+  }
+
+  /**
+   * QA/QC's check of material received (v4 item 48): accepted, partly accepted (with the rejected quantity per line) or
+   * rejected. It can be recorded again to correct it. The store balance is not changed: rejected material goes back to
+   * the supplier with a return to vendor.
+   */
+  async checkGrn(user: RequestUser, id: string, dto: CheckGrnDto): Promise<StockEntryDto> {
+    const row = await this.prisma.stockEntry.findFirst({ where: { id, ...this.access.submissionWhere(user) }, include: { lines: { include: { item: { select: { name: true, unit: true } } } } } });
+    if (!row) throw new NotFoundException('Stock entry not found');
+    if (row.type !== 'RECEIPT') throw new BadRequestException('Only goods received (GRNs) are checked by QA/QC');
+    await this.access.assertCanCheckGrn(user, row.projectId);
+    const note = blank(dto.note);
+    if (dto.status !== 'ACCEPTED' && !note) throw new BadRequestException('Say what was wrong with the material');
+    const rejected = new Map<string, Decimal>();
+    if (dto.status === 'REJECTED') for (const l of row.lines) rejected.set(l.id, l.quantity);
+    if (dto.status === 'PARTLY_ACCEPTED') {
+      for (const r of dto.lines ?? []) {
+        const line = row.lines.find((l) => l.id === r.lineId);
+        if (!line) throw new BadRequestException('A line is not part of this GRN');
+        const q = r.rejectedQty.trim() === '0' ? ZERO : this.parseQty(r.rejectedQty, line.item.name);
+        if (q.gt(line.quantity)) throw new BadRequestException(`${line.item.name}: more rejected than received (${dec(line.quantity)} ${line.item.unit})`);
+        rejected.set(line.id, q);
+      }
+      const some = [...rejected.values()].some((q) => q.gt(0));
+      const all = row.lines.every((l) => rejected.get(l.id)?.eq(l.quantity));
+      if (!some) throw new BadRequestException('Enter the quantity rejected, or mark it accepted');
+      if (all) throw new BadRequestException('Everything was rejected: mark it rejected');
+    }
+    await this.prisma.$transaction([
+      this.prisma.stockEntry.update({ where: { id }, data: { qcStatus: dto.status, qcAt: new Date(), qcById: user.id, qcNote: note } }),
+      ...row.lines.map((l) => this.prisma.stockTxn.update({ where: { id: l.id }, data: { rejectedQty: rejected.get(l.id) ?? ZERO } })),
+    ]);
+    await this.audit.log(user, 'STOCK', id, `QC_${dto.status}`, note);
+    return this.get(user, id);
   }
 
   /** A GRN against a PO cannot be deleted when vendor bills (not rejected) already count on what it received. */

@@ -19,6 +19,7 @@ import { ExpenseTable } from './ExpenseTable';
 import { ExpenseDrawer } from './ExpenseDrawer';
 import { ExpenseFormModal } from './ExpenseFormModal';
 import { BRAND } from '@/lib/brand';
+import { rangePresets } from '@/lib/dates';
 
 /** Site expenses with totals for the current filters, used on the Expenses page and as a project tab. */
 export function ExpenseList({ projectId: fixedProject }: { projectId?: string }) {
@@ -83,7 +84,7 @@ export function ExpenseList({ projectId: fixedProject }: { projectId?: string })
       >
         <Select allowClear placeholder="All categories" style={{ width: 200 }} value={category} onChange={reset(setCategory)} options={EXPENSE_CATEGORIES.map((c) => ({ value: c, label: EXPENSE_CATEGORY_LABELS[c] }))} />
         <Select allowClear placeholder="Any payment" style={{ width: 150 }} value={paymentMode} onChange={reset(setPaymentMode)} options={PAYMENT_MODES.map((m) => ({ value: m, label: PAYMENT_MODE_LABELS[m] }))} />
-        <DatePicker.RangePicker value={range} onChange={(v) => reset(setRange)(v as [Dayjs | null, Dayjs | null] | null)} format="DD MMM YYYY" allowEmpty={[true, true]} />
+        <DatePicker.RangePicker presets={rangePresets()} value={range} onChange={(v) => reset(setRange)(v as [Dayjs | null, Dayjs | null] | null)} format="DD MMM YYYY" allowEmpty={[true, true]} />
         <Checkbox checked={noReceipt} onChange={(e) => reset(setNoReceipt)(e.target.checked)}>
           Without bill photo
         </Checkbox>

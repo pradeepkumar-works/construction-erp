@@ -11,6 +11,7 @@ import { api, errorMessage } from '@/lib/api';
 import { useProjects, useVendors } from '@/lib/queries';
 import { formatINR, toNumber } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
+import { UnitInput } from '@/components/common/UnitInput';
 
 export interface PoLineValue {
   materialRequestItemId?: string | null;
@@ -254,7 +255,7 @@ export function PurchaseOrderFormModal({
                         lines[f.name].unit
                       ) : (
                         <Form.Item name={[f.name, 'unit']} noStyle rules={[{ required: true, whitespace: true, message: 'Unit' }]}>
-                          <Input placeholder="Unit" aria-label={`Unit of line ${f.name + 1}`} maxLength={30} />
+                          <UnitInput aria-label={`Unit of line ${f.name + 1}`} maxLength={30} />
                         </Form.Item>
                       ),
                   },

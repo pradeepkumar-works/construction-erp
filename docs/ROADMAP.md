@@ -360,8 +360,13 @@ preview deployments run them against the production database before a PR is merg
     web, put right by our team or a subcontractor and accepted by QA/QC; the completion certificate, which starts
     the DLP and marks the project completed; retention and deposit still with the client; a close-out checklist;
     reminders as the DLP ends and when snags pass their due date.
-48. **Small items** (S each). QA/QC acceptance on a GRN, procurement status report, unit master, financial-year
-    filters.
+48. ~~**Small items** (S each). QA/QC acceptance on a GRN, procurement status report, unit master, financial-year
+    filters.~~
+    Done: QA/QC (or an approver) accepts, partly accepts or rejects material on a GRN from the register, with the
+    rejected quantity per line and what was wrong; the register filters GRNs awaiting QA/QC. Purchase Orders has a
+    Delivery status tab: approved orders with what has arrived and what is still to come, late ones flagged, a vendor
+    summary and Excel export. A unit master (Stock → Units) feeds every unit field, and date filters offer this
+    month, last month and the last three financial years.
 49. **Hindi on the phone app** (M).
 50. **Delay penalties and escalation** (S + M). Liquidated damages exposure, then price variation on RA bills.
 

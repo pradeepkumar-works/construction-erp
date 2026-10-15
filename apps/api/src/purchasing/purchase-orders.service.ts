@@ -5,6 +5,9 @@ import {
   canPurchase,
   canViewPurchaseOrders,
   type Paginated,
+  type DeliveryState,
+  type ProcurementStatusDto,
+  type ProcurementStatusRowDto,
   type PurchaseOrderDto,
   type PurchaseOrderSortField,
   type ReceivableOrderDto,
@@ -20,7 +23,8 @@ import { dateOnly, dec, iso, money, parseDate } from '../common/serialize';
 import { isUniqueViolation } from '../common/idempotency';
 import { nextDocNo } from '../common/doc-number';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
-import { ClosePurchaseOrderDto, CreatePurchaseOrderDto, ListPurchaseOrdersQuery, PoLineInput, ReceivableOrdersQuery, UpdatePurchaseOrderDto } from './purchasing.dto';
+import { ClosePurchaseOrderDto, CreatePurchaseOrderDto, ListPurchaseOrdersQuery, PoLineInput, ProcurementStatusQuery, ReceivableOrdersQuery, UpdatePurchaseOrderDto } from './purchasing.dto';
+import { todayIn } from '../notifications/time';
 import { MSME_MAX_PAYMENT_DAYS, ZERO, lineAmounts, orderedOn, parseFreight, parseGstRate, parseQty, parseRate, sum, totals } from './purchase-math';
 
 type Tx = Prisma.TransactionClient;
@@ -229,6 +233,100 @@ export class PurchaseOrdersService {
         }),
       }))
       .filter((r) => r.lines.some((l) => Number(l.pending) > 0));
+  }
+
+  /**
+   * Procurement status (v4 item 48): approved orders with what has been received and what is still to come, late ones
+   * (past the delivery date) first, with totals and a line per vendor. Received quantity is net of returns to vendor.
+   */
+  async status(user: RequestUser, q: ProcurementStatusQuery): Promise<ProcurementStatusDto> {
+    if (!canViewPurchaseOrders(user.roleKey)) throw new ForbiddenException('Your role cannot see purchase orders');
+    if (q.projectId) await this.access.assertCanAccessProject(user, q.projectId);
+    const today = todayIn();
+    const where: Prisma.PurchaseOrderWhereInput = { ...this.access.submissionWhere(user), status: 'APPROVED' };
+    if (q.projectId) where.projectId = q.projectId;
+    if (q.vendorId) where.vendorId = q.vendorId;
+    if (q.from || q.to) where.poDate = { ...(q.from ? { gte: parseDate(q.from) } : {}), ...(q.to ? { lte: parseDate(q.to) } : {}) };
+    const rows = await this.prisma.purchaseOrder.findMany({
+      where,
+      include: {
+        project: { select: { name: true } },
+        vendor: { select: { name: true } },
+        lines: { orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }], include: { stockTxns: { select: { quantity: true, date: true, type: true, entry: { select: { id: true, qcStatus: true } } } } } },
+      },
+      orderBy: [{ poDate: 'desc' }, { poNo: 'desc' }],
+      take: 1000,
+    });
+    const all: ProcurementStatusRowDto[] = rows.map((r) => {
+      let orderValue = ZERO;
+      let receivedValue = ZERO;
+      let lastReceipt: Date | null = null;
+      const awaiting = new Set<string>();
+      const lines = r.lines.map((l) => {
+        const received = Prisma.Decimal.max(sum(l.stockTxns, (t) => t.quantity), ZERO);
+        const got = Prisma.Decimal.min(received, l.quantity);
+        const pending = l.quantity.sub(got);
+        orderValue = orderValue.add(l.amount);
+        receivedValue = receivedValue.add(got.mul(l.rate));
+        for (const t of l.stockTxns) {
+          if (t.type !== 'RECEIPT') continue;
+          if (!lastReceipt || t.date > lastReceipt) lastReceipt = t.date;
+          if (!t.entry.qcStatus) awaiting.add(t.entry.id);
+        }
+        return { purchaseOrderLineId: l.id, itemName: l.itemName, unit: l.unit, ordered: dec(l.quantity)!, received: dec(received)!, pending: dec(pending)!, pendingValue: money(pending.mul(l.rate))! };
+      });
+      const pendingValue = r.closedAt ? ZERO : Prisma.Decimal.max(orderValue.sub(receivedValue), ZERO);
+      const anyPending = r.lines.some((l) => sum(l.stockTxns, (t) => t.quantity).lt(l.quantity));
+      const anyReceived = receivedValue.gt(0);
+      const state: DeliveryState = !anyPending ? 'RECEIVED' : r.closedAt ? 'CLOSED' : anyReceived ? 'PARTLY_RECEIVED' : 'NOT_STARTED';
+      const deliveryBy = dateOnly(r.deliveryBy);
+      const open = state === 'NOT_STARTED' || state === 'PARTLY_RECEIVED';
+      const daysLate = open && deliveryBy && deliveryBy < today ? Math.round((parseDate(today).getTime() - parseDate(deliveryBy).getTime()) / 86_400_000) : 0;
+      return {
+        purchaseOrderId: r.id,
+        poNo: r.poNo,
+        poDate: dateOnly(r.poDate)!,
+        projectId: r.projectId,
+        projectName: r.project.name,
+        vendorId: r.vendorId,
+        vendorName: r.vendor.name,
+        deliveryBy,
+        state,
+        daysLate,
+        orderValue: money(orderValue)!,
+        receivedValue: money(receivedValue)!,
+        pendingValue: money(open ? pendingValue : ZERO)!,
+        receivedPct: orderValue.isZero() ? 0 : Math.min(100, Math.round(receivedValue.div(orderValue).mul(100).toNumber())),
+        lastReceiptOn: dateOnly(lastReceipt),
+        awaitingQc: awaiting.size,
+        lines,
+      };
+    });
+    const open = (x: ProcurementStatusRowDto) => x.state === 'NOT_STARTED' || x.state === 'PARTLY_RECEIVED';
+    const show = q.show ?? 'PENDING';
+    const picked = all
+      .filter((x) => show === 'ALL' || (show === 'PENDING' ? open(x) : x.daysLate > 0))
+      .sort((a, b) => b.daysLate - a.daysLate || (a.deliveryBy ?? '9999').localeCompare(b.deliveryBy ?? '9999') || b.poDate.localeCompare(a.poDate));
+    const vendors = new Map<string, ProcurementStatusDto['byVendor'][number]>();
+    for (const x of all) {
+      const v = vendors.get(x.vendorId) ?? { vendorId: x.vendorId, vendorName: x.vendorName, orders: 0, pending: 0, late: 0, pendingValue: '0.00' };
+      v.orders += 1;
+      if (open(x)) v.pending += 1;
+      if (x.daysLate > 0) v.late += 1;
+      v.pendingValue = new Prisma.Decimal(v.pendingValue).add(x.pendingValue).toFixed(2);
+      vendors.set(x.vendorId, v);
+    }
+    return {
+      rows: picked,
+      totals: {
+        orders: all.length,
+        pending: all.filter(open).length,
+        late: all.filter((x) => x.daysLate > 0).length,
+        orderValue: sum(all, (x) => new Prisma.Decimal(x.orderValue)).toFixed(2),
+        pendingValue: sum(all, (x) => new Prisma.Decimal(x.pendingValue)).toFixed(2),
+      },
+      byVendor: [...vendors.values()].filter((v) => v.pending > 0).sort((a, b) => b.late - a.late || Number(b.pendingValue) - Number(a.pendingValue)),
+    };
   }
 
   /** The vendor, request and quotation a PO points at, checked against each other. */

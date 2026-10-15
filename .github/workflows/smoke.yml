@@ -762,6 +762,26 @@ jobs:
           curl -sf "$API_URL/approvals/pending" -H "$PM" | jq -e 'all(.[]; has("amount"))' > /dev/null
           code=$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/approval-rules" -H "$PM")
           echo "PM reading the matrix: $code"; [ "$code" = "403" ]
+      - name: GRN QA/QC, delivery status and units
+        run: |
+          set -e
+          login() { curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' -d "{\"email\":\"$1\",\"password\":\"password123\"}" | jq -r .accessToken; }
+          H="authorization: Bearer $(login pm@demo.com)"
+          E="authorization: Bearer $(login engineer@demo.com)"
+          curl -sf "$API_URL/purchase-orders/status?show=ALL" -H "$H" > /tmp/pos.json
+          jq -e '.totals.orders == (.rows | length) and all(.rows[]; (.state | IN("NOT_STARTED","PARTLY_RECEIVED","RECEIVED","CLOSED")) and .receivedPct >= 0 and .receivedPct <= 100)' /tmp/pos.json > /dev/null
+          jq -r '"approved orders \(.totals.orders), pending \(.totals.pending), late \(.totals.late), still to come \(.totals.pendingValue)"' /tmp/pos.json
+          curl -sf "$API_URL/purchase-orders/status?show=LATE" -H "$H" | jq -e 'all(.rows[]; .daysLate > 0)' > /dev/null
+          curl -sf "$API_URL/units" -H "$H" | jq -e 'length > 0 and all(.[]; (.code | length) > 0 and (.itemCount | type) == "number")' > /dev/null
+          curl -sf "$API_URL/stock/entries?qc=PENDING&pageSize=20" -H "$H" | jq -e 'all(.items[]; .type == "RECEIPT" and .qcStatus == null)' > /dev/null
+          curl -sf "$API_URL/stock/entries?qc=PENDING&pageSize=1" -H "$H" | jq -r '"GRNs awaiting QA/QC: \(.total)"'
+          GRN=$(curl -sf "$API_URL/stock/entries?type=RECEIPT&pageSize=1" -H "$E" | jq -r '.items[0].id // empty')
+          if [ -n "$GRN" ]; then
+            code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/stock/entries/$GRN/qc" -H "$E" -H 'content-type: application/json' -d '{"status":"ACCEPTED"}')
+            echo "site engineer passing a GRN: $code"; [ "$code" = "403" ]
+          fi
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/units" -H "$E" -H 'content-type: application/json' -d '{"code":"smoke","name":"smoke"}')
+          echo "site engineer adding a unit: $code"; [ "$code" = "403" ]
       - name: Invite, set password and reset
         run: |
           set -e

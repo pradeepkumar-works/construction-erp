@@ -17,6 +17,7 @@ import { ExportButton } from '@/components/common/ExportButton';
 import { MeasurementTable } from './MeasurementTable';
 import { MeasurementDrawer } from './MeasurementDrawer';
 import { MeasurementFormModal } from './MeasurementFormModal';
+import { rangePresets } from '@/lib/dates';
 
 /** Measurement book sheets, used on the Measurement Book page and as a project tab. */
 export function MeasurementList({ projectId: fixedProject }: { projectId?: string }) {
@@ -88,7 +89,7 @@ export function MeasurementList({ projectId: fixedProject }: { projectId?: strin
           onChange={reset(setBoqItemId)}
           options={(boq ?? []).map((b) => ({ value: b.id, label: `${b.itemNo} - ${b.description}` }))}
         />
-        <DatePicker.RangePicker value={range} onChange={(v) => reset(setRange)(v as [Dayjs | null, Dayjs | null] | null)} format="DD MMM YYYY" allowEmpty={[true, true]} />
+        <DatePicker.RangePicker presets={rangePresets()} value={range} onChange={(v) => reset(setRange)(v as [Dayjs | null, Dayjs | null] | null)} format="DD MMM YYYY" allowEmpty={[true, true]} />
       </ListToolbar>
       <MeasurementTable
         data={data?.items ?? []}

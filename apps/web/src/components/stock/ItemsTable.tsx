@@ -14,6 +14,7 @@ import { useListState } from '@/lib/listState';
 import { formatDate, formatINR } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { SearchBox } from '@/components/common/SearchBox';
+import { UnitInput } from '@/components/common/UnitInput';
 
 interface ItemForm {
   name: string;
@@ -118,7 +119,7 @@ export function ItemsTable() {
             rules={[{ required: true, whitespace: true, message: 'Required' }]}
             extra={editing && editing !== 'new' && editing.projectCount > 0 ? 'The unit is fixed once the item has stock movements.' : undefined}
           >
-            <Input maxLength={30} disabled={!!editing && editing !== 'new' && editing.projectCount > 0} />
+            <UnitInput maxLength={30} disabled={!!editing && editing !== 'new' && editing.projectCount > 0} />
           </Form.Item>
           <Form.Item name="category" label="Category">
             <Input maxLength={60} placeholder="e.g. Cement, Steel, Fuel" />

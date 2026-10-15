@@ -10,6 +10,7 @@ import { api, errorMessage } from '@/lib/api';
 import { useBoq, useProjects } from '@/lib/queries';
 import { formatINR, formatQty, toNumber } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
+import { UnitInput } from '@/components/common/UnitInput';
 
 /** Picker value for a line that adds an item not yet in the BOQ. */
 const NEW_ITEM = '__new__';
@@ -165,7 +166,7 @@ export function VariationFormModal({ open, onClose, projectId, variation, onSave
                           <Input maxLength={1000} />
                         </Form.Item>
                         <Form.Item name={[f.name, 'unit']} label="Unit" rules={[{ required: true, whitespace: true, message: 'Required' }]}>
-                          <Input maxLength={20} placeholder="Cum" />
+                          <UnitInput maxLength={20} placeholder="Cum" />
                         </Form.Item>
                       </div>
                     )}

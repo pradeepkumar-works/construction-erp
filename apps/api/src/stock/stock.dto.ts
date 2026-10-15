@@ -2,7 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsDateString, IsIn, IsNumberString, IsOptional, IsString, IsUUID, Matches, MaxLength, MinLength, ValidateIf, ValidateNested } from 'class-validator';
 import { VENDOR_ID_DOC } from '../vendors/vendors.dto';
-import { LIST_SORT_FIELDS, STOCK_ENTRY_TYPES, type ItemSortField, type StockBalanceSortField, type StockEntrySortField, type StockEntryType } from '@erp/shared';
+import { GRN_QC_STATUSES, LIST_SORT_FIELDS, STOCK_ENTRY_TYPES, type GrnQcStatus, type ItemSortField, type StockBalanceSortField, type StockEntrySortField, type StockEntryType } from '@erp/shared';
 import { PageQuery, QueryBool } from '../common/paging';
 import { CLIENT_ID_DOC } from '../common/idempotency';
 
@@ -186,6 +186,10 @@ export class ListStockEntriesQuery extends PageQuery {
   @QueryBool()
   @IsBoolean()
   allTypes?: boolean;
+  @ApiPropertyOptional({ enum: ['PENDING', ...GRN_QC_STATUSES], description: 'Receipts by QA/QC check: PENDING = not checked yet' })
+  @IsOptional()
+  @IsIn(['PENDING', ...GRN_QC_STATUSES])
+  qc?: GrnQcStatus | 'PENDING';
 }
 
 /** `q` matches item name, category and project. */
@@ -225,4 +229,22 @@ export class SetMinLevelDto {
   @ApiProperty() @IsUUID() itemId: string;
   @ApiProperty({ example: '100', nullable: true, description: 'null or 0 removes the minimum' })
   @IsOptional() @qty() @IsNumberString() minQty: string | null;
+}
+
+class GrnQcLineDto {
+  @ApiProperty({ description: 'The GRN line (stock line id)' }) @IsUUID() lineId: string;
+  @ApiProperty({ example: '12.5', description: 'Quantity rejected on this line (0 for none)' }) @IsNumberString() rejectedQty: string;
+}
+
+/** QA/QC's check of a GRN. Rejected quantities go back to the supplier with a return to vendor. */
+export class CheckGrnDto {
+  @ApiProperty({ enum: GRN_QC_STATUSES }) @IsIn(GRN_QC_STATUSES) status: GrnQcStatus;
+  @ApiPropertyOptional({ example: '20 bags lumpy, set aside for return' }) @IsOptional() @IsString() @MaxLength(1000) note?: string;
+  @ApiPropertyOptional({ type: [GrnQcLineDto], description: 'Partly accepted: the rejected quantity per line' })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(200)
+  @ValidateNested({ each: true })
+  @Type(() => GrnQcLineDto)
+  lines?: GrnQcLineDto[];
 }

@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { APPROVER_ROLES, type SubmissionType, COMPANY_WIDE_ROLES, isCompanyWide, canAdjustStock, canApprove, canKeepStock, canLogMachinery, canManageEquipment, canManageStore, canMeasure, canRaiseRisk, canRecordAttendance, canRequestInspection, canSubmitExpense, canRecordTest, canRaiseNcr, canManageDocuments, canViewLetters, canManageStaff, canMarkStaff, canViewMessageLog, canReportSafety, canManageSafety, canManageMaintenance, canFreezeBaseline, canManageWorkers, canViewWorkers, canReportDefect, canCloseDefect, canManageHandover, GUEST_ROLES, isGuest } from '@erp/shared';
+import { APPROVER_ROLES, type SubmissionType, COMPANY_WIDE_ROLES, isCompanyWide, canAdjustStock, canApprove, canKeepStock, canLogMachinery, canManageEquipment, canManageStore, canMeasure, canRaiseRisk, canRecordAttendance, canRequestInspection, canSubmitExpense, canRecordTest, canRaiseNcr, canCheckGrn, canManageDocuments, canViewLetters, canManageStaff, canMarkStaff, canViewMessageLog, canReportSafety, canManageSafety, canManageMaintenance, canFreezeBaseline, canManageWorkers, canViewWorkers, canReportDefect, canCloseDefect, canManageHandover, GUEST_ROLES, isGuest } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { ApprovalRightsService } from './approval-rights.service';
 import { RequestUser } from './current-user';
@@ -142,6 +142,12 @@ export class ProjectAccessService {
   /** Raise or close a non-conformance report: QA/QC or an approver with access to the project. */
   async assertCanRaiseNcr(user: RequestUser, projectId: string) {
     if (!canRaiseNcr(user.roleKey)) throw new ForbiddenException('Only QA/QC or an approver can raise or close an NCR');
+    await this.assertCanAccessProject(user, projectId);
+  }
+
+  /** Accept or reject material received on a GRN: QA/QC or an approver with access to the project. */
+  async assertCanCheckGrn(user: RequestUser, projectId: string) {
+    if (!canCheckGrn(user.roleKey)) throw new ForbiddenException('Only QA/QC or an approver can accept or reject material received');
     await this.assertCanAccessProject(user, projectId);
   }
 

@@ -29,6 +29,7 @@ import type {
   SubmissionStatus,
   SubmissionType,
   Weather,
+  GrnQcStatus,
 } from './enums';
 
 /** API response shapes. Decimal columns are serialised as strings to preserve precision. */
@@ -466,6 +467,8 @@ export interface StockLineDto {
   quantity: string;
   materialRequestItemId: string | null;
   purchaseOrderLineId: string | null;
+  /** Receipts: quantity QA/QC rejected; null until checked */
+  rejectedQty?: string | null;
 }
 
 export interface StockEntryDto {
@@ -501,6 +504,11 @@ export interface StockEntryDto {
   transferOutNo: string | null;
   fromProjectName: string | null;
   remarks: string | null;
+  /** Receipts: QA/QC's check of the material (null until checked) */
+  qcStatus?: GrnQcStatus | null;
+  qcAt?: string | null;
+  qcByName?: string | null;
+  qcNote?: string | null;
   lines: StockLineDto[];
   attachments: AttachmentDto[];
   createdById: string;
