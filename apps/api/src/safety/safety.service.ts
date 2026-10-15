@@ -27,6 +27,7 @@ import { dateOnly, iso, parseDate } from '../common/serialize';
 import { isUniqueViolation } from '../common/idempotency';
 import { nextDocNo } from '../common/doc-number';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
+import { todayIn } from '../notifications/time';
 import {
   CloseIncidentDto,
   ClosePermitDto,
@@ -63,7 +64,8 @@ const permitInclude = {
 } satisfies Prisma.WorkPermitInclude;
 type PermitRow = Prisma.WorkPermitGetPayload<{ include: typeof permitInclude }>;
 
-const todayStr = () => new Date().toISOString().slice(0, 10);
+/** Today where the sites are (NOTIFICATION_TIMEZONE), so a date picked just after local midnight is not "in the future". */
+const todayStr = () => todayIn();
 const blank = (v: string | null | undefined) => (v ? v : null);
 const DAY_MS = 86_400_000;
 
