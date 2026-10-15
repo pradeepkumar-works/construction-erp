@@ -84,6 +84,8 @@ export interface UserSummary {
 export interface PasswordLinkDto {
   link: string | null;
   emailed: boolean;
+  /** Why the email was not sent, when email is set up but the provider refused it */
+  emailError?: string | null;
   /** Also sent to the user's phone on WhatsApp or SMS (invites only), else null */
   messaged?: 'WHATSAPP' | 'SMS' | null;
   expiresAt: string;

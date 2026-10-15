@@ -27,7 +27,7 @@ export function PasswordLinkModal({ result, onClose }: { result: { name: string;
           {link.emailed ? (
             <Alert type="success" showIcon title={`Emailed to ${result.email}.`} description="You can also share the link below yourself." />
           ) : (
-            <Alert type="info" showIcon title="Not emailed" description={`Email is not set up on this server, so send this link to ${result.email} yourself (WhatsApp, SMS or email).`} />
+            <Alert type="info" showIcon title="Not emailed" description={`${link.emailError ? `The email could not be sent (${link.emailError})` : 'Email is not set up on this server'}, so send this link to ${result.email} yourself (WhatsApp, SMS or email).`} />
           )}
           {link.messaged ? <Alert type="success" showIcon title={`Also sent on ${MESSAGE_CHANNEL_LABELS[link.messaged]} to their mobile number.`} /> : null}
           {link.link ? (

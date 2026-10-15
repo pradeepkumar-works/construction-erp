@@ -47,12 +47,13 @@ export class PasswordLinksService {
     const base = this.configuredWebUrl() ?? (origin && /^https?:\/\/[^/\s]+$/.test(origin) ? trimUrl(origin) : null);
     const link = base ? `${base}/set-password?token=${token}` : null;
     let emailed = false;
+    let emailError: string | null = null;
     if (link && this.canEmail) {
       const invite = purpose === 'INVITE';
       const org = user.organization.name;
       const hours = invite ? `${INVITE_LINK_HOURS / 24} days` : `${RESET_LINK_HOURS} hours`;
       const lead = invite ? `You have been invited to ${org} on ${PRODUCT_NAME}. Choose a password to sign in.` : `Someone asked to reset your ${PRODUCT_NAME} password for ${org}. If it was not you, ignore this email.`;
-      emailed = await this.email.send({
+      const sent = await this.email.deliver({
         to: user.email,
         subject: invite ? `[${org}] You are invited to ${PRODUCT_NAME}` : `[${org}] Reset your ${PRODUCT_NAME} password`,
         text: `Hello ${user.fullName},\n\n${lead}\n\n${link}\n\nThe link works once and expires in ${hours}.\n`,
@@ -62,12 +63,14 @@ export class PasswordLinksService {
           body: `<p style="margin:0 0 12px">Hello ${escapeHtml(user.fullName)},</p><p style="margin:0">${escapeHtml(lead)}</p>${emailButton(link, invite ? 'Accept invitation' : 'Choose a new password')}<p style="margin:0;color:${EMAIL_COLORS.muted};font-size:13px">The link works once and expires in ${hours}. If the button does not work, open <a href="${escapeHtml(link)}" style="color:${EMAIL_COLORS.link};word-break:break-all">${escapeHtml(link)}</a></p>`,
         }),
       });
+      emailed = sent.ok;
+      emailError = sent.error ?? null;
     } else if (!link) {
       this.log.warn(`No WEB_URL or CORS_ORIGINS: cannot build a ${purpose} link for user ${userId}`);
     }
     // An invite also goes to the phone the admin entered, on WhatsApp or SMS when either is set up.
     const messaged = link && purpose === 'INVITE' ? await this.messaging.direct({ organizationId: user.organizationId, userId: user.id, phone: user.phone }, { template: 'INVITE', params: [user.organization.name, link, `${INVITE_LINK_HOURS / 24} days`] }) : null;
-    return { link, emailed, messaged, expiresAt: expiresAt.toISOString() };
+    return { link, emailed, emailError, messaged, expiresAt: expiresAt.toISOString() };
   }
 
   private async valid(token: string) {
