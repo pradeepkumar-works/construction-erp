@@ -5,7 +5,6 @@ const ART = {
   projects: '/illustrations/empty-no-projects.svg',
   entries: '/illustrations/empty-no-entries.svg',
   approved: '/illustrations/empty-all-approved.svg',
-  offline: '/illustrations/empty-offline.svg',
 } as const;
 
 export type EmptyArtKind = keyof typeof ART;

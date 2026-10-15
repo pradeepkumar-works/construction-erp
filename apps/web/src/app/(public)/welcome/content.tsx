@@ -35,8 +35,6 @@ export type Module = {
   tab: string;
   title: string;
   lead: string;
-  /** Illustration above the feature list, from public/illustrations. */
-  art: { src: string; alt: string };
   shot: { src: string; alt: string };
   features: Feature[];
 };
@@ -47,7 +45,6 @@ export const MODULES: Module[] = [
     tab: 'Site',
     title: 'Everything a site sends to the office',
     lead: 'The site engineer enters the day on the phone. The project manager approves it, and only then does it count.',
-    art: { src: '/illustrations/feature-site-daily-report.svg', alt: 'A site engineer photographs the work on her phone for the daily report while a worker brings bricks' },
     shot: { src: '/landing/web-approvals.webp', alt: 'The approvals queue with progress, machinery and measurement entries waiting for review' },
     features: [
       { icon: <FileTextOutlined />, title: 'DPR and progress', text: 'Quantities against BOQ activities, manpower from attendance, photos and the day\'s issues.' },
@@ -63,7 +60,6 @@ export const MODULES: Module[] = [
     tab: 'Get paid',
     title: 'RA bills straight from the measurement book',
     lead: 'What site measured and the project manager approved becomes the next running bill, with the contract\'s deductions already applied.',
-    art: { src: '/illustrations/feature-ra-billing.svg', alt: 'A quantity surveyor with the measurement book and a client certifying the RA bill on her phone' },
     shot: { src: '/landing/web-ra-bill.webp', alt: 'An RA bill with the abstract of cost, GST and the retention, advance recovery, TDS and labour cess deductions' },
     features: [
       { icon: <BankOutlined />, title: 'Clients and contracts', text: 'Client GSTIN and billing address; per project the agreement, value, dates, retention, security deposit, advance and TDS rates.' },
@@ -77,7 +73,6 @@ export const MODULES: Module[] = [
     tab: 'Buy and pay',
     title: 'From material request to vendor payment',
     lead: 'Quotes, purchase orders, receipts at site and the vendor\'s bill are checked against each other before anyone pays.',
-    art: { src: '/illustrations/feature-procurement.svg', alt: 'A truck delivers cement and the storekeeper checks it against the purchase order and the bill' },
     shot: { src: '/landing/web-po.webp', alt: 'A purchase order with items, GST, the share received at site and its GRN' },
     features: [
       { icon: <ShopOutlined />, title: 'Vendor master', text: 'Suppliers, hire agencies and subcontractors with GSTIN, PAN, bank details and MSME number.' },
@@ -92,7 +87,6 @@ export const MODULES: Module[] = [
     tab: 'Quality',
     title: 'Inspections, tests and NCRs on record',
     lead: 'Site asks for an inspection from the phone, QA/QC passes or fails it against a checklist, and failed work is tracked to closure.',
-    art: { src: '/illustrations/feature-quality.svg', alt: 'Two QA engineers check a checklist and examine concrete test cubes' },
     shot: { src: '/landing/web-quality.webp', alt: 'The quality register with inspections requested, passed and sent for re-inspection' },
     features: [
       { icon: <SafetyOutlined />, title: 'Inspections from site', text: 'An activity at a location, with photos; each checklist point marked OK, not OK or not applicable.' },
@@ -106,7 +100,6 @@ export const MODULES: Module[] = [
     tab: 'Accounts',
     title: 'Cost, cash and the books, project by project',
     lead: 'Management sees what each project has done, what it cost, what was billed and what came in, without waiting for month end.',
-    art: { src: '/illustrations/feature-finance.svg', alt: 'A director reviews project cost on a laptop while the accountant explains the chart' },
     shot: { src: '/landing/web-cost.webp', alt: 'Project cost against executed value, with billed value, cash in and cash out' },
     features: [
       { icon: <FundOutlined />, title: 'Cost against work done', text: 'Expenses, material, machinery, labour and subcontractors against BOQ value executed, with billed value and cash in and out.' },

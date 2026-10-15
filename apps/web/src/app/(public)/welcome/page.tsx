@@ -87,7 +87,7 @@ export default function WelcomePage() {
           <p className="lp-small">Demo accounts are listed on the sign-in page. The site app works without signal.</p>
         </div>
         <div className="lp-hero-art" aria-hidden>
-          <img src="/illustrations/hero-site-to-office.svg" alt="" width={1400} height={900} />
+          <img src="/illustrations/welcome-hero.svg" alt="" width={1020} height={660} />
         </div>
       </section>
       <div className="lp-datum" />
@@ -137,7 +137,6 @@ export default function WelcomePage() {
             <div className="lp-panel-text">
               <h3>{m.title}</h3>
               <p className="lp-panel-lead">{m.lead}</p>
-              <img className="lp-panel-art" src={m.art.src} alt={m.art.alt} width={1200} height={800} loading="lazy" />
               <ul className="lp-feats">
                 {m.features.map((f) => (
                   <li key={f.title}>
