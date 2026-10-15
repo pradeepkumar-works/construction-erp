@@ -437,6 +437,30 @@ Nirmaan hands the payroll provider its inputs; PF, ESI, professional tax and sal
   deductions, measurements and stage actions, print view in `components/bills/billPrint.ts`, Excel export). The
   measurement book shows which bill took each sheet. Site app: `app/bill/[id].tsx` to read and approve.
 
+## Variations
+
+- **Tables.** `Variation` (number per project, `V-n`; title, `cause`, justification; `status` DRAFT → SUBMITTED →
+  APPROVED / REJECTED; `claimedAmount`, `approvedAmount`; sent date and our reference; decision date, the client's
+  reference and a note). `VariationLine`: a quantity change on a BOQ item (`boqItemId`, BOQ rate) or a new item
+  (`isNewItem`, item no., description, unit, proposed rate), with `approvedQty` / `approvedRate` once decided.
+  `Attachment.variationId` holds the instruction, drawing or estimate. Not a submission: the client decides, not the
+  approval matrix.
+- **Extra items.** A BOQ item with no quantity (original 0, no revised quantity) is an extra item waiting for a
+  variation. `RaBillsService.recompute` takes only sheets of items that have a quantity (`BILLABLE_BOQ_ITEM`), so a
+  measured extra item stays out of the bill and the unapproved bill lists it in `heldExtraItems`. The BOQ form refuses
+  to give an extra item a quantity by hand.
+- **Approval** (`POST /variations/:id/decide`, one transaction, advisory lock `VAR:<projectId>`) applies the approved
+  quantities: an existing item's revised quantity moves by the approved change, an extra item gets its quantity and
+  the approved rate, and a new item is added to the BOQ (original 0, revised = approved). An approved variation cannot
+  be edited or deleted. Revised contract value = contract value + approved variations, on `ProjectSummary`, the
+  contract and `GET /variations/summary`; the dashboard's financial progress uses it.
+- **Roles.** Prepared, sent and decided by `VARIATION_ROLES` (admin, management, PM, QS); read by `BILLING_ROLES`.
+- **API.** `/variations` (paged; `projectId`, `status`, `q`), `GET /variations/summary`, `GET /:id`, `POST`, `PATCH`
+  (until approved; `lines` replaces all), `POST /:id/submit`, `POST /:id/decide`, `DELETE` (not approved).
+- **Clients.** Web: Billing → Variations and a Variations tab on each project (totals, register, drawer with the send
+  and decision steps); the Contract tab shows the revised contract value and the RA bill drawer warns about held
+  extra items. No site app screen: variations are office work.
+
 ## Vendors
 
 - **Table.** `Vendor` (tenant table, name unique per organisation, case-insensitive in the service): `kinds`

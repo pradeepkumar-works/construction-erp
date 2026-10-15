@@ -300,8 +300,13 @@ preview deployments run them against the production database before a PR is merg
     (overdue in red); this month's cost across all heads with site expenses beside it (cost viewers); RA bills
     approved this month before GST, and financial progress as approved RA bills to date against the contract value
     of the projects that have one (bill viewers).
-37. **Variation register** (M). Variations with client reference and approval; approved variations add up to a
-    revised contract value; extra items are billed only once approved.
+37. ~~**Variation register** (M). Variations with client reference and approval; approved variations add up to a
+    revised contract value; extra items are billed only once approved.~~
+    Done: Billing → Variations and a project tab. A variation lists quantity changes on BOQ items and new items with
+    proposed rates; it is sent to the client and the client's decision is recorded with their reference, per item
+    quantity and rate. Approval updates the BOQ (revised quantities, new items) and the revised contract value on the
+    contract, projects and dashboard. Extra items with no BOQ quantity stay out of RA bills until then, and the bill
+    says which were held back.
 38. **Budget, forecast and cash flow** (M). Budget per BOQ item, budget against actual and forecast to complete,
     cash-flow forecast from bills due, receivables and payables.
 39. **Stores round-out** (M). Site-to-site transfers, returns to vendor and from site, stock count sheet, valuation

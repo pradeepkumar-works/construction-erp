@@ -12,6 +12,7 @@ import { UpdateContractDto } from './contracts.dto';
 const include = {
   client: { include: { _count: { select: { projects: true } } } },
   risks: { where: { kind: 'DELAY' as const, OR: [{ eotClaimed: true }, { eotGrantedDays: { not: null } }] }, orderBy: { delayStart: 'asc' as const } },
+  variations: { where: { status: 'APPROVED' as const }, select: { approvedAmount: true } },
 } satisfies Prisma.ProjectInclude;
 type Row = Prisma.ProjectGetPayload<{ include: typeof include }>;
 
@@ -40,6 +41,7 @@ export class ContractsService {
     }));
     const extensionDays = extensions.reduce((s, e) => s + (e.eotGrantedDays ?? 0), 0);
     const endDate = dateOnly(p.endDate);
+    const approvedVariations = p.variations.reduce((s, v) => s.add(v.approvedAmount ?? 0), new Prisma.Decimal(0));
     return {
       projectId: p.id,
       projectCode: p.code,
@@ -50,6 +52,8 @@ export class ContractsService {
       agreementNo: p.agreementNo,
       agreementDate: dateOnly(p.agreementDate),
       contractValue: money(p.contractValue),
+      approvedVariations: money(approvedVariations)!,
+      revisedContractValue: p.contractValue ? money(p.contractValue.add(approvedVariations)) : null,
       startDate: dateOnly(p.startDate),
       endDate,
       extensionDays,

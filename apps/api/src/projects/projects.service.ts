@@ -55,7 +55,11 @@ export class ProjectsService {
   }
 
   async toSummary(p: ProjectRow): Promise<ProjectSummary> {
-    const [physicalProgressPct, pendingApprovals] = await Promise.all([this.computeProgress(p.id), this.pendingApprovalsCount(p.id)]);
+    const [physicalProgressPct, pendingApprovals, variations] = await Promise.all([
+      this.computeProgress(p.id),
+      this.pendingApprovalsCount(p.id),
+      p.contractValue ? this.prisma.variation.aggregate({ where: { projectId: p.id, status: 'APPROVED' }, _sum: { approvedAmount: true } }) : null,
+    ]);
     return {
       id: p.id,
       code: p.code,
@@ -67,6 +71,7 @@ export class ProjectsService {
       startDate: dateOnly(p.startDate),
       endDate: dateOnly(p.endDate),
       contractValue: money(p.contractValue),
+      revisedContractValue: p.contractValue ? money(p.contractValue.add(variations?._sum.approvedAmount ?? 0)) : null,
       projectManagerId: p.projectManagerId,
       projectManagerName: p.projectManager?.fullName ?? null,
       physicalProgressPct,

@@ -138,6 +138,7 @@ async function main() {
     await seedDocuments(org.id);
     await seedStaff(org.id);
     await seedGuests(org.id);
+    await seedVariations(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
   }
@@ -299,9 +300,90 @@ async function main() {
   await seedDocuments(org.id);
   await seedStaff(org.id);
   await seedGuests(org.id);
+  await seedVariations(org.id);
 
   console.log('Seed complete. Login with any of these (password: password123):');
   for (const u of USERS) console.log(`  ${u.email.padEnd(24)} ${u.role}`);
+}
+
+/**
+ * Demo variation register (v4 item 37). Road: V-1 approved by the client (two more pipe culverts and a new box
+ * culvert, approved at a lower rate), V-2 with the client (kerb stones, already in the BOQ as an extra item with no
+ * quantity). Building: V-1 still a draft. Only when the organisation has no variations yet.
+ */
+async function seedVariations(organizationId: string) {
+  if (await prisma.variation.count({ where: { organizationId } })) return;
+  const road = await prisma.project.findFirst({ where: { organizationId, type: 'ROAD' }, orderBy: { code: 'asc' } });
+  const building = await prisma.project.findFirst({ where: { organizationId, type: 'BUILDING' }, orderBy: { code: 'asc' } });
+  const qs = await prisma.user.findFirst({ where: { organizationId, email: 'qs@demo.com' } });
+  if (!road || !building || !qs) return;
+  const r2 = (v: Prisma.Decimal) => v.toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+  const audit = (entityId: string, action: string, ago: number, note?: string) =>
+    prisma.auditLog.create({ data: { organizationId, entityType: 'VARIATION', entityId, action, actorId: qs.id, note: note ?? null, createdAt: day(-ago) } });
+
+  const culvert = await prisma.boqItem.findFirst({ where: { projectId: road.id, itemNo: '5.01' } });
+  if (culvert) {
+    const top = (await prisma.boqItem.aggregate({ where: { projectId: road.id }, _max: { sortOrder: true } }))._max.sortOrder ?? 0;
+    const box = await prisma.boqItem.upsert({
+      where: { projectId_itemNo: { projectId: road.id, itemNo: '5.02' } },
+      update: {},
+      create: { organizationId, projectId: road.id, itemNo: '5.02', description: 'RCC box culvert 2 x 2 m at Km 18.4 including wing walls', unit: 'Nos', rate: D(1180000), originalQty: D(0), revisedQty: D(1), sortOrder: top + 1 },
+    });
+    await prisma.boqItem.update({ where: { id: culvert.id }, data: { revisedQty: (culvert.revisedQty ?? culvert.originalQty).add(2) } });
+    const claimed = r2(D(2).mul(culvert.rate)).add(1250000);
+    const approved = r2(D(2).mul(culvert.rate)).add(1180000);
+    const v1 = await prisma.variation.create({
+      data: {
+        organizationId, projectId: road.id, varNo: 1, title: 'Additional cross drainage between Km 17 and Km 19', cause: 'SITE_CONDITION',
+        description: 'Water logging seen in the first monsoon; the Executive Engineer asked for two more pipe culverts and a box culvert at the nallah.',
+        status: 'APPROVED', claimedAmount: claimed, approvedAmount: approved,
+        submittedDate: day(-40), submittedRef: 'NIR/RD/2026/031', decidedDate: day(-25), clientRef: 'EE/RD/KHD/2026/233', decisionNote: 'Box culvert allowed at the analysed rate of ₹11.80 lakh.',
+        createdById: qs.id, createdAt: day(-45),
+        lines: {
+          create: [
+            { organizationId, boqItemId: culvert.id, itemNo: culvert.itemNo, description: culvert.description, unit: culvert.unit, qty: D(2), rate: culvert.rate, approvedQty: D(2), approvedRate: culvert.rate, sortOrder: 0 },
+            { organizationId, boqItemId: box.id, isNewItem: true, itemNo: box.itemNo, description: box.description, unit: box.unit, qty: D(1), rate: D(1250000), approvedQty: D(1), approvedRate: D(1180000), sortOrder: 1 },
+          ],
+        },
+      },
+    });
+    await audit(v1.id, 'CREATED', 45);
+    await audit(v1.id, 'SENT_TO_CLIENT', 40, 'Ref NIR/RD/2026/031');
+    await audit(v1.id, 'APPROVED_BY_CLIENT', 25, 'Ref EE/RD/KHD/2026/233');
+
+    const kerb = await prisma.boqItem.upsert({
+      where: { projectId_itemNo: { projectId: road.id, itemNo: '6.02' } },
+      update: {},
+      create: { organizationId, projectId: road.id, itemNo: '6.02', description: 'Precast kerb stones on bridge approaches', unit: 'Rmt', rate: D(450), originalQty: D(0), sortOrder: top + 2 },
+    });
+    const v2 = await prisma.variation.create({
+      data: {
+        organizationId, projectId: road.id, varNo: 2, title: 'Kerb stones on bridge approaches', cause: 'DESIGN_CHANGE',
+        description: 'Revised GFC drawing RD-GEN-014 R2 adds kerbs on both approaches of the minor bridge.',
+        status: 'SUBMITTED', claimedAmount: r2(D(640).mul(450)), submittedDate: day(-6), submittedRef: 'NIR/RD/2026/044', createdById: qs.id, createdAt: day(-8),
+        lines: { create: [{ organizationId, boqItemId: kerb.id, isNewItem: true, itemNo: kerb.itemNo, description: kerb.description, unit: kerb.unit, qty: D(640), rate: D(450), sortOrder: 0 }] },
+      },
+    });
+    await audit(v2.id, 'CREATED', 8);
+    await audit(v2.id, 'SENT_TO_CLIENT', 6, 'Ref NIR/RD/2026/044');
+  }
+
+  const masonry = await prisma.boqItem.findFirst({ where: { projectId: building.id, itemNo: '4.01' } });
+  if (masonry) {
+    const v = await prisma.variation.create({
+      data: {
+        organizationId, projectId: building.id, varNo: 1, title: 'Additional toilet block for the OPD wing', cause: 'CLIENT_INSTRUCTION',
+        status: 'DRAFT', claimedAmount: r2(D(60).mul(masonry.rate)).add(r2(D(35).mul(8100))), createdById: qs.id, createdAt: day(-2),
+        lines: {
+          create: [
+            { organizationId, boqItemId: masonry.id, itemNo: masonry.itemNo, description: masonry.description, unit: masonry.unit, qty: D(60), rate: masonry.rate, sortOrder: 0 },
+            { organizationId, isNewItem: true, itemNo: '7.01', description: 'RCC M25 in toilet block slab, beams and columns', unit: 'Cum', qty: D(35), rate: D(8100), sortOrder: 1 },
+          ],
+        },
+      },
+    });
+    await audit(v.id, 'CREATED', 2);
+  }
 }
 
 /** Contractors per project type for the demo attendance register. */

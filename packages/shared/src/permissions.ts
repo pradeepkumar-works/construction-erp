@@ -195,6 +195,10 @@ export const canEditContract = (role: RoleKey) => CONTRACT_EDITOR_ROLES.includes
 /** Edit activity templates per project type. */
 export const canManageTemplates = (role: RoleKey) => TEMPLATE_ADMIN_ROLES.includes(role);
 
+/** Prepare variations, send them to the client and record the client's decision. Bill viewers (accounts too) can read them. */
+export const VARIATION_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER', 'QUANTITY_SURVEYOR'];
+export const canManageVariations = (role: RoleKey) => VARIATION_ROLES.includes(role);
+export const canViewVariations = (role: RoleKey) => BILLING_ROLES.includes(role);
 /** Record measurements (MB). */
 export const canMeasure = (role: RoleKey) => MEASUREMENT_ROLES.includes(role);
 

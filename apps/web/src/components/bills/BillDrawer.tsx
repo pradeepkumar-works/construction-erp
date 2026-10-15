@@ -174,6 +174,15 @@ export function BillDrawer({ id, open, onClose, onEdit }: { id: string | null; o
               title="Draft: check the abstract, then submit it for approval. Measurements approved in the meantime are added when it is submitted."
             />
           )}
+          {data.heldExtraItems?.length ? (
+            <Alert
+              type="warning"
+              showIcon
+              style={{ marginBottom: 12 }}
+              title={`Left out until the client approves a variation: ${data.heldExtraItems.map((i) => `${i.itemNo} ${i.description} (${formatQty(i.qty)} ${i.unit} measured)`).join('; ')}`}
+              description={<Link href={`/projects/${data.projectId}?tab=variations`}>Open the project&apos;s variations</Link>}
+            />
+          ) : null}
           <Descriptions
             size="small"
             column={{ xs: 1, sm: 2, lg: 3 }}

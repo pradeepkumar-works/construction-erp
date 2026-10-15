@@ -92,8 +92,8 @@ export class DashboardService {
     if (billedToDate) {
       // Only projects with a contract value count on either side, so the percentage compares like with like.
       const billedBy = new Map(billedToDate.map((b) => [b.projectId, b._sum.grossAmount ?? ZERO]));
-      const withValue = projects.filter((p) => p.contractValue && new Prisma.Decimal(p.contractValue).gt(0));
-      const contract = withValue.reduce((s, p) => s.add(p.contractValue!), ZERO);
+      const withValue = projects.filter((p) => p.revisedContractValue && new Prisma.Decimal(p.revisedContractValue).gt(0));
+      const contract = withValue.reduce((s, p) => s.add(p.revisedContractValue!), ZERO);
       const billed = withValue.reduce((s, p) => s.add(billedBy.get(p.id) ?? ZERO), ZERO);
       financialProgress = { contractValue: money(contract)!, billed: money(billed)!, pct: contract.gt(0) ? Math.round(billed.div(contract).mul(1000).toNumber()) / 10 : null };
     }

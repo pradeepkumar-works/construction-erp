@@ -46,11 +46,12 @@ import {
   IdcardOutlined,
   CarryOutOutlined,
   DatabaseOutlined,
+  DiffOutlined,
 } from '@ant-design/icons';
 import type { AuthUser } from '@erp/shared';
 import { BILLING_REMIND_DAYS, PRODUCT_NAME } from '@erp/shared';
 import { isGuest } from '@erp/shared';
-import { approvalRightsOf, canViewPurchaseOrders, canViewVendorBills, canViewWorkOrders, canViewPayables, canExportTally, canViewGstRegisters, canPrepareSubcontractBill, canEditContract, canEditProjects, canEditVendors, canManageUsers, canSeeVendorBank, canPrepareBill, canViewContract, canViewCost, mayApprove, canViewPayroll, canViewLabourSummary, canManageCompanyData, canManageBilling } from '@erp/shared';
+import { approvalRightsOf, canViewPurchaseOrders, canViewVendorBills, canViewWorkOrders, canViewPayables, canExportTally, canViewGstRegisters, canPrepareSubcontractBill, canEditContract, canEditProjects, canEditVendors, canManageUsers, canSeeVendorBank, canPrepareBill, canViewContract, canViewCost, mayApprove, canViewPayroll, canViewLabourSummary, canManageCompanyData, canManageBilling, canViewVariations } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useCompanyDeletion, usePendingApprovals } from '@/lib/queries';
 import { formatDate, formatDateTime } from '@/lib/format';
@@ -146,6 +147,7 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
         title: 'Billing',
         items: [
           ...(canPrepareBill(user.roleKey) || approvalRightsOf(user).some((r) => r.type === 'BILL') ? [link('/bills', 'RA Bills', FileDoneOutlined)] : []),
+          ...(canViewVariations(user.roleKey) ? [link('/variations', 'Variations', DiffOutlined)] : []),
           ...(canViewContract(user.roleKey) ? [link('/receivables', 'Receivables', AccountBookOutlined)] : []),
           ...(canViewContract(user.roleKey) || canEditContract(user.roleKey) ? [link('/clients', 'Clients', BankOutlined)] : []),
           ...(canViewGstRegisters(user.roleKey) ? [link('/gst', 'GST Registers', PercentageOutlined)] : []),

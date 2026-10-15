@@ -129,6 +129,8 @@ export interface ProjectSummary {
   startDate: string | null;
   endDate: string | null;
   contractValue: string | null;
+  /** Contract value plus variations the client approved (null without a contract value) */
+  revisedContractValue: string | null;
   projectManagerId: string | null;
   projectManagerName: string | null;
   physicalProgressPct: number;
@@ -313,7 +315,7 @@ export interface CompanyDashboard {
   monthCost?: { month: string; total: string; expenses: string };
   /** Only for roles that see bills: approved RA bills dated in the current calendar month, value of work before GST */
   monthBilling?: { month: string; gross: string; bills: number };
-  /** Only for roles that see bills: approved RA bills to date against the contract value of projects that have one */
+  /** Only for roles that see bills: approved RA bills to date against the revised contract value (with approved variations) of projects that have one */
   financialProgress?: { contractValue: string; billed: string; pct: number | null };
   projects: ProjectSummary[];
 }
@@ -977,6 +979,10 @@ export interface ProjectContractDto {
   agreementNo: string | null;
   agreementDate: string | null;
   contractValue: string | null;
+  /** Variations the client approved */
+  approvedVariations: string;
+  /** contractValue + approvedVariations (null without a contract value) */
+  revisedContractValue: string | null;
   startDate: string | null;
   /** Completion date in the agreement */
   endDate: string | null;
@@ -1049,6 +1055,11 @@ export interface RaBillMeasurementDto {
 
 export interface RaBillDto extends SubmissionBase {
   billNo: number;
+  /**
+   * Single bill, not approved yet: extra items measured up to the bill's date that it leaves out because they have no
+   * BOQ quantity until the client approves a variation for them.
+   */
+  heldExtraItems?: { boqItemId: string; itemNo: string; description: string; unit: string; qty: string }[];
   /** In a Tally export: cannot be changed until that export is undone */
   exportedToTally: boolean;
   /** "RA bill 3", or "RA bill 7 (final)" */

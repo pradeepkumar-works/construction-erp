@@ -8,6 +8,7 @@ import { ApprovalRightsService } from '../common/approval-rights.service';
 import { AuditService } from '../common/audit.service';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
 import { AttachmentsService } from '../common/attachments.service';
+import { BILLABLE_BOQ_ITEM, UNAPPROVED_EXTRA_ITEM } from '../variations/variations.service';
 import { dateOnly, dec, iso, money, parseDate } from '../common/serialize';
 import { isUniqueViolation } from '../common/idempotency';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
@@ -261,11 +262,20 @@ export class RaBillsService {
     await this.assertCanSee(user);
     const row = await this.prisma.raBill.findFirst({ where: { id, ...this.access.submissionWhere(user) }, include });
     if (!row) throw new NotFoundException('RA bill not found');
-    const [sheets, receipts] = await Promise.all([
+    const [sheets, receipts, held] = await Promise.all([
       this.prisma.measurementSheet.findMany({ where: { raBillId: id }, include: sheetInclude, orderBy: [{ date: 'asc' }, { mbNo: 'asc' }] }),
       this.receivables.list(user, { billId: id, pageSize: 100, sortBy: 'receiptDate', sortOrder: 'asc' }).catch(() => null),
+      row.status === 'APPROVED'
+        ? []
+        : this.prisma.measurementSheet.groupBy({
+            by: ['boqItemId'],
+            where: { projectId: row.projectId, status: 'APPROVED', raBillId: null, date: { lte: row.measuredUpTo }, boqItem: UNAPPROVED_EXTRA_ITEM },
+            _sum: { totalQty: true },
+          }),
     ]);
-    return this.toDto(row, sheets, receipts?.items);
+    const heldItems = held.length ? await this.prisma.boqItem.findMany({ where: { id: { in: held.map((h) => h.boqItemId) } }, select: { id: true, itemNo: true, description: true, unit: true } }) : [];
+    const heldExtraItems = heldItems.map((b) => ({ boqItemId: b.id, itemNo: b.itemNo, description: b.description, unit: b.unit, qty: dec(held.find((h) => h.boqItemId === b.id)!._sum.totalQty)! }));
+    return { ...this.toDto(row, sheets, receipts?.items), ...(row.status === 'APPROVED' ? {} : { heldExtraItems }) };
   }
 
   /** Work value, GST, deductions and net payable of a set of lines priced on certified (else claimed) quantities. */
@@ -309,7 +319,11 @@ export class RaBillsService {
       include: { project: { select: { retentionPct: true, securityDepositPct: true, advanceRecoveryPct: true, tdsPct: true, gstTdsPct: true, labourCessPct: true, gstRate: true, mobilisationAdvance: true } } },
     });
     await tx.measurementSheet.updateMany({ where: { raBillId: id }, data: { raBillId: null } });
-    await tx.measurementSheet.updateMany({ where: { projectId: bill.projectId, status: 'APPROVED', raBillId: null, date: { lte: bill.measuredUpTo } }, data: { raBillId: id } });
+    // Extra items (no BOQ quantity) wait for the client's approved variation before they are billed.
+    await tx.measurementSheet.updateMany({
+      where: { projectId: bill.projectId, status: 'APPROVED', raBillId: null, date: { lte: bill.measuredUpTo }, boqItem: BILLABLE_BOQ_ITEM },
+      data: { raBillId: id },
+    });
     const earlier = { projectId: bill.projectId, billNo: { lt: bill.billNo } };
     const [measured, billed, boq] = await Promise.all([
       tx.measurementSheet.groupBy({ by: ['boqItemId'], where: { OR: [{ raBillId: id }, { raBill: earlier }] }, _sum: { totalQty: true } }),
