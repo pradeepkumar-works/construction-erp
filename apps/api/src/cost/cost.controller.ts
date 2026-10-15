@@ -1,14 +1,42 @@
 import { Body, Controller, Get, Param, ParseUUIDPipe, Put, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CostService } from './cost.service';
-import { CostQuery, SetLabourRatesDto } from './cost.dto';
+import { BudgetService } from './budget.service';
+import { CashFlowService } from './cash-flow.service';
+import { CashFlowQuery, CostQuery, SetBudgetDto, SetLabourRatesDto } from './cost.dto';
 import { CurrentUser, RequestUser } from '../common/current-user';
 
 @ApiTags('cost')
 @ApiBearerAuth()
 @Controller('cost')
 export class CostController {
-  constructor(private cost: CostService) {}
+  constructor(
+    private cost: CostService,
+    private budget: BudgetService,
+    private cashFlow: CashFlowService,
+  ) {}
+
+  @ApiOperation({
+    summary: 'Cash-flow forecast by month (six) or week (twelve)',
+    description:
+      'Approvers and accounts. In: unpaid RA bills (due the client payment days after sending), retention and deposit releases, and work still to bill spread to completion. Out: unpaid vendor and subcontractor bills by due date, and the forecast to complete spread to completion. Overdue amounts fall in the first period.',
+  })
+  @Get('cash-flow')
+  forecast(@CurrentUser() user: RequestUser, @Query() q: CashFlowQuery) {
+    return this.cashFlow.forecast(user, q);
+  }
+
+  @ApiOperation({ summary: "One project's budget by cost head and BOQ item, against actual cost, with the forecast to complete" })
+  @Get('projects/:id/budget')
+  getBudget(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string) {
+    return this.budget.get(user, id);
+  }
+
+  @ApiOperation({ summary: 'Set the budget by cost head and the budget rates of BOQ items', description: 'Admin, management or the project manager.' })
+  @Put('projects/:id/budget')
+  setBudget(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: SetBudgetDto) {
+    return this.budget.set(user, id, dto);
+  }
 
   @ApiOperation({
     summary: 'Cost against executed value for every visible project',

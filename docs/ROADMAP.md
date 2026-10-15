@@ -307,8 +307,13 @@ preview deployments run them against the production database before a PR is merg
     quantity and rate. Approval updates the BOQ (revised quantities, new items) and the revised contract value on the
     contract, projects and dashboard. Extra items with no BOQ quantity stay out of RA bills until then, and the bill
     says which were held back.
-38. **Budget, forecast and cash flow** (M). Budget per BOQ item, budget against actual and forecast to complete,
-    cash-flow forecast from bills due, receivables and payables.
+38. ~~**Budget, forecast and cash flow** (M). Budget per BOQ item, budget against actual and forecast to complete,
+    cash-flow forecast from bills due, receivables and payables.~~
+    Done: a Budget & Cash Flow tab on each project and a Cash flow tab on Project Cost. The budget is set by cost head
+    and as a budgeted cost per unit on BOQ items (planned margin per item); the tab shows budget, actual, earned and
+    variance per head, and the forecast at completion and forecast margin. The cash-flow forecast covers six months or
+    twelve weeks: unpaid RA bills, retention releases and work still to bill coming in; unpaid vendor bills and the
+    cost still to spend going out. The client's payment days are a contract term.
 39. **Stores round-out** (M). Site-to-site transfers, returns to vendor and from site, stock count sheet, valuation
     and ageing.
 40. **Safety** (M). Incidents and near misses, toolbox talks, permits to work, from the phone.

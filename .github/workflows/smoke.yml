@@ -79,6 +79,19 @@ jobs:
           ENG=$(curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' -d '{"email":"engineer@demo.com","password":"password123"}' | jq -r .accessToken)
           code=$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/variations" -H "authorization: Bearer $ENG")
           echo "variations as a site engineer: $code"; [ "$code" = "403" ]
+      - name: Budget and cash flow
+        run: |
+          set -e
+          TOKEN=$(curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' \
+            -d '{"email":"pm@demo.com","password":"password123"}' | jq -r .accessToken)
+          H="authorization: Bearer $TOKEN"
+          PID=$(curl -sf "$API_URL/projects?pageSize=100" -H "$H" | jq -r '.items[0].id')
+          curl -sf "$API_URL/cost/projects/$PID/budget" -H "$H" | jq -c '{projectCode, budgetAtCompletion, pctComplete, actualCost, forecastAtCompletion, forecastMargin}'
+          curl -sf "$API_URL/cost/cash-flow" -H "$H" | jq -c '.periods[] | {start, inTotal, outTotal, cumulative}'
+          curl -sf "$API_URL/cost/cash-flow?granularity=WEEK" -H "$H" | jq -e '.periods | length == 12' > /dev/null
+          ENG=$(curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' -d '{"email":"engineer@demo.com","password":"password123"}' | jq -r .accessToken)
+          code=$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/cost/cash-flow" -H "authorization: Bearer $ENG")
+          echo "cash flow as a site engineer: $code"; [ "$code" = "403" ]
       - name: Receivables
         run: |
           set -e

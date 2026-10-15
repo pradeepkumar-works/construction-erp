@@ -27,3 +27,6 @@ export const COST_HEAD_LABELS: Record<CostHead, string> = {
   labour: 'Labour',
   subcontract: 'Subcontractors',
 };
+
+/** Days a client is assumed to take to pay a bill when the contract does not say. */
+export const DEFAULT_CLIENT_PAYMENT_DAYS = 30;

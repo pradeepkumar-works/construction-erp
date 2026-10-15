@@ -461,6 +461,27 @@ Nirmaan hands the payroll provider its inputs; PF, ESI, professional tax and sal
   and decision steps); the Contract tab shows the revised contract value and the RA bill drawer warns about held
   extra items. No site app screen: variations are office work.
 
+## Budget and cash flow
+
+- **Tables.** `ProjectBudget` (one per project; an amount per cost head: expenses, material, machinery, labour,
+  subcontract; notes; who set it). `BoqItem.budgetRate` is our budgeted cost per unit (never sent in `BoqItemDto`, so
+  site roles do not see it). `Project.clientPaymentDays` is a contract term (null = 30 days, `DEFAULT_CLIENT_PAYMENT_DAYS`).
+- **Forecast** (`BudgetService`). % complete = executed value (approved progress × BOQ rate) ÷ BOQ value, capped at
+  100%. Budget at completion = the cost-head total, else Σ BOQ qty × budget rate. Actual cost is `CostService.compute`
+  from the start of the project. Earned = budget × % complete; variance = earned − actual; forecast at completion =
+  actual + budget × (1 − % complete); forecast margin = revised contract value − forecast.
+- **Cash flow** (`CashFlowService`, six months or twelve weeks from today). In: open RA bills (receivables summary) due
+  the payment days after sending, approved bills not sent due the payment days after the bill date, retention and
+  deposit held at the release date, and work still to bill (revised contract value − approved bills' work value) spread
+  evenly to the revised completion date, paid the payment days later, × (1 + GST − retention − SD − TDS − GST TDS − cess).
+  Out: open vendor and subcontractor bills (payables summary) by due date, and the forecast to complete spread evenly
+  to completion. Anything due before today goes in the first period. A project with no budget has no "cost still to
+  spend"; one past or without a completion date is spread over the next 91 days. Completed and closed projects only
+  contribute their open bills.
+- **Roles.** Seen by cost viewers (`COST_VIEW_ROLES`); set by `BUDGET_ROLES` (admin, management, PM).
+- **API.** `GET /cost/projects/:id/budget`, `PUT /cost/projects/:id/budget` (`heads` null removes the cost-head
+  budget; `items` sets BOQ budget rates, the rest keep theirs), `GET /cost/cash-flow?projectId&granularity=MONTH|WEEK`.
+
 ## Vendors
 
 - **Table.** `Vendor` (tenant table, name unique per organisation, case-insensitive in the service): `kinds`

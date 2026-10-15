@@ -57,6 +57,9 @@ import type {
   BillStage,
   LabourRatesDto,
   ProjectCostDto,
+  ProjectBudgetDto,
+  CashFlowDto,
+  CashFlowGranularity,
   ProjectCostSummaryDto,
   ProgressReportDto,
   PaymentMode,
@@ -1083,6 +1086,20 @@ export const useCostSummary = (period: CostPeriod, enabled = true) =>
     queryFn: async () => (await api.get<ProjectCostSummaryDto[]>('/cost/projects', { params: clean(period) })).data,
     placeholderData: keepPreviousData,
     enabled,
+  });
+
+export const useProjectBudget = (projectId: string | undefined) =>
+  useQuery({
+    queryKey: ['cost', 'budget', projectId],
+    queryFn: async () => (await api.get<ProjectBudgetDto>(`/cost/projects/${projectId}/budget`)).data,
+    enabled: !!projectId,
+  });
+
+export const useCashFlow = (params: { projectId?: string; granularity: CashFlowGranularity }) =>
+  useQuery({
+    queryKey: ['cost', 'cash-flow', clean(params)],
+    queryFn: async () => (await api.get<CashFlowDto>('/cost/cash-flow', { params: clean(params) })).data,
+    placeholderData: keepPreviousData,
   });
 
 export const useProjectCost = (projectId: string | undefined, period: CostPeriod) =>

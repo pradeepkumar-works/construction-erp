@@ -11,11 +11,11 @@ import { CostQuery, SetLabourRatesDto } from './cost.dto';
 
 type D = Prisma.Decimal;
 const Dec = Prisma.Decimal;
-const ZERO = new Dec(0);
+export const ZERO = new Dec(0);
 const key = (s: string) => s.trim().toLowerCase();
 const monthOf = (d: Date) => d.toISOString().slice(0, 7);
 
-interface Heads {
+export interface Heads {
   expenses: D;
   material: D;
   machinery: D;
@@ -23,7 +23,7 @@ interface Heads {
   subcontract: D;
 }
 const emptyHeads = (): Heads => ({ expenses: ZERO, material: ZERO, machinery: ZERO, labour: ZERO, subcontract: ZERO });
-const total = (h: Heads) => h.expenses.plus(h.material).plus(h.machinery).plus(h.labour).plus(h.subcontract);
+export const total = (h: Heads) => h.expenses.plus(h.material).plus(h.machinery).plus(h.labour).plus(h.subcontract);
 const headsDto = (h: Heads): CostHeadsDto => ({
   expenses: money(h.expenses)!,
   material: money(h.material)!,
@@ -34,7 +34,7 @@ const headsDto = (h: Heads): CostHeadsDto => ({
 });
 
 /** Everything the cost view needs for one project, before it is turned into DTOs. */
-interface Acc {
+export interface Acc {
   heads: Heads;
   executed: D;
   measured: D;
@@ -162,7 +162,8 @@ export class CostService {
     };
   }
 
-  private async compute(organizationId: string, projectIds: string[], date: Prisma.DateTimeFilter | undefined): Promise<Map<string, Acc>> {
+  /** Actual cost and executed value per project (all time when `date` is undefined). */
+  async compute(organizationId: string, projectIds: string[], date: Prisma.DateTimeFilter | undefined): Promise<Map<string, Acc>> {
     const out = new Map(projectIds.map((id) => [id, newAcc()]));
     if (!projectIds.length) return out;
     const scope = { organizationId, projectId: { in: projectIds }, ...(date ? { date } : {}) };

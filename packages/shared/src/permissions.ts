@@ -132,6 +132,9 @@ export const canSubmitExpense = (role: RoleKey) => EXPENSE_SUBMITTER_ROLES.inclu
 export const canViewCost = (role: RoleKey) => COST_VIEW_ROLES.includes(role);
 /** Set labour daily rates. */
 export const canSetLabourRates = (role: RoleKey) => LABOUR_RATE_ROLES.includes(role);
+/** Set a project's cost budget and the budget rates of its BOQ items. */
+export const BUDGET_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER'];
+export const canSetBudget = (role: RoleKey) => BUDGET_ROLES.includes(role);
 
 /** Raise a delay or risk. */
 export const canRaiseRisk = (role: RoleKey) => RISK_RAISER_ROLES.includes(role);

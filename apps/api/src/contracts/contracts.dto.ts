@@ -29,6 +29,7 @@ export class UpdateContractDto {
   @ApiPropertyOptional({ example: '9325000.00', description: 'Mobilisation advance received from the client' }) @IsOptional() @num() @IsNumberString() mobilisationAdvance?: string;
   @pct('10', 'Advance recovered from each bill until the whole advance is back') @IsOptional() @num() @IsNumberString() advanceRecoveryPct?: string;
   @ApiPropertyOptional({ example: 12 }) @IsOptional() @int() @ValidateIf((_, v) => v !== null) @IsInt() @Min(0) @Max(120) defectLiabilityMonths?: number | null;
+  @ApiPropertyOptional({ example: 60, description: 'Days the client takes to pay a bill once sent' }) @IsOptional() @int() @ValidateIf((_, v) => v !== null) @IsInt() @Min(0) @Max(365) clientPaymentDays?: number | null;
   @ApiPropertyOptional({ description: 'The contract has a price variation (escalation) clause' }) @IsOptional() @IsBoolean() priceVariation?: boolean;
   @pct('18', 'GST charged on bills') @IsOptional() @num() @IsNumberString() gstRate?: string;
   @pct('2', 'Income-tax TDS (section 194C) the client deducts') @IsOptional() @num() @IsNumberString() tdsPct?: string;
