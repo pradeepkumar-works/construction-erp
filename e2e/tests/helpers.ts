@@ -3,6 +3,9 @@ import { expect, type Locator, type Page } from '@playwright/test';
 export const API_URL = process.env.E2E_API_URL ?? 'http://localhost:4000/api';
 export const PASSWORD = 'password123';
 
+/** Today as the sites see it (the browser runs in Asia/Kolkata, as does the API's "today"), YYYY-MM-DD. */
+export const localToday = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+
 /** Sign in through the login form and wait for the dashboard. */
 export async function signIn(page: Page, email: string, password = PASSWORD) {
   await page.goto('/login');

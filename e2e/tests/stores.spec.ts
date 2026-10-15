@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { api, apiToken, chooseOption, signIn } from './helpers';
+import { api, apiToken, chooseOption, localToday, signIn } from './helpers';
 
 interface Page<T> {
   items: T[];
@@ -49,7 +49,7 @@ test('a transfer leaves one store and is received at the other', async ({ page }
 
   const out = await api<NonNullable<Entry>>(pm, `/stock/entries/${mine.id}`);
   expect(out.transferInNo).toMatch(/^TRI-/);
-  await expect(api(pm, `/stock/transfers/${mine.id}/receive`, { method: 'POST', body: { date: new Date().toISOString().slice(0, 10) } })).rejects.toThrow(/409/);
+  await expect(api(pm, `/stock/transfers/${mine.id}/receive`, { method: 'POST', body: { date: localToday() } })).rejects.toThrow(/409/);
 });
 
 test('returns from site come off the material cost; returns to the supplier cannot exceed stock', async () => {
@@ -60,7 +60,7 @@ test('returns from site come off the material cost; returns to the supplier cann
   const rate = Number(items.find((i) => i.id === cement.itemId)!.rate);
   const cost = async () => Number((await api<{ cost: { material: string } }>(pm, `/cost/projects/${road.id}`)).cost.material);
   const before = await cost();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localToday();
   const back = await api<NonNullable<Entry>>(pm, '/stock/site-returns', { method: 'POST', body: { projectId: road.id, date: today, issuedTo: 'E2E gang', lines: [{ itemId: cement.itemId, quantity: '1' }] } });
   expect(back.entryNo).toMatch(/^RFS-/);
   expect(await cost()).toBeCloseTo(before - rate, 2);
@@ -98,9 +98,9 @@ test('a stock count posts the differences as one adjustment, and stock value sho
   expect(await balanceOf(pm, road.id, first.itemId)).toBe(Number(first.balance) + 2);
 
   // A count that matches changes nothing; then put the stock back as it was.
-  const same = await api<{ entry: Entry }>(pm, '/stock/counts', { method: 'POST', body: { projectId: road.id, date: new Date().toISOString().slice(0, 10), lines: [{ itemId: first.itemId, countedQty: String(Number(first.balance) + 2) }] } });
+  const same = await api<{ entry: Entry }>(pm, '/stock/counts', { method: 'POST', body: { projectId: road.id, date: localToday(), lines: [{ itemId: first.itemId, countedQty: String(Number(first.balance) + 2) }] } });
   expect(same.entry).toBeNull();
-  await api(pm, '/stock/counts', { method: 'POST', body: { projectId: road.id, date: new Date().toISOString().slice(0, 10), lines: [{ itemId: first.itemId, countedQty: first.balance }] } });
+  await api(pm, '/stock/counts', { method: 'POST', body: { projectId: road.id, date: localToday(), lines: [{ itemId: first.itemId, countedQty: first.balance }] } });
 
   await page.getByRole('tab', { name: 'Value & ageing' }).click();
   await expect(page.locator('.stock-valuation').getByText('Stock value')).toBeVisible();
