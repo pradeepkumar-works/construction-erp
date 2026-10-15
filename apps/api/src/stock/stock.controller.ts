@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Put, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { StockService } from './stock.service';
@@ -7,11 +7,18 @@ import {
   CreateIssueDto,
   CreateItemDto,
   CreateReceiptDto,
+  CreateSiteReturnDto,
+  CreateTransferDto,
+  CreateVendorReturnDto,
+  IncomingTransfersQuery,
   ListItemsQuery,
   ListStockBalancesQuery,
   ListStockEntriesQuery,
+  PostCountDto,
   ReceivableQuery,
+  ReceiveTransferDto,
   SetMinLevelDto,
+  StockValuationQuery,
   UpdateItemDto,
 } from './stock.dto';
 
@@ -39,7 +46,7 @@ export class StockController {
     return this.stock.receivable(user, q);
   }
 
-  @ApiOperation({ summary: 'List GRNs, issues and adjustments', description: 'Paged; `q` matches entry number, project, supplier, challan, issued to, remarks, request number and items.' })
+  @ApiOperation({ summary: 'List store entries', description: 'Paged; without `type` or `allTypes=true` only GRNs, issues and adjustments. `q` matches entry number, project, supplier, challan, issued to, remarks, request number and items.' })
   @Get('entries')
   list(@CurrentUser() user: RequestUser, @Query() q: ListStockEntriesQuery) {
     return this.stock.list(user, q);
@@ -69,6 +76,48 @@ export class StockController {
   @Post('adjustments')
   adjust(@CurrentUser() user: RequestUser, @Body() dto: CreateAdjustmentDto) {
     return this.stock.adjust(user, dto);
+  }
+
+  @ApiOperation({ summary: "Send material to another project's store", description: 'Stock keepers of the sending project. It leaves stock now and is in transit until the other project receives it.' })
+  @Post('transfers')
+  transfer(@CurrentUser() user: RequestUser, @Body() dto: CreateTransferDto) {
+    return this.stock.transfer(user, dto);
+  }
+
+  @ApiOperation({ summary: 'Transfers in transit to projects you can see' })
+  @Get('transfers/incoming')
+  incoming(@CurrentUser() user: RequestUser, @Query() q: IncomingTransfersQuery) {
+    return this.stock.incomingTransfers(user, q);
+  }
+
+  @ApiOperation({ summary: 'Receive a transfer at the project it was sent to', description: 'Stock keepers of the receiving project. The same items and quantities come into stock; each transfer is received once (409).' })
+  @Post('transfers/:id/receive')
+  receiveTransfer(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: ReceiveTransferDto) {
+    return this.stock.receiveTransfer(user, id, dto);
+  }
+
+  @ApiOperation({ summary: 'Return material to the supplier', description: 'Each line may not exceed the stock at the project (409). A reason is required.' })
+  @Post('vendor-returns')
+  returnToVendor(@CurrentUser() user: RequestUser, @Body() dto: CreateVendorReturnDto) {
+    return this.stock.returnToVendor(user, dto);
+  }
+
+  @ApiOperation({ summary: 'Take back unused material from site', description: 'At most what is out on site (issued less returned). It comes off the material cost.' })
+  @Post('site-returns')
+  returnFromSite(@CurrentUser() user: RequestUser, @Body() dto: CreateSiteReturnDto) {
+    return this.stock.returnFromSite(user, dto);
+  }
+
+  @ApiOperation({ summary: 'Post a physical stock count', description: 'Approvers only. Counted quantities against the current balance; the differences become one adjustment. `entry` is the adjustment, null when every count matched.' })
+  @Post('counts')
+  postCount(@CurrentUser() user: RequestUser, @Body() dto: PostCountDto) {
+    return this.stock.postCount(user, dto);
+  }
+
+  @ApiOperation({ summary: 'Stock valuation and ageing', description: 'Store managers, approvers and accounts. Balances at the item master rate, aged first in, first out.' })
+  @Get('valuation')
+  valuation(@CurrentUser() user: RequestUser, @Query() q: StockValuationQuery) {
+    return this.stock.valuation(user, q);
   }
 
   @ApiOperation({ summary: 'Delete a stock entry', description: 'Approvers only. Refused (409) when material it brought in has already been issued.' })

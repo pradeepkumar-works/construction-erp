@@ -114,6 +114,7 @@ export function StockBalances({ projectId: fixedProject, initialLow = false, ini
     { title: 'Received', dataIndex: 'received', align: 'right', width: 120, ...sort('received'), render: qty },
     { title: 'Issued', dataIndex: 'issued', align: 'right', width: 120, ...sort('issued'), render: qty },
     { title: 'Adjusted', dataIndex: 'adjusted', align: 'right', width: 110, render: (v: string, r) => (Number(v) === 0 ? <span className="text-muted">-</span> : qty(v, r)) },
+    { title: 'Transferred', dataIndex: 'transferred', align: 'right', width: 120, render: (v: string, r) => (Number(v) === 0 ? <span className="text-muted">-</span> : qty(v, r)) },
     {
       title: 'Balance',
       dataIndex: 'balance',
@@ -189,7 +190,7 @@ export function StockBalances({ projectId: fixedProject, initialLow = false, ini
         loading={isLoading || isFetching}
         dataSource={data?.items ?? []}
         columns={columns}
-        scroll={{ x: 960 }}
+        scroll={{ x: 1080 }}
         locale={{ emptyText: lowOnly ? 'Nothing is below its minimum.' : 'No stock yet. Receive material against an approved request, or enter opening stock as an adjustment.' }}
         {...list.tableProps<StockBalanceDto>(data?.total)}
       />

@@ -1,7 +1,13 @@
-import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma, StockEntryType } from '@prisma/client';
 import {
+  LEGACY_STOCK_ENTRY_TYPES,
   STOCK_ENTRY_PREFIX,
+  canManageStore,
+  canViewCost,
+  stockAgeingBucket,
+  type StockCountResultDto,
+  type StockValuationDto,
   SUBMISSION_STATUS_LABELS,
   crossesBelowMin,
   isLowStock,
@@ -30,6 +36,13 @@ import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import {
   CreateAdjustmentDto,
   CreateIssueDto,
+  CreateSiteReturnDto,
+  CreateTransferDto,
+  CreateVendorReturnDto,
+  IncomingTransfersQuery,
+  PostCountDto,
+  ReceiveTransferDto,
+  StockValuationQuery,
   CreateItemDto,
   CreateReceiptDto,
   ListItemsQuery,
@@ -52,6 +65,9 @@ const include = {
   purchaseOrder: { select: { poNo: true } },
   activity: { select: { name: true } },
   workOrder: { select: { woNo: true } },
+  toProject: { select: { name: true } },
+  transferIn: { select: { id: true, entryNo: true } },
+  transferOut: { select: { entryNo: true, project: { select: { name: true } } } },
   lines: { orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }], include: { item: { select: { name: true, unit: true } } } },
   attachments: true,
 } satisfies Prisma.StockEntryInclude;
@@ -97,6 +113,8 @@ interface Header {
   issuedTo?: string | null;
   activityId?: string | null;
   workOrderId?: string | null;
+  toProjectId?: string | null;
+  transferOutId?: string | null;
   remarks?: string | null;
 }
 
@@ -145,6 +163,13 @@ export class StockService {
       workOrderId: r.workOrderId,
       woNo: r.workOrder?.woNo ?? null,
       subcontractBillId: r.subcontractBillId,
+      toProjectId: r.toProjectId,
+      toProjectName: r.toProject?.name ?? null,
+      transferInId: r.transferIn?.id ?? null,
+      transferInNo: r.transferIn?.entryNo ?? null,
+      transferOutId: r.transferOutId,
+      transferOutNo: r.transferOut?.entryNo ?? null,
+      fromProjectName: r.transferOut?.project.name ?? null,
       remarks: r.remarks,
       lines: r.lines.map((l) => ({ id: l.id, itemId: l.itemId, itemName: l.item.name, unit: l.item.unit, quantity: dec(l.quantity)!, materialRequestItemId: l.materialRequestItemId, purchaseOrderLineId: l.purchaseOrderLineId })),
       attachments: r.attachments.map((a) => this.attachments.toDto(a)),
@@ -243,6 +268,8 @@ export class StockService {
         issuedTo: blank(h.issuedTo),
         activityId: h.activityId ?? null,
         workOrderId: h.workOrderId ?? null,
+        toProjectId: h.toProjectId ?? null,
+        transferOutId: h.transferOutId ?? null,
         remarks: blank(h.remarks),
         createdById: user.id,
         lines: {
@@ -319,6 +346,7 @@ export class StockService {
     const where: Prisma.StockEntryWhereInput = { ...this.access.submissionWhere(user) };
     if (q.projectId) where.projectId = q.projectId;
     if (q.type) where.type = q.type;
+    else if (!q.allTypes) where.type = { in: LEGACY_STOCK_ENTRY_TYPES };
     if (q.materialRequestId) where.materialRequestId = q.materialRequestId;
     if (q.workOrderId) where.workOrderId = q.workOrderId;
     if (q.itemId) where.lines = { some: { itemId: q.itemId } };
@@ -526,6 +554,10 @@ export class StockService {
     const row = await this.prisma.stockEntry.findFirst({ where: { id, ...this.access.submissionWhere(user) }, include: { lines: { include: { item: { select: { name: true, unit: true } } } } } });
     if (!row) throw new NotFoundException('Stock entry not found');
     await this.access.assertCanAdjustStock(user, row.projectId);
+    if (row.type === 'TRANSFER_OUT') {
+      const received = await this.prisma.stockEntry.findUnique({ where: { transferOutId: row.id }, select: { entryNo: true } });
+      if (received) throw new ConflictException(`${row.entryNo} was received as ${received.entryNo}; delete that first`);
+    }
     if (row.subcontractBillId) {
       const bill = await this.prisma.subcontractBill.findUnique({ where: { id: row.subcontractBillId }, select: { status: true, billNo: true, workOrder: { select: { woNo: true } } } });
       if (bill?.status === 'APPROVED') throw new ConflictException(`${row.entryNo} was recovered in ${subBillLabel(bill.workOrder.woNo, bill.billNo, false)}; it cannot be deleted`);
@@ -566,6 +598,264 @@ export class StockService {
     }
   }
 
+  /* ---------- transfers, returns and counts ---------- */
+
+  /** Items of the organisation by id, refusing unknown ones; quantities parsed and merged per item. */
+  private async itemLines(user: RequestUser, raw: { itemId: string; quantity: string }[]) {
+    const items = await this.prisma.item.findMany({ where: { id: { in: raw.map((l) => l.itemId) }, organizationId: user.organizationId }, select: { id: true, name: true, unit: true } });
+    const lines = this.mergeLines(
+      raw.map((l) => {
+        const item = items.find((i) => i.id === l.itemId);
+        if (!item) throw new BadRequestException('Unknown item');
+        return { itemId: item.id, quantity: this.parseQty(l.quantity, item.name) };
+      }),
+    );
+    return { items, lines };
+  }
+
+  /** Inside the lock: refuse lines that take more than the project holds; returns the balances before. */
+  private async assertInStock(tx: Tx, projectId: string, lines: Line[], items: { id: string; name: string; unit: string }[]) {
+    const before = await this.balancesOf(tx, projectId, lines.map((l) => l.itemId));
+    for (const l of lines) {
+      const have = before.get(l.itemId)!;
+      if (l.quantity.gt(have)) {
+        const item = items.find((i) => i.id === l.itemId)!;
+        throw new ConflictException(have.lte(0) ? `${item.name} is out of stock at this project.` : `Only ${dec(have)} ${item.unit} of ${item.name} is in stock at this project.`);
+      }
+    }
+    return before;
+  }
+
+  /** Send material to another project's store. It leaves this project now and is in transit until received there. */
+  async transfer(user: RequestUser, dto: CreateTransferDto): Promise<StockEntryDto> {
+    const existing = await this.findExisting(user, dto.id);
+    if (existing) return existing;
+    await this.access.assertCanKeepStock(user, dto.projectId);
+    if (dto.toProjectId === dto.projectId) throw new BadRequestException('Pick a different project to send the material to');
+    const to = await this.prisma.project.findFirst({ where: { id: dto.toProjectId, organizationId: user.organizationId }, select: { name: true, status: true } });
+    if (!to) throw new BadRequestException('The receiving project is not in this organisation');
+    if (to.status === 'CLOSED') throw new BadRequestException(`${to.name} is closed`);
+    const date = this.entryDate(dto.date);
+    const { items, lines } = await this.itemLines(user, dto.lines);
+    let before = new Map<string, Decimal>();
+    const saved = await this.createGuarded(user, dto.id, () =>
+      this.inLock(user.organizationId, async (tx) => {
+        before = await this.assertInStock(tx, dto.projectId, lines, items);
+        return this.insertEntry(tx, user, { ...dto, issuedTo: to.name, type: 'TRANSFER_OUT', date }, lines.map((l) => ({ ...l, quantity: l.quantity.neg() })));
+      }),
+    );
+    if ('existing' in saved) return this.get(user, saved.id);
+    await this.audit.log(user, 'STOCK', saved.id, 'CREATED', `${saved.entryNo} to ${to.name}`);
+    await this.alertLowStock(user, dto.projectId, before, saved.id, saved.entryNo);
+    return this.get(user, saved.id);
+  }
+
+  /** Transfers sent to projects the user can see and not received yet. */
+  async incomingTransfers(user: RequestUser, q: IncomingTransfersQuery): Promise<StockEntryDto[]> {
+    if (q.projectId) await this.access.assertCanAccessProject(user, q.projectId);
+    const rows = await this.prisma.stockEntry.findMany({
+      where: { organizationId: user.organizationId, type: 'TRANSFER_OUT', transferIn: null, toProject: this.access.projectWhere(user), ...(q.projectId ? { toProjectId: q.projectId } : {}) },
+      include,
+      orderBy: [{ date: 'asc' }, { entryNo: 'asc' }],
+      take: 200,
+    });
+    return rows.map((r) => this.toDto(r));
+  }
+
+  /** Receive a transfer at the project it was sent to: the same items and quantities come into stock there. */
+  async receiveTransfer(user: RequestUser, transferOutId: string, dto: ReceiveTransferDto): Promise<StockEntryDto> {
+    const existing = await this.findExisting(user, dto.id);
+    if (existing) return existing;
+    const out = await this.prisma.stockEntry.findFirst({ where: { id: transferOutId, organizationId: user.organizationId, type: 'TRANSFER_OUT' }, include: { lines: true, project: { select: { name: true } } } });
+    if (!out || !out.toProjectId) throw new NotFoundException('Transfer not found');
+    await this.access.assertCanKeepStock(user, out.toProjectId);
+    const date = this.entryDate(dto.date);
+    if (date < out.date) throw new BadRequestException('It cannot be received before it was sent');
+    const lines = this.mergeLines(out.lines.map((l) => ({ itemId: l.itemId, quantity: l.quantity.neg() })));
+    const saved = await this.createGuarded(user, dto.id, async () => {
+      try {
+        return await this.inLock(user.organizationId, async (tx) => {
+          const already = await tx.stockEntry.findUnique({ where: { transferOutId: out.id }, select: { entryNo: true } });
+          if (already) throw new ConflictException(`${out.entryNo} was already received as ${already.entryNo}`);
+          return this.insertEntry(
+            tx,
+            user,
+            { id: dto.id, type: 'TRANSFER_IN', projectId: out.toProjectId!, date, transferOutId: out.id, supplier: out.project.name, challanNo: out.challanNo, vehicleNo: out.vehicleNo, remarks: dto.remarks },
+            lines,
+          );
+        });
+      } catch (e) {
+        if (isUniqueViolation(e) && !dto.id) throw new ConflictException(`${out.entryNo} was already received`);
+        throw e;
+      }
+    });
+    if ('existing' in saved) return this.get(user, saved.id);
+    await this.audit.log(user, 'STOCK', saved.id, 'CREATED', `${saved.entryNo} receiving ${out.entryNo} from ${out.project.name}`);
+    return this.get(user, saved.id);
+  }
+
+  /** Send material back to the supplier (damaged, wrong grade, excess). */
+  async returnToVendor(user: RequestUser, dto: CreateVendorReturnDto): Promise<StockEntryDto> {
+    const existing = await this.findExisting(user, dto.id);
+    if (existing) return existing;
+    await this.access.assertCanKeepStock(user, dto.projectId);
+    const date = this.entryDate(dto.date);
+    const vendor = await this.vendors.resolve(user, dto.vendorId, dto.supplier);
+    if (!vendor?.name) throw new BadRequestException('Say which supplier the material goes back to');
+    const { items, lines } = await this.itemLines(user, dto.lines);
+    let before = new Map<string, Decimal>();
+    const saved = await this.createGuarded(user, dto.id, () =>
+      this.inLock(user.organizationId, async (tx) => {
+        before = await this.assertInStock(tx, dto.projectId, lines, items);
+        return this.insertEntry(tx, user, { ...dto, supplier: vendor.name, vendorId: vendor.vendorId ?? null, type: 'RETURN_TO_VENDOR', date }, lines.map((l) => ({ ...l, quantity: l.quantity.neg() })));
+      }),
+    );
+    if ('existing' in saved) return this.get(user, saved.id);
+    await this.attachments.link(user, 'stockEntryId', saved.id, dto.attachmentIds);
+    await this.audit.log(user, 'STOCK', saved.id, 'CREATED', `${saved.entryNo} back to ${vendor.name}`);
+    await this.alertLowStock(user, dto.projectId, before, saved.id, saved.entryNo);
+    return this.get(user, saved.id);
+  }
+
+  /** Issued material that came back unused: it returns to stock and comes off the project's material cost. */
+  async returnFromSite(user: RequestUser, dto: CreateSiteReturnDto): Promise<StockEntryDto> {
+    const existing = await this.findExisting(user, dto.id);
+    if (existing) return existing;
+    await this.access.assertCanKeepStock(user, dto.projectId);
+    const date = this.entryDate(dto.date);
+    if (dto.activityId) {
+      const activity = await this.prisma.activity.findFirst({ where: { id: dto.activityId, projectId: dto.projectId }, select: { id: true } });
+      if (!activity) throw new BadRequestException('The activity is not part of this project');
+    }
+    const { items, lines } = await this.itemLines(user, dto.lines);
+    const saved = await this.createGuarded(user, dto.id, () =>
+      this.inLock(user.organizationId, async (tx) => {
+        // At most what was issued at this project, net of earlier returns.
+        const moved = await tx.stockTxn.groupBy({ by: ['itemId'], where: { projectId: dto.projectId, itemId: { in: lines.map((l) => l.itemId) }, type: { in: ['ISSUE', 'RETURN_FROM_SITE'] } }, _sum: { quantity: true } });
+        for (const l of lines) {
+          const out = (moved.find((m) => m.itemId === l.itemId)?._sum.quantity ?? ZERO).neg();
+          if (l.quantity.gt(out)) {
+            const item = items.find((i) => i.id === l.itemId)!;
+            throw new ConflictException(out.lte(0) ? `No ${item.name} has been issued at this project.` : `Only ${dec(out)} ${item.unit} of ${item.name} is out on site.`);
+          }
+        }
+        return this.insertEntry(tx, user, { ...dto, type: 'RETURN_FROM_SITE', date }, lines);
+      }),
+    );
+    if ('existing' in saved) return this.get(user, saved.id);
+    await this.audit.log(user, 'STOCK', saved.id, 'CREATED', `${saved.entryNo} from ${dto.issuedTo}`);
+    return this.get(user, saved.id);
+  }
+
+  /**
+   * Physical stock count (approvers): each counted quantity is set against the current balance and the differences
+   * are posted as one adjustment (`entry` is null when every count matched).
+   */
+  async postCount(user: RequestUser, dto: PostCountDto): Promise<StockCountResultDto> {
+    const existing = await this.findExisting(user, dto.id);
+    if (existing) return { counted: dto.lines.length, entry: existing };
+    await this.access.assertCanAdjustStock(user, dto.projectId);
+    const date = this.entryDate(dto.date);
+    if (new Set(dto.lines.map((l) => l.itemId)).size !== dto.lines.length) throw new BadRequestException('An item is counted twice');
+    const items = await this.prisma.item.findMany({ where: { id: { in: dto.lines.map((l) => l.itemId) }, organizationId: user.organizationId }, select: { id: true, name: true, unit: true } });
+    const counted = dto.lines.map((l) => {
+      const item = items.find((i) => i.id === l.itemId);
+      if (!item) throw new BadRequestException('Unknown item');
+      const q = D(l.countedQty);
+      if (!q.isFinite() || q.isNegative() || q.decimalPlaces() > 3) throw new BadRequestException(`${item.name}: count a quantity of zero or more, with at most 3 decimals`);
+      return { item, q };
+    });
+    let before = new Map<string, Decimal>();
+    let differences = 0;
+    const saved = await this.createGuarded(user, dto.id, () =>
+      this.inLock(user.organizationId, async (tx) => {
+        before = await this.balancesOf(tx, dto.projectId, counted.map((c) => c.item.id));
+        const lines: Line[] = counted.map((c) => ({ itemId: c.item.id, quantity: c.q.sub(before.get(c.item.id)!) })).filter((l) => !l.quantity.isZero());
+        differences = lines.length;
+        if (!lines.length) return null;
+        const note = `Physical stock count: ${counted.length} item${counted.length === 1 ? '' : 's'} counted, ${lines.length} differ${lines.length === 1 ? 's' : ''}${dto.remarks?.trim() ? `. ${dto.remarks.trim()}` : ''}`;
+        return this.insertEntry(tx, user, { id: dto.id, type: 'ADJUSTMENT', projectId: dto.projectId, date, remarks: note }, lines);
+      }).then((r) => r ?? { id: '', entryNo: '' }),
+    );
+    if ('existing' in saved) return { counted: counted.length, entry: await this.get(user, saved.id) };
+    if (!differences) {
+      await this.audit.log(user, 'PROJECT', dto.projectId, 'STOCK_COUNTED', `${counted.length} items counted, no difference`);
+      return { counted: counted.length, entry: null };
+    }
+    await this.audit.log(user, 'STOCK', saved.id, 'CREATED', `${saved.entryNo}: stock count, ${differences} differences`);
+    await this.alertLowStock(user, dto.projectId, before, saved.id, saved.entryNo);
+    return { counted: counted.length, entry: await this.get(user, saved.id) };
+  }
+
+  /**
+   * Stock valuation and ageing: each balance at the item master rate, aged first in, first out (the stock on hand is
+   * taken to be the latest that came in: GRNs, transfers in, returns from site and positive adjustments).
+   */
+  async valuation(user: RequestUser, q: StockValuationQuery): Promise<StockValuationDto> {
+    if (!canManageStore(user.roleKey) && !canViewCost(user.roleKey)) throw new ForbiddenException('Stock value is for store managers, approvers and accounts');
+    if (q.projectId) await this.access.assertCanAccessProject(user, q.projectId);
+    const asOf = new Date().toISOString().slice(0, 10);
+    const today = parseDate(asOf).getTime();
+    const balances = (await this.buildBalances(user.organizationId, this.access.projectWhere(user), q.projectId)).filter((b) => Number(b.balance) > 0);
+    const projectIds = [...new Set(balances.map((b) => b.projectId))];
+    const [inflows, items] = await Promise.all([
+      projectIds.length
+        ? this.prisma.stockTxn.findMany({
+            where: { organizationId: user.organizationId, projectId: { in: projectIds }, itemId: { in: [...new Set(balances.map((b) => b.itemId))] }, quantity: { gt: 0 } },
+            select: { projectId: true, itemId: true, date: true, quantity: true },
+            orderBy: [{ date: 'desc' }, { id: 'desc' }],
+          })
+        : [],
+      this.prisma.item.findMany({ where: { id: { in: [...new Set(balances.map((b) => b.itemId))] } }, select: { id: true, rate: true } }),
+    ]);
+    const rateOf = new Map(items.map((i) => [i.id, i.rate]));
+    const byKey = new Map<string, { date: Date; quantity: Decimal }[]>();
+    for (const t of inflows) {
+      const k = key(t.projectId, t.itemId);
+      if (!byKey.has(k)) byKey.set(k, []);
+      byKey.get(k)!.push(t);
+    }
+    let totalValue = ZERO;
+    const ageingValue = [ZERO, ZERO, ZERO, ZERO];
+    let unpriced = 0;
+    const rows = balances.map((b) => {
+      const rate = rateOf.get(b.itemId) ?? null;
+      const balance = D(b.balance);
+      const ageing = [ZERO, ZERO, ZERO, ZERO];
+      let left = balance;
+      let oldestDays: number | null = null;
+      for (const t of byKey.get(key(b.projectId, b.itemId)) ?? []) {
+        if (left.lte(0)) break;
+        const take = Prisma.Decimal.min(left, t.quantity);
+        const days = Math.max(0, Math.floor((today - t.date.getTime()) / 86_400_000));
+        ageing[stockAgeingBucket(days)] = ageing[stockAgeingBucket(days)].add(take);
+        oldestDays = days;
+        left = left.sub(take);
+      }
+      // Stock not covered by any inflow (negative history) counts as the oldest bucket.
+      if (left.gt(0)) ageing[3] = ageing[3].add(left);
+      const value = rate ? balance.mul(rate).toDecimalPlaces(2) : ZERO;
+      if (!rate) unpriced += 1;
+      totalValue = totalValue.add(value);
+      if (rate) ageing.forEach((qty, i) => (ageingValue[i] = ageingValue[i].add(qty.mul(rate))));
+      return {
+        projectId: b.projectId,
+        projectName: b.projectName,
+        itemId: b.itemId,
+        itemName: b.itemName,
+        unit: b.unit,
+        category: b.category,
+        balance: b.balance,
+        rate: money(rate),
+        value: money(value)!,
+        ageingQty: ageing.map((a) => dec(a)!),
+        oldestDays,
+      };
+    });
+    rows.sort((a, b) => Number(b.value) - Number(a.value) || a.itemName.localeCompare(b.itemName));
+    return { asOf, rows, totalValue: money(totalValue)!, ageingValue: ageingValue.map((v) => money(v.toDecimalPlaces(2))!), unpricedItems: unpriced };
+  }
+
   /* ---------- balances ---------- */
 
   private async buildBalances(organizationId: string, project: Prisma.ProjectWhereInput, projectId?: string, itemId?: string): Promise<StockBalanceDto[]> {
@@ -574,19 +864,20 @@ export class StockService {
       this.prisma.stockTxn.groupBy({ by: ['projectId', 'itemId', 'type'], where: scope, _sum: { quantity: true }, _max: { date: true } }),
       this.prisma.stockMinLevel.findMany({ where: scope }),
     ]);
-    type Agg = { projectId: string; itemId: string; received: Decimal; issued: Decimal; adjusted: Decimal; last: Date | null; min: Decimal | null };
+    type Agg = { projectId: string; itemId: string; received: Decimal; issued: Decimal; adjusted: Decimal; transferred: Decimal; last: Date | null; min: Decimal | null };
     const aggs = new Map<string, Agg>();
     const agg = (p: string, i: string) => {
       const k = key(p, i);
       let a = aggs.get(k);
-      if (!a) aggs.set(k, (a = { projectId: p, itemId: i, received: ZERO, issued: ZERO, adjusted: ZERO, last: null, min: null }));
+      if (!a) aggs.set(k, (a = { projectId: p, itemId: i, received: ZERO, issued: ZERO, adjusted: ZERO, transferred: ZERO, last: null, min: null }));
       return a;
     };
     for (const s of sums) {
       const a = agg(s.projectId, s.itemId);
       const q = s._sum.quantity ?? ZERO;
-      if (s.type === 'RECEIPT') a.received = a.received.add(q);
-      else if (s.type === 'ISSUE') a.issued = a.issued.sub(q);
+      if (s.type === 'RECEIPT' || s.type === 'RETURN_TO_VENDOR') a.received = a.received.add(q);
+      else if (s.type === 'ISSUE' || s.type === 'RETURN_FROM_SITE') a.issued = a.issued.sub(q);
+      else if (s.type === 'TRANSFER_IN' || s.type === 'TRANSFER_OUT') a.transferred = a.transferred.add(q);
       else a.adjusted = a.adjusted.add(q);
       if (s._max.date && (!a.last || s._max.date > a.last)) a.last = s._max.date;
     }
@@ -601,7 +892,7 @@ export class StockService {
     const projectById = new Map(projects.map((p) => [p.id, p]));
     return all.map((a) => {
       const item = itemById.get(a.itemId)!;
-      const balance = a.received.sub(a.issued).add(a.adjusted);
+      const balance = a.received.sub(a.issued).add(a.adjusted).add(a.transferred);
       return {
         projectId: a.projectId,
         projectName: projectById.get(a.projectId)?.name ?? '',
@@ -612,6 +903,7 @@ export class StockService {
         received: dec(a.received)!,
         issued: dec(a.issued)!,
         adjusted: dec(a.adjusted)!,
+        transferred: dec(a.transferred)!,
         balance: dec(balance)!,
         minQty: a.min && a.min.gt(0) ? dec(a.min) : null,
         low: isLowStock(balance.toString(), a.min?.toString()),

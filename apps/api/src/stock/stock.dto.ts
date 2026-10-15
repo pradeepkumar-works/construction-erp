@@ -94,6 +94,81 @@ export class CreateAdjustmentDto {
   lines: AdjustmentLineDto[];
 }
 
+/* ---------- transfers, returns and counts ---------- */
+
+export class CreateTransferDto {
+  @ApiPropertyOptional(CLIENT_ID_DOC) @IsOptional() @IsUUID('4') id?: string;
+  @ApiProperty({ description: 'The project the material leaves' }) @IsUUID() projectId: string;
+  @ApiProperty({ description: 'The project it goes to (same organisation)' }) @IsUUID() toProjectId: string;
+  @ApiProperty({ example: '2026-10-13' }) @IsDateString() @dateOnly() date: string;
+  @ApiPropertyOptional({ example: 'OD-02-AB-1234' }) @IsOptional() @IsString() @trim() @MaxLength(30) vehicleNo?: string | null;
+  @ApiPropertyOptional({ example: 'DC-221' }) @IsOptional() @IsString() @trim() @MaxLength(60) challanNo?: string | null;
+  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(1000) remarks?: string | null;
+
+  @ApiProperty({ type: [IssueLineDto], description: 'Each quantity may not exceed the stock at the sending project.' })
+  @IsArray() @ArrayMinSize(1) @ArrayMaxSize(100) @ValidateNested({ each: true }) @Type(() => IssueLineDto)
+  lines: IssueLineDto[];
+}
+
+export class ReceiveTransferDto {
+  @ApiPropertyOptional(CLIENT_ID_DOC) @IsOptional() @IsUUID('4') id?: string;
+  @ApiProperty({ example: '2026-10-14' }) @IsDateString() @dateOnly() date: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(1000) remarks?: string | null;
+}
+
+export class CreateVendorReturnDto {
+  @ApiPropertyOptional(CLIENT_ID_DOC) @IsOptional() @IsUUID('4') id?: string;
+  @ApiProperty() @IsUUID() projectId: string;
+  @ApiProperty({ example: '2026-10-13' }) @IsDateString() @dateOnly() date: string;
+  @ApiPropertyOptional({ example: 'Maa Tarini Traders' }) @IsOptional() @IsString() @trim() @MaxLength(200) supplier?: string | null;
+  @ApiPropertyOptional(VENDOR_ID_DOC) @IsOptional() @ValidateIf((_, v) => v !== null) @IsUUID() vendorId?: string | null;
+  @ApiPropertyOptional({ example: 'DN-14', description: 'Our debit note or return challan' }) @IsOptional() @IsString() @trim() @MaxLength(60) challanNo?: string | null;
+  @ApiPropertyOptional({ example: 'OD-02-AB-1234' }) @IsOptional() @IsString() @trim() @MaxLength(30) vehicleNo?: string | null;
+  @ApiProperty({ example: '40 bags set hard in the rain', description: 'Reason, required' }) @IsString() @trim() @MinLength(3) @MaxLength(1000) remarks: string;
+  @ApiPropertyOptional({ type: [String] }) @IsOptional() @IsArray() @IsUUID('all', { each: true }) attachmentIds?: string[];
+
+  @ApiProperty({ type: [IssueLineDto], description: 'Each quantity may not exceed the stock at the project.' })
+  @IsArray() @ArrayMinSize(1) @ArrayMaxSize(100) @ValidateNested({ each: true }) @Type(() => IssueLineDto)
+  lines: IssueLineDto[];
+}
+
+export class CreateSiteReturnDto {
+  @ApiPropertyOptional(CLIENT_ID_DOC) @IsOptional() @IsUUID('4') id?: string;
+  @ApiProperty() @IsUUID() projectId: string;
+  @ApiProperty({ example: '2026-10-13' }) @IsDateString() @dateOnly() date: string;
+  @ApiProperty({ example: 'Kalinga Builders (slab gang)', description: 'Who brought the material back' }) @IsString() @trim() @MinLength(1) @MaxLength(200) issuedTo: string;
+  @ApiPropertyOptional({ description: 'Activity it had been issued for' }) @IsOptional() @IsUUID() activityId?: string | null;
+  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(1000) remarks?: string | null;
+
+  @ApiProperty({ type: [IssueLineDto] })
+  @IsArray() @ArrayMinSize(1) @ArrayMaxSize(100) @ValidateNested({ each: true }) @Type(() => IssueLineDto)
+  lines: IssueLineDto[];
+}
+
+export class CountLineDto {
+  @ApiProperty() @IsUUID() itemId: string;
+  @ApiProperty({ example: '1180', description: 'Quantity counted on the shelf' }) @qty() @IsNumberString() countedQty: string;
+}
+
+export class PostCountDto {
+  @ApiPropertyOptional(CLIENT_ID_DOC) @IsOptional() @IsUUID('4') id?: string;
+  @ApiProperty() @IsUUID() projectId: string;
+  @ApiProperty({ example: '2026-10-13' }) @IsDateString() @dateOnly() date: string;
+  @ApiPropertyOptional({ example: 'Month-end count by the store keeper and the PM' }) @IsOptional() @IsString() @MaxLength(800) remarks?: string | null;
+
+  @ApiProperty({ type: [CountLineDto], description: 'Items counted; items left out are not touched' })
+  @IsArray() @ArrayMinSize(1) @ArrayMaxSize(500) @ValidateNested({ each: true }) @Type(() => CountLineDto)
+  lines: CountLineDto[];
+}
+
+export class IncomingTransfersQuery {
+  @ApiPropertyOptional({ description: 'Transfers going to this project' }) @IsOptional() @IsUUID() projectId?: string;
+}
+
+export class StockValuationQuery {
+  @ApiPropertyOptional() @IsOptional() @IsUUID() projectId?: string;
+}
+
 /* ---------- lists ---------- */
 
 /** `q` matches entry number, project, supplier, challan, issued to, remarks, request number and item names. */
@@ -106,6 +181,11 @@ export class ListStockEntriesQuery extends PageQuery {
   @ApiPropertyOptional({ example: '2026-10-01' }) @IsOptional() @IsDateString() @dateOnly() from?: string;
   @ApiPropertyOptional({ example: '2026-10-31' }) @IsOptional() @IsDateString() @dateOnly() to?: string;
   @ApiPropertyOptional({ enum: LIST_SORT_FIELDS.stockEntries, default: 'date' }) @IsOptional() @IsIn(LIST_SORT_FIELDS.stockEntries as unknown as string[]) sortBy?: StockEntrySortField;
+  @ApiPropertyOptional({ description: 'Include transfers and returns. Left out, only receipts, issues and adjustments are listed (what older phone builds can show).' })
+  @IsOptional()
+  @QueryBool()
+  @IsBoolean()
+  allTypes?: boolean;
 }
 
 /** `q` matches item name, category and project. */

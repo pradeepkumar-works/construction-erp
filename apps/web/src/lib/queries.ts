@@ -69,6 +69,7 @@ import type {
   StockBalanceDto,
   StockEntryDto,
   StockEntryType,
+  StockValuationDto,
   ActivityDto,
   AttendanceDayDto,
   AttendanceSheetDto,
@@ -391,7 +392,22 @@ export const useStockBalances = (filters?: StockBalanceFilters, enabled = true) 
 export const useStockEntries = (filters?: StockEntryFilters, enabled = true) =>
   useQuery({
     queryKey: ['stock', 'entries', clean(filters)],
-    queryFn: async () => (await api.get<Paginated<StockEntryDto>>('/stock/entries', { params: clean(filters) })).data,
+    queryFn: async () => (await api.get<Paginated<StockEntryDto>>('/stock/entries', { params: { ...clean(filters), allTypes: true } })).data,
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+
+export const useIncomingTransfers = (projectId?: string, enabled = true) =>
+  useQuery({
+    queryKey: ['stock', 'incoming', projectId ?? 'all'],
+    queryFn: async () => (await api.get<StockEntryDto[]>('/stock/transfers/incoming', { params: clean({ projectId }) })).data,
+    enabled,
+  });
+
+export const useStockValuation = (projectId?: string, enabled = true) =>
+  useQuery({
+    queryKey: ['stock', 'valuation', projectId ?? 'all'],
+    queryFn: async () => (await api.get<StockValuationDto>('/stock/valuation', { params: clean({ projectId }) })).data,
     placeholderData: keepPreviousData,
     enabled,
   });

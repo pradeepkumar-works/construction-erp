@@ -173,8 +173,9 @@ export class CostService {
       this.prisma.measurementSheet.findMany({ where: { ...scope, status: 'APPROVED' }, select: { projectId: true, totalQty: true, boqItem: { select: { rate: true } } } }),
       this.prisma.expense.findMany({ where: { ...scope, status: 'APPROVED' }, select: { projectId: true, date: true, category: true, totalAmount: true } }),
       // Material issued to a subcontractor and recovered in their approved bill is in that bill's work value instead.
+      // Returns from site come back off the cost.
       this.prisma.stockTxn.findMany({
-        where: { ...scope, type: 'ISSUE', NOT: { entry: { subcontractBill: { status: 'APPROVED' } } } },
+        where: { ...scope, type: { in: ['ISSUE', 'RETURN_FROM_SITE'] }, NOT: { entry: { subcontractBill: { status: 'APPROVED' } } } },
         select: { projectId: true, date: true, quantity: true, item: { select: { id: true, name: true, unit: true, rate: true } } },
       }),
       this.prisma.machineryLog.findMany({ where: { ...scope, status: 'APPROVED' }, select: { projectId: true, date: true, hoursWorked: true, equipment: { select: { id: true, code: true, name: true, rate: true, rateUnit: true } } } }),
@@ -232,7 +233,7 @@ export class CostService {
     }
     for (const t of issues) {
       const acc = out.get(t.projectId)!;
-      const qty = t.quantity.abs();
+      const qty = t.quantity.neg();
       const amount = t.item.rate ? qty.mul(t.item.rate) : ZERO;
       if (!t.item.rate) acc.unpricedItems.add(t.item.id);
       add(acc, t.date, 'material', amount);

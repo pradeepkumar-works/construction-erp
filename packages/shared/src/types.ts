@@ -476,6 +476,15 @@ export interface StockEntryDto {
   workOrderId: string | null;
   woNo: string | null;
   subcontractBillId: string | null;
+  /** Transfers out: where the material is going, and the transfer in that received it (null while in transit) */
+  toProjectId: string | null;
+  toProjectName: string | null;
+  transferInId: string | null;
+  transferInNo: string | null;
+  /** Transfers in: the transfer out it received */
+  transferOutId: string | null;
+  transferOutNo: string | null;
+  fromProjectName: string | null;
   remarks: string | null;
   lines: StockLineDto[];
   attachments: AttachmentDto[];
@@ -492,13 +501,52 @@ export interface StockBalanceDto {
   itemName: string;
   unit: string;
   category: string | null;
+  /** Received on GRNs less returned to suppliers */
   received: string;
+  /** Issued at site less returned from site */
   issued: string;
   adjusted: string;
+  /** Transferred in less transferred out */
+  transferred: string;
   balance: string;
   minQty: string | null;
   low: boolean;
   lastMovement: string | null;
+}
+
+/** Value and age of one item's stock at one project. */
+export interface StockValuationRowDto {
+  projectId: string;
+  projectName: string;
+  itemId: string;
+  itemName: string;
+  unit: string;
+  category: string | null;
+  balance: string;
+  /** Item master rate; null when not set */
+  rate: string | null;
+  value: string;
+  /** Quantity in each ageing bucket (STOCK_AGEING_BUCKETS), oldest stock assumed used first */
+  ageingQty: string[];
+  /** Days since the oldest receipt still in stock */
+  oldestDays: number | null;
+}
+
+/** A posted stock count: how many items were counted and the adjustment for the differences (null when all matched). */
+export interface StockCountResultDto {
+  counted: number;
+  entry: StockEntryDto | null;
+}
+
+/** Stock valuation and ageing: balances at item master rates, aged first in, first out. */
+export interface StockValuationDto {
+  asOf: string;
+  rows: StockValuationRowDto[];
+  totalValue: string;
+  /** Value in each ageing bucket */
+  ageingValue: string[];
+  /** Items in stock without a rate (not valued) */
+  unpricedItems: number;
 }
 
 /** An approved material request line with what is still to be received. */
