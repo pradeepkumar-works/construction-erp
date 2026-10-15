@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ROLE_LABELS, SUBMISSION_TYPE_LABELS, approvalRightsOf } from '@erp/shared';
 import { useAuth } from '../../src/auth/AuthContext';
@@ -7,7 +7,8 @@ import { useNotifications } from '../../src/notifications/NotificationsContext';
 import { MessagingCard } from '../../src/notifications/MessagingCard';
 import { Button, Card, KeyValue, Screen } from '../../src/components';
 import { API_URL } from '../../src/config';
-import { colors, spacing, typography } from '../../src/theme';
+import { LANGUAGES, useLanguage } from '../../src/i18n/LanguageContext';
+import { colors, spacing, touch, typography } from '../../src/theme';
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
@@ -49,6 +50,7 @@ export default function ProfileScreen() {
         <Text style={typography.caption}>Approvals, rejections and change requests on your submissions, plus the daily DPR reminder, also appear under Notifications on the Home screen.</Text>
       </Card>
       <MessagingCard />
+      <LanguageCard />
       <Card title="Connection">
         <View style={styles.apiRow}>
           <Ionicons name="server-outline" size={18} color={colors.textMuted} />
@@ -69,7 +71,40 @@ const styles = StyleSheet.create({
   avatarText: { color: '#fff', fontSize: 28, fontWeight: '800' },
   apiRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
   api: { ...typography.bodyStrong, flex: 1 },
+  langRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: touch.heightSm, gap: spacing.sm },
+  langOff: { opacity: 0.55 },
 });
+
+/** English unless the user picks another language here; the choice stays on this phone. */
+function LanguageCard() {
+  const { language, setLanguage } = useLanguage();
+  return (
+    <Card title="Language">
+      {LANGUAGES.map((l) => {
+        const active = l.code === language;
+        return (
+          <Pressable
+            key={l.code}
+            disabled={!l.available}
+            onPress={() => setLanguage(l.code)}
+            style={[styles.langRow, !l.available && styles.langOff]}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: active, disabled: !l.available }}
+          >
+            <Text style={active ? typography.bodyStrong : typography.body}>{l.label}</Text>
+            {active ? (
+              <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
+            ) : !l.available ? (
+              <Text style={typography.caption}>Coming soon</Text>
+            ) : (
+              <Ionicons name="ellipse-outline" size={22} color={colors.border} />
+            )}
+          </Pressable>
+        );
+      })}
+    </Card>
+  );
+}
 
 function approvalRightsLine(user: Parameters<typeof approvalRightsOf>[0]): string {
   const rights = approvalRightsOf(user);
