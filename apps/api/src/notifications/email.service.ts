@@ -10,6 +10,11 @@ export interface EmailMessage {
 
 export type EmailProvider = 'mail-api' | 'resend' | 'log';
 
+export interface EmailResult {
+  ok: boolean;
+  error?: string;
+}
+
 const DEFAULT_MAIL_API_URL = 'https://communication.cogitrex.com';
 const DEFAULT_MAIL_API_FROM = 'notifications@cogitrex.com';
 
@@ -40,30 +45,35 @@ export class EmailService {
 
   /** Returns true when the message was handed to a real provider. */
   async send(msg: EmailMessage): Promise<boolean> {
-    if (!this.enabled) return false;
+    return (await this.deliver(msg)).ok;
+  }
+
+  /** Like send, plus why it was not sent (provider's answer, no secrets), for callers that report back to an admin. */
+  async deliver(msg: EmailMessage): Promise<EmailResult> {
+    if (!this.enabled) return { ok: false, error: 'Email is switched off (EMAIL_DISABLED=true)' };
     if (this.provider === 'log') {
       this.log.log(`[email not configured] to=${msg.to} subject="${msg.subject}"\n${msg.text}`);
-      return false;
+      return { ok: false, error: 'No email provider is configured' };
     }
     try {
-      return this.provider === 'mail-api' ? await this.sendViaMailApi(msg) : await this.sendViaResend(msg);
+      const result = this.provider === 'mail-api' ? await this.sendViaMailApi(msg) : await this.sendViaResend(msg);
+      if (!result.ok) this.log.warn(`Email to ${msg.to} not sent: ${result.error}`);
+      return result;
     } catch (e) {
-      this.log.warn(`Email to ${msg.to} failed: ${(e as Error).message}`);
-      return false;
+      const error = `${this.provider} unreachable: ${(e as Error).message}`;
+      this.log.warn(`Email to ${msg.to} failed: ${error}`);
+      return { ok: false, error };
     }
   }
 
-  private async sendViaMailApi(msg: EmailMessage): Promise<boolean> {
+  private async sendViaMailApi(msg: EmailMessage): Promise<EmailResult> {
     const res = await fetch(`${this.mailApiUrl}/mail/send`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-api-key': this.mailApiKey! },
       body: JSON.stringify({ from: this.from, to: [msg.to], subject: msg.subject, body: msg.html, isHtml: true }),
     });
     const raw = await res.text();
-    if (!res.ok) {
-      this.log.warn(`Mail API responded ${res.status} for ${msg.to}: ${raw.slice(0, 300)}`);
-      return false;
-    }
+    if (!res.ok) return { ok: false, error: `Mail API responded ${res.status} (from ${this.from}): ${raw.slice(0, 300)}` };
     // A send Gmail rejects still comes back as HTTP 200, with status:false in the body.
     let body: { status?: boolean; internalMessage?: string } | null = null;
     try {
@@ -71,24 +81,18 @@ export class EmailService {
     } catch {
       /* fall through */
     }
-    if (!body?.status) {
-      this.log.warn(`Mail API rejected email to ${msg.to}: ${(body?.internalMessage ?? raw).slice(0, 300)}`);
-      return false;
-    }
-    return true;
+    if (!body?.status) return { ok: false, error: `Mail API rejected the email (from ${this.from}): ${(body?.internalMessage ?? raw).slice(0, 300)}` };
+    return { ok: true };
   }
 
-  private async sendViaResend(msg: EmailMessage): Promise<boolean> {
+  private async sendViaResend(msg: EmailMessage): Promise<EmailResult> {
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { 'content-type': 'application/json', authorization: `Bearer ${this.resendKey}` },
       body: JSON.stringify({ from: this.from, to: [msg.to], subject: msg.subject, html: msg.html, text: msg.text }),
     });
-    if (!res.ok) {
-      this.log.warn(`Resend responded ${res.status} for ${msg.to}: ${(await res.text()).slice(0, 300)}`);
-      return false;
-    }
-    return true;
+    if (!res.ok) return { ok: false, error: `Resend responded ${res.status}: ${(await res.text()).slice(0, 300)}` };
+    return { ok: true };
   }
 }
 
