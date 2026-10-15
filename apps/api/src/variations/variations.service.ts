@@ -18,6 +18,7 @@ import { isUniqueViolation } from '../common/idempotency';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import { dateOnly, dec, iso, money, parseDate } from '../common/serialize';
 import { CreateVariationDto, DecideVariationDto, ListVariationsQuery, SubmitVariationDto, UpdateVariationDto, VariationLineInput, VariationSummaryQuery } from './variations.dto';
+import { todayIn } from '../notifications/time';
 
 const D = (v: string | number | Prisma.Decimal) => new Prisma.Decimal(v);
 const ZERO = D(0);
@@ -274,7 +275,7 @@ export class VariationsService {
     this.assertCanManage(user);
     const cur = await this.load(user, id);
     if (cur.status === 'APPROVED') throw new ConflictException('The client has already approved this variation');
-    if (dto.date > new Date().toISOString().slice(0, 10)) throw new BadRequestException('The date sent cannot be in the future');
+    if (dto.date > todayIn()) throw new BadRequestException('The date sent cannot be in the future');
     await this.prisma.variation.update({
       where: { id },
       data: { status: 'SUBMITTED', submittedDate: parseDate(dto.date), submittedRef: dto.ref ?? null, decidedDate: null, clientRef: null, decisionNote: null },
@@ -291,7 +292,7 @@ export class VariationsService {
     this.assertCanManage(user);
     const cur = await this.load(user, id);
     if (cur.status !== 'SUBMITTED') throw new ConflictException(`Only a variation with the client can be decided (this one is ${VARIATION_STATUS_LABELS[cur.status].toLowerCase()})`);
-    if (dto.date > new Date().toISOString().slice(0, 10)) throw new BadRequestException('The decision date cannot be in the future');
+    if (dto.date > todayIn()) throw new BadRequestException('The decision date cannot be in the future');
     if (cur.submittedDate && dto.date < dateOnly(cur.submittedDate)!) throw new BadRequestException('The decision cannot be dated before the variation was sent');
     const decided = { decidedDate: parseDate(dto.date), clientRef: dto.clientRef ?? null, decisionNote: dto.note ?? null };
     if (dto.decision === 'REJECTED') {
