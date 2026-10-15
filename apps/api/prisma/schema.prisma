@@ -350,6 +350,7 @@ model Organization {
   projects          Project[]
   boqItems          BoqItem[]
   activities        Activity[]
+  milestones        Milestone[]
   progressEntries   ProgressEntry[]
   dailyReports      DailyReport[]
   materialRequests  MaterialRequest[]
@@ -460,6 +461,7 @@ model User {
 
   memberships          ProjectMember[]
   managedProjects      Project[]          @relation("ProjectManager")
+  baselinedProjects    Project[]          @relation("ProjectBaselineBy")
   responsibleFor       Activity[]         @relation("ActivityResponsible")
   submittedProgress    ProgressEntry[]    @relation("ProgressSubmitter")
   reviewedProgress     ProgressEntry[]    @relation("ProgressReviewer")
@@ -583,12 +585,18 @@ model Project {
   labourCessPct         Decimal       @default(0) @db.Decimal(5, 2)
   /// Days the client takes to pay a bill once it is sent; the cash-flow forecast assumes 30 when not set
   clientPaymentDays     Int?
+  /// When the schedule baseline was last frozen (activity planned dates and milestone due dates copied to their baseline)
+  baselineAt            DateTime?
+  baselineById          String?
+  baselineBy            User?         @relation("ProjectBaselineBy", fields: [baselineById], references: [id])
+  baselineNote          String?
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
 
   members          ProjectMember[]
   boqItems         BoqItem[]
   activities       Activity[]
+  milestones       Milestone[]
   progressEntries  ProgressEntry[]
   dailyReports     DailyReport[]
   materialRequests MaterialRequest[]
@@ -1128,6 +1136,9 @@ model Activity {
   plannedQty          Decimal            @db.Decimal(18, 3)
   plannedStart        DateTime?          @db.Date
   plannedEnd          DateTime?          @db.Date
+  /// Planned dates when the project's baseline was frozen; null for an activity added after it
+  baselineStart       DateTime?          @db.Date
+  baselineEnd         DateTime?          @db.Date
   responsibleId       String?
   responsible         User?              @relation("ActivityResponsible", fields: [responsibleId], references: [id])
   /// Checklist a new inspection of this activity starts from
@@ -1147,6 +1158,28 @@ model Activity {
   inspections     Inspection[]
   qualityTests    QualityTest[]
   ncrs            Ncr[]
+
+  @@index([projectId])
+  @@index([organizationId])
+}
+
+/// A key date of a project (contract milestones, handing over a stretch or a floor). Shown as a diamond on the Gantt;
+/// achieved once someone records the date it was reached.
+model Milestone {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name           String
+  dueDate        DateTime     @db.Date
+  /// Due date when the project's baseline was frozen
+  baselineDate   DateTime?    @db.Date
+  achievedOn     DateTime?    @db.Date
+  note           String?
+  sortOrder      Int          @default(0)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
   @@index([projectId])
   @@index([organizationId])

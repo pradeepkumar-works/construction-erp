@@ -74,7 +74,17 @@ export function ActivitiesTab({ projectId, members, project }: { projectId: stri
       render: (v: number, r) => <Progress percent={Math.round(v * 10) / 10} size="small" status={v >= 100 ? 'success' : r.isDelayed ? 'exception' : 'active'} />,
     },
     { title: 'Planned start', dataIndex: 'plannedStart', width: 120, render: (v) => formatDate(v), sorter: (a, b) => (a.plannedStart ?? '').localeCompare(b.plannedStart ?? '') },
-    { title: 'Planned end', dataIndex: 'plannedEnd', width: 120, render: (v) => formatDate(v) },
+    {
+      title: 'Planned end',
+      dataIndex: 'plannedEnd',
+      width: 130,
+      render: (v, r) => (
+        <div>
+          {formatDate(v)}
+          {r.baselineEnd && v && r.baselineEnd !== v ? <div className="text-muted" style={{ fontSize: 12 }}>baseline {formatDate(r.baselineEnd)}</div> : null}
+        </div>
+      ),
+    },
     { title: 'Responsible', dataIndex: 'responsibleName', width: 150, render: (v) => v ?? <span className="text-muted">-</span> },
     ...(editor
       ? [

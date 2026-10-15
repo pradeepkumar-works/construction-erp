@@ -21,6 +21,8 @@ export const APPROVER_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGE
 
 /** Roles allowed to create and edit projects, BOQ and activities. */
 export const PROJECT_EDITOR_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER', 'QUANTITY_SURVEYOR'];
+/** Freeze a project's schedule baseline: the project's managers, not the planners who keep the plan current. */
+export const BASELINE_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER'];
 
 /** Site roles expected to file the daily progress report; they receive the "DPR not submitted" reminder. */
 export const DPR_SUBMITTER_ROLES: RoleKey[] = ['SITE_ENGINEER', 'TEAM_LEADER'];
@@ -111,6 +113,7 @@ export const canViewLabourSummary = (role: RoleKey) => PAYROLL_ROLES.includes(ro
 /** See the staff posted at their projects and mark their attendance: staff admins and attendance recorders. */
 export const canMarkStaff = (role: RoleKey) => STAFF_ADMIN_ROLES.includes(role) || ATTENDANCE_RECORDER_ROLES.includes(role);
 export const canEditProjects = (role: RoleKey) => PROJECT_EDITOR_ROLES.includes(role);
+export const canFreezeBaseline = (role: RoleKey) => BASELINE_ROLES.includes(role);
 export const canManageUsers = (role: RoleKey) => USER_ADMIN_ROLES.includes(role);
 /** Export all the company's data, or ask for the company to be deleted: admins only. */
 export const canManageCompanyData = (role: RoleKey) => role === 'ADMIN';

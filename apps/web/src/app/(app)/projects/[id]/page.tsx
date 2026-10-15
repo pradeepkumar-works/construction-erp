@@ -16,6 +16,7 @@ import { ProjectFormModal } from '@/components/projects/ProjectFormModal';
 import { SectorPanel, sectorTabLabel } from '@/components/sector/SectorPanel';
 import { BoqTab } from '@/components/boq/BoqTab';
 import { ActivitiesTab } from '@/components/activities/ActivitiesTab';
+import { GanttPanel } from '@/components/schedule/GanttPanel';
 import { ProgressList } from '@/components/progress/ProgressList';
 import { DprList } from '@/components/dpr/DprList';
 import { MachineryPanel } from '@/components/machinery/MachineryPanel';
@@ -105,6 +106,7 @@ export default function ProjectDetailPage() {
             ...(user && canViewVariations(user.roleKey) ? [{ key: 'variations', label: 'Variations', children: <VariationsPanel projectId={project.id} /> }] : []),
             { key: 'boq', label: 'BOQ', children: <BoqTab projectId={project.id} /> },
             { key: 'activities', label: 'Activities', children: <ActivitiesTab projectId={project.id} members={project.members} project={project} /> },
+            { key: 'schedule', label: 'Gantt', children: <GanttPanel projectId={project.id} /> },
             { key: 'sector', label: sectorTabLabel(project.type), children: <SectorPanel project={project} editable={editor} /> },
             { key: 'mb', label: 'Measurements', children: <MeasurementList projectId={project.id} /> },
             { key: 'inspections', label: 'Quality', children: <ProjectQualityTab projectId={project.id} /> },

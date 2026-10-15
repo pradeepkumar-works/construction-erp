@@ -3,6 +3,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   DriverDto,
+  GanttDto,
   EquipmentDocType,
   EquipmentDocumentDto,
   ExpiryState,
@@ -332,6 +333,14 @@ export const useActivities = (projectId: string | undefined) =>
   useQuery({
     queryKey: ['activities', projectId],
     queryFn: async () => (await api.get<ActivityDto[]>(`/projects/${projectId}/activities`)).data,
+    enabled: !!projectId,
+  });
+
+/** Gantt with milestones and the baseline; under the activities key so any activity change refreshes it. */
+export const useGantt = (projectId: string | undefined) =>
+  useQuery({
+    queryKey: ['activities', projectId, 'gantt'],
+    queryFn: async () => (await api.get<GanttDto>(`/projects/${projectId}/gantt`)).data,
     enabled: !!projectId,
   });
 

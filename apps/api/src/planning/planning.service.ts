@@ -155,6 +155,8 @@ export class PlanningService {
       checklistTemplateId: a.checklistTemplateId,
       checklistName: a.checklistTemplate?.name ?? null,
       holdPoint: a.holdPoint,
+      baselineStart: dateOnly(a.baselineStart),
+      baselineEnd: dateOnly(a.baselineEnd),
     };
   }
 

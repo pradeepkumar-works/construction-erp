@@ -201,6 +201,9 @@ export interface ActivityDto {
   checklistName: string | null;
   /** Progress is approved only after a passed inspection */
   holdPoint: boolean;
+  /** Planned dates when the baseline was frozen; null if added after it */
+  baselineStart: string | null;
+  baselineEnd: string | null;
 }
 
 export interface AttachmentDto {
