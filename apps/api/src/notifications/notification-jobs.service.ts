@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { EQUIPMENT_DOC_TYPE_LABELS, SERVICE_STATE_LABELS, expiryState, APPROVER_ROLES, DPR_SUBMITTER_ROLES, PAYMENT_ROLES, SPECIALIST_APPROVERS, SUBMISSION_TYPE_LABELS, TEST_KIND_LABELS, type NotificationJobResult, type PendingApprovalDto, type RoleKey } from '@erp/shared';
+import { COMPLIANCE_DOC_KIND_LABELS, COMPLIANCE_ROLES, DOC_ALERT_DAYS, EQUIPMENT_DOC_TYPE_LABELS, SERVICE_STATE_LABELS, expiryState, APPROVER_ROLES, DPR_SUBMITTER_ROLES, PAYMENT_ROLES, SPECIALIST_APPROVERS, SUBMISSION_TYPE_LABELS, TEST_KIND_LABELS, type NotificationJobResult, type PendingApprovalDto, type RoleKey } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -306,6 +306,52 @@ export class NotificationJobsService {
       result.skipped += r.skipped;
     }
     this.log.log(`Machinery due ${date}: ${JSON.stringify(result)}`);
+    return result;
+  }
+
+  /**
+   * Guarantees, insurance and licences (v4 item 46): active entries expiring within DOC_ALERT_DAYS, alerted once as
+   * they start expiring and once more when expired, to accounts, admins and management and the project's manager.
+   * Runs with the digest.
+   */
+  async complianceDue(date = todayIn()): Promise<NotificationJobResult> {
+    const result: NotificationJobResult = { job: 'COMPLIANCE_DUE', date, created: 0, pushed: 0, emailed: 0, messaged: 0, skipped: 0 };
+    const soon = parseDate(date);
+    soon.setUTCDate(soon.getUTCDate() + DOC_ALERT_DAYS);
+    const docs = await this.prisma.complianceDoc.findMany({
+      where: { status: 'ACTIVE', expiresOn: { lte: soon } },
+      include: { project: { select: { name: true, projectManagerId: true } } },
+      orderBy: { expiresOn: 'asc' },
+    });
+    const keepers = new Map<string, string[]>();
+    for (const d of docs) {
+      const expiresOn = d.expiresOn!.toISOString().slice(0, 10);
+      const e = expiryState(expiresOn, date)!;
+      if (!keepers.has(d.organizationId))
+        keepers.set(
+          d.organizationId,
+          (await this.prisma.user.findMany({ where: { organizationId: d.organizationId, isActive: true, role: { key: { in: COMPLIANCE_ROLES } } }, select: { id: true } })).map((u) => u.id),
+        );
+      const userIds = [...keepers.get(d.organizationId)!];
+      if (d.project?.projectManagerId && !userIds.includes(d.project.projectManagerId)) userIds.push(d.project.projectManagerId);
+      const what = `${d.category || COMPLIANCE_DOC_KIND_LABELS[d.kind]} ${d.reference}`;
+      const amount = d.amount ? ` for ${inr(Number(d.amount))}` : '';
+      const r = await this.notifications.notify({
+        organizationId: d.organizationId,
+        userIds,
+        type: 'COMPLIANCE',
+        title: e.state === 'EXPIRED' ? `${what} has expired` : `${what} expires in ${e.daysLeft} day${e.daysLeft === 1 ? '' : 's'}`,
+        body: `${[d.issuer, d.beneficiary ? `in favour of ${d.beneficiary}` : null].filter(Boolean).join(', ') || COMPLIANCE_DOC_KIND_LABELS[d.kind]}${amount}, valid to ${expiresOn}${d.project ? ` · ${d.project.name}` : ''}. Renew it or record its release on the Guarantees & Licences page.`,
+        projectId: d.projectId,
+        entityType: 'COMPLIANCE_DOC',
+        entityId: d.id,
+        dedupeKey: `COMPLIANCE:${d.id}:${e.state}`,
+      });
+      result.created += r.created;
+      result.pushed += r.pushed;
+      result.skipped += r.skipped;
+    }
+    this.log.log(`Compliance due ${date}: ${JSON.stringify(result)}`);
     return result;
   }
 

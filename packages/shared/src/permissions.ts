@@ -132,6 +132,11 @@ export const IMPREST_ADMIN_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'ACCOUNTS_
 export const canManageImprest = (role: RoleKey) => IMPREST_ADMIN_ROLES.includes(role);
 /** Hold an imprest: anyone who pays site expenses. */
 export const canHoldImprest = (role: RoleKey) => EXPENSE_SUBMITTER_ROLES.includes(role);
+/** Keep the guarantees, insurance and licences register: accounts and the company's admins. */
+export const COMPLIANCE_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'ACCOUNTS_MANAGER'];
+export const canManageCompliance = (role: RoleKey) => COMPLIANCE_ROLES.includes(role);
+/** See the register: its keepers, and project managers for the entries of their projects. */
+export const canViewCompliance = (role: RoleKey) => canManageCompliance(role) || role === 'PROJECT_MANAGER';
 /** Record goods received and material issued. */
 export const canKeepStock = (role: RoleKey) => STOCK_KEEPER_ROLES.includes(role);
 /** Store master data (item master, minimum stock levels): the store manager and approvers. */

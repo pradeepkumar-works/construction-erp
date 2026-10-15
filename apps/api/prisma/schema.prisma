@@ -133,6 +133,7 @@ enum NotificationType {
   SAFETY
   MACHINERY
   IMPREST
+  COMPLIANCE
 }
 
 /// What a quality test is of. CONCRETE_CUBE gets 7 and 28-day readings; the others one result.
@@ -356,6 +357,7 @@ model Organization {
   workerAttendance  WorkerAttendance[]
   imprests          Imprest[]
   imprestEntries    ImprestEntry[]
+  complianceDocs    ComplianceDoc[]
   progressEntries   ProgressEntry[]
   dailyReports      DailyReport[]
   materialRequests  MaterialRequest[]
@@ -532,6 +534,7 @@ model User {
   imprestsOpened       Imprest[]          @relation("ImprestOpener")
   imprestRequests      ImprestEntry[]     @relation("ImprestRequester")
   imprestDecisions     ImprestEntry[]     @relation("ImprestDecider")
+  complianceDocs       ComplianceDoc[]
   leaveDecided         LeaveRequest[]     @relation("LeaveDecider")
   leaveApplied         LeaveRequest[]     @relation("LeaveApplicant")
   raisedRisks          Risk[]             @relation("RiskRaiser")
@@ -610,6 +613,7 @@ model Project {
   workers          Worker[]
   workerAttendance WorkerAttendance[]
   imprests         Imprest[]
+  complianceDocs   ComplianceDoc[]
   progressEntries  ProgressEntry[]
   dailyReports     DailyReport[]
   materialRequests MaterialRequest[]
@@ -2013,6 +2017,8 @@ model Attachment {
   maintenanceJob    MaintenanceJob?    @relation(fields: [maintenanceJobId], references: [id], onDelete: Cascade)
   equipmentDocId    String?
   equipmentDoc      EquipmentDocument? @relation(fields: [equipmentDocId], references: [id], onDelete: Cascade)
+  complianceDocId   String?
+  complianceDoc     ComplianceDoc?     @relation(fields: [complianceDocId], references: [id], onDelete: Cascade)
   createdAt         DateTime           @default(now())
 
   @@index([organizationId])
@@ -3115,4 +3121,64 @@ model ImprestEntry {
 
   @@index([imprestId, status])
   @@index([organizationId, status])
+}
+
+/// What a register entry is (v4 item 46).
+enum ComplianceDocKind {
+  BANK_GUARANTEE
+  EMD
+  INSURANCE
+  LICENCE
+}
+
+/// ACTIVE until it is renewed (a newer entry replaces it), released (returned, refunded, cancelled or surrendered)
+/// or invoked (a guarantee encashed, an EMD forfeited).
+enum ComplianceDocStatus {
+  ACTIVE
+  RENEWED
+  RELEASED
+  INVOKED
+}
+
+/// Guarantees, EMD, insurance policies and licences (v4 item 46), company-wide or for one project, with expiry
+/// reminders. Renewing one adds a new entry that points back at the one it replaces.
+model ComplianceDoc {
+  id             String              @id @default(uuid())
+  organizationId String
+  organization   Organization        @relation(fields: [organizationId], references: [id])
+  kind           ComplianceDocKind
+  /// e.g. Performance guarantee, Contractor's all risk, Labour licence
+  category       String?
+  /// Guarantee, receipt, policy or licence number
+  reference      String
+  /// Bank, insurer or licensing authority
+  issuer         String?
+  projectId      String?
+  project        Project?            @relation(fields: [projectId], references: [id])
+  /// In whose favour: the client for a guarantee, the tendering office for an EMD
+  beneficiary    String?
+  /// Guarantee or EMD amount, or the sum insured
+  amount         Decimal?            @db.Decimal(18, 2)
+  /// Margin money (fixed deposit or cash) the bank holds against a guarantee
+  margin         Decimal?            @db.Decimal(18, 2)
+  issuedOn       DateTime?           @db.Date
+  expiresOn      DateTime?           @db.Date
+  /// Last day the beneficiary can claim under a guarantee (often some months after it expires)
+  claimUntil     DateTime?           @db.Date
+  status         ComplianceDocStatus @default(ACTIVE)
+  closedOn       DateTime?           @db.Date
+  closeNote      String?
+  renewedFromId  String?             @unique
+  renewedFrom    ComplianceDoc?      @relation("ComplianceRenewal", fields: [renewedFromId], references: [id], onDelete: SetNull)
+  renewedBy      ComplianceDoc?      @relation("ComplianceRenewal")
+  note           String?
+  createdById    String
+  createdBy      User                @relation(fields: [createdById], references: [id])
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  attachments Attachment[]
+
+  @@index([organizationId, status, expiresOn])
+  @@index([projectId])
 }

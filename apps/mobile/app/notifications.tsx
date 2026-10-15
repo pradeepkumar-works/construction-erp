@@ -29,6 +29,7 @@ const ICON: Record<NotificationType, { name: keyof typeof Ionicons.glyphMap; col
   SAFETY: { name: 'medkit', color: colors.danger, bg: colors.dangerSoft },
   MACHINERY: { name: 'build', color: colors.warning, bg: colors.warningSoft },
   IMPREST: { name: 'cash', color: colors.accent, bg: colors.accentSoft },
+  COMPLIANCE: { name: 'shield-checkmark', color: colors.warning, bg: colors.warningSoft },
 };
 
 export default function NotificationsScreen() {

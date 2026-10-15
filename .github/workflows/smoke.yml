@@ -714,6 +714,16 @@ jobs:
           if [ -n "$I" ]; then curl -sf "$API_URL/imprests/$I" -H "$H" | jq -e '(.ledger | type) == "array" and (.entries | type) == "array"' > /dev/null; fi
           code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/imprests" -H "authorization: Bearer $(login engineer@demo.com)" -H 'content-type: application/json' -d '{"projectId":"00000000-0000-4000-8000-000000000000","holderId":"00000000-0000-4000-8000-000000000000","floatAmount":"1000"}')
           echo "site engineer opening an imprest: $code"; [ "$code" = "403" ]
+      - name: Guarantees and licences register
+        run: |
+          set -e
+          login() { curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' -d "{\"email\":\"$1\",\"password\":\"password123\"}" | jq -r .accessToken; }
+          H="authorization: Bearer $(login accounts@demo.com)"
+          curl -sf "$API_URL/compliance-docs?status=ALL" -H "$H" > /tmp/compliance.json
+          jq -e '(.items | type) == "array" and (.totals.active | type) == "number" and (.totals.guaranteesOut | type) == "string"' /tmp/compliance.json > /dev/null
+          jq -r '"active \(.totals.active), expiring \(.totals.expiring), expired \(.totals.expired), guarantees out \(.totals.guaranteesOut), margin \(.totals.marginBlocked), EMD \(.totals.emdOut)"' /tmp/compliance.json
+          code=$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/compliance-docs" -H "authorization: Bearer $(login engineer@demo.com)")
+          echo "site engineer reading the register: $code"; [ "$code" = "403" ]
       - name: Activity templates
         run: |
           set -e

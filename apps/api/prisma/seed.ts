@@ -149,6 +149,7 @@ async function main() {
     await seedSchedule(org.id);
     await seedWorkers(org.id);
     await seedImprests(org.id);
+    await seedCompliance(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
   }
@@ -319,6 +320,7 @@ async function main() {
   await seedSchedule(org.id);
   await seedWorkers(org.id);
   await seedImprests(org.id);
+  await seedCompliance(org.id);
 
   console.log('Seed complete. Login with any of these (password: password123):');
   for (const u of USERS) console.log(`  ${u.email.padEnd(24)} ${u.role}`);
@@ -329,6 +331,44 @@ async function main() {
  * days ago. Their cash expenses since spend it (one turned down), and today they have asked for the top-up that brings
  * it back to the float. Only when the organisation has no imprest yet.
  */
+async function seedCompliance(organizationId: string) {
+  if (await prisma.complianceDoc.count({ where: { organizationId } })) return;
+  const road = await prisma.project.findFirst({ where: { organizationId, type: 'ROAD' }, orderBy: { code: 'asc' } });
+  const building = await prisma.project.findFirst({ where: { organizationId, type: 'BUILDING' }, orderBy: { code: 'asc' } });
+  const accounts = await prisma.user.findFirst({ where: { organizationId, role: { key: 'ACCOUNTS_MANAGER' } } });
+  if (!road || !building || !accounts) return;
+  const rows = [
+    { kind: 'BANK_GUARANTEE', category: 'Performance guarantee', reference: 'BG/0412/2026', issuer: 'State Bank of India, Cuttack Main', projectId: road.id, beneficiary: road.clientName ?? 'The client', amount: '4250000', margin: '1062500', issuedOn: -340, expiresOn: 25, claimUntil: 205 },
+    { kind: 'BANK_GUARANTEE', category: 'Mobilisation advance guarantee', reference: 'BG/0577/2026', issuer: 'Bank of India, Bhubaneswar', projectId: building.id, beneficiary: building.clientName ?? 'The client', amount: '1800000', margin: '450000', issuedOn: -120, expiresOn: 245, claimUntil: 335 },
+    { kind: 'EMD', category: 'Online deposit', reference: 'EMD/RD-26/118', issuer: 'Odisha e-procurement portal', projectId: null, beneficiary: 'Superintending Engineer, NH Circle, Sambalpur', amount: '350000', issuedOn: -45, expiresOn: null, note: 'Tender for 12 km widening, bids open next month' },
+    { kind: 'INSURANCE', category: "Contractor's all risk (CAR)", reference: 'CAR/2026/77812', issuer: 'New India Assurance', projectId: road.id, amount: '95000000', issuedOn: -300, expiresOn: 65 },
+    { kind: 'INSURANCE', category: "Workmen's compensation", reference: 'WC/2026/40213', issuer: 'United India Insurance', projectId: building.id, amount: '5000000', issuedOn: -360, expiresOn: 6 },
+    { kind: 'LICENCE', category: 'Labour licence (CLRA)', reference: 'CLRA/CTC/2025/0931', issuer: 'Assistant Labour Commissioner, Cuttack', projectId: road.id, issuedOn: -370, expiresOn: -4 },
+    { kind: 'LICENCE', category: 'Contractor registration', reference: 'Super Class OWD 114/2024', issuer: 'Works Department, Government of Odisha', projectId: null, amount: '25000', issuedOn: -650, expiresOn: 445 },
+  ] as const;
+  for (const r of rows) {
+    const doc = await prisma.complianceDoc.create({
+      data: {
+        organizationId,
+        kind: r.kind,
+        category: r.category,
+        reference: r.reference,
+        issuer: r.issuer,
+        projectId: r.projectId,
+        beneficiary: 'beneficiary' in r ? r.beneficiary : null,
+        amount: 'amount' in r ? D(r.amount) : null,
+        margin: 'margin' in r ? D(r.margin) : null,
+        issuedOn: day(r.issuedOn),
+        expiresOn: r.expiresOn === null ? null : day(r.expiresOn),
+        claimUntil: 'claimUntil' in r ? day(r.claimUntil) : null,
+        note: 'note' in r ? r.note : null,
+        createdById: accounts.id,
+      },
+    });
+    await prisma.auditLog.create({ data: { organizationId, entityType: 'COMPLIANCE_DOC', entityId: doc.id, action: 'CREATED', actorId: accounts.id, note: `${r.category} ${r.reference}` } });
+  }
+}
+
 async function seedImprests(organizationId: string) {
   if (await prisma.imprest.count({ where: { organizationId } })) return;
   const project = await prisma.project.findFirst({ where: { organizationId, type: 'ROAD' }, orderBy: { code: 'asc' } });

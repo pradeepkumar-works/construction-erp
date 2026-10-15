@@ -74,6 +74,7 @@ import {
   canHoldImprest,
   canManageImprest,
   canApprove,
+  canViewCompliance,
   isGuest,
 } from '@erp/shared';
 
@@ -174,6 +175,7 @@ export function navFor(user: AuthUser): NavSection[] {
         ...when(canViewVariations(role), { href: '/variations', label: 'Variations', icon: DiffOutlined, keywords: 'extra items deviation' }),
         ...when(canViewContract(role), { href: '/receivables', label: 'Receivables', icon: AccountBookOutlined, keywords: 'collections retention' }),
         ...when(canViewContract(role) || canEditContract(role), { href: '/clients', label: 'Clients', icon: BankOutlined, keywords: 'customers' }),
+        ...when(canViewCompliance(role), { href: '/compliance', label: 'Guarantees & Licences', icon: AuditOutlined, keywords: 'bank guarantee bg insurance car policy licence labour expiry' }),
         ...when(canViewGstRegisters(role), { href: '/gst', label: 'GST Registers', icon: PercentageOutlined, keywords: 'tax gstr' }),
         ...when(canExportTally(role), { href: '/tally', label: 'Tally Export', icon: ExportOutlined, keywords: 'accounts vouchers' }),
       ],

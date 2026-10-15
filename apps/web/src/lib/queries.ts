@@ -85,6 +85,10 @@ import type {
   AttendanceSheetDto,
   AttendanceSuggestionsDto,
   ImprestDetailDto,
+  ComplianceDocDetailDto,
+  ComplianceDocKind,
+  ComplianceDocStatus,
+  ComplianceRegisterDto,
   ImprestDto,
   MusterDto,
   OutputDto,
@@ -1632,5 +1636,20 @@ export const useImprest = (id: string | null | undefined) =>
   useQuery({
     queryKey: ['imprests', 'one', id],
     queryFn: async () => (await api.get<ImprestDetailDto>(`/imprests/${id}`)).data,
+    enabled: !!id,
+  });
+
+/* Guarantees, insurance and licences register (v4 item 46) */
+export const useComplianceDocs = (filters?: { kind?: ComplianceDocKind; status?: ComplianceDocStatus | 'ALL'; state?: 'EXPIRING' | 'EXPIRED'; projectId?: string; q?: string }) =>
+  useQuery({
+    queryKey: ['compliance', 'list', clean(filters)],
+    queryFn: async () => (await api.get<ComplianceRegisterDto>('/compliance-docs', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+  });
+
+export const useComplianceDoc = (id: string | null | undefined) =>
+  useQuery({
+    queryKey: ['compliance', 'one', id],
+    queryFn: async () => (await api.get<ComplianceDocDetailDto>(`/compliance-docs/${id}`)).data,
     enabled: !!id,
   });
