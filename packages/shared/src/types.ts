@@ -307,6 +307,14 @@ export interface CompanyDashboard {
   dprsToday: number;
   /** Only for roles that see bills */
   receivables?: { outstanding: string; over90: string; openBills: number };
+  /** Only for roles that see payables: approved vendor and subcontractor bills not yet paid */
+  payables?: { outstanding: string; overdue: string; openBills: number };
+  /** Only for roles that see project cost: cost booked in the current calendar month (YYYY-MM), all heads */
+  monthCost?: { month: string; total: string; expenses: string };
+  /** Only for roles that see bills: approved RA bills dated in the current calendar month, value of work before GST */
+  monthBilling?: { month: string; gross: string; bills: number };
+  /** Only for roles that see bills: approved RA bills to date against the contract value of projects that have one */
+  financialProgress?: { contractValue: string; billed: string; pct: number | null };
   projects: ProjectSummary[];
 }
 

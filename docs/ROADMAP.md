@@ -287,6 +287,40 @@ relative to a v2 item (S about one, M about two, L about three). The full draft 
 
 Not in v3: a general ledger, statutory payroll, tendering, critical-path scheduling, BIM.
 
+## v4 – close the gaps against the reference documents
+
+From the coverage check against the client's design spreadsheet, proposal and the Nway brochure (15 Oct 2026). A
+full HR setup is out of scope by decision: no salary master, payroll run, payslips, HR letters, exit and settlement or
+statutory payroll; Staff & Leave and Payroll Inputs stay as they are. Migrations stay additive, because Vercel
+preview deployments run them against the production database before a PR is merged.
+
+36. ~~**Dashboard tiles** (S). Vendor payable, this month's expense and billing, and financial progress on the
+    company dashboard.~~
+    Done: a second row of finance tiles for the roles that may see each figure. Receivables and vendor payable
+    (overdue in red); this month's cost across all heads with site expenses beside it (cost viewers); RA bills
+    approved this month before GST, and financial progress as approved RA bills to date against the contract value
+    of the projects that have one (bill viewers).
+37. **Variation register** (M). Variations with client reference and approval; approved variations add up to a
+    revised contract value; extra items are billed only once approved.
+38. **Budget, forecast and cash flow** (M). Budget per BOQ item, budget against actual and forecast to complete,
+    cash-flow forecast from bills due, receivables and payables.
+39. **Stores round-out** (M). Site-to-site transfers, returns to vendor and from site, stock count sheet, valuation
+    and ageing.
+40. **Safety** (M). Incidents and near misses, toolbox talks, permits to work, from the phone.
+41. **Sector progress views** (L). Road chainage strip chart, building floor by activity matrix, water supply
+    village-wise laid and tested.
+42. **Machinery maintenance and vehicle documents** (M). Service schedule, breakdown work orders, spares, expiry
+    alerts, drivers.
+43. **Gantt and baseline** (M). Gantt with milestones and a frozen baseline.
+44. **Named worker register** (M). Workers per labour contractor, attendance per worker, output per man-day.
+45. **Site imprest** (S). Petty cash float, balance and top-ups.
+46. **Guarantees, insurance and licences register** (S) with expiry reminders.
+47. **Handover and defects** (M). Snag list, completion certificate, defect log, close-out checklist.
+48. **Small items** (S each). QA/QC acceptance on a GRN, procurement status report, unit master, financial-year
+    filters.
+49. **Hindi on the phone app** (M).
+50. **Delay penalties and escalation** (S + M). Liquidated damages exposure, then price variation on RA bills.
+
 ## Definition of done for every item
 Prisma migration, API endpoints with Swagger, shared types, web screen, mobile screen where site
 staff use it, seed data updated, `pnpm typecheck` + `next build` + mobile `tsc` clean, smoke test

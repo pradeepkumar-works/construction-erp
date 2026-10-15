@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { canViewContract, seesGettingStarted, type CompanyDashboard, type GettingStartedDto, type GettingStartedStep, type ProjectDashboard, type ProjectType } from '@erp/shared';
+import { canViewContract, canViewCost, canViewPayables, seesGettingStarted, type CompanyDashboard, type GettingStartedDto, type GettingStartedStep, type ProjectDashboard, type ProjectType } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -9,8 +9,10 @@ import { PlanningService } from '../planning/planning.service';
 import { ProgressService } from '../progress/progress.service';
 import { DprService } from '../dpr/dpr.service';
 import { ReceivablesService } from '../receivables/receivables.service';
+import { PayablesService } from '../payables/payables.service';
+import { CostService } from '../cost/cost.service';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
-import { dateOnly, money } from '../common/serialize';
+import { dateOnly, money, parseDate } from '../common/serialize';
 
 @Injectable()
 export class DashboardService {
@@ -23,6 +25,8 @@ export class DashboardService {
     private dpr: DprService,
     private lifecycle: SubmissionLifecycleService,
     private receivables: ReceivablesService,
+    private payables: PayablesService,
+    private cost: CostService,
   ) {}
 
   /** Which first-week setup steps the organisation has done, from what is in its data. */
@@ -64,16 +68,35 @@ export class DashboardService {
     const projects = await this.projects.listAll(user);
     const today = new Date(new Date().toISOString().slice(0, 10) + 'T00:00:00.000Z');
     const projectIds = projects.map((p) => p.id);
-    const [pending, dprsToday, activities, receivables] = await Promise.all([
+    const month = today.toISOString().slice(0, 7);
+    const monthStart = parseDate(`${month}-01`);
+    const monthEnd = new Date(Date.UTC(monthStart.getUTCFullYear(), monthStart.getUTCMonth() + 1, 0));
+    const seesBills = canViewContract(user.roleKey);
+    const billsWhere = { organizationId: user.organizationId, projectId: { in: projectIds }, status: 'APPROVED' as const };
+    const [pending, dprsToday, activities, receivables, payables, monthCost, monthBills, billedToDate] = await Promise.all([
       this.lifecycle.pending(user),
       this.prisma.dailyReport.count({ where: { projectId: { in: projectIds }, date: today } }),
       this.prisma.activity.findMany({ where: { projectId: { in: projectIds }, plannedEnd: { lt: today } }, include: { progressEntries: { where: { status: 'APPROVED' }, select: { quantity: true } } } }),
-      canViewContract(user.roleKey) ? this.receivables.summary(user) : null,
+      seesBills ? this.receivables.summary(user) : null,
+      canViewPayables(user.roleKey) ? this.payables.summary(user) : null,
+      canViewCost(user.roleKey) ? this.cost.summary(user, { from: `${month}-01`, to: dateOnly(monthEnd)! }) : null,
+      seesBills ? this.prisma.raBill.aggregate({ where: { ...billsWhere, billDate: { gte: monthStart, lte: monthEnd } }, _sum: { grossAmount: true }, _count: true }) : null,
+      seesBills ? this.prisma.raBill.groupBy({ by: ['projectId'], where: billsWhere, _sum: { grossAmount: true } }) : null,
     ]);
     const delayedActivities = activities.filter((a) => a.progressEntries.reduce((s, e) => s.add(e.quantity), new Prisma.Decimal(0)).lt(a.plannedQty)).length;
     const byType = new Map<ProjectType, number>();
     for (const p of projects) byType.set(p.type, (byType.get(p.type) ?? 0) + 1);
     const totalContractValue = projects.reduce((s, p) => s.add(p.contractValue ?? 0), new Prisma.Decimal(0));
+    const ZERO = new Prisma.Decimal(0);
+    let financialProgress: CompanyDashboard['financialProgress'];
+    if (billedToDate) {
+      // Only projects with a contract value count on either side, so the percentage compares like with like.
+      const billedBy = new Map(billedToDate.map((b) => [b.projectId, b._sum.grossAmount ?? ZERO]));
+      const withValue = projects.filter((p) => p.contractValue && new Prisma.Decimal(p.contractValue).gt(0));
+      const contract = withValue.reduce((s, p) => s.add(p.contractValue!), ZERO);
+      const billed = withValue.reduce((s, p) => s.add(billedBy.get(p.id) ?? ZERO), ZERO);
+      financialProgress = { contractValue: money(contract)!, billed: money(billed)!, pct: contract.gt(0) ? Math.round(billed.div(contract).mul(1000).toNumber()) / 10 : null };
+    }
     return {
       activeProjects: projects.filter((p) => p.status === 'ACTIVE').length,
       totalProjects: projects.length,
@@ -85,6 +108,18 @@ export class DashboardService {
       ...(receivables
         ? { receivables: { outstanding: receivables.totals.outstanding, over90: receivables.totals.ageing.over90, openBills: receivables.openBills.length } }
         : {}),
+      ...(payables ? { payables: { outstanding: payables.totals.outstanding, overdue: payables.totals.overdue, openBills: payables.openBills.length } } : {}),
+      ...(monthCost
+        ? {
+            monthCost: {
+              month,
+              total: money(monthCost.reduce((s, p) => s.add(p.cost.total), ZERO))!,
+              expenses: money(monthCost.reduce((s, p) => s.add(p.cost.expenses), ZERO))!,
+            },
+          }
+        : {}),
+      ...(monthBills ? { monthBilling: { month, gross: money(monthBills._sum.grossAmount ?? ZERO)!, bills: monthBills._count } } : {}),
+      ...(financialProgress ? { financialProgress } : {}),
       projects,
     };
   }

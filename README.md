@@ -114,7 +114,8 @@ demo seed at 1280 × 800, scale 1.25, saved as WebP).
 - Edit and resubmit: a rejected or changes-requested entry is fixed in place (web drawer or site app)
   and sent back for approval with the reviewer's note shown alongside the form.
 - Dashboards: company (projects, contract value, pending approvals, delayed activities, DPRs
-  today) and project (physical progress weighted by BOQ value, BOQ executed amount, activity
+  today; for finance roles receivables, vendor payable, this month's expense and billing, and financial
+  progress) and project (physical progress weighted by BOQ value, BOQ executed amount, activity
   status, recent submissions).
 - Offline entry on the site app: progress, DPR, material requests and attendance filed without signal are kept
   in an outbox on the phone (photos included) and sent automatically when the connection returns.

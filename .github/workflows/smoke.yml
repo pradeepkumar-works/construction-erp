@@ -33,6 +33,16 @@ jobs:
           curl -sf "$API_URL/projects" -H "authorization: Bearer $TOKEN" | jq -r '.items[] | "\(.code)  \(.physicalProgressPct)%  pending=\(.pendingApprovals)"'
           echo "pending approvals: $(curl -sf "$API_URL/approvals/pending" -H "authorization: Bearer $TOKEN" | jq length)"
           curl -sf "$API_URL/dashboard/company" -H "authorization: Bearer $TOKEN" | jq 'del(.projects)'
+      - name: Dashboard finance tiles
+        run: |
+          set -e
+          TOKEN=$(curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' \
+            -d '{"email":"accounts@demo.com","password":"password123"}' | jq -r .accessToken)
+          curl -sf "$API_URL/dashboard/company" -H "authorization: Bearer $TOKEN" | jq -c '{payables, monthCost, monthBilling, financialProgress}'
+          curl -sf "$API_URL/dashboard/company" -H "authorization: Bearer $TOKEN" | jq -e '.payables and .monthCost and .monthBilling and .financialProgress' > /dev/null
+          ENG=$(curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' -d '{"email":"engineer@demo.com","password":"password123"}' | jq -r .accessToken)
+          curl -sf "$API_URL/dashboard/company" -H "authorization: Bearer $ENG" | jq -e '(.payables // .monthCost // .monthBilling // .financialProgress) == null' > /dev/null
+          echo "site engineer sees no finance tiles"
       - name: Clients and contract terms
         run: |
           set -e
