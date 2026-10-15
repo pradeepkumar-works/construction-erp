@@ -15,3 +15,4 @@ export { SubmissionHeader, AttachmentGallery, ReviewActions, SubmitterActions } 
 export { NotificationBell } from './NotificationBell';
 export { OfflineBanner } from './OfflineBanner';
 export { BillingBanner } from './BillingBanner';
+export { Intro, useIntroSeen } from './Intro';

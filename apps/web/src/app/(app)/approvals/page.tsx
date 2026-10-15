@@ -11,6 +11,7 @@ import { useAuth } from '@/lib/auth';
 import { formatDateTime, formatINR } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { QueryError } from '@/components/common/QueryState';
+import { EmptyArt } from '@/components/common/EmptyArt';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { ProgressDrawer } from '@/components/progress/ProgressDrawer';
 import { DprDrawer } from '@/components/dpr/DprDrawer';
@@ -108,7 +109,7 @@ export default function ApprovalsPage() {
           size="middle"
           pagination={{ pageSize: 20, hideOnSinglePage: true }}
           scroll={{ x: 1120 }}
-          locale={{ emptyText: approver ? 'Nothing waiting for approval. Great work!' : 'No pending approvals' }}
+          locale={{ emptyText: <EmptyArt art="approved" title={approver ? 'Nothing waiting for approval. Great work!' : 'No pending approvals'} /> }}
         />
       </Card>
       <ProgressDrawer id={open?.type === 'PROGRESS' ? open.id : null} open={open?.type === 'PROGRESS'} onClose={() => setOpen(null)} />

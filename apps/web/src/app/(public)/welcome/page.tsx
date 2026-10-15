@@ -10,7 +10,7 @@ import { useAuthOptions } from '@/lib/queries';
 import { FAQ, FLOWS, LOCAL, MODULES, ROLES } from './content';
 
 /** "Create your company" when sign-up is open, and "Try the demo" always. */
-function Ctas({ signup, center, ghost }: { signup?: boolean; center?: boolean; ghost?: boolean }) {
+function Ctas({ signup, center }: { signup?: boolean; center?: boolean }) {
   return (
     <div className={center ? 'lp-cta lp-cta-center' : 'lp-cta'}>
       {signup ? (
@@ -21,7 +21,7 @@ function Ctas({ signup, center, ghost }: { signup?: boolean; center?: boolean; g
         </Link>
       ) : null}
       <Link href="/login">
-        <Button size="large" type={signup ? 'default' : 'primary'} className={ghost ? 'lp-ghost' : undefined}>
+        <Button size="large" type={signup ? 'default' : 'primary'}>
           Try the demo
         </Button>
       </Link>
@@ -83,12 +83,11 @@ export default function WelcomePage() {
             {BRAND.name} runs a contractor&apos;s projects end to end: progress and DPRs from site, RA bills and payments from the client, purchase
             orders, subcontractors and vendor payments, quality checks, and vouchers ready for TallyPrime.
           </p>
-          <Ctas signup={signup} ghost />
+          <Ctas signup={signup} />
           <p className="lp-small">Demo accounts are listed on the sign-in page. The site app works without signal.</p>
         </div>
         <div className="lp-hero-art" aria-hidden>
-          <img className="lp-shot-web" src="/landing/web-dashboard.webp" alt="" width={1600} height={1000} />
-          <img className="lp-shot-phone" src="/landing/phone-home.webp" alt="" width={540} height={1080} />
+          <img src="/illustrations/welcome-hero.svg" alt="" width={1020} height={660} />
         </div>
       </section>
       <div className="lp-datum" />

@@ -8,6 +8,7 @@ import type { DailyReportDto, DprSortField } from '@erp/shared';
 import { WEATHER_LABELS } from '@erp/shared';
 import { formatDate } from '@/lib/format';
 import { StatusTag } from '@/components/common/StatusTag';
+import { EmptyArt } from '@/components/common/EmptyArt';
 import { PhotoThumbs } from '@/components/common/AttachmentGallery';
 import { ReviewActions } from '@/components/common/ReviewActions';
 import { EditResubmitButton } from '@/components/common/EditResubmitButton';
@@ -69,6 +70,7 @@ export function DprTable({
       size="middle"
       {...table}
       scroll={{ x: showProject ? 1400 : 1200 }}
+      locale={{ emptyText: <EmptyArt art="entries" title="No daily reports here yet" /> }}
     />
   );
 }

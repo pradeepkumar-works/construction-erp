@@ -142,7 +142,7 @@ export default function HomeScreen() {
 
           <SectionTitle title="My recent submissions" right={<Button title="See all" variant="ghost" size="sm" onPress={() => router.push('/submissions')} />} />
           {derived.recent.length === 0 ? (
-            <EmptyState title="No submissions yet" subtitle="Use the quick actions above to submit your first entry." icon="create-outline" />
+            <EmptyState title="No submissions yet" subtitle="Use the quick actions above to submit your first entry." icon="create-outline" art="entries" />
           ) : (
             derived.recent.map((r) => <SubmissionRow key={`${r.type}-${r.item.id}`} type={r.type} title={r.title} subtitle={r.subtitle} status={r.item.status} meta={timeAgo(r.item.createdAt)} onPress={() => openDetail(r)} />)
           )}

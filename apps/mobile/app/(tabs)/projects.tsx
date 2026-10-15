@@ -22,7 +22,7 @@ export default function ProjectsScreen() {
         keyExtractor={(p) => p.id}
         contentContainerStyle={styles.list}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.primary} />}
-        ListEmptyComponent={<EmptyState title="No projects" subtitle="You have not been added to any project yet." icon="business-outline" />}
+        ListEmptyComponent={<EmptyState title="No projects" subtitle="You have not been added to any project yet." icon="business-outline" art="projects" />}
         renderItem={({ item }) => (
           <Card onPress={() => router.push(`/project/${item.id}`)}>
             <View style={styles.top}>

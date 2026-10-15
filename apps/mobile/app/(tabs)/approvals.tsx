@@ -38,7 +38,7 @@ export default function ApprovalsScreen() {
             </Text>
           ) : null
         }
-        ListEmptyComponent={<EmptyState title="All caught up" subtitle="Nothing is waiting for your approval." icon="checkmark-done-circle-outline" />}
+        ListEmptyComponent={<EmptyState title="All caught up" subtitle="Nothing is waiting for your approval." icon="checkmark-done-circle-outline" art="approved" />}
         renderSectionHeader={({ section }) => (
           <View style={styles.header}>
             <Text style={typography.h3}>{section.title}</Text>

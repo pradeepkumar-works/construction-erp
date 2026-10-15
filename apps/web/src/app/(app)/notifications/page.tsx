@@ -27,6 +27,7 @@ import { InspectionDrawer } from '@/components/inspections/InspectionDrawer';
 import { notificationHref } from '@/components/notifications/notificationTarget';
 import { MessagingSettingsModal } from '@/components/notifications/MessagingSettingsModal';
 import { MessageLog } from '@/components/notifications/MessageLog';
+import { EmptyArt } from '@/components/common/EmptyArt';
 
 type Open = { type: SubmissionType; id: string } | null;
 
@@ -78,7 +79,10 @@ function NotificationsPageInner() {
       <List<NotificationDto>
         loading={isLoading}
         dataSource={data?.items ?? []}
-        locale={{ emptyText: filter === 'UNREAD' ? 'You are all caught up.' : 'No notifications yet. You will be told here when your submissions are reviewed.' }}
+        locale={{
+          emptyText:
+            filter === 'UNREAD' ? <EmptyArt art="approved" title="You are all caught up." /> : 'No notifications yet. You will be told here when your submissions are reviewed.',
+        }}
         pagination={{ pageSize: 25, hideOnSinglePage: true }}
         renderItem={(n) => (
           <List.Item
