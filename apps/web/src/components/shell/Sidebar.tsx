@@ -98,12 +98,12 @@ export function Sidebar({ user, sections, pendingCount, rail = false, onToggleRa
       {onSearch &&
         (rail ? (
           <Tooltip title={`Search  ${shortcut}`} placement="right">
-            <button type="button" className={cx(s.item, s.search)} onClick={onSearch} aria-label="Search pages and projects">
+            <button type="button" className={cx(s.item, s.search)} onClick={onSearch} aria-label="Search pages and projects" data-tour="search">
               <SearchOutlined className={s.icon} aria-hidden />
             </button>
           </Tooltip>
         ) : (
-          <button type="button" className={s.search} onClick={onSearch} aria-keyshortcuts="Control+K Meta+K">
+          <button type="button" className={s.search} onClick={onSearch} aria-keyshortcuts="Control+K Meta+K" data-tour="search">
             <SearchOutlined aria-hidden />
             <span>Search or jump to…</span>
             <kbd className={s.kbd}>{shortcut}</kbd>
@@ -150,6 +150,7 @@ function NavLink({ item, active, rail, count, onNavigate }: { item: NavItem; act
       href={item.href}
       className={cx(s.item, active && s.active)}
       aria-current={active ? 'page' : undefined}
+      data-tour={item.approvals ? 'approvals' : undefined}
       aria-label={rail ? (count > 0 ? `${item.label}, ${count} pending` : item.label) : undefined}
       onClick={onNavigate}
     >

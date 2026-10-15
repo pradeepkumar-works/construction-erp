@@ -26,6 +26,8 @@ demo seed at 1280 × 800, scale 1.25, saved as WebP).
   dates; each organisation can edit those templates.
 - Onboarding: a new company signs up (when enabled), the admin invites the team by email or a shareable
   link, and anyone can reset a forgotten password.
+- Product tour: the first time someone signs in on a browser, a short tour of the web app (pages, search,
+  approvals, notifications, account); "Take the tour" in the account menu (your name, top right) replays it.
 - An approval matrix (admin): which roles approve which submission types, with optional rupee limits;
   anything above a limit goes to a higher approver.
 - Site submissions from mobile or web: **daily progress** against an activity (with photos),
