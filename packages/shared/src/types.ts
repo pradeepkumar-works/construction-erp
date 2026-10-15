@@ -349,8 +349,8 @@ export interface NotificationDto {
   body: string;
   projectId: string | null;
   projectName: string | null;
-  /** Set when the notification points at a submission; open it with entityType + entityId. */
-  entityType: SubmissionType | null;
+  /** Set when the notification points at a submission (or, for SAFETY, an incident or permit); open it with entityType + entityId. */
+  entityType: SubmissionType | 'SAFETY_INCIDENT' | 'WORK_PERMIT' | null;
   entityId: string | null;
   readAt: string | null;
   createdAt: string;

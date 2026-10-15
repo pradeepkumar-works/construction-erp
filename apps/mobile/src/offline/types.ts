@@ -2,8 +2,8 @@ import type { SubmissionType } from '@erp/shared';
 
 export type OutboxStatus = 'PENDING' | 'SYNCING' | 'FAILED';
 
-/** What an outbox entry creates: one of the approval submissions, a day's attendance sheet, or a delay / risk register entry. */
-export type OutboxType = SubmissionType | 'ATTENDANCE' | 'RISK';
+/** What an outbox entry creates: one of the approval submissions, a day's attendance sheet, a delay / risk register entry or a safety record. */
+export type OutboxType = SubmissionType | 'ATTENDANCE' | 'RISK' | 'SAFETY_INCIDENT' | 'TOOLBOX_TALK' | 'WORK_PERMIT';
 
 export interface OutboxPhoto {
   /** Local file URI (copied into the app's document directory so it survives cache clean-ups). */
@@ -19,7 +19,7 @@ export interface OutboxItem {
   id: string;
   userId: string;
   type: OutboxType;
-  /** Request body for POST /progress, /dpr, /material-requests, /machinery-logs, /expenses, /measurements, /inspections, /attendance or /risks, without id and attachmentIds. */
+  /** Request body for POST /progress, /dpr, /material-requests, /machinery-logs, /expenses, /measurements, /inspections, /attendance, /risks or /safety/*, without id and attachmentIds. */
   payload: Record<string, unknown>;
   photos: OutboxPhoto[];
   /** Display strings for the outbox list. */
@@ -46,6 +46,9 @@ export const OUTBOX_PATH: Record<OutboxType, string> = {
   INSPECTION: '/inspections',
   ATTENDANCE: '/attendance',
   RISK: '/risks',
+  SAFETY_INCIDENT: '/safety/incidents',
+  TOOLBOX_TALK: '/safety/talks',
+  WORK_PERMIT: '/safety/permits',
 };
 
 export const OUTBOX_DETAIL: Record<SubmissionType, string> = {

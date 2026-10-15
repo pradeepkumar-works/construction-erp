@@ -320,7 +320,11 @@ preview deployments run them against the production database before a PR is merg
     until the other store receives it), take back unused material from site (off the project's material cost),
     return material to the supplier, and run a stock count (blank sheet to print, counted quantities posted as one
     adjustment). A Value & ageing tab values stock at item rates and shows how long it has sat in the store.
-40. **Safety** (M). Incidents and near misses, toolbox talks, permits to work, from the phone.
+40. ~~**Safety** (M). Incidents and near misses, toolbox talks, permits to work, from the phone.~~
+    Done: a Safety page, project tab and phone screen. Site staff report an incident or near miss (with photos,
+    offline too), record toolbox talks and ask for a permit to work with the standard precautions for the kind of
+    work. A new Safety Officer role is told of each, closes incidents with the root cause and corrective action, and
+    issues or rejects permits; the summary counts days without a lost-time injury.
 41. **Sector progress views** (L). Road chainage strip chart, building floor by activity matrix, water supply
     village-wise laid and tested.
 42. **Machinery maintenance and vehicle documents** (M). Service schedule, breakdown work orders, spares, expiry

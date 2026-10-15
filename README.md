@@ -43,6 +43,9 @@ demo seed at 1280 × 800, scale 1.25, saved as WebP).
   issue screens in the site app.
 - Stores: transfers between project stores (sent, on the way, received), returns from site and to the
   supplier, stock count with a printable sheet, and stock value with ageing.
+- Safety: incidents and near misses (with root cause and corrective action), toolbox talks and permits to
+  work (hot work, height, excavation and so on, with the standard precautions), reported from the site app,
+  offline too; a Safety Officer role issues permits and closes incidents. Days without a lost-time injury.
 - Machinery: equipment master (owned / hired, hire rate, where deployed) and a daily log per machine
   (hours worked, idle, breakdown, hour meter, diesel) filed from the site app, offline too, and
   approved by the PM like any other submission. Web Machinery page and project tab with Excel export.
@@ -168,6 +171,7 @@ All passwords are `password123`.
 | engineer2@demo.com | Site Engineer | building + water projects, submits |
 | tl@demo.com | Team Leader | road + water projects |
 | qs@demo.com | Quantity Surveyor | road + building projects, records measurements |
+| safety@demo.com | Safety Officer | road + building projects, issues permits, closes incidents |
 | store@demo.com, procurement@demo.com, qaqc@demo.com, accounts@demo.com, hr@demo.com | other roles | as per role |
 | client@demo.com | Client's Engineer (guest) | client portal for the road project: certifies bills, attends inspections |
 | pmc@demo.com | Consultant / PMC (guest) | client portal for the building project |

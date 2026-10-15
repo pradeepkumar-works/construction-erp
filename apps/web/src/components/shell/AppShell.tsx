@@ -33,6 +33,7 @@ import {
   TeamOutlined,
   UserOutlined,
   AlertOutlined,
+  MedicineBoxOutlined,
   PartitionOutlined,
   SafetyCertificateOutlined,
   BankOutlined,
@@ -126,6 +127,7 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
           link('/documents', 'Documents', FolderOpenOutlined),
           link('/expenses', 'Site Expenses', WalletOutlined),
           link('/risks', 'Delays & Risks', AlertOutlined),
+          link('/safety', 'Safety', MedicineBoxOutlined),
         ],
       },
       {

@@ -5,8 +5,8 @@ import type { SubmissionStatus, SubmissionType } from '@erp/shared';
 import { colors, radius, spacing, typography } from '../theme';
 import { StatusBadge } from './StatusBadge';
 
-/** Submissions plus attendance sheets and register entries (which can also sit in the outbox). */
-export type EntryType = SubmissionType | 'ATTENDANCE' | 'RISK';
+/** Submissions plus attendance sheets, register entries and safety records (which can also sit in the outbox). */
+export type EntryType = SubmissionType | 'ATTENDANCE' | 'RISK' | 'SAFETY_INCIDENT' | 'TOOLBOX_TALK' | 'WORK_PERMIT';
 
 export const TYPE_ICON: Record<EntryType, keyof typeof Ionicons.glyphMap> = {
   PROGRESS: 'trending-up',
@@ -23,6 +23,9 @@ export const TYPE_ICON: Record<EntryType, keyof typeof Ionicons.glyphMap> = {
   INSPECTION: 'shield-checkmark',
   ATTENDANCE: 'people',
   RISK: 'alert-circle',
+  SAFETY_INCIDENT: 'medkit',
+  TOOLBOX_TALK: 'megaphone',
+  WORK_PERMIT: 'key',
 };
 
 export const TYPE_SHORT: Record<EntryType, string> = {
@@ -40,6 +43,9 @@ export const TYPE_SHORT: Record<EntryType, string> = {
   INSPECTION: 'Inspection',
   ATTENDANCE: 'Attendance',
   RISK: 'Delay / risk',
+  SAFETY_INCIDENT: 'Incident',
+  TOOLBOX_TALK: 'Toolbox talk',
+  WORK_PERMIT: 'Permit',
 };
 
 interface Props {

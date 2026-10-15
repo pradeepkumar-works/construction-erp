@@ -4,7 +4,7 @@ import { PrismaClient, Prisma } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { deflateSync } from 'zlib';
 import { dprTitle, progressTitle, titleDate } from '../src/common/submission-titles';
-import { STANDARD_CHECKLISTS, isWeeklyOff, leaveDays } from '@erp/shared';
+import { PERMIT_PRECAUTIONS, STANDARD_CHECKLISTS, isWeeklyOff, leaveDays } from '@erp/shared';
 
 const prisma = new PrismaClient();
 const D = (v: string | number) => new Prisma.Decimal(v);
@@ -25,6 +25,7 @@ const ROLES: [string, string][] = [
   ['QUANTITY_SURVEYOR', 'Quantity Surveyor'],
   ['PROCUREMENT_MANAGER', 'Procurement Manager'],
   ['QA_QC_ENGINEER', 'QA/QC Engineer'],
+  ['SAFETY_OFFICER', 'Safety Officer'],
   ['ACCOUNTS_MANAGER', 'Accounts Manager'],
   ['HR_MANAGER', 'HR Manager'],
   ['CLIENT_ENGINEER', "Client's Engineer (guest)"],
@@ -45,6 +46,7 @@ const USERS: { email: string; name: string; role: string; phone: string }[] = [
   { email: 'qaqc@demo.com', name: 'Sneha Iyer', role: 'QA_QC_ENGINEER', phone: '9800000011' },
   { email: 'accounts@demo.com', name: 'Mahesh Gupta', role: 'ACCOUNTS_MANAGER', phone: '9800000012' },
   { email: 'hr@demo.com', name: 'Pooja Reddy', role: 'HR_MANAGER', phone: '9800000013' },
+  { email: 'safety@demo.com', name: 'Harish Pradhan', role: 'SAFETY_OFFICER', phone: '9800000016' },
   // Guests from outside the company: they use the client portal only, on the projects below (seedGuests).
   { email: 'client@demo.com', name: 'Er. Bijay Kumar Panda', role: 'CLIENT_ENGINEER', phone: '9800000014' },
   { email: 'pmc@demo.com', name: 'Lakshmi Menon', role: 'CONSULTANT', phone: '9800000015' },
@@ -141,6 +143,7 @@ async function main() {
     await seedVariations(org.id);
     await seedBudgets(org.id);
     await seedStoreMoves(org.id);
+    await seedSafety(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
   }
@@ -305,6 +308,7 @@ async function main() {
   await seedVariations(org.id);
   await seedBudgets(org.id);
   await seedStoreMoves(org.id);
+  await seedSafety(org.id);
 
   console.log('Seed complete. Login with any of these (password: password123):');
   for (const u of USERS) console.log(`  ${u.email.padEnd(24)} ${u.role}`);
@@ -315,6 +319,90 @@ async function main() {
  * the water supply project already received there, a second one still in transit, and material returned to the
  * supplier of the GRN. Only when the organisation has no transfer yet.
  */
+/**
+ * Demo safety (v4 item 40): the safety officer joins the road and building projects; a few incidents and near misses
+ * (one closed with its root cause), toolbox talks, and permits to work (one waiting, one live, one closed). Only when
+ * the organisation has no safety records yet.
+ */
+async function seedSafety(organizationId: string) {
+  const officer = await prisma.user.findFirst({ where: { organizationId, email: 'safety@demo.com' } });
+  const road = await prisma.project.findFirst({ where: { organizationId, type: 'ROAD' }, orderBy: { code: 'asc' } });
+  const building = await prisma.project.findFirst({ where: { organizationId, type: 'BUILDING' }, orderBy: { code: 'asc' } });
+  const engineer = await prisma.user.findFirst({ where: { organizationId, email: 'engineer@demo.com' } });
+  const engineer2 = await prisma.user.findFirst({ where: { organizationId, email: 'engineer2@demo.com' } });
+  const tl = await prisma.user.findFirst({ where: { organizationId, email: 'tl@demo.com' } });
+  if (!officer || !road || !building || !engineer || !engineer2 || !tl) return;
+  for (const p of [road, building])
+    await prisma.projectMember.upsert({ where: { projectId_userId: { projectId: p.id, userId: officer.id } }, update: {}, create: { projectId: p.id, userId: officer.id } });
+  if (await prisma.safetyIncident.count({ where: { organizationId } })) return;
+  const year = new Date().getUTCFullYear();
+  const no = (prefix: string, n: number) => `${prefix}-${year}-${String(n).padStart(4, '0')}`;
+  const audit = (entityType: string, entityId: string, action: string, actorId: string, at: Date, note?: string) =>
+    prisma.auditLog.create({ data: { organizationId, entityType, entityId, action, actorId, note: note ?? null, createdAt: at } });
+
+  const incidents = [
+    { p: road, by: engineer, type: 'NEAR_MISS', off: -12, time: '10:20', location: 'Ch 14+300, WMM stretch', description: 'Tipper reversed towards the paver crew without a banksman; the crew stepped clear.', contractor: 'Maa Tarini Transport', immediate: 'Work stopped; driver briefed.', root: 'No banksman posted after the shift change.', action: 'Banksman for every reversing tipper; reversing alarm checked daily.', closed: true },
+    { p: building, by: engineer2, type: 'FIRST_AID', off: -6, time: '15:40', location: 'Block A, 2nd floor slab edge', description: 'Helper cut his palm on a protruding binding wire while carrying shuttering plates.', contractor: 'Mahanadi Builders', injured: 1, names: 'Bapi Nayak (helper)', immediate: 'Cleaned and dressed at the first-aid box; back to work.', closed: false },
+    { p: road, by: tl, type: 'PROPERTY_DAMAGE', off: -3, time: '08:05', location: 'Batching plant yard', description: 'Loader bucket hit the cement silo ladder while turning; ladder bent, no one hurt.', contractor: null, immediate: 'Silo access closed until the ladder is repaired.', closed: false },
+    { p: building, by: engineer2, type: 'NEAR_MISS', off: -1, time: '11:30', location: 'Block B, scaffold on the east face', description: 'A brick fell from the 3rd-floor scaffold; it landed inside the barricaded area.', contractor: 'Mahanadi Builders', immediate: 'Toe boards fitted on that bay.', closed: false },
+  ];
+  let n = 0;
+  for (const i of incidents) {
+    const at = day(i.off);
+    const row = await prisma.safetyIncident.create({
+      data: {
+        organizationId, projectId: i.p.id, incidentNo: no('INC', ++n), type: i.type as 'NEAR_MISS', date: at, time: i.time, location: i.location, description: i.description,
+        injuredCount: i.injured ?? 0, injuredNames: i.names ?? null, contractor: i.contractor, immediateAction: i.immediate,
+        rootCause: i.root ?? null, correctiveAction: i.action ?? null, reportedById: i.by.id, createdAt: at,
+        ...(i.closed ? { status: 'CLOSED' as const, closedAt: day(i.off + 2), closedById: officer.id, closureNote: 'Checked on the next two shifts.' } : {}),
+      },
+    });
+    await audit('SAFETY_INCIDENT', row.id, 'CREATED', i.by.id, at);
+    if (i.closed) await audit('SAFETY_INCIDENT', row.id, 'CLOSED', officer.id, day(i.off + 2), 'Checked on the next two shifts.');
+  }
+
+  const talks = [
+    { p: road, off: -7, topic: 'Traffic management and reversing vehicles', by: 'Harish Pradhan (safety officer)', contractor: 'Maa Tarini Transport', count: 24, mins: 15 },
+    { p: building, off: -5, topic: 'Working at height and harness use', by: 'Harish Pradhan (safety officer)', contractor: 'Mahanadi Builders', count: 38, mins: 20 },
+    { p: road, off: -2, topic: 'Heat stress, water and rest', by: 'Manoj Das (supervisor)', contractor: null, count: 31, mins: 10 },
+    { p: building, off: 0, topic: 'Housekeeping and slips, trips, falls', by: 'Priya Mohanty', contractor: 'Mahanadi Builders', count: 35, mins: 15 },
+  ];
+  n = 0;
+  for (const t of talks) {
+    const at = day(t.off);
+    const row = await prisma.toolboxTalk.create({
+      data: { organizationId, projectId: t.p.id, talkNo: no('TBT', ++n), date: at, topic: t.topic, conductedBy: t.by, contractor: t.contractor, attendeeCount: t.count, durationMinutes: t.mins, recordedById: officer.id, createdAt: at },
+    });
+    await audit('TOOLBOX_TALK', row.id, 'CREATED', officer.id, at);
+  }
+
+  const at = (offDays: number, hour: number) => {
+    const d = day(offDays);
+    d.setUTCHours(hour - 5, 30, 0, 0); // hour in India time
+    return d;
+  };
+  const permits = [
+    { p: building, by: engineer2, type: 'HOT_WORK', location: 'Terrace, overhead tank stand', description: 'Welding the tank stand brackets', contractor: 'Mahanadi Builders', workers: 3, from: at(-4, 9), to: at(-4, 18), status: 'CLOSED', note: 'Fire extinguisher and a watcher at all times.' },
+    { p: building, by: engineer2, type: 'WORK_AT_HEIGHT', location: 'Block A, east face 3rd to 5th floor', description: 'External plastering from the scaffold', contractor: 'Mahanadi Builders', workers: 6, from: at(0, 8), to: at(2, 18), status: 'ISSUED', note: 'Harness anchored to the lifeline, not the scaffold.' },
+    { p: road, by: engineer, type: 'EXCAVATION', location: 'Ch 15+120, culvert CD-7', description: 'Excavation for the culvert foundation, 2.4 m deep', contractor: null, workers: 8, from: at(1, 8), to: at(1, 18), status: 'REQUESTED', note: null },
+  ] as const;
+  n = 0;
+  for (const p of permits) {
+    const issued = p.status !== 'REQUESTED';
+    const row = await prisma.workPermit.create({
+      data: {
+        organizationId, projectId: p.p.id, permitNo: no('PTW', ++n), type: p.type, location: p.location, description: p.description, contractor: p.contractor, workerCount: p.workers,
+        validFrom: p.from, validTo: p.to, precautions: PERMIT_PRECAUTIONS[p.type].slice(0, 4), status: p.status, requestedById: p.by.id, createdAt: day(-5),
+        ...(issued ? { issuedById: officer.id, issuedAt: p.from, issueNote: p.note } : {}),
+        ...(p.status === 'CLOSED' ? { closedById: p.by.id, closedAt: p.to, closeNote: 'Work done, area checked for embers.' } : {}),
+      },
+    });
+    await audit('WORK_PERMIT', row.id, 'REQUESTED', p.by.id, day(-5));
+    if (issued) await audit('WORK_PERMIT', row.id, 'ISSUED', officer.id, p.from);
+    if (p.status === 'CLOSED') await audit('WORK_PERMIT', row.id, 'CLOSED', p.by.id, p.to);
+  }
+}
+
 async function seedStoreMoves(organizationId: string) {
   if (await prisma.stockEntry.count({ where: { organizationId, type: 'TRANSFER_OUT' } })) return;
   const road = await prisma.project.findFirst({ where: { organizationId, type: 'ROAD' }, orderBy: { code: 'asc' } });

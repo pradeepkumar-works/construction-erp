@@ -137,6 +137,14 @@ import type {
   PortalInspectionDto,
   PortalProjectDetailDto,
   PortalProjectDto,
+  SafetyIncidentDto,
+  SafetyIncidentStatus,
+  SafetyIncidentType,
+  SafetySummaryDto,
+  ToolboxTalkDto,
+  WorkPermitDto,
+  WorkPermitStatus,
+  WorkPermitType,
 } from '@erp/shared';
 import { MAX_PAGE_SIZE } from '@erp/shared';
 import { api } from './api';
@@ -1160,7 +1168,7 @@ export const usePendingApprovals = (enabled = true) =>
 export const useNotifications = (opts?: { unreadOnly?: boolean; limit?: number }) =>
   useQuery({
     queryKey: ['notifications', clean(opts)],
-    queryFn: async () => (await api.get<NotificationListDto>('/notifications', { params: clean(opts) })).data,
+    queryFn: async () => (await api.get<NotificationListDto>('/notifications', { params: clean({ ...opts, allTypes: true }) })).data,
     refetchInterval: 30_000,
   });
 
@@ -1427,3 +1435,67 @@ export const useVariationSummary = (projectId?: string, enabled = true) =>
     queryFn: async () => (await api.get<VariationSummaryDto[]>('/variations/summary', { params: clean({ projectId }) })).data,
     enabled,
   });
+
+/* ---------- Safety ---------- */
+
+export interface IncidentFilters extends PageParams {
+  projectId?: string;
+  type?: SafetyIncidentType;
+  incidentsOnly?: boolean;
+  status?: SafetyIncidentStatus;
+  from?: string;
+  to?: string;
+}
+
+export interface TalkFilters extends PageParams {
+  projectId?: string;
+  from?: string;
+  to?: string;
+}
+
+export interface PermitFilters extends PageParams {
+  projectId?: string;
+  type?: WorkPermitType;
+  status?: WorkPermitStatus;
+  active?: boolean;
+}
+
+export const useSafetySummary = (projectId?: string) =>
+  useQuery({
+    queryKey: ['safety', 'summary', projectId ?? 'all'],
+    queryFn: async () => (await api.get<SafetySummaryDto>('/safety/summary', { params: clean({ projectId }) })).data,
+    placeholderData: keepPreviousData,
+  });
+
+export const useSafetyIncidents = (filters?: IncidentFilters) =>
+  useQuery({
+    queryKey: ['safety', 'incidents', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<SafetyIncidentDto>>('/safety/incidents', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+  });
+
+export const useSafetyIncident = (id: string | undefined) =>
+  useQuery({ queryKey: ['safety', 'incident', id], queryFn: async () => (await api.get<SafetyIncidentDto>(`/safety/incidents/${id}`)).data, enabled: !!id });
+
+export const useSafetyIncidentHistory = (id: string | undefined) =>
+  useQuery({ queryKey: ['safety', 'incident-history', id], queryFn: async () => (await api.get<AuditLogDto[]>(`/safety/incidents/${id}/history`)).data, enabled: !!id });
+
+export const useToolboxTalks = (filters?: TalkFilters) =>
+  useQuery({
+    queryKey: ['safety', 'talks', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<ToolboxTalkDto>>('/safety/talks', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+  });
+
+export const useWorkPermits = (filters?: PermitFilters) =>
+  useQuery({
+    queryKey: ['safety', 'permits', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<WorkPermitDto>>('/safety/permits', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+  });
+
+export const useWorkPermit = (id: string | undefined) =>
+  useQuery({ queryKey: ['safety', 'permit', id], queryFn: async () => (await api.get<WorkPermitDto>(`/safety/permits/${id}`)).data, enabled: !!id });
+
+export const useWorkPermitHistory = (id: string | undefined) =>
+  useQuery({ queryKey: ['safety', 'permit-history', id], queryFn: async () => (await api.get<AuditLogDto[]>(`/safety/permits/${id}/history`)).data, enabled: !!id });

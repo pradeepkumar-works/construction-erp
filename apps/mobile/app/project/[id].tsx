@@ -64,6 +64,7 @@ export default function ProjectScreen() {
       ) : null}
       <Button title="Stock" icon="cube-outline" variant="secondary" onPress={() => router.push(`/stock?projectId=${project.id}`)} style={styles.attendance} />
       <Button title="Delays & risks" icon="alert-circle-outline" variant="secondary" onPress={() => router.push(`/risks?projectId=${project.id}`)} style={styles.attendance} />
+      <Button title="Safety" icon="medkit-outline" variant="secondary" onPress={() => router.push(`/safety?projectId=${project.id}`)} style={styles.attendance} />
 
       <SectionTitle title="Activities" right={<Text style={typography.caption}>planned / executed</Text>} />
       {activities.length === 0 ? (

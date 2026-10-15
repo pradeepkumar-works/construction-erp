@@ -28,6 +28,7 @@ export const ROLE_KEYS = [
   'QUANTITY_SURVEYOR',
   'PROCUREMENT_MANAGER',
   'QA_QC_ENGINEER',
+  'SAFETY_OFFICER',
   'ACCOUNTS_MANAGER',
   'HR_MANAGER',
   'CLIENT_ENGINEER',
@@ -54,6 +55,7 @@ export const NOTIFICATION_TYPES = [
   'LEAVE',
   'BILLS_DUE',
   'PORTAL',
+  'SAFETY',
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
@@ -86,6 +88,21 @@ export type RiskCategory = (typeof RISK_CATEGORIES)[number];
 
 export const RISK_STATUSES = ['OPEN', 'MONITORING', 'CLOSED'] as const;
 export type RiskStatus = (typeof RISK_STATUSES)[number];
+
+/** What happened at site. A near miss hurt no one; the rest are graded by the worst outcome. */
+export const SAFETY_INCIDENT_TYPES = ['NEAR_MISS', 'FIRST_AID', 'MEDICAL_TREATMENT', 'LOST_TIME', 'PROPERTY_DAMAGE', 'FATALITY'] as const;
+export type SafetyIncidentType = (typeof SAFETY_INCIDENT_TYPES)[number];
+
+export const SAFETY_INCIDENT_STATUSES = ['OPEN', 'CLOSED'] as const;
+export type SafetyIncidentStatus = (typeof SAFETY_INCIDENT_STATUSES)[number];
+
+/** Risky work that needs a written permit before it starts. */
+export const WORK_PERMIT_TYPES = ['HOT_WORK', 'WORK_AT_HEIGHT', 'EXCAVATION', 'CONFINED_SPACE', 'ELECTRICAL', 'LIFTING', 'OTHER'] as const;
+export type WorkPermitType = (typeof WORK_PERMIT_TYPES)[number];
+
+/** REQUESTED by site; ISSUED (work may start) or REJECTED by the safety officer or an approver; CLOSED when the work is done. */
+export const WORK_PERMIT_STATUSES = ['REQUESTED', 'ISSUED', 'REJECTED', 'CLOSED'] as const;
+export type WorkPermitStatus = (typeof WORK_PERMIT_STATUSES)[number];
 
 /** Who a delay is attributable to, which decides whether an extension of time can be claimed. */
 export const DELAY_PARTIES = ['CLIENT', 'CONTRACTOR', 'THIRD_PARTY', 'FORCE_MAJEURE'] as const;

@@ -47,7 +47,13 @@ export const COST_VIEW_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAG
 export const LABOUR_RATE_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'ACCOUNTS_MANAGER'];
 
 /** Roles that raise delays and risks: site staff, the QS and approvers. Anyone with project access can read the register. */
-export const RISK_RAISER_ROLES: RoleKey[] = ['TEAM_LEADER', 'SITE_ENGINEER', 'QUANTITY_SURVEYOR', 'STORE_MANAGER', 'QA_QC_ENGINEER', 'ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER'];
+export const RISK_RAISER_ROLES: RoleKey[] = ['TEAM_LEADER', 'SITE_ENGINEER', 'QUANTITY_SURVEYOR', 'STORE_MANAGER', 'QA_QC_ENGINEER', 'SAFETY_OFFICER', 'ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER'];
+
+/** Report incidents and near misses, record toolbox talks and request permits to work: everyone working at site. Anyone with project access reads them. */
+export const SAFETY_REPORTER_ROLES: RoleKey[] = ['TEAM_LEADER', 'SITE_ENGINEER', 'STORE_MANAGER', 'QUANTITY_SURVEYOR', 'QA_QC_ENGINEER', 'SAFETY_OFFICER', 'ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER'];
+
+/** Issue or reject permits, close incidents and delete wrong safety records: the safety officer and approvers. */
+export const SAFETY_MANAGER_ROLES: RoleKey[] = ['SAFETY_OFFICER', 'ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER'];
 
 /** Roles that request inspections from site: site staff, QA/QC and approvers. */
 export const INSPECTION_REQUEST_ROLES: RoleKey[] = ['TEAM_LEADER', 'SITE_ENGINEER', 'QA_QC_ENGINEER', 'ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER'];
@@ -135,6 +141,13 @@ export const canSetLabourRates = (role: RoleKey) => LABOUR_RATE_ROLES.includes(r
 /** Set a project's cost budget and the budget rates of its BOQ items. */
 export const BUDGET_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER'];
 export const canSetBudget = (role: RoleKey) => BUDGET_ROLES.includes(role);
+
+/** Report an incident or near miss, record a toolbox talk, request a permit to work. */
+export const canReportSafety = (role: RoleKey) => SAFETY_REPORTER_ROLES.includes(role);
+/** Issue / reject permits, close incidents. */
+export const canManageSafety = (role: RoleKey) => SAFETY_MANAGER_ROLES.includes(role);
+/** Change a safety record: whoever entered it, the safety officer and approvers. */
+export const canEditSafetyRecord = (user: SubmissionActor, byId: string): boolean => byId === user.id || canManageSafety(user.roleKey);
 
 /** Raise a delay or risk. */
 export const canRaiseRisk = (role: RoleKey) => RISK_RAISER_ROLES.includes(role);

@@ -5,6 +5,7 @@ import { PUSH_PLATFORMS, PushPlatform } from '@erp/shared';
 export class ListNotificationsQuery {
   @ApiPropertyOptional({ description: 'Only notifications not yet read' }) @IsOptional() @IsBoolean() unreadOnly?: boolean;
   @ApiPropertyOptional({ default: 50 }) @IsOptional() @IsInt() @Min(1) @Max(200) limit?: number;
+  @ApiPropertyOptional({ description: 'Include every type. Left out, only the types older phone builds know are listed (and counted).' }) @IsOptional() @IsBoolean() allTypes?: boolean;
 }
 
 export class RegisterPushTokenDto {

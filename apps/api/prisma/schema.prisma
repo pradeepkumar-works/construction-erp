@@ -130,6 +130,7 @@ enum NotificationType {
   LEAVE
   PORTAL
   BILLS_DUE
+  SAFETY
 }
 
 /// What a quality test is of. CONCRETE_CUBE gets 7 and 28-day readings; the others one result.
@@ -395,6 +396,9 @@ model Organization {
   billingPayments   BillingPayment[]
   variations        Variation[]
   projectBudgets    ProjectBudget[]
+  safetyIncidents   SafetyIncident[]
+  toolboxTalks      ToolboxTalk[]
+  workPermits       WorkPermit[]
   variationLines    VariationLine[]
 }
 
@@ -502,6 +506,12 @@ model User {
   lettersRecorded      Letter[]           @relation("LetterRecorder")
   variationsCreated    Variation[]        @relation("VariationCreator")
   budgetsUpdated       ProjectBudget[]    @relation("BudgetUpdater")
+  incidentsReported    SafetyIncident[]   @relation("IncidentReporter")
+  incidentsClosed      SafetyIncident[]   @relation("IncidentCloser")
+  toolboxTalks         ToolboxTalk[]      @relation("ToolboxTalkRecorder")
+  permitsRequested     WorkPermit[]       @relation("PermitRequester")
+  permitsIssued        WorkPermit[]       @relation("PermitIssuer")
+  permitsClosed        WorkPermit[]       @relation("PermitCloser")
   employee             Employee?          @relation("EmployeeLogin")
   staffMarked          StaffAttendance[]  @relation("StaffAttendanceMarker")
   leaveDecided         LeaveRequest[]     @relation("LeaveDecider")
@@ -599,6 +609,9 @@ model Project {
   holidays         Holiday[]
   variations       Variation[]
   budget           ProjectBudget?
+  safetyIncidents  SafetyIncident[]
+  toolboxTalks     ToolboxTalk[]
+  workPermits      WorkPermit[]
 
   @@unique([organizationId, code])
   @@index([organizationId, status])
@@ -1907,6 +1920,12 @@ model Attachment {
   letter            Letter?           @relation(fields: [letterId], references: [id], onDelete: Cascade)
   variationId       String?
   variation         Variation?        @relation(fields: [variationId], references: [id], onDelete: Cascade)
+  safetyIncidentId  String?
+  safetyIncident    SafetyIncident?   @relation(fields: [safetyIncidentId], references: [id], onDelete: Cascade)
+  toolboxTalkId     String?
+  toolboxTalk       ToolboxTalk?      @relation(fields: [toolboxTalkId], references: [id], onDelete: Cascade)
+  workPermitId      String?
+  workPermit        WorkPermit?       @relation(fields: [workPermitId], references: [id], onDelete: Cascade)
   createdAt         DateTime          @default(now())
 
   @@index([organizationId])
@@ -2605,4 +2624,149 @@ model ProjectBudget {
   updatedAt      DateTime     @updatedAt
 
   @@index([organizationId])
+}
+
+/// What happened. A near miss hurt no one; the rest are graded by the worst outcome.
+enum SafetyIncidentType {
+  NEAR_MISS
+  FIRST_AID
+  MEDICAL_TREATMENT
+  LOST_TIME
+  PROPERTY_DAMAGE
+  FATALITY
+}
+
+enum SafetyIncidentStatus {
+  OPEN
+  CLOSED
+}
+
+/// Work that needs a written permit before it starts.
+enum WorkPermitType {
+  HOT_WORK
+  WORK_AT_HEIGHT
+  EXCAVATION
+  CONFINED_SPACE
+  ELECTRICAL
+  LIFTING
+  OTHER
+}
+
+/// REQUESTED by site, ISSUED (work may start) or REJECTED by a safety officer or approver, CLOSED when the work is done.
+enum WorkPermitStatus {
+  REQUESTED
+  ISSUED
+  REJECTED
+  CLOSED
+}
+
+/// Incident and near-miss register per project (v4 item 40). Not an approval submission: an entry stays open
+/// until the safety officer or an approver closes it with the root cause and the corrective action.
+model SafetyIncident {
+  id               String               @id @default(uuid())
+  organizationId   String
+  organization     Organization         @relation(fields: [organizationId], references: [id])
+  projectId        String
+  project          Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  /// INC-<year>-0001 per organisation
+  incidentNo       String
+  type             SafetyIncidentType
+  date             DateTime             @db.Date
+  /// Time of day, HH:mm
+  time             String?
+  location         String
+  description      String
+  /// People hurt (0 for a near miss or property damage)
+  injuredCount     Int                  @default(0)
+  injuredNames     String?
+  /// Whose workers were involved (labour contractor or subcontractor)
+  contractor       String?
+  immediateAction  String?
+  rootCause        String?
+  correctiveAction String?
+  /// Lost time injury: days the injured person was off work
+  daysLost         Int?
+  status           SafetyIncidentStatus @default(OPEN)
+  closedAt         DateTime?
+  closedById       String?
+  closedBy         User?                @relation("IncidentCloser", fields: [closedById], references: [id], onDelete: SetNull)
+  closureNote      String?
+  reportedById     String
+  reportedBy       User                 @relation("IncidentReporter", fields: [reportedById], references: [id])
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+
+  attachments Attachment[]
+
+  @@unique([organizationId, incidentNo])
+  @@index([projectId, date])
+}
+
+/// A toolbox talk held at site: topic, who gave it and who attended (a photo of the signed sheet as attachment).
+model ToolboxTalk {
+  id              String       @id @default(uuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  projectId       String
+  project         Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  /// TBT-<year>-0001 per organisation
+  talkNo          String
+  date            DateTime     @db.Date
+  topic           String
+  conductedBy     String
+  contractor      String?
+  attendeeCount   Int
+  attendees       String?
+  durationMinutes Int?
+  notes           String?
+  recordedById    String
+  recordedBy      User         @relation("ToolboxTalkRecorder", fields: [recordedById], references: [id])
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  attachments Attachment[]
+
+  @@unique([organizationId, talkNo])
+  @@index([projectId, date])
+}
+
+/// Permit to work for risky work, valid between two times. Expired = ISSUED and past validTo (not stored).
+model WorkPermit {
+  id             String           @id @default(uuid())
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  /// PTW-<year>-0001 per organisation
+  permitNo       String
+  type           WorkPermitType
+  location       String
+  /// The work to be done
+  description    String
+  contractor     String?
+  workerCount    Int?
+  workers        String?
+  validFrom      DateTime
+  validTo        DateTime
+  /// Precautions ticked from the standard list for the type, plus any added
+  precautions    String[]         @default([])
+  status         WorkPermitStatus @default(REQUESTED)
+  requestedById  String
+  requestedBy    User             @relation("PermitRequester", fields: [requestedById], references: [id])
+  issuedById     String?
+  issuedBy       User?            @relation("PermitIssuer", fields: [issuedById], references: [id], onDelete: SetNull)
+  issuedAt       DateTime?
+  /// Conditions on issue, or the reason for rejection
+  issueNote      String?
+  closedById     String?
+  closedBy       User?            @relation("PermitCloser", fields: [closedById], references: [id], onDelete: SetNull)
+  closedAt       DateTime?
+  closeNote      String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  attachments Attachment[]
+
+  @@unique([organizationId, permitNo])
+  @@index([projectId, status])
 }
