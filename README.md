@@ -91,6 +91,8 @@ demo seed at 1280 × 800, scale 1.25, saved as WebP).
   the phone and paid by accounts.
 - Guarantees and licences: bank guarantees, EMDs, insurance policies and licences with renewals and reminders
   before they expire.
+- Handover and defects: snags before handover and defects in the defect liability period, with photos from the
+  phone; the completion certificate; retention still held; a close-out checklist; reminders as the DLP ends.
 - Sector progress: progress and measurements tagged with chainage (road), floor (building) or village (water
   supply); a road strip chart per layer, a floor by activity matrix, and pipe ordered, supplied, laid and tested
   village by village.

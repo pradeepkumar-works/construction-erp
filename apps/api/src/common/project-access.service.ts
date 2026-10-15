@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { APPROVER_ROLES, type SubmissionType, COMPANY_WIDE_ROLES, isCompanyWide, canAdjustStock, canApprove, canKeepStock, canLogMachinery, canManageEquipment, canManageStore, canMeasure, canRaiseRisk, canRecordAttendance, canRequestInspection, canSubmitExpense, canRecordTest, canRaiseNcr, canManageDocuments, canViewLetters, canManageStaff, canMarkStaff, canViewMessageLog, canReportSafety, canManageSafety, canManageMaintenance, canFreezeBaseline, canManageWorkers, canViewWorkers, GUEST_ROLES, isGuest } from '@erp/shared';
+import { APPROVER_ROLES, type SubmissionType, COMPANY_WIDE_ROLES, isCompanyWide, canAdjustStock, canApprove, canKeepStock, canLogMachinery, canManageEquipment, canManageStore, canMeasure, canRaiseRisk, canRecordAttendance, canRequestInspection, canSubmitExpense, canRecordTest, canRaiseNcr, canManageDocuments, canViewLetters, canManageStaff, canMarkStaff, canViewMessageLog, canReportSafety, canManageSafety, canManageMaintenance, canFreezeBaseline, canManageWorkers, canViewWorkers, canReportDefect, canCloseDefect, canManageHandover, GUEST_ROLES, isGuest } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { ApprovalRightsService } from './approval-rights.service';
 import { RequestUser } from './current-user';
@@ -272,6 +272,35 @@ export class ProjectAccessService {
   /** Freeze or replace a project's schedule baseline: the project's managers, with access to the project. */
   async assertCanFreezeBaseline(user: RequestUser, projectId: string) {
     if (!canFreezeBaseline(user.roleKey)) throw new ForbiddenException('Only a project manager, management or an admin can freeze the baseline');
+    await this.assertCanAccessProject(user, projectId);
+  }
+
+  /** Snags, defects and the handover page: the company's own people (not the client's engineers) with access to the project. */
+  handoverWhere(user: RequestUser): { organizationId: string; project?: Prisma.ProjectWhereInput } {
+    if (isGuest(user.roleKey)) throw new ForbiddenException('Snags and defects are kept by the contractor');
+    return this.submissionWhere(user);
+  }
+
+  async assertCanViewHandover(user: RequestUser, projectId: string) {
+    this.handoverWhere(user);
+    await this.assertCanAccessProject(user, projectId);
+  }
+
+  /** Report a snag or defect, or mark one fixed: site and office staff on the project. */
+  async assertCanReportDefect(user: RequestUser, projectId: string) {
+    if (!canReportDefect(user.roleKey)) throw new ForbiddenException('Your role cannot report snags or defects');
+    await this.assertCanAccessProject(user, projectId);
+  }
+
+  /** Accept (close) or reopen a fixed snag or defect, or delete one: QA/QC or an approver on the project. */
+  async assertCanCloseDefect(user: RequestUser, projectId: string) {
+    if (!canCloseDefect(user.roleKey)) throw new ForbiddenException('Only QA/QC or an approver can close or reopen a snag or defect');
+    await this.assertCanAccessProject(user, projectId);
+  }
+
+  /** Record the completion certificate and keep the close-out checklist: the project's approvers. */
+  async assertCanManageHandover(user: RequestUser, projectId: string) {
+    if (!canManageHandover(user.roleKey)) throw new ForbiddenException('Only a project manager, management or an admin can record the handover');
     await this.assertCanAccessProject(user, projectId);
   }
 

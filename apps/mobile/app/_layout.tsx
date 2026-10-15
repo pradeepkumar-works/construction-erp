@@ -70,6 +70,9 @@ function RootNavigator() {
         <Stack.Screen name="safety" options={{ title: 'Safety' }} />
         <Stack.Screen name="incident/new" options={{ title: 'Report an Incident' }} />
         <Stack.Screen name="incident/[id]" options={{ title: 'Incident' }} />
+        <Stack.Screen name="snags" options={{ title: 'Snags & Defects' }} />
+        <Stack.Screen name="snag/new" options={{ title: 'Report Snag' }} />
+        <Stack.Screen name="snag/[id]" options={{ title: 'Snag' }} />
         <Stack.Screen name="talk/new" options={{ title: 'Toolbox Talk' }} />
         <Stack.Screen name="permit/new" options={{ title: 'Ask for a Permit' }} />
         <Stack.Screen name="permit/[id]" options={{ title: 'Permit to Work' }} />

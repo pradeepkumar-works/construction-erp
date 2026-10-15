@@ -2,7 +2,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { canManageWorkers, canMarkStaff, canKeepStock, canLogMachinery, canManageMaintenance, canMeasure, canRaiseRisk, canRecordAttendance, canReportSafety, canRequestInspection, canSubmitExpense } from '@erp/shared';
+import { canManageWorkers, canMarkStaff, canKeepStock, canLogMachinery, canManageMaintenance, canMeasure, canRaiseRisk, canRecordAttendance, canReportDefect, canReportSafety, canRequestInspection, canSubmitExpense } from '@erp/shared';
 import { useAuth } from '../../src/auth/AuthContext';
 import { Button, Screen } from '../../src/components';
 import { colors, radius, shadow, spacing, typography } from '../../src/theme';
@@ -39,6 +39,8 @@ const STAFF_REGISTER = { href: '/staff-register', icon: 'id-card' as const, tone
 
 const RISK = { href: '/risks', icon: 'alert-circle' as const, tone: colors.danger, title: 'Delays & risks', text: 'Record work held up (days lost, who caused it) or raise a risk; see what is open.' };
 
+const SNAGS = { href: '/snags', icon: 'construct-outline' as const, tone: '#9a3412', title: 'Snags & defects', text: 'Log what needs putting right before handover or in the defect liability period, with photos; mark it fixed.' };
+
 const SAFETY = { href: '/safety', icon: 'medkit' as const, tone: '#b91c1c', title: 'Safety', text: 'Report an incident or near miss, record a toolbox talk, ask for a permit to work.' };
 
 const STOCK = [
@@ -64,6 +66,7 @@ export default function SubmitHub() {
     ...(user && canKeepStock(user.roleKey) ? STOCK : []),
     ...(user && canRaiseRisk(user.roleKey) ? [RISK] : []),
     ...(user && canReportSafety(user.roleKey) ? [SAFETY] : []),
+    ...(user && canReportDefect(user.roleKey) ? [SNAGS] : []),
   ];
   return (
     <Screen>

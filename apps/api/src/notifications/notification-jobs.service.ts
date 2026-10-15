@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { COMPLIANCE_DOC_KIND_LABELS, COMPLIANCE_ROLES, DOC_ALERT_DAYS, EQUIPMENT_DOC_TYPE_LABELS, SERVICE_STATE_LABELS, expiryState, APPROVER_ROLES, DPR_SUBMITTER_ROLES, PAYMENT_ROLES, SPECIALIST_APPROVERS, SUBMISSION_TYPE_LABELS, TEST_KIND_LABELS, type NotificationJobResult, type PendingApprovalDto, type RoleKey } from '@erp/shared';
+import { COMPLIANCE_DOC_KIND_LABELS, COMPLIANCE_ROLES, DLP_ALERT_DAYS, DOC_ALERT_DAYS, EQUIPMENT_DOC_TYPE_LABELS, SERVICE_STATE_LABELS, expiryState, APPROVER_ROLES, DPR_SUBMITTER_ROLES, PAYMENT_ROLES, SPECIALIST_APPROVERS, SUBMISSION_TYPE_LABELS, TEST_KIND_LABELS, type NotificationJobResult, type PendingApprovalDto, type RoleKey } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -352,6 +352,81 @@ export class NotificationJobsService {
       result.skipped += r.skipped;
     }
     this.log.log(`Compliance due ${date}: ${JSON.stringify(result)}`);
+    return result;
+  }
+
+  /**
+   * Handover (v4 item 47): the defect liability period ending within DLP_ALERT_DAYS (or just ended), so retention and
+   * the performance guarantee are claimed back; and snags or defects past their due date, to whoever is to put them right.
+   */
+  async handoverDue(date = todayIn()): Promise<NotificationJobResult> {
+    const result: NotificationJobResult = { job: 'HANDOVER_DUE', date, created: 0, pushed: 0, emailed: 0, messaged: 0, skipped: 0 };
+    const today = parseDate(date);
+    const soon = new Date(today.getTime() + DLP_ALERT_DAYS * 86_400_000);
+    const lately = new Date(today.getTime() - DLP_ALERT_DAYS * 86_400_000);
+    const add = (r: { created: number; pushed: number; skipped: number }) => {
+      result.created += r.created;
+      result.pushed += r.pushed;
+      result.skipped += r.skipped;
+    };
+    const handovers = await this.prisma.projectHandover.findMany({
+      where: { dlpEndsOn: { gte: lately, lte: soon } },
+      include: { project: { select: { name: true, projectManagerId: true } } },
+      orderBy: { dlpEndsOn: 'asc' },
+    });
+    const keepers = new Map<string, string[]>();
+    for (const h of handovers) {
+      const endsOn = h.dlpEndsOn.toISOString().slice(0, 10);
+      const daysLeft = Math.round((h.dlpEndsOn.getTime() - today.getTime()) / 86_400_000);
+      const state = daysLeft > 0 ? 'ENDING' : 'ENDED';
+      if (!keepers.has(h.organizationId))
+        keepers.set(
+          h.organizationId,
+          (await this.prisma.user.findMany({ where: { organizationId: h.organizationId, isActive: true, role: { key: { in: COMPLIANCE_ROLES } } }, select: { id: true } })).map((u) => u.id),
+        );
+      const userIds = [...keepers.get(h.organizationId)!];
+      if (h.project.projectManagerId && !userIds.includes(h.project.projectManagerId)) userIds.push(h.project.projectManagerId);
+      const open = await this.prisma.defect.count({ where: { projectId: h.projectId, status: { in: ['OPEN', 'FIXED'] } } });
+      const pending = open ? `${open} snag${open === 1 ? '' : 's'} or defect${open === 1 ? '' : 's'} still to be closed. ` : '';
+      add(
+        await this.notifications.notify({
+          organizationId: h.organizationId,
+          userIds,
+          type: 'DEFECT',
+          title: state === 'ENDED' ? `Defect liability period over: ${h.project.name}` : `Defect liability period ends in ${daysLeft} day${daysLeft === 1 ? '' : 's'}: ${h.project.name}`,
+          body: `The DLP ${state === 'ENDED' ? 'ended' : 'ends'} on ${endsOn}. ${pending}Claim back the retention money and the performance guarantee.`,
+          projectId: h.projectId,
+          entityType: 'HANDOVER',
+          entityId: h.projectId,
+          dedupeKey: `HANDOVER:${h.id}:${endsOn}:${state}`,
+        }),
+      );
+    }
+    const overdue = await this.prisma.defect.findMany({
+      where: { status: 'OPEN', dueDate: { lt: today } },
+      include: { project: { select: { name: true, projectManagerId: true } } },
+      orderBy: { dueDate: 'asc' },
+      take: 500,
+    });
+    for (const d of overdue) {
+      const userIds = [...new Set([d.assignedToId, d.project.projectManagerId].filter((u): u is string => !!u))];
+      if (!userIds.length) continue;
+      const due = d.dueDate!.toISOString().slice(0, 10);
+      add(
+        await this.notifications.notify({
+          organizationId: d.organizationId,
+          userIds,
+          type: 'DEFECT',
+          title: `Overdue: ${d.defectNo} ${d.title}`,
+          body: `${d.project.name}${d.location ? ` at ${d.location}` : ''}${d.contractor ? ` (${d.contractor})` : ''} was to be put right by ${due}.`,
+          projectId: d.projectId,
+          entityType: 'DEFECT',
+          entityId: d.id,
+          dedupeKey: `DEFECT_OVERDUE:${d.id}:${due}`,
+        }),
+      );
+    }
+    this.log.log(`Handover due ${date}: ${JSON.stringify(result)}`);
     return result;
   }
 

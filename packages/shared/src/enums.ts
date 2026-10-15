@@ -59,6 +59,7 @@ export const NOTIFICATION_TYPES = [
   'MACHINERY',
   'IMPREST',
   'COMPLIANCE',
+  'DEFECT',
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
@@ -169,3 +170,14 @@ export type ComplianceDocKind = (typeof COMPLIANCE_DOC_KINDS)[number];
 /** Active until renewed, released (returned, refunded, cancelled, surrendered) or invoked (encashed, forfeited). */
 export const COMPLIANCE_DOC_STATUSES = ['ACTIVE', 'RENEWED', 'RELEASED', 'INVOKED'] as const;
 export type ComplianceDocStatus = (typeof COMPLIANCE_DOC_STATUSES)[number];
+
+/** Handover and defects (v4 item 47): a snag before handover, or a defect in the defect liability period. */
+export const DEFECT_PHASES = ['SNAG', 'DEFECT'] as const;
+export type DefectPhase = (typeof DEFECT_PHASES)[number];
+
+export const DEFECT_PRIORITIES = ['LOW', 'MEDIUM', 'HIGH'] as const;
+export type DefectPriority = (typeof DEFECT_PRIORITIES)[number];
+
+/** OPEN, FIXED by the site, CLOSED once checked (or reopened back to OPEN). */
+export const DEFECT_STATUSES = ['OPEN', 'FIXED', 'CLOSED'] as const;
+export type DefectStatus = (typeof DEFECT_STATUSES)[number];

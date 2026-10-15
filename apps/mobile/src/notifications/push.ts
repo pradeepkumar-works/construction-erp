@@ -77,6 +77,7 @@ export function notificationRoute(data: Record<string, unknown> | undefined): st
   }
   if (data?.type === 'RISK_RAISED' && entityId) return `/risk/${entityId}`;
   if (data?.type === 'SAFETY' && entityId) return entityType === 'WORK_PERMIT' ? `/permit/${entityId}` : `/incident/${entityId}`;
+  if (data?.type === 'DEFECT' && entityId) return entityType === 'DEFECT' ? `/snag/${entityId}` : `/snags?projectId=${entityId}`;
   if ((data?.type === 'TEST_DUE' || data?.type === 'TEST_FAILED') && entityId) return `/test/${entityId}`;
   if (data?.type === 'NCR' && entityId) return `/ncr/${entityId}`;
   const projectId = data?.projectId as string | undefined;

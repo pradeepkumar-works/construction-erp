@@ -355,7 +355,11 @@ preview deployments run them against the production database before a PR is merg
     Done: bank guarantees (with margin money and claim period), EMDs, insurance policies and licences, company-wide
     or per project, with scans; renewals that keep the earlier periods; release and invocation; totals of money tied
     up; and reminders 30 days before expiry and on expiry.
-47. **Handover and defects** (M). Snag list, completion certificate, defect log, close-out checklist.
+47. ~~**Handover and defects** (M). Snag list, completion certificate, defect log, close-out checklist.~~
+    Done: snags before handover and defects in the defect liability period, reported with photos from the phone or
+    web, put right by our team or a subcontractor and accepted by QA/QC; the completion certificate, which starts
+    the DLP and marks the project completed; retention and deposit still with the client; a close-out checklist;
+    reminders as the DLP ends and when snags pass their due date.
 48. **Small items** (S each). QA/QC acceptance on a GRN, procurement status report, unit master, financial-year
     filters.
 49. **Hindi on the phone app** (M).

@@ -724,6 +724,23 @@ jobs:
           jq -r '"active \(.totals.active), expiring \(.totals.expiring), expired \(.totals.expired), guarantees out \(.totals.guaranteesOut), margin \(.totals.marginBlocked), EMD \(.totals.emdOut)"' /tmp/compliance.json
           code=$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/compliance-docs" -H "authorization: Bearer $(login engineer@demo.com)")
           echo "site engineer reading the register: $code"; [ "$code" = "403" ]
+      - name: Handover and defects
+        run: |
+          set -e
+          # Shapes only: no seeded snags are assumed, and nothing is written.
+          login() { curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' -d "{\"email\":\"$1\",\"password\":\"password123\"}" | jq -r .accessToken; }
+          H="authorization: Bearer $(login pm@demo.com)"
+          P=$(curl -sf "$API_URL/projects" -H "$H" | jq -r '.items[0].id')
+          curl -sf "$API_URL/projects/$P/handover" -H "$H" > /tmp/ho.json
+          jq -e '(.snags.open | type) == "number" and (.defects.overdue | type) == "number" and (.defects.cost | type) == "string" and (.checklist | type) == "array"' /tmp/ho.json > /dev/null
+          jq -r '"completion \(.handover.completedOn // "not recorded"); snags open \(.snags.open), defects open \(.defects.open) (\(.defects.overdue) overdue); checklist \([.checklist[] | select(.doneOn)] | length)/\(.checklist | length)"' /tmp/ho.json
+          curl -sf "$API_URL/defects?status=PENDING&pageSize=20" -H "$H" | jq -e '(.total | type) == "number" and all(.items[]; .status == "OPEN" or .status == "FIXED")' > /dev/null
+          code=$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/defects" -H "authorization: Bearer $(login client@demo.com)")
+          echo "client's engineer listing defects: $code"; [ "$code" = "403" ]
+          E="authorization: Bearer $(login engineer@demo.com)"
+          EP=$(curl -sf "$API_URL/projects" -H "$E" | jq -r '.items[0].id')
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X PUT "$API_URL/projects/$EP/handover" -H "$E" -H 'content-type: application/json' -d '{"completedOn":"2026-01-01"}')
+          echo "site engineer recording completion: $code"; [ "$code" = "403" ]
       - name: Activity templates
         run: |
           set -e

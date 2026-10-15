@@ -184,6 +184,32 @@ A site labour register, not HR: no PF, ESI or payslips (those stay with Payroll 
   builds).
 - **Web.** A Guarantees & Licences page under Billing; no phone screen (an office register).
 
+### Handover and defects
+
+- **Tables.** `ProjectHandover` (one per project): completion date, certificate number and date, certified by, the
+  defect liability period (DLP) in months and its end (`dlpEnd` in `packages/shared/src/handover.ts`, clamped to the
+  month's last day), with the certificate as attachments (`handoverId`). `Defect`: `SNG-` (phase `SNAG`, before
+  handover) or `DEF-` (phase `DEFECT`, in the DLP) numbers, title, location, trade, priority, who found it, assignee
+  or subcontractor, due date, status `OPEN` / `FIXED` / `CLOSED` with the fix note, cost and who accepted it; photos
+  are attachments (`defectId`). `CloseoutItem`: the project's close-out checklist lines by category. All three have
+  `tenant_isolation` policies.
+- **Flow.** Site and office staff report snags and defects and mark them fixed (`canReportDefect`); QA/QC and
+  approvers accept (close) or reopen them (`canCloseDefect`). A new entry is a defect once completion is recorded
+  for its date, a snag before. Closing one never fixed needs a note. Offline retries send a client `id`.
+- **Completion.** The project's approvers record it (`PUT /projects/:id/handover`, `canManageHandover`): the DLP
+  defaults to the contract's `defectLiabilityMonths` (12 when empty), the project becomes `COMPLETED`, and the
+  standard checklist (`DEFAULT_CLOSEOUT_ITEMS`) is added when the project has none. Removing it sets the project
+  back to `ACTIVE`.
+- **Summary.** `GET /projects/:id/handover` returns the completion, snag and defect counts (overdue, cost of
+  defects), retention and security deposit still with the client (from receipts, only for `canViewContract`
+  roles), and the checklist. Guests (client's engineer, consultant) are kept out.
+- **Reminders.** `NotificationJobsService.handoverDue` (with the daily digest, or `GET
+  /notifications/jobs/handover-due`) tells the accounts keepers and the project manager once when the DLP comes
+  within 30 days of its end and once when it is over, to claim back retention; and tells the assignee and project
+  manager when an open entry passes its due date (`DEFECT` notification, hidden from older phone builds).
+- **Web and phone.** A Handover tab on the project. The phone has Snags & defects under Submit: report with photos
+  (online), list by status, mark fixed with photos after, accept or reopen.
+
 ## Lists: paging, search, sort and export
 
 `GET /progress`, `/dpr`, `/material-requests`, `/attendance`, `/stock/entries`, `/stock/balances`, `/stock/items`,
