@@ -37,31 +37,324 @@ a {
   white-space: nowrap;
 }
 
-/* Sign-in pages: blueprint navy with a faint drawing grid and a blue datum band along the bottom edge. */
-.login-bg {
-  position: relative;
+/* Sign-in, sign-up and password pages: a navy brand panel beside the form on white. */
+.auth {
   min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: var(--brand-ink);
-  background-image:
-    linear-gradient(rgba(110, 168, 255, 0.07) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(110, 168, 255, 0.07) 1px, transparent 1px),
-    linear-gradient(rgba(110, 168, 255, 0.13) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(110, 168, 255, 0.13) 1px, transparent 1px);
-  background-size: 24px 24px, 24px 24px, 120px 120px, 120px 120px;
-  padding: 24px 24px 48px;
+  display: grid;
+  grid-template-columns: minmax(380px, 5fr) 7fr;
+  background: #fff;
 }
 
-.login-bg::after {
+.auth-aside {
+  /* Stays in view while a long form (sign-up) scrolls. */
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 48px;
+  padding: 40px 56px;
+  color: #fff;
+  background-color: var(--brand-ink);
+}
+
+/* The blueprint grid, faded out towards the top so the headline sits on clean navy. */
+.auth-aside::before {
   content: '';
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 10px;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(110, 168, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(110, 168, 255, 0.08) 1px, transparent 1px);
+  background-size: 32px 32px;
+  -webkit-mask-image: linear-gradient(to top, #000 0%, transparent 70%);
+  mask-image: linear-gradient(to top, #000 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.auth-aside > * {
+  position: relative;
+}
+
+.auth-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.auth-pitch {
+  max-width: 440px;
+  animation: auth-rise 700ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.auth-kicker {
+  margin: 0 0 16px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--brand-accent-light);
+}
+
+.auth-headline {
+  margin: 0;
+  font-family: var(--font-display), 'Arial Narrow', Arial, sans-serif;
+  font-stretch: 85%;
+  font-weight: 800;
+  font-size: clamp(36px, 3.6vw, 52px);
+  line-height: 1.04;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+  color: #fff;
+}
+
+/* The datum line from the logo, under the headline. */
+.auth-datum {
+  display: block;
+  width: 56px;
+  height: 4px;
+  margin: 28px 0;
+  border-radius: 2px;
   background: var(--brand-accent);
+}
+
+.auth-points {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 14px;
+  font-size: 15px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.auth-points li {
+  display: flex;
+  gap: 12px;
+}
+
+.auth-points li::before {
+  content: '';
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  margin-top: 8px;
+  border-radius: 1px;
+  background: var(--brand-accent-light);
+}
+
+.auth-aside-foot {
+  margin: 0;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.auth-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 40px 48px 28px;
+}
+
+.auth-form {
+  width: 100%;
+  margin: auto;
+  padding: 48px 0;
+  animation: auth-rise 500ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.auth-brand-compact {
+  display: none;
+  margin-bottom: 40px;
+}
+
+.auth-title {
+  margin: 0 0 8px;
+  font-family: var(--font-display), 'Arial Narrow', Arial, sans-serif;
+  font-stretch: 88%;
+  font-weight: 700;
+  font-size: 34px;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  color: var(--brand-ink);
+}
+
+.auth-subtitle {
+  margin: 0 0 32px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--brand-muted);
+}
+
+.auth-form .ant-form-item-label > label {
+  font-weight: 500;
+  color: var(--brand-ink);
+}
+
+.auth-form .ant-input-affix-wrapper-lg,
+.auth-form .ant-input-lg {
+  border-radius: 8px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.auth-form .ant-btn-lg {
+  height: 48px;
+  border-radius: 8px;
+}
+
+/* "Forgot password?" sits on the label row, outside the <label> so the field's name stays "Password". */
+.auth-field {
+  position: relative;
+}
+
+.auth-field-aside {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 1;
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.auth-link {
+  color: var(--brand-link);
+  font-weight: 500;
+}
+
+.auth-link:hover {
+  text-decoration: underline;
+}
+
+.auth-alt {
+  margin: 24px 0 0;
+  text-align: center;
+  color: var(--brand-muted);
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 40px 0 16px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--brand-subtle);
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--brand-border);
+}
+
+.auth-demo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.auth-demo button {
+  padding: 6px 12px;
+  border: 1px solid var(--brand-border);
+  border-radius: 999px;
+  background: #fff;
+  font: inherit;
+  font-size: 13px;
+  color: var(--brand-muted);
+  cursor: pointer;
+  transition: border-color 150ms, color 150ms, background-color 150ms;
+}
+
+.auth-demo button:hover {
+  border-color: var(--brand-accent);
+  color: var(--brand-accent);
+}
+
+.auth-demo button[aria-pressed='true'] {
+  border-color: var(--brand-accent);
+  background: var(--brand-accent-soft);
+  color: var(--brand-accent-deep);
+  font-weight: 600;
+}
+
+.auth-demo-note {
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: var(--brand-subtle);
+}
+
+.auth-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 13px;
+  color: var(--brand-subtle);
+}
+
+.auth-foot nav {
+  display: flex;
+  gap: 20px;
+}
+
+.auth-foot a {
+  color: inherit;
+}
+
+.auth-foot a:hover {
+  color: var(--brand-ink);
+}
+
+@keyframes auth-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-pitch,
+  .auth-form {
+    animation: none;
+  }
+}
+
+@media (max-width: 991px) {
+  .auth {
+    grid-template-columns: 1fr;
+  }
+  .auth-aside {
+    display: none;
+  }
+  .auth-brand-compact {
+    display: inline-flex;
+  }
+}
+
+@media (max-width: 575px) {
+  .auth-main {
+    padding: 24px 20px 20px;
+  }
+  .auth-form {
+    padding: 16px 0 32px;
+  }
+  .auth-title {
+    font-size: 30px;
+  }
+  .auth-subtitle {
+    margin-bottom: 28px;
+  }
 }
 
 /* Headings and the wordmark use the condensed display face; figures line up in tables and statistics. */
