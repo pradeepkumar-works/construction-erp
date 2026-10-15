@@ -51,6 +51,7 @@ export const brandCssVars: Record<string, string> = {
   '--brand-accent-light': BRAND.colors.accentLight,
   '--brand-on-accent': BRAND.colors.onAccent,
   '--brand-link': BRAND.colors.link,
+  '--brand-pending': BRAND.colors.pending,
   '--brand-canvas': BRAND.colors.canvas,
   '--brand-border': BRAND.colors.border,
   '--brand-muted': BRAND.colors.muted,

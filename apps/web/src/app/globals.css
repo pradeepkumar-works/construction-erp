@@ -411,13 +411,6 @@ h4.ant-typography,
   }
 }
 
-.ant-menu-dark .ant-menu-item-group-title {
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-weight: 600;
-  padding-top: 14px;
-}
-
 
 /* Superseded revisions and other rows that are on record but not in force */
 .row-muted td {
