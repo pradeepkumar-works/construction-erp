@@ -358,8 +358,11 @@ export interface NotificationDto {
   body: string;
   projectId: string | null;
   projectName: string | null;
-  /** Set when the notification points at a submission (or, for SAFETY, an incident or permit); open it with entityType + entityId. */
-  entityType: SubmissionType | 'SAFETY_INCIDENT' | 'WORK_PERMIT' | null;
+  /**
+   * Set when the notification points at a submission (or, for SAFETY, an incident or permit; for MACHINERY, a machine
+   * due for service, a job card, a vehicle paper or a driver); open it with entityType + entityId.
+   */
+  entityType: SubmissionType | 'SAFETY_INCIDENT' | 'WORK_PERMIT' | 'EQUIPMENT' | 'MAINTENANCE_JOB' | 'EQUIPMENT_DOCUMENT' | 'DRIVER' | null;
   entityId: string | null;
   readAt: string | null;
   createdAt: string;
@@ -381,7 +384,7 @@ export interface PushTokenDto {
 
 /** Result of a scheduled notification job (DPR reminder / approval digest). */
 export interface NotificationJobResult {
-  job: 'DPR_REMINDER' | 'APPROVAL_DIGEST' | 'TESTS_DUE' | 'BILLS_DUE';
+  job: 'DPR_REMINDER' | 'APPROVAL_DIGEST' | 'TESTS_DUE' | 'BILLS_DUE' | 'MACHINERY_DUE';
   date: string;
   created: number;
   pushed: number;
@@ -599,6 +602,11 @@ export interface EquipmentDto {
   isActive: boolean;
   /** Date of the latest log, any status except rejected. */
   lastLogDate: string | null;
+  /** Service every so many working hours and / or days; null when not set */
+  serviceIntervalHours: string | null;
+  serviceIntervalDays: number | null;
+  lastServiceDate: string | null;
+  lastServiceMeter: string | null;
   createdAt: string;
 }
 

@@ -659,6 +659,21 @@ jobs:
           code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/safety/talks" -H "authorization: Bearer $(login accounts@demo.com)" -H 'content-type: application/json' \
             -d "{\"projectId\":\"$PROJECT\",\"date\":\"$(date -u +%Y-%m-%d)\",\"topic\":\"smoke\",\"conductedBy\":\"smoke\",\"attendeeCount\":1}")
           echo "accounts recording a toolbox talk: $code"; [ "$code" = "403" ]
+      - name: Machinery maintenance
+        run: |
+          set -e
+          login() { curl -sf -X POST "$API_URL/auth/login" -H 'content-type: application/json' -d "{\"email\":\"$1\",\"password\":\"password123\"}" | jq -r .accessToken; }
+          S="authorization: Bearer $(login store@demo.com)"
+          curl -sf "$API_URL/maintenance/summary" -H "$S" > /tmp/mnt.json
+          jq -e '(.service | type) == "array" and (.documentsDue | type) == "array" and (.licencesDue | type) == "array" and (.openJobs | type) == "number"' /tmp/mnt.json > /dev/null
+          jq -e 'all(.service[]; .state == "OVERDUE" or .state == "DUE_SOON" or .state == "OK")' /tmp/mnt.json > /dev/null
+          jq -r '"service overdue \([.service[] | select(.state == "OVERDUE")] | length), due soon \([.service[] | select(.state == "DUE_SOON")] | length); papers due \(.documentsDue | length), licences due \(.licencesDue | length); open job cards \(.openJobs) (\(.openBreakdowns) breakdowns)"' /tmp/mnt.json
+          curl -sf "$API_URL/maintenance/jobs?pageSize=5" -H "$S" | jq -e '(.total | type) == "number" and all(.items[]; (.totalCost | tonumber) >= 0)' > /dev/null
+          curl -sf "$API_URL/equipment-documents?pageSize=100" -H "$S" | jq -e 'all(.items[]; .state == "VALID" or .state == "EXPIRING" or .state == "EXPIRED")' > /dev/null
+          curl -sf "$API_URL/drivers?pageSize=5" -H "$S" | jq -e '(.total | type) == "number"' > /dev/null
+          curl -sf "$API_URL/notifications?limit=100" -H "$S" | jq -e 'all(.items[]; .type != "MACHINERY")' > /dev/null
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/drivers" -H "authorization: Bearer $(login engineer@demo.com)" -H 'content-type: application/json' -d '{"name":"smoke"}')
+          echo "site engineer adding a driver: $code"; [ "$code" = "403" ]
       - name: Activity templates
         run: |
           set -e

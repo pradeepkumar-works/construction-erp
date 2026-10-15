@@ -808,6 +808,43 @@ PDF from the browser.
   talk and permit forms (offline through the outbox), incident detail with close / reopen and permit detail
   with issue, reject and close.
 
+## Machinery maintenance and vehicle papers
+
+- **Tables.** `MaintenanceJob` (`MNT-<year>-0001`): machine, the project it was at (null in the yard), `kind`
+  (SERVICE | BREAKDOWN), date, meter reading, fault or work to do, workshop, `status` (OPEN | CLOSED) with
+  closing date, work done, downtime hours, `labourCost` and `partsCost` (bought outside). Spares from the store
+  are ordinary stock issues with `StockEntry.maintenanceJobId` set, so they move stock and count in the project's
+  material cost; the job card values them at the item's standard rate. `EquipmentDocument`: machine, `type`
+  (INSURANCE | FITNESS | PERMIT | PUC | ROAD_TAX | REGISTRATION | OTHER), number, issuer, `validFrom`, `validTo`
+  (required). A renewal is a new row; lists show the latest per machine and type unless `latestOnly=false`.
+  `Driver`: name, phone, licence number, class and validity, the machine they drive, active flag. `Equipment`
+  gained `serviceIntervalHours`, `serviceIntervalDays`, `lastServiceDate` and `lastServiceMeter`. All three new
+  tables have `tenant_isolation` policies. Machine repair labour and outside parts stay on the job card; they are
+  not added to the project cost view (the hire or internal rate already carries a machine's running cost).
+- **Service due.** `serviceStatuses` (`src/maintenance/service-status.ts`): hours worked in logs that are not
+  rejected since the last service (or since the machine was added) against the hour interval, and days since it
+  against the day interval, whichever comes first; due soon within `SERVICE_SOON_HOURS` (25) or
+  `SERVICE_SOON_DAYS` (7). Closing a SERVICE job card sets the machine's last service date and meter (never moves
+  it back). `expiryState` marks papers and licences expiring within `DOC_ALERT_DAYS` (30) or expired.
+- **Who.** Anyone who logs machinery reports a breakdown at a project they can see (`assertCanReportBreakdown`).
+  The store manager and approvers (`canManageMaintenance`) raise services, issue spares, close and delete job
+  cards (not once spares are issued), and keep papers and drivers; the equipment master and its service
+  intervals stay with approvers. Job cards are visible like submissions, plus yard machines for maintenance
+  managers; papers and drivers to the whole organisation.
+- **API.** `GET /maintenance/summary` (service schedule, papers and licences due, open job cards, this month's
+  downtime and cost), `/maintenance/jobs` (CRUD, `/:id/close`, `/:id/spares`), `/equipment-documents`,
+  `/drivers`.
+- **Alerts.** Type `MACHINERY`. A breakdown tells the project's manager and store managers (store managers and
+  admins for a yard machine), `entityType` MAINTENANCE_JOB. The daily `machineryDue` job (with the digest cron,
+  `GET /notifications/jobs/machinery-due` by hand) tells admins, management and the machine's project watchers of
+  services falling due with no open service job card (EQUIPMENT), papers (EQUIPMENT_DOCUMENT) and licences
+  (DRIVER) expiring within 30 days; each once when it falls due and once more when overdue or expired
+  (dedupe keys carry the paper id or the last service date). `MACHINERY` is left out of
+  `LEGACY_NOTIFICATION_TYPES`.
+- **Clients.** Web: Machinery page and project tab gain Maintenance (summary, service schedule with Raise
+  service, job cards, a job drawer with spares and close) and, fleet-wide, Papers & drivers (renew, add, edit);
+  the equipment form takes the service intervals. Site app: Report a breakdown from the Submit tab (online only).
+
 ## Client portal
 
 - **Who.** Two guest roles, `CLIENT_ENGINEER` and `CONSULTANT` (`GUEST_ROLES`, `isGuest`), invited and put on projects

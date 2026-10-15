@@ -70,13 +70,14 @@ export class NotificationsController {
   @Public()
   @UseGuards(CronGuard)
   @ApiSecurity('cron')
-  @ApiOperation({ summary: 'Daily digest of pending approvals (in-app, push, email and WhatsApp); also sends the test-due and payments-due reminders. Auth: Authorization: Bearer <CRON_SECRET>.' })
+  @ApiOperation({ summary: 'Daily digest of pending approvals (in-app, push, email and WhatsApp); also sends the test-due, payments-due and machinery-due reminders. Auth: Authorization: Bearer <CRON_SECRET>.' })
   @Get('jobs/approval-digest')
   async approvalDigest(@Query() q: JobQuery) {
     const digest = await this.jobs.approvalDigest(q.date);
     // Vercel Hobby allows two crons, so the daily test and payment reminders ride on the digest's.
     await this.jobs.testsDue(q.date).catch(() => undefined);
     await this.jobs.billsDue(q.date).catch(() => undefined);
+    await this.jobs.machineryDue(q.date).catch(() => undefined);
     // ...and so does erasing companies whose deletion date has come.
     await this.companyData.purgeDue(q.date).catch(() => undefined);
     // ...and starting trials and billing reminders.
@@ -100,5 +101,14 @@ export class NotificationsController {
   @Get('jobs/bills-due')
   billsDue(@Query() q: JobQuery) {
     return this.jobs.billsDue(q.date);
+  }
+
+  @Public()
+  @UseGuards(CronGuard)
+  @ApiSecurity('cron')
+  @ApiOperation({ summary: 'Machinery due: services falling due, vehicle papers and driving licences expiring within 30 days, each alerted once. Auth: Authorization: Bearer <CRON_SECRET>.' })
+  @Get('jobs/machinery-due')
+  machineryDue(@Query() q: JobQuery) {
+    return this.jobs.machineryDue(q.date);
   }
 }

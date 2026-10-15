@@ -1,4 +1,4 @@
-import type { BillStage, ReceiptKind, VendorKind, MsmeCategory, EquipmentOwnership, ExpenseCategory, PaymentMode, EquipmentRateUnit, MaterialPriority, NotificationType, ProjectStatus, ProjectType, DelayParty, PasswordTokenPurpose, RiskCategory, RiskKind, RiskStatus, RoleKey, SafetyIncidentStatus, SafetyIncidentType, StockEntryType, SubmissionStatus, SubmissionType, Weather, WorkPermitStatus, WorkPermitType } from './enums';
+import type { EquipmentDocType, MaintenanceKind, MaintenanceStatus, BillStage, ReceiptKind, VendorKind, MsmeCategory, EquipmentOwnership, ExpenseCategory, PaymentMode, EquipmentRateUnit, MaterialPriority, NotificationType, ProjectStatus, ProjectType, DelayParty, PasswordTokenPurpose, RiskCategory, RiskKind, RiskStatus, RoleKey, SafetyIncidentStatus, SafetyIncidentType, StockEntryType, SubmissionStatus, SubmissionType, Weather, WorkPermitStatus, WorkPermitType } from './enums';
 
 export const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {
   ROAD: 'Road / Infrastructure',
@@ -86,6 +86,7 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   BILLS_DUE: 'Payments due',
   PORTAL: 'Client portal',
   SAFETY: 'Safety',
+  MACHINERY: 'Machinery',
 };
 
 export const STOCK_ENTRY_TYPE_LABELS: Record<StockEntryType, string> = {
@@ -237,4 +238,24 @@ export const WORK_PERMIT_STATUS_LABELS: Record<WorkPermitStatus, string> = {
   ISSUED: 'Issued',
   REJECTED: 'Rejected',
   CLOSED: 'Closed',
+};
+
+export const MAINTENANCE_KIND_LABELS: Record<MaintenanceKind, string> = {
+  SERVICE: 'Service',
+  BREAKDOWN: 'Breakdown',
+};
+
+export const MAINTENANCE_STATUS_LABELS: Record<MaintenanceStatus, string> = {
+  OPEN: 'Open',
+  CLOSED: 'Closed',
+};
+
+export const EQUIPMENT_DOC_TYPE_LABELS: Record<EquipmentDocType, string> = {
+  INSURANCE: 'Insurance',
+  FITNESS: 'Fitness certificate',
+  PERMIT: 'Permit',
+  PUC: 'PUC (pollution)',
+  ROAD_TAX: 'Road tax',
+  REGISTRATION: 'Registration (RC)',
+  OTHER: 'Other',
 };

@@ -130,6 +130,9 @@ export const canAdjustStock = (role: RoleKey) => canApprove(role);
 export const canLogMachinery = (role: RoleKey) => MACHINERY_LOGGER_ROLES.includes(role);
 /** Equipment master (codes, ownership, hire rates, deployment): approvers only, since rates are commercial. */
 export const canManageEquipment = (role: RoleKey) => canApprove(role);
+/** Report a breakdown from site: the roles that log machinery. Close job cards, keep vehicle papers and drivers: the store manager and approvers. */
+export const MAINTENANCE_MANAGER_ROLES: RoleKey[] = ['STORE_MANAGER', ...APPROVER_ROLES];
+export const canManageMaintenance = (role: RoleKey) => MAINTENANCE_MANAGER_ROLES.includes(role);
 
 /** File site expenses. */
 export const canSubmitExpense = (role: RoleKey) => EXPENSE_SUBMITTER_ROLES.includes(role);

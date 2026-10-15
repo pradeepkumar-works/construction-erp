@@ -56,6 +56,7 @@ export const NOTIFICATION_TYPES = [
   'BILLS_DUE',
   'PORTAL',
   'SAFETY',
+  'MACHINERY',
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
@@ -103,6 +104,17 @@ export type WorkPermitType = (typeof WORK_PERMIT_TYPES)[number];
 /** REQUESTED by site; ISSUED (work may start) or REJECTED by the safety officer or an approver; CLOSED when the work is done. */
 export const WORK_PERMIT_STATUSES = ['REQUESTED', 'ISSUED', 'REJECTED', 'CLOSED'] as const;
 export type WorkPermitStatus = (typeof WORK_PERMIT_STATUSES)[number];
+
+/** A scheduled service when it falls due, or a breakdown repair. */
+export const MAINTENANCE_KINDS = ['SERVICE', 'BREAKDOWN'] as const;
+export type MaintenanceKind = (typeof MAINTENANCE_KINDS)[number];
+
+export const MAINTENANCE_STATUSES = ['OPEN', 'CLOSED'] as const;
+export type MaintenanceStatus = (typeof MAINTENANCE_STATUSES)[number];
+
+/** Machine and vehicle papers that expire. */
+export const EQUIPMENT_DOC_TYPES = ['INSURANCE', 'FITNESS', 'PERMIT', 'PUC', 'ROAD_TAX', 'REGISTRATION', 'OTHER'] as const;
+export type EquipmentDocType = (typeof EQUIPMENT_DOC_TYPES)[number];
 
 /** Who a delay is attributable to, which decides whether an extension of time can be claimed. */
 export const DELAY_PARTIES = ['CLIENT', 'CONTRACTOR', 'THIRD_PARTY', 'FORCE_MAJEURE'] as const;
