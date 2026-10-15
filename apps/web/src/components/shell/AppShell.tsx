@@ -1,189 +1,77 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Alert, Avatar, Badge, Button, Drawer, Dropdown, Grid, Layout, Menu, Space, Tag, Typography } from 'antd';
+import { Alert, Avatar, Button, Drawer, Dropdown, Grid, Layout, Space, Tag, Typography } from 'antd';
 import type { MenuProps } from 'antd';
-import {
-  AppstoreOutlined,
-  CreditCardOutlined,
-  CloudServerOutlined,
-  CustomerServiceOutlined,
-  AuditOutlined,
-  CheckSquareOutlined,
-  FileTextOutlined,
-  InboxOutlined,
-  ToolOutlined,
-  WalletOutlined,
-  PayCircleOutlined,
-  ExportOutlined,
-  PercentageOutlined,
-  CalculatorOutlined,
-  SafetyOutlined,
-  FolderOpenOutlined,
-  FundOutlined,
-  FilePdfOutlined,
-  LineChartOutlined,
-  LogoutOutlined,
-  MenuOutlined,
-  ProjectOutlined,
-  ScheduleOutlined,
-  ShoppingCartOutlined,
-  TeamOutlined,
-  UserOutlined,
-  AlertOutlined,
-  MedicineBoxOutlined,
-  PartitionOutlined,
-  SafetyCertificateOutlined,
-  BankOutlined,
-  FileDoneOutlined,
-  AccountBookOutlined,
-  ContainerOutlined,
-  ReconciliationOutlined,
-  ShopOutlined,
-  SolutionOutlined,
-  ProfileOutlined,
-  IdcardOutlined,
-  CarryOutOutlined,
-  DatabaseOutlined,
-  DiffOutlined,
-} from '@ant-design/icons';
+import { AuditOutlined, CustomerServiceOutlined, LogoutOutlined, MenuOutlined, SearchOutlined, UserOutlined } from '@ant-design/icons';
 import type { AuthUser } from '@erp/shared';
-import { BILLING_REMIND_DAYS, PRODUCT_NAME } from '@erp/shared';
-import { isGuest } from '@erp/shared';
-import { approvalRightsOf, canViewPurchaseOrders, canViewVendorBills, canViewWorkOrders, canViewPayables, canExportTally, canViewGstRegisters, canPrepareSubcontractBill, canEditContract, canEditProjects, canEditVendors, canManageUsers, canSeeVendorBank, canPrepareBill, canViewContract, canViewCost, mayApprove, canViewPayroll, canViewLabourSummary, canManageCompanyData, canManageBilling, canViewVariations } from '@erp/shared';
+import { BILLING_REMIND_DAYS, PRODUCT_NAME, canManageBilling, canManageCompanyData, isGuest, mayApprove } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useCompanyDeletion, usePendingApprovals } from '@/lib/queries';
 import { formatDate, formatDateTime } from '@/lib/format';
 import { endSupportSession } from '@/lib/api';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { BRAND } from '@/lib/brand';
-import { BrandMark, Wordmark } from './BrandMark';
+import { BrandMark } from './BrandMark';
+import { CommandPalette } from './CommandPalette';
+import { navFor } from './nav';
+import { PREF_RAIL, Sidebar, readPref, writePref } from './Sidebar';
+import s from './Sidebar.module.css';
 
-const { Header, Sider, Content } = Layout;
+const { Header, Content } = Layout;
 
-function selectedKey(pathname: string): string {
-  if (pathname === '/') return '/';
-  return '/' + pathname.split('/')[1];
-}
-
-function Brand({ user, collapsed }: { user: AuthUser; collapsed: boolean }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: collapsed ? '16px 0' : '16px 20px', justifyContent: collapsed ? 'center' : 'flex-start', overflow: 'hidden' }}>
-      <BrandMark />
-      {!collapsed && (
-        <div style={{ lineHeight: 1.15, whiteSpace: 'nowrap' }}>
-          <Wordmark color={BRAND.colors.onAccent} size={19} />
-          <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11, marginTop: 4 }}>{user.organizationName}</div>
-        </div>
-      )}
-    </div>
-  );
-}
+/** Typing in a field, so single-key shortcuts must not fire. */
+const isTyping = (el: EventTarget | null) => el instanceof HTMLElement && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
 
 export function AppShell({ user, children }: { user: AuthUser; children: React.ReactNode }) {
   const pathname = usePathname();
   const { logout } = useAuth();
   const screens = Grid.useBreakpoint();
   const isMobile = screens.md === false;
-  const [collapsed, setCollapsed] = useState(false);
+  // The rail is remembered; with no choice yet, narrower laptop screens start with it.
+  const [rail, setRail] = useState<boolean>(() => readPref<boolean | null>(PREF_RAIL, null) ?? window.innerWidth < 1100);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const approver = mayApprove(user);
   const { data: pending } = usePendingApprovals(approver);
-  const pendingCount = pending?.length ?? 0;
+  const pendingCount = approver ? (pending?.length ?? 0) : 0;
+  const sections = useMemo(() => navFor(user), [user]);
+  const guest = isGuest(user.roleKey);
 
-  const items: MenuProps['items'] = useMemo(() => {
-    const narrow = collapsed && !isMobile;
-    const showBadge = approver && pendingCount > 0 && !narrow;
-    const link = (href: string, label: string, Icon: React.ComponentType) => ({ key: href, icon: <Icon />, label: <Link href={href}>{label}</Link> });
-    // The client's engineer and consultant have the portal only.
-    if (isGuest(user.roleKey)) return [link('/portal', 'My projects', ProjectOutlined), link('/notifications', 'Notifications', AuditOutlined)];
-    const sections: { title?: string; items: NonNullable<MenuProps['items']> }[] = [
-      {
-        items: [
-          link('/', 'Dashboard', AppstoreOutlined),
-          link('/projects', 'Projects', ProjectOutlined),
-          {
-            key: '/approvals',
-            icon: <CheckSquareOutlined />,
-            label: (
-              <Link href="/approvals" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span>Approvals</span>
-                {showBadge && <Badge count={pendingCount} size="small" style={{ boxShadow: 'none' }} />}
-              </Link>
-            ),
-          },
-        ],
-      },
-      {
-        title: 'Site',
-        items: [
-          link('/dpr', 'Daily Reports', FileTextOutlined),
-          link('/attendance', 'Attendance', ScheduleOutlined),
-          link('/progress', 'Progress Entries', LineChartOutlined),
-          link('/measurements', 'Measurement Book', CalculatorOutlined),
-          link('/inspections', 'Quality', SafetyOutlined),
-          link('/documents', 'Documents', FolderOpenOutlined),
-          link('/expenses', 'Site Expenses', WalletOutlined),
-          link('/risks', 'Delays & Risks', AlertOutlined),
-          link('/safety', 'Safety', MedicineBoxOutlined),
-        ],
-      },
-      {
-        title: 'Materials & plant',
-        items: [link('/material-requests', 'Material Requests', ShoppingCartOutlined), link('/stock', 'Stock', InboxOutlined), link('/machinery', 'Machinery', ToolOutlined)],
-      },
-      {
-        title: 'Purchases',
-        items: [
-          ...(canViewPurchaseOrders(user.roleKey) ? [link('/purchase-orders', 'Purchase Orders', ContainerOutlined)] : []),
-          ...(canViewVendorBills(user.roleKey) ? [link('/vendor-bills', 'Vendor Bills', ReconciliationOutlined)] : []),
-          ...(canViewWorkOrders(user.roleKey) ? [link('/work-orders', 'Work Orders', SolutionOutlined)] : []),
-          ...(canPrepareSubcontractBill(user.roleKey) || approvalRightsOf(user).some((r) => r.type === 'SUBCONTRACT_BILL') ? [link('/subcontract-bills', 'Subcontractor Bills', ProfileOutlined)] : []),
-          ...(canViewPayables(user.roleKey) ? [link('/payables', 'Payables', PayCircleOutlined)] : []),
-          ...(canEditVendors(user.roleKey) || canSeeVendorBank(user.roleKey) ? [link('/vendors', 'Vendors', ShopOutlined)] : []),
-        ],
-      },
-      {
-        title: 'Billing',
-        items: [
-          ...(canPrepareBill(user.roleKey) || approvalRightsOf(user).some((r) => r.type === 'BILL') ? [link('/bills', 'RA Bills', FileDoneOutlined)] : []),
-          ...(canViewVariations(user.roleKey) ? [link('/variations', 'Variations', DiffOutlined)] : []),
-          ...(canViewContract(user.roleKey) ? [link('/receivables', 'Receivables', AccountBookOutlined)] : []),
-          ...(canViewContract(user.roleKey) || canEditContract(user.roleKey) ? [link('/clients', 'Clients', BankOutlined)] : []),
-          ...(canViewGstRegisters(user.roleKey) ? [link('/gst', 'GST Registers', PercentageOutlined)] : []),
-          ...(canExportTally(user.roleKey) ? [link('/tally', 'Tally Export', ExportOutlined)] : []),
-        ],
-      },
-      {
-        title: 'People',
-        items: [link('/staff', 'Staff & Leave', IdcardOutlined), ...(canViewPayroll(user.roleKey) || canViewLabourSummary(user.roleKey) ? [link('/payroll', 'Payroll Inputs', CarryOutOutlined)] : [])],
-      },
-      {
-        title: 'Reports',
-        items: [link('/reports', 'Progress Reports', FilePdfOutlined), ...(canViewCost(user.roleKey) ? [link('/cost', 'Project Cost', FundOutlined)] : [])],
-      },
-      {
-        title: 'Admin',
-        items: [
-          ...(canEditProjects(user.roleKey) ? [link('/templates', 'Activity Templates', PartitionOutlined)] : []),
-          ...(canManageUsers(user.roleKey) ? [link('/users', 'Users', TeamOutlined), link('/approval-rules', 'Approval Rules', SafetyCertificateOutlined)] : []),
-          ...(canManageCompanyData(user.roleKey) ? [link('/company-data', 'Data & Privacy', DatabaseOutlined)] : []),
-          ...(user.billing && canManageBilling(user.roleKey) ? [link('/billing', 'Billing', CreditCardOutlined)] : []),
-          ...(user.platformAdmin ? [link('/platform', `${PRODUCT_NAME} console`, CloudServerOutlined)] : []),
-        ],
-      },
-    ];
-    // Collapsed to icons there is no room for section titles, so sections are separated by a rule instead.
-    return sections
-      .filter((sec) => sec.items.length > 0)
-      .flatMap((sec, i): NonNullable<MenuProps['items']> => {
-        if (!sec.title) return sec.items;
-        if (narrow) return [{ type: 'divider', key: `d${i}`, style: { borderColor: 'rgba(255,255,255,0.12)', margin: '6px 12px' } }, ...sec.items];
-        return [{ type: 'group', key: `g${i}`, label: sec.title, children: sec.items }];
-      });
-  }, [approver, pendingCount, collapsed, isMobile, user]);
+  const toggleRail = useCallback(() => {
+    setRail((r) => {
+      writePref(PREF_RAIL, !r);
+      return !r;
+    });
+  }, []);
+
+  // Ctrl K / ⌘K opens quick-jump anywhere; [ folds the sidebar to its rail and back.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === 'k') {
+        if (guest) return;
+        e.preventDefault();
+        setMobileOpen(false);
+        setSearchOpen((o) => !o);
+      } else if (e.key === '[' && !e.ctrlKey && !e.metaKey && !e.altKey && !isMobile && !isTyping(e.target) && !document.querySelector('.ant-modal-wrap')) {
+        toggleRail();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [guest, isMobile, toggleRail]);
+
+  // Close the drawer when the page changes (links, quick-jump or the browser's back button).
+  useEffect(() => setMobileOpen(false), [pathname]);
+
+  const openSearch = guest
+    ? undefined
+    : () => {
+        setMobileOpen(false);
+        setSearchOpen(true);
+      };
 
   const userMenu: MenuProps['items'] = [
     { key: 'info', icon: <UserOutlined />, label: `${user.email}`, disabled: true },
@@ -191,29 +79,26 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
     { key: 'logout', icon: <LogoutOutlined />, label: 'Sign out', onClick: logout },
   ];
 
-  const menu = <Menu theme="dark" mode="inline" selectedKeys={[selectedKey(pathname)]} items={items} style={{ borderInlineEnd: 0 }} onClick={() => setMobileOpen(false)} />;
-
   const initials = user.fullName
     .split(' ')
-    .map((s) => s[0])
+    .map((w) => w[0])
     .join('')
     .slice(0, 2)
     .toUpperCase();
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
+    <Layout hasSider style={{ minHeight: '100vh' }}>
       {!isMobile && (
-        <Sider collapsible collapsed={collapsed} onCollapse={setCollapsed} breakpoint="lg" width={232} collapsedWidth={64} style={{ position: 'sticky', top: 0, height: '100vh', overflow: 'auto' }}>
-          <Brand user={user} collapsed={collapsed} />
-          {menu}
-        </Sider>
+        <aside className={`${s.aside} ${rail ? s.asideRail : ''}`}>
+          <Sidebar user={user} sections={sections} pendingCount={pendingCount} rail={rail} onToggleRail={toggleRail} onSearch={openSearch} />
+        </aside>
       )}
       {isMobile && (
-        <Drawer open={mobileOpen} onClose={() => setMobileOpen(false)} placement="left" width={260} closable={false} styles={{ body: { padding: 0, background: BRAND.colors.ink } }}>
-          <Brand user={user} collapsed={false} />
-          {menu}
+        <Drawer open={mobileOpen} onClose={() => setMobileOpen(false)} placement="left" size={288} closable={false} styles={{ body: { padding: 0, background: BRAND.colors.ink } }}>
+          <Sidebar user={user} sections={sections} pendingCount={pendingCount} onNavigate={() => setMobileOpen(false)} onSearch={openSearch} />
         </Drawer>
       )}
+      {!guest && <CommandPalette open={searchOpen} onClose={() => setSearchOpen(false)} sections={sections} withProjects />}
       <Layout>
         <Header
           style={{
@@ -251,6 +136,7 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
             )}
           </Space>
           <Space size={4}>
+            {isMobile && openSearch && <Button type="text" icon={<SearchOutlined />} onClick={openSearch} aria-label="Search pages and projects" />}
             <NotificationBell />
             <Dropdown menu={{ items: userMenu }} trigger={['click']}>
             <Button type="text" style={{ height: 40, padding: '0 8px' }}>

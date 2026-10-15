@@ -78,5 +78,5 @@ test('only staff have the console', async ({ page }) => {
   const denied = await fetch(`${API_URL}/platform/companies`, { headers: { authorization: `Bearer ${pm}` } });
   expect(denied.status).toBe(403);
   await signIn(page, 'pm@demo.com');
-  await expect(page.getByRole('menuitem', { name: /console/ })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: /console/ })).toHaveCount(0);
 });
