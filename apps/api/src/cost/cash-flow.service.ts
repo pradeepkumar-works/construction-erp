@@ -100,7 +100,7 @@ export class CashFlowService {
       this.payables.summary(user, q.projectId ? { projectId: q.projectId } : {}),
       this.prisma.raBill.findMany({
         where: { projectId: { in: ids }, status: 'APPROVED', OR: [{ stage: 'NOT_SENT' }, { sentDate: null }] },
-        select: { projectId: true, billDate: true, grossAmount: true, gstAmount: true },
+        select: { projectId: true, billDate: true, grossAmount: true, pvAmount: true, gstAmount: true },
       }),
       this.prisma.raBill.groupBy({ by: ['projectId'], where: { projectId: { in: ids }, status: 'APPROVED' }, _sum: { grossAmount: true } }),
       this.budget.forecasts(user.organizationId, projects),
@@ -119,7 +119,7 @@ export class CashFlowService {
       const due = addDays(b.billDate, payDays.get(b.projectId) ?? DEFAULT_CLIENT_PAYMENT_DAYS);
       const p = periodOf(due);
       if (!p) continue;
-      const amount = b.grossAmount.plus(b.gstAmount);
+      const amount = b.grossAmount.plus(b.pvAmount).plus(b.gstAmount);
       p.clientBills = p.clientBills.plus(amount);
       if (due < today) overdueIn = overdueIn.plus(amount);
     }

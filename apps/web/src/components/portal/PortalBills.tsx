@@ -80,6 +80,7 @@ function PortalBillDrawer({ id, onClose }: { id: string | null; onClose: () => v
               { key: 'cert', label: 'Certificate', children: data.certifiedDate ? `${data.certificateNo ?? '-'}, ${formatDate(data.certifiedDate)}` : '-' },
               { key: 'gross', label: 'Work value this bill', children: formatINR(data.grossAmount) },
               ...(data.claimedGross && data.claimedGross !== data.grossAmount ? [{ key: 'claimed', label: 'Claimed', children: formatINR(data.claimedGross) }] : []),
+              ...(data.pvLines.length ? [{ key: 'pv', label: 'Price variation', children: formatINR(data.pvAmount) }] : []),
               { key: 'gst', label: `GST ${data.gstRate}%`, children: formatINR(data.gstAmount) },
               { key: 'ded', label: 'Deductions', children: formatINR(data.totalDeductions) },
               { key: 'net', label: 'Net payable', children: <strong>{formatINR(data.netPayable)}</strong> },

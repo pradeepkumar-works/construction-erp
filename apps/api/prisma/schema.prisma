@@ -431,6 +431,7 @@ model Organization {
   maintenanceJobs   MaintenanceJob[]
   equipmentDocs     EquipmentDocument[]
   drivers           Driver[]
+  pvComponents      PriceVariationComponent[]
 }
 
 model Role {
@@ -614,6 +615,8 @@ model Project {
   defectLiabilityMonths Int?
   /// The contract has a price variation (escalation) clause
   priceVariation        Boolean       @default(false)
+  /// Price variation: the date the base indices are taken at (usually the month before the bid was due)
+  pvBaseDate            DateTime?     @db.Date
   /// Liquidated damages for late completion: % of the contract value per day, week or month past the revised completion date
   ldRatePct             Decimal       @default(0) @db.Decimal(6, 3)
   ldPeriod              LdPeriod      @default(WEEK)
@@ -685,6 +688,8 @@ model Project {
   toolboxTalks     ToolboxTalk[]
   workPermits      WorkPermit[]
   maintenanceJobs  MaintenanceJob[]
+
+  pvComponents PriceVariationComponent[]
 
   @@unique([organizationId, code])
   @@index([organizationId, status])
@@ -1867,6 +1872,11 @@ model RaBill {
   totalDeductions       Decimal          @db.Decimal(18, 2)
   /// gross + GST - deductions
   netPayable            Decimal          @db.Decimal(18, 2)
+  /// Price variation on this bill's work value (negative when the indices fell); in the GST and deduction base
+  pvAmount              Decimal          @default(0) @db.Decimal(18, 2)
+  /// The month the current indices are for, and any note on where they came from
+  pvIndexMonth          DateTime?        @db.Date
+  pvNote                String?
   /// What was claimed, kept when the client certifies a different amount
   claimedGross          Decimal?         @db.Decimal(18, 2)
   claimedNet            Decimal?         @db.Decimal(18, 2)
@@ -1891,6 +1901,7 @@ model RaBill {
   updatedAt             DateTime         @updatedAt
 
   items        RaBillItem[]
+  pvLines      RaBillPvLine[]
   measurements MeasurementSheet[]
   attachments  Attachment[]
   receipts     Receipt[]
@@ -1923,6 +1934,42 @@ model RaBillItem {
 
   @@unique([billId, boqItemId])
   @@index([boqItemId])
+}
+
+/// One component of a contract's price variation formula (v4 item 50): its share of the work value and the index it
+/// follows (e.g. Cement 15% on the RBI WPI for cement). The rest of the work value is fixed.
+model PriceVariationComponent {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name           String
+  /// % of the work value that moves with this index
+  sharePct       Decimal      @db.Decimal(5, 2)
+  /// Index on the contract's base date
+  baseIndex      Decimal      @db.Decimal(12, 3)
+  sortOrder      Int          @default(0)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([projectId])
+}
+
+/// One component of the price variation on an RA bill, copied from the contract with this bill's index:
+/// amount = work value × share % × (current − base) / base.
+model RaBillPvLine {
+  id           String  @id @default(uuid())
+  billId       String
+  bill         RaBill  @relation(fields: [billId], references: [id], onDelete: Cascade)
+  name         String
+  sharePct     Decimal @db.Decimal(5, 2)
+  baseIndex    Decimal @db.Decimal(12, 3)
+  currentIndex Decimal @db.Decimal(12, 3)
+  amount       Decimal @db.Decimal(18, 2)
+  sortOrder    Int     @default(0)
+
+  @@index([billId])
 }
 
 /// What a receipt is for: a bill, or the release of retention or security deposit the client held

@@ -108,6 +108,10 @@ demo seed at 1280 × 800, scale 1.25, saved as WebP).
   the retention, security deposit, mobilisation advance and recovery, TDS, GST TDS, labour cess and GST
   percentages bills are built with. Billing → Clients and a Contract tab on each project, for approvers, the
   QS and accounts.
+- Delay penalties and escalation: liquidated damages exposure per project from the contract's LD rate and cap and
+  the delay register (to date, forecast, and excusable days still to claim), on the Contract tab and Delays & Risks.
+  Price variation on RA bills from the contract's formula (components with a share of the work value and a base
+  index) and the month's indices, with GST and deductions on work value plus price variation.
 - RA bills: the next running-account bill of a project from the approved measurements, with the abstract
   (previous / this bill / up to date per BOQ item, excess and extra items flagged), GST and the contract
   deductions. Approved through the approval matrix, then recorded as sent, certified (the client's cuts are kept

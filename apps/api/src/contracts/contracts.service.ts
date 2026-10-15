@@ -8,13 +8,14 @@ import { AuditService } from '../common/audit.service';
 import { ClientsService } from '../clients/clients.service';
 import { dateOnly, iso, money, parseDate } from '../common/serialize';
 import { todayIn } from '../notifications/time';
-import { UpdateContractDto } from './contracts.dto';
+import { PriceVariationDto, UpdateContractDto } from './contracts.dto';
 
 const include = {
   client: { include: { _count: { select: { projects: true } } } },
   risks: { where: { kind: 'DELAY' as const, OR: [{ eotClaimed: true }, { eotGrantedDays: { not: null } }] }, orderBy: { delayStart: 'asc' as const } },
   variations: { where: { status: 'APPROVED' as const }, select: { approvedAmount: true } },
   handover: { select: { completedOn: true } },
+  pvComponents: { orderBy: [{ sortOrder: 'asc' as const }, { createdAt: 'asc' as const }] },
 } satisfies Prisma.ProjectInclude;
 type Row = Prisma.ProjectGetPayload<{ include: typeof include }>;
 
@@ -79,6 +80,8 @@ export class ContractsService {
       defectLiabilityMonths: p.defectLiabilityMonths,
       clientPaymentDays: p.clientPaymentDays,
       priceVariation: p.priceVariation,
+      pvBaseDate: dateOnly(p.pvBaseDate),
+      pvComponents: p.pvComponents.map((c) => ({ id: c.id, name: c.name, sharePct: pctStr(c.sharePct), baseIndex: c.baseIndex.toFixed(3).replace(/\.?0+$/, '') })),
       gstRate: pctStr(p.gstRate),
       tdsPct: pctStr(p.tdsPct),
       gstTdsPct: pctStr(p.gstTdsPct),
@@ -237,6 +240,32 @@ export class ContractsService {
     }
     await this.prisma.project.update({ where: { id: projectId }, data });
     await this.audit.log(user, 'PROJECT', projectId, 'CONTRACT_UPDATED');
+    return this.get(user, projectId);
+  }
+
+  /**
+   * The price variation formula (v4 item 50): the base date and the components, each a share of the work value that
+   * moves with an index. Replaces the whole list; bills already prepared keep the components they copied until they
+   * are filled in again.
+   */
+  async setPriceVariation(user: RequestUser, projectId: string, dto: PriceVariationDto): Promise<ProjectContractDto> {
+    if (!canEditContract(user.roleKey)) throw new ForbiddenException('Your role cannot change contract terms');
+    await this.access.assertCanAccessProject(user, projectId);
+    const rows = dto.components.map((c, i) => ({ name: c.name.trim(), sharePct: new Prisma.Decimal(c.sharePct), baseIndex: new Prisma.Decimal(c.baseIndex), sortOrder: i }));
+    for (const r of rows) {
+      if (!r.name) throw new BadRequestException('Each component needs a name');
+      if (r.sharePct.lte(0) || r.sharePct.gt(100)) throw new BadRequestException(`${r.name}: the share must be more than 0 and at most 100%`);
+      if (r.baseIndex.lte(0)) throw new BadRequestException(`${r.name}: the base index must be more than 0`);
+    }
+    if (new Set(rows.map((r) => r.name.toLowerCase())).size < rows.length) throw new BadRequestException('Two components have the same name');
+    const total = rows.reduce((s, r) => s.add(r.sharePct), ZERO);
+    if (total.gt(100)) throw new BadRequestException(`The shares add up to ${total.toFixed(2)}%; they cannot pass 100%`);
+    await this.prisma.$transaction(async (tx) => {
+      await tx.project.update({ where: { id: projectId }, data: { pvBaseDate: dto.pvBaseDate ? parseDate(dto.pvBaseDate) : null } });
+      await tx.priceVariationComponent.deleteMany({ where: { projectId } });
+      await tx.priceVariationComponent.createMany({ data: rows.map((r) => ({ ...r, organizationId: user.organizationId, projectId })) });
+    });
+    await this.audit.log(user, 'PROJECT', projectId, 'PRICE_VARIATION_UPDATED');
     return this.get(user, projectId);
   }
 }

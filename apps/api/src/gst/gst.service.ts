@@ -98,11 +98,11 @@ export class GstService {
         recipientName: c?.name ?? b.project.clientName ?? b.project.name,
         placeOfSupply: ours ?? c?.stateCode ?? gstStateCode(gstin),
         rate: money(b.gstRate)!,
-        taxable: money(b.grossAmount)!,
+        taxable: money(b.grossAmount.add(b.pvAmount))!,
         igst: money(tax.igst)!,
         cgst: money(tax.cgst)!,
         sgst: money(tax.sgst)!,
-        invoiceValue: money(b.grossAmount.add(b.gstAmount))!,
+        invoiceValue: money(b.grossAmount.add(b.pvAmount).add(b.gstAmount))!,
       };
     });
 

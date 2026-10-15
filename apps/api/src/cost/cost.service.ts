@@ -184,7 +184,7 @@ export class CostService {
         select: { category: true, count: true, vendorId: true, sheet: { select: { projectId: true, date: true } } },
       }),
       this.prisma.labourRate.findMany({ where: { organizationId } }),
-      this.prisma.raBill.groupBy({ by: ['projectId'], where: { ...inProjects, status: 'APPROVED', ...(date ? { billDate: date } : {}) }, _sum: { grossAmount: true } }),
+      this.prisma.raBill.groupBy({ by: ['projectId'], where: { ...inProjects, status: 'APPROVED', ...(date ? { billDate: date } : {}) }, _sum: { grossAmount: true, pvAmount: true } }),
       this.prisma.receipt.groupBy({ by: ['projectId'], where: { ...inProjects, ...(date ? { receiptDate: date } : {}) }, _sum: { amount: true } }),
       this.prisma.subcontractBill.findMany({
         where: { ...inProjects, status: 'APPROVED', ...(date ? { billDate: date } : {}) },
@@ -198,7 +198,7 @@ export class CostService {
     for (const b of vendorBills) out.get(b.projectId)!.payableBilled = b._sum.total ?? ZERO;
     for (const p of payments) out.get(p.projectId)!.cashOut = p._sum.amount ?? ZERO;
     const contracted = new Set(subVendors.map((w) => `${w.projectId}:${w.vendorId}`));
-    for (const b of bills) out.get(b.projectId)!.billed = b._sum.grossAmount ?? ZERO;
+    for (const b of bills) out.get(b.projectId)!.billed = (b._sum.grossAmount ?? ZERO).plus(b._sum.pvAmount ?? ZERO);
     for (const r of receipts) out.get(r.projectId)!.cashIn = r._sum.amount ?? ZERO;
     const month = (acc: Acc, d: Date) => {
       const k = monthOf(d);

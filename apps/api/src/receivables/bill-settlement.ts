@@ -32,8 +32,8 @@ export function settlement(receipts: ReceiptSums[]) {
   return { received, settled };
 }
 
-/** Work value + GST: what the client owes on a bill before its own deductions. */
-export const invoiceOf = (b: { grossAmount: Prisma.Decimal; gstAmount: Prisma.Decimal }) => b.grossAmount.add(b.gstAmount);
+/** Work value + price variation + GST: what the client owes on a bill before its own deductions. */
+export const invoiceOf = (b: { grossAmount: Prisma.Decimal; pvAmount: Prisma.Decimal; gstAmount: Prisma.Decimal }) => b.grossAmount.add(b.pvAmount).add(b.gstAmount);
 
 /**
  * Move a bill to PAID once its receipts settle it, or back to CERTIFIED / SENT when a receipt is taken off or the

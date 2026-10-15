@@ -234,7 +234,9 @@ export class TallyService {
     for (const b of raBills) {
       const client = clientOf(b.project);
       const ref = raBillRef(b.project.code, b.billNo);
-      const l = new Lines(name).dr(client.key, b.grossAmount.add(b.gstAmount), { fallback: client.name, party: true }).cr('SALES', b.grossAmount, cc);
+      // Price variation is part of the sale: works receipts carry work value + price variation.
+      const sale = b.grossAmount.add(b.pvAmount);
+      const l = new Lines(name).dr(client.key, sale.add(b.gstAmount), { fallback: client.name, party: true }).cr('SALES', sale, cc);
       gstLines(l, 'cr', 'OUTPUT', b.gstAmount, false);
       exportedBills.add(b.id);
       add({
@@ -246,7 +248,7 @@ export class TallyService {
         party: client.name,
         projectCode: b.project.code,
         projectName: b.project.name,
-        narration: `RA bill ${b.billNo}${b.isFinal ? ' (final)' : ''} of ${b.project.name}: work ₹${b.grossAmount.toFixed(2)} + GST ₹${b.gstAmount.toFixed(2)}${b.certificateNo ? `, certificate ${b.certificateNo}` : ''}`,
+        narration: `RA bill ${b.billNo}${b.isFinal ? ' (final)' : ''} of ${b.project.name}: work ₹${b.grossAmount.toFixed(2)}${b.pvAmount.isZero() ? '' : ` + price variation ₹${b.pvAmount.toFixed(2)}`} + GST ₹${b.gstAmount.toFixed(2)}${b.certificateNo ? `, certificate ${b.certificateNo}` : ''}`,
         billRef: { name: ref, type: 'New Ref' },
         lines: l.lines,
       });

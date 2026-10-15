@@ -384,7 +384,7 @@ export class ReceivablesService {
     const [bills, receipts] = await Promise.all([
       this.prisma.raBill.findMany({
         where: { projectId: { in: ids }, status: 'APPROVED' },
-        select: { id: true, projectId: true, billNo: true, isFinal: true, stage: true, billDate: true, sentDate: true, certifiedDate: true, grossAmount: true, gstAmount: true, receipts: { select: RECEIPT_SUMS } },
+        select: { id: true, projectId: true, billNo: true, isFinal: true, stage: true, billDate: true, sentDate: true, certifiedDate: true, grossAmount: true, pvAmount: true, gstAmount: true, receipts: { select: RECEIPT_SUMS } },
         orderBy: [{ projectId: 'asc' }, { billNo: 'asc' }],
       }),
       this.prisma.receipt.findMany({ where: { projectId: { in: ids } }, select: { projectId: true, kind: true, ...RECEIPT_SUMS } }),

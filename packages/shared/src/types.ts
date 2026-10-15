@@ -778,7 +778,7 @@ export interface ProjectCostSummaryDto {
   margin: string;
   /** cost.total as % of executedValue; null when nothing was executed. */
   costPct: number | null;
-  /** Approved RA bills dated in the period: value of work (before GST) */
+  /** Approved RA bills dated in the period: value of work plus price variation (before GST) */
   billedValue: string;
   /** Received from the client in the period (bank credits, all receipts) */
   cashIn: string;
@@ -1170,6 +1170,16 @@ export interface ContractExtensionDto {
 }
 
 /** A project's contract with its client: what RA bills are built on. Percentages are of the work value. */
+/** One component of a contract's price variation formula (v4 item 50). */
+export interface PriceVariationComponentDto {
+  id: string;
+  name: string;
+  /** % of the work value that moves with this index */
+  sharePct: string;
+  /** Index on the base date */
+  baseIndex: string;
+}
+
 export interface ProjectContractDto {
   projectId: string;
   projectCode: string;
@@ -1201,6 +1211,10 @@ export interface ProjectContractDto {
   /** Days the client takes to pay a bill once sent; null = not set (the cash-flow forecast assumes 30) */
   clientPaymentDays: number | null;
   priceVariation: boolean;
+  /** Price variation: the date the base indices are taken at */
+  pvBaseDate: string | null;
+  /** The price variation formula: each component's share of the work value and its base index; the rest is fixed */
+  pvComponents: PriceVariationComponentDto[];
   gstRate: string;
   tdsPct: string;
   gstTdsPct: string;
@@ -1301,6 +1315,16 @@ export interface RaBillMeasurementDto {
   lines: MeasurementLineDto[];
 }
 
+/** One component of the price variation on an RA bill. */
+export interface RaBillPvLineDto {
+  id: string;
+  name: string;
+  sharePct: string;
+  baseIndex: string;
+  currentIndex: string;
+  amount: string;
+}
+
 export interface RaBillDto extends SubmissionBase {
   billNo: number;
   /**
@@ -1326,6 +1350,15 @@ export interface RaBillDto extends SubmissionBase {
   /** Value of work in this bill (taxable value) */
   grossAmount: string;
   grossUpto: string;
+  /**
+   * Price variation on this bill's work value (v4 item 50): work value × Σ share × (current − base) / base over the
+   * contract's components. Negative when the indices fell. GST and the deductions are on work value + price variation.
+   */
+  pvAmount: string;
+  /** The month the current indices are for (YYYY-MM-01) */
+  pvIndexMonth: string | null;
+  pvNote: string | null;
+  pvLines: RaBillPvLineDto[];
   gstRate: string;
   gstAmount: string;
   /** Retention, security deposit, advance recovery, TDS, GST TDS, labour cess and any other deduction, in that order (zero ones left out) */
@@ -1333,7 +1366,7 @@ export interface RaBillDto extends SubmissionBase {
   otherDeduction: string;
   otherDeductionNote: string | null;
   totalDeductions: string;
-  /** gross + GST - deductions */
+  /** gross + price variation + GST - deductions */
   netPayable: string;
   /** What was claimed, when the certified amount differs */
   claimedGross: string | null;
@@ -1344,7 +1377,7 @@ export interface RaBillDto extends SubmissionBase {
   certificateNo: string | null;
   paidDate: string | null;
   measurementCount: number;
-  /** Work value + GST: what the client owes before its deductions */
+  /** Work value + price variation + GST: what the client owes before its deductions */
   invoiceAmount: string;
   /** Received in the bank against this bill */
   receivedAmount: string;

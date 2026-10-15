@@ -2,7 +2,7 @@ import { Body, Controller, Get, Param, Put } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { ContractsService } from './contracts.service';
-import { UpdateContractDto } from './contracts.dto';
+import { PriceVariationDto, UpdateContractDto } from './contracts.dto';
 
 @ApiTags('contracts')
 @ApiBearerAuth()
@@ -26,6 +26,17 @@ export class ContractsController {
   @Put()
   update(@CurrentUser() user: RequestUser, @Param('id') id: string, @Body() dto: UpdateContractDto) {
     return this.contracts.update(user, id, dto);
+  }
+
+  @ApiOperation({
+    summary: 'Set the price variation formula',
+    description:
+      'The base date and the components (name, share of the work value in %, base index); the list replaces the saved one and the shares ' +
+      'cannot pass 100%. RA bills then take the current index of each component. Same roles as changing contract terms.',
+  })
+  @Put('price-variation')
+  setPriceVariation(@CurrentUser() user: RequestUser, @Param('id') id: string, @Body() dto: PriceVariationDto) {
+    return this.contracts.setPriceVariation(user, id, dto);
   }
 }
 
