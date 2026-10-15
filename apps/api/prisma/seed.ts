@@ -147,6 +147,7 @@ async function main() {
     await seedSectors(org.id);
     await seedMaintenance(org.id);
     await seedSchedule(org.id);
+    await seedWorkers(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
   }
@@ -315,9 +316,65 @@ async function main() {
   await seedSectors(org.id);
   await seedMaintenance(org.id);
   await seedSchedule(org.id);
+  await seedWorkers(org.id);
 
   console.log('Seed complete. Login with any of these (password: password123):');
   for (const u of USERS) console.log(`  ${u.email.padEnd(24)} ${u.role}`);
+}
+
+/**
+ * Named worker register demo (v4 item 44): Sri Jagannath Constructions' 13 masons and 17 helpers on the road project,
+ * with a roll call for the last six days that matches the head-count sheets (8 + i masons and 12 + i helpers on site
+ * i days ago). Masons build the culvert headwalls; helpers lay WMM, then DBM from yesterday. Two helpers left at noon
+ * three days ago, and a few masons stayed back two hours. Only when the organisation has no worker yet.
+ */
+async function seedWorkers(organizationId: string) {
+  if (await prisma.worker.count({ where: { organizationId } })) return;
+  const project = await prisma.project.findFirst({ where: { organizationId, type: 'ROAD' }, orderBy: { code: 'asc' }, include: { activities: true, members: { include: { user: { include: { role: true } } } } } });
+  if (!project) return;
+  const marker = project.members.find((m) => m.user.role.key === 'TEAM_LEADER')?.userId ?? project.projectManagerId;
+  if (!marker) return;
+  const contractor = 'Sri Jagannath Constructions';
+  const vendor = await prisma.vendor.findFirst({ where: { organizationId, name: contractor }, select: { id: true } });
+  const act = (name: string) => project.activities.find((a) => a.name === name)?.id ?? null;
+  const [culverts, wmm, dbm] = [act('Pipe culverts'), act('WMM laying'), act('DBM paving')];
+  const masons = ['Ramesh Behera', 'Sanjay Pradhan', 'Bijay Sahoo', 'Prakash Nayak', 'Ashok Swain', 'Dillip Mallick', 'Santosh Jena', 'Manoj Rout', 'Pradeep Das', 'Sukanta Barik', 'Niranjan Sethi', 'Rabindra Muduli', 'Gopal Parida'];
+  const helpers = ['Bapi Majhi', 'Laxman Hembram', 'Sunil Tudu', 'Raju Naik', 'Kartik Mahanta', 'Purna Dehury', 'Babula Singh', 'Tutu Biswal', 'Ganesh Murmu', 'Mithun Patra', 'Dhaneswar Bag', 'Saroj Sahu', 'Hari Kisan', 'Bikash Gouda', 'Jitu Mohanty', 'Kanha Lenka', 'Rinku Bhoi'];
+  const ids: { id: string; trade: 'Mason' | 'Helper'; n: number }[] = [];
+  let no = 0;
+  for (const [trade, names, wage] of [['Mason', masons, '900.00'], ['Helper', helpers, '550.00']] as const) {
+    for (const [n, name] of names.entries()) {
+      no += 1;
+      const aadhaar = n % 3 !== 2;
+      const w = await prisma.worker.create({
+        data: {
+          organizationId, workerNo: `W-${String(no).padStart(4, '0')}`, name, contractor, vendorId: vendor?.id ?? null, trade,
+          skill: trade === 'Mason' ? (n < 3 ? 'HIGHLY_SKILLED' : 'SKILLED') : 'UNSKILLED',
+          idType: aadhaar ? 'AADHAAR' : 'VOTER_ID', idNumber: aadhaar ? `XXXX-XXXX-${String(4120 + no * 37).slice(-4)}` : `OR/12/${String(104300 + no * 11)}`,
+          phone: n % 2 ? null : `94370${String(51230 + no * 7).padStart(5, '0')}`,
+          dailyWage: D(trade === 'Mason' && n < 3 ? '950.00' : wage), projectId: project.id, joinedOn: day(-40 - (n % 4) * 10),
+        },
+      });
+      ids.push({ id: w.id, trade, n });
+    }
+  }
+  for (let i = 5; i >= 0; i--) {
+    const date = day(-i);
+    for (const w of ids) {
+      const onSite = w.n < (w.trade === 'Mason' ? 8 + i : 12 + i);
+      const half = onSite && i === 3 && w.trade === 'Helper' && w.n < 2;
+      const ot = onSite && w.trade === 'Mason' && w.n < 3 && i % 2 === 1;
+      await prisma.workerAttendance.create({
+        data: {
+          organizationId, workerId: w.id, projectId: project.id, date, markedById: marker,
+          status: !onSite ? 'ABSENT' : half ? 'HALF_DAY' : 'PRESENT',
+          inTime: onSite ? '08:00' : null, outTime: onSite ? (half ? '12:30' : ot ? '19:00' : '17:00') : null, otHours: ot ? D(2) : null,
+          activityId: !onSite ? null : w.trade === 'Mason' ? culverts : i <= 1 ? dbm : wmm,
+          note: half ? 'Left at noon (diesel delay)' : null,
+        },
+      });
+    }
+  }
 }
 
 /**

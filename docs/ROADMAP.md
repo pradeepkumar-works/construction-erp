@@ -342,7 +342,11 @@ preview deployments run them against the production database before a PR is merg
     milestones and today; milestones with due, baseline and achieved dates; freezing or replacing the baseline by
     the project's managers, with each activity's and milestone's slip against it. Dependencies and critical path
     later.
-44. **Named worker register** (M). Workers per labour contractor, attendance per worker, output per man-day.
+44. ~~**Named worker register** (M). Workers per labour contractor, attendance per worker, output per man-day.~~
+    Done: workers by name per labour contractor with trade, skill, ID (Aadhaar as its last four digits) and wage; a
+    daily roll call per site (present, half day, absent, in and out, overtime, activity) on the web and the site app
+    that keeps the day's head count in step; a monthly muster with wages per worker and contractor; and output per
+    man-day against approved progress. No PF or ESI.
 45. **Site imprest** (S). Petty cash float, balance and top-ups.
 46. **Guarantees, insurance and licences register** (S) with expiry reminders.
 47. **Handover and defects** (M). Snag list, completion certificate, defect log, close-out checklist.

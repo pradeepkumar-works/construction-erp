@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { PROJECT_STATUS_LABELS, PROJECT_TYPE_LABELS, canRecordAttendance, type ActivityDto, type ProjectDetail } from '@erp/shared';
+import { PROJECT_STATUS_LABELS, PROJECT_TYPE_LABELS, canManageWorkers, canRecordAttendance, type ActivityDto, type ProjectDetail } from '@erp/shared';
 import { useAuth } from '../../src/auth/AuthContext';
 import { useFetch } from '../../src/api/hooks';
 import { Button, Card, EmptyState, ErrorState, KeyValue, Loading, Pill, ProgressBar, Screen, SectionTitle, Stat } from '../../src/components';
@@ -61,6 +61,9 @@ export default function ProjectScreen() {
       </View>
       {user && canRecordAttendance(user.roleKey) ? (
         <Button title="Today's attendance" icon="people" variant="secondary" onPress={() => router.push(`/attendance?projectId=${project.id}`)} style={styles.attendance} />
+      ) : null}
+      {user && canManageWorkers(user.roleKey) ? (
+        <Button title="Roll call" icon="checkbox-outline" variant="secondary" onPress={() => router.push(`/roll-call?projectId=${project.id}`)} style={styles.attendance} />
       ) : null}
       <Button title="Stock" icon="cube-outline" variant="secondary" onPress={() => router.push(`/stock?projectId=${project.id}`)} style={styles.attendance} />
       <Button title={project.type === 'ROAD' ? 'Progress by chainage' : project.type === 'BUILDING' ? 'Progress by floor' : 'Villages & pipeline'} icon="map-outline" variant="secondary" onPress={() => router.push(`/sector?projectId=${project.id}`)} style={styles.attendance} />

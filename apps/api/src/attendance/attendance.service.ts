@@ -5,6 +5,7 @@ import {
   MANPOWER_CATEGORIES,
   attendanceToManpower,
   isAttendanceLocked,
+  mergeHeadCount,
   normalizeAttendanceLines,
   totalWorkers,
   type AttendanceDayDto,
@@ -41,6 +42,9 @@ const ORDER: Record<AttendanceSortField, (o: SortOrder) => Prisma.AttendanceShee
   updatedAt: (o) => [{ updatedAt: o }],
 };
 const DESC_DEFAULT = new Set<string>(['date', 'totalWorkers', 'updatedAt']);
+
+/** Remark on a head-count sheet the roll call created. */
+const ROLL_CALL_REMARK = 'From the roll call';
 
 const dayKey = (projectId: string, date: Date) => `${projectId}|${dateOnly(date)}`;
 
@@ -100,7 +104,7 @@ export class AttendanceService {
     return (await this.dprStatuses([{ projectId, date }])).get(dayKey(projectId, date)) ?? null;
   }
 
-  private async assertUnlocked(projectId: string, date: Date) {
+  async assertUnlocked(projectId: string, date: Date) {
     if (isAttendanceLocked(await this.dprStatus(projectId, date)))
       throw new ConflictException(`The DPR for ${dateOnly(date)} is approved, so its attendance can no longer be changed.`);
   }
@@ -210,6 +214,41 @@ export class AttendanceService {
     const row = await this.prisma.attendanceSheet.findUnique({ where: { projectId_date: { projectId, date } }, include: { lines: { orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }] } } });
     if (!row || !row.lines.length) return null;
     return attendanceToManpower(row.lines);
+  }
+
+  /**
+   * Bring the day's head count in step with a roll call (v4 item 44): the contractor and trade pairs the roll call
+   * covers take its counts, other lines stay. Creates the sheet when the roll call has someone on site. Runs in the
+   * roll call's transaction; the caller has checked access and the DPR lock.
+   */
+  async applyRollCall(tx: Prisma.TransactionClient, user: RequestUser, projectId: string, date: Date, fromRollCall: AttendanceLineInput[]) {
+    const sheet = await tx.attendanceSheet.findUnique({ where: { projectId_date: { projectId, date } }, include: { lines: { orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }] } } });
+    const merged = normalizeAttendanceLines(mergeHeadCount(sheet?.lines ?? [], fromRollCall));
+    if (!merged.length && (!sheet || !sheet.remarks || sheet.remarks === ROLL_CALL_REMARK)) {
+      // Nothing left to count and nothing typed on it: the day has no sheet, as before the roll call.
+      if (sheet) await tx.attendanceSheet.delete({ where: { id: sheet.id } });
+      return null;
+    }
+    const lines = await this.linkVendors(user.organizationId, merged);
+    const total = totalWorkers(lines);
+    if (!sheet) {
+      await tx.attendanceSheet.create({
+        data: {
+          organizationId: user.organizationId,
+          projectId,
+          date,
+          remarks: ROLL_CALL_REMARK,
+          totalWorkers: total,
+          recordedById: user.id,
+          lines: { create: lines.map((l, i) => ({ ...l, sortOrder: i })) },
+        },
+      });
+    } else {
+      await tx.attendanceSheet.update({ where: { id: sheet.id }, data: { totalWorkers: total, updatedById: user.id } });
+      await tx.attendanceLine.deleteMany({ where: { sheetId: sheet.id } });
+      if (lines.length) await tx.attendanceLine.createMany({ data: lines.map((l, i) => ({ ...l, sheetId: sheet.id, sortOrder: i })) });
+    }
+    return lines.map(({ contractor, category, count }) => ({ contractor, category, count }));
   }
 
   /** Idempotent create: a sheet that already exists under the client-supplied id is returned as is. */

@@ -3,14 +3,14 @@
 import React from 'react';
 import { Card } from 'antd';
 import { PageHeader } from '@/components/common/PageHeader';
-import { AttendanceList } from '@/components/attendance/AttendanceList';
+import { AttendancePanel } from '@/components/workers/AttendancePanel';
 
 export default function Page() {
   return (
     <div className="page-container">
-      <PageHeader title="Attendance" subtitle="Daily head count by contractor and trade. It fills the manpower of that day's DPR." />
+      <PageHeader title="Attendance" subtitle="Daily head count by contractor and trade, which fills the manpower of that day's DPR, and the named worker register with its roll call and muster." />
       <Card className="table-card" size="small">
-        <AttendanceList />
+        <AttendancePanel />
       </Card>
     </div>
   );

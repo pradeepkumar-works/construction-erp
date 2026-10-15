@@ -124,6 +124,30 @@ end date is set. `POST /projects` with `applyTemplate: true`, or `POST /projects
   plan bar filled to progress, the baseline as a grey bar under it, milestones as diamonds and a line for today,
   and the milestone list. The Activities tab shows the baseline end under a moved planned end.
 
+### Named worker register
+
+A site labour register, not HR: no PF, ESI or payslips (those stay with Payroll Inputs).
+
+- **Tables.** `Worker`: `workerNo` (W-0001 per organisation, under an advisory lock), name, father's name, phone,
+  contractor (linked to the vendor of that name), trade, `WorkerSkill`, `WorkerIdType` and number (Aadhaar keeps only
+  the last four digits), `dailyWage` (defaults to the trade's `LabourRate`), `otRate` (empty = daily wage / 8), the
+  project they work at, `joinedOn`, `leftOn`, `isActive`. `WorkerAttendance`: one mark per worker per day
+  (`StaffAttendanceStatus`), in and out (`HH:mm`), `otHours`, the activity worked on, note, who marked it. Both
+  have a `tenant_isolation` policy.
+- **Roll call.** `GET /workers/roll-call?projectId&date` lists the workers posted there that day (joined, not
+  left) plus anyone already marked there. `PUT /workers/roll-call` (`canManageWorkers` = the attendance recorders,
+  with project access) sets or clears marks; overtime defaults to the time past `WORKER_SHIFT_HOURS` (9) between in
+  and out. A worker marked at another site that day gives 409, a future day 400, and a day whose DPR is approved
+  409 (the same lock as the head count). In the same transaction the day's `AttendanceSheet` takes the roll call's
+  counts (present or half day = one head) for each contractor and trade pair on the roll call; other lines stay,
+  and a sheet is created when there was none (`mergeHeadCount`, `AttendanceService.applyRollCall`).
+- **Muster and output.** `GET /workers/muster?projectId&month` gives each worker's marks by day, man-days (half day
+  = 0.5), OT hours and wages at their current rates, and totals per contractor. `GET /workers/output?projectId&from&to`
+  gives the man-days tagged to each activity against its approved progress in the same days, and output per
+  man-day. Seeing them needs `canViewWorkers` (recorders, quantity surveyors, accounts).
+- **Web and mobile.** The Attendance page and project tab gain Roll call, Workers and Muster & output beside the
+  head count. The site app has an online Roll call screen.
+
 ## Lists: paging, search, sort and export
 
 `GET /progress`, `/dpr`, `/material-requests`, `/attendance`, `/stock/entries`, `/stock/balances`, `/stock/items`,

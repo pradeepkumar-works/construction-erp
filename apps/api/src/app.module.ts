@@ -42,6 +42,7 @@ import { QualityModule } from './quality/quality.module';
 import { DocumentsModule } from './documents/documents.module';
 import { StaffModule } from './staff/staff.module';
 import { AttendanceModule } from './attendance/attendance.module';
+import { WorkersModule } from './workers/workers.module';
 import { MaterialRequestsModule } from './material-requests/material-requests.module';
 import { ApprovalsModule } from './approvals/approvals.module';
 import { DashboardModule } from './dashboard/dashboard.module';
@@ -61,6 +62,7 @@ import { HealthController } from './health.controller';
     ProgressModule,
     DprModule,
     AttendanceModule,
+    WorkersModule,
     MaterialRequestsModule,
     StockModule,
     MachineryModule,

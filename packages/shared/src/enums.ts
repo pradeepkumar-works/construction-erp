@@ -143,3 +143,11 @@ export const RECEIPT_MODES = ['BANK', 'UPI', 'CASH'] as const satisfies readonly
 /** A payment for the Nirmaan subscription (v3 item 34): created with a Razorpay order, paid once Razorpay confirms it. */
 export const BILLING_PAYMENT_STATUSES = ['CREATED', 'PAID'] as const;
 export type BillingPaymentStatus = (typeof BILLING_PAYMENT_STATUSES)[number];
+
+/** Skill grade of a named worker (minimum-wage schedules use the same four). */
+export const WORKER_SKILLS = ['UNSKILLED', 'SEMI_SKILLED', 'SKILLED', 'HIGHLY_SKILLED'] as const;
+export type WorkerSkill = (typeof WORKER_SKILLS)[number];
+
+/** Identity document of a named worker; for Aadhaar only the last four digits are kept. */
+export const WORKER_ID_TYPES = ['AADHAAR', 'VOTER_ID', 'DRIVING_LICENCE', 'PAN', 'OTHER'] as const;
+export type WorkerIdType = (typeof WORKER_ID_TYPES)[number];

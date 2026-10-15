@@ -1,0 +1,168 @@
+'use client';
+
+import React, { useState } from 'react';
+import { DatePicker, Statistic, Table, Tooltip } from 'antd';
+import type { TableProps } from 'antd';
+import dayjs, { type Dayjs } from 'dayjs';
+import type { MusterDto, MusterRowDto, OutputRowDto, StaffAttendanceStatus } from '@erp/shared';
+import { useMuster, useWorkerOutput } from '@/lib/queries';
+import { formatINR, formatQty } from '@/lib/format';
+import { downloadXlsx, exportFileName, type ExportColumn } from '@/lib/exportExcel';
+import { QueryError } from '@/components/common/QueryState';
+import { ProjectSelect } from '@/components/common/ProjectSelect';
+import { ExportButton } from '@/components/common/ExportButton';
+
+const MARK: Record<StaffAttendanceStatus, { text: string; color: string }> = {
+  PRESENT: { text: 'P', color: 'var(--ant-color-success, #389e0d)' },
+  HALF_DAY: { text: 'H', color: 'var(--ant-color-warning, #d46b08)' },
+  ABSENT: { text: 'A', color: 'var(--ant-color-error, #cf1322)' },
+};
+const big = { content: { fontSize: 18 } };
+
+const musterExport = (m: MusterDto): ExportColumn<MusterRowDto>[] => [
+  { header: 'No.', value: (r) => r.workerNo },
+  { header: 'Name', value: (r) => r.name, width: 24 },
+  { header: 'Contractor', value: (r) => r.contractor, width: 28 },
+  { header: 'Trade', value: (r) => r.trade, width: 12 },
+  ...Array.from({ length: m.daysInMonth }, (_, i) => ({ header: String(i + 1), value: (r: MusterRowDto) => (r.marks[i + 1] ? MARK[r.marks[i + 1]].text : ''), width: 3 })),
+  { header: 'Present', value: (r) => r.present },
+  { header: 'Half days', value: (r) => r.halfDays },
+  { header: 'Man-days', value: (r) => r.manDays },
+  { header: 'OT hours', value: (r) => r.otHours },
+  { header: 'Daily wage', value: (r) => Number(r.dailyWage) },
+  { header: 'Wages', value: (r) => Number(r.wages) },
+];
+
+/**
+ * The month's muster roll of a project with wages per worker and per contractor, and output per man-day: man-days
+ * the roll call put on each activity against the progress approved in the same days.
+ */
+export function MusterPanel({ projectId: fixedProject }: { projectId?: string }) {
+  const [projectPick, setProjectPick] = useState<string | undefined>();
+  const projectId = fixedProject ?? projectPick;
+  const [month, setMonth] = useState<Dayjs>(dayjs());
+  const monthStr = month.format('YYYY-MM');
+  const [range, setRange] = useState<[Dayjs, Dayjs]>([dayjs().subtract(6, 'day'), dayjs()]);
+  const muster = useMuster(projectId, monthStr);
+  const output = useWorkerOutput(projectId, range[0].format('YYYY-MM-DD'), range[1].format('YYYY-MM-DD'));
+  const m = muster.data;
+
+  const columns: TableProps<MusterRowDto>['columns'] = [
+    {
+      title: 'Worker',
+      dataIndex: 'name',
+      fixed: 'left',
+      width: 180,
+      render: (v, r) => (
+        <div>
+          <b>{v}</b>
+          <div className="text-muted" style={{ fontSize: 12 }}>
+            {r.workerNo} · {r.trade}
+          </div>
+        </div>
+      ),
+    },
+    ...Array.from({ length: m?.daysInMonth ?? 0 }, (_, i) => ({
+      title: String(i + 1),
+      key: `d${i + 1}`,
+      width: 30,
+      align: 'center' as const,
+      render: (_: unknown, r: MusterRowDto) => {
+        const k = r.marks[i + 1];
+        return k ? <span style={{ color: MARK[k].color, fontWeight: 600, fontSize: 12 }}>{MARK[k].text}</span> : null;
+      },
+    })),
+    { title: 'Man-days', dataIndex: 'manDays', width: 90, align: 'right', fixed: 'right' },
+    { title: 'OT h', dataIndex: 'otHours', width: 60, align: 'right', fixed: 'right' },
+    { title: 'Wages', dataIndex: 'wages', width: 110, align: 'right', fixed: 'right', render: (v) => formatINR(v) },
+  ];
+
+  const outCols: TableProps<OutputRowDto>['columns'] = [
+    { title: 'Activity', dataIndex: 'activityName', render: (v, r) => (
+      <div>
+        <b>{v}</b>
+        <div className="text-muted" style={{ fontSize: 12 }}>{r.trades.map((t) => `${t.trade} ${t.manDays}`).join(', ')}</div>
+      </div>
+    ) },
+    { title: 'Man-days', dataIndex: 'manDays', width: 100, align: 'right' },
+    { title: 'Approved progress', dataIndex: 'quantity', width: 160, align: 'right', render: (v, r) => `${formatQty(v)} ${r.unit}` },
+    {
+      title: <Tooltip title="Approved progress over the man-days the roll call put on the activity">Output per man-day</Tooltip>,
+      dataIndex: 'outputPerManDay',
+      width: 170,
+      align: 'right',
+      render: (v, r) => (v === null || Number(r.quantity) === 0 ? <span className="text-muted">no progress approved</span> : `${formatQty(v)} ${r.unit}`),
+    },
+  ];
+
+  return (
+    <div className="muster-panel">
+      <div style={{ padding: 12, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', borderBottom: '1px solid #f0f0f0' }}>
+        {!fixedProject ? <ProjectSelect value={projectPick} onChange={setProjectPick} placeholder="Pick a project" allowClear={false} /> : null}
+        <DatePicker picker="month" value={month} onChange={(v) => v && setMonth(v)} format="MMM YYYY" allowClear={false} />
+        <div style={{ flex: 1 }} />
+        {m ? (
+          <ExportButton
+            onExport={async () => {
+              downloadXlsx(exportFileName(`muster-${monthStr}`), `Muster ${monthStr}`, musterExport(m), m.rows);
+              return m.rows.length;
+            }}
+          />
+        ) : null}
+      </div>
+      {muster.error ? <QueryError error={muster.error} onRetry={() => muster.refetch()} /> : null}
+      {!projectId ? (
+        <div className="text-muted" style={{ padding: 16 }}>
+          Pick a project to see its muster roll.
+        </div>
+      ) : (
+        <>
+          {m ? (
+            <div className="muster-summary" style={{ padding: '12px 16px', display: 'flex', gap: 28, flexWrap: 'wrap' }}>
+              <Statistic title="Workers" value={m.totals.workers} styles={big} />
+              <Statistic title="Man-days" value={m.totals.manDays} styles={big} />
+              <Statistic title="OT hours" value={m.totals.otHours} styles={big} />
+              <Statistic title="Wages at current rates" value={formatINR(m.totals.wages)} styles={big} />
+              {m.byContractor.map((c) => (
+                <Statistic key={c.contractor} title={c.contractor} value={formatINR(c.wages)} suffix={<span style={{ fontSize: 12 }}>{c.workers} workers, {c.manDays} man-days</span>} styles={big} />
+              ))}
+            </div>
+          ) : null}
+          <Table<MusterRowDto>
+            className="muster-table"
+            rowKey="workerId"
+            size="small"
+            loading={muster.isLoading}
+            columns={columns}
+            dataSource={m?.rows ?? []}
+            pagination={false}
+            scroll={{ x: 180 + 30 * (m?.daysInMonth ?? 31) + 260 }}
+            locale={{ emptyText: 'No roll call marked this month' }}
+          />
+
+          <div style={{ padding: '20px 12px 8px', display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+            <h4 style={{ margin: 0 }}>Output per man-day</h4>
+            <DatePicker.RangePicker value={range} onChange={(v) => v && v[0] && v[1] && setRange([v[0], v[1]])} format="DD MMM YYYY" allowClear={false} />
+            {output.data ? (
+              <span className="text-muted" style={{ fontSize: 13 }}>
+                {output.data.totalManDays} man-days{output.data.untaggedManDays ? `, ${output.data.untaggedManDays} not tagged to an activity` : ''}
+              </span>
+            ) : null}
+          </div>
+          {output.error ? <QueryError error={output.error} onRetry={() => output.refetch()} /> : null}
+          <Table<OutputRowDto>
+            className="output-table"
+            rowKey="activityId"
+            size="small"
+            loading={output.isLoading}
+            columns={outCols}
+            dataSource={output.data?.rows ?? []}
+            pagination={false}
+            scroll={{ x: 700 }}
+            locale={{ emptyText: 'No man-days tagged to activities in these days' }}
+          />
+        </>
+      )}
+    </div>
+  );
+}

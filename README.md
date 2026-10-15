@@ -85,6 +85,8 @@ demo seed at 1280 × 800, scale 1.25, saved as WebP).
   licences with expiry alerts.
 - Gantt and baseline: a Gantt of each project's activities and milestones against a frozen baseline, with
   what is behind plan and how far each finish has moved.
+- Named worker register: contractor labour by name with a daily roll call (on the web and the site app) that
+  keeps the head count in step, a monthly muster with wages, and output per man-day.
 - Sector progress: progress and measurements tagged with chainage (road), floor (building) or village (water
   supply); a road strip chart per layer, a floor by activity matrix, and pipe ordered, supplied, laid and tested
   village by village.

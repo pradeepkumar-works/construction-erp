@@ -84,6 +84,10 @@ import type {
   AttendanceDayDto,
   AttendanceSheetDto,
   AttendanceSuggestionsDto,
+  MusterDto,
+  OutputDto,
+  RollCallDto,
+  WorkerDto,
   AttachmentDto,
   AuditLogDto,
   NcrDto,
@@ -212,6 +216,12 @@ export interface AttendanceFilters extends PageParams {
   projectId?: string;
   from?: string;
   to?: string;
+}
+
+export interface WorkerFilters extends PageParams {
+  projectId?: string;
+  contractor?: string;
+  active?: boolean;
 }
 
 export interface StockEntryFilters extends PageParams {
@@ -406,6 +416,35 @@ export const useAttendanceSuggestions = (projectId: string | undefined) =>
     queryKey: ['attendance', 'suggestions', projectId ?? 'all'],
     queryFn: async () => (await api.get<AttendanceSuggestionsDto>('/attendance/suggestions', { params: clean({ projectId }) })).data,
     staleTime: 5 * 60_000,
+  });
+
+/* Named worker register (v4 item 44); every key starts with 'workers' so one invalidation refreshes them all. */
+export const useWorkers = (filters?: WorkerFilters) =>
+  useQuery({
+    queryKey: ['workers', 'list', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<WorkerDto>>('/workers', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+  });
+
+export const useRollCall = (projectId: string | undefined, date: string | undefined) =>
+  useQuery({
+    queryKey: ['workers', 'roll-call', projectId, date],
+    queryFn: async () => (await api.get<RollCallDto>('/workers/roll-call', { params: { projectId, date } })).data,
+    enabled: !!projectId && !!date,
+  });
+
+export const useMuster = (projectId: string | undefined, month: string | undefined) =>
+  useQuery({
+    queryKey: ['workers', 'muster', projectId, month],
+    queryFn: async () => (await api.get<MusterDto>('/workers/muster', { params: { projectId, month } })).data,
+    enabled: !!projectId && !!month,
+  });
+
+export const useWorkerOutput = (projectId: string | undefined, from: string | undefined, to: string | undefined) =>
+  useQuery({
+    queryKey: ['workers', 'output', projectId, from, to],
+    queryFn: async () => (await api.get<OutputDto>('/workers/output', { params: { projectId, from, to } })).data,
+    enabled: !!projectId && !!from && !!to,
   });
 
 export const useStockBalances = (filters?: StockBalanceFilters, enabled = true) =>
