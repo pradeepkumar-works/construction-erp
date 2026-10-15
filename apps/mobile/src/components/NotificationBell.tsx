@@ -4,13 +4,15 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useNotifications } from '../notifications/NotificationsContext';
 import { colors, radius } from '../theme';
+import { useT } from '../i18n/LanguageContext';
 
 /** Bell with the unread count; opens the notifications screen. */
 export function NotificationBell() {
   const router = useRouter();
   const { unreadCount } = useNotifications();
+  const t = useT();
   return (
-    <Pressable onPress={() => router.push('/notifications')} accessibilityRole="button" accessibilityLabel={`Notifications, ${unreadCount} unread`} style={({ pressed }) => [styles.btn, pressed && styles.pressed]} hitSlop={8}>
+    <Pressable onPress={() => router.push('/notifications')} accessibilityRole="button" accessibilityLabel={t('Notifications, {n} unread', { n: unreadCount })} style={({ pressed }) => [styles.btn, pressed && styles.pressed]} hitSlop={8}>
       <Ionicons name={unreadCount ? 'notifications' : 'notifications-outline'} size={24} color={colors.text} />
       {unreadCount > 0 ? (
         <View style={styles.badge}>

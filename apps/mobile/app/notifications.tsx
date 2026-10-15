@@ -9,6 +9,7 @@ import { notificationRoute } from '../src/notifications/push';
 import { Button, EmptyState, ErrorState, Loading, Screen } from '../src/components';
 import { colors, radius, spacing, typography } from '../src/theme';
 import { timeAgo } from '../src/utils/format';
+import { useT } from '../src/i18n/LanguageContext';
 
 const ICON: Record<NotificationType, { name: keyof typeof Ionicons.glyphMap; color: string; bg: string }> = {
   SUBMISSION_SUBMITTED: { name: 'time', color: colors.warning, bg: colors.warningSoft },
@@ -35,6 +36,7 @@ const ICON: Record<NotificationType, { name: keyof typeof Ionicons.glyphMap; col
 
 export default function NotificationsScreen() {
   const router = useRouter();
+  const t = useT();
   const api = useApi();
   const { refreshUnread } = useNotifications();
   const [busy, setBusy] = useState(false);
@@ -78,12 +80,12 @@ export default function NotificationsScreen() {
         ListHeaderComponent={
           items.length ? (
             <View style={styles.headerRow}>
-              <Text style={typography.caption}>{unread ? `${unread} unread` : 'All read'}</Text>
-              {unread ? <Button title="Mark all read" variant="ghost" size="sm" icon="checkmark-done" onPress={markAll} loading={busy} /> : null}
+              <Text style={typography.caption}>{unread ? t('{n} unread', { n: unread }) : t('All read')}</Text>
+              {unread ? <Button title={t('Mark all read')} variant="ghost" size="sm" icon="checkmark-done" onPress={markAll} loading={busy} /> : null}
             </View>
           ) : null
         }
-        ListEmptyComponent={<EmptyState title="No notifications yet" subtitle="You will be told here when your submissions are approved, rejected or need changes." icon="notifications-off-outline" />}
+        ListEmptyComponent={<EmptyState title={t('No notifications yet')} subtitle={t('You will be told here when your submissions are approved, rejected or need changes.')} icon="notifications-off-outline" />}
         renderItem={({ item }) => <Row item={item} onPress={() => open(item)} />}
       />
     </Screen>
@@ -92,6 +94,7 @@ export default function NotificationsScreen() {
 
 function Row({ item, onPress }: { item: NotificationDto; onPress: () => void }) {
   const icon = ICON[item.type];
+  const t = useT();
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [styles.row, !item.readAt && styles.unread, pressed && styles.pressed]} android_ripple={{ color: colors.border }}>
       <View style={[styles.iconWrap, { backgroundColor: icon.bg }]}>
@@ -108,7 +111,7 @@ function Row({ item, onPress }: { item: NotificationDto; onPress: () => void }) 
           {item.body}
         </Text>
         <Text style={styles.meta}>
-          {NOTIFICATION_TYPE_LABELS[item.type]} · {timeAgo(item.createdAt)}
+          {t(NOTIFICATION_TYPE_LABELS[item.type])} · {timeAgo(item.createdAt)}
           {item.projectName ? ` · ${item.projectName}` : ''}
         </Text>
       </View>

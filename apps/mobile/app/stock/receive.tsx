@@ -7,11 +7,15 @@ import { useApi, useFetch } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
 import { Button, Card, DatePicker, EmptyState, ErrorBanner, Input, Loading, PhotoPicker, Screen, Select, type LocalPhoto } from '../../src/components';
 import { attachmentIds, photosFailed, photosQueued, photosUploading, SubmitSuccess, useProjectOptions } from '../../src/forms/common';
+import { useT } from '../../src/i18n/LanguageContext';
+import type { TranslateVars } from '../../src/i18n/translate';
 import { useOffline } from '../../src/offline';
 import { colors, spacing, typography } from '../../src/theme';
 import { fmtQty, formatDate, isIsoDate, today } from '../../src/utils/format';
 
 const QTY = /^\d+(\.\d{1,3})?$/;
+
+type T = (en: string, vars?: TranslateVars) => string;
 
 /** What a GRN is received against: an approved material request or an approved, open purchase order. */
 interface Source {
@@ -25,24 +29,24 @@ interface Source {
   lines: { id: string; itemName: string; unit: string; due: string; received: string; pending: string }[];
 }
 
-const fromRequest = (r: ReceivableRequestDto): Source => ({
+const fromRequest = (r: ReceivableRequestDto, t: T): Source => ({
   key: `mr:${r.id}`,
   kind: 'MR',
   id: r.id,
   no: r.requestNo,
   label: `${r.requestNo} · ${r.lines.map((l) => l.itemName).join(', ')}`,
-  hint: `Request, needed ${formatDate(r.requiredDate)} · ${MATERIAL_PRIORITY_LABELS[r.priority]}`,
+  hint: `${t('Request, needed {date}', { date: formatDate(r.requiredDate) })} · ${t(MATERIAL_PRIORITY_LABELS[r.priority])}`,
   vendorName: null,
   lines: r.lines.map((l) => ({ id: l.materialRequestItemId, itemName: l.itemName, unit: l.unit, due: l.requested, received: l.received, pending: l.pending })),
 });
 
-const fromOrder = (o: ReceivableOrderDto): Source => ({
+const fromOrder = (o: ReceivableOrderDto, t: T): Source => ({
   key: `po:${o.id}`,
   kind: 'PO',
   id: o.id,
   no: o.poNo,
   label: `${o.poNo} · ${o.vendorName}`,
-  hint: `Purchase order${o.deliveryBy ? `, due ${formatDate(o.deliveryBy)}` : ''} · ${o.lines.map((l) => l.itemName).join(', ')}`,
+  hint: `${o.deliveryBy ? t('Purchase order, due {date}', { date: formatDate(o.deliveryBy) }) : t('Purchase order')} · ${o.lines.map((l) => l.itemName).join(', ')}`,
   vendorName: o.vendorName,
   lines: o.lines.map((l) => ({ id: l.purchaseOrderLineId, itemName: l.itemName, unit: l.unit, due: l.ordered, received: l.received, pending: l.pending })),
 });
@@ -51,6 +55,7 @@ const fromOrder = (o: ReceivableOrderDto): Source => ({
 export default function ReceiveScreen() {
   const params = useLocalSearchParams<{ projectId?: string; materialRequestId?: string; purchaseOrderId?: string }>();
   const { user } = useAuth();
+  const t = useT();
   const api = useApi();
   const { online } = useOffline();
   const projects = useProjectOptions();
@@ -74,7 +79,7 @@ export default function ReceiveScreen() {
 
   const receivable = useFetch<ReceivableRequestDto[]>((a) => a.get('/stock/receivable', { projectId: projectId! }), [projectId], { enabled: !!projectId, refetchOnFocus: false });
   const orders = useFetch<ReceivableOrderDto[]>((a) => a.get('/purchase-orders/receivable', { projectId: projectId! }), [projectId], { enabled: !!projectId, refetchOnFocus: false });
-  const sources = useMemo(() => [...(orders.data ?? []).map(fromOrder), ...(receivable.data ?? []).map(fromRequest)], [orders.data, receivable.data]);
+  const sources = useMemo(() => [...(orders.data ?? []).map((o) => fromOrder(o, t)), ...(receivable.data ?? []).map((r) => fromRequest(r, t))], [orders.data, receivable.data, t]);
   const request = sources.find((s) => s.key === sourceKey) ?? null;
   const requestOptions = useMemo(() => sources.map((s) => ({ value: s.key, label: s.label, hint: s.hint })), [sources]);
 
@@ -85,21 +90,21 @@ export default function ReceiveScreen() {
 
   const validate = () => {
     const e: Record<string, string> = {};
-    if (!request) e.request = 'Choose the purchase order or material request';
-    if (!isIsoDate(date)) e.date = 'Enter a valid date';
-    else if (date > today()) e.date = 'The date cannot be in the future';
+    if (!request) e.request = t('Choose the purchase order or material request');
+    if (!isIsoDate(date)) e.date = t('Enter a valid date');
+    else if (date > today()) e.date = t('The date cannot be in the future');
     let any = false;
     for (const l of request?.lines ?? []) {
       const v = (qty[l.id] ?? '').trim();
       if (!v) continue;
-      if (!QTY.test(v)) e[l.id] = 'Enter a number (up to 3 decimals)';
-      else if (Number(v) > Number(l.pending)) e[l.id] = `Only ${fmtQty(l.pending)} ${l.unit} is pending`;
+      if (!QTY.test(v)) e[l.id] = t('Enter a number (up to 3 decimals)');
+      else if (Number(v) > Number(l.pending)) e[l.id] = t('Only {qty} {unit} is pending', { qty: fmtQty(l.pending), unit: l.unit });
       else if (Number(v) > 0) any = true;
     }
-    if (request && !any && !Object.keys(e).length) e.lines = 'Enter the quantity received on at least one line';
-    if (photosUploading(photos)) e.photos = 'Wait for photos to finish uploading';
-    else if (photosFailed(photos)) e.photos = 'Remove or retry failed photos';
-    else if (photosQueued(photos)) e.photos = 'Photos need a connection to upload';
+    if (request && !any && !Object.keys(e).length) e.lines = t('Enter the quantity received on at least one line');
+    if (photosUploading(photos)) e.photos = t('Wait for photos to finish uploading');
+    else if (photosFailed(photos)) e.photos = t('Remove or retry failed photos');
+    else if (photosQueued(photos)) e.photos = t('Photos need a connection to upload');
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -134,8 +139,8 @@ export default function ReceiveScreen() {
   if (saved) {
     return (
       <SubmitSuccess
-        title={`${saved.entryNo} saved`}
-        subtitle={`${saved.lines.map((l) => `${l.itemName} ${fmtQty(l.quantity)} ${l.unit}`).join(', ')} received against ${saved.poNo ?? saved.requestNo}.`}
+        title={t('{no} saved', { no: saved.entryNo })}
+        subtitle={t('{lines} received against {ref}.', { lines: saved.lines.map((l) => `${l.itemName} ${fmtQty(l.quantity)} ${l.unit}`).join(', '), ref: saved.poNo ?? saved.requestNo })}
         onAnother={() => {
           setSaved(null);
           setSourceKey(null);
@@ -151,15 +156,15 @@ export default function ReceiveScreen() {
     );
   }
   if (projects.loading && !projects.data) return <Loading />;
-  if (user && !canKeepStock(user.roleKey)) return <EmptyState title="Not available for your role" subtitle="The store manager, site engineers and approvers receive material." icon="lock-closed-outline" />;
+  if (user && !canKeepStock(user.roleKey)) return <EmptyState title={t('Not available for your role')} subtitle={t('The store manager, site engineers and approvers receive material.')} icon="lock-closed-outline" />;
 
   return (
     <Screen keyboard>
-      <Stack.Screen options={{ title: 'Receive Material' }} />
-      <ErrorBanner message={submitError ?? projects.error ?? (online ? (receivable.error ?? orders.error) : 'You are offline. Receiving material needs a connection.')} />
+      <Stack.Screen options={{ title: t('Receive Material') }} />
+      <ErrorBanner message={submitError ?? projects.error ?? (online ? (receivable.error ?? orders.error) : t('You are offline. Receiving material needs a connection.'))} />
       <Card>
         <Select
-          label="Project"
+          label={t('Project')}
           required
           value={projectId}
           options={projects.options}
@@ -167,28 +172,30 @@ export default function ReceiveScreen() {
             setProjectId(v);
             setSourceKey(null);
           }}
-          placeholder="Choose project"
+          placeholder={t('Choose project')}
         />
         <Select
-          label="Against"
+          label={t('Against')}
           required
           value={sourceKey}
           options={requestOptions}
           onChange={setSourceKey}
-          placeholder={receivable.loading || orders.loading ? 'Loading…' : requestOptions.length ? 'Choose purchase order or request' : 'Nothing pending to receive'}
+          placeholder={receivable.loading || orders.loading ? t('Loading…') : requestOptions.length ? t('Choose purchase order or request') : t('Nothing pending to receive')}
           disabled={!projectId || !requestOptions.length}
           error={errors.request}
         />
-        <DatePicker label="Received on" required value={date} onChange={setDate} error={errors.date} />
+        <DatePicker label={t('Received on')} required value={date} onChange={setDate} error={errors.date} />
       </Card>
 
       {request ? (
-        <Card title="Quantities received">
+        <Card title={t('Quantities received')}>
           {request.lines.map((l) => (
             <View key={l.id} style={styles.line}>
               <Text style={typography.bodyStrong}>{l.itemName}</Text>
               <Text style={typography.caption}>
-                {request.kind === 'PO' ? 'Ordered' : 'Requested'} {fmtQty(l.due)} · received {fmtQty(l.received)} · pending {fmtQty(l.pending)} {l.unit}
+                {request.kind === 'PO'
+                  ? t('Ordered {due} · received {received} · pending {pending} {unit}', { due: fmtQty(l.due), received: fmtQty(l.received), pending: fmtQty(l.pending), unit: l.unit })
+                  : t('Requested {due} · received {received} · pending {pending} {unit}', { due: fmtQty(l.due), received: fmtQty(l.received), pending: fmtQty(l.pending), unit: l.unit })}
               </Text>
               {Number(l.pending) > 0 ? (
                 <Input
@@ -201,7 +208,7 @@ export default function ReceiveScreen() {
                   containerStyle={styles.qty}
                 />
               ) : (
-                <Text style={styles.done}>Fully received</Text>
+                <Text style={styles.done}>{t('Fully received')}</Text>
               )}
             </View>
           ))}
@@ -209,19 +216,19 @@ export default function ReceiveScreen() {
         </Card>
       ) : null}
 
-      <Card title="Delivery">
+      <Card title={t('Delivery')}>
         {request?.kind === 'PO' ? (
-          <Input label="Supplier" value={request.vendorName ?? ''} editable={false} />
+          <Input label={t('Supplier')} value={request.vendorName ?? ''} editable={false} />
         ) : (
-          <Input label="Supplier" value={supplier} onChangeText={setSupplier} placeholder="Supplier name" />
+          <Input label={t('Supplier')} value={supplier} onChangeText={setSupplier} placeholder={t('Supplier name')} />
         )}
-        <Input label="Challan / invoice no." value={challanNo} onChangeText={setChallanNo} />
-        <Input label="Vehicle no." value={vehicleNo} onChangeText={setVehicleNo} autoCapitalize="characters" />
-        <PhotoPicker label="Challan photo" photos={photos} onChange={setPhotos} max={4} />
+        <Input label={t('Challan / invoice no.')} value={challanNo} onChangeText={setChallanNo} />
+        <Input label={t('Vehicle no.')} value={vehicleNo} onChangeText={setVehicleNo} autoCapitalize="characters" />
+        <PhotoPicker label={t('Challan photo')} photos={photos} onChange={setPhotos} max={4} />
         {errors.photos ? <Text style={styles.err}>{errors.photos}</Text> : null}
-        <Input label="Remarks" value={remarks} onChangeText={setRemarks} multiline containerStyle={styles.last} />
+        <Input label={t('Remarks')} value={remarks} onChangeText={setRemarks} multiline containerStyle={styles.last} />
       </Card>
-      <Button title="Save GRN" icon="checkmark" onPress={save} loading={busy} disabled={!online || !request} />
+      <Button title={t('Save GRN')} icon="checkmark" onPress={save} loading={busy} disabled={!online || !request} />
     </Screen>
   );
 }

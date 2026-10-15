@@ -10,16 +10,18 @@ import { AttachmentGallery, Button, Card, ErrorBanner, ErrorState, Input, KeyVal
 import { TEST_RESULT_TONE } from '../../src/components/qualityTone';
 import { colors, spacing, typography } from '../../src/theme';
 import { formatDate } from '../../src/utils/format';
+import { useT } from '../../src/i18n/LanguageContext';
 
 /** Enter one reading (the 7-day or 28-day cubes); the last reading decides the result against the specification. */
 function ReadingRow({ test, r, onSaved }: { test: QualityTestDto; r: QualityTestReadingDto; onSaved: (x: QualityTestDto) => void }) {
   const api = useApi();
+  const t = useT();
   const [value, setValue] = useState(r.value ?? '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const save = async () => {
     const v = value.trim().replace(',', '.');
-    if (v && !/^\d+(\.\d+)?$/.test(v)) return setError('Enter a number');
+    if (v && !/^\d+(\.\d+)?$/.test(v)) return setError(t('Enter a number'));
     setBusy(true);
     setError(null);
     try {
@@ -34,11 +36,11 @@ function ReadingRow({ test, r, onSaved }: { test: QualityTestDto; r: QualityTest
     <View style={styles.reading}>
       <Text style={styles.label}>
         {r.label}
-        {r.dueOn ? <Text style={[typography.caption, r.overdue && styles.overdue]}> · due {formatDate(r.dueOn)}</Text> : null}
+        {r.dueOn ? <Text style={[typography.caption, r.overdue && styles.overdue]}> · {t('due {date}', { date: formatDate(r.dueOn) })}</Text> : null}
       </Text>
       <View style={styles.row}>
-        <Input value={value} onChangeText={setValue} placeholder={test.unit ?? 'Value'} keyboardType="decimal-pad" error={error ?? undefined} style={styles.flex} />
-        <Button title="Save" onPress={save} loading={busy} disabled={value.trim() === (r.value ?? '')} variant="secondary" />
+        <Input value={value} onChangeText={setValue} placeholder={test.unit ?? t('Value')} keyboardType="decimal-pad" error={error ?? undefined} style={styles.flex} />
+        <Button title={t('Save')} onPress={save} loading={busy} disabled={value.trim() === (r.value ?? '')} variant="secondary" />
       </View>
     </View>
   );
@@ -47,43 +49,47 @@ function ReadingRow({ test, r, onSaved }: { test: QualityTestDto; r: QualityTest
 export default function TestScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
+  const t = useT();
   const { data, loading, refreshing, error, refresh, reload, setData } = useFetch<QualityTestDto>((a) => a.get(`/quality/tests/${id}`), [id], { enabled: !!id });
   if (loading && !data) return <Loading />;
   if (error && !data) return <ErrorState message={error} onRetry={reload} />;
   if (!data) return null;
   const mayRecord = !!user && canRecordTest(user.roleKey);
-  const spec = specRange(data.specMin, data.specMax, data.unit);
+  const spec =
+    data.specMin !== null && data.specMax !== null
+      ? `${t('{from} to {to}', { from: Number(data.specMin), to: Number(data.specMax) })}${data.unit ? ` ${data.unit}` : ''}`
+      : specRange(data.specMin, data.specMax, data.unit);
 
   return (
     <Screen refreshing={refreshing} onRefresh={refresh} keyboard>
       <View style={styles.head}>
         <Text style={typography.caption}>
-          {data.testNo} · {TEST_KIND_LABELS[data.kind]} · {data.projectName}
+          {data.testNo} · {t(TEST_KIND_LABELS[data.kind])} · {data.projectName}
         </Text>
         <Text style={typography.h2}>{data.title}</Text>
         <View style={styles.pills}>
-          <Pill text={TEST_RESULT_LABELS[data.result]} {...TEST_RESULT_TONE[data.result]} />
-          {data.overdue ? <Pill text="Result overdue" fg={colors.danger} bg={colors.dangerSoft} /> : null}
+          <Pill text={t(TEST_RESULT_LABELS[data.result])} {...TEST_RESULT_TONE[data.result]} />
+          {data.overdue ? <Pill text={t('Result overdue')} fg={colors.danger} bg={colors.dangerSoft} /> : null}
         </View>
       </View>
       <ErrorBanner message={null} />
       <Card>
-        <KeyValue label="Sampled on" value={formatDate(data.sampledOn)} />
-        <KeyValue label="Location" value={data.location} />
-        <KeyValue label="Activity" value={data.activityName} />
-        <KeyValue label="Specification" value={data.specification} multiline />
-        <KeyValue label="Passes at" value={spec ?? 'As judged by the tester'} />
-        <KeyValue label="Remarks" value={data.remarks} multiline />
+        <KeyValue label={t('Sampled on')} value={formatDate(data.sampledOn)} />
+        <KeyValue label={t('Location')} value={data.location} />
+        <KeyValue label={t('Activity')} value={data.activityName} />
+        <KeyValue label={t('Specification')} value={data.specification} multiline />
+        <KeyValue label={t('Passes at')} value={spec ?? t('As judged by the tester')} />
+        <KeyValue label={t('Remarks')} value={data.remarks} multiline />
       </Card>
-      <Card title="Readings">
+      <Card title={t('Readings')}>
         {data.readings.map((r) =>
           mayRecord ? (
             <ReadingRow key={`${r.id}:${r.value}`} test={data} r={r} onSaved={setData} />
           ) : (
-            <KeyValue key={r.id} label={r.label} value={r.value !== null ? `${Number(r.value)}${data.unit ? ` ${data.unit}` : ''}` : r.dueOn ? `due ${formatDate(r.dueOn)}` : null} />
+            <KeyValue key={r.id} label={r.label} value={r.value !== null ? `${Number(r.value)}${data.unit ? ` ${data.unit}` : ''}` : r.dueOn ? t('due {date}', { date: formatDate(r.dueOn) }) : null} />
           ),
         )}
-        {spec && data.readings.length > 1 ? <Text style={typography.caption}>The last reading decides the result.</Text> : null}
+        {spec && data.readings.length > 1 ? <Text style={typography.caption}>{t('The last reading decides the result.')}</Text> : null}
       </Card>
       <AttachmentGallery attachments={data.attachments} />
     </Screen>

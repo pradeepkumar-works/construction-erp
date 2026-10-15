@@ -10,12 +10,14 @@ import { AttachmentGallery, Button, Card, ErrorBanner, ErrorState, Input, KeyVal
 import { LEVEL_TONE, RISK_STATUS_TONE } from '../../src/components/riskTone';
 import { colors, spacing, typography } from '../../src/theme';
 import { formatDate, formatDateTime } from '../../src/utils/format';
+import { useT } from '../../src/i18n/LanguageContext';
 
 /** One delay or risk: rating, days lost, action and owner; the raiser, owner or an approver can close or reopen it. */
 export default function RiskScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const api = useApi();
+  const t = useT();
   const { user } = useAuth();
   const { data, loading, refreshing, error, refresh, reload, setData } = useFetch<RiskDto>((a) => a.get(`/risks/${id}`), [id], { enabled: !!id });
   const [closing, setClosing] = useState(false);
@@ -47,60 +49,60 @@ export default function RiskScreen() {
     <Screen refreshing={refreshing} onRefresh={refresh} keyboard>
       <View style={styles.head}>
         <Text style={typography.caption}>
-          {data.riskNo} · {RISK_KIND_LABELS[data.kind]} · {data.projectName}
+          {data.riskNo} · {t(RISK_KIND_LABELS[data.kind])} · {data.projectName}
         </Text>
         <Text style={typography.h2}>{data.title}</Text>
         <View style={styles.pills}>
-          <Pill text={RISK_STATUS_LABELS[data.status]} {...RISK_STATUS_TONE[data.status]} />
-          <Pill text={`Score ${data.score} · ${RISK_LEVEL_LABELS[level]}`} {...LEVEL_TONE[level]} />
-          {data.overdue ? <Pill text="Action overdue" fg={colors.danger} bg={colors.dangerSoft} /> : null}
+          <Pill text={t(RISK_STATUS_LABELS[data.status])} {...RISK_STATUS_TONE[data.status]} />
+          <Pill text={`${t('Score {n}', { n: data.score })} · ${t(RISK_LEVEL_LABELS[level])}`} {...LEVEL_TONE[level]} />
+          {data.overdue ? <Pill text={t('Action overdue')} fg={colors.danger} bg={colors.dangerSoft} /> : null}
         </View>
       </View>
       <ErrorBanner message={actionError} />
       {data.kind === 'DELAY' ? (
-        <Card title="Delay">
+        <Card title={t('Delay')}>
           <View style={styles.daysBox}>
             <Text style={styles.days}>{data.daysLost ?? 0}</Text>
-            <Text style={typography.caption}>day{data.daysLost === 1 ? '' : 's'} lost{data.delayEnd ? '' : ' so far'}</Text>
+            <Text style={typography.caption}>{data.daysLost === 1 ? t(data.delayEnd ? 'day lost' : 'day lost so far') : t(data.delayEnd ? 'days lost' : 'days lost so far')}</Text>
           </View>
-          <KeyValue label="Held up since" value={formatDate(data.delayStart)} />
-          <KeyValue label="Resumed on" value={data.delayEnd ? formatDate(data.delayEnd) : 'Still held up'} />
-          <KeyValue label="Caused by" value={data.responsibleParty ? DELAY_PARTY_LABELS[data.responsibleParty] : null} />
-          <KeyValue label="Extension of time" value={data.eotClaimed ? 'Claimed' : 'Not claimed'} />
+          <KeyValue label={t('Held up since')} value={formatDate(data.delayStart)} />
+          <KeyValue label={t('Resumed on')} value={data.delayEnd ? formatDate(data.delayEnd) : t('Still held up')} />
+          <KeyValue label={t('Caused by')} value={data.responsibleParty ? t(DELAY_PARTY_LABELS[data.responsibleParty]) : null} />
+          <KeyValue label={t('Extension of time')} value={t(data.eotClaimed ? 'Claimed' : 'Not claimed')} />
         </Card>
       ) : null}
       <Card>
-        <KeyValue label="Category" value={RISK_CATEGORY_LABELS[data.category]} />
-        <KeyValue label="Activity" value={data.activityName} />
-        <KeyValue label="Probability × impact" value={`${data.probability} × ${data.impact}`} />
-        <KeyValue label="Details" value={data.description} multiline />
-        <KeyValue label={data.kind === 'DELAY' ? 'Action' : 'Mitigation'} value={data.mitigation} multiline />
-        <KeyValue label="Owner" value={data.ownerName} />
-        <KeyValue label="Due" value={data.dueDate ? formatDate(data.dueDate) : null} />
-        <KeyValue label="Raised by" value={`${data.raisedByName}, ${formatDateTime(data.createdAt)}`} />
-        {data.status === 'CLOSED' ? <KeyValue label="Closed" value={`${formatDateTime(data.closedAt)}${data.closureNote ? `: ${data.closureNote}` : ''}`} multiline /> : null}
+        <KeyValue label={t('Category')} value={t(RISK_CATEGORY_LABELS[data.category])} />
+        <KeyValue label={t('Activity')} value={data.activityName} />
+        <KeyValue label={t('Probability × impact')} value={`${data.probability} × ${data.impact}`} />
+        <KeyValue label={t('Details')} value={data.description} multiline />
+        <KeyValue label={t(data.kind === 'DELAY' ? 'Action' : 'Mitigation')} value={data.mitigation} multiline />
+        <KeyValue label={t('Owner')} value={data.ownerName} />
+        <KeyValue label={t('Due')} value={data.dueDate ? formatDate(data.dueDate) : null} />
+        <KeyValue label={t('Raised by')} value={`${data.raisedByName}, ${formatDateTime(data.createdAt)}`} />
+        {data.status === 'CLOSED' ? <KeyValue label={t('Closed')} value={`${formatDateTime(data.closedAt)}${data.closureNote ? `: ${data.closureNote}` : ''}`} multiline /> : null}
       </Card>
       <AttachmentGallery attachments={data.attachments} />
       {mayEdit ? (
         closing ? (
-          <Card title="Close this entry">
-            {data.kind === 'DELAY' && !data.delayEnd ? <Text style={[typography.caption, styles.gap]}>The delay will be recorded as ending today.</Text> : null}
-            <Input label="How was it resolved" required value={note} onChangeText={setNote} multiline />
-            <Button title="Close entry" icon="checkmark-circle" onPress={() => change({ status: 'CLOSED', closureNote: note.trim() })} loading={busy} disabled={!note.trim()} />
-            <Button title="Cancel" variant="ghost" onPress={() => setClosing(false)} />
+          <Card title={t('Close this entry')}>
+            {data.kind === 'DELAY' && !data.delayEnd ? <Text style={[typography.caption, styles.gap]}>{t('The delay will be recorded as ending today.')}</Text> : null}
+            <Input label={t('How was it resolved')} required value={note} onChangeText={setNote} multiline />
+            <Button title={t('Close entry')} icon="checkmark-circle" onPress={() => change({ status: 'CLOSED', closureNote: note.trim() })} loading={busy} disabled={!note.trim()} />
+            <Button title={t('Cancel')} variant="ghost" onPress={() => setClosing(false)} />
           </Card>
         ) : (
           <View style={styles.actions}>
             {data.status === 'CLOSED' ? (
-              <Button title="Reopen" icon="refresh" variant="secondary" onPress={() => change({ status: 'OPEN' })} loading={busy} style={styles.flex} />
+              <Button title={t('Reopen')} icon="refresh" variant="secondary" onPress={() => change({ status: 'OPEN' })} loading={busy} style={styles.flex} />
             ) : (
-              <Button title="Close" icon="checkmark-circle" onPress={() => setClosing(true)} style={styles.flex} />
+              <Button title={t('Close')} icon="checkmark-circle" onPress={() => setClosing(true)} style={styles.flex} />
             )}
-            <Button title="Update" icon="create" variant="secondary" onPress={() => router.push(`/risk/new?editId=${data.id}`)} style={styles.flex} />
+            <Button title={t('Update')} icon="create" variant="secondary" onPress={() => router.push(`/risk/new?editId=${data.id}`)} style={styles.flex} />
           </View>
         )
       ) : null}
-      <Button title="Open project" variant="ghost" icon="business-outline" onPress={() => router.push(`/project/${data.projectId}`)} />
+      <Button title={t('Open project')} variant="ghost" icon="business-outline" onPress={() => router.push(`/project/${data.projectId}`)} />
     </Screen>
   );
 }

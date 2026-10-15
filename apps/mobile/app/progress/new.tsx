@@ -9,6 +9,7 @@ import { Button, Card, DatePicker, ErrorBanner, ErrorState, Input, Loading, Phot
 import { attachmentIds, photosFailed, photosQueued, photosUploading, QueuedSuccess, SubmitSuccess, toOutboxPhotos, useProjectOptions } from '../../src/forms/common';
 import { attachmentsToPhotos, ReviewerNote } from '../../src/forms/edit';
 import { useSectorInputs } from '../../src/forms/sector';
+import { useT } from '../../src/i18n/LanguageContext';
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
 import { colors, spacing, typography } from '../../src/theme';
 import { fmtQty, formatDate, isIsoDate, today } from '../../src/utils/format';
@@ -17,6 +18,7 @@ import { fmtQty, formatDate, isIsoDate, today } from '../../src/utils/format';
 export default function NewProgressScreen() {
   const params = useLocalSearchParams<{ projectId?: string; activityId?: string; editId?: string }>();
   const editId = params.editId ?? null;
+  const t = useT();
   const api = useApi();
   const { online, enqueue } = useOffline();
   const projects = useProjectOptions();
@@ -61,8 +63,8 @@ export default function NewProgressScreen() {
 
   const activities = useFetch<ActivityDto[]>((a) => a.get(`/projects/${projectId}/activities`), [projectId], { enabled: !!projectId, refetchOnFocus: false, cacheKey: `activities:${projectId}` });
   const activityOptions = useMemo<SelectOption[]>(
-    () => (activities.data ?? []).map((a) => ({ value: a.id, label: `${a.boqItemNo ? `${a.boqItemNo} · ` : ''}${a.name}`, hint: `${a.unit} · ${fmtQty(a.executedQty)} of ${fmtQty(a.plannedQty)} done (${Math.round(a.progressPct)}%)` })),
-    [activities.data],
+    () => (activities.data ?? []).map((a) => ({ value: a.id, label: `${a.boqItemNo ? `${a.boqItemNo} · ` : ''}${a.name}`, hint: t('{unit} · {done} of {planned} done ({pct}%)', { unit: a.unit, done: fmtQty(a.executedQty), planned: fmtQty(a.plannedQty), pct: Math.round(a.progressPct) }) })),
+    [activities.data, t],
   );
   const activity = activities.data?.find((a) => a.id === activityId) ?? null;
 
@@ -73,16 +75,16 @@ export default function NewProgressScreen() {
 
   const validate = () => {
     const e: Record<string, string> = {};
-    if (!projectId) e.projectId = 'Choose a project';
-    if (!activityId) e.activityId = 'Choose an activity';
-    if (!isIsoDate(date)) e.date = 'Enter a valid date';
+    if (!projectId) e.projectId = t('Choose a project');
+    if (!activityId) e.activityId = t('Choose an activity');
+    if (!isIsoDate(date)) e.date = t('Enter a valid date');
     const q = Number(quantity);
-    if (!quantity.trim() || Number.isNaN(q) || q <= 0) e.quantity = 'Enter a quantity greater than 0';
+    if (!quantity.trim() || Number.isNaN(q) || q <= 0) e.quantity = t('Enter a quantity greater than 0');
     sector.validate(e);
-    if (manpower.trim() && (!/^\d+$/.test(manpower.trim()) || Number(manpower) < 0)) e.manpower = 'Whole number';
-    if (photosUploading(photos)) e.photos = 'Wait for photos to finish uploading';
-    else if (photosFailed(photos)) e.photos = 'Remove or retry failed photos';
-    else if (editId && photosQueued(photos)) e.photos = 'Photos need a connection to upload before resubmitting';
+    if (manpower.trim() && (!/^\d+$/.test(manpower.trim()) || Number(manpower) < 0)) e.manpower = t('Whole number');
+    if (photosUploading(photos)) e.photos = t('Wait for photos to finish uploading');
+    else if (photosFailed(photos)) e.photos = t('Remove or retry failed photos');
+    else if (editId && photosQueued(photos)) e.photos = t('Photos need a connection to upload before resubmitting');
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -109,13 +111,13 @@ export default function NewProgressScreen() {
       }
       // New entry: save to the outbox when offline (or when a photo is still on the phone); otherwise send now.
       const queueIt = async () => {
-        const projectName = projects.options.find((o) => o.value === projectId)?.label ?? 'Project';
+        const projectName = projects.options.find((o) => o.value === projectId)?.label ?? t('Project');
         setQueued(
           await enqueue({
             type: 'PROGRESS',
             payload: { projectId, ...body },
             photos: toOutboxPhotos(photos),
-            title: `${activity?.name ?? 'Progress'} · ${fmtQty(Number(quantity))} ${activity?.unit ?? ''}`.trim(),
+            title: `${activity?.name ?? t('Progress')} · ${fmtQty(Number(quantity))} ${activity?.unit ?? ''}`.trim(),
             subtitle: `${projectName} · ${formatDate(date)}`,
           }),
         );
@@ -148,13 +150,13 @@ export default function NewProgressScreen() {
   };
 
   if (queued) {
-    return <QueuedSuccess title="Saved on this phone" subtitle={`${queued.title} · ${queued.subtitle}`} onAnother={reset} />;
+    return <QueuedSuccess title={t('Saved on this phone')} subtitle={`${queued.title} · ${queued.subtitle}`} onAnother={reset} />;
   }
   if (created) {
     return (
       <SubmitSuccess
-        title={editId ? 'Progress resubmitted' : 'Progress submitted'}
-        subtitle={`${created.activityName}: ${fmtQty(created.quantity)} ${created.unit} on ${created.date}. Sent for approval.`}
+        title={editId ? t('Progress resubmitted') : t('Progress submitted')}
+        subtitle={t('{activity}: {qty} {unit} on {date}. Sent for approval.', { activity: created.activityName, qty: fmtQty(created.quantity), unit: created.unit, date: created.date })}
         detailHref={`/progress/${created.id}`}
         onAnother={editId ? undefined : reset}
       />
@@ -166,52 +168,52 @@ export default function NewProgressScreen() {
 
   return (
     <Screen keyboard>
-      <Stack.Screen options={{ title: editId ? 'Edit Progress Entry' : 'New Progress Entry' }} />
+      <Stack.Screen options={{ title: editId ? t('Edit Progress Entry') : t('New Progress Entry') }} />
       <ErrorBanner message={submitError ?? projects.error} />
       <ReviewerNote entry={existing.data} />
       <Card>
-        <Select label="Project" required value={projectId} options={projects.options} onChange={changeProject} placeholder="Choose project" error={errors.projectId} disabled={!!editId} />
+        <Select label={t('Project')} required value={projectId} options={projects.options} onChange={changeProject} placeholder={t('Choose project')} error={errors.projectId} disabled={!!editId} />
         <Select
-          label="Activity"
+          label={t('Activity')}
           required
           value={activityId}
           options={activityOptions}
           onChange={setActivityId}
-          placeholder={!projectId ? 'Choose a project first' : activities.loading ? 'Loading activities…' : 'Choose activity'}
+          placeholder={!projectId ? t('Choose a project first') : activities.loading ? t('Loading activities…') : t('Choose activity')}
           disabled={!projectId || activities.loading}
           error={errors.activityId ?? activities.error}
-          emptyText="No activities in this project"
+          emptyText={t('No activities in this project')}
         />
         {activity ? (
           <View style={styles.activityInfo}>
             <Text style={typography.caption}>
-              Unit <Text style={styles.strong}>{activity.unit}</Text> · Planned <Text style={styles.strong}>{fmtQty(activity.plannedQty)}</Text> · Executed <Text style={styles.strong}>{fmtQty(activity.executedQty)}</Text> · Balance{' '}
+              {t('Unit')} <Text style={styles.strong}>{activity.unit}</Text> · {t('Planned qty')} <Text style={styles.strong}>{fmtQty(activity.plannedQty)}</Text> · {t('Executed')} <Text style={styles.strong}>{fmtQty(activity.executedQty)}</Text> · {t('Balance')}{' '}
               <Text style={styles.strong}>{fmtQty(Math.max(0, Number(activity.plannedQty) - Number(activity.executedQty)))}</Text>
             </Text>
           </View>
         ) : null}
-        <DatePicker label="Date" required value={date} onChange={setDate} error={errors.date} />
+        <DatePicker label={t('Date')} required value={date} onChange={setDate} error={errors.date} />
         <Input
-          label={`Quantity executed${activity ? ` (${activity.unit})` : ''}`}
+          label={`${t('Quantity executed')}${activity ? ` (${activity.unit})` : ''}`}
           required
           value={quantity}
           onChangeText={setQuantity}
           keyboardType="decimal-pad"
-          placeholder="e.g. 120"
+          placeholder={t('e.g. 120')}
           error={errors.quantity}
           style={styles.bigInput}
         />
         {sector.fields(errors)}
       </Card>
-      <Card title="Details (optional)">
-        <Input label="Location" value={location} onChangeText={setLocation} placeholder="e.g. LHS, grid C4-D7" />
-        <Input label="Manpower count" value={manpower} onChangeText={setManpower} keyboardType="number-pad" placeholder="e.g. 18" error={errors.manpower} />
-        <Input label="Machinery used" value={machinery} onChangeText={setMachinery} placeholder="e.g. Grader, Roller" />
-        <Input label="Remarks" value={remarks} onChangeText={setRemarks} multiline placeholder="Anything the PM should know" />
+      <Card title={t('Details (optional)')}>
+        <Input label={t('Location')} value={location} onChangeText={setLocation} placeholder={t('e.g. LHS, grid C4-D7')} />
+        <Input label={t('Manpower count')} value={manpower} onChangeText={setManpower} keyboardType="number-pad" placeholder={t('e.g. 18')} error={errors.manpower} />
+        <Input label={t('Machinery used')} value={machinery} onChangeText={setMachinery} placeholder={t('e.g. Grader, Roller')} />
+        <Input label={t('Remarks')} value={remarks} onChangeText={setRemarks} multiline placeholder={t('Anything the PM should know')} />
         <PhotoPicker photos={photos} onChange={setPhotos} />
         {errors.photos ? <Text style={styles.err}>{errors.photos}</Text> : null}
       </Card>
-      <Button title={editId ? 'Resubmit for approval' : 'Submit for approval'} icon="send" onPress={submit} loading={busy} />
+      <Button title={editId ? t('Resubmit for approval') : t('Submit for approval')} icon="send" onPress={submit} loading={busy} />
     </Screen>
   );
 }

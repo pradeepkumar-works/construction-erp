@@ -13,6 +13,7 @@ import { Button, EmptyState, ErrorBanner, Input, Loading, Pill, Screen, SectionT
 import { absoluteUrl } from '../src/config';
 import { colors, radius, spacing, typography } from '../src/theme';
 import { formatDate } from '../src/utils/format';
+import { useT } from '../src/i18n/LanguageContext';
 
 const LAST_PROJECT = 'documents:lastProject';
 
@@ -23,6 +24,7 @@ const LAST_PROJECT = 'documents:lastProject';
 export default function DocumentsScreen() {
   const params = useLocalSearchParams<{ projectId?: string }>();
   const projects = useProjectOptions();
+  const t = useT();
   const { online } = useOffline();
   // A "drawing issued" notification opens its project.
   const [projectId, setProjectId] = useState<string | null>(params.projectId ?? null);
@@ -58,11 +60,11 @@ export default function DocumentsScreen() {
 
   const saveAll = async () => {
     if (!projectId) return;
-    setSaving('Starting…');
+    setSaving(t('Starting…'));
     try {
-      const r = await saveProjectFiles(projectId, files, (done, total) => setSaving(`Saving ${done} of ${total}…`));
+      const r = await saveProjectFiles(projectId, files, (done, total) => setSaving(t('Saving {done} of {total}…', { done, total })));
       refreshSaved();
-      if (r.failed) Alert.alert('Some drawings were not saved', `${r.failed} file${r.failed > 1 ? 's' : ''} could not be downloaded. Try again with a better signal.`);
+      if (r.failed) Alert.alert(t('Some drawings were not saved'), r.failed > 1 ? t('{n} files could not be downloaded. Try again with a better signal.', { n: r.failed }) : t('1 file could not be downloaded. Try again with a better signal.'));
     } finally {
       setSaving(null);
     }
@@ -70,14 +72,14 @@ export default function DocumentsScreen() {
 
   const open = async (d: DocumentDto) => {
     const f = d.current?.attachments[0];
-    if (!f) return Alert.alert('No file', `${d.docNo} Rev ${d.current?.revision ?? ''} has no file attached yet.`);
+    if (!f) return Alert.alert(t('No file'), t('{doc} Rev {rev} has no file attached yet.', { doc: d.docNo, rev: d.current?.revision ?? '' }));
     const isSaved = saved.has(f.id);
-    if (!isSaved && !online) return Alert.alert('Not saved on this phone', 'Connect to the internet, or save the drawings offline when you have a signal.');
+    if (!isSaved && !online) return Alert.alert(t('Not saved on this phone'), t('Connect to the internet, or save the drawings offline when you have a signal.'));
     if (f.mimeType.startsWith('image/')) return setImage(f);
     try {
       await openPdf(f, isSaved);
     } catch {
-      Alert.alert('Could not open the drawing', 'Install a PDF viewer, or open it online.');
+      Alert.alert(t('Could not open the drawing'), t('Install a PDF viewer, or open it online.'));
     }
   };
 
@@ -89,7 +91,7 @@ export default function DocumentsScreen() {
       }}
     >
       <Select
-        label="Project"
+        label={t('Project')}
         value={projectId}
         options={projects.options}
         onChange={(v) => {
@@ -98,23 +100,23 @@ export default function DocumentsScreen() {
         }}
         searchable
       />
-      <Input placeholder="Search number or title" value={search} onChangeText={setSearch} autoCorrect={false} />
+      <Input placeholder={t('Search number or title')} value={search} onChangeText={setSearch} autoCorrect={false} />
       {canSaveOffline && files.length ? (
         <View style={styles.offline}>
           <Ionicons name={missing ? 'cloud-download-outline' : 'checkmark-circle'} size={20} color={missing ? colors.textMuted : colors.success} />
-          <Text style={[typography.caption, styles.flex]}>{missing ? `${files.length - missing} of ${files.length} drawings saved on this phone` : 'All current drawings saved on this phone'}</Text>
-          {missing ? <Button title={saving ?? 'Save offline'} size="sm" variant="secondary" icon="download-outline" loading={!!saving} disabled={!online || !!saving} onPress={() => void saveAll()} /> : null}
+          <Text style={[typography.caption, styles.flex]}>{missing ? t('{saved} of {total} drawings saved on this phone', { saved: files.length - missing, total: files.length }) : t('All current drawings saved on this phone')}</Text>
+          {missing ? <Button title={saving ?? t('Save offline')} size="sm" variant="secondary" icon="download-outline" loading={!!saving} disabled={!online || !!saving} onPress={() => void saveAll()} /> : null}
         </View>
       ) : null}
       <ErrorBanner message={docs.error} />
       {docs.loading && !docs.data ? (
         <Loading />
       ) : !shown.length ? (
-        <EmptyState title={search ? 'Nothing matches' : 'No drawings yet'} subtitle="Drawings issued to this project show here with their current revision." icon="document-outline" />
+        <EmptyState title={t(search ? 'Nothing matches' : 'No drawings yet')} subtitle={t('Drawings issued to this project show here with their current revision.')} icon="document-outline" />
       ) : (
         shown.map(([discipline, list]) => (
           <View key={discipline}>
-            <SectionTitle title={DOCUMENT_DISCIPLINE_LABELS[discipline as DocumentDto['discipline']]} />
+            <SectionTitle title={t(DOCUMENT_DISCIPLINE_LABELS[discipline as DocumentDto['discipline']])} />
             {list.map((d) => {
               const cur = d.current!;
               const buildable = isBuildable(cur.status);
@@ -123,12 +125,12 @@ export default function DocumentsScreen() {
                 <Pressable key={d.id} onPress={() => void open(d)} style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
                   <View style={styles.flex}>
                     <Text style={typography.caption}>
-                      {d.docNo} · Rev {cur.revision} · {formatDate(cur.issuedOn)}
+                      {d.docNo} · {t('Rev {rev}', { rev: cur.revision })} · {formatDate(cur.issuedOn)}
                     </Text>
                     <Text style={styles.title} numberOfLines={2}>
                       {d.title}
                     </Text>
-                    {!buildable ? <Text style={styles.warn}>{cur.status === 'AS_BUILT' ? 'As-built record' : 'Not for construction'}</Text> : null}
+                    {!buildable ? <Text style={styles.warn}>{t(cur.status === 'AS_BUILT' ? 'As-built record' : 'Not for construction')}</Text> : null}
                     {cur.remarks ? (
                       <Text style={typography.caption} numberOfLines={2}>
                         {cur.remarks}
@@ -136,8 +138,8 @@ export default function DocumentsScreen() {
                     ) : null}
                   </View>
                   <View style={styles.side}>
-                    <Pill text={REVISION_STATUS_LABELS[cur.status]} fg={buildable ? colors.success : colors.warning} bg={buildable ? colors.successSoft : colors.warningSoft} />
-                    {f ? <Ionicons name={saved.has(f.id) ? 'phone-portrait-outline' : 'cloud-outline'} size={18} color={saved.has(f.id) ? colors.success : colors.textMuted} accessibilityLabel={saved.has(f.id) ? 'Saved on this phone' : 'Online only'} /> : null}
+                    <Pill text={t(REVISION_STATUS_LABELS[cur.status])} fg={buildable ? colors.success : colors.warning} bg={buildable ? colors.successSoft : colors.warningSoft} />
+                    {f ? <Ionicons name={saved.has(f.id) ? 'phone-portrait-outline' : 'cloud-outline'} size={18} color={saved.has(f.id) ? colors.success : colors.textMuted} accessibilityLabel={t(saved.has(f.id) ? 'Saved on this phone' : 'Online only')} /> : null}
                   </View>
                 </Pressable>
               );
@@ -145,7 +147,7 @@ export default function DocumentsScreen() {
           </View>
         ))
       )}
-      {docs.fromCache ? <Text style={[typography.caption, styles.center]}>Showing the list saved on this phone.</Text> : null}
+      {docs.fromCache ? <Text style={[typography.caption, styles.center]}>{t('Showing the list saved on this phone.')}</Text> : null}
       <Modal visible={!!image} transparent animationType="fade" onRequestClose={() => setImage(null)}>
         <Pressable style={styles.lightbox} onPress={() => setImage(null)}>
           {image ? <Image source={{ uri: saved.has(image.id) && canSaveOffline ? localUri(image) : absoluteUrl(image.url) }} style={styles.full} contentFit="contain" /> : null}

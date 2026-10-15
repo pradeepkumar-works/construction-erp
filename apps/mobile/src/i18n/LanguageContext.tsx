@@ -1,5 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { translate, type TranslateVars } from './translate';
+import { setFormatLanguage } from '../utils/format';
 
 /**
  * The app's display language. English is the default on every first launch, whatever the phone's own
@@ -10,10 +12,10 @@ export type LanguageCode = 'en' | 'hi';
 
 export const DEFAULT_LANGUAGE: LanguageCode = 'en';
 
-/** `available: false` languages are listed as coming soon until their translations ship (v4 item 49). */
+/** `available: false` languages are listed as coming soon until their translations ship. Hindi shipped in v4 item 49. */
 export const LANGUAGES: { code: LanguageCode; label: string; available: boolean }[] = [
   { code: 'en', label: 'English', available: true },
-  { code: 'hi', label: 'हिन्दी (Hindi)', available: false },
+  { code: 'hi', label: 'हिन्दी (Hindi)', available: true },
 ];
 
 const STORAGE_KEY = 'nirmaan.language';
@@ -32,12 +34,17 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY)
-      .then((v) => isSelectable(v) && setLanguageState(v))
+      .then((v) => {
+        if (!isSelectable(v)) return;
+        setFormatLanguage(v);
+        setLanguageState(v);
+      })
       .catch(() => undefined);
   }, []);
 
   const setLanguage = useCallback((code: LanguageCode) => {
     if (!isSelectable(code)) return;
+    setFormatLanguage(code);
     setLanguageState(code);
     AsyncStorage.setItem(STORAGE_KEY, code).catch(() => undefined);
   }, []);
@@ -47,3 +54,12 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 }
 
 export const useLanguage = () => useContext(LanguageContext);
+
+/**
+ * `t('English text', { n: 3 })` in the current language. The English text is the key, so untranslated text shows in
+ * English; `{name}` placeholders are filled from `vars`. Shared labels translate the same way: `t(STATUS_LABELS[s])`.
+ */
+export function useT() {
+  const { language } = useLanguage();
+  return useCallback((en: string, vars?: TranslateVars) => translate(language, en, vars), [language]);
+}

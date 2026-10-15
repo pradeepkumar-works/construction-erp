@@ -6,6 +6,7 @@ import { canManageWorkers, canMarkStaff, canKeepStock, canLogMachinery, canManag
 import { useAuth } from '../../src/auth/AuthContext';
 import { Button, Screen } from '../../src/components';
 import { colors, radius, shadow, spacing, typography } from '../../src/theme';
+import { useT } from '../../src/i18n/LanguageContext';
 
 const FORMS = [
   { href: '/progress/new', icon: 'trending-up' as const, tone: colors.primary, title: 'Daily progress', text: 'Quantity executed on one activity, with photos.' },
@@ -51,6 +52,7 @@ const STOCK = [
 export default function SubmitHub() {
   const router = useRouter();
   const { user } = useAuth();
+  const t = useT();
   const forms = [
     ...(user && canRecordAttendance(user.roleKey) ? [ATTENDANCE] : []),
     ...(user && canManageWorkers(user.roleKey) ? [ROLL_CALL] : []),
@@ -70,7 +72,7 @@ export default function SubmitHub() {
   ];
   return (
     <Screen>
-      <Text style={typography.caption}>Choose what to submit. Progress, DPRs, material requests, machinery logs, expenses and measurements go straight to your project manager for approval.</Text>
+      <Text style={typography.caption}>{t('Choose what to submit. Progress, DPRs, material requests, machinery logs, expenses and measurements go straight to your project manager for approval.')}</Text>
       <View style={styles.list}>
         {forms.map((f) => (
           <Pressable key={f.href} onPress={() => router.push(f.href)} style={({ pressed }) => [styles.tile, pressed && styles.pressed]}>
@@ -78,14 +80,14 @@ export default function SubmitHub() {
               <Ionicons name={f.icon} size={28} color="#fff" />
             </View>
             <View style={styles.body}>
-              <Text style={typography.h3}>{f.title}</Text>
-              <Text style={[typography.caption, styles.text]}>{f.text}</Text>
+              <Text style={typography.h3}>{t(f.title)}</Text>
+              <Text style={[typography.caption, styles.text]}>{t(f.text)}</Text>
             </View>
             <Ionicons name="chevron-forward" size={22} color={colors.textMuted} />
           </Pressable>
         ))}
       </View>
-      <Button title="My submissions" variant="secondary" icon="list" onPress={() => router.push('/submissions')} />
+      <Button title={t('My submissions')} variant="secondary" icon="list" onPress={() => router.push('/submissions')} />
     </Screen>
   );
 }

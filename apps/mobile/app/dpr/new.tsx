@@ -8,6 +8,7 @@ import { errorMessage } from '../../src/api/client';
 import { Button, Card, Chips, DatePicker, ErrorBanner, ErrorState, Input, Loading, PhotoPicker, Screen, Select, type LocalPhoto } from '../../src/components';
 import { attachmentIds, photosFailed, photosQueued, photosUploading, QueuedSuccess, SubmitSuccess, toOutboxPhotos, useProjectOptions } from '../../src/forms/common';
 import { attachmentsToPhotos, ReviewerNote } from '../../src/forms/edit';
+import { useT } from '../../src/i18n/LanguageContext';
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
 import { colors, spacing, typography } from '../../src/theme';
 import { formatDate, isIsoDate, today } from '../../src/utils/format';
@@ -24,15 +25,14 @@ interface MachineryRow {
 }
 
 const newKey = () => Math.random().toString(36).slice(2, 9);
-const CATEGORY_OPTIONS = MANPOWER_CATEGORIES.map((c) => ({ value: c, label: c }));
 /** Keep a free-text value (e.g. a trade typed on the web) selectable even when it is not in the standard list. */
 const withValue = (options: { value: string; label: string }[], value: string | null) => (value && !options.some((o) => o.value === value) ? [...options, { value, label: value }] : options);
-const WEATHER_CHIPS = WEATHER_OPTIONS.map((w) => ({ value: w, label: WEATHER_LABELS[w] }));
 
 /** New DPR, or (with `editId`) edit a draft / rejected / changes-requested DPR and resubmit it. */
 export default function NewDprScreen() {
   const params = useLocalSearchParams<{ projectId?: string; editId?: string }>();
   const editId = params.editId ?? null;
+  const t = useT();
   const api = useApi();
   const { online, enqueue, items: outbox } = useOffline();
   const projects = useProjectOptions();
@@ -80,6 +80,8 @@ export default function NewDprScreen() {
     setPhotos(attachmentsToPhotos(e.attachments));
   }, [existing.data]);
 
+  const categoryOptions = useMemo(() => MANPOWER_CATEGORIES.map((c) => ({ value: c, label: t(c) })), [t]);
+  const weatherChips = useMemo(() => WEATHER_OPTIONS.map((w) => ({ value: w, label: t(WEATHER_LABELS[w]) })), [t]);
   const totalManpower = useMemo(() => manpower.reduce((s, r) => s + (Number(r.count) || 0), 0), [manpower]);
 
   // New DPR: manpower comes from the day's attendance (on the server, or still in this phone's outbox)
@@ -93,12 +95,12 @@ export default function NewDprScreen() {
   const attendance = useMemo<{ id: string; manpower: ManpowerLine[]; text: string } | null>(() => {
     if (editId || !projectId) return null;
     const sheet = attendanceDay.data?.projectId === projectId && attendanceDay.data.date === date ? attendanceDay.data.sheet : null;
-    if (sheet?.manpower.length) return { id: sheet.id, manpower: sheet.manpower, text: `From attendance: ${sheet.totalWorkers} workers recorded by ${sheet.recordedByName}` };
+    if (sheet?.manpower.length) return { id: sheet.id, manpower: sheet.manpower, text: t('From attendance: {n} workers recorded by {name}', { n: sheet.totalWorkers, name: sheet.recordedByName }) };
     const queuedSheet = outbox.find((i) => i.type === 'ATTENDANCE' && i.payload.projectId === projectId && i.payload.date === date);
     const lines = (queuedSheet?.payload.lines as AttendanceLineInput[] | undefined) ?? [];
-    if (queuedSheet && lines.length) return { id: queuedSheet.id, manpower: attendanceToManpower(lines), text: 'From attendance saved on this phone' };
+    if (queuedSheet && lines.length) return { id: queuedSheet.id, manpower: attendanceToManpower(lines), text: t('From attendance saved on this phone') };
     return null;
-  }, [editId, projectId, date, attendanceDay.data, outbox]);
+  }, [editId, projectId, date, attendanceDay.data, outbox, t]);
   const applyAttendance = (a: NonNullable<typeof attendance>) => {
     setManpower(a.manpower.map((m) => ({ key: newKey(), category: m.category, count: String(m.count) })));
     setFilledFrom(a.id);
@@ -117,23 +119,23 @@ export default function NewDprScreen() {
 
   const validate = () => {
     const e: Record<string, string> = {};
-    if (!projectId) e.projectId = 'Choose a project';
-    if (!isIsoDate(date)) e.date = 'Enter a valid date';
-    if (!workExecuted.trim()) e.workExecuted = 'Describe the work executed today';
+    if (!projectId) e.projectId = t('Choose a project');
+    if (!isIsoDate(date)) e.date = t('Enter a valid date');
+    if (!workExecuted.trim()) e.workExecuted = t('Describe the work executed today');
     for (const r of manpower) {
       if ((r.category && r.count.trim()) || (!r.category && !r.count.trim())) continue;
-      e.manpower = 'Each manpower row needs a category and a count';
+      e.manpower = t('Each manpower row needs a category and a count');
     }
-    if (manpower.some((r) => r.count.trim() && !/^\d+$/.test(r.count.trim()))) e.manpower = 'Manpower counts must be whole numbers';
+    if (manpower.some((r) => r.count.trim() && !/^\d+$/.test(r.count.trim()))) e.manpower = t('Manpower counts must be whole numbers');
     for (const r of machinery) {
       if ((r.name.trim() && r.hours.trim()) || (!r.name.trim() && !r.hours.trim())) continue;
-      e.machinery = 'Each machinery row needs a name and hours';
+      e.machinery = t('Each machinery row needs a name and hours');
     }
-    if (machinery.some((r) => r.hours.trim() && Number.isNaN(Number(r.hours)))) e.machinery = 'Hours must be a number';
-    if (photosUploading(photos)) e.photos = 'Wait for photos to finish uploading';
-    else if (photosFailed(photos)) e.photos = 'Remove or retry failed photos';
-    else if (editId && photosQueued(photos)) e.photos = 'Photos need a connection to upload before resubmitting';
-    if (!editId && outbox.some((i) => i.type === 'DPR' && i.payload.projectId === projectId && i.payload.date === date)) e.date = 'A DPR for this date is already waiting in the outbox';
+    if (machinery.some((r) => r.hours.trim() && Number.isNaN(Number(r.hours)))) e.machinery = t('Hours must be a number');
+    if (photosUploading(photos)) e.photos = t('Wait for photos to finish uploading');
+    else if (photosFailed(photos)) e.photos = t('Remove or retry failed photos');
+    else if (editId && photosQueued(photos)) e.photos = t('Photos need a connection to upload before resubmitting');
+    if (!editId && outbox.some((i) => i.type === 'DPR' && i.payload.projectId === projectId && i.payload.date === date)) e.date = t('A DPR for this date is already waiting in the outbox');
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -162,14 +164,14 @@ export default function NewDprScreen() {
         return;
       }
       const queueIt = async () => {
-        const projectName = projects.options.find((o) => o.value === projectId)?.label ?? 'Project';
+        const projectName = projects.options.find((o) => o.value === projectId)?.label ?? t('Project');
         setQueued(
           await enqueue({
             type: 'DPR',
             payload: { projectId, ...body },
             photos: toOutboxPhotos(photos),
             title: `DPR · ${formatDate(date)}`,
-            subtitle: `${projectName} · ${totalManpower} manpower`,
+            subtitle: `${projectName} · ${t('{n} manpower', { n: totalManpower })}`,
           }),
         );
       };
@@ -191,10 +193,10 @@ export default function NewDprScreen() {
   };
 
   if (queued) {
-    return <QueuedSuccess title="Saved on this phone" subtitle={`${queued.title} · ${queued.subtitle}`} />;
+    return <QueuedSuccess title={t('Saved on this phone')} subtitle={`${queued.title} · ${queued.subtitle}`} />;
   }
   if (created) {
-    return <SubmitSuccess title={editId ? 'DPR resubmitted' : 'DPR submitted'} subtitle={`${created.projectName} · ${formatDate(created.date)} · ${created.totalManpower} manpower. Sent for approval.`} detailHref={`/dpr/${created.id}`} />;
+    return <SubmitSuccess title={editId ? t('DPR resubmitted') : t('DPR submitted')} subtitle={`${created.projectName} · ${formatDate(created.date)} · ${t('{n} manpower. Sent for approval.', { n: created.totalManpower })}`} detailHref={`/dpr/${created.id}`} />;
   }
   if (projects.loading && !projects.data) return <Loading />;
   if (editId && existing.loading && !existing.data) return <Loading />;
@@ -202,28 +204,28 @@ export default function NewDprScreen() {
 
   return (
     <Screen keyboard>
-      <Stack.Screen options={{ title: editId ? 'Edit Daily Report' : 'New Daily Report' }} />
+      <Stack.Screen options={{ title: editId ? t('Edit Daily Report') : t('New Daily Report') }} />
       <ErrorBanner message={submitError ?? projects.error} />
       <ReviewerNote entry={existing.data} />
       <Card>
-        <Select label="Project" required value={projectId} options={projects.options} onChange={setProjectId} placeholder="Choose project" error={errors.projectId} disabled={!!editId} />
-        <DatePicker label="Report date" required value={date} onChange={setDate} error={errors.date} />
-        <Chips label="Weather" value={weather} options={WEATHER_CHIPS} onChange={setWeather} />
-        <Input label="Site condition" value={siteCondition} onChangeText={setSiteCondition} placeholder="e.g. Workable, waterlogged at Km 16" containerStyle={styles.last} />
+        <Select label={t('Project')} required value={projectId} options={projects.options} onChange={setProjectId} placeholder={t('Choose project')} error={errors.projectId} disabled={!!editId} />
+        <DatePicker label={t('Report date')} required value={date} onChange={setDate} error={errors.date} />
+        <Chips label={t('Weather')} value={weather} options={weatherChips} onChange={setWeather} />
+        <Input label={t('Site condition')} value={siteCondition} onChangeText={setSiteCondition} placeholder={t('e.g. Workable, waterlogged at Km 16')} containerStyle={styles.last} />
       </Card>
 
-      <Card title="Manpower" right={<Text style={styles.total}>Total {totalManpower}</Text>}>
+      <Card title={t('Manpower')} right={<Text style={styles.total}>{t('Total {n}', { n: totalManpower })}</Text>}>
         {attendance ? (
           filledFrom === attendance.id && !manpowerEdited ? (
             <Text style={styles.fromAttendance}>{attendance.text}</Text>
           ) : (
-            <Button title="Use attendance figures" variant="ghost" size="sm" icon="people-outline" onPress={() => applyAttendance(attendance)} />
+            <Button title={t('Use attendance figures')} variant="ghost" size="sm" icon="people-outline" onPress={() => applyAttendance(attendance)} />
           )
         ) : null}
         {manpower.map((r) => (
           <View key={r.key} style={styles.row}>
             <View style={styles.grow}>
-              <Select value={r.category} options={withValue(CATEGORY_OPTIONS, r.category)} onChange={(v) => updateMan(r.key, { category: v })} placeholder="Category" />
+              <Select value={r.category} options={withValue(categoryOptions, r.category)} onChange={(v) => updateMan(r.key, { category: v })} placeholder={t('Category')} />
             </View>
             <Input value={r.count} onChangeText={(v) => updateMan(r.key, { count: v })} keyboardType="number-pad" placeholder="Nos" containerStyle={styles.small} />
             <RemoveBtn
@@ -236,7 +238,7 @@ export default function NewDprScreen() {
         ))}
         {errors.manpower ? <Text style={styles.err}>{errors.manpower}</Text> : null}
         <Button
-          title="Add category"
+          title={t('Add category')}
           variant="ghost"
           size="sm"
           icon="add"
@@ -247,36 +249,37 @@ export default function NewDprScreen() {
         />
       </Card>
 
-      <Card title="Machinery">
+      <Card title={t('Machinery')}>
         {machinery.map((r) => (
           <View key={r.key} style={styles.row}>
-            <Input value={r.name} onChangeText={(v) => updateMach(r.key, { name: v })} placeholder="e.g. Excavator" containerStyle={styles.grow} />
-            <Input value={r.hours} onChangeText={(v) => updateMach(r.key, { hours: v })} keyboardType="decimal-pad" placeholder="Hrs" containerStyle={styles.small} />
+            <Input value={r.name} onChangeText={(v) => updateMach(r.key, { name: v })} placeholder={t('e.g. Excavator')} containerStyle={styles.grow} />
+            <Input value={r.hours} onChangeText={(v) => updateMach(r.key, { hours: v })} keyboardType="decimal-pad" placeholder={t('Hrs')} containerStyle={styles.small} />
             <RemoveBtn onPress={() => setMachinery((rows) => rows.filter((x) => x.key !== r.key))} />
           </View>
         ))}
         {errors.machinery ? <Text style={styles.err}>{errors.machinery}</Text> : null}
-        <Button title="Add machine" variant="ghost" size="sm" icon="add" onPress={() => setMachinery((rows) => [...rows, { key: newKey(), name: '', hours: '' }])} />
+        <Button title={t('Add machine')} variant="ghost" size="sm" icon="add" onPress={() => setMachinery((rows) => [...rows, { key: newKey(), name: '', hours: '' }])} />
       </Card>
 
-      <Card title="Work">
-        <Input label="Work executed" required value={workExecuted} onChangeText={setWorkExecuted} multiline placeholder="What was done today, where, and how much" error={errors.workExecuted} />
-        <Input label="Material received" value={materialReceived} onChangeText={setMaterialReceived} multiline placeholder="e.g. 200 bags cement, 20 MT steel" />
-        <Input label="Tests conducted" value={tests} onChangeText={setTests} multiline placeholder="e.g. Cube test, FDD" />
-        <Input label="Safety observations" value={safety} onChangeText={setSafety} multiline placeholder="Toolbox talk, PPE, incidents" />
-        <Input label="Issues / hindrances" value={issues} onChangeText={setIssues} multiline placeholder="Anything blocking work" />
-        <Input label="Next-day plan" value={nextDayPlan} onChangeText={setNextDayPlan} multiline placeholder="Planned activities for tomorrow" />
+      <Card title={t('Work')}>
+        <Input label={t('Work executed')} required value={workExecuted} onChangeText={setWorkExecuted} multiline placeholder={t('What was done today, where, and how much')} error={errors.workExecuted} />
+        <Input label={t('Material received')} value={materialReceived} onChangeText={setMaterialReceived} multiline placeholder={t('e.g. 200 bags cement, 20 MT steel')} />
+        <Input label={t('Tests conducted')} value={tests} onChangeText={setTests} multiline placeholder={t('e.g. Cube test, FDD')} />
+        <Input label={t('Safety observations')} value={safety} onChangeText={setSafety} multiline placeholder={t('Toolbox talk, PPE, incidents')} />
+        <Input label={t('Issues / hindrances')} value={issues} onChangeText={setIssues} multiline placeholder={t('Anything blocking work')} />
+        <Input label={t('Next-day plan')} value={nextDayPlan} onChangeText={setNextDayPlan} multiline placeholder={t('Planned activities for tomorrow')} />
         <PhotoPicker photos={photos} onChange={setPhotos} />
         {errors.photos ? <Text style={styles.err}>{errors.photos}</Text> : null}
       </Card>
-      <Button title={editId ? 'Resubmit DPR for approval' : 'Submit DPR for approval'} icon="send" onPress={submit} loading={busy} />
+      <Button title={editId ? t('Resubmit DPR for approval') : t('Submit DPR for approval')} icon="send" onPress={submit} loading={busy} />
     </Screen>
   );
 }
 
 function RemoveBtn({ onPress }: { onPress: () => void }) {
+  const t = useT();
   return (
-    <Pressable onPress={onPress} style={styles.remove} hitSlop={8} accessibilityLabel="Remove row">
+    <Pressable onPress={onPress} style={styles.remove} hitSlop={8} accessibilityLabel={t('Remove row')}>
       <Ionicons name="trash-outline" size={20} color={colors.danger} />
     </Pressable>
   );

@@ -11,6 +11,7 @@ import { DEFECT_TONE } from '../src/components/defectTone';
 import { useProjectOptions } from '../src/forms/common';
 import { colors, radius, spacing, typography } from '../src/theme';
 import { formatDate } from '../src/utils/format';
+import { useT } from '../src/i18n/LanguageContext';
 
 type Show = 'OPEN' | 'FIXED' | 'CLOSED';
 
@@ -19,6 +20,7 @@ export default function SnagsScreen() {
   const params = useLocalSearchParams<{ projectId?: string }>();
   const router = useRouter();
   const { user } = useAuth();
+  const t = useT();
   const projects = useProjectOptions();
   const [projectId, setProjectId] = useState<string | null>(params.projectId ?? null);
   const [show, setShow] = useState<Show>('OPEN');
@@ -38,26 +40,26 @@ export default function SnagsScreen() {
     <Screen refreshing={list.refreshing} onRefresh={list.refresh}>
       <ErrorBanner message={projects.error ?? (list.data ? null : list.error)} />
       <Card>
-        <Select label="Project" value={projectId} options={[{ value: '', label: 'All my projects' }, ...projects.options]} onChange={(v) => setProjectId(v || null)} placeholder="All my projects" />
-        {mayReport ? <Button title="Report snag or defect" icon="add-circle" onPress={() => router.push(`/snag/new${projectId ? `?projectId=${projectId}` : ''}`)} /> : null}
+        <Select label={t('Project')} value={projectId} options={[{ value: '', label: t('All my projects') }, ...projects.options]} onChange={(v) => setProjectId(v || null)} placeholder={t('All my projects')} />
+        {mayReport ? <Button title={t('Report snag or defect')} icon="add-circle" onPress={() => router.push(`/snag/new${projectId ? `?projectId=${projectId}` : ''}`)} /> : null}
       </Card>
       <Chips
         value={show}
         clearable={false}
         onChange={(v) => v && setShow(v)}
         options={[
-          { value: 'OPEN', label: 'Open' },
-          { value: 'FIXED', label: 'Fixed, to check' },
-          { value: 'CLOSED', label: 'Closed' },
+          { value: 'OPEN', label: t('Open') },
+          { value: 'FIXED', label: t('Fixed, to check') },
+          { value: 'CLOSED', label: t('Closed') },
         ]}
       />
       {list.loading && !list.data ? (
         <Loading />
       ) : total === 0 ? (
-        <EmptyState title={show === 'OPEN' ? 'Nothing open' : show === 'FIXED' ? 'Nothing waiting to be checked' : 'Nothing closed yet'} subtitle="Snags and defects at your sites show here." icon="construct-outline" />
+        <EmptyState title={t(show === 'OPEN' ? 'Nothing open' : show === 'FIXED' ? 'Nothing waiting to be checked' : 'Nothing closed yet')} subtitle={t('Snags and defects at your sites show here.')} icon="construct-outline" />
       ) : (
         <>
-          <SectionTitle title={`${total} ${show === 'OPEN' ? 'open' : show === 'FIXED' ? 'fixed, to check' : 'closed'}`} />
+          <SectionTitle title={t(show === 'OPEN' ? '{n} open' : show === 'FIXED' ? '{n} fixed, to check' : '{n} closed', { n: total })} />
           {(list.data?.items ?? []).map((d) => (
             <Pressable key={d.id} onPress={() => router.push(`/snag/${d.id}`)} style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
               <View style={styles.icon}>
@@ -68,15 +70,15 @@ export default function SnagsScreen() {
                   {d.title}
                 </Text>
                 <Text style={typography.caption} numberOfLines={1}>
-                  {d.defectNo} · {d.location ?? DEFECT_PHASE_LABELS[d.phase]}
+                  {d.defectNo} · {d.location ?? t(DEFECT_PHASE_LABELS[d.phase])}
                 </Text>
                 <Text style={typography.caption} numberOfLines={1}>
                   {projectId ? '' : `${d.projectName} · `}
-                  {d.dueDate ? `by ${formatDate(d.dueDate)}` : `found ${formatDate(d.reportedOn)}`}
+                  {d.dueDate ? t('by {date}', { date: formatDate(d.dueDate) }) : t('found {date}', { date: formatDate(d.reportedOn) })}
                 </Text>
               </View>
               <View style={styles.side}>
-                {d.overdue ? <Pill text="Overdue" fg={colors.danger} bg={colors.dangerSoft} /> : <Pill text={d.priority === 'HIGH' ? 'High' : DEFECT_PHASE_LABELS[d.phase]} {...DEFECT_TONE[d.priority]} />}
+                {d.overdue ? <Pill text={t('Overdue')} fg={colors.danger} bg={colors.dangerSoft} /> : <Pill text={t(d.priority === 'HIGH' ? 'High' : DEFECT_PHASE_LABELS[d.phase])} {...DEFECT_TONE[d.priority]} />}
                 <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
               </View>
             </Pressable>

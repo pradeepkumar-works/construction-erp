@@ -11,6 +11,7 @@ import { INCIDENT_TONE, permitStatus, permitWindow } from '../src/components/saf
 import { useProjectOptions } from '../src/forms/common';
 import { colors, radius, spacing, typography } from '../src/theme';
 import { formatDate } from '../src/utils/format';
+import { useT } from '../src/i18n/LanguageContext';
 
 type Show = 'incidents' | 'permits' | 'talks';
 
@@ -19,6 +20,7 @@ export default function SafetyScreen() {
   const params = useLocalSearchParams<{ projectId?: string; show?: Show }>();
   const router = useRouter();
   const { user } = useAuth();
+  const t = useT();
   const projects = useProjectOptions();
   const [projectId, setProjectId] = useState<string | null>(params.projectId ?? null);
   const [show, setShow] = useState<Show>(params.show ?? 'incidents');
@@ -47,16 +49,16 @@ export default function SafetyScreen() {
     >
       <ErrorBanner message={projects.error ?? (list.data ? null : list.error)} />
       <Card>
-        <Select label="Project" value={projectId} options={[{ value: '', label: 'All my projects' }, ...projects.options]} onChange={(v) => setProjectId(v || null)} placeholder="All my projects" />
+        <Select label={t('Project')} value={projectId} options={[{ value: '', label: t('All my projects') }, ...projects.options]} onChange={(v) => setProjectId(v || null)} placeholder={t('All my projects')} />
         {mayReport ? (
           <>
             <View style={styles.actions}>
-              <Button title="Near miss" icon="eye-outline" variant="secondary" onPress={() => router.push(href('/incident/new', 'nearMiss=1'))} style={styles.flex} />
-              <Button title="Incident" icon="medkit-outline" onPress={() => router.push(href('/incident/new'))} style={styles.flex} />
+              <Button title={t('Near miss')} icon="eye-outline" variant="secondary" onPress={() => router.push(href('/incident/new', 'nearMiss=1'))} style={styles.flex} />
+              <Button title={t('Incident')} icon="medkit-outline" onPress={() => router.push(href('/incident/new'))} style={styles.flex} />
             </View>
             <View style={styles.actions}>
-              <Button title="Toolbox talk" icon="megaphone-outline" variant="secondary" onPress={() => router.push(href('/talk/new'))} style={styles.flex} />
-              <Button title="Ask for permit" icon="key-outline" variant="secondary" onPress={() => router.push(href('/permit/new'))} style={styles.flex} />
+              <Button title={t('Toolbox talk')} icon="megaphone-outline" variant="secondary" onPress={() => router.push(href('/talk/new'))} style={styles.flex} />
+              <Button title={t('Ask for permit')} icon="key-outline" variant="secondary" onPress={() => router.push(href('/permit/new'))} style={styles.flex} />
             </View>
           </>
         ) : null}
@@ -65,21 +67,21 @@ export default function SafetyScreen() {
       {s ? (
         <>
           <View style={[styles.banner, { backgroundColor: s.daysSinceLostTime !== null && s.daysSinceLostTime < 30 ? colors.dangerSoft : colors.successSoft }]}>
-            <Text style={[styles.bannerValue, { color: s.daysSinceLostTime !== null && s.daysSinceLostTime < 30 ? colors.danger : colors.success }]}>{s.daysSinceLostTime ?? 'No'}</Text>
+            <Text style={[styles.bannerValue, { color: s.daysSinceLostTime !== null && s.daysSinceLostTime < 30 ? colors.danger : colors.success }]}>{s.daysSinceLostTime ?? t('No')}</Text>
             <Text style={typography.caption}>
-              {s.daysSinceLostTime === null ? 'lost-time injury recorded' : `day${s.daysSinceLostTime === 1 ? '' : 's'} without a lost-time injury`}
-              {s.lastLostTimeDate ? ` (last ${formatDate(s.lastLostTimeDate)})` : ''}
+              {t(s.daysSinceLostTime === null ? 'lost-time injury recorded' : s.daysSinceLostTime === 1 ? 'day without a lost-time injury' : 'days without a lost-time injury')}
+              {s.lastLostTimeDate ? ` (${t('last {date}', { date: formatDate(s.lastLostTimeDate) })})` : ''}
             </Text>
           </View>
           <View style={styles.stats}>
-            <Stat label="Incidents this month" value={s.incidentsThisMonth} tone={s.incidentsThisMonth ? colors.danger : colors.success} />
-            <Stat label="Near misses" value={s.nearMissesThisMonth} tone={colors.primary} />
-            <Stat label="Open" value={s.openIncidents} tone={s.openIncidents ? colors.warning : colors.success} />
+            <Stat label={t('Incidents this month')} value={s.incidentsThisMonth} tone={s.incidentsThisMonth ? colors.danger : colors.success} />
+            <Stat label={t('Near misses')} value={s.nearMissesThisMonth} tone={colors.primary} />
+            <Stat label={t('Open')} value={s.openIncidents} tone={s.openIncidents ? colors.warning : colors.success} />
           </View>
           <View style={styles.stats}>
-            <Stat label="Talks this month" value={s.toolboxTalksThisMonth} />
-            <Stat label="Attended" value={s.attendeesThisMonth} />
-            <Stat label="Permits waiting / live" value={`${s.permitsRequested} / ${s.permitsActive}`} tone={s.permitsRequested ? colors.warning : colors.primary} />
+            <Stat label={t('Talks this month')} value={s.toolboxTalksThisMonth} />
+            <Stat label={t('Attended')} value={s.attendeesThisMonth} />
+            <Stat label={t('Permits waiting / live')} value={`${s.permitsRequested} / ${s.permitsActive}`} tone={s.permitsRequested ? colors.warning : colors.primary} />
           </View>
         </>
       ) : null}
@@ -89,9 +91,9 @@ export default function SafetyScreen() {
         clearable={false}
         onChange={(v) => v && setShow(v)}
         options={[
-          { value: 'incidents', label: 'Incidents' },
-          { value: 'permits', label: `Permits${s?.permitsRequested ? ` (${s.permitsRequested})` : ''}` },
-          { value: 'talks', label: 'Toolbox talks' },
+          { value: 'incidents', label: t('Incidents') },
+          { value: 'permits', label: `${t('Permits')}${s?.permitsRequested ? ` (${s.permitsRequested})` : ''}` },
+          { value: 'talks', label: t('Toolbox talks') },
         ]}
       />
 
@@ -99,30 +101,44 @@ export default function SafetyScreen() {
         <Loading />
       ) : total === 0 ? (
         <EmptyState
-          title={show === 'incidents' ? 'No incidents' : show === 'permits' ? 'No permits waiting or live' : 'No toolbox talks'}
-          subtitle={show === 'incidents' ? 'Incidents and near misses reported at your sites show here.' : show === 'permits' ? 'Permits to work asked for and issued show here.' : 'Talks recorded at your sites show here.'}
+          title={t(show === 'incidents' ? 'No incidents' : show === 'permits' ? 'No permits waiting or live' : 'No toolbox talks')}
+          subtitle={t(show === 'incidents' ? 'Incidents and near misses reported at your sites show here.' : show === 'permits' ? 'Permits to work asked for and issued show here.' : 'Talks recorded at your sites show here.')}
           icon="medkit-outline"
         />
       ) : (
         <>
-          <SectionTitle title={`${total} ${show === 'incidents' ? `incident${total === 1 ? '' : 's'}` : show === 'permits' ? `permit${total === 1 ? '' : 's'} waiting or live` : `talk${total === 1 ? '' : 's'}`}`} />
+          <SectionTitle
+            title={
+              show === 'incidents'
+                ? total === 1
+                  ? t('1 incident')
+                  : t('{n} incidents', { n: total })
+                : show === 'permits'
+                  ? total === 1
+                    ? t('1 permit waiting or live')
+                    : t('{n} permits waiting or live', { n: total })
+                  : total === 1
+                    ? t('1 talk')
+                    : t('{n} talks', { n: total })
+            }
+          />
           {show === 'incidents'
             ? (incidents.data?.items ?? []).map((r) => (
-                <Row key={r.id} onPress={() => router.push(`/incident/${r.id}`)} icon="medkit" title={`${SAFETY_INCIDENT_TYPE_LABELS[r.type]} · ${r.location}`} sub={`${r.incidentNo} · ${formatDate(r.date)}${r.injuredCount ? ` · ${r.injuredCount} hurt` : ''}`} meta={projectId ? r.reportedByName : `${r.projectName} · ${r.reportedByName}`}>
-                  <Pill text={SAFETY_INCIDENT_STATUS_LABELS[r.status]} fg={r.status === 'OPEN' ? INCIDENT_TONE[r.type].fg : colors.neutral} bg={r.status === 'OPEN' ? INCIDENT_TONE[r.type].bg : colors.neutralSoft} />
+                <Row key={r.id} onPress={() => router.push(`/incident/${r.id}`)} icon="medkit" title={`${t(SAFETY_INCIDENT_TYPE_LABELS[r.type])} · ${r.location}`} sub={`${r.incidentNo} · ${formatDate(r.date)}${r.injuredCount ? ` · ${t('{n} hurt', { n: r.injuredCount })}` : ''}`} meta={projectId ? r.reportedByName : `${r.projectName} · ${r.reportedByName}`}>
+                  <Pill text={t(SAFETY_INCIDENT_STATUS_LABELS[r.status])} fg={r.status === 'OPEN' ? INCIDENT_TONE[r.type].fg : colors.neutral} bg={r.status === 'OPEN' ? INCIDENT_TONE[r.type].bg : colors.neutralSoft} />
                 </Row>
               ))
             : show === 'permits'
               ? (permits.data?.items ?? []).map((r) => {
-                  const st = permitStatus(r);
+                  const st = permitStatus(r, t);
                   return (
-                    <Row key={r.id} onPress={() => router.push(`/permit/${r.id}`)} icon="key" title={`${WORK_PERMIT_TYPE_LABELS[r.type]} · ${r.location}`} sub={`${r.permitNo} · ${permitWindow(r)}`} meta={projectId ? r.requestedByName : `${r.projectName} · ${r.requestedByName}`}>
+                    <Row key={r.id} onPress={() => router.push(`/permit/${r.id}`)} icon="key" title={`${t(WORK_PERMIT_TYPE_LABELS[r.type])} · ${r.location}`} sub={`${r.permitNo} · ${permitWindow(r, t)}`} meta={projectId ? r.requestedByName : `${r.projectName} · ${r.requestedByName}`}>
                       <Pill text={st.text} fg={st.fg} bg={st.bg} />
                     </Row>
                   );
                 })
               : (talks.data?.items ?? []).map((r) => (
-                  <Row key={r.id} icon="megaphone" title={r.topic} sub={`${r.talkNo} · ${formatDate(r.date)} · ${r.attendeeCount} attended`} meta={`${projectId ? '' : `${r.projectName} · `}by ${r.conductedBy}`} />
+                  <Row key={r.id} icon="megaphone" title={t(r.topic)} sub={`${r.talkNo} · ${formatDate(r.date)} · ${t('{n} attended', { n: r.attendeeCount })}`} meta={`${projectId ? '' : `${r.projectName} · `}${t('by {name}', { name: r.conductedBy })}`} />
                 ))}
         </>
       )}

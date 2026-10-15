@@ -10,6 +10,7 @@ import { attachmentIds, photosFailed, photosQueued, photosUploading, QueuedSucce
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
 import { colors, spacing } from '../../src/theme';
 import { formatDate, isIsoDate, today } from '../../src/utils/format';
+import { useT } from '../../src/i18n/LanguageContext';
 
 const nowTime = () => {
   const d = new Date();
@@ -20,6 +21,7 @@ const nowTime = () => {
 export default function IncidentFormScreen() {
   const params = useLocalSearchParams<{ projectId?: string; nearMiss?: string }>();
   const api = useApi();
+  const t = useT();
   const { online, enqueue } = useOffline();
   const projects = useProjectOptions();
 
@@ -49,15 +51,15 @@ export default function IncidentFormScreen() {
 
   const validate = () => {
     const e: Record<string, string> = {};
-    if (!projectId) e.projectId = 'Choose a project';
-    if (!type) e.type = 'Pick what kind';
-    if (!isIsoDate(date) || date > today()) e.date = 'Enter a date up to today';
-    if (time.trim() && !/^([01]\d|2[0-3]):[0-5]\d$/.test(time.trim())) e.time = 'Like 15:40';
-    if (!location.trim()) e.location = 'Where did it happen?';
-    if (!description.trim()) e.description = 'Describe what happened';
-    if (hurt && !(Number(injured) >= 1)) e.injured = 'At least 1';
-    if (photosUploading(photos)) e.photos = 'Wait for photos to finish uploading';
-    else if (photosFailed(photos)) e.photos = 'Remove or retry failed photos';
+    if (!projectId) e.projectId = t('Choose a project');
+    if (!type) e.type = t('Pick what kind');
+    if (!isIsoDate(date) || date > today()) e.date = t('Enter a date up to today');
+    if (time.trim() && !/^([01]\d|2[0-3]):[0-5]\d$/.test(time.trim())) e.time = t('Like 15:40');
+    if (!location.trim()) e.location = t('Where did it happen?');
+    if (!description.trim()) e.description = t('Describe what happened');
+    if (hurt && !(Number(injured) >= 1)) e.injured = t('At least 1');
+    if (photosUploading(photos)) e.photos = t('Wait for photos to finish uploading');
+    else if (photosFailed(photos)) e.photos = t('Remove or retry failed photos');
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -67,23 +69,23 @@ export default function IncidentFormScreen() {
     if (!validate() || !type) return;
     setBusy(true);
     try {
-      const t = (v: string) => v.trim() || undefined;
+      const opt = (v: string) => v.trim() || undefined;
       const body = {
         projectId,
         type,
         date,
-        time: t(time) ?? null,
+        time: opt(time) ?? null,
         location: location.trim(),
         description: description.trim(),
         injuredCount: hurt ? Number(injured) : 0,
-        injuredNames: hurt ? t(names) : undefined,
+        injuredNames: hurt ? opt(names) : undefined,
         daysLost: type === 'LOST_TIME' && daysLost.trim() ? Number(daysLost) : null,
-        contractor: t(contractor),
-        immediateAction: t(action),
+        contractor: opt(contractor),
+        immediateAction: opt(action),
       };
       const queueIt = async () => {
-        const projectName = projects.options.find((o) => o.value === projectId)?.label ?? 'Project';
-        setQueued(await enqueue({ type: 'SAFETY_INCIDENT', payload: body, photos: toOutboxPhotos(photos), title: `${SAFETY_INCIDENT_TYPE_LABELS[type]} · ${location.trim()}`, subtitle: `${projectName} · ${formatDate(date)}` }));
+        const projectName = projects.options.find((o) => o.value === projectId)?.label ?? t('Project');
+        setQueued(await enqueue({ type: 'SAFETY_INCIDENT', payload: body, photos: toOutboxPhotos(photos), title: `${t(SAFETY_INCIDENT_TYPE_LABELS[type])} · ${location.trim()}`, subtitle: `${projectName} · ${formatDate(date)}` }));
       };
       if (!online || photosQueued(photos)) {
         await queueIt();
@@ -114,12 +116,12 @@ export default function IncidentFormScreen() {
     setErrors({});
   };
 
-  if (queued) return <QueuedSuccess title="Saved on this phone" subtitle={`${queued.title} · ${queued.subtitle}`} onAnother={reset} />;
+  if (queued) return <QueuedSuccess title={t('Saved on this phone')} subtitle={`${queued.title} · ${queued.subtitle}`} onAnother={reset} />;
   if (saved) {
     return (
       <SubmitSuccess
-        title={saved.type === 'NEAR_MISS' ? 'Near miss reported' : 'Incident reported'}
-        subtitle={`${saved.incidentNo}. ${isReportableIncident(saved.type) ? 'The safety officer and the project manager have been told.' : 'The safety officer has been told.'}`}
+        title={t(saved.type === 'NEAR_MISS' ? 'Near miss reported' : 'Incident reported')}
+        subtitle={`${saved.incidentNo}. ${t(isReportableIncident(saved.type) ? 'The safety officer and the project manager have been told.' : 'The safety officer has been told.')}`}
         detailHref={`/incident/${saved.id}`}
         onAnother={reset}
       />
@@ -129,32 +131,32 @@ export default function IncidentFormScreen() {
 
   return (
     <Screen keyboard>
-      <Stack.Screen options={{ title: type === 'NEAR_MISS' ? 'Report a Near Miss' : 'Report an Incident' }} />
+      <Stack.Screen options={{ title: t(type === 'NEAR_MISS' ? 'Report a Near Miss' : 'Report an Incident') }} />
       <ErrorBanner message={submitError ?? projects.error} />
       <Card>
-        <Select label="Project" required value={projectId} options={projects.options} onChange={setProjectId} placeholder="Choose project" error={errors.projectId} />
-        <Select label="What kind" required value={type} options={SAFETY_INCIDENT_TYPES.map((t) => ({ value: t, label: SAFETY_INCIDENT_TYPE_LABELS[t] }))} onChange={setType} placeholder="Near miss, first aid..." error={errors.type} />
-        <DatePicker label="Date" required value={date} onChange={setDate} error={errors.date} />
-        <Input label="Time" value={time} onChangeText={setTime} placeholder="HH:mm" keyboardType="numbers-and-punctuation" maxLength={5} error={errors.time} />
-        <Input label="Where" required value={location} onChangeText={setLocation} placeholder="Chainage, block and floor, yard" maxLength={200} error={errors.location} />
-        <Input label="What happened" required value={description} onChangeText={setDescription} multiline maxLength={4000} error={errors.description} />
+        <Select label={t('Project')} required value={projectId} options={projects.options} onChange={setProjectId} placeholder={t('Choose project')} error={errors.projectId} />
+        <Select label={t('What kind')} required value={type} options={SAFETY_INCIDENT_TYPES.map((k) => ({ value: k, label: t(SAFETY_INCIDENT_TYPE_LABELS[k]) }))} onChange={setType} placeholder={t('Near miss, first aid...')} error={errors.type} />
+        <DatePicker label={t('Date')} required value={date} onChange={setDate} error={errors.date} />
+        <Input label={t('Time')} value={time} onChangeText={setTime} placeholder="HH:mm" keyboardType="numbers-and-punctuation" maxLength={5} error={errors.time} />
+        <Input label={t('Where')} required value={location} onChangeText={setLocation} placeholder={t('Chainage, block and floor, yard')} maxLength={200} error={errors.location} />
+        <Input label={t('What happened')} required value={description} onChangeText={setDescription} multiline maxLength={4000} error={errors.description} />
       </Card>
       {hurt ? (
-        <Card title="People hurt">
-          <Input label="How many" required value={injured} onChangeText={setInjured} keyboardType="number-pad" maxLength={3} error={errors.injured} />
-          <Input label="Names" value={names} onChangeText={setNames} placeholder="Name (trade)" maxLength={1000} />
-          {type === 'LOST_TIME' ? <Input label="Days off work" value={daysLost} onChangeText={setDaysLost} keyboardType="number-pad" maxLength={4} /> : null}
+        <Card title={t('People hurt')}>
+          <Input label={t('How many')} required value={injured} onChangeText={setInjured} keyboardType="number-pad" maxLength={3} error={errors.injured} />
+          <Input label={t('Names')} value={names} onChangeText={setNames} placeholder={t('Name (trade)')} maxLength={1000} />
+          {type === 'LOST_TIME' ? <Input label={t('Days off work')} value={daysLost} onChangeText={setDaysLost} keyboardType="number-pad" maxLength={4} /> : null}
         </Card>
       ) : null}
       <Card>
-        <Input label="Whose workers" value={contractor} onChangeText={setContractor} placeholder="Labour contractor or subcontractor" maxLength={200} />
-        <Input label="Immediate action" value={action} onChangeText={setAction} multiline maxLength={2000} placeholder="First aid given, area cordoned off, work stopped" />
+        <Input label={t('Whose workers')} value={contractor} onChangeText={setContractor} placeholder={t('Labour contractor or subcontractor')} maxLength={200} />
+        <Input label={t('Immediate action')} value={action} onChangeText={setAction} multiline maxLength={2000} placeholder={t('First aid given, area cordoned off, work stopped')} />
       </Card>
-      <Card title="Photos of the spot">
+      <Card title={t('Photos of the spot')}>
         <PhotoPicker photos={photos} onChange={setPhotos} />
         {errors.photos ? <Text style={styles.err}>{errors.photos}</Text> : null}
       </Card>
-      <Button title="Report" icon="send" onPress={submit} loading={busy} />
+      <Button title={t('Report')} icon="send" onPress={submit} loading={busy} />
     </Screen>
   );
 }

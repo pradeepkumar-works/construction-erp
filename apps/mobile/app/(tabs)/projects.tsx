@@ -7,9 +7,11 @@ import { useFetch } from '../../src/api/hooks';
 import { fetchProjects } from '../../src/api/lists';
 import { Card, EmptyState, ErrorState, Loading, Pill, ProgressBar, Screen } from '../../src/components';
 import { colors, spacing, typography } from '../../src/theme';
+import { useT } from '../../src/i18n/LanguageContext';
 
 export default function ProjectsScreen() {
   const router = useRouter();
+  const t = useT();
   const { data, loading, refreshing, error, refresh, reload } = useFetch<ProjectSummary[]>(fetchProjects, [], { cacheKey: 'projects' });
 
   if (loading && !data) return <Loading />;
@@ -22,15 +24,15 @@ export default function ProjectsScreen() {
         keyExtractor={(p) => p.id}
         contentContainerStyle={styles.list}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.primary} />}
-        ListEmptyComponent={<EmptyState title="No projects" subtitle="You have not been added to any project yet." icon="business-outline" art="projects" />}
+        ListEmptyComponent={<EmptyState title={t('No projects')} subtitle={t('You have not been added to any project yet.')} icon="business-outline" art="projects" />}
         renderItem={({ item }) => (
           <Card onPress={() => router.push(`/project/${item.id}`)}>
             <View style={styles.top}>
               <Text style={styles.code}>{item.code}</Text>
-              <Pill text={PROJECT_STATUS_LABELS[item.status]} fg={item.status === 'ACTIVE' ? colors.success : colors.neutral} bg={item.status === 'ACTIVE' ? colors.successSoft : colors.neutralSoft} />
+              <Pill text={t(PROJECT_STATUS_LABELS[item.status])} fg={item.status === 'ACTIVE' ? colors.success : colors.neutral} bg={item.status === 'ACTIVE' ? colors.successSoft : colors.neutralSoft} />
             </View>
             <Text style={styles.name}>{item.name}</Text>
-            <Text style={typography.caption}>{PROJECT_TYPE_LABELS[item.type]}</Text>
+            <Text style={typography.caption}>{t(PROJECT_TYPE_LABELS[item.type])}</Text>
             <View style={styles.bar}>
               <ProgressBar value={item.physicalProgressPct} />
             </View>
@@ -54,7 +56,7 @@ export default function ProjectsScreen() {
             </View>
             {item.pendingApprovals > 0 ? (
               <Text style={styles.pending}>
-                {item.pendingApprovals} pending approval{item.pendingApprovals === 1 ? '' : 's'}
+                {item.pendingApprovals === 1 ? t('1 pending approval') : t('{n} pending approvals', { n: item.pendingApprovals })}
               </Text>
             ) : null}
           </Card>

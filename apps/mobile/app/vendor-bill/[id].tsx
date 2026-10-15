@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import type { VendorBillDto } from '@erp/shared';
 import { useFetch } from '../../src/api/hooks';
+import { useT } from '../../src/i18n/LanguageContext';
 import { AttachmentGallery, Button, Card, ErrorState, KeyValue, Loading, ReviewActions, Screen, SubmissionHeader } from '../../src/components';
 import { colors, spacing, typography } from '../../src/theme';
 import { fmtQty, formatDate } from '../../src/utils/format';
@@ -14,6 +15,7 @@ const rupees = (v: string) => `₹${Number(v).toLocaleString('en-IN', { minimumF
 export default function VendorBillScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const t = useT();
   const { data, loading, refreshing, error, refresh, reload, setData } = useFetch<VendorBillDto>((api) => api.get(`/vendor-bills/${id}`), [id], { enabled: !!id });
 
   if (loading && !data) return <Loading />;
@@ -22,16 +24,16 @@ export default function VendorBillScreen() {
 
   return (
     <Screen refreshing={refreshing} onRefresh={refresh}>
-      <SubmissionHeader item={data} title={`${data.billNo} · ${data.vendorName}`} subtitle={`Invoice ${data.invoiceNo} of ${formatDate(data.invoiceDate)} · ${data.poNo}`} />
+      <SubmissionHeader item={data} title={`${data.billNo} · ${data.vendorName}`} subtitle={t('Invoice {invoice} of {date} · {po}', { invoice: data.invoiceNo, date: formatDate(data.invoiceDate), po: data.poNo })} />
       <Card>
         <View style={styles.box}>
           <Text style={styles.total}>{rupees(data.total)}</Text>
-          <Text style={typography.caption}>due {formatDate(data.dueDate)}</Text>
+          <Text style={typography.caption}>{t('due {date}', { date: formatDate(data.dueDate) })}</Text>
         </View>
         <View style={[styles.match, { backgroundColor: data.matched ? colors.successSoft : colors.dangerSoft }]}>
           <Ionicons name={data.matched ? 'checkmark-circle' : 'alert-circle'} size={18} color={data.matched ? colors.success : colors.danger} />
           <View style={{ flex: 1 }}>
-            <Text style={[styles.matchTitle, { color: data.matched ? colors.success : colors.danger }]}>{data.matched ? 'Matches the PO and what was received' : 'Does not match'}</Text>
+            <Text style={[styles.matchTitle, { color: data.matched ? colors.success : colors.danger }]}>{data.matched ? t('Matches the PO and what was received') : t('Does not match')}</Text>
             {data.exceptions.map((e) => (
               <Text key={e} style={styles.exception}>
                 {e}
@@ -39,12 +41,12 @@ export default function VendorBillScreen() {
             ))}
           </View>
         </View>
-        <KeyValue label="Before GST" value={rupees(data.subtotal)} />
-        <KeyValue label="GST" value={rupees(data.gstAmount)} />
-        {Number(data.freight) > 0 ? <KeyValue label="Freight" value={rupees(data.freight)} /> : null}
-        <KeyValue label="Remarks" value={data.remarks} multiline />
+        <KeyValue label={t('Before GST')} value={rupees(data.subtotal)} />
+        <KeyValue label={t('GST')} value={rupees(data.gstAmount)} />
+        {Number(data.freight) > 0 ? <KeyValue label={t('Freight')} value={rupees(data.freight)} /> : null}
+        <KeyValue label={t('Remarks')} value={data.remarks} multiline />
       </Card>
-      <Card title={`Items (${data.lines.length})`}>
+      <Card title={t('Items ({n})', { n: data.lines.length })}>
         {data.lines.map((l) => (
           <View key={l.id} style={styles.line}>
             <View style={{ flex: 1 }}>
@@ -52,7 +54,7 @@ export default function VendorBillScreen() {
                 {l.itemName}
               </Text>
               <Text style={typography.caption}>
-                {fmtQty(l.quantity)} {l.unit} @ {rupees(l.rate)} (PO {rupees(l.poRate)}) · {fmtQty(l.receivedQty)} received
+                {fmtQty(l.quantity)} {l.unit} @ {rupees(l.rate)} (PO {rupees(l.poRate)}) · {t('{qty} received', { qty: fmtQty(l.receivedQty) })}
               </Text>
             </View>
             <Text style={styles.amount}>{rupees(l.amount)}</Text>
@@ -61,7 +63,7 @@ export default function VendorBillScreen() {
       </Card>
       <AttachmentGallery attachments={data.attachments} />
       <ReviewActions type="VENDOR_BILL" item={data} onReviewed={setData} />
-      <Button title="Open project" variant="ghost" icon="business-outline" onPress={() => router.push(`/project/${data.projectId}`)} />
+      <Button title={t('Open project')} variant="ghost" icon="business-outline" onPress={() => router.push(`/project/${data.projectId}`)} />
     </Screen>
   );
 }

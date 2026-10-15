@@ -8,6 +8,7 @@ import { errorMessage } from '../../src/api/client';
 import { Button, Card, Chips, DatePicker, ErrorBanner, ErrorState, Input, Loading, PhotoPicker, Screen, Select, type LocalPhoto, type SelectOption } from '../../src/components';
 import { attachmentIds, photosFailed, photosQueued, photosUploading, QueuedSuccess, SubmitSuccess, toOutboxPhotos, useProjectOptions } from '../../src/forms/common';
 import { attachmentsToPhotos, ReviewerNote } from '../../src/forms/edit';
+import { useT } from '../../src/i18n/LanguageContext';
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
 import { colors, radius, spacing, typography } from '../../src/theme';
 import { formatDate, isIsoDate, today } from '../../src/utils/format';
@@ -19,6 +20,7 @@ const rupees = (n: number) => `₹${n.toLocaleString('en-IN', { minimumFractionD
 export default function NewExpenseScreen() {
   const params = useLocalSearchParams<{ projectId?: string; editId?: string }>();
   const editId = params.editId ?? null;
+  const t = useT();
   const api = useApi();
   const { online, enqueue } = useOffline();
   const projects = useProjectOptions();
@@ -67,21 +69,21 @@ export default function NewExpenseScreen() {
 
   const activities = useFetch<ActivityDto[]>((a) => a.get(`/projects/${projectId}/activities`), [projectId], { enabled: !!projectId, refetchOnFocus: false, cacheKey: `activities:${projectId}` });
   const activityOptions = useMemo<SelectOption[]>(() => (activities.data ?? []).map((a) => ({ value: a.id, label: a.name })), [activities.data]);
-  const categoryOptions = useMemo<SelectOption<ExpenseCategory>[]>(() => EXPENSE_CATEGORIES.map((c) => ({ value: c, label: EXPENSE_CATEGORY_LABELS[c] })), []);
+  const categoryOptions = useMemo<SelectOption<ExpenseCategory>[]>(() => EXPENSE_CATEGORIES.map((c) => ({ value: c, label: t(EXPENSE_CATEGORY_LABELS[c]) })), [t]);
   const gst = MONEY.test(amount.trim()) ? gstFor(amount, gstRate) : 0;
   const total = (MONEY.test(amount.trim()) ? Number(amount) : 0) + gst;
 
   const validate = () => {
     const e: Record<string, string> = {};
-    if (!projectId) e.projectId = 'Choose a project';
-    if (!category) e.category = 'Choose a category';
-    if (!isIsoDate(date)) e.date = 'Enter a valid date';
-    if (!description.trim()) e.description = 'Say what it was for';
-    if (!MONEY.test(amount.trim()) || Number(amount) <= 0) e.amount = 'Enter the amount before GST, e.g. 2400 or 2400.50';
-    if (gstin.trim() && !GSTIN_PATTERN.test(gstin.trim().toUpperCase())) e.gstin = 'Not a valid 15-character GSTIN';
-    if (photosUploading(photos)) e.photos = 'Wait for photos to finish uploading';
-    else if (photosFailed(photos)) e.photos = 'Remove or retry failed photos';
-    else if (editId && photosQueued(photos)) e.photos = 'Photos need a connection to upload before resubmitting';
+    if (!projectId) e.projectId = t('Choose a project');
+    if (!category) e.category = t('Choose a category');
+    if (!isIsoDate(date)) e.date = t('Enter a valid date');
+    if (!description.trim()) e.description = t('Say what it was for');
+    if (!MONEY.test(amount.trim()) || Number(amount) <= 0) e.amount = t('Enter the amount before GST, e.g. 2400 or 2400.50');
+    if (gstin.trim() && !GSTIN_PATTERN.test(gstin.trim().toUpperCase())) e.gstin = t('Not a valid 15-character GSTIN');
+    if (photosUploading(photos)) e.photos = t('Wait for photos to finish uploading');
+    else if (photosFailed(photos)) e.photos = t('Remove or retry failed photos');
+    else if (editId && photosQueued(photos)) e.photos = t('Photos need a connection to upload before resubmitting');
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -92,26 +94,26 @@ export default function NewExpenseScreen() {
     setBusy(true);
     try {
       const blank = editId ? null : undefined;
-      const t = (v: string) => v.trim() || blank;
+      const opt = (v: string) => v.trim() || blank;
       const body = {
         date,
         category,
         description: description.trim(),
-        vendor: t(vendor),
-        vendorGstin: t(gstin.toUpperCase()),
-        billNo: t(billNo),
+        vendor: opt(vendor),
+        vendorGstin: opt(gstin.toUpperCase()),
+        billNo: opt(billNo),
         amount: amount.trim(),
         gstRate,
         paymentMode,
         activityId: activityId ?? blank,
-        remarks: t(remarks),
+        remarks: opt(remarks),
       };
       if (editId) {
         setCreated(await api.patch<ExpenseDto>(`/expenses/${editId}`, { ...body, attachmentIds: attachmentIds(photos), submit: true }));
         return;
       }
       const queueIt = async () => {
-        const projectName = projects.options.find((o) => o.value === projectId)?.label ?? 'Project';
+        const projectName = projects.options.find((o) => o.value === projectId)?.label ?? t('Project');
         setQueued(
           await enqueue({
             type: 'EXPENSE',
@@ -153,12 +155,12 @@ export default function NewExpenseScreen() {
     setErrors({});
   };
 
-  if (queued) return <QueuedSuccess title="Saved on this phone" subtitle={`${queued.title} · ${queued.subtitle}`} onAnother={reset} />;
+  if (queued) return <QueuedSuccess title={t('Saved on this phone')} subtitle={`${queued.title} · ${queued.subtitle}`} onAnother={reset} />;
   if (created) {
     return (
       <SubmitSuccess
-        title={editId ? 'Expense resubmitted' : 'Expense submitted'}
-        subtitle={`${created.expenseNo}: ${rupees(Number(created.totalAmount))} for ${created.description}. Sent for approval.`}
+        title={editId ? t('Expense resubmitted') : t('Expense submitted')}
+        subtitle={t('{no}: {amount} for {description}. Sent for approval.', { no: created.expenseNo, amount: rupees(Number(created.totalAmount)), description: created.description })}
         detailHref={`/expense/${created.id}`}
         onAnother={editId ? undefined : reset}
       />
@@ -170,37 +172,37 @@ export default function NewExpenseScreen() {
 
   return (
     <Screen keyboard>
-      <Stack.Screen options={{ title: editId ? 'Edit Expense' : 'New Site Expense' }} />
+      <Stack.Screen options={{ title: editId ? t('Edit Expense') : t('New Site Expense') }} />
       <ErrorBanner message={submitError ?? projects.error} />
       <ReviewerNote entry={existing.data} />
       <Card>
-        <Select label="Project" required value={projectId} options={projects.options} onChange={setProjectId} placeholder="Choose project" error={errors.projectId} disabled={!!editId} />
-        <Select label="Category" required value={category} options={categoryOptions} onChange={setCategory} placeholder="Choose category" error={errors.category} />
-        <Input label="What was it for" required value={description} onChangeText={setDescription} placeholder="e.g. Hydraulic hose for grader" error={errors.description} />
-        <DatePicker label="Bill date" required value={date} onChange={setDate} error={errors.date} />
+        <Select label={t('Project')} required value={projectId} options={projects.options} onChange={setProjectId} placeholder={t('Choose project')} error={errors.projectId} disabled={!!editId} />
+        <Select label={t('Category')} required value={category} options={categoryOptions} onChange={setCategory} placeholder={t('Choose category')} error={errors.category} />
+        <Input label={t('What was it for')} required value={description} onChangeText={setDescription} placeholder={t('e.g. Hydraulic hose for grader')} error={errors.description} />
+        <DatePicker label={t('Bill date')} required value={date} onChange={setDate} error={errors.date} />
       </Card>
-      <Card title="Amount">
-        <Input label="Amount before GST (₹)" required value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder="e.g. 2400" error={errors.amount} style={styles.bigInput} />
-        <Chips label="GST rate" value={gstRate} onChange={(v) => setGstRate(v ?? '0')} clearable={false} options={GST_RATES.map((r) => ({ value: String(r), label: `${r}%` }))} />
+      <Card title={t('Amount')}>
+        <Input label={t('Amount before GST (₹)')} required value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder={t('e.g. 2400')} error={errors.amount} style={styles.bigInput} />
+        <Chips label={t('GST rate')} value={gstRate} onChange={(v) => setGstRate(v ?? '0')} clearable={false} options={GST_RATES.map((r) => ({ value: String(r), label: `${r}%` }))} />
         <View style={styles.totalBox}>
           <Text style={typography.caption}>GST {rupees(gst)}</Text>
           <Text style={styles.total}>{rupees(total)}</Text>
         </View>
-        <Chips label="Paid by" value={paymentMode} onChange={(v) => setPaymentMode(v ?? 'CASH')} clearable={false} options={PAYMENT_MODES.map((m) => ({ value: m, label: PAYMENT_MODE_LABELS[m].replace(/ \(.*\)$/, '') }))} />
+        <Chips label={t('Paid by')} value={paymentMode} onChange={(v) => setPaymentMode(v ?? 'CASH')} clearable={false} options={PAYMENT_MODES.map((m) => ({ value: m, label: t(PAYMENT_MODE_LABELS[m]).replace(/ \(.*\)$/, '') }))} />
       </Card>
-      <Card title="Bill photo">
+      <Card title={t('Bill photo')}>
         <PhotoPicker photos={photos} onChange={setPhotos} />
         {errors.photos ? <Text style={styles.err}>{errors.photos}</Text> : null}
-        {!photos.length ? <Text style={typography.caption}>Take a photo of the bill; the PM may send it back without one.</Text> : null}
+        {!photos.length ? <Text style={typography.caption}>{t('Take a photo of the bill; the PM may send it back without one.')}</Text> : null}
       </Card>
-      <Card title="Bill details (optional)">
-        <Input label="Vendor" value={vendor} onChangeText={setVendor} />
-        <Input label="Vendor GSTIN" value={gstin} onChangeText={setGstin} autoCapitalize="characters" maxLength={15} error={errors.gstin} />
-        <Input label="Bill no." value={billNo} onChangeText={setBillNo} />
-        <Select label="Activity" value={activityId} options={activityOptions} onChange={setActivityId} placeholder={projectId ? 'Choose activity' : 'Choose a project first'} disabled={!projectId} emptyText="No activities in this project" />
-        <Input label="Remarks" value={remarks} onChangeText={setRemarks} multiline />
+      <Card title={t('Bill details (optional)')}>
+        <Input label={t('Vendor')} value={vendor} onChangeText={setVendor} />
+        <Input label={t('Vendor GSTIN')} value={gstin} onChangeText={setGstin} autoCapitalize="characters" maxLength={15} error={errors.gstin} />
+        <Input label={t('Bill no.')} value={billNo} onChangeText={setBillNo} />
+        <Select label={t('Activity')} value={activityId} options={activityOptions} onChange={setActivityId} placeholder={projectId ? t('Choose activity') : t('Choose a project first')} disabled={!projectId} emptyText={t('No activities in this project')} />
+        <Input label={t('Remarks')} value={remarks} onChangeText={setRemarks} multiline />
       </Card>
-      <Button title={editId ? 'Resubmit for approval' : 'Submit for approval'} icon="send" onPress={submit} loading={busy} />
+      <Button title={editId ? t('Resubmit for approval') : t('Submit for approval')} icon="send" onPress={submit} loading={busy} />
     </Screen>
   );
 }

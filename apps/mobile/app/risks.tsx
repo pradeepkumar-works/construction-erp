@@ -10,6 +10,7 @@ import { LEVEL_TONE, RISK_STATUS_TONE } from '../src/components/riskTone';
 import { useProjectOptions } from '../src/forms/common';
 import { colors, radius, spacing, typography } from '../src/theme';
 import { formatDate } from '../src/utils/format';
+import { useT } from '../src/i18n/LanguageContext';
 
 type Show = 'active' | 'closed' | 'all';
 
@@ -18,6 +19,7 @@ export default function RisksScreen() {
   const params = useLocalSearchParams<{ projectId?: string }>();
   const router = useRouter();
   const { user } = useAuth();
+  const t = useT();
   const projects = useProjectOptions();
   const [projectId, setProjectId] = useState<string | null>(params.projectId ?? null);
   const [show, setShow] = useState<Show>('active');
@@ -45,40 +47,40 @@ export default function RisksScreen() {
     >
       <ErrorBanner message={projects.error ?? (list.data ? null : list.error)} />
       <Card>
-        <Select label="Project" value={projectId} options={[{ value: '', label: 'All my projects' }, ...projects.options]} onChange={(v) => setProjectId(v || null)} placeholder="All my projects" />
-        <Chips value={show} clearable={false} onChange={(v) => v && setShow(v)} options={[{ value: 'active', label: 'Open + monitoring' }, { value: 'closed', label: 'Closed' }, { value: 'all', label: 'All' }]} />
-        <Chips value={kind} onChange={setKind} options={[{ value: 'DELAY', label: 'Delays' }, { value: 'RISK', label: 'Risks' }]} />
+        <Select label={t('Project')} value={projectId} options={[{ value: '', label: t('All my projects') }, ...projects.options]} onChange={(v) => setProjectId(v || null)} placeholder={t('All my projects')} />
+        <Chips value={show} clearable={false} onChange={(v) => v && setShow(v)} options={[{ value: 'active', label: t('Open + monitoring') }, { value: 'closed', label: t('Closed') }, { value: 'all', label: t('All') }]} />
+        <Chips value={kind} onChange={setKind} options={[{ value: 'DELAY', label: t('Delays') }, { value: 'RISK', label: t('Risks') }]} />
         {mayRaise ? (
           <View style={styles.actions}>
-            <Button title="Record delay" icon="time-outline" onPress={() => router.push(newHref('DELAY'))} style={styles.flex} />
-            <Button title="Raise risk" icon="alert-circle-outline" variant="secondary" onPress={() => router.push(newHref('RISK'))} style={styles.flex} />
+            <Button title={t('Record delay')} icon="time-outline" onPress={() => router.push(newHref('DELAY'))} style={styles.flex} />
+            <Button title={t('Raise risk')} icon="alert-circle-outline" variant="secondary" onPress={() => router.push(newHref('RISK'))} style={styles.flex} />
           </View>
         ) : null}
       </Card>
 
       {s ? (
         <View style={styles.stats}>
-          <Stat label="Holding up work" value={s.openDelays} tone={s.openDelays ? colors.danger : colors.success} />
-          <Stat label="High risks" value={s.highRisks} tone={s.highRisks ? colors.danger : colors.success} />
-          <Stat label="Days lost" value={s.daysLost} tone={colors.warning} />
+          <Stat label={t('Holding up work')} value={s.openDelays} tone={s.openDelays ? colors.danger : colors.success} />
+          <Stat label={t('High risks')} value={s.highRisks} tone={s.highRisks ? colors.danger : colors.success} />
+          <Stat label={t('Days lost')} value={s.daysLost} tone={colors.warning} />
         </View>
       ) : null}
 
       {mayRaise && suggestions.data?.length ? (
-        <Card title="Behind schedule, no delay recorded">
+        <Card title={t('Behind schedule, no delay recorded')}>
           {suggestions.data.slice(0, 5).map((x) => (
             <Pressable
               key={x.activityId}
               style={styles.suggestion}
-              onPress={() => router.push(`/risk/new?kind=DELAY&projectId=${x.projectId}&activityId=${x.activityId}&title=${encodeURIComponent(`${x.activityName} behind schedule`)}`)}
+              onPress={() => router.push(`/risk/new?kind=DELAY&projectId=${x.projectId}&activityId=${x.activityId}&title=${encodeURIComponent(t('{activity} behind schedule', { activity: x.activityName }))}`)}
             >
               <View style={styles.flex}>
                 <Text style={typography.bodyStrong}>{x.activityName}</Text>
                 <Text style={typography.caption}>
-                  {x.daysLate} d past {formatDate(x.plannedEnd)} · {x.progressPct}% done
+                  {t('{days} d past {date} · {pct}% done', { days: x.daysLate, date: formatDate(x.plannedEnd), pct: x.progressPct })}
                 </Text>
               </View>
-              <Text style={styles.link}>Record</Text>
+              <Text style={styles.link}>{t('Record')}</Text>
             </Pressable>
           ))}
         </Card>
@@ -87,10 +89,10 @@ export default function RisksScreen() {
       {list.loading && !list.data ? (
         <Loading />
       ) : rows.length === 0 ? (
-        <EmptyState title={show === 'closed' ? 'Nothing closed yet' : 'Nothing open'} subtitle="Delays and risks raised for your projects show here." icon="alert-circle-outline" />
+        <EmptyState title={t(show === 'closed' ? 'Nothing closed yet' : 'Nothing open')} subtitle={t('Delays and risks raised for your projects show here.')} icon="alert-circle-outline" />
       ) : (
         <>
-          <SectionTitle title={`${list.data?.total ?? rows.length} entr${(list.data?.total ?? rows.length) === 1 ? 'y' : 'ies'}`} />
+          <SectionTitle title={(list.data?.total ?? rows.length) === 1 ? t('1 entry') : t('{n} entries', { n: list.data?.total ?? rows.length })} />
           {rows.map((r) => {
             const tone = LEVEL_TONE[riskLevel(r.score)];
             return (
@@ -103,17 +105,17 @@ export default function RisksScreen() {
                     {r.title}
                   </Text>
                   <Text style={typography.caption} numberOfLines={1}>
-                    {r.riskNo} · {r.kind === 'DELAY' ? `${r.daysLost ?? 0} d lost${r.responsibleParty ? ` · ${DELAY_PARTY_LABELS[r.responsibleParty]}` : ''}` : RISK_CATEGORY_LABELS[r.category]}
+                    {r.riskNo} · {r.kind === 'DELAY' ? `${t('{n} d lost', { n: r.daysLost ?? 0 })}${r.responsibleParty ? ` · ${t(DELAY_PARTY_LABELS[r.responsibleParty])}` : ''}` : t(RISK_CATEGORY_LABELS[r.category])}
                   </Text>
                   <Text style={[typography.caption, r.overdue && styles.overdue]} numberOfLines={1}>
                     {projectId ? '' : `${r.projectName} · `}
-                    {r.ownerName ?? 'No owner'}
-                    {r.dueDate ? ` · due ${formatDate(r.dueDate)}` : ''}
+                    {r.ownerName ?? t('No owner')}
+                    {r.dueDate ? ` · ${t('due {date}', { date: formatDate(r.dueDate) })}` : ''}
                   </Text>
                 </View>
                 <View style={styles.side}>
-                  <Pill text={r.kind === 'DELAY' ? 'Delay' : 'Risk'} fg={r.kind === 'DELAY' ? colors.accent : colors.primary} bg={r.kind === 'DELAY' ? colors.accentSoft : colors.primarySoft} />
-                  {r.status !== 'OPEN' ? <Pill text={RISK_STATUS_LABELS[r.status]} {...RISK_STATUS_TONE[r.status]} /> : null}
+                  <Pill text={t(r.kind === 'DELAY' ? 'Delay' : 'Risk')} fg={r.kind === 'DELAY' ? colors.accent : colors.primary} bg={r.kind === 'DELAY' ? colors.accentSoft : colors.primarySoft} />
+                  {r.status !== 'OPEN' ? <Pill text={t(RISK_STATUS_LABELS[r.status])} {...RISK_STATUS_TONE[r.status]} /> : null}
                   <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
                 </View>
               </Pressable>

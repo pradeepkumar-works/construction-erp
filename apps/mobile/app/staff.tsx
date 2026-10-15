@@ -17,6 +17,8 @@ import {
 import { useAuth } from '../src/auth/AuthContext';
 import { useApi, useFetch } from '../src/api/hooks';
 import { errorMessage } from '../src/api/client';
+import { useT } from '../src/i18n/LanguageContext';
+import type { TranslateVars } from '../src/i18n/translate';
 import { Button, Card, Chips, DatePicker, EmptyState, ErrorBanner, ErrorState, Input, Loading, Pill, Screen, SectionTitle } from '../src/components';
 import { colors, spacing, typography } from '../src/theme';
 import { formatDate, isIsoDate, today } from '../src/utils/format';
@@ -29,32 +31,35 @@ const STATUS_TONE: Record<LeaveStatus, { fg: string; bg: string }> = {
 };
 
 const clock = (iso: string | null) => (iso ? new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-');
-const span = (l: Pick<LeaveRequestDto, 'fromDate' | 'toDate' | 'halfDay'>) => (l.fromDate === l.toDate ? `${formatDate(l.fromDate)}${l.halfDay ? ' (half day)' : ''}` : `${formatDate(l.fromDate)} to ${formatDate(l.toDate)}`);
-const days = (n: string | number) => `${n} day${Number(n) === 1 ? '' : 's'}`;
+type T = (en: string, vars?: TranslateVars) => string;
+const span = (l: Pick<LeaveRequestDto, 'fromDate' | 'toDate' | 'halfDay'>, t: T) =>
+  l.fromDate === l.toDate ? (l.halfDay ? t('{date} (half day)', { date: formatDate(l.fromDate) }) : formatDate(l.fromDate)) : t('{from} to {to}', { from: formatDate(l.fromDate), to: formatDate(l.toDate) });
+const days = (n: string | number, t: T) => t(Number(n) === 1 ? '{n} day' : '{n} days', { n });
 
 function LeaveRow({ l, mine, busy, onCancel, onApprove, onReject }: { l: LeaveRequestDto; mine?: boolean; busy: boolean; onCancel?: () => void; onApprove?: () => void; onReject?: () => void }) {
+  const t = useT();
   return (
     <View style={styles.row}>
       <View style={styles.rowHead}>
-        <Text style={typography.bodyStrong}>{mine ? LEAVE_TYPE_LABELS[l.type] : l.employeeName}</Text>
-        <Pill text={LEAVE_STATUS_LABELS[l.status]} {...STATUS_TONE[l.status]} />
+        <Text style={typography.bodyStrong}>{mine ? t(LEAVE_TYPE_LABELS[l.type]) : l.employeeName}</Text>
+        <Pill text={t(LEAVE_STATUS_LABELS[l.status])} {...STATUS_TONE[l.status]} />
       </View>
       <Text style={typography.caption}>
-        {mine ? '' : `${LEAVE_TYPE_LABELS[l.type]} · `}
-        {span(l)} · {days(l.days)}
+        {mine ? '' : `${t(LEAVE_TYPE_LABELS[l.type])} · `}
+        {span(l, t)} · {days(l.days, t)}
       </Text>
       <Text style={typography.caption}>{l.reason}</Text>
       {l.decidedByName ? (
         <Text style={typography.caption}>
-          {LEAVE_STATUS_LABELS[l.status]} by {l.decidedByName}
+          {t('{status} by {name}', { status: t(LEAVE_STATUS_LABELS[l.status]), name: l.decidedByName })}
           {l.decisionNote ? `: ${l.decisionNote}` : ''}
         </Text>
       ) : null}
       {(l.canDecide && onApprove) || (l.canCancel && onCancel) ? (
         <View style={styles.actions}>
-          {l.canDecide && onReject ? <Button title="Reject" size="sm" variant="secondary" disabled={busy} onPress={onReject} /> : null}
-          {l.canDecide && onApprove ? <Button title="Approve" size="sm" disabled={busy} onPress={onApprove} /> : null}
-          {l.canCancel && onCancel ? <Button title="Cancel leave" size="sm" variant="secondary" disabled={busy} onPress={onCancel} /> : null}
+          {l.canDecide && onReject ? <Button title={t('Reject')} size="sm" variant="secondary" disabled={busy} onPress={onReject} /> : null}
+          {l.canDecide && onApprove ? <Button title={t('Approve')} size="sm" disabled={busy} onPress={onApprove} /> : null}
+          {l.canCancel && onCancel ? <Button title={t('Cancel leave')} size="sm" variant="secondary" disabled={busy} onPress={onCancel} /> : null}
         </View>
       ) : null}
     </View>
@@ -68,6 +73,7 @@ function LeaveRow({ l, mine, busy, onCancel, onApprove, onReject }: { l: LeaveRe
 export default function StaffScreen() {
   const router = useRouter();
   const api = useApi();
+  const t = useT();
   const { user } = useAuth();
   const me = useFetch<MyStaffDto>((a) => a.get('/staff/me'), [], { cacheKey: 'staff:me' });
   const toDecide = useFetch<Paginated<LeaveRequestDto>>((a) => a.get('/staff/leave', { toDecide: 'true', pageSize: 50, sortBy: 'fromDate', sortOrder: 'asc' }), []);
@@ -104,14 +110,14 @@ export default function StaffScreen() {
 
   const apply = async () => {
     const e: Record<string, string> = {};
-    if (!type) e.type = 'Choose the leave';
-    if (!isIsoDate(from)) e.from = 'Enter a valid date';
-    if (!isIsoDate(to)) e.to = 'Enter a valid date';
-    else if (isIsoDate(from) && to < from) e.to = 'The leave cannot end before it starts';
-    if (!reason.trim()) e.reason = 'Enter a reason';
+    if (!type) e.type = t('Choose the leave');
+    if (!isIsoDate(from)) e.from = t('Enter a valid date');
+    if (!isIsoDate(to)) e.to = t('Enter a valid date');
+    else if (isIsoDate(from) && to < from) e.to = t('The leave cannot end before it starts');
+    if (!reason.trim()) e.reason = t('Enter a reason');
     setFormErrors(e);
     if (Object.keys(e).length) return;
-    const ok = await run(() => api.post('/staff/leave', { type, fromDate: from, toDate: to, halfDay: halfDay && from === to, reason: reason.trim() }), 'Leave applied. Your site manager and HR have been told.');
+    const ok = await run(() => api.post('/staff/leave', { type, fromDate: from, toDate: to, halfDay: halfDay && from === to, reason: reason.trim() }), t('Leave applied. Your site manager and HR have been told.'));
     if (ok) {
       setApplying(false);
       setReason('');
@@ -121,53 +127,57 @@ export default function StaffScreen() {
 
   const reject = (l: LeaveRequestDto) =>
     Platform.OS === 'ios'
-      ? Alert.prompt('Reject leave', 'Why, so they can plan again', (note) => note?.trim() && void run(() => api.post(`/staff/leave/${l.id}/reject`, { note: note.trim() }), 'Leave rejected'))
-      : Alert.alert('Reject leave', `Reject ${l.employeeName}'s leave?`, [
-          { text: 'Keep', style: 'cancel' },
-          { text: 'Reject', style: 'destructive', onPress: () => void run(() => api.post(`/staff/leave/${l.id}/reject`, { note: 'Not possible on these dates; please speak to me' }), 'Leave rejected') },
+      ? Alert.prompt(t('Reject leave'), t('Why, so they can plan again'), (note) => note?.trim() && void run(() => api.post(`/staff/leave/${l.id}/reject`, { note: note.trim() }), t('Leave rejected')))
+      : Alert.alert(t('Reject leave'), t("Reject {name}'s leave?", { name: l.employeeName }), [
+          { text: t('Keep'), style: 'cancel' },
+          { text: t('Reject'), style: 'destructive', onPress: () => void run(() => api.post(`/staff/leave/${l.id}/reject`, { note: 'Not possible on these dates; please speak to me' }), t('Leave rejected')) },
         ]);
 
   if (me.loading && !data) return <Loading />;
   if (me.error && !data) return <ErrorState message={me.error} onRetry={me.reload} />;
   if (!data) return null;
 
-  const t = data.today;
+  const day = data.today;
   const waiting = toDecide.data?.items ?? [];
   return (
     <Screen keyboard refreshing={me.refreshing} onRefresh={() => void Promise.all([me.refresh(), toDecide.refresh()])}>
       <ErrorBanner message={error} />
       {!data.employee ? (
         <Card>
-          <Text style={typography.body}>Your login is not linked to a staff record. Ask HR to link it, then you can check in and apply for leave here.</Text>
+          <Text style={typography.body}>{t('Your login is not linked to a staff record. Ask HR to link it, then you can check in and apply for leave here.')}</Text>
         </Card>
       ) : (
         <>
-          <Card title={`Today, ${formatDate(today())}`}>
-            {data.todayOff && !t ? <Text style={typography.caption}>{data.todayOff === 'Sunday' ? 'Sunday, the weekly off.' : `Holiday: ${data.todayOff}.`} Working today earns a comp-off.</Text> : null}
-            {t ? (
+          <Card title={t('Today, {date}', { date: formatDate(today()) })}>
+            {data.todayOff && !day ? (
+              <Text style={typography.caption}>
+                {data.todayOff === 'Sunday' ? t('Sunday, the weekly off.') : t('Holiday: {name}.', { name: data.todayOff })} {t('Working today earns a comp-off.')}
+              </Text>
+            ) : null}
+            {day ? (
               <>
                 <Text style={typography.bodyStrong}>
-                  {STAFF_ATTENDANCE_LABELS[t.status]}
-                  {t.projectName ? ` at ${t.projectName}` : ''}
+                  {t(STAFF_ATTENDANCE_LABELS[day.status])}
+                  {day.projectName ? ` ${t('at {project}', { project: day.projectName })}` : ''}
                 </Text>
                 <Text style={typography.caption}>
-                  In {clock(t.checkIn)} · Out {clock(t.checkOut)}
-                  {t.overtimeHours && Number(t.overtimeHours) > 0 ? ` · Overtime ${t.overtimeHours} h` : ''}
+                  {t('In {in} · Out {out}', { in: clock(day.checkIn), out: clock(day.checkOut) })}
+                  {day.overtimeHours && Number(day.overtimeHours) > 0 ? ` · ${t('Overtime {h} h', { h: day.overtimeHours })}` : ''}
                 </Text>
               </>
             ) : (
-              <Text style={typography.caption}>Not checked in yet.</Text>
+              <Text style={typography.caption}>{t('Not checked in yet.')}</Text>
             )}
             <View style={styles.actions}>
-              {!t?.checkIn ? (
-                <Button title="Check in" icon="log-in-outline" loading={busy} onPress={() => void run(() => api.post('/staff/me/check-in', {}), 'Checked in')} />
-              ) : !t.checkOut ? (
-                <Button title="Check out" icon="log-out-outline" variant="secondary" loading={busy} onPress={() => void run(() => api.post('/staff/me/check-out'), 'Checked out')} />
+              {!day?.checkIn ? (
+                <Button title={t('Check in')} icon="log-in-outline" loading={busy} onPress={() => void run(() => api.post('/staff/me/check-in', {}), t('Checked in'))} />
+              ) : !day.checkOut ? (
+                <Button title={t('Check out')} icon="log-out-outline" variant="secondary" loading={busy} onPress={() => void run(() => api.post('/staff/me/check-out'), t('Checked out'))} />
               ) : null}
             </View>
           </Card>
 
-          <Card title={`Leave left in ${data.year}`}>
+          <Card title={t('Leave left in {year}', { year: data.year })}>
             <View style={styles.balances}>
               {data.balances
                 .filter((b) => b.entitled !== null)
@@ -177,20 +187,20 @@ export default function StaffScreen() {
                       {b.left}
                       <Text style={typography.caption}> / {b.entitled}</Text>
                     </Text>
-                    <Text style={typography.caption}>{LEAVE_TYPE_LABELS[b.type]}</Text>
-                    {b.pending ? <Text style={typography.caption}>{b.pending} waiting</Text> : null}
+                    <Text style={typography.caption}>{t(LEAVE_TYPE_LABELS[b.type])}</Text>
+                    {b.pending ? <Text style={typography.caption}>{t('{n} waiting', { n: b.pending })}</Text> : null}
                   </View>
                 ))}
             </View>
-            {!applying ? <Button title="Apply for leave" icon="calendar-outline" onPress={() => setApplying(true)} /> : null}
+            {!applying ? <Button title={t('Apply for leave')} icon="calendar-outline" onPress={() => setApplying(true)} /> : null}
           </Card>
 
           {applying ? (
-            <Card title="Apply for leave">
-              <Chips label="Leave" required value={type} clearable={false} onChange={setType} options={LEAVE_TYPES.map((x) => ({ value: x, label: LEAVE_TYPE_LABELS[x] }))} />
+            <Card title={t('Apply for leave')}>
+              <Chips label={t('Leave')} required value={type} clearable={false} onChange={setType} options={LEAVE_TYPES.map((x) => ({ value: x, label: t(LEAVE_TYPE_LABELS[x]) }))} />
               {formErrors.type ? <Text style={styles.err}>{formErrors.type}</Text> : null}
               <DatePicker
-                label="From"
+                label={t('From')}
                 required
                 value={from}
                 error={formErrors.from}
@@ -199,18 +209,18 @@ export default function StaffScreen() {
                   if (isIsoDate(v) && (!isIsoDate(to) || to < v)) setTo(v);
                 }}
               />
-              <DatePicker label="To" required value={to} error={formErrors.to} onChange={setTo} />
-              {from === to ? <Chips value={halfDay ? 'HALF' : 'FULL'} clearable={false} onChange={(v) => setHalfDay(v === 'HALF')} options={[{ value: 'FULL', label: 'Full day' }, { value: 'HALF', label: 'Half day' }]} /> : null}
-              <Input label="Reason" required value={reason} onChangeText={setReason} error={formErrors.reason} maxLength={500} multiline />
+              <DatePicker label={t('To')} required value={to} error={formErrors.to} onChange={setTo} />
+              {from === to ? <Chips value={halfDay ? 'HALF' : 'FULL'} clearable={false} onChange={(v) => setHalfDay(v === 'HALF')} options={[{ value: 'FULL', label: t('Full day') }, { value: 'HALF', label: t('Half day') }]} /> : null}
+              <Input label={t('Reason')} required value={reason} onChangeText={setReason} error={formErrors.reason} maxLength={500} multiline />
               {taking !== null ? (
                 <Text style={[typography.caption, (taking === 0 || (balance?.left != null && balance.left < taking)) && styles.errText]}>
-                  {taking === 0 ? 'Those days are Sundays or holidays.' : `Takes ${days(taking)} (Sundays and holidays not counted).`}
-                  {balance && balance.left !== null ? ` ${days(balance.left)} left.` : ''}
+                  {taking === 0 ? t('Those days are Sundays or holidays.') : t('Takes {days} (Sundays and holidays not counted).', { days: days(taking, t) })}
+                  {balance && balance.left !== null ? ` ${t('{days} left.', { days: days(balance.left, t) })}` : ''}
                 </Text>
               ) : null}
               <View style={styles.actions}>
-                <Button title="Cancel" variant="secondary" onPress={() => setApplying(false)} />
-                <Button title="Apply" loading={busy} onPress={() => void apply()} />
+                <Button title={t('Cancel')} variant="secondary" onPress={() => setApplying(false)} />
+                <Button title={t('Apply')} loading={busy} onPress={() => void apply()} />
               </View>
             </Card>
           ) : null}
@@ -219,13 +229,13 @@ export default function StaffScreen() {
 
       {waiting.length ? (
         <>
-          <SectionTitle title={`Leave waiting on you (${waiting.length})`} />
+          <SectionTitle title={t('Leave waiting on you ({n})', { n: waiting.length })} />
           {waiting.map((l) => (
             <LeaveRow
               key={l.id}
               l={l}
               busy={busy}
-              onApprove={() => void run(() => api.post(`/staff/leave/${l.id}/approve`, {}), `Leave approved for ${l.employeeName}`)}
+              onApprove={() => void run(() => api.post(`/staff/leave/${l.id}/approve`, {}), t('Leave approved for {name}', { name: l.employeeName }))}
               onReject={() => reject(l)}
             />
           ))}
@@ -234,7 +244,7 @@ export default function StaffScreen() {
 
       {data.employee ? (
         <>
-          <SectionTitle title="My leave" />
+          <SectionTitle title={t('My leave')} />
           {data.leave.length ? (
             data.leave.map((l) => (
               <LeaveRow
@@ -243,21 +253,21 @@ export default function StaffScreen() {
                 mine
                 busy={busy}
                 onCancel={() =>
-                  Alert.alert('Cancel leave', `Cancel ${LEAVE_TYPE_LABELS[l.type].toLowerCase()} on ${span(l)}?`, [
-                    { text: 'Keep', style: 'cancel' },
-                    { text: 'Cancel leave', style: 'destructive', onPress: () => void run(() => api.post(`/staff/leave/${l.id}/cancel`), 'Leave cancelled') },
+                  Alert.alert(t('Cancel leave'), t('Cancel {type} on {span}?', { type: t(LEAVE_TYPE_LABELS[l.type]).toLowerCase(), span: span(l, t) }), [
+                    { text: t('Keep'), style: 'cancel' },
+                    { text: t('Cancel leave'), style: 'destructive', onPress: () => void run(() => api.post(`/staff/leave/${l.id}/cancel`), t('Leave cancelled')) },
                   ])
                 }
               />
             ))
           ) : (
-            <EmptyState title="No leave yet" icon="calendar-outline" />
+            <EmptyState title={t('No leave yet')} icon="calendar-outline" />
           )}
         </>
       ) : null}
 
       {data.holidays.length ? (
-        <Card title="Coming holidays">
+        <Card title={t('Coming holidays')}>
           {data.holidays.map((h) => (
             <View key={h.id} style={styles.holiday}>
               <Text style={typography.body}>{h.name}</Text>
@@ -267,7 +277,7 @@ export default function StaffScreen() {
         </Card>
       ) : null}
 
-      {user && canMarkStaff(user.roleKey) ? <Button title="Staff register" icon="people-outline" variant="secondary" onPress={() => router.push('/staff-register')} /> : null}
+      {user && canMarkStaff(user.roleKey) ? <Button title={t('Staff register')} icon="people-outline" variant="secondary" onPress={() => router.push('/staff-register')} /> : null}
     </Screen>
   );
 }

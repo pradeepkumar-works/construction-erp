@@ -6,6 +6,7 @@ import { useFetch } from '../../src/api/hooks';
 import { AttachmentGallery, Button, Card, ErrorState, KeyValue, Loading, ReviewActions, Screen, SubmissionHeader, SubmitterActions } from '../../src/components';
 import { colors, spacing, typography } from '../../src/theme';
 import { fmtQty, formatDate } from '../../src/utils/format';
+import { useT } from '../../src/i18n/LanguageContext';
 
 const rupees = (v: string) => `₹${Number(v).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
 const factors = (l: MeasurementSheetDto['lines'][number]) => [l.nos, l.length, l.breadth, l.depth].filter((v) => v !== null).map((v) => fmtQty(v as string)).join(' × ');
@@ -13,6 +14,7 @@ const factors = (l: MeasurementSheetDto['lines'][number]) => [l.nos, l.length, l
 export default function MeasurementScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const t = useT();
   const { data, loading, refreshing, error, refresh, reload, setData } = useFetch<MeasurementSheetDto>((api) => api.get(`/measurements/${id}`), [id], { enabled: !!id });
 
   if (loading && !data) return <Loading />;
@@ -28,20 +30,20 @@ export default function MeasurementScreen() {
             {fmtQty(data.totalQty)} {data.unit}
           </Text>
           <Text style={typography.caption}>
-            {rupees(data.amount)} at {rupees(data.rate)} / {data.unit}
+            {t('{amount} at {rate} / {unit}', { amount: rupees(data.amount), rate: rupees(data.rate), unit: data.unit })}
           </Text>
         </View>
-        <KeyValue label="Location" value={data.location} />
-        {data.woNo ? <KeyValue label="Done by" value={`${data.contractorName ?? ''} (${data.woNo})`} /> : null}
-        <KeyValue label="Remarks" value={data.remarks} multiline />
+        <KeyValue label={t('Location')} value={data.location} />
+        {data.woNo ? <KeyValue label={t('Done by')} value={`${data.contractorName ?? ''} (${data.woNo})`} /> : null}
+        <KeyValue label={t('Remarks')} value={data.remarks} multiline />
       </Card>
-      <Card title={`Measurements (${data.lines.length})`}>
+      <Card title={t('Measurements ({n})', { n: data.lines.length })}>
         {data.lines.map((l) => (
           <View key={l.id} style={styles.line}>
             <View style={{ flex: 1 }}>
               <Text style={styles.lineTitle}>
                 {l.description}
-                {l.deduct ? <Text style={{ color: colors.danger }}> · deduct</Text> : null}
+                {l.deduct ? <Text style={{ color: colors.danger }}> · {t('deduct')}</Text> : null}
               </Text>
               <Text style={typography.caption}>{factors(l)}</Text>
             </View>
@@ -52,7 +54,7 @@ export default function MeasurementScreen() {
       <AttachmentGallery attachments={data.attachments} />
       <SubmitterActions type="MEASUREMENT" item={data} />
       <ReviewActions type="MEASUREMENT" item={data} onReviewed={setData} />
-      <Button title="Open project" variant="ghost" icon="business-outline" onPress={() => router.push(`/project/${data.projectId}`)} />
+      <Button title={t('Open project')} variant="ghost" icon="business-outline" onPress={() => router.push(`/project/${data.projectId}`)} />
     </Screen>
   );
 }

@@ -8,6 +8,7 @@ import { fetchProjects } from '../api/lists';
 import { Button, Screen, type LocalPhoto, type SelectOption } from '../components';
 import type { OutboxPhoto } from '../offline/types';
 import { colors, spacing, typography } from '../theme';
+import { useT } from '../i18n/LanguageContext';
 
 /** Projects the user can submit against, as Select options (cached on the device for offline use). */
 export function useProjectOptions() {
@@ -41,6 +42,7 @@ export function toOutboxPhotos(photos: LocalPhoto[]): OutboxPhoto[] {
 /** Full-screen success state shown after a submission is created. */
 export function SubmitSuccess({ title, subtitle, detailHref, onAnother }: { title: string; subtitle: string; detailHref?: string; onAnother?: () => void }) {
   const router = useRouter();
+  const t = useT();
   return (
     <Screen style={styles.center} edges={['left', 'right', 'bottom']}>
       <View style={styles.iconWrap}>
@@ -49,9 +51,9 @@ export function SubmitSuccess({ title, subtitle, detailHref, onAnother }: { titl
       <Text style={[typography.h1, styles.text]}>{title}</Text>
       <Text style={[typography.body, styles.text, styles.sub]}>{subtitle}</Text>
       <View style={styles.actions}>
-        {detailHref ? <Button title="View submission" icon="open-outline" onPress={() => router.replace(detailHref)} /> : null}
-        {onAnother ? <Button title="Submit another" variant="secondary" onPress={onAnother} /> : null}
-        <Button title="Back to home" variant="ghost" onPress={() => router.dismissTo('/(tabs)')} />
+        {detailHref ? <Button title={t('View submission')} icon="open-outline" onPress={() => router.replace(detailHref)} /> : null}
+        {onAnother ? <Button title={t('Submit another')} variant="secondary" onPress={onAnother} /> : null}
+        <Button title={t('Back to home')} variant="ghost" onPress={() => router.dismissTo('/(tabs)')} />
       </View>
     </Screen>
   );
@@ -62,7 +64,7 @@ export function QueuedSuccess({
   title,
   subtitle,
   onAnother,
-  note = 'It will be sent for approval automatically as soon as the phone is back online. You can check it under Outbox.',
+  note,
 }: {
   title: string;
   subtitle: string;
@@ -70,6 +72,7 @@ export function QueuedSuccess({
   note?: string;
 }) {
   const router = useRouter();
+  const t = useT();
   return (
     <Screen style={styles.center} edges={['left', 'right', 'bottom']}>
       <View style={[styles.iconWrap, styles.iconQueued]}>
@@ -77,11 +80,11 @@ export function QueuedSuccess({
       </View>
       <Text style={[typography.h1, styles.text]}>{title}</Text>
       <Text style={[typography.body, styles.text, styles.sub]}>{subtitle}</Text>
-      <Text style={[typography.caption, styles.text, styles.sub]}>{note}</Text>
+      <Text style={[typography.caption, styles.text, styles.sub]}>{note ?? t('It will be sent for approval automatically as soon as the phone is back online. You can check it under Outbox.')}</Text>
       <View style={styles.actions}>
-        <Button title="View outbox" icon="cloud-upload-outline" onPress={() => router.replace('/outbox')} />
-        {onAnother ? <Button title="Submit another" variant="secondary" onPress={onAnother} /> : null}
-        <Button title="Back to home" variant="ghost" onPress={() => router.dismissTo('/(tabs)')} />
+        <Button title={t('View outbox')} icon="cloud-upload-outline" onPress={() => router.replace('/outbox')} />
+        {onAnother ? <Button title={t('Submit another')} variant="secondary" onPress={onAnother} /> : null}
+        <Button title={t('Back to home')} variant="ghost" onPress={() => router.dismissTo('/(tabs)')} />
       </View>
     </Screen>
   );

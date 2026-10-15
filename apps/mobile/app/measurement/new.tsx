@@ -12,6 +12,7 @@ import { Button, Card, Chips, DatePicker, ErrorBanner, ErrorState, Input, Loadin
 import { attachmentIds, photosFailed, photosQueued, photosUploading, QueuedSuccess, SubmitSuccess, toOutboxPhotos, useProjectOptions } from '../../src/forms/common';
 import { attachmentsToPhotos, ReviewerNote } from '../../src/forms/edit';
 import { useSectorInputs } from '../../src/forms/sector';
+import { useT } from '../../src/i18n/LanguageContext';
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
 import { colors, radius, spacing, typography } from '../../src/theme';
 import { fmtQty, formatDate, isIsoDate, today } from '../../src/utils/format';
@@ -35,6 +36,7 @@ const dim = (v: string) => (v.trim() === '' ? null : v.trim());
 export default function NewMeasurementScreen() {
   const params = useLocalSearchParams<{ projectId?: string; editId?: string }>();
   const editId = params.editId ?? null;
+  const t = useT();
   const api = useApi();
   const { online, enqueue } = useOffline();
   const projects = useProjectOptions();
@@ -92,22 +94,22 @@ export default function NewMeasurementScreen() {
 
   const validate = () => {
     const e: Record<string, string> = {};
-    if (!projectId) e.projectId = 'Choose a project';
-    if (!boqItemId) e.boqItemId = 'Choose the BOQ item';
-    if (!isIsoDate(date)) e.date = 'Enter a valid date';
+    if (!projectId) e.projectId = t('Choose a project');
+    if (!boqItemId) e.boqItemId = t('Choose the BOQ item');
+    if (!isIsoDate(date)) e.date = t('Enter a valid date');
     sector.validate(e);
     const tagged = sector.body(false);
-    if (!location.trim() && tagged.chainageFrom === undefined && !tagged.floor && !tagged.village) e.location = 'Say where, e.g. Ch 2+100 to 2+350 or Grid A1-C4';
+    if (!location.trim() && tagged.chainageFrom === undefined && !tagged.floor && !tagged.village) e.location = t('Say where, e.g. Ch 2+100 to 2+350 or Grid A1-C4');
     lines.forEach((l, i) => {
-      if (!l.description.trim()) e[`d${l.key}`] = 'Describe the line';
+      if (!l.description.trim()) e[`d${l.key}`] = t('Describe the line');
       const bad = [l.nos, l.length, l.breadth, l.depth].some((v) => v.trim() !== '' && !NUM.test(v.trim()));
-      if (bad) e[`n${l.key}`] = 'Numbers only, up to 3 decimals';
-      else if (!hasDimensions(asInput[i])) e[`n${l.key}`] = 'Enter nos or a dimension';
+      if (bad) e[`n${l.key}`] = t('Numbers only, up to 3 decimals');
+      else if (!hasDimensions(asInput[i])) e[`n${l.key}`] = t('Enter nos or a dimension');
     });
-    if (!e.lines && total <= 0) e.total = 'The total must be more than zero';
-    if (photosUploading(photos)) e.photos = 'Wait for photos to finish uploading';
-    else if (photosFailed(photos)) e.photos = 'Remove or retry failed photos';
-    else if (editId && photosQueued(photos)) e.photos = 'Photos need a connection to upload before resubmitting';
+    if (!e.lines && total <= 0) e.total = t('The total must be more than zero');
+    if (photosUploading(photos)) e.photos = t('Wait for photos to finish uploading');
+    else if (photosFailed(photos)) e.photos = t('Remove or retry failed photos');
+    else if (editId && photosQueued(photos)) e.photos = t('Photos need a connection to upload before resubmitting');
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -131,7 +133,7 @@ export default function NewMeasurementScreen() {
         return;
       }
       const queueIt = async () => {
-        const projectName = projects.options.find((o) => o.value === projectId)?.label ?? 'Project';
+        const projectName = projects.options.find((o) => o.value === projectId)?.label ?? t('Project');
         setQueued(
           await enqueue({
             type: 'MEASUREMENT',
@@ -170,12 +172,12 @@ export default function NewMeasurementScreen() {
     setErrors({});
   };
 
-  if (queued) return <QueuedSuccess title="Saved on this phone" subtitle={`${queued.title} · ${queued.subtitle}`} onAnother={reset} />;
+  if (queued) return <QueuedSuccess title={t('Saved on this phone')} subtitle={`${queued.title} · ${queued.subtitle}`} onAnother={reset} />;
   if (created) {
     return (
       <SubmitSuccess
-        title={editId ? 'Measurement resubmitted' : 'Measurement submitted'}
-        subtitle={`${created.mbNo}: ${fmtQty(created.totalQty)} ${created.unit} of item ${created.boqItemNo} at ${created.location}. Sent for approval.`}
+        title={editId ? t('Measurement resubmitted') : t('Measurement submitted')}
+        subtitle={t('{mb}: {qty} {unit} of item {item} at {location}. Sent for approval.', { mb: created.mbNo, qty: fmtQty(created.totalQty), unit: created.unit, item: created.boqItemNo, location: created.location })}
         detailHref={`/measurement/${created.id}`}
         onAnother={editId ? undefined : reset}
       />
@@ -187,12 +189,12 @@ export default function NewMeasurementScreen() {
 
   return (
     <Screen keyboard>
-      <Stack.Screen options={{ title: editId ? 'Edit Measurement' : 'New Measurement' }} />
+      <Stack.Screen options={{ title: editId ? t('Edit Measurement') : t('New Measurement') }} />
       <ErrorBanner message={submitError ?? projects.error ?? boq.error} />
       <ReviewerNote entry={existing.data} />
       <Card>
         <Select
-          label="Project"
+          label={t('Project')}
           required
           value={projectId}
           options={projects.options}
@@ -201,39 +203,44 @@ export default function NewMeasurementScreen() {
             setBoqItemId(null);
             setWorkOrderId('');
           }}
-          placeholder="Choose project"
+          placeholder={t('Choose project')}
           error={errors.projectId}
           disabled={!!editId}
         />
-        <Select label="BOQ item" required value={boqItemId} options={boqOptions} onChange={(v) => {
+        <Select label={t('BOQ item')} required value={boqItemId} options={boqOptions} onChange={(v) => {
             setBoqItemId(v);
             setWorkOrderId('');
-          }} placeholder={projectId ? 'Choose BOQ item' : 'Choose a project first'} disabled={!projectId} error={errors.boqItemId} emptyText="No BOQ items in this project" />
+          }} placeholder={projectId ? t('Choose BOQ item') : t('Choose a project first')} disabled={!projectId} error={errors.boqItemId} emptyText={t('No BOQ items in this project')} />
         {item ? (
           <Text style={[typography.caption, styles.boqInfo]}>
-            Contract {fmtQty(item.revisedQty ?? item.originalQty)} {item.unit} · measured {fmtQty(item.measuredQty)} · awaiting approval {fmtQty(item.pendingMeasuredQty)}
+            {t('Contract {contract} {unit} · measured {measured} · awaiting approval {pending}', {
+              contract: fmtQty(item.revisedQty ?? item.originalQty),
+              unit: item.unit,
+              measured: fmtQty(item.measuredQty),
+              pending: fmtQty(item.pendingMeasuredQty),
+            })}
           </Text>
         ) : null}
         {woOptions.length ? (
-          <Select label="Done by (work order)" value={workOrderId} options={[{ value: '', label: 'Departmental (no work order)' }, ...woOptions]} onChange={setWorkOrderId} placeholder="Departmental (no work order)" />
+          <Select label={t('Done by (work order)')} value={workOrderId} options={[{ value: '', label: t('Departmental (no work order)') }, ...woOptions]} onChange={setWorkOrderId} placeholder={t('Departmental (no work order)')} />
         ) : null}
         {sector.fields(errors)}
-        <Input label="Location" value={location} onChangeText={setLocation} placeholder="Grid, side or zone" error={errors.location} />
-        <DatePicker label="Measured on" required value={date} onChange={setDate} error={errors.date} />
+        <Input label={t('Location')} value={location} onChangeText={setLocation} placeholder={t('Grid, side or zone')} error={errors.location} />
+        <DatePicker label={t('Measured on')} required value={date} onChange={setDate} error={errors.date} />
       </Card>
       {lines.map((l, i) => {
         const qty = measurementLineQty(asInput[i]);
         return (
           <Card key={l.key}>
             <View style={styles.lineHead}>
-              <Text style={typography.label}>Line {i + 1}</Text>
+              <Text style={typography.label}>{t('Line {n}', { n: i + 1 })}</Text>
               {lines.length > 1 ? (
-                <Pressable onPress={() => setLines((ls) => ls.filter((x) => x.key !== l.key))} hitSlop={10} accessibilityLabel={`Remove line ${i + 1}`}>
+                <Pressable onPress={() => setLines((ls) => ls.filter((x) => x.key !== l.key))} hitSlop={10} accessibilityLabel={t('Remove line {n}', { n: i + 1 })}>
                   <Ionicons name="trash-outline" size={20} color={colors.danger} />
                 </Pressable>
               ) : null}
             </View>
-            <Input label="Description" required value={l.description} onChangeText={(v) => setLine(l.key, { description: v })} placeholder="e.g. Footing F1" error={errors[`d${l.key}`]} />
+            <Input label={t('Description')} required value={l.description} onChangeText={(v) => setLine(l.key, { description: v })} placeholder={t('e.g. Footing F1')} error={errors[`d${l.key}`]} />
             <View style={styles.dims}>
               {(
                 [
@@ -248,7 +255,7 @@ export default function NewMeasurementScreen() {
             </View>
             {errors[`n${l.key}`] ? <Text style={styles.err}>{errors[`n${l.key}`]}</Text> : null}
             <View style={styles.lineFoot}>
-              <Chips value={l.deduct ? 'D' : 'A'} onChange={(v) => setLine(l.key, { deduct: v === 'D' })} clearable={false} options={[{ value: 'A', label: 'Add' }, { value: 'D', label: 'Deduct' }]} />
+              <Chips value={l.deduct ? 'D' : 'A'} onChange={(v) => setLine(l.key, { deduct: v === 'D' })} clearable={false} options={[{ value: 'A', label: t('Add') }, { value: 'D', label: t('Deduct') }]} />
               <Text style={[styles.lineQty, qty < 0 && { color: colors.danger }]}>
                 {fmtQty(qty)} {unit}
               </Text>
@@ -256,22 +263,22 @@ export default function NewMeasurementScreen() {
           </Card>
         );
       })}
-      <Button title="Add line" variant="ghost" icon="add" onPress={() => setLines((ls) => [...ls, blankLine()])} />
+      <Button title={t('Add line')} variant="ghost" icon="add" onPress={() => setLines((ls) => [...ls, blankLine()])} />
       <View style={styles.totalBox}>
-        <Text style={typography.caption}>Total (blank sizes count as 1)</Text>
+        <Text style={typography.caption}>{t('Total (blank sizes count as 1)')}</Text>
         <Text style={styles.total}>
           {fmtQty(total)} {unit}
         </Text>
       </View>
       {errors.total ? <Text style={styles.err}>{errors.total}</Text> : null}
-      <Card title="Photos or sketch">
+      <Card title={t('Photos or sketch')}>
         <PhotoPicker photos={photos} onChange={setPhotos} />
         {errors.photos ? <Text style={styles.err}>{errors.photos}</Text> : null}
       </Card>
       <Card>
-        <Input label="Remarks" value={remarks} onChangeText={setRemarks} multiline />
+        <Input label={t('Remarks')} value={remarks} onChangeText={setRemarks} multiline />
       </Card>
-      <Button title={editId ? 'Resubmit for approval' : 'Submit for approval'} icon="send" onPress={submit} loading={busy} />
+      <Button title={editId ? t('Resubmit for approval') : t('Submit for approval')} icon="send" onPress={submit} loading={busy} />
     </Screen>
   );
 }

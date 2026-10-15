@@ -7,12 +7,14 @@ import { useFetch } from '../../src/api/hooks';
 import { AttachmentGallery, Button, Card, ErrorState, KeyValue, Loading, ReviewActions, Screen, SubmissionHeader, SubmitterActions } from '../../src/components';
 import { colors, spacing, typography } from '../../src/theme';
 import { formatDate } from '../../src/utils/format';
+import { useT } from '../../src/i18n/LanguageContext';
 
 const rupees = (v: string) => `₹${Number(v).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 export default function ExpenseScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const t = useT();
   const { data, loading, refreshing, error, refresh, reload, setData } = useFetch<ExpenseDto>((api) => api.get(`/expenses/${id}`), [id], { enabled: !!id });
 
   if (loading && !data) return <Loading />;
@@ -29,18 +31,18 @@ export default function ExpenseScreen() {
             {rupees(data.amount)} + GST {Number(data.gstRate)}% {rupees(data.gstAmount)}
           </Text>
         </View>
-        <KeyValue label="Category" value={EXPENSE_CATEGORY_LABELS[data.category]} />
-        <KeyValue label="Paid by" value={PAYMENT_MODE_LABELS[data.paymentMode]} />
-        <KeyValue label="Vendor" value={data.vendor} />
-        <KeyValue label="Vendor GSTIN" value={data.vendorGstin} />
-        <KeyValue label="Bill no." value={data.billNo} />
-        <KeyValue label="Activity" value={data.activityName} />
-        <KeyValue label="Remarks" value={data.remarks} multiline />
+        <KeyValue label={t('Category')} value={t(EXPENSE_CATEGORY_LABELS[data.category])} />
+        <KeyValue label={t('Paid by')} value={t(PAYMENT_MODE_LABELS[data.paymentMode])} />
+        <KeyValue label={t('Vendor')} value={data.vendor} />
+        <KeyValue label={t('Vendor GSTIN')} value={data.vendorGstin} />
+        <KeyValue label={t('Bill no.')} value={data.billNo} />
+        <KeyValue label={t('Activity')} value={data.activityName} />
+        <KeyValue label={t('Remarks')} value={data.remarks} multiline />
       </Card>
       <AttachmentGallery attachments={data.attachments} />
       <SubmitterActions type="EXPENSE" item={data} />
       <ReviewActions type="EXPENSE" item={data} onReviewed={setData} />
-      <Button title="Open project" variant="ghost" icon="business-outline" onPress={() => router.push(`/project/${data.projectId}`)} />
+      <Button title={t('Open project')} variant="ghost" icon="business-outline" onPress={() => router.push(`/project/${data.projectId}`)} />
     </Screen>
   );
 }

@@ -7,12 +7,13 @@ import { useNotifications } from '../../src/notifications/NotificationsContext';
 import { MessagingCard } from '../../src/notifications/MessagingCard';
 import { Button, Card, KeyValue, Screen } from '../../src/components';
 import { API_URL } from '../../src/config';
-import { LANGUAGES, useLanguage } from '../../src/i18n/LanguageContext';
+import { LANGUAGES, useLanguage, useT } from '../../src/i18n/LanguageContext';
 import { colors, spacing, touch, typography } from '../../src/theme';
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
   const { push } = useNotifications();
+  const t = useT();
   if (!user) return null;
   const initials = user.fullName
     .split(' ')
@@ -22,9 +23,9 @@ export default function ProfileScreen() {
     .toUpperCase();
 
   const confirmLogout = () => {
-    Alert.alert('Sign out', 'You will need to sign in again.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign out', style: 'destructive', onPress: () => void signOut() },
+    Alert.alert(t('Sign out'), t('You will need to sign in again.'), [
+      { text: t('Cancel'), style: 'cancel' },
+      { text: t('Sign out'), style: 'destructive', onPress: () => void signOut() },
     ]);
   };
 
@@ -35,32 +36,32 @@ export default function ProfileScreen() {
           <Text style={styles.avatarText}>{initials}</Text>
         </View>
         <Text style={typography.h2}>{user.fullName}</Text>
-        <Text style={typography.caption}>{ROLE_LABELS[user.roleKey] ?? user.roleName}</Text>
+        <Text style={typography.caption}>{t(ROLE_LABELS[user.roleKey] ?? user.roleName)}</Text>
       </View>
-      <Card title="Account">
-        <KeyValue label="Email" value={user.email} />
-        <KeyValue label="Phone" value={user.phone} />
-        <KeyValue label="Role" value={user.roleName} />
-        <KeyValue label="Organisation" value={user.organizationName} />
-        <KeyValue label="Can approve" value={approvalRightsLine(user)} />
+      <Card title={t('Account')}>
+        <KeyValue label={t('Email')} value={user.email} />
+        <KeyValue label={t('Phone')} value={user.phone} />
+        <KeyValue label={t('Role')} value={t(ROLE_LABELS[user.roleKey] ?? user.roleName)} />
+        <KeyValue label={t('Organisation')} value={user.organizationName} />
+        <KeyValue label={t('Can approve')} value={approvalRightsLine(user, t)} />
       </Card>
-      <Card title="Notifications">
-        <KeyValue label="Push to this device" value={push ? (push.status === 'ready' ? 'On' : push.status === 'denied' ? 'Permission denied' : 'Not available') : 'Checking…'} />
-        {push && push.status !== 'ready' && push.reason ? <Text style={typography.caption}>{push.reason}</Text> : null}
-        <Text style={typography.caption}>Approvals, rejections and change requests on your submissions, plus the daily DPR reminder, also appear under Notifications on the Home screen.</Text>
+      <Card title={t('Notifications')}>
+        <KeyValue label={t('Push to this device')} value={t(push ? (push.status === 'ready' ? 'On' : push.status === 'denied' ? 'Permission denied' : 'Not available') : 'Checking…')} />
+        {push && push.status !== 'ready' && push.reason ? <Text style={typography.caption}>{t(push.reason)}</Text> : null}
+        <Text style={typography.caption}>{t('Approvals, rejections and change requests on your submissions, plus the daily DPR reminder, also appear under Notifications on the Home screen.')}</Text>
       </Card>
       <MessagingCard />
       <LanguageCard />
-      <Card title="Connection">
+      <Card title={t('Connection')}>
         <View style={styles.apiRow}>
           <Ionicons name="server-outline" size={18} color={colors.textMuted} />
           <Text style={styles.api} selectable>
             {API_URL}
           </Text>
         </View>
-        <Text style={typography.caption}>Set EXPO_PUBLIC_API_URL before starting Expo to point the app at another server.</Text>
+        <Text style={typography.caption}>{t('Set EXPO_PUBLIC_API_URL before starting Expo to point the app at another server.')}</Text>
       </Card>
-      <Button title="Sign out" variant="danger" icon="log-out-outline" onPress={confirmLogout} />
+      <Button title={t('Sign out')} variant="danger" icon="log-out-outline" onPress={confirmLogout} />
     </Screen>
   );
 }
@@ -78,8 +79,9 @@ const styles = StyleSheet.create({
 /** English unless the user picks another language here; the choice stays on this phone. */
 function LanguageCard() {
   const { language, setLanguage } = useLanguage();
+  const t = useT();
   return (
-    <Card title="Language">
+    <Card title={t('Language')}>
       {LANGUAGES.map((l) => {
         const active = l.code === language;
         return (
@@ -95,7 +97,7 @@ function LanguageCard() {
             {active ? (
               <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
             ) : !l.available ? (
-              <Text style={typography.caption}>Coming soon</Text>
+              <Text style={typography.caption}>{t('Coming soon')}</Text>
             ) : (
               <Ionicons name="ellipse-outline" size={22} color={colors.border} />
             )}
@@ -106,9 +108,9 @@ function LanguageCard() {
   );
 }
 
-function approvalRightsLine(user: Parameters<typeof approvalRightsOf>[0]): string {
+function approvalRightsLine(user: Parameters<typeof approvalRightsOf>[0], t: (en: string, vars?: Record<string, string>) => string): string {
   const rights = approvalRightsOf(user);
-  if (!rights.length) return 'No';
-  if (rights.length === Object.keys(SUBMISSION_TYPE_LABELS).length && rights.every((r) => r.maxAmount === null)) return 'Everything';
-  return rights.map((r) => `${SUBMISSION_TYPE_LABELS[r.type]}${r.maxAmount === null ? '' : ` up to ₹${Number(r.maxAmount).toLocaleString('en-IN')}`}`).join(', ');
+  if (!rights.length) return t('No');
+  if (rights.length === Object.keys(SUBMISSION_TYPE_LABELS).length && rights.every((r) => r.maxAmount === null)) return t('Everything');
+  return rights.map((r) => (r.maxAmount === null ? t(SUBMISSION_TYPE_LABELS[r.type]) : t('{type} up to ₹{amount}', { type: t(SUBMISSION_TYPE_LABELS[r.type]), amount: Number(r.maxAmount).toLocaleString('en-IN') }))).join(', ');
 }

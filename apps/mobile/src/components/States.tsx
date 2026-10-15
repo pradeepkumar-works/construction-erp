@@ -4,12 +4,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '../theme';
 import { ILLUSTRATIONS, type EmptyArt } from '../illustrations';
 import { Button } from './Button';
+import { useT } from '../i18n/LanguageContext';
 
-export function Loading({ text = 'Loading…' }: { text?: string }) {
+export function Loading({ text }: { text?: string }) {
+  const t = useT();
   return (
     <View style={styles.center}>
       <ActivityIndicator size="large" color={colors.primary} />
-      <Text style={styles.text}>{text}</Text>
+      <Text style={styles.text}>{text ?? t('Loading…')}</Text>
     </View>
   );
 }
@@ -43,14 +45,15 @@ export function EmptyState({
 }
 
 export function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
+  const t = useT();
   return (
     <View style={styles.center}>
       <Ionicons name="cloud-offline-outline" size={44} color={colors.danger} />
-      <Text style={styles.title}>Could not load</Text>
+      <Text style={styles.title}>{t('Could not load')}</Text>
       <Text style={styles.text}>{message}</Text>
       {onRetry ? (
         <View style={styles.action}>
-          <Button title="Try again" onPress={onRetry} variant="secondary" icon="refresh" />
+          <Button title={t('Try again')} onPress={onRetry} variant="secondary" icon="refresh" />
         </View>
       ) : null}
     </View>

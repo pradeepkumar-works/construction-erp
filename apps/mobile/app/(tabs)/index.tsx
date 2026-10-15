@@ -11,6 +11,7 @@ import { BillingBanner, Button, Card, EmptyState, ErrorState, Loading, Notificat
 import { useOffline } from '../../src/offline';
 import { colors, radius, spacing, typography } from '../../src/theme';
 import { fmtQty, formatDate, timeAgo, today } from '../../src/utils/format';
+import { useT } from '../../src/i18n/LanguageContext';
 
 interface HomeData {
   projects: ProjectSummary[];
@@ -24,6 +25,7 @@ type Recent = { type: SubmissionType; item: SubmissionBase; title: string; subti
 export default function HomeScreen() {
   const { user } = useAuth();
   const router = useRouter();
+  const t = useT();
   const { syncedCount, items: outbox } = useOffline();
   const { data, loading, refreshing, error, refresh, reload } = useFetch<HomeData>(
     async (api) => {
@@ -45,22 +47,22 @@ export default function HomeScreen() {
     const all: Recent[] = [
       ...data.progress.map((p) => ({ type: 'PROGRESS' as const, item: p, title: `${p.activityName} · ${fmtQty(p.quantity)} ${p.unit}`, subtitle: `${p.projectName} · ${formatDate(p.date)}` })),
       ...data.dprs.map((d) => ({ type: 'DPR' as const, item: d, title: `DPR · ${formatDate(d.date)}`, subtitle: d.projectName })),
-      ...data.mrs.map((m) => ({ type: 'MATERIAL_REQUEST' as const, item: m, title: `${m.requestNo} · ${m.items.length} item${m.items.length === 1 ? '' : 's'}`, subtitle: `${m.projectName} · needed ${formatDate(m.requiredDate)}` })),
+      ...data.mrs.map((m) => ({ type: 'MATERIAL_REQUEST' as const, item: m, title: `${m.requestNo} · ${m.items.length === 1 ? t('1 item') : t('{n} items', { n: m.items.length })}`, subtitle: `${m.projectName} · ${t('needed {date}', { date: formatDate(m.requiredDate) })}` })),
     ];
     const pending = all.filter((r) => r.item.status === 'SUBMITTED').length;
     const changes = all.filter((r) => r.item.status === 'CHANGES_REQUESTED').length;
     const recent = [...all].sort((a, b) => (b.item.createdAt > a.item.createdAt ? 1 : -1)).slice(0, 8);
-    const t = today();
+    const day = today();
     const dprToday = data.projects.map((p) => ({
       project: p,
-      dpr: data.dprs.find((d) => d.projectId === p.id && d.date === t) ?? null,
-      queued: outbox.some((i) => i.type === 'DPR' && i.payload.projectId === p.id && i.payload.date === t),
+      dpr: data.dprs.find((d) => d.projectId === p.id && d.date === day) ?? null,
+      queued: outbox.some((i) => i.type === 'DPR' && i.payload.projectId === p.id && i.payload.date === day),
     }));
     return { pending, changes, recent, dprToday };
-  }, [data, outbox]);
+  }, [data, outbox, t]);
 
   const hour = new Date().getHours();
-  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const greeting = t(hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening');
   const firstName = user?.fullName.split(' ')[0] ?? '';
 
   const openDetail = (r: Recent) => {
@@ -73,23 +75,23 @@ export default function HomeScreen() {
       <View style={styles.topRow}>
         <View style={styles.flex}>
           <Text style={typography.h1}>
-            {greeting}, {firstName}
+            {t('{greeting}, {name}', { greeting, name: firstName })}
           </Text>
-          <Text style={[typography.caption, styles.sub]}>{user?.roleName} · {formatDate(today())}</Text>
+          <Text style={[typography.caption, styles.sub]}>{user ? t(user.roleName) : ''} · {formatDate(today())}</Text>
         </View>
         <NotificationBell />
       </View>
       <BillingBanner />
       <OfflineBanner />
 
-      <SectionTitle title="New entry" />
+      <SectionTitle title={t('New entry')} />
       <View style={styles.quick}>
-        <QuickAction icon="trending-up" label="Progress" onPress={() => router.push('/progress/new')} tone={colors.brand} iconColor={colors.onBrand} />
+        <QuickAction icon="trending-up" label={t('Progress')} onPress={() => router.push('/progress/new')} tone={colors.brand} iconColor={colors.onBrand} />
         <QuickAction icon="document-text" label="DPR" onPress={() => router.push('/dpr/new')} tone={colors.accent} />
-        <QuickAction icon="cube" label="Material" onPress={() => router.push('/material-request/new')} tone={colors.success} />
-        {user && canRecordAttendance(user.roleKey) ? <QuickAction icon="people" label="Attendance" onPress={() => router.push('/attendance')} tone={colors.primaryDark} /> : null}
+        <QuickAction icon="cube" label={t('Material')} onPress={() => router.push('/material-request/new')} tone={colors.success} />
+        {user && canRecordAttendance(user.roleKey) ? <QuickAction icon="people" label={t('Attendance')} onPress={() => router.push('/attendance')} tone={colors.primaryDark} /> : null}
         {/* Four tiles fit a phone row: the store manager gets Stock where site supervisors get Attendance. */}
-        {user && canKeepStock(user.roleKey) && !canRecordAttendance(user.roleKey) ? <QuickAction icon="file-tray-stacked" label="Stock" onPress={() => router.push('/stock')} tone={colors.info} /> : null}
+        {user && canKeepStock(user.roleKey) && !canRecordAttendance(user.roleKey) ? <QuickAction icon="file-tray-stacked" label={t('Stock')} onPress={() => router.push('/stock')} tone={colors.info} /> : null}
       </View>
 
       {loading && !data ? (
@@ -99,15 +101,15 @@ export default function HomeScreen() {
       ) : data && derived ? (
         <>
           <View style={styles.stats}>
-            <Stat label="My projects" value={data.projects.length} />
-            <Stat label="Awaiting approval" value={derived.pending} tone={colors.warning} />
-            <Stat label="Changes requested" value={derived.changes} tone={derived.changes ? colors.info : colors.textMuted} />
+            <Stat label={t('My projects')} value={data.projects.length} />
+            <Stat label={t('Awaiting approval')} value={derived.pending} tone={colors.warning} />
+            <Stat label={t('Changes requested')} value={derived.changes} tone={derived.changes ? colors.info : colors.textMuted} />
           </View>
 
-          <SectionTitle title="Today's DPR" />
+          <SectionTitle title={t("Today's DPR")} />
           {derived.dprToday.length === 0 ? (
             <Card>
-              <Text style={typography.caption}>You are not assigned to any project yet.</Text>
+              <Text style={typography.caption}>{t('You are not assigned to any project yet.')}</Text>
             </Card>
           ) : (
             derived.dprToday.map(({ project, dpr, queued }) => (
@@ -122,17 +124,17 @@ export default function HomeScreen() {
                   {dpr ? (
                     <View style={[styles.dprState, { backgroundColor: colors.successSoft }]}>
                       <Ionicons name="checkmark-circle" size={18} color={colors.success} />
-                      <Text style={[styles.dprStateText, { color: colors.success }]}>Done</Text>
+                      <Text style={[styles.dprStateText, { color: colors.success }]}>{t('Done')}</Text>
                     </View>
                   ) : queued ? (
                     <View style={[styles.dprState, { backgroundColor: colors.primarySoft }]}>
                       <Ionicons name="cloud-upload-outline" size={18} color={colors.primary} />
-                      <Text style={[styles.dprStateText, { color: colors.primary }]}>In outbox</Text>
+                      <Text style={[styles.dprStateText, { color: colors.primary }]}>{t('In outbox')}</Text>
                     </View>
                   ) : (
                     <View style={[styles.dprState, { backgroundColor: colors.warningSoft }]}>
                       <Ionicons name="time" size={18} color={colors.warning} />
-                      <Text style={[styles.dprStateText, { color: colors.warning }]}>Not submitted</Text>
+                      <Text style={[styles.dprStateText, { color: colors.warning }]}>{t('Not submitted')}</Text>
                     </View>
                   )}
                 </View>
@@ -140,9 +142,9 @@ export default function HomeScreen() {
             ))
           )}
 
-          <SectionTitle title="My recent submissions" right={<Button title="See all" variant="ghost" size="sm" onPress={() => router.push('/submissions')} />} />
+          <SectionTitle title={t('My recent submissions')} right={<Button title={t('See all')} variant="ghost" size="sm" onPress={() => router.push('/submissions')} />} />
           {derived.recent.length === 0 ? (
-            <EmptyState title="No submissions yet" subtitle="Use the quick actions above to submit your first entry." icon="create-outline" art="entries" />
+            <EmptyState title={t('No submissions yet')} subtitle={t('Use the quick actions above to submit your first entry.')} icon="create-outline" art="entries" />
           ) : (
             derived.recent.map((r) => <SubmissionRow key={`${r.type}-${r.item.id}`} type={r.type} title={r.title} subtitle={r.subtitle} status={r.item.status} meta={timeAgo(r.item.createdAt)} onPress={() => openDetail(r)} />)
           )}
@@ -153,8 +155,9 @@ export default function HomeScreen() {
 }
 
 function QuickAction({ icon, label, onPress, tone, iconColor = '#fff' }: { icon: keyof typeof Ionicons.glyphMap; label: string; onPress: () => void; tone: string; iconColor?: string }) {
+  const t = useT();
   return (
-    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={`New ${label}`} style={({ pressed }) => [styles.quickBtn, pressed && styles.pressed]}>
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={t('New {label}', { label })} style={({ pressed }) => [styles.quickBtn, pressed && styles.pressed]}>
       <View style={[styles.quickIcon, { backgroundColor: tone }]}>
         <Ionicons name={icon} size={24} color={iconColor} />
       </View>

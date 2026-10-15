@@ -3,6 +3,7 @@ import { FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'r
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radius, spacing, touch, typography } from '../theme';
+import { useT } from '../i18n/LanguageContext';
 
 export interface SelectOption<V extends string = string> {
   value: V;
@@ -24,7 +25,8 @@ interface Props<V extends string> {
 }
 
 /** Modal picker with large rows; searchable for long option lists. */
-export function Select<V extends string>({ label, value, options, onChange, placeholder = 'Select…', error, required, disabled, searchable, emptyText = 'No options' }: Props<V>) {
+export function Select<V extends string>({ label, value, options, onChange, placeholder, error, required, disabled, searchable, emptyText }: Props<V>) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState('');
   const selected = options.find((o) => o.value === value) ?? null;
@@ -50,7 +52,7 @@ export function Select<V extends string>({ label, value, options, onChange, plac
       >
         <View style={styles.flex}>
           <Text style={[styles.value, !selected && styles.placeholder]} numberOfLines={1}>
-            {selected ? selected.label : placeholder}
+            {selected ? selected.label : (placeholder ?? t('Select…'))}
           </Text>
           {selected?.hint ? (
             <Text style={styles.hint} numberOfLines={1}>
@@ -65,7 +67,7 @@ export function Select<V extends string>({ label, value, options, onChange, plac
       <Modal visible={open} animationType="slide" onRequestClose={() => setOpen(false)}>
         <SafeAreaView style={styles.modal}>
           <View style={styles.modalHeader}>
-            <Text style={typography.h2}>{label ?? 'Select'}</Text>
+            <Text style={typography.h2}>{label ?? t('Select')}</Text>
             <Pressable onPress={() => setOpen(false)} hitSlop={12} style={styles.close}>
               <Ionicons name="close" size={26} color={colors.text} />
             </Pressable>
@@ -73,7 +75,7 @@ export function Select<V extends string>({ label, value, options, onChange, plac
           {showSearch ? (
             <View style={styles.search}>
               <Ionicons name="search" size={18} color={colors.textMuted} />
-              <TextInput value={q} onChangeText={setQ} placeholder="Search" placeholderTextColor={colors.textMuted} style={styles.searchInput} autoFocus={false} />
+              <TextInput value={q} onChangeText={setQ} placeholder={t('Search')} placeholderTextColor={colors.textMuted} style={styles.searchInput} autoFocus={false} />
             </View>
           ) : null}
           <FlatList
@@ -81,7 +83,7 @@ export function Select<V extends string>({ label, value, options, onChange, plac
             keyExtractor={(o) => o.value}
             keyboardShouldPersistTaps="handled"
             ItemSeparatorComponent={() => <View style={styles.sep} />}
-            ListEmptyComponent={<Text style={styles.empty}>{emptyText}</Text>}
+            ListEmptyComponent={<Text style={styles.empty}>{emptyText ?? t('No options')}</Text>}
             renderItem={({ item }) => {
               const active = item.value === value;
               return (

@@ -8,10 +8,12 @@ import { useFetch } from '../../src/api/hooks';
 import { Button, Card, EmptyState, ErrorState, KeyValue, Loading, Pill, ProgressBar, Screen, SectionTitle, Stat } from '../../src/components';
 import { colors, spacing, typography } from '../../src/theme';
 import { fmtQty, formatDate } from '../../src/utils/format';
+import { useT } from '../../src/i18n/LanguageContext';
 
 export default function ProjectScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const t = useT();
   const { user } = useAuth();
   const { data, loading, refreshing, error, refresh, reload } = useFetch(
     async (api) => {
@@ -34,45 +36,45 @@ export default function ProjectScreen() {
       <Card>
         <View style={styles.top}>
           <Text style={styles.code}>{project.code}</Text>
-          <Pill text={PROJECT_STATUS_LABELS[project.status]} fg={project.status === 'ACTIVE' ? colors.success : colors.neutral} bg={project.status === 'ACTIVE' ? colors.successSoft : colors.neutralSoft} />
+          <Pill text={t(PROJECT_STATUS_LABELS[project.status])} fg={project.status === 'ACTIVE' ? colors.success : colors.neutral} bg={project.status === 'ACTIVE' ? colors.successSoft : colors.neutralSoft} />
         </View>
         <Text style={typography.h2}>{project.name}</Text>
-        <Text style={typography.caption}>{PROJECT_TYPE_LABELS[project.type]}</Text>
+        <Text style={typography.caption}>{t(PROJECT_TYPE_LABELS[project.type])}</Text>
         <View style={styles.bar}>
           <ProgressBar value={project.physicalProgressPct} height={12} />
         </View>
-        <KeyValue label="Client" value={project.clientName} />
-        <KeyValue label="Location" value={project.location} />
-        <KeyValue label="Project manager" value={project.projectManagerName} />
-        <KeyValue label="Start" value={formatDate(project.startDate)} />
-        <KeyValue label="End" value={formatDate(project.endDate)} />
-        {project.workOrderNo ? <KeyValue label="Work order" value={project.workOrderNo} /> : null}
+        <KeyValue label={t('Client')} value={project.clientName} />
+        <KeyValue label={t('Location')} value={project.location} />
+        <KeyValue label={t('Project manager')} value={project.projectManagerName} />
+        <KeyValue label={t('Start')} value={formatDate(project.startDate)} />
+        <KeyValue label={t('End')} value={formatDate(project.endDate)} />
+        {project.workOrderNo ? <KeyValue label={t('Work order')} value={project.workOrderNo} /> : null}
       </Card>
 
       <View style={styles.stats}>
-        <Stat label="Activities" value={activities.length} />
-        <Stat label="Delayed" value={delayed} tone={delayed ? colors.danger : colors.success} />
-        <Stat label="Pending approvals" value={project.pendingApprovals} tone={project.pendingApprovals ? colors.warning : colors.textMuted} />
+        <Stat label={t('Activities')} value={activities.length} />
+        <Stat label={t('Delayed')} value={delayed} tone={delayed ? colors.danger : colors.success} />
+        <Stat label={t('Pending approvals')} value={project.pendingApprovals} tone={project.pendingApprovals ? colors.warning : colors.textMuted} />
       </View>
 
       <View style={styles.actions}>
-        <Button title="Add progress" icon="trending-up" onPress={() => router.push(`/progress/new?projectId=${project.id}`)} style={styles.flex} />
-        <Button title="New DPR" icon="document-text" variant="secondary" onPress={() => router.push(`/dpr/new?projectId=${project.id}`)} style={styles.flex} />
+        <Button title={t('Add progress')} icon="trending-up" onPress={() => router.push(`/progress/new?projectId=${project.id}`)} style={styles.flex} />
+        <Button title={t('New DPR')} icon="document-text" variant="secondary" onPress={() => router.push(`/dpr/new?projectId=${project.id}`)} style={styles.flex} />
       </View>
       {user && canRecordAttendance(user.roleKey) ? (
-        <Button title="Today's attendance" icon="people" variant="secondary" onPress={() => router.push(`/attendance?projectId=${project.id}`)} style={styles.attendance} />
+        <Button title={t("Today's attendance")} icon="people" variant="secondary" onPress={() => router.push(`/attendance?projectId=${project.id}`)} style={styles.attendance} />
       ) : null}
       {user && canManageWorkers(user.roleKey) ? (
-        <Button title="Roll call" icon="checkbox-outline" variant="secondary" onPress={() => router.push(`/roll-call?projectId=${project.id}`)} style={styles.attendance} />
+        <Button title={t('Roll call')} icon="checkbox-outline" variant="secondary" onPress={() => router.push(`/roll-call?projectId=${project.id}`)} style={styles.attendance} />
       ) : null}
-      <Button title="Stock" icon="cube-outline" variant="secondary" onPress={() => router.push(`/stock?projectId=${project.id}`)} style={styles.attendance} />
-      <Button title={project.type === 'ROAD' ? 'Progress by chainage' : project.type === 'BUILDING' ? 'Progress by floor' : 'Villages & pipeline'} icon="map-outline" variant="secondary" onPress={() => router.push(`/sector?projectId=${project.id}`)} style={styles.attendance} />
-      <Button title="Delays & risks" icon="alert-circle-outline" variant="secondary" onPress={() => router.push(`/risks?projectId=${project.id}`)} style={styles.attendance} />
-      <Button title="Safety" icon="medkit-outline" variant="secondary" onPress={() => router.push(`/safety?projectId=${project.id}`)} style={styles.attendance} />
+      <Button title={t('Stock')} icon="cube-outline" variant="secondary" onPress={() => router.push(`/stock?projectId=${project.id}`)} style={styles.attendance} />
+      <Button title={project.type === 'ROAD' ? t('Progress by chainage') : project.type === 'BUILDING' ? t('Progress by floor') : t('Villages & pipeline')} icon="map-outline" variant="secondary" onPress={() => router.push(`/sector?projectId=${project.id}`)} style={styles.attendance} />
+      <Button title={t('Delays & risks')} icon="alert-circle-outline" variant="secondary" onPress={() => router.push(`/risks?projectId=${project.id}`)} style={styles.attendance} />
+      <Button title={t('Safety')} icon="medkit-outline" variant="secondary" onPress={() => router.push(`/safety?projectId=${project.id}`)} style={styles.attendance} />
 
-      <SectionTitle title="Activities" right={<Text style={typography.caption}>planned / executed</Text>} />
+      <SectionTitle title={t('Activities')} right={<Text style={typography.caption}>{t('planned / executed')}</Text>} />
       {activities.length === 0 ? (
-        <EmptyState title="No activities" subtitle="Activities are set up by the planning team on the web." icon="list-outline" />
+        <EmptyState title={t('No activities')} subtitle={t('Activities are set up by the planning team on the web.')} icon="list-outline" />
       ) : (
         activities.map((a) => (
           <Card key={a.id}>
@@ -84,20 +86,20 @@ export default function ProjectScreen() {
                 </Text>
                 <Text style={typography.caption}>
                   {fmtQty(a.plannedQty)} / {fmtQty(a.executedQty)} {a.unit}
-                  {a.plannedEnd ? ` · due ${formatDate(a.plannedEnd)}` : ''}
+                  {a.plannedEnd ? ` · ${t('due {date}', { date: formatDate(a.plannedEnd) })}` : ''}
                 </Text>
               </View>
               {a.isDelayed ? (
                 <View style={styles.delayed}>
                   <Ionicons name="warning" size={14} color={colors.danger} />
-                  <Text style={styles.delayedText}>Delayed</Text>
+                  <Text style={styles.delayedText}>{t('Delayed')}</Text>
                 </View>
               ) : null}
             </View>
             <View style={styles.actBar}>
               <ProgressBar value={a.progressPct} color={a.isDelayed ? colors.danger : undefined} />
             </View>
-            <Button title="Add progress for this activity" size="sm" variant="secondary" icon="add" onPress={() => router.push(`/progress/new?projectId=${project.id}&activityId=${a.id}`)} />
+            <Button title={t('Add progress for this activity')} size="sm" variant="secondary" icon="add" onPress={() => router.push(`/progress/new?projectId=${project.id}&activityId=${a.id}`)} />
           </Card>
         ))
       )}

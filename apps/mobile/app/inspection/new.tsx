@@ -8,6 +8,7 @@ import { Button, Card, DatePicker, ErrorBanner, ErrorState, Input, Loading, Phot
 import { attachmentIds, photosFailed, photosQueued, photosUploading, QueuedSuccess, SubmitSuccess, toOutboxPhotos, useProjectOptions } from '../../src/forms/common';
 import { attachmentsToPhotos, ReviewerNote } from '../../src/forms/edit';
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
+import { useT } from '../../src/i18n/LanguageContext';
 import { colors, spacing, typography } from '../../src/theme';
 import { formatDate, isIsoDate, today } from '../../src/utils/format';
 
@@ -16,6 +17,7 @@ export default function RequestInspectionScreen() {
   const params = useLocalSearchParams<{ projectId?: string; editId?: string }>();
   const editId = params.editId ?? null;
   const api = useApi();
+  const t = useT();
   const { online, enqueue } = useOffline();
   const projects = useProjectOptions();
   const existing = useFetch<InspectionDto>((a) => a.get(`/inspections/${editId}`), [editId], { enabled: !!editId, refetchOnFocus: false });
@@ -36,10 +38,10 @@ export default function RequestInspectionScreen() {
   const activities = useFetch<ActivityDto[]>((a) => a.get(`/projects/${projectId}/activities`), [projectId], { enabled: !!projectId, refetchOnFocus: false, cacheKey: `activities:${projectId}` });
   const checklists = useFetch<ChecklistTemplateDto[]>((a) => a.get('/inspections/checklists'), [], { refetchOnFocus: false, cacheKey: 'checklists' });
   const activityOptions = useMemo<SelectOption[]>(
-    () => (activities.data ?? []).map((a) => ({ value: a.id, label: a.name, hint: [a.holdPoint ? 'Hold point' : null, a.checklistName].filter(Boolean).join(' · ') || undefined })),
-    [activities.data],
+    () => (activities.data ?? []).map((a) => ({ value: a.id, label: a.name, hint: [a.holdPoint ? t('Hold point') : null, a.checklistName].filter(Boolean).join(' · ') || undefined })),
+    [activities.data, t],
   );
-  const checklistOptions = useMemo<SelectOption[]>(() => [{ value: '', label: 'No checklist' }, ...(checklists.data ?? []).map((c) => ({ value: c.id, label: c.name, hint: `${c.items.length} points` }))], [checklists.data]);
+  const checklistOptions = useMemo<SelectOption[]>(() => [{ value: '', label: t('No checklist') }, ...(checklists.data ?? []).map((c) => ({ value: c.id, label: c.name, hint: t('{n} points', { n: c.items.length }) }))], [checklists.data, t]);
   const activity = activities.data?.find((a) => a.id === activityId) ?? null;
   const checklistBefore = editId ? ((checklists.data ?? []).find((c) => c.name === existing.data?.checklistName)?.id ?? '') : null;
 
@@ -64,13 +66,13 @@ export default function RequestInspectionScreen() {
 
   const validate = () => {
     const e: Record<string, string> = {};
-    if (!projectId) e.projectId = 'Choose a project';
-    if (!activityId) e.activityId = 'Choose the activity';
-    if (!isIsoDate(date)) e.date = 'Enter a valid date';
-    if (!location.trim()) e.location = 'Say where, e.g. First floor slab, bays 1 to 4';
-    if (photosUploading(photos)) e.photos = 'Wait for photos to finish uploading';
-    else if (photosFailed(photos)) e.photos = 'Remove or retry failed photos';
-    else if (editId && photosQueued(photos)) e.photos = 'Photos need a connection to upload before requesting again';
+    if (!projectId) e.projectId = t('Choose a project');
+    if (!activityId) e.activityId = t('Choose the activity');
+    if (!isIsoDate(date)) e.date = t('Enter a valid date');
+    if (!location.trim()) e.location = t('Say where, e.g. First floor slab, bays 1 to 4');
+    if (photosUploading(photos)) e.photos = t('Wait for photos to finish uploading');
+    else if (photosFailed(photos)) e.photos = t('Remove or retry failed photos');
+    else if (editId && photosQueued(photos)) e.photos = t('Photos need a connection to upload before requesting again');
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -88,13 +90,13 @@ export default function RequestInspectionScreen() {
         return;
       }
       const queueIt = async () => {
-        const projectName = projects.options.find((o) => o.value === projectId)?.label ?? 'Project';
+        const projectName = projects.options.find((o) => o.value === projectId)?.label ?? t('Project');
         setQueued(
           await enqueue({
             type: 'INSPECTION',
             payload: { projectId, ...body },
             photos: toOutboxPhotos(photos),
-            title: `Inspection · ${activity?.name ?? 'Activity'} · ${location.trim()}`,
+            title: `${t('Inspection')} · ${activity?.name ?? t('Activity')} · ${location.trim()}`,
             subtitle: `${projectName} · ${formatDate(date)}`,
           }),
         );
@@ -125,12 +127,12 @@ export default function RequestInspectionScreen() {
     setErrors({});
   };
 
-  if (queued) return <QueuedSuccess title="Saved on this phone" subtitle={`${queued.title} · ${queued.subtitle}`} onAnother={reset} />;
+  if (queued) return <QueuedSuccess title={t('Saved on this phone')} subtitle={`${queued.title} · ${queued.subtitle}`} onAnother={reset} />;
   if (created) {
     return (
       <SubmitSuccess
-        title={editId ? 'Inspection requested again' : 'Inspection requested'}
-        subtitle={`${created.inspectionNo}: ${created.activityName} at ${created.location}. QA/QC has been told.`}
+        title={t(editId ? 'Inspection requested again' : 'Inspection requested')}
+        subtitle={t('{no}: {activity} at {location}. QA/QC has been told.', { no: created.inspectionNo, activity: created.activityName, location: created.location })}
         detailHref={`/inspection/${created.id}`}
         onAnother={editId ? undefined : reset}
       />
@@ -142,12 +144,12 @@ export default function RequestInspectionScreen() {
 
   return (
     <Screen keyboard>
-      <Stack.Screen options={{ title: editId ? 'Edit Inspection Request' : 'Request Inspection' }} />
+      <Stack.Screen options={{ title: t(editId ? 'Edit Inspection Request' : 'Request Inspection') }} />
       <ErrorBanner message={submitError ?? projects.error ?? activities.error} />
       <ReviewerNote entry={existing.data} />
       <Card>
         <Select
-          label="Project"
+          label={t('Project')}
           required
           value={projectId}
           options={projects.options}
@@ -155,12 +157,12 @@ export default function RequestInspectionScreen() {
             setProjectId(v);
             setActivityId(null);
           }}
-          placeholder="Choose project"
+          placeholder={t('Choose project')}
           error={errors.projectId}
           disabled={!!editId}
         />
         <Select
-          label="Activity"
+          label={t('Activity')}
           required
           value={activityId}
           options={activityOptions}
@@ -168,24 +170,24 @@ export default function RequestInspectionScreen() {
             setActivityId(v);
             setChecklistId(activities.data?.find((a) => a.id === v)?.checklistTemplateId ?? '');
           }}
-          placeholder={!projectId ? 'Choose a project first' : activities.loading ? 'Loading activities…' : 'Choose activity'}
+          placeholder={t(!projectId ? 'Choose a project first' : activities.loading ? 'Loading activities…' : 'Choose activity')}
           disabled={!projectId}
           error={errors.activityId}
-          emptyText="No activities in this project"
+          emptyText={t('No activities in this project')}
         />
-        {activity?.holdPoint ? <Text style={[typography.caption, styles.hold]}>Hold point: its progress is approved after this inspection passes.</Text> : null}
-        <Input label="Location" required value={location} onChangeText={setLocation} placeholder="Chainage, grid, floor or zone" error={errors.location} />
-        <DatePicker label="Ready on" required value={date} onChange={setDate} error={errors.date} />
-        <Select label="Checklist" value={checklistId} options={checklistOptions} onChange={(v) => setChecklistId(v ?? '')} placeholder="No checklist" />
+        {activity?.holdPoint ? <Text style={[typography.caption, styles.hold]}>{t('Hold point: its progress is approved after this inspection passes.')}</Text> : null}
+        <Input label={t('Location')} required value={location} onChangeText={setLocation} placeholder={t('Chainage, grid, floor or zone')} error={errors.location} />
+        <DatePicker label={t('Ready on')} required value={date} onChange={setDate} error={errors.date} />
+        <Select label={t('Checklist')} value={checklistId} options={checklistOptions} onChange={(v) => setChecklistId(v ?? '')} placeholder={t('No checklist')} />
       </Card>
-      <Card title="Photos">
+      <Card title={t('Photos')}>
         <PhotoPicker photos={photos} onChange={setPhotos} />
         {errors.photos ? <Text style={styles.err}>{errors.photos}</Text> : null}
       </Card>
       <Card>
-        <Input label="Remarks" value={remarks} onChangeText={setRemarks} placeholder="What is ready, anything the inspector should know" multiline />
+        <Input label={t('Remarks')} value={remarks} onChangeText={setRemarks} placeholder={t('What is ready, anything the inspector should know')} multiline />
       </Card>
-      <Button title={editId ? 'Request again' : 'Request inspection'} icon="send" onPress={submit} loading={busy} />
+      <Button title={t(editId ? 'Request again' : 'Request inspection')} icon="send" onPress={submit} loading={busy} />
     </Screen>
   );
 }
