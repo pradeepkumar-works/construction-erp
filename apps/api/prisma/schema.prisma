@@ -43,6 +43,13 @@ enum MaterialPriority {
 
 /// RECEIPT = goods received (GRN) against an approved material request, ISSUE = handed out for use at site,
 /// ADJUSTMENT = opening stock or a physical-count correction (either sign).
+/// QA/QC's check of material received on a GRN (v4 item 48)
+enum GrnQcStatus {
+  ACCEPTED
+  PARTLY_ACCEPTED
+  REJECTED
+}
+
 enum StockEntryType {
   RECEIPT
   ISSUE
@@ -370,6 +377,7 @@ model Organization {
   notifications     Notification[]
   attendanceSheets  AttendanceSheet[]
   items             Item[]
+  units             Unit[]
   stockEntries      StockEntry[]
   stockTxns         StockTxn[]
   stockMinLevels    StockMinLevel[]
@@ -489,6 +497,7 @@ model User {
   recordedAttendance   AttendanceSheet[]  @relation("AttendanceRecorder")
   updatedAttendance    AttendanceSheet[]  @relation("AttendanceUpdater")
   stockEntries         StockEntry[]
+  grnsChecked          StockEntry[]       @relation("GrnQcBy")
   stockMinLevels       StockMinLevel[]
   submittedMachinery   MachineryLog[]     @relation("MachinerySubmitter")
   reviewedMachinery    MachineryLog[]     @relation("MachineryReviewer")
@@ -1428,6 +1437,23 @@ model Item {
   @@unique([organizationId, name, unit])
 }
 
+/// Units of measure the company uses (v4 item 48). Units stay free text on items and lines; this list suggests them
+/// so the same unit is written the same way.
+model Unit {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  /// As written on items and lines, e.g. Cum, MT, Bag
+  code           String
+  /// e.g. Cubic metre
+  name           String
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, code])
+}
+
 /// One document in the store register: a GRN, an issue slip or a stock adjustment. Its lines are StockTxn rows.
 model StockEntry {
   id                String           @id @default(uuid())
@@ -1472,6 +1498,12 @@ model StockEntry {
   /// Issues: spares for this maintenance job
   maintenanceJobId  String?
   maintenanceJob    MaintenanceJob?  @relation(fields: [maintenanceJobId], references: [id], onDelete: SetNull)
+  /// Receipts: QA/QC's check of the material (null = not checked yet)
+  qcStatus          GrnQcStatus?
+  qcAt              DateTime?
+  qcById            String?
+  qcBy              User?            @relation("GrnQcBy", fields: [qcById], references: [id], onDelete: SetNull)
+  qcNote            String?
   createdById       String
   createdBy         User             @relation(fields: [createdById], references: [id])
   createdAt         DateTime         @default(now())
@@ -1508,6 +1540,8 @@ model StockTxn {
   /// Receipts against a PO: the PO line received
   purchaseOrderLineId   String?
   purchaseOrderLine     PurchaseOrderLine?   @relation(fields: [purchaseOrderLineId], references: [id])
+  /// Receipts: quantity QA/QC rejected (to go back to the supplier)
+  rejectedQty           Decimal?             @db.Decimal(18, 3)
   sortOrder             Int                  @default(0)
 
   @@index([projectId, itemId])

@@ -127,6 +127,18 @@ export class ReceivableOrdersQuery {
   @ApiPropertyOptional() @IsOptional() @IsUUID() projectId?: string;
 }
 
+/** The procurement status report: approved orders and what is still to be delivered. */
+export class ProcurementStatusQuery {
+  @ApiPropertyOptional() @IsOptional() @IsUUID() projectId?: string;
+  @ApiPropertyOptional() @IsOptional() @IsUUID() vendorId?: string;
+  @ApiPropertyOptional({ enum: ['PENDING', 'LATE', 'ALL'], default: 'PENDING', description: 'PENDING = something still to come; LATE = past the delivery date' })
+  @IsOptional()
+  @IsIn(['PENDING', 'LATE', 'ALL'])
+  show?: 'PENDING' | 'LATE' | 'ALL';
+  @ApiPropertyOptional({ example: '2026-04-01', description: 'Orders dated from' }) @IsOptional() @IsDateString() from?: string;
+  @ApiPropertyOptional({ example: '2027-03-31', description: 'Orders dated to' }) @IsOptional() @IsDateString() to?: string;
+}
+
 /* ---------- vendor bills ---------- */
 
 export class VendorBillLineInput {

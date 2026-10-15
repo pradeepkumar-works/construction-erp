@@ -16,6 +16,7 @@ import {
   PROJECT_STATUS_LABELS,
   PROJECT_TYPE_LABELS,
   STOCK_ENTRY_TYPE_LABELS,
+  GRN_QC_STATUS_LABELS,
   SUBMISSION_STATUS_LABELS,
   BILL_STAGE_LABELS,
   RECEIPT_KIND_LABELS,
@@ -219,6 +220,8 @@ export const STOCK_ENTRY_EXPORT: ExportColumn<StockEntryExportRow>[] = [
   { header: 'Work order', value: (r) => r.entry.woNo, width: 16 },
   { header: 'Activity', value: (r) => r.entry.activityName, width: 24 },
   { header: 'Remarks', value: (r) => r.entry.remarks, width: 30 },
+  { header: 'QA/QC', value: (r) => (r.entry.type !== 'RECEIPT' ? null : r.entry.qcStatus ? GRN_QC_STATUS_LABELS[r.entry.qcStatus] : 'Awaiting'), width: 16 },
+  { header: 'Rejected', value: (r) => (r.line.rejectedQty ? toNumber(r.line.rejectedQty) : null) },
   { header: 'Entered by', value: (r) => r.entry.createdByName, width: 20 },
 ];
 

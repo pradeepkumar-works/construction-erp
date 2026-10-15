@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { App, AutoComplete, Form, Input, InputNumber, Modal } from 'antd';
+import { App, Form, Input, InputNumber, Modal } from 'antd';
 import type { BoqItemDto } from '@erp/shared';
-import { COMMON_UNITS } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, errorMessage } from '@/lib/api';
+import { UnitInput } from '@/components/common/UnitInput';
 
 interface FormValues {
   itemNo: string;
@@ -68,7 +68,7 @@ export function BoqFormModal({ open, onClose, projectId, item }: { open: boolean
             <Input placeholder="1.01" />
           </Form.Item>
           <Form.Item name="unit" label="Unit" rules={[{ required: true, message: 'Required' }]}>
-            <AutoComplete options={COMMON_UNITS.map((u) => ({ value: u }))} placeholder="Cum" showSearch={{ filterOption: (input, opt) => String(opt?.value ?? '').toLowerCase().includes(input.toLowerCase()) }} />
+            <UnitInput placeholder="Cum" />
           </Form.Item>
         </div>
         <Form.Item name="description" label="Description" rules={[{ required: true, message: 'Required' }]}>

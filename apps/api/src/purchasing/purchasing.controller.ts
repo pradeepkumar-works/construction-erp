@@ -11,6 +11,7 @@ import {
   CreateVendorBillDto,
   ListPurchaseOrdersQuery,
   ListVendorBillsQuery,
+  ProcurementStatusQuery,
   ReceivableOrdersQuery,
   UpdatePurchaseOrderDto,
   UpdateQuotationDto,
@@ -69,6 +70,15 @@ export class PurchasingController {
   @Get('purchase-orders/receivable')
   receivable(@CurrentUser() user: RequestUser, @Query() q: ReceivableOrdersQuery) {
     return this.orders.receivable(user, q);
+  }
+
+  @ApiOperation({
+    summary: 'Procurement status: approved orders, received and still to come, late deliveries first',
+    description: 'With totals and a line per vendor with orders pending. `show`: PENDING (default), LATE or ALL.',
+  })
+  @Get('purchase-orders/status')
+  status(@CurrentUser() user: RequestUser, @Query() q: ProcurementStatusQuery) {
+    return this.orders.status(user, q);
   }
 
   @Get('purchase-orders/:id')

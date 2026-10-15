@@ -4,6 +4,7 @@ import React from 'react';
 import { DatePicker, Segmented, Space } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
 import type { CostPeriod } from '@/lib/queries';
+import { rangePresets } from '@/lib/dates';
 
 export type PeriodPreset = 'month' | 'quarter' | 'fy' | 'all' | 'custom';
 
@@ -56,7 +57,7 @@ export function PeriodPicker({ value, onChange }: { value: PeriodState; onChange
         ]}
       />
       {value.preset === 'custom' ? (
-        <DatePicker.RangePicker value={value.range} onChange={(r) => onChange({ preset: 'custom', range: r as [Dayjs | null, Dayjs | null] | null })} format="DD MMM YYYY" allowEmpty={[true, true]} />
+        <DatePicker.RangePicker presets={rangePresets()} value={value.range} onChange={(r) => onChange({ preset: 'custom', range: r as [Dayjs | null, Dayjs | null] | null })} format="DD MMM YYYY" allowEmpty={[true, true]} />
       ) : null}
     </Space>
   );

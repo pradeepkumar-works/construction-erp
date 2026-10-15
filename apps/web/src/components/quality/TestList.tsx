@@ -17,6 +17,7 @@ import { ListToolbar } from '@/components/common/ListToolbar';
 import { ReadingsSummary, TestResultTag } from './qualityUi';
 import { TestDrawer } from './TestDrawer';
 import { TestFormModal } from './TestFormModal';
+import { rangePresets } from '@/lib/dates';
 
 /** Quality tests, on the Quality page and a project's Quality tab. */
 export function TestList({ projectId: fixedProject, initialOpenId, onOpenNcr }: { projectId?: string; initialOpenId?: string; onOpenNcr?: (id: string) => void }) {
@@ -104,7 +105,7 @@ export function TestList({ projectId: fixedProject, initialOpenId, onOpenNcr }: 
         <Checkbox checked={overdue} onChange={(e) => reset(setOverdue)(e.target.checked)}>
           Results overdue
         </Checkbox>
-        <DatePicker.RangePicker value={range} onChange={(v) => reset(setRange)(v as [Dayjs | null, Dayjs | null] | null)} format="DD MMM YYYY" allowEmpty={[true, true]} />
+        <DatePicker.RangePicker presets={rangePresets()} value={range} onChange={(v) => reset(setRange)(v as [Dayjs | null, Dayjs | null] | null)} format="DD MMM YYYY" allowEmpty={[true, true]} />
       </ListToolbar>
       <Table<QualityTestDto>
         rowKey="id"

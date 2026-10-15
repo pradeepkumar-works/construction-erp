@@ -1,4 +1,4 @@
-import type { ComplianceDocKind, ComplianceDocStatus, DefectPhase, DefectPriority, DefectStatus, ImprestEntryKind, ImprestEntryStatus, WorkerIdType, WorkerSkill, EquipmentDocType, MaintenanceKind, MaintenanceStatus, BillStage, ReceiptKind, VendorKind, MsmeCategory, EquipmentOwnership, ExpenseCategory, PaymentMode, EquipmentRateUnit, MaterialPriority, NotificationType, ProjectStatus, ProjectType, DelayParty, PasswordTokenPurpose, RiskCategory, RiskKind, RiskStatus, RoleKey, SafetyIncidentStatus, SafetyIncidentType, StockEntryType, SubmissionStatus, SubmissionType, Weather, WorkPermitStatus, WorkPermitType } from './enums';
+import type { GrnQcStatus, ComplianceDocKind, ComplianceDocStatus, DefectPhase, DefectPriority, DefectStatus, ImprestEntryKind, ImprestEntryStatus, WorkerIdType, WorkerSkill, EquipmentDocType, MaintenanceKind, MaintenanceStatus, BillStage, ReceiptKind, VendorKind, MsmeCategory, EquipmentOwnership, ExpenseCategory, PaymentMode, EquipmentRateUnit, MaterialPriority, NotificationType, ProjectStatus, ProjectType, DelayParty, PasswordTokenPurpose, RiskCategory, RiskKind, RiskStatus, RoleKey, SafetyIncidentStatus, SafetyIncidentType, StockEntryType, SubmissionStatus, SubmissionType, Weather, WorkPermitStatus, WorkPermitType } from './enums';
 
 export const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {
   ROAD: 'Road / Infrastructure',
@@ -286,3 +286,4 @@ export const COMPLIANCE_DOC_STATUS_LABELS: Record<ComplianceDocStatus, string> =
 export const DEFECT_PHASE_LABELS: Record<DefectPhase, string> = { SNAG: 'Snag', DEFECT: 'Defect (DLP)' };
 export const DEFECT_PRIORITY_LABELS: Record<DefectPriority, string> = { LOW: 'Low', MEDIUM: 'Medium', HIGH: 'High' };
 export const DEFECT_STATUS_LABELS: Record<DefectStatus, string> = { OPEN: 'Open', FIXED: 'Fixed', CLOSED: 'Closed' };
+export const GRN_QC_STATUS_LABELS: Record<GrnQcStatus, string> = { ACCEPTED: 'Accepted', PARTLY_ACCEPTED: 'Partly accepted', REJECTED: 'Rejected' };

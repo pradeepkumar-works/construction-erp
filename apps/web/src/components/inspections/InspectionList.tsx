@@ -18,6 +18,7 @@ import { StatusTag } from '@/components/common/StatusTag';
 import { EditResubmitButton } from '@/components/common/EditResubmitButton';
 import { InspectionDrawer } from './InspectionDrawer';
 import { InspectionFormModal } from './InspectionFormModal';
+import { rangePresets } from '@/lib/dates';
 
 /** Inspection requests, on the Inspections page and as a project tab. */
 export function InspectionList({ projectId: fixedProject }: { projectId?: string }) {
@@ -138,7 +139,7 @@ export function InspectionList({ projectId: fixedProject }: { projectId?: string
           onChange={reset(setActivityId)}
           options={(activities ?? []).map((a) => ({ value: a.id, label: a.name }))}
         />
-        <DatePicker.RangePicker value={range} onChange={(v) => reset(setRange)(v as [Dayjs | null, Dayjs | null] | null)} format="DD MMM YYYY" allowEmpty={[true, true]} />
+        <DatePicker.RangePicker presets={rangePresets()} value={range} onChange={(v) => reset(setRange)(v as [Dayjs | null, Dayjs | null] | null)} format="DD MMM YYYY" allowEmpty={[true, true]} />
       </ListToolbar>
       <Table<InspectionDto>
         rowKey="id"

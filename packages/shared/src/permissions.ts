@@ -101,6 +101,8 @@ export const canRequestInspection = (role: RoleKey) => INSPECTION_REQUEST_ROLES.
 export const canManageChecklists = (role: RoleKey) => CHECKLIST_ADMIN_ROLES.includes(role);
 export const canRecordTest = (role: RoleKey) => QUALITY_TEST_ROLES.includes(role);
 export const canRaiseNcr = (role: RoleKey) => NCR_ROLES.includes(role);
+/** Check material received on a GRN and accept or reject it: QA/QC and the approvers (as for NCRs). */
+export const canCheckGrn = (role: RoleKey) => NCR_ROLES.includes(role);
 export const canManageDocuments = (role: RoleKey) => DOCUMENT_CONTROL_ROLES.includes(role);
 export const canViewLetters = (role: RoleKey) => CORRESPONDENCE_ROLES.includes(role);
 /** Who sees the company's WhatsApp and SMS log. */

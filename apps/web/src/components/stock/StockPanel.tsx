@@ -18,6 +18,7 @@ import { useAuth } from "@/lib/auth";
 import { StockBalances } from "./StockBalances";
 import { StockEntries } from "./StockEntries";
 import { ItemsTable } from "./ItemsTable";
+import { UnitsTable } from "./UnitsTable";
 import { ReceiptModal } from "./ReceiptModal";
 import { IssueModal } from "./IssueModal";
 import { AdjustmentModal } from "./AdjustmentModal";
@@ -175,6 +176,11 @@ export function StockPanel({
                   key: "items",
                   label: "Item master",
                   children: <ItemsTable />,
+                },
+                {
+                  key: "units",
+                  label: "Units",
+                  children: <UnitsTable />,
                 },
               ]),
         ]}

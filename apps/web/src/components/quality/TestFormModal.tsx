@@ -10,6 +10,7 @@ import { api, errorMessage } from '@/lib/api';
 import { useActivities, useProjects } from '@/lib/queries';
 import { formatDate } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
+import { UnitInput } from '@/components/common/UnitInput';
 
 interface FormValues {
   projectId: string;
@@ -147,7 +148,7 @@ export function TestFormModal({ open, onClose, projectId, test }: { open: boolea
             <InputNumber<string> stringMode style={{ width: '100%' }} min="0" />
           </Form.Item>
           <Form.Item name="unit" label="Unit">
-            <Input maxLength={30} />
+            <UnitInput maxLength={30} />
           </Form.Item>
         </div>
         {hasSpec ? (

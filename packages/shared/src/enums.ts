@@ -69,6 +69,8 @@ export type PushPlatform = (typeof PUSH_PLATFORMS)[number];
 /** RECEIPT = GRN against an approved material request, ISSUE = handed out at site, ADJUSTMENT = opening stock or count correction. */
 export const STOCK_ENTRY_TYPES = ['RECEIPT', 'ISSUE', 'ADJUSTMENT', 'TRANSFER_OUT', 'TRANSFER_IN', 'RETURN_TO_VENDOR', 'RETURN_FROM_SITE'] as const;
 export type StockEntryType = (typeof STOCK_ENTRY_TYPES)[number];
+export const GRN_QC_STATUSES = ['ACCEPTED', 'PARTLY_ACCEPTED', 'REJECTED'] as const;
+export type GrnQcStatus = (typeof GRN_QC_STATUSES)[number];
 
 export const EQUIPMENT_OWNERSHIPS = ['OWNED', 'HIRED'] as const;
 export type EquipmentOwnership = (typeof EQUIPMENT_OWNERSHIPS)[number];

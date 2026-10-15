@@ -15,6 +15,7 @@ import { formatDate, formatINR, formatINRCompact, toNumber } from '@/lib/format'
 import { CONSTRUCTION_SAC, GST_SOURCE_LABELS, downloadGstWorkbook, hsnSummary, placeOfSupply } from '@/lib/gstExport';
 import { PageHeader } from '@/components/common/PageHeader';
 import { QueryError } from '@/components/common/QueryState';
+import { rangePresets } from '@/lib/dates';
 
 const money = (v: string | number) => <span className="mono">{formatINR(v)}</span>;
 const taxColumns = <T extends { igst: string; cgst: string; sgst: string }>(): NonNullable<TableProps<T>['columns']> => [
@@ -117,7 +118,7 @@ function GstRegistersPage() {
         title="GST Registers"
         subtitle="Outward supplies from approved RA bills in the GSTR-1 layout, and input tax from vendor bills, subcontractor bills and site expenses to reconcile with GSTR-2B."
         extra={
-          <DatePicker.RangePicker
+          <DatePicker.RangePicker presets={rangePresets()}
             picker="month"
             value={range}
             allowClear={false}

@@ -11,6 +11,7 @@ import { api, errorMessage } from '@/lib/api';
 import { useBoq, useProjects, useVendors } from '@/lib/queries';
 import { formatINR, toNumber } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
+import { UnitInput } from '@/components/common/UnitInput';
 
 interface LineValue {
   boqItemId?: string | null;
@@ -272,7 +273,7 @@ export function WorkOrderFormModal({
                         boqById.get(lines[f.name].boqItemId!)?.unit
                       ) : (
                         <Form.Item name={[f.name, 'unit']} noStyle rules={[{ required: true, whitespace: true, message: 'Unit' }]}>
-                          <Input placeholder="Unit" aria-label={`Unit of line ${f.name + 1}`} maxLength={30} />
+                          <UnitInput aria-label={`Unit of line ${f.name + 1}`} maxLength={30} />
                         </Form.Item>
                       ),
                   },
