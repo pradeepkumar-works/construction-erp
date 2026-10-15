@@ -373,7 +373,7 @@ h4.ant-typography,
 }
 
 .text-danger {
-  color: #cf1322;
+  color: var(--ant-color-error-text);
 }
 
 .mono {

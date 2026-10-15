@@ -11,6 +11,7 @@ import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useAttendanceDay, useAttendanceSuggestions, useProjects } from '@/lib/queries';
 import { formatDate } from '@/lib/format';
+import { themeColor } from '@/lib/theme';
 
 interface LineValue {
   contractor?: string;
@@ -172,7 +173,7 @@ export function AttendanceFormModal({ open, onClose, projectId, sheet: initial }
           <Form.List name="lines">
             {(fields, { add, remove: removeLine }) => (
               <Space orientation="vertical" size={6} style={{ width: '100%' }}>
-                <div style={{ display: 'flex', gap: 6, color: '#8c8c8c', fontSize: 12 }}>
+                <div style={{ display: 'flex', gap: 6, color: themeColor('colorTextDescription'), fontSize: 12 }}>
                   <span style={{ flex: 3 }}>Contractor</span>
                   <span style={{ flex: 2 }}>Trade</span>
                   <span style={{ width: 90 }}>Workers</span>
@@ -209,7 +210,7 @@ export function AttendanceFormModal({ open, onClose, projectId, sheet: initial }
           </Form.List>
         </Form.Item>
 
-        <div style={{ background: '#fafafa', border: '1px solid #f0f0f0', borderRadius: 8, padding: '8px 12px', marginBottom: 16 }}>
+        <div style={{ background: themeColor('colorFillAlter'), border: `1px solid ${themeColor('colorBorderSecondary')}`, borderRadius: 8, padding: '8px 12px', marginBottom: 16 }}>
           <Typography.Text strong>Total {total} workers</Typography.Text>
           {byTrade.length ? (
             <div style={{ marginTop: 6, display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center' }}>

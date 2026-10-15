@@ -13,6 +13,7 @@ import { formatDate, formatDateTime } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { KindTag, RiskStatusTag, ScoreTag } from './riskUi';
+import { themeColor } from '@/lib/theme';
 
 const HISTORY_COLORS: Record<string, string> = { CREATED: 'gray', UPDATED: 'blue', CLOSED: 'green', REOPENED: 'orange', DELETED: 'red' };
 
@@ -138,7 +139,7 @@ export function RiskDrawer({ id, open, onClose, onEdit }: { id: string | null; o
               {
                 key: 'due',
                 label: 'Due',
-                children: data.dueDate ? <span style={data.overdue ? { color: '#cf1322', fontWeight: 600 } : undefined}>{formatDate(data.dueDate)}{data.overdue ? ' (overdue)' : ''}</span> : '-',
+                children: data.dueDate ? <span style={data.overdue ? { color: themeColor('colorErrorText'), fontWeight: 600 } : undefined}>{formatDate(data.dueDate)}{data.overdue ? ' (overdue)' : ''}</span> : '-',
               },
               { key: 'raised', label: 'Raised by', children: `${data.raisedByName}, ${formatDateTime(data.createdAt)}`, span: 2 },
               ...(data.status === 'CLOSED' ? [{ key: 'closed', label: 'Closed', children: `${formatDateTime(data.closedAt)}${data.closureNote ? `: ${data.closureNote}` : ''}`, span: 2 }] : []),

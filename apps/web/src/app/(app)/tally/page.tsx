@@ -15,6 +15,8 @@ import { useTallyExports, useTallyPreview, useTallySettings } from '@/lib/querie
 import { formatDate, formatDateTime, formatINR } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { QueryError } from '@/components/common/QueryState';
+import { CardToolbar } from '@/components/common/CardToolbar';
+import { themeColor } from '@/lib/theme';
 
 const money = (v: string | null) => (v ? <span className="mono">{formatINR(v, true)}</span> : null);
 const KIND_COLORS: Record<TallyVoucherKind, string> = { SALES: 'green', RECEIPT: 'cyan', PURCHASE: 'orange', SUBCONTRACT: 'volcano', PAYMENT: 'purple', EXPENSE: 'gold' };
@@ -94,7 +96,7 @@ function ToExport() {
   return (
     <>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
-      <div style={{ padding: 12, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', borderBottom: '1px solid #f0f0f0' }}>
+      <CardToolbar wrap gap={12} align="center">
         <Space>
           <Typography.Text>Up to the end of</Typography.Text>
           <DatePicker picker="month" value={month} onChange={(d) => d && setMonth(d)} allowClear={false} format="MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'month')} />
@@ -117,7 +119,7 @@ function ToExport() {
             Export {vouchers.length} voucher{vouchers.length === 1 ? '' : 's'}
           </Button>
         </Popconfirm>
-      </div>
+      </CardToolbar>
       <div style={{ padding: '12px 12px 0' }}>
         {data && data.held.length > 0 && (
           <Alert
@@ -308,7 +310,7 @@ function Ledgers() {
   return (
     <>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
-      <div style={{ padding: 12, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, borderBottom: '1px solid #f0f0f0' }}>
+      <div style={{ padding: 12, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, borderBottom: `1px solid ${themeColor('colorBorderSecondary')}` }}>
         <label>
           <Typography.Text type="secondary">Company name in Tally</Typography.Text>
           <Input value={company} onChange={(e) => setCompany(e.target.value)} placeholder="The company open in Tally" maxLength={200} />

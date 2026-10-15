@@ -9,6 +9,7 @@ import { DELAY_PARTY_LABELS, RISK_CATEGORY_LABELS, canEditRisk } from '@erp/shar
 import { useAuth } from '@/lib/auth';
 import { formatDate } from '@/lib/format';
 import { KindTag, RiskStatusTag, ScoreTag } from './riskUi';
+import { themeColor } from '@/lib/theme';
 
 export function RiskTable({
   data,
@@ -75,7 +76,7 @@ export function RiskTable({
       dataIndex: 'dueDate',
       width: 120,
       ...sort('dueDate'),
-      render: (v, r) => (v ? <span style={r.overdue ? { color: '#cf1322', fontWeight: 600 } : undefined}>{formatDate(v)}{r.overdue ? ' (overdue)' : ''}</span> : '-'),
+      render: (v, r) => (v ? <span style={r.overdue ? { color: themeColor('colorErrorText'), fontWeight: 600 } : undefined}>{formatDate(v)}{r.overdue ? ' (overdue)' : ''}</span> : '-'),
     },
     { title: 'Status', fixed: 'right' as const, dataIndex: 'status', width: 110, ...sort('status'), render: (s) => <RiskStatusTag status={s} /> },
     {

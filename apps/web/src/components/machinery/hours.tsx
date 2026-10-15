@@ -5,6 +5,7 @@ import { Tag, Tooltip } from 'antd';
 import type { EquipmentOwnership, MachineryLogDto } from '@erp/shared';
 import { EQUIPMENT_OWNERSHIP_LABELS } from '@erp/shared';
 import { formatQty, toNumber } from '@/lib/format';
+import { themeColor } from '@/lib/theme';
 
 export const OwnershipTag = ({ ownership }: { ownership: EquipmentOwnership }) => (
   <Tag color={ownership === 'HIRED' ? 'orange' : 'geekblue'} style={{ margin: 0 }}>
@@ -25,7 +26,7 @@ export function HoursCell({ log }: { log: Pick<MachineryLogDto, 'hoursWorked' | 
           {idle > 0 && down > 0 ? <span className="text-muted"> · </span> : null}
           {down > 0 ? (
             <Tooltip title={log.breakdownNote}>
-              <span style={{ color: '#cf1322' }}>{formatQty(down)} breakdown</span>
+              <span style={{ color: themeColor('colorErrorText') }}>{formatQty(down)} breakdown</span>
             </Tooltip>
           ) : null}
         </div>

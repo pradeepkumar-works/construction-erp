@@ -12,9 +12,10 @@ import { QueryError } from '@/components/common/QueryState';
 import { HEAD_COLORS } from './CostBar';
 import { BudgetFormModal } from './BudgetFormModal';
 import { CashFlowPanel } from './CashFlowPanel';
+import { themeColor } from '@/lib/theme';
 
-const RED = '#cf1322';
-const GREEN = '#1f9d55';
+const RED = themeColor('colorErrorText');
+const GREEN = themeColor('colorSuccessText');
 const money = (v: string | null) => (v === null ? <span className="text-muted">-</span> : <span className="mono">{formatINR(v)}</span>);
 const variance = (v: string | null) =>
   v === null ? <span className="text-muted">-</span> : <span className="mono" style={{ color: toNumber(v) < 0 ? RED : GREEN }}>{formatINR(v)}</span>;

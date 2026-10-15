@@ -11,6 +11,7 @@ import { useBoq, useProjects } from '@/lib/queries';
 import { formatINR, formatQty, toNumber } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { UnitInput } from '@/components/common/UnitInput';
+import { themeColor } from '@/lib/theme';
 
 /** Picker value for a line that adds an item not yet in the BOQ. */
 const NEW_ITEM = '__new__';
@@ -150,7 +151,7 @@ export function VariationFormModal({ open, onClose, projectId, variation, onSave
                 const extra = !!b && isUnapprovedExtra(b.originalQty, b.revisedQty);
                 const amount = (l?.qty ?? 0) * lineRate(l, boq);
                 return (
-                  <div key={f.key} className="variation-line" style={{ border: '1px solid var(--ant-color-border-secondary, #f0f0f0)', borderRadius: 8, padding: '12px 12px 0', marginBottom: 8 }}>
+                  <div key={f.key} className="variation-line" style={{ border: `1px solid ${themeColor('colorBorderSecondary')}`, borderRadius: 8, padding: '12px 12px 0', marginBottom: 8 }}>
                     <div style={grid('minmax(0, 1fr) 32px')}>
                       <Form.Item name={[f.name, 'boqItemId']} label="BOQ item" rules={[{ required: true, message: 'Pick an item or "New item"' }]}>
                         <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Pick a BOQ item" options={itemOptions} disabled={!selectedProject} popupMatchSelectWidth={false} />

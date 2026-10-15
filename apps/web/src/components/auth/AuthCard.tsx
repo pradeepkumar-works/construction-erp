@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { BRAND } from '@/lib/brand';
 import { BrandMark, Wordmark } from '@/components/shell/BrandMark';
+import { themeColor } from '@/lib/theme';
 
 const POINTS = ['Progress, DPRs and photos from site, even offline', 'RA bills, purchases and payments with GST', 'Approvals on the phone, exports to Tally'];
 
@@ -18,7 +19,7 @@ export function AuthCard({ title, subtitle, children, width = 400 }: { title?: R
       <aside className="auth-aside" aria-hidden>
         <Link href="/welcome" className="auth-brand" tabIndex={-1}>
           <BrandMark size={34} />
-          <Wordmark color="#fff" size={20} />
+          <Wordmark color={themeColor('colorTextLightSolid')} size={20} />
         </Link>
         <div className="auth-pitch">
           <p className="auth-kicker">Construction ERP</p>

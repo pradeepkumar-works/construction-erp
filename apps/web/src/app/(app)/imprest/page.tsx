@@ -12,7 +12,7 @@ function ImprestPage() {
   return (
     <div className="page-container">
       <PageHeader title="Site Imprest" subtitle="Petty cash floats held at the sites: the cash in hand after each holder's cash expenses, and top-ups to bring it back to the float." />
-      <Card className="table-card" size="small">
+      <Card size="small">
         <ImprestPanel key={id ?? ''} initialId={id} />
       </Card>
     </div>

@@ -7,6 +7,7 @@ import { formatPhone, MESSAGE_CHANNEL_LABELS, MESSAGE_CHANNELS, MESSAGE_TEMPLATE
 import { useMessageLog } from '@/lib/queries';
 import { formatDateTime } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
+import { CardToolbar } from '@/components/common/CardToolbar';
 
 const STATUS_COLOR: Record<OutboundMessageStatus, string> = { SENT: 'green', FAILED: 'red', SKIPPED: 'default' };
 
@@ -21,7 +22,7 @@ export function MessageLog() {
 
   return (
     <>
-      <div style={{ padding: 12, display: 'flex', gap: 8, flexWrap: 'wrap', borderBottom: '1px solid #f0f0f0' }}>
+      <CardToolbar wrap gap={8}>
         <Input.Search
           allowClear
           placeholder="Search number, name or text"
@@ -53,7 +54,7 @@ export function MessageLog() {
           }}
           options={OUTBOUND_MESSAGE_STATUSES.map((s) => ({ value: s, label: OUTBOUND_MESSAGE_STATUS_LABELS[s] }))}
         />
-      </div>
+      </CardToolbar>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       <Table<OutboundMessageDto>
         rowKey="id"

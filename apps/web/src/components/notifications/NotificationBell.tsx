@@ -9,6 +9,7 @@ import type { NotificationDto } from '@erp/shared';
 import { useMarkAllNotificationsRead, useMarkNotificationRead, useNotifications } from '@/lib/queries';
 import { timeAgo } from '@/lib/format';
 import { notificationHref } from './notificationTarget';
+import { themeColor } from '@/lib/theme';
 
 /** Header bell: unread badge, the latest notifications in a popover, and a link to the full page. */
 export function NotificationBell() {
@@ -39,13 +40,13 @@ export function NotificationBell() {
         locale={{ emptyText: 'No notifications yet' }}
         style={{ maxHeight: 380, overflow: 'auto' }}
         renderItem={(n) => (
-          <List.Item onClick={() => openItem(n)} style={{ cursor: 'pointer', padding: '8px 4px', background: n.readAt ? undefined : 'rgba(22, 89, 168, 0.06)', borderRadius: 4 }}>
+          <List.Item onClick={() => openItem(n)} style={{ cursor: 'pointer', padding: '8px 4px', background: n.readAt ? undefined : themeColor('colorPrimaryBg'), borderRadius: 4 }}>
             <List.Item.Meta
               avatar={<Badge dot={!n.readAt} offset={[-2, 6]} />}
               title={<span style={{ fontWeight: n.readAt ? 500 : 700, fontSize: 13 }}>{n.title}</span>}
               description={
                 <>
-                  <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.65)' }}>{n.body}</div>
+                  <div style={{ fontSize: 12, color: themeColor('colorTextSecondary') }}>{n.body}</div>
                   <div className="text-muted" style={{ fontSize: 11, marginTop: 2 }}>
                     {timeAgo(n.createdAt)}
                   </div>
@@ -55,7 +56,7 @@ export function NotificationBell() {
           </List.Item>
         )}
       />
-      <div style={{ textAlign: 'center', borderTop: '1px solid #f0f0f0', paddingTop: 8, marginTop: 4 }}>
+      <div style={{ textAlign: 'center', borderTop: `1px solid ${themeColor('colorBorderSecondary')}`, paddingTop: 8, marginTop: 4 }}>
         <Link href="/notifications" onClick={() => setOpen(false)}>
           View all notifications
         </Link>

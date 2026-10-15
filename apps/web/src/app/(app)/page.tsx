@@ -26,6 +26,7 @@ import { ProjectStatusTag, ProjectTypeTag } from '@/components/common/StatusTag'
 import { useAuth } from '@/lib/auth';
 import { BRAND } from '@/lib/brand';
 import { GettingStartedCard } from '@/components/dashboard/GettingStartedCard';
+import { themeColor } from '@/lib/theme';
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -112,7 +113,7 @@ export default function DashboardPage() {
               </KpiTile>
             )}
             <KpiTile>
-              <Statistic title="Delayed Activities" value={data.delayedActivities} prefix={<AlertOutlined />} styles={{ content: { color: data.delayedActivities > 0 ? '#cf1322' : undefined } }} />
+              <Statistic title="Delayed Activities" value={data.delayedActivities} prefix={<AlertOutlined />} styles={{ content: { color: data.delayedActivities > 0 ? themeColor('colorErrorText') : undefined } }} />
             </KpiTile>
             <KpiTile href="/dpr">
               <Statistic title="DPRs Today" value={data.dprsToday} prefix={<FileTextOutlined />} />
@@ -127,7 +128,7 @@ export default function DashboardPage() {
                     title="Receivables"
                     value={formatINRCompact(data.receivables.outstanding)}
                     prefix={<WalletOutlined />}
-                    styles={{ content: { color: toNumber(data.receivables.over90) > 0 ? '#cf1322' : undefined } }}
+                    styles={{ content: { color: toNumber(data.receivables.over90) > 0 ? themeColor('colorErrorText') : undefined } }}
                   />
                   <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                     {data.receivables.openBills} open bill{data.receivables.openBills === 1 ? '' : 's'}
@@ -141,7 +142,7 @@ export default function DashboardPage() {
                     title="Vendor Payable"
                     value={formatINRCompact(data.payables.outstanding)}
                     prefix={<CreditCardOutlined />}
-                    styles={{ content: { color: toNumber(data.payables.overdue) > 0 ? '#cf1322' : undefined } }}
+                    styles={{ content: { color: toNumber(data.payables.overdue) > 0 ? themeColor('colorErrorText') : undefined } }}
                   />
                   <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                     {data.payables.openBills} open bill{data.payables.openBills === 1 ? '' : 's'}

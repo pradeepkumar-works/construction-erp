@@ -25,6 +25,8 @@ import { Loading, QueryError } from '@/components/common/QueryState';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { SearchBox } from '@/components/common/SearchBox';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
+import { CardToolbar } from '@/components/common/CardToolbar';
+import { themeColor } from '@/lib/theme';
 import { ExpiryTag } from '@/components/maintenance/maintenanceUi';
 import { ComplianceFormModal, type ComplianceAction } from './ComplianceForms';
 
@@ -153,17 +155,17 @@ export function CompliancePanel({ initialId }: { initialId?: string }) {
   return (
     <>
       {t ? (
-        <div className="compliance-summary" style={{ padding: '12px 16px', display: 'flex', gap: 28, flexWrap: 'wrap', borderBottom: '1px solid #f0f0f0' }}>
+        <CardToolbar variant="summary" className="compliance-summary" wrap gap={28}>
           <Statistic title="Bank guarantees out" value={formatINR(t.guaranteesOut)} styles={big} />
           <Statistic title="Margin money blocked" value={formatINR(t.marginBlocked)} styles={big} />
           <Statistic title="EMD with tenders" value={formatINR(t.emdOut)} styles={big} />
           <div role="button" tabIndex={0} style={{ cursor: 'pointer' }} onClick={() => pickState('EXPIRING')} onKeyDown={(e) => e.key === 'Enter' && pickState('EXPIRING')}>
-            <Statistic title={`Expiring in ${DOC_ALERT_DAYS} days`} value={t.expiring} styles={{ content: { fontSize: 18, color: t.expiring ? 'var(--ant-color-warning, #d46b08)' : undefined } }} />
+            <Statistic title={`Expiring in ${DOC_ALERT_DAYS} days`} value={t.expiring} styles={{ content: { fontSize: 18, color: t.expiring ? themeColor('orange7') : undefined } }} />
           </div>
           <div role="button" tabIndex={0} style={{ cursor: 'pointer' }} onClick={() => pickState('EXPIRED')} onKeyDown={(e) => e.key === 'Enter' && pickState('EXPIRED')}>
-            <Statistic title="Expired, not renewed" value={t.expired} styles={{ content: { fontSize: 18, color: t.expired ? 'var(--ant-color-error, #cf1322)' : undefined } }} />
+            <Statistic title="Expired, not renewed" value={t.expired} styles={{ content: { fontSize: 18, color: t.expired ? themeColor('colorErrorText') : undefined } }} />
           </div>
-        </div>
+        </CardToolbar>
       ) : null}
       <div style={{ padding: 12, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
         <Segmented<ComplianceDocKind | 'ALL'>

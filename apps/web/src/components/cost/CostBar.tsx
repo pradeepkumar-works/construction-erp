@@ -5,14 +5,15 @@ import { Tooltip } from 'antd';
 import { COST_HEADS, COST_HEAD_LABELS, type CostHead, type CostHeadsDto } from '@erp/shared';
 import { formatINR, toNumber } from '@/lib/format';
 import { BRAND } from '@/lib/brand';
+import { themeColor } from '@/lib/theme';
 
-export const HEAD_COLORS: Record<CostHead, string> = { expenses: '#7c3aed', material: BRAND.colors.primary, machinery: '#d97706', labour: '#0f766e', subcontract: '#be185d' };
+export const HEAD_COLORS: Record<CostHead, string> = { expenses: BRAND.colors.chartViolet, material: BRAND.colors.primary, machinery: BRAND.colors.chartAmber, labour: BRAND.colors.chartTeal, subcontract: BRAND.colors.chartPink };
 
 /** Horizontal stacked bar of the cost heads; `scale` is the value of a full-width bar. */
 export function CostBar({ cost, scale, height = 14 }: { cost: CostHeadsDto; scale: number; height?: number }) {
   const max = Math.max(scale, toNumber(cost.total), 1);
   return (
-    <div style={{ display: 'flex', height, background: '#f0f0f0', borderRadius: 3, overflow: 'hidden' }}>
+    <div style={{ display: 'flex', height, background: themeColor('colorFillSecondary'), borderRadius: 3, overflow: 'hidden' }}>
       {COST_HEADS.map((h) => {
         const v = toNumber(cost[h]);
         if (v <= 0) return null;

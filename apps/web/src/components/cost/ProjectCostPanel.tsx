@@ -14,9 +14,10 @@ import { CostBar, CostLegend, HEAD_COLORS } from './CostBar';
 import { DEFAULT_PERIOD, PeriodPicker, periodLabel, periodParams, type PeriodState } from './PeriodPicker';
 import { LabourRatesModal } from './LabourRatesModal';
 import { unpricedText } from './UnpricedNote';
+import { themeColor } from '@/lib/theme';
 
 const money = (v: string) => <span className="mono">{formatINR(v)}</span>;
-const rateOrDash = (v: string | null, suffix: string) => (v === null ? <span style={{ color: '#d48806' }}>no rate</span> : <span className="mono">{`${formatINR(v, true)} ${suffix}`}</span>);
+const rateOrDash = (v: string | null, suffix: string) => (v === null ? <span style={{ color: themeColor('gold7') }}>no rate</span> : <span className="mono">{`${formatINR(v, true)} ${suffix}`}</span>);
 
 /** One project's cost heads, month by month, and what makes them up. */
 export function ProjectCostPanel({ projectId }: { projectId: string }) {
@@ -53,7 +54,7 @@ export function ProjectCostPanel({ projectId }: { projectId: string }) {
               <Statistic
                 title={`Margin${data.costPct !== null ? ` (cost ${data.costPct}% of executed)` : ''}`}
                 value={formatINR(data.margin)}
-                styles={{ content: { fontSize: 20, color: toNumber(data.margin) < 0 ? '#cf1322' : '#1f9d55' } }}
+                styles={{ content: { fontSize: 20, color: toNumber(data.margin) < 0 ? themeColor('colorErrorText') : themeColor('colorSuccessText') } }}
               />
             </Col>
           </Row>
@@ -96,7 +97,7 @@ export function ProjectCostPanel({ projectId }: { projectId: string }) {
                     key: 'bars',
                     render: (_, m) => (
                       <div style={{ display: 'grid', gap: 3 }}>
-                        <div style={{ height: 8, width: `${(toNumber(m.executedValue) / monthScale) * 100}%`, background: '#52c41a', borderRadius: 2, minWidth: toNumber(m.executedValue) > 0 ? 2 : 0 }} />
+                        <div style={{ height: 8, width: `${(toNumber(m.executedValue) / monthScale) * 100}%`, background: themeColor('colorSuccess'), borderRadius: 2, minWidth: toNumber(m.executedValue) > 0 ? 2 : 0 }} />
                         <CostBar cost={m} scale={monthScale} height={8} />
                       </div>
                     ),

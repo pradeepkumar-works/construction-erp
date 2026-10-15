@@ -28,6 +28,8 @@ import { notificationHref } from '@/components/notifications/notificationTarget'
 import { MessagingSettingsModal } from '@/components/notifications/MessagingSettingsModal';
 import { MessageLog } from '@/components/notifications/MessageLog';
 import { EmptyArt } from '@/components/common/EmptyArt';
+import { CardToolbar } from '@/components/common/CardToolbar';
+import { themeColor } from '@/lib/theme';
 
 type Open = { type: SubmissionType; id: string } | null;
 
@@ -66,7 +68,7 @@ function NotificationsPageInner() {
 
   const list = (
     <>
-      <div style={{ padding: 12, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', borderBottom: '1px solid #f0f0f0' }}>
+      <CardToolbar wrap gap={12} align="center">
         <Segmented
           value={filter}
           onChange={(v) => setFilter(v as 'ALL' | 'UNREAD')}
@@ -75,7 +77,7 @@ function NotificationsPageInner() {
             { value: 'UNREAD', label: `Unread (${unread})` },
           ]}
         />
-      </div>
+      </CardToolbar>
       <List<NotificationDto>
         loading={isLoading}
         dataSource={data?.items ?? []}
@@ -87,7 +89,7 @@ function NotificationsPageInner() {
         renderItem={(n) => (
           <List.Item
             onClick={() => onClick(n)}
-            style={{ cursor: 'pointer', padding: '12px 16px', background: n.readAt ? undefined : 'rgba(22, 89, 168, 0.05)' }}
+            style={{ cursor: 'pointer', padding: '12px 16px', background: n.readAt ? undefined : themeColor('colorPrimaryBg') }}
             extra={
               <Typography.Text type="secondary" style={{ fontSize: 12, whiteSpace: 'nowrap' }} title={formatDateTime(n.createdAt)}>
                 {timeAgo(n.createdAt)}

@@ -11,6 +11,7 @@ import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useHolidays, useProjects } from '@/lib/queries';
 import { QueryError } from '@/components/common/QueryState';
+import { CardToolbar } from '@/components/common/CardToolbar';
 
 /** Holidays for the year: for every site or one site. Leave does not count them; working one earns a comp-off. */
 export function HolidayList() {
@@ -44,7 +45,7 @@ export function HolidayList() {
 
   return (
     <>
-      <div style={{ padding: 12, display: 'flex', gap: 8, alignItems: 'center', borderBottom: '1px solid #f0f0f0' }}>
+      <CardToolbar gap={8} align="center">
         <Select value={year} onChange={setYear} style={{ width: 100 }} options={[-1, 0, 1].map((d) => ({ value: dayjs().year() + d, label: String(dayjs().year() + d) }))} />
         <Typography.Text type="secondary">Sundays are the weekly off at every site.</Typography.Text>
         <div style={{ flex: 1 }} />
@@ -60,7 +61,7 @@ export function HolidayList() {
             Add holiday
           </Button>
         )}
-      </div>
+      </CardToolbar>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       <Table<HolidayDto>
         rowKey="id"

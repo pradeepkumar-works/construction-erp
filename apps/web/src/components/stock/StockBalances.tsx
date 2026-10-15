@@ -19,6 +19,7 @@ import { QueryError } from '@/components/common/QueryState';
 import { ListToolbar } from '@/components/common/ListToolbar';
 import { ExportButton } from '@/components/common/ExportButton';
 import { ItemLedgerDrawer } from './ItemLedgerDrawer';
+import { themeColor } from '@/lib/theme';
 
 /** Minimum level editor in a popover: store manager and approvers. */
 function MinLevelEditor({ row }: { row: StockBalanceDto }) {
@@ -125,7 +126,7 @@ export function StockBalances({ projectId: fixedProject, initialLow = false, ini
         <Space size={4}>
           {r.low ? (
             <Tooltip title={`Below the minimum of ${formatQty(r.minQty)} ${r.unit}`}>
-              <WarningOutlined style={{ color: '#d4380d' }} />
+              <WarningOutlined style={{ color: themeColor('volcano7') }} />
             </Tooltip>
           ) : null}
           <Typography.Text strong type={r.low ? 'danger' : undefined}>

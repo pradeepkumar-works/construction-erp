@@ -16,6 +16,8 @@ import { CostBar, CostLegend } from './CostBar';
 import { DEFAULT_PERIOD, PeriodPicker, periodLabel, periodParams, type PeriodState } from './PeriodPicker';
 import { LabourRatesModal } from './LabourRatesModal';
 import { UnpricedNote, unpricedText } from './UnpricedNote';
+import { CardToolbar } from '@/components/common/CardToolbar';
+import { themeColor } from '@/lib/theme';
 
 const money = (v: string) => <span className="mono">{formatINR(v)}</span>;
 
@@ -89,7 +91,7 @@ export function CostOverview() {
       width: 140,
       align: 'right',
       sorter: (a, b) => toNumber(a.margin) - toNumber(b.margin),
-      render: (v) => <span className="mono" style={{ color: toNumber(v) < 0 ? '#cf1322' : '#1f9d55' }}>{formatINR(v)}</span>,
+      render: (v) => <span className="mono" style={{ color: toNumber(v) < 0 ? themeColor('colorErrorText') : themeColor('colorSuccessText') }}>{formatINR(v)}</span>,
     },
     { title: 'Billed', dataIndex: 'billedValue', width: 130, align: 'right', render: money, sorter: (a, b) => toNumber(a.billedValue) - toNumber(b.billedValue) },
     { title: 'Cash in', dataIndex: 'cashIn', width: 130, align: 'right', render: money, sorter: (a, b) => toNumber(a.cashIn) - toNumber(b.cashIn) },
@@ -100,7 +102,7 @@ export function CostOverview() {
   return (
     <>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
-      <div style={{ padding: 12, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', borderBottom: '1px solid #f0f0f0' }}>
+      <CardToolbar wrap gap={12} align="center">
         <PeriodPicker value={period} onChange={setPeriod} />
         <Space style={{ marginLeft: 'auto' }}>
           <Button icon={<TeamOutlined />} onClick={() => setRatesOpen(true)}>
@@ -113,19 +115,19 @@ export function CostOverview() {
             }}
           />
         </Space>
-      </div>
-      <div style={{ padding: '12px 16px', display: 'flex', gap: 32, flexWrap: 'wrap', borderBottom: '1px solid #f0f0f0' }}>
+      </CardToolbar>
+      <CardToolbar variant="summary" wrap gap={32}>
         <Statistic title="Executed value" value={formatINR(totals.executed)} styles={{ content: { fontSize: 18 } }} />
         <Statistic title="Measured (approved MB)" value={formatINR(totals.measured)} styles={{ content: { fontSize: 18 } }} />
         <Statistic title="Cost" value={formatINR(totals.cost)} styles={{ content: { fontSize: 18 } }} />
-        <Statistic title="Margin" value={formatINR(totals.margin)} styles={{ content: { fontSize: 18, color: totals.margin < 0 ? '#cf1322' : '#1f9d55' } }} />
+        <Statistic title="Margin" value={formatINR(totals.margin)} styles={{ content: { fontSize: 18, color: totals.margin < 0 ? themeColor('colorErrorText') : themeColor('colorSuccessText') } }} />
         <Statistic title="Billed (RA bills)" value={formatINR(totals.billed)} styles={{ content: { fontSize: 18 } }} />
         <Statistic title="Cash in" value={formatINR(totals.cashIn)} styles={{ content: { fontSize: 18 } }} />
         <Statistic title="Cash out" value={formatINR(totals.cashOut)} styles={{ content: { fontSize: 18 } }} />
         <div style={{ alignSelf: 'flex-end', marginLeft: 'auto' }}>
           <CostLegend />
         </div>
-      </div>
+      </CardToolbar>
       <Table<ProjectCostSummaryDto> rowKey="projectId" size="middle" loading={isLoading || isFetching} columns={columns} dataSource={rows} pagination={false} scroll={{ x: 1390 }} />
       <Typography.Paragraph type="secondary" style={{ fontSize: 12, padding: '8px 16px 0' }}>
         {periodLabel(period)}. Cost is approved site expenses, material issued at the item master rate, approved machinery logs at the hire rate, attendance at the

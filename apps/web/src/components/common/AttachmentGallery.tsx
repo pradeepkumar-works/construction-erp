@@ -5,6 +5,7 @@ import { Image, Space, Typography } from 'antd';
 import { PaperClipOutlined } from '@ant-design/icons';
 import type { AttachmentDto } from '@erp/shared';
 import { fileUrl } from '@/lib/api';
+import { themeColor } from '@/lib/theme';
 
 export function AttachmentGallery({ attachments, size = 96 }: { attachments: AttachmentDto[]; size?: number }) {
   if (!attachments || attachments.length === 0) return <Typography.Text type="secondary">No photos</Typography.Text>;
@@ -22,7 +23,7 @@ export function AttachmentGallery({ attachments, size = 96 }: { attachments: Att
                 alt={a.fileName}
                 width={size}
                 height={size}
-                style={{ objectFit: 'cover', borderRadius: 6, border: '1px solid #e6e9ef' }}
+                style={{ objectFit: 'cover', borderRadius: 6, border: `1px solid ${themeColor('colorBorderSecondary')}` }}
               />
             ))}
           </Space>

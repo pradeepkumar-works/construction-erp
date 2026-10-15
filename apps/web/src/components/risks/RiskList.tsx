@@ -18,6 +18,8 @@ import { RiskTable } from './RiskTable';
 import { RiskDrawer } from './RiskDrawer';
 import { RiskFormModal, type RiskPrefill } from './RiskFormModal';
 import { RiskHeatMap } from './RiskHeatMap';
+import { CardToolbar } from '@/components/common/CardToolbar';
+import { themeColor } from '@/lib/theme';
 
 type StatusFilter = RiskStatus | 'ACTIVE' | 'ALL';
 const big = { content: { fontSize: 18 } };
@@ -135,12 +137,12 @@ export function RiskList({ projectId: fixedProject, initialProject, initialOpenI
         />
       ) : null}
       {summary ? (
-        <div style={{ padding: '12px 16px', display: 'flex', gap: 32, flexWrap: 'wrap', alignItems: 'flex-start', borderBottom: '1px solid #f0f0f0' }}>
+        <CardToolbar variant="summary" wrap gap={32} align="flex-start">
           <div style={{ display: 'flex', gap: 28, flexWrap: 'wrap', flex: 1, minWidth: 300 }}>
             <Statistic title="Open" value={summary.open} styles={big} />
             <Statistic title="Monitoring" value={summary.monitoring} styles={big} />
-            <Statistic title="High risks" value={summary.highRisks} styles={{ content: { fontSize: 18, color: summary.highRisks ? '#cf1322' : undefined } }} />
-            <Statistic title="Delays holding up work" value={summary.openDelays} styles={{ content: { fontSize: 18, color: summary.openDelays ? '#d4380d' : undefined } }} />
+            <Statistic title="High risks" value={summary.highRisks} styles={{ content: { fontSize: 18, color: summary.highRisks ? themeColor('colorErrorText') : undefined } }} />
+            <Statistic title="Delays holding up work" value={summary.openDelays} styles={{ content: { fontSize: 18, color: summary.openDelays ? themeColor('volcano7') : undefined } }} />
             <Statistic
               title={
                 <Tooltip title="Days lost to delays caused by the client, third parties or force majeure can support an extension-of-time claim">
@@ -150,7 +152,7 @@ export function RiskList({ projectId: fixedProject, initialProject, initialOpenI
               value={`${summary.daysLost} (${summary.excusableDaysLost})`}
               styles={big}
             />
-            <Statistic title="Overdue actions" value={summary.overdue} styles={{ content: { fontSize: 18, color: summary.overdue ? '#cf1322' : undefined } }} />
+            <Statistic title="Overdue actions" value={summary.overdue} styles={{ content: { fontSize: 18, color: summary.overdue ? themeColor('colorErrorText') : undefined } }} />
             <Statistic title="Closed" value={summary.closed} styles={big} />
             <div style={{ flexBasis: '100%' }}>
               <Space size={[4, 4]} wrap>
@@ -166,7 +168,7 @@ export function RiskList({ projectId: fixedProject, initialProject, initialOpenI
             </div>
           </div>
           <RiskHeatMap heat={summary.heat} />
-        </div>
+        </CardToolbar>
       ) : null}
       <RiskTable
         data={data?.items ?? []}

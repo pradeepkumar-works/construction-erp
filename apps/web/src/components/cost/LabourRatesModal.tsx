@@ -9,6 +9,7 @@ import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useLabourRates } from '@/lib/queries';
 import { formatINR } from '@/lib/format';
+import { themeColor } from '@/lib/theme';
 
 interface Row {
   category: string;
@@ -72,7 +73,7 @@ export function LabourRatesModal({ open, onClose }: { open: boolean; onClose: ()
       {data && !editable ? (
         <div>
           {data.rates.map((r) => (
-            <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f0f0f0' }}>
+            <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: `1px solid ${themeColor('colorBorderSecondary')}` }}>
               <span>{r.category}</span>
               <span className="mono">{formatINR(r.dailyRate, true)} / day</span>
             </div>

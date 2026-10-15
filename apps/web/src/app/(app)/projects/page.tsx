@@ -23,6 +23,7 @@ import { EmptyArt } from '@/components/common/EmptyArt';
 import { ProjectStatusTag, ProjectTypeTag } from '@/components/common/StatusTag';
 import { ProjectFormModal } from '@/components/projects/ProjectFormModal';
 import { BRAND } from '@/lib/brand';
+import { CardToolbar } from '@/components/common/CardToolbar';
 
 export default function ProjectsPage() {
   const { user } = useAuth();
@@ -82,14 +83,14 @@ export default function ProjectsPage() {
       />
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       <Card size="small">
-        <div style={{ padding: 12, display: 'flex', gap: 8, flexWrap: 'wrap', borderBottom: '1px solid #f0f0f0' }}>
+        <CardToolbar wrap gap={8}>
           <SearchBox value={list.search} onChange={list.setSearch} placeholder="Search by name, code, client, location" width={320} />
           <Select allowClear placeholder="All types" value={type} onChange={(v) => { setType(v); list.resetPage(); }} style={{ width: 180 }} options={PROJECT_TYPES.map((t) => ({ value: t, label: PROJECT_TYPE_LABELS[t] }))} />
           <Select allowClear placeholder="All statuses" value={status} onChange={(v) => { setStatus(v); list.resetPage(); }} style={{ width: 160 }} options={PROJECT_STATUSES.map((s) => ({ value: s, label: PROJECT_STATUS_LABELS[s] }))} />
           <div style={{ marginLeft: 'auto' }}>
             <ExportButton onExport={exportRows} />
           </div>
-        </div>
+        </CardToolbar>
         <Table<ProjectSummary>
           rowKey="id"
           loading={isLoading || isFetching}

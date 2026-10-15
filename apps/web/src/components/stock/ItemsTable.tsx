@@ -15,6 +15,7 @@ import { formatDate, formatINR } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { SearchBox } from '@/components/common/SearchBox';
 import { UnitInput } from '@/components/common/UnitInput';
+import { CardToolbar } from '@/components/common/CardToolbar';
 
 interface ItemForm {
   name: string;
@@ -92,14 +93,14 @@ export function ItemsTable() {
   return (
     <>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
-      <div style={{ padding: 12, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', borderBottom: '1px solid #f0f0f0' }}>
+      <CardToolbar wrap gap={8} align="center">
         <SearchBox value={list.search} onChange={list.setSearch} placeholder="Search item, unit or category" />
         {mayManage ? (
           <Button icon={<PlusOutlined />} onClick={() => open('new')} style={{ marginLeft: 'auto' }}>
             Add item
           </Button>
         ) : null}
-      </div>
+      </CardToolbar>
       <Table<ItemDto> size="middle" rowKey="id" loading={isLoading || isFetching} dataSource={data?.items ?? []} columns={columns} {...list.tableProps<ItemDto>(data?.total)} />
       <Modal
         open={!!editing}

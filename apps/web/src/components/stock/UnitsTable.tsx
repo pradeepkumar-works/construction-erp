@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Flex, Form, Input, Modal, Popconfirm, Space, Switch, Table, Typography, theme } from 'antd';
+import { App, Button, Form, Input, Modal, Popconfirm, Space, Switch, Table, Typography } from 'antd';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { UnitDto } from '@erp/shared';
@@ -10,6 +10,7 @@ import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useUnits } from '@/lib/queries';
 import { QueryError } from '@/components/common/QueryState';
+import { CardToolbar } from '@/components/common/CardToolbar';
 
 interface UnitForm {
   code: string;
@@ -20,7 +21,6 @@ interface UnitForm {
 export function UnitsTable() {
   const { user } = useAuth();
   const { message } = App.useApp();
-  const { token } = theme.useToken();
   const qc = useQueryClient();
   const mayManage = !!user && canManageStore(user.roleKey);
   const { data, isLoading, isFetching, error, refetch } = useUnits();
@@ -62,14 +62,14 @@ export function UnitsTable() {
   return (
     <>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
-      <Flex gap={8} wrap align="center" style={{ padding: token.paddingSM, borderBottom: `1px solid ${token.colorBorderSecondary}` }}>
+      <CardToolbar gap={8} wrap align="center">
         <Typography.Text type="secondary">Quantity fields across the app suggest these units. Switch off the ones your company does not use.</Typography.Text>
         {mayManage ? (
           <Button icon={<PlusOutlined />} onClick={() => open('new')} style={{ marginLeft: 'auto' }}>
             Add unit
           </Button>
         ) : null}
-      </Flex>
+      </CardToolbar>
       <Table<UnitDto>
         className="units-table"
         size="middle"
