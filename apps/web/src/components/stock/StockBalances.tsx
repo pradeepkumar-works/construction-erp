@@ -79,7 +79,7 @@ type StockRow = StockBalanceDto & { id: string };
 const KEYS = ['low', 'inStock'] as const;
 
 /** Stock on hand per project and item, with low-stock filter, minimum levels and Excel export. */
-export function StockBalances({ projectId: fixedProject, initialLow = false, initialProject }: { projectId?: string; initialLow?: boolean; initialProject?: string }) {
+export function StockBalances({ projectId: fixedProject, initialLow = false, initialProject, initialSearch }: { projectId?: string; initialLow?: boolean; initialProject?: string; initialSearch?: string }) {
   const { user } = useAuth();
   const mayManage = !!user && canManageStore(user.roleKey);
   const [ledger, setLedger] = useState<StockBalanceDto | null>(null);
@@ -98,7 +98,7 @@ export function StockBalances({ projectId: fixedProject, initialLow = false, ini
     sortFields: LIST_SORT_FIELDS.stockBalances,
     fixedProject,
     initialProject,
-    initialFilters: initialLow ? { low: '1' } : undefined,
+    initialFilters: initialLow || initialSearch ? { ...(initialLow ? { low: '1' } : {}), ...(initialSearch ? { q: initialSearch } : {}) } : undefined,
     chipLabels: { low: () => 'Low stock only', inStock: () => 'In stock only' },
     columns: (sortOrderFor): ListColumn<StockRow>[] => {
       const sort = (key: StockBalanceSortField) => ({ key, sorter: true, sortOrder: sortOrderFor(key), sortDirections: ['ascend', 'descend'] as ('descend' | 'ascend')[] });

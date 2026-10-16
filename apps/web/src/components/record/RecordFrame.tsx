@@ -1,12 +1,13 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import Link from 'next/link';
 import { Anchor, App, Button, Card, Col, Descriptions, Divider, Drawer, Flex, Row, Skeleton, Space, Steps, Tooltip, theme } from 'antd';
 import type { DescriptionsProps } from 'antd';
 import { ArrowLeftOutlined, ExpandOutlined, LinkOutlined, PrinterOutlined } from '@ant-design/icons';
 import type { ApprovalTypeParam } from '@/lib/queries';
 import { useStickyTop } from '@/lib/sticky';
+import { rememberRecord } from '@/lib/recent';
 import { QueryError } from '@/components/common/QueryState';
 import { PageHeader } from '@/components/common/PageHeader';
 import { AuditTrail } from '@/components/common/AuditTrail';
@@ -68,6 +69,14 @@ const sectionTitle = (s: RecordSection) => (s.count === undefined ? s.title : `$
  * that stays in view. Each record type fills the same props once and gets both.
  */
 export function RecordFrame(props: RecordFrameProps) {
+  // Opened records come back under Recent in Search (Ctrl K); the inbox's pane is a glance, not an opening.
+  const shown = props.mode === 'page' || (props.mode === 'drawer' && !!props.open);
+  const href = props.record?.href;
+  const title = props.record?.title;
+  useEffect(() => {
+    if (!shown || !href) return;
+    rememberRecord({ href, title: typeof title === 'string' ? title : props.kind, kind: props.kind });
+  }, [shown, href, title, props.kind]);
   return props.mode === 'drawer' ? <RecordDrawer {...props} /> : props.mode === 'pane' ? <RecordPane {...props} /> : <RecordPage {...props} />;
 }
 

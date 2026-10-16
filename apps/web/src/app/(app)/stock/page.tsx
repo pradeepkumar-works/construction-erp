@@ -11,11 +11,13 @@ function StockPage() {
   // A low-stock notification links here with ?projectId=...&low=1
   const projectId = search.get('projectId') ?? undefined;
   const low = search.get('low') === '1';
+  // Search links an item here with ?q=<name>
+  const q = search.get('q') ?? undefined;
   return (
     <div className="page-container">
       <PageHeader title="Stock" subtitle="Material received against approved requests, issued at site, and the balance per project." extra={<StockActions />} />
       <Card size="small">
-        <StockPanel key={`${projectId ?? ''}|${low}`} initialLow={low} initialProject={projectId} />
+        <StockPanel key={`${projectId ?? ''}|${low}|${q ?? ''}`} initialLow={low} initialProject={projectId} initialSearch={q} />
       </Card>
     </div>
   );

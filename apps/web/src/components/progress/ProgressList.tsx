@@ -95,7 +95,7 @@ export function ProgressList({ projectId: fixedProject, newLabel }: { projectId?
         emptyText={<EmptyArt art="entries" title="No progress entries here yet" />}
       />
       <ProgressDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onEdit={setEditing} />
-      <ProgressFormModal open={formOpen || !!editing} entry={editing} onClose={() => { setFormOpen(false); setEditing(null); }} projectId={fixedProject} />
+      <ProgressFormModal open={formOpen || !!editing} entry={editing} onClose={() => { setFormOpen(false); setEditing(null); }} projectId={fixedProject} defaultProjectId={frame.projectId} />
     </>
   );
 }

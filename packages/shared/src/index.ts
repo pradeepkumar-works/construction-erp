@@ -37,3 +37,4 @@ export * from './handover';
 export * from './procurement';
 export * from './views';
 export * from './links';
+export * from './search';

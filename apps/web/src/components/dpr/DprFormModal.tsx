@@ -30,7 +30,7 @@ interface FormValues {
 }
 
 /** Create a DPR, or (with `entry`) edit a draft / rejected / changes-requested one and resubmit it. */
-export function DprFormModal({ open, onClose, projectId, entry }: { open: boolean; onClose: () => void; projectId?: string; entry?: DailyReportDto | null }) {
+export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry }: { open: boolean; onClose: () => void; projectId?: string; /** A new entry starts on this project (the header's), still changeable. */ defaultProjectId?: string; entry?: DailyReportDto | null }) {
   const [form] = Form.useForm<FormValues>();
   const { message } = App.useApp();
   const qc = useQueryClient();
@@ -81,7 +81,7 @@ export function DprFormModal({ open, onClose, projectId, entry }: { open: boolea
       });
     } else {
       form.setFieldsValue({
-        projectId,
+        projectId: projectId ?? defaultProjectId,
         date: dayjs(),
         weather: 'SUNNY',
         siteCondition: 'Workable',
@@ -89,7 +89,7 @@ export function DprFormModal({ open, onClose, projectId, entry }: { open: boolea
         machinery: [],
       });
     }
-  }, [open, projectId, entry, form]);
+  }, [open, projectId, defaultProjectId, entry, form]);
 
   const mutation = useMutation({
     mutationFn: async (v: FormValues) => {

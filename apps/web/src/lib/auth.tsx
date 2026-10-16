@@ -4,6 +4,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 import { useRouter } from 'next/navigation';
 import type { AuthUser, LoginResponse } from '@erp/shared';
 import { api, endSupportSession, getToken, setToken } from './api';
+import { forgetRecentRecords } from './recent';
 
 interface AuthContextValue {
   user: AuthUser | null;
@@ -58,6 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(() => {
     endSupportSession();
+    forgetRecentRecords();
     setToken(null);
     setUser(null);
     router.replace('/login');

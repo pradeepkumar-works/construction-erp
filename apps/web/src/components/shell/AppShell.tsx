@@ -155,7 +155,7 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
           <Sidebar user={user} sections={sidebarSections} pendingCount={pendingCount} onNavigate={() => setMobileOpen(false)} />
         </Drawer>
       )}
-      {!guest && <CommandPalette open={searchOpen} onClose={() => setSearchOpen(false)} sections={sections} withProjects />}
+      {!guest && <CommandPalette open={searchOpen} onClose={() => setSearchOpen(false)} sections={sections} withProjects user={user} />}
       <ProductTour user={user} mobile={isMobile} open={touring} onClose={() => setTouring(false)} />
       <Layout>
         <Header

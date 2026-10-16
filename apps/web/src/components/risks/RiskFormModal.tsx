@@ -48,7 +48,7 @@ const grid = (cols: string) => ({ display: 'grid', gridTemplateColumns: cols, ga
 const ymd = (d: dayjs.Dayjs | null | undefined) => (d ? d.format('YYYY-MM-DD') : null);
 
 /** Raise a delay or a risk, or (with `risk`) update one, including its status. */
-export function RiskFormModal({ open, onClose, projectId, risk, prefill }: { open: boolean; onClose: () => void; projectId?: string; risk?: RiskDto | null; prefill?: RiskPrefill | null }) {
+export function RiskFormModal({ open, onClose, projectId, defaultProjectId, risk, prefill }: { open: boolean; onClose: () => void; projectId?: string; /** A new entry starts on this project (the header's), still changeable. */ defaultProjectId?: string; risk?: RiskDto | null; prefill?: RiskPrefill | null }) {
   const [form] = Form.useForm<FormValues>();
   const { message } = App.useApp();
   const qc = useQueryClient();
@@ -109,7 +109,7 @@ export function RiskFormModal({ open, onClose, projectId, risk, prefill }: { ope
     } else {
       const k = prefill?.kind ?? 'RISK';
       form.setFieldsValue({
-        projectId: prefill?.projectId ?? projectId,
+        projectId: prefill?.projectId ?? projectId ?? defaultProjectId,
         kind: k,
         activityId: prefill?.activityId,
         title: prefill?.title,
@@ -119,7 +119,7 @@ export function RiskFormModal({ open, onClose, projectId, risk, prefill }: { ope
         eotClaimed: false,
       });
     }
-  }, [open, projectId, risk, prefill, form]);
+  }, [open, projectId, defaultProjectId, risk, prefill, form]);
 
   const mutation = useMutation({
     mutationFn: async (v: FormValues) => {

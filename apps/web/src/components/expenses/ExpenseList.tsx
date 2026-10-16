@@ -144,6 +144,7 @@ export function ExpenseList({ projectId: fixedProject }: { projectId?: string })
           setEditing(null);
         }}
         projectId={fixedProject}
+        defaultProjectId={frame.projectId}
       />
     </>
   );

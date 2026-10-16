@@ -28,7 +28,7 @@ interface FormValues extends SectorFormValues {
  * Create a progress entry, or (with `entry`) edit an existing draft / rejected / changes-requested
  * entry and resubmit it for approval in one go.
  */
-export function ProgressFormModal({ open, onClose, projectId, entry }: { open: boolean; onClose: () => void; projectId?: string; entry?: ProgressEntryDto | null }) {
+export function ProgressFormModal({ open, onClose, projectId, defaultProjectId, entry }: { open: boolean; onClose: () => void; projectId?: string; /** A new entry starts on this project (the header's), still changeable. */ defaultProjectId?: string; entry?: ProgressEntryDto | null }) {
   const [form] = Form.useForm<FormValues>();
   const { message } = App.useApp();
   const qc = useQueryClient();
@@ -57,9 +57,9 @@ export function ProgressFormModal({ open, onClose, projectId, entry }: { open: b
         photos: entry.attachments,
       });
     } else {
-      form.setFieldsValue({ projectId, date: dayjs() });
+      form.setFieldsValue({ projectId: projectId ?? defaultProjectId, date: dayjs() });
     }
-  }, [open, projectId, entry, form]);
+  }, [open, projectId, defaultProjectId, entry, form]);
 
   const mutation = useMutation({
     mutationFn: async (v: FormValues) => {

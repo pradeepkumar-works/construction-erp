@@ -95,7 +95,7 @@ export function DprList({ projectId: fixedProject, newLabel }: { projectId?: str
         emptyText={<EmptyArt art="entries" title="No daily reports here yet" />}
       />
       <DprDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onEdit={setEditing} />
-      <DprFormModal open={formOpen || !!editing} entry={editing} onClose={() => { setFormOpen(false); setEditing(null); }} projectId={fixedProject} />
+      <DprFormModal open={formOpen || !!editing} entry={editing} onClose={() => { setFormOpen(false); setEditing(null); }} projectId={fixedProject} defaultProjectId={frame.projectId} />
     </>
   );
 }

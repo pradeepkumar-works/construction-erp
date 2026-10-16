@@ -159,6 +159,7 @@ export function BillList({ projectId: fixedProject, openId: initialOpen }: { pro
         open={formOpen || !!editing}
         bill={editing}
         projectId={fixedProject}
+        defaultProjectId={frame.projectId}
         onClose={() => {
           setFormOpen(false);
           setEditing(null);

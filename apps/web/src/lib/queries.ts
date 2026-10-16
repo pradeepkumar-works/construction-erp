@@ -3,6 +3,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   SavedViewDto,
+  SearchResultDto,
   SavedViewList,
   SavedViewState,
   DefectDto,
@@ -179,7 +180,7 @@ import type {
   WorkPermitStatus,
   WorkPermitType,
 } from '@erp/shared';
-import { MAX_PAGE_SIZE } from '@erp/shared';
+import { MAX_PAGE_SIZE, SEARCH_MIN_LENGTH } from '@erp/shared';
 import { api } from './api';
 
 export interface RoleDto {
@@ -1760,5 +1761,17 @@ export function useDeleteView() {
   return useMutation({
     mutationFn: async (vars: { id: string; list: SavedViewList }) => (await api.delete(`/saved-views/${vars.id}`)).data,
     onSuccess: (_d, vars) => qc.invalidateQueries({ queryKey: ['saved-views', vars.list] }),
+  });
+}
+
+/** Search everything (Ctrl K): records by number or name, a few of each kind, through the same rules as their lists. */
+export function useSearch(q: string, enabled: boolean) {
+  const term = q.trim();
+  return useQuery({
+    queryKey: ['search', term],
+    queryFn: async () => (await api.get<SearchResultDto>('/search', { params: { q: term } })).data,
+    enabled: enabled && term.length >= SEARCH_MIN_LENGTH,
+    placeholderData: keepPreviousData,
+    staleTime: 30_000,
   });
 }

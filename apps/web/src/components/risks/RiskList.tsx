@@ -228,6 +228,7 @@ export function RiskList({ projectId: fixedProject, initialProject, initialOpenI
           setPrefill(null);
         }}
         projectId={fixedProject}
+        defaultProjectId={frame.projectId}
       />
     </>
   );
