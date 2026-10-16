@@ -45,7 +45,7 @@ export function expenseColumns({
       locked: true,
       render: (_, r) => (
         <div>
-          <RecordLink onOpen={() => onOpen(r.id)}>{r.description}</RecordLink>
+          <RecordLink href={`/expenses/${r.id}`} onOpen={() => onOpen(r.id)}>{r.description}</RecordLink>
           <Sub>{[r.vendor, r.billNo ? `Bill ${r.billNo}` : null].filter(Boolean).join(' · ') || ' '}</Sub>
         </div>
       ),
@@ -85,6 +85,6 @@ export function expenseColumns({
     { title: 'Submitted by', dataIndex: 'submittedByName', width: 140, ...sort('submittedBy') },
     { title: 'Submitted on', dataIndex: 'submittedAt', width: 130, defaultHidden: true, render: (v) => formatDate(v), ...sort('submittedAt') },
     { title: 'Status', fixed: 'right' as const, dataIndex: 'status', width: 140, render: (s) => <StatusTag status={s} />, ...sort('status') },
-    { key: 'actions', title: '', label: 'Actions', locked: true, fixed: 'right' as const, width: 56, render: (_, r) => <RowActions type="expense" row={r} amount={r.totalAmount} onOpen={onOpen} onEdit={onEdit} /> },
+    { key: 'actions', title: '', label: 'Actions', locked: true, fixed: 'right' as const, width: 56, render: (_, r) => <RowActions type="expense" row={r} href={`/expenses/${r.id}`} amount={r.totalAmount} onOpen={onOpen} onEdit={onEdit} /> },
   ];
 }

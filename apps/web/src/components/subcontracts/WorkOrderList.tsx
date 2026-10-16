@@ -43,7 +43,7 @@ function workOrderColumns({ showProject, onOpen, onEdit, sortOrderFor }: { showP
       width: 150,
       render: (_, r) => (
         <div>
-          <RecordLink onOpen={() => onOpen(r.id)} strong className="mono">
+          <RecordLink href={`/work-orders/${r.id}`} onOpen={() => onOpen(r.id)} strong className="mono">
             {r.woNo}
           </RecordLink>
           <Sub>{formatDate(r.woDate)}</Sub>
@@ -85,7 +85,7 @@ function workOrderColumns({ showProject, onOpen, onEdit, sortOrderFor }: { showP
         </Space>
       ),
     },
-    { key: 'actions', title: '', label: 'Actions', locked: true, fixed: 'right' as const, width: 56, render: (_, r) => <RowActions type="work_order" row={r} amount={r.value} onOpen={onOpen} onEdit={onEdit} /> },
+    { key: 'actions', title: '', label: 'Actions', locked: true, fixed: 'right' as const, width: 56, render: (_, r) => <RowActions type="work_order" row={r} href={`/work-orders/${r.id}`} amount={r.value} onOpen={onOpen} onEdit={onEdit} /> },
   ];
 }
 

@@ -67,7 +67,7 @@ test.describe.serial('inspection from request to pass', () => {
     await drawer.getByRole('button', { name: 'Pass' }).click();
     await page.locator('.ant-modal').getByRole('button', { name: 'Pass' }).click();
     await expect(page.getByText(/INS-\d{4}-\d{4} passed/)).toBeVisible();
-    await expect(drawer.getByText('Passed', { exact: true })).toBeVisible();
+    await expect(drawer.locator('.ant-tag').getByText('Passed', { exact: true })).toBeVisible();
     expect((await api<Inspection>(eng, `/inspections/${id}`)).status).toBe('APPROVED');
   });
 });

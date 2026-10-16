@@ -42,7 +42,7 @@ function inspectionColumns({ showProject, onOpen, onEdit, sortOrderFor }: { show
       ...sort('activity'),
       render: (_, r) => (
         <div>
-          <RecordLink onOpen={() => onOpen(r.id)}>{r.activityName}</RecordLink>
+          <RecordLink href={`/inspections/${r.id}`} onOpen={() => onOpen(r.id)}>{r.activityName}</RecordLink>
           {r.holdPoint && (
             <Tag color="orange" style={{ marginLeft: 6 }}>
               Hold point
@@ -72,7 +72,7 @@ function inspectionColumns({ showProject, onOpen, onEdit, sortOrderFor }: { show
     { key: 'reviewedByName', title: 'Inspected by', dataIndex: 'reviewedByName', width: 140, render: (v: string | null) => v ?? '-' },
     { title: 'Status', fixed: 'right' as const, dataIndex: 'status', width: 120, ...sort('status'), render: (s: SubmissionStatus) => <StatusTag status={s} labels={INSPECTION_STATUS_LABELS} /> },
     // Passing an inspection means filling its checklist, so the row menu opens it rather than approving.
-    { key: 'actions', title: '', label: 'Actions', locked: true, fixed: 'right' as const, width: 56, render: (_, r) => <RowActions type="inspection" row={r} review={false} onOpen={onOpen} onEdit={onEdit} /> },
+    { key: 'actions', title: '', label: 'Actions', locked: true, fixed: 'right' as const, width: 56, render: (_, r) => <RowActions type="inspection" row={r} href={`/inspections/${r.id}`} review={false} onOpen={onOpen} onEdit={onEdit} /> },
   ];
 }
 

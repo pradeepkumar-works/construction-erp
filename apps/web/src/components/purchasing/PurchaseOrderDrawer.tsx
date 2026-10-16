@@ -231,7 +231,7 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
                         locale={{ emptyText: 'No bill recorded yet' }}
                         scroll={{ x: 640 }}
                         columns={[
-                          { title: 'Bill', dataIndex: 'billNo', width: 140, render: (v, b) => <Link href={`/vendor-bills?id=${b.id}`} className="mono">{v}</Link> },
+                          { title: 'Bill', dataIndex: 'billNo', width: 140, render: (v, b) => <Link href={`/vendor-bills/${b.id}`} className="mono">{v}</Link> },
                           { title: 'Invoice', dataIndex: 'invoiceNo', render: (v, b) => `${v}, ${formatDate(b.invoiceDate)}` },
                           { title: 'Total', dataIndex: 'total', width: 140, align: 'right', render: (v) => money(v) },
                           { title: 'Match', dataIndex: 'matched', width: 110, render: (v) => (v ? <Tag color="green">Matches</Tag> : <Tag color="red">Exceptions</Tag>) },

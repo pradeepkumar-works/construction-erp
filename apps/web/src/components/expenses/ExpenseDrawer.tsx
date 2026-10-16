@@ -1,82 +1,89 @@
 'use client';
 
 import React from 'react';
-import { Descriptions, Divider, Drawer, Skeleton, Space, Typography } from 'antd';
+import { Typography } from 'antd';
 import type { ExpenseDto } from '@erp/shared';
 import { EXPENSE_CATEGORY_LABELS, PAYMENT_MODE_LABELS } from '@erp/shared';
 import { useExpense } from '@/lib/queries';
 import { formatDate, formatINR } from '@/lib/format';
-import { QueryError } from '@/components/common/QueryState';
 import { StatusTag } from '@/components/common/StatusTag';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
-import { AuditTrail } from '@/components/common/AuditTrail';
 import { ReviewActions } from '@/components/common/ReviewActions';
 import { EditResubmitButton } from '@/components/common/EditResubmitButton';
 import { submissionMetaItems } from '@/components/common/SubmitterInfo';
+import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
+import { submissionLifecycle } from '@/components/record/lifecycle';
 
-export function ExpenseDrawer({ id, open, onClose, onEdit }: { id: string | null; open: boolean; onClose: () => void; onEdit?: (x: ExpenseDto) => void }) {
+interface RecordProps {
+  id: string | null;
+  open?: boolean;
+  onClose?: () => void;
+  onEdit?: (entry: ExpenseDto) => void;
+}
+
+/** A site expense, in a drawer from a list or as its own page at `/expenses/<id>`. */
+export function ExpenseRecord({ id, mode, open, onClose, onEdit }: RecordProps & { mode: RecordMode }) {
   const { data, isLoading, error, refetch } = useExpense(id ?? undefined);
   return (
-    <Drawer
+    <RecordFrame
+      mode={mode}
       open={open}
       onClose={onClose}
-      size={640}
-      title={
-        data ? (
-          <span>
-            {data.expenseNo} <StatusTag status={data.status} />
-          </span>
-        ) : (
-          'Site expense'
-        )
+      drawerSize={640}
+      kind="Site expense"
+      list={{ href: '/expenses', label: 'Site Expenses' }}
+      loading={isLoading}
+      error={error}
+      onRetry={() => refetch()}
+      record={
+        data && {
+          href: `/expenses/${data.id}`,
+          title: `Site expense · ${data.expenseNo}`,
+          tags: <StatusTag status={data.status} />,
+          facts: [
+            { key: 'desc', label: 'Expense', children: data.description },
+            { key: 'date', label: 'Date', children: formatDate(data.date) },
+            { key: 'cat', label: 'Category', children: EXPENSE_CATEGORY_LABELS[data.category] },
+            { key: 'vendor', label: 'Vendor', children: data.vendor ?? '-' },
+            { key: 'gstin', label: 'Vendor GSTIN', children: data.vendorGstin ?? '-' },
+            { key: 'bill', label: 'Bill no.', children: data.billNo ?? '-' },
+            { key: 'mode', label: 'Paid by', children: PAYMENT_MODE_LABELS[data.paymentMode] },
+            { key: 'amount', label: 'Taxable value', children: <span className="mono">{formatINR(data.amount, true)}</span> },
+            { key: 'gst', label: `GST (${Number(data.gstRate)}%)`, children: <span className="mono">{formatINR(data.gstAmount, true)}</span> },
+            { key: 'total', label: 'Total', children: <strong className="mono">{formatINR(data.totalAmount, true)}</strong> },
+            { key: 'activity', label: 'Activity', children: data.activityName ?? '-' },
+            ...submissionMetaItems(data).filter((i) => i.key !== 'status'),
+          ],
+          lifecycle: submissionLifecycle(data),
+          sections: [
+            ...(data.remarks ? [{ key: 'remarks', title: 'Remarks', children: <div style={{ whiteSpace: 'pre-wrap' }}>{data.remarks}</div> }] : []),
+            {
+              key: 'photos',
+              title: 'Bill photos',
+              count: data.attachments.length,
+              children: (
+                <>
+                  <AttachmentGallery attachments={data.attachments} />
+                  <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12 }}>
+                    Expense ID: {data.id}
+                  </Typography.Text>
+                </>
+              ),
+            },
+          ],
+          activity: { type: 'expense', id: data.id },
+          actions: (size) => (
+            <>
+              <EditResubmitButton entry={data} onEdit={onEdit} size={size} />
+              <ReviewActions type="expense" id={data.id} status={data.status} amount={data.totalAmount} size={size} />
+            </>
+          ),
+        }
       }
-      extra={
-        data ? (
-          <Space wrap>
-            <EditResubmitButton entry={data} onEdit={onEdit} size="small" />
-            <ReviewActions type="expense" id={data.id} status={data.status} amount={data.totalAmount} size="small" />
-          </Space>
-        ) : null
-      }
-      destroyOnHidden
-    >
-      {isLoading && <Skeleton active />}
-      {error && <QueryError error={error} onRetry={() => refetch()} />}
-      {data && (
-        <>
-          <Descriptions
-            size="small"
-            column={2}
-            bordered
-            items={[
-              { key: 'desc', label: 'Expense', children: data.description, span: 2 },
-              { key: 'date', label: 'Date', children: formatDate(data.date) },
-              { key: 'cat', label: 'Category', children: EXPENSE_CATEGORY_LABELS[data.category] },
-              { key: 'vendor', label: 'Vendor', children: data.vendor ?? '-' },
-              { key: 'gstin', label: 'Vendor GSTIN', children: data.vendorGstin ?? '-' },
-              { key: 'bill', label: 'Bill no.', children: data.billNo ?? '-' },
-              { key: 'mode', label: 'Paid by', children: PAYMENT_MODE_LABELS[data.paymentMode] },
-              { key: 'amount', label: 'Taxable value', children: formatINR(data.amount, true) },
-              { key: 'gst', label: `GST (${Number(data.gstRate)}%)`, children: formatINR(data.gstAmount, true) },
-              { key: 'total', label: 'Total', children: <strong>{formatINR(data.totalAmount, true)}</strong>, span: 2 },
-              { key: 'activity', label: 'Activity', children: data.activityName ?? '-', span: 2 },
-              { key: 'remarks', label: 'Remarks', children: data.remarks ?? '-', span: 2 },
-              ...submissionMetaItems(data).filter((i) => i.key !== 'status').map((i) => ({ ...i, span: 2 })),
-            ]}
-          />
-          <Divider titlePlacement="start" plain>
-            Bill photos ({data.attachments.length})
-          </Divider>
-          <AttachmentGallery attachments={data.attachments} />
-          <Divider titlePlacement="start" plain>
-            Audit trail
-          </Divider>
-          <AuditTrail type="expense" id={data.id} />
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            Expense ID: {data.id}
-          </Typography.Text>
-        </>
-      )}
-    </Drawer>
+    />
   );
+}
+
+export function ExpenseDrawer(props: RecordProps & { open: boolean; onClose: () => void }) {
+  return <ExpenseRecord mode="drawer" {...props} />;
 }

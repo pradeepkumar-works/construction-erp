@@ -196,7 +196,7 @@ export function ProjectCostPanel({ projectId }: { projectId: string }) {
                       dataSource={data.subcontractByOrder}
                       locale={{ emptyText: 'No approved subcontractor bill in this period' }}
                       columns={[
-                        { title: 'Work order', dataIndex: 'woNo', width: 150, render: (v, r) => <Link href={`/work-orders?id=${r.workOrderId}`} className="mono">{v}</Link> },
+                        { title: 'Work order', dataIndex: 'woNo', width: 150, render: (v, r) => <Link href={`/work-orders/${r.workOrderId}`} className="mono">{v}</Link> },
                         { title: 'Subcontractor', dataIndex: 'vendorName' },
                         { title: 'Bills', dataIndex: 'bills', width: 80, align: 'right' },
                         { title: 'Work value', dataIndex: 'amount', width: 140, align: 'right', render: money },

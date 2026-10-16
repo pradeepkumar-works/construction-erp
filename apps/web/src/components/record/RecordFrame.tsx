@@ -172,7 +172,11 @@ function RecordDrawer({ open, onClose, drawerSize = 820, kind, loading, error, o
         <>
           {record.notices}
           <Descriptions size="small" column={drawerSize >= 960 ? { xs: 1, sm: 2, lg: 3 } : { xs: 1, sm: 2 }} bordered items={record.facts} style={{ marginBottom: token.margin }} />
-          {record.lifecycle && <Steps size="small" {...record.lifecycle} style={{ marginBottom: token.marginXS }} />}
+          {record.lifecycle && (
+            <div role="group" aria-label="Stage">
+              <Steps size="small" {...record.lifecycle} style={{ marginBottom: token.marginXS }} />
+            </div>
+          )}
           {record.sections.map((s) => (
             <React.Fragment key={s.key}>
               <Divider titlePlacement="start" plain>

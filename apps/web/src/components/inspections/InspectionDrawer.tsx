@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { App, Button, ConfigProvider, Descriptions, Divider, Drawer, Input, Modal, Segmented, Skeleton, Space, Table, Tag, Typography } from 'antd';
+import { App, Button, ConfigProvider, Input, Modal, Segmented, Space, Table, Tag, Typography } from 'antd';
 import { CheckOutlined, CloseOutlined, RedoOutlined, WarningOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, InspectionDto, InspectionResult, ReviewDecision } from '@erp/shared';
@@ -12,14 +12,14 @@ import { useInspection } from '@/lib/queries';
 import { formatDate } from '@/lib/format';
 import { themeColor } from '@/lib/theme';
 import { approveTheme } from '@/lib/theme';
-import { QueryError } from '@/components/common/QueryState';
 import { StatusTag } from '@/components/common/StatusTag';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
-import { AuditTrail } from '@/components/common/AuditTrail';
 import { EditResubmitButton } from '@/components/common/EditResubmitButton';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { submissionMetaItems } from '@/components/common/SubmitterInfo';
 import { NcrFormModal, type NcrPrefill } from '@/components/quality/NcrFormModal';
+import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
+import { submissionLifecycle, type Lifecycle } from '@/components/record/lifecycle';
 
 const RESULT_COLORS: Record<InspectionResult, string> = { PASS: 'green', FAIL: 'red', NA: 'default' };
 
@@ -71,9 +71,6 @@ function InspectPanel({ data }: { data: InspectionDto }) {
 
   return (
     <>
-      <Divider titlePlacement="start" plain>
-        Inspect
-      </Divider>
       {data.checklist.length > 0 && (
         <Space style={{ marginBottom: 8 }}>
           <Button size="small" onClick={() => setResults((rs) => rs.map((r) => (r.result ? r : { ...r, result: 'PASS' })))} disabled={!open}>
@@ -146,10 +143,28 @@ function InspectPanel({ data }: { data: InspectionDto }) {
   );
 }
 
-export function InspectionDrawer({ id, open, onClose, onEdit }: { id: string | null; open: boolean; onClose: () => void; onEdit?: (x: InspectionDto) => void }) {
+/** The stage bar in an inspection's own words: requested, then passed, failed or re-inspect. */
+function inspectionLifecycle(x: InspectionDto): Lifecycle {
+  const l = submissionLifecycle(x);
+  const titles = ['Draft', 'Requested', x.status === 'SUBMITTED' || x.status === 'DRAFT' ? 'Inspection' : INSPECTION_STATUS_LABELS[x.status]];
+  return { ...l, items: l.items.map((item, i) => ({ ...item, title: titles[i] ?? item.title })) };
+}
+
+interface RecordProps {
+  id: string | null;
+  open?: boolean;
+  onClose?: () => void;
+  onEdit?: (x: InspectionDto) => void;
+}
+
+/**
+ * An inspection request, in a drawer from a list or as its own page at `/inspections/<id>`. QA/QC records the checklist
+ * and passes or fails it here; in the Approvals inbox's pane the checklist is read only and the inbox opens the drawer.
+ */
+export function InspectionRecord({ id, mode, open, onClose, onEdit }: RecordProps & { mode: RecordMode }) {
   const { user } = useAuth();
   const { data, isLoading, error, refetch } = useInspection(id ?? undefined);
-  const inspector = !!user && !!data && data.status === 'SUBMITTED' && mayApproveType(user, 'INSPECTION');
+  const inspector = mode !== 'pane' && !!user && !!data && data.status === 'SUBMITTED' && mayApproveType(user, 'INSPECTION');
   const counts = data ? checklistCounts(data.checklist) : null;
   const [ncr, setNcr] = useState<NcrPrefill | null>(null);
   // A failed inspection, or one sent back, can be recorded as a non-conformance.
@@ -167,88 +182,89 @@ export function InspectionDrawer({ id, open, onClose, onEdit }: { id: string | n
     });
   };
   return (
-    <Drawer
+    <RecordFrame
+      mode={mode}
       open={open}
       onClose={onClose}
-      size={720}
-      title={
-        data ? (
-          <span>
-            {data.inspectionNo} <StatusTag status={data.status} labels={INSPECTION_STATUS_LABELS} />
-          </span>
-        ) : (
-          'Inspection'
-        )
+      drawerSize={720}
+      kind="Inspection"
+      list={{ href: '/inspections', label: 'Quality' }}
+      loading={isLoading}
+      error={error}
+      onRetry={() => refetch()}
+      record={
+        data && {
+          href: `/inspections/${data.id}`,
+          title: `Inspection · ${data.inspectionNo}`,
+          tags: <StatusTag status={data.status} labels={INSPECTION_STATUS_LABELS} />,
+          facts: [
+            { key: 'activity', label: 'Activity', children: <span>{data.activityName}{data.holdPoint && <Tag color="orange" style={{ marginLeft: 8 }}>Hold point</Tag>}</span> },
+            { key: 'loc', label: 'Location', children: data.location },
+            { key: 'date', label: 'Ready on', children: formatDate(data.date) },
+            { key: 'checklist', label: 'Checklist', children: data.checklistName ?? (data.checklist.length ? 'Own points' : 'None') },
+            ...submissionMetaItems(data)
+              .filter((i) => i.key !== 'status')
+              .map((i) => ({ ...i, label: ({ 'Submitted by': 'Requested by', 'Reviewed by': 'Inspected by', 'Review note': "Inspector's note" } as Record<string, string>)[i.label as string] ?? i.label })),
+          ],
+          lifecycle: inspectionLifecycle(data),
+          sections: [
+            ...(data.remarks ? [{ key: 'remarks', title: 'Remarks', children: <div style={{ whiteSpace: 'pre-wrap' }}>{data.remarks}</div> }] : []),
+            ...(inspector
+              ? [{ key: 'inspect', title: 'Inspect', children: <InspectPanel data={data} /> }]
+              : data.checklist.length > 0
+                ? [
+                    {
+                      key: 'checklist',
+                      title: `Checklist${counts && counts.open < counts.total ? ` (${counts.pass} OK, ${counts.fail} not OK${counts.na ? `, ${counts.na} N/A` : ''})` : ''}`,
+                      children: (
+                        <Table
+                          rowKey={(_, i) => String(i)}
+                          size="small"
+                          pagination={false}
+                          dataSource={data.checklist}
+                          columns={[
+                            { title: '#', key: 'n', width: 40, render: (_, __, i) => i + 1 },
+                            { title: 'Point', dataIndex: 'item', render: (v: string, c) => (c.remark ? <div>{v}<div className="text-muted" style={{ fontSize: 12 }}>{c.remark}</div></div> : v) },
+                            { title: 'Result', dataIndex: 'result', width: 120, render: (r: InspectionResult | null) => <ResultTag result={r} /> },
+                          ]}
+                        />
+                      ),
+                    },
+                  ]
+                : []),
+            {
+              key: 'photos',
+              title: 'Photos',
+              count: data.attachments.length,
+              children: (
+                <>
+                  <AttachmentGallery attachments={data.attachments} />
+                  <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12 }}>
+                    Inspection ID: {data.id}
+                  </Typography.Text>
+                </>
+              ),
+            },
+          ],
+          activity: { type: 'inspection', id: data.id },
+          actions: (size) => (
+            <>
+              {mayRaise ? (
+                <Button size={size} danger icon={<WarningOutlined />} onClick={() => raise(data)}>
+                  Raise NCR
+                </Button>
+              ) : null}
+              <EditResubmitButton entry={data} onEdit={onEdit} size={size} />
+            </>
+          ),
+        }
       }
-      extra={
-        data ? (
-          <Space>
-            {mayRaise ? (
-              <Button size="small" danger icon={<WarningOutlined />} onClick={() => raise(data)}>
-                Raise NCR
-              </Button>
-            ) : null}
-            <EditResubmitButton entry={data} onEdit={onEdit} size="small" />
-          </Space>
-        ) : null
-      }
-      destroyOnHidden
     >
-      {isLoading && <Skeleton active />}
-      {error && <QueryError error={error} onRetry={() => refetch()} />}
-      {data && (
-        <>
-          <Descriptions
-            size="small"
-            column={2}
-            bordered
-            items={[
-              { key: 'activity', label: 'Activity', children: <span>{data.activityName}{data.holdPoint && <Tag color="orange" style={{ marginLeft: 8 }}>Hold point</Tag>}</span>, span: 2 },
-              { key: 'loc', label: 'Location', children: data.location, span: 2 },
-              { key: 'date', label: 'Ready on', children: formatDate(data.date) },
-              { key: 'checklist', label: 'Checklist', children: data.checklistName ?? (data.checklist.length ? 'Own points' : 'None') },
-              { key: 'remarks', label: 'Remarks', children: data.remarks ?? '-', span: 2 },
-              ...submissionMetaItems(data)
-                .filter((i) => i.key !== 'status')
-                .map((i) => ({ ...i, label: ({ 'Submitted by': 'Requested by', 'Reviewed by': 'Inspected by', 'Review note': "Inspector's note" } as Record<string, string>)[i.label] ?? i.label, span: 2 })),
-            ]}
-          />
-          {inspector ? (
-            <InspectPanel data={data} />
-          ) : (
-            data.checklist.length > 0 && (
-              <>
-                <Divider titlePlacement="start" plain>
-                  Checklist{counts && counts.open < counts.total ? ` (${counts.pass} OK, ${counts.fail} not OK${counts.na ? `, ${counts.na} N/A` : ''})` : ''}
-                </Divider>
-                <Table
-                  rowKey={(_, i) => String(i)}
-                  size="small"
-                  pagination={false}
-                  dataSource={data.checklist}
-                  columns={[
-                    { title: '#', key: 'n', width: 40, render: (_, __, i) => i + 1 },
-                    { title: 'Point', dataIndex: 'item', render: (v: string, c) => (c.remark ? <div>{v}<div className="text-muted" style={{ fontSize: 12 }}>{c.remark}</div></div> : v) },
-                    { title: 'Result', dataIndex: 'result', width: 120, render: (r: InspectionResult | null) => <ResultTag result={r} /> },
-                  ]}
-                />
-              </>
-            )
-          )}
-          <Divider titlePlacement="start" plain>
-            Photos ({data.attachments.length})
-          </Divider>
-          <AttachmentGallery attachments={data.attachments} />
-          <Divider titlePlacement="start" plain>
-            Audit trail
-          </Divider>
-          <AuditTrail type="inspection" id={data.id} />
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            Inspection ID: {data.id}
-          </Typography.Text>
-        </>
-      )}
       <NcrFormModal open={!!ncr} onClose={() => setNcr(null)} prefill={ncr} />
-    </Drawer>
+    </RecordFrame>
   );
+}
+
+export function InspectionDrawer(props: RecordProps & { open: boolean; onClose: () => void }) {
+  return <InspectionRecord mode="drawer" {...props} />;
 }
