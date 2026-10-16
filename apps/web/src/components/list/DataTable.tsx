@@ -5,6 +5,7 @@ import { Button, Checkbox, Dropdown, Flex, Table, Tooltip, Typography, theme } f
 import type { TableColumnType, TableProps } from 'antd';
 import { CloseOutlined, ColumnWidthOutlined, LineHeightOutlined } from '@ant-design/icons';
 import { readPref, writePref } from '@/lib/prefs';
+import { useStickyTop } from '@/lib/sticky';
 
 /** A list column: antd's, with a stable `key`, a plain-text `label` for the column chooser, and an optional page total. */
 export type ListColumn<T> = TableColumnType<T> & {
@@ -82,6 +83,7 @@ export function DataTable<T extends { id: string }>({
   emptyText?: React.ReactNode;
 }) {
   const { token } = theme.useToken();
+  const stickyTop = useStickyTop();
   const [wrap, setWrap] = useState(() => readPref<boolean>('nirmaan.table.wrap', false));
   const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
@@ -182,7 +184,7 @@ export function DataTable<T extends { id: string }>({
         columns={shown}
         dataSource={rows}
         size="middle"
-        sticky={{ offsetHeader: 56 }}
+        sticky={{ offsetHeader: stickyTop }}
         {...table}
         scroll={{ x: scrollX }}
         rowSelection={bulk.length ? { selectedRowKeys: selectedKeys, onChange: setSelectedKeys, columnWidth: 40 } : undefined}

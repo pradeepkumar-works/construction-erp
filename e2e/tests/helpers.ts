@@ -49,3 +49,12 @@ export async function newestFirst(page: Page) {
 
 /** A quantity no other entry will have (three decimals), so a test can find its own row by it. */
 export const uniqueQty = () => String(Number((100 + Math.random() * 800).toFixed(3)));
+
+/** Opens a tab of the project page: its group across the top, then the tab inside the group (UI roadmap item 56). */
+export async function openProjectTab(page: Page, group: string, tab?: string) {
+  await page.getByTestId('project-workspace-bar').getByRole('tab', { name: group, exact: true }).click();
+  if (tab) await projectTabs(page, group).getByText(tab, { exact: true }).click();
+}
+
+/** The tabs inside a group of the project page, once the group is open. */
+export const projectTabs = (page: Page, group: string) => page.getByRole('radiogroup', { name: `${group} tabs` });

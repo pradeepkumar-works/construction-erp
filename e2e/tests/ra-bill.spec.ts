@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { api, apiToken, signIn } from './helpers';
+import { api, apiToken, openProjectTab, projectTabs, signIn } from './helpers';
 
 interface Page<T> {
   items: T[];
@@ -72,6 +72,7 @@ test('a site engineer has no RA bills', async ({ page }) => {
   await signIn(page, 'engineer@demo.com');
   await page.goto('/projects');
   await page.getByText('RD-2026-01').first().click();
-  await expect(page.getByRole('tab', { name: 'BOQ' })).toBeVisible();
-  await expect(page.getByRole('tab', { name: 'RA Bills' })).toHaveCount(0);
+  await openProjectTab(page, 'Money');
+  await expect(projectTabs(page, 'Money').getByText('Expenses', { exact: true })).toBeVisible();
+  await expect(projectTabs(page, 'Money').getByText('RA Bills', { exact: true })).toHaveCount(0);
 });
