@@ -186,4 +186,7 @@ export class ListVendorBillsQuery extends PageQuery {
   @ApiPropertyOptional({ enum: SUBMISSION_STATUSES }) @IsOptional() @IsIn(SUBMISSION_STATUSES as unknown as string[]) status?: SubmissionStatus;
   @ApiPropertyOptional({ description: 'Only bills that do not match their PO' }) @IsOptional() @QueryBool() @IsBoolean() exceptions?: boolean;
   @ApiPropertyOptional({ enum: LIST_SORT_FIELDS.vendorBills, default: 'invoiceDate' }) @IsOptional() @IsIn(LIST_SORT_FIELDS.vendorBills as unknown as string[]) sortBy?: VendorBillSortField;
+  @ApiPropertyOptional({ example: '2026-10-01', description: 'Invoices dated from this day (inclusive)' }) @IsOptional() @IsDateString() from?: string;
+  @ApiPropertyOptional({ example: '2026-10-31', description: 'Invoices dated up to this day (inclusive)' }) @IsOptional() @IsDateString() to?: string;
+  @ApiPropertyOptional({ description: 'Only entries the current user submitted' }) @IsOptional() @QueryBool() @IsBoolean() mine?: boolean;
 }

@@ -1,49 +1,58 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button, Checkbox, DatePicker, Select } from 'antd';
+import { Button, Checkbox, Select } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
-import type { Dayjs } from 'dayjs';
-import type { MachineryLogDto, MachineryLogSortField, SubmissionStatus } from '@erp/shared';
-import { MAX_PAGE_SIZE, canLogMachinery } from '@erp/shared';
-import { useProjectScope } from '@/lib/project-scope';
+import type { MachineryLogDto } from '@erp/shared';
+import { LIST_SORT_FIELDS, MAX_PAGE_SIZE, canLogMachinery } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useEquipment, useMachineryLogs } from '@/lib/queries';
-import { useListState } from '@/lib/listState';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { MACHINERY_EXPORT } from '@/lib/exportColumns';
 import { QueryError } from '@/components/common/QueryState';
 import { ListToolbar } from '@/components/common/ListToolbar';
 import { ExportButton } from '@/components/common/ExportButton';
-import { MachineryTable } from './MachineryTable';
+import { EmptyArt } from '@/components/common/EmptyArt';
+import { DataTable } from '@/components/list/DataTable';
+import { DateRangeFilter } from '@/components/list/DateRangeFilter';
+import { exportSelected, useBulkApprove } from '@/components/list/bulk';
+import { useListFrame } from '@/components/list/useListFrame';
+import { machineryColumns } from './MachineryTable';
 import { MachineryDrawer } from './MachineryDrawer';
 import { MachineryFormModal } from './MachineryFormModal';
-import { rangePresets } from '@/lib/dates';
 
-/** Daily machinery logs: paged, searchable, filtered by project, machine, status, dates and breakdowns; Excel export. */
+const KEYS = ['status', 'mine', 'from', 'to', 'equipmentId', 'breakdownOnly'] as const;
+
+/** Daily machinery logs: views, search, project / machine / status / date filters, breakdowns, bulk approve and export. */
 export function MachineryList({ projectId: fixedProject }: { projectId?: string }) {
   const { user } = useAuth();
-  const list = useListState<MachineryLogSortField>({ sortBy: 'date', sortOrder: 'desc' });
-  const [projectFilter, setProjectFilter] = useProjectScope();
-  const [status, setStatus] = useState<SubmissionStatus | undefined>();
-  const [equipmentId, setEquipmentId] = useState<string | undefined>();
-  const [range, setRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
-  const [breakdownOnly, setBreakdownOnly] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<MachineryLogDto | null>(null);
-  const projectId = fixedProject ?? projectFilter;
   const { data: equipment } = useEquipment({ pageSize: MAX_PAGE_SIZE, includeInactive: true });
-  const filters = {
-    ...list.params,
-    projectId,
-    status,
-    equipmentId,
-    from: range?.[0]?.format('YYYY-MM-DD'),
-    to: range?.[1]?.format('YYYY-MM-DD'),
-    breakdownOnly: breakdownOnly || undefined,
-  };
+  const frame = useListFrame({
+    list: 'machinery',
+    type: 'MACHINERY',
+    keys: KEYS,
+    sortBy: 'date',
+    sortOrder: 'desc',
+    sortFields: LIST_SORT_FIELDS.machinery,
+    fixedProject,
+    columns: (sortOrderFor) => machineryColumns({ showProject: !fixedProject, onOpen: setOpenId, onEdit: setEditing, sortOrderFor }),
+    moreViews: [{ key: 'breakdowns', label: 'Breakdowns', filters: { breakdownOnly: '1' } }],
+    chipLabels: {
+      equipmentId: (v) => {
+        const e = equipment?.items.find((x) => x.id === v);
+        return `Machine: ${e ? `${e.code} · ${e.name}` : 'one machine'}`;
+      },
+      breakdownOnly: () => 'Breakdowns only',
+    },
+  });
+  const { page } = frame;
+  const equipmentId = page.filters.equipmentId;
+  const filters = { ...page.params, projectId: frame.projectId, status: frame.status, equipmentId, breakdownOnly: page.filters.breakdownOnly === '1' || undefined };
   const { data, isLoading, isFetching, error, refetch } = useMachineryLogs(filters);
+  const approve = useBulkApprove<MachineryLogDto>('machinery');
   const mayLog = !!user && canLogMachinery(user.roleKey);
 
   const exportRows = async () => {
@@ -54,21 +63,16 @@ export function MachineryList({ projectId: fixedProject }: { projectId?: string 
 
   return (
     <>
+      {frame.views}
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       <ListToolbar
-        projectId={projectFilter}
-        onProject={(v) => {
-          setProjectFilter(v);
-          list.resetPage();
-        }}
+        projectId={frame.projectFilter}
+        onProject={frame.setProjectFilter}
         hideProject={!!fixedProject}
-        status={status}
-        onStatus={(v) => {
-          setStatus(v);
-          list.resetPage();
-        }}
-        search={list.search}
-        onSearch={list.setSearch}
+        status={frame.status}
+        onStatus={frame.setStatus}
+        search={page.search}
+        onSearch={page.setSearch}
         searchPlaceholder="Search machine, operator, work, people"
         extra={
           <>
@@ -85,41 +89,30 @@ export function MachineryList({ projectId: fixedProject }: { projectId?: string 
           allowClear
           showSearch={{ optionFilterProp: 'label' }}
           placeholder="All equipment"
+          aria-label="Equipment"
           style={{ width: 220 }}
           value={equipmentId}
-          onChange={(v) => {
-            setEquipmentId(v);
-            list.resetPage();
-          }}
-          options={(equipment?.items ?? []).filter((e) => !projectId || e.projectId === projectId || e.id === equipmentId).map((e) => ({ value: e.id, label: `${e.code} · ${e.name}` }))}
+          onChange={(v) => page.setFilter('equipmentId', v)}
+          options={(equipment?.items ?? []).filter((e) => !frame.projectId || e.projectId === frame.projectId || e.id === equipmentId).map((e) => ({ value: e.id, label: `${e.code} · ${e.name}` }))}
         />
-        <DatePicker.RangePicker presets={rangePresets()}
-          value={range}
-          onChange={(v) => {
-            setRange(v as [Dayjs | null, Dayjs | null] | null);
-            list.resetPage();
-          }}
-          format="DD MMM YYYY"
-          allowEmpty={[true, true]}
-        />
-        <Checkbox
-          checked={breakdownOnly}
-          onChange={(e) => {
-            setBreakdownOnly(e.target.checked);
-            list.resetPage();
-          }}
-        >
+        <DateRangeFilter {...frame.dateRange} />
+        <Checkbox checked={!!filters.breakdownOnly} onChange={(e) => page.setFilter('breakdownOnly', e.target.checked ? '1' : undefined)}>
           Breakdowns only
         </Checkbox>
       </ListToolbar>
-      <MachineryTable
-        data={data?.items ?? []}
+      <DataTable<MachineryLogDto>
+        columns={frame.columns}
+        visible={frame.choice.visible}
+        onChooseColumns={frame.choice.setChosen}
+        chosenIsDefault={frame.choice.isDefault}
+        rows={data?.items ?? []}
         loading={isLoading || isFetching}
-        showProject={!fixedProject}
+        table={page.tableProps<MachineryLogDto>(data?.total)}
         onOpen={setOpenId}
-        onEdit={setEditing}
-        table={list.tableProps<MachineryLogDto>(data?.total)}
-        sortOrderFor={list.sortOrderFor}
+        bulk={[...(approve ? [approve] : []), exportSelected<MachineryLogDto>('machinery-logs', 'machinery', MACHINERY_EXPORT)]}
+        chips={frame.chips}
+        scrollX={fixedProject ? 1100 : 1320}
+        emptyText={<EmptyArt art="entries" title="No machinery logs here yet" />}
       />
       <MachineryDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onEdit={setEditing} />
       <MachineryFormModal

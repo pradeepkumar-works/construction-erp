@@ -3416,7 +3416,7 @@ model SavedView {
   organization   Organization @relation(fields: [organizationId], references: [id])
   userId         String
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  /// Which list: SAVED_VIEW_LISTS in @erp/shared (dpr, progress, material-requests, purchase-orders, bills)
+  /// Which list: SAVED_VIEW_LISTS in @erp/shared (dpr, progress, material-requests, purchase-orders, bills, machinery, expenses, …)
   list           String
   name           String
   shared         Boolean      @default(false)

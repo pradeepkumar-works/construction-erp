@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-10-lists-approvals',
+    date: '2026-10-16',
+    title: 'Every approval list works the same way',
+    points: [
+      'Vendor bills, work orders, subcontractor bills, site expenses, the measurement book, machinery logs and inspections now have views across the top (Waiting for me, Mine, Sent back, This week) and can be saved and shared.',
+      'Their filters go in the address bar, so a filtered list can be bookmarked or sent, and show as chips you can take off one by one.',
+      'Pick the columns you want, click a row to open it, tick rows to approve or export them together, and see the page total under the figures.',
+      'Vendor bills, work orders and subcontractor bills can now be filtered by date and by who entered them.',
+    ],
+  },
+  {
     id: '2026-10-forms-v2',
     date: '2026-10-16',
     title: 'Roomier forms that keep what you type',

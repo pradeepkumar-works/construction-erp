@@ -2,72 +2,51 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Button, Checkbox, Progress, Select, Space, Table, Typography } from 'antd';
-import type { TableProps } from 'antd';
+import { Button, Checkbox, Progress, Select, Space, theme } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
-import type { SubmissionStatus, WorkOrderDto, WorkOrderSortField } from '@erp/shared';
-import { canIssueWorkOrder } from '@erp/shared';
-import { useProjectScope } from '@/lib/project-scope';
+import type { WorkOrderDto, WorkOrderSortField } from '@erp/shared';
+import { LIST_SORT_FIELDS, canIssueWorkOrder } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useVendors, useWorkOrders } from '@/lib/queries';
-import { useListState } from '@/lib/listState';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { WORK_ORDER_EXPORT } from '@/lib/exportColumns';
-import { formatDate, formatINR } from '@/lib/format';
+import { formatDate, formatINR, toNumber } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { ListToolbar } from '@/components/common/ListToolbar';
 import { ExportButton } from '@/components/common/ExportButton';
+import { EmptyArt } from '@/components/common/EmptyArt';
 import { StatusTag } from '@/components/common/StatusTag';
-import { ReviewActions } from '@/components/common/ReviewActions';
+import { DataTable, type ListColumn } from '@/components/list/DataTable';
+import { DateRangeFilter } from '@/components/list/DateRangeFilter';
+import { RowActions } from '@/components/list/RowActions';
+import { RecordLink } from '@/components/record/RecordLink';
+import { exportSelected, useBulkApprove } from '@/components/list/bulk';
+import { useListFrame } from '@/components/list/useListFrame';
 import { WoStateTag, WorkOrderDrawer } from './WorkOrderDrawer';
 import { WorkOrderFormModal } from './WorkOrderFormModal';
 
 const SUB_KINDS = new Set(['SUBCONTRACTOR', 'LABOUR_CONTRACTOR']);
+const KEYS = ['status', 'mine', 'from', 'to', 'vendorId', 'open'] as const;
 
-/** Work orders, on the Work Orders page and as a project tab. `openId` opens one order (from a link). */
-export function WorkOrderList({ projectId: fixedProject, openId: initialOpen }: { projectId?: string; openId?: string | null }) {
-  const { user } = useAuth();
-  const list = useListState<WorkOrderSortField>({ sortBy: 'woDate', sortOrder: 'desc' });
-  const [projectFilter, setProjectFilter] = useProjectScope();
-  const [status, setStatus] = useState<SubmissionStatus | undefined>();
-  const [vendorId, setVendorId] = useState<string | undefined>();
-  const [onlyOpen, setOnlyOpen] = useState(false);
-  const [openId, setOpenId] = useState<string | null>(initialOpen ?? null);
-  const [formOpen, setFormOpen] = useState(false);
-  const [editing, setEditing] = useState<WorkOrderDto | null>(null);
-  useEffect(() => {
-    if (initialOpen) setOpenId(initialOpen);
-  }, [initialOpen]);
-  const projectId = fixedProject ?? projectFilter;
-  const filters = { ...list.params, projectId, status, vendorId, open: onlyOpen || undefined };
-  const { data, isLoading, isFetching, error, refetch } = useWorkOrders(filters);
-  const { data: vendors } = useVendors();
-  const issuer = !!user && canIssueWorkOrder(user.roleKey);
-  const reset = <T,>(set: (v: T) => void) => (v: T) => {
-    set(v);
-    list.resetPage();
-  };
-  const sort = (key: WorkOrderSortField) => ({ key, sorter: true, sortOrder: list.sortOrderFor(key), sortDirections: ['descend', 'ascend'] as ('descend' | 'ascend')[] });
+function Sub({ children }: { children: React.ReactNode }) {
+  const { token } = theme.useToken();
+  return <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{children}</div>;
+}
 
-  const exportRows = async () => {
-    const rows = await fetchAllPages<WorkOrderDto>('/work-orders', { ...filters });
-    downloadXlsx(exportFileName('work-orders'), 'Work orders', WORK_ORDER_EXPORT, rows);
-    return rows.length;
-  };
-
-  const columns: TableProps<WorkOrderDto>['columns'] = [
+function workOrderColumns({ showProject, onOpen, onEdit, sortOrderFor }: { showProject: boolean; onOpen: (id: string) => void; onEdit: (row: WorkOrderDto) => void; sortOrderFor: (key: WorkOrderSortField) => 'ascend' | 'descend' | null }): ListColumn<WorkOrderDto>[] {
+  const sort = (key: WorkOrderSortField) => ({ key, sorter: true, sortOrder: sortOrderFor(key), sortDirections: ['descend', 'ascend'] as ('descend' | 'ascend')[] });
+  return [
     {
       title: 'WO',
+      locked: true,
       ...sort('woNo'),
       width: 150,
       render: (_, r) => (
         <div>
-          <Typography.Link onClick={() => setOpenId(r.id)} strong className="mono">
+          <RecordLink onOpen={() => onOpen(r.id)} strong className="mono">
             {r.woNo}
-          </Typography.Link>
-          <div className="text-muted" style={{ fontSize: 12 }}>
-            {formatDate(r.woDate)}
-          </div>
+          </RecordLink>
+          <Sub>{formatDate(r.woDate)}</Sub>
         </div>
       ),
     },
@@ -77,21 +56,27 @@ export function WorkOrderList({ projectId: fixedProject, openId: initialOpen }: 
       render: (_, r) => (
         <div>
           {r.vendorName}
-          <div className="text-muted" style={{ fontSize: 12 }}>
-            {r.title}
-          </div>
+          <Sub>{r.title}</Sub>
         </div>
       ),
     },
-    ...(fixedProject
-      ? []
-      : [{ title: 'Project', dataIndex: 'projectName', ...sort('project'), ellipsis: true, render: (v: string, r: WorkOrderDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> }]),
-    { title: 'Value', dataIndex: 'value', width: 150, align: 'right', ...sort('value'), render: (v) => <strong className="mono">{formatINR(v)}</strong> },
-    { title: 'Billed', key: 'billed', width: 130, render: (_, r) => (r.status === 'APPROVED' ? <Progress percent={r.billedPct} size="small" style={{ margin: 0 }} /> : <span className="text-muted">-</span>) },
+    ...(showProject ? [{ title: 'Project', dataIndex: 'projectName', ...sort('project'), ellipsis: true, render: (v: string, r: WorkOrderDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> }] : []),
+    {
+      title: 'Value',
+      dataIndex: 'value',
+      width: 150,
+      align: 'right',
+      ...sort('value'),
+      render: (v) => <strong className="mono">{formatINR(v)}</strong>,
+      total: (rows) => formatINR(rows.reduce((n, r) => n + toNumber(r.value), 0)),
+    },
+    { title: 'Billed', key: 'billed', width: 130, render: (_, r) => (r.status === 'APPROVED' ? <Progress percent={r.billedPct} size="small" style={{ margin: 0 }} /> : '-') },
+    { key: 'submittedByName', title: 'Raised by', dataIndex: 'submittedByName', width: 140, defaultHidden: true },
     {
       title: 'Status',
       dataIndex: 'status',
       width: 170,
+      fixed: 'right' as const,
       ...sort('status'),
       render: (s, r) => (
         <Space size={4} wrap>
@@ -100,33 +85,59 @@ export function WorkOrderList({ projectId: fixedProject, openId: initialOpen }: 
         </Space>
       ),
     },
-    {
-      title: '',
-      key: 'actions',
-      fixed: 'right' as const,
-      width: 150,
-      render: (_, r) => (
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <Button size="small" onClick={() => setOpenId(r.id)}>
-            View
-          </Button>
-          <ReviewActions type="work_order" id={r.id} status={r.status} amount={r.value} size="small" compact />
-        </div>
-      ),
-    },
+    { key: 'actions', title: '', label: 'Actions', locked: true, fixed: 'right' as const, width: 56, render: (_, r) => <RowActions type="work_order" row={r} amount={r.value} onOpen={onOpen} onEdit={onEdit} /> },
   ];
+}
+
+/** Work orders, on the Work Orders page and as a project tab. `openId` opens one order (from a link). */
+export function WorkOrderList({ projectId: fixedProject, openId: initialOpen }: { projectId?: string; openId?: string | null }) {
+  const { user } = useAuth();
+  const [openId, setOpenId] = useState<string | null>(initialOpen ?? null);
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<WorkOrderDto | null>(null);
+  useEffect(() => {
+    if (initialOpen) setOpenId(initialOpen);
+  }, [initialOpen]);
+  const { data: vendors } = useVendors();
+  const frame = useListFrame({
+    list: 'work-orders',
+    type: 'WORK_ORDER',
+    keys: KEYS,
+    sortBy: 'woDate',
+    sortOrder: 'desc',
+    sortFields: LIST_SORT_FIELDS.workOrders,
+    fixedProject,
+    columns: (sortOrderFor) => workOrderColumns({ showProject: !fixedProject, onOpen: setOpenId, onEdit: setEditing, sortOrderFor }),
+    moreViews: [{ key: 'open', label: 'Open orders', filters: { open: '1' } }],
+    chipLabels: {
+      vendorId: (v) => `Subcontractor: ${vendors?.find((x) => x.id === v)?.name ?? 'one subcontractor'}`,
+      open: () => 'Open orders',
+    },
+  });
+  const { page } = frame;
+  const filters = { ...page.params, projectId: frame.projectId, status: frame.status, vendorId: page.filters.vendorId, open: page.filters.open === '1' || undefined };
+  const { data, isLoading, isFetching, error, refetch } = useWorkOrders(filters);
+  const approve = useBulkApprove<WorkOrderDto>('work_order', (r) => r.value);
+  const issuer = !!user && canIssueWorkOrder(user.roleKey);
+
+  const exportRows = async () => {
+    const rows = await fetchAllPages<WorkOrderDto>('/work-orders', { ...filters });
+    downloadXlsx(exportFileName('work-orders'), 'Work orders', WORK_ORDER_EXPORT, rows);
+    return rows.length;
+  };
 
   return (
     <>
+      {frame.views}
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       <ListToolbar
-        projectId={projectFilter}
-        onProject={reset(setProjectFilter)}
+        projectId={frame.projectFilter}
+        onProject={frame.setProjectFilter}
         hideProject={!!fixedProject}
-        status={status}
-        onStatus={reset(setStatus)}
-        search={list.search}
-        onSearch={list.setSearch}
+        status={frame.status}
+        onStatus={frame.setStatus}
+        search={page.search}
+        onSearch={page.setSearch}
         searchPlaceholder="Search WO no., subcontractor, work"
         extra={
           <>
@@ -143,24 +154,30 @@ export function WorkOrderList({ projectId: fixedProject, openId: initialOpen }: 
           allowClear
           showSearch={{ optionFilterProp: 'label' }}
           placeholder="Any subcontractor"
+          aria-label="Subcontractor"
           style={{ width: 220 }}
-          value={vendorId}
-          onChange={reset(setVendorId)}
+          value={filters.vendorId}
+          onChange={(v) => page.setFilter('vendorId', v)}
           options={(vendors ?? []).filter((v) => v.kinds.some((k) => SUB_KINDS.has(k))).map((v) => ({ value: v.id, label: v.name }))}
         />
-        <Checkbox checked={onlyOpen} onChange={(e) => reset(setOnlyOpen)(e.target.checked)}>
+        <DateRangeFilter {...frame.dateRange} />
+        <Checkbox checked={!!filters.open} onChange={(e) => page.setFilter('open', e.target.checked ? '1' : undefined)}>
           Open orders only
         </Checkbox>
       </ListToolbar>
-      <Table<WorkOrderDto>
-        rowKey="id"
+      <DataTable<WorkOrderDto>
+        columns={frame.columns}
+        visible={frame.choice.visible}
+        onChooseColumns={frame.choice.setChosen}
+        chosenIsDefault={frame.choice.isDefault}
+        rows={data?.items ?? []}
         loading={isLoading || isFetching}
-        columns={columns}
-        dataSource={data?.items ?? []}
-        size="middle"
-        {...list.tableProps<WorkOrderDto>(data?.total)}
-        scroll={{ x: fixedProject ? 1000 : 1200 }}
-        locale={{ emptyText: issuer ? 'No work orders yet. Give work to a subcontractor with New work order.' : 'No work orders yet' }}
+        table={page.tableProps<WorkOrderDto>(data?.total)}
+        onOpen={setOpenId}
+        bulk={[...(approve ? [approve] : []), exportSelected<WorkOrderDto>('work-orders', 'Work orders', WORK_ORDER_EXPORT)]}
+        chips={frame.chips}
+        scrollX={fixedProject ? 1000 : 1200}
+        emptyText={<EmptyArt art="entries" title={issuer ? 'No work orders yet. Give work to a subcontractor with New work order.' : 'No work orders yet'} />}
       />
       <WorkOrderDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onEdit={setEditing} />
       <WorkOrderFormModal

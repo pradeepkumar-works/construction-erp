@@ -2,72 +2,68 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Button, Table, Typography } from 'antd';
-import type { TableProps } from 'antd';
+import { theme } from 'antd';
 import type { MachineryLogDto, MachineryLogSortField } from '@erp/shared';
-import { formatDate, formatQty } from '@/lib/format';
+import { formatDate, formatQty, toNumber } from '@/lib/format';
 import { StatusTag } from '@/components/common/StatusTag';
-import { ReviewActions } from '@/components/common/ReviewActions';
-import { EditResubmitButton } from '@/components/common/EditResubmitButton';
+import type { ListColumn } from '@/components/list/DataTable';
+import { RowActions } from '@/components/list/RowActions';
+import { RecordLink } from '@/components/record/RecordLink';
 import { HoursCell, OwnershipTag } from './hours';
 
-export function MachineryTable({
-  data,
-  loading,
+function Sub({ children }: { children: React.ReactNode }) {
+  const { token } = theme.useToken();
+  return <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{children}</div>;
+}
+
+const sum = (values: (string | null)[]) => values.reduce((n, v) => n + toNumber(v ?? 0), 0);
+
+/** The machinery log list's columns; keys of sortable ones are the API's sort fields. */
+export function machineryColumns({
   showProject,
   onOpen,
   onEdit,
-  table,
   sortOrderFor,
 }: {
-  data: MachineryLogDto[];
-  loading?: boolean;
   showProject?: boolean;
   onOpen: (id: string) => void;
   onEdit?: (row: MachineryLogDto) => void;
-  table: Pick<TableProps<MachineryLogDto>, 'pagination' | 'onChange'>;
   sortOrderFor: (key: MachineryLogSortField) => 'ascend' | 'descend' | null;
-}) {
+}): ListColumn<MachineryLogDto>[] {
   const sort = (key: MachineryLogSortField) => ({ key, sorter: true, sortOrder: sortOrderFor(key), sortDirections: ['descend', 'ascend'] as ('descend' | 'ascend')[] });
-  const columns: TableProps<MachineryLogDto>['columns'] = [
+  return [
     { title: 'Date', dataIndex: 'date', width: 110, render: (v) => formatDate(v), ...sort('date') },
     ...(showProject
       ? [{ title: 'Project', dataIndex: 'projectName', ...sort('project'), width: 220, ellipsis: true, render: (v: string, r: MachineryLogDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> }]
       : []),
     {
       title: 'Equipment',
+      locked: true,
       ...sort('equipment'),
       render: (_, r) => (
         <div>
-          <Typography.Link onClick={() => onOpen(r.id)}>
+          <RecordLink onOpen={() => onOpen(r.id)}>
             <span className="mono">{r.equipmentCode}</span> {r.equipmentName}
-          </Typography.Link>
-          <div className="text-muted" style={{ fontSize: 12 }}>
-            {[r.operatorName, r.activityName ?? r.workDone].filter(Boolean).join(' · ') || ' '}
-          </div>
+          </RecordLink>
+          <Sub>{[r.operatorName, r.activityName ?? r.workDone].filter(Boolean).join(' · ') || ' '}</Sub>
         </div>
       ),
     },
-    { title: '', dataIndex: 'ownership', width: 80, render: (o) => <OwnershipTag ownership={o} /> },
-    { title: 'Hours', width: 150, ...sort('hoursWorked'), render: (_, r) => <HoursCell log={r} /> },
-    { title: 'Diesel', dataIndex: 'dieselLitres', width: 90, align: 'right', className: 'mono', render: (v) => (v === null ? '-' : `${formatQty(v)} L`) },
-    { title: 'Submitted by', dataIndex: 'submittedByName', width: 140, ...sort('submittedBy') },
-    { title: 'Status', fixed: 'right' as const, dataIndex: 'status', width: 140, render: (s) => <StatusTag status={s} />, ...sort('status') },
+    { key: 'ownership', title: 'Owned or hired', dataIndex: 'ownership', width: 130, render: (o) => <OwnershipTag ownership={o} /> },
+    { title: 'Hours', width: 150, ...sort('hoursWorked'), render: (_, r) => <HoursCell log={r} />, total: (rows) => `${formatQty(sum(rows.map((r) => r.hoursWorked)))} h` },
     {
-      title: '',
-      key: 'actions',
-      fixed: 'right' as const,
-      width: 190,
-      render: (_, r) => (
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <Button size="small" onClick={() => onOpen(r.id)}>
-            View
-          </Button>
-          <ReviewActions type="machinery" id={r.id} status={r.status} size="small" compact />
-          <EditResubmitButton entry={r} onEdit={onEdit} size="small" compact />
-        </div>
-      ),
+      key: 'diesel',
+      title: 'Diesel',
+      dataIndex: 'dieselLitres',
+      width: 100,
+      align: 'right',
+      className: 'mono',
+      render: (v) => (v === null ? '-' : `${formatQty(v)} L`),
+      total: (rows) => `${formatQty(sum(rows.map((r) => r.dieselLitres)))} L`,
     },
+    { title: 'Submitted by', dataIndex: 'submittedByName', width: 140, ...sort('submittedBy') },
+    { title: 'Submitted on', dataIndex: 'submittedAt', width: 130, defaultHidden: true, render: (v) => formatDate(v), ...sort('submittedAt') },
+    { title: 'Status', fixed: 'right' as const, dataIndex: 'status', width: 140, render: (s) => <StatusTag status={s} />, ...sort('status') },
+    { key: 'actions', title: '', label: 'Actions', locked: true, fixed: 'right' as const, width: 56, render: (_, r) => <RowActions type="machinery" row={r} onOpen={onOpen} onEdit={onEdit} /> },
   ];
-  return <Table<MachineryLogDto> rowKey="id" loading={loading} columns={columns} dataSource={data} size="middle" {...table} scroll={{ x: showProject ? 1300 : 1080 }} />;
 }
