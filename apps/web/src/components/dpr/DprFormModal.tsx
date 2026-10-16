@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Alert, App, Button, DatePicker, Form, Input, InputNumber, Modal, Select, Space, Typography } from 'antd';
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import { Alert, App, DatePicker, Form, Input, InputNumber, Select, Typography } from 'antd';
 import dayjs from 'dayjs';
 import type { AttachmentDto, DailyReportDto, Weather } from '@erp/shared';
 import { MANPOWER_CATEGORIES, WEATHER_LABELS, WEATHER_OPTIONS } from '@erp/shared';
@@ -11,6 +10,8 @@ import { api, errorMessage } from '@/lib/api';
 import { useAttendanceDay, useProjects } from '@/lib/queries';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { editActionLabel } from '@/components/common/EditResubmitButton';
+import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
+import { LineTable } from '@/components/form/LineTable';
 
 interface FormValues {
   projectId: string;
@@ -113,130 +114,158 @@ export function DprFormModal({ open, onClose, projectId, entry }: { open: boolea
     onSuccess: () => {
       message.success(editing ? 'DPR resubmitted for approval' : 'DPR submitted for approval');
       qc.invalidateQueries();
-      onClose();
     },
     onError: (err) => message.error(errorMessage(err)),
   });
 
   return (
-    <Modal open={open} title={entry ? `${editActionLabel(entry.status)} · DPR ${dayjs(entry.date).format('DD MMM YYYY')}` : 'New Daily Progress Report'} okText={editing ? 'Resubmit DPR' : 'Submit DPR'} onCancel={onClose} onOk={() => form.submit()} confirmLoading={mutation.isPending} width={760} destroyOnHidden styles={{ body: { maxHeight: '70vh', overflowY: 'auto', paddingRight: 8 } }}>
+    <FormShell
+      open={open}
+      onClose={onClose}
+      form={form}
+      title={entry ? `${editActionLabel(entry.status)} · DPR ${dayjs(entry.date).format('DD MMM YYYY')}` : 'New Daily Progress Report'}
+      okText={editing ? 'Resubmit DPR' : 'Submit DPR'}
+      onSubmit={(v) => mutation.mutateAsync(v)}
+      draftKey={editing ? undefined : `dpr:${projectId ?? 'any'}`}
+      width={820}
+    >
       <Form
         form={form}
         layout="vertical"
-        onFinish={(v) => mutation.mutate(v)}
         onValuesChange={(changed) => {
           if ('manpower' in changed) setManpowerEdited(true);
         }}
-        style={{ marginTop: 8 }}
       >
         {entry?.reviewNote && (
           <Alert type="warning" showIcon style={{ marginBottom: 16 }} title={`Reviewer note from ${entry.reviewedByName ?? 'approver'}`} description={entry.reviewNote} />
         )}
-        <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]} hidden={!!fixedProject}>
-          <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
-        </Form.Item>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0 16px' }}>
-          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Required' }]}>
-            <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" />
+        <FormSection title="The day">
+          <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]} hidden={!!fixedProject}>
+            <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
           </Form.Item>
-          <Form.Item name="weather" label="Weather">
-            <Select options={WEATHER_OPTIONS.map((w) => ({ value: w, label: WEATHER_LABELS[w] }))} />
+          <FormGrid cols={3}>
+            <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Required' }]}>
+              <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" />
+            </Form.Item>
+            <Form.Item name="weather" label="Weather">
+              <Select options={WEATHER_OPTIONS.map((w) => ({ value: w, label: WEATHER_LABELS[w] }))} />
+            </Form.Item>
+            <Form.Item name="siteCondition" label="Site condition">
+              <Input placeholder="Workable / Waterlogged" />
+            </Form.Item>
+          </FormGrid>
+          <Form.Item name="workExecuted" label="Work executed" rules={[{ required: true, message: 'Required' }]}>
+            <Input.TextArea rows={3} placeholder="Summary of work done today" />
           </Form.Item>
-          <Form.Item name="siteCondition" label="Site condition">
-            <Input placeholder="Workable / Waterlogged" />
-          </Form.Item>
-        </div>
-        <Form.Item name="workExecuted" label="Work executed" rules={[{ required: true, message: 'Required' }]}>
-          <Input.TextArea rows={3} placeholder="Summary of work done today" />
-        </Form.Item>
+        </FormSection>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
-          <div>
-            <Form.Item label="Manpower" style={{ marginBottom: 4 }}>
-              {!editing && attendanceSheet ? (
-                filledFrom === attendanceSheet.id && !manpowerEdited ? (
-                  <Typography.Text type="success" style={{ display: 'block', fontSize: 12, marginBottom: 6 }}>
-                    From attendance: {attendanceSheet.totalWorkers} workers recorded by {attendanceSheet.recordedByName}
-                  </Typography.Text>
-                ) : (
-                  <Typography.Link style={{ display: 'block', fontSize: 12, marginBottom: 6 }} onClick={applyAttendance}>
-                    Use attendance ({attendanceSheet.totalWorkers} workers)
-                  </Typography.Link>
-                )
-              ) : !editing && attendance.data && !attendanceSheet ? (
-                <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12, marginBottom: 6 }}>
-                  No attendance recorded for this day yet
+        <FormSection
+          title="Manpower and machinery"
+          extra={
+            !editing && attendanceSheet ? (
+              filledFrom === attendanceSheet.id && !manpowerEdited ? (
+                <Typography.Text type="success" style={{ fontSize: 12 }}>
+                  From attendance: {attendanceSheet.totalWorkers} workers recorded by {attendanceSheet.recordedByName}
                 </Typography.Text>
-              ) : null}
-              <Form.List name="manpower">
-                {(fields, { add, remove }) => (
-                  <Space orientation="vertical" size={6} style={{ width: '100%' }}>
-                    {fields.map((f) => (
-                      <div key={f.key} style={{ display: 'flex', gap: 6 }}>
-                        <Form.Item name={[f.name, 'category']} noStyle rules={[{ required: true, message: '' }]}>
-                          <Select style={{ flex: 1 }} placeholder="Category" options={MANPOWER_CATEGORIES.map((c) => ({ value: c, label: c }))} />
-                        </Form.Item>
-                        <Form.Item name={[f.name, 'count']} noStyle rules={[{ required: true, message: '' }]}>
-                          <InputNumber min={0} precision={0} placeholder="Nos" style={{ width: 80 }} />
-                        </Form.Item>
-                        <Button icon={<DeleteOutlined />} onClick={() => remove(f.name)} />
-                      </div>
-                    ))}
-                    <Button type="dashed" icon={<PlusOutlined />} onClick={() => add({ count: 1 })} block size="small">
-                      Add category
-                    </Button>
-                  </Space>
-                )}
-              </Form.List>
+              ) : (
+                <Typography.Link style={{ fontSize: 12 }} onClick={applyAttendance}>
+                  Use attendance ({attendanceSheet.totalWorkers} workers)
+                </Typography.Link>
+              )
+            ) : !editing && attendance.data && !attendanceSheet ? (
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                No attendance recorded for this day yet
+              </Typography.Text>
+            ) : null
+          }
+        >
+          <FormGrid cols={2}>
+            <Form.Item label="Manpower" required={false}>
+              <LineTable
+                name="manpower"
+                label="Manpower"
+                addText="Add category"
+                newLine={() => ({ count: 1 })}
+                columns={[
+                  {
+                    key: 'category',
+                    title: 'Category',
+                    render: (f) => (
+                      <Form.Item name={[f.name, 'category']} noStyle rules={[{ required: true, message: '' }]}>
+                        <Select style={{ width: '100%', minWidth: 120 }} placeholder="Category" options={MANPOWER_CATEGORIES.map((c) => ({ value: c, label: c }))} />
+                      </Form.Item>
+                    ),
+                  },
+                  {
+                    key: 'count',
+                    title: 'Nos',
+                    width: 90,
+                    align: 'right',
+                    render: (f) => (
+                      <Form.Item name={[f.name, 'count']} noStyle rules={[{ required: true, message: '' }]}>
+                        <InputNumber min={0} precision={0} placeholder="Nos" style={{ width: '100%' }} />
+                      </Form.Item>
+                    ),
+                  },
+                ]}
+              />
             </Form.Item>
-          </div>
-          <div>
-            <Form.Item label="Machinery" style={{ marginBottom: 4 }}>
-              <Form.List name="machinery">
-                {(fields, { add, remove }) => (
-                  <Space orientation="vertical" size={6} style={{ width: '100%' }}>
-                    {fields.map((f) => (
-                      <div key={f.key} style={{ display: 'flex', gap: 6 }}>
-                        <Form.Item name={[f.name, 'name']} noStyle rules={[{ required: true, message: '' }]}>
-                          <Input style={{ flex: 1 }} placeholder="Equipment" />
-                        </Form.Item>
-                        <Form.Item name={[f.name, 'hours']} noStyle rules={[{ required: true, message: '' }]}>
-                          <InputNumber min={0} placeholder="Hrs" style={{ width: 80 }} />
-                        </Form.Item>
-                        <Button icon={<DeleteOutlined />} onClick={() => remove(f.name)} />
-                      </div>
-                    ))}
-                    <Button type="dashed" icon={<PlusOutlined />} onClick={() => add({ hours: 8 })} block size="small">
-                      Add machine
-                    </Button>
-                  </Space>
-                )}
-              </Form.List>
+            <Form.Item label="Machinery">
+              <LineTable
+                name="machinery"
+                label="Machinery"
+                addText="Add machine"
+                newLine={() => ({ hours: 8 })}
+                columns={[
+                  {
+                    key: 'name',
+                    title: 'Equipment',
+                    render: (f) => (
+                      <Form.Item name={[f.name, 'name']} noStyle rules={[{ required: true, message: '' }]}>
+                        <Input placeholder="Equipment" style={{ minWidth: 120 }} />
+                      </Form.Item>
+                    ),
+                  },
+                  {
+                    key: 'hours',
+                    title: 'Hours',
+                    width: 90,
+                    align: 'right',
+                    render: (f) => (
+                      <Form.Item name={[f.name, 'hours']} noStyle rules={[{ required: true, message: '' }]}>
+                        <InputNumber min={0} placeholder="Hrs" style={{ width: '100%' }} />
+                      </Form.Item>
+                    ),
+                  },
+                ]}
+              />
             </Form.Item>
-          </div>
-        </div>
+          </FormGrid>
+        </FormSection>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px', marginTop: 12 }}>
-          <Form.Item name="materialReceived" label="Material received">
+        <FormSection title="Notes">
+          <FormGrid cols={2}>
+            <Form.Item name="materialReceived" label="Material received">
+              <Input.TextArea rows={2} />
+            </Form.Item>
+            <Form.Item name="testsConducted" label="Tests conducted">
+              <Input.TextArea rows={2} />
+            </Form.Item>
+            <Form.Item name="safetyObservations" label="Safety observations">
+              <Input.TextArea rows={2} />
+            </Form.Item>
+            <Form.Item name="issues" label="Issues / hindrances">
+              <Input.TextArea rows={2} />
+            </Form.Item>
+          </FormGrid>
+          <Form.Item name="nextDayPlan" label="Next day plan">
             <Input.TextArea rows={2} />
           </Form.Item>
-          <Form.Item name="testsConducted" label="Tests conducted">
-            <Input.TextArea rows={2} />
+          <Form.Item name="photos" label="Site photos" extra="Photos of the work done today; they go with the report.">
+            <PhotoUpload />
           </Form.Item>
-          <Form.Item name="safetyObservations" label="Safety observations">
-            <Input.TextArea rows={2} />
-          </Form.Item>
-          <Form.Item name="issues" label="Issues / hindrances">
-            <Input.TextArea rows={2} />
-          </Form.Item>
-        </div>
-        <Form.Item name="nextDayPlan" label="Next day plan">
-          <Input.TextArea rows={2} />
-        </Form.Item>
-        <Form.Item name="photos" label="Site photos">
-          <PhotoUpload />
-        </Form.Item>
+        </FormSection>
       </Form>
-    </Modal>
+    </FormShell>
   );
 }

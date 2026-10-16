@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { api, apiToken, chooseOption, signIn } from './helpers';
+import { api, apiToken, chooseOption, signIn, formPanel } from './helpers';
 
 interface Page<T> {
   items: T[];
@@ -43,7 +43,7 @@ test('work order to a measured subcontractor bill', async ({ page, browser }) =>
   await signIn(page, 'pm@demo.com');
   await page.goto('/work-orders');
   await page.getByRole('button', { name: 'New work order' }).click();
-  const modal = page.locator('.ant-modal').filter({ hasText: 'New work order' });
+  const modal = formPanel(page, 'New work order');
   await chooseOption(modal.getByLabel('Project'), 'RD-2026-01');
   await chooseOption(modal.getByLabel('Subcontractor'), 'Sri Jagannath');
   await expect(modal.getByText('PAN AKPPM3321H')).toBeVisible();

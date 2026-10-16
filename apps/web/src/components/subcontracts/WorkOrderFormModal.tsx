@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo } from 'react';
-import { Alert, App, Button, DatePicker, Form, Input, InputNumber, Modal, Select, Space, Table, Typography } from 'antd';
+import { Alert, App, Button, DatePicker, Form, Input, InputNumber, Select, Table, Typography } from 'antd';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -12,6 +12,7 @@ import { useBoq, useProjects, useVendors } from '@/lib/queries';
 import { formatINR, toNumber } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { UnitInput } from '@/components/common/UnitInput';
+import { FormShell } from '@/components/form/FormShell';
 
 interface LineValue {
   boqItemId?: string | null;
@@ -137,19 +138,9 @@ export function WorkOrderFormModal({
       message.success(submit ? `${o.woNo} submitted for approval` : `${o.woNo} saved as a draft`);
       qc.invalidateQueries({ queryKey: ['work-orders'] });
       onSaved?.(o);
-      onClose();
     },
     onError: (e) => message.error(errorMessage(e)),
   });
-
-  const run = async (submit: boolean) => {
-    try {
-      await form.validateFields();
-      save.mutate({ v: form.getFieldsValue(true) as FormValues, submit });
-    } catch {
-      /* the form shows what is missing */
-    }
-  };
 
   const vendorOptions = (vendors ?? [])
     .filter((v) => v.isActive || v.id === order?.vendorId)
@@ -159,26 +150,19 @@ export function WorkOrderFormModal({
   const grid = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '0 16px' } as const;
 
   return (
-    <Modal
+    <FormShell
       open={open}
+      onClose={onClose}
+      form={form}
       title={order ? `Edit ${order.woNo}` : 'New work order'}
-      onCancel={onClose}
+      okText="Save and submit"
+      secondaryText="Save draft"
+      allValues
+      onSubmit={(v, draft) => save.mutateAsync({ v, submit: !draft })}
       width={1100}
-      destroyOnHidden
-      styles={{ body: { maxHeight: '72vh', overflowY: 'auto', paddingRight: 8 } }}
-      footer={
-        <Space>
-          <Button onClick={onClose}>Cancel</Button>
-          <Button onClick={() => run(false)} loading={save.isPending && !save.variables?.submit}>
-            Save draft
-          </Button>
-          <Button type="primary" onClick={() => run(true)} loading={save.isPending && !!save.variables?.submit}>
-            Save and submit
-          </Button>
-        </Space>
-      }
+      draftKey={order ? undefined : `work-order:${fixedProject ?? 'any'}`}
     >
-      <Form form={form} layout="vertical" style={{ marginTop: 8 }}>
+      <Form form={form} layout="vertical">
         <div style={grid}>
           <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]}>
             <Select
@@ -379,6 +363,6 @@ export function WorkOrderFormModal({
           </div>
         </div>
       </Form>
-    </Modal>
+    </FormShell>
   );
 }

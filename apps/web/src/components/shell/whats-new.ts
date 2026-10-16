@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-10-forms-v2',
+    date: '2026-10-16',
+    title: 'Roomier forms that keep what you type',
+    points: [
+      'Daily reports, material requests, purchase orders, work orders, risks and vendors open in a large panel with sections; the buttons stay at the bottom.',
+      'A new entry is kept on this device as you type, so a refresh or a closed tab does not lose it. Start over clears it.',
+      'Closing a form with changes asks first, and a failed submit lists what still needs filling, with a link to each field.',
+      'Ctrl Enter submits. In line tables (manpower, machinery, items) Enter moves down a line and adds one at the end.',
+    ],
+  },
+  {
     id: '2026-10-home-by-role',
     date: '2026-10-16',
     title: 'A home page made for your job',

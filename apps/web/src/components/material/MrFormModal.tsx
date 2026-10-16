@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { Alert, App, Button, DatePicker, Form, Input, InputNumber, Modal, Select, Space } from 'antd';
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import { Alert, App, DatePicker, Form, Input, InputNumber, Select } from 'antd';
 import dayjs from 'dayjs';
 import type { MaterialPriority, MaterialRequestDto } from '@erp/shared';
 import { MATERIAL_PRIORITIES, MATERIAL_PRIORITY_LABELS } from '@erp/shared';
@@ -11,6 +10,8 @@ import { api, errorMessage } from '@/lib/api';
 import { useProjects } from '@/lib/queries';
 import { editActionLabel } from '@/components/common/EditResubmitButton';
 import { UnitInput } from '@/components/common/UnitInput';
+import { FormGrid, FormShell } from '@/components/form/FormShell';
+import { LineTable } from '@/components/form/LineTable';
 
 interface FormValues {
   projectId: string;
@@ -59,68 +60,89 @@ export function MrFormModal({ open, onClose, projectId, entry }: { open: boolean
     onSuccess: () => {
       message.success(editing ? 'Material request resubmitted for approval' : 'Material request submitted for approval');
       qc.invalidateQueries();
-      onClose();
     },
     onError: (err) => message.error(errorMessage(err)),
   });
 
   return (
-    <Modal open={open} title={entry ? `${editActionLabel(entry.status)} · ${entry.requestNo}` : 'New material request'} okText={editing ? 'Resubmit request' : 'Submit request'} onCancel={onClose} onOk={() => form.submit()} confirmLoading={mutation.isPending} width={720} destroyOnHidden>
-      <Form form={form} layout="vertical" onFinish={(v) => mutation.mutate(v)} style={{ marginTop: 8 }}>
+    <FormShell
+      open={open}
+      onClose={onClose}
+      form={form}
+      title={entry ? `${editActionLabel(entry.status)} · ${entry.requestNo}` : 'New material request'}
+      okText={editing ? 'Resubmit request' : 'Submit request'}
+      onSubmit={(v) => mutation.mutateAsync(v)}
+      draftKey={editing ? undefined : `mr:${projectId ?? 'any'}`}
+      width={820}
+    >
+      <Form form={form} layout="vertical">
         {entry?.reviewNote && (
           <Alert type="warning" showIcon style={{ marginBottom: 16 }} title={`Reviewer note from ${entry.reviewedByName ?? 'approver'}`} description={entry.reviewNote} />
         )}
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]} hidden={!!fixedProject}>
           <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
         </Form.Item>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
+        <FormGrid cols={2}>
           <Form.Item name="requiredDate" label="Required by" rules={[{ required: true, message: 'Required' }]}>
             <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" />
           </Form.Item>
           <Form.Item name="priority" label="Priority" rules={[{ required: true }]}>
             <Select options={MATERIAL_PRIORITIES.map((p) => ({ value: p, label: MATERIAL_PRIORITY_LABELS[p] }))} />
           </Form.Item>
-        </div>
-        <Form.Item label="Items" required style={{ marginBottom: 8 }}>
-          <Form.List name="items" rules={[{ validator: async (_, v) => (!v || v.length === 0 ? Promise.reject(new Error('Add at least one item')) : Promise.resolve()) }]}>
-            {(fields, { add, remove }, { errors }) => (
-              <Space orientation="vertical" size={6} style={{ width: '100%' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '2fr 2fr 90px 100px 32px', gap: 6, fontSize: 12 }} className="text-muted">
-                  <span>Item</span>
-                  <span>Specification</span>
-                  <span>Qty</span>
-                  <span>Unit</span>
-                  <span />
-                </div>
-                {fields.map((f) => (
-                  <div key={f.key} style={{ display: 'grid', gridTemplateColumns: '2fr 2fr 90px 100px 32px', gap: 6 }}>
-                    <Form.Item name={[f.name, 'itemName']} noStyle rules={[{ required: true, message: 'Item name' }]}>
-                      <Input placeholder="Cement OPC 53" />
-                    </Form.Item>
-                    <Form.Item name={[f.name, 'specification']} noStyle>
-                      <Input placeholder="Grade / brand / size" />
-                    </Form.Item>
-                    <Form.Item name={[f.name, 'quantity']} noStyle rules={[{ required: true, message: 'Qty' }]}>
-                      <InputNumber min={0} style={{ width: '100%' }} />
-                    </Form.Item>
-                    <Form.Item name={[f.name, 'unit']} noStyle rules={[{ required: true, message: 'Unit' }]}>
-                      <UnitInput />
-                    </Form.Item>
-                    <Button icon={<DeleteOutlined />} onClick={() => remove(f.name)} disabled={fields.length === 1} />
-                  </div>
-                ))}
-                <Button type="dashed" icon={<PlusOutlined />} onClick={() => add({ unit: 'Nos', quantity: 1 })} block size="small">
-                  Add item
-                </Button>
-                <Form.ErrorList errors={errors} />
-              </Space>
-            )}
-          </Form.List>
+        </FormGrid>
+        <Form.Item label="Items" required>
+          <LineTable
+            name="items"
+            label="Item"
+            addText="Add item"
+            min={1}
+            newLine={() => ({ unit: 'Nos', quantity: 1 })}
+            columns={[
+              {
+                key: 'itemName',
+                title: 'Item',
+                render: (f) => (
+                  <Form.Item name={[f.name, 'itemName']} noStyle rules={[{ required: true, whitespace: true, message: 'Item name' }]}>
+                    <Input placeholder="Cement OPC 53" aria-label={`Item of line ${f.name + 1}`} style={{ minWidth: 160 }} />
+                  </Form.Item>
+                ),
+              },
+              {
+                key: 'specification',
+                title: 'Specification',
+                render: (f) => (
+                  <Form.Item name={[f.name, 'specification']} noStyle>
+                    <Input placeholder="Grade / brand / size" style={{ minWidth: 140 }} />
+                  </Form.Item>
+                ),
+              },
+              {
+                key: 'quantity',
+                title: 'Qty',
+                width: 100,
+                render: (f) => (
+                  <Form.Item name={[f.name, 'quantity']} noStyle rules={[{ required: true, message: 'Qty' }]}>
+                    <InputNumber min={0} style={{ width: '100%' }} aria-label={`Quantity of line ${f.name + 1}`} />
+                  </Form.Item>
+                ),
+              },
+              {
+                key: 'unit',
+                title: 'Unit',
+                width: 110,
+                render: (f) => (
+                  <Form.Item name={[f.name, 'unit']} noStyle rules={[{ required: true, message: 'Unit' }]}>
+                    <UnitInput aria-label={`Unit of line ${f.name + 1}`} />
+                  </Form.Item>
+                ),
+              },
+            ]}
+          />
         </Form.Item>
         <Form.Item name="remarks" label="Remarks">
           <Input.TextArea rows={2} />
         </Form.Item>
       </Form>
-    </Modal>
+    </FormShell>
   );
 }

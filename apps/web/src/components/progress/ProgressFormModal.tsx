@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { Alert, App, DatePicker, Form, Input, InputNumber, Modal, Select } from 'antd';
+import { Alert, App, DatePicker, Form, Input, InputNumber, Select } from 'antd';
 import dayjs from 'dayjs';
 import type { AttachmentDto, ProgressEntryDto } from '@erp/shared';
+import { FormShell } from '@/components/form/FormShell';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, errorMessage } from '@/lib/api';
 import { useActivities, useProjects } from '@/lib/queries';
@@ -79,14 +80,23 @@ export function ProgressFormModal({ open, onClose, projectId, entry }: { open: b
     onSuccess: () => {
       message.success(editing ? 'Progress entry resubmitted for approval' : 'Progress entry submitted for approval');
       qc.invalidateQueries();
-      onClose();
     },
     onError: (err) => message.error(errorMessage(err)),
   });
 
   return (
-    <Modal open={open} title={entry ? `${editActionLabel(entry.status)} · ${entry.activityName}` : 'New progress entry'} okText={editing ? 'Resubmit for approval' : 'Submit'} onCancel={onClose} onOk={() => form.submit()} confirmLoading={mutation.isPending} width={640} destroyOnHidden>
-      <Form form={form} layout="vertical" onFinish={(v) => mutation.mutate(v)} style={{ marginTop: 8 }}>
+    <FormShell
+      open={open}
+      onClose={onClose}
+      form={form}
+      title={entry ? `${editActionLabel(entry.status)} · ${entry.activityName}` : 'New progress entry'}
+      okText={editing ? 'Resubmit for approval' : 'Submit'}
+      onSubmit={(v) => mutation.mutateAsync(v)}
+      layout="modal"
+      width={640}
+      draftKey={editing ? undefined : `progress:${projectId ?? 'any'}`}
+    >
+      <Form form={form} layout="vertical">
         {entry?.reviewNote && (
           <Alert type="warning" showIcon style={{ marginBottom: 16 }} title={`Reviewer note from ${entry.reviewedByName ?? 'approver'}`} description={entry.reviewNote} />
         )}
@@ -129,6 +139,6 @@ export function ProgressFormModal({ open, onClose, projectId, entry }: { open: b
           <PhotoUpload />
         </Form.Item>
       </Form>
-    </Modal>
+    </FormShell>
   );
 }

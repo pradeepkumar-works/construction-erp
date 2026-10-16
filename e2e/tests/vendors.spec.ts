@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { api, apiToken, signIn } from './helpers';
+import { api, apiToken, signIn, formPanel } from './helpers';
 
 interface Page<T> {
   items: T[];
@@ -22,7 +22,7 @@ test('add a vendor and an expense typed with its name links to it', async ({ pag
   await signIn(page, 'procurement@demo.com');
   await page.goto('/vendors');
   await page.getByRole('button', { name: 'New vendor' }).click();
-  const modal = page.locator('.ant-modal').filter({ hasText: 'New vendor' });
+  const modal = formPanel(page, 'New vendor');
   await modal.getByLabel('Vendor name').fill(NAME);
   await modal.getByLabel('GSTIN').fill('21aabfe1234q1z7');
   await modal.getByLabel('MSME (Udyam)').click();

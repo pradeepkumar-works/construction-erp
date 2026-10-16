@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { Alert, App, DatePicker, Form, Input, InputNumber, Modal, Select, Typography } from 'antd';
+import { Alert, App, DatePicker, Form, Input, InputNumber, Select, Typography } from 'antd';
 import dayjs from 'dayjs';
 import type { AttachmentDto, ExpenseCategory, ExpenseDto, PaymentMode } from '@erp/shared';
 import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_LABELS, GSTIN_PATTERN, GST_RATES, GST_TOLERANCE, PAYMENT_MODES, PAYMENT_MODE_LABELS, gstFor } from '@erp/shared';
+import { FormShell } from '@/components/form/FormShell';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, errorMessage } from '@/lib/api';
 import { useActivities, useProjects } from '@/lib/queries';
@@ -98,23 +99,23 @@ export function ExpenseFormModal({ open, onClose, projectId, expense }: { open: 
     onSuccess: (x: ExpenseDto) => {
       message.success(editing ? `${x.expenseNo} resubmitted for approval` : `${x.expenseNo} submitted for approval`);
       qc.invalidateQueries();
-      onClose();
     },
     onError: (err) => message.error(errorMessage(err)),
   });
 
   return (
-    <Modal
+    <FormShell
       open={open}
+      onClose={onClose}
+      form={form}
       title={expense ? `${editActionLabel(expense.status)} · ${expense.expenseNo}` : 'New site expense'}
       okText={editing ? 'Resubmit for approval' : 'Submit'}
-      onCancel={onClose}
-      onOk={() => form.submit()}
-      confirmLoading={mutation.isPending}
+      onSubmit={(v) => mutation.mutateAsync(v)}
+      layout="modal"
       width={680}
-      destroyOnHidden
+      draftKey={editing ? undefined : `expense:${projectId ?? 'any'}`}
     >
-      <Form form={form} layout="vertical" onFinish={(v) => mutation.mutate(v)} style={{ marginTop: 8 }}>
+      <Form form={form} layout="vertical">
         {expense?.reviewNote && <Alert type="warning" showIcon style={{ marginBottom: 16 }} title={`Reviewer note from ${expense.reviewedByName ?? 'approver'}`} description={expense.reviewNote} />}
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]} hidden={!!fixedProject}>
           <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} onChange={() => form.setFieldValue('activityId', undefined)} />
@@ -177,6 +178,6 @@ export function ExpenseFormModal({ open, onClose, projectId, expense }: { open: 
           <PhotoUpload />
         </Form.Item>
       </Form>
-    </Modal>
+    </FormShell>
   );
 }

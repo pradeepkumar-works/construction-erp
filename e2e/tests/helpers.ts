@@ -63,3 +63,10 @@ export async function openProjectTab(page: Page, group: string, tab?: string) {
 
 /** The tabs inside a group of the project page, once the group is open. */
 export const projectTabs = (page: Page, group: string) => page.getByRole('radiogroup', { name: `${group} tabs` });
+
+/** An open form by its title, whether it sits in a modal (short forms) or a drawer (long ones). */
+export function formPanel(page: Page, title: string | RegExp): Locator {
+  return page
+    .locator('.ant-modal, .ant-drawer-content-wrapper')
+    .filter({ has: page.locator('.ant-modal-title, .ant-drawer-title').filter({ hasText: title }) });
+}

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { api, apiToken, newestFirst, queueItem, signIn } from './helpers';
+import { api, apiToken, newestFirst, queueItem, signIn, formPanel } from './helpers';
 
 interface Project { id: string; code: string }
 interface MaterialRequest { id: string; requestNo: string; status: string; reviewNote: string | null }
@@ -43,7 +43,7 @@ test.describe.serial('material request: changes requested, then resubmitted', ()
     await expect(row.getByText('Changes Requested', { exact: false })).toBeVisible();
     await row.getByRole('button', { name: 'Actions' }).click();
     await page.getByRole('menuitem', { name: 'Edit & resubmit' }).click();
-    const modal = page.locator('.ant-modal').filter({ hasText: mr.requestNo });
+    const modal = formPanel(page, mr.requestNo);
     await expect(modal.getByText(reason)).toBeVisible();
     await modal.getByRole('button', { name: 'Resubmit request' }).click();
     await expect(modal).toBeHidden();
