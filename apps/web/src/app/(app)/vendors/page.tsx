@@ -1,22 +1,26 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Card, Checkbox, Popconfirm, Select, Space, Table, Tabs, Tag, Typography } from 'antd';
+import { App, Button, Card, Checkbox, Flex, Popconfirm, Select, Space, Table, Tabs, Tag, Typography, theme } from 'antd';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { MsmeCategory, UnlistedVendorDto, VendorDto, VendorKind, VendorSortField } from '@erp/shared';
-import { GST_STATES, MSME_CATEGORIES, MSME_CATEGORY_LABELS, VENDOR_KINDS, VENDOR_KIND_LABELS, canEditVendors, canSeeVendorBank } from '@erp/shared';
+import { GST_STATES, LIST_SORT_FIELDS, MSME_CATEGORIES, MSME_CATEGORY_LABELS, VENDOR_KINDS, VENDOR_KIND_LABELS, canEditVendors, canSeeVendorBank } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { api, errorMessage } from '@/lib/api';
 import { useUnlistedVendors, useVendorsPage } from '@/lib/queries';
-import { useListState } from '@/lib/listState';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { VENDOR_EXPORT } from '@/lib/exportColumns';
 import { PageHeader } from '@/components/common/PageHeader';
 import { QueryError } from '@/components/common/QueryState';
 import { ListToolbar } from '@/components/common/ListToolbar';
 import { ExportButton } from '@/components/common/ExportButton';
+import { EmptyArt } from '@/components/common/EmptyArt';
 import { VendorFormModal } from '@/components/vendors/VendorFormModal';
+import { DataTable, type ListColumn } from '@/components/list/DataTable';
+import { exportSelected } from '@/components/list/bulk';
+import { useListFrame } from '@/components/list/useListFrame';
+import { formatDate } from '@/lib/format';
 
 const usedOn = (r: { expenseCount: number; equipmentCount: number; grnCount: number }) =>
   [
@@ -27,21 +31,18 @@ const usedOn = (r: { expenseCount: number; equipmentCount: number; grnCount: num
     .filter(Boolean)
     .join(' · ') || '-';
 
+const KEYS = ['kind', 'msme', 'inactive'] as const;
+
+function Sub({ children }: { children: React.ReactNode }) {
+  const { token } = theme.useToken();
+  return <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{children}</div>;
+}
+
 function VendorsTab({ editable, onEdit }: { editable: boolean; onEdit: (v: VendorDto) => void }) {
   const { user } = useAuth();
   const { message } = App.useApp();
   const qc = useQueryClient();
-  const list = useListState<VendorSortField>({ sortBy: 'name', sortOrder: 'asc' });
-  const [kind, setKind] = useState<VendorKind | undefined>();
-  const [msme, setMsme] = useState<MsmeCategory | undefined>();
-  const [includeInactive, setIncludeInactive] = useState(false);
-  const filters = { ...list.params, kind, msme, includeInactive };
-  const { data, isLoading, isFetching, error, refetch } = useVendorsPage(filters);
   const bank = !!user && canSeeVendorBank(user.roleKey);
-  const reset = <T,>(set: (v: T) => void) => (v: T) => {
-    set(v);
-    list.resetPage();
-  };
 
   const remove = useMutation({
     mutationFn: async (id: string) => (await api.delete(`/vendors/${id}`)).data,
@@ -52,121 +53,161 @@ function VendorsTab({ editable, onEdit }: { editable: boolean; onEdit: (v: Vendo
     onError: (e) => message.error(errorMessage(e)),
   });
 
+  const frame = useListFrame<VendorSortField, VendorDto>({
+    list: 'vendors',
+    keys: KEYS,
+    sortBy: 'name',
+    sortOrder: 'asc',
+    sortFields: LIST_SORT_FIELDS.vendors,
+    projectScoped: false,
+    moreViews: [
+      { key: 'suppliers', label: 'Suppliers', filters: { kind: 'SUPPLIER' } },
+      { key: 'subcontractors', label: 'Subcontractors', filters: { kind: 'SUBCONTRACTOR' } },
+      { key: 'hire', label: 'Hire agencies', filters: { kind: 'HIRE_AGENCY' } },
+      { key: 'inactive', label: 'Including inactive', filters: { inactive: '1' } },
+    ],
+    chipLabels: {
+      kind: (v) => `Supplies: ${VENDOR_KIND_LABELS[v as VendorKind] ?? v}`,
+      msme: (v) => `MSME: ${MSME_CATEGORY_LABELS[v as MsmeCategory] ?? v}`,
+      inactive: () => 'Including inactive',
+    },
+    columns: (sortOrderFor): ListColumn<VendorDto>[] => [
+      {
+        title: 'Vendor',
+        key: 'name',
+        locked: true,
+        sorter: true,
+        sortOrder: sortOrderFor('name'),
+        render: (_, v) => (
+          <div>
+            <Typography.Text strong>{v.name}</Typography.Text> {!v.isActive && <Tag>Inactive</Tag>}
+            <Flex gap={4} wrap style={{ marginTop: 2 }}>
+              {v.kinds.map((k) => (
+                <Tag key={k} style={{ margin: 0 }}>
+                  {VENDOR_KIND_LABELS[k]}
+                </Tag>
+              ))}
+            </Flex>
+          </div>
+        ),
+      },
+      {
+        title: 'GSTIN / PAN',
+        key: 'gstin',
+        width: 190,
+        render: (_, v) => (
+          <div>
+            <div className="mono">{v.gstin ?? '-'}</div>
+            <Sub>{[v.pan, v.stateCode ? GST_STATES[v.stateCode] : null].filter(Boolean).join(' · ')}</Sub>
+          </div>
+        ),
+      },
+      {
+        title: 'MSME',
+        key: 'msme',
+        width: 120,
+        render: (_, v) =>
+          v.msmeCategory ? (
+            <Tag color={v.msmeCategory === 'MEDIUM' ? 'default' : 'orange'} title={v.udyamNo ?? undefined} style={{ margin: 0 }}>
+              {MSME_CATEGORY_LABELS[v.msmeCategory]}
+            </Tag>
+          ) : (
+            <Sub>-</Sub>
+          ),
+      },
+      {
+        title: 'Contact',
+        key: 'contact',
+        render: (_, v) => (
+          <div>
+            {v.contactPerson && <div>{v.contactPerson}</div>}
+            <Sub>{[v.phone, v.email].filter(Boolean).join(' · ') || (v.contactPerson ? '' : '-')}</Sub>
+          </div>
+        ),
+      },
+      ...(bank
+        ? [
+            {
+              title: 'Bank',
+              key: 'bank',
+              width: 200,
+              render: (_: unknown, v: VendorDto) =>
+                v.bankAccountNo ? (
+                  <div>
+                    <div className="mono">{v.bankAccountNo}</div>
+                    <Sub>{[v.bankIfsc, v.bankName].filter(Boolean).join(' · ')}</Sub>
+                  </div>
+                ) : (
+                  <Sub>-</Sub>
+                ),
+            } satisfies ListColumn<VendorDto>,
+          ]
+        : []),
+      { title: 'Used on', key: 'used', width: 190, render: (_, v) => usedOn(v) },
+      { title: 'Added', label: 'Added on', key: 'createdAt', dataIndex: 'createdAt', width: 120, defaultHidden: true, sorter: true, sortOrder: sortOrderFor('createdAt'), render: (v: string) => formatDate(v) },
+      ...(editable
+        ? [
+            {
+              title: '',
+              key: 'actions',
+              label: 'Actions',
+              locked: true,
+              fixed: 'right' as const,
+              width: 96,
+              render: (_: unknown, v: VendorDto) => (
+                <Space size={4}>
+                  <Button size="small" type="text" icon={<EditOutlined />} aria-label={`Edit ${v.name}`} onClick={() => onEdit(v)} />
+                  {v.expenseCount + v.equipmentCount + v.grnCount === 0 ? (
+                    <Popconfirm title={`Delete ${v.name}?`} okText="Delete" okButtonProps={{ danger: true }} onConfirm={() => remove.mutate(v.id)}>
+                      <Button size="small" type="text" danger icon={<DeleteOutlined />} aria-label={`Delete ${v.name}`} />
+                    </Popconfirm>
+                  ) : null}
+                </Space>
+              ),
+            } satisfies ListColumn<VendorDto>,
+          ]
+        : []),
+    ],
+  });
+  const { page } = frame;
+  const kind = page.filters.kind as VendorKind | undefined;
+  const msme = page.filters.msme as MsmeCategory | undefined;
+  const includeInactive = page.filters.inactive === '1';
+  const filters = { page: page.params.page, pageSize: page.params.pageSize, q: page.params.q, sortBy: page.params.sortBy, sortOrder: page.params.sortOrder, kind, msme, includeInactive: includeInactive || undefined };
+  const { data, isLoading, isFetching, error, refetch } = useVendorsPage(filters);
+  const rows = data?.items ?? [];
+  const exportCols = VENDOR_EXPORT.filter((c) => bank || !['Account name', 'Account no.', 'IFSC', 'Bank'].includes(c.header));
+
   const exportRows = async () => {
-    const rows = await fetchAllPages<VendorDto>('/vendors', { ...filters });
-    downloadXlsx(exportFileName('vendors'), 'Vendors', VENDOR_EXPORT.filter((c) => bank || !['Account name', 'Account no.', 'IFSC', 'Bank'].includes(c.header)), rows);
-    return rows.length;
+    const all = await fetchAllPages<VendorDto>('/vendors', { ...filters });
+    downloadXlsx(exportFileName('vendors'), 'Vendors', exportCols, all);
+    return all.length;
   };
 
   return (
     <>
+      {frame.views}
       {error && <QueryError error={error} onRetry={() => refetch()} />}
-      <ListToolbar projectId={undefined} onProject={() => undefined} hideProject search={list.search} onSearch={list.setSearch} searchPlaceholder="Search name, GSTIN, PAN, contact" extra={<ExportButton onExport={exportRows} />}>
-        <Select<VendorKind> allowClear placeholder="Supplies anything" style={{ width: 190 }} value={kind} onChange={reset(setKind)} options={VENDOR_KINDS.map((k) => ({ value: k, label: VENDOR_KIND_LABELS[k] }))} />
-        <Select<MsmeCategory> allowClear placeholder="MSME or not" style={{ width: 150 }} value={msme} onChange={reset(setMsme)} options={MSME_CATEGORIES.map((c) => ({ value: c, label: MSME_CATEGORY_LABELS[c] }))} />
-        <Checkbox checked={includeInactive} onChange={(e) => reset(setIncludeInactive)(e.target.checked)}>
+      <ListToolbar projectId={undefined} onProject={() => undefined} hideProject search={page.search} onSearch={page.setSearch} searchPlaceholder="Search name, GSTIN, PAN, contact" extra={<ExportButton onExport={exportRows} />}>
+        <Select<VendorKind> allowClear placeholder="Supplies anything" aria-label="Supplies" style={{ width: 190 }} value={kind} onChange={(v) => page.setFilter('kind', v)} options={VENDOR_KINDS.map((k) => ({ value: k, label: VENDOR_KIND_LABELS[k] }))} />
+        <Select<MsmeCategory> allowClear placeholder="MSME or not" aria-label="MSME" style={{ width: 150 }} value={msme} onChange={(v) => page.setFilter('msme', v)} options={MSME_CATEGORIES.map((c) => ({ value: c, label: MSME_CATEGORY_LABELS[c] }))} />
+        <Checkbox checked={includeInactive} onChange={(e) => page.setFilter('inactive', e.target.checked ? '1' : undefined)}>
           Show inactive
         </Checkbox>
       </ListToolbar>
-      <Table<VendorDto>
-        rowKey="id"
-        size="middle"
+      <DataTable<VendorDto>
+        columns={frame.columns}
+        visible={frame.choice.visible}
+        onChooseColumns={frame.choice.setChosen}
+        chosenIsDefault={frame.choice.isDefault}
+        rows={rows}
         loading={isLoading || isFetching}
-        dataSource={data?.items ?? []}
-        scroll={{ x: 1100 }}
-        {...list.tableProps<VendorDto>(data?.total)}
-        columns={[
-          {
-            title: 'Vendor',
-            key: 'name',
-            sorter: true,
-            sortOrder: list.sortOrderFor('name'),
-            render: (_, v) => (
-              <div>
-                <Typography.Text strong>{v.name}</Typography.Text> {!v.isActive && <Tag>Inactive</Tag>}
-                <div style={{ marginTop: 2 }}>
-                  {v.kinds.map((k) => (
-                    <Tag key={k} style={{ fontSize: 11 }}>
-                      {VENDOR_KIND_LABELS[k]}
-                    </Tag>
-                  ))}
-                </div>
-              </div>
-            ),
-          },
-          {
-            title: 'GSTIN / PAN',
-            key: 'gstin',
-            width: 190,
-            render: (_, v) => (
-              <div style={{ fontSize: 12 }}>
-                <div className="mono">{v.gstin ?? '-'}</div>
-                <div className="text-muted">{[v.pan, v.stateCode ? GST_STATES[v.stateCode] : null].filter(Boolean).join(' · ')}</div>
-              </div>
-            ),
-          },
-          {
-            title: 'MSME',
-            key: 'msme',
-            width: 120,
-            render: (_, v) =>
-              v.msmeCategory ? (
-                <Tag color={v.msmeCategory === 'MEDIUM' ? 'default' : 'orange'} title={v.udyamNo ?? undefined}>
-                  {MSME_CATEGORY_LABELS[v.msmeCategory]}
-                </Tag>
-              ) : (
-                <span className="text-muted">-</span>
-              ),
-          },
-          {
-            title: 'Contact',
-            key: 'contact',
-            render: (_, v) => (
-              <div style={{ fontSize: 12 }}>
-                {v.contactPerson && <div>{v.contactPerson}</div>}
-                <div className="text-muted">{[v.phone, v.email].filter(Boolean).join(' · ') || (v.contactPerson ? '' : '-')}</div>
-              </div>
-            ),
-          },
-          ...(bank
-            ? [
-                {
-                  title: 'Bank',
-                  key: 'bank',
-                  width: 200,
-                  render: (_: unknown, v: VendorDto) =>
-                    v.bankAccountNo ? (
-                      <div style={{ fontSize: 12 }}>
-                        <div className="mono">{v.bankAccountNo}</div>
-                        <div className="text-muted">{[v.bankIfsc, v.bankName].filter(Boolean).join(' · ')}</div>
-                      </div>
-                    ) : (
-                      <span className="text-muted">-</span>
-                    ),
-                },
-              ]
-            : []),
-          { title: 'Used on', key: 'used', width: 190, render: (_, v) => <span style={{ fontSize: 12 }}>{usedOn(v)}</span> },
-          ...(editable
-            ? [
-                {
-                  title: '',
-                  key: 'actions',
-                  width: 96,
-                  render: (_: unknown, v: VendorDto) => (
-                    <Space size={4}>
-                      <Button size="small" type="text" icon={<EditOutlined />} aria-label={`Edit ${v.name}`} onClick={() => onEdit(v)} />
-                      {v.expenseCount + v.equipmentCount + v.grnCount === 0 ? (
-                        <Popconfirm title={`Delete ${v.name}?`} okText="Delete" okButtonProps={{ danger: true }} onConfirm={() => remove.mutate(v.id)}>
-                          <Button size="small" type="text" danger icon={<DeleteOutlined />} aria-label={`Delete ${v.name}`} />
-                        </Popconfirm>
-                      ) : null}
-                    </Space>
-                  ),
-                },
-              ]
-            : []),
-        ]}
+        table={page.tableProps<VendorDto>(data?.total)}
+        onOpen={editable ? (id) => { const v = rows.find((x) => x.id === id); if (v) onEdit(v); } : undefined}
+        bulk={[exportSelected<VendorDto>('vendors', 'Vendors', exportCols)]}
+        chips={frame.chips}
+        scrollX={1100}
+        emptyText={<EmptyArt art="entries" title={kind || msme || page.params.q ? 'No vendor matches these filters' : 'No vendors yet'} />}
       />
     </>
   );

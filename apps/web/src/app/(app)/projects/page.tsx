@@ -3,76 +3,121 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Button, Card, Progress, Select, Table, Badge } from 'antd';
-import type { TableProps } from 'antd';
-import type { ColumnType } from 'antd/es/table';
+import { Badge, Button, Card, Progress, Select, theme } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import type { ProjectSortField, ProjectStatus, ProjectSummary, ProjectType } from '@erp/shared';
-import { PROJECT_STATUSES, PROJECT_STATUS_LABELS, PROJECT_TYPES, PROJECT_TYPE_LABELS, canEditProjects } from '@erp/shared';
+import { LIST_SORT_FIELDS, PROJECT_STATUSES, PROJECT_STATUS_LABELS, PROJECT_TYPES, PROJECT_TYPE_LABELS, canEditProjects } from '@erp/shared';
 import { useProjectsPage } from '@/lib/queries';
-import { useListState } from '@/lib/listState';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { PROJECT_EXPORT } from '@/lib/exportColumns';
 import { ExportButton } from '@/components/common/ExportButton';
-import { SearchBox } from '@/components/common/SearchBox';
 import { useAuth } from '@/lib/auth';
-import { formatDate, formatINR, progressStatus } from '@/lib/format';
+import { formatDate, formatINR, progressStatus, toNumber } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { QueryError } from '@/components/common/QueryState';
 import { EmptyArt } from '@/components/common/EmptyArt';
+import { ListToolbar } from '@/components/common/ListToolbar';
 import { ProjectStatusTag, ProjectTypeTag } from '@/components/common/StatusTag';
 import { ProjectFormModal } from '@/components/projects/ProjectFormModal';
+import { DataTable, type ListColumn } from '@/components/list/DataTable';
+import { exportSelected } from '@/components/list/bulk';
+import { useListFrame } from '@/components/list/useListFrame';
 import { BRAND } from '@/lib/brand';
-import { CardToolbar } from '@/components/common/CardToolbar';
 
-export default function ProjectsPage() {
-  const { user } = useAuth();
-  const router = useRouter();
-  const list = useListState<ProjectSortField>({ sortBy: 'status', sortOrder: 'asc', pageSize: 25 });
-  const [type, setType] = useState<ProjectType | undefined>();
-  const [status, setStatus] = useState<ProjectStatus | undefined>();
-  const filters = { ...list.params, type, status };
-  const { data, isLoading, isFetching, error, refetch } = useProjectsPage(filters);
-  const [createOpen, setCreateOpen] = useState(false);
+const KEYS = ['status', 'type'] as const;
 
-  const canCreate = user && canEditProjects(user.roleKey) && user.roleKey !== 'QUANTITY_SURVEYOR';
-  const sort = (key: ProjectSortField): Pick<ColumnType<ProjectSummary>, 'key' | 'sorter' | 'sortOrder'> => ({ key, sorter: true, sortOrder: list.sortOrderFor(key) });
-  const exportRows = async () => {
-    const rows = await fetchAllPages<ProjectSummary>('/projects', filters);
-    downloadXlsx(exportFileName('projects'), 'Projects', PROJECT_EXPORT, rows);
-    return rows.length;
-  };
+function Sub({ children }: { children: React.ReactNode }) {
+  const { token } = theme.useToken();
+  return <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{children}</div>;
+}
 
-  const columns: TableProps<ProjectSummary>['columns'] = [
+function projectColumns(sortOrderFor: (key: ProjectSortField) => 'ascend' | 'descend' | null): ListColumn<ProjectSummary>[] {
+  const sort = (key: ProjectSortField) => ({ key, sorter: true, sortOrder: sortOrderFor(key) });
+  return [
     {
       title: 'Project',
       ...sort('name'),
+      locked: true,
       width: 320,
       render: (_, p) => (
         <div>
           <Link href={`/projects/${p.id}`} className="link-strong">
             {p.name}
           </Link>
-          <div className="text-muted" style={{ fontSize: 12 }}>
-            {[p.code, p.clientName, p.location].filter(Boolean).join(' · ')}
-          </div>
+          <Sub>{[p.code, p.clientName, p.location].filter(Boolean).join(' · ')}</Sub>
         </div>
       ),
     },
     { title: 'Type', dataIndex: 'type', width: 150, render: (t) => <ProjectTypeTag type={t} />, ...sort('type') },
     { title: 'Status', dataIndex: 'status', width: 110, render: (s) => <ProjectStatusTag status={s} />, ...sort('status') },
-    { title: 'PM', dataIndex: 'projectManagerName', width: 140, render: (v) => v ?? <span className="text-muted">Unassigned</span> },
-    { title: 'Contract Value', dataIndex: 'contractValue', width: 150, align: 'right', className: 'mono', render: (v) => (v ? formatINR(v) : '-'), ...sort('contractValue') },
-    { title: 'Progress', dataIndex: 'physicalProgressPct', width: 160, render: (v: number) => <Progress percent={Math.round(v * 10) / 10} size="small" status={progressStatus(v)} /> },
-    { title: 'End Date', dataIndex: 'endDate', width: 120, render: (v) => formatDate(v), ...sort('endDate') },
-    { title: 'Pending', dataIndex: 'pendingApprovals', width: 80, align: 'center', fixed: 'right', render: (v: number) => (v > 0 ? <Badge count={v} color={BRAND.colors.pending} /> : <span className="text-muted">0</span>) },
+    { key: 'projectManagerName', title: 'PM', label: 'Project manager', dataIndex: 'projectManagerName', width: 140, render: (v) => v ?? <Sub>Unassigned</Sub> },
+    {
+      title: 'Contract Value',
+      label: 'Contract value',
+      dataIndex: 'contractValue',
+      width: 150,
+      align: 'right',
+      className: 'mono',
+      render: (v) => (v ? formatINR(v) : '-'),
+      ...sort('contractValue'),
+      total: (rows) => formatINR(rows.reduce((n, r) => n + toNumber(r.contractValue), 0)),
+    },
+    { key: 'physicalProgressPct', title: 'Progress', dataIndex: 'physicalProgressPct', width: 160, render: (v: number) => <Progress percent={Math.round(v * 10) / 10} size="small" status={progressStatus(v)} /> },
+    { title: 'Start Date', label: 'Start date', dataIndex: 'startDate', width: 120, defaultHidden: true, render: (v) => formatDate(v), ...sort('startDate') },
+    { title: 'End Date', label: 'End date', dataIndex: 'endDate', width: 120, render: (v) => formatDate(v), ...sort('endDate') },
+    {
+      key: 'pendingApprovals',
+      title: 'Pending',
+      label: 'Pending approvals',
+      dataIndex: 'pendingApprovals',
+      width: 80,
+      align: 'center',
+      fixed: 'right',
+      render: (v: number) => (v > 0 ? <Badge count={v} color={BRAND.colors.pending} /> : <Sub>0</Sub>),
+    },
   ];
+}
+
+export default function ProjectsPage() {
+  const { user } = useAuth();
+  const router = useRouter();
+  const frame = useListFrame<ProjectSortField, ProjectSummary>({
+    list: 'projects',
+    keys: KEYS,
+    sortBy: 'status',
+    sortOrder: 'asc',
+    sortFields: LIST_SORT_FIELDS.projects,
+    projectScoped: false,
+    columns: projectColumns,
+    moreViews: [
+      { key: 'active', label: 'Active', filters: { status: 'ACTIVE' } },
+      { key: 'planned', label: 'Planned', filters: { status: 'PLANNED' } },
+      { key: 'on-hold', label: 'On hold', filters: { status: 'ON_HOLD' } },
+      { key: 'completed', label: 'Completed', filters: { status: 'COMPLETED' } },
+    ],
+    statusLabels: PROJECT_STATUS_LABELS,
+    chipLabels: { type: (v) => `Type: ${PROJECT_TYPE_LABELS[v as ProjectType] ?? v}` },
+  });
+  const { page } = frame;
+  const status = page.filters.status as ProjectStatus | undefined;
+  const type = page.filters.type as ProjectType | undefined;
+  const filters = { ...page.params, mine: undefined, from: undefined, to: undefined, status, type };
+  const { data, isLoading, isFetching, error, refetch } = useProjectsPage(filters);
+  const [createOpen, setCreateOpen] = useState(false);
+
+  const canCreate = user && canEditProjects(user.roleKey) && user.roleKey !== 'QUANTITY_SURVEYOR';
+  const filtered = !!(type || status || page.params.q);
+  const exportRows = async () => {
+    const rows = await fetchAllPages<ProjectSummary>('/projects', filters);
+    downloadXlsx(exportFileName('projects'), 'Projects', PROJECT_EXPORT, rows);
+    return rows.length;
+  };
 
   return (
     <div className="page-container">
       <PageHeader
         title="Projects"
-        subtitle={`${data?.total ?? 0} project${data?.total === 1 ? '' : 's'} ${type || status || list.params.q ? 'match' : 'in your scope'}`}
+        subtitle={`${data?.total ?? 0} project${data?.total === 1 ? '' : 's'} ${filtered ? 'match' : 'in your scope'}`}
         extra={
           canCreate ? (
             <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
@@ -83,24 +128,48 @@ export default function ProjectsPage() {
       />
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       <Card size="small">
-        <CardToolbar wrap gap={8}>
-          <SearchBox value={list.search} onChange={list.setSearch} placeholder="Search by name, code, client, location" width={320} />
-          <Select allowClear placeholder="All types" value={type} onChange={(v) => { setType(v); list.resetPage(); }} style={{ width: 180 }} options={PROJECT_TYPES.map((t) => ({ value: t, label: PROJECT_TYPE_LABELS[t] }))} />
-          <Select allowClear placeholder="All statuses" value={status} onChange={(v) => { setStatus(v); list.resetPage(); }} style={{ width: 160 }} options={PROJECT_STATUSES.map((s) => ({ value: s, label: PROJECT_STATUS_LABELS[s] }))} />
-          <div style={{ marginLeft: 'auto' }}>
-            <ExportButton onExport={exportRows} />
-          </div>
-        </CardToolbar>
-        <Table<ProjectSummary>
-          rowKey="id"
+        {frame.views}
+        <ListToolbar
+          projectId={undefined}
+          onProject={() => undefined}
+          hideProject
+          search={page.search}
+          onSearch={page.setSearch}
+          searchPlaceholder="Search by name, code, client, location"
+          extra={<ExportButton onExport={exportRows} />}
+        >
+          <Select<ProjectType>
+            allowClear
+            placeholder="All types"
+            aria-label="Type"
+            value={type}
+            onChange={(v) => page.setFilter('type', v)}
+            style={{ width: 180 }}
+            options={PROJECT_TYPES.map((t) => ({ value: t, label: PROJECT_TYPE_LABELS[t] }))}
+          />
+          <Select<ProjectStatus>
+            allowClear
+            placeholder="All statuses"
+            aria-label="Status"
+            value={status}
+            onChange={(v) => page.setFilter('status', v)}
+            style={{ width: 160 }}
+            options={PROJECT_STATUSES.map((s) => ({ value: s, label: PROJECT_STATUS_LABELS[s] }))}
+          />
+        </ListToolbar>
+        <DataTable<ProjectSummary>
+          columns={frame.columns}
+          visible={frame.choice.visible}
+          onChooseColumns={frame.choice.setChosen}
+          chosenIsDefault={frame.choice.isDefault}
+          rows={data?.items ?? []}
           loading={isLoading || isFetching}
-          columns={columns}
-          dataSource={data?.items ?? []}
-          size="middle"
-          {...list.tableProps<ProjectSummary>(data?.total)}
-          scroll={{ x: 1150 }}
-          locale={{ emptyText: <EmptyArt art="projects" title={list.search || type || status ? 'No project matches these filters' : 'No projects yet'} /> }}
-          onRow={(p) => ({ onClick: (e) => { if ((e.target as HTMLElement).closest('a')) return; router.push(`/projects/${p.id}`); }, style: { cursor: 'pointer' } })}
+          table={page.tableProps<ProjectSummary>(data?.total)}
+          onOpen={(id) => router.push(`/projects/${id}`)}
+          bulk={[exportSelected<ProjectSummary>('projects', 'Projects', PROJECT_EXPORT)]}
+          chips={frame.chips}
+          scrollX={1150}
+          emptyText={<EmptyArt art="projects" title={filtered ? 'No project matches these filters' : 'No projects yet'} />}
         />
       </Card>
       <ProjectFormModal open={createOpen} onClose={() => setCreateOpen(false)} onSaved={(id) => router.push(`/projects/${id}`)} />

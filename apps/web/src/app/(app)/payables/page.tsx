@@ -7,12 +7,12 @@ import type { TableProps } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { PayableBillDto, PayableTotalsDto, ProjectPayableDto, VendorPayableDto, VendorPaymentDto, VendorPaymentSortField } from '@erp/shared';
-import { MSME_CATEGORY_LABELS, RECEIPT_MODE_LABELS, canRecordPayment } from '@erp/shared';
+import { LIST_SORT_FIELDS, MSME_CATEGORY_LABELS, RECEIPT_MODE_LABELS, canRecordPayment } from '@erp/shared';
 import { useProjectScope } from '@/lib/project-scope';
 import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { usePayables, useVendorPayments, useVendors } from '@/lib/queries';
-import { useListState } from '@/lib/listState';
+import { useListPage } from '@/lib/listPage';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { PAYABLE_BILL_EXPORT, PAYABLE_VENDOR_EXPORT, VENDOR_PAYMENT_EXPORT } from '@/lib/exportColumns';
 import { formatDate, formatINR, formatINRCompact, toNumber } from '@/lib/format';
@@ -26,6 +26,10 @@ import { SubBillDrawer } from '@/components/subcontracts/SubBillDrawer';
 import { PAYMENT_QUERY_KEYS, PaymentFormModal, type PayTarget } from '@/components/payables/PaymentFormModal';
 import { InTallyTag } from '@/components/tally/InTallyTag';
 import { CardToolbar } from '@/components/common/CardToolbar';
+import { EmptyArt } from '@/components/common/EmptyArt';
+import { DataTable, useColumnChoice, type ListColumn } from '@/components/list/DataTable';
+import { exportSelected } from '@/components/list/bulk';
+import { RecordLink } from '@/components/record/RecordLink';
 import { themeColor } from '@/lib/theme';
 
 const money = (v: string, strong?: boolean) => (strong ? <strong className="mono">{formatINR(v)}</strong> : <span className="mono">{formatINR(v)}</span>);
@@ -54,17 +58,21 @@ function ageingColumns<T extends PayableTotalsDto>(): NonNullable<TableProps<T>[
   ];
 }
 
+const NO_KEYS: string[] = [];
+const billHref = (r: VendorPaymentDto) => (r.billType === 'VENDOR_BILL' ? `/vendor-bills/${r.vendorBillId}` : `/subcontract-bills/${r.subcontractBillId}`);
+
 function PaymentsTab({ projectId, vendorId, onBill }: { projectId?: string; vendorId?: string; onBill: (b: { billType: PayableBillDto['billType']; billId: string }) => void }) {
   const { user } = useAuth();
   const { message } = App.useApp();
   const qc = useQueryClient();
-  const list = useListState<VendorPaymentSortField>({ sortBy: 'paymentDate', sortOrder: 'desc' });
+  const page = useListPage<VendorPaymentSortField>({ keys: NO_KEYS, sortBy: 'paymentDate', sortOrder: 'desc', sortFields: LIST_SORT_FIELDS.vendorPayments, url: false, scope: `${projectId}:${vendorId}` });
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<VendorPaymentDto | null>(null);
-  const filters = { ...list.params, projectId, vendorId };
+  const filters = { page: page.params.page, pageSize: page.params.pageSize, q: page.params.q, sortBy: page.params.sortBy, sortOrder: page.params.sortOrder, projectId, vendorId };
   const { data, isLoading, isFetching, error, refetch } = useVendorPayments(filters);
+  const rows = data?.items ?? [];
   const accounts = !!user && canRecordPayment(user.roleKey);
-  const sort = (key: VendorPaymentSortField) => ({ key, sorter: true, sortOrder: list.sortOrderFor(key), sortDirections: ['descend', 'ascend'] as ('descend' | 'ascend')[] });
+  const sort = (key: VendorPaymentSortField) => ({ key, sorter: true, sortOrder: page.sortOrderFor(key), sortDirections: ['descend', 'ascend'] as ('descend' | 'ascend')[] });
   const remove = useMutation({
     mutationFn: async (id: string) => (await api.delete(`/vendor-payments/${id}`)).data,
     onSuccess: () => {
@@ -74,30 +82,42 @@ function PaymentsTab({ projectId, vendorId, onBill }: { projectId?: string; vend
     onError: (e) => message.error(errorMessage(e)),
   });
   const exportRows = async () => {
-    const rows = await fetchAllPages<VendorPaymentDto>('/vendor-payments', { ...filters });
-    downloadXlsx(exportFileName('payments'), 'Payments', VENDOR_PAYMENT_EXPORT, rows);
-    return rows.length;
+    const all = await fetchAllPages<VendorPaymentDto>('/vendor-payments', { ...filters });
+    downloadXlsx(exportFileName('payments'), 'Payments', VENDOR_PAYMENT_EXPORT, all);
+    return all.length;
   };
+  const openBill = (r: VendorPaymentDto) => onBill({ billType: r.billType, billId: (r.vendorBillId ?? r.subcontractBillId)! });
 
-  const columns: TableProps<VendorPaymentDto>['columns'] = [
+  const columns: ListColumn<VendorPaymentDto>[] = [
     { title: 'Date', dataIndex: 'paymentDate', width: 110, ...sort('paymentDate'), render: (v) => formatDate(v) },
     {
       title: 'Paid to',
+      locked: true,
       ...sort('vendor'),
       render: (_, r) => (
         <div>
           {r.vendorName}
-          <div style={{ fontSize: 12 }}>
-            <Typography.Link onClick={() => onBill({ billType: r.billType, billId: (r.vendorBillId ?? r.subcontractBillId)! })}>{r.billLabel}</Typography.Link>
+          <div>
+            <RecordLink href={billHref(r)} onOpen={() => openBill(r)} className="mono">
+              {r.billLabel}
+            </RecordLink>
           </div>
         </div>
       ),
     },
     { title: 'Project', dataIndex: 'projectName', ...sort('project'), ellipsis: true, render: (v: string, r) => <Link href={`/projects/${r.projectId}`}>{v}</Link> },
-    { title: 'Paid', dataIndex: 'amount', width: 140, align: 'right', ...sort('amount'), render: (v) => money(v, true) },
-    { title: 'Deducted', key: 'ded', width: 120, align: 'right', render: (_, r) => money(String(toNumber(r.tdsAmount) + toNumber(r.otherDeduction))) },
+    { title: 'Paid', dataIndex: 'amount', width: 140, align: 'right', ...sort('amount'), render: (v) => money(v, true), total: (all) => formatINR(all.reduce((n, r) => n + toNumber(r.amount), 0)) },
+    {
+      title: 'Deducted',
+      key: 'ded',
+      width: 120,
+      align: 'right',
+      render: (_, r) => money(String(toNumber(r.tdsAmount) + toNumber(r.otherDeduction))),
+      total: (all) => formatINR(all.reduce((n, r) => n + toNumber(r.tdsAmount) + toNumber(r.otherDeduction), 0)),
+    },
     {
       title: 'Mode / reference',
+      label: 'Mode and reference',
       key: 'ref',
       width: 240,
       render: (_, r) => (
@@ -112,6 +132,8 @@ function PaymentsTab({ projectId, vendorId, onBill }: { projectId?: string; vend
           {
             title: '',
             key: 'actions',
+            label: 'Actions',
+            locked: true,
             fixed: 'right' as const,
             width: 140,
             render: (_: unknown, r: VendorPaymentDto) =>
@@ -128,11 +150,12 @@ function PaymentsTab({ projectId, vendorId, onBill }: { projectId?: string; vend
                     </Button>
                   </Popconfirm>
                 </Space>
-            ),
-          },
+              ),
+          } satisfies ListColumn<VendorPaymentDto>,
         ]
       : []),
   ];
+  const choice = useColumnChoice('payables-payments', columns);
 
   return (
     <>
@@ -141,8 +164,8 @@ function PaymentsTab({ projectId, vendorId, onBill }: { projectId?: string; vend
         projectId={projectId}
         onProject={() => undefined}
         hideProject
-        search={list.search}
-        onSearch={list.setSearch}
+        search={page.search}
+        onSearch={page.setSearch}
         searchPlaceholder="Search reference, vendor, bill, project"
         extra={
           <>
@@ -155,15 +178,21 @@ function PaymentsTab({ projectId, vendorId, onBill }: { projectId?: string; vend
           </>
         }
       />
-      <Table<VendorPaymentDto>
-        rowKey="id"
-        loading={isLoading || isFetching}
+      <DataTable<VendorPaymentDto>
         columns={columns}
-        dataSource={data?.items ?? []}
-        size="middle"
-        {...list.tableProps<VendorPaymentDto>(data?.total)}
-        scroll={{ x: 1100 }}
-        locale={{ emptyText: 'No payments recorded yet' }}
+        visible={choice.visible}
+        onChooseColumns={choice.setChosen}
+        chosenIsDefault={choice.isDefault}
+        rows={rows}
+        loading={isLoading || isFetching}
+        table={page.tableProps<VendorPaymentDto>(data?.total)}
+        onOpen={(id) => {
+          const r = rows.find((x) => x.id === id);
+          if (r) openBill(r);
+        }}
+        bulk={[exportSelected<VendorPaymentDto>('payments', 'Payments', VENDOR_PAYMENT_EXPORT)]}
+        scrollX={1100}
+        emptyText={<EmptyArt art="entries" title={page.params.q ? 'No payment matches this search' : 'No payments recorded yet'} />}
       />
       <PaymentFormModal
         open={formOpen || !!editing}

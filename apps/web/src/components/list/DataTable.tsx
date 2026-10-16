@@ -75,7 +75,8 @@ export function DataTable<T extends { id: string }>({
   rows: T[];
   loading?: boolean;
   table: Pick<TableProps<T>, 'pagination' | 'onChange'>;
-  onOpen: (id: string) => void;
+  /** Click on a row; left out, rows are not clickable (a list whose rows open nothing for this user). */
+  onOpen?: (id: string) => void;
   bulk?: BulkAction<T>[];
   /** Active filter chips, shown on the strip above the table. */
   chips?: React.ReactNode;
@@ -188,14 +189,18 @@ export function DataTable<T extends { id: string }>({
         {...table}
         scroll={{ x: scrollX }}
         rowSelection={bulk.length ? { selectedRowKeys: selectedKeys, onChange: setSelectedKeys, columnWidth: 40 } : undefined}
-        rowClassName={() => 'row-click'}
-        onRow={(r) => ({
-          onClick: (e) => {
-            // Links, buttons, checkboxes and menus in the row do their own thing.
-            if ((e.target as HTMLElement).closest('a, button, input, label, .ant-dropdown, .ant-checkbox-wrapper, .ant-image')) return;
-            onOpen(r.id);
-          },
-        })}
+        rowClassName={onOpen ? () => 'row-click' : undefined}
+        onRow={
+          onOpen
+            ? (r) => ({
+                onClick: (e) => {
+                  // Links, buttons, checkboxes, switches and menus in the row do their own thing.
+                  if ((e.target as HTMLElement).closest('a, button, input, label, .ant-dropdown, .ant-checkbox-wrapper, .ant-image, .ant-switch')) return;
+                  onOpen(r.id);
+                },
+              })
+            : undefined
+        }
         locale={emptyText ? { emptyText } : undefined}
         summary={
           hasTotals && rows.length > 1

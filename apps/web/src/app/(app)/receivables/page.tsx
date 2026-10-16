@@ -2,17 +2,17 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { App, Button, Card, Col, Popconfirm, Row, Select, Skeleton, Space, Statistic, Table, Tabs, Typography } from 'antd';
+import { App, Button, Card, Col, Popconfirm, Row, Select, Skeleton, Space, Statistic, Table, Tabs, Typography, theme } from 'antd';
 import type { TableProps } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ClientReceivableDto, OpenBillDto, ProjectReceivableDto, ReceiptDto, ReceiptKind, ReceiptSortField } from '@erp/shared';
-import { RECEIPT_KINDS, RECEIPT_KIND_LABELS, RECEIPT_MODE_LABELS, canRecordReceipt } from '@erp/shared';
+import { LIST_SORT_FIELDS, RECEIPT_KINDS, RECEIPT_KIND_LABELS, RECEIPT_MODE_LABELS, canRecordReceipt } from '@erp/shared';
 import { useProjectScope } from '@/lib/project-scope';
 import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useReceipts, useReceivables } from '@/lib/queries';
-import { useListState } from '@/lib/listState';
+import { useListPage } from '@/lib/listPage';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { OPEN_BILL_EXPORT, RECEIPT_EXPORT, RECEIVABLE_EXPORT } from '@/lib/exportColumns';
 import { formatDate, formatINR, formatINRCompact, toNumber } from '@/lib/format';
@@ -26,9 +26,17 @@ import { BillDrawer } from '@/components/bills/BillDrawer';
 import { ReceiptFormModal } from '@/components/receivables/ReceiptFormModal';
 import { InTallyTag } from '@/components/tally/InTallyTag';
 import { CardToolbar } from '@/components/common/CardToolbar';
+import { EmptyArt } from '@/components/common/EmptyArt';
+import { DataTable, useColumnChoice, type ListColumn } from '@/components/list/DataTable';
+import { exportSelected } from '@/components/list/bulk';
+import { RecordLink } from '@/components/record/RecordLink';
 import { themeColor } from '@/lib/theme';
 
 const money = (v: string, strong?: boolean) => (strong ? <strong className="mono">{formatINR(v)}</strong> : <span className="mono">{formatINR(v)}</span>);
+function Sub({ children }: { children: React.ReactNode }) {
+  const { token } = theme.useToken();
+  return <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{children}</div>;
+}
 const late = (v: string) => (toNumber(v) > 0 ? <span className="mono" style={{ color: themeColor('colorErrorText') }}>{formatINR(v)}</span> : <span className="mono text-muted">-</span>);
 
 /** Ageing columns shared by the project and client tables. */
@@ -48,19 +56,22 @@ function ageingColumns<T extends ProjectReceivableDto | ClientReceivableDto>(): 
   ];
 }
 
+const RECEIPT_KEYS = ['kind'] as const;
+
 function ReceiptsTab({ projectId }: { projectId?: string }) {
   const { user } = useAuth();
   const { message } = App.useApp();
   const qc = useQueryClient();
-  const list = useListState<ReceiptSortField>({ sortBy: 'receiptDate', sortOrder: 'desc' });
-  const [kind, setKind] = useState<ReceiptKind | undefined>();
+  const page = useListPage<ReceiptSortField>({ keys: RECEIPT_KEYS, sortBy: 'receiptDate', sortOrder: 'desc', sortFields: LIST_SORT_FIELDS.receipts, url: false, scope: projectId });
+  const kind = page.filters.kind as ReceiptKind | undefined;
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<ReceiptDto | null>(null);
   const [billId, setBillId] = useState<string | null>(null);
-  const filters = { ...list.params, projectId, kind };
+  const filters = { page: page.params.page, pageSize: page.params.pageSize, q: page.params.q, sortBy: page.params.sortBy, sortOrder: page.params.sortOrder, projectId, kind };
   const { data, isLoading, isFetching, error, refetch } = useReceipts(filters);
+  const rows = data?.items ?? [];
   const accounts = !!user && canRecordReceipt(user.roleKey);
-  const sort = (key: ReceiptSortField) => ({ key, sorter: true, sortOrder: list.sortOrderFor(key), sortDirections: ['descend', 'ascend'] as ('descend' | 'ascend')[] });
+  const sort = (key: ReceiptSortField) => ({ key, sorter: true, sortOrder: page.sortOrderFor(key), sortDirections: ['descend', 'ascend'] as ('descend' | 'ascend')[] });
 
   const remove = useMutation({
     mutationFn: async (id: string) => (await api.delete(`/receipts/${id}`)).data,
@@ -72,20 +83,23 @@ function ReceiptsTab({ projectId }: { projectId?: string }) {
   });
 
   const exportRows = async () => {
-    const rows = await fetchAllPages<ReceiptDto>('/receipts', { ...filters });
-    downloadXlsx(exportFileName('receipts'), 'Receipts', RECEIPT_EXPORT, rows);
-    return rows.length;
+    const all = await fetchAllPages<ReceiptDto>('/receipts', { ...filters });
+    downloadXlsx(exportFileName('receipts'), 'Receipts', RECEIPT_EXPORT, all);
+    return all.length;
   };
 
-  const columns: TableProps<ReceiptDto>['columns'] = [
+  const columns: ListColumn<ReceiptDto>[] = [
     { title: 'Date', dataIndex: 'receiptDate', width: 110, ...sort('receiptDate'), render: (v) => formatDate(v) },
     {
       title: 'For',
+      locked: true,
       ...sort('kind'),
       width: 170,
       render: (_, r) =>
         r.billId ? (
-          <Typography.Link onClick={() => setBillId(r.billId)}>{r.billLabel}</Typography.Link>
+          <RecordLink href={`/bills/${r.billId}`} onOpen={() => setBillId(r.billId)}>
+            {r.billLabel}
+          </RecordLink>
         ) : (
           <span>{RECEIPT_KIND_LABELS[r.kind]}</span>
         ),
@@ -98,16 +112,15 @@ function ReceiptsTab({ projectId }: { projectId?: string }) {
       render: (v: string, r) => (
         <div>
           <Link href={`/projects/${r.projectId}?tab=bills`}>{v}</Link>
-          <div className="text-muted" style={{ fontSize: 12 }}>
-            {r.clientName ?? ''}
-          </div>
+          <Sub>{r.clientName ?? ''}</Sub>
         </div>
       ),
     },
-    { title: 'Received', dataIndex: 'amount', width: 140, align: 'right', ...sort('amount'), render: (v) => money(v, true) },
-    { title: 'Deducted', dataIndex: 'deductedAmount', width: 130, align: 'right', render: (v) => money(v) },
+    { title: 'Received', dataIndex: 'amount', width: 140, align: 'right', ...sort('amount'), render: (v) => money(v, true), total: (all) => formatINR(all.reduce((n, r) => n + toNumber(r.amount), 0)) },
+    { key: 'deductedAmount', title: 'Deducted', dataIndex: 'deductedAmount', width: 130, align: 'right', render: (v) => money(v), total: (all) => formatINR(all.reduce((n, r) => n + toNumber(r.deductedAmount), 0)) },
     {
       title: 'Mode / reference',
+      label: 'Mode and reference',
       key: 'ref',
       width: 260,
       render: (_, r) => (
@@ -122,6 +135,8 @@ function ReceiptsTab({ projectId }: { projectId?: string }) {
           {
             title: '',
             key: 'actions',
+            label: 'Actions',
+            locked: true,
             fixed: 'right' as const,
             width: 140,
             render: (_: unknown, r: ReceiptDto) =>
@@ -138,11 +153,12 @@ function ReceiptsTab({ projectId }: { projectId?: string }) {
                     </Button>
                   </Popconfirm>
                 </Space>
-            ),
-          },
+              ),
+          } satisfies ListColumn<ReceiptDto>,
         ]
       : []),
   ];
+  const choice = useColumnChoice('receivables-receipts', columns);
 
   return (
     <>
@@ -151,8 +167,8 @@ function ReceiptsTab({ projectId }: { projectId?: string }) {
         projectId={projectId}
         onProject={() => undefined}
         hideProject
-        search={list.search}
-        onSearch={list.setSearch}
+        search={page.search}
+        onSearch={page.setSearch}
         searchPlaceholder="Search reference, project, client"
         extra={
           <>
@@ -168,24 +184,29 @@ function ReceiptsTab({ projectId }: { projectId?: string }) {
         <Select<ReceiptKind>
           allowClear
           placeholder="All receipts"
+          aria-label="Receipt for"
           style={{ width: 200 }}
           value={kind}
-          onChange={(v) => {
-            setKind(v);
-            list.resetPage();
-          }}
+          onChange={(v) => page.setFilter('kind', v)}
           options={RECEIPT_KINDS.map((k) => ({ value: k, label: RECEIPT_KIND_LABELS[k] }))}
         />
       </ListToolbar>
-      <Table<ReceiptDto>
-        rowKey="id"
-        loading={isLoading || isFetching}
+      <DataTable<ReceiptDto>
         columns={columns}
-        dataSource={data?.items ?? []}
-        size="middle"
-        {...list.tableProps<ReceiptDto>(data?.total)}
-        scroll={{ x: 1100 }}
-        locale={{ emptyText: 'No money received recorded yet' }}
+        visible={choice.visible}
+        onChooseColumns={choice.setChosen}
+        chosenIsDefault={choice.isDefault}
+        rows={rows}
+        loading={isLoading || isFetching}
+        table={page.tableProps<ReceiptDto>(data?.total)}
+        onOpen={(id) => {
+          const r = rows.find((x) => x.id === id);
+          if (r?.billId) setBillId(r.billId);
+          else if (r && accounts && !r.exportedToTally) setEditing(r);
+        }}
+        bulk={[exportSelected<ReceiptDto>('receipts', 'Receipts', RECEIPT_EXPORT)]}
+        scrollX={1100}
+        emptyText={<EmptyArt art="entries" title={kind || page.params.q ? 'No receipt matches these filters' : 'No money received recorded yet'} />}
       />
       <ReceiptFormModal
         open={formOpen || !!editing}
