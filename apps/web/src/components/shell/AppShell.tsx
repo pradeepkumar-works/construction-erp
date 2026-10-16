@@ -3,9 +3,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Alert, Avatar, Button, Drawer, Dropdown, Grid, Layout, Space, Tag, Typography } from 'antd';
+import { Alert, Avatar, Breadcrumb, Button, Drawer, Dropdown, Grid, Layout, Space, Tag } from 'antd';
 import type { MenuProps } from 'antd';
-import { AuditOutlined, CompassOutlined, CustomerServiceOutlined, LogoutOutlined, MenuOutlined, SearchOutlined, UserOutlined } from '@ant-design/icons';
+import { CompassOutlined, CustomerServiceOutlined, LogoutOutlined, MenuOutlined, SearchOutlined, UserOutlined } from '@ant-design/icons';
 import type { AuthUser } from '@erp/shared';
 import { BILLING_REMIND_DAYS, PRODUCT_NAME, canManageBilling, canManageCompanyData, isGuest, mayApprove } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
@@ -16,7 +16,7 @@ import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { BRAND } from '@/lib/brand';
 import { BrandMark } from './BrandMark';
 import { CommandPalette } from './CommandPalette';
-import { navFor } from './nav';
+import { navFor, navTrail } from './nav';
 import { PREF_RAIL, Sidebar, readPref, writePref } from './Sidebar';
 import { ProductTour, shouldAutoStartTour } from './ProductTour';
 import s from './Sidebar.module.css';
@@ -39,6 +39,7 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
   const { data: pending } = usePendingApprovals(approver);
   const pendingCount = approver ? (pending?.length ?? 0) : 0;
   const sections = useMemo(() => navFor(user), [user]);
+  const trail = useMemo(() => navTrail(sections, pathname), [sections, pathname]);
   const guest = isGuest(user.roleKey);
   const [touring, setTouring] = useState(false);
 
@@ -141,10 +142,15 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
                 <BrandMark size={28} />
               </>
             ) : (
-              <>
-                <AuditOutlined style={{ color: BRAND.colors.link }} />
-                <Typography.Text strong>{user.organizationName}</Typography.Text>
-              </>
+              // The company is in the sidebar; the header says where you are.
+              trail && (
+                <Breadcrumb
+                  items={[
+                    ...(trail.section ? [{ title: trail.section }] : []),
+                    { title: pathname === trail.item.href ? trail.item.label : <Link href={trail.item.href}>{trail.item.label}</Link> },
+                  ]}
+                />
+              )
             )}
             {approver && pendingCount > 0 && (
               <Link href="/approvals">

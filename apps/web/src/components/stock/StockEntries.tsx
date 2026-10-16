@@ -60,6 +60,7 @@ export function StockEntries({ projectId: fixedProject }: { projectId?: string }
     {
       title: 'Items',
       key: 'items',
+      width: 280,
       render: (_, r) => (
         <span>
           {r.lines.slice(0, 3).map((l, i) => (
@@ -131,7 +132,7 @@ export function StockEntries({ projectId: fixedProject }: { projectId?: string }
         loading={isLoading || isFetching}
         dataSource={data?.items ?? []}
         columns={columns}
-        scroll={{ x: 1100 }}
+        scroll={{ x: fixedProject ? 1160 : 1380 }}
         {...list.tableProps<StockEntryDto>(data?.total)}
       />
       <StockEntryDrawer id={opened} onClose={() => setOpened(null)} />

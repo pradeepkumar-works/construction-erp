@@ -101,6 +101,7 @@ export function StockBalances({ projectId: fixedProject, initialLow = false, ini
     {
       title: 'Item',
       dataIndex: 'itemName',
+      width: 260,
       ...sort('item'),
       render: (v, r) => (
         <Space size={6} wrap>
@@ -191,7 +192,7 @@ export function StockBalances({ projectId: fixedProject, initialLow = false, ini
         loading={isLoading || isFetching}
         dataSource={data?.items ?? []}
         columns={columns}
-        scroll={{ x: 1080 }}
+        scroll={{ x: fixedProject ? 1150 : 1390 }}
         locale={{ emptyText: lowOnly ? 'Nothing is below its minimum.' : 'No stock yet. Receive material against an approved request, or enter opening stock as an adjustment.' }}
         {...list.tableProps<StockBalanceDto>(data?.total)}
       />
