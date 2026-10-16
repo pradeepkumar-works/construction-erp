@@ -51,6 +51,7 @@ test('a quick look opens the full page, whose link can be copied and whose secti
   await expect(page).toHaveURL(/\/bills$/);
 });
 
+// Subcontractor bills are left out: the demo data has none, so subcontracts.spec checks the page of the one it makes.
 test('the other approval types have their own pages too', async ({ page }) => {
   const md = await apiToken('md@demo.com');
   const pages: { list: string; api: string; heading: RegExp }[] = [
@@ -59,7 +60,6 @@ test('the other approval types have their own pages too', async ({ page }) => {
     { list: '/measurements', api: '/measurements', heading: /^Measurement · / },
     { list: '/vendor-bills', api: '/vendor-bills', heading: /^VB-\d{4}-\d{4} · / },
     { list: '/work-orders', api: '/work-orders', heading: /^WO-/ },
-    { list: '/subcontract-bills', api: '/subcontract-bills', heading: / bill \d+ · / },
     { list: '/inspections', api: '/inspections', heading: /^Inspection · INS-/ },
   ];
   await signIn(page, 'md@demo.com');

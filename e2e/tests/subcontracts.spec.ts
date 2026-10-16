@@ -107,4 +107,9 @@ test('work order to a measured subcontractor bill', async ({ page, browser }) =>
   await expect(billDrawer.getByText('Net payable').first()).toBeVisible();
   await expect(billDrawer.getByText('Material issued to them')).toBeVisible();
   await expect(billDrawer.getByRole('button', { name: 'Print' })).toBeVisible();
+
+  // The bill has a page of its own too.
+  await page.goto(`/subcontract-bills/${bill.id}`);
+  await expect(page.getByRole('heading', { name: new RegExp(`^${bill.label} · `) })).toBeVisible();
+  await expect(page.getByRole('group', { name: 'Stage' })).toContainText('Approved');
 });
