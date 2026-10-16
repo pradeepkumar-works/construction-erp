@@ -14,6 +14,13 @@ import { DprRecord } from '@/components/dpr/DprDrawer';
 import { MrRecord } from '@/components/material/MrDrawer';
 import { PurchaseOrderRecord } from '@/components/purchasing/PurchaseOrderDrawer';
 import { BillRecord } from '@/components/bills/BillDrawer';
+import { MachineryRecord } from '@/components/machinery/MachineryDrawer';
+import { ExpenseRecord } from '@/components/expenses/ExpenseDrawer';
+import { MeasurementRecord } from '@/components/measurements/MeasurementDrawer';
+import { VendorBillRecord } from '@/components/purchasing/VendorBillDrawer';
+import { WorkOrderRecord } from '@/components/subcontracts/WorkOrderDrawer';
+import { SubBillRecord } from '@/components/subcontracts/SubBillDrawer';
+import { InspectionRecord } from '@/components/inspections/InspectionDrawer';
 import { decidedInPlace, QUEUE_TYPE_LABELS } from './queue';
 import { TypeTag } from './ApprovalQueue';
 
@@ -81,12 +88,26 @@ function PaneRecord({ item, onOpenDetails }: { item: PendingApprovalDto; onOpenD
       return <PurchaseOrderRecord mode="pane" id={item.id} />;
     case 'BILL':
       return <BillRecord mode="pane" id={item.id} />;
+    case 'MACHINERY':
+      return <MachineryRecord mode="pane" id={item.id} />;
+    case 'EXPENSE':
+      return <ExpenseRecord mode="pane" id={item.id} />;
+    case 'MEASUREMENT':
+      return <MeasurementRecord mode="pane" id={item.id} />;
+    case 'VENDOR_BILL':
+      return <VendorBillRecord mode="pane" id={item.id} />;
+    case 'WORK_ORDER':
+      return <WorkOrderRecord mode="pane" id={item.id} />;
+    case 'SUBCONTRACT_BILL':
+      return <SubBillRecord mode="pane" id={item.id} />;
+    case 'INSPECTION':
+      return <InspectionRecord mode="pane" id={item.id} />;
     default:
       return <PendingSummary item={item} onOpenDetails={onOpenDetails} />;
   }
 }
 
-/** Types without a record page yet (UI roadmap item 61): what the queue knows, the activity, and the details a click away. */
+/** A type without a record page: what the queue knows, the activity, and the details a click away. Every type has one since item 61. */
 function PendingSummary({ item, onOpenDetails }: { item: PendingApprovalDto; onOpenDetails: () => void }) {
   const { token } = theme.useToken();
   return (

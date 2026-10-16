@@ -40,7 +40,7 @@ export function measurementColumns({
       ...sort('boqItem'),
       render: (_, r) => (
         <div>
-          <RecordLink onOpen={() => onOpen(r.id)}>
+          <RecordLink href={`/measurements/${r.id}`} onOpen={() => onOpen(r.id)}>
             <span className="mono">{r.boqItemNo}</span> {r.boqDescription}
           </RecordLink>
           <Sub>{r.location}</Sub>
@@ -84,6 +84,6 @@ export function measurementColumns({
         </div>
       ),
     },
-    { key: 'actions', title: '', label: 'Actions', locked: true, fixed: 'right' as const, width: 56, render: (_, r) => <RowActions type="measurement" row={r} amount={r.amount} onOpen={onOpen} onEdit={onEdit} /> },
+    { key: 'actions', title: '', label: 'Actions', locked: true, fixed: 'right' as const, width: 56, render: (_, r) => <RowActions type="measurement" row={r} href={`/measurements/${r.id}`} amount={r.amount} onOpen={onOpen} onEdit={onEdit} /> },
   ];
 }

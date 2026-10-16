@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-10-records-all-types',
+    date: '2026-10-16',
+    title: 'Every entry has its own page',
+    points: [
+      'Vendor bills, work orders, subcontractor bills, site expenses, measurements, machinery logs and inspections open as a page of their own, with the stage bar, sections and activity, at an address you can bookmark or send.',
+      'In Approvals, these entries now show whole beside the queue, as daily reports and bills already did.',
+      'In a list, Ctrl or Cmd click on an entry opens its page in a new tab; a plain click still opens the quick look.',
+    ],
+  },
+  {
     id: '2026-10-lists-approvals',
     date: '2026-10-16',
     title: 'Every approval list works the same way',

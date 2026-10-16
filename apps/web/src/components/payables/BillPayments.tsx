@@ -20,8 +20,11 @@ export function PaidTag({ bill }: { bill: { status: string; paidAmount: string; 
   return <Tag style={{ margin: 0 }}>Unpaid</Tag>;
 }
 
-/** Payments against one approved bill, with "Record payment" for accounts. Shown in the vendor and subcontractor bill drawers. */
-export function BillPayments({ target, approved }: { target: PayTarget & { paidAmount: string }; approved: boolean }) {
+/**
+ * Payments against one approved bill, with "Record payment" for accounts. Shown in the vendor and subcontractor bill
+ * records; `heading={false}` when the record's section already titles it.
+ */
+export function BillPayments({ target, approved, heading = true }: { target: PayTarget & { paidAmount: string }; approved: boolean; heading?: boolean }) {
   const { user } = useAuth();
   const { message } = App.useApp();
   const qc = useQueryClient();
@@ -44,9 +47,11 @@ export function BillPayments({ target, approved }: { target: PayTarget & { paidA
 
   return (
     <>
-      <Divider titlePlacement="start" plain>
-        Payments ({data?.total ?? 0})
-      </Divider>
+      {heading && (
+        <Divider titlePlacement="start" plain>
+          Payments ({data?.total ?? 0})
+        </Divider>
+      )}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, gap: 8, flexWrap: 'wrap' }}>
         <Typography.Text>
           Paid {formatINR(target.paidAmount, true)} of {formatINR(target.payable, true)} ·{' '}

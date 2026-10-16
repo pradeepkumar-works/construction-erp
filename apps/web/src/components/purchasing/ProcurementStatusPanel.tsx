@@ -66,7 +66,7 @@ export function ProcurementStatusPanel() {
       width: 150,
       render: (_, r) => (
         <div>
-          <Typography.Link href={`/purchase-orders?id=${r.purchaseOrderId}`}>{r.poNo}</Typography.Link>
+          <Typography.Link href={`/purchase-orders/${r.purchaseOrderId}`}>{r.poNo}</Typography.Link>
           <div>
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>
               {formatDate(r.poDate)}

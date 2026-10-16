@@ -46,7 +46,7 @@ function subBillColumns({ showProject, onOpen, onEdit, sortOrderFor }: { showPro
       width: 200,
       render: (_, r) => (
         <div>
-          <RecordLink onOpen={() => onOpen(r.id)} strong className="mono">
+          <RecordLink href={`/subcontract-bills/${r.id}`} onOpen={() => onOpen(r.id)} strong className="mono">
             {r.label}
           </RecordLink>
           <Sub>{formatDate(r.billDate)}</Sub>
@@ -101,7 +101,7 @@ function subBillColumns({ showProject, onOpen, onEdit, sortOrderFor }: { showPro
         </Space>
       ),
     },
-    { key: 'actions', title: '', label: 'Actions', locked: true, fixed: 'right' as const, width: 56, render: (_, r) => <RowActions type="subcontract_bill" row={r} amount={r.grossAmount} onOpen={onOpen} onEdit={onEdit} /> },
+    { key: 'actions', title: '', label: 'Actions', locked: true, fixed: 'right' as const, width: 56, render: (_, r) => <RowActions type="subcontract_bill" row={r} href={`/subcontract-bills/${r.id}`} amount={r.grossAmount} onOpen={onOpen} onEdit={onEdit} /> },
   ];
 }
 

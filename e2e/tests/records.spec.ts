@@ -34,7 +34,7 @@ test('a quick look opens the full page, whose link can be copied and whose secti
   await page.goto('/bills');
   await page.locator('.ant-table-row a[href^="/bills/"]').first().click();
   const drawer = page.locator('.ant-drawer-open');
-  await expect(drawer.locator('.ant-steps').first()).toBeVisible();
+  await expect(drawer.getByRole('group', { name: 'Stage' })).toBeVisible();
   await drawer.getByRole('button', { name: 'Open full page' }).click();
   await expect(page).toHaveURL(/\/bills\/[0-9a-f-]{36}$/);
   const url = page.url();
@@ -49,4 +49,33 @@ test('a quick look opens the full page, whose link can be copied and whose secti
 
   await page.getByRole('toolbar', { name: 'Record actions' }).getByRole('button', { name: 'RA Bills' }).click();
   await expect(page).toHaveURL(/\/bills$/);
+});
+
+test('the other approval types have their own pages too', async ({ page }) => {
+  const md = await apiToken('md@demo.com');
+  const pages: { list: string; api: string; heading: RegExp }[] = [
+    { list: '/expenses', api: '/expenses', heading: /^Site expense · EXP-/ },
+    { list: '/machinery', api: '/machinery-logs', heading: /^Machinery log · / },
+    { list: '/measurements', api: '/measurements', heading: /^Measurement · / },
+    { list: '/vendor-bills', api: '/vendor-bills', heading: /^VB-\d{4}-\d{4} · / },
+    { list: '/work-orders', api: '/work-orders', heading: /^WO-/ },
+    { list: '/subcontract-bills', api: '/subcontract-bills', heading: / bill \d+ · / },
+    { list: '/inspections', api: '/inspections', heading: /^Inspection · INS-/ },
+  ];
+  await signIn(page, 'md@demo.com');
+  for (const p of pages) {
+    const first = (await api<{ items: { id: string }[] }>(md, `${p.api}?pageSize=1`)).items[0];
+    expect(first, p.api).toBeTruthy();
+    await page.goto(`${p.list}/${first.id}`);
+    await expect(page.getByRole('heading', { name: p.heading }), p.list).toBeVisible();
+    await expect(page.getByRole('group', { name: 'Stage' }), p.list).toBeVisible();
+    // The footer leads back to the list.
+    await expect(page.getByRole('toolbar', { name: 'Record actions' }).locator(`a[href="${p.list}"]`), p.list).toHaveCount(1);
+  }
+
+  // The list's number is a real link to the page, while a plain click still opens the quick look.
+  await page.goto('/vendor-bills');
+  const link = page.locator('.ant-table-row a[href^="/vendor-bills/"]').first();
+  await link.click();
+  await expect(page.locator('.ant-drawer-open').getByRole('group', { name: 'Stage' })).toBeVisible();
 });

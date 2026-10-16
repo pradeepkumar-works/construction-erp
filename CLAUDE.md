@@ -64,8 +64,8 @@ cd e2e && npx playwright test         # browser tests; needs API + web running (
   `RecordFrame` (`components/record/`: facts, `submissionLifecycle` stage bar, sections, activity, actions); the drawer
   export is `<XRecord mode="drawer">`. List links to it use `RecordLink` and `RowActions href`.
 - Approvals inbox (`app/(app)/approvals`): the picked entry shows as `<XRecord mode="pane">` (no actions; the inbox has the
-  decision bar). A type gets the whole record there once it has a page: one line in `RECORD_PAGES` and one in `ApprovalPane`
-  (`components/approvals/`); until then it shows a summary with Open details.
+  decision bar). Every submission type has a page; a new type adds one line in `RECORD_PAGES` and one in `ApprovalPane`
+  (`components/approvals/`), or the pane falls back to a summary with Open details.
 - Forms: a create/edit form sits in `FormShell` (`components/form/`): `layout="drawer"` for long ones (with `FormSection`,
   `FormGrid`), `"modal"` for short; pass `onSubmit={(v) => mutation.mutateAsync(v)}` (the shell closes on success, so
   `onSuccess` does not call `onClose`), and `draftKey` for new entries only. Lines are a `LineTable` over `Form.List`.

@@ -40,6 +40,13 @@ export const RECORD_PAGES: Partial<Record<SubmissionType, string>> = {
   MATERIAL_REQUEST: '/material-requests',
   PURCHASE_ORDER: '/purchase-orders',
   BILL: '/bills',
+  MACHINERY: '/machinery',
+  EXPENSE: '/expenses',
+  MEASUREMENT: '/measurements',
+  VENDOR_BILL: '/vendor-bills',
+  WORK_ORDER: '/work-orders',
+  SUBCONTRACT_BILL: '/subcontract-bills',
+  INSPECTION: '/inspections',
 };
 
 export const recordPage = (type: SubmissionType, id: string) => (RECORD_PAGES[type] ? `${RECORD_PAGES[type]}/${id}` : null);

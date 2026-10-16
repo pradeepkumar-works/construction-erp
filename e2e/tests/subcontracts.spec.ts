@@ -104,7 +104,7 @@ test('work order to a measured subcontractor bill', async ({ page, browser }) =>
 
   await page.goto(`/subcontract-bills?id=${bill.id}`);
   const billDrawer = page.locator('.ant-drawer').filter({ hasText: bill.label });
-  await expect(billDrawer.getByText('Net payable')).toBeVisible();
+  await expect(billDrawer.getByText('Net payable').first()).toBeVisible();
   await expect(billDrawer.getByText('Material issued to them')).toBeVisible();
   await expect(billDrawer.getByRole('button', { name: 'Print' })).toBeVisible();
 });
