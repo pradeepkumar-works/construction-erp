@@ -6,6 +6,7 @@ import type { TableProps } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import type { LeaveRequestDto, LeaveSortField, LeaveStatus, LeaveType } from '@erp/shared';
 import { LEAVE_STATUSES, LEAVE_STATUS_LABELS, LEAVE_TYPES, LEAVE_TYPE_LABELS, canManageStaff } from '@erp/shared';
+import { useProjectScope } from '@/lib/project-scope';
 import { useAuth } from '@/lib/auth';
 import { useLeave } from '@/lib/queries';
 import { useListState } from '@/lib/listState';
@@ -17,7 +18,7 @@ import { LeaveStatusTag, leaveSpan } from './staffUi';
 export function LeaveList({ onOpen, onNew, toDecideFirst }: { onOpen: (id: string) => void; onNew: () => void; toDecideFirst: boolean }) {
   const { user } = useAuth();
   const list = useListState<LeaveSortField>({ sortBy: 'fromDate', sortOrder: 'desc' });
-  const [projectId, setProjectId] = useState<string | undefined>();
+  const [projectId, setProjectId] = useProjectScope();
   const [status, setStatus] = useState<LeaveStatus | undefined>();
   const [type, setType] = useState<LeaveType | undefined>();
   const [toDecide, setToDecide] = useState(toDecideFirst);

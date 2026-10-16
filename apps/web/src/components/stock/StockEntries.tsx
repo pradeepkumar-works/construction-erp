@@ -7,6 +7,7 @@ import type { TableProps } from 'antd';
 import type { Dayjs } from 'dayjs';
 import type { GrnQcStatus, StockEntryDto, StockEntrySortField, StockEntryType } from '@erp/shared';
 import { GRN_QC_STATUSES, GRN_QC_STATUS_LABELS, STOCK_ENTRY_TYPES, STOCK_ENTRY_TYPE_LABELS } from '@erp/shared';
+import { useProjectScope } from '@/lib/project-scope';
 import { useStockEntries } from '@/lib/queries';
 import { useListState } from '@/lib/listState';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
@@ -23,7 +24,7 @@ import { rangePresets } from '@/lib/dates';
 /** Store register: GRNs, issues and adjustments, server-paged with type and date filters and Excel export (one row per line). */
 export function StockEntries({ projectId: fixedProject }: { projectId?: string }) {
   const list = useListState<StockEntrySortField>({ sortBy: 'date', sortOrder: 'desc' });
-  const [projectFilter, setProjectFilter] = useState<string | undefined>();
+  const [projectFilter, setProjectFilter] = useProjectScope();
   const [type, setType] = useState<StockEntryType | undefined>();
   const [qcFilter, setQcFilter] = useState<GrnQcStatus | 'PENDING' | undefined>();
   const [range, setRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);

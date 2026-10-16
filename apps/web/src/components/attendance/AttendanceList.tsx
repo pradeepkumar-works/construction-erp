@@ -6,6 +6,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import type { Dayjs } from 'dayjs';
 import type { AttendanceSheetDto, AttendanceSortField } from '@erp/shared';
 import { canRecordAttendance } from '@erp/shared';
+import { useProjectScope } from '@/lib/project-scope';
 import { useAuth } from '@/lib/auth';
 import { useAttendanceList } from '@/lib/queries';
 import { useListState } from '@/lib/listState';
@@ -23,7 +24,7 @@ export function AttendanceList({ projectId: fixedProject }: { projectId?: string
   const { user } = useAuth();
   const canRecord = !!user && canRecordAttendance(user.roleKey);
   const list = useListState<AttendanceSortField>({ sortBy: 'date', sortOrder: 'desc' });
-  const [projectFilter, setProjectFilter] = useState<string | undefined>();
+  const [projectFilter, setProjectFilter] = useProjectScope();
   const [range, setRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [opened, setOpened] = useState<AttendanceSheetDto | null>(null);

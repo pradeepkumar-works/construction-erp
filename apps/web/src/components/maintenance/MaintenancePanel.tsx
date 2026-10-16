@@ -6,6 +6,7 @@ import { PlusOutlined, ToolOutlined } from '@ant-design/icons';
 import type { TableProps } from 'antd';
 import type { MaintenanceJobDto, MaintenanceKind, MaintenanceStatus, ServiceStatusDto } from '@erp/shared';
 import { MAINTENANCE_KINDS, MAINTENANCE_KIND_LABELS, MAINTENANCE_STATUSES, MAINTENANCE_STATUS_LABELS, MAX_PAGE_SIZE, canLogMachinery, canManageMaintenance } from '@erp/shared';
+import { useProjectScope } from '@/lib/project-scope';
 import { useAuth } from '@/lib/auth';
 import { useEquipment, useMaintenanceJobs, useMaintenanceSummary } from '@/lib/queries';
 import { useListState } from '@/lib/listState';
@@ -26,7 +27,7 @@ const big = { content: { fontSize: 18 } };
  */
 export function MaintenancePanel({ projectId: fixedProject, initialOpenId }: { projectId?: string; initialOpenId?: string }) {
   const { user } = useAuth();
-  const [projectFilter, setProjectFilter] = useState<string | undefined>();
+  const [projectFilter, setProjectFilter] = useProjectScope();
   const projectId = fixedProject ?? projectFilter;
   const manager = !!user && canManageMaintenance(user.roleKey);
   const mayReport = manager || (!!user && canLogMachinery(user.roleKey));

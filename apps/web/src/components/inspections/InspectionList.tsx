@@ -8,6 +8,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import type { Dayjs } from 'dayjs';
 import type { InspectionDto, InspectionSortField, SubmissionStatus } from '@erp/shared';
 import { INSPECTION_STATUS_LABELS, canRequestInspection, checklistCounts } from '@erp/shared';
+import { useProjectScope } from '@/lib/project-scope';
 import { useAuth } from '@/lib/auth';
 import { useActivities, useInspections } from '@/lib/queries';
 import { useListState } from '@/lib/listState';
@@ -24,7 +25,7 @@ import { rangePresets } from '@/lib/dates';
 export function InspectionList({ projectId: fixedProject }: { projectId?: string }) {
   const { user } = useAuth();
   const list = useListState<InspectionSortField>({ sortBy: 'date', sortOrder: 'desc' });
-  const [projectFilter, setProjectFilter] = useState<string | undefined>();
+  const [projectFilter, setProjectFilter] = useProjectScope();
   const [status, setStatus] = useState<SubmissionStatus | undefined>();
   const [activityId, setActivityId] = useState<string | undefined>();
   const [range, setRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);

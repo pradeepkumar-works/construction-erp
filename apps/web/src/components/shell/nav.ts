@@ -98,6 +98,8 @@ export interface NavSection {
   /** The section's icon on the collapsed rail. */
   icon?: NavIcon;
   items: NavItem[];
+  /** Links light up on their own page only (Favourites, Recent), not on the pages under them. */
+  exact?: boolean;
 }
 
 const when = (ok: boolean, ...items: NavItem[]): NavItem[] => (ok ? items : []);

@@ -6,6 +6,7 @@ import type { TableProps } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import type { EmployeeDto, EmployeeSortField } from '@erp/shared';
 import { canManageStaff } from '@erp/shared';
+import { useProjectScope } from '@/lib/project-scope';
 import { useAuth } from '@/lib/auth';
 import { useEmployees } from '@/lib/queries';
 import { useListState } from '@/lib/listState';
@@ -17,7 +18,7 @@ import { ListToolbar } from '@/components/common/ListToolbar';
 export function EmployeeList({ onOpen, onNew }: { onOpen: (id: string) => void; onNew: () => void }) {
   const { user } = useAuth();
   const list = useListState<EmployeeSortField>({ sortBy: 'employeeCode', sortOrder: 'asc' });
-  const [projectId, setProjectId] = useState<string | undefined>();
+  const [projectId, setProjectId] = useProjectScope();
   const [includeInactive, setIncludeInactive] = useState(false);
   const { data, isLoading, isFetching, error, refetch } = useEmployees({ ...list.params, projectId, includeInactive: includeInactive || undefined });
   const sort = (key: EmployeeSortField) => ({ key, sorter: true, sortOrder: list.sortOrderFor(key), sortDirections: ['ascend', 'descend'] as ('descend' | 'ascend')[] });

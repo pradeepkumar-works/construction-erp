@@ -7,6 +7,7 @@ import type { TableProps } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import type { SafetyIncidentDto, SafetyIncidentStatus, SafetyIncidentType } from '@erp/shared';
 import { SAFETY_INCIDENT_STATUSES, SAFETY_INCIDENT_STATUS_LABELS, SAFETY_INCIDENT_TYPES, SAFETY_INCIDENT_TYPE_LABELS, canReportSafety } from '@erp/shared';
+import { useProjectScope } from '@/lib/project-scope';
 import { useAuth } from '@/lib/auth';
 import { useSafetyIncidents } from '@/lib/queries';
 import { useListState } from '@/lib/listState';
@@ -42,7 +43,7 @@ const EXPORT: ExportColumn<SafetyIncidentDto>[] = [
 export function IncidentList({ projectId: fixedProject, initialOpenId }: { projectId?: string; initialOpenId?: string }) {
   const { user } = useAuth();
   const list = useListState<'date'>({ sortBy: 'date', sortOrder: 'desc' });
-  const [projectFilter, setProjectFilter] = useState<string | undefined>();
+  const [projectFilter, setProjectFilter] = useProjectScope();
   const [type, setType] = useState<SafetyIncidentType | 'INCIDENTS' | undefined>();
   const [status, setStatus] = useState<SafetyIncidentStatus | undefined>();
   const [openId, setOpenId] = useState<string | null>(initialOpenId ?? null);

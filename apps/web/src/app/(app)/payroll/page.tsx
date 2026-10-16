@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Card, DatePicker, Tabs } from 'antd';
 import dayjs from 'dayjs';
 import { canViewLabourSummary, canViewPayroll } from '@erp/shared';
+import { useProjectScope } from '@/lib/project-scope';
 import { useAuth } from '@/lib/auth';
 import { PageHeader } from '@/components/common/PageHeader';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
@@ -21,7 +22,7 @@ function PayrollPage() {
   const tab = search.get('tab') === 'contractors' || !staff ? 'contractors' : 'staff';
   // Payroll is usually run for the month just ended.
   const [month, setMonth] = useState(() => (dayjs().date() <= 10 ? dayjs().subtract(1, 'month') : dayjs()).startOf('month'));
-  const [projectId, setProjectId] = useState<string | undefined>();
+  const [projectId, setProjectId] = useProjectScope();
   const m = month.format('YYYY-MM');
 
   return (

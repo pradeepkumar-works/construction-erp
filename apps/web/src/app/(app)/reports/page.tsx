@@ -4,6 +4,7 @@ import React, { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Select, Skeleton } from 'antd';
 import { PageHeader } from '@/components/common/PageHeader';
+import { useProjectScope } from '@/lib/project-scope';
 import { useProjects } from '@/lib/queries';
 import { ProgressReportView } from '@/components/reports/ProgressReportView';
 
@@ -18,11 +19,13 @@ export default function ReportsPage() {
 function Reports() {
   const params = useSearchParams();
   const { data: projects } = useProjects();
+  const [scope] = useProjectScope();
   const [projectId, setProjectId] = useState<string | undefined>(params.get('projectId') ?? undefined);
 
   useEffect(() => {
-    if (!projectId && projects?.length) setProjectId(projects[0].id);
-  }, [projects, projectId]);
+    // The project chosen in the header, else the first.
+    if (!projectId && projects?.length) setProjectId(scope ?? projects[0].id);
+  }, [projects, projectId, scope]);
 
   return (
     <div className="page-container">

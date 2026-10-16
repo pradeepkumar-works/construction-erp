@@ -7,6 +7,7 @@ import type { TableProps } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import type { VariationDto, VariationStatus } from '@erp/shared';
 import { VARIATION_CAUSE_LABELS, VARIATION_STATUSES, VARIATION_STATUS_LABELS, canManageVariations } from '@erp/shared';
+import { useProjectScope } from '@/lib/project-scope';
 import { useAuth } from '@/lib/auth';
 import { useListState } from '@/lib/listState';
 import { useVariationSummary, useVariations } from '@/lib/queries';
@@ -22,7 +23,7 @@ type SortField = 'varNo' | 'createdAt' | 'claimedAmount';
 export function VariationsPanel({ projectId: fixedProject, openId }: { projectId?: string; openId?: string | null }) {
   const { user } = useAuth();
   const list = useListState<SortField>({ sortBy: fixedProject ? 'varNo' : 'createdAt', sortOrder: fixedProject ? 'asc' : 'desc' });
-  const [projectFilter, setProjectFilter] = useState<string | undefined>();
+  const [projectFilter, setProjectFilter] = useProjectScope();
   const [status, setStatus] = useState<VariationStatus | undefined>();
   const [open, setOpen] = useState<string | null>(openId ?? null);
   const [creating, setCreating] = useState(false);

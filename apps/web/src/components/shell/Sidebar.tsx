@@ -4,32 +4,15 @@ import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Popover, Tooltip } from 'antd';
-import { DownOutlined, MenuFoldOutlined, MenuUnfoldOutlined, SearchOutlined } from '@ant-design/icons';
+import { DownOutlined, MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
 import type { AuthUser } from '@erp/shared';
 import { BRAND } from '@/lib/brand';
+import { readPref, writePref } from '@/lib/prefs';
 import { BrandMark, Wordmark } from './BrandMark';
 import { activeHref, type NavItem, type NavSection } from './nav';
 import s from './Sidebar.module.css';
 
 const cx = (...names: (string | false | undefined)[]) => names.filter(Boolean).join(' ');
-
-/** Sidebar preferences live in the browser; storage can be blocked (private windows), so every access is guarded. */
-export function readPref<T>(key: string, fallback: T): T {
-  try {
-    const raw = window.localStorage.getItem(key);
-    return raw == null ? fallback : (JSON.parse(raw) as T);
-  } catch {
-    return fallback;
-  }
-}
-
-export function writePref(key: string, value: unknown) {
-  try {
-    window.localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    // Not remembered; the sidebar still works.
-  }
-}
 
 export const PREF_RAIL = 'nirmaan.sidebar.rail';
 const PREF_CLOSED = 'nirmaan.sidebar.closed';
@@ -50,11 +33,11 @@ interface SidebarProps {
   onToggleRail?: () => void;
   /** Called after a link is followed (closes the mobile drawer). */
   onNavigate?: () => void;
-  onSearch?: () => void;
 }
 
-export function Sidebar({ user, sections, pendingCount, rail = false, onToggleRail, onNavigate, onSearch }: SidebarProps) {
-  const active = activeHref(usePathname());
+export function Sidebar({ user, sections, pendingCount, rail = false, onToggleRail, onNavigate }: SidebarProps) {
+  const pathname = usePathname();
+  const active = activeHref(pathname);
   const [closed, setClosed] = useState<string[]>(() => readPref<string[]>(PREF_CLOSED, []));
   const navRef = useRef<HTMLElement>(null);
 
@@ -79,7 +62,6 @@ export function Sidebar({ user, sections, pendingCount, rail = false, onToggleRa
   const top = sections.filter((sec) => !sec.title);
   const groups = sections.filter((sec) => sec.title);
   const countFor = (item: NavItem) => (item.approvals ? pendingCount : 0);
-  const shortcut = searchShortcut();
 
   return (
     <div className={cx(s.sidebar, rail && s.rail)}>
@@ -95,21 +77,6 @@ export function Sidebar({ user, sections, pendingCount, rail = false, onToggleRa
         )}
       </div>
 
-      {onSearch &&
-        (rail ? (
-          <Tooltip title={`Search  ${shortcut}`} placement="right">
-            <button type="button" className={cx(s.item, s.search)} onClick={onSearch} aria-label="Search pages and projects" data-tour="search">
-              <SearchOutlined className={s.icon} aria-hidden />
-            </button>
-          </Tooltip>
-        ) : (
-          <button type="button" className={s.search} onClick={onSearch} aria-keyshortcuts="Control+K Meta+K" data-tour="search">
-            <SearchOutlined aria-hidden />
-            <span>Search or jump to…</span>
-            <kbd className={s.kbd}>{shortcut}</kbd>
-          </button>
-        ))}
-
       <nav ref={navRef} aria-label="Main" className={s.scroll}>
         {top.map((sec) => (
           <ul key={sec.key} className={s.list}>
@@ -121,9 +88,9 @@ export function Sidebar({ user, sections, pendingCount, rail = false, onToggleRa
         {rail && groups.length > 0 && <div className={s.rule} role="separator" />}
         {groups.map((sec) =>
           rail ? (
-            <RailSection key={sec.key} section={sec} active={active} onNavigate={onNavigate} />
+            <RailSection key={sec.key} section={sec} active={sec.exact ? pathname : active} onNavigate={onNavigate} />
           ) : (
-            <Group key={sec.key} section={sec} open={!closed.includes(sec.key)} onToggle={() => toggle(sec.key)} active={active} onNavigate={onNavigate} />
+            <Group key={sec.key} section={sec} open={!closed.includes(sec.key)} onToggle={() => toggle(sec.key)} active={sec.exact ? pathname : active} onNavigate={onNavigate} />
           ),
         )}
       </nav>

@@ -8,6 +8,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ClientReceivableDto, OpenBillDto, ProjectReceivableDto, ReceiptDto, ReceiptKind, ReceiptSortField } from '@erp/shared';
 import { RECEIPT_KINDS, RECEIPT_KIND_LABELS, RECEIPT_MODE_LABELS, canRecordReceipt } from '@erp/shared';
+import { useProjectScope } from '@/lib/project-scope';
 import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useReceipts, useReceivables } from '@/lib/queries';
@@ -200,7 +201,7 @@ function ReceiptsTab({ projectId }: { projectId?: string }) {
 }
 
 export default function ReceivablesPage() {
-  const [projectId, setProjectId] = useState<string | undefined>();
+  const [projectId, setProjectId] = useProjectScope();
   const [billId, setBillId] = useState<string | null>(null);
   const { data, isLoading, error, refetch } = useReceivables(projectId);
   const t = data?.totals;

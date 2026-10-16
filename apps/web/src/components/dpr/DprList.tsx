@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { Button } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import type { DailyReportDto, DprSortField, SubmissionStatus } from '@erp/shared';
+import { useNewIntent } from '@/lib/new-intent';
+import { useProjectScope } from '@/lib/project-scope';
 import { useDprList } from '@/lib/queries';
 import { useListState } from '@/lib/listState';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
@@ -21,7 +23,7 @@ import { DprFormModal } from './DprFormModal';
  */
 export function DprList({ projectId: fixedProject, newLabel }: { projectId?: string; newLabel?: string }) {
   const list = useListState<DprSortField>({ sortBy: 'date', sortOrder: 'desc' });
-  const [projectFilter, setProjectFilter] = useState<string | undefined>();
+  const [projectFilter, setProjectFilter] = useProjectScope();
   const [status, setStatus] = useState<SubmissionStatus | undefined>();
   const [openId, setOpenId] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
@@ -35,6 +37,8 @@ export function DprList({ projectId: fixedProject, newLabel }: { projectId?: str
     downloadXlsx(exportFileName('dpr'), 'dpr', DPR_EXPORT, rows);
     return rows.length;
   };
+
+  useNewIntent('dpr', !!newLabel, () => setFormOpen(true));
 
   return (
     <>

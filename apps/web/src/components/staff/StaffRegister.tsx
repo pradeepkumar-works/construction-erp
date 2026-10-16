@@ -8,6 +8,7 @@ import type { StaffAttendanceStatus, StaffRegisterDto, StaffRegisterRowDto } fro
 import { LEAVE_TYPE_LABELS, STAFF_ATTENDANCE_LABELS, STAFF_ATTENDANCE_STATUSES } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, errorMessage } from '@/lib/api';
+import { useProjectScope } from '@/lib/project-scope';
 import { useProjects, useStaffRegister } from '@/lib/queries';
 import { QueryError } from '@/components/common/QueryState';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
@@ -25,6 +26,7 @@ export function StaffRegister() {
   const { message } = App.useApp();
   const qc = useQueryClient();
   const { data: projects } = useProjects();
+  const [scope] = useProjectScope();
   const [projectId, setProjectId] = useState<string | undefined>();
   const [date, setDate] = useState(dayjs());
   const day = date.format('YYYY-MM-DD');
@@ -32,8 +34,9 @@ export function StaffRegister() {
   const [marks, setMarks] = useState<Record<string, Mark>>({});
 
   useEffect(() => {
-    if (!projectId && projects?.length) setProjectId(projects[0].id);
-  }, [projects, projectId]);
+    // The project chosen in the header, else the first.
+    if (!projectId && projects?.length) setProjectId(scope ?? projects[0].id);
+  }, [projects, projectId, scope]);
   useEffect(() => {
     setMarks(Object.fromEntries((data?.rows ?? []).map((r) => [r.employee.id, fromRow(r)])));
   }, [data]);

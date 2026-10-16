@@ -4,6 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { Button } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import type { MaterialRequestDto, MaterialRequestSortField, SubmissionStatus } from '@erp/shared';
+import { useNewIntent } from '@/lib/new-intent';
+import { useProjectScope } from '@/lib/project-scope';
 import { useMaterialRequests } from '@/lib/queries';
 import { useListState } from '@/lib/listState';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
@@ -21,7 +23,7 @@ import { MrFormModal } from './MrFormModal';
  */
 export function MrList({ projectId: fixedProject, newLabel, openId: initialOpen }: { projectId?: string; newLabel?: string; openId?: string | null }) {
   const list = useListState<MaterialRequestSortField>({ sortBy: 'createdAt', sortOrder: 'desc' });
-  const [projectFilter, setProjectFilter] = useState<string | undefined>();
+  const [projectFilter, setProjectFilter] = useProjectScope();
   const [status, setStatus] = useState<SubmissionStatus | undefined>();
   const [openId, setOpenId] = useState<string | null>(initialOpen ?? null);
   useEffect(() => {
@@ -38,6 +40,8 @@ export function MrList({ projectId: fixedProject, newLabel, openId: initialOpen 
     downloadXlsx(exportFileName('material-requests'), 'material-requests', MR_EXPORT, mrExportRows(rows));
     return rows.length;
   };
+
+  useNewIntent('material-request', !!newLabel, () => setFormOpen(true));
 
   return (
     <>
