@@ -11,7 +11,7 @@ import { AttachmentsService } from '../common/attachments.service';
 import { BILLABLE_BOQ_ITEM, UNAPPROVED_EXTRA_ITEM } from '../variations/variations.service';
 import { dateOnly, dec, iso, money, parseDate } from '../common/serialize';
 import { isUniqueViolation } from '../common/idempotency';
-import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
+import { ilike, pageArgs, paginated, searchWords, dateRange } from '../common/paging';
 import { BillDateDto, BillPriceVariationDto, CertifyBillDto, CreateRaBillDto, ListRaBillsQuery, UpdateRaBillDto } from './ra-bills.dto';
 import { invoiceOf, RECEIPT_SUMS, settlement, syncBillStage } from '../receivables/bill-settlement';
 import { ReceivablesService } from '../receivables/receivables.service';
@@ -252,6 +252,9 @@ export class RaBillsService {
     if (q.projectId) where.projectId = q.projectId;
     if (q.status) where.status = q.status;
     if (q.stage) where.stage = q.stage;
+    if (q.mine) where.submittedById = user.id;
+    const days = dateRange(q.from, q.to);
+    if (days) where.billDate = days;
     const words = searchWords(q.q);
     if (words.length)
       where.AND = words.map((w) => ({

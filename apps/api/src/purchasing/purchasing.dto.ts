@@ -121,6 +121,9 @@ export class ListPurchaseOrdersQuery extends PageQuery {
   @ApiPropertyOptional({ enum: SUBMISSION_STATUSES }) @IsOptional() @IsIn(SUBMISSION_STATUSES as unknown as string[]) status?: SubmissionStatus;
   @ApiPropertyOptional({ description: 'Only approved orders still open (something to receive, not closed)' }) @IsOptional() @QueryBool() @IsBoolean() open?: boolean;
   @ApiPropertyOptional({ enum: LIST_SORT_FIELDS.purchaseOrders, default: 'poDate' }) @IsOptional() @IsIn(LIST_SORT_FIELDS.purchaseOrders as unknown as string[]) sortBy?: PurchaseOrderSortField;
+  @ApiPropertyOptional({ example: '2026-10-01', description: 'From this day (inclusive)' }) @IsOptional() @IsDateString() from?: string;
+  @ApiPropertyOptional({ example: '2026-10-31', description: 'Up to this day (inclusive)' }) @IsOptional() @IsDateString() to?: string;
+  @ApiPropertyOptional({ description: 'Only entries the current user submitted' }) @IsOptional() @QueryBool() @IsBoolean() mine?: boolean;
 }
 
 export class ReceivableOrdersQuery {

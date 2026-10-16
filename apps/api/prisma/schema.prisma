@@ -432,6 +432,7 @@ model Organization {
   equipmentDocs     EquipmentDocument[]
   drivers           Driver[]
   pvComponents      PriceVariationComponent[]
+  savedViews        SavedView[]
 }
 
 model Role {
@@ -486,6 +487,7 @@ model User {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
+  savedViews           SavedView[]
   memberships          ProjectMember[]
   managedProjects      Project[]          @relation("ProjectManager")
   baselinedProjects    Project[]          @relation("ProjectBaselineBy")
@@ -3405,4 +3407,24 @@ model CloseoutItem {
   updatedAt      DateTime     @updatedAt
 
   @@index([projectId, sortOrder])
+}
+
+/// A list's filters, sort and columns saved under a name (UI roadmap item 55). Personal unless shared with the company.
+model SavedView {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Which list: SAVED_VIEW_LISTS in @erp/shared (dpr, progress, material-requests, purchase-orders, bills)
+  list           String
+  name           String
+  shared         Boolean      @default(false)
+  /// SavedViewState: { filters: Record<string, string>, columns?: string[] }
+  state          Json
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId, list])
+  @@index([userId])
 }

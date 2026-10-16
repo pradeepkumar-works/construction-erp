@@ -42,7 +42,8 @@ test.describe.serial('material request: changes requested, then resubmitted', ()
     await page.goto('/material-requests');
     const row = page.locator('tr').filter({ hasText: mr.requestNo });
     await expect(row.getByText('Changes Requested', { exact: false })).toBeVisible();
-    await row.getByRole('button', { name: 'Edit & resubmit' }).click();
+    await row.getByRole('button', { name: 'Actions' }).click();
+    await page.getByRole('menuitem', { name: 'Edit & resubmit' }).click();
     const modal = page.locator('.ant-modal').filter({ hasText: mr.requestNo });
     await expect(modal.getByText(reason)).toBeVisible();
     await modal.getByRole('button', { name: 'Resubmit request' }).click();

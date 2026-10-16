@@ -9,6 +9,18 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-10-lists',
+    date: '2026-10-16',
+    title: 'Better lists',
+    points: [
+      'Daily reports, progress, material requests, purchase orders and RA bills have views across the top: Waiting for me, Mine, Sent back, This week.',
+      'Save your own filters as a view, and share it with the company if it helps others.',
+      'Filter by dates, hide the columns you do not need, and click anywhere on a row to open it.',
+      'Tick rows to approve or export several at once. Money lists show a total for the page.',
+      'The filters are in the address bar, so a filtered list can be bookmarked or sent to someone.',
+    ],
+  },
+  {
     id: '2026-10-shell',
     date: '2026-10-16',
     title: 'A new header',

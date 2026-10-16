@@ -2,16 +2,13 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Button, Checkbox, Progress, Select, Space, Table, Typography } from 'antd';
-import type { TableProps } from 'antd';
+import { Button, Checkbox, Progress, Select, Space, Typography, theme } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
-import type { PurchaseOrderDto, PurchaseOrderSortField, SubmissionStatus } from '@erp/shared';
-import { canPurchase } from '@erp/shared';
+import type { PurchaseOrderDto, PurchaseOrderSortField } from '@erp/shared';
+import { LIST_SORT_FIELDS, canPurchase } from '@erp/shared';
 import { useNewIntent } from '@/lib/new-intent';
-import { useProjectScope } from '@/lib/project-scope';
 import { useAuth } from '@/lib/auth';
 import { usePurchaseOrders, useVendors } from '@/lib/queries';
-import { useListState } from '@/lib/listState';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { PURCHASE_ORDER_EXPORT } from '@/lib/exportColumns';
 import { formatDate, formatINR } from '@/lib/format';
@@ -19,79 +16,56 @@ import { QueryError } from '@/components/common/QueryState';
 import { ListToolbar } from '@/components/common/ListToolbar';
 import { ExportButton } from '@/components/common/ExportButton';
 import { StatusTag } from '@/components/common/StatusTag';
-import { ReviewActions } from '@/components/common/ReviewActions';
+import { DataTable, type ListColumn } from '@/components/list/DataTable';
+import { DateRangeFilter } from '@/components/list/DateRangeFilter';
+import { RowActions } from '@/components/list/RowActions';
+import { exportSelected, useBulkApprove } from '@/components/list/bulk';
+import { useListFrame } from '@/components/list/useListFrame';
 import { PoStateTag, PurchaseOrderDrawer } from './PurchaseOrderDrawer';
 import { PurchaseOrderFormModal } from './PurchaseOrderFormModal';
 
-/** Purchase orders, on the Purchase Orders page and as a project tab. `openId` opens one order (from a link). */
-export function PurchaseOrderList({ projectId: fixedProject, openId: initialOpen }: { projectId?: string; openId?: string | null }) {
-  const { user } = useAuth();
-  const list = useListState<PurchaseOrderSortField>({ sortBy: 'poDate', sortOrder: 'desc' });
-  const [projectFilter, setProjectFilter] = useProjectScope();
-  const [status, setStatus] = useState<SubmissionStatus | undefined>();
-  const [vendorId, setVendorId] = useState<string | undefined>();
-  const [onlyOpen, setOnlyOpen] = useState(false);
-  const [openId, setOpenId] = useState<string | null>(initialOpen ?? null);
-  const [formOpen, setFormOpen] = useState(false);
-  const [editing, setEditing] = useState<PurchaseOrderDto | null>(null);
-  useEffect(() => {
-    if (initialOpen) setOpenId(initialOpen);
-  }, [initialOpen]);
-  const projectId = fixedProject ?? projectFilter;
-  const filters = { ...list.params, projectId, status, vendorId, open: onlyOpen || undefined };
-  const { data, isLoading, isFetching, error, refetch } = usePurchaseOrders(filters);
-  const { data: vendors } = useVendors();
-  const buyer = !!user && canPurchase(user.roleKey);
-  const reset = <T,>(set: (v: T) => void) => (v: T) => {
-    set(v);
-    list.resetPage();
-  };
-  const sort = (key: PurchaseOrderSortField) => ({ key, sorter: true, sortOrder: list.sortOrderFor(key), sortDirections: ['descend', 'ascend'] as ('descend' | 'ascend')[] });
+const KEYS = ['status', 'mine', 'from', 'to', 'vendorId', 'open'] as const;
+const sumMoney = (values: string[]) => formatINR(values.reduce((n, v) => n + Number(v || 0), 0));
 
-  const exportRows = async () => {
-    const rows = await fetchAllPages<PurchaseOrderDto>('/purchase-orders', { ...filters });
-    downloadXlsx(exportFileName('purchase-orders'), 'Purchase orders', PURCHASE_ORDER_EXPORT, rows);
-    return rows.length;
-  };
+function TwoLine({ top, sub }: { top: React.ReactNode; sub: React.ReactNode }) {
+  const { token } = theme.useToken();
+  return (
+    <div>
+      {top}
+      <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{sub}</div>
+    </div>
+  );
+}
 
-  const columns: TableProps<PurchaseOrderDto>['columns'] = [
+function poColumns({ showProject, onOpen, sortOrderFor }: { showProject: boolean; onOpen: (id: string) => void; sortOrderFor: (key: PurchaseOrderSortField) => 'ascend' | 'descend' | null }): ListColumn<PurchaseOrderDto>[] {
+  const sort = (key: PurchaseOrderSortField) => ({ key, sorter: true, sortOrder: sortOrderFor(key), sortDirections: ['descend', 'ascend'] as ('descend' | 'ascend')[] });
+  return [
     {
       title: 'PO',
+      label: 'PO no.',
+      locked: true,
       ...sort('poNo'),
-      width: 150,
+      width: 160,
       render: (_, r) => (
-        <div>
-          <Typography.Link onClick={() => setOpenId(r.id)} strong className="mono">
-            {r.poNo}
-          </Typography.Link>
-          <div className="text-muted" style={{ fontSize: 12 }}>
-            {formatDate(r.poDate)}
-          </div>
-        </div>
+        <TwoLine
+          top={
+            <Typography.Link onClick={() => onOpen(r.id)} strong className="mono">
+              {r.poNo}
+            </Typography.Link>
+          }
+          sub={formatDate(r.poDate)}
+        />
       ),
     },
-    {
-      title: 'Vendor',
-      ...sort('vendor'),
-      render: (_, r) => (
-        <div>
-          {r.vendorName}
-          <div className="text-muted" style={{ fontSize: 12 }}>
-            {r.lines.map((l) => l.itemName).join(', ')}
-          </div>
-        </div>
-      ),
-    },
-    ...(fixedProject
-      ? []
-      : [{ title: 'Project', dataIndex: 'projectName', ...sort('project'), ellipsis: true, render: (v: string, r: PurchaseOrderDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> }]),
-    { title: 'Request', dataIndex: 'requestNo', width: 120, render: (v, r) => (v ? <Link href={`/material-requests?id=${r.materialRequestId}`} className="mono">{v}</Link> : <span className="text-muted">-</span>) },
-    { title: 'Total', dataIndex: 'total', width: 140, align: 'right', ...sort('total'), render: (v) => <strong className="mono">{formatINR(v)}</strong> },
-    { title: 'Received', key: 'received', width: 130, render: (_, r) => (r.status === 'APPROVED' ? <Progress percent={r.receivedPct} size="small" style={{ margin: 0 }} /> : <span className="text-muted">-</span>) },
+    { title: 'Vendor', ...sort('vendor'), render: (_, r) => <TwoLine top={r.vendorName} sub={r.lines.map((l) => l.itemName).join(', ')} /> },
+    ...(showProject ? [{ title: 'Project', dataIndex: 'projectName', ...sort('project'), ellipsis: true, render: (v: string, r: PurchaseOrderDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> }] : []),
+    { key: 'request', title: 'Request', dataIndex: 'requestNo', width: 140, render: (v, r) => (v ? <Link href={`/material-requests?id=${r.materialRequestId}`} className="mono">{v}</Link> : '-') },
+    { title: 'Total', dataIndex: 'total', width: 150, align: 'right', ...sort('total'), render: (v) => <strong className="mono">{formatINR(v)}</strong>, total: (rows) => sumMoney(rows.map((r) => r.total)) },
+    { title: 'Raised on', dataIndex: 'createdAt', width: 130, defaultHidden: true, render: (v) => formatDate(v), ...sort('createdAt') },
     {
       title: 'Status',
       dataIndex: 'status',
-      width: 170,
+      width: 180,
       ...sort('status'),
       render: (s, r) => (
         <Space size={4} wrap>
@@ -100,35 +74,62 @@ export function PurchaseOrderList({ projectId: fixedProject, openId: initialOpen
         </Space>
       ),
     },
-    {
-      title: '',
-      key: 'actions',
-      fixed: 'right' as const,
-      width: 150,
-      render: (_, r) => (
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <Button size="small" onClick={() => setOpenId(r.id)}>
-            View
-          </Button>
-          <ReviewActions type="purchase_order" id={r.id} status={r.status} amount={r.total} size="small" compact />
-        </div>
-      ),
-    },
+    { key: 'received', title: 'Received', width: 130, render: (_, r) => (r.status === 'APPROVED' ? <Progress percent={r.receivedPct} size="small" style={{ margin: 0 }} /> : '-') },
+    { key: 'actions', title: '', label: 'Actions', locked: true, fixed: 'right' as const, width: 56, render: (_, r) => <RowActions type="purchase_order" row={r} amount={r.total} onOpen={onOpen} /> },
   ];
+}
+
+/** Purchase orders, on the Purchase Orders page and as a project tab. `openId` opens one order (from a link). */
+export function PurchaseOrderList({ projectId: fixedProject, openId: initialOpen }: { projectId?: string; openId?: string | null }) {
+  const { user } = useAuth();
+  const [openId, setOpenId] = useState<string | null>(initialOpen ?? null);
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<PurchaseOrderDto | null>(null);
+  useEffect(() => {
+    if (initialOpen) setOpenId(initialOpen);
+  }, [initialOpen]);
+  const { data: vendors } = useVendors();
+  const frame = useListFrame({
+    list: 'purchase-orders',
+    type: 'PURCHASE_ORDER',
+    keys: KEYS,
+    sortBy: 'poDate',
+    sortOrder: 'desc',
+    sortFields: LIST_SORT_FIELDS.purchaseOrders,
+    fixedProject,
+    columns: (sortOrderFor) => poColumns({ showProject: !fixedProject, onOpen: setOpenId, sortOrderFor }),
+    moreViews: [{ key: 'open', label: 'Open orders', filters: { open: '1' } }],
+    chipLabels: {
+      vendorId: (v) => `Vendor: ${vendors?.find((x) => x.id === v)?.name ?? 'one vendor'}`,
+      open: () => 'Open orders',
+    },
+  });
+  const { page } = frame;
+  const filters = { ...page.params, projectId: frame.projectId, status: frame.status, vendorId: page.filters.vendorId, open: page.filters.open === '1' || undefined };
+  const { data, isLoading, isFetching, error, refetch } = usePurchaseOrders(filters);
+  const approve = useBulkApprove<PurchaseOrderDto>('purchase_order', (r) => r.total);
+  const buyer = !!user && canPurchase(user.roleKey);
+
+  const exportRows = async () => {
+    const rows = await fetchAllPages<PurchaseOrderDto>('/purchase-orders', { ...filters });
+    downloadXlsx(exportFileName('purchase-orders'), 'Purchase orders', PURCHASE_ORDER_EXPORT, rows);
+    return rows.length;
+  };
 
   useNewIntent('purchase-order', buyer, () => setFormOpen(true));
 
   return (
     <>
+      {frame.views}
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       <ListToolbar
-        projectId={projectFilter}
-        onProject={reset(setProjectFilter)}
+        projectId={frame.projectFilter}
+        onProject={frame.setProjectFilter}
         hideProject={!!fixedProject}
-        status={status}
-        onStatus={reset(setStatus)}
-        search={list.search}
-        onSearch={list.setSearch}
+        status={frame.status}
+        onStatus={frame.setStatus}
+        search={page.search}
+        onSearch={page.setSearch}
         searchPlaceholder="Search PO no., vendor, item, request"
         extra={
           <>
@@ -141,20 +142,25 @@ export function PurchaseOrderList({ projectId: fixedProject, openId: initialOpen
           </>
         }
       >
-        <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Any vendor" style={{ width: 220 }} value={vendorId} onChange={reset(setVendorId)} options={(vendors ?? []).map((v) => ({ value: v.id, label: v.name }))} />
-        <Checkbox checked={onlyOpen} onChange={(e) => reset(setOnlyOpen)(e.target.checked)}>
+        <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Any vendor" aria-label="Vendor" style={{ width: 220 }} value={page.filters.vendorId} onChange={(v) => page.setFilter('vendorId', v)} options={(vendors ?? []).map((v) => ({ value: v.id, label: v.name }))} />
+        <DateRangeFilter {...frame.dateRange} />
+        <Checkbox checked={page.filters.open === '1'} onChange={(e) => page.setFilter('open', e.target.checked ? '1' : undefined)}>
           Open orders only
         </Checkbox>
       </ListToolbar>
-      <Table<PurchaseOrderDto>
-        rowKey="id"
+      <DataTable<PurchaseOrderDto>
+        columns={frame.columns}
+        visible={frame.choice.visible}
+        onChooseColumns={frame.choice.setChosen}
+        chosenIsDefault={frame.choice.isDefault}
+        rows={data?.items ?? []}
         loading={isLoading || isFetching}
-        columns={columns}
-        dataSource={data?.items ?? []}
-        size="middle"
-        {...list.tableProps<PurchaseOrderDto>(data?.total)}
-        scroll={{ x: fixedProject ? 1000 : 1200 }}
-        locale={{ emptyText: buyer ? 'No purchase orders yet. Raise one from an approved material request, or with New purchase order.' : 'No purchase orders yet' }}
+        table={page.tableProps<PurchaseOrderDto>(data?.total)}
+        onOpen={setOpenId}
+        bulk={[...(approve ? [approve] : []), exportSelected<PurchaseOrderDto>('purchase-orders', 'Purchase orders', PURCHASE_ORDER_EXPORT)]}
+        chips={frame.chips}
+        scrollX={fixedProject ? 1050 : 1250}
+        emptyText={buyer ? 'No purchase orders yet. Raise one from an approved material request, or with New purchase order.' : 'No purchase orders yet'}
       />
       <PurchaseOrderDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onEdit={setEditing} />
       <PurchaseOrderFormModal

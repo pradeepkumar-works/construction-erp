@@ -41,4 +41,6 @@ export class ListDprQuery extends PageQuery {
   @ApiPropertyOptional({ enum: SUBMISSION_STATUSES }) @IsOptional() @IsIn(SUBMISSION_STATUSES as unknown as string[]) status?: SubmissionStatus;
   @ApiPropertyOptional() @IsOptional() @QueryBool() @IsBoolean() mine?: boolean;
   @ApiPropertyOptional({ enum: LIST_SORT_FIELDS.dpr, default: 'date' }) @IsOptional() @IsIn(LIST_SORT_FIELDS.dpr as unknown as string[]) sortBy?: DprSortField;
+  @ApiPropertyOptional({ example: '2026-10-01', description: 'From this day (inclusive)' }) @IsOptional() @IsDateString() from?: string;
+  @ApiPropertyOptional({ example: '2026-10-31', description: 'Up to this day (inclusive)' }) @IsOptional() @IsDateString() to?: string;
 }

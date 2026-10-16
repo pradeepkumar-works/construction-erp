@@ -250,4 +250,8 @@ ALTER TABLE "PriceVariationComponent" NO FORCE ROW LEVEL SECURITY;
 ALTER TABLE "PriceVariationComponent" DISABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS tenant_isolation ON "PriceVariationComponent";
 
+ALTER TABLE "SavedView" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "SavedView" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "SavedView";
+
 DROP FUNCTION IF EXISTS app_current_org();

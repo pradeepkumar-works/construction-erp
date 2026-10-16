@@ -2,6 +2,9 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
+  SavedViewDto,
+  SavedViewList,
+  SavedViewState,
   DefectDto,
   DefectPhase,
   HandoverSummaryDto,
@@ -213,6 +216,9 @@ export interface ListFilters extends PageParams {
   activityId?: string;
   status?: SubmissionStatus;
   mine?: boolean;
+  /** YYYY-MM-DD, both ends included (DPR, progress, material requests). */
+  from?: string;
+  to?: string;
 }
 
 export interface ProjectFilters extends PageParams {
@@ -910,6 +916,9 @@ export interface BillFilters extends PageParams {
   projectId?: string;
   status?: SubmissionStatus;
   stage?: BillStage;
+  mine?: boolean;
+  from?: string;
+  to?: string;
 }
 
 export const useBills = (filters: BillFilters, enabled = true) =>
@@ -1042,6 +1051,9 @@ export interface PurchaseOrderFilters extends PageParams {
   materialRequestId?: string;
   status?: SubmissionStatus;
   open?: boolean;
+  mine?: boolean;
+  from?: string;
+  to?: string;
 }
 
 export const usePurchaseOrders = (filters: PurchaseOrderFilters, enabled = true) =>
@@ -1704,3 +1716,27 @@ export const useLdExposure = (enabled = true) =>
     queryFn: async () => (await api.get<LdExposureDto[]>('/ld-exposure')).data,
     enabled,
   });
+
+/* ---------- saved views (UI roadmap item 55) ---------- */
+
+export const useSavedViews = (list: SavedViewList, enabled = true) =>
+  useQuery({ queryKey: ['saved-views', list], queryFn: async () => (await api.get<SavedViewDto[]>('/saved-views', { params: { list } })).data, enabled });
+
+export function useSaveView() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (vars: { id?: string; list: SavedViewList; name?: string; shared?: boolean; state?: SavedViewState }) =>
+      vars.id
+        ? (await api.patch<SavedViewDto>(`/saved-views/${vars.id}`, { name: vars.name, shared: vars.shared, state: vars.state })).data
+        : (await api.post<SavedViewDto>('/saved-views', { list: vars.list, name: vars.name, shared: vars.shared, state: vars.state })).data,
+    onSuccess: (_d, vars) => qc.invalidateQueries({ queryKey: ['saved-views', vars.list] }),
+  });
+}
+
+export function useDeleteView() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (vars: { id: string; list: SavedViewList }) => (await api.delete(`/saved-views/${vars.id}`)).data,
+    onSuccess: (_d, vars) => qc.invalidateQueries({ queryKey: ['saved-views', vars.list] }),
+  });
+}

@@ -57,6 +57,9 @@ cd e2e && npx playwright test         # browser tests; needs API + web running (
   switcher and remembered; never a local `useState`. A list with a New button calls `useNewIntent(kind, allowed, open)`
   (`src/lib/new-intent.ts`) and gets a line in `components/shell/NewMenu.tsx`. Release notes for Help > What's new
   are in `components/shell/whats-new.ts`.
+- Lists: a submission list page uses `useListFrame` (`components/list/useListFrame.tsx`: filters in the URL via
+  `useListPage`, views, chips, chosen columns) and `DataTable` (`ListColumn` with a stable `key`, row click, `RowActions`
+  menu, bulk bar, page totals). A list with saved views is a key in `SAVED_VIEW_LISTS` (`packages/shared/src/views.ts`).
 - Mobile: screens in `app/`, shared UI in `src/components`, API in `src/api`, no new native deps
   without checking `node_modules/expo/bundledNativeModules.json` for the SDK-pinned version.
 - Mobile text: wrap everything a screen shows in `t()` from `useT()` (English is the key, `{placeholders}` for values)

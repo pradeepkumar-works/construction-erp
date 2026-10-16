@@ -121,6 +121,8 @@ export const canManageUsers = (role: RoleKey) => USER_ADMIN_ROLES.includes(role)
 export const canManageCompanyData = (role: RoleKey) => role === 'ADMIN';
 /** See and pay for the company's subscription: admins only. */
 export const canManageBilling = (role: RoleKey) => role === 'ADMIN';
+/** Changing or deleting a view someone else shared with the company (owners always can). */
+export const canManageSharedViews = (role: RoleKey) => role === 'ADMIN';
 export const seesGettingStarted = (role: RoleKey) => GETTING_STARTED_ROLES.includes(role);
 export const submitsDpr = (role: RoleKey) => DPR_SUBMITTER_ROLES.includes(role);
 export const canRecordAttendance = (role: RoleKey) => ATTENDANCE_RECORDER_ROLES.includes(role);

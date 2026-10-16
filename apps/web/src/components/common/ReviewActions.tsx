@@ -10,7 +10,7 @@ import { errorMessage } from '@/lib/api';
 import { useReview, type ApprovalTypeParam } from '@/lib/queries';
 import { approveTheme } from '@/lib/theme';
 
-const LABELS: Record<ReviewDecision, string> = {
+export const REVIEW_LABELS: Record<ReviewDecision, string> = {
   APPROVE: 'Approve',
   REJECT: 'Reject',
   REQUEST_CHANGES: 'Request changes',
@@ -36,29 +36,9 @@ export function ReviewActions({
   onDone?: () => void;
 }) {
   const { user } = useAuth();
-  const { message } = App.useApp();
-  const review = useReview();
   const [decision, setDecision] = useState<ReviewDecision | null>(null);
-  const [form] = Form.useForm<{ note?: string }>();
 
   if (!user || !mayApproveType(user, type.toUpperCase() as SubmissionType, amount) || status !== 'SUBMITTED') return null;
-
-  const submit = async () => {
-    if (!decision) return;
-    try {
-      const values = await form.validateFields();
-      await review.mutateAsync({ type, id, decision, note: values.note });
-      message.success(
-        decision === 'APPROVE' ? 'Approved' : decision === 'REJECT' ? 'Rejected' : 'Changes requested',
-      );
-      setDecision(null);
-      form.resetFields();
-      onDone?.();
-    } catch (err) {
-      if (err && typeof err === 'object' && 'errorFields' in err) return;
-      message.error(errorMessage(err));
-    }
-  };
 
   return (
     <>
@@ -91,28 +71,56 @@ export function ReviewActions({
           </Button>
         </Space>
       )}
-      <Modal
-        open={!!decision}
-        title={decision ? LABELS[decision] : ''}
-        okText={decision ? LABELS[decision] : 'OK'}
-        okButtonProps={{ danger: decision === 'REJECT', loading: review.isPending }}
-        onOk={submit}
-        onCancel={() => {
-          setDecision(null);
-          form.resetFields();
-        }}
-        destroyOnHidden
-      >
-        <Form form={form} layout="vertical" style={{ marginTop: 12 }}>
-          <Form.Item
-            name="note"
-            label={decision === 'APPROVE' ? 'Note (optional)' : 'Reason'}
-            rules={decision === 'APPROVE' ? [] : [{ required: true, message: 'Please enter a reason' }]}
-          >
-            <Input.TextArea rows={3} placeholder={decision === 'APPROVE' ? 'Any remarks for the submitter' : 'Explain what needs to change'} />
-          </Form.Item>
-        </Form>
-      </Modal>
+      <ReviewDialog type={type} id={id} decision={decision} onClose={() => setDecision(null)} onDone={onDone} />
     </>
+  );
+}
+
+/** Whether this user may approve, reject or send back this entry now. */
+export function useMayReview(type: ApprovalTypeParam, status: SubmissionStatus, amount?: string | null) {
+  const { user } = useAuth();
+  return !!user && status === 'SUBMITTED' && mayApproveType(user, type.toUpperCase() as SubmissionType, amount);
+}
+
+/** The note dialog behind Approve, Request changes and Reject (a reason is required for the last two). */
+export function ReviewDialog({ type, id, decision, onClose, onDone }: { type: ApprovalTypeParam; id: string; decision: ReviewDecision | null; onClose: () => void; onDone?: () => void }) {
+  const { message } = App.useApp();
+  const review = useReview();
+  const [form] = Form.useForm<{ note?: string }>();
+
+  const submit = async () => {
+    if (!decision) return;
+    try {
+      const values = await form.validateFields();
+      await review.mutateAsync({ type, id, decision, note: values.note });
+      message.success(decision === 'APPROVE' ? 'Approved' : decision === 'REJECT' ? 'Rejected' : 'Changes requested');
+      form.resetFields();
+      onClose();
+      onDone?.();
+    } catch (err) {
+      if (err && typeof err === 'object' && 'errorFields' in err) return;
+      message.error(errorMessage(err));
+    }
+  };
+
+  return (
+    <Modal
+      open={!!decision}
+      title={decision ? REVIEW_LABELS[decision] : ''}
+      okText={decision ? REVIEW_LABELS[decision] : 'OK'}
+      okButtonProps={{ danger: decision === 'REJECT', loading: review.isPending }}
+      onOk={submit}
+      onCancel={() => {
+        onClose();
+        form.resetFields();
+      }}
+      destroyOnHidden
+    >
+      <Form form={form} layout="vertical" style={{ marginTop: 12 }}>
+        <Form.Item name="note" label={decision === 'APPROVE' ? 'Note (optional)' : 'Reason'} rules={decision === 'APPROVE' ? [] : [{ required: true, message: 'Please enter a reason' }]}>
+          <Input.TextArea rows={3} placeholder={decision === 'APPROVE' ? 'Any remarks for the submitter' : 'Explain what needs to change'} />
+        </Form.Item>
+      </Form>
+    </Modal>
   );
 }
