@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo } from 'react';
-import { Alert, App, Button, DatePicker, Form, Input, InputNumber, Modal, Select, Space, Table, Typography } from 'antd';
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import { Alert, App, DatePicker, Form, Input, InputNumber, Select, Table, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, PurchaseOrderDto } from '@erp/shared';
@@ -12,6 +11,8 @@ import { useProjects, useVendors } from '@/lib/queries';
 import { formatINR, toNumber } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { UnitInput } from '@/components/common/UnitInput';
+import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
+import { LineTable } from '@/components/form/LineTable';
 
 export interface PoLineValue {
   materialRequestItemId?: string | null;
@@ -157,201 +158,189 @@ export function PurchaseOrderFormModal({
       message.success(submit ? `${o.poNo} submitted for approval` : `${o.poNo} saved as a draft`);
       for (const k of ['purchase-orders', 'material-requests', 'quotations']) qc.invalidateQueries({ queryKey: [k] });
       onSaved?.(o);
-      onClose();
     },
     onError: (e) => message.error(errorMessage(e)),
   });
 
-  const run = async (submit: boolean) => {
-    try {
-      await form.validateFields();
-      // All values, not just the rendered fields: request lines carry their item without an input for it.
-      save.mutate({ v: form.getFieldsValue(true) as FormValues, submit });
-    } catch {
-      /* the form shows what is missing */
-    }
-  };
-
   const vendorOptions = (vendors ?? []).filter((v) => v.isActive || v.id === order?.vendorId).map((v) => ({ value: v.id, label: v.name }));
-  const grid = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '0 16px' } as const;
+
+  const summary = (
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '4px 12px' }}>
+      <span>Items</span>
+      <span className="mono">{formatINR(totals.subtotal, true)}</span>
+      <span>GST</span>
+      <span className="mono">{formatINR(totals.gst, true)}</span>
+      <span>Freight</span>
+      <span className="mono">{formatINR(toNumber(freight), true)}</span>
+      <strong>Order total</strong>
+      <strong className="mono">{formatINR(totals.total, true)}</strong>
+    </div>
+  );
 
   return (
-    <Modal
+    <FormShell
       open={open}
+      onClose={onClose}
+      form={form}
       title={order ? `Edit ${order.poNo}` : fromRequest ? `Purchase order for ${fromRequest}` : 'New purchase order'}
-      onCancel={onClose}
+      okText="Save and submit"
+      secondaryText="Save draft"
+      // All values, not just the rendered fields: request lines carry their item without an input for it.
+      allValues
+      onSubmit={(v, draft) => save.mutateAsync({ v, submit: !draft })}
+      draftKey={order || start?.materialRequestId || start?.quotationId ? undefined : `po:${start?.projectId ?? 'any'}`}
       width={1040}
-      destroyOnHidden
-      styles={{ body: { maxHeight: '72vh', overflowY: 'auto', paddingRight: 8 } }}
-      footer={
-        <Space>
-          <Button onClick={onClose}>Cancel</Button>
-          <Button onClick={() => run(false)} loading={save.isPending && !save.variables?.submit}>
-            Save draft
-          </Button>
-          <Button type="primary" onClick={() => run(true)} loading={save.isPending && !!save.variables?.submit}>
-            Save and submit
-          </Button>
-        </Space>
+      footerExtra={
+        <Typography.Text strong className="mono" style={{ marginInlineEnd: 8 }}>
+          {formatINR(totals.total, true)}
+        </Typography.Text>
       }
     >
-      <Form form={form} layout="vertical" style={{ marginTop: 8 }}>
-        <div style={grid}>
-          <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]}>
-            <Select showSearch={{ optionFilterProp: 'label' }} disabled={!!order || !!start?.projectId} options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
-          </Form.Item>
-          <Form.Item
-            name="vendorId"
-            label="Vendor"
-            rules={[{ required: true, message: 'Pick the vendor from the master' }]}
-            extra={vendor ? [vendor.gstin ? `GSTIN ${vendor.gstin}` : 'No GSTIN', vendor.msmeCategory ? MSME_CATEGORY_LABELS[vendor.msmeCategory] : null].filter(Boolean).join(' · ') : undefined}
-          >
-            <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Vendor master" options={vendorOptions} />
-          </Form.Item>
-          <Form.Item name="poDate" label="PO date" rules={[{ required: true, message: 'Required' }]}>
-            <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" />
-          </Form.Item>
-          <Form.Item name="deliveryBy" label="Deliver by">
-            <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" />
-          </Form.Item>
-        </div>
+      <Form form={form} layout="vertical">
+        <FormSection title="Order">
+          <FormGrid cols={4}>
+            <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]}>
+              <Select showSearch={{ optionFilterProp: 'label' }} disabled={!!order || !!start?.projectId} options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
+            </Form.Item>
+            <Form.Item
+              name="vendorId"
+              label="Vendor"
+              rules={[{ required: true, message: 'Pick the vendor from the master' }]}
+              extra={vendor ? [vendor.gstin ? `GSTIN ${vendor.gstin}` : 'No GSTIN', vendor.msmeCategory ? MSME_CATEGORY_LABELS[vendor.msmeCategory] : null].filter(Boolean).join(' · ') : undefined}
+            >
+              <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Vendor master" options={vendorOptions} />
+            </Form.Item>
+            <Form.Item name="poDate" label="PO date" rules={[{ required: true, message: 'Required' }]}>
+              <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" />
+            </Form.Item>
+            <Form.Item name="deliveryBy" label="Deliver by">
+              <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" />
+            </Form.Item>
+          </FormGrid>
+        </FormSection>
 
-        <Form.List name="lines">
-          {(fields, { add, remove }) => (
-            <>
-              <Table
-                size="small"
-                pagination={false}
-                rowKey="key"
-                dataSource={fields}
-                style={{ marginBottom: 8 }}
-                columns={[
-                  {
-                    title: 'Item',
-                    key: 'item',
-                    render: (_, f) =>
-                      lines?.[f.name]?.materialRequestItemId ? (
-                        <div>
-                          <Typography.Text strong>{lines[f.name].itemName}</Typography.Text>
-                          {lines[f.name].specification && <div className="text-muted" style={{ fontSize: 12 }}>{lines[f.name].specification}</div>}
-                        </div>
-                      ) : (
-                        <>
-                          <Form.Item name={[f.name, 'itemName']} noStyle rules={[{ required: true, whitespace: true, message: 'Item' }]}>
-                            <Input placeholder="Item" aria-label={`Item of line ${f.name + 1}`} maxLength={200} />
-                          </Form.Item>
-                          <Form.Item name={[f.name, 'specification']} noStyle>
-                            <Input placeholder="Specification" maxLength={300} style={{ marginTop: 4 }} />
-                          </Form.Item>
-                        </>
-                      ),
-                  },
-                  {
-                    title: 'Unit',
-                    key: 'unit',
-                    width: 90,
-                    render: (_, f) =>
-                      lines?.[f.name]?.materialRequestItemId ? (
-                        lines[f.name].unit
-                      ) : (
-                        <Form.Item name={[f.name, 'unit']} noStyle rules={[{ required: true, whitespace: true, message: 'Unit' }]}>
-                          <UnitInput aria-label={`Unit of line ${f.name + 1}`} maxLength={30} />
-                        </Form.Item>
-                      ),
-                  },
-                  {
-                    title: 'Quantity',
-                    key: 'qty',
-                    width: 120,
-                    render: (_, f) => (
-                      <Form.Item name={[f.name, 'quantity']} noStyle rules={[{ required: true, message: 'Qty' }]}>
-                        <InputNumber min={0.001} precision={3} style={{ width: '100%' }} aria-label={`Quantity of line ${f.name + 1}`} />
+        <FormSection title="Items">
+          <LineTable
+            name="lines"
+            label="Item"
+            addText="Add item"
+            min={1}
+            newLine={() => ({ gstRate: 18 })}
+            columns={[
+              {
+                title: 'Item',
+                key: 'item',
+                render: (f) =>
+                  lines?.[f.name]?.materialRequestItemId ? (
+                    <div>
+                      <Typography.Text strong>{lines[f.name].itemName}</Typography.Text>
+                      {lines[f.name].specification && <div className="text-muted" style={{ fontSize: 12 }}>{lines[f.name].specification}</div>}
+                    </div>
+                  ) : (
+                    <div style={{ minWidth: 200 }}>
+                      <Form.Item name={[f.name, 'itemName']} noStyle rules={[{ required: true, whitespace: true, message: 'Item' }]}>
+                        <Input placeholder="Item" aria-label={`Item of line ${f.name + 1}`} maxLength={200} />
                       </Form.Item>
-                    ),
-                  },
-                  {
-                    title: 'Rate (₹)',
-                    key: 'rate',
-                    width: 130,
-                    render: (_, f) => (
-                      <Form.Item name={[f.name, 'rate']} noStyle rules={[{ required: true, message: 'Rate' }]}>
-                        <InputNumber min={0} precision={2} style={{ width: '100%' }} aria-label={`Rate of line ${f.name + 1}`} />
+                      <Form.Item name={[f.name, 'specification']} noStyle>
+                        <Input placeholder="Specification" maxLength={300} style={{ marginTop: 4 }} />
                       </Form.Item>
-                    ),
-                  },
-                  {
-                    title: 'GST',
-                    key: 'gst',
-                    width: 90,
-                    render: (_, f) => (
-                      <Form.Item name={[f.name, 'gstRate']} noStyle initialValue={18}>
-                        <Select options={GST_RATES.map((r) => ({ value: r, label: `${r}%` }))} aria-label={`GST of line ${f.name + 1}`} />
-                      </Form.Item>
-                    ),
-                  },
-                  { title: 'Amount', key: 'amount', width: 130, align: 'right', render: (_, f) => <span className="mono">{formatINR(lineAmount(lines?.[f.name]), true)}</span> },
-                  {
-                    title: '',
-                    key: 'x',
-                    width: 40,
-                    render: (_, f) => (fields.length > 1 ? <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => remove(f.name)} aria-label={`Remove line ${f.name + 1}`} /> : null),
-                  },
-                ]}
-              />
-              <Button size="small" icon={<PlusOutlined />} onClick={() => add({ gstRate: 18 })} style={{ marginBottom: 16 }}>
-                Add item
-              </Button>
-            </>
-          )}
-        </Form.List>
+                    </div>
+                  ),
+              },
+              {
+                title: 'Unit',
+                key: 'unit',
+                width: 90,
+                render: (f) =>
+                  lines?.[f.name]?.materialRequestItemId ? (
+                    lines[f.name].unit
+                  ) : (
+                    <Form.Item name={[f.name, 'unit']} noStyle rules={[{ required: true, whitespace: true, message: 'Unit' }]}>
+                      <UnitInput aria-label={`Unit of line ${f.name + 1}`} maxLength={30} />
+                    </Form.Item>
+                  ),
+              },
+              {
+                title: 'Quantity',
+                key: 'qty',
+                width: 120,
+                render: (f) => (
+                  <Form.Item name={[f.name, 'quantity']} noStyle rules={[{ required: true, message: 'Qty' }]}>
+                    <InputNumber min={0.001} precision={3} style={{ width: '100%' }} aria-label={`Quantity of line ${f.name + 1}`} />
+                  </Form.Item>
+                ),
+              },
+              {
+                title: 'Rate (₹)',
+                key: 'rate',
+                width: 130,
+                render: (f) => (
+                  <Form.Item name={[f.name, 'rate']} noStyle rules={[{ required: true, message: 'Rate' }]}>
+                    <InputNumber min={0} precision={2} style={{ width: '100%' }} aria-label={`Rate of line ${f.name + 1}`} />
+                  </Form.Item>
+                ),
+              },
+              {
+                title: 'GST',
+                key: 'gst',
+                width: 90,
+                render: (f) => (
+                  <Form.Item name={[f.name, 'gstRate']} noStyle initialValue={18}>
+                    <Select options={GST_RATES.map((r) => ({ value: r, label: `${r}%` }))} aria-label={`GST of line ${f.name + 1}`} />
+                  </Form.Item>
+                ),
+              },
+              { title: 'Amount', key: 'amount', width: 130, align: 'right', render: (f) => <span className="mono">{formatINR(lineAmount(lines?.[f.name]), true)}</span> },
+            ]}
+            footer={() => (
+              <Table.Summary.Row>
+                <Table.Summary.Cell index={0} colSpan={6} align="right">
+                  <Typography.Text type="secondary">Items before GST</Typography.Text>
+                </Table.Summary.Cell>
+                <Table.Summary.Cell index={1} align="right">
+                  <span className="mono">{formatINR(totals.subtotal, true)}</span>
+                </Table.Summary.Cell>
+                <Table.Summary.Cell index={2} />
+              </Table.Summary.Row>
+            )}
+          />
+        </FormSection>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 300px', gap: 24 }}>
-          <div>
-            <div style={grid}>
-              <Form.Item name="freight" label="Freight (₹)">
-                <InputNumber min={0} precision={2} style={{ width: '100%' }} />
+        <FormSection title="Terms">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '0 24px' }}>
+            <div>
+              <FormGrid cols={2}>
+                <Form.Item name="freight" label="Freight (₹)">
+                  <InputNumber min={0} precision={2} style={{ width: '100%' }} />
+                </Form.Item>
+                <Form.Item
+                  name="paymentDays"
+                  label="Payment days"
+                  extra={msme ? `${vendor?.name} is a ${vendor?.msmeCategory?.toLowerCase()} enterprise: at most 45 days.` : 'From the invoice; 30 when left empty.'}
+                  rules={[{ type: 'number', max: msme ? 45 : 365, message: msme ? 'At most 45 days for a micro or small enterprise' : 'At most 365 days' }]}
+                >
+                  <InputNumber min={0} precision={0} style={{ width: '100%' }} />
+                </Form.Item>
+              </FormGrid>
+              <Form.Item name="paymentTerms" label="Payment terms">
+                <Input maxLength={300} placeholder="30 days from receipt of material and invoice" />
               </Form.Item>
-              <Form.Item
-                name="paymentDays"
-                label="Payment days"
-                extra={msme ? `${vendor?.name} is a ${vendor?.msmeCategory?.toLowerCase()} enterprise: at most 45 days.` : 'From the invoice; 30 when left empty.'}
-                rules={[{ type: 'number', max: msme ? 45 : 365, message: msme ? 'At most 45 days for a micro or small enterprise' : 'At most 365 days' }]}
-              >
-                <InputNumber min={0} precision={0} style={{ width: '100%' }} />
+              <Form.Item name="deliveryAddress" label="Delivery address">
+                <Input maxLength={500} placeholder="Site store" />
+              </Form.Item>
+              <Form.Item name="remarks" label="Remarks (printed under the terms)">
+                <Input.TextArea rows={2} maxLength={1000} />
+              </Form.Item>
+              <Form.Item name="docs" label="Quotation or other documents">
+                <PhotoUpload max={4} />
               </Form.Item>
             </div>
-            <Form.Item name="paymentTerms" label="Payment terms">
-              <Input maxLength={300} placeholder="30 days from receipt of material and invoice" />
-            </Form.Item>
-            <Form.Item name="deliveryAddress" label="Delivery address">
-              <Input maxLength={500} placeholder="Site store" />
-            </Form.Item>
-            <Form.Item name="remarks" label="Remarks (printed under the terms)">
-              <Input.TextArea rows={2} maxLength={1000} />
-            </Form.Item>
-            <Form.Item name="docs" label="Quotation or other documents">
-              <PhotoUpload max={4} />
-            </Form.Item>
+            <div>
+              <Alert type="info" title={summary} />
+            </div>
           </div>
-          <div>
-            <Alert
-              type="info"
-              title={
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '4px 12px' }}>
-                  <span>Items</span>
-                  <span className="mono">{formatINR(totals.subtotal, true)}</span>
-                  <span>GST</span>
-                  <span className="mono">{formatINR(totals.gst, true)}</span>
-                  <span>Freight</span>
-                  <span className="mono">{formatINR(toNumber(freight), true)}</span>
-                  <strong>Order total</strong>
-                  <strong className="mono">{formatINR(totals.total, true)}</strong>
-                </div>
-              }
-            />
-          </div>
-        </div>
+        </FormSection>
       </Form>
-    </Modal>
+    </FormShell>
   );
 }

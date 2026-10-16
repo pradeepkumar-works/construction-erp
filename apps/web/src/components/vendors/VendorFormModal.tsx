@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { App, Checkbox, Divider, Form, Input, Modal, Select } from 'antd';
+import { App, Checkbox, Divider, Form, Input, Select } from 'antd';
+import { FormShell } from '@/components/form/FormShell';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { MsmeCategory, VendorDto, VendorKind } from '@erp/shared';
 import { GST_STATES, GSTIN_PATTERN, IFSC_PATTERN, MSME_CATEGORIES, MSME_CATEGORY_LABELS, PAN_PATTERN, UDYAM_PATTERN, VENDOR_KINDS, VENDOR_KIND_LABELS, canSeeVendorBank, gstStateCode } from '@erp/shared';
@@ -112,7 +113,6 @@ export function VendorFormModal({
       message.success(vendor ? 'Vendor updated' : `${v.name} added${linked ? `, linked to ${linked} entr${linked === 1 ? 'y' : 'ies'} that named it` : ''}`);
       for (const k of ['vendors', 'expenses', 'machinery', 'stock']) qc.invalidateQueries({ queryKey: [k] });
       onSaved?.(v);
-      onClose();
     },
     onError: (e) => message.error(errorMessage(e)),
   });
@@ -120,8 +120,18 @@ export function VendorFormModal({
   const grid3 = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '0 16px' } as const;
 
   return (
-    <Modal open={open} title={vendor ? `Edit ${vendor.name}` : 'New vendor'} okText={vendor ? 'Save changes' : 'Add vendor'} onCancel={onClose} onOk={() => form.submit()} confirmLoading={save.isPending} width={720} destroyOnHidden>
-      <Form form={form} layout="vertical" onFinish={(v) => save.mutate(v)} style={{ marginTop: 8 }}>
+    <FormShell
+      open={open}
+      onClose={onClose}
+      form={form}
+      title={vendor ? `Edit ${vendor.name}` : 'New vendor'}
+      okText={vendor ? 'Save changes' : 'Add vendor'}
+      onSubmit={(v) => save.mutateAsync(v)}
+      layout="drawer"
+      width={720}
+      draftKey={vendor ? undefined : 'vendor'}
+    >
+      <Form form={form} layout="vertical">
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '0 16px' }}>
           <Form.Item name="name" label="Vendor name" rules={[{ required: true, whitespace: true, message: 'Required' }]}>
             <Input placeholder="Maa Tarini Traders" maxLength={200} />
@@ -193,6 +203,6 @@ export function VendorFormModal({
           </Form.Item>
         ) : null}
       </Form>
-    </Modal>
+    </FormShell>
   );
 }

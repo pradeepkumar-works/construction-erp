@@ -66,6 +66,9 @@ cd e2e && npx playwright test         # browser tests; needs API + web running (
 - Approvals inbox (`app/(app)/approvals`): the picked entry shows as `<XRecord mode="pane">` (no actions; the inbox has the
   decision bar). A type gets the whole record there once it has a page: one line in `RECORD_PAGES` and one in `ApprovalPane`
   (`components/approvals/`); until then it shows a summary with Open details.
+- Forms: a create/edit form sits in `FormShell` (`components/form/`): `layout="drawer"` for long ones (with `FormSection`,
+  `FormGrid`), `"modal"` for short; pass `onSubmit={(v) => mutation.mutateAsync(v)}` (the shell closes on success, so
+  `onSuccess` does not call `onClose`), and `draftKey` for new entries only. Lines are a `LineTable` over `Form.List`.
 - Home (`app/(app)/page.tsx`): what each role leads with is `homeLayout(role)` in `components/home/layout.ts` (order only;
   the API's `GET /dashboard/my-work` and `/dashboard/trends` in `HomeService` leave out what a role may not see). A new My work
   card is a key on `MyWorkDto`, a block in `HomeService.myWork` and a line in `MyWorkPanel`'s `CARDS`. Charts use

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { api, apiToken, chooseOption, signIn } from './helpers';
+import { api, apiToken, chooseOption, signIn, formPanel } from './helpers';
 
 interface Page<T> {
   items: T[];
@@ -52,7 +52,7 @@ test('quotation to PO to GRN to a matched vendor bill', async ({ page, browser }
   const raise = drawer.getByRole('button', { name: 'Raise PO', exact: true });
   await expect(raise).toHaveCount(2);
   await raise.and(page.locator('.ant-btn-primary')).click();
-  modal = page.locator('.ant-modal').filter({ hasText: `Purchase order for ${mr.requestNo}` });
+  modal = formPanel(page, `Purchase order for ${mr.requestNo}`);
   await expect(modal.getByLabel('Rate of line 1')).toHaveValue('85.00');
   await expect(modal.getByLabel('Quantity of line 1')).toHaveValue('100.000');
   await modal.getByRole('button', { name: 'Save and submit' }).click();

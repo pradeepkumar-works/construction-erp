@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { chooseOption, signIn } from './helpers';
+import { chooseOption, signIn, formPanel } from './helpers';
 
 /** The header (UI roadmap item 54): project switcher, + New, favourites and recent, Help. */
 test('the project picked in the header filters every list and is kept after a reload', async ({ page }) => {
@@ -35,7 +35,7 @@ test('+ New opens the form from any page, and on the list already open', async (
   await page.locator('[data-tour="new"]').click();
   await page.getByRole('menuitem', { name: 'Material request' }).click();
   await expect(page).toHaveURL(/\/material-requests$/);
-  await expect(page.locator('.ant-modal-title')).toBeVisible();
+  await expect(formPanel(page, 'New material request')).toBeVisible();
 });
 
 test('a starred page is under Favourites and the last pages opened are under Recent', async ({ page }) => {

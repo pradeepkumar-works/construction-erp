@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useEffect, useMemo } from 'react';
-import { App, Checkbox, DatePicker, Form, Input, InputNumber, Modal, Segmented, Select, Typography } from 'antd';
+import { App, Checkbox, DatePicker, Form, Input, InputNumber, Segmented, Select, Typography } from 'antd';
 import dayjs from 'dayjs';
 import type { AttachmentDto, DelayParty, RiskCategory, RiskDto, RiskKind, RiskStatus } from '@erp/shared';
 import { DELAY_PARTIES, DELAY_PARTY_LABELS, RISK_CATEGORIES, RISK_CATEGORY_LABELS, RISK_LEVEL_LABELS, RISK_STATUSES, RISK_STATUS_LABELS, delayDays, riskLevel, riskScore } from '@erp/shared';
+import { FormShell } from '@/components/form/FormShell';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, errorMessage } from '@/lib/api';
 import { useActivities, useProject, useProjects } from '@/lib/queries';
@@ -150,23 +151,23 @@ export function RiskFormModal({ open, onClose, projectId, risk, prefill }: { ope
       message.success(editing ? `${x.riskNo} updated` : `${x.riskNo} raised`);
       qc.invalidateQueries({ queryKey: ['risks'] });
       qc.invalidateQueries({ queryKey: ['notifications'] });
-      onClose();
     },
     onError: (err) => message.error(errorMessage(err)),
   });
 
   return (
-    <Modal
+    <FormShell
       open={open}
+      onClose={onClose}
+      form={form}
       title={risk ? `Update ${risk.riskNo}` : isDelay ? 'Record a delay' : 'Raise a risk'}
       okText={editing ? 'Save' : isDelay ? 'Record delay' : 'Raise risk'}
-      onCancel={onClose}
-      onOk={() => form.submit()}
-      confirmLoading={mutation.isPending}
+      onSubmit={(v) => mutation.mutateAsync(v)}
+      layout="drawer"
       width={720}
-      destroyOnHidden
+      draftKey={editing || prefill ? undefined : `risk:${projectId ?? 'any'}`}
     >
-      <Form form={form} layout="vertical" onFinish={(v) => mutation.mutate(v)} style={{ marginTop: 8 }}>
+      <Form form={form} layout="vertical">
         <Form.Item name="kind" style={{ marginBottom: 12 }}>
           <Segmented
             options={[
@@ -273,6 +274,6 @@ export function RiskFormModal({ open, onClose, projectId, risk, prefill }: { ope
           <PhotoUpload />
         </Form.Item>
       </Form>
-    </Modal>
+    </FormShell>
   );
 }

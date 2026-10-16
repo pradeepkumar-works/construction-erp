@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { Alert, App, Button, Checkbox, DatePicker, Form, Input, InputNumber, Modal, Select, Space, Typography } from 'antd';
+import { Alert, App, Checkbox, DatePicker, Form, Input, InputNumber, Select, Typography } from 'antd';
 import dayjs from 'dayjs';
 import type { AttachmentDto, RaBillDto } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -9,6 +9,7 @@ import { api, errorMessage } from '@/lib/api';
 import { useProjects } from '@/lib/queries';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { editActionLabel } from '@/components/common/EditResubmitButton';
+import { FormShell } from '@/components/form/FormShell';
 
 interface FormValues {
   projectId: string;
@@ -70,40 +71,25 @@ export function BillFormModal({ open, onClose, projectId, bill, onSaved }: { ope
     onSuccess: (b, { submit }) => {
       message.success(submit ? `${b.billLabel} submitted for approval` : `${b.billLabel} saved as a draft`);
       qc.invalidateQueries();
-      onClose();
       onSaved?.(b);
     },
     onError: (err) => message.error(errorMessage(err)),
   });
 
-  const save = async (submit: boolean) => {
-    try {
-      mutation.mutate({ v: await form.validateFields(), submit });
-    } catch {
-      // validation messages are shown on the fields
-    }
-  };
-
   return (
-    <Modal
+    <FormShell
       open={open}
+      onClose={onClose}
+      form={form}
       title={bill ? `${bill.status === 'DRAFT' ? 'Edit' : editActionLabel(bill.status)} · ${bill.billLabel}` : 'Prepare RA bill'}
-      onCancel={onClose}
+      okText={bill && bill.status !== 'DRAFT' ? 'Resubmit for approval' : 'Submit for approval'}
+      secondaryText={editing ? 'Save' : 'Save as draft'}
+      onSubmit={(v, draft) => mutation.mutateAsync({ v, submit: !draft })}
+      layout="modal"
       width={640}
-      destroyOnHidden
-      footer={
-        <Space>
-          <Button onClick={onClose}>Cancel</Button>
-          <Button loading={mutation.isPending && !mutation.variables?.submit} onClick={() => save(false)}>
-            {editing ? 'Save' : 'Save as draft'}
-          </Button>
-          <Button type="primary" loading={mutation.isPending && !!mutation.variables?.submit} onClick={() => save(true)}>
-            {bill && bill.status !== 'DRAFT' ? 'Resubmit for approval' : 'Submit for approval'}
-          </Button>
-        </Space>
-      }
+      draftKey={bill ? undefined : `ra-bill:${projectId ?? 'any'}`}
     >
-      <Form form={form} layout="vertical" style={{ marginTop: 8 }}>
+      <Form form={form} layout="vertical">
         {bill?.reviewNote && <Alert type="warning" showIcon style={{ marginBottom: 16 }} title={`Reviewer note from ${bill.reviewedByName ?? 'approver'}`} description={bill.reviewNote} />}
         <Typography.Paragraph type="secondary">
           The bill takes the approved measurements dated up to the date you give that no earlier bill took, prices them at the BOQ rates and applies the
@@ -151,6 +137,6 @@ export function BillFormModal({ open, onClose, projectId, bill, onSaved }: { ope
           <PhotoUpload />
         </Form.Item>
       </Form>
-    </Modal>
+    </FormShell>
   );
 }

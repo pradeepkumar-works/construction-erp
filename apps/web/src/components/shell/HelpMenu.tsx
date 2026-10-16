@@ -72,6 +72,8 @@ export function HelpMenu({ onTour, withSearch }: { onTour: () => void; withSearc
     ['Show these shortcuts', ['?']],
     ['Move through search results', ['↑', '↓']],
     ['Close a dialog or drawer', ['Esc']],
+    ['Submit the form you are filling', ['Ctrl', 'Enter']],
+    ['Next line of a table in a form (adds one on the last)', ['Enter']],
   ];
   const approvalKeys: [string, string[]][] = [
     ['Next and previous entry', ['J', 'K']],
