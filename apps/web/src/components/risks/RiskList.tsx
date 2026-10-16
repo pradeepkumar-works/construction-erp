@@ -4,19 +4,21 @@ import React, { useState } from 'react';
 import { Alert, Button, Checkbox, Segmented, Select, Space, Statistic, Tag, Tooltip, Typography } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import type { RiskCategory, RiskDto, RiskKind, RiskSortField, RiskStatus } from '@erp/shared';
-import { RISK_CATEGORIES, RISK_CATEGORY_LABELS, RISK_STATUSES, RISK_STATUS_LABELS, canRaiseRisk } from '@erp/shared';
+import { LIST_SORT_FIELDS, RISK_CATEGORIES, RISK_CATEGORY_LABELS, RISK_STATUSES, RISK_STATUS_LABELS, canRaiseRisk } from '@erp/shared';
 import { useNewIntent } from '@/lib/new-intent';
-import { useProjectScope } from '@/lib/project-scope';
 import { useAuth } from '@/lib/auth';
 import { useRisks, useRiskSuggestions, useRiskSummary } from '@/lib/queries';
-import { useListState } from '@/lib/listState';
 import { formatDate } from '@/lib/format';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { RISK_EXPORT } from '@/lib/exportColumns';
 import { QueryError } from '@/components/common/QueryState';
 import { ListToolbar } from '@/components/common/ListToolbar';
 import { ExportButton } from '@/components/common/ExportButton';
-import { RiskTable } from './RiskTable';
+import { EmptyArt } from '@/components/common/EmptyArt';
+import { DataTable } from '@/components/list/DataTable';
+import { exportSelected } from '@/components/list/bulk';
+import { useListFrame } from '@/components/list/useListFrame';
+import { riskColumns } from './RiskTable';
 import { RiskDrawer } from './RiskDrawer';
 import { RiskFormModal, type RiskPrefill } from './RiskFormModal';
 import { RiskHeatMap } from './RiskHeatMap';
@@ -25,24 +27,53 @@ import { themeColor } from '@/lib/theme';
 
 type StatusFilter = RiskStatus | 'ACTIVE' | 'ALL';
 const big = { content: { fontSize: 18 } };
+const KEYS = ['kind', 'status', 'category', 'mine', 'overdue'] as const;
 
 /** Delay and risk register with totals and the heat map; the Delays & Risks page and a project tab. */
 export function RiskList({ projectId: fixedProject, initialProject, initialOpenId }: { projectId?: string; initialProject?: string; initialOpenId?: string }) {
   const { user } = useAuth();
-  const list = useListState<RiskSortField>({ sortBy: 'score', sortOrder: 'desc' });
-  const [projectFilter, setProjectFilter] = useProjectScope(initialProject);
-  const [kind, setKind] = useState<RiskKind | 'ALL'>('ALL');
-  const [status, setStatus] = useState<StatusFilter>('ACTIVE');
-  const [category, setCategory] = useState<RiskCategory | undefined>();
-  const [mine, setMine] = useState(false);
-  const [overdue, setOverdue] = useState(false);
   const [openId, setOpenId] = useState<string | null>(initialOpenId ?? null);
   const [formOpen, setFormOpen] = useState(false);
   const [prefill, setPrefill] = useState<RiskPrefill | null>(null);
   const [editing, setEditing] = useState<RiskDto | null>(null);
-  const projectId = fixedProject ?? projectFilter;
+  const frame = useListFrame<RiskSortField, RiskDto>({
+    list: 'risks',
+    keys: KEYS,
+    sortBy: 'score',
+    sortOrder: 'desc',
+    sortFields: LIST_SORT_FIELDS.risks,
+    fixedProject,
+    initialProject,
+    // With no status filter the register shows what is open or being watched.
+    allLabel: 'Open',
+    moreViews: [
+      { key: 'delays', label: 'Delays', filters: { kind: 'DELAY' } },
+      { key: 'risks', label: 'Risks', filters: { kind: 'RISK' } },
+      { key: 'mine', label: 'Mine', filters: { mine: '1' } },
+      { key: 'overdue', label: 'Overdue', filters: { overdue: '1' } },
+      { key: 'closed', label: 'Closed', filters: { status: 'CLOSED' } },
+    ],
+    statusLabels: { ...RISK_STATUS_LABELS, ALL: 'All statuses' },
+    chipLabels: {
+      kind: (v) => (v === 'DELAY' ? 'Delays' : 'Risks'),
+      category: (v) => `Category: ${RISK_CATEGORY_LABELS[v as RiskCategory] ?? v}`,
+      overdue: () => 'Overdue',
+    },
+    columns: (sortOrderFor) => riskColumns({ user, showProject: !fixedProject, onOpen: setOpenId, onEdit: setEditing, sortOrderFor }),
+  });
+  const { page } = frame;
+  const projectId = frame.projectId;
+  const kind = (page.filters.kind as RiskKind | undefined) ?? 'ALL';
+  const status = (page.filters.status as StatusFilter | undefined) ?? 'ACTIVE';
+  const category = page.filters.category as RiskCategory | undefined;
+  const mine = page.filters.mine === '1';
+  const overdue = page.filters.overdue === '1';
   const filters = {
-    ...list.params,
+    page: page.params.page,
+    pageSize: page.params.pageSize,
+    q: page.params.q,
+    sortBy: page.params.sortBy,
+    sortOrder: page.params.sortOrder,
     projectId,
     kind: kind === 'ALL' ? undefined : kind,
     status: status === 'ACTIVE' || status === 'ALL' ? undefined : status,
@@ -55,10 +86,6 @@ export function RiskList({ projectId: fixedProject, initialProject, initialOpenI
   const { data: summary } = useRiskSummary(filters);
   const mayRaise = !!user && canRaiseRisk(user.roleKey);
   const { data: suggestions } = useRiskSuggestions(projectId, mayRaise);
-  const reset = <T,>(set: (v: T) => void) => (v: T) => {
-    set(v);
-    list.resetPage();
-  };
   const raise = (p: RiskPrefill | null) => {
     setPrefill(p);
     setFormOpen(true);
@@ -74,13 +101,14 @@ export function RiskList({ projectId: fixedProject, initialProject, initialOpenI
 
   return (
     <>
+      {frame.views}
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       <ListToolbar
-        projectId={projectFilter}
-        onProject={reset(setProjectFilter)}
+        projectId={frame.projectFilter}
+        onProject={frame.setProjectFilter}
         hideProject={!!fixedProject}
-        search={list.search}
-        onSearch={list.setSearch}
+        search={page.search}
+        onSearch={page.setSearch}
         searchPlaceholder="Search no., title, action"
         extra={
           <>
@@ -100,24 +128,25 @@ export function RiskList({ projectId: fixedProject, initialProject, initialOpenI
       >
         <Segmented
           value={kind}
-          onChange={(v) => reset(setKind)(v as RiskKind | 'ALL')}
+          onChange={(v) => page.setFilter('kind', v === 'ALL' ? undefined : v)}
           options={[
             { value: 'ALL', label: 'All' },
             { value: 'DELAY', label: 'Delays' },
             { value: 'RISK', label: 'Risks' },
           ]}
         />
-        <Select
+        <Select<StatusFilter>
           style={{ width: 170 }}
+          aria-label="Status"
           value={status}
-          onChange={reset(setStatus)}
+          onChange={(v) => page.setFilter('status', v === 'ACTIVE' ? undefined : v)}
           options={[{ value: 'ACTIVE', label: 'Open + monitoring' }, ...RISK_STATUSES.map((s) => ({ value: s, label: RISK_STATUS_LABELS[s] })), { value: 'ALL', label: 'All statuses' }]}
         />
-        <Select allowClear placeholder="All categories" style={{ width: 190 }} value={category} onChange={reset(setCategory)} options={RISK_CATEGORIES.map((c) => ({ value: c, label: RISK_CATEGORY_LABELS[c] }))} />
-        <Checkbox checked={mine} onChange={(e) => reset(setMine)(e.target.checked)}>
+        <Select<RiskCategory> allowClear placeholder="All categories" aria-label="Category" style={{ width: 190 }} value={category} onChange={(v) => page.setFilter('category', v)} options={RISK_CATEGORIES.map((c) => ({ value: c, label: RISK_CATEGORY_LABELS[c] }))} />
+        <Checkbox checked={mine} onChange={(e) => page.setFilter('mine', e.target.checked ? '1' : undefined)}>
           Mine
         </Checkbox>
-        <Checkbox checked={overdue} onChange={(e) => reset(setOverdue)(e.target.checked)}>
+        <Checkbox checked={overdue} onChange={(e) => page.setFilter('overdue', e.target.checked ? '1' : undefined)}>
           Overdue
         </Checkbox>
       </ListToolbar>
@@ -162,7 +191,7 @@ export function RiskList({ projectId: fixedProject, initialProject, initialOpenI
               <Space size={[4, 4]} wrap>
                 {summary.byCategory.map((c) => (
                   <Tooltip key={c.category} title={`${c.total} in all${c.daysLost ? `, ${c.daysLost} day(s) lost` : ''}`}>
-                    <Tag style={{ cursor: 'pointer' }} color={category === c.category ? 'blue' : undefined} onClick={() => reset(setCategory)(category === c.category ? undefined : c.category)}>
+                    <Tag style={{ cursor: 'pointer' }} color={category === c.category ? 'blue' : undefined} onClick={() => page.setFilter('category', category === c.category ? undefined : c.category)}>
                       {RISK_CATEGORY_LABELS[c.category]}: {c.open} open
                     </Tag>
                   </Tooltip>
@@ -174,14 +203,19 @@ export function RiskList({ projectId: fixedProject, initialProject, initialOpenI
           <RiskHeatMap heat={summary.heat} />
         </CardToolbar>
       ) : null}
-      <RiskTable
-        data={data?.items ?? []}
+      <DataTable<RiskDto>
+        columns={frame.columns}
+        visible={frame.choice.visible}
+        onChooseColumns={frame.choice.setChosen}
+        chosenIsDefault={frame.choice.isDefault}
+        rows={data?.items ?? []}
         loading={isLoading || isFetching}
-        showProject={!fixedProject}
+        table={page.tableProps<RiskDto>(data?.total)}
         onOpen={setOpenId}
-        onEdit={setEditing}
-        table={list.tableProps<RiskDto>(data?.total)}
-        sortOrderFor={list.sortOrderFor}
+        bulk={[exportSelected<RiskDto>('delay-risk-register', 'register', RISK_EXPORT)]}
+        chips={frame.chips}
+        scrollX={fixedProject ? 1150 : 1350}
+        emptyText={<EmptyArt art="entries" title={kind !== 'ALL' || status !== 'ACTIVE' || category || mine || overdue || page.params.q ? 'Nothing matches these filters' : 'No delays or risks open'} />}
       />
       <RiskDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onEdit={setEditing} />
       <RiskFormModal

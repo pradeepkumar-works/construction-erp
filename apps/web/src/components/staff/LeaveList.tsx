@@ -1,62 +1,93 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Button, Checkbox, Select, Table, Typography } from 'antd';
-import type { TableProps } from 'antd';
+import React from 'react';
+import { Button, Checkbox, Select, theme } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import type { LeaveRequestDto, LeaveSortField, LeaveStatus, LeaveType } from '@erp/shared';
-import { LEAVE_STATUSES, LEAVE_STATUS_LABELS, LEAVE_TYPES, LEAVE_TYPE_LABELS, canManageStaff } from '@erp/shared';
-import { useProjectScope } from '@/lib/project-scope';
+import { LEAVE_STATUSES, LEAVE_STATUS_LABELS, LEAVE_TYPES, LEAVE_TYPE_LABELS, LIST_SORT_FIELDS, canManageStaff } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useLeave } from '@/lib/queries';
-import { useListState } from '@/lib/listState';
 import { QueryError } from '@/components/common/QueryState';
 import { ListToolbar } from '@/components/common/ListToolbar';
+import { EmptyArt } from '@/components/common/EmptyArt';
+import { DataTable, type ListColumn } from '@/components/list/DataTable';
+import { useListFrame } from '@/components/list/useListFrame';
+import { RecordLink } from '@/components/record/RecordLink';
 import { LeaveStatusTag, leaveSpan } from './staffUi';
+
+const KEYS = ['status', 'type', 'toDecide'] as const;
+
+function Sub({ children }: { children: React.ReactNode }) {
+  const { token } = theme.useToken();
+  return <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{children}</div>;
+}
 
 /** Leave of the staff the user can see; "Waiting on me" shows what they can approve. */
 export function LeaveList({ onOpen, onNew, toDecideFirst }: { onOpen: (id: string) => void; onNew: () => void; toDecideFirst: boolean }) {
   const { user } = useAuth();
-  const list = useListState<LeaveSortField>({ sortBy: 'fromDate', sortOrder: 'desc' });
-  const [projectId, setProjectId] = useProjectScope();
-  const [status, setStatus] = useState<LeaveStatus | undefined>();
-  const [type, setType] = useState<LeaveType | undefined>();
-  const [toDecide, setToDecide] = useState(toDecideFirst);
-  const { data, isLoading, isFetching, error, refetch } = useLeave({ ...list.params, projectId, status, type, toDecide: toDecide || undefined });
-  const sort = (key: LeaveSortField) => ({ key, sorter: true, sortOrder: list.sortOrderFor(key), sortDirections: ['descend', 'ascend'] as ('descend' | 'ascend')[] });
-
-  const columns: TableProps<LeaveRequestDto>['columns'] = [
-    { title: 'Employee', dataIndex: 'employeeName', width: 200, ...sort('employee'), render: (v: string, r) => <Typography.Link onClick={() => onOpen(r.id)}>{v}</Typography.Link> },
-    { title: 'Posted at', dataIndex: 'projectName', width: 200, ellipsis: true, render: (v: string | null) => v ?? 'Head office' },
-    { title: 'Leave', dataIndex: 'type', width: 160, ...sort('type'), render: (v: LeaveType) => LEAVE_TYPE_LABELS[v] },
-    { title: 'Dates', dataIndex: 'fromDate', width: 220, ...sort('fromDate'), render: (_, r) => leaveSpan(r) },
-    { title: 'Days', dataIndex: 'days', width: 70, align: 'right' },
-    { title: 'Reason', dataIndex: 'reason', ellipsis: true, width: 240 },
-    { title: 'Status', dataIndex: 'status', width: 110, ...sort('status'), render: (v: LeaveStatus) => <LeaveStatusTag status={v} /> },
-    {
-      title: '',
-      key: 'actions',
-      fixed: 'right' as const,
-      width: 90,
-      render: (_, r) => (
-        <Button size="small" type={r.canDecide ? 'primary' : 'default'} onClick={() => onOpen(r.id)}>
-          {r.canDecide ? 'Decide' : 'Open'}
-        </Button>
-      ),
+  const frame = useListFrame<LeaveSortField, LeaveRequestDto>({
+    list: 'leave',
+    url: false,
+    keys: KEYS,
+    sortBy: 'fromDate',
+    sortOrder: 'desc',
+    sortFields: LIST_SORT_FIELDS.leave,
+    initialFilters: toDecideFirst ? { toDecide: '1' } : undefined,
+    statusLabels: LEAVE_STATUS_LABELS,
+    chipLabels: { type: (v) => `Leave: ${LEAVE_TYPE_LABELS[v as LeaveType] ?? v}`, toDecide: () => 'Waiting on me' },
+    columns: (sortOrderFor): ListColumn<LeaveRequestDto>[] => {
+      const sort = (key: LeaveSortField) => ({ key, sorter: true, sortOrder: sortOrderFor(key), sortDirections: ['descend', 'ascend'] as ('descend' | 'ascend')[] });
+      return [
+        {
+          title: 'Employee',
+          ...sort('employee'),
+          locked: true,
+          width: 220,
+          render: (_, r) => (
+            <div>
+              <RecordLink onOpen={() => onOpen(r.id)} strong>
+                {r.employeeName}
+              </RecordLink>
+              <Sub>{r.projectName ?? 'Head office'}</Sub>
+            </div>
+          ),
+        },
+        { title: 'Leave', dataIndex: 'type', width: 160, ...sort('type'), render: (v: LeaveType) => LEAVE_TYPE_LABELS[v] },
+        { title: 'Dates', dataIndex: 'fromDate', width: 220, ...sort('fromDate'), render: (_, r) => leaveSpan(r) },
+        { key: 'days', title: 'Days', dataIndex: 'days', width: 70, align: 'right' },
+        { key: 'reason', title: 'Reason', dataIndex: 'reason', ellipsis: true, width: 240 },
+        { title: 'Status', dataIndex: 'status', width: 110, ...sort('status'), render: (v: LeaveStatus) => <LeaveStatusTag status={v} /> },
+        {
+          key: 'actions',
+          title: '',
+          label: 'Decide',
+          locked: true,
+          fixed: 'right' as const,
+          width: 90,
+          render: (_, r) =>
+            r.canDecide ? (
+              <Button size="small" type="primary" onClick={() => onOpen(r.id)}>
+                Decide
+              </Button>
+            ) : null,
+        },
+      ];
     },
-  ];
+  });
+  const { page } = frame;
+  const status = page.filters.status as LeaveStatus | undefined;
+  const type = page.filters.type as LeaveType | undefined;
+  const toDecide = page.filters.toDecide === '1';
+  const { data, isLoading, isFetching, error, refetch } = useLeave({ page: page.params.page, pageSize: page.params.pageSize, q: page.params.q, sortBy: page.params.sortBy, sortOrder: page.params.sortOrder, projectId: frame.projectId, status, type, toDecide: toDecide || undefined });
 
   return (
     <>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       <ListToolbar
-        projectId={projectId}
-        onProject={(v) => {
-          setProjectId(v);
-          list.resetPage();
-        }}
-        search={list.search}
-        onSearch={list.setSearch}
+        projectId={frame.projectFilter}
+        onProject={frame.setProjectFilter}
+        search={page.search}
+        onSearch={page.setSearch}
         searchPlaceholder="Search name, code, reason"
         extra={
           user && canManageStaff(user.roleKey) ? (
@@ -66,27 +97,24 @@ export function LeaveList({ onOpen, onNew, toDecideFirst }: { onOpen: (id: strin
           ) : null
         }
       >
-        <Select<LeaveType> allowClear placeholder="Any leave" style={{ width: 170 }} value={type} onChange={(v) => { setType(v); list.resetPage(); }} options={LEAVE_TYPES.map((t) => ({ value: t, label: LEAVE_TYPE_LABELS[t] }))} />
-        <Select<LeaveStatus> allowClear placeholder="Any status" style={{ width: 140 }} value={status} onChange={(v) => { setStatus(v); list.resetPage(); }} options={LEAVE_STATUSES.map((s) => ({ value: s, label: LEAVE_STATUS_LABELS[s] }))} />
-        <Checkbox
-          checked={toDecide}
-          onChange={(e) => {
-            setToDecide(e.target.checked);
-            list.resetPage();
-          }}
-        >
+        <Select<LeaveType> allowClear placeholder="Any leave" aria-label="Leave type" style={{ width: 170 }} value={type} onChange={(v) => page.setFilter('type', v)} options={LEAVE_TYPES.map((t) => ({ value: t, label: LEAVE_TYPE_LABELS[t] }))} />
+        <Select<LeaveStatus> allowClear placeholder="Any status" aria-label="Status" style={{ width: 140 }} value={status} onChange={(v) => page.setFilter('status', v)} options={LEAVE_STATUSES.map((s) => ({ value: s, label: LEAVE_STATUS_LABELS[s] }))} />
+        <Checkbox checked={toDecide} onChange={(e) => page.setFilter('toDecide', e.target.checked ? '1' : undefined)}>
           Waiting on me
         </Checkbox>
       </ListToolbar>
-      <Table<LeaveRequestDto>
-        rowKey="id"
+      <DataTable<LeaveRequestDto>
+        columns={frame.columns}
+        visible={frame.choice.visible}
+        onChooseColumns={frame.choice.setChosen}
+        chosenIsDefault={frame.choice.isDefault}
+        rows={data?.items ?? []}
         loading={isLoading || isFetching}
-        columns={columns}
-        dataSource={data?.items ?? []}
-        size="middle"
-        {...list.tableProps<LeaveRequestDto>(data?.total)}
-        scroll={{ x: 1300 }}
-        locale={{ emptyText: toDecide ? 'Nothing waiting on you' : 'No leave' }}
+        table={page.tableProps<LeaveRequestDto>(data?.total)}
+        onOpen={onOpen}
+        chips={frame.chips}
+        scrollX={1200}
+        emptyText={<EmptyArt art="entries" title={toDecide ? 'Nothing waiting on you' : status || type || page.params.q ? 'No leave matches these filters' : 'No leave'} />}
       />
     </>
   );

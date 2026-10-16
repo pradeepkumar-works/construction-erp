@@ -27,7 +27,7 @@ test.describe.serial('a failed cube test through its NCR', () => {
     await expect(page.getByText(/TST-\d{4}-\d{4} recorded/)).toBeVisible();
 
     await page.getByPlaceholder('Search no., sample, location').fill(title);
-    await page.locator('tr').filter({ hasText: title }).getByRole('button', { name: 'Open' }).click();
+    await page.locator('tr').filter({ hasText: title }).getByText(title).click();
     const drawer = page.locator('.ant-drawer-open');
     await drawer.getByLabel('7 days result').fill('18.2');
     await drawer.getByRole('row', { name: /7 days/ }).getByRole('button', { name: 'Save' }).click();

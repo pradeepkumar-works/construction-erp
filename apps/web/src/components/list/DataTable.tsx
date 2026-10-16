@@ -66,6 +66,8 @@ export function DataTable<T extends { id: string }>({
   chips,
   scrollX,
   emptyText,
+  className,
+  expandable,
 }: {
   columns: ListColumn<T>[];
   /** Keys of the columns to show (from useColumnChoice). */
@@ -82,6 +84,9 @@ export function DataTable<T extends { id: string }>({
   chips?: React.ReactNode;
   scrollX?: number;
   emptyText?: React.ReactNode;
+  className?: string;
+  /** Lines that open under a row (a toolbox talk's notes). */
+  expandable?: TableProps<T>['expandable'];
 }) {
   const { token } = theme.useToken();
   const stickyTop = useStickyTop();
@@ -181,6 +186,8 @@ export function DataTable<T extends { id: string }>({
       </Flex>
       <Table<T>
         rowKey="id"
+        className={className}
+        expandable={expandable}
         loading={loading}
         columns={shown}
         dataSource={rows}
