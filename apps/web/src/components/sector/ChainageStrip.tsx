@@ -4,6 +4,7 @@ import React from 'react';
 import { Tooltip, Typography } from 'antd';
 import { formatChainage, type ChainageLayer } from '@erp/shared';
 import { BRAND } from '@/lib/brand';
+import { themeColor } from '@/lib/theme';
 import { formatDate, formatQty } from '@/lib/format';
 
 const LABEL = 220;
@@ -43,7 +44,7 @@ export function ChainageStrip({ layers, start, end }: { layers: ChainageLayer[];
           </div>
         </div>
         {layers.map((l) => (
-          <div key={l.activityId} className="strip-row" data-activity={l.name} style={{ display: 'flex', alignItems: 'center', padding: '6px 0', borderTop: `1px solid ${BRAND.colors.border}` }}>
+          <div key={l.activityId} className="strip-row" data-activity={l.name} style={{ display: 'flex', alignItems: 'center', padding: '6px 0', borderTop: `1px solid ${themeColor('colorBorderSecondary')}` }}>
             <div style={{ width: LABEL, flex: 'none', paddingRight: 12 }}>
               <div style={{ fontWeight: 500 }}>{l.name}</div>
               <div className="text-muted" style={{ fontSize: 12 }}>
@@ -51,9 +52,9 @@ export function ChainageStrip({ layers, start, end }: { layers: ChainageLayer[];
                 {Number(l.unplacedQty) ? ` · ${formatQty(l.unplacedQty)} with no chainage` : ''}
               </div>
             </div>
-            <div style={{ position: 'relative', flex: 1, height: 18, background: BRAND.colors.canvas, borderRadius: 3 }}>
+            <div style={{ position: 'relative', flex: 1, height: 18, background: themeColor('colorFillSecondary'), borderRadius: 3 }}>
               {ticks.map((t) => (
-                <span key={t} style={{ position: 'absolute', left: pct(t), top: 0, bottom: 0, width: 1, background: BRAND.colors.border }} />
+                <span key={t} style={{ position: 'absolute', left: pct(t), top: 0, bottom: 0, width: 1, background: themeColor('colorBorder') }} />
               ))}
               {l.segments.map((s) => {
                 const point = s.to - s.from < length / 400;

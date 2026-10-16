@@ -3,12 +3,13 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Alert, Avatar, Breadcrumb, Button, Drawer, Dropdown, Grid, Layout, Space, Tag } from 'antd';
+import { Alert, Avatar, Breadcrumb, Button, Drawer, Dropdown, Grid, Layout, Space, Tag, theme } from 'antd';
 import type { MenuProps } from 'antd';
-import { CompassOutlined, CustomerServiceOutlined, LogoutOutlined, MenuOutlined, SearchOutlined, UserOutlined } from '@ant-design/icons';
+import { BgColorsOutlined, CheckOutlined, ColumnHeightOutlined, CompassOutlined, CustomerServiceOutlined, LogoutOutlined, MenuOutlined, SearchOutlined, UserOutlined } from '@ant-design/icons';
 import type { AuthUser } from '@erp/shared';
 import { BILLING_REMIND_DAYS, PRODUCT_NAME, canManageBilling, canManageCompanyData, isGuest, mayApprove } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
+import { useAppearance, type Density, type ThemeMode } from '@/lib/appearance';
 import { useCompanyDeletion, usePendingApprovals } from '@/lib/queries';
 import { formatDate, formatDateTime } from '@/lib/format';
 import { endSupportSession } from '@/lib/api';
@@ -42,6 +43,8 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
   const trail = useMemo(() => navTrail(sections, pathname), [sections, pathname]);
   const guest = isGuest(user.roleKey);
   const [touring, setTouring] = useState(false);
+  const { token } = theme.useToken();
+  const { prefs, setPrefs } = useAppearance();
 
   // The first time someone signs in on this browser, once the shell has laid out.
   useEffect(() => {
@@ -87,6 +90,29 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
     { key: 'info', icon: <UserOutlined />, label: `${user.email}`, disabled: true },
     { type: 'divider' },
     {
+      key: 'mode',
+      icon: <BgColorsOutlined />,
+      label: 'Appearance',
+      children: ([['light', 'Light'], ['dark', 'Dark'], ['system', 'Same as this device']] as [ThemeMode, string][]).map(([mode, label]) => ({
+        key: `mode-${mode}`,
+        label,
+        icon: prefs.mode === mode ? <CheckOutlined /> : <span className="menu-check-gap" />,
+        onClick: () => setPrefs({ mode }),
+      })),
+    },
+    {
+      key: 'density',
+      icon: <ColumnHeightOutlined />,
+      label: 'Density',
+      children: ([['comfortable', 'Comfortable'], ['compact', 'Compact']] as [Density, string][]).map(([density, label]) => ({
+        key: `density-${density}`,
+        label,
+        icon: prefs.density === density ? <CheckOutlined /> : <span className="menu-check-gap" />,
+        onClick: () => setPrefs({ density }),
+      })),
+    },
+    { type: 'divider' },
+    {
       key: 'tour',
       icon: <CompassOutlined />,
       label: 'Take the tour',
@@ -126,12 +152,13 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
             alignItems: 'center',
             justifyContent: 'space-between',
             padding: isMobile ? '0 12px' : '0 24px',
-            borderBottom: `1px solid ${BRAND.colors.border}`,
+            borderBottom: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}`,
             position: 'sticky',
             top: 0,
             zIndex: 10,
             height: 56,
             lineHeight: '56px',
+            background: token.colorBgContainer,
             gap: 8,
           }}
         >

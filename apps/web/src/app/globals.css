@@ -360,7 +360,7 @@ h4.ant-typography,
 
 /* Primary links inside tables and cards (Next <Link> inherits colour from the reset above). */
 .link-strong {
-  color: var(--brand-link);
+  color: var(--ant-color-link);
   font-weight: 600;
 }
 
@@ -375,6 +375,12 @@ h4.ant-typography,
 /* Dashboard KPI cards: the title leaves room for the icon square in the top right corner (control height + a gap). */
 .kpi-card .ant-statistic-title {
   padding-right: calc(var(--ant-control-height, 32px) + 8px);
+}
+
+/* Keeps the unticked choices in the account menu lined up with the ticked one. */
+.menu-check-gap {
+  display: inline-block;
+  width: 14px;
 }
 
 .text-danger {
