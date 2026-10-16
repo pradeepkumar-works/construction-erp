@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-10-lists-masters',
+    date: '2026-10-16',
+    title: 'Projects, clients, vendors and users lists',
+    points: [
+      'Projects, clients, vendors and users have views across the top (Active projects, Subcontractors, Inactive users…) that can be saved and shared, and their filters go in the address bar as chips.',
+      'Pick the columns you want, tick rows to export them, and click a row to open the project or edit the vendor, client or user.',
+      'The payments list in Payables and the receipts list in Receivables add up the page, and a bill there opens its own page with Ctrl or Cmd click.',
+    ],
+  },
+  {
     id: '2026-10-records-all-types',
     date: '2026-10-16',
     title: 'Every entry has its own page',

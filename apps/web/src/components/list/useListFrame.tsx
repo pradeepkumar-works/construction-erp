@@ -12,39 +12,48 @@ import { ListViews, type BuiltInView } from './ListViews';
 import { standardViews } from './views';
 
 /**
- * Everything a submission list page shares (UI roadmap item 55): its filters in the URL, the header's project, the
- * views across the top, the columns chosen and the filter chips. With `fixedProject` (a project page tab) there are no
- * views and nothing goes in the URL; the table features stay.
+ * Everything a list page shares (UI roadmap item 55): its filters in the URL, the header's project, the views across the
+ * top, the columns chosen and the filter chips. A submission list (`type`) gets the standard views (Waiting for me, Mine,
+ * Sent back, This week); any other list has All and its own `moreViews`. With `fixedProject` (a project page tab) or
+ * `url: false` (a list in a page's tab) there are no views and nothing goes in the URL; the table features stay.
  */
 export function useListFrame<S extends string, T>(opts: {
   list: SavedViewList;
-  type: SubmissionType;
+  /** A submission list's type, for its standard views; left out for registers and masters. */
+  type?: SubmissionType;
   /** Filters this list understands besides q and the sort. */
   keys: readonly string[];
   sortBy: S;
   sortOrder: SortOrder;
   sortFields: readonly S[];
   fixedProject?: string;
+  /** False for a list in a tab of a page: no views, nothing in the URL. */
+  url?: boolean;
+  /** False for a company-wide list (clients, users…): the header's project neither filters it nor resets its page. */
+  projectScoped?: boolean;
   /** The list's columns, given the sort arrows' state. */
   columns: (sortOrderFor: (key: S) => 'ascend' | 'descend' | null) => ListColumn<T>[];
   /** Views of this list after the standard ones. */
   moreViews?: BuiltInView[];
   /** Chip wording for this list's own filters. */
   chipLabels?: ChipLabels;
-  statusLabels?: Record<SubmissionStatus, string>;
+  statusLabels?: Record<string, string>;
 }) {
   const { user } = useAuth();
   const [projectFilter, setProjectFilter] = useProjectScope();
-  const projectId = opts.fixedProject ?? projectFilter;
-  const page = useListPage<S>({ keys: opts.keys, sortBy: opts.sortBy, sortOrder: opts.sortOrder, sortFields: opts.sortFields, url: !opts.fixedProject, scope: projectId });
+  const scoped = opts.projectScoped !== false;
+  const projectId = opts.fixedProject ?? (scoped ? projectFilter : undefined);
+  const inUrl = !opts.fixedProject && opts.url !== false;
+  const page = useListPage<S>({ keys: opts.keys, sortBy: opts.sortBy, sortOrder: opts.sortOrder, sortFields: opts.sortFields, url: inUrl, scope: projectId });
   const columns = opts.columns(page.sortOrderFor);
   const choice = useColumnChoice(opts.list, columns);
-  const statusLabels = opts.statusLabels ?? SUBMISSION_STATUS_LABELS;
+  const statusLabels: Record<string, string> = opts.statusLabels ?? SUBMISSION_STATUS_LABELS;
+  const builtIns = opts.type ? standardViews(user, opts.type) : [{ key: 'all', label: 'All', filters: {} }];
 
-  const views = opts.fixedProject ? null : (
+  const views = !inUrl ? null : (
     <ListViews
       list={opts.list}
-      builtIns={[...standardViews(user, opts.type), ...(opts.moreViews ?? [])]}
+      builtIns={[...builtIns, ...(opts.moreViews ?? [])]}
       filters={page.filters}
       columns={choice.visible}
       onApply={(filters, columns) => {
@@ -58,7 +67,7 @@ export function useListFrame<S extends string, T>(opts: {
     <FilterChips
       filters={page.filters}
       labels={{
-        status: (v) => `Status: ${statusLabels[v as SubmissionStatus] ?? v}`,
+        status: (v) => `Status: ${statusLabels[v] ?? v}`,
         mine: () => 'Mine',
         ...opts.chipLabels,
       }}

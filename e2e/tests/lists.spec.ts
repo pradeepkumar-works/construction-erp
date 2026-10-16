@@ -132,3 +132,31 @@ test('the other approval lists have the same views, chips, columns and totals', 
   await rows(page).first().locator('td').nth(2).click();
   await expect(page.locator('.ant-drawer')).toContainText(expenseNo);
 });
+
+test('projects, clients, vendors and users have views, chips and columns too', async ({ page }) => {
+  await signIn(page, 'admin@demo.com');
+  await page.goto('/projects');
+  await page.getByRole('tab', { name: 'Active' }).click();
+  await expect(page).toHaveURL(/\/projects\?status=ACTIVE$/);
+  await expect(page.locator('.ant-tag').filter({ hasText: 'Status: Active' })).toBeVisible();
+  // A row opens its project.
+  await rows(page).first().locator('td').nth(3).click();
+  await expect(page).toHaveURL(/\/projects\/[0-9a-f-]{36}/);
+
+  await page.goto('/vendors');
+  await page.getByRole('tab', { name: 'Subcontractors' }).click();
+  await expect(page).toHaveURL(/\/vendors\?kind=SUBCONTRACTOR$/);
+  await expect(page.locator('.ant-tag').filter({ hasText: 'Supplies: Subcontractor' })).toBeVisible();
+  await expect(rows(page).first()).toContainText('Subcontractor');
+
+  await page.goto('/clients');
+  await expect(page.getByRole('button', { name: 'Columns' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Including inactive' })).toBeVisible();
+
+  await page.goto('/users?roleKey=SITE_ENGINEER');
+  await expect(page.locator('.ant-tag').filter({ hasText: 'Role: Site Engineer' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Site engineers' })).toHaveAttribute('aria-selected', 'true');
+  // Clicking a user opens the edit form.
+  await rows(page).first().locator('td').nth(2).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+});

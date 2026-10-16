@@ -60,6 +60,8 @@ cd e2e && npx playwright test         # browser tests; needs API + web running (
 - Lists: a submission list page uses `useListFrame` (`components/list/useListFrame.tsx`: filters in the URL via
   `useListPage`, views, chips, chosen columns) and `DataTable` (`ListColumn` with a stable `key`, row click, `RowActions`
   menu, bulk bar, page totals). A list with saved views is a key in `SAVED_VIEW_LISTS` (`packages/shared/src/views.ts`).
+  A register or master (projects, vendors…) uses it without `type` (All plus its own `moreViews`, `projectScoped: false` when
+  company-wide); a list inside a page's tab uses `useListPage({ url: false })` + `useColumnChoice` + `DataTable`.
 - Records: a submission's drawer and its own page (`/dpr/[id]`, `/bills/[id]`, …) are one `XRecord` component on
   `RecordFrame` (`components/record/`: facts, `submissionLifecycle` stage bar, sections, activity, actions); the drawer
   export is `<XRecord mode="drawer">`. List links to it use `RecordLink` and `RowActions href`.
