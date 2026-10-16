@@ -7,6 +7,8 @@ import type { TableProps } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import type { BillSortField, BillStage, RaBillDto, SubmissionStatus } from '@erp/shared';
 import { BILL_STAGES, BILL_STAGE_LABELS, canPrepareBill } from '@erp/shared';
+import { useNewIntent } from '@/lib/new-intent';
+import { useProjectScope } from '@/lib/project-scope';
 import { useAuth } from '@/lib/auth';
 import { useBills } from '@/lib/queries';
 import { useListState } from '@/lib/listState';
@@ -26,7 +28,7 @@ import { BillFormModal } from './BillFormModal';
 export function BillList({ projectId: fixedProject, openId: initialOpen }: { projectId?: string; openId?: string | null }) {
   const { user } = useAuth();
   const list = useListState<BillSortField>({ sortBy: 'billDate', sortOrder: 'desc' });
-  const [projectFilter, setProjectFilter] = useState<string | undefined>();
+  const [projectFilter, setProjectFilter] = useProjectScope();
   const [status, setStatus] = useState<SubmissionStatus | undefined>();
   const [stage, setStage] = useState<BillStage | undefined>();
   const [openId, setOpenId] = useState<string | null>(initialOpen ?? null);
@@ -105,6 +107,8 @@ export function BillList({ projectId: fixedProject, openId: initialOpen }: { pro
       ),
     },
   ];
+
+  useNewIntent('ra-bill', preparer, () => setFormOpen(true));
 
   return (
     <>

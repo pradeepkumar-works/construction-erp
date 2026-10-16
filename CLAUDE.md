@@ -51,8 +51,12 @@ cd e2e && npx playwright test         # browser tests; needs API + web running (
   `showSearch={{ optionFilterProp }}`, Alert `title`, Drawer `size`, Space `orientation`, Spin `description`, Statistic
   `styles.content`). Run `npx @ant-design/cli lint apps/web/src/<folder>` on the folders you changed before committing.
 - Product tour: `src/components/shell/ProductTour.tsx` (antd `Tour`) steps over shell elements marked `data-tour="…"`;
-  it starts once per user per browser and again from the account menu. Test browsers (`navigator.webdriver`) never
+  it starts once per user per browser and again from Help. Test browsers (`navigator.webdriver`) never
   get it by themselves.
+- Shell: a list's project filter is `useProjectScope()` (`src/lib/project-scope.tsx`), shared with the header's project
+  switcher and remembered; never a local `useState`. A list with a New button calls `useNewIntent(kind, allowed, open)`
+  (`src/lib/new-intent.ts`) and gets a line in `components/shell/NewMenu.tsx`. Release notes for Help > What's new
+  are in `components/shell/whats-new.ts`.
 - Mobile: screens in `app/`, shared UI in `src/components`, API in `src/api`, no new native deps
   without checking `node_modules/expo/bundledNativeModules.json` for the SDK-pinned version.
 - Mobile text: wrap everything a screen shows in `t()` from `useT()` (English is the key, `{placeholders}` for values)

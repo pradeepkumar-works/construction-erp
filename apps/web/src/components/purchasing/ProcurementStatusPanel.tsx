@@ -6,6 +6,7 @@ import type { TableProps } from 'antd';
 import type { Dayjs } from 'dayjs';
 import type { DeliveryState, ProcurementStatusLineDto, ProcurementStatusRowDto } from '@erp/shared';
 import { DELIVERY_STATE_LABELS } from '@erp/shared';
+import { useProjectScope } from '@/lib/project-scope';
 import { useProcurementStatus, useVendors } from '@/lib/queries';
 import { downloadXlsx, exportFileName, type ExportColumn } from '@/lib/exportExcel';
 import { rangePresets } from '@/lib/dates';
@@ -45,7 +46,7 @@ const EXPORT: ExportColumn<ExportRow>[] = [
 export function ProcurementStatusPanel() {
   const { token } = theme.useToken();
   const [show, setShow] = useState<Show>('PENDING');
-  const [projectId, setProjectId] = useState<string | undefined>();
+  const [projectId, setProjectId] = useProjectScope();
   const [vendorId, setVendorId] = useState<string | undefined>();
   const [range, setRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
   const vendors = useVendors();

@@ -6,6 +6,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import type { Dayjs } from 'dayjs';
 import type { MachineryLogDto, MachineryLogSortField, SubmissionStatus } from '@erp/shared';
 import { MAX_PAGE_SIZE, canLogMachinery } from '@erp/shared';
+import { useProjectScope } from '@/lib/project-scope';
 import { useAuth } from '@/lib/auth';
 import { useEquipment, useMachineryLogs } from '@/lib/queries';
 import { useListState } from '@/lib/listState';
@@ -23,7 +24,7 @@ import { rangePresets } from '@/lib/dates';
 export function MachineryList({ projectId: fixedProject }: { projectId?: string }) {
   const { user } = useAuth();
   const list = useListState<MachineryLogSortField>({ sortBy: 'date', sortOrder: 'desc' });
-  const [projectFilter, setProjectFilter] = useState<string | undefined>();
+  const [projectFilter, setProjectFilter] = useProjectScope();
   const [status, setStatus] = useState<SubmissionStatus | undefined>();
   const [equipmentId, setEquipmentId] = useState<string | undefined>();
   const [range, setRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);

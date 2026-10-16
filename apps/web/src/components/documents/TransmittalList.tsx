@@ -7,6 +7,7 @@ import type { TableProps } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import type { TransmittalDto, TransmittalSortField } from '@erp/shared';
 import { TRANSMITTAL_PURPOSE_LABELS, canManageDocuments } from '@erp/shared';
+import { useProjectScope } from '@/lib/project-scope';
 import { useAuth } from '@/lib/auth';
 import { useTransmittals } from '@/lib/queries';
 import { useListState } from '@/lib/listState';
@@ -18,7 +19,7 @@ import { ListToolbar } from '@/components/common/ListToolbar';
 export function TransmittalList({ projectId: fixedProject, onOpen, onNew }: { projectId?: string; onOpen: (id: string) => void; onNew: () => void }) {
   const { user } = useAuth();
   const list = useListState<TransmittalSortField>({ sortBy: 'sentOn', sortOrder: 'desc' });
-  const [projectFilter, setProjectFilter] = useState<string | undefined>();
+  const [projectFilter, setProjectFilter] = useProjectScope();
   const [unacknowledged, setUnacknowledged] = useState(false);
   const projectId = fixedProject ?? projectFilter;
   const { data, isLoading, isFetching, error, refetch } = useTransmittals({ ...list.params, projectId, unacknowledged: unacknowledged || undefined });

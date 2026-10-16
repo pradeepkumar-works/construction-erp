@@ -6,6 +6,8 @@ import { PlusOutlined } from '@ant-design/icons';
 import type { Dayjs } from 'dayjs';
 import type { ExpenseCategory, ExpenseDto, ExpenseSortField, PaymentMode, SubmissionStatus } from '@erp/shared';
 import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_LABELS, PAYMENT_MODES, PAYMENT_MODE_LABELS, canSubmitExpense } from '@erp/shared';
+import { useNewIntent } from '@/lib/new-intent';
+import { useProjectScope } from '@/lib/project-scope';
 import { useAuth } from '@/lib/auth';
 import { useExpenses, useExpenseSummary } from '@/lib/queries';
 import { useListState } from '@/lib/listState';
@@ -27,7 +29,7 @@ import { themeColor } from '@/lib/theme';
 export function ExpenseList({ projectId: fixedProject }: { projectId?: string }) {
   const { user } = useAuth();
   const list = useListState<ExpenseSortField>({ sortBy: 'date', sortOrder: 'desc' });
-  const [projectFilter, setProjectFilter] = useState<string | undefined>();
+  const [projectFilter, setProjectFilter] = useProjectScope();
   const [status, setStatus] = useState<SubmissionStatus | undefined>();
   const [category, setCategory] = useState<ExpenseCategory | undefined>();
   const [paymentMode, setPaymentMode] = useState<PaymentMode | undefined>();
@@ -60,6 +62,8 @@ export function ExpenseList({ projectId: fixedProject }: { projectId?: string })
     downloadXlsx(exportFileName('expenses'), 'expenses', EXPENSE_EXPORT, rows);
     return rows.length;
   };
+
+  useNewIntent('expense', mayFile, () => setFormOpen(true));
 
   return (
     <>

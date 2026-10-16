@@ -7,6 +7,7 @@ import type { TableProps } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import type { SubcontractBillDto, SubcontractBillSortField, SubmissionStatus } from '@erp/shared';
 import { canPrepareSubcontractBill } from '@erp/shared';
+import { useProjectScope } from '@/lib/project-scope';
 import { useAuth } from '@/lib/auth';
 import { useSubcontractBills, useVendors } from '@/lib/queries';
 import { useListState } from '@/lib/listState';
@@ -29,7 +30,7 @@ const SUB_KINDS = new Set(['SUBCONTRACTOR', 'LABOUR_CONTRACTOR']);
 export function SubBillList({ projectId: fixedProject, openId: initialOpen }: { projectId?: string; openId?: string | null }) {
   const { user } = useAuth();
   const list = useListState<SubcontractBillSortField>({ sortBy: 'billDate', sortOrder: 'desc' });
-  const [projectFilter, setProjectFilter] = useState<string | undefined>();
+  const [projectFilter, setProjectFilter] = useProjectScope();
   const [status, setStatus] = useState<SubmissionStatus | undefined>();
   const [vendorId, setVendorId] = useState<string | undefined>();
   const [openId, setOpenId] = useState<string | null>(initialOpen ?? null);

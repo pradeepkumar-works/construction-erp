@@ -6,6 +6,7 @@ import { Button, Card, Segmented, Table, Tag, Tooltip, Typography, Alert } from 
 import type { TableProps } from 'antd';
 import type { PendingApprovalDto, SubmissionType } from '@erp/shared';
 import { APPROVAL_AMOUNT_BASIS, SUBMISSION_TYPE_LABELS, approvalRightsOf, mayApprove } from '@erp/shared';
+import { useProjectScope } from '@/lib/project-scope';
 import { usePendingApprovals } from '@/lib/queries';
 import { useAuth } from '@/lib/auth';
 import { formatDateTime, formatINR, timeAgo } from '@/lib/format';
@@ -36,7 +37,7 @@ export default function ApprovalsPage() {
   const limited = rights.filter((r) => r.maxAmount !== null && APPROVAL_AMOUNT_BASIS[r.type]);
   const { data, isLoading, error, refetch } = usePendingApprovals(approver);
   const [type, setType] = useState<'ALL' | SubmissionType>('ALL');
-  const [projectId, setProjectId] = useState<string | undefined>();
+  const [projectId, setProjectId] = useProjectScope();
   const [open, setOpen] = useState<{ type: SubmissionType; id: string } | null>(null);
 
   const filtered = useMemo(

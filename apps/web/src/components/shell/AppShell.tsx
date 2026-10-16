@@ -3,35 +3,48 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Alert, Avatar, Breadcrumb, Button, Drawer, Dropdown, Grid, Layout, Space, Tag, theme } from 'antd';
+import { Alert, Avatar, Breadcrumb, Button, Drawer, Dropdown, Grid, Layout, Space, Tag, Tooltip, Typography, theme } from 'antd';
 import type { MenuProps } from 'antd';
-import { BgColorsOutlined, CheckOutlined, ColumnHeightOutlined, CompassOutlined, CustomerServiceOutlined, LogoutOutlined, MenuOutlined, SearchOutlined, UserOutlined } from '@ant-design/icons';
+import { BgColorsOutlined, CheckOutlined, ColumnHeightOutlined, CustomerServiceOutlined, LogoutOutlined, MenuOutlined, SearchOutlined, StarFilled, StarOutlined, UserOutlined } from '@ant-design/icons';
 import type { AuthUser } from '@erp/shared';
 import { BILLING_REMIND_DAYS, PRODUCT_NAME, canManageBilling, canManageCompanyData, isGuest, mayApprove } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useAppearance, type Density, type ThemeMode } from '@/lib/appearance';
-import { useCompanyDeletion, usePendingApprovals } from '@/lib/queries';
+import { ProjectScopeProvider } from '@/lib/project-scope';
+import { readPref, writePref } from '@/lib/prefs';
+import { useCompanyDeletion, usePendingApprovals, useProjects } from '@/lib/queries';
 import { formatDate, formatDateTime } from '@/lib/format';
 import { endSupportSession } from '@/lib/api';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { BRAND } from '@/lib/brand';
 import { BrandMark } from './BrandMark';
 import { CommandPalette } from './CommandPalette';
+import { HelpMenu, dialogOpen, isTyping } from './HelpMenu';
+import { NewMenu } from './NewMenu';
+import { ProjectSwitcher } from './ProjectSwitcher';
 import { navFor, navTrail } from './nav';
-import { PREF_RAIL, Sidebar, readPref, writePref } from './Sidebar';
+import { usePins } from './pins';
+import { PREF_RAIL, Sidebar, searchShortcut } from './Sidebar';
 import { ProductTour, shouldAutoStartTour } from './ProductTour';
 import s from './Sidebar.module.css';
 
 const { Header, Content } = Layout;
 
-/** Typing in a field, so single-key shortcuts must not fire. */
-const isTyping = (el: EventTarget | null) => el instanceof HTMLElement && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
-
 export function AppShell({ user, children }: { user: AuthUser; children: React.ReactNode }) {
+  return (
+    <ProjectScopeProvider userId={user.id} enabled={!isGuest(user.roleKey)}>
+      <Shell user={user}>{children}</Shell>
+    </ProjectScopeProvider>
+  );
+}
+
+function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }) {
   const pathname = usePathname();
   const { logout } = useAuth();
   const screens = Grid.useBreakpoint();
   const isMobile = screens.md === false;
+  // Below xl the header drops the words beside its icons.
+  const roomy = !!screens.xl;
   // The rail is remembered; with no choice yet, narrower laptop screens start with it.
   const [rail, setRail] = useState<boolean>(() => readPref<boolean | null>(PREF_RAIL, null) ?? window.innerWidth < 1100);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -42,6 +55,14 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
   const sections = useMemo(() => navFor(user), [user]);
   const trail = useMemo(() => navTrail(sections, pathname), [sections, pathname]);
   const guest = isGuest(user.roleKey);
+  const { data: projects } = useProjects(!guest);
+  const { current: pinnable, isFavourite, toggleFavourite, pinSections } = usePins(user.id, sections);
+  // Favourites and Recent sit under the top links.
+  const sidebarSections = useMemo(() => [...sections.filter((x) => !x.title), ...pinSections, ...sections.filter((x) => x.title)], [sections, pinSections]);
+  const projectCrumb = useMemo(() => {
+    const id = pathname.match(/^\/projects\/([\w-]+)/)?.[1];
+    return id ? projects?.find((p) => p.id === id) : undefined;
+  }, [pathname, projects]);
   const [touring, setTouring] = useState(false);
   const { token } = theme.useToken();
   const { prefs, setPrefs } = useAppearance();
@@ -68,7 +89,7 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
         e.preventDefault();
         setMobileOpen(false);
         setSearchOpen((o) => !o);
-      } else if (e.key === '[' && !e.ctrlKey && !e.metaKey && !e.altKey && !isMobile && !isTyping(e.target) && !document.querySelector('.ant-modal-wrap')) {
+      } else if (e.key === '[' && !e.ctrlKey && !e.metaKey && !e.altKey && !isMobile && !isTyping(e.target) && !dialogOpen()) {
         toggleRail();
       }
     };
@@ -112,15 +133,6 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
       })),
     },
     { type: 'divider' },
-    {
-      key: 'tour',
-      icon: <CompassOutlined />,
-      label: 'Take the tour',
-      onClick: () => {
-        setMobileOpen(false);
-        setTouring(true);
-      },
-    },
     { key: 'logout', icon: <LogoutOutlined />, label: 'Sign out', onClick: logout },
   ];
 
@@ -135,12 +147,12 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
     <Layout hasSider style={{ minHeight: '100vh' }}>
       {!isMobile && (
         <aside className={`${s.aside} ${rail ? s.asideRail : ''}`} data-tour="sidebar">
-          <Sidebar user={user} sections={sections} pendingCount={pendingCount} rail={rail} onToggleRail={toggleRail} onSearch={openSearch} />
+          <Sidebar user={user} sections={sidebarSections} pendingCount={pendingCount} rail={rail} onToggleRail={toggleRail} />
         </aside>
       )}
       {isMobile && (
         <Drawer open={mobileOpen} onClose={() => setMobileOpen(false)} placement="left" size={288} closable={false} styles={{ body: { padding: 0, background: BRAND.colors.ink } }}>
-          <Sidebar user={user} sections={sections} pendingCount={pendingCount} onNavigate={() => setMobileOpen(false)} onSearch={openSearch} />
+          <Sidebar user={user} sections={sidebarSections} pendingCount={pendingCount} onNavigate={() => setMobileOpen(false)} />
         </Drawer>
       )}
       {!guest && <CommandPalette open={searchOpen} onClose={() => setSearchOpen(false)} sections={sections} withProjects />}
@@ -151,7 +163,7 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: isMobile ? '0 12px' : '0 24px',
+            padding: isMobile ? `0 ${token.paddingSM}px` : `0 ${token.paddingLG}px`,
             borderBottom: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}`,
             position: 'sticky',
             top: 0,
@@ -159,55 +171,107 @@ export function AppShell({ user, children }: { user: AuthUser; children: React.R
             height: 56,
             lineHeight: '56px',
             background: token.colorBgContainer,
-            gap: 8,
+            gap: token.marginSM,
           }}
         >
-          <Space size={12} style={{ minWidth: 0 }}>
+          <Space size={token.marginSM} style={{ minWidth: 0 }}>
             {isMobile ? (
               <>
                 <Button type="text" icon={<MenuOutlined />} onClick={() => setMobileOpen(true)} aria-label="Open menu" data-tour="menu" />
                 <BrandMark size={28} />
+                {approver && pendingCount > 0 && (
+                  <Link href="/approvals">
+                    <Tag color="orange" style={{ margin: 0 }}>
+                      {pendingCount} pending
+                    </Tag>
+                  </Link>
+                )}
               </>
             ) : (
-              // The company is in the sidebar; the header says where you are.
-              trail && (
-                <Breadcrumb
-                  items={[
-                    ...(trail.section ? [{ title: trail.section }] : []),
-                    { title: pathname === trail.item.href ? trail.item.label : <Link href={trail.item.href}>{trail.item.label}</Link> },
-                  ]}
-                />
-              )
-            )}
-            {approver && pendingCount > 0 && (
-              <Link href="/approvals">
-                <Tag color="orange" style={{ margin: 0 }}>
-                  {pendingCount} pending{isMobile ? '' : ` approval${pendingCount === 1 ? '' : 's'}`}
-                </Tag>
-              </Link>
+              <>
+                {!guest && (
+                  <span data-tour="project">
+                    <ProjectSwitcher width={roomy ? 240 : 200} />
+                  </span>
+                )}
+                {/* The company is in the sidebar; the header says where you are. */}
+                {trail && (
+                  <Breadcrumb
+                    items={[
+                      ...(trail.section ? [{ title: trail.section }] : []),
+                      { title: pathname === trail.item.href ? trail.item.label : <Link href={trail.item.href}>{trail.item.label}</Link> },
+                      ...(projectCrumb
+                        ? [{ title: <span style={{ display: 'inline-block', maxWidth: roomy ? 320 : 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'bottom' }} title={projectCrumb.name}>{projectCrumb.name}</span> }]
+                        : []),
+                    ]}
+                  />
+                )}
+                {pinnable && (
+                  <Tooltip title={isFavourite ? 'Remove from favourites' : 'Add to favourites'}>
+                    <Button
+                      type="text"
+                      size="small"
+                      aria-label={isFavourite ? 'Remove from favourites' : 'Add to favourites'}
+                      aria-pressed={isFavourite}
+                      icon={isFavourite ? <StarFilled style={{ color: token.colorWarning }} /> : <StarOutlined />}
+                      onClick={() => toggleFavourite(pinnable)}
+                    />
+                  </Tooltip>
+                )}
+              </>
             )}
           </Space>
-          <Space size={4}>
-            {isMobile && openSearch && <Button type="text" icon={<SearchOutlined />} onClick={openSearch} aria-label="Search pages and projects" data-tour="search" />}
+          <Space size={token.marginXXS}>
+            {openSearch &&
+              (isMobile || !roomy ? (
+                <Tooltip title={isMobile ? undefined : `Search  ${searchShortcut()}`}>
+                  <Button type="text" icon={<SearchOutlined />} onClick={openSearch} aria-label="Search pages and projects" data-tour="search" />
+                </Tooltip>
+              ) : (
+                <Button
+                  color="default"
+                  variant="filled"
+                  icon={<SearchOutlined />}
+                  onClick={openSearch}
+                  aria-keyshortcuts="Control+K Meta+K"
+                  data-tour="search"
+                  style={{ width: 260, justifyContent: 'flex-start', color: token.colorTextTertiary }}
+                >
+                  <span style={{ flex: 1, textAlign: 'left' }}>Search or jump to…</span>
+                  <Typography.Text keyboard type="secondary" style={{ fontSize: token.fontSizeSM }}>
+                    {searchShortcut()}
+                  </Typography.Text>
+                </Button>
+              ))}
+            <span style={{ marginInline: token.marginXXS }}>
+              <NewMenu user={user} compact={isMobile || !roomy} />
+            </span>
+            <HelpMenu
+              withSearch={!!openSearch}
+              onTour={() => {
+                setMobileOpen(false);
+                setTouring(true);
+              }}
+            />
             <span data-tour="notifications">
               <NotificationBell />
             </span>
             <Dropdown menu={{ items: userMenu }} trigger={['click']}>
-            <Button type="text" style={{ height: 40, padding: '0 8px' }} data-tour="account">
-              <Space>
-                <Avatar size="small" style={{ background: BRAND.colors.accent, color: BRAND.colors.onAccent, fontWeight: 700 }}>
-                  {initials}
-                </Avatar>
-                {!isMobile && (
-                  <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: 1.1 }}>
-                    <span style={{ fontWeight: 600, fontSize: 13 }}>{user.fullName}</span>
-                    <span className="text-muted" style={{ fontSize: 11 }}>
-                      {user.roleName}
+              <Button type="text" style={{ height: 40, padding: `0 ${token.paddingXS}px` }} data-tour="account" aria-label={roomy ? undefined : `${user.fullName}, account`}>
+                <Space>
+                  <Avatar size="small" style={{ background: BRAND.colors.accent, color: BRAND.colors.onAccent, fontWeight: 700 }}>
+                    {initials}
+                  </Avatar>
+                  {roomy && (
+                    <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: 1.1 }}>
+                      <span style={{ fontWeight: 600, fontSize: 13 }}>{user.fullName}</span>
+                      <span className="text-muted" style={{ fontSize: 11 }}>
+                        {user.roleName}
+                      </span>
                     </span>
-                  </span>
-                )}
-              </Space>
-            </Button>
+                  )}
+                </Space>
+              </Button>
             </Dropdown>
           </Space>
         </Header>

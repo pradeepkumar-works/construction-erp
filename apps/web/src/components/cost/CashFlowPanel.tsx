@@ -7,6 +7,7 @@ import type { TableProps } from 'antd';
 import dayjs from 'dayjs';
 import type { CashFlowGranularity, CashFlowPeriodDto } from '@erp/shared';
 import { DEFAULT_CLIENT_PAYMENT_DAYS } from '@erp/shared';
+import { useProjectScope } from '@/lib/project-scope';
 import { useCashFlow, useProjects } from '@/lib/queries';
 import { formatINR, toNumber } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
@@ -27,7 +28,7 @@ const periodLabel = (p: CashFlowPeriodDto, g: CashFlowGranularity) =>
 /** Money expected in and out by month or week, for one project or every project the user can see. */
 export function CashFlowPanel({ projectId: fixedProject }: { projectId?: string }) {
   const [granularity, setGranularity] = useState<CashFlowGranularity>('MONTH');
-  const [projectFilter, setProjectFilter] = useState<string | undefined>();
+  const [projectFilter, setProjectFilter] = useProjectScope();
   const projectId = fixedProject ?? projectFilter;
   const { data: projects } = useProjects();
   const { data, isLoading, isFetching, error, refetch } = useCashFlow({ projectId, granularity });

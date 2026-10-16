@@ -8,6 +8,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { PayableBillDto, PayableTotalsDto, ProjectPayableDto, VendorPayableDto, VendorPaymentDto, VendorPaymentSortField } from '@erp/shared';
 import { MSME_CATEGORY_LABELS, RECEIPT_MODE_LABELS, canRecordPayment } from '@erp/shared';
+import { useProjectScope } from '@/lib/project-scope';
 import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { usePayables, useVendorPayments, useVendors } from '@/lib/queries';
@@ -178,7 +179,7 @@ function PaymentsTab({ projectId, vendorId, onBill }: { projectId?: string; vend
 
 export default function PayablesPage() {
   const { user } = useAuth();
-  const [projectId, setProjectId] = useState<string | undefined>();
+  const [projectId, setProjectId] = useProjectScope();
   const [vendorId, setVendorId] = useState<string | undefined>();
   const [bill, setBill] = useState<{ billType: PayableBillDto['billType']; billId: string } | null>(null);
   const [paying, setPaying] = useState<PayTarget | null>(null);

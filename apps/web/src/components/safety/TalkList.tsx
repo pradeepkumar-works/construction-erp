@@ -8,6 +8,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ToolboxTalkDto } from '@erp/shared';
 import { canEditSafetyRecord, canReportSafety } from '@erp/shared';
+import { useProjectScope } from '@/lib/project-scope';
 import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useToolboxTalks } from '@/lib/queries';
@@ -40,7 +41,7 @@ export function TalkList({ projectId: fixedProject }: { projectId?: string }) {
   const { message } = App.useApp();
   const qc = useQueryClient();
   const list = useListState<'date'>({ sortBy: 'date', sortOrder: 'desc' });
-  const [projectFilter, setProjectFilter] = useState<string | undefined>();
+  const [projectFilter, setProjectFilter] = useProjectScope();
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<ToolboxTalkDto | null>(null);
   const projectId = fixedProject ?? projectFilter;

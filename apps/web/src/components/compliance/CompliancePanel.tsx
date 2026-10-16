@@ -17,6 +17,7 @@ import {
   canBeInvoked,
   canManageCompliance,
 } from '@erp/shared';
+import { useProjectScope } from '@/lib/project-scope';
 import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useComplianceDoc, useComplianceDocs } from '@/lib/queries';
@@ -63,7 +64,7 @@ export function CompliancePanel({ initialId }: { initialId?: string }) {
   const [kind, setKind] = useState<ComplianceDocKind | 'ALL'>('ALL');
   const [status, setStatus] = useState<ComplianceDocStatus | 'ALL'>('ACTIVE');
   const [state, setState] = useState<'EXPIRING' | 'EXPIRED' | undefined>();
-  const [projectId, setProjectId] = useState<string | undefined>();
+  const [projectId, setProjectId] = useProjectScope();
   const [q, setQ] = useState('');
   const [openId, setOpenId] = useState<string | null>(initialId ?? null);
   const [action, setAction] = useState<ComplianceAction | null>(null);

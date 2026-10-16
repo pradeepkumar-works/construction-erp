@@ -8,6 +8,7 @@ import type { TableProps } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { StockBalanceDto, StockBalanceSortField } from '@erp/shared';
 import { canManageStore } from '@erp/shared';
+import { useProjectScope } from '@/lib/project-scope';
 import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useStockBalances } from '@/lib/queries';
@@ -77,7 +78,7 @@ export function StockBalances({ projectId: fixedProject, initialLow = false, ini
   const { user } = useAuth();
   const mayManage = !!user && canManageStore(user.roleKey);
   const list = useListState<StockBalanceSortField>({ sortBy: 'item', sortOrder: 'asc', pageSize: 50 });
-  const [projectFilter, setProjectFilter] = useState<string | undefined>(initialProject);
+  const [projectFilter, setProjectFilter] = useProjectScope(initialProject);
   const [lowOnly, setLowOnly] = useState(initialLow);
   const [inStock, setInStock] = useState(false);
   const [ledger, setLedger] = useState<StockBalanceDto | null>(null);

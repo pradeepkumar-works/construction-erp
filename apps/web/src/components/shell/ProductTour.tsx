@@ -5,7 +5,8 @@ import { Tour } from 'antd';
 import type { TourProps } from 'antd';
 import type { AuthUser } from '@erp/shared';
 import { PRODUCT_NAME, isGuest, mayApprove } from '@erp/shared';
-import { readPref, searchShortcut, writePref } from './Sidebar';
+import { readPref, writePref } from '@/lib/prefs';
+import { searchShortcut } from './Sidebar';
 
 /** Users who have seen the tour on this browser (their ids), or "*" for every user. */
 export const PREF_TOUR = 'nirmaan.tour.seen';
@@ -33,7 +34,7 @@ function stepsFor(user: AuthUser, mobile: boolean): Step[] {
   const steps: (Step | false)[] = [
     {
       title: `Welcome to ${PRODUCT_NAME}, ${first}`,
-      description: 'A quick look around the screen. Leave it any time; your name at the top right has it again.',
+      description: 'A quick look around the screen. Leave it any time; Help (?) at the top right has it again.',
     },
     mobile
       ? { target: 'menu', title: 'Your pages', description: 'The menu opens every page your role uses, grouped by Site, Billing, Reports and more.', placement: 'bottom' }
@@ -45,17 +46,29 @@ function stepsFor(user: AuthUser, mobile: boolean): Step[] {
             : 'Every page your role uses, grouped by Site, Materials & plant, Billing, Reports and more. Press [ to fold it to icons and back.',
           placement: 'right',
         },
-    {
-      target: 'search',
-      title: 'Jump anywhere',
-      description: `Find a page or a project by its name or code. ${searchShortcut()} opens it from any page.`,
-      placement: mobile ? 'bottom' : 'right',
-    },
     mayApprove(user) && {
       target: 'approvals',
       title: 'Waiting for you',
       description: 'Entries that need your approval. Approve, reject or send them back with a note; the person who filed them is told.',
       placement: mobile ? 'bottom' : 'right',
+    },
+    {
+      target: 'project',
+      title: 'Work on one project',
+      description: 'Pick a project here and every list shows that project only, until you switch back to All projects. It is remembered on this browser.',
+      placement: 'bottom',
+    },
+    {
+      target: 'search',
+      title: 'Jump anywhere',
+      description: `Find a page or a project by its name or code. ${searchShortcut()} opens it from any page.`,
+      placement: 'bottom',
+    },
+    {
+      target: 'new',
+      title: 'Start something new',
+      description: 'A daily report, progress entry, material request and whatever else your role files, from any page.',
+      placement: 'bottomRight',
     },
     {
       target: 'notifications',
@@ -64,9 +77,15 @@ function stepsFor(user: AuthUser, mobile: boolean): Step[] {
       placement: 'bottomRight',
     },
     {
+      target: 'help',
+      title: 'Help',
+      description: 'Keyboard shortcuts, what has changed lately, and this tour again whenever you like.',
+      placement: 'bottomRight',
+    },
+    {
       target: 'account',
       title: 'Your account',
-      description: 'Sign out here, and take this tour again whenever you like.',
+      description: 'Choose light or dark and how compact pages are, or sign out.',
       placement: 'bottomRight',
     },
   ];
@@ -75,7 +94,7 @@ function stepsFor(user: AuthUser, mobile: boolean): Step[] {
 
 /**
  * The product tour (v4 item 51): a few steps over the app shell, shown once per user on this browser after they first
- * sign in, and again from the account menu. Steps whose element is not on screen (search for guests) are left out, and
+ * sign in, and again from Help. Steps whose element is not on screen (search for guests) are left out, and
  * so is approvals for roles that approve nothing.
  */
 export function ProductTour({ user, mobile, open, onClose }: { user: AuthUser; mobile: boolean; open: boolean; onClose: () => void }) {

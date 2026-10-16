@@ -7,6 +7,7 @@ import type { TableProps } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import type { LetterDirection, LetterDto, LetterSortField } from '@erp/shared';
 import { LETTER_DIRECTIONS, LETTER_DIRECTION_LABELS } from '@erp/shared';
+import { useProjectScope } from '@/lib/project-scope';
 import { useLetters } from '@/lib/queries';
 import { useListState } from '@/lib/listState';
 import { formatDate } from '@/lib/format';
@@ -17,7 +18,7 @@ import { DirectionTag } from './LetterDrawer';
 /** Letters in and out, numbered IN- and OUT-, with replies due. */
 export function LetterList({ projectId: fixedProject, onOpen, onNew }: { projectId?: string; onOpen: (id: string) => void; onNew: () => void }) {
   const list = useListState<LetterSortField>({ sortBy: 'letterDate', sortOrder: 'desc' });
-  const [projectFilter, setProjectFilter] = useState<string | undefined>();
+  const [projectFilter, setProjectFilter] = useProjectScope();
   const [direction, setDirection] = useState<LetterDirection | undefined>();
   const [awaiting, setAwaiting] = useState(false);
   const projectId = fixedProject ?? projectFilter;

@@ -7,6 +7,7 @@ import type { TableProps } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import type { SubmissionStatus, WorkOrderDto, WorkOrderSortField } from '@erp/shared';
 import { canIssueWorkOrder } from '@erp/shared';
+import { useProjectScope } from '@/lib/project-scope';
 import { useAuth } from '@/lib/auth';
 import { useVendors, useWorkOrders } from '@/lib/queries';
 import { useListState } from '@/lib/listState';
@@ -27,7 +28,7 @@ const SUB_KINDS = new Set(['SUBCONTRACTOR', 'LABOUR_CONTRACTOR']);
 export function WorkOrderList({ projectId: fixedProject, openId: initialOpen }: { projectId?: string; openId?: string | null }) {
   const { user } = useAuth();
   const list = useListState<WorkOrderSortField>({ sortBy: 'woDate', sortOrder: 'desc' });
-  const [projectFilter, setProjectFilter] = useState<string | undefined>();
+  const [projectFilter, setProjectFilter] = useProjectScope();
   const [status, setStatus] = useState<SubmissionStatus | undefined>();
   const [vendorId, setVendorId] = useState<string | undefined>();
   const [onlyOpen, setOnlyOpen] = useState(false);

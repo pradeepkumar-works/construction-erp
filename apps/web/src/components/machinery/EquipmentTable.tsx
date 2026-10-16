@@ -8,6 +8,7 @@ import type { TableProps } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { EquipmentDto, EquipmentOwnership, EquipmentRateUnit, EquipmentSortField } from '@erp/shared';
 import { EQUIPMENT_OWNERSHIPS, EQUIPMENT_OWNERSHIP_LABELS, EQUIPMENT_RATE_UNITS, EQUIPMENT_RATE_UNIT_LABELS, canManageEquipment } from '@erp/shared';
+import { useProjectScope } from '@/lib/project-scope';
 import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useEquipment, useProjects } from '@/lib/queries';
@@ -44,7 +45,7 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
   const qc = useQueryClient();
   const mayManage = !!user && canManageEquipment(user.roleKey);
   const list = useListState<EquipmentSortField>({ sortBy: 'code', sortOrder: 'asc', pageSize: 50 });
-  const [projectFilter, setProjectFilter] = useState<string | undefined>();
+  const [projectFilter, setProjectFilter] = useProjectScope();
   const [ownership, setOwnership] = useState<EquipmentOwnership | undefined>();
   const [includeInactive, setIncludeInactive] = useState(false);
   const projectId = fixedProject ?? projectFilter;

@@ -7,6 +7,7 @@ import type { TableProps } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import type { WorkPermitDto, WorkPermitStatus, WorkPermitType } from '@erp/shared';
 import { WORK_PERMIT_STATUS_LABELS, WORK_PERMIT_TYPES, WORK_PERMIT_TYPE_LABELS, canReportSafety } from '@erp/shared';
+import { useProjectScope } from '@/lib/project-scope';
 import { useAuth } from '@/lib/auth';
 import { useWorkPermits } from '@/lib/queries';
 import { useListState } from '@/lib/listState';
@@ -39,7 +40,7 @@ type View = 'ACTIVE' | WorkPermitStatus | 'ALL';
 export function PermitList({ projectId: fixedProject, initialOpenId }: { projectId?: string; initialOpenId?: string }) {
   const { user } = useAuth();
   const list = useListState<'date'>({ sortBy: 'date', sortOrder: 'desc' });
-  const [projectFilter, setProjectFilter] = useState<string | undefined>();
+  const [projectFilter, setProjectFilter] = useProjectScope();
   const [view, setView] = useState<View>('ACTIVE');
   const [type, setType] = useState<WorkPermitType | undefined>();
   const [openId, setOpenId] = useState<string | null>(initialOpenId ?? null);

@@ -7,6 +7,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ImprestDto, ImprestEntryDto, ImprestLedgerLine } from '@erp/shared';
 import { IMPREST_ENTRY_KIND_LABELS, IMPREST_ENTRY_STATUS_LABELS, PAYMENT_MODE_LABELS, SUBMISSION_STATUS_LABELS, canManageImprest } from '@erp/shared';
+import { useProjectScope } from '@/lib/project-scope';
 import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useImprest, useImprests } from '@/lib/queries';
@@ -37,7 +38,7 @@ function CashBar({ i }: { i: ImprestDto }) {
 export function ImprestPanel({ projectId: fixedProject, initialId }: { projectId?: string; initialId?: string }) {
   const { user } = useAuth();
   const admin = !!user && canManageImprest(user.roleKey);
-  const [projectFilter, setProjectFilter] = useState<string | undefined>();
+  const [projectFilter, setProjectFilter] = useProjectScope();
   const [active, setActive] = useState(true);
   const [openId, setOpenId] = useState<string | null>(initialId ?? null);
   const [action, setAction] = useState<ImprestAction | null>(null);

@@ -7,6 +7,7 @@ import type { TableProps } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import type { SubmissionStatus, VendorBillDto, VendorBillSortField } from '@erp/shared';
 import { canRecordVendorBill } from '@erp/shared';
+import { useProjectScope } from '@/lib/project-scope';
 import { useAuth } from '@/lib/auth';
 import { useVendorBills, useVendors } from '@/lib/queries';
 import { useListState } from '@/lib/listState';
@@ -26,7 +27,7 @@ import { VendorBillFormModal } from './VendorBillFormModal';
 export function VendorBillList({ projectId: fixedProject, openId: initialOpen }: { projectId?: string; openId?: string | null }) {
   const { user } = useAuth();
   const list = useListState<VendorBillSortField>({ sortBy: 'invoiceDate', sortOrder: 'desc' });
-  const [projectFilter, setProjectFilter] = useState<string | undefined>();
+  const [projectFilter, setProjectFilter] = useProjectScope();
   const [status, setStatus] = useState<SubmissionStatus | undefined>();
   const [vendorId, setVendorId] = useState<string | undefined>();
   const [exceptions, setExceptions] = useState(false);

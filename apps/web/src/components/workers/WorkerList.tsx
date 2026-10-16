@@ -7,6 +7,7 @@ import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { WorkerDto } from '@erp/shared';
 import { WORKER_ID_TYPE_LABELS, WORKER_SKILL_LABELS, canManageWorkers } from '@erp/shared';
+import { useProjectScope } from '@/lib/project-scope';
 import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useWorkers } from '@/lib/queries';
@@ -40,7 +41,7 @@ export function WorkerList({ projectId: fixedProject }: { projectId?: string }) 
   const { message } = App.useApp();
   const qc = useQueryClient();
   const editor = !!user && canManageWorkers(user.roleKey);
-  const [projectFilter, setProjectFilter] = useState<string | undefined>();
+  const [projectFilter, setProjectFilter] = useProjectScope();
   const [search, setSearch] = useState('');
   const [active, setActive] = useState(true);
   const [page, setPage] = useState(1);

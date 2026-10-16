@@ -7,6 +7,7 @@ import type { TableProps } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import type { DocumentDiscipline, DocumentDto, DocumentKind, DocumentSortField, RevisionStatus } from '@erp/shared';
 import { DOCUMENT_DISCIPLINES, DOCUMENT_DISCIPLINE_LABELS, DOCUMENT_KINDS, DOCUMENT_KIND_LABELS, REVISION_STATUSES, REVISION_STATUS_LABELS, canManageDocuments } from '@erp/shared';
+import { useProjectScope } from '@/lib/project-scope';
 import { useAuth } from '@/lib/auth';
 import { useDocuments } from '@/lib/queries';
 import { useListState } from '@/lib/listState';
@@ -20,7 +21,7 @@ import { DocumentFormModal } from './DocumentFormModal';
 export function DocumentList({ projectId: fixedProject, onOpen }: { projectId?: string; onOpen: (id: string) => void }) {
   const { user } = useAuth();
   const list = useListState<DocumentSortField>({ sortBy: 'docNo', sortOrder: 'asc' });
-  const [projectFilter, setProjectFilter] = useState<string | undefined>();
+  const [projectFilter, setProjectFilter] = useProjectScope();
   const [kind, setKind] = useState<DocumentKind | undefined>();
   const [discipline, setDiscipline] = useState<DocumentDiscipline | undefined>();
   const [status, setStatus] = useState<RevisionStatus | undefined>();

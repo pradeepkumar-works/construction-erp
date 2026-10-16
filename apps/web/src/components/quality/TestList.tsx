@@ -8,6 +8,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import type { Dayjs } from 'dayjs';
 import type { QualityTestDto, QualityTestSortField, TestKind, TestResult } from '@erp/shared';
 import { TEST_KINDS, TEST_KIND_LABELS, TEST_RESULTS, TEST_RESULT_LABELS, canRecordTest, specRange } from '@erp/shared';
+import { useProjectScope } from '@/lib/project-scope';
 import { useAuth } from '@/lib/auth';
 import { useQualityTests } from '@/lib/queries';
 import { useListState } from '@/lib/listState';
@@ -23,7 +24,7 @@ import { rangePresets } from '@/lib/dates';
 export function TestList({ projectId: fixedProject, initialOpenId, onOpenNcr }: { projectId?: string; initialOpenId?: string; onOpenNcr?: (id: string) => void }) {
   const { user } = useAuth();
   const list = useListState<QualityTestSortField>({ sortBy: 'sampledOn', sortOrder: 'desc' });
-  const [projectFilter, setProjectFilter] = useState<string | undefined>();
+  const [projectFilter, setProjectFilter] = useProjectScope();
   const [kind, setKind] = useState<TestKind | undefined>();
   const [result, setResult] = useState<TestResult | undefined>();
   const [overdue, setOverdue] = useState(false);

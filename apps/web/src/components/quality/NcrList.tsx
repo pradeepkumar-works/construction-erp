@@ -7,6 +7,7 @@ import type { TableProps } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import type { NcrDto, NcrSeverity, NcrSortField, NcrStatus } from '@erp/shared';
 import { NCR_SEVERITIES, NCR_SEVERITY_LABELS, NCR_STATUSES, NCR_STATUS_LABELS, canRaiseNcr } from '@erp/shared';
+import { useProjectScope } from '@/lib/project-scope';
 import { useAuth } from '@/lib/auth';
 import { useNcrs } from '@/lib/queries';
 import { useListState } from '@/lib/listState';
@@ -20,7 +21,7 @@ import { NcrFormModal } from './NcrFormModal';
 export function NcrList({ projectId: fixedProject, onOpen }: { projectId?: string; onOpen: (id: string) => void }) {
   const { user } = useAuth();
   const list = useListState<NcrSortField>({ sortBy: 'raisedOn', sortOrder: 'desc' });
-  const [projectFilter, setProjectFilter] = useState<string | undefined>();
+  const [projectFilter, setProjectFilter] = useProjectScope();
   const [status, setStatus] = useState<NcrStatus | undefined>();
   const [severity, setSeverity] = useState<NcrSeverity | undefined>();
   const [active, setActive] = useState(false);

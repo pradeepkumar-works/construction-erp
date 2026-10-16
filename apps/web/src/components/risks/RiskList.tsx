@@ -5,6 +5,8 @@ import { Alert, Button, Checkbox, Segmented, Select, Space, Statistic, Tag, Tool
 import { PlusOutlined } from '@ant-design/icons';
 import type { RiskCategory, RiskDto, RiskKind, RiskSortField, RiskStatus } from '@erp/shared';
 import { RISK_CATEGORIES, RISK_CATEGORY_LABELS, RISK_STATUSES, RISK_STATUS_LABELS, canRaiseRisk } from '@erp/shared';
+import { useNewIntent } from '@/lib/new-intent';
+import { useProjectScope } from '@/lib/project-scope';
 import { useAuth } from '@/lib/auth';
 import { useRisks, useRiskSuggestions, useRiskSummary } from '@/lib/queries';
 import { useListState } from '@/lib/listState';
@@ -28,7 +30,7 @@ const big = { content: { fontSize: 18 } };
 export function RiskList({ projectId: fixedProject, initialProject, initialOpenId }: { projectId?: string; initialProject?: string; initialOpenId?: string }) {
   const { user } = useAuth();
   const list = useListState<RiskSortField>({ sortBy: 'score', sortOrder: 'desc' });
-  const [projectFilter, setProjectFilter] = useState<string | undefined>(initialProject);
+  const [projectFilter, setProjectFilter] = useProjectScope(initialProject);
   const [kind, setKind] = useState<RiskKind | 'ALL'>('ALL');
   const [status, setStatus] = useState<StatusFilter>('ACTIVE');
   const [category, setCategory] = useState<RiskCategory | undefined>();
@@ -67,6 +69,8 @@ export function RiskList({ projectId: fixedProject, initialProject, initialOpenI
     downloadXlsx(exportFileName('delay-risk-register'), 'register', RISK_EXPORT, rows);
     return rows.length;
   };
+
+  useNewIntent('risk', mayRaise, () => raise(null));
 
   return (
     <>

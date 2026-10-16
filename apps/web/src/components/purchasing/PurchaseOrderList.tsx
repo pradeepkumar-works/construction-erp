@@ -7,6 +7,8 @@ import type { TableProps } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import type { PurchaseOrderDto, PurchaseOrderSortField, SubmissionStatus } from '@erp/shared';
 import { canPurchase } from '@erp/shared';
+import { useNewIntent } from '@/lib/new-intent';
+import { useProjectScope } from '@/lib/project-scope';
 import { useAuth } from '@/lib/auth';
 import { usePurchaseOrders, useVendors } from '@/lib/queries';
 import { useListState } from '@/lib/listState';
@@ -25,7 +27,7 @@ import { PurchaseOrderFormModal } from './PurchaseOrderFormModal';
 export function PurchaseOrderList({ projectId: fixedProject, openId: initialOpen }: { projectId?: string; openId?: string | null }) {
   const { user } = useAuth();
   const list = useListState<PurchaseOrderSortField>({ sortBy: 'poDate', sortOrder: 'desc' });
-  const [projectFilter, setProjectFilter] = useState<string | undefined>();
+  const [projectFilter, setProjectFilter] = useProjectScope();
   const [status, setStatus] = useState<SubmissionStatus | undefined>();
   const [vendorId, setVendorId] = useState<string | undefined>();
   const [onlyOpen, setOnlyOpen] = useState(false);
@@ -113,6 +115,8 @@ export function PurchaseOrderList({ projectId: fixedProject, openId: initialOpen
       ),
     },
   ];
+
+  useNewIntent('purchase-order', buyer, () => setFormOpen(true));
 
   return (
     <>
