@@ -42,9 +42,14 @@ export async function chooseOption(field: Locator, text = '') {
 
 /** The Approvals queue lists oldest first; flip it so a just-submitted entry is on the first page. */
 export async function newestFirst(page: Page) {
-  const header = page.locator('th').filter({ hasText: /^Submitted$/ });
-  await header.click();
-  await expect(header).toHaveAttribute('aria-sort', 'descending');
+  const order = page.getByRole('radiogroup', { name: 'Order' }).or(page.locator('[aria-label="Order"]'));
+  await order.getByText('Newest first', { exact: true }).click();
+}
+
+/** An entry in the Approvals inbox's queue, by text in its title; `open` picks it, showing it in the pane beside. */
+export function queueItem(page: Page, text: string | RegExp) {
+  const item = page.locator('[data-queue-item]').filter({ hasText: text });
+  return { item, open: () => item.getByRole('button').first().click(), decision: page.getByRole('toolbar', { name: 'Decision' }) };
 }
 
 /** A quantity no other entry will have (three decimals), so a test can find its own row by it. */

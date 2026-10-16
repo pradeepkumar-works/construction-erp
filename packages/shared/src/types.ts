@@ -309,6 +309,13 @@ export interface PendingApprovalDto {
   amount: string | null;
 }
 
+/** An entry the current user approved, rejected or sent back: the Approvals inbox's "reviewed today". */
+export interface ReviewedItemDto extends PendingApprovalDto {
+  decision: 'APPROVED' | 'REJECTED' | 'CHANGES_REQUESTED';
+  note: string | null;
+  reviewedAt: string;
+}
+
 export interface AuditLogDto {
   id: string;
   entityType: string;

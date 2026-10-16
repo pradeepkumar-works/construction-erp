@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { api, apiToken, newestFirst, signIn } from './helpers';
+import { api, apiToken, newestFirst, queueItem, signIn } from './helpers';
 
 interface Project { id: string; code: string }
 interface MaterialRequest { id: string; requestNo: string; status: string; reviewNote: string | null }
@@ -25,10 +25,9 @@ test.describe.serial('material request: changes requested, then resubmitted', ()
     await signIn(page, 'pm@demo.com');
     await page.goto('/approvals');
     await newestFirst(page);
-    const row = page.locator('tr').filter({ hasText: mr.requestNo });
-    await row.getByRole('button', { name: 'Review' }).click();
-    const drawer = page.locator('.ant-drawer-open');
-    await drawer.getByRole('button', { name: 'Request changes' }).click();
+    const entry = queueItem(page, mr.requestNo);
+    await entry.open();
+    await entry.decision.getByRole('button', { name: /Request changes/ }).click();
     const modal = page.locator('.ant-modal').filter({ hasText: 'Reason' });
     await modal.getByRole('button', { name: 'Request changes' }).click();
     await expect(modal.getByText('Please enter a reason')).toBeVisible();

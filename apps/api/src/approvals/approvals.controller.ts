@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { SUBMISSION_TYPES, type SubmissionType } from '@erp/shared';
 import { BadRequestException } from '@nestjs/common';
@@ -17,6 +17,14 @@ export class ApprovalsController {
   @Get('pending')
   pending(@CurrentUser() user: RequestUser) {
     return this.lifecycle.pending(user);
+  }
+
+  /** What the current user reviewed since `since` (an ISO time, by default the last 24 hours), newest first. */
+  @Get('reviewed')
+  reviewed(@CurrentUser() user: RequestUser, @Query('since') since?: string) {
+    const from = since ? new Date(since) : new Date(Date.now() - 24 * 3600_000);
+    if (Number.isNaN(from.getTime())) throw new BadRequestException('since must be an ISO date-time');
+    return this.lifecycle.reviewedBy(user, from);
   }
 
   /** Generic review endpoint for every submission type except INSPECTION, which is reviewed with its checklist. */

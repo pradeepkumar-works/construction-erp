@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, ConfigProvider, Form, Input, Modal, Space, Tooltip } from 'antd';
+import { App, Button, ConfigProvider, Form, Input, Modal, Space, Tooltip, Typography } from 'antd';
 import { CheckOutlined, CloseOutlined, EditOutlined } from '@ant-design/icons';
 import type { ReviewDecision, SubmissionStatus, SubmissionType } from '@erp/shared';
 import { mayApproveType } from '@erp/shared';
@@ -118,9 +118,22 @@ export function ReviewDialog({ type, id, decision, onClose, onDone }: { type: Ap
     >
       <Form form={form} layout="vertical" style={{ marginTop: 12 }}>
         <Form.Item name="note" label={decision === 'APPROVE' ? 'Note (optional)' : 'Reason'} rules={decision === 'APPROVE' ? [] : [{ required: true, message: 'Please enter a reason' }]}>
-          <Input.TextArea rows={3} placeholder={decision === 'APPROVE' ? 'Any remarks for the submitter' : 'Explain what needs to change'} />
+          <Input.TextArea
+            rows={3}
+            autoFocus
+            placeholder={decision === 'APPROVE' ? 'Any remarks for the submitter' : 'Explain what needs to change'}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                submit();
+              }
+            }}
+          />
         </Form.Item>
       </Form>
+      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+        Ctrl Enter to {decision ? REVIEW_LABELS[decision].toLowerCase() : 'confirm'}
+      </Typography.Text>
     </Modal>
   );
 }

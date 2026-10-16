@@ -130,6 +130,7 @@ import type {
   NotificationListDto,
   Paginated,
   PendingApprovalDto,
+  ReviewedItemDto,
   ProgressEntryDto,
   ProjectDashboard,
   ProjectDetail,
@@ -1249,6 +1250,18 @@ export const usePendingApprovals = (enabled = true) =>
     enabled,
     refetchInterval: 30_000,
   });
+
+/** What the current user reviewed since local midnight: the Approvals inbox's "reviewed today". */
+export const useReviewedToday = (enabled = true) => {
+  const midnight = new Date();
+  midnight.setHours(0, 0, 0, 0);
+  const since = midnight.toISOString();
+  return useQuery({
+    queryKey: ['approvals', 'reviewed', since],
+    queryFn: async () => (await api.get<ReviewedItemDto[]>('/approvals/reviewed', { params: { since } })).data,
+    enabled,
+  });
+};
 
 export const useNotifications = (opts?: { unreadOnly?: boolean; limit?: number }) =>
   useQuery({

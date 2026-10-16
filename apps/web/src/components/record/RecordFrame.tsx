@@ -21,7 +21,8 @@ export interface RecordSection {
   children: React.ReactNode;
 }
 
-export type RecordMode = 'drawer' | 'page';
+/** `pane`: inside another page, such as the Approvals inbox, which brings its own actions. */
+export type RecordMode = 'drawer' | 'page' | 'pane';
 type ActionSize = 'small' | 'middle';
 
 export interface RecordFrameProps {
@@ -67,7 +68,66 @@ const sectionTitle = (s: RecordSection) => (s.count === undefined ? s.title : `$
  * that stays in view. Each record type fills the same props once and gets both.
  */
 export function RecordFrame(props: RecordFrameProps) {
-  return props.mode === 'drawer' ? <RecordDrawer {...props} /> : <RecordPage {...props} />;
+  return props.mode === 'drawer' ? <RecordDrawer {...props} /> : props.mode === 'pane' ? <RecordPane {...props} /> : <RecordPage {...props} />;
+}
+
+/** The record without a frame of its own and without its actions, which the host page supplies. */
+function RecordPane({ loading, error, onRetry, record, children }: RecordFrameProps) {
+  const { token } = theme.useToken();
+  return (
+    <div className="record-pane">
+      {loading && <Skeleton active paragraph={{ rows: 8 }} />}
+      {!!error && <QueryError error={error} onRetry={onRetry} />}
+      {record && (
+        <>
+          <Flex justify="space-between" align="flex-start" gap={token.marginSM} style={{ marginBottom: token.marginSM }}>
+            <Space wrap size={token.marginXS} align="center">
+              <span style={{ fontSize: token.fontSizeHeading5, fontWeight: token.fontWeightStrong }} role="heading" aria-level={2}>
+                {record.title}
+              </span>
+              {record.tags}
+            </Space>
+            <Space size={token.marginXXS}>
+              {record.print && (
+                <Tooltip title="Print">
+                  <Button size="small" type="text" icon={<PrinterOutlined />} onClick={record.print} aria-label="Print" />
+                </Tooltip>
+              )}
+              <Tooltip title="Open full page">
+                <Link href={record.href}>
+                  <Button size="small" type="text" icon={<ExpandOutlined />} aria-label="Open full page" />
+                </Link>
+              </Tooltip>
+            </Space>
+          </Flex>
+          {record.notices}
+          <Descriptions size="small" column={{ xs: 1, sm: 2, xxl: 3 }} bordered items={record.facts} style={{ marginBottom: token.margin }} />
+          {record.lifecycle && (
+            <div role="group" aria-label="Stage">
+              <Steps size="small" {...record.lifecycle} style={{ marginBottom: token.marginXS }} />
+            </div>
+          )}
+          {record.sections.map((s) => (
+            <React.Fragment key={s.key}>
+              <Divider titlePlacement="start" plain>
+                {sectionTitle(s)}
+              </Divider>
+              {s.children}
+            </React.Fragment>
+          ))}
+          {record.activity && (
+            <>
+              <Divider titlePlacement="start" plain>
+                Activity
+              </Divider>
+              <AuditTrail type={record.activity.type} id={record.activity.id} />
+            </>
+          )}
+        </>
+      )}
+      {children}
+    </div>
+  );
 }
 
 function RecordDrawer({ open, onClose, drawerSize = 820, kind, loading, error, onRetry, record, children }: RecordFrameProps) {

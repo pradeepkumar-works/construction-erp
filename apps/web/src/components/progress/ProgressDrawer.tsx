@@ -59,7 +59,7 @@ export function ProgressRecord({ id, mode, open, onClose, onEdit }: RecordProps 
               children: (
                 <>
                   <AttachmentGallery attachments={data.attachments} />
-                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                  <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12 }}>
                     Entry ID: {data.id}
                   </Typography.Text>
                 </>

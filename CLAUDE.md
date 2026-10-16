@@ -63,6 +63,9 @@ cd e2e && npx playwright test         # browser tests; needs API + web running (
 - Records: a submission's drawer and its own page (`/dpr/[id]`, `/bills/[id]`, …) are one `XRecord` component on
   `RecordFrame` (`components/record/`: facts, `submissionLifecycle` stage bar, sections, activity, actions); the drawer
   export is `<XRecord mode="drawer">`. List links to it use `RecordLink` and `RowActions href`.
+- Approvals inbox (`app/(app)/approvals`): the picked entry shows as `<XRecord mode="pane">` (no actions; the inbox has the
+  decision bar). A type gets the whole record there once it has a page: one line in `RECORD_PAGES` and one in `ApprovalPane`
+  (`components/approvals/`); until then it shows a summary with Open details.
 - Project page: a new project tab is one entry in `app/(app)/projects/[id]/page.tsx` with a `group` from `WORKSPACE_GROUPS`
   (`components/projects/ProjectWorkspace.tsx`); its `key` is the `?tab=` value, so never rename one. Anything sticky
   inside a page reads its top offset from `useStickyTop()` (`src/lib/sticky.tsx`), not a fixed 56.
