@@ -124,3 +124,13 @@ export function progressStatus(pct: number): 'success' | 'exception' | 'normal' 
   if (pct >= 100) return 'success';
   return 'active';
 }
+
+/** The heading a feed groups a moment under: "Today", "Yesterday", "Monday" within the week, then the date. */
+export function dayLabel(value: string): string {
+  const d = dayjs(value).startOf('day');
+  const days = dayjs().startOf('day').diff(d, 'day');
+  if (days <= 0) return 'Today';
+  if (days === 1) return 'Yesterday';
+  if (days < 7) return d.format('dddd');
+  return d.format('DD MMM YYYY');
+}

@@ -149,7 +149,8 @@ export function CommandPalette({ open, onClose, sections, withProjects, user }: 
 
   const records = useMemo<Target[]>(() => {
     if (query.trim().length < SEARCH_MIN_LENGTH) return [];
-    const hits = search.data?.hits ?? [];
+    // Only the answer to what is in the box now: an earlier query's records would read as matches for this one.
+    const hits = search.data?.q === query.trim().slice(0, 80) ? search.data.hits : [];
     const order = (h: SearchHitDto) => SEARCH_KINDS.indexOf(h.kind);
     return [...hits]
       .sort((a, b) => order(a) - order(b))

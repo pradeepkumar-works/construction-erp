@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, Param, Post, Query, UseGuards } from '@n
 import { ApiBearerAuth, ApiOperation, ApiSecurity, ApiTags } from '@nestjs/swagger';
 import { NotificationsService } from './notifications.service';
 import { NotificationJobsService } from './notification-jobs.service';
-import { JobQuery, ListNotificationsQuery, RegisterPushTokenDto, RemovePushTokenQuery } from './notifications.dto';
+import { JobQuery, ListNotificationsQuery, ReadAllNotificationsQuery, RegisterPushTokenDto, RemovePushTokenQuery } from './notifications.dto';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { GuestAllowed, Public } from '../common/decorators';
 import { CronGuard } from './cron.guard';
@@ -26,8 +26,8 @@ export class NotificationsController {
 
   @GuestAllowed()
   @Post('read-all')
-  readAll(@CurrentUser() user: RequestUser) {
-    return this.notifications.markAllRead(user);
+  readAll(@CurrentUser() user: RequestUser, @Query() q: ReadAllNotificationsQuery) {
+    return this.notifications.markAllRead(user, q.tab);
   }
 
   @GuestAllowed()

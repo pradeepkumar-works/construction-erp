@@ -38,3 +38,4 @@ export * from './procurement';
 export * from './views';
 export * from './links';
 export * from './search';
+export * from './notifications';

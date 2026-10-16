@@ -129,6 +129,7 @@ import type {
   MaterialRequestDto,
   NotificationDto,
   NotificationListDto,
+  NotificationTab,
   Paginated,
   PendingApprovalDto,
   ReviewedItemDto,
@@ -1273,11 +1274,12 @@ export const useReviewedToday = (enabled = true) => {
   });
 };
 
-export const useNotifications = (opts?: { unreadOnly?: boolean; limit?: number }) =>
+export const useNotifications = (opts?: { unreadOnly?: boolean; limit?: number; tab?: NotificationTab }, enabled = true) =>
   useQuery({
     queryKey: ['notifications', clean(opts)],
     queryFn: async () => (await api.get<NotificationListDto>('/notifications', { params: clean({ ...opts, allTypes: true }) })).data,
     refetchInterval: 30_000,
+    enabled,
   });
 
 /* ---------- Client portal ---------- */
@@ -1401,7 +1403,8 @@ export function useMarkNotificationRead() {
 export function useMarkAllNotificationsRead() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async () => (await api.post<{ updated: number }>('/notifications/read-all')).data,
+    /** Every notification, or only one tab's. */
+    mutationFn: async (tab?: NotificationTab) => (await api.post<{ updated: number }>('/notifications/read-all', undefined, { params: clean({ tab }) })).data,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['notifications'] }),
   });
 }

@@ -1,78 +1,147 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Badge, Button, Empty, Flex, Listy, Popover, Typography } from 'antd';
+import { Badge, Button, Drawer, Flex, Grid, Segmented, Spin, Tabs, Typography, theme } from 'antd';
 import { BellOutlined, CheckOutlined } from '@ant-design/icons';
-import type { NotificationDto } from '@erp/shared';
+import type { NotificationDto, NotificationTab, SubmissionType } from '@erp/shared';
+import { NOTIFICATION_TABS, NOTIFICATION_TAB_LABELS, SUBMISSION_TYPES } from '@erp/shared';
 import { useMarkAllNotificationsRead, useMarkNotificationRead, useNotifications } from '@/lib/queries';
-import { timeAgo } from '@/lib/format';
+import { EmptyArt } from '@/components/common/EmptyArt';
 import { notificationHref } from './notificationTarget';
-import { themeColor } from '@/lib/theme';
-import { ListRowMeta } from '@/components/common/ListRowMeta';
+import { NotificationFeed } from './NotificationFeed';
+import type { OpenSubmission } from './SubmissionRecordDrawer';
 
-/** Header bell: unread badge, the latest notifications in a popover, and a link to the full page. */
+// Every submission's record drawer, loaded the first time a notification opens one.
+const SubmissionRecordDrawer = dynamic(() => import('./SubmissionRecordDrawer').then((m) => m.SubmissionRecordDrawer), { ssr: false });
+
+const EMPTY: Record<NotificationTab, string> = {
+  FOR_ME: 'Approvals and rejections of your entries, drawings issued, risks, snags and safety reports land here.',
+  APPROVALS: 'Entries sent to you for approval, and the morning digest of what waits on you, land here.',
+  REMINDERS: 'Missing DPRs, tests due, low stock, payments, machine papers and guarantees falling due land here.',
+};
+
+/** A submission notification opens its record in a drawer over the page; any other opens its page. */
+export function submissionOf(n: NotificationDto): OpenSubmission {
+  return n.entityType && n.entityId && (SUBMISSION_TYPES as readonly string[]).includes(n.entityType) ? { type: n.entityType as SubmissionType, id: n.entityId } : null;
+}
+
+/**
+ * Notifications centre (UI roadmap item 63): the header bell opens a drawer with For me, Approvals and Reminders tabs,
+ * each grouped by day with its own unread count and Mark all read. A submission opens in place, over the current page.
+ */
 export function NotificationBell() {
   const router = useRouter();
+  const { token } = theme.useToken();
+  const screens = Grid.useBreakpoint();
   const [open, setOpen] = useState(false);
-  const { data } = useNotifications({ limit: 8 });
+  const [tab, setTab] = useState<NotificationTab>('FOR_ME');
+  const [unreadOnly, setUnreadOnly] = useState(false);
+  const [record, setRecord] = useState<OpenSubmission>(null);
+  // Kept mounted after the first record so closing one animates out.
+  const [recordsUsed, setRecordsUsed] = useState(false);
+  // The badge needs only the counts; the drawer's list is fetched while it is open.
+  const { data: counts } = useNotifications({ limit: 1 });
+  const { data, isLoading } = useNotifications({ tab, limit: 60, unreadOnly: unreadOnly || undefined }, open);
   const markRead = useMarkNotificationRead();
   const markAll = useMarkAllNotificationsRead();
-  const unread = data?.unreadCount ?? 0;
+  const unread = counts?.unreadCount ?? 0;
+  const byTab = data?.unreadByTab ?? counts?.unreadByTab;
+
+  // Open on the first tab with something unread.
+  useEffect(() => {
+    if (!open) return;
+    const first = NOTIFICATION_TABS.find((t) => (counts?.unreadByTab?.[t] ?? 0) > 0);
+    if (first) setTab(first);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const openItem = (n: NotificationDto) => {
-    setOpen(false);
     if (!n.readAt) markRead.mutate(n.id);
+    const sub = submissionOf(n);
+    if (sub) {
+      setRecordsUsed(true);
+      setRecord(sub);
+      return;
+    }
+    setOpen(false);
     router.push(notificationHref(n));
   };
 
-  const content = (
-    <div style={{ width: 360, maxWidth: '85vw' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-        <Typography.Text strong>Notifications</Typography.Text>
-        <Button type="link" size="small" icon={<CheckOutlined />} disabled={unread === 0} loading={markAll.isPending} onClick={() => markAll.mutate()}>
-          Mark all read
-        </Button>
-      </div>
-      {data?.items.length ? (
-        <Listy<NotificationDto>
-          items={data.items}
-          rowKey="id"
-          styles={{ root: { maxHeight: 380, overflow: 'auto' }, item: { padding: 0, border: 0 } }}
-          itemRender={(n) => (
-            <Flex onClick={() => openItem(n)} style={{ cursor: 'pointer', padding: '8px 4px', background: n.readAt ? undefined : themeColor('colorPrimaryBg'), borderRadius: 4, borderBottom: `1px solid ${themeColor('colorSplit')}` }}>
-              <ListRowMeta
-                avatar={<Badge dot={!n.readAt} offset={[-2, 6]} />}
-                title={<span style={{ fontWeight: n.readAt ? 500 : 700, fontSize: 13 }}>{n.title}</span>}
-                description={
-                  <>
-                    <div style={{ fontSize: 12, color: themeColor('colorTextSecondary') }}>{n.body}</div>
-                    <div className="text-muted" style={{ fontSize: 11, marginTop: 2 }}>
-                      {timeAgo(n.createdAt)}
-                    </div>
-                  </>
-                }
-              />
-            </Flex>
-          )}
+  const items = data?.items ?? [];
+  const tabUnread = byTab?.[tab] ?? 0;
+  const body = (
+    <Spin spinning={isLoading && open}>
+      <Flex justify="space-between" align="center" style={{ padding: `${token.paddingXS}px ${token.paddingSM}px`, borderBottom: `1px solid ${token.colorSplit}` }}>
+        <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
+          {tabUnread ? `${tabUnread} unread` : 'Nothing unread'}
+        </Typography.Text>
+        <Segmented
+          size="small"
+          aria-label="Show"
+          value={unreadOnly ? 'UNREAD' : 'ALL'}
+          onChange={(v) => setUnreadOnly(v === 'UNREAD')}
+          options={[
+            { value: 'ALL', label: 'All' },
+            { value: 'UNREAD', label: 'Unread' },
+          ]}
         />
+      </Flex>
+      {items.length ? (
+        <NotificationFeed items={items} onOpen={openItem} compact />
+      ) : isLoading ? (
+        <div style={{ minHeight: 160 }} />
       ) : (
-        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No notifications yet" />
+        <div style={{ padding: token.paddingLG }}>
+          <EmptyArt art="approved" title={unreadOnly ? 'You are all caught up.' : `No ${NOTIFICATION_TAB_LABELS[tab].toLowerCase()} notifications yet`}>
+            {unreadOnly ? null : EMPTY[tab]}
+          </EmptyArt>
+        </div>
       )}
-      <div style={{ textAlign: 'center', borderTop: `1px solid ${themeColor('colorBorderSecondary')}`, paddingTop: 8, marginTop: 4 }}>
-        <Link href="/notifications" onClick={() => setOpen(false)}>
-          View all notifications
-        </Link>
-      </div>
-    </div>
+    </Spin>
   );
 
   return (
-    <Popover content={content} trigger="click" open={open} onOpenChange={setOpen} placement="bottomRight" arrow={false}>
+    <>
       <Badge count={unread} size="small" offset={[-4, 4]}>
-        <Button type="text" icon={<BellOutlined style={{ fontSize: 18 }} />} aria-label="Notifications" style={{ height: 40, width: 40 }} />
+        <Button type="text" icon={<BellOutlined style={{ fontSize: 18 }} />} aria-label={unread ? `Notifications, ${unread} unread` : 'Notifications'} style={{ height: 40, width: 40 }} onClick={() => setOpen(true)} />
       </Badge>
-    </Popover>
+      <Drawer
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Notifications"
+        size={screens.sm ? 440 : '100%'}
+        styles={{ body: { padding: 0 }, footer: { textAlign: 'center' } }}
+        extra={
+          <Button size="small" type="text" icon={<CheckOutlined />} disabled={tabUnread === 0} loading={markAll.isPending} onClick={() => markAll.mutate(tab)}>
+            Mark all read
+          </Button>
+        }
+        footer={
+          <Link href="/notifications" onClick={() => setOpen(false)}>
+            View all notifications
+          </Link>
+        }
+      >
+        <Tabs
+          activeKey={tab}
+          onChange={(k) => setTab(k as NotificationTab)}
+          tabBarStyle={{ padding: `0 ${token.paddingSM}px`, marginBottom: 0 }}
+          items={NOTIFICATION_TABS.map((t) => ({
+            key: t,
+            label: (
+              <Flex gap={token.marginXXS} align="center">
+                {NOTIFICATION_TAB_LABELS[t]}
+                {byTab?.[t] ? <Badge count={byTab[t]} size="small" color={token.colorPrimary} /> : null}
+              </Flex>
+            ),
+            children: t === tab ? body : null,
+          }))}
+        />
+      </Drawer>
+      {recordsUsed ? <SubmissionRecordDrawer open={record} onClose={() => setRecord(null)} /> : null}
+    </>
   );
 }

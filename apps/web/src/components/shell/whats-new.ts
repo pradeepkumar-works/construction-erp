@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-10-notifications-centre',
+    date: '2026-10-17',
+    title: 'A notifications centre',
+    points: [
+      'The bell opens a panel with three tabs: For me (your entries approved or sent back, drawings issued, risks, snags), Approvals (what waits on your decision) and Reminders (missing DPRs, tests, stock, payments and papers falling due), each with its own unread count.',
+      'Notifications are grouped by day, and Mark all read clears just the tab you are on.',
+      'A notification about an entry opens it right there, over the page you are on, so you do not lose your place.',
+      'Notices about the company, such as a read-only account, a scheduled deletion or being offline, now share one bar at the top of the page instead of stacking up.',
+    ],
+  },
+  {
     id: '2026-10-search-everything',
     date: '2026-10-17',
     title: 'Search finds records, not just pages',

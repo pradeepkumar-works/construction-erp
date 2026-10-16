@@ -3,23 +3,22 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Alert, Avatar, Breadcrumb, Button, Drawer, Dropdown, Grid, Layout, Space, Tag, Tooltip, Typography, theme } from 'antd';
+import { Avatar, Breadcrumb, Button, Drawer, Dropdown, Grid, Layout, Space, Tag, Tooltip, Typography, theme } from 'antd';
 import type { MenuProps } from 'antd';
-import { BgColorsOutlined, CheckOutlined, ColumnHeightOutlined, CustomerServiceOutlined, LogoutOutlined, MenuOutlined, SearchOutlined, StarFilled, StarOutlined, UserOutlined } from '@ant-design/icons';
+import { BgColorsOutlined, CheckOutlined, ColumnHeightOutlined, LogoutOutlined, MenuOutlined, SearchOutlined, StarFilled, StarOutlined, UserOutlined } from '@ant-design/icons';
 import type { AuthUser } from '@erp/shared';
-import { BILLING_REMIND_DAYS, PRODUCT_NAME, canManageBilling, canManageCompanyData, isGuest, mayApprove } from '@erp/shared';
+import { isGuest, mayApprove } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useAppearance, type Density, type ThemeMode } from '@/lib/appearance';
 import { ProjectScopeProvider } from '@/lib/project-scope';
 import { readPref, writePref } from '@/lib/prefs';
-import { useCompanyDeletion, usePendingApprovals, useProjects } from '@/lib/queries';
-import { formatDate, formatDateTime } from '@/lib/format';
-import { endSupportSession } from '@/lib/api';
+import { usePendingApprovals, useProjects } from '@/lib/queries';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { BRAND } from '@/lib/brand';
 import { BrandMark } from './BrandMark';
 import { CommandPalette } from './CommandPalette';
 import { HelpMenu, dialogOpen, isTyping } from './HelpMenu';
+import { MessageBar } from './MessageBar';
 import { NewMenu } from './NewMenu';
 import { ProjectSwitcher } from './ProjectSwitcher';
 import { navFor, navTrail } from './nav';
@@ -276,99 +275,10 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
           </Space>
         </Header>
         <Content>
-          <SupportBanner user={user} />
-          <BillingBanner user={user} />
-          <DeletionBanner user={user} />
+          <MessageBar user={user} />
           {children}
         </Content>
       </Layout>
     </Layout>
-  );
-}
-
-/** Staff viewing a company for support see, on every page, whose data it is and how to leave. */
-function SupportBanner({ user }: { user: AuthUser }) {
-  if (!user.support) return null;
-  const exit = () => {
-    endSupportSession();
-    window.location.href = '/platform';
-  };
-  return (
-    <div className="page-container" style={{ paddingBottom: 0 }}>
-      <Alert
-        type="warning"
-        showIcon
-        icon={<CustomerServiceOutlined />}
-        title={`Viewing ${user.organizationName} as ${PRODUCT_NAME} support, read-only, until ${formatDateTime(user.support.expiresAt)}. The visit is in the company's log.`}
-        action={
-          <Button size="small" onClick={exit}>
-            Exit
-          </Button>
-        }
-      />
-    </div>
-  );
-}
-
-/** Everyone sees when the company is read-only for want of payment; admins also see the trial or period running out. */
-function BillingBanner({ user }: { user: AuthUser }) {
-  const b = user.billing;
-  if (!b || user.support) return null;
-  const admin = canManageBilling(user.roleKey);
-  const renew = admin && (
-    <Link href="/billing">
-      <Button size="small" type="primary">
-        {b.status === 'READ_ONLY' ? 'Renew' : 'Subscribe'}
-      </Button>
-    </Link>
-  );
-  if (b.status === 'READ_ONLY') {
-    return (
-      <div className="page-container" style={{ paddingBottom: 0 }}>
-        <Alert
-          type="error"
-          showIcon
-          title={`${user.organizationName} is read-only: the ${PRODUCT_NAME} ${b.paidUntil ? 'subscription' : 'free trial'} has ended. You can still see and export everything.${admin ? '' : ' Ask your admin to renew.'}`}
-          action={renew}
-        />
-      </div>
-    );
-  }
-  const ends = b.status === 'TRIAL' ? b.trialEndsAt : b.status === 'ACTIVE' ? b.paidUntil : null;
-  if (!admin || !ends || b.status === 'EXEMPT') return null;
-  const daysLeft = Math.round((Date.parse(`${ends}T00:00:00Z`) - Date.parse(`${new Date().toISOString().slice(0, 10)}T00:00:00Z`)) / 86_400_000);
-  if (daysLeft > BILLING_REMIND_DAYS) return null;
-  return (
-    <div className="page-container" style={{ paddingBottom: 0 }}>
-      <Alert
-        type="info"
-        showIcon
-        title={`Your ${b.status === 'TRIAL' ? 'free trial' : 'subscription'} ends on ${formatDate(ends)}. After that the company becomes read-only until it is paid.`}
-        action={renew}
-      />
-    </div>
-  );
-}
-
-/** Admins are reminded on every page while the company is set to be deleted. */
-function DeletionBanner({ user }: { user: AuthUser }) {
-  const admin = canManageCompanyData(user.roleKey);
-  const { data } = useCompanyDeletion(admin);
-  if (!admin || !data?.scheduledFor) return null;
-  return (
-    <div className="page-container" style={{ paddingBottom: 0 }}>
-      <Alert
-        type="error"
-        showIcon
-        title={`This company and all its data will be deleted on ${formatDate(data.scheduledFor)}.`}
-        action={
-          <Link href="/company-data">
-            <Button size="small" danger>
-              Review or cancel
-            </Button>
-          </Link>
-        }
-      />
-    </div>
   );
 }
