@@ -12,13 +12,32 @@ import { useReview, type ApprovalTypeParam } from '@/lib/queries';
 import type { BulkAction } from './DataTable';
 
 /**
- * "Approve n" for a selection that is all waiting and within this user's approval limit; one approval per entry, as if
- * approved one by one (each writes its own audit line and tells its submitter).
+ * Approves entries one after another, as if one by one (each writes its own audit line and tells its submitter); stops
+ * at the first that fails and says how far it got. Resolves to the number approved.
  */
-export function useBulkApprove<T extends { id: string; status: SubmissionStatus }>(type: ApprovalTypeParam, amountOf?: (row: T) => string | null | undefined): BulkAction<T> | null {
-  const { user } = useAuth();
+export function useApproveMany() {
   const { message } = App.useApp();
   const review = useReview();
+  return async (type: ApprovalTypeParam, ids: string[]) => {
+    let done = 0;
+    for (const id of ids) {
+      try {
+        await review.mutateAsync({ type, id, decision: 'APPROVE' });
+        done += 1;
+      } catch (err) {
+        message.error(`Stopped after ${done} of ${ids.length}: ${errorMessage(err)}`);
+        return done;
+      }
+    }
+    message.success(`Approved ${done} ${done === 1 ? 'entry' : 'entries'}`);
+    return done;
+  };
+}
+
+/** "Approve n" for a selection that is all waiting and within this user's approval limit. */
+export function useBulkApprove<T extends { id: string; status: SubmissionStatus }>(type: ApprovalTypeParam, amountOf?: (row: T) => string | null | undefined): BulkAction<T> | null {
+  const { user } = useAuth();
+  const approveMany = useApproveMany();
   const kind = type.toUpperCase() as SubmissionType;
   if (!user || !mayApproveType(user, kind)) return null;
   return {
@@ -28,17 +47,7 @@ export function useBulkApprove<T extends { id: string; status: SubmissionStatus 
     primary: true,
     allowed: (rows) => rows.every((r) => r.status === 'SUBMITTED' && mayApproveType(user, kind, amountOf?.(r) ?? null)),
     run: async (rows) => {
-      let done = 0;
-      for (const r of rows) {
-        try {
-          await review.mutateAsync({ type, id: r.id, decision: 'APPROVE' });
-          done += 1;
-        } catch (err) {
-          message.error(`Stopped after ${done} of ${rows.length}: ${errorMessage(err)}`);
-          return;
-        }
-      }
-      message.success(`Approved ${done} ${done === 1 ? 'entry' : 'entries'}`);
+      await approveMany(type, rows.map((r) => r.id));
     },
   };
 }

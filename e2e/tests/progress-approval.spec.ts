@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { api, apiToken, chooseOption, newestFirst, signIn, uniqueQty } from './helpers';
+import { api, apiToken, chooseOption, newestFirst, queueItem, signIn, uniqueQty } from './helpers';
 
 interface Entry { id: string; quantity: string; status: string; remarks: string | null }
 
@@ -25,15 +25,15 @@ test.describe.serial('progress entry from submission to approval', () => {
     await signIn(page, 'pm@demo.com');
     await page.goto('/approvals');
     await newestFirst(page);
-    const row = page.locator('tr').filter({ hasText: `: ${qty} ` });
-    await expect(row).toHaveCount(1);
-    await row.getByRole('button', { name: 'Review' }).click();
-    const drawer = page.locator('.ant-drawer-open');
-    await expect(drawer.getByText(remarks)).toBeVisible();
-    await drawer.getByRole('button', { name: 'Approve' }).click();
+    const entry = queueItem(page, `: ${qty} `);
+    await expect(entry.item).toHaveCount(1);
+    await entry.open();
+    await expect(page.getByRole('region', { name: 'Approval queue' }).locator('[aria-current="true"]')).toContainText(`: ${qty} `);
+    await expect(page.getByText(remarks)).toBeVisible();
+    await entry.decision.getByRole('button', { name: /Approve/ }).click();
     await page.locator('.ant-modal').getByRole('button', { name: 'Approve' }).click();
     await expect(page.getByText('Approved', { exact: true }).first()).toBeVisible();
-    await expect(page.locator('tr').filter({ hasText: `: ${qty} ` })).toHaveCount(0);
+    await expect(entry.item).toHaveCount(0);
   });
 
   test('the entry shows as approved for the engineer', async () => {

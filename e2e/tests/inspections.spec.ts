@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { API_URL, api, apiToken, chooseOption, newestFirst, signIn } from './helpers';
+import { API_URL, api, apiToken, chooseOption, newestFirst, queueItem, signIn } from './helpers';
 
 type Project = { id: string; code: string };
 type Activity = { id: string; name: string; holdPoint: boolean; checklistTemplateId: string | null };
@@ -39,7 +39,9 @@ test.describe.serial('inspection from request to pass', () => {
     await signIn(page, 'qaqc@demo.com');
     await page.goto('/approvals');
     await newestFirst(page);
-    await page.locator('tr').filter({ hasText: location }).getByRole('button', { name: 'Review' }).click();
+    const entry = queueItem(page, location);
+    await entry.open();
+    await entry.decision.getByRole('button', { name: 'Record the checklist' }).click();
     const drawer = page.locator('.ant-drawer-open');
     await drawer.getByRole('button', { name: 'Mark the rest OK' }).click();
     await drawer.getByRole('radiogroup', { name: 'Result of Layer thickness' }).getByText('Not OK').click();

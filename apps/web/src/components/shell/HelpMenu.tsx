@@ -73,6 +73,13 @@ export function HelpMenu({ onTour, withSearch }: { onTour: () => void; withSearc
     ['Move through search results', ['↑', '↓']],
     ['Close a dialog or drawer', ['Esc']],
   ];
+  const approvalKeys: [string, string[]][] = [
+    ['Next and previous entry', ['J', 'K']],
+    ['Approve, request changes, reject', ['A', 'C', 'R']],
+    ['Tick the entry for bulk approval', ['X']],
+    ['Open its full page', ['O']],
+    ['Confirm the decision', ['Ctrl', 'Enter']],
+  ];
 
   return (
     <>
@@ -82,6 +89,15 @@ export function HelpMenu({ onTour, withSearch }: { onTour: () => void; withSearc
       <Modal open={keysOpen} onCancel={() => setKeysOpen(false)} footer={null} title="Keyboard shortcuts" width={440}>
         <Flex vertical gap={token.marginSM}>
           {shortcuts.map(([what, keys]) => (
+            <Flex key={what} justify="space-between" align="center" gap={token.margin}>
+              <Typography.Text>{what}</Typography.Text>
+              <Keys keys={keys} />
+            </Flex>
+          ))}
+          <Typography.Text strong style={{ marginTop: token.marginXS }}>
+            In Approvals
+          </Typography.Text>
+          {approvalKeys.map(([what, keys]) => (
             <Flex key={what} justify="space-between" align="center" gap={token.margin}>
               <Typography.Text>{what}</Typography.Text>
               <Keys keys={keys} />

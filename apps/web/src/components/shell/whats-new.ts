@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-10-approvals-inbox',
+    date: '2026-10-16',
+    title: 'Approvals is now an inbox',
+    points: [
+      'What waits for you is on the left, grouped by type; the entry you pick opens beside it with Approve, Request changes and Reject underneath.',
+      'Decide and the next entry opens by itself. J and K move through the queue, A approves, C asks for changes and R rejects.',
+      'Tick entries of one type, or a whole group, and approve them together. Each is approved as if one by one, so its submitter hears and its history shows it.',
+      'Approved today, at the top, lists what you approved, rejected or sent back since midnight.',
+    ],
+  },
+  {
     id: '2026-10-record-pages',
     date: '2026-10-16',
     title: 'Every report, request, order and bill has its own page',
