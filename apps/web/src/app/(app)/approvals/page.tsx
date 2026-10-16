@@ -2,13 +2,13 @@
 
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Button, Card, Segmented, Table, Tag, Typography, Alert } from 'antd';
+import { Button, Card, Segmented, Table, Tag, Tooltip, Typography, Alert } from 'antd';
 import type { TableProps } from 'antd';
 import type { PendingApprovalDto, SubmissionType } from '@erp/shared';
 import { APPROVAL_AMOUNT_BASIS, SUBMISSION_TYPE_LABELS, approvalRightsOf, mayApprove } from '@erp/shared';
 import { usePendingApprovals } from '@/lib/queries';
 import { useAuth } from '@/lib/auth';
-import { formatDateTime, formatINR } from '@/lib/format';
+import { formatDateTime, formatINR, timeAgo } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { QueryError } from '@/components/common/QueryState';
 import { EmptyArt } from '@/components/common/EmptyArt';
@@ -56,7 +56,7 @@ export default function ApprovalsPage() {
     { title: 'Project', dataIndex: 'projectName', width: 200, ellipsis: { showTitle: true }, render: (v, r) => <Link href={`/projects/${r.projectId}`}>{v}</Link> },
     { title: 'Amount', dataIndex: 'amount', width: 120, align: 'right', render: (v: string | null) => (v === null ? <span className="text-muted">-</span> : <span className="mono">{formatINR(v)}</span>) },
     { title: 'Submitted by', dataIndex: 'submittedByName', width: 140 },
-    { title: 'Submitted', dataIndex: 'submittedAt', width: 150, render: (v) => formatDateTime(v), sorter: (a, b) => a.submittedAt.localeCompare(b.submittedAt), defaultSortOrder: 'ascend' },
+    { title: 'Submitted', dataIndex: 'submittedAt', width: 120, render: (v: string) => <Tooltip title={formatDateTime(v)}>{timeAgo(v)}</Tooltip>, sorter: (a, b) => a.submittedAt.localeCompare(b.submittedAt), defaultSortOrder: 'ascend' },
     { title: '', key: 'a', width: 96, fixed: 'right', render: (_, r) => <Button type="primary" size="small" onClick={() => setOpen({ type: r.type, id: r.id })}>Review</Button> },
   ];
 

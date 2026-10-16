@@ -223,3 +223,13 @@ export function activeHref(pathname: string): string {
   if (pathname === '/') return '/';
   return '/' + pathname.split('/')[1];
 }
+
+/** Where a path sits in the sidebar, for the header: the section's title (none for the top links) and the link. */
+export function navTrail(sections: NavSection[], pathname: string): { section?: string; item: NavItem } | null {
+  const href = activeHref(pathname);
+  for (const s of sections) {
+    const item = s.items.find((i) => i.href === href);
+    if (item) return { section: s.title, item };
+  }
+  return null;
+}

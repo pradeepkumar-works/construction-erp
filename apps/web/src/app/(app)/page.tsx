@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Card, Col, Progress, Row, Statistic, Table, Tag, Typography, Badge } from 'antd';
+import { Badge, Card, Col, Progress, Row, Statistic, Table, Tag, Typography, theme } from 'antd';
 import type { TableProps } from 'antd';
 import {
   AlertOutlined,
@@ -98,36 +98,35 @@ export default function DashboardPage() {
       {data && (
         <>
           <Row gutter={[16, 16]}>
-            <KpiTile>
-              <Statistic title="Active Projects" value={data.activeProjects} suffix={<span className="text-muted" style={{ fontSize: 14 }}>/ {data.totalProjects}</span>} prefix={<ProjectOutlined />} />
+            <KpiTile icon={<ProjectOutlined />}>
+              <Statistic title="Active Projects" value={data.activeProjects} suffix={<span className="text-muted" style={{ fontSize: 14 }}>/ {data.totalProjects}</span>} />
             </KpiTile>
-            <KpiTile>
-              <Statistic title="Total Contract Value" value={formatINRCompact(data.totalContractValue)} prefix={<FundProjectionScreenOutlined />} />
+            <KpiTile icon={<FundProjectionScreenOutlined />}>
+              <Statistic title="Total Contract Value" value={formatINRCompact(data.totalContractValue)} />
               <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                 {formatINR(data.totalContractValue)}
               </Typography.Text>
             </KpiTile>
             {approver && (
-              <KpiTile href="/approvals">
-                <Statistic title="Pending Approvals" value={data.pendingApprovals} prefix={<CheckSquareOutlined />} styles={{ content: { color: data.pendingApprovals > 0 ? BRAND.colors.pending : undefined } }} />
+              <KpiTile href="/approvals" icon={<CheckSquareOutlined />}>
+                <Statistic title="Pending Approvals" value={data.pendingApprovals} styles={{ content: { color: data.pendingApprovals > 0 ? BRAND.colors.pending : undefined } }} />
               </KpiTile>
             )}
-            <KpiTile>
-              <Statistic title="Delayed Activities" value={data.delayedActivities} prefix={<AlertOutlined />} styles={{ content: { color: data.delayedActivities > 0 ? themeColor('colorErrorText') : undefined } }} />
+            <KpiTile icon={<AlertOutlined />}>
+              <Statistic title="Delayed Activities" value={data.delayedActivities} styles={{ content: { color: data.delayedActivities > 0 ? themeColor('colorErrorText') : undefined } }} />
             </KpiTile>
-            <KpiTile href="/dpr">
-              <Statistic title="DPRs Today" value={data.dprsToday} prefix={<FileTextOutlined />} />
+            <KpiTile href="/dpr" icon={<FileTextOutlined />}>
+              <Statistic title="DPRs Today" value={data.dprsToday} />
             </KpiTile>
           </Row>
 
           {(data.receivables || data.payables || data.monthCost || data.monthBilling || data.financialProgress) && (
             <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
               {data.receivables && (
-                <KpiTile href="/receivables">
+                <KpiTile href="/receivables" icon={<WalletOutlined />}>
                   <Statistic
                     title="Receivables"
                     value={formatINRCompact(data.receivables.outstanding)}
-                    prefix={<WalletOutlined />}
                     styles={{ content: { color: toNumber(data.receivables.over90) > 0 ? themeColor('colorErrorText') : undefined } }}
                   />
                   <Typography.Text type="secondary" style={{ fontSize: 12 }}>
@@ -137,11 +136,10 @@ export default function DashboardPage() {
                 </KpiTile>
               )}
               {data.payables && (
-                <KpiTile href="/payables">
+                <KpiTile href="/payables" icon={<CreditCardOutlined />}>
                   <Statistic
                     title="Vendor Payable"
                     value={formatINRCompact(data.payables.outstanding)}
-                    prefix={<CreditCardOutlined />}
                     styles={{ content: { color: toNumber(data.payables.overdue) > 0 ? themeColor('colorErrorText') : undefined } }}
                   />
                   <Typography.Text type="secondary" style={{ fontSize: 12 }}>
@@ -151,28 +149,27 @@ export default function DashboardPage() {
                 </KpiTile>
               )}
               {data.monthCost && (
-                <KpiTile href="/cost">
-                  <Statistic title={`Expense in ${monthName(data.monthCost.month)}`} value={formatINRCompact(data.monthCost.total)} prefix={<ShoppingCartOutlined />} />
+                <KpiTile href="/cost" icon={<ShoppingCartOutlined />}>
+                  <Statistic title={`Expense in ${monthName(data.monthCost.month)}`} value={formatINRCompact(data.monthCost.total)} />
                   <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                     incl. {formatINRCompact(data.monthCost.expenses)} site expenses
                   </Typography.Text>
                 </KpiTile>
               )}
               {data.monthBilling && (
-                <KpiTile href="/bills">
-                  <Statistic title={`Billed in ${monthName(data.monthBilling.month)}`} value={formatINRCompact(data.monthBilling.gross)} prefix={<AuditOutlined />} />
+                <KpiTile href="/bills" icon={<AuditOutlined />}>
+                  <Statistic title={`Billed in ${monthName(data.monthBilling.month)}`} value={formatINRCompact(data.monthBilling.gross)} />
                   <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                     {data.monthBilling.bills} RA bill{data.monthBilling.bills === 1 ? '' : 's'}, before GST
                   </Typography.Text>
                 </KpiTile>
               )}
               {data.financialProgress && (
-                <KpiTile>
+                <KpiTile icon={<PieChartOutlined />}>
                   <Statistic
                     title="Financial Progress"
                     value={data.financialProgress.pct ?? '-'}
                     suffix={data.financialProgress.pct === null ? undefined : '%'}
-                    prefix={<PieChartOutlined />}
                   />
                   <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                     {formatINRCompact(data.financialProgress.billed)} billed of {formatINRCompact(data.financialProgress.contractValue)}
@@ -229,10 +226,33 @@ function monthName(month: string) {
   return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString('en-IN', { month: 'short', year: 'numeric', timeZone: 'UTC' });
 }
 
-/** One KPI card; every card in the row stretches to the tallest so the row reads as one band. */
-function KpiTile({ href, children }: { href?: string; children: React.ReactNode }) {
+/** One KPI card: the figure keeps the card's full width and the tile's icon sits in a tinted square in the top right
+ * corner (the title leaves room for it). Every card in the row stretches to the tallest so the row reads as one band. */
+function KpiTile({ href, icon, children }: { href?: string; icon?: React.ReactNode; children: React.ReactNode }) {
+  const { token } = theme.useToken();
   const card = (
-    <Card className="kpi-card" hoverable={!!href} style={{ height: '100%' }}>
+    <Card className="kpi-card" hoverable={!!href} style={{ height: '100%', position: 'relative' }}>
+      {icon ? (
+        <span
+          aria-hidden
+          style={{
+            position: 'absolute',
+            top: token.paddingLG,
+            right: token.paddingLG,
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: token.controlHeight,
+            height: token.controlHeight,
+            borderRadius: token.borderRadiusLG,
+            background: token.colorPrimaryBg,
+            color: token.colorPrimary,
+            fontSize: token.fontSizeLG,
+          }}
+        >
+          {icon}
+        </span>
+      ) : null}
       {children}
     </Card>
   );

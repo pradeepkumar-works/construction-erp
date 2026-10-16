@@ -372,6 +372,11 @@ h4.ant-typography,
   color: var(--ant-color-text-tertiary);
 }
 
+/* Dashboard KPI cards: the title leaves room for the icon square in the top right corner (control height + a gap). */
+.kpi-card .ant-statistic-title {
+  padding-right: calc(var(--ant-control-height, 32px) + 8px);
+}
+
 .text-danger {
   color: var(--ant-color-error-text);
 }
