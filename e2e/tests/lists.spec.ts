@@ -90,8 +90,14 @@ test('clicking a row opens it, and selected rows get the bulk bar', async ({ pag
   await expect(bar).toBeHidden();
 });
 
-test('money lists show a total for the page', async ({ page }) => {
+test('figures add up in a total row for the page', async ({ page }) => {
   await signIn(page, 'pm@demo.com');
-  await page.goto('/bills');
-  await expect(page.locator('.ant-table-summary')).toContainText('Total, this page');
+  await page.goto('/dpr');
+  await expect(rows(page).nth(1)).toBeVisible();
+  const summary = page.locator('.ant-table-summary');
+  await expect(summary).toContainText('Total, this page');
+  // The manpower total is the sum of the rows' manpower.
+  const index = await page.locator('.ant-table-thead th').allInnerTexts().then((h) => h.findIndex((t) => t.trim() === 'Manpower'));
+  const cells = await rows(page).evaluateAll((trs, i) => trs.map((tr) => Number((tr.children[i] as HTMLElement).innerText.trim() || 0)), index);
+  await expect(summary.locator('td').nth(index)).toHaveText(String(cells.reduce((a, b) => a + b, 0)));
 });
