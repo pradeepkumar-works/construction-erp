@@ -34,7 +34,7 @@ test('a quick look opens the full page, whose link can be copied and whose secti
   await page.goto('/bills');
   await page.locator('.ant-table-row a[href^="/bills/"]').first().click();
   const drawer = page.locator('.ant-drawer-open');
-  await expect(drawer.locator('.ant-steps')).toBeVisible();
+  await expect(drawer.locator('.ant-steps').first()).toBeVisible();
   await drawer.getByRole('button', { name: 'Open full page' }).click();
   await expect(page).toHaveURL(/\/bills\/[0-9a-f-]{36}$/);
   const url = page.url();
