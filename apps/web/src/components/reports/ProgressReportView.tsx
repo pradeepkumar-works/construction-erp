@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { App, Button, Card, DatePicker, Empty, Segmented, Skeleton, Space } from 'antd';
+import { App, Button, Card, DatePicker, Empty, Segmented, Skeleton, Space, theme } from 'antd';
 import { PrinterOutlined } from '@ant-design/icons';
 import dayjs, { type Dayjs } from 'dayjs';
 import { QueryError } from '@/components/common/QueryState';
@@ -19,6 +19,7 @@ const weekOf = (d: Dayjs): [Dayjs, Dayjs] => {
  * /reports/progress, the client portal from /portal/projects/:id/report (the same report).
  */
 export function ProgressReportView({ projectId, portal = false, picker }: { projectId: string | undefined; portal?: boolean; picker?: React.ReactNode }) {
+  const { token } = theme.useToken();
   const { message } = App.useApp();
   const [kind, setKind] = useState<ReportKind>('MONTHLY');
   const [anchor, setAnchor] = useState<Dayjs>(dayjs());
@@ -69,9 +70,9 @@ export function ProgressReportView({ projectId, portal = false, picker }: { proj
       {!projectId ? <Empty description="Choose a project" /> : null}
       {isLoading ? <Skeleton active /> : null}
       {data ? (
-        <Card size="small" styles={{ body: { padding: 0, background: '#e9edf2' } }}>
+        <Card size="small" styles={{ body: { padding: 0, background: token.colorFillSecondary } }}>
           <div style={{ padding: 16, display: 'flex', justifyContent: 'center', opacity: isFetching ? 0.6 : 1 }}>
-            <iframe title="Report preview" srcDoc={html} style={{ width: '100%', maxWidth: 900, height: 1200, border: '1px solid #d0d7e2', background: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,.08)' }} />
+            <iframe title="Report preview" srcDoc={html} style={{ width: '100%', maxWidth: 900, height: 1200, border: `1px solid ${token.colorBorder}`, background: token.colorBgContainer, boxShadow: token.boxShadowTertiary }} />
           </div>
         </Card>
       ) : null}

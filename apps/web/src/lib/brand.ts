@@ -28,8 +28,10 @@ export const BRAND = {
     link: '#1A56BF',
     /** Pending and alerts (brick orange, so it never reads as the brand blue). */
     pending: '#C2410C',
-    /** Approve and pass buttons. */
+    /** Approve and pass buttons, and figures that are good news (a positive margin). */
     success: '#1F9D55',
+    /** Overdue amounts, losses and other figures that need attention (antd red-7, which reads on white). */
+    danger: '#CF1322',
     canvas: '#F3F6FA',
     border: '#DCE3ED',
     /** Secondary text on white (subtitles), and quieter captions and footers. */
@@ -37,6 +39,11 @@ export const BRAND = {
     subtle: '#8A94A3',
     /** A pale blue fill behind a selected chip. */
     accentSoft: '#EEF4FD',
+    /** Series colours in charts, beside the primary blue (cost heads: expenses, machinery, labour, subcontract). */
+    chartViolet: '#7C3AED',
+    chartAmber: '#D97706',
+    chartTeal: '#0F766E',
+    chartPink: '#BE185D',
     /** The website's body text, captions, hairlines and the browser-frame bar on its screenshots. */
     siteText: '#3B4A5F',
     siteMuted: '#64748B',

@@ -12,6 +12,7 @@ import { useAuth } from '@/lib/auth';
 import { useImprest, useImprests } from '@/lib/queries';
 import { STATUS_COLORS, formatDate, formatINR } from '@/lib/format';
 import { Loading, QueryError } from '@/components/common/QueryState';
+import { CardToolbar } from '@/components/common/CardToolbar';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { ImprestActionModal, type ImprestAction } from './ImprestActions';
 
@@ -104,7 +105,7 @@ export function ImprestPanel({ projectId: fixedProject, initialId }: { projectId
 
   return (
     <div className="imprest-panel">
-      <div style={{ padding: 12, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', borderBottom: '1px solid #f0f0f0' }}>
+      <CardToolbar wrap gap={8} align="center">
         {!fixedProject ? <ProjectSelect value={projectFilter} onChange={setProjectFilter} /> : null}
         <Segmented value={active ? 'open' : 'closed'} onChange={(v) => setActive(v === 'open')} options={[{ value: 'open', label: 'Open' }, { value: 'closed', label: 'Closed' }]} />
         {waiting ? <Tag color="orange">{waiting} top-up{waiting === 1 ? '' : 's'} waiting</Tag> : null}
@@ -114,7 +115,7 @@ export function ImprestPanel({ projectId: fixedProject, initialId }: { projectId
             Open an imprest
           </Button>
         ) : null}
-      </div>
+      </CardToolbar>
       {error ? <QueryError error={error} onRetry={() => refetch()} /> : null}
       <Table<ImprestDto>
         className="imprest-table"

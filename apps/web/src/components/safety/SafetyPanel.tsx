@@ -9,6 +9,8 @@ import { IncidentList } from './IncidentList';
 import { TalkList } from './TalkList';
 import { PermitList } from './PermitList';
 import { INCIDENT_TYPE_COLORS } from './safetyUi';
+import { CardToolbar } from '@/components/common/CardToolbar';
+import { themeColor } from '@/lib/theme';
 
 export type SafetyTab = 'incidents' | 'talks' | 'permits';
 const big = { content: { fontSize: 18 } };
@@ -20,11 +22,11 @@ export function SafetyPanel({ projectId, initialTab, initialId }: { projectId?: 
   return (
     <div className="safety-panel">
       {s ? (
-        <div className="safety-summary" style={{ padding: '12px 16px', display: 'flex', gap: 28, flexWrap: 'wrap', alignItems: 'flex-start', borderBottom: '1px solid #f0f0f0' }}>
+        <CardToolbar className="safety-summary" variant="summary" wrap gap={28} align="flex-start">
           <Statistic
             title={<Tooltip title="Since the last lost-time injury or fatality">Days without a lost-time injury</Tooltip>}
             value={s.daysSinceLostTime ?? 'None recorded'}
-            styles={{ content: { fontSize: 18, color: s.daysSinceLostTime !== null && s.daysSinceLostTime < 30 ? 'var(--ant-color-error, #cf1322)' : undefined } }}
+            styles={{ content: { fontSize: 18, color: s.daysSinceLostTime !== null && s.daysSinceLostTime < 30 ? themeColor('colorErrorText') : undefined } }}
             suffix={s.lastLostTimeDate ? <span style={{ fontSize: 12 }}>since {formatDate(s.lastLostTimeDate)}</span> : undefined}
           />
           <Statistic title="Incidents this month" value={s.incidentsThisMonth} styles={big} />
@@ -32,7 +34,7 @@ export function SafetyPanel({ projectId, initialTab, initialId }: { projectId?: 
           <Statistic title="Open incidents" value={s.openIncidents} styles={big} />
           <Statistic title="Toolbox talks this month" value={s.toolboxTalksThisMonth} suffix={<span style={{ fontSize: 12 }}>{s.attendeesThisMonth} attended</span>} styles={big} />
           <Statistic title="Permits waiting / live" value={`${s.permitsRequested} / ${s.permitsActive}`} styles={big} />
-          {s.permitsExpired ? <Statistic title="Permits run out, not closed" value={s.permitsExpired} styles={{ content: { fontSize: 18, color: 'var(--ant-color-warning, #d46b08)' } }} /> : null}
+          {s.permitsExpired ? <Statistic title="Permits run out, not closed" value={s.permitsExpired} styles={{ content: { fontSize: 18, color: themeColor('colorWarning') } }} /> : null}
           {s.byType.length ? (
             <div style={{ flexBasis: '100%', display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}>
               <span className="text-muted" style={{ fontSize: 12, marginRight: 4 }}>
@@ -48,7 +50,7 @@ export function SafetyPanel({ projectId, initialTab, initialId }: { projectId?: 
               </span>
             </div>
           ) : null}
-        </div>
+        </CardToolbar>
       ) : null}
       <Tabs
         activeKey={tab}

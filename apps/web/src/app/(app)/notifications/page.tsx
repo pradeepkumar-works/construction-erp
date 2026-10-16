@@ -3,7 +3,7 @@
 import React, { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Badge, Button, Card, List, Segmented, Space, Tabs, Tag, Typography } from 'antd';
+import { Badge, Button, Card, Flex, Listy, Pagination, Segmented, Space, Spin, Tabs, Tag, Typography } from 'antd';
 import { CheckOutlined, MessageOutlined } from '@ant-design/icons';
 import type { NotificationDto, SubmissionType } from '@erp/shared';
 import { canViewMessageLog, NOTIFICATION_TYPE_LABELS, SUBMISSION_TYPES } from '@erp/shared';
@@ -28,6 +28,11 @@ import { notificationHref } from '@/components/notifications/notificationTarget'
 import { MessagingSettingsModal } from '@/components/notifications/MessagingSettingsModal';
 import { MessageLog } from '@/components/notifications/MessageLog';
 import { EmptyArt } from '@/components/common/EmptyArt';
+import { CardToolbar } from '@/components/common/CardToolbar';
+import { themeColor } from '@/lib/theme';
+import { ListRowMeta } from '@/components/common/ListRowMeta';
+
+const PAGE_SIZE = 25;
 
 type Open = { type: SubmissionType; id: string } | null;
 
@@ -35,6 +40,7 @@ function NotificationsPageInner() {
   const router = useRouter();
   const search = useSearchParams();
   const [filter, setFilter] = useState<'ALL' | 'UNREAD'>('ALL');
+  const [page, setPage] = useState(1);
   const [open, setOpen] = useState<Open>(null);
   const [settings, setSettings] = useState(false);
   const { user } = useAuth();
@@ -63,61 +69,72 @@ function NotificationsPageInner() {
   };
 
   const unread = data?.unreadCount ?? 0;
+  const items = data?.items ?? [];
 
   const list = (
     <>
-      <div style={{ padding: 12, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', borderBottom: '1px solid #f0f0f0' }}>
+      <CardToolbar wrap gap={12} align="center">
         <Segmented
           value={filter}
-          onChange={(v) => setFilter(v as 'ALL' | 'UNREAD')}
+          onChange={(v) => {
+            setFilter(v as 'ALL' | 'UNREAD');
+            setPage(1);
+          }}
           options={[
             { value: 'ALL', label: 'All' },
             { value: 'UNREAD', label: `Unread (${unread})` },
           ]}
         />
-      </div>
-      <List<NotificationDto>
-        loading={isLoading}
-        dataSource={data?.items ?? []}
-        locale={{
-          emptyText:
-            filter === 'UNREAD' ? <EmptyArt art="approved" title="You are all caught up." /> : 'No notifications yet. You will be told here when your submissions are reviewed.',
-        }}
-        pagination={{ pageSize: 25, hideOnSinglePage: true }}
-        renderItem={(n) => (
-          <List.Item
-            onClick={() => onClick(n)}
-            style={{ cursor: 'pointer', padding: '12px 16px', background: n.readAt ? undefined : 'rgba(22, 89, 168, 0.05)' }}
-            extra={
-              <Typography.Text type="secondary" style={{ fontSize: 12, whiteSpace: 'nowrap' }} title={formatDateTime(n.createdAt)}>
-                {timeAgo(n.createdAt)}
-              </Typography.Text>
-            }
-          >
-            <List.Item.Meta
-              avatar={<Badge dot={!n.readAt} offset={[-2, 8]} />}
-              title={
-                <span style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <span style={{ fontWeight: n.readAt ? 500 : 700 }}>{n.title}</span>
-                  <Tag color={NOTIFICATION_COLORS[n.type]} style={{ margin: 0 }}>
-                    {NOTIFICATION_TYPE_LABELS[n.type]}
-                  </Tag>
-                </span>
-              }
-              description={
-                <>
-                  <div>{n.body}</div>
-                  {n.projectName && n.projectId && (
-                    <Link href={`/projects/${n.projectId}`} onClick={(e) => e.stopPropagation()} style={{ fontSize: 12 }}>
-                      {n.projectName}
-                    </Link>
-                  )}
-                </>
-              }
-            />
-          </List.Item>
+      </CardToolbar>
+      <Spin spinning={isLoading}>
+        {items.length ? (
+          <Listy<NotificationDto>
+            items={items.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)}
+            rowKey="id"
+            styles={{ item: { padding: 0 } }}
+            itemRender={(n) => (
+              <Flex
+                gap="middle"
+                align="flex-start"
+                onClick={() => onClick(n)}
+                style={{ cursor: 'pointer', padding: '12px 16px', background: n.readAt ? undefined : themeColor('colorPrimaryBg') }}
+              >
+                <ListRowMeta
+                  avatar={<Badge dot={!n.readAt} offset={[-2, 8]} />}
+                  title={
+                    <span style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <span style={{ fontWeight: n.readAt ? 500 : 700 }}>{n.title}</span>
+                      <Tag color={NOTIFICATION_COLORS[n.type]} style={{ margin: 0 }}>
+                        {NOTIFICATION_TYPE_LABELS[n.type]}
+                      </Tag>
+                    </span>
+                  }
+                  description={
+                    <>
+                      <div>{n.body}</div>
+                      {n.projectName && n.projectId && (
+                        <Link href={`/projects/${n.projectId}`} onClick={(e) => e.stopPropagation()} style={{ fontSize: 12 }}>
+                          {n.projectName}
+                        </Link>
+                      )}
+                    </>
+                  }
+                />
+                <Typography.Text type="secondary" style={{ fontSize: 12, whiteSpace: 'nowrap', alignSelf: 'center' }} title={formatDateTime(n.createdAt)}>
+                  {timeAgo(n.createdAt)}
+                </Typography.Text>
+              </Flex>
+            )}
+          />
+        ) : isLoading ? null : (
+          <Flex justify="center" style={{ padding: 16, color: themeColor('colorTextDescription') }}>
+            {filter === 'UNREAD' ? <EmptyArt art="approved" title="You are all caught up." /> : 'No notifications yet. You will be told here when your submissions are reviewed.'}
+          </Flex>
         )}
-      />
+        <Flex justify="flex-end" style={{ padding: items.length > PAGE_SIZE ? 16 : 0 }}>
+          <Pagination current={page} pageSize={PAGE_SIZE} total={items.length} hideOnSinglePage onChange={setPage} />
+        </Flex>
+      </Spin>
     </>
   );
 

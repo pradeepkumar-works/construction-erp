@@ -12,6 +12,7 @@ import { useProjects, useStaffRegister } from '@/lib/queries';
 import { QueryError } from '@/components/common/QueryState';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { clock } from './staffUi';
+import { CardToolbar } from '@/components/common/CardToolbar';
 
 type Mark = { status: StaffAttendanceStatus | null; overtimeHours: number | null; note: string };
 const NONE = 'NONE';
@@ -139,7 +140,7 @@ export function StaffRegister() {
 
   return (
     <>
-      <div style={{ padding: 12, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', borderBottom: '1px solid #f0f0f0' }}>
+      <CardToolbar wrap gap={8} align="center">
         <ProjectSelect value={projectId} onChange={(v) => setProjectId(v)} allowClear={false} placeholder="Select project" />
         <DatePicker value={date} allowClear={false} format="ddd DD MMM YYYY" onChange={(d) => d && setDate(d)} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
         <div style={{ flex: 1 }} />
@@ -151,7 +152,7 @@ export function StaffRegister() {
             Save{changed.length ? ` (${changed.length})` : ''}
           </Button>
         </Space>
-      </div>
+      </CardToolbar>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {data && (data.holiday || data.weeklyOff) && (
         <Alert type="info" showIcon style={{ margin: 12 }} title={`${data.holiday ? `Holiday: ${data.holiday}` : 'Sunday, the weekly off'}. Anyone marked present earns a comp-off.`} />

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { App, Button, Descriptions, Divider, Drawer, Input, Modal, Segmented, Skeleton, Space, Table, Tag, Typography } from 'antd';
+import { App, Button, ConfigProvider, Descriptions, Divider, Drawer, Input, Modal, Segmented, Skeleton, Space, Table, Tag, Typography } from 'antd';
 import { CheckOutlined, CloseOutlined, RedoOutlined, WarningOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, InspectionDto, InspectionResult, ReviewDecision } from '@erp/shared';
@@ -11,6 +11,7 @@ import { useAuth } from '@/lib/auth';
 import { useInspection } from '@/lib/queries';
 import { formatDate } from '@/lib/format';
 import { BRAND } from '@/lib/brand';
+import { approveTheme } from '@/lib/theme';
 import { QueryError } from '@/components/common/QueryState';
 import { StatusTag } from '@/components/common/StatusTag';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
@@ -111,9 +112,11 @@ function InspectPanel({ data }: { data: InspectionDto }) {
         <PhotoUpload value={photos} onChange={setPhotos} />
       </div>
       <Space wrap style={{ marginTop: 12 }}>
-        <Button type="primary" icon={<CheckOutlined />} style={open || failed ? undefined : { background: BRAND.colors.success }} disabled={!!open || !!failed} onClick={() => setDecision('APPROVE')}>
-          Pass
-        </Button>
+        <ConfigProvider theme={approveTheme}>
+          <Button type="primary" icon={<CheckOutlined />} disabled={!!open || !!failed} onClick={() => setDecision('APPROVE')}>
+            Pass
+          </Button>
+        </ConfigProvider>
         <Button icon={<RedoOutlined />} disabled={!!open} onClick={() => setDecision('REQUEST_CHANGES')}>
           Re-inspect
         </Button>

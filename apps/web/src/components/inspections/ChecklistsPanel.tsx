@@ -10,6 +10,7 @@ import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useChecklists } from '@/lib/queries';
 import { QueryError } from '@/components/common/QueryState';
+import { CardToolbar } from '@/components/common/CardToolbar';
 
 const lines = (v: string) =>
   v
@@ -64,7 +65,7 @@ export function ChecklistsPanel() {
   return (
     <>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
-      <div style={{ padding: 12, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', borderBottom: '1px solid #f0f0f0' }}>
+      <CardToolbar wrap gap={8} align="center">
         <Typography.Text type="secondary">Pick a checklist for each activity on the project&apos;s Activities tab; its inspections start from it.</Typography.Text>
         {mayEdit && (
           <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
@@ -76,7 +77,7 @@ export function ChecklistsPanel() {
             </Button>
           </div>
         )}
-      </div>
+      </CardToolbar>
       <Table<ChecklistTemplateDto>
         rowKey="id"
         size="middle"

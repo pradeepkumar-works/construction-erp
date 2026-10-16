@@ -14,6 +14,7 @@ import { formatINR, formatQty, toNumber } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { editActionLabel } from '@/components/common/EditResubmitButton';
 import { SectorInputs, sectorBody, sectorFormValues, typedLocation, type SectorFormValues } from '@/components/sector/SectorInputs';
+import { themeColor } from '@/lib/theme';
 
 interface LineValues {
   description?: string;
@@ -156,7 +157,7 @@ export function MeasurementFormModal({ open, onClose, projectId, boqItemId, shee
         >
           <Input maxLength={200} placeholder="Grid, side or zone, e.g. LHS, grid C4-D7" />
         </Form.Item>
-        <div style={{ ...LINE_GRID, fontSize: 12, color: 'rgba(0,0,0,0.55)', marginBottom: 4 }}>
+        <div style={{ ...LINE_GRID, fontSize: 12, color: themeColor('colorTextDescription'), marginBottom: 4 }}>
           <span>Description</span>
           <span>Nos</span>
           <span>Length</span>
@@ -205,7 +206,7 @@ export function MeasurementFormModal({ open, onClose, projectId, boqItemId, shee
                     <Form.Item name={[f.name, 'deduct']} valuePropName="checked">
                       <Checkbox />
                     </Form.Item>
-                    <div className="mono" style={{ textAlign: 'right', lineHeight: '32px', color: qty < 0 ? '#cf1322' : undefined }}>
+                    <div className="mono" style={{ textAlign: 'right', lineHeight: '32px', color: qty < 0 ? themeColor('colorErrorText') : undefined }}>
                       {formatQty(qty)}
                     </div>
                     <Button type="text" icon={<DeleteOutlined />} disabled={fields.length === 1} onClick={() => remove(f.name)} aria-label="Remove line" />

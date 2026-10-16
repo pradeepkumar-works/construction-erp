@@ -24,9 +24,11 @@ import { BillStageTag } from '@/components/bills/billUi';
 import { BillDrawer } from '@/components/bills/BillDrawer';
 import { ReceiptFormModal } from '@/components/receivables/ReceiptFormModal';
 import { InTallyTag } from '@/components/tally/InTallyTag';
+import { CardToolbar } from '@/components/common/CardToolbar';
+import { themeColor } from '@/lib/theme';
 
 const money = (v: string, strong?: boolean) => (strong ? <strong className="mono">{formatINR(v)}</strong> : <span className="mono">{formatINR(v)}</span>);
-const late = (v: string) => (toNumber(v) > 0 ? <span className="mono" style={{ color: '#cf1322' }}>{formatINR(v)}</span> : <span className="mono text-muted">-</span>);
+const late = (v: string) => (toNumber(v) > 0 ? <span className="mono" style={{ color: themeColor('colorErrorText') }}>{formatINR(v)}</span> : <span className="mono text-muted">-</span>);
 
 /** Ageing columns shared by the project and client tables. */
 function ageingColumns<T extends ProjectReceivableDto | ClientReceivableDto>(): NonNullable<TableProps<T>['columns']> {
@@ -248,7 +250,7 @@ export default function ReceivablesPage() {
       align: 'right',
       defaultSortOrder: 'descend',
       sorter: (a, b) => a.daysOutstanding - b.daysOutstanding,
-      render: (v: number) => <span style={{ color: v > 90 ? '#cf1322' : v > 60 ? '#d46b08' : undefined }}>{v}</span>,
+      render: (v: number) => <span style={{ color: v > 90 ? themeColor('colorErrorText') : v > 60 ? themeColor('orange7') : undefined }}>{v}</span>,
     },
   ];
 
@@ -298,7 +300,7 @@ export default function ReceivablesPage() {
           </Col>
           <Col flex="1 1 180px">
             <Card style={{ height: '100%' }}>
-              <Statistic title="Over 90 days" value={formatINRCompact(t.ageing.over90)} styles={{ content: { color: toNumber(t.ageing.over90) > 0 ? '#cf1322' : undefined } }} />
+              <Statistic title="Over 90 days" value={formatINRCompact(t.ageing.over90)} styles={{ content: { color: toNumber(t.ageing.over90) > 0 ? themeColor('colorErrorText') : undefined } }} />
               <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                 61-90 days: {formatINR(t.ageing.days61to90)}
               </Typography.Text>
@@ -331,9 +333,9 @@ export default function ReceivablesPage() {
               label: `Open bills${data ? ` (${data.openBills.length})` : ''}`,
               children: (
                 <>
-                  <div style={{ padding: 12, display: 'flex', justifyContent: 'flex-end', borderBottom: '1px solid #f0f0f0' }}>
+                  <CardToolbar justify="flex-end">
                     <ExportButton onExport={exportOpen} />
-                  </div>
+                  </CardToolbar>
                   <Table<OpenBillDto> rowKey="billId" size="middle" loading={isLoading} columns={openColumns} dataSource={data?.openBills ?? []} pagination={false} scroll={{ x: 1000 }} locale={{ emptyText: 'Every bill sent has been settled' }} />
                 </>
               ),
@@ -343,9 +345,9 @@ export default function ReceivablesPage() {
               label: 'By project',
               children: (
                 <>
-                  <div style={{ padding: 12, display: 'flex', justifyContent: 'flex-end', borderBottom: '1px solid #f0f0f0' }}>
+                  <CardToolbar justify="flex-end">
                     <ExportButton onExport={exportProjects} />
-                  </div>
+                  </CardToolbar>
                   <Table<ProjectReceivableDto> rowKey="projectId" size="middle" loading={isLoading} columns={projectColumns} dataSource={data?.projects ?? []} pagination={false} scroll={{ x: 1700 }} />
                 </>
               ),

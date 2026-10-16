@@ -10,9 +10,10 @@ import { DEFAULT_CLIENT_PAYMENT_DAYS } from '@erp/shared';
 import { useCashFlow, useProjects } from '@/lib/queries';
 import { formatINR, toNumber } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
+import { themeColor } from '@/lib/theme';
 
-const RED = '#cf1322';
-const GREEN = '#1f9d55';
+const RED = themeColor('colorErrorText');
+const GREEN = themeColor('colorSuccessText');
 const money = (v: string) => <span className="mono">{formatINR(v)}</span>;
 const signed = (v: string) => (
   <span className="mono" style={{ color: toNumber(v) < 0 ? RED : undefined }}>

@@ -24,9 +24,11 @@ import { VendorBillDrawer } from '@/components/purchasing/VendorBillDrawer';
 import { SubBillDrawer } from '@/components/subcontracts/SubBillDrawer';
 import { PAYMENT_QUERY_KEYS, PaymentFormModal, type PayTarget } from '@/components/payables/PaymentFormModal';
 import { InTallyTag } from '@/components/tally/InTallyTag';
+import { CardToolbar } from '@/components/common/CardToolbar';
+import { themeColor } from '@/lib/theme';
 
 const money = (v: string, strong?: boolean) => (strong ? <strong className="mono">{formatINR(v)}</strong> : <span className="mono">{formatINR(v)}</span>);
-const late = (v: string) => (toNumber(v) > 0 ? <span className="mono" style={{ color: '#cf1322' }}>{formatINR(v)}</span> : <span className="mono text-muted">-</span>);
+const late = (v: string) => (toNumber(v) > 0 ? <span className="mono" style={{ color: themeColor('colorErrorText') }}>{formatINR(v)}</span> : <span className="mono text-muted">-</span>);
 const isSmall = (m: string | null) => m === 'MICRO' || m === 'SMALL';
 
 /** When a bill falls due, in words: "in 5 days", "today", "12 days late". */
@@ -278,9 +280,9 @@ export default function PayablesPage() {
   ];
 
   const toolbar = (onExport: () => Promise<number>) => (
-    <div style={{ padding: 12, display: 'flex', justifyContent: 'flex-end', borderBottom: '1px solid #f0f0f0' }}>
+    <CardToolbar justify="flex-end">
       <ExportButton onExport={onExport} />
-    </div>
+    </CardToolbar>
   );
 
   return (
@@ -317,7 +319,7 @@ export default function PayablesPage() {
           </Col>
           <Col flex="1 1 180px">
             <Card style={{ height: '100%' }}>
-              <Statistic title="Overdue" value={formatINRCompact(t.overdue)} styles={{ content: { color: toNumber(t.overdue) > 0 ? '#cf1322' : undefined } }} />
+              <Statistic title="Overdue" value={formatINRCompact(t.overdue)} styles={{ content: { color: toNumber(t.overdue) > 0 ? themeColor('colorErrorText') : undefined } }} />
               <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                 Due in the next 7 days: {formatINR(t.dueSoon)}
               </Typography.Text>
@@ -325,7 +327,7 @@ export default function PayablesPage() {
           </Col>
           <Col flex="1 1 180px">
             <Card style={{ height: '100%' }}>
-              <Statistic title="MSME at risk" value={formatINRCompact(t.msmeAtRisk)} styles={{ content: { color: toNumber(t.msmeAtRisk) > 0 ? '#cf1322' : undefined } }} />
+              <Statistic title="MSME at risk" value={formatINRCompact(t.msmeAtRisk)} styles={{ content: { color: toNumber(t.msmeAtRisk) > 0 ? themeColor('colorErrorText') : undefined } }} />
               <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                 Micro and small enterprises due within 7 days or late
               </Typography.Text>

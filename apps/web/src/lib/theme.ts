@@ -1,6 +1,6 @@
 'use client';
 
-import { theme, type ConfigProviderProps, type ThemeConfig } from 'antd';
+import { theme, type ConfigProviderProps, type GlobalToken, type ThemeConfig } from 'antd';
 import { token2CSSVar } from '@ant-design/cssinjs';
 import { BRAND } from './brand';
 
@@ -15,6 +15,9 @@ export const appTheme: ThemeConfig = {
     colorLink: c.link,
     colorLinkHover: c.pending,
     colorBgLayout: c.canvas,
+    // Typography type="danger" / "success" and figures coloured from the token read these.
+    colorErrorText: c.danger,
+    colorSuccessText: c.success,
     borderRadius: 4,
     fontFamily: "var(--font-body), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif",
   },
@@ -38,6 +41,12 @@ export const appTheme: ThemeConfig = {
   },
 };
 
+/** The Approve button: a primary button in the success green, with antd's hover and active shades of it. */
+const successShades = theme.getDesignToken({ token: { colorPrimary: c.success } });
+export const approveTheme: ThemeConfig = {
+  components: { Button: { colorPrimary: c.success, colorPrimaryHover: successShades.colorPrimaryHover, colorPrimaryActive: successShades.colorPrimaryActive } },
+};
+
 /** Figures line up in tables and statistics. */
 const tabularNums = { fontVariantNumeric: 'tabular-nums' } as const;
 
@@ -46,6 +55,15 @@ export const componentConfig: Pick<ConfigProviderProps, 'table' | 'statistic'> =
   table: { styles: { title: tabularNums, section: tabularNums, footer: tabularNums, header: { cell: { whiteSpace: 'nowrap' } } } },
   statistic: { styles: { content: tabularNums } },
 };
+
+/** Colour tokens: the semantic ones (`colorErrorText`) and antd's preset palettes (`orange7`). */
+const COLOR_TOKEN = /^(color[A-Z]|(blue|purple|cyan|green|magenta|pink|red|orange|yellow|volcano|geekblue|gold|lime)\d+$)/;
+
+/**
+ * A theme colour for an inline style or a constant outside a component, as the token's CSS variable, so
+ * it follows the theme like `theme.useToken()` would: `color: themeColor('colorErrorText')`.
+ */
+export const themeColor = (key: keyof GlobalToken) => `var(${token2CSSVar(key, 'ant')})`;
 
 const kebab = (key: string) => key.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
 
@@ -58,7 +76,7 @@ export const themeCssVariables = (() => {
   const token = theme.getDesignToken(appTheme);
   const vars: string[] = [];
   for (const [key, value] of Object.entries(token)) {
-    if (key.startsWith('color') && typeof value === 'string') vars.push(`${token2CSSVar(key, 'ant')}:${value}`);
+    if (COLOR_TOKEN.test(key) && typeof value === 'string') vars.push(`${token2CSSVar(key, 'ant')}:${value}`);
   }
   for (const [key, value] of Object.entries(c)) vars.push(`--brand-${kebab(key)}:${value}`);
   return `:root{${vars.join(';')}}`;

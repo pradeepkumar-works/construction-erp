@@ -7,6 +7,7 @@ import { DownloadOutlined, InboxOutlined } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, errorMessage } from '@/lib/api';
+import { themeColor } from '@/lib/theme';
 
 type Field = 'itemNo' | 'description' | 'unit' | 'rate' | 'originalQty' | 'revisedQty';
 
@@ -201,7 +202,7 @@ export function BoqImportModal({ open, onClose, projectId }: { open: boolean; on
             {FIELDS.map((f) => (
               <div key={f.key}>
                 <div style={{ fontSize: 12, marginBottom: 2 }}>
-                  {f.label} {f.required && <span style={{ color: '#cf1322' }}>*</span>}
+                  {f.label} {f.required && <span style={{ color: themeColor('colorErrorText') }}>*</span>}
                 </div>
                 <Select
                   allowClear

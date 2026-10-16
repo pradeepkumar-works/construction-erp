@@ -12,6 +12,7 @@ import { useAuth } from '@/lib/auth';
 import { useGantt } from '@/lib/queries';
 import { formatDate, formatDateTime } from '@/lib/format';
 import { Loading, QueryError } from '@/components/common/QueryState';
+import { themeColor } from '@/lib/theme';
 import { GanttChart, GanttLegend, type GanttScale } from './GanttChart';
 import { MilestoneFormModal } from './MilestoneFormModal';
 
@@ -104,7 +105,7 @@ export function GanttPanel({ projectId }: { projectId: string }) {
           <Statistic
             title="Against the baseline"
             value={s.finishSlipDays === null ? '-' : s.finishSlipDays === 0 ? 'On time' : s.finishSlipDays > 0 ? `${s.finishSlipDays} days late` : `${-s.finishSlipDays} days early`}
-            styles={{ content: { fontSize: 18, color: (s.finishSlipDays ?? 0) > 0 ? 'var(--ant-color-error, #cf1322)' : undefined } }}
+            styles={{ content: { fontSize: 18, color: (s.finishSlipDays ?? 0) > 0 ? themeColor('colorErrorText') : undefined } }}
           />
         ) : null}
         <Statistic title="Behind plan / past end" value={`${s.behind} / ${s.late}`} styles={big} />

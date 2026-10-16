@@ -6,6 +6,7 @@ import type { SubmissionStatus } from '@erp/shared';
 import { SUBMISSION_STATUSES, SUBMISSION_STATUS_LABELS } from '@erp/shared';
 import { ProjectSelect } from './ProjectSelect';
 import { SearchBox } from './SearchBox';
+import { CardToolbar } from './CardToolbar';
 
 export function ListToolbar({
   projectId,
@@ -37,7 +38,7 @@ export function ListToolbar({
   statusLabels?: Record<SubmissionStatus, string>;
 }) {
   return (
-    <div style={{ padding: 12, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', borderBottom: '1px solid #f0f0f0' }}>
+    <CardToolbar wrap gap={8} align="center">
       {onSearch ? <SearchBox value={search ?? ''} onChange={onSearch} placeholder={searchPlaceholder} /> : null}
       {hideProject ? null : <ProjectSelect value={projectId} onChange={(v) => onProject(v)} />}
       {onStatus ? (
@@ -45,6 +46,6 @@ export function ListToolbar({
       ) : null}
       {children}
       {extra ? <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>{extra}</div> : null}
-    </div>
+    </CardToolbar>
   );
 }

@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Form, Input, Modal, Space, Tooltip } from 'antd';
+import { App, Button, ConfigProvider, Form, Input, Modal, Space, Tooltip } from 'antd';
 import { CheckOutlined, CloseOutlined, EditOutlined } from '@ant-design/icons';
 import type { ReviewDecision, SubmissionStatus, SubmissionType } from '@erp/shared';
 import { mayApproveType } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { errorMessage } from '@/lib/api';
 import { useReview, type ApprovalTypeParam } from '@/lib/queries';
+import { approveTheme } from '@/lib/theme';
 
 const LABELS: Record<ReviewDecision, string> = {
   APPROVE: 'Approve',
@@ -63,9 +64,11 @@ export function ReviewActions({
     <>
       {compact ? (
         <Space size={4}>
-          <Tooltip title="Approve">
-            <Button type="primary" size={size} icon={<CheckOutlined />} onClick={() => setDecision('APPROVE')} style={{ background: '#1f9d55' }} aria-label="Approve" />
-          </Tooltip>
+          <ConfigProvider theme={approveTheme}>
+            <Tooltip title="Approve">
+              <Button type="primary" size={size} icon={<CheckOutlined />} onClick={() => setDecision('APPROVE')} aria-label="Approve" />
+            </Tooltip>
+          </ConfigProvider>
           <Tooltip title="Request changes">
             <Button size={size} icon={<EditOutlined />} onClick={() => setDecision('REQUEST_CHANGES')} aria-label="Request changes" />
           </Tooltip>
@@ -75,9 +78,11 @@ export function ReviewActions({
         </Space>
       ) : (
         <Space wrap size={size === 'small' ? 4 : 8}>
-          <Button type="primary" size={size} icon={<CheckOutlined />} onClick={() => setDecision('APPROVE')} style={{ background: '#1f9d55' }}>
-            Approve
-          </Button>
+          <ConfigProvider theme={approveTheme}>
+            <Button type="primary" size={size} icon={<CheckOutlined />} onClick={() => setDecision('APPROVE')}>
+              Approve
+            </Button>
+          </ConfigProvider>
           <Button size={size} icon={<EditOutlined />} onClick={() => setDecision('REQUEST_CHANGES')}>
             Request changes
           </Button>

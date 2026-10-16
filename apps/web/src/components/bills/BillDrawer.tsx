@@ -24,6 +24,7 @@ import { openBillPrint } from './billPrint';
 import { ReceiptFormModal } from '@/components/receivables/ReceiptFormModal';
 import { InTallyTag } from '@/components/tally/InTallyTag';
 import { BillPriceVariation } from './BillPriceVariation';
+import { themeColor } from '@/lib/theme';
 
 type StageAction = 'send' | 'certify';
 const ACTION_TITLES: Record<StageAction, string> = { send: 'Record as sent to the client', certify: 'Record the client’s certificate' };
@@ -32,7 +33,7 @@ const money = (v: string) => <span className="mono">{formatINR(v, true)}</span>;
 
 function Row({ label, value, strong, muted }: { label: React.ReactNode; value: string; strong?: boolean; muted?: boolean }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '3px 0', fontWeight: strong ? 600 : undefined, color: muted ? 'rgba(0,0,0,0.55)' : undefined }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '3px 0', fontWeight: strong ? 600 : undefined, color: muted ? themeColor('colorTextDescription') : undefined }}>
       <span>{label}</span>
       {money(value)}
     </div>
@@ -243,7 +244,7 @@ export function BillDrawer({ id, open, onClose, onEdit }: { id: string | null; o
               { title: 'Previous', dataIndex: 'prevQty', width: 90, align: 'right', render: (v) => <span className="mono">{formatQty(v)}</span> },
               { title: 'This bill', dataIndex: 'thisQty', width: 90, align: 'right', render: (v) => <strong className="mono">{formatQty(v)}</strong> },
               ...(certified
-                ? [{ title: 'Certified', dataIndex: 'certifiedQty', width: 90, align: 'right' as const, render: (v: string | null, i: RaBillItemDto) => <span className="mono" style={v !== null && v !== i.thisQty ? { color: '#cf1322' } : undefined}>{formatQty(v)}</span> }]
+                ? [{ title: 'Certified', dataIndex: 'certifiedQty', width: 90, align: 'right' as const, render: (v: string | null, i: RaBillItemDto) => <span className="mono" style={v !== null && v !== i.thisQty ? { color: themeColor('colorErrorText') } : undefined}>{formatQty(v)}</span> }]
                 : []),
               { title: 'Up to date', dataIndex: 'uptoQty', width: 100, align: 'right', render: (v) => <span className="mono">{formatQty(v)}</span> },
               { title: 'Amount', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <strong className="mono">{formatINR(v, true)}</strong> },

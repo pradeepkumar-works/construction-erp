@@ -20,6 +20,8 @@ import { ExpenseDrawer } from './ExpenseDrawer';
 import { ExpenseFormModal } from './ExpenseFormModal';
 import { BRAND } from '@/lib/brand';
 import { rangePresets } from '@/lib/dates';
+import { CardToolbar } from '@/components/common/CardToolbar';
+import { themeColor } from '@/lib/theme';
 
 /** Site expenses with totals for the current filters, used on the Expenses page and as a project tab. */
 export function ExpenseList({ projectId: fixedProject }: { projectId?: string }) {
@@ -90,10 +92,10 @@ export function ExpenseList({ projectId: fixedProject }: { projectId?: string })
         </Checkbox>
       </ListToolbar>
       {summary ? (
-        <div style={{ padding: '12px 16px', display: 'flex', gap: 32, flexWrap: 'wrap', alignItems: 'flex-start', borderBottom: '1px solid #f0f0f0' }}>
+        <CardToolbar variant="summary" wrap gap={32} align="flex-start">
           <Statistic title={`Total (${summary.count})`} value={formatINR(summary.totalAmount, true)} styles={{ content: { fontSize: 18 } }} />
           <Statistic title="GST in it" value={formatINR(summary.gstAmount, true)} styles={{ content: { fontSize: 18 } }} />
-          <Statistic title="Approved (project cost)" value={formatINR(summary.approvedTotal, true)} styles={{ content: { fontSize: 18, color: '#1f9d55' } }} />
+          <Statistic title="Approved (project cost)" value={formatINR(summary.approvedTotal, true)} styles={{ content: { fontSize: 18, color: themeColor('colorSuccessText') } }} />
           <Statistic title="Waiting for approval" value={formatINR(summary.pendingTotal, true)} styles={{ content: { fontSize: 18, color: BRAND.colors.pending } }} />
           <Space size={[4, 4]} wrap style={{ flex: 1, minWidth: 240 }}>
             {summary.byCategory.slice(0, 6).map((c) => (
@@ -104,7 +106,7 @@ export function ExpenseList({ projectId: fixedProject }: { projectId?: string })
               </Tooltip>
             ))}
           </Space>
-        </div>
+        </CardToolbar>
       ) : null}
       <ExpenseTable
         data={data?.items ?? []}

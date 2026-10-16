@@ -258,7 +258,7 @@ function RailSection({ section, active, onNavigate }: { section: NavSection; act
       arrow={false}
       mouseEnterDelay={0.08}
       mouseLeaveDelay={0.15}
-      styles={{ container: { padding: 6, background: 'var(--brand-ink)', boxShadow: '0 12px 32px rgba(6, 19, 40, 0.35)' } }}
+      styles={{ container: { padding: 6, background: 'var(--brand-ink)', boxShadow: '0 12px 32px color-mix(in srgb, var(--brand-ink-deep) 35%, transparent)' } }}
       afterOpenChange={(visible) => {
         if (visible && fromKeyboard.current) list.current?.querySelector('a')?.focus();
         fromKeyboard.current = false;

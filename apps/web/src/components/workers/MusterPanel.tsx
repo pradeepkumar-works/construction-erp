@@ -9,13 +9,15 @@ import { useMuster, useWorkerOutput } from '@/lib/queries';
 import { formatINR, formatQty } from '@/lib/format';
 import { downloadXlsx, exportFileName, type ExportColumn } from '@/lib/exportExcel';
 import { QueryError } from '@/components/common/QueryState';
+import { CardToolbar } from '@/components/common/CardToolbar';
+import { themeColor } from '@/lib/theme';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { ExportButton } from '@/components/common/ExportButton';
 
 const MARK: Record<StaffAttendanceStatus, { text: string; color: string }> = {
-  PRESENT: { text: 'P', color: 'var(--ant-color-success, #389e0d)' },
-  HALF_DAY: { text: 'H', color: 'var(--ant-color-warning, #d46b08)' },
-  ABSENT: { text: 'A', color: 'var(--ant-color-error, #cf1322)' },
+  PRESENT: { text: 'P', color: themeColor('colorSuccessText') },
+  HALF_DAY: { text: 'H', color: themeColor('orange7') },
+  ABSENT: { text: 'A', color: themeColor('colorErrorText') },
 };
 const big = { content: { fontSize: 18 } };
 
@@ -97,7 +99,7 @@ export function MusterPanel({ projectId: fixedProject }: { projectId?: string })
 
   return (
     <div className="muster-panel">
-      <div style={{ padding: 12, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', borderBottom: '1px solid #f0f0f0' }}>
+      <CardToolbar wrap gap={8} align="center">
         {!fixedProject ? <ProjectSelect value={projectPick} onChange={setProjectPick} placeholder="Pick a project" allowClear={false} /> : null}
         <DatePicker picker="month" value={month} onChange={(v) => v && setMonth(v)} format="MMM YYYY" allowClear={false} />
         <div style={{ flex: 1 }} />
@@ -109,7 +111,7 @@ export function MusterPanel({ projectId: fixedProject }: { projectId?: string })
             }}
           />
         ) : null}
-      </div>
+      </CardToolbar>
       {muster.error ? <QueryError error={muster.error} onRetry={() => muster.refetch()} /> : null}
       {!projectId ? (
         <div className="text-muted" style={{ padding: 16 }}>

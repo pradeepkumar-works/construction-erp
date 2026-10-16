@@ -13,6 +13,7 @@ import { useAuth } from '@/lib/auth';
 import { useActivities, useRollCall } from '@/lib/queries';
 import { formatDate } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
+import { CardToolbar } from '@/components/common/CardToolbar';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 
 interface Mark {
@@ -197,7 +198,7 @@ export function RollCallPanel({ projectId: fixedProject }: { projectId?: string 
 
   return (
     <div className="roll-call">
-      <div style={{ padding: 12, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', borderBottom: '1px solid #f0f0f0' }}>
+      <CardToolbar wrap gap={8} align="center">
         {!fixedProject ? <ProjectSelect value={projectPick} onChange={setProjectPick} placeholder="Pick a project" allowClear={false} /> : null}
         <DatePicker value={date} onChange={(v) => v && setDate(v)} format="DD MMM YYYY" allowClear={false} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
         <Input.Search allowClear placeholder="Search name, trade" style={{ width: 200 }} value={search} onChange={(e) => setSearch(e.target.value)} />
@@ -216,7 +217,7 @@ export function RollCallPanel({ projectId: fixedProject }: { projectId?: string 
             </Button>
           </>
         ) : null}
-      </div>
+      </CardToolbar>
       {error ? <QueryError error={error} onRetry={() => refetch()} /> : null}
       {!projectId ? (
         <div className="text-muted" style={{ padding: 16 }}>

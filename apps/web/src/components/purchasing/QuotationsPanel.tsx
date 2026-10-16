@@ -15,6 +15,7 @@ import { StatusTag } from '@/components/common/StatusTag';
 import { QuotationFormModal } from './QuotationFormModal';
 import { PurchaseOrderFormModal, type PoStart } from './PurchaseOrderFormModal';
 import { PoStateTag, PurchaseOrderDrawer } from './PurchaseOrderDrawer';
+import { themeColor } from '@/lib/theme';
 
 type Line = ComparativeStatementDto['lines'][number];
 
@@ -118,7 +119,7 @@ export function QuotationsPanel({ request }: { request: MaterialRequestDto }) {
                   <div style={{ whiteSpace: 'normal' }}>
                     {data.lowestQuotationId === q.id && quotes.length > 1 && (
                       <Tooltip title="Lowest total among quotations for every item">
-                        <TrophyOutlined style={{ color: '#d48806', marginRight: 4 }} />
+                        <TrophyOutlined style={{ color: themeColor('gold7'), marginRight: 4 }} />
                       </Tooltip>
                     )}
                     {q.vendorName}
@@ -132,7 +133,7 @@ export function QuotationsPanel({ request }: { request: MaterialRequestDto }) {
                 const r = l.rates[q.id];
                 if (!r) return <span className="text-muted">Not quoted</span>;
                 return (
-                  <div style={best(l, q) ? { background: '#f6ffed', borderRadius: 4, padding: '0 4px' } : undefined}>
+                  <div style={best(l, q) ? { background: themeColor('colorSuccessBg'), borderRadius: 4, padding: '0 4px' } : undefined}>
                     <span className="mono">{formatINR(r.rate, true)}</span> <span className="text-muted">+{r.gstRate}%</span>
                     <div className="text-muted mono" style={{ fontSize: 11 }}>
                       {formatINR(r.amount, true)}

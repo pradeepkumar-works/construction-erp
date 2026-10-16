@@ -11,6 +11,7 @@ import { formatINR, formatQty, toNumber } from '@/lib/format';
 import { downloadXlsx, exportFileName, type ExportColumn } from '@/lib/exportExcel';
 import { QueryError } from '@/components/common/QueryState';
 import { ExportButton } from '@/components/common/ExportButton';
+import { CardToolbar } from '@/components/common/CardToolbar';
 
 const EXPORT: ExportColumn<StockValuationRowDto>[] = [
   { header: 'Project', value: (r) => r.projectName, width: 30 },
@@ -46,7 +47,7 @@ export function StockValuation({ projectId }: { projectId?: string }) {
   return (
     <div className="stock-valuation">
       {error && <QueryError error={error} onRetry={() => refetch()} />}
-      <div style={{ padding: '12px 16px', display: 'flex', gap: 32, flexWrap: 'wrap', alignItems: 'flex-end', borderBottom: '1px solid var(--ant-color-border-secondary, #f0f0f0)' }}>
+      <CardToolbar variant="summary" wrap gap={32} align="flex-end">
         <Statistic title="Stock value" value={formatINR(data?.totalValue ?? 0)} styles={{ content: { fontSize: 18 } }} />
         {STOCK_AGEING_BUCKETS.map((b, i) => (
           <Statistic key={b} title={b} value={formatINR(data?.ageingValue[i] ?? 0)} styles={{ content: { fontSize: 18 } }} />
@@ -59,7 +60,7 @@ export function StockValuation({ projectId }: { projectId?: string }) {
             }}
           />
         </div>
-      </div>
+      </CardToolbar>
       {data?.unpricedItems ? (
         <Alert
           type="warning"

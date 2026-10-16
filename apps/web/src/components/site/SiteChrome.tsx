@@ -10,7 +10,7 @@ export function SiteHeader({ links, children }: { links?: { href: string; label:
       <div className="lp-nav-inner">
         <Link href="/welcome" className="lp-brand" aria-label={BRAND.name}>
           <BrandMark size={32} />
-          <Wordmark color="#fff" size={19} />
+          <Wordmark color={BRAND.colors.onAccent} size={19} />
         </Link>
         {links?.length ? (
           <nav className="lp-nav-links" aria-label="Sections">
@@ -37,7 +37,7 @@ export function SiteFooter({ signup }: { signup?: boolean }) {
           <div className="lp-foot-brand">
             <span className="lp-brand">
               <BrandMark size={28} />
-              <Wordmark color="#fff" size={17} />
+              <Wordmark color={BRAND.colors.onAccent} size={17} />
             </span>
             <p>{BRAND.description}.</p>
           </div>

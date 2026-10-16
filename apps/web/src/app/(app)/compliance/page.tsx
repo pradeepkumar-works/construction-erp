@@ -12,7 +12,7 @@ function CompliancePage() {
   return (
     <div className="page-container">
       <PageHeader title="Guarantees & Licences" subtitle="Bank guarantees, EMDs, insurance policies and licences, soonest expiry first. Accounts and admins are reminded 30 days before each expires." />
-      <Card className="table-card" size="small">
+      <Card size="small">
         <CompliancePanel key={id ?? ''} initialId={id} />
       </Card>
     </div>

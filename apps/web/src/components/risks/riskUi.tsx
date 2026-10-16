@@ -4,8 +4,9 @@ import React from 'react';
 import { Tag, Tooltip } from 'antd';
 import type { RiskDto, RiskLevel, RiskStatus } from '@erp/shared';
 import { RISK_KIND_LABELS, RISK_LEVEL_LABELS, RISK_RATING_LABELS, RISK_STATUS_LABELS, riskLevel } from '@erp/shared';
+import { themeColor } from '@/lib/theme';
 
-export const LEVEL_COLORS: Record<RiskLevel, string> = { LOW: '#52c41a', MEDIUM: '#faad14', HIGH: '#f5222d' };
+export const LEVEL_COLORS: Record<RiskLevel, string> = { LOW: themeColor('colorSuccess'), MEDIUM: themeColor('colorWarning'), HIGH: themeColor('red6') };
 export const LEVEL_TAG: Record<RiskLevel, string> = { LOW: 'green', MEDIUM: 'gold', HIGH: 'red' };
 export const STATUS_TAG: Record<RiskStatus, string> = { OPEN: 'red', MONITORING: 'blue', CLOSED: 'default' };
 

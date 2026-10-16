@@ -15,6 +15,8 @@ import { ListToolbar } from '@/components/common/ListToolbar';
 import { JobDrawer } from './JobDrawer';
 import { JobFormModal } from './JobFormModal';
 import { JobKindTag, JobStatusTag, ServiceStateTag, serviceLeft } from './maintenanceUi';
+import { CardToolbar } from '@/components/common/CardToolbar';
+import { themeColor } from '@/lib/theme';
 
 const big = { content: { fontSize: 18 } };
 
@@ -104,13 +106,13 @@ export function MaintenancePanel({ projectId: fixedProject, initialOpenId }: { p
   return (
     <div className="maintenance-panel">
       {s ? (
-        <div className="maintenance-summary" style={{ padding: '12px 16px', display: 'flex', gap: 28, flexWrap: 'wrap', borderBottom: '1px solid var(--ant-color-border-secondary, #f0f0f0)' }}>
+        <CardToolbar className="maintenance-summary" variant="summary" wrap gap={28}>
           <Statistic title="Open job cards" value={s.openJobs} styles={big} />
-          <Statistic title="Machines broken down" value={s.openBreakdowns} styles={{ content: { fontSize: 18, color: s.openBreakdowns ? 'var(--ant-color-error, #cf1322)' : undefined } }} />
+          <Statistic title="Machines broken down" value={s.openBreakdowns} styles={{ content: { fontSize: 18, color: s.openBreakdowns ? themeColor('colorErrorText') : undefined } }} />
           <Statistic title="Service overdue / due soon" value={`${s.service.filter((x) => x.state === 'OVERDUE').length} / ${s.service.filter((x) => x.state === 'DUE_SOON').length}`} styles={big} />
           <Statistic title="Closed this month" value={s.closedThisMonth} suffix={<span style={{ fontSize: 12 }}>{formatQty(s.downtimeHoursThisMonth)} h down</span>} styles={big} />
           <Statistic title="Repair cost this month" value={formatINR(s.costThisMonth)} styles={big} />
-        </div>
+        </CardToolbar>
       ) : null}
       {s && s.service.length ? (
         <div style={{ padding: '12px 16px 0' }}>

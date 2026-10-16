@@ -25,6 +25,7 @@ import { VendorBillDrawer } from '@/components/purchasing/VendorBillDrawer';
 import { WorkOrderDrawer } from '@/components/subcontracts/WorkOrderDrawer';
 import { SubBillDrawer } from '@/components/subcontracts/SubBillDrawer';
 import { InspectionDrawer } from '@/components/inspections/InspectionDrawer';
+import { CardToolbar } from '@/components/common/CardToolbar';
 
 const TYPE_COLORS: Record<SubmissionType, string> = { PROGRESS: 'blue', DPR: 'purple', MATERIAL_REQUEST: 'cyan', MACHINERY: 'magenta', EXPENSE: 'default', MEASUREMENT: 'geekblue', BILL: 'gold', PURCHASE_ORDER: 'orange', VENDOR_BILL: 'volcano', WORK_ORDER: 'lime', SUBCONTRACT_BILL: 'green', INSPECTION: 'orange' };
 
@@ -73,7 +74,7 @@ export default function ApprovalsPage() {
       )}
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       <Card size="small">
-        <div style={{ padding: 12, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', borderBottom: '1px solid #f0f0f0' }}>
+        <CardToolbar wrap gap={12} align="center">
           <Segmented
             value={type}
             onChange={(v) => setType(v as 'ALL' | SubmissionType)}
@@ -100,7 +101,7 @@ export default function ApprovalsPage() {
             ]}
           />
           <ProjectSelect value={projectId} onChange={(v) => setProjectId(v)} />
-        </div>
+        </CardToolbar>
         <Table<PendingApprovalDto>
           rowKey={(r) => `${r.type}-${r.id}`}
           loading={isLoading}

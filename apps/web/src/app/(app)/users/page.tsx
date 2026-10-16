@@ -22,6 +22,7 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { QueryError } from '@/components/common/QueryState';
 import { UserFormModal } from '@/components/users/UserFormModal';
 import { PasswordLinkModal } from '@/components/users/PasswordLinkModal';
+import { CardToolbar } from '@/components/common/CardToolbar';
 
 export default function UsersPage() {
   const { user } = useAuth();
@@ -135,13 +136,13 @@ export default function UsersPage() {
       )}
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       <Card size="small">
-        <div style={{ padding: 12, display: 'flex', gap: 8, flexWrap: 'wrap', borderBottom: '1px solid #f0f0f0' }}>
+        <CardToolbar wrap gap={8}>
           <SearchBox value={list.search} onChange={list.setSearch} placeholder="Search name, email, phone" width={300} />
           <Select allowClear placeholder="All roles" value={roleKey} onChange={(v) => { setRoleKey(v); list.resetPage(); }} style={{ width: 220 }} options={ROLE_KEYS.map((r) => ({ value: r, label: ROLE_LABELS[r] }))} />
           <div style={{ marginLeft: 'auto' }}>
             <ExportButton onExport={exportRows} />
           </div>
-        </div>
+        </CardToolbar>
         <Table<UserSummary> rowKey="id" loading={isLoading || isFetching} columns={columns} dataSource={data?.items ?? []} size="middle" scroll={{ x: 800 }} {...list.tableProps<UserSummary>(data?.total)} />
       </Card>
       <UserFormModal open={formOpen} onClose={() => setFormOpen(false)} user={editing} onInvited={(c) => c.invite && setLinkResult({ name: c.fullName, email: c.email, invite: true, link: c.invite })} />
