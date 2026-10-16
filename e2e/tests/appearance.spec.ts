@@ -10,15 +10,20 @@ async function backgroundLuminance(page: Page, selector: string) {
   });
 }
 
+/** Opens the account menu unless it is open already. */
+async function openAccountMenu(page: Page) {
+  if (!(await page.getByRole('menuitem', { name: 'Sign out' }).isVisible())) await page.locator('[data-tour="account"]').click({ timeout: 1500 });
+}
+
 async function pick(page: Page, menu: string, choice: string) {
-  await page.locator('[data-tour="account"]').click();
   const item = page.getByRole('menuitem', { name: choice, exact: true }).or(page.getByRole('menuitem', { name: `check ${choice}`, exact: true }));
-  // The pointer crosses the other submenu on its way, so hover until this one has opened.
+  // A submenu opens on hover and can close again before the click lands (the pointer crosses the other submenu, or
+  // the page under the menu is still settling), so open, hover and click until the click goes through.
   await expect(async () => {
+    await openAccountMenu(page);
     await page.getByRole('menuitem', { name: menu }).hover();
-    await expect(item).toBeVisible({ timeout: 1000 });
+    await item.click({ timeout: 1500 });
   }).toPass();
-  await item.click();
 }
 
 test('dark mode and compact density are chosen from the account menu and kept after a reload', async ({ page }) => {
@@ -41,9 +46,11 @@ test('dark mode and compact density are chosen from the account menu and kept af
   await expect.poll(() => backgroundLuminance(page, '.ant-card')).toBeLessThan(0.2);
 
   // The sign-in page stays light whatever the signed-in app uses.
-  await page.locator('[data-tour="account"]').click();
-  await page.getByRole('menuitem', { name: 'Sign out' }).click();
-  await expect(page).toHaveURL(/\/login/);
+  await expect(async () => {
+    await openAccountMenu(page);
+    await page.getByRole('menuitem', { name: 'Sign out' }).click({ timeout: 1500 });
+    await expect(page).toHaveURL(/\/login/, { timeout: 3000 });
+  }).toPass();
   expect(await backgroundLuminance(page, '.auth')).toBeGreaterThan(0.9);
 });
 
