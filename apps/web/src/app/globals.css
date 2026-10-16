@@ -411,3 +411,19 @@ h4.ant-typography,
 .row-muted td {
   color: var(--ant-color-text-tertiary);
 }
+
+/* A record page printed from the browser (item 57): the record only, without the app around it. */
+@media print {
+  aside,
+  .ant-layout-header,
+  [data-record-chrome] {
+    display: none !important;
+  }
+  .record-page .ant-col {
+    flex: 0 0 100% !important;
+    max-width: 100% !important;
+  }
+  .record-page .ant-card {
+    break-inside: avoid;
+  }
+}

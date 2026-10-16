@@ -16,6 +16,12 @@ const COLORS: Record<string, string> = {
   DELETED: 'red',
 };
 
+/** "CHANGES_REQUESTED" reads "Changes requested". */
+export const auditActionLabel = (action: string) => {
+  const words = action.replace(/_/g, ' ').toLowerCase();
+  return words.charAt(0).toUpperCase() + words.slice(1);
+};
+
 export function AuditTrail({ type, id }: { type: ApprovalTypeParam; id: string | undefined }) {
   const { data, isLoading } = useAudit(type, id);
   if (isLoading) return <Skeleton active paragraph={{ rows: 3 }} />;
@@ -28,7 +34,7 @@ export function AuditTrail({ type, id }: { type: ApprovalTypeParam; id: string |
         content: (
           <div>
             <div>
-              <Typography.Text strong>{log.action.replace(/_/g, ' ')}</Typography.Text>{' '}
+              <Typography.Text strong>{auditActionLabel(log.action)}</Typography.Text>{' '}
               <Typography.Text type="secondary">by {log.actorName}</Typography.Text>
             </div>
             <div className="text-muted" style={{ fontSize: 12 }}>

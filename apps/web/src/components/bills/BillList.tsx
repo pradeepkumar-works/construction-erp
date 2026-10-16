@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Button, Select, Typography, theme } from 'antd';
+import { Button, Select, theme } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import type { BillSortField, BillStage, RaBillDto } from '@erp/shared';
 import { BILL_STAGES, BILL_STAGE_LABELS, LIST_SORT_FIELDS, canPrepareBill } from '@erp/shared';
@@ -19,6 +19,7 @@ import { StatusTag } from '@/components/common/StatusTag';
 import { DataTable, type ListColumn } from '@/components/list/DataTable';
 import { DateRangeFilter } from '@/components/list/DateRangeFilter';
 import { RowActions } from '@/components/list/RowActions';
+import { RecordLink } from '@/components/record/RecordLink';
 import { exportSelected, useBulkApprove } from '@/components/list/bulk';
 import { useListFrame } from '@/components/list/useListFrame';
 import { BillStageTag } from './billUi';
@@ -49,9 +50,9 @@ function billColumns({ showProject, onOpen, sortOrderFor }: { showProject: boole
       render: (_, r) => (
         <TwoLine
           top={
-            <Typography.Link onClick={() => onOpen(r.id)} strong>
+            <RecordLink href={`/bills/${r.id}`} onOpen={() => onOpen(r.id)} strong>
               {r.billLabel}
-            </Typography.Link>
+            </RecordLink>
           }
           sub={`up to ${formatDate(r.measuredUpTo)}`}
         />
@@ -66,7 +67,7 @@ function billColumns({ showProject, onOpen, sortOrderFor }: { showProject: boole
     { title: 'Prepared on', dataIndex: 'createdAt', width: 130, defaultHidden: true, render: (v) => formatDate(v), ...sort('createdAt') },
     { title: 'Status', dataIndex: 'status', width: 150, ...sort('status'), render: (s) => <StatusTag status={s} /> },
     { title: 'With client', dataIndex: 'stage', width: 140, ...sort('stage'), render: (s, r) => (r.status === 'APPROVED' ? <BillStageTag stage={s} /> : '-') },
-    { key: 'actions', title: '', label: 'Actions', locked: true, fixed: 'right' as const, width: 56, render: (_, r) => <RowActions type="bill" row={r} amount={r.grossAmount} onOpen={onOpen} /> },
+    { key: 'actions', title: '', label: 'Actions', locked: true, fixed: 'right' as const, width: 56, render: (_, r) => <RowActions type="bill" row={r} amount={r.grossAmount} href={`/bills/${r.id}`} onOpen={onOpen} /> },
   ];
 }
 

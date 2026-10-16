@@ -77,7 +77,8 @@ test('clicking a row opens it, and selected rows get the bulk bar', async ({ pag
   await page.keyboard.press('Escape');
 
   await rows(page).first().getByRole('button', { name: 'Actions' }).click();
-  await expect(page.getByRole('menuitem', { name: 'Open' })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: /Open$/ })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Open full page' })).toBeVisible();
   await page.keyboard.press('Escape');
 
   await rows(page).nth(0).locator('.ant-checkbox-input').check();

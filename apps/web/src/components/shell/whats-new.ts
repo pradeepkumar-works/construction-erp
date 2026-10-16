@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-10-record-pages',
+    date: '2026-10-16',
+    title: 'Every report, request, order and bill has its own page',
+    points: [
+      'Daily reports, progress entries, material requests, purchase orders and RA bills open on their own page, with a link you can copy and send.',
+      'A bar across the top shows where it stands: drafted, submitted, approved, and for bills sent, certified and paid.',
+      'Jump to a section from the bar above them; who did what and when is beside them, and the actions stay at the bottom of the screen.',
+      'Clicking a row still opens the quick look; Open full page is at its top and in the row menu, and Ctrl click opens the page in a new tab.',
+    ],
+  },
+  {
     id: '2026-10-project-workspace',
     date: '2026-10-16',
     title: 'A tidier project page',
