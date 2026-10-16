@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { signIn } from './helpers';
+import { openProjectTab, projectTabs, signIn } from './helpers';
 
 /** Billing: the client master and a project's contract terms (v3 item 17). */
 test('the project manager sees the client master and the road contract', async ({ page }) => {
@@ -10,7 +10,7 @@ test('the project manager sees the client master and the road contract', async (
 
   await page.goto('/projects');
   await page.getByText('RD-2026-01').first().click();
-  await page.getByRole('tab', { name: 'Contract', exact: true }).click();
+  await openProjectTab(page, 'Money', 'Contract');
   await expect(page.getByText('04/EE/R&B/2025-26', { exact: false })).toBeVisible();
   await expect(page.getByText('Extensions of time')).toBeVisible();
   await page.getByRole('button', { name: 'Edit contract' }).click();
@@ -23,6 +23,9 @@ test('a site engineer has no Contract tab', async ({ page }) => {
   await signIn(page, 'engineer@demo.com');
   await page.goto('/projects');
   await page.getByText('RD-2026-01').first().click();
-  await expect(page.getByRole('tab', { name: 'BOQ' })).toBeVisible();
-  await expect(page.getByRole('tab', { name: 'Contract', exact: true })).toHaveCount(0);
+  await openProjectTab(page, 'Plan');
+  await expect(projectTabs(page, 'Plan').getByText('BOQ', { exact: true })).toBeVisible();
+  await openProjectTab(page, 'Money');
+  await expect(projectTabs(page, 'Money').getByText('Expenses', { exact: true })).toBeVisible();
+  await expect(projectTabs(page, 'Money').getByText('Contract', { exact: true })).toHaveCount(0);
 });

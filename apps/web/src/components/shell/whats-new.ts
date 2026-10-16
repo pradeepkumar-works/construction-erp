@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-10-project-workspace',
+    date: '2026-10-16',
+    title: 'A tidier project page',
+    points: [
+      'A project\'s 25 tabs are now six groups: Overview, Plan, Site, Materials, Money and Handover, with the tabs of each group underneath.',
+      'The header shows how the project is doing: activities running late, cost against work done, and how much of that work is billed.',
+      'Scroll down and the groups stay at the top with the project\'s name, and table headers stay under them.',
+      'A project opens on the tab you last used on it, and each group on its last tab.',
+    ],
+  },
+  {
     id: '2026-10-lists',
     date: '2026-10-16',
     title: 'Better lists',

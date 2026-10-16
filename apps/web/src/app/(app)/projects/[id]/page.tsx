@@ -1,18 +1,22 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { Button, Card, Progress, Space, Tabs, Typography } from 'antd';
+import { Button, Card, Progress, Space, Typography } from 'antd';
 import { EditOutlined, FilePdfOutlined } from '@ant-design/icons';
 import Link from 'next/link';
+import type { ProjectDetail } from '@erp/shared';
 import { canEditProjects, isGuest, canViewContract, canViewVariations, canViewCost, canViewPurchaseOrders, canViewWorkOrders } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useProject } from '@/lib/queries';
+import { readPref, writePref } from '@/lib/prefs';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Loading, QueryError } from '@/components/common/QueryState';
 import { ProjectStatusTag, ProjectTypeTag } from '@/components/common/StatusTag';
 import { ProjectOverview } from '@/components/projects/ProjectOverview';
 import { ProjectFormModal } from '@/components/projects/ProjectFormModal';
+import { ProjectHealth, useProjectHealth } from '@/components/projects/ProjectHealth';
+import { CompactTitle, ProjectWorkspace, type WorkspaceTab } from '@/components/projects/ProjectWorkspace';
 import { SectorPanel, sectorTabLabel } from '@/components/sector/SectorPanel';
 import { BoqTab } from '@/components/boq/BoqTab';
 import { ActivitiesTab } from '@/components/activities/ActivitiesTab';
@@ -38,16 +42,12 @@ import { PurchaseOrderList } from '@/components/purchasing/PurchaseOrderList';
 import { SubcontractsPanel } from '@/components/subcontracts/SubcontractsPanel';
 import { HandoverPanel } from '@/components/handover/HandoverPanel';
 
+const tabPref = (projectId: string) => `nirmaan.project.tab.${projectId}`;
+
 export default function ProjectDetailPage() {
   const params = useParams<{ id: string }>();
   const id = params?.id;
-  const router = useRouter();
-  const search = useSearchParams();
-  const tab = search.get('tab') ?? 'overview';
-  const { user } = useAuth();
   const { data: project, isLoading, error, refetch } = useProject(id);
-  const [editOpen, setEditOpen] = useState(false);
-  const editor = !!user && canEditProjects(user.roleKey) && user.roleKey !== 'QUANTITY_SURVEYOR';
 
   if (isLoading) return <Loading />;
   if (error || !project) {
@@ -57,9 +57,66 @@ export default function ProjectDetailPage() {
       </div>
     );
   }
+  return <ProjectPage project={project} />;
+}
+
+function ProjectPage({ project }: { project: ProjectDetail }) {
+  const router = useRouter();
+  const search = useSearchParams();
+  const { user } = useAuth();
+  const [editOpen, setEditOpen] = useState(false);
+  const headerRef = useRef<HTMLDivElement>(null);
+  const health = useProjectHealth(project);
+  const editor = !!user && canEditProjects(user.roleKey) && user.roleKey !== 'QUANTITY_SURVEYOR';
+  const can = (allowed: boolean) => !!user && allowed;
+
+  const all: (WorkspaceTab | false)[] = [
+    { key: 'overview', group: 'overview', label: 'Overview', children: <ProjectOverview project={project} /> },
+    { key: 'boq', group: 'plan', label: 'BOQ', children: <BoqTab projectId={project.id} /> },
+    { key: 'activities', group: 'plan', label: 'Activities', children: <ActivitiesTab projectId={project.id} members={project.members} project={project} /> },
+    { key: 'schedule', group: 'plan', label: 'Gantt', children: <GanttPanel projectId={project.id} /> },
+    { key: 'sector', group: 'plan', label: sectorTabLabel(project.type), children: <SectorPanel project={project} editable={editor} /> },
+    { key: 'progress', group: 'site', label: 'Progress', children: <ProgressList projectId={project.id} newLabel="New progress entry" /> },
+    { key: 'dpr', group: 'site', label: 'Daily Reports', children: <DprList projectId={project.id} newLabel="New DPR" /> },
+    { key: 'attendance', group: 'site', label: 'Attendance', children: <AttendancePanel projectId={project.id} /> },
+    { key: 'mb', group: 'site', label: 'Measurements', children: <MeasurementList projectId={project.id} /> },
+    { key: 'inspections', group: 'site', label: 'Quality', children: <ProjectQualityTab projectId={project.id} /> },
+    { key: 'safety', group: 'site', label: 'Safety', children: <SafetyPanel projectId={project.id} /> },
+    { key: 'risks', group: 'site', label: 'Delays & Risks', children: <RiskList projectId={project.id} /> },
+    { key: 'documents', group: 'site', label: 'Documents', children: <ProjectDocumentsTab projectId={project.id} /> },
+    { key: 'material', group: 'materials', label: 'Material Requests', children: <MrList projectId={project.id} newLabel="New material request" /> },
+    can(!!user && canViewPurchaseOrders(user.roleKey)) && { key: 'po', group: 'materials', label: 'Purchase Orders', children: <PurchaseOrderList projectId={project.id} /> },
+    { key: 'stock', group: 'materials', label: 'Stock', children: <StockPanel projectId={project.id} /> },
+    { key: 'machinery', group: 'materials', label: 'Machinery', children: <MachineryPanel projectId={project.id} /> },
+    can(!!user && canViewContract(user.roleKey)) && { key: 'contract', group: 'money', label: 'Contract', children: <ContractPanel projectId={project.id} /> },
+    can(!!user && canViewContract(user.roleKey)) && { key: 'bills', group: 'money', label: 'RA Bills', children: <BillList projectId={project.id} /> },
+    can(!!user && canViewVariations(user.roleKey)) && { key: 'variations', group: 'money', label: 'Variations', children: <VariationsPanel projectId={project.id} /> },
+    can(!!user && canViewWorkOrders(user.roleKey)) && { key: 'subcontracts', group: 'money', label: 'Subcontracts', children: <SubcontractsPanel projectId={project.id} /> },
+    { key: 'expenses', group: 'money', label: 'Expenses', children: <ExpenseList projectId={project.id} /> },
+    can(!!user && canViewCost(user.roleKey)) && { key: 'cost', group: 'money', label: 'Cost', children: <ProjectCostPanel projectId={project.id} /> },
+    can(!!user && canViewCost(user.roleKey)) && { key: 'budget', group: 'money', label: 'Budget & Cash Flow', children: <ProjectBudgetPanel projectId={project.id} /> },
+    can(!!user && !isGuest(user.roleKey)) && { key: 'handover', group: 'handover', label: 'Handover', children: <HandoverPanel projectId={project.id} members={project.members} initialDefectId={search.get('defect') ?? undefined} /> },
+  ];
+  const tabs = all.filter((t): t is WorkspaceTab => !!t);
+
+  // ?tab= wins (links from elsewhere); without it, the tab last open on this project in this browser.
+  const fromUrl = search.get('tab');
+  const [remembered] = useState(() => readPref<string | null>(tabPref(project.id), null));
+  const active = tabs.find((t) => t.key === (fromUrl ?? remembered))?.key ?? 'overview';
+  useEffect(() => writePref(tabPref(project.id), active), [project.id, active]);
+
+  const open = (key: string) => {
+    const sp = new URLSearchParams(search.toString());
+    sp.delete('defect');
+    if (key === 'overview') sp.delete('tab');
+    else sp.set('tab', key);
+    const qs = sp.toString();
+    router.replace(`/projects/${project.id}${qs ? `?${qs}` : ''}`, { scroll: false });
+  };
 
   return (
     <div className="page-container">
+      <div ref={headerRef}>
       <PageHeader
         crumbs={[{ title: 'Projects', href: '/projects' }, { title: project.code }]}
         title={
@@ -70,11 +127,14 @@ export default function ProjectDetailPage() {
           </Space>
         }
         subtitle={
-          <Space size={16} wrap>
-            <span>{project.code}</span>
-            {project.clientName && <span>Client: {project.clientName}</span>}
-            {project.location && <span>{project.location}</span>}
-            {project.projectManagerName && <span>PM: {project.projectManagerName}</span>}
+          <Space orientation="vertical" size={8}>
+            <Space size={16} wrap>
+              <span>{project.code}</span>
+              {project.clientName && <span>Client: {project.clientName}</span>}
+              {project.location && <span>{project.location}</span>}
+              {project.projectManagerName && <span>PM: {project.projectManagerName}</span>}
+            </Space>
+            <ProjectHealth signals={health} />
           </Space>
         }
         extra={
@@ -96,37 +156,18 @@ export default function ProjectDetailPage() {
           </Space>
         }
       />
-      <Card size="small" styles={{ body: { paddingTop: 4 } }}>
-        <Tabs
-          activeKey={tab}
-          onChange={(k) => router.replace(`/projects/${project.id}${k === 'overview' ? '' : `?tab=${k}`}`)}
-          items={[
-            { key: 'overview', label: 'Overview', children: <ProjectOverview project={project} /> },
-            ...(user && canViewContract(user.roleKey) ? [{ key: 'contract', label: 'Contract', children: <ContractPanel projectId={project.id} /> }] : []),
-            ...(user && canViewContract(user.roleKey) ? [{ key: 'bills', label: 'RA Bills', children: <BillList projectId={project.id} /> }] : []),
-            ...(user && canViewVariations(user.roleKey) ? [{ key: 'variations', label: 'Variations', children: <VariationsPanel projectId={project.id} /> }] : []),
-            { key: 'boq', label: 'BOQ', children: <BoqTab projectId={project.id} /> },
-            { key: 'activities', label: 'Activities', children: <ActivitiesTab projectId={project.id} members={project.members} project={project} /> },
-            { key: 'schedule', label: 'Gantt', children: <GanttPanel projectId={project.id} /> },
-            { key: 'sector', label: sectorTabLabel(project.type), children: <SectorPanel project={project} editable={editor} /> },
-            { key: 'mb', label: 'Measurements', children: <MeasurementList projectId={project.id} /> },
-            { key: 'inspections', label: 'Quality', children: <ProjectQualityTab projectId={project.id} /> },
-            { key: 'documents', label: 'Documents', children: <ProjectDocumentsTab projectId={project.id} /> },
-            { key: 'progress', label: 'Progress', children: <ProgressList projectId={project.id} newLabel="New progress entry" /> },
-            { key: 'dpr', label: 'Daily Reports', children: <DprList projectId={project.id} newLabel="New DPR" /> },
-            { key: 'attendance', label: 'Attendance', children: <AttendancePanel projectId={project.id} /> },
-            { key: 'material', label: 'Material Requests', children: <MrList projectId={project.id} newLabel="New material request" /> },
-            ...(user && canViewPurchaseOrders(user.roleKey) ? [{ key: 'po', label: 'Purchase Orders', children: <PurchaseOrderList projectId={project.id} /> }] : []),
-            ...(user && canViewWorkOrders(user.roleKey) ? [{ key: 'subcontracts', label: 'Subcontracts', children: <SubcontractsPanel projectId={project.id} /> }] : []),
-            { key: 'stock', label: 'Stock', children: <StockPanel projectId={project.id} /> },
-            { key: 'machinery', label: 'Machinery', children: <MachineryPanel projectId={project.id} /> },
-            { key: 'expenses', label: 'Expenses', children: <ExpenseList projectId={project.id} /> },
-            { key: 'risks', label: 'Delays & Risks', children: <RiskList projectId={project.id} /> },
-            { key: 'safety', label: 'Safety', children: <SafetyPanel projectId={project.id} /> },
-            ...(user && !isGuest(user.roleKey) ? [{ key: 'handover', label: 'Handover', children: <HandoverPanel projectId={project.id} members={project.members} initialDefectId={search.get('defect') ?? undefined} /> }] : []),
-            ...(user && canViewCost(user.roleKey) ? [{ key: 'cost', label: 'Cost', children: <ProjectCostPanel projectId={project.id} /> }] : []),
-            ...(user && canViewCost(user.roleKey) ? [{ key: 'budget', label: 'Budget & Cash Flow', children: <ProjectBudgetPanel projectId={project.id} /> }] : []),
-          ]}
+      </div>
+      <Card size="small" styles={{ body: { padding: 0 } }}>
+        <ProjectWorkspace
+          tabs={tabs}
+          active={active}
+          onChange={open}
+          headerRef={headerRef}
+          compactTitle={
+            <CompactTitle code={project.code} name={project.name}>
+              <ProjectHealth signals={health} compact />
+            </CompactTitle>
+          }
         />
       </Card>
       <ProjectFormModal open={editOpen} onClose={() => setEditOpen(false)} project={project} />
