@@ -61,6 +61,12 @@ export function MachineryList({ projectId: fixedProject }: { projectId?: string 
     return rows.length;
   };
 
+  const newButton = mayLog ? (
+    <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
+      Log machinery
+    </Button>
+  ) : null;
+
   return (
     <>
       {frame.views}
@@ -77,11 +83,7 @@ export function MachineryList({ projectId: fixedProject }: { projectId?: string 
         extra={
           <>
             <ExportButton onExport={exportRows} />
-            {mayLog ? (
-              <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
-                Log machinery
-              </Button>
-            ) : null}
+            {newButton}
           </>
         }
       >
@@ -111,8 +113,11 @@ export function MachineryList({ projectId: fixedProject }: { projectId?: string 
         onOpen={setOpenId}
         bulk={[...(approve ? [approve] : []), exportSelected<MachineryLogDto>('machinery-logs', 'machinery', MACHINERY_EXPORT)]}
         chips={frame.chips}
+        empty={frame.empty}
+        failed={!!error}
         scrollX={fixedProject ? 1100 : 1320}
         emptyText={<EmptyArt art="entries" title="No machinery logs here yet" />}
+        emptyAction={newButton}
       />
       <MachineryDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onEdit={setEditing} />
       <MachineryFormModal

@@ -113,18 +113,18 @@ export default function ProjectsPage() {
     return rows.length;
   };
 
+  const newButton = canCreate ? (
+    <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
+      New project
+    </Button>
+  ) : undefined;
+
   return (
     <div className="page-container">
       <PageHeader
         title="Projects"
         subtitle={`${data?.total ?? 0} project${data?.total === 1 ? '' : 's'} ${filtered ? 'match' : 'in your scope'}`}
-        extra={
-          canCreate ? (
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
-              New project
-            </Button>
-          ) : undefined
-        }
+        extra={newButton}
       />
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       <Card size="small">
@@ -168,8 +168,11 @@ export default function ProjectsPage() {
           onOpen={(id) => router.push(`/projects/${id}`)}
           bulk={[exportSelected<ProjectSummary>('projects', 'Projects', PROJECT_EXPORT)]}
           chips={frame.chips}
+          empty={frame.empty}
+          failed={!!error}
           scrollX={1150}
           emptyText={<EmptyArt art="projects" title={filtered ? 'No project matches these filters' : 'No projects yet'} />}
+          emptyAction={newButton}
         />
       </Card>
       <ProjectFormModal open={createOpen} onClose={() => setCreateOpen(false)} onSaved={(id) => router.push(`/projects/${id}`)} />

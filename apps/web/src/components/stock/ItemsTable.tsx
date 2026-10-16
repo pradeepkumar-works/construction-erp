@@ -116,16 +116,18 @@ export function ItemsTable() {
   const { data, isLoading, isFetching, error, refetch } = useStockItems({ page: page.params.page, pageSize: page.params.pageSize, q: page.params.q, sortBy: page.params.sortBy, sortOrder: page.params.sortOrder });
   const rows = data?.items ?? [];
 
+  const newButton = mayManage ? (
+    <Button icon={<PlusOutlined />} onClick={() => open('new')} style={{ marginLeft: 'auto' }}>
+      Add item
+    </Button>
+  ) : null;
+
   return (
     <>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       <CardToolbar wrap gap={8} align="center">
         <SearchBox value={page.search} onChange={page.setSearch} placeholder="Search item, unit or category" />
-        {mayManage ? (
-          <Button icon={<PlusOutlined />} onClick={() => open('new')} style={{ marginLeft: 'auto' }}>
-            Add item
-          </Button>
-        ) : null}
+        {newButton}
       </CardToolbar>
       <DataTable<ItemDto>
         columns={frame.columns}
@@ -144,8 +146,11 @@ export function ItemsTable() {
             : undefined
         }
         chips={frame.chips}
+        empty={frame.empty}
+        failed={!!error}
         scrollX={900}
         emptyText={<EmptyArt art="entries" title={page.params.q ? 'No item matches this search' : 'No items yet. GRNs add them from the request lines.'} />}
+        emptyAction={newButton}
       />
       <Modal
         open={!!editing}

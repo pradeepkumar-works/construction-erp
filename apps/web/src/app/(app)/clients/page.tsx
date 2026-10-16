@@ -108,18 +108,18 @@ export default function ClientsPage() {
   const { data, isLoading, isFetching, error, refetch } = useClientsPage({ page: page.params.page, pageSize: page.params.pageSize, q: page.params.q, sortBy: page.params.sortBy, sortOrder: page.params.sortOrder, includeInactive: includeInactive || undefined });
   const rows = data?.items ?? [];
 
+  const newButton = editable ? (
+    <Button type="primary" icon={<PlusOutlined />} onClick={() => setAdding(true)}>
+      New client
+    </Button>
+  ) : null;
+
   return (
     <div className="page-container">
       <PageHeader
         title="Clients"
         subtitle="The departments and owners you build for. A project's Contract tab links it to a client; bills carry the client's GSTIN and address."
-        extra={
-          editable ? (
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => setAdding(true)}>
-              New client
-            </Button>
-          ) : null
-        }
+        extra={newButton}
       />
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       <Card size="small">
@@ -139,8 +139,11 @@ export default function ClientsPage() {
           table={page.tableProps<ClientDto>(data?.total)}
           onOpen={editable ? (id) => setEditing(rows.find((c) => c.id === id) ?? null) : undefined}
           chips={frame.chips}
+          empty={frame.empty}
+          failed={!!error}
           scrollX={900}
           emptyText={<EmptyArt art="entries" title={page.params.q || includeInactive ? 'No client matches these filters' : editable ? 'No clients yet. Add the departments you build for with New client.' : 'No clients yet'} />}
+          emptyAction={newButton}
         />
       </Card>
       <ClientFormModal

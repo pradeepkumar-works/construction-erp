@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, App, Button, DatePicker, Input, InputNumber, Segmented, Space, Table, Tag, Typography } from 'antd';
+import { formatDayMonth } from '@/lib/format';
 import type { TableProps } from 'antd';
 import dayjs from 'dayjs';
 import type { StaffAttendanceStatus, StaffRegisterDto, StaffRegisterRowDto } from '@erp/shared';
@@ -57,7 +58,7 @@ export function StaffRegister() {
         })
       ).data,
     onSuccess: (d) => {
-      message.success(`Register saved for ${dayjs(d.date).format('DD MMM')}`);
+      message.success(`Register saved for ${formatDayMonth(d.date)}`);
       qc.setQueryData(['staff', 'register', projectId, day], d);
       qc.invalidateQueries({ queryKey: ['staff'] });
     },

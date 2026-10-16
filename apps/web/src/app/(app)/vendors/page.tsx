@@ -38,7 +38,7 @@ function Sub({ children }: { children: React.ReactNode }) {
   return <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{children}</div>;
 }
 
-function VendorsTab({ editable, onEdit }: { editable: boolean; onEdit: (v: VendorDto) => void }) {
+function VendorsTab({ editable, onEdit, emptyAction }: { editable: boolean; onEdit: (v: VendorDto) => void; emptyAction?: React.ReactNode }) {
   const { user } = useAuth();
   const { message } = App.useApp();
   const qc = useQueryClient();
@@ -206,8 +206,11 @@ function VendorsTab({ editable, onEdit }: { editable: boolean; onEdit: (v: Vendo
         onOpen={editable ? (id) => { const v = rows.find((x) => x.id === id); if (v) onEdit(v); } : undefined}
         bulk={[exportSelected<VendorDto>('vendors', 'Vendors', exportCols)]}
         chips={frame.chips}
+        empty={frame.empty}
+        failed={!!error}
         scrollX={1100}
         emptyText={<EmptyArt art="entries" title={kind || msme || page.params.q ? 'No vendor matches these filters' : 'No vendors yet'} />}
+        emptyAction={emptyAction}
       />
     </>
   );
@@ -259,24 +262,24 @@ export default function VendorsPage() {
   const [adding, setAdding] = useState<Partial<{ name: string; gstin: string; kinds: VendorKind[] }> | null>(null);
   const { data: unlisted } = useUnlistedVendors(editable);
 
+  const newButton = editable ? (
+    <Button type="primary" icon={<PlusOutlined />} onClick={() => setAdding({})}>
+      New vendor
+    </Button>
+  ) : null;
+
   return (
     <div className="page-container">
       <PageHeader
         title="Vendors"
         subtitle="Suppliers, hire agencies, subcontractors and service providers, with GSTIN, MSME registration and bank details. Expenses, machines and GRNs pick from this list."
-        extra={
-          editable ? (
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => setAdding({})}>
-              New vendor
-            </Button>
-          ) : null
-        }
+        extra={newButton}
       />
       <Card size="small">
         <Tabs
           tabBarStyle={{ padding: '0 12px', marginBottom: 0 }}
           items={[
-            { key: 'vendors', label: 'Vendor master', children: <VendorsTab editable={editable} onEdit={setEditing} /> },
+            { key: 'vendors', label: 'Vendor master', children: <VendorsTab editable={editable} onEdit={setEditing} emptyAction={newButton} /> },
             {
               key: 'unlisted',
               label: `Not in the master${unlisted?.length ? ` (${unlisted.length})` : ''}`,

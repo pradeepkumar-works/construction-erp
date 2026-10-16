@@ -80,6 +80,12 @@ export function TestList({ projectId: fixedProject, initialOpenId, onOpenNcr }: 
   const { data, isLoading, isFetching, error, refetch } = useQualityTests(filters);
   const filtered = !!(kind || result || overdue || page.params.q || page.params.from || page.params.to);
 
+  const newButton = user && canRecordTest(user.roleKey) ? (
+    <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
+      Record test
+    </Button>
+  ) : null;
+
   return (
     <>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
@@ -90,13 +96,7 @@ export function TestList({ projectId: fixedProject, initialOpenId, onOpenNcr }: 
         search={page.search}
         onSearch={page.setSearch}
         searchPlaceholder="Search no., sample, location"
-        extra={
-          user && canRecordTest(user.roleKey) ? (
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
-              Record test
-            </Button>
-          ) : null
-        }
+        extra={newButton}
       >
         <Select<TestKind> allowClear placeholder="All tests" aria-label="Test" value={kind} onChange={(v) => page.setFilter('kind', v)} style={{ width: 200 }} options={TEST_KINDS.map((k) => ({ value: k, label: TEST_KIND_LABELS[k] }))} />
         <Select<TestResult> allowClear placeholder="Any result" aria-label="Result" value={result} onChange={(v) => page.setFilter('result', v)} style={{ width: 130 }} options={TEST_RESULTS.map((k) => ({ value: k, label: TEST_RESULT_LABELS[k] }))} />
@@ -115,8 +115,11 @@ export function TestList({ projectId: fixedProject, initialOpenId, onOpenNcr }: 
         table={page.tableProps<QualityTestDto>(data?.total)}
         onOpen={setOpenId}
         chips={frame.chips}
+        empty={frame.empty}
+        failed={!!error}
         scrollX={fixedProject ? 1100 : 1280}
         emptyText={<EmptyArt art="entries" title={filtered ? 'No test matches these filters' : 'No test recorded yet'} />}
+        emptyAction={newButton}
       />
       <TestDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onOpenNcr={onOpenNcr} />
       <TestFormModal open={formOpen} onClose={() => setFormOpen(false)} projectId={fixedProject} />

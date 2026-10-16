@@ -112,6 +112,12 @@ export function TalkList({ projectId: fixedProject }: { projectId?: string }) {
   const filters = { page: page.params.page, pageSize: page.params.pageSize, q: page.params.q, sortOrder: page.params.sortOrder, projectId: frame.projectId };
   const { data, isLoading, isFetching, error, refetch } = useToolboxTalks(filters);
 
+  const newButton = user && canReportSafety(user.roleKey) ? (
+    <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
+      Record talk
+    </Button>
+  ) : null;
+
   return (
     <>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
@@ -131,11 +137,7 @@ export function TalkList({ projectId: fixedProject }: { projectId?: string }) {
                 return rows.length;
               }}
             />
-            {user && canReportSafety(user.roleKey) ? (
-              <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
-                Record talk
-              </Button>
-            ) : null}
+            {newButton}
           </>
         }
       />
@@ -150,6 +152,8 @@ export function TalkList({ projectId: fixedProject }: { projectId?: string }) {
         table={page.tableProps<ToolboxTalkDto>(data?.total)}
         bulk={[exportSelected<ToolboxTalkDto>('toolbox-talks', 'talks', EXPORT)]}
         chips={frame.chips}
+        empty={frame.empty}
+        failed={!!error}
         expandable={{
           rowExpandable: (r) => !!(r.attendees || r.notes || r.attachments.length),
           expandedRowRender: (r) => (
@@ -162,6 +166,7 @@ export function TalkList({ projectId: fixedProject }: { projectId?: string }) {
         }}
         scrollX={fixedProject ? 800 : 1000}
         emptyText={<EmptyArt art="entries" title={page.params.q ? 'No toolbox talk matches this search' : 'No toolbox talks recorded'} />}
+        emptyAction={newButton}
       />
       <TalkFormModal
         open={formOpen || !!editing}

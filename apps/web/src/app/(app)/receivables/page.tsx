@@ -9,7 +9,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ClientReceivableDto, OpenBillDto, ProjectReceivableDto, ReceiptDto, ReceiptKind, ReceiptSortField } from '@erp/shared';
 import { LIST_SORT_FIELDS, RECEIPT_KINDS, RECEIPT_KIND_LABELS, RECEIPT_MODE_LABELS, canRecordReceipt } from '@erp/shared';
 import { useProjectScope } from '@/lib/project-scope';
-import { api, errorMessage } from '@/lib/api';
+import { api, errorMessage, errorStatus } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useReceipts, useReceivables } from '@/lib/queries';
 import { useListPage } from '@/lib/listPage';
@@ -160,6 +160,12 @@ function ReceiptsTab({ projectId }: { projectId?: string }) {
   ];
   const choice = useColumnChoice('receivables-receipts', columns);
 
+  const newButton = accounts ? (
+    <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
+      Record money received
+    </Button>
+  ) : null;
+
   return (
     <>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
@@ -173,11 +179,7 @@ function ReceiptsTab({ projectId }: { projectId?: string }) {
         extra={
           <>
             <ExportButton onExport={exportRows} />
-            {accounts ? (
-              <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
-                Record money received
-              </Button>
-            ) : null}
+            {newButton}
           </>
         }
       >
@@ -207,6 +209,7 @@ function ReceiptsTab({ projectId }: { projectId?: string }) {
         bulk={[exportSelected<ReceiptDto>('receipts', 'Receipts', RECEIPT_EXPORT)]}
         scrollX={1100}
         emptyText={<EmptyArt art="entries" title={kind || page.params.q ? 'No receipt matches these filters' : 'No money received recorded yet'} />}
+        emptyAction={newButton}
       />
       <ReceiptFormModal
         open={formOpen || !!editing}
@@ -300,6 +303,16 @@ export default function ReceivablesPage() {
     { title: 'Projects', dataIndex: 'projectCount', width: 90, align: 'right' },
     ...ageingColumns<ClientReceivableDto>(),
   ];
+
+  // A role that may not see this gets the reason alone, not empty tabs under it.
+  if (errorStatus(error) === 403) {
+    return (
+      <div className="page-container">
+        <PageHeader title="Receivables" />
+        <QueryError error={error} />
+      </div>
+    );
+  }
 
   return (
     <div className="page-container">

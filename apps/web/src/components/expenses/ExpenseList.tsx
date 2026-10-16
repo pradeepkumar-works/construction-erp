@@ -73,6 +73,12 @@ export function ExpenseList({ projectId: fixedProject }: { projectId?: string })
 
   useNewIntent('expense', mayFile, () => setFormOpen(true));
 
+  const newButton = mayFile ? (
+    <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
+      New expense
+    </Button>
+  ) : null;
+
   return (
     <>
       {frame.views}
@@ -89,11 +95,7 @@ export function ExpenseList({ projectId: fixedProject }: { projectId?: string })
         extra={
           <>
             <ExportButton onExport={exportRows} />
-            {mayFile ? (
-              <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
-                New expense
-              </Button>
-            ) : null}
+            {newButton}
           </>
         }
       >
@@ -132,8 +134,11 @@ export function ExpenseList({ projectId: fixedProject }: { projectId?: string })
         onOpen={setOpenId}
         bulk={[...(approve ? [approve] : []), exportSelected<ExpenseDto>('expenses', 'expenses', EXPENSE_EXPORT)]}
         chips={frame.chips}
+        empty={frame.empty}
+        failed={!!error}
         scrollX={fixedProject ? 1550 : 1750}
         emptyText={<EmptyArt art="entries" title="No site expenses here yet" />}
+        emptyAction={newButton}
       />
       <ExpenseDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onEdit={setEditing} />
       <ExpenseFormModal

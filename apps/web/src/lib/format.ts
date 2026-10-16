@@ -134,3 +134,17 @@ export function dayLabel(value: string): string {
   if (days < 7) return d.format('dddd');
   return d.format('DD MMM YYYY');
 }
+
+/** "Oct 2026": a month on its own (a bill's index month, a cost row). */
+export function formatMonth(value: string | null | undefined): string {
+  if (!value) return '-';
+  const d = dayjs(value.length === 7 ? `${value}-01` : value);
+  return d.isValid() ? d.format('MMM YYYY') : value;
+}
+
+/** "15 Oct": a day inside a range whose year is given once ("15 Oct to 21 Oct 2026"). */
+export function formatDayMonth(value: string | dayjs.Dayjs | null | undefined): string {
+  if (!value) return '-';
+  const d = dayjs(value);
+  return d.isValid() ? d.format('DD MMM') : String(value);
+}

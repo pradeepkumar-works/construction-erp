@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-10-page-states',
+    date: '2026-10-17',
+    title: 'Clearer loading, empty and error pages',
+    points: [
+      'Pages and lists show their outline while they load instead of a spinner, so nothing jumps when the data arrives.',
+      'An empty list says what goes there and offers the button to add the first one; a list filtered down to nothing offers Clear filters.',
+      'A page you may not open, an entry that is not there, and losing the connection each get their own page with a way back, and a page that fails shows a code to quote to support.',
+    ],
+  },
+  {
     id: '2026-10-notifications-centre',
     date: '2026-10-17',
     title: 'A notifications centre',

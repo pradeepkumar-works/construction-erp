@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { App, Button, Card, DatePicker, Empty, Segmented, Skeleton, Space, theme } from 'antd';
+import { formatDayMonth, formatDate } from '@/lib/format';
 import { PrinterOutlined } from '@ant-design/icons';
 import dayjs, { type Dayjs } from 'dayjs';
 import { QueryError } from '@/components/common/QueryState';
@@ -50,7 +51,7 @@ export function ProgressReportView({ projectId, portal = false, picker }: { proj
               { value: 'CUSTOM', label: 'Custom' },
             ]}
           />
-          {kind === 'WEEKLY' ? <DatePicker picker="week" value={anchor} onChange={(d) => d && setAnchor(d)} allowClear={false} format={() => `${from.format('D MMM')} to ${to.format('D MMM YYYY')}`} /> : null}
+          {kind === 'WEEKLY' ? <DatePicker picker="week" value={anchor} onChange={(d) => d && setAnchor(d)} allowClear={false} format={() => `${formatDayMonth(from)} to ${formatDate(to.format('YYYY-MM-DD'))}`} /> : null}
           {kind === 'MONTHLY' ? <DatePicker picker="month" value={anchor} onChange={(d) => d && setAnchor(d)} allowClear={false} format="MMMM YYYY" /> : null}
           {kind === 'CUSTOM' ? (
             <DatePicker.RangePicker

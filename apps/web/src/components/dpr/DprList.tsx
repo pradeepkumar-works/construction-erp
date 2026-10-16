@@ -54,6 +54,12 @@ export function DprList({ projectId: fixedProject, newLabel }: { projectId?: str
 
   useNewIntent('dpr', !!newLabel, () => setFormOpen(true));
 
+  const newButton = newLabel ? (
+    <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
+      {newLabel}
+    </Button>
+  ) : null;
+
   return (
     <>
       {frame.views}
@@ -70,11 +76,7 @@ export function DprList({ projectId: fixedProject, newLabel }: { projectId?: str
         extra={
           <>
             <ExportButton onExport={exportRows} />
-            {newLabel ? (
-              <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
-                {newLabel}
-              </Button>
-            ) : null}
+            {newButton}
           </>
         }
       >
@@ -91,8 +93,11 @@ export function DprList({ projectId: fixedProject, newLabel }: { projectId?: str
         onOpen={setOpenId}
         bulk={[...(approve ? [approve] : []), exportSelected<DailyReportDto>('dpr', 'dpr', DPR_EXPORT)]}
         chips={frame.chips}
+        empty={frame.empty}
+        failed={!!error}
         scrollX={fixedProject ? 1230 : 1450}
         emptyText={<EmptyArt art="entries" title="No daily reports here yet" />}
+        emptyAction={newButton}
       />
       <DprDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onEdit={setEditing} />
       <DprFormModal open={formOpen || !!editing} entry={editing} onClose={() => { setFormOpen(false); setEditing(null); }} projectId={fixedProject} defaultProjectId={frame.projectId} />

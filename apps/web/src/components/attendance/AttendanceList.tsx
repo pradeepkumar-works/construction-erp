@@ -101,6 +101,12 @@ export function AttendanceList({ projectId: fixedProject }: { projectId?: string
     return lines.length;
   };
 
+  const newButton = canRecord ? (
+    <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
+      Record attendance
+    </Button>
+  ) : null;
+
   return (
     <>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
@@ -114,11 +120,7 @@ export function AttendanceList({ projectId: fixedProject }: { projectId?: string
         extra={
           <>
             <ExportButton onExport={exportRows} />
-            {canRecord ? (
-              <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
-                Record attendance
-              </Button>
-            ) : null}
+            {newButton}
           </>
         }
       >
@@ -135,8 +137,11 @@ export function AttendanceList({ projectId: fixedProject }: { projectId?: string
         onOpen={(id) => setOpened(rows.find((r) => r.id === id) ?? null)}
         bulk={[exportSelected<AttendanceSheetDto, ReturnType<typeof attendanceExportRows>[number]>('attendance', 'attendance', ATTENDANCE_EXPORT, attendanceExportRows)]}
         chips={frame.chips}
+        empty={frame.empty}
+        failed={!!error}
         scrollX={fixedProject ? 1000 : 1250}
         emptyText={<EmptyArt art="entries" title={page.filters.from || page.filters.to || page.params.q ? 'No sheet matches these filters' : canRecord ? 'No attendance yet. Record the day with Record attendance.' : 'No attendance yet'} />}
+        emptyAction={newButton}
       />
       <AttendanceFormModal
         open={formOpen || !!opened}

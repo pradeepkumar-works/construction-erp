@@ -143,23 +143,25 @@ export default function UsersPage() {
   }
 
 
+  const newButton = (
+    <Button
+      type="primary"
+      icon={<PlusOutlined />}
+      onClick={() => {
+        setEditing(null);
+        setFormOpen(true);
+      }}
+    >
+      Add user
+    </Button>
+  );
+
   return (
     <div className="page-container">
       <PageHeader
         title="Users"
         subtitle={`${data?.total ?? 0} users${roleKey || isActive !== undefined || page.params.q ? ' match' : ` in ${user?.organizationName ?? 'your organisation'}`}`}
-        extra={
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => {
-              setEditing(null);
-              setFormOpen(true);
-            }}
-          >
-            Add user
-          </Button>
-        }
+        extra={newButton}
       />
       {welcome && (
         <Alert
@@ -205,8 +207,11 @@ export default function UsersPage() {
           }}
           bulk={[exportSelected<UserSummary>('users', 'Users', USER_EXPORT)]}
           chips={frame.chips}
+          empty={frame.empty}
+          failed={!!error}
           scrollX={900}
           emptyText={<EmptyArt art="entries" title={roleKey || isActive !== undefined || page.params.q ? 'No user matches these filters' : 'No users yet'} />}
+          emptyAction={newButton}
         />
       </Card>
       <UserFormModal open={formOpen} onClose={() => setFormOpen(false)} user={editing} onInvited={(c) => c.invite && setLinkResult({ name: c.fullName, email: c.email, invite: true, link: c.invite })} />

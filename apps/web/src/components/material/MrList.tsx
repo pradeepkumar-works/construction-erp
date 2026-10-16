@@ -57,6 +57,12 @@ export function MrList({ projectId: fixedProject, newLabel, openId: initialOpen 
 
   useNewIntent('material-request', !!newLabel, () => setFormOpen(true));
 
+  const newButton = newLabel ? (
+    <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
+      {newLabel}
+    </Button>
+  ) : null;
+
   return (
     <>
       {frame.views}
@@ -73,11 +79,7 @@ export function MrList({ projectId: fixedProject, newLabel, openId: initialOpen 
         extra={
           <>
             <ExportButton onExport={exportRows} />
-            {newLabel ? (
-              <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
-                {newLabel}
-              </Button>
-            ) : null}
+            {newButton}
           </>
         }
       >
@@ -94,8 +96,11 @@ export function MrList({ projectId: fixedProject, newLabel, openId: initialOpen 
         onOpen={setOpenId}
         bulk={[...(approve ? [approve] : []), exportSelected<MaterialRequestDto, MrExportRow>('material-requests', 'material-requests', MR_EXPORT, mrExportRows)]}
         chips={frame.chips}
+        empty={frame.empty}
+        failed={!!error}
         scrollX={fixedProject ? 1180 : 1400}
         emptyText={<EmptyArt art="entries" title="No material requests here yet" />}
+        emptyAction={newButton}
       />
       <MrDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onEdit={setEditing} />
       <MrFormModal open={formOpen || !!editing} entry={editing} onClose={() => { setFormOpen(false); setEditing(null); }} projectId={fixedProject} defaultProjectId={frame.projectId} />

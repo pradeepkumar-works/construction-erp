@@ -95,6 +95,12 @@ export function PermitList({ projectId: fixedProject, initialOpenId }: { project
   const filters = { page: page.params.page, pageSize: page.params.pageSize, q: page.params.q, sortOrder: page.params.sortOrder, projectId: frame.projectId, type, active: view === 'ACTIVE' || undefined, status: view === 'ACTIVE' || view === 'ALL' ? undefined : view };
   const { data, isLoading, isFetching, error, refetch } = useWorkPermits(filters);
 
+  const newButton = user && canReportSafety(user.roleKey) ? (
+    <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
+      Ask for permit
+    </Button>
+  ) : null;
+
   return (
     <>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
@@ -114,11 +120,7 @@ export function PermitList({ projectId: fixedProject, initialOpenId }: { project
                 return rows.length;
               }}
             />
-            {user && canReportSafety(user.roleKey) ? (
-              <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
-                Ask for permit
-              </Button>
-            ) : null}
+            {newButton}
           </>
         }
       >
@@ -137,8 +139,11 @@ export function PermitList({ projectId: fixedProject, initialOpenId }: { project
         onOpen={setOpenId}
         bulk={[exportSelected<WorkPermitDto>('permits-to-work', 'permits', EXPORT)]}
         chips={frame.chips}
+        empty={frame.empty}
+        failed={!!error}
         scrollX={fixedProject ? 900 : 1100}
         emptyText={<EmptyArt art="entries" title={view === 'ACTIVE' ? 'No permits waiting or live' : 'No permits'} />}
+        emptyAction={newButton}
       />
       <PermitDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onEdit={setEditing} />
       <PermitFormModal

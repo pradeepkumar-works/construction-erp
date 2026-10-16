@@ -64,6 +64,12 @@ export function EmployeeList({ onOpen, onNew }: { onOpen: (id: string) => void; 
   const includeInactive = page.filters.inactive === '1';
   const { data, isLoading, isFetching, error, refetch } = useEmployees({ page: page.params.page, pageSize: page.params.pageSize, q: page.params.q, sortBy: page.params.sortBy, sortOrder: page.params.sortOrder, projectId: frame.projectId, includeInactive: includeInactive || undefined });
 
+  const newButton = user && canManageStaff(user.roleKey) ? (
+    <Button type="primary" icon={<PlusOutlined />} onClick={onNew}>
+      Add staff
+    </Button>
+  ) : null;
+
   return (
     <>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
@@ -73,13 +79,7 @@ export function EmployeeList({ onOpen, onNew }: { onOpen: (id: string) => void; 
         search={page.search}
         onSearch={page.setSearch}
         searchPlaceholder="Search name, code, designation"
-        extra={
-          user && canManageStaff(user.roleKey) ? (
-            <Button type="primary" icon={<PlusOutlined />} onClick={onNew}>
-              Add staff
-            </Button>
-          ) : null
-        }
+        extra={newButton}
       >
         <Checkbox checked={includeInactive} onChange={(e) => page.setFilter('inactive', e.target.checked ? '1' : undefined)}>
           Include people who left
@@ -95,8 +95,11 @@ export function EmployeeList({ onOpen, onNew }: { onOpen: (id: string) => void; 
         table={page.tableProps<EmployeeDto>(data?.total)}
         onOpen={onOpen}
         chips={frame.chips}
+        empty={frame.empty}
+        failed={!!error}
         scrollX={1150}
         emptyText={<EmptyArt art="entries" title={includeInactive || page.params.q ? 'No one matches these filters' : 'No staff yet'} />}
+        emptyAction={newButton}
       />
     </>
   );

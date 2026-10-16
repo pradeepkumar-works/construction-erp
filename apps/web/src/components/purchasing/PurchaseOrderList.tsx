@@ -13,6 +13,7 @@ import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { PURCHASE_ORDER_EXPORT } from '@/lib/exportColumns';
 import { formatDate, formatINR } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
+import { EmptyArt } from '@/components/common/EmptyArt';
 import { ListToolbar } from '@/components/common/ListToolbar';
 import { ExportButton } from '@/components/common/ExportButton';
 import { StatusTag } from '@/components/common/StatusTag';
@@ -119,6 +120,12 @@ export function PurchaseOrderList({ projectId: fixedProject, openId: initialOpen
 
   useNewIntent('purchase-order', buyer, () => setFormOpen(true));
 
+  const newButton = buyer ? (
+    <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
+      New purchase order
+    </Button>
+  ) : null;
+
   return (
     <>
       {frame.views}
@@ -135,11 +142,7 @@ export function PurchaseOrderList({ projectId: fixedProject, openId: initialOpen
         extra={
           <>
             <ExportButton onExport={exportRows} />
-            {buyer ? (
-              <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
-                New purchase order
-              </Button>
-            ) : null}
+            {newButton}
           </>
         }
       >
@@ -160,8 +163,11 @@ export function PurchaseOrderList({ projectId: fixedProject, openId: initialOpen
         onOpen={setOpenId}
         bulk={[...(approve ? [approve] : []), exportSelected<PurchaseOrderDto>('purchase-orders', 'Purchase orders', PURCHASE_ORDER_EXPORT)]}
         chips={frame.chips}
+        empty={frame.empty}
+        failed={!!error}
         scrollX={fixedProject ? 1050 : 1250}
-        emptyText={buyer ? 'No purchase orders yet. Raise one from an approved material request, or with New purchase order.' : 'No purchase orders yet'}
+        emptyText={<EmptyArt art="entries" title={buyer ? 'No purchase orders yet. Raise one from an approved material request, or with New purchase order.' : 'No purchase orders yet'} />}
+        emptyAction={newButton}
       />
       <PurchaseOrderDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onEdit={setEditing} />
       <PurchaseOrderFormModal

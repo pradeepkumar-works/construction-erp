@@ -78,6 +78,12 @@ export function DocumentList({ projectId: fixedProject, onOpen }: { projectId?: 
   const status = page.filters.status as RevisionStatus | undefined;
   const { data, isLoading, isFetching, error, refetch } = useDocuments({ page: page.params.page, pageSize: page.params.pageSize, q: page.params.q, sortBy: page.params.sortBy, sortOrder: page.params.sortOrder, projectId: frame.projectId, kind, discipline, status });
 
+  const newButton = user && canManageDocuments(user.roleKey) ? (
+    <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
+      Add document
+    </Button>
+  ) : null;
+
   return (
     <>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
@@ -88,13 +94,7 @@ export function DocumentList({ projectId: fixedProject, onOpen }: { projectId?: 
         search={page.search}
         onSearch={page.setSearch}
         searchPlaceholder="Search number or title"
-        extra={
-          user && canManageDocuments(user.roleKey) ? (
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
-              Add document
-            </Button>
-          ) : null
-        }
+        extra={newButton}
       >
         <Select<DocumentKind> allowClear placeholder="All types" aria-label="Type" value={kind} onChange={(v) => page.setFilter('kind', v)} style={{ width: 150 }} options={DOCUMENT_KINDS.map((k) => ({ value: k, label: DOCUMENT_KIND_LABELS[k] }))} />
         <Select<DocumentDiscipline> allowClear placeholder="All disciplines" aria-label="Discipline" value={discipline} onChange={(v) => page.setFilter('discipline', v)} style={{ width: 170 }} options={DOCUMENT_DISCIPLINES.map((k) => ({ value: k, label: DOCUMENT_DISCIPLINE_LABELS[k] }))} />
@@ -110,8 +110,11 @@ export function DocumentList({ projectId: fixedProject, onOpen }: { projectId?: 
         table={page.tableProps<DocumentDto>(data?.total)}
         onOpen={onOpen}
         chips={frame.chips}
+        empty={frame.empty}
+        failed={!!error}
         scrollX={fixedProject ? 1050 : 1250}
         emptyText={<EmptyArt art="entries" title={kind || discipline || status || page.params.q ? 'No document matches these filters' : 'No drawings or documents yet'} />}
+        emptyAction={newButton}
       />
       <DocumentFormModal open={formOpen} onClose={() => setFormOpen(false)} projectId={fixedProject} onSaved={(d) => onOpen(d.id)} />
     </>

@@ -4,7 +4,8 @@ import React from 'react';
 import { Tag, Timeline, Typography } from 'antd';
 import type { AuditLogDto, SafetyIncidentStatus, SafetyIncidentType, WorkPermitDto } from '@erp/shared';
 import { SAFETY_INCIDENT_STATUS_LABELS, SAFETY_INCIDENT_TYPE_LABELS, WORK_PERMIT_STATUS_LABELS, WORK_PERMIT_TYPE_LABELS } from '@erp/shared';
-import { formatDateTime } from '@/lib/format';
+import { formatDateTime, formatDayMonth } from '@/lib/format';
+import dayjs from 'dayjs';
 
 export const INCIDENT_TYPE_COLORS: Record<SafetyIncidentType, string> = {
   NEAR_MISS: 'gold',
@@ -47,8 +48,8 @@ export const permitTypeLabel = (t: WorkPermitDto['type']) => WORK_PERMIT_TYPE_LA
 export function permitWindow(p: Pick<WorkPermitDto, 'validFrom' | 'validTo'>) {
   const from = new Date(p.validFrom);
   const to = new Date(p.validTo);
-  const d = (x: Date) => x.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
-  const t = (x: Date) => x.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false });
+  const d = (x: Date) => formatDayMonth(dayjs(x));
+  const t = (x: Date) => dayjs(x).format('HH:mm');
   return d(from) === d(to) ? `${d(from)}, ${t(from)} to ${t(to)}` : `${d(from)} ${t(from)} to ${d(to)} ${t(to)}`;
 }
 

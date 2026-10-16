@@ -80,6 +80,12 @@ export function LeaveList({ onOpen, onNew, toDecideFirst }: { onOpen: (id: strin
   const toDecide = page.filters.toDecide === '1';
   const { data, isLoading, isFetching, error, refetch } = useLeave({ page: page.params.page, pageSize: page.params.pageSize, q: page.params.q, sortBy: page.params.sortBy, sortOrder: page.params.sortOrder, projectId: frame.projectId, status, type, toDecide: toDecide || undefined });
 
+  const newButton = user && canManageStaff(user.roleKey) ? (
+    <Button icon={<PlusOutlined />} onClick={onNew}>
+      Apply for someone
+    </Button>
+  ) : null;
+
   return (
     <>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
@@ -89,13 +95,7 @@ export function LeaveList({ onOpen, onNew, toDecideFirst }: { onOpen: (id: strin
         search={page.search}
         onSearch={page.setSearch}
         searchPlaceholder="Search name, code, reason"
-        extra={
-          user && canManageStaff(user.roleKey) ? (
-            <Button icon={<PlusOutlined />} onClick={onNew}>
-              Apply for someone
-            </Button>
-          ) : null
-        }
+        extra={newButton}
       >
         <Select<LeaveType> allowClear placeholder="Any leave" aria-label="Leave type" style={{ width: 170 }} value={type} onChange={(v) => page.setFilter('type', v)} options={LEAVE_TYPES.map((t) => ({ value: t, label: LEAVE_TYPE_LABELS[t] }))} />
         <Select<LeaveStatus> allowClear placeholder="Any status" aria-label="Status" style={{ width: 140 }} value={status} onChange={(v) => page.setFilter('status', v)} options={LEAVE_STATUSES.map((s) => ({ value: s, label: LEAVE_STATUS_LABELS[s] }))} />
@@ -113,8 +113,11 @@ export function LeaveList({ onOpen, onNew, toDecideFirst }: { onOpen: (id: strin
         table={page.tableProps<LeaveRequestDto>(data?.total)}
         onOpen={onOpen}
         chips={frame.chips}
+        empty={frame.empty}
+        failed={!!error}
         scrollX={1200}
         emptyText={<EmptyArt art="entries" title={toDecide ? 'Nothing waiting on you' : status || type || page.params.q ? 'No leave matches these filters' : 'No leave'} />}
+        emptyAction={newButton}
       />
     </>
   );

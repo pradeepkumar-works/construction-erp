@@ -100,6 +100,12 @@ export function InspectionList({ projectId: fixedProject }: { projectId?: string
   const activityId = frame.projectId ? page.filters.activityId : undefined;
   const { data, isLoading, isFetching, error, refetch } = useInspections({ ...page.params, projectId: frame.projectId, status: frame.status, activityId });
 
+  const newButton = user && canRequestInspection(user.roleKey) ? (
+    <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
+      Request inspection
+    </Button>
+  ) : null;
+
   return (
     <>
       {frame.views}
@@ -117,13 +123,7 @@ export function InspectionList({ projectId: fixedProject }: { projectId?: string
         search={page.search}
         onSearch={page.setSearch}
         searchPlaceholder="Search no., location, activity"
-        extra={
-          user && canRequestInspection(user.roleKey) ? (
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
-              Request inspection
-            </Button>
-          ) : null
-        }
+        extra={newButton}
       >
         <Select
           allowClear
@@ -148,8 +148,11 @@ export function InspectionList({ projectId: fixedProject }: { projectId?: string
         table={page.tableProps<InspectionDto>(data?.total)}
         onOpen={setOpenId}
         chips={frame.chips}
+        empty={frame.empty}
+        failed={!!error}
         scrollX={fixedProject ? 1250 : 1450}
         emptyText={<EmptyArt art="entries" title="No inspection requested yet" />}
+        emptyAction={newButton}
       />
       <InspectionDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onEdit={setEditing} />
       <InspectionFormModal

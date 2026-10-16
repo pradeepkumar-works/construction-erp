@@ -78,6 +78,12 @@ export function LetterList({ projectId: fixedProject, onOpen, onNew }: { project
   const awaiting = page.filters.awaiting === '1';
   const { data, isLoading, isFetching, error, refetch } = useLetters({ page: page.params.page, pageSize: page.params.pageSize, q: page.params.q, sortBy: page.params.sortBy, sortOrder: page.params.sortOrder, projectId: frame.projectId, direction, awaitingReply: awaiting || undefined });
 
+  const newButton = (
+    <Button type="primary" icon={<PlusOutlined />} onClick={onNew}>
+      Record letter
+    </Button>
+  );
+
   return (
     <>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
@@ -88,11 +94,7 @@ export function LetterList({ projectId: fixedProject, onOpen, onNew }: { project
         search={page.search}
         onSearch={page.setSearch}
         searchPlaceholder="Search no., reference, subject"
-        extra={
-          <Button type="primary" icon={<PlusOutlined />} onClick={onNew}>
-            Record letter
-          </Button>
-        }
+        extra={newButton}
       >
         <Select<LetterDirection> allowClear placeholder="In and out" aria-label="In or out" value={direction} onChange={(v) => page.setFilter('direction', v)} style={{ width: 130 }} options={LETTER_DIRECTIONS.map((d) => ({ value: d, label: LETTER_DIRECTION_LABELS[d] }))} />
         <Checkbox checked={awaiting} onChange={(e) => page.setFilter('awaiting', e.target.checked ? '1' : undefined)}>
@@ -109,8 +111,11 @@ export function LetterList({ projectId: fixedProject, onOpen, onNew }: { project
         table={page.tableProps<LetterDto>(data?.total)}
         onOpen={onOpen}
         chips={frame.chips}
+        empty={frame.empty}
+        failed={!!error}
         scrollX={fixedProject ? 950 : 1150}
         emptyText={<EmptyArt art="entries" title={direction || awaiting || page.params.q ? 'No letter matches these filters' : 'No letters recorded'} />}
+        emptyAction={newButton}
       />
     </>
   );

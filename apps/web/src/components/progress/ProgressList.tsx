@@ -54,6 +54,12 @@ export function ProgressList({ projectId: fixedProject, newLabel }: { projectId?
 
   useNewIntent('progress', !!newLabel, () => setFormOpen(true));
 
+  const newButton = newLabel ? (
+    <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
+      {newLabel}
+    </Button>
+  ) : null;
+
   return (
     <>
       {frame.views}
@@ -70,11 +76,7 @@ export function ProgressList({ projectId: fixedProject, newLabel }: { projectId?
         extra={
           <>
             <ExportButton onExport={exportRows} />
-            {newLabel ? (
-              <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
-                {newLabel}
-              </Button>
-            ) : null}
+            {newButton}
           </>
         }
       >
@@ -91,8 +93,11 @@ export function ProgressList({ projectId: fixedProject, newLabel }: { projectId?
         onOpen={setOpenId}
         bulk={[...(approve ? [approve] : []), exportSelected<ProgressEntryDto>('progress', 'progress', PROGRESS_EXPORT)]}
         chips={frame.chips}
+        empty={frame.empty}
+        failed={!!error}
         scrollX={fixedProject ? 1180 : 1400}
         emptyText={<EmptyArt art="entries" title="No progress entries here yet" />}
+        emptyAction={newButton}
       />
       <ProgressDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onEdit={setEditing} />
       <ProgressFormModal open={formOpen || !!editing} entry={editing} onClose={() => { setFormOpen(false); setEditing(null); }} projectId={fixedProject} defaultProjectId={frame.projectId} />

@@ -11,7 +11,7 @@ import { useAuth } from '@/lib/auth';
 import { useProject } from '@/lib/queries';
 import { readPref, writePref } from '@/lib/prefs';
 import { PageHeader } from '@/components/common/PageHeader';
-import { Loading, QueryError } from '@/components/common/QueryState';
+import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { ProjectStatusTag, ProjectTypeTag } from '@/components/common/StatusTag';
 import { ProjectOverview } from '@/components/projects/ProjectOverview';
 import { ProjectFormModal } from '@/components/projects/ProjectFormModal';
@@ -49,7 +49,12 @@ export default function ProjectDetailPage() {
   const id = params?.id;
   const { data: project, isLoading, error, refetch } = useProject(id);
 
-  if (isLoading) return <Loading />;
+  if (isLoading)
+    return (
+      <div className="page-container">
+        <PageSkeleton shape="workspace" />
+      </div>
+    );
   if (error || !project) {
     return (
       <div className="page-container">

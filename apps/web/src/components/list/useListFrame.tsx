@@ -91,6 +91,8 @@ export function useListFrame<S extends string, T>(opts: ListFrameTarget & {
     choice,
     views,
     chips,
+    /** For the table's empty state: filters narrowed it to nothing, so it offers Clear filters rather than the New button. */
+    empty: { filtered: Object.entries(page.filters).some(([k, v]) => !!v && k !== 'sortBy' && k !== 'sortOrder'), clear: () => page.clear() },
     status: page.filters.status as SubmissionStatus | undefined,
     setStatus: (v?: SubmissionStatus) => page.setFilter('status', v),
     dateRange: {

@@ -9,7 +9,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { RaBillDto, RaBillPvLineDto } from '@erp/shared';
 import { api, errorMessage } from '@/lib/api';
 import { useContract } from '@/lib/queries';
-import { formatINR, toNumber } from '@/lib/format';
+import { formatINR, toNumber, formatMonth } from '@/lib/format';
 
 interface FormValues {
   indexMonth?: dayjs.Dayjs | null;
@@ -43,7 +43,7 @@ export function BillPriceVariation({ bill, editable }: { bill: RaBillDto; editab
             <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
               <Typography.Text type="secondary">
                 On this bill&apos;s work value of {formatINR(bill.grossAmount, true)}
-                {bill.pvIndexMonth ? `, indices for ${dayjs(bill.pvIndexMonth).format('MMM YYYY')}` : ''}
+                {bill.pvIndexMonth ? `, indices for ${formatMonth(bill.pvIndexMonth)}` : ''}
                 {bill.pvNote ? ` (${bill.pvNote})` : ''}
               </Typography.Text>
               {canFill ? (
