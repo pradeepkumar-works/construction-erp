@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-10-lists-registers',
+    date: '2026-10-17',
+    title: 'Registers, stores, staff and machinery lists',
+    points: [
+      'The delay and risk register and the variations list have views across the top (Delays, Overdue, Not sent, With the client…) that can be saved and shared, and their filters go in the address bar.',
+      'Quality tests, NCRs, safety incidents, permits, toolbox talks, documents, letters, transmittals, stock, the stock register, staff, leave, attendance, workers, the machine list, job cards, papers and drivers now work like the other lists: chips for the filters, columns you pick, a click on the row to open it, and page totals.',
+      'Where a list could already be exported, you can now tick rows and export just those.',
+    ],
+  },
+  {
     id: '2026-10-lists-masters',
     date: '2026-10-16',
     title: 'Projects, clients, vendors and users lists',

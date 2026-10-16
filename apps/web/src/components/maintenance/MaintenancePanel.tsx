@@ -1,18 +1,20 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button, Select, Statistic, Table, Typography } from 'antd';
+import { Button, Select, Statistic, Table, Typography, theme } from 'antd';
 import { PlusOutlined, ToolOutlined } from '@ant-design/icons';
 import type { TableProps } from 'antd';
 import type { MaintenanceJobDto, MaintenanceKind, MaintenanceStatus, ServiceStatusDto } from '@erp/shared';
 import { MAINTENANCE_KINDS, MAINTENANCE_KIND_LABELS, MAINTENANCE_STATUSES, MAINTENANCE_STATUS_LABELS, MAX_PAGE_SIZE, canLogMachinery, canManageMaintenance } from '@erp/shared';
-import { useProjectScope } from '@/lib/project-scope';
 import { useAuth } from '@/lib/auth';
 import { useEquipment, useMaintenanceJobs, useMaintenanceSummary } from '@/lib/queries';
-import { useListState } from '@/lib/listState';
-import { formatDate, formatINR, formatQty } from '@/lib/format';
+import { formatDate, formatINR, formatQty, toNumber } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { ListToolbar } from '@/components/common/ListToolbar';
+import { EmptyArt } from '@/components/common/EmptyArt';
+import { DataTable, type ListColumn } from '@/components/list/DataTable';
+import { useListFrame } from '@/components/list/useListFrame';
+import { RecordLink } from '@/components/record/RecordLink';
 import { JobDrawer } from './JobDrawer';
 import { JobFormModal } from './JobFormModal';
 import { JobKindTag, JobStatusTag, ServiceStateTag, serviceLeft } from './maintenanceUi';
@@ -20,6 +22,12 @@ import { CardToolbar } from '@/components/common/CardToolbar';
 import { themeColor } from '@/lib/theme';
 
 const big = { content: { fontSize: 18 } };
+const KEYS = ['status', 'kind', 'equipmentId'] as const;
+
+function Sub({ children }: { children: React.ReactNode }) {
+  const { token } = theme.useToken();
+  return <span style={{ color: token.colorTextSecondary }}>{children}</span>;
+}
 
 /**
  * Machinery maintenance (v4 item 42): service schedule of the fleet, open breakdowns and job cards. Site staff report
@@ -27,20 +35,65 @@ const big = { content: { fontSize: 18 } };
  */
 export function MaintenancePanel({ projectId: fixedProject, initialOpenId }: { projectId?: string; initialOpenId?: string }) {
   const { user } = useAuth();
-  const [projectFilter, setProjectFilter] = useProjectScope();
-  const projectId = fixedProject ?? projectFilter;
   const manager = !!user && canManageMaintenance(user.roleKey);
   const mayReport = manager || (!!user && canLogMachinery(user.roleKey));
-  const { data: s } = useMaintenanceSummary(projectId);
-  const list = useListState<'date'>({ sortBy: 'date', sortOrder: 'desc', pageSize: 20 });
-  const [status, setStatus] = useState<MaintenanceStatus | undefined>();
-  const [kind, setKind] = useState<MaintenanceKind | undefined>();
-  const [equipmentId, setEquipmentId] = useState<string | undefined>();
   const [openId, setOpenId] = useState<string | null>(initialOpenId ?? null);
   const [form, setForm] = useState<{ kind: MaintenanceKind; equipmentId?: string } | null>(null);
   const [editing, setEditing] = useState<MaintenanceJobDto | null>(null);
+  const frame = useListFrame<'date', MaintenanceJobDto>({
+    list: 'maintenance-jobs',
+    url: false,
+    keys: KEYS,
+    sortBy: 'date',
+    sortOrder: 'desc',
+    sortFields: ['date'],
+    fixedProject,
+    statusLabels: MAINTENANCE_STATUS_LABELS,
+    chipLabels: {
+      kind: (v) => MAINTENANCE_KIND_LABELS[v as MaintenanceKind] ?? v,
+      equipmentId: (v) => {
+        const e = equipment?.items.find((x) => x.id === v);
+        return e ? `Machine: ${e.code}` : 'One machine';
+      },
+    },
+    columns: (): ListColumn<MaintenanceJobDto>[] => [
+      {
+        key: 'jobNo',
+        title: 'Job card',
+        dataIndex: 'jobNo',
+        width: 150,
+        locked: true,
+        render: (v: string, r) => (
+          <RecordLink onOpen={() => setOpenId(r.id)} strong className="mono">
+            {v}
+          </RecordLink>
+        ),
+      },
+      { key: 'date', title: 'Date', dataIndex: 'date', width: 110, render: (v: string) => formatDate(v) },
+      {
+        title: 'Machine',
+        key: 'm',
+        width: 220,
+        render: (_, r) => (
+          <span>
+            <b className="mono">{r.equipmentCode}</b> {r.equipmentName}
+          </span>
+        ),
+      },
+      { title: 'Type', dataIndex: 'kind', key: 'kind', width: 110, render: (v: MaintenanceKind) => <JobKindTag kind={v} /> },
+      { key: 'description', title: 'Fault / work', dataIndex: 'description', ellipsis: true },
+      ...(fixedProject ? [] : [{ key: 'projectName', title: 'At', dataIndex: 'projectName', width: 200, ellipsis: true, render: (v: string | null) => v ?? <Sub>Yard</Sub> } satisfies ListColumn<MaintenanceJobDto>]),
+      { key: 'status', title: 'Status', dataIndex: 'status', width: 90, render: (v: MaintenanceStatus) => <JobStatusTag status={v} /> },
+      { key: 'totalCost', title: 'Cost', dataIndex: 'totalCost', width: 110, align: 'right', render: (v: string, r) => (r.status === 'CLOSED' || Number(v) > 0 ? formatINR(v) : '-'), total: (rows) => formatINR(rows.reduce((n, r) => n + toNumber(r.totalCost), 0)) },
+    ],
+  });
+  const { page, projectId } = frame;
+  const { data: s } = useMaintenanceSummary(projectId);
   const { data: equipment } = useEquipment({ pageSize: MAX_PAGE_SIZE, projectId });
-  const { data, isLoading, isFetching, error, refetch } = useMaintenanceJobs({ page: list.params.page, pageSize: list.params.pageSize, q: list.params.q, projectId, status, kind, equipmentId });
+  const status = page.filters.status as MaintenanceStatus | undefined;
+  const kind = page.filters.kind as MaintenanceKind | undefined;
+  const equipmentId = page.filters.equipmentId;
+  const { data, isLoading, isFetching, error, refetch } = useMaintenanceJobs({ page: page.params.page, pageSize: page.params.pageSize, q: page.params.q, projectId, status, kind, equipmentId });
 
   const serviceColumns: TableProps<ServiceStatusDto>['columns'] = [
     {
@@ -84,26 +137,6 @@ export function MaintenancePanel({ projectId: fixedProject, initialOpenId }: { p
       : []),
   ];
 
-  const columns: TableProps<MaintenanceJobDto>['columns'] = [
-    { title: 'Job card', dataIndex: 'jobNo', width: 150, className: 'mono', render: (v, r) => <a style={{ whiteSpace: 'nowrap' }} onClick={() => setOpenId(r.id)}>{v}</a> },
-    { title: 'Date', dataIndex: 'date', width: 110, render: (v) => formatDate(v) },
-    {
-      title: 'Machine',
-      key: 'm',
-      width: 220,
-      render: (_, r) => (
-        <span>
-          <b className="mono">{r.equipmentCode}</b> {r.equipmentName}
-        </span>
-      ),
-    },
-    { title: 'Type', dataIndex: 'kind', key: 'kind', width: 110, render: (v) => <JobKindTag kind={v} /> },
-    { title: 'Fault / work', dataIndex: 'description', ellipsis: true },
-    ...(projectId ? [] : [{ title: 'At', dataIndex: 'projectName', width: 200, ellipsis: true, render: (v: string | null) => v ?? <span className="text-muted">Yard</span> }]),
-    { title: 'Status', dataIndex: 'status', width: 90, render: (v) => <JobStatusTag status={v} /> },
-    { title: 'Cost', dataIndex: 'totalCost', width: 110, align: 'right', render: (v, r) => (r.status === 'CLOSED' || Number(v) > 0 ? formatINR(v) : '-') },
-  ];
-
   return (
     <div className="maintenance-panel">
       {s ? (
@@ -130,13 +163,12 @@ export function MaintenancePanel({ projectId: fixedProject, initialOpenId }: { p
       </div>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       <ListToolbar
-        search={list.search}
-        onSearch={list.setSearch}
-        projectId={projectFilter}
+        search={page.search}
+        onSearch={page.setSearch}
+        projectId={frame.projectFilter}
         onProject={(v) => {
-          setProjectFilter(v);
-          setEquipmentId(undefined);
-          list.resetPage();
+          frame.setProjectFilter(v);
+          page.setFilter('equipmentId', undefined);
         }}
         hideProject={!!fixedProject}
         searchPlaceholder="Search job, machine, fault, workshop"
@@ -158,48 +190,45 @@ export function MaintenancePanel({ projectId: fixedProject, initialOpenId }: { p
         <Select
           allowClear
           placeholder="Open and closed"
+          aria-label="Status"
           style={{ width: 150 }}
           value={status}
-          onChange={(v) => {
-            setStatus(v);
-            list.resetPage();
-          }}
+          onChange={(v) => page.setFilter('status', v)}
           options={MAINTENANCE_STATUSES.map((x) => ({ value: x, label: MAINTENANCE_STATUS_LABELS[x] }))}
         />
         <Select
           allowClear
           placeholder="Services and breakdowns"
+          aria-label="Type"
           style={{ width: 190 }}
           value={kind}
-          onChange={(v) => {
-            setKind(v);
-            list.resetPage();
-          }}
+          onChange={(v) => page.setFilter('kind', v)}
           options={MAINTENANCE_KINDS.map((x) => ({ value: x, label: MAINTENANCE_KIND_LABELS[x] }))}
         />
         <Select
           allowClear
           showSearch={{ optionFilterProp: 'label' }}
           placeholder="All machines"
+          aria-label="Machine"
           style={{ width: 220 }}
           value={equipmentId}
-          onChange={(v) => {
-            setEquipmentId(v);
-            list.resetPage();
-          }}
+          onChange={(v) => page.setFilter('equipmentId', v)}
           options={(equipment?.items ?? []).map((e) => ({ value: e.id, label: `${e.code} · ${e.name}` }))}
         />
       </ListToolbar>
-      <Table<MaintenanceJobDto>
+      <DataTable<MaintenanceJobDto>
         className="job-table"
-        size="middle"
-        rowKey="id"
+        columns={frame.columns}
+        visible={frame.choice.visible}
+        onChooseColumns={frame.choice.setChosen}
+        chosenIsDefault={frame.choice.isDefault}
+        rows={data?.items ?? []}
         loading={isLoading || isFetching}
-        dataSource={data?.items ?? []}
-        columns={columns}
-        {...list.tableProps<MaintenanceJobDto>(data?.total)}
-        onRow={(r) => ({ onClick: () => setOpenId(r.id), style: { cursor: 'pointer' } })}
-        scroll={{ x: 1000 }}
+        table={page.tableProps<MaintenanceJobDto>(data?.total)}
+        onOpen={setOpenId}
+        chips={frame.chips}
+        scrollX={1000}
+        emptyText={<EmptyArt art="entries" title={status || kind || equipmentId || page.params.q ? 'No job card matches these filters' : 'No job cards yet'} />}
       />
       <JobDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onEdit={setEditing} />
       <JobFormModal

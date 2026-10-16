@@ -1,9 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Checkbox, DatePicker, Form, Input, Modal, Popconfirm, Select, Space, Table, Typography } from 'antd';
+import { App, Button, Checkbox, DatePicker, Form, Input, Modal, Popconfirm, Select, Space, Typography, theme } from 'antd';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
-import type { TableProps } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, DriverDto, EquipmentDocType, EquipmentDocumentDto, ExpiryState } from '@erp/shared';
@@ -11,10 +10,13 @@ import { DOC_ALERT_DAYS, EQUIPMENT_DOC_TYPES, EQUIPMENT_DOC_TYPE_LABELS, EXPIRY_
 import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useDrivers, useEquipment, useEquipmentDocuments } from '@/lib/queries';
-import { useListState } from '@/lib/listState';
 import { formatDate } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { ListToolbar } from '@/components/common/ListToolbar';
+import { EmptyArt } from '@/components/common/EmptyArt';
+import { DataTable, type ListColumn } from '@/components/list/DataTable';
+import { useListFrame } from '@/components/list/useListFrame';
+import { RecordLink } from '@/components/record/RecordLink';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { ExpiryTag } from './maintenanceUi';
@@ -43,6 +45,13 @@ interface DriverValues {
 const grid = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', columnGap: 16 } as const;
 const t = (v: string | undefined) => v?.trim() || null;
 const EXPIRY_STATES: ExpiryState[] = ['EXPIRED', 'EXPIRING', 'VALID'];
+const DOC_KEYS = ['type', 'state', 'equipmentId', 'old'] as const;
+const DRIVER_KEYS = ['left'] as const;
+
+function Sub({ children }: { children: React.ReactNode }) {
+  const { token } = theme.useToken();
+  return <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{children}</div>;
+}
 
 /** Vehicle papers that expire (insurance, fitness, permit, PUC, road tax, RC) and the drivers with their licences. */
 export function PapersPanel() {
@@ -54,11 +63,85 @@ export function PapersPanel() {
   const machines = (equipment?.items ?? []).map((e) => ({ value: e.id, label: `${e.code} · ${e.name}` }));
 
   /* ---------- papers ---------- */
-  const docList = useListState<'validTo'>({ sortBy: 'validTo', sortOrder: 'asc', pageSize: 20 });
-  const [docType, setDocType] = useState<EquipmentDocType | undefined>();
-  const [docState, setDocState] = useState<ExpiryState | undefined>();
-  const [docMachine, setDocMachine] = useState<string | undefined>();
-  const [showOld, setShowOld] = useState(false);
+  const docFrame = useListFrame<'validTo', EquipmentDocumentDto>({
+    list: 'machine-papers',
+    url: false,
+    keys: DOC_KEYS,
+    sortBy: 'validTo',
+    sortOrder: 'asc',
+    sortFields: ['validTo'],
+    projectScoped: false,
+    chipLabels: {
+      type: (v) => EQUIPMENT_DOC_TYPE_LABELS[v as EquipmentDocType] ?? v,
+      state: (v) => EXPIRY_STATE_LABELS[v as ExpiryState] ?? v,
+      equipmentId: (v) => `Machine: ${equipment?.items.find((e) => e.id === v)?.code ?? 'one machine'}`,
+      old: () => 'Renewed ones too',
+    },
+    columns: (): ListColumn<EquipmentDocumentDto>[] =>
+  [
+      {
+        title: 'Machine',
+        key: 'm',
+        width: 230,
+        locked: true,
+        render: (_, r) => (
+          <span>
+            {manager ? (
+              <RecordLink onOpen={() => openDoc(r)} strong className="mono">
+                {r.equipmentCode}
+              </RecordLink>
+            ) : (
+              <b className="mono">{r.equipmentCode}</b>
+            )}{' '}
+            {r.equipmentName}
+          </span>
+        ),
+      },
+      { key: 'type', title: 'Paper', dataIndex: 'type', width: 160, render: (v: EquipmentDocType) => EQUIPMENT_DOC_TYPE_LABELS[v] },
+      {
+        title: 'Number / issued by',
+        key: 'n',
+        render: (_, r) => (
+          <div>
+            {r.number ?? '-'}
+            <Sub>{[r.issuer, r.notes].filter(Boolean).join(' · ') || ' '}</Sub>
+          </div>
+        ),
+      },
+      { key: 'validTo', title: 'Valid to', dataIndex: 'validTo', width: 120, render: (v: string) => formatDate(v) },
+      { title: '', key: 'state', label: 'Validity', width: 120, render: (_, r) => <ExpiryTag state={r.state} daysLeft={r.daysLeft} /> },
+      {
+        title: '',
+        key: 'a',
+        label: 'Scans and actions',
+        locked: true,
+        width: 170,
+        render: (_, r) => (
+          <Space size={2}>
+            {r.attachments.length ? <AttachmentGallery attachments={r.attachments} size={28} /> : null}
+            {manager ? (
+              <>
+                {r.state !== 'VALID' ? (
+                  <Button size="small" type="link" onClick={() => openDoc(r, true)}>
+                    Renew
+                  </Button>
+                ) : null}
+                <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openDoc(r)} aria-label="Edit" />
+                <Popconfirm title="Delete this paper?" okText="Delete" okButtonProps={{ danger: true }} onConfirm={() => removeDoc.mutate(r)}>
+                  <Button type="text" size="small" danger icon={<DeleteOutlined />} aria-label="Delete" />
+                </Popconfirm>
+              </>
+            ) : null}
+          </Space>
+        ),
+      },
+    ],
+  });
+  const docList = docFrame.page;
+  const docType = docList.filters.type as EquipmentDocType | undefined;
+  const docState = docList.filters.state as ExpiryState | undefined;
+  const docMachine = docList.filters.equipmentId;
+  const showOld = docList.filters.old === '1';
   const docs = useEquipmentDocuments({ page: docList.params.page, pageSize: docList.params.pageSize, q: docList.params.q, type: docType, state: docState, equipmentId: docMachine, latestOnly: showOld ? false : undefined });
   const [docEditing, setDocEditing] = useState<EquipmentDocumentDto | 'new' | null>(null);
   const [docForm] = Form.useForm<DocValues>();
@@ -110,60 +193,46 @@ export function PapersPanel() {
     onError: (e) => message.error(errorMessage(e)),
   });
 
-  const docColumns: TableProps<EquipmentDocumentDto>['columns'] = [
-    {
-      title: 'Machine',
-      key: 'm',
-      width: 230,
-      render: (_, r) => (
-        <span>
-          <b className="mono">{r.equipmentCode}</b> {r.equipmentName}
-        </span>
-      ),
-    },
-    { title: 'Paper', dataIndex: 'type', width: 160, render: (v: EquipmentDocType) => EQUIPMENT_DOC_TYPE_LABELS[v] },
-    {
-      title: 'Number / issued by',
-      key: 'n',
-      render: (_, r) => (
-        <div>
-          {r.number ?? '-'}
-          <div className="text-muted" style={{ fontSize: 12 }}>
-            {[r.issuer, r.notes].filter(Boolean).join(' · ') || ' '}
-          </div>
-        </div>
-      ),
-    },
-    { title: 'Valid to', dataIndex: 'validTo', width: 120, render: (v) => formatDate(v) },
-    { title: '', key: 'state', width: 120, render: (_, r) => <ExpiryTag state={r.state} daysLeft={r.daysLeft} /> },
-    {
-      title: '',
-      key: 'a',
-      width: 170,
-      render: (_, r) => (
-        <Space size={2}>
-          {r.attachments.length ? <AttachmentGallery attachments={r.attachments} size={28} /> : null}
-          {manager ? (
-            <>
-              {r.state !== 'VALID' ? (
-                <Button size="small" type="link" onClick={() => openDoc(r, true)}>
-                  Renew
-                </Button>
-              ) : null}
-              <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openDoc(r)} aria-label="Edit" />
-              <Popconfirm title="Delete this paper?" okText="Delete" okButtonProps={{ danger: true }} onConfirm={() => removeDoc.mutate(r)}>
-                <Button type="text" size="small" danger icon={<DeleteOutlined />} aria-label="Delete" />
-              </Popconfirm>
-            </>
-          ) : null}
-        </Space>
-      ),
-    },
-  ];
-
   /* ---------- drivers ---------- */
-  const drvList = useListState<'name'>({ sortBy: 'name', sortOrder: 'asc', pageSize: 20 });
-  const [showLeft, setShowLeft] = useState(false);
+  const drvFrame = useListFrame<'name', DriverDto>({
+    list: 'drivers',
+    url: false,
+    keys: DRIVER_KEYS,
+    sortBy: 'name',
+    sortOrder: 'asc',
+    sortFields: ['name'],
+    projectScoped: false,
+    chipLabels: { left: () => 'Including those who left' },
+    columns: (): ListColumn<DriverDto>[] =>
+  [
+      { key: 'name', title: 'Driver / operator', locked: true, render: (_, r) => <div>{manager ? <RecordLink onOpen={() => openDriver(r)} strong>{r.name}</RecordLink> : r.name}{r.isActive ? null : <Typography.Text type="secondary"> (left)</Typography.Text>}<Sub>{r.phone ?? ' '}</Sub></div> },
+      { title: 'Licence', key: 'l', render: (_, r) => <div>{r.licenceNo ?? '-'}<Sub>{r.licenceClass ?? ' '}</Sub></div> },
+      { key: 'licenceValidTo', title: 'Valid to', dataIndex: 'licenceValidTo', width: 120, render: (v: string | null) => (v ? formatDate(v) : '-') },
+      { title: '', key: 's', label: 'Validity', width: 120, render: (_, r) => <ExpiryTag state={r.licenceState} daysLeft={r.daysLeft} /> },
+      { title: 'Drives', key: 'e', width: 220, render: (_, r) => (r.equipmentCode ? <span><b className="mono">{r.equipmentCode}</b> {r.equipmentName}</span> : <Typography.Text type="secondary">-</Typography.Text>) },
+      ...(manager
+        ? [
+            {
+              title: '',
+              key: 'a',
+              label: 'Actions',
+              locked: true,
+              width: 80,
+              render: (_: unknown, r: DriverDto) => (
+                <Space size={2}>
+                  <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openDriver(r)} aria-label="Edit" />
+                  <Popconfirm title={`Delete ${r.name}?`} description="Or edit and untick Active to keep the record" okText="Delete" okButtonProps={{ danger: true }} onConfirm={() => removeDriver.mutate(r)}>
+                    <Button type="text" size="small" danger icon={<DeleteOutlined />} aria-label="Delete" />
+                  </Popconfirm>
+                </Space>
+              ),
+            } satisfies ListColumn<DriverDto>,
+          ]
+        : []),
+    ],
+  });
+  const drvList = drvFrame.page;
+  const showLeft = drvList.filters.left === '1';
   const drivers = useDrivers({ page: drvList.params.page, pageSize: drvList.params.pageSize, q: drvList.params.q, includeInactive: showLeft || undefined });
   const [drvEditing, setDrvEditing] = useState<DriverDto | 'new' | null>(null);
   const [drvForm] = Form.useForm<DriverValues>();
@@ -211,31 +280,6 @@ export function PapersPanel() {
     },
     onError: (e) => message.error(errorMessage(e)),
   });
-  const driverColumns: TableProps<DriverDto>['columns'] = [
-    { title: 'Driver / operator', dataIndex: 'name', render: (v, r) => <div>{v}{r.isActive ? null : <span className="text-muted"> (left)</span>}<div className="text-muted" style={{ fontSize: 12 }}>{r.phone ?? ' '}</div></div> },
-    { title: 'Licence', key: 'l', render: (_, r) => <div>{r.licenceNo ?? '-'}<div className="text-muted" style={{ fontSize: 12 }}>{r.licenceClass ?? ' '}</div></div> },
-    { title: 'Valid to', dataIndex: 'licenceValidTo', width: 120, render: (v) => (v ? formatDate(v) : '-') },
-    { title: '', key: 's', width: 120, render: (_, r) => <ExpiryTag state={r.licenceState} daysLeft={r.daysLeft} /> },
-    { title: 'Drives', key: 'e', width: 220, render: (_, r) => (r.equipmentCode ? <span><b className="mono">{r.equipmentCode}</b> {r.equipmentName}</span> : <span className="text-muted">-</span>) },
-    ...(manager
-      ? [
-          {
-            title: '',
-            key: 'a',
-            width: 80,
-            render: (_: unknown, r: DriverDto) => (
-              <Space size={2}>
-                <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openDriver(r)} aria-label="Edit" />
-                <Popconfirm title={`Delete ${r.name}?`} description="Or edit and untick Active to keep the record" okText="Delete" okButtonProps={{ danger: true }} onConfirm={() => removeDriver.mutate(r)}>
-                  <Button type="text" size="small" danger icon={<DeleteOutlined />} aria-label="Delete" />
-                </Popconfirm>
-              </Space>
-            ),
-          },
-        ]
-      : []),
-  ];
-
   return (
     <div className="papers-panel">
       <div style={{ padding: '12px 16px 0' }}>
@@ -261,14 +305,27 @@ export function PapersPanel() {
           ) : null
         }
       >
-        <Select allowClear placeholder="All papers" style={{ width: 170 }} value={docType} onChange={(v) => { setDocType(v); docList.resetPage(); }} options={EQUIPMENT_DOC_TYPES.map((x) => ({ value: x, label: EQUIPMENT_DOC_TYPE_LABELS[x] }))} />
-        <Select allowClear placeholder="Any validity" style={{ width: 150 }} value={docState} onChange={(v) => { setDocState(v); docList.resetPage(); }} options={EXPIRY_STATES.map((x) => ({ value: x, label: EXPIRY_STATE_LABELS[x] }))} />
-        <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="All machines" style={{ width: 220 }} value={docMachine} onChange={(v) => { setDocMachine(v); docList.resetPage(); }} options={machines} />
-        <Checkbox checked={showOld} onChange={(e) => { setShowOld(e.target.checked); docList.resetPage(); }}>
+        <Select allowClear placeholder="All papers" style={{ width: 170 }} value={docType} aria-label="Paper" onChange={(v) => docList.setFilter('type', v)} options={EQUIPMENT_DOC_TYPES.map((x) => ({ value: x, label: EQUIPMENT_DOC_TYPE_LABELS[x] }))} />
+        <Select allowClear placeholder="Any validity" style={{ width: 150 }} value={docState} aria-label="Validity" onChange={(v) => docList.setFilter('state', v)} options={EXPIRY_STATES.map((x) => ({ value: x, label: EXPIRY_STATE_LABELS[x] }))} />
+        <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="All machines" style={{ width: 220 }} value={docMachine} aria-label="Machine" onChange={(v) => docList.setFilter('equipmentId', v)} options={machines} />
+        <Checkbox checked={showOld} onChange={(e) => docList.setFilter('old', e.target.checked ? '1' : undefined)}>
           Show renewed ones too
         </Checkbox>
       </ListToolbar>
-      <Table<EquipmentDocumentDto> className="papers-table" size="middle" rowKey="id" loading={docs.isLoading || docs.isFetching} dataSource={docs.data?.items ?? []} columns={docColumns} {...docList.tableProps<EquipmentDocumentDto>(docs.data?.total)} scroll={{ x: 960 }} />
+      <DataTable<EquipmentDocumentDto>
+        className="papers-table"
+        columns={docFrame.columns}
+        visible={docFrame.choice.visible}
+        onChooseColumns={docFrame.choice.setChosen}
+        chosenIsDefault={docFrame.choice.isDefault}
+        rows={docs.data?.items ?? []}
+        loading={docs.isLoading || docs.isFetching}
+        table={docList.tableProps<EquipmentDocumentDto>(docs.data?.total)}
+        onOpen={manager ? (id) => { const d = docs.data?.items.find((x) => x.id === id); if (d) openDoc(d); } : undefined}
+        chips={docFrame.chips}
+        scrollX={960}
+        emptyText={<EmptyArt art="entries" title={docType || docState || docMachine || showOld || docList.params.q ? 'No paper matches these filters' : 'No papers recorded'} />}
+      />
 
       <div style={{ padding: '20px 16px 0' }}>
         <Typography.Title level={5} style={{ margin: 0 }}>
@@ -290,11 +347,24 @@ export function PapersPanel() {
           ) : null
         }
       >
-        <Checkbox checked={showLeft} onChange={(e) => { setShowLeft(e.target.checked); drvList.resetPage(); }}>
+        <Checkbox checked={showLeft} onChange={(e) => drvList.setFilter('left', e.target.checked ? '1' : undefined)}>
           Show those who left
         </Checkbox>
       </ListToolbar>
-      <Table<DriverDto> className="drivers-table" size="middle" rowKey="id" loading={drivers.isLoading || drivers.isFetching} dataSource={drivers.data?.items ?? []} columns={driverColumns} {...drvList.tableProps<DriverDto>(drivers.data?.total)} scroll={{ x: 900 }} />
+      <DataTable<DriverDto>
+        className="drivers-table"
+        columns={drvFrame.columns}
+        visible={drvFrame.choice.visible}
+        onChooseColumns={drvFrame.choice.setChosen}
+        chosenIsDefault={drvFrame.choice.isDefault}
+        rows={drivers.data?.items ?? []}
+        loading={drivers.isLoading || drivers.isFetching}
+        table={drvList.tableProps<DriverDto>(drivers.data?.total)}
+        onOpen={manager ? (id) => { const d = drivers.data?.items.find((x) => x.id === id); if (d) openDriver(d); } : undefined}
+        chips={drvFrame.chips}
+        scrollX={900}
+        emptyText={<EmptyArt art="entries" title={showLeft || drvList.params.q ? 'No driver matches these filters' : 'No drivers recorded'} />}
+      />
 
       <Modal open={!!docEditing} title={docEditing === 'new' ? 'Add a paper' : 'Change paper'} onCancel={() => setDocEditing(null)} onOk={() => docForm.submit()} okButtonProps={{ loading: saveDoc.isPending }} okText="Save" width={640} destroyOnHidden>
         <Form form={docForm} layout="vertical" onFinish={(v) => saveDoc.mutate(v)}>

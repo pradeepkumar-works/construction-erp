@@ -90,10 +90,15 @@ test('date filters offer financial years', async ({ page }) => {
   await signIn(page, 'pm@demo.com');
   await page.goto('/stock');
   await page.getByRole('tab', { name: 'Register' }).click();
-  await page.getByPlaceholder('Start date').click();
+  const from = page.getByPlaceholder('From');
+  await from.click();
   const fy = page.locator('.ant-picker-presets li').filter({ hasText: /^FY \d{4}-\d{2}$/ }).first();
   const label = (await fy.textContent())!;
-  await fy.click();
-  await expect(page.getByPlaceholder('Start date')).toHaveValue(`01 Apr ${label.slice(3, 7)}`);
-  await expect(page.getByPlaceholder('End date')).toHaveValue(`31 Mar ${Number(label.slice(3, 7)) + 1}`);
+  // Under trace recording the first click on a preset is sometimes lost (not seen by hand), so pick it again if needed.
+  await expect(async () => {
+    if (!(await fy.isVisible())) await from.click();
+    await fy.click();
+    await expect(from).toHaveValue(`1 Apr ${label.slice(3, 7)}`, { timeout: 2000 });
+  }).toPass();
+  await expect(page.getByPlaceholder('To')).toHaveValue(`31 Mar ${Number(label.slice(3, 7)) + 1}`);
 });

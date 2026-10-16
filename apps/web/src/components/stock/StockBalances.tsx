@@ -2,23 +2,25 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { App, Button, Checkbox, InputNumber, Popover, Space, Table, Tag, Tooltip, Typography } from 'antd';
+import { App, Button, Checkbox, InputNumber, Popover, Space, Tag, Tooltip, Typography } from 'antd';
 import { EditOutlined, WarningOutlined } from '@ant-design/icons';
-import type { TableProps } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { StockBalanceDto, StockBalanceSortField } from '@erp/shared';
-import { canManageStore } from '@erp/shared';
-import { useProjectScope } from '@/lib/project-scope';
+import { LIST_SORT_FIELDS, canManageStore } from '@erp/shared';
 import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useStockBalances } from '@/lib/queries';
-import { useListState } from '@/lib/listState';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { STOCK_BALANCE_EXPORT } from '@/lib/exportColumns';
 import { formatDate, formatQty } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { ListToolbar } from '@/components/common/ListToolbar';
 import { ExportButton } from '@/components/common/ExportButton';
+import { EmptyArt } from '@/components/common/EmptyArt';
+import { DataTable, type ListColumn } from '@/components/list/DataTable';
+import { exportSelected } from '@/components/list/bulk';
+import { useListFrame } from '@/components/list/useListFrame';
+import { RecordLink } from '@/components/record/RecordLink';
 import { ItemLedgerDrawer } from './ItemLedgerDrawer';
 import { themeColor } from '@/lib/theme';
 
@@ -73,129 +75,136 @@ function MinLevelEditor({ row }: { row: StockBalanceDto }) {
   );
 }
 
+type StockRow = StockBalanceDto & { id: string };
+const KEYS = ['low', 'inStock'] as const;
+
 /** Stock on hand per project and item, with low-stock filter, minimum levels and Excel export. */
 export function StockBalances({ projectId: fixedProject, initialLow = false, initialProject }: { projectId?: string; initialLow?: boolean; initialProject?: string }) {
   const { user } = useAuth();
   const mayManage = !!user && canManageStore(user.roleKey);
-  const list = useListState<StockBalanceSortField>({ sortBy: 'item', sortOrder: 'asc', pageSize: 50 });
-  const [projectFilter, setProjectFilter] = useProjectScope(initialProject);
-  const [lowOnly, setLowOnly] = useState(initialLow);
-  const [inStock, setInStock] = useState(false);
   const [ledger, setLedger] = useState<StockBalanceDto | null>(null);
-  const projectId = fixedProject ?? projectFilter;
-  const filters = { ...list.params, projectId, lowOnly: lowOnly || undefined, inStock: inStock || undefined };
-  const { data, isLoading, isFetching, error, refetch } = useStockBalances(filters);
-
-  const exportRows = async () => {
-    const rows = await fetchAllPages<StockBalanceDto>('/stock/balances', { ...filters });
-    downloadXlsx(exportFileName('stock-balance'), 'stock', STOCK_BALANCE_EXPORT, rows);
-    return rows.length;
-  };
-
-  const sort = (key: StockBalanceSortField) => ({ key, sorter: true, sortOrder: list.sortOrderFor(key), sortDirections: ['ascend', 'descend'] as ('descend' | 'ascend')[] });
   const qty = (v: string, r: StockBalanceDto) => (
     <span>
-      {formatQty(v)} <span className="text-muted">{r.unit}</span>
+      {formatQty(v)} <Typography.Text type="secondary">{r.unit}</Typography.Text>
     </span>
   );
-  const columns: TableProps<StockBalanceDto>['columns'] = [
-    {
-      title: 'Item',
-      dataIndex: 'itemName',
-      width: 260,
-      ...sort('item'),
-      render: (v, r) => (
-        <Space size={6} wrap>
-          <Typography.Link onClick={() => setLedger(r)}>{v}</Typography.Link>
-          {r.category ? <Tag style={{ margin: 0 }}>{r.category}</Tag> : null}
-        </Space>
-      ),
+  const nil = <Typography.Text type="secondary">-</Typography.Text>;
+  const frame = useListFrame<StockBalanceSortField, StockRow>({
+    list: 'stock-balances',
+    url: false,
+    keys: KEYS,
+    sortBy: 'item',
+    sortOrder: 'asc',
+    sortFields: LIST_SORT_FIELDS.stockBalances,
+    fixedProject,
+    initialProject,
+    initialFilters: initialLow ? { low: '1' } : undefined,
+    chipLabels: { low: () => 'Low stock only', inStock: () => 'In stock only' },
+    columns: (sortOrderFor): ListColumn<StockRow>[] => {
+      const sort = (key: StockBalanceSortField) => ({ key, sorter: true, sortOrder: sortOrderFor(key), sortDirections: ['ascend', 'descend'] as ('descend' | 'ascend')[] });
+      return [
+        {
+          title: 'Item',
+          dataIndex: 'itemName',
+          locked: true,
+          width: 260,
+          ...sort('item'),
+          render: (v, r) => (
+            <Space size={6} wrap>
+              <RecordLink onOpen={() => setLedger(r)}>{v}</RecordLink>
+              {r.category ? <Tag style={{ margin: 0 }}>{r.category}</Tag> : null}
+            </Space>
+          ),
+        },
+        ...(fixedProject
+          ? []
+          : [{ title: 'Project', dataIndex: 'projectName', ...sort('project'), width: 240, ellipsis: true, render: (v: string, r: StockRow) => <Link href={`/projects/${r.projectId}?tab=stock`}>{v}</Link> } satisfies ListColumn<StockRow>]),
+        { title: 'Received', dataIndex: 'received', align: 'right', width: 120, ...sort('received'), render: qty },
+        { title: 'Issued', dataIndex: 'issued', align: 'right', width: 120, ...sort('issued'), render: qty },
+        { key: 'adjusted', title: 'Adjusted', dataIndex: 'adjusted', align: 'right', width: 110, render: (v: string, r) => (Number(v) === 0 ? nil : qty(v, r)) },
+        { key: 'transferred', title: 'Transferred', dataIndex: 'transferred', align: 'right', width: 120, render: (v: string, r) => (Number(v) === 0 ? nil : qty(v, r)) },
+        {
+          title: 'Balance',
+          dataIndex: 'balance',
+          align: 'right',
+          width: 140,
+          ...sort('balance'),
+          render: (v: string, r) => (
+            <Space size={4}>
+              {r.low ? (
+                <Tooltip title={`Below the minimum of ${formatQty(r.minQty)} ${r.unit}`}>
+                  <WarningOutlined style={{ color: themeColor('volcano7') }} />
+                </Tooltip>
+              ) : null}
+              <Typography.Text strong type={r.low ? 'danger' : undefined}>
+                {formatQty(v)}
+              </Typography.Text>
+              <Typography.Text type="secondary">{r.unit}</Typography.Text>
+            </Space>
+          ),
+        },
+        {
+          key: 'minQty',
+          title: 'Minimum',
+          dataIndex: 'minQty',
+          align: 'right',
+          width: 130,
+          render: (v: string | null, r) => (
+            <Space size={2}>
+              {v ? formatQty(v) : nil}
+              {mayManage ? <MinLevelEditor row={r} /> : null}
+            </Space>
+          ),
+        },
+        { title: 'Last movement', dataIndex: 'lastMovement', width: 130, ...sort('lastMovement'), render: (v) => formatDate(v) },
+      ];
     },
-    ...(fixedProject
-      ? []
-      : [{ title: 'Project', dataIndex: 'projectName', ...sort('project'), width: 240, ellipsis: true, render: (v: string, r: StockBalanceDto) => <Link href={`/projects/${r.projectId}?tab=stock`}>{v}</Link> }]),
-    { title: 'Received', dataIndex: 'received', align: 'right', width: 120, ...sort('received'), render: qty },
-    { title: 'Issued', dataIndex: 'issued', align: 'right', width: 120, ...sort('issued'), render: qty },
-    { title: 'Adjusted', dataIndex: 'adjusted', align: 'right', width: 110, render: (v: string, r) => (Number(v) === 0 ? <span className="text-muted">-</span> : qty(v, r)) },
-    { title: 'Transferred', dataIndex: 'transferred', align: 'right', width: 120, render: (v: string, r) => (Number(v) === 0 ? <span className="text-muted">-</span> : qty(v, r)) },
-    {
-      title: 'Balance',
-      dataIndex: 'balance',
-      align: 'right',
-      width: 140,
-      ...sort('balance'),
-      render: (v: string, r) => (
-        <Space size={4}>
-          {r.low ? (
-            <Tooltip title={`Below the minimum of ${formatQty(r.minQty)} ${r.unit}`}>
-              <WarningOutlined style={{ color: themeColor('volcano7') }} />
-            </Tooltip>
-          ) : null}
-          <Typography.Text strong type={r.low ? 'danger' : undefined}>
-            {formatQty(v)}
-          </Typography.Text>
-          <span className="text-muted">{r.unit}</span>
-        </Space>
-      ),
-    },
-    {
-      title: 'Minimum',
-      dataIndex: 'minQty',
-      align: 'right',
-      width: 130,
-      render: (v: string | null, r) => (
-        <Space size={2}>
-          {v ? formatQty(v) : <span className="text-muted">-</span>}
-          {mayManage ? <MinLevelEditor row={r} /> : null}
-        </Space>
-      ),
-    },
-    { title: 'Last movement', dataIndex: 'lastMovement', width: 130, ...sort('lastMovement'), render: (v) => formatDate(v) },
-  ];
+  });
+  const { page } = frame;
+  const lowOnly = page.filters.low === '1';
+  const inStock = page.filters.inStock === '1';
+  const filters = { page: page.params.page, pageSize: page.params.pageSize, q: page.params.q, sortBy: page.params.sortBy, sortOrder: page.params.sortOrder, projectId: frame.projectId, lowOnly: lowOnly || undefined, inStock: inStock || undefined };
+  const { data, isLoading, isFetching, error, refetch } = useStockBalances(filters);
+  const rows: StockRow[] = (data?.items ?? []).map((r) => ({ ...r, id: `${r.projectId}|${r.itemId}` }));
+
+  const exportRows = async () => {
+    const all = await fetchAllPages<StockBalanceDto>('/stock/balances', { ...filters });
+    downloadXlsx(exportFileName('stock-balance'), 'stock', STOCK_BALANCE_EXPORT, all);
+    return all.length;
+  };
 
   return (
     <>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       <ListToolbar
-        projectId={projectFilter}
-        onProject={(v) => {
-          setProjectFilter(v);
-          list.resetPage();
-        }}
+        projectId={frame.projectFilter}
+        onProject={frame.setProjectFilter}
         hideProject={!!fixedProject}
-        search={list.search}
-        onSearch={list.setSearch}
+        search={page.search}
+        onSearch={page.setSearch}
         searchPlaceholder="Search item or category"
         extra={<ExportButton onExport={exportRows} />}
       >
-        <Checkbox
-          checked={lowOnly}
-          onChange={(e) => {
-            setLowOnly(e.target.checked);
-            list.resetPage();
-          }}
-        >
+        <Checkbox checked={lowOnly} onChange={(e) => page.setFilter('low', e.target.checked ? '1' : undefined)}>
           Low stock only
         </Checkbox>
-        <Checkbox
-          checked={inStock}
-          onChange={(e) => {
-            setInStock(e.target.checked);
-            list.resetPage();
-          }}
-        >
+        <Checkbox checked={inStock} onChange={(e) => page.setFilter('inStock', e.target.checked ? '1' : undefined)}>
           In stock only
         </Checkbox>
       </ListToolbar>
-      <Table<StockBalanceDto>
-        size="middle"
-        rowKey={(r) => `${r.projectId}|${r.itemId}`}
+      <DataTable<StockRow>
+        columns={frame.columns}
+        visible={frame.choice.visible}
+        onChooseColumns={frame.choice.setChosen}
+        chosenIsDefault={frame.choice.isDefault}
+        rows={rows}
         loading={isLoading || isFetching}
-        dataSource={data?.items ?? []}
-        columns={columns}
-        scroll={{ x: fixedProject ? 1150 : 1390 }}
-        locale={{ emptyText: lowOnly ? 'Nothing is below its minimum.' : 'No stock yet. Receive material against an approved request, or enter opening stock as an adjustment.' }}
-        {...list.tableProps<StockBalanceDto>(data?.total)}
+        table={page.tableProps<StockRow>(data?.total)}
+        onOpen={(id) => setLedger(rows.find((r) => r.id === id) ?? null)}
+        bulk={[exportSelected<StockRow, StockBalanceDto>('stock-balance', 'stock', STOCK_BALANCE_EXPORT)]}
+        chips={frame.chips}
+        scrollX={fixedProject ? 1150 : 1390}
+        emptyText={<EmptyArt art="entries" title={lowOnly ? 'Nothing is below its minimum.' : 'No stock yet. Receive material against an approved request, or enter opening stock as an adjustment.'} />}
       />
       <ItemLedgerDrawer row={ledger} onClose={() => setLedger(null)} />
     </>

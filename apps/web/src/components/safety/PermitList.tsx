@@ -2,19 +2,21 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Button, Segmented, Select, Table, Typography } from 'antd';
-import type { TableProps } from 'antd';
+import { Button, Segmented, Select, theme } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import type { WorkPermitDto, WorkPermitStatus, WorkPermitType } from '@erp/shared';
 import { WORK_PERMIT_STATUS_LABELS, WORK_PERMIT_TYPES, WORK_PERMIT_TYPE_LABELS, canReportSafety } from '@erp/shared';
-import { useProjectScope } from '@/lib/project-scope';
 import { useAuth } from '@/lib/auth';
 import { useWorkPermits } from '@/lib/queries';
-import { useListState } from '@/lib/listState';
 import { downloadXlsx, exportFileName, fetchAllPages, type ExportColumn } from '@/lib/exportExcel';
 import { QueryError } from '@/components/common/QueryState';
 import { ListToolbar } from '@/components/common/ListToolbar';
 import { ExportButton } from '@/components/common/ExportButton';
+import { EmptyArt } from '@/components/common/EmptyArt';
+import { DataTable, type ListColumn } from '@/components/list/DataTable';
+import { exportSelected } from '@/components/list/bulk';
+import { useListFrame } from '@/components/list/useListFrame';
+import { RecordLink } from '@/components/record/RecordLink';
 import { PermitDrawer } from './PermitDrawer';
 import { PermitFormModal } from './PermitFormModal';
 import { PermitStatusTag, permitTypeLabel, permitWindow } from './safetyUi';
@@ -35,55 +37,73 @@ const EXPORT: ExportColumn<WorkPermitDto>[] = [
 ];
 
 type View = 'ACTIVE' | WorkPermitStatus | 'ALL';
+const KEYS = ['view', 'type'] as const;
+const VIEWS: View[] = ['ACTIVE', 'REQUESTED', 'ISSUED', 'CLOSED', 'ALL'];
+const VIEW_LABELS: Record<string, string> = { ACTIVE: 'Waiting + live', REQUESTED: 'Waiting', ISSUED: 'Issued', CLOSED: 'Closed', ALL: 'All' };
+
+function Sub({ children }: { children: React.ReactNode }) {
+  const { token } = theme.useToken();
+  return <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{children}</div>;
+}
 
 /** Permits to work: what is waiting to be issued, live at site, and the record of past ones. */
 export function PermitList({ projectId: fixedProject, initialOpenId }: { projectId?: string; initialOpenId?: string }) {
   const { user } = useAuth();
-  const list = useListState<'date'>({ sortBy: 'date', sortOrder: 'desc' });
-  const [projectFilter, setProjectFilter] = useProjectScope();
-  const [view, setView] = useState<View>('ACTIVE');
-  const [type, setType] = useState<WorkPermitType | undefined>();
   const [openId, setOpenId] = useState<string | null>(initialOpenId ?? null);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<WorkPermitDto | null>(null);
-  const projectId = fixedProject ?? projectFilter;
-  const { sortBy: _sortBy, ...paging } = list.params;
-  const filters = { ...paging, projectId, type, active: view === 'ACTIVE' || undefined, status: view === 'ACTIVE' || view === 'ALL' ? undefined : view };
-  const { data, isLoading, isFetching, error, refetch } = useWorkPermits(filters);
-  const reset = <T,>(set: (v: T) => void) => (v: T) => {
-    set(v);
-    list.resetPage();
-  };
-
-  const columns: TableProps<WorkPermitDto>['columns'] = [
-    { title: 'No.', dataIndex: 'permitNo', width: 135, className: 'mono' },
-    ...(fixedProject ? [] : [{ title: 'Project', dataIndex: 'projectName', width: 200, ellipsis: true, render: (v: string, r: WorkPermitDto) => <Link href={`/projects/${r.projectId}?tab=safety`}>{v}</Link> }]),
-    {
-      title: 'Work',
-      dataIndex: 'type',
-      render: (t, r) => (
-        <div>
-          <Typography.Link onClick={() => setOpenId(r.id)}>{permitTypeLabel(t)}</Typography.Link>
-          <div className="text-muted" style={{ fontSize: 12 }}>
-            {r.location}: {r.description}
+  const frame = useListFrame<'date', WorkPermitDto>({
+    list: 'work-permits',
+    url: false,
+    keys: KEYS,
+    sortBy: 'date',
+    sortOrder: 'desc',
+    sortFields: ['date'],
+    fixedProject,
+    // Waiting + live is the default, so only the other choices get a chip.
+    chipLabels: { view: (v) => `Permits: ${VIEW_LABELS[v] ?? v}`, type: (v) => `Work: ${WORK_PERMIT_TYPE_LABELS[v as WorkPermitType] ?? v}` },
+    columns: (): ListColumn<WorkPermitDto>[] => [
+      { key: 'permitNo', title: 'No.', dataIndex: 'permitNo', width: 135, className: 'mono' },
+      ...(fixedProject
+        ? []
+        : [{ key: 'projectName', title: 'Project', dataIndex: 'projectName', width: 200, ellipsis: true, render: (v: string, r: WorkPermitDto) => <Link href={`/projects/${r.projectId}?tab=safety`}>{v}</Link> } satisfies ListColumn<WorkPermitDto>]),
+      {
+        key: 'type',
+        title: 'Work',
+        dataIndex: 'type',
+        locked: true,
+        render: (t, r) => (
+          <div>
+            <RecordLink onOpen={() => setOpenId(r.id)}>{permitTypeLabel(t)}</RecordLink>
+            <Sub>
+              {r.location}: {r.description}
+            </Sub>
           </div>
-        </div>
-      ),
-    },
-    { title: 'Valid', key: 'valid', width: 230, render: (_, r) => permitWindow(r) },
-    { title: 'Asked by', dataIndex: 'requestedByName', width: 150 },
-    { title: 'Status', dataIndex: 'status', width: 100, fixed: 'right' as const, render: (_, r) => <PermitStatusTag p={r} /> },
-  ];
+        ),
+      },
+      { title: 'Valid', key: 'valid', width: 230, render: (_, r) => permitWindow(r) },
+      { key: 'contractor', title: 'Contractor', dataIndex: 'contractor', width: 160, defaultHidden: true, render: (v: string | null) => v ?? <Sub>-</Sub> },
+      { key: 'workerCount', title: 'Workers', dataIndex: 'workerCount', width: 90, align: 'right', defaultHidden: true, render: (v: number | null) => v ?? <Sub>-</Sub>, total: (rows) => rows.reduce((n, r) => n + (r.workerCount ?? 0), 0) },
+      { key: 'requestedByName', title: 'Asked by', dataIndex: 'requestedByName', width: 150 },
+      { key: 'issuedByName', title: 'Issued by', dataIndex: 'issuedByName', width: 150, defaultHidden: true, render: (v: string | null) => v ?? <Sub>-</Sub> },
+      { key: 'status', title: 'Status', dataIndex: 'status', width: 100, fixed: 'right' as const, render: (_, r) => <PermitStatusTag p={r} /> },
+    ],
+  });
+  const { page } = frame;
+  const view = (page.filters.view as View | undefined) ?? 'ACTIVE';
+  const type = page.filters.type as WorkPermitType | undefined;
+  const filters = { page: page.params.page, pageSize: page.params.pageSize, q: page.params.q, sortOrder: page.params.sortOrder, projectId: frame.projectId, type, active: view === 'ACTIVE' || undefined, status: view === 'ACTIVE' || view === 'ALL' ? undefined : view };
+  const { data, isLoading, isFetching, error, refetch } = useWorkPermits(filters);
 
   return (
     <>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       <ListToolbar
-        projectId={projectFilter}
-        onProject={reset(setProjectFilter)}
+        projectId={frame.projectFilter}
+        onProject={frame.setProjectFilter}
         hideProject={!!fixedProject}
-        search={list.search}
-        onSearch={list.setSearch}
+        search={page.search}
+        onSearch={page.setSearch}
         searchPlaceholder="Search no., place, work"
         extra={
           <>
@@ -102,30 +122,23 @@ export function PermitList({ projectId: fixedProject, initialOpenId }: { project
           </>
         }
       >
-        <Segmented
-          value={view}
-          onChange={(v) => reset(setView)(v as View)}
-          options={[
-            { value: 'ACTIVE', label: 'Waiting + live' },
-            { value: 'REQUESTED', label: 'Waiting' },
-            { value: 'ISSUED', label: 'Issued' },
-            { value: 'CLOSED', label: 'Closed' },
-            { value: 'ALL', label: 'All' },
-          ]}
-        />
-        <Select allowClear placeholder="All kinds of work" style={{ width: 200 }} value={type} onChange={reset(setType)} options={WORK_PERMIT_TYPES.map((t) => ({ value: t, label: WORK_PERMIT_TYPE_LABELS[t] }))} />
+        <Segmented<View> value={view} onChange={(v) => page.setFilter('view', v === 'ACTIVE' ? undefined : v)} options={VIEWS.map((v) => ({ value: v, label: VIEW_LABELS[v] }))} />
+        <Select<WorkPermitType> allowClear placeholder="All kinds of work" aria-label="Work" style={{ width: 200 }} value={type} onChange={(v) => page.setFilter('type', v)} options={WORK_PERMIT_TYPES.map((t) => ({ value: t, label: WORK_PERMIT_TYPE_LABELS[t] }))} />
       </ListToolbar>
-      <Table<WorkPermitDto>
-        rowKey="id"
+      <DataTable<WorkPermitDto>
         className="permit-list"
-        size="middle"
+        columns={frame.columns}
+        visible={frame.choice.visible}
+        onChooseColumns={frame.choice.setChosen}
+        chosenIsDefault={frame.choice.isDefault}
+        rows={data?.items ?? []}
         loading={isLoading || isFetching}
-        columns={columns}
-        dataSource={data?.items ?? []}
-        {...list.tableProps<WorkPermitDto>(data?.total)}
-        onRow={(r) => ({ onClick: () => setOpenId(r.id), style: { cursor: 'pointer' } })}
-        scroll={{ x: fixedProject ? 900 : 1100 }}
-        locale={{ emptyText: view === 'ACTIVE' ? 'No permits waiting or live' : 'No permits' }}
+        table={page.tableProps<WorkPermitDto>(data?.total)}
+        onOpen={setOpenId}
+        bulk={[exportSelected<WorkPermitDto>('permits-to-work', 'permits', EXPORT)]}
+        chips={frame.chips}
+        scrollX={fixedProject ? 900 : 1100}
+        emptyText={<EmptyArt art="entries" title={view === 'ACTIVE' ? 'No permits waiting or live' : 'No permits'} />}
       />
       <PermitDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onEdit={setEditing} />
       <PermitFormModal

@@ -160,3 +160,27 @@ test('projects, clients, vendors and users have views, chips and columns too', a
   await rows(page).first().locator('td').nth(2).click();
   await expect(page.getByRole('dialog')).toBeVisible();
 });
+
+test('registers have views, and lists in a tab keep chips and columns', async ({ page }) => {
+  await signIn(page, 'pm@demo.com');
+  await page.goto('/risks');
+  // The register opens on what is still open, under its own name.
+  await expect(page.getByRole('tab', { name: 'Open', exact: true })).toHaveAttribute('aria-selected', 'true');
+  await page.getByRole('tab', { name: 'Delays' }).click();
+  await expect(page).toHaveURL(/\/risks\?kind=DELAY$/);
+  await expect(page.locator('.ant-tag').filter({ hasText: 'Delays' })).toBeVisible();
+
+  await page.goto('/stock');
+  await page.getByRole('tab', { name: 'Register' }).click();
+  const register = page.getByRole('tabpanel', { name: 'Register' });
+  await expect(register.getByRole('button', { name: 'Columns' })).toBeVisible();
+  const chip = register.locator('.ant-tag').filter({ hasText: 'Type: Issue' });
+  // Under trace recording a click in this tab's drop-downs is sometimes lost (not seen by hand), so pick again if needed.
+  await expect(async () => {
+    if (!(await page.locator('.ant-select-dropdown:visible').count())) await register.getByRole('combobox', { name: 'Type' }).click();
+    await page.locator('.ant-select-dropdown:visible .ant-select-item-option').filter({ hasText: /^Issue$/ }).click();
+    await expect(chip).toBeVisible({ timeout: 2000 });
+  }).toPass();
+  // A tab list keeps its filters to itself: nothing goes in the address bar.
+  await expect(page).toHaveURL(/\/stock$/);
+});

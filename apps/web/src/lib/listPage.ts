@@ -32,12 +32,13 @@ const readUrl = (keys: readonly string[]): ListFilters => {
 /**
  * The state of a list page (UI roadmap item 55): filters, search and sort as one set of strings, kept in the URL so a
  * filtered list can be bookmarked or sent, plus paging. `keys` are the filters this list understands (besides `q`,
- * `sortBy` and `sortOrder`). With `url: false` (a list inside a project tab) nothing is written to the address bar.
+ * `sortBy` and `sortOrder`). With `url: false` (a list inside a project tab) nothing is written to the address bar, and
+ * `initial` (a link's "low stock only") is where the filters start.
  */
-export function useListPage<S extends string>(opts: { keys: readonly string[]; sortBy: S; sortOrder: SortOrder; sortFields?: readonly S[]; url?: boolean; scope?: string }) {
+export function useListPage<S extends string>(opts: { keys: readonly string[]; sortBy: S; sortOrder: SortOrder; sortFields?: readonly S[]; url?: boolean; scope?: string; initial?: ListFilters }) {
   const { keys, url = true, scope } = opts;
   const allKeys = useMemo(() => [...keys, 'q', 'sortBy', 'sortOrder'], [keys]);
-  const [filters, setFiltersRaw] = useState<ListFilters>(() => (url ? readUrl(allKeys) : {}));
+  const [filters, setFiltersRaw] = useState<ListFilters>(() => (url ? readUrl(allKeys) : (opts.initial ?? {})));
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 

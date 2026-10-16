@@ -2,20 +2,22 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Button, Select, Table, Typography } from 'antd';
-import type { TableProps } from 'antd';
+import { Button, Select, theme } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import type { SafetyIncidentDto, SafetyIncidentStatus, SafetyIncidentType } from '@erp/shared';
 import { SAFETY_INCIDENT_STATUSES, SAFETY_INCIDENT_STATUS_LABELS, SAFETY_INCIDENT_TYPES, SAFETY_INCIDENT_TYPE_LABELS, canReportSafety } from '@erp/shared';
-import { useProjectScope } from '@/lib/project-scope';
 import { useAuth } from '@/lib/auth';
 import { useSafetyIncidents } from '@/lib/queries';
-import { useListState } from '@/lib/listState';
 import { formatDate } from '@/lib/format';
 import { downloadXlsx, exportFileName, fetchAllPages, type ExportColumn } from '@/lib/exportExcel';
 import { QueryError } from '@/components/common/QueryState';
 import { ListToolbar } from '@/components/common/ListToolbar';
 import { ExportButton } from '@/components/common/ExportButton';
+import { EmptyArt } from '@/components/common/EmptyArt';
+import { DataTable, type ListColumn } from '@/components/list/DataTable';
+import { exportSelected } from '@/components/list/bulk';
+import { useListFrame } from '@/components/list/useListFrame';
+import { RecordLink } from '@/components/record/RecordLink';
 import { IncidentDrawer } from './IncidentDrawer';
 import { IncidentFormModal } from './IncidentFormModal';
 import { IncidentStatusTag, IncidentTypeTag } from './safetyUi';
@@ -39,57 +41,70 @@ const EXPORT: ExportColumn<SafetyIncidentDto>[] = [
   { header: 'Reported by', value: (r) => r.reportedByName, width: 20 },
 ];
 
+const KEYS = ['type', 'status'] as const;
+
+function Sub({ children }: { children: React.ReactNode }) {
+  const { token } = theme.useToken();
+  return <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{children}</div>;
+}
+
 /** The incident and near-miss register. */
 export function IncidentList({ projectId: fixedProject, initialOpenId }: { projectId?: string; initialOpenId?: string }) {
   const { user } = useAuth();
-  const list = useListState<'date'>({ sortBy: 'date', sortOrder: 'desc' });
-  const [projectFilter, setProjectFilter] = useProjectScope();
-  const [type, setType] = useState<SafetyIncidentType | 'INCIDENTS' | undefined>();
-  const [status, setStatus] = useState<SafetyIncidentStatus | undefined>();
   const [openId, setOpenId] = useState<string | null>(initialOpenId ?? null);
   const [form, setForm] = useState<{ nearMiss: boolean } | null>(null);
   const [editing, setEditing] = useState<SafetyIncidentDto | null>(null);
-  const projectId = fixedProject ?? projectFilter;
-  const { sortBy: _sortBy, ...paging } = list.params;
-  const filters = { ...paging, projectId, type: type === 'INCIDENTS' ? undefined : type, incidentsOnly: type === 'INCIDENTS' || undefined, status };
+  const frame = useListFrame<'date', SafetyIncidentDto>({
+    list: 'safety-incidents',
+    url: false,
+    keys: KEYS,
+    sortBy: 'date',
+    sortOrder: 'desc',
+    sortFields: ['date'],
+    fixedProject,
+    statusLabels: SAFETY_INCIDENT_STATUS_LABELS,
+    chipLabels: { type: (v) => (v === 'INCIDENTS' ? 'All but near misses' : `Type: ${SAFETY_INCIDENT_TYPE_LABELS[v as SafetyIncidentType] ?? v}`) },
+    columns: (): ListColumn<SafetyIncidentDto>[] => [
+      { key: 'incidentNo', title: 'No.', dataIndex: 'incidentNo', width: 135, className: 'mono' },
+      { key: 'date', title: 'Date', dataIndex: 'date', width: 120, render: (v, r) => `${formatDate(v)}${r.time ? ` ${r.time}` : ''}` },
+      ...(fixedProject
+        ? []
+        : [{ key: 'projectName', title: 'Project', dataIndex: 'projectName', width: 200, ellipsis: true, render: (v: string, r: SafetyIncidentDto) => <Link href={`/projects/${r.projectId}?tab=safety`}>{v}</Link> } satisfies ListColumn<SafetyIncidentDto>]),
+      { key: 'type', title: 'Type', dataIndex: 'type', width: 150, render: (t) => <IncidentTypeTag type={t} /> },
+      {
+        key: 'description',
+        title: 'What happened',
+        dataIndex: 'description',
+        locked: true,
+        render: (v, r) => (
+          <div>
+            <RecordLink onOpen={() => setOpenId(r.id)}>{r.location}</RecordLink>
+            <Sub>{v.length > 140 ? `${v.slice(0, 137)}...` : v}</Sub>
+          </div>
+        ),
+      },
+      { key: 'injuredCount', title: 'Hurt', label: 'People hurt', dataIndex: 'injuredCount', width: 70, align: 'center', render: (v) => (v ? <strong>{v}</strong> : <Sub>-</Sub>), total: (rows) => rows.reduce((n, r) => n + r.injuredCount, 0) },
+      { key: 'daysLost', title: 'Days off', label: 'Days off work', dataIndex: 'daysLost', width: 90, align: 'center', defaultHidden: true, render: (v: number | null) => v ?? <Sub>-</Sub> },
+      { key: 'reportedByName', title: 'Reported by', dataIndex: 'reportedByName', width: 150 },
+      { key: 'status', title: 'Status', dataIndex: 'status', width: 90, fixed: 'right' as const, render: (s) => <IncidentStatusTag status={s} /> },
+    ],
+  });
+  const { page } = frame;
+  const type = page.filters.type as SafetyIncidentType | 'INCIDENTS' | undefined;
+  const status = page.filters.status as SafetyIncidentStatus | undefined;
+  const filters = { page: page.params.page, pageSize: page.params.pageSize, q: page.params.q, sortOrder: page.params.sortOrder, projectId: frame.projectId, type: type === 'INCIDENTS' ? undefined : type, incidentsOnly: type === 'INCIDENTS' || undefined, status };
   const { data, isLoading, isFetching, error, refetch } = useSafetyIncidents(filters);
   const mayReport = !!user && canReportSafety(user.roleKey);
-  const reset = <T,>(set: (v: T) => void) => (v: T) => {
-    set(v);
-    list.resetPage();
-  };
-
-  const columns: TableProps<SafetyIncidentDto>['columns'] = [
-    { title: 'No.', dataIndex: 'incidentNo', width: 135, className: 'mono' },
-    { title: 'Date', dataIndex: 'date', width: 120, render: (v, r) => `${formatDate(v)}${r.time ? ` ${r.time}` : ''}` },
-    ...(fixedProject ? [] : [{ title: 'Project', dataIndex: 'projectName', width: 200, ellipsis: true, render: (v: string, r: SafetyIncidentDto) => <Link href={`/projects/${r.projectId}?tab=safety`}>{v}</Link> }]),
-    { title: 'Type', dataIndex: 'type', width: 150, render: (t) => <IncidentTypeTag type={t} /> },
-    {
-      title: 'What happened',
-      dataIndex: 'description',
-      render: (v, r) => (
-        <div>
-          <Typography.Link onClick={() => setOpenId(r.id)}>{r.location}</Typography.Link>
-          <div className="text-muted" style={{ fontSize: 12 }}>
-            {v.length > 140 ? `${v.slice(0, 137)}...` : v}
-          </div>
-        </div>
-      ),
-    },
-    { title: 'Hurt', dataIndex: 'injuredCount', width: 70, align: 'center', render: (v) => (v ? <strong>{v}</strong> : <span className="text-muted">-</span>) },
-    { title: 'Reported by', dataIndex: 'reportedByName', width: 150 },
-    { title: 'Status', dataIndex: 'status', width: 90, fixed: 'right' as const, render: (s) => <IncidentStatusTag status={s} /> },
-  ];
 
   return (
     <>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       <ListToolbar
-        projectId={projectFilter}
-        onProject={reset(setProjectFilter)}
+        projectId={frame.projectFilter}
+        onProject={frame.setProjectFilter}
         hideProject={!!fixedProject}
-        search={list.search}
-        onSearch={list.setSearch}
+        search={page.search}
+        onSearch={page.setSearch}
         searchPlaceholder="Search no., place, details"
         extra={
           <>
@@ -116,24 +131,36 @@ export function IncidentList({ projectId: fixedProject, initialOpenId }: { proje
         <Select
           allowClear
           placeholder="All types"
+          aria-label="Type"
           style={{ width: 190 }}
           value={type}
-          onChange={reset(setType)}
+          onChange={(v) => page.setFilter('type', v)}
           options={[{ value: 'INCIDENTS', label: 'All but near misses' }, ...SAFETY_INCIDENT_TYPES.map((t) => ({ value: t, label: SAFETY_INCIDENT_TYPE_LABELS[t] }))]}
         />
-        <Select allowClear placeholder="Open and closed" style={{ width: 150 }} value={status} onChange={reset(setStatus)} options={SAFETY_INCIDENT_STATUSES.map((s) => ({ value: s, label: SAFETY_INCIDENT_STATUS_LABELS[s] }))} />
+        <Select<SafetyIncidentStatus>
+          allowClear
+          placeholder="Open and closed"
+          aria-label="Status"
+          style={{ width: 150 }}
+          value={status}
+          onChange={(v) => page.setFilter('status', v)}
+          options={SAFETY_INCIDENT_STATUSES.map((s) => ({ value: s, label: SAFETY_INCIDENT_STATUS_LABELS[s] }))}
+        />
       </ListToolbar>
-      <Table<SafetyIncidentDto>
-        rowKey="id"
+      <DataTable<SafetyIncidentDto>
         className="incident-list"
-        size="middle"
+        columns={frame.columns}
+        visible={frame.choice.visible}
+        onChooseColumns={frame.choice.setChosen}
+        chosenIsDefault={frame.choice.isDefault}
+        rows={data?.items ?? []}
         loading={isLoading || isFetching}
-        columns={columns}
-        dataSource={data?.items ?? []}
-        {...list.tableProps<SafetyIncidentDto>(data?.total)}
-        onRow={(r) => ({ onClick: () => setOpenId(r.id), style: { cursor: 'pointer' } })}
-        scroll={{ x: fixedProject ? 1000 : 1200 }}
-        locale={{ emptyText: 'No incidents or near misses recorded' }}
+        table={page.tableProps<SafetyIncidentDto>(data?.total)}
+        onOpen={setOpenId}
+        bulk={[exportSelected<SafetyIncidentDto>('incident-register', 'incidents', EXPORT)]}
+        chips={frame.chips}
+        scrollX={fixedProject ? 1000 : 1200}
+        emptyText={<EmptyArt art="entries" title={type || status || page.params.q ? 'No incident matches these filters' : 'No incidents or near misses recorded'} />}
       />
       <IncidentDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onEdit={setEditing} />
       <IncidentFormModal

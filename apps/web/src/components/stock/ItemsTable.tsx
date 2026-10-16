@@ -1,21 +1,24 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Form, Input, InputNumber, Modal, Popconfirm, Space, Table, Tag } from 'antd';
+import { App, Button, Form, Input, InputNumber, Modal, Popconfirm, Space, Tag, Typography } from 'antd';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
-import type { TableProps } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ItemDto, ItemSortField } from '@erp/shared';
-import { canManageStore } from '@erp/shared';
+import { LIST_SORT_FIELDS, canManageStore } from '@erp/shared';
 import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useStockItems } from '@/lib/queries';
-import { useListState } from '@/lib/listState';
 import { formatDate, formatINR } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { SearchBox } from '@/components/common/SearchBox';
 import { UnitInput } from '@/components/common/UnitInput';
 import { CardToolbar } from '@/components/common/CardToolbar';
+import { EmptyArt } from '@/components/common/EmptyArt';
+import { DataTable, type ListColumn } from '@/components/list/DataTable';
+import { useListFrame } from '@/components/list/useListFrame';
+
+const NO_KEYS: string[] = [];
 
 interface ItemForm {
   name: string;
@@ -30,8 +33,6 @@ export function ItemsTable() {
   const { message } = App.useApp();
   const qc = useQueryClient();
   const mayManage = !!user && canManageStore(user.roleKey);
-  const list = useListState<ItemSortField>({ sortBy: 'name', sortOrder: 'asc', pageSize: 50 });
-  const { data, isLoading, isFetching, error, refetch } = useStockItems(list.params);
   const [editing, setEditing] = useState<ItemDto | 'new' | null>(null);
   const [form] = Form.useForm<ItemForm>();
 
@@ -63,45 +64,89 @@ export function ItemsTable() {
     if (i !== 'new') form.setFieldsValue({ name: i.name, unit: i.unit, category: i.category ?? undefined, rate: i.rate === null ? undefined : Number(i.rate) });
   };
 
-  const sort = (key: ItemSortField) => ({ key, sorter: true, sortOrder: list.sortOrderFor(key), sortDirections: ['ascend', 'descend'] as ('descend' | 'ascend')[] });
-  const columns: TableProps<ItemDto>['columns'] = [
-    { title: 'Item', dataIndex: 'name', ...sort('name') },
-    { title: 'Unit', dataIndex: 'unit', width: 100, ...sort('unit') },
-    { title: 'Category', dataIndex: 'category', width: 160, ...sort('category'), render: (v) => (v ? <Tag style={{ margin: 0 }}>{v}</Tag> : <span className="text-muted">-</span>) },
-    { title: 'Rate (₹)', dataIndex: 'rate', width: 130, align: 'right', className: 'mono', render: (v: string | null, r) => (v === null ? <span className="text-muted">-</span> : `${formatINR(v, true).replace('₹ ', '')} / ${r.unit}`) },
-    { title: 'Projects with stock', dataIndex: 'projectCount', width: 160, align: 'center' },
-    { title: 'Added', dataIndex: 'createdAt', width: 130, ...sort('createdAt'), render: (v) => formatDate(v) },
-    ...(mayManage
-      ? [
-          {
-            title: '',
-            key: 'actions',
-            width: 100,
-            render: (_: unknown, r: ItemDto) => (
-              <Space size={2}>
-                <Button type="text" size="small" icon={<EditOutlined />} onClick={() => open(r)} aria-label="Edit" />
-                <Popconfirm title={`Delete ${r.name}?`} okText="Delete" okButtonProps={{ danger: true }} onConfirm={() => remove.mutate(r)} disabled={r.projectCount > 0}>
-                  <Button type="text" size="small" danger icon={<DeleteOutlined />} disabled={r.projectCount > 0} title={r.projectCount > 0 ? 'Has stock movements' : undefined} aria-label="Delete" />
-                </Popconfirm>
-              </Space>
-            ),
-          },
-        ]
-      : []),
-  ];
+  const frame = useListFrame<ItemSortField, ItemDto>({
+    list: 'stock-items',
+    url: false,
+    keys: NO_KEYS,
+    sortBy: 'name',
+    sortOrder: 'asc',
+    sortFields: LIST_SORT_FIELDS.items,
+    projectScoped: false,
+    columns: (sortOrderFor): ListColumn<ItemDto>[] => {
+      const sort = (key: ItemSortField) => ({ key, sorter: true, sortOrder: sortOrderFor(key), sortDirections: ['ascend', 'descend'] as ('descend' | 'ascend')[] });
+      return [
+        { title: 'Item', dataIndex: 'name', locked: true, ...sort('name') },
+        { title: 'Unit', dataIndex: 'unit', width: 100, ...sort('unit') },
+        { title: 'Category', dataIndex: 'category', width: 160, ...sort('category'), render: (v) => (v ? <Tag style={{ margin: 0 }}>{v}</Tag> : <Typography.Text type="secondary">-</Typography.Text>) },
+        {
+          key: 'rate',
+          title: 'Rate (₹)',
+          label: 'Rate',
+          dataIndex: 'rate',
+          width: 130,
+          align: 'right',
+          className: 'mono',
+          render: (v: string | null, r) => (v === null ? <Typography.Text type="secondary">-</Typography.Text> : `${formatINR(v, true).replace('₹ ', '')} / ${r.unit}`),
+        },
+        { key: 'projectCount', title: 'Projects with stock', dataIndex: 'projectCount', width: 160, align: 'center' },
+        { title: 'Added', dataIndex: 'createdAt', width: 130, ...sort('createdAt'), render: (v) => formatDate(v) },
+        ...(mayManage
+          ? [
+              {
+                title: '',
+                key: 'actions',
+                label: 'Actions',
+                locked: true,
+                width: 100,
+                render: (_: unknown, r: ItemDto) => (
+                  <Space size={2}>
+                    <Button type="text" size="small" icon={<EditOutlined />} onClick={() => open(r)} aria-label="Edit" />
+                    <Popconfirm title={`Delete ${r.name}?`} okText="Delete" okButtonProps={{ danger: true }} onConfirm={() => remove.mutate(r)} disabled={r.projectCount > 0}>
+                      <Button type="text" size="small" danger icon={<DeleteOutlined />} disabled={r.projectCount > 0} title={r.projectCount > 0 ? 'Has stock movements' : undefined} aria-label="Delete" />
+                    </Popconfirm>
+                  </Space>
+                ),
+              } satisfies ListColumn<ItemDto>,
+            ]
+          : []),
+      ];
+    },
+  });
+  const { page } = frame;
+  const { data, isLoading, isFetching, error, refetch } = useStockItems({ page: page.params.page, pageSize: page.params.pageSize, q: page.params.q, sortBy: page.params.sortBy, sortOrder: page.params.sortOrder });
+  const rows = data?.items ?? [];
 
   return (
     <>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       <CardToolbar wrap gap={8} align="center">
-        <SearchBox value={list.search} onChange={list.setSearch} placeholder="Search item, unit or category" />
+        <SearchBox value={page.search} onChange={page.setSearch} placeholder="Search item, unit or category" />
         {mayManage ? (
           <Button icon={<PlusOutlined />} onClick={() => open('new')} style={{ marginLeft: 'auto' }}>
             Add item
           </Button>
         ) : null}
       </CardToolbar>
-      <Table<ItemDto> size="middle" rowKey="id" loading={isLoading || isFetching} dataSource={data?.items ?? []} columns={columns} {...list.tableProps<ItemDto>(data?.total)} />
+      <DataTable<ItemDto>
+        columns={frame.columns}
+        visible={frame.choice.visible}
+        onChooseColumns={frame.choice.setChosen}
+        chosenIsDefault={frame.choice.isDefault}
+        rows={rows}
+        loading={isLoading || isFetching}
+        table={page.tableProps<ItemDto>(data?.total)}
+        onOpen={
+          mayManage
+            ? (id) => {
+                const i = rows.find((x) => x.id === id);
+                if (i) open(i);
+              }
+            : undefined
+        }
+        chips={frame.chips}
+        scrollX={900}
+        emptyText={<EmptyArt art="entries" title={page.params.q ? 'No item matches this search' : 'No items yet. GRNs add them from the request lines.'} />}
+      />
       <Modal
         open={!!editing}
         title={editing === 'new' ? 'Add item' : 'Edit item'}
