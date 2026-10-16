@@ -2,73 +2,53 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Button, DatePicker, Select, Table, Tag, Typography } from 'antd';
-import type { TableProps } from 'antd';
+import { Button, Select, Tag, theme } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
-import type { Dayjs } from 'dayjs';
 import type { InspectionDto, InspectionSortField, SubmissionStatus } from '@erp/shared';
-import { INSPECTION_STATUS_LABELS, canRequestInspection, checklistCounts } from '@erp/shared';
-import { useProjectScope } from '@/lib/project-scope';
+import { INSPECTION_STATUS_LABELS, LIST_SORT_FIELDS, canRequestInspection, checklistCounts } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
+import { useProjectScope } from '@/lib/project-scope';
 import { useActivities, useInspections } from '@/lib/queries';
-import { useListState } from '@/lib/listState';
 import { formatDate } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { ListToolbar } from '@/components/common/ListToolbar';
+import { EmptyArt } from '@/components/common/EmptyArt';
 import { StatusTag } from '@/components/common/StatusTag';
-import { EditResubmitButton } from '@/components/common/EditResubmitButton';
+import { DataTable, type ListColumn } from '@/components/list/DataTable';
+import { DateRangeFilter } from '@/components/list/DateRangeFilter';
+import { RowActions } from '@/components/list/RowActions';
+import { RecordLink } from '@/components/record/RecordLink';
+import { useListFrame } from '@/components/list/useListFrame';
 import { InspectionDrawer } from './InspectionDrawer';
 import { InspectionFormModal } from './InspectionFormModal';
-import { rangePresets } from '@/lib/dates';
 
-/** Inspection requests, on the Inspections page and as a project tab. */
-export function InspectionList({ projectId: fixedProject }: { projectId?: string }) {
-  const { user } = useAuth();
-  const list = useListState<InspectionSortField>({ sortBy: 'date', sortOrder: 'desc' });
-  const [projectFilter, setProjectFilter] = useProjectScope();
-  const [status, setStatus] = useState<SubmissionStatus | undefined>();
-  const [activityId, setActivityId] = useState<string | undefined>();
-  const [range, setRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
-  const [openId, setOpenId] = useState<string | null>(null);
-  const [formOpen, setFormOpen] = useState(false);
-  const [editing, setEditing] = useState<InspectionDto | null>(null);
-  const projectId = fixedProject ?? projectFilter;
-  const { data: activities } = useActivities(projectId);
-  const { data, isLoading, isFetching, error, refetch } = useInspections({
-    ...list.params,
-    projectId,
-    status,
-    activityId: projectId ? activityId : undefined,
-    from: range?.[0]?.format('YYYY-MM-DD'),
-    to: range?.[1]?.format('YYYY-MM-DD'),
-  });
-  const reset = <T,>(set: (v: T) => void) => (v: T) => {
-    set(v);
-    list.resetPage();
-  };
-  const sort = (key: InspectionSortField) => ({ key, sorter: true, sortOrder: list.sortOrderFor(key), sortDirections: ['descend', 'ascend'] as ('descend' | 'ascend')[] });
+const KEYS = ['status', 'mine', 'from', 'to', 'activityId'] as const;
 
-  const columns: TableProps<InspectionDto>['columns'] = [
+function Sub({ children }: { children: React.ReactNode }) {
+  const { token } = theme.useToken();
+  return <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{children}</div>;
+}
+
+function inspectionColumns({ showProject, onOpen, onEdit, sortOrderFor }: { showProject: boolean; onOpen: (id: string) => void; onEdit: (row: InspectionDto) => void; sortOrderFor: (key: InspectionSortField) => 'ascend' | 'descend' | null }): ListColumn<InspectionDto>[] {
+  const sort = (key: InspectionSortField) => ({ key, sorter: true, sortOrder: sortOrderFor(key), sortDirections: ['descend', 'ascend'] as ('descend' | 'ascend')[] });
+  return [
     { title: 'Ready on', dataIndex: 'date', width: 110, render: (v) => formatDate(v), ...sort('date') },
     { title: 'No.', dataIndex: 'inspectionNo', width: 130, className: 'mono', ...sort('inspectionNo') },
-    ...(fixedProject
-      ? []
-      : [{ title: 'Project', dataIndex: 'projectName', ...sort('project'), width: 200, ellipsis: true, render: (v: string, r: InspectionDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> }]),
+    ...(showProject ? [{ title: 'Project', dataIndex: 'projectName', ...sort('project'), width: 200, ellipsis: true, render: (v: string, r: InspectionDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> }] : []),
     {
       title: 'Activity and location',
+      locked: true,
       width: 280,
       ...sort('activity'),
       render: (_, r) => (
         <div>
-          <Typography.Link onClick={() => setOpenId(r.id)}>{r.activityName}</Typography.Link>
+          <RecordLink onOpen={() => onOpen(r.id)}>{r.activityName}</RecordLink>
           {r.holdPoint && (
             <Tag color="orange" style={{ marginLeft: 6 }}>
               Hold point
             </Tag>
           )}
-          <div className="text-muted" style={{ fontSize: 12 }}>
-            {r.location}
-          </div>
+          <Sub>{r.location}</Sub>
         </div>
       ),
     },
@@ -78,49 +58,64 @@ export function InspectionList({ projectId: fixedProject }: { projectId?: string
       width: 170,
       render: (_, r) => {
         const c = checklistCounts(r.checklist);
-        if (!c.total) return <span className="text-muted">-</span>;
+        if (!c.total) return '-';
         return (
-          <div style={{ fontSize: 12 }}>
+          <div>
             {r.checklistName ?? 'Own points'}
-            <div className="text-muted">{c.open === c.total ? `${c.total} points` : `${c.pass} OK${c.fail ? `, ${c.fail} not OK` : ''}`}</div>
+            <Sub>{c.open === c.total ? `${c.total} points` : `${c.pass} OK${c.fail ? `, ${c.fail} not OK` : ''}`}</Sub>
           </div>
         );
       },
     },
     { title: 'Requested by', dataIndex: 'submittedByName', width: 140, ...sort('submittedBy') },
-    { title: 'Inspected by', dataIndex: 'reviewedByName', width: 140, render: (v: string | null) => v ?? <span className="text-muted">-</span> },
+    { title: 'Requested on', dataIndex: 'submittedAt', width: 130, defaultHidden: true, render: (v) => formatDate(v), ...sort('submittedAt') },
+    { key: 'reviewedByName', title: 'Inspected by', dataIndex: 'reviewedByName', width: 140, render: (v: string | null) => v ?? '-' },
     { title: 'Status', fixed: 'right' as const, dataIndex: 'status', width: 120, ...sort('status'), render: (s: SubmissionStatus) => <StatusTag status={s} labels={INSPECTION_STATUS_LABELS} /> },
-    {
-      title: '',
-      key: 'actions',
-      fixed: 'right' as const,
-      width: 120,
-      render: (_, r) => (
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <Button size="small" onClick={() => setOpenId(r.id)}>
-            {r.status === 'SUBMITTED' ? 'Open' : 'View'}
-          </Button>
-          <EditResubmitButton entry={r} onEdit={setEditing} size="small" compact />
-        </div>
-      ),
-    },
+    // Passing an inspection means filling its checklist, so the row menu opens it rather than approving.
+    { key: 'actions', title: '', label: 'Actions', locked: true, fixed: 'right' as const, width: 56, render: (_, r) => <RowActions type="inspection" row={r} review={false} onOpen={onOpen} onEdit={onEdit} /> },
   ];
+}
+
+/** Inspection requests, on the Inspections page and as a project tab. */
+export function InspectionList({ projectId: fixedProject }: { projectId?: string }) {
+  const { user } = useAuth();
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<InspectionDto | null>(null);
+  const [scope] = useProjectScope();
+  const { data: activities } = useActivities(fixedProject ?? scope);
+  const frame = useListFrame({
+    list: 'inspections',
+    type: 'INSPECTION',
+    keys: KEYS,
+    sortBy: 'date',
+    sortOrder: 'desc',
+    sortFields: LIST_SORT_FIELDS.inspections,
+    fixedProject,
+    columns: (sortOrderFor) => inspectionColumns({ showProject: !fixedProject, onOpen: setOpenId, onEdit: setEditing, sortOrderFor }),
+    statusLabels: INSPECTION_STATUS_LABELS,
+    chipLabels: { activityId: (v) => `Activity: ${activities?.find((a) => a.id === v)?.name ?? 'one activity'}` },
+  });
+  const { page } = frame;
+  const activityId = frame.projectId ? page.filters.activityId : undefined;
+  const { data, isLoading, isFetching, error, refetch } = useInspections({ ...page.params, projectId: frame.projectId, status: frame.status, activityId });
 
   return (
     <>
+      {frame.views}
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       <ListToolbar
-        projectId={projectFilter}
+        projectId={frame.projectFilter}
         onProject={(v) => {
-          setActivityId(undefined);
-          reset(setProjectFilter)(v);
+          page.setFilter('activityId', undefined);
+          frame.setProjectFilter(v);
         }}
         hideProject={!!fixedProject}
-        status={status}
-        onStatus={reset(setStatus)}
+        status={frame.status}
+        onStatus={frame.setStatus}
         statusLabels={INSPECTION_STATUS_LABELS}
-        search={list.search}
-        onSearch={list.setSearch}
+        search={page.search}
+        onSearch={page.setSearch}
         searchPlaceholder="Search no., location, activity"
         extra={
           user && canRequestInspection(user.roleKey) ? (
@@ -133,24 +128,28 @@ export function InspectionList({ projectId: fixedProject }: { projectId?: string
         <Select
           allowClear
           showSearch={{ optionFilterProp: 'label' }}
-          placeholder={projectId ? 'All activities' : 'Pick a project to filter by activity'}
-          disabled={!projectId}
+          placeholder={frame.projectId ? 'All activities' : 'Pick a project to filter by activity'}
+          aria-label="Activity"
+          disabled={!frame.projectId}
           style={{ width: 240 }}
           value={activityId}
-          onChange={reset(setActivityId)}
+          onChange={(v) => page.setFilter('activityId', v)}
           options={(activities ?? []).map((a) => ({ value: a.id, label: a.name }))}
         />
-        <DatePicker.RangePicker presets={rangePresets()} value={range} onChange={(v) => reset(setRange)(v as [Dayjs | null, Dayjs | null] | null)} format="DD MMM YYYY" allowEmpty={[true, true]} />
+        <DateRangeFilter {...frame.dateRange} />
       </ListToolbar>
-      <Table<InspectionDto>
-        rowKey="id"
+      <DataTable<InspectionDto>
+        columns={frame.columns}
+        visible={frame.choice.visible}
+        onChooseColumns={frame.choice.setChosen}
+        chosenIsDefault={frame.choice.isDefault}
+        rows={data?.items ?? []}
         loading={isLoading || isFetching}
-        columns={columns}
-        dataSource={data?.items ?? []}
-        size="middle"
-        {...list.tableProps<InspectionDto>(data?.total)}
-        scroll={{ x: fixedProject ? 1300 : 1500 }}
-        locale={{ emptyText: 'No inspection requested yet' }}
+        table={page.tableProps<InspectionDto>(data?.total)}
+        onOpen={setOpenId}
+        chips={frame.chips}
+        scrollX={fixedProject ? 1250 : 1450}
+        emptyText={<EmptyArt art="entries" title="No inspection requested yet" />}
       />
       <InspectionDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onEdit={setEditing} />
       <InspectionFormModal

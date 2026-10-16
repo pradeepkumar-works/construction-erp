@@ -21,7 +21,7 @@ import { AttachmentsService } from '../common/attachments.service';
 import { dateOnly, dec, iso, money, parseDate } from '../common/serialize';
 import { isUniqueViolation } from '../common/idempotency';
 import { nextDocNo } from '../common/doc-number';
-import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
+import { dateRange, ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import { D, MSME_MAX_PAYMENT_DAYS, ZERO, parseGstRate, parseQty, parseRate, sum } from '../purchasing/purchase-math';
 import { CloseWorkOrderDto, CreateWorkOrderDto, ListWorkOrdersQuery, MarginQuery, UpdateWorkOrderDto, WoLineInput } from './subcontracts.dto';
 
@@ -163,6 +163,9 @@ export class WorkOrdersService {
     if (q.status) where.status = q.status;
     if (q.open) Object.assign(where, { status: 'APPROVED', closedAt: null });
     if (q.boqItemId) where.lines = { some: { boqItemId: q.boqItemId } };
+    if (q.mine) where.submittedById = user.id;
+    const days = dateRange(q.from, q.to);
+    if (days) where.woDate = days;
     const words = searchWords(q.q);
     if (words.length)
       where.AND = words.map((w) => ({

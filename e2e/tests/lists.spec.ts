@@ -102,3 +102,33 @@ test('figures add up in a total row for the page', async ({ page }) => {
   const cells = await rows(page).evaluateAll((trs, i) => trs.map((tr) => Number((tr.children[i] as HTMLElement).innerText.trim() || 0)), index);
   await expect(summary.locator('td').nth(index)).toHaveText(String(cells.reduce((a, b) => a + b, 0)));
 });
+
+test('the other approval lists have the same views, chips, columns and totals', async ({ page }) => {
+  await signIn(page, 'md@demo.com');
+  for (const path of ['/vendor-bills', '/work-orders', '/subcontract-bills', '/expenses', '/measurements', '/machinery', '/inspections']) {
+    await page.goto(path);
+    await expect(page.getByRole('tab', { name: 'Sent back' }), path).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Mine' }), path).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Columns' }), path).toBeVisible();
+  }
+
+  // A list's own view goes in the address bar and shows as a chip.
+  await page.goto('/vendor-bills');
+  await page.getByRole('tab', { name: 'Not matching the PO' }).click();
+  await expect(page).toHaveURL(/\/vendor-bills\?exceptions=1$/);
+  await expect(page.locator('.ant-tag').filter({ hasText: 'Not matching the PO' })).toBeVisible();
+
+  // Dates now filter work orders too; the chip takes them off.
+  await page.goto('/work-orders?from=2026-01-01');
+  await expect(page.locator('.ant-tag').filter({ hasText: 'From 01 Jan 2026' })).toBeVisible();
+  await page.getByLabel('Remove From 01 Jan 2026').click();
+  await expect(page).toHaveURL(/\/work-orders$/);
+
+  // Expenses add up on the page, and a row opens its entry.
+  await page.goto('/expenses');
+  await expect(rows(page).nth(1)).toBeVisible();
+  await expect(page.locator('.ant-table-summary')).toContainText('Total, this page');
+  const expenseNo = (await rows(page).first().locator('td.mono').first().innerText()).trim();
+  await rows(page).first().locator('td').nth(2).click();
+  await expect(page.locator('.ant-drawer')).toContainText(expenseNo);
+});

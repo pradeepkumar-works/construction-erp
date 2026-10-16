@@ -61,7 +61,7 @@ test.describe.serial('inspection from request to pass', () => {
     await signIn(page, 'qaqc@demo.com');
     await page.goto('/inspections');
     await page.getByPlaceholder('Search no., location, activity').fill(location);
-    await page.locator('tr').filter({ hasText: location }).getByRole('button', { name: 'Open' }).click();
+    await page.locator('tr').filter({ hasText: location }).getByText(location).click();
     const drawer = page.locator('.ant-drawer-open');
     await drawer.getByRole('radiogroup', { name: 'Result of Layer thickness' }).getByText('OK', { exact: true }).click();
     await drawer.getByRole('button', { name: 'Pass' }).click();

@@ -19,7 +19,7 @@ import { SubmissionLifecycleService } from '../common/submission-lifecycle.servi
 import { AttachmentsService } from '../common/attachments.service';
 import { dateOnly, dec, iso, money, parseDate } from '../common/serialize';
 import { isUniqueViolation } from '../common/idempotency';
-import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
+import { dateRange, ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import { D, DEFAULT_PAYMENT_DAYS, MSME_MAX_PAYMENT_DAYS, ZERO, sum } from '../purchasing/purchase-math';
 import { CreateSubcontractBillDto, ListSubcontractBillsQuery, OwnItemQtyInput, UpdateSubcontractBillDto } from './subcontracts.dto';
 import { pctStr } from './work-orders.service';
@@ -184,6 +184,9 @@ export class SubcontractBillsService {
     if (q.workOrderId) where.workOrderId = q.workOrderId;
     if (q.vendorId) where.workOrder = { vendorId: q.vendorId };
     if (q.status) where.status = q.status;
+    if (q.mine) where.submittedById = user.id;
+    const days = dateRange(q.from, q.to);
+    if (days) where.billDate = days;
     const words = searchWords(q.q);
     if (words.length)
       where.AND = words.map((w) => ({

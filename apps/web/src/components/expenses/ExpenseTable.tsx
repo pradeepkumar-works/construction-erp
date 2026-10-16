@@ -2,50 +2,51 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Button, Table, Tag, Tooltip, Typography } from 'antd';
+import { Tag, Tooltip, theme } from 'antd';
 import { WarningOutlined } from '@ant-design/icons';
-import type { TableProps } from 'antd';
 import type { ExpenseDto, ExpenseSortField } from '@erp/shared';
 import { EXPENSE_CATEGORY_LABELS, PAYMENT_MODE_LABELS } from '@erp/shared';
 import { formatDate, formatINR, toNumber } from '@/lib/format';
 import { StatusTag } from '@/components/common/StatusTag';
 import { PhotoThumbs } from '@/components/common/AttachmentGallery';
-import { ReviewActions } from '@/components/common/ReviewActions';
-import { EditResubmitButton } from '@/components/common/EditResubmitButton';
+import type { ListColumn } from '@/components/list/DataTable';
+import { RowActions } from '@/components/list/RowActions';
+import { RecordLink } from '@/components/record/RecordLink';
 
-export function ExpenseTable({
-  data,
-  loading,
+const sumMoney = (values: string[]) => formatINR(values.reduce((n, v) => n + toNumber(v), 0), true);
+
+function Sub({ children }: { children: React.ReactNode }) {
+  const { token } = theme.useToken();
+  return <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{children}</div>;
+}
+
+/** The site expense list's columns; keys of sortable ones are the API's sort fields. */
+export function expenseColumns({
   showProject,
   onOpen,
   onEdit,
-  table,
   sortOrderFor,
 }: {
-  data: ExpenseDto[];
-  loading?: boolean;
   showProject?: boolean;
   onOpen: (id: string) => void;
   onEdit?: (row: ExpenseDto) => void;
-  table: Pick<TableProps<ExpenseDto>, 'pagination' | 'onChange'>;
   sortOrderFor: (key: ExpenseSortField) => 'ascend' | 'descend' | null;
-}) {
+}): ListColumn<ExpenseDto>[] {
   const sort = (key: ExpenseSortField) => ({ key, sorter: true, sortOrder: sortOrderFor(key), sortDirections: ['descend', 'ascend'] as ('descend' | 'ascend')[] });
-  const columns: TableProps<ExpenseDto>['columns'] = [
+  return [
     { title: 'Date', dataIndex: 'date', width: 110, render: (v) => formatDate(v), ...sort('date') },
     { title: 'No.', dataIndex: 'expenseNo', width: 130, className: 'mono', ...sort('expenseNo') },
     ...(showProject
       ? [{ title: 'Project', dataIndex: 'projectName', ...sort('project'), width: 200, ellipsis: true, render: (v: string, r: ExpenseDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> }]
       : []),
     {
+      key: 'description',
       title: 'Expense',
-      dataIndex: 'description',
-      render: (v, r) => (
+      locked: true,
+      render: (_, r) => (
         <div>
-          <Typography.Link onClick={() => onOpen(r.id)}>{v}</Typography.Link>
-          <div className="text-muted" style={{ fontSize: 12 }}>
-            {[r.vendor, r.billNo ? `Bill ${r.billNo}` : null].filter(Boolean).join(' · ') || ' '}
-          </div>
+          <RecordLink onOpen={() => onOpen(r.id)}>{r.description}</RecordLink>
+          <Sub>{[r.vendor, r.billNo ? `Bill ${r.billNo}` : null].filter(Boolean).join(' · ') || ' '}</Sub>
         </div>
       ),
     },
@@ -58,17 +59,16 @@ export function ExpenseTable({
       render: (_, r) => (
         <div className="mono">
           {formatINR(r.totalAmount, true)}
-          {toNumber(r.gstAmount) > 0 ? (
-            <div className="text-muted" style={{ fontSize: 11 }}>
-              incl. GST {formatINR(r.gstAmount, true)}
-            </div>
-          ) : null}
+          {toNumber(r.gstAmount) > 0 ? <Sub>incl. GST {formatINR(r.gstAmount, true)}</Sub> : null}
         </div>
       ),
+      total: (rows) => sumMoney(rows.map((r) => r.totalAmount)),
     },
-    { title: 'Paid by', dataIndex: 'paymentMode', width: 110, render: (m) => PAYMENT_MODE_LABELS[m as ExpenseDto['paymentMode']].replace(/ \(.*\)$/, '') },
+    { key: 'paymentMode', title: 'Paid by', dataIndex: 'paymentMode', width: 110, render: (m) => PAYMENT_MODE_LABELS[m as ExpenseDto['paymentMode']].replace(/ \(.*\)$/, '') },
     {
+      key: 'attachments',
       title: 'Bill',
+      label: 'Bill photo',
       dataIndex: 'attachments',
       width: 110,
       render: (a: ExpenseDto['attachments']) =>
@@ -83,22 +83,8 @@ export function ExpenseTable({
         ),
     },
     { title: 'Submitted by', dataIndex: 'submittedByName', width: 140, ...sort('submittedBy') },
+    { title: 'Submitted on', dataIndex: 'submittedAt', width: 130, defaultHidden: true, render: (v) => formatDate(v), ...sort('submittedAt') },
     { title: 'Status', fixed: 'right' as const, dataIndex: 'status', width: 140, render: (s) => <StatusTag status={s} />, ...sort('status') },
-    {
-      title: '',
-      key: 'actions',
-      fixed: 'right' as const,
-      width: 190,
-      render: (_, r) => (
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <Button size="small" onClick={() => onOpen(r.id)}>
-            View
-          </Button>
-          <ReviewActions type="expense" id={r.id} status={r.status} amount={r.totalAmount} size="small" compact />
-          <EditResubmitButton entry={r} onEdit={onEdit} size="small" compact />
-        </div>
-      ),
-    },
+    { key: 'actions', title: '', label: 'Actions', locked: true, fixed: 'right' as const, width: 56, render: (_, r) => <RowActions type="expense" row={r} amount={r.totalAmount} onOpen={onOpen} onEdit={onEdit} /> },
   ];
-  return <Table<ExpenseDto> rowKey="id" loading={loading} columns={columns} dataSource={data} size="middle" {...table} scroll={{ x: showProject ? 1700 : 1500 }} />;
 }

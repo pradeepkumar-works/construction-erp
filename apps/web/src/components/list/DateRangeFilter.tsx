@@ -3,12 +3,14 @@
 import React from 'react';
 import { DatePicker } from 'antd';
 import dayjs from 'dayjs';
+import { rangePresets } from '@/lib/dates';
 
-/** The list's `from`/`to` filter as one range picker. */
+/** The list's `from`/`to` filter as one range picker, with the usual presets (this month, financial years…). */
 export function DateRangeFilter({ from, to, onChange, placeholder = ['From', 'To'] }: { from?: string; to?: string; onChange: (from?: string, to?: string) => void; placeholder?: [string, string] }) {
   return (
     <DatePicker.RangePicker
       allowEmpty={[true, true]}
+      presets={rangePresets()}
       placeholder={placeholder}
       format="D MMM YYYY"
       value={[from ? dayjs(from) : null, to ? dayjs(to) : null]}

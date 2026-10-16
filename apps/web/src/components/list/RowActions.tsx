@@ -24,6 +24,7 @@ export function RowActions<T extends SubmissionBase & { id: string }>({
   onOpen,
   onEdit,
   extra,
+  review = true,
 }: {
   type: ApprovalTypeParam;
   row: T;
@@ -34,11 +35,13 @@ export function RowActions<T extends SubmissionBase & { id: string }>({
   onOpen: (id: string) => void;
   onEdit?: (row: T) => void;
   extra?: MenuProps['items'];
+  /** False where the decision needs more than a note (an inspection is passed from its checklist in the record). */
+  review?: boolean;
 }) {
   const { user } = useAuth();
   const router = useRouter();
   const [decision, setDecision] = useState<ReviewDecision | null>(null);
-  const mayReview = useMayReview(type, row.status, amount);
+  const mayReview = useMayReview(type, row.status, amount) && review;
   const mayEdit = !!user && !!onEdit && canEditSubmission(user, row) && canResubmit(user, row);
 
   const items: MenuProps['items'] = [

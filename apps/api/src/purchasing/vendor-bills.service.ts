@@ -18,7 +18,7 @@ import { AttachmentsService } from '../common/attachments.service';
 import { dateOnly, dec, iso, money, parseDate } from '../common/serialize';
 import { isUniqueViolation } from '../common/idempotency';
 import { nextDocNo } from '../common/doc-number';
-import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
+import { dateRange, ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import { CreateVendorBillDto, ListVendorBillsQuery, UpdateVendorBillDto, VendorBillLineInput } from './purchasing.dto';
 import { DEFAULT_PAYMENT_DAYS, MSME_MAX_PAYMENT_DAYS, ZERO, lineAmounts, parseFreight, parseGstRate, parseQty, parseRate, sum, totals } from './purchase-math';
 
@@ -162,6 +162,9 @@ export class VendorBillsService {
     if (q.purchaseOrderId) where.purchaseOrderId = q.purchaseOrderId;
     if (q.status) where.status = q.status;
     if (q.exceptions) where.matched = false;
+    if (q.mine) where.submittedById = user.id;
+    const days = dateRange(q.from, q.to);
+    if (days) where.invoiceDate = days;
     const words = searchWords(q.q);
     if (words.length)
       where.AND = words.map((w) => ({ OR: [{ billNo: ilike(w) }, { invoiceNo: ilike(w) }, { vendor: { name: ilike(w) } }, { project: { name: ilike(w) } }, { purchaseOrder: { poNo: ilike(w) } }] }));

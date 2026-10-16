@@ -71,6 +71,9 @@ export class ListWorkOrdersQuery extends PageQuery {
   @ApiPropertyOptional({ description: 'Only approved orders that are not closed' }) @IsOptional() @QueryBool() @IsBoolean() open?: boolean;
   @ApiPropertyOptional({ description: 'Only orders with a line on this BOQ item' }) @IsOptional() @IsUUID() boqItemId?: string;
   @ApiPropertyOptional({ enum: LIST_SORT_FIELDS.workOrders, default: 'woDate' }) @IsOptional() @IsIn(LIST_SORT_FIELDS.workOrders as unknown as string[]) sortBy?: WorkOrderSortField;
+  @ApiPropertyOptional({ example: '2026-10-01', description: 'Orders dated from this day (inclusive)' }) @IsOptional() @IsDateString() from?: string;
+  @ApiPropertyOptional({ example: '2026-10-31', description: 'Orders dated up to this day (inclusive)' }) @IsOptional() @IsDateString() to?: string;
+  @ApiPropertyOptional({ description: 'Only entries the current user submitted' }) @IsOptional() @QueryBool() @IsBoolean() mine?: boolean;
 }
 
 export class MarginQuery {
@@ -119,4 +122,7 @@ export class ListSubcontractBillsQuery extends PageQuery {
   @ApiPropertyOptional() @IsOptional() @IsUUID() workOrderId?: string;
   @ApiPropertyOptional({ enum: SUBMISSION_STATUSES }) @IsOptional() @IsIn(SUBMISSION_STATUSES as unknown as string[]) status?: SubmissionStatus;
   @ApiPropertyOptional({ enum: LIST_SORT_FIELDS.subcontractBills, default: 'billDate' }) @IsOptional() @IsIn(LIST_SORT_FIELDS.subcontractBills as unknown as string[]) sortBy?: SubcontractBillSortField;
+  @ApiPropertyOptional({ example: '2026-10-01', description: 'Bills dated from this day (inclusive)' }) @IsOptional() @IsDateString() from?: string;
+  @ApiPropertyOptional({ example: '2026-10-31', description: 'Bills dated up to this day (inclusive)' }) @IsOptional() @IsDateString() to?: string;
+  @ApiPropertyOptional({ description: 'Only entries the current user submitted' }) @IsOptional() @QueryBool() @IsBoolean() mine?: boolean;
 }
