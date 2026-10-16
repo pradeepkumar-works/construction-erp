@@ -34,7 +34,7 @@ interface FormValues {
 const grid = (cols: string) => ({ display: 'grid', gridTemplateColumns: cols, gap: '0 16px' }) as const;
 
 /** File a site expense, or (with `expense`) fix a returned one and resubmit it. */
-export function ExpenseFormModal({ open, onClose, projectId, expense }: { open: boolean; onClose: () => void; projectId?: string; expense?: ExpenseDto | null }) {
+export function ExpenseFormModal({ open, onClose, projectId, defaultProjectId, expense }: { open: boolean; onClose: () => void; projectId?: string; /** A new entry starts on this project (the header's), still changeable. */ defaultProjectId?: string; expense?: ExpenseDto | null }) {
   const [form] = Form.useForm<FormValues>();
   const { message } = App.useApp();
   const qc = useQueryClient();
@@ -71,9 +71,9 @@ export function ExpenseFormModal({ open, onClose, projectId, expense }: { open: 
         photos: expense.attachments,
       });
     } else {
-      form.setFieldsValue({ projectId, date: dayjs(), gstRate: 0, paymentMode: 'CASH' });
+      form.setFieldsValue({ projectId: projectId ?? defaultProjectId, date: dayjs(), gstRate: 0, paymentMode: 'CASH' });
     }
-  }, [open, projectId, expense, form]);
+  }, [open, projectId, defaultProjectId, expense, form]);
 
   const mutation = useMutation({
     mutationFn: async (v: FormValues) => {

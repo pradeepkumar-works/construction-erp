@@ -3,21 +3,47 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Modal } from 'antd';
-import { BellOutlined, ProjectOutlined, SearchOutlined } from '@ant-design/icons';
-import { useProjects } from '@/lib/queries';
+import {
+  AlertOutlined,
+  BankOutlined,
+  BellOutlined,
+  FileTextOutlined,
+  FolderOpenOutlined,
+  HistoryOutlined,
+  InboxOutlined,
+  LoadingOutlined,
+  ProjectOutlined,
+  SearchOutlined,
+  ShopOutlined,
+  UserOutlined,
+} from '@ant-design/icons';
+import type { AuthUser, SearchHitDto, SearchKind, SubmissionStatus } from '@erp/shared';
+import { SEARCH_KINDS, SEARCH_KIND_LABELS, SEARCH_MIN_LENGTH, SUBMISSION_STATUSES } from '@erp/shared';
+import { useProjects, useSearch } from '@/lib/queries';
+import { useProjectScope } from '@/lib/project-scope';
+import { requestNew } from '@/lib/new-intent';
+import { recentRecords, rememberRecord, type RecentRecord } from '@/lib/recent';
+import { StatusTag } from '@/components/common/StatusTag';
 import type { NavIcon, NavSection } from './nav';
+import { newEntriesFor, type NewEntry } from './NewMenu';
 import s from './Sidebar.module.css';
 
 interface Target {
   key: string;
-  href: string;
   label: string;
-  hint: string;
+  /** Shown after the label, quieter: a record's vendor and project. */
+  sub?: string | null;
+  hint?: string;
   icon: NavIcon;
-  group: 'Pages' | 'Projects';
-  /** Lower-cased text the query is matched against. */
+  group: string;
+  /** Lower-cased text the query is matched against (pages, projects, actions). */
   text: string;
+  status?: SubmissionStatus;
+  go: () => void;
 }
+
+const KIND_ICONS: Partial<Record<SearchKind, NavIcon>> = { risk: AlertOutlined, document: FolderOpenOutlined, vendor: ShopOutlined, client: BankOutlined, item: InboxOutlined, person: UserOutlined };
+const STATUSES = new Set<string>(SUBMISSION_STATUSES);
 
 /** Every query word must appear; labels that start with the query come first. */
 function rank(targets: Target[], query: string): Target[] {
@@ -34,57 +60,137 @@ function rank(targets: Target[], query: string): Target[] {
     .map((r) => r.t);
 }
 
-/** Quick-jump to any page in the sidebar or any project, from the keyboard (Ctrl K / ⌘K) or the sidebar's search box. */
-export function CommandPalette({ open, onClose, sections, withProjects }: { open: boolean; onClose: () => void; sections: NavSection[]; withProjects: boolean }) {
+/** The query a moment after the last key, so the API is asked once per pause rather than per letter. */
+function useDebounced(value: string, ms: number) {
+  const [v, setV] = useState(value);
+  useEffect(() => {
+    const t = window.setTimeout(() => setV(value), ms);
+    return () => window.clearTimeout(t);
+  }, [value, ms]);
+  return v;
+}
+
+/**
+ * Search everything (UI roadmap item 62), from the keyboard (Ctrl K / ⌘K) or the header's search box: pages, projects,
+ * records by number or name (through `GET /search`, which applies each list's own access rules), recently opened records,
+ * and actions such as "New daily report for Jajpur".
+ */
+export function CommandPalette({ open, onClose, sections, withProjects, user }: { open: boolean; onClose: () => void; sections: NavSection[]; withProjects: boolean; user: AuthUser }) {
   const router = useRouter();
   const [query, setQuery] = useState('');
   const [index, setIndex] = useState(0);
+  const [recent, setRecent] = useState<RecentRecord[]>([]);
   const input = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const { data: projects } = useProjects(open && withProjects);
+  const [, setProjectScope] = useProjectScope();
+  const term = useDebounced(query, 200);
+  const search = useSearch(term, open && withProjects);
+  const searching = search.isFetching || (query.trim() !== term.trim() && query.trim().length >= SEARCH_MIN_LENGTH);
+
+  const navigate = (href: string) => {
+    onClose();
+    router.push(href);
+  };
 
   const pages = useMemo<Target[]>(() => {
-    const list = sections.flatMap((sec) =>
-      sec.items.map((i) => ({ key: i.href, href: i.href, label: i.label, hint: sec.title ?? '', icon: i.icon, group: 'Pages' as const, text: `${i.label} ${i.keywords ?? ''}`.toLowerCase() })),
+    const list: Target[] = sections.flatMap((sec) =>
+      sec.items.map((i) => ({ key: i.href, label: i.label, hint: sec.title ?? '', icon: i.icon, group: 'Pages', text: `${i.label} ${i.keywords ?? ''}`.toLowerCase(), go: () => navigate(i.href) })),
     );
-    if (!list.some((t) => t.href === '/notifications')) {
-      list.push({ key: '/notifications', href: '/notifications', label: 'Notifications', hint: '', icon: BellOutlined, group: 'Pages', text: 'notifications alerts inbox' });
+    if (!list.some((t) => t.key === '/notifications')) {
+      list.push({ key: '/notifications', label: 'Notifications', hint: '', icon: BellOutlined, group: 'Pages', text: 'notifications alerts inbox', go: () => navigate('/notifications') });
     }
     return list;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sections]);
 
   const projectTargets = useMemo<Target[]>(
     () =>
       (projects ?? []).map((p) => ({
         key: p.id,
-        href: `/projects/${p.id}`,
         label: p.name,
         hint: p.code,
         icon: ProjectOutlined,
-        group: 'Projects' as const,
+        group: 'Projects',
         text: `${p.name} ${p.code} ${p.clientName ?? ''} ${p.location ?? ''}`.toLowerCase(),
+        go: () => navigate(`/projects/${p.id}`),
       })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [projects],
   );
 
-  const results = useMemo(() => [...rank(pages, query), ...rank(projectTargets, query).slice(0, query.trim() ? 8 : 5)], [pages, projectTargets, query]);
+  /** "New DPR", or "new dpr for jajpur": the project after "for" is picked in the header before the form opens. */
+  const actions = useMemo<Target[]>(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return [];
+    const entries = newEntriesFor(user).flat();
+    const start = (e: NewEntry, projectId?: string) => {
+      onClose();
+      if (projectId) setProjectScope(projectId);
+      requestNew(e.kind, () => router.push(e.href));
+    };
+    const at = q.match(/^(.*?)\s+for\s+(.+)$/);
+    if (at && withProjects) {
+      const project = rank(projectTargets, at[2])[0];
+      const p = project ? (projects ?? []).find((x) => x.id === project.key) : undefined;
+      if (p) {
+        return rank(
+          entries.map((e) => ({ key: `${e.kind}:${p.id}`, label: `${e.action} for ${p.name}`, hint: p.code, icon: () => e.icon, group: 'Actions', text: `${e.action} ${e.label} new`.toLowerCase(), go: () => start(e, p.id) })),
+          at[1],
+        );
+      }
+    }
+    return rank(
+      entries.map((e) => ({ key: e.kind, label: e.action, icon: () => e.icon, group: 'Actions', text: `${e.action} ${e.label} new`.toLowerCase(), go: () => start(e) })),
+      q,
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, user, projectTargets]);
+
+  const records = useMemo<Target[]>(() => {
+    if (query.trim().length < SEARCH_MIN_LENGTH) return [];
+    const hits = search.data?.hits ?? [];
+    const order = (h: SearchHitDto) => SEARCH_KINDS.indexOf(h.kind);
+    return [...hits]
+      .sort((a, b) => order(a) - order(b))
+      .map((h) => ({
+        key: `${h.kind}:${h.id}`,
+        label: h.title,
+        sub: h.subtitle,
+        icon: KIND_ICONS[h.kind] ?? FileTextOutlined,
+        group: SEARCH_KIND_LABELS[h.kind],
+        text: '',
+        status: h.status && STATUSES.has(h.status) ? (h.status as SubmissionStatus) : undefined,
+        go: () => {
+          rememberRecord({ href: h.href, title: h.title, kind: SEARCH_KIND_LABELS[h.kind] });
+          navigate(h.href);
+        },
+      }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search.data, query]);
+
+  const recentTargets = useMemo<Target[]>(
+    () => recent.map((r) => ({ key: r.href, label: r.title, sub: r.kind, icon: HistoryOutlined, group: 'Recent', text: `${r.title} ${r.kind}`.toLowerCase(), go: () => navigate(r.href) })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [recent],
+  );
+
+  const results = useMemo(() => {
+    if (!query.trim()) return [...recentTargets, ...pages, ...projectTargets.slice(0, 5)];
+    return [...actions, ...rank(pages, query), ...rank(projectTargets, query).slice(0, 8), ...records];
+  }, [actions, pages, projectTargets, records, recentTargets, query]);
 
   useEffect(() => setIndex(0), [query]);
   useEffect(() => {
     if (!open) return;
     setQuery('');
+    setRecent(recentRecords());
     const t = window.setTimeout(() => input.current?.focus(), 30);
     return () => window.clearTimeout(t);
   }, [open]);
   useEffect(() => {
     listRef.current?.querySelector(`[data-index="${index}"]`)?.scrollIntoView({ block: 'nearest' });
   }, [index]);
-
-  const go = (t: Target | undefined) => {
-    if (!t) return;
-    onClose();
-    router.push(t.href);
-  };
 
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowDown') {
@@ -95,22 +201,25 @@ export function CommandPalette({ open, onClose, sections, withProjects }: { open
       setIndex((i) => Math.max(i - 1, 0));
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      go(results[index]);
+      results[index]?.go();
     }
   };
 
+  const placeholder = withProjects ? 'Search pages, projects, numbers (PO-2026-0012), vendors, people, or “new DPR for …”' : 'Search pages';
+  const empty = results.length === 0 && !searching;
+
   return (
-    <Modal open={open} onCancel={onClose} footer={null} closable={false} width={580} style={{ top: 88 }} destroyOnHidden styles={{ container: { padding: 0, overflow: 'hidden' } }} aria-label="Search and jump">
+    <Modal open={open} onCancel={onClose} footer={null} closable={false} width={620} style={{ top: 88 }} destroyOnHidden styles={{ container: { padding: 0, overflow: 'hidden' } }} aria-label="Search">
       <div className={s.palette}>
         <div className={s.paletteInput}>
-          <SearchOutlined aria-hidden />
+          {searching ? <LoadingOutlined aria-label="Searching" /> : <SearchOutlined aria-hidden />}
           <input
             ref={input}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={onKeyDown}
-            placeholder={withProjects ? 'Search pages and projects' : 'Search pages'}
-            aria-label="Search pages and projects"
+            placeholder={placeholder}
+            aria-label="Search"
             role="combobox"
             aria-expanded
             aria-controls="palette-results"
@@ -120,7 +229,7 @@ export function CommandPalette({ open, onClose, sections, withProjects }: { open
           />
         </div>
         <ul ref={listRef} id="palette-results" role="listbox" className={s.paletteList}>
-          {results.length === 0 && <li className={s.paletteEmpty}>Nothing matches “{query.trim()}”.</li>}
+          {empty && <li className={s.paletteEmpty}>Nothing matches “{query.trim()}”.</li>}
           {results.map((t, i) => {
             const Icon = t.icon;
             const heading = i === 0 || results[i - 1].group !== t.group;
@@ -138,10 +247,14 @@ export function CommandPalette({ open, onClose, sections, withProjects }: { open
                   aria-selected={i === index}
                   className={`${s.option} ${i === index ? s.optionActive : ''}`}
                   onMouseMove={() => i !== index && setIndex(i)}
-                  onClick={() => go(t)}
+                  onClick={() => t.go()}
                 >
                   <Icon aria-hidden />
-                  <span className={s.optionLabel}>{t.label}</span>
+                  <span className={s.optionLabel}>
+                    {t.label}
+                    {t.sub ? <span className={s.optionSub}>{t.sub}</span> : null}
+                  </span>
+                  {t.status ? <StatusTag status={t.status} /> : null}
                   {t.hint && <span className={s.optionHint}>{t.hint}</span>}
                 </li>
               </React.Fragment>

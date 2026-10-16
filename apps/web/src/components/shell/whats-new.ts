@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-10-search-everything',
+    date: '2026-10-17',
+    title: 'Search finds records, not just pages',
+    points: [
+      'Ctrl K (or the search box at the top) now finds material requests, purchase orders, bills, MB sheets, expenses, inspections, risks, documents, vendors, clients, items and people by number or name, showing only what your lists would show you.',
+      'Before you type, it lists the records you opened lately.',
+      'Type an action to start it: “new DPR”, “prepare RA bill”, or “new DPR for Jajpur” to open the form on that project.',
+    ],
+  },
+  {
     id: '2026-10-lists-registers',
     date: '2026-10-17',
     title: 'Registers, stores, staff and machinery lists',

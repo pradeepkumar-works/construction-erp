@@ -4,7 +4,7 @@ import { signIn } from './helpers';
 test('quick-jump opens a page or a project from the keyboard', async ({ page }) => {
   await signIn(page, 'pm@demo.com');
   await page.keyboard.press('Control+k');
-  const search = page.getByRole('combobox', { name: 'Search pages and projects' });
+  const search = page.getByRole('combobox', { name: 'Search', exact: true });
   await expect(search).toBeFocused();
   await search.fill('mb');
   await expect(page.getByRole('option').first()).toContainText('Measurement Book');

@@ -448,3 +448,10 @@
   font-family: inherit;
   font-size: 11px;
 }
+
+.optionSub {
+  margin-left: 8px;
+  color: var(--ant-color-text-tertiary);
+  font-weight: 400;
+  font-size: 12px;
+}

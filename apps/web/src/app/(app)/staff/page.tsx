@@ -34,7 +34,8 @@ function StaffPage() {
   const tab: Tab = raw && TABS.includes(raw) && allowed(raw) ? raw : 'me';
   // Leave notifications link here with ?tab=leave&leave=<id>
   const [leaveId, setLeaveId] = useState<string | null>(search.get('leave'));
-  const [employeeId, setEmployeeId] = useState<string | null>(null);
+  // Search links here with ?employee=<id>
+  const [employeeId, setEmployeeId] = useState<string | null>(search.get('employee'));
   const [applyFor, setApplyFor] = useState(false);
   const [newEmployee, setNewEmployee] = useState(false);
 

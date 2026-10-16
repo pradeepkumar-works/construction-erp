@@ -3,5 +3,5 @@ import { SubcontractsController } from './subcontracts.controller';
 import { WorkOrdersService } from './work-orders.service';
 import { SubcontractBillsService } from './subcontract-bills.service';
 
-@Module({ controllers: [SubcontractsController], providers: [WorkOrdersService, SubcontractBillsService] })
+@Module({ controllers: [SubcontractsController], providers: [WorkOrdersService, SubcontractBillsService], exports: [WorkOrdersService, SubcontractBillsService] })
 export class SubcontractsModule {}

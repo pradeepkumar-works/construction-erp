@@ -22,7 +22,7 @@ interface FormValues {
 }
 
 /** Create a material request, or (with `entry`) edit a draft / rejected / changes-requested one and resubmit it. */
-export function MrFormModal({ open, onClose, projectId, entry }: { open: boolean; onClose: () => void; projectId?: string; entry?: MaterialRequestDto | null }) {
+export function MrFormModal({ open, onClose, projectId, defaultProjectId, entry }: { open: boolean; onClose: () => void; projectId?: string; /** A new entry starts on this project (the header's), still changeable. */ defaultProjectId?: string; entry?: MaterialRequestDto | null }) {
   const [form] = Form.useForm<FormValues>();
   const { message } = App.useApp();
   const qc = useQueryClient();
@@ -42,9 +42,9 @@ export function MrFormModal({ open, onClose, projectId, entry }: { open: boolean
         items: entry.items.map((i) => ({ itemName: i.itemName, specification: i.specification ?? undefined, unit: i.unit, quantity: Number(i.quantity) })),
       });
     } else {
-      form.setFieldsValue({ projectId, requiredDate: dayjs().add(7, 'day'), priority: 'NORMAL', items: [{ itemName: '', unit: 'Nos', quantity: 1 }] });
+      form.setFieldsValue({ projectId: projectId ?? defaultProjectId, requiredDate: dayjs().add(7, 'day'), priority: 'NORMAL', items: [{ itemName: '', unit: 'Nos', quantity: 1 }] });
     }
-  }, [open, projectId, entry, form]);
+  }, [open, projectId, defaultProjectId, entry, form]);
 
   const mutation = useMutation({
     mutationFn: async (v: FormValues) => {

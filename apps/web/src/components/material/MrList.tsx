@@ -98,7 +98,7 @@ export function MrList({ projectId: fixedProject, newLabel, openId: initialOpen 
         emptyText={<EmptyArt art="entries" title="No material requests here yet" />}
       />
       <MrDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onEdit={setEditing} />
-      <MrFormModal open={formOpen || !!editing} entry={editing} onClose={() => { setFormOpen(false); setEditing(null); }} projectId={fixedProject} />
+      <MrFormModal open={formOpen || !!editing} entry={editing} onClose={() => { setFormOpen(false); setEditing(null); }} projectId={fixedProject} defaultProjectId={frame.projectId} />
     </>
   );
 }

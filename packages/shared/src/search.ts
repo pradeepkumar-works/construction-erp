@@ -1,0 +1,59 @@
+/** Search everything (UI roadmap item 62): what `GET /search` can find, in the order the palette lists them. */
+export const SEARCH_KINDS = [
+  'material_request',
+  'purchase_order',
+  'vendor_bill',
+  'work_order',
+  'subcontract_bill',
+  'ra_bill',
+  'measurement',
+  'expense',
+  'inspection',
+  'risk',
+  'document',
+  'vendor',
+  'client',
+  'item',
+  'person',
+] as const;
+export type SearchKind = (typeof SEARCH_KINDS)[number];
+
+export const SEARCH_KIND_LABELS: Record<SearchKind, string> = {
+  material_request: 'Material requests',
+  purchase_order: 'Purchase orders',
+  vendor_bill: 'Vendor bills',
+  work_order: 'Work orders',
+  subcontract_bill: 'Subcontractor bills',
+  ra_bill: 'RA bills',
+  measurement: 'Measurement book',
+  expense: 'Site expenses',
+  inspection: 'Inspections',
+  risk: 'Delays & risks',
+  document: 'Documents',
+  vendor: 'Vendors',
+  client: 'Clients',
+  item: 'Items',
+  person: 'People',
+};
+
+/** Fewest characters a search needs before the API looks. */
+export const SEARCH_MIN_LENGTH = 2;
+
+/** One record found: what to show and where it opens. */
+export interface SearchHitDto {
+  kind: SearchKind;
+  id: string;
+  /** Its number or name: "PO-2026-0012", "Kalinga Cranes". */
+  title: string;
+  /** A line of context: vendor, project, designation… */
+  subtitle: string | null;
+  /** The record's own page, or its list opened on it. */
+  href: string;
+  /** A submission's status, for its tag. */
+  status: string | null;
+}
+
+export interface SearchResultDto {
+  q: string;
+  hits: SearchHitDto[];
+}

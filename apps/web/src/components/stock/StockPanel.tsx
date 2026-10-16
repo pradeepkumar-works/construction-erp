@@ -124,10 +124,13 @@ export function StockPanel({
   projectId,
   initialLow,
   initialProject,
+  initialSearch,
 }: {
   projectId?: string;
   initialLow?: boolean;
   initialProject?: string;
+  /** Stock on hand opens searched for this (an item picked in Search). */
+  initialSearch?: string;
 }) {
   const [tab, setTab] = useState("balances");
   const { user } = useAuth();
@@ -152,6 +155,7 @@ export function StockPanel({
                 projectId={projectId}
                 initialLow={initialLow}
                 initialProject={initialProject}
+                initialSearch={initialSearch}
               />
             ),
           },

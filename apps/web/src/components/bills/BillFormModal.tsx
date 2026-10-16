@@ -26,7 +26,7 @@ interface FormValues {
  * Prepare the next RA bill of a project, or (with `bill`) change one that is not approved yet. The API picks the approved
  * measurements up to the date and prices them; saving as a draft shows the abstract before it goes for approval.
  */
-export function BillFormModal({ open, onClose, projectId, bill, onSaved }: { open: boolean; onClose: () => void; projectId?: string; bill?: RaBillDto | null; onSaved?: (b: RaBillDto) => void }) {
+export function BillFormModal({ open, onClose, projectId, defaultProjectId, bill, onSaved }: { open: boolean; onClose: () => void; projectId?: string; /** A new bill starts on this project (the header's), still changeable. */ defaultProjectId?: string; bill?: RaBillDto | null; onSaved?: (b: RaBillDto) => void }) {
   const [form] = Form.useForm<FormValues>();
   const { message } = App.useApp();
   const qc = useQueryClient();
@@ -50,9 +50,9 @@ export function BillFormModal({ open, onClose, projectId, bill, onSaved }: { ope
         files: bill.attachments,
       });
     } else {
-      form.setFieldsValue({ projectId, billDate: dayjs(), measuredUpTo: dayjs() });
+      form.setFieldsValue({ projectId: projectId ?? defaultProjectId, billDate: dayjs(), measuredUpTo: dayjs() });
     }
-  }, [open, projectId, bill, form]);
+  }, [open, projectId, defaultProjectId, bill, form]);
 
   const mutation = useMutation({
     mutationFn: async ({ v, submit }: { v: FormValues; submit: boolean }) => {
