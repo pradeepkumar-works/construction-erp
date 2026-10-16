@@ -61,13 +61,11 @@ function poColumns({ showProject, onOpen, sortOrderFor }: { showProject: boolean
     ...(showProject ? [{ title: 'Project', dataIndex: 'projectName', ...sort('project'), ellipsis: true, render: (v: string, r: PurchaseOrderDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> }] : []),
     { key: 'request', title: 'Request', dataIndex: 'requestNo', width: 140, render: (v, r) => (v ? <Link href={`/material-requests?id=${r.materialRequestId}`} className="mono">{v}</Link> : '-') },
     { title: 'Total', dataIndex: 'total', width: 150, align: 'right', ...sort('total'), render: (v) => <strong className="mono">{formatINR(v)}</strong>, total: (rows) => sumMoney(rows.map((r) => r.total)) },
-    { key: 'received', title: 'Received', width: 130, render: (_, r) => (r.status === 'APPROVED' ? <Progress percent={r.receivedPct} size="small" style={{ margin: 0 }} /> : '-') },
     { title: 'Raised on', dataIndex: 'createdAt', width: 130, defaultHidden: true, render: (v) => formatDate(v), ...sort('createdAt') },
     {
       title: 'Status',
       dataIndex: 'status',
       width: 180,
-      fixed: 'right' as const,
       ...sort('status'),
       render: (s, r) => (
         <Space size={4} wrap>
@@ -76,6 +74,7 @@ function poColumns({ showProject, onOpen, sortOrderFor }: { showProject: boolean
         </Space>
       ),
     },
+    { key: 'received', title: 'Received', width: 130, render: (_, r) => (r.status === 'APPROVED' ? <Progress percent={r.receivedPct} size="small" style={{ margin: 0 }} /> : '-') },
     { key: 'actions', title: '', label: 'Actions', locked: true, fixed: 'right' as const, width: 56, render: (_, r) => <RowActions type="purchase_order" row={r} amount={r.total} onOpen={onOpen} /> },
   ];
 }
@@ -160,7 +159,7 @@ export function PurchaseOrderList({ projectId: fixedProject, openId: initialOpen
         onOpen={setOpenId}
         bulk={[...(approve ? [approve] : []), exportSelected<PurchaseOrderDto>('purchase-orders', 'Purchase orders', PURCHASE_ORDER_EXPORT)]}
         chips={frame.chips}
-        scrollX={fixedProject ? 1000 : 1150}
+        scrollX={fixedProject ? 1050 : 1250}
         emptyText={buyer ? 'No purchase orders yet. Raise one from an approved material request, or with New purchase order.' : 'No purchase orders yet'}
       />
       <PurchaseOrderDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onEdit={setEditing} />

@@ -91,7 +91,7 @@ export function ProgressList({ projectId: fixedProject, newLabel }: { projectId?
         onOpen={setOpenId}
         bulk={[...(approve ? [approve] : []), exportSelected<ProgressEntryDto>('progress', 'progress', PROGRESS_EXPORT)]}
         chips={frame.chips}
-        scrollX={fixedProject ? 1150 : 1300}
+        scrollX={fixedProject ? 1180 : 1400}
         emptyText={<EmptyArt art="entries" title="No progress entries here yet" />}
       />
       <ProgressDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onEdit={setEditing} />

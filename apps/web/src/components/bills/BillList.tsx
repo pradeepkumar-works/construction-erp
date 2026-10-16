@@ -63,9 +63,9 @@ function billColumns({ showProject, onOpen, sortOrderFor }: { showProject: boole
       : []),
     { title: 'Work value', dataIndex: 'grossAmount', width: 150, align: 'right', ...sort('grossAmount'), render: (v) => <span className="mono">{formatINR(v)}</span>, total: (rows) => sumMoney(rows.map((r) => r.grossAmount)) },
     { title: 'Net payable', dataIndex: 'netPayable', width: 150, align: 'right', ...sort('netPayable'), render: (v) => <strong className="mono">{formatINR(v)}</strong>, total: (rows) => sumMoney(rows.map((r) => r.netPayable)) },
-    { title: 'With client', dataIndex: 'stage', width: 140, ...sort('stage'), render: (s, r) => (r.status === 'APPROVED' ? <BillStageTag stage={s} /> : '-') },
     { title: 'Prepared on', dataIndex: 'createdAt', width: 130, defaultHidden: true, render: (v) => formatDate(v), ...sort('createdAt') },
-    { title: 'Status', dataIndex: 'status', width: 150, fixed: 'right' as const, ...sort('status'), render: (s) => <StatusTag status={s} /> },
+    { title: 'Status', dataIndex: 'status', width: 150, ...sort('status'), render: (s) => <StatusTag status={s} /> },
+    { title: 'With client', dataIndex: 'stage', width: 140, ...sort('stage'), render: (s, r) => (r.status === 'APPROVED' ? <BillStageTag stage={s} /> : '-') },
     { key: 'actions', title: '', label: 'Actions', locked: true, fixed: 'right' as const, width: 56, render: (_, r) => <RowActions type="bill" row={r} amount={r.grossAmount} onOpen={onOpen} /> },
   ];
 }
@@ -150,7 +150,7 @@ export function BillList({ projectId: fixedProject, openId: initialOpen }: { pro
         onOpen={setOpenId}
         bulk={[...(approve ? [approve] : []), exportSelected<RaBillDto>('ra-bills', 'RA bills', BILL_EXPORT)]}
         chips={frame.chips}
-        scrollX={fixedProject ? 1000 : 1100}
+        scrollX={fixedProject ? 1000 : 1200}
         emptyText={preparer ? 'No bills yet. Prepare the first one from the approved measurements.' : 'No bills yet'}
       />
       <BillDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onEdit={setEditing} />

@@ -94,7 +94,7 @@ export function MrList({ projectId: fixedProject, newLabel, openId: initialOpen 
         onOpen={setOpenId}
         bulk={[...(approve ? [approve] : []), exportSelected<MaterialRequestDto, MrExportRow>('material-requests', 'material-requests', MR_EXPORT, mrExportRows)]}
         chips={frame.chips}
-        scrollX={fixedProject ? 1050 : 1200}
+        scrollX={fixedProject ? 1180 : 1400}
         emptyText={<EmptyArt art="entries" title="No material requests here yet" />}
       />
       <MrDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onEdit={setEditing} />

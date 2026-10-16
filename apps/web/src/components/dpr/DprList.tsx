@@ -91,7 +91,7 @@ export function DprList({ projectId: fixedProject, newLabel }: { projectId?: str
         onOpen={setOpenId}
         bulk={[...(approve ? [approve] : []), exportSelected<DailyReportDto>('dpr', 'dpr', DPR_EXPORT)]}
         chips={frame.chips}
-        scrollX={fixedProject ? 1150 : 1300}
+        scrollX={fixedProject ? 1230 : 1450}
         emptyText={<EmptyArt art="entries" title="No daily reports here yet" />}
       />
       <DprDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onEdit={setEditing} />

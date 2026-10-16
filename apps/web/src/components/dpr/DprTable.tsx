@@ -31,7 +31,7 @@ export function dprColumns({
       ? [{ title: 'Project', dataIndex: 'projectName', ...sort('project'), width: 220, ellipsis: true, render: (v: string, r: DailyReportDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> }]
       : []),
     { key: 'weather', title: 'Weather', dataIndex: 'weather', width: 100, render: (w) => (w ? <Tag style={{ margin: 0 }}>{WEATHER_LABELS[w as keyof typeof WEATHER_LABELS] ?? w}</Tag> : '-') },
-    { key: 'workExecuted', title: 'Work executed', dataIndex: 'workExecuted', ellipsis: true },
+    { key: 'workExecuted', title: 'Work executed', dataIndex: 'workExecuted', width: 260, ellipsis: true },
     { key: 'manpower', title: 'Manpower', dataIndex: 'totalManpower', width: 110, align: 'right', total: (rows) => rows.reduce((n, r) => n + (r.totalManpower ?? 0), 0) },
     { key: 'machinery', title: 'Machinery', width: 100, align: 'right', render: (_, r) => r.machinery.length, total: (rows) => rows.reduce((n, r) => n + r.machinery.length, 0) },
     { key: 'photos', title: 'Photos', dataIndex: 'attachments', width: 140, render: (a) => <PhotoThumbs attachments={a} /> },
