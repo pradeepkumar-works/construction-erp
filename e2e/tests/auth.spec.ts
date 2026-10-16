@@ -3,7 +3,7 @@ import { signIn } from './helpers';
 
 test('a project manager signs in and sees the dashboard', async ({ page }) => {
   await signIn(page, 'pm@demo.com');
-  await expect(page.getByText('Active Projects')).toBeVisible();
+  await expect(page.getByText('My work', { exact: true })).toBeVisible();
   await expect(page.getByText('NIRMAAN').first()).toBeVisible();
 });
 

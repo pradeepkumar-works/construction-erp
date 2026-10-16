@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-10-home-by-role',
+    date: '2026-10-16',
+    title: 'A home page made for your job',
+    points: [
+      'My work, at the top, lists what waits for you: approvals, daily reports not filed today, entries sent back, bills awaiting payment, payments due, expiring guarantees, late deliveries and low stock.',
+      'Directors, project managers, accounts, stores, quantity surveyors and site staff each see the figures and charts they use most, first.',
+      'Figures show this month against last with a six-month trend line.',
+      'New charts: planned against actual progress, cash in and out, billed against contract, and cost by head.',
+    ],
+  },
+  {
     id: '2026-10-approvals-inbox',
     date: '2026-10-16',
     title: 'Approvals is now an inbox',

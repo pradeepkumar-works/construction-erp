@@ -36,3 +36,4 @@ export * from './compliance';
 export * from './handover';
 export * from './procurement';
 export * from './views';
+export * from './links';

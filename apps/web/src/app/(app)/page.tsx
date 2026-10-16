@@ -2,7 +2,8 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Badge, Card, Col, Progress, Row, Statistic, Table, Tag, Typography, theme } from 'antd';
+import dynamic from 'next/dynamic';
+import { Badge, Card, Col, Empty, Flex, Grid, Progress, Row, Skeleton, Statistic, Table, Tag, Typography } from 'antd';
 import type { TableProps } from 'antd';
 import {
   AlertOutlined,
@@ -13,12 +14,14 @@ import {
   FundProjectionScreenOutlined,
   PieChartOutlined,
   ProjectOutlined,
+  RiseOutlined,
   ShoppingCartOutlined,
   WalletOutlined,
+  BankOutlined,
 } from '@ant-design/icons';
-import type { ProjectSummary } from '@erp/shared';
+import type { CompanyDashboard, HomeTrendsDto, ProjectSummary } from '@erp/shared';
 import { PROJECT_TYPE_LABELS, isCompanyWide, mayApprove } from '@erp/shared';
-import { useCompanyDashboard } from '@/lib/queries';
+import { useCompanyDashboard, useHomeTrends, useMyWork } from '@/lib/queries';
 import { formatINR, formatINRCompact, formatDate, progressStatus, toNumber } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Loading, QueryError } from '@/components/common/QueryState';
@@ -27,6 +30,15 @@ import { useAuth } from '@/lib/auth';
 import { BRAND } from '@/lib/brand';
 import { GettingStartedCard } from '@/components/dashboard/GettingStartedCard';
 import { themeColor } from '@/lib/theme';
+import { MyWorkPanel } from '@/components/home/MyWorkPanel';
+import { KpiTile, kpiColumns, trendOf } from '@/components/home/KpiTile';
+import { homeLayout, type ChartKey, type KpiKey } from '@/components/home/layout';
+import { WhenInView } from '@/components/home/WhenInView';
+
+const chartLoading = () => <Skeleton.Node active style={{ width: '100%', height: 280 }} />;
+const SCurveChart = dynamic(() => import('@/components/home/charts').then((m) => m.SCurveChart), { ssr: false, loading: chartLoading });
+const CashFlowChart = dynamic(() => import('@/components/home/charts').then((m) => m.CashFlowChart), { ssr: false, loading: chartLoading });
+const CostByHeadChart = dynamic(() => import('@/components/home/charts').then((m) => m.CostByHeadChart), { ssr: false, loading: chartLoading });
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -82,6 +94,15 @@ export default function DashboardPage() {
     },
   ];
 
+  const layout = homeLayout(user?.roleKey ?? 'SITE_ENGINEER');
+  const myWork = useMyWork();
+  const trends = useHomeTrends();
+  const t = trends.data;
+  const screens = Grid.useBreakpoint();
+  // Kpi has no hooks, so it is called as a function: the row needs to know how many tiles the role can see.
+  const tiles = data ? layout.kpis.map((k) => [k, Kpi({ k, data, trends: t, approver })] as const).filter(([, node]) => node) : [];
+  const perRow = kpiColumns(tiles.length, screens);
+
   return (
     <div className="page-container">
       <PageHeader
@@ -93,89 +114,24 @@ export default function DashboardPage() {
         }
       />
       <GettingStartedCard />
+      <MyWorkPanel data={myWork.data} loading={myWork.isLoading} order={layout.myWork} />
       {isLoading && <Loading />}
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {data && (
         <>
           <Row gutter={[16, 16]}>
-            <KpiTile icon={<ProjectOutlined />}>
-              <Statistic title="Active Projects" value={data.activeProjects} suffix={<span className="text-muted" style={{ fontSize: 14 }}>/ {data.totalProjects}</span>} />
-            </KpiTile>
-            <KpiTile icon={<FundProjectionScreenOutlined />}>
-              <Statistic title="Total Contract Value" value={formatINRCompact(data.totalContractValue)} />
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                {formatINR(data.totalContractValue)}
-              </Typography.Text>
-            </KpiTile>
-            {approver && (
-              <KpiTile href="/approvals" icon={<CheckSquareOutlined />}>
-                <Statistic title="Pending Approvals" value={data.pendingApprovals} styles={{ content: { color: data.pendingApprovals > 0 ? BRAND.colors.pending : undefined } }} />
-              </KpiTile>
-            )}
-            <KpiTile icon={<AlertOutlined />}>
-              <Statistic title="Delayed Activities" value={data.delayedActivities} styles={{ content: { color: data.delayedActivities > 0 ? themeColor('colorErrorText') : undefined } }} />
-            </KpiTile>
-            <KpiTile href="/dpr" icon={<FileTextOutlined />}>
-              <Statistic title="DPRs Today" value={data.dprsToday} />
-            </KpiTile>
+            {tiles.map(([k, node]) => (
+              <Col key={k} flex={`0 0 ${100 / perRow}%`}>
+                {node}
+              </Col>
+            ))}
           </Row>
 
-          {(data.receivables || data.payables || data.monthCost || data.monthBilling || data.financialProgress) && (
+          {t && (
             <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
-              {data.receivables && (
-                <KpiTile href="/receivables" icon={<WalletOutlined />}>
-                  <Statistic
-                    title="Receivables"
-                    value={formatINRCompact(data.receivables.outstanding)}
-                    styles={{ content: { color: toNumber(data.receivables.over90) > 0 ? themeColor('colorErrorText') : undefined } }}
-                  />
-                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                    {data.receivables.openBills} open bill{data.receivables.openBills === 1 ? '' : 's'}
-                    {toNumber(data.receivables.over90) > 0 ? ` · ${formatINRCompact(data.receivables.over90)} over 90 days` : ''}
-                  </Typography.Text>
-                </KpiTile>
-              )}
-              {data.payables && (
-                <KpiTile href="/payables" icon={<CreditCardOutlined />}>
-                  <Statistic
-                    title="Vendor Payable"
-                    value={formatINRCompact(data.payables.outstanding)}
-                    styles={{ content: { color: toNumber(data.payables.overdue) > 0 ? themeColor('colorErrorText') : undefined } }}
-                  />
-                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                    {data.payables.openBills} open bill{data.payables.openBills === 1 ? '' : 's'}
-                    {toNumber(data.payables.overdue) > 0 ? ` · ${formatINRCompact(data.payables.overdue)} overdue` : ''}
-                  </Typography.Text>
-                </KpiTile>
-              )}
-              {data.monthCost && (
-                <KpiTile href="/cost" icon={<ShoppingCartOutlined />}>
-                  <Statistic title={`Expense in ${monthName(data.monthCost.month)}`} value={formatINRCompact(data.monthCost.total)} />
-                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                    incl. {formatINRCompact(data.monthCost.expenses)} site expenses
-                  </Typography.Text>
-                </KpiTile>
-              )}
-              {data.monthBilling && (
-                <KpiTile href="/bills" icon={<AuditOutlined />}>
-                  <Statistic title={`Billed in ${monthName(data.monthBilling.month)}`} value={formatINRCompact(data.monthBilling.gross)} />
-                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                    {data.monthBilling.bills} RA bill{data.monthBilling.bills === 1 ? '' : 's'}, before GST
-                  </Typography.Text>
-                </KpiTile>
-              )}
-              {data.financialProgress && (
-                <KpiTile icon={<PieChartOutlined />}>
-                  <Statistic
-                    title="Financial Progress"
-                    value={data.financialProgress.pct ?? '-'}
-                    suffix={data.financialProgress.pct === null ? undefined : '%'}
-                  />
-                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                    {formatINRCompact(data.financialProgress.billed)} billed of {formatINRCompact(data.financialProgress.contractValue)}
-                  </Typography.Text>
-                </KpiTile>
-              )}
+              {layout.charts.map((c) => (
+                <HomeChart key={c} c={c} trends={t} />
+              ))}
             </Row>
           )}
 
@@ -186,15 +142,15 @@ export default function DashboardPage() {
                   <Typography.Text type="secondary">No projects yet</Typography.Text>
                 ) : (
                   <Row gutter={[24, 8]}>
-                    {data.projectsByType.map((t) => (
-                      <Col key={t.type} xs={24} sm={12} lg={8}>
+                    {data.projectsByType.map((pt) => (
+                      <Col key={pt.type} xs={24} sm={12} lg={8}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
-                          <span>{PROJECT_TYPE_LABELS[t.type] ?? t.type}</span>
+                          <span>{PROJECT_TYPE_LABELS[pt.type] ?? pt.type}</span>
                           <Tag style={{ margin: 0 }}>
-                            {t.count} project{t.count === 1 ? '' : 's'}
+                            {pt.count} project{pt.count === 1 ? '' : 's'}
                           </Tag>
                         </div>
-                        <Progress percent={data.totalProjects ? Math.round((t.count / data.totalProjects) * 100) : 0} size="small" showInfo={false} strokeColor={BRAND.colors.primary} />
+                        <Progress percent={data.totalProjects ? Math.round((pt.count / data.totalProjects) * 100) : 0} size="small" showInfo={false} strokeColor={BRAND.colors.primary} />
                       </Col>
                     ))}
                   </Row>
@@ -220,51 +176,186 @@ export default function DashboardPage() {
   );
 }
 
+const small = { fontSize: 12 } as const;
+
+/** One tile of the role's KPI row; nothing when the role cannot see its figure. */
+function Kpi({ k, data, trends, approver }: { k: KpiKey; data: CompanyDashboard; trends: HomeTrendsDto | undefined; approver: boolean }) {
+  const months = trends?.months ?? [];
+  const thisMonth = shortMonth(months[months.length - 1] ?? new Date().toISOString().slice(0, 7));
+  const last = (xs?: string[]) => xs?.[xs.length - 1] ?? '0';
+  switch (k) {
+    case 'contract':
+      return (
+        <KpiTile icon={<FundProjectionScreenOutlined />}>
+          <Statistic title="Total contract value" value={formatINRCompact(data.totalContractValue)} />
+          <Typography.Text type="secondary" style={small}>
+            {data.financialProgress?.pct != null ? `${data.financialProgress.pct}% billed to date` : formatINR(data.totalContractValue)}
+          </Typography.Text>
+        </KpiTile>
+      );
+    case 'projects':
+      return (
+        <KpiTile href="/projects" icon={<ProjectOutlined />}>
+          <Statistic title="Active projects" value={data.activeProjects} suffix={<span className="text-muted" style={{ fontSize: 14 }}>/ {data.totalProjects}</span>} />
+        </KpiTile>
+      );
+    case 'workDone':
+      return trends ? (
+        <KpiTile href="/progress" icon={<RiseOutlined />} trend={trendOf(trends.workDone, months)}>
+          <Statistic title={`Work done in ${thisMonth}`} value={formatINRCompact(last(trends.workDone))} />
+        </KpiTile>
+      ) : null;
+    case 'billed':
+      return trends?.billed ? (
+        <KpiTile href="/bills" icon={<AuditOutlined />} trend={trendOf(trends.billed, months)}>
+          <Statistic title={`Billed in ${thisMonth}`} value={formatINRCompact(last(trends.billed))} />
+        </KpiTile>
+      ) : null;
+    case 'cost':
+      return trends?.cost ? (
+        <KpiTile href="/cost" icon={<ShoppingCartOutlined />} trend={trendOf(trends.cost, months, false)}>
+          <Statistic title={`Cost in ${thisMonth}`} value={formatINRCompact(last(trends.cost))} />
+        </KpiTile>
+      ) : null;
+    case 'cashIn':
+      return trends?.cashIn ? (
+        <KpiTile href="/receivables" icon={<BankOutlined />} trend={trendOf(trends.cashIn, months)}>
+          <Statistic title={`Received in ${thisMonth}`} value={formatINRCompact(last(trends.cashIn))} />
+        </KpiTile>
+      ) : null;
+    case 'receivables':
+      return data.receivables ? (
+        <KpiTile href="/receivables" icon={<WalletOutlined />}>
+          <Statistic
+            title="Receivables"
+            value={formatINRCompact(data.receivables.outstanding)}
+            styles={{ content: { color: toNumber(data.receivables.over90) > 0 ? themeColor('colorErrorText') : undefined } }}
+          />
+          <Typography.Text type="secondary" style={small}>
+            {data.receivables.openBills} open bill{data.receivables.openBills === 1 ? '' : 's'}
+            {toNumber(data.receivables.over90) > 0 ? ` · ${formatINRCompact(data.receivables.over90)} over 90 days` : ''}
+          </Typography.Text>
+        </KpiTile>
+      ) : null;
+    case 'payables':
+      return data.payables ? (
+        <KpiTile href="/payables" icon={<CreditCardOutlined />}>
+          <Statistic
+            title="Vendor payable"
+            value={formatINRCompact(data.payables.outstanding)}
+            styles={{ content: { color: toNumber(data.payables.overdue) > 0 ? themeColor('colorErrorText') : undefined } }}
+          />
+          <Typography.Text type="secondary" style={small}>
+            {data.payables.openBills} open bill{data.payables.openBills === 1 ? '' : 's'}
+            {toNumber(data.payables.overdue) > 0 ? ` · ${formatINRCompact(data.payables.overdue)} overdue` : ''}
+          </Typography.Text>
+        </KpiTile>
+      ) : null;
+    case 'pending':
+      return approver ? (
+        <KpiTile href="/approvals" icon={<CheckSquareOutlined />}>
+          <Statistic title="Pending approvals" value={data.pendingApprovals} styles={{ content: { color: data.pendingApprovals > 0 ? BRAND.colors.pending : undefined } }} />
+        </KpiTile>
+      ) : null;
+    case 'delayed':
+      return (
+        <KpiTile icon={<AlertOutlined />}>
+          <Statistic title="Delayed activities" value={data.delayedActivities} styles={{ content: { color: data.delayedActivities > 0 ? themeColor('colorErrorText') : undefined } }} />
+        </KpiTile>
+      );
+    case 'dprsToday':
+      return (
+        <KpiTile href="/dpr" icon={<FileTextOutlined />} trend={trends ? { ...trendOf(trends.dprs, months), deltaPct: null } : undefined}>
+          <Statistic title="DPRs today" value={data.dprsToday} />
+          {trends && (
+            <Typography.Text type="secondary" style={small}>
+              {trends.dprs[trends.dprs.length - 1]} approved in {thisMonth}
+            </Typography.Text>
+          )}
+        </KpiTile>
+      );
+  }
+}
+
+/** One chart card of the role's layout; nothing when the role cannot see its data or there is none. */
+function HomeChart({ c, trends }: { c: ChartKey; trends: HomeTrendsDto }) {
+  // On a phone the card's note would squeeze its title, so it is left out there.
+  const wide = Grid.useBreakpoint().sm !== false;
+  const card = (title: string, extra: string, body: React.ReactNode, label: string) => (
+    <Col xs={24} xl={12}>
+      <Card size="small" title={title} extra={wide ? <Typography.Text type="secondary" style={small}>{extra}</Typography.Text> : undefined} style={{ height: '100%' }}>
+        <div role="img" aria-label={label}>
+          <WhenInView minHeight={280}>{body}</WhenInView>
+        </div>
+      </Card>
+    </Col>
+  );
+  switch (c) {
+    case 'sCurve': {
+      const now = [...trends.sCurve].reverse().find((p) => p.actual !== null);
+      return card(
+        'Planned against actual progress',
+        'Value of work, cumulative',
+        trends.sCurve.length ? <SCurveChart data={trends.sCurve} /> : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Plan activities with dates and BOQ items to see the curve" />,
+        now ? `Progress curve: ${now.actual}% done against ${now.planned}% planned by ${monthName(now.month)}` : 'Progress curve: nothing planned yet',
+      );
+    }
+    case 'cashFlow':
+      if (!trends.cashIn && !trends.cashOut) return null;
+      return card(
+        'Cash in and out',
+        'Last six months',
+        <CashFlowChart months={trends.months} cashIn={trends.cashIn} cashOut={trends.cashOut} />,
+        `Cash received and paid over the last six months`,
+      );
+    case 'costByHead':
+      if (!trends.costByHead) return null;
+      return card(
+        'Cost by head',
+        'Last six months',
+        toNumber(trends.costByHead.total) > 0 ? <CostByHeadChart heads={trends.costByHead} /> : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No cost booked in the last six months" />,
+        `Cost by head over the last six months: ${formatINRCompact(trends.costByHead.total)} in all`,
+      );
+    case 'billingVsContract':
+      if (!trends.billingVsContract) return null;
+      return card(
+        'Billed against contract',
+        'Approved RA bills to date',
+        trends.billingVsContract.length ? (
+          <Flex vertical gap={12} style={{ paddingTop: 8 }}>
+            {trends.billingVsContract.map((b) => {
+              const pct = toNumber(b.contractValue) > 0 ? Math.round((toNumber(b.billed) / toNumber(b.contractValue)) * 1000) / 10 : 0;
+              return (
+                <div key={b.projectId}>
+                  <Flex justify="space-between" gap={8}>
+                    <Link href={`/projects/${b.projectId}?tab=bills`} style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {b.projectName}
+                    </Link>
+                    <Typography.Text type="secondary" className="mono" style={{ ...small, whiteSpace: 'nowrap' }}>
+                      {formatINRCompact(b.billed)} of {formatINRCompact(b.contractValue)}
+                    </Typography.Text>
+                  </Flex>
+                  <Progress percent={pct} size="small" aria-label={`${b.projectName}: ${pct}% billed`} />
+                </div>
+              );
+            })}
+          </Flex>
+        ) : (
+          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No contract values yet" />
+        ),
+        'Billed against contract value per project',
+      );
+  }
+}
+
+/** "2026-10" → "Oct" */
+function shortMonth(month: string) {
+  const [y, m] = month.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString('en-GB', { month: 'short', timeZone: 'UTC' });
+}
+
 /** "2026-10" → "Oct 2026" */
 function monthName(month: string) {
   const [y, m] = month.split('-').map(Number);
   return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString('en-IN', { month: 'short', year: 'numeric', timeZone: 'UTC' });
-}
-
-/** One KPI card: the figure keeps the card's full width and the tile's icon sits in a tinted square in the top right
- * corner (the title leaves room for it). Every card in the row stretches to the tallest so the row reads as one band. */
-function KpiTile({ href, icon, children }: { href?: string; icon?: React.ReactNode; children: React.ReactNode }) {
-  const { token } = theme.useToken();
-  const card = (
-    <Card className="kpi-card" hoverable={!!href} style={{ height: '100%', position: 'relative' }}>
-      {icon ? (
-        <span
-          aria-hidden
-          style={{
-            position: 'absolute',
-            top: token.paddingLG,
-            right: token.paddingLG,
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: token.controlHeight,
-            height: token.controlHeight,
-            borderRadius: token.borderRadiusLG,
-            background: token.colorPrimaryBg,
-            color: token.colorPrimary,
-            fontSize: token.fontSizeLG,
-          }}
-        >
-          {icon}
-        </span>
-      ) : null}
-      {children}
-    </Card>
-  );
-  return (
-    <Col flex="1 1 160px">
-      {href ? (
-        <Link href={href} style={{ display: 'block', height: '100%' }}>
-          {card}
-        </Link>
-      ) : (
-        card
-      )}
-    </Col>
-  );
 }

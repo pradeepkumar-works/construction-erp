@@ -1,0 +1,126 @@
+'use client';
+
+import React from 'react';
+import Link from 'next/link';
+import { Card, Typography, theme } from 'antd';
+import { ArrowDownOutlined, ArrowUpOutlined } from '@ant-design/icons';
+
+/**
+ * A small trend line under a KPI figure, drawn as plain SVG: a page has up to six of these, and a chart library instance
+ * each would slow the page down just as it opens.
+ */
+function Sparkline({ values, color }: { values: number[]; color: string }) {
+  const { token } = theme.useToken();
+  const id = `spark${React.useId().replace(/[^\w-]/g, '')}`;
+  if (values.length < 2) return null;
+  const W = 120;
+  const H = 36;
+  const max = Math.max(...values, 0);
+  const min = Math.min(...values, 0);
+  const span = max - min || 1;
+  const pts = values.map((v, i) => [(i / (values.length - 1)) * W, H - 2 - ((v - min) / span) * (H - 4)] as const);
+  const line = pts.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+  return (
+    <svg aria-hidden viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" width="100%" height={H} style={{ display: 'block', marginTop: token.marginXS, overflow: 'visible' }}>
+      <defs>
+        <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity={0.3} />
+          <stop offset="100%" stopColor={color} stopOpacity={0} />
+        </linearGradient>
+      </defs>
+      <path d={`${line} L${W},${H} L0,${H} Z`} fill={`url(#${id})`} />
+      <path d={line} fill="none" stroke={color} strokeWidth={1.5} vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export interface Trend {
+  values: number[];
+  /** Change of this month on last month, in % (null when last month was nil, and then not shown) */
+  deltaPct: number | null;
+  /** This month over last month, for a jump too big to read as a percentage */
+  ratio: number | null;
+  /** Last month's short name, e.g. "Sep" */
+  previous: string;
+  /** Whether more is good news (work done, billing, cash in) or not (cost) */
+  upIsGood: boolean;
+}
+
+/**
+ * How many tiles go on a row: as many as fit (4 on a laptop, 3 on a tablet, 2 on a phone), spread so the rows are even,
+ * so six tiles are two rows of three rather than four and two.
+ */
+export function kpiColumns(count: number, screens: Partial<Record<'sm' | 'lg', boolean>>): number {
+  const max = screens.lg ? 4 : screens.sm ? 3 : 2;
+  if (count <= 0) return 1;
+  return Math.min(max, Math.ceil(count / Math.ceil(count / max)));
+}
+
+/** Last six months of a series into a tile's trend: this month on last month. */
+export function trendOf(series: (string | number)[], months: string[], upIsGood = true): Trend {
+  const values = series.map(Number);
+  const now = values[values.length - 1] ?? 0;
+  const before = values[values.length - 2] ?? 0;
+  const [y, m] = (months[months.length - 2] ?? '2000-01').split('-').map(Number);
+  return {
+    values,
+    deltaPct: before > 0 ? Math.round(((now - before) / before) * 100) : null,
+    ratio: before > 0 ? now / before : null,
+    previous: new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString('en-GB', { month: 'short', timeZone: 'UTC' }),
+    upIsGood,
+  };
+}
+
+/**
+ * One KPI card: the figure keeps the card's full width and the tile's icon sits in a tinted square in the top right
+ * corner. With a trend it shows this month against last and a six-month sparkline (UI roadmap item 59). The page lays
+ * the tiles out in even rows (see `kpiColumns`), and every card stretches to the tallest so a row reads as one band.
+ */
+export function KpiTile({ href, icon, trend, children }: { href?: string; icon?: React.ReactNode; trend?: Trend; children: React.ReactNode }) {
+  const { token } = theme.useToken();
+  const delta = trend?.deltaPct ?? null;
+  const good = delta !== null && (delta >= 0) === trend!.upIsGood;
+  const card = (
+    <Card className="kpi-card" hoverable={!!href} style={{ height: '100%', position: 'relative' }}>
+      {icon ? (
+        <span
+          aria-hidden
+          style={{
+            position: 'absolute',
+            top: token.paddingLG,
+            right: token.paddingLG,
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: token.controlHeight,
+            height: token.controlHeight,
+            borderRadius: token.borderRadiusLG,
+            background: token.colorPrimaryBg,
+            color: token.colorPrimary,
+            fontSize: token.fontSizeLG,
+          }}
+        >
+          {icon}
+        </span>
+      ) : null}
+      {children}
+      {trend && (
+        <>
+          {delta !== null && (
+            <Typography.Text style={{ display: 'block', fontSize: token.fontSizeSM, marginTop: token.marginXXS }} type={delta === 0 ? 'secondary' : good ? 'success' : 'danger'}>
+              {delta > 0 ? <ArrowUpOutlined aria-hidden /> : delta < 0 ? <ArrowDownOutlined aria-hidden /> : null} {delta >= 200 && trend.ratio ? `${Math.round(trend.ratio)}× ${trend.previous}` : `${Math.abs(delta)}% ${delta >= 0 ? 'up' : 'down'} on ${trend.previous}`}
+            </Typography.Text>
+          )}
+          <Sparkline values={trend.values} color={good || delta === null ? token.colorPrimary : token.colorError} />
+        </>
+      )}
+    </Card>
+  );
+  return href ? (
+    <Link href={href} style={{ display: 'block', height: '100%' }}>
+      {card}
+    </Link>
+  ) : (
+    card
+  );
+}

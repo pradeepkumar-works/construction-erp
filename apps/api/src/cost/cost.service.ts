@@ -104,6 +104,20 @@ export class CostService {
     return projects.map((p) => this.summaryDto(p, accs.get(p.id)!));
   }
 
+  /** Cost booked month by month across the caller's projects, and the heads for the whole period (the home page's trends). */
+  async monthly(user: RequestUser, q: CostQuery): Promise<{ months: Map<string, D>; heads: CostHeadsDto }> {
+    this.assertCanView(user);
+    const projects = await this.prisma.project.findMany({ where: this.access.projectWhere(user), select: { id: true } });
+    const accs = await this.compute(user.organizationId, projects.map((p) => p.id), this.range(q));
+    const months = new Map<string, D>();
+    const heads = emptyHeads();
+    for (const acc of accs.values()) {
+      for (const [m, v] of acc.months) months.set(m, (months.get(m) ?? ZERO).add(total(v.heads)));
+      for (const k of Object.keys(heads) as (keyof Heads)[]) heads[k] = heads[k].add(acc.heads[k]);
+    }
+    return { months, heads: headsDto(heads) };
+  }
+
   async project(user: RequestUser, projectId: string, q: CostQuery): Promise<ProjectCostDto> {
     this.assertCanView(user);
     await this.access.assertCanAccessProject(user, projectId);
