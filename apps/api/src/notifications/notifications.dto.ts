@@ -1,11 +1,16 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsBoolean, IsIn, IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min } from 'class-validator';
-import { PUSH_PLATFORMS, PushPlatform } from '@erp/shared';
+import { NOTIFICATION_TABS, NotificationTab, PUSH_PLATFORMS, PushPlatform } from '@erp/shared';
 
 export class ListNotificationsQuery {
   @ApiPropertyOptional({ description: 'Only notifications not yet read' }) @IsOptional() @IsBoolean() unreadOnly?: boolean;
   @ApiPropertyOptional({ default: 50 }) @IsOptional() @IsInt() @Min(1) @Max(200) limit?: number;
   @ApiPropertyOptional({ description: 'Include every type. Left out, only the types older phone builds know are listed (and counted).' }) @IsOptional() @IsBoolean() allTypes?: boolean;
+  @ApiPropertyOptional({ enum: NOTIFICATION_TABS, description: 'Only the types in one tab of the notifications drawer' }) @IsOptional() @IsIn(NOTIFICATION_TABS as unknown as string[]) tab?: NotificationTab;
+}
+
+export class ReadAllNotificationsQuery {
+  @ApiPropertyOptional({ enum: NOTIFICATION_TABS, description: 'Mark only the types in one tab read' }) @IsOptional() @IsIn(NOTIFICATION_TABS as unknown as string[]) tab?: NotificationTab;
 }
 
 export class RegisterPushTokenDto {

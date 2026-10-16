@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { LEGACY_NOTIFICATION_TYPES, type NotificationDto, type NotificationListDto, type NotificationType, type PushTokenDto, type SubmissionType } from '@erp/shared';
+import { LEGACY_NOTIFICATION_TYPES, NOTIFICATION_TABS, NOTIFICATION_TAB_OF, notificationTypesIn, type NotificationDto, type NotificationListDto, type NotificationTab, type NotificationType, type PushTokenDto, type SubmissionType } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -63,12 +63,19 @@ export class NotificationsService {
     // Older phone builds crash on a type they have no icon for, so they get only the types they know.
     const types = q.allTypes ? {} : { type: { in: LEGACY_NOTIFICATION_TYPES } };
     const where: Prisma.NotificationWhereInput = { userId: user.id, organizationId: user.organizationId, ...types };
+    if (q.tab) where.AND = [{ type: { in: notificationTypesIn(q.tab) } }];
     if (q.unreadOnly) where.readAt = null;
-    const [rows, unreadCount] = await Promise.all([
+    const [rows, unread] = await Promise.all([
       this.prisma.notification.findMany({ where, include, orderBy: { createdAt: 'desc' }, take: q.limit ?? 50 }),
-      this.prisma.notification.count({ where: { userId: user.id, readAt: null, ...types } }),
+      this.prisma.notification.groupBy({ by: ['type'], where: { userId: user.id, organizationId: user.organizationId, readAt: null, ...types }, _count: { _all: true } }),
     ]);
-    return { items: rows.map((r) => this.toDto(r)), unreadCount };
+    const unreadByTab = Object.fromEntries(NOTIFICATION_TABS.map((t) => [t, 0])) as Record<NotificationTab, number>;
+    let unreadCount = 0;
+    for (const g of unread) {
+      unreadCount += g._count._all;
+      unreadByTab[NOTIFICATION_TAB_OF[g.type as NotificationType]] += g._count._all;
+    }
+    return { items: rows.map((r) => this.toDto(r)), unreadCount, unreadByTab };
   }
 
   async markRead(user: RequestUser, id: string): Promise<NotificationDto> {
@@ -79,8 +86,8 @@ export class NotificationsService {
     return this.toDto(updated);
   }
 
-  async markAllRead(user: RequestUser) {
-    const res = await this.prisma.notification.updateMany({ where: { userId: user.id, readAt: null }, data: { readAt: new Date() } });
+  async markAllRead(user: RequestUser, tab?: NotificationTab) {
+    const res = await this.prisma.notification.updateMany({ where: { userId: user.id, readAt: null, ...(tab ? { type: { in: notificationTypesIn(tab) } } : {}) }, data: { readAt: new Date() } });
     return { updated: res.count };
   }
 

@@ -1,3 +1,4 @@
+import type { NotificationTab } from './notifications';
 import type { InspectionCheck, NcrSeverity, NcrStatus, TestKind, TestResult } from './quality';
 import type { ApprovalRightDto } from './approvals';
 import type { TallyVoucherKind } from './tally';
@@ -453,6 +454,8 @@ export interface NotificationDto {
 export interface NotificationListDto {
   items: NotificationDto[];
   unreadCount: number;
+  /** Unread notifications in each drawer tab (all types, whatever `tab` filtered the items to). */
+  unreadByTab?: Record<NotificationTab, number>;
 }
 
 export interface PushTokenDto {

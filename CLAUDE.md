@@ -60,6 +60,10 @@ cd e2e && npx playwright test         # browser tests; needs API + web running (
 - Search (Ctrl K, `components/shell/CommandPalette.tsx`): records come from `GET /search` (`apps/api/src/search`), which calls each
   kind's own list service with `q`, so the list's access rules apply; a new searchable kind is one entry in `SearchService`'s
   sources plus its key in `SEARCH_KINDS` (`packages/shared/src/search.ts`). Actions are the `NewMenu` entries (`newEntriesFor`).
+- Notifications: the bell opens the drawer in `components/notifications/NotificationBell.tsx`; a new `NOTIFICATION_TYPES` entry
+  needs its tab in `NOTIFICATION_TAB_OF` (`packages/shared/src/notifications.ts`) and its link in `notificationTarget.ts`.
+  Page-level notices (read-only, deletion, support, offline) are entries in `useShellMessages` (`components/shell/MessageBar.tsx`),
+  never a separate `Alert` above the page.
 - Lists: a submission list page uses `useListFrame` (`components/list/useListFrame.tsx`: filters in the URL via
   `useListPage`, views, chips, chosen columns) and `DataTable` (`ListColumn` with a stable `key`, row click, `RowActions`
   menu, bulk bar, page totals). A list with saved views is a key in `SAVED_VIEW_LISTS` (`packages/shared/src/views.ts`).
