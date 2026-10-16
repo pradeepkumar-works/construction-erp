@@ -347,6 +347,76 @@ export interface CompanyDashboard {
   projects: ProjectSummary[];
 }
 
+/** One line of a My work card: what needs doing, and where. */
+export interface MyWorkItem {
+  /** e.g. "PO-2026-0012 · Shree Cement", "RA bill 4 · NHAI" */
+  label: string;
+  /** e.g. "6 days late", "Due in 3 days" */
+  note: string;
+  projectName: string | null;
+  /** Rupees, where it means something */
+  amount: string | null;
+  /** Web path that opens it */
+  href: string;
+}
+
+export interface MyWorkCard {
+  count: number;
+  /** Rupees involved, where it means something */
+  amount: string | null;
+  /** The most urgent few */
+  items: MyWorkItem[];
+}
+
+/**
+ * The home page's My work (UI roadmap item 59): only what the caller's role can act on or see; a card is missing when
+ * the role has no business with it, and present with count 0 when there is simply nothing to do.
+ */
+export interface MyWorkDto {
+  approvals?: { type: SubmissionType; count: number }[];
+  /** Active projects with no daily report for today */
+  dprsMissing?: MyWorkCard;
+  /** The caller's own entries rejected or sent back for changes */
+  sentBack?: MyWorkCard;
+  /** Sent RA bills not fully received, oldest first */
+  receivables?: MyWorkCard;
+  /** Vendor and subcontractor bills due in the next 7 days or overdue */
+  payablesDue?: MyWorkCard;
+  /** Guarantees, EMDs, policies and licences expiring in the next 30 days or expired */
+  expiring?: MyWorkCard;
+  /** Approved orders past their delivery date and not fully received */
+  lateDeliveries?: MyWorkCard;
+  /** Items below their minimum level in a store */
+  lowStock?: MyWorkCard;
+}
+
+/** Month by month, oldest first, for the home page's KPI trends and charts (UI roadmap item 59). */
+export interface HomeTrendsDto {
+  /** YYYY-MM, the last six months including this one */
+  months: string[];
+  /** Approved progress × BOQ rate, per month */
+  workDone: string[];
+  /** Approved daily reports, per month */
+  dprs: number[];
+  /** Approved RA bills by bill date, value of work before GST (roles that see bills) */
+  billed?: string[];
+  /** Receipts from clients by receipt date (roles that see bills) */
+  cashIn?: string[];
+  /** Payments to vendors and subcontractors by payment date (roles that see payables) */
+  cashOut?: string[];
+  /** Cost booked, all heads (roles that see cost) */
+  cost?: string[];
+  /** Cost of the six months by head (roles that see cost) */
+  costByHead?: CostHeadsDto;
+  /**
+   * Planned against actual value of work, cumulative, as % of the planned total, month by month over the planned span
+   * of the projects' activities (activities with dates and a BOQ rate). Empty when nothing is planned.
+   */
+  sCurve: { month: string; planned: number; actual: number | null }[];
+  /** Approved RA bills to date against the revised contract value, per project with one (roles that see bills) */
+  billingVsContract?: { projectId: string; projectCode: string; projectName: string; contractValue: string; billed: string }[];
+}
+
 export interface ProjectDashboard {
   project: ProjectSummary;
   physicalProgressPct: number;

@@ -28,7 +28,7 @@ async function pick(page: Page, menu: string, choice: string) {
 
 test('dark mode and compact density are chosen from the account menu and kept after a reload', async ({ page }) => {
   await signIn(page, 'pm@demo.com');
-  await expect(page.getByText('Active Projects')).toBeVisible();
+  await expect(page.getByText('My work', { exact: true })).toBeVisible();
   expect(await backgroundLuminance(page, '.ant-card')).toBeGreaterThan(0.9);
 
   await pick(page, 'Appearance', 'Dark');

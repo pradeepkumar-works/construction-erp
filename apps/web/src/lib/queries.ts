@@ -131,6 +131,8 @@ import type {
   Paginated,
   PendingApprovalDto,
   ReviewedItemDto,
+  MyWorkDto,
+  HomeTrendsDto,
   ProgressEntryDto,
   ProjectDashboard,
   ProjectDetail,
@@ -303,6 +305,13 @@ export const clean = (f?: object) =>
   Object.fromEntries(Object.entries(f ?? {}).filter(([, v]) => v !== undefined && v !== null && v !== ''));
 
 /* ---------- queries ---------- */
+
+/** The home page's My work: only the cards the caller's role has. */
+export const useMyWork = () =>
+  useQuery({ queryKey: ['dashboard', 'my-work'], queryFn: async () => (await api.get<MyWorkDto>('/dashboard/my-work')).data, refetchInterval: 60_000 });
+
+/** Six months of trends for the home page's tiles and charts. */
+export const useHomeTrends = () => useQuery({ queryKey: ['dashboard', 'trends'], queryFn: async () => (await api.get<HomeTrendsDto>('/dashboard/trends')).data });
 
 export const useCompanyDashboard = () =>
   useQuery({ queryKey: ['dashboard', 'company'], queryFn: async () => (await api.get<CompanyDashboard>('/dashboard/company')).data });

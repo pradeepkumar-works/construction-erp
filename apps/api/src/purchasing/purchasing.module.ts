@@ -4,5 +4,5 @@ import { QuotationsService } from './quotations.service';
 import { PurchaseOrdersService } from './purchase-orders.service';
 import { VendorBillsService } from './vendor-bills.service';
 
-@Module({ controllers: [PurchasingController], providers: [QuotationsService, PurchaseOrdersService, VendorBillsService] })
+@Module({ controllers: [PurchasingController], providers: [QuotationsService, PurchaseOrdersService, VendorBillsService], exports: [PurchaseOrdersService] })
 export class PurchasingModule {}

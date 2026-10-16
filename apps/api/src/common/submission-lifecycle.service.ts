@@ -145,6 +145,12 @@ export class SubmissionLifecycleService {
     });
   }
 
+  /** The caller's own entries in these statuses (the home page's "sent back"), newest submitted first. */
+  async mine(user: RequestUser, statuses: SubmissionStatus[]): Promise<PendingApprovalDto[]> {
+    const where = { organizationId: user.organizationId, submittedById: user.id, status: { in: statuses } };
+    return (await this.describe(() => where)).sort((a, b) => b.submittedAt.localeCompare(a.submittedAt));
+  }
+
   /** The queue's one-line description of every entry each type's `whereFor` matches (null skips the type). */
   private async describe(whereFor: (type: SubmissionType) => Record<string, unknown> | null): Promise<PendingApprovalDto[]> {
     const none = Promise.resolve([] as never[]);

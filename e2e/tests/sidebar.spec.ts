@@ -24,7 +24,7 @@ test('sections fold and stay folded, and the rail opens a section beside it', as
   await expect(site).toHaveAttribute('aria-expanded', 'true');
   await site.click();
   await expect(site).toHaveAttribute('aria-expanded', 'false');
-  await expect(page.getByRole('link', { name: 'Daily Reports' })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Daily Reports', exact: true })).toHaveCount(0);
   await page.reload();
   await expect(page.getByRole('button', { name: 'Site', exact: true })).toHaveAttribute('aria-expanded', 'false');
 

@@ -1,13 +1,14 @@
 import { Controller, Get, Param } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { DashboardService } from './dashboard.service';
+import { HomeService } from './home.service';
 import { CurrentUser, RequestUser } from '../common/current-user';
 
 @ApiTags('dashboard')
 @ApiBearerAuth()
 @Controller('dashboard')
 export class DashboardController {
-  constructor(private dashboard: DashboardService) {}
+  constructor(private dashboard: DashboardService, private home: HomeService) {}
 
   @Get('company')
   company(@CurrentUser() user: RequestUser) {
@@ -18,6 +19,18 @@ export class DashboardController {
   @Get('getting-started')
   gettingStarted(@CurrentUser() user: RequestUser) {
     return this.dashboard.gettingStarted(user);
+  }
+
+  /** The home page's My work: what the caller's role can act on now. */
+  @Get('my-work')
+  myWork(@CurrentUser() user: RequestUser) {
+    return this.home.myWork(user);
+  }
+
+  /** Six months of trends for the home page's tiles and charts, each part only for roles that see it. */
+  @Get('trends')
+  trends(@CurrentUser() user: RequestUser) {
+    return this.home.trends(user);
   }
 
   @Get('projects/:id')
