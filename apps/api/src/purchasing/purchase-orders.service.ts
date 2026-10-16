@@ -22,7 +22,7 @@ import { AttachmentsService } from '../common/attachments.service';
 import { dateOnly, dec, iso, money, parseDate } from '../common/serialize';
 import { isUniqueViolation } from '../common/idempotency';
 import { nextDocNo } from '../common/doc-number';
-import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
+import { ilike, pageArgs, paginated, searchWords, dateRange } from '../common/paging';
 import { ClosePurchaseOrderDto, CreatePurchaseOrderDto, ListPurchaseOrdersQuery, PoLineInput, ProcurementStatusQuery, ReceivableOrdersQuery, UpdatePurchaseOrderDto } from './purchasing.dto';
 import { todayIn } from '../notifications/time';
 import { MSME_MAX_PAYMENT_DAYS, ZERO, lineAmounts, orderedOn, parseFreight, parseGstRate, parseQty, parseRate, sum, totals } from './purchase-math';
@@ -161,6 +161,9 @@ export class PurchaseOrdersService {
     if (q.materialRequestId) where.materialRequestId = q.materialRequestId;
     if (q.status) where.status = q.status;
     if (q.open) Object.assign(where, { status: 'APPROVED', closedAt: null });
+    if (q.mine) where.submittedById = user.id;
+    const days = dateRange(q.from, q.to);
+    if (days) where.poDate = days;
     const words = searchWords(q.q);
     if (words.length)
       where.AND = words.map((w) => ({

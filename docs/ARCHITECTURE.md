@@ -1116,6 +1116,14 @@ that device and is deleted on sign-out or when Expo reports it unregistered.
   value in both enums, its text, its WATI variable names (`WATI_PARAM_NAMES`), a WhatsApp and DLT registration, and a `message` on the `notify()`
   call. WhatsApp goes through WATI when `WATI_API_ENDPOINT` is set, else Meta's Cloud API.
 
+## Saved list views
+
+`SavedView` is a named set of a list's filters, sort and columns (`state`, JSON, cleaned to string filters and column
+keys and capped at `SAVED_VIEW_MAX_STATE` characters), owned by one user, for one of `SAVED_VIEW_LISTS`. A `shared`
+view shows for everyone in the organisation; only its owner or an admin (`canManageSharedViews`) can change or delete
+it. The project is never saved: it follows the header's project switcher. Views are a convenience over the list
+endpoints' own filters (`status`, `mine`, `from`/`to`…), so they never widen what a user can see.
+
 ## Languages (mobile)
 
 The site app opens in English on every phone, whatever the device language, and a user switches to Hindi under

@@ -35,3 +35,4 @@ export * from './imprest';
 export * from './compliance';
 export * from './handover';
 export * from './procurement';
+export * from './views';

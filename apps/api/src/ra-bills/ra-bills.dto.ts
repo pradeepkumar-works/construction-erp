@@ -2,7 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import { ArrayMaxSize, IsArray, IsBoolean, IsDateString, IsIn, IsNumberString, IsOptional, IsString, IsUUID, MaxLength, ValidateNested } from 'class-validator';
 import { BILL_STAGES, LIST_SORT_FIELDS, SUBMISSION_STATUSES, type BillSortField, type BillStage, type SubmissionStatus } from '@erp/shared';
-import { PageQuery } from '../common/paging';
+import { PageQuery, QueryBool } from '../common/paging';
 import { CLIENT_ID_DOC } from '../common/idempotency';
 
 const trim = () => Transform(({ value }) => (typeof value === 'string' ? value.trim() || null : value));
@@ -76,4 +76,7 @@ export class ListRaBillsQuery extends PageQuery {
   @ApiPropertyOptional({ enum: SUBMISSION_STATUSES }) @IsOptional() @IsIn(SUBMISSION_STATUSES as unknown as string[]) status?: SubmissionStatus;
   @ApiPropertyOptional({ enum: BILL_STAGES }) @IsOptional() @IsIn(BILL_STAGES as unknown as string[]) stage?: BillStage;
   @ApiPropertyOptional({ enum: LIST_SORT_FIELDS.bills, default: 'billDate' }) @IsOptional() @IsIn(LIST_SORT_FIELDS.bills as unknown as string[]) sortBy?: BillSortField;
+  @ApiPropertyOptional({ example: '2026-10-01', description: 'From this day (inclusive)' }) @IsOptional() @IsDateString() from?: string;
+  @ApiPropertyOptional({ example: '2026-10-31', description: 'Up to this day (inclusive)' }) @IsOptional() @IsDateString() to?: string;
+  @ApiPropertyOptional({ description: 'Only entries the current user submitted' }) @IsOptional() @QueryBool() @IsBoolean() mine?: boolean;
 }

@@ -1,0 +1,97 @@
+import { expect, test, type Page } from '@playwright/test';
+import { signIn } from './helpers';
+
+/** List pages (UI roadmap item 55): views, filters in the URL, saved and shared views, columns, rows, selection. */
+
+const rows = (page: Page) => page.locator('.ant-table-tbody .ant-table-row');
+
+test('a view sets the filters, which go in the address bar and come back from a link', async ({ page }) => {
+  await signIn(page, 'pm@demo.com');
+  await page.goto('/dpr');
+  await page.getByRole('tab', { name: 'Waiting for me' }).click();
+  await expect(page).toHaveURL(/\/dpr\?status=SUBMITTED$/);
+  await expect(page.getByRole('tab', { name: 'Waiting for me' })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('.ant-tag').filter({ hasText: 'Status: Pending Approval' })).toBeVisible();
+
+  // A link with filters opens the list filtered, with the chips to take them off.
+  await page.goto('/dpr?status=APPROVED&from=2026-01-01');
+  await expect(page.locator('.ant-tag').filter({ hasText: 'From 01 Jan 2026' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'All' })).toHaveAttribute('aria-selected', 'false');
+  await page.getByRole('button', { name: 'Clear all' }).click();
+  await expect(page).toHaveURL(/\/dpr$/);
+  await expect(page.getByRole('tab', { name: 'All' })).toHaveAttribute('aria-selected', 'true');
+});
+
+test('a view saved and shared shows for the company, and only its owner can change it', async ({ page, browser }) => {
+  const name = `Approved RA bills ${Date.now() % 100000}`;
+  await signIn(page, 'pm@demo.com');
+  await page.goto('/bills?status=APPROVED');
+  await page.getByRole('button', { name: 'Save view' }).click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByLabel('Name').fill(name);
+  await dialog.getByLabel('Share with the company').check();
+  await dialog.getByRole('button', { name: 'Save', exact: true }).click();
+  const tab = page.getByRole('tab', { name });
+  await expect(tab).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('button', { name: 'Save view' })).toBeDisabled();
+
+  // Someone else in the company sees it, without the menu to change it.
+  const other = await browser.newPage();
+  await signIn(other, 'md@demo.com');
+  await other.goto('/bills');
+  await other.getByRole('tab', { name }).click();
+  await expect(other).toHaveURL(/status=APPROVED/);
+  await expect(other.getByRole('button', { name: `${name} view options` })).toHaveCount(0);
+  await other.close();
+
+  // The owner deletes it.
+  await page.getByRole('button', { name: `${name} view options` }).click();
+  await page.getByRole('menuitem', { name: 'Delete' }).click();
+  await page.locator('.ant-modal-confirm').getByRole('button', { name: 'Delete' }).click();
+  await expect(page.getByRole('tab', { name })).toHaveCount(0);
+});
+
+test('columns can be hidden and stay hidden, and Reset brings them back', async ({ page }) => {
+  await signIn(page, 'pm@demo.com');
+  await page.goto('/dpr');
+  const header = page.locator('.ant-table-thead th').filter({ hasText: /^Weather$/ });
+  await expect(header).toBeVisible();
+  await page.getByRole('button', { name: 'Columns' }).click();
+  await page.getByRole('checkbox', { name: 'Weather' }).uncheck();
+  await expect(header).toHaveCount(0);
+  await page.reload();
+  await expect(page.locator('.ant-table-thead th').filter({ hasText: /^Date$/ })).toBeVisible();
+  await expect(header).toHaveCount(0);
+  await page.getByRole('button', { name: 'Columns' }).click();
+  await page.getByRole('button', { name: 'Reset columns' }).click();
+  await expect(header).toBeVisible();
+});
+
+test('clicking a row opens it, and selected rows get the bulk bar', async ({ page }) => {
+  await signIn(page, 'pm@demo.com');
+  await page.goto('/material-requests');
+  await expect(rows(page).first()).toBeVisible();
+  const requestNo = (await rows(page).first().locator('td').nth(1).innerText()).trim();
+  await rows(page).first().locator('td').nth(3).click();
+  await expect(page.locator('.ant-drawer')).toContainText(requestNo);
+  await page.keyboard.press('Escape');
+
+  await rows(page).first().getByRole('button', { name: 'Actions' }).click();
+  await expect(page.getByRole('menuitem', { name: 'Open' })).toBeVisible();
+  await page.keyboard.press('Escape');
+
+  await rows(page).nth(0).locator('.ant-checkbox-input').check();
+  await rows(page).nth(1).locator('.ant-checkbox-input').check();
+  const bar = page.getByRole('toolbar', { name: 'Selected rows' });
+  await expect(bar).toContainText('2 selected');
+  const download = page.waitForEvent('download');
+  await bar.getByRole('button', { name: 'Export' }).click();
+  expect((await download).suggestedFilename()).toMatch(/\.xlsx$/);
+  await expect(bar).toBeHidden();
+});
+
+test('money lists show a total for the page', async ({ page }) => {
+  await signIn(page, 'pm@demo.com');
+  await page.goto('/bills');
+  await expect(page.locator('.ant-table-summary')).toContainText('Total, this page');
+});

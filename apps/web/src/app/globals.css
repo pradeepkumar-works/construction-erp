@@ -402,6 +402,11 @@ h4.ant-typography,
 }
 
 
+/* List rows open on click (DataTable). */
+.row-click > td {
+  cursor: pointer;
+}
+
 /* Superseded revisions and other rows that are on record but not in force */
 .row-muted td {
   color: var(--ant-color-text-tertiary);

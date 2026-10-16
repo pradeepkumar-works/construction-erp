@@ -9,7 +9,7 @@ import { SubmissionLifecycleService } from '../common/submission-lifecycle.servi
 import { AttachmentsService } from '../common/attachments.service';
 import { dateOnly, dec, iso, parseDate } from '../common/serialize';
 import { isUniqueViolation } from '../common/idempotency';
-import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
+import { ilike, pageArgs, paginated, searchWords, istDayRange } from '../common/paging';
 import { CreateMaterialRequestDto, ListMaterialRequestQuery, UpdateMaterialRequestDto } from './material-requests.dto';
 import { orderedOn, sum } from '../purchasing/purchase-math';
 
@@ -99,6 +99,9 @@ export class MaterialRequestsService {
     if (q.projectId) where.projectId = q.projectId;
     if (q.status) where.status = q.status;
     if (q.mine) where.submittedById = user.id;
+    // Raised on these days.
+    const days = istDayRange(q.from, q.to);
+    if (days) where.createdAt = days;
     const words = searchWords(q.q);
     if (words.length)
       where.AND = words.map((w) => ({

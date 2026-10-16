@@ -46,3 +46,11 @@ export const QueryBool = () =>
     if (raw === undefined || raw === null || raw === '') return undefined;
     return raw === true || raw === 'true' || raw === '1';
   });
+
+/** `from`/`to` (YYYY-MM-DD, both ends included) on a date column; undefined when neither is given. */
+export const dateRange = (from?: string, to?: string) =>
+  from || to ? { ...(from ? { gte: new Date(`${from}T00:00:00.000Z`) } : {}), ...(to ? { lte: new Date(`${to}T00:00:00.000Z`) } : {}) } : undefined;
+
+/** The same on a timestamp, by the days as the sites see them (India, UTC+05:30). */
+export const istDayRange = (from?: string, to?: string) =>
+  from || to ? { ...(from ? { gte: new Date(`${from}T00:00:00.000+05:30`) } : {}), ...(to ? { lt: new Date(new Date(`${to}T00:00:00.000+05:30`).getTime() + 86_400_000) } : {}) } : undefined;

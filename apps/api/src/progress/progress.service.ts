@@ -10,7 +10,7 @@ import { SubmissionLifecycleService } from '../common/submission-lifecycle.servi
 import { AttachmentsService } from '../common/attachments.service';
 import { dateOnly, dec, iso, parseDate } from '../common/serialize';
 import { isUniqueViolation } from '../common/idempotency';
-import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
+import { ilike, pageArgs, paginated, searchWords, dateRange } from '../common/paging';
 import { CreateProgressDto, ListProgressQuery, UpdateProgressDto } from './progress.dto';
 
 const include = {
@@ -82,6 +82,8 @@ export class ProgressService {
     if (q.activityId) where.activityId = q.activityId;
     if (q.status) where.status = q.status;
     if (q.mine) where.submittedById = user.id;
+    const days = dateRange(q.from, q.to);
+    if (days) where.date = days;
     const words = searchWords(q.q);
     if (words.length)
       where.AND = words.map((w) => ({
