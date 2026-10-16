@@ -49,8 +49,8 @@ export function ApprovalQueue({ groups, current, onOpen, selected, selectedType,
                 top: 0,
                 zIndex: 1,
                 padding: `${token.paddingXS}px ${token.paddingSM}px`,
-                background: token.colorFillQuaternary,
-                backdropFilter: 'blur(8px)',
+                // The fill is see-through, so it sits on the container colour to hide the entries scrolling under it.
+                background: `linear-gradient(${token.colorFillQuaternary}, ${token.colorFillQuaternary}), ${token.colorBgContainer}`,
                 borderBottom: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}`,
               }}
             >
