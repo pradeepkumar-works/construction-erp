@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Button, Checkbox, Progress, Select, Space, Typography, theme } from 'antd';
+import { Button, Checkbox, Progress, Select, Space, theme } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import type { PurchaseOrderDto, PurchaseOrderSortField } from '@erp/shared';
 import { LIST_SORT_FIELDS, canPurchase } from '@erp/shared';
@@ -19,6 +19,7 @@ import { StatusTag } from '@/components/common/StatusTag';
 import { DataTable, type ListColumn } from '@/components/list/DataTable';
 import { DateRangeFilter } from '@/components/list/DateRangeFilter';
 import { RowActions } from '@/components/list/RowActions';
+import { RecordLink } from '@/components/record/RecordLink';
 import { exportSelected, useBulkApprove } from '@/components/list/bulk';
 import { useListFrame } from '@/components/list/useListFrame';
 import { PoStateTag, PurchaseOrderDrawer } from './PurchaseOrderDrawer';
@@ -49,9 +50,9 @@ function poColumns({ showProject, onOpen, sortOrderFor }: { showProject: boolean
       render: (_, r) => (
         <TwoLine
           top={
-            <Typography.Link onClick={() => onOpen(r.id)} strong className="mono">
+            <RecordLink href={`/purchase-orders/${r.id}`} onOpen={() => onOpen(r.id)} strong className="mono">
               {r.poNo}
-            </Typography.Link>
+            </RecordLink>
           }
           sub={formatDate(r.poDate)}
         />
@@ -75,7 +76,7 @@ function poColumns({ showProject, onOpen, sortOrderFor }: { showProject: boolean
       ),
     },
     { key: 'received', title: 'Received', width: 130, render: (_, r) => (r.status === 'APPROVED' ? <Progress percent={r.receivedPct} size="small" style={{ margin: 0 }} /> : '-') },
-    { key: 'actions', title: '', label: 'Actions', locked: true, fixed: 'right' as const, width: 56, render: (_, r) => <RowActions type="purchase_order" row={r} amount={r.total} onOpen={onOpen} /> },
+    { key: 'actions', title: '', label: 'Actions', locked: true, fixed: 'right' as const, width: 56, render: (_, r) => <RowActions type="purchase_order" row={r} amount={r.total} href={`/purchase-orders/${r.id}`} onOpen={onOpen} /> },
   ];
 }
 

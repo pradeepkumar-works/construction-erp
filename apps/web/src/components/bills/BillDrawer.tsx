@@ -2,8 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Alert, App, Button, Card, DatePicker, Descriptions, Divider, Drawer, Form, Input, InputNumber, Modal, Popconfirm, Skeleton, Space, Table, Tag, Typography } from 'antd';
-import { PrinterOutlined } from '@ant-design/icons';
+import { Alert, App, Button, Card, DatePicker, Divider, Form, Input, InputNumber, Modal, Popconfirm, Table, Tag, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { RaBillDto, RaBillItemDto, ReceiptDto } from '@erp/shared';
@@ -12,10 +11,8 @@ import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useBill } from '@/lib/queries';
 import { formatDate, formatINR, formatQty, toNumber } from '@/lib/format';
-import { QueryError } from '@/components/common/QueryState';
 import { StatusTag } from '@/components/common/StatusTag';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
-import { AuditTrail } from '@/components/common/AuditTrail';
 import { ReviewActions } from '@/components/common/ReviewActions';
 import { EditResubmitButton } from '@/components/common/EditResubmitButton';
 import { submissionMetaItems } from '@/components/common/SubmitterInfo';
@@ -25,6 +22,8 @@ import { ReceiptFormModal } from '@/components/receivables/ReceiptFormModal';
 import { InTallyTag } from '@/components/tally/InTallyTag';
 import { BillPriceVariation } from './BillPriceVariation';
 import { themeColor } from '@/lib/theme';
+import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
+import { submissionLifecycle } from '@/components/record/lifecycle';
 
 type StageAction = 'send' | 'certify';
 const ACTION_TITLES: Record<StageAction, string> = { send: 'Record as sent to the client', certify: 'Record the client’s certificate' };
@@ -40,8 +39,15 @@ function Row({ label, value, strong, muted }: { label: React.ReactNode; value: s
   );
 }
 
-/** An RA bill: abstract, deductions, the measurements it bills, approval and where it is with the client. */
-export function BillDrawer({ id, open, onClose, onEdit }: { id: string | null; open: boolean; onClose: () => void; onEdit?: (b: RaBillDto) => void }) {
+interface RecordProps {
+  id: string | null;
+  open?: boolean;
+  onClose?: () => void;
+  onEdit?: (b: RaBillDto) => void;
+}
+
+/** An RA bill: abstract, deductions, the measurements it bills, approval and where it is with the client; in a drawer or at `/bills/<id>`. */
+export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { mode: RecordMode }) {
   const { user } = useAuth();
   const { message } = App.useApp();
   const qc = useQueryClient();
@@ -75,7 +81,7 @@ export function BillDrawer({ id, open, onClose, onEdit }: { id: string | null; o
     mutationFn: async () => (await api.delete(`/ra-bills/${id}`)).data,
     onSuccess: () => {
       done('Bill deleted. Its measurements can be billed again.');
-      onClose();
+      onClose?.();
     },
     onError: (e) => message.error(errorMessage(e)),
   });
@@ -103,243 +109,257 @@ export function BillDrawer({ id, open, onClose, onEdit }: { id: string | null; o
   const editable = !!data && !!user && preparer && canEditSubmission(user, data);
   const approved = data?.status === 'APPROVED';
   const certified = !!data?.items.some((i) => i.certifiedQty !== null);
+  const stageAt = data ? (['NOT_SENT', 'SENT', 'CERTIFIED', 'PAID'] as const).indexOf(data.stage) : 0;
 
   return (
-    <Drawer
+    <RecordFrame
+      mode={mode}
       open={open}
       onClose={onClose}
-      size={1000}
-      title={
-        data ? (
-          <Space wrap>
-            {data.billLabel} <StatusTag status={data.status} /> {approved && <BillStageTag stage={data.stage} />}
-          </Space>
-        ) : (
-          'RA bill'
-        )
-      }
-      extra={
-        data ? (
-          <Space wrap>
-            <Button size="small" icon={<PrinterOutlined />} onClick={() => !openBillPrint(data, user?.organizationName ?? '') && message.warning('Pop-up blocked. Allow pop-ups to print the bill.')}>
-              Print
-            </Button>
-            {editable && data.status === 'DRAFT' && user && canResubmit(user, data) ? (
-              <Button size="small" type="primary" loading={submit.isPending} onClick={() => submit.mutate()}>
-                Submit for approval
-              </Button>
-            ) : null}
-            {editable && data.status === 'DRAFT' ? (
-              <Button size="small" onClick={() => onEdit?.(data)}>
-                Edit
-              </Button>
-            ) : (
-              preparer && <EditResubmitButton entry={data} onEdit={onEdit} size="small" />
-            )}
-            <ReviewActions type="bill" id={data.id} status={data.status} amount={data.grossAmount} size="small" />
-            {approved && preparer && (data.stage === 'NOT_SENT' || data.stage === 'SENT') ? (
-              <Button size="small" type={data.stage === 'NOT_SENT' ? 'primary' : 'default'} onClick={() => openAction('send', data)}>
-                {data.stage === 'NOT_SENT' ? 'Mark sent' : 'Change date sent'}
-              </Button>
-            ) : null}
-            {approved && preparer && !data.exportedToTally && (data.stage === 'SENT' || data.stage === 'CERTIFIED') ? (
-              <Button size="small" type={data.stage === 'SENT' ? 'primary' : 'default'} onClick={() => openAction('certify', data)}>
-                {data.stage === 'SENT' ? 'Record certificate' : 'Correct certificate'}
-              </Button>
-            ) : null}
-            {approved && accounts && (data.stage === 'SENT' || data.stage === 'CERTIFIED') ? (
-              <Button size="small" onClick={() => setPaying(true)}>
-                Record payment
-              </Button>
-            ) : null}
-            {editable ? (
-              <Popconfirm title="Delete this bill?" description="Its measurements become billable again." onConfirm={() => remove.mutate()}>
-                <Button size="small" danger loading={remove.isPending}>
-                  Delete
-                </Button>
-              </Popconfirm>
-            ) : null}
-          </Space>
-        ) : null
-      }
-      destroyOnHidden
-    >
-      {isLoading && <Skeleton active />}
-      {error && <QueryError error={error} onRetry={() => refetch()} />}
-      {data && (
-        <>
-          {data.status === 'DRAFT' && (
-            <Alert
-              type="info"
-              showIcon
-              style={{ marginBottom: 12 }}
-              title="Draft: check the abstract, then submit it for approval. Measurements approved in the meantime are added when it is submitted."
-            />
-          )}
-          {data.heldExtraItems?.length ? (
-            <Alert
-              type="warning"
-              showIcon
-              style={{ marginBottom: 12 }}
-              title={`Left out until the client approves a variation: ${data.heldExtraItems.map((i) => `${i.itemNo} ${i.description} (${formatQty(i.qty)} ${i.unit} measured)`).join('; ')}`}
-              description={<Link href={`/projects/${data.projectId}?tab=variations`}>Open the project&apos;s variations</Link>}
-            />
-          ) : null}
-          <Descriptions
-            size="small"
-            column={{ xs: 1, sm: 2, lg: 3 }}
-            bordered
-            items={[
-              { key: 'project', label: 'Project', children: <Link href={`/projects/${data.projectId}?tab=bills`}>{data.projectName}</Link>, span: 2 },
-              { key: 'billDate', label: 'Bill date', children: formatDate(data.billDate) },
-              {
-                key: 'client',
-                label: 'Client',
-                span: 2,
-                children: data.client ? (
-                  <span>
-                    {data.client.name}
-                    {data.client.gstin && <span className="text-muted"> · GSTIN {data.client.gstin}{data.client.stateCode ? ` (${GST_STATES[data.client.stateCode] ?? data.client.stateCode})` : ''}</span>}
-                  </span>
-                ) : (
-                  data.clientName ?? '-'
-                ),
-              },
-              { key: 'upto', label: 'Measurements up to', children: formatDate(data.measuredUpTo) },
-              { key: 'agreement', label: 'Agreement', children: data.agreementNo ? `${data.agreementNo}${data.agreementDate ? `, ${formatDate(data.agreementDate)}` : ''}` : '-' },
-              { key: 'wo', label: 'Work order', children: data.workOrderNo ?? '-' },
-              { key: 'sheets', label: 'Measurement sheets', children: data.measurementCount },
-              ...(approved
-                ? [
-                    { key: 'sent', label: 'Sent', children: data.sentDate ? formatDate(data.sentDate) : '-' },
-                    { key: 'cert', label: 'Certified', children: data.certifiedDate ? `${formatDate(data.certifiedDate)}${data.certificateNo ? ` (${data.certificateNo})` : ''}` : '-' },
-                    { key: 'paid', label: 'Paid', children: data.paidDate ? formatDate(data.paidDate) : '-' },
-                  ]
-                : []),
-              ...(data.remarks ? [{ key: 'remarks', label: 'Remarks', children: data.remarks, span: 3 }] : []),
-              ...submissionMetaItems(data).filter((i) => i.key !== 'status' && i.key !== 'project'),
-            ]}
-          />
-          <Divider titlePlacement="start" plain>
-            Abstract of cost
-          </Divider>
-          <Table<RaBillItemDto>
-            rowKey="id"
-            size="small"
-            pagination={false}
-            dataSource={data.items}
-            scroll={{ x: 1100 }}
-            columns={[
-              {
-                title: 'Item',
-                render: (_, i) => (
-                  <div>
-                    <span className="mono">{i.itemNo}</span> {i.description}
-                    {i.extraItem ? <Tag color="orange" style={{ marginLeft: 6 }}>Extra item</Tag> : toNumber(i.excessQty) > 0 ? <Tag color="red" style={{ marginLeft: 6 }}>Excess {formatQty(i.excessQty)} {i.unit}</Tag> : null}
-                  </div>
-                ),
-              },
-              { title: 'BOQ qty', dataIndex: 'boqQty', width: 100, align: 'right', render: (v, i) => <span className="mono">{formatQty(v)} {i.unit}</span> },
-              { title: 'Rate', dataIndex: 'rate', width: 100, align: 'right', render: (v) => <span className="mono">{formatINR(v, true)}</span> },
-              { title: 'Previous', dataIndex: 'prevQty', width: 90, align: 'right', render: (v) => <span className="mono">{formatQty(v)}</span> },
-              { title: 'This bill', dataIndex: 'thisQty', width: 90, align: 'right', render: (v) => <strong className="mono">{formatQty(v)}</strong> },
-              ...(certified
-                ? [{ title: 'Certified', dataIndex: 'certifiedQty', width: 90, align: 'right' as const, render: (v: string | null, i: RaBillItemDto) => <span className="mono" style={v !== null && v !== i.thisQty ? { color: themeColor('colorErrorText') } : undefined}>{formatQty(v)}</span> }]
-                : []),
-              { title: 'Up to date', dataIndex: 'uptoQty', width: 100, align: 'right', render: (v) => <span className="mono">{formatQty(v)}</span> },
-              { title: 'Amount', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <strong className="mono">{formatINR(v, true)}</strong> },
-            ]}
-          />
-          <BillPriceVariation bill={data} editable={editable} />
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12, marginTop: 12 }}>
-            <Card size="small" title="Bill amount">
-              <Row label="Work up to the previous bill" value={data.grossPrevious} muted />
-              <Row label="Work in this bill" value={data.grossAmount} strong />
-              <Row label="Work up to date" value={data.grossUpto} muted />
-              {data.pvLines.length ? <Row label="Price variation" value={data.pvAmount} strong /> : null}
-              <Divider style={{ margin: '6px 0' }} />
-              <Row label={`GST @ ${data.gstRate}%`} value={data.gstAmount} />
-              <Row label="Less deductions" value={data.totalDeductions} />
-              <Divider style={{ margin: '6px 0' }} />
-              <Row label={<span style={{ fontSize: 15 }}>Net payable</span>} value={data.netPayable} strong />
-              {approved && data.stage !== 'NOT_SENT' && (
-                <>
-                  <Divider style={{ margin: '6px 0' }} />
-                  <Row label="Received in the bank" value={data.receivedAmount} />
-                  <Row label="Settled (received + deducted)" value={data.settledAmount} muted />
-                  <Row label="Outstanding" value={data.outstanding} strong />
-                </>
-              )}
-              {data.claimedNet !== null && (
-                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  Claimed {formatINR(data.claimedGross, true)} of work, {formatINR(data.claimedNet, true)} net. The client passed {formatINR(toNumber(data.claimedNet) - toNumber(data.netPayable), true)} less; the quantities it cut come back in the next bill.
-                </Typography.Text>
-              )}
-            </Card>
-            <Card size="small" title="Deductions">
-              {data.deductions.length === 0 && <Typography.Text type="secondary">None</Typography.Text>}
-              {data.deductions.map((d) => (
-                <Row key={d.key} label={d.pct !== null ? `${d.label} @ ${d.pct}%` : d.label} value={d.amount} />
-              ))}
-              {data.deductions.length > 0 && (
-                <>
-                  <Divider style={{ margin: '6px 0' }} />
-                  <Row label="Total" value={data.totalDeductions} strong />
-                </>
-              )}
-            </Card>
-          </div>
-          {approved && data.receipts && data.stage !== 'NOT_SENT' && (
+      drawerSize={1000}
+      kind="RA bill"
+      list={{ href: '/bills', label: 'RA Bills' }}
+      loading={isLoading}
+      error={error}
+      onRetry={() => refetch()}
+      record={
+        data && {
+          href: `/bills/${data.id}`,
+          title: data.billLabel,
+          tags: (
             <>
-              <Divider titlePlacement="start" plain>
-                Payments received ({data.receipts.length})
-              </Divider>
-              <Table<ReceiptDto>
-                rowKey="id"
-                size="small"
-                pagination={false}
-                dataSource={data.receipts}
-                locale={{ emptyText: 'No payment recorded yet' }}
-                columns={[
-                  { title: 'Date', dataIndex: 'receiptDate', width: 110, render: (v) => formatDate(v) },
-                  { title: 'Mode', dataIndex: 'mode', width: 80, render: (v: ReceiptDto['mode']) => RECEIPT_MODE_LABELS[v] },
-                  { title: 'Reference', dataIndex: 'reference', render: (v) => (v ? <span className="mono">{v}</span> : '-') },
-                  { title: 'Received', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <strong className="mono">{formatINR(v, true)}</strong> },
-                  { title: 'Deducted', dataIndex: 'deductedAmount', width: 130, align: 'right', render: (v) => <span className="mono">{formatINR(v, true)}</span> },
-                  { title: 'By', dataIndex: 'createdByName', width: 140 },
-                  ...(accounts
-                    ? [{ title: '', key: 'edit', width: 70, render: (_: unknown, r: ReceiptDto) => (r.exportedToTally ? <InTallyTag /> : <Button size="small" type="link" onClick={() => setCorrecting(r)}>Edit</Button>) }]
-                    : []),
-                ]}
-              />
+              <StatusTag status={data.status} /> {approved && <BillStageTag stage={data.stage} />}
             </>
-          )}
-          <Divider titlePlacement="start" plain>
-            Measurements billed ({data.measurements?.length ?? 0})
-          </Divider>
-          <Table
-            rowKey="id"
-            size="small"
-            pagination={false}
-            dataSource={data.measurements ?? []}
-            columns={[
-              { title: 'MB no.', dataIndex: 'mbNo', width: 130, className: 'mono' },
-              { title: 'Date', dataIndex: 'date', width: 110, render: (v) => formatDate(v) },
-              { title: 'Item', dataIndex: 'boqItemNo', width: 80, className: 'mono' },
-              { title: 'Location', dataIndex: 'location' },
-              { title: 'Quantity', dataIndex: 'totalQty', width: 130, align: 'right', render: (v, m) => <span className="mono">{formatQty(v)} {m.unit}</span> },
-            ]}
-          />
-          <Divider titlePlacement="start" plain>
-            Documents ({data.attachments.length})
-          </Divider>
-          <AttachmentGallery attachments={data.attachments} />
-          <Divider titlePlacement="start" plain>
-            Audit trail
-          </Divider>
-          <AuditTrail type="bill" id={data.id} />
-        </>
-      )}
+          ),
+          print: () => {
+            if (!openBillPrint(data, user?.organizationName ?? '')) message.warning('Pop-up blocked. Allow pop-ups to print the bill.');
+          },
+          notices: (
+            <>
+              {data.status === 'DRAFT' && (
+                <Alert
+                  type="info"
+                  showIcon
+                  style={{ marginBottom: 12 }}
+                  title="Draft: check the abstract, then submit it for approval. Measurements approved in the meantime are added when it is submitted."
+                />
+              )}
+              {data.heldExtraItems?.length ? (
+                <Alert
+                  type="warning"
+                  showIcon
+                  style={{ marginBottom: 12 }}
+                  title={`Left out until the client approves a variation: ${data.heldExtraItems.map((i) => `${i.itemNo} ${i.description} (${formatQty(i.qty)} ${i.unit} measured)`).join('; ')}`}
+                  description={<Link href={`/projects/${data.projectId}?tab=variations`}>Open the project&apos;s variations</Link>}
+                />
+              ) : null}
+            </>
+          ),
+          facts: [
+            { key: 'net', label: 'Net payable', children: <strong>{money(data.netPayable)}</strong> },
+            { key: 'project', label: 'Project', children: <Link href={`/projects/${data.projectId}?tab=bills`}>{data.projectName}</Link>, span: 2 },
+            { key: 'billDate', label: 'Bill date', children: formatDate(data.billDate) },
+            {
+              key: 'client',
+              label: 'Client',
+              span: 2,
+              children: data.client ? (
+                <span>
+                  {data.client.name}
+                  {data.client.gstin && <span className="text-muted"> · GSTIN {data.client.gstin}{data.client.stateCode ? ` (${GST_STATES[data.client.stateCode] ?? data.client.stateCode})` : ''}</span>}
+                </span>
+              ) : (
+                data.clientName ?? '-'
+              ),
+            },
+            { key: 'upto', label: 'Measurements up to', children: formatDate(data.measuredUpTo) },
+            { key: 'agreement', label: 'Agreement', children: data.agreementNo ? `${data.agreementNo}${data.agreementDate ? `, ${formatDate(data.agreementDate)}` : ''}` : '-' },
+            { key: 'wo', label: 'Work order', children: data.workOrderNo ?? '-' },
+            { key: 'sheets', label: 'Measurement sheets', children: data.measurementCount },
+            ...(data.remarks ? [{ key: 'remarks', label: 'Remarks', children: data.remarks, span: 3 }] : []),
+            ...submissionMetaItems(data).filter((i) => i.key !== 'status' && i.key !== 'project'),
+          ],
+          lifecycle: submissionLifecycle(data, [
+            { title: 'Sent', done: stageAt >= 1, content: data.sentDate ? formatDate(data.sentDate) : undefined },
+            { title: 'Certified', done: stageAt >= 2, content: data.certifiedDate ? `${formatDate(data.certifiedDate)}${data.certificateNo ? `, ${data.certificateNo}` : ''}` : undefined },
+            { title: 'Paid', done: stageAt >= 3, content: data.paidDate ? formatDate(data.paidDate) : approved && stageAt >= 1 ? `${formatINR(data.outstanding, true)} outstanding` : undefined },
+          ]),
+          sections: [
+            {
+              key: 'abstract',
+              title: 'Abstract of cost',
+              count: data.items.length,
+              children: (
+                <>
+                  <Table<RaBillItemDto>
+                    rowKey="id"
+                    size="small"
+                    pagination={false}
+                    dataSource={data.items}
+                    scroll={{ x: 1100 }}
+                    columns={[
+                      {
+                        title: 'Item',
+                        render: (_, i) => (
+                          <div>
+                            <span className="mono">{i.itemNo}</span> {i.description}
+                            {i.extraItem ? <Tag color="orange" style={{ marginLeft: 6 }}>Extra item</Tag> : toNumber(i.excessQty) > 0 ? <Tag color="red" style={{ marginLeft: 6 }}>Excess {formatQty(i.excessQty)} {i.unit}</Tag> : null}
+                          </div>
+                        ),
+                      },
+                      { title: 'BOQ qty', dataIndex: 'boqQty', width: 100, align: 'right', render: (v, i) => <span className="mono">{formatQty(v)} {i.unit}</span> },
+                      { title: 'Rate', dataIndex: 'rate', width: 100, align: 'right', render: (v) => <span className="mono">{formatINR(v, true)}</span> },
+                      { title: 'Previous', dataIndex: 'prevQty', width: 90, align: 'right', render: (v) => <span className="mono">{formatQty(v)}</span> },
+                      { title: 'This bill', dataIndex: 'thisQty', width: 90, align: 'right', render: (v) => <strong className="mono">{formatQty(v)}</strong> },
+                      ...(certified
+                        ? [{ title: 'Certified', dataIndex: 'certifiedQty', width: 90, align: 'right' as const, render: (v: string | null, i: RaBillItemDto) => <span className="mono" style={v !== null && v !== i.thisQty ? { color: themeColor('colorErrorText') } : undefined}>{formatQty(v)}</span> }]
+                        : []),
+                      { title: 'Up to date', dataIndex: 'uptoQty', width: 100, align: 'right', render: (v) => <span className="mono">{formatQty(v)}</span> },
+                      { title: 'Amount', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <strong className="mono">{formatINR(v, true)}</strong> },
+                    ]}
+                  />
+                  <BillPriceVariation bill={data} editable={editable} />
+                </>
+              ),
+            },
+            {
+              key: 'amounts',
+              title: 'Amount and deductions',
+              children: (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12, marginTop: 12 }}>
+                  <Card size="small" title="Bill amount">
+                    <Row label="Work up to the previous bill" value={data.grossPrevious} muted />
+                    <Row label="Work in this bill" value={data.grossAmount} strong />
+                    <Row label="Work up to date" value={data.grossUpto} muted />
+                    {data.pvLines.length ? <Row label="Price variation" value={data.pvAmount} strong /> : null}
+                    <Divider style={{ margin: '6px 0' }} />
+                    <Row label={`GST @ ${data.gstRate}%`} value={data.gstAmount} />
+                    <Row label="Less deductions" value={data.totalDeductions} />
+                    <Divider style={{ margin: '6px 0' }} />
+                    <Row label={<span style={{ fontSize: 15 }}>Net payable</span>} value={data.netPayable} strong />
+                    {approved && data.stage !== 'NOT_SENT' && (
+                      <>
+                        <Divider style={{ margin: '6px 0' }} />
+                        <Row label="Received in the bank" value={data.receivedAmount} />
+                        <Row label="Settled (received + deducted)" value={data.settledAmount} muted />
+                        <Row label="Outstanding" value={data.outstanding} strong />
+                      </>
+                    )}
+                    {data.claimedNet !== null && (
+                      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                        Claimed {formatINR(data.claimedGross, true)} of work, {formatINR(data.claimedNet, true)} net. The client passed {formatINR(toNumber(data.claimedNet) - toNumber(data.netPayable), true)} less; the quantities it cut come back in the next bill.
+                      </Typography.Text>
+                    )}
+                  </Card>
+                  <Card size="small" title="Deductions">
+                    {data.deductions.length === 0 && <Typography.Text type="secondary">None</Typography.Text>}
+                    {data.deductions.map((d) => (
+                      <Row key={d.key} label={d.pct !== null ? `${d.label} @ ${d.pct}%` : d.label} value={d.amount} />
+                    ))}
+                    {data.deductions.length > 0 && (
+                      <>
+                        <Divider style={{ margin: '6px 0' }} />
+                        <Row label="Total" value={data.totalDeductions} strong />
+                      </>
+                    )}
+                  </Card>
+                </div>
+              ),
+            },
+            ...(approved && data.receipts && data.stage !== 'NOT_SENT'
+              ? [
+                  {
+                    key: 'payments',
+                    title: 'Payments received',
+                    count: data.receipts.length,
+                    children: (
+                      <Table<ReceiptDto>
+                        rowKey="id"
+                        size="small"
+                        pagination={false}
+                        dataSource={data.receipts}
+                        locale={{ emptyText: 'No payment recorded yet' }}
+                        columns={[
+                          { title: 'Date', dataIndex: 'receiptDate', width: 110, render: (v) => formatDate(v) },
+                          { title: 'Mode', dataIndex: 'mode', width: 80, render: (v: ReceiptDto['mode']) => RECEIPT_MODE_LABELS[v] },
+                          { title: 'Reference', dataIndex: 'reference', render: (v) => (v ? <span className="mono">{v}</span> : '-') },
+                          { title: 'Received', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <strong className="mono">{formatINR(v, true)}</strong> },
+                          { title: 'Deducted', dataIndex: 'deductedAmount', width: 130, align: 'right', render: (v) => <span className="mono">{formatINR(v, true)}</span> },
+                          { title: 'By', dataIndex: 'createdByName', width: 140 },
+                          ...(accounts
+                            ? [{ title: '', key: 'edit', width: 70, render: (_: unknown, r: ReceiptDto) => (r.exportedToTally ? <InTallyTag /> : <Button size="small" type="link" onClick={() => setCorrecting(r)}>Edit</Button>) }]
+                            : []),
+                        ]}
+                      />
+                    ),
+                  },
+                ]
+              : []),
+            {
+              key: 'measurements',
+              title: 'Measurements billed',
+              count: data.measurements?.length ?? 0,
+              children: (
+                <Table
+                  rowKey="id"
+                  size="small"
+                  pagination={false}
+                  dataSource={data.measurements ?? []}
+                  columns={[
+                    { title: 'MB no.', dataIndex: 'mbNo', width: 130, className: 'mono' },
+                    { title: 'Date', dataIndex: 'date', width: 110, render: (v) => formatDate(v) },
+                    { title: 'Item', dataIndex: 'boqItemNo', width: 80, className: 'mono' },
+                    { title: 'Location', dataIndex: 'location' },
+                    { title: 'Quantity', dataIndex: 'totalQty', width: 130, align: 'right', render: (v, m) => <span className="mono">{formatQty(v)} {m.unit}</span> },
+                  ]}
+                />
+              ),
+            },
+            { key: 'documents', title: 'Documents', count: data.attachments.length, children: <AttachmentGallery attachments={data.attachments} /> },
+          ],
+          activity: { type: 'bill', id: data.id },
+          actions: (size) => (
+            <>
+              {editable && data.status === 'DRAFT' && user && canResubmit(user, data) ? (
+                <Button size={size} type="primary" loading={submit.isPending} onClick={() => submit.mutate()}>
+                  Submit for approval
+                </Button>
+              ) : null}
+              {editable && data.status === 'DRAFT' ? (
+                <Button size={size} onClick={() => onEdit?.(data)}>
+                  Edit
+                </Button>
+              ) : (
+                preparer && <EditResubmitButton entry={data} onEdit={onEdit} size={size} />
+              )}
+              <ReviewActions type="bill" id={data.id} status={data.status} amount={data.grossAmount} size={size} />
+              {approved && preparer && (data.stage === 'NOT_SENT' || data.stage === 'SENT') ? (
+                <Button size={size} type={data.stage === 'NOT_SENT' ? 'primary' : 'default'} onClick={() => openAction('send', data)}>
+                  {data.stage === 'NOT_SENT' ? 'Mark sent' : 'Change date sent'}
+                </Button>
+              ) : null}
+              {approved && preparer && !data.exportedToTally && (data.stage === 'SENT' || data.stage === 'CERTIFIED') ? (
+                <Button size={size} type={data.stage === 'SENT' ? 'primary' : 'default'} onClick={() => openAction('certify', data)}>
+                  {data.stage === 'SENT' ? 'Record certificate' : 'Correct certificate'}
+                </Button>
+              ) : null}
+              {approved && accounts && (data.stage === 'SENT' || data.stage === 'CERTIFIED') ? (
+                <Button size={size} onClick={() => setPaying(true)}>
+                  Record payment
+                </Button>
+              ) : null}
+              {editable ? (
+                <Popconfirm title="Delete this bill?" description="Its measurements become billable again." onConfirm={() => remove.mutate()}>
+                  <Button size={size} danger loading={remove.isPending}>
+                    Delete
+                  </Button>
+                </Popconfirm>
+              ) : null}
+            </>
+          ),
+        }
+      }
+    >
       <Modal
         open={!!action}
         title={action ? ACTION_TITLES[action] : ''}
@@ -388,6 +408,10 @@ export function BillDrawer({ id, open, onClose, onEdit }: { id: string | null; o
         </Form>
       </Modal>
       <ReceiptFormModal open={paying || !!correcting} bill={correcting ? null : data} receipt={correcting} onClose={() => { setPaying(false); setCorrecting(null); }} />
-    </Drawer>
+    </RecordFrame>
   );
+}
+
+export function BillDrawer(props: RecordProps & { open: boolean; onClose: () => void }) {
+  return <BillRecord mode="drawer" {...props} />;
 }

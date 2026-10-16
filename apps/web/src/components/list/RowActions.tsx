@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button, Dropdown } from 'antd';
 import type { MenuProps } from 'antd';
-import { CheckOutlined, CloseOutlined, EditOutlined, EllipsisOutlined, ExportOutlined, RollbackOutlined } from '@ant-design/icons';
+import { CheckOutlined, CloseOutlined, EditOutlined, EllipsisOutlined, ExpandOutlined, ExportOutlined, RollbackOutlined } from '@ant-design/icons';
 import type { ReviewDecision, SubmissionBase } from '@erp/shared';
 import { canEditSubmission, canResubmit } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
@@ -12,13 +13,14 @@ import { ReviewDialog, useMayReview } from '@/components/common/ReviewActions';
 import { editActionLabel } from '@/components/common/EditResubmitButton';
 
 /**
- * A row's ⋯ menu on a list page: Open, then whatever this user may do to the entry (approve, send back or reject while
+ * A row's ⋯ menu on a list page: Open (and Open full page), then whatever this user may do to the entry (approve, send back or reject while
  * it waits; edit and resubmit their own when it was sent back), and any list-specific `extra` items.
  */
 export function RowActions<T extends SubmissionBase & { id: string }>({
   type,
   row,
   amount,
+  href,
   onOpen,
   onEdit,
   extra,
@@ -27,17 +29,21 @@ export function RowActions<T extends SubmissionBase & { id: string }>({
   row: T;
   /** The amount the approval limit applies to, when the list knows it. */
   amount?: string | null;
+  /** The entry's own page, when it has one: "Open full page". */
+  href?: string;
   onOpen: (id: string) => void;
   onEdit?: (row: T) => void;
   extra?: MenuProps['items'];
 }) {
   const { user } = useAuth();
+  const router = useRouter();
   const [decision, setDecision] = useState<ReviewDecision | null>(null);
   const mayReview = useMayReview(type, row.status, amount);
   const mayEdit = !!user && !!onEdit && canEditSubmission(user, row) && canResubmit(user, row);
 
   const items: MenuProps['items'] = [
     { key: 'open', icon: <ExportOutlined />, label: 'Open', onClick: () => onOpen(row.id) },
+    ...(href ? [{ key: 'page', icon: <ExpandOutlined />, label: 'Open full page', onClick: () => router.push(href) }] : []),
     ...(mayReview
       ? [
           { type: 'divider' as const },

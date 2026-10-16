@@ -2,19 +2,20 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Typography, theme } from 'antd';
+import { theme } from 'antd';
 import type { ProgressEntryDto, ProgressSortField } from '@erp/shared';
 import { formatDate, formatQty } from '@/lib/format';
 import { StatusTag } from '@/components/common/StatusTag';
 import { PhotoThumbs } from '@/components/common/AttachmentGallery';
 import type { ListColumn } from '@/components/list/DataTable';
 import { RowActions } from '@/components/list/RowActions';
+import { RecordLink } from '@/components/record/RecordLink';
 
 function ActivityCell({ row, onOpen }: { row: ProgressEntryDto; onOpen: (id: string) => void }) {
   const { token } = theme.useToken();
   return (
     <div>
-      <Typography.Link onClick={() => onOpen(row.id)}>{row.activityName}</Typography.Link>
+      <RecordLink href={`/progress/${row.id}`} onOpen={() => onOpen(row.id)}>{row.activityName}</RecordLink>
       {row.location && <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{row.location}</div>}
     </div>
   );
@@ -46,6 +47,6 @@ export function progressColumns({
     { title: 'Submitted by', dataIndex: 'submittedByName', width: 150, ellipsis: true, ...sort('submittedBy') },
     { title: 'Submitted on', dataIndex: 'submittedAt', width: 130, defaultHidden: true, render: (v) => (v ? formatDate(v) : '-'), ...sort('submittedAt') },
     { title: 'Status', fixed: 'right' as const, dataIndex: 'status', width: 150, render: (s) => <StatusTag status={s} />, ...sort('status') },
-    { key: 'actions', title: '', label: 'Actions', locked: true, fixed: 'right' as const, width: 56, render: (_, r) => <RowActions type="progress" row={r} onOpen={onOpen} onEdit={onEdit} /> },
+    { key: 'actions', title: '', label: 'Actions', locked: true, fixed: 'right' as const, width: 56, render: (_, r) => <RowActions type="progress" row={r} href={`/progress/${r.id}`} onOpen={onOpen} onEdit={onEdit} /> },
   ];
 }
