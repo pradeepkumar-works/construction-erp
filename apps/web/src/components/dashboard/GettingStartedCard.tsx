@@ -10,6 +10,7 @@ import { seesGettingStarted } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useGettingStarted } from '@/lib/queries';
 import { BRAND } from '@/lib/brand';
+import { themeColor } from '@/lib/theme';
 
 /** What each step asks for, where to do it, and which day of the first week it fits. */
 const STEPS: Record<GettingStartedStep, { title: string; help: string; href: string; action: string; day: number }> = {
@@ -74,7 +75,7 @@ export function GettingStartedCard() {
           const step = STEPS[s.key];
           const isNext = s.key === next;
           return (
-            <li key={s.key} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: '8px 0', borderTop: i ? `1px solid ${BRAND.colors.border}` : undefined }}>
+            <li key={s.key} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: '8px 0', borderTop: i ? `1px solid ${themeColor('colorBorderSecondary')}` : undefined }}>
               <span style={{ width: 22, flex: '0 0 22px', textAlign: 'center', marginTop: 1 }}>
                 {s.done ? <CheckCircleFilled style={{ color: token.colorSuccess, fontSize: 18 }} /> : <Typography.Text className="mono" strong type={isNext ? undefined : 'secondary'}>{i + 1}</Typography.Text>}
               </span>

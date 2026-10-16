@@ -49,5 +49,14 @@ export const BRAND = {
     siteMuted: '#64748B',
     siteRule: '#E3E9F1',
     siteFrame: '#F7F9FC',
+    /** Dark mode surfaces: a near-neutral night with a little of the blueprint navy (page, cards, menus and popups). */
+    nightLayout: '#0B1119',
+    nightSurface: '#121A25',
+    nightElevated: '#18222F',
+    nightBorder: '#2B3747',
+    nightBorderSoft: '#202B39',
+    /** Dark mode text, and links that read on the night surfaces. */
+    nightText: '#E3EAF4',
+    nightLink: '#6EA8FF',
   },
 } as const;

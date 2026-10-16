@@ -80,7 +80,7 @@ export function MembersCard({ project }: { project: ProjectDetail }) {
             <Flex gap="middle" align="center">
               <ListRowMeta
                 avatar={
-                  <Avatar size="small" style={{ background: m.isPm ? BRAND.colors.ink : BRAND.colors.primary }}>
+                  <Avatar size="small" style={{ background: m.isPm ? BRAND.colors.accent : undefined }}>
                     {m.fullName
                       .split(' ')
                       .map((s) => s[0])

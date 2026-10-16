@@ -16,12 +16,12 @@ import { ReviewActions } from '@/components/common/ReviewActions';
 import { EditResubmitButton } from '@/components/common/EditResubmitButton';
 import { submissionMetaItems } from '@/components/common/SubmitterInfo';
 import { openDprPrint } from './dprPrint';
-import { BRAND } from '@/lib/brand';
+import { themeColor } from '@/lib/theme';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div style={{ marginBottom: 12 }}>
-      <Typography.Text strong style={{ display: 'block', marginBottom: 2, fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.4, color: BRAND.colors.ink }}>
+      <Typography.Text strong style={{ display: 'block', marginBottom: 2, fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.4, color: themeColor('colorTextHeading') }}>
         {title}
       </Typography.Text>
       <div style={{ whiteSpace: 'pre-wrap' }}>{children ?? <span className="text-muted">-</span>}</div>

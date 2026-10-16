@@ -10,7 +10,7 @@ import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useInspection } from '@/lib/queries';
 import { formatDate } from '@/lib/format';
-import { BRAND } from '@/lib/brand';
+import { themeColor } from '@/lib/theme';
 import { approveTheme } from '@/lib/theme';
 import { QueryError } from '@/components/common/QueryState';
 import { StatusTag } from '@/components/common/StatusTag';
@@ -85,7 +85,7 @@ function InspectPanel({ data }: { data: InspectionDto }) {
         </Space>
       )}
       {data.checklist.map((c, i) => (
-        <div key={i} className="inspect-point" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', gap: '4px 12px', padding: '8px 0', borderBottom: `1px solid ${BRAND.colors.border}` }}>
+        <div key={i} className="inspect-point" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', gap: '4px 12px', padding: '8px 0', borderBottom: `1px solid ${themeColor('colorBorderSecondary')}` }}>
           <span>
             {i + 1}. {c.item}
           </span>

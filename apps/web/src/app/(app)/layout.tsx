@@ -6,6 +6,7 @@ import { Spin } from 'antd';
 import { isGuest } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { AppShell } from '@/components/shell/AppShell';
+import { AppearanceProvider } from '@/lib/appearance';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -32,5 +33,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
-  return <AppShell user={user}>{children}</AppShell>;
+  return (
+    <AppearanceProvider>
+      <AppShell user={user}>{children}</AppShell>
+    </AppearanceProvider>
+  );
 }

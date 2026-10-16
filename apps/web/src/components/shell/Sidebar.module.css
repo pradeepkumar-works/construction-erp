@@ -391,7 +391,7 @@
   gap: 10px;
   padding: 0 16px;
   height: 52px;
-  border-bottom: 1px solid var(--brand-border);
+  border-bottom: 1px solid var(--ant-color-border-secondary);
 }
 
 .paletteInput input {
@@ -406,7 +406,7 @@
 }
 
 .paletteInput > :first-child {
-  color: var(--brand-subtle);
+  color: var(--ant-color-text-tertiary);
   font-size: 16px;
 }
 
@@ -421,7 +421,7 @@
 
 .paletteHeading {
   padding: 10px 10px 4px;
-  color: var(--brand-subtle);
+  color: var(--ant-color-text-tertiary);
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -440,16 +440,16 @@
 }
 
 .option > :first-child {
-  color: var(--brand-muted);
+  color: var(--ant-color-text-secondary);
   font-size: 16px;
 }
 
 .optionActive {
-  background: var(--brand-accent-soft);
+  background: var(--ant-color-primary-bg);
 }
 
 .optionActive > :first-child {
-  color: var(--brand-accent);
+  color: var(--ant-color-primary);
 }
 
 .optionLabel {
@@ -463,13 +463,13 @@
 
 .optionHint {
   flex: 0 0 auto;
-  color: var(--brand-subtle);
+  color: var(--ant-color-text-tertiary);
   font-size: 12px;
 }
 
 .paletteEmpty {
   padding: 28px 16px;
-  color: var(--brand-muted);
+  color: var(--ant-color-text-secondary);
   text-align: center;
 }
 
@@ -477,15 +477,15 @@
   display: flex;
   gap: 16px;
   padding: 8px 16px;
-  border-top: 1px solid var(--brand-border);
-  color: var(--brand-subtle);
+  border-top: 1px solid var(--ant-color-border-secondary);
+  color: var(--ant-color-text-tertiary);
   font-size: 12px;
 }
 
 .paletteFoot kbd {
   padding: 0 5px;
   margin-right: 4px;
-  border: 1px solid var(--brand-border);
+  border: 1px solid var(--ant-color-border-secondary);
   border-radius: 4px;
   font-family: inherit;
   font-size: 11px;
