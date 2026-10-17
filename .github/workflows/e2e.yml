@@ -57,6 +57,9 @@ jobs:
       - name: Ask Nirmaan's tools show each role only its own projects
         working-directory: apps/api
         run: DATABASE_URL="$RUNTIME_URL" node dist/scripts/ai-access-check.js
+      - name: Ask Nirmaan's drafts match the masters and save nothing
+        working-directory: apps/api
+        run: DATABASE_URL="$RUNTIME_URL" node dist/scripts/ai-drafts-test.js
       - name: Bill checks catch the seeded anomalies and flag nothing else
         working-directory: apps/api
         run: DATABASE_URL="$RUNTIME_URL" node dist/scripts/bill-checks-test.js

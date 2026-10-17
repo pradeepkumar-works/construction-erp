@@ -1155,6 +1155,33 @@ export; the client portal and the phone app show the amount.
   drawings (printed, photographed, handwritten, Hindi) and `scripts/doc-read-eval.ts` grades a deployed API on them; it
   calls the real model, so it is run by hand.
 
+## Drafts from a sentence
+
+- **What it is.** AI item 71: in Ask Nirmaan, "Raise an MR for 200 bags of OPC 53 for the highway by Friday", rough
+  notes for a DPR, an expense, a progress entry or a letter (an RA bill's covering letter from the bill's figures)
+  come back as a draft under the answer. Open form opens the list's own form filled in (`requestNew(kind, navigate,
+  draft)` from `lib/new-intent.ts`, so the list on screen or the one navigated to opens it); the user checks it and
+  submits it. Nothing is saved by asking.
+- **Tools.** `draft_material_request`, `draft_expense`, `draft_progress`, `draft_dpr` and `draft_letter` in
+  `AiToolsService` call `AiDraftsService`, which resolves the project (id, code or name, through `ProjectsService`),
+  matches items to the item master (`StockService.listItems`, `itemSimilarity`) and units to the unit master, activities
+  to the project's schedule, manpower to the DPR's categories, and reads an RA bill through `RaBillsService.get`. Each
+  returns the form's values and `flags`, the fields to check and why (an item not in the master, a unit unlike the
+  item's, a date passed, a DPR that already exists for the day). They write nothing; the tools' roles are the forms'.
+- **Grounding.** A figure in the text the model wrote into a draft (a letter, a DPR's sections) that is neither in the
+  question nor in a record a tool read becomes a flag (`groundDrafts`). Drafts are kept on the answer
+  (`AiMessage.drafts`) so a conversation from history can still open them.
+- **Forms.** A form takes `prefill` from its list and passes it to `FormShell` as `aiDraft`: the shell says the form was
+  filled in, lists what to check, counts it as changes (closing asks; the draft is kept on the device) and does not
+  bring back an older kept draft over it. Fields to check are amber (`aiFlagItem`, `aiFlagInput` in
+  `components/ai/drafts.tsx`) until changed. A new draft kind is a tool, a `NewKind`, its list's `useNewIntent` passing
+  the draft on, and the form's `prefill`.
+- **Tests.** `src/scripts/ai-drafts-test.ts` (CI) checks that nothing in `src/ai` calls a create, submit, approve or
+  delete outside the assistant's own tables, the grounding, and against the demo data the matching, the project
+  boundary, and that every draft tool run as every user saves nothing. `e2e/tests/ai-drafts.spec.ts` opens drafted
+  forms with the stand-in model. `scripts/draft-eval.ts` asks a deployed API 40 sentences in English, Hindi and
+  Hinglish and grades each draft's fields; it calls the real model, so it is run by hand.
+
 ## Money and quantities
 
 Decimal columns everywhere (`Decimal(18,2)` for money, `Decimal(18,3)` for quantities) and strings

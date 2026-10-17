@@ -5,7 +5,10 @@ import { Alert, App, Button, Drawer, Flex, Form, Grid, Modal, Typography, theme 
 import type { FormInstance } from 'antd';
 import { isAxiosError } from 'axios';
 import { useRouter } from 'next/navigation';
+import type { AiDraftDto } from '@erp/shared';
+import { PRODUCT_NAME } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
+import { SparkleIcon } from '@/components/ai/SparkleIcon';
 import { formatDateTime } from '@/lib/format';
 import { setLeaveGuard } from '@/lib/leave-guard';
 import { useProjectScope } from '@/lib/project-scope';
@@ -46,6 +49,11 @@ export interface FormShellProps<T> {
    * off where the project must be a deliberate choice.
    */
   projectDefault?: boolean;
+  /**
+   * A draft Ask Nirmaan filled in (AI item 71), already put in the fields by the form. It takes the place of a kept
+   * draft, counts as changes (so closing asks, and it is kept on this device), and the form says what to check.
+   */
+  aiDraft?: AiDraftDto | null;
   children: React.ReactNode;
 }
 
@@ -108,7 +116,7 @@ const focusIn = (el: HTMLElement) => {
  * The form component keeps its own fields and defaults and passes `onSubmit` (usually `mutation.mutateAsync`) instead
  * of the Form's `onFinish`.
  */
-export function FormShell<T>({ open, onClose, title, form, okText, onSubmit, secondaryText, allValues, layout = 'drawer', width, draftKey, footerExtra, okDisabled, projectDefault = true, children }: FormShellProps<T>) {
+export function FormShell<T>({ open, onClose, title, form, okText, onSubmit, secondaryText, allValues, layout = 'drawer', width, draftKey, footerExtra, okDisabled, projectDefault = true, aiDraft, children }: FormShellProps<T>) {
   const { token } = theme.useToken();
   const { modal, message } = App.useApp();
   const { user } = useAuth();
@@ -132,7 +140,9 @@ export function FormShell<T>({ open, onClose, title, form, okText, onSubmit, sec
   // user touched a field and the values differ, so a form's own late fills (attendance, order lines) do not count.
   const opened = useRef<string | null>(null);
   const defaults = useRef<string | null>(null);
-  const changedSince = (ref: React.MutableRefObject<string | null>) => form.isFieldsTouched() && snapshot(form.getFieldsValue(true)) !== ref.current;
+  // A drafted form is all changes until it is saved or started over.
+  const fromAi = useRef(false);
+  const changedSince = (ref: React.MutableRefObject<string | null>) => fromAi.current || (form.isFieldsTouched() && snapshot(form.getFieldsValue(true)) !== ref.current);
   const mac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
 
   // Opening a new entry brings back its draft, after the form has put in its own defaults.
@@ -140,6 +150,7 @@ export function FormShell<T>({ open, onClose, title, form, okText, onSubmit, sec
     setProblems(null);
     setRestored(null);
     setSavedAt(null);
+    fromAi.current = false;
     if (!open) return;
     const t = window.setTimeout(() => {
       // A new entry's empty Project field starts on the project the user is working on.
@@ -148,7 +159,8 @@ export function FormShell<T>({ open, onClose, title, form, okText, onSubmit, sec
       }
       const base = form.getFieldsValue(true);
       defaults.current = snapshot(base);
-      const draft = storageKey ? readDraft<Partial<T>>(storageKey) : null;
+      fromAi.current = !!aiDraft;
+      const draft = storageKey && !aiDraft ? readDraft<Partial<T>>(storageKey) : null;
       if (draft) {
         form.setFieldsValue(draft.values as never);
         setRestored({ at: draft.at, base });
@@ -156,11 +168,11 @@ export function FormShell<T>({ open, onClose, title, form, okText, onSubmit, sec
       opened.current = snapshot(form.getFieldsValue(true));
     }, 0);
     return () => window.clearTimeout(t);
-  }, [open, storageKey, form, projectDefault]);
+  }, [open, storageKey, form, projectDefault, aiDraft]);
 
-  // Keep the draft as the user types.
+  // Keep the draft as the user types (or as Ask Nirmaan filled it in).
   useEffect(() => {
-    if (!open || !storageKey || submitting || !form.isFieldsTouched()) return;
+    if (!open || !storageKey || submitting || !(form.isFieldsTouched() || aiDraft)) return;
     const t = window.setTimeout(() => {
       if (changedSince(defaults)) {
         writeDraft(storageKey, form.getFieldsValue(true));
@@ -171,7 +183,7 @@ export function FormShell<T>({ open, onClose, title, form, okText, onSubmit, sec
       }
     }, 400);
     return () => window.clearTimeout(t);
-  }, [values, open, storageKey, submitting, form]);
+  }, [values, open, storageKey, submitting, form, aiDraft]);
 
   // The summary follows the fields as they are fixed.
   useEffect(() => {
@@ -305,6 +317,7 @@ export function FormShell<T>({ open, onClose, title, form, okText, onSubmit, sec
     if (storageKey) clearDraft(storageKey);
     form.resetFields();
     if (restored) form.setFieldsValue(restored.base as never);
+    fromAi.current = false;
     opened.current = defaults.current;
     setRestored(null);
     setSavedAt(null);
@@ -347,6 +360,28 @@ export function FormShell<T>({ open, onClose, title, form, okText, onSubmit, sec
 
   const body = (
     <div ref={bodyRef} onKeyDownCapture={onKeyDownCapture}>
+      {aiDraft && (
+        <Alert
+          type="info"
+          showIcon
+          icon={<SparkleIcon />}
+          className="ai-draft-note"
+          style={{ marginBottom: token.margin }}
+          title={`Filled in by Ask ${PRODUCT_NAME} from what you wrote`}
+          description={
+            <>
+              Check each field before you {okText.toLowerCase()}. Nothing is saved until you do.
+              {aiDraft.flags.length > 0 && (
+                <ul aria-label="To check" style={{ margin: `${token.marginXXS}px 0 0`, paddingInlineStart: token.paddingMD }}>
+                  {aiDraft.flags.map((f, i) => (
+                    <li key={i}>{f.note}</li>
+                  ))}
+                </ul>
+              )}
+            </>
+          }
+        />
+      )}
       {restored && (
         <Alert
           type="info"

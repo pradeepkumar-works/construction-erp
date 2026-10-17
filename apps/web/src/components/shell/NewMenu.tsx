@@ -4,9 +4,9 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Dropdown } from 'antd';
 import type { MenuProps } from 'antd';
-import { AlertOutlined, ContainerOutlined, FileDoneOutlined, FileTextOutlined, LineChartOutlined, PlusOutlined, ShoppingCartOutlined, WalletOutlined } from '@ant-design/icons';
+import { AlertOutlined, ContainerOutlined, FileDoneOutlined, FileTextOutlined, LineChartOutlined, MailOutlined, PlusOutlined, ShoppingCartOutlined, WalletOutlined } from '@ant-design/icons';
 import type { AuthUser } from '@erp/shared';
-import { canPrepareBill, canPurchase, canRaiseRisk, canSubmitExpense, isGuest } from '@erp/shared';
+import { canPrepareBill, canPurchase, canRaiseRisk, canSubmitExpense, canViewLetters, isGuest } from '@erp/shared';
 import { requestNew, type NewKind } from '@/lib/new-intent';
 
 export interface NewEntry {
@@ -32,6 +32,7 @@ export function newEntriesFor(user: AuthUser): NewEntry[][] {
   const office: NewEntry[] = [
     ...(canPurchase(role) ? [{ kind: 'purchase-order' as const, label: 'Purchase order', action: 'New purchase order (PO)', href: '/purchase-orders', icon: <ContainerOutlined /> }] : []),
     ...(canPrepareBill(role) ? [{ kind: 'ra-bill' as const, label: 'RA bill', action: 'Prepare RA bill', href: '/bills', icon: <FileDoneOutlined /> }] : []),
+    ...(canViewLetters(role) ? [{ kind: 'letter' as const, label: 'Letter', action: 'Record a letter', href: '/documents?tab=letters', icon: <MailOutlined /> }] : []),
   ];
   return [site, office].filter((g) => g.length > 0);
 }

@@ -30,6 +30,39 @@ export interface AiMessageDto {
   /** 1 helpful, -1 not helpful, null not rated */
   feedback: 1 | -1 | null;
   createdAt: string;
+  /** Forms the answer filled in (AI item 71), for the user to open, check and save */
+  drafts?: AiDraftDto[];
+}
+
+/** What Ask Nirmaan can fill in from a sentence (AI item 71). The first four are also "+ New" kinds. */
+export const AI_DRAFT_KINDS = ['material-request', 'expense', 'progress', 'dpr', 'letter'] as const;
+export type AiDraftKind = (typeof AI_DRAFT_KINDS)[number];
+
+export const AI_DRAFT_LABELS: Record<AiDraftKind, string> = {
+  'material-request': 'Material request',
+  expense: 'Site expense',
+  progress: 'Progress entry',
+  dpr: 'Daily report',
+  letter: 'Letter',
+};
+
+/**
+ * A form filled in from what the user wrote. Nothing is saved: the user opens the form, checks it and saves it. Values
+ * are the form's fields with dates as YYYY-MM-DD; `flags` name the fields to check (`items.0.itemName`) and why.
+ */
+export interface AiDraftDto {
+  kind: AiDraftKind;
+  /** One line: what was drafted, e.g. "Material request for District Hospital Block B: 1 item, needed by 24 Oct 2026" */
+  title: string;
+  projectId: string;
+  projectName: string;
+  values: Record<string, unknown>;
+  flags: { field: string; note: string }[];
+}
+
+/** A drafted value at a path like `items.0.itemName`. */
+export function draftValueAt(values: Record<string, unknown>, path: string): unknown {
+  return path.split('.').reduce<unknown>((v, k) => (v && typeof v === 'object' ? (v as Record<string, unknown>)[k] : undefined), values);
 }
 
 export interface AiThreadDto {

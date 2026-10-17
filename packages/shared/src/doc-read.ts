@@ -78,7 +78,8 @@ export const normUnit = (u: string | null | undefined): string => {
 const words = (s: string): string[] =>
   s
     .toLowerCase()
-    .replace(/(\d)\s*(mm|kg|grade|swg)\b/g, '$1$2')
+    // "12 mm", "12mm" and "12" are one number; "53 grade" is 53.
+    .replace(/(\d)\s*(mm|kg|grade|swg)\b/g, '$1')
     .split(/[^a-z0-9]+/)
     .filter((w) => w.length > 1 || /\d/.test(w));
 

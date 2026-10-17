@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo } from 'react';
 import { App, DatePicker, Form, Input, Segmented, Select } from 'antd';
 import dayjs from 'dayjs';
-import type { AttachmentDto, LetterDirection, LetterDto } from '@erp/shared';
+import type { AiDraftDto, AttachmentDto, LetterDirection, LetterDto } from '@erp/shared';
 import { LETTER_DIRECTION_LABELS } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, errorMessage } from '@/lib/api';
@@ -11,6 +11,7 @@ import { useLetters, useProjects, useRisks } from '@/lib/queries';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { inSentence } from '@/lib/format';
+import { aiFlagItem } from '@/components/ai/drafts';
 
 interface FormValues {
   projectId: string;
@@ -36,16 +37,19 @@ export interface LetterPrefill {
   riskId?: string | null;
 }
 
-/** Record a letter received or sent, or (with `letter`) change one. */
-export function LetterFormModal({ open, onClose, projectId, letter, prefill, onSaved }: { open: boolean; onClose: () => void; projectId?: string; letter?: LetterDto | null; prefill?: LetterPrefill | null; onSaved?: (l: LetterDto) => void }) {
+/** Record a letter received or sent, or (with `letter`) change one. `aiDraft` is a letter Ask Nirmaan wrote (AI item 71). */
+export function LetterFormModal({ open, onClose, projectId, letter, prefill, aiDraft, onSaved }: { open: boolean; onClose: () => void; projectId?: string; letter?: LetterDto | null; prefill?: LetterPrefill | null; aiDraft?: AiDraftDto | null; onSaved?: (l: LetterDto) => void }) {
   const [form] = Form.useForm<FormValues>();
   const { message } = App.useApp();
   const qc = useQueryClient();
   const { data: projects } = useProjects();
   const editing = !!letter;
+  const draft = letter ? null : aiDraft;
   const fixedProject = letter?.projectId ?? prefill?.projectId ?? projectId;
   const selectedProject = Form.useWatch('projectId', form) ?? fixedProject;
   const direction = Form.useWatch('direction', form) ?? letter?.direction;
+  const party = Form.useWatch('party', form);
+  const summary = Form.useWatch('summary', form);
   const { data: letters } = useLetters({ projectId: selectedProject, pageSize: 100, sortBy: 'letterDate', sortOrder: 'desc' }, open && !!selectedProject);
   const { data: delays } = useRisks({ projectId: selectedProject, pageSize: 100 }, open && !!selectedProject);
 
@@ -84,8 +88,18 @@ export function LetterFormModal({ open, onClose, projectId, letter, prefill, onS
         subject: prefill?.subject,
         inReplyToId: prefill?.inReplyToId,
         riskId: prefill?.riskId ?? undefined,
+        ...(aiDraft
+          ? {
+              projectId: aiDraft.projectId,
+              direction: 'OUT' as const,
+              party: aiDraft.values.party as string | undefined,
+              subject: aiDraft.values.subject as string | undefined,
+              summary: aiDraft.values.summary as string | undefined,
+              inReplyToId: aiDraft.values.inReplyToId as string | undefined,
+            }
+          : {}),
       });
-  }, [open, projectId, letter, prefill, form]);
+  }, [open, projectId, letter, prefill, aiDraft, form]);
 
   const mutation = useMutation({
     mutationFn: async (v: FormValues) => {
@@ -123,6 +137,7 @@ export function LetterFormModal({ open, onClose, projectId, letter, prefill, onS
       okText={editing ? 'Save' : 'Record'}
       onSubmit={(v) => mutation.mutateAsync(v)}
       draftKey={editing || prefill ? undefined : `letter:${projectId ?? 'any'}`}
+      aiDraft={draft}
     >
       <Form form={form} layout="vertical">
         <FormSection title="Letter">
@@ -145,14 +160,14 @@ export function LetterFormModal({ open, onClose, projectId, letter, prefill, onS
               <Input maxLength={100} placeholder="EE/RB/2026/412" />
             </Form.Item>
           </FormGrid>
-          <Form.Item name="party" label={direction === 'OUT' ? 'To' : 'From'} rules={[{ required: true, whitespace: true, message: direction === 'OUT' ? 'Say who it goes to' : 'Say who it is from' }]}>
+          <Form.Item name="party" label={direction === 'OUT' ? 'To' : 'From'} rules={[{ required: true, whitespace: true, message: direction === 'OUT' ? 'Say who it goes to' : 'Say who it is from' }]} {...aiFlagItem(draft, 'party', party)}>
             <Input maxLength={200} placeholder="Executive Engineer, R&B Division" />
           </Form.Item>
           <Form.Item name="subject" label="Subject" rules={[{ required: true, whitespace: true, message: 'Enter the subject' }]}>
             <Input maxLength={300} />
           </Form.Item>
-          <Form.Item name="summary" label="Gist">
-            <Input.TextArea rows={3} maxLength={4000} placeholder="What it says or asks for" />
+          <Form.Item name="summary" label={draft ? 'Letter text' : 'Gist'} {...aiFlagItem(draft, 'summary', summary)}>
+            <Input.TextArea autoSize={{ minRows: 3, maxRows: draft ? 16 : 8 }} maxLength={4000} placeholder="What it says or asks for" />
           </Form.Item>
           <Form.Item name="files" label="Scanned letter">
             <PhotoUpload />

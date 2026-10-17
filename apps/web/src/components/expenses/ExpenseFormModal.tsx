@@ -3,7 +3,7 @@
 import React, { useEffect } from 'react';
 import { Alert, App, DatePicker, Form, Input, Select, Typography } from 'antd';
 import dayjs from 'dayjs';
-import type { AttachmentDto, ExpenseCategory, ExpenseDto, PaymentMode } from '@erp/shared';
+import type { AiDraftDto, AttachmentDto, ExpenseCategory, ExpenseDto, PaymentMode } from '@erp/shared';
 import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_LABELS, GSTIN_PATTERN, GST_RATES, GST_TOLERANCE, PAYMENT_MODES, PAYMENT_MODE_LABELS, gstFor } from '@erp/shared';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { CODE_INPUT, MoneyInput, upper } from '@/components/form/inputs';
@@ -14,6 +14,7 @@ import { formatINR } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { editActionLabel } from '@/components/common/EditResubmitButton';
 import { VendorPicker } from '@/components/vendors/VendorPicker';
+import { aiFlagItem, draftDate } from '@/components/ai/drafts';
 
 interface FormValues {
   projectId: string;
@@ -33,7 +34,7 @@ interface FormValues {
 }
 
 /** File a site expense, or (with `expense`) fix a returned one and resubmit it. */
-export function ExpenseFormModal({ open, onClose, projectId, defaultProjectId, expense }: { open: boolean; onClose: () => void; projectId?: string; /** A new entry starts on this project (the header's), still changeable. */ defaultProjectId?: string; expense?: ExpenseDto | null }) {
+export function ExpenseFormModal({ open, onClose, projectId, defaultProjectId, expense, prefill }: { open: boolean; onClose: () => void; projectId?: string; /** A new entry starts on this project (the header's), still changeable. */ defaultProjectId?: string; expense?: ExpenseDto | null; /** Filled in by Ask Nirmaan (AI item 71) */ prefill?: AiDraftDto | null }) {
   const [form] = Form.useForm<FormValues>();
   const { message } = App.useApp();
   const qc = useQueryClient();
@@ -48,6 +49,10 @@ export function ExpenseFormModal({ open, onClose, projectId, defaultProjectId, e
   const computedGst = amount ? gstFor(amount, rate ?? 0) : 0;
   const gst = typedGst ?? computedGst;
   const photos = Form.useWatch('photos', form);
+  const draft = expense ? null : prefill;
+  const category = Form.useWatch('category', form);
+  const paymentMode = Form.useWatch('paymentMode', form);
+  const gstRateNow = Form.useWatch('gstRate', form);
 
   useEffect(() => {
     if (!open) return;
@@ -71,8 +76,12 @@ export function ExpenseFormModal({ open, onClose, projectId, defaultProjectId, e
       });
     } else {
       form.setFieldsValue({ projectId: projectId ?? defaultProjectId, date: dayjs(), gstRate: 0, paymentMode: 'CASH' });
+      if (prefill) {
+        const v = prefill.values;
+        form.setFieldsValue({ ...(v as Partial<FormValues>), projectId: prefill.projectId, date: draftDate(v.date) ?? dayjs() });
+      }
     }
-  }, [open, projectId, defaultProjectId, expense, form]);
+  }, [open, projectId, defaultProjectId, expense, prefill, form]);
 
   const mutation = useMutation({
     mutationFn: async (v: FormValues) => {
@@ -113,6 +122,7 @@ export function ExpenseFormModal({ open, onClose, projectId, defaultProjectId, e
       layout="modal"
       width={680}
       draftKey={editing ? undefined : `expense:${projectId ?? 'any'}`}
+      aiDraft={draft}
     >
       <Form form={form} layout="vertical">
         {expense?.reviewNote && <Alert type="warning" showIcon style={{ marginBottom: 16 }} title={`Reviewer note from ${expense.reviewedByName ?? 'approver'}`} description={expense.reviewNote} />}
@@ -120,7 +130,7 @@ export function ExpenseFormModal({ open, onClose, projectId, defaultProjectId, e
           <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} onChange={() => form.setFieldValue('activityId', undefined)} />
         </Form.Item>
         <FormGrid cols={2}>
-          <Form.Item name="category" label="Category" rules={[{ required: true, message: 'Choose the category' }]}>
+          <Form.Item name="category" label="Category" rules={[{ required: true, message: 'Choose the category' }]} {...aiFlagItem(draft, 'category', category)}>
             <Select placeholder="Select" options={EXPENSE_CATEGORIES.map((c) => ({ value: c, label: EXPENSE_CATEGORY_LABELS[c] }))} />
           </Form.Item>
           <Form.Item name="date" label="Bill date" rules={[{ required: true, message: 'Pick the bill date' }]}>
@@ -145,7 +155,7 @@ export function ExpenseFormModal({ open, onClose, projectId, defaultProjectId, e
           <Form.Item name="amount" label="Taxable value" rules={[{ required: true, message: 'Enter the amount before GST' }]}>
             <MoneyInput min={0.01} />
           </Form.Item>
-          <Form.Item name="gstRate" label="GST %">
+          <Form.Item name="gstRate" label="GST %" {...aiFlagItem(draft, 'gstRate', gstRateNow)}>
             <Select options={GST_RATES.map((r) => ({ value: r, label: `${r}%` }))} />
           </Form.Item>
           <Form.Item
@@ -163,7 +173,7 @@ export function ExpenseFormModal({ open, onClose, projectId, defaultProjectId, e
           </Form.Item>
         </FormGrid>
         <FormGrid cols={2}>
-          <Form.Item name="paymentMode" label="Paid by" rules={[{ required: true }]}>
+          <Form.Item name="paymentMode" label="Paid by" rules={[{ required: true }]} {...aiFlagItem(draft, 'paymentMode', paymentMode)}>
             <Select options={PAYMENT_MODES.map((m) => ({ value: m, label: PAYMENT_MODE_LABELS[m] }))} />
           </Form.Item>
           <Form.Item name="activityId" label="Activity (optional)">

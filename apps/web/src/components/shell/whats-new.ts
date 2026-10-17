@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-10-ask-drafts',
+    date: '2026-10-18',
+    title: 'Ask Nirmaan fills in forms',
+    points: [
+      'Write "Raise an MR for 200 bags of OPC 53 for the highway by Friday", in English, Hindi or Hinglish, and Ask Nirmaan drafts the material request with items from your item master. Open form to check it and submit.',
+      'The same works for a site expense, a progress entry, a DPR from rough notes, and a letter, including the covering letter for an RA bill from the bill\'s own figures.',
+      'Anything to check is marked amber, such as an item not in the master or a figure not found in your records. Nothing is saved until you submit.',
+    ],
+  },
+  {
     id: '2026-10-keyboard',
     date: '2026-10-17',
     title: 'Every page named, and the keyboard reaches everything',

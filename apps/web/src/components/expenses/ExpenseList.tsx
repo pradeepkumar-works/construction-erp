@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Button, Checkbox, Select, Space, Statistic, Tag, Tooltip } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
-import type { ExpenseCategory, ExpenseDto, PaymentMode } from '@erp/shared';
+import type { AiDraftDto, ExpenseCategory, ExpenseDto, PaymentMode } from '@erp/shared';
 import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_LABELS, LIST_SORT_FIELDS, PAYMENT_MODES, PAYMENT_MODE_LABELS, canSubmitExpense } from '@erp/shared';
 import { useNewIntent } from '@/lib/new-intent';
 import { useAuth } from '@/lib/auth';
@@ -34,6 +34,8 @@ export function ExpenseList({ projectId: fixedProject }: { projectId?: string })
   const [openId, setOpenId] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<ExpenseDto | null>(null);
+  // A draft from Ask Nirmaan (AI item 71) the form opens with
+  const [prefill, setPrefill] = useState<AiDraftDto | null>(null);
   const frame = useListFrame({
     list: 'expenses',
     type: 'EXPENSE',
@@ -71,7 +73,10 @@ export function ExpenseList({ projectId: fixedProject }: { projectId?: string })
     return rows.length;
   };
 
-  useNewIntent('expense', mayFile, () => setFormOpen(true));
+  useNewIntent('expense', mayFile, (draft) => {
+    setPrefill(draft ?? null);
+    setFormOpen(true);
+  });
 
   const newButton = mayFile ? (
     <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
@@ -145,9 +150,11 @@ export function ExpenseList({ projectId: fixedProject }: { projectId?: string })
       <ExpenseFormModal
         open={formOpen || !!editing}
         expense={editing}
+        prefill={prefill}
         onClose={() => {
           setFormOpen(false);
           setEditing(null);
+          setPrefill(null);
         }}
         projectId={fixedProject}
         defaultProjectId={frame.projectId}
