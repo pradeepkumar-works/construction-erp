@@ -5,9 +5,10 @@ import { Button, Select, Statistic, Table, Typography, theme } from 'antd';
 import { PlusOutlined, ToolOutlined } from '@ant-design/icons';
 import type { TableProps } from 'antd';
 import type { MaintenanceJobDto, MaintenanceKind, MaintenanceStatus, ServiceStatusDto } from '@erp/shared';
-import { MAINTENANCE_KINDS, MAINTENANCE_KIND_LABELS, MAINTENANCE_STATUSES, MAINTENANCE_STATUS_LABELS, MAX_PAGE_SIZE, canLogMachinery, canManageMaintenance } from '@erp/shared';
+import { MAINTENANCE_KINDS, MAINTENANCE_KIND_LABELS, MAINTENANCE_STATUSES, MAINTENANCE_STATUS_LABELS, canLogMachinery, canManageMaintenance } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
-import { useEquipment, useMaintenanceJobs, useMaintenanceSummary } from '@/lib/queries';
+import { useMaintenanceJobs, useMaintenanceSummary } from '@/lib/queries';
+import { EquipmentSelect, useEquipmentItem } from '@/components/common/SearchSelect';
 import { formatDate, formatINR, formatQty, toNumber } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { ListToolbar } from '@/components/common/ListToolbar';
@@ -51,10 +52,7 @@ export function MaintenancePanel({ projectId: fixedProject, initialOpenId }: { p
     statusLabels: MAINTENANCE_STATUS_LABELS,
     chipLabels: {
       kind: (v) => MAINTENANCE_KIND_LABELS[v as MaintenanceKind] ?? v,
-      equipmentId: (v) => {
-        const e = equipment?.items.find((x) => x.id === v);
-        return e ? `Machine: ${e.code}` : 'One machine';
-      },
+      equipmentId: () => (machine ? `Machine: ${machine.code}` : 'One machine'),
     },
     columns: (): ListColumn<MaintenanceJobDto>[] => [
       {
@@ -89,10 +87,11 @@ export function MaintenancePanel({ projectId: fixedProject, initialOpenId }: { p
   });
   const { page, projectId } = frame;
   const { data: s } = useMaintenanceSummary(projectId);
-  const { data: equipment } = useEquipment({ pageSize: MAX_PAGE_SIZE, projectId });
   const status = page.filters.status as MaintenanceStatus | undefined;
   const kind = page.filters.kind as MaintenanceKind | undefined;
   const equipmentId = page.filters.equipmentId;
+  // Read by the chip's label once the list has drawn.
+  const machine = useEquipmentItem(equipmentId);
   const { data, isLoading, isFetching, error, refetch } = useMaintenanceJobs({ page: page.params.page, pageSize: page.params.pageSize, q: page.params.q, projectId, status, kind, equipmentId });
 
   const serviceColumns: TableProps<ServiceStatusDto>['columns'] = [
@@ -208,15 +207,14 @@ export function MaintenancePanel({ projectId: fixedProject, initialOpenId }: { p
           onChange={(v) => page.setFilter('kind', v)}
           options={MAINTENANCE_KINDS.map((x) => ({ value: x, label: MAINTENANCE_KIND_LABELS[x] }))}
         />
-        <Select
+        <EquipmentSelect
           allowClear
-          showSearch={{ optionFilterProp: 'label' }}
           placeholder="All machines"
           aria-label="Machine"
           style={{ width: 220 }}
+          params={projectId ? { projectId } : undefined}
           value={equipmentId}
           onChange={(v) => page.setFilter('equipmentId', v)}
-          options={(equipment?.items ?? []).map((e) => ({ value: e.id, label: `${e.code} · ${e.name}` }))}
         />
       </ListToolbar>
       <DataTable<MaintenanceJobDto>

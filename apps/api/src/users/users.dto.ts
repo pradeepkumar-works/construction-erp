@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import { IsBoolean, IsEmail, IsIn, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 import { MIN_PASSWORD_LENGTH, LIST_SORT_FIELDS, ROLE_KEYS, RoleKey, type UserSortField } from '@erp/shared';
 import { PageQuery, QueryBool } from '../common/paging';
@@ -6,6 +7,12 @@ import { PageQuery, QueryBool } from '../common/paging';
 /** `q` matches name, email and phone. */
 export class ListUsersQuery extends PageQuery {
   @ApiPropertyOptional({ enum: ROLE_KEYS }) @IsOptional() @IsIn(ROLE_KEYS as unknown as string[]) roleKey?: RoleKey;
+  /** Any of several roles (a picker of project managers, of imprest holders), comma-separated. */
+  @ApiPropertyOptional({ description: 'Comma-separated role keys; a user with any of them matches' })
+  @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' ? value.split(',').map((v) => v.trim()).filter(Boolean) : value))
+  @IsIn(ROLE_KEYS as unknown as string[], { each: true })
+  roleKeys?: RoleKey[];
   @ApiPropertyOptional() @IsOptional() @QueryBool() @IsBoolean() isActive?: boolean;
   @ApiPropertyOptional({ enum: LIST_SORT_FIELDS.users, default: 'fullName' }) @IsOptional() @IsIn(LIST_SORT_FIELDS.users as unknown as string[]) sortBy?: UserSortField;
 }

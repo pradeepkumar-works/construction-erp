@@ -45,6 +45,12 @@ export class UpdateVendorDto extends PartialType(CreateVendorDto) {
 /** `q` matches name, GSTIN, PAN, contact person and phone. */
 export class ListVendorsQuery extends PageQuery {
   @ApiPropertyOptional({ enum: VENDOR_KINDS }) @IsOptional() @IsIn(VENDOR_KINDS as unknown as string[]) kind?: VendorKind;
+  /** Any of several kinds (a subcontractor picker: subcontractors and labour contractors), comma-separated. */
+  @ApiPropertyOptional({ description: 'Comma-separated vendor kinds; a vendor of any of them matches' })
+  @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' ? value.split(',').map((v) => v.trim()).filter(Boolean) : value))
+  @IsIn(VENDOR_KINDS as unknown as string[], { each: true })
+  kinds?: VendorKind[];
   @ApiPropertyOptional({ enum: MSME_CATEGORIES }) @IsOptional() @IsIn(MSME_CATEGORIES as unknown as string[]) msme?: MsmeCategory;
   @ApiPropertyOptional({ description: 'Include inactive vendors' }) @IsOptional() @QueryBool() @IsBoolean() includeInactive?: boolean;
   @ApiPropertyOptional({ enum: LIST_SORT_FIELDS.vendors, default: 'name' }) @IsOptional() @IsIn(LIST_SORT_FIELDS.vendors as unknown as string[]) sortBy?: VendorSortField;

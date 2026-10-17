@@ -6,10 +6,11 @@ import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, DriverDto, EquipmentDocType, EquipmentDocumentDto, ExpiryState } from '@erp/shared';
-import { DOC_ALERT_DAYS, EQUIPMENT_DOC_TYPES, EQUIPMENT_DOC_TYPE_LABELS, EXPIRY_STATE_LABELS, MAX_PAGE_SIZE, canManageMaintenance } from '@erp/shared';
+import { DOC_ALERT_DAYS, EQUIPMENT_DOC_TYPES, EQUIPMENT_DOC_TYPE_LABELS, EXPIRY_STATE_LABELS, canManageMaintenance } from '@erp/shared';
 import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
-import { useDrivers, useEquipment, useEquipmentDocuments } from '@/lib/queries';
+import { useDrivers, useEquipmentDocuments } from '@/lib/queries';
+import { EquipmentSelect, useEquipmentItem } from '@/components/common/SearchSelect';
 import { formatDate } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { ListToolbar } from '@/components/common/ListToolbar';
@@ -61,8 +62,6 @@ export function PapersPanel() {
   const { message } = App.useApp();
   const qc = useQueryClient();
   const manager = !!user && canManageMaintenance(user.roleKey);
-  const { data: equipment } = useEquipment({ pageSize: MAX_PAGE_SIZE });
-  const machines = (equipment?.items ?? []).map((e) => ({ value: e.id, label: `${e.code} · ${e.name}` }));
 
   /* ---------- papers ---------- */
   const docFrame = useListFrame<'validTo', EquipmentDocumentDto>({
@@ -76,7 +75,7 @@ export function PapersPanel() {
     chipLabels: {
       type: (v) => EQUIPMENT_DOC_TYPE_LABELS[v as EquipmentDocType] ?? v,
       state: (v) => EXPIRY_STATE_LABELS[v as ExpiryState] ?? v,
-      equipmentId: (v) => `Machine: ${equipment?.items.find((e) => e.id === v)?.code ?? 'one machine'}`,
+      equipmentId: () => `Machine: ${docMachineItem?.code ?? 'one machine'}`,
       old: () => 'Renewed ones too',
     },
     columns: (): ListColumn<EquipmentDocumentDto>[] =>
@@ -143,6 +142,8 @@ export function PapersPanel() {
   const docType = docList.filters.type as EquipmentDocType | undefined;
   const docState = docList.filters.state as ExpiryState | undefined;
   const docMachine = docList.filters.equipmentId;
+  // Read by the chip's label once the list has drawn.
+  const docMachineItem = useEquipmentItem(docMachine);
   const showOld = docList.filters.old === '1';
   const docs = useEquipmentDocuments({ page: docList.params.page, pageSize: docList.params.pageSize, q: docList.params.q, type: docType, state: docState, equipmentId: docMachine, latestOnly: showOld ? false : undefined });
   const [docEditing, setDocEditing] = useState<EquipmentDocumentDto | 'new' | null>(null);
@@ -314,7 +315,7 @@ export function PapersPanel() {
       >
         <Select allowClear placeholder="All papers" style={{ width: 170 }} value={docType} aria-label="Paper" onChange={(v) => docList.setFilter('type', v)} options={EQUIPMENT_DOC_TYPES.map((x) => ({ value: x, label: EQUIPMENT_DOC_TYPE_LABELS[x] }))} />
         <Select allowClear placeholder="Any validity" style={{ width: 150 }} value={docState} aria-label="Validity" onChange={(v) => docList.setFilter('state', v)} options={EXPIRY_STATES.map((x) => ({ value: x, label: EXPIRY_STATE_LABELS[x] }))} />
-        <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="All machines" style={{ width: 220 }} value={docMachine} aria-label="Machine" onChange={(v) => docList.setFilter('equipmentId', v)} options={machines} />
+        <EquipmentSelect allowClear placeholder="All machines" style={{ width: 220 }} value={docMachine} aria-label="Machine" onChange={(v) => docList.setFilter('equipmentId', v)} />
         <Checkbox checked={showOld} onChange={(e) => docList.setFilter('old', e.target.checked ? '1' : undefined)}>
           Show renewed ones too
         </Checkbox>
@@ -376,7 +377,7 @@ export function PapersPanel() {
         <Form form={docForm} layout="vertical">
           <FormGrid cols={2}>
             <Form.Item name="equipmentId" label="Machine" rules={[{ required: true, message: 'Pick the machine' }]}>
-              <Select showSearch={{ optionFilterProp: 'label' }} disabled={docEditing !== 'new'} options={machines} />
+              <EquipmentSelect disabled={docEditing !== 'new'} />
             </Form.Item>
             <Form.Item name="type" label="Paper" rules={[{ required: true, message: 'Choose the paper' }]}>
               <Select options={EQUIPMENT_DOC_TYPES.map((x) => ({ value: x, label: EQUIPMENT_DOC_TYPE_LABELS[x] }))} />
@@ -424,7 +425,7 @@ export function PapersPanel() {
             </Form.Item>
           </FormGrid>
           <Form.Item name="equipmentId" label="Drives">
-            <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Machine or vehicle" options={machines} />
+            <EquipmentSelect allowClear placeholder="Machine or vehicle" />
           </Form.Item>
           <Form.Item name="notes" label="Notes">
             <Input maxLength={1000} />

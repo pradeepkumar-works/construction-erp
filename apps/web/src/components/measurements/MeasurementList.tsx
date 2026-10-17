@@ -7,7 +7,7 @@ import type { MeasurementSheetDto } from '@erp/shared';
 import { LIST_SORT_FIELDS, canMeasure } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useProjectScope } from '@/lib/project-scope';
-import { useBoq, useMeasurements } from '@/lib/queries';
+import { useBoq, useMeasurements, LIST_START } from '@/lib/queries';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { MEASUREMENT_EXPORT, measurementExportRows, type MeasurementExportRow } from '@/lib/exportColumns';
 import { QueryError } from '@/components/common/QueryState';
@@ -36,8 +36,9 @@ export function MeasurementList({ projectId: fixedProject }: { projectId?: strin
     list: 'measurements',
     type: 'MEASUREMENT',
     keys: KEYS,
-    sortBy: 'date',
-    sortOrder: 'desc',
+    // Where the sidebar's hover fetched it ahead from (LIST_START).
+    sortBy: LIST_START['/measurements'].sortBy,
+    sortOrder: LIST_START['/measurements'].sortOrder,
     sortFields: LIST_SORT_FIELDS.measurements,
     fixedProject,
     columns: (sortOrderFor) => measurementColumns({ showProject: !fixedProject, onOpen: setOpenId, onEdit: setEditing, sortOrderFor }),

@@ -2,14 +2,19 @@
 
 import React from 'react';
 import { Typography } from 'antd';
+import { useHoverIntent, usePrefetch } from '@/lib/prefetch';
 
 /**
  * A record's number or name in a list: a click opens the quick look, while Ctrl or Cmd click, a middle click or
  * "Open in new tab" go to the record's own page, since it is a real link (UI roadmap item 57). A type without its own page
  * yet passes no `href`: it is then a button that looks like a link, so it still takes focus and opens on Enter or Space
- * (UX item 81; a link without `href` cannot be reached from the keyboard).
+ * (UX item 81; a link without `href` cannot be reached from the keyboard). With `href`, resting the pointer on it or
+ * focusing it fetches the record ahead (item 83), for the quick look and the page alike; `data-record-link` lets its row
+ * do the same.
  */
 export function RecordLink({ href, onOpen, strong, className, children }: { href?: string; onOpen: () => void; strong?: boolean; className?: string; children: React.ReactNode }) {
+  const prefetch = usePrefetch();
+  const ahead = useHoverIntent(() => prefetch.record(href));
   if (!href)
     return (
       <Typography.Link
@@ -35,6 +40,8 @@ export function RecordLink({ href, onOpen, strong, className, children }: { href
       href={href}
       strong={strong}
       className={className}
+      data-record-link=""
+      {...ahead}
       onClick={(e) => {
         if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
         e.preventDefault();

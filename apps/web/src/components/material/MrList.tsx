@@ -6,7 +6,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import type { AiDraftDto, MaterialRequestDto } from '@erp/shared';
 import { LIST_SORT_FIELDS } from '@erp/shared';
 import { useNewIntent } from '@/lib/new-intent';
-import { useMaterialRequests } from '@/lib/queries';
+import { useMaterialRequests, LIST_START } from '@/lib/queries';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { MR_EXPORT, mrExportRows, type MrExportRow } from '@/lib/exportColumns';
 import { QueryError } from '@/components/common/QueryState';
@@ -40,8 +40,9 @@ export function MrList({ projectId: fixedProject, newLabel, openId: initialOpen 
     list: 'material-requests',
     type: 'MATERIAL_REQUEST',
     keys: KEYS,
-    sortBy: 'createdAt',
-    sortOrder: 'desc',
+    // Where the sidebar's hover fetched it ahead from (LIST_START).
+    sortBy: LIST_START['/material-requests'].sortBy,
+    sortOrder: LIST_START['/material-requests'].sortOrder,
     sortFields: LIST_SORT_FIELDS.materialRequests,
     fixedProject,
     columns: (sortOrderFor) => mrColumns({ showProject: !fixedProject, onOpen: setOpenId, onEdit: setEditing, sortOrderFor }),

@@ -8,7 +8,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ContractPercentField, LdPeriod, ProjectContractDto } from '@erp/shared';
 import { CONTRACT_PERCENT_FIELDS, CONTRACT_PERCENT_LABELS, LD_PERIODS, LD_PERIOD_LABELS, MAX_GST_RATE } from '@erp/shared';
 import { api, errorMessage } from '@/lib/api';
-import { useClients } from '@/lib/queries';
+import { ClientSelect } from '@/components/common/SearchSelect';
 import { ClientFormModal } from '@/components/clients/ClientFormModal';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
@@ -44,7 +44,6 @@ export function ContractFormModal({ open, contract, onClose }: { open: boolean; 
   const [form] = Form.useForm<FormValues>();
   const { message } = App.useApp();
   const qc = useQueryClient();
-  const { data: clients } = useClients(open);
   const [newClient, setNewClient] = useState(false);
 
   useEffect(() => {
@@ -106,12 +105,11 @@ export function ContractFormModal({ open, contract, onClose }: { open: boolean; 
             <Form.Item label="Client" required={false} style={{ marginBottom: 12 }}>
               <div style={{ display: 'flex', gap: 8 }}>
                 <Form.Item name="clientId" noStyle>
-                  <Select
+                  <ClientSelect
                     allowClear
-                    showSearch={{ optionFilterProp: 'label' }}
-                    placeholder={contract.clientName ? `${contract.clientName} (not in the client master)` : 'Select a client'}
+                    placeholder={contract.clientName ? `${contract.clientName} (not in the client master)` : 'Type a client\'s name'}
                     style={{ flex: 1 }}
-                    options={(clients ?? []).map((c) => ({ value: c.id, label: c.department ? `${c.name} · ${c.department}` : c.name }))}
+                    selected={contract.client ? { value: contract.client.id, label: contract.client.department ? `${contract.client.name} · ${contract.client.department}` : contract.client.name } : null}
                   />
                 </Form.Item>
                 <Button icon={<PlusOutlined />} onClick={() => setNewClient(true)}>

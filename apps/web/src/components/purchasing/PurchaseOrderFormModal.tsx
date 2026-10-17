@@ -7,7 +7,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, PurchaseOrderDto } from '@erp/shared';
 import { GST_RATES, MSME_CATEGORY_LABELS } from '@erp/shared';
 import { api, errorMessage } from '@/lib/api';
-import { useProjects, useVendors } from '@/lib/queries';
+import { useProjects } from '@/lib/queries';
+import { VendorSelect, useVendor } from '@/components/common/SearchSelect';
 import { formatINR, toNumber } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { UnitInput } from '@/components/common/UnitInput';
@@ -74,12 +75,11 @@ export function PurchaseOrderFormModal({
   const { message } = App.useApp();
   const qc = useQueryClient();
   const { data: projects } = useProjects();
-  const { data: vendors } = useVendors(open);
   // preserve: lines from a request keep their item and unit without a field for them
   const lines = Form.useWatch('lines', { form, preserve: true }) as PoLineValue[] | undefined;
   const freight = Form.useWatch('freight', form);
   const vendorId = Form.useWatch('vendorId', form);
-  const vendor = vendors?.find((v) => v.id === vendorId);
+  const vendor = useVendor(open ? vendorId : undefined);
   const msme = vendor?.msmeCategory === 'MICRO' || vendor?.msmeCategory === 'SMALL';
   const fromRequest = order ? order.requestNo : start?.requestNo;
 
@@ -164,8 +164,6 @@ export function PurchaseOrderFormModal({
     onError: (e) => message.error(errorMessage(e)),
   });
 
-  const vendorOptions = (vendors ?? []).filter((v) => v.isActive || v.id === order?.vendorId).map((v) => ({ value: v.id, label: v.name }));
-
   const summary = (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '4px 12px' }}>
       <span>Items</span>
@@ -210,7 +208,7 @@ export function PurchaseOrderFormModal({
               rules={[{ required: true, message: 'Pick the vendor from the master' }]}
               extra={vendor ? [vendor.gstin ? `GSTIN ${vendor.gstin}` : 'No GSTIN', vendor.msmeCategory ? MSME_CATEGORY_LABELS[vendor.msmeCategory] : null].filter(Boolean).join(' · ') : undefined}
             >
-              <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Vendor master" options={vendorOptions} />
+              <VendorSelect prefer={['SUPPLIER']} />
             </Form.Item>
             <Form.Item name="poDate" label="PO date" rules={[{ required: true, message: 'Pick the PO date' }]}>
               <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" />

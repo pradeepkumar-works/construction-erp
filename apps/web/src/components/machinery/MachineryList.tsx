@@ -4,9 +4,10 @@ import React, { useState } from 'react';
 import { Button, Checkbox, Select } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import type { MachineryLogDto } from '@erp/shared';
-import { LIST_SORT_FIELDS, MAX_PAGE_SIZE, canLogMachinery } from '@erp/shared';
+import { LIST_SORT_FIELDS, canLogMachinery } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
-import { useEquipment, useMachineryLogs } from '@/lib/queries';
+import { useMachineryLogs } from '@/lib/queries';
+import { EquipmentSelect, useEquipmentItem } from '@/components/common/SearchSelect';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { MACHINERY_EXPORT } from '@/lib/exportColumns';
 import { QueryError } from '@/components/common/QueryState';
@@ -29,7 +30,6 @@ export function MachineryList({ projectId: fixedProject }: { projectId?: string 
   const [openId, setOpenId] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<MachineryLogDto | null>(null);
-  const { data: equipment } = useEquipment({ pageSize: MAX_PAGE_SIZE, includeInactive: true });
   const frame = useListFrame({
     list: 'machinery',
     type: 'MACHINERY',
@@ -41,15 +41,14 @@ export function MachineryList({ projectId: fixedProject }: { projectId?: string 
     columns: (sortOrderFor) => machineryColumns({ showProject: !fixedProject, onOpen: setOpenId, onEdit: setEditing, sortOrderFor }),
     moreViews: [{ key: 'breakdowns', label: 'Breakdowns', filters: { breakdownOnly: '1' } }],
     chipLabels: {
-      equipmentId: (v) => {
-        const e = equipment?.items.find((x) => x.id === v);
-        return `Machine: ${e ? `${e.code} · ${e.name}` : 'one machine'}`;
-      },
+      equipmentId: () => `Machine: ${machine ? `${machine.code} · ${machine.name}` : 'one machine'}`,
       breakdownOnly: () => 'Breakdowns only',
     },
   });
   const { page } = frame;
   const equipmentId = page.filters.equipmentId;
+  // Read by the chip's label once the list has drawn.
+  const machine = useEquipmentItem(equipmentId);
   const filters = { ...page.params, projectId: frame.projectId, status: frame.status, equipmentId, breakdownOnly: page.filters.breakdownOnly === '1' || undefined };
   const { data, isLoading, isFetching, error, refetch } = useMachineryLogs(filters);
   const approve = useBulkApprove<MachineryLogDto>('machinery');
@@ -88,15 +87,14 @@ export function MachineryList({ projectId: fixedProject }: { projectId?: string 
           </>
         }
       >
-        <Select
+        <EquipmentSelect
           allowClear
-          showSearch={{ optionFilterProp: 'label' }}
           placeholder="All equipment"
           aria-label="Equipment"
           style={{ width: 220 }}
+          params={{ projectId: frame.projectId, includeInactive: true }}
           value={equipmentId}
           onChange={(v) => page.setFilter('equipmentId', v)}
-          options={(equipment?.items ?? []).filter((e) => !frame.projectId || e.projectId === frame.projectId || e.id === equipmentId).map((e) => ({ value: e.id, label: `${e.code} · ${e.name}` }))}
         />
         <DateRangeFilter {...frame.dateRange} />
         <Checkbox checked={!!filters.breakdownOnly} onChange={(e) => page.setFilter('breakdownOnly', e.target.checked ? '1' : undefined)}>

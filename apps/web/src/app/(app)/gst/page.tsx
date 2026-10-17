@@ -3,7 +3,7 @@
 import React, { Suspense, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Alert, Button, Card, Col, DatePicker, Row, Skeleton, Statistic, Table, Tabs, Tag, Typography } from 'antd';
+import { Alert, Button, Card, Col, DatePicker, Row, Statistic, Table, Tabs, Tag, Typography } from 'antd';
 import type { TableProps } from 'antd';
 import { DownloadOutlined } from '@ant-design/icons';
 import dayjs, { type Dayjs } from 'dayjs';
@@ -14,7 +14,7 @@ import { useGstRegisters } from '@/lib/queries';
 import { formatDate, formatINR, formatINRCompact, toNumber } from '@/lib/format';
 import { CONSTRUCTION_SAC, GST_SOURCE_LABELS, downloadGstWorkbook, hsnSummary, placeOfSupply } from '@/lib/gstExport';
 import { PageHeader } from '@/components/common/PageHeader';
-import { QueryError } from '@/components/common/QueryState';
+import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { tabBarWithExtra } from '@/components/common/tabBarWithExtra';
 import { rangePresets } from '@/lib/dates';
 import { themeFontSize } from '@/lib/theme';
@@ -133,7 +133,7 @@ function GstRegistersPage() {
         }
       />
       {error && <QueryError error={error} onRetry={() => refetch()} />}
-      {isLoading && <Skeleton active />}
+      {isLoading && <PageSkeleton shape="workspace" header={false} />}
       {data && (
         <>
           <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>

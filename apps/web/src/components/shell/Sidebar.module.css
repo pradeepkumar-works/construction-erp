@@ -15,6 +15,13 @@
   width: 64px;
 }
 
+/* The loading shell (ShellSkeleton): phones have no sidebar, only the header's menu button. */
+@media (max-width: 767.98px) {
+  .asideSkeleton {
+    display: none;
+  }
+}
+
 .sidebar {
   display: flex;
   flex-direction: column;

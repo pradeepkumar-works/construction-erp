@@ -16,7 +16,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
-import { AttachmentsService } from '../common/attachments.service';
+import { AttachmentsService, ATTACHMENT_FIELDS } from '../common/attachments.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { StockService } from '../stock/stock.service';
 import { dateOnly, dec, iso, money, parseDate } from '../common/serialize';
@@ -47,7 +47,7 @@ const jobInclude = {
   project: { select: { name: true } },
   reportedBy: { select: { fullName: true } },
   closedBy: { select: { fullName: true } },
-  attachments: true,
+  attachments: { select: ATTACHMENT_FIELDS },
   spareIssues: {
     select: { id: true, entryNo: true, date: true, lines: { select: { itemId: true, quantity: true, item: { select: { name: true, unit: true, rate: true } } }, orderBy: { sortOrder: 'asc' } } },
     orderBy: { date: 'asc' },
@@ -55,7 +55,7 @@ const jobInclude = {
 } satisfies Prisma.MaintenanceJobInclude;
 type JobRow = Prisma.MaintenanceJobGetPayload<{ include: typeof jobInclude }>;
 
-const docInclude = { equipment: { select: { code: true, name: true } }, attachments: true } satisfies Prisma.EquipmentDocumentInclude;
+const docInclude = { equipment: { select: { code: true, name: true } }, attachments: { select: ATTACHMENT_FIELDS } } satisfies Prisma.EquipmentDocumentInclude;
 type DocRow = Prisma.EquipmentDocumentGetPayload<{ include: typeof docInclude }>;
 
 const driverInclude = { equipment: { select: { code: true, name: true } } } satisfies Prisma.DriverInclude;

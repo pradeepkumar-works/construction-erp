@@ -12,7 +12,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { AuditService } from '../common/audit.service';
-import { AttachmentsService } from '../common/attachments.service';
+import { AttachmentsService, ATTACHMENT_FIELDS } from '../common/attachments.service';
 import { ProjectAccessService } from '../common/project-access.service';
 import { isUniqueViolation } from '../common/idempotency';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
@@ -28,7 +28,7 @@ const include = {
   project: { select: { code: true, name: true } },
   createdBy: { select: { fullName: true } },
   lines: { orderBy: { sortOrder: 'asc' } },
-  attachments: true,
+  attachments: { select: ATTACHMENT_FIELDS },
 } satisfies Prisma.VariationInclude;
 type Row = Prisma.VariationGetPayload<{ include: typeof include }>;
 

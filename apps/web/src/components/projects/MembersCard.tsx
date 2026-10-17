@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
-import { App, Avatar, Button, Empty, Flex, Listy, Popconfirm, Select, Space, Tag, Typography } from 'antd';
+import React, { useCallback, useState } from 'react';
+import { App, Avatar, Button, Empty, Flex, Listy, Popconfirm, Space, Tag, Typography } from 'antd';
 import { DeleteOutlined, UserAddOutlined } from '@ant-design/icons';
-import type { ProjectDetail } from '@erp/shared';
+import type { ProjectDetail, UserSummary } from '@erp/shared';
 import { canEditProjects } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, errorMessage } from '@/lib/api';
-import { useUsers } from '@/lib/queries';
+import { UserSelect } from '@/components/common/SearchSelect';
 import { Section } from '@/components/common/Section';
 import { useAuth } from '@/lib/auth';
 import { BRAND } from '@/lib/brand';
@@ -18,7 +18,6 @@ export function MembersCard({ project }: { project: ProjectDetail }) {
   const { user } = useAuth();
   const { message } = App.useApp();
   const qc = useQueryClient();
-  const { data: users } = useUsers();
   const [adding, setAdding] = useState(false);
   const [userId, setUserId] = useState<string | undefined>();
   const editor = !!user && canEditProjects(user.roleKey) && user.roleKey !== 'QUANTITY_SURVEYOR';
@@ -42,8 +41,8 @@ export function MembersCard({ project }: { project: ProjectDetail }) {
     onError: (err) => message.error(errorMessage(err)),
   });
 
-  const memberIds = new Set(project.members.map((m) => m.userId));
-  const candidates = (users ?? []).filter((u) => u.isActive && !memberIds.has(u.id) && u.id !== project.projectManagerId);
+  // People already on the team are not offered again.
+  const onTeam = useCallback((u: UserSummary) => u.id === project.projectManagerId || project.members.some((m) => m.userId === u.id), [project]);
 
   const members = [
     ...(project.projectManagerName
@@ -65,7 +64,7 @@ export function MembersCard({ project }: { project: ProjectDetail }) {
     >
       {adding && (
         <Space.Compact style={{ width: '100%', marginBottom: 12 }}>
-          <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select user" aria-label="User" value={userId} onChange={setUserId} style={{ flex: 1 }} options={candidates.map((u) => ({ value: u.id, label: `${u.fullName} · ${u.roleName}` }))} />
+          <UserSelect exclude={onTeam} placeholder="Type a name" aria-label="User" value={userId} onChange={setUserId} style={{ flex: 1 }} />
           <Button type="primary" disabled={!userId} loading={add.isPending} onClick={() => userId && add.mutate(userId)}>
             Add
           </Button>

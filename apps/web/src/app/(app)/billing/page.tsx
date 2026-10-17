@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Alert, App, Button, Card, Col, Descriptions, Form, Input, Radio, Row, Select, Skeleton, Table, Tag, Typography } from 'antd';
+import { Alert, App, Button, Card, Col, Descriptions, Form, Input, Radio, Row, Select, Table, Tag, Typography } from 'antd';
 import { CreditCardOutlined, PrinterOutlined } from '@ant-design/icons';
 import type { BillingDetailsDto, BillingInvoiceDto, BillingStatus } from '@erp/shared';
 import { BILLING_STATUS_LABELS, BILLING_UNIT_LABELS, BILLING_YEAR_CHARGED_MONTHS, GST_STATES, PRODUCT_NAME, canManageBilling } from '@erp/shared';
@@ -12,7 +12,7 @@ import { useBilling, useBillingInvoices, useCreateBillingOrder, useUpdateBilling
 import { formatDate, formatINR } from '@/lib/format';
 import { openInvoicePrint } from '@/components/billing/invoicePrint';
 import { PageHeader } from '@/components/common/PageHeader';
-import { QueryError } from '@/components/common/QueryState';
+import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 
 const STATUS_COLORS: Record<BillingStatus, string> = { TRIAL: 'blue', ACTIVE: 'green', READ_ONLY: 'red', EXEMPT: 'default' };
 const STATE_OPTIONS = Object.entries(GST_STATES).map(([code, name]) => ({ value: code, label: `${name} (${code})` }));
@@ -68,7 +68,7 @@ export default function BillingPage() {
       <PageHeader title="Billing" subtitle={`Your ${PRODUCT_NAME} subscription and GST invoices`} />
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {isLoading || !data || !amount || !unit ? (
-        <Skeleton active />
+        error ? null : <PageSkeleton shape="record" header={false} />
       ) : (
         <>
           <Card style={{ marginBottom: 16 }}>

@@ -58,6 +58,7 @@ export class ReportsService {
         where: { mimeType: { startsWith: 'image/' }, progressEntry: { projectId, status: 'APPROVED', date: inPeriod } },
         orderBy: { createdAt: 'desc' },
         take: MAX_PHOTOS,
+        omit: { data: true },
         include: { progressEntry: { select: { date: true, activity: { select: { name: true } } } } },
       }),
       this.prisma.risk.findMany({

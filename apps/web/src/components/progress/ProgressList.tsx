@@ -6,7 +6,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import type { AiDraftDto, ProgressEntryDto } from '@erp/shared';
 import { LIST_SORT_FIELDS } from '@erp/shared';
 import { useNewIntent } from '@/lib/new-intent';
-import { useProgressList } from '@/lib/queries';
+import { useProgressList, LIST_START } from '@/lib/queries';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { PROGRESS_EXPORT } from '@/lib/exportColumns';
 import { QueryError } from '@/components/common/QueryState';
@@ -37,8 +37,9 @@ export function ProgressList({ projectId: fixedProject, newLabel }: { projectId?
     list: 'progress',
     type: 'PROGRESS',
     keys: KEYS,
-    sortBy: 'date',
-    sortOrder: 'desc',
+    // Where the sidebar's hover fetched it ahead from (LIST_START).
+    sortBy: LIST_START['/progress'].sortBy,
+    sortOrder: LIST_START['/progress'].sortOrder,
     sortFields: LIST_SORT_FIELDS.progress,
     fixedProject,
     columns: (sortOrderFor) => progressColumns({ showProject: !fixedProject, onOpen: setOpenId, onEdit: setEditing, sortOrderFor }),

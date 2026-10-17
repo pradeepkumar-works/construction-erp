@@ -7,7 +7,8 @@ import type { ProjectDetail, ProjectStatus, ProjectType } from '@erp/shared';
 import { PROJECT_STATUSES, PROJECT_STATUS_LABELS, PROJECT_TYPES, PROJECT_TYPE_LABELS } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, errorMessage } from '@/lib/api';
-import { useActivityTemplates, useClients, useUsers } from '@/lib/queries';
+import { useActivityTemplates } from '@/lib/queries';
+import { ClientSelect, UserSelect } from '@/components/common/SearchSelect';
 import { inSentence } from '@/lib/format';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
@@ -28,6 +29,9 @@ interface FormValues {
   applyTemplate?: boolean;
 }
 
+/** Who can manage a project. */
+const MANAGER_ROLES = ['PROJECT_MANAGER', 'MANAGEMENT', 'ADMIN'] as const;
+
 export function ProjectFormModal({
   open,
   onClose,
@@ -42,8 +46,6 @@ export function ProjectFormModal({
   const [form] = Form.useForm<FormValues>();
   const { message } = App.useApp();
   const qc = useQueryClient();
-  const { data: users } = useUsers();
-  const { data: clients } = useClients(open);
   const isEdit = !!project;
   const { data: templates } = useActivityTemplates(open && !project);
   const type = Form.useWatch('type', form);
@@ -104,8 +106,6 @@ export function ProjectFormModal({
     onError: (err) => message.error(errorMessage(err)),
   });
 
-  const managers = (users ?? []).filter((u) => u.isActive && ['PROJECT_MANAGER', 'MANAGEMENT', 'ADMIN'].includes(u.roleKey));
-
   return (
     <FormShell
       open={open}
@@ -138,7 +138,11 @@ export function ProjectFormModal({
               <Select options={PROJECT_STATUSES.map((s) => ({ value: s, label: PROJECT_STATUS_LABELS[s] }))} />
             </Form.Item>
             <Form.Item name="projectManagerId" label="Project manager">
-              <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Select" options={managers.map((u) => ({ value: u.id, label: `${u.fullName} (${u.roleName})` }))} />
+              <UserSelect
+                roles={MANAGER_ROLES}
+                allowClear
+                selected={project?.projectManagerId && project.projectManagerName ? { value: project.projectManagerId, label: project.projectManagerName } : null}
+              />
             </Form.Item>
           </FormGrid>
           <Form.Item name="description" label="Description">
@@ -148,7 +152,7 @@ export function ProjectFormModal({
         <FormSection title="Client and contract">
           <FormGrid cols={2}>
             <Form.Item name="clientId" label="Client" extra={!project?.clientId && project?.clientName ? `Now: ${project.clientName} (not in the client master)` : 'Add clients under Billing → Clients, or from the Contract tab.'}>
-              <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Select a client" options={(clients ?? []).map((c) => ({ value: c.id, label: c.department ? `${c.name} · ${c.department}` : c.name }))} />
+              <ClientSelect allowClear />
             </Form.Item>
             <Form.Item name="consultantName" label="Consultant / PMC">
               <Input />

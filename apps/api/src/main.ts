@@ -15,7 +15,9 @@ async function bootstrap() {
   app.use(tenantMiddleware);
   // CORS_ORIGINS: comma-separated list of allowed origins; unset = allow any origin (dev / mobile apps)
   const origins = (process.env.CORS_ORIGINS || '').split(',').map((o) => o.trim()).filter(Boolean);
-  app.enableCors({ origin: origins.length ? origins : true, credentials: true });
+  // maxAge: the browser asks once per URL per 2 hours (Chrome's cap) instead of before every call, which on a list doubled
+  // the round trips; Server-Timing is exposed so the web app can report where a slow call spent its time.
+  app.enableCors({ origin: origins.length ? origins : true, credentials: true, maxAge: 7200, exposedHeaders: ['Server-Timing'] });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true, transformOptions: { enableImplicitConversion: true } }));
 
   const uploadDir = process.env.UPLOAD_DIR || './uploads';

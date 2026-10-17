@@ -5,14 +5,16 @@ import { App, Checkbox, DatePicker, Form, Input, Select } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ImprestDetailDto, ImprestDto, PaymentMode } from '@erp/shared';
-import { PAYMENT_MODES, PAYMENT_MODE_LABELS, canHoldImprest } from '@erp/shared';
+import { PAYMENT_MODES, PAYMENT_MODE_LABELS, ROLE_KEYS, canHoldImprest } from '@erp/shared';
 import { api, errorMessage } from '@/lib/api';
-import { useUsers } from '@/lib/queries';
+import { UserSelect } from '@/components/common/SearchSelect';
 import { formatINR } from '@/lib/format';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
 
+/** Roles that may hold a site's cash float. */
+const HOLDER_ROLES = ROLE_KEYS.filter(canHoldImprest);
 const MODES = PAYMENT_MODES.filter((m) => m !== 'CREDIT').map((m) => ({ value: m, label: PAYMENT_MODE_LABELS[m] }));
 const ymd = (d?: dayjs.Dayjs | null) => (d ? d.format('YYYY-MM-DD') : undefined);
 
@@ -53,7 +55,6 @@ export function ImprestActionModal({ action, onClose, onDone }: { action: Impres
   const [form] = Form.useForm<Values>();
   const { message } = App.useApp();
   const qc = useQueryClient();
-  const users = useUsers();
   const kind = action?.kind;
   const imp = action && action.kind !== 'open' ? action.imprest : null;
 
@@ -127,11 +128,7 @@ export function ImprestActionModal({ action, onClose, onDone }: { action: Impres
               <ProjectSelect placeholder="Pick the project" allowClear={false} />
             </Form.Item>
             <Form.Item name="holderId" label="Held by" rules={[{ required: true, message: 'Pick who holds the cash' }]} extra="The site in-charge whose cash expenses spend it">
-              <Select
-                showSearch={{ optionFilterProp: 'label' }}
-                loading={users.isLoading}
-                options={(users.data ?? []).filter((u) => u.isActive && canHoldImprest(u.roleKey)).map((u) => ({ value: u.id, label: `${u.fullName} (${u.roleName})` }))}
-              />
+              <UserSelect roles={HOLDER_ROLES} />
             </Form.Item>
           </>
         ) : null}

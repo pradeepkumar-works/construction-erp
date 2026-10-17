@@ -2,13 +2,13 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Button, Checkbox, Progress, Select, Space, theme } from 'antd';
+import { Button, Checkbox, Progress, Space, theme } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import type { PurchaseOrderDto, PurchaseOrderSortField } from '@erp/shared';
 import { LIST_SORT_FIELDS, canPurchase } from '@erp/shared';
 import { useNewIntent } from '@/lib/new-intent';
 import { useAuth } from '@/lib/auth';
-import { usePurchaseOrders, useVendors } from '@/lib/queries';
+import { usePurchaseOrders } from '@/lib/queries';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { PURCHASE_ORDER_EXPORT } from '@/lib/exportColumns';
 import { formatDate, formatINR } from '@/lib/format';
@@ -25,6 +25,7 @@ import { exportSelected, useBulkApprove } from '@/components/list/bulk';
 import { useListFrame } from '@/components/list/useListFrame';
 import { PoStateTag, PurchaseOrderDrawer } from './PurchaseOrderDrawer';
 import { PurchaseOrderFormModal } from './PurchaseOrderFormModal';
+import { VendorSelect, useVendorName } from '@/components/common/SearchSelect';
 
 const KEYS = ['status', 'mine', 'from', 'to', 'vendorId', 'open'] as const;
 const sumMoney = (values: string[]) => formatINR(values.reduce((n, v) => n + Number(v || 0), 0));
@@ -90,7 +91,6 @@ export function PurchaseOrderList({ projectId: fixedProject, openId: initialOpen
   useEffect(() => {
     if (initialOpen) setOpenId(initialOpen);
   }, [initialOpen]);
-  const { data: vendors } = useVendors();
   const frame = useListFrame({
     list: 'purchase-orders',
     type: 'PURCHASE_ORDER',
@@ -102,11 +102,13 @@ export function PurchaseOrderList({ projectId: fixedProject, openId: initialOpen
     columns: (sortOrderFor) => poColumns({ showProject: !fixedProject, onOpen: setOpenId, sortOrderFor }),
     moreViews: [{ key: 'open', label: 'Open orders', filters: { open: '1' } }],
     chipLabels: {
-      vendorId: (v) => `Vendor: ${vendors?.find((x) => x.id === v)?.name ?? 'one vendor'}`,
+      vendorId: () => `Vendor: ${vendorName ?? 'one vendor'}`,
       open: () => 'Open orders',
     },
   });
   const { page } = frame;
+  // Read by the chip's label once the list has drawn.
+  const vendorName = useVendorName(page.filters.vendorId);
   const filters = { ...page.params, projectId: frame.projectId, status: frame.status, vendorId: page.filters.vendorId, open: page.filters.open === '1' || undefined };
   const { data, isLoading, isFetching, error, refetch } = usePurchaseOrders(filters);
   const approve = useBulkApprove<PurchaseOrderDto>('purchase_order', (r) => r.total);
@@ -147,7 +149,7 @@ export function PurchaseOrderList({ projectId: fixedProject, openId: initialOpen
           </>
         }
       >
-        <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Any vendor" aria-label="Vendor" style={{ width: 220 }} value={page.filters.vendorId} onChange={(v) => page.setFilter('vendorId', v)} options={(vendors ?? []).map((v) => ({ value: v.id, label: v.name }))} />
+        <VendorSelect allowClear placeholder="Any vendor" aria-label="Vendor" style={{ width: 220 }} value={page.filters.vendorId} onChange={(v) => page.setFilter('vendorId', v)} />
         <DateRangeFilter {...frame.dateRange} />
         <Checkbox checked={page.filters.open === '1'} onChange={(e) => page.setFilter('open', e.target.checked ? '1' : undefined)}>
           Open orders only

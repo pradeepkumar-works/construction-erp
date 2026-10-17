@@ -7,7 +7,7 @@ import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
-import { AttachmentsService } from '../common/attachments.service';
+import { AttachmentsService, ATTACHMENT_FIELDS } from '../common/attachments.service';
 import { dateOnly, iso, parseDate } from '../common/serialize';
 import { isUniqueViolation } from '../common/idempotency';
 import { nextDocNo } from '../common/doc-number';
@@ -19,7 +19,7 @@ const include = {
   activity: { select: { name: true, holdPoint: true } },
   submittedBy: { select: { fullName: true } },
   reviewedBy: { select: { fullName: true } },
-  attachments: { orderBy: { createdAt: 'asc' } },
+  attachments: { select: ATTACHMENT_FIELDS, orderBy: { createdAt: 'asc' } },
 } satisfies Prisma.InspectionInclude;
 type Row = Prisma.InspectionGetPayload<{ include: typeof include }>;
 

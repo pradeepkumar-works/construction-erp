@@ -22,7 +22,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
-import { AttachmentsService } from '../common/attachments.service';
+import { AttachmentsService, ATTACHMENT_FIELDS } from '../common/attachments.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { todayIn } from '../notifications/time';
 import { dateOnly, iso, parseDate } from '../common/serialize';
@@ -46,7 +46,7 @@ import {
 
 const revisionInclude = {
   issuedBy: { select: { fullName: true } },
-  attachments: { orderBy: { createdAt: 'asc' } },
+  attachments: { select: ATTACHMENT_FIELDS, orderBy: { createdAt: 'asc' } },
 } satisfies Prisma.DocumentRevisionInclude;
 type RevisionRow = Prisma.DocumentRevisionGetPayload<{ include: typeof revisionInclude }>;
 
@@ -72,7 +72,7 @@ const letterInclude = {
   risk: { select: { riskNo: true, title: true } },
   inReplyTo: letterRef,
   replies: { ...letterRef, orderBy: { letterDate: 'asc' } },
-  attachments: { orderBy: { createdAt: 'asc' } },
+  attachments: { select: ATTACHMENT_FIELDS, orderBy: { createdAt: 'asc' } },
 } satisfies Prisma.LetterInclude;
 type LetterRow = Prisma.LetterGetPayload<{ include: typeof letterInclude }>;
 

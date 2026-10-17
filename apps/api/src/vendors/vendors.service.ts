@@ -70,6 +70,7 @@ export class VendorsService {
     const where: Prisma.VendorWhereInput = { organizationId: user.organizationId };
     if (!q.includeInactive) where.isActive = true;
     if (q.kind) where.kinds = { has: q.kind };
+    else if (q.kinds?.length) where.kinds = { hasSome: q.kinds };
     if (q.msme) where.msmeCategory = q.msme;
     const words = searchWords(q.q);
     if (words.length) where.AND = words.map((w) => ({ OR: [{ name: ilike(w) }, { gstin: ilike(w) }, { pan: ilike(w) }, { contactPerson: ilike(w) }, { phone: ilike(w) }] }));

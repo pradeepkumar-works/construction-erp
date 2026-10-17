@@ -5,10 +5,10 @@ import { App, DatePicker, Form, Input, Select } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, MaintenanceJobDto, MaintenanceKind } from '@erp/shared';
-import { MAINTENANCE_KINDS, MAINTENANCE_KIND_LABELS, MAX_PAGE_SIZE, canManageMaintenance } from '@erp/shared';
+import { MAINTENANCE_KINDS, MAINTENANCE_KIND_LABELS, canManageMaintenance } from '@erp/shared';
 import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
-import { useEquipment } from '@/lib/queries';
+import { EquipmentSelect } from '@/components/common/SearchSelect';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { QuantityInput } from '@/components/form/inputs';
@@ -44,7 +44,6 @@ export function JobFormModal({
   const qc = useQueryClient();
   const { user } = useAuth();
   const manager = !!user && canManageMaintenance(user.roleKey);
-  const { data: equipment } = useEquipment({ pageSize: MAX_PAGE_SIZE, projectId }, open);
   const editing = !!job;
   const watchedKind = Form.useWatch('kind', form);
 
@@ -98,12 +97,7 @@ export function JobFormModal({
       <Form form={form} layout="vertical">
         <FormGrid cols={2}>
           <Form.Item name="equipmentId" label="Machine" rules={[{ required: true, message: 'Pick the machine' }]}>
-            <Select
-              showSearch={{ optionFilterProp: 'label' }}
-              disabled={editing}
-              placeholder="Machine or vehicle"
-              options={(equipment?.items ?? []).map((e) => ({ value: e.id, label: `${e.code} · ${e.name}${e.projectName && !projectId ? ` (${e.projectName})` : ''}` }))}
-            />
+            <EquipmentSelect disabled={editing} placeholder="Machine or vehicle" params={projectId ? { projectId } : undefined} />
           </Form.Item>
           {manager ? (
             <Form.Item name="kind" label="Job">

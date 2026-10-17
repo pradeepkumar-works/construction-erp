@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { App, Button, Card, Col, Popconfirm, Row, Select, Skeleton, Space, Statistic, Table, Tabs, Tag, Typography } from 'antd';
+import { App, Button, Card, Col, Popconfirm, Row, Select, Space, Statistic, Table, Tabs, Tag, Typography } from 'antd';
 import type { TableProps } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -11,13 +11,13 @@ import { LIST_SORT_FIELDS, MSME_CATEGORY_LABELS, RECEIPT_MODE_LABELS, canRecordP
 import { useProjectScope } from '@/lib/project-scope';
 import { api, errorMessage, errorStatus } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
-import { usePayables, useVendorPayments, useVendors } from '@/lib/queries';
+import { usePayables, useVendorPayments } from '@/lib/queries';
 import { useListPage } from '@/lib/listPage';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { PAYABLE_BILL_EXPORT, PAYABLE_VENDOR_EXPORT, VENDOR_PAYMENT_EXPORT } from '@/lib/exportColumns';
 import { formatDate, formatINR, formatINRCompact, toNumber } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
-import { QueryError } from '@/components/common/QueryState';
+import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { ListToolbar } from '@/components/common/ListToolbar';
 import { ExportButton } from '@/components/common/ExportButton';
@@ -31,6 +31,7 @@ import { DataTable, useColumnChoice, type ListColumn } from '@/components/list/D
 import { exportSelected } from '@/components/list/bulk';
 import { RecordLink } from '@/components/record/RecordLink';
 import { themeColor, themeFontSize } from '@/lib/theme';
+import { VendorSelect } from '@/components/common/SearchSelect';
 
 const money = (v: string, strong?: boolean) => (strong ? <strong className="mono">{formatINR(v)}</strong> : <span className="mono">{formatINR(v)}</span>);
 const late = (v: string) => (toNumber(v) > 0 ? <span className="mono" style={{ color: themeColor('colorErrorText') }}>{formatINR(v)}</span> : <span className="mono text-muted">-</span>);
@@ -217,7 +218,6 @@ export default function PayablesPage() {
   const [bill, setBill] = useState<{ billType: PayableBillDto['billType']; billId: string } | null>(null);
   const [paying, setPaying] = useState<PayTarget | null>(null);
   const { data, isLoading, error, refetch } = usePayables({ projectId, vendorId });
-  const { data: vendors } = useVendors();
   const accounts = !!user && canRecordPayment(user.roleKey);
   const t = data?.totals;
 
@@ -336,22 +336,13 @@ export default function PayablesPage() {
         subtitle="What is owed to vendors and subcontractors on their approved bills, by due date, with micro and small enterprises flagged before their 45 days run out."
         extra={
           <Space wrap>
-            <Select
-              allowClear
-              showSearch={{ optionFilterProp: 'label' }}
-              placeholder="Any vendor"
-              aria-label="Vendor"
-              style={{ width: 220 }}
-              value={vendorId}
-              onChange={setVendorId}
-              options={(vendors ?? []).map((v) => ({ value: v.id, label: v.name }))}
-            />
+            <VendorSelect allowClear placeholder="Any vendor" aria-label="Vendor" style={{ width: 220 }} value={vendorId} onChange={setVendorId} />
             <ProjectSelect value={projectId} onChange={(v) => setProjectId(v)} />
           </Space>
         }
       />
       {error && <QueryError error={error} onRetry={() => refetch()} />}
-      {isLoading && <Skeleton active />}
+      {isLoading && <PageSkeleton shape="workspace" header={false} />}
       {t && (
         <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
           <Col flex="1 1 180px">

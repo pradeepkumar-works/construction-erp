@@ -8,7 +8,7 @@ import type { BillSortField, BillStage, RaBillDto } from '@erp/shared';
 import { BILL_STAGES, BILL_STAGE_LABELS, LIST_SORT_FIELDS, canPrepareBill } from '@erp/shared';
 import { useNewIntent } from '@/lib/new-intent';
 import { useAuth } from '@/lib/auth';
-import { useBills } from '@/lib/queries';
+import { useBills, LIST_START } from '@/lib/queries';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { BILL_EXPORT } from '@/lib/exportColumns';
 import { formatDate, formatINR } from '@/lib/format';
@@ -85,8 +85,9 @@ export function BillList({ projectId: fixedProject, openId: initialOpen }: { pro
     list: 'bills',
     type: 'BILL',
     keys: KEYS,
-    sortBy: 'billDate',
-    sortOrder: 'desc',
+    // Where the sidebar's hover fetched it ahead from (LIST_START).
+    sortBy: LIST_START['/bills'].sortBy,
+    sortOrder: LIST_START['/bills'].sortOrder,
     sortFields: LIST_SORT_FIELDS.bills,
     fixedProject,
     columns: (sortOrderFor) => billColumns({ showProject: !fixedProject, onOpen: setOpenId, sortOrderFor }),

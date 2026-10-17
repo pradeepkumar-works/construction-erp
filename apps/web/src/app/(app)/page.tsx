@@ -28,7 +28,7 @@ import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { ProjectStatusTag, ProjectTypeTag } from '@/components/common/StatusTag';
 import { useAuth } from '@/lib/auth';
 import { BRAND } from '@/lib/brand';
-import { GettingStartedCard } from '@/components/dashboard/GettingStartedCard';
+import { GettingStartedCard, useGettingStarted } from '@/components/dashboard/GettingStartedCard';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { MyWorkPanel } from '@/components/home/MyWorkPanel';
 import { KpiTile, kpiColumns, trendOf } from '@/components/home/KpiTile';
@@ -43,7 +43,7 @@ const CostByHeadChart = dynamic(() => import('@/components/home/charts').then((m
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const { data, isLoading, error, refetch } = useCompanyDashboard();
+  const { data, isPending, error, refetch } = useCompanyDashboard();
   const companyWide = !!user && isCompanyWide(user.roleKey);
   const approver = !!user && mayApprove(user);
 
@@ -99,6 +99,11 @@ export default function DashboardPage() {
   const myWork = useMyWork();
   const trends = useHomeTrends();
   const t = trends.data;
+  const gettingStarted = useGettingStarted();
+  // The page draws once everything above the charts is known (item 83): the setup checklist, My work, the KPI tiles (some
+  // need the trends) and the chart row. Drawing each as it arrived pushed what was already on screen down (CLS 0.22).
+  // The four requests go out together, so this waits for the slowest, not their sum; a failed one does not hold it up.
+  const ready = !isPending && !myWork.isPending && !trends.isPending && gettingStarted.settled;
   const screens = Grid.useBreakpoint();
   // Kpi has no hooks, so it is called as a function: the row needs to know how many tiles the role can see.
   const tiles = data ? layout.kpis.map((k) => [k, Kpi({ k, data, trends: t, approver })] as const).filter(([, node]) => node) : [];
@@ -115,11 +120,11 @@ export default function DashboardPage() {
             : `Site progress and approvals on your ${data ? `${data.totalProjects} ` : ''}project${data?.totalProjects === 1 ? '' : 's'}`
         }
       />
-      <GettingStartedCard />
-      <MyWorkPanel data={myWork.data} loading={myWork.isLoading} order={layout.myWork} />
-      {isLoading && <PageSkeleton shape="home" header={false} />}
+      {!ready && !error && <PageSkeleton shape="home" header={false} />}
       {error && <QueryError error={error} onRetry={() => refetch()} />}
-      {data && (
+      {ready && <GettingStartedCard state={gettingStarted} />}
+      {ready && <MyWorkPanel data={myWork.data} loading={false} order={layout.myWork} />}
+      {ready && data && (
         <>
           <Row gutter={[16, 16]}>
             {tiles.map(([k, node]) => (

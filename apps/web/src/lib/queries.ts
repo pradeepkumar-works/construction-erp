@@ -1,6 +1,6 @@
 'use client';
 
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
 import type {
   DocReadKind,
   DocReadResultDto,
@@ -190,7 +190,7 @@ import type {
   WorkPermitStatus,
   WorkPermitType,
 } from '@erp/shared';
-import { MAX_PAGE_SIZE, SEARCH_MIN_LENGTH } from '@erp/shared';
+import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, SEARCH_MIN_LENGTH } from '@erp/shared';
 import { api } from './api';
 
 export interface RoleDto {
@@ -315,6 +315,104 @@ export interface MeasurementFilters extends ListFilters {
 export const clean = (f?: object) =>
   Object.fromEntries(Object.entries(f ?? {}).filter(([, v]) => v !== undefined && v !== null && v !== ''));
 
+/* ---------- records and lists by their page, so a hover can fetch them ahead ---------- */
+
+/** Each record page's query: the route its links use, the API path, and the key its hook below reads. */
+const RECORD_QUERIES = {
+  '/progress': { key: (id: string) => ['progress', 'detail', id], path: '/progress' },
+  '/dpr': { key: (id: string) => ['dpr', 'detail', id], path: '/dpr' },
+  '/material-requests': { key: (id: string) => ['material-requests', 'detail', id], path: '/material-requests' },
+  '/purchase-orders': { key: (id: string) => ['purchase-orders', 'detail', id], path: '/purchase-orders' },
+  '/bills': { key: (id: string) => ['bills', 'detail', id], path: '/ra-bills' },
+  '/machinery': { key: (id: string) => ['machinery', 'logs', 'detail', id], path: '/machinery-logs' },
+  '/expenses': { key: (id: string) => ['expenses', 'detail', id], path: '/expenses' },
+  '/measurements': { key: (id: string) => ['measurements', 'detail', id], path: '/measurements' },
+  '/vendor-bills': { key: (id: string) => ['vendor-bills', 'detail', id], path: '/vendor-bills' },
+  '/work-orders': { key: (id: string) => ['work-orders', 'detail', id], path: '/work-orders' },
+  '/subcontract-bills': { key: (id: string) => ['subcontract-bills', 'detail', id], path: '/subcontract-bills' },
+  '/inspections': { key: (id: string) => ['inspections', 'detail', id], path: '/inspections' },
+  '/projects': { key: (id: string) => ['projects', id], path: '/projects' },
+} satisfies Record<string, { key: (id: string) => QueryKey; path: string }>;
+type RecordRoute = keyof typeof RECORD_QUERIES;
+
+const recordQuery = <T>(route: RecordRoute, id: string | undefined) => ({
+  queryKey: RECORD_QUERIES[route].key(id ?? ''),
+  queryFn: async () => (await api.get<T>(`${RECORD_QUERIES[route].path}/${id}`)).data,
+});
+
+/** The query behind a link to a record's page (`/dpr/<id>`, `/projects/<id>?tab=boq`); null for any other link. */
+export function recordQueryFor(href: string) {
+  const m = href.match(/^(\/[a-z-]+)\/([0-9a-f-]{8,})(?:[?#].*)?$/i);
+  if (!m || !(m[1] in RECORD_QUERIES)) return null;
+  return recordQuery<unknown>(m[1] as RecordRoute, m[2]);
+}
+
+/**
+ * Where each list the sidebar links to starts: page 1 in its default sort. Its page reads the sort from here, so the
+ * query a hover fetches ahead is the very one the list then asks for (`key` + the cleaned filters, as its hook builds it).
+ */
+export const LIST_START = {
+  '/dpr': { key: ['dpr'], path: '/dpr', sortBy: 'date', sortOrder: 'desc', projectScoped: true },
+  '/progress': { key: ['progress'], path: '/progress', sortBy: 'date', sortOrder: 'desc', projectScoped: true },
+  '/material-requests': { key: ['material-requests'], path: '/material-requests', sortBy: 'createdAt', sortOrder: 'desc', projectScoped: true },
+  '/bills': { key: ['bills'], path: '/ra-bills', sortBy: 'billDate', sortOrder: 'desc', projectScoped: true },
+  '/expenses': { key: ['expenses'], path: '/expenses', sortBy: 'date', sortOrder: 'desc', projectScoped: true },
+  '/measurements': { key: ['measurements'], path: '/measurements', sortBy: 'date', sortOrder: 'desc', projectScoped: true },
+  '/vendor-bills': { key: ['vendor-bills'], path: '/vendor-bills', sortBy: 'invoiceDate', sortOrder: 'desc', projectScoped: true },
+  '/work-orders': { key: ['work-orders'], path: '/work-orders', sortBy: 'woDate', sortOrder: 'desc', projectScoped: true },
+  '/subcontract-bills': { key: ['subcontract-bills'], path: '/subcontract-bills', sortBy: 'billDate', sortOrder: 'desc', projectScoped: true },
+  '/projects': { key: ['projects', 'page'], path: '/projects', sortBy: 'status', sortOrder: 'asc', projectScoped: false },
+} as const satisfies Record<string, { key: readonly string[]; path: string; sortBy: string; sortOrder: SortOrder; projectScoped: boolean }>;
+
+/** The first-page query of the list a sidebar link opens (with the header's project where the list follows it). */
+export function listStartQueryFor(href: string, projectId?: string): { queryKey: QueryKey; queryFn: () => Promise<unknown> } | null {
+  if (href === '/approvals') return { queryKey: ['approvals', 'pending'], queryFn: async () => (await api.get<PendingApprovalDto[]>('/approvals/pending')).data };
+  if (href === '/') return { queryKey: ['dashboard', 'my-work'], queryFn: async () => (await api.get<MyWorkDto>('/dashboard/my-work')).data };
+  const start = LIST_START[href as keyof typeof LIST_START];
+  if (!start) return null;
+  const params = clean({ page: 1, pageSize: DEFAULT_PAGE_SIZE, sortBy: start.sortBy, sortOrder: start.sortOrder, projectId: start.projectScoped ? projectId : undefined });
+  return { queryKey: [...start.key, params], queryFn: async () => (await api.get<Paginated<unknown>>(start.path, { params })).data };
+}
+
+/* ---------- search-as-you-type pickers ---------- */
+
+/** Rows a picker shows at a time: the first page as it opens, then what matches the words typed. */
+export const PICKER_PAGE_SIZE = 20;
+
+/** The masters a picker can search, each with its list endpoint (which understands `q`) and whether it has `GET /:id`. */
+export const PICKER_SOURCES = {
+  users: { key: ['users'], path: '/users', sortBy: 'fullName', byId: false },
+  vendors: { key: ['vendors'], path: '/vendors', sortBy: 'name', byId: true },
+  clients: { key: ['clients'], path: '/clients', sortBy: 'name', byId: true },
+  equipment: { key: ['machinery', 'equipment'], path: '/equipment', sortBy: 'code', byId: true },
+  items: { key: ['stock', 'items'], path: '/stock/items', sortBy: 'name', byId: false },
+} as const;
+export type PickerSource = keyof typeof PICKER_SOURCES;
+
+/** One page of a master for a picker; under the master's key, so creating or editing one refreshes it. */
+export const usePickerPage = <T>(source: PickerSource, q: string, params: object | undefined, enabled: boolean) => {
+  const s = PICKER_SOURCES[source];
+  const query = clean({ ...params, q: q.trim() || undefined, pageSize: PICKER_PAGE_SIZE, sortBy: s.sortBy });
+  return useQuery({
+    queryKey: [...s.key, 'pick', query],
+    queryFn: async () => (await api.get<Paginated<T>>(s.path, { params: query })).data,
+    enabled,
+    placeholderData: keepPreviousData,
+    staleTime: 60_000,
+  });
+};
+
+/** A picker's current value when it is not on the page shown (only for masters with `GET /:id`). */
+export const usePickerRecord = <T>(source: PickerSource, id: string | undefined, enabled: boolean) => {
+  const s = PICKER_SOURCES[source];
+  return useQuery({
+    queryKey: [...s.key, 'pick-one', id],
+    queryFn: async () => (await api.get<T>(`${s.path}/${id}`)).data,
+    enabled: enabled && !!id && s.byId,
+    staleTime: 5 * 60_000,
+  });
+};
+
 /* ---------- queries ---------- */
 
 /** The home page's My work: only the cards the caller's role has. */
@@ -337,12 +435,17 @@ export const useProjectDashboard = (id: string | undefined) =>
     enabled: !!id,
   });
 
-/** Every visible project (one large page) for dropdowns and pickers. */
+/**
+ * Every visible project (one large page) for the header's switcher, the shell and project dropdowns. It stays one cached
+ * query on purpose: the shell needs the whole set anyway, every picker shares it, and an organisation has tens of
+ * projects, not thousands. Kept fresh for five minutes; saving a project invalidates it.
+ */
 export const useProjects = (enabled = true) =>
   useQuery({
     queryKey: ['projects', 'all'],
     queryFn: async () => (await api.get<Paginated<ProjectSummary>>('/projects', { params: { pageSize: MAX_PAGE_SIZE, sortBy: 'code' } })).data.items,
     enabled,
+    staleTime: 5 * 60_000,
   });
 
 /** One server-side page of the projects list (search, filters, sort). */
@@ -353,16 +456,7 @@ export const useProjectsPage = (filters: ProjectFilters) =>
     placeholderData: keepPreviousData,
   });
 
-export const useProject = (id: string | undefined) =>
-  useQuery({
-    queryKey: ['projects', id],
-    queryFn: async () => (await api.get<ProjectDetail>(`/projects/${id}`)).data,
-    enabled: !!id,
-  });
-
-/** Every user of the organisation (one large page) for pickers. */
-export const useUsers = () =>
-  useQuery({ queryKey: ['users', 'all'], queryFn: async () => (await api.get<Paginated<UserSummary>>('/users', { params: { pageSize: MAX_PAGE_SIZE } })).data.items });
+export const useProject = (id: string | undefined) => useQuery({ ...recordQuery<ProjectDetail>('/projects', id), enabled: !!id });
 
 export const useUsersPage = (filters: UserFilters) =>
   useQuery({
@@ -403,12 +497,7 @@ export const useProgressList = (filters?: ListFilters) =>
     placeholderData: keepPreviousData,
   });
 
-export const useProgressEntry = (id: string | undefined) =>
-  useQuery({
-    queryKey: ['progress', 'detail', id],
-    queryFn: async () => (await api.get<ProgressEntryDto>(`/progress/${id}`)).data,
-    enabled: !!id,
-  });
+export const useProgressEntry = (id: string | undefined) => useQuery({ ...recordQuery<ProgressEntryDto>('/progress', id), enabled: !!id });
 
 export const useDprList = (filters?: ListFilters, enabled = true) =>
   useQuery({
@@ -418,12 +507,7 @@ export const useDprList = (filters?: ListFilters, enabled = true) =>
     enabled,
   });
 
-export const useDpr = (id: string | undefined) =>
-  useQuery({
-    queryKey: ['dpr', 'detail', id],
-    queryFn: async () => (await api.get<DailyReportDto>(`/dpr/${id}`)).data,
-    enabled: !!id,
-  });
+export const useDpr = (id: string | undefined) => useQuery({ ...recordQuery<DailyReportDto>('/dpr', id), enabled: !!id });
 
 export const useMaterialRequests = (filters?: ListFilters) =>
   useQuery({
@@ -432,12 +516,7 @@ export const useMaterialRequests = (filters?: ListFilters) =>
     placeholderData: keepPreviousData,
   });
 
-export const useMaterialRequest = (id: string | undefined) =>
-  useQuery({
-    queryKey: ['material-requests', 'detail', id],
-    queryFn: async () => (await api.get<MaterialRequestDto>(`/material-requests/${id}`)).data,
-    enabled: !!id,
-  });
+export const useMaterialRequest = (id: string | undefined) => useQuery({ ...recordQuery<MaterialRequestDto>('/material-requests', id), enabled: !!id });
 
 export const useAttendanceList = (filters?: AttendanceFilters) =>
   useQuery({
@@ -542,12 +621,7 @@ export const useMachineryLogs = (filters?: MachineryFilters) =>
     placeholderData: keepPreviousData,
   });
 
-export const useMachineryLog = (id: string | undefined) =>
-  useQuery({
-    queryKey: ['machinery', 'logs', 'detail', id],
-    queryFn: async () => (await api.get<MachineryLogDto>(`/machinery-logs/${id}`)).data,
-    enabled: !!id,
-  });
+export const useMachineryLog = (id: string | undefined) => useQuery({ ...recordQuery<MachineryLogDto>('/machinery', id), enabled: !!id });
 
 export const useEquipment = (filters?: EquipmentFilters, enabled = true) =>
   useQuery({
@@ -572,12 +646,7 @@ export const useExpenseSummary = (filters?: ExpenseFilters) =>
     placeholderData: keepPreviousData,
   });
 
-export const useExpense = (id: string | undefined) =>
-  useQuery({
-    queryKey: ['expenses', 'detail', id],
-    queryFn: async () => (await api.get<ExpenseDto>(`/expenses/${id}`)).data,
-    enabled: !!id,
-  });
+export const useExpense = (id: string | undefined) => useQuery({ ...recordQuery<ExpenseDto>('/expenses', id), enabled: !!id });
 
 export const useAuthOptions = () =>
   useQuery({ queryKey: ['auth-options'], queryFn: async () => (await api.get<AuthOptionsDto>('/auth/options')).data, staleTime: 5 * 60_000 });
@@ -634,12 +703,7 @@ export const useMeasurements = (filters?: MeasurementFilters) =>
     placeholderData: keepPreviousData,
   });
 
-export const useMeasurement = (id: string | undefined) =>
-  useQuery({
-    queryKey: ['measurements', 'detail', id],
-    queryFn: async () => (await api.get<MeasurementSheetDto>(`/measurements/${id}`)).data,
-    enabled: !!id,
-  });
+export const useMeasurement = (id: string | undefined) => useQuery({ ...recordQuery<MeasurementSheetDto>('/measurements', id), enabled: !!id });
 
 export interface InspectionFilters extends ListFilters {
   from?: string;
@@ -653,12 +717,7 @@ export const useInspections = (filters?: InspectionFilters) =>
     placeholderData: keepPreviousData,
   });
 
-export const useInspection = (id: string | undefined) =>
-  useQuery({
-    queryKey: ['inspections', 'detail', id],
-    queryFn: async () => (await api.get<InspectionDto>(`/inspections/${id}`)).data,
-    enabled: !!id,
-  });
+export const useInspection = (id: string | undefined) => useQuery({ ...recordQuery<InspectionDto>('/inspections', id), enabled: !!id });
 
 export const useChecklists = () =>
   useQuery({
@@ -951,12 +1010,7 @@ export const useBills = (filters: BillFilters, enabled = true) =>
     enabled,
   });
 
-export const useBill = (id: string | undefined) =>
-  useQuery({
-    queryKey: ['bills', 'detail', id],
-    queryFn: async () => (await api.get<RaBillDto>(`/ra-bills/${id}`)).data,
-    enabled: !!id,
-  });
+export const useBill = (id: string | undefined) => useQuery({ ...recordQuery<RaBillDto>('/bills', id), enabled: !!id });
 
 export interface ReceiptFilters extends PageParams {
   projectId?: string;
@@ -979,6 +1033,7 @@ export const useReceivables = (projectId?: string, enabled = true) =>
     queryKey: ['receivables', projectId ?? 'all'],
     queryFn: async () => (await api.get<ReceivablesDto>('/receivables', { params: clean({ projectId }) })).data,
     enabled,
+    placeholderData: keepPreviousData,
   });
 
 export interface VendorPaymentFilters extends PageParams {
@@ -1003,6 +1058,7 @@ export const usePayables = (filters: { projectId?: string; vendorId?: string } =
     queryKey: ['payables', clean(filters)],
     queryFn: async () => (await api.get<PayablesDto>('/payables', { params: clean(filters) })).data,
     enabled,
+    placeholderData: keepPreviousData,
   });
 
 export const useTallySettings = (enabled = true) =>
@@ -1051,15 +1107,6 @@ export const useVendorsPage = (filters: VendorFilters) =>
     placeholderData: keepPreviousData,
   });
 
-/** Active vendors for pickers. */
-export const useVendors = (enabled = true) =>
-  useQuery({
-    queryKey: ['vendors', 'all'],
-    queryFn: async () => (await api.get<Paginated<VendorDto>>('/vendors', { params: { pageSize: MAX_PAGE_SIZE } })).data.items,
-    enabled,
-    staleTime: 60_000,
-  });
-
 export const useUnlistedVendors = (enabled = true) =>
   useQuery({
     queryKey: ['vendors', 'unlisted'],
@@ -1086,12 +1133,7 @@ export const usePurchaseOrders = (filters: PurchaseOrderFilters, enabled = true)
     enabled,
   });
 
-export const usePurchaseOrder = (id: string | undefined) =>
-  useQuery({
-    queryKey: ['purchase-orders', 'detail', id],
-    queryFn: async () => (await api.get<PurchaseOrderDto>(`/purchase-orders/${id}`)).data,
-    enabled: !!id,
-  });
+export const usePurchaseOrder = (id: string | undefined) => useQuery({ ...recordQuery<PurchaseOrderDto>('/purchase-orders', id), enabled: !!id });
 
 /** Approved, open purchase orders with something still to receive (GRN form). */
 export const useReceivableOrders = (projectId: string | undefined, enabled = true) =>
@@ -1131,12 +1173,7 @@ export const useVendorBills = (filters: VendorBillFilters, enabled = true) =>
     enabled,
   });
 
-export const useVendorBill = (id: string | undefined) =>
-  useQuery({
-    queryKey: ['vendor-bills', 'detail', id],
-    queryFn: async () => (await api.get<VendorBillDto>(`/vendor-bills/${id}`)).data,
-    enabled: !!id,
-  });
+export const useVendorBill = (id: string | undefined) => useQuery({ ...recordQuery<VendorBillDto>('/vendor-bills', id), enabled: !!id });
 
 export interface WorkOrderFilters extends PageParams {
   projectId?: string;
@@ -1154,12 +1191,7 @@ export const useWorkOrders = (filters: WorkOrderFilters, enabled = true) =>
     enabled,
   });
 
-export const useWorkOrder = (id: string | undefined) =>
-  useQuery({
-    queryKey: ['work-orders', 'detail', id],
-    queryFn: async () => (await api.get<WorkOrderDto>(`/work-orders/${id}`)).data,
-    enabled: !!id,
-  });
+export const useWorkOrder = (id: string | undefined) => useQuery({ ...recordQuery<WorkOrderDto>('/work-orders', id), enabled: !!id });
 
 /** Client rate against subcontract rate per BOQ item of a project (billing roles). */
 export const useWorkOrderMargin = (projectId: string | undefined, enabled = true) =>
@@ -1184,19 +1216,7 @@ export const useSubcontractBills = (filters: SubcontractBillFilters, enabled = t
     enabled,
   });
 
-export const useSubcontractBill = (id: string | undefined) =>
-  useQuery({
-    queryKey: ['subcontract-bills', 'detail', id],
-    queryFn: async () => (await api.get<SubcontractBillDto>(`/subcontract-bills/${id}`)).data,
-    enabled: !!id,
-  });
-
-export const useClients = (enabled = true) =>
-  useQuery({
-    queryKey: ['clients', 'all'],
-    queryFn: async () => (await api.get<Paginated<ClientDto>>('/clients', { params: { pageSize: MAX_PAGE_SIZE } })).data.items,
-    enabled,
-  });
+export const useSubcontractBill = (id: string | undefined) => useQuery({ ...recordQuery<SubcontractBillDto>('/subcontract-bills', id), enabled: !!id });
 
 export const useContract = (projectId: string | undefined, enabled = true) =>
   useQuery({
