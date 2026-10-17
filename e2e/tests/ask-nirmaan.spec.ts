@@ -13,7 +13,8 @@ test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
 type Status = { enabled: boolean; reason: string | null; questionsLeftToday: number; canManage: boolean };
 
-const panel = (page: Page) => page.getByRole('dialog', { name: 'Ask Nirmaan' });
+// On a wide screen the panel is a column beside the page (a complementary landmark), not a dialog over it.
+const panel = (page: Page) => page.getByRole('complementary', { name: 'Ask Nirmaan' });
 
 async function ask(page: Page, question: string) {
   const box = panel(page).getByPlaceholder('Ask about projects, bills, orders, stock…');

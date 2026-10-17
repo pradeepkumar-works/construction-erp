@@ -14,6 +14,7 @@ export const WHATS_NEW: WhatsNew[] = [
     title: 'Ask Nirmaan',
     points: [
       'Ask a question about your company\'s records in plain words, in English or Hindi: the Ask button in the header, Ctrl J, or type a question in Ctrl K.',
+      'The answer panel opens beside the page, which narrows to make room, so you can keep working with the answer in view.',
       'Answers come only from what your role can already see, with a link to every record used. A figure the assistant could not find in those records is flagged for you to check.',
       'It only reads: it cannot create, approve, pay or delete anything. Admins switch it on or off and set a monthly allowance under Admin > Ask Nirmaan.',
     ],
