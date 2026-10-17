@@ -382,6 +382,30 @@ preview deployments run them against the production database before a PR is merg
     someone signs in on a browser, and again from the account menu (Take the tour). The repo carries the antd MCP
     server and llms.txt references for working on the web app.
 
+## AI – Ask Nirmaan and what follows
+
+Rules for every AI item: the AI reads only what the asking user can see (through `AiToolsService`), never submits,
+approves, pays or deletes anything, cites the records it used, is off per company until an admin switches it on (on
+for DEMO), and stays inside a monthly allowance per company and a daily question limit per person. The model for each
+job is Pradeep's call once item 67's evaluation (`apps/api/scripts/ai-eval.ts`) has run on the preview.
+
+67. **Ask Nirmaan (web) and the AI foundation** (L). Built: the panel (header button, Ctrl J, Ctrl K), streaming answers
+    with linked records and flagged figures, history, ratings, Admin > Ask Nirmaan, the role-by-role access check in CI,
+    and the golden and red-team eval. Goes live once `ANTHROPIC_API_KEY` is set on the API and the eval has run.
+68. **Explain and summarise** (M): "Summarise this week" on a project; "Explain" beside a cost head over budget, a late
+    activity and an RA bill.
+69. **Bill checks before approval** (M): rule checks on vendor, subcontract and RA bills and expenses (rate above PO,
+    quantity above GRN, duplicate invoice, GST, BOQ overrun) with a one-line summary.
+70. **Read invoices and challans** (L): a photo or PDF fills a vendor bill or GRN draft, each field showing its source.
+71. **Drafts from a sentence** (M): "Raise an MR for 200 bags of OPC 53 for Tower B by Friday" opens the filled form.
+72. **Ask and dictate on the phone, in Hindi** (L): an Ask tab and a dictated DPR in the site app.
+73. **Early warnings** (M): a watch list of forecast slips, cash gaps, late vendors, stock-outs and missing DPRs.
+74. **Morning brief and weekly narrative** (S).
+75. **Ask the contract** (M): answers with quotes and page numbers from contracts, specifications and letters.
+76. **Site photo checks** (M): captions and advisory flags on site photos.
+77. **AI usage, controls and pricing** (S): usage by feature, an admin conversation log, roles allowed, and the AI
+    allowance in Plans and billing.
+
 ## Definition of done for every item
 Prisma migration, API endpoints with Swagger, shared types, web screen, mobile screen where site
 staff use it, seed data updated, `pnpm typecheck` + `next build` + mobile `tsc` clean, smoke test

@@ -99,7 +99,7 @@ const WATER_BOQ: BoqSeed[] = [
 ];
 
 async function main() {
-  const org = await prisma.organization.upsert({ where: { code: 'DEMO' }, update: {}, create: { code: 'DEMO', name: 'Demo Infra Projects Pvt Ltd' } });
+  const org = await prisma.organization.upsert({ where: { code: 'DEMO' }, update: { aiEnabled: true }, create: { code: 'DEMO', name: 'Demo Infra Projects Pvt Ltd', aiEnabled: true } });
 
   const roles = new Map<string, string>();
   for (const [key, name] of ROLES) {

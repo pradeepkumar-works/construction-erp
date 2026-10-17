@@ -12,7 +12,7 @@ test('the tour starts on first sign-in and can be taken again from Help', async 
   const tour = page.locator('.product-tour');
   await expect(tour.getByText(/^Welcome to Nirmaan, /)).toBeVisible();
   await tour.getByRole('button', { name: 'Next' }).click();
-  for (const title of ['Your pages', 'Waiting for you', 'Work on one project', 'Jump anywhere', 'Start something new', 'Notifications', 'Help']) {
+  for (const title of ['Your pages', 'Waiting for you', 'Work on one project', 'Jump anywhere', 'Ask Nirmaan', 'Start something new', 'Notifications', 'Help']) {
     await expect(tour.locator('.ant-tour-title')).toHaveText(title);
     await tour.getByRole('button', { name: 'Next' }).click();
   }

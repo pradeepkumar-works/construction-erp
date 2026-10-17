@@ -1,0 +1,346 @@
+import { ForbiddenException, HttpException, HttpStatus, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import type Anthropic from '@anthropic-ai/sdk';
+import { Prisma } from '@prisma/client';
+import type { AiAskInput, AiCitationDto, AiMessageDto, AiSettingsDto, AiStatusDto, AiStreamEvent, AiThreadDetailDto, AiThreadDto } from '@erp/shared';
+import { ROLE_LABELS, canManageAi, canUseAi } from '@erp/shared';
+import type { RequestUser } from '../common/current-user';
+import { AuditService } from '../common/audit.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { ProjectsService } from '../projects/projects.service';
+import { todayIn } from '../notifications/time';
+import { aiConfig, aiConfigured, costPaise, type AiUsage } from './ai.config';
+import { AiToolsService } from './ai-tools.service';
+import { collectHrefs, collectNumbers, filterLinks, unverifiedFigures } from './grounding';
+import { AnthropicModel, FakeModel, type AiModel, type ModelMessage } from './model';
+import { SYSTEM_PROMPT, contextNote } from './prompt';
+import type { UpdateAiSettingsDto } from './ai.dto';
+
+/** Model calls in one answer at most (each may run several tools). */
+const MAX_ROUNDS = 8;
+/** Earlier questions and answers of the thread sent with a new question. */
+const HISTORY = 12;
+/** The longest one answer may take. */
+const ANSWER_TIMEOUT_MS = 150_000;
+
+/** Record pages and the tool kind that opens them, so "this bill" on /bills/<id> means that bill. */
+const RECORD_PATHS: Record<string, string> = {
+  dpr: 'dpr',
+  progress: 'progress',
+  'material-requests': 'material_request',
+  'purchase-orders': 'purchase_order',
+  'vendor-bills': 'vendor_bill',
+  'work-orders': 'work_order',
+  'subcontract-bills': 'subcontract_bill',
+  bills: 'ra_bill',
+  measurements: 'measurement',
+  expenses: 'expense',
+  inspections: 'inspection',
+  machinery: 'machinery_log',
+};
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** What the panel says while a tool runs. */
+const TOOL_STATUS: Record<string, string> = {
+  search_records: 'Searching records',
+  list_projects: 'Looking at projects',
+  project_overview: 'Reading the project',
+  company_overview: 'Reading company figures',
+  my_work: 'Checking what needs you',
+  approvals_waiting: 'Checking approvals',
+  monthly_trends: 'Reading monthly trends',
+  list_records: 'Reading records',
+  get_record: 'Opening a record',
+  schedule: 'Reading the schedule',
+  project_cost: 'Reading project cost',
+  project_budget: 'Reading the budget',
+  cash_flow: 'Reading the cash-flow forecast',
+  stock_on_hand: 'Checking stock',
+  delivery_status: 'Checking deliveries',
+  risks_summary: 'Reading delays and risks',
+  ld_exposure: 'Reading LD exposure',
+  expenses_summary: 'Reading site expenses',
+  receivables_summary: 'Reading receivables',
+  payables_summary: 'Reading payables',
+  quality_summary: 'Reading quality',
+  safety_summary: 'Reading safety',
+  machinery_summary: 'Reading machinery',
+};
+
+type Emit = (e: AiStreamEvent) => void;
+
+const istStart = (day: string) => new Date(`${day}T00:00:00.000+05:30`);
+const rupees = (paise: number) => Math.round(paise) / 100;
+
+/**
+ * Ask Nirmaan (AI roadmap item 67): a question goes to the model with read-only tools; the answer streams back, its
+ * links are kept only where a tool returned them, its figures are checked against the tool results, and the
+ * conversation, tokens and estimated cost are stored per company.
+ */
+@Injectable()
+export class AiService {
+  private readonly log = new Logger(AiService.name);
+
+  constructor(
+    private prisma: PrismaService,
+    private tools: AiToolsService,
+    private projects: ProjectsService,
+    private audit: AuditService,
+  ) {}
+
+  private model(): AiModel {
+    const c = aiConfig();
+    return c.provider === 'fake' ? new FakeModel() : new AnthropicModel(c.apiKey!, c.model, c.effort);
+  }
+
+  /** Whether this company has the assistant on, for the signed-in user (AuthUser.ai). */
+  async enabledFor(organizationId: string): Promise<boolean> {
+    if (!aiConfigured()) return false;
+    const org = await this.prisma.organization.findUnique({ where: { id: organizationId }, select: { aiEnabled: true } });
+    return !!org?.aiEnabled;
+  }
+
+  async status(user: RequestUser): Promise<AiStatusDto> {
+    const canManage = canManageAi(user.roleKey) && !user.support;
+    // Guests use the portal, and staff looking at a company for support do not spend its allowance.
+    if (!canUseAi(user.roleKey) || user.support) return { enabled: false, reason: 'COMPANY_OFF', questionsLeftToday: 0, canManage: false };
+    if (!aiConfigured()) return { enabled: false, reason: 'NOT_CONFIGURED', questionsLeftToday: 0, canManage };
+    const [org, spent, askedToday] = await Promise.all([
+      this.prisma.organization.findUnique({ where: { id: user.organizationId }, select: { aiEnabled: true, aiMonthlyCapInr: true } }),
+      this.spentThisMonth(user.organizationId),
+      this.askedToday(user),
+    ]);
+    const left = Math.max(0, aiConfig().dailyQuestions - askedToday);
+    if (!org?.aiEnabled) return { enabled: false, reason: 'COMPANY_OFF', questionsLeftToday: left, canManage };
+    if (rupees(spent) >= this.capOf(org.aiMonthlyCapInr)) return { enabled: false, reason: 'CAP_REACHED', questionsLeftToday: left, canManage };
+    return { enabled: true, reason: null, questionsLeftToday: left, canManage };
+  }
+
+  /** Refuses before the stream starts, so the panel gets a plain error it can show. */
+  async assertCanAsk(user: RequestUser) {
+    if (!canUseAi(user.roleKey)) throw new ForbiddenException('Ask Nirmaan is for company staff');
+    if (user.support) throw new ForbiddenException('Ask Nirmaan is not available in a support session');
+    const s = await this.status(user);
+    if (s.reason === 'NOT_CONFIGURED') throw new HttpException('Ask Nirmaan is not set up on this server yet', HttpStatus.SERVICE_UNAVAILABLE);
+    if (s.reason === 'COMPANY_OFF') throw new ForbiddenException('Ask Nirmaan is switched off for your company. An admin can switch it on in Admin > Ask Nirmaan.');
+    if (s.reason === 'CAP_REACHED') throw new HttpException("Your company has used this month's Ask Nirmaan allowance. An admin can raise it in Admin > Ask Nirmaan.", HttpStatus.TOO_MANY_REQUESTS);
+    if (s.questionsLeftToday <= 0) throw new HttpException("You have asked today's maximum number of questions. Ask again tomorrow.", HttpStatus.TOO_MANY_REQUESTS);
+  }
+
+  async threads(user: RequestUser): Promise<AiThreadDto[]> {
+    const rows = await this.prisma.aiThread.findMany({ where: { organizationId: user.organizationId, userId: user.id }, orderBy: { updatedAt: 'desc' }, take: 30 });
+    return rows.map((t) => ({ id: t.id, title: t.title, updatedAt: t.updatedAt.toISOString() }));
+  }
+
+  async thread(user: RequestUser, id: string): Promise<AiThreadDetailDto> {
+    const t = await this.prisma.aiThread.findFirst({ where: { id, organizationId: user.organizationId, userId: user.id }, include: { messages: { orderBy: { createdAt: 'asc' } } } });
+    if (!t) throw new NotFoundException('Conversation not found');
+    return { id: t.id, title: t.title, updatedAt: t.updatedAt.toISOString(), messages: t.messages.map(toDto) };
+  }
+
+  async deleteThread(user: RequestUser, id: string) {
+    const { count } = await this.prisma.aiThread.deleteMany({ where: { id, organizationId: user.organizationId, userId: user.id } });
+    if (!count) throw new NotFoundException('Conversation not found');
+    return { ok: true };
+  }
+
+  async feedback(user: RequestUser, messageId: string, value: 1 | -1 | null) {
+    const m = await this.prisma.aiMessage.findFirst({ where: { id: messageId, organizationId: user.organizationId, role: 'assistant', thread: { userId: user.id } } });
+    if (!m) throw new NotFoundException('Answer not found');
+    await this.prisma.aiMessage.update({ where: { id: m.id }, data: { feedback: value } });
+    return { ok: true };
+  }
+
+  async settings(user: RequestUser): Promise<AiSettingsDto> {
+    if (!canManageAi(user.roleKey)) throw new ForbiddenException('Only admins manage Ask Nirmaan');
+    const monthStart = istStart(`${todayIn().slice(0, 7)}-01`);
+    const [org, spent, questions, byUser] = await Promise.all([
+      this.prisma.organization.findUniqueOrThrow({ where: { id: user.organizationId }, select: { aiEnabled: true, aiMonthlyCapInr: true } }),
+      this.spentThisMonth(user.organizationId),
+      this.prisma.aiMessage.count({ where: { organizationId: user.organizationId, role: 'user', createdAt: { gte: monthStart } } }),
+      this.usageByUser(user.organizationId, monthStart),
+    ]);
+    return {
+      enabled: org.aiEnabled,
+      monthlyCapInr: org.aiMonthlyCapInr,
+      effectiveCapInr: this.capOf(org.aiMonthlyCapInr),
+      spentThisMonthInr: rupees(spent),
+      questionsThisMonth: questions,
+      byUser,
+      configured: aiConfigured(),
+      model: aiConfig().provider === 'fake' ? 'test stand-in' : aiConfig().model,
+    };
+  }
+
+  async updateSettings(user: RequestUser, dto: UpdateAiSettingsDto): Promise<AiSettingsDto> {
+    if (!canManageAi(user.roleKey) || user.support) throw new ForbiddenException('Only admins manage Ask Nirmaan');
+    const data: Prisma.OrganizationUpdateInput = {};
+    if (dto.enabled !== undefined) data.aiEnabled = dto.enabled;
+    if (dto.monthlyCapInr !== undefined) data.aiMonthlyCapInr = dto.monthlyCapInr;
+    await this.prisma.organization.update({ where: { id: user.organizationId }, data });
+    const note = [dto.enabled !== undefined ? `Ask Nirmaan ${dto.enabled ? 'on' : 'off'}` : null, dto.monthlyCapInr !== undefined ? `monthly allowance ${dto.monthlyCapInr === null ? 'back to the default' : `₹${dto.monthlyCapInr}`}` : null];
+    await this.audit.log(user, 'COMPANY', user.organizationId, 'AI_SETTINGS', note.filter(Boolean).join(', '));
+    return this.settings(user);
+  }
+
+  /**
+   * Answers one question, streaming events through `emit`. Never throws once streaming has started: a failure is an
+   * `error` event, and whatever the model was paid for is still recorded.
+   */
+  async ask(user: RequestUser, input: AiAskInput, emit: Emit, signal: AbortSignal): Promise<void> {
+    const started = Date.now();
+    const question = input.question.trim();
+    const thread = input.threadId
+      ? await this.prisma.aiThread.findFirst({ where: { id: input.threadId, organizationId: user.organizationId, userId: user.id } })
+      : await this.prisma.aiThread.create({ data: { organizationId: user.organizationId, userId: user.id, title: titleOf(question) } });
+    if (!thread) throw new NotFoundException('Conversation not found');
+    emit({ type: 'thread', threadId: thread.id, title: thread.title });
+
+    const earlier = await this.prisma.aiMessage.findMany({ where: { threadId: thread.id, text: { not: '' } }, orderBy: { createdAt: 'desc' }, take: HISTORY });
+    await this.prisma.aiMessage.create({ data: { organizationId: user.organizationId, threadId: thread.id, role: 'user', text: question, page: (input.page ?? undefined) as Prisma.InputJsonValue | undefined } });
+
+    const messages: ModelMessage[] = historyMessages(earlier.reverse());
+    messages.push({ role: 'user', content: [{ type: 'text', text: await this.context(user, input) }, { type: 'text', text: question }] });
+
+    const model = this.model();
+    const tools = this.tools.definitions(user);
+    const usage: AiUsage = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 };
+    const results: unknown[] = [];
+    const calls: { name: string; input: unknown; error?: string }[] = [];
+    const parts: string[] = [];
+    let servedBy = model.name;
+    let failure: string | null = null;
+    const timeout = AbortSignal.timeout(ANSWER_TIMEOUT_MS);
+    const both = AbortSignal.any([signal, timeout]);
+
+    try {
+      for (let round = 0; round < MAX_ROUNDS; round++) {
+        let first = true;
+        const turn = await model.turn({ system: SYSTEM_PROMPT, tools, messages }, (t) => {
+          // A new round's text starts a new paragraph after what was already shown.
+          if (first && parts.length) emit({ type: 'text', text: '\n\n' });
+          first = false;
+          emit({ type: 'text', text: t });
+        }, both);
+        servedBy = turn.model;
+        usage.input += turn.usage.input;
+        usage.output += turn.usage.output;
+        usage.cacheRead += turn.usage.cacheRead;
+        usage.cacheWrite += turn.usage.cacheWrite;
+        const text = turn.content.filter((b): b is Anthropic.Beta.BetaTextBlock => b.type === 'text').map((b) => b.text).join('');
+        if (text.trim()) parts.push(text);
+        if (turn.stopReason === 'refusal') {
+          failure = parts.length ? null : "I can't help with that one. Try asking about your projects, bills, stock or schedule.";
+          break;
+        }
+        if (turn.stopReason !== 'tool_use') break;
+        messages.push({ role: 'assistant', content: turn.content as Anthropic.Beta.BetaContentBlockParam[] });
+        const uses = turn.content.filter((b): b is Anthropic.Beta.BetaToolUseBlock => b.type === 'tool_use');
+        for (const name of new Set(uses.map((u) => u.name))) emit({ type: 'status', text: TOOL_STATUS[name] ?? 'Reading records' });
+        const ran = await Promise.all(uses.map(async (u) => ({ use: u, out: await this.tools.run(user, u.name, u.input) })));
+        const blocks: Anthropic.Beta.BetaToolResultBlockParam[] = ran.map(({ use, out }) => {
+          calls.push({ name: use.name, input: use.input, ...(out.isError ? { error: out.text } : {}) });
+          if (!out.isError) results.push(out.result);
+          return { type: 'tool_result', tool_use_id: use.id, content: out.text, ...(out.isError ? { is_error: true } : {}) };
+        });
+        messages.push({ role: 'user', content: blocks });
+        if (round === MAX_ROUNDS - 1) failure = 'This needed more lookups than I can do in one answer. Ask about one project or a shorter period.';
+      }
+    } catch (e) {
+      if (signal.aborted) failure = 'Stopped.';
+      else if (timeout.aborted) failure = 'That took too long. Ask about one project or a shorter period.';
+      else {
+        this.log.warn(`ask: ${(e as Error).message}`);
+        failure = 'Sorry, I could not finish this answer. Please try again.';
+      }
+    }
+
+    const draft = [parts.join('\n\n'), failure].filter(Boolean).join('\n\n');
+    const { text, citations } = filterLinks(draft, collectHrefs(results));
+    const unverified = failure && !parts.length ? [] : unverifiedFigures(text, [...collectNumbers(results), ...collectNumbers(question)]);
+    const saved = await this.prisma.aiMessage.create({
+      data: {
+        organizationId: user.organizationId,
+        threadId: thread.id,
+        role: 'assistant',
+        text,
+        citations: citations as unknown as Prisma.InputJsonValue,
+        unverified: unverified as unknown as Prisma.InputJsonValue,
+        toolCalls: calls as unknown as Prisma.InputJsonValue,
+        model: servedBy,
+        inputTokens: usage.input,
+        outputTokens: usage.output,
+        cacheReadTokens: usage.cacheRead,
+        cacheWriteTokens: usage.cacheWrite,
+        costPaise: servedBy === 'fake' ? 0 : costPaise(servedBy, usage),
+        durationMs: Date.now() - started,
+      },
+    });
+    await this.prisma.aiThread.update({ where: { id: thread.id }, data: { updatedAt: new Date() } });
+    if (failure && !parts.length) emit({ type: 'error', message: failure });
+    emit({ type: 'done', message: toDto(saved) });
+  }
+
+  /** Who is asking, today's date, the page and the picked project, as the question's first block. */
+  private async context(user: RequestUser, input: AiAskInput): Promise<string> {
+    const path = typeof input.page?.path === 'string' ? input.page.path.slice(0, 200) : null;
+    const [, first, second] = path?.split('?')[0].split('/') ?? [];
+    const record = first && RECORD_PATHS[first] && second && UUID.test(second) ? { kind: RECORD_PATHS[first], id: second } : null;
+    const projectId = first === 'projects' && second && UUID.test(second) ? second : input.page?.projectId && UUID.test(input.page.projectId) ? input.page.projectId : null;
+    const project = projectId ? await this.projects.get(user, projectId).catch(() => null) : null;
+    return contextNote({ fullName: user.fullName, roleName: ROLE_LABELS[user.roleKey], today: todayIn(), page: path, record, projectId: project?.id, projectName: project?.name });
+  }
+
+  private capOf(own: number | null): number {
+    return own ?? aiConfig().defaultMonthlyCapInr;
+  }
+
+  private async spentThisMonth(organizationId: string): Promise<number> {
+    const agg = await this.prisma.aiMessage.aggregate({ where: { organizationId, createdAt: { gte: istStart(`${todayIn().slice(0, 7)}-01`) } }, _sum: { costPaise: true } });
+    return agg._sum.costPaise ?? 0;
+  }
+
+  private askedToday(user: RequestUser): Promise<number> {
+    return this.prisma.aiMessage.count({ where: { organizationId: user.organizationId, role: 'user', thread: { userId: user.id }, createdAt: { gte: istStart(todayIn()) } } });
+  }
+
+  private async usageByUser(organizationId: string, since: Date): Promise<AiSettingsDto['byUser']> {
+    const rows = await this.prisma.aiMessage.findMany({ where: { organizationId, createdAt: { gte: since } }, select: { role: true, costPaise: true, thread: { select: { userId: true, user: { select: { fullName: true } } } } } });
+    const by = new Map<string, AiSettingsDto['byUser'][number]>();
+    for (const r of rows) {
+      const u = by.get(r.thread.userId) ?? { userId: r.thread.userId, fullName: r.thread.user.fullName, questions: 0, spentInr: 0 };
+      if (r.role === 'user') u.questions += 1;
+      u.spentInr += r.costPaise / 100;
+      by.set(u.userId, u);
+    }
+    return [...by.values()].map((u) => ({ ...u, spentInr: Math.round(u.spentInr * 100) / 100 })).sort((a, b) => b.questions - a.questions).slice(0, 20);
+  }
+}
+
+const titleOf = (q: string) => (q.length > 80 ? `${q.slice(0, 77).trimEnd()}…` : q);
+
+/** Earlier turns as plain text: questions and finished answers only, oldest first, starting with a question. */
+function historyMessages(rows: { role: string; text: string }[]): ModelMessage[] {
+  const out: ModelMessage[] = [];
+  for (const r of rows) {
+    const role = r.role === 'assistant' ? 'assistant' : 'user';
+    if (!out.length && role === 'assistant') continue;
+    const prev = out[out.length - 1];
+    if (prev && prev.role === role) prev.content = `${prev.content as string}\n\n${r.text}`;
+    else out.push({ role, content: r.text });
+  }
+  // The new question follows, so the history must end with an answer.
+  if (out.length && out[out.length - 1].role === 'user') out.pop();
+  return out;
+}
+
+function toDto(m: { id: string; role: string; text: string; citations: Prisma.JsonValue; unverified: Prisma.JsonValue; feedback: number | null; createdAt: Date }): AiMessageDto {
+  return {
+    id: m.id,
+    role: m.role === 'assistant' ? 'assistant' : 'user',
+    text: m.text,
+    citations: (Array.isArray(m.citations) ? m.citations : []) as unknown as AiCitationDto[],
+    unverified: (Array.isArray(m.unverified) ? m.unverified : []) as string[],
+    feedback: m.feedback === 1 || m.feedback === -1 ? m.feedback : null,
+    createdAt: m.createdAt.toISOString(),
+  };
+}

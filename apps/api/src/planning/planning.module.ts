@@ -4,5 +4,5 @@ import { PlanningService } from './planning.service';
 import { ScheduleController } from './schedule.controller';
 import { ScheduleService } from './schedule.service';
 
-@Module({ controllers: [PlanningController, ScheduleController], providers: [PlanningService, ScheduleService], exports: [PlanningService] })
+@Module({ controllers: [PlanningController, ScheduleController], providers: [PlanningService, ScheduleService], exports: [PlanningService, ScheduleService] })
 export class PlanningModule {}

@@ -2,6 +2,9 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
+  AiSettingsDto,
+  AiStatusDto,
+  AiThreadDto,
   SavedViewDto,
   SearchResultDto,
   SavedViewList,
@@ -1776,5 +1779,36 @@ export function useSearch(q: string, enabled: boolean) {
     enabled: enabled && term.length >= SEARCH_MIN_LENGTH,
     placeholderData: keepPreviousData,
     staleTime: 30_000,
+  });
+}
+
+// ---- Ask Nirmaan (AI item 67) ----
+
+export const useAiStatus = (enabled: boolean) =>
+  useQuery({ queryKey: ['ai', 'status'], queryFn: async () => (await api.get<AiStatusDto>('/ai/status')).data, enabled, staleTime: 60_000 });
+
+export const useAiThreads = (enabled: boolean) => useQuery({ queryKey: ['ai', 'threads'], queryFn: async () => (await api.get<AiThreadDto[]>('/ai/threads')).data, enabled });
+
+export function useDeleteAiThread() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => (await api.delete(`/ai/threads/${id}`)).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['ai', 'threads'] }),
+  });
+}
+
+export const useAiFeedback = () =>
+  useMutation({ mutationFn: async ({ id, value }: { id: string; value: 1 | -1 | null }) => (await api.post(`/ai/messages/${id}/feedback`, { value })).data });
+
+export const useAiSettings = (enabled: boolean) => useQuery({ queryKey: ['ai', 'settings'], queryFn: async () => (await api.get<AiSettingsDto>('/ai/settings')).data, enabled });
+
+export function useUpdateAiSettings() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (d: { enabled?: boolean; monthlyCapInr?: number | null }) => (await api.patch<AiSettingsDto>('/ai/settings', d)).data,
+    onSuccess: (d) => {
+      qc.setQueryData(['ai', 'settings'], d);
+      void qc.invalidateQueries({ queryKey: ['ai', 'status'] });
+    },
   });
 }

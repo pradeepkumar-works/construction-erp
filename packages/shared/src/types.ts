@@ -53,6 +53,8 @@ export interface AuthUser {
   support?: { staffName: string; expiresAt: string };
   /** The company's subscription, only when billing is switched on for this server */
   billing?: BillingStateDto;
+  /** Ask Nirmaan is switched on for the company and set up on this server (AI roadmap item 67) */
+  ai?: boolean;
 }
 
 /** Where a company stands with its subscription. READ_ONLY: trial over and nothing paid, so it can read but not write. */

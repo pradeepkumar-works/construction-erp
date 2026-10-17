@@ -1,13 +1,14 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
-import { BILLING_YEAR_CHARGED_MONTHS, PRODUCT_NAME, ROLE_KEYS, ROLE_LABELS, orgCodeFrom, type AuthOptionsDto, type AuthUser, type LoginResponse, type PasswordTokenInfoDto, type RoleKey } from '@erp/shared';
+import { BILLING_YEAR_CHARGED_MONTHS, PRODUCT_NAME, canUseAi, ROLE_KEYS, ROLE_LABELS, orgCodeFrom, type AuthOptionsDto, type AuthUser, type LoginResponse, type PasswordTokenInfoDto, type RoleKey } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ApprovalRightsService } from '../common/approval-rights.service';
 import { isPlatformAdmin } from '../common/platform-admin';
 import { billingConfig, billingState } from '../common/billing';
 import { todayIn } from '../notifications/time';
+import { aiConfigured } from '../ai/ai.config';
 import { PasswordLinksService } from './password-links.service';
 import { SignupDto } from './auth.dto';
 
@@ -115,7 +116,7 @@ export class AuthService {
     return { ok: true };
   }
 
-  private async toAuthUser(user: { id: string; email: string; fullName: string; phone: string | null; organizationId: string; role: { key: string; name: string }; organization: BillingOrg & { name: string } }): Promise<AuthUser> {
+  private async toAuthUser(user: { id: string; email: string; fullName: string; phone: string | null; organizationId: string; role: { key: string; name: string }; organization: BillingOrg & { name: string; aiEnabled: boolean } }): Promise<AuthUser> {
     return {
       id: user.id,
       email: user.email,
@@ -128,6 +129,7 @@ export class AuthService {
       approvalRights: await this.rights.rightsFor(user.organizationId, user.role.key as RoleKey),
       ...(isPlatformAdmin(user.email) ? { platformAdmin: true } : {}),
       ...billingOf(user.organization),
+      ...(user.organization.aiEnabled && aiConfigured() && canUseAi(user.role.key as RoleKey) ? { ai: true } : {}),
     };
   }
 }

@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-10-ask-nirmaan',
+    date: '2026-10-17',
+    title: 'Ask Nirmaan',
+    points: [
+      'Ask a question about your company\'s records in plain words, in English or Hindi: the Ask button in the header, Ctrl J, or type a question in Ctrl K.',
+      'Answers come only from what your role can already see, with a link to every record used. A figure the assistant could not find in those records is flagged for you to check.',
+      'It only reads: it cannot create, approve, pay or delete anything. Admins switch it on or off and set a monthly allowance under Admin > Ask Nirmaan.',
+    ],
+  },
+  {
     id: '2026-10-phone-app',
     date: '2026-10-17',
     title: 'The phone app, polished',

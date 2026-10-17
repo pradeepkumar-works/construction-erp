@@ -1072,6 +1072,39 @@ export; the client portal and the phone app show the amount.
 - **Daily job** (with the digest cron): companies without `trialEndsAt` start their trial; admins are emailed once 7
   days and 1 day before the trial or paid period ends, and when it has (`billingRemindedFor`).
 
+## Ask Nirmaan (AI assistant)
+
+- **What it is.** A chat panel on every web page (header button, Ctrl J, or a question typed in Ctrl K) that answers
+  questions about the company's own records. `POST /api/ai/ask` streams server-sent events (`thread`, `status`, `text`,
+  `done`, `error`; `AiStreamEvent` in `packages/shared/src/ai.ts`); the web reads them with `fetch` in `lib/ai.ts`.
+  The panel is `components/ai/AskPanel.tsx` (Ant Design X `Bubble`, `Sender`, `Welcome`, `Prompts`; answers rendered
+  with `@ant-design/x-markdown`), loaded with `dynamic()` the first time it opens.
+- **Tools, not data dumps.** The model only sees what its read-only tools return (`ai/ai-tools.service.ts`). Each tool
+  calls the same service as the matching list or page with the asking user (the `SearchService` pattern), so project
+  access, role checks and row-level security apply unchanged; tools a role may not use are left out of its definitions
+  and refuse if called anyway. `list_records` and `get_record` cover 20 record kinds, each with its page link. A new kind
+  is one entry in `kinds`; a new summary is one entry in `tools`. Results are compacted (files, empty values and long
+  text dropped, lists cut at 40) and capped at 24,000 characters.
+- **Access check.** `src/scripts/ai-access-check.ts` runs every tool as every demo user and fails if a result names a
+  project that user cannot open or a refused tool answers. CI runs it after the seed.
+- **Grounding.** After the answer, `ai/grounding.ts` keeps Markdown links only to hrefs the tools returned (others become
+  plain words; they are the answer's citations) and lists figures that match no number in the tool results or the
+  question (₹, lakh, crore and per cent scales; row counts count) as `unverified`, which the panel flags.
+- **Model.** `ai/model.ts`: Claude through `@anthropic-ai/sdk` (beta Messages, streaming, adaptive thinking, `effort`,
+  prompt caching on the fixed instructions and tools, server-side fallback). `AI_PROVIDER=fake` swaps in a scripted
+  stand-in (one tool picked from the question's words, results listed as links) for CI and local work. The instructions
+  are `ai/prompt.ts`; who is asking, today and the page (`/projects/<id>` or a record page, plus the header's project)
+  go with each question.
+- **Storage and limits.** `AiThread` and `AiMessage` (tenant tables with RLS). Each answer stores tokens, model, time and
+  an estimated cost in paise at list prices (`ai.config.ts`). `Organization.aiEnabled` (off by default, on for DEMO) and
+  `aiMonthlyCapInr` (null = `AI_DEFAULT_MONTHLY_CAP_INR`) are set by admins at `/ai-settings` (audited `AI_SETTINGS`);
+  each user may ask `AI_DAILY_QUESTIONS` a day. Refusals (off, cap, limit, guests, support sessions) come back as plain
+  HTTP errors before the stream starts. History sent to the model is the last 12 questions and answers as text.
+- **Never acts.** No tool writes. The instructions treat record text as data, not instructions.
+- **Evaluation.** `apps/api/scripts/ai-eval.ts` asks a deployed API a golden set (expected facts read live from the API)
+  and a red-team set as the demo accounts, and prints the share of checks passed, cost per answer and latency. It
+  calls the real model, so it is run by hand.
+
 ## Money and quantities
 
 Decimal columns everywhere (`Decimal(18,2)` for money, `Decimal(18,3)` for quantities) and strings

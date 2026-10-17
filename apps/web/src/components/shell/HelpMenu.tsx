@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Badge, Button, Drawer, Dropdown, Flex, Modal, Timeline, Typography, theme } from 'antd';
 import type { MenuProps } from 'antd';
 import { CompassOutlined, CustomerServiceOutlined, GiftOutlined, QuestionCircleOutlined, ThunderboltOutlined } from '@ant-design/icons';
+import { PRODUCT_NAME } from '@erp/shared';
 import { formatDate } from '@/lib/format';
 import { readPref, writePref } from '@/lib/prefs';
 import { searchShortcut } from './Sidebar';
@@ -33,7 +34,7 @@ function Keys({ keys }: { keys: string[] }) {
 }
 
 /** The header's Help: keyboard shortcuts (also on ?), what's new, contact support and the tour. */
-export function HelpMenu({ onTour, withSearch }: { onTour: () => void; withSearch: boolean }) {
+export function HelpMenu({ onTour, withSearch, withAsk = false }: { onTour: () => void; withSearch: boolean; withAsk?: boolean }) {
   const { token } = theme.useToken();
   const [keysOpen, setKeysOpen] = useState(false);
   const [newsOpen, setNewsOpen] = useState(false);
@@ -68,6 +69,7 @@ export function HelpMenu({ onTour, withSearch }: { onTour: () => void; withSearc
 
   const shortcuts: [string, string[]][] = [
     ...(withSearch ? ([['Search pages and projects', searchShortcut().startsWith('⌘') ? ['⌘', 'K'] : ['Ctrl', 'K']]] as [string, string[]][]) : []),
+    ...(withAsk ? ([[`Ask ${PRODUCT_NAME} a question`, searchShortcut().startsWith('⌘') ? ['⌘', 'J'] : ['Ctrl', 'J']]] as [string, string[]][]) : []),
     ['Skip the menu to the page (first Tab on a page)', ['Tab', 'Enter']],
     ['Fold the sidebar to icons and back', ['[']],
     ['Show these shortcuts', ['?']],

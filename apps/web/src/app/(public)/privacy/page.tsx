@@ -68,6 +68,11 @@ export default function PrivacyPage() {
         <ul>
           <li>The database runs on Neon (PostgreSQL) in Singapore, and the application on Vercel. Connections are encrypted.</li>
           <li>Email goes through the configured email provider; push notifications through Expo; WhatsApp and SMS, when a user switches them on, through the messaging provider the company&apos;s plan uses.</li>
+          <li>
+            When a company switches on Ask {name}, the AI assistant, a question and the records needed to answer it are sent to Anthropic&apos;s Claude API to
+            write the answer. Anthropic does not use this data to train its models. The assistant only reads what the asking person can already see, and the
+            conversation is kept in {name} for that person, who can delete it.
+          </li>
           <li>These providers handle the data only to deliver the service.</li>
         </ul>
 

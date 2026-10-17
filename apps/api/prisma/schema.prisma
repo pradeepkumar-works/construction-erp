@@ -362,6 +362,11 @@ model Organization {
   /// The last billing reminder sent, so each is sent once (e.g. "TRIAL:2026-11-13:7")
   billingRemindedFor String?
 
+  /// Ask Nirmaan (AI item 67): switched on by an admin; off until then
+  aiEnabled       Boolean @default(false)
+  /// Rupees per calendar month for the company's AI use; null = the server's AI_DEFAULT_MONTHLY_CAP_INR
+  aiMonthlyCapInr Int?
+
   users             User[]
   roles             Role[]
   projects          Project[]
@@ -433,6 +438,8 @@ model Organization {
   drivers           Driver[]
   pvComponents      PriceVariationComponent[]
   savedViews        SavedView[]
+  aiThreads         AiThread[]
+  aiMessages        AiMessage[]
 }
 
 model Role {
@@ -488,6 +495,7 @@ model User {
   updatedAt      DateTime     @updatedAt
 
   savedViews           SavedView[]
+  aiThreads            AiThread[]
   memberships          ProjectMember[]
   managedProjects      Project[]          @relation("ProjectManager")
   baselinedProjects    Project[]          @relation("ProjectBaselineBy")
@@ -3427,4 +3435,53 @@ model SavedView {
 
   @@index([organizationId, list])
   @@index([userId])
+}
+
+/// An Ask Nirmaan conversation (AI item 67), kept for the user and the company's admins.
+model AiThread {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title          String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  messages       AiMessage[]
+
+  @@index([organizationId, userId, updatedAt])
+}
+
+/// One question or answer. Answers carry the records they cited, what the model was paid for, and the user's rating.
+model AiMessage {
+  id               String       @id @default(uuid())
+  organizationId   String
+  organization     Organization @relation(fields: [organizationId], references: [id])
+  threadId         String
+  thread           AiThread     @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  /// user | assistant
+  role             String
+  text             String
+  /// The page the question was asked from (AiPageContext)
+  page             Json?
+  /// AiCitationDto[]
+  citations        Json?
+  /// Figures in the answer that did not match the records read
+  unverified       Json?
+  /// Tools called, in order, with their inputs (for admins and the evaluation)
+  toolCalls        Json?
+  model            String?
+  inputTokens      Int          @default(0)
+  outputTokens     Int          @default(0)
+  cacheReadTokens  Int          @default(0)
+  cacheWriteTokens Int          @default(0)
+  /// Estimated cost in paise at list prices
+  costPaise        Int          @default(0)
+  durationMs       Int?
+  /// 1 helpful, -1 not helpful
+  feedback         Int?
+  createdAt        DateTime     @default(now())
+
+  @@index([organizationId, createdAt])
+  @@index([threadId, createdAt])
 }

@@ -48,6 +48,7 @@ import {
   WalletOutlined,
 } from '@ant-design/icons';
 import type { AuthUser } from '@erp/shared';
+import { SparkleIcon } from '@/components/ai/SparkleIcon';
 import {
   PRODUCT_NAME,
   approvalRightsOf,
@@ -75,6 +76,7 @@ import {
   canManageImprest,
   canApprove,
   canViewCompliance,
+  canManageAi,
   isGuest,
 } from '@erp/shared';
 
@@ -212,6 +214,7 @@ export function navFor(user: AuthUser): NavSection[] {
           { href: '/approval-rules', label: 'Approval Rules', icon: SafetyCertificateOutlined, keywords: 'matrix limits' },
         ),
         ...when(canManageCompanyData(role), { href: '/company-data', label: 'Data & Privacy', icon: DatabaseOutlined, keywords: 'export delete' }),
+        ...when(canManageAi(role), { href: '/ai-settings', label: `Ask ${PRODUCT_NAME}`, icon: SparkleIcon, keywords: 'ai assistant chat allowance' }),
         ...when(!!user.billing && canManageBilling(role), { href: '/billing', label: 'Billing', icon: CreditCardOutlined, keywords: 'subscription plan invoice' }),
         ...when(!!user.platformAdmin, { href: '/platform', label: `${PRODUCT_NAME} console`, icon: CloudServerOutlined, keywords: 'platform companies support' }),
       ],
