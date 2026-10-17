@@ -49,7 +49,8 @@
     "typecheck": "tsc --noEmit",
     "export:android": "expo export --platform android",
     "export:web": "expo export --platform web",
-    "i18n:check": "node scripts/check-i18n.mjs"
+    "i18n:check": "node scripts/check-i18n.mjs",
+    "eas-build-post-install": "pnpm --filter @erp/shared build"
   },
   "private": true
 }
