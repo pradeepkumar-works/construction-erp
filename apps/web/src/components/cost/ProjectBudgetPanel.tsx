@@ -13,6 +13,7 @@ import { HEAD_COLORS } from './CostBar';
 import { BudgetFormModal } from './BudgetFormModal';
 import { CashFlowPanel } from './CashFlowPanel';
 import { themeColor } from '@/lib/theme';
+import { AskButton } from '@/components/ai/AskButton';
 
 const RED = themeColor('colorErrorText');
 const GREEN = themeColor('colorSuccessText');
@@ -140,7 +141,29 @@ export function ProjectBudgetPanel({ projectId }: { projectId: string }) {
                     },
                   },
                   { title: 'Earned', dataIndex: 'earned', width: 140, align: 'right', render: money },
-                  { title: 'Variance', dataIndex: 'variance', width: 140, align: 'right', render: variance },
+                  {
+                    title: 'Variance',
+                    dataIndex: 'variance',
+                    width: 140,
+                    align: 'right',
+                    render: (v: string | null, r) => (
+                      <>
+                        {variance(v)}
+                        {v !== null && toNumber(v) < 0 ? (
+                          <div>
+                            <AskButton
+                              size="small"
+                              type="link"
+                              style={{ paddingInline: 0 }}
+                              label="Explain"
+                              aria-label={`Explain why ${COST_HEAD_LABELS[r.head]} is over budget`}
+                              question={`Why is ${COST_HEAD_LABELS[r.head].toLowerCase()} over budget on this project? Which purchase orders, bills and expenses drove it?`}
+                            />
+                          </div>
+                        ) : null}
+                      </>
+                    ),
+                  },
                   { title: 'Forecast', dataIndex: 'forecast', width: 140, align: 'right', render: money },
                 ]}
               />

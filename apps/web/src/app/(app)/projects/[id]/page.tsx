@@ -41,6 +41,7 @@ import { MrList } from '@/components/material/MrList';
 import { PurchaseOrderList } from '@/components/purchasing/PurchaseOrderList';
 import { SubcontractsPanel } from '@/components/subcontracts/SubcontractsPanel';
 import { HandoverPanel } from '@/components/handover/HandoverPanel';
+import { AskButton } from '@/components/ai/AskButton';
 
 const tabPref = (projectId: string) => `nirmaan.project.tab.${projectId}`;
 
@@ -150,6 +151,7 @@ function ProjectPage({ project }: { project: ProjectDetail }) {
               </Typography.Text>
               <Progress percent={project.physicalProgressPct} size="small" aria-label={`Physical progress ${project.physicalProgressPct}%`} />
             </div>
+            <AskButton question={`Summarise this week on ${project.code} ${project.name}.`} label="Summarise this week" title="Ask Nirmaan for this week on this project: work against plan, labour, machines, materials, bills, risks and decisions" />
             <Link href={`/reports?projectId=${project.id}`}>
               <Button icon={<FilePdfOutlined />}>Progress report</Button>
             </Link>

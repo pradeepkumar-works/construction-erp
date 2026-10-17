@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-10-ask-summaries',
+    date: '2026-10-17',
+    title: 'Ask Nirmaan summarises and explains',
+    points: [
+      'Summarise this week on a project page: work done against plan, DPRs, labour, machines, materials, bills, new risks and what waits for a decision, with a link to every record.',
+      'Explain beside a delayed activity, the Gantt\'s behind count or a cost head over budget asks why, from progress, delay entries, breakdowns, orders and bills.',
+      'What changed on an RA bill after the first compares it with the one before, item by item.',
+    ],
+  },
+  {
     id: '2026-10-ux-fixes',
     date: '2026-10-17',
     title: 'Small things, fixed',
