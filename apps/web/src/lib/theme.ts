@@ -113,7 +113,9 @@ export const approveTheme: ThemeConfig = {
 const tabularNums = { fontVariantNumeric: 'tabular-nums' } as const;
 
 /** Defaults for every instance of a component, passed to the root ConfigProvider with the theme. */
-export const componentConfig: Pick<ConfigProviderProps, 'table' | 'statistic'> = {
+export const componentConfig: Pick<ConfigProviderProps, 'table' | 'statistic' | 'form'> = {
+  // A field left empty says which one, so the error reads on its own (and in the form's summary).
+  form: { validateMessages: { required: '${label} is required', types: { email: 'Enter an email address, e.g. name@company.com', number: '${label} must be a number' } } },
   table: { styles: { title: tabularNums, section: tabularNums, footer: tabularNums, header: { cell: { whiteSpace: 'nowrap' } } } },
   statistic: { styles: { content: tabularNums } },
 };

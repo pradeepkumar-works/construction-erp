@@ -3,8 +3,13 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, App, Button, Drawer, Flex, Form, Grid, Modal, Typography, theme } from 'antd';
 import type { FormInstance } from 'antd';
+import { isAxiosError } from 'axios';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { formatDateTime } from '@/lib/format';
+import { setLeaveGuard } from '@/lib/leave-guard';
+import { useProjectScope } from '@/lib/project-scope';
+import { useProjects } from '@/lib/queries';
 import { clearDraft, draftStorageKey, readDraft, snapshot, writeDraft } from './drafts';
 
 export interface FormShellProps<T> {
@@ -36,6 +41,11 @@ export interface FormShellProps<T> {
   footerExtra?: React.ReactNode;
   /** Disables the submit button, e.g. while a required lookup loads */
   okDisabled?: boolean;
+  /**
+   * A new entry's empty Project field starts on the header's project, or the user's only project (default on). Turn it
+   * off where the project must be a deliberate choice.
+   */
+  projectDefault?: boolean;
   children: React.ReactNode;
 }
 
@@ -57,9 +67,31 @@ function problemsIn(root: HTMLElement | null): Problem[] {
     const line = item.getAttribute('data-line-label');
     const label = line ?? item.querySelector('.ant-form-item-label label')?.textContent?.trim() ?? 'A field';
     const message = line ? 'Fill in each column' : (item.querySelector('.ant-form-item-explain-error')?.textContent?.trim() ?? '');
-    out.push({ label, message: message === 'Required' ? 'Required' : message, el: item });
+    out.push({ label, message, el: item });
   });
   return out;
+}
+
+type NamePath = (string | number)[];
+
+/**
+ * The API's validation messages that name a field of this form ("rate must not be less than 0",
+ * "lines.0.quantity must be a number"), as errors to show on those fields (UX item 79). Others stay in the toast.
+ */
+function serverFieldErrors(err: unknown, fields: Record<string, unknown>): { name: NamePath; errors: string[] }[] {
+  if (!isAxiosError(err) || err.response?.status !== 400) return [];
+  const raw = (err.response.data as { message?: string | string[] } | undefined)?.message;
+  const messages = Array.isArray(raw) ? raw : raw ? [raw] : [];
+  const out = new Map<string, { name: NamePath; errors: string[] }>();
+  for (const m of messages) {
+    const hit = /^([a-z][A-Za-z0-9]*(?:\.[A-Za-z0-9]+)*)\s+(.+)$/.exec(String(m));
+    if (!hit || !(hit[1].split('.')[0] in fields)) continue;
+    const name = hit[1].split('.').map((p) => (/^\d+$/.test(p) ? Number(p) : p));
+    const text = hit[2].charAt(0).toUpperCase() + hit[2].slice(1);
+    const key = name.join('.');
+    out.set(key, { name, errors: [...(out.get(key)?.errors ?? []), text] });
+  }
+  return [...out.values()];
 }
 
 const focusIn = (el: HTMLElement) => {
@@ -75,10 +107,17 @@ const focusIn = (el: HTMLElement) => {
  * The form component keeps its own fields and defaults and passes `onSubmit` (usually `mutation.mutateAsync`) instead
  * of the Form's `onFinish`.
  */
-export function FormShell<T>({ open, onClose, title, form, okText, onSubmit, secondaryText, allValues, layout = 'drawer', width, draftKey, footerExtra, okDisabled, children }: FormShellProps<T>) {
+export function FormShell<T>({ open, onClose, title, form, okText, onSubmit, secondaryText, allValues, layout = 'drawer', width, draftKey, footerExtra, okDisabled, projectDefault = true, children }: FormShellProps<T>) {
   const { token } = theme.useToken();
-  const { modal } = App.useApp();
+  const { modal, message } = App.useApp();
   const { user } = useAuth();
+  const router = useRouter();
+  const [scopedProject] = useProjectScope();
+  const { data: projects } = useProjects(open && projectDefault);
+  const startProject = useRef<string | undefined>(undefined);
+  startProject.current = scopedProject ?? (projects?.length === 1 ? projects[0].id : undefined);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
   const screens = Grid.useBreakpoint();
   const bodyRef = useRef<HTMLDivElement>(null);
   const summaryRef = useRef<HTMLDivElement>(null);
@@ -102,6 +141,10 @@ export function FormShell<T>({ open, onClose, title, form, okText, onSubmit, sec
     setSavedAt(null);
     if (!open) return;
     const t = window.setTimeout(() => {
+      // A new entry's empty Project field starts on the project the user is working on.
+      if (projectDefault && startProject.current && 'projectId' in (form.getFieldsValue() as object) && !(form as FormInstance).getFieldValue('projectId')) {
+        form.setFieldsValue({ projectId: startProject.current } as never);
+      }
       const base = form.getFieldsValue(true);
       defaults.current = snapshot(base);
       const draft = storageKey ? readDraft<Partial<T>>(storageKey) : null;
@@ -112,7 +155,7 @@ export function FormShell<T>({ open, onClose, title, form, okText, onSubmit, sec
       opened.current = snapshot(form.getFieldsValue(true));
     }, 0);
     return () => window.clearTimeout(t);
-  }, [open, storageKey, form]);
+  }, [open, storageKey, form, projectDefault]);
 
   // Keep the draft as the user types.
   useEffect(() => {
@@ -147,6 +190,64 @@ export function FormShell<T>({ open, onClose, title, form, okText, onSubmit, sec
     return () => window.removeEventListener('beforeunload', warn);
   }, [open, storageKey, form]);
 
+  // Leaving for another page: a new entry's draft is kept, an edit asks before its changes are thrown away.
+  const leaveCheck = useRef<() => Promise<boolean>>(async () => true);
+  leaveCheck.current = async () => {
+    if (!changedSince(opened)) return true;
+    if (storageKey) {
+      message.info('What you typed is kept as a draft on this device');
+      return true;
+    }
+    return new Promise<boolean>((resolve) =>
+      modal.confirm({
+        title: 'Discard your changes?',
+        content: 'What you changed here will be lost.',
+        okText: 'Discard changes',
+        okButtonProps: { danger: true },
+        cancelText: 'Keep editing',
+        onOk: () => resolve(true),
+        onCancel: () => resolve(false),
+      }),
+    );
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    const off = setLeaveGuard(() => leaveCheck.current());
+    // A link anywhere on the page (the record a field points at, a menu behind a modal).
+    const onClick = (e: MouseEvent) => {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const a = (e.target as Element | null)?.closest?.('a[href]') as HTMLAnchorElement | null;
+      if (!a || (a.target && a.target !== '_self') || a.hasAttribute('download')) return;
+      const url = new URL(a.href, window.location.href);
+      if (url.origin !== window.location.origin || (url.pathname === window.location.pathname && url.search === window.location.search)) return;
+      if (!changedSince(opened)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      void leaveCheck.current().then((ok) => ok && router.push(`${url.pathname}${url.search}${url.hash}`));
+    };
+    document.addEventListener('click', onClick, true);
+    // The browser's Back closes the form (after the same check) rather than leaving the page under it: the form adds a
+    // history entry for itself, on the same address, and takes it back off when it closes.
+    const id = Math.random().toString(36).slice(2);
+    const ours = () => (window.history.state as { nirmaanForm?: string } | null)?.nirmaanForm === id;
+    const mark = () => window.history.pushState({ ...window.history.state, nirmaanForm: id }, '');
+    const routed = !!(window.history.state as { __NA?: boolean } | null)?.__NA;
+    if (routed) mark();
+    const onPop = () => {
+      if (ours()) return;
+      void leaveCheck.current().then((ok) => (ok ? closeRef.current() : mark()));
+    };
+    if (routed) window.addEventListener('popstate', onPop);
+    return () => {
+      off();
+      document.removeEventListener('click', onClick, true);
+      window.removeEventListener('popstate', onPop);
+      if (routed && ours()) window.history.back();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
   const submit = useCallback(async (secondary = false) => {
     if (submitting || okDisabled) return;
     let validated: T;
@@ -169,8 +270,18 @@ export function FormShell<T>({ open, onClose, title, form, okText, onSubmit, sec
       await onSubmit(allValues ? (form.getFieldsValue(true) as T) : validated, secondary);
       if (storageKey) clearDraft(storageKey);
       onClose();
-    } catch {
-      // The mutation said what went wrong; what was typed stays.
+    } catch (err) {
+      // The mutation said what went wrong; what was typed stays, and a message about a field shows on that field.
+      const fields = serverFieldErrors(err, form.getFieldsValue() as Record<string, unknown>);
+      if (fields.length) {
+        form.setFields(fields as never);
+        window.setTimeout(() => {
+          const found = problemsIn(bodyRef.current);
+          setProblems(found);
+          summaryRef.current?.scrollIntoView({ block: 'nearest' });
+          summaryRef.current?.focus({ preventScroll: true });
+        }, 120);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -257,20 +368,24 @@ export function FormShell<T>({ open, onClose, title, form, okText, onSubmit, sec
             title={problems.length === 1 ? 'One field needs attention' : `${problems.length} fields need attention`}
             description={
               <ul style={{ margin: 0, paddingInlineStart: token.paddingMD }}>
-                {problems.map((p, i) => (
-                  <li key={i}>
-                    <Typography.Link
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        focusIn(p.el);
-                      }}
-                    >
-                      {p.label}
-                    </Typography.Link>
-                    {p.message && p.message !== p.label ? <Typography.Text type="secondary">{` · ${p.message}`}</Typography.Text> : null}
-                  </li>
-                ))}
+                {problems.map((p, i) => {
+                  // "Project is required" says no more than the field's name and "Required".
+                  const whole = !!p.message && p.message.startsWith(p.label) && /is required$/.test(p.message);
+                  return (
+                    <li key={i}>
+                      <Typography.Link
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          focusIn(p.el);
+                        }}
+                      >
+                        {p.label}
+                      </Typography.Link>
+                      {p.message && p.message !== p.label ? <Typography.Text type="secondary">{` · ${whole ? 'Required' : p.message}`}</Typography.Text> : null}
+                    </li>
+                  );
+                })}
               </ul>
             }
           />

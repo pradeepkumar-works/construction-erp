@@ -1,11 +1,13 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { App, Form, Input, InputNumber, Modal } from 'antd';
+import { App, Form, Input } from 'antd';
 import type { BoqItemDto } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, errorMessage } from '@/lib/api';
 import { UnitInput } from '@/components/common/UnitInput';
+import { FormGrid, FormShell } from '@/components/form/FormShell';
+import { MoneyInput, QuantityInput } from '@/components/form/inputs';
 
 interface FormValues {
   itemNo: string;
@@ -55,37 +57,38 @@ export function BoqFormModal({ open, onClose, projectId, item }: { open: boolean
       message.success(isEdit ? 'BOQ item updated' : 'BOQ item added');
       qc.invalidateQueries({ queryKey: ['boq', projectId] });
       qc.invalidateQueries({ queryKey: ['dashboard'] });
-      onClose();
     },
     onError: (err) => message.error(errorMessage(err)),
   });
 
+  const unit = Form.useWatch('unit', form);
+
   return (
-    <Modal open={open} title={isEdit ? `Edit BOQ item ${item?.itemNo}` : 'Add BOQ item'} okText={isEdit ? 'Save' : 'Add item'} onCancel={onClose} onOk={() => form.submit()} confirmLoading={mutation.isPending} destroyOnHidden>
-      <Form form={form} layout="vertical" onFinish={(v) => mutation.mutate(v)} style={{ marginTop: 8 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '0 16px' }}>
-          <Form.Item name="itemNo" label="Item no." rules={[{ required: true, message: 'Required' }]}>
+    <FormShell open={open} onClose={onClose} form={form} layout="modal" title={isEdit ? `Edit BOQ item ${item?.itemNo}` : 'Add BOQ item'} okText={isEdit ? 'Save' : 'Add item'} onSubmit={(v) => mutation.mutateAsync(v)}>
+      <Form form={form} layout="vertical">
+        <FormGrid cols={2}>
+          <Form.Item name="itemNo" label="Item no." rules={[{ required: true, whitespace: true, message: 'Enter the item number, e.g. 1.01' }]}>
             <Input placeholder="1.01" />
           </Form.Item>
-          <Form.Item name="unit" label="Unit" rules={[{ required: true, message: 'Required' }]}>
+          <Form.Item name="unit" label="Unit" rules={[{ required: true, whitespace: true, message: 'Enter the unit, e.g. Cum' }]}>
             <UnitInput placeholder="Cum" />
           </Form.Item>
-        </div>
-        <Form.Item name="description" label="Description" rules={[{ required: true, message: 'Required' }]}>
+        </FormGrid>
+        <Form.Item name="description" label="Description" rules={[{ required: true, whitespace: true, message: 'Describe the item' }]}>
           <Input.TextArea rows={2} />
         </Form.Item>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0 16px' }}>
-          <Form.Item name="rate" label="Rate (₹)" rules={[{ required: true, message: 'Required' }]}>
-            <InputNumber style={{ width: '100%' }} min={0} />
+        <FormGrid cols={3}>
+          <Form.Item name="rate" label="Rate" rules={[{ required: true, message: 'Enter the rate' }]}>
+            <MoneyInput />
           </Form.Item>
-          <Form.Item name="originalQty" label="Original qty" rules={[{ required: true, message: 'Required' }]}>
-            <InputNumber style={{ width: '100%' }} min={0} />
+          <Form.Item name="originalQty" label="Original qty" rules={[{ required: true, message: 'Enter the quantity' }]}>
+            <QuantityInput unit={unit} />
           </Form.Item>
           <Form.Item name="revisedQty" label="Revised qty">
-            <InputNumber style={{ width: '100%' }} min={0} />
+            <QuantityInput unit={unit} />
           </Form.Item>
-        </div>
+        </FormGrid>
       </Form>
-    </Modal>
+    </FormShell>
   );
 }

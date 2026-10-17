@@ -404,11 +404,12 @@ export const useProgressEntry = (id: string | undefined) =>
     enabled: !!id,
   });
 
-export const useDprList = (filters?: ListFilters) =>
+export const useDprList = (filters?: ListFilters, enabled = true) =>
   useQuery({
     queryKey: ['dpr', clean(filters)],
     queryFn: async () => (await api.get<Paginated<DailyReportDto>>('/dpr', { params: clean(filters) })).data,
     placeholderData: keepPreviousData,
+    enabled,
   });
 
 export const useDpr = (id: string | undefined) =>
