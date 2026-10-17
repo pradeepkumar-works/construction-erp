@@ -56,17 +56,35 @@ async function handle<T>(res: Response): Promise<T> {
   return (text ? JSON.parse(text) : undefined) as T;
 }
 
+/**
+ * How long a request may take before it counts as no connection (UX item 80): on weak signal a request can hang for
+ * minutes, and a submit that times out goes to the outbox instead of spinning.
+ */
+const REQUEST_TIMEOUT_MS = 25_000;
+const UPLOAD_TIMEOUT_MS = 90_000;
+
+/** `fetch` that gives up after `ms`, failing like a dropped connection. */
+async function fetchWithTimeout(url: string, init: RequestInit, ms: number): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
   const headers: Record<string, string> = { Accept: 'application/json' };
   if (opts.token) headers.Authorization = `Bearer ${opts.token}`;
   if (opts.body !== undefined) headers['Content-Type'] = 'application/json';
   let res: Response;
   try {
-    res = await fetch(`${API_URL}${path}${buildQuery(opts.query)}`, {
-      method: opts.method ?? 'GET',
-      headers,
-      body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
-    });
+    res = await fetchWithTimeout(
+      `${API_URL}${path}${buildQuery(opts.query)}`,
+      { method: opts.method ?? 'GET', headers, body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined },
+      REQUEST_TIMEOUT_MS,
+    );
   } catch {
     throw new ApiError(0, 'Cannot reach Nirmaan. Check your signal and try again.');
   }
@@ -88,7 +106,7 @@ export async function uploadFile<T>(file: UploadFile, token: string | null): Pro
   if (token) headers.Authorization = `Bearer ${token}`;
   let res: Response;
   try {
-    res = await fetch(`${API_URL}/uploads`, { method: 'POST', headers, body: form });
+    res = await fetchWithTimeout(`${API_URL}/uploads`, { method: 'POST', headers, body: form }, UPLOAD_TIMEOUT_MS);
   } catch {
     throw new ApiError(0, 'Upload failed: cannot reach the server.');
   }

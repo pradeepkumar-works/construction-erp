@@ -1,11 +1,11 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import type { ProjectSummary } from '@erp/shared';
 import { useFetch } from '../api/hooks';
 import { fetchProjects } from '../api/lists';
-import { Button, Screen, type LocalPhoto, type SelectOption } from '../components';
+import { Button, Screen, confirmResult, type LocalPhoto, type SelectOption } from '../components';
 import type { OutboxPhoto } from '../offline/types';
 import { colors, spacing, typography } from '../theme';
 import { useT } from '../i18n/LanguageContext';
@@ -43,6 +43,8 @@ export function toOutboxPhotos(photos: LocalPhoto[]): OutboxPhoto[] {
 export function SubmitSuccess({ title, subtitle, detailHref, onAnother }: { title: string; subtitle: string; detailHref?: string; onAnother?: () => void }) {
   const router = useRouter();
   const t = useT();
+  // A vibration and a spoken line, so the result is clear without reading the screen (UX item 80).
+  useEffect(() => confirmResult(`${title}. ${subtitle}`), [title, subtitle]);
   return (
     <Screen style={styles.center} edges={['left', 'right', 'bottom']}>
       <View style={styles.iconWrap}>
@@ -73,6 +75,7 @@ export function QueuedSuccess({
 }) {
   const router = useRouter();
   const t = useT();
+  useEffect(() => confirmResult(`${title}. ${subtitle}`, 'info'), [title, subtitle]);
   return (
     <Screen style={styles.center} edges={['left', 'right', 'bottom']}>
       <View style={[styles.iconWrap, styles.iconQueued]}>

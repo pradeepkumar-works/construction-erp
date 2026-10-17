@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import type { ActivityDto, ChecklistTemplateDto, InspectionDto } from '@erp/shared';
@@ -9,6 +9,7 @@ import { attachmentIds, photosFailed, photosQueued, photosUploading, QueuedSucce
 import { attachmentsToPhotos, ReviewerNote } from '../../src/forms/edit';
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
 import { useT } from '../../src/i18n/LanguageContext';
+import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
 import { colors, spacing, typography } from '../../src/theme';
 import { formatDate, isIsoDate, today } from '../../src/utils/format';
 
@@ -18,7 +19,11 @@ export default function RequestInspectionScreen() {
   const editId = params.editId ?? null;
   const api = useApi();
   const t = useT();
-  const { online, enqueue } = useOffline();
+  const errorSummary = useErrorSummary();
+  const { online, enqueue, newId } = useOffline();
+  // The same id for a direct send and the outbox, so a send that timed out but arrived is never made twice
+  // (a new one for each entry made with Submit another).
+  const clientId = useRef(newId());
   const projects = useProjectOptions();
   const existing = useFetch<InspectionDto>((a) => a.get(`/inspections/${editId}`), [editId], { enabled: !!editId, refetchOnFocus: false });
 
@@ -74,6 +79,7 @@ export default function RequestInspectionScreen() {
     else if (photosFailed(photos)) e.photos = t('Remove or retry failed photos');
     else if (editId && photosQueued(photos)) e.photos = t('Photos need a connection to upload before requesting again');
     setErrors(e);
+    errorSummary.report(e);
     return Object.keys(e).length === 0;
   };
 
@@ -93,6 +99,7 @@ export default function RequestInspectionScreen() {
         const projectName = projects.options.find((o) => o.value === projectId)?.label ?? t('Project');
         setQueued(
           await enqueue({
+            id: clientId.current,
             type: 'INSPECTION',
             payload: { projectId, ...body },
             photos: toOutboxPhotos(photos),
@@ -106,7 +113,7 @@ export default function RequestInspectionScreen() {
         return;
       }
       try {
-        setCreated(await api.post<InspectionDto>('/inspections', { projectId, ...body, attachmentIds: attachmentIds(photos) }));
+        setCreated(await api.post<InspectionDto>('/inspections', { id: clientId.current, projectId, ...body, attachmentIds: attachmentIds(photos) }));
       } catch (e) {
         if (!isOfflineError(e)) throw e;
         await queueIt();
@@ -119,6 +126,7 @@ export default function RequestInspectionScreen() {
   };
 
   const reset = () => {
+    clientId.current = newId();
     setCreated(null);
     setQueued(null);
     setLocation('');
@@ -143,8 +151,9 @@ export default function RequestInspectionScreen() {
   if (editId && existing.error && !existing.data) return <ErrorState message={existing.error} onRetry={existing.reload} />;
 
   return (
-    <Screen keyboard>
+    <Screen keyboard scrollRef={errorSummary.scrollRef}>
       <Stack.Screen options={{ title: t(editId ? 'Edit Inspection Request' : 'Request Inspection') }} />
+      <ErrorSummary errors={errors} />
       <ErrorBanner message={submitError ?? projects.error ?? activities.error} />
       <ReviewerNote entry={existing.data} />
       <Card>

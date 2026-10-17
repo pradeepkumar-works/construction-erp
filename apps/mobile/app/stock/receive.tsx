@@ -8,6 +8,7 @@ import { errorMessage } from '../../src/api/client';
 import { Button, Card, DatePicker, EmptyState, ErrorBanner, Input, Loading, PhotoPicker, Screen, Select, type LocalPhoto } from '../../src/components';
 import { attachmentIds, photosFailed, photosQueued, photosUploading, SubmitSuccess, useProjectOptions } from '../../src/forms/common';
 import { useT } from '../../src/i18n/LanguageContext';
+import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
 import type { TranslateVars } from '../../src/i18n/translate';
 import { useOffline } from '../../src/offline';
 import { colors, spacing, typography } from '../../src/theme';
@@ -56,6 +57,7 @@ export default function ReceiveScreen() {
   const params = useLocalSearchParams<{ projectId?: string; materialRequestId?: string; purchaseOrderId?: string }>();
   const { user } = useAuth();
   const t = useT();
+  const errorSummary = useErrorSummary();
   const api = useApi();
   const { online } = useOffline();
   const projects = useProjectOptions();
@@ -92,20 +94,21 @@ export default function ReceiveScreen() {
     const e: Record<string, string> = {};
     if (!request) e.request = t('Choose the purchase order or material request');
     if (!isIsoDate(date)) e.date = t('Enter a valid date');
-    else if (date > today()) e.date = t('The date cannot be in the future');
+    else if (date > today()) e.date = t('Enter a date up to today');
     let any = false;
     for (const l of request?.lines ?? []) {
       const v = (qty[l.id] ?? '').trim();
       if (!v) continue;
       if (!QTY.test(v)) e[l.id] = t('Enter a number (up to 3 decimals)');
-      else if (Number(v) > Number(l.pending)) e[l.id] = t('Only {qty} {unit} is pending', { qty: fmtQty(l.pending), unit: l.unit });
+      else if (Number(v) > Number(l.pending)) e[l.id] = t('Enter at most {qty} {unit}, the quantity pending', { qty: fmtQty(l.pending), unit: l.unit });
       else if (Number(v) > 0) any = true;
     }
     if (request && !any && !Object.keys(e).length) e.lines = t('Enter the quantity received on at least one line');
     if (photosUploading(photos)) e.photos = t('Wait for photos to finish uploading');
     else if (photosFailed(photos)) e.photos = t('Remove or retry failed photos');
-    else if (photosQueued(photos)) e.photos = t('Photos need a connection to upload');
+    else if (photosQueued(photos)) e.photos = t('Photos need a connection; remove them or try again');
     setErrors(e);
+    errorSummary.report(e);
     return Object.keys(e).length === 0;
   };
 
@@ -159,8 +162,9 @@ export default function ReceiveScreen() {
   if (user && !canKeepStock(user.roleKey)) return <EmptyState title={t('Not available for your role')} subtitle={t('The store manager, site engineers and approvers receive material.')} icon="lock-closed-outline" />;
 
   return (
-    <Screen keyboard>
+    <Screen keyboard scrollRef={errorSummary.scrollRef}>
       <Stack.Screen options={{ title: t('Receive Material') }} />
+      <ErrorSummary errors={errors} />
       <ErrorBanner message={submitError ?? projects.error ?? (online ? (receivable.error ?? orders.error) : t('You are offline. Receiving material needs a connection.'))} />
       <Card>
         <Select
@@ -203,6 +207,7 @@ export default function ReceiveScreen() {
                   onChangeText={(v) => setQty((q) => ({ ...q, [l.id]: v }))}
                   keyboardType="decimal-pad"
                   placeholder={`0 ${l.unit}`}
+                  accessibilityLabel={t('Quantity of {item} received, in {unit}', { item: l.itemName, unit: l.unit })}
                   right={<Text style={typography.caption}>{l.unit}</Text>}
                   error={errors[l.id]}
                   containerStyle={styles.qty}

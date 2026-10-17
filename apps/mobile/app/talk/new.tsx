@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import type { ToolboxTalkDto } from '@erp/shared';
@@ -12,6 +12,7 @@ import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
 import { colors, spacing } from '../../src/theme';
 import { formatDate, isIsoDate, today } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
+import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
 
 const OTHER = '__other';
 /** English labels; shown through t(). The value of a listed topic is the English text the API stores. */
@@ -23,8 +24,12 @@ export default function TalkFormScreen() {
   const params = useLocalSearchParams<{ projectId?: string }>();
   const api = useApi();
   const t = useT();
+  const errorSummary = useErrorSummary();
   const { user } = useAuth();
-  const { online, enqueue } = useOffline();
+  const { online, enqueue, newId } = useOffline();
+  // The same id for a direct send and the outbox, so a send that timed out but arrived is never made twice
+  // (a new one for each entry made with Submit another).
+  const clientId = useRef(newId());
   const projects = useProjectOptions();
 
   const [projectId, setProjectId] = useState<string | null>(params.projectId ?? null);
@@ -55,11 +60,12 @@ export default function TalkFormScreen() {
     if (!projectId) e.projectId = t('Choose a project');
     if (!isIsoDate(date) || date > today()) e.date = t('Enter a date up to today');
     if (!subject) e.topic = t(topic === OTHER ? 'Type the topic' : 'Pick a topic');
-    if (!conductedBy.trim()) e.conductedBy = t('Who gave the talk?');
-    if (!(Number(count) >= 1) || !Number.isInteger(Number(count))) e.count = t('How many attended?');
+    if (!conductedBy.trim()) e.conductedBy = t('Enter who gave the talk');
+    if (!(Number(count) >= 1) || !Number.isInteger(Number(count))) e.count = t('Enter how many attended');
     if (photosUploading(photos)) e.photos = t('Wait for photos to finish uploading');
     else if (photosFailed(photos)) e.photos = t('Remove or retry failed photos');
     setErrors(e);
+    errorSummary.report(e);
     return Object.keys(e).length === 0;
   };
 
@@ -82,14 +88,14 @@ export default function TalkFormScreen() {
       };
       const queueIt = async () => {
         const projectName = projects.options.find((o) => o.value === projectId)?.label ?? t('Project');
-        setQueued(await enqueue({ type: 'TOOLBOX_TALK', payload: body, photos: toOutboxPhotos(photos), title: `${t('Toolbox talk')} · ${t(subject)}`, subtitle: `${projectName} · ${formatDate(date)} · ${t('{n} attended', { n: count })}` }));
+        setQueued(await enqueue({ id: clientId.current, type: 'TOOLBOX_TALK', payload: body, photos: toOutboxPhotos(photos), title: `${t('Toolbox talk')} · ${t(subject)}`, subtitle: `${projectName} · ${formatDate(date)} · ${t('{n} attended', { n: count })}` }));
       };
       if (!online || photosQueued(photos)) {
         await queueIt();
         return;
       }
       try {
-        setSaved(await api.post<ToolboxTalkDto>('/safety/talks', { ...body, attachmentIds: attachmentIds(photos) }));
+        setSaved(await api.post<ToolboxTalkDto>('/safety/talks', { id: clientId.current, ...body, attachmentIds: attachmentIds(photos) }));
       } catch (e) {
         if (!isOfflineError(e)) throw e;
         await queueIt();
@@ -102,6 +108,7 @@ export default function TalkFormScreen() {
   };
 
   const reset = () => {
+    clientId.current = newId();
     setSaved(null);
     setQueued(null);
     setTopic(null);
@@ -119,7 +126,8 @@ export default function TalkFormScreen() {
   if (projects.loading && !projects.data) return <Loading />;
 
   return (
-    <Screen keyboard>
+    <Screen keyboard scrollRef={errorSummary.scrollRef}>
+      <ErrorSummary errors={errors} />
       <ErrorBanner message={submitError ?? projects.error} />
       <Card>
         <Select label={t('Project')} required value={projectId} options={projects.options} onChange={setProjectId} placeholder={t('Choose project')} error={errors.projectId} />

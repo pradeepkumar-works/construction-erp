@@ -7,6 +7,7 @@ import { ILLUSTRATIONS } from '../illustrations';
 import { colors, radius, spacing, typography } from '../theme';
 import { Button } from './Button';
 import { useT } from '../i18n/LanguageContext';
+import { LanguageSwitch } from '../i18n/LanguageSwitch';
 
 const SEEN_KEY = 'nirmaan.introSeen';
 
@@ -63,7 +64,7 @@ export function Intro({ onDone }: { onDone: () => void }) {
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right', 'bottom']}>
       <View style={styles.top}>
-        <Text style={styles.brand}>{PRODUCT_NAME.toUpperCase()}</Text>
+        <LanguageSwitch />
         {!last ? <Button title={t('Skip')} variant="ghost" size="sm" onPress={onDone} /> : null}
       </View>
       <ScrollView
@@ -91,6 +92,7 @@ export function Intro({ onDone }: { onDone: () => void }) {
         ))}
       </View>
       <View style={styles.footer}>
+        <Text style={styles.brand}>{PRODUCT_NAME.toUpperCase()}</Text>
         <Button title={last ? t('Get started') : t('Next')} onPress={next} icon={last ? 'log-in-outline' : 'arrow-forward'} />
       </View>
     </SafeAreaView>
@@ -99,8 +101,8 @@ export function Intro({ onDone }: { onDone: () => void }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
-  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.xl, minHeight: 48 },
-  brand: { ...typography.wordmark, fontSize: 18, letterSpacing: 2, color: colors.primaryDark },
+  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.xl, paddingTop: spacing.sm, minHeight: 56 },
+  brand: { ...typography.wordmark, fontSize: 18, letterSpacing: 2, color: colors.primaryDark, textAlign: 'center', marginBottom: spacing.md },
   pager: { flex: 1 },
   slide: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xl },
   title: { ...typography.h1, marginTop: spacing.lg, textAlign: 'center' },

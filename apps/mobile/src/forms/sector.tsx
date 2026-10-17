@@ -5,6 +5,14 @@ import { useFetch } from '../api/hooks';
 import { Chips, Input, Select } from '../components';
 import { useT } from '../i18n/LanguageContext';
 
+/** The sector fields as typed, kept in a form's draft. */
+export interface SectorDraft {
+  from: string;
+  to: string;
+  floor: string | null;
+  village: string | null;
+}
+
 /**
  * Chainage, floor or village for the chosen project's type (v4 item 41), as form state plus fields to render. The
  * project's settings come from the same cache as the other forms, so the fields work offline once loaded.
@@ -23,11 +31,11 @@ export function useSectorInputs(projectId: string | null) {
   const validate = (e: Record<string, string>) => {
     const a = parseChainage(from);
     const b = parseChainage(to);
-    if (from.trim() && a === null) e.chainageFrom = t('Like {example}', { example: '14+200' });
-    if (to.trim() && b === null) e.chainageTo = t('Like {example}', { example: '14+600' });
-    if (!from.trim() && to.trim()) e.chainageFrom = t('Where does it start?');
+    if (from.trim() && a === null) e.chainageFrom = t('Enter the chainage like {example}', { example: '14+200' });
+    if (to.trim() && b === null) e.chainageTo = t('Enter the chainage like {example}', { example: '14+600' });
+    if (!from.trim() && to.trim()) e.chainageFrom = t('Enter the chainage where it starts');
     if (p && a !== null && ((p.chainageStart !== null && a < p.chainageStart) || (p.chainageEnd !== null && (b ?? a) > p.chainageEnd)))
-      e.chainageFrom = p.chainageEnd !== null ? t('Within {from} to {to}', { from: formatChainage(p.chainageStart ?? 0), to: formatChainage(p.chainageEnd) }) : t('Within {from} to the end', { from: formatChainage(p.chainageStart ?? 0) });
+      e.chainageFrom = p.chainageEnd !== null ? t('Enter a chainage within {from} to {to}', { from: formatChainage(p.chainageStart ?? 0), to: formatChainage(p.chainageEnd) }) : t('Enter a chainage from {from} onwards', { from: formatChainage(p.chainageStart ?? 0) });
   };
 
   /** Request fields: blanks are null on an edit and left out on a create. */
@@ -50,6 +58,15 @@ export function useSectorInputs(projectId: string | null) {
 
   const clear = () => load({});
 
+  /** What was typed, for a form's draft (`useFormDraft`); `restore` puts it back. */
+  const value: SectorDraft = { from, to, floor, village };
+  const restore = (v: SectorDraft | undefined) => {
+    setFrom(v?.from ?? '');
+    setTo(v?.to ?? '');
+    setFloor(v?.floor ?? null);
+    setVillage(v?.village ?? null);
+  };
+
   const fields = (errors: Record<string, string>) =>
     p ? (
       <>
@@ -64,5 +81,5 @@ export function useSectorInputs(projectId: string | null) {
       </>
     ) : null;
 
-  return { validate, body, load, clear, fields };
+  return { validate, body, load, clear, fields, value, restore };
 }

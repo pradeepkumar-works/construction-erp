@@ -1,11 +1,13 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getLocales } from 'expo-localization';
 import { translate, type TranslateVars } from './translate';
 import { setFormatLanguage } from '../utils/format';
+import { kvGet, kvSet } from '../utils/kv';
 
 /**
- * The app's display language. English is the default on every first launch, whatever the phone's own
- * language is: the app never reads the device locale. A user switches language under Profile, and the
+ * The app's display language. The first launch follows the phone's own language when the app has it (UX item 80), so
+ * a phone set to Hindi opens in Hindi; a user switches on the intro, the sign-in screen or under Profile, and the
  * choice is kept on this phone.
  */
 export type LanguageCode = 'en' | 'hi';
@@ -20,7 +22,23 @@ export const LANGUAGES: { code: LanguageCode; label: string; available: boolean 
 
 const STORAGE_KEY = 'nirmaan.language';
 
-const isSelectable = (v: string | null): v is LanguageCode => LANGUAGES.some((l) => l.code === v && l.available);
+const isSelectable = (v: string | null | undefined): v is LanguageCode => LANGUAGES.some((l) => l.code === v && l.available);
+
+/** The first of the phone's preferred languages the app has, else English. */
+function phoneLanguage(): LanguageCode {
+  try {
+    for (const l of getLocales()) if (isSelectable(l.languageCode)) return l.languageCode;
+  } catch {
+    // No locale information: English.
+  }
+  return DEFAULT_LANGUAGE;
+}
+
+/** Read synchronously, so the first screen is already in the right language. */
+function startLanguage(): { code: LanguageCode; chosen: boolean } {
+  const saved = kvGet(STORAGE_KEY);
+  return isSelectable(saved) ? { code: saved, chosen: true } : { code: phoneLanguage(), chosen: false };
+}
 
 interface LanguageState {
   language: LanguageCode;
@@ -30,23 +48,30 @@ interface LanguageState {
 const LanguageContext = createContext<LanguageState>({ language: DEFAULT_LANGUAGE, setLanguage: () => undefined });
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [language, setLanguageState] = useState<LanguageCode>(DEFAULT_LANGUAGE);
+  const [start] = useState(startLanguage);
+  const [language, setLanguageState] = useState<LanguageCode>(() => {
+    setFormatLanguage(start.code);
+    return start.code;
+  });
 
+  // A choice made before this version was kept in AsyncStorage: carry it over once.
   useEffect(() => {
+    if (start.chosen) return;
     AsyncStorage.getItem(STORAGE_KEY)
       .then((v) => {
         if (!isSelectable(v)) return;
+        kvSet(STORAGE_KEY, v);
         setFormatLanguage(v);
         setLanguageState(v);
       })
       .catch(() => undefined);
-  }, []);
+  }, [start.chosen]);
 
   const setLanguage = useCallback((code: LanguageCode) => {
     if (!isSelectable(code)) return;
     setFormatLanguage(code);
     setLanguageState(code);
-    AsyncStorage.setItem(STORAGE_KEY, code).catch(() => undefined);
+    kvSet(STORAGE_KEY, code);
   }, []);
 
   const value = useMemo(() => ({ language, setLanguage }), [language, setLanguage]);

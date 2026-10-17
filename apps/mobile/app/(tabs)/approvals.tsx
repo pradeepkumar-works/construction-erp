@@ -7,7 +7,7 @@ import { SUBMISSION_TYPE_LABELS, type PendingApprovalDto, type SubmissionType } 
 import { useApi, useFetch } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
 import { canQuickReview, reviewSubmission } from '../../src/api/review';
-import { Button, EmptyState, ErrorBanner, ErrorState, Input, Loading, Screen, SubmissionRow } from '../../src/components';
+import { Button, EmptyState, ErrorBanner, ErrorState, Input, Loading, Screen, SubmissionRow, useSnackbar } from '../../src/components';
 import { BottomSheet } from '../../src/components/BottomSheet';
 import { colors, radius, spacing, touch, typography } from '../../src/theme';
 import { timeAgo } from '../../src/utils/format';
@@ -22,6 +22,7 @@ export default function ApprovalsScreen() {
   const router = useRouter();
   const api = useApi();
   const t = useT();
+  const snackbar = useSnackbar();
   const { data, loading, refreshing, error, refresh, reload, setData } = useFetch<PendingApprovalDto[]>((api) => api.get('/approvals/pending'), []);
   const [approving, setApproving] = useState<PendingApprovalDto | null>(null);
   const [note, setNote] = useState('');
@@ -54,6 +55,7 @@ export default function ApprovalsScreen() {
       const done = keyOf(approving);
       setData((prev) => (prev ? prev.filter((p) => keyOf(p) !== done) : prev));
       setApproving(null);
+      snackbar.show(t('Approved: {title}', { title: approving.title }));
       void reload();
     } catch (e) {
       setSheetError(errorMessage(e));
@@ -108,7 +110,7 @@ export default function ApprovalsScreen() {
         title={approving ? t('Approve {title}?', { title: approving.title }) : undefined}
         subtitle={approving ? `${approving.projectName} · ${approving.submittedByName}` : undefined}
       >
-        <Input value={note} onChangeText={setNote} placeholder={t('Note (optional)')} multiline />
+        <Input value={note} onChangeText={setNote} placeholder={t('Note (optional)')} accessibilityLabel={t('Note for the submitter (optional)')} multiline />
         <ErrorBanner message={sheetError} />
         <View style={styles.sheetBtns}>
           <Button title={t('Cancel')} variant="ghost" onPress={() => setApproving(null)} disabled={busy} style={styles.flex} />
@@ -139,7 +141,7 @@ function SwipeRow({ item, onOpen, onApprove, onSwipeOpen }: { item: PendingAppro
         <View style={styles.actions}>
           {onApprove ? (
             <Pressable onPress={onApprove} accessibilityRole="button" accessibilityLabel={t('Approve')} style={({ pressed }) => [styles.action, styles.approve, pressed && styles.pressed]}>
-              <Ionicons name="checkmark-circle" size={24} color={colors.onBrand} />
+              <Ionicons name="checkmark-circle" size={24} color={colors.textOnPrimary} />
               <Text style={styles.actionText}>{t('Approve')}</Text>
             </Pressable>
           ) : null}
@@ -152,7 +154,7 @@ function SwipeRow({ item, onOpen, onApprove, onSwipeOpen }: { item: PendingAppro
             accessibilityLabel={t('Open entry')}
             style={({ pressed }) => [styles.action, styles.openAction, pressed && styles.pressed]}
           >
-            <Ionicons name="open-outline" size={22} color={colors.onBrand} />
+            <Ionicons name="open-outline" size={22} color={colors.textOnPrimary} />
             <Text style={styles.actionText}>{t('Open entry')}</Text>
           </Pressable>
         </View>
@@ -188,7 +190,8 @@ const styles = StyleSheet.create({
   action: { width: ACTION_WIDTH, alignItems: 'center', justifyContent: 'center', gap: spacing.xs, minHeight: touch.height },
   approve: { backgroundColor: colors.success },
   openAction: { backgroundColor: colors.primary },
-  actionText: { color: colors.onBrand, fontSize: 13, fontWeight: '700' },
+  // textOnPrimary: white on the day tones, night ink on the brighter night tones (AA in both palettes).
+  actionText: { color: colors.textOnPrimary, fontSize: 13, fontWeight: '700' },
   pressed: { opacity: 0.8 },
   sheetBtns: { flexDirection: 'row' },
 });

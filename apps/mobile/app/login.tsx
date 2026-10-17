@@ -7,6 +7,7 @@ import { errorMessage, request } from '../src/api/client';
 import type { AuthOptionsDto } from '@erp/shared';
 import { PRODUCT_NAME } from '@erp/shared';
 import { useT } from '../src/i18n/LanguageContext';
+import { LanguageSwitch } from '../src/i18n/LanguageSwitch';
 import { colors, fonts, radius, spacing, touch, typography } from '../src/theme';
 
 const DEMO_ACCOUNTS = [
@@ -88,6 +89,8 @@ export default function LoginScreen() {
         <View style={styles.brand}>
           <Image source={require('../assets/splash-icon.png')} style={styles.logo} accessibilityIgnoresInvertColors />
           <Text style={styles.wordmark}>{PRODUCT_NAME.toUpperCase()}</Text>
+          <View style={styles.flex} />
+          <LanguageSwitch />
         </View>
 
         <Text style={styles.title} accessibilityRole="header">
@@ -124,7 +127,7 @@ export default function LoginScreen() {
           returnKeyType="go"
           onSubmitEditing={submit}
           right={
-            <Pressable onPress={() => setShowPw((s) => !s)} hitSlop={10} accessibilityLabel={showPw ? t('Hide password') : t('Show password')}>
+            <Pressable onPress={() => setShowPw((s) => !s)} hitSlop={10} accessibilityRole="button" accessibilityLabel={showPw ? t('Hide password') : t('Show password')}>
               <Ionicons name={showPw ? 'eye-off-outline' : 'eye-outline'} size={22} color={colors.textMuted} />
             </Pressable>
           }
@@ -172,6 +175,7 @@ const styles = StyleSheet.create({
   content: { justifyContent: 'center', flexGrow: 1, paddingHorizontal: spacing.xl, paddingTop: spacing.xxl },
   blank: { flex: 1, backgroundColor: colors.surface },
   brand: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: 40 },
+  flex: { flex: 1 },
   logo: { width: 36, height: 36 },
   wordmark: { ...typography.wordmark, fontSize: 20, letterSpacing: 1.5, color: colors.primaryDark },
   title: { fontFamily: fonts.display, fontSize: 32, color: colors.primaryDark, marginBottom: spacing.sm },

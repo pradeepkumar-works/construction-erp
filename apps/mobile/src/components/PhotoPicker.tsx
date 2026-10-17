@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
@@ -125,6 +125,19 @@ export function PhotoPicker({ label, photos, onChange, max = 6 }: Props) {
     }
   }, [addAssets, max, photos.length, t]);
 
+  // Android may close the app while the camera is open; the photo taken then is handed back once the app restarts, to
+  // the next photo field opened, which is the form with the reopened draft (UX item 80).
+  const recovered = useRef(false);
+  useEffect(() => {
+    if (recovered.current) return;
+    recovered.current = true;
+    ImagePicker.getPendingResultAsync()
+      .then((r) => {
+        if (r && 'assets' in r && !r.canceled && r.assets?.length) void addAssets(r.assets);
+      })
+      .catch(() => undefined);
+  }, [addAssets]);
+
   const remove = (key: string) => onChange((prev) => prev.filter((p) => p.key !== key));
   const retry = (photo: LocalPhoto) => {
     onChange((prev) => prev.map((p) => (p.key === photo.key ? { ...p, uploading: true, error: undefined, queued: false } : p)));
@@ -205,10 +218,10 @@ const styles = StyleSheet.create({
   strip: { gap: spacing.sm, paddingTop: spacing.md },
   thumbWrap: { width: 96, height: 96, borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.neutralSoft },
   thumb: { width: '100%', height: '100%' },
-  overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center' },
+  overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: colors.scrim, alignItems: 'center', justifyContent: 'center' },
   overlayError: { backgroundColor: 'rgba(220,38,38,0.7)' },
   overlayText: { color: colors.onOverlay, fontSize: 12, fontWeight: '700' },
   okMark: { position: 'absolute', left: 6, bottom: 6, backgroundColor: colors.surface, borderRadius: 10 },
-  removeBtn: { position: 'absolute', top: 4, right: 4, width: 24, height: 24, borderRadius: 12, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center' },
+  removeBtn: { position: 'absolute', top: 4, right: 4, width: 24, height: 24, borderRadius: 12, backgroundColor: colors.scrim, alignItems: 'center', justifyContent: 'center' },
   hint: { ...typography.caption, marginTop: spacing.sm },
 });

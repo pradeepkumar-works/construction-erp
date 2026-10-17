@@ -65,3 +65,14 @@ export const OUTBOX_DETAIL: Record<SubmissionType, string> = {
   SUBCONTRACT_BILL: '/subcontract-bill/',
   INSPECTION: '/inspection/',
 };
+
+/**
+ * Phone forms that can open an entry the server refused, so it is corrected and sent again (UX item 80). The form reads
+ * the entry by its `outboxId` param, keeps its id (so a retry never makes a second entry) and replaces it when sent.
+ */
+export const OUTBOX_FIX_PATH: Partial<Record<OutboxType, string>> = {
+  DPR: '/dpr/new',
+  PROGRESS: '/progress/new',
+  MEASUREMENT: '/measurement/new',
+  ATTENDANCE: '/attendance',
+};
