@@ -33,6 +33,7 @@ export const NOTIFICATION_TAB_OF: Record<NotificationType, NotificationTab> = {
   BILLS_DUE: 'REMINDERS',
   MACHINERY: 'REMINDERS',
   COMPLIANCE: 'REMINDERS',
+  WATCH_LIST: 'REMINDERS',
 };
 
 /** The notification types in one tab. */

@@ -8,6 +8,7 @@ export function notificationHref(n: NotificationDto): string {
   if (n.type === 'IMPREST') return `/imprest${n.entityId ? `?id=${n.entityId}` : ''}`;
   if (n.type === 'COMPLIANCE') return `/compliance${n.entityId ? `?id=${n.entityId}` : ''}`;
   if (n.type === 'DEFECT' && n.projectId) return `/projects/${n.projectId}?tab=handover${n.entityType === 'DEFECT' && n.entityId ? `&defect=${n.entityId}` : ''}`;
+  if (n.type === 'WATCH_LIST') return '/watch-list';
   if (n.entityType && n.entityId) return `/notifications?type=${n.entityType}&id=${n.entityId}`;
   if (n.type === 'APPROVAL_DIGEST') return '/approvals';
   if (n.type === 'DPR_REMINDER' && n.projectId) return `/projects/${n.projectId}?tab=dpr`;

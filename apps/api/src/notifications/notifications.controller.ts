@@ -70,7 +70,7 @@ export class NotificationsController {
   @Public()
   @UseGuards(CronGuard)
   @ApiSecurity('cron')
-  @ApiOperation({ summary: 'Daily digest of pending approvals (in-app, push, email and WhatsApp); also sends the test-due, payments-due, machinery-due, guarantee and licence expiry and defect liability reminders. Auth: Authorization: Bearer <CRON_SECRET>.' })
+  @ApiOperation({ summary: 'Daily digest of pending approvals (in-app, push, email and WhatsApp); also sends the test-due, payments-due, machinery-due, guarantee and licence expiry and defect liability reminders, and on Mondays the watch list. Auth: Authorization: Bearer <CRON_SECRET>.' })
   @Get('jobs/approval-digest')
   async approvalDigest(@Query() q: JobQuery) {
     const digest = await this.jobs.approvalDigest(q.date);
@@ -80,6 +80,8 @@ export class NotificationsController {
     await this.jobs.machineryDue(q.date).catch(() => undefined);
     await this.jobs.complianceDue(q.date).catch(() => undefined);
     await this.jobs.handoverDue(q.date).catch(() => undefined);
+    // ...and, on Mondays, the weekly watch list of early warnings.
+    await this.jobs.watchList(q.date).catch(() => undefined);
     // ...and so does erasing companies whose deletion date has come.
     await this.companyData.purgeDue(q.date).catch(() => undefined);
     // ...and starting trials and billing reminders.
@@ -130,5 +132,14 @@ export class NotificationsController {
   @Get('jobs/handover-due')
   handoverDue(@Query() q: JobQuery) {
     return this.jobs.handoverDue(q.date);
+  }
+
+  @Public()
+  @UseGuards(CronGuard)
+  @ApiSecurity('cron')
+  @ApiOperation({ summary: 'Weekly watch list: one notification to each manager, stores, purchase or accounts user with open early warnings, once a week (runs on any day when called here). Auth: Authorization: Bearer <CRON_SECRET>.' })
+  @Get('jobs/watch-list')
+  watchList(@Query() q: JobQuery) {
+    return this.jobs.watchList(q.date, true);
   }
 }

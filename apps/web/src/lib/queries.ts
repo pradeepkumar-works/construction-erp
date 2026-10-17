@@ -6,6 +6,7 @@ import type {
   DocReadResultDto,
   DraftChecksDto,
   BillChecksDto,
+  WatchListDto,
   BillCheckSummaryDto,
   CheckKind,
   AiSettingsDto,
@@ -1854,6 +1855,24 @@ export function useAcceptCheck(kind: CheckKind, id: string) {
     mutationFn: async (v: { key: string; note: string; reopen?: boolean }) =>
       (await api.post<BillChecksDto>(`/checks/${kind}/${id}/${v.reopen ? 'reopen' : 'accept'}`, v.reopen ? { key: v.key } : { key: v.key, note: v.note })).data,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['checks', kind, id] }),
+  });
+}
+
+// ---- Early warnings, the watch list (AI item 73) ----
+
+export const useWatchList = (enabled = true) =>
+  useQuery({ queryKey: ['watch-list'], queryFn: async () => (await api.get<WatchListDto>('/warnings')).data, enabled });
+
+/** Dismiss a warning with a reason, or bring a dismissed one back (`restore`). */
+export function useDismissWarning() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { key: string; reason?: string; restore?: boolean }) =>
+      (await api.post<WatchListDto>(`/warnings/${v.restore ? 'restore' : 'dismiss'}`, v.restore ? { key: v.key } : { key: v.key, reason: v.reason })).data,
+    onSuccess: (d) => {
+      qc.setQueryData(['watch-list'], d);
+      void qc.invalidateQueries({ queryKey: ['dashboard', 'my-work'] });
+    },
   });
 }
 

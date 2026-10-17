@@ -381,6 +381,8 @@ export interface MyWorkDto {
   approvals?: { type: SubmissionType; count: number }[];
   /** Active projects with no daily report for today */
   dprsMissing?: MyWorkCard;
+  /** Early warnings not dismissed (AI item 73): finishes slipping, a cash gap, stock running out… */
+  watchList?: MyWorkCard;
   /** The caller's own entries rejected or sent back for changes */
   sentBack?: MyWorkCard;
   /** Sent RA bills not fully received, oldest first */
@@ -473,7 +475,7 @@ export interface PushTokenDto {
 
 /** Result of a scheduled notification job (DPR reminder / approval digest). */
 export interface NotificationJobResult {
-  job: 'DPR_REMINDER' | 'APPROVAL_DIGEST' | 'TESTS_DUE' | 'BILLS_DUE' | 'MACHINERY_DUE' | 'COMPLIANCE_DUE' | 'HANDOVER_DUE';
+  job: 'DPR_REMINDER' | 'APPROVAL_DIGEST' | 'TESTS_DUE' | 'BILLS_DUE' | 'MACHINERY_DUE' | 'COMPLIANCE_DUE' | 'HANDOVER_DUE' | 'WATCH_LIST';
   date: string;
   created: number;
   pushed: number;

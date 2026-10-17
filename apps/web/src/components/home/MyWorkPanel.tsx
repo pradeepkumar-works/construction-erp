@@ -7,6 +7,7 @@ import {
   CheckCircleOutlined,
   CheckSquareOutlined,
   CreditCardOutlined,
+  EyeOutlined,
   FileTextOutlined,
   InboxOutlined,
   RollbackOutlined,
@@ -20,6 +21,7 @@ import { QUEUE_TYPE_LABELS } from '@/components/approvals/queue';
 import type { MyWorkKey } from './layout';
 
 const CARDS: Record<Exclude<MyWorkKey, 'approvals'>, { title: string; icon: React.ReactNode; href: string | null; tone: 'warning' | 'error' | 'info' }> = {
+  watchList: { title: 'Watch list', icon: <EyeOutlined />, href: '/watch-list', tone: 'warning' },
   dprsMissing: { title: 'DPRs not filed today', icon: <FileTextOutlined />, href: '/dpr', tone: 'warning' },
   sentBack: { title: 'Sent back to you', icon: <RollbackOutlined />, href: null, tone: 'warning' },
   receivables: { title: 'Bills awaiting payment', icon: <WalletOutlined />, href: '/receivables', tone: 'info' },

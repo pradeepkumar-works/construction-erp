@@ -270,5 +270,8 @@ DROP POLICY IF EXISTS tenant_isolation ON "BillCheckSummary";
 ALTER TABLE "AiDocumentRead" NO FORCE ROW LEVEL SECURITY;
 ALTER TABLE "AiDocumentRead" DISABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS tenant_isolation ON "AiDocumentRead";
+ALTER TABLE "WarningDismissal" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "WarningDismissal" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "WarningDismissal";
 
 DROP FUNCTION IF EXISTS app_current_org();

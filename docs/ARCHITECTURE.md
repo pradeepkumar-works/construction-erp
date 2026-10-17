@@ -1187,7 +1187,8 @@ export; the client portal and the phone app show the amount.
 - **What it is.** AI item 72: the site app's Ask tab (`apps/mobile/app/(tabs)/ask.tsx`, shown when Ask Nirmaan is on
   for the company). People type or speak through the keyboard's own microphone (no speech module), in Hindi, English or
   Hinglish. The tab sends `language` (the app's language) and `client: 'phone'` with each question; the prompt then
-  answers in Hindi with 0-9 figures when the app is in Hindi, and keeps a phone answer to a few short lines.
+  answers in Hindi with 0-9 figures when the app is in Hindi (a question typed in Hinglish gets Hinglish back), and keeps a
+  phone answer to five short lines at most, a long list given as its count, the first three and a link.
 - **Answers.** `src/ai/ask.ts` reads the same server-sent events as the web panel through Expo's streaming fetch, with a
   45 s idle timeout. `AnswerText` renders the answer's Markdown; `phoneRoute` (`src/ai/links.ts`) maps a web link to
   the phone's own screen, and a link with no screen stays plain text. Status lines go through `t()`, so their Hindi is
@@ -1200,6 +1201,33 @@ export; the client portal and the phone app show the amount.
   questions.
 - **Tests.** `scripts/ai-eval.ts` with `AI_EVAL_ONLY=phone` asks a deployed API in Hindi, Hinglish and English as the
   phone does and checks Hindi answers, 0-9 figures, length, the access boundary and a dictated DPR.
+
+## Early warnings (watch list)
+
+- **What it is.** AI item 73, though no model is involved: plain forecasts over the records, shown on `/watch-list`, as
+  the Watch list card in My work, and in a weekly notification (`WATCH_LIST`, Reminders tab). Each warning carries its
+  figures (`facts`) and links to the records behind it.
+- **Rules.** `apps/api/src/warnings/warning-rules.ts` holds pure functions with unit tests:
+  - Schedule: the last 28 days' rate puts the finish more than 7 days past the baseline (or planned) end, or the
+    activity was due to start 14 days or more ago and has no progress recorded in the last 28 days.
+  - Cash: bills due against expected receipts over the next 8 weeks, cumulative, where each client's receipts are
+    expected after its median actual days to pay (at least two paid bills). Overdue amounts fall in week 1.
+  - Vendors: over the last 60 days against the 60 before, a rising share of late deliveries (against the PO's
+    delivery date) or of GRN rejections. NCRs have no vendor link, so they are not counted.
+  - Stock: days of stock left at the last 30 days' issue rate is below the item's lead time (median PO to receipt,
+    7 days by default) and nothing is on order.
+  - Machines: breakdown hours or idle share up on the month before.
+  - DPRs: no DPR on a site for three or more days running, counting back from yesterday.
+- **Who sees what.** `watchListKinds(role)` in `packages/shared/src/warnings.ts`: schedule and DPRs for approvers, cash
+  for those who see cost, vendors for purchase, stock for stores, machines for maintenance. Projects come from
+  `ProjectAccessService.projectWhere`, so a PM sees only their own.
+- **Dismissing.** `POST /warnings/dismiss {key, reason}` needs a reason and holds for the whole company
+  (`WarningDismissal`, audited). The key carries the warning's figures in coarse form (the slip in 14-day steps, the
+  month, the week), so a dismissed warning comes back when things get worse. `POST /warnings/restore` undoes it.
+- **Weekly notification.** `NotificationJobsService.watchList` runs on Mondays with the daily digest (and the in-process
+  scheduler), once per week per user.
+- **Tests.** `src/scripts/warnings-test.ts` (CI runs it): the forecast unit tests, each role's kinds and projects on the
+  demo data, dismissals, and a 60-day backtest over the demo history printing the day each warning would first have fired.
 
 ## Money and quantities
 

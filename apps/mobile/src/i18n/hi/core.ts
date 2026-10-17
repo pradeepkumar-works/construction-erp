@@ -131,6 +131,7 @@ export const CORE: Record<string, string> = {
   'Guarantees and policies expiring': 'ख़त्म होती गारंटी और पॉलिसी',
   'Late deliveries': 'देर से आने वाली डिलीवरी',
   'Below minimum stock': 'न्यूनतम स्टॉक से कम',
+  'Watch list': 'निगरानी सूची',
   'No DPR for today': 'आज का DPR नहीं',
   'Sent today': 'आज भेजा गया',
   'Due today': 'आज देय',
