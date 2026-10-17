@@ -1229,6 +1229,30 @@ export; the client portal and the phone app show the amount.
 - **Tests.** `src/scripts/warnings-test.ts` (CI runs it): the forecast unit tests, each role's kinds and projects on the
   demo data, dismissals, and a 60-day backtest over the demo history printing the day each warning would first have fired.
 
+## Morning brief and weekly narrative
+
+- **What it is.** AI item 74. Each morning a person who asked for it gets three lines on what needs them today, and each
+  project's weekly progress report opens with a paragraph on last week. Both are written once, overnight, and stored in
+  `AiBrief` (`kind` MORNING or WEEK, unique `key` per company: `MORNING:<userId>:<date>`, `WEEK:<projectId>:<monday>`).
+- **Facts first.** `apps/api/src/briefs/brief-rules.ts` (pure functions) builds the facts and the rules' own draft:
+  the brief from the person's My work (`HomeService.myWork`) and approvals queue, so a role sees only what its My work
+  shows; the narrative from the progress report's figures, without money. The model gets the facts and the draft through
+  `AiService.writeFromFacts` (no tools) and returns picks from the rules' numbered lines (each line keeps its candidate's
+  link) or a paragraph. Anything that fails `parsePicks` / `narrativeFits`, or holds a figure the facts do not
+  (`unverifiedFigures`), is dropped and the rules' draft is stored instead (`byAssistant` false).
+- **Who gets it.** The brief is opt-in per person (`User.morningBrief`, `PUT /briefs/me`; the home card offers it and the
+  first brief is written at once). Only in a company with Ask Nirmaan on, for roles that may use it, never for support
+  sessions. Narratives are written as the company's first admin for active projects with approved DPRs or progress that week.
+- **When.** `NotificationJobsService.writeBriefs` (mornings daily, narratives on Mondays) runs first in the daily digest
+  cron, then `approvalDigest` (which carries today's brief in its email) and `morningBrief` (bell, push, WhatsApp
+  `MORNING_BRIEF` template, and email only when the digest email did not go). `GET /notifications/jobs/briefs` writes
+  them alone. In-process, `MORNING_BRIEF_TIME` (default 06:00) writes them.
+- **Shown.** Home `MorningBriefCard`, the `MORNING_BRIEF` notification (For me tab), and the progress report's Summary
+  (`ProgressReportDto.narrative`, only on a Monday-to-Sunday report). The cost counts in the company's allowance and
+  shows as Briefs in Admin > Ask Nirmaan's "Used for" table.
+- **Tests.** `src/scripts/briefs-test.ts` (CI runs it, fake model): the rules, grounding, opt-in, AI off, re-runs and
+  sending once, and narratives on the demo projects.
+
 ## Money and quantities
 
 Decimal columns everywhere (`Decimal(18,2)` for money, `Decimal(18,3)` for quantities) and strings

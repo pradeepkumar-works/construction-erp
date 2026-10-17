@@ -133,8 +133,12 @@ export class ReportsService {
     const end = project.endDate;
     const timeElapsedPct = start && end && end > start ? Math.round(Math.min(100, Math.max(0, ((to.getTime() - start.getTime() + DAY) / (end.getTime() - start.getTime() + DAY)) * 100)) * 10) / 10 : null;
     const contract = project.contractValue;
+    // A Monday-to-Sunday week carries the summary paragraph written overnight for it (AI item 74), when there is one.
+    const week = days === 7 && from.getUTCDay() === 1 ? await this.prisma.aiBrief.findUnique({ where: { organizationId_key: { organizationId: user.organizationId, key: `WEEK:${projectId}:${q.from}` } } }) : null;
+    const narrative = week ? { text: (week.lines as { text: string }[]).map((l) => l.text).join(' '), writtenAt: week.createdAt.toISOString(), byAssistant: week.byAssistant } : null;
 
     return {
+      narrative,
       project: {
         id: project.id,
         code: project.code,

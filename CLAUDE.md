@@ -110,6 +110,9 @@ cd e2e && npx playwright test         # browser tests; needs API + web running (
 - Watch list (item 73, `apps/api/src/warnings`, ARCHITECTURE "Early warnings"): each forecast is a pure function in
   `warning-rules.ts` with a test in `src/scripts/warnings-test.ts`; `WarningsService` loads the records and builds the
   warning, whose `key` must change when its figures move on (a dismissal holds per key). Who sees a kind is `watchListKinds(role)`.
+- Morning brief and weekly narrative (item 74, `apps/api/src/briefs`, ARCHITECTURE "Morning brief"): facts and the rules'
+  draft come from `brief-rules.ts` (pure, tested in `src/scripts/briefs-test.ts`); the model writes through
+  `AiService.writeFromFacts` and its text is used only when it passes the fit and figure checks, else the draft is stored.
 - Mobile: screens in `app/`, shared UI in `src/components`, API in `src/api`, no new native deps
   without checking `node_modules/expo/bundledNativeModules.json` for the SDK-pinned version.
 - Mobile theme: `src/theme.ts` picks the light or dark palette once at start-up (Profile > Appearance, stored in

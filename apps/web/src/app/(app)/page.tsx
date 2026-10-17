@@ -31,6 +31,7 @@ import { BRAND } from '@/lib/brand';
 import { GettingStartedCard } from '@/components/dashboard/GettingStartedCard';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { MyWorkPanel } from '@/components/home/MyWorkPanel';
+import { MorningBriefCard } from '@/components/home/MorningBriefCard';
 import { KpiTile, kpiColumns, trendOf } from '@/components/home/KpiTile';
 import { homeLayout, type ChartKey, type KpiKey } from '@/components/home/layout';
 import { CashFlowTable, ChartCard, CostByHeadTable, SCurveTable } from '@/components/home/ChartCard';
@@ -116,6 +117,7 @@ export default function DashboardPage() {
         }
       />
       <GettingStartedCard />
+      <MorningBriefCard />
       <MyWorkPanel data={myWork.data} loading={myWork.isLoading} order={layout.myWork} />
       {isLoading && <PageSkeleton shape="home" header={false} />}
       {error && <QueryError error={error} onRetry={() => refetch()} />}

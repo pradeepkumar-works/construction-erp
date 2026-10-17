@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-10-morning-brief',
+    date: '2026-10-20',
+    title: 'A morning brief, and a weekly summary for the client',
+    points: [
+      'Ask for a morning brief on your home page: three lines on what needs you today, such as approvals waiting more than two days, a warning from your watch list or payments due this week. Each line opens the page behind it.',
+      'The brief also comes by email (inside the approvals digest when you get one) and, once your alerts are on, on WhatsApp. Turn it off from the brief whenever you like.',
+      'The weekly progress report now opens with a short summary of the week, written from the report\'s own figures, and the client sees it in the portal too.',
+      'Admin > Ask Nirmaan shows what this month\'s spend went on: questions, bill checks, documents read, and briefs and summaries.',
+    ],
+  },
+  {
     id: '2026-10-watch-list',
     date: '2026-10-19',
     title: 'Watch list: early warnings',
