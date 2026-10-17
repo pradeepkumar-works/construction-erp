@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { App, Button, DatePicker, Empty, Form, Input, InputNumber, Modal, Space, Table, Typography } from 'antd';
+import { App, Button, DatePicker, Empty, Form, Input, InputNumber, Space, Table, Typography } from 'antd';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { PriceVariationComponentDto, ProjectContractDto } from '@erp/shared';
 import { api, errorMessage } from '@/lib/api';
 import { formatDate } from '@/lib/format';
+import { FormShell } from '@/components/form/FormShell';
 
 interface FormValues {
   pvBaseDate?: dayjs.Dayjs | null;
@@ -100,15 +101,14 @@ function PriceVariationModal({ open, contract, onClose }: { open: boolean; contr
     onSuccess: (d) => {
       qc.setQueryData(['contract', contract.projectId], d);
       message.success('Price variation formula saved');
-      onClose();
     },
     onError: (e) => message.error(errorMessage(e)),
   });
 
   const total = 100 - fixedShare(shares);
   return (
-    <Modal open={open} title="Price variation formula" okText="Save" onOk={() => form.submit()} onCancel={onClose} confirmLoading={save.isPending} width={640} destroyOnHidden>
-      <Form form={form} layout="vertical" onFinish={(v) => save.mutate(v)} className="pv-form" requiredMark="optional">
+    <FormShell open={open} onClose={onClose} form={form} layout="modal" title="Price variation formula" okText="Save" onSubmit={(v) => save.mutateAsync(v)}>
+      <Form form={form} layout="vertical" className="pv-form" requiredMark="optional">
         <Form.Item name="pvBaseDate" label="Base date" extra="Usually the month before the bids were due; the base indices are for this date">
           <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} />
         </Form.Item>
@@ -117,13 +117,13 @@ function PriceVariationModal({ open, contract, onClose }: { open: boolean; contr
             <>
               {fields.map((f) => (
                 <Space key={f.key} align="start" wrap>
-                  <Form.Item name={[f.name, 'name']} label={f.name === 0 ? 'Component' : undefined} rules={[{ required: true, whitespace: true, message: 'Name it' }]}>
+                  <Form.Item name={[f.name, 'name']} label={f.name === 0 ? 'Component' : undefined} rules={[{ required: true, whitespace: true, message: 'Name the component' }]}>
                     <Input maxLength={80} placeholder="Cement" list="pv-suggestions" style={{ width: 200 }} />
                   </Form.Item>
-                  <Form.Item name={[f.name, 'sharePct']} label={f.name === 0 ? 'Share (%)' : undefined} rules={[{ required: true, message: 'Share' }]}>
+                  <Form.Item name={[f.name, 'sharePct']} label={f.name === 0 ? 'Share (%)' : undefined} rules={[{ required: true, message: 'Enter the share' }]}>
                     <InputNumber min={0.01} max={100} step={1} style={{ width: 120 }} />
                   </Form.Item>
-                  <Form.Item name={[f.name, 'baseIndex']} label={f.name === 0 ? 'Base index' : undefined} rules={[{ required: true, message: 'Base index' }]}>
+                  <Form.Item name={[f.name, 'baseIndex']} label={f.name === 0 ? 'Base index' : undefined} rules={[{ required: true, message: 'Enter the base index' }]}>
                     <InputNumber min={0.001} step={0.1} style={{ width: 140 }} />
                   </Form.Item>
                   <Button type="text" danger icon={<DeleteOutlined />} aria-label="Remove component" onClick={() => remove(f.name)} style={{ marginTop: f.name === 0 ? 30 : 0 }} />
@@ -146,6 +146,6 @@ function PriceVariationModal({ open, contract, onClose }: { open: boolean; contr
           )}
         </Form.List>
       </Form>
-    </Modal>
+    </FormShell>
   );
 }

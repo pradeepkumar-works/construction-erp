@@ -33,7 +33,7 @@ test('a snag is fixed and accepted, completion starts the DLP and the checklist'
 
   // A snag from the walk-through, put right and accepted.
   await page.getByRole('button', { name: 'Report snag' }).click();
-  const form = page.locator('.ant-modal').filter({ hasText: 'Report a snag or defect' });
+  const form = page.locator('.ant-drawer-open').filter({ hasText: 'Report a snag or defect' });
   await form.getByLabel('What is wrong').fill('Door closer missing');
   await form.getByLabel('Where').fill('OT corridor');
   await form.getByRole('button', { name: 'Report', exact: true }).click();

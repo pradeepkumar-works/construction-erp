@@ -38,11 +38,11 @@ test('a site team marks the roll call of named workers and the head count follow
   await page.goto(`/projects/${project.id}?tab=attendance`);
   await page.locator('.attendance-tabs').getByRole('tab', { name: 'Workers' }).click();
   await page.getByRole('button', { name: 'Add worker' }).click();
-  const form = page.locator('.ant-modal').filter({ hasText: 'Add a worker' });
+  const form = page.locator('.ant-drawer-open').filter({ hasText: 'Add a worker' });
   await form.getByLabel('Name', { exact: true }).fill('Sania Barik');
   await form.getByLabel('Labour contractor').fill('Kalia Contractors');
   await form.getByLabel('Trade').fill('Helper');
-  await form.getByLabel('Daily wage (₹)').fill('600');
+  await form.getByLabel('Daily wage', { exact: true }).fill('600');
   await form.getByRole('button', { name: 'Add worker' }).click();
   await expect(page.getByText('Worker W-0004 added')).toBeVisible();
   await expect(page.locator('.worker-list tr').filter({ hasText: 'Sania Barik' })).toContainText('Kalia Contractors');

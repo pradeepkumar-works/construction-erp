@@ -27,13 +27,13 @@ test('accounts add a bank guarantee, see it expiring and renew it', async ({ pag
   await signIn(page, email);
   await page.goto('/compliance');
   await page.getByRole('button', { name: 'Add entry' }).click();
-  const form = page.locator('.ant-modal').filter({ hasText: 'Add to the register' });
+  const form = page.locator('.ant-drawer-open').filter({ hasText: 'Add to the register' });
   await form.getByLabel('Number').fill('BG/E2E/1');
   await form.getByLabel('Bank').fill('State Bank of India');
   await chooseOption(form.getByLabel('Project'), 'BG-01');
   await form.getByLabel('In favour of').fill('Executive Engineer, NH Division');
-  await form.getByLabel('Guarantee amount (₹)').fill('500000');
-  await form.getByLabel('Margin money (₹)').fill('125000');
+  await form.getByLabel('Guarantee amount').fill('500000');
+  await form.getByLabel('Margin money').fill('125000');
   await form.getByLabel('Valid to').fill(typed(shift(today, 10)));
   await form.getByLabel('Valid to').press('Enter');
   await form.getByRole('button', { name: 'Add', exact: true }).click();

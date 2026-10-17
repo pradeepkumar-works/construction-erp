@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { Alert, App, Button, Checkbox, DatePicker, Form, Input, InputNumber, Modal, Select, Typography } from 'antd';
+import { Alert, App, Button, Checkbox, DatePicker, Form, Input, InputNumber, Select, Typography } from 'antd';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { AttachmentDto, MeasurementSheetDto } from '@erp/shared';
@@ -15,6 +15,8 @@ import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { editActionLabel } from '@/components/common/EditResubmitButton';
 import { SectorInputs, sectorBody, sectorFormValues, typedLocation, type SectorFormValues } from '@/components/sector/SectorInputs';
 import { themeColor } from '@/lib/theme';
+import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
+import { QuantityInput } from '@/components/form/inputs';
 
 interface LineValues {
   description?: string;
@@ -99,143 +101,149 @@ export function MeasurementFormModal({ open, onClose, projectId, boqItemId, shee
     onSuccess: (x: MeasurementSheetDto) => {
       message.success(editing ? `${x.mbNo} resubmitted for approval` : `${x.mbNo} submitted for approval`);
       qc.invalidateQueries();
-      onClose();
     },
     onError: (err) => message.error(errorMessage(err)),
   });
 
   return (
-    <Modal
+    <FormShell
       open={open}
+      onClose={onClose}
+      form={form}
+      layout="drawer"
+      width={900}
       title={sheet ? `${editActionLabel(sheet.status)} · ${sheet.mbNo}` : 'New measurement'}
       okText={editing ? 'Resubmit for approval' : 'Submit'}
-      onCancel={onClose}
-      onOk={() => form.submit()}
-      confirmLoading={mutation.isPending}
-      width={900}
-      destroyOnHidden
+      onSubmit={(v) => mutation.mutateAsync(v)}
+      draftKey={editing ? undefined : `measurement:${projectId ?? 'any'}`}
     >
-      <Form form={form} layout="vertical" onFinish={(v) => mutation.mutate(v)} style={{ marginTop: 8 }}>
+      <Form form={form} layout="vertical">
         {sheet?.reviewNote && <Alert type="warning" showIcon style={{ marginBottom: 16 }} title={`Reviewer note from ${sheet.reviewedByName ?? 'approver'}`} description={sheet.reviewNote} />}
-        <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]} hidden={!!fixedProject}>
-          <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} onChange={() => form.setFieldsValue({ boqItemId: undefined, workOrderId: undefined })} />
-        </Form.Item>
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '0 16px' }}>
-          <Form.Item
-            name="boqItemId"
-            label="BOQ item"
-            rules={[{ required: true, message: 'Required' }]}
-            extra={item ? `Contract ${formatQty(contractQty)} ${item.unit} · measured ${formatQty(item.measuredQty)} · awaiting approval ${formatQty(item.pendingMeasuredQty)}` : undefined}
-          >
-            <Select
-              showSearch={{ optionFilterProp: 'label' }}
-              placeholder="Select BOQ item"
-              disabled={!selectedProject}
-              options={(boq ?? []).map((b) => ({ value: b.id, label: `${b.itemNo} - ${b.description} (${b.unit})` }))}
-              onChange={() => form.setFieldValue('workOrderId', undefined)}
-            />
+        <FormSection title="What and where">
+          <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!fixedProject}>
+            <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} onChange={() => form.setFieldsValue({ boqItemId: undefined, workOrderId: undefined })} />
           </Form.Item>
-          <Form.Item name="date" label="Measured on" rules={[{ required: true, message: 'Required' }]}>
-            <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
-          </Form.Item>
-        </div>
-        {woOptions.length > 0 && (
-          <Form.Item name="workOrderId" label="Done by (work order)" extra="Tag the subcontractor's work so it goes in their bill. Leave empty for departmental work.">
-            <Select allowClear placeholder="Departmental (no work order)" options={woOptions} />
-          </Form.Item>
-        )}
-        <SectorInputs projectId={selectedProject} />
-        <Form.Item
-          name="location"
-          label="Location"
-          dependencies={['chainageFrom', 'floor', 'village']}
-          rules={[
-            ({ getFieldValue }) => ({
-              validator: (_, v?: string) => (v?.trim() || getFieldValue('chainageFrom') || getFieldValue('floor') || getFieldValue('village') ? Promise.resolve() : Promise.reject(new Error('Required'))),
-            }),
-          ]}
-        >
-          <Input maxLength={200} placeholder="Grid, side or zone, e.g. LHS, grid C4-D7" />
-        </Form.Item>
-        <div style={{ ...LINE_GRID, fontSize: 12, color: themeColor('colorTextDescription'), marginBottom: 4 }}>
-          <span>Description</span>
-          <span>Nos</span>
-          <span>Length</span>
-          <span>Breadth</span>
-          <span>Depth / height</span>
-          <span>Deduct</span>
-          <span style={{ textAlign: 'right' }}>Qty {item ? `(${item.unit})` : ''}</span>
-          <span />
-        </div>
-        <Form.List
-          name="lines"
-          rules={[
-            {
-              validator: async (_, v: LineValues[] | undefined) => {
-                if (!v?.length) throw new Error('Add at least one line');
-                if (measurementTotal(v) <= 0) throw new Error('The total must be greater than zero');
-              },
-            },
-          ]}
-        >
-          {(fields, { add, remove }, { errors }) => (
-            <>
-              {fields.map((f) => {
-                const line = lines[f.name] ?? {};
-                const qty = measurementLineQty(line);
-                return (
-                  <div key={f.key} style={LINE_GRID}>
-                    <Form.Item name={[f.name, 'description']} rules={[{ required: true, whitespace: true, message: 'Required' }]}>
-                      <Input maxLength={200} placeholder="e.g. Footing F1" />
-                    </Form.Item>
-                    <Form.Item name={[f.name, 'nos']}>
-                      <InputNumber style={{ width: '100%' }} min={0} />
-                    </Form.Item>
-                    <Form.Item name={[f.name, 'length']}>
-                      <InputNumber style={{ width: '100%' }} min={0} />
-                    </Form.Item>
-                    <Form.Item name={[f.name, 'breadth']}>
-                      <InputNumber style={{ width: '100%' }} min={0} />
-                    </Form.Item>
-                    <Form.Item
-                      name={[f.name, 'depth']}
-                      rules={[{ validator: async () => (hasDimensions(line) ? undefined : Promise.reject(new Error('Enter nos or a dimension'))) }]}
-                    >
-                      <InputNumber style={{ width: '100%' }} min={0} />
-                    </Form.Item>
-                    <Form.Item name={[f.name, 'deduct']} valuePropName="checked">
-                      <Checkbox />
-                    </Form.Item>
-                    <div className="mono" style={{ textAlign: 'right', lineHeight: '32px', color: qty < 0 ? themeColor('colorErrorText') : undefined }}>
-                      {formatQty(qty)}
-                    </div>
-                    <Button type="text" icon={<DeleteOutlined />} disabled={fields.length === 1} onClick={() => remove(f.name)} aria-label="Remove line" />
-                  </div>
-                );
-              })}
-              <Form.ErrorList errors={errors} />
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '4px 0 16px' }}>
-                <Button icon={<PlusOutlined />} onClick={() => add({ nos: 1 })} disabled={fields.length >= 100}>
-                  Add line
-                </Button>
-                <Typography.Text strong style={{ fontSize: 16 }}>
-                  Total {formatQty(total)} {item?.unit ?? ''}
-                  {item ? <span className="text-muted" style={{ fontWeight: 400, fontSize: 13 }}> · {formatINR(total * toNumber(item.rate))}</span> : null}
-                </Typography.Text>
-              </div>
-            </>
+          <FormGrid cols={2}>
+            <Form.Item
+              name="boqItemId"
+              label="BOQ item"
+              rules={[{ required: true, message: 'Choose the BOQ item' }]}
+              extra={item ? `Contract ${formatQty(contractQty)} ${item.unit} · measured ${formatQty(item.measuredQty)} · awaiting approval ${formatQty(item.pendingMeasuredQty)}` : undefined}
+            >
+              <Select
+                showSearch={{ optionFilterProp: 'label' }}
+                placeholder="Select BOQ item"
+                disabled={!selectedProject}
+                options={(boq ?? []).map((b) => ({ value: b.id, label: `${b.itemNo} - ${b.description} (${b.unit})` }))}
+                onChange={() => form.setFieldValue('workOrderId', undefined)}
+              />
+            </Form.Item>
+            <Form.Item name="date" label="Measured on" rules={[{ required: true, message: 'Pick the date' }]}>
+              <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+            </Form.Item>
+          </FormGrid>
+          {woOptions.length > 0 && (
+            <Form.Item name="workOrderId" label="Done by (work order)" extra="Tag the subcontractor's work so it goes in their bill. Leave empty for departmental work.">
+              <Select allowClear placeholder="Departmental (no work order)" options={woOptions} />
+            </Form.Item>
           )}
-        </Form.List>
-        <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginTop: -8 }}>
-          Each line is nos × length × breadth × depth; blank columns count as 1. Tick Deduct for openings and overlaps.
-        </Typography.Paragraph>
-        <Form.Item name="remarks" label="Remarks">
-          <Input.TextArea rows={2} maxLength={1000} />
-        </Form.Item>
-        <Form.Item name="photos" label="Photos or sketch">
-          <PhotoUpload />
-        </Form.Item>
+          <SectorInputs projectId={selectedProject} />
+          <Form.Item
+            name="location"
+            label="Location"
+            dependencies={['chainageFrom', 'floor', 'village']}
+            rules={[
+              ({ getFieldValue }) => ({
+                validator: (_, v?: string) => (v?.trim() || getFieldValue('chainageFrom') || getFieldValue('floor') || getFieldValue('village') ? Promise.resolve() : Promise.reject(new Error('Enter the location, or a chainage, floor or village'))),
+              }),
+            ]}
+          >
+            <Input maxLength={200} placeholder="Grid, side or zone, e.g. LHS, grid C4-D7" />
+          </Form.Item>
+        </FormSection>
+        <FormSection title="Measurements">
+          <div style={{ ...LINE_GRID, fontSize: 12, color: themeColor('colorTextDescription'), marginBottom: 4 }}>
+            <span>Description</span>
+            <span>Nos</span>
+            <span>Length</span>
+            <span>Breadth</span>
+            <span>Depth / height</span>
+            <span>Deduct</span>
+            <span style={{ textAlign: 'right' }}>Qty {item ? `(${item.unit})` : ''}</span>
+            <span />
+          </div>
+          <Form.List
+            name="lines"
+            rules={[
+              {
+                validator: async (_, v: LineValues[] | undefined) => {
+                  if (!v?.length) throw new Error('Add at least one line');
+                  if (measurementTotal(v) <= 0) throw new Error('The total must be greater than zero');
+                },
+              },
+            ]}
+          >
+            {(fields, { add, remove }, { errors }) => (
+              <>
+                {fields.map((f) => {
+                  const line = lines[f.name] ?? {};
+                  const qty = measurementLineQty(line);
+                  return (
+                    <div key={f.key} style={LINE_GRID}>
+                      <Form.Item name={[f.name, 'description']} rules={[{ required: true, whitespace: true, message: 'Describe the line' }]}>
+                        <Input maxLength={200} placeholder="e.g. Footing F1" />
+                      </Form.Item>
+                      <Form.Item name={[f.name, 'nos']}>
+                        <InputNumber style={{ width: '100%' }} min={0} />
+                      </Form.Item>
+                      <Form.Item name={[f.name, 'length']}>
+                        <QuantityInput />
+                      </Form.Item>
+                      <Form.Item name={[f.name, 'breadth']}>
+                        <QuantityInput />
+                      </Form.Item>
+                      <Form.Item
+                        name={[f.name, 'depth']}
+                        rules={[{ validator: async () => (hasDimensions(line) ? undefined : Promise.reject(new Error('Enter nos or a dimension'))) }]}
+                      >
+                        <QuantityInput />
+                      </Form.Item>
+                      <Form.Item name={[f.name, 'deduct']} valuePropName="checked">
+                        <Checkbox />
+                      </Form.Item>
+                      <div className="mono" style={{ textAlign: 'right', lineHeight: '32px', color: qty < 0 ? themeColor('colorErrorText') : undefined }}>
+                        {formatQty(qty)}
+                      </div>
+                      <Button type="text" icon={<DeleteOutlined />} disabled={fields.length === 1} onClick={() => remove(f.name)} aria-label="Remove line" />
+                    </div>
+                  );
+                })}
+                <Form.ErrorList errors={errors} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '4px 0 16px' }}>
+                  <Button icon={<PlusOutlined />} onClick={() => add({ nos: 1 })} disabled={fields.length >= 100}>
+                    Add line
+                  </Button>
+                  <Typography.Text strong style={{ fontSize: 16 }}>
+                    Total {formatQty(total)} {item?.unit ?? ''}
+                    {item ? <span className="text-muted" style={{ fontWeight: 400, fontSize: 13 }}> · {formatINR(total * toNumber(item.rate))}</span> : null}
+                  </Typography.Text>
+                </div>
+              </>
+            )}
+          </Form.List>
+          <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginTop: -8 }}>
+            Each line is nos × length × breadth × depth; blank columns count as 1. Tick Deduct for openings and overlaps.
+          </Typography.Paragraph>
+        </FormSection>
+        <FormSection title="Notes">
+          <Form.Item name="remarks" label="Remarks">
+            <Input.TextArea rows={2} maxLength={1000} />
+          </Form.Item>
+          <Form.Item name="photos" label="Photos or sketch">
+            <PhotoUpload />
+          </Form.Item>
+        </FormSection>
       </Form>
-    </Modal>
+    </FormShell>
   );
 }

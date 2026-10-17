@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { api, apiToken, chooseOption, signIn } from './helpers';
+import { api, apiToken, chooseOption, formPanel, signIn } from './helpers';
 
 interface Page<T> {
   items: T[];
@@ -23,7 +23,7 @@ test('a variation approved by the client revises the BOQ and the contract value'
   await signIn(page, 'qs@demo.com');
   await page.goto(`/projects/${road.id}?tab=variations`);
   await page.getByRole('button', { name: 'New variation' }).click();
-  const modal = page.locator('.ant-modal').filter({ hasText: 'New variation' });
+  const modal = formPanel(page, 'New variation');
   await modal.getByLabel('Title').fill('E2E: more WMM and a drain');
   const lines = modal.locator('.variation-line');
   await chooseOption(lines.nth(0).getByLabel('BOQ item'), 'Wet Mix');
@@ -34,7 +34,7 @@ test('a variation approved by the client revises the BOQ and the contract value'
   await lines.nth(1).getByLabel('Description').fill('Lined drain at the toll plaza');
   await lines.nth(1).getByLabel('Unit').fill('Rmt');
   await lines.nth(1).getByLabel('Quantity').fill('20');
-  await lines.nth(1).getByLabel('Proposed rate (₹)').fill('1500');
+  await lines.nth(1).getByLabel('Proposed rate').fill('1500');
   await modal.getByRole('button', { name: 'Prepare' }).click();
 
   const drawer = page.locator('.ant-drawer').filter({ hasText: 'E2E: more WMM and a drain' });
@@ -48,7 +48,7 @@ test('a variation approved by the client revises the BOQ and the contract value'
   await drawer.getByRole('button', { name: 'Record decision' }).click();
   const decide = page.locator('.ant-modal').filter({ hasText: "Client's decision" });
   await decide.getByLabel("Client's order or letter").fill('EE/E2E/9');
-  await decide.getByLabel('Rate (₹)').fill('1400');
+  await decide.getByLabel('Rate', { exact: true }).fill('1400');
   await decide.getByRole('button', { name: 'Record' }).click();
   await expect(drawer.getByText('Approved by client', { exact: true })).toBeVisible();
 

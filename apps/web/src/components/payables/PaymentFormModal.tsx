@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo } from 'react';
-import { Alert, App, DatePicker, Form, Input, InputNumber, Modal, Select, Tag, Typography } from 'antd';
+import { Alert, App, DatePicker, Form, Input, Select, Tag, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { PayableBillDto, PayableBillType, PaymentMode, VendorPaymentDto } from '@erp/shared';
@@ -9,6 +9,8 @@ import { MSME_CATEGORY_LABELS, RECEIPT_MODES, RECEIPT_MODE_LABELS } from '@erp/s
 import { api, errorMessage } from '@/lib/api';
 import { usePayables } from '@/lib/queries';
 import { formatDate, formatINR, toNumber } from '@/lib/format';
+import { FormGrid, FormShell } from '@/components/form/FormShell';
+import { MoneyInput } from '@/components/form/inputs';
 
 /** The bill a payment is for, when the modal is opened from the bill itself. */
 export interface PayTarget {
@@ -99,7 +101,6 @@ export function PaymentFormModal({ open, onClose, bill, payment }: { open: boole
     onSuccess: (p) => {
       message.success(`${formatINR(p.amount, true)} ${editing ? 'updated' : 'paid'} against ${p.billLabel}`);
       for (const k of PAYMENT_QUERY_KEYS) qc.invalidateQueries({ queryKey: [k] });
-      onClose();
     },
     onError: (e) => message.error(errorMessage(e)),
   });
@@ -107,17 +108,16 @@ export function PaymentFormModal({ open, onClose, bill, payment }: { open: boole
   const over = target && !editing ? settles - toNumber(target.outstanding) : 0;
 
   return (
-    <Modal
+    <FormShell
       open={open}
+      onClose={onClose}
+      form={form}
+      layout="modal"
       title={editing ? `Correct payment · ${payment.billLabel}` : bill ? `Pay ${bill.vendorName} · ${bill.billLabel}` : 'Record a payment'}
       okText={editing ? 'Save' : 'Record payment'}
-      onCancel={onClose}
-      onOk={() => form.submit()}
-      confirmLoading={mutation.isPending}
-      width={640}
-      destroyOnHidden
+      onSubmit={(v) => mutation.mutateAsync(v)}
     >
-      <Form form={form} layout="vertical" onFinish={(v) => mutation.mutate(v)} style={{ marginTop: 8 }}>
+      <Form form={form} layout="vertical">
         {!bill && !editing && (
           <Form.Item name="billKey" label="Bill" rules={[{ required: true, message: 'Choose the bill' }]}>
             <Select
@@ -138,33 +138,33 @@ export function PaymentFormModal({ open, onClose, bill, payment }: { open: boole
             ) : null}
           </Typography.Paragraph>
         )}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0 16px' }}>
-          <Form.Item name="paymentDate" label="Paid on" rules={[{ required: true, message: 'Required' }]}>
+        <FormGrid cols={3}>
+          <Form.Item name="paymentDate" label="Paid on" rules={[{ required: true, message: 'Pick the date' }]}>
             <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
-          <Form.Item name="amount" label="Amount paid (₹)" rules={[{ required: true, message: 'Required' }]}>
-            <InputNumber style={{ width: '100%' }} min={0} precision={2} />
+          <Form.Item name="amount" label="Amount paid" rules={[{ required: true, message: 'Enter the amount' }]}>
+            <MoneyInput />
           </Form.Item>
           <Form.Item name="mode" label="Mode">
             <Select options={RECEIPT_MODES.map((m) => ({ value: m, label: RECEIPT_MODE_LABELS[m] }))} />
           </Form.Item>
-        </div>
+        </FormGrid>
         <Form.Item name="reference" label="UTR / cheque / voucher no.">
           <Input maxLength={100} placeholder="e.g. HDFCN26287512345" />
         </Form.Item>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '0 16px' }}>
+        <FormGrid cols={3}>
           {billType !== 'SUBCONTRACT_BILL' && (
-            <Form.Item name="tdsAmount" label="TDS deducted (₹)" tooltip="Section 194Q on purchases or 194C on contracts, deducted when paying">
-              <InputNumber style={{ width: '100%' }} min={0} precision={2} />
+            <Form.Item name="tdsAmount" label="TDS deducted" tooltip="Section 194Q on purchases or 194C on contracts, deducted when paying">
+              <MoneyInput />
             </Form.Item>
           )}
-          <Form.Item name="otherDeduction" label="Other deduction (₹)">
-            <InputNumber style={{ width: '100%' }} min={0} precision={2} />
+          <Form.Item name="otherDeduction" label="Other deduction">
+            <MoneyInput />
           </Form.Item>
           <Form.Item name="otherDeductionNote" label="Deducted for">
             <Input maxLength={200} placeholder="Short supply debit note" />
           </Form.Item>
-        </div>
+        </FormGrid>
         {billType === 'SUBCONTRACT_BILL' && <Typography.Paragraph type="secondary">Their TDS, retention and recoveries are already deducted in the bill&apos;s net payable.</Typography.Paragraph>}
         <Typography.Paragraph>
           This settles <strong>{formatINR(settles, true)}</strong> of the bill (paid plus deducted).
@@ -174,6 +174,6 @@ export function PaymentFormModal({ open, onClose, bill, payment }: { open: boole
           <Input.TextArea rows={2} maxLength={1000} />
         </Form.Item>
       </Form>
-    </Modal>
+    </FormShell>
   );
 }

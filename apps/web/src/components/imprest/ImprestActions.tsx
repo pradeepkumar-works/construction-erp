@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { App, Checkbox, DatePicker, Form, Input, InputNumber, Modal, Select } from 'antd';
+import { App, Checkbox, DatePicker, Form, Input, Select } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ImprestDetailDto, ImprestDto, PaymentMode } from '@erp/shared';
@@ -10,6 +10,8 @@ import { api, errorMessage } from '@/lib/api';
 import { useUsers } from '@/lib/queries';
 import { formatINR } from '@/lib/format';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
+import { FormShell } from '@/components/form/FormShell';
+import { MoneyInput } from '@/components/form/inputs';
 
 const MODES = PAYMENT_MODES.filter((m) => m !== 'CREDIT').map((m) => ({ value: m, label: PAYMENT_MODE_LABELS[m] }));
 const ymd = (d?: dayjs.Dayjs | null) => (d ? d.format('YYYY-MM-DD') : undefined);
@@ -102,24 +104,23 @@ export function ImprestActionModal({ action, onClose, onDone }: { action: Impres
       message.success(done[action!.kind]);
       qc.invalidateQueries({ queryKey: ['imprests'] });
       onDone?.(d.id);
-      onClose();
     },
     onError: (err) => message.error(errorMessage(err)),
   });
 
   const needsAmount = kind !== 'reject';
-  const amountLabel = kind === 'open' || kind === 'float' ? 'Float (₹)' : kind === 'return' ? 'Amount returned (₹)' : 'Amount (₹)';
+  const amountLabel = kind === 'open' || kind === 'float' ? 'Float' : kind === 'return' ? 'Amount returned' : 'Amount';
   const paying = kind === 'pay' || kind === 'advance' || kind === 'open';
 
   return (
-    <Modal open={!!action} title={kind ? TITLES[kind] : ''} okText={kind ? OK[kind] : 'Save'} onCancel={onClose} onOk={() => form.submit()} confirmLoading={save.isPending} destroyOnHidden>
+    <FormShell open={!!action} onClose={onClose} form={form} layout="modal" title={kind ? TITLES[kind] : ''} okText={kind ? OK[kind] : 'Save'} onSubmit={(v) => save.mutateAsync(v)}>
       {imp ? (
         <p className="text-muted" style={{ marginTop: 0 }}>
           {imp.holderName} at {imp.projectName}: {formatINR(imp.cashInHand, true)} in hand of a {formatINR(imp.floatAmount)} float.
           {kind === 'pay' && imp.openRequest?.reason ? ` Asked for: ${imp.openRequest.reason}` : ''}
         </p>
       ) : null}
-      <Form form={form} layout="vertical" onFinish={(v) => save.mutate(v)} requiredMark="optional">
+      <Form form={form} layout="vertical" requiredMark="optional">
         {kind === 'open' ? (
           <>
             <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Pick the project' }]}>
@@ -136,7 +137,7 @@ export function ImprestActionModal({ action, onClose, onDone }: { action: Impres
         ) : null}
         {needsAmount ? (
           <Form.Item name="amount" label={amountLabel} rules={[{ required: kind !== 'topup', message: 'Enter the amount' }]} extra={kind === 'topup' ? 'Empty: what brings the cash back to the float' : undefined}>
-            <InputNumber min={1} style={{ width: '100%' }} />
+            <MoneyInput min={1} />
           </Form.Item>
         ) : null}
         {kind === 'open' ? (
@@ -169,6 +170,6 @@ export function ImprestActionModal({ action, onClose, onDone }: { action: Impres
           </Form.Item>
         ) : null}
       </Form>
-    </Modal>
+    </FormShell>
   );
 }

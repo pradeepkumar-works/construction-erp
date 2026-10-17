@@ -23,7 +23,7 @@ test('LD terms on the contract give the exposure for a late project', async ({ p
     await signIn(page, 'pm2@demo.com');
     await page.goto(`/projects/${building.id}?tab=contract`);
     await page.getByRole('button', { name: 'Edit contract' }).click();
-    const modal = page.locator('.ant-modal').filter({ hasText: 'Contract: BL-2026-02' });
+    const modal = page.locator('.ant-drawer-open').filter({ hasText: 'Contract: BL-2026-02' });
     await modal.getByLabel('LD rate (% of contract value)').fill('0.1');
     // A click while the dropdown is still opening can be lost, so pick again until the field shows the choice.
     const period = modal.locator('.ant-form-item').filter({ has: page.getByText('For each', { exact: true }) });

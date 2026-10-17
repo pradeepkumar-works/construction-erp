@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo } from 'react';
-import { Alert, App, DatePicker, Form, Input, InputNumber, Modal, Select } from 'antd';
+import { Alert, App, DatePicker, Form, Input, InputNumber, Select } from 'antd';
 import dayjs from 'dayjs';
 import type { AttachmentDto, MachineryLogDto } from '@erp/shared';
 import { MAX_LOG_HOURS, MAX_PAGE_SIZE, machineryLogProblem } from '@erp/shared';
@@ -10,6 +10,8 @@ import { api, errorMessage } from '@/lib/api';
 import { useActivities, useEquipment, useProjects } from '@/lib/queries';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { editActionLabel } from '@/components/common/EditResubmitButton';
+import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
+import { QuantityInput } from '@/components/form/inputs';
 
 interface FormValues {
   projectId: string;
@@ -28,8 +30,6 @@ interface FormValues {
   remarks?: string;
   photos?: AttachmentDto[];
 }
-
-const grid3 = { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0 16px' } as const;
 
 /** Log a machine's day, or (with `log`) fix a returned log and resubmit it. */
 export function MachineryFormModal({ open, onClose, projectId, log }: { open: boolean; onClose: () => void; projectId?: string; log?: MachineryLogDto | null }) {
@@ -109,89 +109,93 @@ export function MachineryFormModal({ open, onClose, projectId, log }: { open: bo
     onSuccess: () => {
       message.success(editing ? 'Machinery log resubmitted for approval' : 'Machinery log submitted for approval');
       qc.invalidateQueries();
-      onClose();
     },
     onError: (err) => message.error(errorMessage(err)),
   });
 
-  const onFinish = (v: FormValues) => {
+  const submit = async (v: FormValues) => {
     const problem = machineryLogProblem(v);
     if (problem) {
       message.error(problem);
-      return;
+      throw new Error(problem);
     }
-    mutation.mutate(v);
+    return mutation.mutateAsync(v);
   };
 
   return (
-    <Modal
+    <FormShell
       open={open}
+      onClose={onClose}
+      form={form}
+      layout="drawer"
       title={log ? `${editActionLabel(log.status)} · ${log.equipmentCode}` : 'Log machinery'}
       okText={editing ? 'Resubmit for approval' : 'Submit'}
-      onCancel={onClose}
-      onOk={() => form.submit()}
-      confirmLoading={mutation.isPending}
-      width={680}
-      destroyOnHidden
+      onSubmit={submit}
     >
-      <Form form={form} layout="vertical" onFinish={onFinish} style={{ marginTop: 8 }}>
+      <Form form={form} layout="vertical">
         {log?.reviewNote && <Alert type="warning" showIcon style={{ marginBottom: 16 }} title={`Reviewer note from ${log.reviewedByName ?? 'approver'}`} description={log.reviewNote} />}
-        <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]} hidden={!!fixedProject}>
-          <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} onChange={() => form.setFieldValue('activityId', undefined)} />
-        </Form.Item>
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '0 16px' }}>
-          <Form.Item name="equipmentId" label="Equipment" rules={[{ required: true, message: 'Required' }]}>
-            <Select showSearch={{ optionFilterProp: 'label' }} loading={eqLoading} placeholder="Select machine" options={equipmentOptions} />
+        <FormSection title="Machine and hours">
+          <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!fixedProject}>
+            <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} onChange={() => form.setFieldValue('activityId', undefined)} />
           </Form.Item>
-          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Required' }]}>
-            <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+          <FormGrid cols={2}>
+            <Form.Item name="equipmentId" label="Equipment" rules={[{ required: true, message: 'Choose the machine' }]}>
+              <Select showSearch={{ optionFilterProp: 'label' }} loading={eqLoading} placeholder="Select machine" options={equipmentOptions} />
+            </Form.Item>
+            <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date' }]}>
+              <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+            </Form.Item>
+          </FormGrid>
+          <FormGrid cols={3}>
+            <Form.Item name="hoursWorked" label="Hours worked" rules={[{ required: true, message: 'Enter the hours worked' }]}>
+              <InputNumber style={{ width: '100%' }} min={0} max={MAX_LOG_HOURS} step={0.5} />
+            </Form.Item>
+            <Form.Item name="idleHours" label="Idle hours">
+              <InputNumber style={{ width: '100%' }} min={0} max={MAX_LOG_HOURS} step={0.5} />
+            </Form.Item>
+            <Form.Item name="breakdownHours" label="Breakdown hours">
+              <InputNumber style={{ width: '100%' }} min={0} max={MAX_LOG_HOURS} step={0.5} />
+            </Form.Item>
+          </FormGrid>
+          {Number(breakdown) > 0 ? (
+            <Form.Item name="breakdownNote" label="What broke down" rules={[{ required: true, whitespace: true, message: 'Say what broke down' }]}>
+              <Input placeholder="Hydraulic hose burst; mechanic attended" maxLength={500} />
+            </Form.Item>
+          ) : null}
+        </FormSection>
+        <FormSection title="Meter, diesel and work">
+          <FormGrid cols={3}>
+            <Form.Item name="meterStart" label="Hour meter start">
+              <InputNumber style={{ width: '100%' }} min={0} />
+            </Form.Item>
+            <Form.Item name="meterEnd" label="Hour meter end">
+              <InputNumber style={{ width: '100%' }} min={0} />
+            </Form.Item>
+            <Form.Item name="dieselLitres" label="Diesel filled">
+              <QuantityInput unit="L" />
+            </Form.Item>
+          </FormGrid>
+          <FormGrid cols={2}>
+            <Form.Item name="operatorName" label="Operator">
+              <Input maxLength={80} />
+            </Form.Item>
+            <Form.Item name="activityId" label="Activity">
+              <Select allowClear showSearch={{ optionFilterProp: 'label' }} disabled={!selectedProject} options={(activities ?? []).map((a) => ({ value: a.id, label: a.name }))} />
+            </Form.Item>
+          </FormGrid>
+          <Form.Item name="workDone" label="Work done">
+            <Input placeholder="Excavation for drain, Ch. 2+400 to 2+520" maxLength={500} />
           </Form.Item>
-        </div>
-        <div style={grid3}>
-          <Form.Item name="hoursWorked" label="Hours worked" rules={[{ required: true, message: 'Required' }]}>
-            <InputNumber style={{ width: '100%' }} min={0} max={MAX_LOG_HOURS} step={0.5} />
+        </FormSection>
+        <FormSection title="Notes and photos">
+          <Form.Item name="remarks" label="Remarks">
+            <Input.TextArea rows={2} maxLength={1000} />
           </Form.Item>
-          <Form.Item name="idleHours" label="Idle hours">
-            <InputNumber style={{ width: '100%' }} min={0} max={MAX_LOG_HOURS} step={0.5} />
+          <Form.Item name="photos" label="Photos (hour meter, log sheet)">
+            <PhotoUpload />
           </Form.Item>
-          <Form.Item name="breakdownHours" label="Breakdown hours">
-            <InputNumber style={{ width: '100%' }} min={0} max={MAX_LOG_HOURS} step={0.5} />
-          </Form.Item>
-        </div>
-        {Number(breakdown) > 0 ? (
-          <Form.Item name="breakdownNote" label="What broke down" rules={[{ required: true, whitespace: true, message: 'Required when there are breakdown hours' }]}>
-            <Input placeholder="Hydraulic hose burst; mechanic attended" maxLength={500} />
-          </Form.Item>
-        ) : null}
-        <div style={grid3}>
-          <Form.Item name="meterStart" label="Hour meter start">
-            <InputNumber style={{ width: '100%' }} min={0} />
-          </Form.Item>
-          <Form.Item name="meterEnd" label="Hour meter end">
-            <InputNumber style={{ width: '100%' }} min={0} />
-          </Form.Item>
-          <Form.Item name="dieselLitres" label="Diesel filled (L)">
-            <InputNumber style={{ width: '100%' }} min={0} />
-          </Form.Item>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
-          <Form.Item name="operatorName" label="Operator">
-            <Input maxLength={80} />
-          </Form.Item>
-          <Form.Item name="activityId" label="Activity">
-            <Select allowClear showSearch={{ optionFilterProp: 'label' }} disabled={!selectedProject} options={(activities ?? []).map((a) => ({ value: a.id, label: a.name }))} />
-          </Form.Item>
-        </div>
-        <Form.Item name="workDone" label="Work done">
-          <Input placeholder="Excavation for drain, Ch. 2+400 to 2+520" maxLength={500} />
-        </Form.Item>
-        <Form.Item name="remarks" label="Remarks">
-          <Input.TextArea rows={2} maxLength={1000} />
-        </Form.Item>
-        <Form.Item name="photos" label="Photos (hour meter, log sheet)">
-          <PhotoUpload />
-        </Form.Item>
+        </FormSection>
       </Form>
-    </Modal>
+    </FormShell>
   );
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Descriptions, Divider, Drawer, Form, Input, Modal, Popconfirm, Skeleton, Space, Typography } from 'antd';
+import { App, Button, Descriptions, Divider, Drawer, Form, Input, Popconfirm, Skeleton, Space, Typography } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { SafetyIncidentDto } from '@erp/shared';
 import { canEditSafetyRecord, canManageSafety } from '@erp/shared';
@@ -11,6 +11,7 @@ import { useSafetyIncident, useSafetyIncidentHistory } from '@/lib/queries';
 import { formatDate, formatDateTime } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
+import { FormShell } from '@/components/form/FormShell';
 import { IncidentStatusTag, IncidentTypeTag, SafetyHistory } from './safetyUi';
 
 /** One incident or near miss: what happened, the investigation, and closing it with the root cause and the action. */
@@ -32,10 +33,7 @@ export function IncidentDrawer({ id, open, onClose, onEdit }: { id: string | nul
   const close = useMutation({
     mutationFn: async (v: { rootCause: string; correctiveAction: string; closureNote?: string }) =>
       (await api.post<SafetyIncidentDto>(`/safety/incidents/${id}/close`, { rootCause: v.rootCause.trim(), correctiveAction: v.correctiveAction.trim(), closureNote: v.closureNote?.trim() || null })).data,
-    onSuccess: (i) => {
-      done(`${i.incidentNo} closed`);
-      setClosing(false);
-    },
+    onSuccess: (i) => done(`${i.incidentNo} closed`),
     onError: (e) => message.error(errorMessage(e)),
   });
   const reopen = useMutation({
@@ -140,16 +138,8 @@ export function IncidentDrawer({ id, open, onClose, onEdit }: { id: string | nul
           <SafetyHistory history={history} />
         </>
       )}
-      <Modal
-        open={closing}
-        title={data ? `Close ${data.incidentNo}` : 'Close'}
-        okText="Close incident"
-        onCancel={() => setClosing(false)}
-        confirmLoading={close.isPending}
-        onOk={() => form.submit()}
-        destroyOnHidden
-      >
-        <Form form={form} layout="vertical" onFinish={(v) => close.mutate(v)} initialValues={{ rootCause: data?.rootCause ?? '', correctiveAction: data?.correctiveAction ?? '' }}>
+      <FormShell open={closing} onClose={() => setClosing(false)} form={form} layout="modal" width={520} title={data ? `Close ${data.incidentNo}` : 'Close'} okText="Close incident" onSubmit={(v) => close.mutateAsync(v)}>
+        <Form form={form} layout="vertical" initialValues={{ rootCause: data?.rootCause ?? '', correctiveAction: data?.correctiveAction ?? '' }}>
           <Form.Item name="rootCause" label="Root cause" rules={[{ required: true, whitespace: true, message: 'Why did it happen?' }]}>
             <Input.TextArea rows={2} maxLength={2000} />
           </Form.Item>
@@ -160,7 +150,7 @@ export function IncidentDrawer({ id, open, onClose, onEdit }: { id: string | nul
             <Input.TextArea rows={2} maxLength={2000} placeholder="Checked on site, toolbox talk held" />
           </Form.Item>
         </Form>
-      </Modal>
+      </FormShell>
     </Drawer>
   );
 }

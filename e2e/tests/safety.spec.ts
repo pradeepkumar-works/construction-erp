@@ -26,7 +26,7 @@ test('an incident is reported at site and closed by the safety officer', async (
   await signIn(page, 'engineer2@demo.com');
   await page.goto(`/projects/${project.id}?tab=safety`);
   await page.getByRole('button', { name: /Report incident/ }).click();
-  const form = page.locator('.ant-modal').filter({ hasText: 'Report an incident' });
+  const form = page.locator('.ant-drawer-open').filter({ hasText: 'Report an incident' });
   await chooseOption(form.getByLabel('Type'), 'First aid');
   await form.getByLabel('Where').fill(where);
   await form.getByLabel('What happened').fill('Mason twisted an ankle on loose stair shuttering.');
@@ -72,7 +72,7 @@ test('a permit to work is asked for, issued by the safety officer and closed', a
   await page.goto(`/projects/${project.id}?tab=safety`);
   await page.getByRole('tab', { name: /Permits to work/ }).click();
   await page.getByRole('button', { name: /Ask for permit/ }).click();
-  const form = page.locator('.ant-modal').filter({ hasText: 'Ask for a permit to work' });
+  const form = page.locator('.ant-drawer-open').filter({ hasText: 'Ask for a permit to work' });
   await chooseOption(form.getByLabel('Work', { exact: true }), 'Hot work');
   await form.getByLabel('Where').fill(where);
   await form.getByLabel('The work').fill('Cutting the shaft door frames');

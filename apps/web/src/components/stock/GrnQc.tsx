@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { App, Form, Input, InputNumber, Modal, Segmented, Table, Tag, Typography } from 'antd';
+import { App, Form, Input, Segmented, Table, Tag, Typography } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { GrnQcStatus, StockEntryDto, StockLineDto } from '@erp/shared';
 import { GRN_QC_STATUSES, GRN_QC_STATUS_LABELS } from '@erp/shared';
 import { api, errorMessage } from '@/lib/api';
 import { formatQty, inSentence } from '@/lib/format';
+import { FormShell } from '@/components/form/FormShell';
+import { QuantityInput } from '@/components/form/inputs';
 
 const COLORS: Record<GrnQcStatus, string> = { ACCEPTED: 'green', PARTLY_ACCEPTED: 'gold', REJECTED: 'red' };
 
@@ -61,17 +63,16 @@ export function GrnQcModal({ entry, open, onClose }: { entry: StockEntryDto; ope
       message.success(`${e.entryNo}: ${inSentence(GRN_QC_STATUS_LABELS[e.qcStatus!])}`);
       qc.invalidateQueries({ queryKey: ['stock'] });
       qc.invalidateQueries({ queryKey: ['purchase-orders', 'status'] });
-      onClose();
     },
     onError: (e) => message.error(errorMessage(e)),
   });
 
   return (
-    <Modal open={open} title={`QA/QC check · ${entry.entryNo}`} okText="Save" onCancel={onClose} onOk={() => form.submit()} confirmLoading={save.isPending} width={640} destroyOnHidden>
+    <FormShell open={open} onClose={onClose} form={form} layout="modal" title={`QA/QC check · ${entry.entryNo}`} okText="Save" onSubmit={(v) => save.mutateAsync(v)}>
       <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
         {entry.supplier ?? 'Material'} received on {entry.date}. The stock is not changed: send rejected material back with a return to supplier.
       </Typography.Paragraph>
-      <Form form={form} layout="vertical" onFinish={(v) => save.mutate(v)} className="grn-qc-form">
+      <Form form={form} layout="vertical" className="grn-qc-form">
         <Form.Item name="status" label="Result">
           <Segmented<GrnQcStatus> options={GRN_QC_STATUSES.map((s) => ({ value: s, label: GRN_QC_STATUS_LABELS[s] }))} />
         </Form.Item>
@@ -91,7 +92,7 @@ export function GrnQcModal({ entry, open, onClose }: { entry: StockEntryDto; ope
                 width: 150,
                 render: (_, l) => (
                   <Form.Item name={['rejected', l.id]} noStyle>
-                    <InputNumber min={0} max={Number(l.quantity)} style={{ width: '100%' }} aria-label={`Rejected ${l.itemName}`} />
+                    <QuantityInput max={Number(l.quantity)} unit={l.unit} aria-label={`Rejected ${l.itemName}`} />
                   </Form.Item>
                 ),
               },
@@ -106,6 +107,6 @@ export function GrnQcModal({ entry, open, onClose }: { entry: StockEntryDto; ope
           <Input.TextArea rows={2} maxLength={1000} placeholder={status === 'ACCEPTED' ? undefined : 'E.g. 20 bags lumpy, set aside for return'} />
         </Form.Item>
       </Form>
-    </Modal>
+    </FormShell>
   );
 }

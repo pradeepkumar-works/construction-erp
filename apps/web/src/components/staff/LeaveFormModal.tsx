@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo } from 'react';
-import { Alert, App, Checkbox, DatePicker, Form, Input, Modal, Select, Typography } from 'antd';
+import { Alert, App, Checkbox, DatePicker, Form, Input, Select, Typography } from 'antd';
 import dayjs from 'dayjs';
 import type { LeaveRequestDto, LeaveType } from '@erp/shared';
 import { LEAVE_TYPES, LEAVE_TYPE_LABELS, canManageStaff, leaveDays } from '@erp/shared';
@@ -11,6 +11,7 @@ import { useAuth } from '@/lib/auth';
 import { useEmployees, useHolidays, useLeaveBalances, useMyStaff } from '@/lib/queries';
 import { days } from './staffUi';
 import { inSentence } from '@/lib/format';
+import { FormGrid, FormShell } from '@/components/form/FormShell';
 
 interface FormValues {
   employeeId?: string;
@@ -20,8 +21,6 @@ interface FormValues {
   halfDay?: boolean;
   reason: string;
 }
-
-const grid = (cols: string) => ({ display: 'grid', gridTemplateColumns: cols, gap: '0 16px' }) as const;
 
 /**
  * Apply for leave: for yourself, or (HR) for someone else. Shows the working days it takes (Sundays and holidays are
@@ -74,26 +73,25 @@ export function LeaveFormModal({ open, onClose, employeeId: fixedEmployee, onSav
       message.success(`Leave applied: ${days(l.days)}`);
       qc.invalidateQueries({ queryKey: ['staff'] });
       onSaved?.(l);
-      onClose();
     },
     onError: (err) => message.error(errorMessage(err)),
   });
 
   const noRecord = open && !admin && me && !me.employee;
   return (
-    <Modal open={open} title="Apply for leave" okText="Apply" onCancel={onClose} onOk={() => form.submit()} okButtonProps={{ disabled: !!noRecord }} confirmLoading={mutation.isPending} width={560} destroyOnHidden>
+    <FormShell open={open} onClose={onClose} form={form} layout="modal" title="Apply for leave" okText="Apply" onSubmit={(v) => mutation.mutateAsync(v)} okDisabled={!!noRecord} width={560}>
       {noRecord && <Alert type="warning" showIcon style={{ marginBottom: 12 }} title="Your login is not linked to a staff record. Ask HR to link it." />}
-      <Form form={form} layout="vertical" onFinish={(v) => mutation.mutate(v)} style={{ marginTop: 8 }}>
+      <Form form={form} layout="vertical">
         {admin && !fixedEmployee && (
           <Form.Item name="employeeId" label="Employee" extra="Leave blank to apply for yourself">
             <Select allowClear showSearch={{ optionFilterProp: 'label' }} options={(staff?.items ?? []).map((e) => ({ value: e.id, label: `${e.fullName} (${e.employeeCode})` }))} />
           </Form.Item>
         )}
-        <Form.Item name="type" label="Leave" rules={[{ required: true, message: 'Required' }]}>
+        <Form.Item name="type" label="Leave" rules={[{ required: true, message: 'Choose the kind of leave' }]}>
           <Select options={LEAVE_TYPES.map((t) => ({ value: t, label: LEAVE_TYPE_LABELS[t] }))} />
         </Form.Item>
-        <div style={grid('1fr 1fr')}>
-          <Form.Item name="fromDate" label="From" rules={[{ required: true, message: 'Required' }]}>
+        <FormGrid cols={2}>
+          <Form.Item name="fromDate" label="From" rules={[{ required: true, message: 'Pick the first day' }]}>
             <DatePicker
               style={{ width: '100%' }}
               format="DD MMM YYYY"
@@ -103,16 +101,16 @@ export function LeaveFormModal({ open, onClose, employeeId: fixedEmployee, onSav
               }}
             />
           </Form.Item>
-          <Form.Item name="toDate" label="To" rules={[{ required: true, message: 'Required' }]}>
+          <Form.Item name="toDate" label="To" rules={[{ required: true, message: 'Pick the last day' }]}>
             <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => !!from && d.isBefore(from, 'day')} />
           </Form.Item>
-        </div>
+        </FormGrid>
         {from && to && from.isSame(to, 'day') && (
           <Form.Item name="halfDay" valuePropName="checked" style={{ marginTop: -8 }}>
             <Checkbox>Half day</Checkbox>
           </Form.Item>
         )}
-        <Form.Item name="reason" label="Reason" rules={[{ required: true, whitespace: true, message: 'Required' }]}>
+        <Form.Item name="reason" label="Reason" rules={[{ required: true, whitespace: true, message: 'Give the reason' }]}>
           <Input.TextArea rows={2} maxLength={500} />
         </Form.Item>
         {taking !== null && (
@@ -122,6 +120,6 @@ export function LeaveFormModal({ open, onClose, employeeId: fixedEmployee, onSav
           </Typography.Text>
         )}
       </Form>
-    </Modal>
+    </FormShell>
   );
 }
