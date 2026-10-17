@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { SUBMISSION_STATUS_LABELS, type SubmissionStatus } from '@erp/shared';
-import { radius, spacing, statusTone } from '../theme';
+import { maxFontScale, radius, spacing, statusTone } from '../theme';
 import { useT } from '../i18n/LanguageContext';
 
 /** `labels` words the status for one kind of entry (an inspection is "Passed" rather than "Approved"). */
@@ -11,7 +11,7 @@ export function StatusBadge({ status, size = 'md', labels = SUBMISSION_STATUS_LA
   return (
     <View style={[styles.badge, { backgroundColor: tone.bg }, size === 'lg' && styles.lg]}>
       <View style={[styles.dot, { backgroundColor: tone.fg }]} />
-      <Text style={[styles.text, { color: tone.fg }, size === 'lg' && styles.lgText]}>{labels[status] ? t(labels[status]) : status}</Text>
+      <Text maxFontSizeMultiplier={maxFontScale} style={[styles.text, { color: tone.fg }, size === 'lg' && styles.lgText]}>{labels[status] ? t(labels[status]) : status}</Text>
     </View>
   );
 }
@@ -20,7 +20,9 @@ export function StatusBadge({ status, size = 'md', labels = SUBMISSION_STATUS_LA
 export function Pill({ text, fg, bg }: { text: string; fg: string; bg: string }) {
   return (
     <View style={[styles.badge, { backgroundColor: bg }]}>
-      <Text style={[styles.text, { color: fg }]}>{text}</Text>
+      <Text maxFontSizeMultiplier={maxFontScale} style={[styles.text, { color: fg }]}>
+        {text}
+      </Text>
     </View>
   );
 }

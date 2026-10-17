@@ -46,7 +46,7 @@ export function SubmitSuccess({ title, subtitle, detailHref, onAnother }: { titl
   return (
     <Screen style={styles.center} edges={['left', 'right', 'bottom']}>
       <View style={styles.iconWrap}>
-        <Ionicons name="checkmark" size={48} color="#fff" />
+        <Ionicons name="checkmark" size={48} color={colors.textOnPrimary} />
       </View>
       <Text style={[typography.h1, styles.text]}>{title}</Text>
       <Text style={[typography.body, styles.text, styles.sub]}>{subtitle}</Text>
@@ -76,7 +76,7 @@ export function QueuedSuccess({
   return (
     <Screen style={styles.center} edges={['left', 'right', 'bottom']}>
       <View style={[styles.iconWrap, styles.iconQueued]}>
-        <Ionicons name="cloud-upload-outline" size={48} color="#fff" />
+        <Ionicons name="cloud-upload-outline" size={48} color={colors.textOnPrimary} />
       </View>
       <Text style={[typography.h1, styles.text]}>{title}</Text>
       <Text style={[typography.body, styles.text, styles.sub]}>{subtitle}</Text>

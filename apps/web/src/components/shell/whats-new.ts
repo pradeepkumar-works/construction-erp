@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-10-phone-app',
+    date: '2026-10-17',
+    title: 'The phone app, polished',
+    points: [
+      'The phone app opens on My work, the same cards as the web home: what waits for your approval, DPRs not yet sent, entries sent back to you.',
+      'Dark mode under Profile > Appearance (or the same as the phone), and text that grows with the phone\'s text size without breaking the layout.',
+      'On the Approvals tab, swipe a row left to approve it after a confirm, with an optional note. Lists show their outline while they load, and record actions open in a sheet from the bottom.',
+    ],
+  },
+  {
     id: '2026-10-accessibility',
     date: '2026-10-17',
     title: 'Easier to read and to use from the keyboard',

@@ -1,17 +1,19 @@
 import React from 'react';
-import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '../theme';
 import { ILLUSTRATIONS, type EmptyArt } from '../illustrations';
 import { Button } from './Button';
+import { Skeleton } from './Skeleton';
 import { useT } from '../i18n/LanguageContext';
 
-export function Loading({ text }: { text?: string }) {
+/** A screen's first load: placeholder rows in place of a spinner. `text` is also shown, for a wait worth explaining. */
+export function Loading({ text, variant = 'list' }: { text?: string; variant?: 'list' | 'card' }) {
   const t = useT();
   return (
-    <View style={styles.center}>
-      <ActivityIndicator size="large" color={colors.primary} />
-      <Text style={styles.text}>{text ?? t('Loading…')}</Text>
+    <View style={styles.skeleton}>
+      <Skeleton variant={variant} label={text ?? t('Loading…')} />
+      {text ? <Text style={styles.text}>{text}</Text> : null}
     </View>
   );
 }
@@ -72,6 +74,7 @@ export function ErrorBanner({ message }: { message: string | null }) {
 }
 
 const styles = StyleSheet.create({
+  skeleton: { flex: 1, padding: spacing.lg, backgroundColor: colors.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl, minHeight: 220 },
   art: { width: 240, height: 180 },
   title: { ...typography.h3, marginTop: spacing.md, textAlign: 'center' },

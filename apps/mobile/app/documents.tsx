@@ -152,7 +152,7 @@ export default function DocumentsScreen() {
         <Pressable style={styles.lightbox} onPress={() => setImage(null)}>
           {image ? <Image source={{ uri: saved.has(image.id) && canSaveOffline ? localUri(image) : absoluteUrl(image.url) }} style={styles.full} contentFit="contain" /> : null}
           <View style={styles.lightboxClose}>
-            <Ionicons name="close-circle" size={36} color="#fff" />
+            <Ionicons name="close-circle" size={36} color={colors.onOverlay} />
           </View>
         </Pressable>
       </Modal>

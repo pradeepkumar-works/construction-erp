@@ -2,14 +2,16 @@ import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { canKeepStock, canRecordAttendance } from '@erp/shared';
-import type { DailyReportDto, MaterialRequestDto, Paginated, ProgressEntryDto, ProjectSummary, SubmissionBase, SubmissionType } from '@erp/shared';
+import { SUBMISSION_STATUS_LABELS, canKeepStock, canRecordAttendance } from '@erp/shared';
+import type { DailyReportDto, MaterialRequestDto, MyWorkDto, Paginated, ProgressEntryDto, ProjectSummary, SubmissionBase, SubmissionType } from '@erp/shared';
 import { useFetch } from '../../src/api/hooks';
 import { fetchProjects } from '../../src/api/lists';
 import { useAuth } from '../../src/auth/AuthContext';
-import { BillingBanner, Button, Card, EmptyState, ErrorState, Loading, NotificationBell, OfflineBanner, Screen, SectionTitle, Stat, SubmissionRow } from '../../src/components';
+import { BillingBanner, Button, Card, EmptyState, ErrorState, NotificationBell, OfflineBanner, Screen, SectionTitle, Stat, SubmissionRow } from '../../src/components';
+import { MyWorkPanel } from '../../src/components/MyWork';
+import { Skeleton } from '../../src/components/Skeleton';
 import { useOffline } from '../../src/offline';
-import { colors, radius, spacing, typography } from '../../src/theme';
+import { colors, radius, spacing, statusTone, typography } from '../../src/theme';
 import { fmtQty, formatDate, timeAgo, today } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
 
@@ -41,6 +43,11 @@ export default function HomeScreen() {
     [syncedCount],
     { cacheKey: 'home' },
   );
+  // What the role should act on now, as on the web home; pull to refresh reloads it with the rest.
+  const myWork = useFetch<MyWorkDto>((api) => api.get('/dashboard/my-work'), [syncedCount], { cacheKey: 'my-work' });
+  const refreshAll = async () => {
+    await Promise.all([refresh(), myWork.refresh()]);
+  };
 
   const derived = useMemo(() => {
     if (!data) return null;
@@ -71,7 +78,7 @@ export default function HomeScreen() {
   };
 
   return (
-    <Screen refreshing={refreshing} onRefresh={refresh} edges={['top', 'left', 'right', 'bottom']}>
+    <Screen refreshing={refreshing || myWork.refreshing} onRefresh={refreshAll} edges={['top', 'left', 'right', 'bottom']}>
       <View style={styles.topRow}>
         <View style={styles.flex}>
           <Text style={typography.h1}>
@@ -84,6 +91,8 @@ export default function HomeScreen() {
       <BillingBanner />
       <OfflineBanner />
 
+      <MyWorkPanel data={myWork.data} loading={myWork.loading} />
+
       <SectionTitle title={t('New entry')} />
       <View style={styles.quick}>
         <QuickAction icon="trending-up" label={t('Progress')} onPress={() => router.push('/progress/new')} tone={colors.brand} iconColor={colors.onBrand} />
@@ -95,15 +104,15 @@ export default function HomeScreen() {
       </View>
 
       {loading && !data ? (
-        <Loading />
+        <Skeleton variant="card" label={t('Loading…')} />
       ) : error && !data ? (
         <ErrorState message={error} onRetry={reload} />
       ) : data && derived ? (
         <>
           <View style={styles.stats}>
             <Stat label={t('My projects')} value={data.projects.length} />
-            <Stat label={t('Awaiting approval')} value={derived.pending} tone={colors.warning} />
-            <Stat label={t('Changes requested')} value={derived.changes} tone={derived.changes ? colors.info : colors.textMuted} />
+            <Stat label={t(SUBMISSION_STATUS_LABELS.SUBMITTED)} value={derived.pending} tone={statusTone.SUBMITTED.fg} />
+            <Stat label={t(SUBMISSION_STATUS_LABELS.CHANGES_REQUESTED)} value={derived.changes} tone={derived.changes ? statusTone.CHANGES_REQUESTED.fg : colors.textMuted} />
           </View>
 
           <SectionTitle title={t("Today's DPR")} />
@@ -154,7 +163,7 @@ export default function HomeScreen() {
   );
 }
 
-function QuickAction({ icon, label, onPress, tone, iconColor = '#fff' }: { icon: keyof typeof Ionicons.glyphMap; label: string; onPress: () => void; tone: string; iconColor?: string }) {
+function QuickAction({ icon, label, onPress, tone, iconColor = colors.onBrand }: { icon: keyof typeof Ionicons.glyphMap; label: string; onPress: () => void; tone: string; iconColor?: string }) {
   const t = useT();
   return (
     <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={t('New {label}', { label })} style={({ pressed }) => [styles.quickBtn, pressed && styles.pressed]}>

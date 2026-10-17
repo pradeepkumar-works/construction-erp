@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
   link: { color: colors.primary, fontWeight: '700' },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md, marginBottom: spacing.sm },
   pressed: { opacity: 0.7 },
-  score: { width: 44, height: 44, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
+  score: { minWidth: 44, minHeight: 44, paddingHorizontal: 4, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
   scoreText: { fontSize: 18, fontWeight: '800' },
   side: { alignItems: 'flex-end', gap: 4 },
   overdue: { color: colors.danger, fontWeight: '700' },

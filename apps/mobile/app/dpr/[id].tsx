@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { WEATHER_LABELS, type DailyReportDto } from '@erp/shared';
 import { useFetch } from '../../src/api/hooks';
-import { AttachmentGallery, Button, Card, ErrorState, KeyValue, Loading, ReviewActions, Screen, SubmissionHeader, SubmitterActions } from '../../src/components';
+import { AttachmentGallery, Card, ErrorState, KeyValue, Loading, ReviewActions, Screen, SubmissionHeader, SubmitterActions } from '../../src/components';
 import { colors, spacing, typography } from '../../src/theme';
 import { formatDate } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
@@ -42,7 +42,6 @@ export default function DprDetailScreen() {
       <AttachmentGallery attachments={data.attachments} />
       <SubmitterActions type="DPR" item={data} />
       <ReviewActions type="DPR" item={data} onReviewed={setData} />
-      <Button title={t('Open project')} variant="ghost" icon="business-outline" onPress={() => router.push(`/project/${data.projectId}`)} />
     </Screen>
   );
 }

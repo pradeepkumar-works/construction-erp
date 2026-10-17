@@ -1,6 +1,7 @@
 import React from 'react';
-import { Stack } from 'expo-router';
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import * as SystemUI from 'expo-system-ui';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from '../src/auth/AuthContext';
@@ -10,7 +11,16 @@ import { LanguageProvider, useT } from '../src/i18n/LanguageContext';
 import { Loading } from '../src/components';
 import { useFonts, Archivo_700Bold, Archivo_800ExtraBold } from '@expo-google-fonts/archivo';
 import { PRODUCT_NAME } from '@erp/shared';
-import { colors } from '../src/theme';
+import { colors, scheme } from '../src/theme';
+
+/** Navigation chrome (cards, headers, tab bar defaults) in the palette src/theme.ts picked at launch. */
+const navigationTheme = {
+  ...(scheme === 'dark' ? DarkTheme : DefaultTheme),
+  colors: { primary: colors.primary, background: colors.bg, card: colors.surface, text: colors.text, border: colors.border, notification: colors.danger },
+};
+
+// The window behind the screens (seen during transitions and behind the keyboard) matches the page.
+SystemUI.setBackgroundColorAsync(colors.bg).catch(() => undefined);
 
 function RootNavigator() {
   const { user, ready } = useAuth();
@@ -96,8 +106,10 @@ export default function RootLayout() {
           <AuthProvider>
             <OfflineProvider>
               <NotificationsProvider>
-                <StatusBar style="dark" />
-                <RootNavigator />
+                <ThemeProvider value={navigationTheme}>
+                  <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+                  <RootNavigator />
+                </ThemeProvider>
               </NotificationsProvider>
             </OfflineProvider>
           </AuthProvider>

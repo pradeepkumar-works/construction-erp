@@ -1,7 +1,7 @@
 import React from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radius, spacing, touch } from '../theme';
+import { colors, maxFontScale, radius, spacing, touch } from '../theme';
 
 type Variant = 'primary' | 'secondary' | 'danger' | 'ghost' | 'success' | 'accent';
 
@@ -46,7 +46,7 @@ export function Button({ title, onPress, variant = 'primary', loading, disabled,
       ) : (
         <View style={styles.row}>
           {icon ? <Ionicons name={icon} size={20} color={p.fg} style={styles.icon} /> : null}
-          <Text style={[styles.text, { color: p.fg, fontSize: size === 'sm' ? 14 : 16 }]}>{title}</Text>
+          <Text maxFontSizeMultiplier={maxFontScale} style={[styles.text, { color: p.fg, fontSize: size === 'sm' ? 14 : 16 }]}>{title}</Text>
         </View>
       )}
     </Pressable>
@@ -62,9 +62,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
   },
-  row: { flexDirection: 'row', alignItems: 'center' },
+  row: { flexDirection: 'row', alignItems: 'center', flexShrink: 1 },
   icon: { marginRight: spacing.sm },
-  text: { fontWeight: '700' },
+  text: { fontWeight: '700', textAlign: 'center', flexShrink: 1 },
   pressed: { opacity: 0.8 },
   disabled: { opacity: 0.5 },
 });

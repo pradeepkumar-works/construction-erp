@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radius, spacing, touch, typography } from '../theme';
+import { colors, maxFontScale, radius, spacing, touch, typography } from '../theme';
 import { useT } from '../i18n/LanguageContext';
 
 export interface SelectOption<V extends string = string> {
@@ -51,11 +51,11 @@ export function Select<V extends string>({ label, value, options, onChange, plac
         accessibilityRole="button"
       >
         <View style={styles.flex}>
-          <Text style={[styles.value, !selected && styles.placeholder]} numberOfLines={1}>
+          <Text style={[styles.value, !selected && styles.placeholder]} numberOfLines={1} maxFontSizeMultiplier={maxFontScale}>
             {selected ? selected.label : (placeholder ?? t('Select…'))}
           </Text>
           {selected?.hint ? (
-            <Text style={styles.hint} numberOfLines={1}>
+            <Text style={styles.hint} numberOfLines={1} maxFontSizeMultiplier={maxFontScale}>
               {selected.hint}
             </Text>
           ) : null}

@@ -1,5 +1,5 @@
-import React from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { Alert, Appearance, DevSettings, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ROLE_LABELS, SUBMISSION_TYPE_LABELS, approvalRightsOf } from '@erp/shared';
 import { useAuth } from '../../src/auth/AuthContext';
@@ -8,7 +8,7 @@ import { MessagingCard } from '../../src/notifications/MessagingCard';
 import { Button, Card, KeyValue, Screen } from '../../src/components';
 import { API_URL } from '../../src/config';
 import { LANGUAGES, useLanguage, useT } from '../../src/i18n/LanguageContext';
-import { colors, spacing, touch, typography } from '../../src/theme';
+import { APPEARANCE_CHOICES, appearance, colors, saveAppearance, spacing, touch, typography, type AppearanceChoice } from '../../src/theme';
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
@@ -52,6 +52,7 @@ export default function ProfileScreen() {
       </Card>
       <MessagingCard />
       <LanguageCard />
+      <AppearanceCard />
       <Card title={t('Connection')}>
         <View style={styles.apiRow}>
           <Ionicons name="server-outline" size={18} color={colors.textMuted} />
@@ -69,11 +70,13 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   hero: { alignItems: 'center', marginBottom: spacing.xl, gap: 2 },
   avatar: { width: 76, height: 76, borderRadius: 38, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm },
-  avatarText: { color: '#fff', fontSize: 28, fontWeight: '800' },
+  avatarText: { color: colors.textOnPrimary, fontSize: 28, fontWeight: '800' },
   apiRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
   api: { ...typography.bodyStrong, flex: 1 },
-  langRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: touch.heightSm, gap: spacing.sm },
-  langOff: { opacity: 0.55 },
+  choiceRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: touch.heightSm, gap: spacing.sm },
+  choiceOff: { opacity: 0.55 },
+  note: { marginTop: spacing.xs },
+  reload: { marginTop: spacing.md },
 });
 
 /** English unless the user picks another language here; the choice stays on this phone. */
@@ -89,7 +92,7 @@ function LanguageCard() {
             key={l.code}
             disabled={!l.available}
             onPress={() => setLanguage(l.code)}
-            style={[styles.langRow, !l.available && styles.langOff]}
+            style={[styles.choiceRow, !l.available && styles.choiceOff]}
             accessibilityRole="radio"
             accessibilityState={{ selected: active, disabled: !l.available }}
           >
@@ -104,6 +107,41 @@ function LanguageCard() {
           </Pressable>
         );
       })}
+    </Card>
+  );
+}
+
+/** Reloading the JS picks the palette again; only a dev build (or the web) can do that from inside the app. */
+const canReload = Platform.OS === 'web' || __DEV__;
+
+function reloadApp(choice: AppearanceChoice) {
+  if (Platform.OS === 'web') return globalThis.location?.reload();
+  // Clear the explicit scheme this session set, so "Same as phone" reads the phone again after the reload.
+  if (choice === 'system') Appearance.setColorScheme('unspecified');
+  DevSettings.reload();
+}
+
+/** Light, dark or the phone's own setting. The palette is picked when the app starts, so a new choice applies then. */
+function AppearanceCard() {
+  const t = useT();
+  const [choice, setChoice] = useState<AppearanceChoice>(appearance);
+  const pick = (value: AppearanceChoice) => {
+    setChoice(value);
+    saveAppearance(value);
+  };
+  return (
+    <Card title={t('Appearance')}>
+      {APPEARANCE_CHOICES.map((o) => {
+        const active = o.value === choice;
+        return (
+          <Pressable key={o.value} onPress={() => pick(o.value)} style={styles.choiceRow} accessibilityRole="radio" accessibilityState={{ selected: active }}>
+            <Text style={active ? typography.bodyStrong : typography.body}>{t(o.label)}</Text>
+            <Ionicons name={active ? 'checkmark-circle' : 'ellipse-outline'} size={22} color={active ? colors.primary : colors.border} />
+          </Pressable>
+        );
+      })}
+      <Text style={[typography.caption, styles.note]}>{t('A new choice applies the next time you open the app.')}</Text>
+      {canReload && choice !== appearance ? <Button title={t('Reload now')} variant="secondary" size="sm" icon="refresh" onPress={() => reloadApp(choice)} style={styles.reload} /> : null}
     </Card>
   );
 }

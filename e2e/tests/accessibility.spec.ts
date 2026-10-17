@@ -8,7 +8,7 @@ import { signIn } from './helpers';
  * both inside antd and not ours to change.
  */
 // The sign-in page rises in on load; axe measures colours mid-animation otherwise.
-test.use({ reducedMotion: 'reduce' });
+test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
 const PAGES = ['/', '/projects', '/dpr', '/material-requests', '/purchase-orders', '/bills', '/approvals', '/notifications', '/risks', '/vendors'];
 

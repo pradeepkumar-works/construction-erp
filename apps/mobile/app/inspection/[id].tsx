@@ -171,7 +171,6 @@ export default function InspectionScreen() {
       ) : null}
       <AttachmentGallery attachments={data.attachments} />
       <SubmitterActions type="INSPECTION" item={data} />
-      <Button title={t('Open project')} variant="ghost" icon="business-outline" onPress={() => router.push(`/project/${data.projectId}`)} />
     </Screen>
   );
 }

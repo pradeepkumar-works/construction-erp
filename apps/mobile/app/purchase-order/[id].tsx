@@ -5,7 +5,7 @@ import type { PurchaseOrderDto } from '@erp/shared';
 import { MSME_CATEGORY_LABELS } from '@erp/shared';
 import { useFetch } from '../../src/api/hooks';
 import { useT } from '../../src/i18n/LanguageContext';
-import { AttachmentGallery, Button, Card, ErrorState, KeyValue, Loading, ReviewActions, Screen, SubmissionHeader } from '../../src/components';
+import { AttachmentGallery, Card, ErrorState, KeyValue, Loading, ReviewActions, Screen, SubmissionHeader } from '../../src/components';
 import { colors, spacing, typography } from '../../src/theme';
 import { fmtQty, formatDate } from '../../src/utils/format';
 
@@ -59,7 +59,6 @@ export default function PurchaseOrderScreen() {
       </Card>
       <AttachmentGallery attachments={data.attachments} />
       <ReviewActions type="PURCHASE_ORDER" item={data} onReviewed={setData} />
-      <Button title={t('Open project')} variant="ghost" icon="business-outline" onPress={() => router.push(`/project/${data.projectId}`)} />
     </Screen>
   );
 }

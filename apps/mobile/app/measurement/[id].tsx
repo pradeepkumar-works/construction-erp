@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { MeasurementSheetDto } from '@erp/shared';
 import { useFetch } from '../../src/api/hooks';
-import { AttachmentGallery, Button, Card, ErrorState, KeyValue, Loading, ReviewActions, Screen, SubmissionHeader, SubmitterActions } from '../../src/components';
+import { AttachmentGallery, Card, ErrorState, KeyValue, Loading, ReviewActions, Screen, SubmissionHeader, SubmitterActions } from '../../src/components';
 import { colors, spacing, typography } from '../../src/theme';
 import { fmtQty, formatDate } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
@@ -54,7 +54,6 @@ export default function MeasurementScreen() {
       <AttachmentGallery attachments={data.attachments} />
       <SubmitterActions type="MEASUREMENT" item={data} />
       <ReviewActions type="MEASUREMENT" item={data} onReviewed={setData} />
-      <Button title={t('Open project')} variant="ghost" icon="business-outline" onPress={() => router.push(`/project/${data.projectId}`)} />
     </Screen>
   );
 }

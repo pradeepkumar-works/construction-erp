@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, TextInput, View, type TextInputProps, type ViewStyle } from 'react-native';
-import { colors, radius, spacing, touch, typography } from '../theme';
+import { colors, maxFontScale, radius, spacing, touch, typography } from '../theme';
 
 interface Props extends TextInputProps {
   label?: string;
@@ -15,7 +15,7 @@ export function Input({ label, error, hint, required, containerStyle, right, sty
   return (
     <View style={[styles.container, containerStyle]}>
       {label ? (
-        <Text style={styles.label}>
+        <Text style={styles.label} maxFontSizeMultiplier={maxFontScale}>
           {label}
           {required ? <Text style={styles.req}> *</Text> : null}
         </Text>
@@ -23,13 +23,22 @@ export function Input({ label, error, hint, required, containerStyle, right, sty
       <View style={[styles.inputWrap, !!error && styles.inputError, multiline && styles.multilineWrap]}>
         <TextInput
           placeholderTextColor={colors.textMuted}
+          maxFontSizeMultiplier={maxFontScale}
           multiline={multiline}
           style={[styles.input, multiline && styles.multiline, style]}
           {...rest}
         />
         {right}
       </View>
-      {error ? <Text style={styles.error}>{error}</Text> : hint ? <Text style={styles.hint}>{hint}</Text> : null}
+      {error ? (
+        <Text style={styles.error} maxFontSizeMultiplier={maxFontScale}>
+          {error}
+        </Text>
+      ) : hint ? (
+        <Text style={styles.hint} maxFontSizeMultiplier={maxFontScale}>
+          {hint}
+        </Text>
+      ) : null}
     </View>
   );
 }

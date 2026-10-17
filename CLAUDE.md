@@ -94,6 +94,10 @@ cd e2e && npx playwright test         # browser tests; needs API + web running (
   inside a page reads its top offset from `useStickyTop()` (`src/lib/sticky.tsx`), not a fixed 56.
 - Mobile: screens in `app/`, shared UI in `src/components`, API in `src/api`, no new native deps
   without checking `node_modules/expo/bundledNativeModules.json` for the SDK-pinned version.
+- Mobile theme: `src/theme.ts` picks the light or dark palette once at start-up (Profile > Appearance, stored in
+  expo-sqlite's kv-store; a new choice applies on the next launch), so use `colors`/`statusTone`, never hex. Text styles
+  cap growth with `maxFontSizeMultiplier={maxFontScale}` and rows use `minHeight`. Loading is `Loading` (a `Skeleton`),
+  a set of actions is a `BottomSheet` (`SheetActions`), and approving goes through `reviewSubmission()` (`src/api/review.ts`).
 - Mobile text: wrap everything a screen shows in `t()` from `useT()` (English is the key, `{placeholders}` for values)
   and add its Hindi to `src/i18n/hi/` (see ARCHITECTURE, Languages); `npm run i18n:check` in `apps/mobile` must pass.
 

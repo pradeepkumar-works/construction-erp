@@ -154,11 +154,11 @@ export function PhotoPicker({ label, photos, onChange, max = 6 }: Props) {
               <Image source={{ uri: p.uri }} style={styles.thumb} contentFit="cover" />
               {p.uploading ? (
                 <View style={styles.overlay}>
-                  <ActivityIndicator color="#fff" />
+                  <ActivityIndicator color={colors.onOverlay} />
                 </View>
               ) : p.error ? (
                 <Pressable onPress={() => retry(p)} style={[styles.overlay, styles.overlayError]}>
-                  <Ionicons name="refresh" size={22} color="#fff" />
+                  <Ionicons name="refresh" size={22} color={colors.onOverlay} />
                   <Text style={styles.overlayText}>{t('Retry')}</Text>
                 </Pressable>
               ) : p.queued ? (
@@ -171,7 +171,7 @@ export function PhotoPicker({ label, photos, onChange, max = 6 }: Props) {
                 </View>
               )}
               <Pressable onPress={() => remove(p.key)} style={styles.removeBtn} hitSlop={8} accessibilityLabel={t('Remove photo')}>
-                <Ionicons name="close" size={16} color="#fff" />
+                <Ionicons name="close" size={16} color={colors.onOverlay} />
               </Pressable>
             </View>
           ))}
@@ -207,8 +207,8 @@ const styles = StyleSheet.create({
   thumb: { width: '100%', height: '100%' },
   overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center' },
   overlayError: { backgroundColor: 'rgba(220,38,38,0.7)' },
-  overlayText: { color: '#fff', fontSize: 12, fontWeight: '700' },
-  okMark: { position: 'absolute', left: 6, bottom: 6, backgroundColor: '#fff', borderRadius: 10 },
+  overlayText: { color: colors.onOverlay, fontSize: 12, fontWeight: '700' },
+  okMark: { position: 'absolute', left: 6, bottom: 6, backgroundColor: colors.surface, borderRadius: 10 },
   removeBtn: { position: 'absolute', top: 4, right: 4, width: 24, height: 24, borderRadius: 12, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center' },
   hint: { ...typography.caption, marginTop: spacing.sm },
 });
