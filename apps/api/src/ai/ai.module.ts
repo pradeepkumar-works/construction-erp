@@ -28,6 +28,7 @@ import { PlanningModule } from '../planning/planning.module';
 import { AiController } from './ai.controller';
 import { AiService } from './ai.service';
 import { AiToolsService } from './ai-tools.service';
+import { AiDigestService } from './ai-digest.service';
 
 @Module({
   imports: [
@@ -59,7 +60,7 @@ import { AiToolsService } from './ai-tools.service';
     PlanningModule,
   ],
   controllers: [AiController],
-  providers: [AiService, AiToolsService],
+  providers: [AiService, AiToolsService, AiDigestService],
   exports: [AiService, AiToolsService],
 })
 export class AiModule {}

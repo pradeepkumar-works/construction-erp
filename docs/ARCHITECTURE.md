@@ -1087,6 +1087,13 @@ export; the client portal and the phone app show the amount.
   and refuse if called anyway. `list_records` and `get_record` cover 20 record kinds, each with its page link. A new kind
   is one entry in `kinds`; a new summary is one entry in `tools`. Results are compacted (files, empty values and long
   text dropped, lists cut at 40) and capped at 24,000 characters.
+- **Summaries and explanations.** `ai/ai-digest.service.ts` gathers what a question about one project needs in one
+  call, from the same list services: `project_week` (work done, against plan, DPRs, labour, machines, materials, bills,
+  new risks, what needs a decision; a section the role may not see says so), `explain_activities` (behind or late
+  activities with their progress, delay entries and breakdowns) and `ra_bill_changes` (an RA bill against the one
+  before it, item by item). The web asks them from the page through `useAsk()` (`lib/ask.tsx`) and `AskButton`:
+  Summarise this week on a project, Explain beside a delayed activity, the Gantt's behind count and an over-budget cost
+  head, What changed on an RA bill after the first. The buttons show only when Ask Nirmaan is on for the company.
 - **Access check.** `src/scripts/ai-access-check.ts` runs every tool as every demo user and fails if a result names a
   project that user cannot open or a refused tool answers. CI runs it after the seed.
 - **Grounding.** After the answer, `ai/grounding.ts` keeps Markdown links only to hrefs the tools returned (others become

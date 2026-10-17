@@ -16,6 +16,7 @@ import { readPref, writePref } from '@/lib/prefs';
 import { useAiStatus, usePendingApprovals, useProjects } from '@/lib/queries';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { SparkleIcon } from '@/components/ai/SparkleIcon';
+import { AskContext } from '@/lib/ask';
 import { BRAND } from '@/lib/brand';
 import { BrandMark } from './BrandMark';
 import { CommandPalette } from './CommandPalette';
@@ -90,6 +91,7 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
     if (question) setAskQuestion(question);
   }, []);
   const takeAskQuestion = useCallback(() => setAskQuestion(null), []);
+  const askContext = useMemo(() => ({ available: askVisible && !!aiStatus?.enabled, ask: (q: string) => openAsk(q) }), [askVisible, aiStatus?.enabled, openAsk]);
 
   // The first time someone signs in on this browser, once the shell has laid out.
   useEffect(() => {
@@ -327,7 +329,7 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
         <div style={{ display: 'flex', alignItems: 'flex-start', flex: 1 }}>
           <Content id="main-content" tabIndex={-1} style={{ outline: 'none', flex: 1, minWidth: 0 }}>
             <MessageBar user={user} />
-            {children}
+            <AskContext.Provider value={askContext}>{children}</AskContext.Provider>
           </Content>
           {askVisible && askLoaded && <AskPanel open={askOpen} onClose={() => setAskOpen(false)} user={user} status={aiStatus} mobile={isMobile} question={askQuestion} onQuestionTaken={takeAskQuestion} />}
         </div>

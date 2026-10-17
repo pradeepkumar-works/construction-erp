@@ -23,6 +23,7 @@ import { InTallyTag } from '@/components/tally/InTallyTag';
 import { BillPriceVariation } from './BillPriceVariation';
 import { themeColor } from '@/lib/theme';
 import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
+import { AskButton } from '@/components/ai/AskButton';
 import { submissionLifecycle } from '@/components/record/lifecycle';
 
 type StageAction = 'send' | 'certify';
@@ -129,6 +130,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
           tags: (
             <>
               <StatusTag status={data.status} /> {approved && <BillStageTag stage={data.stage} />}
+              {data.billNo > 1 && mode !== 'pane' ? <AskButton size="small" label="What changed" question={`What changed on ${data.billLabel} of ${data.projectName} from the last bill, and why?`} /> : null}
             </>
           ),
           print: () => {

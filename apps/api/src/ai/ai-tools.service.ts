@@ -35,6 +35,7 @@ import { ContractsService } from '../contracts/contracts.service';
 import { QualityService } from '../quality/quality.service';
 import { MaintenanceService } from '../maintenance/maintenance.service';
 import { ScheduleService } from '../planning/schedule.service';
+import { AiDigestService } from './ai-digest.service';
 
 /** Tool input after its schema: what the model sent, before checking. */
 type Input = Record<string, unknown>;
@@ -130,6 +131,7 @@ export class AiToolsService {
     quality: QualityService,
     maintenance: MaintenanceService,
     schedule: ScheduleService,
+    digest: AiDigestService,
   ) {
     const any = <T>(f: T) => f as never;
     this.kinds = {
@@ -318,6 +320,33 @@ export class AiToolsService {
       {
         def: { name: 'safety_summary', description: 'Incidents and near misses this month, open incidents, toolbox talks, permits waiting and active.', input_schema: { type: 'object', properties: { projectId: projectIdProp } } },
         run: (user, i) => safety.summary(user, optUuid(i.projectId, 'projectId')),
+      },
+      {
+        def: {
+          name: 'project_week',
+          description:
+            'Summarise a project over a period (default the last 7 days, at most 31): work done by activity, activities behind plan or due, DPRs filed and their issues, labour man-days by trade, machine hours, idle, breakdowns and diesel, materials received, vendor and subcontractor bills, new delays and risks, and what waits for this user to decide. Use for "summarise this week" or "what happened on site".',
+          input_schema: { type: 'object', properties: { projectId: { type: 'string' }, from: fromProp, to: toProp }, required: ['projectId'] },
+        },
+        run: (user, i) => digest.week(user, uuid(i.projectId, 'projectId'), optDate(i.from, 'from'), optDate(i.to, 'to')),
+      },
+      {
+        def: {
+          name: 'explain_activities',
+          description:
+            'Why activities are behind: for one activity (activityId from schedule) or every behind or late activity of a project, the plan against progress, when progress was last booked, delay entries linked to it, machine breakdowns on it, plus DPR issues, open delays and material requests waiting on the project.',
+          input_schema: { type: 'object', properties: { projectId: { type: 'string' }, activityId: { type: 'string', description: 'One activity; omit for every behind or late one' } }, required: ['projectId'] },
+        },
+        run: (user, i) => digest.activities(user, uuid(i.projectId, 'projectId'), optUuid(i.activityId, 'activityId')),
+      },
+      {
+        def: {
+          name: 'ra_bill_changes',
+          description: "What changed on an RA bill since the project's previous bill: quantity and amount per BOQ item this bill against last bill, new and dropped items, gross, price variation, deductions and net. The latest bill when billId is left out.",
+          input_schema: { type: 'object', properties: { projectId: { type: 'string' }, billId: { type: 'string', description: 'An RA bill id; omit for the latest bill' } }, required: ['projectId'] },
+        },
+        allowed: (u) => canViewContract(u.roleKey),
+        run: (user, i) => digest.raBillChanges(user, uuid(i.projectId, 'projectId'), optUuid(i.billId, 'billId')),
       },
       {
         def: { name: 'machinery_summary', description: 'Machines due for service, open breakdown job cards, vehicle papers and licences expiring.', input_schema: { type: 'object', properties: { projectId: projectIdProp } } },
