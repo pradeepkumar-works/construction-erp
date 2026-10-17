@@ -13,6 +13,7 @@ import { EditResubmitButton } from '@/components/common/EditResubmitButton';
 import { submissionMetaItems } from '@/components/common/SubmitterInfo';
 import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
 import { submissionLifecycle } from '@/components/record/lifecycle';
+import { themeFontSize } from '@/lib/theme';
 
 const dim = (v: string | null) => (v === null ? '' : formatQty(v));
 
@@ -94,7 +95,7 @@ export function MeasurementRecord({ id, mode, open, onClose, onEdit }: RecordPro
               children: (
                 <>
                   <AttachmentGallery attachments={data.attachments} />
-                  <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12 }}>
+                  <Typography.Text type="secondary" style={{ display: 'block', fontSize: themeFontSize('fontSizeSM') }}>
                     Measurement ID: {data.id}
                   </Typography.Text>
                 </>

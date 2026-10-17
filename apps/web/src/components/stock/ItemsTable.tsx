@@ -100,7 +100,7 @@ export function ItemsTable() {
                 locked: true,
                 width: 100,
                 render: (_: unknown, r: ItemDto) => (
-                  <Space size={2}>
+                  <Space size="small">
                     <Button type="text" size="small" icon={<EditOutlined />} onClick={() => open(r)} aria-label="Edit" />
                     <Popconfirm title={`Delete ${r.name}?`} okText="Delete" okButtonProps={{ danger: true }} onConfirm={() => remove.mutate(r)} disabled={r.projectCount > 0}>
                       <Button type="text" size="small" danger icon={<DeleteOutlined />} disabled={r.projectCount > 0} title={r.projectCount > 0 ? 'Has stock movements' : undefined} aria-label="Delete" />

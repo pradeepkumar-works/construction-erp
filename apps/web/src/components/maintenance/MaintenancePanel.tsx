@@ -19,9 +19,9 @@ import { JobDrawer } from './JobDrawer';
 import { JobFormModal } from './JobFormModal';
 import { JobKindTag, JobStatusTag, ServiceStateTag, serviceLeft } from './maintenanceUi';
 import { CardToolbar } from '@/components/common/CardToolbar';
-import { themeColor } from '@/lib/theme';
+import { themeColor, themeFontSize } from '@/lib/theme';
 
-const big = { content: { fontSize: 18 } };
+const big = { content: { fontSize: themeFontSize('fontSizeXL') } };
 const KEYS = ['status', 'kind', 'equipmentId'] as const;
 
 function Sub({ children }: { children: React.ReactNode }) {
@@ -102,7 +102,7 @@ export function MaintenancePanel({ projectId: fixedProject, initialOpenId }: { p
       render: (_, r) => (
         <div>
           <b className="mono">{r.equipmentCode}</b> {r.equipmentName}
-          {!projectId ? <div className="text-muted" style={{ fontSize: 12 }}>{r.projectName ?? 'Yard'}</div> : null}
+          {!projectId ? <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{r.projectName ?? 'Yard'}</div> : null}
         </div>
       ),
     },
@@ -148,9 +148,9 @@ export function MaintenancePanel({ projectId: fixedProject, initialOpenId }: { p
       {s ? (
         <CardToolbar className="maintenance-summary" variant="summary" wrap gap={28}>
           <Statistic title="Open job cards" value={s.openJobs} styles={big} />
-          <Statistic title="Machines broken down" value={s.openBreakdowns} styles={{ content: { fontSize: 18, color: s.openBreakdowns ? themeColor('colorErrorText') : undefined } }} />
+          <Statistic title="Machines broken down" value={s.openBreakdowns} styles={{ content: { fontSize: themeFontSize('fontSizeXL'), color: s.openBreakdowns ? themeColor('colorErrorText') : undefined } }} />
           <Statistic title="Service overdue / due soon" value={`${s.service.filter((x) => x.state === 'OVERDUE').length} / ${s.service.filter((x) => x.state === 'DUE_SOON').length}`} styles={big} />
-          <Statistic title="Closed this month" value={s.closedThisMonth} suffix={<span style={{ fontSize: 12 }}>{formatQty(s.downtimeHoursThisMonth)} h down</span>} styles={big} />
+          <Statistic title="Closed this month" value={s.closedThisMonth} suffix={<span style={{ fontSize: themeFontSize('fontSizeSM') }}>{formatQty(s.downtimeHoursThisMonth)} h down</span>} styles={big} />
           <Statistic title="Repair cost this month" value={formatINR(s.costThisMonth)} styles={big} />
         </CardToolbar>
       ) : null}

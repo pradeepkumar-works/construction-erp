@@ -9,6 +9,7 @@ import { api, errorMessage } from '@/lib/api';
 import { formatINR, formatQty, toNumber } from '@/lib/format';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
+import { themeFontSize } from '@/lib/theme';
 
 interface FormValues {
   heads: Partial<Record<CostHead, number | null>>;
@@ -73,7 +74,7 @@ export function BudgetFormModal({ open, onClose, budget }: { open: boolean; onCl
     <FormShell open={open} onClose={onClose} form={form} layout="drawer" width={980} title={`Budget: ${budget.projectCode}`} okText="Save" onSubmit={(v) => save.mutateAsync({ v })}>
       <Form form={form} layout="vertical">
         <FormSection title="By cost head">
-          <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginBottom: 8 }}>
+          <Typography.Paragraph type="secondary" style={{ fontSize: themeFontSize('fontSizeSM'), marginBottom: 8 }}>
             What the whole job should cost under each head of the cost view. This total is the budget at completion; without it, the BOQ budget below is used.
           </Typography.Paragraph>
           <FormGrid cols={3}>
@@ -117,13 +118,13 @@ export function BudgetFormModal({ open, onClose, budget }: { open: boolean; onCl
 
         <FormSection title="BOQ budget rates">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
-            <div className="text-muted" style={{ fontSize: 12 }}>
+            <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
               Our cost per unit of each item, not the client&apos;s rate. It gives each item&apos;s planned margin.
             </div>
             <Space>
-              <span style={{ fontSize: 12 }}>Fill empty rates at</span>
+              <span style={{ fontSize: themeFontSize('fontSizeSM') }}>Fill empty rates at</span>
               <InputNumber<number> size="small" min={1} max={200} value={fillPct} onChange={setFillPct} suffix="%" style={{ width: 90 }} aria-label="Fill empty rates at, % of the client's rate" />
-              <span style={{ fontSize: 12 }}>of the client&apos;s rate</span>
+              <span style={{ fontSize: themeFontSize('fontSizeSM') }}>of the client&apos;s rate</span>
               <Button size="small" onClick={fillRates}>
                 Fill
               </Button>

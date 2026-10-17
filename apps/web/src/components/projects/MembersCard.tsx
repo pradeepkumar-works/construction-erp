@@ -1,16 +1,18 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Avatar, Button, Card, Empty, Flex, Listy, Popconfirm, Select, Space, Tag, Typography } from 'antd';
+import { App, Avatar, Button, Empty, Flex, Listy, Popconfirm, Select, Space, Tag, Typography } from 'antd';
 import { DeleteOutlined, UserAddOutlined } from '@ant-design/icons';
 import type { ProjectDetail } from '@erp/shared';
 import { canEditProjects } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, errorMessage } from '@/lib/api';
 import { useUsers } from '@/lib/queries';
+import { Section } from '@/components/common/Section';
 import { useAuth } from '@/lib/auth';
 import { BRAND } from '@/lib/brand';
 import { ListRowMeta } from '@/components/common/ListRowMeta';
+import { themeFontSize } from '@/lib/theme';
 
 export function MembersCard({ project }: { project: ProjectDetail }) {
   const { user } = useAuth();
@@ -51,8 +53,7 @@ export function MembersCard({ project }: { project: ProjectDetail }) {
   ];
 
   return (
-    <Card
-      size="small"
+    <Section
       title={`Team (${project.members.length})`}
       extra={
         editor && !adding ? (
@@ -90,11 +91,11 @@ export function MembersCard({ project }: { project: ProjectDetail }) {
                   </Avatar>
                 }
                 title={
-                  <span style={{ fontSize: 13 }}>
+                  <span style={{ fontSize: themeFontSize('fontSize') }}>
                     {m.fullName} {m.isPm && <Tag color="gold" style={{ marginLeft: 4 }}>PM</Tag>}
                   </span>
                 }
-                description={<Typography.Text type="secondary" style={{ fontSize: 12 }}>{m.roleName}</Typography.Text>}
+                description={<Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>{m.roleName}</Typography.Text>}
               />
               {editor && !m.isPm ? (
                 <Popconfirm title={`Remove ${m.fullName} from the project?`} okText="Remove" okButtonProps={{ danger: true }} onConfirm={() => remove.mutate(m.userId)}>
@@ -107,6 +108,6 @@ export function MembersCard({ project }: { project: ProjectDetail }) {
       ) : (
         <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No team members yet" />
       )}
-    </Card>
+    </Section>
   );
 }

@@ -10,7 +10,7 @@ import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useInspection } from '@/lib/queries';
 import { formatDate } from '@/lib/format';
-import { themeColor } from '@/lib/theme';
+import { themeColor, themeFontSize } from '@/lib/theme';
 import { approveTheme } from '@/lib/theme';
 import { StatusTag } from '@/components/common/StatusTag';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
@@ -76,7 +76,7 @@ function InspectPanel({ data }: { data: InspectionDto }) {
           <Button size="small" onClick={() => setResults((rs) => rs.map((r) => (r.result ? r : { ...r, result: 'PASS' })))} disabled={!open}>
             Mark the rest OK
           </Button>
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
             {open ? `${open} of ${results.length} points to check` : failed ? `${failed} not OK` : 'All points checked'}
           </Typography.Text>
         </Space>
@@ -103,7 +103,7 @@ function InspectPanel({ data }: { data: InspectionDto }) {
         </div>
       ))}
       <div style={{ marginTop: 12 }}>
-        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+        <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
           Inspector&apos;s photos
         </Typography.Text>
         <PhotoUpload value={photos} onChange={setPhotos} />
@@ -224,7 +224,7 @@ export function InspectionRecord({ id, mode, open, onClose, onEdit }: RecordProp
                           dataSource={data.checklist}
                           columns={[
                             { title: '#', key: 'n', width: 40, render: (_, __, i) => i + 1 },
-                            { title: 'Point', dataIndex: 'item', render: (v: string, c) => (c.remark ? <div>{v}<div className="text-muted" style={{ fontSize: 12 }}>{c.remark}</div></div> : v) },
+                            { title: 'Point', dataIndex: 'item', render: (v: string, c) => (c.remark ? <div>{v}<div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{c.remark}</div></div> : v) },
                             { title: 'Result', dataIndex: 'result', width: 120, render: (r: InspectionResult | null) => <ResultTag result={r} /> },
                           ]}
                         />
@@ -239,7 +239,7 @@ export function InspectionRecord({ id, mode, open, onClose, onEdit }: RecordProp
               children: (
                 <>
                   <AttachmentGallery attachments={data.attachments} />
-                  <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12 }}>
+                  <Typography.Text type="secondary" style={{ display: 'block', fontSize: themeFontSize('fontSizeSM') }}>
                     Inspection ID: {data.id}
                   </Typography.Text>
                 </>

@@ -13,6 +13,7 @@ import { EditResubmitButton } from '@/components/common/EditResubmitButton';
 import { submissionMetaItems } from '@/components/common/SubmitterInfo';
 import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
 import { submissionLifecycle } from '@/components/record/lifecycle';
+import { themeFontSize } from '@/lib/theme';
 
 const h = (v: string) => `${formatQty(v)} h`;
 
@@ -71,7 +72,7 @@ export function MachineryRecord({ id, mode, open, onClose, onEdit }: RecordProps
               children: (
                 <>
                   <AttachmentGallery attachments={data.attachments} />
-                  <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12 }}>
+                  <Typography.Text type="secondary" style={{ display: 'block', fontSize: themeFontSize('fontSizeSM') }}>
                     Log ID: {data.id}
                   </Typography.Text>
                 </>

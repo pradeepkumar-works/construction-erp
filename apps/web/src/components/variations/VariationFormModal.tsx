@@ -11,7 +11,7 @@ import { useBoq, useProjects } from '@/lib/queries';
 import { formatINR, formatQty, toNumber } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { UnitInput } from '@/components/common/UnitInput';
-import { themeColor } from '@/lib/theme';
+import { themeColor, themeFontSize } from '@/lib/theme';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput, QuantityInput } from '@/components/form/inputs';
 
@@ -141,7 +141,7 @@ export function VariationFormModal({ open, onClose, projectId, variation, onSave
         </FormSection>
 
         <FormSection title="Items">
-          <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginBottom: 8 }}>
+          <Typography.Paragraph type="secondary" style={{ fontSize: themeFontSize('fontSizeSM'), marginBottom: 8 }}>
             A BOQ item with a quantity change (negative to omit), or a new item with its proposed rate. Nothing changes in the BOQ until the client approves.
           </Typography.Paragraph>
           <Form.List name="lines" rules={[{ validator: async (_, v) => (v?.length ? undefined : Promise.reject(new Error('Add at least one item'))) }]}>

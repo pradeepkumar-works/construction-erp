@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Alert, Button, Card, Col, Row, Select, Statistic, theme } from 'antd';
+import { Alert, Button, Col, Row, Select, Statistic, theme } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import type { VariationDto, VariationStatus } from '@erp/shared';
 import { VARIATION_CAUSE_LABELS, VARIATION_STATUSES, VARIATION_STATUS_LABELS, canManageVariations } from '@erp/shared';
@@ -17,6 +17,7 @@ import { useListFrame } from '@/components/list/useListFrame';
 import { RecordLink } from '@/components/record/RecordLink';
 import { VariationDrawer, VariationStatusTag } from './VariationDrawer';
 import { VariationFormModal } from './VariationFormModal';
+import { FigureBlock } from '@/components/common/Section';
 
 type SortField = 'varNo' | 'createdAt' | 'claimedAmount';
 const KEYS = ['status'] as const;
@@ -111,31 +112,31 @@ export function VariationsPanel({ projectId: fixedProject, openId }: { projectId
         <Alert
           type="warning"
           showIcon
-          style={{ margin: fixedProject ? '0 0 12px' : 12 }}
+          style={{ margin: fixedProject ? '0 12px 12px' : 12 }}
           title={`${extras} extra item${extras === 1 ? '' : 's'} in the BOQ without a quantity`}
           description="RA bills leave out extra items until the client approves a variation that gives them a quantity and rate."
         />
       ) : null}
-      <Row gutter={[12, 12]} style={{ padding: fixedProject ? '0 0 12px' : 12 }}>
+      <Row gutter={[12, 12]} style={{ padding: fixedProject ? '0 12px 12px' : 12 }}>
         <Col xs={12} md={6}>
-          <Card size="small">
+          <FigureBlock>
             <Statistic title="Contract value" value={formatINRCompact(sum('contractValue'))} />
-          </Card>
+          </FigureBlock>
         </Col>
         <Col xs={12} md={6}>
-          <Card size="small">
+          <FigureBlock>
             <Statistic title="Approved variations" value={formatINRCompact(sum('approved'))} />
-          </Card>
+          </FigureBlock>
         </Col>
         <Col xs={12} md={6}>
-          <Card size="small">
+          <FigureBlock>
             <Statistic title="Revised contract value" value={formatINRCompact(sum('revisedContractValue'))} />
-          </Card>
+          </FigureBlock>
         </Col>
         <Col xs={12} md={6}>
-          <Card size="small">
+          <FigureBlock>
             <Statistic title="Claimed, not yet approved" value={formatINRCompact(sum('pending'))} />
-          </Card>
+          </FigureBlock>
         </Col>
       </Row>
       {frame.views}

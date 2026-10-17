@@ -90,7 +90,7 @@ export function TemplateEditor({ template, editable }: { template: ActivityTempl
             key: 'actions',
             width: 120,
             render: (_: unknown, r: Row, i: number) => (
-              <Space size={0}>
+              <Space size="small">
                 <Button size="small" type="text" icon={<ArrowUpOutlined />} aria-label={`Move ${r.name.trim() || `activity ${i + 1}`} up`} disabled={i === 0} onClick={() => move(i, -1)} />
                 <Button size="small" type="text" icon={<ArrowDownOutlined />} aria-label={`Move ${r.name.trim() || `activity ${i + 1}`} down`} disabled={i === rows.length - 1} onClick={() => move(i, 1)} />
                 <Button

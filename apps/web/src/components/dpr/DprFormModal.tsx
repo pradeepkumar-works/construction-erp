@@ -14,6 +14,7 @@ import { editActionLabel } from '@/components/common/EditResubmitButton';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { LineTable } from '@/components/form/LineTable';
 import { aiFlagItem, draftDate } from '@/components/ai/drafts';
+import { themeFontSize } from '@/lib/theme';
 
 interface FormValues {
   projectId: string;
@@ -214,16 +215,16 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
           extra={
             !editing && attendanceSheet ? (
               filledFrom === attendanceSheet.id && !manpowerEdited ? (
-                <Typography.Text type="success" style={{ fontSize: 12 }}>
+                <Typography.Text type="success" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                   From attendance: {attendanceSheet.totalWorkers} workers recorded by {attendanceSheet.recordedByName}
                 </Typography.Text>
               ) : (
-                <Button type="link" size="small" onClick={applyAttendance} style={{ padding: 0, height: 'auto', fontSize: 12 }}>
+                <Button type="link" size="small" onClick={applyAttendance} style={{ padding: 0, fontSize: themeFontSize('fontSizeSM') }}>
                   Use attendance ({attendanceSheet.totalWorkers} workers)
                 </Button>
               )
             ) : !editing && attendance.data && !attendanceSheet ? (
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+              <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                 No attendance recorded for this day yet
               </Typography.Text>
             ) : null
@@ -236,7 +237,7 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
               style={{ marginBottom: 12 }}
               title={`Copied from the DPR of ${formatDate(copiedFrom.date)}: check the numbers for today`}
               action={
-                <Button type="link" size="small" onClick={clearCopied} style={{ padding: 0, height: 'auto', fontSize: 12 }}>
+                <Button type="link" size="small" onClick={clearCopied} style={{ padding: 0, fontSize: themeFontSize('fontSizeSM') }}>
                   Clear
                 </Button>
               }

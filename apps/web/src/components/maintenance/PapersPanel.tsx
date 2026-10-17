@@ -22,6 +22,7 @@ import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { PHONE_INPUT, phoneRule } from '@/components/form/inputs';
 import { ExpiryTag } from './maintenanceUi';
+import { themeFontSize } from '@/lib/theme';
 
 interface DocValues {
   equipmentId: string;
@@ -118,7 +119,7 @@ export function PapersPanel() {
         locked: true,
         width: 170,
         render: (_, r) => (
-          <Space size={2}>
+          <Space size="small">
             {r.attachments.length ? <AttachmentGallery attachments={r.attachments} size={28} /> : null}
             {manager ? (
               <>
@@ -219,7 +220,7 @@ export function PapersPanel() {
               locked: true,
               width: 80,
               render: (_: unknown, r: DriverDto) => (
-                <Space size={2}>
+                <Space size="small">
                   <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openDriver(r)} aria-label="Edit" />
                   <Popconfirm title={`Delete ${r.name}?`} description="Or edit and untick Active to keep the record" okText="Delete" okButtonProps={{ danger: true }} onConfirm={() => removeDriver.mutate(r)}>
                     <Button type="text" size="small" danger icon={<DeleteOutlined />} aria-label="Delete" />
@@ -297,7 +298,7 @@ export function PapersPanel() {
         <Typography.Title level={5} style={{ margin: 0 }}>
           Vehicle and machine papers
         </Typography.Title>
-        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+        <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
           The latest paper of each kind per machine. Admins, management and the store team are alerted {DOC_ALERT_DAYS} days before one expires.
         </Typography.Text>
       </div>

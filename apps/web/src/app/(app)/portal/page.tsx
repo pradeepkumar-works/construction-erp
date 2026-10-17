@@ -9,6 +9,7 @@ import { formatDate, formatINRCompact, PROJECT_STATUS_COLORS } from '@/lib/forma
 import { useAuth } from '@/lib/auth';
 import { PageHeader } from '@/components/common/PageHeader';
 import { QueryError } from '@/components/common/QueryState';
+import { themeFontSize } from '@/lib/theme';
 
 /** The client portal home: the projects the client's engineer or consultant is on. */
 export default function PortalPage() {
@@ -38,23 +39,23 @@ export default function PortalPage() {
                   </Typography.Title>
                   <Typography.Text type="secondary">{[p.location, p.contractValue ? `Contract ${formatINRCompact(p.contractValue)}` : null].filter(Boolean).join(' · ')}</Typography.Text>
                   <div>
-                    <Typography.Text style={{ fontSize: 12 }}>Physical progress</Typography.Text>
+                    <Typography.Text style={{ fontSize: themeFontSize('fontSizeSM') }}>Physical progress</Typography.Text>
                     <Progress percent={p.physicalProgressPct} size="small" aria-label={`Physical progress ${p.physicalProgressPct}%`} />
                     {p.timeElapsedPct != null ? (
-                      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                      <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                         {p.timeElapsedPct}% of the contract period gone · ends {formatDate(p.endDate)}
                       </Typography.Text>
                     ) : null}
                   </div>
                   <Space wrap size={12}>
                     <Badge count={p.billsToCertify} showZero={false} offset={[8, 0]}>
-                      <Typography.Text style={{ fontSize: 13 }}>Bills to certify</Typography.Text>
+                      <Typography.Text style={{ fontSize: themeFontSize('fontSize') }}>Bills to certify</Typography.Text>
                     </Badge>
                     <Badge count={p.openInspections} showZero={false} offset={[8, 0]} color="purple">
-                      <Typography.Text style={{ fontSize: 13 }}>Inspections requested</Typography.Text>
+                      <Typography.Text style={{ fontSize: themeFontSize('fontSize') }}>Inspections requested</Typography.Text>
                     </Badge>
                   </Space>
-                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                  <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                     Last daily report: {p.lastDprDate ? formatDate(p.lastDprDate) : 'none yet'}
                   </Typography.Text>
                 </Space>

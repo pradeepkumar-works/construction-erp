@@ -14,6 +14,7 @@ import { QueryError } from '@/components/common/QueryState';
 import { StatusTag } from '@/components/common/StatusTag';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { ResultTag } from '@/components/inspections/InspectionDrawer';
+import { themeFontSize } from '@/lib/theme';
 
 /** Inspections requested on the project: the client's engineer can see the checklist and record that they attended. */
 export function PortalInspections({ inspections, openId, onOpen }: { inspections: UseQueryResult<PortalInspectionDto[]>; openId: string | null; onOpen: (id: string | null) => void }) {
@@ -140,7 +141,7 @@ function PortalInspectionDrawer({ data, onClose }: { data: PortalInspectionDto |
                 dataSource={data.checklist}
                 columns={[
                   { title: '#', key: 'n', width: 40, render: (_, __, i) => i + 1 },
-                  { title: 'Point', dataIndex: 'item', render: (v: string, c) => (c.remark ? <div>{v}<div className="text-muted" style={{ fontSize: 12 }}>{c.remark}</div></div> : v) },
+                  { title: 'Point', dataIndex: 'item', render: (v: string, c) => (c.remark ? <div>{v}<div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{c.remark}</div></div> : v) },
                   { title: 'Result', dataIndex: 'result', width: 120, render: (r: InspectionResult | null) => <ResultTag result={r} /> },
                 ]}
               />

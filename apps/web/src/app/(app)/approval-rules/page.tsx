@@ -11,6 +11,7 @@ import { api, errorMessage } from '@/lib/api';
 import { useApprovalMatrix } from '@/lib/queries';
 import { PageHeader } from '@/components/common/PageHeader';
 import { QueryError } from '@/components/common/QueryState';
+import { themeFontSize } from '@/lib/theme';
 
 /** One cell: may approve, and the limit (null = no limit). */
 type Cell = { on: boolean; max: number | null };
@@ -72,7 +73,7 @@ export default function ApprovalRulesPage() {
       render: (v, r) => (
         <div>
           <div style={{ fontWeight: 600 }}>{v}</div>
-          <div className="text-muted" style={{ fontSize: 12 }}>
+          <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
             {r.users} active user{r.users === 1 ? '' : 's'}
           </div>
         </div>
@@ -82,7 +83,7 @@ export default function ApprovalRulesPage() {
       title: (
         <div>
           <div>{SUBMISSION_TYPE_LABELS[t]}</div>
-          {APPROVAL_AMOUNT_BASIS[t] ? <div className="text-muted" style={{ fontSize: 11, fontWeight: 400 }}>limit on {APPROVAL_AMOUNT_BASIS[t]}</div> : null}
+          {APPROVAL_AMOUNT_BASIS[t] ? <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM'), fontWeight: 400 }}>limit on {APPROVAL_AMOUNT_BASIS[t]}</div> : null}
         </div>
       ),
       key: t,

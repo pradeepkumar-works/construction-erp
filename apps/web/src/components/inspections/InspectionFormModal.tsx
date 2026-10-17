@@ -10,6 +10,7 @@ import { useActivities, useChecklists, useProjects } from '@/lib/queries';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { editActionLabel } from '@/components/common/EditResubmitButton';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
+import { themeFontSize } from '@/lib/theme';
 
 interface FormValues {
   projectId: string;
@@ -121,7 +122,7 @@ export function InspectionFormModal({ open, onClose, projectId, inspection }: { 
         <Form.Item name="photos" label="Photos">
           <PhotoUpload />
         </Form.Item>
-        <Typography.Paragraph type="secondary" style={{ fontSize: 12, margin: 0 }}>
+        <Typography.Paragraph type="secondary" style={{ fontSize: themeFontSize('fontSizeSM'), margin: 0 }}>
           QA/QC is told at once. They check each point and pass it, fail it or ask for re-inspection after rectification.
         </Typography.Paragraph>
       </Form>

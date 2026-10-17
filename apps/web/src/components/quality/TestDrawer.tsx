@@ -16,6 +16,7 @@ import { NcrStatusTag, TestResultTag } from './qualityUi';
 import { TestFormModal } from './TestFormModal';
 import { NcrFormModal, type NcrPrefill } from './NcrFormModal';
 import { RecordLink } from '@/components/record/RecordLink';
+import { themeFontSize } from '@/lib/theme';
 
 /** One reading's value with a Save button; a recorded value can be corrected the same way. */
 function ReadingInput({ test, reading }: { test: QualityTestDto; reading: QualityTestReadingDto }) {
@@ -162,7 +163,7 @@ export function TestDrawer({ id, open, onClose, onOpenNcr }: { id: string | null
             ]}
           />
           {spec && data.readings.length > 1 ? (
-            <Typography.Paragraph type="secondary" style={{ marginTop: 8, fontSize: 12 }}>
+            <Typography.Paragraph type="secondary" style={{ marginTop: 8, fontSize: themeFontSize('fontSizeSM') }}>
               The last reading ({data.readings[data.readings.length - 1].label}) decides the result.
             </Typography.Paragraph>
           ) : null}

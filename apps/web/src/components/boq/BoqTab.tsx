@@ -15,7 +15,7 @@ import { QueryError } from '@/components/common/QueryState';
 import { BoqFormModal } from './BoqFormModal';
 import { BoqImportModal, downloadBoqTemplate } from './BoqImportModal';
 import { BRAND } from '@/lib/brand';
-import { themeColor } from '@/lib/theme';
+import { themeColor, themeFontSize } from '@/lib/theme';
 import { loadXlsx } from '@/lib/exportExcel';
 
 export function BoqTab({ projectId }: { projectId: string }) {
@@ -108,7 +108,7 @@ export function BoqTab({ projectId }: { projectId: string }) {
         <div>
           <div>{toNumber(v) ? formatQty(v) : <span className="text-muted">-</span>}</div>
           {toNumber(r.pendingMeasuredQty) ? (
-            <div className="text-muted" style={{ fontSize: 11 }}>
+            <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
               +{formatQty(r.pendingMeasuredQty)} pending
             </div>
           ) : null}
@@ -150,10 +150,10 @@ export function BoqTab({ projectId }: { projectId: string }) {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
         <Space size={24} wrap>
-          <Statistic title="BOQ items" value={totals.count} styles={{ content: { fontSize: 20 } }} />
-          <Statistic title="BOQ amount" value={formatINR(totals.amount)} styles={{ content: { fontSize: 20 } }} />
-          <Statistic title="Executed value" value={formatINR(totals.executed)} styles={{ content: { fontSize: 20 } }} />
-          <Statistic title="Measured value (approved MB)" value={formatINR(totals.measured)} styles={{ content: { fontSize: 20 } }} />
+          <Statistic title="BOQ items" value={totals.count} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
+          <Statistic title="BOQ amount" value={formatINR(totals.amount)} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
+          <Statistic title="Executed value" value={formatINR(totals.executed)} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
+          <Statistic title="Measured value (approved MB)" value={formatINR(totals.measured)} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
         </Space>
         <Space wrap>
           <Input.Search placeholder="Search item / description" aria-label="Search BOQ items" allowClear value={search} onChange={(e) => setSearch(e.target.value)} style={{ width: 240 }} />

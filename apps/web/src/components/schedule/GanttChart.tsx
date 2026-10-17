@@ -95,7 +95,7 @@ export function GanttChart({ data, scale, showBaseline, onMilestone }: { data: G
   const label = (children: React.ReactNode, sub?: React.ReactNode) => (
     <div className="gantt-label" style={{ position: 'sticky', left: 0, zIndex: 3, width: LABEL_W, minWidth: LABEL_W, padding: '0 12px', background: token.colorBgContainer, borderRight: `1px solid ${token.colorBorderSecondary}`, display: 'flex', flexDirection: 'column', justifyContent: 'center', overflow: 'hidden' }}>
       <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{children}</div>
-      {sub ? <div className="text-muted" style={{ fontSize: 11, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sub}</div> : null}
+      {sub ? <div className="text-muted" style={{ fontSize: token.fontSizeSM, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sub}</div> : null}
     </div>
   );
   const row = (key: string, lbl: React.ReactNode, bars: React.ReactNode, className: string, onClick?: () => void, action?: string) => (
@@ -124,7 +124,7 @@ export function GanttChart({ data, scale, showBaseline, onMilestone }: { data: G
   );
   const section = (title: string) => (
     <div style={{ display: 'flex', height: 26, background: token.colorFillQuaternary, borderBottom: `1px solid ${token.colorBorderSecondary}` }}>
-      <div style={{ position: 'sticky', left: 0, zIndex: 3, width: LABEL_W, minWidth: LABEL_W, padding: '0 12px', lineHeight: '26px', fontWeight: 600, fontSize: 12, background: token.colorFillQuaternary }}>{title}</div>
+      <div style={{ position: 'sticky', left: 0, zIndex: 3, width: LABEL_W, minWidth: LABEL_W, padding: '0 12px', lineHeight: '26px', fontWeight: 600, fontSize: token.fontSizeSM, background: token.colorFillQuaternary }}>{title}</div>
       <div style={{ width, minWidth: width }} />
     </div>
   );
@@ -208,14 +208,14 @@ export function GanttChart({ data, scale, showBaseline, onMilestone }: { data: G
         </div>
         <div style={{ display: 'flex', height: scale === 'week' ? 44 : 28, borderBottom: `1px solid ${token.colorBorder}`, position: 'relative' }}>
           <div style={{ position: 'sticky', left: 0, zIndex: 3, width: LABEL_W, minWidth: LABEL_W, background: token.colorBgContainer, borderRight: `1px solid ${token.colorBorderSecondary}` }} />
-          <div style={{ position: 'relative', width, minWidth: width, fontSize: 12 }}>
+          <div style={{ position: 'relative', width, minWidth: width, fontSize: token.fontSizeSM }}>
             {months.map((m) => (
               <div key={m.left} style={{ position: 'absolute', left: m.left, width: m.width, top: 0, height: 26, lineHeight: '26px', paddingLeft: 6, whiteSpace: 'nowrap', overflow: 'hidden', fontWeight: 600 }}>
                 {m.label}
               </div>
             ))}
             {weeks.map((w) => (
-              <div key={w.left} className="text-muted" style={{ position: 'absolute', left: w.left, top: 26, height: 18, paddingLeft: 3, fontSize: 11, borderLeft: `1px dotted ${token.colorBorder}` }}>
+              <div key={w.left} className="text-muted" style={{ position: 'absolute', left: w.left, top: 26, height: 18, paddingLeft: 3, fontSize: token.fontSizeSM, borderLeft: `1px dotted ${token.colorBorder}` }}>
                 {w.label}
               </div>
             ))}
@@ -240,7 +240,7 @@ export function GanttLegend({ showBaseline }: { showBaseline: boolean }) {
     </span>
   );
   return (
-    <div className="text-muted" style={{ display: 'flex', gap: 18, flexWrap: 'wrap', fontSize: 12, marginTop: 8 }}>
+    <div className="text-muted" style={{ display: 'flex', gap: 18, flexWrap: 'wrap', fontSize: token.fontSizeSM, marginTop: 8 }}>
       {swatch(BRAND.colors.primary, 'Plan, filled to progress')}
       {swatch(token.colorError, 'Behind plan or past its end')}
       {swatch(token.colorSuccess, 'Done')}

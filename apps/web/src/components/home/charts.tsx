@@ -104,7 +104,7 @@ export function CostByHeadChart({ heads }: { heads: CostHeadsDto }) {
       annotations={[
         {
           type: 'text',
-          style: { text: formatINRCompact(heads.total), x: '50%', y: '50%', textAlign: 'center', fontSize: token.fontSizeHeading4, fontWeight: 600, fill: token.colorText },
+          style: { text: formatINRCompact(heads.total), x: '50%', y: '50%', textAlign: 'center', fontSize: token.fontSizeHeading3, fontWeight: 600, fill: token.colorText },
         },
       ]}
     />

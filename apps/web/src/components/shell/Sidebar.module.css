@@ -21,7 +21,7 @@
   height: 100%;
   color: color-mix(in srgb, var(--ant-color-white) 72%, transparent);
   background: var(--brand-ink);
-  font-size: 13.5px;
+  font-size: var(--ant-font-size);
   overflow: hidden;
 }
 
@@ -47,14 +47,14 @@
   overflow: hidden;
   text-overflow: ellipsis;
   color: color-mix(in srgb, var(--ant-color-white) 62%, transparent);
-  font-size: 11.5px;
+  font-size: var(--ant-font-size-sm);
 }
 
 .kbd {
   padding: 1px 6px;
   border: 1px solid color-mix(in srgb, var(--ant-color-white) 14%, transparent);
   border-radius: 4px;
-  font-size: 11px;
+  font-size: var(--ant-font-size-sm);
   line-height: 16px;
   color: color-mix(in srgb, var(--ant-color-white) 62%, transparent);
   font-family: inherit;
@@ -107,7 +107,7 @@
 
 .icon {
   flex: 0 0 auto;
-  font-size: 16px;
+  font-size: var(--ant-font-size-lg);
   color: color-mix(in srgb, var(--ant-color-white) 62%, transparent);
   transition: color var(--ant-motion-duration-fast) var(--ant-motion-ease-out);
 }
@@ -154,7 +154,7 @@
   border-radius: 9px;
   background: var(--brand-pending);
   color: var(--brand-on-accent);
-  font-size: 11px;
+  font-size: var(--ant-font-size-sm);
   font-weight: 600;
   line-height: 18px;
   text-align: center;
@@ -179,7 +179,7 @@
   background: transparent;
   color: color-mix(in srgb, var(--ant-color-white) 60%, transparent);
   font: inherit;
-  font-size: 11px;
+  font-size: var(--ant-font-size-sm);
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -197,7 +197,7 @@
 }
 
 .chevron {
-  font-size: 9px;
+  font-size: var(--ant-font-size-sm);
   opacity: 0;
   transform: rotate(-90deg);
   transition: transform var(--ant-motion-duration-mid) var(--ant-motion-ease-out), opacity var(--ant-motion-duration-fast) var(--ant-motion-ease-out);
@@ -262,7 +262,7 @@
   min-width: 16px;
   height: 16px;
   padding: 0 4px;
-  font-size: 10px;
+  font-size: var(--ant-font-size-sm);
   line-height: 16px;
 }
 
@@ -278,13 +278,13 @@
 
 .flyout {
   min-width: 200px;
-  font-size: 13.5px;
+  font-size: var(--ant-font-size);
 }
 
 .flyoutTitle {
   padding: 6px 10px 6px;
   color: color-mix(in srgb, var(--ant-color-white) 60%, transparent);
-  font-size: 11px;
+  font-size: var(--ant-font-size-sm);
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -303,7 +303,7 @@
 
 .foot .item {
   color: color-mix(in srgb, var(--ant-color-white) 62%, transparent);
-  font-size: 12.5px;
+  font-size: var(--ant-font-size-sm);
 }
 
 .rail .foot {
@@ -315,6 +315,15 @@
 .groupHead:focus-visible {
   outline: 2px solid var(--brand-accent-light);
   outline-offset: -2px;
+}
+
+/* Touch screens: each link and section head is a 44 px target (UX item 82); the sidebar keeps its width. */
+@media (pointer: coarse) {
+  .item,
+  .rail .item,
+  .groupHead {
+    height: 44px;
+  }
 }
 
 /* No keyboard hints on touch screens. */
@@ -359,13 +368,13 @@
   outline: 0;
   background: transparent;
   font: inherit;
-  font-size: 15px;
+  font-size: var(--ant-font-size-lg);
   color: inherit;
 }
 
 .paletteInput > :first-child {
   color: var(--ant-color-text-tertiary);
-  font-size: 16px;
+  font-size: var(--ant-font-size-lg);
 }
 
 .paletteList {
@@ -380,7 +389,7 @@
 .paletteHeading {
   padding: 10px 10px 4px;
   color: var(--ant-color-text-tertiary);
-  font-size: 11px;
+  font-size: var(--ant-font-size-sm);
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -399,7 +408,7 @@
 
 .option > :first-child {
   color: var(--ant-color-text-secondary);
-  font-size: 16px;
+  font-size: var(--ant-font-size-lg);
 }
 
 .optionActive {
@@ -422,7 +431,7 @@
 .optionHint {
   flex: 0 0 auto;
   color: var(--ant-color-text-tertiary);
-  font-size: 12px;
+  font-size: var(--ant-font-size-sm);
 }
 
 .paletteEmpty {
@@ -437,7 +446,7 @@
   padding: 8px 16px;
   border-top: 1px solid var(--ant-color-border-secondary);
   color: var(--ant-color-text-tertiary);
-  font-size: 12px;
+  font-size: var(--ant-font-size-sm);
 }
 
 .paletteFoot kbd {
@@ -446,12 +455,12 @@
   border: 1px solid var(--ant-color-border-secondary);
   border-radius: 4px;
   font-family: inherit;
-  font-size: 11px;
+  font-size: var(--ant-font-size-sm);
 }
 
 .optionSub {
   margin-left: 8px;
   color: var(--ant-color-text-tertiary);
   font-weight: 400;
-  font-size: 12px;
+  font-size: var(--ant-font-size-sm);
 }

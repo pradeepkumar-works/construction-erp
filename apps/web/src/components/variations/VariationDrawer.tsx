@@ -17,6 +17,7 @@ import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { MoneyInput, QuantityInput } from '@/components/form/inputs';
 import { VariationFormModal } from './VariationFormModal';
+import { themeFontSize } from '@/lib/theme';
 
 const STATUS_COLORS: Record<VariationStatus, string> = { DRAFT: 'default', SUBMITTED: 'gold', APPROVED: 'green', REJECTED: 'red' };
 
@@ -77,7 +78,7 @@ export function VariationDrawer({ id, open, onClose }: { id: string | null; open
             render: (_: unknown, l: VariationLineDto) => (
               <div>
                 {formatINR(l.approvedAmount)}
-                <div className="text-muted" style={{ fontSize: 12 }}>
+                <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                   {formatQty(l.approvedQty)} @ {formatINR(l.approvedRate, true)}
                 </div>
               </div>
@@ -286,7 +287,7 @@ function DecisionModal({ open, onClose, variation }: { open: boolean; onClose: (
                       <div key={f.key} style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 140px 160px', gap: '0 12px', alignItems: 'center' }}>
                         <div style={{ paddingBottom: 24 }}>
                           <span className="mono">{l.itemNo}</span> {l.description}
-                          <div className="text-muted" style={{ fontSize: 12 }}>
+                          <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                             Claimed {formatQty(l.qty)} {l.unit} @ {formatINR(l.rate, true)}
                           </div>
                         </div>

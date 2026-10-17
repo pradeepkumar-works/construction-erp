@@ -14,6 +14,7 @@ import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput, QuantityInput } from '@/components/form/inputs';
 import { ReadDocumentButton, ReadPreview, ReadSource, readFieldProps, type ReadState } from '@/components/ai/ReadDocument';
 import { DraftBillChecks } from './DraftBillChecks';
+import { themeFontSize } from '@/lib/theme';
 
 interface FormValues {
   purchaseOrderId: string;
@@ -231,17 +232,17 @@ export function VendorBillFormModal({
         {readState ? (
           <ReadPreview state={readState} active={activeRead} onClear={() => setReadState(null)}>
             {readState.result.match?.vendor ? (
-              <div style={{ fontSize: 12, marginTop: 4 }}>
+              <div style={{ fontSize: themeFontSize('fontSizeSM'), marginTop: 4 }}>
                 Vendor {readState.result.match.vendor.name}
                 {readState.result.match.purchaseOrder ? `, order ${readState.result.match.purchaseOrder.poNo}` : ''}. {readState.result.match.note ?? ''}
               </div>
             ) : readState.result.match?.note ? (
-              <Typography.Text type="warning" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
+              <Typography.Text type="warning" style={{ fontSize: themeFontSize('fontSizeSM'), display: 'block', marginTop: 4 }}>
                 {readState.result.match.note}
               </Typography.Text>
             ) : null}
             {unmatched.length ? (
-              <Typography.Text type="warning" style={{ fontSize: 12, display: 'block' }}>
+              <Typography.Text type="warning" style={{ fontSize: themeFontSize('fontSizeSM'), display: 'block' }}>
                 Not on the order, so not filled: {unmatched.map((l) => readText(l.description)).join('; ')}.
               </Typography.Text>
             ) : null}
@@ -410,7 +411,7 @@ export function VendorBillFormModal({
                 </div>
               }
               description={
-                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                   Due {po.paymentDays ?? 30} days from the invoice{po.vendorMsme === 'MICRO' || po.vendorMsme === 'SMALL' ? ' (45 at most, MSME)' : ''}.
                 </Typography.Text>
               }

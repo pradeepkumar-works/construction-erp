@@ -18,6 +18,7 @@ import { ACTIVITY_EXPORT } from '@/lib/exportColumns';
 import { ActivityFormModal } from './ActivityFormModal';
 import { ApplyTemplateModal } from '@/components/templates/ApplyTemplateModal';
 import { AskButton } from '@/components/ai/AskButton';
+import { themeFontSize } from '@/lib/theme';
 
 export function ActivitiesTab({ projectId, members, project }: { projectId: string; members: ProjectMemberDto[]; project?: ProjectDetail }) {
   const { user } = useAuth();
@@ -66,7 +67,7 @@ export function ActivitiesTab({ projectId, members, project }: { projectId: stri
             </Tag>
           )}
           {(r.boqItemNo || r.checklistName) && (
-            <div className="text-muted" style={{ fontSize: 12 }}>
+            <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
               {[r.boqItemNo && `BOQ ${r.boqItemNo}`, r.checklistName && `Checklist: ${r.checklistName}`].filter(Boolean).join(' · ')}
             </div>
           )}
@@ -91,7 +92,7 @@ export function ActivitiesTab({ projectId, members, project }: { projectId: stri
       render: (v, r) => (
         <div>
           {formatDate(v)}
-          {r.baselineEnd && v && r.baselineEnd !== v ? <div className="text-muted" style={{ fontSize: 12 }}>baseline {formatDate(r.baselineEnd)}</div> : null}
+          {r.baselineEnd && v && r.baselineEnd !== v ? <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>baseline {formatDate(r.baselineEnd)}</div> : null}
         </div>
       ),
     },

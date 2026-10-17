@@ -5,7 +5,7 @@ import { Tooltip } from 'antd';
 import { COST_HEADS, COST_HEAD_LABELS, type CostHead, type CostHeadsDto } from '@erp/shared';
 import { formatINR, toNumber } from '@/lib/format';
 import { BRAND } from '@/lib/brand';
-import { themeColor } from '@/lib/theme';
+import { themeColor, themeFontSize } from '@/lib/theme';
 
 export const HEAD_COLORS: Record<CostHead, string> = { expenses: BRAND.colors.chartViolet, material: BRAND.colors.primary, machinery: BRAND.colors.chartAmber, labour: BRAND.colors.chartTeal, subcontract: BRAND.colors.chartPink };
 
@@ -29,7 +29,7 @@ export function CostBar({ cost, scale, height = 14 }: { cost: CostHeadsDto; scal
 
 export function CostLegend() {
   return (
-    <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 12 }}>
+    <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: themeFontSize('fontSizeSM') }}>
       {COST_HEADS.map((h) => (
         <span key={h} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
           <span style={{ width: 10, height: 10, borderRadius: 2, background: HEAD_COLORS[h], display: 'inline-block' }} />

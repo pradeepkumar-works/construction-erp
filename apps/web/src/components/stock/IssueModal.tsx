@@ -12,6 +12,7 @@ import { useActivities, useAttendanceSuggestions, useProjects, useStockBalances,
 import { useAuth } from '@/lib/auth';
 import { formatQty } from '@/lib/format';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
+import { themeFontSize } from '@/lib/theme';
 
 interface LineValue {
   itemId?: string;
@@ -161,7 +162,7 @@ export function IssueModal({ open, onClose, projectId }: { open: boolean; onClos
         <Form.Item name="remarks" label="Remarks">
           <Input.TextArea rows={2} maxLength={1000} />
         </Form.Item>
-        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+        <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
           Items that fall below their minimum level alert the store manager and the project manager.
         </Typography.Text>
       </Form>

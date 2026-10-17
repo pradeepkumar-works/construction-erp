@@ -27,14 +27,14 @@ import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { SearchBox } from '@/components/common/SearchBox';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { CardToolbar } from '@/components/common/CardToolbar';
-import { themeColor } from '@/lib/theme';
+import { themeColor, themeFontSize } from '@/lib/theme';
 import { ExpiryTag } from '@/components/maintenance/maintenanceUi';
 import { RecordLink } from '@/components/record/RecordLink';
 import { ComplianceFormModal, type ComplianceAction } from './ComplianceForms';
 
 const KIND_COLORS: Record<ComplianceDocKind, string> = { BANK_GUARANTEE: 'blue', EMD: 'cyan', INSURANCE: 'purple', LICENCE: 'geekblue' };
 const STATUS_COLORS: Record<ComplianceDocStatus, string> = { ACTIVE: 'green', RENEWED: 'default', RELEASED: 'default', INVOKED: 'red' };
-const big = { content: { fontSize: 18 } };
+const big = { content: { fontSize: themeFontSize('fontSizeXL') } };
 
 const KindTag = ({ kind }: { kind: ComplianceDocKind }) => (
   <Tag color={KIND_COLORS[kind]} style={{ margin: 0 }}>
@@ -103,7 +103,7 @@ export function CompliancePanel({ initialId }: { initialId?: string }) {
         <div>
           <KindTag kind={d.kind} />
           {d.category ? (
-            <div className="text-muted" style={{ fontSize: 12, marginTop: 2 }}>
+            <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM'), marginTop: 2 }}>
               {d.category}
             </div>
           ) : null}
@@ -116,7 +116,7 @@ export function CompliancePanel({ initialId }: { initialId?: string }) {
       render: (_, d) => (
         <div>
           <b>{d.reference}</b>
-          <div className="text-muted" style={{ fontSize: 12 }}>
+          <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
             {d.issuer ?? ' '}
           </div>
         </div>
@@ -129,7 +129,7 @@ export function CompliancePanel({ initialId }: { initialId?: string }) {
         <div>
           {d.projectName ?? <span className="text-muted">Company-wide</span>}
           {d.beneficiary ? (
-            <div className="text-muted" style={{ fontSize: 12 }}>
+            <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
               In favour of {d.beneficiary}
             </div>
           ) : null}
@@ -146,7 +146,7 @@ export function CompliancePanel({ initialId }: { initialId?: string }) {
           <div>
             {formatINR(d.amount)}
             {d.margin ? (
-              <div className="text-muted" style={{ fontSize: 12 }}>
+              <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                 margin {formatINR(d.margin)}
               </div>
             ) : null}
@@ -168,10 +168,10 @@ export function CompliancePanel({ initialId }: { initialId?: string }) {
           <Statistic title="Margin money blocked" value={formatINR(t.marginBlocked)} styles={big} />
           <Statistic title="EMD with tenders" value={formatINR(t.emdOut)} styles={big} />
           <div role="button" tabIndex={0} aria-pressed={state === 'EXPIRING'} style={{ cursor: 'pointer' }} onClick={() => pickState('EXPIRING')} onKeyDown={onKeys(() => pickState('EXPIRING'))}>
-            <Statistic title={`Expiring in ${DOC_ALERT_DAYS} days`} value={t.expiring} styles={{ content: { fontSize: 18, color: t.expiring ? themeColor('orange7') : undefined } }} />
+            <Statistic title={`Expiring in ${DOC_ALERT_DAYS} days`} value={t.expiring} styles={{ content: { fontSize: themeFontSize('fontSizeXL'), color: t.expiring ? themeColor('orange7') : undefined } }} />
           </div>
           <div role="button" tabIndex={0} aria-pressed={state === 'EXPIRED'} style={{ cursor: 'pointer' }} onClick={() => pickState('EXPIRED')} onKeyDown={onKeys(() => pickState('EXPIRED'))}>
-            <Statistic title="Expired, not renewed" value={t.expired} styles={{ content: { fontSize: 18, color: t.expired ? themeColor('colorErrorText') : undefined } }} />
+            <Statistic title="Expired, not renewed" value={t.expired} styles={{ content: { fontSize: themeFontSize('fontSizeXL'), color: t.expired ? themeColor('colorErrorText') : undefined } }} />
           </div>
         </CardToolbar>
       ) : null}

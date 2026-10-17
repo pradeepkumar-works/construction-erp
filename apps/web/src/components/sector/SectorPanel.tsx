@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Alert, Button, Card, Empty } from 'antd';
+import { Alert, Button, Empty } from 'antd';
 import { SettingOutlined } from '@ant-design/icons';
 import type { ProjectDetail } from '@erp/shared';
 import { formatChainage } from '@erp/shared';
@@ -11,6 +11,7 @@ import { ChainageStrip } from './ChainageStrip';
 import { SectorMatrixTable } from './SectorMatrixTable';
 import { PipelineCard } from './PipelineCard';
 import { SectorSettingsModal } from './SectorSettingsModal';
+import { Section } from '@/components/common/Section';
 
 /** Tab label for a project's sector view. */
 export const sectorTabLabel = (type: ProjectDetail['type']) => (type === 'ROAD' ? 'Chainage' : type === 'BUILDING' ? 'Floors' : 'Villages & Pipeline');
@@ -46,19 +47,19 @@ export function SectorPanel({ project, editable }: { project: ProjectDetail; edi
       ) : (
         <>
           {data.pipeline ? (
-            <Card size="small">
+            <Section>
               <PipelineCard stages={data.pipeline.stages} villages={data.pipeline.villages} />
-            </Card>
+            </Section>
           ) : null}
           {data.strip ? (
-            <Card size="small" title={`Along the ${project.type === 'ROAD' ? 'road' : 'main'}${data.chainageStart !== null && data.chainageEnd !== null ? `: Ch ${formatChainage(data.chainageStart)} to ${formatChainage(data.chainageEnd)}` : ''}`}>
+            <Section title={`Along the ${project.type === 'ROAD' ? 'road' : 'main'}${data.chainageStart !== null && data.chainageEnd !== null ? `: Ch ${formatChainage(data.chainageStart)} to ${formatChainage(data.chainageEnd)}` : ''}`}>
               {data.strip.length ? <ChainageStrip layers={data.strip} start={data.chainageStart} end={data.chainageEnd} /> : <Empty description="No progress placed along the chainage yet" />}
-            </Card>
+            </Section>
           ) : null}
           {data.matrix ? (
-            <Card size="small" title={data.matrix.rowLabel === 'Floor' ? 'Floor by activity (approved quantity)' : 'Village by activity (approved quantity)'}>
+            <Section title={data.matrix.rowLabel === 'Floor' ? 'Floor by activity (approved quantity)' : 'Village by activity (approved quantity)'}>
               {data.matrix.rows.length || data.matrix.unassigned.length ? <SectorMatrixTable matrix={data.matrix} /> : <Empty description={`No ${data.matrix.rowLabel === 'Floor' ? 'floors' : 'villages'} yet`} />}
-            </Card>
+            </Section>
           ) : null}
         </>
       )}

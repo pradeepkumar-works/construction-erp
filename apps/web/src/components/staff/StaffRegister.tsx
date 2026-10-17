@@ -15,6 +15,7 @@ import { QueryError } from '@/components/common/QueryState';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { clock } from './staffUi';
 import { CardToolbar } from '@/components/common/CardToolbar';
+import { themeFontSize } from '@/lib/theme';
 
 type Mark = { status: StaffAttendanceStatus | null; overtimeHours: number | null; note: string };
 const NONE = 'NONE';
@@ -83,7 +84,7 @@ export function StaffRegister() {
       render: (_, r) => (
         <div>
           <div>{r.employee.fullName}</div>
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
             {r.employee.employeeCode} · {r.employee.designation}
           </Typography.Text>
         </div>

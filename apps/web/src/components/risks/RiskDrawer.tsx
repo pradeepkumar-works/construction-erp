@@ -13,7 +13,7 @@ import { formatDate, formatDateTime } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { KindTag, RiskStatusTag, ScoreTag } from './riskUi';
-import { themeColor } from '@/lib/theme';
+import { themeColor, themeFontSize } from '@/lib/theme';
 
 const HISTORY_COLORS: Record<string, string> = { CREATED: 'gray', UPDATED: 'blue', CLOSED: 'green', REOPENED: 'orange', DELETED: 'red' };
 
@@ -183,7 +183,7 @@ export function RiskDrawer({ id, open, onClose, onEdit }: { id: string | null; o
               content: (
                 <div>
                   <Typography.Text strong>{h.action.charAt(0) + h.action.slice(1).toLowerCase()}</Typography.Text> <Typography.Text type="secondary">by {h.actorName}</Typography.Text>
-                  <div className="text-muted" style={{ fontSize: 12 }}>
+                  <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                     {formatDateTime(h.createdAt)}
                   </div>
                   {h.note && <div style={{ marginTop: 2 }}>&ldquo;{h.note}&rdquo;</div>}

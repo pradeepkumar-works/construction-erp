@@ -8,6 +8,7 @@ import { useMessageLog } from '@/lib/queries';
 import { formatDateTime } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { CardToolbar } from '@/components/common/CardToolbar';
+import { themeFontSize } from '@/lib/theme';
 
 const STATUS_COLOR: Record<OutboundMessageStatus, string> = { SENT: 'green', FAILED: 'red', SKIPPED: 'default' };
 
@@ -86,7 +87,7 @@ export function MessageLog() {
             render: (_, m) => (
               <>
                 <div>{m.userName ?? '-'}</div>
-                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                   {formatPhone(m.to)}
                 </Typography.Text>
               </>
@@ -98,10 +99,10 @@ export function MessageLog() {
             key: 'body',
             render: (_, m) => (
               <>
-                <Typography.Text strong style={{ fontSize: 12 }}>
+                <Typography.Text strong style={{ fontSize: themeFontSize('fontSizeSM') }}>
                   {MESSAGE_TEMPLATE_LABELS[m.template]}
                 </Typography.Text>
-                <div style={{ fontSize: 13 }}>{m.body}</div>
+                <div style={{ fontSize: themeFontSize('fontSize') }}>{m.body}</div>
               </>
             ),
           },
@@ -113,7 +114,7 @@ export function MessageLog() {
               <>
                 <Tag color={STATUS_COLOR[m.status]}>{OUTBOUND_MESSAGE_STATUS_LABELS[m.status]}</Tag>
                 {m.error ? (
-                  <div style={{ fontSize: 12 }}>
+                  <div style={{ fontSize: themeFontSize('fontSizeSM') }}>
                     <Typography.Text type="secondary">{m.error}</Typography.Text>
                   </div>
                 ) : null}

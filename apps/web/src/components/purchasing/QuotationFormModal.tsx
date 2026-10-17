@@ -11,6 +11,7 @@ import { useVendors } from '@/lib/queries';
 import { formatQty, toNumber } from '@/lib/format';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
+import { themeFontSize } from '@/lib/theme';
 
 interface FormValues {
   vendorId: string;
@@ -124,7 +125,7 @@ export function QuotationFormModal({ open, request, quotation, onClose }: { open
             pagination={false}
             dataSource={request.items}
             columns={[
-              { title: 'Item', dataIndex: 'itemName', render: (v, i) => <div>{v}{i.specification && <div className="text-muted" style={{ fontSize: 12 }}>{i.specification}</div>}</div> },
+              { title: 'Item', dataIndex: 'itemName', render: (v, i) => <div>{v}{i.specification && <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{i.specification}</div>}</div> },
               { title: 'Quantity', dataIndex: 'quantity', width: 120, align: 'right', render: (v, i) => `${formatQty(v)} ${i.unit}` },
               {
                 title: 'Rate (per unit, before GST)',

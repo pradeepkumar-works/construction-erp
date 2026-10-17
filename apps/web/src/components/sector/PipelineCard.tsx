@@ -5,6 +5,7 @@ import { Progress, Table, Typography } from 'antd';
 import type { PipelineStages, VillagePipeline } from '@erp/shared';
 import { BRAND } from '@/lib/brand';
 import { formatQty, toNumber } from '@/lib/format';
+import { themeFontSize } from '@/lib/theme';
 
 const STAGES: { key: keyof Omit<PipelineStages, 'plannedM'>; label: string; hint: string }[] = [
   { key: 'orderedM', label: 'Ordered', hint: 'on approved purchase orders' },
@@ -30,7 +31,7 @@ export function PipelineCard({ stages, villages }: { stages: PipelineStages; vil
               <span>{formatQty(stages[s.key])} m</span>
             </div>
             <Progress percent={Math.round((toNumber(stages[s.key]) / top) * 100)} showInfo={false} strokeColor={s.key === 'testedM' ? BRAND.colors.success : BRAND.colors.primary} aria-label={`${s.label}: ${Math.round((toNumber(stages[s.key]) / top) * 100)}%`} />
-            <div className="text-muted" style={{ fontSize: 12 }}>
+            <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
               {s.hint}
             </div>
           </div>

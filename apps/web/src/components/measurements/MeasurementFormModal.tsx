@@ -14,7 +14,7 @@ import { formatINR, formatQty, toNumber } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { editActionLabel } from '@/components/common/EditResubmitButton';
 import { SectorInputs, sectorBody, sectorFormValues, typedLocation, type SectorFormValues } from '@/components/sector/SectorInputs';
-import { themeColor } from '@/lib/theme';
+import { themeColor, themeFontSize } from '@/lib/theme';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { QuantityInput } from '@/components/form/inputs';
 
@@ -162,7 +162,7 @@ export function MeasurementFormModal({ open, onClose, projectId, boqItemId, shee
           </Form.Item>
         </FormSection>
         <FormSection title="Measurements">
-          <div style={{ ...LINE_GRID, fontSize: 12, color: themeColor('colorTextDescription'), marginBottom: 4 }}>
+          <div style={{ ...LINE_GRID, fontSize: themeFontSize('fontSizeSM'), color: themeColor('colorTextDescription'), marginBottom: 4 }}>
             <span>Description</span>
             <span>Nos</span>
             <span>Length</span>
@@ -223,15 +223,15 @@ export function MeasurementFormModal({ open, onClose, projectId, boqItemId, shee
                   <Button icon={<PlusOutlined />} onClick={() => add({ nos: 1 })} disabled={fields.length >= 100}>
                     Add line
                   </Button>
-                  <Typography.Text strong style={{ fontSize: 16 }}>
+                  <Typography.Text strong style={{ fontSize: themeFontSize('fontSizeLG') }}>
                     Total {formatQty(total)} {item?.unit ?? ''}
-                    {item ? <span className="text-muted" style={{ fontWeight: 400, fontSize: 13 }}> · {formatINR(total * toNumber(item.rate))}</span> : null}
+                    {item ? <span className="text-muted" style={{ fontWeight: 400, fontSize: themeFontSize('fontSizeSM') }}> · {formatINR(total * toNumber(item.rate))}</span> : null}
                   </Typography.Text>
                 </div>
               </>
             )}
           </Form.List>
-          <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginTop: -8 }}>
+          <Typography.Paragraph type="secondary" style={{ fontSize: themeFontSize('fontSizeSM'), marginTop: -8 }}>
             Each line is nos × length × breadth × depth; blank columns count as 1. Tick Deduct for openings and overlaps.
           </Typography.Paragraph>
         </FormSection>

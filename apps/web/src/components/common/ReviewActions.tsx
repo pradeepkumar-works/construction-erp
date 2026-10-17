@@ -8,7 +8,7 @@ import { mayApproveType } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { errorMessage } from '@/lib/api';
 import { useReview, type ApprovalTypeParam } from '@/lib/queries';
-import { approveTheme } from '@/lib/theme';
+import { approveTheme, themeFontSize } from '@/lib/theme';
 import { inSentence } from '@/lib/format';
 
 export const REVIEW_LABELS: Record<ReviewDecision, string> = {
@@ -132,7 +132,7 @@ export function ReviewDialog({ type, id, decision, onClose, onDone }: { type: Ap
           />
         </Form.Item>
       </Form>
-      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+      <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
         Ctrl Enter to {decision ? inSentence(REVIEW_LABELS[decision]) : 'confirm'}
       </Typography.Text>
     </Modal>

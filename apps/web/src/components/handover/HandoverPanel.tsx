@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Card, Checkbox, Descriptions, Drawer, Empty, Flex, Input, Popconfirm, Progress, Segmented, Select, Space, Statistic, Table, Tag, Typography, theme } from 'antd';
+import { App, Button, Checkbox, Descriptions, Drawer, Empty, Flex, Input, Popconfirm, Progress, Segmented, Select, Space, Statistic, Table, Tag, Typography, theme } from 'antd';
 import type { TableProps } from 'antd';
 import { CheckCircleOutlined, DeleteOutlined, PlusOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -25,6 +25,7 @@ import { Loading, QueryError } from '@/components/common/QueryState';
 import { SearchBox } from '@/components/common/SearchBox';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { DefectFormModal, HandoverFormModal, type DefectAction } from './HandoverForms';
+import { Section } from '@/components/common/Section';
 
 const STATUS_COLORS: Record<DefectStatus, string> = { OPEN: 'orange', FIXED: 'blue', CLOSED: 'green' };
 const PRIORITY_COLORS: Record<DefectPriority, string> = { LOW: 'default', MEDIUM: 'gold', HIGH: 'red' };
@@ -103,7 +104,7 @@ export function HandoverPanel({ projectId, members, initialDefectId }: { project
   if (summary.error || !summary.data) return <QueryError error={summary.error ?? new Error('Not found')} onRetry={summary.refetch} />;
   const s = summary.data;
   const h = s.handover;
-  const big = { content: { fontSize: 20 } };
+  const big = { content: { fontSize: token.fontSizeXL } };
 
   const columns: TableProps<DefectDto>['columns'] = [
     {
@@ -114,7 +115,7 @@ export function HandoverPanel({ projectId, members, initialDefectId }: { project
         <div>
           <b>{d.defectNo}</b>
           <div>
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
               {DEFECT_PHASE_LABELS[d.phase]}
             </Typography.Text>
           </div>
@@ -128,7 +129,7 @@ export function HandoverPanel({ projectId, members, initialDefectId }: { project
         <div>
           {d.title}
           <div>
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
               {[d.location, d.trade].filter(Boolean).join(' · ') || ' '}
             </Typography.Text>
           </div>
@@ -153,9 +154,8 @@ export function HandoverPanel({ projectId, members, initialDefectId }: { project
   const d = open.data;
   const doneCount = s.checklist.filter((i) => i.doneOn).length;
   return (
-    <Flex vertical gap={16} style={{ paddingTop: 12 }}>
-      <Card
-        size="small"
+    <Flex vertical gap={16} style={{ padding: `0 ${token.paddingSM}px ${token.paddingSM}px` }}>
+      <Section
         className="handover-completion"
         title={
           <Space>
@@ -207,14 +207,14 @@ export function HandoverPanel({ projectId, members, initialDefectId }: { project
             {s.defectLiabilityMonths ? ` (${s.defectLiabilityMonths} months in the contract)` : ''} starts from its date.
           </Typography.Text>
         )}
-      </Card>
+      </Section>
 
       <Flex className="handover-summary" gap={32} wrap style={{ padding: `0 ${token.paddingXS}px` }}>
-        <Statistic title="Snags open" value={s.snags.open} suffix={s.snags.fixed ? <Typography.Text type="secondary" style={{ fontSize: 13 }}>+{s.snags.fixed} fixed</Typography.Text> : undefined} styles={big} />
+        <Statistic title="Snags open" value={s.snags.open} suffix={s.snags.fixed ? <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>+{s.snags.fixed} fixed</Typography.Text> : undefined} styles={big} />
         <Statistic
           title="Defects open"
           value={s.defects.open}
-          suffix={s.defects.overdue ? <Typography.Text type="danger" style={{ fontSize: 13 }}>{s.defects.overdue} overdue</Typography.Text> : undefined}
+          suffix={s.defects.overdue ? <Typography.Text type="danger" style={{ fontSize: token.fontSizeSM }}>{s.defects.overdue} overdue</Typography.Text> : undefined}
           styles={big}
         />
         <Statistic title="Cost of defects" value={formatINR(s.defects.cost)} styles={big} />
@@ -222,8 +222,8 @@ export function HandoverPanel({ projectId, members, initialDefectId }: { project
         {s.depositHeld !== null ? <Statistic title="Security deposit with the client" value={formatINR(s.depositHeld)} styles={big} /> : null}
       </Flex>
 
-      <Card size="small" title="Snags and defects" styles={{ body: { padding: 0 } }}>
-        <Flex gap={8} wrap align="center" style={{ padding: token.paddingSM }}>
+      <Section title="Snags and defects">
+        <Flex gap={8} wrap align="center" style={{ paddingBottom: token.paddingSM }}>
           <Segmented<DefectPhase | 'ALL'>
             value={phase}
             onChange={(v) => {
@@ -285,7 +285,7 @@ export function HandoverPanel({ projectId, members, initialDefectId }: { project
             locale={{ emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={status === 'PENDING' && !q ? 'Nothing open' : 'Nothing matches'} /> }}
           />
         )}
-      </Card>
+      </Section>
 
       <CloseoutChecklist projectId={projectId} items={s.checklist} editable={manager} doneCount={doneCount} />
 
@@ -405,8 +405,7 @@ function CloseoutChecklist({ projectId, items, editable, doneCount }: { projectI
   });
 
   return (
-    <Card
-      size="small"
+    <Section
       className="closeout-checklist"
       title="Close-out checklist"
       extra={items.length ? <Progress percent={Math.round((doneCount / items.length) * 100)} size="small" style={{ width: 160, margin: 0 }} format={() => `${doneCount}/${items.length}`} aria-label={`Close-out checklist: ${doneCount} of ${items.length} done`} /> : null}
@@ -435,7 +434,7 @@ function CloseoutChecklist({ projectId, items, editable, doneCount }: { projectI
                         </Typography.Text>
                       </Checkbox>
                       {i.doneOn ? (
-                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                        <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
                           {formatDate(i.doneOn)}
                           {i.doneByName ? `, ${i.doneByName}` : ''}
                         </Typography.Text>
@@ -475,6 +474,6 @@ function CloseoutChecklist({ projectId, items, editable, doneCount }: { projectI
           ) : null}
         </Flex>
       )}
-    </Card>
+    </Section>
   );
 }

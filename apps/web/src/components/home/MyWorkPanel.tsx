@@ -72,13 +72,14 @@ export function MyWorkPanel({ data, loading, order }: { data: MyWorkDto | undefi
 function Frame({ title, icon, href, count, tone, children, amount }: { title: string; icon: React.ReactNode; href: string | null; count: number; tone: 'warning' | 'error' | 'info'; amount?: string | null; children: React.ReactNode }) {
   const { token } = theme.useToken();
   const color = count === 0 ? token.colorSuccess : tone === 'error' ? token.colorError : tone === 'warning' ? token.colorWarning : token.colorPrimary;
-  // The count is text, so it takes the text shade of the tone (the warning yellow does not read on white).
-  const figure = tone === 'error' ? token.colorErrorText : tone === 'warning' ? token.colorWarningText : token.colorPrimaryText;
+  // A count is neutral; only a card of exceptions (late deliveries, payments due) colours it, in the text shade (UX item 82).
+  const figure = tone === 'error' ? token.colorErrorText : token.colorText;
   const bg = count === 0 ? token.colorSuccessBg : tone === 'error' ? token.colorErrorBg : tone === 'warning' ? token.colorWarningBg : token.colorPrimaryBg;
   return (
     <section
       aria-label={title}
-      style={{ height: '100%', padding: token.paddingSM, border: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}`, borderRadius: token.borderRadiusLG }}
+      // A part of the My work card, so a hairline above it rather than a box around it (UX item 82: no cards inside cards).
+      style={{ height: '100%', paddingTop: token.paddingSM, borderTop: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}` }}
     >
       <Flex align="center" gap={token.marginSM} style={{ marginBottom: token.marginXS }}>
         <span
@@ -101,7 +102,7 @@ function Frame({ title, icon, href, count, tone, children, amount }: { title: st
             </Typography.Text>
           ) : null}
         </div>
-        <span style={{ fontSize: token.fontSizeHeading3, fontWeight: token.fontWeightStrong, color: count === 0 ? token.colorTextTertiary : figure, fontVariantNumeric: 'tabular-nums' }}>{count}</span>
+        <span style={{ fontSize: token.fontSizeHeading2, fontWeight: token.fontWeightStrong, color: count === 0 ? token.colorTextTertiary : figure, fontVariantNumeric: 'tabular-nums' }}>{count}</span>
       </Flex>
       {children}
     </section>

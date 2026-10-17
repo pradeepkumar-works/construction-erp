@@ -1,81 +1,83 @@
 'use client';
 
 import React from 'react';
-import { Card, Col, Descriptions, Progress, Row, Statistic, Table, Typography } from 'antd';
+import { Col, Descriptions, Progress, Row, Statistic, Table, Typography, theme } from 'antd';
 import type { ProjectDetail } from '@erp/shared';
 import { useProjectDashboard } from '@/lib/queries';
 import { formatDate, formatINR, formatINRCompact, formatQty, toNumber } from '@/lib/format';
 import { ProjectStatusTag, ProjectTypeTag } from '@/components/common/StatusTag';
 import { QueryError } from '@/components/common/QueryState';
+import { FigureBlock, Section } from '@/components/common/Section';
 import { MembersCard } from './MembersCard';
-import { BRAND } from '@/lib/brand';
 import { themeColor } from '@/lib/theme';
 
+/** The project's Overview tab: figures, progress by activity, details and team, as sections of the workspace's surface. */
 export function ProjectOverview({ project }: { project: ProjectDetail }) {
+  const { token } = theme.useToken();
   const { data: dash, isLoading, error, refetch } = useProjectDashboard(project.id);
   const boqTotal = toNumber(dash?.boqTotalAmount);
   const boqExec = toNumber(dash?.boqExecutedAmount);
   const finPct = boqTotal > 0 ? Math.round((boqExec / boqTotal) * 1000) / 10 : 0;
 
   return (
-    <Row gutter={[16, 16]}>
+    <Row gutter={[token.margin, token.margin]} style={{ padding: `0 ${token.paddingSM}px ${token.paddingSM}px` }}>
       <Col xs={24} xl={16}>
         {error && <QueryError error={error} onRetry={() => refetch()} />}
-        <Row gutter={[12, 12]}>
+        <Row gutter={[token.marginSM, token.marginSM]}>
           <Col xs={12} md={6}>
-            <Card size="small" loading={isLoading}>
+            <FigureBlock loading={isLoading}>
               <Statistic title="Physical progress" value={dash?.physicalProgressPct ?? project.physicalProgressPct} suffix="%" precision={1} />
               <Progress percent={dash?.physicalProgressPct ?? project.physicalProgressPct} size="small" showInfo={false} aria-label={`Physical progress ${dash?.physicalProgressPct ?? project.physicalProgressPct}%`} />
-            </Card>
+            </FigureBlock>
           </Col>
           <Col xs={12} md={6}>
-            <Card size="small" loading={isLoading}>
+            <FigureBlock loading={isLoading}>
               <Statistic title="Financial progress" value={finPct} suffix="%" precision={1} />
               <Progress percent={finPct} size="small" showInfo={false} strokeColor={themeColor('colorTextHeading')} aria-label={`Financial progress ${finPct}%`} />
-            </Card>
+            </FigureBlock>
           </Col>
           <Col xs={12} md={6}>
-            <Card size="small" loading={isLoading}>
+            <FigureBlock loading={isLoading}>
               <Statistic title="Executed value" value={formatINRCompact(dash?.boqExecutedAmount)} />
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+              <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
                 of {formatINRCompact(dash?.boqTotalAmount)} BOQ
               </Typography.Text>
-            </Card>
+            </FigureBlock>
           </Col>
           <Col xs={12} md={6}>
-            <Card size="small" loading={isLoading}>
+            <FigureBlock loading={isLoading}>
               <Statistic title="Activities" value={dash?.activitiesCompleted ?? 0} suffix={`/ ${dash?.activitiesTotal ?? 0} done`} />
-              <Typography.Text type={dash?.activitiesDelayed ? 'danger' : 'secondary'} style={{ fontSize: 12 }}>
+              <Typography.Text type={dash?.activitiesDelayed ? 'danger' : 'secondary'} style={{ fontSize: token.fontSizeSM }}>
                 {dash?.activitiesDelayed ?? 0} delayed
               </Typography.Text>
-            </Card>
+            </FigureBlock>
           </Col>
           <Col xs={12} md={6}>
-            <Card size="small" loading={isLoading}>
-              <Statistic title="Pending approvals" value={dash?.pendingApprovals ?? project.pendingApprovals} styles={{ content: { color: (dash?.pendingApprovals ?? 0) > 0 ? BRAND.colors.pending : undefined } }} />
-            </Card>
+            <FigureBlock loading={isLoading}>
+              <Statistic title="Pending approvals" value={dash?.pendingApprovals ?? project.pendingApprovals} />
+            </FigureBlock>
           </Col>
           <Col xs={12} md={6}>
-            <Card size="small" loading={isLoading}>
+            <FigureBlock loading={isLoading}>
               <Statistic title="Open material requests" value={dash?.openMaterialRequests ?? 0} />
-            </Card>
+            </FigureBlock>
           </Col>
           <Col xs={12} md={6}>
-            <Card size="small" loading={isLoading}>
-              <Statistic title="Last DPR" value={dash?.lastDprDate ? formatDate(dash.lastDprDate) : 'None'} styles={{ content: { fontSize: 18 } }} />
-            </Card>
+            <FigureBlock loading={isLoading}>
+              <Statistic title="Last DPR" value={dash?.lastDprDate ? formatDate(dash.lastDprDate) : 'None'} styles={{ content: { fontSize: token.fontSizeXL } }} />
+            </FigureBlock>
           </Col>
           <Col xs={12} md={6}>
-            <Card size="small">
-              <Statistic title="Contract value" value={formatINRCompact(project.contractValue)} styles={{ content: { fontSize: 18 } }} />
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            <FigureBlock>
+              <Statistic title="Contract value" value={formatINRCompact(project.contractValue)} styles={{ content: { fontSize: token.fontSizeXL } }} />
+              <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
                 {project.contractValue ? formatINR(project.contractValue) : '-'}
               </Typography.Text>
-            </Card>
+            </FigureBlock>
           </Col>
         </Row>
 
-        <Card size="small" title="Planned vs executed by activity" style={{ marginTop: 16 }} loading={isLoading}>
+        <Section title="Planned vs executed by activity" style={{ marginTop: token.margin }} loading={isLoading}>
           <Table
             size="small"
             rowKey="activityId"
@@ -89,10 +91,10 @@ export function ProjectOverview({ project }: { project: ProjectDetail }) {
               { title: 'Progress', dataIndex: 'progressPct', width: 260, render: (v: number) => <Progress percent={Math.round(v * 10) / 10} size="small" status={v >= 100 ? 'success' : 'active'} aria-label={`${Math.round(v * 10) / 10}% done`} /> },
             ]}
           />
-        </Card>
+        </Section>
       </Col>
       <Col xs={24} xl={8}>
-        <Card size="small" title="Project details" style={{ marginBottom: 16 }}>
+        <Section title="Project details" style={{ marginBottom: token.margin }}>
           <Descriptions
             size="small"
             column={1}
@@ -110,7 +112,7 @@ export function ProjectOverview({ project }: { project: ProjectDetail }) {
               ...(project.description ? [{ key: 'desc', label: 'Description', children: project.description }] : []),
             ]}
           />
-        </Card>
+        </Section>
         <MembersCard project={project} />
       </Col>
     </Row>

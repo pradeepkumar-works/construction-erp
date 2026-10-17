@@ -6,6 +6,7 @@ import type { TableProps } from 'antd';
 import type { SectorCell, SectorMatrix } from '@erp/shared';
 import { BRAND } from '@/lib/brand';
 import { formatDate, formatQty } from '@/lib/format';
+import { themeFontSize } from '@/lib/theme';
 
 type Row = { key: string; label: string; none?: boolean };
 
@@ -24,7 +25,7 @@ export function SectorMatrixTable({ matrix }: { matrix: SectorMatrix }) {
         <Tooltip title={`${formatQty(a.executedQty)} of ${formatQty(a.plannedQty)} ${a.unit} done in all`}>
           <span>
             {a.name}
-            <div className="text-muted" style={{ fontSize: 11, fontWeight: 400 }}>
+            <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM'), fontWeight: 400 }}>
               {a.unit}
             </div>
           </span>
@@ -47,7 +48,7 @@ export function SectorMatrixTable({ matrix }: { matrix: SectorMatrix }) {
           <Tooltip title={c.lastDate ? `Last entry ${formatDate(c.lastDate)}` : undefined}>
             <div>
               {Number(c.approvedQty) ? <div style={{ fontWeight: 600, color: BRAND.colors.success }}>{formatQty(c.approvedQty)}</div> : null}
-              {Number(c.pendingQty) ? <div style={{ fontSize: 12, color: BRAND.colors.pending }}>+{formatQty(c.pendingQty)} waiting</div> : null}
+              {Number(c.pendingQty) ? <div style={{ fontSize: themeFontSize('fontSizeSM'), color: BRAND.colors.pending }}>+{formatQty(c.pendingQty)} waiting</div> : null}
             </div>
           </Tooltip>
         );

@@ -12,13 +12,13 @@ import { useAuth } from '@/lib/auth';
 import { useGantt } from '@/lib/queries';
 import { formatDate, formatDateTime } from '@/lib/format';
 import { Loading, QueryError } from '@/components/common/QueryState';
-import { themeColor } from '@/lib/theme';
+import { themeColor, themeFontSize } from '@/lib/theme';
 import { GanttChart, GanttLegend, type GanttScale } from './GanttChart';
 import { MilestoneFormModal } from './MilestoneFormModal';
 import { AskButton } from '@/components/ai/AskButton';
 
 const MILESTONE_COLORS: Record<MilestoneState, string> = { UPCOMING: 'blue', DUE_SOON: 'orange', MISSED: 'red', ACHIEVED: 'green', ACHIEVED_LATE: 'gold' };
-const big = { content: { fontSize: 18 } };
+const big = { content: { fontSize: themeFontSize('fontSizeXL') } };
 
 const moved = (days: number | null) =>
   days === null ? <span className="text-muted">-</span> : days === 0 ? <span className="text-muted">none</span> : <span className={days > 0 ? 'text-danger' : undefined}>{days > 0 ? `${days} days later` : `${-days} days earlier`}</span>;
@@ -67,7 +67,7 @@ export function GanttPanel({ projectId }: { projectId: string }) {
     { title: 'Milestone', dataIndex: 'name', render: (v, r) => (
       <div>
         <b>{v}</b>
-        {r.note ? <div className="text-muted" style={{ fontSize: 12 }}>{r.note}</div> : null}
+        {r.note ? <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{r.note}</div> : null}
       </div>
     ) },
     { title: 'Due on', dataIndex: 'dueDate', width: 120, render: (v) => formatDate(v) },
@@ -106,15 +106,15 @@ export function GanttPanel({ projectId }: { projectId: string }) {
           <Statistic
             title="Against the baseline"
             value={s.finishSlipDays === null ? '-' : s.finishSlipDays === 0 ? 'On time' : s.finishSlipDays > 0 ? `${s.finishSlipDays} days late` : `${-s.finishSlipDays} days early`}
-            styles={{ content: { fontSize: 18, color: (s.finishSlipDays ?? 0) > 0 ? themeColor('colorErrorText') : undefined } }}
+            styles={{ content: { fontSize: themeFontSize('fontSizeXL'), color: (s.finishSlipDays ?? 0) > 0 ? themeColor('colorErrorText') : undefined } }}
           />
         ) : null}
         <div>
           <Statistic title="Behind plan / past end" value={`${s.behind} / ${s.late}`} styles={big} />
           {s.behind + s.late > 0 ? <AskButton size="small" type="link" style={{ paddingInline: 0 }} label="Explain" aria-label="Explain why activities are behind" question="Why are activities behind plan on this project?" /> : null}
         </div>
-        {data.baselineAt ? <Statistic title="Activities slipped" value={s.slipped} suffix={<span style={{ fontSize: 12 }}>of {s.scheduled}</span>} styles={big} /> : null}
-        <Statistic title="Milestones achieved" value={s.milestonesAchieved} suffix={<span style={{ fontSize: 12 }}>of {s.milestones}{s.milestonesMissed ? `, ${s.milestonesMissed} missed` : ''}</span>} styles={big} />
+        {data.baselineAt ? <Statistic title="Activities slipped" value={s.slipped} suffix={<span style={{ fontSize: themeFontSize('fontSizeSM') }}>of {s.scheduled}</span>} styles={big} /> : null}
+        <Statistic title="Milestones achieved" value={s.milestonesAchieved} suffix={<span style={{ fontSize: themeFontSize('fontSizeSM') }}>of {s.milestones}{s.milestonesMissed ? `, ${s.milestonesMissed} missed` : ''}</span>} styles={big} />
       </div>
 
       <Alert

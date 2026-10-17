@@ -11,7 +11,7 @@ import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useAttendanceDay, useAttendanceSuggestions, useProjects } from '@/lib/queries';
 import { formatDate } from '@/lib/format';
-import { themeColor } from '@/lib/theme';
+import { themeColor, themeFontSize } from '@/lib/theme';
 import { FormShell } from '@/components/form/FormShell';
 
 interface LineValue {
@@ -158,7 +158,7 @@ export function AttendanceFormModal({ open, onClose, projectId, sheet: initial }
         <Form.List name="lines">
           {(fields, { add, remove: removeLine }) => (
             <Space orientation="vertical" size={6} style={{ width: '100%' }}>
-              <div style={{ display: 'flex', gap: 6, color: themeColor('colorTextDescription'), fontSize: 12 }}>
+              <div style={{ display: 'flex', gap: 6, color: themeColor('colorTextDescription'), fontSize: themeFontSize('fontSizeSM') }}>
                 <span style={{ flex: 3 }}>Contractor</span>
                 <span style={{ flex: 2 }}>Trade</span>
                 <span style={{ width: 90 }}>Workers</span>
@@ -199,7 +199,7 @@ export function AttendanceFormModal({ open, onClose, projectId, sheet: initial }
         <Typography.Text strong>Total {total} workers</Typography.Text>
         {byTrade.length ? (
           <div style={{ marginTop: 6, display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center' }}>
-            <Typography.Text type="secondary" style={{ fontSize: 12, marginRight: 4 }}>
+            <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM'), marginRight: 4 }}>
               Fills the DPR manpower:
             </Typography.Text>
             {byTrade.map((m) => (
@@ -215,7 +215,7 @@ export function AttendanceFormModal({ open, onClose, projectId, sheet: initial }
         <Input.TextArea rows={2} maxLength={1000} />
       </Form.Item>
       {editing ? (
-        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+        <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
           Recorded by {sheet.recordedByName}
           {sheet.updatedByName ? `, last changed by ${sheet.updatedByName}` : ''}.
         </Typography.Text>

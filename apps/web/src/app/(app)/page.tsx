@@ -29,7 +29,7 @@ import { ProjectStatusTag, ProjectTypeTag } from '@/components/common/StatusTag'
 import { useAuth } from '@/lib/auth';
 import { BRAND } from '@/lib/brand';
 import { GettingStartedCard } from '@/components/dashboard/GettingStartedCard';
-import { themeColor } from '@/lib/theme';
+import { themeColor, themeFontSize } from '@/lib/theme';
 import { MyWorkPanel } from '@/components/home/MyWorkPanel';
 import { KpiTile, kpiColumns, trendOf } from '@/components/home/KpiTile';
 import { homeLayout, type ChartKey, type KpiKey } from '@/components/home/layout';
@@ -58,7 +58,7 @@ export default function DashboardPage() {
           <Link href={`/projects/${p.id}`} className="link-strong">
             {p.name}
           </Link>
-          <div className="text-muted" style={{ fontSize: 12 }}>
+          <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
             {p.code} {p.location ? `· ${p.location}` : ''}
           </div>
         </div>
@@ -178,7 +178,7 @@ export default function DashboardPage() {
   );
 }
 
-const small = { fontSize: 12 } as const;
+const small = { fontSize: themeFontSize('fontSizeSM') } as const;
 
 /** One tile of the role's KPI row; nothing when the role cannot see its figure. */
 function Kpi({ k, data, trends, approver }: { k: KpiKey; data: CompanyDashboard; trends: HomeTrendsDto | undefined; approver: boolean }) {
@@ -198,7 +198,7 @@ function Kpi({ k, data, trends, approver }: { k: KpiKey; data: CompanyDashboard;
     case 'projects':
       return (
         <KpiTile href="/projects" icon={<ProjectOutlined />}>
-          <Statistic title="Active projects" value={data.activeProjects} suffix={<span className="text-muted" style={{ fontSize: 14 }}>/ {data.totalProjects}</span>} />
+          <Statistic title="Active projects" value={data.activeProjects} suffix={<span className="text-muted" style={{ fontSize: themeFontSize('fontSize') }}>/ {data.totalProjects}</span>} />
         </KpiTile>
       );
     case 'workDone':
@@ -256,7 +256,7 @@ function Kpi({ k, data, trends, approver }: { k: KpiKey; data: CompanyDashboard;
     case 'pending':
       return approver ? (
         <KpiTile href="/approvals" icon={<CheckSquareOutlined />}>
-          <Statistic title="Pending approvals" value={data.pendingApprovals} styles={{ content: { color: data.pendingApprovals > 0 ? BRAND.colors.pending : undefined } }} />
+          <Statistic title="Pending approvals" value={data.pendingApprovals} />
         </KpiTile>
       ) : null;
     case 'delayed':

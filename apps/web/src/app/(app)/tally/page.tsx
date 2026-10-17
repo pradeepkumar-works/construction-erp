@@ -16,7 +16,7 @@ import { formatDate, formatDateTime, formatINR } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { QueryError } from '@/components/common/QueryState';
 import { CardToolbar } from '@/components/common/CardToolbar';
-import { themeColor } from '@/lib/theme';
+import { themeColor, themeFontSize } from '@/lib/theme';
 
 const money = (v: string | null) => (v ? <span className="mono">{formatINR(v, true)}</span> : null);
 const KIND_COLORS: Record<TallyVoucherKind, string> = { SALES: 'green', RECEIPT: 'cyan', PURCHASE: 'orange', SUBCONTRACT: 'volcano', PAYMENT: 'purple', EXPENSE: 'gold' };
@@ -72,7 +72,7 @@ function ToExport() {
       render: (v: string, r) => (
         <div>
           <span className="mono">{v}</span>
-          <div className="text-muted" style={{ fontSize: 12 }}>
+          <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
             {TALLY_VOUCHER_TYPES[r.kind]}
           </div>
         </div>
@@ -84,7 +84,7 @@ function ToExport() {
       render: (v: string, r) => (
         <div>
           {v}
-          <div className="text-muted" style={{ fontSize: 12 }}>
+          <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
             {r.projectCode} · {r.projectName}
           </div>
         </div>
@@ -193,7 +193,7 @@ function Exports() {
     onError: (e) => message.error(errorMessage(e)),
   });
   const columns: TableProps<TallyExportDto>['columns'] = [
-    { title: 'Exported', dataIndex: 'createdAt', width: 180, render: (v, r) => <div>{formatDateTime(v)}<div className="text-muted" style={{ fontSize: 12 }}>{r.createdByName}</div></div> },
+    { title: 'Exported', dataIndex: 'createdAt', width: 180, render: (v, r) => <div>{formatDateTime(v)}<div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{r.createdByName}</div></div> },
     { title: 'Up to', dataIndex: 'upTo', width: 120, render: (v) => formatDate(v) },
     {
       title: 'Vouchers',
@@ -285,7 +285,7 @@ function Ledgers() {
       render: (_, l) => (
         <div>
           {l.kind === 'FIXED' ? l.use : l.defaultName}
-          <div className="text-muted" style={{ fontSize: 12 }}>
+          <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
             {l.kind === 'FIXED' ? `Default "${l.defaultName}"` : l.use}
           </div>
         </div>

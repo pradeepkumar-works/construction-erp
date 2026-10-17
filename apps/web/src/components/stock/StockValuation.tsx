@@ -12,6 +12,7 @@ import { downloadXlsx, exportFileName, type ExportColumn } from '@/lib/exportExc
 import { QueryError } from '@/components/common/QueryState';
 import { ExportButton } from '@/components/common/ExportButton';
 import { CardToolbar } from '@/components/common/CardToolbar';
+import { themeFontSize } from '@/lib/theme';
 
 const EXPORT: ExportColumn<StockValuationRowDto>[] = [
   { header: 'Project', value: (r) => r.projectName, width: 30 },
@@ -48,9 +49,9 @@ export function StockValuation({ projectId }: { projectId?: string }) {
     <div className="stock-valuation">
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       <CardToolbar variant="summary" wrap gap={32} align="flex-end">
-        <Statistic title="Stock value" value={formatINR(data?.totalValue ?? 0)} styles={{ content: { fontSize: 18 } }} />
+        <Statistic title="Stock value" value={formatINR(data?.totalValue ?? 0)} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
         {STOCK_AGEING_BUCKETS.map((b, i) => (
-          <Statistic key={b} title={b} value={formatINR(data?.ageingValue[i] ?? 0)} styles={{ content: { fontSize: 18 } }} />
+          <Statistic key={b} title={b} value={formatINR(data?.ageingValue[i] ?? 0)} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
         ))}
         <div style={{ marginLeft: 'auto' }}>
           <ExportButton
@@ -80,7 +81,7 @@ export function StockValuation({ projectId }: { projectId?: string }) {
         scroll={{ x: projectId ? 980 : 1200 }}
         locale={{ emptyText: 'Nothing in stock' }}
       />
-      <Typography.Paragraph type="secondary" style={{ fontSize: 12, padding: '8px 16px 0' }}>
+      <Typography.Paragraph type="secondary" style={{ fontSize: themeFontSize('fontSizeSM'), padding: '8px 16px 0' }}>
         Stock on hand at the item master rate. Ageing assumes the oldest stock is used first, so what is on hand is the latest that came in (GRNs,
         transfers in, returns from site and positive adjustments); the buckets show how long ago that was.
       </Typography.Paragraph>

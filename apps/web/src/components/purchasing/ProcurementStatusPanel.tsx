@@ -68,7 +68,7 @@ export function ProcurementStatusPanel() {
         <div>
           <Typography.Link href={`/purchase-orders/${r.purchaseOrderId}`}>{r.poNo}</Typography.Link>
           <div>
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
               {formatDate(r.poDate)}
             </Typography.Text>
           </div>
@@ -82,7 +82,7 @@ export function ProcurementStatusPanel() {
         <div>
           {r.vendorName}
           <div>
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
               {r.projectName}
             </Typography.Text>
           </div>
@@ -98,7 +98,7 @@ export function ProcurementStatusPanel() {
           {r.deliveryBy ? formatDate(r.deliveryBy) : <Typography.Text type="secondary">Not set</Typography.Text>}
           {r.daysLate ? (
             <div>
-              <Typography.Text type="danger" style={{ fontSize: 12 }}>
+              <Typography.Text type="danger" style={{ fontSize: token.fontSizeSM }}>
                 {r.daysLate} day{r.daysLate === 1 ? '' : 's'} late
               </Typography.Text>
             </div>
@@ -118,7 +118,7 @@ export function ProcurementStatusPanel() {
             {DELIVERY_STATE_LABELS[r.state]}
           </Tag>
           {r.awaitingQc ? (
-            <Typography.Text type="warning" style={{ fontSize: 12 }}>
+            <Typography.Text type="warning" style={{ fontSize: token.fontSizeSM }}>
               {r.awaitingQc} GRN{r.awaitingQc === 1 ? '' : 's'} awaiting QA/QC
             </Typography.Text>
           ) : null}
@@ -134,7 +134,7 @@ export function ProcurementStatusPanel() {
         <Flex gap={32} wrap className="procurement-summary" style={{ padding: `${token.paddingXS}px ${token.padding}px` }}>
           <Statistic title="Approved orders" value={t.orders} />
           <Statistic title="With deliveries pending" value={t.pending} />
-          <Statistic title="Late" value={t.late} styles={{ content: t.late ? { color: token.colorError } : undefined }} />
+          <Statistic title="Late" value={t.late} styles={{ content: t.late ? { color: token.colorErrorText } : undefined }} />
           <Statistic title="Value still to come" value={formatINR(t.pendingValue)} />
         </Flex>
       ) : null}

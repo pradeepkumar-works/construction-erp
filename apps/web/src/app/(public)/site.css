@@ -38,7 +38,7 @@
 }
 .lp-eyebrow {
   margin: 0 0 16px !important;
-  font-size: 12px;
+  font-size: var(--ant-font-size-sm);
   font-weight: 600;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -66,7 +66,7 @@
 .lp-head-lead {
   margin-top: 20px !important;
   max-width: 560px;
-  font-size: 17px;
+  font-size: var(--ant-font-size-lg);
   line-height: 1.6;
   color: var(--lp-text);
 }
@@ -88,14 +88,14 @@
   padding: 0 22px;
   border-radius: 8px;
   border: 1px solid transparent;
-  font-size: 16px;
+  font-size: var(--ant-font-size-lg);
   font-weight: 600;
   line-height: 1;
   white-space: nowrap;
   transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease;
 }
 .lp-btn .anticon {
-  font-size: 13px;
+  font-size: var(--ant-font-size-sm);
   transition: transform 160ms ease;
 }
 .lp-btn:hover .anticon {
@@ -135,7 +135,7 @@
 .lp-btn-sm {
   height: 38px;
   padding: 0 16px;
-  font-size: 14px;
+  font-size: var(--ant-font-size);
 }
 .lp-cta {
   display: flex;
@@ -175,7 +175,7 @@
 .lp-nav-links a,
 .lp-nav-signin {
   color: color-mix(in srgb, var(--ant-color-white) 74%, transparent);
-  font-size: 14px;
+  font-size: var(--ant-font-size);
   font-weight: 500;
   transition: color 160ms ease;
 }
@@ -254,13 +254,13 @@
   padding-top: 42px;
 }
 .lp-lead {
-  font-size: 18px;
+  font-size: var(--ant-font-size-xl);
   line-height: 1.6;
   color: var(--lp-on-dark);
   max-width: 460px;
 }
 .lp-hero-note {
-  font-size: 13px;
+  font-size: var(--ant-font-size-sm);
   color: color-mix(in srgb, var(--ant-color-white) 50%, transparent);
 }
 .lp-hero-text,
@@ -367,7 +367,7 @@
   display: block;
   margin-bottom: 14px;
   font-family: var(--font-display), Arial, sans-serif;
-  font-size: 34px;
+  font-size: var(--ant-font-size-heading-1);
   font-weight: 700;
   font-stretch: 85%;
   font-variant-numeric: tabular-nums;
@@ -375,18 +375,18 @@
   color: var(--brand-accent);
 }
 .lp-day-list h3 {
-  font-size: 19px;
+  font-size: var(--ant-font-size-xl);
   font-weight: 700;
   margin-bottom: 4px;
 }
 .lp-day-where {
-  font-size: 13px;
+  font-size: var(--ant-font-size-sm);
   font-weight: 600;
   color: var(--lp-muted);
   margin-bottom: 12px !important;
 }
 .lp-day-list p:last-child {
-  font-size: 15px;
+  font-size: var(--ant-font-size-lg);
   line-height: 1.55;
   color: var(--lp-text);
 }
@@ -413,7 +413,7 @@
   background: transparent;
   color: var(--lp-text);
   font: inherit;
-  font-size: 14px;
+  font-size: var(--ant-font-size);
   font-weight: 600;
   padding: 9px 16px;
   border-radius: 7px;
@@ -443,14 +443,14 @@
   top: 100px;
 }
 .lp-panel h3 {
-  font-size: 30px;
+  font-size: var(--ant-font-size-heading-1);
   font-weight: 800;
   font-stretch: 85%;
   line-height: 1.08;
   margin-bottom: 14px;
 }
 .lp-panel-lead {
-  font-size: 16px;
+  font-size: var(--ant-font-size-lg);
   line-height: 1.6;
   color: var(--lp-text);
   margin-bottom: 28px !important;
@@ -470,16 +470,16 @@
 .lp-feat-icon {
   flex: 0 0 auto;
   color: var(--brand-accent);
-  font-size: 18px;
+  font-size: var(--ant-font-size-xl);
   line-height: 22px;
 }
 .lp-feats h4 {
-  font-size: 16px;
+  font-size: var(--ant-font-size-lg);
   font-weight: 700;
   margin-bottom: 3px;
 }
 .lp-feats p {
-  font-size: 14px;
+  font-size: var(--ant-font-size);
   line-height: 1.55;
   color: var(--lp-text);
 }
@@ -521,7 +521,7 @@
 }
 .lp-flow-name {
   font-family: var(--font-display), Arial, sans-serif;
-  font-size: 22px;
+  font-size: var(--ant-font-size-xl);
   font-weight: 800;
   font-stretch: 85%;
   color: var(--ant-color-text-light-solid);
@@ -538,7 +538,7 @@
 .lp-flow li {
   display: inline-flex;
   align-items: center;
-  font-size: 14px;
+  font-size: var(--ant-font-size);
   font-weight: 500;
   color: color-mix(in srgb, var(--ant-color-white) 86%, transparent);
 }
@@ -575,7 +575,7 @@
   display: grid;
   grid-template-columns: 52px minmax(0, 1fr);
   border-bottom: 1px solid var(--lp-rule);
-  font-size: 16px;
+  font-size: var(--ant-font-size-lg);
   line-height: 1.5;
   color: var(--brand-ink);
 }
@@ -635,15 +635,15 @@
   color: var(--ant-color-text-light-solid);
   font-family: var(--font-display), Arial, sans-serif;
   font-weight: 800;
-  font-size: 16px;
+  font-size: var(--ant-font-size-lg);
 }
 .lp-steps h3 {
-  font-size: 20px;
+  font-size: var(--ant-font-size-xl);
   font-weight: 700;
   margin-bottom: 4px;
 }
 .lp-steps p {
-  font-size: 15px;
+  font-size: var(--ant-font-size-lg);
   line-height: 1.6;
   color: var(--lp-text);
 }
@@ -661,13 +661,13 @@
 }
 .lp-role-list dt {
   font-family: var(--font-display), Arial, sans-serif;
-  font-size: 18px;
+  font-size: var(--ant-font-size-xl);
   font-weight: 700;
   margin-bottom: 6px;
 }
 .lp-role-list dd {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--ant-font-size-lg);
   line-height: 1.55;
   color: var(--lp-text);
 }
@@ -698,26 +698,26 @@
   margin-bottom: 36px;
 }
 .lp-project-type {
-  font-size: 12px;
+  font-size: var(--ant-font-size-sm);
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--brand-link);
 }
 .lp-project-code {
-  font-size: 13px;
+  font-size: var(--ant-font-size-sm);
   font-variant-numeric: tabular-nums;
   color: var(--lp-muted);
 }
 .lp-project h3 {
-  font-size: 22px;
+  font-size: var(--ant-font-size-xl);
   font-weight: 800;
   font-stretch: 88%;
   line-height: 1.15;
   margin-bottom: 12px;
 }
 .lp-project p {
-  font-size: 14px;
+  font-size: var(--ant-font-size);
   line-height: 1.55;
   color: var(--lp-muted);
 }
@@ -732,12 +732,12 @@
   border-top: 2px solid var(--brand-ink);
 }
 .lp-trust h3 {
-  font-size: 18px;
+  font-size: var(--ant-font-size-xl);
   font-weight: 700;
   margin-bottom: 8px;
 }
 .lp-trust p {
-  font-size: 15px;
+  font-size: var(--ant-font-size-lg);
   line-height: 1.55;
   color: var(--lp-text);
 }
@@ -781,7 +781,7 @@
   color: var(--brand-ink);
 }
 .lp-plan-price span {
-  font-size: 15px;
+  font-size: var(--ant-font-size-lg);
   color: var(--lp-text);
 }
 .lp-plan ul {
@@ -794,7 +794,7 @@
 .lp-plan li {
   display: flex;
   gap: 12px;
-  font-size: 15px;
+  font-size: var(--ant-font-size-lg);
   line-height: 1.5;
   color: var(--brand-ink);
 }
@@ -834,7 +834,7 @@
   padding: 22px 0;
   font-family: var(--font-display), Arial, sans-serif;
   font-weight: 700;
-  font-size: 18px;
+  font-size: var(--ant-font-size-xl);
 }
 .lp-faq summary::-webkit-details-marker {
   display: none;
@@ -853,7 +853,7 @@
 }
 .lp-faq details p {
   padding: 0 40px 24px 0;
-  font-size: 16px;
+  font-size: var(--ant-font-size-lg);
   line-height: 1.65;
   color: var(--lp-text);
 }
@@ -887,7 +887,7 @@
 .lp-final p {
   max-width: 560px;
   margin: 20px auto 36px !important;
-  font-size: 17px;
+  font-size: var(--ant-font-size-lg);
   line-height: 1.6;
   color: var(--lp-on-dark);
 }
@@ -899,7 +899,7 @@
 .lp-foot {
   background: var(--brand-ink-deep);
   color: color-mix(in srgb, var(--ant-color-white) 55%, transparent);
-  font-size: 14px;
+  font-size: var(--ant-font-size);
 }
 .lp-foot-top {
   display: grid;
@@ -919,7 +919,7 @@
 }
 .lp .lp-foot-col h3 {
   font-family: var(--font-body), system-ui, sans-serif;
-  font-size: 12px;
+  font-size: var(--ant-font-size-sm);
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -939,7 +939,7 @@
   flex-wrap: wrap;
   padding: 22px 0 28px;
   border-top: 1px solid color-mix(in srgb, var(--ant-color-white) 10%, transparent);
-  font-size: 13px;
+  font-size: var(--ant-font-size-sm);
 }
 
 /* Scroll reveal: only once the script has marked the page, so nothing stays hidden without it. */
@@ -976,7 +976,7 @@
   max-width: 760px;
   padding-top: 64px;
   padding-bottom: 96px;
-  font-size: 16px;
+  font-size: var(--ant-font-size-lg);
   line-height: 1.7;
   color: var(--lp-text);
 }
@@ -987,7 +987,7 @@
   margin-bottom: 8px;
 }
 .lp-doc h2 {
-  font-size: 24px;
+  font-size: var(--ant-font-size-heading-2);
   font-weight: 800;
   margin: 40px 0 12px;
 }
@@ -1006,7 +1006,7 @@
 }
 .lp-doc-meta {
   color: var(--lp-muted);
-  font-size: 13px;
+  font-size: var(--ant-font-size-sm);
   margin-bottom: 32px !important;
 }
 

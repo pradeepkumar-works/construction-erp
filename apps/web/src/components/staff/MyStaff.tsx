@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Alert, App, Button, Card, Col, Empty, Flex, Listy, Popconfirm, Row, Space, Statistic, Table, Typography } from 'antd';
+import { Alert, App, Button, Col, Empty, Flex, Listy, Popconfirm, Row, Space, Statistic, Table, Typography } from 'antd';
 import type { TableProps } from 'antd';
 import { LoginOutlined, LogoutOutlined, PlusOutlined } from '@ant-design/icons';
 import type { LeaveRequestDto } from '@erp/shared';
@@ -13,6 +13,8 @@ import { formatDate } from '@/lib/format';
 import { Loading, QueryError } from '@/components/common/QueryState';
 import { AttendanceTag, LeaveStatusTag, clock, days, leaveSpan } from './staffUi';
 import { LeaveFormModal } from './LeaveFormModal';
+import { themeFontSize } from '@/lib/theme';
+import { Section } from '@/components/common/Section';
 
 /** The signed-in person's own record: check in and out, leave balances, their requests and coming holidays. */
 export function MyStaff() {
@@ -65,7 +67,7 @@ export function MyStaff() {
     <div style={{ padding: 16 }}>
       <Row gutter={[16, 16]}>
         <Col xs={24} lg={8}>
-          <Card size="small" title={`Today, ${formatDate(new Date().toISOString())}`}>
+          <Section title={`Today, ${formatDate(new Date().toISOString())}`}>
             {data.todayOff && !t ? (
               <Typography.Paragraph type="secondary">{data.todayOff === 'Sunday' ? 'Sunday, the weekly off.' : `Holiday: ${data.todayOff}.`} Working today counts towards a comp-off.</Typography.Paragraph>
             ) : null}
@@ -95,11 +97,10 @@ export function MyStaff() {
                 </Button>
               ) : null}
             </div>
-          </Card>
+          </Section>
         </Col>
         <Col xs={24} lg={16}>
-          <Card
-            size="small"
+          <Section
             title={`Leave left in ${data.year}`}
             extra={
               <Button type="primary" icon={<PlusOutlined />} onClick={() => setApply(true)}>
@@ -113,26 +114,26 @@ export function MyStaff() {
                 .map((b) => (
                   <Col key={b.type} xs={12} md={6}>
                     <Statistic title={LEAVE_TYPE_LABELS[b.type]} value={b.left ?? 0} suffix={`/ ${b.entitled}`} />
-                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                    <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                       {b.taken} taken{b.pending ? `, ${b.pending} waiting` : ''}
                     </Typography.Text>
                   </Col>
                 ))}
             </Row>
-          </Card>
+          </Section>
         </Col>
         <Col xs={24} lg={16}>
-          <Card size="small" title="My leave" styles={{ body: { padding: 0 } }}>
+          <Section title="My leave">
             <Table<LeaveRequestDto> rowKey="id" size="small" columns={columns} dataSource={data.leave} pagination={false} scroll={{ x: 1080 }} locale={{ emptyText: 'No leave yet' }} />
-          </Card>
+          </Section>
         </Col>
         <Col xs={24} lg={8}>
-          <Card size="small" title="Coming holidays">
+          <Section title="Coming holidays">
             {data.holidays.length ? (
               <Listy
                 items={data.holidays}
                 rowKey="id"
-                styles={{ item: { padding: '8px 16px', background: 'transparent' } }}
+                styles={{ item: { padding: '8px 0', background: 'transparent' } }}
                 itemRender={(h) => (
                   <Flex justify="space-between" align="center" gap="small">
                     <span>
@@ -146,7 +147,7 @@ export function MyStaff() {
             ) : (
               <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="None listed" />
             )}
-          </Card>
+          </Section>
         </Col>
       </Row>
       <LeaveFormModal open={apply} onClose={() => setApply(false)} employeeId={data.employee.id} />

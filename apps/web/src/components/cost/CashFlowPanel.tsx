@@ -10,7 +10,7 @@ import { useProjectScope } from '@/lib/project-scope';
 import { useCashFlow, useProjects } from '@/lib/queries';
 import { formatINR, toNumber, formatMonth, formatDayMonth } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
-import { themeColor } from '@/lib/theme';
+import { themeColor, themeFontSize } from '@/lib/theme';
 
 const RED = themeColor('colorErrorText');
 const GREEN = themeColor('colorSuccessText');
@@ -105,14 +105,14 @@ export function CashFlowPanel({ projectId: fixedProject }: { projectId?: string 
       {data && (
         <>
           <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap', marginBottom: 12 }}>
-            <Statistic title="Money in" value={formatINR(sum('inTotal'))} styles={{ content: { fontSize: 18 } }} />
-            <Statistic title="Money out" value={formatINR(sum('outTotal'))} styles={{ content: { fontSize: 18 } }} />
-            <Statistic title="Net over the period" value={formatINR(sum('net'))} styles={{ content: { fontSize: 18, color: sum('net') < 0 ? RED : GREEN } }} />
+            <Statistic title="Money in" value={formatINR(sum('inTotal'))} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
+            <Statistic title="Money out" value={formatINR(sum('outTotal'))} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
+            <Statistic title="Net over the period" value={formatINR(sum('net'))} styles={{ content: { fontSize: themeFontSize('fontSizeXL'), color: sum('net') < 0 ? RED : GREEN } }} />
             {overdue ? (
               <Statistic
                 title="Overdue today (in the first row)"
                 value={`${formatINR(data.overdueIn)} in · ${formatINR(data.overdueOut)} out`}
-                styles={{ content: { fontSize: 18 } }}
+                styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }}
               />
             ) : null}
           </div>
@@ -155,7 +155,7 @@ export function CashFlowPanel({ projectId: fixedProject }: { projectId?: string 
         </>
       )}
       <Table<CashFlowPeriodDto> rowKey="start" size="small" loading={isLoading || isFetching} columns={columns} dataSource={periods} pagination={false} scroll={{ x: 1530 }} />
-      <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginTop: 8 }}>
+      <Typography.Paragraph type="secondary" style={{ fontSize: themeFontSize('fontSizeSM'), marginTop: 8 }}>
         Client bills are approved RA bills not yet paid, expected the client&apos;s payment days after they were sent (set on the Contract tab;{' '}
         {DEFAULT_CLIENT_PAYMENT_DAYS} days when not set). Retention and security deposit come back at the end of the defect liability period. Work still to
         bill is the revised contract value less what has been billed, billed evenly up to the completion date and received after the payment days, with GST

@@ -15,6 +15,7 @@ import { QueryError } from '@/components/common/QueryState';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { LetterFormModal, type LetterPrefill } from './LetterFormModal';
 import { RecordLink } from '@/components/record/RecordLink';
+import { themeFontSize } from '@/lib/theme';
 
 export const DirectionTag = ({ direction }: { direction: LetterRefDto['direction'] }) => (
   <Tag color={direction === 'IN' ? 'blue' : 'purple'} style={{ margin: 0 }}>
@@ -134,7 +135,7 @@ export function LetterDrawer({ id, open, onClose, onOpen }: { id: string | null;
               <Space orientation="vertical" size={6} style={{ width: '100%' }}>
                 {data.inReplyTo ? (
                   <div>
-                    <div className="text-muted" style={{ fontSize: 12 }}>
+                    <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                       In reply to
                     </div>
                     {ref(data.inReplyTo)}
@@ -142,7 +143,7 @@ export function LetterDrawer({ id, open, onClose, onOpen }: { id: string | null;
                 ) : null}
                 {data.replies.length ? (
                   <div>
-                    <div className="text-muted" style={{ fontSize: 12 }}>
+                    <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                       Replies
                     </div>
                     {data.replies.map(ref)}

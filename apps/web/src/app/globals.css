@@ -75,7 +75,7 @@ a {
 
 .auth-kicker {
   margin: 0 0 16px;
-  font-size: 12px;
+  font-size: var(--ant-font-size-sm);
   font-weight: 600;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -110,7 +110,7 @@ a {
   list-style: none;
   display: grid;
   gap: 14px;
-  font-size: 15px;
+  font-size: var(--ant-font-size-lg);
   line-height: 1.45;
   color: color-mix(in srgb, var(--ant-color-white) 72%, transparent);
 }
@@ -132,7 +132,7 @@ a {
 
 .auth-aside-foot {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--ant-font-size-sm);
   color: color-mix(in srgb, var(--ant-color-white) 62%, transparent);
 }
 
@@ -160,7 +160,7 @@ a {
   font-family: var(--font-display), 'Arial Narrow', Arial, sans-serif;
   font-stretch: 88%;
   font-weight: 700;
-  font-size: 34px;
+  font-size: var(--ant-font-size-heading-1);
   line-height: 1.1;
   letter-spacing: -0.01em;
   color: var(--brand-ink);
@@ -168,7 +168,7 @@ a {
 
 .auth-subtitle {
   margin: 0 0 32px;
-  font-size: 15px;
+  font-size: var(--ant-font-size-lg);
   line-height: 1.5;
   color: var(--brand-muted);
 }
@@ -200,7 +200,7 @@ a {
   top: 0;
   right: 0;
   z-index: 1;
-  font-size: 14px;
+  font-size: var(--ant-font-size);
   line-height: 22px;
 }
 
@@ -224,7 +224,7 @@ a {
   align-items: center;
   gap: 12px;
   margin: 40px 0 16px;
-  font-size: 12px;
+  font-size: var(--ant-font-size-sm);
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -251,7 +251,7 @@ a {
   border-radius: 999px;
   background: var(--ant-color-bg-container);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--ant-font-size-sm);
   color: var(--brand-muted);
   cursor: pointer;
   transition: border-color 150ms, color 150ms, background-color 150ms;
@@ -271,7 +271,7 @@ a {
 
 .auth-demo-note {
   margin: 12px 0 0;
-  font-size: 12px;
+  font-size: var(--ant-font-size-sm);
   color: var(--brand-subtle);
 }
 
@@ -279,7 +279,7 @@ a {
   display: flex;
   justify-content: space-between;
   gap: 16px;
-  font-size: 13px;
+  font-size: var(--ant-font-size-sm);
   color: var(--brand-subtle);
 }
 
@@ -332,9 +332,6 @@ a {
   }
   .auth-form {
     padding: 16px 0 32px;
-  }
-  .auth-title {
-    font-size: 30px;
   }
   .auth-subtitle {
     margin-bottom: 28px;
@@ -397,7 +394,7 @@ h4.ant-typography,
   }
   /* KPI tiles sit two to a row on phones; keep "₹ 59.27 Cr" on one line. */
   .ant-card .ant-statistic .ant-statistic-content {
-    font-size: 20px;
+    font-size: var(--ant-font-size-xl);
   }
 }
 
@@ -452,6 +449,66 @@ h4.ant-typography,
 :root .ant-tag.ant-tag-warning:not(.ant-tag-disabled):is(.ant-tag-filled, .ant-tag-outlined) { color: var(--ant-color-warning-text); }
 :root .ant-tag.ant-tag-error:not(.ant-tag-disabled):is(.ant-tag-filled, .ant-tag-outlined) { color: var(--ant-color-error-text); }
 :root .ant-tag.ant-tag-processing:not(.ant-tag-disabled):is(.ant-tag-filled, .ant-tag-outlined) { color: var(--ant-color-primary-text); }
+
+/*
+ * One type scale, 12 px the floor (UX item 82). antd sets <kbd> and <code> at 90% and 85% of the text around them, which
+ * in a 12 px caption falls under the floor; a lone `monospace` face would also shrink them to 13/16 of the text.
+ */
+:root .ant-typography kbd {
+  font-size: max(var(--ant-font-size-sm), 90%);
+}
+:root .ant-typography code {
+  font-size: max(var(--ant-font-size-sm), 85%);
+}
+code,
+kbd {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+/*
+ * Touch screens (UX item 82, WCAG 2.5.8 and the 44 px touch guideline): every control is at least 44 px, whatever the
+ * density. Mouse and pen keep the 24 px floor the theme sets (`lib/theme.ts`). Links in running text keep their size.
+ */
+@media (pointer: coarse) {
+  :root .ant-btn {
+    min-height: 44px;
+  }
+  :root .ant-btn-icon-only {
+    min-width: 44px;
+  }
+  :root .ant-select {
+    --ant-select-height: 44px;
+  }
+  :root :is(.ant-input-affix-wrapper, .ant-picker, .ant-input-number),
+  :root .ant-input:not(:is(.ant-input-affix-wrapper, .ant-input-number, .ant-input-group, .ant-picker) .ant-input) {
+    min-height: 44px;
+  }
+  :root .ant-input-number {
+    display: inline-flex;
+    align-items: center;
+  }
+  :root .ant-segmented-item-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+  }
+  :root .ant-tabs-tab {
+    min-height: 44px;
+  }
+  :root :is(.ant-pagination-item, .ant-pagination-prev, .ant-pagination-next, .ant-pagination-jump-prev, .ant-pagination-jump-next) {
+    min-width: 44px;
+    height: 44px;
+    line-height: 42px;
+  }
+  :root :is(.ant-checkbox-wrapper, .ant-radio-wrapper) {
+    min-height: 44px;
+    align-items: center;
+  }
+  :root :is(.ant-dropdown-menu-item, .ant-select-item-option) {
+    min-height: 44px;
+  }
+}
 
 /* Keyboard focus is always visible: a two-pixel ring in the primary colour on anything focused from the keyboard. */
 :where(a, button, [role='button'], [role='tab'], [role='menuitem'], [role='option'], [tabindex]):focus-visible {

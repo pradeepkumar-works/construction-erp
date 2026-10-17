@@ -15,7 +15,7 @@ import { StatusTag } from '@/components/common/StatusTag';
 import { QuotationFormModal } from './QuotationFormModal';
 import { PurchaseOrderFormModal, type PoStart } from './PurchaseOrderFormModal';
 import { PoStateTag, PurchaseOrderDrawer } from './PurchaseOrderDrawer';
-import { themeColor } from '@/lib/theme';
+import { themeColor, themeFontSize } from '@/lib/theme';
 import { RecordLink } from '@/components/record/RecordLink';
 
 type Line = ComparativeStatementDto['lines'][number];
@@ -104,7 +104,7 @@ export function QuotationsPanel({ request }: { request: MaterialRequestDto }) {
               render: (_, l) => (
                 <div>
                   {l.itemName}
-                  <div className="text-muted" style={{ fontSize: 12 }}>
+                  <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                     {formatQty(l.quantity)} {l.unit}
                     {toNumber(l.orderedQty) > 0 ? ` · ${formatQty(l.orderedQty)} ordered` : ''}
                   </div>
@@ -125,7 +125,7 @@ export function QuotationsPanel({ request }: { request: MaterialRequestDto }) {
                     )}
                     {q.vendorName}
                   </div>
-                  <div className="text-muted" style={{ fontSize: 11, fontWeight: 400 }}>
+                  <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM'), fontWeight: 400 }}>
                     {[q.quoteRef, formatDate(q.quoteDate), q.deliveryDays != null ? `${q.deliveryDays} days` : null].filter(Boolean).join(' · ')}
                   </div>
                 </div>
@@ -136,7 +136,7 @@ export function QuotationsPanel({ request }: { request: MaterialRequestDto }) {
                 return (
                   <div style={best(l, q) ? { background: themeColor('colorSuccessBg'), borderRadius: 4, padding: '0 4px' } : undefined}>
                     <span className="mono">{formatINR(r.rate, true)}</span> <span className="text-muted">+{r.gstRate}%</span>
-                    <div className="text-muted mono" style={{ fontSize: 11 }}>
+                    <div className="text-muted mono" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                       {formatINR(r.amount, true)}
                     </div>
                   </div>
@@ -153,10 +153,10 @@ export function QuotationsPanel({ request }: { request: MaterialRequestDto }) {
                 {quotes.map((q, i) => (
                   <Table.Summary.Cell key={q.id} index={i + 1} align="right">
                     <strong className="mono">{formatINR(q.total, true)}</strong>
-                    {q.missingLines > 0 && <div className="text-muted" style={{ fontSize: 11 }}>{q.missingLines} item{q.missingLines === 1 ? '' : 's'} not quoted</div>}
-                    {toNumber(q.freight) > 0 && <div className="text-muted" style={{ fontSize: 11 }}>freight {formatINR(q.freight)}</div>}
+                    {q.missingLines > 0 && <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{q.missingLines} item{q.missingLines === 1 ? '' : 's'} not quoted</div>}
+                    {toNumber(q.freight) > 0 && <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>freight {formatINR(q.freight)}</div>}
                     {buyer && (
-                      <Space size={2} style={{ marginTop: 4 }}>
+                      <Space size="small" style={{ marginTop: 4 }}>
                         {remaining && (
                           <Button size="small" type={data.lowestQuotationId === q.id ? 'primary' : 'default'} onClick={() => raise(q)}>
                             Raise PO

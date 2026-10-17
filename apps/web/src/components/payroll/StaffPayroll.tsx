@@ -10,6 +10,7 @@ import { usePayroll } from '@/lib/queries';
 import { downloadXlsx, type ExportColumn } from '@/lib/exportExcel';
 import { formatDate } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
+import { themeFontSize } from '@/lib/theme';
 
 const SHORT: Record<LeaveType, string> = { CASUAL: 'CL', SICK: 'SL', EARNED: 'EL', COMP_OFF: 'Comp-off', UNPAID: 'LWP' };
 const n = (v: number) => (v ? v : '');
@@ -51,7 +52,7 @@ export function StaffPayroll({ month, projectId }: { month: string; projectId?: 
       render: (v: string, r) => (
         <div>
           <div>{v}</div>
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
             {r.designation}
           </Typography.Text>
         </div>

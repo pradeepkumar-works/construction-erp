@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Alert, App, Button, Card, Divider, Popconfirm, Table, Tag, Typography } from 'antd';
+import { Alert, App, Button, Divider, Popconfirm, Table, Tag, Typography } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { SubcontractBillDto, SubcontractBillLineDto } from '@erp/shared';
 import { MSME_CATEGORY_LABELS, canEditSubmission, canPrepareSubcontractBill, canResubmit, canViewPayables } from '@erp/shared';
@@ -21,6 +21,7 @@ import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
 import { checksSection } from '@/components/checks/ChecksSection';
 import { submissionLifecycle } from '@/components/record/lifecycle';
 import { openSubBillPrint } from './subcontractPrint';
+import { Section } from '@/components/common/Section';
 
 const money = (v: string | number) => <span className="mono">{formatINR(v, true)}</span>;
 
@@ -193,7 +194,7 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
                     ]}
                   />
                   <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
-                    <Card size="small" style={{ width: 380 }}>
+                    <Section style={{ width: 380 }}>
                       {[
                         ['Work in this bill', data.grossAmount],
                         [`GST ${data.gstRate}%`, data.gstAmount],
@@ -220,7 +221,7 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
                         <span>Net payable</span>
                         {money(data.netPayable)}
                       </div>
-                    </Card>
+                    </Section>
                   </div>
                 </>
               ),

@@ -4,7 +4,7 @@ import React from 'react';
 import { Tooltip, Typography } from 'antd';
 import { formatChainage, type ChainageLayer } from '@erp/shared';
 import { BRAND } from '@/lib/brand';
-import { themeColor } from '@/lib/theme';
+import { themeColor, themeFontSize } from '@/lib/theme';
 import { formatDate, formatQty } from '@/lib/format';
 
 const LABEL = 220;
@@ -34,12 +34,12 @@ export function ChainageStrip({ layers, start, end }: { layers: ChainageLayer[];
           <div style={{ width: LABEL, flex: 'none' }} />
           <div style={{ position: 'relative', flex: 1, height: 22 }}>
             {ticks.map((t) => (
-              <span key={t} className="text-muted" style={{ position: 'absolute', left: pct(t), transform: 'translateX(-50%)', fontSize: 11, whiteSpace: 'nowrap' }}>
+              <span key={t} className="text-muted" style={{ position: 'absolute', left: pct(t), transform: 'translateX(-50%)', fontSize: themeFontSize('fontSizeSM'), whiteSpace: 'nowrap' }}>
                 {formatChainage(t)}
               </span>
             ))}
           </div>
-          <div style={{ width: SIDE, flex: 'none', fontSize: 11, textAlign: 'right' }} className="text-muted">
+          <div style={{ width: SIDE, flex: 'none', fontSize: themeFontSize('fontSizeSM'), textAlign: 'right' }} className="text-muted">
             done
           </div>
         </div>
@@ -47,7 +47,7 @@ export function ChainageStrip({ layers, start, end }: { layers: ChainageLayer[];
           <div key={l.activityId} className="strip-row" data-activity={l.name} style={{ display: 'flex', alignItems: 'center', padding: '6px 0', borderTop: `1px solid ${themeColor('colorBorderSecondary')}` }}>
             <div style={{ width: LABEL, flex: 'none', paddingRight: 12 }}>
               <div style={{ fontWeight: 500 }}>{l.name}</div>
-              <div className="text-muted" style={{ fontSize: 12 }}>
+              <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                 {formatQty(l.executedQty)} of {formatQty(l.plannedQty)} {l.unit}
                 {Number(l.unplacedQty) ? ` · ${formatQty(l.unplacedQty)} with no chainage` : ''}
               </div>
@@ -79,7 +79,7 @@ export function ChainageStrip({ layers, start, end }: { layers: ChainageLayer[];
                 );
               })}
             </div>
-            <div style={{ width: SIDE, flex: 'none', textAlign: 'right', fontSize: 12 }}>
+            <div style={{ width: SIDE, flex: 'none', textAlign: 'right', fontSize: themeFontSize('fontSizeSM') }}>
               {!l.coveredM && !l.pendingM && l.segments.length ? (
                 // Work at points (culverts): count the places, a length means nothing.
                 <div style={{ fontWeight: 600 }}>
@@ -96,7 +96,7 @@ export function ChainageStrip({ layers, start, end }: { layers: ChainageLayer[];
             </div>
           </div>
         ))}
-        <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginTop: 8, marginBottom: 0 }}>
+        <Typography.Paragraph type="secondary" style={{ fontSize: themeFontSize('fontSizeSM'), marginTop: 8, marginBottom: 0 }}>
           <span style={{ display: 'inline-block', width: 10, height: 10, background: BRAND.colors.success, marginRight: 4, verticalAlign: 'middle' }} />
           approved
           <span style={{ display: 'inline-block', width: 10, height: 10, background: BRAND.colors.pending, opacity: 0.55, margin: '0 4px 0 12px', verticalAlign: 'middle' }} />
