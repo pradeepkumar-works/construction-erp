@@ -72,6 +72,10 @@ cd e2e && npx playwright test         # browser tests; needs API + web running (
 - States: a page loading shows `PageSkeleton` (`components/common/QueryState.tsx`, shapes list/record/home/workspace), a failed
   query `QueryError` (403, 404 and offline get their own Result). `DataTable` draws its own first-load skeleton and empty state:
   pass `empty={frame.empty}` (Clear filters when filtered) and `emptyAction={newButton}`, the same button as the toolbar's.
+- Accessibility (WCAG 2.2 AA, `e2e/tests/accessibility.spec.ts` runs axe on the main pages in both themes): text colours come
+  from tokens, never antd's raw `colorWarning`/`colorSuccess` for text (use the `…Text` token); a filter or search control outside a
+  labelled `Form.Item` gets an `aria-label` (`ListToolbar` takes `searchLabel`), a `Progress` gets one too; buttons beside a
+  tab bar go through `renderTabBar={tabBarWithExtra(…)}` (`components/common/tabBarWithExtra.tsx`), not `tabBarExtraContent`.
 - Records: a submission's drawer and its own page (`/dpr/[id]`, `/bills/[id]`, …) are one `XRecord` component on
   `RecordFrame` (`components/record/`: facts, `submissionLifecycle` stage bar, sections, activity, actions); the drawer
   export is `<XRecord mode="drawer">`. List links to it use `RecordLink` and `RowActions href`.

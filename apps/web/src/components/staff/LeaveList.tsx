@@ -95,6 +95,7 @@ export function LeaveList({ onOpen, onNew, toDecideFirst }: { onOpen: (id: strin
         search={page.search}
         onSearch={page.setSearch}
         searchPlaceholder="Search name, code, reason"
+        searchLabel="Search leave requests"
         extra={newButton}
       >
         <Select<LeaveType> allowClear placeholder="Any leave" aria-label="Leave type" style={{ width: 170 }} value={type} onChange={(v) => page.setFilter('type', v)} options={LEAVE_TYPES.map((t) => ({ value: t, label: LEAVE_TYPE_LABELS[t] }))} />

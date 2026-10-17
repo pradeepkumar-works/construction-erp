@@ -157,6 +157,7 @@ export function SubBillList({ projectId: fixedProject, openId: initialOpen }: { 
         search={page.search}
         onSearch={page.setSearch}
         searchPlaceholder="Search WO no., subcontractor, invoice"
+        searchLabel="Search subcontractor bills"
         extra={
           <>
             <ExportButton onExport={exportRows} />

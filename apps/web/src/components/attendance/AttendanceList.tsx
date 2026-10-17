@@ -117,6 +117,7 @@ export function AttendanceList({ projectId: fixedProject }: { projectId?: string
         search={page.search}
         onSearch={page.setSearch}
         searchPlaceholder="Search contractor, trade, people"
+        searchLabel="Search attendance"
         extra={
           <>
             <ExportButton onExport={exportRows} />

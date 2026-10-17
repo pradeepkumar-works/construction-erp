@@ -112,6 +112,7 @@ export function IncidentList({ projectId: fixedProject, initialOpenId }: { proje
         search={page.search}
         onSearch={page.setSearch}
         searchPlaceholder="Search no., place, details"
+        searchLabel="Search incidents"
         extra={
           <>
             <ExportButton

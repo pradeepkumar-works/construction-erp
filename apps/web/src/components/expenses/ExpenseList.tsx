@@ -92,6 +92,7 @@ export function ExpenseList({ projectId: fixedProject }: { projectId?: string })
         search={page.search}
         onSearch={page.setSearch}
         searchPlaceholder="Search no., description, vendor, bill"
+        searchLabel="Search expenses"
         extra={
           <>
             <ExportButton onExport={exportRows} />

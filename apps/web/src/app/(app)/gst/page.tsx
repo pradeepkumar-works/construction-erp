@@ -15,6 +15,7 @@ import { formatDate, formatINR, formatINRCompact, toNumber } from '@/lib/format'
 import { CONSTRUCTION_SAC, GST_SOURCE_LABELS, downloadGstWorkbook, hsnSummary, placeOfSupply } from '@/lib/gstExport';
 import { PageHeader } from '@/components/common/PageHeader';
 import { QueryError } from '@/components/common/QueryState';
+import { tabBarWithExtra } from '@/components/common/tabBarWithExtra';
 import { rangePresets } from '@/lib/dates';
 
 const money = (v: string | number) => <span className="mono">{formatINR(v)}</span>;
@@ -125,6 +126,7 @@ function GstRegistersPage() {
             format="MMM YYYY"
             disabledDate={(d) => d.isAfter(dayjs(), 'month')}
             onChange={(v) => v && v[0] && v[1] && setRange([v[0], v[1]])}
+            aria-label="Months"
           />
         }
       />
@@ -185,11 +187,11 @@ function GstRegistersPage() {
       <Card size="small">
         <Tabs
           tabBarStyle={{ padding: '0 12px', marginBottom: 0 }}
-          tabBarExtraContent={
+          renderTabBar={tabBarWithExtra(
             <Button icon={<DownloadOutlined />} disabled={!data} onClick={() => data && downloadGstWorkbook(data)} style={{ marginRight: 12 }}>
               Excel
-            </Button>
-          }
+            </Button>,
+          )}
           items={[
             {
               key: 'outward',

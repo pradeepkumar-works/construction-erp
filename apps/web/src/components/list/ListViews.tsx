@@ -150,28 +150,21 @@ export function ListViews({
 
   return (
     <>
-      <Tabs
-        size="small"
-        activeKey={active ?? '__none'}
-        onChange={pick}
-        items={items}
-        tabBarStyle={{ padding: `0 ${token.paddingSM}px`, marginBottom: 0 }}
-        tabBarExtraContent={{
-          right: (
-            <Button
-              size="small"
-              icon={<SaveOutlined />}
-              disabled={unchanged}
-              onClick={() => {
-                form.setFieldsValue({ name: '', shared: false });
-                setEditing('new');
-              }}
-            >
-              Save view
-            </Button>
-          ),
-        }}
-      />
+      {/* Save view sits beside the tabs, not in antd's tab bar, whose role="tablist" may hold only tabs. */}
+      <Flex align="center" gap={token.marginSM} style={{ padding: `0 ${token.paddingSM}px`, borderBottom: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}` }}>
+        <Tabs size="small" activeKey={active ?? '__none'} onChange={pick} items={items} tabBarStyle={{ marginBottom: -token.lineWidth }} style={{ flex: 1, minWidth: 0 }} />
+        <Button
+          size="small"
+          icon={<SaveOutlined />}
+          disabled={unchanged}
+          onClick={() => {
+            form.setFieldsValue({ name: '', shared: false });
+            setEditing('new');
+          }}
+        >
+          Save view
+        </Button>
+      </Flex>
       <Modal open={!!editing} title={editing === 'new' ? 'Save this view' : 'Rename or share'} okText="Save" onOk={submit} okButtonProps={{ loading: save.isPending }} onCancel={() => setEditing(null)} destroyOnHidden>
         <Form form={form} layout="vertical" style={{ marginTop: token.marginSM }} onFinish={submit}>
           <Form.Item name="name" label="Name" rules={[{ required: true, whitespace: true, message: 'Give the view a name' }, { max: 60 }]}>

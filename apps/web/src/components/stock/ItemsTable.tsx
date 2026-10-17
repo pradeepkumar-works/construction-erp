@@ -126,7 +126,7 @@ export function ItemsTable() {
     <>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       <CardToolbar wrap gap={8} align="center">
-        <SearchBox value={page.search} onChange={page.setSearch} placeholder="Search item, unit or category" />
+        <SearchBox value={page.search} onChange={page.setSearch} placeholder="Search item, unit or category" aria-label="Search items" />
         {newButton}
       </CardToolbar>
       <DataTable<ItemDto>

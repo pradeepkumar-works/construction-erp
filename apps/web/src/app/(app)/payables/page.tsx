@@ -173,6 +173,7 @@ function PaymentsTab({ projectId, vendorId, onBill }: { projectId?: string; vend
         search={page.search}
         onSearch={page.setSearch}
         searchPlaceholder="Search reference, vendor, bill, project"
+        searchLabel="Search payments"
         extra={
           <>
             <ExportButton onExport={exportRows} />
@@ -339,6 +340,7 @@ export default function PayablesPage() {
               allowClear
               showSearch={{ optionFilterProp: 'label' }}
               placeholder="Any vendor"
+              aria-label="Vendor"
               style={{ width: 220 }}
               value={vendorId}
               onChange={setVendorId}

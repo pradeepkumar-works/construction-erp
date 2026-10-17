@@ -96,6 +96,7 @@ export function CashFlowPanel({ projectId: fixedProject }: { projectId?: string 
             value={projectFilter}
             onChange={setProjectFilter}
             style={{ width: 260 }}
+            aria-label="Project"
             options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))}
           />
         )}

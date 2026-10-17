@@ -62,7 +62,7 @@ function projectColumns(sortOrderFor: (key: ProjectSortField) => 'ascend' | 'des
       ...sort('contractValue'),
       total: (rows) => formatINR(rows.reduce((n, r) => n + toNumber(r.contractValue), 0)),
     },
-    { key: 'physicalProgressPct', title: 'Progress', dataIndex: 'physicalProgressPct', width: 160, render: (v: number) => <Progress percent={Math.round(v * 10) / 10} size="small" status={progressStatus(v)} /> },
+    { key: 'physicalProgressPct', title: 'Progress', dataIndex: 'physicalProgressPct', width: 160, render: (v: number) => <Progress percent={Math.round(v * 10) / 10} size="small" status={progressStatus(v)} aria-label={`${Math.round(v * 10) / 10}% done`} /> },
     { title: 'Start Date', label: 'Start date', dataIndex: 'startDate', width: 120, defaultHidden: true, render: (v) => formatDate(v), ...sort('startDate') },
     { title: 'End Date', label: 'End date', dataIndex: 'endDate', width: 120, render: (v) => formatDate(v), ...sort('endDate') },
     {
@@ -136,6 +136,7 @@ export default function ProjectsPage() {
           search={page.search}
           onSearch={page.setSearch}
           searchPlaceholder="Search by name, code, client, location"
+          searchLabel="Search projects"
           extra={<ExportButton onExport={exportRows} />}
         >
           <Select<ProjectType>

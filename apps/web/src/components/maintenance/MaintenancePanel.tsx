@@ -178,6 +178,7 @@ export function MaintenancePanel({ projectId: fixedProject, initialOpenId }: { p
         }}
         hideProject={!!fixedProject}
         searchPlaceholder="Search job, machine, fault, workshop"
+        searchLabel="Search maintenance jobs"
         extra={
           <>
             {manager ? (

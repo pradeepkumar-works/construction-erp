@@ -144,6 +144,9 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
 
   return (
     <Layout hasSider style={{ minHeight: '100vh' }}>
+      <a href="#main-content" className="skip-link">
+        Skip to content
+      </a>
       {!isMobile && (
         <aside className={`${s.aside} ${rail ? s.asideRail : ''}`} data-tour="sidebar">
           <Sidebar user={user} sections={sidebarSections} pendingCount={pendingCount} rail={rail} onToggleRail={toggleRail} />
@@ -274,7 +277,7 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
             </Dropdown>
           </Space>
         </Header>
-        <Content>
+        <Content id="main-content" tabIndex={-1} style={{ outline: 'none' }}>
           <MessageBar user={user} />
           {children}
         </Content>

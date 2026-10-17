@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-10-accessibility',
+    date: '2026-10-17',
+    title: 'Easier to read and to use from the keyboard',
+    points: [
+      'Quieter text, status tags, badges and figures are a shade darker in light mode and a shade brighter in dark mode, so they read clearly on every background.',
+      'The first Tab on any page offers Skip to content, and whatever has keyboard focus now always shows a ring.',
+      'Filters, search boxes and progress bars say what they are to screen readers. Help > Keyboard shortcuts lists every shortcut.',
+    ],
+  },
+  {
     id: '2026-10-page-states',
     date: '2026-10-17',
     title: 'Clearer loading, empty and error pages',

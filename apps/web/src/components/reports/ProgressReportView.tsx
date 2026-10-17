@@ -51,8 +51,8 @@ export function ProgressReportView({ projectId, portal = false, picker }: { proj
               { value: 'CUSTOM', label: 'Custom' },
             ]}
           />
-          {kind === 'WEEKLY' ? <DatePicker picker="week" value={anchor} onChange={(d) => d && setAnchor(d)} allowClear={false} format={() => `${formatDayMonth(from)} to ${formatDate(to.format('YYYY-MM-DD'))}`} /> : null}
-          {kind === 'MONTHLY' ? <DatePicker picker="month" value={anchor} onChange={(d) => d && setAnchor(d)} allowClear={false} format="MMMM YYYY" /> : null}
+          {kind === 'WEEKLY' ? <DatePicker picker="week" aria-label="Week" value={anchor} onChange={(d) => d && setAnchor(d)} allowClear={false} format={() => `${formatDayMonth(from)} to ${formatDate(to.format('YYYY-MM-DD'))}`} /> : null}
+          {kind === 'MONTHLY' ? <DatePicker picker="month" aria-label="Month" value={anchor} onChange={(d) => d && setAnchor(d)} allowClear={false} format="MMMM YYYY" /> : null}
           {kind === 'CUSTOM' ? (
             <DatePicker.RangePicker
               value={custom ?? [from, to]}
@@ -60,6 +60,7 @@ export function ProgressReportView({ projectId, portal = false, picker }: { proj
               format="DD MMM YYYY"
               allowClear={false}
               disabledDate={(d, info) => !!info?.from && Math.abs(d.diff(info.from, 'day')) > 91}
+              aria-label="Dates"
             />
           ) : null}
           <Button type="primary" icon={<PrinterOutlined />} disabled={!data} onClick={() => data && !openProgressReportPrint(data, kind) && message.warning('Pop-up blocked. Allow pop-ups to print the report.')}>

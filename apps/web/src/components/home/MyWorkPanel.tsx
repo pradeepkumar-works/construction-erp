@@ -72,6 +72,8 @@ export function MyWorkPanel({ data, loading, order }: { data: MyWorkDto | undefi
 function Frame({ title, icon, href, count, tone, children, amount }: { title: string; icon: React.ReactNode; href: string | null; count: number; tone: 'warning' | 'error' | 'info'; amount?: string | null; children: React.ReactNode }) {
   const { token } = theme.useToken();
   const color = count === 0 ? token.colorSuccess : tone === 'error' ? token.colorError : tone === 'warning' ? token.colorWarning : token.colorPrimary;
+  // The count is text, so it takes the text shade of the tone (the warning yellow does not read on white).
+  const figure = tone === 'error' ? token.colorErrorText : tone === 'warning' ? token.colorWarningText : token.colorPrimaryText;
   const bg = count === 0 ? token.colorSuccessBg : tone === 'error' ? token.colorErrorBg : tone === 'warning' ? token.colorWarningBg : token.colorPrimaryBg;
   return (
     <section
@@ -99,7 +101,7 @@ function Frame({ title, icon, href, count, tone, children, amount }: { title: st
             </Typography.Text>
           ) : null}
         </div>
-        <span style={{ fontSize: token.fontSizeHeading3, fontWeight: token.fontWeightStrong, color: count === 0 ? token.colorTextTertiary : color, fontVariantNumeric: 'tabular-nums' }}>{count}</span>
+        <span style={{ fontSize: token.fontSizeHeading3, fontWeight: token.fontWeightStrong, color: count === 0 ? token.colorTextTertiary : figure, fontVariantNumeric: 'tabular-nums' }}>{count}</span>
       </Flex>
       {children}
     </section>

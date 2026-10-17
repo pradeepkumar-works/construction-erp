@@ -90,6 +90,7 @@ export function TransmittalList({ projectId: fixedProject, onOpen, onNew }: { pr
         search={page.search}
         onSearch={page.setSearch}
         searchPlaceholder="Search no., to, document"
+        searchLabel="Search transmittals"
         extra={newButton}
       >
         <Checkbox checked={unacknowledged} onChange={(e) => page.setFilter('unacknowledged', e.target.checked ? '1' : undefined)}>

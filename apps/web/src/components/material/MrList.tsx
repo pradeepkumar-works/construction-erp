@@ -76,6 +76,7 @@ export function MrList({ projectId: fixedProject, newLabel, openId: initialOpen 
         search={page.search}
         onSearch={page.setSearch}
         searchPlaceholder="Search request no., items, people"
+        searchLabel="Search material requests"
         extra={
           <>
             <ExportButton onExport={exportRows} />

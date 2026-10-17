@@ -96,6 +96,7 @@ export function TestList({ projectId: fixedProject, initialOpenId, onOpenNcr }: 
         search={page.search}
         onSearch={page.setSearch}
         searchPlaceholder="Search no., sample, location"
+        searchLabel="Search tests"
         extra={newButton}
       >
         <Select<TestKind> allowClear placeholder="All tests" aria-label="Test" value={kind} onChange={(v) => page.setFilter('kind', v)} style={{ width: 200 }} options={TEST_KINDS.map((k) => ({ value: k, label: TEST_KIND_LABELS[k] }))} />

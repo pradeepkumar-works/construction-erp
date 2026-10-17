@@ -190,7 +190,7 @@ export function CompliancePanel({ initialId }: { initialId?: string }) {
           </Tag>
         ) : null}
         <ProjectSelect value={projectId} onChange={setProjectId} placeholder="All projects" style={{ width: 240 }} />
-        <SearchBox value={q} onChange={setQ} placeholder="Number, bank, insurer, client" width={240} />
+        <SearchBox value={q} onChange={setQ} placeholder="Number, bank, insurer, client" width={240} aria-label="Search guarantees and policies" />
         <span style={{ flex: 1 }} />
         {keeper ? (
           <Button type="primary" icon={<PlusOutlined />} onClick={() => setAction({ kind: 'new' })}>

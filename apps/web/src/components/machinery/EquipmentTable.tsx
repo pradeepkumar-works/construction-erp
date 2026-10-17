@@ -205,6 +205,7 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
         search={page.search}
         onSearch={page.setSearch}
         searchPlaceholder="Search code, name, registration, agency"
+        searchLabel="Search equipment"
         extra={
           <>
             <ExportButton onExport={exportRows} />

@@ -124,7 +124,7 @@ export default function ClientsPage() {
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       <Card size="small">
         {frame.views}
-        <ListToolbar projectId={undefined} onProject={() => undefined} hideProject search={page.search} onSearch={page.setSearch} searchPlaceholder="Search name, department, GSTIN">
+        <ListToolbar projectId={undefined} onProject={() => undefined} hideProject search={page.search} onSearch={page.setSearch} searchPlaceholder="Search name, department, GSTIN" searchLabel="Search clients">
           <Checkbox checked={includeInactive} onChange={(e) => page.setFilter('inactive', e.target.checked ? '1' : undefined)}>
             Show inactive
           </Checkbox>

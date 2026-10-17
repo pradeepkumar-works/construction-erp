@@ -15,6 +15,7 @@ export function ProjectSelect(props: SelectProps<string>) {
       loading={isLoading}
       options={(data ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))}
       style={{ minWidth: 260 }}
+      aria-label="Project"
       {...props}
     />
   );

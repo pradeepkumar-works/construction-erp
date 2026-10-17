@@ -39,7 +39,7 @@ export default function PortalPage() {
                   <Typography.Text type="secondary">{[p.location, p.contractValue ? `Contract ${formatINRCompact(p.contractValue)}` : null].filter(Boolean).join(' · ')}</Typography.Text>
                   <div>
                     <Typography.Text style={{ fontSize: 12 }}>Physical progress</Typography.Text>
-                    <Progress percent={p.physicalProgressPct} size="small" />
+                    <Progress percent={p.physicalProgressPct} size="small" aria-label={`Physical progress ${p.physicalProgressPct}%`} />
                     {p.timeElapsedPct != null ? (
                       <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                         {p.timeElapsedPct}% of the contract period gone · ends {formatDate(p.endDate)}

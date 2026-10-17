@@ -28,15 +28,21 @@ export const BRAND = {
     link: '#1A56BF',
     /** Pending and alerts (brick orange, so it never reads as the brand blue). */
     pending: '#C2410C',
-    /** Approve and pass buttons, and figures that are good news (a positive margin). */
-    success: '#1F9D55',
+    /** Approve and pass buttons, and figures that are good news (a positive margin). Dark enough for white text on it and for text on white (WCAG AA). */
+    success: '#167A3E',
     /** Overdue amounts, losses and other figures that need attention (antd red-7, which reads on white). */
     danger: '#CF1322',
     canvas: '#F3F6FA',
     border: '#DCE3ED',
     /** Secondary text on white (subtitles), and quieter captions and footers. */
     muted: '#5B6779',
-    subtle: '#8A94A3',
+    /** The quietest text on white that still meets WCAG AA (4.5:1): captions, footers. */
+    subtle: '#64748B',
+    /** antd's tertiary and placeholder text (descriptions, Typography secondary, empty fields), darkened from 45% and 25% black to meet AA. */
+    textTertiary: 'rgba(0, 0, 0, 0.58)',
+    textPlaceholder: 'rgba(0, 0, 0, 0.55)',
+    /** Section titles on the navy sidebar. */
+    inkCaption: 'rgba(255, 255, 255, 0.6)',
     /** A pale blue fill behind a selected chip. */
     accentSoft: '#EEF4FD',
     /** Series colours in charts, beside the primary blue (cost heads: expenses, machinery, labour, subcontract). */
@@ -58,5 +64,10 @@ export const BRAND = {
     /** Dark mode text, and links that read on the night surfaces. */
     nightText: '#E3EAF4',
     nightLink: '#6EA8FF',
+    /** Dark mode tertiary and placeholder text: nightText at 62% and 58%, which keep 4.5:1 on every night surface. */
+    nightTextTertiary: 'rgba(227, 234, 244, 0.62)',
+    nightTextPlaceholder: 'rgba(227, 234, 244, 0.58)',
+    /** Dark mode danger buttons: a red that reads on the night surfaces as text, with night-ink text when it is the fill. */
+    nightDanger: '#F26D6F',
   },
 } as const;

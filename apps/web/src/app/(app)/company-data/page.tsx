@@ -58,7 +58,7 @@ function ExportCard() {
           </Typography.Paragraph>
           {progress ? (
             <div style={{ maxWidth: 480 }}>
-              <Progress percent={progress.percent} status="active" />
+              <Progress percent={progress.percent} status="active" aria-label={`Export ${progress.percent}% built`} />
               <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                 {progress.step}
               </Typography.Text>

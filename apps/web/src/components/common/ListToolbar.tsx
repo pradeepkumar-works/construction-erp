@@ -16,6 +16,7 @@ export function ListToolbar({
   search,
   onSearch,
   searchPlaceholder,
+  searchLabel,
   hideProject,
   children,
   extra,
@@ -29,6 +30,8 @@ export function ListToolbar({
   search?: string;
   onSearch?: (v: string) => void;
   searchPlaceholder?: string;
+  /** Accessible name of the search box, e.g. "Search material requests". */
+  searchLabel?: string;
   /** Inside a project page the project filter is fixed. */
   hideProject?: boolean;
   children?: React.ReactNode;
@@ -39,10 +42,10 @@ export function ListToolbar({
 }) {
   return (
     <CardToolbar wrap gap={8} align="center">
-      {onSearch ? <SearchBox value={search ?? ''} onChange={onSearch} placeholder={searchPlaceholder} /> : null}
+      {onSearch ? <SearchBox value={search ?? ''} onChange={onSearch} placeholder={searchPlaceholder} aria-label={searchLabel} /> : null}
       {hideProject ? null : <ProjectSelect value={projectId} onChange={(v) => onProject(v)} />}
       {onStatus ? (
-        <Select allowClear placeholder="All statuses" value={status} onChange={(v) => onStatus(v)} style={{ width: 180 }} options={SUBMISSION_STATUSES.map((s) => ({ value: s, label: statusLabels[s] }))} />
+        <Select allowClear placeholder="All statuses" aria-label="Status" value={status} onChange={(v) => onStatus(v)} style={{ width: 180 }} options={SUBMISSION_STATUSES.map((s) => ({ value: s, label: statusLabels[s] }))} />
       ) : null}
       {children}
       {extra ? <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>{extra}</div> : null}

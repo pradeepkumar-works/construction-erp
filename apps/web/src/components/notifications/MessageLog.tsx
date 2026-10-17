@@ -26,6 +26,7 @@ export function MessageLog() {
         <Input.Search
           allowClear
           placeholder="Search number, name or text"
+          aria-label="Search messages"
           style={{ width: 260 }}
           onSearch={(v) => {
             setQ(v.trim());
@@ -35,6 +36,7 @@ export function MessageLog() {
         <Select
           allowClear
           placeholder="Channel"
+          aria-label="Channel"
           style={{ width: 130 }}
           value={channel}
           onChange={(v) => {
@@ -46,6 +48,7 @@ export function MessageLog() {
         <Select
           allowClear
           placeholder="Status"
+          aria-label="Status"
           style={{ width: 140 }}
           value={status}
           onChange={(v) => {

@@ -123,6 +123,7 @@ export function InspectionList({ projectId: fixedProject }: { projectId?: string
         search={page.search}
         onSearch={page.setSearch}
         searchPlaceholder="Search no., location, activity"
+        searchLabel="Search inspections"
         extra={newButton}
       >
         <Select

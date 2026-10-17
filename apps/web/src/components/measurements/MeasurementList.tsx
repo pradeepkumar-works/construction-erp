@@ -83,6 +83,7 @@ export function MeasurementList({ projectId: fixedProject }: { projectId?: strin
         search={page.search}
         onSearch={page.setSearch}
         searchPlaceholder="Search MB no., location, BOQ item"
+        searchLabel="Search measurements"
         extra={
           <>
             <ExportButton onExport={exportRows} />

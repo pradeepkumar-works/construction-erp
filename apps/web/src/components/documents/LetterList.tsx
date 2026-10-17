@@ -94,6 +94,7 @@ export function LetterList({ projectId: fixedProject, onOpen, onNew }: { project
         search={page.search}
         onSearch={page.setSearch}
         searchPlaceholder="Search no., reference, subject"
+        searchLabel="Search letters"
         extra={newButton}
       >
         <Select<LetterDirection> allowClear placeholder="In and out" aria-label="In or out" value={direction} onChange={(v) => page.setFilter('direction', v)} style={{ width: 130 }} options={LETTER_DIRECTIONS.map((d) => ({ value: d, label: LETTER_DIRECTION_LABELS[d] }))} />

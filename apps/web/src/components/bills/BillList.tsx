@@ -125,6 +125,7 @@ export function BillList({ projectId: fixedProject, openId: initialOpen }: { pro
         search={page.search}
         onSearch={page.setSearch}
         searchPlaceholder="Search bill no., project, client, certificate"
+        searchLabel="Search bills"
         extra={
           <>
             <ExportButton onExport={exportRows} />

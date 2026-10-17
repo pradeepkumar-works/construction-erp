@@ -99,7 +99,7 @@ function ToExport() {
       <CardToolbar wrap gap={12} align="center">
         <Space>
           <Typography.Text>Up to the end of</Typography.Text>
-          <DatePicker picker="month" value={month} onChange={(d) => d && setMonth(d)} allowClear={false} format="MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'month')} />
+          <DatePicker picker="month" value={month} onChange={(d) => d && setMonth(d)} allowClear={false} format="MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'month')} aria-label="Month" />
         </Space>
         <Space wrap size={4}>
           {TALLY_VOUCHER_KINDS.filter((k) => data?.counts[k]).map((k) => (
@@ -339,9 +339,10 @@ function Ledgers() {
           value={kind}
           onChange={setKind}
           style={{ width: 200 }}
+          aria-label="Ledger kind"
           options={[{ value: 'ALL', label: 'All ledgers' }, ...(Object.keys(LEDGER_KIND_LABELS) as TallyLedgerKind[]).map((k) => ({ value: k, label: LEDGER_KIND_LABELS[k] }))]}
         />
-        <Input.Search allowClear placeholder="Search ledgers" style={{ maxWidth: 280 }} onSearch={setQ} onChange={(e) => !e.target.value && setQ('')} />
+        <Input.Search allowClear placeholder="Search ledgers" aria-label="Search ledgers" style={{ maxWidth: 280 }} onSearch={setQ} onChange={(e) => !e.target.value && setQ('')} />
         <Typography.Text type="secondary" style={{ alignSelf: 'center' }}>
           Leave a ledger empty to use the default name. Within the state GST goes to CGST and SGST, to IGST for a vendor in another state.
         </Typography.Text>

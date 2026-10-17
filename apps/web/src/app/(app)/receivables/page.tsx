@@ -176,6 +176,7 @@ function ReceiptsTab({ projectId }: { projectId?: string }) {
         search={page.search}
         onSearch={page.setSearch}
         searchPlaceholder="Search reference, project, client"
+        searchLabel="Search receipts"
         extra={
           <>
             <ExportButton onExport={exportRows} />

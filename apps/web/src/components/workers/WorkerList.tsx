@@ -143,6 +143,7 @@ export function WorkerList({ projectId: fixedProject }: { projectId?: string }) 
         search={page.search}
         onSearch={page.setSearch}
         searchPlaceholder="Search name, number, contractor, trade"
+        searchLabel="Search workers"
         extra={
           <>
             <ExportButton

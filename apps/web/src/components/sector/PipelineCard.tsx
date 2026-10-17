@@ -29,7 +29,7 @@ export function PipelineCard({ stages, villages }: { stages: PipelineStages; vil
               <strong>{s.label}</strong>
               <span>{formatQty(stages[s.key])} m</span>
             </div>
-            <Progress percent={Math.round((toNumber(stages[s.key]) / top) * 100)} showInfo={false} strokeColor={s.key === 'testedM' ? BRAND.colors.success : BRAND.colors.primary} />
+            <Progress percent={Math.round((toNumber(stages[s.key]) / top) * 100)} showInfo={false} strokeColor={s.key === 'testedM' ? BRAND.colors.success : BRAND.colors.primary} aria-label={`${s.label}: ${Math.round((toNumber(stages[s.key]) / top) * 100)}%`} />
             <div className="text-muted" style={{ fontSize: 12 }}>
               {s.hint}
             </div>
@@ -53,7 +53,7 @@ export function PipelineCard({ stages, villages }: { stages: PipelineStages; vil
             width: 200,
             render: (_, r) => {
               const laid = toNumber(r.laidM);
-              return laid ? <Progress size="small" percent={Math.min(100, Math.round((toNumber(r.testedM) / laid) * 100))} /> : <span className="text-muted">nothing laid</span>;
+              return laid ? <Progress size="small" percent={Math.min(100, Math.round((toNumber(r.testedM) / laid) * 100))} aria-label={`${Math.min(100, Math.round((toNumber(r.testedM) / laid) * 100))}% of laid tested`} /> : <span className="text-muted">nothing laid</span>;
             },
           },
         ]}

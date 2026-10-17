@@ -128,6 +128,7 @@ export function TalkList({ projectId: fixedProject }: { projectId?: string }) {
         search={page.search}
         onSearch={page.setSearch}
         searchPlaceholder="Search topic, given by"
+        searchLabel="Search toolbox talks"
         extra={
           <>
             <ExportButton

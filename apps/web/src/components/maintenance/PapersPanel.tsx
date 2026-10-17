@@ -309,6 +309,7 @@ export function PapersPanel() {
         search={docList.search}
         onSearch={docList.setSearch}
         searchPlaceholder="Search machine, number, issuer"
+        searchLabel="Search machine papers"
         extra={newButton}
       >
         <Select allowClear placeholder="All papers" style={{ width: 170 }} value={docType} aria-label="Paper" onChange={(v) => docList.setFilter('type', v)} options={EQUIPMENT_DOC_TYPES.map((x) => ({ value: x, label: EQUIPMENT_DOC_TYPE_LABELS[x] }))} />
@@ -347,6 +348,7 @@ export function PapersPanel() {
         search={drvList.search}
         onSearch={drvList.setSearch}
         searchPlaceholder="Search name, phone, licence, machine"
+        searchLabel="Search drivers and operators"
         extra={newDriverButton}
       >
         <Checkbox checked={showLeft} onChange={(e) => drvList.setFilter('left', e.target.checked ? '1' : undefined)}>

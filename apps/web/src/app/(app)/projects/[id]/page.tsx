@@ -148,7 +148,7 @@ function ProjectPage({ project }: { project: ProjectDetail }) {
               <Typography.Text type="secondary" style={{ fontSize: 11 }}>
                 Physical progress
               </Typography.Text>
-              <Progress percent={project.physicalProgressPct} size="small" />
+              <Progress percent={project.physicalProgressPct} size="small" aria-label={`Physical progress ${project.physicalProgressPct}%`} />
             </div>
             <Link href={`/reports?projectId=${project.id}`}>
               <Button icon={<FilePdfOutlined />}>Progress report</Button>

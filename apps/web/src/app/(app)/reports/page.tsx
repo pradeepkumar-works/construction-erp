@@ -37,6 +37,7 @@ function Reports() {
             showSearch={{ optionFilterProp: 'label' }}
             style={{ width: 340 }}
             placeholder="Project"
+            aria-label="Project"
             value={projectId}
             onChange={setProjectId}
             options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))}
