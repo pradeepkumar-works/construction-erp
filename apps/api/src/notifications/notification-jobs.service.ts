@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { COMPLIANCE_DOC_KIND_LABELS, COMPLIANCE_ROLES, DLP_ALERT_DAYS, DOC_ALERT_DAYS, EQUIPMENT_DOC_TYPE_LABELS, SERVICE_STATE_LABELS, expiryState, APPROVER_ROLES, DPR_SUBMITTER_ROLES, PAYMENT_ROLES, SPECIALIST_APPROVERS, SUBMISSION_TYPE_LABELS, TEST_KIND_LABELS, type NotificationJobResult, type PendingApprovalDto, type RoleKey } from '@erp/shared';
+import { COMPLIANCE_DOC_KIND_LABELS, COMPLIANCE_ROLES, DLP_ALERT_DAYS, DOC_ALERT_DAYS, EQUIPMENT_DOC_TYPE_LABELS, SERVICE_STATE_LABELS, expiryState, APPROVER_ROLES, DPR_SUBMITTER_ROLES, PAYMENT_ROLES, SPECIALIST_APPROVERS, SUBMISSION_TYPE_LABELS, TEST_KIND_LABELS, canSeeWatchList, type BriefLineDto, type NotificationJobResult, type PendingApprovalDto, type RoleKey } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -12,6 +12,8 @@ import { PayablesService } from '../payables/payables.service';
 import { EMAIL_COLORS, emailButton, emailLayout } from './email-layout';
 import { JOB_TIMEZONE, todayIn } from './time';
 import { latestDocIds, serviceStatuses } from '../maintenance/service-status';
+import { WarningsService } from '../warnings/warnings.service';
+import { BriefsService, toBrief } from '../briefs/briefs.service';
 
 const WEB_URL = (process.env.WEB_URL || '').replace(/\/+$/, '');
 /** Bills falling due within this many days (today included) trigger the payments-due alert. */
@@ -35,7 +37,115 @@ export class NotificationJobsService {
     private access: ProjectAccessService,
     private messaging: MessagingService,
     private payables: PayablesService,
+    private warnings: WarningsService,
+    private briefs: BriefsService,
   ) {}
+
+  /**
+   * The overnight batch (AI item 74): today's morning briefs for everyone who asked, and on Mondays last week's summary
+   * paragraph for each active project's report. Writes only; `morningBrief` sends the briefs after the digest.
+   */
+  async writeBriefs(date = todayIn()) {
+    const mornings = await this.briefs.writeMornings(date);
+    const weekly = (parseDate(date).getUTCDay() + 6) % 7 === 0 ? await this.briefs.writeNarratives(date) : null;
+    return { mornings, weekly };
+  }
+
+  /**
+   * Sends today's morning briefs: in the app and on the phone, on WhatsApp once its template is approved (or by SMS),
+   * and by email unless the brief already went in the approvals digest email. Once per user per day.
+   */
+  async morningBrief(date = todayIn()): Promise<NotificationJobResult> {
+    const result: NotificationJobResult = { job: 'MORNING_BRIEF', date, created: 0, pushed: 0, emailed: 0, messaged: 0, skipped: 0 };
+    const dedupeKey = `MORNING_BRIEF:${date}`;
+    const rows = await this.prisma.aiBrief.findMany({
+      where: { kind: 'MORNING', date: parseDate(date), user: { isActive: true, morningBrief: true } },
+      include: { user: { select: { id: true, email: true, fullName: true } }, organization: { select: { name: true } } },
+    });
+    for (const row of rows) {
+      const u = row.user!;
+      const brief = toBrief(row);
+      const r = await this.notifications.notify({
+        organizationId: row.organizationId,
+        userIds: [u.id],
+        type: 'MORNING_BRIEF',
+        title: 'Your morning brief',
+        body: brief.lines.map((l) => l.text).join('\n'),
+        dedupeKey,
+        message: { template: 'MORNING_BRIEF', params: [u.fullName.split(' ')[0], cut(brief.lines.map((l) => l.text).join(' · '), 600), this.messaging.webUrl('/')] },
+      });
+      if (r.created === 0) {
+        result.skipped++;
+        continue;
+      }
+      result.created += r.created;
+      result.pushed += r.pushed;
+      result.messaged! += r.messaged;
+      const inDigest = await this.prisma.notification.findFirst({ where: { userId: u.id, dedupeKey: `APPROVAL_DIGEST:${date}`, emailedAt: { not: null } }, select: { id: true } });
+      if (inDigest) continue;
+      const sent = await this.email.send({
+        to: u.email,
+        subject: `[${row.organization.name}] Your morning brief`,
+        text: `Good morning ${u.fullName.split(' ')[0]},\n\n${brief.lines.map((l) => `- ${l.text}`).join('\n')}\n${WEB_URL ? `\nOpen ${WEB_URL}\n` : ''}`,
+        html: emailLayout({
+          preheader: brief.lines[0]?.text ?? 'Your morning brief',
+          orgName: row.organization.name,
+          body: `<p style="margin:0 0 12px">Good morning ${escapeHtml(u.fullName.split(' ')[0])},</p>${this.briefHtml(brief.lines)}${WEB_URL ? emailButton(`${WEB_URL}/`, 'Open Nirmaan') : ''}`,
+          footnote: 'You asked for this brief. Turn it off from the brief on your home page.',
+        }),
+      });
+      if (sent) {
+        result.emailed++;
+        await this.prisma.notification.updateMany({ where: { userId: u.id, dedupeKey }, data: { emailedAt: new Date() } });
+      }
+    }
+    this.log.log(`Morning brief ${date}: ${JSON.stringify(result)}`);
+    return result;
+  }
+
+  /**
+   * The weekly watch list (AI item 73): on Mondays (any day with `anyDay`, for a manual run), each user whose role has
+   * early warnings and who has open ones gets one notification naming the first few. Once per user per week.
+   */
+  async watchList(date = todayIn(), anyDay = false): Promise<NotificationJobResult> {
+    const result: NotificationJobResult = { job: 'WATCH_LIST', date, created: 0, pushed: 0, emailed: 0, skipped: 0 };
+    const weekday = (parseDate(date).getUTCDay() + 6) % 7;
+    if (weekday !== 0 && !anyDay) return result;
+    const dedupeKey = `WATCH_LIST:${new Date(parseDate(date).getTime() - weekday * 86_400_000).toISOString().slice(0, 10)}`;
+    const users = await this.prisma.user.findMany({ where: { isActive: true }, include: { role: { select: { key: true } } } });
+    for (const u of users) {
+      const roleKey = u.role.key as RoleKey;
+      if (!canSeeWatchList(roleKey)) continue;
+      const already = await this.prisma.notification.findFirst({ where: { userId: u.id, dedupeKey }, select: { id: true } });
+      if (already) {
+        result.skipped++;
+        continue;
+      }
+      const user: RequestUser = { id: u.id, organizationId: u.organizationId, roleKey, email: u.email, fullName: u.fullName };
+      const open = await this.warnings.open(user).catch((e: Error) => {
+        this.log.warn(`watch list for ${u.id}: ${e.message}`);
+        return [];
+      });
+      if (!open.length) {
+        result.skipped++;
+        continue;
+      }
+      const r = await this.notifications.notify({
+        organizationId: u.organizationId,
+        userIds: [u.id],
+        type: 'WATCH_LIST',
+        title: `${open.length} early warning${open.length === 1 ? '' : 's'} on your watch list`,
+        body: `${open
+          .slice(0, 3)
+          .map((w) => w.title)
+          .join('; ')}${open.length > 3 ? `; and ${open.length - 3} more` : ''}`,
+        dedupeKey,
+      });
+      result.created += r.created;
+      result.pushed += r.pushed;
+    }
+    return result;
+  }
 
   /**
    * "DPR not submitted" reminder: for every ACTIVE project without a DPR for today (drafts don't count),
@@ -127,11 +237,14 @@ export class NotificationJobsService {
       result.created += r.created;
       result.pushed += r.pushed;
       result.messaged! += r.messaged;
+      // A morning brief written for today rides in this email rather than in one of its own.
+      const briefRow = await this.prisma.aiBrief.findUnique({ where: { organizationId_key: { organizationId: u.organizationId, key: `MORNING:${u.id}:${date}` } } });
+      const brief = briefRow && u.morningBrief ? toBrief(briefRow).lines : null;
       const sent = await this.email.send({
         to: u.email,
         subject: `[${u.organization.name}] ${pending.length} submission${pending.length === 1 ? '' : 's'} waiting for your approval`,
-        text: `Hello ${u.fullName},\n\nThese site submissions are waiting for your review:\n\n${summary.detailText}\n${WEB_URL ? `\nOpen the approvals queue: ${WEB_URL}/approvals\n` : ''}`,
-        html: this.digestHtml(u.fullName, u.organization.name, pending),
+        text: `Hello ${u.fullName},\n\n${brief ? `Your morning brief:\n${brief.map((l) => `- ${l.text}`).join('\n')}\n\n` : ''}These site submissions are waiting for your review:\n\n${summary.detailText}\n${WEB_URL ? `\nOpen the approvals queue: ${WEB_URL}/approvals\n` : ''}`,
+        html: this.digestHtml(u.fullName, u.organization.name, pending, brief),
       });
       if (sent) {
         result.emailed++;
@@ -445,7 +558,13 @@ export class NotificationJobsService {
     return { text, detailText };
   }
 
-  private digestHtml(name: string, orgName: string, pending: PendingApprovalDto[]): string {
+  /** A morning brief as an email block: its lines, each linked where it has a page. */
+  private briefHtml(lines: BriefLineDto[]): string {
+    const item = (l: BriefLineDto) => `<li style="margin:0 0 6px">${l.href && WEB_URL ? `<a href="${escapeHtml(`${WEB_URL}${l.href}`)}" style="color:${EMAIL_COLORS.link}">${escapeHtml(l.text)}</a>` : escapeHtml(l.text)}</li>`;
+    return `<ul style="margin:0 0 16px;padding-left:20px">${lines.map(item).join('')}</ul>`;
+  }
+
+  private digestHtml(name: string, orgName: string, pending: PendingApprovalDto[], brief: BriefLineDto[] | null = null): string {
     const groups = this.groupByProject(pending);
     const cell = `padding:7px 8px;border-bottom:1px solid ${EMAIL_COLORS.border}`;
     const sections = [...groups.entries()]
@@ -470,6 +589,7 @@ export class NotificationJobsService {
       preheader: `${count}.`,
       orgName,
       body: `<p style="margin:0 0 12px">Hello ${escapeHtml(name)},</p>
+      ${brief ? `<p style="margin:0 0 6px;font-weight:600">Your morning brief</p>${this.briefHtml(brief)}` : ''}
       <p style="margin:0">${count.replace(/^\d+/, (n) => `<strong>${n}</strong>`)}.</p>
       ${sections}
       ${WEB_URL ? emailButton(`${WEB_URL}/approvals`, 'Open approvals') : ''}`,

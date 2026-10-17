@@ -16,22 +16,22 @@ export interface HomeLayout {
  */
 const LAYOUTS: Record<'director' | 'manager' | 'accounts' | 'stores' | 'qs' | 'site', HomeLayout> = {
   director: {
-    myWork: ['approvals', 'receivables', 'payablesDue', 'expiring', 'lateDeliveries', 'dprsMissing', 'lowStock', 'sentBack'],
+    myWork: ['approvals', 'watchList', 'receivables', 'payablesDue', 'expiring', 'lateDeliveries', 'dprsMissing', 'lowStock', 'sentBack'],
     kpis: ['contract', 'workDone', 'billed', 'cashIn', 'receivables', 'payables'],
     charts: ['sCurve', 'cashFlow', 'billingVsContract', 'costByHead'],
   },
   manager: {
-    myWork: ['approvals', 'dprsMissing', 'lateDeliveries', 'expiring', 'lowStock', 'payablesDue', 'receivables', 'sentBack'],
+    myWork: ['approvals', 'watchList', 'dprsMissing', 'lateDeliveries', 'expiring', 'lowStock', 'payablesDue', 'receivables', 'sentBack'],
     kpis: ['workDone', 'pending', 'delayed', 'dprsToday', 'cost', 'billed'],
     charts: ['sCurve', 'costByHead', 'billingVsContract', 'cashFlow'],
   },
   accounts: {
-    myWork: ['payablesDue', 'receivables', 'approvals', 'expiring', 'lateDeliveries', 'sentBack'],
+    myWork: ['payablesDue', 'watchList', 'receivables', 'approvals', 'expiring', 'lateDeliveries', 'sentBack'],
     kpis: ['cashIn', 'receivables', 'payables', 'billed', 'cost'],
     charts: ['cashFlow', 'billingVsContract', 'costByHead'],
   },
   stores: {
-    myWork: ['lateDeliveries', 'lowStock', 'approvals', 'sentBack', 'dprsMissing'],
+    myWork: ['lateDeliveries', 'lowStock', 'watchList', 'approvals', 'sentBack', 'dprsMissing'],
     kpis: ['projects', 'workDone', 'dprsToday', 'delayed'],
     charts: ['sCurve'],
   },

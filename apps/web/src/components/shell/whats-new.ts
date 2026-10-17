@@ -10,7 +10,7 @@ export interface WhatsNew {
 export const WHATS_NEW: WhatsNew[] = [
   {
     id: '2026-10-speed',
-    date: '2026-10-18',
+    date: '2026-10-20',
     title: 'Faster pages',
     points: [
       'Lists open faster: the server reads only what a list shows, and the browser asks once before calling it instead of before every call.',
@@ -21,12 +21,42 @@ export const WHATS_NEW: WhatsNew[] = [
   },
   {
     id: '2026-10-targets-type',
-    date: '2026-10-18',
+    date: '2026-10-20',
     title: 'Easier to hit, easier to read',
     points: [
       'Every button, field and tab is at least 24 px tall, also in compact, and grows to 44 px on a touch screen.',
       'Text follows one scale with 12 px as the smallest, so compact no longer shrinks it.',
       'Figures are plain text unless something needs a look: red or amber now only marks what is late, over budget, rejected or falling.',
+    ],
+  },
+  {
+    id: '2026-10-morning-brief',
+    date: '2026-10-20',
+    title: 'A morning brief, and a weekly summary for the client',
+    points: [
+      'Ask for a morning brief on your home page: three lines on what needs you today, such as approvals waiting more than two days, a warning from your watch list or payments due this week. Each line opens the page behind it.',
+      'The brief also comes by email (inside the approvals digest when you get one) and, once your alerts are on, on WhatsApp. Turn it off from the brief whenever you like.',
+      'The weekly progress report now opens with a short summary of the week, written from the report\'s own figures, and the client sees it in the portal too.',
+      'Admin > Ask Nirmaan shows what this month\'s spend went on: questions, bill checks, documents read, and briefs and summaries.',
+    ],
+  },
+  {
+    id: '2026-10-watch-list',
+    date: '2026-10-19',
+    title: 'Watch list: early warnings',
+    points: [
+      'A Watch list card in My work, and its own page, warns ahead of trouble: an activity whose current rate puts its finish past the baseline, a cash gap in the next eight weeks (using how long each client actually takes to pay), stock that runs out before an order could arrive, vendors late or rejected more often, machines idle or breaking down more than the month before, and sites with no DPR three days running.',
+      'Each warning shows its figures and links to the records behind it. Dismiss one with a reason and it stays dismissed for everyone until its figures move on.',
+      'On Mondays a notification lists what is on your watch list.',
+    ],
+  },
+  {
+    id: '2026-10-phone-ask',
+    date: '2026-10-19',
+    title: 'Ask Nirmaan on the phone, in Hindi',
+    points: [
+      'The site app has an Ask tab: type, or tap the microphone on your keyboard and speak, in Hindi, English or Hinglish. With the app in Hindi, answers come in Hindi, and their links open the record on the phone.',
+      'Dictate today\'s DPR: say the work done, manpower, machines and problems, and the DPR form opens filled in to check and send, through the outbox if the signal drops.',
     ],
   },
   {

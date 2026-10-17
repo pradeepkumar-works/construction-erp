@@ -149,6 +149,8 @@ enum NotificationType {
   IMPREST
   COMPLIANCE
   DEFECT
+  WATCH_LIST
+  MORNING_BRIEF
 }
 
 /// What a quality test is of. CONCRETE_CUBE gets 7 and 28-day readings; the others one result.
@@ -266,6 +268,7 @@ enum MessageTemplate {
   BILLS_DUE
   INVITE
   TEST
+  MORNING_BRIEF
 }
 
 /// SKIPPED: the channel is not set up on this server, so nothing left it (the row shows what would have gone).
@@ -441,6 +444,8 @@ model Organization {
   aiThreads            AiThread[]
   aiMessages           AiMessage[]
   billCheckAcceptances BillCheckAcceptance[]
+  warningDismissals    WarningDismissal[]
+  aiBriefs             AiBrief[]
   billCheckSummaries   BillCheckSummary[]
   aiDocumentReads      AiDocumentRead[]
 }
@@ -491,6 +496,8 @@ model User {
   /// The user's own opt-in for alerts on WhatsApp and by SMS (WhatsApp first, SMS as the fallback).
   whatsappAlerts Boolean      @default(false)
   smsAlerts      Boolean      @default(false)
+  /// The user's own opt-in for a three-line morning brief from Ask Nirmaan (AI item 74).
+  morningBrief   Boolean      @default(false)
   isActive       Boolean      @default(true)
   /// Set when invited; cleared once the user chooses a password.
   invitedAt      DateTime?
@@ -500,6 +507,8 @@ model User {
   savedViews           SavedView[]
   aiThreads            AiThread[]
   billChecksAccepted   BillCheckAcceptance[] @relation("BillCheckAcceptedBy")
+  warningsDismissed    WarningDismissal[]    @relation("WarningDismissedBy")
+  aiBriefs             AiBrief[]
   aiDocumentReads      AiDocumentRead[]
   memberships          ProjectMember[]
   managedProjects      Project[]             @relation("ProjectManager")
@@ -592,6 +601,7 @@ model Project {
   id                    String        @id @default(uuid())
   organizationId        String
   organization          Organization  @relation(fields: [organizationId], references: [id])
+  aiBriefs              AiBrief[]
   code                  String
   name                  String
   type                  ProjectType
@@ -3594,5 +3604,50 @@ model AiDocumentRead {
   ok             Boolean
   createdAt      DateTime     @default(now())
 
+  @@index([organizationId, createdAt])
+}
+
+/// An early warning dismissed with a reason (AI item 73), for the whole company. The key carries the figures the
+/// warning fired on, so it comes back when they move on.
+model WarningDismissal {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  warningKey     String
+  reason         String
+  dismissedById  String
+  dismissedBy    User         @relation("WarningDismissedBy", fields: [dismissedById], references: [id])
+  createdAt      DateTime     @default(now())
+
+  @@unique([organizationId, warningKey])
+}
+
+/// Written by Ask Nirmaan in the overnight batch (AI item 74): a user's morning brief (MORNING, for `date`) or a
+/// project's weekly narrative for the client's report (WEEK, `date` = the week's Monday). `key` is
+/// MORNING:<userId>:<date> or WEEK:<projectId>:<monday>, so a re-run writes nothing twice.
+model AiBrief {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  /// MORNING | WEEK
+  kind           String
+  key            String
+  userId         String?
+  user           User?        @relation(fields: [userId], references: [id])
+  projectId      String?
+  project        Project?     @relation(fields: [projectId], references: [id])
+  date           DateTime     @db.Date
+  /// [{ text, href }] for a brief, [{ text }] for a narrative
+  lines          Json
+  /// The model's text passed the grounding check; false = the rules' own draft
+  byAssistant    Boolean
+  /// Figures the model wrote that the records do not contain (why its text was not used)
+  unverified     Json?
+  model          String?
+  /// Counted in the company's monthly Ask Nirmaan allowance
+  costPaise      Int          @default(0)
+  createdAt      DateTime     @default(now())
+
+  @@unique([organizationId, key])
   @@index([organizationId, createdAt])
 }

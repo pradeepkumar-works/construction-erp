@@ -5,7 +5,7 @@ export const MESSAGE_CHANNELS = ['WHATSAPP', 'SMS'] as const;
 export type MessageChannel = (typeof MESSAGE_CHANNELS)[number];
 export const MESSAGE_CHANNEL_LABELS: Record<MessageChannel, string> = { WHATSAPP: 'WhatsApp', SMS: 'SMS' };
 
-export const MESSAGE_TEMPLATES = ['APPROVAL_REQUEST', 'SENT_BACK', 'DPR_REMINDER', 'APPROVAL_DIGEST', 'TEST_DUE', 'BILLS_DUE', 'INVITE', 'TEST'] as const;
+export const MESSAGE_TEMPLATES = ['APPROVAL_REQUEST', 'SENT_BACK', 'DPR_REMINDER', 'APPROVAL_DIGEST', 'TEST_DUE', 'BILLS_DUE', 'INVITE', 'TEST', 'MORNING_BRIEF'] as const;
 export type MessageTemplate = (typeof MESSAGE_TEMPLATES)[number];
 export const MESSAGE_TEMPLATE_LABELS: Record<MessageTemplate, string> = {
   APPROVAL_REQUEST: 'Approval request',
@@ -16,6 +16,7 @@ export const MESSAGE_TEMPLATE_LABELS: Record<MessageTemplate, string> = {
   BILLS_DUE: 'Payments due',
   INVITE: 'Invite',
   TEST: 'Test',
+  MORNING_BRIEF: 'Morning brief',
 };
 
 /** WATI when WATI_API_ENDPOINT and WATI_ACCESS_TOKEN are set, else Meta's Cloud API when its keys are. */
@@ -42,6 +43,7 @@ export const MESSAGE_TEMPLATE_TEXT: Record<MessageTemplate, string> = {
   BILLS_DUE: `Payments due: {{1}} in the next 3 days, {{2}} overdue. See the due list at {{3}} in ${PRODUCT_NAME}.`,
   INVITE: `You have been invited to {{1}} on ${PRODUCT_NAME}. Choose a password to sign in: {{2}} The link works once and expires in {{3}}.`,
   TEST: `Test message from ${PRODUCT_NAME}: your alerts on this number are working.`,
+  MORNING_BRIEF: `Good morning {{1}}. Your brief for today: {{2}}. Open {{3}} for the details in ${PRODUCT_NAME}.`,
 };
 
 /**
@@ -57,7 +59,14 @@ export const WATI_PARAM_NAMES: Record<MessageTemplate, string[]> = {
   BILLS_DUE: ['due_soon', 'overdue', 'link'],
   INVITE: ['company', 'link', 'expires_in'],
   TEST: [],
+  MORNING_BRIEF: ['name', 'brief', 'link'],
 };
+
+/**
+ * Templates added after launch: WhatsApp sends one only once it is approved by Meta and named in
+ * WHATSAPP_APPROVED_TEMPLATES (e.g. `MORNING_BRIEF`); until then it goes by SMS if registered there, or not at all.
+ */
+export const TEMPLATES_NEEDING_APPROVAL: MessageTemplate[] = ['MORNING_BRIEF'];
 
 /** A template's text with WATI's named variables, e.g. "Approval needed: {{item}} on {{project}}…". */
 export function watiTemplateText(template: MessageTemplate): string {

@@ -3,6 +3,7 @@ import type { InspectionCheck, NcrSeverity, NcrStatus, TestKind, TestResult } fr
 import type { ApprovalRightDto } from './approvals';
 import type { TallyVoucherKind } from './tally';
 import type { BillingUnit } from './billing';
+import type { ProgressNarrativeDto } from './briefs';
 import type { DocumentDiscipline, DocumentKind, LetterDirection, RevisionStatus, TransmittalPurpose } from './documents';
 import type { LeaveStatus, LeaveType, StaffAttendanceStatus } from './staff';
 import type { CostHead } from './cost';
@@ -381,6 +382,8 @@ export interface MyWorkDto {
   approvals?: { type: SubmissionType; count: number }[];
   /** Active projects with no daily report for today */
   dprsMissing?: MyWorkCard;
+  /** Early warnings not dismissed (AI item 73): finishes slipping, a cash gap, stock running out… */
+  watchList?: MyWorkCard;
   /** The caller's own entries rejected or sent back for changes */
   sentBack?: MyWorkCard;
   /** Sent RA bills not fully received, oldest first */
@@ -473,7 +476,7 @@ export interface PushTokenDto {
 
 /** Result of a scheduled notification job (DPR reminder / approval digest). */
 export interface NotificationJobResult {
-  job: 'DPR_REMINDER' | 'APPROVAL_DIGEST' | 'TESTS_DUE' | 'BILLS_DUE' | 'MACHINERY_DUE' | 'COMPLIANCE_DUE' | 'HANDOVER_DUE';
+  job: 'DPR_REMINDER' | 'APPROVAL_DIGEST' | 'TESTS_DUE' | 'BILLS_DUE' | 'MACHINERY_DUE' | 'COMPLIANCE_DUE' | 'HANDOVER_DUE' | 'WATCH_LIST' | 'MORNING_BRIEF' | 'WEEK_NARRATIVE';
   date: string;
   created: number;
   pushed: number;
@@ -1057,6 +1060,8 @@ export interface ProgressReportDto {
   from: string;
   to: string;
   generatedAt: string;
+  /** A Monday-to-Sunday week's summary paragraph, written overnight by Ask Nirmaan (AI item 74); null otherwise. */
+  narrative: ProgressNarrativeDto | null;
   physical: { atStartPct: number; atEndPct: number };
   /** Share of the contract period elapsed at the end of the report period; null without both dates. */
   timeElapsedPct: number | null;
