@@ -163,7 +163,7 @@ export function RiskList({ projectId: fixedProject, initialProject, initialOpenI
             <Space size={[6, 6]} wrap>
               {suggestions.slice(0, 8).map((s) => (
                 <Tooltip key={s.activityId} title={`${s.projectName}: planned finish ${formatDate(s.plannedEnd)}, ${s.progressPct}% done`}>
-                  <Button size="small" color="orange" variant="outlined" onClick={() => raise({ kind: 'DELAY', projectId: s.projectId, activityId: s.activityId, title: `${s.activityName} behind schedule` })}>
+                  <Button size="small" onClick={() => raise({ kind: 'DELAY', projectId: s.projectId, activityId: s.activityId, title: `${s.activityName} behind schedule` })}>
                     {s.activityName} · {s.daysLate} d late · record delay
                   </Button>
                 </Tooltip>

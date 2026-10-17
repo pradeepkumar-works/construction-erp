@@ -17,7 +17,7 @@ test('each page has its own tab title, one h1 and one breadcrumb', async ({ page
 
   // A record's page is named after the record, and the header's breadcrumb carries its kind (no second one on the page).
   const md = await apiToken('md@demo.com');
-  const bill = (await api<{ items: { id: string }[] }>(md, '/bills?pageSize=1')).items[0];
+  const bill = (await api<{ items: { id: string }[] }>(md, '/ra-bills?pageSize=1')).items[0];
   await page.goto(`/bills/${bill.id}`);
   await expect(page.getByRole('group', { name: 'Stage' })).toBeVisible();
   const heading = (await page.locator('h1').innerText()).trim();
@@ -37,9 +37,9 @@ test('moving to another page puts focus on its heading', async ({ page }) => {
 
 test('list rows open from the keyboard, and records without a page of their own can be reached by Tab', async ({ page }) => {
   await signIn(page, 'pm@demo.com');
-  await page.goto('/bills');
+  await page.goto('/dpr');
   const rows = page.locator('.ant-table-tbody > tr[data-row-key]');
-  await expect(rows.first()).toBeVisible();
+  await expect(rows.nth(1)).toBeVisible();
   // The rows are one Tab stop.
   await expect(page.locator('.ant-table-tbody > tr[tabindex="0"]')).toHaveCount(1);
   await rows.first().focus();
@@ -74,8 +74,9 @@ test('single-key shortcuts can be turned off, and Ask is on Alt J', async ({ pag
   // ? and J no longer do anything; arrows still move through a list.
   await page.keyboard.press('?');
   await expect(dialog).toBeHidden();
-  await page.goto('/bills');
+  await page.goto('/dpr');
   const rows = page.locator('.ant-table-tbody > tr[data-row-key]');
+  await expect(rows.nth(1)).toBeVisible();
   await rows.first().focus();
   await page.keyboard.press('j');
   await expect(rows.first()).toBeFocused();
@@ -99,8 +100,8 @@ test('a dark-mode page starts dark before the app loads', async ({ page }) => {
   expect(await page.evaluate(() => document.documentElement.dataset.theme)).toBe('dark');
   await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#0B1119');
 
-  // Sign-in stays light.
-  await page.goto('/login');
-  await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
+  // The public pages stay light.
+  await page.goto('/privacy');
+  await expect(page.getByRole('heading', { name: 'Privacy', level: 1 })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.dataset.theme)).toBeUndefined();
 });

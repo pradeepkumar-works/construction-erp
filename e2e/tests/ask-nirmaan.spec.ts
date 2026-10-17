@@ -129,7 +129,7 @@ test('a site engineer gets no Summarise button while Ask Nirmaan is off for the 
   try {
     await signIn(page, 'engineer@demo.com');
     await page.goto(`/projects/${project.id}`);
-    await expect(page.getByRole('button', { name: /Progress report/ })).toBeVisible();
+    await expect(page.getByRole('link', { name: /Progress report/ })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Summarise this week' })).toHaveCount(0);
   } finally {
     await api(admin, '/ai/settings', { method: 'PATCH', body: { enabled: true } });

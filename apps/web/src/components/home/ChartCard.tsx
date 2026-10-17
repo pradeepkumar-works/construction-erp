@@ -41,7 +41,7 @@ export function ChartCard({ title, note, summary, chart, table }: { title: strin
         {summary}
       </Typography.Paragraph>
       {view === 'chart' ? (
-        <div role="img" aria-label={summary}>
+        <div role="img" aria-label={`${title}. ${summary}`}>
           <WhenInView minHeight={280}>{chart}</WhenInView>
         </div>
       ) : (

@@ -19,7 +19,7 @@ test('a new company sees its first-week checklist, and it follows what they do',
   await expect(card).toBeVisible();
   await expect(card).toContainText('Day 1 of 7');
   await expect(card).toContainText('0 of 8 done');
-  await expect(card.getByRole('button', { name: 'Projects' })).toBeVisible();
+  await expect(card.getByRole('link', { name: 'Projects' })).toBeVisible();
 
   // Make a project through the API (the project form is not what this test is about), then reload.
   const token = await apiToken(email);
