@@ -133,7 +133,7 @@ a {
 .auth-aside-foot {
   margin: 0;
   font-size: 13px;
-  color: color-mix(in srgb, var(--ant-color-white) 45%, transparent);
+  color: color-mix(in srgb, var(--ant-color-white) 62%, transparent);
 }
 
 .auth-main {
@@ -426,4 +426,47 @@ h4.ant-typography,
   .record-page .ant-card {
     break-inside: avoid;
   }
+}
+
+/*
+ * Accessibility (UI roadmap item 65, WCAG 2.2 AA).
+ * Coloured tags: antd sets their text in shade 7 of the palette, which falls under 4.5:1 on the shade-1 fill for the
+ * warm colours; shade 8 (9 for lime, gold and yellow) reads in both themes (the dark palettes run the other way, so 8 is the lighter one there).
+ * The selector out-ranks antd's own (`.ant-tag.ant-tag-green:not(.ant-tag-disabled).ant-tag-filled`).
+ */
+:root .ant-tag.ant-tag-green:not(.ant-tag-disabled):is(.ant-tag-filled, .ant-tag-outlined) { color: var(--ant-green-8); }
+:root .ant-tag.ant-tag-lime:not(.ant-tag-disabled):is(.ant-tag-filled, .ant-tag-outlined) { color: var(--ant-lime-9); }
+:root .ant-tag.ant-tag-gold:not(.ant-tag-disabled):is(.ant-tag-filled, .ant-tag-outlined) { color: var(--ant-gold-9); }
+:root .ant-tag.ant-tag-yellow:not(.ant-tag-disabled):is(.ant-tag-filled, .ant-tag-outlined) { color: var(--ant-yellow-9); }
+:root .ant-tag.ant-tag-orange:not(.ant-tag-disabled):is(.ant-tag-filled, .ant-tag-outlined) { color: var(--ant-orange-8); }
+:root .ant-tag.ant-tag-volcano:not(.ant-tag-disabled):is(.ant-tag-filled, .ant-tag-outlined) { color: var(--ant-volcano-8); }
+:root .ant-tag.ant-tag-cyan:not(.ant-tag-disabled):is(.ant-tag-filled, .ant-tag-outlined) { color: var(--ant-cyan-8); }
+:root .ant-tag.ant-tag-blue:not(.ant-tag-disabled):is(.ant-tag-filled, .ant-tag-outlined) { color: var(--ant-blue-8); }
+:root .ant-tag.ant-tag-geekblue:not(.ant-tag-disabled):is(.ant-tag-filled, .ant-tag-outlined) { color: var(--ant-geekblue-8); }
+:root .ant-tag.ant-tag-purple:not(.ant-tag-disabled):is(.ant-tag-filled, .ant-tag-outlined) { color: var(--ant-purple-8); }
+:root .ant-tag.ant-tag-magenta:not(.ant-tag-disabled):is(.ant-tag-filled, .ant-tag-outlined) { color: var(--ant-magenta-8); }
+:root .ant-tag.ant-tag-red:not(.ant-tag-disabled):is(.ant-tag-filled, .ant-tag-outlined) { color: var(--ant-red-8); }
+:root .ant-tag.ant-tag-pink:not(.ant-tag-disabled):is(.ant-tag-filled, .ant-tag-outlined) { color: var(--ant-pink-8); }
+
+/* Keyboard focus is always visible: a two-pixel ring in the primary colour on anything focused from the keyboard. */
+:where(a, button, [role='button'], [role='tab'], [role='menuitem'], [role='option'], [tabindex]):focus-visible {
+  outline: 2px solid var(--ant-color-primary);
+  outline-offset: 2px;
+}
+
+/* "Skip to content": the first stop for the Tab key on every signed-in page, shown only while focused. */
+.skip-link {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 2000;
+  padding: 8px 16px;
+  border-radius: 6px;
+  background: var(--ant-color-primary);
+  color: var(--ant-color-white);
+  font-weight: 600;
+  transform: translateY(-200%);
+}
+.skip-link:focus {
+  transform: none;
 }

@@ -95,23 +95,15 @@ export function ProjectWorkspace({
           padding: `0 ${token.paddingSM}px`,
         }}
       >
-        <Tabs
-          activeKey={current.group}
-          onChange={openGroup}
-          items={groups.map((g) => ({ key: g.key, label: g.label, icon: g.icon }))}
-          tabBarStyle={{ marginBottom: 0 }}
-          tabBarExtraContent={
-            collapsed
-              ? {
-                  left: (
-                    <Flex align="center" gap={token.marginXS} style={{ marginRight: token.marginLG, maxWidth: Math.min(420, Math.max(180, bar.width * 0.3)), minWidth: 0 }}>
-                      {compactTitle}
-                    </Flex>
-                  ),
-                }
-              : undefined
-          }
-        />
+        {/* The compact title sits beside the tabs, not in antd's tab bar, whose role="tablist" may hold only tabs. */}
+        <Flex align="center" style={{ borderBottom: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}` }}>
+          {collapsed ? (
+            <Flex align="center" gap={token.marginXS} style={{ marginRight: token.marginLG, maxWidth: Math.min(420, Math.max(180, bar.width * 0.3)), minWidth: 0 }}>
+              {compactTitle}
+            </Flex>
+          ) : null}
+          <Tabs activeKey={current.group} onChange={openGroup} items={groups.map((g) => ({ key: g.key, label: g.label, icon: g.icon }))} tabBarStyle={{ marginBottom: -token.lineWidth }} style={{ flex: 1, minWidth: 0 }} />
+        </Flex>
         {inGroup.length > 1 && (
           <div style={{ padding: `${token.paddingXS}px 0`, overflowX: 'auto' }}>
             <Segmented size="small" value={current.key} onChange={(v) => onChange(String(v))} options={inGroup.map((t) => ({ value: t.key, label: t.label }))} aria-label={`${groups.find((g) => g.key === current.group)?.label} tabs`} />

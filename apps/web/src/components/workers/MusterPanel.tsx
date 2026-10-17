@@ -101,7 +101,7 @@ export function MusterPanel({ projectId: fixedProject }: { projectId?: string })
     <div className="muster-panel">
       <CardToolbar wrap gap={8} align="center">
         {!fixedProject ? <ProjectSelect value={projectPick} onChange={setProjectPick} placeholder="Pick a project" allowClear={false} /> : null}
-        <DatePicker picker="month" value={month} onChange={(v) => v && setMonth(v)} format="MMM YYYY" allowClear={false} />
+        <DatePicker picker="month" value={month} onChange={(v) => v && setMonth(v)} format="MMM YYYY" allowClear={false} aria-label="Month" />
         <div style={{ flex: 1 }} />
         {m ? (
           <ExportButton
@@ -144,7 +144,7 @@ export function MusterPanel({ projectId: fixedProject }: { projectId?: string })
 
           <div style={{ padding: '20px 12px 8px', display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
             <h4 style={{ margin: 0 }}>Output per man-day</h4>
-            <DatePicker.RangePicker value={range} onChange={(v) => v && v[0] && v[1] && setRange([v[0], v[1]])} format="DD MMM YYYY" allowClear={false} />
+            <DatePicker.RangePicker value={range} onChange={(v) => v && v[0] && v[1] && setRange([v[0], v[1]])} format="DD MMM YYYY" allowClear={false} aria-label="Dates" />
             {output.data ? (
               <span className="text-muted" style={{ fontSize: 13 }}>
                 {output.data.totalManDays} man-days{output.data.untaggedManDays ? `, ${output.data.untaggedManDays} not tagged to an activity` : ''}

@@ -76,7 +76,7 @@ function poColumns({ showProject, onOpen, sortOrderFor }: { showProject: boolean
         </Space>
       ),
     },
-    { key: 'received', title: 'Received', width: 130, render: (_, r) => (r.status === 'APPROVED' ? <Progress percent={r.receivedPct} size="small" style={{ margin: 0 }} /> : '-') },
+    { key: 'received', title: 'Received', width: 130, render: (_, r) => (r.status === 'APPROVED' ? <Progress percent={r.receivedPct} size="small" style={{ margin: 0 }} aria-label={`${r.receivedPct}% received`} /> : '-') },
     { key: 'actions', title: '', label: 'Actions', locked: true, fixed: 'right' as const, width: 56, render: (_, r) => <RowActions type="purchase_order" row={r} amount={r.total} href={`/purchase-orders/${r.id}`} onOpen={onOpen} /> },
   ];
 }
@@ -139,6 +139,7 @@ export function PurchaseOrderList({ projectId: fixedProject, openId: initialOpen
         search={page.search}
         onSearch={page.setSearch}
         searchPlaceholder="Search PO no., vendor, item, request"
+        searchLabel="Search purchase orders"
         extra={
           <>
             <ExportButton onExport={exportRows} />

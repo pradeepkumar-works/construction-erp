@@ -80,6 +80,7 @@ export function MachineryList({ projectId: fixedProject }: { projectId?: string 
         search={page.search}
         onSearch={page.setSearch}
         searchPlaceholder="Search machine, operator, work, people"
+        searchLabel="Search machinery logs"
         extra={
           <>
             <ExportButton onExport={exportRows} />

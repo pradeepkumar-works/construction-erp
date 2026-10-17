@@ -15,6 +15,7 @@ import {
   canViewCost,
 } from "@erp/shared";
 import { useAuth } from "@/lib/auth";
+import { tabBarWithExtra } from "@/components/common/tabBarWithExtra";
 import { StockBalances } from "./StockBalances";
 import { StockEntries } from "./StockEntries";
 import { ItemsTable } from "./ItemsTable";
@@ -143,9 +144,9 @@ export function StockPanel({
         activeKey={tab}
         onChange={setTab}
         tabBarStyle={{ padding: "0 12px", marginBottom: 0 }}
-        tabBarExtraContent={
-          projectId ? <StockActions projectId={projectId} /> : undefined
-        }
+        renderTabBar={tabBarWithExtra(
+          projectId ? <StockActions projectId={projectId} /> : undefined,
+        )}
         items={[
           {
             key: "balances",

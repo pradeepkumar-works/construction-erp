@@ -111,6 +111,7 @@ export function NcrList({ projectId: fixedProject, onOpen }: { projectId?: strin
         search={page.search}
         onSearch={page.setSearch}
         searchPlaceholder="Search no., title, location"
+        searchLabel="Search NCRs"
         extra={newButton}
       >
         <Select<NcrStatus> allowClear placeholder="All statuses" aria-label="Status" value={status} onChange={(v) => page.setFilter('status', v)} style={{ width: 150 }} options={NCR_STATUSES.map((s) => ({ value: s, label: NCR_STATUS_LABELS[s] }))} />

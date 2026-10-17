@@ -59,7 +59,7 @@ export function EmployeeDrawer({ id, open, onClose, onOpenLeave }: { id: string 
             Attendance
           </Divider>
           <Space style={{ marginBottom: 8 }} wrap>
-            <DatePicker picker="month" format="MMM YYYY" allowClear={false} value={month} onChange={(d) => d && setMonth(d.startOf('month'))} disabledDate={(d) => d.isAfter(dayjs(), 'month')} />
+            <DatePicker picker="month" format="MMM YYYY" allowClear={false} aria-label="Month" value={month} onChange={(d) => d && setMonth(d.startOf('month'))} disabledDate={(d) => d.isAfter(dayjs(), 'month')} />
             <Typography.Text>
               {totals.present} days present, {totals.absent} absent{totals.overtime ? `, ${totals.overtime} h overtime` : ''}
             </Typography.Text>

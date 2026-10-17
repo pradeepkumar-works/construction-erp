@@ -71,7 +71,7 @@ export function ActivitiesTab({ projectId, members, project }: { projectId: stri
       dataIndex: 'progressPct',
       width: 180,
       sorter: (a, b) => a.progressPct - b.progressPct,
-      render: (v: number, r) => <Progress percent={Math.round(v * 10) / 10} size="small" status={v >= 100 ? 'success' : r.isDelayed ? 'exception' : 'active'} />,
+      render: (v: number, r) => <Progress percent={Math.round(v * 10) / 10} size="small" status={v >= 100 ? 'success' : r.isDelayed ? 'exception' : 'active'} aria-label={`${Math.round(v * 10) / 10}% done`} />,
     },
     { title: 'Planned start', dataIndex: 'plannedStart', width: 120, render: (v) => formatDate(v), sorter: (a, b) => (a.plannedStart ?? '').localeCompare(b.plannedStart ?? '') },
     {

@@ -69,7 +69,7 @@ export function GettingStartedCard() {
       }
       extra={<Button type="text" size="small" icon={<CloseOutlined />} onClick={hide} aria-label="Hide the setup checklist" />}
     >
-      <Progress percent={Math.round((data.done / data.total) * 100)} showInfo={false} strokeColor={BRAND.colors.accent} size="small" style={{ marginBottom: 8 }} />
+      <Progress percent={Math.round((data.done / data.total) * 100)} showInfo={false} strokeColor={BRAND.colors.accent} size="small" style={{ marginBottom: 8 }} aria-label={`Setup checklist: ${data.done} of ${data.total} done`} />
       <ol style={{ listStyle: 'none', margin: 0, padding: 0 }}>
         {data.steps.map((s, i) => {
           const step = STEPS[s.key];

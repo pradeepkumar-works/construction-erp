@@ -183,6 +183,7 @@ export function StockBalances({ projectId: fixedProject, initialLow = false, ini
         search={page.search}
         onSearch={page.setSearch}
         searchPlaceholder="Search item or category"
+        searchLabel="Search stock balances"
         extra={<ExportButton onExport={exportRows} />}
       >
         <Checkbox checked={lowOnly} onChange={(e) => page.setFilter('low', e.target.checked ? '1' : undefined)}>

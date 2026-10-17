@@ -73,6 +73,7 @@ export function DprList({ projectId: fixedProject, newLabel }: { projectId?: str
         search={page.search}
         onSearch={page.setSearch}
         searchPlaceholder="Search work, issues, people"
+        searchLabel="Search DPRs"
         extra={
           <>
             <ExportButton onExport={exportRows} />

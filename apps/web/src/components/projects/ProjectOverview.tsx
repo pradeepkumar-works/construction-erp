@@ -25,13 +25,13 @@ export function ProjectOverview({ project }: { project: ProjectDetail }) {
           <Col xs={12} md={6}>
             <Card size="small" loading={isLoading}>
               <Statistic title="Physical progress" value={dash?.physicalProgressPct ?? project.physicalProgressPct} suffix="%" precision={1} />
-              <Progress percent={dash?.physicalProgressPct ?? project.physicalProgressPct} size="small" showInfo={false} />
+              <Progress percent={dash?.physicalProgressPct ?? project.physicalProgressPct} size="small" showInfo={false} aria-label={`Physical progress ${dash?.physicalProgressPct ?? project.physicalProgressPct}%`} />
             </Card>
           </Col>
           <Col xs={12} md={6}>
             <Card size="small" loading={isLoading}>
               <Statistic title="Financial progress" value={finPct} suffix="%" precision={1} />
-              <Progress percent={finPct} size="small" showInfo={false} strokeColor={themeColor('colorTextHeading')} />
+              <Progress percent={finPct} size="small" showInfo={false} strokeColor={themeColor('colorTextHeading')} aria-label={`Financial progress ${finPct}%`} />
             </Card>
           </Col>
           <Col xs={12} md={6}>
@@ -86,7 +86,7 @@ export function ProjectOverview({ project }: { project: ProjectDetail }) {
               { title: 'Activity', dataIndex: 'name' },
               { title: 'Planned', dataIndex: 'plannedQty', width: 110, align: 'right', className: 'mono', render: (v) => formatQty(v) },
               { title: 'Executed', dataIndex: 'executedQty', width: 110, align: 'right', className: 'mono', render: (v) => formatQty(v) },
-              { title: 'Progress', dataIndex: 'progressPct', width: 260, render: (v: number) => <Progress percent={Math.round(v * 10) / 10} size="small" status={v >= 100 ? 'success' : 'active'} /> },
+              { title: 'Progress', dataIndex: 'progressPct', width: 260, render: (v: number) => <Progress percent={Math.round(v * 10) / 10} size="small" status={v >= 100 ? 'success' : 'active'} aria-label={`${Math.round(v * 10) / 10}% done`} /> },
             ]}
           />
         </Card>

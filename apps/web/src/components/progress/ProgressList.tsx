@@ -73,6 +73,7 @@ export function ProgressList({ projectId: fixedProject, newLabel }: { projectId?
         search={page.search}
         onSearch={page.setSearch}
         searchPlaceholder="Search activity, location, remarks, people"
+        searchLabel="Search progress entries"
         extra={
           <>
             <ExportButton onExport={exportRows} />

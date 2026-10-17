@@ -147,6 +147,7 @@ export function VariationsPanel({ projectId: fixedProject, openId }: { projectId
         search={page.search}
         onSearch={page.setSearch}
         searchPlaceholder="Search title or item"
+        searchLabel="Search variations"
         extra={newButton}
       >
         <Select<VariationStatus> allowClear placeholder="All statuses" aria-label="Status" value={status} onChange={(v) => page.setFilter('status', v)} style={{ width: 180 }} options={VARIATION_STATUSES.map((v) => ({ value: v, label: VARIATION_STATUS_LABELS[v] }))} />

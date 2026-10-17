@@ -92,7 +92,7 @@ export function BoqTab({ projectId }: { projectId: string }) {
         return (
           <div>
             <div style={{ textAlign: 'right' }}>{formatQty(v)}</div>
-            <Progress percent={pct} size="small" showInfo={false} strokeColor={pct >= 100 ? themeColor('colorSuccess') : BRAND.colors.primary} />
+            <Progress percent={pct} size="small" showInfo={false} strokeColor={pct >= 100 ? themeColor('colorSuccess') : BRAND.colors.primary} aria-label={`${pct}% executed`} />
           </div>
         );
       },
@@ -154,7 +154,7 @@ export function BoqTab({ projectId }: { projectId: string }) {
           <Statistic title="Measured value (approved MB)" value={formatINR(totals.measured)} styles={{ content: { fontSize: 20 } }} />
         </Space>
         <Space wrap>
-          <Input.Search placeholder="Search item / description" allowClear value={search} onChange={(e) => setSearch(e.target.value)} style={{ width: 240 }} />
+          <Input.Search placeholder="Search item / description" aria-label="Search BOQ items" allowClear value={search} onChange={(e) => setSearch(e.target.value)} style={{ width: 240 }} />
           <Button icon={<DownloadOutlined />} onClick={exportExcel} disabled={!data || data.length === 0}>
             Export
           </Button>

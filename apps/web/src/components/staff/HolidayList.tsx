@@ -46,7 +46,7 @@ export function HolidayList() {
   return (
     <>
       <CardToolbar gap={8} align="center">
-        <Select value={year} onChange={setYear} style={{ width: 100 }} options={[-1, 0, 1].map((d) => ({ value: dayjs().year() + d, label: String(dayjs().year() + d) }))} />
+        <Select value={year} onChange={setYear} style={{ width: 100 }} aria-label="Year" options={[-1, 0, 1].map((d) => ({ value: dayjs().year() + d, label: String(dayjs().year() + d) }))} />
         <Typography.Text type="secondary">Sundays are the weekly off at every site.</Typography.Text>
         <div style={{ flex: 1 }} />
         {admin && (

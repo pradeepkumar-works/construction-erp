@@ -71,7 +71,7 @@ export function ProjectBudgetPanel({ projectId }: { projectId: string }) {
               <div className="text-muted" style={{ fontSize: 14, marginBottom: 4 }}>
                 Work done
               </div>
-              <Progress percent={data.pctComplete} size="small" />
+              <Progress percent={data.pctComplete} size="small" aria-label={`Work done ${data.pctComplete}%`} />
               <div className="text-muted" style={{ fontSize: 12 }}>
                 {formatINR(data.executedValue)} of {formatINR(data.boqValue)} BOQ
               </div>
@@ -136,7 +136,7 @@ export function ProjectBudgetPanel({ projectId }: { projectId: string }) {
                     width: 150,
                     render: (_, r) => {
                       const pct = toNumber(r.budget) > 0 ? Math.round((toNumber(r.actual) / toNumber(r.budget)) * 1000) / 10 : 0;
-                      return <Progress percent={Math.min(pct, 100)} format={() => `${pct}%`} size="small" status={pct > data.pctComplete + 10 ? 'exception' : 'normal'} />;
+                      return <Progress percent={Math.min(pct, 100)} format={() => `${pct}%`} size="small" status={pct > data.pctComplete + 10 ? 'exception' : 'normal'} aria-label={`${pct}% of budget used`} />;
                     },
                   },
                   { title: 'Earned', dataIndex: 'earned', width: 140, align: 'right', render: money },

@@ -68,6 +68,7 @@ export function HelpMenu({ onTour, withSearch }: { onTour: () => void; withSearc
 
   const shortcuts: [string, string[]][] = [
     ...(withSearch ? ([['Search pages and projects', searchShortcut().startsWith('⌘') ? ['⌘', 'K'] : ['Ctrl', 'K']]] as [string, string[]][]) : []),
+    ['Skip the menu to the page (first Tab on a page)', ['Tab', 'Enter']],
     ['Fold the sidebar to icons and back', ['[']],
     ['Show these shortcuts', ['?']],
     ['Move through search results', ['↑', '↓']],

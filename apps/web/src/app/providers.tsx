@@ -3,15 +3,22 @@
 import React, { useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { App as AntApp, ConfigProvider } from 'antd';
+import { errorStatus } from '@/lib/api';
 import { AuthProvider } from '@/lib/auth';
 import { appTheme, componentConfig, themeCssVariables } from '@/lib/theme';
+
+const isClientError = (err: unknown) => {
+  const status = errorStatus(err);
+  return !!status && status >= 400 && status < 500;
+};
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
     () =>
       new QueryClient({
         defaultOptions: {
-          queries: { retry: 1, refetchOnWindowFocus: false, staleTime: 15_000 },
+          // One retry for a dropped connection or a server error; a 4xx (not allowed, not found) will not change, so it shows at once.
+          queries: { retry: (failures, err) => failures < 1 && !isClientError(err), refetchOnWindowFocus: false, staleTime: 15_000 },
         },
       }),
   );

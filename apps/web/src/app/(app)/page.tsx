@@ -80,7 +80,7 @@ export default function DashboardPage() {
       dataIndex: 'physicalProgressPct',
       key: 'progress',
       width: 170,
-      render: (v: number) => <Progress percent={Math.round(v * 10) / 10} size="small" status={progressStatus(v)} />,
+      render: (v: number) => <Progress percent={Math.round(v * 10) / 10} size="small" status={progressStatus(v)} aria-label={`${Math.round(v * 10) / 10}% done`} />,
     },
     { title: 'End Date', dataIndex: 'endDate', key: 'end', width: 110, render: (v) => formatDate(v) },
     {
@@ -150,7 +150,7 @@ export default function DashboardPage() {
                             {pt.count} project{pt.count === 1 ? '' : 's'}
                           </Tag>
                         </div>
-                        <Progress percent={data.totalProjects ? Math.round((pt.count / data.totalProjects) * 100) : 0} size="small" showInfo={false} strokeColor={BRAND.colors.primary} />
+                        <Progress percent={data.totalProjects ? Math.round((pt.count / data.totalProjects) * 100) : 0} size="small" showInfo={false} strokeColor={BRAND.colors.primary} aria-label={`${PROJECT_TYPE_LABELS[pt.type] ?? pt.type}: ${data.totalProjects ? Math.round((pt.count / data.totalProjects) * 100) : 0}% of projects`} />
                       </Col>
                     ))}
                   </Row>

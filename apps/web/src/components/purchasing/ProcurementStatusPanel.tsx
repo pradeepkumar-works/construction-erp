@@ -106,7 +106,7 @@ export function ProcurementStatusPanel() {
         </div>
       ),
     },
-    { title: 'Received', key: 'pct', width: 150, render: (_, r) => <Progress percent={r.receivedPct} size="small" /> },
+    { title: 'Received', key: 'pct', width: 150, render: (_, r) => <Progress percent={r.receivedPct} size="small" aria-label={`${r.receivedPct}% received`} /> },
     { title: 'Still to come', dataIndex: 'pendingValue', width: 140, align: 'right', render: (v: string) => (Number(v) ? formatINR(v) : '-') },
     {
       title: '',
@@ -159,7 +159,7 @@ export function ProcurementStatusPanel() {
           aria-label="Vendor"
           options={(vendors.data ?? []).map((v) => ({ value: v.id, label: v.name }))}
         />
-        <DatePicker.RangePicker presets={rangePresets()} value={range} onChange={(v) => setRange(v as [Dayjs | null, Dayjs | null] | null)} format="DD MMM YYYY" allowEmpty={[true, true]} placeholder={['Orders from', 'to']} />
+        <DatePicker.RangePicker presets={rangePresets()} value={range} onChange={(v) => setRange(v as [Dayjs | null, Dayjs | null] | null)} format="DD MMM YYYY" allowEmpty={[true, true]} placeholder={['Orders from', 'to']} aria-label="Order dates" />
         <span style={{ flex: 1 }} />
         <ExportButton onExport={exportRows} />
       </Flex>

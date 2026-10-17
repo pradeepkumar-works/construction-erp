@@ -141,7 +141,7 @@ export default function DesignPage() {
           <Col xs={24} md={8}>
             <Card size="small">
               <Typography.Text type="secondary">Physical progress</Typography.Text>
-              <Progress percent={31.5} />
+              <Progress percent={31.5} aria-label="Example progress" />
             </Card>
           </Col>
         </Row>
@@ -149,16 +149,16 @@ export default function DesignPage() {
         <Card title="Form" size="small">
           <Row gutter={[token.margin, token.margin]}>
             <Col xs={24} md={8}>
-              <Input placeholder="Search work, issues, people" />
+              <Input placeholder="Search work, issues, people" aria-label="Search" />
             </Col>
             <Col xs={24} md={8}>
-              <Select style={{ width: '100%' }} placeholder="All projects" options={[{ value: 'a', label: 'Bhubaneswar - Puri Highway' }]} />
+              <Select style={{ width: '100%' }} placeholder="All projects" aria-label="Project" options={[{ value: 'a', label: 'Bhubaneswar - Puri Highway' }]} />
             </Col>
             <Col xs={12} md={4}>
-              <DatePicker style={{ width: '100%' }} />
+              <DatePicker style={{ width: '100%' }} aria-label="Date" />
             </Col>
             <Col xs={12} md={4}>
-              <InputNumber style={{ width: '100%' }} placeholder="Qty" />
+              <InputNumber style={{ width: '100%' }} placeholder="Qty" aria-label="Quantity" />
             </Col>
           </Row>
         </Card>

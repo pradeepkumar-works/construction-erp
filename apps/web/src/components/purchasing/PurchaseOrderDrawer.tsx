@@ -129,7 +129,7 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
             { key: 'deliver', label: 'Deliver by', children: data.deliveryBy ? formatDate(data.deliveryBy) : '-' },
             { key: 'address', label: 'Delivery address', children: data.deliveryAddress ?? '-' },
             { key: 'pay', label: 'Payment', children: data.paymentTerms ?? (data.paymentDays !== null ? `${data.paymentDays} days from invoice` : '-') },
-            ...(approved ? [{ key: 'recv', label: 'Received', children: <Progress percent={data.receivedPct} size="small" style={{ maxWidth: 240, margin: 0 }} /> }] : []),
+            ...(approved ? [{ key: 'recv', label: 'Received', children: <Progress percent={data.receivedPct} size="small" style={{ maxWidth: 240, margin: 0 }} aria-label={`${data.receivedPct}% received`} /> }] : []),
             ...(data.remarks ? [{ key: 'remarks', label: 'Remarks', children: data.remarks }] : []),
             ...submissionMetaItems(data).filter((i) => i.key !== 'status' && i.key !== 'project'),
           ],

@@ -145,6 +145,7 @@ export function VendorBillList({ projectId: fixedProject, openId: initialOpen }:
         search={page.search}
         onSearch={page.setSearch}
         searchPlaceholder="Search bill, invoice, vendor, PO"
+        searchLabel="Search vendor bills"
         extra={
           <>
             <ExportButton onExport={exportRows} />

@@ -58,7 +58,7 @@ export function PeriodPicker({ value, onChange }: { value: PeriodState; onChange
         ]}
       />
       {value.preset === 'custom' ? (
-        <DatePicker.RangePicker presets={rangePresets()} value={value.range} onChange={(r) => onChange({ preset: 'custom', range: r as [Dayjs | null, Dayjs | null] | null })} format="DD MMM YYYY" allowEmpty={[true, true]} />
+        <DatePicker.RangePicker presets={rangePresets()} value={value.range} onChange={(r) => onChange({ preset: 'custom', range: r as [Dayjs | null, Dayjs | null] | null })} format="DD MMM YYYY" allowEmpty={[true, true]} aria-label="Dates" />
       ) : null}
     </Space>
   );

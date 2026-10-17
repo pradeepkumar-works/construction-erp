@@ -114,6 +114,7 @@ export function StockEntries({ projectId: fixedProject }: { projectId?: string }
         search={page.search}
         onSearch={page.setSearch}
         searchPlaceholder="Search entry, item, supplier, MR"
+        searchLabel="Search stock entries"
         extra={<ExportButton onExport={exportRows} />}
       >
         <Select<StockEntryType> allowClear placeholder="All types" aria-label="Type" value={type} onChange={(v) => page.setFilter('type', v)} style={{ width: 160 }} options={STOCK_ENTRY_TYPES.map((t) => ({ value: t, label: STOCK_ENTRY_TYPE_LABELS[t] }))} />

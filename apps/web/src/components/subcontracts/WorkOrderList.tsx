@@ -70,7 +70,7 @@ function workOrderColumns({ showProject, onOpen, onEdit, sortOrderFor }: { showP
       render: (v) => <strong className="mono">{formatINR(v)}</strong>,
       total: (rows) => formatINR(rows.reduce((n, r) => n + toNumber(r.value), 0)),
     },
-    { title: 'Billed', key: 'billed', width: 130, render: (_, r) => (r.status === 'APPROVED' ? <Progress percent={r.billedPct} size="small" style={{ margin: 0 }} /> : '-') },
+    { title: 'Billed', key: 'billed', width: 130, render: (_, r) => (r.status === 'APPROVED' ? <Progress percent={r.billedPct} size="small" style={{ margin: 0 }} aria-label={`${r.billedPct}% billed`} /> : '-') },
     { key: 'submittedByName', title: 'Raised by', dataIndex: 'submittedByName', width: 140, defaultHidden: true },
     {
       title: 'Status',
@@ -145,6 +145,7 @@ export function WorkOrderList({ projectId: fixedProject, openId: initialOpen }: 
         search={page.search}
         onSearch={page.setSearch}
         searchPlaceholder="Search WO no., subcontractor, work"
+        searchLabel="Search work orders"
         extra={
           <>
             <ExportButton onExport={exportRows} />

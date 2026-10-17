@@ -94,6 +94,7 @@ export function DocumentList({ projectId: fixedProject, onOpen }: { projectId?: 
         search={page.search}
         onSearch={page.setSearch}
         searchPlaceholder="Search number or title"
+        searchLabel="Search documents"
         extra={newButton}
       >
         <Select<DocumentKind> allowClear placeholder="All types" aria-label="Type" value={kind} onChange={(v) => page.setFilter('kind', v)} style={{ width: 150 }} options={DOCUMENT_KINDS.map((k) => ({ value: k, label: DOCUMENT_KIND_LABELS[k] }))} />

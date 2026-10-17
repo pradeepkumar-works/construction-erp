@@ -188,7 +188,7 @@ function VendorsTab({ editable, onEdit, emptyAction }: { editable: boolean; onEd
     <>
       {frame.views}
       {error && <QueryError error={error} onRetry={() => refetch()} />}
-      <ListToolbar projectId={undefined} onProject={() => undefined} hideProject search={page.search} onSearch={page.setSearch} searchPlaceholder="Search name, GSTIN, PAN, contact" extra={<ExportButton onExport={exportRows} />}>
+      <ListToolbar projectId={undefined} onProject={() => undefined} hideProject search={page.search} onSearch={page.setSearch} searchPlaceholder="Search name, GSTIN, PAN, contact" searchLabel="Search vendors" extra={<ExportButton onExport={exportRows} />}>
         <Select<VendorKind> allowClear placeholder="Supplies anything" aria-label="Supplies" style={{ width: 190 }} value={kind} onChange={(v) => page.setFilter('kind', v)} options={VENDOR_KINDS.map((k) => ({ value: k, label: VENDOR_KIND_LABELS[k] }))} />
         <Select<MsmeCategory> allowClear placeholder="MSME or not" aria-label="MSME" style={{ width: 150 }} value={msme} onChange={(v) => page.setFilter('msme', v)} options={MSME_CATEGORIES.map((c) => ({ value: c, label: MSME_CATEGORY_LABELS[c] }))} />
         <Checkbox checked={includeInactive} onChange={(e) => page.setFilter('inactive', e.target.checked ? '1' : undefined)}>

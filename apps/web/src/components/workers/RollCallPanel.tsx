@@ -200,8 +200,8 @@ export function RollCallPanel({ projectId: fixedProject }: { projectId?: string 
     <div className="roll-call">
       <CardToolbar wrap gap={8} align="center">
         {!fixedProject ? <ProjectSelect value={projectPick} onChange={setProjectPick} placeholder="Pick a project" allowClear={false} /> : null}
-        <DatePicker value={date} onChange={(v) => v && setDate(v)} format="DD MMM YYYY" allowClear={false} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
-        <Input.Search allowClear placeholder="Search name, trade" style={{ width: 200 }} value={search} onChange={(e) => setSearch(e.target.value)} />
+        <DatePicker value={date} onChange={(v) => v && setDate(v)} format="DD MMM YYYY" allowClear={false} disabledDate={(d) => d.isAfter(dayjs(), 'day')} aria-label="Date" />
+        <Input.Search allowClear placeholder="Search name, trade" aria-label="Search workers" style={{ width: 200 }} value={search} onChange={(e) => setSearch(e.target.value)} />
         <div style={{ flex: 1 }} />
         {!readOnly && data?.rows.length ? (
           <>

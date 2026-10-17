@@ -31,6 +31,12 @@ export function makeTheme({ dark, compact }: Appearance): ThemeConfig {
           colorBorderSecondary: c.nightBorderSoft,
           colorLink: c.nightLink,
           colorLinkHover: c.accentLight,
+          // The same AA fixes as the light theme, on the night surfaces: brighter quiet text and a primary text blue that
+          // reads on navy (the badge red is set on Badge alone, since red text needs the lighter shade here).
+          colorTextTertiary: c.nightTextTertiary,
+          colorTextDescription: c.nightTextTertiary,
+          colorTextPlaceholder: c.nightTextPlaceholder,
+          colorPrimaryText: c.nightLink,
         }
       : {
           colorLink: c.link,
@@ -39,6 +45,14 @@ export function makeTheme({ dark, compact }: Appearance): ThemeConfig {
           // Typography type="danger" / "success" and figures coloured from the token read these.
           colorErrorText: c.danger,
           colorSuccessText: c.success,
+          colorWarningText: c.pending,
+          // Badges, danger buttons and success fills carry white or coloured text, so they use the AA-safe shades.
+          colorError: c.danger,
+          colorSuccess: c.success,
+          // antd's 45% and 25% black fall below WCAG AA (4.5:1) on white and on the canvas.
+          colorTextTertiary: c.textTertiary,
+          colorTextDescription: c.textTertiary,
+          colorTextPlaceholder: c.textPlaceholder,
         }),
   };
   // The header is a card-coloured bar in either mode.
@@ -51,20 +65,31 @@ export function makeTheme({ dark, compact }: Appearance): ThemeConfig {
     components: {
       Layout: { headerBg: surface, siderBg: c.ink, bodyBg: dark ? undefined : c.canvas, triggerBg: c.inkDeep, triggerColor: c.accentLight },
       // Primary buttons are Nirmaan blue with white text.
-      Button: { colorPrimary: c.accent, colorPrimaryHover: c.accentDeep, colorPrimaryActive: c.accentDeep, primaryColor: c.onAccent, primaryShadow: 'none', fontWeight: 600 },
+      Button: {
+        colorPrimary: c.accent,
+        colorPrimaryHover: c.accentDeep,
+        colorPrimaryActive: c.accentDeep,
+        primaryColor: c.onAccent,
+        primaryShadow: 'none',
+        fontWeight: 600,
+        // Reject and Delete stay readable on the night surfaces (WCAG AA).
+        ...(dark ? { colorError: c.nightDanger, dangerColor: c.nightLayout } : {}),
+      },
       Menu: {
         darkItemBg: c.ink,
         darkSubMenuItemBg: c.ink,
         darkItemSelectedBg: c.accent,
         darkItemSelectedColor: c.onAccent,
         darkItemHoverBg: c.primaryDeep,
-        darkGroupTitleColor: 'rgba(255,255,255,0.45)',
+        darkGroupTitleColor: c.inkCaption,
         itemHeight: 36,
         itemMarginBlock: 2,
         groupTitleFontSize: 11,
         groupTitleLineHeight: 1.2,
       },
       Card: { headerFontSize: 15 },
+      // The selected tab's text is primary-coloured, which in dark mode needs the lighter blue to read.
+      ...(dark ? { Badge: { colorError: c.danger }, Tabs: { itemSelectedColor: c.nightLink, itemActiveColor: c.nightLink, itemHoverColor: c.accentLight, inkBarColor: c.nightLink } } : {}),
     },
   };
 }

@@ -15,7 +15,7 @@ export function PortalOverview({ project: p }: { project: PortalProjectDetailDto
         column={{ xs: 1, md: 2, xl: 3 }}
         style={{ marginBottom: 16 }}
         items={[
-          { key: 'pp', label: 'Physical progress', children: <Progress percent={p.physicalProgressPct} size="small" style={{ minWidth: 160, margin: 0 }} /> },
+          { key: 'pp', label: 'Physical progress', children: <Progress percent={p.physicalProgressPct} size="small" style={{ minWidth: 160, margin: 0 }} aria-label={`Physical progress ${p.physicalProgressPct}%`} /> },
           { key: 'te', label: 'Contract period gone', children: p.timeElapsedPct != null ? `${p.timeElapsedPct}%` : '-' },
           { key: 'cv', label: 'Contract value', children: p.contractValue ? formatINR(p.contractValue) : '-' },
           { key: 'wo', label: 'Work order', children: p.workOrderNo ?? '-' },
@@ -37,7 +37,7 @@ export function PortalOverview({ project: p }: { project: PortalProjectDetailDto
           { title: 'Activity', dataIndex: 'name' },
           { title: 'Planned', key: 'planned', width: 200, render: (_, a) => (a.plannedStart && a.plannedEnd ? `${formatDate(a.plannedStart)} to ${formatDate(a.plannedEnd)}` : '-') },
           { title: 'Quantity', key: 'qty', align: 'right', width: 220, render: (_, a) => `${formatQty(a.doneQty)} of ${formatQty(a.plannedQty)} ${a.unit}` },
-          { title: 'Done', dataIndex: 'pct', width: 180, render: (v: number) => <Progress percent={v} size="small" status={progressStatus(v)} style={{ margin: 0 }} /> },
+          { title: 'Done', dataIndex: 'pct', width: 180, render: (v: number) => <Progress percent={v} size="small" status={progressStatus(v)} style={{ margin: 0 }} aria-label={`${v}% done`} /> },
         ]}
       />
     </div>

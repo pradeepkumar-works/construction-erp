@@ -260,6 +260,7 @@ export function HandoverPanel({ projectId, members, initialDefectId }: { project
             }}
             placeholder="Number, location, trade"
             width={220}
+            aria-label="Search snags and defects"
           />
           <span style={{ flex: 1 }} />
           {reporter ? (
@@ -408,7 +409,7 @@ function CloseoutChecklist({ projectId, items, editable, doneCount }: { projectI
       size="small"
       className="closeout-checklist"
       title="Close-out checklist"
-      extra={items.length ? <Progress percent={Math.round((doneCount / items.length) * 100)} size="small" style={{ width: 160, margin: 0 }} format={() => `${doneCount}/${items.length}`} /> : null}
+      extra={items.length ? <Progress percent={Math.round((doneCount / items.length) * 100)} size="small" style={{ width: 160, margin: 0 }} format={() => `${doneCount}/${items.length}`} aria-label={`Close-out checklist: ${doneCount} of ${items.length} done`} /> : null}
     >
       {items.length === 0 ? (
         <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No checklist yet. It starts with the standard close-out lines when completion is recorded.">

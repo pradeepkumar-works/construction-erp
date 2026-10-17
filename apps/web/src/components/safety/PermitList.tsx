@@ -111,6 +111,7 @@ export function PermitList({ projectId: fixedProject, initialOpenId }: { project
         search={page.search}
         onSearch={page.setSearch}
         searchPlaceholder="Search no., place, work"
+        searchLabel="Search permits"
         extra={
           <>
             <ExportButton

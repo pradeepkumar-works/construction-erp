@@ -26,7 +26,7 @@ function CashBar({ i }: { i: ImprestDto }) {
     <div>
       <b className={i.low ? 'text-danger' : undefined}>{rs(i.cashInHand)}</b>
       <span className="text-muted" style={{ fontSize: 12 }}> of {formatINR(i.floatAmount)}</span>
-      <Progress percent={Math.round(pct)} size="small" showInfo={false} status={i.low ? 'exception' : 'normal'} />
+      <Progress percent={Math.round(pct)} size="small" showInfo={false} status={i.low ? 'exception' : 'normal'} aria-label={`Cash in hand: ${Math.round(pct)}% of float`} />
     </div>
   );
 }

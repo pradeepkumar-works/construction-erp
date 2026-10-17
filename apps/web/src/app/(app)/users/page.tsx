@@ -176,7 +176,7 @@ export default function UsersPage() {
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       <Card size="small">
         {frame.views}
-        <ListToolbar projectId={undefined} onProject={() => undefined} hideProject search={page.search} onSearch={page.setSearch} searchPlaceholder="Search name, email, phone" extra={<ExportButton onExport={exportRows} />}>
+        <ListToolbar projectId={undefined} onProject={() => undefined} hideProject search={page.search} onSearch={page.setSearch} searchPlaceholder="Search name, email, phone" searchLabel="Search users" extra={<ExportButton onExport={exportRows} />}>
           <Select<RoleKey> allowClear placeholder="All roles" aria-label="Role" value={roleKey} onChange={(v) => page.setFilter('roleKey', v)} style={{ width: 220 }} options={ROLE_KEYS.map((r) => ({ value: r, label: ROLE_LABELS[r] }))} />
           <Select<'yes' | 'no'>
             allowClear
