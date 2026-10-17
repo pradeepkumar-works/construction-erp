@@ -101,7 +101,7 @@ export function MeasurementRecord({ id, mode, open, onClose, onEdit }: RecordPro
               ),
             },
           ],
-          activity: { type: 'measurement', id: data.id },
+          activity: { type: 'measurement', id: data.id, submission: data },
           actions: (size) => (
             <>
               <EditResubmitButton entry={data} onEdit={onEdit} size={size} />

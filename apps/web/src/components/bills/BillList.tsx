@@ -100,7 +100,7 @@ export function BillList({ projectId: fixedProject, openId: initialOpen }: { pro
 
   const exportRows = async () => {
     const rows = await fetchAllPages<RaBillDto>('/ra-bills', { ...filters });
-    downloadXlsx(exportFileName('ra-bills'), 'RA bills', BILL_EXPORT, rows);
+    await downloadXlsx(exportFileName('ra-bills'), 'RA bills', BILL_EXPORT, rows);
     return rows.length;
   };
 

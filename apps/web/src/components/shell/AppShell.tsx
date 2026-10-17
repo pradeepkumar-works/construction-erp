@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
-import { Avatar, Breadcrumb, Button, Drawer, Dropdown, Grid, Layout, Space, Tag, Tooltip, Typography, theme } from 'antd';
+import { Avatar, Breadcrumb, Button, Drawer, Dropdown, Flex, Grid, Layout, Space, Tag, Tooltip, Typography, theme } from 'antd';
 import type { MenuProps } from 'antd';
 import { BgColorsOutlined, CheckOutlined, ColumnHeightOutlined, LogoutOutlined, MenuOutlined, SearchOutlined, StarFilled, StarOutlined, UserOutlined } from '@ant-design/icons';
 import type { AuthUser } from '@erp/shared';
@@ -206,7 +206,7 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
             gap: token.marginSM,
           }}
         >
-          <Space size={token.marginSM} style={{ minWidth: 0 }}>
+          <Flex gap={token.marginSM} align="center" style={{ minWidth: 0, flex: 1 }}>
             {isMobile ? (
               <>
                 <Button type="text" icon={<MenuOutlined />} onClick={() => setMobileOpen(true)} aria-label="Open menu" data-tour="menu" />
@@ -222,18 +222,19 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
             ) : (
               <>
                 {!guest && (
-                  <span data-tour="project">
+                  <span data-tour="project" style={{ flexShrink: 0 }}>
                     <ProjectSwitcher width={roomy ? 240 : 200} />
                   </span>
                 )}
                 {/* The company is in the sidebar; the header says where you are. */}
                 {trail && (
                   <Breadcrumb
+                    className="header-crumbs"
                     items={[
                       ...(trail.section ? [{ title: trail.section }] : []),
                       { title: pathname === trail.item.href ? trail.item.label : <Link href={trail.item.href}>{trail.item.label}</Link> },
                       ...(projectCrumb
-                        ? [{ title: <span style={{ display: 'inline-block', maxWidth: roomy ? 320 : 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'bottom' }} title={projectCrumb.name}>{projectCrumb.name}</span> }]
+                        ? [{ title: <span title={projectCrumb.name}>{projectCrumb.name}</span> }]
                         : []),
                     ]}
                   />
@@ -252,8 +253,8 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
                 )}
               </>
             )}
-          </Space>
-          <Space size={token.marginXXS}>
+          </Flex>
+          <Space size={token.marginXXS} style={{ flexShrink: 0 }}>
             {openSearch &&
               (isMobile || !roomy ? (
                 <Tooltip title={isMobile ? undefined : `Search  ${searchShortcut()}`}>

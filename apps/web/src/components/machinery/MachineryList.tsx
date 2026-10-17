@@ -57,7 +57,7 @@ export function MachineryList({ projectId: fixedProject }: { projectId?: string 
 
   const exportRows = async () => {
     const rows = await fetchAllPages<MachineryLogDto>('/machinery-logs', { ...filters });
-    downloadXlsx(exportFileName('machinery-logs'), 'machinery', MACHINERY_EXPORT, rows);
+    await downloadXlsx(exportFileName('machinery-logs'), 'machinery', MACHINERY_EXPORT, rows);
     return rows.length;
   };
 

@@ -10,6 +10,7 @@ import { MAX_TEMPLATE_DAYS, MAX_TEMPLATE_ITEMS, PROJECT_TYPE_LABELS, templateSpa
 import { api, errorMessage } from '@/lib/api';
 import { TimelineBar } from './TimelineBar';
 import { UnitInput } from '@/components/common/UnitInput';
+import { inSentence } from '@/lib/format';
 
 type Row = ActivityTemplateItem & { key: number };
 let seq = 0;
@@ -114,7 +115,7 @@ export function TemplateEditor({ template, editable }: { template: ActivityTempl
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
         <Typography.Text type="secondary">
           {template.isDefault ? <Tag color="blue">Standard list</Tag> : <Tag color="green">Your list</Tag>}
-          {rows.length} activities for a {PROJECT_TYPE_LABELS[template.projectType].toLowerCase()} project. When a project has start and end dates the schedule is stretched or squeezed to fit them.
+          {rows.length} activities for a {inSentence(PROJECT_TYPE_LABELS[template.projectType])} project. When a project has start and end dates the schedule is stretched or squeezed to fit them.
         </Typography.Text>
         {editable ? (
           <Space>

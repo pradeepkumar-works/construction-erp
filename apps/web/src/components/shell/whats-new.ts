@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-10-ux-fixes',
+    date: '2026-10-17',
+    title: 'Small things, fixed',
+    points: [
+      'Every entry\'s Activity shows who sent it and who reviewed it, including entries made before the full history was kept.',
+      'The sign-in form starts empty and offers the email keyboard on phones; demo accounts show only on the demo site.',
+      'A long project name stays on one line in the header, and green status tags and team initials read clearly in both themes.',
+    ],
+  },
+  {
     id: '2026-10-ask-nirmaan',
     date: '2026-10-17',
     title: 'Ask Nirmaan',

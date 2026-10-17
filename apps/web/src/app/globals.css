@@ -447,6 +447,11 @@ h4.ant-typography,
 :root .ant-tag.ant-tag-magenta:not(.ant-tag-disabled):is(.ant-tag-filled, .ant-tag-outlined) { color: var(--ant-magenta-8); }
 :root .ant-tag.ant-tag-red:not(.ant-tag-disabled):is(.ant-tag-filled, .ant-tag-outlined) { color: var(--ant-red-8); }
 :root .ant-tag.ant-tag-pink:not(.ant-tag-disabled):is(.ant-tag-filled, .ant-tag-outlined) { color: var(--ant-pink-8); }
+/* Status tags (success, warning, error, processing) take the AA text shades of the theme rather than the fill colours. */
+:root .ant-tag.ant-tag-success:not(.ant-tag-disabled):is(.ant-tag-filled, .ant-tag-outlined) { color: var(--ant-color-success-text); }
+:root .ant-tag.ant-tag-warning:not(.ant-tag-disabled):is(.ant-tag-filled, .ant-tag-outlined) { color: var(--ant-color-warning-text); }
+:root .ant-tag.ant-tag-error:not(.ant-tag-disabled):is(.ant-tag-filled, .ant-tag-outlined) { color: var(--ant-color-error-text); }
+:root .ant-tag.ant-tag-processing:not(.ant-tag-disabled):is(.ant-tag-filled, .ant-tag-outlined) { color: var(--ant-color-primary-text); }
 
 /* Keyboard focus is always visible: a two-pixel ring in the primary colour on anything focused from the keyboard. */
 :where(a, button, [role='button'], [role='tab'], [role='menuitem'], [role='option'], [tabindex]):focus-visible {
@@ -469,4 +474,19 @@ h4.ant-typography,
 }
 .skip-link:focus {
   transform: none;
+}
+
+/* The header's breadcrumb stays on one line and gives way to the search box; a long project name ends in an ellipsis. */
+.ant-breadcrumb.header-crumbs {
+  min-width: 0;
+  overflow: hidden;
+}
+.ant-breadcrumb.header-crumbs ol {
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+.ant-breadcrumb.header-crumbs li:last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }

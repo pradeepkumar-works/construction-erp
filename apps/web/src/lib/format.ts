@@ -43,6 +43,14 @@ export function formatDateTime(value: string | null | undefined): string {
   return d.isValid() ? d.format('DD MMM YYYY, HH:mm') : value;
 }
 
+/** A label inside a sentence: "RA Bill" reads "RA bill", "Measurement (MB)" reads "measurement (MB)"; abbreviations keep their capitals. */
+export function inSentence(label: string): string {
+  return label
+    .split(' ')
+    .map((w) => (/^\(?[A-Z0-9]{2,}\)?$/.test(w) ? w : w.toLowerCase()))
+    .join(' ');
+}
+
 export function formatPct(value: number | null | undefined): string {
   if (value === null || value === undefined) return '-';
   return `${Math.round(value * 10) / 10}%`;

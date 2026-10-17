@@ -6,7 +6,6 @@ import { Button, ErrorBanner, Input, Intro, Screen, useIntroSeen } from '../src/
 import { errorMessage, request } from '../src/api/client';
 import type { AuthOptionsDto } from '@erp/shared';
 import { PRODUCT_NAME } from '@erp/shared';
-import { API_URL } from '../src/config';
 import { useT } from '../src/i18n/LanguageContext';
 import { colors, fonts, radius, spacing, touch, typography } from '../src/theme';
 
@@ -28,6 +27,13 @@ export default function LoginScreen() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [introSeen, markIntroSeen] = useIntroSeen();
+  // The demo accounts show only where the server offers them (DEMO_LOGIN), never on a company's own server.
+  const [demo, setDemo] = useState(false);
+  useEffect(() => {
+    request<AuthOptionsDto>('/auth/options')
+      .then((o) => setDemo(o.demoLogin))
+      .catch(() => setDemo(false));
+  }, []);
   // The form settles into place once, after the intro check.
   const rise = useRef(new Animated.Value(0)).current;
   useEffect(() => {
@@ -126,34 +132,37 @@ export default function LoginScreen() {
         {notice ? <Text style={styles.notice}>{notice}</Text> : null}
         <Button title={t('Sign in')} onPress={submit} loading={busy} style={styles.submit} />
 
-        <View style={styles.divider}>
-          <View style={styles.rule} />
-          <Text style={styles.dividerText}>{t('Try a demo account')}</Text>
-          <View style={styles.rule} />
-        </View>
-        <View style={styles.chips}>
-          {DEMO_ACCOUNTS.map((a) => {
-            const on = email.trim().toLowerCase() === a.email;
-            return (
-              <Pressable
-                key={a.email}
-                onPress={() => {
-                  setEmail(a.email);
-                  setPassword(DEMO_PASSWORD);
-                  setError(null);
-                }}
-                accessibilityRole="button"
-                accessibilityState={{ selected: on }}
-                accessibilityHint={t('Fills in {email}', { email: a.email })}
-                style={({ pressed }) => [styles.chip, on && styles.chipOn, pressed && styles.pressed]}
-              >
-                <Text style={[styles.chipText, on && styles.chipTextOn]}>{t(a.role)}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
-        <Text style={styles.demoNote}>{t('Fills in the form. Every demo account uses the password {password}.', { password: DEMO_PASSWORD })}</Text>
-        <Text style={styles.api}>{API_URL}</Text>
+        {demo ? (
+          <>
+            <View style={styles.divider}>
+              <View style={styles.rule} />
+              <Text style={styles.dividerText}>{t('Try a demo account')}</Text>
+              <View style={styles.rule} />
+            </View>
+            <View style={styles.chips}>
+              {DEMO_ACCOUNTS.map((a) => {
+                const on = email.trim().toLowerCase() === a.email;
+                return (
+                  <Pressable
+                    key={a.email}
+                    onPress={() => {
+                      setEmail(a.email);
+                      setPassword(DEMO_PASSWORD);
+                      setError(null);
+                    }}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: on }}
+                    accessibilityHint={t('Fills in {email}', { email: a.email })}
+                    style={({ pressed }) => [styles.chip, on && styles.chipOn, pressed && styles.pressed]}
+                  >
+                    <Text style={[styles.chipText, on && styles.chipTextOn]}>{t(a.role)}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            <Text style={styles.demoNote}>{t('Fills in the form. Every demo account uses the password {password}.', { password: DEMO_PASSWORD })}</Text>
+          </>
+        ) : null}
       </Animated.View>
     </Screen>
   );
@@ -182,5 +191,4 @@ const styles = StyleSheet.create({
   chipTextOn: { color: colors.primary, fontWeight: '600' },
   pressed: { opacity: 0.7 },
   demoNote: { ...typography.caption, marginTop: spacing.md },
-  api: { ...typography.caption, fontSize: 11, marginTop: spacing.xl, textAlign: 'center' },
 });

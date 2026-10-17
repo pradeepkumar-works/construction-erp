@@ -109,7 +109,7 @@ export function MrRecord({ id, mode, open, onClose, onEdit }: RecordProps & { mo
             ...(purchasing ? [{ key: 'buying', title: 'Quotations and purchase orders', children: <QuotationsPanel request={data} /> }] : []),
             ...(data.attachments.length > 0 ? [{ key: 'attachments', title: 'Attachments', count: data.attachments.length, children: <AttachmentGallery attachments={data.attachments} /> }] : []),
           ],
-          activity: { type: 'material_request', id: data.id },
+          activity: { type: 'material_request', id: data.id, submission: data },
           actions: (size) => (
             <>
               {mayReceive ? (

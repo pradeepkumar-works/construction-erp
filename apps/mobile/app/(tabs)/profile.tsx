@@ -54,17 +54,19 @@ export default function ProfileScreen() {
       <MessagingCard />
       <LanguageCard />
       <AppearanceCard />
-      <Card title={t('Connection')}>
-        <View style={styles.apiRow}>
-          <Ionicons name="server-outline" size={18} color={colors.textMuted} />
-          <Text style={styles.api} selectable>
-            {API_URL}
-          </Text>
-        </View>
-        <Text style={typography.caption}>{t('Set EXPO_PUBLIC_API_URL before starting Expo to point the app at another server.')}</Text>
-        <Text style={typography.caption}>{t('App version {version}', { version: Constants.expoConfig?.version ?? '-' })}</Text>
-      </Card>
+      {__DEV__ ? (
+        <Card title={t('Connection')}>
+          <View style={styles.apiRow}>
+            <Ionicons name="server-outline" size={18} color={colors.textMuted} />
+            <Text style={styles.api} selectable>
+              {API_URL}
+            </Text>
+          </View>
+          <Text style={typography.caption}>{t('Set EXPO_PUBLIC_API_URL before starting Expo to point the app at another server.')}</Text>
+        </Card>
+      ) : null}
       <Button title={t('Sign out')} variant="danger" icon="log-out-outline" onPress={confirmLogout} />
+      <Text style={[typography.caption, styles.version]}>{t('App version {version}', { version: Constants.expoConfig?.version ?? '-' })}</Text>
     </Screen>
   );
 }
@@ -79,6 +81,7 @@ const styles = StyleSheet.create({
   choiceOff: { opacity: 0.55 },
   note: { marginTop: spacing.xs },
   reload: { marginTop: spacing.md },
+  version: { textAlign: 'center', marginTop: spacing.md },
 });
 
 /** English unless the user picks another language here; the choice stays on this phone. */

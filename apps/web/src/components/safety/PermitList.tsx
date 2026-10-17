@@ -117,7 +117,7 @@ export function PermitList({ projectId: fixedProject, initialOpenId }: { project
             <ExportButton
               onExport={async () => {
                 const rows = await fetchAllPages<WorkPermitDto>('/safety/permits', filters);
-                downloadXlsx(exportFileName('permits-to-work'), 'permits', EXPORT, rows);
+                await downloadXlsx(exportFileName('permits-to-work'), 'permits', EXPORT, rows);
                 return rows.length;
               }}
             />

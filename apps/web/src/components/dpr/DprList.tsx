@@ -48,7 +48,7 @@ export function DprList({ projectId: fixedProject, newLabel }: { projectId?: str
 
   const exportRows = async () => {
     const rows = await fetchAllPages<DailyReportDto>('/dpr', { ...filters });
-    downloadXlsx(exportFileName('dpr'), 'dpr', DPR_EXPORT, rows);
+    await downloadXlsx(exportFileName('dpr'), 'dpr', DPR_EXPORT, rows);
     return rows.length;
   };
 

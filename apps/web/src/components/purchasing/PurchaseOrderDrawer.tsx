@@ -244,7 +244,7 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
               : []),
             { key: 'documents', title: 'Documents', count: data.attachments.length, children: <AttachmentGallery attachments={data.attachments} /> },
           ],
-          activity: { type: 'purchase_order', id: data.id },
+          activity: { type: 'purchase_order', id: data.id, submission: data },
           actions: (size) => (
             <>
               {editable && data.status === 'DRAFT' && user && canResubmit(user, data) ? (

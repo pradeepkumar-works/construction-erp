@@ -169,7 +169,7 @@ export function StockBalances({ projectId: fixedProject, initialLow = false, ini
 
   const exportRows = async () => {
     const all = await fetchAllPages<StockBalanceDto>('/stock/balances', { ...filters });
-    downloadXlsx(exportFileName('stock-balance'), 'stock', STOCK_BALANCE_EXPORT, all);
+    await downloadXlsx(exportFileName('stock-balance'), 'stock', STOCK_BALANCE_EXPORT, all);
     return all.length;
   };
 

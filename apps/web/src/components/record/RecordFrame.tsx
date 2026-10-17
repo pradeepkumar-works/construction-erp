@@ -12,6 +12,7 @@ import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { PageHeader } from '@/components/common/PageHeader';
 import { AuditTrail } from '@/components/common/AuditTrail';
 import type { Lifecycle } from './lifecycle';
+import type { SubmissionBase } from '@erp/shared';
 
 /** One block of a record: a table of lines, the photos, the totals… In the drawer it sits under a divider, on the page in its own card. */
 export interface RecordSection {
@@ -50,7 +51,8 @@ export interface RecordFrameProps {
     /** Alerts above the sections (a draft, a closed order). */
     notices?: React.ReactNode;
     sections: RecordSection[];
-    activity?: { type: ApprovalTypeParam; id: string };
+    /** The audit log; `submission` stands in for it on entries made before the log existed (or seeded). */
+    activity?: { type: ApprovalTypeParam; id: string; submission?: SubmissionBase };
     /** The record's actions, at the drawer's top or in the page's footer. */
     actions?: (size: ActionSize) => React.ReactNode;
     /** Its print-out; the page falls back to the browser's print of itself. */
@@ -129,7 +131,7 @@ function RecordPane({ loading, error, onRetry, record, children }: RecordFramePr
               <Divider titlePlacement="start" plain>
                 Activity
               </Divider>
-              <AuditTrail type={record.activity.type} id={record.activity.id} />
+              <AuditTrail type={record.activity.type} id={record.activity.id} submission={record.activity.submission} />
             </>
           )}
         </>
@@ -199,7 +201,7 @@ function RecordDrawer({ open, onClose, drawerSize = 820, kind, loading, error, o
               <Divider titlePlacement="start" plain>
                 Activity
               </Divider>
-              <AuditTrail type={record.activity.type} id={record.activity.id} />
+              <AuditTrail type={record.activity.type} id={record.activity.id} submission={record.activity.submission} />
             </>
           )}
         </>
@@ -294,7 +296,7 @@ function RecordPage({ kind, list, loading, error, onRetry, record, children }: R
                   style={{ position: 'sticky', top: top + token.marginSM }}
                   styles={{ body: { maxHeight: `calc(100vh - ${top + 160}px)`, overflowY: 'auto' } }}
                 >
-                  <AuditTrail type={record.activity.type} id={record.activity.id} />
+                  <AuditTrail type={record.activity.type} id={record.activity.id} submission={record.activity.submission} />
                 </Card>
               </Col>
             )}

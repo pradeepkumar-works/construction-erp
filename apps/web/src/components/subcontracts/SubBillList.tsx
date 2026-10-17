@@ -134,7 +134,7 @@ export function SubBillList({ projectId: fixedProject, openId: initialOpen }: { 
 
   const exportRows = async () => {
     const rows = await fetchAllPages<SubcontractBillDto>('/subcontract-bills', { ...filters });
-    downloadXlsx(exportFileName('subcontractor-bills'), 'Subcontractor bills', SUBCONTRACT_BILL_EXPORT, rows);
+    await downloadXlsx(exportFileName('subcontractor-bills'), 'Subcontractor bills', SUBCONTRACT_BILL_EXPORT, rows);
     return rows.length;
   };
 

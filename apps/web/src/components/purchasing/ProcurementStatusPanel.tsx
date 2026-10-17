@@ -55,7 +55,7 @@ export function ProcurementStatusPanel() {
 
   const exportRows = async () => {
     const rows = (data?.rows ?? []).flatMap((o) => o.lines.map((l) => ({ o, l })));
-    downloadXlsx(exportFileName('procurement-status'), 'status', EXPORT, rows);
+    await downloadXlsx(exportFileName('procurement-status'), 'status', EXPORT, rows);
     return rows.length;
   };
 

@@ -37,6 +37,8 @@ export function makeTheme({ dark, compact }: Appearance): ThemeConfig {
           colorTextDescription: c.nightTextTertiary,
           colorTextPlaceholder: c.nightTextPlaceholder,
           colorPrimaryText: c.nightLink,
+          // Typography type="danger" and red figures: antd's dark red falls under 4.5:1 on the night surfaces.
+          colorErrorText: c.nightDanger,
         }
       : {
           colorLink: c.link,
@@ -49,6 +51,8 @@ export function makeTheme({ dark, compact }: Appearance): ThemeConfig {
           // Badges, danger buttons and success fills carry white or coloured text, so they use the AA-safe shades.
           colorError: c.danger,
           colorSuccess: c.success,
+          colorSuccessBg: c.successBg,
+          colorSuccessBorder: c.successBorder,
           // antd's 45% and 25% black fall below WCAG AA (4.5:1) on white and on the canvas.
           colorTextTertiary: c.textTertiary,
           colorTextDescription: c.textTertiary,
@@ -88,6 +92,8 @@ export function makeTheme({ dark, compact }: Appearance): ThemeConfig {
         groupTitleLineHeight: 1.2,
       },
       Card: { headerFontSize: 15 },
+      // Initials avatars: antd fills them with the placeholder grey, which white initials fail AA on in dark mode.
+      Avatar: { colorTextPlaceholder: c.muted },
       // The selected tab's text is primary-coloured, which in dark mode needs the lighter blue to read.
       ...(dark ? { Badge: { colorError: c.danger }, Tabs: { itemSelectedColor: c.nightLink, itemActiveColor: c.nightLink, itemHoverColor: c.accentLight, inkBarColor: c.nightLink } } : {}),
     },

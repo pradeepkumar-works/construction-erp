@@ -93,7 +93,7 @@ export function RiskList({ projectId: fixedProject, initialProject, initialOpenI
 
   const exportRows = async () => {
     const rows = await fetchAllPages<RiskDto>('/risks', { ...filters });
-    downloadXlsx(exportFileName('delay-risk-register'), 'register', RISK_EXPORT, rows);
+    await downloadXlsx(exportFileName('delay-risk-register'), 'register', RISK_EXPORT, rows);
     return rows.length;
   };
 

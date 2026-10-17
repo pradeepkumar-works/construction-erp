@@ -68,7 +68,7 @@ export async function request<T>(path: string, opts: RequestOptions = {}): Promi
       body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
     });
   } catch {
-    throw new ApiError(0, `Cannot reach the server at ${API_URL}. Check EXPO_PUBLIC_API_URL and that the API is running.`);
+    throw new ApiError(0, 'Cannot reach Nirmaan. Check your signal and try again.');
   }
   return handle<T>(res);
 }

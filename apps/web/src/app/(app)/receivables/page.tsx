@@ -84,7 +84,7 @@ function ReceiptsTab({ projectId }: { projectId?: string }) {
 
   const exportRows = async () => {
     const all = await fetchAllPages<ReceiptDto>('/receipts', { ...filters });
-    downloadXlsx(exportFileName('receipts'), 'Receipts', RECEIPT_EXPORT, all);
+    await downloadXlsx(exportFileName('receipts'), 'Receipts', RECEIPT_EXPORT, all);
     return all.length;
   };
 
@@ -232,11 +232,11 @@ export default function ReceivablesPage() {
   const t = data?.totals;
 
   const exportProjects = async () => {
-    downloadXlsx(exportFileName('receivables'), 'Receivables', RECEIVABLE_EXPORT, data?.projects ?? []);
+    await downloadXlsx(exportFileName('receivables'), 'Receivables', RECEIVABLE_EXPORT, data?.projects ?? []);
     return data?.projects.length ?? 0;
   };
   const exportOpen = async () => {
-    downloadXlsx(exportFileName('open-bills'), 'Open bills', OPEN_BILL_EXPORT, data?.openBills ?? []);
+    await downloadXlsx(exportFileName('open-bills'), 'Open bills', OPEN_BILL_EXPORT, data?.openBills ?? []);
     return data?.openBills.length ?? 0;
   };
 

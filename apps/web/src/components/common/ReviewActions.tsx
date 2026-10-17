@@ -9,6 +9,7 @@ import { useAuth } from '@/lib/auth';
 import { errorMessage } from '@/lib/api';
 import { useReview, type ApprovalTypeParam } from '@/lib/queries';
 import { approveTheme } from '@/lib/theme';
+import { inSentence } from '@/lib/format';
 
 export const REVIEW_LABELS: Record<ReviewDecision, string> = {
   APPROVE: 'Approve',
@@ -132,7 +133,7 @@ export function ReviewDialog({ type, id, decision, onClose, onDone }: { type: Ap
         </Form.Item>
       </Form>
       <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-        Ctrl Enter to {decision ? REVIEW_LABELS[decision].toLowerCase() : 'confirm'}
+        Ctrl Enter to {decision ? inSentence(REVIEW_LABELS[decision]) : 'confirm'}
       </Typography.Text>
     </Modal>
   );

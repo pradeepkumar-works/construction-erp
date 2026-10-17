@@ -122,7 +122,7 @@ export function VendorBillList({ projectId: fixedProject, openId: initialOpen }:
 
   const exportRows = async () => {
     const rows = await fetchAllPages<VendorBillDto>('/vendor-bills', { ...filters });
-    downloadXlsx(exportFileName('vendor-bills'), 'Vendor bills', VENDOR_BILL_EXPORT, rows);
+    await downloadXlsx(exportFileName('vendor-bills'), 'Vendor bills', VENDOR_BILL_EXPORT, rows);
     return rows.length;
   };
 

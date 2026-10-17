@@ -6,7 +6,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { GrnQcStatus, StockEntryDto, StockLineDto } from '@erp/shared';
 import { GRN_QC_STATUSES, GRN_QC_STATUS_LABELS } from '@erp/shared';
 import { api, errorMessage } from '@/lib/api';
-import { formatQty } from '@/lib/format';
+import { formatQty, inSentence } from '@/lib/format';
 
 const COLORS: Record<GrnQcStatus, string> = { ACCEPTED: 'green', PARTLY_ACCEPTED: 'gold', REJECTED: 'red' };
 
@@ -58,7 +58,7 @@ export function GrnQcModal({ entry, open, onClose }: { entry: StockEntryDto; ope
         })
       ).data,
     onSuccess: (e) => {
-      message.success(`${e.entryNo}: ${GRN_QC_STATUS_LABELS[e.qcStatus!].toLowerCase()}`);
+      message.success(`${e.entryNo}: ${inSentence(GRN_QC_STATUS_LABELS[e.qcStatus!])}`);
       qc.invalidateQueries({ queryKey: ['stock'] });
       qc.invalidateQueries({ queryKey: ['purchase-orders', 'status'] });
       onClose();

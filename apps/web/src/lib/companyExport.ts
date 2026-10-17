@@ -1,10 +1,10 @@
 'use client';
 
-import * as XLSX from 'xlsx';
 import type { CompanyExportFileDto, CompanyExportManifestDto, CompanyExportPageDto } from '@erp/shared';
 import { PRODUCT_NAME } from '@erp/shared';
 import { api, fileUrl } from './api';
 import { ZipWriter } from './zip';
+import { loadXlsx } from './exportExcel';
 
 const PAGE = 1000;
 
@@ -31,6 +31,7 @@ export async function buildCompanyExport(manifest: CompanyExportManifestDto, onP
     onProgress({ percent: Math.min(99, Math.round((done / work) * 100)), step });
   };
 
+  const XLSX = await loadXlsx();
   await api.post('/company-data/export/log');
   for (const t of manifest.tables) {
     const rows: CompanyExportPageDto['rows'] = [];

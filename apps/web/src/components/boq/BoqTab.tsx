@@ -7,7 +7,6 @@ import { DeleteOutlined, DownloadOutlined, EditOutlined, FileExcelOutlined, Plus
 import type { BoqItemDto } from '@erp/shared';
 import { canEditProjects } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import * as XLSX from 'xlsx';
 import { api, errorMessage } from '@/lib/api';
 import { useBoq } from '@/lib/queries';
 import { useAuth } from '@/lib/auth';
@@ -17,6 +16,7 @@ import { BoqFormModal } from './BoqFormModal';
 import { BoqImportModal, downloadBoqTemplate } from './BoqImportModal';
 import { BRAND } from '@/lib/brand';
 import { themeColor } from '@/lib/theme';
+import { loadXlsx } from '@/lib/exportExcel';
 
 export function BoqTab({ projectId }: { projectId: string }) {
   const { user } = useAuth();
@@ -52,7 +52,8 @@ export function BoqTab({ projectId }: { projectId: string }) {
     return { amount, executed, measured, count: items.length };
   }, [data]);
 
-  const exportExcel = () => {
+  const exportExcel = async () => {
+    const XLSX = await loadXlsx();
     const ws = XLSX.utils.json_to_sheet(
       (data ?? []).map((i) => ({
         'Item No': i.itemNo,

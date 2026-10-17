@@ -38,6 +38,7 @@ export class AuthService {
     const billing = billingConfig();
     return {
       signup: signupOpen(),
+      demoLogin: process.env.DEMO_LOGIN !== 'false',
       resetByEmail: this.links.canEmail && !!this.links.configuredWebUrl(),
       pricing: billing ? { unit: billing.unit, price: billing.price, trialDays: billing.trialDays, yearChargedMonths: BILLING_YEAR_CHARGED_MONTHS } : null,
     };

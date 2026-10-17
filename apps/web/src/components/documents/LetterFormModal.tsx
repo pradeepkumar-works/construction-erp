@@ -9,6 +9,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, errorMessage } from '@/lib/api';
 import { useLetters, useProjects, useRisks } from '@/lib/queries';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
+import { inSentence } from '@/lib/format';
 
 interface FormValues {
   projectId: string;
@@ -50,7 +51,7 @@ export function LetterFormModal({ open, onClose, projectId, letter, prefill, onS
   const { data: delays } = useRisks({ projectId: selectedProject, pageSize: 100 }, open && !!selectedProject);
 
   const letterOptions = useMemo(
-    () => (letters?.items ?? []).filter((l) => l.id !== letter?.id).map((l) => ({ value: l.id, label: `${l.letterNo} (${LETTER_DIRECTION_LABELS[l.direction].toLowerCase()}) ${l.subject}` })),
+    () => (letters?.items ?? []).filter((l) => l.id !== letter?.id).map((l) => ({ value: l.id, label: `${l.letterNo} (${inSentence(LETTER_DIRECTION_LABELS[l.direction])}) ${l.subject}` })),
     [letters, letter],
   );
   const riskOptions = useMemo(

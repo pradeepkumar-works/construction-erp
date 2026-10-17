@@ -130,7 +130,7 @@ export default function UsersPage() {
   const rows = data?.items ?? [];
   const exportRows = async () => {
     const all = await fetchAllPages<UserSummary>('/users', filters);
-    downloadXlsx(exportFileName('users'), 'Users', USER_EXPORT, all);
+    await downloadXlsx(exportFileName('users'), 'Users', USER_EXPORT, all);
     return all.length;
   };
 
