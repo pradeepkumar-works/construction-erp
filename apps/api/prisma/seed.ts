@@ -4,6 +4,7 @@ import { PrismaClient, Prisma } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { deflateSync } from 'zlib';
 import { dprTitle, progressTitle, titleDate } from '../src/common/submission-titles';
+import { DEMO_CONTRACTS, textPdf } from '../src/documents/demo-contracts';
 import { DEFAULT_CLOSEOUT_ITEMS, PERMIT_PRECAUTIONS, STANDARD_CHECKLISTS, gstinCheckChar, isWeeklyOff, leaveDays } from '@erp/shared';
 
 const prisma = new PrismaClient();
@@ -141,6 +142,7 @@ async function main() {
     await seedQuality(org.id);
     await seedTestsAndNcrs(org.id);
     await seedDocuments(org.id);
+    await seedContractDocuments(org.id);
     await seedStaff(org.id);
     await seedGuests(org.id);
     await seedVariations(org.id);
@@ -316,6 +318,7 @@ async function main() {
   await seedQuality(org.id);
   await seedTestsAndNcrs(org.id);
   await seedDocuments(org.id);
+  await seedContractDocuments(org.id);
   await seedStaff(org.id);
   await seedGuests(org.id);
   await seedVariations(org.id);
@@ -2230,6 +2233,28 @@ function drawingPdf(docNo: string, title: string, revision: string, project: str
   pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n${offsets.map((o) => `${String(o).padStart(10, '0')} 00000 n \n`).join('')}`;
   pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
   return new Uint8Array(Buffer.from(pdf, 'latin1'));
+}
+
+/** The sample contracts (AI item 75): a CONTRACT document with its text PDF on each demo project that has none. */
+async function seedContractDocuments(organizationId: string) {
+  for (const c of DEMO_CONTRACTS) {
+    const project = await prisma.project.findFirst({ where: { organizationId, type: c.projectType }, orderBy: { code: 'asc' } });
+    if (!project?.projectManagerId || (await prisma.document.count({ where: { projectId: project.id, docNo: c.docNo } }))) continue;
+    const by = project.projectManagerId;
+    const ago = 120;
+    const doc = await prisma.document.create({
+      data: { organizationId, projectId: project.id, docNo: c.docNo, title: c.title, kind: 'CONTRACT', discipline: 'GENERAL', remarks: 'Sample contract for Ask Nirmaan', createdById: by, createdAt: day(-ago) },
+    });
+    const rev = await prisma.documentRevision.create({
+      data: { documentId: doc.id, revision: 'R0', issuedOn: day(-ago), status: 'APPROVED_WITH_COMMENTS', receivedFrom: c.from, remarks: 'Signed agreement', issuedById: by, createdAt: day(-ago) },
+    });
+    const pdf = textPdf(c.title, c.pages);
+    await prisma.attachment.create({
+      data: { organizationId, fileName: `${c.docNo}.pdf`, mimeType: 'application/pdf', size: pdf.length, storagePath: `db:seed/${c.docNo}.pdf`, data: new Uint8Array(pdf), uploadedById: by, revisionId: rev.id, createdAt: day(-ago) },
+    });
+    await prisma.document.update({ where: { id: doc.id }, data: { currentRevisionId: rev.id } });
+    await prisma.auditLog.create({ data: { organizationId, entityType: 'DOCUMENT', entityId: doc.id, action: 'CREATED', actorId: by, note: 'Rev R0', createdAt: day(-ago) } });
+  }
 }
 
 type DemoRevision = [string, number, 'FOR_CONSTRUCTION' | 'FOR_APPROVAL' | 'APPROVED_WITH_COMMENTS', string | null];

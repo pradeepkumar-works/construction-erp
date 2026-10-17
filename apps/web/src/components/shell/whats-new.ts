@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-10-ask-the-contract',
+    date: '2026-10-21',
+    title: 'Ask the contract',
+    points: [
+      'Ask Nirmaan now reads the PDFs you file in Documents (contracts, specifications, method statements, reports) and your letters in and out. Ask "What is the LD cap?", "Which clause allows price variation?" or "Did we notify the client about the land delay?".',
+      'Answers quote the contract\'s own words with the document and page. The link opens the PDF at that page, with the page\'s text under it to copy.',
+      'Only the current revision is searched, and you see only the projects and letters your role can see. A quote that is not in the document is flagged for you to check.',
+    ],
+  },
+  {
     id: '2026-10-speed',
     date: '2026-10-20',
     title: 'Faster pages',

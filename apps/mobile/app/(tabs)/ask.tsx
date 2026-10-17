@@ -224,7 +224,7 @@ function Answer({ turn, onOpenDraft }: { turn: Turn; onOpenDraft: (d: AiDraftDto
         </View>
       ) : null}
       {turn.error ? <Text style={styles.error}>{turn.error}</Text> : null}
-      {m?.unverified.length ? <Text style={styles.caption}>{t('Check these figures before relying on them: {list}', { list: m.unverified.join(', ') })}</Text> : null}
+      {m?.unverified.length ? <Text style={styles.caption}>{m.unverified.some((u) => u.startsWith('“')) ? t('Check these in the records before relying on them: {list}', { list: m.unverified.join(', ') }) : t('Check these figures before relying on them: {list}', { list: m.unverified.join(', ') })}</Text> : null}
       {links.length ? (
         <View style={styles.chips}>
           {links.map((c) => (

@@ -10,7 +10,8 @@ import { ProjectsService } from '../projects/projects.service';
 import { todayIn } from '../notifications/time';
 import { aiConfig, aiConfigured, costPaise, modelName, type AiUsage } from './ai.config';
 import { AiToolsService } from './ai-tools.service';
-import { collectHrefs, collectNumbers, derivedNumbers, filterLinks, unverifiedFigures } from './grounding';
+import { collectHrefs, collectNumbers, collectTexts, derivedNumbers, filterLinks, unverifiedFigures } from './grounding';
+import { unverifiedQuotes } from '../documents/document-text';
 import { FakeModel, MessagesModel, type AiModel, type ModelMessage } from './model';
 import { CHECK_SUMMARY_PROMPT, SYSTEM_PROMPT, contextNote } from './prompt';
 import type { UpdateAiSettingsDto } from './ai.dto';
@@ -284,7 +285,11 @@ export class AiService {
 
     const draft = [parts.join('\n\n'), failure].filter(Boolean).join('\n\n');
     const { text, citations } = filterLinks(draft, collectHrefs(results));
-    const unverified = failure && !parts.length ? [] : unverifiedFigures(text, [...collectNumbers(results), ...derivedNumbers(results), ...collectNumbers(question)]);
+    // Figures must be in what the tools returned, and so must quoted words (AI item 75: quotes from contracts).
+    const unverified =
+      failure && !parts.length
+        ? []
+        : [...unverifiedFigures(text, [...collectNumbers(results), ...derivedNumbers(results), ...collectNumbers(question)]), ...unverifiedQuotes(text, [...collectTexts(results), question])];
     const filled = groundDrafts(latestPerKind(drafts), results, question);
     const saved = await this.prisma.aiMessage.create({
       data: {

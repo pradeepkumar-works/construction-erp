@@ -89,6 +89,7 @@ function RootNavigator() {
         <Stack.Screen name="permit/[id]" options={{ title: t('Permit to Work') }} />
         <Stack.Screen name="quality" options={{ title: t('Tests & NCRs') }} />
         <Stack.Screen name="documents" options={{ title: t('Drawings') }} />
+        <Stack.Screen name="document-page" options={{ title: t('Document page') }} />
         <Stack.Screen name="staff" options={{ title: t('Attendance & leave') }} />
         <Stack.Screen name="staff-register" options={{ title: t('Staff register') }} />
         <Stack.Screen name="ncr/[id]" options={{ title: t('NCR') }} />

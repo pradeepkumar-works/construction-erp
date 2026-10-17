@@ -38,6 +38,7 @@ import { MaintenanceService } from '../maintenance/maintenance.service';
 import { ScheduleService } from '../planning/schedule.service';
 import { AiDigestService } from './ai-digest.service';
 import { AiDraftsService } from './ai-drafts.service';
+import { DocumentTextService } from '../documents/document-text.service';
 
 /** Tool input after its schema: what the model sent, before checking. */
 type Input = Record<string, unknown>;
@@ -142,6 +143,7 @@ export class AiToolsService {
     schedule: ScheduleService,
     digest: AiDigestService,
     drafts: AiDraftsService,
+    documentText: DocumentTextService,
   ) {
     const any = <T>(f: T) => f as never;
     this.kinds = {
@@ -177,6 +179,28 @@ export class AiToolsService {
           input_schema: { type: 'object', properties: { q: { type: 'string', description: 'Words or a number to look for' } }, required: ['q'] },
         },
         run: async (user, i) => (await search.search(user, optText(i.q) ?? '')).hits,
+      },
+      {
+        def: {
+          name: 'search_documents',
+          description:
+            "Search inside the filed documents: the current revision's PDF of contracts, specifications, method statements, reports and drawings, page by page, and letters in and out. Returns the best pages with their text, page number and a link that opens the PDF at that page. Use for what a contract or specification says and whether a letter was sent. Send search words, not a question.",
+          input_schema: {
+            type: 'object',
+            properties: { query: { type: 'string', description: 'Words to look for, e.g. "liquidated damages maximum" or "price adjustment clause"' }, projectId: { type: 'string', description: 'Search one project (an id from list_projects)' } },
+            required: ['query'],
+          },
+        },
+        run: async (user, i) => {
+          const query = optText(i.query);
+          if (!query) throw new BadRequestException('query is needed: the words to look for');
+          const { hits, unread } = await documentText.search(user, { query, projectId: optUuid(i.projectId, 'projectId'), read: false });
+          return {
+            results: hits,
+            ...(hits.length ? {} : { note: 'Nothing in the filed documents matches these words. Try the words a contract would use, or say the documents do not cover it.' }),
+            ...(unread ? { notSearchedYet: `${unread} filed PDF${unread === 1 ? ' is' : 's are'} not searchable yet; files are read when filed and overnight.` } : {}),
+          };
+        },
       },
       {
         def: {

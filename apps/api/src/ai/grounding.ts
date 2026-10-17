@@ -20,6 +20,14 @@ export function collectHrefs(value: unknown, out = new Set<string>()): Set<strin
 const NUMBER_IN_TEXT = /-?\d[\d,]*(?:\.\d+)?/g;
 const AMOUNT_IN_WORDS = /(?:₹|Rs\.?)\s?(\d[\d,]*(?:\.\d+)?)\s?(L\b|lakhs?|Cr\b|crores?)/gi;
 
+/** Every piece of text in the tool results (page text, titles, remarks): what an answer may quote from. */
+export function collectTexts(value: unknown, out: string[] = []): string[] {
+  if (typeof value === 'string') out.push(value);
+  else if (Array.isArray(value)) value.forEach((v) => collectTexts(v, out));
+  else if (value && typeof value === 'object') Object.values(value).forEach((v) => collectTexts(v, out));
+  return out;
+}
+
 /** Every number in the tool results (amounts arrive as strings like "1234567.50"). */
 export function collectNumbers(value: unknown, out: number[] = []): number[] {
   if (typeof value === 'number' && Number.isFinite(value)) out.push(value);
