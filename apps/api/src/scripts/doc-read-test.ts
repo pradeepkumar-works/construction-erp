@@ -6,7 +6,7 @@
  */
 import assert from 'node:assert/strict';
 import { disciplineOf, gstinCheckChar, itemSimilarity, matchLines, normUnit } from '@erp/shared';
-import { normalise, parseReply, toDate, toNumber } from '../ai/ai-read.service';
+import { fixGstin, fixVehicleNo, normalise, parseReply, toDate, toNumber } from '../ai/ai-read.service';
 
 const tests: [string, () => void][] = [];
 const test = (name: string, fn: () => void) => tests.push([name, fn]);
@@ -42,11 +42,26 @@ test('the JSON is found inside a code fence or a sentence', () => {
 test('a GSTIN whose check character does not match is marked to check', () => {
   const ok = normalise('invoice', { fields: { gstin: at(valid('21ABCPU7788C1Z')) }, lines: [] }, 1);
   assert.equal(ok.fields.gstin.confidence, 'high');
-  const bad = normalise('invoice', { fields: { gstin: at('21ABCPU7788C1Z1') }, lines: [] }, 1);
+  // A wrong check character that is no look-alike of the right one.
+  const good = valid('21ABCPU7788C1Z');
+  const bad = normalise('invoice', { fields: { gstin: at(`${good.slice(0, 14)}${good[14] === 'X' ? 'Y' : 'X'}`) }, lines: [] }, 1);
   assert.equal(bad.fields.gstin.confidence, 'low');
   assert.match(bad.fields.gstin.reason ?? '', /check character/);
   const short = normalise('challan', { fields: { gstin: at('21ABCPU7788') }, lines: [] }, 1);
   assert.equal(short.fields.gstin.confidence, 'low');
+});
+
+test('look-alike characters in a GSTIN and a vehicle number are put right by their pattern', () => {
+  assert.equal(fixGstin('21AAKFK4521B1ZO'), '21AAKFK4521B1Z0');
+  assert.equal(fixGstin('2LAAKFK452IB1Z0'), '21AAKFK4521B1Z0');
+  assert.equal(fixGstin('21AAKFK4521B1Z0'), '21AAKFK4521B1Z0');
+  const r = normalise('challan', { fields: { gstin: { value: '21AAKFK4521B1ZO' }, vehicleNo: { value: 'ODO2 BT 9087' } }, lines: [] }, 1);
+  assert.equal(r.fields.gstin.value, '21AAKFK4521B1Z0');
+  assert.equal(r.fields.gstin.confidence, 'high');
+  assert.equal(r.fields.vehicleNo.value, 'OD02 BT 9087');
+  assert.equal(fixVehicleNo('ODO2BT9087'), 'OD02BT9087');
+  assert.equal(fixVehicleNo('DL1C AB 1234'), 'DL1C AB 1234');
+  assert.equal(fixVehicleNo('OD 33 X 4410'), 'OD 33 X 4410');
 });
 
 test('a line whose quantity × rate is not its amount, and totals that do not add up, are marked to check', () => {
