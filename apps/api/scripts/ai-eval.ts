@@ -240,7 +240,7 @@ async function main() {
     }
     const failed = results.filter((r) => !r.ok).map((r) => r.name);
     console.log(`${failed.length ? '✗' : '✓'} [${c.set}] ${c.as}: ${c.question}`);
-    if (failed.length) console.log(`    failed: ${failed.join('; ')}${a.error ? ` (error: ${a.error.slice(0, 200)})` : ''}\n    answer: ${text(a).slice(0, 300).replace(/\n/g, ' ')}`);
+    if (failed.length) console.log(`    failed: ${failed.join('; ')}${a.error ? ` (error: ${a.error.slice(0, 200)})` : ''}${a.message?.unverified.length ? `\n    unverified: ${a.message.unverified.join(', ')}` : ''}\n    answer: ${text(a).slice(0, 300).replace(/\n/g, ' ')}`);
   }
   const spent = (await spentInr()) - before;
   const median = (xs: number[]) => (xs.length ? [...xs].sort((x, y) => x - y)[Math.floor(xs.length / 2)] : 0);

@@ -1980,6 +1980,11 @@ const ANOMALY_EXPENSES: DemoAnomaly[] = [
  * GSTIN gets its proper check character so the clean ones pass.
  */
 async function seedCheckAnomalies(organizationId: string) {
+  // Vendors' GSTINs with a valid check character, so an invoice read off paper matches its vendor (AI item 70).
+  for (const v of await prisma.vendor.findMany({ where: { organizationId, gstin: { not: null } }, select: { id: true, gstin: true } })) {
+    const check = v.gstin!.length === 15 ? gstinCheckChar(v.gstin!.slice(0, 14)) : null;
+    if (check && v.gstin![14] !== check) await prisma.vendor.update({ where: { id: v.id }, data: { gstin: `${v.gstin!.slice(0, 14)}${check}` } });
+  }
   await prisma.expense.updateMany({ where: { organizationId, vendorGstin: { startsWith: '21AAKFS1234M1Z', not: DEMO_EXPENSE_GSTIN } }, data: { vendorGstin: DEMO_EXPENSE_GSTIN } });
   const year = new Date().getUTCFullYear();
 

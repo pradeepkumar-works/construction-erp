@@ -128,13 +128,19 @@ export class AiService {
 
   /** Refuses before the stream starts, so the panel gets a plain error it can show. */
   async assertCanAsk(user: RequestUser) {
+    const s = await this.assertCanUse(user);
+    if (s.questionsLeftToday <= 0) throw new HttpException("You have asked today's maximum number of questions. Ask again tomorrow.", HttpStatus.TOO_MANY_REQUESTS);
+  }
+
+  /** On for this user's company, set up on the server and within the month's allowance. */
+  async assertCanUse(user: RequestUser): Promise<AiStatusDto> {
     if (!canUseAi(user.roleKey)) throw new ForbiddenException('Ask Nirmaan is for company staff');
     if (user.support) throw new ForbiddenException('Ask Nirmaan is not available in a support session');
     const s = await this.status(user);
     if (s.reason === 'NOT_CONFIGURED') throw new HttpException('Ask Nirmaan is not set up on this server yet', HttpStatus.SERVICE_UNAVAILABLE);
     if (s.reason === 'COMPANY_OFF') throw new ForbiddenException('Ask Nirmaan is switched off for your company. An admin can switch it on in Admin > Ask Nirmaan.');
     if (s.reason === 'CAP_REACHED') throw new HttpException("Your company has used this month's Ask Nirmaan allowance. An admin can raise it in Admin > Ask Nirmaan.", HttpStatus.TOO_MANY_REQUESTS);
-    if (s.questionsLeftToday <= 0) throw new HttpException("You have asked today's maximum number of questions. Ask again tomorrow.", HttpStatus.TOO_MANY_REQUESTS);
+    return s;
   }
 
   async threads(user: RequestUser): Promise<AiThreadDto[]> {
@@ -307,14 +313,15 @@ export class AiService {
     return own ?? aiConfig().defaultMonthlyCapInr;
   }
 
-  /** Answers and bill-check summaries this calendar month, in paise. */
+  /** Answers, bill-check summaries and document reads this calendar month, in paise. */
   private async spentThisMonth(organizationId: string): Promise<number> {
     const since = istStart(`${todayIn().slice(0, 7)}-01`);
-    const [answers, summaries] = await Promise.all([
+    const [answers, summaries, reads] = await Promise.all([
       this.prisma.aiMessage.aggregate({ where: { organizationId, createdAt: { gte: since } }, _sum: { costPaise: true } }),
       this.prisma.billCheckSummary.aggregate({ where: { organizationId, createdAt: { gte: since } }, _sum: { costPaise: true } }),
+      this.prisma.aiDocumentRead.aggregate({ where: { organizationId, createdAt: { gte: since } }, _sum: { costPaise: true } }),
     ]);
-    return (answers._sum.costPaise ?? 0) + (summaries._sum.costPaise ?? 0);
+    return (answers._sum.costPaise ?? 0) + (summaries._sum.costPaise ?? 0) + (reads._sum.costPaise ?? 0);
   }
 
   /**
@@ -344,6 +351,20 @@ export class AiService {
       this.log.warn(`check summary: ${(e as Error).message}`);
       return null;
     }
+  }
+
+  /**
+   * One call to the model with no tools, for work that is not a question (reading a document): its text, the model that
+   * answered and the cost. Throws when the assistant is not on for this user or the call fails.
+   */
+  async singleTurn(user: RequestUser, system: string, content: Anthropic.Beta.BetaContentBlockParam[], timeoutMs: number): Promise<{ text: string; model: string; costPaise: number }> {
+    await this.assertCanUse(user);
+    const turn = await this.model().turn({ system, tools: [], messages: [{ role: 'user', content }] }, () => undefined, AbortSignal.timeout(timeoutMs));
+    const text = turn.content
+      .filter((b): b is Anthropic.Beta.BetaTextBlock => b.type === 'text')
+      .map((b) => b.text)
+      .join('');
+    return { text, model: turn.model, costPaise: costPaise(turn.model, turn.usage) };
   }
 
   private askedToday(user: RequestUser): Promise<number> {

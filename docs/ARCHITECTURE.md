@@ -1136,6 +1136,25 @@ export; the client portal and the phone app show the amount.
   every seeded anomaly (`seedCheckAnomalies`) is flagged and every other demo bill and expense shows no flag. CI runs it
   after the seed. A new rule is a function in `bill-rules.ts` plus its tests there.
 
+## Reading invoices, challans and drawings
+
+- **What it is.** AI item 70: Fill from invoice on a new vendor bill, Fill from challan on a GRN and Fill from title
+  block on a new register entry (`components/ai/ReadDocument.tsx`). The browser turns a photo or the first three pages
+  of a PDF into JPEGs (`lib/doc-pages.ts`) and posts them to `POST /ai/read` (`AiReadService`), which needs the same
+  right as the form it fills and Ask Nirmaan on for the company. The model returns each value with a confidence, a page
+  and a box (thousandths of the page); the form shows where each value came from and marks the unsure ones.
+- **Checks in code, not the model.** `normalise` turns figures and dates into numbers and `YYYY-MM-DD`, and marks a value
+  low when a GSTIN fails its check character, a line's quantity × rate is not its amount, or the lines, taxes and total
+  do not add up. Matching is plain code: the vendor by GSTIN (then by a name with one hit), the order by printed PO
+  number or best line match among the vendor's approved orders, and lines with `matchLines` (`@erp/shared` doc-read).
+  The vendor bill form runs the bill checks on the draft (`POST /checks/vendor-bill/preview`) before it is saved.
+- **Nothing is saved by reading.** The read fills the form and attaches the scan as an upload; the user saves. Each read
+  is an `AiDocumentRead` row (cost, time, success) counted in the monthly allowance; the page images are not kept there.
+- **Tests.** `src/scripts/doc-read-test.ts` (CI) covers parsing, the checks and matching; `e2e/tests/doc-read.spec.ts`
+  runs the three forms with the stand-in model. `scripts/doc-read-pack.ts` renders 31 synthetic invoices, challans and
+  drawings (printed, photographed, handwritten, Hindi) and `scripts/doc-read-eval.ts` grades a deployed API on them; it
+  calls the real model, so it is run by hand.
+
 ## Money and quantities
 
 Decimal columns everywhere (`Decimal(18,2)` for money, `Decimal(18,3)` for quantities) and strings
@@ -1145,7 +1164,9 @@ over the wire. No floating point for contract values.
 
 Uploaded first (`POST /api/uploads`), then linked to the entry by id. This keeps mobile forms simple
 and lets a photo be taken before the form is finished. Local disk now, object storage later; only
-`storagePath` changes.
+`storagePath` changes. With Vercel Blob storage, a web file over 4 MB goes straight to Blob: `POST /uploads/direct`
+gives a client token for a path under the organisation's prefix, and `POST /uploads/direct/complete` checks the blob
+and creates the Attachment (up to 100 MB).
 
 ## Notifications
 

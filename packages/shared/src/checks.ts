@@ -30,6 +30,13 @@ export interface BillChecksDto {
   canAccept: boolean;
 }
 
+/** Checks on a bill not yet saved (a vendor bill filled from a scanned invoice): nothing to accept, the rules' line. */
+export interface DraftChecksDto {
+  checks: BillCheckDto[];
+  openFlags: number;
+  summary: string;
+}
+
 export interface BillCheckSummaryDto {
   summary: string;
   summaryBy: 'ai' | 'rules';

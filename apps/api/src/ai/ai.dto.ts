@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsBoolean, IsIn, IsInt, IsOptional, IsString, IsUUID, Max, MaxLength, Min, MinLength, ValidateIf, ValidateNested } from 'class-validator';
-import { AI_QUESTION_MAX } from '@erp/shared';
+import { AI_QUESTION_MAX, DOC_READ_KINDS, type DocReadKind } from '@erp/shared';
 
 export class AiPageContextDto {
   @ApiPropertyOptional({ example: '/projects/6f1c…', description: 'The page the question is asked from' }) @IsOptional() @IsString() @MaxLength(300) path?: string;
@@ -28,4 +28,9 @@ export class UpdateAiSettingsDto {
   @Min(0)
   @Max(10_000_000)
   monthlyCapInr?: number | null;
+}
+
+export class ReadDocumentDto {
+  @ApiProperty({ enum: DOC_READ_KINDS, description: 'invoice fills a vendor bill, challan a GRN, drawing a document register entry' }) @IsIn(DOC_READ_KINDS as unknown as string[]) kind!: DocReadKind;
+  @ApiPropertyOptional({ description: 'Invoices: the order the form is already on, to match the lines against' }) @IsOptional() @IsUUID() purchaseOrderId?: string;
 }

@@ -1,13 +1,14 @@
 'use client';
 
-import React, { useEffect } from 'react';
-import { App, Divider, Form, Input, Modal, Select } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { App, Divider, Flex, Form, Input, Modal, Select } from 'antd';
 import dayjs from 'dayjs';
 import type { AttachmentDto, DocumentDetailDto, DocumentDiscipline, DocumentKind, RevisionStatus } from '@erp/shared';
-import { DOCUMENT_DISCIPLINES, DOCUMENT_DISCIPLINE_LABELS, DOCUMENT_KINDS, DOCUMENT_KIND_LABELS } from '@erp/shared';
+import { DOCUMENT_DISCIPLINES, DOCUMENT_DISCIPLINE_LABELS, DOCUMENT_KINDS, DOCUMENT_KIND_LABELS, disciplineOf, readText } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, errorMessage } from '@/lib/api';
-import { useProjects } from '@/lib/queries';
+import { uploadFile, useProjects } from '@/lib/queries';
+import { ReadDocumentButton, ReadPreview, readFieldProps, type ReadState } from '@/components/ai/ReadDocument';
 import { RevisionFields } from './RevisionFields';
 
 interface FormValues {
@@ -29,13 +30,41 @@ export function DocumentFormModal({ open, onClose, projectId, doc, onSaved }: { 
   const qc = useQueryClient();
   const { data: projects } = useProjects();
   const editing = !!doc;
+  // A drawing's title block read to fill the form (AI item 70).
+  const [readState, setReadState] = useState<ReadState | null>(null);
+  const [activeRead, setActiveRead] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
     form.resetFields();
+    setReadState(null);
     if (doc) form.setFieldsValue({ projectId: doc.projectId, docNo: doc.docNo, title: doc.title, kind: doc.kind, discipline: doc.discipline, remarks: doc.remarks ?? undefined });
     else form.setFieldsValue({ projectId, kind: 'DRAWING', discipline: 'GENERAL', revision: { revision: 'R0', issuedOn: dayjs(), status: 'FOR_CONSTRUCTION' } as FormValues['revision'] });
   }, [open, projectId, doc, form]);
+
+  /** Number, title, discipline and the first revision from the title block; the drawing itself goes on the revision. */
+  const applyRead = (s: ReadState) => {
+    setReadState(s);
+    const f = s.result.fields;
+    const date = readText(f.date);
+    const discipline = disciplineOf(readText(f.discipline));
+    form.setFieldsValue({
+      docNo: readText(f.drawingNo) ?? form.getFieldValue('docNo'),
+      title: readText(f.title) ?? form.getFieldValue('title'),
+      kind: 'DRAWING',
+      ...(discipline ? { discipline } : {}),
+      revision: {
+        ...form.getFieldValue('revision'),
+        ...(readText(f.revision) ? { revision: readText(f.revision)! } : {}),
+        ...(date && !dayjs(date).isAfter(dayjs(), 'day') ? { issuedOn: dayjs(date) } : {}),
+        ...(readText(f.issuedBy) ? { receivedFrom: readText(f.issuedBy)! } : {}),
+      },
+    });
+    uploadFile(s.file)
+      .then((att) => form.setFieldValue(['revision', 'files'], [...((form.getFieldValue(['revision', 'files']) as AttachmentDto[] | undefined) ?? []), att]))
+      .catch((e) => message.warning(`The form is filled, but the drawing could not be attached: ${errorMessage(e)}`));
+  };
+  const read = (key: string) => readFieldProps(readState, key, setActiveRead);
 
   const mutation = useMutation({
     mutationFn: async (v: FormValues) => {
@@ -69,14 +98,20 @@ export function DocumentFormModal({ open, onClose, projectId, doc, onSaved }: { 
   return (
     <Modal open={open} title={doc ? `Edit ${doc.docNo}` : 'Add drawing or document'} okText={editing ? 'Save' : 'Add'} onCancel={onClose} onOk={() => form.submit()} confirmLoading={mutation.isPending} width={680} destroyOnHidden>
       <Form form={form} layout="vertical" onFinish={(v) => mutation.mutate(v)} style={{ marginTop: 8 }}>
+        {!editing && !readState ? (
+          <Flex justify="flex-end" style={{ marginBottom: 8 }}>
+            <ReadDocumentButton kind="drawing" label="Fill from title block" onRead={applyRead} />
+          </Flex>
+        ) : null}
+        {readState ? <ReadPreview state={readState} active={activeRead} onClear={() => setReadState(null)} /> : null}
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]} hidden={!!(doc || projectId)}>
           <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
         </Form.Item>
         <div style={grid('1fr 2fr')}>
-          <Form.Item name="docNo" label="Number" rules={[{ required: true, whitespace: true, message: 'Required' }]}>
+          <Form.Item name="docNo" label="Number" rules={[{ required: true, whitespace: true, message: 'Required' }]} {...read('drawingNo')}>
             <Input maxLength={60} placeholder="STR-GA-101" />
           </Form.Item>
-          <Form.Item name="title" label="Title" rules={[{ required: true, whitespace: true, message: 'Required' }]}>
+          <Form.Item name="title" label="Title" rules={[{ required: true, whitespace: true, message: 'Required' }]} {...read('title')}>
             <Input maxLength={200} placeholder="First floor slab reinforcement" />
           </Form.Item>
         </div>
@@ -84,7 +119,7 @@ export function DocumentFormModal({ open, onClose, projectId, doc, onSaved }: { 
           <Form.Item name="kind" label="Type">
             <Select options={DOCUMENT_KINDS.map((k) => ({ value: k, label: DOCUMENT_KIND_LABELS[k] }))} />
           </Form.Item>
-          <Form.Item name="discipline" label="Discipline">
+          <Form.Item name="discipline" label="Discipline" {...read('discipline')}>
             <Select options={DOCUMENT_DISCIPLINES.map((k) => ({ value: k, label: DOCUMENT_DISCIPLINE_LABELS[k] }))} />
           </Form.Item>
         </div>
@@ -96,7 +131,7 @@ export function DocumentFormModal({ open, onClose, projectId, doc, onSaved }: { 
             <Divider titlePlacement="start" plain>
               First revision
             </Divider>
-            <RevisionFields prefix={['revision']} />
+            <RevisionFields prefix={['revision']} read={read} />
           </>
         ) : null}
       </Form>
