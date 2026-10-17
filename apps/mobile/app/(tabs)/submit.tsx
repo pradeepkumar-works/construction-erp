@@ -9,44 +9,44 @@ import { colors, radius, shadow, spacing, typography } from '../../src/theme';
 import { useT } from '../../src/i18n/LanguageContext';
 
 const FORMS = [
-  { href: '/progress/new', icon: 'trending-up' as const, tone: colors.primary, title: 'Daily progress', text: 'Quantity executed on one activity, with photos.' },
-  { href: '/dpr/new', icon: 'document-text' as const, tone: colors.accent, title: 'Daily progress report (DPR)', text: 'Weather, manpower, machinery, work done and next-day plan.' },
-  { href: '/material-request/new', icon: 'cube' as const, tone: colors.success, title: 'Material request', text: 'Items needed on site with required date and priority.' },
+  { href: '/progress/new', icon: 'trending-up' as const, tone: colors.tileBlue, title: 'Daily progress', text: 'Quantity executed on one activity, with photos.' },
+  { href: '/dpr/new', icon: 'document-text' as const, tone: colors.tileOrange, title: 'Daily progress report (DPR)', text: 'Weather, manpower, machinery, work done and next-day plan.' },
+  { href: '/material-request/new', icon: 'cube' as const, tone: colors.tileGreen, title: 'Material request', text: 'Items needed on site with required date and priority.' },
 ];
 
-const ATTENDANCE = { href: '/attendance', icon: 'people' as const, tone: colors.primaryDark, title: 'Attendance', text: 'Workers on site today by contractor and trade. Fills the DPR manpower.' };
+const ATTENDANCE = { href: '/attendance', icon: 'people' as const, tone: colors.tileNavy, title: 'Attendance', text: 'Workers on site today by contractor and trade. Fills the DPR manpower.' };
 
-const BREAKDOWN = { href: '/breakdown/new', icon: 'build' as const, tone: '#c2410c', title: 'Report a breakdown', text: 'A machine has stopped at site: the store manager and the project manager are told at once.' };
+const BREAKDOWN = { href: '/breakdown/new', icon: 'build' as const, tone: colors.tileBrick, title: 'Report a breakdown', text: 'A machine has stopped at site: the store manager and the project manager are told at once.' };
 
-const MACHINERY = { href: '/machinery/new', icon: 'construct' as const, tone: '#b45309', title: 'Machinery log', text: 'A machine’s day: hours worked, idle, breakdown and diesel.' };
+const MACHINERY = { href: '/machinery/new', icon: 'construct' as const, tone: colors.tileAmber, title: 'Machinery log', text: 'A machine’s day: hours worked, idle, breakdown and diesel.' };
 
-const EXPENSE = { href: '/expense/new', icon: 'wallet' as const, tone: '#7c3aed', title: 'Site expense', text: 'A bill paid at site, with GST and the bill photo.' };
+const EXPENSE = { href: '/expense/new', icon: 'wallet' as const, tone: colors.tileViolet, title: 'Site expense', text: 'A bill paid at site, with GST and the bill photo.' };
 
-const MEASUREMENT = { href: '/measurement/new', icon: 'resize' as const, tone: '#0f766e', title: 'Measurement (MB)', text: 'Nos × L × B × D against a BOQ item, with deductions; the billable quantity.' };
+const MEASUREMENT = { href: '/measurement/new', icon: 'resize' as const, tone: colors.tileTeal, title: 'Measurement (MB)', text: 'Nos × L × B × D against a BOQ item, with deductions; the billable quantity.' };
 
-const INSPECTION = { href: '/inspection/new', icon: 'shield-checkmark' as const, tone: colors.warning, title: 'Request inspection', text: 'Work ready for QA/QC to check against the checklist, with photos.' };
+const INSPECTION = { href: '/inspection/new', icon: 'shield-checkmark' as const, tone: colors.tileBrick, title: 'Request inspection', text: 'Work ready for QA/QC to check against the checklist, with photos.' };
 
-const QUALITY = { href: '/quality', icon: 'flask' as const, tone: '#0e7490', title: 'Tests & NCRs', text: 'Enter cube and other test results; record the action taken on an NCR.' };
+const QUALITY = { href: '/quality', icon: 'flask' as const, tone: colors.tileCyan, title: 'Tests & NCRs', text: 'Enter cube and other test results; record the action taken on an NCR.' };
 
-const DRAWINGS = { href: '/documents', icon: 'document-text-outline' as const, tone: '#334155', title: 'Drawings', text: 'The current revision of every drawing on your project; save them to open without a signal.' };
+const DRAWINGS = { href: '/documents', icon: 'document-text-outline' as const, tone: colors.tileSlate, title: 'Drawings', text: 'The current revision of every drawing on your project; save them to open without a signal.' };
 
-const ROLL_CALL = { href: '/roll-call', icon: 'checkbox-outline' as const, tone: '#1d4ed8', title: 'Roll call', text: 'Mark the contractors\u2019 workers by name: present, half day or absent, with overtime.' };
+const ROLL_CALL = { href: '/roll-call', icon: 'checkbox-outline' as const, tone: colors.tileIndigo, title: 'Roll call', text: 'Mark the contractors\u2019 workers by name: present, half day or absent, with overtime.' };
 
-const IMPREST = { href: '/imprest', icon: 'cash' as const, tone: '#a16207', title: 'My imprest', text: 'Petty cash in hand after your cash expenses; ask accounts for a top-up.' };
+const IMPREST = { href: '/imprest', icon: 'cash' as const, tone: colors.tileOchre, title: 'My imprest', text: 'Petty cash in hand after your cash expenses; ask accounts for a top-up.' };
 
-const MY_STAFF = { href: '/staff', icon: 'calendar' as const, tone: '#4d7c0f', title: 'My attendance & leave', text: 'Check in and out, see your leave balance and apply for leave.' };
+const MY_STAFF = { href: '/staff', icon: 'calendar' as const, tone: colors.tileLime, title: 'My attendance & leave', text: 'Check in and out, see your leave balance and apply for leave.' };
 
-const STAFF_REGISTER = { href: '/staff-register', icon: 'id-card' as const, tone: '#365314', title: 'Staff register', text: 'Mark the company staff at your site present, half day or absent.' };
+const STAFF_REGISTER = { href: '/staff-register', icon: 'id-card' as const, tone: colors.tileOlive, title: 'Staff register', text: 'Mark the company staff at your site present, half day or absent.' };
 
-const RISK = { href: '/risks', icon: 'alert-circle' as const, tone: colors.danger, title: 'Delays & risks', text: 'Record work held up (days lost, who caused it) or raise a risk; see what is open.' };
+const RISK = { href: '/risks', icon: 'alert-circle' as const, tone: colors.tileRed, title: 'Delays & risks', text: 'Record work held up (days lost, who caused it) or raise a risk; see what is open.' };
 
-const SNAGS = { href: '/snags', icon: 'construct-outline' as const, tone: '#9a3412', title: 'Snags & defects', text: 'Log what needs putting right before handover or in the defect liability period, with photos; mark it fixed.' };
+const SNAGS = { href: '/snags', icon: 'construct-outline' as const, tone: colors.tileRust, title: 'Snags & defects', text: 'Log what needs putting right before handover or in the defect liability period, with photos; mark it fixed.' };
 
-const SAFETY = { href: '/safety', icon: 'medkit' as const, tone: '#b91c1c', title: 'Safety', text: 'Report an incident or near miss, record a toolbox talk, ask for a permit to work.' };
+const SAFETY = { href: '/safety', icon: 'medkit' as const, tone: colors.tileCrimson, title: 'Safety', text: 'Report an incident or near miss, record a toolbox talk, ask for a permit to work.' };
 
 const STOCK = [
-  { href: '/stock/receive', icon: 'download' as const, tone: colors.success, title: 'Receive material (GRN)', text: 'Delivery against a purchase order or an approved material request, with the challan photo.' },
-  { href: '/stock/issue', icon: 'arrow-up-circle' as const, tone: colors.info, title: 'Issue material', text: 'Material handed out at site, from the stock on hand.' },
+  { href: '/stock/receive', icon: 'download' as const, tone: colors.tileGreen, title: 'Receive material (GRN)', text: 'Delivery against a purchase order or an approved material request, with the challan photo.' },
+  { href: '/stock/issue', icon: 'arrow-up-circle' as const, tone: colors.tileViolet, title: 'Issue material', text: 'Material handed out at site, from the stock on hand.' },
 ];
 
 export default function SubmitHub() {
@@ -77,7 +77,7 @@ export default function SubmitHub() {
         {forms.map((f) => (
           <Pressable key={f.href} onPress={() => router.push(f.href)} style={({ pressed }) => [styles.tile, pressed && styles.pressed]}>
             <View style={[styles.icon, { backgroundColor: f.tone }]}>
-              <Ionicons name={f.icon} size={28} color="#fff" />
+              <Ionicons name={f.icon} size={28} color={colors.onTile} />
             </View>
             <View style={styles.body}>
               <Text style={typography.h3}>{t(f.title)}</Text>

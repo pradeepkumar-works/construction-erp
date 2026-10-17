@@ -4,7 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { ExpenseDto } from '@erp/shared';
 import { EXPENSE_CATEGORY_LABELS, PAYMENT_MODE_LABELS } from '@erp/shared';
 import { useFetch } from '../../src/api/hooks';
-import { AttachmentGallery, Button, Card, ErrorState, KeyValue, Loading, ReviewActions, Screen, SubmissionHeader, SubmitterActions } from '../../src/components';
+import { AttachmentGallery, Card, ErrorState, KeyValue, Loading, ReviewActions, Screen, SubmissionHeader, SubmitterActions } from '../../src/components';
 import { colors, spacing, typography } from '../../src/theme';
 import { formatDate } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
@@ -42,7 +42,6 @@ export default function ExpenseScreen() {
       <AttachmentGallery attachments={data.attachments} />
       <SubmitterActions type="EXPENSE" item={data} />
       <ReviewActions type="EXPENSE" item={data} onReviewed={setData} />
-      <Button title={t('Open project')} variant="ghost" icon="business-outline" onPress={() => router.push(`/project/${data.projectId}`)} />
     </Screen>
   );
 }

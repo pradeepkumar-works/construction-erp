@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { colors, radius, spacing, touch, typography } from '../theme';
+import { colors, maxFontScale, radius, spacing, touch, typography } from '../theme';
 
 interface Props<V extends string> {
   label?: string;
@@ -17,7 +17,7 @@ export function Chips<V extends string>({ label, value, options, onChange, clear
   return (
     <View style={styles.container}>
       {label ? (
-        <Text style={styles.label}>
+        <Text style={styles.label} maxFontSizeMultiplier={maxFontScale}>
           {label}
           {required ? <Text style={styles.req}> *</Text> : null}
         </Text>
@@ -32,7 +32,7 @@ export function Chips<V extends string>({ label, value, options, onChange, clear
               style={[styles.chip, active && styles.chipActive]}
               accessibilityState={{ selected: active }}
             >
-              <Text style={[styles.chipText, active && styles.chipTextActive]}>{o.label}</Text>
+              <Text maxFontSizeMultiplier={maxFontScale} style={[styles.chipText, active && styles.chipTextActive]}>{o.label}</Text>
             </Pressable>
           );
         })}

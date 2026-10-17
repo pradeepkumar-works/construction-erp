@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View, type AccessibilityActionEvent, type AccessibilityActionInfo, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { SubmissionStatus, SubmissionType } from '@erp/shared';
 import { colors, radius, spacing, typography } from '../theme';
@@ -55,11 +55,22 @@ interface Props {
   meta?: string;
   status?: SubmissionStatus;
   onPress: () => void;
+  style?: ViewStyle;
+  /** Extra screen-reader actions (e.g. Approve on a row that also swipes). */
+  accessibilityActions?: AccessibilityActionInfo[];
+  onAccessibilityAction?: (event: AccessibilityActionEvent) => void;
 }
 
-export function SubmissionRow({ type, title, subtitle, meta, status, onPress }: Props) {
+export function SubmissionRow({ type, title, subtitle, meta, status, onPress, style, accessibilityActions, onAccessibilityAction }: Props) {
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.row, pressed && styles.pressed]} android_ripple={{ color: colors.border }}>
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [styles.row, style, pressed && styles.pressed]}
+      android_ripple={{ color: colors.border }}
+      accessibilityRole="button"
+      accessibilityActions={accessibilityActions}
+      onAccessibilityAction={onAccessibilityAction}
+    >
       <View style={styles.iconWrap}>
         <Ionicons name={TYPE_ICON[type]} size={22} color={colors.primary} />
       </View>

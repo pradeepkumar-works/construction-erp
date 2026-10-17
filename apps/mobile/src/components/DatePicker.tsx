@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radius, spacing, touch, typography } from '../theme';
+import { colors, maxFontScale, radius, spacing, touch, typography } from '../theme';
 import { addDays, formatDate, isIsoDate, today } from '../utils/format';
 import { useT } from '../i18n/LanguageContext';
 
@@ -39,6 +39,7 @@ export function DatePicker({ label, value, onChange, error, required }: Props) {
             autoCapitalize="none"
             autoCorrect={false}
             maxLength={10}
+            maxFontSizeMultiplier={maxFontScale}
             style={styles.input}
           />
         </View>
@@ -46,7 +47,7 @@ export function DatePicker({ label, value, onChange, error, required }: Props) {
           <Ionicons name="chevron-forward" size={22} color={colors.primary} />
         </Pressable>
         <Pressable onPress={() => onChange(today())} style={styles.todayBtn}>
-          <Text style={styles.todayText}>{t('Today')}</Text>
+          <Text style={styles.todayText} maxFontSizeMultiplier={maxFontScale}>{t('Today')}</Text>
         </Pressable>
       </View>
       {error ? (
@@ -86,7 +87,7 @@ const styles = StyleSheet.create({
   },
   inputError: { borderColor: colors.danger },
   input: { fontSize: 17, color: colors.text, textAlign: 'center', fontVariant: ['tabular-nums'] },
-  todayBtn: { marginLeft: spacing.sm, height: touch.height, paddingHorizontal: spacing.md, justifyContent: 'center', borderRadius: radius.md, borderWidth: 1.5, borderColor: colors.primary },
+  todayBtn: { marginLeft: spacing.sm, minHeight: touch.height, paddingHorizontal: spacing.md, justifyContent: 'center', borderRadius: radius.md, borderWidth: 1.5, borderColor: colors.primary },
   todayText: { color: colors.primary, fontWeight: '700' },
   error: { color: colors.danger, marginTop: spacing.xs, fontSize: 13 },
   hint: { ...typography.caption, marginTop: spacing.xs },

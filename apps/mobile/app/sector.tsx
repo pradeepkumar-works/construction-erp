@@ -6,7 +6,7 @@ import { formatChainage } from '@erp/shared';
 import { useFetch } from '../src/api/hooks';
 import { useT } from '../src/i18n/LanguageContext';
 import { Card, EmptyState, ErrorState, Loading, ProgressBar, Screen } from '../src/components';
-import { colors, radius, spacing, typography } from '../src/theme';
+import { colors, radius, spacing, statusTone, typography } from '../src/theme';
 import { fmtQty } from '../src/utils/format';
 
 /** Progress where it happened: along the road, floor by floor, or village by village with the pipe stages. */
@@ -56,7 +56,7 @@ function Strip({ layers, start, end, main }: { layers: ChainageLayer[]; start: n
                   key={s.entryId}
                   style={[
                     styles.seg,
-                    { left: `${pos(s.from)}%`, width: point ? 3 : `${Math.max(pos(s.to) - pos(s.from), 0.5)}%`, backgroundColor: s.status === 'APPROVED' ? colors.success : colors.warning, opacity: s.status === 'APPROVED' ? 0.9 : 0.5 },
+                    { left: `${pos(s.from)}%`, width: point ? 3 : `${Math.max(pos(s.to) - pos(s.from), 0.5)}%`, backgroundColor: statusTone[s.status as keyof typeof statusTone]?.fg ?? colors.warning, opacity: s.status === 'APPROVED' ? 0.9 : 0.5 },
                   ]}
                 />
               );

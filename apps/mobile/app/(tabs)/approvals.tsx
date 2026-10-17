@@ -1,26 +1,66 @@
-import React, { useMemo } from 'react';
-import { RefreshControl, SectionList, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { Pressable, RefreshControl, SectionList, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import ReanimatedSwipeable, { type SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { SUBMISSION_TYPE_LABELS, type PendingApprovalDto, type SubmissionType } from '@erp/shared';
-import { useFetch } from '../../src/api/hooks';
-import { EmptyState, ErrorState, Loading, Screen, SubmissionRow } from '../../src/components';
-import { colors, spacing, typography } from '../../src/theme';
+import { useApi, useFetch } from '../../src/api/hooks';
+import { errorMessage } from '../../src/api/client';
+import { canQuickReview, reviewSubmission } from '../../src/api/review';
+import { Button, EmptyState, ErrorBanner, ErrorState, Input, Loading, Screen, SubmissionRow } from '../../src/components';
+import { BottomSheet } from '../../src/components/BottomSheet';
+import { colors, radius, spacing, touch, typography } from '../../src/theme';
 import { timeAgo } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
 
 const ORDER: SubmissionType[] = ['DPR', 'PROGRESS', 'MATERIAL_REQUEST', 'MACHINERY', 'EXPENSE', 'MEASUREMENT', 'BILL', 'PURCHASE_ORDER', 'VENDOR_BILL', 'WORK_ORDER', 'SUBCONTRACT_BILL', 'INSPECTION'];
 const DETAIL_PATH: Record<SubmissionType, string> = { PROGRESS: '/progress/', DPR: '/dpr/', MATERIAL_REQUEST: '/material-request/', MACHINERY: '/machinery/', EXPENSE: '/expense/', MEASUREMENT: '/measurement/', BILL: '/bill/', PURCHASE_ORDER: '/purchase-order/', VENDOR_BILL: '/vendor-bill/', WORK_ORDER: '/work-order/', SUBCONTRACT_BILL: '/subcontract-bill/', INSPECTION: '/inspection/' };
 
+const keyOf = (p: PendingApprovalDto) => `${p.type}-${p.id}`;
+
 export default function ApprovalsScreen() {
   const router = useRouter();
+  const api = useApi();
   const t = useT();
-  const { data, loading, refreshing, error, refresh, reload } = useFetch<PendingApprovalDto[]>((api) => api.get('/approvals/pending'), []);
+  const { data, loading, refreshing, error, refresh, reload, setData } = useFetch<PendingApprovalDto[]>((api) => api.get('/approvals/pending'), []);
+  const [approving, setApproving] = useState<PendingApprovalDto | null>(null);
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [sheetError, setSheetError] = useState<string | null>(null);
+  // One row open at a time: swiping another closes the last.
+  const openRow = useRef<SwipeableMethods | null>(null);
 
   const sections = useMemo(
     () =>
       ORDER.map((type) => ({ type, title: t(SUBMISSION_TYPE_LABELS[type]), data: (data ?? []).filter((p) => p.type === type) })).filter((s) => s.data.length > 0),
     [data, t],
   );
+
+  const open = useCallback((item: PendingApprovalDto) => router.push(`${DETAIL_PATH[item.type]}${item.id}`), [router]);
+  const askApprove = useCallback((item: PendingApprovalDto) => {
+    openRow.current?.close();
+    setNote('');
+    setSheetError(null);
+    setApproving(item);
+  }, []);
+
+  const approve = async () => {
+    if (!approving) return;
+    setBusy(true);
+    setSheetError(null);
+    try {
+      // The same review call the record screen makes.
+      await reviewSubmission(api, approving.type, approving.id, 'APPROVE', note);
+      const done = keyOf(approving);
+      setData((prev) => (prev ? prev.filter((p) => keyOf(p) !== done) : prev));
+      setApproving(null);
+      void reload();
+    } catch (e) {
+      setSheetError(errorMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  };
 
   if (loading && !data) return <Loading />;
   if (error && !data) return <ErrorState message={error} onRetry={reload} />;
@@ -29,7 +69,7 @@ export default function ApprovalsScreen() {
     <Screen scroll={false} padded={false}>
       <SectionList
         sections={sections}
-        keyExtractor={(item) => `${item.type}-${item.id}`}
+        keyExtractor={keyOf}
         contentContainerStyle={styles.list}
         stickySectionHeadersEnabled={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.primary} />}
@@ -37,6 +77,8 @@ export default function ApprovalsScreen() {
           data && data.length ? (
             <Text style={styles.summary}>
               {data.length === 1 ? t('1 item waiting for your review') : t('{n} items waiting for your review', { n: data.length })}
+              {' · '}
+              {t('Swipe left to approve')}
             </Text>
           ) : null
         }
@@ -48,15 +90,105 @@ export default function ApprovalsScreen() {
           </View>
         )}
         renderItem={({ item }) => (
-          <SubmissionRow type={item.type} title={item.title} subtitle={item.projectName} meta={`${item.amount && item.type !== 'EXPENSE' ? `₹${Number(item.amount).toLocaleString('en-IN')} · ` : ''}${item.submittedByName} · ${timeAgo(item.submittedAt)}`} onPress={() => router.push(`${DETAIL_PATH[item.type]}${item.id}`)} />
+          <SwipeRow
+            item={item}
+            onOpen={() => open(item)}
+            onApprove={canQuickReview(item.type) ? () => askApprove(item) : undefined}
+            onSwipeOpen={(row) => {
+              if (openRow.current && openRow.current !== row) openRow.current.close();
+              openRow.current = row;
+            }}
+          />
         )}
       />
+      <BottomSheet
+        visible={!!approving}
+        onClose={() => setApproving(null)}
+        dismissable={!busy}
+        title={approving ? t('Approve {title}?', { title: approving.title }) : undefined}
+        subtitle={approving ? `${approving.projectName} · ${approving.submittedByName}` : undefined}
+      >
+        <Input value={note} onChangeText={setNote} placeholder={t('Note (optional)')} multiline />
+        <ErrorBanner message={sheetError} />
+        <View style={styles.sheetBtns}>
+          <Button title={t('Cancel')} variant="ghost" onPress={() => setApproving(null)} disabled={busy} style={styles.flex} />
+          <Button title={t('Approve')} variant="success" icon="checkmark" onPress={approve} loading={busy} style={styles.flex2} />
+        </View>
+      </BottomSheet>
     </Screen>
   );
 }
 
+/**
+ * A queue row: tap opens the record; swiping left shows Approve (where a plain decision will do) and Open. Screen
+ * readers get the same Approve as a row action instead of the gesture.
+ */
+function SwipeRow({ item, onOpen, onApprove, onSwipeOpen }: { item: PendingApprovalDto; onOpen: () => void; onApprove?: () => void; onSwipeOpen: (row: SwipeableMethods) => void }) {
+  const t = useT();
+  const ref = useRef<SwipeableMethods>(null);
+  const meta = `${item.amount && item.type !== 'EXPENSE' ? `₹${Number(item.amount).toLocaleString('en-IN')} · ` : ''}${item.submittedByName} · ${timeAgo(item.submittedAt)}`;
+  return (
+    <ReanimatedSwipeable
+      ref={ref}
+      friction={2}
+      rightThreshold={40}
+      overshootRight={false}
+      containerStyle={styles.swipe}
+      onSwipeableWillOpen={() => ref.current && onSwipeOpen(ref.current)}
+      renderRightActions={(_progress, _translation, methods) => (
+        <View style={styles.actions}>
+          {onApprove ? (
+            <Pressable onPress={onApprove} accessibilityRole="button" accessibilityLabel={t('Approve')} style={({ pressed }) => [styles.action, styles.approve, pressed && styles.pressed]}>
+              <Ionicons name="checkmark-circle" size={24} color={colors.onBrand} />
+              <Text style={styles.actionText}>{t('Approve')}</Text>
+            </Pressable>
+          ) : null}
+          <Pressable
+            onPress={() => {
+              methods.close();
+              onOpen();
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={t('Open entry')}
+            style={({ pressed }) => [styles.action, styles.openAction, pressed && styles.pressed]}
+          >
+            <Ionicons name="open-outline" size={22} color={colors.onBrand} />
+            <Text style={styles.actionText}>{t('Open entry')}</Text>
+          </Pressable>
+        </View>
+      )}
+    >
+      <SubmissionRow
+        type={item.type}
+        title={item.title}
+        subtitle={item.projectName}
+        meta={meta}
+        onPress={onOpen}
+        style={styles.row}
+        accessibilityActions={onApprove ? [{ name: 'approve', label: t('Approve') }] : undefined}
+        onAccessibilityAction={(e) => {
+          if (e.nativeEvent.actionName === 'approve') onApprove?.();
+        }}
+      />
+    </ReanimatedSwipeable>
+  );
+}
+
+const ACTION_WIDTH = 88;
+
 const styles = StyleSheet.create({
+  flex: { flex: 1 },
+  flex2: { flex: 1.6, marginLeft: spacing.sm },
   list: { padding: spacing.lg, paddingBottom: spacing.xxl, flexGrow: 1 },
   summary: { ...typography.caption, marginBottom: spacing.sm },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.md, marginBottom: spacing.sm },
+  swipe: { marginBottom: spacing.sm, borderRadius: radius.lg, overflow: 'hidden' },
+  row: { marginBottom: 0 },
+  actions: { flexDirection: 'row' },
+  action: { width: ACTION_WIDTH, alignItems: 'center', justifyContent: 'center', gap: spacing.xs, minHeight: touch.height },
+  approve: { backgroundColor: colors.success },
+  openAction: { backgroundColor: colors.primary },
+  actionText: { color: colors.onBrand, fontSize: 13, fontWeight: '700' },
+  pressed: { opacity: 0.8 },
+  sheetBtns: { flexDirection: 'row' },
 });
