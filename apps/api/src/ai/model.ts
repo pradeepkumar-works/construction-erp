@@ -8,6 +8,8 @@ export interface TurnArgs {
   system: string;
   tools: Anthropic.Beta.BetaTool[];
   messages: ModelMessage[];
+  /** The conversation, so a gateway keeps its calls on one provider and the prompt cache stays warm */
+  sessionId?: string;
 }
 
 export interface TurnResult {
@@ -24,19 +26,37 @@ export interface AiModel {
   turn(args: TurnArgs, onText: (text: string) => void, signal: AbortSignal): Promise<TurnResult>;
 }
 
-/** Claude through the Anthropic API. */
-export class AnthropicModel implements AiModel {
+/** OpenRouter's Anthropic-compatible Messages API, so the same client and message shapes serve both. */
+const OPENROUTER_URL = 'https://openrouter.ai/api';
+
+/** Claude through the Anthropic API, or through OpenRouter. */
+export class ClaudeModel implements AiModel {
   private readonly client: Anthropic;
 
   constructor(
+    private readonly provider: 'anthropic' | 'openrouter',
     apiKey: string,
     readonly name: string,
     private readonly effort: AiEffort,
   ) {
-    this.client = new Anthropic({ apiKey, maxRetries: 2, timeout: 120_000 });
+    // OpenRouter takes its key as a bearer token; `apiKey: null` keeps a stray ANTHROPIC_API_KEY from being sent there.
+    const auth = provider === 'openrouter' ? { apiKey: null, authToken: apiKey, baseURL: OPENROUTER_URL } : { apiKey };
+    this.client = new Anthropic({ ...auth, maxRetries: 2, timeout: 120_000 });
   }
 
   async turn(args: TurnArgs, onText: (text: string) => void, signal: AbortSignal): Promise<TurnResult> {
+    const routing =
+      this.provider === 'openrouter'
+        ? {
+            // Only providers that do not keep or train on prompts; the same provider for the whole conversation.
+            provider: { data_collection: 'deny' },
+            ...(args.sessionId ? { session_id: args.sessionId } : {}),
+          }
+        : {
+            // If the model declines on a policy check, the API retries on its default fallback model in the same call.
+            betas: ['server-side-fallback-2026-07-01'],
+            fallbacks: 'default' as const,
+          };
     const stream = this.client.beta.messages.stream(
       {
         model: this.name,
@@ -48,20 +68,24 @@ export class AnthropicModel implements AiModel {
         output_config: { effort: this.effort },
         // The instructions and tools are the same on every call, so they are read from the cache after the first.
         cache_control: { type: 'ephemeral' },
-        // If the model declines on a policy check, the API retries on its default fallback model in the same call.
-        betas: ['server-side-fallback-2026-07-01'],
-        fallbacks: 'default',
+        ...routing,
       },
       { signal },
     );
     stream.on('text', (t) => onText(t));
+    // OpenRouter adds what it billed to the final usage; the client keeps only the token counts.
+    let usd: number | undefined;
+    stream.on('streamEvent', (event) => {
+      const cost = event.type === 'message_delta' ? (event.usage as { cost?: unknown }).cost : undefined;
+      if (typeof cost === 'number') usd = cost;
+    });
     const msg = await stream.finalMessage();
     const u = msg.usage;
     return {
       content: msg.content,
       stopReason: msg.stop_reason,
       model: msg.model,
-      usage: { input: u.input_tokens ?? 0, output: u.output_tokens ?? 0, cacheRead: u.cache_read_input_tokens ?? 0, cacheWrite: u.cache_creation_input_tokens ?? 0 },
+      usage: { input: u.input_tokens ?? 0, output: u.output_tokens ?? 0, cacheRead: u.cache_read_input_tokens ?? 0, cacheWrite: u.cache_creation_input_tokens ?? 0, usd },
     };
   }
 }

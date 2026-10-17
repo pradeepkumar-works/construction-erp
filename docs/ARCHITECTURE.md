@@ -1091,12 +1091,15 @@ export; the client portal and the phone app show the amount.
   plain words; they are the answer's citations) and lists figures that match no number in the tool results or the
   question (₹, lakh, crore and per cent scales; row counts count) as `unverified`, which the panel flags.
 - **Model.** `ai/model.ts`: Claude through `@anthropic-ai/sdk` (beta Messages, streaming, adaptive thinking, `effort`,
-  prompt caching on the fixed instructions and tools, server-side fallback). `AI_PROVIDER=fake` swaps in a scripted
+  prompt caching on the fixed instructions and tools). The same client goes to OpenRouter's Anthropic-compatible
+  Messages API when `OPENROUTER_API_KEY` is set (bearer key, `provider.data_collection: deny`, the thread id as
+  `session_id` so one conversation stays on one provider and its cache), or to Anthropic direct with server-side
+  fallback. `AI_PROVIDER=fake` swaps in a scripted
   stand-in (one tool picked from the question's words, results listed as links) for CI and local work. The instructions
   are `ai/prompt.ts`; who is asking, today and the page (`/projects/<id>` or a record page, plus the header's project)
   go with each question.
 - **Storage and limits.** `AiThread` and `AiMessage` (tenant tables with RLS). Each answer stores tokens, model, time and
-  an estimated cost in paise at list prices (`ai.config.ts`). `Organization.aiEnabled` (off by default, on for DEMO) and
+  its cost in paise: what OpenRouter billed (`usage.cost`), or an estimate at list prices on Anthropic direct (`ai.config.ts`). `Organization.aiEnabled` (off by default, on for DEMO) and
   `aiMonthlyCapInr` (null = `AI_DEFAULT_MONTHLY_CAP_INR`) are set by admins at `/ai-settings` (audited `AI_SETTINGS`);
   each user may ask `AI_DAILY_QUESTIONS` a day. Refusals (off, cap, limit, guests, support sessions) come back as plain
   HTTP errors before the stream starts. History sent to the model is the last 12 questions and answers as text.

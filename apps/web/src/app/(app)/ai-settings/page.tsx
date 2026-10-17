@@ -29,7 +29,7 @@ function SettingsCard({ data }: { data: AiSettingsDto }) {
           showIcon
           style={{ marginBottom: token.margin }}
           title="Not set up on this server yet"
-          description="The server needs an AI key before anyone can ask. Whoever runs your server adds ANTHROPIC_API_KEY to its settings; your choices here are kept until then."
+          description="The server needs an AI key before anyone can ask. Whoever runs your server adds OPENROUTER_API_KEY (or ANTHROPIC_API_KEY) to its settings; your choices here are kept until then."
         />
       )}
       <Flex vertical gap={token.marginLG}>
@@ -98,7 +98,7 @@ function UsageCard({ data }: { data: AiSettingsDto }) {
       />
       <Progress percent={pct} status={pct >= 100 ? 'exception' : 'normal'} aria-label={`${pct}% of the monthly allowance used`} style={{ maxWidth: 480 }} />
       <Typography.Paragraph type="secondary" style={{ marginTop: token.marginXS }}>
-        Estimated from the AI provider&apos;s list prices; the provider&apos;s own invoice is the final figure.
+        What the AI provider charged for each answer, in rupees at the server&apos;s exchange rate; the provider&apos;s own invoice is the final figure.
       </Typography.Paragraph>
       <Table
         size="small"
@@ -120,8 +120,8 @@ function DataCard() {
   return (
     <Card title="Where the data goes">
       <Typography.Paragraph>
-        To answer, {PRODUCT_NAME} sends the question and the records needed for it to Anthropic&apos;s Claude, which writes the answer. Under Anthropic&apos;s commercial terms this data is
-        not used to train its models. Conversations are kept in {PRODUCT_NAME} for the person who asked, who can delete them.
+        To answer, {PRODUCT_NAME} sends the question and the records needed for it to Anthropic&apos;s Claude, through the OpenRouter gateway, which
+        writes the answer. Requests go only to providers that do not keep or train on them. Conversations are kept in {PRODUCT_NAME} for the person who asked, who can delete them.
       </Typography.Paragraph>
       <Typography.Paragraph type="secondary" style={{ margin: 0 }}>
         Ask {PRODUCT_NAME} only reads. It cannot create, approve, pay or delete anything, and every answer links to the records it used so people can check them.
