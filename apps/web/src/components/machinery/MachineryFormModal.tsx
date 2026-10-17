@@ -1,13 +1,14 @@
 'use client';
 
-import React, { useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { Alert, App, DatePicker, Form, Input, InputNumber, Select } from 'antd';
 import dayjs from 'dayjs';
-import type { AttachmentDto, MachineryLogDto } from '@erp/shared';
-import { MAX_LOG_HOURS, MAX_PAGE_SIZE, machineryLogProblem } from '@erp/shared';
+import type { AttachmentDto, EquipmentDto, MachineryLogDto } from '@erp/shared';
+import { MAX_LOG_HOURS, machineryLogProblem } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, errorMessage } from '@/lib/api';
-import { useActivities, useEquipment, useProjects } from '@/lib/queries';
+import { useActivities, useProjects } from '@/lib/queries';
+import { EquipmentSelect } from '@/components/common/SearchSelect';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { editActionLabel } from '@/components/common/EditResubmitButton';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
@@ -41,20 +42,10 @@ export function MachineryFormModal({ open, onClose, projectId, log }: { open: bo
   const fixedProject = log?.projectId ?? projectId;
   const selectedProject = Form.useWatch('projectId', form) ?? fixedProject;
   const { data: activities } = useActivities(selectedProject);
-  const { data: equipment, isLoading: eqLoading } = useEquipment({ pageSize: MAX_PAGE_SIZE }, open);
   const breakdown = Form.useWatch('breakdownHours', form);
 
   // Machines deployed at the chosen project first, then the rest of the fleet.
-  const equipmentOptions = useMemo(() => {
-    const all = equipment?.items ?? [];
-    const here = all.filter((e) => e.projectId === selectedProject);
-    const other = all.filter((e) => e.projectId !== selectedProject);
-    const opt = (e: (typeof all)[number]) => ({ value: e.id, label: `${e.code} · ${e.name}` });
-    return [
-      ...(here.length ? [{ label: 'At this project', options: here.map(opt) }] : []),
-      ...(other.length ? [{ label: here.length ? 'Elsewhere / yard' : 'All equipment', options: other.map(opt) }] : []),
-    ];
-  }, [equipment, selectedProject]);
+  const hereFirst = useCallback((a: EquipmentDto, b: EquipmentDto) => Number(b.projectId === selectedProject) - Number(a.projectId === selectedProject), [selectedProject]);
 
   useEffect(() => {
     if (!open) return;
@@ -140,7 +131,7 @@ export function MachineryFormModal({ open, onClose, projectId, log }: { open: bo
           </Form.Item>
           <FormGrid cols={2}>
             <Form.Item name="equipmentId" label="Equipment" rules={[{ required: true, message: 'Choose the machine' }]}>
-              <Select showSearch={{ optionFilterProp: 'label' }} loading={eqLoading} placeholder="Select machine" options={equipmentOptions} />
+              <EquipmentSelect sortRows={hereFirst} selected={log ? { value: log.equipmentId, label: `${log.equipmentCode} - ${log.equipmentName}` } : null} />
             </Form.Item>
             <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date' }]}>
               <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />

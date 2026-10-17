@@ -7,7 +7,7 @@ import { Badge, Button, Card, Progress, Select, theme } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import type { ProjectSortField, ProjectStatus, ProjectSummary, ProjectType } from '@erp/shared';
 import { LIST_SORT_FIELDS, PROJECT_STATUSES, PROJECT_STATUS_LABELS, PROJECT_TYPES, PROJECT_TYPE_LABELS, canEditProjects } from '@erp/shared';
-import { useProjectsPage } from '@/lib/queries';
+import { useProjectsPage, LIST_START } from '@/lib/queries';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { PROJECT_EXPORT } from '@/lib/exportColumns';
 import { ExportButton } from '@/components/common/ExportButton';
@@ -84,8 +84,9 @@ export default function ProjectsPage() {
   const frame = useListFrame<ProjectSortField, ProjectSummary>({
     list: 'projects',
     keys: KEYS,
-    sortBy: 'status',
-    sortOrder: 'asc',
+    // Where the sidebar's hover fetched it ahead from (LIST_START).
+    sortBy: LIST_START['/projects'].sortBy,
+    sortOrder: LIST_START['/projects'].sortOrder,
     sortFields: LIST_SORT_FIELDS.projects,
     projectScoped: false,
     columns: projectColumns,

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { ServerTimingInterceptor } from './common/server-timing';
 import { GuestGuard } from './common/guest.guard';
 import { SupportReadOnlyGuard } from './common/support.guard';
 import { BillingReadOnlyGuard } from './common/billing';
@@ -59,6 +60,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { HealthController } from './health.controller';
+import { VitalsController } from './vitals.controller';
 
 @Module({
   imports: [
@@ -117,12 +119,13 @@ import { HealthController } from './health.controller';
     PortalModule,
     PlatformModule,
   ],
-  controllers: [HealthController],
+  controllers: [HealthController, VitalsController],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: GuestGuard },
     { provide: APP_GUARD, useClass: SupportReadOnlyGuard },
     { provide: APP_GUARD, useClass: BillingReadOnlyGuard },
+    { provide: APP_INTERCEPTOR, useClass: ServerTimingInterceptor },
   ],
 })
 export class AppModule {}

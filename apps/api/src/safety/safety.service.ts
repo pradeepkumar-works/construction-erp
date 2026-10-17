@@ -21,7 +21,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
-import { AttachmentsService } from '../common/attachments.service';
+import { AttachmentsService, ATTACHMENT_FIELDS } from '../common/attachments.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { dateOnly, iso, parseDate } from '../common/serialize';
 import { isUniqueViolation } from '../common/idempotency';
@@ -48,11 +48,11 @@ const incidentInclude = {
   project: { select: { name: true } },
   reportedBy: { select: { fullName: true } },
   closedBy: { select: { fullName: true } },
-  attachments: true,
+  attachments: { select: ATTACHMENT_FIELDS },
 } satisfies Prisma.SafetyIncidentInclude;
 type IncidentRow = Prisma.SafetyIncidentGetPayload<{ include: typeof incidentInclude }>;
 
-const talkInclude = { project: { select: { name: true } }, recordedBy: { select: { fullName: true } }, attachments: true } satisfies Prisma.ToolboxTalkInclude;
+const talkInclude = { project: { select: { name: true } }, recordedBy: { select: { fullName: true } }, attachments: { select: ATTACHMENT_FIELDS } } satisfies Prisma.ToolboxTalkInclude;
 type TalkRow = Prisma.ToolboxTalkGetPayload<{ include: typeof talkInclude }>;
 
 const permitInclude = {
@@ -60,7 +60,7 @@ const permitInclude = {
   requestedBy: { select: { fullName: true } },
   issuedBy: { select: { fullName: true } },
   closedBy: { select: { fullName: true } },
-  attachments: true,
+  attachments: { select: ATTACHMENT_FIELDS },
 } satisfies Prisma.WorkPermitInclude;
 type PermitRow = Prisma.WorkPermitGetPayload<{ include: typeof permitInclude }>;
 

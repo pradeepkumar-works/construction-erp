@@ -2,12 +2,12 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Button, Checkbox, Select, Space, Tag, theme } from 'antd';
+import { Button, Checkbox, Space, Tag, theme } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import type { VendorBillDto, VendorBillSortField } from '@erp/shared';
 import { LIST_SORT_FIELDS, canRecordVendorBill } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
-import { useVendorBills, useVendors } from '@/lib/queries';
+import { useVendorBills, LIST_START } from '@/lib/queries';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { VENDOR_BILL_EXPORT } from '@/lib/exportColumns';
 import { formatDate, formatINR, toNumber } from '@/lib/format';
@@ -25,6 +25,7 @@ import { exportSelected, useBulkApprove } from '@/components/list/bulk';
 import { useListFrame } from '@/components/list/useListFrame';
 import { MatchTag, VendorBillDrawer, overdueDays } from './VendorBillDrawer';
 import { VendorBillFormModal } from './VendorBillFormModal';
+import { VendorSelect, useVendorName } from '@/components/common/SearchSelect';
 
 const KEYS = ['status', 'mine', 'from', 'to', 'vendorId', 'exceptions'] as const;
 
@@ -98,23 +99,25 @@ export function VendorBillList({ projectId: fixedProject, openId: initialOpen }:
   useEffect(() => {
     if (initialOpen) setOpenId(initialOpen);
   }, [initialOpen]);
-  const { data: vendors } = useVendors();
   const frame = useListFrame({
     list: 'vendor-bills',
     type: 'VENDOR_BILL',
     keys: KEYS,
-    sortBy: 'invoiceDate',
-    sortOrder: 'desc',
+    // Where the sidebar's hover fetched it ahead from (LIST_START).
+    sortBy: LIST_START['/vendor-bills'].sortBy,
+    sortOrder: LIST_START['/vendor-bills'].sortOrder,
     sortFields: LIST_SORT_FIELDS.vendorBills,
     fixedProject,
     columns: (sortOrderFor) => vendorBillColumns({ showProject: !fixedProject, onOpen: setOpenId, onEdit: setEditing, sortOrderFor }),
     moreViews: [{ key: 'exceptions', label: 'Not matching the PO', filters: { exceptions: '1' } }],
     chipLabels: {
-      vendorId: (v) => `Vendor: ${vendors?.find((x) => x.id === v)?.name ?? 'one vendor'}`,
+      vendorId: () => `Vendor: ${vendorName ?? 'one vendor'}`,
       exceptions: () => 'Not matching the PO',
     },
   });
   const { page } = frame;
+  // Read by the chip's label once the list has drawn.
+  const vendorName = useVendorName(page.filters.vendorId);
   const filters = { ...page.params, projectId: frame.projectId, status: frame.status, vendorId: page.filters.vendorId, exceptions: page.filters.exceptions === '1' || undefined };
   const { data, isLoading, isFetching, error, refetch } = useVendorBills(filters);
   const approve = useBulkApprove<VendorBillDto>('vendor_bill', (r) => r.total);
@@ -153,7 +156,7 @@ export function VendorBillList({ projectId: fixedProject, openId: initialOpen }:
           </>
         }
       >
-        <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Any vendor" aria-label="Vendor" style={{ width: 220 }} value={filters.vendorId} onChange={(v) => page.setFilter('vendorId', v)} options={(vendors ?? []).map((v) => ({ value: v.id, label: v.name }))} />
+        <VendorSelect allowClear placeholder="Any vendor" aria-label="Vendor" style={{ width: 220 }} value={filters.vendorId} onChange={(v) => page.setFilter('vendorId', v)} />
         <DateRangeFilter {...frame.dateRange} placeholder={['Invoices from', 'To']} />
         <Checkbox checked={!!filters.exceptions} onChange={(e) => page.setFilter('exceptions', e.target.checked ? '1' : undefined)}>
           Not matching the PO

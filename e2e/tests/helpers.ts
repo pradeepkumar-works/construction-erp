@@ -32,11 +32,18 @@ export async function api<T>(token: string, path: string, init: { method?: strin
   return (await res.json()) as T;
 }
 
-/** Pick an option in an antd Select: type to filter, then Enter takes the first match (or the first option when `text` is empty). */
+/**
+ * Pick an option in an antd Select: type to filter, then Enter takes the first match (or the first option when `text` is
+ * empty). It waits on this field's own list (one just closed can still be fading out), and a search-as-you-type picker
+ * (item 83) offers no option until the server has answered for the words typed.
+ */
 export async function chooseOption(field: Locator, text = '') {
   await field.click();
   if (text) await field.fill(text);
-  await field.page().locator('.ant-select-dropdown:not(.ant-select-dropdown-hidden) .ant-select-item-option-active').filter({ visible: true }).last().waitFor();
+  const page = field.page();
+  const list = await field.getAttribute('aria-controls');
+  const dropdown = list ? page.locator('.ant-select-dropdown').filter({ has: page.locator(`[id="${list}"]`) }) : page.locator('.ant-select-dropdown:not(.ant-select-dropdown-hidden)');
+  await dropdown.locator('.ant-select-item-option-active').filter({ visible: true }).last().waitFor();
   await field.press('Enter');
 }
 

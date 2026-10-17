@@ -5,10 +5,11 @@ import { Alert, App, Button, DatePicker, Form, Input, InputNumber, Select, Table
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { AttachmentDto, WorkOrderDto } from '@erp/shared';
+import type { AttachmentDto, VendorDto, VendorKind, WorkOrderDto } from '@erp/shared';
 import { GST_RATES, MSME_CATEGORY_LABELS, contractorTdsPct } from '@erp/shared';
 import { api, errorMessage } from '@/lib/api';
-import { useBoq, useProjects, useVendors } from '@/lib/queries';
+import { useBoq, useProjects } from '@/lib/queries';
+import { VendorSelect, useVendor } from '@/components/common/SearchSelect';
 import { formatINR, toNumber } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { UnitInput } from '@/components/common/UnitInput';
@@ -43,7 +44,7 @@ interface FormValues {
   docs?: AttachmentDto[];
 }
 
-const SUB_KINDS = new Set(['SUBCONTRACTOR', 'LABOUR_CONTRACTOR']);
+const SUB_KINDS: VendorKind[] = ['SUBCONTRACTOR', 'LABOUR_CONTRACTOR'];
 const lineAmount = (l: LineValue | undefined) => Math.round(toNumber(l?.quantity) * toNumber(l?.rate) * 100) / 100;
 const iso = (d: dayjs.Dayjs | null | undefined) => (d ? d.format('YYYY-MM-DD') : null);
 
@@ -65,13 +66,12 @@ export function WorkOrderFormModal({
   const { message } = App.useApp();
   const qc = useQueryClient();
   const { data: projects } = useProjects();
-  const { data: vendors } = useVendors(open);
   const projectId = Form.useWatch('projectId', form) as string | undefined;
   const { data: boq } = useBoq(open ? projectId : undefined);
   const lines = Form.useWatch('lines', { form, preserve: true }) as LineValue[] | undefined;
   const vendorId = Form.useWatch('vendorId', form);
   const gstRate = Form.useWatch('gstRate', form);
-  const vendor = vendors?.find((v) => v.id === vendorId);
+  const vendor = useVendor(open ? vendorId : undefined);
   const msme = vendor?.msmeCategory === 'MICRO' || vendor?.msmeCategory === 'SMALL';
 
   useEffect(() => {
@@ -100,9 +100,7 @@ export function WorkOrderFormModal({
   }, [open, order, fixedProject, form]);
 
   /** A new vendor brings its TDS under section 194C and GST (none without a GSTIN). */
-  const onVendor = (id: string) => {
-    const v = vendors?.find((x) => x.id === id);
-    if (!v) return;
+  const onVendor = (v: VendorDto) => {
     form.setFieldsValue({ tdsPct: contractorTdsPct(v.pan), gstRate: v.gstin ? (form.getFieldValue('gstRate') || 18) : 0 });
   };
 
@@ -144,10 +142,6 @@ export function WorkOrderFormModal({
     onError: (e) => message.error(errorMessage(e)),
   });
 
-  const vendorOptions = (vendors ?? [])
-    .filter((v) => v.isActive || v.id === order?.vendorId)
-    .sort((a, b) => Number(b.kinds.some((k) => SUB_KINDS.has(k))) - Number(a.kinds.some((k) => SUB_KINDS.has(k))) || a.name.localeCompare(b.name))
-    .map((v) => ({ value: v.id, label: v.name }));
   const usedBoq = new Set((lines ?? []).map((l) => l.boqItemId).filter(Boolean));
 
   return (
@@ -185,7 +179,7 @@ export function WorkOrderFormModal({
                 : undefined
             }
           >
-            <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Vendor master" options={vendorOptions} onChange={onVendor} />
+            <VendorSelect prefer={SUB_KINDS} placeholder="Type a subcontractor's name" onPick={onVendor} />
           </Form.Item>
           <Form.Item name="woDate" label="Work order date" rules={[{ required: true, message: 'Pick the work order date' }]}>
             <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" />

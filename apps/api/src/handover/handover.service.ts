@@ -18,7 +18,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
-import { AttachmentsService } from '../common/attachments.service';
+import { AttachmentsService, ATTACHMENT_FIELDS } from '../common/attachments.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { dateOnly, iso, money, parseDate } from '../common/serialize';
 import { isUniqueViolation } from '../common/idempotency';
@@ -33,13 +33,13 @@ const defectInclude = {
   assignedTo: { select: { fullName: true } },
   fixedBy: { select: { fullName: true } },
   closedBy: { select: { fullName: true } },
-  attachments: { select: { id: true, fileName: true, mimeType: true, size: true, storagePath: true, createdAt: true }, orderBy: { createdAt: 'asc' } },
+  attachments: { select: ATTACHMENT_FIELDS, orderBy: { createdAt: 'asc' } },
 } satisfies Prisma.DefectInclude;
 type DefectRow = Prisma.DefectGetPayload<{ include: typeof defectInclude }>;
 
 const handoverInclude = {
   recordedBy: { select: { fullName: true } },
-  attachments: { select: { id: true, fileName: true, mimeType: true, size: true, storagePath: true, createdAt: true }, orderBy: { createdAt: 'asc' } },
+  attachments: { select: ATTACHMENT_FIELDS, orderBy: { createdAt: 'asc' } },
 } satisfies Prisma.ProjectHandoverInclude;
 type HandoverRow = Prisma.ProjectHandoverGetPayload<{ include: typeof handoverInclude }>;
 

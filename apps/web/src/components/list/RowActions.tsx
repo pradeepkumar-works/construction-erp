@@ -11,6 +11,7 @@ import { useAuth } from '@/lib/auth';
 import type { ApprovalTypeParam } from '@/lib/queries';
 import { ReviewDialog, useMayReview } from '@/components/common/ReviewActions';
 import { editActionLabel } from '@/components/common/EditResubmitButton';
+import { usePrefetch } from '@/lib/prefetch';
 
 /**
  * A row's ⋯ menu on a list page: Open (and Open full page), then whatever this user may do to the entry (approve, send back or reject while
@@ -40,6 +41,7 @@ export function RowActions<T extends SubmissionBase & { id: string }>({
 }) {
   const { user } = useAuth();
   const router = useRouter();
+  const prefetch = usePrefetch();
   const [decision, setDecision] = useState<ReviewDecision | null>(null);
   const mayReview = useMayReview(type, row.status, amount) && review;
   const mayEdit = !!user && !!onEdit && canEditSubmission(user, row) && canResubmit(user, row);
@@ -61,7 +63,8 @@ export function RowActions<T extends SubmissionBase & { id: string }>({
 
   return (
     <>
-      <Dropdown menu={{ items }} trigger={['click']} placement="bottomRight">
+      {/* Opening the menu fetches the entry ahead (item 83): Open and Open full page then show it at once. */}
+      <Dropdown menu={{ items }} trigger={['click']} placement="bottomRight" onOpenChange={(o) => o && prefetch.record(href)}>
         <Button type="text" size="small" icon={<EllipsisOutlined />} aria-label="Actions" />
       </Dropdown>
       <ReviewDialog type={type} id={row.id} decision={decision} onClose={() => setDecision(null)} />

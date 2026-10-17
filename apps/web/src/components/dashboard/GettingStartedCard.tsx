@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Button, Card, Progress, Typography, theme } from 'antd';
 import { CheckCircleFilled, CloseOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { GettingStartedStep } from '@erp/shared';
 import { seesGettingStarted } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
-import { useGettingStarted } from '@/lib/queries';
+import { useGettingStarted as useGettingStartedQuery } from '@/lib/queries';
 import { BRAND } from '@/lib/brand';
 import { themeColor } from '@/lib/theme';
 import { LinkButton } from '@/components/common/LinkButton';
@@ -26,31 +26,47 @@ const STEPS: Record<GettingStartedStep, { title: string; help: string; href: str
 
 const hiddenKey = (orgId: string) => `nirmaan.gettingStarted.hidden.${orgId}`;
 
-/** First-week setup checklist on the dashboard, for admin and management, until every step is done or it is hidden. */
-export function GettingStartedCard() {
-  const { user } = useAuth();
-  const { token } = theme.useToken();
-  const allowed = !!user && seesGettingStarted(user.roleKey);
-  const [hidden, setHidden] = useState(true);
-  useEffect(() => {
-    if (!user) return;
-    try {
-      setHidden(localStorage.getItem(hiddenKey(user.organizationId)) === '1');
-    } catch {
-      setHidden(false);
-    }
-  }, [user]);
-  const { data } = useGettingStarted(allowed && !hidden);
-  if (!user || !allowed || hidden || !data || data.done === data.total) return null;
+const readHidden = (orgId: string | undefined) => {
+  if (!orgId) return true;
+  try {
+    return localStorage.getItem(hiddenKey(orgId)) === '1';
+  } catch {
+    return false;
+  }
+};
 
+/**
+ * Whether the checklist shows, read as the page first draws (the hidden flag is this browser's, read at once), so the
+ * home page can wait for it with everything else and draw once (item 83: nothing appears above what is already shown).
+ */
+export function useGettingStarted() {
+  const { user } = useAuth();
+  const allowed = !!user && seesGettingStarted(user.roleKey);
+  const orgId = user?.organizationId;
+  const [hidden, setHidden] = useState(() => readHidden(orgId));
+  const [readFor, setReadFor] = useState(orgId);
+  if (readFor !== orgId) {
+    setReadFor(orgId);
+    setHidden(readHidden(orgId));
+  }
+  const query = useGettingStartedQuery(allowed && !hidden);
   const hide = () => {
     try {
-      localStorage.setItem(hiddenKey(user.organizationId), '1');
+      if (orgId) localStorage.setItem(hiddenKey(orgId), '1');
     } catch {
       // private mode: hidden for this visit only
     }
     setHidden(true);
   };
+  return { user, allowed, hidden, hide, data: query.data, settled: !allowed || hidden || !query.isPending };
+}
+
+/** First-week setup checklist on the dashboard, for admin and management, until every step is done or it is hidden. */
+export function GettingStartedCard({ state }: { state: ReturnType<typeof useGettingStarted> }) {
+  const { token } = theme.useToken();
+  const { user, allowed, hidden, hide, data } = state;
+  if (!user || !allowed || hidden || !data || data.done === data.total) return null;
+
   const day = Math.max(1, dayjs().startOf('day').diff(dayjs(data.organizationCreatedAt).startOf('day'), 'day') + 1);
   const next = data.steps.find((s) => !s.done)?.key;
 

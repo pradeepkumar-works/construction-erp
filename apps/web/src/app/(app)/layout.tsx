@@ -2,10 +2,10 @@
 
 import React, { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { Spin } from 'antd';
 import { isGuest } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { AppShell } from '@/components/shell/AppShell';
+import { ShellSkeleton } from '@/components/shell/ShellSkeleton';
 import { AppearanceProvider } from '@/lib/appearance';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -25,13 +25,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     if (guestAway) router.replace('/portal');
   }, [guestAway, router]);
 
-  if (loading || !user || guestAway) {
-    return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Spin size="large" />
-      </div>
-    );
-  }
+  // While the sign-in is checked: the shell's outline and a page of placeholders, where the app will draw them.
+  if (loading || !user || guestAway) return <ShellSkeleton />;
 
   return (
     <AppearanceProvider>

@@ -2,15 +2,22 @@
 
 import React, { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Select, Skeleton } from 'antd';
+import { Select } from 'antd';
 import { PageHeader } from '@/components/common/PageHeader';
 import { useProjectScope } from '@/lib/project-scope';
 import { useProjects } from '@/lib/queries';
 import { ProgressReportView } from '@/components/reports/ProgressReportView';
+import { PageSkeleton } from '@/components/common/QueryState';
 
 export default function ReportsPage() {
   return (
-    <Suspense fallback={<Skeleton active />}>
+    <Suspense
+      fallback={
+        <div className="page-container">
+          <PageSkeleton />
+        </div>
+      }
+    >
       <Reports />
     </Suspense>
   );

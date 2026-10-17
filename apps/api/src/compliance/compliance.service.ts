@@ -15,7 +15,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
-import { AttachmentsService } from '../common/attachments.service';
+import { AttachmentsService, ATTACHMENT_FIELDS } from '../common/attachments.service';
 import { todayIn } from '../notifications/time';
 import { dateOnly, iso, money, parseDate } from '../common/serialize';
 import { CloseComplianceDocDto, CreateComplianceDocDto, ListComplianceQuery, RenewComplianceDocDto, UpdateComplianceDocDto } from './compliance.dto';
@@ -24,7 +24,7 @@ const include = {
   project: { select: { name: true } },
   createdBy: { select: { fullName: true } },
   renewedBy: { select: { id: true } },
-  attachments: { select: { id: true, fileName: true, mimeType: true, size: true, storagePath: true, createdAt: true }, orderBy: { createdAt: 'asc' } },
+  attachments: { select: ATTACHMENT_FIELDS, orderBy: { createdAt: 'asc' } },
 } satisfies Prisma.ComplianceDocInclude;
 type Row = Prisma.ComplianceDocGetPayload<{ include: typeof include }>;
 

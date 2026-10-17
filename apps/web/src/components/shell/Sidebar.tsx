@@ -8,6 +8,7 @@ import { DownOutlined, MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/
 import type { AuthUser } from '@erp/shared';
 import { BRAND } from '@/lib/brand';
 import { readPref, writePref } from '@/lib/prefs';
+import { useHoverIntent, usePrefetch } from '@/lib/prefetch';
 import { BrandMark, Wordmark } from './BrandMark';
 import { activeHref, type NavItem, type NavSection } from './nav';
 import s from './Sidebar.module.css';
@@ -112,9 +113,13 @@ export function Sidebar({ user, sections, pendingCount, rail = false, onToggleRa
 
 function NavLink({ item, active, rail, count, onNavigate }: { item: NavItem; active: boolean; rail: boolean; count: number; onNavigate?: () => void }) {
   const Icon = item.icon;
+  // Resting on a link fetches its list's first page ahead (item 83); Next fetches the page's code itself.
+  const prefetch = usePrefetch();
+  const ahead = useHoverIntent(() => prefetch.list(item.href));
   const link = (
     <Link
       href={item.href}
+      {...ahead}
       className={cx(s.item, active && s.active)}
       aria-current={active ? 'page' : undefined}
       data-tour={item.approvals ? 'approvals' : undefined}

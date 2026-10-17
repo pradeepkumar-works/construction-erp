@@ -22,7 +22,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
-import { AttachmentsService } from '../common/attachments.service';
+import { AttachmentsService, ATTACHMENT_FIELDS } from '../common/attachments.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { dateOnly, iso, parseDate, pct } from '../common/serialize';
 import { isUniqueViolation } from '../common/idempotency';
@@ -35,7 +35,7 @@ const include = {
   activity: { select: { name: true } },
   owner: { select: { fullName: true } },
   raisedBy: { select: { fullName: true } },
-  attachments: true,
+  attachments: { select: ATTACHMENT_FIELDS },
 } satisfies Prisma.RiskInclude;
 type Row = Prisma.RiskGetPayload<{ include: typeof include }>;
 

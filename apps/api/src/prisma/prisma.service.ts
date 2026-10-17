@@ -1,6 +1,6 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
-import { runInTenantTx, tenantRlsEnabled, tenantStore } from './tenant-context';
+import { recordDbTime, runInTenantTx, tenantRlsEnabled, tenantStore } from './tenant-context';
 
 const NO_ORG = '00000000-0000-0000-0000-000000000000';
 
@@ -21,9 +21,15 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         $allModels: {
           async $allOperations({ args, query }) {
             const ctx = tenantStore();
-            if (!tenantRlsEnabled() || !ctx?.orgId || ctx.inTx) return query(args);
-            const [, result] = await base.$transaction([setOrg(base, ctx.orgId), query(args)]);
-            return result;
+            const t0 = performance.now();
+            try {
+              if (!tenantRlsEnabled() || !ctx?.orgId || ctx.inTx) return await query(args);
+              const [, result] = await base.$transaction([setOrg(base, ctx.orgId), query(args)]);
+              return result;
+            } finally {
+              // Server-Timing's db figure: each top-level operation once (its RLS transaction included).
+              if (!ctx?.inTx) recordDbTime(performance.now() - t0);
+            }
           },
         },
       },
@@ -32,13 +38,18 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       const ctx = tenantStore();
       const orgId = ctx?.orgId;
       if (!tenantRlsEnabled() || !orgId || ctx?.inTx) return (ext.$transaction as any)(arg, opts);
+      // The operations inside run with inTx set and are not timed one by one: the whole transaction counts once.
+      const t0 = performance.now();
+      const timed = <T>(p: Promise<T>) => p.finally(() => recordDbTime(performance.now() - t0));
       if (typeof arg === 'function') {
-        return ext.$transaction(async (tx) => {
-          await setOrg(tx as unknown as PrismaClient, orgId);
-          return runInTenantTx(() => (arg as (tx: unknown) => Promise<unknown>)(tx));
-        }, opts as any);
+        return timed(
+          ext.$transaction(async (tx) => {
+            await setOrg(tx as unknown as PrismaClient, orgId);
+            return runInTenantTx(() => (arg as (tx: unknown) => Promise<unknown>)(tx));
+          }, opts as any),
+        );
       }
-      return runInTenantTx(() => (ext.$transaction as any)([setOrg(base, orgId), ...(arg as unknown[])], opts)).then((r: unknown[]) => r.slice(1));
+      return timed(runInTenantTx(() => (ext.$transaction as any)([setOrg(base, orgId), ...(arg as unknown[])], opts)).then((r: unknown[]) => r.slice(1)));
     };
     const own = new Set<PropertyKey>(['onModuleInit', 'onModuleDestroy', 'tenantGuardStatus']);
     return new Proxy(ext, {

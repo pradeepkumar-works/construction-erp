@@ -2,12 +2,12 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Button, Checkbox, Progress, Select, Space, theme } from 'antd';
+import { Button, Checkbox, Progress, Space, theme } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
-import type { WorkOrderDto, WorkOrderSortField } from '@erp/shared';
+import type { WorkOrderDto, WorkOrderSortField, VendorKind } from '@erp/shared';
 import { LIST_SORT_FIELDS, canIssueWorkOrder } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
-import { useVendors, useWorkOrders } from '@/lib/queries';
+import { useWorkOrders, LIST_START } from '@/lib/queries';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { WORK_ORDER_EXPORT } from '@/lib/exportColumns';
 import { formatDate, formatINR, toNumber } from '@/lib/format';
@@ -24,8 +24,9 @@ import { exportSelected, useBulkApprove } from '@/components/list/bulk';
 import { useListFrame } from '@/components/list/useListFrame';
 import { WoStateTag, WorkOrderDrawer } from './WorkOrderDrawer';
 import { WorkOrderFormModal } from './WorkOrderFormModal';
+import { VendorSelect, useVendorName } from '@/components/common/SearchSelect';
 
-const SUB_KINDS = new Set(['SUBCONTRACTOR', 'LABOUR_CONTRACTOR']);
+const SUB_KINDS: VendorKind[] = ['SUBCONTRACTOR', 'LABOUR_CONTRACTOR'];
 const KEYS = ['status', 'mine', 'from', 'to', 'vendorId', 'open'] as const;
 
 function Sub({ children }: { children: React.ReactNode }) {
@@ -98,23 +99,25 @@ export function WorkOrderList({ projectId: fixedProject, openId: initialOpen }: 
   useEffect(() => {
     if (initialOpen) setOpenId(initialOpen);
   }, [initialOpen]);
-  const { data: vendors } = useVendors();
   const frame = useListFrame({
     list: 'work-orders',
     type: 'WORK_ORDER',
     keys: KEYS,
-    sortBy: 'woDate',
-    sortOrder: 'desc',
+    // Where the sidebar's hover fetched it ahead from (LIST_START).
+    sortBy: LIST_START['/work-orders'].sortBy,
+    sortOrder: LIST_START['/work-orders'].sortOrder,
     sortFields: LIST_SORT_FIELDS.workOrders,
     fixedProject,
     columns: (sortOrderFor) => workOrderColumns({ showProject: !fixedProject, onOpen: setOpenId, onEdit: setEditing, sortOrderFor }),
     moreViews: [{ key: 'open', label: 'Open orders', filters: { open: '1' } }],
     chipLabels: {
-      vendorId: (v) => `Subcontractor: ${vendors?.find((x) => x.id === v)?.name ?? 'one subcontractor'}`,
+      vendorId: () => `Subcontractor: ${vendorName ?? 'one subcontractor'}`,
       open: () => 'Open orders',
     },
   });
   const { page } = frame;
+  // Read by the chip's label once the list has drawn.
+  const vendorName = useVendorName(page.filters.vendorId);
   const filters = { ...page.params, projectId: frame.projectId, status: frame.status, vendorId: page.filters.vendorId, open: page.filters.open === '1' || undefined };
   const { data, isLoading, isFetching, error, refetch } = useWorkOrders(filters);
   const approve = useBulkApprove<WorkOrderDto>('work_order', (r) => r.value);
@@ -153,15 +156,14 @@ export function WorkOrderList({ projectId: fixedProject, openId: initialOpen }: 
           </>
         }
       >
-        <Select
+        <VendorSelect
+          kinds={SUB_KINDS}
           allowClear
-          showSearch={{ optionFilterProp: 'label' }}
           placeholder="Any subcontractor"
           aria-label="Subcontractor"
           style={{ width: 220 }}
           value={filters.vendorId}
           onChange={(v) => page.setFilter('vendorId', v)}
-          options={(vendors ?? []).filter((v) => v.kinds.some((k) => SUB_KINDS.has(k))).map((v) => ({ value: v.id, label: v.name }))}
         />
         <DateRangeFilter {...frame.dateRange} />
         <Checkbox checked={!!filters.open} onChange={(e) => page.setFilter('open', e.target.checked ? '1' : undefined)}>

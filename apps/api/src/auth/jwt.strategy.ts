@@ -31,7 +31,15 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (payload.sup) return this.support(payload);
     const user = await this.prisma.user.findFirst({
       where: { id: payload.sub, organizationId: payload.org, isActive: true, organization: { suspendedAt: null } },
-      include: { role: true, organization: { select: { code: true, trialEndsAt: true, paidUntil: true } } },
+      // Runs on every request: only the columns the request user needs.
+      select: {
+        id: true,
+        organizationId: true,
+        email: true,
+        fullName: true,
+        role: { select: { key: true } },
+        organization: { select: { code: true, trialEndsAt: true, paidUntil: true } },
+      },
     });
     if (!user) throw new UnauthorizedException();
     setTenant(user.organizationId);

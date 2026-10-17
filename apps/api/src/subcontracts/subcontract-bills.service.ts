@@ -16,7 +16,7 @@ import { ProjectAccessService } from '../common/project-access.service';
 import { ApprovalRightsService } from '../common/approval-rights.service';
 import { AuditService } from '../common/audit.service';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
-import { AttachmentsService } from '../common/attachments.service';
+import { AttachmentsService, ATTACHMENT_FIELDS } from '../common/attachments.service';
 import { dateOnly, dec, iso, money, parseDate } from '../common/serialize';
 import { isUniqueViolation } from '../common/idempotency';
 import { dateRange, ilike, pageArgs, paginated, searchWords } from '../common/paging';
@@ -35,7 +35,7 @@ const include = {
   materials: { include: { item: { select: { name: true, unit: true } } }, orderBy: { item: { name: 'asc' as const } } },
   submittedBy: { select: { fullName: true } },
   reviewedBy: { select: { fullName: true } },
-  attachments: true,
+  attachments: { select: ATTACHMENT_FIELDS },
   _count: { select: { measurements: true, issues: true } },
 } satisfies Prisma.SubcontractBillInclude;
 type Row = Prisma.SubcontractBillGetPayload<{ include: typeof include }>;

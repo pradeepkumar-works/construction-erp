@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import React from 'react';
 import { AntdRegistry } from '@ant-design/nextjs-registry';
 import { Providers } from './providers';
+import { WebVitals } from '@/components/shell/WebVitals';
 import { BRAND } from '@/lib/brand';
 import { Archivo, Public_Sans } from 'next/font/google';
 import './globals.css';
@@ -31,6 +32,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: APPEARANCE_SCRIPT }} />
       </head>
       <body>
+        <WebVitals />
         <AntdRegistry>
           <Providers>{children}</Providers>
         </AntdRegistry>

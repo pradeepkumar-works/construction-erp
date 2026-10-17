@@ -23,6 +23,7 @@ import { readPref, writePref } from "@/lib/prefs";
 import { useStickyTop } from "@/lib/sticky";
 import { useSingleKeys } from "@/lib/shortcuts";
 import { EmptyArt } from "@/components/common/EmptyArt";
+import { HOVER_INTENT_MS, usePrefetch } from "@/lib/prefetch";
 
 /** A list column: antd's, with a stable `key`, a plain-text `label` for the column chooser, and an optional page total. */
 export type ListColumn<T> = TableColumnType<T> & {
@@ -135,6 +136,13 @@ export function DataTable<T extends { id: string }>({
   const tabRow = Math.min(activeRow, Math.max(rows.length - 1, 0));
   const tableRef = useRef<HTMLDivElement>(null);
   const [singleKeys] = useSingleKeys();
+  // A row the pointer rests on, or that takes focus, fetches its record ahead (item 83) through its RecordLink.
+  const prefetch = usePrefetch();
+  const hoverTimer = useRef<number | undefined>(undefined);
+  const fetchRowAhead = (tr: HTMLElement) =>
+    prefetch.record(
+      tr.querySelector<HTMLAnchorElement>("a[data-record-link][href]")?.getAttribute("href"),
+    );
   const focusRow = (i: number) => {
     const trs = tableRef.current?.querySelectorAll<HTMLTableRowElement>(
       ".ant-table-tbody > tr[data-row-key]",
@@ -383,8 +391,19 @@ export function DataTable<T extends { id: string }>({
                   tabIndex: index === tabRow ? 0 : -1,
                   "aria-keyshortcuts": "Enter",
                   onFocus: (e) => {
-                    if (e.target === e.currentTarget) setActiveRow(index);
+                    if (e.target !== e.currentTarget) return;
+                    setActiveRow(index);
+                    fetchRowAhead(e.currentTarget);
                   },
+                  onMouseEnter: (e) => {
+                    const tr = e.currentTarget;
+                    window.clearTimeout(hoverTimer.current);
+                    hoverTimer.current = window.setTimeout(
+                      () => fetchRowAhead(tr),
+                      HOVER_INTENT_MS,
+                    );
+                  },
+                  onMouseLeave: () => window.clearTimeout(hoverTimer.current),
                   onKeyDown: (e) => onRowKey(e, r, index),
                   onClick: (e) => {
                     // Links, buttons, checkboxes, switches and menus in the row do their own thing.

@@ -16,7 +16,7 @@ import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
 import { VendorsService } from '../vendors/vendors.service';
-import { AttachmentsService } from '../common/attachments.service';
+import { AttachmentsService, ATTACHMENT_FIELDS } from '../common/attachments.service';
 import { dateOnly, dec, iso, money, parseDate } from '../common/serialize';
 import { isUniqueViolation } from '../common/idempotency';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
@@ -30,7 +30,7 @@ const logInclude = {
   activity: { select: { name: true } },
   submittedBy: { select: { fullName: true } },
   reviewedBy: { select: { fullName: true } },
-  attachments: true,
+  attachments: { select: ATTACHMENT_FIELDS },
 } satisfies Prisma.MachineryLogInclude;
 type LogRow = Prisma.MachineryLogGetPayload<{ include: typeof logInclude }>;
 

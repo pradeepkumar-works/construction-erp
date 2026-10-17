@@ -17,7 +17,7 @@ import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
-import { AttachmentsService } from '../common/attachments.service';
+import { AttachmentsService, ATTACHMENT_FIELDS } from '../common/attachments.service';
 import { dateOnly, dec, iso, money, parseDate } from '../common/serialize';
 import { isUniqueViolation } from '../common/idempotency';
 import { nextDocNo } from '../common/doc-number';
@@ -33,7 +33,7 @@ const include = {
   vendor: { select: { name: true, gstin: true, pan: true, msmeCategory: true } },
   submittedBy: { select: { fullName: true } },
   reviewedBy: { select: { fullName: true } },
-  attachments: true,
+  attachments: { select: ATTACHMENT_FIELDS },
   lines: {
     orderBy: [{ sortOrder: 'asc' as const }, { id: 'asc' as const }],
     include: { boqItem: { select: { itemNo: true } }, billLines: { where: { bill: { status: { not: 'REJECTED' as const } } }, select: { thisQty: true } } },

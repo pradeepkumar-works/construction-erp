@@ -2,12 +2,12 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Button, Select, Space, Tag, theme } from 'antd';
+import { Button, Space, Tag, theme } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
-import type { SubcontractBillDto, SubcontractBillSortField } from '@erp/shared';
+import type { SubcontractBillDto, SubcontractBillSortField, VendorKind } from '@erp/shared';
 import { LIST_SORT_FIELDS, canPrepareSubcontractBill } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
-import { useSubcontractBills, useVendors } from '@/lib/queries';
+import { useSubcontractBills, LIST_START } from '@/lib/queries';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { SUBCONTRACT_BILL_EXPORT } from '@/lib/exportColumns';
 import { formatDate, formatINR, toNumber } from '@/lib/format';
@@ -26,8 +26,9 @@ import { useListFrame } from '@/components/list/useListFrame';
 import { overdueDays } from '@/components/purchasing/VendorBillDrawer';
 import { SubBillDrawer } from './SubBillDrawer';
 import { SubBillFormModal } from './SubBillFormModal';
+import { VendorSelect, useVendorName } from '@/components/common/SearchSelect';
 
-const SUB_KINDS = new Set(['SUBCONTRACTOR', 'LABOUR_CONTRACTOR']);
+const SUB_KINDS: VendorKind[] = ['SUBCONTRACTOR', 'LABOUR_CONTRACTOR'];
 const KEYS = ['status', 'mine', 'from', 'to', 'vendorId'] as const;
 const sumMoney = (values: string[]) => formatINR(values.reduce((n, v) => n + toNumber(v), 0));
 
@@ -114,19 +115,21 @@ export function SubBillList({ projectId: fixedProject, openId: initialOpen }: { 
   useEffect(() => {
     if (initialOpen) setOpenId(initialOpen);
   }, [initialOpen]);
-  const { data: vendors } = useVendors();
   const frame = useListFrame({
     list: 'subcontract-bills',
     type: 'SUBCONTRACT_BILL',
     keys: KEYS,
-    sortBy: 'billDate',
-    sortOrder: 'desc',
+    // Where the sidebar's hover fetched it ahead from (LIST_START).
+    sortBy: LIST_START['/subcontract-bills'].sortBy,
+    sortOrder: LIST_START['/subcontract-bills'].sortOrder,
     sortFields: LIST_SORT_FIELDS.subcontractBills,
     fixedProject,
     columns: (sortOrderFor) => subBillColumns({ showProject: !fixedProject, onOpen: setOpenId, onEdit: setEditing, sortOrderFor }),
-    chipLabels: { vendorId: (v) => `Subcontractor: ${vendors?.find((x) => x.id === v)?.name ?? 'one subcontractor'}` },
+    chipLabels: { vendorId: () => `Subcontractor: ${vendorName ?? 'one subcontractor'}` },
   });
   const { page } = frame;
+  // Read by the chip's label once the list has drawn.
+  const vendorName = useVendorName(page.filters.vendorId);
   const filters = { ...page.params, projectId: frame.projectId, status: frame.status, vendorId: page.filters.vendorId };
   const { data, isLoading, isFetching, error, refetch } = useSubcontractBills(filters);
   const approve = useBulkApprove<SubcontractBillDto>('subcontract_bill', (r) => r.grossAmount);
@@ -165,15 +168,14 @@ export function SubBillList({ projectId: fixedProject, openId: initialOpen }: { 
           </>
         }
       >
-        <Select
+        <VendorSelect
+          kinds={SUB_KINDS}
           allowClear
-          showSearch={{ optionFilterProp: 'label' }}
           placeholder="Any subcontractor"
           aria-label="Subcontractor"
           style={{ width: 220 }}
           value={filters.vendorId}
           onChange={(v) => page.setFilter('vendorId', v)}
-          options={(vendors ?? []).filter((v) => v.kinds.some((k) => SUB_KINDS.has(k))).map((v) => ({ value: v.id, label: v.name }))}
         />
         <DateRangeFilter {...frame.dateRange} placeholder={['Billed from', 'To']} />
       </ListToolbar>

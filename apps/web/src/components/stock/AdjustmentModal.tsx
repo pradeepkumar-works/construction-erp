@@ -1,20 +1,22 @@
 'use client';
 
-import React, { useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { App, Button, DatePicker, Form, Input, InputNumber, Select, Space, Typography } from 'antd';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { StockEntryDto } from '@erp/shared';
+import type { ItemDto, StockEntryDto } from '@erp/shared';
 import { MAX_PAGE_SIZE } from '@erp/shared';
 import { api, errorMessage } from '@/lib/api';
-import { useProjects, useStockBalances, useStockItems } from '@/lib/queries';
+import { useProjects, useStockBalances } from '@/lib/queries';
+import { SearchSelect } from '@/components/common/SearchSelect';
 import { formatQty } from '@/lib/format';
 import { UnitInput } from '@/components/common/UnitInput';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { themeFontSize } from '@/lib/theme';
 
 const NEW = '__new__';
+const NEW_OPTION = [{ value: NEW, label: '+ New item' }];
 
 interface LineValue {
   itemId?: string;
@@ -38,9 +40,16 @@ export function AdjustmentModal({ open, onClose, projectId }: { open: boolean; o
   const { data: projects } = useProjects();
   const watchedProject = Form.useWatch('projectId', form);
   const scope = projectId ?? watchedProject;
-  const items = useStockItems({ pageSize: MAX_PAGE_SIZE, sortBy: 'name', sortOrder: 'asc' });
+  // The project's balances (one row per item it holds) label the items; the item master itself is searched as you type.
   const stock = useStockBalances({ projectId: scope, pageSize: MAX_PAGE_SIZE }, open && !!scope);
   const balanceOf = useMemo(() => new Map((stock.data?.items ?? []).map((b) => [b.itemId, b])), [stock.data]);
+  const itemOption = useCallback(
+    (i: ItemDto) => {
+      const b = balanceOf.get(i.id);
+      return { value: i.id, label: `${i.name} (${i.unit})${b ? `, ${formatQty(b.balance)} in stock` : ''}` };
+    },
+    [balanceOf],
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -89,18 +98,12 @@ export function AdjustmentModal({ open, onClose, projectId }: { open: boolean; o
                   return (
                     <div key={f.key} style={{ display: 'flex', gap: 6, alignItems: 'flex-start', flexWrap: 'wrap' }}>
                       <Form.Item name={[f.name, 'itemId']} style={{ flex: '3 1 220px', marginBottom: 0 }} rules={[{ required: true, message: 'Pick an item' }]}>
-                        <Select
-                          showSearch={{ optionFilterProp: 'label' }}
-                          placeholder="Item"
-                          loading={items.isLoading}
+                        <SearchSelect<ItemDto>
+                          source="items"
+                          toOption={itemOption}
+                          extra={NEW_OPTION}
+                          placeholder="Type an item"
                           onChange={() => form.setFieldValue(['lines', f.name, 'quantity'], null)}
-                          options={[
-                            { value: NEW, label: '+ New item' },
-                            ...(items.data?.items ?? []).map((i) => {
-                              const b = balanceOf.get(i.id);
-                              return { value: i.id, label: `${i.name} (${i.unit})${b ? `, ${formatQty(b.balance)} in stock` : ''}` };
-                            }),
-                          ]}
                         />
                       </Form.Item>
                       {itemId === NEW ? (

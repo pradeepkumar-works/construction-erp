@@ -718,6 +718,7 @@ model Project {
 
   @@unique([organizationId, code])
   @@index([organizationId, status])
+  @@index([projectManagerId])
 }
 
 /// A client (employer) the organisation builds for: a government department or a private owner.
@@ -884,6 +885,7 @@ model PurchaseOrder {
   @@unique([organizationId, poNo])
   @@index([organizationId, status])
   @@index([projectId, status])
+  @@index([organizationId, poDate])
 }
 
 model PurchaseOrderLine {
@@ -964,6 +966,7 @@ model VendorBill {
   @@index([organizationId, status])
   @@index([projectId, status])
   @@index([tallyExportId])
+  @@index([organizationId, invoiceDate])
 }
 
 model VendorBillLine {
@@ -1037,6 +1040,7 @@ model WorkOrder {
   @@index([organizationId, status])
   @@index([projectId, status])
   @@index([vendorId])
+  @@index([organizationId, woDate])
 }
 
 /// One item of a work order: a BOQ item of the project (measured in the measurement book) or the work order's own item
@@ -1129,6 +1133,7 @@ model SubcontractBill {
   @@index([organizationId, status])
   @@index([projectId, status])
   @@index([tallyExportId])
+  @@index([organizationId, billDate])
 }
 
 /// One work order item on a subcontractor bill: quantity up to the previous bill, in this bill and up to date.
@@ -1325,6 +1330,8 @@ model ProgressEntry {
   @@index([projectId, status])
   @@index([activityId, status])
   @@index([organizationId, status])
+  @@index([organizationId, date])
+  @@index([projectId, date])
 }
 
 model DailyReport {
@@ -1361,6 +1368,7 @@ model DailyReport {
 
   @@index([projectId, date])
   @@index([organizationId, status])
+  @@index([organizationId, date])
 }
 
 model MaterialRequest {
@@ -1392,6 +1400,8 @@ model MaterialRequest {
 
   @@unique([organizationId, requestNo])
   @@index([projectId, status])
+  @@index([organizationId, status])
+  @@index([organizationId, createdAt])
 }
 
 model MaterialRequestItem {
@@ -1683,6 +1693,7 @@ model MachineryLog {
   @@index([projectId, status])
   @@index([equipmentId, date])
   @@index([organizationId, status])
+  @@index([organizationId, date])
 }
 
 /// A site expense paid at the project (bill with GST), approved like other submissions. Approved expenses are project cost.
@@ -1732,6 +1743,7 @@ model Expense {
   @@index([organizationId, status])
   @@index([projectId, date])
   @@index([tallyExportId])
+  @@index([organizationId, date])
 }
 
 /// Delay and risk register entry. Not an approval submission: it stays open, is reviewed and closed.
@@ -1838,6 +1850,7 @@ model MeasurementSheet {
   @@index([boqItemId, status])
   @@index([organizationId, status])
   @@index([workOrderId])
+  @@index([organizationId, date])
 }
 
 /// One row of a measurement: nos × length × breadth × depth (blank dimensions count as 1); a deduction is negative.
@@ -1935,6 +1948,7 @@ model RaBill {
   @@index([organizationId, status])
   @@index([projectId, status])
   @@index([tallyExportId])
+  @@index([organizationId, billDate])
 }
 
 /// One BOQ item on an RA bill: quantity up to the previous bill, in this bill and up to date, at the BOQ rate.
@@ -2157,6 +2171,34 @@ model Attachment {
   createdAt         DateTime           @default(now())
 
   @@index([organizationId])
+  // Every record lists its files: one index per parent column (item 83).
+  @@index([progressEntryId])
+  @@index([dailyReportId])
+  @@index([materialRequestId])
+  @@index([stockEntryId])
+  @@index([machineryLogId])
+  @@index([expenseId])
+  @@index([measurementId])
+  @@index([riskId])
+  @@index([raBillId])
+  @@index([purchaseOrderId])
+  @@index([vendorBillId])
+  @@index([workOrderId])
+  @@index([subcontractBillId])
+  @@index([inspectionId])
+  @@index([qualityTestId])
+  @@index([ncrId])
+  @@index([revisionId])
+  @@index([letterId])
+  @@index([variationId])
+  @@index([safetyIncidentId])
+  @@index([toolboxTalkId])
+  @@index([workPermitId])
+  @@index([maintenanceJobId])
+  @@index([equipmentDocId])
+  @@index([complianceDocId])
+  @@index([defectId])
+  @@index([handoverId])
 }
 
 model AuditLog {
@@ -2173,6 +2215,7 @@ model AuditLog {
 
   @@index([entityType, entityId])
   @@index([organizationId, createdAt])
+  @@index([actorId, createdAt])
 }
 
 // ---------- Notifications ----------
@@ -2380,6 +2423,7 @@ model Inspection {
   @@index([projectId, status])
   @@index([activityId, status])
   @@index([organizationId, status])
+  @@index([organizationId, date])
 }
 
 /// A quality test: a sample taken on a date, the specification and its readings (cubes at 7 and 28 days).

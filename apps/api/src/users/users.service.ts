@@ -18,6 +18,18 @@ const ORDER: Record<UserSortField, (o: SortOrder) => Prisma.UserOrderByWithRelat
   createdAt: (o) => [{ createdAt: o }],
 };
 
+/** What a user's row in the list (and a picker) shows: never the password hash. */
+const USER_FIELDS = {
+  id: true,
+  email: true,
+  fullName: true,
+  phone: true,
+  isActive: true,
+  invitedAt: true,
+  createdAt: true,
+  role: { select: { key: true, name: true } },
+} satisfies Prisma.UserSelect;
+
 @Injectable()
 export class UsersService {
   constructor(private prisma: PrismaService, private links: PasswordLinksService) {}
@@ -35,6 +47,7 @@ export class UsersService {
   async list(req: RequestUser, q: ListUsersQuery): Promise<Paginated<UserSummary>> {
     const where: Prisma.UserWhereInput = { organizationId: req.organizationId };
     if (q.roleKey) where.role = { key: q.roleKey };
+    else if (q.roleKeys?.length) where.role = { key: { in: q.roleKeys } };
     if (q.isActive !== undefined) where.isActive = q.isActive;
     const words = searchWords(q.q);
     if (words.length) where.AND = words.map((w) => ({ OR: [{ fullName: ilike(w) }, { email: ilike(w) }, { phone: ilike(w) }] }));
@@ -42,7 +55,7 @@ export class UsersService {
     const order = q.sortOrder ?? (sortBy === 'createdAt' ? 'desc' : 'asc');
     const args = pageArgs(q);
     const [rows, total] = await Promise.all([
-      this.prisma.user.findMany({ where, include: { role: true }, orderBy: [...ORDER[sortBy](order), { id: 'asc' }], skip: args.skip, take: args.take }),
+      this.prisma.user.findMany({ where, select: USER_FIELDS, orderBy: [...ORDER[sortBy](order), { id: 'asc' }], skip: args.skip, take: args.take }),
       this.prisma.user.count({ where }),
     ]);
     return paginated(rows.map((u) => this.toDto(u)), total, args);

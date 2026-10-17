@@ -2,13 +2,13 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Badge, Card, Col, Empty, Progress, Row, Skeleton, Space, Tag, Typography } from 'antd';
+import { Badge, Card, Col, Empty, Progress, Row, Space, Tag, Typography } from 'antd';
 import { PROJECT_STATUS_LABELS, PROJECT_TYPE_LABELS } from '@erp/shared';
 import { usePortalProjects } from '@/lib/queries';
 import { formatDate, formatINRCompact, PROJECT_STATUS_COLORS } from '@/lib/format';
 import { useAuth } from '@/lib/auth';
 import { PageHeader } from '@/components/common/PageHeader';
-import { QueryError } from '@/components/common/QueryState';
+import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { themeFontSize } from '@/lib/theme';
 
 /** The client portal home: the projects the client's engineer or consultant is on. */
@@ -19,7 +19,7 @@ export default function PortalPage() {
     <div className="page-container">
       <PageHeader title="My projects" subtitle={`Approved progress, daily reports, RA bills and inspections from ${user?.organizationName ?? 'the contractor'}.`} />
       {error && <QueryError error={error} onRetry={() => refetch()} />}
-      {isLoading ? <Skeleton active /> : null}
+      {isLoading ? <PageSkeleton header={false} /> : null}
       {data && !data.length ? <Empty description="You have not been added to a project yet. Ask the contractor's project manager to add you." /> : null}
       <Row gutter={[16, 16]}>
         {(data ?? []).map((p) => (

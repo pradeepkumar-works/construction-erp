@@ -18,7 +18,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
       new QueryClient({
         defaultOptions: {
           // One retry for a dropped connection or a server error; a 4xx (not allowed, not found) will not change, so it shows at once.
-          queries: { retry: (failures, err) => failures < 1 && !isClientError(err), refetchOnWindowFocus: false, staleTime: 15_000 },
+          // Lists and records count as fresh for 30 s, so going back to a list, or opening a record prefetched on hover,
+          // shows it at once without asking again; saving anything invalidates what it changed.
+          queries: { retry: (failures, err) => failures < 1 && !isClientError(err), refetchOnWindowFocus: false, staleTime: 30_000 },
         },
       }),
   );

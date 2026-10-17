@@ -7,7 +7,7 @@ import type { AiDraftDto, ExpenseCategory, ExpenseDto, PaymentMode } from '@erp/
 import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_LABELS, LIST_SORT_FIELDS, PAYMENT_MODES, PAYMENT_MODE_LABELS, canSubmitExpense } from '@erp/shared';
 import { useNewIntent } from '@/lib/new-intent';
 import { useAuth } from '@/lib/auth';
-import { useExpenses, useExpenseSummary } from '@/lib/queries';
+import { useExpenses, useExpenseSummary, LIST_START } from '@/lib/queries';
 import { formatINR } from '@/lib/format';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { EXPENSE_EXPORT } from '@/lib/exportColumns';
@@ -40,8 +40,9 @@ export function ExpenseList({ projectId: fixedProject }: { projectId?: string })
     list: 'expenses',
     type: 'EXPENSE',
     keys: KEYS,
-    sortBy: 'date',
-    sortOrder: 'desc',
+    // Where the sidebar's hover fetched it ahead from (LIST_START).
+    sortBy: LIST_START['/expenses'].sortBy,
+    sortOrder: LIST_START['/expenses'].sortOrder,
     sortFields: LIST_SORT_FIELDS.expenses,
     fixedProject,
     columns: (sortOrderFor) => expenseColumns({ showProject: !fixedProject, onOpen: setOpenId, onEdit: setEditing, sortOrderFor }),

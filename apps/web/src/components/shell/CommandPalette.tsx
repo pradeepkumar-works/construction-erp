@@ -29,6 +29,7 @@ import type { NavIcon, NavSection } from './nav';
 import { newEntriesFor, type NewEntry } from './NewMenu';
 import { SparkleIcon } from '@/components/ai/SparkleIcon';
 import s from './Sidebar.module.css';
+import { useDebounced } from '@/lib/debounce';
 
 interface Target {
   key: string;
@@ -62,16 +63,6 @@ function rank(targets: Target[], query: string): Target[] {
     })
     .sort((a, b) => a.score - b.score)
     .map((r) => r.t);
-}
-
-/** The query a moment after the last key, so the API is asked once per pause rather than per letter. */
-function useDebounced(value: string, ms: number) {
-  const [v, setV] = useState(value);
-  useEffect(() => {
-    const t = window.setTimeout(() => setV(value), ms);
-    return () => window.clearTimeout(t);
-  }, [value, ms]);
-  return v;
 }
 
 /**

@@ -7,7 +7,7 @@ import { SECTOR_SELECT, locationOr, resolveSector } from '../common/sector';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
-import { AttachmentsService } from '../common/attachments.service';
+import { AttachmentsService, ATTACHMENT_FIELDS } from '../common/attachments.service';
 import { dateOnly, dec, iso, money, parseDate } from '../common/serialize';
 import { isUniqueViolation } from '../common/idempotency';
 import { nextDocNo } from '../common/doc-number';
@@ -21,7 +21,7 @@ const include = {
   lines: { orderBy: { sortOrder: 'asc' } },
   submittedBy: { select: { fullName: true } },
   reviewedBy: { select: { fullName: true } },
-  attachments: true,
+  attachments: { select: ATTACHMENT_FIELDS },
   raBill: { select: { billNo: true } },
   workOrder: { select: { woNo: true, vendor: { select: { name: true } } } },
 } satisfies Prisma.MeasurementSheetInclude;

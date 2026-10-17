@@ -9,6 +9,27 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-10-speed',
+    date: '2026-10-20',
+    title: 'Faster pages',
+    points: [
+      'Lists open faster: the server reads only what a list shows, and the browser asks once before calling it instead of before every call.',
+      'Resting the pointer on a record or a sidebar link fetches it ahead, so it opens at once. The next page of a list keeps the current rows on screen until it arrives.',
+      'Choosing a person, vendor, client, machine or item now searches as you type, instead of loading the whole list first.',
+      'Home draws in one go without pushing things down, its charts load as you scroll to them, and every page shows its outline while it loads.',
+    ],
+  },
+  {
+    id: '2026-10-targets-type',
+    date: '2026-10-20',
+    title: 'Easier to hit, easier to read',
+    points: [
+      'Every button, field and tab is at least 24 px tall, also in compact, and grows to 44 px on a touch screen.',
+      'Text follows one scale with 12 px as the smallest, so compact no longer shrinks it.',
+      'Figures are plain text unless something needs a look: red or amber now only marks what is late, over budget, rejected or falling.',
+    ],
+  },
+  {
     id: '2026-10-morning-brief',
     date: '2026-10-20',
     title: 'A morning brief, and a weekly summary for the client',

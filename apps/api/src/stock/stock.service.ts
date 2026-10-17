@@ -28,7 +28,7 @@ import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
 import { VendorsService } from '../vendors/vendors.service';
 import { assertOpenWorkOrder } from '../subcontracts/work-orders.service';
-import { AttachmentsService } from '../common/attachments.service';
+import { AttachmentsService, ATTACHMENT_FIELDS } from '../common/attachments.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { dateOnly, dec, iso, money, parseDate } from '../common/serialize';
 import { isUniqueViolation } from '../common/idempotency';
@@ -71,7 +71,7 @@ const include = {
   transferOut: { select: { entryNo: true, project: { select: { name: true } } } },
   lines: { orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }], include: { item: { select: { name: true, unit: true } } } },
   qcBy: { select: { fullName: true } },
-  attachments: true,
+  attachments: { select: ATTACHMENT_FIELDS },
 } satisfies Prisma.StockEntryInclude;
 type Row = Prisma.StockEntryGetPayload<{ include: typeof include }>;
 

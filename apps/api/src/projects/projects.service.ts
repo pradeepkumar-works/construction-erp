@@ -18,6 +18,10 @@ const projectInclude = {
 
 type ProjectRow = Prisma.ProjectGetPayload<{ include: typeof projectInclude }>;
 
+/** What the list shows needs no members (the detail adds them). */
+const summaryInclude = { projectManager: { select: { id: true, fullName: true } } } satisfies Prisma.ProjectInclude;
+type SummaryRow = Prisma.ProjectGetPayload<{ include: typeof summaryInclude }>;
+
 const ORDER: Record<ProjectSortField, (o: SortOrder) => Prisma.ProjectOrderByWithRelationInput[]> = {
   status: (o) => [{ status: o }, { code: 'asc' }],
   code: (o) => [{ code: o }],
@@ -34,33 +38,33 @@ const DESC_DEFAULT = new Set<string>(['startDate', 'endDate', 'contractValue', '
 export class ProjectsService {
   constructor(private prisma: PrismaService, private access: ProjectAccessService, private audit: AuditService, private templates: TemplatesService) {}
 
-  /** Physical progress = weighted by BOQ amount where activities are linked to BOQ, else simple average of activity %. */
-  async computeProgress(projectId: string): Promise<number> {
-    const activities = await this.prisma.activity.findMany({
-      where: { projectId },
-      include: { boqItem: { select: { rate: true } }, progressEntries: { where: { status: 'APPROVED' }, select: { quantity: true } } },
-    });
-    return weightedProgress(
-      activities.map((a) => ({ plannedQty: a.plannedQty, rate: a.boqItem?.rate ?? null, executed: a.progressEntries.reduce((s, e) => s.add(e.quantity), new Prisma.Decimal(0)) })),
-    );
-  }
-
-  async pendingApprovalsCount(projectId: string): Promise<number> {
-    const [p, d, m] = await Promise.all([
-      this.prisma.progressEntry.count({ where: { projectId, status: 'SUBMITTED' } }),
-      this.prisma.dailyReport.count({ where: { projectId, status: 'SUBMITTED' } }),
-      this.prisma.materialRequest.count({ where: { projectId, status: 'SUBMITTED' } }),
+  /**
+   * The list's figures for a page of projects in a fixed number of queries, however many projects: physical progress
+   * (weighted by BOQ amount where activities are linked to BOQ, else by planned quantity), entries waiting for approval
+   * and the contract value revised by approved variations.
+   */
+  async summaries(rows: SummaryRow[]): Promise<ProjectSummary[]> {
+    if (!rows.length) return [];
+    const ids = rows.map((r) => r.id);
+    const waiting = { projectId: { in: ids }, status: 'SUBMITTED' as const };
+    const withContract = rows.filter((r) => r.contractValue).map((r) => r.id);
+    const [activities, executed, progress, dprs, mrs, variations] = await Promise.all([
+      this.prisma.activity.findMany({ where: { projectId: { in: ids } }, select: { id: true, projectId: true, plannedQty: true, boqItem: { select: { rate: true } } } }),
+      this.prisma.progressEntry.groupBy({ by: ['activityId'], where: { activity: { projectId: { in: ids } }, status: 'APPROVED' }, _sum: { quantity: true } }),
+      this.prisma.progressEntry.groupBy({ by: ['projectId'], where: waiting, _count: { _all: true } }),
+      this.prisma.dailyReport.groupBy({ by: ['projectId'], where: waiting, _count: { _all: true } }),
+      this.prisma.materialRequest.groupBy({ by: ['projectId'], where: waiting, _count: { _all: true } }),
+      withContract.length
+        ? this.prisma.variation.groupBy({ by: ['projectId'], where: { projectId: { in: withContract }, status: 'APPROVED' }, _sum: { approvedAmount: true } })
+        : [],
     ]);
-    return p + d + m;
-  }
-
-  async toSummary(p: ProjectRow): Promise<ProjectSummary> {
-    const [physicalProgressPct, pendingApprovals, variations] = await Promise.all([
-      this.computeProgress(p.id),
-      this.pendingApprovalsCount(p.id),
-      p.contractValue ? this.prisma.variation.aggregate({ where: { projectId: p.id, status: 'APPROVED' }, _sum: { approvedAmount: true } }) : null,
-    ]);
-    return {
+    const done = new Map(executed.map((e) => [e.activityId, e._sum.quantity ?? new Prisma.Decimal(0)]));
+    const byProject = new Map<string, typeof activities>();
+    for (const a of activities) byProject.set(a.projectId, [...(byProject.get(a.projectId) ?? []), a]);
+    const pending = new Map<string, number>();
+    for (const g of [...progress, ...dprs, ...mrs]) pending.set(g.projectId, (pending.get(g.projectId) ?? 0) + g._count._all);
+    const varied = new Map(variations.map((v) => [v.projectId, v._sum.approvedAmount]));
+    return rows.map((p) => ({
       id: p.id,
       code: p.code,
       name: p.name,
@@ -71,16 +75,18 @@ export class ProjectsService {
       startDate: dateOnly(p.startDate),
       endDate: dateOnly(p.endDate),
       contractValue: money(p.contractValue),
-      revisedContractValue: p.contractValue ? money(p.contractValue.add(variations?._sum.approvedAmount ?? 0)) : null,
+      revisedContractValue: p.contractValue ? money(p.contractValue.add(varied.get(p.id) ?? 0)) : null,
       projectManagerId: p.projectManagerId,
       projectManagerName: p.projectManager?.fullName ?? null,
-      physicalProgressPct,
-      pendingApprovals,
-    };
+      physicalProgressPct: weightedProgress(
+        (byProject.get(p.id) ?? []).map((a) => ({ plannedQty: a.plannedQty, rate: a.boqItem?.rate ?? null, executed: done.get(a.id) ?? new Prisma.Decimal(0) })),
+      ),
+      pendingApprovals: pending.get(p.id) ?? 0,
+    }));
   }
 
   async toDetail(p: ProjectRow): Promise<ProjectDetail> {
-    const summary = await this.toSummary(p);
+    const [summary] = await this.summaries([p]);
     return {
       ...summary,
       clientId: p.clientId,
@@ -99,8 +105,8 @@ export class ProjectsService {
 
   /** Every visible project, unpaged (dashboards). */
   async listAll(user: RequestUser): Promise<ProjectSummary[]> {
-    const rows = await this.prisma.project.findMany({ where: this.access.projectWhere(user), include: projectInclude, orderBy: [{ status: 'asc' }, { code: 'asc' }] });
-    return Promise.all(rows.map((r) => this.toSummary(r)));
+    const rows = await this.prisma.project.findMany({ where: this.access.projectWhere(user), include: summaryInclude, orderBy: [{ status: 'asc' }, { code: 'asc' }] });
+    return this.summaries(rows);
   }
 
   async list(user: RequestUser, q: ListProjectsQuery): Promise<Paginated<ProjectSummary>> {
@@ -114,10 +120,10 @@ export class ProjectsService {
     const order = q.sortOrder ?? (DESC_DEFAULT.has(sortBy) ? 'desc' : 'asc');
     const args = pageArgs(q);
     const [rows, total] = await Promise.all([
-      this.prisma.project.findMany({ where, include: projectInclude, orderBy: [...ORDER[sortBy](order), { id: 'asc' }], skip: args.skip, take: args.take }),
+      this.prisma.project.findMany({ where, include: summaryInclude, orderBy: [...ORDER[sortBy](order), { id: 'asc' }], skip: args.skip, take: args.take }),
       this.prisma.project.count({ where }),
     ]);
-    return paginated(await Promise.all(rows.map((r) => this.toSummary(r))), total, args);
+    return paginated(await this.summaries(rows), total, args);
   }
 
   async get(user: RequestUser, id: string): Promise<ProjectDetail> {

@@ -3,10 +3,10 @@
 import React, { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Badge, Card, Skeleton, Tabs } from 'antd';
+import { Badge, Card, Tabs } from 'antd';
 import { usePortalBills, usePortalInspections, usePortalProject } from '@/lib/queries';
 import { PageHeader } from '@/components/common/PageHeader';
-import { QueryError } from '@/components/common/QueryState';
+import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { PortalOverview } from '@/components/portal/PortalOverview';
 import { PortalDprs } from '@/components/portal/PortalDprs';
 import { PortalBills } from '@/components/portal/PortalBills';
@@ -50,7 +50,7 @@ function PortalProject() {
     <div className="page-container">
       <PageHeader title={data ? data.name : 'Project'} subtitle={data ? [data.code, data.clientName, data.location].filter(Boolean).join(' · ') : undefined} extra={<Link href="/portal" className="text-link">All my projects</Link>} />
       {error && <QueryError error={error} onRetry={() => refetch()} />}
-      {isLoading ? <Skeleton active /> : null}
+      {isLoading ? <PageSkeleton shape="workspace" header={false} /> : null}
       {data ? (
         <Card size="small">
           <Tabs
@@ -91,7 +91,13 @@ function PortalProject() {
 
 export default function PortalProjectPage() {
   return (
-    <Suspense fallback={<Skeleton active />}>
+    <Suspense
+      fallback={
+        <div className="page-container">
+          <PageSkeleton shape="workspace" />
+        </div>
+      }
+    >
       <PortalProject />
     </Suspense>
   );

@@ -1,19 +1,20 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Card, DatePicker, Flex, Progress, Segmented, Select, Statistic, Table, Tag, Typography, theme } from 'antd';
+import { Card, DatePicker, Flex, Progress, Segmented, Statistic, Table, Tag, Typography, theme } from 'antd';
 import type { TableProps } from 'antd';
 import type { Dayjs } from 'dayjs';
 import type { DeliveryState, ProcurementStatusLineDto, ProcurementStatusRowDto } from '@erp/shared';
 import { DELIVERY_STATE_LABELS } from '@erp/shared';
 import { useProjectScope } from '@/lib/project-scope';
-import { useProcurementStatus, useVendors } from '@/lib/queries';
+import { useProcurementStatus } from '@/lib/queries';
 import { downloadXlsx, exportFileName, type ExportColumn } from '@/lib/exportExcel';
 import { rangePresets } from '@/lib/dates';
 import { formatDate, formatINR, formatQty } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { ExportButton } from '@/components/common/ExportButton';
+import { VendorSelect } from '@/components/common/SearchSelect';
 
 const STATE_COLORS: Record<DeliveryState, string> = { NOT_STARTED: 'default', PARTLY_RECEIVED: 'blue', RECEIVED: 'green', CLOSED: 'purple' };
 type Show = 'PENDING' | 'LATE' | 'ALL';
@@ -49,7 +50,6 @@ export function ProcurementStatusPanel() {
   const [projectId, setProjectId] = useProjectScope();
   const [vendorId, setVendorId] = useState<string | undefined>();
   const [range, setRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
-  const vendors = useVendors();
   const { data, isLoading, isFetching, error, refetch } = useProcurementStatus({ show, projectId, vendorId, from: range?.[0]?.format('YYYY-MM-DD'), to: range?.[1]?.format('YYYY-MM-DD') });
   const t = data?.totals;
 
@@ -149,16 +149,7 @@ export function ProcurementStatusPanel() {
           ]}
         />
         <ProjectSelect value={projectId} onChange={setProjectId} placeholder="All projects" style={{ width: 220 }} />
-        <Select
-          allowClear
-          showSearch={{ optionFilterProp: 'label' }}
-          placeholder="All vendors"
-          value={vendorId}
-          onChange={setVendorId}
-          style={{ width: 220 }}
-          aria-label="Vendor"
-          options={(vendors.data ?? []).map((v) => ({ value: v.id, label: v.name }))}
-        />
+        <VendorSelect allowClear placeholder="All vendors" value={vendorId} onChange={setVendorId} style={{ width: 220 }} aria-label="Vendor" />
         <DatePicker.RangePicker presets={rangePresets()} value={range} onChange={(v) => setRange(v as [Dayjs | null, Dayjs | null] | null)} format="DD MMM YYYY" allowEmpty={[true, true]} placeholder={['Orders from', 'to']} aria-label="Order dates" />
         <span style={{ flex: 1 }} />
         <ExportButton onExport={exportRows} />

@@ -6,7 +6,7 @@ import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
-import { AttachmentsService } from '../common/attachments.service';
+import { AttachmentsService, ATTACHMENT_FIELDS } from '../common/attachments.service';
 import { dateOnly, iso, parseDate } from '../common/serialize';
 import { isUniqueViolation } from '../common/idempotency';
 import { ilike, pageArgs, paginated, searchWords, dateRange } from '../common/paging';
@@ -17,7 +17,7 @@ const include = {
   project: { select: { name: true } },
   submittedBy: { select: { fullName: true } },
   reviewedBy: { select: { fullName: true } },
-  attachments: true,
+  attachments: { select: ATTACHMENT_FIELDS },
 } satisfies Prisma.DailyReportInclude;
 type Row = Prisma.DailyReportGetPayload<{ include: typeof include }>;
 

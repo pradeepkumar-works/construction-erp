@@ -25,7 +25,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
-import { AttachmentsService } from '../common/attachments.service';
+import { AttachmentsService, ATTACHMENT_FIELDS } from '../common/attachments.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { todayIn } from '../notifications/time';
 import { dateOnly, dec, iso, parseDate } from '../common/serialize';
@@ -39,7 +39,7 @@ const testInclude = {
   activity: { select: { name: true } },
   createdBy: { select: { fullName: true } },
   readings: { orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }] },
-  attachments: { orderBy: { createdAt: 'asc' } },
+  attachments: { select: ATTACHMENT_FIELDS, orderBy: { createdAt: 'asc' } },
   _count: { select: { ncrs: { where: { status: { not: 'CLOSED' } } } } },
 } satisfies Prisma.QualityTestInclude;
 type TestRow = Prisma.QualityTestGetPayload<{ include: typeof testInclude }>;
@@ -52,7 +52,7 @@ const ncrInclude = {
   raisedBy: { select: { fullName: true } },
   actionBy: { select: { fullName: true } },
   closedBy: { select: { fullName: true } },
-  attachments: { orderBy: { createdAt: 'asc' } },
+  attachments: { select: ATTACHMENT_FIELDS, orderBy: { createdAt: 'asc' } },
 } satisfies Prisma.NcrInclude;
 type NcrRow = Prisma.NcrGetPayload<{ include: typeof ncrInclude }>;
 

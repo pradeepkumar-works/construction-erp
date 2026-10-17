@@ -25,6 +25,10 @@ interface SubmissionRow {
  * A rejected or changes-requested entry is edited in place and resubmitted (audit action RESUBMITTED), so the
  * review history stays on one record. Every submission type (progress, DPRs, material requests, machinery logs, expenses, measurements, bills, orders, inspections) goes through here.
  */
+/** The queue's line reads only the project's and the submitter's names. */
+const NAME = { select: { name: true } } as const;
+const BY = { select: { fullName: true } } as const;
+
 @Injectable()
 export class SubmissionLifecycleService {
   private readonly approvedHooks = new Map<SubmissionType, (user: RequestUser, id: string) => Promise<void>>();
@@ -157,20 +161,20 @@ export class SubmissionLifecycleService {
     const allowed = (t: SubmissionType) => whereFor(t) !== null;
     const where = (t: SubmissionType) => whereFor(t) as any;
     const [progress, dprs, mrs, logs, expenses, mbs, bills, pos, vbills, wos, sbills, inspections] = await Promise.all([
-      allowed('PROGRESS') ? this.prisma.progressEntry.findMany({ where: where('PROGRESS'), include: { project: true, activity: { include: { boqItem: { select: { rate: true } } } }, submittedBy: true }, orderBy: { submittedAt: 'asc' } }) : none,
-      allowed('DPR') ? this.prisma.dailyReport.findMany({ where: where('DPR'), include: { project: true, submittedBy: true }, orderBy: { submittedAt: 'asc' } }) : none,
-      allowed('MATERIAL_REQUEST') ? this.prisma.materialRequest.findMany({ where: where('MATERIAL_REQUEST'), include: { project: true, submittedBy: true, items: true }, orderBy: { submittedAt: 'asc' } }) : none,
-      allowed('MACHINERY') ? this.prisma.machineryLog.findMany({ where: where('MACHINERY'), include: { project: true, submittedBy: true, equipment: true }, orderBy: { submittedAt: 'asc' } }) : none,
-      allowed('EXPENSE') ? this.prisma.expense.findMany({ where: where('EXPENSE'), include: { project: true, submittedBy: true }, orderBy: { submittedAt: 'asc' } }) : none,
-      allowed('MEASUREMENT') ? this.prisma.measurementSheet.findMany({ where: where('MEASUREMENT'), include: { project: true, submittedBy: true, boqItem: true }, orderBy: { submittedAt: 'asc' } }) : none,
-      allowed('BILL') ? this.prisma.raBill.findMany({ where: where('BILL'), include: { project: true, submittedBy: true }, orderBy: { submittedAt: 'asc' } }) : none,
-      allowed('PURCHASE_ORDER') ? this.prisma.purchaseOrder.findMany({ where: where('PURCHASE_ORDER'), include: { project: true, submittedBy: true, vendor: { select: { name: true } } }, orderBy: { submittedAt: 'asc' } }) : none,
-      allowed('VENDOR_BILL') ? this.prisma.vendorBill.findMany({ where: where('VENDOR_BILL'), include: { project: true, submittedBy: true, vendor: { select: { name: true } } }, orderBy: { submittedAt: 'asc' } }) : none,
-      allowed('WORK_ORDER') ? this.prisma.workOrder.findMany({ where: where('WORK_ORDER'), include: { project: true, submittedBy: true, vendor: { select: { name: true } } }, orderBy: { submittedAt: 'asc' } }) : none,
+      allowed('PROGRESS') ? this.prisma.progressEntry.findMany({ where: where('PROGRESS'), include: { project: NAME, activity: { include: { boqItem: { select: { rate: true } } } }, submittedBy: BY }, orderBy: { submittedAt: 'asc' } }) : none,
+      allowed('DPR') ? this.prisma.dailyReport.findMany({ where: where('DPR'), include: { project: NAME, submittedBy: BY }, orderBy: { submittedAt: 'asc' } }) : none,
+      allowed('MATERIAL_REQUEST') ? this.prisma.materialRequest.findMany({ where: where('MATERIAL_REQUEST'), include: { project: NAME, submittedBy: BY, items: { select: { id: true } } }, orderBy: { submittedAt: 'asc' } }) : none,
+      allowed('MACHINERY') ? this.prisma.machineryLog.findMany({ where: where('MACHINERY'), include: { project: NAME, submittedBy: BY, equipment: { select: { code: true, name: true, rate: true, rateUnit: true } } }, orderBy: { submittedAt: 'asc' } }) : none,
+      allowed('EXPENSE') ? this.prisma.expense.findMany({ where: where('EXPENSE'), include: { project: NAME, submittedBy: BY }, orderBy: { submittedAt: 'asc' } }) : none,
+      allowed('MEASUREMENT') ? this.prisma.measurementSheet.findMany({ where: where('MEASUREMENT'), include: { project: NAME, submittedBy: BY, boqItem: { select: { itemNo: true, unit: true, rate: true } } }, orderBy: { submittedAt: 'asc' } }) : none,
+      allowed('BILL') ? this.prisma.raBill.findMany({ where: where('BILL'), include: { project: NAME, submittedBy: BY }, orderBy: { submittedAt: 'asc' } }) : none,
+      allowed('PURCHASE_ORDER') ? this.prisma.purchaseOrder.findMany({ where: where('PURCHASE_ORDER'), include: { project: NAME, submittedBy: BY, vendor: { select: { name: true } } }, orderBy: { submittedAt: 'asc' } }) : none,
+      allowed('VENDOR_BILL') ? this.prisma.vendorBill.findMany({ where: where('VENDOR_BILL'), include: { project: NAME, submittedBy: BY, vendor: { select: { name: true } } }, orderBy: { submittedAt: 'asc' } }) : none,
+      allowed('WORK_ORDER') ? this.prisma.workOrder.findMany({ where: where('WORK_ORDER'), include: { project: NAME, submittedBy: BY, vendor: { select: { name: true } } }, orderBy: { submittedAt: 'asc' } }) : none,
       allowed('SUBCONTRACT_BILL')
-        ? this.prisma.subcontractBill.findMany({ where: where('SUBCONTRACT_BILL'), include: { project: true, submittedBy: true, workOrder: { select: { woNo: true, vendor: { select: { name: true } } } } }, orderBy: { submittedAt: 'asc' } })
+        ? this.prisma.subcontractBill.findMany({ where: where('SUBCONTRACT_BILL'), include: { project: NAME, submittedBy: BY, workOrder: { select: { woNo: true, vendor: { select: { name: true } } } } }, orderBy: { submittedAt: 'asc' } })
         : none,
-      allowed('INSPECTION') ? this.prisma.inspection.findMany({ where: where('INSPECTION'), include: { project: true, submittedBy: true, activity: { select: { name: true } } }, orderBy: { submittedAt: 'asc' } }) : none,
+      allowed('INSPECTION') ? this.prisma.inspection.findMany({ where: where('INSPECTION'), include: { project: NAME, submittedBy: BY, activity: { select: { name: true } } }, orderBy: { submittedAt: 'asc' } }) : none,
     ]);
     const amt = (d: Prisma.Decimal | null): string | null => (d === null ? null : d.toDecimalPlaces(2).toFixed(2));
     const machineCost = (l: (typeof logs)[number]) => {

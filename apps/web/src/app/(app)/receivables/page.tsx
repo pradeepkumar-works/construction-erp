@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { App, Button, Card, Col, Popconfirm, Row, Select, Skeleton, Space, Statistic, Table, Tabs, Typography, theme } from 'antd';
+import { App, Button, Card, Col, Popconfirm, Row, Select, Space, Statistic, Table, Tabs, Typography, theme } from 'antd';
 import type { TableProps } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -17,7 +17,7 @@ import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { OPEN_BILL_EXPORT, RECEIPT_EXPORT, RECEIVABLE_EXPORT } from '@/lib/exportColumns';
 import { formatDate, formatINR, formatINRCompact, toNumber } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
-import { QueryError } from '@/components/common/QueryState';
+import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { ListToolbar } from '@/components/common/ListToolbar';
 import { ExportButton } from '@/components/common/ExportButton';
@@ -323,7 +323,7 @@ export default function ReceivablesPage() {
         extra={<ProjectSelect value={projectId} onChange={(v) => setProjectId(v)} />}
       />
       {error && <QueryError error={error} onRetry={() => refetch()} />}
-      {isLoading && <Skeleton active />}
+      {isLoading && <PageSkeleton shape="workspace" header={false} />}
       {t && (
         <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
           <Col flex="1 1 180px">

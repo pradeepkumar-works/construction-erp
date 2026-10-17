@@ -7,7 +7,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { MaterialRequestDto, MaterialRequestItemDto, QuotationDto } from '@erp/shared';
 import { GST_RATES } from '@erp/shared';
 import { api, errorMessage } from '@/lib/api';
-import { useVendors } from '@/lib/queries';
+import { VendorSelect } from '@/components/common/SearchSelect';
 import { formatQty, toNumber } from '@/lib/format';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
@@ -30,7 +30,6 @@ export function QuotationFormModal({ open, request, quotation, onClose }: { open
   const [form] = Form.useForm<FormValues>();
   const { message } = App.useApp();
   const qc = useQueryClient();
-  const { data: vendors } = useVendors(open);
 
   useEffect(() => {
     if (!open) return;
@@ -100,12 +99,7 @@ export function QuotationFormModal({ open, request, quotation, onClose }: { open
         <FormSection title="Quotation">
           <FormGrid cols={2}>
             <Form.Item name="vendorId" label="Vendor" rules={[{ required: true, message: 'Pick the vendor' }]}>
-              <Select
-                showSearch={{ optionFilterProp: 'label' }}
-                disabled={!!quotation}
-                placeholder="Vendor master"
-                options={(vendors ?? []).filter((v) => v.isActive).map((v) => ({ value: v.id, label: v.name }))}
-              />
+              <VendorSelect prefer={['SUPPLIER']} disabled={!!quotation} selected={quotation ? { value: quotation.vendorId, label: quotation.vendorName } : null} />
             </Form.Item>
             <Form.Item name="quoteRef" label="Their quotation no.">
               <Input maxLength={60} />

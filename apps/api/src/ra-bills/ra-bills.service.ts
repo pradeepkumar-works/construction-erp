@@ -7,7 +7,7 @@ import { ProjectAccessService } from '../common/project-access.service';
 import { ApprovalRightsService } from '../common/approval-rights.service';
 import { AuditService } from '../common/audit.service';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
-import { AttachmentsService } from '../common/attachments.service';
+import { AttachmentsService, ATTACHMENT_FIELDS } from '../common/attachments.service';
 import { BILLABLE_BOQ_ITEM, UNAPPROVED_EXTRA_ITEM } from '../variations/variations.service';
 import { dateOnly, dec, iso, money, parseDate } from '../common/serialize';
 import { isUniqueViolation } from '../common/idempotency';
@@ -40,7 +40,7 @@ const include = {
   pvLines: { orderBy: { sortOrder: 'asc' } },
   submittedBy: { select: { fullName: true } },
   reviewedBy: { select: { fullName: true } },
-  attachments: true,
+  attachments: { select: ATTACHMENT_FIELDS },
   receipts: { select: RECEIPT_SUMS },
   _count: { select: { measurements: true } },
 } satisfies Prisma.RaBillInclude;
