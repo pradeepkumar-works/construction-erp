@@ -53,9 +53,13 @@ export function LabourRatesModal({ open, onClose }: { open: boolean; onClose: ()
           description={
             <span>
               {data.unpricedTrades.map((t) => (
-                <Tag key={t} style={{ cursor: editable ? 'pointer' : undefined }} onClick={() => editable && form.setFieldValue('rates', [...(form.getFieldValue('rates') ?? []), { category: t }])}>
-                  {t}
-                </Tag>
+                editable ? (
+                  <Button key={t} size="small" color="default" variant="filled" aria-label={`Add a rate for ${t}`} onClick={() => form.setFieldValue('rates', [...(form.getFieldValue('rates') ?? []), { category: t }])} style={{ marginInlineEnd: 8 }}>
+                    {t}
+                  </Button>
+                ) : (
+                  <Tag key={t}>{t}</Tag>
+                )
               ))}
             </span>
           }

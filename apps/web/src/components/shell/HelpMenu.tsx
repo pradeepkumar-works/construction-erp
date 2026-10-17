@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Badge, Button, Drawer, Dropdown, Flex, Modal, Timeline, Typography, theme } from 'antd';
+import { Badge, Button, Drawer, Dropdown, Flex, Modal, Switch, Timeline, Typography, theme } from 'antd';
 import type { MenuProps } from 'antd';
 import { CompassOutlined, CustomerServiceOutlined, GiftOutlined, QuestionCircleOutlined, ThunderboltOutlined } from '@ant-design/icons';
 import { PRODUCT_NAME } from '@erp/shared';
 import { formatDate } from '@/lib/format';
 import { readPref, writePref } from '@/lib/prefs';
+import { askShortcutKeys, singleKeysOn, useSingleKeys } from '@/lib/shortcuts';
 import { searchShortcut } from './Sidebar';
 import { WHATS_NEW } from './whats-new';
 
@@ -40,11 +41,12 @@ export function HelpMenu({ onTour, withSearch, withAsk = false }: { onTour: () =
   const [newsOpen, setNewsOpen] = useState(false);
   const [seen, setSeen] = useState<string | null>(() => readPref<string | null>(PREF_SEEN, null));
   const unseen = WHATS_NEW.length > 0 && seen !== WHATS_NEW[0].id;
+  const [singleKeys, setSingleKeys] = useSingleKeys();
 
   // ? opens the shortcuts from anywhere outside a field or a dialog.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== '?' || e.ctrlKey || e.metaKey || e.altKey || isTyping(e.target) || dialogOpen()) return;
+      if (e.key !== '?' || e.ctrlKey || e.metaKey || e.altKey || !singleKeysOn() || isTyping(e.target) || dialogOpen()) return;
       e.preventDefault();
       setKeysOpen(true);
     };
@@ -61,7 +63,7 @@ export function HelpMenu({ onTour, withSearch, withAsk = false }: { onTour: () =
   };
 
   const items: MenuProps['items'] = [
-    { key: 'keys', icon: <ThunderboltOutlined />, label: 'Keyboard shortcuts', extra: <Typography.Text keyboard>?</Typography.Text>, onClick: () => setKeysOpen(true) },
+    { key: 'keys', icon: <ThunderboltOutlined />, label: 'Keyboard shortcuts', extra: singleKeys ? <Typography.Text keyboard>?</Typography.Text> : undefined, onClick: () => setKeysOpen(true) },
     { key: 'news', icon: <GiftOutlined />, label: unseen ? <Badge dot offset={[6, 0]}>What&apos;s new</Badge> : "What's new", onClick: openNews },
     { key: 'tour', icon: <CompassOutlined />, label: 'Take the tour', onClick: onTour },
     ...(SUPPORT ? [{ key: 'support', icon: <CustomerServiceOutlined />, label: <a href={`mailto:${SUPPORT}`}>Contact support</a> }] : []),
@@ -69,20 +71,31 @@ export function HelpMenu({ onTour, withSearch, withAsk = false }: { onTour: () =
 
   const shortcuts: [string, string[]][] = [
     ...(withSearch ? ([['Search pages and projects', searchShortcut().startsWith('⌘') ? ['⌘', 'K'] : ['Ctrl', 'K']]] as [string, string[]][]) : []),
-    ...(withAsk ? ([[`Ask ${PRODUCT_NAME} a question`, searchShortcut().startsWith('⌘') ? ['⌘', 'J'] : ['Ctrl', 'J']]] as [string, string[]][]) : []),
+    ...(withAsk ? ([[`Ask ${PRODUCT_NAME} a question`, askShortcutKeys()]] as [string, string[]][]) : []),
     ['Skip the menu to the page (first Tab on a page)', ['Tab', 'Enter']],
-    ['Fold the sidebar to icons and back', ['[']],
-    ['Show these shortcuts', ['?']],
+    ...(singleKeys
+      ? ([
+          ['Fold the sidebar to icons and back', ['[']],
+          ['Show these shortcuts', ['?']],
+        ] as [string, string[]][])
+      : []),
     ['Move through search results', ['↑', '↓']],
+    ['Move through the rows of a list (after Tab to the list)', singleKeys ? ['↑', '↓', 'J', 'K'] : ['↑', '↓']],
+    ['Open the row', ['Enter']],
+    ...(singleKeys ? ([['Tick the row', ['X']]] as [string, string[]][]) : []),
     ['Close a dialog or drawer', ['Esc']],
     ['Submit the form you are filling', ['Ctrl', 'Enter']],
     ['Next line of a table in a form (adds one on the last)', ['Enter']],
   ];
   const approvalKeys: [string, string[]][] = [
-    ['Next and previous entry', ['J', 'K']],
-    ['Approve, request changes, reject', ['A', 'C', 'R']],
-    ['Tick the entry for bulk approval', ['X']],
-    ['Open its full page', ['O']],
+    ...(singleKeys
+      ? ([
+          ['Next and previous entry', ['J', 'K']],
+          ['Approve, request changes, reject', ['A', 'C', 'R']],
+          ['Tick the entry for bulk approval', ['X']],
+          ['Open its full page', ['O']],
+        ] as [string, string[]][])
+      : []),
     ['Confirm the decision', ['Ctrl', 'Enter']],
   ];
 
@@ -91,8 +104,19 @@ export function HelpMenu({ onTour, withSearch, withAsk = false }: { onTour: () =
       <Dropdown menu={{ items }} trigger={['click']} placement="bottomRight">
         <Button type="text" aria-label="Help" data-tour="help" icon={<Badge dot={unseen}>{<QuestionCircleOutlined style={{ fontSize: token.fontSizeLG }} />}</Badge>} />
       </Dropdown>
-      <Modal open={keysOpen} onCancel={() => setKeysOpen(false)} footer={null} title="Keyboard shortcuts" width={440}>
+      <Modal open={keysOpen} onCancel={() => setKeysOpen(false)} footer={null} title="Keyboard shortcuts" width={460}>
         <Flex vertical gap={token.marginSM}>
+          <Flex justify="space-between" align="flex-start" gap={token.margin} style={{ paddingBottom: token.paddingSM, borderBottom: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}` }}>
+            <div>
+              <Typography.Text strong id="single-keys-label">
+                Single-key shortcuts
+              </Typography.Text>
+              <Typography.Text type="secondary" style={{ display: 'block', fontSize: token.fontSizeSM }}>
+                Keys such as J, K and ? on their own. Turn them off if you use speech input or press keys by accident.
+              </Typography.Text>
+            </div>
+            <Switch checked={singleKeys} onChange={setSingleKeys} aria-labelledby="single-keys-label" />
+          </Flex>
           {shortcuts.map(([what, keys]) => (
             <Flex key={what} justify="space-between" align="center" gap={token.margin}>
               <Typography.Text>{what}</Typography.Text>

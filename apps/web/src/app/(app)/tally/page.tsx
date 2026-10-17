@@ -357,6 +357,7 @@ export default function TallyPage() {
   if (user && !canExportTally(user.roleKey))
     return (
       <div className="page-container">
+        <PageHeader title="Tally Export" />
         <Alert type="info" showIcon title="Only admin, management and accounts export to Tally." />
       </div>
     );
@@ -368,8 +369,8 @@ export default function TallyPage() {
       />
       <Typography.Paragraph type="secondary" style={{ maxWidth: 900 }}>
         Once: set the ledger names under Ledgers, download the ledger masters and import them in TallyPrime (Import → Masters). Each month: export here and import
-        the file (Import → Transactions). Exported receipts and payments are locked in <Link href="/receivables">Receivables</Link> and{' '}
-        <Link href="/payables">Payables</Link> until their export is undone.
+        the file (Import → Transactions). Exported receipts and payments are locked in <Link href="/receivables" className="text-link">Receivables</Link> and{' '}
+        <Link href="/payables" className="text-link">Payables</Link> until their export is undone.
       </Typography.Paragraph>
       <Card size="small">
         <Tabs

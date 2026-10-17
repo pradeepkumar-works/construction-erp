@@ -29,6 +29,7 @@ import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { CardToolbar } from '@/components/common/CardToolbar';
 import { themeColor } from '@/lib/theme';
 import { ExpiryTag } from '@/components/maintenance/maintenanceUi';
+import { RecordLink } from '@/components/record/RecordLink';
 import { ComplianceFormModal, type ComplianceAction } from './ComplianceForms';
 
 const KIND_COLORS: Record<ComplianceDocKind, string> = { BANK_GUARANTEE: 'blue', EMD: 'cyan', INSURANCE: 'purple', LICENCE: 'geekblue' };
@@ -82,6 +83,12 @@ export function CompliancePanel({ initialId }: { initialId?: string }) {
     onError: (e) => message.error(errorMessage(e)),
   });
 
+  /** Enter and Space both press a role="button" element, as they do a real button. */
+  const onKeys = (act: () => void) => (e: React.KeyboardEvent) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    e.preventDefault();
+    act();
+  };
   const pickState = (s: 'EXPIRING' | 'EXPIRED') => {
     setState(state === s ? undefined : s);
     setStatus('ACTIVE');
@@ -160,10 +167,10 @@ export function CompliancePanel({ initialId }: { initialId?: string }) {
           <Statistic title="Bank guarantees out" value={formatINR(t.guaranteesOut)} styles={big} />
           <Statistic title="Margin money blocked" value={formatINR(t.marginBlocked)} styles={big} />
           <Statistic title="EMD with tenders" value={formatINR(t.emdOut)} styles={big} />
-          <div role="button" tabIndex={0} style={{ cursor: 'pointer' }} onClick={() => pickState('EXPIRING')} onKeyDown={(e) => e.key === 'Enter' && pickState('EXPIRING')}>
+          <div role="button" tabIndex={0} aria-pressed={state === 'EXPIRING'} style={{ cursor: 'pointer' }} onClick={() => pickState('EXPIRING')} onKeyDown={onKeys(() => pickState('EXPIRING'))}>
             <Statistic title={`Expiring in ${DOC_ALERT_DAYS} days`} value={t.expiring} styles={{ content: { fontSize: 18, color: t.expiring ? themeColor('orange7') : undefined } }} />
           </div>
-          <div role="button" tabIndex={0} style={{ cursor: 'pointer' }} onClick={() => pickState('EXPIRED')} onKeyDown={(e) => e.key === 'Enter' && pickState('EXPIRED')}>
+          <div role="button" tabIndex={0} aria-pressed={state === 'EXPIRED'} style={{ cursor: 'pointer' }} onClick={() => pickState('EXPIRED')} onKeyDown={onKeys(() => pickState('EXPIRED'))}>
             <Statistic title="Expired, not renewed" value={t.expired} styles={{ content: { fontSize: 18, color: t.expired ? themeColor('colorErrorText') : undefined } }} />
           </div>
         </CardToolbar>
@@ -285,7 +292,7 @@ export function CompliancePanel({ initialId }: { initialId?: string }) {
             </Descriptions>
             {d.renewedById ? (
               <p style={{ marginTop: 12 }}>
-                Renewed: <a onClick={() => setOpenId(d.renewedById)}>open the current entry</a>
+                Renewed: <RecordLink onOpen={() => setOpenId(d.renewedById)}>open the current entry</RecordLink>
               </p>
             ) : null}
             <h4 style={{ marginTop: 16 }}>Scans</h4>

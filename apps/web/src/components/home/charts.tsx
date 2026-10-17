@@ -1,28 +1,27 @@
 'use client';
 
 import React from 'react';
-import { theme } from 'antd';
+import { Grid, theme } from 'antd';
 import { Column, Line, Pie } from '@ant-design/plots';
 import type { CostHeadsDto, HomeTrendsDto } from '@erp/shared';
-import { useAppearance } from '@/lib/appearance';
+import { useAppearance, useReducedMotion } from '@/lib/appearance';
 import { formatINRCompact, toNumber } from '@/lib/format';
+import { COST_HEADS, monthLabel } from './chartData';
 
 /**
  * The home page's charts (UI roadmap item 59), drawn with @ant-design/plots and coloured from the antd tokens, so light
- * and dark follow the user's appearance. This module is only loaded by the pages that draw a chart.
+ * and dark follow the user's appearance. This module is only loaded by the pages that draw a chart. They draw without
+ * animating when the system asks for less motion; the summary and the table view are `ChartCard`'s (UX item 81).
  */
-
-const monthLabel = (m: string) => {
-  const [y, mo] = m.split('-').map(Number);
-  return new Date(Date.UTC(y, mo - 1, 1)).toLocaleDateString('en-GB', { month: 'short', year: '2-digit', timeZone: 'UTC' });
-};
 
 function useChartTheme() {
   const { token } = theme.useToken();
   const { dark } = useAppearance();
+  const reduced = useReducedMotion();
   return {
     token,
     base: {
+      ...(reduced ? { animate: false as const } : {}),
       theme: { type: dark ? 'classicDark' : 'classic', view: { viewFill: 'transparent' } },
       autoFit: true,
       axis: {
@@ -82,29 +81,24 @@ export function CashFlowChart({ months, cashIn, cashOut }: { months: string[]; c
   );
 }
 
-const HEADS: [keyof Omit<CostHeadsDto, 'total'>, string][] = [
-  ['material', 'Material'],
-  ['subcontract', 'Subcontract'],
-  ['labour', 'Labour'],
-  ['machinery', 'Machinery'],
-  ['expenses', 'Site expenses'],
-];
-
 /** Cost of the six months by head, as a ring with the total in the middle. */
 export function CostByHeadChart({ heads }: { heads: CostHeadsDto }) {
   const { token, base } = useChartTheme();
-  const rows = HEADS.map(([k, label]) => ({ head: label, amount: toNumber(heads[k]) })).filter((r) => r.amount > 0);
+  // Beside the ring on wider screens; below it on a phone, where the side would squeeze the ring.
+  const side = Grid.useBreakpoint().md !== false;
+  const rows = COST_HEADS.map(([k, label]) => ({ head: label, amount: toNumber(heads[k]) })).filter((r) => r.amount > 0);
   return (
     <Pie
       theme={base.theme}
+      {...(base.animate === false ? { animate: false as const } : {})}
       autoFit
       height={280}
       data={rows}
       angleField="amount"
       colorField="head"
       innerRadius={0.62}
-      scale={{ color: { domain: HEADS.map(([, l]) => l), range: [token.blue, token.purple, token.gold, token.cyan, token.magenta] } }}
-      legend={{ color: { itemLabelFill: token.colorText, position: 'right' as const } }}
+      scale={{ color: { domain: COST_HEADS.map(([, l]) => l), range: [token.blue, token.purple, token.gold, token.cyan, token.magenta] } }}
+      legend={{ color: { itemLabelFill: token.colorText, position: side ? ('right' as const) : ('bottom' as const) } }}
       label={false}
       tooltip={{ field: 'amount', valueFormatter: (v: number) => formatINRCompact(v) }}
       annotations={[

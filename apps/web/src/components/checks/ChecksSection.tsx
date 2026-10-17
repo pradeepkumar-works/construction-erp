@@ -127,7 +127,7 @@ export function CheckRows({ checks, action }: { checks: BillCheckDto[]; action?:
             {c.links.length ? (
               <Flex gap={10} wrap style={{ fontSize: 12 }}>
                 {c.links.map((l) => (
-                  <Link key={`${l.href}-${l.label}`} href={l.href}>
+                  <Link key={`${l.href}-${l.label}`} href={l.href} className="text-link">
                     {l.label}
                   </Link>
                 ))}

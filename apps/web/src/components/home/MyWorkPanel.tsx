@@ -146,7 +146,7 @@ function WorkCard({ k, card }: { k: Exclude<MyWorkKey, 'approvals'>; card: MyWor
           {items.map((i) => (
             <li key={`${i.href}-${i.label}`} style={{ padding: `${token.paddingXXS}px 0`, borderTop: `${token.lineWidth}px ${token.lineType} ${token.colorSplit}` }}>
               <Flex justify="space-between" gap={token.marginXS} align="baseline">
-                <Link href={i.href} style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={i.label}>
+                <Link href={i.href} className="text-link" style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={i.label}>
                   {i.label}
                 </Link>
                 {i.amount ? (
@@ -162,7 +162,7 @@ function WorkCard({ k, card }: { k: Exclude<MyWorkKey, 'approvals'>; card: MyWor
           ))}
           {card.count > items.length && meta.href && (
             <li style={{ paddingTop: token.paddingXXS }}>
-              <Link href={meta.href} style={{ fontSize: token.fontSizeSM }}>
+              <Link href={meta.href} className="text-link" style={{ fontSize: token.fontSizeSM }}>
                 {card.count - items.length} more
               </Link>
             </li>

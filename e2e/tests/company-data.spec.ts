@@ -61,7 +61,7 @@ test('an admin schedules the company for deletion and cancels it', async ({ page
 
   await page.goto('/projects');
   await expect(page.getByText(/This company and all its data will be deleted on/)).toBeVisible();
-  await page.getByRole('button', { name: 'Review or cancel' }).click();
+  await page.getByRole('link', { name: 'Review or cancel' }).click();
   await expect(page).toHaveURL(/\/company-data/);
   await page.getByRole('button', { name: 'Cancel deletion' }).click();
   await expect(page.getByText('Deletion cancelled')).toBeVisible();

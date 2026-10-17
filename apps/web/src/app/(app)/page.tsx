@@ -33,7 +33,8 @@ import { themeColor } from '@/lib/theme';
 import { MyWorkPanel } from '@/components/home/MyWorkPanel';
 import { KpiTile, kpiColumns, trendOf } from '@/components/home/KpiTile';
 import { homeLayout, type ChartKey, type KpiKey } from '@/components/home/layout';
-import { WhenInView } from '@/components/home/WhenInView';
+import { CashFlowTable, ChartCard, CostByHeadTable, SCurveTable } from '@/components/home/ChartCard';
+import { cashFlowSummary, costByHeadSummary, sCurveSummary } from '@/components/home/chartData';
 
 const chartLoading = () => <Skeleton.Node active style={{ width: '100%', height: 280 }} />;
 const SCurveChart = dynamic(() => import('@/components/home/charts').then((m) => m.SCurveChart), { ssr: false, loading: chartLoading });
@@ -107,6 +108,7 @@ export default function DashboardPage() {
     <div className="page-container">
       <PageHeader
         title={`Welcome, ${user?.fullName.split(' ')[0] ?? ''}`}
+        docTitle="Home"
         subtitle={
           companyWide
             ? 'Company-wide overview of projects, site progress and approvals'
@@ -281,69 +283,84 @@ function Kpi({ k, data, trends, approver }: { k: KpiKey; data: CompanyDashboard;
 function HomeChart({ c, trends }: { c: ChartKey; trends: HomeTrendsDto }) {
   // On a phone the card's note would squeeze its title, so it is left out there.
   const wide = Grid.useBreakpoint().sm !== false;
-  const card = (title: string, extra: string, body: React.ReactNode, label: string) => (
+  const note = (text: string) => (wide ? <Typography.Text type="secondary" style={small}>{text}</Typography.Text> : undefined);
+  const empty = (title: string, extra: string, description: string) => (
     <Col xs={24} xl={12}>
-      <Card size="small" title={title} extra={wide ? <Typography.Text type="secondary" style={small}>{extra}</Typography.Text> : undefined} style={{ height: '100%' }}>
-        <div role="img" aria-label={label}>
-          <WhenInView minHeight={280}>{body}</WhenInView>
-        </div>
+      <Card size="small" title={title} extra={note(extra)} style={{ height: '100%' }}>
+        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={description} />
       </Card>
     </Col>
   );
   switch (c) {
-    case 'sCurve': {
-      const now = [...trends.sCurve].reverse().find((p) => p.actual !== null);
-      return card(
-        'Planned against actual progress',
-        'Value of work, cumulative',
-        trends.sCurve.length ? <SCurveChart data={trends.sCurve} /> : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Plan activities with dates and BOQ items to see the curve" />,
-        now ? `Progress curve: ${now.actual}% done against ${now.planned}% planned by ${monthName(now.month)}` : 'Progress curve: nothing planned yet',
+    case 'sCurve':
+      if (!trends.sCurve.length) return empty('Planned against actual progress', 'Value of work, cumulative', 'Plan activities with dates and BOQ items to see the curve');
+      return (
+        <Col xs={24} xl={12}>
+          <ChartCard
+            title="Planned against actual progress"
+            note={note('Value of work, cumulative')}
+            summary={sCurveSummary(trends.sCurve)}
+            chart={<SCurveChart data={trends.sCurve} />}
+            table={<SCurveTable data={trends.sCurve} />}
+          />
+        </Col>
       );
-    }
     case 'cashFlow':
       if (!trends.cashIn && !trends.cashOut) return null;
-      return card(
-        'Cash in and out',
-        'Last six months',
-        <CashFlowChart months={trends.months} cashIn={trends.cashIn} cashOut={trends.cashOut} />,
-        `Cash received and paid over the last six months`,
+      return (
+        <Col xs={24} xl={12}>
+          <ChartCard
+            title="Cash in and out"
+            note={note('Last six months')}
+            summary={cashFlowSummary(trends)}
+            chart={<CashFlowChart months={trends.months} cashIn={trends.cashIn} cashOut={trends.cashOut} />}
+            table={<CashFlowTable months={trends.months} cashIn={trends.cashIn} cashOut={trends.cashOut} />}
+          />
+        </Col>
       );
     case 'costByHead':
       if (!trends.costByHead) return null;
-      return card(
-        'Cost by head',
-        'Last six months',
-        toNumber(trends.costByHead.total) > 0 ? <CostByHeadChart heads={trends.costByHead} /> : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No cost booked in the last six months" />,
-        `Cost by head over the last six months: ${formatINRCompact(trends.costByHead.total)} in all`,
+      if (!(toNumber(trends.costByHead.total) > 0)) return empty('Cost by head', 'Last six months', 'No cost booked in the last six months');
+      return (
+        <Col xs={24} xl={12}>
+          <ChartCard
+            title="Cost by head"
+            note={note('Last six months')}
+            summary={costByHeadSummary(trends.costByHead)}
+            chart={<CostByHeadChart heads={trends.costByHead} />}
+            table={<CostByHeadTable heads={trends.costByHead} />}
+          />
+        </Col>
       );
     case 'billingVsContract':
       if (!trends.billingVsContract) return null;
-      return card(
-        'Billed against contract',
-        'Approved RA bills to date',
-        trends.billingVsContract.length ? (
-          <Flex vertical gap={12} style={{ paddingTop: 8 }}>
-            {trends.billingVsContract.map((b) => {
-              const pct = toNumber(b.contractValue) > 0 ? Math.round((toNumber(b.billed) / toNumber(b.contractValue)) * 1000) / 10 : 0;
-              return (
-                <div key={b.projectId}>
-                  <Flex justify="space-between" gap={8}>
-                    <Link href={`/projects/${b.projectId}?tab=bills`} style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {b.projectName}
-                    </Link>
-                    <Typography.Text type="secondary" className="mono" style={{ ...small, whiteSpace: 'nowrap' }}>
-                      {formatINRCompact(b.billed)} of {formatINRCompact(b.contractValue)}
-                    </Typography.Text>
-                  </Flex>
-                  <Progress percent={pct} size="small" aria-label={`${b.projectName}: ${pct}% billed`} />
-                </div>
-              );
-            })}
-          </Flex>
-        ) : (
-          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No contract values yet" />
-        ),
-        'Billed against contract value per project',
+      return (
+        <Col xs={24} xl={12}>
+          <Card size="small" title="Billed against contract" extra={note('Approved RA bills to date')} style={{ height: '100%' }}>
+            {trends.billingVsContract.length ? (
+              <Flex vertical gap={12} style={{ paddingTop: 8 }}>
+                {trends.billingVsContract.map((b) => {
+                  const pct = toNumber(b.contractValue) > 0 ? Math.round((toNumber(b.billed) / toNumber(b.contractValue)) * 1000) / 10 : 0;
+                  return (
+                    <div key={b.projectId}>
+                      <Flex justify="space-between" gap={8}>
+                        <Link href={`/projects/${b.projectId}?tab=bills`} className="text-link" style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {b.projectName}
+                        </Link>
+                        <Typography.Text type="secondary" className="mono" style={{ ...small, whiteSpace: 'nowrap' }}>
+                          {formatINRCompact(b.billed)} of {formatINRCompact(b.contractValue)}
+                        </Typography.Text>
+                      </Flex>
+                      <Progress percent={pct} size="small" aria-label={`${b.projectName}: ${pct}% billed`} />
+                    </div>
+                  );
+                })}
+              </Flex>
+            ) : (
+              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No contract values yet" />
+            )}
+          </Card>
+        </Col>
       );
   }
 }
@@ -352,10 +369,4 @@ function HomeChart({ c, trends }: { c: ChartKey; trends: HomeTrendsDto }) {
 function shortMonth(month: string) {
   const [y, m] = month.split('-').map(Number);
   return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString('en-GB', { month: 'short', timeZone: 'UTC' });
-}
-
-/** "2026-10" → "Oct 2026" */
-function monthName(month: string) {
-  const [y, m] = month.split('-').map(Number);
-  return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString('en-IN', { month: 'short', year: 'numeric', timeZone: 'UTC' });
 }

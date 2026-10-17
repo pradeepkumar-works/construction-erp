@@ -34,7 +34,7 @@ async function askApi(token: string, question: string) {
 
 test('the panel answers with links to the records it used, and they open', async ({ page }) => {
   await signIn(page, 'pm@demo.com');
-  await page.keyboard.press('Control+j');
+  await page.keyboard.press('Alt+j');
   await expect(panel(page)).toBeVisible();
   await expect(panel(page).getByText('Try asking')).toBeVisible();
   await ask(page, 'Which projects are we running?');
@@ -129,7 +129,7 @@ test('a site engineer gets no Summarise button while Ask Nirmaan is off for the 
   try {
     await signIn(page, 'engineer@demo.com');
     await page.goto(`/projects/${project.id}`);
-    await expect(page.getByRole('button', { name: /Progress report/ })).toBeVisible();
+    await expect(page.getByRole('link', { name: /Progress report/ })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Summarise this week' })).toHaveCount(0);
   } finally {
     await api(admin, '/ai/settings', { method: 'PATCH', body: { enabled: true } });
@@ -172,7 +172,7 @@ test('an admin sees the switch, the allowance and this month’s use', async ({ 
 
 test('the panel passes axe', async ({ page }) => {
   await signIn(page, 'pm@demo.com');
-  await page.keyboard.press('Control+j');
+  await page.keyboard.press('Alt+j');
   await ask(page, 'What is waiting for my approval?');
   await expect(panel(page).getByRole('button', { name: 'Copy answer' })).toBeVisible();
   await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running' || a.effect?.getTiming().iterations === Infinity));

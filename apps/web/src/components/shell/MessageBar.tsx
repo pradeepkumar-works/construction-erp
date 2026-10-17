@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { Alert, Button, Flex, theme } from 'antd';
 import { CustomerServiceOutlined, DisconnectOutlined } from '@ant-design/icons';
 import type { AuthUser } from '@erp/shared';
@@ -9,6 +8,7 @@ import { BILLING_REMIND_DAYS, PRODUCT_NAME, canManageBilling, canManageCompanyDa
 import { useCompanyDeletion } from '@/lib/queries';
 import { formatDate, formatDateTime } from '@/lib/format';
 import { endSupportSession } from '@/lib/api';
+import { LinkButton } from '@/components/common/LinkButton';
 
 type Level = 'error' | 'warning' | 'info';
 
@@ -82,11 +82,9 @@ function useShellMessages(user: AuthUser): ShellMessage[] {
   if (b && !user.support) {
     const admin = canManageBilling(user.roleKey);
     const renew = admin ? (
-      <Link href="/billing">
-        <Button size="small" type="primary">
-          {b.status === 'READ_ONLY' ? 'Renew' : 'Subscribe'}
-        </Button>
-      </Link>
+      <LinkButton href="/billing" size="small" type="primary">
+        {b.status === 'READ_ONLY' ? 'Renew' : 'Subscribe'}
+      </LinkButton>
     ) : undefined;
     if (b.status === 'READ_ONLY') {
       list.push({
@@ -117,11 +115,9 @@ function useShellMessages(user: AuthUser): ShellMessage[] {
       type: 'error',
       title: `This company and all its data will be deleted on ${formatDate(deletion.scheduledFor)}.`,
       action: (
-        <Link href="/company-data">
-          <Button size="small" danger>
-            Review or cancel
-          </Button>
-        </Link>
+        <LinkButton href="/company-data" size="small" danger>
+          Review or cancel
+        </LinkButton>
       ),
     });
   }

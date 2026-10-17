@@ -7,7 +7,7 @@ test.describe('page states', () => {
     await signIn(page, 'pm@demo.com');
     await page.goto('/no-such-page');
     await expect(page.getByText("This page doesn't exist")).toBeVisible();
-    await page.getByRole('button', { name: 'Go to home' }).click();
+    await page.getByRole('link', { name: 'Go to home' }).click();
     await expect(page).not.toHaveURL(/no-such-page/);
   });
 
@@ -15,7 +15,7 @@ test.describe('page states', () => {
     await signIn(page, 'engineer@demo.com');
     await page.goto('/purchase-orders/00000000-0000-4000-8000-000000000000');
     await expect(page.getByText('Not found', { exact: true })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Go to home' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Go to home' })).toBeVisible();
     await page.goto('/receivables');
     await expect(page.getByText("You don't have access to this").first()).toBeVisible();
   });

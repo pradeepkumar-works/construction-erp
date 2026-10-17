@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import Link from 'next/link';
 import { Anchor, App, Button, Card, Col, Descriptions, Divider, Drawer, Flex, Row, Skeleton, Space, Steps, Tooltip, theme } from 'antd';
 import type { DescriptionsProps } from 'antd';
 import { ArrowLeftOutlined, ExpandOutlined, LinkOutlined, PrinterOutlined } from '@ant-design/icons';
@@ -10,6 +9,7 @@ import { useStickyTop } from '@/lib/sticky';
 import { rememberRecord } from '@/lib/recent';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { PageHeader } from '@/components/common/PageHeader';
+import { LinkButton } from '@/components/common/LinkButton';
 import { AuditTrail } from '@/components/common/AuditTrail';
 import type { Lifecycle } from './lifecycle';
 import type { SubmissionBase } from '@erp/shared';
@@ -105,9 +105,7 @@ function RecordPane({ loading, error, onRetry, record, children }: RecordFramePr
                 </Tooltip>
               )}
               <Tooltip title="Open full page">
-                <Link href={record.href}>
-                  <Button size="small" type="text" icon={<ExpandOutlined />} aria-label="Open full page" />
-                </Link>
+                <LinkButton href={record.href} size="small" type="text" icon={<ExpandOutlined />} aria-label="Open full page" />
               </Tooltip>
             </Space>
           </Flex>
@@ -167,9 +165,7 @@ function RecordDrawer({ open, onClose, drawerSize = 820, kind, loading, error, o
               </Button>
             )}
             <Tooltip title="Open full page">
-              <Link href={record.href}>
-                <Button size="small" icon={<ExpandOutlined />} aria-label="Open full page" />
-              </Link>
+              <LinkButton href={record.href} size="small" icon={<ExpandOutlined />} aria-label="Open full page" />
             </Tooltip>
             {record.actions?.('small')}
           </Space>
@@ -231,6 +227,7 @@ function RecordPage({ kind, list, loading, error, onRetry, record, children }: R
     <div className="page-container record-page">
       <PageHeader
         crumbs={[{ title: list.label, href: list.href }, { title: kind }]}
+        docTitle={typeof record?.title === 'string' ? record.title : kind}
         title={
           record ? (
             <Space wrap size={token.marginSM} align="center">
@@ -321,9 +318,9 @@ function RecordPage({ kind, list, loading, error, onRetry, record, children }: R
               boxShadow: token.boxShadowTertiary,
             }}
           >
-            <Link href={list.href}>
-              <Button icon={<ArrowLeftOutlined />}>{list.label}</Button>
-            </Link>
+            <LinkButton href={list.href} icon={<ArrowLeftOutlined />}>
+              {list.label}
+            </LinkButton>
             <Space wrap>{record.actions?.('middle')}</Space>
           </Flex>
         </>

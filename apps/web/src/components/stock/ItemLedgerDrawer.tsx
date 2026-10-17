@@ -7,6 +7,7 @@ import { useStockEntries } from '@/lib/queries';
 import { formatDate, formatQty } from '@/lib/format';
 import { StockTypeTag, entrySummary } from './StockTypeTag';
 import { StockEntryDrawer } from './StockEntryDrawer';
+import { RecordLink } from '@/components/record/RecordLink';
 
 /** Movements of one item at one project, newest first. */
 export function ItemLedgerDrawer({ row, onClose }: { row: StockBalanceDto | null; onClose: () => void }) {
@@ -48,7 +49,7 @@ export function ItemLedgerDrawer({ row, onClose }: { row: StockBalanceDto | null
             pagination={{ current: page, pageSize: 20, total: data?.total ?? 0, onChange: setPage, hideOnSinglePage: true }}
             columns={[
               { title: 'Date', dataIndex: 'date', width: 110, render: (v) => formatDate(v) },
-              { title: 'Entry', dataIndex: 'entryNo', width: 130, render: (v, e) => <Typography.Link onClick={() => setOpened(e.id)}>{v}</Typography.Link> },
+              { title: 'Entry', dataIndex: 'entryNo', width: 130, render: (v, e) => <RecordLink onOpen={() => setOpened(e.id)}>{v}</RecordLink> },
               { title: 'Type', dataIndex: 'type', width: 120, render: (v) => <StockTypeTag type={v} /> },
               { title: 'Details', key: 'd', ellipsis: true, render: (_, e) => entrySummary(e) },
               {

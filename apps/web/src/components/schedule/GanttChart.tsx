@@ -98,8 +98,26 @@ export function GanttChart({ data, scale, showBaseline, onMilestone }: { data: G
       {sub ? <div className="text-muted" style={{ fontSize: 11, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sub}</div> : null}
     </div>
   );
-  const row = (key: string, lbl: React.ReactNode, bars: React.ReactNode, className: string, onClick?: () => void) => (
-    <div key={key} className={className} style={{ display: 'flex', height: ROW_H, borderBottom: `1px solid ${token.colorBorderSecondary}`, cursor: onClick ? 'pointer' : undefined }} onClick={onClick}>
+  const row = (key: string, lbl: React.ReactNode, bars: React.ReactNode, className: string, onClick?: () => void, action?: string) => (
+    <div
+      key={key}
+      className={className}
+      style={{ display: 'flex', height: ROW_H, borderBottom: `1px solid ${token.colorBorderSecondary}`, cursor: onClick ? 'pointer' : undefined }}
+      onClick={onClick}
+      // A row that opens something is a button for the keyboard too: Tab reaches it, Enter or Space opens it.
+      {...(onClick
+        ? {
+            role: 'button',
+            tabIndex: 0,
+            'aria-label': action,
+            onKeyDown: (e: React.KeyboardEvent) => {
+              if (e.key !== 'Enter' && e.key !== ' ') return;
+              e.preventDefault();
+              onClick();
+            },
+          }
+        : {})}
+    >
       {lbl}
       <div style={{ position: 'relative', width, minWidth: width }}>{bars}</div>
     </div>
@@ -138,6 +156,7 @@ export function GanttChart({ data, scale, showBaseline, onMilestone }: { data: G
       </Tooltip>,
       'gantt-row gantt-milestone',
       onMilestone ? () => onMilestone(m) : undefined,
+      `Edit milestone ${m.name}, due ${formatDate(m.dueDate)}`,
     );
   };
 

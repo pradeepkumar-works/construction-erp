@@ -46,7 +46,13 @@ export default function PlatformPage() {
   }, [data, q]);
 
   if (!user) return null;
-  if (!staff) return <Alert type="info" title={`This page is for ${PRODUCT_NAME} staff.`} />;
+  if (!staff)
+    return (
+      <div className="page-container">
+        <PageHeader title={`${PRODUCT_NAME} console`} />
+        <Alert type="info" title={`This page is for ${PRODUCT_NAME} staff.`} />
+      </div>
+    );
   const active = data?.filter((c) => !c.suspendedAt && c.actions30d > 0).length ?? 0;
 
   return (

@@ -28,8 +28,8 @@ test('accounts lead with money due and see cash flow', async ({ page }) => {
   await expect(page.getByText('Vendor payable', { exact: true })).toBeVisible();
   await expect(page.getByText(/^Received in [A-Z][a-z]{2,3}$/)).toBeVisible();
   await expect(page.getByText(/^Cost in [A-Z][a-z]{2,3}$/)).toBeVisible();
-  await expect(page.getByRole('img', { name: /Cash received and paid/ })).toBeVisible();
-  await expect(page.getByRole('img', { name: /Cost by head/ })).toBeVisible();
+  await expect(page.getByRole('img', { name: /^Cash in and out\. / })).toBeVisible();
+  await expect(page.getByRole('img', { name: /^Cost by head\. / })).toBeVisible();
 });
 
 test('a project manager sees approvals, missing DPRs and the progress curve', async ({ page }) => {
@@ -45,7 +45,7 @@ test('a project manager sees approvals, missing DPRs and the progress curve', as
   await expect(section(page, 'DPRs not filed today')).toBeVisible();
   await expect(page.getByText(/^Work done in [A-Z][a-z]{2,3}$/)).toBeVisible();
   await expect(page.getByText('Pending approvals', { exact: true })).toBeVisible();
-  await expect(page.getByRole('img', { name: /^Progress curve/ })).toBeVisible();
+  await expect(page.getByRole('img', { name: /^Planned against actual progress\. / })).toBeVisible();
 });
 
 test('a site engineer sees no money', async ({ page }) => {
@@ -60,5 +60,5 @@ test('a site engineer sees no money', async ({ page }) => {
   await expect(page.getByText('Delayed activities', { exact: true })).toBeVisible();
   await expect(page.getByText('Vendor payable')).toHaveCount(0);
   await expect(page.getByText('Bills awaiting payment')).toHaveCount(0);
-  await expect(page.getByRole('img', { name: /Cash received and paid/ })).toHaveCount(0);
+  await expect(page.getByRole('img', { name: /^Cash in and out\. / })).toHaveCount(0);
 });

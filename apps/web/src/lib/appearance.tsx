@@ -3,6 +3,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { App as AntApp, ConfigProvider } from 'antd';
 import { componentConfig, cssVariablesFor, makeTheme } from './theme';
+import { BRAND } from './brand';
 
 export type ThemeMode = 'light' | 'dark' | 'system';
 export type Density = 'comfortable' | 'compact';
@@ -37,6 +38,19 @@ const Ctx = createContext<{ prefs: AppearancePrefs; dark: boolean; setPrefs: (p:
 
 /** The signed-in user's look on this browser (Light, Dark or the system's; Comfortable or Compact), with a setter. */
 export const useAppearance = () => useContext(Ctx);
+
+/** The system asks for less motion (UX item 81): antd's motion is off and charts draw without animating. */
+export function useReducedMotion() {
+  const [reduced, setReduced] = useState(() => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setReduced(mq.matches);
+    const on = (e: MediaQueryListEvent) => setReduced(e.matches);
+    mq.addEventListener('change', on);
+    return () => mq.removeEventListener('change', on);
+  }, []);
+  return reduced;
+}
 
 /** Follows the operating system's light or dark setting while the mode is "system". */
 function useSystemDark(enabled: boolean) {
@@ -75,7 +89,26 @@ export function AppearanceProvider({ children }: { children: React.ReactNode }) 
     });
   }, []);
 
-  const config = useMemo(() => makeTheme({ dark, compact }), [dark, compact]);
+  const reducedMotion = useReducedMotion();
+  const config = useMemo(() => {
+    const base = makeTheme({ dark, compact });
+    return reducedMotion ? { ...base, token: { ...base.token, motion: false } } : base;
+  }, [dark, compact, reducedMotion]);
+
+  // The page's colour scheme and the browser's bar colour follow the choice; the head script in app/layout.tsx set them
+  // before the first paint from the same stored choice, so a dark page never flashes white.
+  useEffect(() => {
+    const root = document.documentElement;
+    root.dataset.theme = dark ? 'dark' : 'light';
+    // The theme's own CSS variables take over from the head script's stand-in colours.
+    root.style.removeProperty('background');
+    root.style.removeProperty('color-scheme');
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? BRAND.colors.nightLayout : BRAND.colors.canvas);
+    return () => {
+      delete root.dataset.theme;
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', BRAND.colors.canvas);
+    };
+  }, [dark]);
   const css = useMemo(() => `${cssVariablesFor(config)}:root{color-scheme:${dark ? 'dark' : 'light'}}`, [config, dark]);
   const value = useMemo(() => ({ prefs, dark, setPrefs }), [prefs, dark, setPrefs]);
 

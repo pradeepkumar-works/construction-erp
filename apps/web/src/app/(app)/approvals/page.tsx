@@ -18,6 +18,7 @@ import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { ReviewDialog } from '@/components/common/ReviewActions';
 import { useApproveMany } from '@/components/list/bulk';
 import { dialogOpen, isTyping } from '@/components/shell/HelpMenu';
+import { singleKeysOn } from '@/lib/shortcuts';
 import { ApprovalQueue } from '@/components/approvals/ApprovalQueue';
 import { ApprovalPane } from '@/components/approvals/ApprovalPane';
 import { ReviewedToday } from '@/components/approvals/ReviewedToday';
@@ -161,11 +162,11 @@ export default function ApprovalsPage() {
     else setDrawer({ type: currentItem.type, id: currentItem.id });
   };
 
-  // J and K move, A, C and R decide, X ticks, O opens the full page (or the details).
+  // J and K move, A, C and R decide, X ticks, O opens the full page (or the details), unless single keys are off.
   useEffect(() => {
     if (!split) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.ctrlKey || e.metaKey || e.altKey || isTyping(e.target) || dialogOpen()) return;
+      if (e.ctrlKey || e.metaKey || e.altKey || !singleKeysOn() || isTyping(e.target) || dialogOpen()) return;
       const k = e.key.toLowerCase();
       if (!['j', 'k', 'a', 'c', 'r', 'x', 'o'].includes(k) || !flat.length) return;
       e.preventDefault();

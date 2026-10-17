@@ -29,8 +29,20 @@ export default function BillingPage() {
   const [paying, setPaying] = useState(false);
 
   if (!user) return null;
-  if (!user.billing) return <Alert type="info" title={`Billing is not switched on for this ${PRODUCT_NAME} server.`} />;
-  if (!admin) return <Alert type="info" title="Only an admin can see and pay for the subscription." />;
+  if (!user.billing)
+    return (
+      <div className="page-container" style={{ maxWidth: 948, marginLeft: 0 }}>
+        <PageHeader title="Billing" />
+        <Alert type="info" title={`Billing is not switched on for this ${PRODUCT_NAME} server.`} />
+      </div>
+    );
+  if (!admin)
+    return (
+      <div className="page-container" style={{ maxWidth: 948, marginLeft: 0 }}>
+        <PageHeader title="Billing" />
+        <Alert type="info" title="Only an admin can see and pay for the subscription." />
+      </div>
+    );
 
   const pay = async () => {
     setPaying(true);

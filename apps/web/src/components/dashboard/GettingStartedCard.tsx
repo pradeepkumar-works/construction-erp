@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { Button, Card, Progress, Typography, theme } from 'antd';
 import { CheckCircleFilled, CloseOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -11,6 +10,7 @@ import { useAuth } from '@/lib/auth';
 import { useGettingStarted } from '@/lib/queries';
 import { BRAND } from '@/lib/brand';
 import { themeColor } from '@/lib/theme';
+import { LinkButton } from '@/components/common/LinkButton';
 
 /** What each step asks for, where to do it, and which day of the first week it fits. */
 const STEPS: Record<GettingStartedStep, { title: string; help: string; href: string; action: string; day: number }> = {
@@ -93,11 +93,9 @@ export function GettingStartedCard() {
                 )}
               </div>
               {!s.done && (
-                <Link href={step.href}>
-                  <Button size="small" type={isNext ? 'primary' : 'default'}>
-                    {step.action}
-                  </Button>
-                </Link>
+                <LinkButton href={step.href} size="small" type={isNext ? 'primary' : 'default'}>
+                  {step.action}
+                </LinkButton>
               )}
             </li>
           );

@@ -70,7 +70,7 @@ test('a company whose trial has ended is read-only until an admin pays', async (
     }),
   );
 
-  await page.getByRole('button', { name: 'Renew' }).click();
+  await page.getByRole('link', { name: 'Renew' }).click();
   await expect(page).toHaveURL(/\/billing$/);
   await expect(page.getByRole('button', { name: /Pay ₹/ })).toBeDisabled();
   await page.getByLabel('Legal name').fill('E2E Billing Constructions Pvt Ltd');

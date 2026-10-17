@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
@@ -13,6 +13,7 @@ import { useAuth } from '@/lib/auth';
 import { useAppearance, type Density, type ThemeMode } from '@/lib/appearance';
 import { ProjectScopeProvider } from '@/lib/project-scope';
 import { readPref, writePref } from '@/lib/prefs';
+import { askShortcutLabel, isAskShortcut, singleKeysOn } from '@/lib/shortcuts';
 import { useAiStatus, usePendingApprovals, useProjects } from '@/lib/queries';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { SparkleIcon } from '@/components/ai/SparkleIcon';
@@ -25,6 +26,7 @@ import { MessageBar } from './MessageBar';
 import { NewMenu } from './NewMenu';
 import { ProjectSwitcher } from './ProjectSwitcher';
 import { navFor, navTrail } from './nav';
+import { PageTrailProvider } from './page-trail';
 import { usePins } from './pins';
 import { PREF_RAIL, Sidebar, searchShortcut } from './Sidebar';
 import { ProductTour, shouldAutoStartTour } from './ProductTour';
@@ -35,8 +37,6 @@ const { Header, Content } = Layout;
 // The assistant's panel (and Ant Design X with it) loads the first time someone opens it.
 const AskPanel = dynamic(() => import('@/components/ai/AskPanel'), { ssr: false });
 
-/** Ctrl J / ⌘J, shown beside the Ask button. */
-const askShortcut = () => (typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘J' : 'Ctrl J');
 
 export function AppShell({ user, children }: { user: AuthUser; children: React.ReactNode }) {
   return (
@@ -107,7 +107,7 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
     });
   }, []);
 
-  // Ctrl K / ⌘K opens quick-jump anywhere; [ folds the sidebar to its rail and back.
+  // Ctrl K / ⌘K opens quick-jump anywhere; Alt J / ⌘J opens Ask; [ folds the sidebar to its rail and back.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === 'k') {
@@ -115,12 +115,12 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
         e.preventDefault();
         setMobileOpen(false);
         setSearchOpen((o) => !o);
-      } else if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === 'j') {
+      } else if (isAskShortcut(e)) {
         if (!askVisible) return;
         e.preventDefault();
         if (askOpen) setAskOpen(false);
         else openAsk();
-      } else if (e.key === '[' && !e.ctrlKey && !e.metaKey && !e.altKey && !isMobile && !isTyping(e.target) && !dialogOpen()) {
+      } else if (e.key === '[' && !e.ctrlKey && !e.metaKey && !e.altKey && !isMobile && singleKeysOn() && !isTyping(e.target) && !dialogOpen()) {
         toggleRail();
       }
     };
@@ -130,6 +130,31 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
 
   // Close the drawer when the page changes (links, quick-jump or the browser's back button).
   useEffect(() => setMobileOpen(false), [pathname]);
+
+  // After moving to another page within the app, focus goes to its heading (UX item 81), so a keyboard or screen reader
+  // user starts on the new page rather than on the link they left, and hears where they are. A full load keeps the browser's.
+  const firstPath = useRef(true);
+  useEffect(() => {
+    if (firstPath.current) {
+      firstPath.current = false;
+      return;
+    }
+    let tries = 0;
+    let timer = 0;
+    const focus = () => {
+      const heading = document.getElementById('page-title');
+      if (heading) heading.focus({ preventScroll: true });
+      else if (++tries < 20) timer = window.setTimeout(focus, 100);
+      else document.getElementById('main-content')?.focus({ preventScroll: true });
+    };
+    timer = window.setTimeout(focus, 0);
+    return () => window.clearTimeout(timer);
+  }, [pathname]);
+
+  // The page's last crumb (a record's kind, a project's code) joins the header's trail, so there is one breadcrumb.
+  const [trailTail, setTrailTail] = useState<string | null>(null);
+  const headerTrail = !isMobile && !!trail;
+  const pageTrail = useMemo(() => ({ shown: headerTrail, setTail: setTrailTail }), [headerTrail]);
 
   const openSearch = guest
     ? undefined
@@ -237,7 +262,9 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
                       { title: pathname === trail.item.href ? trail.item.label : <Link href={trail.item.href}>{trail.item.label}</Link> },
                       ...(projectCrumb
                         ? [{ title: <span title={projectCrumb.name}>{projectCrumb.name}</span> }]
-                        : []),
+                        : trailTail && pathname !== trail.item.href
+                          ? [{ title: <span aria-current="page">{trailTail}</span> }]
+                          : []),
                     ]}
                   />
                 )}
@@ -279,13 +306,13 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
                 </Button>
               ))}
             {askVisible && (
-              <Tooltip title={isMobile ? undefined : `Ask ${PRODUCT_NAME}  ${askShortcut()}`}>
+              <Tooltip title={isMobile ? undefined : `Ask ${PRODUCT_NAME}  ${askShortcutLabel()}`}>
                 <Button
                   type="text"
                   icon={<SparkleIcon style={{ color: token.colorPrimary }} />}
                   onClick={() => (askOpen ? setAskOpen(false) : openAsk())}
                   aria-label={spacious ? undefined : `Ask ${PRODUCT_NAME}`}
-                  aria-keyshortcuts="Control+J Meta+J"
+                  aria-keyshortcuts="Alt+J Meta+J"
                   aria-expanded={askOpen}
                   data-tour="ask"
                 >
@@ -330,7 +357,9 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
         <div style={{ display: 'flex', alignItems: 'flex-start', flex: 1 }}>
           <Content id="main-content" tabIndex={-1} style={{ outline: 'none', flex: 1, minWidth: 0 }}>
             <MessageBar user={user} />
-            <AskContext.Provider value={askContext}>{children}</AskContext.Provider>
+            <PageTrailProvider value={pageTrail}>
+              <AskContext.Provider value={askContext}>{children}</AskContext.Provider>
+            </PageTrailProvider>
           </Content>
           {askVisible && askLoaded && <AskPanel open={askOpen} onClose={() => setAskOpen(false)} user={user} status={aiStatus} mobile={isMobile} question={askQuestion} onQuestionTaken={takeAskQuestion} />}
         </div>

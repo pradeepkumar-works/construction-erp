@@ -1074,7 +1074,7 @@ export; the client portal and the phone app show the amount.
 
 ## Ask Nirmaan (AI assistant)
 
-- **What it is.** A chat panel on every web page (header button, Ctrl J, or a question typed in Ctrl K) that answers
+- **What it is.** A chat panel on every web page (header button, Alt J or ⌘J on a Mac, or a question typed in Ctrl K) that answers
   questions about the company's own records. `POST /api/ai/ask` streams server-sent events (`thread`, `status`, `text`,
   `done`, `error`; `AiStreamEvent` in `packages/shared/src/ai.ts`); the web reads them with `fetch` in `lib/ai.ts`.
   The panel is `components/ai/AskPanel.tsx` (Ant Design X `Bubble`, `Sender`, `Welcome`, `Prompts`; answers rendered

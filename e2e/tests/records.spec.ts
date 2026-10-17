@@ -35,7 +35,7 @@ test('a quick look opens the full page, whose link can be copied and whose secti
   await page.locator('.ant-table-row a[href^="/bills/"]').first().click();
   const drawer = page.locator('.ant-drawer-open');
   await expect(drawer.getByRole('group', { name: 'Stage' })).toBeVisible();
-  await drawer.getByRole('button', { name: 'Open full page' }).click();
+  await drawer.getByRole('link', { name: 'Open full page' }).click();
   await expect(page).toHaveURL(/\/bills\/[0-9a-f-]{36}$/);
   const url = page.url();
 
@@ -47,7 +47,7 @@ test('a quick look opens the full page, whose link can be copied and whose secti
   await expect(page.getByText('Link copied')).toBeVisible();
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(url);
 
-  await page.getByRole('toolbar', { name: 'Record actions' }).getByRole('button', { name: 'RA Bills' }).click();
+  await page.getByRole('toolbar', { name: 'Record actions' }).getByRole('link', { name: 'RA Bills' }).click();
   await expect(page).toHaveURL(/\/bills$/);
 });
 

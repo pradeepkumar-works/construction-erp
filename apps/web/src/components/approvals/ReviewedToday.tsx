@@ -9,6 +9,7 @@ import { useReviewedToday } from '@/lib/queries';
 import { formatDateTime } from '@/lib/format';
 import { StatusTag } from '@/components/common/StatusTag';
 import { recordPage } from './queue';
+import { RecordLink } from '@/components/record/RecordLink';
 
 /** "Reviewed today": what this user approved, rejected or sent back since midnight, newest first. */
 export function ReviewedToday({ onOpen }: { onOpen: (item: ReviewedItemDto) => void }) {
@@ -30,15 +31,15 @@ export function ReviewedToday({ onOpen }: { onOpen: (item: ReviewedItemDto) => v
               <li key={`${r.type}:${r.id}:${r.reviewedAt}`} style={{ padding: `${token.paddingXS}px 0`, borderBottom: `${token.lineWidth}px ${token.lineType} ${token.colorSplit}` }}>
                 <Flex gap={token.marginXS} align="baseline" justify="space-between">
                   {href ? (
-                    <Link href={href} style={{ minWidth: 0 }}>
+                    <Link href={href} className="text-link" style={{ minWidth: 0 }}>
                       <Typography.Text ellipsis style={{ color: 'inherit' }}>
                         {r.title}
                       </Typography.Text>
                     </Link>
                   ) : (
-                    <Typography.Link ellipsis onClick={() => onOpen(r)} style={{ minWidth: 0 }}>
-                      {r.title}
-                    </Typography.Link>
+                    <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <RecordLink onOpen={() => onOpen(r)}>{r.title}</RecordLink>
+                    </span>
                   )}
                   <StatusTag status={r.decision} />
                 </Flex>

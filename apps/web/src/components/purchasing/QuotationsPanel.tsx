@@ -16,6 +16,7 @@ import { QuotationFormModal } from './QuotationFormModal';
 import { PurchaseOrderFormModal, type PoStart } from './PurchaseOrderFormModal';
 import { PoStateTag, PurchaseOrderDrawer } from './PurchaseOrderDrawer';
 import { themeColor } from '@/lib/theme';
+import { RecordLink } from '@/components/record/RecordLink';
 
 type Line = ComparativeStatementDto['lines'][number];
 
@@ -182,7 +183,7 @@ export function QuotationsPanel({ request }: { request: MaterialRequestDto }) {
           style={{ marginTop: 12 }}
           dataSource={orders.data?.items ?? []}
           columns={[
-            { title: 'Purchase order', dataIndex: 'poNo', width: 150, render: (v, o) => <Typography.Link className="mono" onClick={() => setOpenPo(o.id)}>{v}</Typography.Link> },
+            { title: 'Purchase order', dataIndex: 'poNo', width: 150, render: (v, o) => <RecordLink href={`/purchase-orders/${o.id}`} onOpen={() => setOpenPo(o.id)} className="mono">{v}</RecordLink> },
             { title: 'Vendor', dataIndex: 'vendorName' },
             { title: 'Total', dataIndex: 'total', width: 140, align: 'right', render: (v) => <span className="mono">{formatINR(v, true)}</span> },
             { title: 'Status', key: 'status', width: 190, render: (_, o) => <Space size={4}><StatusTag status={o.status} /><PoStateTag order={o} /></Space> },

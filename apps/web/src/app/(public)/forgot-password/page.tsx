@@ -33,7 +33,7 @@ export default function ForgotPasswordPage() {
           status="success"
           title="Check your email"
           subTitle={`If ${sentTo} has an account, a link to choose a new password is on its way. It works once and expires in 2 hours.`}
-          extra={<Link href="/login">Back to sign in</Link>}
+          extra={<Link href="/login" className="text-link">Back to sign in</Link>}
         />
       ) : (
         <>

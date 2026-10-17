@@ -1,4 +1,5 @@
 import React from 'react';
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SUPPORT_ACCESS_DAYS } from '@erp/shared';
 import { BRAND } from '@/lib/brand';
@@ -7,6 +8,8 @@ import { SiteFooter, SiteHeader } from '@/components/site/SiteChrome';
 /** Where privacy questions go; set NEXT_PUBLIC_PRIVACY_EMAIL on the web project. */
 const CONTACT = process.env.NEXT_PUBLIC_PRIVACY_EMAIL;
 const UPDATED = '14 October 2026';
+
+export const metadata: Metadata = { title: `Privacy · ${BRAND.name}` };
 
 export default function PrivacyPage() {
   const name = BRAND.name;
