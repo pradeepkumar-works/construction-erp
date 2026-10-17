@@ -2,6 +2,9 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
+  BillChecksDto,
+  BillCheckSummaryDto,
+  CheckKind,
   AiSettingsDto,
   AiStatusDto,
   AiThreadDto,
@@ -1810,5 +1813,32 @@ export function useUpdateAiSettings() {
       qc.setQueryData(['ai', 'settings'], d);
       void qc.invalidateQueries({ queryKey: ['ai', 'status'] });
     },
+  });
+}
+
+/** A bill's checks before approval (AI item 69); `version` refetches them when the bill itself was reloaded. */
+export const useBillChecks = (kind: CheckKind, id: string | undefined, version?: number) =>
+  useQuery({
+    queryKey: ['checks', kind, id, version],
+    queryFn: async () => (await api.get<BillChecksDto>(`/checks/${kind}/${id}`)).data,
+    enabled: !!id,
+    placeholderData: keepPreviousData,
+  });
+
+/** The model's one line over a bill's open flags, asked for only when the checks say it is not written yet. */
+export const useBillCheckSummary = (kind: CheckKind, id: string | undefined, enabled: boolean) =>
+  useQuery({
+    queryKey: ['checks', kind, id, 'summary'],
+    queryFn: async () => (await api.get<BillCheckSummaryDto>(`/checks/${kind}/${id}/summary`)).data,
+    enabled: !!id && enabled,
+    staleTime: Infinity,
+  });
+
+export function useAcceptCheck(kind: CheckKind, id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { key: string; note: string; reopen?: boolean }) =>
+      (await api.post<BillChecksDto>(`/checks/${kind}/${id}/${v.reopen ? 'reopen' : 'accept'}`, v.reopen ? { key: v.key } : { key: v.key, note: v.note })).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['checks', kind, id] }),
   });
 }

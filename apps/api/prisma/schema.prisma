@@ -367,79 +367,81 @@ model Organization {
   /// Rupees per calendar month for the company's AI use; null = the server's AI_DEFAULT_MONTHLY_CAP_INR
   aiMonthlyCapInr Int?
 
-  users             User[]
-  roles             Role[]
-  projects          Project[]
-  boqItems          BoqItem[]
-  activities        Activity[]
-  milestones        Milestone[]
-  workers           Worker[]
-  workerAttendance  WorkerAttendance[]
-  imprests          Imprest[]
-  imprestEntries    ImprestEntry[]
-  complianceDocs    ComplianceDoc[]
-  handovers         ProjectHandover[]
-  defects           Defect[]
-  closeoutItems     CloseoutItem[]
-  progressEntries   ProgressEntry[]
-  dailyReports      DailyReport[]
-  materialRequests  MaterialRequest[]
-  attachments       Attachment[]
-  auditLogs         AuditLog[]
-  notifications     Notification[]
-  attendanceSheets  AttendanceSheet[]
-  items             Item[]
-  units             Unit[]
-  stockEntries      StockEntry[]
-  stockTxns         StockTxn[]
-  stockMinLevels    StockMinLevel[]
-  equipment         Equipment[]
-  machineryLogs     MachineryLog[]
-  expenses          Expense[]
-  risks             Risk[]
-  activityTemplates ActivityTemplate[]
-  approvalRules     ApprovalRule[]
-  passwordTokens    PasswordToken[]
-  measurements      MeasurementSheet[]
-  labourRates       LabourRate[]
-  clients           Client[]
-  vendors           Vendor[]
-  quotations        Quotation[]
-  purchaseOrders    PurchaseOrder[]
-  vendorBills       VendorBill[]
-  workOrders        WorkOrder[]
-  subcontractBills  SubcontractBill[]
-  raBills           RaBill[]
-  receipts          Receipt[]
-  vendorPayments    VendorPayment[]
-  tallyConfig       TallyConfig?
-  tallyExports      TallyExport[]
-  checklists        ChecklistTemplate[]
-  inspections       Inspection[]
-  qualityTests      QualityTest[]
-  ncrs              Ncr[]
-  documents         Document[]
-  transmittals      Transmittal[]
-  letters           Letter[]
-  employees         Employee[]
-  staffAttendance   StaffAttendance[]
-  leaveRequests     LeaveRequest[]
-  holidays          Holiday[]
-  outboundMessages  OutboundMessage[]
-  billingPayments   BillingPayment[]
-  variations        Variation[]
-  projectBudgets    ProjectBudget[]
-  safetyIncidents   SafetyIncident[]
-  toolboxTalks      ToolboxTalk[]
-  workPermits       WorkPermit[]
-  variationLines    VariationLine[]
-  maintenanceJobs   MaintenanceJob[]
-  equipmentDocs     EquipmentDocument[]
-  drivers           Driver[]
-  pvComponents      PriceVariationComponent[]
-  savedViews        SavedView[]
-  aiThreads         AiThread[]
-  aiMessages        AiMessage[]
+  users                User[]
+  roles                Role[]
+  projects             Project[]
+  boqItems             BoqItem[]
+  activities           Activity[]
+  milestones           Milestone[]
+  workers              Worker[]
+  workerAttendance     WorkerAttendance[]
+  imprests             Imprest[]
+  imprestEntries       ImprestEntry[]
+  complianceDocs       ComplianceDoc[]
+  handovers            ProjectHandover[]
+  defects              Defect[]
+  closeoutItems        CloseoutItem[]
+  progressEntries      ProgressEntry[]
+  dailyReports         DailyReport[]
+  materialRequests     MaterialRequest[]
+  attachments          Attachment[]
+  auditLogs            AuditLog[]
+  notifications        Notification[]
+  attendanceSheets     AttendanceSheet[]
+  items                Item[]
+  units                Unit[]
+  stockEntries         StockEntry[]
+  stockTxns            StockTxn[]
+  stockMinLevels       StockMinLevel[]
+  equipment            Equipment[]
+  machineryLogs        MachineryLog[]
+  expenses             Expense[]
+  risks                Risk[]
+  activityTemplates    ActivityTemplate[]
+  approvalRules        ApprovalRule[]
+  passwordTokens       PasswordToken[]
+  measurements         MeasurementSheet[]
+  labourRates          LabourRate[]
+  clients              Client[]
+  vendors              Vendor[]
+  quotations           Quotation[]
+  purchaseOrders       PurchaseOrder[]
+  vendorBills          VendorBill[]
+  workOrders           WorkOrder[]
+  subcontractBills     SubcontractBill[]
+  raBills              RaBill[]
+  receipts             Receipt[]
+  vendorPayments       VendorPayment[]
+  tallyConfig          TallyConfig?
+  tallyExports         TallyExport[]
+  checklists           ChecklistTemplate[]
+  inspections          Inspection[]
+  qualityTests         QualityTest[]
+  ncrs                 Ncr[]
+  documents            Document[]
+  transmittals         Transmittal[]
+  letters              Letter[]
+  employees            Employee[]
+  staffAttendance      StaffAttendance[]
+  leaveRequests        LeaveRequest[]
+  holidays             Holiday[]
+  outboundMessages     OutboundMessage[]
+  billingPayments      BillingPayment[]
+  variations           Variation[]
+  projectBudgets       ProjectBudget[]
+  safetyIncidents      SafetyIncident[]
+  toolboxTalks         ToolboxTalk[]
+  workPermits          WorkPermit[]
+  variationLines       VariationLine[]
+  maintenanceJobs      MaintenanceJob[]
+  equipmentDocs        EquipmentDocument[]
+  drivers              Driver[]
+  pvComponents         PriceVariationComponent[]
+  savedViews           SavedView[]
+  aiThreads            AiThread[]
+  aiMessages           AiMessage[]
+  billCheckAcceptances BillCheckAcceptance[]
+  billCheckSummaries   BillCheckSummary[]
 }
 
 model Role {
@@ -496,86 +498,87 @@ model User {
 
   savedViews           SavedView[]
   aiThreads            AiThread[]
+  billChecksAccepted   BillCheckAcceptance[] @relation("BillCheckAcceptedBy")
   memberships          ProjectMember[]
-  managedProjects      Project[]          @relation("ProjectManager")
-  baselinedProjects    Project[]          @relation("ProjectBaselineBy")
-  responsibleFor       Activity[]         @relation("ActivityResponsible")
-  submittedProgress    ProgressEntry[]    @relation("ProgressSubmitter")
-  reviewedProgress     ProgressEntry[]    @relation("ProgressReviewer")
-  submittedReports     DailyReport[]      @relation("DprSubmitter")
-  reviewedReports      DailyReport[]      @relation("DprReviewer")
-  submittedRequests    MaterialRequest[]  @relation("MrSubmitter")
-  reviewedRequests     MaterialRequest[]  @relation("MrReviewer")
+  managedProjects      Project[]             @relation("ProjectManager")
+  baselinedProjects    Project[]             @relation("ProjectBaselineBy")
+  responsibleFor       Activity[]            @relation("ActivityResponsible")
+  submittedProgress    ProgressEntry[]       @relation("ProgressSubmitter")
+  reviewedProgress     ProgressEntry[]       @relation("ProgressReviewer")
+  submittedReports     DailyReport[]         @relation("DprSubmitter")
+  reviewedReports      DailyReport[]         @relation("DprReviewer")
+  submittedRequests    MaterialRequest[]     @relation("MrSubmitter")
+  reviewedRequests     MaterialRequest[]     @relation("MrReviewer")
   uploadedAttachments  Attachment[]
   auditLogs            AuditLog[]
   notifications        Notification[]
   pushTokens           PushToken[]
   outboundMessages     OutboundMessage[]
   passwordTokens       PasswordToken[]
-  recordedAttendance   AttendanceSheet[]  @relation("AttendanceRecorder")
-  updatedAttendance    AttendanceSheet[]  @relation("AttendanceUpdater")
+  recordedAttendance   AttendanceSheet[]     @relation("AttendanceRecorder")
+  updatedAttendance    AttendanceSheet[]     @relation("AttendanceUpdater")
   stockEntries         StockEntry[]
-  grnsChecked          StockEntry[]       @relation("GrnQcBy")
+  grnsChecked          StockEntry[]          @relation("GrnQcBy")
   stockMinLevels       StockMinLevel[]
-  submittedMachinery   MachineryLog[]     @relation("MachinerySubmitter")
-  reviewedMachinery    MachineryLog[]     @relation("MachineryReviewer")
-  submittedExpenses    Expense[]          @relation("ExpenseSubmitter")
-  reviewedExpenses     Expense[]          @relation("ExpenseReviewer")
-  submittedMeasures    MeasurementSheet[] @relation("MeasurementSubmitter")
-  reviewedMeasures     MeasurementSheet[] @relation("MeasurementReviewer")
-  submittedBills       RaBill[]           @relation("BillSubmitter")
-  reviewedBills        RaBill[]           @relation("BillReviewer")
-  receiptsRecorded     Receipt[]          @relation("ReceiptCreator")
+  submittedMachinery   MachineryLog[]        @relation("MachinerySubmitter")
+  reviewedMachinery    MachineryLog[]        @relation("MachineryReviewer")
+  submittedExpenses    Expense[]             @relation("ExpenseSubmitter")
+  reviewedExpenses     Expense[]             @relation("ExpenseReviewer")
+  submittedMeasures    MeasurementSheet[]    @relation("MeasurementSubmitter")
+  reviewedMeasures     MeasurementSheet[]    @relation("MeasurementReviewer")
+  submittedBills       RaBill[]              @relation("BillSubmitter")
+  reviewedBills        RaBill[]              @relation("BillReviewer")
+  receiptsRecorded     Receipt[]             @relation("ReceiptCreator")
   tallyExports         TallyExport[]
-  vendorPaymentsMade   VendorPayment[]    @relation("VendorPaymentCreator")
-  quotationsEntered    Quotation[]        @relation("QuotationCreator")
-  submittedPos         PurchaseOrder[]    @relation("PoSubmitter")
-  reviewedPos          PurchaseOrder[]    @relation("PoReviewer")
-  submittedVendorBills VendorBill[]       @relation("VendorBillSubmitter")
-  reviewedVendorBills  VendorBill[]       @relation("VendorBillReviewer")
-  submittedWorkOrders  WorkOrder[]        @relation("WorkOrderSubmitter")
-  reviewedWorkOrders   WorkOrder[]        @relation("WorkOrderReviewer")
-  submittedSubBills    SubcontractBill[]  @relation("SubBillSubmitter")
-  reviewedSubBills     SubcontractBill[]  @relation("SubBillReviewer")
-  requestedInspections Inspection[]       @relation("InspectionRequester")
-  inspectionsDone      Inspection[]       @relation("InspectionInspector")
-  inspectionsWitnessed Inspection[]       @relation("InspectionWitness")
-  qualityTests         QualityTest[]      @relation("TestCreator")
-  ncrsRaised           Ncr[]              @relation("NcrRaiser")
-  ncrsToAct            Ncr[]              @relation("NcrActionBy")
-  ncrsClosed           Ncr[]              @relation("NcrCloser")
-  documentsCreated     Document[]         @relation("DocumentCreator")
-  revisionsIssued      DocumentRevision[] @relation("RevisionIssuer")
-  transmittalsSent     Transmittal[]      @relation("TransmittalSender")
-  lettersRecorded      Letter[]           @relation("LetterRecorder")
-  variationsCreated    Variation[]        @relation("VariationCreator")
-  budgetsUpdated       ProjectBudget[]    @relation("BudgetUpdater")
-  incidentsReported    SafetyIncident[]   @relation("IncidentReporter")
-  incidentsClosed      SafetyIncident[]   @relation("IncidentCloser")
-  toolboxTalks         ToolboxTalk[]      @relation("ToolboxTalkRecorder")
-  permitsRequested     WorkPermit[]       @relation("PermitRequester")
-  permitsIssued        WorkPermit[]       @relation("PermitIssuer")
-  permitsClosed        WorkPermit[]       @relation("PermitCloser")
-  maintenanceReported  MaintenanceJob[]   @relation("MaintenanceReporter")
-  maintenanceClosed    MaintenanceJob[]   @relation("MaintenanceCloser")
-  employee             Employee?          @relation("EmployeeLogin")
-  staffMarked          StaffAttendance[]  @relation("StaffAttendanceMarker")
-  workerDaysMarked     WorkerAttendance[] @relation("WorkerAttendanceMarker")
-  imprestsHeld         Imprest[]          @relation("ImprestHolder")
-  imprestsOpened       Imprest[]          @relation("ImprestOpener")
-  imprestRequests      ImprestEntry[]     @relation("ImprestRequester")
-  imprestDecisions     ImprestEntry[]     @relation("ImprestDecider")
+  vendorPaymentsMade   VendorPayment[]       @relation("VendorPaymentCreator")
+  quotationsEntered    Quotation[]           @relation("QuotationCreator")
+  submittedPos         PurchaseOrder[]       @relation("PoSubmitter")
+  reviewedPos          PurchaseOrder[]       @relation("PoReviewer")
+  submittedVendorBills VendorBill[]          @relation("VendorBillSubmitter")
+  reviewedVendorBills  VendorBill[]          @relation("VendorBillReviewer")
+  submittedWorkOrders  WorkOrder[]           @relation("WorkOrderSubmitter")
+  reviewedWorkOrders   WorkOrder[]           @relation("WorkOrderReviewer")
+  submittedSubBills    SubcontractBill[]     @relation("SubBillSubmitter")
+  reviewedSubBills     SubcontractBill[]     @relation("SubBillReviewer")
+  requestedInspections Inspection[]          @relation("InspectionRequester")
+  inspectionsDone      Inspection[]          @relation("InspectionInspector")
+  inspectionsWitnessed Inspection[]          @relation("InspectionWitness")
+  qualityTests         QualityTest[]         @relation("TestCreator")
+  ncrsRaised           Ncr[]                 @relation("NcrRaiser")
+  ncrsToAct            Ncr[]                 @relation("NcrActionBy")
+  ncrsClosed           Ncr[]                 @relation("NcrCloser")
+  documentsCreated     Document[]            @relation("DocumentCreator")
+  revisionsIssued      DocumentRevision[]    @relation("RevisionIssuer")
+  transmittalsSent     Transmittal[]         @relation("TransmittalSender")
+  lettersRecorded      Letter[]              @relation("LetterRecorder")
+  variationsCreated    Variation[]           @relation("VariationCreator")
+  budgetsUpdated       ProjectBudget[]       @relation("BudgetUpdater")
+  incidentsReported    SafetyIncident[]      @relation("IncidentReporter")
+  incidentsClosed      SafetyIncident[]      @relation("IncidentCloser")
+  toolboxTalks         ToolboxTalk[]         @relation("ToolboxTalkRecorder")
+  permitsRequested     WorkPermit[]          @relation("PermitRequester")
+  permitsIssued        WorkPermit[]          @relation("PermitIssuer")
+  permitsClosed        WorkPermit[]          @relation("PermitCloser")
+  maintenanceReported  MaintenanceJob[]      @relation("MaintenanceReporter")
+  maintenanceClosed    MaintenanceJob[]      @relation("MaintenanceCloser")
+  employee             Employee?             @relation("EmployeeLogin")
+  staffMarked          StaffAttendance[]     @relation("StaffAttendanceMarker")
+  workerDaysMarked     WorkerAttendance[]    @relation("WorkerAttendanceMarker")
+  imprestsHeld         Imprest[]             @relation("ImprestHolder")
+  imprestsOpened       Imprest[]             @relation("ImprestOpener")
+  imprestRequests      ImprestEntry[]        @relation("ImprestRequester")
+  imprestDecisions     ImprestEntry[]        @relation("ImprestDecider")
   complianceDocs       ComplianceDoc[]
   handoversRecorded    ProjectHandover[]
-  defectsReported      Defect[]           @relation("DefectReporter")
-  defectsAssigned      Defect[]           @relation("DefectAssignee")
-  defectsFixed         Defect[]           @relation("DefectFixer")
-  defectsClosed        Defect[]           @relation("DefectCloser")
+  defectsReported      Defect[]              @relation("DefectReporter")
+  defectsAssigned      Defect[]              @relation("DefectAssignee")
+  defectsFixed         Defect[]              @relation("DefectFixer")
+  defectsClosed        Defect[]              @relation("DefectCloser")
   closeoutItemsDone    CloseoutItem[]
-  leaveDecided         LeaveRequest[]     @relation("LeaveDecider")
-  leaveApplied         LeaveRequest[]     @relation("LeaveApplicant")
-  raisedRisks          Risk[]             @relation("RiskRaiser")
-  ownedRisks           Risk[]             @relation("RiskOwner")
+  leaveDecided         LeaveRequest[]        @relation("LeaveDecider")
+  leaveApplied         LeaveRequest[]        @relation("LeaveApplicant")
+  raisedRisks          Risk[]                @relation("RiskRaiser")
+  ownedRisks           Risk[]                @relation("RiskOwner")
 
   @@unique([organizationId, email])
   @@index([organizationId])
@@ -3484,4 +3487,42 @@ model AiMessage {
 
   @@index([organizationId, createdAt])
   @@index([threadId, createdAt])
+}
+
+/// An approver looked at a bill check's flag and accepted it, with a note (AI item 69).
+model BillCheckAcceptance {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  /// vendor-bill | subcontract-bill | expense | ra-bill (CHECK_KINDS)
+  kind           String
+  billId         String
+  /// The flag's key, which carries its figures, so a changed bill is checked afresh
+  checkKey       String
+  note           String
+  acceptedById   String
+  acceptedBy     User         @relation("BillCheckAcceptedBy", fields: [acceptedById], references: [id])
+  createdAt      DateTime     @default(now())
+
+  @@unique([kind, billId, checkKey])
+  @@index([organizationId])
+}
+
+/// The model's one-line summary of a bill's checks, written once per set of open flags.
+model BillCheckSummary {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  kind           String
+  billId         String
+  /// The open flags' keys it was written for, hashed
+  fingerprint    String
+  text           String
+  model          String?
+  /// What it cost, counted in the company's monthly Ask Nirmaan allowance
+  costPaise      Int          @default(0)
+  createdAt      DateTime     @default(now())
+
+  @@unique([kind, billId, fingerprint])
+  @@index([organizationId, createdAt])
 }

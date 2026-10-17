@@ -18,6 +18,7 @@ import { submissionMetaItems } from '@/components/common/SubmitterInfo';
 import { overdueDays } from '@/components/purchasing/VendorBillDrawer';
 import { BillPayments, PaidTag } from '@/components/payables/BillPayments';
 import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
+import { checksSection } from '@/components/checks/ChecksSection';
 import { submissionLifecycle } from '@/components/record/lifecycle';
 import { openSubBillPrint } from './subcontractPrint';
 
@@ -38,7 +39,7 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
   const { user } = useAuth();
   const { message } = App.useApp();
   const qc = useQueryClient();
-  const { data, isLoading, error, refetch } = useSubcontractBill(id ?? undefined);
+  const { data, isLoading, error, refetch, dataUpdatedAt } = useSubcontractBill(id ?? undefined);
   const preparer = !!user && canPrepareSubcontractBill(user.roleKey);
 
   const done = (text: string) => {
@@ -150,6 +151,7 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
             { title: 'Paid', done: !!data.paidDate, content: data.status !== 'APPROVED' ? undefined : data.paidDate ? formatDate(data.paidDate) : `${formatINR(data.outstanding, true)} to pay` },
           ]),
           sections: [
+            checksSection('subcontract-bill', data.id, dataUpdatedAt),
             {
               key: 'abstract',
               title: 'Abstract',

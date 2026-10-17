@@ -1119,6 +1119,23 @@ export; the client portal and the phone app show the amount.
   and a red-team set as the demo accounts, and prints the share of checks passed, cost per answer and latency. It
   calls the real model, so it is run by hand.
 
+## Bill checks before approval
+
+- **What it is.** AI item 69: a Checks section first on vendor bill, subcontract bill, RA bill and expense records
+  (`components/checks/ChecksSection.tsx`, so the Approvals inbox pane shows it too). `GET /checks/:kind/:id`
+  (`apps/api/src/checks`) loads the bill through its own service (its access rules apply), gathers what it must agree
+  with (PO lines and GRNs, the work order, the BOQ, the measurement book, earlier bills, other bills and expenses of the
+  same supplier entered before it) and runs the rules in `checks/bill-rules.ts`: plain functions of numbers, a tick when
+  a rule passes, a flag per finding. Flag keys carry their figures, so a changed bill is checked afresh.
+- **Accepting.** Someone who may approve the bill (`assertCanApproveSubmission`) accepts a flag with a note while it is
+  SUBMITTED (`BillCheckAcceptance`, audited `CHECK_ACCEPTED` / `CHECK_REOPENED`). Nothing blocks approval.
+- **Summary line.** With open flags and Ask Nirmaan on, `GET /checks/:kind/:id/summary` asks the model for one sentence
+  from the flags alone (no tools, `CHECK_SUMMARY_PROMPT`), kept in `BillCheckSummary` per set of open flags and counted
+  in the monthly allowance. A line with a figure not in the flags is replaced by the rules' own line, as is any failure.
+- **Tests.** `src/scripts/bill-checks-test.ts` tests each rule passing and failing, then (with a database) checks that
+  every seeded anomaly (`seedCheckAnomalies`) is flagged and every other demo bill and expense shows no flag. CI runs it
+  after the seed. A new rule is a function in `bill-rules.ts` plus its tests there.
+
 ## Money and quantities
 
 Decimal columns everywhere (`Decimal(18,2)` for money, `Decimal(18,3)` for quantities) and strings

@@ -40,3 +40,4 @@ export * from './links';
 export * from './search';
 export * from './notifications';
 export * from './ai';
+export * from './checks';
