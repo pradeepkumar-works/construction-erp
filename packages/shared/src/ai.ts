@@ -1,5 +1,6 @@
 import type { RoleKey } from './enums';
 import { isGuest } from './permissions';
+import type { AiFeature } from './briefs';
 
 /**
  * Ask Nirmaan (AI roadmap item 67): an assistant that answers from the company's own records through read-only tools
@@ -98,6 +99,8 @@ export interface AiSettingsDto {
   questionsThisMonth: number;
   /** Most active users this month */
   byUser: { userId: string; fullName: string; questions: number; spentInr: number }[];
+  /** What the month's spend went on (AI item 74): how many of each and their cost */
+  byFeature: { feature: AiFeature; count: number; spentInr: number }[];
   /** The server has a model key (OPENROUTER_API_KEY, ANTHROPIC_API_KEY or the test provider) */
   configured: boolean;
   model: string;

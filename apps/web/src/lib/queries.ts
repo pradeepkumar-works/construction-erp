@@ -7,6 +7,7 @@ import type {
   DraftChecksDto,
   BillChecksDto,
   WatchListDto,
+  BriefStatusDto,
   BillCheckSummaryDto,
   CheckKind,
   AiSettingsDto,
@@ -1873,6 +1874,19 @@ export function useDismissWarning() {
       qc.setQueryData(['watch-list'], d);
       void qc.invalidateQueries({ queryKey: ['dashboard', 'my-work'] });
     },
+  });
+}
+
+// ---- Morning brief (AI item 74) ----
+
+export const useMorningBrief = () => useQuery({ queryKey: ['brief-today'], queryFn: async () => (await api.get<BriefStatusDto>('/briefs/today')).data, staleTime: 5 * 60_000 });
+
+/** Ask for the morning brief or stop it; turning it on brings back today's brief at once. */
+export function useSetMorningBrief() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (morningBrief: boolean) => (await api.put<BriefStatusDto>('/briefs/me', { morningBrief })).data,
+    onSuccess: (d) => qc.setQueryData(['brief-today'], d),
   });
 }
 

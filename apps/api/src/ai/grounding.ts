@@ -18,6 +18,7 @@ export function collectHrefs(value: unknown, out = new Set<string>()): Set<strin
 }
 
 const NUMBER_IN_TEXT = /-?\d[\d,]*(?:\.\d+)?/g;
+const AMOUNT_IN_WORDS = /(?:₹|Rs\.?)\s?(\d[\d,]*(?:\.\d+)?)\s?(L\b|lakhs?|Cr\b|crores?)/gi;
 
 /** Every number in the tool results (amounts arrive as strings like "1234567.50"). */
 export function collectNumbers(value: unknown, out: number[] = []): number[] {
@@ -25,6 +26,11 @@ export function collectNumbers(value: unknown, out: number[] = []): number[] {
   else if (typeof value === 'string') {
     for (const m of value.matchAll(NUMBER_IN_TEXT)) {
       const n = Number(m[0].replace(/,/g, ''));
+      if (Number.isFinite(n)) out.push(n);
+    }
+    // A text that already says "₹3.2 L" (a watch-list title) gives the amount it stands for too.
+    for (const m of value.matchAll(AMOUNT_IN_WORDS)) {
+      const n = Number(m[1].replace(/,/g, '')) * (/^c/i.test(m[2]) ? 1e7 : 1e5);
       if (Number.isFinite(n)) out.push(n);
     }
   } else if (Array.isArray(value)) {

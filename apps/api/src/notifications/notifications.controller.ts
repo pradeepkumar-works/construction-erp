@@ -70,10 +70,14 @@ export class NotificationsController {
   @Public()
   @UseGuards(CronGuard)
   @ApiSecurity('cron')
-  @ApiOperation({ summary: 'Daily digest of pending approvals (in-app, push, email and WhatsApp); also sends the test-due, payments-due, machinery-due, guarantee and licence expiry and defect liability reminders, and on Mondays the watch list. Auth: Authorization: Bearer <CRON_SECRET>.' })
+  @ApiOperation({ summary: 'Daily digest of pending approvals (in-app, push, email and WhatsApp); also writes and sends the morning briefs, and sends the test-due, payments-due, machinery-due, guarantee and licence expiry and defect liability reminders, and on Mondays the watch list. Auth: Authorization: Bearer <CRON_SECRET>.' })
   @Get('jobs/approval-digest')
   async approvalDigest(@Query() q: JobQuery) {
+    // Vercel Hobby has no third cron for the overnight batch, so morning briefs not yet written are written first
+    // (a no-op where jobs/briefs already ran), go into the digest email, and are sent after it.
+    await this.jobs.writeBriefs(q.date).catch(() => undefined);
     const digest = await this.jobs.approvalDigest(q.date);
+    await this.jobs.morningBrief(q.date).catch(() => undefined);
     // Vercel Hobby allows two crons, so the daily test and payment reminders ride on the digest's.
     await this.jobs.testsDue(q.date).catch(() => undefined);
     await this.jobs.billsDue(q.date).catch(() => undefined);
@@ -87,6 +91,15 @@ export class NotificationsController {
     // ...and starting trials and billing reminders.
     await this.billing.daily(q.date).catch(() => undefined);
     return digest;
+  }
+
+  @Public()
+  @UseGuards(CronGuard)
+  @ApiSecurity('cron')
+  @ApiOperation({ summary: "The overnight batch: today's morning briefs and, on Mondays, last week's summary paragraph for each project's report (AI item 74). Writes only; the digest sends the briefs. Auth: Authorization: Bearer <CRON_SECRET>." })
+  @Get('jobs/briefs')
+  writeBriefs(@Query() q: JobQuery) {
+    return this.jobs.writeBriefs(q.date);
   }
 
   @Public()

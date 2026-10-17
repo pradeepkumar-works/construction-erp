@@ -34,6 +34,7 @@ export const NOTIFICATION_TAB_OF: Record<NotificationType, NotificationTab> = {
   MACHINERY: 'REMINDERS',
   COMPLIANCE: 'REMINDERS',
   WATCH_LIST: 'REMINDERS',
+  MORNING_BRIEF: 'FOR_ME',
 };
 
 /**
@@ -42,8 +43,8 @@ export const NOTIFICATION_TAB_OF: Record<NotificationType, NotificationTab> = {
  * only to a client that knows it. Version 1 is what `allTypes` meant before; a new type goes in with the next
  * version, and the web and the phone send the latest.
  */
-const NOTIFICATION_TYPE_VERSION: Partial<Record<NotificationType, number>> = { WATCH_LIST: 2 };
-export const NOTIFICATION_TYPES_VERSION = 2;
+const NOTIFICATION_TYPE_VERSION: Partial<Record<NotificationType, number>> = { WATCH_LIST: 2, MORNING_BRIEF: 3 };
+export const NOTIFICATION_TYPES_VERSION = 3;
 
 /** The types a client that knows version `version` of the list can show. */
 export function notificationTypesFor(version: number): NotificationType[] {

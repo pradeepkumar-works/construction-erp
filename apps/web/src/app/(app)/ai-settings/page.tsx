@@ -2,8 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { Alert, App, Button, Card, Descriptions, Flex, InputNumber, Progress, Space, Switch, Table, Typography, theme } from 'antd';
-import type { AiSettingsDto } from '@erp/shared';
-import { PRODUCT_NAME, canManageAi } from '@erp/shared';
+import type { AiFeature, AiSettingsDto } from '@erp/shared';
+import { AI_FEATURE_LABELS, PRODUCT_NAME, canManageAi } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { errorMessage } from '@/lib/api';
 import { formatINR } from '@/lib/format';
@@ -101,6 +101,18 @@ function UsageCard({ data }: { data: AiSettingsDto }) {
       <Typography.Paragraph type="secondary" style={{ marginTop: token.marginXS }}>
         What the AI provider charged for each answer, in rupees at the server&apos;s exchange rate; the provider&apos;s own invoice is the final figure.
       </Typography.Paragraph>
+      <Table
+        size="small"
+        rowKey="feature"
+        pagination={false}
+        dataSource={data.byFeature}
+        style={{ marginBottom: token.margin }}
+        columns={[
+          { key: 'feature', title: 'Used for', dataIndex: 'feature', render: (f: AiFeature) => AI_FEATURE_LABELS[f] },
+          { key: 'count', title: 'How many', dataIndex: 'count', align: 'right', render: (n: number) => n.toLocaleString('en-IN') },
+          { key: 'spent', title: 'Used', dataIndex: 'spentInr', align: 'right', render: (v: number) => formatINR(v) },
+        ]}
+      />
       <Table
         size="small"
         rowKey="userId"

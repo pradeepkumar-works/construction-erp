@@ -133,6 +133,7 @@ export const CORE: Record<string, string> = {
   'Late deliveries': 'देर से आने वाली डिलीवरी',
   'Below minimum stock': 'न्यूनतम स्टॉक से कम',
   'Watch list': 'निगरानी सूची',
+  'Morning brief': 'सुबह की झलक',
   'No DPR for today': 'आज का DPR नहीं',
   'Sent today': 'आज भेजा गया',
   'Due today': 'आज देय',

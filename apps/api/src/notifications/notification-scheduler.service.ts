@@ -19,8 +19,9 @@ export class NotificationSchedulerService implements OnModuleInit, OnModuleDestr
     if (process.env.NOTIFICATION_JOBS_INPROCESS !== 'true') return;
     const reminderAt = process.env.DPR_REMINDER_TIME || '17:00';
     const digestAt = process.env.APPROVAL_DIGEST_TIME || '09:00';
-    this.log.log(`In-process notification jobs enabled: DPR reminder at ${reminderAt}, approval digest at ${digestAt} (${JOB_TIMEZONE})`);
-    this.timer = setInterval(() => void this.tick(reminderAt, digestAt), 30_000);
+    const briefsAt = process.env.MORNING_BRIEF_TIME || '06:00';
+    this.log.log(`In-process notification jobs enabled: DPR reminder at ${reminderAt}, approval digest at ${digestAt}, morning briefs written at ${briefsAt} (${JOB_TIMEZONE})`);
+    this.timer = setInterval(() => void this.tick(reminderAt, digestAt, briefsAt), 30_000);
     this.timer.unref();
   }
 
@@ -28,11 +29,13 @@ export class NotificationSchedulerService implements OnModuleInit, OnModuleDestr
     if (this.timer) clearInterval(this.timer);
   }
 
-  private async tick(reminderAt: string, digestAt: string) {
+  private async tick(reminderAt: string, digestAt: string, briefsAt: string) {
     const now = wallClockIn();
     const today = todayIn();
     await this.runIfDue('DPR_REMINDER', reminderAt, now, today, () => this.jobs.dprReminder(today));
+    await this.runIfDue('BRIEFS', briefsAt, now, today, () => this.jobs.writeBriefs(today));
     await this.runIfDue('APPROVAL_DIGEST', digestAt, now, today, () => this.jobs.approvalDigest(today));
+    await this.runIfDue('MORNING_BRIEF', digestAt, now, today, () => this.jobs.morningBrief(today));
     await this.runIfDue('TESTS_DUE', digestAt, now, today, () => this.jobs.testsDue(today));
     await this.runIfDue('BILLS_DUE', digestAt, now, today, () => this.jobs.billsDue(today));
     await this.runIfDue('MACHINERY_DUE', digestAt, now, today, () => this.jobs.machineryDue(today));

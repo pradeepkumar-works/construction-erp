@@ -1,7 +1,7 @@
 import { BadRequestException, ForbiddenException, HttpException, HttpStatus, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type Anthropic from '@anthropic-ai/sdk';
 import { Prisma } from '@prisma/client';
-import type { AiAskInput, AiCitationDto, AiDraftDto, AiMessageDto, AiSettingsDto, AiStatusDto, AiStreamEvent, AiThreadDetailDto, AiThreadDto } from '@erp/shared';
+import type { AiAskInput, AiFeature, AiCitationDto, AiDraftDto, AiMessageDto, AiSettingsDto, AiStatusDto, AiStreamEvent, AiThreadDetailDto, AiThreadDto } from '@erp/shared';
 import { ROLE_LABELS, canManageAi, canUseAi } from '@erp/shared';
 import type { RequestUser } from '../common/current-user';
 import { AuditService } from '../common/audit.service';
@@ -175,12 +175,13 @@ export class AiService {
   async settings(user: RequestUser): Promise<AiSettingsDto> {
     if (!canManageAi(user.roleKey)) throw new ForbiddenException('Only admins manage Ask Nirmaan');
     const monthStart = istStart(`${todayIn().slice(0, 7)}-01`);
-    const [org, spent, questions, byUser] = await Promise.all([
+    const [org, byFeature, byUser] = await Promise.all([
       this.prisma.organization.findUniqueOrThrow({ where: { id: user.organizationId }, select: { aiEnabled: true, aiMonthlyCapInr: true } }),
-      this.spentThisMonth(user.organizationId),
-      this.prisma.aiMessage.count({ where: { organizationId: user.organizationId, role: 'user', createdAt: { gte: monthStart } } }),
+      this.spendByFeature(user.organizationId),
       this.usageByUser(user.organizationId, monthStart),
     ]);
+    const spent = byFeature.reduce((s, f) => s + f.paise, 0);
+    const questions = byFeature.find((f) => f.feature === 'QUESTIONS')!.count;
     return {
       enabled: org.aiEnabled,
       monthlyCapInr: org.aiMonthlyCapInr,
@@ -188,6 +189,7 @@ export class AiService {
       spentThisMonthInr: rupees(spent),
       questionsThisMonth: questions,
       byUser,
+      byFeature: byFeature.map((f) => ({ feature: f.feature, count: f.count, spentInr: rupees(f.paise) })),
       configured: aiConfigured(),
       model: aiConfig().provider === 'fake' ? 'test stand-in' : aiConfig().model,
     };
@@ -322,15 +324,60 @@ export class AiService {
     return own ?? aiConfig().defaultMonthlyCapInr;
   }
 
-  /** Answers, bill-check summaries and document reads this calendar month, in paise. */
+  /** Answers, bill-check summaries, document reads and briefs this calendar month, in paise. */
   private async spentThisMonth(organizationId: string): Promise<number> {
-    const since = istStart(`${todayIn().slice(0, 7)}-01`);
-    const [answers, summaries, reads] = await Promise.all([
-      this.prisma.aiMessage.aggregate({ where: { organizationId, createdAt: { gte: since } }, _sum: { costPaise: true } }),
-      this.prisma.billCheckSummary.aggregate({ where: { organizationId, createdAt: { gte: since } }, _sum: { costPaise: true } }),
-      this.prisma.aiDocumentRead.aggregate({ where: { organizationId, createdAt: { gte: since } }, _sum: { costPaise: true } }),
+    return (await this.spendByFeature(organizationId)).reduce((s, f) => s + f.paise, 0);
+  }
+
+  /** This calendar month's spend by what it went on: how many of each and their cost in paise. */
+  private async spendByFeature(organizationId: string): Promise<{ feature: AiFeature; count: number; paise: number }[]> {
+    const where = { organizationId, createdAt: { gte: istStart(`${todayIn().slice(0, 7)}-01`) } };
+    const [answers, questions, summaries, reads, briefs] = await Promise.all([
+      this.prisma.aiMessage.aggregate({ where, _sum: { costPaise: true } }),
+      this.prisma.aiMessage.count({ where: { ...where, role: 'user' } }),
+      this.prisma.billCheckSummary.aggregate({ where, _sum: { costPaise: true }, _count: { _all: true } }),
+      this.prisma.aiDocumentRead.aggregate({ where, _sum: { costPaise: true }, _count: { _all: true } }),
+      this.prisma.aiBrief.aggregate({ where, _sum: { costPaise: true }, _count: { _all: true } }),
     ]);
-    return (answers._sum.costPaise ?? 0) + (summaries._sum.costPaise ?? 0) + (reads._sum.costPaise ?? 0);
+    return [
+      { feature: 'QUESTIONS', count: questions, paise: answers._sum.costPaise ?? 0 },
+      { feature: 'BILL_CHECKS', count: summaries._count._all, paise: summaries._sum.costPaise ?? 0 },
+      { feature: 'DOCUMENT_READS', count: reads._count._all, paise: reads._sum.costPaise ?? 0 },
+      { feature: 'BRIEFS', count: briefs._count._all, paise: briefs._sum.costPaise ?? 0 },
+    ];
+  }
+
+  /**
+   * A short text for the overnight batch (AI item 74): the model rewrites the rules' draft from the facts alone, with no
+   * tools. Its text is used only when `fits` takes it and every figure in it is in the facts; otherwise the draft is,
+   * and a failed call also falls back to the draft. Null when the assistant is not on for this user, so nothing is written.
+   */
+  async writeFromFacts<T>(
+    user: RequestUser,
+    system: string,
+    facts: unknown,
+    draft: string,
+    fits: (text: string) => T | null,
+  ): Promise<{ value: T | null; text: string; unverified: string[]; model: string | null; costPaise: number } | null> {
+    if ((await this.status(user)).enabled !== true) return null;
+    try {
+      const turn = await this.model().turn(
+        { system, tools: [], messages: [{ role: 'user', content: `${JSON.stringify(facts)}\n\nDraft: ${draft}` }] },
+        () => undefined,
+        AbortSignal.timeout(45_000),
+      );
+      const text = turn.content
+        .filter((b): b is Anthropic.Beta.BetaTextBlock => b.type === 'text')
+        .map((b) => b.text)
+        .join('')
+        .trim();
+      const unverified = unverifiedFigures(text, [...collectNumbers(facts), ...derivedNumbers(facts)]);
+      const value = unverified.length ? null : fits(text);
+      return { value, text, unverified, model: turn.model, costPaise: costPaise(turn.model, turn.usage) };
+    } catch (e) {
+      this.log.warn(`written from facts: ${(e as Error).message}`);
+      return { value: null, text: '', unverified: [], model: null, costPaise: 0 };
+    }
   }
 
   /**

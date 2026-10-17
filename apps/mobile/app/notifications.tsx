@@ -34,6 +34,7 @@ const ICON: Record<NotificationType, { name: keyof typeof Ionicons.glyphMap; col
   COMPLIANCE: { name: 'shield-checkmark', color: colors.warning, bg: colors.warningSoft },
   DEFECT: { name: 'construct', color: colors.warning, bg: colors.warningSoft },
   WATCH_LIST: { name: 'eye', color: colors.warning, bg: colors.warningSoft },
+  MORNING_BRIEF: { name: 'cafe', color: colors.primary, bg: colors.primarySoft },
 };
 
 export default function NotificationsScreen() {

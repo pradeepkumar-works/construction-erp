@@ -3,6 +3,7 @@ import type { InspectionCheck, NcrSeverity, NcrStatus, TestKind, TestResult } fr
 import type { ApprovalRightDto } from './approvals';
 import type { TallyVoucherKind } from './tally';
 import type { BillingUnit } from './billing';
+import type { ProgressNarrativeDto } from './briefs';
 import type { DocumentDiscipline, DocumentKind, LetterDirection, RevisionStatus, TransmittalPurpose } from './documents';
 import type { LeaveStatus, LeaveType, StaffAttendanceStatus } from './staff';
 import type { CostHead } from './cost';
@@ -475,7 +476,7 @@ export interface PushTokenDto {
 
 /** Result of a scheduled notification job (DPR reminder / approval digest). */
 export interface NotificationJobResult {
-  job: 'DPR_REMINDER' | 'APPROVAL_DIGEST' | 'TESTS_DUE' | 'BILLS_DUE' | 'MACHINERY_DUE' | 'COMPLIANCE_DUE' | 'HANDOVER_DUE' | 'WATCH_LIST';
+  job: 'DPR_REMINDER' | 'APPROVAL_DIGEST' | 'TESTS_DUE' | 'BILLS_DUE' | 'MACHINERY_DUE' | 'COMPLIANCE_DUE' | 'HANDOVER_DUE' | 'WATCH_LIST' | 'MORNING_BRIEF' | 'WEEK_NARRATIVE';
   date: string;
   created: number;
   pushed: number;
@@ -1059,6 +1060,8 @@ export interface ProgressReportDto {
   from: string;
   to: string;
   generatedAt: string;
+  /** A Monday-to-Sunday week's summary paragraph, written overnight by Ask Nirmaan (AI item 74); null otherwise. */
+  narrative: ProgressNarrativeDto | null;
   physical: { atStartPct: number; atEndPct: number };
   /** Share of the contract period elapsed at the end of the report period; null without both dates. */
   timeElapsedPct: number | null;
