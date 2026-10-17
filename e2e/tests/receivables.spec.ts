@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { api, apiToken, signIn } from './helpers';
+import { api, apiToken, formPanel, signIn } from './helpers';
 
 interface Page<T> {
   items: T[];
@@ -25,10 +25,10 @@ test('record payments against a sent RA bill until it is paid', async ({ page })
   await page.goto(`/bills?id=${bill.id}`);
   const drawer = page.locator('.ant-drawer').filter({ hasText: 'Abstract of cost' });
   await drawer.getByRole('button', { name: 'Record payment' }).click();
-  let modal = page.locator('.ant-modal').filter({ hasText: 'Payment received' });
+  let modal = formPanel(page, 'Payment received');
   // The first payment comes with the bill's deductions filled in; the client pays part of the rest.
-  await expect(modal.getByLabel('Retention (₹)')).not.toHaveValue('');
-  await modal.getByLabel('Amount received (₹)').fill('100000');
+  await expect(modal.getByLabel('Retention', { exact: true })).not.toHaveValue('');
+  await modal.getByLabel('Amount received').fill('100000');
   await modal.getByLabel('UTR / cheque / advice no.').fill('E2E-UTR-1');
   await modal.getByRole('button', { name: 'Record' }).click();
   await expect(page.getByText(/recorded against RA bill 1/)).toBeVisible();
@@ -40,8 +40,9 @@ test('record payments against a sent RA bill until it is paid', async ({ page })
 
   // The second payment is the balance.
   await drawer.getByRole('button', { name: 'Record payment' }).click();
-  modal = page.locator('.ant-modal').filter({ hasText: 'Payment received' });
-  await expect(modal.getByLabel('Amount received (₹)')).toHaveValue(Number(open!.outstanding).toFixed(2));
+  modal = formPanel(page, 'Payment received');
+  // The amount shows grouped the Indian way once filled in (1,23,456.5).
+  await expect(modal.getByLabel('Amount received')).toHaveValue(new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(Number(open!.outstanding)));
   await modal.getByRole('button', { name: 'Record' }).click();
   await expect(drawer.locator('.ant-drawer-title').getByText('Paid')).toBeVisible();
 

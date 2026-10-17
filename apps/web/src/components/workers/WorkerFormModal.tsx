@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { App, AutoComplete, Col, DatePicker, Form, Input, InputNumber, Modal, Row, Select } from 'antd';
+import { App, AutoComplete, DatePicker, Form, Input, Select } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { WorkerDto, WorkerIdType, WorkerSkill } from '@erp/shared';
@@ -9,6 +9,8 @@ import { WORKER_ID_TYPES, WORKER_ID_TYPE_LABELS, WORKER_SKILLS, WORKER_SKILL_LAB
 import { api, errorMessage } from '@/lib/api';
 import { useAttendanceSuggestions } from '@/lib/queries';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
+import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
+import { MoneyInput, PHONE_INPUT, phoneRule } from '@/components/form/inputs';
 
 interface Values {
   name: string;
@@ -82,65 +84,26 @@ export function WorkerFormModal({ open, onClose, worker, projectId }: { open: bo
     onSuccess: (w) => {
       message.success(worker ? 'Worker saved' : `Worker ${w.workerNo} added`);
       qc.invalidateQueries({ queryKey: ['workers'] });
-      onClose();
     },
     onError: (err) => message.error(errorMessage(err)),
   });
 
   return (
-    <Modal
-      open={open}
-      title={worker ? `${worker.workerNo} ${worker.name}` : 'Add a worker'}
-      okText={worker ? 'Save' : 'Add worker'}
-      onCancel={onClose}
-      onOk={() => form.submit()}
-      confirmLoading={save.isPending}
-      destroyOnHidden
-      width={640}
-    >
-      <Form form={form} layout="vertical" onFinish={(v) => save.mutate(v)} requiredMark="optional">
-        <Row gutter={12}>
-          <Col xs={24} sm={12}>
+    <FormShell open={open} onClose={onClose} form={form} layout="drawer" title={worker ? `${worker.workerNo} ${worker.name}` : 'Add a worker'} okText={worker ? 'Save' : 'Add worker'} onSubmit={(v) => save.mutateAsync(v)}>
+      <Form form={form} layout="vertical" requiredMark="optional">
+        <FormSection title="Worker">
+          <FormGrid cols={2}>
             <Form.Item name="name" label="Name" rules={[{ required: true, whitespace: true, message: 'Enter the name' }]}>
               <Input maxLength={120} />
             </Form.Item>
-          </Col>
-          <Col xs={24} sm={12}>
             <Form.Item name="fatherName" label="Father's name">
               <Input maxLength={120} />
             </Form.Item>
-          </Col>
-          <Col xs={24} sm={12}>
-            <Form.Item name="contractor" label="Labour contractor" rules={[{ required: true, whitespace: true, message: 'Enter the contractor, or Departmental' }]}>
-              <AutoComplete options={(suggestions.data?.contractors ?? []).map((c) => ({ value: c }))} showSearch={{ filterOption: (i, o) => String(o?.value).toLowerCase().includes(i.toLowerCase()) }} />
-            </Form.Item>
-          </Col>
-          <Col xs={24} sm={12}>
-            <Form.Item name="trade" label="Trade" rules={[{ required: true, whitespace: true, message: 'Enter the trade' }]}>
-              <AutoComplete options={(suggestions.data?.categories ?? []).map((c) => ({ value: c }))} showSearch={{ filterOption: (i, o) => String(o?.value).toLowerCase().includes(i.toLowerCase()) }} />
-            </Form.Item>
-          </Col>
-          <Col xs={24} sm={8}>
-            <Form.Item name="skill" label="Skill">
-              <Select options={WORKER_SKILLS.map((s) => ({ value: s, label: WORKER_SKILL_LABELS[s] }))} />
-            </Form.Item>
-          </Col>
-          <Col xs={12} sm={8}>
-            <Form.Item name="dailyWage" label="Daily wage (₹)" extra={worker ? undefined : 'Empty: the labour rate of the trade'}>
-              <InputNumber min={0} style={{ width: '100%' }} />
-            </Form.Item>
-          </Col>
-          <Col xs={12} sm={8}>
-            <Form.Item name="otRate" label="OT per hour (₹)" extra="Empty: daily wage / 8">
-              <InputNumber min={0} style={{ width: '100%' }} />
-            </Form.Item>
-          </Col>
-          <Col xs={24} sm={8}>
+          </FormGrid>
+          <FormGrid cols={3}>
             <Form.Item name="idType" label="ID">
               <Select allowClear options={WORKER_ID_TYPES.map((t) => ({ value: t, label: WORKER_ID_TYPE_LABELS[t] }))} />
             </Form.Item>
-          </Col>
-          <Col xs={24} sm={8}>
             <Form.Item
               name="idNumber"
               label="ID number"
@@ -148,31 +111,48 @@ export function WorkerFormModal({ open, onClose, worker, projectId }: { open: bo
             >
               <Input maxLength={40} placeholder={worker?.idNumber ?? undefined} />
             </Form.Item>
-          </Col>
-          <Col xs={24} sm={8}>
-            <Form.Item name="phone" label="Phone">
-              <Input maxLength={20} />
+            <Form.Item name="phone" label="Phone" rules={[phoneRule]}>
+              <Input {...PHONE_INPUT} />
             </Form.Item>
-          </Col>
-          <Col xs={24} sm={12}>
-            <Form.Item name="projectId" label="Working at">
-              <ProjectSelect placeholder="Not posted to a project" />
+          </FormGrid>
+        </FormSection>
+        <FormSection title="Work and wage">
+          <FormGrid cols={2}>
+            <Form.Item name="contractor" label="Labour contractor" rules={[{ required: true, whitespace: true, message: 'Enter the contractor, or Departmental' }]}>
+              <AutoComplete options={(suggestions.data?.contractors ?? []).map((c) => ({ value: c }))} showSearch={{ filterOption: (i, o) => String(o?.value).toLowerCase().includes(i.toLowerCase()) }} />
             </Form.Item>
-          </Col>
-          <Col xs={12} sm={6}>
+            <Form.Item name="trade" label="Trade" rules={[{ required: true, whitespace: true, message: 'Enter the trade' }]}>
+              <AutoComplete options={(suggestions.data?.categories ?? []).map((c) => ({ value: c }))} showSearch={{ filterOption: (i, o) => String(o?.value).toLowerCase().includes(i.toLowerCase()) }} />
+            </Form.Item>
+          </FormGrid>
+          <FormGrid cols={3}>
+            <Form.Item name="skill" label="Skill">
+              <Select options={WORKER_SKILLS.map((s) => ({ value: s, label: WORKER_SKILL_LABELS[s] }))} />
+            </Form.Item>
+            <Form.Item name="dailyWage" label="Daily wage" extra={worker ? undefined : 'Empty: the labour rate of the trade'}>
+              <MoneyInput />
+            </Form.Item>
+            <Form.Item name="otRate" label="OT per hour" extra="Empty: daily wage / 8">
+              <MoneyInput />
+            </Form.Item>
+          </FormGrid>
+        </FormSection>
+        <FormSection title="Posting">
+          <Form.Item name="projectId" label="Working at">
+            <ProjectSelect placeholder="Not posted to a project" />
+          </Form.Item>
+          <FormGrid cols={2}>
             <Form.Item name="joinedOn" label="Joined on">
               <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} />
             </Form.Item>
-          </Col>
-          {worker ? (
-            <Col xs={12} sm={6}>
+            {worker ? (
               <Form.Item name="leftOn" label="Left on" extra="Takes them off the roll call">
                 <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} />
               </Form.Item>
-            </Col>
-          ) : null}
-        </Row>
+            ) : null}
+          </FormGrid>
+        </FormSection>
       </Form>
-    </Modal>
+    </FormShell>
   );
 }

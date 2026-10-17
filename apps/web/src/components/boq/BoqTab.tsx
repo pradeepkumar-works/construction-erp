@@ -130,13 +130,14 @@ export function BoqTab({ projectId }: { projectId: string }) {
                   size="small"
                   type="text"
                   icon={<EditOutlined />}
+                  aria-label={`Edit BOQ item ${r.itemNo}`}
                   onClick={() => {
                     setEditing(r);
                     setFormOpen(true);
                   }}
                 />
                 <Popconfirm title="Delete this BOQ item?" okText="Delete" okButtonProps={{ danger: true }} onConfirm={() => del.mutate(r.id)}>
-                  <Button size="small" type="text" danger icon={<DeleteOutlined />} />
+                  <Button size="small" type="text" danger icon={<DeleteOutlined />} aria-label={`Delete BOQ item ${r.itemNo}`} />
                 </Popconfirm>
               </Space>
             ),

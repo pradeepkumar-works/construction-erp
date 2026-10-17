@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo } from 'react';
-import { App, Button, Form, Input, InputNumber, Modal, Select, Typography } from 'antd';
+import { App, Button, Form, Input, Select, Typography } from 'antd';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, BoqItemDto, VariationCause, VariationDto } from '@erp/shared';
@@ -12,6 +12,8 @@ import { formatINR, formatQty, toNumber } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { UnitInput } from '@/components/common/UnitInput';
 import { themeColor } from '@/lib/theme';
+import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
+import { MoneyInput, QuantityInput } from '@/components/form/inputs';
 
 /** Picker value for a line that adds an item not yet in the BOQ. */
 const NEW_ITEM = '__new__';
@@ -105,113 +107,118 @@ export function VariationFormModal({ open, onClose, projectId, variation, onSave
       message.success(editing ? `${v.label} updated` : `${v.label} prepared`);
       qc.invalidateQueries({ queryKey: ['variations'] });
       onSaved?.(v);
-      onClose();
     },
     onError: (err) => message.error(errorMessage(err)),
   });
 
   return (
-    <Modal
+    <FormShell
       open={open}
+      onClose={onClose}
+      form={form}
       title={variation ? `Edit ${variation.label}` : 'New variation'}
       okText={editing ? 'Save' : 'Prepare'}
-      onCancel={onClose}
-      onOk={() => form.submit()}
-      confirmLoading={mutation.isPending}
+      onSubmit={(v) => mutation.mutateAsync(v)}
       width={900}
-      destroyOnHidden
+      draftKey={editing ? undefined : `variation:${projectId ?? 'any'}`}
     >
-      <Form form={form} layout="vertical" onFinish={(v) => mutation.mutate(v)} style={{ marginTop: 8 }}>
-        <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]} hidden={!!fixedProject}>
-          <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} onChange={() => form.setFieldsValue({ lines: [{}] })} />
-        </Form.Item>
-        <div style={grid('2fr 1fr')}>
-          <Form.Item name="title" label="Title" rules={[{ required: true, whitespace: true, message: 'Required' }]}>
-            <Input maxLength={200} placeholder="Extra retaining wall at Km 14.2" />
+      <Form form={form} layout="vertical">
+        <FormSection title="Variation">
+          <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!fixedProject}>
+            <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} onChange={() => form.setFieldsValue({ lines: [{}] })} />
           </Form.Item>
-          <Form.Item name="cause" label="Cause" rules={[{ required: true, message: 'Required' }]}>
-            <Select options={VARIATION_CAUSES.map((c) => ({ value: c, label: VARIATION_CAUSE_LABELS[c] }))} />
+          <FormGrid cols={2}>
+            <Form.Item name="title" label="Title" rules={[{ required: true, whitespace: true, message: 'Give the variation a title' }]}>
+              <Input maxLength={200} placeholder="Extra retaining wall at Km 14.2" />
+            </Form.Item>
+            <Form.Item name="cause" label="Cause" rules={[{ required: true, message: 'Choose the cause' }]}>
+              <Select options={VARIATION_CAUSES.map((c) => ({ value: c, label: VARIATION_CAUSE_LABELS[c] }))} />
+            </Form.Item>
+          </FormGrid>
+          <Form.Item name="description" label="Justification">
+            <Input.TextArea rows={2} maxLength={2000} placeholder="Instruction, drawing or site condition behind the change" />
           </Form.Item>
-        </div>
-        <Form.Item name="description" label="Justification">
-          <Input.TextArea rows={2} maxLength={2000} placeholder="Instruction, drawing or site condition behind the change" />
-        </Form.Item>
+        </FormSection>
 
-        <Typography.Text strong>Items</Typography.Text>
-        <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginBottom: 8 }}>
-          A BOQ item with a quantity change (negative to omit), or a new item with its proposed rate. Nothing changes in the BOQ until the client approves.
-        </Typography.Paragraph>
-        <Form.List name="lines" rules={[{ validator: async (_, v) => (v?.length ? undefined : Promise.reject(new Error('Add at least one item'))) }]}>
-          {(fields, { add, remove }, { errors }) => (
-            <>
-              {fields.map((f) => {
-                const l = lines?.[f.name];
-                const b = l?.boqItemId && l.boqItemId !== NEW_ITEM ? boq.get(l.boqItemId) : undefined;
-                const isNew = l?.boqItemId === NEW_ITEM;
-                const extra = !!b && isUnapprovedExtra(b.originalQty, b.revisedQty);
-                const amount = (l?.qty ?? 0) * lineRate(l, boq);
-                return (
-                  <div key={f.key} className="variation-line" style={{ border: `1px solid ${themeColor('colorBorderSecondary')}`, borderRadius: 8, padding: '12px 12px 0', marginBottom: 8 }}>
-                    <div style={grid('minmax(0, 1fr) 32px')}>
-                      <Form.Item name={[f.name, 'boqItemId']} label="BOQ item" rules={[{ required: true, message: 'Pick an item or "New item"' }]}>
-                        <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Pick a BOQ item" options={itemOptions} disabled={!selectedProject} popupMatchSelectWidth={false} />
-                      </Form.Item>
-                      <Button type="text" danger icon={<DeleteOutlined />} onClick={() => remove(f.name)} aria-label="Remove item" style={{ marginTop: 30 }} />
-                    </div>
-                    {isNew && (
-                      <div style={grid('120px 1fr 100px')}>
-                        <Form.Item name={[f.name, 'itemNo']} label="Item no." rules={[{ required: true, whitespace: true, message: 'Required' }]}>
-                          <Input maxLength={30} placeholder="7.01" />
+        <FormSection title="Items">
+          <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginBottom: 8 }}>
+            A BOQ item with a quantity change (negative to omit), or a new item with its proposed rate. Nothing changes in the BOQ until the client approves.
+          </Typography.Paragraph>
+          <Form.List name="lines" rules={[{ validator: async (_, v) => (v?.length ? undefined : Promise.reject(new Error('Add at least one item'))) }]}>
+            {(fields, { add, remove }, { errors }) => (
+              <>
+                {fields.map((f) => {
+                  const l = lines?.[f.name];
+                  const b = l?.boqItemId && l.boqItemId !== NEW_ITEM ? boq.get(l.boqItemId) : undefined;
+                  const isNew = l?.boqItemId === NEW_ITEM;
+                  const extra = !!b && isUnapprovedExtra(b.originalQty, b.revisedQty);
+                  const amount = (l?.qty ?? 0) * lineRate(l, boq);
+                  return (
+                    <div key={f.key} className="variation-line" style={{ border: `1px solid ${themeColor('colorBorderSecondary')}`, borderRadius: 8, padding: '12px 12px 0', marginBottom: 8 }}>
+                      <div style={grid('minmax(0, 1fr) 32px')}>
+                        <Form.Item name={[f.name, 'boqItemId']} label="BOQ item" rules={[{ required: true, message: 'Pick an item or "New item"' }]}>
+                          <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Pick a BOQ item" options={itemOptions} disabled={!selectedProject} popupMatchSelectWidth={false} />
                         </Form.Item>
-                        <Form.Item name={[f.name, 'description']} label="Description" rules={[{ required: true, whitespace: true, message: 'Required' }]}>
-                          <Input maxLength={1000} />
-                        </Form.Item>
-                        <Form.Item name={[f.name, 'unit']} label="Unit" rules={[{ required: true, whitespace: true, message: 'Required' }]}>
-                          <UnitInput maxLength={20} placeholder="Cum" />
-                        </Form.Item>
+                        <Button type="text" danger icon={<DeleteOutlined />} onClick={() => remove(f.name)} aria-label="Remove item" style={{ marginTop: 30 }} />
                       </div>
-                    )}
-                    <div style={grid('1fr 1fr 1fr')}>
-                      <Form.Item
-                        name={[f.name, 'qty']}
-                        label={isNew || extra ? 'Quantity' : 'Quantity added (− to omit)'}
-                        extra={b ? `BOQ quantity ${formatQty(b.revisedQty ?? b.originalQty)} ${b.unit}` : undefined}
-                        rules={[{ required: true, message: 'Required' }, { validator: async (_, v) => (v === 0 ? Promise.reject(new Error('Cannot be 0')) : undefined) }]}
-                      >
-                        <InputNumber style={{ width: '100%' }} min={isNew || extra ? 0.001 : undefined} />
-                      </Form.Item>
-                      {isNew || extra ? (
-                        <Form.Item name={[f.name, 'rate']} label="Proposed rate (₹)" rules={[{ required: true, message: 'Required' }]}>
-                          <InputNumber style={{ width: '100%' }} min={0} />
-                        </Form.Item>
-                      ) : (
-                        <Form.Item label="BOQ rate">
-                          <span className="mono">{b ? formatINR(b.rate) : '-'}</span>
-                        </Form.Item>
+                      {isNew && (
+                        <FormGrid cols={3}>
+                          <Form.Item name={[f.name, 'itemNo']} label="Item no." rules={[{ required: true, whitespace: true, message: 'Enter the item number, e.g. 7.01' }]}>
+                            <Input maxLength={30} placeholder="7.01" />
+                          </Form.Item>
+                          <Form.Item name={[f.name, 'description']} label="Description" rules={[{ required: true, whitespace: true, message: 'Describe the item' }]}>
+                            <Input maxLength={1000} />
+                          </Form.Item>
+                          <Form.Item name={[f.name, 'unit']} label="Unit" rules={[{ required: true, whitespace: true, message: 'Enter the unit, e.g. Cum' }]}>
+                            <UnitInput maxLength={20} placeholder="Cum" />
+                          </Form.Item>
+                        </FormGrid>
                       )}
-                      <Form.Item label="Amount">
-                        <span className="mono">{formatINR(amount)}</span>
-                      </Form.Item>
+                      <FormGrid cols={3}>
+                        <Form.Item
+                          name={[f.name, 'qty']}
+                          label={isNew || extra ? 'Quantity' : 'Quantity added (− to omit)'}
+                          extra={b ? `BOQ quantity ${formatQty(b.revisedQty ?? b.originalQty)} ${b.unit}` : undefined}
+                          rules={[{ required: true, message: 'Enter the quantity' }, { validator: async (_, v) => (v === 0 ? Promise.reject(new Error('Enter a quantity other than 0')) : undefined) }]}
+                        >
+                          {/* A BOQ item's change can be negative (an omission). */}
+                          <QuantityInput unit={isNew ? l?.unit : b?.unit} min={isNew || extra ? 0.001 : undefined} />
+                        </Form.Item>
+                        {isNew || extra ? (
+                          <Form.Item name={[f.name, 'rate']} label="Proposed rate" rules={[{ required: true, message: 'Enter the proposed rate' }]}>
+                            <MoneyInput />
+                          </Form.Item>
+                        ) : (
+                          <Form.Item label="BOQ rate">
+                            <span className="mono">{b ? formatINR(b.rate) : '-'}</span>
+                          </Form.Item>
+                        )}
+                        <Form.Item label="Amount">
+                          <span className="mono">{formatINR(amount)}</span>
+                        </Form.Item>
+                      </FormGrid>
                     </div>
-                  </div>
-                );
-              })}
-              <Form.ErrorList errors={errors} />
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '4px 0 16px' }}>
-                <Button icon={<PlusOutlined />} onClick={() => add({})} disabled={!selectedProject}>
-                  Add item
-                </Button>
-                <Typography.Text strong>
-                  Claimed <span className="mono">{formatINR(total)}</span>
-                </Typography.Text>
-              </div>
-            </>
-          )}
-        </Form.List>
-        <Form.Item name="files" label="Instruction, drawing or estimate">
-          <PhotoUpload />
-        </Form.Item>
+                  );
+                })}
+                <Form.ErrorList errors={errors} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '4px 0 0' }}>
+                  <Button icon={<PlusOutlined />} onClick={() => add({})} disabled={!selectedProject}>
+                    Add item
+                  </Button>
+                  <Typography.Text strong>
+                    Claimed <span className="mono">{formatINR(total)}</span>
+                  </Typography.Text>
+                </div>
+              </>
+            )}
+          </Form.List>
+        </FormSection>
+        <FormSection title="Documents">
+          <Form.Item name="files" label="Instruction, drawing or estimate">
+            <PhotoUpload />
+          </Form.Item>
+        </FormSection>
       </Form>
-    </Modal>
+    </FormShell>
   );
 }

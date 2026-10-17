@@ -1,13 +1,15 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { App, Checkbox, DatePicker, Form, Input, InputNumber, Modal, Select } from 'antd';
+import { App, Checkbox, DatePicker, Form, Input, Select } from 'antd';
 import dayjs from 'dayjs';
 import type { ActivityDto, ProjectMemberDto } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, errorMessage } from '@/lib/api';
 import { useBoq, useChecklists } from '@/lib/queries';
 import { UnitInput } from '@/components/common/UnitInput';
+import { FormGrid, FormShell } from '@/components/form/FormShell';
+import { QuantityInput } from '@/components/form/inputs';
 
 interface FormValues {
   name: string;
@@ -78,7 +80,6 @@ export function ActivityFormModal({
       message.success(isEdit ? 'Activity updated' : 'Activity added');
       qc.invalidateQueries({ queryKey: ['activities', projectId] });
       qc.invalidateQueries({ queryKey: ['dashboard'] });
-      onClose();
     },
     onError: (err) => message.error(errorMessage(err)),
   });
@@ -92,38 +93,40 @@ export function ActivityFormModal({
     }
   };
 
+  const unit = Form.useWatch('unit', form);
+
   return (
-    <Modal open={open} title={isEdit ? 'Edit activity' : 'Add activity'} okText={isEdit ? 'Save' : 'Add activity'} onCancel={onClose} onOk={() => form.submit()} confirmLoading={mutation.isPending} width={640} destroyOnHidden>
-      <Form form={form} layout="vertical" onFinish={(v) => mutation.mutate(v)} style={{ marginTop: 8 }}>
+    <FormShell open={open} onClose={onClose} form={form} layout="modal" title={isEdit ? 'Edit activity' : 'Add activity'} okText={isEdit ? 'Save' : 'Add activity'} onSubmit={(v) => mutation.mutateAsync(v)}>
+      <Form form={form} layout="vertical">
         <Form.Item name="boqItemId" label="Linked BOQ item">
           <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Optional - pick a BOQ item to link" onChange={onBoqChange} options={(boq ?? []).map((b) => ({ value: b.id, label: `${b.itemNo} - ${b.description}` }))} />
         </Form.Item>
-        <Form.Item name="name" label="Activity name" rules={[{ required: true, message: 'Required' }]}>
+        <Form.Item name="name" label="Activity name" rules={[{ required: true, whitespace: true, message: 'Name the activity, e.g. GSB laying' }]}>
           <Input placeholder="GSB laying" />
         </Form.Item>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr', gap: '0 16px' }}>
-          <Form.Item name="unit" label="Unit" rules={[{ required: true, message: 'Required' }]}>
+        <FormGrid cols={2}>
+          <Form.Item name="unit" label="Unit" rules={[{ required: true, whitespace: true, message: 'Enter the unit, e.g. Cum' }]}>
             <UnitInput placeholder="Cum" />
           </Form.Item>
-          <Form.Item name="plannedQty" label="Planned qty" rules={[{ required: true, message: 'Required' }]}>
-            <InputNumber style={{ width: '100%' }} min={0} />
+          <Form.Item name="plannedQty" label="Planned qty" rules={[{ required: true, message: 'Enter the planned quantity' }]}>
+            <QuantityInput unit={unit} />
           </Form.Item>
           <Form.Item name="dates" label="Planned start / end">
             <DatePicker.RangePicker style={{ width: '100%' }} format="DD MMM YYYY" allowEmpty={[true, true]} />
           </Form.Item>
-        </div>
-        <Form.Item name="responsibleId" label="Responsible">
-          <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Project member" options={members.map((m) => ({ value: m.userId, label: `${m.fullName} (${m.roleName})` }))} />
-        </Form.Item>
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '0 16px', alignItems: 'end' }}>
+          <Form.Item name="responsibleId" label="Responsible">
+            <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Project member" options={members.map((m) => ({ value: m.userId, label: `${m.fullName} (${m.roleName})` }))} />
+          </Form.Item>
+        </FormGrid>
+        <FormGrid cols={2}>
           <Form.Item name="checklistTemplateId" label="Inspection checklist">
             <Select allowClear placeholder={checklists?.length ? 'None' : 'No checklist yet (Inspections > Checklists)'} options={(checklists ?? []).map((c) => ({ value: c.id, label: c.name }))} />
           </Form.Item>
-          <Form.Item name="holdPoint" valuePropName="checked" tooltip="Progress of this activity is approved only after a passed inspection at the same location">
+          <Form.Item name="holdPoint" valuePropName="checked" style={{ alignSelf: 'end' }} tooltip="Progress of this activity is approved only after a passed inspection at the same location">
             <Checkbox>Hold point</Checkbox>
           </Form.Item>
-        </div>
+        </FormGrid>
       </Form>
-    </Modal>
+    </FormShell>
   );
 }

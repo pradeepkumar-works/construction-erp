@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, App, DatePicker, Empty, Flex, Form, Input, InputNumber, Modal, Select, Table, Typography } from 'antd';
+import { Alert, App, DatePicker, Empty, Flex, Form, Input, InputNumber, Select, Table, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, ReceivableOrderDto, ReceivableRequestDto, StockEntryDto } from '@erp/shared';
@@ -11,6 +11,7 @@ import { uploadFile, useProjects, useReceivable, useReceivableOrders } from '@/l
 import { formatDate, formatQty } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { VendorPicker } from '@/components/vendors/VendorPicker';
+import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { ReadDocumentButton, ReadPreview, ReadSource, readFieldProps, type ReadState } from '@/components/ai/ReadDocument';
 
 interface FormValues {
@@ -171,24 +172,13 @@ export function ReceiptModal({
       qc.invalidateQueries({ queryKey: ['stock'] });
       qc.invalidateQueries({ queryKey: ['material-requests'] });
       qc.invalidateQueries({ queryKey: ['purchase-orders'] });
-      onClose();
     },
     onError: (err) => message.error(errorMessage(err)),
   });
 
   return (
-    <Modal
-      open={open}
-      title="Receive material (GRN)"
-      onCancel={onClose}
-      onOk={() => form.submit()}
-      okText="Save GRN"
-      okButtonProps={{ loading: save.isPending, disabled: !request }}
-      width={760}
-      destroyOnHidden
-      styles={{ body: { maxHeight: '70vh', overflowY: 'auto', paddingRight: 8 } }}
-    >
-      <Form form={form} layout="vertical" onFinish={(v) => save.mutate(v)} style={{ marginTop: 8 }}>
+    <FormShell open={open} onClose={onClose} form={form} layout="modal" width={760} title="Receive material (GRN)" okText="Save GRN" okDisabled={!request} onSubmit={(v) => save.mutateAsync(v)}>
+      <Form form={form} layout="vertical">
         {!readState ? (
           <Flex justify="flex-end" style={{ marginBottom: 8 }}>
             <ReadDocumentButton kind="challan" label="Fill from challan" onRead={applyRead} disabled={loading} />
@@ -274,8 +264,8 @@ export function ReceiptModal({
           <Alert type="info" showIcon style={{ marginBottom: 16 }} title="Material is received against an approved purchase order or material request. Each line can take up to what is still pending." />
         )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', columnGap: 12 }}>
-          <Form.Item name="date" label="Received on" rules={[{ required: true, message: 'Required' }]}>
+        <FormGrid cols={2}>
+          <Form.Item name="date" label="Received on" rules={[{ required: true, message: 'Pick the date' }]}>
             <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
           {request?.kind === 'PO' ? (
@@ -293,7 +283,7 @@ export function ReceiptModal({
           <Form.Item name="vehicleNo" label="Vehicle no." {...readFieldProps(readState, 'vehicleNo', setActiveRead)}>
             <Input maxLength={30} />
           </Form.Item>
-        </div>
+        </FormGrid>
         <Form.Item name="photos" label="Challan photo">
           <PhotoUpload max={4} />
         </Form.Item>
@@ -301,6 +291,6 @@ export function ReceiptModal({
           <Input.TextArea rows={2} maxLength={1000} />
         </Form.Item>
       </Form>
-    </Modal>
+    </FormShell>
   );
 }

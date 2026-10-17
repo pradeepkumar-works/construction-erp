@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { api, apiToken, chooseOption, signIn } from './helpers';
+import { api, apiToken, chooseOption, formPanel, signIn } from './helpers';
 
 type Doc = { id: string; docNo: string; current: { id: string; revision: string; status: string; attachments: { fileName: string }[] } | null; revisionCount: number };
 type Transmittal = { id: string; transmittalNo: string; acknowledgedBy: string | null; items: { docNo: string; revision: string; copies: number }[] };
@@ -23,7 +23,7 @@ test.describe.serial('drawings, transmittals and letters', () => {
     await signIn(page, 'pm@demo.com');
     await page.getByRole('link', { name: 'Documents' }).click();
     await page.getByRole('button', { name: 'Add document' }).click();
-    const modal = page.locator('.ant-modal').filter({ hasText: 'Add drawing or document' });
+    const modal = formPanel(page, 'Add drawing or document');
     await chooseOption(modal.getByLabel('Project'), 'RD-2026-01');
     await modal.getByLabel('Number').fill(docNo);
     await modal.getByLabel('Title').fill('Retaining wall at Km 14+100');
@@ -31,6 +31,7 @@ test.describe.serial('drawings, transmittals and letters', () => {
     await expect(modal.getByText(`${docNo}-R0.pdf`)).toBeVisible();
     await modal.getByRole('button', { name: 'Add', exact: true }).click();
     await expect(page.getByText(`${docNo} added to the register`)).toBeVisible();
+    await expect(modal).toBeHidden();
 
     // The drawer opens on the new document; R1 supersedes R0.
     const drawer = page.locator('.ant-drawer-open');
@@ -87,7 +88,7 @@ test.describe.serial('drawings, transmittals and letters', () => {
     await signIn(page, 'pm@demo.com');
     await page.goto('/documents?tab=letters');
     await page.getByRole('button', { name: 'Record letter' }).click();
-    const modal = page.locator('.ant-modal').filter({ hasText: 'Record a letter' });
+    const modal = formPanel(page, 'Record a letter');
     await chooseOption(modal.getByLabel('Project'), 'RD-2026-01');
     await modal.getByLabel('From').fill('Executive Engineer, R&B Division, Khordha');
     await modal.getByLabel('Subject').fill(subject);
@@ -96,10 +97,11 @@ test.describe.serial('drawings, transmittals and letters', () => {
     await page.locator('.ant-picker-dropdown:not(.ant-picker-dropdown-hidden) .ant-picker-now-btn').click();
     await modal.getByRole('button', { name: 'Record', exact: true }).click();
     await expect(page.getByText(/IN-\d{4}-\d{4} recorded/)).toBeVisible();
+    await expect(modal).toBeHidden();
 
     const drawer = page.locator('.ant-drawer-open');
     await drawer.getByRole('button', { name: 'Reply' }).click();
-    const reply = page.locator('.ant-modal').filter({ hasText: 'Reply' }).filter({ hasText: 'In reply to' });
+    const reply = formPanel(page, 'Reply').filter({ hasText: 'In reply to' });
     await expect(reply.getByLabel('Subject')).toHaveValue(`Re: ${subject}`);
     await reply.getByRole('button', { name: 'Record', exact: true }).click();
     await expect(page.getByText(/OUT-\d{4}-\d{4} recorded/)).toBeVisible();

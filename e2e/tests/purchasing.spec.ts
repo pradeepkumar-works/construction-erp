@@ -41,7 +41,7 @@ test('quotation to PO to GRN to a matched vendor bill', async ({ page, browser }
   await page.goto(`/material-requests?id=${mr.id}`);
   const drawer = page.locator('.ant-drawer').filter({ hasText: 'Quotations and purchase orders' });
   await drawer.getByRole('button', { name: 'Add quotation' }).click();
-  let modal = page.locator('.ant-modal').filter({ hasText: 'Add quotation' });
+  let modal = formPanel(page, 'Add quotation');
   await chooseOption(modal.getByLabel('Vendor'), 'Sahoo Auto');
   await modal.getByLabel('Their quotation no.').fill('SAP/E2E/1');
   await modal.getByLabel('Rate for Binding wire 18 SWG (e2e)').fill('85');
@@ -53,8 +53,8 @@ test('quotation to PO to GRN to a matched vendor bill', async ({ page, browser }
   await expect(raise).toHaveCount(2);
   await raise.and(page.locator('.ant-btn-primary')).click();
   modal = formPanel(page, `Purchase order for ${mr.requestNo}`);
-  await expect(modal.getByLabel('Rate of line 1')).toHaveValue('85.00');
-  await expect(modal.getByLabel('Quantity of line 1')).toHaveValue('100.000');
+  await expect(modal.getByLabel('Rate of line 1')).toHaveValue('85');
+  await expect(modal.getByLabel('Quantity of line 1')).toHaveValue('100');
   await modal.getByRole('button', { name: 'Save and submit' }).click();
   await expect(page.getByText(/PO-\d{4}-\d{4} submitted for approval/)).toBeVisible();
 
@@ -77,8 +77,8 @@ test('quotation to PO to GRN to a matched vendor bill', async ({ page, browser }
   const poDrawer = page.locator('.ant-drawer').filter({ hasText: po.poNo });
   await expect(poDrawer.getByText('GRN-', { exact: false }).first()).toBeVisible();
   await poDrawer.getByRole('button', { name: 'Record vendor bill' }).click();
-  modal = page.locator('.ant-modal').filter({ hasText: 'Record vendor bill' });
-  await expect(modal.getByLabel('Quantity billed of Binding wire 18 SWG (e2e)')).toHaveValue('60.000');
+  modal = formPanel(page, 'Record vendor bill');
+  await expect(modal.getByLabel('Quantity billed of Binding wire 18 SWG (e2e)')).toHaveValue('60');
   const invoiceNo = `E2E-${Date.now()}`;
   await modal.getByLabel("Vendor's invoice no.").fill(invoiceNo);
   await modal.getByRole('button', { name: 'Save and submit' }).click();

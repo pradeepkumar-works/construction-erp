@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { api, apiToken, signIn } from './helpers';
+import { api, apiToken, formPanel, signIn } from './helpers';
 
 interface Page<T> {
   items: T[];
@@ -46,17 +46,17 @@ test('an invoice photo fills the vendor bill, with checks on the draft, and noth
   await signIn(page, 'accounts@demo.com');
   await page.goto(`/purchase-orders?id=${po.id}`);
   await page.locator('.ant-drawer').filter({ hasText: po.poNo }).getByRole('button', { name: 'Record vendor bill' }).click();
-  const modal = page.locator('.ant-modal').filter({ hasText: 'Record vendor bill' });
+  const modal = formPanel(page, 'Record vendor bill');
   const chooser = page.waitForEvent('filechooser');
   await modal.getByRole('button', { name: 'Fill from invoice' }).click();
   await (await chooser).setFiles({ name: 'sahoo-invoice.png', mimeType: 'image/png', buffer: PNG });
 
   await expect(modal.getByText('Filled from sahoo-invoice.png')).toBeVisible();
   await expect(modal.getByLabel("Vendor's invoice no.")).toHaveValue('SAP/26-27/0412');
-  await expect(modal.getByLabel('Quantity billed of Binding wire 18 SWG (e2e)')).toHaveValue('40.000');
+  await expect(modal.getByLabel('Quantity billed of Binding wire 18 SWG (e2e)')).toHaveValue('40');
   // The date and the rate were hard to read: the date's field says so, the rate's box is amber.
   await expect(modal.getByText(/Check this: hard to read/)).toBeVisible();
-  await expect(modal.locator('.ant-input-number-status-warning').filter({ has: page.getByLabel('Rate of Binding wire 18 SWG (e2e)') })).toHaveCount(1);
+  await expect(modal.locator('[class*="input-number"][class*="status-warning"]').filter({ has: page.getByLabel('Rate of Binding wire 18 SWG (e2e)') })).not.toHaveCount(0);
   // Pointing at where a value came from shows its box on the page.
   await modal.getByRole('button', { name: /From the invoice/ }).first().hover();
   await expect(modal.locator('[data-read-box]')).not.toHaveCount(0);
@@ -86,7 +86,7 @@ test('a challan photo fills the GRN against the order', async ({ page }) => {
   await signIn(page, 'store@demo.com');
   await page.goto(`/purchase-orders?id=${po.id}`);
   await page.locator('.ant-drawer').filter({ hasText: po.poNo }).getByRole('button', { name: 'Receive material' }).click();
-  const modal = page.locator('.ant-modal').filter({ hasText: 'Receive material (GRN)' });
+  const modal = formPanel(page, 'Receive material (GRN)');
   const chooser = page.waitForEvent('filechooser');
   await modal.getByRole('button', { name: 'Fill from challan' }).click();
   await (await chooser).setFiles({ name: 'challan.png', mimeType: 'image/png', buffer: PNG });
@@ -103,7 +103,7 @@ test("a drawing's title block fills the register entry", async ({ page }) => {
   await signIn(page, 'pm@demo.com');
   await page.getByRole('link', { name: 'Documents' }).click();
   await page.getByRole('button', { name: 'Add document' }).click();
-  const modal = page.locator('.ant-modal').filter({ hasText: 'Add drawing or document' });
+  const modal = formPanel(page, 'Add drawing or document');
   const chooser = page.waitForEvent('filechooser');
   await modal.getByRole('button', { name: 'Fill from title block' }).click();
   await (await chooser).setFiles({ name: 'column-layout.png', mimeType: 'image/png', buffer: PNG });

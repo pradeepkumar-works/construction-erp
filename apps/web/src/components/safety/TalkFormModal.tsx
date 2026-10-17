@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { App, AutoComplete, DatePicker, Form, Input, InputNumber, Modal, Select } from 'antd';
+import { App, AutoComplete, DatePicker, Form, Input, InputNumber, Select } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, ToolboxTalkDto } from '@erp/shared';
@@ -10,6 +10,7 @@ import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useProjects } from '@/lib/queries';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
+import { FormGrid, FormShell } from '@/components/form/FormShell';
 
 interface FormValues {
   projectId: string;
@@ -23,8 +24,6 @@ interface FormValues {
   notes?: string;
   photos?: AttachmentDto[];
 }
-
-const grid = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', columnGap: 16 } as const;
 
 /** Record a toolbox talk (topic, who gave it, how many attended, the signed sheet), or change one. */
 export function TalkFormModal({ open, onClose, projectId, talk }: { open: boolean; onClose: () => void; projectId?: string; talk?: ToolboxTalkDto | null }) {
@@ -72,43 +71,33 @@ export function TalkFormModal({ open, onClose, projectId, talk }: { open: boolea
     onSuccess: (x) => {
       message.success(`${x.talkNo} saved`);
       qc.invalidateQueries({ queryKey: ['safety'] });
-      onClose();
     },
     onError: (e) => message.error(errorMessage(e)),
   });
 
   return (
-    <Modal
-      open={open}
-      title={talk ? `Change ${talk.talkNo}` : 'Record a toolbox talk'}
-      onCancel={onClose}
-      onOk={() => form.submit()}
-      okText="Save"
-      okButtonProps={{ loading: save.isPending }}
-      width={680}
-      destroyOnHidden
-    >
-      <Form form={form} layout="vertical" onFinish={(v) => save.mutate(v)}>
-        <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]} hidden={!!projectId || !!talk}>
+    <FormShell open={open} onClose={onClose} form={form} layout="modal" width={680} title={talk ? `Change ${talk.talkNo}` : 'Record a toolbox talk'} okText="Save" onSubmit={(v) => save.mutateAsync(v)}>
+      <Form form={form} layout="vertical">
+        <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!projectId || !!talk}>
           <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
         </Form.Item>
         <Form.Item name="topic" label="Topic" rules={[{ required: true, whitespace: true, message: 'What was it about?' }]}>
           <AutoComplete options={TOOLBOX_TOPICS.map((t) => ({ value: t }))} showSearch={{ filterOption: (input, o) => (o?.value ?? '').toLowerCase().includes(input.toLowerCase()) }} placeholder="Pick or type a topic" />
         </Form.Item>
-        <div style={grid}>
-          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Required' }]}>
+        <FormGrid cols={2}>
+          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date' }]}>
             <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} allowClear={false} />
           </Form.Item>
           <Form.Item name="conductedBy" label="Given by" rules={[{ required: true, whitespace: true, message: 'Who gave it?' }]}>
             <Input maxLength={120} />
           </Form.Item>
           <Form.Item name="attendeeCount" label="Attended" rules={[{ required: true, message: 'How many?' }]}>
-            <InputNumber min={1} max={2000} style={{ width: '100%' }} suffix="workers" />
+            <InputNumber min={1} max={2000} precision={0} inputMode="numeric" style={{ width: '100%' }} suffix="workers" />
           </Form.Item>
           <Form.Item name="durationMinutes" label="Minutes">
-            <InputNumber min={1} max={480} style={{ width: '100%' }} />
+            <InputNumber min={1} max={480} precision={0} inputMode="numeric" style={{ width: '100%' }} />
           </Form.Item>
-        </div>
+        </FormGrid>
         <Form.Item name="contractor" label="Contractor's gang">
           <Input maxLength={200} placeholder="Optional" />
         </Form.Item>
@@ -122,6 +111,6 @@ export function TalkFormModal({ open, onClose, projectId, talk }: { open: boolea
           <PhotoUpload />
         </Form.Item>
       </Form>
-    </Modal>
+    </FormShell>
   );
 }

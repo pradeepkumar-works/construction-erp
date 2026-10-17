@@ -37,8 +37,8 @@ test('pay an approved vendor bill from the due list until it is paid', async ({ 
   const row = page.locator('tr').filter({ hasText: open.billLabel });
   await row.getByRole('button', { name: 'Pay' }).click();
   let modal = page.locator('.ant-modal').filter({ hasText: `· ${open.billLabel}` });
-  await expect(modal.getByLabel('Amount paid (₹)')).toHaveValue(Number(open.outstanding).toFixed(2));
-  await modal.getByLabel('Amount paid (₹)').fill('1000');
+  await expect(modal.getByLabel('Amount paid')).toHaveValue(new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(Number(open.outstanding)));
+  await modal.getByLabel('Amount paid').fill('1000');
   await modal.getByLabel('UTR / cheque / voucher no.').fill('E2E-PAY-1');
   await modal.getByRole('button', { name: 'Record payment' }).click();
   await expect(page.getByText(`paid against ${open.billLabel}`)).toBeVisible();
@@ -53,7 +53,7 @@ test('pay an approved vendor bill from the due list until it is paid', async ({ 
   await expect(drawer.locator('.ant-table').getByText('E2E-PAY-1')).toBeVisible();
   await drawer.getByRole('button', { name: 'Record payment' }).click();
   modal = page.locator('.ant-modal').filter({ hasText: `· ${open.billLabel}` });
-  await expect(modal.getByLabel('Amount paid (₹)')).toHaveValue((Number(open.outstanding) - 1000).toFixed(2));
+  await expect(modal.getByLabel('Amount paid')).toHaveValue(new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(Number(open.outstanding) - 1000));
   await modal.getByLabel('UTR / cheque / voucher no.').fill('E2E-PAY-2');
   await modal.getByRole('button', { name: 'Record payment' }).click();
   await expect(drawer.locator('.ant-drawer-title').getByText('Paid', { exact: true })).toBeVisible();

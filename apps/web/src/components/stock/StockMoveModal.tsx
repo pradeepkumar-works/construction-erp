@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo } from 'react';
-import { Alert, App, AutoComplete, Button, DatePicker, Form, Input, InputNumber, Modal, Select, Space, Typography } from 'antd';
+import { Alert, App, AutoComplete, Button, DatePicker, Form, Input, InputNumber, Select, Space, Typography } from 'antd';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -11,6 +11,7 @@ import { api, errorMessage } from '@/lib/api';
 import { useActivities, useAttendanceSuggestions, useProjects, useStockBalances } from '@/lib/queries';
 import { formatQty } from '@/lib/format';
 import { VendorPicker } from '@/components/vendors/VendorPicker';
+import { FormGrid, FormShell } from '@/components/form/FormShell';
 
 export type StockMove = 'transfer' | 'vendor' | 'site';
 
@@ -88,7 +89,6 @@ export function StockMoveModal({ move, open, onClose, projectId }: { move: Stock
       message.success(move === 'transfer' ? `${e.entryNo} sent to ${e.toProjectName}` : `${e.entryNo} saved`);
       qc.invalidateQueries({ queryKey: ['stock'] });
       qc.invalidateQueries({ queryKey: ['cost'] });
-      onClose();
     },
     onError: (err) => message.error(errorMessage(err)),
   });
@@ -96,23 +96,14 @@ export function StockMoveModal({ move, open, onClose, projectId }: { move: Stock
   const chosen = new Set((watchedLines ?? []).map((l) => l?.itemId).filter(Boolean));
   const limitOf = (i: { balance: string; issued: string }) => (move === 'site' ? i.issued : i.balance);
 
+  // The project stock is sent from is a deliberate choice, so a transfer does not start on the header's project.
   return (
-    <Modal
-      open={open}
-      title={copy.title}
-      onCancel={onClose}
-      onOk={() => form.submit()}
-      okText={copy.ok}
-      okButtonProps={{ loading: save.isPending }}
-      width={720}
-      destroyOnHidden
-      styles={{ body: { maxHeight: '70vh', overflowY: 'auto', paddingRight: 8 } }}
-    >
+    <FormShell open={open} onClose={onClose} form={form} layout="modal" width={720} title={copy.title} okText={copy.ok} projectDefault={move !== 'transfer'} onSubmit={(v) => save.mutateAsync(v)}>
       <Typography.Paragraph type="secondary" style={{ marginBottom: 12 }}>
         {copy.help}
       </Typography.Paragraph>
-      <Form form={form} layout="vertical" onFinish={(v) => save.mutate(v)}>
-        <Form.Item name="projectId" label={move === 'transfer' ? 'From project' : 'Project'} rules={[{ required: true, message: 'Required' }]} hidden={!!projectId}>
+      <Form form={form} layout="vertical">
+        <Form.Item name="projectId" label={move === 'transfer' ? 'From project' : 'Project'} rules={[{ required: true, message: 'Choose the project' }]} hidden={!!projectId}>
           <Select
             showSearch={{ optionFilterProp: 'label' }}
             placeholder="Select project"
@@ -120,7 +111,7 @@ export function StockMoveModal({ move, open, onClose, projectId }: { move: Stock
             options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))}
           />
         </Form.Item>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', columnGap: 12 }}>
+        <FormGrid cols={2}>
           {move === 'transfer' && (
             <Form.Item name="toProjectId" label="To project" rules={[{ required: true, message: 'Where is it going?' }]}>
               <Select
@@ -130,7 +121,7 @@ export function StockMoveModal({ move, open, onClose, projectId }: { move: Stock
               />
             </Form.Item>
           )}
-          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Required' }]}>
+          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date' }]}>
             <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
           {move === 'vendor' && (
@@ -162,7 +153,7 @@ export function StockMoveModal({ move, open, onClose, projectId }: { move: Stock
               </Form.Item>
             </>
           )}
-        </div>
+        </FormGrid>
 
         {scope && !stock.isLoading && !items.length ? (
           <Alert type="warning" showIcon style={{ marginBottom: 12 }} title={move === 'site' ? 'Nothing has been issued at this project yet.' : 'Nothing is in stock at this project.'} />
@@ -195,7 +186,7 @@ export function StockMoveModal({ move, open, onClose, projectId }: { move: Stock
                         name={[f.name, 'quantity']}
                         style={{ width: 180, marginBottom: 0 }}
                         rules={[
-                          { required: true, message: 'Quantity' },
+                          { required: true, message: 'Enter the quantity' },
                           {
                             validator: (_, v) =>
                               !v || !row || Number(v) <= Number(limitOf(row))
@@ -221,6 +212,6 @@ export function StockMoveModal({ move, open, onClose, projectId }: { move: Stock
           <Input.TextArea rows={2} maxLength={1000} />
         </Form.Item>
       </Form>
-    </Modal>
+    </FormShell>
   );
 }

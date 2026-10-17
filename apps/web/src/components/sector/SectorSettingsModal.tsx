@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { App, Form, Input, Modal, Select, Typography } from 'antd';
+import { App, Form, Input, Select, Typography } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { DEFAULT_FLOORS, formatChainage, parseChainage, sectorKinds, type ProjectDetail } from '@erp/shared';
 import { api, errorMessage } from '@/lib/api';
+import { FormGrid, FormShell } from '@/components/form/FormShell';
 
 interface FormValues {
   chainageStart?: string;
@@ -47,18 +48,17 @@ export function SectorSettingsModal({ open, onClose, project }: { open: boolean;
       message.success('Sector settings saved');
       qc.invalidateQueries({ queryKey: ['projects'] });
       qc.invalidateQueries({ queryKey: ['sector', project.id] });
-      onClose();
     },
     onError: (e) => message.error(errorMessage(e)),
   });
 
   return (
-    <Modal open={open} title="Sector settings" okText="Save" onCancel={onClose} onOk={() => form.submit()} okButtonProps={{ loading: save.isPending }} destroyOnHidden>
-      <Form form={form} layout="vertical" onFinish={(v) => save.mutate(v)}>
+    <FormShell open={open} onClose={onClose} form={form} layout="modal" title="Sector settings" okText="Save" onSubmit={(v) => save.mutateAsync(v)}>
+      <Form form={form} layout="vertical">
         {k.chainage ? (
           <>
             <Typography.Paragraph type="secondary">{project.type === 'ROAD' ? 'The stretch of road in the contract.' : 'The length of the main the strip chart draws (optional).'}</Typography.Paragraph>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 16 }}>
+            <FormGrid cols={2}>
               <Form.Item name="chainageStart" label="Chainage from" rules={[chainageRule]}>
                 <Input placeholder="12+000" />
               </Form.Item>
@@ -79,7 +79,7 @@ export function SectorSettingsModal({ open, onClose, project }: { open: boolean;
               >
                 <Input placeholder="28+000" />
               </Form.Item>
-            </div>
+            </FormGrid>
           </>
         ) : null}
         {k.floor ? (
@@ -93,6 +93,6 @@ export function SectorSettingsModal({ open, onClose, project }: { open: boolean;
           </Form.Item>
         ) : null}
       </Form>
-    </Modal>
+    </FormShell>
   );
 }

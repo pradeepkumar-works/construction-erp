@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, App, Button, DatePicker, Flex, Form, Input, InputNumber, Modal, Select, Space, Table, Typography } from 'antd';
+import { Alert, App, DatePicker, Flex, Form, Input, Select, Table, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, PurchaseOrderLineDto, VendorBillDto } from '@erp/shared';
@@ -10,6 +10,8 @@ import { api, errorMessage } from '@/lib/api';
 import { uploadFile, usePurchaseOrder, usePurchaseOrders } from '@/lib/queries';
 import { formatINR, formatQty, toNumber } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
+import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
+import { MoneyInput, QuantityInput } from '@/components/form/inputs';
 import { ReadDocumentButton, ReadPreview, ReadSource, readFieldProps, type ReadState } from '@/components/ai/ReadDocument';
 import { DraftBillChecks } from './DraftBillChecks';
 
@@ -200,42 +202,27 @@ export function VendorBillFormModal({
       qc.invalidateQueries({ queryKey: ['vendor-bills'] });
       qc.invalidateQueries({ queryKey: ['purchase-orders'] });
       onSaved?.(b);
-      onClose();
     },
     onError: (e) => message.error(errorMessage(e)),
   });
 
-  const run = async (submit: boolean) => {
-    try {
-      await form.validateFields();
-      save.mutate({ v: form.getFieldsValue(true) as FormValues, submit });
-    } catch {
-      /* the form shows what is missing */
-    }
-  };
   const setLine = (id: string, patch: Partial<LineValue>) => setLines((ls) => ({ ...ls, [id]: { ...ls[id], ...patch } }));
 
   return (
-    <Modal
+    <FormShell
       open={open}
-      title={bill ? `Edit ${bill.billNo}` : 'Record vendor bill'}
-      onCancel={onClose}
+      onClose={onClose}
+      form={form}
+      layout="drawer"
       width={1040}
-      destroyOnHidden
-      styles={{ body: { maxHeight: '72vh', overflowY: 'auto', paddingRight: 8 } }}
-      footer={
-        <Space>
-          <Button onClick={onClose}>Cancel</Button>
-          <Button onClick={() => run(false)} loading={save.isPending && !save.variables?.submit} disabled={!po}>
-            Save draft
-          </Button>
-          <Button type="primary" onClick={() => run(true)} loading={save.isPending && !!save.variables?.submit} disabled={!po}>
-            Save and submit
-          </Button>
-        </Space>
-      }
+      allValues
+      title={bill ? `Edit ${bill.billNo}` : 'Record vendor bill'}
+      okText="Save and submit"
+      secondaryText="Save draft"
+      okDisabled={!po}
+      onSubmit={(v, secondary) => save.mutateAsync({ v, submit: !secondary })}
     >
-      <Form form={form} layout="vertical" style={{ marginTop: 8 }}>
+      <Form form={form} layout="vertical">
         {!bill && !readState ? (
           <Flex justify="flex-end" style={{ marginBottom: 8 }}>
             <ReadDocumentButton kind="invoice" label="Fill from invoice" purchaseOrderId={purchaseOrderId} onRead={applyRead} />
@@ -260,113 +247,112 @@ export function VendorBillFormModal({
             ) : null}
           </ReadPreview>
         ) : null}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0 16px' }}>
-          <Form.Item name="purchaseOrderId" label="Purchase order" rules={[{ required: true, message: 'Pick the PO this invoice is for' }]}>
-            {bill || purchaseOrderId ? (
-              <Select disabled options={po ? [{ value: po.id, label: `${po.poNo} · ${po.vendorName}` }] : []} />
-            ) : (
-              <Select
-                showSearch={{ optionFilterProp: 'label' }}
-                loading={orders.isLoading}
-                placeholder="Approved purchase order"
-                onChange={() => setLines({})}
-                options={(orders.data?.items ?? []).map((o) => ({ value: o.id, label: `${o.poNo} · ${o.vendorName} · ${o.projectName}` }))}
-              />
-            )}
-          </Form.Item>
-          <Form.Item name="invoiceNo" label="Vendor's invoice no." rules={[{ required: true, whitespace: true, message: 'Required' }]} {...readFieldProps(readState, 'invoiceNo', setActiveRead)}>
-            <Input maxLength={60} />
-          </Form.Item>
-          <Form.Item name="invoiceDate" label="Invoice date" rules={[{ required: true, message: 'Required' }]} {...readFieldProps(readState, 'invoiceDate', setActiveRead)}>
-            <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
-          </Form.Item>
-          <Form.Item name="freight" label="Freight (₹)" extra={po && toNumber(po.freight) > 0 ? `PO freight ${formatINR(po.freight, true)}` : undefined} {...readFieldProps(readState, 'freight', setActiveRead)}>
-            <InputNumber min={0} precision={2} style={{ width: '100%' }} />
-          </Form.Item>
-        </div>
-        {po ? (
-          <Table<PurchaseOrderLineDto>
-            size="small"
-            rowKey="id"
-            pagination={false}
-            loading={poLoading}
-            dataSource={po.lines}
-            style={{ marginBottom: 12 }}
-            columns={[
-              {
-                title: 'Item',
-                dataIndex: 'itemName',
-                render: (v, l) => {
-                  const i = readLineOf(l.id);
-                  return i < 0 ? (
-                    v
-                  ) : (
-                    <div>
-                      {v}
+        <FormSection title="Invoice">
+          <FormGrid cols={4}>
+            <Form.Item name="purchaseOrderId" label="Purchase order" rules={[{ required: true, message: 'Pick the PO this invoice is for' }]}>
+              {bill || purchaseOrderId ? (
+                <Select disabled options={po ? [{ value: po.id, label: `${po.poNo} · ${po.vendorName}` }] : []} />
+              ) : (
+                <Select
+                  showSearch={{ optionFilterProp: 'label' }}
+                  loading={orders.isLoading}
+                  placeholder="Approved purchase order"
+                  onChange={() => setLines({})}
+                  options={(orders.data?.items ?? []).map((o) => ({ value: o.id, label: `${o.poNo} · ${o.vendorName} · ${o.projectName}` }))}
+                />
+              )}
+            </Form.Item>
+            <Form.Item name="invoiceNo" label="Vendor's invoice no." rules={[{ required: true, whitespace: true, message: 'Enter the invoice number' }]} {...readFieldProps(readState, 'invoiceNo', setActiveRead)}>
+              <Input maxLength={60} />
+            </Form.Item>
+            <Form.Item name="invoiceDate" label="Invoice date" rules={[{ required: true, message: 'Pick the invoice date' }]} {...readFieldProps(readState, 'invoiceDate', setActiveRead)}>
+              <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+            </Form.Item>
+            <Form.Item name="freight" label="Freight" extra={po && toNumber(po.freight) > 0 ? `PO freight ${formatINR(po.freight, true)}` : undefined} {...readFieldProps(readState, 'freight', setActiveRead)}>
+              <MoneyInput />
+            </Form.Item>
+          </FormGrid>
+        </FormSection>
+        <FormSection title="Lines">
+          {po ? (
+            <Table<PurchaseOrderLineDto>
+              size="small"
+              rowKey="id"
+              pagination={false}
+              loading={poLoading}
+              dataSource={po.lines}
+              style={{ marginBottom: 12 }}
+              columns={[
+                {
+                  title: 'Item',
+                  dataIndex: 'itemName',
+                  render: (v, l) => {
+                    const i = readLineOf(l.id);
+                    return i < 0 ? (
+                      v
+                    ) : (
                       <div>
-                        <ReadSource kind="invoice" page={readState!.result.lines[i].description?.page ?? null} onActive={(on) => setActiveRead(on ? `line-${i}-description` : null)} />
+                        {v}
+                        <div>
+                          <ReadSource kind="invoice" page={readState!.result.lines[i].description?.page ?? null} onActive={(on) => setActiveRead(on ? `line-${i}-description` : null)} />
+                        </div>
                       </div>
-                    </div>
-                  );
+                    );
+                  },
                 },
-              },
-              { title: 'Ordered', dataIndex: 'quantity', width: 100, align: 'right', render: (v, l) => `${formatQty(v)} ${l.unit}` },
-              { title: 'Received', dataIndex: 'receivedQty', width: 90, align: 'right', render: (v) => formatQty(v) },
-              { title: 'Billed before', key: 'billed', width: 100, align: 'right', render: (_, l) => formatQty(billedElsewhere(l)) },
-              {
-                title: 'Billed now',
-                key: 'qty',
-                width: 120,
-                render: (_, l) => (
-                  <InputNumber
-                    min={0}
-                    precision={3}
-                    value={lines[l.id]?.quantity ?? null}
-                    onChange={(v) => setLine(l.id, { quantity: v })}
-                    status={toNumber(lines[l.id]?.quantity) > toNumber(l.receivedQty) - billedElsewhere(l) + 1e-9 || lowOn(l.id, 'quantity') ? 'warning' : undefined}
-                    style={{ width: '100%' }}
-                    aria-label={`Quantity billed of ${l.itemName}`}
-                  />
-                ),
-              },
-              {
-                title: 'Rate (₹)',
-                key: 'rate',
-                width: 130,
-                render: (_, l) => (
-                  <InputNumber
-                    min={0}
-                    precision={2}
-                    value={lines[l.id]?.rate ?? null}
-                    onChange={(v) => setLine(l.id, { rate: v })}
-                    status={toNumber(lines[l.id]?.rate) > toNumber(l.rate) || lowOn(l.id, 'rate') ? 'warning' : undefined}
-                    style={{ width: '100%' }}
-                    aria-label={`Rate of ${l.itemName}`}
-                  />
-                ),
-              },
-              {
-                title: 'GST',
-                key: 'gst',
-                width: 90,
-                render: (_, l) => (
-                  <Select
-                    value={lines[l.id]?.gstRate}
-                    onChange={(v) => setLine(l.id, { gstRate: v })}
-                    status={lines[l.id] && toNumber(lines[l.id].gstRate) !== toNumber(l.gstRate) ? 'warning' : undefined}
-                    options={[...new Set([...GST_RATES, toNumber(l.gstRate)])].map((r) => ({ value: r, label: `${r}%` }))}
-                    style={{ width: '100%' }}
-                  />
-                ),
-              },
-              { title: 'Amount', key: 'amt', width: 120, align: 'right', render: (_, l) => <span className="mono">{formatINR(amountOf(lines[l.id]), true)}</span> },
-            ]}
-          />
-        ) : (
-          <Alert type="info" showIcon style={{ marginBottom: 12 }} title="Pick the purchase order; its lines fill in with what was received and not yet billed, at the PO rates." />
-        )}
+                { title: 'Ordered', dataIndex: 'quantity', width: 100, align: 'right', render: (v, l) => `${formatQty(v)} ${l.unit}` },
+                { title: 'Received', dataIndex: 'receivedQty', width: 90, align: 'right', render: (v) => formatQty(v) },
+                { title: 'Billed before', key: 'billed', width: 100, align: 'right', render: (_, l) => formatQty(billedElsewhere(l)) },
+                {
+                  title: 'Billed now',
+                  key: 'qty',
+                  width: 140,
+                  render: (_, l) => (
+                    <QuantityInput
+                      unit={l.unit}
+                      value={lines[l.id]?.quantity ?? null}
+                      onChange={(v) => setLine(l.id, { quantity: v })}
+                      status={toNumber(lines[l.id]?.quantity) > toNumber(l.receivedQty) - billedElsewhere(l) + 1e-9 || lowOn(l.id, 'quantity') ? 'warning' : undefined}
+                      aria-label={`Quantity billed of ${l.itemName}`}
+                    />
+                  ),
+                },
+                {
+                  title: 'Rate',
+                  key: 'rate',
+                  width: 130,
+                  render: (_, l) => (
+                    <MoneyInput
+                      value={lines[l.id]?.rate ?? null}
+                      onChange={(v) => setLine(l.id, { rate: v })}
+                      status={toNumber(lines[l.id]?.rate) > toNumber(l.rate) || lowOn(l.id, 'rate') ? 'warning' : undefined}
+                      aria-label={`Rate of ${l.itemName}`}
+                    />
+                  ),
+                },
+                {
+                  title: 'GST',
+                  key: 'gst',
+                  width: 90,
+                  render: (_, l) => (
+                    <Select
+                      value={lines[l.id]?.gstRate}
+                      onChange={(v) => setLine(l.id, { gstRate: v })}
+                      status={lines[l.id] && toNumber(lines[l.id].gstRate) !== toNumber(l.gstRate) ? 'warning' : undefined}
+                      options={[...new Set([...GST_RATES, toNumber(l.gstRate)])].map((r) => ({ value: r, label: `${r}%` }))}
+                      style={{ width: '100%' }}
+                    />
+                  ),
+                },
+                { title: 'Amount', key: 'amt', width: 120, align: 'right', render: (_, l) => <span className="mono">{formatINR(amountOf(lines[l.id]), true)}</span> },
+              ]}
+            />
+          ) : (
+            <Alert type="info" showIcon style={{ marginBottom: 12 }} title="Pick the purchase order; its lines fill in with what was received and not yet billed, at the PO rates." />
+          )}
+        </FormSection>
         {po && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 300px', gap: 24 }}>
+          <FormGrid cols={2}>
             <div>
               {issues.length > 0 && (
                 <Alert
@@ -429,9 +415,9 @@ export function VendorBillFormModal({
                 </Typography.Text>
               }
             />
-          </div>
+          </FormGrid>
         )}
       </Form>
-    </Modal>
+    </FormShell>
   );
 }

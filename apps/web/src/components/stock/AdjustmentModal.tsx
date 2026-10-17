@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo } from 'react';
-import { App, Button, DatePicker, Form, Input, InputNumber, Modal, Select, Space, Typography } from 'antd';
+import { App, Button, DatePicker, Form, Input, InputNumber, Select, Space, Typography } from 'antd';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -11,6 +11,7 @@ import { api, errorMessage } from '@/lib/api';
 import { useProjects, useStockBalances, useStockItems } from '@/lib/queries';
 import { formatQty } from '@/lib/format';
 import { UnitInput } from '@/components/common/UnitInput';
+import { FormGrid, FormShell } from '@/components/form/FormShell';
 
 const NEW = '__new__';
 
@@ -59,35 +60,24 @@ export function AdjustmentModal({ open, onClose, projectId }: { open: boolean; o
     onSuccess: (e) => {
       message.success(`${e.entryNo} saved`);
       qc.invalidateQueries({ queryKey: ['stock'] });
-      onClose();
     },
     onError: (err) => message.error(errorMessage(err)),
   });
 
   return (
-    <Modal
-      open={open}
-      title="Adjust stock"
-      onCancel={onClose}
-      onOk={() => form.submit()}
-      okText="Save adjustment"
-      okButtonProps={{ loading: save.isPending }}
-      width={760}
-      destroyOnHidden
-      styles={{ body: { maxHeight: '70vh', overflowY: 'auto', paddingRight: 8 } }}
-    >
-      <Form form={form} layout="vertical" onFinish={(v) => save.mutate(v)} style={{ marginTop: 8 }}>
-        <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]} hidden={!!projectId}>
+    <FormShell open={open} onClose={onClose} form={form} layout="modal" width={760} title="Adjust stock" okText="Save adjustment" onSubmit={(v) => save.mutateAsync(v)}>
+      <Form form={form} layout="vertical">
+        <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!projectId}>
           <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
         </Form.Item>
-        <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', columnGap: 12 }}>
-          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Required' }]}>
+        <FormGrid cols={2}>
+          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date' }]}>
             <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
           <Form.Item name="remarks" label="Reason" rules={[{ required: true, whitespace: true, min: 3, message: 'Say why, e.g. Opening stock or Physical count on 30 Sep' }]}>
             <Input maxLength={1000} placeholder="Opening stock, physical count, damaged material..." />
           </Form.Item>
-        </div>
+        </FormGrid>
         <Form.Item label="Lines" required extra="Positive adds to stock, negative takes it off." style={{ marginBottom: 8 }}>
           <Form.List name="lines">
             {(fields, { add, remove }) => (
@@ -114,10 +104,10 @@ export function AdjustmentModal({ open, onClose, projectId }: { open: boolean; o
                       </Form.Item>
                       {itemId === NEW ? (
                         <>
-                          <Form.Item name={[f.name, 'itemName']} style={{ flex: '2 1 160px', marginBottom: 0 }} rules={[{ required: true, whitespace: true, message: 'Name' }]}>
+                          <Form.Item name={[f.name, 'itemName']} style={{ flex: '2 1 160px', marginBottom: 0 }} rules={[{ required: true, whitespace: true, message: 'Name the item' }]}>
                             <Input placeholder="Item name" maxLength={200} />
                           </Form.Item>
-                          <Form.Item name={[f.name, 'unit']} style={{ width: 100, marginBottom: 0 }} rules={[{ required: true, whitespace: true, message: 'Unit' }]}>
+                          <Form.Item name={[f.name, 'unit']} style={{ width: 100, marginBottom: 0 }} rules={[{ required: true, whitespace: true, message: 'Enter the unit' }]}>
                             <UnitInput />
                           </Form.Item>
                         </>
@@ -126,7 +116,7 @@ export function AdjustmentModal({ open, onClose, projectId }: { open: boolean; o
                         name={[f.name, 'quantity']}
                         style={{ width: 150, marginBottom: 0 }}
                         rules={[
-                          { required: true, message: 'Qty' },
+                          { required: true, message: 'Enter the quantity' },
                           {
                             validator: (_, v) =>
                               !v || Number(v) !== 0
@@ -154,6 +144,6 @@ export function AdjustmentModal({ open, onClose, projectId }: { open: boolean; o
           Only approvers can adjust stock. Every adjustment is kept in the register with its reason.
         </Typography.Text>
       </Form>
-    </Modal>
+    </FormShell>
   );
 }

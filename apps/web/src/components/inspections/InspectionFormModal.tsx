@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { Alert, App, DatePicker, Form, Input, Modal, Select, Typography } from 'antd';
+import { Alert, App, DatePicker, Form, Input, Select, Typography } from 'antd';
 import dayjs from 'dayjs';
 import type { AttachmentDto, InspectionDto } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -9,6 +9,7 @@ import { api, errorMessage } from '@/lib/api';
 import { useActivities, useChecklists, useProjects } from '@/lib/queries';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { editActionLabel } from '@/components/common/EditResubmitButton';
+import { FormGrid, FormShell } from '@/components/form/FormShell';
 
 interface FormValues {
   projectId: string;
@@ -74,29 +75,28 @@ export function InspectionFormModal({ open, onClose, projectId, inspection }: { 
     onSuccess: (x: InspectionDto) => {
       message.success(`${x.inspectionNo} ${editing ? 'requested again' : 'requested'}`);
       qc.invalidateQueries();
-      onClose();
     },
     onError: (err) => message.error(errorMessage(err)),
   });
 
   return (
-    <Modal
+    <FormShell
       open={open}
+      onClose={onClose}
+      form={form}
+      layout="modal"
       title={inspection ? `${editActionLabel(inspection.status)} · ${inspection.inspectionNo}` : 'Request inspection'}
       okText={editing ? 'Request again' : 'Request inspection'}
-      onCancel={onClose}
-      onOk={() => form.submit()}
-      confirmLoading={mutation.isPending}
-      width={640}
-      destroyOnHidden
+      onSubmit={(v) => mutation.mutateAsync(v)}
+      draftKey={editing ? undefined : `inspection:${projectId ?? 'any'}`}
     >
-      <Form form={form} layout="vertical" onFinish={(v) => mutation.mutate(v)} style={{ marginTop: 8 }}>
+      <Form form={form} layout="vertical">
         {inspection?.reviewNote && <Alert type="warning" showIcon style={{ marginBottom: 16 }} title={`Note from ${inspection.reviewedByName ?? 'the inspector'}`} description={inspection.reviewNote} />}
-        <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]} hidden={!!fixedProject}>
+        <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!fixedProject}>
           <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} onChange={() => form.setFieldsValue({ activityId: undefined })} />
         </Form.Item>
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '0 16px' }}>
-          <Form.Item name="activityId" label="Activity" rules={[{ required: true, message: 'Required' }]} extra={activity?.holdPoint ? 'Hold point: its progress is approved after this passes.' : undefined}>
+        <FormGrid cols={2}>
+          <Form.Item name="activityId" label="Activity" rules={[{ required: true, message: 'Choose the activity' }]} extra={activity?.holdPoint ? 'Hold point: its progress is approved after this passes.' : undefined}>
             <Select
               showSearch={{ optionFilterProp: 'label' }}
               placeholder="Select activity"
@@ -105,11 +105,11 @@ export function InspectionFormModal({ open, onClose, projectId, inspection }: { 
               onChange={(id) => form.setFieldValue('checklistTemplateId', activities?.find((a) => a.id === id)?.checklistTemplateId ?? null)}
             />
           </Form.Item>
-          <Form.Item name="date" label="Ready on" rules={[{ required: true, message: 'Required' }]}>
+          <Form.Item name="date" label="Ready on" rules={[{ required: true, message: 'Pick the date it is ready' }]}>
             <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
-        </div>
-        <Form.Item name="location" label="Location" rules={[{ required: true, whitespace: true, message: 'Required' }]}>
+        </FormGrid>
+        <Form.Item name="location" label="Location" rules={[{ required: true, whitespace: true, message: 'Say where, e.g. the chainage, grid or floor' }]}>
           <Input maxLength={200} placeholder="Chainage, grid, floor or zone, e.g. First floor slab, bays 1 to 4" />
         </Form.Item>
         <Form.Item name="checklistTemplateId" label="Checklist" extra={template ? `${template.items.length} points: ${template.items.slice(0, 3).join('; ')}${template.items.length > 3 ? '; …' : ''}` : 'Without a checklist the inspector passes or fails it with a note.'}>
@@ -125,6 +125,6 @@ export function InspectionFormModal({ open, onClose, projectId, inspection }: { 
           QA/QC is told at once. They check each point and pass it, fail it or ask for re-inspection after rectification.
         </Typography.Paragraph>
       </Form>
-    </Modal>
+    </FormShell>
   );
 }

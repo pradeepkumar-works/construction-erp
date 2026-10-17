@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Alert, App, Button, Card, DatePicker, Divider, Form, Input, InputNumber, Modal, Popconfirm, Table, Tag, Typography } from 'antd';
+import { Alert, App, Button, Card, DatePicker, Divider, Form, Input, Popconfirm, Table, Tag, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { RaBillDto, RaBillItemDto, ReceiptDto } from '@erp/shared';
@@ -26,6 +26,8 @@ import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
 import { checksSection } from '@/components/checks/ChecksSection';
 import { AskButton } from '@/components/ai/AskButton';
 import { submissionLifecycle } from '@/components/record/lifecycle';
+import { FormGrid, FormShell } from '@/components/form/FormShell';
+import { QuantityInput } from '@/components/form/inputs';
 
 type StageAction = 'send' | 'certify';
 const ACTION_TITLES: Record<StageAction, string> = { send: 'Record as sent to the client', certify: 'Record the client’s certificate' };
@@ -70,7 +72,6 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
     mutationFn: async ({ act, body }: { act: StageAction; body: object }) => (await api.post<RaBillDto>(`/ra-bills/${id}/${act}`, body)).data,
     onSuccess: (b, { act }) => {
       done(act === 'send' ? `${b.billLabel} recorded as sent` : `${b.billLabel} certified for ${formatINR(b.netPayable, true)} net`);
-      setAction(null);
     },
     onError: (e) => message.error(errorMessage(e)),
   });
@@ -97,21 +98,26 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
     });
     setAction(act);
   };
-  const confirmAction = async () => {
+  const confirmAction = async (v: { date: dayjs.Dayjs; certificateNo?: string; qty: Record<string, number | null> }) => {
     if (!action || !data) return;
-    const v = await form.validateFields();
     const date = v.date.format('YYYY-MM-DD');
-    if (action !== 'certify') return stage.mutate({ act: action, body: { date } });
+    if (action !== 'certify') return stage.mutateAsync({ act: action, body: { date } });
     const items = data.items
       .filter((i) => v.qty?.[i.boqItemId] !== undefined && v.qty[i.boqItemId] !== null && v.qty[i.boqItemId] !== toNumber(i.thisQty))
       .map((i) => ({ boqItemId: i.boqItemId, certifiedQty: String(v.qty[i.boqItemId]) }));
-    stage.mutate({ act: 'certify', body: { date, certificateNo: v.certificateNo?.trim() || null, items } });
+    return stage.mutateAsync({ act: 'certify', body: { date, certificateNo: v.certificateNo?.trim() || null, items } });
   };
 
   const editable = !!data && !!user && preparer && canEditSubmission(user, data);
   const approved = data?.status === 'APPROVED';
   const certified = !!data?.items.some((i) => i.certifiedQty !== null);
   const stageAt = data ? (['NOT_SENT', 'SENT', 'CERTIFIED', 'PAID'] as const).indexOf(data.stage) : 0;
+
+  const dateItem = (
+    <Form.Item name="date" label={action === 'send' ? 'Date sent' : 'Certificate date'} rules={[{ required: true, message: 'Pick the date' }]}>
+      <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+    </Form.Item>
+  );
 
   return (
     <RecordFrame
@@ -364,27 +370,18 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
         }
       }
     >
-      <Modal
-        open={!!action}
-        title={action ? ACTION_TITLES[action] : ''}
-        okText="Save"
-        onCancel={() => setAction(null)}
-        onOk={confirmAction}
-        confirmLoading={stage.isPending}
-        width={action === 'certify' ? 760 : 420}
-        destroyOnHidden
-      >
-        <Form form={form} layout="vertical" style={{ marginTop: 8 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: action === 'certify' ? '1fr 1fr' : '1fr', gap: '0 16px' }}>
-            <Form.Item name="date" label={action === 'send' ? 'Date sent' : 'Certificate date'} rules={[{ required: true, message: 'Required' }]}>
-              <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
-            </Form.Item>
-            {action === 'certify' && (
+      <FormShell open={!!action} onClose={() => setAction(null)} form={form} layout="modal" title={action ? ACTION_TITLES[action] : ''} okText="Save" width={action === 'certify' ? 760 : 420} onSubmit={confirmAction}>
+        <Form form={form} layout="vertical">
+          {action === 'certify' ? (
+            <FormGrid cols={2}>
+              {dateItem}
               <Form.Item name="certificateNo" label="Certificate / MB check reference">
                 <Input maxLength={100} placeholder="e.g. EE/RD/2026/114" />
               </Form.Item>
-            )}
-          </div>
+            </FormGrid>
+          ) : (
+            dateItem
+          )}
           {action === 'certify' && data && (
             <>
               <Typography.Paragraph type="secondary">Change only the quantities the client cut. The bill is re-priced on what it passed and the claim is kept for reference.</Typography.Paragraph>
@@ -393,6 +390,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
                 size="small"
                 pagination={false}
                 dataSource={data.items.filter((i) => toNumber(i.thisQty) > 0)}
+                onRow={(i) => ({ 'data-line-label': `Certified quantity of ${i.itemNo}` }) as React.HTMLAttributes<HTMLElement>}
                 columns={[
                   { title: 'Item', render: (_, i) => <span><span className="mono">{i.itemNo}</span> {i.description}</span> },
                   { title: 'Claimed', dataIndex: 'thisQty', width: 120, align: 'right', render: (v, i) => <span className="mono">{formatQty(v)} {i.unit}</span> },
@@ -401,7 +399,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
                     width: 150,
                     render: (_, i) => (
                       <Form.Item name={['qty', i.boqItemId]} noStyle rules={[{ required: true }]}>
-                        <InputNumber style={{ width: '100%' }} min={0} max={toNumber(i.thisQty)} precision={3} aria-label={`Certified quantity of ${i.itemNo}`} />
+                        <QuantityInput unit={i.unit} max={toNumber(i.thisQty)} aria-label={`Certified quantity of ${i.itemNo}`} />
                       </Form.Item>
                     ),
                   },
@@ -410,7 +408,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
             </>
           )}
         </Form>
-      </Modal>
+      </FormShell>
       <ReceiptFormModal open={paying || !!correcting} bill={correcting ? null : data} receipt={correcting} onClose={() => { setPaying(false); setCorrecting(null); }} />
     </RecordFrame>
   );

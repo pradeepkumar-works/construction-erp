@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Alert, App, Button, DatePicker, Divider, Form, Input, InputNumber, Modal, Popconfirm, Space, Table, Typography } from 'antd';
+import { Alert, App, Button, DatePicker, Divider, Form, Input, InputNumber, Popconfirm, Space, Table, Typography } from 'antd';
 import { EditOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -10,6 +10,7 @@ import type { RaBillDto, RaBillPvLineDto } from '@erp/shared';
 import { api, errorMessage } from '@/lib/api';
 import { useContract } from '@/lib/queries';
 import { formatINR, toNumber, formatMonth } from '@/lib/format';
+import { FormGrid, FormShell } from '@/components/form/FormShell';
 
 interface FormValues {
   indexMonth?: dayjs.Dayjs | null;
@@ -124,49 +125,45 @@ function IndicesModal({ open, bill, components, onClose }: { open: boolean; bill
       qc.setQueryData(['bills', 'detail', b.id], b);
       qc.invalidateQueries({ queryKey: ['bills'] });
       message.success(b.pvLines.length ? `Price variation ${formatINR(b.pvAmount, true)} added to ${b.billLabel}` : `Price variation taken off ${b.billLabel}`);
-      onClose();
     },
     onError: (e) => message.error(errorMessage(e)),
   });
 
   const submit = (v: FormValues) =>
-    save.mutate({
+    save.mutateAsync({
       indexMonth: v.indexMonth ? v.indexMonth.startOf('month').format('YYYY-MM-DD') : null,
       note: v.note?.trim() || null,
       indices: components.map((c) => ({ componentId: c.id, currentIndex: String(v.current[c.id]) })),
     });
 
   return (
-    <Modal
+    <FormShell
       open={open}
+      onClose={onClose}
+      form={form}
+      layout="modal"
       title={`Price variation on ${bill.billLabel}`}
-      onCancel={onClose}
-      destroyOnHidden
-      footer={
-        <Space>
-          {bill.pvLines.length ? (
-            <Popconfirm title="Take the price variation off this bill?" onConfirm={() => save.mutate({ indices: [] })}>
-              <Button danger loading={save.isPending}>
-                Remove
-              </Button>
-            </Popconfirm>
-          ) : null}
-          <Button onClick={onClose}>Cancel</Button>
-          <Button type="primary" loading={save.isPending} onClick={() => form.submit()}>
-            Save
-          </Button>
-        </Space>
+      okText="Save"
+      onSubmit={submit}
+      footerExtra={
+        bill.pvLines.length ? (
+          <Popconfirm title="Take the price variation off this bill?" onConfirm={() => save.mutate({ indices: [] }, { onSuccess: onClose })}>
+            <Button danger loading={save.isPending}>
+              Remove
+            </Button>
+          </Popconfirm>
+        ) : null
       }
     >
-      <Form form={form} layout="vertical" onFinish={submit} className="bill-pv-form" requiredMark="optional">
-        <Space wrap align="start">
+      <Form form={form} layout="vertical" className="bill-pv-form" requiredMark="optional">
+        <FormGrid cols={2}>
           <Form.Item name="indexMonth" label="Indices for" rules={[{ required: true, message: 'Pick the month' }]}>
-            <DatePicker picker="month" format="MMM YYYY" allowClear={false} />
+            <DatePicker picker="month" format="MMM YYYY" allowClear={false} style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item name="note" label="Source" extra="For example: RBI WPI, provisional">
-            <Input maxLength={300} style={{ width: 260 }} />
+            <Input maxLength={300} />
           </Form.Item>
-        </Space>
+        </FormGrid>
         {components.map((c) => (
           <Form.Item
             key={c.id}
@@ -178,6 +175,6 @@ function IndicesModal({ open, bill, components, onClose }: { open: boolean; bill
           </Form.Item>
         ))}
       </Form>
-    </Modal>
+    </FormShell>
   );
 }

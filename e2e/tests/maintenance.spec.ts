@@ -58,7 +58,7 @@ test('a breakdown is reported at site, spares issued and the job card closed', a
   await drawer.getByRole('button', { name: 'Close job' }).click();
   const close = page.locator('.ant-modal').filter({ hasText: `Close ${job.jobNo}` });
   await close.getByLabel('Work done').fill('Cylinder seal kit replaced, oil topped up.');
-  await close.getByLabel('Labour (₹)').fill('900');
+  await close.getByLabel('Labour', { exact: true }).fill('900');
   await close.getByRole('button', { name: 'Close job' }).click();
   await expect(page.getByText(`${job.jobNo} closed`)).toBeVisible();
 

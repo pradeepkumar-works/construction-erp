@@ -19,6 +19,17 @@ export const WHATS_NEW: WhatsNew[] = [
     ],
   },
   {
+    id: '2026-10-forms',
+    date: '2026-10-17',
+    title: 'Forms that keep your work',
+    points: [
+      'Every form now warns before throwing away changes, whether you press Esc, the browser\'s Back, Ctrl K or a link. New entries keep a draft on this device.',
+      'A failed save lists what needs fixing and says how ("Choose the project"); errors from the server show on the field they belong to.',
+      'Amounts show in lakhs and crores with ₹, quantities show their unit, and phones open the number keypad for them.',
+      'A new DPR starts from the previous report\'s manpower and machinery, says so, and Clear empties them.',
+    ],
+  },
+  {
     id: '2026-10-bill-checks',
     date: '2026-10-17',
     title: 'Checks before you approve a bill',

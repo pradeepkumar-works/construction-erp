@@ -13,6 +13,7 @@ import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { UnitInput } from '@/components/common/UnitInput';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { LineTable } from '@/components/form/LineTable';
+import { MoneyInput, QuantityInput } from '@/components/form/inputs';
 
 export interface PoLineValue {
   materialRequestItemId?: string | null;
@@ -199,7 +200,7 @@ export function PurchaseOrderFormModal({
       <Form form={form} layout="vertical">
         <FormSection title="Order">
           <FormGrid cols={4}>
-            <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]}>
+            <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]}>
               <Select showSearch={{ optionFilterProp: 'label' }} disabled={!!order || !!start?.projectId} options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
             </Form.Item>
             <Form.Item
@@ -210,7 +211,7 @@ export function PurchaseOrderFormModal({
             >
               <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Vendor master" options={vendorOptions} />
             </Form.Item>
-            <Form.Item name="poDate" label="PO date" rules={[{ required: true, message: 'Required' }]}>
+            <Form.Item name="poDate" label="PO date" rules={[{ required: true, message: 'Pick the PO date' }]}>
               <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" />
             </Form.Item>
             <Form.Item name="deliveryBy" label="Deliver by">
@@ -238,7 +239,7 @@ export function PurchaseOrderFormModal({
                     </div>
                   ) : (
                     <div style={{ minWidth: 200 }}>
-                      <Form.Item name={[f.name, 'itemName']} noStyle rules={[{ required: true, whitespace: true, message: 'Item' }]}>
+                      <Form.Item name={[f.name, 'itemName']} noStyle rules={[{ required: true, whitespace: true, message: 'Enter the item' }]}>
                         <Input placeholder="Item" aria-label={`Item of line ${f.name + 1}`} maxLength={200} />
                       </Form.Item>
                       <Form.Item name={[f.name, 'specification']} noStyle>
@@ -255,7 +256,7 @@ export function PurchaseOrderFormModal({
                   lines?.[f.name]?.materialRequestItemId ? (
                     lines[f.name].unit
                   ) : (
-                    <Form.Item name={[f.name, 'unit']} noStyle rules={[{ required: true, whitespace: true, message: 'Unit' }]}>
+                    <Form.Item name={[f.name, 'unit']} noStyle rules={[{ required: true, whitespace: true, message: 'Enter the unit' }]}>
                       <UnitInput aria-label={`Unit of line ${f.name + 1}`} maxLength={30} />
                     </Form.Item>
                   ),
@@ -265,18 +266,18 @@ export function PurchaseOrderFormModal({
                 key: 'qty',
                 width: 120,
                 render: (f) => (
-                  <Form.Item name={[f.name, 'quantity']} noStyle rules={[{ required: true, message: 'Qty' }]}>
-                    <InputNumber min={0.001} precision={3} style={{ width: '100%' }} aria-label={`Quantity of line ${f.name + 1}`} />
+                  <Form.Item name={[f.name, 'quantity']} noStyle rules={[{ required: true, message: 'Enter the quantity' }]}>
+                    <QuantityInput min={0.001} aria-label={`Quantity of line ${f.name + 1}`} />
                   </Form.Item>
                 ),
               },
               {
-                title: 'Rate (₹)',
+                title: 'Rate',
                 key: 'rate',
                 width: 130,
                 render: (f) => (
-                  <Form.Item name={[f.name, 'rate']} noStyle rules={[{ required: true, message: 'Rate' }]}>
-                    <InputNumber min={0} precision={2} style={{ width: '100%' }} aria-label={`Rate of line ${f.name + 1}`} />
+                  <Form.Item name={[f.name, 'rate']} noStyle rules={[{ required: true, message: 'Enter the rate' }]}>
+                    <MoneyInput aria-label={`Rate of line ${f.name + 1}`} />
                   </Form.Item>
                 ),
               },
@@ -307,11 +308,11 @@ export function PurchaseOrderFormModal({
         </FormSection>
 
         <FormSection title="Terms">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '0 24px' }}>
+          <FormGrid cols={2}>
             <div>
               <FormGrid cols={2}>
-                <Form.Item name="freight" label="Freight (₹)">
-                  <InputNumber min={0} precision={2} style={{ width: '100%' }} />
+                <Form.Item name="freight" label="Freight">
+                  <MoneyInput />
                 </Form.Item>
                 <Form.Item
                   name="paymentDays"
@@ -319,7 +320,7 @@ export function PurchaseOrderFormModal({
                   extra={msme ? `${vendor?.name} is a ${vendor?.msmeCategory?.toLowerCase()} enterprise: at most 45 days.` : 'From the invoice; 30 when left empty.'}
                   rules={[{ type: 'number', max: msme ? 45 : 365, message: msme ? 'At most 45 days for a micro or small enterprise' : 'At most 365 days' }]}
                 >
-                  <InputNumber min={0} precision={0} style={{ width: '100%' }} />
+                  <InputNumber min={0} precision={0} inputMode="numeric" style={{ width: '100%' }} />
                 </Form.Item>
               </FormGrid>
               <Form.Item name="paymentTerms" label="Payment terms">
@@ -338,7 +339,7 @@ export function PurchaseOrderFormModal({
             <div>
               <Alert type="info" title={summary} />
             </div>
-          </div>
+          </FormGrid>
         </FormSection>
       </Form>
     </FormShell>

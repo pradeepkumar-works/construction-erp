@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Checkbox, DatePicker, Form, Input, Modal, Popconfirm, Select, Space, Typography, theme } from 'antd';
+import { App, Button, Checkbox, DatePicker, Form, Input, Popconfirm, Select, Space, Typography, theme } from 'antd';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -19,6 +19,8 @@ import { useListFrame } from '@/components/list/useListFrame';
 import { RecordLink } from '@/components/record/RecordLink';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
+import { FormGrid, FormShell } from '@/components/form/FormShell';
+import { PHONE_INPUT, phoneRule } from '@/components/form/inputs';
 import { ExpiryTag } from './maintenanceUi';
 
 interface DocValues {
@@ -42,7 +44,6 @@ interface DriverValues {
   isActive?: boolean;
 }
 
-const grid = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', columnGap: 16 } as const;
 const t = (v: string | undefined) => v?.trim() || null;
 const EXPIRY_STATES: ExpiryState[] = ['EXPIRED', 'EXPIRING', 'VALID'];
 const DOC_KEYS = ['type', 'state', 'equipmentId', 'old'] as const;
@@ -180,7 +181,6 @@ export function PapersPanel() {
     onSuccess: (d) => {
       message.success(`${EQUIPMENT_DOC_TYPE_LABELS[d.type]} of ${d.equipmentCode} saved`);
       qc.invalidateQueries({ queryKey: ['maintenance'] });
-      setDocEditing(null);
     },
     onError: (e) => message.error(errorMessage(e)),
   });
@@ -268,7 +268,6 @@ export function PapersPanel() {
     onSuccess: (d) => {
       message.success(`${d.name} saved`);
       qc.invalidateQueries({ queryKey: ['maintenance'] });
-      setDrvEditing(null);
     },
     onError: (e) => message.error(errorMessage(e)),
   });
@@ -372,25 +371,25 @@ export function PapersPanel() {
         emptyAction={newDriverButton}
       />
 
-      <Modal open={!!docEditing} title={docEditing === 'new' ? 'Add a paper' : 'Change paper'} onCancel={() => setDocEditing(null)} onOk={() => docForm.submit()} okButtonProps={{ loading: saveDoc.isPending }} okText="Save" width={640} destroyOnHidden>
-        <Form form={docForm} layout="vertical" onFinish={(v) => saveDoc.mutate(v)}>
-          <div style={grid}>
+      <FormShell open={!!docEditing} onClose={() => setDocEditing(null)} form={docForm} layout="modal" title={docEditing === 'new' ? 'Add a paper' : 'Change paper'} okText="Save" onSubmit={(v) => saveDoc.mutateAsync(v)}>
+        <Form form={docForm} layout="vertical">
+          <FormGrid cols={2}>
             <Form.Item name="equipmentId" label="Machine" rules={[{ required: true, message: 'Pick the machine' }]}>
               <Select showSearch={{ optionFilterProp: 'label' }} disabled={docEditing !== 'new'} options={machines} />
             </Form.Item>
-            <Form.Item name="type" label="Paper" rules={[{ required: true, message: 'Which paper?' }]}>
+            <Form.Item name="type" label="Paper" rules={[{ required: true, message: 'Choose the paper' }]}>
               <Select options={EQUIPMENT_DOC_TYPES.map((x) => ({ value: x, label: EQUIPMENT_DOC_TYPE_LABELS[x] }))} />
             </Form.Item>
-          </div>
-          <div style={grid}>
+          </FormGrid>
+          <FormGrid cols={2}>
             <Form.Item name="number" label="Number">
               <Input maxLength={80} />
             </Form.Item>
             <Form.Item name="issuer" label="Issued by">
               <Input maxLength={200} placeholder="Insurer, RTO, authority" />
             </Form.Item>
-          </div>
-          <Form.Item name="validity" label="Valid from / to" rules={[{ validator: (_, v?: [unknown, unknown]) => (v?.[1] ? Promise.resolve() : Promise.reject(new Error('When does it expire?'))) }]}>
+          </FormGrid>
+          <Form.Item name="validity" label="Valid from / to" rules={[{ validator: (_, v?: [unknown, unknown]) => (v?.[1] ? Promise.resolve() : Promise.reject(new Error('Pick the date it expires'))) }]}>
             <DatePicker.RangePicker format="DD MMM YYYY" style={{ width: '100%' }} allowEmpty={[true, false]} />
           </Form.Item>
           <Form.Item name="notes" label="Notes">
@@ -400,19 +399,19 @@ export function PapersPanel() {
             <PhotoUpload />
           </Form.Item>
         </Form>
-      </Modal>
+      </FormShell>
 
-      <Modal open={!!drvEditing} title={drvEditing === 'new' ? 'Add a driver' : 'Change driver'} onCancel={() => setDrvEditing(null)} onOk={() => drvForm.submit()} okButtonProps={{ loading: saveDriver.isPending }} okText="Save" width={600} destroyOnHidden>
-        <Form form={drvForm} layout="vertical" onFinish={(v) => saveDriver.mutate(v)}>
-          <div style={grid}>
-            <Form.Item name="name" label="Name" rules={[{ required: true, whitespace: true, message: 'Required' }]}>
+      <FormShell open={!!drvEditing} onClose={() => setDrvEditing(null)} form={drvForm} layout="modal" title={drvEditing === 'new' ? 'Add a driver' : 'Change driver'} okText="Save" onSubmit={(v) => saveDriver.mutateAsync(v)} width={600}>
+        <Form form={drvForm} layout="vertical">
+          <FormGrid cols={2}>
+            <Form.Item name="name" label="Name" rules={[{ required: true, whitespace: true, message: 'Enter the name' }]}>
               <Input maxLength={120} />
             </Form.Item>
-            <Form.Item name="phone" label="Phone">
-              <Input maxLength={20} />
+            <Form.Item name="phone" label="Phone" rules={[phoneRule]}>
+              <Input {...PHONE_INPUT} />
             </Form.Item>
-          </div>
-          <div style={grid}>
+          </FormGrid>
+          <FormGrid cols={3}>
             <Form.Item name="licenceNo" label="Licence no.">
               <Input maxLength={40} />
             </Form.Item>
@@ -422,7 +421,7 @@ export function PapersPanel() {
             <Form.Item name="licenceValidTo" label="Licence valid to">
               <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} />
             </Form.Item>
-          </div>
+          </FormGrid>
           <Form.Item name="equipmentId" label="Drives">
             <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Machine or vehicle" options={machines} />
           </Form.Item>
@@ -435,7 +434,7 @@ export function PapersPanel() {
             </Form.Item>
           ) : null}
         </Form>
-      </Modal>
+      </FormShell>
     </div>
   );
 }

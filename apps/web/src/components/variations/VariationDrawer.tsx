@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { App, Button, DatePicker, Descriptions, Divider, Drawer, Form, Input, InputNumber, Modal, Popconfirm, Segmented, Skeleton, Space, Table, Tag, Typography } from 'antd';
+import { App, Button, DatePicker, Descriptions, Divider, Drawer, Form, Input, Popconfirm, Segmented, Skeleton, Space, Table, Tag, Typography } from 'antd';
 import { CheckCircleOutlined, DeleteOutlined, EditOutlined, SendOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
@@ -14,6 +14,8 @@ import { useVariation } from '@/lib/queries';
 import { formatDate, formatINR, formatQty, toNumber } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
+import { FormGrid, FormShell } from '@/components/form/FormShell';
+import { MoneyInput, QuantityInput } from '@/components/form/inputs';
 import { VariationFormModal } from './VariationFormModal';
 
 const STATUS_COLORS: Record<VariationStatus, string> = { DRAFT: 'default', SUBMITTED: 'gold', APPROVED: 'green', REJECTED: 'red' };
@@ -182,21 +184,20 @@ function SendModal({ open, onClose, variation }: { open: boolean; onClose: () =>
     onSuccess: (v) => {
       message.success(`${v.label} is with the client`);
       qc.invalidateQueries({ queryKey: ['variations'] });
-      onClose();
     },
     onError: (err) => message.error(errorMessage(err)),
   });
   return (
-    <Modal open={open} title={`Send ${variation.label} to the client`} okText="Record" onCancel={onClose} onOk={() => form.submit()} confirmLoading={mutation.isPending} destroyOnHidden>
-      <Form form={form} layout="vertical" onFinish={(v) => mutation.mutate(v)} style={{ marginTop: 8 }}>
-        <Form.Item name="date" label="Sent on" rules={[{ required: true, message: 'Required' }]}>
+    <FormShell open={open} onClose={onClose} form={form} layout="modal" title={`Send ${variation.label} to the client`} okText="Record" onSubmit={(v) => mutation.mutateAsync(v)}>
+      <Form form={form} layout="vertical">
+        <Form.Item name="date" label="Sent on" rules={[{ required: true, message: 'Pick the date it was sent' }]}>
           <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
         </Form.Item>
         <Form.Item name="ref" label="Our letter reference">
           <Input maxLength={100} placeholder="NIR/RD/2026/041" />
         </Form.Item>
       </Form>
-    </Modal>
+    </FormShell>
   );
 }
 
@@ -251,14 +252,13 @@ function DecisionModal({ open, onClose, variation }: { open: boolean; onClose: (
       qc.invalidateQueries({ queryKey: ['contract'] });
       qc.invalidateQueries({ queryKey: ['projects'] });
       qc.invalidateQueries({ queryKey: ['dashboard'] });
-      onClose();
     },
     onError: (err) => message.error(errorMessage(err)),
   });
   return (
-    <Modal open={open} title={`Client's decision on ${variation.label}`} okText="Record" onCancel={onClose} onOk={() => form.submit()} confirmLoading={mutation.isPending} width={760} destroyOnHidden>
-      <Form form={form} layout="vertical" onFinish={(v) => mutation.mutate(v)} style={{ marginTop: 8 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0 12px' }}>
+    <FormShell open={open} onClose={onClose} form={form} layout="modal" title={`Client's decision on ${variation.label}`} okText="Record" onSubmit={(v) => mutation.mutateAsync(v)} width={760}>
+      <Form form={form} layout="vertical">
+        <FormGrid cols={3}>
           <Form.Item name="decision" label="Decision">
             <Segmented
               options={[
@@ -267,13 +267,13 @@ function DecisionModal({ open, onClose, variation }: { open: boolean; onClose: (
               ]}
             />
           </Form.Item>
-          <Form.Item name="date" label="On" rules={[{ required: true, message: 'Required' }]}>
+          <Form.Item name="date" label="On" rules={[{ required: true, message: 'Pick the date of the decision' }]}>
             <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
           <Form.Item name="clientRef" label="Client's order or letter">
             <Input maxLength={100} placeholder="EE/RD/2026/233" />
           </Form.Item>
-        </div>
+        </FormGrid>
         {decision === 'APPROVED' ? (
           <>
             <Typography.Text strong>What the client approved</Typography.Text>
@@ -290,12 +290,13 @@ function DecisionModal({ open, onClose, variation }: { open: boolean; onClose: (
                             Claimed {formatQty(l.qty)} {l.unit} @ {formatINR(l.rate, true)}
                           </div>
                         </div>
-                        <Form.Item name={[f.name, 'approvedQty']} label="Quantity" rules={[{ required: true, message: 'Required' }]}>
-                          <InputNumber style={{ width: '100%' }} />
+                        <Form.Item name={[f.name, 'approvedQty']} label="Quantity" rules={[{ required: true, message: 'Enter the approved quantity' }]}>
+                          {/* An omission is approved as a negative quantity. */}
+                          <QuantityInput unit={l.unit} min={undefined} />
                         </Form.Item>
                         {l.isNewItem ? (
-                          <Form.Item name={[f.name, 'approvedRate']} label="Rate (₹)" rules={[{ required: true, message: 'Required' }]}>
-                            <InputNumber style={{ width: '100%' }} min={0} />
+                          <Form.Item name={[f.name, 'approvedRate']} label="Rate" rules={[{ required: true, message: 'Enter the approved rate' }]}>
+                            <MoneyInput />
                           </Form.Item>
                         ) : (
                           <Form.Item label="Rate">
@@ -317,6 +318,6 @@ function DecisionModal({ open, onClose, variation }: { open: boolean; onClose: (
           <Input.TextArea rows={2} maxLength={2000} placeholder={decision === 'REJECTED' ? 'Reason the client gave' : 'Conditions or remarks'} />
         </Form.Item>
       </Form>
-    </Modal>
+    </FormShell>
   );
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Form, Input, Modal, Popconfirm, Space, Table, Typography } from 'antd';
+import { App, Button, Form, Input, Popconfirm, Space, Table, Typography } from 'antd';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ChecklistTemplateDto } from '@erp/shared';
@@ -11,6 +11,7 @@ import { useAuth } from '@/lib/auth';
 import { useChecklists } from '@/lib/queries';
 import { QueryError } from '@/components/common/QueryState';
 import { CardToolbar } from '@/components/common/CardToolbar';
+import { FormShell } from '@/components/form/FormShell';
 
 const lines = (v: string) =>
   v
@@ -35,7 +36,6 @@ export function ChecklistsPanel() {
     },
     onSuccess: () => {
       message.success('Checklist saved');
-      setEditing(null);
       qc.invalidateQueries({ queryKey: ['inspections', 'checklists'] });
     },
     onError: (e) => message.error(errorMessage(e)),
@@ -117,9 +117,9 @@ export function ChecklistsPanel() {
             : []),
         ]}
       />
-      <Modal open={!!editing} title={editing === 'new' ? 'New checklist' : 'Edit checklist'} okText="Save" onOk={() => form.submit()} onCancel={() => setEditing(null)} confirmLoading={save.isPending} destroyOnHidden forceRender>
-        <Form form={form} layout="vertical" onFinish={(v) => save.mutate(v)} style={{ marginTop: 8 }}>
-          <Form.Item name="name" label="Name" rules={[{ required: true, whitespace: true, message: 'Required' }]}>
+      <FormShell open={!!editing} onClose={() => setEditing(null)} form={form} layout="modal" title={editing === 'new' ? 'New checklist' : 'Edit checklist'} okText="Save" onSubmit={(v) => save.mutateAsync(v)}>
+        <Form form={form} layout="vertical">
+          <Form.Item name="name" label="Name" rules={[{ required: true, whitespace: true, message: 'Name the checklist' }]}>
             <Input maxLength={120} placeholder="e.g. Waterproofing before tiling" />
           </Form.Item>
           <Form.Item
@@ -131,7 +131,7 @@ export function ChecklistsPanel() {
             <Input.TextArea rows={8} />
           </Form.Item>
         </Form>
-      </Modal>
+      </FormShell>
     </>
   );
 }

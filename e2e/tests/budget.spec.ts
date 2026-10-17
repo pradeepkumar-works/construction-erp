@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { api, apiToken, signIn } from './helpers';
+import { api, apiToken, formPanel, signIn } from './helpers';
 
 interface Page<T> {
   items: T[];
@@ -30,12 +30,12 @@ test('a budget by cost head and BOQ budget rates give a forecast and a cash flow
     await signIn(page, 'pm@demo.com');
     await page.goto(`/projects/${project.id}?tab=budget`);
     await page.getByRole('button', { name: /(Set|Edit) budget$/ }).click();
-    const modal = page.locator('.ant-modal').filter({ hasText: 'Budget: WS-2026-03' });
-    await modal.getByLabel('Material issued (₹)').fill('60000000');
-    await modal.getByLabel('Subcontractors (₹)').fill('50000000');
-    await modal.getByLabel('Machinery (₹)').fill('20000000');
-    await modal.getByLabel('Labour (₹)').fill('25000000');
-    await modal.getByLabel('Site expenses (₹)').fill('10000000');
+    const modal = formPanel(page, 'Budget: WS-2026-03');
+    await modal.getByLabel('Material issued', { exact: true }).fill('60000000');
+    await modal.getByLabel('Subcontractors', { exact: true }).fill('50000000');
+    await modal.getByLabel('Machinery', { exact: true }).fill('20000000');
+    await modal.getByLabel('Labour', { exact: true }).fill('25000000');
+    await modal.getByLabel('Site expenses', { exact: true }).fill('10000000');
     await modal.getByRole('button', { name: 'Fill', exact: true }).click();
     await modal.getByRole('button', { name: 'Save' }).click();
     await expect(page.getByText('Budget saved')).toBeVisible();

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { Alert, App, Button, Checkbox, DatePicker, Form, Input, InputNumber, Modal, Select, Space, Table, Typography } from 'antd';
+import { Alert, App, Checkbox, DatePicker, Form, Input, Select, Table, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, SubcontractBillDto, WorkOrderLineDto } from '@erp/shared';
@@ -9,6 +9,8 @@ import { api, errorMessage } from '@/lib/api';
 import { useWorkOrder, useWorkOrders } from '@/lib/queries';
 import { formatINR, formatQty, toNumber } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
+import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
+import { MoneyInput, QuantityInput } from '@/components/form/inputs';
 
 interface FormValues {
   workOrderId: string;
@@ -97,69 +99,53 @@ export function SubBillFormModal({
       qc.invalidateQueries({ queryKey: ['work-orders'] });
       qc.invalidateQueries({ queryKey: ['stock'] });
       onSaved?.(b);
-      onClose();
     },
     onError: (e) => message.error(errorMessage(e)),
   });
 
-  const run = async (submit: boolean) => {
-    try {
-      await form.validateFields();
-      save.mutate({ v: form.getFieldsValue(true) as FormValues, submit });
-    } catch {
-      /* the form shows what is missing */
-    }
-  };
-
-  const grid = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '0 16px' } as const;
-
   return (
-    <Modal
+    <FormShell
       open={open}
-      title={bill ? `Edit ${bill.label}` : wo ? `New bill on ${wo.woNo} · ${wo.vendorName}` : 'New subcontractor bill'}
-      onCancel={onClose}
+      onClose={onClose}
+      form={form}
+      layout="drawer"
       width={860}
-      destroyOnHidden
-      footer={
-        <Space>
-          <Button onClick={onClose}>Cancel</Button>
-          <Button loading={save.isPending} onClick={() => run(false)}>
-            Save draft
-          </Button>
-          <Button type="primary" loading={save.isPending} onClick={() => run(true)}>
-            Save and submit
-          </Button>
-        </Space>
-      }
+      allValues
+      title={bill ? `Edit ${bill.label}` : wo ? `New bill on ${wo.woNo} · ${wo.vendorName}` : 'New subcontractor bill'}
+      okText="Save and submit"
+      secondaryText="Save draft"
+      onSubmit={(v, secondary) => save.mutateAsync({ v, submit: !secondary })}
     >
       <Form form={form} layout="vertical" requiredMark="optional">
-        {!bill && !workOrderId && (
-          <Form.Item name="workOrderId" label="Work order" rules={[{ required: true, message: 'Choose the work order' }]}>
-            <Select
-              showSearch={{ optionFilterProp: 'label' }}
-              loading={orders.isLoading}
-              placeholder="An approved, open work order"
-              options={(orders.data?.items ?? []).map((o) => ({ value: o.id, label: `${o.woNo} · ${o.vendorName} · ${o.title}` }))}
-            />
-          </Form.Item>
-        )}
-        <div style={grid}>
-          <Form.Item name="billDate" label="Bill date" rules={[{ required: true }]}>
-            <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" />
-          </Form.Item>
-          <Form.Item name="measuredUpTo" label="Work measured up to" rules={[{ required: true }]} tooltip="Approved measurements and material issued to them up to this day go in the bill">
-            <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" />
-          </Form.Item>
-          <Form.Item name="invoiceNo" label="Their invoice no.">
-            <Input maxLength={60} placeholder="SC/24-25/017" />
-          </Form.Item>
-          <Form.Item name="isFinal" label="Final bill" valuePropName="checked">
-            <Checkbox>This is their final bill</Checkbox>
-          </Form.Item>
-        </div>
+        <FormSection title="Bill">
+          {!bill && !workOrderId && (
+            <Form.Item name="workOrderId" label="Work order" rules={[{ required: true, message: 'Choose the work order' }]}>
+              <Select
+                showSearch={{ optionFilterProp: 'label' }}
+                loading={orders.isLoading}
+                placeholder="An approved, open work order"
+                options={(orders.data?.items ?? []).map((o) => ({ value: o.id, label: `${o.woNo} · ${o.vendorName} · ${o.title}` }))}
+              />
+            </Form.Item>
+          )}
+          <FormGrid cols={2}>
+            <Form.Item name="billDate" label="Bill date" rules={[{ required: true, message: 'Pick the bill date' }]}>
+              <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" />
+            </Form.Item>
+            <Form.Item name="measuredUpTo" label="Work measured up to" rules={[{ required: true, message: 'Pick the day work is measured up to' }]} tooltip="Approved measurements and material issued to them up to this day go in the bill">
+              <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" />
+            </Form.Item>
+            <Form.Item name="invoiceNo" label="Their invoice no.">
+              <Input maxLength={60} placeholder="SC/24-25/017" />
+            </Form.Item>
+            <Form.Item name="isFinal" label="Final bill" valuePropName="checked">
+              <Checkbox>This is their final bill</Checkbox>
+            </Form.Item>
+          </FormGrid>
+        </FormSection>
         {woId && woLoading && <Typography.Text type="secondary">Loading the work order…</Typography.Text>}
-        {wo && (
-          <>
+        {wo && (boqLines.length > 0 || ownLines.length > 0) && (
+          <FormSection title="Work in this bill">
             {boqLines.length > 0 && (
               <Alert
                 type="info"
@@ -192,7 +178,7 @@ export function SubBillFormModal({
                       width: 130,
                       render: (_, l) => (
                         <Form.Item name={['qty', l.id]} noStyle>
-                          <InputNumber min={0} precision={3} style={{ width: '100%' }} aria-label={`This bill quantity of ${l.description}`} />
+                          <QuantityInput unit={l.unit} aria-label={`This bill quantity of ${l.description}`} />
                         </Form.Item>
                       ),
                     },
@@ -200,29 +186,31 @@ export function SubBillFormModal({
                 />
               </>
             )}
-          </>
+          </FormSection>
         )}
-        <div style={grid}>
-          <Form.Item name="otherDeduction" label="Other deduction (₹)" tooltip="Anything else to recover: damages, hire of our equipment, a penalty">
-            <InputNumber min={0} precision={2} style={{ width: '100%' }} />
+        <FormSection title="Deductions and documents">
+          <FormGrid cols={2}>
+            <Form.Item name="otherDeduction" label="Other deduction" tooltip="Anything else to recover: damages, hire of our equipment, a penalty">
+              <MoneyInput />
+            </Form.Item>
+            <Form.Item name="otherDeductionNote" label="For">
+              <Input maxLength={200} placeholder="Hire of our mixer, 6 days" />
+            </Form.Item>
+          </FormGrid>
+          <Form.Item name="remarks" label="Remarks">
+            <Input.TextArea rows={2} maxLength={1000} />
           </Form.Item>
-          <Form.Item name="otherDeductionNote" label="For">
-            <Input maxLength={200} placeholder="Hire of our mixer, 6 days" />
+          <Form.Item name="docs" label="Their invoice or other documents">
+            <PhotoUpload max={4} />
           </Form.Item>
-        </div>
-        <Form.Item name="remarks" label="Remarks">
-          <Input.TextArea rows={2} maxLength={1000} />
-        </Form.Item>
-        <Form.Item name="docs" label="Their invoice or other documents">
-          <PhotoUpload max={4} />
-        </Form.Item>
-        {wo && (
-          <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginBottom: 0 }}>
-            Deducted on saving: retention {wo.retentionPct}%, TDS {wo.tdsPct}%
-            {toNumber(wo.advanceAmount) > 0 ? `, advance recovery ${wo.advanceRecoveryPct}% (${formatINR(toNumber(wo.advanceAmount) - toNumber(wo.advanceRecovered), true)} left)` : ''}, and material issued to them at our rates. GST {wo.gstRate}% is added.
-          </Typography.Paragraph>
-        )}
+          {wo && (
+            <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginBottom: 0 }}>
+              Deducted on saving: retention {wo.retentionPct}%, TDS {wo.tdsPct}%
+              {toNumber(wo.advanceAmount) > 0 ? `, advance recovery ${wo.advanceRecoveryPct}% (${formatINR(toNumber(wo.advanceAmount) - toNumber(wo.advanceRecovered), true)} left)` : ''}, and material issued to them at our rates. GST {wo.gstRate}% is added.
+            </Typography.Paragraph>
+          )}
+        </FormSection>
       </Form>
-    </Modal>
+    </FormShell>
   );
 }

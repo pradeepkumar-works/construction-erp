@@ -19,6 +19,7 @@ import {
 } from '@ant-design/icons';
 import type { AuthUser, SearchHitDto, SearchKind, SubmissionStatus } from '@erp/shared';
 import { PRODUCT_NAME, SEARCH_KINDS, SEARCH_KIND_LABELS, SEARCH_MIN_LENGTH, SUBMISSION_STATUSES } from '@erp/shared';
+import { confirmLeave } from '@/lib/leave-guard';
 import { useProjects, useSearch } from '@/lib/queries';
 import { useProjectScope } from '@/lib/project-scope';
 import { requestNew } from '@/lib/new-intent';
@@ -108,7 +109,8 @@ export function CommandPalette({
 
   const navigate = (href: string) => {
     onClose();
-    router.push(href);
+    // An open form with unsaved changes asks first.
+    void confirmLeave().then((ok) => ok && router.push(href));
   };
 
   const pages = useMemo<Target[]>(() => {
@@ -145,7 +147,7 @@ export function CommandPalette({
     const start = (e: NewEntry, projectId?: string) => {
       onClose();
       if (projectId) setProjectScope(projectId);
-      requestNew(e.kind, () => router.push(e.href));
+      requestNew(e.kind, () => void confirmLeave().then((ok) => ok && router.push(e.href)));
     };
     const at = q.match(/^(.*?)\s+for\s+(.+)$/);
     if (at && withProjects) {
