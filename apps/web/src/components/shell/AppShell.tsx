@@ -188,7 +188,6 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
         </Drawer>
       )}
       {!guest && <CommandPalette open={searchOpen} onClose={() => setSearchOpen(false)} sections={sections} withProjects user={user} onAsk={askVisible ? openAsk : undefined} />}
-      {askVisible && askLoaded && <AskPanel open={askOpen} onClose={() => setAskOpen(false)} user={user} status={aiStatus} mobile={isMobile} question={askQuestion} onQuestionTaken={takeAskQuestion} />}
       <ProductTour user={user} mobile={isMobile} open={touring} onClose={() => setTouring(false)} />
       <Layout>
         <Header
@@ -324,10 +323,14 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
             </Dropdown>
           </Space>
         </Header>
-        <Content id="main-content" tabIndex={-1} style={{ outline: 'none' }}>
-          <MessageBar user={user} />
-          {children}
-        </Content>
+        {/* Ask Nirmaan opens as a column beside the page on a wide screen, so the page narrows instead of being covered. */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', flex: 1 }}>
+          <Content id="main-content" tabIndex={-1} style={{ outline: 'none', flex: 1, minWidth: 0 }}>
+            <MessageBar user={user} />
+            {children}
+          </Content>
+          {askVisible && askLoaded && <AskPanel open={askOpen} onClose={() => setAskOpen(false)} user={user} status={aiStatus} mobile={isMobile} question={askQuestion} onQuestionTaken={takeAskQuestion} />}
+        </div>
       </Layout>
     </Layout>
   );

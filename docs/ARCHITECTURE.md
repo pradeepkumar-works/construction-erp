@@ -1078,7 +1078,9 @@ export; the client portal and the phone app show the amount.
   questions about the company's own records. `POST /api/ai/ask` streams server-sent events (`thread`, `status`, `text`,
   `done`, `error`; `AiStreamEvent` in `packages/shared/src/ai.ts`); the web reads them with `fetch` in `lib/ai.ts`.
   The panel is `components/ai/AskPanel.tsx` (Ant Design X `Bubble`, `Sender`, `Welcome`, `Prompts`; answers rendered
-  with `@ant-design/x-markdown`), loaded with `dynamic()` the first time it opens.
+  with `@ant-design/x-markdown`), loaded with `dynamic()` the first time it opens. On a wide screen it is a 440 px
+  column beside the page in `AppShell` (the page narrows; it stays mounted while closed so the conversation survives); on
+  a phone it is a full-screen `Drawer`.
 - **Tools, not data dumps.** The model only sees what its read-only tools return (`ai/ai-tools.service.ts`). Each tool
   calls the same service as the matching list or page with the asking user (the `SearchService` pattern), so project
   access, role checks and row-level security apply unchanged; tools a role may not use are left out of its definitions

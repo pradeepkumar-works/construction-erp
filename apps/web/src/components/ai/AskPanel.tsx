@@ -4,7 +4,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { App, Button, Drawer, Empty, Flex, Popconfirm, Result, Spin, Tag, Tooltip, Typography, theme } from 'antd';
-import { ArrowLeftOutlined, CopyOutlined, DeleteOutlined, DislikeFilled, DislikeOutlined, HistoryOutlined, LikeFilled, LikeOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, CloseOutlined, CopyOutlined, DeleteOutlined, DislikeFilled, DislikeOutlined, HistoryOutlined, LikeFilled, LikeOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
 import { Bubble, Prompts, Sender, Welcome } from '@ant-design/x';
 import type { BubbleItemType } from '@ant-design/x';
 import XMarkdown, { type ComponentProps } from '@ant-design/x-markdown';
@@ -15,6 +15,7 @@ import { api, errorMessage } from '@/lib/api';
 import { streamAsk } from '@/lib/ai';
 import { useProjectScope } from '@/lib/project-scope';
 import { useAiFeedback, useAiThreads, useDeleteAiThread, useProjects } from '@/lib/queries';
+import { APP_HEADER_HEIGHT } from '@/lib/sticky';
 import { SparkleIcon } from './SparkleIcon';
 import { suggestionsFor } from './suggestions';
 
@@ -43,6 +44,9 @@ function AnswerLink(props: ComponentProps & { href?: string }) {
 }
 
 const MARKDOWN_COMPONENTS = { a: AnswerLink };
+
+/** Width of the panel beside the page on a wide screen. */
+const DOCK_WIDTH = 440;
 
 let seq = 0;
 const localId = (kind: string) => `local-${kind}-${++seq}`;
@@ -84,6 +88,7 @@ export default function AskPanel({
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const abort = useRef<AbortController | null>(null);
+  const dock = useRef<HTMLElement>(null);
   const threads = useAiThreads(open && view === 'history');
   const deleteThread = useDeleteAiThread();
   const feedback = useAiFeedback();
@@ -148,6 +153,17 @@ export default function AskPanel({
 
   // Stop an answer that is still coming when the panel unmounts.
   useEffect(() => () => abort.current?.abort(), []);
+
+  // Beside the page there is no drawer to move focus, so opening puts the cursor in the question box.
+  useEffect(() => {
+    if (open && !mobile) dock.current?.querySelector('textarea')?.focus();
+  }, [open, mobile]);
+
+  /** Closing from inside the panel hands focus back to the header's Ask button rather than losing it. */
+  const closeDock = () => {
+    if (dock.current?.contains(document.activeElement)) document.querySelector<HTMLElement>('[data-tour="ask"]')?.focus();
+    onClose();
+  };
 
   const newChat = () => {
     abort.current?.abort();
@@ -316,43 +332,80 @@ export default function AskPanel({
     body = <Bubble.List items={bubbles} autoScroll style={{ flex: 1, minHeight: 0 }} />;
   }
 
+  const content = (
+    <>
+      <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflowY: view === 'history' || !items.length ? 'auto' : undefined }}>{body}</div>
+      {!off && (
+        <div>
+          <Sender
+            value={input}
+            onChange={(v) => setInput(v.slice(0, AI_QUESTION_MAX))}
+            onSubmit={(v) => void ask(v)}
+            onCancel={() => abort.current?.abort()}
+            loading={busy}
+            disabled={noneLeft}
+            placeholder={noneLeft ? 'You have asked the most questions allowed today' : 'Ask about projects, bills, orders, stock…'}
+            autoSize={{ minRows: 1, maxRows: 6 }}
+            suffix={(_, { components: { SendButton, LoadingButton } }) => (busy ? <LoadingButton aria-label="Stop the answer" /> : <SendButton aria-label="Ask" />)}
+          />
+          <Typography.Paragraph type="secondary" style={{ fontSize: token.fontSizeSM, margin: `${token.marginXXS}px 0 0` }}>
+            Answers can be wrong; open the linked records before you act.
+            {status && status.questionsLeftToday <= 10 ? ` ${status.questionsLeftToday} question${status.questionsLeftToday === 1 ? '' : 's'} left today.` : ''}
+          </Typography.Paragraph>
+        </div>
+      )}
+    </>
+  );
+  const bodyStyle: React.CSSProperties = { display: 'flex', flexDirection: 'column', padding: `${token.paddingSM}px ${token.padding}px`, gap: token.marginSM };
+
+  if (mobile) {
+    return (
+      <NavigateCtx.Provider value={onClose}>
+        <Drawer open={open} onClose={onClose} placement="right" size="100%" title={title} extra={extra} rootClassName="ask-panel" styles={{ body: bodyStyle }} aria-label={`Ask ${PRODUCT_NAME}`}>
+          {content}
+        </Drawer>
+      </NavigateCtx.Provider>
+    );
+  }
+
+  // On a wide screen the panel is a column beside the page, which narrows to make room (AppShell lays them out side
+  // by side). It stays mounted while closed so the conversation is still there when it opens again.
   return (
-    <NavigateCtx.Provider value={mobile ? onClose : () => undefined}>
-      <Drawer
-        open={open}
-        onClose={onClose}
-        placement="right"
-        size={mobile ? '100%' : 460}
-        mask={mobile}
-        title={title}
-        extra={extra}
-        rootClassName="ask-panel"
-        styles={{ body: { display: 'flex', flexDirection: 'column', padding: `${token.paddingSM}px ${token.padding}px`, gap: token.marginSM } }}
+    <NavigateCtx.Provider value={() => undefined}>
+      <aside
+        ref={dock}
+        className="ask-panel"
         aria-label={`Ask ${PRODUCT_NAME}`}
-        // Beside the page rather than over it on a wide screen: the page stays usable, so it is not modal.
-        aria-modal={mobile}
+        hidden={!open}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape' && !e.defaultPrevented) closeDock();
+        }}
+        style={{
+          display: open ? 'flex' : 'none',
+          flexDirection: 'column',
+          flex: `0 0 ${DOCK_WIDTH}px`,
+          width: DOCK_WIDTH,
+          position: 'sticky',
+          top: APP_HEADER_HEIGHT,
+          height: `calc(100vh - ${APP_HEADER_HEIGHT}px)`,
+          background: token.colorBgContainer,
+          borderLeft: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}`,
+        }}
       >
-        <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflowY: view === 'history' || !items.length ? 'auto' : undefined }}>{body}</div>
-        {!off && (
-          <div>
-            <Sender
-              value={input}
-              onChange={(v) => setInput(v.slice(0, AI_QUESTION_MAX))}
-              onSubmit={(v) => void ask(v)}
-              onCancel={() => abort.current?.abort()}
-              loading={busy}
-              disabled={noneLeft}
-              placeholder={noneLeft ? 'You have asked the most questions allowed today' : 'Ask about projects, bills, orders, stock…'}
-              autoSize={{ minRows: 1, maxRows: 6 }}
-              suffix={(_, { components: { SendButton, LoadingButton } }) => (busy ? <LoadingButton aria-label="Stop the answer" /> : <SendButton aria-label="Ask" />)}
-            />
-            <Typography.Paragraph type="secondary" style={{ fontSize: token.fontSizeSM, margin: `${token.marginXXS}px 0 0` }}>
-              Answers can be wrong; open the linked records before you act.
-              {status && status.questionsLeftToday <= 10 ? ` ${status.questionsLeftToday} question${status.questionsLeftToday === 1 ? '' : 's'} left today.` : ''}
-            </Typography.Paragraph>
-          </div>
-        )}
-      </Drawer>
+        <Flex align="center" justify="space-between" gap={token.marginXS} style={{ padding: `${token.paddingSM}px ${token.padding}px`, borderBottom: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}` }}>
+          <Typography.Title level={2} style={{ fontSize: token.fontSizeLG, margin: 0, display: 'flex', alignItems: 'center', gap: token.marginXS }}>
+            <SparkleIcon style={{ color: token.colorPrimary }} />
+            Ask {PRODUCT_NAME}
+          </Typography.Title>
+          <Flex gap={token.marginXXS}>
+            {extra}
+            <Tooltip title="Close (Ctrl J)">
+              <Button type="text" icon={<CloseOutlined />} aria-label={`Close Ask ${PRODUCT_NAME}`} onClick={closeDock} />
+            </Tooltip>
+          </Flex>
+        </Flex>
+        <div style={{ ...bodyStyle, flex: 1, minHeight: 0 }}>{content}</div>
+      </aside>
     </NavigateCtx.Provider>
   );
 }
