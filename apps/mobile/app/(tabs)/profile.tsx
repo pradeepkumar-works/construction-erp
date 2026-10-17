@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Alert, Appearance, DevSettings, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 import { ROLE_LABELS, SUBMISSION_TYPE_LABELS, approvalRightsOf } from '@erp/shared';
 import { useAuth } from '../../src/auth/AuthContext';
 import { useNotifications } from '../../src/notifications/NotificationsContext';
@@ -61,6 +62,7 @@ export default function ProfileScreen() {
           </Text>
         </View>
         <Text style={typography.caption}>{t('Set EXPO_PUBLIC_API_URL before starting Expo to point the app at another server.')}</Text>
+        <Text style={typography.caption}>{t('App version {version}', { version: Constants.expoConfig?.version ?? '-' })}</Text>
       </Card>
       <Button title={t('Sign out')} variant="danger" icon="log-out-outline" onPress={confirmLogout} />
     </Screen>
