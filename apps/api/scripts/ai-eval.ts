@@ -9,12 +9,14 @@
  * It prints a table and a summary: share of checks passed, cost per answer, and time to the first word and
  * to the whole answer. Each answer is in a new conversation, so they do not lean on each other. The MD's questions are
  * shared between the MD and admin accounts (both see everything) to stay under the daily limit per person; raise
- * AI_DAILY_QUESTIONS on the deployment to run it more than once a day. To compare models, run it again after changing
- * AI_MODEL on the deployment. An account that cannot sign in fails its questions instead of stopping the run.
+ * AI_DAILY_QUESTIONS on the deployment to run it more than once a day. To compare models without redeploying, list them
+ * in AI_EVAL_MODELS on the deployment and run once per model with AI_EVAL_MODEL=<model> (for example
+ * claude-sonnet-5-5 or google/gemini-3.8-flash). An account that cannot sign in fails its questions instead of stopping the run.
  */
 
 const API = (process.env.AI_EVAL_API ?? 'http://localhost:4000/api').replace(/\/$/, '');
 const ONLY = process.env.AI_EVAL_ONLY as 'golden' | 'red' | undefined;
+const MODEL = process.env.AI_EVAL_MODEL?.trim() || undefined;
 const PASSWORD = 'password123';
 
 type Message = { id: string; text: string; citations: { href: string; label: string }[]; unverified: string[] };
@@ -43,7 +45,7 @@ async function ask(email: string, question: string): Promise<Answer> {
   const res = await fetch(`${API}/ai/ask`, {
     method: 'POST',
     headers: { authorization: `Bearer ${await token(email)}`, 'content-type': 'application/json' },
-    body: JSON.stringify({ question }),
+    body: JSON.stringify({ question, ...(MODEL ? { model: MODEL } : {}) }),
   });
   if (!res.ok || !res.body) return { message: null, error: await res.text(), firstMs: null, totalMs: Date.now() - started, httpStatus: res.status };
   let firstMs: number | null = null;
@@ -184,7 +186,7 @@ async function main() {
   let total = 0;
   const firsts: number[] = [];
   const totals: number[] = [];
-  console.log(`Asking ${cases.length} questions of ${API}\n`);
+  console.log(`Asking ${cases.length} questions of ${API}${MODEL ? ` on ${MODEL}` : ''}\n`);
   for (const c of cases) {
     const a = await ask(c.as, c.question).catch((e: Error): Answer => ({ message: null, error: e.message, firstMs: null, totalMs: 0, httpStatus: 0 }));
     const results = c.checks.map((k) => ({ name: k.name, ok: k.ok(a) }));

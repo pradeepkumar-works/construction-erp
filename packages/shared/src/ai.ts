@@ -82,6 +82,8 @@ export interface AiAskInput {
   question: string;
   threadId?: string | null;
   page?: AiPageContext;
+  /** Model comparison only: one of the server's AI_EVAL_MODELS (ignored by the app) */
+  model?: string;
 }
 
 /** Server-sent events of POST /ai/ask, one JSON object per `data:` line. */

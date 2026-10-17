@@ -12,6 +12,7 @@ export class AskDto {
   @ApiProperty({ example: 'Which purchase orders are late on the Jajpur road?' }) @IsString() @MinLength(2) @MaxLength(AI_QUESTION_MAX) question!: string;
   @ApiPropertyOptional({ description: 'Continue this conversation; omit to start a new one' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsUUID() threadId?: string | null;
   @ApiPropertyOptional({ type: AiPageContextDto }) @IsOptional() @ValidateNested() @Type(() => AiPageContextDto) page?: AiPageContextDto;
+  @ApiPropertyOptional({ description: "Model comparison only: one of the server's AI_EVAL_MODELS" }) @IsOptional() @IsString() @MaxLength(100) model?: string;
 }
 
 export class AiFeedbackDto {

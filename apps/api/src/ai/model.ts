@@ -29,8 +29,8 @@ export interface AiModel {
 /** OpenRouter's Anthropic-compatible Messages API, so the same client and message shapes serve both. */
 const OPENROUTER_URL = 'https://openrouter.ai/api';
 
-/** Claude through the Anthropic API, or through OpenRouter. */
-export class ClaudeModel implements AiModel {
+/** Claude through the Anthropic API, or any model OpenRouter serves (it translates the Messages API for non-Claude models). */
+export class MessagesModel implements AiModel {
   private readonly client: Anthropic;
 
   constructor(
@@ -57,6 +57,8 @@ export class ClaudeModel implements AiModel {
             betas: ['server-side-fallback-2026-07-01'],
             fallbacks: 'default' as const,
           };
+    // Adaptive thinking and cache breakpoints are Claude's; other models get only the effort, which OpenRouter maps.
+    const claude = this.provider === 'anthropic' || this.name.startsWith('anthropic/');
     const stream = this.client.beta.messages.stream(
       {
         model: this.name,
@@ -64,10 +66,14 @@ export class ClaudeModel implements AiModel {
         system: [{ type: 'text', text: args.system }],
         tools: args.tools,
         messages: args.messages,
-        thinking: { type: 'adaptive' },
         output_config: { effort: this.effort },
-        // The instructions and tools are the same on every call, so they are read from the cache after the first.
-        cache_control: { type: 'ephemeral' },
+        ...(claude
+          ? {
+              thinking: { type: 'adaptive' as const },
+              // The instructions and tools are the same on every call, so they are read from the cache after the first.
+              cache_control: { type: 'ephemeral' as const },
+            }
+          : {}),
         ...routing,
       },
       { signal },

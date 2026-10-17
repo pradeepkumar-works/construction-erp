@@ -23,15 +23,23 @@ const int = (v: string | undefined, fallback: number) => {
   return Number.isFinite(n) && n >= 0 ? Math.floor(n) : fallback;
 };
 
+/** A model as the provider names it. */
+export function modelName(name: string, provider: AiProvider): string {
+  return provider === 'openrouter' ? openRouterModel(name) : name;
+}
+
 export function aiConfig() {
   const e = process.env;
   const effort = e.AI_EFFORT === 'low' || e.AI_EFFORT === 'high' ? e.AI_EFFORT : 'medium';
   const provider = providerOf(e);
   const model = e.AI_MODEL?.trim() || 'claude-opus-5-5';
+  const named = (m: string) => modelName(m, provider);
   return {
     provider,
     apiKey: (provider === 'openrouter' ? e.OPENROUTER_API_KEY : e.ANTHROPIC_API_KEY)?.trim() || null,
-    model: provider === 'openrouter' ? openRouterModel(model) : model,
+    model: named(model),
+    /** Models a question may name to compare them on the same deployment (scripts/ai-eval.ts); empty = none */
+    evalModels: (e.AI_EVAL_MODELS ?? '').split(',').map((m) => m.trim()).filter(Boolean).map(named),
     effort: effort as AiEffort,
     disabled: e.AI_DISABLED === 'true',
     /** Rupees a company may spend in a calendar month unless an admin sets its own cap */
