@@ -18,6 +18,7 @@ import { useAiFeedback, useAiThreads, useDeleteAiThread, useProjects } from '@/l
 import { APP_HEADER_HEIGHT } from '@/lib/sticky';
 import { SparkleIcon } from './SparkleIcon';
 import { suggestionsFor } from './suggestions';
+import { DraftCard } from './drafts';
 
 /** One line of the conversation; `pending` while the answer streams, `error` when it failed or was stopped. */
 interface ChatItem extends AiMessageDto {
@@ -56,7 +57,8 @@ const blankMessage = (role: 'user' | 'assistant', text: string): ChatItem => ({ 
 /**
  * Ask Nirmaan (AI item 67): a side panel on every page for questions about the company's own records. Answers stream
  * in with links to the records they used; figures the server could not find in those records are flagged. The panel
- * only reads: it never creates, approves or pays anything.
+ * only reads: it never creates, approves or pays anything. It can fill in a form (item 71) that the user opens, checks
+ * and saves.
  */
 export default function AskPanel({
   open,
@@ -323,7 +325,7 @@ export default function AskPanel({
           variant="borderless"
           icon={<SparkleIcon style={{ fontSize: 28, color: token.colorPrimary }} />}
           title={`Hi ${user.fullName.split(' ')[0]}, what would you like to know?`}
-          description="Ask about your projects, bills, orders, stock, progress or approvals. Answers come from the records you can see, with a link to each one. It only reads; it never changes anything."
+          description="Ask about your projects, bills, orders, stock, progress or approvals. Answers come from the records you can see, with a link to each one. It can also fill in a material request, expense, progress entry, DPR or letter for you to check and save; it never saves or approves anything itself."
         />
         <Prompts title="Try asking" vertical items={suggestions.map((s) => ({ key: s, label: s }))} onItemClick={({ data }) => void ask(String(data.label))} />
       </Flex>
@@ -453,6 +455,9 @@ function AnswerFooter({ item, onRate, onCopy, onRetry }: { item: ChatItem; onRat
           )}
         </Flex>
       )}
+      {(item.drafts ?? []).map((d) => (
+        <DraftOpen key={d.kind} draft={d} />
+      ))}
       {item.citations.length > 0 && (
         <Flex wrap gap={token.marginXXS} align="center" aria-label="Records used">
           <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
@@ -486,6 +491,11 @@ function AnswerFooter({ item, onRate, onCopy, onRetry }: { item: ChatItem; onRat
       )}
     </Flex>
   );
+}
+
+function DraftOpen({ draft }: { draft: NonNullable<AiMessageDto['drafts']>[number] }) {
+  const onNavigate = useContext(NavigateCtx);
+  return <DraftCard draft={draft} onNavigate={onNavigate} />;
 }
 
 function CitationLink({ href, children }: { href: string; children: React.ReactNode }) {

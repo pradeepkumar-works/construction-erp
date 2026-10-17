@@ -2,9 +2,11 @@
 
 import React, { useState } from 'react';
 import { Badge, Tabs } from 'antd';
+import type { AiDraftDto } from '@erp/shared';
 import { canViewLetters } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useDocumentSummary } from '@/lib/queries';
+import { useNewIntent } from '@/lib/new-intent';
 import { DocumentList } from './DocumentList';
 import { DocumentDrawer } from './DocumentDrawer';
 import { TransmittalList } from './TransmittalList';
@@ -38,6 +40,13 @@ export function DocumentTabs({ projectId, tab, onTab, openId, openLetterId }: { 
   const [letterId, setLetterId] = useState<string | null>(openLetterId ?? null);
   const [send, setSend] = useState<TransmittalPrefill | 'new' | null>(null);
   const [newLetter, setNewLetter] = useState(false);
+  // A letter Ask Nirmaan wrote (AI item 71), or "+ New" > Letter
+  const [letterDraft, setLetterDraft] = useState<AiDraftDto | null>(null);
+  useNewIntent('letter', letters, (draft) => {
+    if (tab !== 'letters') onTab('letters');
+    setLetterDraft(draft ?? null);
+    setNewLetter(true);
+  });
   return (
     <>
       <Tabs
@@ -82,7 +91,16 @@ export function DocumentTabs({ projectId, tab, onTab, openId, openLetterId }: { 
       {letters ? (
         <>
           <LetterDrawer id={letterId} open={!!letterId} onClose={() => setLetterId(null)} onOpen={setLetterId} />
-          <LetterFormModal open={newLetter} onClose={() => setNewLetter(false)} projectId={projectId} onSaved={(l) => setLetterId(l.id)} />
+          <LetterFormModal
+            open={newLetter}
+            onClose={() => {
+              setNewLetter(false);
+              setLetterDraft(null);
+            }}
+            projectId={projectId}
+            aiDraft={letterDraft}
+            onSaved={(l) => setLetterId(l.id)}
+          />
         </>
       ) : null}
     </>

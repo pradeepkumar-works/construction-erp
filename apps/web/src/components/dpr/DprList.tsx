@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Button } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
-import type { DailyReportDto } from '@erp/shared';
+import type { AiDraftDto, DailyReportDto } from '@erp/shared';
 import { LIST_SORT_FIELDS } from '@erp/shared';
 import { useNewIntent } from '@/lib/new-intent';
 import { useDprList } from '@/lib/queries';
@@ -31,6 +31,8 @@ export function DprList({ projectId: fixedProject, newLabel }: { projectId?: str
   const [openId, setOpenId] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<DailyReportDto | null>(null);
+  // A draft from Ask Nirmaan (AI item 71) the form opens with
+  const [prefill, setPrefill] = useState<AiDraftDto | null>(null);
   const frame = useListFrame({
     list: 'dpr',
     type: 'DPR',
@@ -52,7 +54,10 @@ export function DprList({ projectId: fixedProject, newLabel }: { projectId?: str
     return rows.length;
   };
 
-  useNewIntent('dpr', !!newLabel, () => setFormOpen(true));
+  useNewIntent('dpr', !!newLabel, (draft) => {
+    setPrefill(draft ?? null);
+    setFormOpen(true);
+  });
 
   const newButton = newLabel ? (
     <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
@@ -101,7 +106,7 @@ export function DprList({ projectId: fixedProject, newLabel }: { projectId?: str
         emptyAction={newButton}
       />
       <DprDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onEdit={setEditing} />
-      <DprFormModal open={formOpen || !!editing} entry={editing} onClose={() => { setFormOpen(false); setEditing(null); }} projectId={fixedProject} defaultProjectId={frame.projectId} />
+      <DprFormModal open={formOpen || !!editing} entry={editing} onClose={() => { setFormOpen(false); setEditing(null); setPrefill(null); }} prefill={prefill} projectId={fixedProject} defaultProjectId={frame.projectId} />
     </>
   );
 }

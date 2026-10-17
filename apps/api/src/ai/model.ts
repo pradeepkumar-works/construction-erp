@@ -137,6 +137,8 @@ export class FakeModel implements AiModel {
 const STOP = new Set(['what', 'which', 'show', 'list', 'find', 'about', 'the', 'and', 'for', 'with', 'this', 'that', 'how', 'many', 'are', 'there', 'our', 'any', 'all', 'from', 'me', 'please']);
 
 function pickTool(q: string, projectId?: string): [string, Record<string, unknown>] {
+  const draft = fakeDraft(q, projectId);
+  if (draft) return draft;
   if (projectId && /summari[sz]e/.test(q)) return ['project_week', { projectId }];
   if (projectId && /changed|last bill/.test(q)) return ['ra_bill_changes', { projectId }];
   if (projectId && /behind|late|delay/.test(q) && !/cost|budget/.test(q)) return ['explain_activities', { projectId }];
@@ -151,6 +153,35 @@ function pickTool(q: string, projectId?: string): [string, Record<string, unknow
   return ['search_records', { q: word ?? q.slice(0, 40) }];
 }
 
+const UNIT = '(bags?|kg|mt|nos|cum|ltr|rmt|sqm)';
+
+/** Drafts from a sentence (item 71), parsed by pattern: enough for the forms to be tested without a model. */
+function fakeDraft(q: string, projectId?: string): [string, Record<string, unknown>] | null {
+  if (!/^(raise|draft|write|book|log|make|create|fill)\b/.test(q)) return null;
+  const code = q.match(/\b([a-z]{2}-\d{4}-\d{2})\b/)?.[1];
+  const project = projectId ? { projectId } : code ? { project: code } : {};
+  const date = q.match(/\b(\d{4}-\d{2}-\d{2})\b/)?.[1];
+  if (/\b(mr|material request|indent)\b/.test(q)) {
+    const items = [...q.matchAll(new RegExp(`(\\d+(?:\\.\\d+)?)\\s*${UNIT}\\s+(?:of\\s+)?(.+?)(?=,| and \\d| for | by | on |$)`, 'g'))].map((m) => ({ quantity: Number(m[1]), unit: m[2], name: m[3].trim() }));
+    return ['draft_material_request', { ...project, items, ...(date ? { requiredDate: date } : {}), ...(/urgent/.test(q) ? { priority: 'URGENT' } : {}) }];
+  }
+  if (/\bexpense\b/.test(q)) {
+    const amount = Number(q.match(/(?:₹|rs\.?)\s?([\d,]+)/)?.[1]?.replace(/,/g, '') ?? 0);
+    return ['draft_expense', { ...project, amount, description: q.match(/\bfor (.+?)(?: paid| by |$)/)?.[1] ?? 'Site expense', category: /diesel|fuel/.test(q) ? 'FUEL' : undefined, paymentMode: /\bupi\b/.test(q) ? 'UPI' : undefined }];
+  }
+  if (/\bprogress\b/.test(q)) {
+    const m = q.match(new RegExp(`(\\d+(?:\\.\\d+)?)\\s*${UNIT}?\\s+(?:of\\s+)?(.+?)(?= on | at |$)`));
+    return ['draft_progress', { ...project, quantity: Number(m?.[1] ?? 0), unit: m?.[2], activity: m?.[3]?.trim() ?? q, ...(date ? { date } : {}) }];
+  }
+  if (/\b(dpr|daily report)\b/.test(q)) {
+    const notes = q.split(':').slice(1).join(':').trim() || q;
+    const manpower = [...notes.matchAll(/(\d+)\s+(masons?|helpers?|carpenters?|bar benders?)/g)].map((m) => ({ category: m[2].replace(/s$/, ''), count: Number(m[1]) }));
+    return ['draft_dpr', { ...project, workExecuted: notes, manpower, ...(/rain/.test(notes) ? { weather: 'RAINY' } : {}) }];
+  }
+  if (/\bletter\b/.test(q)) return ['draft_letter', { ...project, subject: q.match(/about (.+)$/)?.[1] ?? 'Site matters', body: 'We write regarding the matter above.' }];
+  return null;
+}
+
 const LABEL_KEYS = ['title', 'poNo', 'requestNo', 'billLabel', 'billNo', 'woNo', 'mbNo', 'expenseNo', 'inspectionNo', 'riskNo', 'docNo', 'label', 'name', 'code'];
 
 function describe(raw: string): string {
@@ -160,6 +191,8 @@ function describe(raw: string): string {
   } catch {
     return 'I found records, but the list was too long to read here. Ask about one project.';
   }
+  const draft = (data as { draft?: { title: string; flags?: unknown[] } } | null)?.draft;
+  if (draft) return `I've filled it in: ${draft.title}. Open it to check${draft.flags?.length ? ` the ${draft.flags.length === 1 ? 'one thing marked' : `${draft.flags.length} things marked`}` : ''} and save it.`;
   const linked = linkedRows(data);
   if (!linked.length) return 'I found nothing for that in the records you can see.';
   const lines = linked.slice(0, 5).map((r) => {

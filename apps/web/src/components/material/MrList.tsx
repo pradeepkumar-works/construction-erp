@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
-import type { MaterialRequestDto } from '@erp/shared';
+import type { AiDraftDto, MaterialRequestDto } from '@erp/shared';
 import { LIST_SORT_FIELDS } from '@erp/shared';
 import { useNewIntent } from '@/lib/new-intent';
 import { useMaterialRequests } from '@/lib/queries';
@@ -34,6 +34,8 @@ export function MrList({ projectId: fixedProject, newLabel, openId: initialOpen 
   }, [initialOpen]);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<MaterialRequestDto | null>(null);
+  // A draft from Ask Nirmaan (AI item 71) the form opens with
+  const [prefill, setPrefill] = useState<AiDraftDto | null>(null);
   const frame = useListFrame({
     list: 'material-requests',
     type: 'MATERIAL_REQUEST',
@@ -55,7 +57,10 @@ export function MrList({ projectId: fixedProject, newLabel, openId: initialOpen 
     return rows.length;
   };
 
-  useNewIntent('material-request', !!newLabel, () => setFormOpen(true));
+  useNewIntent('material-request', !!newLabel, (draft) => {
+    setPrefill(draft ?? null);
+    setFormOpen(true);
+  });
 
   const newButton = newLabel ? (
     <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
@@ -104,7 +109,7 @@ export function MrList({ projectId: fixedProject, newLabel, openId: initialOpen 
         emptyAction={newButton}
       />
       <MrDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onEdit={setEditing} />
-      <MrFormModal open={formOpen || !!editing} entry={editing} onClose={() => { setFormOpen(false); setEditing(null); }} projectId={fixedProject} defaultProjectId={frame.projectId} />
+      <MrFormModal open={formOpen || !!editing} entry={editing} onClose={() => { setFormOpen(false); setEditing(null); setPrefill(null); }} prefill={prefill} projectId={fixedProject} defaultProjectId={frame.projectId} />
     </>
   );
 }

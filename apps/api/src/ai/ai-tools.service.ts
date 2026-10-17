@@ -1,7 +1,8 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import type Anthropic from '@anthropic-ai/sdk';
 import type { Paginated } from '@erp/shared';
-import { PROJECT_STATUSES, SUBMISSION_STATUSES, canViewContract, canViewCost, canViewPurchaseOrders, submissionHref } from '@erp/shared';
+import { EXPENSE_CATEGORIES, MATERIAL_PRIORITIES, PAYMENT_MODES, PROJECT_STATUSES, SUBMISSION_STATUSES, WEATHER_OPTIONS, canSubmitExpense, canViewContract, canViewCost, canViewLetters, canViewPurchaseOrders, submissionHref } from '@erp/shared';
+import type { AiDraftDto } from '@erp/shared';
 import type { RequestUser } from '../common/current-user';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
 import { SearchService } from '../search/search.service';
@@ -36,6 +37,7 @@ import { QualityService } from '../quality/quality.service';
 import { MaintenanceService } from '../maintenance/maintenance.service';
 import { ScheduleService } from '../planning/schedule.service';
 import { AiDigestService } from './ai-digest.service';
+import { AiDraftsService } from './ai-drafts.service';
 
 /** Tool input after its schema: what the model sent, before checking. */
 type Input = Record<string, unknown>;
@@ -86,6 +88,13 @@ const optText = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim().sl
 const optPage = (v: unknown) => (typeof v === 'number' && Number.isInteger(v) && v >= 1 && v <= 50 ? v : 1);
 
 const projectIdProp = { type: 'string', description: 'A project id from list_projects; omit for every project the user can see' } as const;
+/** The draft tools name the project by id or as the user wrote it. */
+const draftProjectProps = {
+  projectId: { type: 'string', description: 'The project id, from list_projects or the page; or leave out and pass project' },
+  project: { type: 'string', description: 'The project as the user named it (part of its name or its code), when you have no id' },
+} as const;
+const DRAFT_NOTE = 'Nothing is saved: the user opens the draft in its form from your answer, checks it and saves it.';
+
 const fromProp = { type: 'string', description: 'From this day, YYYY-MM-DD (inclusive)' } as const;
 const toProp = { type: 'string', description: 'Up to this day, YYYY-MM-DD (inclusive)' } as const;
 
@@ -132,6 +141,7 @@ export class AiToolsService {
     maintenance: MaintenanceService,
     schedule: ScheduleService,
     digest: AiDigestService,
+    drafts: AiDraftsService,
   ) {
     const any = <T>(f: T) => f as never;
     this.kinds = {
@@ -352,6 +362,117 @@ export class AiToolsService {
         def: { name: 'machinery_summary', description: 'Machines due for service, open breakdown job cards, vehicle papers and licences expiring.', input_schema: { type: 'object', properties: { projectId: projectIdProp } } },
         run: (user, i) => maintenance.summary(user, optUuid(i.projectId, 'projectId')),
       },
+      // Drafts from a sentence (item 71): fill a form for the user to check and save; never a write.
+      {
+        def: {
+          name: 'draft_material_request',
+          description: `Fill in a new material request (indent) from what the user asked for: items with quantity and unit, the date needed, priority. Item names in English as a store would write them (OPC 53 cement, TMT 12mm), even when the user writes in Hindi; they are matched to the item master. ${DRAFT_NOTE}`,
+          input_schema: {
+            type: 'object',
+            properties: {
+              ...draftProjectProps,
+              items: {
+                type: 'array',
+                items: { type: 'object', properties: { name: { type: 'string' }, specification: { type: 'string', description: 'Grade, brand or size, if said' }, quantity: { type: 'number' }, unit: { type: 'string', description: 'Bags, MT, Kg, Cum, Nos, Ltr, Rmt…' } }, required: ['name', 'quantity'] },
+              },
+              requiredDate: { type: 'string', description: 'Needed by, YYYY-MM-DD; work out "by Friday" from today' },
+              priority: { type: 'string', enum: [...MATERIAL_PRIORITIES] },
+              remarks: { type: 'string' },
+            },
+            required: ['items'],
+          },
+        },
+        run: (user, i) => drafts.materialRequest(user, i),
+      },
+      {
+        def: {
+          name: 'draft_expense',
+          description: `Fill in a site expense (petty cash spent on site) from what the user said. ${DRAFT_NOTE}`,
+          input_schema: {
+            type: 'object',
+            properties: {
+              ...draftProjectProps,
+              date: { type: 'string', description: 'YYYY-MM-DD; today if not said' },
+              category: { type: 'string', enum: [...EXPENSE_CATEGORIES] },
+              description: { type: 'string', description: 'What it was for, in a few words' },
+              amount: { type: 'number', description: 'Rupees, including GST' },
+              gstRate: { type: 'number', description: 'GST per cent, only if said' },
+              vendor: { type: 'string', description: 'Shop or person paid' },
+              billNo: { type: 'string' },
+              paymentMode: { type: 'string', enum: [...PAYMENT_MODES] },
+              remarks: { type: 'string' },
+            },
+            required: ['description', 'amount'],
+          },
+        },
+        allowed: (u) => canSubmitExpense(u.roleKey),
+        run: (user, i) => drafts.expense(user, i),
+      },
+      {
+        def: {
+          name: 'draft_progress',
+          description: `Fill in a progress entry: a quantity of one schedule activity done on a day. The activity is matched to the project's schedule. ${DRAFT_NOTE}`,
+          input_schema: {
+            type: 'object',
+            properties: {
+              ...draftProjectProps,
+              activity: { type: 'string', description: 'The work done, as the user named it (or the BOQ item number)' },
+              quantity: { type: 'number' },
+              unit: { type: 'string', description: 'As the user said it, if they did' },
+              date: { type: 'string', description: 'YYYY-MM-DD; today if not said' },
+              location: { type: 'string', description: 'Chainage, floor, grid or village, if said' },
+              manpowerCount: { type: 'number' },
+              remarks: { type: 'string' },
+            },
+            required: ['activity', 'quantity'],
+          },
+        },
+        run: (user, i) => drafts.progress(user, i),
+      },
+      {
+        def: {
+          name: 'draft_dpr',
+          description: `Fill in a daily progress report (DPR) from the user's rough notes: sort what they wrote into the report's sections without adding anything they did not say. ${DRAFT_NOTE}`,
+          input_schema: {
+            type: 'object',
+            properties: {
+              ...draftProjectProps,
+              date: { type: 'string', description: 'YYYY-MM-DD; today if not said' },
+              weather: { type: 'string', enum: [...WEATHER_OPTIONS] },
+              siteCondition: { type: 'string' },
+              manpower: { type: 'array', items: { type: 'object', properties: { category: { type: 'string', description: 'Mason, helper, carpenter, bar bender…' }, count: { type: 'number' } }, required: ['category', 'count'] } },
+              machinery: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, hours: { type: 'number' } }, required: ['name', 'hours'] } },
+              workExecuted: { type: 'string', description: 'Work done, one line per item of work' },
+              materialReceived: { type: 'string' },
+              testsConducted: { type: 'string' },
+              safetyObservations: { type: 'string' },
+              issues: { type: 'string', description: 'Hold-ups and problems' },
+              nextDayPlan: { type: 'string' },
+            },
+            required: ['workExecuted'],
+          },
+        },
+        run: (user, i) => drafts.dailyReport(user, i),
+      },
+      {
+        def: {
+          name: 'draft_letter',
+          description: `Fill in an outgoing letter for the project's correspondence register: to the client or anyone else. For an RA bill's covering letter pass raBillId (from list_records kind ra_bill) and the letter's figures are filled from the bill; write only what the user asked to add in body. ${DRAFT_NOTE}`,
+          input_schema: {
+            type: 'object',
+            properties: {
+              ...draftProjectProps,
+              party: { type: 'string', description: "Who it is to; the project's client when not said" },
+              subject: { type: 'string' },
+              body: { type: 'string', description: 'The letter text, in plain paragraphs, using only facts from the user or your tools' },
+              raBillId: { type: 'string', description: 'For a covering letter of an RA bill' },
+              inReplyToId: { type: 'string', description: 'A received letter this answers' },
+            },
+          },
+        },
+        allowed: (u) => canViewLetters(u.roleKey),
+        run: (user, i) => drafts.letter(user, i),
+      },
     ];
   }
 
@@ -369,14 +490,16 @@ export class AiToolsService {
    * Runs one tool for this user. A refusal or a bad input comes back as an error result the model can read and work
    * around ("not allowed for your role"), never as a crash of the whole answer.
    */
-  async run(user: RequestUser, name: string, input: unknown): Promise<{ result: unknown; text: string; isError: boolean }> {
+  async run(user: RequestUser, name: string, input: unknown): Promise<{ result: unknown; text: string; isError: boolean; draft?: AiDraftDto }> {
     const tool = this.tools.find((t) => t.def.name === name);
     try {
       if (!tool) throw new BadRequestException(`No tool called ${name}`);
       if (tool.allowed && !tool.allowed(user)) throw new ForbiddenException('Not available for your role');
       const raw = await tool.run(user, (input && typeof input === 'object' ? input : {}) as Input);
       const result = compact(raw) ?? (Array.isArray(raw) ? [] : {});
-      return { result, text: cap(JSON.stringify(result)), isError: false };
+      // A draft goes to the panel whole; the model reads it compacted like any result.
+      const draft = name.startsWith('draft_') ? (raw as { draft?: AiDraftDto }).draft : undefined;
+      return { result, text: cap(JSON.stringify(result)), isError: false, ...(draft ? { draft } : {}) };
     } catch (e) {
       const message =
         e instanceof ForbiddenException ? `Not allowed: ${e.message}. Tell the user this is outside what their role can see.`

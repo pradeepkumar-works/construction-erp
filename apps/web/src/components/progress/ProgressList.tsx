@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Button } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
-import type { ProgressEntryDto } from '@erp/shared';
+import type { AiDraftDto, ProgressEntryDto } from '@erp/shared';
 import { LIST_SORT_FIELDS } from '@erp/shared';
 import { useNewIntent } from '@/lib/new-intent';
 import { useProgressList } from '@/lib/queries';
@@ -31,6 +31,8 @@ export function ProgressList({ projectId: fixedProject, newLabel }: { projectId?
   const [openId, setOpenId] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<ProgressEntryDto | null>(null);
+  // A draft from Ask Nirmaan (AI item 71) the form opens with
+  const [prefill, setPrefill] = useState<AiDraftDto | null>(null);
   const frame = useListFrame({
     list: 'progress',
     type: 'PROGRESS',
@@ -52,7 +54,10 @@ export function ProgressList({ projectId: fixedProject, newLabel }: { projectId?
     return rows.length;
   };
 
-  useNewIntent('progress', !!newLabel, () => setFormOpen(true));
+  useNewIntent('progress', !!newLabel, (draft) => {
+    setPrefill(draft ?? null);
+    setFormOpen(true);
+  });
 
   const newButton = newLabel ? (
     <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
@@ -101,7 +106,7 @@ export function ProgressList({ projectId: fixedProject, newLabel }: { projectId?
         emptyAction={newButton}
       />
       <ProgressDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onEdit={setEditing} />
-      <ProgressFormModal open={formOpen || !!editing} entry={editing} onClose={() => { setFormOpen(false); setEditing(null); }} projectId={fixedProject} defaultProjectId={frame.projectId} />
+      <ProgressFormModal open={formOpen || !!editing} entry={editing} onClose={() => { setFormOpen(false); setEditing(null); setPrefill(null); }} prefill={prefill} projectId={fixedProject} defaultProjectId={frame.projectId} />
     </>
   );
 }

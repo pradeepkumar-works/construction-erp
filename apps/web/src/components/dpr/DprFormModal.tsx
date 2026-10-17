@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, App, DatePicker, Form, Input, InputNumber, Select, Typography } from 'antd';
 import dayjs from 'dayjs';
-import type { AttachmentDto, DailyReportDto, Weather } from '@erp/shared';
+import type { AiDraftDto, AttachmentDto, DailyReportDto, Weather } from '@erp/shared';
 import { MANPOWER_CATEGORIES, WEATHER_LABELS, WEATHER_OPTIONS } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, errorMessage } from '@/lib/api';
@@ -13,6 +13,7 @@ import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { editActionLabel } from '@/components/common/EditResubmitButton';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { LineTable } from '@/components/form/LineTable';
+import { aiFlagItem, draftDate } from '@/components/ai/drafts';
 
 interface FormValues {
   projectId: string;
@@ -31,13 +32,15 @@ interface FormValues {
 }
 
 /** Create a DPR, or (with `entry`) edit a draft / rejected / changes-requested one and resubmit it. */
-export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry }: { open: boolean; onClose: () => void; projectId?: string; /** A new entry starts on this project (the header's), still changeable. */ defaultProjectId?: string; entry?: DailyReportDto | null }) {
+export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry, prefill }: { open: boolean; onClose: () => void; projectId?: string; /** A new entry starts on this project (the header's), still changeable. */ defaultProjectId?: string; entry?: DailyReportDto | null; /** Filled in by Ask Nirmaan from rough notes (AI item 71) */ prefill?: AiDraftDto | null }) {
   const [form] = Form.useForm<FormValues>();
   const { message } = App.useApp();
   const qc = useQueryClient();
   const { data: projects } = useProjects();
   const editing = !!entry;
   const fixedProject = entry?.projectId ?? projectId;
+  const draft = entry ? null : prefill;
+  const now = Form.useWatch([], { form, preserve: true }) as Partial<FormValues> | undefined;
 
   // New DPR: manpower comes from the day's attendance sheet until the user edits it by hand.
   const watchedProject = Form.useWatch('projectId', form);
@@ -86,7 +89,8 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
 
   useEffect(() => {
     if (!open) return;
-    setManpowerEdited(false);
+    // Manpower the user dictated stays; otherwise the attendance sheet fills it as usual.
+    setManpowerEdited(!entry && !!prefill?.values.manpower);
     setFilledFrom(null);
     setCopiedFrom(null);
     setCopyCleared(false);
@@ -116,8 +120,25 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
         manpower: [],
         machinery: [],
       });
+      if (prefill) {
+        const v = prefill.values as Partial<Omit<FormValues, 'date'>> & { date?: string };
+        form.setFieldsValue({
+          projectId: prefill.projectId,
+          date: draftDate(v.date) ?? dayjs(),
+          weather: v.weather,
+          siteCondition: v.siteCondition,
+          ...(v.manpower ? { manpower: v.manpower } : {}),
+          machinery: v.machinery ?? [],
+          materialReceived: v.materialReceived,
+          workExecuted: v.workExecuted,
+          testsConducted: v.testsConducted,
+          safetyObservations: v.safetyObservations,
+          issues: v.issues,
+          nextDayPlan: v.nextDayPlan,
+        });
+      }
     }
-  }, [open, projectId, defaultProjectId, entry, form]);
+  }, [open, projectId, defaultProjectId, entry, prefill, form]);
 
   const mutation = useMutation({
     mutationFn: async (v: FormValues) => {
@@ -155,6 +176,7 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
       okText={editing ? 'Resubmit DPR' : 'Submit DPR'}
       onSubmit={(v) => mutation.mutateAsync(v)}
       draftKey={editing ? undefined : `dpr:${projectId ?? 'any'}`}
+      aiDraft={draft}
       width={820}
     >
       <Form
@@ -172,7 +194,7 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
             <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
           </Form.Item>
           <FormGrid cols={3}>
-            <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date of the report' }]}>
+            <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date of the report' }]} {...aiFlagItem(draft, 'date', watchedDate)}>
               <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" />
             </Form.Item>
             <Form.Item name="weather" label="Weather">
@@ -182,7 +204,7 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
               <Input placeholder="Workable / Waterlogged" />
             </Form.Item>
           </FormGrid>
-          <Form.Item name="workExecuted" label="Work executed" rules={[{ required: true, whitespace: true, message: 'Say what work was done today' }]}>
+          <Form.Item name="workExecuted" label="Work executed" rules={[{ required: true, whitespace: true, message: 'Say what work was done today' }]} {...aiFlagItem(draft, 'workExecuted', now?.workExecuted)}>
             <Input.TextArea rows={3} placeholder="Summary of work done today" />
           </Form.Item>
         </FormSection>
@@ -286,20 +308,20 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
 
         <FormSection title="Notes">
           <FormGrid cols={2}>
-            <Form.Item name="materialReceived" label="Material received">
+            <Form.Item name="materialReceived" label="Material received" {...aiFlagItem(draft, 'materialReceived', now?.materialReceived)}>
               <Input.TextArea rows={2} />
             </Form.Item>
-            <Form.Item name="testsConducted" label="Tests conducted">
+            <Form.Item name="testsConducted" label="Tests conducted" {...aiFlagItem(draft, 'testsConducted', now?.testsConducted)}>
               <Input.TextArea rows={2} />
             </Form.Item>
-            <Form.Item name="safetyObservations" label="Safety observations">
+            <Form.Item name="safetyObservations" label="Safety observations" {...aiFlagItem(draft, 'safetyObservations', now?.safetyObservations)}>
               <Input.TextArea rows={2} />
             </Form.Item>
-            <Form.Item name="issues" label="Issues / hindrances">
+            <Form.Item name="issues" label="Issues / hindrances" {...aiFlagItem(draft, 'issues', now?.issues)}>
               <Input.TextArea rows={2} />
             </Form.Item>
           </FormGrid>
-          <Form.Item name="nextDayPlan" label="Next day plan">
+          <Form.Item name="nextDayPlan" label="Next day plan" {...aiFlagItem(draft, 'nextDayPlan', now?.nextDayPlan)}>
             <Input.TextArea rows={2} />
           </Form.Item>
           <Form.Item name="photos" label="Site photos" extra="Photos of the work done today; they go with the report.">
