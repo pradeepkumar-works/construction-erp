@@ -2,7 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Notifications from 'expo-notifications';
-import type { NotificationListDto, PushTokenDto } from '@erp/shared';
+import { NOTIFICATION_TYPES_VERSION, type NotificationListDto, type PushTokenDto } from '@erp/shared';
 import { useAuth } from '../auth/AuthContext';
 import { request } from '../api/client';
 import { configureForegroundHandler, getPushRegistration, notificationRoute, type PushRegistration } from './push';
@@ -75,7 +75,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
   const refreshUnread = useCallback(async () => {
     if (!token) return;
     try {
-      const res = await request<NotificationListDto>('/notifications', { token, query: { unreadOnly: true, limit: 1, allTypes: true } });
+      const res = await request<NotificationListDto>('/notifications', { token, query: { unreadOnly: true, limit: 1, typesVersion: NOTIFICATION_TYPES_VERSION } });
       setUnreadCount(res.unreadCount);
     } catch {
       // keep the previous count

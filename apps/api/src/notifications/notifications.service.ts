@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { LEGACY_NOTIFICATION_TYPES, NOTIFICATION_TABS, NOTIFICATION_TAB_OF, notificationTypesIn, type NotificationDto, type NotificationListDto, type NotificationTab, type NotificationType, type PushTokenDto, type SubmissionType } from '@erp/shared';
+import { LEGACY_NOTIFICATION_TYPES, NOTIFICATION_TABS, NOTIFICATION_TAB_OF, NOTIFICATION_TYPES_VERSION, notificationTypesFor, notificationTypesIn, type NotificationDto, type NotificationListDto, type NotificationTab, type NotificationType, type PushTokenDto, type SubmissionType } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -61,7 +61,8 @@ export class NotificationsService {
 
   async list(user: RequestUser, q: ListNotificationsQuery): Promise<NotificationListDto> {
     // Older phone builds crash on a type they have no icon for, so they get only the types they know.
-    const types = q.allTypes ? {} : { type: { in: LEGACY_NOTIFICATION_TYPES } };
+    const version = q.typesVersion ?? (q.allTypes ? 1 : 0);
+    const types = version >= NOTIFICATION_TYPES_VERSION ? {} : { type: { in: version === 0 ? LEGACY_NOTIFICATION_TYPES : notificationTypesFor(version) } };
     const where: Prisma.NotificationWhereInput = { userId: user.id, organizationId: user.organizationId, ...types };
     if (q.tab) where.AND = [{ type: { in: notificationTypesIn(q.tab) } }];
     if (q.unreadOnly) where.readAt = null;

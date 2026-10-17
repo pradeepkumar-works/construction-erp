@@ -36,6 +36,20 @@ export const NOTIFICATION_TAB_OF: Record<NotificationType, NotificationTab> = {
   WATCH_LIST: 'REMINDERS',
 };
 
+/**
+ * When each type was added, as the version of the type list a client must name (`typesVersion`) to be sent it.
+ * Phone builds have no icon for a type newer than they are and crash on it, so `GET /notifications` lists a type
+ * only to a client that knows it. Version 1 is what `allTypes` meant before; a new type goes in with the next
+ * version, and the web and the phone send the latest.
+ */
+const NOTIFICATION_TYPE_VERSION: Partial<Record<NotificationType, number>> = { WATCH_LIST: 2 };
+export const NOTIFICATION_TYPES_VERSION = 2;
+
+/** The types a client that knows version `version` of the list can show. */
+export function notificationTypesFor(version: number): NotificationType[] {
+  return NOTIFICATION_TYPES.filter((t) => (NOTIFICATION_TYPE_VERSION[t] ?? 1) <= version);
+}
+
 /** The notification types in one tab. */
 export function notificationTypesIn(tab: NotificationTab): NotificationType[] {
   return NOTIFICATION_TYPES.filter((t) => NOTIFICATION_TAB_OF[t] === tab);

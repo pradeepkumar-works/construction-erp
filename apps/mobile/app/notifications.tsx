@@ -2,7 +2,7 @@ import React, { useCallback, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { NOTIFICATION_TYPE_LABELS, type NotificationDto, type NotificationListDto, type NotificationType } from '@erp/shared';
+import { NOTIFICATION_TYPE_LABELS, NOTIFICATION_TYPES_VERSION, type NotificationDto, type NotificationListDto, type NotificationType } from '@erp/shared';
 import { useApi, useFetch } from '../src/api/hooks';
 import { useNotifications } from '../src/notifications/NotificationsContext';
 import { notificationRoute } from '../src/notifications/push';
@@ -11,6 +11,7 @@ import { colors, radius, spacing, typography } from '../src/theme';
 import { timeAgo } from '../src/utils/format';
 import { useT } from '../src/i18n/LanguageContext';
 
+const FALLBACK_ICON = { name: 'notifications' as const, color: colors.primary, bg: colors.primarySoft };
 const ICON: Record<NotificationType, { name: keyof typeof Ionicons.glyphMap; color: string; bg: string }> = {
   SUBMISSION_SUBMITTED: { name: 'time', color: colors.warning, bg: colors.warningSoft },
   SUBMISSION_APPROVED: { name: 'checkmark-circle', color: colors.success, bg: colors.successSoft },
@@ -41,7 +42,7 @@ export default function NotificationsScreen() {
   const api = useApi();
   const { refreshUnread } = useNotifications();
   const [busy, setBusy] = useState(false);
-  const { data, loading, refreshing, error, refresh, reload, setData } = useFetch<NotificationListDto>((a) => a.get('/notifications', { limit: 100, allTypes: true }), []);
+  const { data, loading, refreshing, error, refresh, reload, setData } = useFetch<NotificationListDto>((a) => a.get('/notifications', { limit: 100, typesVersion: NOTIFICATION_TYPES_VERSION }), []);
 
   const open = useCallback(
     async (n: NotificationDto) => {
@@ -94,7 +95,8 @@ export default function NotificationsScreen() {
 }
 
 function Row({ item, onPress }: { item: NotificationDto; onPress: () => void }) {
-  const icon = ICON[item.type];
+  // A type newer than this build gets a plain bell rather than a crash.
+  const icon = ICON[item.type] ?? FALLBACK_ICON;
   const t = useT();
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [styles.row, !item.readAt && styles.unread, pressed && styles.pressed]} android_ripple={{ color: colors.border }}>
@@ -112,7 +114,7 @@ function Row({ item, onPress }: { item: NotificationDto; onPress: () => void }) 
           {item.body}
         </Text>
         <Text style={styles.meta}>
-          {t(NOTIFICATION_TYPE_LABELS[item.type])} · {timeAgo(item.createdAt)}
+          {t(NOTIFICATION_TYPE_LABELS[item.type] ?? 'Notification')} · {timeAgo(item.createdAt)}
           {item.projectName ? ` · ${item.projectName}` : ''}
         </Text>
       </View>

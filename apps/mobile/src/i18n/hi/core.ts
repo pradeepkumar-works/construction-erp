@@ -13,6 +13,7 @@ export const CORE: Record<string, string> = {
   Organisation: 'कंपनी',
   'Can approve': 'मंज़ूर कर सकते हैं',
   Notifications: 'सूचनाएँ',
+  Notification: 'सूचना',
   'Push to this device': 'इस फ़ोन पर सूचना',
   On: 'चालू',
   'Permission denied': 'अनुमति नहीं मिली',
