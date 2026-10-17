@@ -110,7 +110,7 @@ test("a drawing's title block fills the register entry", async ({ page }) => {
 
   await expect(modal.getByLabel('Number')).toHaveValue('BL-STR-GF-104');
   await expect(modal.getByLabel('Title')).toHaveValue('Ground floor column layout');
-  await expect(modal.getByLabel('Revision')).toHaveValue('R2');
+  await expect(modal.getByRole('textbox', { name: /^\*? ?Revision$/ })).toHaveValue('R2');
   await expect(modal.getByText('Structural')).toBeVisible();
   // The consultant's name was hard to read.
   await expect(modal.getByText(/Check this/)).toBeVisible();
