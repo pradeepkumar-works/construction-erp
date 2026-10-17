@@ -99,6 +99,9 @@ cd e2e && npx playwright test         # browser tests; needs API + web running (
 - Ask Nirmaan (AI, `apps/api/src/ai`, ARCHITECTURE "Ask Nirmaan"): the model reads only through `AiToolsService`, whose tools call
   the list services with the user, never Prisma directly; a new tool or record kind must pass `src/scripts/ai-access-check.ts`
   (CI runs it). Tools never write. Local work and CI use `AI_PROVIDER=fake`; don't call the real model from tests.
+  Drafts (item 71) are `draft_*` tools in `AiDraftsService` that return form values; the list's `useNewIntent` passes the
+  draft to its form's `prefill`, which hands it to `FormShell` as `aiDraft`. `src/scripts/ai-drafts-test.ts` fails on any
+  write call in `src/ai`.
 - Mobile: screens in `app/`, shared UI in `src/components`, API in `src/api`, no new native deps
   without checking `node_modules/expo/bundledNativeModules.json` for the SDK-pinned version.
 - Mobile theme: `src/theme.ts` picks the light or dark palette once at start-up (Profile > Appearance, stored in

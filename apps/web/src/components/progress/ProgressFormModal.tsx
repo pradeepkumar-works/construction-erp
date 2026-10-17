@@ -3,7 +3,7 @@
 import React, { useEffect } from 'react';
 import { Alert, App, DatePicker, Form, Input, InputNumber, Select } from 'antd';
 import dayjs from 'dayjs';
-import type { AttachmentDto, ProgressEntryDto } from '@erp/shared';
+import type { AiDraftDto, AttachmentDto, ProgressEntryDto } from '@erp/shared';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { QuantityInput } from '@/components/form/inputs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -11,6 +11,7 @@ import { api, errorMessage } from '@/lib/api';
 import { useActivities, useProjects } from '@/lib/queries';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { editActionLabel } from '@/components/common/EditResubmitButton';
+import { aiFlagItem, draftDate } from '@/components/ai/drafts';
 import { SectorInputs, sectorBody, sectorFormValues, typedLocation, type SectorFormValues } from '@/components/sector/SectorInputs';
 
 interface FormValues extends SectorFormValues {
@@ -29,7 +30,7 @@ interface FormValues extends SectorFormValues {
  * Create a progress entry, or (with `entry`) edit an existing draft / rejected / changes-requested
  * entry and resubmit it for approval in one go.
  */
-export function ProgressFormModal({ open, onClose, projectId, defaultProjectId, entry }: { open: boolean; onClose: () => void; projectId?: string; /** A new entry starts on this project (the header's), still changeable. */ defaultProjectId?: string; entry?: ProgressEntryDto | null }) {
+export function ProgressFormModal({ open, onClose, projectId, defaultProjectId, entry, prefill }: { open: boolean; onClose: () => void; projectId?: string; /** A new entry starts on this project (the header's), still changeable. */ defaultProjectId?: string; entry?: ProgressEntryDto | null; /** Filled in by Ask Nirmaan (AI item 71) */ prefill?: AiDraftDto | null }) {
   const [form] = Form.useForm<FormValues>();
   const { message } = App.useApp();
   const qc = useQueryClient();
@@ -40,6 +41,9 @@ export function ProgressFormModal({ open, onClose, projectId, defaultProjectId, 
   const { data: activities, isLoading: actLoading } = useActivities(selectedProject);
   const selectedActivity = Form.useWatch('activityId', form);
   const activity = activities?.find((a) => a.id === selectedActivity);
+  const draft = entry ? null : prefill;
+  const quantity = Form.useWatch('quantity', form);
+  const date = Form.useWatch('date', form);
 
   useEffect(() => {
     if (!open) return;
@@ -59,8 +63,12 @@ export function ProgressFormModal({ open, onClose, projectId, defaultProjectId, 
       });
     } else {
       form.setFieldsValue({ projectId: projectId ?? defaultProjectId, date: dayjs() });
+      if (prefill) {
+        const v = prefill.values as Partial<Omit<FormValues, 'date'>> & { date?: string };
+        form.setFieldsValue({ projectId: prefill.projectId, activityId: v.activityId, date: draftDate(v.date) ?? dayjs(), quantity: v.quantity, location: v.location, manpowerCount: v.manpowerCount, remarks: v.remarks });
+      }
     }
-  }, [open, projectId, defaultProjectId, entry, form]);
+  }, [open, projectId, defaultProjectId, entry, prefill, form]);
 
   const mutation = useMutation({
     mutationFn: async (v: FormValues) => {
@@ -96,6 +104,7 @@ export function ProgressFormModal({ open, onClose, projectId, defaultProjectId, 
       layout="modal"
       width={640}
       draftKey={editing ? undefined : `progress:${projectId ?? 'any'}`}
+      aiDraft={draft}
     >
       <Form form={form} layout="vertical">
         {entry?.reviewNote && (
@@ -105,7 +114,7 @@ export function ProgressFormModal({ open, onClose, projectId, defaultProjectId, 
           <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} onChange={() => form.setFieldValue('activityId', undefined)} />
         </Form.Item>
         <FormGrid cols={2}>
-          <Form.Item name="activityId" label="Activity" rules={[{ required: true, message: 'Choose the activity' }]}>
+          <Form.Item name="activityId" label="Activity" rules={[{ required: true, message: 'Choose the activity' }]} {...aiFlagItem(draft, 'activityId', selectedActivity)}>
             <Select
               showSearch={{ optionFilterProp: 'label' }}
               loading={actLoading}
@@ -114,12 +123,12 @@ export function ProgressFormModal({ open, onClose, projectId, defaultProjectId, 
               options={(activities ?? []).map((a) => ({ value: a.id, label: `${a.name} (${a.unit})` }))}
             />
           </Form.Item>
-          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date' }]}>
+          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date' }]} {...aiFlagItem(draft, 'date', date)}>
             <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
         </FormGrid>
         <FormGrid cols={3}>
-          <Form.Item name="quantity" label="Quantity executed" rules={[{ required: true, message: 'Enter the quantity done' }]}>
+          <Form.Item name="quantity" label="Quantity executed" rules={[{ required: true, message: 'Enter the quantity done' }]} {...aiFlagItem(draft, 'quantity', quantity)}>
             <QuantityInput unit={activity?.unit} />
           </Form.Item>
           <Form.Item name="manpowerCount" label="Manpower">

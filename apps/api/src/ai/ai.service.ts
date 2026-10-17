@@ -1,7 +1,7 @@
 import { BadRequestException, ForbiddenException, HttpException, HttpStatus, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type Anthropic from '@anthropic-ai/sdk';
 import { Prisma } from '@prisma/client';
-import type { AiAskInput, AiCitationDto, AiMessageDto, AiSettingsDto, AiStatusDto, AiStreamEvent, AiThreadDetailDto, AiThreadDto } from '@erp/shared';
+import type { AiAskInput, AiCitationDto, AiDraftDto, AiMessageDto, AiSettingsDto, AiStatusDto, AiStreamEvent, AiThreadDetailDto, AiThreadDto } from '@erp/shared';
 import { ROLE_LABELS, canManageAi, canUseAi } from '@erp/shared';
 import type { RequestUser } from '../common/current-user';
 import { AuditService } from '../common/audit.service';
@@ -50,6 +50,11 @@ const TOOL_STATUS: Record<string, string> = {
   monthly_trends: 'Reading monthly trends',
   list_records: 'Reading records',
   get_record: 'Opening a record',
+  draft_material_request: 'Filling in the material request',
+  draft_expense: 'Filling in the expense',
+  draft_progress: 'Filling in the progress entry',
+  draft_dpr: 'Filling in the DPR',
+  draft_letter: 'Writing the letter',
   schedule: 'Reading the schedule',
   project_cost: 'Reading project cost',
   project_budget: 'Reading the budget',
@@ -223,6 +228,7 @@ export class AiService {
     const usage: AiUsage = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 };
     let paise = 0;
     const results: unknown[] = [];
+    const drafts: AiDraftDto[] = [];
     const calls: { name: string; input: unknown; error?: string }[] = [];
     const parts: string[] = [];
     let servedBy = model.name;
@@ -259,6 +265,7 @@ export class AiService {
         const blocks: Anthropic.Beta.BetaToolResultBlockParam[] = ran.map(({ use, out }) => {
           calls.push({ name: use.name, input: use.input, ...(out.isError ? { error: out.text } : {}) });
           if (!out.isError) results.push(out.result);
+          if (out.draft) drafts.push(out.draft);
           return { type: 'tool_result', tool_use_id: use.id, content: out.text, ...(out.isError ? { is_error: true } : {}) };
         });
         messages.push({ role: 'user', content: blocks });
@@ -276,6 +283,7 @@ export class AiService {
     const draft = [parts.join('\n\n'), failure].filter(Boolean).join('\n\n');
     const { text, citations } = filterLinks(draft, collectHrefs(results));
     const unverified = failure && !parts.length ? [] : unverifiedFigures(text, [...collectNumbers(results), ...derivedNumbers(results), ...collectNumbers(question)]);
+    const filled = groundDrafts(latestPerKind(drafts), results, question);
     const saved = await this.prisma.aiMessage.create({
       data: {
         organizationId: user.organizationId,
@@ -285,6 +293,7 @@ export class AiService {
         citations: citations as unknown as Prisma.InputJsonValue,
         unverified: unverified as unknown as Prisma.InputJsonValue,
         toolCalls: calls as unknown as Prisma.InputJsonValue,
+        drafts: filled.length ? (filled as unknown as Prisma.InputJsonValue) : undefined,
         model: servedBy,
         inputTokens: usage.input,
         outputTokens: usage.output,
@@ -401,7 +410,31 @@ function historyMessages(rows: { role: string; text: string }[]): ModelMessage[]
   return out;
 }
 
-function toDto(m: { id: string; role: string; text: string; citations: Prisma.JsonValue; unverified: Prisma.JsonValue; feedback: number | null; createdAt: Date }): AiMessageDto {
+/** A form drafted twice in one answer (the model fixed its first try) is offered once, as last drafted. */
+function latestPerKind(drafts: AiDraftDto[]): AiDraftDto[] {
+  return drafts.filter((d, i) => !drafts.slice(i + 1).some((later) => later.kind === d.kind));
+}
+
+/** Free text the model wrote into a draft: a figure in it must come from the question or a record read, or it is flagged. */
+const DRAFT_TEXT_FIELDS = ['summary', 'workExecuted', 'materialReceived', 'issues', 'nextDayPlan', 'testsConducted', 'safetyObservations', 'remarks'];
+
+export function groundDrafts(drafts: AiDraftDto[], results: unknown[], question: string): AiDraftDto[] {
+  // Figures in a draft are the model's own, so they cannot vouch for themselves.
+  const facts = results.map((r) => (r && typeof r === 'object' && 'draft' in r ? { ...(r as object), draft: undefined } : r));
+  const known = [...collectNumbers(facts), ...derivedNumbers(facts), ...collectNumbers(question)];
+  return drafts.map((d) => {
+    const flags = [...d.flags];
+    for (const field of DRAFT_TEXT_FIELDS) {
+      const v = d.values[field];
+      if (typeof v !== 'string') continue;
+      const odd = unverifiedFigures(v, known);
+      if (odd.length) flags.push({ field, note: `Check ${odd.length === 1 ? 'this figure' : 'these figures'}, not found in what you said or the records: ${odd.join(', ')}` });
+    }
+    return { ...d, flags };
+  });
+}
+
+function toDto(m: { id: string; role: string; text: string; citations: Prisma.JsonValue; unverified: Prisma.JsonValue; drafts?: Prisma.JsonValue; feedback: number | null; createdAt: Date }): AiMessageDto {
   return {
     id: m.id,
     role: m.role === 'assistant' ? 'assistant' : 'user',
@@ -410,5 +443,6 @@ function toDto(m: { id: string; role: string; text: string; citations: Prisma.Js
     unverified: (Array.isArray(m.unverified) ? m.unverified : []) as string[],
     feedback: m.feedback === 1 || m.feedback === -1 ? m.feedback : null,
     createdAt: m.createdAt.toISOString(),
+    ...(Array.isArray(m.drafts) && m.drafts.length ? { drafts: m.drafts as unknown as AiDraftDto[] } : {}),
   };
 }

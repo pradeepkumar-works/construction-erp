@@ -66,6 +66,19 @@ test('a line whose quantity × rate is not its amount, and totals that do not ad
   assert.equal(fine.lines[0].rate.confidence, 'high');
 });
 
+test('a kachha bill with only lines, one GST figure and a total gets its taxable value and GST worked out', () => {
+  const r = normalise('invoice', { fields: { total: at(2714) }, lines: [{ description: at('Hydraulic hose'), quantity: at(2), rate: at(1150), amount: at(2300) }] }, 1);
+  assert.equal(r.fields.subtotal.value, 2300);
+  assert.equal(r.fields.subtotal.box, null, 'a worked-out figure has no place on the page');
+  assert.match(r.fields.subtotal.reason ?? '', /sum of the lines/);
+  assert.equal(Number(r.fields.cgst.value) + Number(r.fields.sgst.value), 414);
+  assert.equal(r.fields.total.confidence, 'high');
+  const printed = normalise('invoice', { fields: { subtotal: at(2300), cgst: at(207), sgst: at(207), total: at(2714) }, lines: [] }, 1);
+  assert.equal(printed.fields.cgst.reason, null, 'printed figures are left alone');
+  const noGst = normalise('invoice', { fields: { subtotal: at(2300), total: at(2300) }, lines: [] }, 1);
+  assert.equal(noGst.fields.cgst.value, null, 'a bill without GST gets none');
+});
+
 test('values not printed stay empty with no box; boxes are clamped and a page past the last is dropped', () => {
   const r = normalise('drawing', { fields: { drawingNo: { value: 'A-101', page: 4, box: [-20, 10, 1200, 40] }, revision: { value: null, box: [1, 2, 3, 4] } }, lines: [{ description: at('x') }] }, 2);
   assert.deepEqual(r.fields.drawingNo.box, [0, 10, 1000, 40]);
