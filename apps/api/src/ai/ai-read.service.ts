@@ -103,21 +103,26 @@ export class AiReadService {
       return result(picked, { id: po.vendorId, name: po.vendorName }, vendorOk ? null : `The invoice's GSTIN ${gstin} is not ${po.vendorName}'s (${po.vendorGstin}).`);
     }
 
-    const byGstin = gstin ? (await this.vendors.list(user, { q: gstin, pageSize: 5 } as never)).items.filter((v) => v.gstin && norm(v.gstin) === norm(gstin)) : [];
-    const byName = !byGstin.length && name ? (await this.vendors.list(user, { q: name, pageSize: 5 } as never)).items : [];
-    const vendor = byGstin[0] ?? (byName.length === 1 ? byName[0] : undefined);
+    // The same state, PAN and entity (the first 14 characters) is the same vendor even when one of the two GSTINs has
+    // its last, check character wrong; the read one's is verified, so the note points at the master's.
+    const byPan = gstin ? (await this.vendors.list(user, { q: norm(gstin).slice(2, 12), pageSize: 10 } as never)).items.filter((v) => v.gstin && norm(v.gstin).slice(0, 14) === norm(gstin).slice(0, 14)) : [];
+    const byGstin = byPan.filter((v) => norm(v.gstin!) === norm(gstin!));
+    const byName = !byPan.length && name ? (await this.vendors.list(user, { q: name, pageSize: 5 } as never)).items : [];
+    const vendor = byGstin[0] ?? (byPan.length === 1 ? byPan[0] : undefined) ?? (byName.length === 1 ? byName[0] : undefined);
     if (!vendor) return result(null, null, gstin ? `No vendor in the master has GSTIN ${gstin}.` : 'The vendor could not be found in the master.');
+    const masterNote = !byGstin.length && byPan[0] === vendor ? `${vendor.name}'s GSTIN in the vendor master is ${vendor.gstin}, which differs from the invoice's ${gstin} in its last character; ${gstinChecksumOk(gstin!) ? 'the invoice\'s is the valid one, so correct the master' : 'check which is right'}.` : null;
+    const withNote = (note: string | null) => [masterNote, note].filter(Boolean).join(' ') || null;
     const orders = (await this.purchaseOrders.list(user, { vendorId: vendor.id, status: 'APPROVED', pageSize: 50, sortBy: 'poDate', sortOrder: 'desc' } as never)).items;
-    if (!orders.length) return result(null, { id: vendor.id, name: vendor.name }, `${vendor.name} has no approved purchase order you can see.`);
+    if (!orders.length) return result(null, { id: vendor.id, name: vendor.name }, withNote(`${vendor.name} has no approved purchase order you can see.`));
     const poNo = readText(read.fields.poNo);
     const printed = poNo ? orders.find((o) => norm(o.poNo) === norm(poNo) || norm(o.poNo).endsWith(norm(poNo))) : undefined;
-    if (printed) return result(scoreOf(printed), { id: vendor.id, name: vendor.name }, null);
+    if (printed) return result(scoreOf(printed), { id: vendor.id, name: vendor.name }, withNote(null));
     // Most alike first; among equals the order with more received and not yet billed, then the newest.
     const pending = (po: PurchaseOrderDto) => po.lines.reduce((s, l) => s + Math.max(0, Number(l.receivedQty) - Number(l.billedQty)), 0);
     const ranked = orders.map(scoreOf).sort((a, b) => b.score - a.score || pending(b.po) - pending(a.po));
     const best = ranked[0];
-    if (!best.score) return result(null, { id: vendor.id, name: vendor.name }, `None of ${vendor.name}'s orders has items like the invoice's.`);
-    return result(best, { id: vendor.id, name: vendor.name }, ranked.length > 1 ? `Picked ${best.po.poNo}, the order whose items are most like the invoice's; change it if it is another.` : null);
+    if (!best.score) return result(null, { id: vendor.id, name: vendor.name }, withNote(`None of ${vendor.name}'s orders has items like the invoice's.`));
+    return result(best, { id: vendor.id, name: vendor.name }, withNote(ranked.length > 1 ? `Picked ${best.po.poNo}, the order whose items are most like the invoice's; change it if it is another.` : null));
   }
 }
 
@@ -166,15 +171,30 @@ export function normalise(kind: DocReadKind, raw: { fields: Record<string, unkno
     if (q !== null && r !== null && a !== null && Math.abs(q * r - a) > TOLERANCE) for (const f of [l.quantity, l.rate, l.amount]) low(f, 'quantity × rate is not the amount');
   }
   const amounts = lines.map((l) => readNumber(l.amount));
+  const linesSum = amounts.length && amounts.every((a) => a !== null) ? Math.round(amounts.reduce((s: number, a) => s + a!, 0) * 100) / 100 : null;
+  // A kachha bill prints only its lines, one GST figure and the total: what is not printed is worked out, and says so.
+  if (readNumber(fields.subtotal) === null && linesSum !== null) fields.subtotal = worked(linesSum, 'not printed; the sum of the lines');
   const subtotal = readNumber(fields.subtotal);
-  if (subtotal !== null && amounts.length && amounts.every((a) => a !== null) && Math.abs(amounts.reduce((s: number, a) => s + a!, 0) - subtotal) > TOLERANCE) low(fields.subtotal, 'the lines do not add up to it');
+  if (subtotal !== null && linesSum !== null && Math.abs(linesSum - subtotal) > TOLERANCE) low(fields.subtotal, 'the lines do not add up to it');
   const total = readNumber(fields.total);
+  if (total !== null && subtotal !== null && ['cgst', 'sgst', 'igst'].every((k) => readNumber(fields[k]) === null)) {
+    const tax = Math.round((total - subtotal - (readNumber(fields.freight) ?? 0)) * 100) / 100;
+    if (tax > TOLERANCE) {
+      fields.cgst = worked(Math.round(tax * 50) / 100, 'not printed apart; half the GST, worked out from the total');
+      fields.sgst = worked(Math.round((tax - readNumber(fields.cgst)!) * 100) / 100, 'not printed apart; half the GST, worked out from the total');
+    }
+  }
   if (total !== null && subtotal !== null) {
     const sum = subtotal + ['cgst', 'sgst', 'igst', 'freight'].reduce((s, k) => s + (readNumber(fields[k]) ?? 0), 0);
     // Invoices round the total to the rupee.
     if (Math.abs(sum - total) > TOLERANCE) low(fields.total, 'subtotal, GST and freight do not add up to it');
   }
   return { fields, lines };
+}
+
+/** A figure not printed but worked out from those that are: no place on the page, and the reason says how. */
+function worked(value: number, reason: string): DocReadField {
+  return { value, confidence: 'high', reason, page: null, box: null };
 }
 
 function low(f: DocReadField | undefined, reason: string) {
