@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { App, Button, Card, Divider, Popconfirm, Table, Tag, Typography } from 'antd';
+import { App, Button, Divider, Popconfirm, Table, Tag, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { VendorBillDto, VendorBillLineDto } from '@erp/shared';
@@ -20,6 +20,8 @@ import { BillPayments, PaidTag } from '@/components/payables/BillPayments';
 import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
 import { checksSection } from '@/components/checks/ChecksSection';
 import { submissionLifecycle } from '@/components/record/lifecycle';
+import { themeFontSize } from '@/lib/theme';
+import { Section } from '@/components/common/Section';
 
 const money = (v: string | number) => <span className="mono">{formatINR(v, true)}</span>;
 
@@ -159,7 +161,7 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
                             <Typography.Text type={toNumber(v) > toNumber(l.poRate) ? 'danger' : undefined} className="mono">
                               {formatINR(v, true)}
                             </Typography.Text>
-                            {v !== l.poRate && <div className="text-muted mono" style={{ fontSize: 11 }}>PO {formatINR(l.poRate, true)}</div>}
+                            {v !== l.poRate && <div className="text-muted mono" style={{ fontSize: themeFontSize('fontSizeSM') }}>PO {formatINR(l.poRate, true)}</div>}
                           </span>
                         ),
                       },
@@ -175,7 +177,7 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
                     ]}
                   />
                   <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
-                    <Card size="small" style={{ width: 320 }}>
+                    <Section style={{ width: 320 }}>
                       {[
                         ['Items', data.subtotal],
                         ['GST', data.gstAmount],
@@ -191,7 +193,7 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
                         <span>Invoice total</span>
                         {money(data.total)}
                       </div>
-                    </Card>
+                    </Section>
                   </div>
                 </>
               ),

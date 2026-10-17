@@ -12,9 +12,52 @@ export interface Appearance {
   compact: boolean;
 }
 
+/** The one type scale (UX item 82), in px: 12 is the floor, in either density. */
+export const TYPE_SCALE = [12, 14, 16, 20, 24, 30] as const;
+
+/** antd's line height for a font size (its `getLineHeight`): the text plus 8 px. */
+const lineHeightOf = (size: number) => (size + 8) / size;
+
+/**
+ * The type and target floor, run after antd's own algorithms (UX item 82). antd's compact algorithm rebuilds every font
+ * size from 12 (body 12, small 10) and makes small controls 21 px; this puts the type back on the scale (12 small, 14 body,
+ * 16 large, 20 extra large; headings 30, 24, 20, 16, 14) so compact shrinks only heights and spacing, and keeps a small
+ * control 24 px (WCAG 2.5.8) and the extra small one 16 px.
+ */
+const typeAndTargets: typeof theme.compactAlgorithm = (seed, map) => {
+  const base = map ?? theme.defaultAlgorithm(seed);
+  const [sm, md, lg, xl, h2, h1] = TYPE_SCALE;
+  const headings = [h1, h2, xl, lg, md] as const;
+  return {
+    ...base,
+    fontSizeSM: sm,
+    fontSize: md,
+    fontSizeLG: lg,
+    fontSizeXL: xl,
+    fontSizeHeading1: headings[0],
+    fontSizeHeading2: headings[1],
+    fontSizeHeading3: headings[2],
+    fontSizeHeading4: headings[3],
+    fontSizeHeading5: headings[4],
+    lineHeightSM: lineHeightOf(sm),
+    lineHeight: lineHeightOf(md),
+    lineHeightLG: lineHeightOf(lg),
+    lineHeightHeading1: lineHeightOf(headings[0]),
+    lineHeightHeading2: lineHeightOf(headings[1]),
+    lineHeightHeading3: lineHeightOf(headings[2]),
+    lineHeightHeading4: lineHeightOf(headings[3]),
+    lineHeightHeading5: lineHeightOf(headings[4]),
+    fontHeightSM: sm + 8,
+    fontHeight: md + 8,
+    fontHeightLG: lg + 8,
+    controlHeightSM: Math.max(base.controlHeightSM, 24),
+    controlHeightXS: Math.max(base.controlHeightXS, 16),
+  };
+};
+
 /** The antd theme for one appearance: brand colours as design tokens and component tokens. Every screen's colours start here. */
 export function makeTheme({ dark, compact }: Appearance): ThemeConfig {
-  const algorithm = [dark ? theme.darkAlgorithm : theme.defaultAlgorithm, ...(compact ? [theme.compactAlgorithm] : [])];
+  const algorithm = [dark ? theme.darkAlgorithm : theme.defaultAlgorithm, ...(compact ? [theme.compactAlgorithm] : []), typeAndTargets];
   const token: ThemeConfig['token'] = {
     colorPrimary: c.primary,
     colorInfo: c.primary,
@@ -88,10 +131,14 @@ export function makeTheme({ dark, compact }: Appearance): ThemeConfig {
         darkGroupTitleColor: c.inkCaption,
         itemHeight: 36,
         itemMarginBlock: 2,
-        groupTitleFontSize: 11,
+        groupTitleFontSize: TYPE_SCALE[0],
         groupTitleLineHeight: 1.2,
       },
-      Card: { headerFontSize: 15 },
+      // A small Segmented (the project page's tabs) draws its items 4 px inside the control: 28 keeps each item 24 px.
+      Segmented: { controlHeightSM: 28 },
+      // Figures and dialog titles keep their size now that the headings follow the scale (antd reads heading 3 and 5).
+      Statistic: { contentFontSize: TYPE_SCALE[4] },
+      Modal: { titleFontSize: TYPE_SCALE[2] },
       // Initials avatars: antd fills them with the placeholder grey, which white initials fail AA on in dark mode.
       Avatar: { colorTextPlaceholder: c.muted },
       // The selected tab's text is primary-coloured, which in dark mode needs the lighter blue to read.
@@ -129,6 +176,15 @@ const COLOR_TOKEN = /^(color[A-Z]|(blue|purple|cyan|green|magenta|pink|red|orang
  */
 export const themeColor = (key: keyof GlobalToken) => `var(${token2CSSVar(key, 'ant')})`;
 
+const FONT_SIZE_KEYS = ['fontSizeSM', 'fontSize', 'fontSizeLG', 'fontSizeXL', 'fontSizeHeading1', 'fontSizeHeading2', 'fontSizeHeading3', 'fontSizeHeading4', 'fontSizeHeading5'] as const;
+type FontSizeKey = (typeof FONT_SIZE_KEYS)[number];
+
+/**
+ * A size from the type scale for an inline style outside a component (a constant, a column definition), as the token's
+ * CSS variable, so it follows the theme like `token.fontSizeSM` would: `fontSize: themeFontSize('fontSizeSM')`.
+ */
+export const themeFontSize = (key: FontSizeKey) => `var(${token2CSSVar(key, 'ant')})`;
+
 const kebab = (key: string) => key.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
 
 /**
@@ -145,6 +201,10 @@ export function cssVariablesFor(config: ThemeConfig): string {
   }
   for (const [key, value] of Object.entries(c)) vars.push(`--brand-${kebab(key)}:${value}`);
   vars.push(`--ant-control-height:${token.controlHeight}px`);
+  // The type scale, so CSS files and inline styles outside a component (`var(--ant-font-size-sm)`) never hold a px size.
+  for (const key of FONT_SIZE_KEYS) {
+    vars.push(`${token2CSSVar(key, 'ant')}:${token[key]}px`);
+  }
   // antd's own motion, so CSS transitions (the sidebar) move at the same pace as antd's components.
   for (const key of ['motionDurationFast', 'motionDurationMid', 'motionDurationSlow', 'motionEaseInOut', 'motionEaseOut'] as const) vars.push(`${token2CSSVar(key, 'ant')}:${token[key]}`);
   return `:root{${vars.join(';')}}`;

@@ -15,6 +15,7 @@ import { FileLinks, RevisionStatusTag } from './docUi';
 import { DocumentFormModal } from './DocumentFormModal';
 import { RevisionFormModal } from './RevisionFormModal';
 import { RecordLink } from '@/components/record/RecordLink';
+import { themeFontSize } from '@/lib/theme';
 
 /** A drawing or document: its current revision first, every revision with its files and transmittals, and the history. */
 export function DocumentDrawer({ id, open, onClose, onSend, onOpenTransmittal }: { id: string | null; open: boolean; onClose: () => void; onSend?: (projectId: string, revisionIds: string[]) => void; onOpenTransmittal?: (id: string) => void }) {
@@ -114,10 +115,10 @@ export function DocumentDrawer({ id, open, onClose, onSend, onOpenTransmittal }:
                 key: 'files',
                 render: (_, r) => (
                   <div>
-                    {r.remarks ? <div style={{ fontSize: 12 }}>{r.remarks}</div> : null}
+                    {r.remarks ? <div style={{ fontSize: themeFontSize('fontSizeSM') }}>{r.remarks}</div> : null}
                     <FileLinks files={r.attachments} compact />
                     {r.transmittals.length ? (
-                      <div className="text-muted" style={{ fontSize: 12 }}>
+                      <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                         Sent on{' '}
                         {r.transmittals.map((t, i) => (
                           <React.Fragment key={t.id}>
@@ -162,7 +163,7 @@ export function DocumentDrawer({ id, open, onClose, onSend, onOpenTransmittal }:
                 <div>
                   <Typography.Text strong>{(h.action.charAt(0) + h.action.slice(1).toLowerCase()).replace(/_/g, ' ')}</Typography.Text> <Typography.Text type="secondary">by {h.actorName}</Typography.Text>
                   {h.note ? <span> · {h.note}</span> : null}
-                  <div className="text-muted" style={{ fontSize: 12 }}>
+                  <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                     {formatDateTime(h.createdAt)}
                   </div>
                 </div>

@@ -10,7 +10,7 @@ import { formatINR, formatQty } from '@/lib/format';
 import { downloadXlsx, exportFileName, type ExportColumn } from '@/lib/exportExcel';
 import { QueryError } from '@/components/common/QueryState';
 import { CardToolbar } from '@/components/common/CardToolbar';
-import { themeColor } from '@/lib/theme';
+import { themeColor, themeFontSize } from '@/lib/theme';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { ExportButton } from '@/components/common/ExportButton';
 
@@ -19,7 +19,7 @@ const MARK: Record<StaffAttendanceStatus, { text: string; color: string }> = {
   HALF_DAY: { text: 'H', color: themeColor('orange7') },
   ABSENT: { text: 'A', color: themeColor('colorErrorText') },
 };
-const big = { content: { fontSize: 18 } };
+const big = { content: { fontSize: themeFontSize('fontSizeXL') } };
 
 const musterExport = (m: MusterDto): ExportColumn<MusterRowDto>[] => [
   { header: 'No.', value: (r) => r.workerNo },
@@ -58,7 +58,7 @@ export function MusterPanel({ projectId: fixedProject }: { projectId?: string })
       render: (v, r) => (
         <div>
           <b>{v}</b>
-          <div className="text-muted" style={{ fontSize: 12 }}>
+          <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
             {r.workerNo} · {r.trade}
           </div>
         </div>
@@ -71,7 +71,7 @@ export function MusterPanel({ projectId: fixedProject }: { projectId?: string })
       align: 'center' as const,
       render: (_: unknown, r: MusterRowDto) => {
         const k = r.marks[i + 1];
-        return k ? <span style={{ color: MARK[k].color, fontWeight: 600, fontSize: 12 }}>{MARK[k].text}</span> : null;
+        return k ? <span style={{ color: MARK[k].color, fontWeight: 600, fontSize: themeFontSize('fontSizeSM') }}>{MARK[k].text}</span> : null;
       },
     })),
     { title: 'Man-days', dataIndex: 'manDays', width: 90, align: 'right', fixed: 'right' },
@@ -83,7 +83,7 @@ export function MusterPanel({ projectId: fixedProject }: { projectId?: string })
     { title: 'Activity', dataIndex: 'activityName', render: (v, r) => (
       <div>
         <b>{v}</b>
-        <div className="text-muted" style={{ fontSize: 12 }}>{r.trades.map((t) => `${t.trade} ${t.manDays}`).join(', ')}</div>
+        <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{r.trades.map((t) => `${t.trade} ${t.manDays}`).join(', ')}</div>
       </div>
     ) },
     { title: 'Man-days', dataIndex: 'manDays', width: 100, align: 'right' },
@@ -126,7 +126,7 @@ export function MusterPanel({ projectId: fixedProject }: { projectId?: string })
               <Statistic title="OT hours" value={m.totals.otHours} styles={big} />
               <Statistic title="Wages at current rates" value={formatINR(m.totals.wages)} styles={big} />
               {m.byContractor.map((c) => (
-                <Statistic key={c.contractor} title={c.contractor} value={formatINR(c.wages)} suffix={<span style={{ fontSize: 12 }}>{c.workers} workers, {c.manDays} man-days</span>} styles={big} />
+                <Statistic key={c.contractor} title={c.contractor} value={formatINR(c.wages)} suffix={<span style={{ fontSize: themeFontSize('fontSizeSM') }}>{c.workers} workers, {c.manDays} man-days</span>} styles={big} />
               ))}
             </div>
           ) : null}
@@ -146,7 +146,7 @@ export function MusterPanel({ projectId: fixedProject }: { projectId?: string })
             <h4 style={{ margin: 0 }}>Output per man-day</h4>
             <DatePicker.RangePicker value={range} onChange={(v) => v && v[0] && v[1] && setRange([v[0], v[1]])} format="DD MMM YYYY" allowClear={false} aria-label="Dates" />
             {output.data ? (
-              <span className="text-muted" style={{ fontSize: 13 }}>
+              <span className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                 {output.data.totalManDays} man-days{output.data.untaggedManDays ? `, ${output.data.untaggedManDays} not tagged to an activity` : ''}
               </span>
             ) : null}

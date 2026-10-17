@@ -42,6 +42,7 @@ import { SubcontractsPanel } from '@/components/subcontracts/SubcontractsPanel';
 import { HandoverPanel } from '@/components/handover/HandoverPanel';
 import { AskButton } from '@/components/ai/AskButton';
 import { LinkButton } from '@/components/common/LinkButton';
+import { themeFontSize } from '@/lib/theme';
 
 const tabPref = (projectId: string) => `nirmaan.project.tab.${projectId}`;
 
@@ -147,7 +148,7 @@ function ProjectPage({ project }: { project: ProjectDetail }) {
         extra={
           <Space>
             <div style={{ width: 160 }}>
-              <Typography.Text type="secondary" style={{ fontSize: 11 }}>
+              <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                 Physical progress
               </Typography.Text>
               <Progress percent={project.physicalProgressPct} size="small" aria-label={`Physical progress ${project.physicalProgressPct}%`} />

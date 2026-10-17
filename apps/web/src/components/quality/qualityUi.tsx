@@ -5,6 +5,7 @@ import { Tag } from 'antd';
 import type { NcrSeverity, NcrStatus, QualityTestDto, TestResult } from '@erp/shared';
 import { NCR_SEVERITY_LABELS, NCR_STATUS_LABELS, TEST_RESULT_LABELS } from '@erp/shared';
 import { formatDate } from '@/lib/format';
+import { themeFontSize } from '@/lib/theme';
 
 const RESULT_TAG: Record<TestResult, string> = { PENDING: 'default', PASS: 'green', FAIL: 'red' };
 const SEVERITY_TAG: Record<NcrSeverity, string> = { MINOR: 'gold', MAJOR: 'orange', CRITICAL: 'red' };
@@ -31,7 +32,7 @@ export const NcrStatusTag = ({ status }: { status: NcrStatus }) => (
 /** "7 days 18.9 · 28 days due 11 Nov": each reading's value, or when it is due. */
 export function ReadingsSummary({ t }: { t: QualityTestDto }) {
   return (
-    <div style={{ fontSize: 12 }}>
+    <div style={{ fontSize: themeFontSize('fontSizeSM') }}>
       {t.readings.map((r) => (
         <div key={r.id} style={{ whiteSpace: 'nowrap' }}>
           {t.readings.length > 1 ? <span className="text-muted">{r.label}: </span> : null}

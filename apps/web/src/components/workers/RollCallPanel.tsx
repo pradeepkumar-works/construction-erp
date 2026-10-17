@@ -15,6 +15,7 @@ import { formatDate } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { CardToolbar } from '@/components/common/CardToolbar';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
+import { themeFontSize } from '@/lib/theme';
 
 interface Mark {
   status: StaffAttendanceStatus | null;
@@ -100,7 +101,7 @@ export function RollCallPanel({ projectId: fixedProject }: { projectId?: string 
       render: (v, r) => (
         <div>
           <b>{v}</b>
-          <div className="text-muted" style={{ fontSize: 12 }}>
+          <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
             {r.workerNo} · {r.trade} · {WORKER_SKILL_LABELS[r.skill]}
           </div>
         </div>
@@ -229,7 +230,7 @@ export function RollCallPanel({ projectId: fixedProject }: { projectId?: string 
             <Alert type="info" showIcon style={{ margin: 12 }} title={`The DPR for ${formatDate(dateStr)} is approved, so this roll call can no longer change.`} />
           ) : null}
           {data ? (
-            <div className="roll-call-summary text-muted" style={{ padding: '8px 12px', fontSize: 13 }}>
+            <div className="roll-call-summary text-muted" style={{ padding: '8px 12px', fontSize: themeFontSize('fontSizeSM') }}>
               {data.rows.length} on the roll · {count('PRESENT')} present · {count('HALF_DAY')} half day · {count('ABSENT')} absent · {count(null)} not marked ·{' '}
               {live.reduce((s, x) => s + manDays(x), 0)} man-days
               {data.headCount ? (

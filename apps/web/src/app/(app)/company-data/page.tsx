@@ -13,6 +13,7 @@ import { buildCompanyExport, type ExportProgress } from '@/lib/companyExport';
 import { formatDate, formatDateTime } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { QueryError } from '@/components/common/QueryState';
+import { themeFontSize } from '@/lib/theme';
 
 const bytes = (n: number) => (n < 1024 * 1024 ? `${Math.max(1, Math.round(n / 1024))} KB` : `${(n / 1024 / 1024).toFixed(1)} MB`);
 
@@ -59,7 +60,7 @@ function ExportCard() {
           {progress ? (
             <div style={{ maxWidth: 480 }}>
               <Progress percent={progress.percent} status="active" aria-label={`Export ${progress.percent}% built`} />
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+              <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                 {progress.step}
               </Typography.Text>
             </div>

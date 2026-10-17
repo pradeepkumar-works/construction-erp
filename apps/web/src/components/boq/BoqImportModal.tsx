@@ -6,7 +6,7 @@ import type { UploadProps } from 'antd';
 import { DownloadOutlined, InboxOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, errorMessage } from '@/lib/api';
-import { themeColor } from '@/lib/theme';
+import { themeColor, themeFontSize } from '@/lib/theme';
 import { loadXlsx } from '@/lib/exportExcel';
 
 type Field = 'itemNo' | 'description' | 'unit' | 'rate' | 'originalQty' | 'revisedQty';
@@ -203,7 +203,7 @@ export function BoqImportModal({ open, onClose, projectId }: { open: boolean; on
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px 16px', margin: '12px 0 16px' }}>
             {FIELDS.map((f) => (
               <div key={f.key}>
-                <div style={{ fontSize: 12, marginBottom: 2 }}>
+                <div style={{ fontSize: themeFontSize('fontSizeSM'), marginBottom: 2 }}>
                   {f.label} {f.required && <span style={{ color: themeColor('colorErrorText') }}>*</span>}
                 </div>
                 <Select

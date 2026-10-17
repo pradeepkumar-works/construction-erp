@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Alert, App, Button, Card, Divider, Form, Input, Popconfirm, Progress, Table, Tag, Typography } from 'antd';
+import { Alert, App, Button, Divider, Form, Input, Popconfirm, Progress, Table, Tag, Typography } from 'antd';
 import { ImportOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { PurchaseOrderDto, PurchaseOrderLineDto } from '@erp/shared';
@@ -22,6 +22,8 @@ import { openPoPrint } from './poPrint';
 import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
 import { submissionLifecycle } from '@/components/record/lifecycle';
 import { FormShell } from '@/components/form/FormShell';
+import { themeFontSize } from '@/lib/theme';
+import { Section } from '@/components/common/Section';
 
 const money = (v: string | number) => <span className="mono" style={{ whiteSpace: 'nowrap' }}>{formatINR(v, true)}</span>;
 
@@ -150,7 +152,7 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
                     dataSource={data.lines}
                     scroll={{ x: 760 }}
                     columns={[
-                      { title: 'Item', render: (_, l) => <div>{l.itemName}{l.specification && <div className="text-muted" style={{ fontSize: 12 }}>{l.specification}</div>}</div> },
+                      { title: 'Item', render: (_, l) => <div>{l.itemName}{l.specification && <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{l.specification}</div>}</div> },
                       { title: 'Quantity', dataIndex: 'quantity', width: 120, align: 'right', render: (v, l) => <span className="mono">{formatQty(v)} {l.unit}</span> },
                       { title: 'Rate', dataIndex: 'rate', width: 110, align: 'right', render: (v) => money(v) },
                       { title: 'GST', dataIndex: 'gstRate', width: 60, align: 'right', render: (v) => `${v}%` },
@@ -170,7 +172,7 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
                     ]}
                   />
                   <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
-                    <Card size="small" style={{ width: 320 }}>
+                    <Section style={{ width: 320 }}>
                       {[
                         ['Items', data.subtotal],
                         ['GST', data.gstAmount],
@@ -186,7 +188,7 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
                         <span>Order total</span>
                         {money(data.total)}
                       </div>
-                    </Card>
+                    </Section>
                   </div>
                 </>
               ),

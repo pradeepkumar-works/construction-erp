@@ -9,6 +9,7 @@ import { useContractorMonth } from '@/lib/queries';
 import { downloadXlsx, type ExportColumn } from '@/lib/exportExcel';
 import { formatINR, toNumber } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
+import { themeFontSize } from '@/lib/theme';
 
 /** Labour contractors' month from the attendance register: man-days by project and trade, at the daily rates. */
 export function ContractorMonth({ month, projectId }: { month: string; projectId?: string }) {
@@ -44,7 +45,7 @@ export function ContractorMonth({ month, projectId }: { month: string; projectId
         i === 0 || rows[i - 1].contractor !== v ? (
           <div>
             <div>{v}</div>
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
               {totals.get(v)!.manDays} man-days{totals.get(v)!.amount ? `, ${formatINR(totals.get(v)!.amount)}` : ''}
             </Typography.Text>
           </div>

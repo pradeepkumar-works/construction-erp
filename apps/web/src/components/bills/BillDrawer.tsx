@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Alert, App, Button, Card, DatePicker, Divider, Form, Input, Popconfirm, Table, Tag, Typography } from 'antd';
+import { Alert, App, Button, DatePicker, Divider, Form, Input, Popconfirm, Table, Tag, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { RaBillDto, RaBillItemDto, ReceiptDto } from '@erp/shared';
@@ -21,13 +21,14 @@ import { openBillPrint } from './billPrint';
 import { ReceiptFormModal } from '@/components/receivables/ReceiptFormModal';
 import { InTallyTag } from '@/components/tally/InTallyTag';
 import { BillPriceVariation } from './BillPriceVariation';
-import { themeColor } from '@/lib/theme';
+import { themeColor, themeFontSize } from '@/lib/theme';
 import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
 import { checksSection } from '@/components/checks/ChecksSection';
 import { AskButton } from '@/components/ai/AskButton';
 import { submissionLifecycle } from '@/components/record/lifecycle';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { QuantityInput } from '@/components/form/inputs';
+import { Section } from '@/components/common/Section';
 
 type StageAction = 'send' | 'certify';
 const ACTION_TITLES: Record<StageAction, string> = { send: 'Record as sent to the client', certify: 'Record the client’s certificate' };
@@ -237,7 +238,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
               title: 'Amount and deductions',
               children: (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12, marginTop: 12 }}>
-                  <Card size="small" title="Bill amount">
+                  <Section title="Bill amount">
                     <Row label="Work up to the previous bill" value={data.grossPrevious} muted />
                     <Row label="Work in this bill" value={data.grossAmount} strong />
                     <Row label="Work up to date" value={data.grossUpto} muted />
@@ -246,7 +247,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
                     <Row label={`GST @ ${data.gstRate}%`} value={data.gstAmount} />
                     <Row label="Less deductions" value={data.totalDeductions} />
                     <Divider style={{ margin: '6px 0' }} />
-                    <Row label={<span style={{ fontSize: 15 }}>Net payable</span>} value={data.netPayable} strong />
+                    <Row label={<span style={{ fontSize: themeFontSize('fontSizeLG') }}>Net payable</span>} value={data.netPayable} strong />
                     {approved && data.stage !== 'NOT_SENT' && (
                       <>
                         <Divider style={{ margin: '6px 0' }} />
@@ -256,12 +257,12 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
                       </>
                     )}
                     {data.claimedNet !== null && (
-                      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                      <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                         Claimed {formatINR(data.claimedGross, true)} of work, {formatINR(data.claimedNet, true)} net. The client passed {formatINR(toNumber(data.claimedNet) - toNumber(data.netPayable), true)} less; the quantities it cut come back in the next bill.
                       </Typography.Text>
                     )}
-                  </Card>
-                  <Card size="small" title="Deductions">
+                  </Section>
+                  <Section title="Deductions">
                     {data.deductions.length === 0 && <Typography.Text type="secondary">None</Typography.Text>}
                     {data.deductions.map((d) => (
                       <Row key={d.key} label={d.pct !== null ? `${d.label} @ ${d.pct}%` : d.label} value={d.amount} />
@@ -272,7 +273,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
                         <Row label="Total" value={data.totalDeductions} strong />
                       </>
                     )}
-                  </Card>
+                  </Section>
                 </div>
               ),
             },

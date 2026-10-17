@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Alert, App, Button, Card, Form, Input, Popconfirm, Progress, Table, Tag, Typography } from 'antd';
+import { Alert, App, Button, Form, Input, Popconfirm, Progress, Table, Tag, Typography } from 'antd';
 import { FileAddOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { WorkOrderDto, WorkOrderLineDto } from '@erp/shared';
@@ -21,6 +21,8 @@ import { submissionLifecycle } from '@/components/record/lifecycle';
 import { FormShell } from '@/components/form/FormShell';
 import { SubBillFormModal } from './SubBillFormModal';
 import { openWoPrint } from './subcontractPrint';
+import { themeFontSize } from '@/lib/theme';
+import { Section } from '@/components/common/Section';
 
 const money = (v: string | number) => <span className="mono">{formatINR(v, true)}</span>;
 
@@ -156,7 +158,7 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
                 toNumber(data.advanceAmount) > 0 ? (
                   <span>
                     {money(data.advanceAmount)} at {data.advanceRecoveryPct}% a bill
-                    <div className="text-muted" style={{ fontSize: 12 }}>
+                    <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                       {formatINR(data.advanceRecovered, true)} recovered, {formatINR(Math.max(advanceLeft, 0), true)} to go
                     </div>
                   </span>
@@ -222,12 +224,12 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
                     ]}
                   />
                   <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
-                    <Card size="small" style={{ width: 320 }}>
+                    <Section style={{ width: 320 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600 }}>
                         <span>Order value before GST</span>
                         {money(data.value)}
                       </div>
-                    </Card>
+                    </Section>
                   </div>
                 </>
               ),

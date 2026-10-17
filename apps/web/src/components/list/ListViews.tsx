@@ -132,7 +132,7 @@ export function ListViews({
           {mayEdit(v) && (
             <span onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
               <Dropdown menu={{ items: menuFor(v) }} trigger={['click']}>
-                <Button type="text" size="small" icon={<EllipsisOutlined />} aria-label={`${v.name} view options`} style={{ width: token.controlHeightXS, height: token.controlHeightXS }} />
+                <Button type="text" size="small" icon={<EllipsisOutlined />} aria-label={`${v.name} view options`} />
               </Dropdown>
             </span>
           )}

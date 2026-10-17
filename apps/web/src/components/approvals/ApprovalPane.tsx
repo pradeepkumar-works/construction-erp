@@ -6,7 +6,7 @@ import { Button, ConfigProvider, Descriptions, Divider, Flex, Space, Typography,
 import { CheckOutlined, CloseOutlined, EditOutlined, FileSearchOutlined } from '@ant-design/icons';
 import type { PendingApprovalDto, ReviewDecision } from '@erp/shared';
 import { approvalTypeParam } from '@/lib/queries';
-import { approveTheme } from '@/lib/theme';
+import { approveTheme, themeFontSize } from '@/lib/theme';
 import { formatDateTime, formatINR } from '@/lib/format';
 import { AuditTrail } from '@/components/common/AuditTrail';
 import { ProgressRecord } from '@/components/progress/ProgressDrawer';
@@ -70,7 +70,7 @@ export function ApprovalPane({ item, onDecide, onOpenDetails }: { item: PendingA
 
 function Key({ k }: { k: string }) {
   return (
-    <Typography.Text keyboard aria-hidden style={{ fontSize: 11, marginInlineStart: 2, color: 'inherit' }}>
+    <Typography.Text keyboard aria-hidden style={{ fontSize: themeFontSize('fontSizeSM'), marginInlineStart: 2, color: 'inherit' }}>
       {k}
     </Typography.Text>
   );
@@ -114,7 +114,7 @@ function PendingSummary({ item, onOpenDetails }: { item: PendingApprovalDto; onO
     <>
       <Flex justify="space-between" align="flex-start" gap={token.marginSM} style={{ marginBottom: token.marginSM }}>
         <Space wrap size={token.marginXS} align="center">
-          <span role="heading" aria-level={2} style={{ fontSize: token.fontSizeHeading5, fontWeight: token.fontWeightStrong }}>
+          <span role="heading" aria-level={2} style={{ fontSize: token.fontSizeLG, fontWeight: token.fontWeightStrong }}>
             {item.title}
           </span>
           <TypeTag type={item.type} label={QUEUE_TYPE_LABELS[item.type]} />

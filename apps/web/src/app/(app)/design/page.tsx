@@ -2,12 +2,13 @@
 
 import React from 'react';
 import { Alert, Button, Card, Col, ConfigProvider, DatePicker, Descriptions, Empty, Flex, Input, InputNumber, Progress, Row, Segmented, Select, Space, Statistic, Steps, Table, Tag, Typography, theme } from 'antd';
-import { CheckOutlined, PlusOutlined } from '@ant-design/icons';
+import { CheckCircleFilled, CheckOutlined, CloseCircleFilled, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { SUBMISSION_STATUSES } from '@erp/shared';
 import { PageHeader } from '@/components/common/PageHeader';
 import { StatusTag } from '@/components/common/StatusTag';
 import { BRAND } from '@/lib/brand';
-import { approveTheme } from '@/lib/theme';
+import { approveTheme, makeTheme, themeFontSize } from '@/lib/theme';
+import { Section } from '@/components/common/Section';
 import { formatINR } from '@/lib/format';
 import { useAppearance, type Density, type ThemeMode } from '@/lib/appearance';
 
@@ -29,6 +30,69 @@ const TOKENS = [
   'colorFillSecondary',
 ] as const;
 
+/** The type scale (UX item 82): every size on screen is one of these, 12 px the floor, in either density. */
+const TYPE_SCALE = [
+  { token: 'fontSizeHeading1', alias: '', use: 'The largest heading, used sparingly (the sign-in title)' },
+  { token: 'fontSizeHeading2', alias: '', use: "A page's title (its h1) and the KPI figures on Home" },
+  { token: 'fontSizeXL', alias: 'fontSizeHeading3', use: 'Figures inside a tab, such as cost or safety totals' },
+  { token: 'fontSizeLG', alias: 'fontSizeHeading4', use: 'Card, section and dialog titles; a total that leads a block' },
+  { token: 'fontSize', alias: 'fontSizeHeading5', use: 'Body text, table cells, fields and buttons' },
+  { token: 'fontSizeSM', alias: '', use: 'Captions, secondary lines under a figure, tags and hints. Nothing is smaller' },
+] as const;
+
+const kebab = (key: string) => key.replace(/([a-z])([A-Z0-9])/g, '$1-$2').toLowerCase();
+
+/** A control with its height as drawn, measured in the page. */
+function Measured({ children }: { children: React.ReactNode }) {
+  const ref = React.useRef<HTMLSpanElement>(null);
+  const [height, setHeight] = React.useState<number | null>(null);
+  React.useLayoutEffect(() => {
+    const el = ref.current?.firstElementChild;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => setHeight(Math.round(el.getBoundingClientRect().height)));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  return (
+    <Flex align="center" gap={8}>
+      <span ref={ref} style={{ display: 'inline-flex' }}>
+        {children}
+      </span>
+      <Typography.Text type="secondary" className="mono" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+        {height ?? '…'} px
+      </Typography.Text>
+    </Flex>
+  );
+}
+
+/** One density's controls, drawn with that density's theme. */
+function TargetSample({ label }: { label: string }) {
+  const { token } = theme.useToken();
+  return (
+    <Flex vertical gap={token.marginSM} align="flex-start">
+      <Typography.Text strong>{label}</Typography.Text>
+      <Measured>
+        <Button size="small" icon={<EditOutlined />} aria-label={`Edit, ${label.toLowerCase()} small`} />
+      </Measured>
+      <Measured>
+        <Button size="small">Small button</Button>
+      </Measured>
+      <Measured>
+        <Button type="primary">Middle button</Button>
+      </Measured>
+      <Measured>
+        <Input placeholder="Field" aria-label={`${label} field`} style={{ width: 200 }} />
+      </Measured>
+      <Measured>
+        <Segmented size="small" options={['Small', 'Segmented']} aria-label={`${label} small segmented`} />
+      </Measured>
+      <Measured>
+        <Segmented options={['Middle', 'Segmented']} aria-label={`${label} segmented`} />
+      </Measured>
+    </Flex>
+  );
+}
+
 const rows = [
   { key: '1', item: 'RCC M25 in slab and beams', unit: 'Cum', qty: '420', amount: '3402000' },
   { key: '2', item: 'Brick masonry in CM 1:6', unit: 'Cum', qty: '980', amount: '6076000' },
@@ -41,7 +105,7 @@ const rows = [
  */
 export default function DesignPage() {
   const { token } = theme.useToken();
-  const { prefs, setPrefs } = useAppearance();
+  const { prefs, setPrefs, dark } = useAppearance();
 
   return (
     <div className="page-container">
@@ -85,14 +149,42 @@ export default function DesignPage() {
           </Row>
         </Card>
 
-        <Card title="Type" size="small">
-          {([1, 2, 3, 4, 5] as const).map((level) => (
-            <Typography.Title key={level} level={level} style={{ marginTop: 0 }}>
-              Heading {level}: District Hospital Block B
-            </Typography.Title>
-          ))}
-          <Typography.Paragraph>Body text: RCC slab GF continued, shuttering for the next pour, 34 workers on site.</Typography.Paragraph>
-          <Space size={token.marginLG} wrap>
+        <Card title="Type scale" size="small">
+          <Typography.Paragraph type="secondary">
+            Six sizes, 12 px the floor. Compact keeps them; only heights and spacing shrink. In code use the token (
+            <Typography.Text code>token.fontSizeSM</Typography.Text>) or, outside a component and in CSS, its variable (
+            <Typography.Text code>var(--ant-font-size-sm)</Typography.Text>), never a number.
+          </Typography.Paragraph>
+          <Table
+            size="small"
+            pagination={false}
+            rowKey="token"
+            dataSource={TYPE_SCALE.map((t) => ({ ...t, px: token[t.token] }))}
+            columns={[
+              { title: 'Size', dataIndex: 'px', width: 70, align: 'right', render: (v: number) => <span className="mono">{v} px</span> },
+              {
+                title: 'Token',
+                dataIndex: 'token',
+                width: 260,
+                render: (k: string, t) => (
+                  <>
+                    <Typography.Text code>{k}</Typography.Text>
+                    {t.alias ? <Typography.Text code>{t.alias}</Typography.Text> : null}
+                    <div className="text-muted mono" style={{ fontSize: token.fontSizeSM }}>
+                      var(--ant-{kebab(k)})
+                    </div>
+                  </>
+                ),
+              },
+              { title: 'Use', dataIndex: 'use' },
+              { title: 'Sample', key: 'sample', render: (_, t) => <span style={{ fontSize: t.px, lineHeight: 1.3 }}>Hospital Block B</span> },
+            ]}
+          />
+          <Typography.Paragraph style={{ marginTop: token.margin, marginBottom: 0 }}>
+            Headings: level 1 is {token.fontSizeHeading1} px, 2 is {token.fontSizeHeading2}, 3 is {token.fontSizeHeading3}, 4 is {token.fontSizeHeading4} and 5 is{' '}
+            {token.fontSizeHeading5}. A page title is an h1 drawn at {token.fontSizeHeading2} px.
+          </Typography.Paragraph>
+          <Space size={token.marginLG} wrap style={{ marginTop: token.marginSM }}>
             <Typography.Text type="secondary">Secondary</Typography.Text>
             <Typography.Text type="success">Success</Typography.Text>
             <Typography.Text type="warning">Warning</Typography.Text>
@@ -100,6 +192,103 @@ export default function DesignPage() {
             <Typography.Link>Link</Typography.Link>
             <span className="mono">{formatINR('18650000')}</span>
           </Space>
+        </Card>
+
+        <Card title="Targets" size="small">
+          <Typography.Paragraph type="secondary">
+            Every control is at least 24 px high (WCAG 2.5.8) in both densities, and 44 px on a touch screen. Icon buttons side by side keep a gap
+            between them.
+          </Typography.Paragraph>
+          <Row gutter={[token.marginLG, token.margin]}>
+            <Col xs={24} md={12}>
+              <ConfigProvider theme={makeTheme({ dark, compact: false })}>
+                <TargetSample label="Comfortable" />
+              </ConfigProvider>
+            </Col>
+            <Col xs={24} md={12}>
+              <ConfigProvider theme={makeTheme({ dark, compact: true })}>
+                <TargetSample label="Compact" />
+              </ConfigProvider>
+            </Col>
+          </Row>
+        </Card>
+
+        <Card title="Colour for exceptions" size="small">
+          <Typography.Paragraph type="secondary">
+            Numbers are neutral text. Colour marks only an exception: late, overdue, over budget, rejected, a fall that matters. A figure that is just a
+            total or a count stays neutral. Tags keep their status colours, since they carry a word too. Coloured text uses the text tokens (
+            <Typography.Text code>colorErrorText</Typography.Text>), never <Typography.Text code>colorWarning</Typography.Text> or{' '}
+            <Typography.Text code>colorSuccess</Typography.Text>.
+          </Typography.Paragraph>
+          <Row gutter={[token.marginLG, token.margin]}>
+            <Col xs={24} md={12}>
+              <Flex align="center" gap={token.marginXS} style={{ marginBottom: token.marginSM }}>
+                <CheckCircleFilled style={{ color: token.colorSuccess }} aria-hidden />
+                <Typography.Text strong>Correct</Typography.Text>
+              </Flex>
+              <Row gutter={[token.margin, token.margin]}>
+                <Col span={8}>
+                  <Statistic title="Contract value" value="₹ 59.27 Cr" styles={{ content: { fontSize: token.fontSizeXL } }} />
+                </Col>
+                <Col span={8}>
+                  <Statistic title="Pending approvals" value={34} styles={{ content: { fontSize: token.fontSizeXL } }} />
+                </Col>
+                <Col span={8}>
+                  <Statistic title="Vendor payable" value="₹ 1.84 Cr" styles={{ content: { fontSize: token.fontSizeXL, color: token.colorErrorText } }} />
+                  <Typography.Text type="danger" style={{ fontSize: token.fontSizeSM }}>
+                    ₹ 13.26 L overdue
+                  </Typography.Text>
+                </Col>
+              </Row>
+            </Col>
+            <Col xs={24} md={12}>
+              <Flex align="center" gap={token.marginXS} style={{ marginBottom: token.marginSM }}>
+                <CloseCircleFilled style={{ color: token.colorError }} aria-hidden />
+                <Typography.Text strong>Incorrect</Typography.Text>
+              </Flex>
+              <Row gutter={[token.margin, token.margin]}>
+                <Col span={8}>
+                  <Statistic title="Contract value" value="₹ 59.27 Cr" styles={{ content: { fontSize: token.fontSizeXL, color: token.colorSuccessText } }} />
+                </Col>
+                <Col span={8}>
+                  <Statistic title="Pending approvals" value={34} styles={{ content: { fontSize: token.fontSizeXL, color: token.colorWarningText } }} />
+                </Col>
+                <Col span={8}>
+                  <Statistic title="Vendor payable" value="₹ 1.84 Cr" styles={{ content: { fontSize: token.fontSizeXL, color: token.colorPrimaryText } }} />
+                  <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
+                    the overdue part gets lost
+                  </Typography.Text>
+                </Col>
+              </Row>
+            </Col>
+          </Row>
+        </Card>
+
+        <Card title="No cards inside cards" size="small">
+          <Typography.Paragraph type="secondary">
+            A card is one surface. Its parts are sections: a hairline in <Typography.Text code>colorBorderSecondary</Typography.Text> above, a title
+            and the content (<Typography.Text code>Section</Typography.Text> and <Typography.Text code>FigureBlock</Typography.Text> in
+            components/common/Section.tsx). A project tab and a record are already a surface, so the blocks in them are sections, never cards of their
+            own.
+          </Typography.Paragraph>
+          <Row gutter={[token.marginLG, token.margin]}>
+            <Col xs={24} md={12}>
+              <Flex vertical gap={token.margin}>
+                <Section title="Agreement" extra={<Button size="small">Edit</Button>}>
+                  <Descriptions size="small" column={2} items={[{ label: 'Work order', children: 'WO/OWD/2025/0417' }, { label: 'Contract value', children: formatINR('186500000') }]} />
+                </Section>
+                <Section title="Extensions of time">
+                  <Typography.Text type="secondary">No extension claimed.</Typography.Text>
+                </Section>
+              </Flex>
+            </Col>
+            <Col xs={24} md={12}>
+              <Typography.Paragraph>
+                Not a card with a border and a header inside another card: two frames around the same content, and a second header that competes with the
+                first.
+              </Typography.Paragraph>
+            </Col>
+          </Row>
         </Card>
 
         <Card title="Actions and status" size="small">
@@ -135,7 +324,7 @@ export default function DesignPage() {
           </Col>
           <Col xs={24} md={8}>
             <Card size="small">
-              <Statistic title="Pending approvals" value={34} styles={{ content: { color: token.colorWarningText } }} />
+              <Statistic title="Pending approvals" value={34} />
             </Card>
           </Col>
           <Col xs={24} md={8}>

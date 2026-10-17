@@ -16,6 +16,7 @@ import { Loading, QueryError } from '@/components/common/QueryState';
 import { CardToolbar } from '@/components/common/CardToolbar';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { ImprestActionModal, type ImprestAction } from './ImprestActions';
+import { themeFontSize } from '@/lib/theme';
 
 const rs = (v: string | number) => formatINR(v, true);
 const ENTRY_COLORS = { REQUESTED: 'orange', PAID: 'green', REJECTED: 'red' } as const;
@@ -25,7 +26,7 @@ function CashBar({ i }: { i: ImprestDto }) {
   return (
     <div>
       <b className={i.low ? 'text-danger' : undefined}>{rs(i.cashInHand)}</b>
-      <span className="text-muted" style={{ fontSize: 12 }}> of {formatINR(i.floatAmount)}</span>
+      <span className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}> of {formatINR(i.floatAmount)}</span>
       <Progress percent={Math.round(pct)} size="small" showInfo={false} status={i.low ? 'exception' : 'normal'} aria-label={`Cash in hand: ${Math.round(pct)}% of float`} />
     </div>
   );
@@ -53,7 +54,7 @@ export function ImprestPanel({ projectId: fixedProject, initialId }: { projectId
       render: (v, i) => (
         <div>
           <b>{v}</b>
-          {!fixedProject ? <div className="text-muted" style={{ fontSize: 12 }}>{i.projectName}</div> : null}
+          {!fixedProject ? <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{i.projectName}</div> : null}
         </div>
       ),
     },
@@ -66,7 +67,7 @@ export function ImprestPanel({ projectId: fixedProject, initialId }: { projectId
       render: (_, i) => (
         <div>
           {rs(i.approvedSpend)}
-          {Number(i.pendingSpend) ? <div className="text-muted" style={{ fontSize: 12 }}>+ {rs(i.pendingSpend)} awaiting approval</div> : null}
+          {Number(i.pendingSpend) ? <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>+ {rs(i.pendingSpend)} awaiting approval</div> : null}
         </div>
       ),
     },
@@ -160,7 +161,7 @@ function ImprestDrawer({ id, onClose, admin, onAction }: { id: string | null; on
       render: (v, l) => (
         <div>
           {v}
-          <div className="text-muted" style={{ fontSize: 12 }}>
+          <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
             {l.ref}
             {l.status ? (
               <Tag color={STATUS_COLORS[l.status]} style={{ marginLeft: 6 }}>

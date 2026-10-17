@@ -15,6 +15,7 @@ import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { NcrStatusTag, SeverityTag } from './qualityUi';
 import { NcrFormModal } from './NcrFormModal';
+import { themeFontSize } from '@/lib/theme';
 
 const HISTORY_COLORS: Record<string, string> = { CREATED: 'red', ACTION_TAKEN: 'blue', CLOSED: 'green', REOPENED: 'orange', UPDATED: 'gray' };
 
@@ -203,7 +204,7 @@ export function NcrDrawer({ id, open, onClose }: { id: string | null; open: bool
               content: (
                 <div>
                   <Typography.Text strong>{(h.action.charAt(0) + h.action.slice(1).toLowerCase()).replace(/_/g, ' ')}</Typography.Text> <Typography.Text type="secondary">by {h.actorName}</Typography.Text>
-                  <div className="text-muted" style={{ fontSize: 12 }}>
+                  <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                     {formatDateTime(h.createdAt)}
                   </div>
                   {h.note && <div style={{ marginTop: 2 }}>&ldquo;{h.note}&rdquo;</div>}

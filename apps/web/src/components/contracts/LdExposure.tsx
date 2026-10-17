@@ -8,6 +8,7 @@ import { LD_PERIOD_LABELS, PROJECT_STATUS_LABELS } from '@erp/shared';
 import { useLdExposure } from '@/lib/queries';
 import { formatDate, formatINR } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
+import { themeFontSize } from '@/lib/theme';
 
 const rateLine = (ld: LdExposureDto) => (Number(ld.ldRatePct) > 0 ? `${ld.ldRatePct}% ${LD_PERIOD_LABELS[ld.ldPeriod]}, capped at ${ld.ldCapPct}%` : 'No LD rate in the contract');
 
@@ -19,9 +20,9 @@ export function LdExposureCard({ ld }: { ld: LdExposureDto }) {
     <Flex vertical gap={12} className="ld-exposure">
       {noRate ? <Alert type="info" showIcon title="Add the LD rate and cap from the contract to see what late completion would cost." /> : null}
       <Flex gap={32} wrap>
-        <Statistic title="Days late" value={ld.daysLate} suffix={ld.completedOn ? 'at completion' : 'today'} styles={{ content: ld.daysLate ? { color: token.colorError } : undefined }} />
-        <Statistic title="LD to date" value={formatINR(ld.ldToDate)} styles={{ content: Number(ld.ldToDate) ? { color: token.colorError } : undefined }} />
-        <Statistic title="Forecast LD" value={formatINR(ld.ldForecast)} styles={{ content: Number(ld.ldForecast) ? { color: token.colorWarning } : undefined }} />
+        <Statistic title="Days late" value={ld.daysLate} suffix={ld.completedOn ? 'at completion' : 'today'} styles={{ content: ld.daysLate ? { color: token.colorErrorText } : undefined }} />
+        <Statistic title="LD to date" value={formatINR(ld.ldToDate)} styles={{ content: Number(ld.ldToDate) ? { color: token.colorErrorText } : undefined }} />
+        <Statistic title="Forecast LD" value={formatINR(ld.ldForecast)} styles={{ content: Number(ld.ldForecast) ? { color: token.colorWarningText } : undefined }} />
         <Statistic title="If pending extensions are granted" value={formatINR(ld.ldForecastWithEot)} />
       </Flex>
       <Descriptions size="small" column={{ xs: 1, sm: 2, lg: 3 }} bordered>
@@ -82,7 +83,7 @@ export function LdExposureTable() {
               <div>
                 <Link href={`/projects/${r.projectId}?tab=contract`}>{r.projectName}</Link>
                 <div>
-                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                  <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                     {r.projectCode} · {PROJECT_STATUS_LABELS[r.projectStatus]} · {rateLine(r)}
                   </Typography.Text>
                 </div>

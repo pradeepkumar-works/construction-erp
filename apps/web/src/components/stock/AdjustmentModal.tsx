@@ -12,6 +12,7 @@ import { useProjects, useStockBalances, useStockItems } from '@/lib/queries';
 import { formatQty } from '@/lib/format';
 import { UnitInput } from '@/components/common/UnitInput';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
+import { themeFontSize } from '@/lib/theme';
 
 const NEW = '__new__';
 
@@ -140,7 +141,7 @@ export function AdjustmentModal({ open, onClose, projectId }: { open: boolean; o
             )}
           </Form.List>
         </Form.Item>
-        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+        <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
           Only approvers can adjust stock. Every adjustment is kept in the register with its reason.
         </Typography.Text>
       </Form>

@@ -15,6 +15,7 @@ import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { editActionLabel } from '@/components/common/EditResubmitButton';
 import { VendorPicker } from '@/components/vendors/VendorPicker';
 import { aiFlagItem, draftDate } from '@/components/ai/drafts';
+import { themeFontSize } from '@/lib/theme';
 
 interface FormValues {
   projectId: string;
@@ -167,7 +168,7 @@ export function ExpenseFormModal({ open, onClose, projectId, defaultProjectId, e
             <MoneyInput placeholder={computedGst.toFixed(2)} />
           </Form.Item>
           <Form.Item label="Total">
-            <Typography.Text strong style={{ fontSize: 16, lineHeight: '32px' }}>
+            <Typography.Text strong style={{ fontSize: themeFontSize('fontSizeLG'), lineHeight: '32px' }}>
               {formatINR((Number(amount) || 0) + (Number(gst) || 0), true)}
             </Typography.Text>
           </Form.Item>

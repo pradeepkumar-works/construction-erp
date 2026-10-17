@@ -14,6 +14,7 @@ import { UnitInput } from '@/components/common/UnitInput';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { LineTable } from '@/components/form/LineTable';
 import { MoneyInput, QuantityInput } from '@/components/form/inputs';
+import { themeFontSize } from '@/lib/theme';
 
 export interface PoLineValue {
   materialRequestItemId?: string | null;
@@ -235,7 +236,7 @@ export function PurchaseOrderFormModal({
                   lines?.[f.name]?.materialRequestItemId ? (
                     <div>
                       <Typography.Text strong>{lines[f.name].itemName}</Typography.Text>
-                      {lines[f.name].specification && <div className="text-muted" style={{ fontSize: 12 }}>{lines[f.name].specification}</div>}
+                      {lines[f.name].specification && <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{lines[f.name].specification}</div>}
                     </div>
                   ) : (
                     <div style={{ minWidth: 200 }}>

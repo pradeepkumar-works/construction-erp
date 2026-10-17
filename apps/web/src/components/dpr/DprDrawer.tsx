@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { App, Card, Table, Tag, Typography } from 'antd';
+import { App, Table, Tag, Typography } from 'antd';
 import type { DailyReportDto, ManpowerLine, MachineryLine } from '@erp/shared';
 import { WEATHER_LABELS } from '@erp/shared';
 import { useDpr } from '@/lib/queries';
@@ -15,12 +15,13 @@ import { submissionMetaItems } from '@/components/common/SubmitterInfo';
 import { openDprPrint } from './dprPrint';
 import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
 import { submissionLifecycle } from '@/components/record/lifecycle';
-import { themeColor } from '@/lib/theme';
+import { themeColor, themeFontSize } from '@/lib/theme';
+import { Section } from '@/components/common/Section';
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Note({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div style={{ marginBottom: 12 }}>
-      <Typography.Text strong style={{ display: 'block', marginBottom: 2, fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.4, color: themeColor('colorTextHeading') }}>
+      <Typography.Text strong style={{ display: 'block', marginBottom: 2, fontSize: themeFontSize('fontSizeSM'), textTransform: 'uppercase', letterSpacing: 0.4, color: themeColor('colorTextHeading') }}>
         {title}
       </Typography.Text>
       <div style={{ whiteSpace: 'pre-wrap' }}>{children ?? <span className="text-muted">-</span>}</div>
@@ -78,7 +79,7 @@ export function DprRecord({ id, mode, open, onClose, onEdit }: RecordProps & { m
               title: 'Manpower and machinery',
               children: (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12 }}>
-                  <Card size="small" title="Manpower">
+                  <Section title="Manpower">
                     <Table<ManpowerLine>
                       size="small"
                       rowKey={(r, i) => `${r.category}-${i}`}
@@ -99,8 +100,8 @@ export function DprRecord({ id, mode, open, onClose, onEdit }: RecordProps & { m
                         </Table.Summary.Row>
                       )}
                     />
-                  </Card>
-                  <Card size="small" title="Machinery">
+                  </Section>
+                  <Section title="Machinery">
                     <Table<MachineryLine>
                       size="small"
                       rowKey={(r, i) => `${r.name}-${i}`}
@@ -111,7 +112,7 @@ export function DprRecord({ id, mode, open, onClose, onEdit }: RecordProps & { m
                         { title: 'Hours', dataIndex: 'hours', align: 'right', width: 80 },
                       ]}
                     />
-                  </Card>
+                  </Section>
                 </div>
               ),
             },
@@ -120,11 +121,11 @@ export function DprRecord({ id, mode, open, onClose, onEdit }: RecordProps & { m
               title: 'Site notes',
               children: (
                 <>
-                  <Section title="Material received">{data.materialReceived}</Section>
-                  <Section title="Tests conducted">{data.testsConducted}</Section>
-                  <Section title="Safety observations">{data.safetyObservations}</Section>
-                  <Section title="Issues / hindrances">{data.issues}</Section>
-                  <Section title="Next day plan">{data.nextDayPlan}</Section>
+                  <Note title="Material received">{data.materialReceived}</Note>
+                  <Note title="Tests conducted">{data.testsConducted}</Note>
+                  <Note title="Safety observations">{data.safetyObservations}</Note>
+                  <Note title="Issues / hindrances">{data.issues}</Note>
+                  <Note title="Next day plan">{data.nextDayPlan}</Note>
                 </>
               ),
             },

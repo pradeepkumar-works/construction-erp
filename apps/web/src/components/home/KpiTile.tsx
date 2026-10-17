@@ -79,7 +79,8 @@ export function trendOf(series: (string | number)[], months: string[], upIsGood 
 export function KpiTile({ href, icon, trend, children }: { href?: string; icon?: React.ReactNode; trend?: Trend; children: React.ReactNode }) {
   const { token } = theme.useToken();
   const delta = trend?.deltaPct ?? null;
-  const good = delta !== null && (delta >= 0) === trend!.upIsGood;
+  // Colour marks an exception only (UX item 82): a move the wrong way of 10% or more. A rise, or a small dip, stays neutral.
+  const bad = delta !== null && delta !== 0 && (delta > 0) !== trend!.upIsGood && Math.abs(delta) >= 10;
   const card = (
     <Card className="kpi-card" hoverable={!!href} style={{ height: '100%', position: 'relative' }}>
       {icon ? (
@@ -107,11 +108,11 @@ export function KpiTile({ href, icon, trend, children }: { href?: string; icon?:
       {trend && (
         <>
           {delta !== null && (
-            <Typography.Text style={{ display: 'block', fontSize: token.fontSizeSM, marginTop: token.marginXXS }} type={delta === 0 ? 'secondary' : good ? 'success' : 'danger'}>
+            <Typography.Text style={{ display: 'block', fontSize: token.fontSizeSM, marginTop: token.marginXXS }} type={bad ? 'danger' : 'secondary'}>
               {delta > 0 ? <ArrowUpOutlined aria-hidden /> : delta < 0 ? <ArrowDownOutlined aria-hidden /> : null} {delta >= 200 && trend.ratio ? `${Math.round(trend.ratio)}× ${trend.previous}` : `${Math.abs(delta)}% ${delta >= 0 ? 'up' : 'down'} on ${trend.previous}`}
             </Typography.Text>
           )}
-          <Sparkline values={trend.values} color={good || delta === null ? token.colorPrimary : token.colorError} />
+          <Sparkline values={trend.values} color={bad ? token.colorError : token.colorPrimary} />
         </>
       )}
     </Card>

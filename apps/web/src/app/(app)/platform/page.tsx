@@ -12,6 +12,7 @@ import { useOpenSupportSession, usePlatformCompanies, usePlatformCompany, useSet
 import { formatDate, formatDateTime } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { QueryError } from '@/components/common/QueryState';
+import { themeFontSize } from '@/lib/theme';
 
 const bytes = (n: number) => (n < 1024 * 1024 ? `${Math.round(n / 1024)} KB` : `${(n / 1024 / 1024).toFixed(1)} MB`);
 const supportOpen = (c: Pick<PlatformCompanyDto, 'supportAccessUntil'>) => !!c.supportAccessUntil && new Date(c.supportAccessUntil) > new Date();
@@ -79,7 +80,7 @@ export default function PlatformPage() {
             render: (v: string, r) => (
               <div>
                 {v}
-                <div className="text-muted" style={{ fontSize: 12 }}>
+                <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                   {r.code}, since {formatDate(r.createdAt)}
                 </div>
               </div>
@@ -225,7 +226,7 @@ function CompanyDrawer({ id, ownOrgId, onClose }: { id: string | null; ownOrgId:
                 render: (v: string, u) => (
                   <div>
                     {v} {!u.isActive && <Tag>Inactive</Tag>}
-                    <div className="text-muted" style={{ fontSize: 12 }}>
+                    <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                       {u.email}
                     </div>
                   </div>

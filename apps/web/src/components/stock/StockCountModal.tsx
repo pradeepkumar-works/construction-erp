@@ -12,6 +12,7 @@ import { useProjects, useStockBalances } from '@/lib/queries';
 import { formatQty } from '@/lib/format';
 import { downloadXlsx, exportFileName, type ExportColumn } from '@/lib/exportExcel';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
+import { themeFontSize } from '@/lib/theme';
 
 const SHEET: ExportColumn<StockBalanceDto>[] = [
   { header: 'Item', value: (r) => r.itemName, width: 40 },
@@ -123,7 +124,7 @@ export function StockCountModal({ open, onClose, projectId: fixedProject }: { op
             <Input maxLength={800} placeholder="Who counted, which store" />
           </Form.Item>
         </FormGrid>
-        <Typography.Paragraph type="secondary" style={{ fontSize: 12 }}>
+        <Typography.Paragraph type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
           Enter what is on the shelf. Items left blank are not touched. Posting sets each counted item to the counted quantity with one adjustment.
         </Typography.Paragraph>
         <Table<StockBalanceDto>

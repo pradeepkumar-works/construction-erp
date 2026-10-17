@@ -22,7 +22,7 @@ import { exportSelected } from '@/components/list/bulk';
 import { useListFrame } from '@/components/list/useListFrame';
 import { RecordLink } from '@/components/record/RecordLink';
 import { ItemLedgerDrawer } from './ItemLedgerDrawer';
-import { themeColor } from '@/lib/theme';
+import { themeColor, themeFontSize } from '@/lib/theme';
 
 /** Minimum level editor in a popover: store manager and approvers. */
 function MinLevelEditor({ row }: { row: StockBalanceDto }) {
@@ -64,7 +64,7 @@ function MinLevelEditor({ row }: { row: StockBalanceDto }) {
               </Button>
             ) : null}
           </Space>
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
             The store manager and PM are alerted when an issue takes the stock below it.
           </Typography.Text>
         </Space>
@@ -150,7 +150,7 @@ export function StockBalances({ projectId: fixedProject, initialLow = false, ini
           align: 'right',
           width: 130,
           render: (v: string | null, r) => (
-            <Space size={2}>
+            <Space size="small">
               {v ? formatQty(v) : nil}
               {mayManage ? <MinLevelEditor row={r} /> : null}
             </Space>

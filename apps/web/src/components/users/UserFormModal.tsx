@@ -91,7 +91,7 @@ export function UserFormModal({ open, onClose, user, onInvited }: { open: boolea
           </Form.Item>
         )}
         {isEdit && !resetPwd ? (
-          <Button type="link" onClick={() => setResetPwd(true)} style={{ padding: 0, height: 'auto' }}>
+          <Button type="link" onClick={() => setResetPwd(true)} style={{ padding: 0 }}>
             Set a new password
           </Button>
         ) : isEdit || how === 'password' ? (

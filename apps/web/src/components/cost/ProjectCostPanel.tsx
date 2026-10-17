@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Alert, Button, Card, Col, Empty, Row, Skeleton, Statistic, Table, Tabs, Typography } from 'antd';
+import { Alert, Button, Col, Empty, Row, Skeleton, Statistic, Table, Tabs, Typography } from 'antd';
 import { TeamOutlined } from '@ant-design/icons';
 import type { ProjectCostDto } from '@erp/shared';
 import { COST_HEADS, COST_HEAD_LABELS, EQUIPMENT_RATE_UNIT_LABELS, EXPENSE_CATEGORY_LABELS } from '@erp/shared';
@@ -13,7 +13,8 @@ import { CostBar, CostLegend, HEAD_COLORS } from './CostBar';
 import { DEFAULT_PERIOD, PeriodPicker, periodLabel, periodParams, type PeriodState } from './PeriodPicker';
 import { LabourRatesModal } from './LabourRatesModal';
 import { unpricedText } from './UnpricedNote';
-import { themeColor } from '@/lib/theme';
+import { themeColor, themeFontSize } from '@/lib/theme';
+import { Section, SectionStack } from '@/components/common/Section';
 
 const money = (v: string) => <span className="mono">{formatINR(v)}</span>;
 const rateOrDash = (v: string | null, suffix: string) => (v === null ? <span style={{ color: themeColor('gold7') }}>no rate</span> : <span className="mono">{`${formatINR(v, true)} ${suffix}`}</span>);
@@ -27,7 +28,7 @@ export function ProjectCostPanel({ projectId }: { projectId: string }) {
   const monthScale = data ? Math.max(1, ...data.months.map((m) => Math.max(toNumber(m.total), toNumber(m.executedValue)))) : 1;
 
   return (
-    <div>
+    <SectionStack gap={0}>
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', marginBottom: 12 }}>
         <PeriodPicker value={period} onChange={setPeriod} />
         <Button icon={<TeamOutlined />} onClick={() => setRatesOpen(true)} style={{ marginLeft: 'auto' }}>
@@ -41,45 +42,45 @@ export function ProjectCostPanel({ projectId }: { projectId: string }) {
           {missing.length ? <Alert type="warning" showIcon style={{ marginBottom: 12 }} title="Part of the cost is not counted because a rate is missing" description={missing.join('; ') + '. Set rates in the item master, the equipment master or Labour rates.'} /> : null}
           <Row gutter={[16, 16]}>
             <Col xs={12} md={6}>
-              <Statistic title="Executed value" value={formatINR(data.executedValue)} styles={{ content: { fontSize: 20 } }} />
+              <Statistic title="Executed value" value={formatINR(data.executedValue)} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
             </Col>
             <Col xs={12} md={6}>
-              <Statistic title="Measured (approved MB)" value={formatINR(data.measuredValue)} styles={{ content: { fontSize: 20 } }} />
+              <Statistic title="Measured (approved MB)" value={formatINR(data.measuredValue)} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
             </Col>
             <Col xs={12} md={6}>
-              <Statistic title="Cost" value={formatINR(data.cost.total)} styles={{ content: { fontSize: 20 } }} />
+              <Statistic title="Cost" value={formatINR(data.cost.total)} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
             </Col>
             <Col xs={12} md={6}>
               <Statistic
                 title={`Margin${data.costPct !== null ? ` (cost ${data.costPct}% of executed)` : ''}`}
                 value={formatINR(data.margin)}
-                styles={{ content: { fontSize: 20, color: toNumber(data.margin) < 0 ? themeColor('colorErrorText') : themeColor('colorSuccessText') } }}
+                styles={{ content: { fontSize: themeFontSize('fontSizeXL'), color: toNumber(data.margin) < 0 ? themeColor('colorErrorText') : themeColor('colorSuccessText') } }}
               />
             </Col>
           </Row>
           <Row gutter={[16, 16]} style={{ marginTop: 8 }}>
             <Col xs={12} md={6}>
-              <Statistic title="Billed (approved RA bills)" value={formatINR(data.billedValue)} styles={{ content: { fontSize: 16 } }} />
+              <Statistic title="Billed (approved RA bills)" value={formatINR(data.billedValue)} styles={{ content: { fontSize: themeFontSize('fontSizeLG') } }} />
             </Col>
             <Col xs={12} md={6}>
-              <Statistic title="Cash in from the client" value={formatINR(data.cashIn)} styles={{ content: { fontSize: 16 } }} />
+              <Statistic title="Cash in from the client" value={formatINR(data.cashIn)} styles={{ content: { fontSize: themeFontSize('fontSizeLG') } }} />
             </Col>
             <Col xs={12} md={6}>
-              <Statistic title="Vendor and subcontractor bills (incl. GST)" value={formatINR(data.payableBilled)} styles={{ content: { fontSize: 16 } }} />
+              <Statistic title="Vendor and subcontractor bills (incl. GST)" value={formatINR(data.payableBilled)} styles={{ content: { fontSize: themeFontSize('fontSizeLG') } }} />
             </Col>
             <Col xs={12} md={6}>
-              <Statistic title="Cash out to them" value={formatINR(data.cashOut)} styles={{ content: { fontSize: 16 } }} />
+              <Statistic title="Cash out to them" value={formatINR(data.cashOut)} styles={{ content: { fontSize: themeFontSize('fontSizeLG') } }} />
             </Col>
           </Row>
-          <Card size="small" style={{ marginTop: 16 }} title="Cost heads" extra={<CostLegend />}>
+          <Section style={{ marginTop: 16 }} title="Cost heads" extra={<CostLegend />}>
             <CostBar cost={data.cost} scale={toNumber(data.cost.total)} height={18} />
             <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap', marginTop: 12 }}>
               {COST_HEADS.map((h) => (
-                <Statistic key={h} title={<span style={{ color: HEAD_COLORS[h] }}>{COST_HEAD_LABELS[h]}</span>} value={formatINR(data.cost[h])} styles={{ content: { fontSize: 16 } }} />
+                <Statistic key={h} title={<span style={{ color: HEAD_COLORS[h] }}>{COST_HEAD_LABELS[h]}</span>} value={formatINR(data.cost[h])} styles={{ content: { fontSize: themeFontSize('fontSizeLG') } }} />
               ))}
             </div>
-          </Card>
-          <Card size="small" style={{ marginTop: 16 }} title="By month" extra={<Typography.Text type="secondary">{periodLabel(period)}</Typography.Text>}>
+          </Section>
+          <Section style={{ marginTop: 16 }} title="By month" extra={<Typography.Text type="secondary">{periodLabel(period)}</Typography.Text>}>
             {data.months.length ? (
               <Table<ProjectCostDto['months'][number]>
                 rowKey="month"
@@ -106,8 +107,8 @@ export function ProjectCostPanel({ projectId }: { projectId: string }) {
             ) : (
               <Empty description="Nothing executed or spent in this period" />
             )}
-          </Card>
-          <Card size="small" style={{ marginTop: 16 }}>
+          </Section>
+          <Section style={{ marginTop: 16 }}>
             <Tabs
               items={[
                 {
@@ -205,10 +206,10 @@ export function ProjectCostPanel({ projectId }: { projectId: string }) {
                 },
               ]}
             />
-          </Card>
+          </Section>
         </>
       )}
       <LabourRatesModal open={ratesOpen} onClose={() => setRatesOpen(false)} />
-    </div>
+    </SectionStack>
   );
 }

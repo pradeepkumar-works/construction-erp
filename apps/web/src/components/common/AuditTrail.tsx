@@ -5,6 +5,7 @@ import { Timeline, Typography, Skeleton } from 'antd';
 import type { SubmissionBase } from '@erp/shared';
 import { useAudit, type ApprovalTypeParam } from '@/lib/queries';
 import { formatDateTime } from '@/lib/format';
+import { themeFontSize } from '@/lib/theme';
 
 const COLORS: Record<string, string> = {
   CREATED: 'gray',
@@ -60,7 +61,7 @@ export function AuditTrail({ type, id, submission }: { type: ApprovalTypeParam; 
               <Typography.Text strong>{auditActionLabel(log.action)}</Typography.Text>{' '}
               <Typography.Text type="secondary">by {log.actorName}</Typography.Text>
             </div>
-            <div className="text-muted" style={{ fontSize: 12 }}>
+            <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
               {formatDateTime(log.createdAt)}
             </div>
             {log.note && <div style={{ marginTop: 2 }}>&ldquo;{log.note}&rdquo;</div>}

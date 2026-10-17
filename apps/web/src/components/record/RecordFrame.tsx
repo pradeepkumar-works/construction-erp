@@ -93,7 +93,7 @@ function RecordPane({ loading, error, onRetry, record, children }: RecordFramePr
         <>
           <Flex justify="space-between" align="flex-start" gap={token.marginSM} style={{ marginBottom: token.marginSM }}>
             <Space wrap size={token.marginXS} align="center">
-              <span style={{ fontSize: token.fontSizeHeading5, fontWeight: token.fontWeightStrong }} role="heading" aria-level={2}>
+              <span style={{ fontSize: token.fontSizeLG, fontWeight: token.fontWeightStrong }} role="heading" aria-level={2}>
                 {record.title}
               </span>
               {record.tags}

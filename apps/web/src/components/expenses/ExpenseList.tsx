@@ -24,7 +24,7 @@ import { ExpenseDrawer } from './ExpenseDrawer';
 import { ExpenseFormModal } from './ExpenseFormModal';
 import { BRAND } from '@/lib/brand';
 import { CardToolbar } from '@/components/common/CardToolbar';
-import { themeColor } from '@/lib/theme';
+import { themeColor, themeFontSize } from '@/lib/theme';
 
 const KEYS = ['status', 'mine', 'from', 'to', 'category', 'paymentMode', 'noReceipt'] as const;
 
@@ -114,10 +114,10 @@ export function ExpenseList({ projectId: fixedProject }: { projectId?: string })
       </ListToolbar>
       {summary ? (
         <CardToolbar variant="summary" wrap gap={32} align="flex-start">
-          <Statistic title={`Total (${summary.count})`} value={formatINR(summary.totalAmount, true)} styles={{ content: { fontSize: 18 } }} />
-          <Statistic title="GST in it" value={formatINR(summary.gstAmount, true)} styles={{ content: { fontSize: 18 } }} />
-          <Statistic title="Approved (project cost)" value={formatINR(summary.approvedTotal, true)} styles={{ content: { fontSize: 18, color: themeColor('colorSuccessText') } }} />
-          <Statistic title="Waiting for approval" value={formatINR(summary.pendingTotal, true)} styles={{ content: { fontSize: 18, color: BRAND.colors.pending } }} />
+          <Statistic title={`Total (${summary.count})`} value={formatINR(summary.totalAmount, true)} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
+          <Statistic title="GST in it" value={formatINR(summary.gstAmount, true)} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
+          <Statistic title="Approved (project cost)" value={formatINR(summary.approvedTotal, true)} styles={{ content: { fontSize: themeFontSize('fontSizeXL'), color: themeColor('colorSuccessText') } }} />
+          <Statistic title="Waiting for approval" value={formatINR(summary.pendingTotal, true)} styles={{ content: { fontSize: themeFontSize('fontSizeXL'), color: BRAND.colors.pending } }} />
           <Space size={[4, 4]} wrap style={{ flex: 1, minWidth: 240 }}>
             {summary.byCategory.slice(0, 6).map((c) => (
               <Tooltip key={c.category} title={`${c.count} expense(s)`}>

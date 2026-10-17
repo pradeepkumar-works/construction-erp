@@ -43,7 +43,7 @@ export function PageHeader({
       )}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
         <div style={{ minWidth: 0 }}>
-          <Typography.Title level={1} id="page-title" tabIndex={-1} style={{ margin: 0, fontSize: token.fontSizeHeading3, lineHeight: token.lineHeightHeading3 }}>
+          <Typography.Title level={1} id="page-title" tabIndex={-1} style={{ margin: 0, fontSize: token.fontSizeHeading2, lineHeight: token.lineHeightHeading2 }}>
             {title}
           </Typography.Title>
           {subtitle && (

@@ -10,6 +10,7 @@ import { useLeaveBalances, useLeaveHistory, useLeaveRequest } from '@/lib/querie
 import { formatDateTime } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { LeaveStatusTag, days, leaveSpan } from './staffUi';
+import { themeFontSize } from '@/lib/theme';
 
 /** One leave request: details, the employee's balance for the year, approve / reject / cancel, and its history. */
 export function LeaveDrawer({ id, open, onClose }: { id: string | null; open: boolean; onClose: () => void }) {
@@ -112,7 +113,7 @@ export function LeaveDrawer({ id, open, onClose }: { id: string | null; open: bo
                 <div>
                   <Typography.Text strong>{h.action.charAt(0) + h.action.slice(1).toLowerCase()}</Typography.Text> <Typography.Text type="secondary">by {h.actorName}</Typography.Text>
                   {h.note ? <span> · {h.note}</span> : null}
-                  <div className="text-muted" style={{ fontSize: 12 }}>
+                  <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                     {formatDateTime(h.createdAt)}
                   </div>
                 </div>

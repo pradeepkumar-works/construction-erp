@@ -170,7 +170,7 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
                 fixed: 'right' as const,
                 width: 90,
                 render: (_: unknown, r: EquipmentDto) => (
-                  <Space size={2}>
+                  <Space size="small">
                     <Button type="text" size="small" icon={<EditOutlined />} onClick={() => open(r)} aria-label="Edit" />
                     <Popconfirm title={`Delete ${r.code}?`} okText="Delete" okButtonProps={{ danger: true }} onConfirm={() => remove.mutate(r)} disabled={!!r.lastLogDate}>
                       <Button type="text" size="small" danger icon={<DeleteOutlined />} disabled={!!r.lastLogDate} title={r.lastLogDate ? 'Has logs; mark it inactive instead' : undefined} aria-label="Delete" />

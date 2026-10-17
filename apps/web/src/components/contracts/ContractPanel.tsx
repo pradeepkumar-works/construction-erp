@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Alert, Button, Card, Descriptions, Skeleton, Space, Table, Tag, Typography } from 'antd';
+import { Alert, Button, Descriptions, Skeleton, Table, Tag, Typography } from 'antd';
 import { EditOutlined } from '@ant-design/icons';
 import type { ContractExtensionDto } from '@erp/shared';
 import { CONTRACT_PERCENT_FIELDS, CONTRACT_PERCENT_LABELS, DELAY_PARTY_LABELS, GST_STATES, canEditContract } from '@erp/shared';
@@ -13,6 +13,8 @@ import { QueryError } from '@/components/common/QueryState';
 import { ContractFormModal } from './ContractFormModal';
 import { LdExposureCard } from './LdExposure';
 import { PriceVariationCard } from './PriceVariation';
+import { themeFontSize } from '@/lib/theme';
+import { Section, SectionStack } from '@/components/common/Section';
 
 /** A project's contract with its client: the Contract tab of a project. */
 export function ContractPanel({ projectId }: { projectId: string }) {
@@ -26,12 +28,11 @@ export function ContractPanel({ projectId }: { projectId: string }) {
 
   const missing = [!c.client && 'a client from the client master', !c.agreementNo && 'the agreement number', !c.contractValue && 'the contract value'].filter(Boolean);
   return (
-    <Space orientation="vertical" size={16} style={{ width: '100%' }}>
+    <SectionStack>
       {missing.length > 0 && (
         <Alert type="info" showIcon title={`Bills print better with ${missing.join(', ')}.`} action={editable ? <Button size="small" onClick={() => setEditing(true)}>Fill in</Button> : undefined} />
       )}
-      <Card
-        size="small"
+      <Section
         title="Agreement"
         extra={
           editable ? (
@@ -47,7 +48,7 @@ export function ContractPanel({ projectId }: { projectId: string }) {
               <div>
                 <Typography.Text strong>{c.client.name}</Typography.Text>
                 {c.client.department && <div>{c.client.department}</div>}
-                {c.client.billingAddress && <div className="text-muted" style={{ fontSize: 12 }}>{c.client.billingAddress}</div>}
+                {c.client.billingAddress && <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{c.client.billingAddress}</div>}
               </div>
             ) : (
               <span>
@@ -57,7 +58,7 @@ export function ContractPanel({ projectId }: { projectId: string }) {
           </Descriptions.Item>
           <Descriptions.Item label="Client GSTIN">
             {c.client?.gstin ?? '-'}
-            {c.client?.stateCode && <div className="text-muted" style={{ fontSize: 12 }}>{GST_STATES[c.client.stateCode] ?? c.client.stateCode}</div>}
+            {c.client?.stateCode && <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{GST_STATES[c.client.stateCode] ?? c.client.stateCode}</div>}
           </Descriptions.Item>
           <Descriptions.Item label="Work order">{c.workOrderNo ?? '-'}</Descriptions.Item>
           <Descriptions.Item label="Agreement">{c.agreementNo ? `${c.agreementNo}${c.agreementDate ? `, ${formatDate(c.agreementDate)}` : ''}` : '-'}</Descriptions.Item>
@@ -65,7 +66,7 @@ export function ContractPanel({ projectId }: { projectId: string }) {
           <Descriptions.Item label="Revised contract value">
             {c.revisedContractValue ? formatINR(c.revisedContractValue) : '-'}
             {toNumber(c.approvedVariations) !== 0 && (
-              <div className="text-muted" style={{ fontSize: 12 }}>
+              <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                 <Link href={`/projects/${c.projectId}?tab=variations`}>{formatINR(c.approvedVariations)} in approved variations</Link>
               </div>
             )}
@@ -81,8 +82,8 @@ export function ContractPanel({ projectId }: { projectId: string }) {
           <Descriptions.Item label="Price variation">{c.priceVariation ? 'Yes' : 'No'}</Descriptions.Item>
           <Descriptions.Item label="Mobilisation advance">{Number(c.mobilisationAdvance) > 0 ? formatINR(c.mobilisationAdvance) : 'None'}</Descriptions.Item>
         </Descriptions>
-      </Card>
-      <Card size="small" title="On each bill (% of the work value)">
+      </Section>
+      <Section title="On each bill (% of the work value)">
         <Descriptions size="small" column={{ xs: 2, sm: 4, lg: 7 }} layout="vertical" bordered>
           {CONTRACT_PERCENT_FIELDS.map((k) => (
             <Descriptions.Item key={k} label={CONTRACT_PERCENT_LABELS[k]}>
@@ -90,8 +91,8 @@ export function ContractPanel({ projectId }: { projectId: string }) {
             </Descriptions.Item>
           ))}
         </Descriptions>
-      </Card>
-      <Card size="small" title="Extensions of time" extra={<Link href={`/projects/${projectId}?tab=risks`}>Delay register</Link>}>
+      </Section>
+      <Section title="Extensions of time" extra={<Link href={`/projects/${projectId}?tab=risks`}>Delay register</Link>}>
         <Table<ContractExtensionDto>
           rowKey="riskId"
           size="small"
@@ -118,18 +119,18 @@ export function ContractPanel({ projectId }: { projectId: string }) {
             ) : null
           }
         />
-      </Card>
+      </Section>
       {c.priceVariation ? (
-        <Card size="small" title="Price variation">
+        <Section title="Price variation">
           <PriceVariationCard contract={c} editable={editable} />
-        </Card>
+        </Section>
       ) : null}
       {c.ld ? (
-        <Card size="small" title="Liquidated damages">
+        <Section title="Liquidated damages">
           <LdExposureCard ld={c.ld} />
-        </Card>
+        </Section>
       ) : null}
       {editable && <ContractFormModal open={editing} contract={c} onClose={() => setEditing(false)} />}
-    </Space>
+    </SectionStack>
   );
 }

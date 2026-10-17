@@ -14,6 +14,7 @@ import { submissionMetaItems } from '@/components/common/SubmitterInfo';
 import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
 import { checksSection } from '@/components/checks/ChecksSection';
 import { submissionLifecycle } from '@/components/record/lifecycle';
+import { themeFontSize } from '@/lib/theme';
 
 interface RecordProps {
   id: string | null;
@@ -66,7 +67,7 @@ export function ExpenseRecord({ id, mode, open, onClose, onEdit }: RecordProps &
               children: (
                 <>
                   <AttachmentGallery attachments={data.attachments} />
-                  <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12 }}>
+                  <Typography.Text type="secondary" style={{ display: 'block', fontSize: themeFontSize('fontSizeSM') }}>
                     Expense ID: {data.id}
                   </Typography.Text>
                 </>

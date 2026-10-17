@@ -277,6 +277,8 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
                       aria-pressed={isFavourite}
                       icon={isFavourite ? <StarFilled style={{ color: token.colorWarning }} /> : <StarOutlined />}
                       onClick={() => toggleFavourite(pinnable)}
+                      // A long breadcrumb gives way first; the star keeps its 24 px target.
+                      style={{ flexShrink: 0 }}
                     />
                   </Tooltip>
                 )}
@@ -342,8 +344,8 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
                   </Avatar>
                   {roomy && (
                     <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: 1.1 }}>
-                      <span style={{ fontWeight: 600, fontSize: 13 }}>{user.fullName}</span>
-                      <span className="text-muted" style={{ fontSize: 11 }}>
+                      <span style={{ fontWeight: 600, fontSize: token.fontSize }}>{user.fullName}</span>
+                      <span className="text-muted" style={{ fontSize: token.fontSizeSM }}>
                         {user.roleName}
                       </span>
                     </span>

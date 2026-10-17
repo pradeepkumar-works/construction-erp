@@ -30,7 +30,7 @@ import { EmptyArt } from '@/components/common/EmptyArt';
 import { DataTable, useColumnChoice, type ListColumn } from '@/components/list/DataTable';
 import { exportSelected } from '@/components/list/bulk';
 import { RecordLink } from '@/components/record/RecordLink';
-import { themeColor } from '@/lib/theme';
+import { themeColor, themeFontSize } from '@/lib/theme';
 
 const money = (v: string, strong?: boolean) => (strong ? <strong className="mono">{formatINR(v)}</strong> : <span className="mono">{formatINR(v)}</span>);
 function Sub({ children }: { children: React.ReactNode }) {
@@ -258,7 +258,7 @@ export default function ReceivablesPage() {
       render: (v: string, r) => (
         <div>
           <Link href={`/projects/${r.projectId}?tab=bills`}>{v}</Link>
-          <div className="text-muted" style={{ fontSize: 12 }}>
+          <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
             {r.clientName ?? ''}
           </div>
         </div>
@@ -290,7 +290,7 @@ export default function ReceivablesPage() {
       render: (v: string, r) => (
         <div>
           <Link href={`/projects/${r.projectId}?tab=bills`}>{v}</Link>
-          <div className="text-muted" style={{ fontSize: 12 }}>
+          <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
             {r.clientName ?? ''}
           </div>
         </div>
@@ -329,7 +329,7 @@ export default function ReceivablesPage() {
           <Col flex="1 1 180px">
             <Card style={{ height: '100%' }}>
               <Statistic title="Outstanding" value={formatINRCompact(t.outstanding)} />
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+              <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                 {data.openBills.length} open bill{data.openBills.length === 1 ? '' : 's'} · {formatINR(t.notSent)} approved, not sent
               </Typography.Text>
             </Card>
@@ -337,7 +337,7 @@ export default function ReceivablesPage() {
           <Col flex="1 1 180px">
             <Card style={{ height: '100%' }}>
               <Statistic title="Over 90 days" value={formatINRCompact(t.ageing.over90)} styles={{ content: { color: toNumber(t.ageing.over90) > 0 ? themeColor('colorErrorText') : undefined } }} />
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+              <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                 61-90 days: {formatINR(t.ageing.days61to90)}
               </Typography.Text>
             </Card>
@@ -345,7 +345,7 @@ export default function ReceivablesPage() {
           <Col flex="1 1 180px">
             <Card style={{ height: '100%' }}>
               <Statistic title="Retention + deposit held" value={formatINRCompact(toNumber(t.retentionHeld) + toNumber(t.depositHeld))} />
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+              <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                 Retention {formatINR(t.retentionHeld)} · deposit {formatINR(t.depositHeld)}
               </Typography.Text>
             </Card>
@@ -353,7 +353,7 @@ export default function ReceivablesPage() {
           <Col flex="1 1 180px">
             <Card style={{ height: '100%' }}>
               <Statistic title="TDS deducted" value={formatINRCompact(toNumber(t.tdsDeducted) + toNumber(t.gstTdsDeducted))} />
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+              <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                 Income tax {formatINR(t.tdsDeducted)} · GST {formatINR(t.gstTdsDeducted)}
               </Typography.Text>
             </Card>

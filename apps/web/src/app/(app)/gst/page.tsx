@@ -17,6 +17,7 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { QueryError } from '@/components/common/QueryState';
 import { tabBarWithExtra } from '@/components/common/tabBarWithExtra';
 import { rangePresets } from '@/lib/dates';
+import { themeFontSize } from '@/lib/theme';
 
 const money = (v: string | number) => <span className="mono">{formatINR(v)}</span>;
 const taxColumns = <T extends { igst: string; cgst: string; sgst: string }>(): NonNullable<TableProps<T>['columns']> => [
@@ -52,7 +53,7 @@ function GstRegistersPage() {
           <Link href={`/bills?id=${r.billId}`} className="mono">
             {v}
           </Link>
-          <div className="text-muted" style={{ fontSize: 12 }}>
+          <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
             {formatDate(r.invoiceDate)}
           </div>
         </div>
@@ -64,7 +65,7 @@ function GstRegistersPage() {
       render: (_, r) => (
         <div>
           {r.recipientName} <Tag style={{ marginLeft: 4 }}>{r.section}</Tag>
-          <div className="text-muted mono" style={{ fontSize: 12 }}>
+          <div className="text-muted mono" style={{ fontSize: themeFontSize('fontSizeSM') }}>
             {r.recipientGstin ?? 'Unregistered'} · {placeOfSupply(r.placeOfSupply) || 'place of supply not known'}
           </div>
         </div>
@@ -83,7 +84,7 @@ function GstRegistersPage() {
       render: (_, r) => (
         <div>
           <span className="mono">{r.invoiceNo ?? <Typography.Text type="warning">no invoice no.</Typography.Text>}</span>
-          <div className="text-muted" style={{ fontSize: 12 }}>
+          <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
             {formatDate(r.invoiceDate)}
           </div>
         </div>
@@ -100,7 +101,7 @@ function GstRegistersPage() {
               No GSTIN
             </Tag>
           )}
-          <div className="text-muted" style={{ fontSize: 12 }}>
+          <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
             <span className="mono">{r.supplierGstin ?? '-'}</span> · {GST_SOURCE_LABELS[r.source]} {r.ref} · {r.projectCode}
           </div>
         </div>
@@ -139,7 +140,7 @@ function GstRegistersPage() {
             <Col flex="1 1 180px">
               <Card style={{ height: '100%' }}>
                 <Statistic title="Output tax" value={formatINRCompact(data.outwardTotals.tax)} />
-                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                   On {formatINR(data.outwardTotals.taxable)} billed, {data.outward.length} invoice{data.outward.length === 1 ? '' : 's'}
                 </Typography.Text>
               </Card>
@@ -147,7 +148,7 @@ function GstRegistersPage() {
             <Col flex="1 1 180px">
               <Card style={{ height: '100%' }}>
                 <Statistic title="Input tax" value={formatINRCompact(data.inwardTotals.tax)} />
-                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                   On {formatINR(data.inwardTotals.taxable)} bought with a GSTIN
                 </Typography.Text>
               </Card>
@@ -155,7 +156,7 @@ function GstRegistersPage() {
             <Col flex="1 1 180px">
               <Card style={{ height: '100%' }}>
                 <Statistic title={net >= 0 ? 'Net GST to pay' : 'Input tax carried forward'} value={formatINRCompact(Math.abs(net))} />
-                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                   Before TDS credits and the electronic ledgers
                 </Typography.Text>
               </Card>
@@ -163,7 +164,7 @@ function GstRegistersPage() {
             <Col flex="1 1 180px">
               <Card style={{ height: '100%' }}>
                 <Statistic title="Not claimable" value={formatINRCompact(data.ineligibleTax)} />
-                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                   GST paid where the supplier&apos;s GSTIN is missing
                 </Typography.Text>
               </Card>
@@ -252,7 +253,7 @@ function GstRegistersPage() {
           ]}
         />
       </Card>
-      <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginTop: 8 }}>
+      <Typography.Paragraph type="secondary" style={{ fontSize: themeFontSize('fontSizeSM'), marginTop: 8 }}>
         RA bills are taken by bill date once approved, invoice number as in the Tally export; works on a site are supplied where it is, so their GST is CGST and SGST.
         Purchases are approved bills and expenses by invoice date, one row per GST rate; IGST when the supplier is registered in another state. E-invoicing is not
         generated here.

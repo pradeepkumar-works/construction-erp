@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { themeFontSize } from '@/lib/theme';
 import Link from 'next/link';
 import { Alert, App, Button, Flex, Form, Input, Skeleton, Spin, Tag, Typography, theme } from 'antd';
 import { CheckCircleFilled, CheckOutlined, ExclamationCircleFilled } from '@ant-design/icons';
@@ -42,7 +43,7 @@ export function ChecksSection({ kind, id, version }: { kind: CheckKind; id: stri
         title={line.summary}
         description={
           line.summaryBy === 'ai' ? (
-            <span className="text-muted" style={{ fontSize: 12, display: 'inline-flex', gap: 6, alignItems: 'center' }}>
+            <span className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM'), display: 'inline-flex', gap: 6, alignItems: 'center' }}>
               <SparkleIcon /> Summary by Ask Nirmaan from the checks below
             </span>
           ) : data.aiSummaryPending && summary.isFetching ? (
@@ -120,12 +121,12 @@ export function CheckRows({ checks, action }: { checks: BillCheckDto[]; action?:
               {c.title}
             </Typography.Text>
             {c.detail ? (
-              <div className="text-muted" style={{ fontSize: 12 }}>
+              <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                 {c.detail}
               </div>
             ) : null}
             {c.links.length ? (
-              <Flex gap={10} wrap style={{ fontSize: 12 }}>
+              <Flex gap={10} wrap style={{ fontSize: themeFontSize('fontSizeSM') }}>
                 {c.links.map((l) => (
                   <Link key={`${l.href}-${l.label}`} href={l.href} className="text-link">
                     {l.label}
@@ -134,7 +135,7 @@ export function CheckRows({ checks, action }: { checks: BillCheckDto[]; action?:
               </Flex>
             ) : null}
             {c.accepted ? (
-              <div className="text-muted" style={{ fontSize: 12 }}>
+              <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                 Accepted by {c.accepted.byName}, {formatDateTime(c.accepted.at)}: {c.accepted.note}
               </div>
             ) : null}

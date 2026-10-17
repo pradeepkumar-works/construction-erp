@@ -4,6 +4,7 @@ import React, { useMemo } from 'react';
 import { AutoComplete } from 'antd';
 import type { VendorDto, VendorKind } from '@erp/shared';
 import { useVendors } from '@/lib/queries';
+import { themeFontSize } from '@/lib/theme';
 
 /**
  * Vendor name with suggestions from the vendor master (vendors of `kind` first). A name that is not in the master can
@@ -32,7 +33,7 @@ export function VendorPicker({
       label: (
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
           <span>{v.name}</span>
-          {v.gstin && <span className="text-muted mono" style={{ fontSize: 12 }}>{v.gstin}</span>}
+          {v.gstin && <span className="text-muted mono" style={{ fontSize: themeFontSize('fontSizeSM') }}>{v.gstin}</span>}
         </div>
       ),
     }));

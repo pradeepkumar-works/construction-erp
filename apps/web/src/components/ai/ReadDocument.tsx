@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { themeFontSize } from '@/lib/theme';
 import { App, Button, Flex, Segmented, Tooltip, Typography, theme } from 'antd';
 import type { FormItemProps } from 'antd';
 import type { DocReadField, DocReadKind, DocReadResultDto } from '@erp/shared';
@@ -110,7 +111,7 @@ export function ReadPreview({ state, active, onClear, children }: { state: ReadS
           <Typography.Text strong>
             <SparkleIcon /> Filled from {state.file.name}
           </Typography.Text>
-          <div className="text-muted" style={{ fontSize: 12 }}>
+          <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
             {toCheck.length
               ? `${toCheck.length} value${toCheck.length === 1 ? '' : 's'} to check, marked in amber: ${toCheck.map((b) => b.label.toLowerCase()).join(', ')}.`
               : `Check the values against the ${noun} before saving.`}{' '}
@@ -185,7 +186,7 @@ export function ReadSource({ kind, page, onActive }: { kind: DocReadKind; page: 
       type="link"
       size="small"
       icon={<SparkleIcon />}
-      style={{ padding: 0, height: 'auto', fontSize: 12 }}
+      style={{ padding: 0, fontSize: themeFontSize('fontSizeSM') }}
       onMouseEnter={() => onActive(true)}
       onMouseLeave={() => onActive(false)}
       onFocus={() => onActive(true)}

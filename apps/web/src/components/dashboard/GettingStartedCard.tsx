@@ -61,7 +61,7 @@ export function GettingStartedCard() {
       title={
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <span>Your first week on {BRAND.name}</span>
-          <Typography.Text type="secondary" style={{ fontWeight: 400, fontSize: 13 }}>
+          <Typography.Text type="secondary" style={{ fontWeight: 400, fontSize: token.fontSizeSM }}>
             {day <= 7 ? `Day ${day} of 7 · ` : ''}
             {data.done} of {data.total} done
           </Typography.Text>
@@ -83,11 +83,11 @@ export function GettingStartedCard() {
                 <Typography.Text strong={isNext} delete={s.done} type={s.done ? 'secondary' : undefined}>
                   {step.title}
                 </Typography.Text>
-                <Typography.Text type="secondary" style={{ fontSize: 12, marginLeft: 8 }}>
+                <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM, marginLeft: 8 }}>
                   Day {step.day}
                 </Typography.Text>
                 {!s.done && (
-                  <div className="text-muted" style={{ fontSize: 13 }}>
+                  <div className="text-muted" style={{ fontSize: token.fontSizeSM }}>
                     {step.help}
                   </div>
                 )}

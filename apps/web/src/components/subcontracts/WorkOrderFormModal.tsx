@@ -14,6 +14,7 @@ import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { UnitInput } from '@/components/common/UnitInput';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { MoneyInput, QuantityInput } from '@/components/form/inputs';
+import { themeFontSize } from '@/lib/theme';
 
 interface LineValue {
   boqItemId?: string | null;
@@ -240,7 +241,7 @@ export function WorkOrderFormModal({
                     render: (_, f) => {
                       const b = lines?.[f.name]?.boqItemId ? boqById.get(lines[f.name].boqItemId!) : undefined;
                       return b ? (
-                        <Typography.Text style={{ fontSize: 12 }}>{b.description}</Typography.Text>
+                        <Typography.Text style={{ fontSize: themeFontSize('fontSizeSM') }}>{b.description}</Typography.Text>
                       ) : (
                         <Form.Item name={[f.name, 'description']} noStyle rules={[{ required: true, whitespace: true, message: 'Describe the item' }]}>
                           <Input placeholder="Scaffolding, hire and erection" aria-label={`Description of line ${f.name + 1}`} maxLength={300} />
@@ -285,7 +286,7 @@ export function WorkOrderFormModal({
                             <MoneyInput aria-label={`Rate of line ${f.name + 1}`} />
                           </Form.Item>
                           {b && (
-                            <Typography.Text type={rate > client ? 'danger' : 'secondary'} style={{ fontSize: 11 }}>
+                            <Typography.Text type={rate > client ? 'danger' : 'secondary'} style={{ fontSize: themeFontSize('fontSizeSM') }}>
                               Client {formatINR(client)}
                               {rate > 0 && client > 0 ? ` · margin ${Math.round(((client - rate) / client) * 1000) / 10}%` : ''}
                             </Typography.Text>

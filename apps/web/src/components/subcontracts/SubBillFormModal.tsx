@@ -11,6 +11,7 @@ import { formatINR, formatQty, toNumber } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput, QuantityInput } from '@/components/form/inputs';
+import { themeFontSize } from '@/lib/theme';
 
 interface FormValues {
   workOrderId: string;
@@ -204,7 +205,7 @@ export function SubBillFormModal({
             <PhotoUpload max={4} />
           </Form.Item>
           {wo && (
-            <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginBottom: 0 }}>
+            <Typography.Paragraph type="secondary" style={{ fontSize: themeFontSize('fontSizeSM'), marginBottom: 0 }}>
               Deducted on saving: retention {wo.retentionPct}%, TDS {wo.tdsPct}%
               {toNumber(wo.advanceAmount) > 0 ? `, advance recovery ${wo.advanceRecoveryPct}% (${formatINR(toNumber(wo.advanceAmount) - toNumber(wo.advanceRecovered), true)} left)` : ''}, and material issued to them at our rates. GST {wo.gstRate}% is added.
             </Typography.Paragraph>
