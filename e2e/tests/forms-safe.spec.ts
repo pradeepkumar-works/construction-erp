@@ -23,7 +23,7 @@ test('an empty submit says how to fix each field, and an amount reads in lakhs',
 
   await form.getByLabel('Rate').fill('1234567.5');
   await form.getByLabel('Description').click();
-  await expect(form.getByLabel('Rate')).toHaveValue('12,34,567.50');
+  await expect(form.getByLabel('Rate')).toHaveValue('12,34,567.5');
 
   // Nothing saved yet, so leaving asks before throwing it away.
   await form.getByRole('button', { name: 'Cancel' }).click();
@@ -48,6 +48,7 @@ test('Back closes an edited form only after asking, and stays on the page', asyn
   await page.evaluate(() => window.history.back());
   const confirm = page.locator('.ant-modal-confirm').filter({ hasText: 'Discard your changes?' });
   await confirm.getByRole('button', { name: 'Keep editing' }).click();
+  await expect(confirm).toHaveCount(0);
   await expect(description).toHaveValue(`${before} (checked)`);
 
   await page.evaluate(() => window.history.back());

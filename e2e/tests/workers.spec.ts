@@ -42,7 +42,7 @@ test('a site team marks the roll call of named workers and the head count follow
   await form.getByLabel('Name', { exact: true }).fill('Sania Barik');
   await form.getByLabel('Labour contractor').fill('Kalia Contractors');
   await form.getByLabel('Trade').fill('Helper');
-  await form.getByLabel('Daily wage', { exact: true }).fill('600');
+  await form.getByRole('spinbutton', { name: /^Daily wage/ }).fill('600');
   await form.getByRole('button', { name: 'Add worker' }).click();
   await expect(page.getByText('Worker W-0004 added')).toBeVisible();
   await expect(page.locator('.worker-list tr').filter({ hasText: 'Sania Barik' })).toContainText('Kalia Contractors');

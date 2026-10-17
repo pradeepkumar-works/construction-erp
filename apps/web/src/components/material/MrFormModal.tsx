@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { Alert, App, DatePicker, Form, Input, InputNumber, Select } from 'antd';
+import { Alert, App, DatePicker, Form, Input, Select } from 'antd';
 import dayjs from 'dayjs';
 import type { MaterialPriority, MaterialRequestDto } from '@erp/shared';
 import { MATERIAL_PRIORITIES, MATERIAL_PRIORITY_LABELS } from '@erp/shared';
@@ -12,6 +12,7 @@ import { editActionLabel } from '@/components/common/EditResubmitButton';
 import { UnitInput } from '@/components/common/UnitInput';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { LineTable } from '@/components/form/LineTable';
+import { QuantityInput } from '@/components/form/inputs';
 
 interface FormValues {
   projectId: string;
@@ -79,11 +80,11 @@ export function MrFormModal({ open, onClose, projectId, defaultProjectId, entry 
         {entry?.reviewNote && (
           <Alert type="warning" showIcon style={{ marginBottom: 16 }} title={`Reviewer note from ${entry.reviewedByName ?? 'approver'}`} description={entry.reviewNote} />
         )}
-        <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]} hidden={!!fixedProject}>
+        <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!fixedProject}>
           <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
         </Form.Item>
         <FormGrid cols={2}>
-          <Form.Item name="requiredDate" label="Required by" rules={[{ required: true, message: 'Required' }]}>
+          <Form.Item name="requiredDate" label="Required by" rules={[{ required: true, message: 'Pick the date it is needed by' }]}>
             <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" />
           </Form.Item>
           <Form.Item name="priority" label="Priority" rules={[{ required: true }]}>
@@ -102,7 +103,7 @@ export function MrFormModal({ open, onClose, projectId, defaultProjectId, entry 
                 key: 'itemName',
                 title: 'Item',
                 render: (f) => (
-                  <Form.Item name={[f.name, 'itemName']} noStyle rules={[{ required: true, whitespace: true, message: 'Item name' }]}>
+                  <Form.Item name={[f.name, 'itemName']} noStyle rules={[{ required: true, whitespace: true, message: 'Enter the item' }]}>
                     <Input placeholder="Cement OPC 53" aria-label={`Item of line ${f.name + 1}`} style={{ minWidth: 160 }} />
                   </Form.Item>
                 ),
@@ -121,8 +122,8 @@ export function MrFormModal({ open, onClose, projectId, defaultProjectId, entry 
                 title: 'Qty',
                 width: 100,
                 render: (f) => (
-                  <Form.Item name={[f.name, 'quantity']} noStyle rules={[{ required: true, message: 'Qty' }]}>
-                    <InputNumber min={0} style={{ width: '100%' }} aria-label={`Quantity of line ${f.name + 1}`} />
+                  <Form.Item name={[f.name, 'quantity']} noStyle rules={[{ required: true, message: 'Enter the quantity' }]}>
+                    <QuantityInput aria-label={`Quantity of line ${f.name + 1}`} />
                   </Form.Item>
                 ),
               },
@@ -131,7 +132,7 @@ export function MrFormModal({ open, onClose, projectId, defaultProjectId, entry 
                 title: 'Unit',
                 width: 110,
                 render: (f) => (
-                  <Form.Item name={[f.name, 'unit']} noStyle rules={[{ required: true, message: 'Unit' }]}>
+                  <Form.Item name={[f.name, 'unit']} noStyle rules={[{ required: true, whitespace: true, message: 'Enter the unit' }]}>
                     <UnitInput aria-label={`Unit of line ${f.name + 1}`} />
                   </Form.Item>
                 ),

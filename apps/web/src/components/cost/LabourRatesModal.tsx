@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { Alert, App, Button, Form, Input, InputNumber, Modal, Skeleton, Tag, Typography } from 'antd';
+import { Alert, App, Button, Form, Input, Modal, Skeleton, Tag, Typography } from 'antd';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { canSetLabourRates } from '@erp/shared';
@@ -10,6 +10,8 @@ import { useAuth } from '@/lib/auth';
 import { useLabourRates } from '@/lib/queries';
 import { formatINR } from '@/lib/format';
 import { themeColor } from '@/lib/theme';
+import { FormShell } from '@/components/form/FormShell';
+import { MoneyInput } from '@/components/form/inputs';
 
 interface Row {
   category: string;
@@ -34,23 +36,12 @@ export function LabourRatesModal({ open, onClose }: { open: boolean; onClose: ()
     onSuccess: () => {
       message.success('Labour rates saved');
       qc.invalidateQueries({ queryKey: ['cost'] });
-      onClose();
     },
     onError: (err) => message.error(errorMessage(err)),
   });
 
-  return (
-    <Modal
-      open={open}
-      title="Labour daily rates"
-      onCancel={onClose}
-      onOk={() => (editable ? form.submit() : onClose())}
-      okText={editable ? 'Save' : 'Close'}
-      cancelButtonProps={{ style: editable ? undefined : { display: 'none' } }}
-      confirmLoading={save.isPending}
-      width={560}
-      destroyOnHidden
-    >
+  const intro = (
+    <>
       <Typography.Paragraph type="secondary">Labour cost is each day&apos;s attendance head count × the daily rate of its trade.</Typography.Paragraph>
       {isLoading ? <Skeleton active /> : null}
       {data?.unpricedTrades.length ? (
@@ -70,28 +61,52 @@ export function LabourRatesModal({ open, onClose }: { open: boolean; onClose: ()
           }
         />
       ) : null}
-      {data && !editable ? (
-        <div>
-          {data.rates.map((r) => (
-            <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: `1px solid ${themeColor('colorBorderSecondary')}` }}>
-              <span>{r.category}</span>
-              <span className="mono">{formatINR(r.dailyRate, true)} / day</span>
-            </div>
-          ))}
-        </div>
-      ) : null}
-      {data && editable ? (
-        <Form form={form} onFinish={(v) => save.mutate(v)}>
+    </>
+  );
+
+  if (!editable)
+    return (
+      <Modal
+        open={open}
+        title="Labour daily rates"
+        onCancel={onClose}
+        footer={
+          <Button type="primary" onClick={onClose}>
+            Close
+          </Button>
+        }
+        width={560}
+        destroyOnHidden
+      >
+        {intro}
+        {data ? (
+          <div>
+            {data.rates.map((r) => (
+              <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: `1px solid ${themeColor('colorBorderSecondary')}` }}>
+                <span>{r.category}</span>
+                <span className="mono">{formatINR(r.dailyRate, true)} / day</span>
+              </div>
+            ))}
+          </div>
+        ) : null}
+      </Modal>
+    );
+
+  return (
+    <FormShell open={open} onClose={onClose} form={form} layout="modal" width={560} title="Labour daily rates" okText="Save" okDisabled={!data} onSubmit={(v) => save.mutateAsync(v)}>
+      {intro}
+      {data ? (
+        <Form form={form}>
           <Form.List name="rates">
             {(fields, { add, remove }) => (
               <>
                 {fields.map((f) => (
                   <div key={f.key} style={{ display: 'grid', gridTemplateColumns: '1fr 180px 32px', gap: 8 }}>
-                    <Form.Item name={[f.name, 'category']} rules={[{ required: true, whitespace: true, message: 'Trade' }]}>
-                      <Input placeholder="Trade, e.g. Mason" maxLength={60} />
+                    <Form.Item name={[f.name, 'category']} rules={[{ required: true, whitespace: true, message: 'Enter the trade' }]}>
+                      <Input placeholder="Trade, e.g. Mason" maxLength={60} aria-label="Trade" />
                     </Form.Item>
-                    <Form.Item name={[f.name, 'dailyRate']} rules={[{ required: true, message: 'Rate' }]}>
-                      <InputNumber min={0} precision={2} prefix="₹" suffix="/ day" style={{ width: '100%' }} />
+                    <Form.Item name={[f.name, 'dailyRate']} rules={[{ required: true, message: 'Enter the daily rate' }]}>
+                      <MoneyInput suffix="/ day" aria-label="Daily rate" />
                     </Form.Item>
                     <Button type="text" danger icon={<DeleteOutlined />} onClick={() => remove(f.name)} aria-label="Remove" />
                   </div>
@@ -104,6 +119,6 @@ export function LabourRatesModal({ open, onClose }: { open: boolean; onClose: ()
           </Form.List>
         </Form>
       ) : null}
-    </Modal>
+    </FormShell>
   );
 }

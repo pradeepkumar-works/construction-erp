@@ -81,7 +81,7 @@ test('work order to a measured subcontractor bill', async ({ page, browser }) =>
   await page.goto(`/work-orders?id=${wo.id}`);
   const drawer = page.locator('.ant-drawer').filter({ hasText: wo.woNo });
   await drawer.getByRole('button', { name: 'Prepare bill' }).click();
-  const billModal = page.locator('.ant-modal').filter({ hasText: `New bill on ${wo.woNo}` });
+  const billModal = formPanel(page, `New bill on ${wo.woNo}`);
   await expect(billModal.getByText('BOQ items are billed as measured')).toBeVisible();
   await billModal.getByLabel('Their invoice no.').fill('SJC/E2E/1');
   await billModal.getByRole('button', { name: 'Save and submit' }).click();

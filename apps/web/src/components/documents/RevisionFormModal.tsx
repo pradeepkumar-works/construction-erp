@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { App, Form, Modal } from 'antd';
+import { App, Form } from 'antd';
 import dayjs from 'dayjs';
 import type { AttachmentDto, DocumentDetailDto, DocumentRevisionDto, RevisionStatus } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, errorMessage } from '@/lib/api';
+import { FormShell } from '@/components/form/FormShell';
 import { RevisionFields } from './RevisionFields';
 
 interface FormValues {
@@ -64,25 +65,24 @@ export function RevisionFormModal({ open, onClose, doc, revision }: { open: bool
       message.success(editing ? 'Revision updated' : `${d.docNo} Rev ${d.current?.revision ?? ''} recorded`);
       qc.invalidateQueries({ queryKey: ['documents'] });
       qc.invalidateQueries({ queryKey: ['notifications'] });
-      onClose();
     },
     onError: (err) => message.error(errorMessage(err)),
   });
 
   return (
-    <Modal
+    <FormShell
       open={open}
+      onClose={onClose}
+      form={form}
+      layout="modal"
+      width={640}
       title={doc ? (revision ? `${doc.docNo} Rev ${revision.revision}` : `New revision of ${doc.docNo}`) : ''}
       okText={editing ? 'Save' : 'Add revision'}
-      onCancel={onClose}
-      onOk={() => form.submit()}
-      confirmLoading={mutation.isPending}
-      width={640}
-      destroyOnHidden
+      onSubmit={(v) => mutation.mutateAsync(v)}
     >
-      <Form form={form} layout="vertical" onFinish={(v) => mutation.mutate(v)} style={{ marginTop: 8 }}>
+      <Form form={form} layout="vertical" style={{ marginTop: 8 }}>
         <RevisionFields />
       </Form>
-    </Modal>
+    </FormShell>
   );
 }

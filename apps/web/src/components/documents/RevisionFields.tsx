@@ -5,25 +5,24 @@ import { DatePicker, Form, Input, Select } from 'antd';
 import dayjs from 'dayjs';
 import { REVISION_STATUSES, REVISION_STATUS_LABELS } from '@erp/shared';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
-
-const grid = (cols: string) => ({ display: 'grid', gridTemplateColumns: cols, gap: '0 16px' }) as const;
+import { FormGrid } from '@/components/form/FormShell';
 
 /** Revision, date, status, from whom and the files: in the new-document form (under `revision`) and the revision form. */
 export function RevisionFields({ prefix = [] }: { prefix?: string[] }) {
   const n = (k: string) => [...prefix, k];
   return (
     <>
-      <div style={grid('1fr 1fr 1.6fr')}>
-        <Form.Item name={n('revision')} label="Revision" rules={[{ required: true, whitespace: true, message: 'Required' }]}>
+      <FormGrid cols={3}>
+        <Form.Item name={n('revision')} label="Revision" rules={[{ required: true, whitespace: true, message: 'Enter the revision, e.g. R0' }]}>
           <Input maxLength={20} placeholder="R0, A, P1" />
         </Form.Item>
-        <Form.Item name={n('issuedOn')} label="Issued on" rules={[{ required: true, message: 'Required' }]}>
+        <Form.Item name={n('issuedOn')} label="Issued on" rules={[{ required: true, message: 'Pick the date it was issued' }]}>
           <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
         </Form.Item>
-        <Form.Item name={n('status')} label="Status" rules={[{ required: true, message: 'Required' }]}>
+        <Form.Item name={n('status')} label="Status" rules={[{ required: true, message: 'Choose the status' }]}>
           <Select options={REVISION_STATUSES.map((s) => ({ value: s, label: REVISION_STATUS_LABELS[s] }))} />
         </Form.Item>
-      </div>
+      </FormGrid>
       <Form.Item name={n('receivedFrom')} label="Issued by (architect, consultant, client)">
         <Input maxLength={200} />
       </Form.Item>

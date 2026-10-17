@@ -4,7 +4,8 @@ import React, { useEffect } from 'react';
 import { Alert, App, DatePicker, Form, Input, InputNumber, Select } from 'antd';
 import dayjs from 'dayjs';
 import type { AttachmentDto, ProgressEntryDto } from '@erp/shared';
-import { FormShell } from '@/components/form/FormShell';
+import { FormGrid, FormShell } from '@/components/form/FormShell';
+import { QuantityInput } from '@/components/form/inputs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, errorMessage } from '@/lib/api';
 import { useActivities, useProjects } from '@/lib/queries';
@@ -100,11 +101,11 @@ export function ProgressFormModal({ open, onClose, projectId, defaultProjectId, 
         {entry?.reviewNote && (
           <Alert type="warning" showIcon style={{ marginBottom: 16 }} title={`Reviewer note from ${entry.reviewedByName ?? 'approver'}`} description={entry.reviewNote} />
         )}
-        <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]} hidden={!!fixedProject}>
+        <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!fixedProject}>
           <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} onChange={() => form.setFieldValue('activityId', undefined)} />
         </Form.Item>
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '0 16px' }}>
-          <Form.Item name="activityId" label="Activity" rules={[{ required: true, message: 'Required' }]}>
+        <FormGrid cols={2}>
+          <Form.Item name="activityId" label="Activity" rules={[{ required: true, message: 'Choose the activity' }]}>
             <Select
               showSearch={{ optionFilterProp: 'label' }}
               loading={actLoading}
@@ -113,21 +114,21 @@ export function ProgressFormModal({ open, onClose, projectId, defaultProjectId, 
               options={(activities ?? []).map((a) => ({ value: a.id, label: `${a.name} (${a.unit})` }))}
             />
           </Form.Item>
-          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Required' }]}>
+          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date' }]}>
             <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0 16px' }}>
-          <Form.Item name="quantity" label={`Quantity executed${activity ? ` (${activity.unit})` : ''}`} rules={[{ required: true, message: 'Required' }]}>
-            <InputNumber style={{ width: '100%' }} min={0} />
+        </FormGrid>
+        <FormGrid cols={3}>
+          <Form.Item name="quantity" label="Quantity executed" rules={[{ required: true, message: 'Enter the quantity done' }]}>
+            <QuantityInput unit={activity?.unit} />
           </Form.Item>
           <Form.Item name="manpowerCount" label="Manpower">
-            <InputNumber style={{ width: '100%' }} min={0} precision={0} />
+            <InputNumber style={{ width: '100%' }} min={0} precision={0} inputMode="numeric" />
           </Form.Item>
           <Form.Item name="location" label="Location">
             <Input placeholder="Grid, side, structure" />
           </Form.Item>
-        </div>
+        </FormGrid>
         <SectorInputs projectId={selectedProject} />
         <Form.Item name="machineryUsed" label="Machinery used">
           <Input placeholder="Excavator x1, Tipper x4" />

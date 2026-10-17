@@ -64,8 +64,9 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
   const prevDay = dayStr ? dayjs(dayStr).subtract(1, 'day').format('YYYY-MM-DD') : undefined;
   const previous = useDprList({ projectId: watchedProject, to: prevDay, pageSize: 1 }, open && !editing && !!watchedProject && !!prevDay).data?.items[0];
   const [copiedFrom, setCopiedFrom] = useState<DailyReportDto | null>(null);
+  const [copyCleared, setCopyCleared] = useState(false);
   useEffect(() => {
-    if (!open || editing || !previous || attendance.isLoading || copiedFrom?.id === previous.id) return;
+    if (!open || editing || !previous || copyCleared || attendance.isLoading || copiedFrom?.id === previous.id) return;
     const v = form.getFieldsValue(['manpower', 'machinery']) as Pick<FormValues, 'manpower' | 'machinery'>;
     const takeManpower = !attendanceSheet && !manpowerEdited && !v.manpower?.length && previous.manpower.length > 0;
     const takeMachinery = !v.machinery?.length && previous.machinery.length > 0;
@@ -75,10 +76,11 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
       ...(takeMachinery ? { machinery: previous.machinery.map((m) => ({ ...m })) } : {}),
     });
     setCopiedFrom(previous);
-  }, [open, editing, previous, attendance.isLoading, attendanceSheet, manpowerEdited, copiedFrom, form]);
+  }, [open, editing, previous, copyCleared, attendance.isLoading, attendanceSheet, manpowerEdited, copiedFrom, form]);
   const clearCopied = () => {
     form.setFieldsValue({ ...(filledFrom ? {} : { manpower: [] }), machinery: [] });
     setCopiedFrom(null);
+    setCopyCleared(true);
     setManpowerEdited(true);
   };
 
@@ -87,6 +89,7 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
     setManpowerEdited(false);
     setFilledFrom(null);
     setCopiedFrom(null);
+    setCopyCleared(false);
     form.resetFields();
     if (entry) {
       form.setFieldsValue({

@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { App, Divider, Form, Input, Modal, Select } from 'antd';
+import { App, Form, Input, Select } from 'antd';
 import dayjs from 'dayjs';
 import type { AttachmentDto, DocumentDetailDto, DocumentDiscipline, DocumentKind, RevisionStatus } from '@erp/shared';
 import { DOCUMENT_DISCIPLINES, DOCUMENT_DISCIPLINE_LABELS, DOCUMENT_KINDS, DOCUMENT_KIND_LABELS } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, errorMessage } from '@/lib/api';
 import { useProjects } from '@/lib/queries';
+import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { RevisionFields } from './RevisionFields';
 
 interface FormValues {
@@ -19,8 +20,6 @@ interface FormValues {
   remarks?: string;
   revision?: { revision: string; issuedOn: dayjs.Dayjs; status: RevisionStatus; receivedFrom?: string; remarks?: string; files?: AttachmentDto[] };
 }
-
-const grid = (cols: string) => ({ display: 'grid', gridTemplateColumns: cols, gap: '0 16px' }) as const;
 
 /** Add a drawing or document with its first revision, or (with `doc`) change its number, title and type. */
 export function DocumentFormModal({ open, onClose, projectId, doc, onSaved }: { open: boolean; onClose: () => void; projectId?: string; doc?: DocumentDetailDto | null; onSaved?: (d: DocumentDetailDto) => void }) {
@@ -61,45 +60,43 @@ export function DocumentFormModal({ open, onClose, projectId, doc, onSaved }: { 
       message.success(editing ? `${d.docNo} updated` : `${d.docNo} added to the register`);
       qc.invalidateQueries({ queryKey: ['documents'] });
       onSaved?.(d);
-      onClose();
     },
     onError: (err) => message.error(errorMessage(err)),
   });
 
   return (
-    <Modal open={open} title={doc ? `Edit ${doc.docNo}` : 'Add drawing or document'} okText={editing ? 'Save' : 'Add'} onCancel={onClose} onOk={() => form.submit()} confirmLoading={mutation.isPending} width={680} destroyOnHidden>
-      <Form form={form} layout="vertical" onFinish={(v) => mutation.mutate(v)} style={{ marginTop: 8 }}>
-        <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]} hidden={!!(doc || projectId)}>
-          <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
-        </Form.Item>
-        <div style={grid('1fr 2fr')}>
-          <Form.Item name="docNo" label="Number" rules={[{ required: true, whitespace: true, message: 'Required' }]}>
-            <Input maxLength={60} placeholder="STR-GA-101" />
+    <FormShell open={open} onClose={onClose} form={form} layout="drawer" width={680} title={doc ? `Edit ${doc.docNo}` : 'Add drawing or document'} okText={editing ? 'Save' : 'Add'} onSubmit={(v) => mutation.mutateAsync(v)}>
+      <Form form={form} layout="vertical">
+        <FormSection title="Document">
+          <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!(doc || projectId)}>
+            <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
           </Form.Item>
-          <Form.Item name="title" label="Title" rules={[{ required: true, whitespace: true, message: 'Required' }]}>
-            <Input maxLength={200} placeholder="First floor slab reinforcement" />
+          <FormGrid cols={2}>
+            <Form.Item name="docNo" label="Number" rules={[{ required: true, whitespace: true, message: 'Enter the number, e.g. STR-GA-101' }]}>
+              <Input maxLength={60} placeholder="STR-GA-101" />
+            </Form.Item>
+            <Form.Item name="title" label="Title" rules={[{ required: true, whitespace: true, message: 'Enter the title' }]}>
+              <Input maxLength={200} placeholder="First floor slab reinforcement" />
+            </Form.Item>
+          </FormGrid>
+          <FormGrid cols={2}>
+            <Form.Item name="kind" label="Type">
+              <Select options={DOCUMENT_KINDS.map((k) => ({ value: k, label: DOCUMENT_KIND_LABELS[k] }))} />
+            </Form.Item>
+            <Form.Item name="discipline" label="Discipline">
+              <Select options={DOCUMENT_DISCIPLINES.map((k) => ({ value: k, label: DOCUMENT_DISCIPLINE_LABELS[k] }))} />
+            </Form.Item>
+          </FormGrid>
+          <Form.Item name="remarks" label="Remarks">
+            <Input.TextArea rows={2} maxLength={1000} />
           </Form.Item>
-        </div>
-        <div style={grid('1fr 1fr')}>
-          <Form.Item name="kind" label="Type">
-            <Select options={DOCUMENT_KINDS.map((k) => ({ value: k, label: DOCUMENT_KIND_LABELS[k] }))} />
-          </Form.Item>
-          <Form.Item name="discipline" label="Discipline">
-            <Select options={DOCUMENT_DISCIPLINES.map((k) => ({ value: k, label: DOCUMENT_DISCIPLINE_LABELS[k] }))} />
-          </Form.Item>
-        </div>
-        <Form.Item name="remarks" label="Remarks">
-          <Input.TextArea rows={2} maxLength={1000} />
-        </Form.Item>
+        </FormSection>
         {!editing ? (
-          <>
-            <Divider titlePlacement="start" plain>
-              First revision
-            </Divider>
+          <FormSection title="First revision">
             <RevisionFields prefix={['revision']} />
-          </>
+          </FormSection>
         ) : null}
       </Form>
-    </Modal>
+    </FormShell>
   );
 }

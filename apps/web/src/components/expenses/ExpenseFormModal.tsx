@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { Alert, App, DatePicker, Form, Input, InputNumber, Select, Typography } from 'antd';
+import { Alert, App, DatePicker, Form, Input, Select, Typography } from 'antd';
 import dayjs from 'dayjs';
 import type { AttachmentDto, ExpenseCategory, ExpenseDto, PaymentMode } from '@erp/shared';
 import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_LABELS, GSTIN_PATTERN, GST_RATES, GST_TOLERANCE, PAYMENT_MODES, PAYMENT_MODE_LABELS, gstFor } from '@erp/shared';
-import { FormShell } from '@/components/form/FormShell';
+import { FormGrid, FormShell } from '@/components/form/FormShell';
+import { CODE_INPUT, MoneyInput, upper } from '@/components/form/inputs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, errorMessage } from '@/lib/api';
 import { useActivities, useProjects } from '@/lib/queries';
@@ -30,8 +31,6 @@ interface FormValues {
   remarks?: string;
   photos?: AttachmentDto[];
 }
-
-const grid = (cols: string) => ({ display: 'grid', gridTemplateColumns: cols, gap: '0 16px' }) as const;
 
 /** File a site expense, or (with `expense`) fix a returned one and resubmit it. */
 export function ExpenseFormModal({ open, onClose, projectId, defaultProjectId, expense }: { open: boolean; onClose: () => void; projectId?: string; /** A new entry starts on this project (the header's), still changeable. */ defaultProjectId?: string; expense?: ExpenseDto | null }) {
@@ -117,34 +116,34 @@ export function ExpenseFormModal({ open, onClose, projectId, defaultProjectId, e
     >
       <Form form={form} layout="vertical">
         {expense?.reviewNote && <Alert type="warning" showIcon style={{ marginBottom: 16 }} title={`Reviewer note from ${expense.reviewedByName ?? 'approver'}`} description={expense.reviewNote} />}
-        <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]} hidden={!!fixedProject}>
+        <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!fixedProject}>
           <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} onChange={() => form.setFieldValue('activityId', undefined)} />
         </Form.Item>
-        <div style={grid('1fr 1fr')}>
-          <Form.Item name="category" label="Category" rules={[{ required: true, message: 'Required' }]}>
+        <FormGrid cols={2}>
+          <Form.Item name="category" label="Category" rules={[{ required: true, message: 'Choose the category' }]}>
             <Select placeholder="Select" options={EXPENSE_CATEGORIES.map((c) => ({ value: c, label: EXPENSE_CATEGORY_LABELS[c] }))} />
           </Form.Item>
-          <Form.Item name="date" label="Bill date" rules={[{ required: true, message: 'Required' }]}>
+          <Form.Item name="date" label="Bill date" rules={[{ required: true, message: 'Pick the bill date' }]}>
             <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
-        </div>
-        <Form.Item name="description" label="What was it for" rules={[{ required: true, whitespace: true, message: 'Required' }]}>
+        </FormGrid>
+        <Form.Item name="description" label="What was it for" rules={[{ required: true, whitespace: true, message: 'Say what it was for' }]}>
           <Input maxLength={300} placeholder="Hydraulic hose for grader GRD-01" />
         </Form.Item>
-        <div style={grid('2fr 1.4fr 1fr')}>
+        <FormGrid cols={3}>
           <Form.Item name="vendor" label="Vendor">
             <VendorPicker onPick={(v) => v.gstin && !form.getFieldValue('vendorGstin') && form.setFieldValue('vendorGstin', v.gstin)} />
           </Form.Item>
-          <Form.Item name="vendorGstin" label="Vendor GSTIN" rules={[{ validator: async (_, v) => (!v || GSTIN_PATTERN.test(String(v).trim().toUpperCase()) ? undefined : Promise.reject(new Error('Not a valid GSTIN'))) }]}>
-            <Input maxLength={15} style={{ textTransform: 'uppercase' }} />
+          <Form.Item name="vendorGstin" label="Vendor GSTIN" normalize={upper} rules={[{ validator: async (_, v) => (!v || GSTIN_PATTERN.test(String(v).trim().toUpperCase()) ? undefined : Promise.reject(new Error('A GSTIN is 15 characters, e.g. 27ABCDE1234F1Z5'))) }]}>
+            <Input {...CODE_INPUT} maxLength={15} />
           </Form.Item>
           <Form.Item name="billNo" label="Bill no.">
             <Input maxLength={60} />
           </Form.Item>
-        </div>
-        <div style={grid('1.2fr 1fr 1fr 1.2fr')}>
-          <Form.Item name="amount" label="Taxable value (₹)" rules={[{ required: true, message: 'Required' }]}>
-            <InputNumber style={{ width: '100%' }} min={0.01} precision={2} />
+        </FormGrid>
+        <FormGrid cols={4}>
+          <Form.Item name="amount" label="Taxable value" rules={[{ required: true, message: 'Enter the amount before GST' }]}>
+            <MoneyInput min={0.01} />
           </Form.Item>
           <Form.Item name="gstRate" label="GST %">
             <Select options={GST_RATES.map((r) => ({ value: r, label: `${r}%` }))} />
@@ -155,22 +154,22 @@ export function ExpenseFormModal({ open, onClose, projectId, defaultProjectId, e
             tooltip={`Leave empty to use ${rate ?? 0}% of the amount. A typed value must be within ₹${GST_TOLERANCE} of it.`}
             rules={[{ validator: async (_, v) => (v === undefined || v === null || Math.abs(Number(v) - computedGst) <= GST_TOLERANCE ? undefined : Promise.reject(new Error(`Expected about ₹${computedGst.toFixed(2)}`))) }]}
           >
-            <InputNumber style={{ width: '100%' }} min={0} precision={2} placeholder={computedGst.toFixed(2)} />
+            <MoneyInput placeholder={computedGst.toFixed(2)} />
           </Form.Item>
           <Form.Item label="Total">
             <Typography.Text strong style={{ fontSize: 16, lineHeight: '32px' }}>
               {formatINR((Number(amount) || 0) + (Number(gst) || 0), true)}
             </Typography.Text>
           </Form.Item>
-        </div>
-        <div style={grid('1fr 1fr')}>
+        </FormGrid>
+        <FormGrid cols={2}>
           <Form.Item name="paymentMode" label="Paid by" rules={[{ required: true }]}>
             <Select options={PAYMENT_MODES.map((m) => ({ value: m, label: PAYMENT_MODE_LABELS[m] }))} />
           </Form.Item>
           <Form.Item name="activityId" label="Activity (optional)">
             <Select allowClear showSearch={{ optionFilterProp: 'label' }} disabled={!selectedProject} options={(activities ?? []).map((a) => ({ value: a.id, label: a.name }))} />
           </Form.Item>
-        </div>
+        </FormGrid>
         <Form.Item name="remarks" label="Remarks">
           <Input.TextArea rows={2} maxLength={1000} />
         </Form.Item>

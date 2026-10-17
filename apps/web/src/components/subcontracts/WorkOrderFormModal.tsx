@@ -12,7 +12,8 @@ import { useBoq, useProjects, useVendors } from '@/lib/queries';
 import { formatINR, toNumber } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { UnitInput } from '@/components/common/UnitInput';
-import { FormShell } from '@/components/form/FormShell';
+import { FormGrid, FormShell } from '@/components/form/FormShell';
+import { MoneyInput, QuantityInput } from '@/components/form/inputs';
 
 interface LineValue {
   boqItemId?: string | null;
@@ -147,7 +148,6 @@ export function WorkOrderFormModal({
     .sort((a, b) => Number(b.kinds.some((k) => SUB_KINDS.has(k))) - Number(a.kinds.some((k) => SUB_KINDS.has(k))) || a.name.localeCompare(b.name))
     .map((v) => ({ value: v.id, label: v.name }));
   const usedBoq = new Set((lines ?? []).map((l) => l.boqItemId).filter(Boolean));
-  const grid = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '0 16px' } as const;
 
   return (
     <FormShell
@@ -163,8 +163,8 @@ export function WorkOrderFormModal({
       draftKey={order ? undefined : `work-order:${fixedProject ?? 'any'}`}
     >
       <Form form={form} layout="vertical">
-        <div style={grid}>
-          <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]}>
+        <FormGrid cols={3}>
+          <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]}>
             <Select
               showSearch={{ optionFilterProp: 'label' }}
               disabled={!!order || !!fixedProject}
@@ -186,12 +186,12 @@ export function WorkOrderFormModal({
           >
             <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Vendor master" options={vendorOptions} onChange={onVendor} />
           </Form.Item>
-          <Form.Item name="woDate" label="Work order date" rules={[{ required: true, message: 'Required' }]}>
+          <Form.Item name="woDate" label="Work order date" rules={[{ required: true, message: 'Pick the work order date' }]}>
             <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" />
           </Form.Item>
-        </div>
-        <div style={grid}>
-          <Form.Item name="title" label="Work" rules={[{ required: true, whitespace: true, message: 'Say what the work is' }]} style={{ gridColumn: 'span 2' }}>
+        </FormGrid>
+        <FormGrid cols={3}>
+          <Form.Item name="title" label="Work" rules={[{ required: true, whitespace: true, message: 'Say what the work is' }]}>
             <Input maxLength={200} placeholder="Brickwork and plaster, Block A" />
           </Form.Item>
           <Form.Item name="startDate" label="Start">
@@ -200,7 +200,7 @@ export function WorkOrderFormModal({
           <Form.Item name="endDate" label="Finish">
             <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" />
           </Form.Item>
-        </div>
+        </FormGrid>
 
         <Form.List name="lines">
           {(fields, { add, remove }) => (
@@ -242,7 +242,7 @@ export function WorkOrderFormModal({
                       return b ? (
                         <Typography.Text style={{ fontSize: 12 }}>{b.description}</Typography.Text>
                       ) : (
-                        <Form.Item name={[f.name, 'description']} noStyle rules={[{ required: true, whitespace: true, message: 'Description' }]}>
+                        <Form.Item name={[f.name, 'description']} noStyle rules={[{ required: true, whitespace: true, message: 'Describe the item' }]}>
                           <Input placeholder="Scaffolding, hire and erection" aria-label={`Description of line ${f.name + 1}`} maxLength={300} />
                         </Form.Item>
                       );
@@ -256,7 +256,7 @@ export function WorkOrderFormModal({
                       lines?.[f.name]?.boqItemId ? (
                         boqById.get(lines[f.name].boqItemId!)?.unit
                       ) : (
-                        <Form.Item name={[f.name, 'unit']} noStyle rules={[{ required: true, whitespace: true, message: 'Unit' }]}>
+                        <Form.Item name={[f.name, 'unit']} noStyle rules={[{ required: true, whitespace: true, message: 'Enter the unit' }]}>
                           <UnitInput aria-label={`Unit of line ${f.name + 1}`} maxLength={30} />
                         </Form.Item>
                       ),
@@ -266,13 +266,13 @@ export function WorkOrderFormModal({
                     key: 'qty',
                     width: 120,
                     render: (_, f) => (
-                      <Form.Item name={[f.name, 'quantity']} noStyle rules={[{ required: true, message: 'Qty' }]}>
-                        <InputNumber min={0.001} precision={3} style={{ width: '100%' }} aria-label={`Quantity of line ${f.name + 1}`} />
+                      <Form.Item name={[f.name, 'quantity']} noStyle rules={[{ required: true, message: 'Enter the quantity' }]}>
+                        <QuantityInput min={0.001} aria-label={`Quantity of line ${f.name + 1}`} />
                       </Form.Item>
                     ),
                   },
                   {
-                    title: 'Rate (₹)',
+                    title: 'Rate',
                     key: 'rate',
                     width: 140,
                     render: (_, f) => {
@@ -281,8 +281,8 @@ export function WorkOrderFormModal({
                       const client = b ? toNumber(b.rate) : 0;
                       return (
                         <>
-                          <Form.Item name={[f.name, 'rate']} noStyle rules={[{ required: true, message: 'Rate' }]}>
-                            <InputNumber min={0} precision={2} style={{ width: '100%' }} aria-label={`Rate of line ${f.name + 1}`} />
+                          <Form.Item name={[f.name, 'rate']} noStyle rules={[{ required: true, message: 'Enter the rate' }]}>
+                            <MoneyInput aria-label={`Rate of line ${f.name + 1}`} />
                           </Form.Item>
                           {b && (
                             <Typography.Text type={rate > client ? 'danger' : 'secondary'} style={{ fontSize: 11 }}>
@@ -310,9 +310,9 @@ export function WorkOrderFormModal({
           )}
         </Form.List>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 280px', gap: 24 }}>
+        <FormGrid cols={2}>
           <div>
-            <div style={grid}>
+            <FormGrid cols={2}>
               <Form.Item name="gstRate" label="GST on their bills">
                 <Select options={GST_RATES.map((r) => ({ value: r, label: `${r}%` }))} />
               </Form.Item>
@@ -322,8 +322,8 @@ export function WorkOrderFormModal({
               <Form.Item name="tdsPct" label="TDS (%)" extra="Section 194C: 1% individual or HUF, 2% others">
                 <InputNumber min={0} max={100} precision={2} style={{ width: '100%' }} />
               </Form.Item>
-              <Form.Item name="advanceAmount" label="Advance paid (₹)">
-                <InputNumber min={0} precision={2} style={{ width: '100%' }} />
+              <Form.Item name="advanceAmount" label="Advance paid">
+                <MoneyInput />
               </Form.Item>
               <Form.Item name="advanceRecoveryPct" label="Advance recovery (%)" extra="Of each bill, until the advance is recovered">
                 <InputNumber min={0} max={100} precision={2} style={{ width: '100%' }} />
@@ -334,9 +334,9 @@ export function WorkOrderFormModal({
                 extra={msme ? `${vendor?.name} is a ${vendor?.msmeCategory?.toLowerCase()} enterprise: at most 45 days.` : 'From their bill; 30 when left empty.'}
                 rules={[{ type: 'number', max: msme ? 45 : 365, message: msme ? 'At most 45 days for a micro or small enterprise' : 'At most 365 days' }]}
               >
-                <InputNumber min={0} precision={0} style={{ width: '100%' }} />
+                <InputNumber min={0} precision={0} inputMode="numeric" style={{ width: '100%' }} />
               </Form.Item>
-            </div>
+            </FormGrid>
             <Form.Item name="terms" label="Terms (printed on the work order)">
               <Input.TextArea rows={3} maxLength={4000} placeholder="Rates include labour, tools and tackles. Cement and steel issued from our store are recovered at the store rate." />
             </Form.Item>
@@ -361,7 +361,7 @@ export function WorkOrderFormModal({
               description="Material issued to them from the store is recovered from their bills at the item's rate."
             />
           </div>
-        </div>
+        </FormGrid>
       </Form>
     </FormShell>
   );
