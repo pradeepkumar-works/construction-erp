@@ -391,7 +391,7 @@ job is Pradeep's call once item 67's evaluation (`apps/api/scripts/ai-eval.ts`) 
 
 67. **Ask Nirmaan (web) and the AI foundation** (L). Built: the panel (header button, Ctrl J, Ctrl K), streaming answers
     with linked records and flagged figures, history, ratings, Admin > Ask Nirmaan, the role-by-role access check in CI,
-    and the golden and red-team eval. Goes live once `ANTHROPIC_API_KEY` is set on the API and the eval has run.
+    and the golden and red-team eval. Goes live once `OPENROUTER_API_KEY` is set on the API and the eval has run.
 68. **Explain and summarise** (M): "Summarise this week" on a project; "Explain" beside a cost head over budget, a late
     activity and an RA bill.
 69. **Bill checks before approval** (M): rule checks on vendor, subcontract and RA bills and expenses (rate above PO,

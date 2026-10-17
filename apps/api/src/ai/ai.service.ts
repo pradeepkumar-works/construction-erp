@@ -11,7 +11,7 @@ import { todayIn } from '../notifications/time';
 import { aiConfig, aiConfigured, costPaise, type AiUsage } from './ai.config';
 import { AiToolsService } from './ai-tools.service';
 import { collectHrefs, collectNumbers, filterLinks, unverifiedFigures } from './grounding';
-import { AnthropicModel, FakeModel, type AiModel, type ModelMessage } from './model';
+import { ClaudeModel, FakeModel, type AiModel, type ModelMessage } from './model';
 import { SYSTEM_PROMPT, contextNote } from './prompt';
 import type { UpdateAiSettingsDto } from './ai.dto';
 
@@ -89,7 +89,7 @@ export class AiService {
 
   private model(): AiModel {
     const c = aiConfig();
-    return c.provider === 'fake' ? new FakeModel() : new AnthropicModel(c.apiKey!, c.model, c.effort);
+    return c.provider === 'fake' ? new FakeModel() : new ClaudeModel(c.provider, c.apiKey!, c.model, c.effort);
   }
 
   /** Whether this company has the assistant on, for the signed-in user (AuthUser.ai). */
@@ -204,6 +204,7 @@ export class AiService {
     const model = this.model();
     const tools = this.tools.definitions(user);
     const usage: AiUsage = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 };
+    let paise = 0;
     const results: unknown[] = [];
     const calls: { name: string; input: unknown; error?: string }[] = [];
     const parts: string[] = [];
@@ -215,7 +216,7 @@ export class AiService {
     try {
       for (let round = 0; round < MAX_ROUNDS; round++) {
         let first = true;
-        const turn = await model.turn({ system: SYSTEM_PROMPT, tools, messages }, (t) => {
+        const turn = await model.turn({ system: SYSTEM_PROMPT, tools, messages, sessionId: thread.id }, (t) => {
           // A new round's text starts a new paragraph after what was already shown.
           if (first && parts.length) emit({ type: 'text', text: '\n\n' });
           first = false;
@@ -226,6 +227,7 @@ export class AiService {
         usage.output += turn.usage.output;
         usage.cacheRead += turn.usage.cacheRead;
         usage.cacheWrite += turn.usage.cacheWrite;
+        paise += costPaise(turn.model, turn.usage);
         const text = turn.content.filter((b): b is Anthropic.Beta.BetaTextBlock => b.type === 'text').map((b) => b.text).join('');
         if (text.trim()) parts.push(text);
         if (turn.stopReason === 'refusal') {
@@ -271,7 +273,7 @@ export class AiService {
         outputTokens: usage.output,
         cacheReadTokens: usage.cacheRead,
         cacheWriteTokens: usage.cacheWrite,
-        costPaise: servedBy === 'fake' ? 0 : costPaise(servedBy, usage),
+        costPaise: paise,
         durationMs: Date.now() - started,
       },
     });

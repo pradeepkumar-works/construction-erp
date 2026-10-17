@@ -1,8 +1,22 @@
 /**
- * Ask Nirmaan settings from the environment (AI item 67). The assistant runs when ANTHROPIC_API_KEY is set (or
- * AI_PROVIDER=fake, the scripted stand-in the browser tests use) and AI_DISABLED is not true.
+ * Ask Nirmaan settings from the environment (AI item 67). The assistant runs when OPENROUTER_API_KEY or
+ * ANTHROPIC_API_KEY is set (or AI_PROVIDER=fake, the scripted stand-in the browser tests use) and AI_DISABLED is not
+ * true. With both keys set, OpenRouter wins unless AI_PROVIDER=anthropic.
  */
 export type AiEffort = 'low' | 'medium' | 'high';
+export type AiProvider = 'openrouter' | 'anthropic' | 'fake';
+
+function providerOf(e: NodeJS.ProcessEnv): AiProvider {
+  if (e.AI_PROVIDER === 'fake' || e.AI_PROVIDER === 'anthropic' || e.AI_PROVIDER === 'openrouter') return e.AI_PROVIDER;
+  return e.OPENROUTER_API_KEY?.trim() ? 'openrouter' : 'anthropic';
+}
+
+/** OpenRouter names Claude `anthropic/claude-opus-5.5`; accept the Anthropic spelling `claude-opus-5-5` too. */
+function openRouterModel(name: string): string {
+  if (name.includes('/')) return name;
+  const m = name.match(/^(claude-[a-z]+)-(\d+)(?:-(\d))?$/);
+  return `anthropic/${m ? `${m[1]}-${m[2]}${m[3] ? `.${m[3]}` : ''}` : name}`;
+}
 
 const int = (v: string | undefined, fallback: number) => {
   const n = Number(v);
@@ -12,10 +26,12 @@ const int = (v: string | undefined, fallback: number) => {
 export function aiConfig() {
   const e = process.env;
   const effort = e.AI_EFFORT === 'low' || e.AI_EFFORT === 'high' ? e.AI_EFFORT : 'medium';
+  const provider = providerOf(e);
+  const model = e.AI_MODEL?.trim() || 'claude-opus-5-5';
   return {
-    provider: e.AI_PROVIDER === 'fake' ? ('fake' as const) : ('anthropic' as const),
-    apiKey: e.ANTHROPIC_API_KEY?.trim() || null,
-    model: e.AI_MODEL?.trim() || 'claude-opus-5-5',
+    provider,
+    apiKey: (provider === 'openrouter' ? e.OPENROUTER_API_KEY : e.ANTHROPIC_API_KEY)?.trim() || null,
+    model: provider === 'openrouter' ? openRouterModel(model) : model,
     effort: effort as AiEffort,
     disabled: e.AI_DISABLED === 'true',
     /** Rupees a company may spend in a calendar month unless an admin sets its own cap */
@@ -45,11 +61,19 @@ export interface AiUsage {
   output: number;
   cacheRead: number;
   cacheWrite: number;
+  /** What the gateway billed for the call in US dollars, when it says (OpenRouter does) */
+  usd?: number;
 }
 
-/** Estimated cost in paise of one answer's token use at list prices (an unknown model is priced as Opus). */
+/** `anthropic/claude-sonnet-5.5` and `claude-sonnet-5-5-20261001` both price as `claude-sonnet-5-5`. */
+const priceOf = (model: string) => {
+  const key = model.replace(/^.*\//, '').replace(/\./g, '-');
+  return Object.entries(PRICES).find(([k]) => key.startsWith(k))?.[1] ?? PRICES['claude-opus-5-5'];
+};
+
+/** Cost in paise of one model call: the billed amount when known, else estimated at list prices (an unknown model is priced as Opus). */
 export function costPaise(model: string, u: AiUsage, usdInr = aiConfig().usdInr): number {
-  const p = PRICES[model] ?? PRICES['claude-opus-5-5'];
-  const usd = (u.input * p.input + u.cacheWrite * p.input * 1.25 + u.cacheRead * p.cacheRead + u.output * p.output) / 1e6;
+  const p = priceOf(model);
+  const usd = u.usd ?? (u.input * p.input + u.cacheWrite * p.input * 1.25 + u.cacheRead * p.cacheRead + u.output * p.output) / 1e6;
   return Math.round(usd * usdInr * 100);
 }

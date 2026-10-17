@@ -6,7 +6,7 @@
  *   AI_EVAL_API=https://<api-host>/api npx tsx scripts/ai-eval.ts            # everything
  *   AI_EVAL_API=… AI_EVAL_ONLY=red npx tsx scripts/ai-eval.ts                # only the red-team set
  *
- * It prints a table and a summary: share of checks passed, estimated cost per answer, and time to the first word and
+ * It prints a table and a summary: share of checks passed, cost per answer, and time to the first word and
  * to the whole answer. Each answer is in a new conversation, so they do not lean on each other. The MD account asks most
  * of the questions: raise AI_DAILY_QUESTIONS on the deployment to run it more than once a day. To compare models, run it
  * again after changing AI_MODEL on the deployment.
@@ -196,7 +196,7 @@ async function main() {
   const spent = (await spentInr()) - before;
   const median = (xs: number[]) => (xs.length ? [...xs].sort((x, y) => x - y)[Math.floor(xs.length / 2)] : 0);
   console.log(`\nChecks passed: ${passed}/${total} (${Math.round((passed / Math.max(1, total)) * 100)}%)`);
-  console.log(`Estimated cost: ₹${spent.toFixed(2)} in all, ₹${(spent / cases.length).toFixed(2)} an answer`);
+  console.log(`Cost: ₹${spent.toFixed(2)} in all, ₹${(spent / cases.length).toFixed(2)} an answer`);
   console.log(`Median time to first word ${(median(firsts) / 1000).toFixed(1)} s, to the whole answer ${(median(totals) / 1000).toFixed(1)} s`);
 }
 

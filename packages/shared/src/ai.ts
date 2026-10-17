@@ -60,12 +60,12 @@ export interface AiSettingsDto {
   monthlyCapInr: number | null;
   /** The cap in force (the company's or the server default) */
   effectiveCapInr: number;
-  /** Spent this calendar month, in rupees (estimated from token use at list prices) */
+  /** Spent this calendar month, in rupees (as billed by OpenRouter, or estimated at list prices) */
   spentThisMonthInr: number;
   questionsThisMonth: number;
   /** Most active users this month */
   byUser: { userId: string; fullName: string; questions: number; spentInr: number }[];
-  /** The server has a model key (ANTHROPIC_API_KEY or the test provider) */
+  /** The server has a model key (OPENROUTER_API_KEY, ANTHROPIC_API_KEY or the test provider) */
   configured: boolean;
   model: string;
 }
