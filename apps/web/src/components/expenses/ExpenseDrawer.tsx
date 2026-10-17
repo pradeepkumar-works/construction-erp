@@ -12,6 +12,7 @@ import { ReviewActions } from '@/components/common/ReviewActions';
 import { EditResubmitButton } from '@/components/common/EditResubmitButton';
 import { submissionMetaItems } from '@/components/common/SubmitterInfo';
 import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
+import { checksSection } from '@/components/checks/ChecksSection';
 import { submissionLifecycle } from '@/components/record/lifecycle';
 
 interface RecordProps {
@@ -23,7 +24,7 @@ interface RecordProps {
 
 /** A site expense, in a drawer from a list or as its own page at `/expenses/<id>`. */
 export function ExpenseRecord({ id, mode, open, onClose, onEdit }: RecordProps & { mode: RecordMode }) {
-  const { data, isLoading, error, refetch } = useExpense(id ?? undefined);
+  const { data, isLoading, error, refetch, dataUpdatedAt } = useExpense(id ?? undefined);
   return (
     <RecordFrame
       mode={mode}
@@ -56,6 +57,7 @@ export function ExpenseRecord({ id, mode, open, onClose, onEdit }: RecordProps &
           ],
           lifecycle: submissionLifecycle(data),
           sections: [
+            checksSection('expense', data.id, dataUpdatedAt),
             ...(data.remarks ? [{ key: 'remarks', title: 'Remarks', children: <div style={{ whiteSpace: 'pre-wrap' }}>{data.remarks}</div> }] : []),
             {
               key: 'photos',

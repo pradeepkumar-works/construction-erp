@@ -23,6 +23,7 @@ import { InTallyTag } from '@/components/tally/InTallyTag';
 import { BillPriceVariation } from './BillPriceVariation';
 import { themeColor } from '@/lib/theme';
 import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
+import { checksSection } from '@/components/checks/ChecksSection';
 import { AskButton } from '@/components/ai/AskButton';
 import { submissionLifecycle } from '@/components/record/lifecycle';
 
@@ -52,7 +53,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
   const { user } = useAuth();
   const { message } = App.useApp();
   const qc = useQueryClient();
-  const { data, isLoading, error, refetch } = useBill(id ?? undefined);
+  const { data, isLoading, error, refetch, dataUpdatedAt } = useBill(id ?? undefined);
   const [action, setAction] = useState<StageAction | null>(null);
   const [form] = Form.useForm<{ date: dayjs.Dayjs; certificateNo?: string; qty: Record<string, number | null> }>();
   const preparer = !!user && canPrepareBill(user.roleKey);
@@ -187,6 +188,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
             { title: 'Paid', done: stageAt >= 3, content: data.paidDate ? formatDate(data.paidDate) : approved && stageAt >= 1 ? `${formatINR(data.outstanding, true)} outstanding` : undefined },
           ]),
           sections: [
+            checksSection('ra-bill', data.id, dataUpdatedAt),
             {
               key: 'abstract',
               title: 'Abstract of cost',

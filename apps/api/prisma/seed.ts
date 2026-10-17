@@ -4,7 +4,7 @@ import { PrismaClient, Prisma } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { deflateSync } from 'zlib';
 import { dprTitle, progressTitle, titleDate } from '../src/common/submission-titles';
-import { DEFAULT_CLOSEOUT_ITEMS, PERMIT_PRECAUTIONS, STANDARD_CHECKLISTS, isWeeklyOff, leaveDays } from '@erp/shared';
+import { DEFAULT_CLOSEOUT_ITEMS, PERMIT_PRECAUTIONS, STANDARD_CHECKLISTS, gstinCheckChar, isWeeklyOff, leaveDays } from '@erp/shared';
 
 const prisma = new PrismaClient();
 const D = (v: string | number) => new Prisma.Decimal(v);
@@ -154,6 +154,7 @@ async function main() {
     await seedImprests(org.id);
     await seedCompliance(org.id);
     await seedHandover(org.id);
+    await seedCheckAnomalies(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
   }
@@ -328,6 +329,7 @@ async function main() {
   await seedImprests(org.id);
   await seedCompliance(org.id);
   await seedHandover(org.id);
+  await seedCheckAnomalies(org.id);
 
   console.log('Seed complete. Login with any of these (password: password123):');
   for (const u of USERS) console.log(`  ${u.email.padEnd(24)} ${u.role}`);
@@ -1295,7 +1297,7 @@ async function seedExpenses(organizationId: string) {
       const x = await prisma.expense.create({
         data: {
           organizationId, projectId: project.id, expenseNo: `EXP-${year}-${String(counter).padStart(4, '0')}`, date: day(-ago), category: category as never, description, vendor,
-          vendorGstin: rate > 0 ? '21AAKFS1234M1Z' + String((counter % 9) + 1) : null, billNo: vendor ? `B-${3100 + counter}` : null,
+          vendorGstin: rate > 0 ? DEMO_EXPENSE_GSTIN : null, billNo: vendor ? `B-${3100 + counter}` : null,
           amount: D(amount), gstRate: D(rate), gstAmount: gst, totalAmount: D(amount).plus(gst), paymentMode,
           status, submittedById: filer, submittedAt: day(-ago), createdAt: day(-ago),
           reviewedById: reviewed ? pm : null, reviewedAt: reviewed ? day(Math.min(0, -ago + 1)) : null, reviewNote: note,
@@ -1954,6 +1956,80 @@ async function seedPayables(organizationId: string) {
       { organizationId, entityType: 'VENDOR_BILL', entityId: bill.id, action: 'PAYMENT_MADE', actorId: accounts, note: `₹${paid.toFixed(2)} paid (SBIN526287700412)`, createdAt: day(-12) },
     ],
   });
+}
+
+/** The GSTIN typed on the demo expenses that have GST, with its proper check character. */
+const DEMO_EXPENSE_GSTIN = `21AAKFS1234M1Z${gstinCheckChar('21AAKFS1234M1Z')}`;
+
+/** Bill checks' demo anomalies (AI item 69): [project type, description, vendor, GSTIN, bill no, amount, GST %, payment mode]. */
+type DemoAnomaly = ['ROAD' | 'BUILDING' | 'WATER_SUPPLY', string, string, string | null, string, string, number, 'CASH' | 'UPI'];
+const ANOMALY_EXPENSES: DemoAnomaly[] = [
+  // Filed twice: the same bill as the approved hydraulic hose expense (bill no filled in from it).
+  ['ROAD', 'Hydraulic hose for grader GRD-01', 'Sahoo Auto Parts', DEMO_EXPENSE_GSTIN, '', '2400', 18, 'CASH'],
+  // Above the ₹10,000 cash limit of Income Tax section 40A(3).
+  ['WATER_SUPPLY', 'JCB hire for trench backfilling, 1 day', 'Mahalaxmi Earthmovers', null, 'ME-0921', '14500', 0, 'CASH'],
+  // A GSTIN with a mistyped character.
+  ['BUILDING', 'Waterproofing compound, 2 buckets', 'Odisha Chem Agencies', `21AADFO7712Q1Z${gstinCheckChar('21AADFO7712Q1Z') === 'A' ? 'B' : 'A'}`, 'OCA/1187', '3200', 18, 'UPI'],
+];
+
+/**
+ * Bills with something wrong in them, for the checks before approval (AI item 69) to catch, all waiting for approval:
+ * an expense filed twice, one paid in cash above the limit, one with a mistyped GSTIN, and a second copy of the road
+ * supplier's invoice billing what was already billed (on top of the building bill's steel above the PO rate). Each is
+ * added once, found by its description or invoice, so this also runs on an existing demo company; the demo expenses'
+ * GSTIN gets its proper check character so the clean ones pass.
+ */
+async function seedCheckAnomalies(organizationId: string) {
+  await prisma.expense.updateMany({ where: { organizationId, vendorGstin: { startsWith: '21AAKFS1234M1Z', not: DEMO_EXPENSE_GSTIN } }, data: { vendorGstin: DEMO_EXPENSE_GSTIN } });
+  const year = new Date().getUTCFullYear();
+
+  for (const [type, description, vendor, gstin, billNo, amount, rate, paymentMode] of ANOMALY_EXPENSES) {
+    if (await prisma.expense.count({ where: { organizationId, description } })) continue;
+    const project = await prisma.project.findFirst({ where: { organizationId, type }, include: { members: { include: { user: { include: { role: true } } } } }, orderBy: { code: 'asc' } });
+    const filer = project?.members.find((m) => m.user.role.key === 'SITE_ENGINEER')?.userId ?? project?.projectManagerId;
+    if (!project || !filer) continue;
+    const original = billNo ? null : await prisma.expense.findFirst({ where: { projectId: project.id, vendor, status: 'APPROVED', billNo: { not: null } }, orderBy: { date: 'asc' } });
+    if (!billNo && !original) continue;
+    const last = await prisma.expense.findFirst({ where: { organizationId, expenseNo: { startsWith: `EXP-${year}-` } }, orderBy: { expenseNo: 'desc' }, select: { expenseNo: true } });
+    const expenseNo = `EXP-${year}-${String((last ? parseInt(last.expenseNo.slice(9), 10) : 0) + 1).padStart(4, '0')}`;
+    const gst = D(amount).mul(rate).div(100).toDecimalPlaces(2);
+    const x = await prisma.expense.create({
+      data: {
+        organizationId, projectId: project.id, expenseNo, date: day(-1), category: (type === 'WATER_SUPPLY' ? 'TRANSPORT' : type === 'ROAD' ? 'REPAIRS' : 'MATERIAL_LOCAL') as never, description, vendor,
+        vendorGstin: gstin, billNo: billNo || original!.billNo, amount: D(amount), gstRate: D(rate), gstAmount: gst, totalAmount: D(amount).plus(gst), paymentMode,
+        status: 'SUBMITTED', submittedById: filer, submittedAt: day(-1), createdAt: day(-1),
+      },
+    });
+    await prisma.auditLog.createMany({
+      data: [
+        { organizationId, entityType: 'EXPENSE', entityId: x.id, action: 'CREATED', actorId: filer, createdAt: day(-1) },
+        { organizationId, entityType: 'EXPENSE', entityId: x.id, action: 'SUBMITTED', actorId: filer, createdAt: day(-1) },
+      ],
+    });
+  }
+
+  // The road supplier's invoice again, typed with dashes, for what its approved bill already took.
+  const first = await prisma.vendorBill.findFirst({ where: { organizationId, invoiceNo: 'KBA/26-27/0213' }, include: { lines: { include: { purchaseOrderLine: true } } } });
+  const accounts = (await prisma.user.findFirst({ where: { organizationId, role: { key: 'ACCOUNTS_MANAGER' } }, select: { id: true } }))?.id;
+  if (first && accounts && !(await prisma.vendorBill.count({ where: { organizationId, invoiceNo: 'KBA-26-27-0213' } }))) {
+    const count = await prisma.vendorBill.count({ where: { organizationId, billNo: { startsWith: `VB-${year}-` } } });
+    const bill = await prisma.vendorBill.create({
+      data: {
+        organizationId, projectId: first.projectId, vendorId: first.vendorId, purchaseOrderId: first.purchaseOrderId, billNo: `VB-${year}-${String(count + 1).padStart(4, '0')}`, invoiceNo: 'KBA-26-27-0213',
+        invoiceDate: first.invoiceDate, dueDate: first.dueDate, freight: D(0), subtotal: first.subtotal, gstAmount: first.gstAmount, total: first.subtotal.add(first.gstAmount),
+        matched: false,
+        exceptions: first.lines.map((l) => `${l.purchaseOrderLine.itemName}: ${l.quantity.toFixed(3).replace(/\.?0+$/, '')} ${l.purchaseOrderLine.unit} billed, ${l.quantity.toFixed(3).replace(/\.?0+$/, '')} received of which ${l.quantity.toFixed(3).replace(/\.?0+$/, '')} is on other bills`),
+        remarks: 'Invoice copy received by post', status: 'SUBMITTED', submittedById: accounts, submittedAt: day(-1), createdAt: day(-1),
+        lines: { create: first.lines.map((l) => ({ purchaseOrderLineId: l.purchaseOrderLineId, quantity: l.quantity, rate: l.rate, gstRate: l.gstRate, amount: l.amount, gstAmount: l.gstAmount, sortOrder: l.sortOrder })) },
+      },
+    });
+    await prisma.auditLog.createMany({
+      data: [
+        { organizationId, entityType: 'VENDOR_BILL', entityId: bill.id, action: 'CREATED', actorId: accounts, createdAt: day(-1) },
+        { organizationId, entityType: 'VENDOR_BILL', entityId: bill.id, action: 'SUBMITTED', actorId: accounts, createdAt: day(-1) },
+      ],
+    });
+  }
 }
 
 /** Which standard checklist each demo activity inspects against; `true` marks a hold point. */
