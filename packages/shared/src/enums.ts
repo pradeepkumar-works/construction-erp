@@ -60,6 +60,7 @@ export const NOTIFICATION_TYPES = [
   'IMPREST',
   'COMPLIANCE',
   'DEFECT',
+  'WATCH_LIST',
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 

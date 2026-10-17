@@ -111,6 +111,7 @@ export const NOTIFICATION_COLORS: Record<NotificationType, string> = {
   IMPREST: 'gold',
   COMPLIANCE: 'purple',
   DEFECT: 'volcano',
+  WATCH_LIST: 'gold',
 };
 
 /** "2 min ago", "3 h ago", "4 d ago", then a date. */

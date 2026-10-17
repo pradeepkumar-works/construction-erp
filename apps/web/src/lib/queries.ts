@@ -6,6 +6,7 @@ import type {
   DocReadResultDto,
   DraftChecksDto,
   BillChecksDto,
+  WatchListDto,
   BillCheckSummaryDto,
   CheckKind,
   AiSettingsDto,
@@ -190,7 +191,7 @@ import type {
   WorkPermitStatus,
   WorkPermitType,
 } from '@erp/shared';
-import { MAX_PAGE_SIZE, SEARCH_MIN_LENGTH } from '@erp/shared';
+import { MAX_PAGE_SIZE, NOTIFICATION_TYPES_VERSION, SEARCH_MIN_LENGTH } from '@erp/shared';
 import { api } from './api';
 
 export interface RoleDto {
@@ -1287,7 +1288,7 @@ export const useReviewedToday = (enabled = true) => {
 export const useNotifications = (opts?: { unreadOnly?: boolean; limit?: number; tab?: NotificationTab }, enabled = true) =>
   useQuery({
     queryKey: ['notifications', clean(opts)],
-    queryFn: async () => (await api.get<NotificationListDto>('/notifications', { params: clean({ ...opts, allTypes: true }) })).data,
+    queryFn: async () => (await api.get<NotificationListDto>('/notifications', { params: clean({ ...opts, typesVersion: NOTIFICATION_TYPES_VERSION }) })).data,
     refetchInterval: 30_000,
     enabled,
   });
@@ -1854,6 +1855,24 @@ export function useAcceptCheck(kind: CheckKind, id: string) {
     mutationFn: async (v: { key: string; note: string; reopen?: boolean }) =>
       (await api.post<BillChecksDto>(`/checks/${kind}/${id}/${v.reopen ? 'reopen' : 'accept'}`, v.reopen ? { key: v.key } : { key: v.key, note: v.note })).data,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['checks', kind, id] }),
+  });
+}
+
+// ---- Early warnings, the watch list (AI item 73) ----
+
+export const useWatchList = (enabled = true) =>
+  useQuery({ queryKey: ['watch-list'], queryFn: async () => (await api.get<WatchListDto>('/warnings')).data, enabled });
+
+/** Dismiss a warning with a reason, or bring a dismissed one back (`restore`). */
+export function useDismissWarning() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { key: string; reason?: string; restore?: boolean }) =>
+      (await api.post<WatchListDto>(`/warnings/${v.restore ? 'restore' : 'dismiss'}`, v.restore ? { key: v.key } : { key: v.key, reason: v.reason })).data,
+    onSuccess: (d) => {
+      qc.setQueryData(['watch-list'], d);
+      void qc.invalidateQueries({ queryKey: ['dashboard', 'my-work'] });
+    },
   });
 }
 

@@ -9,6 +9,25 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-10-watch-list',
+    date: '2026-10-19',
+    title: 'Watch list: early warnings',
+    points: [
+      'A Watch list card in My work, and its own page, warns ahead of trouble: an activity whose current rate puts its finish past the baseline, a cash gap in the next eight weeks (using how long each client actually takes to pay), stock that runs out before an order could arrive, vendors late or rejected more often, machines idle or breaking down more than the month before, and sites with no DPR three days running.',
+      'Each warning shows its figures and links to the records behind it. Dismiss one with a reason and it stays dismissed for everyone until its figures move on.',
+      'On Mondays a notification lists what is on your watch list.',
+    ],
+  },
+  {
+    id: '2026-10-phone-ask',
+    date: '2026-10-19',
+    title: 'Ask Nirmaan on the phone, in Hindi',
+    points: [
+      'The site app has an Ask tab: type, or tap the microphone on your keyboard and speak, in Hindi, English or Hinglish. With the app in Hindi, answers come in Hindi, and their links open the record on the phone.',
+      'Dictate today\'s DPR: say the work done, manpower, machines and problems, and the DPR form opens filled in to check and send, through the outbox if the signal drops.',
+    ],
+  },
+  {
     id: '2026-10-ask-drafts',
     date: '2026-10-18',
     title: 'Ask Nirmaan fills in forms',

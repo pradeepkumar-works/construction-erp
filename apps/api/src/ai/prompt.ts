@@ -50,8 +50,8 @@ export function contextNote(args: {
   if (args.page) lines.push(`They are on the page ${args.page}.`);
   if (args.record) lines.push(`That page shows one record: get_record with kind "${args.record.kind}" and id "${args.record.id}"; "this bill", "this order" and the like mean it.`);
   if (args.projectId && args.projectName) lines.push(`They have picked the project "${args.projectName}" (id ${args.projectId}); "this project" means it.`);
-  if (args.phone) lines.push('They are asking from the site app on a phone: keep the answer to a few short lines.');
-  if (args.language === 'hi') lines.push('Their app is in Hindi: answer in Hindi, in Devanagari script, whatever language the question is in, the way a site engineer speaks; keep record numbers, codes, names of items, people and places, and links as they are, and write every figure with the digits 0-9.');
+  if (args.phone) lines.push('They are asking from the site app on a phone: keep the answer to a few short lines, five at most; for a long list give the count, the three oldest or largest, and a link to the whole list.');
+  if (args.language === 'hi') lines.push('Their app is in Hindi: answer a question in Hindi or English in Hindi, in Devanagari script, and a question in Hinglish (Hindi in Roman letters) in the same Hinglish, the way a site engineer speaks; keep record numbers, codes, names of items, people and places, and links as they are, and write every figure with the digits 0-9.');
   return lines.join(' ');
 }
 

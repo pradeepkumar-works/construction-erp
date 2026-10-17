@@ -19,10 +19,10 @@ type Tone = 'warning' | 'error' | 'info';
  * only: the API leaves out a card the role may not see.
  */
 const ORDERS: Record<'director' | 'manager' | 'accounts' | 'stores' | 'qs' | 'site', MyWorkKey[]> = {
-  director: ['approvals', 'receivables', 'payablesDue', 'expiring', 'lateDeliveries', 'dprsMissing', 'lowStock', 'sentBack'],
-  manager: ['approvals', 'dprsMissing', 'lateDeliveries', 'expiring', 'lowStock', 'payablesDue', 'receivables', 'sentBack'],
-  accounts: ['payablesDue', 'receivables', 'approvals', 'expiring', 'lateDeliveries', 'sentBack'],
-  stores: ['lateDeliveries', 'lowStock', 'approvals', 'sentBack', 'dprsMissing'],
+  director: ['approvals', 'watchList', 'receivables', 'payablesDue', 'expiring', 'lateDeliveries', 'dprsMissing', 'lowStock', 'sentBack'],
+  manager: ['approvals', 'watchList', 'dprsMissing', 'lateDeliveries', 'expiring', 'lowStock', 'payablesDue', 'receivables', 'sentBack'],
+  accounts: ['payablesDue', 'watchList', 'receivables', 'approvals', 'expiring', 'lateDeliveries', 'sentBack'],
+  stores: ['lateDeliveries', 'lowStock', 'watchList', 'approvals', 'sentBack', 'dprsMissing'],
   qs: ['sentBack', 'approvals', 'receivables', 'dprsMissing'],
   site: ['sentBack', 'dprsMissing', 'approvals', 'lateDeliveries', 'lowStock'],
 };
@@ -56,6 +56,7 @@ const CARDS: Record<CardKey, { title: string; icon: keyof typeof Ionicons.glyphM
   expiring: { title: 'Guarantees and policies expiring', icon: 'shield-checkmark-outline', tone: 'warning', route: null },
   lateDeliveries: { title: 'Late deliveries', icon: 'bus-outline', tone: 'error', route: null },
   lowStock: { title: 'Below minimum stock', icon: 'file-tray-stacked-outline', tone: 'warning', route: '/stock' },
+  watchList: { title: 'Watch list', icon: 'eye-outline', tone: 'warning', route: null },
 };
 
 const TONES: Record<Tone, { fg: string; bg: string }> = {

@@ -149,6 +149,7 @@ enum NotificationType {
   IMPREST
   COMPLIANCE
   DEFECT
+  WATCH_LIST
 }
 
 /// What a quality test is of. CONCRETE_CUBE gets 7 and 28-day readings; the others one result.
@@ -441,6 +442,7 @@ model Organization {
   aiThreads            AiThread[]
   aiMessages           AiMessage[]
   billCheckAcceptances BillCheckAcceptance[]
+  warningDismissals    WarningDismissal[]
   billCheckSummaries   BillCheckSummary[]
   aiDocumentReads      AiDocumentRead[]
 }
@@ -500,6 +502,7 @@ model User {
   savedViews           SavedView[]
   aiThreads            AiThread[]
   billChecksAccepted   BillCheckAcceptance[] @relation("BillCheckAcceptedBy")
+  warningsDismissed    WarningDismissal[]    @relation("WarningDismissedBy")
   aiDocumentReads      AiDocumentRead[]
   memberships          ProjectMember[]
   managedProjects      Project[]             @relation("ProjectManager")
@@ -3551,4 +3554,19 @@ model AiDocumentRead {
   createdAt      DateTime     @default(now())
 
   @@index([organizationId, createdAt])
+}
+
+/// An early warning dismissed with a reason (AI item 73), for the whole company. The key carries the figures the
+/// warning fired on, so it comes back when they move on.
+model WarningDismissal {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  warningKey     String
+  reason         String
+  dismissedById  String
+  dismissedBy    User         @relation("WarningDismissedBy", fields: [dismissedById], references: [id])
+  createdAt      DateTime     @default(now())
+
+  @@unique([organizationId, warningKey])
 }

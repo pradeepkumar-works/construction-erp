@@ -6,6 +6,7 @@ import {
   canApprove,
   canKeepStock,
   canManageStore,
+  canSeeWatchList,
   canViewCompliance,
   canViewContract,
   canViewCost,
@@ -28,6 +29,7 @@ import { PurchaseOrdersService } from '../purchasing/purchase-orders.service';
 import { ComplianceService } from '../compliance/compliance.service';
 import { StockService } from '../stock/stock.service';
 import { ProjectsService } from '../projects/projects.service';
+import { WarningsService } from '../warnings/warnings.service';
 
 type D = Prisma.Decimal;
 const ZERO = new Prisma.Decimal(0);
@@ -69,13 +71,14 @@ export class HomeService {
     private compliance: ComplianceService,
     private stock: StockService,
     private projectsService: ProjectsService,
+    private warnings: WarningsService,
   ) {}
 
   async myWork(user: RequestUser): Promise<MyWorkDto> {
     const role = user.roleKey;
     const today = todayIn();
     const rights = await this.rights.rightsFor(user.organizationId, role);
-    const [pending, missing, sentBack, receivables, payables, expiring, expired, late, low] = await Promise.all([
+    const [pending, missing, sentBack, receivables, payables, expiring, expired, late, low, watch] = await Promise.all([
       rights.length ? this.lifecycle.pending(user) : null,
       canApprove(role) || submitsDpr(role) ? this.dprsMissing(user, today) : null,
       this.lifecycle.mine(user, ['REJECTED', 'CHANGES_REQUESTED']),
@@ -85,6 +88,7 @@ export class HomeService {
       canViewCompliance(role) ? this.compliance.list(user, { state: 'EXPIRED' }) : null,
       canViewPurchaseOrders(role) ? this.purchaseOrders.status(user, { show: 'LATE' }) : null,
       canKeepStock(role) || canManageStore(role) ? this.stock.balances(user, { lowOnly: true, page: 1, pageSize: TOP }) : null,
+      canSeeWatchList(role) ? this.warnings.open(user) : null,
     ]);
 
     const out: MyWorkDto = {};
@@ -93,6 +97,7 @@ export class HomeService {
       for (const p of pending) counts.set(p.type, (counts.get(p.type) ?? 0) + 1);
       out.approvals = [...counts.entries()].map(([type, count]) => ({ type, count }));
     }
+    if (watch) out.watchList = card(watch.length, watch.map((w) => ({ label: w.title, note: w.detail, projectName: w.projectName, amount: null, href: '/watch-list' })));
     if (missing) out.dprsMissing = card(missing.length, missing.map((p) => ({ label: p.name, note: `No DPR for today`, projectName: null, amount: null, href: `/projects/${p.id}?tab=dpr` })));
     out.sentBack = card(
       sentBack.length,

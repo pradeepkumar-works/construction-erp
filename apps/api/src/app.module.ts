@@ -24,6 +24,7 @@ import { RisksModule } from './risks/risks.module';
 import { SearchModule } from './search/search.module';
 import { AiModule } from './ai/ai.module';
 import { BillChecksModule } from './checks/bill-checks.module';
+import { WarningsModule } from './warnings/warnings.module';
 import { SafetyModule } from './safety/safety.module';
 import { MaintenanceModule } from './maintenance/maintenance.module';
 import { UnitsModule } from './units/units.module';
@@ -101,6 +102,7 @@ import { HealthController } from './health.controller';
     SearchModule,
     AiModule,
     BillChecksModule,
+    WarningsModule,
     SafetyModule,
     MaintenanceModule,
     UnitsModule,

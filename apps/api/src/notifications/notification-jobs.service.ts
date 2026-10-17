@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { COMPLIANCE_DOC_KIND_LABELS, COMPLIANCE_ROLES, DLP_ALERT_DAYS, DOC_ALERT_DAYS, EQUIPMENT_DOC_TYPE_LABELS, SERVICE_STATE_LABELS, expiryState, APPROVER_ROLES, DPR_SUBMITTER_ROLES, PAYMENT_ROLES, SPECIALIST_APPROVERS, SUBMISSION_TYPE_LABELS, TEST_KIND_LABELS, type NotificationJobResult, type PendingApprovalDto, type RoleKey } from '@erp/shared';
+import { COMPLIANCE_DOC_KIND_LABELS, COMPLIANCE_ROLES, DLP_ALERT_DAYS, DOC_ALERT_DAYS, EQUIPMENT_DOC_TYPE_LABELS, SERVICE_STATE_LABELS, expiryState, APPROVER_ROLES, DPR_SUBMITTER_ROLES, PAYMENT_ROLES, SPECIALIST_APPROVERS, SUBMISSION_TYPE_LABELS, TEST_KIND_LABELS, canSeeWatchList, type NotificationJobResult, type PendingApprovalDto, type RoleKey } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -12,6 +12,7 @@ import { PayablesService } from '../payables/payables.service';
 import { EMAIL_COLORS, emailButton, emailLayout } from './email-layout';
 import { JOB_TIMEZONE, todayIn } from './time';
 import { latestDocIds, serviceStatuses } from '../maintenance/service-status';
+import { WarningsService } from '../warnings/warnings.service';
 
 const WEB_URL = (process.env.WEB_URL || '').replace(/\/+$/, '');
 /** Bills falling due within this many days (today included) trigger the payments-due alert. */
@@ -35,7 +36,52 @@ export class NotificationJobsService {
     private access: ProjectAccessService,
     private messaging: MessagingService,
     private payables: PayablesService,
+    private warnings: WarningsService,
   ) {}
+
+  /**
+   * The weekly watch list (AI item 73): on Mondays (any day with `anyDay`, for a manual run), each user whose role has
+   * early warnings and who has open ones gets one notification naming the first few. Once per user per week.
+   */
+  async watchList(date = todayIn(), anyDay = false): Promise<NotificationJobResult> {
+    const result: NotificationJobResult = { job: 'WATCH_LIST', date, created: 0, pushed: 0, emailed: 0, skipped: 0 };
+    const weekday = (parseDate(date).getUTCDay() + 6) % 7;
+    if (weekday !== 0 && !anyDay) return result;
+    const dedupeKey = `WATCH_LIST:${new Date(parseDate(date).getTime() - weekday * 86_400_000).toISOString().slice(0, 10)}`;
+    const users = await this.prisma.user.findMany({ where: { isActive: true }, include: { role: { select: { key: true } } } });
+    for (const u of users) {
+      const roleKey = u.role.key as RoleKey;
+      if (!canSeeWatchList(roleKey)) continue;
+      const already = await this.prisma.notification.findFirst({ where: { userId: u.id, dedupeKey }, select: { id: true } });
+      if (already) {
+        result.skipped++;
+        continue;
+      }
+      const user: RequestUser = { id: u.id, organizationId: u.organizationId, roleKey, email: u.email, fullName: u.fullName };
+      const open = await this.warnings.open(user).catch((e: Error) => {
+        this.log.warn(`watch list for ${u.id}: ${e.message}`);
+        return [];
+      });
+      if (!open.length) {
+        result.skipped++;
+        continue;
+      }
+      const r = await this.notifications.notify({
+        organizationId: u.organizationId,
+        userIds: [u.id],
+        type: 'WATCH_LIST',
+        title: `${open.length} early warning${open.length === 1 ? '' : 's'} on your watch list`,
+        body: `${open
+          .slice(0, 3)
+          .map((w) => w.title)
+          .join('; ')}${open.length > 3 ? `; and ${open.length - 3} more` : ''}`,
+        dedupeKey,
+      });
+      result.created += r.created;
+      result.pushed += r.pushed;
+    }
+    return result;
+  }
 
   /**
    * "DPR not submitted" reminder: for every ACTIVE project without a DPR for today (drafts don't count),
