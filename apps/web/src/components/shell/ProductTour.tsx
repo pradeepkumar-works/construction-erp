@@ -65,6 +65,12 @@ function stepsFor(user: AuthUser, mobile: boolean): Step[] {
       placement: 'bottom',
     },
     {
+      target: 'ask',
+      title: `Ask ${PRODUCT_NAME}`,
+      description: 'Ask about your projects, bills, orders or stock in plain words, in English or Hindi. Answers come from the records you can see, with a link to each one.',
+      placement: 'bottom',
+    },
+    {
       target: 'new',
       title: 'Start something new',
       description: 'A daily report, progress entry, material request and whatever else your role files, from any page.',

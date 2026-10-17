@@ -11,6 +11,6 @@ import { PayablesModule } from '../payables/payables.module';
   imports: [VariationsModule, ReceivablesModule, PayablesModule],
   controllers: [CostController],
   providers: [CostService, BudgetService, CashFlowService],
-  exports: [CostService, BudgetService],
+  exports: [CostService, BudgetService, CashFlowService],
 })
 export class CostModule {}

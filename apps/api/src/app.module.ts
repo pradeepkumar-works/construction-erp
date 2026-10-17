@@ -22,6 +22,7 @@ import { CostModule } from './cost/cost.module';
 import { ReportsModule } from './reports/reports.module';
 import { RisksModule } from './risks/risks.module';
 import { SearchModule } from './search/search.module';
+import { AiModule } from './ai/ai.module';
 import { SafetyModule } from './safety/safety.module';
 import { MaintenanceModule } from './maintenance/maintenance.module';
 import { UnitsModule } from './units/units.module';
@@ -97,6 +98,7 @@ import { HealthController } from './health.controller';
     ReportsModule,
     RisksModule,
     SearchModule,
+    AiModule,
     SafetyModule,
     MaintenanceModule,
     UnitsModule,

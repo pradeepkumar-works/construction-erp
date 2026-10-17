@@ -18,7 +18,7 @@ import {
   UserOutlined,
 } from '@ant-design/icons';
 import type { AuthUser, SearchHitDto, SearchKind, SubmissionStatus } from '@erp/shared';
-import { SEARCH_KINDS, SEARCH_KIND_LABELS, SEARCH_MIN_LENGTH, SUBMISSION_STATUSES } from '@erp/shared';
+import { PRODUCT_NAME, SEARCH_KINDS, SEARCH_KIND_LABELS, SEARCH_MIN_LENGTH, SUBMISSION_STATUSES } from '@erp/shared';
 import { useProjects, useSearch } from '@/lib/queries';
 import { useProjectScope } from '@/lib/project-scope';
 import { requestNew } from '@/lib/new-intent';
@@ -26,6 +26,7 @@ import { recentRecords, rememberRecord, type RecentRecord } from '@/lib/recent';
 import { StatusTag } from '@/components/common/StatusTag';
 import type { NavIcon, NavSection } from './nav';
 import { newEntriesFor, type NewEntry } from './NewMenu';
+import { SparkleIcon } from '@/components/ai/SparkleIcon';
 import s from './Sidebar.module.css';
 
 interface Target {
@@ -44,6 +45,8 @@ interface Target {
 
 const KIND_ICONS: Partial<Record<SearchKind, NavIcon>> = { risk: AlertOutlined, document: FolderOpenOutlined, vendor: ShopOutlined, client: BankOutlined, item: InboxOutlined, person: UserOutlined };
 const STATUSES = new Set<string>(SUBMISSION_STATUSES);
+/** Typed as a question: Ask Nirmaan goes first rather than last. */
+const QUESTION = /\?\s*$|^(what|which|who|how|why|when|where|is|are|did|do|does|show|list|tell|kitn|kya|kaun|kab|kahan|kaise)\b/i;
 
 /** Every query word must appear; labels that start with the query come first. */
 function rank(targets: Target[], query: string): Target[] {
@@ -75,7 +78,22 @@ function useDebounced(value: string, ms: number) {
  * records by number or name (through `GET /search`, which applies each list's own access rules), recently opened records,
  * and actions such as "New daily report for Jajpur".
  */
-export function CommandPalette({ open, onClose, sections, withProjects, user }: { open: boolean; onClose: () => void; sections: NavSection[]; withProjects: boolean; user: AuthUser }) {
+export function CommandPalette({
+  open,
+  onClose,
+  sections,
+  withProjects,
+  user,
+  onAsk,
+}: {
+  open: boolean;
+  onClose: () => void;
+  sections: NavSection[];
+  withProjects: boolean;
+  user: AuthUser;
+  /** Hands what was typed to Ask Nirmaan, when the assistant is on */
+  onAsk?: (question: string) => void;
+}) {
   const router = useRouter();
   const [query, setQuery] = useState('');
   const [index, setIndex] = useState(0);
@@ -176,10 +194,18 @@ export function CommandPalette({ open, onClose, sections, withProjects, user }: 
     [recent],
   );
 
+  const askTarget = useMemo<Target | null>(() => {
+    const q = query.trim();
+    if (!onAsk || q.length < 3) return null;
+    return { key: 'ask', label: `Ask ${PRODUCT_NAME}: “${q}”`, icon: SparkleIcon, group: 'Ask', text: '', go: () => onAsk(q) };
+  }, [onAsk, query]);
+
   const results = useMemo(() => {
     if (!query.trim()) return [...recentTargets, ...pages, ...projectTargets.slice(0, 5)];
-    return [...actions, ...rank(pages, query), ...rank(projectTargets, query).slice(0, 8), ...records];
-  }, [actions, pages, projectTargets, records, recentTargets, query]);
+    const found = [...actions, ...rank(pages, query), ...rank(projectTargets, query).slice(0, 8), ...records];
+    if (!askTarget) return found;
+    return QUESTION.test(query.trim()) ? [askTarget, ...found] : [...found, askTarget];
+  }, [actions, pages, projectTargets, records, recentTargets, query, askTarget]);
 
   useEffect(() => setIndex(0), [query]);
   useEffect(() => {

@@ -219,6 +219,7 @@ const LOG_LABELS: Record<string, string> = {
   UNSUSPENDED: 'Suspension lifted',
   SUBSCRIPTION_PAID: 'Subscription paid',
   TRIAL_CHANGED: 'Trial changed',
+  AI_SETTINGS: 'Ask Nirmaan settings',
 };
 
 function CompanyLogCard() {

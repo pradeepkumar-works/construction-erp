@@ -11,7 +11,8 @@ const RANK = { OVERDUE: 0, DUE_SOON: 1, OK: 2, NOT_SET: 3 } as const;
  */
 export async function serviceStatuses(prisma: PrismaClient | Prisma.TransactionClient, where: Prisma.EquipmentWhereInput, today: string): Promise<ServiceStatusDto[]> {
   const machines = await prisma.equipment.findMany({
-    where: { ...where, isActive: true, OR: [{ serviceIntervalHours: { not: null } }, { serviceIntervalDays: { not: null } }] },
+    // AND, not a spread: the caller's `where` may carry its own OR (the projects this user can see).
+    where: { AND: [where, { isActive: true, OR: [{ serviceIntervalHours: { not: null } }, { serviceIntervalDays: { not: null } }] }] },
     select: {
       id: true,
       code: true,

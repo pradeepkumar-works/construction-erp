@@ -47,13 +47,16 @@ jobs:
         working-directory: apps/api
         run: |
           pnpm build
-          DATABASE_URL="$RUNTIME_URL" JWT_SECRET=e2e-secret PORT=4000 STORAGE_MODE=db ORG_SIGNUP=open PUSH_DISABLED=true EMAIL_DISABLED=true PLATFORM_ADMIN_EMAILS=admin@demo.com \
+          DATABASE_URL="$RUNTIME_URL" JWT_SECRET=e2e-secret PORT=4000 STORAGE_MODE=db ORG_SIGNUP=open PUSH_DISABLED=true EMAIL_DISABLED=true PLATFORM_ADMIN_EMAILS=admin@demo.com AI_PROVIDER=fake \
             RAZORPAY_KEY_ID=rzp_test_e2e RAZORPAY_KEY_SECRET=e2e-razorpay-secret RAZORPAY_WEBHOOK_SECRET=e2e-webhook-secret RAZORPAY_API_URL=http://localhost:4010/v1 \
             BILLING_PRICE=1500 BILLING_SELLER_NAME="Nirmaan Software Pvt Ltd" BILLING_SELLER_GSTIN=21AAACN1234F1Z5 BILLING_SELLER_ADDRESS="Bhubaneswar, Odisha" \
             nohup node dist/main.js > /tmp/api.log 2>&1 &
           for i in $(seq 1 30); do curl -sf "$E2E_API_URL/health" > /tmp/health.json && break; sleep 2; done
           cat /tmp/health.json; echo
           [ "$(jq -r .tenantGuard /tmp/health.json)" = "enforced" ]
+      - name: Ask Nirmaan's tools show each role only its own projects
+        working-directory: apps/api
+        run: DATABASE_URL="$RUNTIME_URL" node dist/scripts/ai-access-check.js
       - name: Build and start the web app
         working-directory: apps/web
         run: |

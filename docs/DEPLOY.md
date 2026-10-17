@@ -42,6 +42,10 @@ API (`apps/api`):
 | `PUSH_DISABLED`, `EMAIL_DISABLED`, `MESSAGING_DISABLED` | `true` switches a channel off (useful on preview deployments); `MESSAGING_DISABLED` stops WhatsApp and SMS |
 | `PLATFORM_ADMIN_EMAILS` | comma-separated emails of staff who get the console at `/platform` (all companies, suspend, read-only support views). Use staff's own accounts, never a demo account: demo passwords are public. Unset = nobody. |
 | `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, `BILLING_PRICE`, `BILLING_SELLER_NAME`, `BILLING_SELLER_GSTIN`, `BILLING_SELLER_ADDRESS` | Plans and billing, see "Billing" below. Billing is off (nobody is charged or restricted) until the key id and secret, the price and the seller's name and GSTIN are all set. |
+| `ANTHROPIC_API_KEY` | Ask Nirmaan, the AI assistant: a Claude API key from console.anthropic.com. Without it the assistant is off for everyone (admins see "not set up"). Each company also switches it on under Admin > Ask Nirmaan (the DEMO company is on). Answers stream for up to about 2.5 minutes, so the API's Vercel functions need Fluid compute (the default for new projects, 300 s). |
+| `AI_MODEL`, `AI_EFFORT` | the Claude model (default `claude-opus-5-5`) and how hard it thinks (`low`, `medium` default, `high`) |
+| `AI_DEFAULT_MONTHLY_CAP_INR`, `AI_DAILY_QUESTIONS`, `AI_USD_INR` | a company's monthly allowance unless its admin sets one (default 5000), questions per person per day (default 60), and the rupee rate for the cost estimate (default 88) |
+| `AI_DISABLED`, `AI_PROVIDER` | `AI_DISABLED=true` switches the assistant off everywhere (kill switch). `AI_PROVIDER=fake` uses a scripted stand-in instead of the model: for CI and local work only, never production. |
 | `PROTECTED_ORG_CODES` | comma-separated organisation codes that can never be deleted (default `DEMO`, the public demo company) |
 
 Web (`apps/web`): `NEXT_PUBLIC_API_URL`, e.g. `https://construction-erp-api-pradeep15.vercel.app/api`, and
