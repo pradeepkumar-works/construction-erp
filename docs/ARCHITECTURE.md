@@ -1092,8 +1092,10 @@ export; the client portal and the phone app show the amount.
 - **Grounding.** After the answer, `ai/grounding.ts` keeps Markdown links only to hrefs the tools returned (others become
   plain words; they are the answer's citations) and lists figures that match no number in the tool results or the
   question (₹, lakh, crore and per cent scales; row counts count) as `unverified`, which the panel flags.
-- **Model.** `ai/model.ts`: Claude through `@anthropic-ai/sdk` (beta Messages, streaming, adaptive thinking, `effort`,
-  prompt caching on the fixed instructions and tools). The same client goes to OpenRouter's Anthropic-compatible
+- **Model.** `ai/model.ts`: `@anthropic-ai/sdk` (beta Messages, streaming, `effort`; for Claude models also adaptive
+  thinking and prompt caching on the fixed instructions and tools). Production runs DeepSeek V4.1 Flash (`AI_MODEL`),
+  picked from the 17 Oct comparison of seven models with `scripts/ai-eval.ts`; OpenRouter translates the
+  Messages API for non-Claude models. The same client goes to OpenRouter's Anthropic-compatible
   Messages API when `OPENROUTER_API_KEY` is set (bearer key, `provider.data_collection: deny`, the thread id as
   `session_id` so one conversation stays on one provider and its cache), or to Anthropic direct with server-side
   fallback. `AI_PROVIDER=fake` swaps in a scripted

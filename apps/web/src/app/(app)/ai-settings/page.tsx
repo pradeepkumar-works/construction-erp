@@ -120,8 +120,8 @@ function DataCard() {
   return (
     <Card title="Where the data goes">
       <Typography.Paragraph>
-        To answer, {PRODUCT_NAME} sends the question and the records needed for it to Anthropic&apos;s Claude, through the OpenRouter gateway, which
-        writes the answer. Requests go only to providers that do not keep or train on them. Conversations are kept in {PRODUCT_NAME} for the person who asked, who can delete them.
+        To answer, {PRODUCT_NAME} sends the question and the records needed for it to the AI model named under This month, through the OpenRouter gateway,
+        which writes the answer. Requests go only to providers that do not keep or train on them. Conversations are kept in {PRODUCT_NAME} for the person who asked, who can delete them.
       </Typography.Paragraph>
       <Typography.Paragraph type="secondary" style={{ margin: 0 }}>
         Ask {PRODUCT_NAME} only reads. It cannot create, approve, pay or delete anything, and every answer links to the records it used so people can check them.
