@@ -20,6 +20,16 @@ export const WHATS_NEW: WhatsNew[] = [
     ],
   },
   {
+    id: '2026-10-bill-checks',
+    date: '2026-10-17',
+    title: 'Checks before you approve a bill',
+    points: [
+      'Vendor bills, subcontract bills, RA bills and site expenses open with a Checks section, also in the Approvals inbox: a tick for each check that passes, and a flag for what needs a look.',
+      'Flags include a rate above the PO or work order, more billed than received or measured, a BOQ item past its contract quantity, an invoice billed twice, GST that does not add up, a mistyped GSTIN and cash above ₹10,000.',
+      'With Ask Nirmaan on, the line on top is written for you from the flags. Whoever approves the bill can accept a flag with a note; the bill\'s activity keeps it.',
+    ],
+  },
+  {
     id: '2026-10-ask-summaries',
     date: '2026-10-17',
     title: 'Ask Nirmaan summarises and explains',

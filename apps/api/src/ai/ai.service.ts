@@ -12,7 +12,7 @@ import { aiConfig, aiConfigured, costPaise, modelName, type AiUsage } from './ai
 import { AiToolsService } from './ai-tools.service';
 import { collectHrefs, collectNumbers, derivedNumbers, filterLinks, unverifiedFigures } from './grounding';
 import { FakeModel, MessagesModel, type AiModel, type ModelMessage } from './model';
-import { SYSTEM_PROMPT, contextNote } from './prompt';
+import { CHECK_SUMMARY_PROMPT, SYSTEM_PROMPT, contextNote } from './prompt';
 import type { UpdateAiSettingsDto } from './ai.dto';
 
 /** Model calls in one answer at most (each may run several tools). */
@@ -307,9 +307,43 @@ export class AiService {
     return own ?? aiConfig().defaultMonthlyCapInr;
   }
 
+  /** Answers and bill-check summaries this calendar month, in paise. */
   private async spentThisMonth(organizationId: string): Promise<number> {
-    const agg = await this.prisma.aiMessage.aggregate({ where: { organizationId, createdAt: { gte: istStart(`${todayIn().slice(0, 7)}-01`) } }, _sum: { costPaise: true } });
-    return agg._sum.costPaise ?? 0;
+    const since = istStart(`${todayIn().slice(0, 7)}-01`);
+    const [answers, summaries] = await Promise.all([
+      this.prisma.aiMessage.aggregate({ where: { organizationId, createdAt: { gte: since } }, _sum: { costPaise: true } }),
+      this.prisma.billCheckSummary.aggregate({ where: { organizationId, createdAt: { gte: since } }, _sum: { costPaise: true } }),
+    ]);
+    return (answers._sum.costPaise ?? 0) + (summaries._sum.costPaise ?? 0);
+  }
+
+  /**
+   * One line for an approver about a bill's checks (AI item 69), written by the model from the flags alone, with no
+   * tools. Null when the assistant is not on for this user; the caller then shows the rules' own line. A line with a
+   * figure the flags do not contain is not used.
+   */
+  async checkSummary(user: RequestUser, facts: { bill: string; flags: { title: string; detail: string | null; accepted: boolean }[]; passed: string[] }, draft: string): Promise<{ text: string; model: string | null; costPaise: number } | null> {
+    if ((await this.status(user)).enabled !== true) return null;
+    const model = this.model();
+    try {
+      const turn = await model.turn(
+        { system: CHECK_SUMMARY_PROMPT, tools: [], messages: [{ role: 'user', content: `${JSON.stringify(facts)}\n\nDraft: ${draft}` }] },
+        () => undefined,
+        AbortSignal.timeout(30_000),
+      );
+      const paise = costPaise(turn.model, turn.usage);
+      const text = turn.content
+        .filter((b): b is Anthropic.Beta.BetaTextBlock => b.type === 'text')
+        .map((b) => b.text)
+        .join(' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      const grounded = text.length > 0 && text.length <= 300 && unverifiedFigures(text, [...collectNumbers(facts), ...derivedNumbers(facts)]).length === 0;
+      return grounded ? { text, model: turn.model, costPaise: paise } : { text: draft, model: null, costPaise: paise };
+    } catch (e) {
+      this.log.warn(`check summary: ${(e as Error).message}`);
+      return null;
+    }
   }
 
   private askedToday(user: RequestUser): Promise<number> {

@@ -43,3 +43,8 @@ export function contextNote(args: {
   if (args.projectId && args.projectName) lines.push(`They have picked the project "${args.projectName}" (id ${args.projectId}); "this project" means it.`);
   return lines.join(' ');
 }
+
+/** Bill checks (AI item 69): one line for the approver from the rules' findings. */
+export const CHECK_SUMMARY_PROMPT = `You write the one-line summary at the top of a bill's checks in ${PRODUCT_NAME}, a construction ERP, for the person about to approve the bill. You get the bill, the flags the rules raised (with any an approver already accepted) and the checks that passed, as JSON, and a plain draft line.
+
+Write one sentence, at most 30 words, in plain English: what most needs a look before approving, and why it matters (paying above the agreed rate, paying for material not received, paying twice, a tax problem). Mention a second flag only if it is as serious. Use only figures that appear in the flags, as written there. No greeting, no Markdown, no advice to approve or reject. If every flag is accepted, say so in a few words.`;

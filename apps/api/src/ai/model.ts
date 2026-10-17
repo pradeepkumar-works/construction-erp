@@ -109,6 +109,11 @@ export class FakeModel implements AiModel {
     const blocks = Array.isArray(last.content) ? last.content : [];
     const result = blocks.find((b): b is Anthropic.Beta.BetaToolResultBlockParam => b.type === 'tool_result');
     const usage = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 };
+    // A call with no tools (a bill-check summary) gets its draft line back.
+    if (!args.tools.length) {
+      const text = `${(typeof last.content === 'string' ? last.content : '').split('Draft: ').pop()?.trim() ?? ''}`;
+      return { content: [{ type: 'text', text, citations: null } as Block], stopReason: 'end_turn', usage, model: this.name };
+    }
     if (!result) {
       const texts = blocks.filter((b): b is Anthropic.Beta.BetaTextBlockParam => b.type === 'text').map((b) => b.text);
       const question = texts[texts.length - 1]?.toLowerCase() ?? (typeof last.content === 'string' ? last.content.toLowerCase() : '');

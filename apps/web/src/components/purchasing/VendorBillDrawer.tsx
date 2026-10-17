@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Alert, App, Button, Card, Divider, Popconfirm, Table, Tag, Typography } from 'antd';
+import { App, Button, Card, Divider, Popconfirm, Table, Tag, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { VendorBillDto, VendorBillLineDto } from '@erp/shared';
@@ -18,6 +18,7 @@ import { EditResubmitButton } from '@/components/common/EditResubmitButton';
 import { submissionMetaItems } from '@/components/common/SubmitterInfo';
 import { BillPayments, PaidTag } from '@/components/payables/BillPayments';
 import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
+import { checksSection } from '@/components/checks/ChecksSection';
 import { submissionLifecycle } from '@/components/record/lifecycle';
 
 const money = (v: string | number) => <span className="mono">{formatINR(v, true)}</span>;
@@ -42,7 +43,7 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
   const { user } = useAuth();
   const { message } = App.useApp();
   const qc = useQueryClient();
-  const { data, isLoading, error, refetch } = useVendorBill(id ?? undefined);
+  const { data, isLoading, error, refetch, dataUpdatedAt } = useVendorBill(id ?? undefined);
   const recorder = !!user && canRecordVendorBill(user.roleKey);
 
   const done = (text: string) => {
@@ -88,23 +89,6 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
               <StatusTag status={data.status} /> <MatchTag matched={data.matched} /> <PaidTag bill={data} />
             </>
           ),
-          notices: data.matched ? (
-            <Alert type="success" showIcon style={{ marginBottom: 12 }} title="Matches the purchase order and what was received" />
-          ) : (
-            <Alert
-              type="error"
-              showIcon
-              style={{ marginBottom: 12 }}
-              title="Does not match the purchase order and what was received"
-              description={
-                <ul style={{ margin: 0, paddingLeft: 18 }}>
-                  {data.exceptions.map((e) => (
-                    <li key={e}>{e}</li>
-                  ))}
-                </ul>
-              }
-            />
-          ),
           facts: [
             {
               key: 'vendor',
@@ -138,6 +122,7 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
             { title: 'Paid', done: !!data.paidDate, content: data.status !== 'APPROVED' ? undefined : data.paidDate ? formatDate(data.paidDate) : `${formatINR(data.outstanding, true)} to pay` },
           ]),
           sections: [
+            checksSection('vendor-bill', data.id, dataUpdatedAt),
             {
               key: 'items',
               title: 'Items, matched against the PO and GRNs',
