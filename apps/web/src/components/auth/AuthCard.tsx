@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { BRAND } from '@/lib/brand';
 import { BrandMark, Wordmark } from '@/components/shell/BrandMark';
 import { themeColor } from '@/lib/theme';
+import { textOf, usePageTitle } from '@/lib/page-title';
 
 const POINTS = ['Progress, DPRs and photos from site, even offline', 'RA bills, purchases and payments with GST', 'Approvals on the phone, exports to Tally'];
 
@@ -13,6 +14,7 @@ const POINTS = ['Progress, DPRs and photos from site, even offline', 'RA bills, 
  * (hidden on narrow screens) and the form on white, with plenty of room around it.
  */
 export function AuthCard({ title, subtitle, children, width = 400 }: { title?: React.ReactNode; subtitle: React.ReactNode; children: React.ReactNode; width?: number }) {
+  usePageTitle(textOf(title));
   const year = new Date().getFullYear();
   return (
     <div className="auth">

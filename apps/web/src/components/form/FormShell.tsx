@@ -95,7 +95,8 @@ function serverFieldErrors(err: unknown, fields: Record<string, unknown>): { nam
 }
 
 const focusIn = (el: HTMLElement) => {
-  el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  // Glides to the field unless the system asks for less motion (UX item 81).
+  el.scrollIntoView({ block: 'center', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
   el.querySelector<HTMLElement>('input:not([type=hidden]), textarea, [tabindex]:not([tabindex="-1"])')?.focus({ preventScroll: true });
 };
 

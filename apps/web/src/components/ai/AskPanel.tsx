@@ -16,6 +16,7 @@ import { streamAsk } from '@/lib/ai';
 import { useProjectScope } from '@/lib/project-scope';
 import { useAiFeedback, useAiThreads, useDeleteAiThread, useProjects } from '@/lib/queries';
 import { APP_HEADER_HEIGHT } from '@/lib/sticky';
+import { askShortcutLabel } from '@/lib/shortcuts';
 import { SparkleIcon } from './SparkleIcon';
 import { suggestionsFor } from './suggestions';
 
@@ -37,7 +38,7 @@ function AnswerLink(props: ComponentProps & { href?: string }) {
   // The server keeps only links to records the assistant read; anything else is shown as its words.
   if (!href || !href.startsWith('/') || href.startsWith('//')) return <span>{children}</span>;
   return (
-    <Link href={href} onClick={onNavigate}>
+    <Link href={href} className="text-link" onClick={onNavigate}>
       {children}
     </Link>
   );
@@ -399,7 +400,7 @@ export default function AskPanel({
           </Typography.Title>
           <Flex gap={token.marginXXS}>
             {extra}
-            <Tooltip title="Close (Ctrl J)">
+            <Tooltip title={`Close (${askShortcutLabel()})`}>
               <Button type="text" icon={<CloseOutlined />} aria-label={`Close Ask ${PRODUCT_NAME}`} onClick={closeDock} />
             </Tooltip>
           </Flex>

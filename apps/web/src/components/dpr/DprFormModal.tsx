@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Alert, App, DatePicker, Form, Input, InputNumber, Select, Typography } from 'antd';
+import { Alert, App, Button, DatePicker, Form, Input, InputNumber, Select, Typography } from 'antd';
 import dayjs from 'dayjs';
 import type { AttachmentDto, DailyReportDto, Weather } from '@erp/shared';
 import { MANPOWER_CATEGORIES, WEATHER_LABELS, WEATHER_OPTIONS } from '@erp/shared';
@@ -196,9 +196,9 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
                   From attendance: {attendanceSheet.totalWorkers} workers recorded by {attendanceSheet.recordedByName}
                 </Typography.Text>
               ) : (
-                <Typography.Link style={{ fontSize: 12 }} onClick={applyAttendance}>
+                <Button type="link" size="small" onClick={applyAttendance} style={{ padding: 0, height: 'auto', fontSize: 12 }}>
                   Use attendance ({attendanceSheet.totalWorkers} workers)
-                </Typography.Link>
+                </Button>
               )
             ) : !editing && attendance.data && !attendanceSheet ? (
               <Typography.Text type="secondary" style={{ fontSize: 12 }}>
@@ -214,9 +214,9 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
               style={{ marginBottom: 12 }}
               title={`Copied from the DPR of ${formatDate(copiedFrom.date)}: check the numbers for today`}
               action={
-                <Typography.Link onClick={clearCopied} style={{ fontSize: 12 }}>
+                <Button type="link" size="small" onClick={clearCopied} style={{ padding: 0, height: 'auto', fontSize: 12 }}>
                   Clear
-                </Typography.Link>
+                </Button>
               }
             />
           ) : null}

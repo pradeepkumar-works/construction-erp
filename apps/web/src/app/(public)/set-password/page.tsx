@@ -49,7 +49,7 @@ export default function SetPasswordPage() {
           subTitle={token ? errorMessage(info.error) : 'The link is incomplete. Open it again from your email.'}
           extra={
             <>
-              <Link href="/forgot-password">Get a new reset link</Link> · <Link href="/login">Sign in</Link>
+              <Link href="/forgot-password" className="text-link">Get a new reset link</Link> · <Link href="/login" className="text-link">Sign in</Link>
             </>
           }
         />

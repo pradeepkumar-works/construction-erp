@@ -249,14 +249,20 @@ function CompanyLogCard() {
 export default function CompanyDataPage() {
   const { user } = useAuth();
   if (!user) return null;
-  if (!canManageCompanyData(user.roleKey)) return <Alert type="info" title="Only an admin can export or delete company data." />;
+  if (!canManageCompanyData(user.roleKey))
+    return (
+      <div className="page-container" style={{ maxWidth: 948, marginLeft: 0 }}>
+        <PageHeader title="Data & Privacy" />
+        <Alert type="info" title="Only an admin can export or delete company data." />
+      </div>
+    );
   return (
     <div className="page-container" style={{ maxWidth: 948, marginLeft: 0 }}>
       <PageHeader
         title="Data & Privacy"
         subtitle={
           <span>
-            Your data is yours: take all of it, or have it erased. See the <Link href="/privacy">privacy policy</Link>.
+            Your data is yours: take all of it, or have it erased. See the <Link href="/privacy" className="text-link">privacy policy</Link>.
           </span>
         }
       />

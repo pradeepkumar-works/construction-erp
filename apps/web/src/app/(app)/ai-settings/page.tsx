@@ -8,6 +8,7 @@ import { useAuth } from '@/lib/auth';
 import { errorMessage } from '@/lib/api';
 import { formatINR } from '@/lib/format';
 import { useAiSettings, useUpdateAiSettings } from '@/lib/queries';
+import { askShortcutLabel } from '@/lib/shortcuts';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 
@@ -46,7 +47,7 @@ function SettingsCard({ data }: { data: AiSettingsDto }) {
               On for everyone in the company
             </label>
             <Typography.Paragraph id="ai-enabled-help" type="secondary" style={{ margin: 0 }}>
-              Staff get the Ask button in the header (Ctrl J). Each person&apos;s answers come only from what their own role can see in {PRODUCT_NAME}. The client&apos;s
+              Staff get the Ask button in the header ({askShortcutLabel()}). Each person&apos;s answers come only from what their own role can see in {PRODUCT_NAME}. The client&apos;s
               engineer and the consultant never see it.
             </Typography.Paragraph>
           </div>
@@ -135,7 +136,13 @@ export default function AiSettingsPage() {
   const allowed = !!user && canManageAi(user.roleKey);
   const { data, isLoading, error, refetch } = useAiSettings(allowed);
   if (!user) return null;
-  if (!allowed) return <Alert type="info" title={`Only an admin can change Ask ${PRODUCT_NAME} settings.`} />;
+  if (!allowed)
+    return (
+      <div className="page-container" style={{ maxWidth: 948, marginLeft: 0 }}>
+        <PageHeader title={`Ask ${PRODUCT_NAME}`} />
+        <Alert type="info" title={`Only an admin can change Ask ${PRODUCT_NAME} settings.`} />
+      </div>
+    );
   return (
     <div className="page-container" style={{ maxWidth: 948, marginLeft: 0 }}>
       <PageHeader title={`Ask ${PRODUCT_NAME}`} subtitle="An assistant that answers questions about your company's records, with links to each record it used." />

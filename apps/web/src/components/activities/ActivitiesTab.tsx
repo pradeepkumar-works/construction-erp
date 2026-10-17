@@ -109,13 +109,14 @@ export function ActivitiesTab({ projectId, members, project }: { projectId: stri
                   size="small"
                   type="text"
                   icon={<EditOutlined />}
+                  aria-label={`Edit activity ${r.name}`}
                   onClick={() => {
                     setEditing(r);
                     setFormOpen(true);
                   }}
                 />
                 <Popconfirm title="Delete this activity?" okText="Delete" okButtonProps={{ danger: true }} onConfirm={() => del.mutate(r.id)}>
-                  <Button size="small" type="text" danger icon={<DeleteOutlined />} />
+                  <Button size="small" type="text" danger icon={<DeleteOutlined />} aria-label={`Delete activity ${r.name}`} />
                 </Popconfirm>
               </Space>
             ),

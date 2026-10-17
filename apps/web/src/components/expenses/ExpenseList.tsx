@@ -116,9 +116,9 @@ export function ExpenseList({ projectId: fixedProject }: { projectId?: string })
           <Space size={[4, 4]} wrap style={{ flex: 1, minWidth: 240 }}>
             {summary.byCategory.slice(0, 6).map((c) => (
               <Tooltip key={c.category} title={`${c.count} expense(s)`}>
-                <Tag style={{ cursor: 'pointer' }} color={category === c.category ? 'blue' : undefined} onClick={() => page.setFilter('category', category === c.category ? undefined : c.category)}>
+                <Tag.CheckableTag checked={category === c.category} onChange={(on) => page.setFilter('category', on ? c.category : undefined)}>
                   {EXPENSE_CATEGORY_LABELS[c.category]}: {formatINR(c.totalAmount)}
-                </Tag>
+                </Tag.CheckableTag>
               </Tooltip>
             ))}
           </Space>

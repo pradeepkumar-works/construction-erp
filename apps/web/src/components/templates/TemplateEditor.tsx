@@ -62,25 +62,25 @@ export function TemplateEditor({ template, editable }: { template: ActivityTempl
     {
       title: 'Activity',
       dataIndex: 'name',
-      render: (v, r) => (editable ? <Input value={v} maxLength={120} onChange={(e) => update(r.key, { name: e.target.value })} status={!v.trim() ? 'error' : undefined} /> : v),
+      render: (v, r, i) => (editable ? <Input aria-label={`Activity ${i + 1} name`} value={v} maxLength={120} onChange={(e) => update(r.key, { name: e.target.value })} status={!v.trim() ? 'error' : undefined} /> : v),
     },
     {
       title: 'Unit',
       dataIndex: 'unit',
       width: 110,
-      render: (v, r) => (editable ? <UnitInput value={v} onChange={(u) => update(r.key, { unit: u })} style={{ width: '100%' }} /> : v),
+      render: (v, r, i) => (editable ? <UnitInput aria-label={`Activity ${i + 1} unit`} value={v} onChange={(u) => update(r.key, { unit: u })} style={{ width: '100%' }} /> : v),
     },
     {
       title: 'Starts on day',
       dataIndex: 'startDay',
       width: 120,
-      render: (v, r) => (editable ? <InputNumber min={0} max={MAX_TEMPLATE_DAYS} precision={0} value={v} onChange={(n) => update(r.key, { startDay: n ?? 0 })} style={{ width: '100%' }} /> : v),
+      render: (v, r, i) => (editable ? <InputNumber aria-label={`Activity ${i + 1} starts on day`} min={0} max={MAX_TEMPLATE_DAYS} precision={0} value={v} onChange={(n) => update(r.key, { startDay: n ?? 0 })} style={{ width: '100%' }} /> : v),
     },
     {
       title: 'Days',
       dataIndex: 'durationDays',
       width: 100,
-      render: (v, r) => (editable ? <InputNumber min={1} max={MAX_TEMPLATE_DAYS} precision={0} value={v} onChange={(n) => update(r.key, { durationDays: n ?? 1 })} style={{ width: '100%' }} /> : v),
+      render: (v, r, i) => (editable ? <InputNumber aria-label={`Activity ${i + 1} days`} min={1} max={MAX_TEMPLATE_DAYS} precision={0} value={v} onChange={(n) => update(r.key, { durationDays: n ?? 1 })} style={{ width: '100%' }} /> : v),
     },
     { title: `Schedule (${span} days)`, key: 'bar', width: 260, render: (_, r) => <TimelineBar start={r.startDay} length={r.durationDays} span={span} /> },
     ...(editable
@@ -91,13 +91,14 @@ export function TemplateEditor({ template, editable }: { template: ActivityTempl
             width: 120,
             render: (_: unknown, r: Row, i: number) => (
               <Space size={0}>
-                <Button size="small" type="text" icon={<ArrowUpOutlined />} disabled={i === 0} onClick={() => move(i, -1)} />
-                <Button size="small" type="text" icon={<ArrowDownOutlined />} disabled={i === rows.length - 1} onClick={() => move(i, 1)} />
+                <Button size="small" type="text" icon={<ArrowUpOutlined />} aria-label={`Move ${r.name.trim() || `activity ${i + 1}`} up`} disabled={i === 0} onClick={() => move(i, -1)} />
+                <Button size="small" type="text" icon={<ArrowDownOutlined />} aria-label={`Move ${r.name.trim() || `activity ${i + 1}`} down`} disabled={i === rows.length - 1} onClick={() => move(i, 1)} />
                 <Button
                   size="small"
                   type="text"
                   danger
                   icon={<DeleteOutlined />}
+                  aria-label={`Delete ${r.name.trim() || `activity ${i + 1}`}`}
                   onClick={() => {
                     setRows((rs) => rs.filter((x) => x.key !== r.key));
                     setDirty(true);

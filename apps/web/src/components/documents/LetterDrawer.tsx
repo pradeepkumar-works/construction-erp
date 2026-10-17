@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { App, Button, Descriptions, Divider, Drawer, Popconfirm, Skeleton, Space, Tag, Typography } from 'antd';
+import { App, Button, Descriptions, Divider, Drawer, Popconfirm, Skeleton, Space, Tag } from 'antd';
 import { DeleteOutlined, EditOutlined, RollbackOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { LetterRefDto } from '@erp/shared';
@@ -14,6 +14,7 @@ import { formatDate } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { LetterFormModal, type LetterPrefill } from './LetterFormModal';
+import { RecordLink } from '@/components/record/RecordLink';
 
 export const DirectionTag = ({ direction }: { direction: LetterRefDto['direction'] }) => (
   <Tag color={direction === 'IN' ? 'blue' : 'purple'} style={{ margin: 0 }}>
@@ -41,9 +42,9 @@ export function LetterDrawer({ id, open, onClose, onOpen }: { id: string | null;
   const ref = (l: LetterRefDto) => (
     <div key={l.id} style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
       <DirectionTag direction={l.direction} />
-      <Typography.Link onClick={() => onOpen(l.id)} style={{ whiteSpace: 'nowrap' }}>
-        {l.letterNo}
-      </Typography.Link>
+      <span style={{ whiteSpace: 'nowrap' }}>
+        <RecordLink onOpen={() => onOpen(l.id)}>{l.letterNo}</RecordLink>
+      </span>
       <span className="text-muted" style={{ whiteSpace: 'nowrap' }}>
         {formatDate(l.letterDate)}
       </span>

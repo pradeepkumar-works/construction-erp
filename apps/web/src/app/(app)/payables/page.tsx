@@ -228,9 +228,9 @@ export default function PayablesPage() {
       width: 190,
       render: (_, r) => (
         <div>
-          <Typography.Link strong onClick={() => setBill(r)} className="mono">
+          <RecordLink href={r.billType === 'VENDOR_BILL' ? `/vendor-bills/${r.billId}` : `/subcontract-bills/${r.billId}`} onOpen={() => setBill(r)} strong className="mono">
             {r.billLabel}
-          </Typography.Link>
+          </RecordLink>
           <div className="text-muted" style={{ fontSize: 12 }}>
             {r.billType === 'VENDOR_BILL' ? 'Vendor bill' : 'Subcontractor bill'} · {formatDate(r.billDate)}
           </div>

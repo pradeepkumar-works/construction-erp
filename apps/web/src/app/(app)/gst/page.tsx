@@ -37,6 +37,7 @@ function GstRegistersPage() {
   if (user && !canViewGstRegisters(user.roleKey))
     return (
       <div className="page-container">
+        <PageHeader title="GST Registers" />
         <Alert type="warning" showIcon title="Only admin, management and accounts see the GST registers." />
       </div>
     );

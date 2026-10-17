@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import Link from 'next/link';
 import { Button, Result, Space, Typography } from 'antd';
 import { ReloadOutlined } from '@ant-design/icons';
+import { LinkButton } from '@/components/common/LinkButton';
+import { usePageTitle } from '@/lib/page-title';
 
 /** A page that crashed while drawing: the shell stays, and the page can be tried again (UI roadmap item 64). */
 export default function PageError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  usePageTitle('Page error');
   useEffect(() => {
     console.error(error);
   }, [error]);
@@ -14,7 +16,7 @@ export default function PageError({ error, reset }: { error: Error & { digest?: 
     <div className="page-container">
       <Result
         status="500"
-        title="This page ran into a problem"
+        title={<h1 className="heading-plain">This page ran into a problem</h1>}
         subTitle={
           <>
             Nothing you saved is lost. Try again, and if it keeps happening tell your admin what you were doing.
@@ -30,9 +32,7 @@ export default function PageError({ error, reset }: { error: Error & { digest?: 
             <Button type="primary" icon={<ReloadOutlined />} onClick={reset}>
               Try again
             </Button>
-            <Link href="/">
-              <Button>Go to home</Button>
-            </Link>
+            <LinkButton href="/">Go to home</LinkButton>
           </Space>
         }
       />

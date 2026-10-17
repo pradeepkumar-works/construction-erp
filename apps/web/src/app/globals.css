@@ -490,3 +490,31 @@ h4.ant-typography,
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/*
+ * Links look like links (UX item 81, WCAG 1.4.1): the reset at the top makes every <a> inherit its colour, so links in
+ * table cells, record facts, card headers and notices take the link colour, underlined on hover. Buttons, tags and antd's
+ * own Typography links keep their look. `text-link` does the same for a link in running text anywhere else.
+ */
+.ant-table-cell a:not(.ant-btn):not(.ant-tag):not(.ant-typography),
+.ant-descriptions-item-content a:not(.ant-btn):not(.ant-tag):not(.ant-typography),
+.ant-card-extra a:not(.ant-btn):not(.ant-tag):not(.ant-typography),
+.ant-alert a:not(.ant-btn):not(.ant-typography),
+a.text-link {
+  color: var(--ant-color-link);
+}
+.ant-table-cell a:not(.ant-btn):not(.ant-tag):not(.ant-typography):hover,
+.ant-descriptions-item-content a:not(.ant-btn):not(.ant-tag):not(.ant-typography):hover,
+.ant-card-extra a:not(.ant-btn):not(.ant-tag):not(.ant-typography):hover,
+.ant-alert a:not(.ant-btn):not(.ant-typography):hover,
+a.text-link:hover {
+  color: var(--ant-color-link-hover);
+  text-decoration: underline;
+}
+
+/* A heading that keeps the look of where it sits, such as the title of a Result that is the page's <h1>. */
+.heading-plain {
+  margin: 0;
+  font: inherit;
+  color: inherit;
+}

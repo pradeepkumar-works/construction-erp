@@ -160,7 +160,7 @@ export function RiskDrawer({ id, open, onClose, onEdit }: { id: string | null; o
                     <span className="text-muted" style={{ width: 90, flex: 'none' }}>
                       {formatDate(l.letterDate)}
                     </span>
-                    <Link href={`/documents?tab=letters&letter=${l.id}`} style={{ flex: 'none' }}>
+                    <Link href={`/documents?tab=letters&letter=${l.id}`} className="text-link" style={{ flex: 'none' }}>
                       {l.letterNo}
                     </Link>
                     <span>

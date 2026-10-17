@@ -48,7 +48,7 @@ function PortalProject() {
 
   return (
     <div className="page-container">
-      <PageHeader title={data ? data.name : 'Project'} subtitle={data ? [data.code, data.clientName, data.location].filter(Boolean).join(' · ') : undefined} extra={<Link href="/portal">All my projects</Link>} />
+      <PageHeader title={data ? data.name : 'Project'} subtitle={data ? [data.code, data.clientName, data.location].filter(Boolean).join(' · ') : undefined} extra={<Link href="/portal" className="text-link">All my projects</Link>} />
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {isLoading ? <Skeleton active /> : null}
       {data ? (

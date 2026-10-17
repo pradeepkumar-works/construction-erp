@@ -4,7 +4,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Button, Card, Progress, Space, Typography } from 'antd';
 import { EditOutlined, FilePdfOutlined } from '@ant-design/icons';
-import Link from 'next/link';
 import type { ProjectDetail } from '@erp/shared';
 import { canEditProjects, isGuest, canViewContract, canViewVariations, canViewCost, canViewPurchaseOrders, canViewWorkOrders } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
@@ -42,6 +41,7 @@ import { PurchaseOrderList } from '@/components/purchasing/PurchaseOrderList';
 import { SubcontractsPanel } from '@/components/subcontracts/SubcontractsPanel';
 import { HandoverPanel } from '@/components/handover/HandoverPanel';
 import { AskButton } from '@/components/ai/AskButton';
+import { LinkButton } from '@/components/common/LinkButton';
 
 const tabPref = (projectId: string) => `nirmaan.project.tab.${projectId}`;
 
@@ -125,6 +125,7 @@ function ProjectPage({ project }: { project: ProjectDetail }) {
       <div ref={headerRef}>
       <PageHeader
         crumbs={[{ title: 'Projects', href: '/projects' }, { title: project.code }]}
+        docTitle={project.name}
         title={
           <Space wrap size={8}>
             <span>{project.name}</span>
@@ -152,9 +153,9 @@ function ProjectPage({ project }: { project: ProjectDetail }) {
               <Progress percent={project.physicalProgressPct} size="small" aria-label={`Physical progress ${project.physicalProgressPct}%`} />
             </div>
             <AskButton question={`Summarise this week on ${project.code} ${project.name}.`} label="Summarise this week" title="Ask Nirmaan for this week on this project: work against plan, labour, machines, materials, bills, risks and decisions" />
-            <Link href={`/reports?projectId=${project.id}`}>
-              <Button icon={<FilePdfOutlined />}>Progress report</Button>
-            </Link>
+            <LinkButton href={`/reports?projectId=${project.id}`} icon={<FilePdfOutlined />}>
+              Progress report
+            </LinkButton>
             {editor && (
               <Button icon={<EditOutlined />} onClick={() => setEditOpen(true)}>
                 Edit

@@ -163,9 +163,9 @@ export function RiskList({ projectId: fixedProject, initialProject, initialOpenI
             <Space size={[6, 6]} wrap>
               {suggestions.slice(0, 8).map((s) => (
                 <Tooltip key={s.activityId} title={`${s.projectName}: planned finish ${formatDate(s.plannedEnd)}, ${s.progressPct}% done`}>
-                  <Tag style={{ cursor: 'pointer' }} color="orange" onClick={() => raise({ kind: 'DELAY', projectId: s.projectId, activityId: s.activityId, title: `${s.activityName} behind schedule` })}>
+                  <Button size="small" color="orange" variant="outlined" onClick={() => raise({ kind: 'DELAY', projectId: s.projectId, activityId: s.activityId, title: `${s.activityName} behind schedule` })}>
                     {s.activityName} · {s.daysLate} d late · record delay
-                  </Tag>
+                  </Button>
                 </Tooltip>
               ))}
             </Space>
@@ -194,9 +194,9 @@ export function RiskList({ projectId: fixedProject, initialProject, initialOpenI
               <Space size={[4, 4]} wrap>
                 {summary.byCategory.map((c) => (
                   <Tooltip key={c.category} title={`${c.total} in all${c.daysLost ? `, ${c.daysLost} day(s) lost` : ''}`}>
-                    <Tag style={{ cursor: 'pointer' }} color={category === c.category ? 'blue' : undefined} onClick={() => page.setFilter('category', category === c.category ? undefined : c.category)}>
+                    <Tag.CheckableTag checked={category === c.category} onChange={(on) => page.setFilter('category', on ? c.category : undefined)}>
                       {RISK_CATEGORY_LABELS[c.category]}: {c.open} open
-                    </Tag>
+                    </Tag.CheckableTag>
                   </Tooltip>
                 ))}
                 {!summary.byCategory.length ? <Typography.Text type="secondary">Nothing raised yet.</Typography.Text> : null}

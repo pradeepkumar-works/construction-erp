@@ -121,7 +121,7 @@ export function NotificationBell() {
           </Button>
         }
         footer={
-          <Link href="/notifications" onClick={() => setOpen(false)}>
+          <Link href="/notifications" className="text-link" onClick={() => setOpen(false)}>
             View all notifications
           </Link>
         }

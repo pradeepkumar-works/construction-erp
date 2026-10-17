@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { Alert, Button, Empty, Flex, Result, Skeleton, theme } from 'antd';
 import { DisconnectOutlined, FileSearchOutlined, LockOutlined, ReloadOutlined } from '@ant-design/icons';
 import { PRODUCT_NAME } from '@erp/shared';
 import { errorMessage, errorStatus } from '@/lib/api';
+import { LinkButton } from '@/components/common/LinkButton';
 
 function useOnline() {
   const [online, setOnline] = useState(true);
@@ -35,11 +35,7 @@ export function QueryError({ error, onRetry }: { error: unknown; onRetry?: () =>
       Try again
     </Button>
   ) : null;
-  const home = (
-    <Link href="/">
-      <Button>Go to home</Button>
-    </Link>
-  );
+  const home = <LinkButton href="/">Go to home</LinkButton>;
   const icon = (node: React.ReactNode) => <span style={{ fontSize: 48, color: token.colorTextTertiary }}>{node}</span>;
 
   if (status === 403)

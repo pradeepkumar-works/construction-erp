@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { App, Form, Input, Radio, Select, Switch, Typography } from 'antd';
+import { App, Button, Form, Input, Radio, Select, Switch } from 'antd';
 import { MIN_PASSWORD_LENGTH, type CreateUserResultDto, type RoleKey, type UserSummary } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, errorMessage } from '@/lib/api';
@@ -91,7 +91,9 @@ export function UserFormModal({ open, onClose, user, onInvited }: { open: boolea
           </Form.Item>
         )}
         {isEdit && !resetPwd ? (
-          <Typography.Link onClick={() => setResetPwd(true)}>Set a new password</Typography.Link>
+          <Button type="link" onClick={() => setResetPwd(true)} style={{ padding: 0, height: 'auto' }}>
+            Set a new password
+          </Button>
         ) : isEdit || how === 'password' ? (
           <Form.Item name="password" label={isEdit ? 'New password' : 'Password'} rules={[{ required: true, message: 'Enter a password' }, { min: MIN_PASSWORD_LENGTH, message: `At least ${MIN_PASSWORD_LENGTH} characters` }]}>
             <Input.Password autoComplete="new-password" />

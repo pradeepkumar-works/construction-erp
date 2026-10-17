@@ -246,9 +246,9 @@ export default function ReceivablesPage() {
       key: 'bill',
       width: 140,
       render: (_, r) => (
-        <Typography.Link strong onClick={() => setBillId(r.billId)}>
+        <RecordLink href={`/bills/${r.billId}`} onOpen={() => setBillId(r.billId)} strong>
           {r.billLabel}
-        </Typography.Link>
+        </RecordLink>
       ),
     },
     {

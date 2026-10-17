@@ -15,6 +15,7 @@ import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { NcrStatusTag, TestResultTag } from './qualityUi';
 import { TestFormModal } from './TestFormModal';
 import { NcrFormModal, type NcrPrefill } from './NcrFormModal';
+import { RecordLink } from '@/components/record/RecordLink';
 
 /** One reading's value with a Save button; a recorded value can be corrected the same way. */
 function ReadingInput({ test, reading }: { test: QualityTestDto; reading: QualityTestReadingDto }) {
@@ -171,9 +172,7 @@ export function TestDrawer({ id, open, onClose, onOpenNcr }: { id: string | null
           {ncrs?.items.length ? (
             ncrs.items.map((n) => (
               <div key={n.id} style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '4px 0' }}>
-                <Typography.Link onClick={() => onOpenNcr?.(n.id)} disabled={!onOpenNcr}>
-                  {n.ncrNo}
-                </Typography.Link>
+                {onOpenNcr ? <RecordLink onOpen={() => onOpenNcr(n.id)}>{n.ncrNo}</RecordLink> : <span>{n.ncrNo}</span>}
                 <span>{n.title}</span>
                 <NcrStatusTag status={n.status} />
               </div>

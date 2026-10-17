@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, DatePicker, Descriptions, Divider, Drawer, Form, Input, Popconfirm, Skeleton, Space, Table, Typography } from 'antd';
+import { App, Button, DatePicker, Descriptions, Divider, Drawer, Form, Input, Popconfirm, Skeleton, Space, Table } from 'antd';
 import { DeleteOutlined, EditOutlined, PrinterOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -15,6 +15,7 @@ import { QueryError } from '@/components/common/QueryState';
 import { RevisionStatusTag } from './docUi';
 import { TransmittalFormModal } from './TransmittalFormModal';
 import { openTransmittalPrint } from './transmittalPrint';
+import { RecordLink } from '@/components/record/RecordLink';
 
 /** The receiver signed for it: date and name. */
 function AcknowledgeForm({ t }: { t: TransmittalDto }) {
@@ -118,7 +119,7 @@ export function TransmittalDrawer({ id, open, onClose, onOpenDocument }: { id: s
             pagination={false}
             dataSource={data.items}
             columns={[
-              { title: 'Number', dataIndex: 'docNo', width: 140, className: 'mono', render: (v: string, r) => <Typography.Link onClick={() => onOpenDocument?.(r.documentId)} disabled={!onOpenDocument}>{v}</Typography.Link> },
+              { title: 'Number', dataIndex: 'docNo', width: 140, className: 'mono', render: (v: string, r) => (onOpenDocument ? <RecordLink onOpen={() => onOpenDocument(r.documentId)}>{v}</RecordLink> : v) },
               { title: 'Title', dataIndex: 'title' },
               { title: 'Rev', dataIndex: 'revision', width: 60 },
               { title: 'Status', dataIndex: 'status', width: 170, render: (v) => <RevisionStatusTag status={v} /> },

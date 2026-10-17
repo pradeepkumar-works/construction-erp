@@ -14,6 +14,7 @@ import { QueryError } from '@/components/common/QueryState';
 import { FileLinks, RevisionStatusTag } from './docUi';
 import { DocumentFormModal } from './DocumentFormModal';
 import { RevisionFormModal } from './RevisionFormModal';
+import { RecordLink } from '@/components/record/RecordLink';
 
 /** A drawing or document: its current revision first, every revision with its files and transmittals, and the history. */
 export function DocumentDrawer({ id, open, onClose, onSend, onOpenTransmittal }: { id: string | null; open: boolean; onClose: () => void; onSend?: (projectId: string, revisionIds: string[]) => void; onOpenTransmittal?: (id: string) => void }) {
@@ -121,9 +122,7 @@ export function DocumentDrawer({ id, open, onClose, onSend, onOpenTransmittal }:
                         {r.transmittals.map((t, i) => (
                           <React.Fragment key={t.id}>
                             {i ? ', ' : ''}
-                            <Typography.Link onClick={() => onOpenTransmittal?.(t.id)} disabled={!onOpenTransmittal} style={{ fontSize: 12 }}>
-                              {t.transmittalNo}
-                            </Typography.Link>{' '}
+                            {onOpenTransmittal ? <RecordLink onOpen={() => onOpenTransmittal(t.id)}>{t.transmittalNo}</RecordLink> : t.transmittalNo}{' '}
                             to {t.toParty}
                           </React.Fragment>
                         ))}

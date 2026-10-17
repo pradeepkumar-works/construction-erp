@@ -98,7 +98,7 @@ export function MembersCard({ project }: { project: ProjectDetail }) {
               />
               {editor && !m.isPm ? (
                 <Popconfirm title={`Remove ${m.fullName} from the project?`} okText="Remove" okButtonProps={{ danger: true }} onConfirm={() => remove.mutate(m.userId)}>
-                  <Button size="small" type="text" danger icon={<DeleteOutlined />} />
+                  <Button size="small" type="text" danger icon={<DeleteOutlined />} aria-label={`Remove ${m.fullName} from the project`} />
                 </Popconfirm>
               ) : null}
             </Flex>

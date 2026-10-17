@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-10-keyboard',
+    date: '2026-10-17',
+    title: 'Every page named, and the keyboard reaches everything',
+    points: [
+      'Browser tabs and history show each page\'s name, and a record\'s own number on its page ("PO-2026-0012 · Tata Steel · Nirmaan").',
+      'In any list, Tab to the rows, move with ↑ ↓ (or J K), press Enter to open one and X to tick it. Every record opens from the keyboard.',
+      'Ask Nirmaan is now Alt J (⌘J on a Mac), since Ctrl J opens the browser\'s downloads. Single-key shortcuts such as J, K and ? can be turned off in Help > Keyboard shortcuts.',
+      'Home charts say what they show in a line of words and switch to a table. Dark mode no longer flashes white on load, and animations stop when your device asks for less motion.',
+    ],
+  },
+  {
     id: '2026-10-phone-field',
     date: '2026-10-17',
     title: 'The phone app, ready for site',

@@ -7,6 +7,7 @@ import { BILLING_GST_PCT } from '@erp/shared';
 import { BRAND } from '@/lib/brand';
 import { formatINR } from '@/lib/format';
 import { useAuthOptions } from '@/lib/queries';
+import { usePageTitle } from '@/lib/page-title';
 import { SiteFooter, SiteHeader } from '@/components/site/SiteChrome';
 import { DAY, DEMO_PROJECTS, FAQ, FLOWS, LOCAL, MODULES, ROLES, TRUST } from './content';
 
@@ -85,6 +86,7 @@ function useReveal(root: React.RefObject<HTMLDivElement | null>) {
 }
 
 export default function WelcomePage() {
+  usePageTitle('Construction ERP for Indian contractors');
   const { data: options } = useAuthOptions();
   const [tab, setTab] = useState(MODULES[0].key);
   const root = useRef<HTMLDivElement>(null);
