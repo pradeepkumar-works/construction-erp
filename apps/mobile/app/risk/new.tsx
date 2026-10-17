@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import type { ActivityDto, DelayParty, ProjectDetail, RiskCategory, RiskDto, RiskKind, RiskStatus } from '@erp/shared';
@@ -12,6 +12,7 @@ import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
 import { colors, radius, spacing, typography } from '../../src/theme';
 import { addDays, formatDate, isIsoDate, today } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
+import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
 
 const RATINGS = ['1', '2', '3', '4', '5'].map((v) => ({ value: v, label: v }));
 /** English labels; shown through t(). */
@@ -29,7 +30,11 @@ export default function RiskFormScreen() {
   const editId = params.editId ?? null;
   const api = useApi();
   const t = useT();
-  const { online, enqueue } = useOffline();
+  const errorSummary = useErrorSummary();
+  const { online, enqueue, newId } = useOffline();
+  // The same id for a direct send and the outbox, so a send that timed out but arrived is never made twice
+  // (a new one for each entry made with Submit another).
+  const clientId = useRef(newId());
   const projects = useProjectOptions();
   const existing = useFetch<RiskDto>((a) => a.get(`/risks/${editId}`), [editId], { enabled: !!editId, refetchOnFocus: false });
 
@@ -111,13 +116,14 @@ export default function RiskFormScreen() {
     if (!category) e.category = t('Choose a category');
     if (isDelay) {
       if (!isIsoDate(delayStart) || delayStart > today()) e.delayStart = t('Enter a date up to today');
-      if (resumed && (!isIsoDate(delayEnd) || delayEnd < delayStart || delayEnd > today())) e.delayEnd = t('Between the start and today');
+      if (resumed && (!isIsoDate(delayEnd) || delayEnd < delayStart || delayEnd > today())) e.delayEnd = t('Enter a date between the start and today');
     }
     if (editId && status === 'CLOSED' && !closureNote.trim()) e.closureNote = t('Say how it was resolved');
     if (photosUploading(photos)) e.photos = t('Wait for photos to finish uploading');
     else if (photosFailed(photos)) e.photos = t('Remove or retry failed photos');
     else if (editId && photosQueued(photos)) e.photos = t('Photos need a connection to upload before saving');
     setErrors(e);
+    errorSummary.report(e);
     return Object.keys(e).length === 0;
   };
 
@@ -151,6 +157,7 @@ export default function RiskFormScreen() {
         const projectName = projects.options.find((o) => o.value === projectId)?.label ?? t('Project');
         setQueued(
           await enqueue({
+            id: clientId.current,
             type: 'RISK',
             payload: { projectId, ...body },
             photos: toOutboxPhotos(photos),
@@ -164,7 +171,7 @@ export default function RiskFormScreen() {
         return;
       }
       try {
-        setSaved(await api.post<RiskDto>('/risks', { projectId, ...body, attachmentIds: attachmentIds(photos) }));
+        setSaved(await api.post<RiskDto>('/risks', { id: clientId.current, projectId, ...body, attachmentIds: attachmentIds(photos) }));
       } catch (e) {
         if (!isOfflineError(e)) throw e;
         await queueIt();
@@ -177,6 +184,7 @@ export default function RiskFormScreen() {
   };
 
   const reset = () => {
+    clientId.current = newId();
     setSaved(null);
     setQueued(null);
     setTitle('');
@@ -203,8 +211,9 @@ export default function RiskFormScreen() {
   if (editId && existing.error && !existing.data) return <ErrorState message={existing.error} onRetry={existing.reload} />;
 
   return (
-    <Screen keyboard>
+    <Screen keyboard scrollRef={errorSummary.scrollRef}>
       <Stack.Screen options={{ title: editId ? t('Update {no}', { no: existing.data?.riskNo ?? '' }) : t(isDelay ? 'Record a Delay' : 'Raise a Risk') }} />
+      <ErrorSummary errors={errors} />
       <ErrorBanner message={submitError ?? projects.error} />
       <Card>
         <Chips

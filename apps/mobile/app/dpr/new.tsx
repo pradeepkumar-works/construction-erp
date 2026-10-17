@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,7 +7,9 @@ import { useApi, useFetch } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
 import { Button, Card, Chips, DatePicker, ErrorBanner, ErrorState, Input, Loading, PhotoPicker, Screen, Select, type LocalPhoto } from '../../src/components';
 import { attachmentIds, photosFailed, photosQueued, photosUploading, QueuedSuccess, SubmitSuccess, toOutboxPhotos, useProjectOptions } from '../../src/forms/common';
-import { attachmentsToPhotos, ReviewerNote } from '../../src/forms/edit';
+import { attachmentsToPhotos, outboxToPhotos, OutboxRefusal, ReviewerNote, useOutboxEntry } from '../../src/forms/edit';
+import { DraftNotice, restorePhotos, useFormDraft, useLeaveGuard } from '../../src/forms/draft';
+import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
 import { useT } from '../../src/i18n/LanguageContext';
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
 import { colors, spacing, typography } from '../../src/theme';
@@ -28,13 +30,21 @@ const newKey = () => Math.random().toString(36).slice(2, 9);
 /** Keep a free-text value (e.g. a trade typed on the web) selectable even when it is not in the standard list. */
 const withValue = (options: { value: string; label: string }[], value: string | null) => (value && !options.some((o) => o.value === value) ? [...options, { value, label: value }] : options);
 
-/** New DPR, or (with `editId`) edit a draft / rejected / changes-requested DPR and resubmit it. */
+/**
+ * New DPR, or (with `editId`) edit a draft / rejected / changes-requested DPR and resubmit it, or (with `outboxId`) fix
+ * one the server refused from the outbox. A new DPR is kept on the phone as a draft while it is typed.
+ */
 export default function NewDprScreen() {
-  const params = useLocalSearchParams<{ projectId?: string; editId?: string }>();
+  const params = useLocalSearchParams<{ projectId?: string; editId?: string; outboxId?: string }>();
   const editId = params.editId ?? null;
+  const outboxId = params.outboxId ?? null;
   const t = useT();
   const api = useApi();
-  const { online, enqueue, items: outbox } = useOffline();
+  const { online, enqueue, discard, newId, items: outbox } = useOffline();
+  const refused = useOutboxEntry(outboxId);
+  // The same id for a direct send and the outbox, so a send that timed out but arrived is never made twice.
+  const clientId = useRef(outboxId ?? newId()).current;
+  const errorSummary = useErrorSummary();
   const projects = useProjectOptions();
   const existing = useFetch<DailyReportDto>((a) => a.get(`/dpr/${editId}`), [editId], { enabled: !!editId, refetchOnFocus: false });
 
@@ -56,10 +66,76 @@ export default function NewDprScreen() {
   const [busy, setBusy] = useState(false);
   const [created, setCreated] = useState<DailyReportDto | null>(null);
   const [queued, setQueued] = useState<OutboxItem | null>(null);
+  const [manpowerEdited, setManpowerEdited] = useState(false);
+
+  const draft = useFormDraft(
+    editId || outboxId ? null : 'dpr',
+    { projectId, date, weather, siteCondition, manpower, machinery, materialReceived, workExecuted, tests, safety, issues, nextDayPlan, photos, manpowerEdited },
+    (d) => {
+      setProjectId(d.projectId);
+      setDate(d.date);
+      setWeather(d.weather);
+      setSiteCondition(d.siteCondition);
+      setManpower(d.manpower);
+      setMachinery(d.machinery);
+      setMaterialReceived(d.materialReceived);
+      setWorkExecuted(d.workExecuted);
+      setTests(d.tests);
+      setSafety(d.safety);
+      setIssues(d.issues);
+      setNextDayPlan(d.nextDayPlan);
+      setPhotos(restorePhotos(d.photos));
+      setManpowerEdited(d.manpowerEdited);
+    },
+  );
+  useLeaveGuard(draft, { keepsDraft: !editId && !outboxId, busy });
+  const startOver = () => {
+    setProjectId(params.projectId ?? (projects.options.length === 1 ? projects.options[0].value : null));
+    setDate(today());
+    setWeather(null);
+    setSiteCondition('');
+    setManpower([{ key: newKey(), category: 'Mason', count: '' }, { key: newKey(), category: 'Helper', count: '' }]);
+    setMachinery([{ key: newKey(), name: '', hours: '' }]);
+    setMaterialReceived('');
+    setWorkExecuted('');
+    setTests('');
+    setSafety('');
+    setIssues('');
+    setNextDayPlan('');
+    setPhotos([]);
+    setManpowerEdited(false);
+    setErrors({});
+  };
 
   useEffect(() => {
-    if (!editId && !projectId && projects.options.length === 1) setProjectId(projects.options[0].value);
-  }, [editId, projects.options, projectId]);
+    if (!editId && !outboxId && !projectId && projects.options.length === 1) {
+      setProjectId(projects.options[0].value);
+      draft.settle();
+    }
+  }, [editId, outboxId, projects.options, projectId, draft.settle]);
+
+  // Fixing a refused outbox entry: fill the form from what was queued.
+  const [refusedLoaded, setRefusedLoaded] = useState(false);
+  useEffect(() => {
+    if (!refused || refusedLoaded) return;
+    const p = refused.payload as { projectId: string; date: string; weather?: Weather | null; siteCondition?: string; manpower?: ManpowerLine[]; machinery?: { name: string; hours: number }[]; materialReceived?: string; workExecuted?: string; testsConducted?: string; safetyObservations?: string; issues?: string; nextDayPlan?: string };
+    setProjectId(p.projectId);
+    setDate(p.date);
+    setWeather(p.weather ?? null);
+    setSiteCondition(p.siteCondition ?? '');
+    if (p.manpower?.length) setManpower(p.manpower.map((m) => ({ key: newKey(), category: m.category, count: String(m.count) })));
+    if (p.machinery?.length) setMachinery(p.machinery.map((m) => ({ key: newKey(), name: m.name, hours: String(m.hours) })));
+    setMaterialReceived(p.materialReceived ?? '');
+    setWorkExecuted(p.workExecuted ?? '');
+    setTests(p.testsConducted ?? '');
+    setSafety(p.safetyObservations ?? '');
+    setIssues(p.issues ?? '');
+    setNextDayPlan(p.nextDayPlan ?? '');
+    setPhotos(outboxToPhotos(refused.photos));
+    setManpowerEdited(true);
+    setRefusedLoaded(true);
+    draft.settle();
+  }, [refused, refusedLoaded, draft.settle]);
 
   // Editing: prefill the form from the loaded report.
   useEffect(() => {
@@ -78,6 +154,8 @@ export default function NewDprScreen() {
     setIssues(e.issues ?? '');
     setNextDayPlan(e.nextDayPlan ?? '');
     setPhotos(attachmentsToPhotos(e.attachments));
+    draft.settle();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [existing.data]);
 
   const categoryOptions = useMemo(() => MANPOWER_CATEGORIES.map((c) => ({ value: c, label: t(c) })), [t]);
@@ -86,14 +164,13 @@ export default function NewDprScreen() {
 
   // New DPR: manpower comes from the day's attendance (on the server, or still in this phone's outbox)
   // until the user edits it by hand.
-  const [manpowerEdited, setManpowerEdited] = useState(false);
   const [filledFrom, setFilledFrom] = useState<string | null>(null);
   const attendanceDay = useFetch<AttendanceDayDto>((a) => a.get('/attendance/day', { projectId: projectId!, date }), [projectId, date], {
     enabled: !editId && !!projectId && isIsoDate(date) && online,
     refetchOnFocus: false,
   });
   const attendance = useMemo<{ id: string; manpower: ManpowerLine[]; text: string } | null>(() => {
-    if (editId || !projectId) return null;
+    if (editId || outboxId || !projectId) return null;
     const sheet = attendanceDay.data?.projectId === projectId && attendanceDay.data.date === date ? attendanceDay.data.sheet : null;
     if (sheet?.manpower.length) return { id: sheet.id, manpower: sheet.manpower, text: t('From attendance: {n} workers recorded by {name}', { n: sheet.totalWorkers, name: sheet.recordedByName }) };
     const queuedSheet = outbox.find((i) => i.type === 'ATTENDANCE' && i.payload.projectId === projectId && i.payload.date === date);
@@ -107,7 +184,11 @@ export default function NewDprScreen() {
     setManpowerEdited(false);
   };
   useEffect(() => {
-    if (attendance && !manpowerEdited && filledFrom !== attendance.id) applyAttendance(attendance);
+    if (attendance && !manpowerEdited && filledFrom !== attendance.id) {
+      applyAttendance(attendance);
+      // Filled in by itself: not a change of the user's to keep or warn about.
+      if (!draft.restoredAt) draft.settle();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [attendance, manpowerEdited, filledFrom]);
 
@@ -124,19 +205,20 @@ export default function NewDprScreen() {
     if (!workExecuted.trim()) e.workExecuted = t('Describe the work executed today');
     for (const r of manpower) {
       if ((r.category && r.count.trim()) || (!r.category && !r.count.trim())) continue;
-      e.manpower = t('Each manpower row needs a category and a count');
+      e.manpower = t('Choose a category and enter a count in each manpower row');
     }
-    if (manpower.some((r) => r.count.trim() && !/^\d+$/.test(r.count.trim()))) e.manpower = t('Manpower counts must be whole numbers');
+    if (manpower.some((r) => r.count.trim() && !/^\d+$/.test(r.count.trim()))) e.manpower = t('Enter manpower counts as whole numbers');
     for (const r of machinery) {
       if ((r.name.trim() && r.hours.trim()) || (!r.name.trim() && !r.hours.trim())) continue;
-      e.machinery = t('Each machinery row needs a name and hours');
+      e.machinery = t('Enter a name and hours in each machinery row');
     }
-    if (machinery.some((r) => r.hours.trim() && Number.isNaN(Number(r.hours)))) e.machinery = t('Hours must be a number');
+    if (machinery.some((r) => r.hours.trim() && Number.isNaN(Number(r.hours)))) e.machinery = t('Enter machinery hours as a number');
     if (photosUploading(photos)) e.photos = t('Wait for photos to finish uploading');
     else if (photosFailed(photos)) e.photos = t('Remove or retry failed photos');
     else if (editId && photosQueued(photos)) e.photos = t('Photos need a connection to upload before resubmitting');
-    if (!editId && outbox.some((i) => i.type === 'DPR' && i.payload.projectId === projectId && i.payload.date === date)) e.date = t('A DPR for this date is already waiting in the outbox');
+    if (!editId && outbox.some((i) => i.id !== outboxId && i.type === 'DPR' && i.payload.projectId === projectId && i.payload.date === date)) e.date = t('A DPR for this date is already waiting in the outbox');
     setErrors(e);
+    errorSummary.report(e);
     return Object.keys(e).length === 0;
   };
 
@@ -161,12 +243,15 @@ export default function NewDprScreen() {
       };
       if (editId) {
         setCreated(await api.patch<DailyReportDto>(`/dpr/${editId}`, { ...body, attachmentIds: attachmentIds(photos), submit: true }));
+        draft.clear();
         return;
       }
       const queueIt = async () => {
         const projectName = projects.options.find((o) => o.value === projectId)?.label ?? t('Project');
+        draft.clear();
         setQueued(
           await enqueue({
+            id: clientId,
             type: 'DPR',
             payload: { projectId, ...body },
             photos: toOutboxPhotos(photos),
@@ -180,7 +265,10 @@ export default function NewDprScreen() {
         return;
       }
       try {
-        setCreated(await api.post<DailyReportDto>('/dpr', { projectId, ...body, attachmentIds: attachmentIds(photos) }));
+        const dpr = await api.post<DailyReportDto>('/dpr', { id: clientId, projectId, ...body, attachmentIds: attachmentIds(photos) });
+        draft.clear();
+        if (outboxId) await discard(outboxId);
+        setCreated(dpr);
       } catch (e) {
         if (!isOfflineError(e)) throw e;
         await queueIt();
@@ -203,10 +291,13 @@ export default function NewDprScreen() {
   if (editId && existing.error && !existing.data) return <ErrorState message={existing.error} onRetry={existing.reload} />;
 
   return (
-    <Screen keyboard>
-      <Stack.Screen options={{ title: editId ? t('Edit Daily Report') : t('New Daily Report') }} />
+    <Screen keyboard scrollRef={errorSummary.scrollRef}>
+      <Stack.Screen options={{ title: editId ? t('Edit Daily Report') : outboxId ? t('Fix Daily Report') : t('New Daily Report') }} />
+      <DraftNotice draft={draft} onStartOver={startOver} />
+      <ErrorSummary errors={errors} />
       <ErrorBanner message={submitError ?? projects.error} />
       <ReviewerNote entry={existing.data} />
+      <OutboxRefusal item={refused} />
       <Card>
         <Select label={t('Project')} required value={projectId} options={projects.options} onChange={setProjectId} placeholder={t('Choose project')} error={errors.projectId} disabled={!!editId} />
         <DatePicker label={t('Report date')} required value={date} onChange={setDate} error={errors.date} />
@@ -227,7 +318,14 @@ export default function NewDprScreen() {
             <View style={styles.grow}>
               <Select value={r.category} options={withValue(categoryOptions, r.category)} onChange={(v) => updateMan(r.key, { category: v })} placeholder={t('Category')} />
             </View>
-            <Input value={r.count} onChangeText={(v) => updateMan(r.key, { count: v })} keyboardType="number-pad" placeholder="Nos" containerStyle={styles.small} />
+            <Input
+              value={r.count}
+              onChangeText={(v) => updateMan(r.key, { count: v })}
+              keyboardType="number-pad"
+              placeholder="Nos"
+              accessibilityLabel={r.category ? t('Number of {category}', { category: t(r.category) }) : t('Number of workers')}
+              containerStyle={styles.small}
+            />
             <RemoveBtn
               onPress={() => {
                 setManpowerEdited(true);
@@ -252,8 +350,15 @@ export default function NewDprScreen() {
       <Card title={t('Machinery')}>
         {machinery.map((r) => (
           <View key={r.key} style={styles.row}>
-            <Input value={r.name} onChangeText={(v) => updateMach(r.key, { name: v })} placeholder={t('e.g. Excavator')} containerStyle={styles.grow} />
-            <Input value={r.hours} onChangeText={(v) => updateMach(r.key, { hours: v })} keyboardType="decimal-pad" placeholder={t('Hrs')} containerStyle={styles.small} />
+            <Input value={r.name} onChangeText={(v) => updateMach(r.key, { name: v })} placeholder={t('e.g. Excavator')} accessibilityLabel={t('Machine')} containerStyle={styles.grow} />
+            <Input
+              value={r.hours}
+              onChangeText={(v) => updateMach(r.key, { hours: v })}
+              keyboardType="decimal-pad"
+              placeholder={t('Hrs')}
+              accessibilityLabel={r.name.trim() ? t('Hours worked by {machine}', { machine: r.name.trim() }) : t('Hours worked')}
+              containerStyle={styles.small}
+            />
             <RemoveBtn onPress={() => setMachinery((rows) => rows.filter((x) => x.key !== r.key))} />
           </View>
         ))}
@@ -279,7 +384,7 @@ export default function NewDprScreen() {
 function RemoveBtn({ onPress }: { onPress: () => void }) {
   const t = useT();
   return (
-    <Pressable onPress={onPress} style={styles.remove} hitSlop={8} accessibilityLabel={t('Remove row')}>
+    <Pressable onPress={onPress} style={styles.remove} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('Remove row')}>
       <Ionicons name="trash-outline" size={20} color={colors.danger} />
     </Pressable>
   );

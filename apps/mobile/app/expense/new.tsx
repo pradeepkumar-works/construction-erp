@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import type { ActivityDto, ExpenseCategory, ExpenseDto, PaymentMode } from '@erp/shared';
@@ -9,6 +9,7 @@ import { Button, Card, Chips, DatePicker, ErrorBanner, ErrorState, Input, Loadin
 import { attachmentIds, photosFailed, photosQueued, photosUploading, QueuedSuccess, SubmitSuccess, toOutboxPhotos, useProjectOptions } from '../../src/forms/common';
 import { attachmentsToPhotos, ReviewerNote } from '../../src/forms/edit';
 import { useT } from '../../src/i18n/LanguageContext';
+import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
 import { colors, radius, spacing, typography } from '../../src/theme';
 import { formatDate, isIsoDate, today } from '../../src/utils/format';
@@ -21,8 +22,12 @@ export default function NewExpenseScreen() {
   const params = useLocalSearchParams<{ projectId?: string; editId?: string }>();
   const editId = params.editId ?? null;
   const t = useT();
+  const errorSummary = useErrorSummary();
   const api = useApi();
-  const { online, enqueue } = useOffline();
+  const { online, enqueue, newId } = useOffline();
+  // The same id for a direct send and the outbox, so a send that timed out but arrived is never made twice
+  // (a new one for each entry made with Submit another).
+  const clientId = useRef(newId());
   const projects = useProjectOptions();
   const existing = useFetch<ExpenseDto>((a) => a.get(`/expenses/${editId}`), [editId], { enabled: !!editId, refetchOnFocus: false });
 
@@ -80,11 +85,12 @@ export default function NewExpenseScreen() {
     if (!isIsoDate(date)) e.date = t('Enter a valid date');
     if (!description.trim()) e.description = t('Say what it was for');
     if (!MONEY.test(amount.trim()) || Number(amount) <= 0) e.amount = t('Enter the amount before GST, e.g. 2400 or 2400.50');
-    if (gstin.trim() && !GSTIN_PATTERN.test(gstin.trim().toUpperCase())) e.gstin = t('Not a valid 15-character GSTIN');
+    if (gstin.trim() && !GSTIN_PATTERN.test(gstin.trim().toUpperCase())) e.gstin = t('Enter the 15-character GSTIN, or leave it blank');
     if (photosUploading(photos)) e.photos = t('Wait for photos to finish uploading');
     else if (photosFailed(photos)) e.photos = t('Remove or retry failed photos');
     else if (editId && photosQueued(photos)) e.photos = t('Photos need a connection to upload before resubmitting');
     setErrors(e);
+    errorSummary.report(e);
     return Object.keys(e).length === 0;
   };
 
@@ -116,6 +122,7 @@ export default function NewExpenseScreen() {
         const projectName = projects.options.find((o) => o.value === projectId)?.label ?? t('Project');
         setQueued(
           await enqueue({
+            id: clientId.current,
             type: 'EXPENSE',
             payload: { projectId, ...body },
             photos: toOutboxPhotos(photos),
@@ -129,7 +136,7 @@ export default function NewExpenseScreen() {
         return;
       }
       try {
-        setCreated(await api.post<ExpenseDto>('/expenses', { projectId, ...body, attachmentIds: attachmentIds(photos) }));
+        setCreated(await api.post<ExpenseDto>('/expenses', { id: clientId.current, projectId, ...body, attachmentIds: attachmentIds(photos) }));
       } catch (e) {
         if (!isOfflineError(e)) throw e;
         await queueIt();
@@ -142,6 +149,7 @@ export default function NewExpenseScreen() {
   };
 
   const reset = () => {
+    clientId.current = newId();
     setCreated(null);
     setQueued(null);
     setDescription('');
@@ -171,8 +179,9 @@ export default function NewExpenseScreen() {
   if (editId && existing.error && !existing.data) return <ErrorState message={existing.error} onRetry={existing.reload} />;
 
   return (
-    <Screen keyboard>
+    <Screen keyboard scrollRef={errorSummary.scrollRef}>
       <Stack.Screen options={{ title: editId ? t('Edit Expense') : t('New Site Expense') }} />
+      <ErrorSummary errors={errors} />
       <ErrorBanner message={submitError ?? projects.error} />
       <ReviewerNote entry={existing.data} />
       <Card>

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Alert, Appearance, DevSettings, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Appearance, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
+import { reloadAppAsync } from 'expo';
 import { ROLE_LABELS, SUBMISSION_TYPE_LABELS, approvalRightsOf } from '@erp/shared';
 import { useAuth } from '../../src/auth/AuthContext';
 import { useNotifications } from '../../src/notifications/NotificationsContext';
@@ -80,11 +81,10 @@ const styles = StyleSheet.create({
   choiceRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: touch.heightSm, gap: spacing.sm },
   choiceOff: { opacity: 0.55 },
   note: { marginTop: spacing.xs },
-  reload: { marginTop: spacing.md },
   version: { textAlign: 'center', marginTop: spacing.md },
 });
 
-/** English unless the user picks another language here; the choice stays on this phone. */
+/** The phone's language until the user picks another here; the choice stays on this phone. */
 function LanguageCard() {
   const { language, setLanguage } = useLanguage();
   const t = useT();
@@ -107,7 +107,7 @@ function LanguageCard() {
             ) : !l.available ? (
               <Text style={typography.caption}>{t('Coming soon')}</Text>
             ) : (
-              <Ionicons name="ellipse-outline" size={22} color={colors.border} />
+              <Ionicons name="ellipse-outline" size={22} color={colors.borderStrong} />
             )}
           </Pressable>
         );
@@ -116,23 +116,27 @@ function LanguageCard() {
   );
 }
 
-/** Reloading the JS picks the palette again; only a dev build (or the web) can do that from inside the app. */
-const canReload = Platform.OS === 'web' || __DEV__;
-
-function reloadApp(choice: AppearanceChoice) {
-  if (Platform.OS === 'web') return globalThis.location?.reload();
+/** The palette is picked when the JS starts, so a new choice reloads the app (UX item 80); drafts and the outbox are kept. */
+async function applyAppearance(choice: AppearanceChoice) {
+  saveAppearance(choice);
   // Clear the explicit scheme this session set, so "Same as phone" reads the phone again after the reload.
   if (choice === 'system') Appearance.setColorScheme('unspecified');
-  DevSettings.reload();
+  if (Platform.OS === 'web') return globalThis.location?.reload();
+  try {
+    await reloadAppAsync('Appearance changed');
+  } catch {
+    // Expo Go without reload support: the choice applies the next time the app opens.
+  }
 }
 
-/** Light, dark or the phone's own setting. The palette is picked when the app starts, so a new choice applies then. */
+/** Light, dark or the phone's own setting; the app redraws in the new colours at once. */
 function AppearanceCard() {
   const t = useT();
   const [choice, setChoice] = useState<AppearanceChoice>(appearance);
   const pick = (value: AppearanceChoice) => {
+    if (value === choice) return;
     setChoice(value);
-    saveAppearance(value);
+    void applyAppearance(value);
   };
   return (
     <Card title={t('Appearance')}>
@@ -141,12 +145,11 @@ function AppearanceCard() {
         return (
           <Pressable key={o.value} onPress={() => pick(o.value)} style={styles.choiceRow} accessibilityRole="radio" accessibilityState={{ selected: active }}>
             <Text style={active ? typography.bodyStrong : typography.body}>{t(o.label)}</Text>
-            <Ionicons name={active ? 'checkmark-circle' : 'ellipse-outline'} size={22} color={active ? colors.primary : colors.border} />
+            <Ionicons name={active ? 'checkmark-circle' : 'ellipse-outline'} size={22} color={active ? colors.primary : colors.borderStrong} />
           </Pressable>
         );
       })}
-      <Text style={[typography.caption, styles.note]}>{t('A new choice applies the next time you open the app.')}</Text>
-      {canReload && choice !== appearance ? <Button title={t('Reload now')} variant="secondary" size="sm" icon="refresh" onPress={() => reloadApp(choice)} style={styles.reload} /> : null}
+      <Text style={[typography.caption, styles.note]}>{t('The app restarts in the new colours. Anything you were typing is kept as a draft.')}</Text>
     </Card>
   );
 }

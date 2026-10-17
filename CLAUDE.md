@@ -102,9 +102,16 @@ cd e2e && npx playwright test         # browser tests; needs API + web running (
 - Mobile: screens in `app/`, shared UI in `src/components`, API in `src/api`, no new native deps
   without checking `node_modules/expo/bundledNativeModules.json` for the SDK-pinned version.
 - Mobile theme: `src/theme.ts` picks the light or dark palette once at start-up (Profile > Appearance, stored in
-  expo-sqlite's kv-store; a new choice applies on the next launch), so use `colors`/`statusTone`, never hex. Text styles
+  expo-sqlite's kv-store, `src/utils/kv.ts`; a new choice reloads the app with `reloadAppAsync`), so use
+  `colors`/`statusTone`, never hex; field outlines are `borderStrong`, scrims `scrim`/`scrimDeep`. Text styles
   cap growth with `maxFontSizeMultiplier={maxFontScale}` and rows use `minHeight`. Loading is `Loading` (a `Skeleton`),
   a set of actions is a `BottomSheet` (`SheetActions`), and approving goes through `reviewSubmission()` (`src/api/review.ts`).
+  A result (approved, sent, outbox drained) is `useSnackbar().show()` (bar, spoken, haptic) or `confirmResult()`.
+- Mobile forms: a new-entry form keeps a draft with `useFormDraft` + `useLeaveGuard` + `DraftNotice` (`src/forms/draft.tsx`,
+  `settle()` after anything it fills in by itself), shows `ErrorSummary` with `useErrorSummary` (`src/forms/errors.tsx`),
+  and sends one `clientId` both directly and to the outbox; a form in `OUTBOX_FIX_PATH` also opens a refused entry by
+  `?outboxId=`. Every `Input` has a `label` or an `accessibilityLabel`; dates and times are `DatePicker`/`TimePicker`
+  (the phone's own pickers). `app/dpr/new.tsx` is the reference.
 - Mobile text: wrap everything a screen shows in `t()` from `useT()` (English is the key, `{placeholders}` for values)
   and add its Hindi to `src/i18n/hi/` (see ARCHITECTURE, Languages); `npm run i18n:check` in `apps/mobile` must pass.
 

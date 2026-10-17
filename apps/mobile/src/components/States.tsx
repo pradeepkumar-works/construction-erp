@@ -62,11 +62,11 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry?: ()
   );
 }
 
-/** Inline (non-fullscreen) error banner for forms. */
+/** Inline (non-fullscreen) error banner for forms; screen readers read it out when it appears. */
 export function ErrorBanner({ message }: { message: string | null }) {
   if (!message) return null;
   return (
-    <View style={styles.banner}>
+    <View style={styles.banner} accessibilityRole="alert" accessibilityLiveRegion="polite">
       <Ionicons name="alert-circle" size={20} color={colors.danger} />
       <Text style={styles.bannerText}>{message}</Text>
     </View>

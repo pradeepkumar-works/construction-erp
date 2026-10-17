@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,8 +10,10 @@ import { useApi, useFetch } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
 import { Button, Card, Chips, DatePicker, ErrorBanner, ErrorState, Input, Loading, PhotoPicker, Screen, Select, type LocalPhoto, type SelectOption } from '../../src/components';
 import { attachmentIds, photosFailed, photosQueued, photosUploading, QueuedSuccess, SubmitSuccess, toOutboxPhotos, useProjectOptions } from '../../src/forms/common';
-import { attachmentsToPhotos, ReviewerNote } from '../../src/forms/edit';
-import { useSectorInputs } from '../../src/forms/sector';
+import { attachmentsToPhotos, outboxToPhotos, OutboxRefusal, ReviewerNote, useOutboxEntry } from '../../src/forms/edit';
+import { DraftNotice, restorePhotos, useFormDraft, useLeaveGuard } from '../../src/forms/draft';
+import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
+import { useSectorInputs, type SectorDraft } from '../../src/forms/sector';
 import { useT } from '../../src/i18n/LanguageContext';
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
 import { colors, radius, spacing, typography } from '../../src/theme';
@@ -32,13 +34,22 @@ let seq = 0;
 const blankLine = (): Line => ({ key: `l${++seq}`, description: '', nos: '1', length: '', breadth: '', depth: '', deduct: false });
 const dim = (v: string) => (v.trim() === '' ? null : v.trim());
 
-/** Record a measurement against a BOQ item (works offline through the outbox), or (with `editId`) fix and resubmit one. */
+/**
+ * Record a measurement against a BOQ item (works offline through the outbox), or (with `editId`) fix and resubmit one,
+ * or (with `outboxId`) fix one the server refused from the outbox. A new one is kept on the phone as a draft.
+ */
 export default function NewMeasurementScreen() {
-  const params = useLocalSearchParams<{ projectId?: string; editId?: string }>();
+  const params = useLocalSearchParams<{ projectId?: string; editId?: string; outboxId?: string }>();
   const editId = params.editId ?? null;
+  const outboxId = params.outboxId ?? null;
   const t = useT();
   const api = useApi();
-  const { online, enqueue } = useOffline();
+  const { online, enqueue, discard, newId } = useOffline();
+  const refused = useOutboxEntry(outboxId);
+  // The same id for a direct send and the outbox, so a send that timed out but arrived is never made twice
+  // (a new one for each sheet made with Submit another).
+  const clientId = useRef(outboxId ?? newId());
+  const errorSummary = useErrorSummary();
   const projects = useProjectOptions();
   const existing = useFetch<MeasurementSheetDto>((a) => a.get(`/measurements/${editId}`), [editId], { enabled: !!editId, refetchOnFocus: false });
 
@@ -57,9 +68,73 @@ export default function NewMeasurementScreen() {
   const [queued, setQueued] = useState<OutboxItem | null>(null);
   const sector = useSectorInputs(projectId);
 
+  const draft = useFormDraft<{ projectId: string | null; boqItemId: string | null; workOrderId: string; date: string; location: string; sector: SectorDraft; lines: Line[]; remarks: string; photos: LocalPhoto[] }>(
+    editId || outboxId ? null : 'measurement',
+    { projectId, boqItemId, workOrderId, date, location, sector: sector.value, lines, remarks, photos },
+    (d) => {
+      setProjectId(d.projectId);
+      setBoqItemId(d.boqItemId);
+      setWorkOrderId(d.workOrderId);
+      setDate(d.date);
+      setLocation(d.location);
+      sector.restore(d.sector);
+      // New keys: the saved ones may clash with lines numbered since the app started.
+      setLines(d.lines.length ? d.lines.map((l) => ({ ...l, key: `l${++seq}` })) : [blankLine()]);
+      setRemarks(d.remarks);
+      setPhotos(restorePhotos(d.photos));
+    },
+  );
+  useLeaveGuard(draft, { keepsDraft: !editId && !outboxId, busy });
+  const startOver = () => {
+    setProjectId(params.projectId ?? (projects.options.length === 1 ? projects.options[0].value : null));
+    setBoqItemId(null);
+    setWorkOrderId('');
+    setDate(today());
+    setLocation('');
+    sector.clear();
+    setLines([blankLine()]);
+    setRemarks('');
+    setPhotos([]);
+    setErrors({});
+  };
+
   useEffect(() => {
-    if (!editId && !projectId && projects.options.length === 1) setProjectId(projects.options[0].value);
-  }, [editId, projects.options, projectId]);
+    if (!editId && !outboxId && !projectId && projects.options.length === 1) {
+      setProjectId(projects.options[0].value);
+      draft.settle();
+    }
+  }, [editId, outboxId, projects.options, projectId, draft.settle]);
+
+  // Fixing a refused outbox entry: fill the form from what was queued.
+  const [refusedLoaded, setRefusedLoaded] = useState(false);
+  useEffect(() => {
+    if (!refused || refusedLoaded) return;
+    const p = refused.payload as {
+      projectId: string;
+      boqItemId: string;
+      workOrderId?: string;
+      date: string;
+      location?: string;
+      remarks?: string;
+      chainageFrom?: number;
+      chainageTo?: number;
+      floor?: string;
+      village?: string;
+      lines?: { description: string; nos: string | null; length: string | null; breadth: string | null; depth: string | null; deduct: boolean }[];
+    };
+    setProjectId(p.projectId);
+    setBoqItemId(p.boqItemId);
+    setWorkOrderId(p.workOrderId ?? '');
+    setDate(p.date);
+    setLocation(p.location ?? '');
+    sector.load(p);
+    setRemarks(p.remarks ?? '');
+    if (p.lines?.length) setLines(p.lines.map((l) => ({ key: `l${++seq}`, description: l.description, nos: l.nos ?? '', length: l.length ?? '', breadth: l.breadth ?? '', depth: l.depth ?? '', deduct: l.deduct })));
+    setPhotos(outboxToPhotos(refused.photos));
+    setRefusedLoaded(true);
+    draft.settle();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refused, refusedLoaded, draft.settle]);
 
   useEffect(() => {
     const m = existing.data;
@@ -73,6 +148,8 @@ export default function NewMeasurementScreen() {
     setRemarks(m.remarks ?? '');
     setLines(m.lines.map((l) => ({ key: `l${++seq}`, description: l.description, nos: l.nos ?? '', length: l.length ?? '', breadth: l.breadth ?? '', depth: l.depth ?? '', deduct: l.deduct })));
     setPhotos(attachmentsToPhotos(m.attachments));
+    draft.settle();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [existing.data]);
 
   const boq = useFetch<BoqItemDto[]>((a) => a.get(`/projects/${projectId}/boq`), [projectId], { enabled: !!projectId, refetchOnFocus: false, cacheKey: `boq:${projectId}` });
@@ -101,16 +178,17 @@ export default function NewMeasurementScreen() {
     const tagged = sector.body(false);
     if (!location.trim() && tagged.chainageFrom === undefined && !tagged.floor && !tagged.village) e.location = t('Say where, e.g. Ch 2+100 to 2+350 or Grid A1-C4');
     lines.forEach((l, i) => {
-      if (!l.description.trim()) e[`d${l.key}`] = t('Describe the line');
+      if (!l.description.trim()) e[`d${l.key}`] = t('Line {n}: describe what was measured', { n: i + 1 });
       const bad = [l.nos, l.length, l.breadth, l.depth].some((v) => v.trim() !== '' && !NUM.test(v.trim()));
-      if (bad) e[`n${l.key}`] = t('Numbers only, up to 3 decimals');
-      else if (!hasDimensions(asInput[i])) e[`n${l.key}`] = t('Enter nos or a dimension');
+      if (bad) e[`n${l.key}`] = t('Line {n}: enter sizes as numbers with up to 3 decimals', { n: i + 1 });
+      else if (!hasDimensions(asInput[i])) e[`n${l.key}`] = t('Line {n}: enter the nos or a size', { n: i + 1 });
     });
-    if (!e.lines && total <= 0) e.total = t('The total must be more than zero');
+    if (!e.lines && total <= 0) e.total = t('Make the total more than zero: check the sizes and the deductions');
     if (photosUploading(photos)) e.photos = t('Wait for photos to finish uploading');
     else if (photosFailed(photos)) e.photos = t('Remove or retry failed photos');
     else if (editId && photosQueued(photos)) e.photos = t('Photos need a connection to upload before resubmitting');
     setErrors(e);
+    errorSummary.report(e);
     return Object.keys(e).length === 0;
   };
 
@@ -130,12 +208,15 @@ export default function NewMeasurementScreen() {
       };
       if (editId) {
         setCreated(await api.patch<MeasurementSheetDto>(`/measurements/${editId}`, { ...body, attachmentIds: attachmentIds(photos), submit: true }));
+        draft.clear();
         return;
       }
       const queueIt = async () => {
         const projectName = projects.options.find((o) => o.value === projectId)?.label ?? t('Project');
+        draft.clear();
         setQueued(
           await enqueue({
+            id: clientId.current,
             type: 'MEASUREMENT',
             payload: { projectId, ...body },
             photos: toOutboxPhotos(photos),
@@ -149,7 +230,10 @@ export default function NewMeasurementScreen() {
         return;
       }
       try {
-        setCreated(await api.post<MeasurementSheetDto>('/measurements', { projectId, ...body, attachmentIds: attachmentIds(photos) }));
+        const sheet = await api.post<MeasurementSheetDto>('/measurements', { id: clientId.current, projectId, ...body, attachmentIds: attachmentIds(photos) });
+        draft.clear();
+        if (outboxId) await discard(outboxId);
+        setCreated(sheet);
       } catch (e) {
         if (!isOfflineError(e)) throw e;
         await queueIt();
@@ -162,6 +246,7 @@ export default function NewMeasurementScreen() {
   };
 
   const reset = () => {
+    clientId.current = newId();
     setCreated(null);
     setQueued(null);
     setLocation('');
@@ -170,16 +255,18 @@ export default function NewMeasurementScreen() {
     setRemarks('');
     setPhotos([]);
     setErrors({});
+    // What stays (project, BOQ item, date) is the next sheet's starting point, not unsent work.
+    draft.settle();
   };
 
-  if (queued) return <QueuedSuccess title={t('Saved on this phone')} subtitle={`${queued.title} · ${queued.subtitle}`} onAnother={reset} />;
+  if (queued) return <QueuedSuccess title={t('Saved on this phone')} subtitle={`${queued.title} · ${queued.subtitle}`} onAnother={outboxId ? undefined : reset} />;
   if (created) {
     return (
       <SubmitSuccess
         title={editId ? t('Measurement resubmitted') : t('Measurement submitted')}
         subtitle={t('{mb}: {qty} {unit} of item {item} at {location}. Sent for approval.', { mb: created.mbNo, qty: fmtQty(created.totalQty), unit: created.unit, item: created.boqItemNo, location: created.location })}
         detailHref={`/measurement/${created.id}`}
-        onAnother={editId ? undefined : reset}
+        onAnother={editId || outboxId ? undefined : reset}
       />
     );
   }
@@ -188,10 +275,13 @@ export default function NewMeasurementScreen() {
   if (editId && existing.error && !existing.data) return <ErrorState message={existing.error} onRetry={existing.reload} />;
 
   return (
-    <Screen keyboard>
-      <Stack.Screen options={{ title: editId ? t('Edit Measurement') : t('New Measurement') }} />
+    <Screen keyboard scrollRef={errorSummary.scrollRef}>
+      <Stack.Screen options={{ title: editId ? t('Edit Measurement') : outboxId ? t('Fix Measurement') : t('New Measurement') }} />
+      <DraftNotice draft={draft} onStartOver={startOver} />
+      <ErrorSummary errors={errors} />
       <ErrorBanner message={submitError ?? projects.error ?? boq.error} />
       <ReviewerNote entry={existing.data} />
+      <OutboxRefusal item={refused} />
       <Card>
         <Select
           label={t('Project')}
@@ -235,7 +325,7 @@ export default function NewMeasurementScreen() {
             <View style={styles.lineHead}>
               <Text style={typography.label}>{t('Line {n}', { n: i + 1 })}</Text>
               {lines.length > 1 ? (
-                <Pressable onPress={() => setLines((ls) => ls.filter((x) => x.key !== l.key))} hitSlop={10} accessibilityLabel={t('Remove line {n}', { n: i + 1 })}>
+                <Pressable onPress={() => setLines((ls) => ls.filter((x) => x.key !== l.key))} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('Remove line {n}', { n: i + 1 })}>
                   <Ionicons name="trash-outline" size={20} color={colors.danger} />
                 </Pressable>
               ) : null}
@@ -244,13 +334,13 @@ export default function NewMeasurementScreen() {
             <View style={styles.dims}>
               {(
                 [
-                  ['nos', 'Nos'],
-                  ['length', 'L'],
-                  ['breadth', 'B'],
-                  ['depth', 'D / H'],
+                  ['nos', 'Nos', 'Line {n}: number (nos)'],
+                  ['length', 'L', 'Line {n}: length'],
+                  ['breadth', 'B', 'Line {n}: breadth'],
+                  ['depth', 'D / H', 'Line {n}: depth or height'],
                 ] as const
-              ).map(([k, label]) => (
-                <Input key={k} label={label} value={l[k]} onChangeText={(v) => setLine(l.key, { [k]: v })} keyboardType="decimal-pad" containerStyle={styles.dim} />
+              ).map(([k, label, name]) => (
+                <Input key={k} label={label} accessibilityLabel={t(name, { n: i + 1 })} value={l[k]} onChangeText={(v) => setLine(l.key, { [k]: v })} keyboardType="decimal-pad" containerStyle={styles.dim} />
               ))}
             </View>
             {errors[`n${l.key}`] ? <Text style={styles.err}>{errors[`n${l.key}`]}</Text> : null}

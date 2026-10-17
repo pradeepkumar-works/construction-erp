@@ -17,6 +17,7 @@ import { useApi } from '../api/hooks';
 import { errorMessage } from '../api/client';
 import { reviewSubmission } from '../api/review';
 import { ErrorBanner } from './States';
+import { useSnackbar } from './Snackbar';
 import { useAuth } from '../auth/AuthContext';
 import { canEditSubmission, canResubmit, mayApproveType } from '@erp/shared';
 import { useT } from '../i18n/LanguageContext';
@@ -88,10 +89,10 @@ export function AttachmentGallery({ attachments }: { attachments: AttachmentDto[
         </View>
       ))}
       <Modal visible={!!open} transparent animationType="fade" onRequestClose={() => setOpen(null)}>
-        <Pressable style={styles.lightbox} onPress={() => setOpen(null)}>
+        <Pressable style={styles.lightbox} onPress={() => setOpen(null)} accessibilityRole="button" accessibilityLabel={t('Close photo')}>
           {open ? <Image source={{ uri: absoluteUrl(open.url) }} style={styles.full} contentFit="contain" /> : null}
           <View style={styles.lightboxClose}>
-            <Ionicons name="close-circle" size={36} color={colors.onBrand} />
+            <Ionicons name="close-circle" size={36} color={colors.onOverlay} />
           </View>
         </Pressable>
       </Modal>
@@ -99,10 +100,10 @@ export function AttachmentGallery({ attachments }: { attachments: AttachmentDto[
   );
 }
 
-const DECISIONS: { decision: ReviewDecision; label: string; confirm: string; variant: 'success' | 'accent' | 'danger'; icon: 'checkmark' | 'create-outline' | 'close' }[] = [
-  { decision: 'APPROVE', label: 'Approve', confirm: 'Confirm approve', variant: 'success', icon: 'checkmark' },
-  { decision: 'REQUEST_CHANGES', label: 'Request changes', confirm: 'Confirm request changes', variant: 'accent', icon: 'create-outline' },
-  { decision: 'REJECT', label: 'Reject', confirm: 'Confirm reject', variant: 'danger', icon: 'close' },
+const DECISIONS: { decision: ReviewDecision; label: string; confirm: string; done: string; variant: 'success' | 'accent' | 'danger'; icon: 'checkmark' | 'create-outline' | 'close' }[] = [
+  { decision: 'APPROVE', label: 'Approve', confirm: 'Confirm approve', done: 'Approved', variant: 'success', icon: 'checkmark' },
+  { decision: 'REQUEST_CHANGES', label: 'Request changes', confirm: 'Confirm request changes', done: 'Sent back for changes', variant: 'accent', icon: 'create-outline' },
+  { decision: 'REJECT', label: 'Reject', confirm: 'Confirm reject', done: 'Rejected', variant: 'danger', icon: 'close' },
 ];
 
 /** Entry forms on the phone; RA bills, purchase orders and vendor bills are prepared on the web. */
@@ -133,6 +134,7 @@ export function ReviewActions<T extends SubmissionBase>({ type, item, onReviewed
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const t = useT();
+  const snackbar = useSnackbar();
 
   const known = item as unknown as { totalAmount?: string; amount?: string; grossAmount?: string };
   const amount = type === 'EXPENSE' ? known.totalAmount : type === 'MEASUREMENT' ? known.amount : type === 'BILL' ? known.grossAmount : undefined;
@@ -150,6 +152,7 @@ export function ReviewActions<T extends SubmissionBase>({ type, item, onReviewed
       setPending(null);
       setNote('');
       onReviewed(updated);
+      if (meta) snackbar.show(t(meta.done), { tone: pending === 'APPROVE' ? 'success' : 'info' });
     } catch (e) {
       setError(errorMessage(e));
     } finally {
@@ -166,7 +169,7 @@ export function ReviewActions<T extends SubmissionBase>({ type, item, onReviewed
         ))}
       </View>
       <BottomSheet visible={!!pending} onClose={() => setPending(null)} dismissable={!busy} title={meta ? t(meta.label) : undefined} subtitle={t('Add an optional note for the submitter.')}>
-        <Input value={note} onChangeText={setNote} placeholder={t('Note (optional)')} multiline autoFocus />
+        <Input value={note} onChangeText={setNote} placeholder={t('Note (optional)')} accessibilityLabel={t('Note for the submitter (optional)')} multiline autoFocus />
         <ErrorBanner message={error} />
         <View style={styles.sheetBtns}>
           <Button title={t('Cancel')} variant="ghost" onPress={() => setPending(null)} disabled={busy} style={styles.flex} />
@@ -217,7 +220,7 @@ const styles = StyleSheet.create({
   thumb: { width: '100%', height: '100%' },
   fileRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm },
   fileName: { ...typography.body, flex: 1 },
-  lightbox: { flex: 1, backgroundColor: colors.text, alignItems: 'center', justifyContent: 'center' },
+  lightbox: { flex: 1, backgroundColor: colors.scrimDeep, alignItems: 'center', justifyContent: 'center' },
   full: { width: '100%', height: '85%' },
   lightboxClose: { position: 'absolute', top: 48, right: 20 },
   reviewHint: { marginBottom: spacing.md },

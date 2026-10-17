@@ -128,6 +128,11 @@ export const COMMERCIAL: Record<string, string> = {
   'Meter start': 'मीटर शुरू',
   'Meter end': 'मीटर अंत',
   'Diesel filled (litres)': 'डीज़ल भरा (लीटर)',
+  'Enter the idle hours as a number': 'खाली रहने के घंटे संख्या में डालें',
+  'Enter the breakdown hours as a number': 'ब्रेकडाउन के घंटे संख्या में डालें',
+  'Enter the meter start as a number': 'शुरू की मीटर रीडिंग संख्या में डालें',
+  'Enter the meter end as a number': 'आख़िरी मीटर रीडिंग संख्या में डालें',
+  'Enter the diesel litres as a number': 'डीज़ल के लीटर संख्या में डालें',
   'e.g. 60': 'जैसे 60',
   'Details (optional)': 'विवरण (ज़रूरी नहीं)',
   'Choose activity': 'गतिविधि चुनें',
@@ -149,6 +154,7 @@ export const COMMERCIAL: Record<string, string> = {
   'You are offline. A breakdown is sent straight away, so it needs a connection.': 'आप ऑफ़लाइन हैं। ब्रेकडाउन की सूचना तुरंत भेजी जाती है, इसलिए इंटरनेट चाहिए।',
   'Stopped on': 'कब बंद हुई',
   'Hour meter / km': 'आवर मीटर / किमी',
+  'Enter the meter reading as a number': 'मीटर रीडिंग संख्या में डालें',
   'Hydraulic hose burst on the boom; machine stopped at Ch 14+600': 'बूम का हाइड्रोलिक पाइप फट गया; मशीन Ch 14+600 पर रुकी',
 
   // Progress by place
