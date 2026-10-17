@@ -1,11 +1,12 @@
-import { Appearance, Platform } from 'react-native';
+import { Appearance } from 'react-native';
 import type { SubmissionStatus } from '@erp/shared';
+import { kvGet, kvSet } from './utils/kv';
 
 /**
  * Light, dark or the phone's own setting, chosen under Profile > Appearance. Screens build their `StyleSheet`s from
- * `colors` when their module loads, so the palette is picked once, here, when the JS starts: a new choice applies the
- * next time the app opens. The choice is read synchronously (expo-sqlite's key-value store; localStorage on web) so
- * the first frame is already in the right colours.
+ * `colors` when their module loads, so the palette is picked once, here, when the JS starts; a new choice reloads the
+ * app (Profile's `applyAppearance`). The choice is read synchronously (expo-sqlite's key-value store; localStorage on
+ * web) so the first frame is already in the right colours.
  */
 export type AppearanceChoice = 'light' | 'dark' | 'system';
 
@@ -19,28 +20,14 @@ const APPEARANCE_KEY = 'nirmaan.appearance';
 
 const isChoice = (v: unknown): v is AppearanceChoice => v === 'light' || v === 'dark' || v === 'system';
 
-function kvStore() {
-  // Required lazily so the web bundle never evaluates the native module (as in src/offline/db.ts).
-  return (require('expo-sqlite/kv-store') as typeof import('expo-sqlite/kv-store')).Storage;
-}
-
 function readChoice(): AppearanceChoice {
-  try {
-    const v = Platform.OS === 'web' ? globalThis.localStorage?.getItem(APPEARANCE_KEY) : kvStore().getItemSync(APPEARANCE_KEY);
-    return isChoice(v) ? v : 'system';
-  } catch {
-    return 'system';
-  }
+  const v = kvGet(APPEARANCE_KEY);
+  return isChoice(v) ? v : 'system';
 }
 
-/** Saves the choice for the next launch; the palette in use does not change until then. */
+/** Saves the choice; the palette in use changes when the JS next starts. */
 export function saveAppearance(choice: AppearanceChoice) {
-  try {
-    if (Platform.OS === 'web') globalThis.localStorage?.setItem(APPEARANCE_KEY, choice);
-    else kvStore().setItemSync(APPEARANCE_KEY, choice);
-  } catch {
-    // Storage unavailable: the app keeps following the phone.
-  }
+  kvSet(APPEARANCE_KEY, choice);
 }
 
 /** The choice the running palette was picked from. */
@@ -82,6 +69,9 @@ const TILES = {
   onTile: '#FFFFFF',
   /** Icons and text over a photo or the black lightbox scrim. */
   onOverlay: '#FFFFFF',
+  /** Behind a sheet or a photo: black in both palettes, so the page dims rather than turning grey at night. */
+  scrim: 'rgba(0,0,0,0.55)',
+  scrimDeep: 'rgba(0,0,0,0.92)',
 };
 
 /**
@@ -103,6 +93,8 @@ const LIGHT = {
   bg: '#F3F6FA',
   surface: '#FFFFFF',
   border: '#DCE3ED',
+  /** Outlines of fields and the off state of radios: 3:1 on white and on the canvas, so empty fields show in sunlight. */
+  borderStrong: '#7B8798',
   text: '#0F1B2D',
   textMuted: '#5B6779',
   textOnPrimary: '#FFFFFF',
@@ -136,6 +128,7 @@ const DARK: typeof LIGHT = {
   bg: '#0B1119',
   surface: '#121A25',
   border: '#2B3747',
+  borderStrong: '#66738A',
   text: '#E3EAF4',
   textMuted: '#9AA7B8',
   textOnPrimary: '#0B1119',

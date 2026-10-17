@@ -9,6 +9,7 @@ import { errorMessage } from '../../src/api/client';
 import { Button, Card, Chips, DatePicker, EmptyState, ErrorBanner, Input, Loading, Screen, Select } from '../../src/components';
 import { SubmitSuccess, useProjectOptions } from '../../src/forms/common';
 import { useT } from '../../src/i18n/LanguageContext';
+import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
 import { useOffline } from '../../src/offline';
 import { colors, spacing, typography } from '../../src/theme';
 import { fmtQty, isIsoDate, today } from '../../src/utils/format';
@@ -27,6 +28,7 @@ export default function IssueScreen() {
   const params = useLocalSearchParams<{ projectId?: string }>();
   const { user } = useAuth();
   const t = useT();
+  const errorSummary = useErrorSummary();
   const api = useApi();
   const { online } = useOffline();
   const projects = useProjectOptions();
@@ -70,17 +72,18 @@ export default function IssueScreen() {
     const e: Record<string, string> = {};
     if (!projectId) e.projectId = t('Choose a project');
     if (!isIsoDate(date)) e.date = t('Enter a valid date');
-    else if (date > today()) e.date = t('The date cannot be in the future');
-    if (!issuedTo.trim()) e.issuedTo = t('Who took the material?');
+    else if (date > today()) e.date = t('Enter a date up to today');
+    if (!issuedTo.trim()) e.issuedTo = t('Enter who took the material');
     const used = rows.filter((r) => r.itemId || r.quantity.trim());
     if (!used.length) e.lines = t('Add at least one item');
     for (const r of used) {
       const item = r.itemId ? byId.get(r.itemId) : undefined;
       if (!item) e[r.key] = t('Choose the item');
       else if (!QTY.test(r.quantity.trim()) || Number(r.quantity) <= 0) e[r.key] = t('Enter a quantity (up to 3 decimals)');
-      else if (Number(r.quantity) > Number(item.balance)) e[r.key] = t('Only {qty} {unit} in stock', { qty: fmtQty(item.balance), unit: item.unit });
+      else if (Number(r.quantity) > Number(item.balance)) e[r.key] = t('Enter at most {qty} {unit}, the stock on hand', { qty: fmtQty(item.balance), unit: item.unit });
     }
     setErrors(e);
+    errorSummary.report(e);
     return Object.keys(e).length === 0;
   };
 
@@ -119,8 +122,9 @@ export default function IssueScreen() {
   const contractors = (suggestions.data?.contractors ?? []).slice(0, 8);
 
   return (
-    <Screen keyboard>
+    <Screen keyboard scrollRef={errorSummary.scrollRef}>
       <Stack.Screen options={{ title: t('Issue Material') }} />
+      <ErrorSummary errors={errors} />
       <ErrorBanner message={submitError ?? projects.error ?? (online ? stock.error : t('You are offline. Issuing material needs a connection.'))} />
       <Card>
         <Select
@@ -175,6 +179,7 @@ export default function IssueScreen() {
                   onChangeText={(v) => updateRow(r.key, { quantity: v })}
                   keyboardType="decimal-pad"
                   placeholder={t('Quantity')}
+                  accessibilityLabel={item ? t('Quantity of {item} to issue', { item: item.itemName }) : t('Quantity to issue')}
                   right={item ? <Text style={typography.caption}>{item.unit}</Text> : undefined}
                   hint={item ? t('{qty} {unit} in stock', { qty: fmtQty(item.balance), unit: item.unit }) : undefined}
                   error={errors[r.key]}
@@ -182,7 +187,7 @@ export default function IssueScreen() {
                 />
               </View>
               {rows.length > 1 ? (
-                <Pressable onPress={() => setRows((rs) => rs.filter((x) => x.key !== r.key))} style={styles.remove} hitSlop={8} accessibilityLabel={t('Remove item')}>
+                <Pressable onPress={() => setRows((rs) => rs.filter((x) => x.key !== r.key))} style={styles.remove} hitSlop={8} accessibilityRole="button" accessibilityLabel={item ? t('Remove {item}', { item: item.itemName }) : t('Remove item')}>
                   <Ionicons name="close-circle-outline" size={22} color={colors.textMuted} />
                 </Pressable>
               ) : null}

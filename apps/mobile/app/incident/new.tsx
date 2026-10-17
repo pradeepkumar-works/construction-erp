@@ -1,16 +1,17 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import type { SafetyIncidentDto, SafetyIncidentType } from '@erp/shared';
 import { INJURY_TYPES, SAFETY_INCIDENT_TYPES, SAFETY_INCIDENT_TYPE_LABELS, isReportableIncident } from '@erp/shared';
 import { useApi } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
-import { Button, Card, DatePicker, ErrorBanner, Input, Loading, PhotoPicker, Screen, Select, type LocalPhoto } from '../../src/components';
+import { Button, Card, DatePicker, ErrorBanner, Input, TimePicker, Loading, PhotoPicker, Screen, Select, type LocalPhoto } from '../../src/components';
 import { attachmentIds, photosFailed, photosQueued, photosUploading, QueuedSuccess, SubmitSuccess, toOutboxPhotos, useProjectOptions } from '../../src/forms/common';
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
 import { colors, spacing } from '../../src/theme';
 import { formatDate, isIsoDate, today } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
+import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
 
 const nowTime = () => {
   const d = new Date();
@@ -22,7 +23,11 @@ export default function IncidentFormScreen() {
   const params = useLocalSearchParams<{ projectId?: string; nearMiss?: string }>();
   const api = useApi();
   const t = useT();
-  const { online, enqueue } = useOffline();
+  const errorSummary = useErrorSummary();
+  const { online, enqueue, newId } = useOffline();
+  // The same id for a direct send and the outbox, so a send that timed out but arrived is never made twice
+  // (a new one for each entry made with Submit another).
+  const clientId = useRef(newId());
   const projects = useProjectOptions();
 
   const [projectId, setProjectId] = useState<string | null>(params.projectId ?? null);
@@ -52,15 +57,16 @@ export default function IncidentFormScreen() {
   const validate = () => {
     const e: Record<string, string> = {};
     if (!projectId) e.projectId = t('Choose a project');
-    if (!type) e.type = t('Pick what kind');
+    if (!type) e.type = t('Choose what kind it was');
     if (!isIsoDate(date) || date > today()) e.date = t('Enter a date up to today');
-    if (time.trim() && !/^([01]\d|2[0-3]):[0-5]\d$/.test(time.trim())) e.time = t('Like 15:40');
-    if (!location.trim()) e.location = t('Where did it happen?');
+    if (time.trim() && !/^([01]\d|2[0-3]):[0-5]\d$/.test(time.trim())) e.time = t('Enter the time like 15:40');
+    if (!location.trim()) e.location = t('Say where it happened');
     if (!description.trim()) e.description = t('Describe what happened');
-    if (hurt && !(Number(injured) >= 1)) e.injured = t('At least 1');
+    if (hurt && !(Number(injured) >= 1)) e.injured = t('Enter how many were hurt (at least 1)');
     if (photosUploading(photos)) e.photos = t('Wait for photos to finish uploading');
     else if (photosFailed(photos)) e.photos = t('Remove or retry failed photos');
     setErrors(e);
+    errorSummary.report(e);
     return Object.keys(e).length === 0;
   };
 
@@ -85,14 +91,14 @@ export default function IncidentFormScreen() {
       };
       const queueIt = async () => {
         const projectName = projects.options.find((o) => o.value === projectId)?.label ?? t('Project');
-        setQueued(await enqueue({ type: 'SAFETY_INCIDENT', payload: body, photos: toOutboxPhotos(photos), title: `${t(SAFETY_INCIDENT_TYPE_LABELS[type])} · ${location.trim()}`, subtitle: `${projectName} · ${formatDate(date)}` }));
+        setQueued(await enqueue({ id: clientId.current, type: 'SAFETY_INCIDENT', payload: body, photos: toOutboxPhotos(photos), title: `${t(SAFETY_INCIDENT_TYPE_LABELS[type])} · ${location.trim()}`, subtitle: `${projectName} · ${formatDate(date)}` }));
       };
       if (!online || photosQueued(photos)) {
         await queueIt();
         return;
       }
       try {
-        setSaved(await api.post<SafetyIncidentDto>('/safety/incidents', { ...body, attachmentIds: attachmentIds(photos) }));
+        setSaved(await api.post<SafetyIncidentDto>('/safety/incidents', { id: clientId.current, ...body, attachmentIds: attachmentIds(photos) }));
       } catch (e) {
         if (!isOfflineError(e)) throw e;
         await queueIt();
@@ -105,6 +111,7 @@ export default function IncidentFormScreen() {
   };
 
   const reset = () => {
+    clientId.current = newId();
     setSaved(null);
     setQueued(null);
     setLocation('');
@@ -130,14 +137,15 @@ export default function IncidentFormScreen() {
   if (projects.loading && !projects.data) return <Loading />;
 
   return (
-    <Screen keyboard>
+    <Screen keyboard scrollRef={errorSummary.scrollRef}>
       <Stack.Screen options={{ title: t(type === 'NEAR_MISS' ? 'Report a Near Miss' : 'Report an Incident') }} />
+      <ErrorSummary errors={errors} />
       <ErrorBanner message={submitError ?? projects.error} />
       <Card>
         <Select label={t('Project')} required value={projectId} options={projects.options} onChange={setProjectId} placeholder={t('Choose project')} error={errors.projectId} />
         <Select label={t('What kind')} required value={type} options={SAFETY_INCIDENT_TYPES.map((k) => ({ value: k, label: t(SAFETY_INCIDENT_TYPE_LABELS[k]) }))} onChange={setType} placeholder={t('Near miss, first aid...')} error={errors.type} />
         <DatePicker label={t('Date')} required value={date} onChange={setDate} error={errors.date} />
-        <Input label={t('Time')} value={time} onChangeText={setTime} placeholder="HH:mm" keyboardType="numbers-and-punctuation" maxLength={5} error={errors.time} />
+        <TimePicker label={t('Time')} value={time} onChange={setTime} error={errors.time} />
         <Input label={t('Where')} required value={location} onChangeText={setLocation} placeholder={t('Chainage, block and floor, yard')} maxLength={200} error={errors.location} />
         <Input label={t('What happened')} required value={description} onChangeText={setDescription} multiline maxLength={4000} error={errors.description} />
       </Card>

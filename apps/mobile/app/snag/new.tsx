@@ -11,6 +11,7 @@ import { useOffline } from '../../src/offline';
 import { colors, spacing } from '../../src/theme';
 import { isIsoDate, today } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
+import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
 
 /**
  * Report a snag (before handover) or a defect (in the defect liability period) with photos (v4 item 47). Which one it is
@@ -20,6 +21,7 @@ export default function ReportSnagScreen() {
   const params = useLocalSearchParams<{ projectId?: string }>();
   const api = useApi();
   const t = useT();
+  const errorSummary = useErrorSummary();
   const { online } = useOffline();
   const projects = useProjectOptions();
   const [projectId, setProjectId] = useState<string | null>(params.projectId ?? null);
@@ -44,10 +46,11 @@ export default function ReportSnagScreen() {
     const e: Record<string, string> = {};
     if (!projectId) e.projectId = t('Choose a project');
     if (!title.trim()) e.title = t('Say what is wrong');
-    if (dueDate && !isIsoDate(dueDate)) e.dueDate = t('Enter a date');
+    if (dueDate && !isIsoDate(dueDate)) e.dueDate = t('Enter a valid due date');
     if (photosUploading(photos)) e.photos = t('Wait for photos to finish uploading');
     else if (photosFailed(photos) || photosQueued(photos)) e.photos = t('Photos need a connection; remove them or try again');
     setErrors(e);
+    errorSummary.report(e);
     return Object.keys(e).length === 0;
   };
 
@@ -90,8 +93,9 @@ export default function ReportSnagScreen() {
   if (projects.loading && !projects.data) return <Loading />;
 
   return (
-    <Screen keyboard>
+    <Screen keyboard scrollRef={errorSummary.scrollRef}>
       <Stack.Screen options={{ title: t('Report Snag') }} />
+      <ErrorSummary errors={errors} />
       <ErrorBanner message={submitError ?? projects.error ?? (online ? null : t('You are offline. A snag is sent straight away, so it needs a connection.'))} />
       <Card>
         <Select label={t('Project')} required value={projectId} options={projects.options} onChange={setProjectId} placeholder={t('Choose project')} error={errors.projectId} />

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import type { ActivityDto, ProgressEntryDto } from '@erp/shared';
@@ -7,20 +7,31 @@ import { useApi, useFetch } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
 import { Button, Card, DatePicker, ErrorBanner, ErrorState, Input, Loading, PhotoPicker, Screen, Select, type LocalPhoto, type SelectOption } from '../../src/components';
 import { attachmentIds, photosFailed, photosQueued, photosUploading, QueuedSuccess, SubmitSuccess, toOutboxPhotos, useProjectOptions } from '../../src/forms/common';
-import { attachmentsToPhotos, ReviewerNote } from '../../src/forms/edit';
-import { useSectorInputs } from '../../src/forms/sector';
+import { attachmentsToPhotos, outboxToPhotos, OutboxRefusal, ReviewerNote, useOutboxEntry } from '../../src/forms/edit';
+import { DraftNotice, restorePhotos, useFormDraft, useLeaveGuard } from '../../src/forms/draft';
+import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
+import { useSectorInputs, type SectorDraft } from '../../src/forms/sector';
 import { useT } from '../../src/i18n/LanguageContext';
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
 import { colors, spacing, typography } from '../../src/theme';
 import { fmtQty, formatDate, isIsoDate, today } from '../../src/utils/format';
 
-/** New progress entry, or (with `editId`) edit a draft / rejected / changes-requested entry and resubmit it. */
+/**
+ * New progress entry, or (with `editId`) edit a draft / rejected / changes-requested entry and resubmit it, or (with
+ * `outboxId`) fix one the server refused from the outbox. A new entry is kept on the phone as a draft while it is typed.
+ */
 export default function NewProgressScreen() {
-  const params = useLocalSearchParams<{ projectId?: string; activityId?: string; editId?: string }>();
+  const params = useLocalSearchParams<{ projectId?: string; activityId?: string; editId?: string; outboxId?: string }>();
   const editId = params.editId ?? null;
+  const outboxId = params.outboxId ?? null;
   const t = useT();
   const api = useApi();
-  const { online, enqueue } = useOffline();
+  const { online, enqueue, discard, newId } = useOffline();
+  const refused = useOutboxEntry(outboxId);
+  // The same id for a direct send and the outbox, so a send that timed out but arrived is never made twice
+  // (a new one for each entry made with Submit another).
+  const clientId = useRef(outboxId ?? newId());
+  const errorSummary = useErrorSummary();
   const projects = useProjectOptions();
   const existing = useFetch<ProgressEntryDto>((a) => a.get(`/progress/${editId}`), [editId], { enabled: !!editId, refetchOnFocus: false });
 
@@ -40,10 +51,64 @@ export default function NewProgressScreen() {
   const [queued, setQueued] = useState<OutboxItem | null>(null);
   const sector = useSectorInputs(projectId);
 
+  const draft = useFormDraft<{ projectId: string | null; activityId: string | null; date: string; quantity: string; location: string; sector: SectorDraft; manpower: string; machinery: string; remarks: string; photos: LocalPhoto[] }>(
+    editId || outboxId ? null : 'progress',
+    { projectId, activityId, date, quantity, location, sector: sector.value, manpower, machinery, remarks, photos },
+    (d) => {
+      setProjectId(d.projectId);
+      setActivityId(d.activityId);
+      setDate(d.date);
+      setQuantity(d.quantity);
+      setLocation(d.location);
+      sector.restore(d.sector);
+      setManpower(d.manpower);
+      setMachinery(d.machinery);
+      setRemarks(d.remarks);
+      setPhotos(restorePhotos(d.photos));
+    },
+  );
+  useLeaveGuard(draft, { keepsDraft: !editId && !outboxId, busy });
+  const startOver = () => {
+    setProjectId(params.projectId ?? (projects.options.length === 1 ? projects.options[0].value : null));
+    setActivityId(params.activityId ?? null);
+    setDate(today());
+    setQuantity('');
+    setLocation('');
+    sector.clear();
+    setManpower('');
+    setMachinery('');
+    setRemarks('');
+    setPhotos([]);
+    setErrors({});
+  };
+
   // Default to the only project when the user has just one.
   useEffect(() => {
-    if (!editId && !projectId && projects.options.length === 1) setProjectId(projects.options[0].value);
-  }, [editId, projects.options, projectId]);
+    if (!editId && !outboxId && !projectId && projects.options.length === 1) {
+      setProjectId(projects.options[0].value);
+      draft.settle();
+    }
+  }, [editId, outboxId, projects.options, projectId, draft.settle]);
+
+  // Fixing a refused outbox entry: fill the form from what was queued.
+  const [refusedLoaded, setRefusedLoaded] = useState(false);
+  useEffect(() => {
+    if (!refused || refusedLoaded) return;
+    const p = refused.payload as { projectId: string; activityId: string; date: string; quantity: string; location?: string; remarks?: string; manpowerCount?: number; machineryUsed?: string; chainageFrom?: number; chainageTo?: number; floor?: string; village?: string };
+    setProjectId(p.projectId);
+    setActivityId(p.activityId);
+    setDate(p.date);
+    setQuantity(String(p.quantity ?? ''));
+    setLocation(p.location ?? '');
+    sector.load(p);
+    setManpower(p.manpowerCount === undefined || p.manpowerCount === null ? '' : String(p.manpowerCount));
+    setMachinery(p.machineryUsed ?? '');
+    setRemarks(p.remarks ?? '');
+    setPhotos(outboxToPhotos(refused.photos));
+    setRefusedLoaded(true);
+    draft.settle();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refused, refusedLoaded, draft.settle]);
 
   // Editing: prefill the form from the loaded entry.
   useEffect(() => {
@@ -59,6 +124,8 @@ export default function NewProgressScreen() {
     setMachinery(e.machineryUsed ?? '');
     setRemarks(e.remarks ?? '');
     setPhotos(attachmentsToPhotos(e.attachments));
+    draft.settle();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [existing.data]);
 
   const activities = useFetch<ActivityDto[]>((a) => a.get(`/projects/${projectId}/activities`), [projectId], { enabled: !!projectId, refetchOnFocus: false, cacheKey: `activities:${projectId}` });
@@ -81,11 +148,12 @@ export default function NewProgressScreen() {
     const q = Number(quantity);
     if (!quantity.trim() || Number.isNaN(q) || q <= 0) e.quantity = t('Enter a quantity greater than 0');
     sector.validate(e);
-    if (manpower.trim() && (!/^\d+$/.test(manpower.trim()) || Number(manpower) < 0)) e.manpower = t('Whole number');
+    if (manpower.trim() && (!/^\d+$/.test(manpower.trim()) || Number(manpower) < 0)) e.manpower = t('Enter the manpower count as a whole number');
     if (photosUploading(photos)) e.photos = t('Wait for photos to finish uploading');
     else if (photosFailed(photos)) e.photos = t('Remove or retry failed photos');
     else if (editId && photosQueued(photos)) e.photos = t('Photos need a connection to upload before resubmitting');
     setErrors(e);
+    errorSummary.report(e);
     return Object.keys(e).length === 0;
   };
 
@@ -107,13 +175,16 @@ export default function NewProgressScreen() {
       };
       if (editId) {
         setCreated(await api.patch<ProgressEntryDto>(`/progress/${editId}`, { ...body, attachmentIds: attachmentIds(photos), submit: true }));
+        draft.clear();
         return;
       }
       // New entry: save to the outbox when offline (or when a photo is still on the phone); otherwise send now.
       const queueIt = async () => {
         const projectName = projects.options.find((o) => o.value === projectId)?.label ?? t('Project');
+        draft.clear();
         setQueued(
           await enqueue({
+            id: clientId.current,
             type: 'PROGRESS',
             payload: { projectId, ...body },
             photos: toOutboxPhotos(photos),
@@ -127,7 +198,10 @@ export default function NewProgressScreen() {
         return;
       }
       try {
-        setCreated(await api.post<ProgressEntryDto>('/progress', { projectId, ...body, attachmentIds: attachmentIds(photos) }));
+        const entry = await api.post<ProgressEntryDto>('/progress', { id: clientId.current, projectId, ...body, attachmentIds: attachmentIds(photos) });
+        draft.clear();
+        if (outboxId) await discard(outboxId);
+        setCreated(entry);
       } catch (e) {
         if (!isOfflineError(e)) throw e;
         await queueIt();
@@ -140,6 +214,7 @@ export default function NewProgressScreen() {
   };
 
   const reset = () => {
+    clientId.current = newId();
     setCreated(null);
     setQueued(null);
     setQuantity('');
@@ -147,10 +222,12 @@ export default function NewProgressScreen() {
     sector.clear();
     setPhotos([]);
     setErrors({});
+    // What stays (project, activity, date…) is the next entry's starting point, not unsent work.
+    draft.settle();
   };
 
   if (queued) {
-    return <QueuedSuccess title={t('Saved on this phone')} subtitle={`${queued.title} · ${queued.subtitle}`} onAnother={reset} />;
+    return <QueuedSuccess title={t('Saved on this phone')} subtitle={`${queued.title} · ${queued.subtitle}`} onAnother={outboxId ? undefined : reset} />;
   }
   if (created) {
     return (
@@ -158,7 +235,7 @@ export default function NewProgressScreen() {
         title={editId ? t('Progress resubmitted') : t('Progress submitted')}
         subtitle={t('{activity}: {qty} {unit} on {date}. Sent for approval.', { activity: created.activityName, qty: fmtQty(created.quantity), unit: created.unit, date: created.date })}
         detailHref={`/progress/${created.id}`}
-        onAnother={editId ? undefined : reset}
+        onAnother={editId || outboxId ? undefined : reset}
       />
     );
   }
@@ -167,10 +244,13 @@ export default function NewProgressScreen() {
   if (editId && existing.error && !existing.data) return <ErrorState message={existing.error} onRetry={existing.reload} />;
 
   return (
-    <Screen keyboard>
-      <Stack.Screen options={{ title: editId ? t('Edit Progress Entry') : t('New Progress Entry') }} />
+    <Screen keyboard scrollRef={errorSummary.scrollRef}>
+      <Stack.Screen options={{ title: editId ? t('Edit Progress Entry') : outboxId ? t('Fix Progress Entry') : t('New Progress Entry') }} />
+      <DraftNotice draft={draft} onStartOver={startOver} />
+      <ErrorSummary errors={errors} />
       <ErrorBanner message={submitError ?? projects.error} />
       <ReviewerNote entry={existing.data} />
+      <OutboxRefusal item={refused} />
       <Card>
         <Select label={t('Project')} required value={projectId} options={projects.options} onChange={changeProject} placeholder={t('Choose project')} error={errors.projectId} disabled={!!editId} />
         <Select

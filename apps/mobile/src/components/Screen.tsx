@@ -16,11 +16,14 @@ interface Props {
   edges?: ('top' | 'bottom' | 'left' | 'right')[];
   /** Page colour behind everything (default the app canvas). */
   background?: string;
+  /** The scroll view, for a form that scrolls back up to its error summary (`useErrorSummary`). */
+  scrollRef?: React.Ref<ScrollView>;
 }
 
-export function Screen({ children, scroll = true, keyboard = false, refreshing = false, onRefresh, padded = true, style, edges = ['left', 'right', 'bottom'], background }: Props) {
+export function Screen({ children, scroll = true, keyboard = false, refreshing = false, onRefresh, padded = true, style, edges = ['left', 'right', 'bottom'], background, scrollRef }: Props) {
   const body = scroll ? (
     <ScrollView
+      ref={scrollRef}
       style={styles.flex}
       contentContainerStyle={[padded && styles.padded, style]}
       keyboardShouldPersistTaps="handled"

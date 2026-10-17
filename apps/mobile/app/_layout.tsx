@@ -8,7 +8,7 @@ import { AuthProvider, useAuth } from '../src/auth/AuthContext';
 import { NotificationsProvider } from '../src/notifications/NotificationsContext';
 import { OfflineProvider } from '../src/offline';
 import { LanguageProvider, useT } from '../src/i18n/LanguageContext';
-import { Loading } from '../src/components';
+import { Loading, SnackbarProvider } from '../src/components';
 import { useFonts, Archivo_700Bold, Archivo_800ExtraBold } from '@expo-google-fonts/archivo';
 import { PRODUCT_NAME } from '@erp/shared';
 import { colors, scheme } from '../src/theme';
@@ -102,18 +102,20 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <LanguageProvider>
-          <AuthProvider>
-            <OfflineProvider>
-              <NotificationsProvider>
-                <ThemeProvider value={navigationTheme}>
-                  <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-                  <RootNavigator />
-                </ThemeProvider>
-              </NotificationsProvider>
-            </OfflineProvider>
-          </AuthProvider>
-        </LanguageProvider>
+        <SnackbarProvider>
+          <LanguageProvider>
+            <AuthProvider>
+              <OfflineProvider>
+                <NotificationsProvider>
+                  <ThemeProvider value={navigationTheme}>
+                    <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+                    <RootNavigator />
+                  </ThemeProvider>
+                </NotificationsProvider>
+              </OfflineProvider>
+            </AuthProvider>
+          </LanguageProvider>
+        </SnackbarProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

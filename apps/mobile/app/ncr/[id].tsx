@@ -98,7 +98,7 @@ export default function NcrScreen() {
       ) : null}
       {qa && data.status !== 'OPEN' ? (
         <Card title={t(data.status === 'ACTION_TAKEN' ? 'Verify' : 'Reopen')}>
-          <Input value={note} onChangeText={setNote} placeholder={t(data.status === 'ACTION_TAKEN' ? 'How it was verified, or what is still not right' : 'What is not right')} multiline />
+          <Input value={note} onChangeText={setNote} placeholder={t(data.status === 'ACTION_TAKEN' ? 'How it was verified, or what is still not right' : 'What is not right')} accessibilityLabel={data.status === 'ACTION_TAKEN' ? t('How it was verified, or what is still not right') : t('What is not right')} multiline />
           <View style={styles.row}>
             {data.status === 'ACTION_TAKEN' ? (
               <Button title={t('Close NCR')} variant="success" icon="checkmark" onPress={() => run(() => api.post<NcrDto>(`/quality/ncrs/${data.id}/close`, { note: note.trim() || undefined }))} loading={busy} style={styles.flex} />

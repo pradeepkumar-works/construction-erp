@@ -1211,8 +1211,9 @@ endpoints' own filters (`status`, `mine`, `from`/`to`…), so they never widen w
 
 ## Languages (mobile)
 
-The site app opens in English on every phone, whatever the device language, and a user switches to Hindi under
-Profile > Language; the choice stays on the phone (`LanguageProvider`, `src/i18n/LanguageContext.tsx`). Screens call
+The site app first opens in the phone's own language when it has it (Hindi or English, from `expo-localization`), and a
+user switches on the intro, the sign-in screen (`LanguageSwitch`) or under Profile > Language; the choice stays on the
+phone in the kv-store, read before the first frame (`LanguageProvider`, `src/i18n/LanguageContext.tsx`). Screens call
 `const t = useT()` and wrap every piece of text they show: `t('Submit for approval')`, `t('{n} workers present', { n })`,
 and shared labels as `t(SUBMISSION_STATUS_LABELS[s])`. The English text is the key; Hindi lives in
 `src/i18n/hi/*.ts` (shared labels and everyday words in `common.ts`, the rest by group of screens), and text without
@@ -1231,14 +1232,21 @@ New progress entries, DPRs, material requests and attendance sheets can be filed
   to the first one. So a phone can resend after a lost response without creating duplicates.
 - **Outbox.** `apps/mobile/src/offline` keeps a SQLite database (`siteapp.db`) with an `outbox` table
   (one row per queued entry, per user) and a `cache` table. A form submits straight to the API when
-  online; when offline, or when the request fails to reach the server, it saves the entry to the
-  outbox with a fresh UUID. Picked photos are copied into the app's documents folder because the
+  online; when offline, or when the request fails to reach the server or takes over 25 seconds
+  (`REQUEST_TIMEOUT_MS` in `src/api/client.ts`), it saves the entry to the outbox. The form makes one
+  UUID up front and sends it both ways, so a request that timed out but arrived is not made twice. Picked photos are copied into the app's documents folder because the
   image picker's cache can be purged.
 - **Sync.** `OfflineProvider` flushes the outbox in creation order when the network comes back
   (expo-network), when the app returns to the foreground and after sign-in. For each entry it uploads
   any photo without an attachment id (remembering ids as it goes), then posts the entry with its
   client id. Network errors and 5xx stop the run and keep the entry pending; a 4xx (for example a DPR
-  for a day that already has one) marks it failed, and the Outbox screen offers retry or discard.
+  for a day that already has one) marks it failed, and the Outbox screen offers Fix and send (the form reopens
+  the entry by `?outboxId=`, `OUTBOX_FIX_PATH`), Send again or Discard. A run that sent or refused entries
+  says so in the snackbar, and the outbox shows when an entry last reached the server.
+- **Drafts.** A new DPR, progress entry, measurement or attendance sheet is kept in the kv-store as it is typed
+  (`useFormDraft`, one per form and user) and reopened on the form's first frame; leaving with unsent work asks
+  whether to keep the draft. A photo taken while Android closed the app comes back through
+  `ImagePicker.getPendingResultAsync` to the next photo field opened.
 - **Read cache.** `useFetch(..., { cacheKey })` stores the last good response per user, so projects,
   activities, the home screen and My Submissions open offline with the last loaded data.
 - Edits and resubmits, reviews and approvals still need a connection: they act on server state that

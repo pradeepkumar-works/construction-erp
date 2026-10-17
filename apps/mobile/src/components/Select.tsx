@@ -49,6 +49,9 @@ export function Select<V extends string>({ label, value, options, onChange, plac
         onPress={() => !disabled && setOpen(true)}
         style={[styles.field, !!error && styles.fieldError, disabled && styles.disabled]}
         accessibilityRole="button"
+        accessibilityLabel={`${label ?? placeholder ?? t('Select')}${required ? `, ${t('required')}` : ''}: ${selected ? selected.label : t('not chosen')}`}
+        accessibilityHint={error ?? undefined}
+        accessibilityState={{ disabled: !!disabled }}
       >
         <View style={styles.flex}>
           <Text style={[styles.value, !selected && styles.placeholder]} numberOfLines={1} maxFontSizeMultiplier={maxFontScale}>
@@ -68,14 +71,14 @@ export function Select<V extends string>({ label, value, options, onChange, plac
         <SafeAreaView style={styles.modal}>
           <View style={styles.modalHeader}>
             <Text style={typography.h2}>{label ?? t('Select')}</Text>
-            <Pressable onPress={() => setOpen(false)} hitSlop={12} style={styles.close}>
+            <Pressable onPress={() => setOpen(false)} hitSlop={12} style={styles.close} accessibilityRole="button" accessibilityLabel={t('Close')}>
               <Ionicons name="close" size={26} color={colors.text} />
             </Pressable>
           </View>
           {showSearch ? (
             <View style={styles.search}>
               <Ionicons name="search" size={18} color={colors.textMuted} />
-              <TextInput value={q} onChangeText={setQ} placeholder={t('Search')} placeholderTextColor={colors.textMuted} style={styles.searchInput} autoFocus={false} />
+              <TextInput value={q} onChangeText={setQ} placeholder={t('Search')} accessibilityLabel={t('Search')} placeholderTextColor={colors.textMuted} style={styles.searchInput} autoFocus={false} />
             </View>
           ) : null}
           <FlatList
@@ -94,6 +97,8 @@ export function Select<V extends string>({ label, value, options, onChange, plac
                     setQ('');
                   }}
                   style={[styles.row, active && styles.rowActive]}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: active }}
                 >
                   <View style={styles.flex}>
                     <Text style={[styles.rowLabel, active && styles.rowLabelActive]}>{item.label}</Text>
@@ -120,7 +125,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.surface,
     borderWidth: 1.5,
-    borderColor: colors.border,
+    borderColor: colors.borderStrong,
     borderRadius: radius.md,
     minHeight: touch.height,
     paddingHorizontal: spacing.md,

@@ -100,7 +100,7 @@ export default function DocumentsScreen() {
         }}
         searchable
       />
-      <Input placeholder={t('Search number or title')} value={search} onChangeText={setSearch} autoCorrect={false} />
+      <Input placeholder={t('Search number or title')} accessibilityLabel={t('Search documents by number or title')} value={search} onChangeText={setSearch} autoCorrect={false} />
       {canSaveOffline && files.length ? (
         <View style={styles.offline}>
           <Ionicons name={missing ? 'cloud-download-outline' : 'checkmark-circle'} size={20} color={missing ? colors.textMuted : colors.success} />
@@ -149,7 +149,7 @@ export default function DocumentsScreen() {
       )}
       {docs.fromCache ? <Text style={[typography.caption, styles.center]}>{t('Showing the list saved on this phone.')}</Text> : null}
       <Modal visible={!!image} transparent animationType="fade" onRequestClose={() => setImage(null)}>
-        <Pressable style={styles.lightbox} onPress={() => setImage(null)}>
+        <Pressable style={styles.lightbox} onPress={() => setImage(null)} accessibilityRole="button" accessibilityLabel={t('Close photo')}>
           {image ? <Image source={{ uri: saved.has(image.id) && canSaveOffline ? localUri(image) : absoluteUrl(image.url) }} style={styles.full} contentFit="contain" /> : null}
           <View style={styles.lightboxClose}>
             <Ionicons name="close-circle" size={36} color={colors.onOverlay} />
@@ -169,7 +169,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 15, fontWeight: '600', color: colors.text, marginVertical: 2 },
   warn: { color: colors.warning, fontWeight: '700', fontSize: 12 },
   side: { alignItems: 'flex-end', gap: 6 },
-  lightbox: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', alignItems: 'center', justifyContent: 'center' },
+  lightbox: { flex: 1, backgroundColor: colors.scrimDeep, alignItems: 'center', justifyContent: 'center' },
   full: { width: '100%', height: '85%' },
   lightboxClose: { position: 'absolute', top: 48, right: 20 },
 });
