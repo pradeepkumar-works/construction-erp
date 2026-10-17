@@ -17,10 +17,12 @@
     "@ant-design/x-markdown": "2.9.0",
     "@erp/shared": "workspace:*",
     "@tanstack/react-query": "^5.104.2",
+    "@vercel/blob": "2.8.1",
     "antd": "^6.6.6",
     "axios": "^1.20.0",
     "dayjs": "^1.11.23",
     "next": "^15.5.27",
+    "pdfjs-dist": "5.6.205",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"

@@ -1,16 +1,20 @@
-import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Res } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiProduces, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Res, UploadedFiles, UseInterceptors } from '@nestjs/common';
+import { FilesInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiProduces, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
 import type { AiStreamEvent } from '@erp/shared';
+import { DOC_READ_MAX_PAGES, DOC_READ_MAX_PAGE_BYTES } from '@erp/shared';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { AiService } from './ai.service';
-import { AiFeedbackDto, AskDto, UpdateAiSettingsDto } from './ai.dto';
+import { AiReadService } from './ai-read.service';
+import { AiFeedbackDto, AskDto, ReadDocumentDto, UpdateAiSettingsDto } from './ai.dto';
 
 @ApiTags('ai')
 @ApiBearerAuth()
 @Controller('ai')
 export class AiController {
-  constructor(private ai: AiService) {}
+  constructor(private ai: AiService, private reader: AiReadService) {}
 
   @ApiOperation({ summary: 'Whether Ask Nirmaan is on for you', description: 'On for the company, set up on the server, within the monthly allowance, and questions left today.' })
   @Get('status')
@@ -47,6 +51,18 @@ export class AiController {
     } finally {
       res.end();
     }
+  }
+
+  @ApiOperation({
+    summary: 'Read an invoice, delivery challan or drawing title block',
+    description: `Page images (JPEG, PNG or WebP; at most ${DOC_READ_MAX_PAGES}) in \`pages\`. Returns what is printed, each value with its page, its box on the page and a confidence; invoices also get the vendor, order and order lines they match. Saves nothing but the cost of the call, which counts in the monthly allowance.`,
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ schema: { type: 'object', required: ['kind', 'pages'], properties: { kind: { type: 'string', enum: ['invoice', 'challan', 'drawing'] }, purchaseOrderId: { type: 'string', format: 'uuid' }, pages: { type: 'array', items: { type: 'string', format: 'binary' } } } } })
+  @Post('read')
+  @UseInterceptors(FilesInterceptor('pages', DOC_READ_MAX_PAGES, { storage: memoryStorage(), limits: { fileSize: DOC_READ_MAX_PAGE_BYTES } }))
+  read(@CurrentUser() user: RequestUser, @Body() dto: ReadDocumentDto, @UploadedFiles() pages: Express.Multer.File[] = []) {
+    return this.reader.read(user, dto.kind, pages, dto.purchaseOrderId);
   }
 
   @ApiOperation({ summary: 'Your conversations', description: 'The 30 most recent, newest first.' })

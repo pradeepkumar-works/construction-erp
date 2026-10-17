@@ -442,6 +442,7 @@ model Organization {
   aiMessages           AiMessage[]
   billCheckAcceptances BillCheckAcceptance[]
   billCheckSummaries   BillCheckSummary[]
+  aiDocumentReads      AiDocumentRead[]
 }
 
 model Role {
@@ -499,6 +500,7 @@ model User {
   savedViews           SavedView[]
   aiThreads            AiThread[]
   billChecksAccepted   BillCheckAcceptance[] @relation("BillCheckAcceptedBy")
+  aiDocumentReads      AiDocumentRead[]
   memberships          ProjectMember[]
   managedProjects      Project[]             @relation("ProjectManager")
   baselinedProjects    Project[]             @relation("ProjectBaselineBy")
@@ -3524,5 +3526,27 @@ model BillCheckSummary {
   createdAt      DateTime     @default(now())
 
   @@unique([kind, billId, fingerprint])
+  @@index([organizationId, createdAt])
+}
+
+/// One invoice, challan or drawing read by the model to fill a form (AI item 70). Only what it cost is kept: the pages
+/// and what was read go back to the form, and nothing is saved until the user saves it.
+model AiDocumentRead {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  userId         String
+  user           User         @relation(fields: [userId], references: [id])
+  /// invoice | challan | drawing (DOC_READ_KINDS)
+  kind           String
+  pages          Int
+  model          String
+  /// Counted in the company's monthly Ask Nirmaan allowance
+  costPaise      Int          @default(0)
+  ms             Int
+  /// The reply could be read as fields
+  ok             Boolean
+  createdAt      DateTime     @default(now())
+
   @@index([organizationId, createdAt])
 }

@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-10-read-documents',
+    date: '2026-10-17',
+    title: 'Fill a form from a photo',
+    points: [
+      'With Ask Nirmaan on, Fill from invoice on a new vendor bill reads a photo or PDF of the invoice: number, date, lines, taxes and the order it belongs to. The bill\'s checks run before you save.',
+      'Fill from challan on a GRN reads the challan and vehicle numbers and the quantities, and Fill from title block fills a new drawing\'s number, title and revision.',
+      'Each value shows where on the page it came from, anything hard to read is marked Check this, and nothing is saved until you press Save. The scan is attached to the entry.',
+    ],
+  },
+  {
     id: '2026-10-bill-checks',
     date: '2026-10-17',
     title: 'Checks before you approve a bill',

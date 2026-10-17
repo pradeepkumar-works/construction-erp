@@ -41,3 +41,4 @@ export * from './search';
 export * from './notifications';
 export * from './ai';
 export * from './checks';
+export * from './doc-read';
