@@ -1,4 +1,4 @@
-import { ForbiddenException, HttpException, HttpStatus, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, HttpException, HttpStatus, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type Anthropic from '@anthropic-ai/sdk';
 import { Prisma } from '@prisma/client';
 import type { AiAskInput, AiCitationDto, AiMessageDto, AiSettingsDto, AiStatusDto, AiStreamEvent, AiThreadDetailDto, AiThreadDto } from '@erp/shared';
@@ -8,10 +8,10 @@ import { AuditService } from '../common/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProjectsService } from '../projects/projects.service';
 import { todayIn } from '../notifications/time';
-import { aiConfig, aiConfigured, costPaise, type AiUsage } from './ai.config';
+import { aiConfig, aiConfigured, costPaise, modelName, type AiUsage } from './ai.config';
 import { AiToolsService } from './ai-tools.service';
 import { collectHrefs, collectNumbers, derivedNumbers, filterLinks, unverifiedFigures } from './grounding';
-import { ClaudeModel, FakeModel, type AiModel, type ModelMessage } from './model';
+import { FakeModel, MessagesModel, type AiModel, type ModelMessage } from './model';
 import { SYSTEM_PROMPT, contextNote } from './prompt';
 import type { UpdateAiSettingsDto } from './ai.dto';
 
@@ -87,9 +87,20 @@ export class AiService {
     private audit: AuditService,
   ) {}
 
-  private model(): AiModel {
+  private model(name?: string): AiModel {
     const c = aiConfig();
-    return c.provider === 'fake' ? new FakeModel() : new ClaudeModel(c.provider, c.apiKey!, c.model, c.effort);
+    return c.provider === 'fake' ? new FakeModel() : new MessagesModel(c.provider, c.apiKey!, (name && this.evalModel(name)) || c.model, c.effort);
+  }
+
+  private evalModel(name: string): string | undefined {
+    const c = aiConfig();
+    const named = modelName(name, c.provider);
+    return c.evalModels.includes(named) ? named : undefined;
+  }
+
+  /** A question may name a model only to compare models, and only one the server lists in AI_EVAL_MODELS. */
+  assertModel(name?: string) {
+    if (name && !this.evalModel(name)) throw new BadRequestException('That model is not open for comparison on this server (AI_EVAL_MODELS)');
   }
 
   /** Whether this company has the assistant on, for the signed-in user (AuthUser.ai). */
@@ -201,7 +212,7 @@ export class AiService {
     const messages: ModelMessage[] = historyMessages(earlier.reverse());
     messages.push({ role: 'user', content: [{ type: 'text', text: await this.context(user, input) }, { type: 'text', text: question }] });
 
-    const model = this.model();
+    const model = this.model(input.model);
     const tools = this.tools.definitions(user);
     const usage: AiUsage = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 };
     let paise = 0;

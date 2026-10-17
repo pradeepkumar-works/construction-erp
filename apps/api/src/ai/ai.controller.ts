@@ -27,6 +27,7 @@ export class AiController {
   @Post('ask')
   async ask(@CurrentUser() user: RequestUser, @Body() dto: AskDto, @Res() res: Response) {
     await this.ai.assertCanAsk(user);
+    this.ai.assertModel(dto.model);
     res.status(200);
     res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
     res.setHeader('Cache-Control', 'no-cache, no-transform');
