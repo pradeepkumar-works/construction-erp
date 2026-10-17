@@ -32,7 +32,8 @@ export function aiConfig() {
   const e = process.env;
   const effort = e.AI_EFFORT === 'low' || e.AI_EFFORT === 'high' ? e.AI_EFFORT : 'medium';
   const provider = providerOf(e);
-  const model = e.AI_MODEL?.trim() || 'claude-opus-5-5';
+  // DeepSeek V4.1 Flash on OpenRouter, chosen from the 17 Oct 2026 comparison; Anthropic direct can only run Claude.
+  const model = e.AI_MODEL?.trim() || (provider === 'openrouter' ? 'deepseek/deepseek-v4.1-flash' : 'claude-opus-5-5');
   const named = (m: string) => modelName(m, provider);
   return {
     provider,
