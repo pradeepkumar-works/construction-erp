@@ -41,6 +41,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="index" options={{ title: t('Home'), headerShown: false, tabBarIcon: icon('home', 'home-outline') }} />
       <Tabs.Screen name="projects" options={{ title: t('Projects'), tabBarIcon: icon('business', 'business-outline') }} />
       <Tabs.Screen name="submit" options={{ title: t('Submit'), tabBarIcon: icon('add-circle', 'add-circle-outline') }} />
+      <Tabs.Screen name="ask" options={{ title: t('Ask'), tabBarIcon: icon('sparkles', 'sparkles-outline'), href: user?.ai ? undefined : null }} />
       <Tabs.Screen name="approvals" options={{ title: t('Approvals'), tabBarIcon: icon('checkmark-done-circle', 'checkmark-done-circle-outline'), href: approver ? undefined : null }} />
       <Tabs.Screen name="profile" options={{ title: t('Profile'), tabBarIcon: icon('person', 'person-outline') }} />
     </Tabs>

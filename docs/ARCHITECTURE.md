@@ -1182,6 +1182,25 @@ export; the client portal and the phone app show the amount.
   forms with the stand-in model. `scripts/draft-eval.ts` asks a deployed API 40 sentences in English, Hindi and
   Hinglish and grades each draft's fields; it calls the real model, so it is run by hand.
 
+## Ask on the phone
+
+- **What it is.** AI item 72: the site app's Ask tab (`apps/mobile/app/(tabs)/ask.tsx`, shown when Ask Nirmaan is on
+  for the company). People type or speak through the keyboard's own microphone (no speech module), in Hindi, English or
+  Hinglish. The tab sends `language` (the app's language) and `client: 'phone'` with each question; the prompt then
+  answers in Hindi with 0-9 figures when the app is in Hindi, and keeps a phone answer to a few short lines.
+- **Answers.** `src/ai/ask.ts` reads the same server-sent events as the web panel through Expo's streaming fetch, with a
+  45 s idle timeout. `AnswerText` renders the answer's Markdown; `phoneRoute` (`src/ai/links.ts`) maps a web link to
+  the phone's own screen, and a link with no screen stays plain text. Status lines go through `t()`, so their Hindi is
+  in `src/i18n/hi/ai.ts`; a draft's flag notes are still English.
+- **Dictate today's DPR.** The tile asks for notes and sends them as a request to draft today's DPR for the chosen
+  project. A DPR draft opens `/dpr/new?fromAsk=<key>` (the draft is kept in memory, too big for a route) filled in, with
+  `AskDraftNotice` listing what to check; the form sends it as any DPR, through the outbox when the signal drops. Other
+  draft kinds say to finish them in Ask on the web.
+- **Offline.** The tab says it needs a connection and that entries still save on the phone; it does not queue
+  questions.
+- **Tests.** `scripts/ai-eval.ts` with `AI_EVAL_ONLY=phone` asks a deployed API in Hindi, Hinglish and English as the
+  phone does and checks Hindi answers, 0-9 figures, length, the access boundary and a dictated DPR.
+
 ## Money and quantities
 
 Decimal columns everywhere (`Decimal(18,2)` for money, `Decimal(18,3)` for quantities) and strings

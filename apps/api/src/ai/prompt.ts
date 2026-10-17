@@ -43,11 +43,15 @@ export function contextNote(args: {
   record?: { kind: string; id: string } | null;
   projectName?: string | null;
   projectId?: string | null;
+  language?: 'en' | 'hi';
+  phone?: boolean;
 }): string {
   const lines = [`Today is ${args.today} (India time). The user is ${args.fullName}, ${args.roleName}.`];
   if (args.page) lines.push(`They are on the page ${args.page}.`);
   if (args.record) lines.push(`That page shows one record: get_record with kind "${args.record.kind}" and id "${args.record.id}"; "this bill", "this order" and the like mean it.`);
   if (args.projectId && args.projectName) lines.push(`They have picked the project "${args.projectName}" (id ${args.projectId}); "this project" means it.`);
+  if (args.phone) lines.push('They are asking from the site app on a phone: keep the answer to a few short lines.');
+  if (args.language === 'hi') lines.push('Their app is in Hindi: answer in Hindi, in Devanagari script, whatever language the question is in, the way a site engineer speaks; keep record numbers, codes, names of items, people and places, and links as they are, and write every figure with the digits 0-9.');
   return lines.join(' ');
 }
 

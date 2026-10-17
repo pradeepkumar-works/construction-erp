@@ -315,7 +315,7 @@ export class AiService {
     const record = first && RECORD_PATHS[first] && second && UUID.test(second) ? { kind: RECORD_PATHS[first], id: second } : null;
     const projectId = first === 'projects' && second && UUID.test(second) ? second : input.page?.projectId && UUID.test(input.page.projectId) ? input.page.projectId : null;
     const project = projectId ? await this.projects.get(user, projectId).catch(() => null) : null;
-    return contextNote({ fullName: user.fullName, roleName: ROLE_LABELS[user.roleKey], today: todayIn(), page: path, record, projectId: project?.id, projectName: project?.name });
+    return contextNote({ fullName: user.fullName, roleName: ROLE_LABELS[user.roleKey], today: todayIn(), page: path, record, projectId: project?.id, projectName: project?.name, language: input.language, phone: input.client === 'phone' });
   }
 
   private capOf(own: number | null): number {
