@@ -106,7 +106,7 @@ export function MusterPanel({ projectId: fixedProject }: { projectId?: string })
         {m ? (
           <ExportButton
             onExport={async () => {
-              downloadXlsx(exportFileName(`muster-${monthStr}`), `Muster ${monthStr}`, musterExport(m), m.rows);
+              await downloadXlsx(exportFileName(`muster-${monthStr}`), `Muster ${monthStr}`, musterExport(m), m.rows);
               return m.rows.length;
             }}
           />

@@ -5,7 +5,7 @@ import { Typography } from 'antd';
 import type { MachineryLogDto } from '@erp/shared';
 import { EQUIPMENT_OWNERSHIP_LABELS } from '@erp/shared';
 import { useMachineryLog } from '@/lib/queries';
-import { formatDate, formatQty, toNumber } from '@/lib/format';
+import { formatDate, formatQty, toNumber, inSentence } from '@/lib/format';
 import { StatusTag } from '@/components/common/StatusTag';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { ReviewActions } from '@/components/common/ReviewActions';
@@ -44,7 +44,7 @@ export function MachineryRecord({ id, mode, open, onClose, onEdit }: RecordProps
           title: `Machinery log · ${data.equipmentCode}`,
           tags: <StatusTag status={data.status} />,
           facts: [
-            { key: 'eq', label: 'Equipment', children: `${data.equipmentCode} ${data.equipmentName} (${EQUIPMENT_OWNERSHIP_LABELS[data.ownership].toLowerCase()})` },
+            { key: 'eq', label: 'Equipment', children: `${data.equipmentCode} ${data.equipmentName} (${inSentence(EQUIPMENT_OWNERSHIP_LABELS[data.ownership])})` },
             { key: 'date', label: 'Date', children: formatDate(data.date) },
             { key: 'op', label: 'Operator', children: data.operatorName ?? '-' },
             { key: 'worked', label: 'Hours worked', children: h(data.hoursWorked) },
@@ -78,7 +78,7 @@ export function MachineryRecord({ id, mode, open, onClose, onEdit }: RecordProps
               ),
             },
           ],
-          activity: { type: 'machinery', id: data.id },
+          activity: { type: 'machinery', id: data.id, submission: data },
           actions: (size) => (
             <>
               <EditResubmitButton entry={data} onEdit={onEdit} size={size} />

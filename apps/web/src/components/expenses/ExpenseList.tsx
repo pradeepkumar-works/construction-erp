@@ -67,7 +67,7 @@ export function ExpenseList({ projectId: fixedProject }: { projectId?: string })
 
   const exportRows = async () => {
     const rows = await fetchAllPages<ExpenseDto>('/expenses', { ...filters });
-    downloadXlsx(exportFileName('expenses'), 'expenses', EXPENSE_EXPORT, rows);
+    await downloadXlsx(exportFileName('expenses'), 'expenses', EXPENSE_EXPORT, rows);
     return rows.length;
   };
 

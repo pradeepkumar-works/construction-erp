@@ -149,7 +149,7 @@ export function WorkerList({ projectId: fixedProject }: { projectId?: string }) 
             <ExportButton
               onExport={async () => {
                 const all = await fetchAllPages<WorkerDto>('/workers', { projectId: frame.projectId, q: page.params.q, active });
-                downloadXlsx(exportFileName('workers'), 'Workers', EXPORT, all);
+                await downloadXlsx(exportFileName('workers'), 'Workers', EXPORT, all);
                 return all.length;
               }}
             />

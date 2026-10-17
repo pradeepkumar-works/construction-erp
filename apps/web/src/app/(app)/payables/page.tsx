@@ -83,7 +83,7 @@ function PaymentsTab({ projectId, vendorId, onBill }: { projectId?: string; vend
   });
   const exportRows = async () => {
     const all = await fetchAllPages<VendorPaymentDto>('/vendor-payments', { ...filters });
-    downloadXlsx(exportFileName('payments'), 'Payments', VENDOR_PAYMENT_EXPORT, all);
+    await downloadXlsx(exportFileName('payments'), 'Payments', VENDOR_PAYMENT_EXPORT, all);
     return all.length;
   };
   const openBill = (r: VendorPaymentDto) => onBill({ billType: r.billType, billId: (r.vendorBillId ?? r.subcontractBillId)! });
@@ -398,7 +398,7 @@ export default function PayablesPage() {
               children: (
                 <>
                   {toolbar(async () => {
-                    downloadXlsx(exportFileName('due-list'), 'Due list', PAYABLE_BILL_EXPORT, data?.openBills ?? []);
+                    await downloadXlsx(exportFileName('due-list'), 'Due list', PAYABLE_BILL_EXPORT, data?.openBills ?? []);
                     return data?.openBills.length ?? 0;
                   })}
                   <Table<PayableBillDto>
@@ -420,7 +420,7 @@ export default function PayablesPage() {
               children: (
                 <>
                   {toolbar(async () => {
-                    downloadXlsx(exportFileName('payables-by-vendor'), 'Payables by vendor', PAYABLE_VENDOR_EXPORT, data?.vendors ?? []);
+                    await downloadXlsx(exportFileName('payables-by-vendor'), 'Payables by vendor', PAYABLE_VENDOR_EXPORT, data?.vendors ?? []);
                     return data?.vendors.length ?? 0;
                   })}
                   <Table<VendorPayableDto> rowKey="vendorId" size="middle" loading={isLoading} columns={vendorColumns} dataSource={data?.vendors ?? []} pagination={false} scroll={{ x: 1650 }} />

@@ -55,7 +55,7 @@ export function StockValuation({ projectId }: { projectId?: string }) {
         <div style={{ marginLeft: 'auto' }}>
           <ExportButton
             onExport={async () => {
-              downloadXlsx(exportFileName('stock-valuation'), 'valuation', EXPORT, rows);
+              await downloadXlsx(exportFileName('stock-valuation'), 'valuation', EXPORT, rows);
               return rows.length;
             }}
           />

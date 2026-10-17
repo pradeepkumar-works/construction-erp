@@ -71,7 +71,7 @@ export function ExpenseRecord({ id, mode, open, onClose, onEdit }: RecordProps &
               ),
             },
           ],
-          activity: { type: 'expense', id: data.id },
+          activity: { type: 'expense', id: data.id, submission: data },
           actions: (size) => (
             <>
               <EditResubmitButton entry={data} onEdit={onEdit} size={size} />

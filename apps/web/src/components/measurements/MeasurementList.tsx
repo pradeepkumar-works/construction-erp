@@ -57,7 +57,7 @@ export function MeasurementList({ projectId: fixedProject }: { projectId?: strin
 
   const exportRows = async () => {
     const rows = await fetchAllPages<MeasurementSheetDto>('/measurements', { ...filters });
-    downloadXlsx(exportFileName('measurement-book'), 'measurements', MEASUREMENT_EXPORT, measurementExportRows(rows));
+    await downloadXlsx(exportFileName('measurement-book'), 'measurements', MEASUREMENT_EXPORT, measurementExportRows(rows));
     return rows.length;
   };
 

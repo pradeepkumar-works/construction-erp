@@ -117,8 +117,8 @@ const INWARD: ExportColumn<GstInwardRowDto>[] = [
 export { SOURCE_LABELS as GST_SOURCE_LABELS };
 
 /** One workbook: GSTR-1 b2b, b2cs and hsn sheets, and the input tax register. */
-export function downloadGstWorkbook(data: GstRegistersDto) {
-  downloadWorkbook(`gst-registers-${data.from}-to-${data.to}`, [
+export async function downloadGstWorkbook(data: GstRegistersDto) {
+  await downloadWorkbook(`gst-registers-${data.from}-to-${data.to}`, [
     workbookSheet('b2b', B2B, data.outward.filter((r) => r.section === 'B2B')),
     workbookSheet('b2cs', B2CS, b2csSummary(data.outward)),
     workbookSheet('hsn', HSN, hsnSummary(data.outward)),

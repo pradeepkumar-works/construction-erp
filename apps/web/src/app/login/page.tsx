@@ -46,9 +46,9 @@ export default function LoginPage() {
     <AuthCard title="Sign in" subtitle="Welcome back. Manage projects, site progress and approvals.">
       {error && <Alert type="error" showIcon title={error} style={{ marginBottom: 24 }} />}
 
-      <Form form={form} layout="vertical" onFinish={onFinish} initialValues={{ email: 'pm@demo.com', password: DEMO_PASSWORD }} requiredMark={false}>
+      <Form form={form} layout="vertical" onFinish={onFinish} requiredMark={false}>
         <Form.Item name="email" label="Email" rules={[{ required: true, message: 'Email is required' }, { type: 'email', message: 'Enter a valid email' }]}>
-          <Input placeholder="you@company.com" autoComplete="username" size="large" autoFocus />
+          <Input type="email" inputMode="email" placeholder="you@company.com" autoComplete="username" autoCapitalize="none" spellCheck={false} size="large" autoFocus />
         </Form.Item>
         <div className="auth-field">
           <Form.Item name="password" label="Password" rules={[{ required: true, message: 'Password is required' }]}>
@@ -81,26 +81,30 @@ export default function LoginPage() {
         )}
       </p>
 
-      <div className="auth-divider">Try a demo account</div>
-      <div className="auth-demo" role="group" aria-label="Demo accounts">
-        {DEMO_ACCOUNTS.map((a) => (
-          <button
-            key={a.email}
-            type="button"
-            title={a.email}
-            aria-pressed={email === a.email}
-            onClick={() => {
-              setError(null);
-              form.setFieldsValue({ email: a.email, password: DEMO_PASSWORD });
-            }}
-          >
-            {a.role}
-          </button>
-        ))}
-      </div>
-      <p className="auth-demo-note">
-        Fills in the form. Every demo account uses the password <code>{DEMO_PASSWORD}</code>.
-      </p>
+      {options?.demoLogin && (
+        <>
+          <div className="auth-divider">Try a demo account</div>
+          <div className="auth-demo" role="group" aria-label="Demo accounts">
+            {DEMO_ACCOUNTS.map((a) => (
+              <button
+                key={a.email}
+                type="button"
+                title={a.email}
+                aria-pressed={email === a.email}
+                onClick={() => {
+                  setError(null);
+                  form.setFieldsValue({ email: a.email, password: DEMO_PASSWORD });
+                }}
+              >
+                {a.role}
+              </button>
+            ))}
+          </div>
+          <p className="auth-demo-note">
+            Fills in the form. Every demo account uses the password <code>{DEMO_PASSWORD}</code>.
+          </p>
+        </>
+      )}
     </AuthCard>
   );
 }

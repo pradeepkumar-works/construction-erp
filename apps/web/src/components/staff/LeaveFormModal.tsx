@@ -10,6 +10,7 @@ import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useEmployees, useHolidays, useLeaveBalances, useMyStaff } from '@/lib/queries';
 import { days } from './staffUi';
+import { inSentence } from '@/lib/format';
 
 interface FormValues {
   employeeId?: string;
@@ -117,7 +118,7 @@ export function LeaveFormModal({ open, onClose, employeeId: fixedEmployee, onSav
         {taking !== null && (
           <Typography.Text type={taking === 0 || (balance?.left != null && balance.left < taking) ? 'danger' : 'secondary'}>
             {taking === 0 ? 'Those days are Sundays or holidays.' : `Takes ${days(taking)} (Sundays and holidays not counted).`}
-            {balance && balance.left !== null ? ` ${days(balance.left)} of ${LEAVE_TYPE_LABELS[balance.type].toLowerCase()} left for ${year}.` : ''}
+            {balance && balance.left !== null ? ` ${days(balance.left)} of ${inSentence(LEAVE_TYPE_LABELS[balance.type])} left for ${year}.` : ''}
           </Typography.Text>
         )}
       </Form>

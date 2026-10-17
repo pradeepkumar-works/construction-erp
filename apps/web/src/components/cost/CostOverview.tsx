@@ -110,7 +110,7 @@ export function CostOverview() {
           </Button>
           <ExportButton
             onExport={async () => {
-              downloadXlsx(exportFileName('project-cost'), 'cost', EXPORT, rows);
+              await downloadXlsx(exportFileName('project-cost'), 'cost', EXPORT, rows);
               return rows.length;
             }}
           />

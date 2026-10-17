@@ -134,7 +134,7 @@ export function TalkList({ projectId: fixedProject }: { projectId?: string }) {
             <ExportButton
               onExport={async () => {
                 const rows = await fetchAllPages<ToolboxTalkDto>('/safety/talks', filters);
-                downloadXlsx(exportFileName('toolbox-talks'), 'talks', EXPORT, rows);
+                await downloadXlsx(exportFileName('toolbox-talks'), 'talks', EXPORT, rows);
                 return rows.length;
               }}
             />

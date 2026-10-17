@@ -13,6 +13,7 @@ import { EmptyArt } from '@/components/common/EmptyArt';
 import { notificationHref } from './notificationTarget';
 import { NotificationFeed } from './NotificationFeed';
 import type { OpenSubmission } from './SubmissionRecordDrawer';
+import { inSentence } from '@/lib/format';
 
 // Every submission's record drawer, loaded the first time a notification opens one.
 const SubmissionRecordDrawer = dynamic(() => import('./SubmissionRecordDrawer').then((m) => m.SubmissionRecordDrawer), { ssr: false });
@@ -95,7 +96,7 @@ export function NotificationBell() {
         <div style={{ minHeight: 160 }} />
       ) : (
         <div style={{ padding: token.paddingLG }}>
-          <EmptyArt art="approved" title={unreadOnly ? 'You are all caught up.' : `No ${NOTIFICATION_TAB_LABELS[tab].toLowerCase()} notifications yet`}>
+          <EmptyArt art="approved" title={unreadOnly ? 'You are all caught up.' : `No ${inSentence(NOTIFICATION_TAB_LABELS[tab])} notifications yet`}>
             {unreadOnly ? null : EMPTY[tab]}
           </EmptyArt>
         </div>
