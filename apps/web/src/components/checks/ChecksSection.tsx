@@ -20,7 +20,6 @@ import type { RecordSection } from '@/components/record/RecordFrame';
  * shows it through the record's pane.
  */
 export function ChecksSection({ kind, id, version }: { kind: CheckKind; id: string; version?: number }) {
-  const { token } = theme.useToken();
   const { message } = App.useApp();
   const { data, isLoading, error, refetch } = useBillChecks(kind, id, version);
   const summary = useBillCheckSummary(kind, id, !!data?.aiSummaryPending);
@@ -31,8 +30,6 @@ export function ChecksSection({ kind, id, version }: { kind: CheckKind; id: stri
   if (isLoading) return <Skeleton active title={false} paragraph={{ rows: 2 }} />;
   if (error || !data) return <QueryError error={error} onRetry={() => refetch()} />;
 
-  const flags = data.checks.filter((c) => !c.ok);
-  const passed = data.checks.filter((c) => c.ok);
   const line = summary.data && data.aiSummaryPending ? summary.data : { summary: data.summary, summaryBy: data.summaryBy };
   const reopen = (c: BillCheckDto) =>
     accept.mutate({ key: c.key, note: '', reopen: true }, { onSuccess: () => message.success('Flag reopened'), onError: (e) => message.error(errorMessage(e)) });
@@ -55,63 +52,22 @@ export function ChecksSection({ kind, id, version }: { kind: CheckKind; id: stri
         style={{ marginBottom: 8 }}
       />
 
-      {flags.map((c) => (
-        <Flex key={c.key} gap={10} align="flex-start" className="bill-check-flag" style={{ padding: '8px 0', borderBottom: `1px solid ${token.colorSplit}` }}>
-          {c.accepted ? (
-            <CheckCircleFilled style={{ color: token.colorTextTertiary, marginTop: 4 }} aria-label="Accepted" />
-          ) : (
-            <ExclamationCircleFilled style={{ color: token.colorWarningText, marginTop: 4 }} aria-label="Flag" />
-          )}
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <Typography.Text strong={!c.accepted} type={c.accepted ? 'secondary' : undefined}>
-              {c.title}
-            </Typography.Text>
-            {c.detail ? (
-              <div className="text-muted" style={{ fontSize: 12 }}>
-                {c.detail}
-              </div>
-            ) : null}
-            {c.links.length ? (
-              <Flex gap={10} wrap style={{ fontSize: 12 }}>
-                {c.links.map((l) => (
-                  <Link key={`${l.href}-${l.label}`} href={l.href} className="text-link">
-                    {l.label}
-                  </Link>
-                ))}
-              </Flex>
-            ) : null}
-            {c.accepted ? (
-              <div className="text-muted" style={{ fontSize: 12 }}>
-                Accepted by {c.accepted.byName}, {formatDateTime(c.accepted.at)}: {c.accepted.note}
-              </div>
-            ) : null}
-          </div>
-          {data.canAccept ? (
+      <CheckRows
+        checks={data.checks}
+        action={(c) =>
+          data.canAccept ? (
             c.accepted ? (
               <Button size="small" type="link" onClick={() => reopen(c)} loading={accept.isPending && accept.variables?.key === c.key}>
                 Reopen
               </Button>
             ) : (
-              <Button
-                size="small"
-                onClick={() => setAccepting(c)}
-              >
+              <Button size="small" onClick={() => setAccepting(c)}>
                 Accept
               </Button>
             )
-          ) : null}
-        </Flex>
-      ))}
-
-      {passed.length ? (
-        <Flex gap={6} wrap style={{ marginTop: flags.length ? 10 : 0 }} role="list" aria-label="Checks passed">
-          {passed.map((c) => (
-            <Tag key={c.key} color="green" icon={<CheckOutlined />} role="listitem" style={{ margin: 0 }}>
-              {c.title}
-            </Tag>
-          ))}
-        </Flex>
-      ) : null}
+          ) : null
+        }
+      />
 
       <FormShell<{ note: string }>
         open={!!accepting}
@@ -144,3 +100,58 @@ export function ChecksSection({ kind, id, version }: { kind: CheckKind; id: stri
 
 /** The Checks section for a record's sections list. */
 export const checksSection = (kind: CheckKind, id: string, version?: number): RecordSection => ({ key: 'checks', title: 'Checks', children: <ChecksSection kind={kind} id={id} version={version} /> });
+
+/** The flags, each with what it is about and an optional action, then a tick for each check that passed. */
+export function CheckRows({ checks, action }: { checks: BillCheckDto[]; action?: (c: BillCheckDto) => React.ReactNode }) {
+  const { token } = theme.useToken();
+  const flags = checks.filter((c) => !c.ok);
+  const passed = checks.filter((c) => c.ok);
+  return (
+    <>
+      {flags.map((c) => (
+        <Flex key={c.key} gap={10} align="flex-start" className="bill-check-flag" style={{ padding: '8px 0', borderBottom: `1px solid ${token.colorSplit}` }}>
+          {c.accepted ? (
+            <CheckCircleFilled style={{ color: token.colorTextTertiary, marginTop: 4 }} aria-label="Accepted" />
+          ) : (
+            <ExclamationCircleFilled style={{ color: token.colorWarningText, marginTop: 4 }} aria-label="Flag" />
+          )}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <Typography.Text strong={!c.accepted} type={c.accepted ? 'secondary' : undefined}>
+              {c.title}
+            </Typography.Text>
+            {c.detail ? (
+              <div className="text-muted" style={{ fontSize: 12 }}>
+                {c.detail}
+              </div>
+            ) : null}
+            {c.links.length ? (
+              <Flex gap={10} wrap style={{ fontSize: 12 }}>
+                {c.links.map((l) => (
+                  <Link key={`${l.href}-${l.label}`} href={l.href} className="text-link">
+                    {l.label}
+                  </Link>
+                ))}
+              </Flex>
+            ) : null}
+            {c.accepted ? (
+              <div className="text-muted" style={{ fontSize: 12 }}>
+                Accepted by {c.accepted.byName}, {formatDateTime(c.accepted.at)}: {c.accepted.note}
+              </div>
+            ) : null}
+          </div>
+          {action?.(c)}
+        </Flex>
+      ))}
+
+      {passed.length ? (
+        <Flex gap={6} wrap style={{ marginTop: flags.length ? 10 : 0 }} role="list" aria-label="Checks passed">
+          {passed.map((c) => (
+            <Tag key={c.key} color="green" icon={<CheckOutlined />} role="listitem" style={{ margin: 0 }}>
+              {c.title}
+            </Tag>
+          ))}
+        </Flex>
+      ) : null}
+    </>
+  );
+}

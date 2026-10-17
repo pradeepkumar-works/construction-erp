@@ -25,10 +25,12 @@ import { ContractsModule } from '../contracts/contracts.module';
 import { QualityModule } from '../quality/quality.module';
 import { MaintenanceModule } from '../maintenance/maintenance.module';
 import { PlanningModule } from '../planning/planning.module';
+import { VendorsModule } from '../vendors/vendors.module';
 import { AiController } from './ai.controller';
 import { AiService } from './ai.service';
 import { AiToolsService } from './ai-tools.service';
 import { AiDigestService } from './ai-digest.service';
+import { AiReadService } from './ai-read.service';
 
 @Module({
   imports: [
@@ -58,9 +60,10 @@ import { AiDigestService } from './ai-digest.service';
     QualityModule,
     MaintenanceModule,
     PlanningModule,
+    VendorsModule,
   ],
   controllers: [AiController],
-  providers: [AiService, AiToolsService, AiDigestService],
+  providers: [AiService, AiToolsService, AiDigestService, AiReadService],
   exports: [AiService, AiToolsService],
 })
 export class AiModule {}

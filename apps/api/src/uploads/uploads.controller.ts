@@ -1,15 +1,20 @@
-import { BadRequestException, Controller, Get, NotFoundException, Param, Post, Res, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Body, ConflictException, Controller, Get, NotFoundException, Param, Post, Res, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { randomUUID } from 'crypto';
+import { extname } from 'path';
 import type { Response } from 'express';
 import { Public } from '../common/decorators';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { memoryStorage } from 'multer';
 import { PrismaService } from '../prisma/prisma.service';
 import { AttachmentsService } from '../common/attachments.service';
 import { StorageService } from '../common/storage.service';
 import { CurrentUser, RequestUser } from '../common/current-user';
+import { CompleteDirectUploadDto, StartDirectUploadDto } from './uploads.dto';
 
 const ALLOWED = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'application/pdf'];
+/** A file sent straight to Blob storage may be this large (a drawing set, a long invoice PDF). */
+const DIRECT_MAX_BYTES = 100 * 1024 * 1024;
 
 @ApiTags('uploads')
 @ApiBearerAuth()
@@ -44,6 +49,44 @@ export class UploadsController {
         data: saved.data ? new Uint8Array(saved.data) : null,
         uploadedById: user.id,
       },
+    });
+    return this.attachments.toDto(row);
+  }
+
+  @ApiOperation({
+    summary: 'Start sending a large file straight to Blob storage',
+    description: 'For files over the 4.5 MB a hosted request takes. Returns a short-lived token for that one path; send the file with `@vercel/blob/client` `put`, then call `/uploads/direct/complete`. 409 when the server keeps files in its database.',
+  })
+  @Post('direct')
+  async startDirect(@CurrentUser() user: RequestUser, @Body() dto: StartDirectUploadDto) {
+    if (this.storage.mode !== 'blob') throw new ConflictException('Files over 4 MB need Blob storage, which this server does not use. Attach a smaller copy.');
+    if (!ALLOWED.includes(dto.mimeType)) throw new BadRequestException('File type not allowed (jpeg, png, webp, heic, pdf)');
+    if (dto.size > DIRECT_MAX_BYTES) throw new BadRequestException('Files up to 100 MB');
+    const ext = extname(dto.fileName).toLowerCase().replace(/[^.a-z0-9]/g, '') || '.pdf';
+    const pathname = `${user.organizationId}/${new Date().toISOString().slice(0, 10)}/${randomUUID()}${ext}`;
+    const { generateClientTokenFromReadWriteToken } = await import('@vercel/blob/client');
+    const clientToken = await generateClientTokenFromReadWriteToken({
+      token: process.env.BLOB_READ_WRITE_TOKEN!,
+      pathname,
+      allowedContentTypes: [dto.mimeType],
+      maximumSizeInBytes: DIRECT_MAX_BYTES,
+      validUntil: Date.now() + 15 * 60_000,
+      addRandomSuffix: false,
+    });
+    return { pathname, clientToken };
+  }
+
+  @ApiOperation({ summary: 'Record a file sent straight to Blob storage', description: 'Returns the attachment, to pass in `attachmentIds` like any upload.' })
+  @Post('direct/complete')
+  async completeDirect(@CurrentUser() user: RequestUser, @Body() dto: CompleteDirectUploadDto) {
+    if (this.storage.mode !== 'blob') throw new ConflictException('This server does not use Blob storage');
+    const url = new URL(dto.url);
+    if (!url.hostname.endsWith('.blob.vercel-storage.com') || url.pathname !== `/${dto.pathname}` || !dto.pathname.startsWith(`${user.organizationId}/`)) throw new BadRequestException('Not a file this company sent');
+    const { head } = await import('@vercel/blob');
+    const blob = await head(dto.url).catch(() => null);
+    if (!blob) throw new BadRequestException('The file did not arrive; send it again');
+    const row = await this.prisma.attachment.create({
+      data: { organizationId: user.organizationId, fileName: dto.fileName.slice(0, 200), mimeType: blob.contentType, size: blob.size, storagePath: blob.url, uploadedById: user.id },
     });
     return this.attachments.toDto(row);
   }
