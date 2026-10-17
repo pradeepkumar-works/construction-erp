@@ -137,6 +137,12 @@ export function MaintenancePanel({ projectId: fixedProject, initialOpenId }: { p
       : []),
   ];
 
+  const newButton = mayReport ? (
+    <Button type="primary" icon={<PlusOutlined />} onClick={() => setForm({ kind: 'BREAKDOWN' })}>
+      Report breakdown
+    </Button>
+  ) : null;
+
   return (
     <div className="maintenance-panel">
       {s ? (
@@ -179,11 +185,7 @@ export function MaintenancePanel({ projectId: fixedProject, initialOpenId }: { p
                 Raise service
               </Button>
             ) : null}
-            {mayReport ? (
-              <Button type="primary" icon={<PlusOutlined />} onClick={() => setForm({ kind: 'BREAKDOWN' })}>
-                Report breakdown
-              </Button>
-            ) : null}
+            {newButton}
           </>
         }
       >
@@ -227,8 +229,11 @@ export function MaintenancePanel({ projectId: fixedProject, initialOpenId }: { p
         table={page.tableProps<MaintenanceJobDto>(data?.total)}
         onOpen={setOpenId}
         chips={frame.chips}
+        empty={frame.empty}
+        failed={!!error}
         scrollX={1000}
         emptyText={<EmptyArt art="entries" title={status || kind || equipmentId || page.params.q ? 'No job card matches these filters' : 'No job cards yet'} />}
+        emptyAction={newButton}
       />
       <JobDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onEdit={setEditing} />
       <JobFormModal

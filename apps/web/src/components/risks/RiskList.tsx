@@ -99,6 +99,12 @@ export function RiskList({ projectId: fixedProject, initialProject, initialOpenI
 
   useNewIntent('risk', mayRaise, () => raise(null));
 
+  const newButton = mayRaise ? (
+    <Button type="primary" icon={<PlusOutlined />} onClick={() => raise({ kind: 'RISK', projectId })}>
+      Raise risk
+    </Button>
+  ) : null;
+
   return (
     <>
       {frame.views}
@@ -114,15 +120,11 @@ export function RiskList({ projectId: fixedProject, initialProject, initialOpenI
           <>
             <ExportButton onExport={exportRows} />
             {mayRaise ? (
-              <>
-                <Button icon={<PlusOutlined />} onClick={() => raise({ kind: 'DELAY', projectId })}>
-                  Record delay
-                </Button>
-                <Button type="primary" icon={<PlusOutlined />} onClick={() => raise({ kind: 'RISK', projectId })}>
-                  Raise risk
-                </Button>
-              </>
+              <Button icon={<PlusOutlined />} onClick={() => raise({ kind: 'DELAY', projectId })}>
+                Record delay
+              </Button>
             ) : null}
+            {newButton}
           </>
         }
       >
@@ -214,8 +216,11 @@ export function RiskList({ projectId: fixedProject, initialProject, initialOpenI
         onOpen={setOpenId}
         bulk={[exportSelected<RiskDto>('delay-risk-register', 'register', RISK_EXPORT)]}
         chips={frame.chips}
+        empty={frame.empty}
+        failed={!!error}
         scrollX={fixedProject ? 1150 : 1350}
         emptyText={<EmptyArt art="entries" title={kind !== 'ALL' || status !== 'ACTIVE' || category || mine || overdue || page.params.q ? 'Nothing matches these filters' : 'No delays or risks open'} />}
+        emptyAction={newButton}
       />
       <RiskDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onEdit={setEditing} />
       <RiskFormModal

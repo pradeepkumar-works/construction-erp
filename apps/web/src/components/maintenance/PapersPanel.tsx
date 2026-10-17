@@ -280,6 +280,18 @@ export function PapersPanel() {
     },
     onError: (e) => message.error(errorMessage(e)),
   });
+
+  const newButton = manager ? (
+    <Button type="primary" icon={<PlusOutlined />} onClick={() => openDoc('new')}>
+      Add paper
+    </Button>
+  ) : null;
+  const newDriverButton = manager ? (
+    <Button icon={<PlusOutlined />} onClick={() => openDriver('new')}>
+      Add driver
+    </Button>
+  ) : null;
+
   return (
     <div className="papers-panel">
       <div style={{ padding: '12px 16px 0' }}>
@@ -297,13 +309,7 @@ export function PapersPanel() {
         search={docList.search}
         onSearch={docList.setSearch}
         searchPlaceholder="Search machine, number, issuer"
-        extra={
-          manager ? (
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => openDoc('new')}>
-              Add paper
-            </Button>
-          ) : null
-        }
+        extra={newButton}
       >
         <Select allowClear placeholder="All papers" style={{ width: 170 }} value={docType} aria-label="Paper" onChange={(v) => docList.setFilter('type', v)} options={EQUIPMENT_DOC_TYPES.map((x) => ({ value: x, label: EQUIPMENT_DOC_TYPE_LABELS[x] }))} />
         <Select allowClear placeholder="Any validity" style={{ width: 150 }} value={docState} aria-label="Validity" onChange={(v) => docList.setFilter('state', v)} options={EXPIRY_STATES.map((x) => ({ value: x, label: EXPIRY_STATE_LABELS[x] }))} />
@@ -323,8 +329,10 @@ export function PapersPanel() {
         table={docList.tableProps<EquipmentDocumentDto>(docs.data?.total)}
         onOpen={manager ? (id) => { const d = docs.data?.items.find((x) => x.id === id); if (d) openDoc(d); } : undefined}
         chips={docFrame.chips}
+        empty={docFrame.empty}
         scrollX={960}
         emptyText={<EmptyArt art="entries" title={docType || docState || docMachine || showOld || docList.params.q ? 'No paper matches these filters' : 'No papers recorded'} />}
+        emptyAction={newButton}
       />
 
       <div style={{ padding: '20px 16px 0' }}>
@@ -339,13 +347,7 @@ export function PapersPanel() {
         search={drvList.search}
         onSearch={drvList.setSearch}
         searchPlaceholder="Search name, phone, licence, machine"
-        extra={
-          manager ? (
-            <Button icon={<PlusOutlined />} onClick={() => openDriver('new')}>
-              Add driver
-            </Button>
-          ) : null
-        }
+        extra={newDriverButton}
       >
         <Checkbox checked={showLeft} onChange={(e) => drvList.setFilter('left', e.target.checked ? '1' : undefined)}>
           Show those who left
@@ -362,8 +364,10 @@ export function PapersPanel() {
         table={drvList.tableProps<DriverDto>(drivers.data?.total)}
         onOpen={manager ? (id) => { const d = drivers.data?.items.find((x) => x.id === id); if (d) openDriver(d); } : undefined}
         chips={drvFrame.chips}
+        empty={drvFrame.empty}
         scrollX={900}
         emptyText={<EmptyArt art="entries" title={showLeft || drvList.params.q ? 'No driver matches these filters' : 'No drivers recorded'} />}
+        emptyAction={newDriverButton}
       />
 
       <Modal open={!!docEditing} title={docEditing === 'new' ? 'Add a paper' : 'Change paper'} onCancel={() => setDocEditing(null)} onOk={() => docForm.submit()} okButtonProps={{ loading: saveDoc.isPending }} okText="Save" width={640} destroyOnHidden>

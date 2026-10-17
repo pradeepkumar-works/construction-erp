@@ -4,11 +4,10 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { Alert, Button, Card, Col, Empty, Row, Skeleton, Statistic, Table, Tabs, Typography } from 'antd';
 import { TeamOutlined } from '@ant-design/icons';
-import dayjs from 'dayjs';
 import type { ProjectCostDto } from '@erp/shared';
 import { COST_HEADS, COST_HEAD_LABELS, EQUIPMENT_RATE_UNIT_LABELS, EXPENSE_CATEGORY_LABELS } from '@erp/shared';
 import { useProjectCost } from '@/lib/queries';
-import { formatINR, formatQty, toNumber } from '@/lib/format';
+import { formatINR, formatQty, toNumber, formatMonth } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { CostBar, CostLegend, HEAD_COLORS } from './CostBar';
 import { DEFAULT_PERIOD, PeriodPicker, periodLabel, periodParams, type PeriodState } from './PeriodPicker';
@@ -89,7 +88,7 @@ export function ProjectCostPanel({ projectId }: { projectId: string }) {
                 dataSource={data.months}
                 scroll={{ x: 760 }}
                 columns={[
-                  { title: 'Month', dataIndex: 'month', width: 100, render: (v) => dayjs(`${v}-01`).format('MMM YYYY') },
+                  { title: 'Month', dataIndex: 'month', width: 100, render: (v) => formatMonth(v) },
                   { title: 'Executed value', dataIndex: 'executedValue', width: 140, align: 'right', render: money },
                   { title: 'Cost', dataIndex: 'total', width: 130, align: 'right', render: money },
                   {

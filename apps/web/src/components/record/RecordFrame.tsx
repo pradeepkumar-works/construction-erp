@@ -8,7 +8,7 @@ import { ArrowLeftOutlined, ExpandOutlined, LinkOutlined, PrinterOutlined } from
 import type { ApprovalTypeParam } from '@/lib/queries';
 import { useStickyTop } from '@/lib/sticky';
 import { rememberRecord } from '@/lib/recent';
-import { QueryError } from '@/components/common/QueryState';
+import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { PageHeader } from '@/components/common/PageHeader';
 import { AuditTrail } from '@/components/common/AuditTrail';
 import type { Lifecycle } from './lifecycle';
@@ -254,11 +254,7 @@ function RecordPage({ kind, list, loading, error, onRetry, record, children }: R
           ) : null
         }
       />
-      {loading && (
-        <Card>
-          <Skeleton active paragraph={{ rows: 6 }} />
-        </Card>
-      )}
+      {loading && <PageSkeleton shape="record" header={false} />}
       {!!error && <QueryError error={error} onRetry={onRetry} />}
       {record && (
         <>

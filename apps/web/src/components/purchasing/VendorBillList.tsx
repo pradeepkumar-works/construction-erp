@@ -126,6 +126,12 @@ export function VendorBillList({ projectId: fixedProject, openId: initialOpen }:
     return rows.length;
   };
 
+  const newButton = recorder ? (
+    <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
+      Record vendor bill
+    </Button>
+  ) : null;
+
   return (
     <>
       {frame.views}
@@ -142,11 +148,7 @@ export function VendorBillList({ projectId: fixedProject, openId: initialOpen }:
         extra={
           <>
             <ExportButton onExport={exportRows} />
-            {recorder ? (
-              <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
-                Record vendor bill
-              </Button>
-            ) : null}
+            {newButton}
           </>
         }
       >
@@ -167,8 +169,11 @@ export function VendorBillList({ projectId: fixedProject, openId: initialOpen }:
         onOpen={setOpenId}
         bulk={[...(approve ? [approve] : []), exportSelected<VendorBillDto>('vendor-bills', 'Vendor bills', VENDOR_BILL_EXPORT)]}
         chips={frame.chips}
+        empty={frame.empty}
+        failed={!!error}
         scrollX={fixedProject ? 1200 : 1420}
         emptyText={<EmptyArt art="entries" title="No vendor bills here yet" />}
+        emptyAction={newButton}
       />
       <VendorBillDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onEdit={setEditing} />
       <VendorBillFormModal

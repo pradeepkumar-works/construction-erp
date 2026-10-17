@@ -4,12 +4,11 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { Alert, Segmented, Select, Statistic, Table, Tag, Typography } from 'antd';
 import type { TableProps } from 'antd';
-import dayjs from 'dayjs';
 import type { CashFlowGranularity, CashFlowPeriodDto } from '@erp/shared';
 import { DEFAULT_CLIENT_PAYMENT_DAYS } from '@erp/shared';
 import { useProjectScope } from '@/lib/project-scope';
 import { useCashFlow, useProjects } from '@/lib/queries';
-import { formatINR, toNumber } from '@/lib/format';
+import { formatINR, toNumber, formatMonth, formatDayMonth } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { themeColor } from '@/lib/theme';
 
@@ -23,7 +22,7 @@ const signed = (v: string) => (
 );
 
 const periodLabel = (p: CashFlowPeriodDto, g: CashFlowGranularity) =>
-  g === 'MONTH' ? dayjs(p.start).format('MMM YYYY') : `${dayjs(p.start).format('D MMM')} to ${dayjs(p.end).format('D MMM')}`;
+  g === 'MONTH' ? formatMonth(p.start) : `${formatDayMonth(p.start)} to ${formatDayMonth(p.end)}`;
 
 /** Money expected in and out by month or week, for one project or every project the user can see. */
 export function CashFlowPanel({ projectId: fixedProject }: { projectId?: string }) {

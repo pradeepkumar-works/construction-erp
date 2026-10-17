@@ -127,6 +127,12 @@ export function WorkerList({ projectId: fixedProject }: { projectId?: string }) 
   const { data, isLoading, isFetching, error, refetch } = useWorkers(filters);
   const rows = data?.items ?? [];
 
+  const newButton = editor ? (
+    <Button type="primary" icon={<PlusOutlined />} onClick={() => setForm({ worker: null })}>
+      Add worker
+    </Button>
+  ) : null;
+
   return (
     <div className="worker-list">
       {error && <QueryError error={error} onRetry={() => refetch()} />}
@@ -146,11 +152,7 @@ export function WorkerList({ projectId: fixedProject }: { projectId?: string }) 
                 return all.length;
               }}
             />
-            {editor ? (
-              <Button type="primary" icon={<PlusOutlined />} onClick={() => setForm({ worker: null })}>
-                Add worker
-              </Button>
-            ) : null}
+            {newButton}
           </>
         }
       >
@@ -174,8 +176,11 @@ export function WorkerList({ projectId: fixedProject }: { projectId?: string }) 
         onOpen={editor ? (id) => { const w = rows.find((x) => x.id === id); if (w) setForm({ worker: w }); } : undefined}
         bulk={[exportSelected<WorkerDto>('workers', 'Workers', EXPORT)]}
         chips={frame.chips}
+        empty={frame.empty}
+        failed={!!error}
         scrollX={1100}
         emptyText={<EmptyArt art="entries" title={!active ? 'Nobody has left' : page.params.q ? 'No worker matches this search' : 'No workers yet. Add the labour contractors’ workers by name to mark a daily roll call.'} />}
+        emptyAction={newButton}
       />
       <WorkerFormModal open={!!form} onClose={() => setForm(null)} worker={form?.worker} projectId={fixedProject} />
     </div>

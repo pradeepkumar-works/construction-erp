@@ -96,6 +96,12 @@ export function IncidentList({ projectId: fixedProject, initialOpenId }: { proje
   const { data, isLoading, isFetching, error, refetch } = useSafetyIncidents(filters);
   const mayReport = !!user && canReportSafety(user.roleKey);
 
+  const newButton = mayReport ? (
+    <Button type="primary" icon={<PlusOutlined />} onClick={() => setForm({ nearMiss: false })}>
+      Report incident
+    </Button>
+  ) : null;
+
   return (
     <>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
@@ -116,15 +122,11 @@ export function IncidentList({ projectId: fixedProject, initialOpenId }: { proje
               }}
             />
             {mayReport ? (
-              <>
-                <Button icon={<PlusOutlined />} onClick={() => setForm({ nearMiss: true })}>
-                  Near miss
-                </Button>
-                <Button type="primary" icon={<PlusOutlined />} onClick={() => setForm({ nearMiss: false })}>
-                  Report incident
-                </Button>
-              </>
+              <Button icon={<PlusOutlined />} onClick={() => setForm({ nearMiss: true })}>
+                Near miss
+              </Button>
             ) : null}
+            {newButton}
           </>
         }
       >
@@ -159,8 +161,11 @@ export function IncidentList({ projectId: fixedProject, initialOpenId }: { proje
         onOpen={setOpenId}
         bulk={[exportSelected<SafetyIncidentDto>('incident-register', 'incidents', EXPORT)]}
         chips={frame.chips}
+        empty={frame.empty}
+        failed={!!error}
         scrollX={fixedProject ? 1000 : 1200}
         emptyText={<EmptyArt art="entries" title={type || status || page.params.q ? 'No incident matches these filters' : 'No incidents or near misses recorded'} />}
+        emptyAction={newButton}
       />
       <IncidentDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onEdit={setEditing} />
       <IncidentFormModal

@@ -13,6 +13,7 @@ import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { BILL_EXPORT } from '@/lib/exportColumns';
 import { formatDate, formatINR } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
+import { EmptyArt } from '@/components/common/EmptyArt';
 import { ListToolbar } from '@/components/common/ListToolbar';
 import { ExportButton } from '@/components/common/ExportButton';
 import { StatusTag } from '@/components/common/StatusTag';
@@ -105,6 +106,12 @@ export function BillList({ projectId: fixedProject, openId: initialOpen }: { pro
 
   useNewIntent('ra-bill', preparer, () => setFormOpen(true));
 
+  const newButton = preparer ? (
+    <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
+      Prepare RA bill
+    </Button>
+  ) : null;
+
   return (
     <>
       {frame.views}
@@ -121,11 +128,7 @@ export function BillList({ projectId: fixedProject, openId: initialOpen }: { pro
         extra={
           <>
             <ExportButton onExport={exportRows} />
-            {preparer ? (
-              <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
-                Prepare RA bill
-              </Button>
-            ) : null}
+            {newButton}
           </>
         }
       >
@@ -151,8 +154,11 @@ export function BillList({ projectId: fixedProject, openId: initialOpen }: { pro
         onOpen={setOpenId}
         bulk={[...(approve ? [approve] : []), exportSelected<RaBillDto>('ra-bills', 'RA bills', BILL_EXPORT)]}
         chips={frame.chips}
+        empty={frame.empty}
+        failed={!!error}
         scrollX={fixedProject ? 1000 : 1200}
-        emptyText={preparer ? 'No bills yet. Prepare the first one from the approved measurements.' : 'No bills yet'}
+        emptyText={<EmptyArt art="entries" title={preparer ? 'No bills yet. Prepare the first one from the approved measurements.' : 'No bills yet'} />}
+        emptyAction={newButton}
       />
       <BillDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onEdit={setEditing} />
       <BillFormModal

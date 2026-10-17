@@ -126,6 +126,12 @@ export function WorkOrderList({ projectId: fixedProject, openId: initialOpen }: 
     return rows.length;
   };
 
+  const newButton = issuer ? (
+    <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
+      New work order
+    </Button>
+  ) : null;
+
   return (
     <>
       {frame.views}
@@ -142,11 +148,7 @@ export function WorkOrderList({ projectId: fixedProject, openId: initialOpen }: 
         extra={
           <>
             <ExportButton onExport={exportRows} />
-            {issuer ? (
-              <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
-                New work order
-              </Button>
-            ) : null}
+            {newButton}
           </>
         }
       >
@@ -176,8 +178,11 @@ export function WorkOrderList({ projectId: fixedProject, openId: initialOpen }: 
         onOpen={setOpenId}
         bulk={[...(approve ? [approve] : []), exportSelected<WorkOrderDto>('work-orders', 'Work orders', WORK_ORDER_EXPORT)]}
         chips={frame.chips}
+        empty={frame.empty}
+        failed={!!error}
         scrollX={fixedProject ? 1000 : 1200}
         emptyText={<EmptyArt art="entries" title={issuer ? 'No work orders yet. Give work to a subcontractor with New work order.' : 'No work orders yet'} />}
+        emptyAction={newButton}
       />
       <WorkOrderDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onEdit={setEditing} />
       <WorkOrderFormModal

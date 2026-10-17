@@ -203,6 +203,8 @@ export function StockBalances({ projectId: fixedProject, initialLow = false, ini
         onOpen={(id) => setLedger(rows.find((r) => r.id === id) ?? null)}
         bulk={[exportSelected<StockRow, StockBalanceDto>('stock-balance', 'stock', STOCK_BALANCE_EXPORT)]}
         chips={frame.chips}
+        empty={frame.empty}
+        failed={!!error}
         scrollX={fixedProject ? 1150 : 1390}
         emptyText={<EmptyArt art="entries" title={lowOnly ? 'Nothing is below its minimum.' : 'No stock yet. Receive material against an approved request, or enter opening stock as an adjustment.'} />}
       />

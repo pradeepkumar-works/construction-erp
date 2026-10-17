@@ -95,6 +95,12 @@ api.interceptors.response.use(
 );
 
 /** Extracts a human readable message from an API / axios error. */
+/** The HTTP status of a failed request; 0 when the request never got an answer (offline, server down, blocked). */
+export function errorStatus(err: unknown): number | undefined {
+  if (!axios.isAxiosError(err)) return undefined;
+  return err.response ? err.response.status : 0;
+}
+
 export function errorMessage(err: unknown, fallback = 'Something went wrong'): string {
   if (axios.isAxiosError(err)) {
     const data = err.response?.data as { message?: string | string[] } | undefined;

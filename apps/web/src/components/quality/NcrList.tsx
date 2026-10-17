@@ -95,6 +95,12 @@ export function NcrList({ projectId: fixedProject, onOpen }: { projectId?: strin
   });
   const filtered = !!(status || severity || active || mine || page.params.q);
 
+  const newButton = user && canRaiseNcr(user.roleKey) ? (
+    <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
+      Raise NCR
+    </Button>
+  ) : null;
+
   return (
     <>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
@@ -105,13 +111,7 @@ export function NcrList({ projectId: fixedProject, onOpen }: { projectId?: strin
         search={page.search}
         onSearch={page.setSearch}
         searchPlaceholder="Search no., title, location"
-        extra={
-          user && canRaiseNcr(user.roleKey) ? (
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
-              Raise NCR
-            </Button>
-          ) : null
-        }
+        extra={newButton}
       >
         <Select<NcrStatus> allowClear placeholder="All statuses" aria-label="Status" value={status} onChange={(v) => page.setFilter('status', v)} style={{ width: 150 }} options={NCR_STATUSES.map((s) => ({ value: s, label: NCR_STATUS_LABELS[s] }))} />
         <Select<NcrSeverity> allowClear placeholder="Any severity" aria-label="Severity" value={severity} onChange={(v) => page.setFilter('severity', v)} style={{ width: 140 }} options={NCR_SEVERITIES.map((s) => ({ value: s, label: NCR_SEVERITY_LABELS[s] }))} />
@@ -132,8 +132,11 @@ export function NcrList({ projectId: fixedProject, onOpen }: { projectId?: strin
         table={page.tableProps<NcrDto>(data?.total)}
         onOpen={onOpen}
         chips={frame.chips}
+        empty={frame.empty}
+        failed={!!error}
         scrollX={fixedProject ? 1000 : 1200}
         emptyText={<EmptyArt art="entries" title={filtered ? 'No NCR matches these filters' : 'No NCR raised'} />}
+        emptyAction={newButton}
       />
       <NcrFormModal open={formOpen} onClose={() => setFormOpen(false)} projectId={fixedProject} onSaved={(x) => onOpen(x.id)} />
     </>

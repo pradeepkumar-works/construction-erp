@@ -101,7 +101,8 @@ const kebab = (key: string) => key.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowe
 /**
  * antd scopes its CSS variables to each component, so plain elements (the sign-in page, the website, the
  * sidebar) cannot read them. This declares a theme's colour tokens on :root under antd's own names
- * (`--ant-color-text-tertiary`), plus the brand palette as `--brand-*`, so CSS files never hold a colour.
+ * (`--ant-color-text-tertiary`) and its motion tokens, plus the brand palette as `--brand-*`, so CSS files never hold a
+ * colour or a duration.
  */
 export function cssVariablesFor(config: ThemeConfig): string {
   const token = theme.getDesignToken(config);
@@ -111,6 +112,8 @@ export function cssVariablesFor(config: ThemeConfig): string {
   }
   for (const [key, value] of Object.entries(c)) vars.push(`--brand-${kebab(key)}:${value}`);
   vars.push(`--ant-control-height:${token.controlHeight}px`);
+  // antd's own motion, so CSS transitions (the sidebar) move at the same pace as antd's components.
+  for (const key of ['motionDurationFast', 'motionDurationMid', 'motionDurationSlow', 'motionEaseInOut', 'motionEaseOut'] as const) vars.push(`${token2CSSVar(key, 'ant')}:${token[key]}`);
   return `:root{${vars.join(';')}}`;
 }
 

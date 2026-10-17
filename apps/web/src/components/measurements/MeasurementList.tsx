@@ -61,6 +61,12 @@ export function MeasurementList({ projectId: fixedProject }: { projectId?: strin
     return rows.length;
   };
 
+  const newButton = mayMeasure ? (
+    <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
+      New measurement
+    </Button>
+  ) : null;
+
   return (
     <>
       {frame.views}
@@ -80,11 +86,7 @@ export function MeasurementList({ projectId: fixedProject }: { projectId?: strin
         extra={
           <>
             <ExportButton onExport={exportRows} />
-            {mayMeasure ? (
-              <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
-                New measurement
-              </Button>
-            ) : null}
+            {newButton}
           </>
         }
       >
@@ -112,8 +114,11 @@ export function MeasurementList({ projectId: fixedProject }: { projectId?: strin
         onOpen={setOpenId}
         bulk={[...(approve ? [approve] : []), exportSelected<MeasurementSheetDto, MeasurementExportRow>('measurement-book', 'measurements', MEASUREMENT_EXPORT, measurementExportRows)]}
         chips={frame.chips}
+        empty={frame.empty}
+        failed={!!error}
         scrollX={fixedProject ? 1150 : 1350}
         emptyText={<EmptyArt art="entries" title="No measurements here yet" />}
+        emptyAction={newButton}
       />
       <MeasurementDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onEdit={setEditing} />
       <MeasurementFormModal

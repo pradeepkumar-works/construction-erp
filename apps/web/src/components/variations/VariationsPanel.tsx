@@ -99,6 +99,12 @@ export function VariationsPanel({ projectId: fixedProject, openId }: { projectId
   const sum = (k: 'approved' | 'pending' | 'contractValue' | 'revisedContractValue') => (summary ?? []).reduce((acc, p) => acc + toNumber(p[k]), 0);
   const extras = (summary ?? []).reduce((acc, p) => acc + p.unapprovedExtraItems, 0);
 
+  const newButton = manage ? (
+    <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreating(true)}>
+      New variation
+    </Button>
+  ) : null;
+
   return (
     <>
       {extras > 0 ? (
@@ -141,13 +147,7 @@ export function VariationsPanel({ projectId: fixedProject, openId }: { projectId
         search={page.search}
         onSearch={page.setSearch}
         searchPlaceholder="Search title or item"
-        extra={
-          manage ? (
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreating(true)}>
-              New variation
-            </Button>
-          ) : null
-        }
+        extra={newButton}
       >
         <Select<VariationStatus> allowClear placeholder="All statuses" aria-label="Status" value={status} onChange={(v) => page.setFilter('status', v)} style={{ width: 180 }} options={VARIATION_STATUSES.map((v) => ({ value: v, label: VARIATION_STATUS_LABELS[v] }))} />
       </ListToolbar>
@@ -161,8 +161,11 @@ export function VariationsPanel({ projectId: fixedProject, openId }: { projectId
         table={page.tableProps<VariationDto>(data?.total)}
         onOpen={setOpen}
         chips={frame.chips}
+        empty={frame.empty}
+        failed={!!error}
         scrollX={fixedProject ? 1000 : 1130}
         emptyText={<EmptyArt art="entries" title={status || page.params.q ? 'No variation matches these filters' : 'No variations yet'} />}
+        emptyAction={newButton}
       />
       <VariationDrawer id={open} open={!!open} onClose={() => setOpen(null)} />
       <VariationFormModal open={creating} onClose={() => setCreating(false)} projectId={fixedProject} onSaved={(v) => setOpen(v.id)} />

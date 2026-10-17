@@ -9,7 +9,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { PayableBillDto, PayableTotalsDto, ProjectPayableDto, VendorPayableDto, VendorPaymentDto, VendorPaymentSortField } from '@erp/shared';
 import { LIST_SORT_FIELDS, MSME_CATEGORY_LABELS, RECEIPT_MODE_LABELS, canRecordPayment } from '@erp/shared';
 import { useProjectScope } from '@/lib/project-scope';
-import { api, errorMessage } from '@/lib/api';
+import { api, errorMessage, errorStatus } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { usePayables, useVendorPayments, useVendors } from '@/lib/queries';
 import { useListPage } from '@/lib/listPage';
@@ -157,6 +157,12 @@ function PaymentsTab({ projectId, vendorId, onBill }: { projectId?: string; vend
   ];
   const choice = useColumnChoice('payables-payments', columns);
 
+  const newButton = accounts ? (
+    <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
+      Record a payment
+    </Button>
+  ) : null;
+
   return (
     <>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
@@ -170,11 +176,7 @@ function PaymentsTab({ projectId, vendorId, onBill }: { projectId?: string; vend
         extra={
           <>
             <ExportButton onExport={exportRows} />
-            {accounts ? (
-              <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
-                Record a payment
-              </Button>
-            ) : null}
+            {newButton}
           </>
         }
       />
@@ -193,6 +195,7 @@ function PaymentsTab({ projectId, vendorId, onBill }: { projectId?: string; vend
         bulk={[exportSelected<VendorPaymentDto>('payments', 'Payments', VENDOR_PAYMENT_EXPORT)]}
         scrollX={1100}
         emptyText={<EmptyArt art="entries" title={page.params.q ? 'No payment matches this search' : 'No payments recorded yet'} />}
+        emptyAction={newButton}
       />
       <PaymentFormModal
         open={formOpen || !!editing}
@@ -314,6 +317,16 @@ export default function PayablesPage() {
       <ExportButton onExport={onExport} />
     </CardToolbar>
   );
+
+  // A role that may not see this gets the reason alone, not empty tabs under it.
+  if (errorStatus(error) === 403) {
+    return (
+      <div className="page-container">
+        <PageHeader title="Payables" />
+        <QueryError error={error} />
+      </div>
+    );
+  }
 
   return (
     <div className="page-container">

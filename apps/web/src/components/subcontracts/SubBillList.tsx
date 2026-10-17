@@ -138,6 +138,12 @@ export function SubBillList({ projectId: fixedProject, openId: initialOpen }: { 
     return rows.length;
   };
 
+  const newButton = preparer ? (
+    <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
+      New bill
+    </Button>
+  ) : null;
+
   return (
     <>
       {frame.views}
@@ -154,11 +160,7 @@ export function SubBillList({ projectId: fixedProject, openId: initialOpen }: { 
         extra={
           <>
             <ExportButton onExport={exportRows} />
-            {preparer ? (
-              <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
-                New bill
-              </Button>
-            ) : null}
+            {newButton}
           </>
         }
       >
@@ -185,8 +187,11 @@ export function SubBillList({ projectId: fixedProject, openId: initialOpen }: { 
         onOpen={setOpenId}
         bulk={[...(approve ? [approve] : []), exportSelected<SubcontractBillDto>('subcontractor-bills', 'Subcontractor bills', SUBCONTRACT_BILL_EXPORT)]}
         chips={frame.chips}
+        empty={frame.empty}
+        failed={!!error}
         scrollX={fixedProject ? 1000 : 1200}
         emptyText={<EmptyArt art="entries" title={preparer ? 'No subcontractor bills yet. Prepare one from an approved work order.' : 'No subcontractor bills yet'} />}
+        emptyAction={newButton}
       />
       <SubBillDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onEdit={setEditing} />
       <SubBillFormModal

@@ -24,7 +24,7 @@ import { PROJECT_TYPE_LABELS, isCompanyWide, mayApprove } from '@erp/shared';
 import { useCompanyDashboard, useHomeTrends, useMyWork } from '@/lib/queries';
 import { formatINR, formatINRCompact, formatDate, progressStatus, toNumber } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
-import { Loading, QueryError } from '@/components/common/QueryState';
+import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { ProjectStatusTag, ProjectTypeTag } from '@/components/common/StatusTag';
 import { useAuth } from '@/lib/auth';
 import { BRAND } from '@/lib/brand';
@@ -115,7 +115,7 @@ export default function DashboardPage() {
       />
       <GettingStartedCard />
       <MyWorkPanel data={myWork.data} loading={myWork.isLoading} order={layout.myWork} />
-      {isLoading && <Loading />}
+      {isLoading && <PageSkeleton shape="home" header={false} />}
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {data && (
         <>

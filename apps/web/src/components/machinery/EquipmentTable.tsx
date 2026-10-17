@@ -189,6 +189,12 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
   const { data, isLoading, isFetching, error, refetch } = useEquipment(filters);
   const rows = data?.items ?? [];
 
+  const newButton = mayManage ? (
+    <Button icon={<PlusOutlined />} onClick={() => open('new')}>
+      Add machine
+    </Button>
+  ) : null;
+
   return (
     <>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
@@ -202,11 +208,7 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
         extra={
           <>
             <ExportButton onExport={exportRows} />
-            {mayManage ? (
-              <Button icon={<PlusOutlined />} onClick={() => open('new')}>
-                Add machine
-              </Button>
-            ) : null}
+            {newButton}
           </>
         }
       >
@@ -237,8 +239,11 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
         onOpen={mayManage ? (id) => { const r = rows.find((x) => x.id === id); if (r) open(r); } : undefined}
         bulk={[exportSelected<EquipmentDto>('equipment', 'equipment', EQUIPMENT_EXPORT)]}
         chips={frame.chips}
+        empty={frame.empty}
+        failed={!!error}
         scrollX={1000}
         emptyText={<EmptyArt art="entries" title={ownership || includeInactive || page.params.q ? 'No machine matches these filters' : mayManage ? 'No machines yet. Add the fleet with Add machine.' : 'No machines yet'} />}
+        emptyAction={newButton}
       />
       <Modal open={!!editing} title={editing === 'new' ? 'Add machine' : 'Edit machine'} onCancel={() => setEditing(null)} onOk={() => form.submit()} okButtonProps={{ loading: save.isPending }} width={620} destroyOnHidden>
         <Form form={form} layout="vertical" onFinish={(v) => save.mutate(v)} style={{ marginTop: 8 }}>

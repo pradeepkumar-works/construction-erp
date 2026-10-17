@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { DatePicker, Segmented, Space } from 'antd';
+import { formatDate } from '@/lib/format';
 import dayjs, { type Dayjs } from 'dayjs';
 import type { CostPeriod } from '@/lib/queries';
 import { rangePresets } from '@/lib/dates';
@@ -38,7 +39,7 @@ export function periodParams(p: PeriodState): CostPeriod {
 export function periodLabel(p: PeriodState): string {
   const q = periodParams(p);
   if (!q.from && !q.to) return 'since the start';
-  const fmt = (s?: string) => (s ? dayjs(s).format('D MMM YYYY') : '…');
+  const fmt = (s?: string) => (s ? formatDate(s) : '…');
   return `${fmt(q.from)} to ${fmt(q.to)}`;
 }
 

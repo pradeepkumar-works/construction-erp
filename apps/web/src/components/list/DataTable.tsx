@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { Button, Checkbox, Dropdown, Flex, Table, Tooltip, Typography, theme } from 'antd';
+import { Button, Checkbox, Dropdown, Flex, Skeleton, Table, Tooltip, Typography, theme } from 'antd';
 import type { TableColumnType, TableProps } from 'antd';
-import { CloseOutlined, ColumnWidthOutlined, LineHeightOutlined } from '@ant-design/icons';
+import { ClearOutlined, CloseOutlined, ColumnWidthOutlined, LineHeightOutlined } from '@ant-design/icons';
 import { readPref, writePref } from '@/lib/prefs';
 import { useStickyTop } from '@/lib/sticky';
+import { EmptyArt } from '@/components/common/EmptyArt';
 
 /** A list column: antd's, with a stable `key`, a plain-text `label` for the column chooser, and an optional page total. */
 export type ListColumn<T> = TableColumnType<T> & {
@@ -66,6 +67,9 @@ export function DataTable<T extends { id: string }>({
   chips,
   scrollX,
   emptyText,
+  emptyAction,
+  empty,
+  failed,
   className,
   expandable,
 }: {
@@ -84,6 +88,12 @@ export function DataTable<T extends { id: string }>({
   chips?: React.ReactNode;
   scrollX?: number;
   emptyText?: React.ReactNode;
+  /** The list's own New button, offered again when there is nothing yet (not when filters hide everything). */
+  emptyAction?: React.ReactNode;
+  /** From `useListFrame`: whether filters are on, and how to drop them. */
+  empty?: { filtered: boolean; clear: () => void };
+  /** The list's query failed; the page shows why (QueryError), so the table only says it has nothing to show. */
+  failed?: boolean;
   className?: string;
   /** Lines that open under a row (a toolbox talk's notes). */
   expandable?: TableProps<T>['expandable'];
@@ -105,6 +115,27 @@ export function DataTable<T extends { id: string }>({
   }, [columns, visible, wrap]);
 
   const hasTotals = shown.some((c) => c.total);
+  // The first load draws rows of placeholders, not a spinner over "No data".
+  const firstLoad = !!loading && rows.length === 0;
+  const emptyNext = empty?.filtered ? (
+    <Button icon={<ClearOutlined />} onClick={empty.clear}>
+      Clear filters
+    </Button>
+  ) : (
+    emptyAction
+  );
+  const emptyState = firstLoad ? (
+    <div aria-busy="true" aria-label="Loading" style={{ padding: `${token.paddingXS}px 0`, textAlign: 'left' }}>
+      <Skeleton active title={false} paragraph={{ rows: 6, width: ['100%', '96%', '100%', '92%', '100%', '88%'] }} />
+    </div>
+  ) : failed ? (
+    <Typography.Text type="secondary">The list could not be loaded.</Typography.Text>
+  ) : (
+    <div>
+      {emptyText ?? <EmptyArt art="entries" title="Nothing here yet" />}
+      {emptyNext ? <div style={{ marginTop: -token.marginXS, paddingBottom: token.padding }}>{emptyNext}</div> : null}
+    </div>
+  );
   const chooser = (
     <Dropdown
       trigger={['click']}
@@ -188,7 +219,7 @@ export function DataTable<T extends { id: string }>({
         rowKey="id"
         className={className}
         expandable={expandable}
-        loading={loading}
+        loading={loading && !firstLoad}
         columns={shown}
         dataSource={rows}
         size="middle"
@@ -208,7 +239,7 @@ export function DataTable<T extends { id: string }>({
               })
             : undefined
         }
-        locale={emptyText ? { emptyText } : undefined}
+        locale={{ emptyText: emptyState }}
         summary={
           hasTotals && rows.length > 1
             ? (data) => (

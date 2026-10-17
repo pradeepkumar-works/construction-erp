@@ -74,6 +74,12 @@ export function TransmittalList({ projectId: fixedProject, onOpen, onNew }: { pr
   const unacknowledged = page.filters.unacknowledged === '1';
   const { data, isLoading, isFetching, error, refetch } = useTransmittals({ page: page.params.page, pageSize: page.params.pageSize, q: page.params.q, sortBy: page.params.sortBy, sortOrder: page.params.sortOrder, projectId: frame.projectId, unacknowledged: unacknowledged || undefined });
 
+  const newButton = user && canManageDocuments(user.roleKey) ? (
+    <Button type="primary" icon={<PlusOutlined />} onClick={onNew}>
+      New transmittal
+    </Button>
+  ) : null;
+
   return (
     <>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
@@ -84,13 +90,7 @@ export function TransmittalList({ projectId: fixedProject, onOpen, onNew }: { pr
         search={page.search}
         onSearch={page.setSearch}
         searchPlaceholder="Search no., to, document"
-        extra={
-          user && canManageDocuments(user.roleKey) ? (
-            <Button type="primary" icon={<PlusOutlined />} onClick={onNew}>
-              New transmittal
-            </Button>
-          ) : null
-        }
+        extra={newButton}
       >
         <Checkbox checked={unacknowledged} onChange={(e) => page.setFilter('unacknowledged', e.target.checked ? '1' : undefined)}>
           Not acknowledged
@@ -106,8 +106,11 @@ export function TransmittalList({ projectId: fixedProject, onOpen, onNew }: { pr
         table={page.tableProps<TransmittalDto>(data?.total)}
         onOpen={onOpen}
         chips={frame.chips}
+        empty={frame.empty}
+        failed={!!error}
         scrollX={fixedProject ? 1000 : 1200}
         emptyText={<EmptyArt art="entries" title={unacknowledged || page.params.q ? 'No transmittal matches these filters' : 'No transmittals yet'} />}
+        emptyAction={newButton}
       />
     </>
   );
