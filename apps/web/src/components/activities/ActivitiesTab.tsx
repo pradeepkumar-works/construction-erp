@@ -17,6 +17,7 @@ import { downloadXlsx, exportFileName } from '@/lib/exportExcel';
 import { ACTIVITY_EXPORT } from '@/lib/exportColumns';
 import { ActivityFormModal } from './ActivityFormModal';
 import { ApplyTemplateModal } from '@/components/templates/ApplyTemplateModal';
+import { AskButton } from '@/components/ai/AskButton';
 
 export function ActivitiesTab({ projectId, members, project }: { projectId: string; members: ProjectMemberDto[]; project?: ProjectDetail }) {
   const { user } = useAuth();
@@ -49,6 +50,15 @@ export function ActivitiesTab({ projectId, members, project }: { projectId: stri
             <Tag color="red" icon={<WarningOutlined />} style={{ marginLeft: 4 }}>
               Delayed
             </Tag>
+          )}
+          {r.isDelayed && (
+            <AskButton
+              size="small"
+              type="link"
+              label="Explain"
+              aria-label={`Explain why ${v} is behind`}
+              question={`Why is ${v}${project ? ` on ${project.code}` : ''} behind plan?`}
+            />
           )}
           {r.holdPoint && (
             <Tag color="orange" style={{ marginLeft: 4 }}>

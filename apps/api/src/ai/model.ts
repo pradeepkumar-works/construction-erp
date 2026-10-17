@@ -110,12 +110,11 @@ export class FakeModel implements AiModel {
     const result = blocks.find((b): b is Anthropic.Beta.BetaToolResultBlockParam => b.type === 'tool_result');
     const usage = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 };
     if (!result) {
-      const question = blocks
-        .filter((b): b is Anthropic.Beta.BetaTextBlockParam => b.type === 'text')
-        .map((b) => b.text)
-        .pop()
-        ?.toLowerCase() ?? (typeof last.content === 'string' ? last.content.toLowerCase() : '');
-      const [name, input] = pickTool(question);
+      const texts = blocks.filter((b): b is Anthropic.Beta.BetaTextBlockParam => b.type === 'text').map((b) => b.text);
+      const question = texts[texts.length - 1]?.toLowerCase() ?? (typeof last.content === 'string' ? last.content.toLowerCase() : '');
+      // The page or the header's project, from the context note, for the project tools.
+      const projectId = texts.join(' ').match(/\/projects\/([0-9a-f-]{36})|\(id ([0-9a-f-]{36})\)/)?.slice(1).find(Boolean);
+      const [name, input] = pickTool(question, projectId);
       return { content: [{ type: 'tool_use', id: `toolu_fake_${Date.now()}`, name, input, caller: { type: 'direct' } } as Block], stopReason: 'tool_use', usage, model: this.name };
     }
     const raw = typeof result.content === 'string' ? result.content : (result.content ?? []).map((c) => ('text' in c ? c.text : '')).join('');
@@ -127,10 +126,13 @@ export class FakeModel implements AiModel {
 
 const STOP = new Set(['what', 'which', 'show', 'list', 'find', 'about', 'the', 'and', 'for', 'with', 'this', 'that', 'how', 'many', 'are', 'there', 'our', 'any', 'all', 'from', 'me', 'please']);
 
-function pickTool(q: string): [string, Record<string, unknown>] {
+function pickTool(q: string, projectId?: string): [string, Record<string, unknown>] {
+  if (projectId && /summari[sz]e/.test(q)) return ['project_week', { projectId }];
+  if (projectId && /changed|last bill/.test(q)) return ['ra_bill_changes', { projectId }];
+  if (projectId && /behind|late|delay/.test(q) && !/cost|budget/.test(q)) return ['explain_activities', { projectId }];
   if (/approv/.test(q)) return ['approvals_waiting', {}];
   if (/my work|waiting for me|today/.test(q)) return ['my_work', {}];
-  if (/cost|margin|budget/.test(q)) return ['project_cost', {}];
+  if (/cost|margin|budget/.test(q)) return ['project_cost', projectId ? { projectId } : {}];
   if (/project/.test(q)) return ['list_projects', {}];
   const word = q
     .split(/[^\p{L}\p{N}-]+/u)
@@ -148,16 +150,22 @@ function describe(raw: string): string {
   } catch {
     return 'I found records, but the list was too long to read here. Ask about one project.';
   }
-  const rows: Record<string, unknown>[] = Array.isArray(data)
-    ? data
-    : data && typeof data === 'object' && Array.isArray((data as { items?: unknown }).items)
-      ? (data as { items: Record<string, unknown>[] }).items
-      : [];
-  const linked = rows.filter((r) => r && typeof r === 'object' && typeof r.href === 'string');
+  const linked = linkedRows(data);
   if (!linked.length) return 'I found nothing for that in the records you can see.';
   const lines = linked.slice(0, 5).map((r) => {
     const label = LABEL_KEYS.map((k) => r[k]).find((v) => typeof v === 'string' && v) as string | undefined;
     return `- [${label ?? 'Record'}](${r.href as string})${typeof r.status === 'string' ? ` (${r.status})` : ''}`;
   });
   return `Here is what I found (${linked.length}):\n\n${lines.join('\n')}`;
+}
+
+/** Every object with a link, in the order they come, however deep (a digest nests them in sections). */
+function linkedRows(value: unknown, out: Record<string, unknown>[] = []): Record<string, unknown>[] {
+  if (Array.isArray(value)) value.forEach((v) => linkedRows(v, out));
+  else if (value && typeof value === 'object') {
+    const row = value as Record<string, unknown>;
+    if (typeof row.href === 'string') out.push(row);
+    Object.values(row).forEach((v) => (v && typeof v === 'object' ? linkedRows(v, out) : undefined));
+  }
+  return out;
 }

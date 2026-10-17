@@ -90,6 +90,52 @@ test('Ctrl K hands a question to Ask Nirmaan, and the conversation is kept in hi
   await expect(panel(page).getByRole('button', { name: question, exact: true })).toHaveCount(0);
 });
 
+test('Summarise this week and Explain ask about what is on the page (AI item 68)', async ({ page }) => {
+  await signIn(page, 'md@demo.com');
+  const md = await apiToken('md@demo.com');
+  const project = (await api<{ items: { id: string; code: string; status: string }[] }>(md, '/projects?pageSize=100')).items.find((p) => p.status === 'ACTIVE')!;
+
+  // The project header's button asks for the week; the answer links the records it read.
+  await page.goto(`/projects/${project.id}`);
+  await page.getByRole('button', { name: 'Summarise this week' }).click();
+  await expect(panel(page).getByText(`Summarise this week on ${project.code}`, { exact: false })).toBeVisible();
+  await expect(panel(page).getByText(/Here is what I found \(\d+\)/)).toBeVisible();
+  await expect(panel(page).getByLabel('Records used').getByRole('link').first()).toBeVisible();
+
+  // Explain beside a delayed activity asks why it is behind.
+  const activities = await api<{ name: string; isDelayed: boolean }[]>(md, `/projects/${project.id}/activities`);
+  const late = activities.find((a) => a.isDelayed);
+  if (late) {
+    await page.goto(`/projects/${project.id}?tab=activities`);
+    await page.getByRole('button', { name: `Explain why ${late.name} is behind` }).click();
+    await expect(panel(page).getByText(`Why is ${late.name}`, { exact: false })).toBeVisible();
+    await expect(panel(page).getByText(/Here is what I found \(\d+\)/).last()).toBeVisible();
+  }
+
+  // An RA bill after the first offers What changed.
+  const bill = (await api<{ items: { id: string; billNo: number; billLabel: string }[] }>(md, '/ra-bills?pageSize=100')).items.find((b) => b.billNo > 1);
+  if (bill) {
+    await page.goto(`/bills/${bill.id}`);
+    await page.getByRole('button', { name: 'What changed' }).click();
+    await expect(panel(page).getByText(`What changed on ${bill.billLabel}`, { exact: false })).toBeVisible();
+  }
+});
+
+test('a site engineer gets no Summarise button while Ask Nirmaan is off for the company', async ({ page }) => {
+  const admin = await apiToken('admin@demo.com');
+  const eng = await apiToken('engineer@demo.com');
+  const project = (await api<{ items: { id: string }[] }>(eng, '/projects?pageSize=1')).items[0];
+  await api(admin, '/ai/settings', { method: 'PATCH', body: { enabled: false } });
+  try {
+    await signIn(page, 'engineer@demo.com');
+    await page.goto(`/projects/${project.id}`);
+    await expect(page.getByRole('button', { name: /Progress report/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Summarise this week' })).toHaveCount(0);
+  } finally {
+    await api(admin, '/ai/settings', { method: 'PATCH', body: { enabled: true } });
+  }
+});
+
 test('guests cannot ask, and nobody can ask once an admin switches it off', async () => {
   // Guests only reach the client portal's routes.
   const client = await apiToken('client@demo.com');
