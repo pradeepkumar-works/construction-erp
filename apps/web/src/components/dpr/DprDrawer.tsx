@@ -130,7 +130,7 @@ export function DprRecord({ id, mode, open, onClose, onEdit }: RecordProps & { m
             },
             { key: 'photos', title: 'Photos', count: data.attachments.length, children: <AttachmentGallery attachments={data.attachments} /> },
           ],
-          activity: { type: 'dpr', id: data.id },
+          activity: { type: 'dpr', id: data.id, submission: data },
           actions: (size) => (
             <>
               <EditResubmitButton entry={data} onEdit={onEdit} size={size} />

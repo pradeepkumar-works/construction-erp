@@ -118,7 +118,7 @@ export function IncidentList({ projectId: fixedProject, initialOpenId }: { proje
             <ExportButton
               onExport={async () => {
                 const rows = await fetchAllPages<SafetyIncidentDto>('/safety/incidents', filters);
-                downloadXlsx(exportFileName('incident-register'), 'incidents', EXPORT, rows);
+                await downloadXlsx(exportFileName('incident-register'), 'incidents', EXPORT, rows);
                 return rows.length;
               }}
             />

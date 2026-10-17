@@ -7,7 +7,7 @@ import type { ApplyTemplateResultDto, ProjectDetail } from '@erp/shared';
 import { PROJECT_TYPE_LABELS, scheduleTemplate } from '@erp/shared';
 import { api, errorMessage } from '@/lib/api';
 import { useActivityTemplates } from '@/lib/queries';
-import { formatDate } from '@/lib/format';
+import { formatDate, inSentence } from '@/lib/format';
 
 /** Pick standard activities for the project's type and add the ones it does not have yet. */
 export function ApplyTemplateModal({ open, onClose, project, existing }: { open: boolean; onClose: () => void; project: ProjectDetail; existing: string[] }) {
@@ -37,7 +37,7 @@ export function ApplyTemplateModal({ open, onClose, project, existing }: { open:
     <Modal
       open={open}
       onCancel={onClose}
-      title={`Add ${PROJECT_TYPE_LABELS[project.type].toLowerCase()} activities from the template`}
+      title={`Add ${inSentence(PROJECT_TYPE_LABELS[project.type])} activities from the template`}
       okText={`Add ${picked.length} activit${picked.length === 1 ? 'y' : 'ies'}`}
       okButtonProps={{ disabled: !picked.length }}
       confirmLoading={apply.isPending}

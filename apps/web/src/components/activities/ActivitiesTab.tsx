@@ -133,7 +133,7 @@ export function ActivitiesTab({ projectId, members, project }: { projectId: stri
         <Space>
         <ExportButton
           onExport={async () => {
-            downloadXlsx(exportFileName('activities'), 'Activities', ACTIVITY_EXPORT, data ?? []);
+            await downloadXlsx(exportFileName('activities'), 'Activities', ACTIVITY_EXPORT, data ?? []);
             return data?.length ?? 0;
           }}
         />

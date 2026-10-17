@@ -109,7 +109,7 @@ export default function ProjectsPage() {
   const filtered = !!(type || status || page.params.q);
   const exportRows = async () => {
     const rows = await fetchAllPages<ProjectSummary>('/projects', filters);
-    downloadXlsx(exportFileName('projects'), 'Projects', PROJECT_EXPORT, rows);
+    await downloadXlsx(exportFileName('projects'), 'Projects', PROJECT_EXPORT, rows);
     return rows.length;
   };
 

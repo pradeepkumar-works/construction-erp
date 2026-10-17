@@ -8,6 +8,7 @@ import { PROJECT_STATUSES, PROJECT_STATUS_LABELS, PROJECT_TYPES, PROJECT_TYPE_LA
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, errorMessage } from '@/lib/api';
 import { useActivityTemplates, useClients, useUsers } from '@/lib/queries';
+import { inSentence } from '@/lib/format';
 
 interface FormValues {
   code: string;
@@ -158,7 +159,7 @@ export function ProjectFormModal({
         </Form.Item>
         {!isEdit ? (
           <Form.Item name="applyTemplate" valuePropName="checked" style={{ marginBottom: 0 }} extra="Scheduled across the start and end dates; planned quantities are filled in later. Templates are under Activity Templates.">
-            <Checkbox>Add the {template ? `${template.items.length} ` : ''}standard {type ? PROJECT_TYPE_LABELS[type as ProjectType].toLowerCase() : ''} activities</Checkbox>
+            <Checkbox>Add the {template ? `${template.items.length} ` : ''}standard {type ? inSentence(PROJECT_TYPE_LABELS[type as ProjectType]) : ''} activities</Checkbox>
           </Form.Item>
         ) : null}
       </Form>

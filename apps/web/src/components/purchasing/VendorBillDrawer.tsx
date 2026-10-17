@@ -238,7 +238,7 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
               : []),
             { key: 'invoice', title: 'Invoice', count: data.attachments.length, children: <AttachmentGallery attachments={data.attachments} /> },
           ],
-          activity: { type: 'vendor_bill', id: data.id },
+          activity: { type: 'vendor_bill', id: data.id, submission: data },
           actions: (size) => (
             <>
               {editable && data.status === 'DRAFT' && user && canResubmit(user, data) ? (

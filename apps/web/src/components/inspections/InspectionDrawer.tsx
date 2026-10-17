@@ -246,7 +246,7 @@ export function InspectionRecord({ id, mode, open, onClose, onEdit }: RecordProp
               ),
             },
           ],
-          activity: { type: 'inspection', id: data.id },
+          activity: { type: 'inspection', id: data.id, submission: data },
           actions: (size) => (
             <>
               {mayRaise ? (

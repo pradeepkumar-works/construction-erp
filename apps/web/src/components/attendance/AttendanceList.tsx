@@ -97,7 +97,7 @@ export function AttendanceList({ projectId: fixedProject }: { projectId?: string
   const exportRows = async () => {
     const all = await fetchAllPages<AttendanceSheetDto>('/attendance', { ...filters });
     const lines = attendanceExportRows(all);
-    downloadXlsx(exportFileName('attendance'), 'attendance', ATTENDANCE_EXPORT, lines);
+    await downloadXlsx(exportFileName('attendance'), 'attendance', ATTENDANCE_EXPORT, lines);
     return lines.length;
   };
 

@@ -106,6 +106,8 @@ export interface CreateUserResultDto extends UserSummary {
 export interface AuthOptionsDto {
   /** New organisations may sign up (ORG_SIGNUP=open on the API). */
   signup: boolean;
+  /** The sign-in screens offer the demo accounts (on unless DEMO_LOGIN=false on the API; off for a customer's own server). */
+  demoLogin: boolean;
   /** Password-reset emails can be sent (email provider and web address configured). */
   resetByEmail: boolean;
   /** The public price for the product page, or null while billing is switched off. */

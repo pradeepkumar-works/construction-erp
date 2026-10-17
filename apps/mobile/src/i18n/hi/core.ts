@@ -20,6 +20,7 @@ export const CORE: Record<string, string> = {
   'Checking…': 'जाँच हो रही है…',
   'Approvals, rejections and change requests on your submissions, plus the daily DPR reminder, also appear under Notifications on the Home screen.': 'आपकी एंट्री पर मंज़ूरी, नामंज़ूरी और बदलाव की माँग, और रोज़ का DPR रिमाइंडर होम स्क्रीन पर सूचनाओं में भी दिखते हैं।',
   Connection: 'कनेक्शन',
+  'App version {version}': 'ऐप संस्करण {version}',
   'Set EXPO_PUBLIC_API_URL before starting Expo to point the app at another server.': 'ऐप को दूसरे सर्वर से जोड़ने के लिए Expo शुरू करने से पहले EXPO_PUBLIC_API_URL सेट करें।',
   Language: 'भाषा',
   'Coming soon': 'जल्द आ रहा है',

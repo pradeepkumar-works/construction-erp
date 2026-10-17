@@ -4,10 +4,10 @@ import React, { useMemo, useState } from 'react';
 import { Alert, App, Button, Modal, Select, Space, Steps, Table, Typography, Upload } from 'antd';
 import type { UploadProps } from 'antd';
 import { DownloadOutlined, InboxOutlined } from '@ant-design/icons';
-import * as XLSX from 'xlsx';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, errorMessage } from '@/lib/api';
 import { themeColor } from '@/lib/theme';
+import { loadXlsx } from '@/lib/exportExcel';
 
 type Field = 'itemNo' | 'description' | 'unit' | 'rate' | 'originalQty' | 'revisedQty';
 
@@ -33,7 +33,8 @@ interface ParsedRow {
   error?: string;
 }
 
-export function downloadBoqTemplate() {
+export async function downloadBoqTemplate() {
+  const XLSX = await loadXlsx();
   const ws = XLSX.utils.aoa_to_sheet([
     ['Item No', 'Description', 'Unit', 'Rate', 'Quantity', 'Revised Qty'],
     ['1.01', 'Clearing and grubbing including removal of vegetation', 'Sqm', 18.5, 85000, ''],
@@ -65,8 +66,9 @@ export function BoqImportModal({ open, onClose, projectId }: { open: boolean; on
   const beforeUpload: UploadProps['beforeUpload'] = (file) => {
     setParseError(null);
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
+        const XLSX = await loadXlsx();
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
         const wb = XLSX.read(data, { type: 'array' });
         const ws = wb.Sheets[wb.SheetNames[0]];

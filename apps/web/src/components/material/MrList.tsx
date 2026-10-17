@@ -51,7 +51,7 @@ export function MrList({ projectId: fixedProject, newLabel, openId: initialOpen 
 
   const exportRows = async () => {
     const rows = await fetchAllPages<MaterialRequestDto>('/material-requests', { ...filters });
-    downloadXlsx(exportFileName('material-requests'), 'material-requests', MR_EXPORT, mrExportRows(rows));
+    await downloadXlsx(exportFileName('material-requests'), 'material-requests', MR_EXPORT, mrExportRows(rows));
     return rows.length;
   };
 

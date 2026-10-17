@@ -122,7 +122,7 @@ export function WorkOrderList({ projectId: fixedProject, openId: initialOpen }: 
 
   const exportRows = async () => {
     const rows = await fetchAllPages<WorkOrderDto>('/work-orders', { ...filters });
-    downloadXlsx(exportFileName('work-orders'), 'Work orders', WORK_ORDER_EXPORT, rows);
+    await downloadXlsx(exportFileName('work-orders'), 'Work orders', WORK_ORDER_EXPORT, rows);
     return rows.length;
   };
 

@@ -180,7 +180,7 @@ function VendorsTab({ editable, onEdit, emptyAction }: { editable: boolean; onEd
 
   const exportRows = async () => {
     const all = await fetchAllPages<VendorDto>('/vendors', { ...filters });
-    downloadXlsx(exportFileName('vendors'), 'Vendors', exportCols, all);
+    await downloadXlsx(exportFileName('vendors'), 'Vendors', exportCols, all);
     return all.length;
   };
 

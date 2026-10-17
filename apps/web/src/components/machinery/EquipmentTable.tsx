@@ -117,7 +117,7 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
 
   const exportRows = async () => {
     const rows = await fetchAllPages<EquipmentDto>('/equipment', { ...filters });
-    downloadXlsx(exportFileName('equipment'), 'equipment', EQUIPMENT_EXPORT, rows);
+    await downloadXlsx(exportFileName('equipment'), 'equipment', EQUIPMENT_EXPORT, rows);
     return rows.length;
   };
 

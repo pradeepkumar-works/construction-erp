@@ -114,7 +114,7 @@ export function PurchaseOrderList({ projectId: fixedProject, openId: initialOpen
 
   const exportRows = async () => {
     const rows = await fetchAllPages<PurchaseOrderDto>('/purchase-orders', { ...filters });
-    downloadXlsx(exportFileName('purchase-orders'), 'Purchase orders', PURCHASE_ORDER_EXPORT, rows);
+    await downloadXlsx(exportFileName('purchase-orders'), 'Purchase orders', PURCHASE_ORDER_EXPORT, rows);
     return rows.length;
   };
 

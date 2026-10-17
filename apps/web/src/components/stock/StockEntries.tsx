@@ -100,7 +100,7 @@ export function StockEntries({ projectId: fixedProject }: { projectId?: string }
 
   const exportRows = async () => {
     const rows = stockEntryExportRows(await fetchAllPages<StockEntryDto>('/stock/entries', { ...filters, allTypes: true }));
-    downloadXlsx(exportFileName('stock-register'), 'register', STOCK_ENTRY_EXPORT, rows);
+    await downloadXlsx(exportFileName('stock-register'), 'register', STOCK_ENTRY_EXPORT, rows);
     return rows.length;
   };
 

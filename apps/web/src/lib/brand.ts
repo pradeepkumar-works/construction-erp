@@ -30,6 +30,9 @@ export const BRAND = {
     pending: '#C2410C',
     /** Approve and pass buttons, and figures that are good news (a positive margin). Dark enough for white text on it and for text on white (WCAG AA). */
     success: '#167A3E',
+    /** Light fills behind success text (status tags): antd's shade of the green above comes out grey. */
+    successBg: '#E8F5EC',
+    successBorder: '#A7D7B6',
     /** Overdue amounts, losses and other figures that need attention (antd red-7, which reads on white). */
     danger: '#CF1322',
     canvas: '#F3F6FA',

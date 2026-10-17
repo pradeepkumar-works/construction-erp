@@ -262,7 +262,7 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
               : []),
             { key: 'documents', title: 'Documents', count: data.attachments.length, children: <AttachmentGallery attachments={data.attachments} /> },
           ],
-          activity: { type: 'work_order', id: data.id },
+          activity: { type: 'work_order', id: data.id, submission: data },
           actions: (size) => (
             <>
               {editable && data.status === 'DRAFT' && user && canResubmit(user, data) ? (

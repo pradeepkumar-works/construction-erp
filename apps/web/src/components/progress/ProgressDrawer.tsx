@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import { Typography } from 'antd';
 import type { ProgressEntryDto } from '@erp/shared';
 import { sectorLocation } from '@erp/shared';
 import { useProgressEntry } from '@/lib/queries';
@@ -56,17 +55,10 @@ export function ProgressRecord({ id, mode, open, onClose, onEdit }: RecordProps 
               key: 'photos',
               title: 'Photos',
               count: data.attachments.length,
-              children: (
-                <>
-                  <AttachmentGallery attachments={data.attachments} />
-                  <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12 }}>
-                    Entry ID: {data.id}
-                  </Typography.Text>
-                </>
-              ),
+              children: <AttachmentGallery attachments={data.attachments} />,
             },
           ],
-          activity: { type: 'progress', id: data.id },
+          activity: { type: 'progress', id: data.id, submission: data },
           actions: (size) => (
             <>
               <EditResubmitButton entry={data} onEdit={onEdit} size={size} />

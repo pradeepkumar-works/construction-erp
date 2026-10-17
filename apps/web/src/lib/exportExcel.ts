@@ -1,6 +1,5 @@
 'use client';
 
-import * as XLSX from 'xlsx';
 import { MAX_PAGE_SIZE, type Paginated } from '@erp/shared';
 import { api } from './api';
 
@@ -26,7 +25,11 @@ export interface ExportColumn<T> {
   width?: number;
 }
 
-function sheet<T>(columns: ExportColumn<T>[], rows: T[]) {
+/** The spreadsheet library (about 400 KB) loads on the first export, not with every list. */
+export const loadXlsx = () => import('xlsx');
+type Xlsx = Awaited<ReturnType<typeof loadXlsx>>;
+
+function sheet<T>(XLSX: Xlsx, columns: ExportColumn<T>[], rows: T[]) {
   const aoa = [columns.map((c) => c.header), ...rows.map((r) => columns.map((c) => c.value(r) ?? ''))];
   const ws = XLSX.utils.aoa_to_sheet(aoa);
   ws['!cols'] = columns.map((c) => ({ wch: c.width ?? Math.max(10, c.header.length + 2) }));
@@ -34,19 +37,21 @@ function sheet<T>(columns: ExportColumn<T>[], rows: T[]) {
 }
 
 /** Write rows to a one-sheet .xlsx and start the download. */
-export function downloadXlsx<T>(fileName: string, sheetName: string, columns: ExportColumn<T>[], rows: T[]) {
+export async function downloadXlsx<T>(fileName: string, sheetName: string, columns: ExportColumn<T>[], rows: T[]) {
+  const XLSX = await loadXlsx();
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, sheet(columns, rows), sheetName.slice(0, 31));
+  XLSX.utils.book_append_sheet(wb, sheet(XLSX, columns, rows), sheetName.slice(0, 31));
   XLSX.writeFile(wb, fileName.endsWith('.xlsx') ? fileName : `${fileName}.xlsx`);
 }
 
-/** One sheet of a workbook, built from rows. */
-export const workbookSheet = <T>(name: string, columns: ExportColumn<T>[], rows: T[]) => ({ name: name.slice(0, 31), ws: sheet(columns, rows) });
+/** One sheet of a workbook, built from rows once the library has loaded. */
+export const workbookSheet = <T>(name: string, columns: ExportColumn<T>[], rows: T[]) => ({ name: name.slice(0, 31), build: (XLSX: Xlsx) => sheet(XLSX, columns, rows) });
 
 /** Write several sheets to one .xlsx and start the download. */
-export function downloadWorkbook(fileName: string, sheets: ReturnType<typeof workbookSheet>[]) {
+export async function downloadWorkbook(fileName: string, sheets: ReturnType<typeof workbookSheet>[]) {
+  const XLSX = await loadXlsx();
   const wb = XLSX.utils.book_new();
-  for (const s of sheets) XLSX.utils.book_append_sheet(wb, s.ws, s.name);
+  for (const s of sheets) XLSX.utils.book_append_sheet(wb, s.build(XLSX), s.name);
   XLSX.writeFile(wb, fileName.endsWith('.xlsx') ? fileName : `${fileName}.xlsx`);
 }
 

@@ -10,7 +10,7 @@ import { useProjectScope } from '@/lib/project-scope';
 import { approvalTypeParam, usePendingApprovals } from '@/lib/queries';
 import { useAuth } from '@/lib/auth';
 import { approveTheme } from '@/lib/theme';
-import { formatINR } from '@/lib/format';
+import { formatINR, inSentence } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { QueryError } from '@/components/common/QueryState';
 import { EmptyArt } from '@/components/common/EmptyArt';
@@ -140,7 +140,7 @@ export default function ApprovalsPage() {
     const t = selectedType;
     const ids = [...selected].map((k) => k.slice(k.indexOf(':') + 1));
     modal.confirm({
-      title: `Approve ${ids.length} ${ids.length === 1 ? 'entry' : 'entries'} in ${QUEUE_TYPE_LABELS[t].toLowerCase()}?`,
+      title: `Approve ${ids.length} ${ids.length === 1 ? 'entry' : 'entries'} in ${inSentence(QUEUE_TYPE_LABELS[t])}?`,
       content: 'Each is approved on its own, as if one by one: its submitter is told and its activity shows your approval.',
       okText: `Approve ${ids.length}`,
       onOk: async () => {
@@ -216,7 +216,7 @@ export default function ApprovalsPage() {
           style={{ position: 'sticky', top: 0, zIndex: 2, padding: `${token.paddingXS}px ${token.paddingSM}px`, background: token.colorPrimaryBg, borderBottom: `${token.lineWidth}px ${token.lineType} ${token.colorPrimaryBorder}` }}
         >
           <Typography.Text strong>
-            {selected.size} selected in {QUEUE_TYPE_LABELS[selectedType].toLowerCase()}
+            {selected.size} selected in {inSentence(QUEUE_TYPE_LABELS[selectedType])}
           </Typography.Text>
           <Flex gap={token.marginXS}>
             <Button size="small" type="text" onClick={clearSelection}>
@@ -269,7 +269,7 @@ export default function ApprovalsPage() {
           type="info"
           showIcon
           closable
-          title={`Your approval limit: ${limited.map((r) => `${SUBMISSION_TYPE_LABELS[r.type].toLowerCase()} up to ${formatINR(r.maxAmount)}`).join(', ')}. Anything above goes to a higher approver.`}
+          title={`Your approval limit: ${limited.map((r) => `${inSentence(SUBMISSION_TYPE_LABELS[r.type])} up to ${formatINR(r.maxAmount)}`).join(', ')}. Anything above goes to a higher approver.`}
           style={{ marginBottom: token.margin }}
         />
       )}

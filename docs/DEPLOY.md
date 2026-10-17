@@ -34,6 +34,7 @@ API (`apps/api`):
 | `WEB_URL` | web ERP URL used for links in emails (digest, invites, password resets). Password-reset emails need it (or `CORS_ORIGINS`). |
 | `TENANT_RLS` | `off` stops the API setting the organisation for Postgres row-level security (kill switch; the policies then allow everything). Unset = on. `GET /api/health` shows `tenantGuard`: `enforced`, `off`, or `bypassed` when the database role has BYPASSRLS or is a superuser (then connect as `erp_runtime`, see "Database roles"). To remove the policies: `psql "$DATABASE_URL" -f apps/api/prisma/rls-rollback.sql`. |
 | `ORG_SIGNUP` | `open` lets new companies create an organisation at `/signup`; unset = closed |
+| `DEMO_LOGIN` | `false` hides the demo accounts on the web and phone sign-in screens (set it on a customer's own server); unset = shown, as on the demo site |
 | `EXPO_ACCESS_TOKEN` | optional; only if push security is enforced on the Expo project |
 | `NOTIFICATION_JOBS_INPROCESS`, `DPR_REMINDER_TIME`, `APPROVAL_DIGEST_TIME` | run the jobs from a timer inside the API (Docker / Railway) instead of Vercel Cron; times are `HH:mm` in `NOTIFICATION_TIMEZONE` |
 | `WATI_API_ENDPOINT`, `WATI_ACCESS_TOKEN` | WhatsApp alerts through WATI, see "WhatsApp and SMS" below: the API endpoint (`https://live-mt-server.wati.io/<account number>`) and access token from WATI's API Docs page. `WATI_CHANNEL_NUMBER` is only needed when the WATI account has more than one WhatsApp number. WATI is used when both it and the Cloud API keys are set. |

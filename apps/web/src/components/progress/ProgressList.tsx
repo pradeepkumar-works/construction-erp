@@ -48,7 +48,7 @@ export function ProgressList({ projectId: fixedProject, newLabel }: { projectId?
 
   const exportRows = async () => {
     const rows = await fetchAllPages<ProgressEntryDto>('/progress', { ...filters });
-    downloadXlsx(exportFileName('progress'), 'progress', PROGRESS_EXPORT, rows);
+    await downloadXlsx(exportFileName('progress'), 'progress', PROGRESS_EXPORT, rows);
     return rows.length;
   };
 
