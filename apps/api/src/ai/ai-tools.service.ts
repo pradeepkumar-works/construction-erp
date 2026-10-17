@@ -408,6 +408,8 @@ export function compact(value: unknown, depth = 0): unknown {
     const c = compact(v, depth + 1);
     if (c !== undefined) out[k] = c;
   }
+  // A per-project row in a summary (cost, receivables…) links to its project, so the answer can cite it.
+  if (typeof out.projectId === 'string' && UUID.test(out.projectId) && out.href === undefined) out.href = `/projects/${out.projectId}`;
   return Object.keys(out).length ? out : undefined;
 }
 

@@ -32,7 +32,44 @@ export function collectNumbers(value: unknown, out: number[] = []): number[] {
     out.push(value.length);
     value.forEach((v) => collectNumbers(v, out));
   }
-  else if (value && typeof value === 'object') Object.values(value).forEach((v) => collectNumbers(v, out));
+  else if (value && typeof value === 'object') {
+    for (const [k, v] of Object.entries(value)) {
+      // Bucket names carry their bounds ("days31to60").
+      for (const m of k.matchAll(/\d+/g)) out.push(Number(m[0]));
+      collectNumbers(v, out);
+    }
+  }
+  return out;
+}
+
+const numeric = (v: unknown): number | null => {
+  if (typeof v === 'number') return Number.isFinite(v) ? v : null;
+  if (typeof v === 'string' && /^-?\d+(\.\d+)?$/.test(v)) return Number(v);
+  return null;
+};
+
+/**
+ * Figures an answer may fairly work out from the tool results: the total of a column ("₹18.87 Cr of contract value
+ * across 3 projects") and the gap between two figures of one row ("840 against a minimum of 1,000: short by 160").
+ */
+export function derivedNumbers(value: unknown, out: number[] = []): number[] {
+  if (Array.isArray(value)) {
+    const sums = new Map<string, number>();
+    for (const row of value) {
+      if (row && typeof row === 'object' && !Array.isArray(row)) {
+        for (const [k, v] of Object.entries(row)) {
+          const n = numeric(v);
+          if (n !== null) sums.set(k, (sums.get(k) ?? 0) + n);
+        }
+      }
+      derivedNumbers(row, out);
+    }
+    sums.forEach((n) => out.push(Math.round(n * 1000) / 1000));
+  } else if (value && typeof value === 'object') {
+    const own = Object.values(value).map(numeric).filter((n): n is number => n !== null);
+    for (let i = 0; i < own.length; i++) for (let j = i + 1; j < own.length; j++) out.push(Math.abs(Math.round((own[i] - own[j]) * 1000) / 1000));
+    Object.values(value).forEach((v) => derivedNumbers(v, out));
+  }
   return out;
 }
 
@@ -69,9 +106,10 @@ const scaleOf = (suffix: string | undefined): Scale => {
 
 /** Figures in `answer` that match nothing in the tool results, as written (at most ten). */
 export function unverifiedFigures(answer: string, sourceNumbers: number[]): string[] {
-  // Link targets and dates are not figures.
+  // Link targets, dates and day counts ("45 days", "0–30 days") are not figures.
   const text = answer
     .replace(/\]\([^)]*\)/g, ']')
+    .replace(/\b\d{1,4}(?:\s?[–-]\s?\d{1,4})?\+?\s?days?\b/gi, ' ')
     .replace(/\b\d{4}-\d{2}-\d{2}\b/g, ' ')
     .replace(/\b\d{1,2}\s(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s\d{4}\b/gi, ' ');
   const bases: Record<Scale, number[]> = {
