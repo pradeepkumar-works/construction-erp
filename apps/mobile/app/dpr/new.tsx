@@ -12,6 +12,8 @@ import { DraftNotice, restorePhotos, useFormDraft, useLeaveGuard } from '../../s
 import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
 import { useT } from '../../src/i18n/LanguageContext';
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
+import { draftFor } from '../../src/ai/ask';
+import { AskDraftNotice } from '../../src/ai/AskDraftNotice';
 import { colors, spacing, typography } from '../../src/theme';
 import { formatDate, isIsoDate, today } from '../../src/utils/format';
 
@@ -32,12 +34,15 @@ const withValue = (options: { value: string; label: string }[], value: string | 
 
 /**
  * New DPR, or (with `editId`) edit a draft / rejected / changes-requested DPR and resubmit it, or (with `outboxId`) fix
- * one the server refused from the outbox. A new DPR is kept on the phone as a draft while it is typed.
+ * one the server refused from the outbox, or (with `fromAsk`) check one filled in from notes dictated on the Ask tab.
+ * A new DPR is kept on the phone as a draft while it is typed.
  */
 export default function NewDprScreen() {
-  const params = useLocalSearchParams<{ projectId?: string; editId?: string; outboxId?: string }>();
+  const params = useLocalSearchParams<{ projectId?: string; editId?: string; outboxId?: string; fromAsk?: string }>();
   const editId = params.editId ?? null;
   const outboxId = params.outboxId ?? null;
+  // Filled in by Ask Nirmaan (AI item 72): it takes the place of a draft kept on the phone and is itself kept as one.
+  const [askDraft] = useState(() => (editId || outboxId ? null : draftFor(params.fromAsk)));
   const t = useT();
   const api = useApi();
   const { online, enqueue, discard, newId, items: outbox } = useOffline();
@@ -108,11 +113,11 @@ export default function NewDprScreen() {
   };
 
   useEffect(() => {
-    if (!editId && !outboxId && !projectId && projects.options.length === 1) {
+    if (!editId && !outboxId && !askDraft && !projectId && projects.options.length === 1) {
       setProjectId(projects.options[0].value);
       draft.settle();
     }
-  }, [editId, outboxId, projects.options, projectId, draft.settle]);
+  }, [editId, outboxId, askDraft, projects.options, projectId, draft.settle]);
 
   // Fixing a refused outbox entry: fill the form from what was queued.
   const [refusedLoaded, setRefusedLoaded] = useState(false);
@@ -136,6 +141,28 @@ export default function NewDprScreen() {
     setRefusedLoaded(true);
     draft.settle();
   }, [refused, refusedLoaded, draft.settle]);
+
+  // From the Ask tab: the dictated day, over any draft the form brought back. Not settled, so it is kept and leaving asks.
+  useEffect(() => {
+    if (!askDraft) return;
+    const v = askDraft.values as { date?: string; weather?: Weather | null; siteCondition?: string; manpower?: ManpowerLine[]; machinery?: { name: string; hours: number }[]; materialReceived?: string; workExecuted?: string; testsConducted?: string; safetyObservations?: string; issues?: string; nextDayPlan?: string };
+    setProjectId(askDraft.projectId);
+    setDate(v.date && isIsoDate(v.date) ? v.date : today());
+    setWeather(v.weather ?? null);
+    setSiteCondition(v.siteCondition ?? '');
+    setManpower(v.manpower?.length ? v.manpower.map((m) => ({ key: newKey(), category: m.category, count: String(m.count) })) : [{ key: newKey(), category: 'Mason', count: '' }, { key: newKey(), category: 'Helper', count: '' }]);
+    setMachinery(v.machinery?.length ? v.machinery.map((m) => ({ key: newKey(), name: m.name, hours: String(m.hours) })) : [{ key: newKey(), name: '', hours: '' }]);
+    setMaterialReceived(v.materialReceived ?? '');
+    setWorkExecuted(v.workExecuted ?? '');
+    setTests(v.testsConducted ?? '');
+    setSafety(v.safetyObservations ?? '');
+    setIssues(v.issues ?? '');
+    setNextDayPlan(v.nextDayPlan ?? '');
+    setPhotos([]);
+    // Manpower said in the notes stays; with none, the day's attendance fills it as for any new DPR.
+    setManpowerEdited(!!v.manpower?.length);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [askDraft]);
 
   // Editing: prefill the form from the loaded report.
   useEffect(() => {
@@ -187,7 +214,7 @@ export default function NewDprScreen() {
     if (attendance && !manpowerEdited && filledFrom !== attendance.id) {
       applyAttendance(attendance);
       // Filled in by itself: not a change of the user's to keep or warn about.
-      if (!draft.restoredAt) draft.settle();
+      if (!draft.restoredAt && !askDraft) draft.settle();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [attendance, manpowerEdited, filledFrom]);
@@ -293,7 +320,7 @@ export default function NewDprScreen() {
   return (
     <Screen keyboard scrollRef={errorSummary.scrollRef}>
       <Stack.Screen options={{ title: editId ? t('Edit Daily Report') : outboxId ? t('Fix Daily Report') : t('New Daily Report') }} />
-      <DraftNotice draft={draft} onStartOver={startOver} />
+      {askDraft ? <AskDraftNotice draft={askDraft} /> : <DraftNotice draft={draft} onStartOver={startOver} />}
       <ErrorSummary errors={errors} />
       <ErrorBanner message={submitError ?? projects.error} />
       <ReviewerNote entry={existing.data} />

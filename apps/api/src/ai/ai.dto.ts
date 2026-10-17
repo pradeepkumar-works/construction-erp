@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsBoolean, IsIn, IsInt, IsOptional, IsString, IsUUID, Max, MaxLength, Min, MinLength, ValidateIf, ValidateNested } from 'class-validator';
-import { AI_QUESTION_MAX, DOC_READ_KINDS, type DocReadKind } from '@erp/shared';
+import { AI_LANGUAGES, AI_QUESTION_MAX, DOC_READ_KINDS, type AiLanguage, type DocReadKind } from '@erp/shared';
 
 export class AiPageContextDto {
   @ApiPropertyOptional({ example: '/projects/6f1c…', description: 'The page the question is asked from' }) @IsOptional() @IsString() @MaxLength(300) path?: string;
@@ -12,6 +12,8 @@ export class AskDto {
   @ApiProperty({ example: 'Which purchase orders are late on the Jajpur road?' }) @IsString() @MinLength(2) @MaxLength(AI_QUESTION_MAX) question!: string;
   @ApiPropertyOptional({ description: 'Continue this conversation; omit to start a new one' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsUUID() threadId?: string | null;
   @ApiPropertyOptional({ type: AiPageContextDto }) @IsOptional() @ValidateNested() @Type(() => AiPageContextDto) page?: AiPageContextDto;
+  @ApiPropertyOptional({ enum: AI_LANGUAGES, description: 'Answer in this language (the site app passes its own); English when left out' }) @IsOptional() @IsIn(AI_LANGUAGES as unknown as string[]) language?: AiLanguage;
+  @ApiPropertyOptional({ enum: ['web', 'phone'], description: "phone: the site app's Ask tab" }) @IsOptional() @IsIn(['web', 'phone']) client?: 'web' | 'phone';
   @ApiPropertyOptional({ description: "Model comparison only: one of the server's AI_EVAL_MODELS" }) @IsOptional() @IsString() @MaxLength(100) model?: string;
 }
 

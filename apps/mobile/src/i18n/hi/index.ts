@@ -8,5 +8,6 @@ import { CORE } from './core';
 import { SITE } from './site';
 import { QUALITY } from './quality';
 import { COMMERCIAL } from './commercial';
+import { AI } from './ai';
 
-export const HI: Record<string, string> = { ...COMMON, ...CORE, ...SITE, ...QUALITY, ...COMMERCIAL };
+export const HI: Record<string, string> = { ...COMMON, ...CORE, ...SITE, ...QUALITY, ...COMMERCIAL, ...AI };

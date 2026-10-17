@@ -111,10 +111,17 @@ export interface AiPageContext {
   projectId?: string | null;
 }
 
+export const AI_LANGUAGES = ['en', 'hi'] as const;
+export type AiLanguage = (typeof AI_LANGUAGES)[number];
+
 export interface AiAskInput {
   question: string;
   threadId?: string | null;
   page?: AiPageContext;
+  /** The language to answer in: the site app's (AI item 72). English when left out. */
+  language?: AiLanguage;
+  /** Where the question is asked from: the site app's Ask tab keeps answers short and links to its own screens. */
+  client?: 'web' | 'phone';
   /** Model comparison only: one of the server's AI_EVAL_MODELS (ignored by the app) */
   model?: string;
 }

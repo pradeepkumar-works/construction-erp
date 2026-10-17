@@ -97,7 +97,8 @@ export class AiDraftsService {
       if (quantity === undefined || quantity <= 0) throw new BadRequestException(`items[${n}].quantity must be a number above 0`);
       const spec = text(line.specification, 200);
       const said = text(line.unit, 30);
-      const match = await this.matchItem(user, [name, spec].filter(Boolean).join(' '));
+      // Two lines are two items: one already matched is not offered again.
+      const match = await this.matchItem(user, [name, spec].filter(Boolean).join(' '), said, new Set(items.map((x) => x.itemName)));
       // A known item keeps the item master's unit, as stores receive it; anything else takes the unit master's spelling.
       let unit = match?.unit ?? said;
       if (match && said && normUnit(said) !== normUnit(match.unit)) {
@@ -121,13 +122,15 @@ export class AiDraftsService {
   }
 
   /** The item master entry most like `name`, or null when none is alike enough. */
-  private async matchItem(user: RequestUser, name: string): Promise<{ name: string; unit: string } | null> {
+  private async matchItem(user: RequestUser, name: string, unit?: string, taken: Set<string> = new Set()): Promise<{ name: string; unit: string } | null> {
     const words = name.toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length >= 3 || /\d/.test(w)).slice(0, 4);
     const seen = new Map<string, { name: string; unit: string }>();
     for (const q of words.length ? words : [name]) {
-      for (const it of (await this.stock.listItems(user, { q, page: 1, pageSize: 20 } as never)).items) seen.set(it.id, it);
+      for (const it of (await this.stock.listItems(user, { q, page: 1, pageSize: 20 } as never)).items) if (!taken.has(it.name)) seen.set(it.id, it);
     }
-    const best = [...seen.values()].map((it) => ({ it, s: itemSimilarity(name, it.name) })).sort((a, b) => b.s - a.s)[0];
+    // A tie ("bitumen emulsion" is as like "Bitumen VG-30" as "Emulsion SS-1") goes to the item kept in the unit said.
+    const rank = (it: { name: string; unit: string }) => ({ it, s: itemSimilarity(name, it.name), unit: !!unit && normUnit(unit) === normUnit(it.unit) ? 1 : 0 });
+    const best = [...seen.values()].map(rank).sort((a, b) => b.s - a.s || b.unit - a.unit)[0];
     return best && best.s >= MATCH ? best.it : null;
   }
 

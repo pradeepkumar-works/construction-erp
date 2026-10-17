@@ -120,6 +120,8 @@ cd e2e && npx playwright test         # browser tests; needs API + web running (
   and sends one `clientId` both directly and to the outbox; a form in `OUTBOX_FIX_PATH` also opens a refused entry by
   `?outboxId=`. Every `Input` has a `label` or an `accessibilityLabel`; dates and times are `DatePicker`/`TimePicker`
   (the phone's own pickers). `app/dpr/new.tsx` is the reference.
+- Mobile Ask tab (`app/(tabs)/ask.tsx`, ARCHITECTURE "Ask on the phone"): links in answers open phone screens through
+  `phoneRoute` (`src/ai/links.ts`), so a new record screen adds its line there; a server status line needs its Hindi in `src/i18n/hi/ai.ts`.
 - Mobile text: wrap everything a screen shows in `t()` from `useT()` (English is the key, `{placeholders}` for values)
   and add its Hindi to `src/i18n/hi/` (see ARCHITECTURE, Languages); `npm run i18n:check` in `apps/mobile` must pass.
 

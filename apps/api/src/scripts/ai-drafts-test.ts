@@ -115,6 +115,9 @@ async function runDemo(): Promise<string[]> {
         const hindiUnit = await draftOf('engineer@demo.com', 'draft_material_request', { project: 'puri highway', items: [{ name: 'OPC 53 cement', quantity: 50, unit: 'MT' }] });
         check('MR: a project named in words is found', hindiUnit.projectId === road.id, hindiUnit.projectName);
         check('MR: a unit unlike the item master’s is flagged', hindiUnit.flags.some((f) => f.field === 'items.0.unit'), JSON.stringify(hindiUnit.flags));
+        const tie = await draftOf('engineer@demo.com', 'draft_material_request', { projectId: road.id, items: [{ name: 'Bitumen VG-30', quantity: 10, unit: 'MT' }, { name: 'Bitumen emulsion', quantity: 2000, unit: 'Ltr' }] });
+        const tieItems = tie.values.items as { itemName: string }[];
+        check('MR: a tie goes to the item kept in the unit said, and one item is not matched twice', tieItems[0].itemName === 'Bitumen VG-30' && tieItems[1].itemName === 'Emulsion SS-1', JSON.stringify(tieItems));
 
         // Activities from the project's schedule.
         const progress = await draftOf('engineer@demo.com', 'draft_progress', { projectId: road.id, activity: 'GSB', quantity: 40, unit: 'cum', date: '2026-10-01' });

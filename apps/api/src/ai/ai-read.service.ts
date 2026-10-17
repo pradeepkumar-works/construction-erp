@@ -1,7 +1,7 @@
 import { BadRequestException, ForbiddenException, HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import type Anthropic from '@anthropic-ai/sdk';
 import type { DocReadField, DocReadKind, DocReadLine, DocReadResultDto, PurchaseOrderDto } from '@erp/shared';
-import { DOC_READ_FIELDS, DOC_READ_LINE_FIELDS, DOC_READ_MAX_PAGES, DOC_READ_MAX_PAGE_BYTES, canKeepStock, canManageDocuments, canRecordVendorBill, gstinChecksumOk, matchLines, readNumber, readText } from '@erp/shared';
+import { DOC_READ_FIELDS, DOC_READ_LINE_FIELDS, DOC_READ_MAX_PAGES, DOC_READ_MAX_PAGE_BYTES, canKeepStock, canManageDocuments, canRecordVendorBill, gstinCheckChar, gstinChecksumOk, matchLines, readNumber, readText } from '@erp/shared';
 import type { RequestUser } from '../common/current-user';
 import { PrismaService } from '../prisma/prisma.service';
 import { VendorsService } from '../vendors/vendors.service';
@@ -159,8 +159,21 @@ export function normalise(kind: DocReadKind, raw: { fields: Record<string, unkno
 
   const gstin = fields.gstin;
   if (gstin && typeof gstin.value === 'string') {
+    const fixed = fixGstin(gstin.value);
+    if (fixed !== gstin.value && gstinChecksumOk(fixed)) {
+      gstin.reason = `read as ${gstin.value}; a look-alike character put right by the GSTIN's pattern and check character`;
+      gstin.value = fixed;
+    }
     if (!/^\d{2}[A-Z0-9]{13}$/.test(gstin.value)) low(gstin, 'not 15 characters like a GSTIN');
     else if (!gstinChecksumOk(gstin.value)) low(gstin, 'check character does not match; a character may be misread');
+  }
+  const vehicle = fields.vehicleNo;
+  if (vehicle && typeof vehicle.value === 'string') {
+    const fixed = fixVehicleNo(vehicle.value);
+    if (fixed !== vehicle.value) {
+      vehicle.reason = `read as ${vehicle.value}; the RTO number is digits`;
+      vehicle.value = fixed;
+    }
   }
   if (kind !== 'invoice') return { fields, lines };
 
@@ -190,6 +203,36 @@ export function normalise(kind: DocReadKind, raw: { fields: Record<string, unkno
     if (Math.abs(sum - total) > TOLERANCE) low(fields.total, 'subtotal, GST and freight do not add up to it');
   }
   return { fields, lines };
+}
+
+const TO_DIGIT: Record<string, string> = { O: '0', D: '0', Q: '0', I: '1', L: '1', Z: '2', S: '5', B: '8', G: '6' };
+const TO_LETTER: Record<string, string> = { '0': 'O', '1': 'I', '2': 'Z', '5': 'S', '8': 'B', '6': 'G' };
+
+/**
+ * A GSTIN with look-alike characters put right where its pattern allows only digits or only letters (state code,
+ * PAN, entity number, the Z), and a check character read as its look-alike when the computed one is that look-alike:
+ * "21AAKFK4521B1ZO" → "21AAKFK4521B1Z0". The caller keeps the result only when its check character then agrees.
+ */
+export function fixGstin(g: string): string {
+  if (g.length !== 15) return g;
+  const c = g.split('');
+  const digits = [0, 1, 7, 8, 9, 10];
+  const letters = [2, 3, 4, 5, 6, 11];
+  for (const i of digits) c[i] = TO_DIGIT[c[i]] ?? c[i];
+  for (const i of letters) c[i] = TO_LETTER[c[i]] ?? c[i];
+  if (c[13] === '2') c[13] = 'Z';
+  const head = c.slice(0, 14).join('');
+  const want = gstinCheckChar(head);
+  if (want && want !== c[14] && (TO_DIGIT[c[14]] === want || TO_LETTER[c[14]] === want)) c[14] = want;
+  return c.join('');
+}
+
+/** A vehicle number's RTO code is digits: "ODO2 BT 9087" → "OD02 BT 9087". */
+export function fixVehicleNo(v: string): string {
+  const m = v.match(/^([A-Z]{2})(\s*-?\s*)([0-9A-Z]{2})((?![0-9]).*)$/i);
+  if (!m) return v;
+  const rto = m[3].toUpperCase().split('').map((ch) => TO_DIGIT[ch] ?? ch).join('');
+  return /^\d{2}$/.test(rto) ? `${m[1]}${m[2]}${rto}${m[4]}` : v;
 }
 
 /** A figure not printed but worked out from those that are: no place on the page, and the reason says how. */
