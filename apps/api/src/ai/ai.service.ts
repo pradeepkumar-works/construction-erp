@@ -10,7 +10,7 @@ import { ProjectsService } from '../projects/projects.service';
 import { todayIn } from '../notifications/time';
 import { aiConfig, aiConfigured, costPaise, type AiUsage } from './ai.config';
 import { AiToolsService } from './ai-tools.service';
-import { collectHrefs, collectNumbers, filterLinks, unverifiedFigures } from './grounding';
+import { collectHrefs, collectNumbers, derivedNumbers, filterLinks, unverifiedFigures } from './grounding';
 import { ClaudeModel, FakeModel, type AiModel, type ModelMessage } from './model';
 import { SYSTEM_PROMPT, contextNote } from './prompt';
 import type { UpdateAiSettingsDto } from './ai.dto';
@@ -258,7 +258,7 @@ export class AiService {
 
     const draft = [parts.join('\n\n'), failure].filter(Boolean).join('\n\n');
     const { text, citations } = filterLinks(draft, collectHrefs(results));
-    const unverified = failure && !parts.length ? [] : unverifiedFigures(text, [...collectNumbers(results), ...collectNumbers(question)]);
+    const unverified = failure && !parts.length ? [] : unverifiedFigures(text, [...collectNumbers(results), ...derivedNumbers(results), ...collectNumbers(question)]);
     const saved = await this.prisma.aiMessage.create({
       data: {
         organizationId: user.organizationId,
