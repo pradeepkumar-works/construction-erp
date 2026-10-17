@@ -30,6 +30,8 @@ export function Chips<V extends string>({ label, value, options, onChange, clear
               key={o.value}
               onPress={() => onChange(active && clearable ? null : o.value)}
               style={[styles.chip, active && styles.chipActive]}
+              accessibilityRole="radio"
+              accessibilityLabel={label ? `${o.label}, ${label}` : o.label}
               accessibilityState={{ selected: active }}
             >
               <Text maxFontSizeMultiplier={maxFontScale} style={[styles.chipText, active && styles.chipTextActive]}>{o.label}</Text>
@@ -52,7 +54,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: radius.pill,
     borderWidth: 1.5,
-    borderColor: colors.border,
+    borderColor: colors.borderStrong,
     backgroundColor: colors.surface,
   },
   chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },

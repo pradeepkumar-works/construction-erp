@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-10-phone-field',
+    date: '2026-10-17',
+    title: 'The phone app, ready for site',
+    points: [
+      'A new DPR, progress entry, measurement or attendance sheet is kept on the phone as you type, through a call, the camera or the phone closing the app, and leaving asks whether to keep it.',
+      'A failed submit scrolls up to a list of what to fix, reads it out and buzzes; approving or sending confirms the same way.',
+      'On weak signal a submit gives up after 25 seconds and goes to the outbox instead of spinning. An entry the server refused opens again with Fix and send, and the outbox shows when it last sent.',
+      'The app starts in the phone\'s language (Hindi or English, switchable on the first screens), dates and times use the phone\'s own pickers, fields have stronger outlines for sunlight, and dark mode switches at once.',
+    ],
+  },
+  {
     id: '2026-10-forms',
     date: '2026-10-17',
     title: 'Forms that keep your work',

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import type { ActivityDto, EquipmentDto, MachineryLogDto, Paginated } from '@erp/shared';
@@ -6,6 +6,7 @@ import { MAX_PAGE_SIZE, machineryLogProblem } from '@erp/shared';
 import { useApi, useFetch } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
 import { useT } from '../../src/i18n/LanguageContext';
+import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
 import { Button, Card, DatePicker, ErrorBanner, ErrorState, Input, Loading, PhotoPicker, Screen, Select, type LocalPhoto, type SelectOption } from '../../src/components';
 import { attachmentIds, photosFailed, photosQueued, photosUploading, QueuedSuccess, SubmitSuccess, toOutboxPhotos, useProjectOptions } from '../../src/forms/common';
 import { attachmentsToPhotos, ReviewerNote } from '../../src/forms/edit';
@@ -21,7 +22,11 @@ export default function NewMachineryLogScreen() {
   const editId = params.editId ?? null;
   const api = useApi();
   const t = useT();
-  const { online, enqueue } = useOffline();
+  const errorSummary = useErrorSummary();
+  const { online, enqueue, newId } = useOffline();
+  // The same id for a direct send and the outbox, so a send that timed out but arrived is never made twice
+  // (a new one for each entry made with Submit another).
+  const clientId = useRef(newId());
   const projects = useProjectOptions();
   const existing = useFetch<MachineryLogDto>((a) => a.get(`/machinery-logs/${editId}`), [editId], { enabled: !!editId, refetchOnFocus: false });
   const fleet = useFetch<Paginated<EquipmentDto>>((a) => a.get('/equipment', { pageSize: MAX_PAGE_SIZE }), [], { refetchOnFocus: false, cacheKey: 'equipment:v1' });
@@ -95,7 +100,14 @@ export default function NewMachineryLogScreen() {
     if (!equipmentId) e.equipmentId = t('Choose a machine');
     if (!isIsoDate(date)) e.date = t('Enter a valid date');
     if (!NUM.test(worked.trim())) e.worked = t('Enter the hours worked (0 if it did not work)');
-    for (const [k, v] of [['idle', idle], ['down', down], ['meterStart', meterStart], ['meterEnd', meterEnd], ['diesel', diesel]] as const) if (v.trim() && !NUM.test(v.trim())) e[k] = t('Enter a number');
+    const numbers = [
+      ['idle', idle, t('Enter the idle hours as a number')],
+      ['down', down, t('Enter the breakdown hours as a number')],
+      ['meterStart', meterStart, t('Enter the meter start as a number')],
+      ['meterEnd', meterEnd, t('Enter the meter end as a number')],
+      ['diesel', diesel, t('Enter the diesel litres as a number')],
+    ] as const;
+    for (const [k, v, message] of numbers) if (v.trim() && !NUM.test(v.trim())) e[k] = message;
     if (Object.keys(e).length === 0) {
       const problem = machineryLogProblem({ hoursWorked: worked, idleHours: idle || 0, breakdownHours: down || 0, meterStart: meterStart || null, meterEnd: meterEnd || null, breakdownNote });
       if (problem) e.worked = t(problem);
@@ -104,6 +116,7 @@ export default function NewMachineryLogScreen() {
     else if (photosFailed(photos)) e.photos = t('Remove or retry failed photos');
     else if (editId && photosQueued(photos)) e.photos = t('Photos need a connection to upload before resubmitting');
     setErrors(e);
+    errorSummary.report(e);
     return Object.keys(e).length === 0;
   };
 
@@ -138,6 +151,7 @@ export default function NewMachineryLogScreen() {
         const projectName = projects.options.find((o) => o.value === projectId)?.label ?? t('Project');
         setQueued(
           await enqueue({
+            id: clientId.current,
             type: 'MACHINERY',
             payload: { projectId, ...body },
             photos: toOutboxPhotos(photos),
@@ -151,7 +165,7 @@ export default function NewMachineryLogScreen() {
         return;
       }
       try {
-        setCreated(await api.post<MachineryLogDto>('/machinery-logs', { projectId, ...body, attachmentIds: attachmentIds(photos) }));
+        setCreated(await api.post<MachineryLogDto>('/machinery-logs', { id: clientId.current, projectId, ...body, attachmentIds: attachmentIds(photos) }));
       } catch (e) {
         if (!isOfflineError(e)) throw e;
         await queueIt();
@@ -164,6 +178,7 @@ export default function NewMachineryLogScreen() {
   };
 
   const reset = () => {
+    clientId.current = newId();
     setCreated(null);
     setQueued(null);
     setEquipmentId(null);
@@ -197,8 +212,9 @@ export default function NewMachineryLogScreen() {
   if (editId && existing.error && !existing.data) return <ErrorState message={existing.error} onRetry={existing.reload} />;
 
   return (
-    <Screen keyboard>
+    <Screen keyboard scrollRef={errorSummary.scrollRef}>
       <Stack.Screen options={{ title: editId ? t('Edit Machinery Log') : t('Log Machinery') }} />
+      <ErrorSummary errors={errors} />
       <ErrorBanner message={submitError ?? projects.error ?? fleet.error} />
       <ReviewerNote entry={existing.data} />
       <Card>

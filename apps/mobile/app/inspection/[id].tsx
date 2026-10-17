@@ -91,7 +91,7 @@ function Inspect({ data, onDone }: { data: InspectionDto; onDone: (x: Inspection
                   { value: 'NA', label: t('N/A') },
                 ]}
               />
-              {points[i]?.result === 'FAIL' ? <Input value={points[i].remark} onChangeText={(v) => set(i, { remark: v })} placeholder={t('What is wrong')} /> : null}
+              {points[i]?.result === 'FAIL' ? <Input value={points[i].remark} onChangeText={(v) => set(i, { remark: v })} placeholder={t('What is wrong')} accessibilityLabel={t('What is wrong with point {n}', { n: i + 1 })} /> : null}
             </View>
           ))}
           {open ? <Button title={t('Mark the rest OK')} variant="ghost" icon="checkmark-done" onPress={() => setPoints((ps) => ps.map((p) => (p.result ? p : { ...p, result: 'PASS' })))} /> : null}
@@ -113,7 +113,7 @@ function Inspect({ data, onDone }: { data: InspectionDto; onDone: (x: Inspection
           <View style={styles.sheet}>
             <Text style={typography.h2}>{meta ? t(meta.label) : null}</Text>
             <Text style={[typography.caption, styles.sheetSub]}>{meta ? t(meta.hint) : null}</Text>
-            <Input value={note} onChangeText={setNote} placeholder={t(pending === 'APPROVE' || failed ? 'Note (optional)' : 'Say what is wrong')} multiline autoFocus />
+            <Input value={note} onChangeText={setNote} placeholder={t(pending === 'APPROVE' || failed ? 'Note (optional)' : 'Say what is wrong')} accessibilityLabel={pending === 'APPROVE' || failed ? t('Note for the requester (optional)') : t('What is wrong')} multiline autoFocus />
             <ErrorBanner message={error} />
             <View style={styles.sheetBtns}>
               <Button title={t('Cancel')} variant="ghost" onPress={() => setPending(null)} disabled={busy} style={styles.flex} />
@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
   result: { paddingHorizontal: spacing.sm, paddingVertical: 4, borderRadius: radius.pill },
   resultText: { fontSize: 12, fontWeight: '700' },
   actions: { gap: spacing.sm },
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  backdrop: { flex: 1, backgroundColor: colors.scrim, justifyContent: 'flex-end' },
   sheet: { backgroundColor: colors.surface, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: spacing.xl, paddingBottom: spacing.xxl },
   sheetSub: { marginBottom: spacing.lg },
   sheetBtns: { flexDirection: 'row' },

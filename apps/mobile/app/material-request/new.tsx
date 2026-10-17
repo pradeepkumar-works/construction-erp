@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,6 +9,7 @@ import { Button, Card, Chips, DatePicker, ErrorBanner, ErrorState, Input, Loadin
 import { QueuedSuccess, SubmitSuccess, useProjectOptions } from '../../src/forms/common';
 import { ReviewerNote } from '../../src/forms/edit';
 import { useT } from '../../src/i18n/LanguageContext';
+import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
 import { colors, spacing, typography } from '../../src/theme';
 import { addDays, formatDate, isIsoDate, today } from '../../src/utils/format';
@@ -30,8 +31,12 @@ export default function NewMaterialRequestScreen() {
   const params = useLocalSearchParams<{ projectId?: string; editId?: string }>();
   const editId = params.editId ?? null;
   const t = useT();
+  const errorSummary = useErrorSummary();
   const api = useApi();
-  const { online, enqueue } = useOffline();
+  const { online, enqueue, newId } = useOffline();
+  // The same id for a direct send and the outbox, so a send that timed out but arrived is never made twice
+  // (a new one for each entry made with Submit another).
+  const clientId = useRef(newId());
   const projects = useProjectOptions();
   const existing = useFetch<MaterialRequestDto>((a) => a.get(`/material-requests/${editId}`), [editId], { enabled: !!editId, refetchOnFocus: false });
 
@@ -71,10 +76,11 @@ export default function NewMaterialRequestScreen() {
     const filled = items.filter((r) => r.itemName.trim() || r.quantity.trim() || r.unit || r.specification.trim());
     if (!filled.length) e.items = t('Add at least one item');
     for (const r of filled) {
-      if (!r.itemName.trim() || !r.unit || !r.quantity.trim()) e.items = t('Each item needs a name, unit and quantity');
-      else if (Number.isNaN(Number(r.quantity)) || Number(r.quantity) <= 0) e.items = t('Quantities must be numbers greater than 0');
+      if (!r.itemName.trim() || !r.unit || !r.quantity.trim()) e.items = t('Enter a name, unit and quantity for each item');
+      else if (Number.isNaN(Number(r.quantity)) || Number(r.quantity) <= 0) e.items = t('Enter each quantity as a number greater than 0');
     }
     setErrors(e);
+    errorSummary.report(e);
     return Object.keys(e).length === 0;
   };
 
@@ -99,6 +105,7 @@ export default function NewMaterialRequestScreen() {
         const projectName = projects.options.find((o) => o.value === projectId)?.label ?? t('Project');
         setQueued(
           await enqueue({
+            id: clientId.current,
             type: 'MATERIAL_REQUEST',
             payload: { projectId, ...body },
             photos: [],
@@ -112,7 +119,7 @@ export default function NewMaterialRequestScreen() {
         return;
       }
       try {
-        setCreated(await api.post<MaterialRequestDto>('/material-requests', { projectId, ...body }));
+        setCreated(await api.post<MaterialRequestDto>('/material-requests', { id: clientId.current, projectId, ...body }));
       } catch (e) {
         if (!isOfflineError(e)) throw e;
         await queueIt();
@@ -135,8 +142,9 @@ export default function NewMaterialRequestScreen() {
   if (editId && existing.error && !existing.data) return <ErrorState message={existing.error} onRetry={existing.reload} />;
 
   return (
-    <Screen keyboard>
+    <Screen keyboard scrollRef={errorSummary.scrollRef}>
       <Stack.Screen options={{ title: editId ? t('Edit Material Request') : t('New Material Request') }} />
+      <ErrorSummary errors={errors} />
       <ErrorBanner message={submitError ?? projects.error} />
       <ReviewerNote entry={existing.data} />
       <Card>
@@ -151,18 +159,18 @@ export default function NewMaterialRequestScreen() {
             <View style={styles.itemHead}>
               <Text style={typography.label}>{t('Item {n}', { n: i + 1 })}</Text>
               {items.length > 1 ? (
-                <Pressable onPress={() => setItems((rows) => rows.filter((x) => x.key !== r.key))} hitSlop={8} style={styles.remove}>
+                <Pressable onPress={() => setItems((rows) => rows.filter((x) => x.key !== r.key))} hitSlop={8} style={styles.remove} accessibilityRole="button" accessibilityLabel={t('Remove item {n}', { n: i + 1 })}>
                   <Ionicons name="trash-outline" size={20} color={colors.danger} />
                 </Pressable>
               ) : null}
             </View>
-            <Input value={r.itemName} onChangeText={(v) => update(r.key, { itemName: v })} placeholder={t('Item name, e.g. Cement OPC 53')} containerStyle={styles.field} />
-            <Input value={r.specification} onChangeText={(v) => update(r.key, { specification: v })} placeholder={t('Specification (optional)')} containerStyle={styles.field} />
+            <Input value={r.itemName} onChangeText={(v) => update(r.key, { itemName: v })} placeholder={t('Item name, e.g. Cement OPC 53')} accessibilityLabel={t('Item {n} name', { n: i + 1 })} containerStyle={styles.field} />
+            <Input value={r.specification} onChangeText={(v) => update(r.key, { specification: v })} placeholder={t('Specification (optional)')} accessibilityLabel={t('Item {n} specification (optional)', { n: i + 1 })} containerStyle={styles.field} />
             <View style={styles.row}>
               <View style={styles.grow}>
                 <Select value={r.unit} options={UNIT_OPTIONS} onChange={(v) => update(r.key, { unit: v })} placeholder={t('Unit')} />
               </View>
-              <Input value={r.quantity} onChangeText={(v) => update(r.key, { quantity: v })} keyboardType="decimal-pad" placeholder={t('Qty')} containerStyle={styles.qty} />
+              <Input value={r.quantity} onChangeText={(v) => update(r.key, { quantity: v })} keyboardType="decimal-pad" placeholder={t('Qty')} accessibilityLabel={t('Item {n} quantity', { n: i + 1 })} containerStyle={styles.qty} />
             </View>
           </View>
         ))}

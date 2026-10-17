@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, TextInput, View, type TextInputProps, type ViewStyle } from 'react-native';
 import { colors, maxFontScale, radius, spacing, touch, typography } from '../theme';
+import { useT } from '../i18n/LanguageContext';
 
 interface Props extends TextInputProps {
   label?: string;
@@ -11,7 +12,13 @@ interface Props extends TextInputProps {
   right?: React.ReactNode;
 }
 
-export function Input({ label, error, hint, required, containerStyle, right, style, multiline, ...rest }: Props) {
+/**
+ * A text field with its label above. Screen readers hear the label (or, for a field in a table row, the
+ * `accessibilityLabel` or placeholder), "required", and the error or hint after it.
+ */
+export function Input({ label, error, hint, required, containerStyle, right, style, multiline, accessibilityLabel, ...rest }: Props) {
+  const t = useT();
+  const name = accessibilityLabel ?? label ?? rest.placeholder;
   return (
     <View style={[styles.container, containerStyle]}>
       {label ? (
@@ -26,6 +33,8 @@ export function Input({ label, error, hint, required, containerStyle, right, sty
           maxFontSizeMultiplier={maxFontScale}
           multiline={multiline}
           style={[styles.input, multiline && styles.multiline, style]}
+          accessibilityLabel={name ? `${name}${required ? `, ${t('required')}` : ''}` : undefined}
+          accessibilityHint={error ?? hint ?? undefined}
           {...rest}
         />
         {right}
@@ -52,7 +61,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.surface,
     borderWidth: 1.5,
-    borderColor: colors.border,
+    borderColor: colors.borderStrong,
     borderRadius: radius.md,
     minHeight: touch.height,
     paddingHorizontal: spacing.md,

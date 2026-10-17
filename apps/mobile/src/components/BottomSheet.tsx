@@ -89,7 +89,7 @@ export function SheetActions({ actions, onClose }: { actions: SheetAction[]; onC
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   // The page behind dims with the darkest palette colour; the sheet itself stays opaque.
-  backdrop: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: colors.text, opacity: 0.45 },
+  backdrop: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: colors.scrim },
   sheet: { marginTop: 'auto', backgroundColor: colors.surface, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, paddingHorizontal: spacing.xl, paddingTop: spacing.sm },
   handle: { alignSelf: 'center', width: 40, height: 5, borderRadius: radius.pill, backgroundColor: colors.border, marginBottom: spacing.md },
   head: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: spacing.md },

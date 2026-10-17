@@ -4,6 +4,9 @@ import * as Network from 'expo-network';
 import * as Crypto from 'expo-crypto';
 import type { AttachmentDto } from '@erp/shared';
 import { useAuth } from '../auth/AuthContext';
+import { useSnackbar } from '../components/Snackbar';
+import { useT } from '../i18n/LanguageContext';
+import { kvGet, kvSet } from '../utils/kv';
 import { ApiError, errorMessage, request, uploadFile } from '../api/client';
 import { getStore, type OutboxRow } from './db';
 import { persistPhoto, photoExists, removePhotos } from './photos';
@@ -29,6 +32,7 @@ interface OfflineState {
   syncing: boolean;
   /** Bumps every time an entry reaches the server, so lists can refetch. */
   syncedCount: number;
+  /** When an entry from this phone last reached the server (kept across restarts). */
   lastSyncedAt: string | null;
   newId: () => string;
   enqueue: (input: EnqueueInput) => Promise<OutboxItem>;
@@ -38,6 +42,8 @@ interface OfflineState {
 }
 
 const OfflineContext = createContext<OfflineState | null>(null);
+
+const LAST_SYNCED_KEY = 'nirmaan.outbox.lastSyncedAt';
 
 const toRow = (item: OutboxItem): OutboxRow => ({ id: item.id, userId: item.userId, type: item.type, status: item.status, createdAt: item.createdAt, data: JSON.stringify(item) });
 const fromRow = (row: OutboxRow): OutboxItem => ({ ...(JSON.parse(row.data) as OutboxItem), status: row.status as OutboxStatus });
@@ -53,7 +59,15 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<OutboxItem[]>([]);
   const [syncing, setSyncing] = useState(false);
   const [syncedCount, setSyncedCount] = useState(0);
-  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
+  const [lastSyncedAt, setLastSyncedAtState] = useState<string | null>(() => kvGet(LAST_SYNCED_KEY));
+  const setLastSyncedAt = useCallback((at: string) => {
+    setLastSyncedAtState(at);
+    kvSet(LAST_SYNCED_KEY, at);
+  }, []);
+  const snackbar = useSnackbar();
+  const t = useT();
+  const tRef = useRef(t);
+  tRef.current = t;
   const tokenRef = useRef(token);
   tokenRef.current = token;
   const userIdRef = useRef(user?.id ?? null);
@@ -127,6 +141,8 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
     }
     syncRunning.current = true;
     setSyncing(true);
+    let sent = 0;
+    let refused = 0;
     try {
       do {
         syncAgain.current = false;
@@ -138,6 +154,7 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
           await save(sending);
           try {
             await sendItem(sending);
+            sent++;
             setSyncedCount((n) => n + 1);
             setLastSyncedAt(new Date().toISOString());
           } catch (e) {
@@ -152,6 +169,7 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
               break;
             }
             const transient = e instanceof ApiError && e.status >= 500;
+            if (!transient) refused++;
             await save({ ...sending, status: transient ? 'PENDING' : 'FAILED', error: errorMessage(e), attempts: item.attempts + 1 });
             if (transient) break;
           }
@@ -160,8 +178,12 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
     } finally {
       syncRunning.current = false;
       setSyncing(false);
+      // Entries saved offline went out by themselves: say so (UX item 80), and say when one was refused.
+      const tr = tRef.current;
+      if (refused) snackbar.show(refused === 1 ? tr('1 entry was not accepted. Open the outbox to fix it.') : tr('{n} entries were not accepted. Open the outbox to fix them.', { n: refused }), { tone: 'error' });
+      else if (sent) snackbar.show(sent === 1 ? tr('1 entry from the outbox was sent') : tr('{n} entries from the outbox were sent', { n: sent }));
     }
-  }, [save, sendItem]);
+  }, [save, sendItem, setLastSyncedAt, snackbar]);
 
   // Try to flush whenever we (re)connect, the app comes to the foreground, or a user signs in.
   useEffect(() => {

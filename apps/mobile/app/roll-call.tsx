@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { STAFF_ATTENDANCE_LABELS, STAFF_ATTENDANCE_STATUSES, manDays, type ActivityDto, type RollCallDto, type RollCallRowDto, type StaffAttendanceStatus } from '@erp/shared';
@@ -6,6 +6,7 @@ import { useApi, useFetch } from '../src/api/hooks';
 import { errorMessage } from '../src/api/client';
 import { Button, Card, Chips, DatePicker, EmptyState, ErrorBanner, Input, Loading, Screen, Select } from '../src/components';
 import { useProjectOptions } from '../src/forms/common';
+import { DraftNotice, useFormDraft, useLeaveGuard } from '../src/forms/draft';
 import { useT } from '../src/i18n/LanguageContext';
 import { colors, spacing, typography } from '../src/theme';
 import { isIsoDate, today } from '../src/utils/format';
@@ -19,7 +20,8 @@ const fromRow = (r: RollCallRowDto): Mark => ({ status: r.status, ot: r.otHours 
 
 /**
  * The roll call of the named workers at one site for one day (v4 item 44): mark each present, half day or absent,
- * with overtime. Saving also brings the day's head count in step. Needs a connection.
+ * with overtime. Saving also brings the day's head count in step. Needs a connection. A day nobody has marked yet is
+ * kept on the phone as a draft while it is marked; changing a day already saved is not.
  */
 export default function RollCallScreen() {
   const api = useApi();
@@ -32,17 +34,62 @@ export default function RollCallScreen() {
   const [activityId, setActivityId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!projectId && projects.options.length) setProjectId(projects.options[0].value);
-  }, [projects.options, projectId]);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const valid = !!projectId && isIsoDate(date) && date <= today();
   const roll = useFetch<RollCallDto>((a) => a.get('/workers/roll-call', { projectId: projectId!, date }), [projectId, date], { enabled: valid, refetchOnFocus: false });
   const activities = useFetch<ActivityDto[]>((a) => a.get(`/projects/${projectId}/activities`), [projectId], { enabled: !!projectId, refetchOnFocus: false });
+  const fresh = !roll.data || roll.data.rows.every((r) => !r.status);
+
+  /** Marks of a restored draft, put on the roll once its day has loaded. */
+  const restoredMarks = useRef<{ day: string; marks: Record<string, Mark> } | null>(null);
+  const draft = useFormDraft<{ projectId: string | null; date: string; activityId: string | null; marks: Record<string, Mark> }>(
+    fresh ? 'roll-call' : null,
+    { projectId, date, activityId, marks },
+    (d) => {
+      setProjectId(d.projectId);
+      setDate(d.date);
+      setActivityId(d.activityId);
+      setMarks(d.marks);
+      restoredMarks.current = { day: `${d.projectId}|${d.date}`, marks: d.marks };
+    },
+  );
+  useLeaveGuard(draft, { keepsDraft: fresh, busy });
+
   useEffect(() => {
-    setMarks(Object.fromEntries((roll.data?.rows ?? []).map((r) => [r.workerId, fromRow(r)])));
+    if (!projectId && projects.options.length) {
+      // A project put back from a draft in the same frame wins.
+      setProjectId((p) => p ?? projects.options[0].value);
+      draft.settle();
+    }
+  }, [projects.options, projectId, draft.settle]);
+
+  // The day's marks from the server; a restored draft's marks go on top when its day is still unmarked.
+  useEffect(() => {
+    if (!roll.data) return;
+    const server = Object.fromEntries(roll.data.rows.map((r) => [r.workerId, fromRow(r)]));
+    const kept = restoredMarks.current;
+    if (kept && kept.day === `${roll.data.projectId}|${roll.data.date}`) {
+      restoredMarks.current = null;
+      if (roll.data.rows.every((r) => !r.status)) {
+        setMarks({ ...server, ...Object.fromEntries(Object.entries(kept.marks).filter(([id]) => id in server)) });
+        return;
+      }
+      setNotice(t('This day was marked on another phone while your draft waited, so the roll shows those marks.'));
+      setMarks(server);
+      draft.clear();
+      return;
+    }
+    setMarks(server);
+    // Loaded by itself: not a change of the user's to keep or warn about.
+    draft.settle();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roll.data]);
+  const startOver = () => {
+    setActivityId(null);
+    setMarks(Object.fromEntries((roll.data?.rows ?? []).map((r) => [r.workerId, fromRow(r)])));
+    setNotice(null);
+  };
 
   const rows = roll.data?.rows ?? [];
   const changed = useMemo(() => rows.filter((r) => marks[r.workerId] && (marks[r.workerId].status !== r.status || marks[r.workerId].ot !== (r.otHours ?? ''))), [rows, marks]);
@@ -70,6 +117,7 @@ export default function RollCallScreen() {
         };
       });
       const d = await api.put<RollCallDto>('/workers/roll-call', { projectId, date, entries });
+      draft.clear();
       roll.setData(d);
       const head = (d.headCount ?? []).reduce((s, l) => s + l.count, 0);
       Alert.alert(t('Roll call saved'), t('Head count for the day: {n}', { n: head }));
@@ -106,8 +154,14 @@ export default function RollCallScreen() {
 
   return (
     <Screen refreshing={roll.refreshing} onRefresh={roll.refresh}>
+      <DraftNotice draft={draft} onStartOver={startOver} />
+      {notice ? (
+        <Card>
+          <Text style={typography.caption}>{notice}</Text>
+        </Card>
+      ) : null}
       <Select label={t('Project')} value={projectId} options={projects.options} onChange={setProjectId} searchable />
-      <DatePicker label={t('Date')} value={date} onChange={setDate} error={isIsoDate(date) && date > today() ? t('Not a future day') : null} />
+      <DatePicker label={t('Date')} value={date} onChange={setDate} error={isIsoDate(date) && date > today() ? t('Choose a date up to today') : null} />
       <Select
         label={t('Working on (for those you mark)')}
         value={activityId}

@@ -39,7 +39,7 @@ function ReadingRow({ test, r, onSaved }: { test: QualityTestDto; r: QualityTest
         {r.dueOn ? <Text style={[typography.caption, r.overdue && styles.overdue]}> · {t('due {date}', { date: formatDate(r.dueOn) })}</Text> : null}
       </Text>
       <View style={styles.row}>
-        <Input value={value} onChangeText={setValue} placeholder={test.unit ?? t('Value')} keyboardType="decimal-pad" error={error ?? undefined} style={styles.flex} />
+        <Input value={value} onChangeText={setValue} placeholder={test.unit ?? t('Value')} accessibilityLabel={test.unit ? t('{reading} in {unit}', { reading: r.label, unit: test.unit }) : r.label} keyboardType="decimal-pad" error={error ?? undefined} style={styles.flex} />
         <Button title={t('Save')} onPress={save} loading={busy} disabled={value.trim() === (r.value ?? '')} variant="secondary" />
       </View>
     </View>

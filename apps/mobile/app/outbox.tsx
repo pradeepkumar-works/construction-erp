@@ -1,10 +1,11 @@
 import React from 'react';
 import { Alert, FlatList, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, Card, EmptyState, Screen, SubmissionRow } from '../src/components';
-import { useOffline, type OutboxItem } from '../src/offline';
+import { OUTBOX_FIX_PATH, useOffline, type OutboxItem } from '../src/offline';
 import { colors, spacing, typography } from '../src/theme';
-import { timeAgo } from '../src/utils/format';
+import { formatDateTime, timeAgo } from '../src/utils/format';
 import { useT } from '../src/i18n/LanguageContext';
 
 const STATUS_TEXT: Record<OutboxItem['status'], string> = {
@@ -13,10 +14,15 @@ const STATUS_TEXT: Record<OutboxItem['status'], string> = {
   FAILED: 'Not accepted',
 };
 
-/** Entries saved on this phone while offline, with retry / discard for ones the server refused. */
+/** Entries saved on this phone while offline, with fix, retry and discard for ones the server refused. */
 export default function OutboxScreen() {
-  const { items, online, syncing, sync, retry, discard } = useOffline();
+  const { items, online, syncing, sync, retry, discard, lastSyncedAt } = useOffline();
   const t = useT();
+  const router = useRouter();
+  const fix = (item: OutboxItem) => {
+    const path = OUTBOX_FIX_PATH[item.type];
+    if (path) router.push({ pathname: path as never, params: { outboxId: item.id } });
+  };
 
   const confirmDiscard = (item: OutboxItem) =>
     Alert.alert(t('Discard entry'), t('This entry has not reached the server and will be deleted from this phone.'), [
@@ -36,18 +42,20 @@ export default function OutboxScreen() {
               <Ionicons name={online ? 'cloud-done-outline' : 'cloud-offline-outline'} size={22} color={online ? colors.success : colors.warning} />
               <Text style={[typography.bodyStrong, styles.flex]}>{online ? (syncing ? t('Sending queued entries…') : t('Online')) : t('Offline: entries will send when the connection is back')}</Text>
             </View>
+            <Text style={[typography.caption, styles.synced]}>{lastSyncedAt ? t('Last sent to the server {when}', { when: formatDateTime(lastSyncedAt) }) : t('Nothing sent from this phone yet')}</Text>
             {items.length ? <Button title={t('Send now')} icon="cloud-upload-outline" variant="secondary" onPress={() => void sync()} disabled={!online || syncing} /> : null}
           </Card>
         }
         ListEmptyComponent={<EmptyState title={t('Outbox is empty')} subtitle={t('Entries you save without a connection wait here until they are sent.')} icon="cloud-done-outline" art="approved" />}
         renderItem={({ item }) => (
           <View>
-            <SubmissionRow type={item.type} title={item.title} subtitle={item.subtitle} meta={`${t(STATUS_TEXT[item.status])} · ${t('saved {ago}', { ago: timeAgo(item.createdAt) })}`} onPress={() => (item.status === 'FAILED' ? confirmDiscard(item) : undefined)} />
+            <SubmissionRow type={item.type} title={item.title} subtitle={item.subtitle} meta={`${t(STATUS_TEXT[item.status])} · ${t('saved {ago}', { ago: timeAgo(item.createdAt) })}`} onPress={() => (item.status === 'FAILED' ? fix(item) : undefined)} />
             {item.status === 'FAILED' ? (
               <View style={styles.failed}>
                 <Text style={styles.error}>{item.error}</Text>
                 <View style={styles.actions}>
-                  <Button title={t('Retry')} size="sm" variant="secondary" icon="refresh" onPress={() => void retry(item.id)} />
+                  {OUTBOX_FIX_PATH[item.type] ? <Button title={t('Fix and send')} size="sm" icon="create-outline" onPress={() => fix(item)} /> : null}
+                  <Button title={t('Send again')} size="sm" variant="secondary" icon="refresh" onPress={() => void retry(item.id)} />
                   <Button title={t('Discard')} size="sm" variant="ghost" icon="trash-outline" onPress={() => confirmDiscard(item)} />
                 </View>
               </View>
@@ -65,5 +73,6 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   failed: { marginTop: -spacing.xs, marginBottom: spacing.md, paddingHorizontal: spacing.md },
   error: { color: colors.danger, fontSize: 13, marginBottom: spacing.sm },
-  actions: { flexDirection: 'row', gap: spacing.sm },
+  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  synced: { marginBottom: spacing.sm },
 });

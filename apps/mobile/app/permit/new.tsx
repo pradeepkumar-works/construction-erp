@@ -1,17 +1,18 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import type { WorkPermitDto, WorkPermitType } from '@erp/shared';
 import { PERMIT_MAX_DAYS, PERMIT_PRECAUTIONS, WORK_PERMIT_TYPES, WORK_PERMIT_TYPE_LABELS } from '@erp/shared';
 import { useApi } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
-import { Button, Card, DatePicker, ErrorBanner, Input, Loading, PhotoPicker, Screen, Select, type LocalPhoto } from '../../src/components';
+import { Button, Card, DatePicker, ErrorBanner, Input, TimePicker, Loading, PhotoPicker, Screen, Select, type LocalPhoto } from '../../src/components';
 import { Checklist, permitWindow } from '../../src/components/safetyTone';
 import { attachmentIds, photosFailed, photosQueued, photosUploading, QueuedSuccess, SubmitSuccess, toOutboxPhotos, useProjectOptions } from '../../src/forms/common';
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
 import { colors, spacing, typography } from '../../src/theme';
 import { isIsoDate, today } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
+import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
 
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 const at = (date: string, time: string) => new Date(`${date}T${time}:00`);
@@ -22,7 +23,11 @@ export default function PermitFormScreen() {
   const params = useLocalSearchParams<{ projectId?: string }>();
   const api = useApi();
   const t = useT();
-  const { online, enqueue } = useOffline();
+  const errorSummary = useErrorSummary();
+  const { online, enqueue, newId } = useOffline();
+  // The same id for a direct send and the outbox, so a send that timed out but arrived is never made twice
+  // (a new one for each entry made with Submit another).
+  const clientId = useRef(newId());
   const projects = useProjectOptions();
 
   const [projectId, setProjectId] = useState<string | null>(params.projectId ?? null);
@@ -53,19 +58,20 @@ export default function PermitFormScreen() {
     const e: Record<string, string> = {};
     if (!projectId) e.projectId = t('Choose a project');
     if (!type) e.type = t('Pick the kind of work');
-    if (!location.trim()) e.location = t('Where is the work?');
-    if (!description.trim()) e.description = t('What will be done?');
-    if (!isIsoDate(fromDate) || !TIME.test(fromTime)) e.from = t('Date and a time like 09:00');
-    if (!isIsoDate(toDate) || !TIME.test(toTime)) e.to = t('Date and a time like 18:00');
+    if (!location.trim()) e.location = t('Say where the work is');
+    if (!description.trim()) e.description = t('Describe the work to be done');
+    if (!isIsoDate(fromDate) || !TIME.test(fromTime)) e.from = t('Enter the start date and a time like 09:00');
+    if (!isIsoDate(toDate) || !TIME.test(toTime)) e.to = t('Enter the end date and a time like 18:00');
     if (!e.from && !e.to) {
       const mins = (at(toDate, toTime).getTime() - at(fromDate, fromTime).getTime()) / 60000;
-      if (mins <= 0) e.to = t('Must end after it starts');
-      else if (mins > PERMIT_MAX_DAYS * 24 * 60) e.to = t('At most {n} days; take a new permit for longer work', { n: PERMIT_MAX_DAYS });
+      if (mins <= 0) e.to = t('Set the end after the start');
+      else if (mins > PERMIT_MAX_DAYS * 24 * 60) e.to = t('Keep it to {n} days at most; take a new permit for longer work', { n: PERMIT_MAX_DAYS });
     }
-    if (workerCount.trim() && !(Number(workerCount) >= 1)) e.workerCount = t('At least 1');
+    if (workerCount.trim() && !(Number(workerCount) >= 1)) e.workerCount = t('Enter the number of workers (at least 1)');
     if (photosUploading(photos)) e.photos = t('Wait for photos to finish uploading');
     else if (photosFailed(photos)) e.photos = t('Remove or retry failed photos');
     setErrors(e);
+    errorSummary.report(e);
     return Object.keys(e).length === 0;
   };
 
@@ -95,14 +101,14 @@ export default function PermitFormScreen() {
       };
       const queueIt = async () => {
         const projectName = projects.options.find((o) => o.value === projectId)?.label ?? t('Project');
-        setQueued(await enqueue({ type: 'WORK_PERMIT', payload: body, photos: toOutboxPhotos(photos), title: `${t('Permit')} · ${t(WORK_PERMIT_TYPE_LABELS[type])} · ${location.trim()}`, subtitle: `${projectName} · ${permitWindow(body, t)}` }));
+        setQueued(await enqueue({ id: clientId.current, type: 'WORK_PERMIT', payload: body, photos: toOutboxPhotos(photos), title: `${t('Permit')} · ${t(WORK_PERMIT_TYPE_LABELS[type])} · ${location.trim()}`, subtitle: `${projectName} · ${permitWindow(body, t)}` }));
       };
       if (!online || photosQueued(photos)) {
         await queueIt();
         return;
       }
       try {
-        setSaved(await api.post<WorkPermitDto>('/safety/permits', { ...body, attachmentIds: attachmentIds(photos) }));
+        setSaved(await api.post<WorkPermitDto>('/safety/permits', { id: clientId.current, ...body, attachmentIds: attachmentIds(photos) }));
       } catch (e) {
         if (!isOfflineError(e)) throw e;
         await queueIt();
@@ -115,6 +121,7 @@ export default function PermitFormScreen() {
   };
 
   const reset = () => {
+    clientId.current = newId();
     setSaved(null);
     setQueued(null);
     setLocation('');
@@ -131,7 +138,8 @@ export default function PermitFormScreen() {
   if (projects.loading && !projects.data) return <Loading />;
 
   return (
-    <Screen keyboard>
+    <Screen keyboard scrollRef={errorSummary.scrollRef}>
+      <ErrorSummary errors={errors} />
       <ErrorBanner message={submitError ?? projects.error} />
       <Card>
         <Select label={t('Project')} required value={projectId} options={projects.options} onChange={setProjectId} placeholder={t('Choose project')} error={errors.projectId} />
@@ -152,9 +160,9 @@ export default function PermitFormScreen() {
       </Card>
       <Card title={t('Valid (at most {n} days)', { n: PERMIT_MAX_DAYS })}>
         <DatePicker label={t('From')} required value={fromDate} onChange={setFromDate} error={errors.from} />
-        <Input label={t('From time')} value={fromTime} onChangeText={setFromTime} placeholder="HH:mm" keyboardType="numbers-and-punctuation" maxLength={5} />
+        <TimePicker label={t('From time')} value={fromTime} onChange={setFromTime} />
         <DatePicker label={t('Till')} required value={toDate} onChange={setToDate} error={errors.to} />
-        <Input label={t('Till time')} value={toTime} onChangeText={setToTime} placeholder="HH:mm" keyboardType="numbers-and-punctuation" maxLength={5} />
+        <TimePicker label={t('Till time')} value={toTime} onChange={setToTime} />
       </Card>
       <Card title={t('Workers')}>
         <Input label={t('Contractor')} value={contractor} onChangeText={setContractor} placeholder={t('Optional')} maxLength={200} />

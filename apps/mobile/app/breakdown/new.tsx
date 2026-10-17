@@ -6,6 +6,7 @@ import { MAX_PAGE_SIZE } from '@erp/shared';
 import { useApi, useFetch } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
 import { useT } from '../../src/i18n/LanguageContext';
+import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
 import { Button, Card, DatePicker, ErrorBanner, ErrorState, Input, Loading, PhotoPicker, Screen, Select, type LocalPhoto, type SelectOption } from '../../src/components';
 import { attachmentIds, photosFailed, photosQueued, photosUploading, SubmitSuccess } from '../../src/forms/common';
 import { useOffline } from '../../src/offline';
@@ -22,6 +23,7 @@ export default function BreakdownScreen() {
   const params = useLocalSearchParams<{ equipmentId?: string; projectId?: string }>();
   const api = useApi();
   const t = useT();
+  const errorSummary = useErrorSummary();
   const { online } = useOffline();
   const fleet = useFetch<Paginated<EquipmentDto>>((a) => a.get('/equipment', { pageSize: MAX_PAGE_SIZE }), [], { refetchOnFocus: false, cacheKey: 'equipment:v1' });
 
@@ -46,11 +48,12 @@ export default function BreakdownScreen() {
     const e: Record<string, string> = {};
     if (!equipmentId) e.equipmentId = t('Choose the machine');
     if (!isIsoDate(date) || date > today()) e.date = t('Enter a date up to today');
-    if (meter.trim() && !NUM.test(meter.trim())) e.meter = t('Enter a number');
+    if (meter.trim() && !NUM.test(meter.trim())) e.meter = t('Enter the meter reading as a number');
     if (!description.trim()) e.description = t('Say what broke down');
     if (photosUploading(photos)) e.photos = t('Wait for photos to finish uploading');
     else if (photosFailed(photos) || photosQueued(photos)) e.photos = t('Photos need a connection; remove them or try again');
     setErrors(e);
+    errorSummary.report(e);
     return Object.keys(e).length === 0;
   };
 
@@ -97,8 +100,9 @@ export default function BreakdownScreen() {
   if (fleet.error && !fleet.data) return <ErrorState message={fleet.error} onRetry={fleet.reload} />;
 
   return (
-    <Screen keyboard>
+    <Screen keyboard scrollRef={errorSummary.scrollRef}>
       <Stack.Screen options={{ title: t('Report Breakdown') }} />
+      <ErrorSummary errors={errors} />
       <ErrorBanner message={submitError ?? (online ? null : t('You are offline. A breakdown is sent straight away, so it needs a connection.'))} />
       <Card>
         <Select label={t('Machine')} required value={equipmentId} options={options} onChange={setEquipmentId} placeholder={t('Choose the machine')} error={errors.equipmentId} />

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,6 +10,7 @@ import {
   normalizeAttendanceLines,
   totalWorkers,
   type AttendanceDayDto,
+  type AttendanceLineInput,
   type AttendanceSheetDto,
   type AttendanceSuggestionsDto,
 } from '@erp/shared';
@@ -18,6 +19,9 @@ import { useApi, useFetch } from '../src/api/hooks';
 import { errorMessage } from '../src/api/client';
 import { Button, Card, Chips, DatePicker, ErrorBanner, Input, Loading, Screen, Select } from '../src/components';
 import { QueuedSuccess, SubmitSuccess, useProjectOptions } from '../src/forms/common';
+import { DraftNotice, useFormDraft, useLeaveGuard } from '../src/forms/draft';
+import { OutboxRefusal, useOutboxEntry } from '../src/forms/edit';
+import { ErrorSummary, useErrorSummary } from '../src/forms/errors';
 import { useT } from '../src/i18n/LanguageContext';
 import { isOfflineError, useOffline, type OutboxItem } from '../src/offline';
 import { colors, radius, spacing, typography } from '../src/theme';
@@ -39,9 +43,9 @@ const emptyRow = (category: string | null = null): TradeRow => ({ key: newKey(),
 const defaultGroups = (): Group[] => [{ key: newKey(), contractor: DEPARTMENTAL_CONTRACTOR, rows: [emptyRow('Supervisor'), emptyRow('Helper')] }];
 
 /** Sheet lines grouped by contractor, in first-appearance order. */
-const toGroups = (sheet: AttendanceSheetDto): Group[] => {
+const toGroups = (lines: AttendanceLineInput[]): Group[] => {
   const groups: Group[] = [];
-  for (const l of sheet.lines) {
+  for (const l of lines) {
     let g = groups.find((x) => x.contractor === l.contractor);
     if (!g) {
       g = { key: newKey(), contractor: l.contractor, rows: [] };
@@ -57,14 +61,21 @@ const toLines = (groups: Group[]) =>
 
 /**
  * Daily attendance by contractor and trade for one project. Opens the day's existing sheet for correction
- * when there is one; a new sheet made without a connection waits in the outbox.
+ * when there is one; a new sheet made without a connection waits in the outbox, and is kept on the phone as a draft
+ * while it is typed. With `outboxId` it opens a sheet the server refused (usually because the day was recorded on
+ * another phone meanwhile), to correct and send again.
  */
 export default function AttendanceScreen() {
-  const params = useLocalSearchParams<{ projectId?: string; date?: string }>();
+  const params = useLocalSearchParams<{ projectId?: string; date?: string; outboxId?: string }>();
+  const outboxId = params.outboxId ?? null;
   const { user } = useAuth();
   const t = useT();
   const api = useApi();
-  const { online, enqueue, items: outbox } = useOffline();
+  const { online, enqueue, discard, newId, items: outbox } = useOffline();
+  const refused = useOutboxEntry(outboxId);
+  // The same id for a direct send and the outbox, so a send that timed out but arrived is never made twice.
+  const clientId = useRef(outboxId ?? newId());
+  const errorSummary = useErrorSummary();
   const projects = useProjectOptions();
   const mayRecord = !!user && canRecordAttendance(user.roleKey);
 
@@ -77,10 +88,11 @@ export default function AttendanceScreen() {
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState<AttendanceSheetDto | null>(null);
   const [queued, setQueued] = useState<OutboxItem | null>(null);
-
-  useEffect(() => {
-    if (!projectId && projects.options.length === 1) setProjectId(projects.options[0].value);
-  }, [projects.options, projectId]);
+  const [notice, setNotice] = useState<string | null>(null);
+  /** "project|date" of a day whose new sheet the form holds by itself (a restored draft or a refused entry): loading that day keeps it. */
+  const keepFor = useRef<string | null>(null);
+  /** The form shows a sheet from the server (rather than a new one). */
+  const showsSheet = useRef(false);
 
   const validDay = !!projectId && isIsoDate(date);
   const day = useFetch<AttendanceDayDto>((a) => a.get('/attendance/day', { projectId: projectId!, date }), [projectId, date], { enabled: validDay, refetchOnFocus: false });
@@ -92,19 +104,83 @@ export default function AttendanceScreen() {
 
   const sheet = validDay && day.data && day.data.projectId === projectId && day.data.date === date ? day.data.sheet : null;
   const locked = !!(validDay && day.data?.locked);
-  const queuedForDay = outbox.find((i) => i.type === 'ATTENDANCE' && i.payload.projectId === projectId && i.payload.date === date) ?? null;
+  const queuedForDay = outbox.find((i) => i.id !== outboxId && i.type === 'ATTENDANCE' && i.payload.projectId === projectId && i.payload.date === date) ?? null;
 
-  // Load the day's sheet into the form (or start a fresh one) whenever project or date change.
+  // A new sheet is kept as a draft (with its project and day); a sheet already on the server, or a refused one, is not.
+  const draft = useFormDraft<{ projectId: string | null; date: string; groups: Group[]; remarks: string }>(
+    outboxId || sheet ? null : 'attendance',
+    { projectId, date, groups, remarks },
+    (d) => {
+      setProjectId(d.projectId);
+      setDate(d.date);
+      setGroups(d.groups.length ? d.groups : defaultGroups());
+      setRemarks(d.remarks);
+      keepFor.current = `${d.projectId}|${d.date}`;
+      showsSheet.current = false;
+    },
+  );
+  useLeaveGuard(draft, { keepsDraft: !outboxId && !sheet, busy });
+  const startOver = () => {
+    setGroups(defaultGroups());
+    setRemarks('');
+    setErrors({});
+    setNotice(null);
+  };
+
+  useEffect(() => {
+    if (!outboxId && !projectId && projects.options.length === 1) {
+      setProjectId(projects.options[0].value);
+      draft.settle();
+    }
+  }, [outboxId, projects.options, projectId, draft.settle]);
+
+  // Fixing a refused outbox entry: fill the form from what was queued.
+  const [refusedLoaded, setRefusedLoaded] = useState(false);
+  useEffect(() => {
+    if (!refused || refusedLoaded) return;
+    const p = refused.payload as { projectId: string; date: string; lines?: AttendanceLineInput[]; remarks?: string | null };
+    setProjectId(p.projectId);
+    setDate(p.date);
+    setGroups(toGroups(p.lines ?? []));
+    setRemarks(p.remarks ?? '');
+    keepFor.current = `${p.projectId}|${p.date}`;
+    showsSheet.current = false;
+    setRefusedLoaded(true);
+    draft.settle();
+  }, [refused, refusedLoaded, draft.settle]);
+
+  // Load the day's sheet into the form whenever project or date change. A new sheet being typed stays as it is
+  // when only the day changes, and a form that showed a recorded sheet starts a fresh one on a day without one.
   useEffect(() => {
     if (!validDay || day.loading) return;
-    if (sheet) {
-      setGroups(toGroups(sheet));
+    if (keepFor.current === `${projectId}|${date}`) {
+      keepFor.current = null;
+      // A refused sheet stays as queued: saving it replaces the day's sheet, if there is one now.
+      if (!sheet || outboxId) return;
+      // The draft's day was recorded on another phone while the draft waited: show that sheet instead.
+      setGroups(toGroups(sheet.lines));
       setRemarks(sheet.remarks ?? '');
-    } else {
+      showsSheet.current = true;
+      setNotice(t('{name} recorded this day while your draft waited on this phone, so the form shows their sheet.', { name: sheet.recordedByName }));
+      setErrors({});
+      draft.clear();
+      return;
+    }
+    if (sheet) {
+      setGroups(toGroups(sheet.lines));
+      setRemarks(sheet.remarks ?? '');
+      showsSheet.current = true;
+    } else if (showsSheet.current) {
       setGroups(defaultGroups());
       setRemarks('');
-    }
+      showsSheet.current = false;
+    } else return;
     setErrors({});
+    setNotice(null);
+    // Filled in by itself: not a change of the user's to keep or warn about. A restored draft that is no longer on
+    // screen is dropped, so an empty sheet never replaces it on the phone.
+    if (draft.restoredAt && !sheet) draft.clear();
+    else draft.settle();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sheet?.id, sheet?.updatedAt, projectId, date, day.loading]);
 
@@ -130,12 +206,13 @@ export default function AttendanceScreen() {
     for (const g of groups) {
       const used = g.rows.some((r) => r.category || r.count.trim());
       if (used && !g.contractor.trim()) e[`c-${g.key}`] = t('Enter the contractor');
-      if (g.rows.some((r) => (r.category && !r.count.trim()) || (!r.category && r.count.trim()))) e[`r-${g.key}`] = t('Each row needs a trade and a count');
-      if (g.rows.some((r) => r.count.trim() && !/^\d+$/.test(r.count.trim()))) e[`r-${g.key}`] = t('Counts must be whole numbers');
+      if (g.rows.some((r) => (r.category && !r.count.trim()) || (!r.category && r.count.trim()))) e[`r-${g.key}`] = t('Choose a trade and enter a count in each row');
+      if (g.rows.some((r) => r.count.trim() && !/^\d+$/.test(r.count.trim()))) e[`r-${g.key}`] = t('Enter counts as whole numbers');
     }
     if (!lines.length && !remarks.trim()) e.lines = t('Enter at least one worker count, or a remark such as "Holiday"');
     if (!sheet && queuedForDay) e.date = t('Attendance for this day is already waiting in the outbox');
     setErrors(e);
+    errorSummary.report(e);
     return Object.keys(e).length === 0;
   };
 
@@ -146,19 +223,26 @@ export default function AttendanceScreen() {
     try {
       const body = { date, lines, remarks: remarks.trim() || null };
       if (sheet) {
-        setSaved(await api.patch<AttendanceSheetDto>(`/attendance/${sheet.id}`, body));
+        const updated = await api.patch<AttendanceSheetDto>(`/attendance/${sheet.id}`, body);
+        draft.clear();
+        if (outboxId) await discard(outboxId);
+        setSaved(updated);
         return;
       }
       const queueIt = async () => {
         const projectName = projects.options.find((o) => o.value === projectId)?.label ?? t('Project');
-        setQueued(await enqueue({ type: 'ATTENDANCE', payload: { projectId, ...body }, photos: [], title: `${t('Attendance')} · ${formatDate(date)}`, subtitle: `${projectName} · ${t('{n} workers', { n: total })}` }));
+        draft.clear();
+        setQueued(await enqueue({ id: clientId.current, type: 'ATTENDANCE', payload: { projectId, ...body }, photos: [], title: `${t('Attendance')} · ${formatDate(date)}`, subtitle: `${projectName} · ${t('{n} workers', { n: total })}` }));
       };
       if (!online) {
         await queueIt();
         return;
       }
       try {
-        setSaved(await api.post<AttendanceSheetDto>('/attendance', { projectId, ...body }));
+        const created = await api.post<AttendanceSheetDto>('/attendance', { id: clientId.current, projectId, ...body });
+        draft.clear();
+        if (outboxId) await discard(outboxId);
+        setSaved(created);
       } catch (e) {
         if (!isOfflineError(e)) throw e;
         await queueIt();
@@ -179,6 +263,7 @@ export default function AttendanceScreen() {
         title={t('Attendance saved')}
         subtitle={`${saved.projectName} · ${formatDate(saved.date)} · ${t("{n} workers. The day's DPR takes its manpower from this sheet.", { n: saved.totalWorkers })}`}
         onAnother={() => {
+          clientId.current = newId();
           setSaved(null);
           day.reload();
         }}
@@ -191,9 +276,13 @@ export default function AttendanceScreen() {
   const offlineUnknown = validDay && !online && !day.data;
 
   return (
-    <Screen keyboard>
-      <Stack.Screen options={{ title: sheet ? t('Edit Attendance') : t('Attendance') }} />
+    <Screen keyboard scrollRef={errorSummary.scrollRef}>
+      <Stack.Screen options={{ title: refused ? t('Fix Attendance') : sheet ? t('Edit Attendance') : t('Attendance') }} />
+      {!sheet ? <DraftNotice draft={draft} onStartOver={startOver} /> : null}
+      <ErrorSummary errors={errors} />
       <ErrorBanner message={submitError ?? projects.error} />
+      <OutboxRefusal item={refused} />
+      {notice ? <Notice icon="information-circle-outline" text={notice} /> : null}
       {!mayRecord ? <Notice icon="eye-outline" text={t('Your role can view attendance but not record it.')} /> : null}
       {locked ? <Notice icon="lock-closed-outline" text={t('The DPR for this day is approved, so its attendance is locked.')} /> : null}
       {offlineUnknown ? <Notice icon="cloud-offline-outline" text={t('Offline: a new sheet will wait in the outbox. If this day was already recorded, it will be refused when the phone reconnects.')} /> : null}
@@ -201,7 +290,9 @@ export default function AttendanceScreen() {
         <Select label={t('Project')} required value={projectId} options={projects.options} onChange={setProjectId} placeholder={t('Choose project')} error={errors.projectId} />
         <DatePicker label={t('Date')} required value={date} onChange={setDate} error={errors.date} />
         {validDay && day.loading ? <Text style={typography.caption}>{t('Checking this day…')}</Text> : null}
-        {sheet ? (
+        {sheet && refused ? (
+          <Text style={typography.caption}>{t('{name} has already recorded this day. Saving replaces that sheet with the figures below.', { name: sheet.recordedByName })}</Text>
+        ) : sheet ? (
           <Text style={typography.caption}>
             {sheet.updatedByName
               ? t('Recorded by {name}, last changed by {editor}. Saving updates this sheet.', { name: sheet.recordedByName, editor: sheet.updatedByName })
@@ -216,7 +307,7 @@ export default function AttendanceScreen() {
           title={g.contractor.trim() === DEPARTMENTAL_CONTRACTOR ? t('Own workers') : t('Contractor workers')}
           right={
             groups.length > 1 && !readOnly ? (
-              <Pressable onPress={() => setGroups((gs) => gs.filter((x) => x.key !== g.key))} hitSlop={8} accessibilityLabel={t('Remove contractor')}>
+              <Pressable onPress={() => setGroups((gs) => gs.filter((x) => x.key !== g.key))} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('Remove contractor')}>
                 <Ionicons name="trash-outline" size={20} color={colors.danger} />
               </Pressable>
             ) : null
@@ -231,9 +322,23 @@ export default function AttendanceScreen() {
               <View style={styles.grow}>
                 <Select value={r.category} options={r.category && !categoryOptions.some((o) => o.value === r.category) ? [...categoryOptions, { value: r.category, label: r.category }] : categoryOptions} onChange={(v) => updateRow(g.key, r.key, { category: v })} placeholder={t('Trade')} disabled={readOnly} />
               </View>
-              <Input value={r.count} onChangeText={(v) => updateRow(g.key, r.key, { count: v })} keyboardType="number-pad" placeholder="Nos" containerStyle={styles.small} editable={!readOnly} />
+              <Input
+                value={r.count}
+                onChangeText={(v) => updateRow(g.key, r.key, { count: v })}
+                keyboardType="number-pad"
+                placeholder="Nos"
+                accessibilityLabel={r.category ? t('Number of {category}', { category: t(r.category) }) : t('Number of workers')}
+                containerStyle={styles.small}
+                editable={!readOnly}
+              />
               {!readOnly ? (
-                <Pressable onPress={() => updateGroup(g.key, { rows: g.rows.filter((x) => x.key !== r.key) })} style={styles.remove} hitSlop={8} accessibilityLabel={t('Remove row')}>
+                <Pressable
+                  onPress={() => updateGroup(g.key, { rows: g.rows.filter((x) => x.key !== r.key) })}
+                  style={styles.remove}
+                  hitSlop={8}
+                  accessibilityRole="button"
+                  accessibilityLabel={r.category ? t('Remove {item}', { item: t(r.category) }) : t('Remove row')}
+                >
                   <Ionicons name="close-circle-outline" size={22} color={colors.textMuted} />
                 </Pressable>
               ) : null}

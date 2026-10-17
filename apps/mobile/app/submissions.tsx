@@ -116,7 +116,7 @@ export default function SubmissionsScreen() {
       </View>
       <View style={styles.banner}>
         <OfflineBanner />
-        <Input value={text} onChangeText={setText} placeholder={t('Search')} returnKeyType="search" autoCapitalize="none" containerStyle={styles.search} />
+        <Input value={text} onChangeText={setText} placeholder={t('Search')} accessibilityLabel={t('Search my submissions')} returnKeyType="search" autoCapitalize="none" containerStyle={styles.search} />
       </View>
       {loading && !data ? (
         <Loading />
