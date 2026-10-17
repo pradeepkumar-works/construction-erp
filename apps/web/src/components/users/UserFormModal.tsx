@@ -1,11 +1,13 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { App, Form, Input, Modal, Radio, Select, Switch, Typography } from 'antd';
+import { App, Form, Input, Radio, Select, Switch, Typography } from 'antd';
 import { MIN_PASSWORD_LENGTH, type CreateUserResultDto, type RoleKey, type UserSummary } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, errorMessage } from '@/lib/api';
 import { useRoles } from '@/lib/queries';
+import { FormGrid, FormShell } from '@/components/form/FormShell';
+import { EMAIL_INPUT, PHONE_INPUT, emailRule, phoneRule } from '@/components/form/inputs';
 
 interface FormValues {
   email: string;
@@ -51,26 +53,26 @@ export function UserFormModal({ open, onClose, user, onInvited }: { open: boolea
       message.success(isEdit ? 'User updated' : created.invite ? 'User invited' : 'User created');
       if (!isEdit && created.invite) onInvited?.(created);
       qc.invalidateQueries({ queryKey: ['users'] });
-      onClose();
     },
     onError: (err) => message.error(errorMessage(err)),
   });
 
   return (
-    <Modal open={open} title={isEdit ? `Edit ${user?.fullName}` : 'New user'} okText={isEdit ? 'Save' : how === 'password' ? 'Create user' : 'Invite user'} onCancel={onClose} onOk={() => form.submit()} confirmLoading={mutation.isPending} destroyOnHidden>
-      <Form form={form} layout="vertical" onFinish={(v) => mutation.mutate(v)} style={{ marginTop: 8 }}>
-        <Form.Item name="fullName" label="Full name" rules={[{ required: true, message: 'Required' }]}>
+    <FormShell open={open} onClose={onClose} form={form} layout="modal" width={520} title={isEdit ? `Edit ${user?.fullName}` : 'New user'} okText={isEdit ? 'Save' : how === 'password' ? 'Create user' : 'Invite user'} onSubmit={(v) => mutation.mutateAsync(v)}>
+      <Form form={form} layout="vertical">
+        <Form.Item name="fullName" label="Full name" rules={[{ required: true, whitespace: true, message: 'Enter their full name' }]}>
           <Input />
         </Form.Item>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
-          <Form.Item name="email" label="Email" rules={[{ required: true, message: 'Required' }, { type: 'email', message: 'Invalid email' }]}>
-            <Input autoComplete="off" />
+        <FormGrid cols={2}>
+          <Form.Item name="email" label="Email" rules={[{ required: true, whitespace: true, message: 'Enter their email address' }, emailRule]}>
+            {/* Someone else's address: the browser should not fill in the admin's own. */}
+            <Input {...EMAIL_INPUT} autoComplete="off" />
           </Form.Item>
-          <Form.Item name="phone" label="Phone">
-            <Input />
+          <Form.Item name="phone" label="Phone" rules={[phoneRule]}>
+            <Input {...PHONE_INPUT} autoComplete="off" />
           </Form.Item>
-        </div>
-        <Form.Item name="roleKey" label="Role" rules={[{ required: true, message: 'Required' }]}>
+        </FormGrid>
+        <Form.Item name="roleKey" label="Role" rules={[{ required: true, message: 'Choose the role' }]}>
           <Select showSearch={{ optionFilterProp: 'label' }} options={(roles ?? []).map((r) => ({ value: r.key, label: r.name }))} />
         </Form.Item>
         {isEdit && (
@@ -91,11 +93,11 @@ export function UserFormModal({ open, onClose, user, onInvited }: { open: boolea
         {isEdit && !resetPwd ? (
           <Typography.Link onClick={() => setResetPwd(true)}>Set a new password</Typography.Link>
         ) : isEdit || how === 'password' ? (
-          <Form.Item name="password" label={isEdit ? 'New password' : 'Password'} rules={[{ required: true, message: 'Required' }, { min: MIN_PASSWORD_LENGTH, message: `At least ${MIN_PASSWORD_LENGTH} characters` }]}>
+          <Form.Item name="password" label={isEdit ? 'New password' : 'Password'} rules={[{ required: true, message: 'Enter a password' }, { min: MIN_PASSWORD_LENGTH, message: `At least ${MIN_PASSWORD_LENGTH} characters` }]}>
             <Input.Password autoComplete="new-password" />
           </Form.Item>
         ) : null}
       </Form>
-    </Modal>
+    </FormShell>
   );
 }

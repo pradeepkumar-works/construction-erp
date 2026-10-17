@@ -36,7 +36,7 @@ test('prepare, approve, send and certify an RA bill', async ({ page }) => {
   await modal.getByLabel('Project').fill('RD-2026-01');
   await page.locator('.ant-select-dropdown:not(.ant-select-dropdown-hidden) .ant-select-item-option-active').filter({ visible: true }).last().waitFor();
   await modal.getByLabel('Project').press('Enter');
-  await modal.getByLabel('Other deduction (₹)').fill('1500');
+  await modal.getByLabel('Other deduction', { exact: true }).fill('1500');
   await modal.getByLabel('What it is for').fill('Water charges');
   await modal.getByRole('button', { name: 'Save as draft' }).click();
 

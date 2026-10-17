@@ -7,7 +7,8 @@ import type { AttachmentDto, DailyReportDto, Weather } from '@erp/shared';
 import { MANPOWER_CATEGORIES, WEATHER_LABELS, WEATHER_OPTIONS } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, errorMessage } from '@/lib/api';
-import { useAttendanceDay, useProjects } from '@/lib/queries';
+import { useAttendanceDay, useDprList, useProjects } from '@/lib/queries';
+import { formatDate } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { editActionLabel } from '@/components/common/EditResubmitButton';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
@@ -58,10 +59,37 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
     setFilledFrom(attendanceSheet.id);
   }, [open, editing, attendanceSheet, manpowerEdited, filledFrom, form]);
 
+  // New DPR: what the gang and machines were on the project's previous report, said so, with Clear (UX item 79). The
+  // day's attendance still wins for manpower.
+  const prevDay = dayStr ? dayjs(dayStr).subtract(1, 'day').format('YYYY-MM-DD') : undefined;
+  const previous = useDprList({ projectId: watchedProject, to: prevDay, pageSize: 1 }, open && !editing && !!watchedProject && !!prevDay).data?.items[0];
+  const [copiedFrom, setCopiedFrom] = useState<DailyReportDto | null>(null);
+  const [copyCleared, setCopyCleared] = useState(false);
+  useEffect(() => {
+    if (!open || editing || !previous || copyCleared || attendance.isLoading || copiedFrom?.id === previous.id) return;
+    const v = form.getFieldsValue(['manpower', 'machinery']) as Pick<FormValues, 'manpower' | 'machinery'>;
+    const takeManpower = !attendanceSheet && !manpowerEdited && !v.manpower?.length && previous.manpower.length > 0;
+    const takeMachinery = !v.machinery?.length && previous.machinery.length > 0;
+    if (!takeManpower && !takeMachinery) return;
+    form.setFieldsValue({
+      ...(takeManpower ? { manpower: previous.manpower.map((m) => ({ ...m })) } : {}),
+      ...(takeMachinery ? { machinery: previous.machinery.map((m) => ({ ...m })) } : {}),
+    });
+    setCopiedFrom(previous);
+  }, [open, editing, previous, copyCleared, attendance.isLoading, attendanceSheet, manpowerEdited, copiedFrom, form]);
+  const clearCopied = () => {
+    form.setFieldsValue({ ...(filledFrom ? {} : { manpower: [] }), machinery: [] });
+    setCopiedFrom(null);
+    setCopyCleared(true);
+    setManpowerEdited(true);
+  };
+
   useEffect(() => {
     if (!open) return;
     setManpowerEdited(false);
     setFilledFrom(null);
+    setCopiedFrom(null);
+    setCopyCleared(false);
     form.resetFields();
     if (entry) {
       form.setFieldsValue({
@@ -85,7 +113,7 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
         date: dayjs(),
         weather: 'SUNNY',
         siteCondition: 'Workable',
-        manpower: [{ category: 'Mason', count: 4 }, { category: 'Helper', count: 10 }],
+        manpower: [],
         machinery: [],
       });
     }
@@ -140,11 +168,11 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
           <Alert type="warning" showIcon style={{ marginBottom: 16 }} title={`Reviewer note from ${entry.reviewedByName ?? 'approver'}`} description={entry.reviewNote} />
         )}
         <FormSection title="The day">
-          <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]} hidden={!!fixedProject}>
+          <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!fixedProject}>
             <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
           </Form.Item>
           <FormGrid cols={3}>
-            <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Required' }]}>
+            <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date of the report' }]}>
               <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" />
             </Form.Item>
             <Form.Item name="weather" label="Weather">
@@ -154,7 +182,7 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
               <Input placeholder="Workable / Waterlogged" />
             </Form.Item>
           </FormGrid>
-          <Form.Item name="workExecuted" label="Work executed" rules={[{ required: true, message: 'Required' }]}>
+          <Form.Item name="workExecuted" label="Work executed" rules={[{ required: true, whitespace: true, message: 'Say what work was done today' }]}>
             <Input.TextArea rows={3} placeholder="Summary of work done today" />
           </Form.Item>
         </FormSection>
@@ -179,6 +207,19 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
             ) : null
           }
         >
+          {copiedFrom && !editing ? (
+            <Alert
+              type="info"
+              showIcon
+              style={{ marginBottom: 12 }}
+              title={`Copied from the DPR of ${formatDate(copiedFrom.date)}: check the numbers for today`}
+              action={
+                <Typography.Link onClick={clearCopied} style={{ fontSize: 12 }}>
+                  Clear
+                </Typography.Link>
+              }
+            />
+          ) : null}
           <FormGrid cols={2}>
             <Form.Item label="Manpower" required={false}>
               <LineTable
@@ -203,7 +244,7 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
                     align: 'right',
                     render: (f) => (
                       <Form.Item name={[f.name, 'count']} noStyle rules={[{ required: true, message: '' }]}>
-                        <InputNumber min={0} precision={0} placeholder="Nos" style={{ width: '100%' }} />
+                        <InputNumber min={0} precision={0} placeholder="Nos" inputMode="numeric" style={{ width: '100%' }} />
                       </Form.Item>
                     ),
                   },
@@ -233,7 +274,7 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
                     align: 'right',
                     render: (f) => (
                       <Form.Item name={[f.name, 'hours']} noStyle rules={[{ required: true, message: '' }]}>
-                        <InputNumber min={0} placeholder="Hrs" style={{ width: '100%' }} />
+                        <InputNumber min={0} max={24} placeholder="Hrs" inputMode="decimal" style={{ width: '100%' }} />
                       </Form.Item>
                     ),
                   },

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { Alert, App, Button, DatePicker, Descriptions, Divider, Drawer, Form, Input, InputNumber, Modal, Popconfirm, Select, Skeleton, Space, Table, Typography } from 'antd';
+import { Alert, App, Button, DatePicker, Descriptions, Divider, Drawer, Form, Input, Popconfirm, Select, Skeleton, Space, Table, Typography } from 'antd';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -13,6 +13,8 @@ import { useMaintenanceJob, useStockBalances } from '@/lib/queries';
 import { formatDate, formatINR, formatQty } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
+import { FormGrid, FormShell } from '@/components/form/FormShell';
+import { MoneyInput, QuantityInput } from '@/components/form/inputs';
 import { JobKindTag, JobStatusTag } from './maintenanceUi';
 
 interface CloseValues {
@@ -30,7 +32,6 @@ interface SpareValues {
   lines?: { itemId?: string; quantity?: number | null }[];
 }
 
-const grid = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', columnGap: 16 } as const;
 const str = (n: number | null | undefined) => (n === undefined || n === null ? null : String(n));
 
 /** One job card: the fault or service, spares issued from the store, and closing it with the work done and its cost. */
@@ -68,7 +69,6 @@ export function JobDrawer({ id, open, onClose, onEdit }: { id: string | null; op
       ).data,
     onSuccess: (x) => {
       done(`${x.jobNo} closed`);
-      setClosing(false);
     },
     onError: (e) => message.error(errorMessage(e)),
   });
@@ -81,7 +81,6 @@ export function JobDrawer({ id, open, onClose, onEdit }: { id: string | null; op
     onSuccess: (x) => {
       done(`Spares issued against ${x.jobNo}`);
       qc.invalidateQueries({ queryKey: ['stock'] });
-      setIssuing(false);
     },
     onError: (e) => message.error(errorMessage(e)),
   });
@@ -218,41 +217,41 @@ export function JobDrawer({ id, open, onClose, onEdit }: { id: string | null; op
         </>
       )}
 
-      <Modal open={closing} title={`Close ${j?.jobNo ?? ''}`} onCancel={() => setClosing(false)} onOk={() => closeForm.submit()} okText="Close job" okButtonProps={{ loading: close.isPending }} destroyOnHidden width={620}>
-        <Form form={closeForm} layout="vertical" onFinish={(v) => close.mutate(v)}>
+      <FormShell open={closing} onClose={() => setClosing(false)} form={closeForm} layout="modal" title={`Close ${j?.jobNo ?? ''}`} okText="Close job" onSubmit={(v) => close.mutateAsync(v)} width={620}>
+        <Form form={closeForm} layout="vertical">
           {j?.kind === 'SERVICE' ? <Alert type="info" showIcon style={{ marginBottom: 12 }} title="Closing a service restarts the machine's service schedule from this date." /> : null}
-          <div style={grid}>
-            <Form.Item name="closedDate" label="Back in work on" rules={[{ required: true, message: 'Required' }]}>
+          <FormGrid cols={3}>
+            <Form.Item name="closedDate" label="Back in work on" rules={[{ required: true, message: 'Pick the date' }]}>
               <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day') || (!!j && d.isBefore(dayjs(j.date), 'day'))} allowClear={false} />
             </Form.Item>
             <Form.Item name="downtimeHours" label="Working hours lost">
-              <InputNumber min={0} style={{ width: '100%' }} />
+              <QuantityInput unit="hours" />
             </Form.Item>
             <Form.Item name="meterReading" label="Hour meter / km">
-              <InputNumber min={0} style={{ width: '100%' }} />
+              <QuantityInput />
             </Form.Item>
-          </div>
+          </FormGrid>
           <Form.Item name="workDone" label="Work done" rules={[{ required: true, whitespace: true, message: 'What was done?' }]}>
             <Input.TextArea rows={3} maxLength={2000} />
           </Form.Item>
-          <div style={grid}>
-            <Form.Item name="labourCost" label="Labour (₹)">
-              <InputNumber min={0} style={{ width: '100%' }} />
+          <FormGrid cols={3}>
+            <Form.Item name="labourCost" label="Labour">
+              <MoneyInput />
             </Form.Item>
-            <Form.Item name="partsCost" label="Parts bought outside (₹)" tooltip="Spares issued from the store are counted on their own">
-              <InputNumber min={0} style={{ width: '100%' }} />
+            <Form.Item name="partsCost" label="Parts bought outside" tooltip="Spares issued from the store are counted on their own">
+              <MoneyInput />
             </Form.Item>
             <Form.Item name="workshop" label="Workshop / mechanic">
               <Input maxLength={200} />
             </Form.Item>
-          </div>
+          </FormGrid>
         </Form>
-      </Modal>
+      </FormShell>
 
-      <Modal open={issuing} title={`Issue spares for ${j?.jobNo ?? ''}`} onCancel={() => setIssuing(false)} onOk={() => spareForm.submit()} okText="Issue" okButtonProps={{ loading: spares.isPending }} destroyOnHidden width={620}>
-        <Form form={spareForm} layout="vertical" onFinish={(v) => spares.mutate(v)}>
+      <FormShell open={issuing} onClose={() => setIssuing(false)} form={spareForm} layout="modal" title={`Issue spares for ${j?.jobNo ?? ''}`} okText="Issue" onSubmit={(v) => spares.mutateAsync(v)} width={620}>
+        <Form form={spareForm} layout="vertical">
           <Typography.Paragraph type="secondary">From the store at {j?.projectName}. The issue slip is linked to this job card.</Typography.Paragraph>
-          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Required' }]} style={{ maxWidth: 220 }}>
+          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date' }]} style={{ maxWidth: 220 }}>
             <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} allowClear={false} />
           </Form.Item>
           {!stock.isLoading && !items.length ? <Alert type="warning" showIcon style={{ marginBottom: 12 }} title="Nothing is in stock at this project." /> : null}
@@ -263,7 +262,7 @@ export function JobDrawer({ id, open, onClose, onEdit }: { id: string | null; op
                   const itemId = spareForm.getFieldValue(['lines', f.name, 'itemId']) as string | undefined;
                   const row = items.find((i) => i.itemId === itemId);
                   return (
-                    <div key={f.key} style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
+                    <div key={f.key} data-line-label={`Spare ${f.name + 1}`} style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
                       <Form.Item name={[f.name, 'itemId']} style={{ flex: 3, marginBottom: 0 }} rules={[{ required: true, message: 'Pick a spare' }]}>
                         <Select
                           showSearch={{ optionFilterProp: 'label' }}
@@ -273,8 +272,8 @@ export function JobDrawer({ id, open, onClose, onEdit }: { id: string | null; op
                           options={items.map((i) => ({ value: i.itemId, label: `${i.itemName} (${formatQty(i.balance)} ${i.unit} in stock)`, disabled: chosen.has(i.itemId) && i.itemId !== itemId }))}
                         />
                       </Form.Item>
-                      <Form.Item name={[f.name, 'quantity']} style={{ flex: 1, marginBottom: 0 }} rules={[{ required: true, message: 'Qty' }]}>
-                        <InputNumber min={0} max={row ? Number(row.balance) : undefined} style={{ width: '100%' }} placeholder={row ? row.unit : 'Qty'} aria-label="Quantity" />
+                      <Form.Item name={[f.name, 'quantity']} style={{ flex: 1, marginBottom: 0 }} rules={[{ required: true, message: 'Enter the quantity' }]}>
+                        <QuantityInput unit={row?.unit} max={row ? Number(row.balance) : undefined} placeholder="Qty" aria-label="Quantity" />
                       </Form.Item>
                       <Button type="text" danger icon={<DeleteOutlined />} onClick={() => drop(f.name)} disabled={fields.length === 1} aria-label="Remove line" />
                     </div>
@@ -287,7 +286,7 @@ export function JobDrawer({ id, open, onClose, onEdit }: { id: string | null; op
             )}
           </Form.List>
         </Form>
-      </Modal>
+      </FormShell>
     </Drawer>
   );
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo } from 'react';
-import { Alert, App, AutoComplete, Button, DatePicker, Form, Input, InputNumber, Modal, Select, Space, Typography } from 'antd';
+import { Alert, App, AutoComplete, Button, DatePicker, Form, Input, InputNumber, Select, Space, Typography } from 'antd';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -11,6 +11,7 @@ import { api, errorMessage } from '@/lib/api';
 import { useActivities, useAttendanceSuggestions, useProjects, useStockBalances, useWorkOrders } from '@/lib/queries';
 import { useAuth } from '@/lib/auth';
 import { formatQty } from '@/lib/format';
+import { FormGrid, FormShell } from '@/components/form/FormShell';
 
 interface LineValue {
   itemId?: string;
@@ -61,7 +62,6 @@ export function IssueModal({ open, onClose, projectId }: { open: boolean; onClos
     onSuccess: (e) => {
       message.success(`${e.entryNo} saved: issued to ${e.issuedTo}`);
       qc.invalidateQueries({ queryKey: ['stock'] });
-      onClose();
     },
     onError: (err) => message.error(errorMessage(err)),
   });
@@ -69,19 +69,9 @@ export function IssueModal({ open, onClose, projectId }: { open: boolean; onClos
   const chosen = new Set((watchedLines ?? []).map((l) => l?.itemId).filter(Boolean));
 
   return (
-    <Modal
-      open={open}
-      title="Issue material"
-      onCancel={onClose}
-      onOk={() => form.submit()}
-      okText="Save issue"
-      okButtonProps={{ loading: save.isPending }}
-      width={720}
-      destroyOnHidden
-      styles={{ body: { maxHeight: '70vh', overflowY: 'auto', paddingRight: 8 } }}
-    >
-      <Form form={form} layout="vertical" onFinish={(v) => save.mutate(v)} style={{ marginTop: 8 }}>
-        <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]} hidden={!!projectId}>
+    <FormShell open={open} onClose={onClose} form={form} layout="modal" width={720} title="Issue material" okText="Save issue" onSubmit={(v) => save.mutateAsync(v)}>
+      <Form form={form} layout="vertical">
+        <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!projectId}>
           <Select
             showSearch={{ optionFilterProp: 'label' }}
             placeholder="Select project"
@@ -89,8 +79,8 @@ export function IssueModal({ open, onClose, projectId }: { open: boolean; onClos
             options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))}
           />
         </Form.Item>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', columnGap: 12 }}>
-          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Required' }]}>
+        <FormGrid cols={2}>
+          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date' }]}>
             <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
           {(wos.data?.items.length ?? 0) > 0 && (
@@ -116,7 +106,7 @@ export function IssueModal({ open, onClose, projectId }: { open: boolean; onClos
           <Form.Item name="activityId" label="For activity">
             <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Optional" disabled={!scope} options={(activities.data ?? []).map((a) => ({ value: a.id, label: a.name }))} />
           </Form.Item>
-        </div>
+        </FormGrid>
 
         {scope && !stock.isLoading && !items.length ? (
           <Alert type="warning" showIcon style={{ marginBottom: 12 }} title="Nothing is in stock at this project yet. Receive material first." />
@@ -148,7 +138,7 @@ export function IssueModal({ open, onClose, projectId }: { open: boolean; onClos
                         name={[f.name, 'quantity']}
                         style={{ width: 180, marginBottom: 0 }}
                         rules={[
-                          { required: true, message: 'Quantity' },
+                          { required: true, message: 'Enter the quantity' },
                           {
                             validator: (_, v) =>
                               !v || !row || Number(v) <= Number(row.balance) ? Promise.resolve() : Promise.reject(new Error(`Only ${formatQty(row.balance)} ${row.unit} in stock`)),
@@ -175,6 +165,6 @@ export function IssueModal({ open, onClose, projectId }: { open: boolean; onClos
           Items that fall below their minimum level alert the store manager and the project manager.
         </Typography.Text>
       </Form>
-    </Modal>
+    </FormShell>
   );
 }

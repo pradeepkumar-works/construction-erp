@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo } from 'react';
-import { App, Button, DatePicker, Form, Input, InputNumber, Modal, Select, Typography } from 'antd';
+import { App, Button, DatePicker, Form, Input, InputNumber, Select, Typography } from 'antd';
 import { DeleteOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { TransmittalDto, TransmittalPurpose } from '@erp/shared';
@@ -9,6 +9,7 @@ import { TRANSMITTAL_PURPOSES, TRANSMITTAL_PURPOSE_LABELS } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, errorMessage } from '@/lib/api';
 import { useProjects, useSiteDocuments } from '@/lib/queries';
+import { FormGrid, FormShell } from '@/components/form/FormShell';
 
 interface FormValues {
   projectId: string;
@@ -25,8 +26,6 @@ export interface TransmittalPrefill {
   projectId: string;
   revisionIds: string[];
 }
-
-const grid = (cols: string) => ({ display: 'grid', gridTemplateColumns: cols, gap: '0 16px' }) as const;
 
 /** Send revisions to someone, or (with `transmittal`) change what was sent. Picks from each document's current revision. */
 export function TransmittalFormModal({
@@ -92,7 +91,6 @@ export function TransmittalFormModal({
       message.success(transmittal ? `${t.transmittalNo} updated` : `${t.transmittalNo} recorded`);
       qc.invalidateQueries({ queryKey: ['documents'] });
       onSaved?.(t);
-      onClose();
     },
     onError: (err) => message.error(errorMessage(err)),
   });
@@ -100,9 +98,9 @@ export function TransmittalFormModal({
   const chosen = new Set((items ?? []).map((i) => i?.revisionId));
   const locked = !!transmittal?.acknowledgedOn;
   return (
-    <Modal open={open} title={transmittal ? `Edit ${transmittal.transmittalNo}` : 'New transmittal'} okText={transmittal ? 'Save' : 'Record transmittal'} onCancel={onClose} onOk={() => form.submit()} confirmLoading={mutation.isPending} width={720} destroyOnHidden>
-      <Form form={form} layout="vertical" onFinish={(v) => mutation.mutate(v)} style={{ marginTop: 8 }}>
-        <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]} hidden={!!fixedProject}>
+    <FormShell open={open} onClose={onClose} form={form} layout="modal" width={720} title={transmittal ? `Edit ${transmittal.transmittalNo}` : 'New transmittal'} okText={transmittal ? 'Save' : 'Record transmittal'} onSubmit={(v) => mutation.mutateAsync(v)}>
+      <Form form={form} layout="vertical" style={{ marginTop: 8 }}>
+        <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!fixedProject}>
           <Select
             showSearch={{ optionFilterProp: 'label' }}
             placeholder="Select project"
@@ -110,22 +108,22 @@ export function TransmittalFormModal({
             onChange={() => form.setFieldsValue({ items: [] })}
           />
         </Form.Item>
-        <div style={grid('1.4fr 1fr')}>
-          <Form.Item name="toParty" label="To" rules={[{ required: true, whitespace: true, message: 'Required' }]}>
+        <FormGrid cols={2}>
+          <Form.Item name="toParty" label="To" rules={[{ required: true, whitespace: true, message: 'Say who it goes to' }]}>
             <Input maxLength={200} placeholder="Subcontractor, consultant or client" />
           </Form.Item>
           <Form.Item name="attention" label="Attention">
             <Input maxLength={200} placeholder="Name and designation" />
           </Form.Item>
-        </div>
-        <div style={grid('1fr 1fr')}>
+        </FormGrid>
+        <FormGrid cols={2}>
           <Form.Item name="purpose" label="Purpose">
             <Select options={TRANSMITTAL_PURPOSES.map((p) => ({ value: p, label: TRANSMITTAL_PURPOSE_LABELS[p] }))} />
           </Form.Item>
-          <Form.Item name="sentOn" label="Sent on" rules={[{ required: true, message: 'Required' }]}>
+          <Form.Item name="sentOn" label="Sent on" rules={[{ required: true, message: 'Pick the date it was sent' }]}>
             <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
-        </div>
+        </FormGrid>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 32px', gap: 8 }}>
           <Typography.Text strong>Documents</Typography.Text>
           <Typography.Text strong>Copies</Typography.Text>
@@ -149,7 +147,7 @@ export function TransmittalFormModal({
                     <Select showSearch={{ optionFilterProp: 'label' }} disabled={locked} aria-label="Document" options={options.map((o) => ({ ...o, disabled: chosen.has(o.value) && items?.[f.name]?.revisionId !== o.value }))} />
                   </Form.Item>
                   <Form.Item name={[f.name, 'copies']} initialValue={1} style={{ marginBottom: 8 }}>
-                    <InputNumber min={1} max={99} style={{ width: '100%' }} disabled={locked} aria-label="Copies" />
+                    <InputNumber min={1} max={99} precision={0} inputMode="numeric" style={{ width: '100%' }} disabled={locked} aria-label="Copies" />
                   </Form.Item>
                   <Button type="text" icon={<DeleteOutlined />} onClick={() => remove(f.name)} disabled={locked} aria-label="Remove document" />
                 </div>
@@ -167,6 +165,6 @@ export function TransmittalFormModal({
           <Input.TextArea rows={2} maxLength={1000} />
         </Form.Item>
       </Form>
-    </Modal>
+    </FormShell>
   );
 }

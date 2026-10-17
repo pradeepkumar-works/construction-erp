@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Form, Input, InputNumber, Modal, Popconfirm, Space, Tag, Typography } from 'antd';
+import { App, Button, Form, Input, Popconfirm, Space, Tag, Typography } from 'antd';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ItemDto, ItemSortField } from '@erp/shared';
@@ -17,6 +17,8 @@ import { CardToolbar } from '@/components/common/CardToolbar';
 import { EmptyArt } from '@/components/common/EmptyArt';
 import { DataTable, type ListColumn } from '@/components/list/DataTable';
 import { useListFrame } from '@/components/list/useListFrame';
+import { FormShell } from '@/components/form/FormShell';
+import { MoneyInput } from '@/components/form/inputs';
 
 const NO_KEYS: string[] = [];
 
@@ -45,7 +47,6 @@ export function ItemsTable() {
       message.success(`${i.name} saved`);
       qc.invalidateQueries({ queryKey: ['stock'] });
       qc.invalidateQueries({ queryKey: ['cost'] });
-      setEditing(null);
     },
     onError: (err) => message.error(errorMessage(err)),
   });
@@ -152,22 +153,15 @@ export function ItemsTable() {
         emptyText={<EmptyArt art="entries" title={page.params.q ? 'No item matches this search' : 'No items yet. GRNs add them from the request lines.'} />}
         emptyAction={newButton}
       />
-      <Modal
-        open={!!editing}
-        title={editing === 'new' ? 'Add item' : 'Edit item'}
-        onCancel={() => setEditing(null)}
-        onOk={() => form.submit()}
-        okButtonProps={{ loading: save.isPending }}
-        destroyOnHidden
-      >
-        <Form form={form} layout="vertical" onFinish={(v) => save.mutate(v)} style={{ marginTop: 8 }}>
-          <Form.Item name="name" label="Name" rules={[{ required: true, whitespace: true, message: 'Required' }]}>
+      <FormShell open={!!editing} onClose={() => setEditing(null)} form={form} layout="modal" width={520} title={editing === 'new' ? 'Add item' : 'Edit item'} okText={editing === 'new' ? 'Add item' : 'Save'} onSubmit={(v) => save.mutateAsync(v)}>
+        <Form form={form} layout="vertical">
+          <Form.Item name="name" label="Name" rules={[{ required: true, whitespace: true, message: 'Enter the item name' }]}>
             <Input maxLength={200} />
           </Form.Item>
           <Form.Item
             name="unit"
             label="Unit"
-            rules={[{ required: true, whitespace: true, message: 'Required' }]}
+            rules={[{ required: true, whitespace: true, message: 'Enter the unit, e.g. Bag' }]}
             extra={editing && editing !== 'new' && editing.projectCount > 0 ? 'The unit is fixed once the item has stock movements.' : undefined}
           >
             <UnitInput maxLength={30} disabled={!!editing && editing !== 'new' && editing.projectCount > 0} />
@@ -175,11 +169,11 @@ export function ItemsTable() {
           <Form.Item name="category" label="Category">
             <Input maxLength={60} placeholder="e.g. Cement, Steel, Fuel" />
           </Form.Item>
-          <Form.Item name="rate" label="Standard rate (₹ per unit)" extra="Values material issued in the project cost view.">
-            <InputNumber min={0} precision={2} style={{ width: '100%' }} />
+          <Form.Item name="rate" label="Standard rate per unit" extra="Values material issued in the project cost view.">
+            <MoneyInput />
           </Form.Item>
         </Form>
-      </Modal>
+      </FormShell>
     </>
   );
 }

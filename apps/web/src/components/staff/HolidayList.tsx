@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, DatePicker, Form, Input, Modal, Popconfirm, Select, Table, Typography } from 'antd';
+import { App, Button, DatePicker, Form, Input, Popconfirm, Select, Table, Typography } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { HolidayDto } from '@erp/shared';
@@ -12,6 +12,7 @@ import { useAuth } from '@/lib/auth';
 import { useHolidays, useProjects } from '@/lib/queries';
 import { QueryError } from '@/components/common/QueryState';
 import { CardToolbar } from '@/components/common/CardToolbar';
+import { FormShell } from '@/components/form/FormShell';
 
 /** Holidays for the year: for every site or one site. Leave does not count them; working one earns a comp-off. */
 export function HolidayList() {
@@ -30,7 +31,6 @@ export function HolidayList() {
     onSuccess: (h) => {
       message.success(`${h.name} added`);
       qc.invalidateQueries({ queryKey: ['staff'] });
-      setAdding(false);
     },
     onError: (err) => message.error(errorMessage(err)),
   });
@@ -92,19 +92,20 @@ export function HolidayList() {
             : []),
         ]}
       />
-      <Modal open={adding} title="Add holiday" okText="Add" onCancel={() => setAdding(false)} onOk={() => form.submit()} confirmLoading={add.isPending} destroyOnHidden>
-        <Form form={form} layout="vertical" onFinish={(v) => add.mutate(v)} style={{ marginTop: 8 }}>
-          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Required' }]}>
+      {/* Blank Where is every site, so the header's project is not put in. */}
+      <FormShell open={adding} onClose={() => setAdding(false)} form={form} layout="modal" title="Add holiday" okText="Add" onSubmit={(v) => add.mutateAsync(v)} projectDefault={false}>
+        <Form form={form} layout="vertical">
+          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date' }]}>
             <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" />
           </Form.Item>
-          <Form.Item name="name" label="Holiday" rules={[{ required: true, whitespace: true, message: 'Required' }]}>
+          <Form.Item name="name" label="Holiday" rules={[{ required: true, whitespace: true, message: 'Name the holiday' }]}>
             <Input maxLength={100} placeholder="Ratha Yatra" />
           </Form.Item>
           <Form.Item name="projectId" label="Where" extra="Blank for every site">
             <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Every site" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
           </Form.Item>
         </Form>
-      </Modal>
+      </FormShell>
     </>
   );
 }

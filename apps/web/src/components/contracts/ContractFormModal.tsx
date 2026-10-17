@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { App, Button, Checkbox, DatePicker, Divider, Form, Input, InputNumber, Modal, Select, Typography } from 'antd';
+import { App, Button, Checkbox, DatePicker, Form, Input, InputNumber, Select } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -10,6 +10,8 @@ import { CONTRACT_PERCENT_FIELDS, CONTRACT_PERCENT_LABELS, LD_PERIODS, LD_PERIOD
 import { api, errorMessage } from '@/lib/api';
 import { useClients } from '@/lib/queries';
 import { ClientFormModal } from '@/components/clients/ClientFormModal';
+import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
+import { MoneyInput } from '@/components/form/inputs';
 
 type FormValues = {
   clientId?: string | null;
@@ -36,8 +38,6 @@ const PCT_HELP: Record<ContractPercentField, string> = {
   labourCessPct: 'BOCW cess, usually 1%',
   gstRate: 'Charged on the work value',
 };
-
-const rupees = { formatter: (v?: number | string) => (v === undefined || v === null || v === '' ? '' : Number(v).toLocaleString('en-IN')), parser: (v?: string) => Number((v ?? '').replace(/[^\d.]/g, '')) };
 
 /** Edit a project's contract terms: client, agreement, value and dates, advance and the bill percentages. */
 export function ContractFormModal({ open, contract, onClose }: { open: boolean; contract: ProjectContractDto; onClose: () => void }) {
@@ -94,90 +94,89 @@ export function ContractFormModal({ open, contract, onClose }: { open: boolean; 
       qc.invalidateQueries({ queryKey: ['contract', contract.projectId] });
       qc.invalidateQueries({ queryKey: ['projects'] });
       qc.invalidateQueries({ queryKey: ['clients'] });
-      onClose();
     },
     onError: (e) => message.error(errorMessage(e)),
   });
 
   return (
     <>
-      <Modal open={open} title={`Contract: ${contract.projectCode}`} okText="Save contract" onCancel={onClose} onOk={() => form.submit()} confirmLoading={save.isPending} width={760} destroyOnHidden>
-        <Form form={form} layout="vertical" onFinish={(v) => save.mutate(v)} style={{ marginTop: 8 }}>
-          <Form.Item label="Client" required={false} style={{ marginBottom: 12 }}>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <Form.Item name="clientId" noStyle>
-                <Select
-                  allowClear
-                  showSearch={{ optionFilterProp: 'label' }}
-                  placeholder={contract.clientName ? `${contract.clientName} (not in the client master)` : 'Select a client'}
-                  style={{ flex: 1 }}
-                  options={(clients ?? []).map((c) => ({ value: c.id, label: c.department ? `${c.name} · ${c.department}` : c.name }))}
-                />
+      <FormShell open={open} onClose={onClose} form={form} layout="drawer" title={`Contract: ${contract.projectCode}`} okText="Save contract" onSubmit={(v) => save.mutateAsync(v)}>
+        <Form form={form} layout="vertical">
+          <FormSection title="Client and agreement">
+            <Form.Item label="Client" required={false} style={{ marginBottom: 12 }}>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <Form.Item name="clientId" noStyle>
+                  <Select
+                    allowClear
+                    showSearch={{ optionFilterProp: 'label' }}
+                    placeholder={contract.clientName ? `${contract.clientName} (not in the client master)` : 'Select a client'}
+                    style={{ flex: 1 }}
+                    options={(clients ?? []).map((c) => ({ value: c.id, label: c.department ? `${c.name} · ${c.department}` : c.name }))}
+                  />
+                </Form.Item>
+                <Button icon={<PlusOutlined />} onClick={() => setNewClient(true)}>
+                  New client
+                </Button>
+              </div>
+            </Form.Item>
+            <FormGrid cols={3}>
+              <Form.Item name="workOrderNo" label="Work order no.">
+                <Input />
               </Form.Item>
-              <Button icon={<PlusOutlined />} onClick={() => setNewClient(true)}>
-                New client
-              </Button>
-            </div>
-          </Form.Item>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0 16px' }}>
-            <Form.Item name="workOrderNo" label="Work order no.">
-              <Input />
-            </Form.Item>
-            <Form.Item name="agreementNo" label="Agreement no.">
-              <Input placeholder="04/EE/R&B/2025-26" />
-            </Form.Item>
-            <Form.Item name="agreementDate" label="Agreement date">
-              <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" />
-            </Form.Item>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '0 16px' }}>
-            <Form.Item name="contractValue" label="Contract value (₹)">
-              <InputNumber<number> style={{ width: '100%' }} min={0} {...rupees} />
-            </Form.Item>
-            <Form.Item name="dates" label="Start / completion date (as agreed)" extra="Extensions of time come from the delay register.">
-              <DatePicker.RangePicker style={{ width: '100%' }} format="DD MMM YYYY" allowEmpty={[true, true]} />
-            </Form.Item>
-          </div>
-          <Divider titlePlacement="start" plain style={{ margin: '4px 0 12px' }}>
-            <Typography.Text type="secondary">Deductions and GST on each bill (% of the work value)</Typography.Text>
-          </Divider>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0 16px' }}>
-            {CONTRACT_PERCENT_FIELDS.map((k) => (
-              <Form.Item key={k} name={k} label={`${CONTRACT_PERCENT_LABELS[k]} %`} tooltip={PCT_HELP[k]}>
-                <InputNumber<number> style={{ width: '100%' }} min={0} max={k === 'gstRate' ? MAX_GST_RATE : 100} />
+              <Form.Item name="agreementNo" label="Agreement no.">
+                <Input placeholder="04/EE/R&B/2025-26" />
               </Form.Item>
-            ))}
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0 16px' }}>
-            <Form.Item name="mobilisationAdvance" label="Mobilisation advance (₹)" tooltip="Advance received from the client; recovered from bills at the advance recovery %">
-              <InputNumber<number> style={{ width: '100%' }} min={0} {...rupees} />
+              <Form.Item name="agreementDate" label="Agreement date">
+                <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" />
+              </Form.Item>
+            </FormGrid>
+            <FormGrid cols={2}>
+              <Form.Item name="contractValue" label="Contract value">
+                <MoneyInput />
+              </Form.Item>
+              <Form.Item name="dates" label="Start / completion date (as agreed)" extra="Extensions of time come from the delay register.">
+                <DatePicker.RangePicker style={{ width: '100%' }} format="DD MMM YYYY" allowEmpty={[true, true]} />
+              </Form.Item>
+            </FormGrid>
+          </FormSection>
+          <FormSection title="Deductions and GST on each bill (% of the work value)">
+            <FormGrid cols={4}>
+              {CONTRACT_PERCENT_FIELDS.map((k) => (
+                <Form.Item key={k} name={k} label={`${CONTRACT_PERCENT_LABELS[k]} %`} tooltip={PCT_HELP[k]}>
+                  <InputNumber<number> style={{ width: '100%' }} min={0} max={k === 'gstRate' ? MAX_GST_RATE : 100} />
+                </Form.Item>
+              ))}
+            </FormGrid>
+            <FormGrid cols={3}>
+              <Form.Item name="mobilisationAdvance" label="Mobilisation advance" tooltip="Advance received from the client; recovered from bills at the advance recovery %">
+                <MoneyInput />
+              </Form.Item>
+              <Form.Item name="defectLiabilityMonths" label="Defect liability (months)">
+                <InputNumber<number> style={{ width: '100%' }} min={0} max={120} precision={0} inputMode="numeric" />
+              </Form.Item>
+              <Form.Item name="clientPaymentDays" label="Client pays within (days)" tooltip="Days the client takes to pay a bill once it is sent. The cash-flow forecast assumes 30 when left empty.">
+                <InputNumber<number> style={{ width: '100%' }} min={0} max={365} precision={0} inputMode="numeric" placeholder="30" />
+              </Form.Item>
+            </FormGrid>
+          </FormSection>
+          <FormSection title="Liquidated damages for late completion">
+            <FormGrid cols={3}>
+              <Form.Item name="ldRatePct" label="LD rate (% of contract value)" tooltip="Leave at 0 if the contract has no liquidated damages clause">
+                <InputNumber<number> style={{ width: '100%' }} min={0} max={100} step={0.05} />
+              </Form.Item>
+              <Form.Item name="ldPeriod" label="For each">
+                <Select<LdPeriod> options={LD_PERIODS.map((p) => ({ value: p, label: LD_PERIOD_LABELS[p].replace('per ', '') }))} />
+              </Form.Item>
+              <Form.Item name="ldCapPct" label="LD cap (% of contract value)" tooltip="Usually 10%">
+                <InputNumber<number> style={{ width: '100%' }} min={0} max={100} />
+              </Form.Item>
+            </FormGrid>
+            <Form.Item name="priceVariation" label="Price variation" valuePropName="checked">
+              <Checkbox>Contract has a price variation clause</Checkbox>
             </Form.Item>
-            <Form.Item name="defectLiabilityMonths" label="Defect liability (months)">
-              <InputNumber<number> style={{ width: '100%' }} min={0} max={120} />
-            </Form.Item>
-            <Form.Item name="clientPaymentDays" label="Client pays within (days)" tooltip="Days the client takes to pay a bill once it is sent. The cash-flow forecast assumes 30 when left empty.">
-              <InputNumber<number> style={{ width: '100%' }} min={0} max={365} placeholder="30" />
-            </Form.Item>
-          </div>
-          <Divider titlePlacement="start" plain style={{ margin: '4px 0 12px' }}>
-            <Typography.Text type="secondary">Liquidated damages for late completion</Typography.Text>
-          </Divider>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0 16px' }}>
-            <Form.Item name="ldRatePct" label="LD rate (% of contract value)" tooltip="Leave at 0 if the contract has no liquidated damages clause">
-              <InputNumber<number> style={{ width: '100%' }} min={0} max={100} step={0.05} />
-            </Form.Item>
-            <Form.Item name="ldPeriod" label="For each">
-              <Select<LdPeriod> options={LD_PERIODS.map((p) => ({ value: p, label: LD_PERIOD_LABELS[p].replace('per ', '') }))} />
-            </Form.Item>
-            <Form.Item name="ldCapPct" label="LD cap (% of contract value)" tooltip="Usually 10%">
-              <InputNumber<number> style={{ width: '100%' }} min={0} max={100} />
-            </Form.Item>
-          </div>
-          <Form.Item name="priceVariation" label="Price variation" valuePropName="checked">
-            <Checkbox>Contract has a price variation clause</Checkbox>
-          </Form.Item>
+          </FormSection>
         </Form>
-      </Modal>
+      </FormShell>
       <ClientFormModal open={newClient} onClose={() => setNewClient(false)} onSaved={(c) => form.setFieldValue('clientId', c.id)} />
     </>
   );

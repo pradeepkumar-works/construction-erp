@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo } from 'react';
-import { Alert, App, Collapse, DatePicker, Form, Input, InputNumber, Modal, Segmented, Select, Typography } from 'antd';
+import { Alert, App, DatePicker, Form, Input, Segmented, Select, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { OpenBillDto, PaymentMode, RaBillDto, ReceiptDto, ReceiptKind } from '@erp/shared';
@@ -9,6 +9,8 @@ import { RECEIPT_KIND_LABELS, RECEIPT_MODES, RECEIPT_MODE_LABELS } from '@erp/sh
 import { api, errorMessage } from '@/lib/api';
 import { useBill, useProjects, useReceivables } from '@/lib/queries';
 import { formatDate, formatINR, toNumber } from '@/lib/format';
+import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
+import { MoneyInput } from '@/components/form/inputs';
 
 const DEDUCTIONS = [
   ['tdsAmount', 'TDS (income tax)', 'tds'],
@@ -46,7 +48,7 @@ export function ReceiptFormModal({ open, onClose, bill, receipt }: { open: boole
   const { data: projects } = useProjects();
   const { data: receivables } = useReceivables(undefined, open && !bill && !receipt);
   const watchedKind = Form.useWatch('kind', form) as ReceiptKind | undefined;
-  // The kind switch is only shown for a new receipt without a bill; onFinish leaves out fields that are not shown.
+  // The kind switch is only shown for a new receipt without a bill; the submitted values leave out fields that are not shown.
   const kind: ReceiptKind = receipt ? receipt.kind : bill ? 'BILL' : (watchedKind ?? 'BILL');
   const billId = Form.useWatch('billId', form) as string | undefined;
   const { data: chosen } = useBill(open && !bill && billId ? billId : undefined);
@@ -108,7 +110,6 @@ export function ReceiptFormModal({ open, onClose, bill, receipt }: { open: boole
       qc.invalidateQueries({ queryKey: ['bills'] });
       qc.invalidateQueries({ queryKey: ['dashboard'] });
       qc.invalidateQueries({ queryKey: ['cost'] });
-      onClose();
     },
     onError: (e) => message.error(errorMessage(e)),
   });
@@ -116,91 +117,79 @@ export function ReceiptFormModal({ open, onClose, bill, receipt }: { open: boole
   const over = kind === 'BILL' && target && !editing ? settles - toNumber(target.outstanding) : 0;
 
   return (
-    <Modal
+    <FormShell
       open={open}
+      onClose={onClose}
+      form={form}
       title={editing ? 'Correct receipt' : bill ? `Payment received · ${bill.billLabel}` : 'Record money received'}
       okText={editing ? 'Save' : 'Record'}
-      onCancel={onClose}
-      onOk={() => form.submit()}
-      confirmLoading={mutation.isPending}
+      onSubmit={(v) => mutation.mutateAsync(v)}
       width={680}
-      destroyOnHidden
     >
-      <Form form={form} layout="vertical" onFinish={(v) => mutation.mutate(v)} style={{ marginTop: 8 }}>
+      <Form form={form} layout="vertical">
         {!bill && !editing && (
           <Form.Item name="kind">
             <Segmented options={(['BILL', 'RETENTION_RELEASE', 'DEPOSIT_RELEASE'] as ReceiptKind[]).map((k) => ({ value: k, label: RECEIPT_KIND_LABELS[k] }))} />
           </Form.Item>
         )}
-        {kind === 'BILL' ? (
-          <Form.Item name="billId" label="Bill" rules={[{ required: true, message: 'Choose the bill' }]} hidden={!!bill || editing}>
-            <Select
-              showSearch={{ optionFilterProp: 'label' }}
-              placeholder="Bills sent and not yet settled"
-              options={openBills.map((b) => ({ value: b.billId, label: `${b.projectCode} · ${b.billLabel} · ${formatINR(b.outstanding)} outstanding` }))}
-              notFoundContent="No bill is waiting for payment"
-            />
+        <FormSection title="Payment">
+          {kind === 'BILL' ? (
+            <Form.Item name="billId" label="Bill" rules={[{ required: true, message: 'Choose the bill' }]} hidden={!!bill || editing}>
+              <Select
+                showSearch={{ optionFilterProp: 'label' }}
+                placeholder="Bills sent and not yet settled"
+                options={openBills.map((b) => ({ value: b.billId, label: `${b.projectCode} · ${b.billLabel} · ${formatINR(b.outstanding)} outstanding` }))}
+                notFoundContent="No bill is waiting for payment"
+              />
+            </Form.Item>
+          ) : (
+            <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={editing}>
+              <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
+            </Form.Item>
+          )}
+          {kind === 'BILL' && target && !editing && (
+            <Typography.Paragraph type="secondary">
+              {target.billLabel} of {formatDate(target.billDate)}: work + GST {formatINR(target.invoiceAmount, true)}, settled so far {formatINR(target.settledAmount, true)}, outstanding{' '}
+              <strong>{formatINR(target.outstanding, true)}</strong>.
+            </Typography.Paragraph>
+          )}
+          <FormGrid cols={3}>
+            <Form.Item name="receiptDate" label="Received on" rules={[{ required: true, message: 'Pick the date' }]}>
+              <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+            </Form.Item>
+            <Form.Item name="amount" label="Amount received" rules={[{ required: true, message: 'Enter the amount received' }]}>
+              <MoneyInput />
+            </Form.Item>
+            <Form.Item name="mode" label="Mode">
+              <Select options={RECEIPT_MODES.map((m) => ({ value: m, label: RECEIPT_MODE_LABELS[m] }))} />
+            </Form.Item>
+          </FormGrid>
+          <Form.Item name="reference" label="UTR / cheque / advice no.">
+            <Input maxLength={100} placeholder="e.g. SBIN526291234567" />
           </Form.Item>
-        ) : (
-          <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={editing}>
-            <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
-          </Form.Item>
-        )}
-        {kind === 'BILL' && target && !editing && (
-          <Typography.Paragraph type="secondary">
-            {target.billLabel} of {formatDate(target.billDate)}: work + GST {formatINR(target.invoiceAmount, true)}, settled so far {formatINR(target.settledAmount, true)}, outstanding{' '}
-            <strong>{formatINR(target.outstanding, true)}</strong>.
-          </Typography.Paragraph>
-        )}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0 16px' }}>
-          <Form.Item name="receiptDate" label="Received on" rules={[{ required: true, message: 'Required' }]}>
-            <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
-          </Form.Item>
-          <Form.Item name="amount" label="Amount received (₹)" rules={[{ required: true, message: 'Required' }]}>
-            <InputNumber style={{ width: '100%' }} min={0} precision={2} />
-          </Form.Item>
-          <Form.Item name="mode" label="Mode">
-            <Select options={RECEIPT_MODES.map((m) => ({ value: m, label: RECEIPT_MODE_LABELS[m] }))} />
-          </Form.Item>
-        </div>
-        <Form.Item name="reference" label="UTR / cheque / advice no.">
-          <Input maxLength={100} placeholder="e.g. SBIN526291234567" />
-        </Form.Item>
+        </FormSection>
         {kind === 'BILL' && (
-          <Collapse
-            size="small"
-            style={{ marginBottom: 16 }}
-            defaultActiveKey={['d']}
-            items={[
-              {
-                key: 'd',
-                label: `Deducted by the client: ${formatINR(deducted, true)}`,
-                children: (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0 16px' }}>
-                    {DEDUCTIONS.map(([k, label]) => (
-                      <Form.Item key={k} name={k} label={`${label} (₹)`}>
-                        <InputNumber style={{ width: '100%' }} min={0} precision={2} />
-                      </Form.Item>
-                    ))}
-                    <Form.Item name="otherDeductionNote" label="Other deduction for">
-                      <Input maxLength={200} />
-                    </Form.Item>
-                  </div>
-                ),
-              },
-            ]}
-          />
+          <FormSection title="Deducted by the client" extra={<Typography.Text strong>{formatINR(deducted, true)}</Typography.Text>}>
+            <FormGrid cols={3}>
+              {DEDUCTIONS.map(([k, label]) => (
+                <Form.Item key={k} name={k} label={label}>
+                  <MoneyInput />
+                </Form.Item>
+              ))}
+              <Form.Item name="otherDeductionNote" label="Other deduction for">
+                <Input maxLength={200} />
+              </Form.Item>
+            </FormGrid>
+            <Typography.Paragraph>
+              This settles <strong>{formatINR(settles, true)}</strong> of the bill (received plus deducted).
+            </Typography.Paragraph>
+            {over > 1 && <Alert type="warning" showIcon style={{ marginBottom: 12 }} title={`That is ${formatINR(over, true)} more than the bill has outstanding.`} />}
+          </FormSection>
         )}
-        {kind === 'BILL' && (
-          <Typography.Paragraph>
-            This settles <strong>{formatINR(settles, true)}</strong> of the bill (received plus deducted).
-          </Typography.Paragraph>
-        )}
-        {over > 1 && <Alert type="warning" showIcon style={{ marginBottom: 12 }} title={`That is ${formatINR(over, true)} more than the bill has outstanding.`} />}
         <Form.Item name="remarks" label="Remarks">
           <Input.TextArea rows={2} maxLength={1000} />
         </Form.Item>
       </Form>
-    </Modal>
+    </FormShell>
   );
 }

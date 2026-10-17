@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Checkbox, DatePicker, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Tag, theme } from 'antd';
+import { App, Button, Checkbox, DatePicker, Form, Input, InputNumber, Popconfirm, Select, Space, Tag, theme } from 'antd';
 import dayjs from 'dayjs';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -23,6 +23,8 @@ import { useListFrame } from '@/components/list/useListFrame';
 import { RecordLink } from '@/components/record/RecordLink';
 import { OwnershipTag } from './hours';
 import { VendorPicker } from '@/components/vendors/VendorPicker';
+import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
+import { MoneyInput } from '@/components/form/inputs';
 
 const KEYS = ['ownership', 'inactive'] as const;
 
@@ -80,7 +82,6 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
     onSuccess: (e) => {
       message.success(`${e.code} saved`);
       qc.invalidateQueries({ queryKey: ['machinery'] });
-      setEditing(null);
     },
     onError: (err) => message.error(errorMessage(err)),
   });
@@ -246,61 +247,77 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
         emptyText={<EmptyArt art="entries" title={ownership || includeInactive || page.params.q ? 'No machine matches these filters' : mayManage ? 'No machines yet. Add the fleet with Add machine.' : 'No machines yet'} />}
         emptyAction={newButton}
       />
-      <Modal open={!!editing} title={editing === 'new' ? 'Add machine' : 'Edit machine'} onCancel={() => setEditing(null)} onOk={() => form.submit()} okButtonProps={{ loading: save.isPending }} width={620} destroyOnHidden>
-        <Form form={form} layout="vertical" onFinish={(v) => save.mutate(v)} style={{ marginTop: 8 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '0 16px' }}>
-            <Form.Item name="code" label="Code" rules={[{ required: true, whitespace: true, message: 'Required' }]}>
-              <Input maxLength={30} placeholder="EXC-02" />
+      {/* Where a new machine is deployed is a deliberate choice (the yard by default), not the header's project. */}
+      <FormShell
+        open={!!editing}
+        onClose={() => setEditing(null)}
+        form={form}
+        layout="drawer"
+        title={editing === 'new' ? 'Add machine' : 'Edit machine'}
+        okText={editing === 'new' ? 'Add machine' : 'Save'}
+        projectDefault={false}
+        onSubmit={(v) => save.mutateAsync(v)}
+      >
+        <Form form={form} layout="vertical">
+          <FormSection title="Machine">
+            <FormGrid cols={2}>
+              <Form.Item name="code" label="Code" rules={[{ required: true, whitespace: true, message: 'Enter the code, e.g. EXC-02' }]}>
+                <Input maxLength={30} placeholder="EXC-02" />
+              </Form.Item>
+              <Form.Item name="name" label="Name" rules={[{ required: true, whitespace: true, message: 'Enter the machine name' }]}>
+                <Input maxLength={120} placeholder="Excavator (Tata Hitachi EX200)" />
+              </Form.Item>
+            </FormGrid>
+            <FormGrid cols={2}>
+              <Form.Item name="category" label="Category">
+                <Input maxLength={60} placeholder="Earthmoving, Compaction, Lifting" />
+              </Form.Item>
+              <Form.Item name="registrationNo" label="Registration / serial no.">
+                <Input maxLength={40} />
+              </Form.Item>
+            </FormGrid>
+          </FormSection>
+          <FormSection title="Ownership and rate">
+            <FormGrid cols={2}>
+              <Form.Item name="ownership" label="Owned / hired" rules={[{ required: true }]}>
+                <Select options={EQUIPMENT_OWNERSHIPS.map((o) => ({ value: o, label: EQUIPMENT_OWNERSHIP_LABELS[o] }))} />
+              </Form.Item>
+              <Form.Item name="supplier" label="Hire agency" hidden={formOwnership !== 'HIRED'}>
+                <VendorPicker kind="HIRE_AGENCY" />
+              </Form.Item>
+            </FormGrid>
+            <FormGrid cols={2}>
+              <Form.Item name="rate" label={formOwnership === 'HIRED' ? 'Hire rate' : 'Internal rate'} extra="Used for the project cost view">
+                <MoneyInput />
+              </Form.Item>
+              <Form.Item name="rateUnit" label="Rate per" rules={[{ required: true }]}>
+                <Select options={EQUIPMENT_RATE_UNITS.map((u) => ({ value: u, label: EQUIPMENT_RATE_UNIT_LABELS[u] }))} />
+              </Form.Item>
+            </FormGrid>
+          </FormSection>
+          <FormSection title="Deployment and service">
+            <Form.Item name="projectId" label="Deployed at">
+              <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Yard / unassigned" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
             </Form.Item>
-            <Form.Item name="name" label="Name" rules={[{ required: true, whitespace: true, message: 'Required' }]}>
-              <Input maxLength={120} placeholder="Excavator (Tata Hitachi EX200)" />
-            </Form.Item>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
-            <Form.Item name="category" label="Category">
-              <Input maxLength={60} placeholder="Earthmoving, Compaction, Lifting" />
-            </Form.Item>
-            <Form.Item name="registrationNo" label="Registration / serial no.">
-              <Input maxLength={40} />
-            </Form.Item>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '0 16px' }}>
-            <Form.Item name="ownership" label="Owned / hired" rules={[{ required: true }]}>
-              <Select options={EQUIPMENT_OWNERSHIPS.map((o) => ({ value: o, label: EQUIPMENT_OWNERSHIP_LABELS[o] }))} />
-            </Form.Item>
-            <Form.Item name="supplier" label="Hire agency" hidden={formOwnership !== 'HIRED'}>
-              <VendorPicker kind="HIRE_AGENCY" />
-            </Form.Item>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
-            <Form.Item name="rate" label={formOwnership === 'HIRED' ? 'Hire rate (₹)' : 'Internal rate (₹)'} extra="Used for the project cost view">
-              <InputNumber style={{ width: '100%' }} min={0} />
-            </Form.Item>
-            <Form.Item name="rateUnit" label="Rate per" rules={[{ required: true }]}>
-              <Select options={EQUIPMENT_RATE_UNITS.map((u) => ({ value: u, label: EQUIPMENT_RATE_UNIT_LABELS[u] }))} />
-            </Form.Item>
-          </div>
-          <Form.Item name="projectId" label="Deployed at">
-            <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Yard / unassigned" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
-          </Form.Item>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0 16px' }}>
-            <Form.Item name="serviceIntervalHours" label="Service every (hours)" tooltip="Working hours from the daily logs; leave blank for no hour schedule">
-              <InputNumber style={{ width: '100%' }} min={1} />
-            </Form.Item>
-            <Form.Item name="serviceIntervalDays" label="or every (days)">
-              <InputNumber style={{ width: '100%' }} min={1} max={3650} precision={0} />
-            </Form.Item>
-            <Form.Item name="lastServiceDate" label="Last service" tooltip="Closing a service job card updates it">
-              <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
-            </Form.Item>
-          </div>
-          {editing && editing !== 'new' ? (
-            <Form.Item name="isActive" valuePropName="checked">
-              <Checkbox>Active (inactive machines cannot be logged)</Checkbox>
-            </Form.Item>
-          ) : null}
+            <FormGrid cols={3}>
+              <Form.Item name="serviceIntervalHours" label="Service every (hours)" tooltip="Working hours from the daily logs; leave blank for no hour schedule">
+                <InputNumber style={{ width: '100%' }} min={1} />
+              </Form.Item>
+              <Form.Item name="serviceIntervalDays" label="or every (days)">
+                <InputNumber style={{ width: '100%' }} min={1} max={3650} precision={0} inputMode="numeric" />
+              </Form.Item>
+              <Form.Item name="lastServiceDate" label="Last service" tooltip="Closing a service job card updates it">
+                <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+              </Form.Item>
+            </FormGrid>
+            {editing && editing !== 'new' ? (
+              <Form.Item name="isActive" valuePropName="checked">
+                <Checkbox>Active (inactive machines cannot be logged)</Checkbox>
+              </Form.Item>
+            ) : null}
+          </FormSection>
         </Form>
-      </Modal>
+      </FormShell>
     </>
   );
 }

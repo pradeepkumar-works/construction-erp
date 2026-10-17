@@ -69,7 +69,7 @@ test('the unit master adds a unit that quantity fields then suggest', async ({ p
   const modal = page.locator('.ant-modal').filter({ hasText: 'Add unit' });
   await modal.getByLabel('Unit', { exact: true }).fill(code);
   await modal.getByLabel('Name').fill('E2E test unit');
-  await modal.getByRole('button', { name: 'OK' }).click();
+  await modal.getByRole('button', { name: 'Add unit' }).click();
   await expect(page.getByText(`${code} saved`)).toBeVisible();
 
   // The item form suggests it.

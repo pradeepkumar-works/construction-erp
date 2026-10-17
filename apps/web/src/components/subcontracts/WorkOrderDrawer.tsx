@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Alert, App, Button, Card, Form, Input, Modal, Popconfirm, Progress, Table, Tag, Typography } from 'antd';
+import { Alert, App, Button, Card, Form, Input, Popconfirm, Progress, Table, Tag, Typography } from 'antd';
 import { FileAddOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { WorkOrderDto, WorkOrderLineDto } from '@erp/shared';
@@ -18,6 +18,7 @@ import { EditResubmitButton } from '@/components/common/EditResubmitButton';
 import { submissionMetaItems } from '@/components/common/SubmitterInfo';
 import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
 import { submissionLifecycle } from '@/components/record/lifecycle';
+import { FormShell } from '@/components/form/FormShell';
 import { SubBillFormModal } from './SubBillFormModal';
 import { openWoPrint } from './subcontractPrint';
 
@@ -63,10 +64,7 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
   });
   const close = useMutation({
     mutationFn: async (note: string) => (await api.post<WorkOrderDto>(`/work-orders/${id}/close`, { note })).data,
-    onSuccess: (o) => {
-      done(`${o.woNo} closed`);
-      setClosing(false);
-    },
+    onSuccess: (o) => done(`${o.woNo} closed`),
     onError: (e) => message.error(errorMessage(e)),
   });
   const remove = useMutation({
@@ -306,22 +304,14 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
         }
       }
     >
-      <Modal
-        open={closing}
-        title={data ? `Close ${data.woNo}` : 'Close order'}
-        okText="Close order"
-        onCancel={() => setClosing(false)}
-        onOk={async () => close.mutate((await closeForm.validateFields()).note)}
-        confirmLoading={close.isPending}
-        destroyOnHidden
-      >
+      <FormShell open={closing} onClose={() => setClosing(false)} form={closeForm} layout="modal" title={data ? `Close ${data.woNo}` : 'Close order'} okText="Close order" onSubmit={(v) => close.mutateAsync(v.note)}>
         <Typography.Paragraph type="secondary">No more measurements, material issues or bills can be made against it. Close it once the final bill is settled or the work is withdrawn.</Typography.Paragraph>
         <Form form={closeForm} layout="vertical">
           <Form.Item name="note" label="Why" rules={[{ required: true, whitespace: true, message: 'Say why the order is closed' }]}>
             <Input.TextArea rows={2} maxLength={500} placeholder="Work complete; final bill paid" />
           </Form.Item>
         </Form>
-      </Modal>
+      </FormShell>
       <SubBillFormModal open={billing} workOrderId={data?.id} onClose={() => setBilling(false)} />
     </RecordFrame>
   );

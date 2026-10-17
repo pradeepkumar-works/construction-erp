@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect } from 'react';
-import { App, Checkbox, DatePicker, Form, Input, InputNumber, Modal, Select } from 'antd';
+import React, { useEffect, useRef } from 'react';
+import { App, Checkbox, DatePicker, Form, Input, Select } from 'antd';
 import dayjs from 'dayjs';
 import type { ProjectDetail, ProjectStatus, ProjectType } from '@erp/shared';
 import { PROJECT_STATUSES, PROJECT_STATUS_LABELS, PROJECT_TYPES, PROJECT_TYPE_LABELS } from '@erp/shared';
@@ -9,6 +9,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, errorMessage } from '@/lib/api';
 import { useActivityTemplates, useClients, useUsers } from '@/lib/queries';
 import { inSentence } from '@/lib/format';
+import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
+import { MoneyInput } from '@/components/form/inputs';
 
 interface FormValues {
   code: string;
@@ -46,6 +48,8 @@ export function ProjectFormModal({
   const { data: templates } = useActivityTemplates(open && !project);
   const type = Form.useWatch('type', form);
   const template = templates?.find((t) => t.projectType === type);
+  // The saved project, handed to `onSaved` once the form has closed (e.g. to open it).
+  const saved = useRef<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -95,8 +99,7 @@ export function ProjectFormModal({
     onSuccess: (data) => {
       message.success(isEdit ? 'Project updated' : 'Project created');
       qc.invalidateQueries();
-      onClose();
-      onSaved?.(data.id);
+      saved.current = data.id;
     },
     onError: (err) => message.error(errorMessage(err)),
   });
@@ -104,65 +107,72 @@ export function ProjectFormModal({
   const managers = (users ?? []).filter((u) => u.isActive && ['PROJECT_MANAGER', 'MANAGEMENT', 'ADMIN'].includes(u.roleKey));
 
   return (
-    <Modal
+    <FormShell
       open={open}
+      onClose={() => {
+        onClose();
+        if (saved.current) onSaved?.(saved.current);
+        saved.current = null;
+      }}
+      form={form}
+      layout="drawer"
       title={isEdit ? 'Edit project' : 'New project'}
       okText={isEdit ? 'Save changes' : 'Create project'}
-      onCancel={onClose}
-      onOk={() => form.submit()}
-      confirmLoading={mutation.isPending}
-      width={720}
-      destroyOnHidden
+      onSubmit={(v) => mutation.mutateAsync(v)}
     >
-      <Form form={form} layout="vertical" onFinish={(v) => mutation.mutate(v)} style={{ marginTop: 8 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '0 16px' }}>
-          <Form.Item name="code" label="Project code" rules={[{ required: true, message: 'Required' }]}>
-            <Input placeholder="RD-2026-01" />
+      <Form form={form} layout="vertical">
+        <FormSection title="Project">
+          <FormGrid cols={2}>
+            <Form.Item name="code" label="Project code" rules={[{ required: true, whitespace: true, message: 'Enter the project code, e.g. RD-2026-01' }]}>
+              <Input placeholder="RD-2026-01" />
+            </Form.Item>
+            <Form.Item name="name" label="Project name" rules={[{ required: true, whitespace: true, message: 'Enter the project name' }]}>
+              <Input placeholder="Highway widening Km 12 to Km 28" />
+            </Form.Item>
+          </FormGrid>
+          <FormGrid cols={3}>
+            <Form.Item name="type" label="Type" rules={[{ required: true, message: 'Choose the type' }]}>
+              <Select options={PROJECT_TYPES.map((t) => ({ value: t, label: PROJECT_TYPE_LABELS[t] }))} />
+            </Form.Item>
+            <Form.Item name="status" label="Status">
+              <Select options={PROJECT_STATUSES.map((s) => ({ value: s, label: PROJECT_STATUS_LABELS[s] }))} />
+            </Form.Item>
+            <Form.Item name="projectManagerId" label="Project manager">
+              <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Select" options={managers.map((u) => ({ value: u.id, label: `${u.fullName} (${u.roleName})` }))} />
+            </Form.Item>
+          </FormGrid>
+          <Form.Item name="description" label="Description">
+            <Input.TextArea rows={2} />
           </Form.Item>
-          <Form.Item name="name" label="Project name" rules={[{ required: true, message: 'Required' }]}>
-            <Input placeholder="Highway widening Km 12 to Km 28" />
-          </Form.Item>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0 16px' }}>
-          <Form.Item name="type" label="Type" rules={[{ required: true, message: 'Required' }]}>
-            <Select options={PROJECT_TYPES.map((t) => ({ value: t, label: PROJECT_TYPE_LABELS[t] }))} />
-          </Form.Item>
-          <Form.Item name="status" label="Status">
-            <Select options={PROJECT_STATUSES.map((s) => ({ value: s, label: PROJECT_STATUS_LABELS[s] }))} />
-          </Form.Item>
-          <Form.Item name="projectManagerId" label="Project manager">
-            <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Select" options={managers.map((u) => ({ value: u.id, label: `${u.fullName} (${u.roleName})` }))} />
-          </Form.Item>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
-          <Form.Item name="clientId" label="Client" extra={!project?.clientId && project?.clientName ? `Now: ${project.clientName} (not in the client master)` : 'Add clients under Billing → Clients, or from the Contract tab.'}>
-            <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Select a client" options={(clients ?? []).map((c) => ({ value: c.id, label: c.department ? `${c.name} · ${c.department}` : c.name }))} />
-          </Form.Item>
-          <Form.Item name="consultantName" label="Consultant / PMC">
-            <Input />
-          </Form.Item>
-          <Form.Item name="location" label="Location">
-            <Input />
-          </Form.Item>
-          <Form.Item name="workOrderNo" label="Work order no.">
-            <Input />
-          </Form.Item>
-          <Form.Item name="dates" label="Start / end date">
-            <DatePicker.RangePicker style={{ width: '100%' }} format="DD MMM YYYY" allowEmpty={[true, true]} />
-          </Form.Item>
-          <Form.Item name="contractValue" label="Contract value (₹)">
-            <InputNumber<number> style={{ width: '100%' }} min={0} formatter={(v) => (v === undefined || v === null ? '' : Number(v).toLocaleString('en-IN'))} parser={(v) => Number((v ?? '').replace(/[^\d.]/g, ''))} />
-          </Form.Item>
-        </div>
-        <Form.Item name="description" label="Description">
-          <Input.TextArea rows={2} />
-        </Form.Item>
-        {!isEdit ? (
-          <Form.Item name="applyTemplate" valuePropName="checked" style={{ marginBottom: 0 }} extra="Scheduled across the start and end dates; planned quantities are filled in later. Templates are under Activity Templates.">
-            <Checkbox>Add the {template ? `${template.items.length} ` : ''}standard {type ? inSentence(PROJECT_TYPE_LABELS[type as ProjectType]) : ''} activities</Checkbox>
-          </Form.Item>
-        ) : null}
+        </FormSection>
+        <FormSection title="Client and contract">
+          <FormGrid cols={2}>
+            <Form.Item name="clientId" label="Client" extra={!project?.clientId && project?.clientName ? `Now: ${project.clientName} (not in the client master)` : 'Add clients under Billing → Clients, or from the Contract tab.'}>
+              <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Select a client" options={(clients ?? []).map((c) => ({ value: c.id, label: c.department ? `${c.name} · ${c.department}` : c.name }))} />
+            </Form.Item>
+            <Form.Item name="consultantName" label="Consultant / PMC">
+              <Input />
+            </Form.Item>
+            <Form.Item name="location" label="Location">
+              <Input />
+            </Form.Item>
+            <Form.Item name="workOrderNo" label="Work order no.">
+              <Input />
+            </Form.Item>
+            <Form.Item name="dates" label="Start / end date">
+              <DatePicker.RangePicker style={{ width: '100%' }} format="DD MMM YYYY" allowEmpty={[true, true]} />
+            </Form.Item>
+            <Form.Item name="contractValue" label="Contract value">
+              <MoneyInput />
+            </Form.Item>
+          </FormGrid>
+          {!isEdit ? (
+            <Form.Item name="applyTemplate" valuePropName="checked" style={{ marginBottom: 0 }} extra="Scheduled across the start and end dates; planned quantities are filled in later. Templates are under Activity Templates.">
+              <Checkbox>Add the {template ? `${template.items.length} ` : ''}standard {type ? inSentence(PROJECT_TYPE_LABELS[type as ProjectType]) : ''} activities</Checkbox>
+            </Form.Item>
+          ) : null}
+        </FormSection>
       </Form>
-    </Modal>
+    </FormShell>
   );
 }

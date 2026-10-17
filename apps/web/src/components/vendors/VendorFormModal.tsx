@@ -2,7 +2,8 @@
 
 import React, { useEffect } from 'react';
 import { App, Checkbox, Divider, Form, Input, Select } from 'antd';
-import { FormShell } from '@/components/form/FormShell';
+import { FormGrid, FormShell } from '@/components/form/FormShell';
+import { CODE_INPUT, EMAIL_INPUT, PHONE_INPUT, emailRule, phoneRule, upper } from '@/components/form/inputs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { MsmeCategory, VendorDto, VendorKind } from '@erp/shared';
 import { GST_STATES, GSTIN_PATTERN, IFSC_PATTERN, MSME_CATEGORIES, MSME_CATEGORY_LABELS, PAN_PATTERN, UDYAM_PATTERN, VENDOR_KINDS, VENDOR_KIND_LABELS, canSeeVendorBank, gstStateCode } from '@erp/shared';
@@ -117,8 +118,6 @@ export function VendorFormModal({
     onError: (e) => message.error(errorMessage(e)),
   });
 
-  const grid3 = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '0 16px' } as const;
-
   return (
     <FormShell
       open={open}
@@ -132,66 +131,66 @@ export function VendorFormModal({
       draftKey={vendor ? undefined : 'vendor'}
     >
       <Form form={form} layout="vertical">
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '0 16px' }}>
-          <Form.Item name="name" label="Vendor name" rules={[{ required: true, whitespace: true, message: 'Required' }]}>
+        <FormGrid cols={2}>
+          <Form.Item name="name" label="Vendor name" rules={[{ required: true, whitespace: true, message: 'Enter the vendor name' }]}>
             <Input placeholder="Maa Tarini Traders" maxLength={200} />
           </Form.Item>
           <Form.Item name="kinds" label="Supplies">
             <Select mode="multiple" placeholder="What they do for you" options={VENDOR_KINDS.map((k) => ({ value: k, label: VENDOR_KIND_LABELS[k] }))} />
           </Form.Item>
-        </div>
-        <div style={grid3}>
-          <Form.Item name="gstin" label="GSTIN" rules={[pattern(GSTIN_PATTERN, '15 characters, like 21ABCPT1234F1Z9')]}>
-            <Input placeholder="21ABCPT1234F1Z9" style={{ textTransform: 'uppercase' }} />
+        </FormGrid>
+        <FormGrid cols={3}>
+          <Form.Item name="gstin" label="GSTIN" normalize={upper} rules={[pattern(GSTIN_PATTERN, 'A GSTIN is 15 characters, e.g. 21ABCPT1234F1Z9')]}>
+            <Input {...CODE_INPUT} placeholder="21ABCPT1234F1Z9" />
           </Form.Item>
-          <Form.Item name="pan" label="PAN" extra={gstin ? 'Taken from the GSTIN if left empty' : undefined} rules={[pattern(PAN_PATTERN, '10 characters, like ABCPT1234F')]}>
-            <Input placeholder="ABCPT1234F" style={{ textTransform: 'uppercase' }} />
+          <Form.Item name="pan" label="PAN" normalize={upper} extra={gstin ? 'Taken from the GSTIN if left empty' : undefined} rules={[pattern(PAN_PATTERN, 'A PAN is 10 characters, e.g. ABCPT1234F')]}>
+            <Input {...CODE_INPUT} placeholder="ABCPT1234F" />
           </Form.Item>
           <Form.Item name="stateCode" label="State (GST)">
             <Select allowClear showSearch={{ optionFilterProp: 'label' }} disabled={!!fromGstin} placeholder="Select" options={Object.entries(GST_STATES).map(([code, name]) => ({ value: code, label: `${code} ${name}` }))} />
           </Form.Item>
-        </div>
+        </FormGrid>
         <Form.Item name="address" label="Address">
           <Input.TextArea rows={2} maxLength={500} />
         </Form.Item>
-        <div style={grid3}>
+        <FormGrid cols={3}>
           <Form.Item name="contactPerson" label="Contact person">
             <Input maxLength={120} />
           </Form.Item>
-          <Form.Item name="phone" label="Phone">
-            <Input maxLength={40} />
+          <Form.Item name="phone" label="Phone" rules={[phoneRule]}>
+            <Input {...PHONE_INPUT} />
           </Form.Item>
-          <Form.Item name="email" label="Email" rules={[{ type: 'email', message: 'Not an email address' }]}>
-            <Input />
+          <Form.Item name="email" label="Email" rules={[emailRule]}>
+            <Input {...EMAIL_INPUT} />
           </Form.Item>
-        </div>
-        <div style={grid3}>
+        </FormGrid>
+        <FormGrid cols={2}>
           <Form.Item name="msmeCategory" label="MSME (Udyam)" extra="Bills of micro and small enterprises are due within 45 days.">
             <Select allowClear placeholder="Not registered" options={MSME_CATEGORIES.map((c) => ({ value: c, label: MSME_CATEGORY_LABELS[c] }))} />
           </Form.Item>
-          <Form.Item name="udyamNo" label="Udyam registration no." hidden={!msme} rules={[pattern(UDYAM_PATTERN, 'Like UDYAM-OD-19-0012345')]}>
-            <Input placeholder="UDYAM-OD-19-0012345" style={{ textTransform: 'uppercase' }} />
+          <Form.Item name="udyamNo" label="Udyam registration no." normalize={upper} hidden={!msme} rules={[pattern(UDYAM_PATTERN, 'Enter it as on the certificate, e.g. UDYAM-OD-19-0012345')]}>
+            <Input {...CODE_INPUT} placeholder="UDYAM-OD-19-0012345" />
           </Form.Item>
-        </div>
+        </FormGrid>
         {bank && (
           <>
             <Divider titlePlacement="start" plain style={{ marginTop: 0 }}>
               Bank account for payments
             </Divider>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0 16px' }}>
+            <FormGrid cols={2}>
               <Form.Item name="bankAccountName" label="Account name">
                 <Input maxLength={200} />
               </Form.Item>
-              <Form.Item name="bankAccountNo" label="Account number" rules={[pattern(/^[0-9A-Z]{6,20}$/, '6 to 20 letters or digits')]}>
+              <Form.Item name="bankAccountNo" label="Account number" rules={[pattern(/^[0-9A-Z]{6,20}$/, 'Enter 6 to 20 letters or digits')]}>
                 <Input className="mono" />
               </Form.Item>
-              <Form.Item name="bankIfsc" label="IFSC" rules={[pattern(IFSC_PATTERN, '11 characters, like SBIN0001234')]}>
-                <Input placeholder="SBIN0001234" style={{ textTransform: 'uppercase' }} />
+              <Form.Item name="bankIfsc" label="IFSC" normalize={upper} rules={[pattern(IFSC_PATTERN, 'An IFSC is 11 characters, e.g. SBIN0001234')]}>
+                <Input {...CODE_INPUT} placeholder="SBIN0001234" />
               </Form.Item>
               <Form.Item name="bankName" label="Bank and branch">
                 <Input maxLength={200} />
               </Form.Item>
-            </div>
+            </FormGrid>
           </>
         )}
         <Form.Item name="remarks" label="Remarks">

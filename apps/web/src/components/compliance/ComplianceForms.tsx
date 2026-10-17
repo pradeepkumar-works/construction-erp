@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect } from 'react';
-import { App, AutoComplete, DatePicker, Form, Input, InputNumber, Modal, Select } from 'antd';
+import React, { useEffect, useRef } from 'react';
+import { App, AutoComplete, DatePicker, Form, Input, Select } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, ComplianceDocDetailDto, ComplianceDocDto, ComplianceDocKind } from '@erp/shared';
@@ -10,6 +10,8 @@ import { api, errorMessage } from '@/lib/api';
 import { formatDate } from '@/lib/format';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
+import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
+import { MoneyInput } from '@/components/form/inputs';
 
 /** A form on a register entry: add or correct one, renew it, or close it as released or invoked. */
 export type ComplianceAction =
@@ -39,7 +41,6 @@ interface Values {
 const ymd = (d?: dayjs.Dayjs | null) => (d ? d.format('YYYY-MM-DD') : null);
 const str = (n?: number | null) => (n === null || n === undefined ? null : String(n));
 const t = (v?: string) => v?.trim() || null;
-const grid = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', columnGap: 16 } as const;
 
 const TITLES: Record<ComplianceAction['kind'], string> = { new: 'Add to the register', edit: 'Edit entry', renew: 'Renew', release: 'Record the release', invoke: 'Record it as invoked' };
 const OK: Record<ComplianceAction['kind'], string> = { new: 'Add', edit: 'Save', renew: 'Renew', release: 'Released', invoke: 'Invoked' };
@@ -123,12 +124,14 @@ export function ComplianceFormModal({ action, onClose, onDone }: { action: Compl
       message.success(done[action!.kind]);
       qc.invalidateQueries({ queryKey: ['compliance'] });
       onDone?.(d.id);
-      onClose();
     },
     onError: (e) => message.error(errorMessage(e)),
   });
 
   const full = mode === 'new' || mode === 'edit';
+  // Kept while the form closes, so a drawer does not turn into a modal on its way out.
+  const wasFull = useRef(full);
+  if (action) wasFull.current = full;
   const guarantee = kind === 'BANK_GUARANTEE';
   const scansField = (
     <Form.Item name="scans" label="Scans" extra="The guarantee, receipt, policy or licence (photo or PDF)">
@@ -137,71 +140,91 @@ export function ComplianceFormModal({ action, onClose, onDone }: { action: Compl
   );
 
   return (
-    <Modal open={!!action} title={mode ? TITLES[mode] : ''} okText={mode ? OK[mode] : 'Save'} onCancel={onClose} onOk={() => form.submit()} confirmLoading={save.isPending} width={full ? 720 : 520} destroyOnHidden>
+    <FormShell
+      open={!!action}
+      onClose={onClose}
+      form={form}
+      // Adding or editing an entry is a long form; renewing, releasing or invoking one is a short one.
+      layout={wasFull.current ? 'drawer' : 'modal'}
+      width={wasFull.current ? 720 : 520}
+      title={mode ? TITLES[mode] : ''}
+      okText={mode ? OK[mode] : 'Save'}
+      // An entry with no project is for the whole company, so a new one does not take the header's project.
+      projectDefault={false}
+      onSubmit={(v) => save.mutateAsync(v)}
+    >
       {doc ? (
         <p className="text-muted" style={{ marginTop: 0 }}>
           {doc.category || COMPLIANCE_DOC_KIND_LABELS[doc.kind]} {doc.reference}
           {doc.expiresOn ? `, valid to ${formatDate(doc.expiresOn)}` : ''}
         </p>
       ) : null}
-      <Form form={form} layout="vertical" onFinish={(v) => save.mutate(v)} requiredMark="optional" className="compliance-form">
+      <Form form={form} layout="vertical" requiredMark="optional" className="compliance-form">
         {full ? (
           <>
-            <div style={grid}>
-              <Form.Item name="kind" label="Kind" rules={[{ required: true }]}>
-                <Select disabled={mode === 'edit'} options={COMPLIANCE_DOC_KINDS.map((k) => ({ value: k, label: COMPLIANCE_DOC_KIND_LABELS[k] }))} />
-              </Form.Item>
-              <Form.Item name="category" label="Type">
-                <AutoComplete options={COMPLIANCE_CATEGORIES[kind].map((c) => ({ value: c }))} showSearch={{ filterOption: (input, o) => String(o?.value ?? '').toLowerCase().includes(input.toLowerCase()) }} maxLength={80} />
-              </Form.Item>
-              <Form.Item name="reference" label="Number" rules={[{ required: true, whitespace: true, message: 'Enter its number' }]}>
-                <Input maxLength={80} />
-              </Form.Item>
-              <Form.Item name="issuer" label={COMPLIANCE_ISSUER_LABELS[kind]}>
-                <Input maxLength={120} />
-              </Form.Item>
-              <Form.Item name="projectId" label="Project" extra="Empty: for the whole company">
-                <ProjectSelect placeholder="Company-wide" />
-              </Form.Item>
-              {kind === 'BANK_GUARANTEE' || kind === 'EMD' ? (
-                <Form.Item name="beneficiary" label="In favour of">
-                  <Input maxLength={160} />
+            <FormSection title="The document">
+              <FormGrid cols={2}>
+                <Form.Item name="kind" label="Kind" rules={[{ required: true, message: 'Choose the kind' }]}>
+                  <Select disabled={mode === 'edit'} options={COMPLIANCE_DOC_KINDS.map((k) => ({ value: k, label: COMPLIANCE_DOC_KIND_LABELS[k] }))} />
                 </Form.Item>
-              ) : null}
-              <Form.Item name="amount" label={`${COMPLIANCE_AMOUNT_LABELS[kind]} (₹)`}>
-                <InputNumber min={0} style={{ width: '100%' }} />
-              </Form.Item>
-              {guarantee ? (
-                <Form.Item name="margin" label="Margin money (₹)" extra="Held by the bank against it">
-                  <InputNumber min={0} style={{ width: '100%' }} />
+                <Form.Item name="category" label="Type">
+                  <AutoComplete options={COMPLIANCE_CATEGORIES[kind].map((c) => ({ value: c }))} showSearch={{ filterOption: (input, o) => String(o?.value ?? '').toLowerCase().includes(input.toLowerCase()) }} maxLength={80} />
                 </Form.Item>
-              ) : null}
-              <Form.Item name="issuedOn" label="Issued on">
-                <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} />
-              </Form.Item>
-              <Form.Item name="expiresOn" label="Valid to" extra={kind === 'EMD' ? 'Empty until the tender result' : undefined}>
-                <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} />
-              </Form.Item>
-              {guarantee ? (
-                <Form.Item name="claimUntil" label="Claim period to">
+                <Form.Item name="reference" label="Number" rules={[{ required: true, whitespace: true, message: 'Enter its number' }]}>
+                  <Input maxLength={80} />
+                </Form.Item>
+                <Form.Item name="issuer" label={COMPLIANCE_ISSUER_LABELS[kind]}>
+                  <Input maxLength={120} />
+                </Form.Item>
+                <Form.Item name="projectId" label="Project" extra="Empty: for the whole company">
+                  <ProjectSelect placeholder="Company-wide" />
+                </Form.Item>
+                {kind === 'BANK_GUARANTEE' || kind === 'EMD' ? (
+                  <Form.Item name="beneficiary" label="In favour of">
+                    <Input maxLength={160} />
+                  </Form.Item>
+                ) : null}
+              </FormGrid>
+            </FormSection>
+            <FormSection title="Amounts and validity">
+              <FormGrid cols={2}>
+                <Form.Item name="amount" label={COMPLIANCE_AMOUNT_LABELS[kind]}>
+                  <MoneyInput />
+                </Form.Item>
+                {guarantee ? (
+                  <Form.Item name="margin" label="Margin money" extra="Held by the bank against it">
+                    <MoneyInput />
+                  </Form.Item>
+                ) : null}
+                <Form.Item name="issuedOn" label="Issued on">
                   <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} />
                 </Form.Item>
-              ) : null}
-            </div>
-            <Form.Item name="note" label="Note">
-              <Input.TextArea rows={2} maxLength={1000} />
-            </Form.Item>
-            {scansField}
+                <Form.Item name="expiresOn" label="Valid to" extra={kind === 'EMD' ? 'Empty until the tender result' : undefined}>
+                  <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} />
+                </Form.Item>
+                {guarantee ? (
+                  <Form.Item name="claimUntil" label="Claim period to">
+                    <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} />
+                  </Form.Item>
+                ) : null}
+              </FormGrid>
+            </FormSection>
+            <FormSection title="Note and scans">
+              <Form.Item name="note" label="Note">
+                <Input.TextArea rows={2} maxLength={1000} />
+              </Form.Item>
+              {scansField}
+            </FormSection>
           </>
         ) : null}
         {mode === 'renew' ? (
           <>
-            <div style={grid}>
+            <FormGrid cols={2}>
               <Form.Item name="reference" label="New number" rules={[{ required: true, whitespace: true, message: 'Enter its number' }]}>
                 <Input maxLength={80} />
               </Form.Item>
-              <Form.Item name="amount" label={`${COMPLIANCE_AMOUNT_LABELS[kind]} (₹)`}>
-                <InputNumber min={0} style={{ width: '100%' }} />
+              <Form.Item name="amount" label={COMPLIANCE_AMOUNT_LABELS[kind]}>
+                <MoneyInput />
               </Form.Item>
               <Form.Item name="issuedOn" label="Starts on">
                 <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} allowClear={false} />
@@ -214,7 +237,7 @@ export function ComplianceFormModal({ action, onClose, onDone }: { action: Compl
                   <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} />
                 </Form.Item>
               ) : null}
-            </div>
+            </FormGrid>
             <Form.Item name="note" label="Note">
               <Input.TextArea rows={2} maxLength={1000} />
             </Form.Item>
@@ -232,6 +255,6 @@ export function ComplianceFormModal({ action, onClose, onDone }: { action: Compl
           </>
         ) : null}
       </Form>
-    </Modal>
+    </FormShell>
   );
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Alert, App, Button, DatePicker, Descriptions, Drawer, Form, Input, InputNumber, Modal, Skeleton, Table, Typography } from 'antd';
+import { Alert, App, Button, DatePicker, Descriptions, Drawer, Form, Input, Skeleton, Table, Typography } from 'antd';
 import type { UseQueryResult } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import type { PortalBillDto, RaBillItemDto } from '@erp/shared';
@@ -12,6 +12,8 @@ import { useCertifyAsClient, usePortalBill } from '@/lib/queries';
 import { formatDate, formatINR, formatQty } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { BillStageTag } from '@/components/bills/billUi';
+import { FormGrid, FormShell } from '@/components/form/FormShell';
+import { QuantityInput } from '@/components/form/inputs';
 
 /** RA bills sent to the client: the client's engineer or consultant checks the quantities and certifies them. */
 export function PortalBills({ bills, openId, onOpen }: { bills: UseQueryResult<PortalBillDto[]>; openId: string | null; onOpen: (id: string | null) => void }) {
@@ -156,24 +158,24 @@ function CertifyModal({ bill, onClose }: { bill: PortalBillDto | null; onClose: 
     try {
       const out = await certify.mutateAsync({ id: bill.id, date: v.date.format('YYYY-MM-DD'), certificateNo: v.certificateNo?.trim() || null, items });
       message.success(`${out.billLabel} certified: work value ${formatINR(out.grossAmount)}`);
-      onClose();
     } catch (e) {
       message.error(errorMessage(e));
+      throw e;
     }
   };
 
   return (
-    <Modal open={!!bill} title={bill ? `Certify ${bill.billLabel}` : ''} onCancel={onClose} onOk={() => form.submit()} okText="Certify" confirmLoading={certify.isPending} width={760} destroyOnHidden>
+    <FormShell open={!!bill} onClose={onClose} form={form} layout="modal" width={760} title={bill ? `Certify ${bill.billLabel}` : ''} okText="Certify" onSubmit={submit} projectDefault={false}>
       <Typography.Paragraph type="secondary">Enter the quantity you pass for each item. Items you leave as they are pass as claimed. The contractor's QS and project manager are told.</Typography.Paragraph>
-      <Form form={form} layout="vertical" onFinish={submit} requiredMark={false}>
-        <div style={{ display: 'flex', gap: 12 }}>
-          <Form.Item name="date" label="Certificate date" rules={[{ required: true }]} style={{ flex: 1 }}>
+      <Form form={form} layout="vertical" requiredMark={false}>
+        <FormGrid cols={2}>
+          <Form.Item name="date" label="Certificate date" rules={[{ required: true, message: 'Pick the certificate date' }]}>
             <DatePicker format="DD MMM YYYY" style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
-          <Form.Item name="certificateNo" label="Certificate no." style={{ flex: 1 }}>
+          <Form.Item name="certificateNo" label="Certificate no.">
             <Input maxLength={100} placeholder="EE/RD/2026/114" />
           </Form.Item>
-        </div>
+        </FormGrid>
         <Table
           rowKey="boqItemId"
           size="small"
@@ -188,14 +190,14 @@ function CertifyModal({ bill, onClose }: { bill: PortalBillDto | null; onClose: 
               key: 'q',
               width: 150,
               render: (_, l) => (
-                <Form.Item name={['qty', l.boqItemId]} style={{ margin: 0 }} rules={[{ required: true, message: 'Required' }]}>
-                  <InputNumber min={0} max={Number(l.thisQty)} style={{ width: '100%' }} aria-label={`Certified ${l.itemNo}`} />
+                <Form.Item name={['qty', l.boqItemId]} style={{ margin: 0 }} rules={[{ required: true, message: 'Enter the quantity you pass' }]}>
+                  <QuantityInput unit={l.unit} max={Number(l.thisQty)} aria-label={`Certified ${l.itemNo}`} />
                 </Form.Item>
               ),
             },
           ]}
         />
       </Form>
-    </Modal>
+    </FormShell>
   );
 }

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Alert, App, Button, Card, Divider, Form, Input, Modal, Popconfirm, Progress, Table, Tag, Typography } from 'antd';
+import { Alert, App, Button, Card, Divider, Form, Input, Popconfirm, Progress, Table, Tag, Typography } from 'antd';
 import { ImportOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { PurchaseOrderDto, PurchaseOrderLineDto } from '@erp/shared';
@@ -21,6 +21,7 @@ import { VendorBillFormModal } from './VendorBillFormModal';
 import { openPoPrint } from './poPrint';
 import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
 import { submissionLifecycle } from '@/components/record/lifecycle';
+import { FormShell } from '@/components/form/FormShell';
 
 const money = (v: string | number) => <span className="mono" style={{ whiteSpace: 'nowrap' }}>{formatINR(v, true)}</span>;
 
@@ -62,10 +63,7 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
   });
   const close = useMutation({
     mutationFn: async (note: string) => (await api.post<PurchaseOrderDto>(`/purchase-orders/${id}/close`, { note })).data,
-    onSuccess: (o) => {
-      done(`${o.poNo} closed`);
-      setClosing(false);
-    },
+    onSuccess: (o) => done(`${o.poNo} closed`),
     onError: (e) => message.error(errorMessage(e)),
   });
   const remove = useMutation({
@@ -293,22 +291,14 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
         }
       }
     >
-      <Modal
-        open={closing}
-        title={data ? `Close ${data.poNo} short` : 'Close order'}
-        okText="Close order"
-        onCancel={() => setClosing(false)}
-        onOk={async () => close.mutate((await closeForm.validateFields()).note)}
-        confirmLoading={close.isPending}
-        destroyOnHidden
-      >
+      <FormShell open={closing} onClose={() => setClosing(false)} form={closeForm} layout="modal" title={data ? `Close ${data.poNo} short` : 'Close order'} okText="Close order" onSubmit={(v) => close.mutateAsync(v.note)}>
         <Typography.Paragraph type="secondary">Nothing more can be received against it, and what was not received can be ordered again. What was received can still be billed.</Typography.Paragraph>
         <Form form={closeForm} layout="vertical">
           <Form.Item name="note" label="Why" rules={[{ required: true, whitespace: true, message: 'Say why the balance is not needed' }]}>
             <Input.TextArea rows={2} maxLength={500} placeholder="Balance not required; vendor informed" />
           </Form.Item>
         </Form>
-      </Modal>
+      </FormShell>
       <ReceiptModal open={receiving} onClose={() => setReceiving(false)} projectId={data?.projectId} purchaseOrderId={data?.id} />
       <VendorBillFormModal open={billing} purchaseOrderId={data?.id} onClose={() => setBilling(false)} />
     </RecordFrame>

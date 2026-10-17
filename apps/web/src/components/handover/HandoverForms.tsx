@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect } from 'react';
-import { App, AutoComplete, DatePicker, Form, Input, InputNumber, Modal, Segmented, Select, Typography } from 'antd';
+import React, { useEffect, useRef } from 'react';
+import { App, AutoComplete, DatePicker, Form, Input, InputNumber, Segmented, Select, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, DefectDto, DefectPhase, DefectPriority, HandoverSummaryDto, ProjectMemberDto } from '@erp/shared';
@@ -9,10 +9,11 @@ import { DEFAULT_DLP_MONTHS, DEFECT_PHASES, DEFECT_PHASE_LABELS, DEFECT_PRIORITI
 import { api, errorMessage } from '@/lib/api';
 import { formatDate } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
+import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
+import { MoneyInput } from '@/components/form/inputs';
 
 const ymd = (d?: dayjs.Dayjs | null) => (d ? d.format('YYYY-MM-DD') : null);
 const t = (v?: string) => v?.trim() || null;
-const grid = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', columnGap: 16 } as const;
 const DATE = 'DD MMM YYYY';
 const TRADES = ['Civil', 'Plaster', 'Masonry', 'Tiling', 'Painting', 'Plumbing', 'Electrical', 'Joinery', 'Waterproofing', 'Fabrication', 'Road work', 'Drainage', 'Road marking', 'Landscaping'];
 
@@ -73,24 +74,23 @@ export function HandoverFormModal({ open, summary, onClose }: { open: boolean; s
       qc.setQueryData(['handover', summary.projectId], s);
       qc.invalidateQueries({ queryKey: ['projects'] });
       qc.invalidateQueries({ queryKey: ['project', summary.projectId] });
-      onClose();
     },
     onError: (e) => message.error(errorMessage(e)),
   });
 
   const ends = completedOn && typeof months === 'number' ? dlpEnd(completedOn.format('YYYY-MM-DD'), months) : null;
   return (
-    <Modal open={open} title={h ? 'Edit completion' : 'Record completion'} okText="Save" onCancel={onClose} onOk={() => form.submit()} confirmLoading={save.isPending} width={640} destroyOnHidden>
+    <FormShell open={open} onClose={onClose} form={form} layout="modal" title={h ? 'Edit completion' : 'Record completion'} okText="Save" onSubmit={(v) => save.mutateAsync(v)}>
       <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
         The date on the completion certificate starts the defect liability period. The project is marked completed.
       </Typography.Paragraph>
-      <Form form={form} layout="vertical" onFinish={(v) => save.mutate(v)} requiredMark="optional" className="handover-form">
-        <div style={grid}>
+      <Form form={form} layout="vertical" requiredMark="optional" className="handover-form">
+        <FormGrid cols={2}>
           <Form.Item name="completedOn" label="Completed on" rules={[{ required: true, message: 'Pick the completion date' }]}>
             <DatePicker format={DATE} style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
-          <Form.Item name="dlpMonths" label="Defect liability (months)" extra={ends ? `Runs to ${formatDate(ends)}` : undefined} rules={[{ required: true }]}>
-            <InputNumber min={0} max={120} precision={0} style={{ width: '100%' }} />
+          <Form.Item name="dlpMonths" label="Defect liability (months)" extra={ends ? `Runs to ${formatDate(ends)}` : undefined} rules={[{ required: true, message: 'Enter the months, e.g. 12' }]}>
+            <InputNumber min={0} max={120} precision={0} inputMode="numeric" style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item name="certificateNo" label="Certificate number">
             <Input maxLength={80} />
@@ -98,7 +98,7 @@ export function HandoverFormModal({ open, summary, onClose }: { open: boolean; s
           <Form.Item name="certificateDate" label="Certificate date">
             <DatePicker format={DATE} style={{ width: '100%' }} />
           </Form.Item>
-        </div>
+        </FormGrid>
         <Form.Item name="certifiedBy" label="Certified by" extra="E.g. the client's Executive Engineer">
           <Input maxLength={160} />
         </Form.Item>
@@ -109,7 +109,7 @@ export function HandoverFormModal({ open, summary, onClose }: { open: boolean; s
           <PhotoUpload max={4} />
         </Form.Item>
       </Form>
-    </Modal>
+    </FormShell>
   );
 }
 
@@ -225,73 +225,92 @@ export function DefectFormModal({
       qc.invalidateQueries({ queryKey: ['defects'] });
       qc.invalidateQueries({ queryKey: ['handover', projectId] });
       onDone?.(d.id);
-      onClose();
     },
     onError: (e) => message.error(errorMessage(e)),
   });
 
   const full = mode === 'new' || mode === 'edit';
+  // Kept while the form closes, so a drawer does not turn into a modal on its way out.
+  const wasFull = useRef(full);
+  if (action) wasFull.current = full;
   return (
-    <Modal open={!!action} title={mode ? TITLES[mode] : ''} okText={mode ? OK[mode] : 'Save'} onCancel={onClose} onOk={() => form.submit()} confirmLoading={save.isPending} width={full ? 720 : 520} destroyOnHidden>
+    <FormShell
+      open={!!action}
+      onClose={onClose}
+      form={form}
+      // Reporting or editing a defect is a long form; marking it fixed, closing or reopening is a short one.
+      layout={wasFull.current ? 'drawer' : 'modal'}
+      width={wasFull.current ? 720 : 520}
+      title={mode ? TITLES[mode] : ''}
+      okText={mode ? OK[mode] : 'Save'}
+      draftKey={mode === 'new' ? `defect:${projectId}` : undefined}
+      onSubmit={(v) => save.mutateAsync(v)}
+    >
       {defect ? (
         <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
           {defect.defectNo} {defect.title}
           {defect.location ? `, ${defect.location}` : ''}
         </Typography.Paragraph>
       ) : null}
-      <Form form={form} layout="vertical" onFinish={(v) => save.mutate(v)} requiredMark="optional" className="defect-form">
+      <Form form={form} layout="vertical" requiredMark="optional" className="defect-form">
         {full ? (
           <>
-            <Form.Item name="phase" label="Kind">
-              <Segmented<DefectPhase> options={DEFECT_PHASES.map((p) => ({ value: p, label: DEFECT_PHASE_LABELS[p] }))} />
-            </Form.Item>
-            <Form.Item name="title" label="What is wrong" rules={[{ required: true, whitespace: true, message: 'Say what is wrong' }]}>
-              <Input maxLength={200} placeholder="E.g. Toilet floor slopes away from the drain" />
-            </Form.Item>
-            <div style={grid}>
-              <Form.Item name="location" label="Where">
-                <Input maxLength={200} placeholder="Block, floor, room or chainage" />
+            <FormSection title="The defect">
+              <Form.Item name="phase" label="Kind">
+                <Segmented<DefectPhase> options={DEFECT_PHASES.map((p) => ({ value: p, label: DEFECT_PHASE_LABELS[p] }))} />
               </Form.Item>
-              <Form.Item name="trade" label="Trade">
-                <AutoComplete options={TRADES.map((v) => ({ value: v }))} showSearch={{ filterOption: (input, o) => String(o?.value ?? '').toLowerCase().includes(input.toLowerCase()) }} maxLength={80} />
+              <Form.Item name="title" label="What is wrong" rules={[{ required: true, whitespace: true, message: 'Say what is wrong' }]}>
+                <Input maxLength={200} placeholder="E.g. Toilet floor slopes away from the drain" />
               </Form.Item>
-              <Form.Item name="priority" label="Priority">
-                <Segmented<DefectPriority> options={DEFECT_PRIORITIES.map((p) => ({ value: p, label: DEFECT_PRIORITY_LABELS[p] }))} />
+              <FormGrid cols={2}>
+                <Form.Item name="location" label="Where">
+                  <Input maxLength={200} placeholder="Block, floor, room or chainage" />
+                </Form.Item>
+                <Form.Item name="trade" label="Trade">
+                  <AutoComplete options={TRADES.map((v) => ({ value: v }))} showSearch={{ filterOption: (input, o) => String(o?.value ?? '').toLowerCase().includes(input.toLowerCase()) }} maxLength={80} />
+                </Form.Item>
+                <Form.Item name="reportedOn" label="Found on">
+                  <DatePicker format={DATE} style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+                </Form.Item>
+                <Form.Item name="foundBy" label="Found by" extra="When not one of us, e.g. the client's engineer">
+                  <Input maxLength={120} />
+                </Form.Item>
+              </FormGrid>
+              <Form.Item name="description" label="Details">
+                <Input.TextArea rows={2} maxLength={2000} />
               </Form.Item>
-              <Form.Item name="assignedToId" label="Assigned to">
-                <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Someone on the project" options={members.map((m) => ({ value: m.userId, label: `${m.fullName} (${m.roleName})` }))} />
+              <Form.Item name="photos" label="Photos">
+                <PhotoUpload max={6} />
               </Form.Item>
-              <Form.Item name="contractor" label="Subcontractor" extra="When they are to put it right">
-                <Input maxLength={160} />
-              </Form.Item>
-              <Form.Item name="dueDate" label="Put right by">
-                <DatePicker format={DATE} style={{ width: '100%' }} />
-              </Form.Item>
-              <Form.Item name="reportedOn" label="Found on">
-                <DatePicker format={DATE} style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
-              </Form.Item>
-              <Form.Item name="foundBy" label="Found by" extra="When not one of us, e.g. the client's engineer">
-                <Input maxLength={120} />
-              </Form.Item>
-            </div>
-            <Form.Item name="description" label="Details">
-              <Input.TextArea rows={2} maxLength={2000} />
-            </Form.Item>
-            <Form.Item name="photos" label="Photos">
-              <PhotoUpload max={6} />
-            </Form.Item>
+            </FormSection>
+            <FormSection title="Putting it right">
+              <FormGrid cols={2}>
+                <Form.Item name="priority" label="Priority">
+                  <Segmented<DefectPriority> options={DEFECT_PRIORITIES.map((p) => ({ value: p, label: DEFECT_PRIORITY_LABELS[p] }))} />
+                </Form.Item>
+                <Form.Item name="assignedToId" label="Assigned to">
+                  <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Someone on the project" options={members.map((m) => ({ value: m.userId, label: `${m.fullName} (${m.roleName})` }))} />
+                </Form.Item>
+                <Form.Item name="contractor" label="Subcontractor" extra="When they are to put it right">
+                  <Input maxLength={160} />
+                </Form.Item>
+                <Form.Item name="dueDate" label="Put right by">
+                  <DatePicker format={DATE} style={{ width: '100%' }} />
+                </Form.Item>
+              </FormGrid>
+            </FormSection>
           </>
         ) : null}
         {mode === 'fix' ? (
           <>
-            <div style={grid}>
-              <Form.Item name="date" label="Fixed on" rules={[{ required: true }]}>
+            <FormGrid cols={2}>
+              <Form.Item name="date" label="Fixed on" rules={[{ required: true, message: 'Pick the date it was fixed' }]}>
                 <DatePicker format={DATE} style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
               </Form.Item>
-              <Form.Item name="cost" label="Cost (₹)" extra="What putting it right cost">
-                <InputNumber min={0} style={{ width: '100%' }} />
+              <Form.Item name="cost" label="Cost" extra="What putting it right cost">
+                <MoneyInput />
               </Form.Item>
-            </div>
+            </FormGrid>
             <Form.Item name="fixNote" label="What was done">
               <Input.TextArea rows={2} maxLength={2000} />
             </Form.Item>
@@ -311,6 +330,6 @@ export function DefectFormModal({
           </Form.Item>
         ) : null}
       </Form>
-    </Modal>
+    </FormShell>
   );
 }

@@ -31,7 +31,7 @@ function AcknowledgeForm({ t }: { t: TransmittalDto }) {
   });
   return (
     <Form form={form} layout="inline" initialValues={{ on: dayjs() }} onFinish={(v) => save.mutate(v)} style={{ rowGap: 8 }}>
-      <Form.Item name="on" rules={[{ required: true, message: 'Required' }]}>
+      <Form.Item name="on" rules={[{ required: true, message: 'Pick the date it was received' }]}>
         <DatePicker format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day') || d.isBefore(dayjs(t.sentOn), 'day')} aria-label="Received on" />
       </Form.Item>
       <Form.Item name="by" rules={[{ required: true, whitespace: true, message: 'Who signed for it' }]}>

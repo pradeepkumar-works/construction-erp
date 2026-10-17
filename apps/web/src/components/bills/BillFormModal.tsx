@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { Alert, App, Checkbox, DatePicker, Form, Input, InputNumber, Select, Typography } from 'antd';
+import { Alert, App, Checkbox, DatePicker, Form, Input, Select, Typography } from 'antd';
 import dayjs from 'dayjs';
 import type { AttachmentDto, RaBillDto } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -9,7 +9,8 @@ import { api, errorMessage } from '@/lib/api';
 import { useProjects } from '@/lib/queries';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { editActionLabel } from '@/components/common/EditResubmitButton';
-import { FormShell } from '@/components/form/FormShell';
+import { FormGrid, FormShell } from '@/components/form/FormShell';
+import { MoneyInput } from '@/components/form/inputs';
 
 interface FormValues {
   projectId: string;
@@ -95,11 +96,11 @@ export function BillFormModal({ open, onClose, projectId, defaultProjectId, bill
           The bill takes the approved measurements dated up to the date you give that no earlier bill took, prices them at the BOQ rates and applies the
           project&apos;s contract terms (GST, retention, advance recovery, TDS and cess). Measurements approved later are picked up when the bill is submitted.
         </Typography.Paragraph>
-        <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]} hidden={!!fixedProject}>
+        <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!fixedProject}>
           <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
         </Form.Item>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
-          <Form.Item name="billDate" label="Bill date" rules={[{ required: true, message: 'Required' }]}>
+        <FormGrid cols={2}>
+          <Form.Item name="billDate" label="Bill date" rules={[{ required: true, message: 'Pick the bill date' }]}>
             <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
           <Form.Item
@@ -107,7 +108,7 @@ export function BillFormModal({ open, onClose, projectId, defaultProjectId, bill
             label="Measurements up to"
             dependencies={['billDate']}
             rules={[
-              { required: true, message: 'Required' },
+              { required: true, message: 'Pick the date measurements go up to' },
               ({ getFieldValue }) => ({
                 validator: async (_, v: dayjs.Dayjs | undefined) => {
                   const bd = getFieldValue('billDate') as dayjs.Dayjs | undefined;
@@ -118,15 +119,15 @@ export function BillFormModal({ open, onClose, projectId, defaultProjectId, bill
           >
             <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(billDate ?? dayjs(), 'day')} />
           </Form.Item>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '0 16px' }}>
-          <Form.Item name="otherDeduction" label="Other deduction (₹)" extra="Water, electricity, hire of client's equipment">
-            <InputNumber style={{ width: '100%' }} min={0} precision={2} />
+        </FormGrid>
+        <FormGrid cols={2}>
+          <Form.Item name="otherDeduction" label="Other deduction" extra="Water, electricity, hire of client's equipment">
+            <MoneyInput />
           </Form.Item>
           <Form.Item name="otherDeductionNote" label="What it is for">
             <Input maxLength={200} placeholder="e.g. Water charges" />
           </Form.Item>
-        </div>
+        </FormGrid>
         <Form.Item name="isFinal" valuePropName="checked">
           <Checkbox>This is the final bill of the work</Checkbox>
         </Form.Item>

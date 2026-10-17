@@ -14,7 +14,7 @@ test('the project manager sees the client master and the road contract', async (
   await expect(page.getByText('04/EE/R&B/2025-26', { exact: false })).toBeVisible();
   await expect(page.getByText('Extensions of time')).toBeVisible();
   await page.getByRole('button', { name: 'Edit contract' }).click();
-  const modal = page.locator('.ant-modal').filter({ hasText: 'Contract: RD-2026-01' });
+  const modal = page.locator('.ant-drawer-open').filter({ hasText: 'Contract: RD-2026-01' });
   await expect(modal.getByLabel('Retention %')).toHaveValue('5');
   await modal.getByRole('button', { name: 'Cancel' }).click();
 });

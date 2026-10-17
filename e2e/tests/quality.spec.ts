@@ -18,12 +18,12 @@ test.describe.serial('a failed cube test through its NCR', () => {
     await page.getByRole('link', { name: 'Quality' }).click();
     await page.getByRole('tab', { name: /Tests/ }).click();
     await page.getByRole('button', { name: 'Record test' }).click();
-    const modal = page.locator('.ant-modal').filter({ hasText: 'Record a test' });
-    await chooseOption(modal.getByLabel('Project'), 'RD-2026-01');
-    await expect(modal.getByText(/Readings: 7 days on .*, 28 days on/)).toBeVisible();
-    await modal.getByLabel('What was sampled').fill(title);
-    await modal.getByLabel('Lowest that passes').fill('25');
-    await modal.getByRole('button', { name: 'Record test' }).click();
+    const form = page.locator('.ant-drawer-open').filter({ hasText: 'Record a test' });
+    await chooseOption(form.getByLabel('Project'), 'RD-2026-01');
+    await expect(form.getByText(/Readings: 7 days on .*, 28 days on/)).toBeVisible();
+    await form.getByLabel('What was sampled').fill(title);
+    await form.getByLabel('Lowest that passes').fill('25');
+    await form.getByRole('button', { name: 'Record test' }).click();
     await expect(page.getByText(/TST-\d{4}-\d{4} recorded/)).toBeVisible();
 
     await page.getByPlaceholder('Search no., sample, location').fill(title);

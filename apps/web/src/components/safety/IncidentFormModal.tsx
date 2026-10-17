@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { App, DatePicker, Form, Input, InputNumber, Modal, Select, TimePicker } from 'antd';
+import { App, DatePicker, Form, Input, InputNumber, Select, TimePicker } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, SafetyIncidentDto, SafetyIncidentType } from '@erp/shared';
@@ -9,6 +9,7 @@ import { INJURY_TYPES, SAFETY_INCIDENT_TYPES, SAFETY_INCIDENT_TYPE_LABELS } from
 import { api, errorMessage } from '@/lib/api';
 import { useProjects } from '@/lib/queries';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
+import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 
 interface FormValues {
   projectId: string;
@@ -26,8 +27,6 @@ interface FormValues {
   daysLost?: number | null;
   photos?: AttachmentDto[];
 }
-
-const grid = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', columnGap: 16 } as const;
 
 /** Report an incident or a near miss, or (with `incident`) change one. */
 export function IncidentFormModal({ open, onClose, projectId, incident, nearMiss }: { open: boolean; onClose: () => void; projectId?: string; incident?: SafetyIncidentDto | null; nearMiss?: boolean }) {
@@ -88,79 +87,83 @@ export function IncidentFormModal({ open, onClose, projectId, incident, nearMiss
     onSuccess: (x) => {
       message.success(editing ? `${x.incidentNo} saved` : `${x.incidentNo} reported`);
       qc.invalidateQueries({ queryKey: ['safety'] });
-      onClose();
     },
     onError: (e) => message.error(errorMessage(e)),
   });
 
   return (
-    <Modal
+    <FormShell
       open={open}
+      onClose={onClose}
+      form={form}
+      layout="drawer"
       title={editing ? `Change ${incident?.incidentNo}` : nearMiss ? 'Report a near miss' : 'Report an incident'}
-      onCancel={onClose}
-      onOk={() => form.submit()}
       okText={editing ? 'Save' : 'Report'}
-      okButtonProps={{ loading: save.isPending }}
-      width={720}
-      destroyOnHidden
-      styles={{ body: { maxHeight: '70vh', overflowY: 'auto', paddingRight: 8 } }}
+      draftKey={editing ? undefined : `${nearMiss ? 'near-miss' : 'incident'}:${projectId ?? 'any'}`}
+      onSubmit={(v) => save.mutateAsync(v)}
     >
-      <Form form={form} layout="vertical" onFinish={(v) => save.mutate(v)}>
-        <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Required' }]} hidden={!!projectId || editing}>
-          <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
-        </Form.Item>
-        <div style={grid}>
-          <Form.Item name="type" label="Type" rules={[{ required: true, message: 'Pick one' }]}>
-            <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Near miss, first aid..." options={SAFETY_INCIDENT_TYPES.map((t) => ({ value: t, label: SAFETY_INCIDENT_TYPE_LABELS[t] }))} />
+      <Form form={form} layout="vertical">
+        <FormSection title="The incident">
+          <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!projectId || editing}>
+            <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
           </Form.Item>
-          <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Required' }]}>
-            <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} allowClear={false} />
-          </Form.Item>
-          <Form.Item name="time" label="Time">
-            <TimePicker style={{ width: '100%' }} format="HH:mm" minuteStep={5} />
-          </Form.Item>
-        </div>
-        <Form.Item name="location" label="Where" rules={[{ required: true, whitespace: true, message: 'Where did it happen?' }]}>
-          <Input maxLength={200} placeholder="Chainage, block and floor, yard" />
-        </Form.Item>
-        <Form.Item name="description" label="What happened" rules={[{ required: true, whitespace: true, message: 'Describe what happened' }]}>
-          <Input.TextArea rows={3} maxLength={4000} />
-        </Form.Item>
-        {injury ? (
-          <div style={grid}>
-            <Form.Item name="injuredCount" label="People hurt" initialValue={1}>
-              <InputNumber min={1} max={500} style={{ width: '100%' }} />
+          <FormGrid cols={3}>
+            <Form.Item name="type" label="Type" rules={[{ required: true, message: 'Choose the type' }]}>
+              <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Near miss, first aid..." options={SAFETY_INCIDENT_TYPES.map((t) => ({ value: t, label: SAFETY_INCIDENT_TYPE_LABELS[t] }))} />
             </Form.Item>
-            <Form.Item name="injuredNames" label="Names" style={{ gridColumn: 'span 2' }}>
-              <Input maxLength={1000} placeholder="Name (trade)" />
+            <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date' }]}>
+              <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} allowClear={false} />
             </Form.Item>
-            {type === 'LOST_TIME' ? (
-              <Form.Item name="daysLost" label="Days off work">
-                <InputNumber min={0} max={3650} style={{ width: '100%' }} />
+            <Form.Item name="time" label="Time">
+              <TimePicker style={{ width: '100%' }} format="HH:mm" minuteStep={5} />
+            </Form.Item>
+          </FormGrid>
+          <Form.Item name="location" label="Where" rules={[{ required: true, whitespace: true, message: 'Where did it happen?' }]}>
+            <Input maxLength={200} placeholder="Chainage, block and floor, yard" />
+          </Form.Item>
+          <Form.Item name="description" label="What happened" rules={[{ required: true, whitespace: true, message: 'Describe what happened' }]}>
+            <Input.TextArea rows={3} maxLength={4000} />
+          </Form.Item>
+          <Form.Item name="photos" label="Photos">
+            <PhotoUpload />
+          </Form.Item>
+        </FormSection>
+        <FormSection title="People and action">
+          {injury ? (
+            <>
+              <FormGrid cols={2}>
+                <Form.Item name="injuredCount" label="People hurt" initialValue={1}>
+                  <InputNumber min={1} max={500} precision={0} inputMode="numeric" style={{ width: '100%' }} />
+                </Form.Item>
+                {type === 'LOST_TIME' ? (
+                  <Form.Item name="daysLost" label="Days off work">
+                    <InputNumber min={0} max={3650} precision={0} inputMode="numeric" style={{ width: '100%' }} />
+                  </Form.Item>
+                ) : null}
+              </FormGrid>
+              <Form.Item name="injuredNames" label="Names">
+                <Input maxLength={1000} placeholder="Name (trade)" />
               </Form.Item>
-            ) : null}
-          </div>
-        ) : null}
-        <Form.Item name="contractor" label="Whose workers">
-          <Input maxLength={200} placeholder="Labour contractor or subcontractor" />
-        </Form.Item>
-        <Form.Item name="immediateAction" label="Immediate action">
-          <Input.TextArea rows={2} maxLength={2000} placeholder="First aid given, area cordoned off, work stopped" />
-        </Form.Item>
-        {editing ? (
-          <div style={grid}>
-            <Form.Item name="rootCause" label="Root cause">
-              <Input.TextArea rows={2} maxLength={2000} />
-            </Form.Item>
-            <Form.Item name="correctiveAction" label="Corrective action">
-              <Input.TextArea rows={2} maxLength={2000} />
-            </Form.Item>
-          </div>
-        ) : null}
-        <Form.Item name="photos" label="Photos">
-          <PhotoUpload />
-        </Form.Item>
+            </>
+          ) : null}
+          <Form.Item name="contractor" label="Whose workers">
+            <Input maxLength={200} placeholder="Labour contractor or subcontractor" />
+          </Form.Item>
+          <Form.Item name="immediateAction" label="Immediate action">
+            <Input.TextArea rows={2} maxLength={2000} placeholder="First aid given, area cordoned off, work stopped" />
+          </Form.Item>
+          {editing ? (
+            <FormGrid cols={2}>
+              <Form.Item name="rootCause" label="Root cause">
+                <Input.TextArea rows={2} maxLength={2000} />
+              </Form.Item>
+              <Form.Item name="correctiveAction" label="Corrective action">
+                <Input.TextArea rows={2} maxLength={2000} />
+              </Form.Item>
+            </FormGrid>
+          ) : null}
+        </FormSection>
       </Form>
-    </Modal>
+    </FormShell>
   );
 }
