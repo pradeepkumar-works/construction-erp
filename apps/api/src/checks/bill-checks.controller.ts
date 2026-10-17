@@ -3,7 +3,7 @@ import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger'
 import { CHECK_KINDS, type CheckKind } from '@erp/shared';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { BillChecksService } from './bill-checks.service';
-import { AcceptCheckDto, ReopenCheckDto } from './bill-checks.dto';
+import { AcceptCheckDto, DraftVendorBillDto, ReopenCheckDto } from './bill-checks.dto';
 
 class KindPipe implements PipeTransform<string, CheckKind> {
   transform(v: string): CheckKind {
@@ -18,6 +18,12 @@ const kindParam = { name: 'kind', enum: CHECK_KINDS };
 @Controller('checks')
 export class BillChecksController {
   constructor(private checks: BillChecksService) {}
+
+  @ApiOperation({ summary: 'Checks on a vendor bill before it is saved', description: 'The same rules as a saved bill, on a draft filled from a scanned invoice; nothing is saved.' })
+  @Post('vendor-bill/preview')
+  preview(@CurrentUser() user: RequestUser, @Body() dto: DraftVendorBillDto) {
+    return this.checks.previewVendorBill(user, dto);
+  }
 
   @ApiOperation({
     summary: "A bill's checks before approval",

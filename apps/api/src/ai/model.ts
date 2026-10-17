@@ -109,6 +109,11 @@ export class FakeModel implements AiModel {
     const blocks = Array.isArray(last.content) ? last.content : [];
     const result = blocks.find((b): b is Anthropic.Beta.BetaToolResultBlockParam => b.type === 'tool_result');
     const usage = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 };
+    // A page to read (item 70) gets a fixed reading of its kind, so the forms it fills can be tested without a model.
+    if (blocks.some((b) => b.type === 'image')) {
+      const kind = blocks.map((b) => (b.type === 'text' ? b.text : '')).join(' ').match(/Kind: (\w+)/)?.[1] ?? 'invoice';
+      return { content: [{ type: 'text', text: JSON.stringify(FAKE_READS[kind] ?? FAKE_READS.invoice), citations: null } as Block], stopReason: 'end_turn', usage, model: this.name };
+    }
     // A call with no tools (a bill-check summary) gets its draft line back.
     if (!args.tools.length) {
       const text = `${(typeof last.content === 'string' ? last.content : '').split('Draft: ').pop()?.trim() ?? ''}`;
@@ -174,3 +179,48 @@ function linkedRows(value: unknown, out: Record<string, unknown>[] = []): Record
   }
   return out;
 }
+
+const at = (value: unknown, box: number[], confidence: 'high' | 'low' = 'high') => ({ value, confidence, page: 1, box });
+
+/** What the stand-in "reads" off any page: an invoice and a challan for binding wire from Sahoo Auto Parts, and a drawing. */
+const FAKE_READS: Record<string, { fields: Record<string, unknown>; lines: Record<string, unknown>[] }> = {
+  invoice: {
+    fields: {
+      vendorName: at('Sahoo Auto Parts', [60, 40, 420, 80]),
+      gstin: at('21BXRPS6612K1Z1', [60, 90, 360, 115]),
+      invoiceNo: at('SAP/26-27/0412', [640, 140, 940, 170]),
+      invoiceDate: at('10/10/2026', [640, 180, 940, 210], 'low'),
+      poNo: at(null, [0, 0, 0, 0], 'low'),
+      subtotal: at(3400, [760, 640, 940, 665]),
+      cgst: at(306, [760, 670, 940, 695]),
+      sgst: at(306, [760, 700, 940, 725]),
+      igst: at(null, [0, 0, 0, 0]),
+      freight: at(null, [0, 0, 0, 0]),
+      total: at(4012, [760, 740, 940, 770]),
+    },
+    lines: [{ description: at('Binding wire 18 SWG', [60, 420, 420, 445]), hsn: at('7217', [430, 420, 500, 445]), quantity: at(40, [520, 420, 600, 445]), unit: at('Kg', [610, 420, 660, 445]), rate: at(85, [670, 420, 760, 445], 'low'), gstRate: at(18, [770, 420, 820, 445]), amount: at(3400, [840, 420, 940, 445]) }],
+  },
+  challan: {
+    fields: {
+      supplierName: at('Sahoo Auto Parts', [60, 40, 420, 80]),
+      gstin: at('21BXRPS6612K1Z1', [60, 90, 360, 115]),
+      challanNo: at('DC-7781', [640, 140, 900, 170]),
+      date: at('2026-10-15', [640, 180, 900, 210]),
+      vehicleNo: at('OD02AB1234', [640, 220, 900, 250], 'low'),
+      poNo: at(null, [0, 0, 0, 0], 'low'),
+    },
+    lines: [{ description: at('Binding wire 18 SWG', [60, 420, 420, 445]), quantity: at(20, [520, 420, 600, 445]), unit: at('Kg', [610, 420, 660, 445]) }],
+  },
+  drawing: {
+    fields: {
+      drawingNo: at('BL-STR-GF-104', [700, 880, 980, 905]),
+      revision: at('R2', [700, 910, 760, 935]),
+      title: at('Ground floor column layout', [700, 820, 980, 870]),
+      date: at('12.10.2026', [780, 910, 980, 935]),
+      scale: at('1:100', [700, 940, 800, 965]),
+      issuedBy: at('Mohanty Associates', [700, 780, 980, 810], 'low'),
+      discipline: at('Structural', [820, 940, 980, 965]),
+    },
+    lines: [],
+  },
+};

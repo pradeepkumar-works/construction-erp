@@ -1,8 +1,8 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { createHash } from 'node:crypto';
 import { Prisma } from '@prisma/client';
-import type { BillCheckDto, BillChecksDto, BillCheckSummaryDto, CheckKind, SubmissionType } from '@erp/shared';
-import { gstinChecksumOk } from '@erp/shared';
+import type { BillCheckDto, BillChecksDto, BillCheckSummaryDto, CheckKind, DraftChecksDto, SubmissionType } from '@erp/shared';
+import { canRecordVendorBill, gstinChecksumOk } from '@erp/shared';
 import type { RequestUser } from '../common/current-user';
 import { AuditService } from '../common/audit.service';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -10,6 +10,7 @@ import { dateOnly } from '../common/serialize';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
 import { VendorBillsService } from '../purchasing/vendor-bills.service';
+import { PurchaseOrdersService } from '../purchasing/purchase-orders.service';
 import { SubcontractBillsService } from '../subcontracts/subcontract-bills.service';
 import { ExpensesService } from '../expenses/expenses.service';
 import { RaBillsService } from '../ra-bills/ra-bills.service';
@@ -42,6 +43,7 @@ export class BillChecksService {
     private audit: AuditService,
     private ai: AiService,
     private vendorBills: VendorBillsService,
+    private purchaseOrders: PurchaseOrdersService,
     private subBills: SubcontractBillsService,
     private expenses: ExpensesService,
     private raBills: RaBillsService,
@@ -162,20 +164,86 @@ export class BillChecksService {
       where: { id, organizationId: user.organizationId },
       include: { vendor: { select: { gstin: true } }, purchaseOrder: { include: { lines: true } }, lines: { orderBy: { sortOrder: 'asc' } } },
     });
-    const po = bill.purchaseOrder;
+    const checks = await this.vendorBillChecksOf(user, {
+      id,
+      vendorId: bill.vendorId,
+      vendorGstin: bill.vendor.gstin,
+      invoiceNo: bill.invoiceNo,
+      createdAt: bill.createdAt,
+      po: { id: bill.purchaseOrder.id, freight: n(bill.purchaseOrder.freight), lines: bill.purchaseOrder.lines.map((l) => ({ id: l.id, itemName: l.itemName, unit: l.unit, rate: n(l.rate), gstRate: n(l.gstRate) })) },
+      freight: n(bill.freight),
+      subtotal: n(bill.subtotal),
+      gstAmount: n(bill.gstAmount),
+      total: n(bill.total),
+      lines: bill.lines.map((l) => ({ id: l.id, purchaseOrderLineId: l.purchaseOrderLineId, qty: n(l.quantity), rate: n(l.rate), gstRate: n(l.gstRate), amount: n(l.amount), gstAmount: n(l.gstAmount) })),
+    });
+    return { type: 'VENDOR_BILL', projectId: dto.projectId, status: dto.status, label: `${dto.billNo}, invoice ${dto.invoiceNo} of ${dto.vendorName}, total ${dto.total}`, checks };
+  }
+
+  /**
+   * The checks on a vendor bill not yet saved (AI item 70: a bill filled from a scanned invoice), against the order and
+   * every bill already entered. With the invoice's printed total, a total that is not what the lines give is flagged.
+   */
+  async previewVendorBill(user: RequestUser, draft: { purchaseOrderId: string; invoiceNo: string; freight: number; invoiceTotal?: number | null; lines: { purchaseOrderLineId: string; quantity: number; rate: number; gstRate: number }[] }): Promise<DraftChecksDto> {
+    if (!canRecordVendorBill(user.roleKey)) throw new ForbiddenException('Your role does not record vendor bills');
+    const po = await this.purchaseOrders.get(user, draft.purchaseOrderId);
+    const lines = draft.lines
+      .filter((l) => l.quantity > 0)
+      .map((l, i) => {
+        if (!po.lines.some((pl) => pl.id === l.purchaseOrderLineId)) throw new BadRequestException('A line is not on this purchase order');
+        const amount = Math.round(l.quantity * l.rate * 100) / 100;
+        return { id: `draft-${i}`, purchaseOrderLineId: l.purchaseOrderLineId, qty: l.quantity, rate: l.rate, gstRate: l.gstRate, amount, gstAmount: Math.round(amount * l.gstRate) / 100 };
+      });
+    const subtotal = lines.reduce((s, l) => s + l.amount, 0);
+    const gstAmount = lines.reduce((s, l) => s + l.gstAmount, 0);
+    const checks = await this.vendorBillChecksOf(user, {
+      id: null,
+      vendorId: po.vendorId,
+      vendorGstin: po.vendorGstin,
+      invoiceNo: draft.invoiceNo,
+      createdAt: new Date(),
+      po: { id: po.id, freight: Number(po.freight), lines: po.lines.map((l) => ({ id: l.id, itemName: l.itemName, unit: l.unit, rate: Number(l.rate), gstRate: Number(l.gstRate) })) },
+      freight: draft.freight,
+      subtotal,
+      gstAmount,
+      total: draft.invoiceTotal ?? subtotal + gstAmount + draft.freight,
+      lines,
+    });
+    const dtos = checks.map((c) => ({ ...c, accepted: null }));
+    return { checks: dtos, openFlags: dtos.filter((c) => !c.ok).length, summary: rulesSummary(dtos) };
+  }
+
+  private async vendorBillChecksOf(
+    user: RequestUser,
+    bill: {
+      id: string | null;
+      vendorId: string;
+      vendorGstin: string | null;
+      invoiceNo: string;
+      createdAt: Date;
+      po: { id: string; freight: number; lines: { id: string; itemName: string; unit: string; rate: number; gstRate: number }[] };
+      freight: number;
+      subtotal: number;
+      gstAmount: number;
+      total: number;
+      lines: { id: string; purchaseOrderLineId: string; qty: number; rate: number; gstRate: number; amount: number; gstAmount: number }[];
+    },
+  ): Promise<Check[]> {
+    const { id, po } = bill;
     // A bill is checked against the ones entered before it: the later copy is the one flagged.
     const before = { createdAt: { lt: bill.createdAt } };
+    const notThis = id ? { id: { not: id } } : {};
     const lineIds = bill.lines.map((l) => l.purchaseOrderLineId);
     const [txns, others, otherFreight, dupBills, dupExpenses] = await Promise.all([
       this.prisma.stockTxn.findMany({ where: { purchaseOrderLineId: { in: lineIds } }, include: { entry: { select: { id: true, entryNo: true, type: true } } } }),
-      this.prisma.vendorBillLine.findMany({ where: { purchaseOrderLineId: { in: lineIds }, billId: { not: id }, bill: { ...notRejected, ...before } }, include: { bill: { select: { id: true, billNo: true } } } }),
-      this.prisma.vendorBill.aggregate({ where: { purchaseOrderId: po.id, id: { not: id }, ...notRejected, ...before }, _sum: { freight: true } }),
+      this.prisma.vendorBillLine.findMany({ where: { purchaseOrderLineId: { in: lineIds }, ...(id ? { billId: { not: id } } : {}), bill: { ...notRejected, ...before } }, include: { bill: { select: { id: true, billNo: true } } } }),
+      this.prisma.vendorBill.aggregate({ where: { purchaseOrderId: po.id, ...notThis, ...notRejected, ...before }, _sum: { freight: true } }),
       this.prisma.vendorBill.findMany({
-        where: { organizationId: user.organizationId, id: { not: id }, ...notRejected, ...before, OR: [{ vendorId: bill.vendorId }, ...(bill.vendor.gstin ? [{ vendor: { gstin: bill.vendor.gstin } }] : [])] },
+        where: { organizationId: user.organizationId, ...notThis, ...notRejected, ...before, OR: [{ vendorId: bill.vendorId }, ...(bill.vendorGstin ? [{ vendor: { gstin: bill.vendorGstin } }] : [])] },
         select: { id: true, billNo: true, invoiceNo: true },
       }),
-      bill.vendor.gstin
-        ? this.prisma.expense.findMany({ where: { organizationId: user.organizationId, ...notRejected, ...before, OR: [{ vendorGstin: bill.vendor.gstin }, { vendorId: bill.vendorId }], billNo: { not: null } }, select: { id: true, expenseNo: true, billNo: true } })
+      bill.vendorGstin
+        ? this.prisma.expense.findMany({ where: { organizationId: user.organizationId, ...notRejected, ...before, OR: [{ vendorGstin: bill.vendorGstin }, { vendorId: bill.vendorId }], billNo: { not: null } }, select: { id: true, expenseNo: true, billNo: true } })
         : this.prisma.expense.findMany({ where: { organizationId: user.organizationId, ...notRejected, ...before, vendorId: bill.vendorId, billNo: { not: null } }, select: { id: true, expenseNo: true, billNo: true } }),
     ]);
     const invoice = norm(bill.invoiceNo);
@@ -183,13 +251,13 @@ export class BillChecksService {
       ...dupBills.filter((b) => norm(b.invoiceNo) === invoice).map((b) => ({ label: b.billNo, href: `/vendor-bills/${b.id}` })),
       ...dupExpenses.filter((x) => norm(x.billNo) === invoice).map((x) => ({ label: x.expenseNo, href: `/expenses/${x.id}` })),
     ];
-    const checks = vendorBillChecks({
+    return vendorBillChecks({
       invoiceNo: bill.invoiceNo,
-      freight: n(bill.freight),
-      poFreightLeft: n(po.freight) - n(otherFreight._sum.freight),
-      subtotal: n(bill.subtotal),
-      gstAmount: n(bill.gstAmount),
-      total: n(bill.total),
+      freight: bill.freight,
+      poFreightLeft: po.freight - n(otherFreight._sum.freight),
+      subtotal: bill.subtotal,
+      gstAmount: bill.gstAmount,
+      total: bill.total,
       duplicates,
       lines: bill.lines.map((l, i) => {
         const pl = po.lines.find((x) => x.id === l.purchaseOrderLineId)!;
@@ -211,13 +279,13 @@ export class BillChecksService {
           no: i + 1,
           item: pl.itemName,
           unit: pl.unit,
-          qty: n(l.quantity),
-          rate: n(l.rate),
-          gstRate: n(l.gstRate),
-          amount: n(l.amount),
-          gstAmount: n(l.gstAmount),
-          poRate: n(pl.rate),
-          poGstRate: n(pl.gstRate),
+          qty: l.qty,
+          rate: l.rate,
+          gstRate: l.gstRate,
+          amount: l.amount,
+          gstAmount: l.gstAmount,
+          poRate: pl.rate,
+          poGstRate: pl.gstRate,
           received: mine.reduce((s, t) => s + n(t.quantity), 0),
           receipts: [...receipts.values()],
           billedElsewhere: [...elsewhere.values()].reduce((s, b) => s + b.qty, 0),
@@ -225,7 +293,6 @@ export class BillChecksService {
         };
       }),
     });
-    return { type: 'VENDOR_BILL', projectId: dto.projectId, status: dto.status, label: `${dto.billNo}, invoice ${dto.invoiceNo} of ${dto.vendorName}, total ${dto.total}`, checks };
   }
 
   private async subcontractBill(user: RequestUser, id: string): Promise<Loaded> {

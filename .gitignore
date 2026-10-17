@@ -10,3 +10,4 @@ coverage/
 .env.*.local
 apps/api/uploads/
 .DS_Store
+apps/api/scripts/.doc-read-pack/

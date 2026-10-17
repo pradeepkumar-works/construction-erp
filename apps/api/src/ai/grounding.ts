@@ -136,7 +136,9 @@ export function unverifiedFigures(answer: string, sourceNumbers: number[]): stri
     if (!currency && scale === 'unit' && /^\s*\d+\.\s/.test(text.slice(Math.max(0, (m.index ?? 0) - 1), (m.index ?? 0) + digits.length + 2))) continue;
     const decimals = digits.includes('.') ? digits.split('.')[1].length : 0;
     const set = known(scale, decimals);
-    const hit = set.has(value.toFixed(decimals)) || set.has((-value).toFixed(decimals)) || (decimals === 0 && known(scale, 0).has(Math.round(value).toFixed(0)));
+    // A bare "L" is lakh after ₹ but litres after a quantity ("34 L" of diesel): either reading may match.
+    const litres = !currency && /^l$/i.test(suffix ?? '') ? known('unit', decimals).has(value.toFixed(decimals)) : false;
+    const hit = litres || set.has(value.toFixed(decimals)) || set.has((-value).toFixed(decimals)) || (decimals === 0 && known(scale, 0).has(Math.round(value).toFixed(0)));
     if (!hit) {
       const label = whole.trim();
       if (!out.includes(label)) out.push(label);

@@ -1,17 +1,18 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, App, DatePicker, Empty, Form, Input, InputNumber, Select, Table, Typography } from 'antd';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Alert, App, DatePicker, Empty, Flex, Form, Input, InputNumber, Select, Table, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, ReceivableOrderDto, ReceivableRequestDto, StockEntryDto } from '@erp/shared';
-import { MATERIAL_PRIORITY_LABELS } from '@erp/shared';
+import { MATERIAL_PRIORITY_LABELS, itemSimilarity, matchLines, readNumber, readText } from '@erp/shared';
 import { api, errorMessage } from '@/lib/api';
-import { useProjects, useReceivable, useReceivableOrders } from '@/lib/queries';
+import { uploadFile, useProjects, useReceivable, useReceivableOrders } from '@/lib/queries';
 import { formatDate, formatQty } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { VendorPicker } from '@/components/vendors/VendorPicker';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
+import { ReadDocumentButton, ReadPreview, ReadSource, readFieldProps, type ReadState } from '@/components/ai/ReadDocument';
 
 interface FormValues {
   projectId?: string;
@@ -83,19 +84,69 @@ export function ReceiptModal({
   const request = sources.find((s) => s.key === watchedSource);
   const loading = receivable.isLoading || orders.isLoading;
   const [qty, setQty] = useState<Record<string, string | null>>({});
+  // A delivery challan read to fill the GRN (AI item 70), and the quantities waiting for its order to be picked.
+  const [readState, setReadState] = useState<ReadState | null>(null);
+  const [activeRead, setActiveRead] = useState<string | null>(null);
+  const [readLines, setReadLines] = useState<Record<string, number> | null>(null);
+  const pendingQty = useRef<{ key: string; qty: Record<string, string | null> } | null>(null);
 
   useEffect(() => {
     if (!open) return;
     form.resetFields();
     form.setFieldsValue({ projectId, source: purchaseOrderId ? `po:${purchaseOrderId}` : materialRequestId ? `mr:${materialRequestId}` : undefined, date: dayjs() });
     setQty({});
+    setReadState(null);
+    setReadLines(null);
+    pendingQty.current = null;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, projectId, materialRequestId, purchaseOrderId]);
 
   // Pre-fill each line with its pending quantity when a source is picked.
   useEffect(() => {
-    if (request) setQty(Object.fromEntries(request.lines.map((l) => [l.id, Number(l.pending) > 0 ? l.pending : null])));
+    if (!request) return;
+    const read = pendingQty.current?.key === request.key ? pendingQty.current.qty : null;
+    pendingQty.current = null;
+    setQty(read ?? Object.fromEntries(request.lines.map((l) => [l.id, Number(l.pending) > 0 ? l.pending : null])));
   }, [request]);
+
+  /**
+   * Fills the GRN from a read challan: the purchase order it is most like (its printed number, the supplier, then its
+   * items), the quantities on the challan for the lines they match, the challan and vehicle numbers.
+   */
+  const applyRead = (s: ReadState) => {
+    setReadState(s);
+    setActiveRead(null);
+    const f = s.result.fields;
+    form.setFieldsValue({ challanNo: readText(f.challanNo) ?? undefined, vehicleNo: readText(f.vehicleNo) ?? undefined });
+    const read = s.result.lines.map((l) => ({ description: readText(l.description) ?? '', unit: readText(l.unit) }));
+    const poNo = readText(f.poNo)?.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const supplier = readText(f.supplierName) ?? '';
+    const candidates = (watchedSource ? sources.filter((x) => x.key === watchedSource) : sources.filter((x) => x.kind === 'PO')).map((src) => {
+      const m = matchLines(read, src.lines.map((l) => ({ id: l.id, itemName: l.itemName, specification: l.specification, unit: l.unit })));
+      const printed = poNo && src.label.toUpperCase().replace(/[^A-Z0-9]/g, '').includes(poNo) ? 5 : 0;
+      const vendor = src.vendorName && supplier && itemSimilarity(supplier, src.vendorName) >= 0.5 ? 1 : 0;
+      return { src, m, score: printed + vendor + m.reduce((t, x) => t + (x?.score ?? 0), 0) };
+    });
+    const best = candidates.sort((a, b) => b.score - a.score)[0];
+    if (!best || !best.m.some(Boolean)) {
+      message.warning('The challan is read, but no purchase order waiting for material has its items. Pick what it is against.');
+    } else {
+      const byLine: Record<string, number> = {};
+      best.m.forEach((x, i) => {
+        if (x) byLine[x.id] = i;
+      });
+      setReadLines(byLine);
+      const q = Object.fromEntries(best.src.lines.map((l) => [l.id, byLine[l.id] !== undefined ? (readNumber(s.result.lines[byLine[l.id]].quantity)?.toString() ?? null) : null]));
+      if (best.src.key === watchedSource) setQty(q);
+      else {
+        pendingQty.current = { key: best.src.key, qty: q };
+        form.setFieldValue('source', best.src.key);
+      }
+    }
+    uploadFile(s.file)
+      .then((att) => form.setFieldValue('photos', [...((form.getFieldValue('photos') as AttachmentDto[] | undefined) ?? []), att]))
+      .catch((e) => message.warning(`The form is filled, but the challan could not be attached: ${errorMessage(e)}`));
+  };
 
   const save = useMutation({
     mutationFn: async (v: FormValues) => {
@@ -128,6 +179,13 @@ export function ReceiptModal({
   return (
     <FormShell open={open} onClose={onClose} form={form} layout="modal" width={760} title="Receive material (GRN)" okText="Save GRN" okDisabled={!request} onSubmit={(v) => save.mutateAsync(v)}>
       <Form form={form} layout="vertical">
+        {!readState ? (
+          <Flex justify="flex-end" style={{ marginBottom: 8 }}>
+            <ReadDocumentButton kind="challan" label="Fill from challan" onRead={applyRead} disabled={loading} />
+          </Flex>
+        ) : (
+          <ReadPreview state={readState} active={activeRead} onClear={() => setReadState(null)} />
+        )}
         {projectId ? null : (
           <Form.Item name="projectId" label="Project">
             <Select
@@ -160,7 +218,23 @@ export function ReceiptModal({
             style={{ marginBottom: 16 }}
             dataSource={request.lines}
             columns={[
-              { title: 'Item', dataIndex: 'itemName', render: (v, l) => (l.specification ? <span>{v} <Typography.Text type="secondary">({l.specification})</Typography.Text></span> : v) },
+              {
+                title: 'Item',
+                dataIndex: 'itemName',
+                render: (v, l) => {
+                  const i = readState && readLines ? readLines[l.id] : undefined;
+                  return (
+                    <div>
+                      {l.specification ? <span>{v} <Typography.Text type="secondary">({l.specification})</Typography.Text></span> : v}
+                      {i !== undefined ? (
+                        <div>
+                          <ReadSource kind="challan" page={readState!.result.lines[i].quantity?.page ?? null} onActive={(on) => setActiveRead(on ? `line-${i}-quantity` : null)} />
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                },
+              },
               { title: request.kind === 'PO' ? 'Ordered' : 'Requested', dataIndex: 'due', align: 'right', width: 100, render: (v, l) => `${formatQty(v)} ${l.unit}` },
               { title: 'Received', dataIndex: 'received', align: 'right', width: 100, render: (v) => formatQty(v) },
               {
@@ -173,6 +247,8 @@ export function ReceiptModal({
                       stringMode
                       min="0"
                       max={l.pending}
+                      status={readState && readLines?.[l.id] !== undefined && (readState.result.lines[readLines[l.id]].quantity?.confidence === 'low' || Number(qty[l.id] ?? 0) > Number(l.pending)) ? 'warning' : undefined}
+                      aria-label={`Quantity received of ${l.itemName}`}
                       value={qty[l.id] ?? null}
                       onChange={(v) => setQty((q) => ({ ...q, [l.id]: v }))}
                       suffix={l.unit}
@@ -201,10 +277,10 @@ export function ReceiptModal({
               <VendorPicker kind="SUPPLIER" />
             </Form.Item>
           )}
-          <Form.Item name="challanNo" label="Challan / invoice no.">
+          <Form.Item name="challanNo" label="Challan / invoice no." {...readFieldProps(readState, 'challanNo', setActiveRead)}>
             <Input maxLength={60} />
           </Form.Item>
-          <Form.Item name="vehicleNo" label="Vehicle no.">
+          <Form.Item name="vehicleNo" label="Vehicle no." {...readFieldProps(readState, 'vehicleNo', setActiveRead)}>
             <Input maxLength={30} />
           </Form.Item>
         </FormGrid>

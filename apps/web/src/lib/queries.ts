@@ -2,6 +2,9 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
+  DocReadKind,
+  DocReadResultDto,
+  DraftChecksDto,
   BillChecksDto,
   BillCheckSummaryDto,
   CheckKind,
@@ -1416,7 +1419,17 @@ export function useMarkAllNotificationsRead() {
   });
 }
 
+/** Above this a file goes straight to Blob storage, past the 4.5 MB a hosted request takes. */
+const DIRECT_UPLOAD_BYTES = 4 * 1024 * 1024;
+
 export async function uploadFile(file: File): Promise<AttachmentDto> {
+  if (file.size > DIRECT_UPLOAD_BYTES) {
+    const mimeType = file.type || (file.name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'application/octet-stream');
+    const { pathname, clientToken } = (await api.post<{ pathname: string; clientToken: string }>('/uploads/direct', { fileName: file.name, mimeType, size: file.size })).data;
+    const { put } = await import('@vercel/blob/client');
+    const blob = await put(pathname, file, { access: 'public', token: clientToken, contentType: mimeType, multipart: file.size > 8 * 1024 * 1024 });
+    return (await api.post<AttachmentDto>('/uploads/direct/complete', { pathname, url: blob.url, fileName: file.name })).data;
+  }
   const fd = new FormData();
   fd.append('file', file);
   const { data } = await api.post<AttachmentDto>('/uploads', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
@@ -1843,3 +1856,35 @@ export function useAcceptCheck(kind: CheckKind, id: string) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['checks', kind, id] }),
   });
 }
+
+// ---- Reading invoices, challans and drawings (AI item 70) ----
+
+/** Sends page images to be read; saves nothing. */
+export function useReadDocument() {
+  return useMutation({
+    mutationFn: async ({ kind, pages, purchaseOrderId }: { kind: DocReadKind; pages: Blob[]; purchaseOrderId?: string }) => {
+      const fd = new FormData();
+      fd.append('kind', kind);
+      if (purchaseOrderId) fd.append('purchaseOrderId', purchaseOrderId);
+      pages.forEach((p, i) => fd.append('pages', p, `page-${i + 1}.jpg`));
+      return (await api.post<DocReadResultDto>('/ai/read', fd, { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 120_000 })).data;
+    },
+  });
+}
+
+export interface DraftVendorBill {
+  purchaseOrderId: string;
+  invoiceNo: string;
+  freight: number;
+  invoiceTotal?: number | null;
+  lines: { purchaseOrderLineId: string; quantity: number; rate: number; gstRate: number }[];
+}
+
+/** Item 69's checks on a vendor bill not yet saved. */
+export const useDraftVendorBillChecks = (draft: DraftVendorBill | null) =>
+  useQuery({
+    queryKey: ['checks', 'draft', 'vendor-bill', draft],
+    queryFn: async () => (await api.post<DraftChecksDto>('/checks/vendor-bill/preview', draft)).data,
+    enabled: !!draft && !!draft.invoiceNo && draft.lines.length > 0,
+    placeholderData: keepPreviousData,
+  });
