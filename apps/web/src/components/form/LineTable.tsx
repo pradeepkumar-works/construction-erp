@@ -92,7 +92,7 @@ export function LineTable({
         // Columns without a width get room for a field; wider than the panel, the table scrolls sideways.
         const minWidth = 40 + (locked ? 0 : 44) + columns.reduce((n, c) => n + (typeof c.width === 'number' ? c.width : 200), 0);
         return (
-          <div ref={wrap} onKeyDown={onKeyDown}>
+          <div ref={wrap} role="presentation" onKeyDown={onKeyDown}>
             <Table<FormListFieldData>
               size="small"
               rowKey="key"

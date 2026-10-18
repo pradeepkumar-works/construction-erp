@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Button, Divider, Space, Table, Tag, Typography } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { PayableBillType, VendorPaymentDto } from '@erp/shared';
+import type { VendorPaymentDto } from '@erp/shared';
 import { RECEIPT_MODE_LABELS, canRecordPayment, canViewPayables } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';

@@ -55,7 +55,7 @@ function ToExport() {
   const [month, setMonth] = useState(dayjs());
   const upTo = month.endOf('month').format('YYYY-MM-DD');
   const { data, isLoading, isFetching, error, refetch } = useTallyPreview({ upTo });
-  const vouchers = data?.vouchers ?? [];
+  const vouchers = useMemo(() => data?.vouchers ?? [], [data]);
   const create = useMutation({
     mutationFn: async () => (await api.post<TallyExportDto>('/tally/exports', { upTo })).data,
     onSuccess: async (e) => {

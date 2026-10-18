@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { App, AutoComplete, DatePicker, Form, Input, Select } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -131,8 +131,8 @@ export function ComplianceFormModal({ action, onClose, onDone }: { action: Compl
 
   const full = mode === 'new' || mode === 'edit';
   // Kept while the form closes, so a drawer does not turn into a modal on its way out.
-  const wasFull = useRef(full);
-  if (action) wasFull.current = full;
+  const [wasFull, setWasFull] = useState(full);
+  if (action && wasFull !== full) setWasFull(full);
   const guarantee = kind === 'BANK_GUARANTEE';
   const scansField = (
     <Form.Item name="scans" label="Scans" extra="The guarantee, receipt, policy or licence (photo or PDF)">
@@ -146,8 +146,8 @@ export function ComplianceFormModal({ action, onClose, onDone }: { action: Compl
       onClose={onClose}
       form={form}
       // Adding or editing an entry is a long form; renewing, releasing or invoking one is a short one.
-      layout={wasFull.current ? 'drawer' : 'modal'}
-      width={wasFull.current ? 720 : 520}
+      layout={wasFull ? 'drawer' : 'modal'}
+      width={wasFull ? 720 : 520}
       title={mode ? TITLES[mode] : ''}
       okText={mode ? OK[mode] : 'Save'}
       // An entry with no project is for the whole company, so a new one does not take the header's project.

@@ -104,6 +104,12 @@ function serverFieldErrors(err: unknown, fields: Record<string, unknown>): { nam
   return [...out.values()];
 }
 
+/** An in-page link to the field's control, as an error summary's links are (the click focuses it without a jump). */
+const fieldHref = (el: HTMLElement) => {
+  const id = el.querySelector<HTMLElement>('input:not([type=hidden])[id], textarea[id], [role=combobox][id]')?.id;
+  return id ? `#${id}` : '#';
+};
+
 const focusIn = (el: HTMLElement) => {
   // Glides to the field unless the system asks for less motion (UX item 81).
   el.scrollIntoView({ block: 'center', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
@@ -125,10 +131,13 @@ export function FormShell<T>({ open, onClose, title, form, okText, onSubmit, sec
   const router = useRouter();
   const [scopedProject] = useProjectScope();
   const { data: projects } = useProjects(open && projectDefault);
+  // The latest project to start on and close handler, for the timers and listeners below (set after each render).
   const startProject = useRef<string | undefined>(undefined);
-  startProject.current = scopedProject ?? (projects?.length === 1 ? projects[0].id : undefined);
   const closeRef = useRef(onClose);
-  closeRef.current = onClose;
+  useEffect(() => {
+    startProject.current = scopedProject ?? (projects?.length === 1 ? projects[0].id : undefined);
+    closeRef.current = onClose;
+  });
   const screens = Grid.useBreakpoint();
   const bodyRef = useRef<HTMLDivElement>(null);
   const summaryRef = useRef<HTMLDivElement>(null);
@@ -147,7 +156,10 @@ export function FormShell<T>({ open, onClose, title, form, okText, onSubmit, sec
   const defaults = useRef<string | null>(null);
   // A drafted form is all changes until it is saved or started over.
   const fromAi = useRef(false);
-  const changedSince = (ref: React.MutableRefObject<string | null>) => fromAi.current || (form.isFieldsTouched() && snapshot(form.getFieldsValue(true)) !== ref.current);
+  const changedSince = useCallback(
+    (ref: React.MutableRefObject<string | null>) => fromAi.current || (form.isFieldsTouched() && snapshot(form.getFieldsValue(true)) !== ref.current),
+    [form],
+  );
   const mac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
 
   // Opening a new entry brings back its draft, after the form has put in its own defaults.
@@ -189,14 +201,14 @@ export function FormShell<T>({ open, onClose, title, form, okText, onSubmit, sec
       }
     }, 400);
     return () => window.clearTimeout(t);
-  }, [values, open, storageKey, submitting, form, aiDraft]);
+  }, [values, open, storageKey, submitting, form, aiDraft, changedSince]);
 
   // The summary follows the fields as they are fixed.
   useEffect(() => {
     if (!problems) return;
     const t = window.setTimeout(() => setProblems((p) => (p ? problemsIn(bodyRef.current) : p)), 50);
     return () => window.clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only when the values change: `problems` itself is set in here
   }, [values]);
 
   // An entry being edited has no draft, so leaving the page with changes asks first.
@@ -207,28 +219,30 @@ export function FormShell<T>({ open, onClose, title, form, okText, onSubmit, sec
     };
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);
-  }, [open, storageKey, form]);
+  }, [open, storageKey, changedSince]);
 
   // Leaving for another page: a new entry's draft is kept, an edit asks before its changes are thrown away.
   const leaveCheck = useRef<() => Promise<boolean>>(async () => true);
-  leaveCheck.current = async () => {
-    if (!changedSince(opened)) return true;
-    if (storageKey) {
-      message.info('What you typed is kept as a draft on this device');
-      return true;
-    }
-    return new Promise<boolean>((resolve) =>
-      modal.confirm({
-        title: 'Discard your changes?',
-        content: 'What you changed here will be lost.',
-        okText: 'Discard changes',
-        okButtonProps: { danger: true },
-        cancelText: 'Keep editing',
-        onOk: () => resolve(true),
-        onCancel: () => resolve(false),
-      }),
-    );
-  };
+  useEffect(() => {
+    leaveCheck.current = async () => {
+      if (!changedSince(opened)) return true;
+      if (storageKey) {
+        message.info('What you typed is kept as a draft on this device');
+        return true;
+      }
+      return new Promise<boolean>((resolve) =>
+        modal.confirm({
+          title: 'Discard your changes?',
+          content: 'What you changed here will be lost.',
+          okText: 'Discard changes',
+          okButtonProps: { danger: true },
+          cancelText: 'Keep editing',
+          onOk: () => resolve(true),
+          onCancel: () => resolve(false),
+        }),
+      );
+    };
+  });
 
   useEffect(() => {
     if (!open) return;
@@ -264,7 +278,7 @@ export function FormShell<T>({ open, onClose, title, form, okText, onSubmit, sec
       window.removeEventListener('popstate', onPop);
       if (routed && ours()) window.history.back();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per opening: it adds a history entry for the form, so it must not run again while open
   }, [open]);
 
   const submit = useCallback(async (secondary = false) => {
@@ -445,7 +459,7 @@ export function FormShell<T>({ open, onClose, title, form, okText, onSubmit, sec
                   return (
                     <li key={i}>
                       <Typography.Link
-                        href="#"
+                        href={fieldHref(p.el)}
                         onClick={(e) => {
                           e.preventDefault();
                           focusIn(p.el);

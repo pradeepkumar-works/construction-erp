@@ -99,8 +99,7 @@ export function ReceiptModal({
     setReadState(null);
     setReadLines(null);
     pendingQty.current = null;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, projectId, materialRequestId, purchaseOrderId]);
+  }, [open, projectId, materialRequestId, purchaseOrderId, form]);
 
   // Pre-fill each line with its pending quantity when a source is picked.
   useEffect(() => {

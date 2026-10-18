@@ -53,7 +53,6 @@ export function reportWebVital(metric: { name: string; value: number; rating?: s
     id: metric.id,
   };
   if (process.env.NODE_ENV !== 'production') {
-    // eslint-disable-next-line no-console
     console.info(`[web vitals] ${report.name} ${report.value} on ${report.path} (budget ${budget}${report.overBudget ? ', over' : ''})`);
     return;
   }

@@ -32,7 +32,7 @@ export function PhotoUpload({
       .map((f) => (f.response as AttachmentDto | undefined)?.id ?? f.uid)
       .join('|');
     if (wanted !== shown && !files.some((f) => f.status === 'uploading')) setFiles((value ?? []).map(toUploadFile));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- follows a value set from outside only; the list's own changes reach the value through onChange
   }, [value]);
 
   const customRequest: UploadProps['customRequest'] = async (options) => {

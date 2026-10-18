@@ -372,6 +372,7 @@ export default function AskPanel({
   // by side). It stays mounted while closed so the conversation is still there when it opens again.
   return (
     <NavigateCtx.Provider value={() => undefined}>
+      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- Escape from any control in the panel closes it; the keys bubble up from them */}
       <aside
         ref={dock}
         className="ask-panel"

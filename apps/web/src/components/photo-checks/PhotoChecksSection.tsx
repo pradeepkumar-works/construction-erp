@@ -46,13 +46,13 @@ function PhotoChecks({ kind, id, photos }: { kind: PhotoCheckKind; id: string; p
   // Ask again while photos are left and the last run checked some; stop on an error or a run that got nowhere.
   const lastPending = useRef<number | null>(null);
   const pending = data?.pending ?? 0;
-  const due = !!data?.available && pending > 0 && !run.isPending && !run.isError && lastPending.current !== pending;
+  const ready = !!data?.available && pending > 0 && !run.isPending && !run.isError;
   const check = run.mutate;
   useEffect(() => {
-    if (!due) return;
+    if (!ready || lastPending.current === pending) return;
     lastPending.current = pending;
     check();
-  }, [due, pending, check]);
+  }, [ready, pending, check]);
 
   if (!data || (!data.checks.length && !(data.available && pending))) return null;
   const byPhoto = new Map(data.checks.map((c) => [c.attachmentId, c]));

@@ -70,8 +70,7 @@ export function StockMoveModal({ move, open, onClose, projectId }: { move: Stock
     if (!open) return;
     form.resetFields();
     form.setFieldsValue({ projectId: projectId as string, date: dayjs(), lines: [{}] });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, projectId, move]);
+  }, [open, projectId, move, form]);
 
   const save = useMutation({
     mutationFn: async (v: FormValues) => {

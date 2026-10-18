@@ -64,7 +64,7 @@ function UndoAction({ undo, onDone }: { undo: () => void; onDone: () => void }) 
       if (!undoStack.length) window.removeEventListener('keydown', onUndoKey);
       onDone();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once for the notice's life: running again would call onDone while it still shows
   }, []);
   return (
     <Button
@@ -217,6 +217,7 @@ export function FeedbackHost() {
   useState(() => {
     const m = message as MessageInstance & { [POLITE]?: boolean };
     if (m[POLITE]) return;
+    // eslint-disable-next-line react-hooks/immutability -- deliberately wraps antd's one shared message instance, once (the POLITE mark)
     m[POLITE] = true;
     for (const type of ['success', 'info', 'loading'] as const) {
       const open = m[type];

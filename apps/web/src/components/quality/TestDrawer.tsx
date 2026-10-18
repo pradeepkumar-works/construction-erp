@@ -46,7 +46,6 @@ function ReadingInput({ test, reading }: { test: QualityTestDto; reading: Qualit
 
 export function TestDrawer({ id, open, onClose, onOpenNcr }: { id: string | null; open: boolean; onClose: () => void; onOpenNcr?: (id: string) => void }) {
   const { user } = useAuth();
-  const { message } = App.useApp();
   const qc = useQueryClient();
   const { data, isLoading, error, refetch } = useQualityTest(id ?? undefined);
   const { data: ncrs } = useNcrs(id ? { qualityTestId: id, pageSize: 50 } : undefined);

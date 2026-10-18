@@ -99,30 +99,40 @@ export function GanttChart({ data, scale, showBaseline, onMilestone }: { data: G
       {sub ? <div className="text-muted" style={{ fontSize: token.fontSizeSM, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sub}</div> : null}
     </div>
   );
-  const row = (key: string, lbl: React.ReactNode, bars: React.ReactNode, className: string, onClick?: () => void, action?: string) => (
-    <div
-      key={key}
-      className={className}
-      style={{ display: 'flex', height: ROW_H, borderBottom: `1px solid ${token.colorBorderSecondary}`, cursor: onClick ? 'pointer' : undefined }}
-      onClick={onClick}
-      // A row that opens something is a button for the keyboard too: Tab reaches it, Enter or Space opens it.
-      {...(onClick
-        ? {
-            role: 'button',
-            tabIndex: 0,
-            'aria-label': action,
-            onKeyDown: (e: React.KeyboardEvent) => {
-              if (e.key !== 'Enter' && e.key !== ' ') return;
-              e.preventDefault();
-              onClick();
-            },
-          }
-        : {})}
-    >
-      {lbl}
-      <div style={{ position: 'relative', width, minWidth: width }}>{bars}</div>
-    </div>
-  );
+  const row = (key: string, lbl: React.ReactNode, bars: React.ReactNode, className: string, onClick?: () => void, action?: string) => {
+    const style: React.CSSProperties = { display: 'flex', height: ROW_H, borderBottom: `1px solid ${token.colorBorderSecondary}`, cursor: onClick ? 'pointer' : undefined };
+    const cells = (
+      <>
+        {lbl}
+        <div style={{ position: 'relative', width, minWidth: width }}>{bars}</div>
+      </>
+    );
+    if (!onClick)
+      return (
+        <div key={key} className={className} style={style}>
+          {cells}
+        </div>
+      );
+    // A row that opens something is a button for the keyboard too: Tab reaches it, Enter or Space opens it.
+    return (
+      <div
+        key={key}
+        className={className}
+        style={style}
+        role="button"
+        tabIndex={0}
+        aria-label={action}
+        onClick={onClick}
+        onKeyDown={(e) => {
+          if (e.key !== 'Enter' && e.key !== ' ') return;
+          e.preventDefault();
+          onClick();
+        }}
+      >
+        {cells}
+      </div>
+    );
+  };
   const section = (title: string) => (
     <div style={{ display: 'flex', height: 26, background: token.colorFillQuaternary, borderBottom: `1px solid ${token.colorBorderSecondary}` }}>
       <div style={{ position: 'sticky', left: 0, zIndex: 3, width: LABEL_W, minWidth: LABEL_W, padding: '0 12px', lineHeight: '26px', fontWeight: 600, fontSize: token.fontSizeSM, background: token.colorFillQuaternary }}>{title}</div>

@@ -4,7 +4,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRightOutlined } from '@ant-design/icons';
 import { BILLING_GST_PCT } from '@erp/shared';
-import { BRAND } from '@/lib/brand';
 import { formatINR } from '@/lib/format';
 import { useAuthOptions } from '@/lib/queries';
 import { usePageTitle } from '@/lib/page-title';
@@ -94,7 +93,7 @@ export default function WelcomePage() {
   const signup = !!options?.signup;
   const pricing = options?.pricing ?? null;
 
-  const onTabKey = (e: React.KeyboardEvent<HTMLDivElement>) => {
+  const onTabKey = (e: React.KeyboardEvent<HTMLButtonElement>) => {
     if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
     const i = MODULES.findIndex((m) => m.key === tab);
     const next = MODULES[(i + (e.key === 'ArrowRight' ? 1 : MODULES.length - 1)) % MODULES.length];
@@ -161,7 +160,7 @@ export default function WelcomePage() {
           <div className="lp-head rv">
             <Eyebrow>What it does</Eyebrow>
             <h2>Site, billing, purchase, quality and accounts</h2>
-            <div className="lp-tabs" role="tablist" aria-label="Modules" onKeyDown={onTabKey}>
+            <div className="lp-tabs" role="tablist" aria-label="Modules">
               {MODULES.map((m) => (
                 <button
                   key={m.key}
@@ -173,6 +172,7 @@ export default function WelcomePage() {
                   tabIndex={tab === m.key ? 0 : -1}
                   className="lp-tab"
                   onClick={() => setTab(m.key)}
+                  onKeyDown={onTabKey}
                 >
                   {m.tab}
                 </button>

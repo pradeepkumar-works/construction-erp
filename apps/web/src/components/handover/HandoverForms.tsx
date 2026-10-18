@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { App, AutoComplete, DatePicker, Form, Input, InputNumber, Segmented, Select, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -233,16 +233,16 @@ export function DefectFormModal({
 
   const full = mode === 'new' || mode === 'edit';
   // Kept while the form closes, so a drawer does not turn into a modal on its way out.
-  const wasFull = useRef(full);
-  if (action) wasFull.current = full;
+  const [wasFull, setWasFull] = useState(full);
+  if (action && wasFull !== full) setWasFull(full);
   return (
     <FormShell
       open={!!action}
       onClose={onClose}
       form={form}
       // Reporting or editing a defect is a long form; marking it fixed, closing or reopening is a short one.
-      layout={wasFull.current ? 'drawer' : 'modal'}
-      width={wasFull.current ? 720 : 520}
+      layout={wasFull ? 'drawer' : 'modal'}
+      width={wasFull ? 720 : 520}
       title={mode ? TITLES[mode] : ''}
       okText={mode ? OK[mode] : 'Save'}
       draftKey={mode === 'new' ? `defect:${projectId}` : undefined}

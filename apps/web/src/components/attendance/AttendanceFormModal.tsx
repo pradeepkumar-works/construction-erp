@@ -83,7 +83,7 @@ export function AttendanceFormModal({ open, onClose, projectId, sheet: initial }
 
   useEffect(() => {
     if (open) load(initial ?? null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `load` is new each render; this fills the form when it opens or its sheet or project changes
   }, [open, initial, projectId]);
 
   const clean = useMemo(() => toLines(watchedLines), [watchedLines]);

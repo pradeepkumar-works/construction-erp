@@ -17,6 +17,7 @@ export function RecordLink({ href, onOpen, strong, className, children }: { href
   const ahead = useHoverIntent(() => prefetch.record(href));
   if (!href)
     return (
+      // eslint-disable-next-line jsx-a11y/anchor-is-valid -- deliberately a button with a link's look (role="button", Space below, Enter by the anchor), see above
       <Typography.Link
         href="#"
         role="button"

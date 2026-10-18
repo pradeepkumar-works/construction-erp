@@ -56,8 +56,7 @@ export function InspectionFormModal({ open, onClose, projectId, inspection }: { 
     } else {
       form.setFieldsValue({ projectId, date: dayjs() });
     }
-    // checklists only name the current checklist when editing; loading them later must not reset the form
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- checklists only name the current one when editing; loading them later must not reset the form
   }, [open, projectId, inspection, form]);
 
   const mutation = useMutation({

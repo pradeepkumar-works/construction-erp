@@ -48,7 +48,7 @@ export function CostOverview() {
   const [ratesOpen, setRatesOpen] = useState(false);
   const params = periodParams(period);
   const { data, isLoading, isFetching, error, refetch } = useCostSummary(params);
-  const rows = data ?? [];
+  const rows = useMemo(() => data ?? [], [data]);
   const totals = useMemo(() => {
     const sum = (f: (r: ProjectCostSummaryDto) => string) => rows.reduce((s, r) => s + toNumber(f(r)), 0);
     return { executed: sum((r) => r.executedValue), measured: sum((r) => r.measuredValue), cost: sum((r) => r.cost.total), margin: sum((r) => r.margin), billed: sum((r) => r.billedValue), cashIn: sum((r) => r.cashIn), cashOut: sum((r) => r.cashOut) };

@@ -12,7 +12,7 @@ import { FAIL_NOTICE } from '@/lib/notify';
 import { useMyStaff } from '@/lib/queries';
 import { formatDate } from '@/lib/format';
 import { Loading, QueryError } from '@/components/common/QueryState';
-import { AttendanceTag, LeaveStatusTag, clock, days, leaveSpan } from './staffUi';
+import { AttendanceTag, LeaveStatusTag, clock, leaveSpan } from './staffUi';
 import { LeaveFormModal } from './LeaveFormModal';
 import { themeFontSize } from '@/lib/theme';
 import { Section } from '@/components/common/Section';

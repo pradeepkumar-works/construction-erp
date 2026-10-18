@@ -32,7 +32,6 @@ export const VariationStatusTag = ({ status }: { status: VariationStatus }) => (
 /** A variation with its items, claimed and approved; sends it to the client and records the client's decision. */
 export function VariationDrawer({ id, open, onClose }: { id: string | null; open: boolean; onClose: () => void }) {
   const { user } = useAuth();
-  const { message } = App.useApp();
   const qc = useQueryClient();
   const { data, isLoading, error, refetch } = useVariation(id ?? undefined);
   const [editing, setEditing] = useState(false);

@@ -129,7 +129,7 @@ export function ListViews({
             </Tooltip>
           ) : null}
           {mayEdit(v) && (
-            <span onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+            <span role="presentation" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
               <Dropdown menu={{ items: menuFor(v) }} trigger={['click']}>
                 <Button type="text" size="small" icon={<EllipsisOutlined />} aria-label={`${v.name} view options`} />
               </Dropdown>
@@ -184,7 +184,12 @@ export function ListViews({
       <Modal open={!!editing} title={editing === 'new' ? 'Save this view' : 'Rename or share'} okText="Save" onOk={submit} okButtonProps={{ loading: save.isPending }} onCancel={() => setEditing(null)} destroyOnHidden>
         <Form form={form} layout="vertical" style={{ marginTop: token.marginSM }} onFinish={submit}>
           <Form.Item name="name" label="Name" rules={[{ required: true, whitespace: true, message: 'Give the view a name' }, { max: 60 }]}>
-            <Input autoFocus placeholder="Submitted this month" maxLength={60} />
+            <Input
+              placeholder="Submitted this month"
+              maxLength={60}
+              // eslint-disable-next-line jsx-a11y/no-autofocus -- focus moves into the dialog that just opened, as the dialog pattern asks
+              autoFocus
+            />
           </Form.Item>
           <Form.Item name="shared" valuePropName="checked" style={{ marginBottom: 0 }} extra="Everyone in the company sees it on this list. Only you, or an admin, can change it.">
             <Checkbox>Share with the company</Checkbox>
