@@ -2375,6 +2375,40 @@ export interface LetterRefDto {
   subject: string;
 }
 
+/** Where a search inside the filed documents found its words (Ask the contract, AI item 75). */
+export interface DocumentSearchHitDto {
+  source: 'DOCUMENT' | 'LETTER';
+  projectId: string;
+  title: string;
+  kind: string;
+  /** 1-based; null for a letter's own subject and summary */
+  page: number | null;
+  pages: number | null;
+  date: string | null;
+  /** Opens the PDF at the page (`/documents/view?file=…&page=…`), or the letter */
+  href: string;
+  text: string;
+}
+
+export interface DocumentSearchResultDto {
+  hits: DocumentSearchHitDto[];
+  /** Files in these projects not read yet */
+  unread: number;
+}
+
+/** One page of a filed PDF, for the page an answer's citation opens. */
+export interface DocumentPageViewDto {
+  attachmentId: string;
+  fileName: string;
+  url: string;
+  page: number;
+  /** Pages with text; 0 when the file has not been read or has no text (a scan) */
+  pages: number;
+  title: string;
+  recordHref: string;
+  text: string | null;
+}
+
 export interface LetterDto {
   id: string;
   projectId: string;

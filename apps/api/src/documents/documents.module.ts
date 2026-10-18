@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { DocumentsController, LettersController, TransmittalsController } from './documents.controller';
 import { DocumentsService } from './documents.service';
+import { DocumentTextService } from './document-text.service';
 
-@Module({ controllers: [DocumentsController, TransmittalsController, LettersController], providers: [DocumentsService], exports: [DocumentsService] })
+@Module({ controllers: [DocumentsController, TransmittalsController, LettersController], providers: [DocumentsService, DocumentTextService], exports: [DocumentsService, DocumentTextService] })
 export class DocumentsModule {}

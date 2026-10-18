@@ -72,6 +72,9 @@ jobs:
       - name: Morning briefs and weekly narratives use only the records' figures and go once to those who asked
         working-directory: apps/api
         run: DATABASE_URL="$RUNTIME_URL" node dist/scripts/briefs-test.js
+      - name: Ask the contract finds each of the 30 sample questions on its page and shows each role only its own documents
+        working-directory: apps/api
+        run: DATABASE_URL="$RUNTIME_URL" node dist/scripts/contract-search-test.js
       - name: Build and start the web app
         working-directory: apps/web
         run: |

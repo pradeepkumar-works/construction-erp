@@ -12,10 +12,12 @@ export function suggestionsFor(user: AuthUser, path: string, projectName?: strin
   const role = user.roleKey;
   const out: string[] = [];
   if (RECORD_PAGE.test(path)) out.push('Summarise this record and tell me what is pending on it');
+  if (path.startsWith('/documents')) out.push(projectName ? `What is the LD cap in the ${projectName} contract?` : 'What is the LD cap in our contracts, and where does it say so?');
   if (/^\/projects\/[\w-]+/.test(path) || projectName) {
     const name = /^\/projects\/[\w-]+/.test(path) ? 'this project' : projectName;
     out.push(`How is ${name} doing against plan?`);
     if (canViewCost(role)) out.push(`Where is ${name} over budget?`);
+    if (name === 'this project') out.push('Which clause of this project\'s contract allows price variation?');
   }
   if (mayApprove(user)) out.push('What is waiting for my approval, oldest first?');
   if (canViewCost(role) && isCompanyWide(role)) out.push('Which projects have the lowest margin right now?');

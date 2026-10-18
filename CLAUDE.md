@@ -113,6 +113,10 @@ cd e2e && npx playwright test         # browser tests; needs API + web running (
 - Morning brief and weekly narrative (item 74, `apps/api/src/briefs`, ARCHITECTURE "Morning brief"): facts and the rules'
   draft come from `brief-rules.ts` (pure, tested in `src/scripts/briefs-test.ts`); the model writes through
   `AiService.writeFromFacts` and its text is used only when it passes the fit and figure checks, else the draft is stored.
+- Ask the contract (item 75, ARCHITECTURE "Ask the contract"): PDF pages live in `DocumentPage` (read by
+  `DocumentTextService`, searched with Postgres full-text search); a new kind of filed PDF is a branch in its `pendingWhere`
+  and search join. `search_documents` never reads files itself. Sample contracts and their questions are
+  `src/documents/demo-contracts.ts`; keep `src/scripts/contract-search-test.ts` passing when changing search words.
 - Mobile: screens in `app/`, shared UI in `src/components`, API in `src/api`, no new native deps
   without checking `node_modules/expo/bundledNativeModules.json` for the SDK-pinned version.
 - Mobile theme: `src/theme.ts` picks the light or dark palette once at start-up (Profile > Appearance, stored in

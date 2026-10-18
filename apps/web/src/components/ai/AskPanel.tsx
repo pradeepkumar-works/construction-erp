@@ -473,7 +473,7 @@ function AnswerFooter({ item, onRate, onCopy, onRetry }: { item: ChatItem; onRat
       )}
       {item.unverified.length > 0 && (
         <Typography.Text type="warning" style={{ fontSize: token.fontSizeSM }}>
-          Check {item.unverified.length === 1 ? 'this figure' : 'these figures'} in the records: {item.unverified.join(', ')}. {item.unverified.length === 1 ? 'It was' : 'They were'} not in what Ask{' '}
+          Check {item.unverified.length === 1 ? 'this' : 'these'} {item.unverified.some((u) => u.startsWith('“')) ? '' : item.unverified.length === 1 ? 'figure ' : 'figures '}in the records: {item.unverified.join(', ')}. {item.unverified.length === 1 ? 'It was' : 'They were'} not in what Ask{' '}
           {PRODUCT_NAME} read.
         </Typography.Text>
       )}
