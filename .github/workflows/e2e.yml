@@ -2,14 +2,28 @@ name: End-to-end tests
 
 # Runs the API and the web app against a fresh Postgres with the demo seed, the API connected as the
 # erp_runtime role (row-level security enforced, as in production), then the Playwright browser tests.
+# Three jobs side by side, each with its own database and servers: the flows (and the API checks and the antd lint),
+# and the route walk (item 89: every sidebar page in both widths and themes) in two shards, so the slowest job stays
+# well under 25 minutes.
 on:
   pull_request:
   workflow_dispatch:
 
 jobs:
   e2e:
+    name: e2e (${{ matrix.suite }})
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - suite: flows
+            args: --project=chromium
+          - suite: walk-1
+            args: --project=walk --workers=2 --shard=1/2
+          - suite: walk-2
+            args: --project=walk --workers=2 --shard=2/2
     services:
       postgres:
         image: postgres:16
@@ -32,7 +46,21 @@ jobs:
           cache: pnpm
       - run: CI=true pnpm install --frozen-lockfile
       - name: Phone app has Hindi for every string it shows
+        if: matrix.suite == 'flows'
         run: node apps/mobile/scripts/check-i18n.mjs
+      # The antd CLI's lint (deprecated props, antd's a11y and usage rules, against the installed antd; it needs no network
+      # once fetched). It exits 0 whatever it finds, so its JSON is read: every issue is printed, and any fails the step.
+      - name: antd lint on the web's components, app and lib
+        if: matrix.suite == 'flows'
+        run: |
+          found=0
+          for dir in components app lib; do
+            npx -y @ant-design/cli@6.6.6 lint "apps/web/src/$dir" --format json > "/tmp/antd-lint-$dir.json"
+            jq -r '.issues[] | "\(.file):\(.line) [\(.rule)] \(.message)"' "/tmp/antd-lint-$dir.json"
+            found=$((found + $(jq '.issues | length' "/tmp/antd-lint-$dir.json")))
+          done
+          echo "antd lint: $found issues"
+          [ "$found" -eq 0 ]
       - name: Database owner like Neon's (BYPASSRLS, not superuser)
         run: |
           psql "postgresql://postgres:postgres@localhost:5432/postgres" -c "CREATE ROLE erp_owner LOGIN PASSWORD 'owner' CREATEROLE BYPASSRLS" -c "CREATE DATABASE erp OWNER erp_owner"
@@ -55,24 +83,31 @@ jobs:
           cat /tmp/health.json; echo
           [ "$(jq -r .tenantGuard /tmp/health.json)" = "enforced" ]
       - name: Ask Nirmaan's tools show each role only its own projects
+        if: matrix.suite == 'flows'
         working-directory: apps/api
         run: DATABASE_URL="$RUNTIME_URL" node dist/scripts/ai-access-check.js
       - name: Ask Nirmaan's drafts match the masters and save nothing
+        if: matrix.suite == 'flows'
         working-directory: apps/api
         run: DATABASE_URL="$RUNTIME_URL" node dist/scripts/ai-drafts-test.js
       - name: Bill checks catch the seeded anomalies and flag nothing else
+        if: matrix.suite == 'flows'
         working-directory: apps/api
         run: DATABASE_URL="$RUNTIME_URL" node dist/scripts/bill-checks-test.js
       - name: Reading invoices turns the model's reply into checked values and matches order lines
+        if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/doc-read-test.js
       - name: Early warnings forecast right, show each role its own kinds and backtest on the demo history
+        if: matrix.suite == 'flows'
         working-directory: apps/api
         run: DATABASE_URL="$RUNTIME_URL" node dist/scripts/warnings-test.js
       - name: Morning briefs and weekly narratives use only the records' figures and go once to those who asked
+        if: matrix.suite == 'flows'
         working-directory: apps/api
         run: DATABASE_URL="$RUNTIME_URL" node dist/scripts/briefs-test.js
       - name: Ask the contract finds each of the 30 sample questions on its page and shows each role only its own documents
+        if: matrix.suite == 'flows'
         working-directory: apps/api
         run: DATABASE_URL="$RUNTIME_URL" node dist/scripts/contract-search-test.js
       - name: Build and start the web app
@@ -83,12 +118,22 @@ jobs:
           for i in $(seq 1 30); do curl -sf -o /dev/null "$E2E_WEB_URL/login" && break; sleep 2; done
       - run: npx playwright install --with-deps chromium
         working-directory: e2e
-      - run: pnpm --filter @erp/e2e test
+      - name: Playwright (${{ matrix.suite }})
+        working-directory: e2e
+        run: npx playwright test ${{ matrix.args }}
       - if: failure()
         run: tail -100 /tmp/api.log; tail -50 /tmp/web.log
       - if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.suite }}
           path: e2e/playwright-report
+          retention-days: 7
+      # Full-page screenshots of every walked page (role / width-theme / page), for reviewers; nothing is compared.
+      - if: always() && matrix.suite != 'flows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: route-walk-screens-${{ matrix.suite }}
+          path: e2e/route-walk/screens
+          if-no-files-found: ignore
           retention-days: 7

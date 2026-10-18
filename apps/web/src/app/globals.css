@@ -644,6 +644,10 @@ kbd {
   :root .ant-tabs-tab {
     min-height: 44px;
   }
+  /* antd sizes the pager from this variable, and a small pager's own value outranks the rule below. */
+  :root .ant-pagination.ant-pagination {
+    --ant-pagination-item-size-actual: 44px;
+  }
   :root :is(.ant-pagination-item, .ant-pagination-prev, .ant-pagination-next, .ant-pagination-jump-prev, .ant-pagination-jump-next) {
     min-width: 44px;
     height: 44px;
@@ -708,6 +712,11 @@ kbd {
 a.text-link {
   color: var(--ant-color-link);
 }
+/* In running text the colour alone does not set a link apart from grey text (WCAG 1.4.1): it is underlined too. */
+a.text-link {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
 .ant-table-cell a:not(.ant-btn):not(.ant-tag):not(.ant-typography):hover,
 .ant-descriptions-item-content a:not(.ant-btn):not(.ant-tag):not(.ant-typography):hover,
 .ant-card-extra a:not(.ant-btn):not(.ant-tag):not(.ant-typography):hover,
@@ -722,4 +731,9 @@ a.text-link:hover {
   margin: 0;
   font: inherit;
   color: inherit;
+}
+
+/* A table's plain-text empty message: antd draws it in the disabled grey (1.8:1); it is content, so secondary text. */
+.ant-table-placeholder :is(.ant-table-cell, .ant-table-expanded-row-fixed) {
+  color: var(--ant-color-text-secondary);
 }

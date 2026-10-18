@@ -22,7 +22,11 @@ pnpm typecheck                        # all packages, must pass before committin
 cd apps/web && npx next build         # web must build clean
 cd apps/mobile && npx tsc --noEmit && CI=1 npx expo export --platform android
 cd e2e && npx playwright test         # browser tests; needs API + web running (docs/TESTING.md), CI runs them on PRs
+cd e2e && npx playwright test --project=walk --workers=2   # just the route walk (every sidebar page, see Accessibility)
 ```
+
+A pull request fills in `.github/pull_request_template.md`: the checks above, screenshots at 1440 and 390 in both themes,
+and the pre-delivery checklist.
 
 ## Conventions
 
@@ -72,8 +76,9 @@ cd e2e && npx playwright test         # browser tests; needs API + web running (
 - States: a page loading shows `PageSkeleton` (`components/common/QueryState.tsx`, shapes list/record/home/workspace), a failed
   query `QueryError` (403, 404 and offline get their own Result). `DataTable` draws its own first-load skeleton and empty state:
   pass `empty={frame.empty}` (Clear filters when filtered) and `emptyAction={newButton}`, the same button as the toolbar's.
-- Pages: `PageHeader` is the page's one `<h1>` and sets the tab title ("Bills · Nirmaan"; pass `docTitle` when the title is
-  not plain text); a page without it calls `usePageTitle` (`src/lib/page-title.ts`) and draws its own `<h1>`. Its `crumbs` join
+- Pages: every page has one `<h1>` and a tab title of its own. `PageHeader` is the page's one `<h1>` and sets the tab
+  title ("Bills · Nirmaan"; pass `docTitle` when the title is not plain text); a page without it calls `usePageTitle`
+  (`src/lib/page-title.ts`) and draws its own `<h1>`. Its `crumbs` join
   the header's breadcrumb, so a page never draws a second one. A link styled as a button is `LinkButton`
   (`components/common/LinkButton.tsx`), never a `Button` inside a `Link`. Single-key shortcuts check `singleKeysOn()`
   (`src/lib/shortcuts.ts`, off from Help > Keyboard shortcuts); Ask is Alt J (⌘J on a Mac), never Ctrl J.
@@ -81,6 +86,9 @@ cd e2e && npx playwright test         # browser tests; needs API + web running (
   from tokens, never antd's raw `colorWarning`/`colorSuccess` for text (use the `…Text` token); a filter or search control outside a
   labelled `Form.Item` gets an `aria-label` (`ListToolbar` takes `searchLabel`), a `Progress` gets one too; buttons beside a
   tab bar go through `renderTabBar={tabBarWithExtra(…)}` (`components/common/tabBarWithExtra.tsx`), not `tabBarExtraContent`.
+  The route walk (`e2e/tests/route-walk.spec.ts`) opens every `nav.ts` link for each role in `WALK_ROLES` and every project
+  tab, at 1440 and 390 (touch) in both themes: axe, one `<h1>`, own tab title, targets 24 px (44 touch), text 12 px, no
+  sideways scroll at 390. A new page is in it with no test edit and must pass it; a link no listed role sees needs a role.
 - Records: a submission's drawer and its own page (`/dpr/[id]`, `/bills/[id]`, …) are one `XRecord` component on
   `RecordFrame` (`components/record/`: facts, `submissionLifecycle` stage bar, sections, activity, actions); the drawer
   export is `<XRecord mode="drawer">`. List links to it use `RecordLink` and `RowActions href`.

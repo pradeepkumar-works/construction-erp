@@ -5,7 +5,7 @@
 | Check | Where | What it covers |
 |-------|-------|----------------|
 | `pnpm typecheck`, `next build`, mobile `tsc` and `expo export` | before every commit (see CLAUDE.md) | types and builds |
-| `.github/workflows/e2e.yml` | every pull request | the API and web app on a fresh Postgres with the demo seed, the API connected as `erp_runtime` (row-level security enforced), then the Playwright browser tests in `e2e/` |
+| `.github/workflows/e2e.yml` | every pull request | the API and web app on a fresh Postgres with the demo seed, the API connected as `erp_runtime` (row-level security enforced), then the Playwright browser tests in `e2e/`: the flows (with the API checks and the antd lint) and the route walk in two shards, three jobs side by side |
 | `.github/workflows/smoke.yml` | by hand, against production | the API contract of every module, read-mostly, with the demo accounts |
 | Phone checklist below | by hand on a real phone, before a store release | offline entry, photos and sync |
 
@@ -32,6 +32,46 @@ npx playwright show-report             # after a failure: trace, screenshot, net
 
 To test with row-level security enforced locally, run migrations and the seed as the owner and the API as
 `erp_runtime`, as the workflow does (`ALTER ROLE erp_runtime LOGIN PASSWORD '...'` once).
+
+## The route walk (`route-walk.spec.ts`, UX item 89)
+
+Every page in the sidebar, for each role whose sidebar differs (`WALK_ROLES` in `e2e/tests/route-walk.ts`: pm, a site
+engineer, accounts, admin and the client's engineer), at 1440×900 and at 390×844 on a touch screen, in the light and the
+dark theme, plus every tab of a project page (`?tab=` keys) for pm@demo.com. The pages are not listed in the test:
+`route-walk.setup.ts` signs each role in once (saved sessions, no login per page) and keeps the links its sidebar draws
+from `components/shell/nav.ts`, and the tabs are read from the project page's source. A new module is walked as soon as
+it is in `nav.ts`, and the walk fails if no role in `WALK_ROLES` sees a link. On each page:
+
+- axe at WCAG 2.2 AA (every view);
+- one `<h1>` and a tab title of its own, not just "Nirmaan" (1440, light);
+- every control at least 24 px, 44 px on the touch screen, and no text under 12 px (light views);
+- no sideways scroll at 390 px;
+- a full-page screenshot, uploaded as the `route-walk-screens-walk-1` and `-walk-2` artifacts
+  (`<role>/<width>-<theme>/<page>.jpg`) for reviewers to look through.
+
+There is no pixel-diff gate on the screenshots: baselines would churn with every UI item, and fonts and anti-aliasing
+differ between machines, so a diff would fail on noise more often than on a real change. People look at them instead
+(the PR template asks for 1440 and 390 in both themes).
+
+Each page waits for the app's own ready signal (no `aria-busy` region, skeleton or spinner left, the `<h1>` drawn,
+fonts loaded), never a fixed sleep or network idle. Each page in each view is its own test (a role's test for a page
+outside its sidebar is skipped), so a failure names the role, view, page, check and element. The walk only reads, so it
+runs on two workers, and it never retries: its checks answer the same each time, and a retry would hide a page that only
+sometimes breaks. CI splits it into two shards (`--shard=1/2`, `2/2`) beside the flows job.
+
+```bash
+cd e2e
+E2E_API_URL=http://localhost:4000/api E2E_WEB_URL=http://localhost:3000 npx playwright test --project=walk --workers=2
+ls route-walk/screens                  # the screenshots; the flows alone are --project=chromium
+```
+
+## Web Vitals budgets (`speed.spec.ts`)
+
+Home, a list, a record and Approvals are opened fresh and used once (the search palette, a row), and the app's own
+reporting (`next/web-vitals` into `reportWebVital`, `POST /api/vitals`) is read against `WEB_VITAL_BUDGETS` in
+`apps/web/src/lib/vitals.ts`. LCP and INP may reach `VITALS_SLACK` times their budget (2 unless set): a CI runner
+shares a few slow cores between Postgres, the API, the web server and the browser, with no GPU. CLS is not about speed
+and keeps its budget. The field reports in the API's log (`/api/vitals`) are the measure for real phones and networks.
 
 ## Offline entry on a real phone
 

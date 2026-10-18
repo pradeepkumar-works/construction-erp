@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { newestFirst, signIn } from './helpers';
+import { newestFirst, pageOverflow, signIn } from './helpers';
 
 // UX item 84: lists on a phone are cards with their filters in a drawer, a record keeps its actions in reach, the header
 // fits; on a laptop the DPR list fits without sideways scroll; the finance pages, tabs and the Approvals filters live in
@@ -8,10 +8,7 @@ import { newestFirst, signIn } from './helpers';
 const PHONE = { width: 390, height: 844 };
 
 /** No sideways scroll on the page itself. */
-async function noPageOverflow(page: Page) {
-  const { scroll, width } = await page.evaluate(() => ({ scroll: document.documentElement.scrollWidth, width: window.innerWidth }));
-  expect(scroll).toBeLessThanOrEqual(width);
-}
+const noPageOverflow = async (page: Page) => expect(await pageOverflow(page)).toBe(0);
 
 test.describe('on a phone', () => {
   test.use({ viewport: PHONE });
