@@ -51,9 +51,27 @@ export function inSentence(label: string): string {
     .join(' ');
 }
 
-export function formatPct(value: number | null | undefined): string {
-  if (value === null || value === undefined) return '-';
-  return `${Math.round(value * 10) / 10}%`;
+const pctFormats = new Map<string, Intl.NumberFormat>();
+
+/**
+ * A percentage, written one way everywhere (UX item 85): whole numbers from 10% up, one decimal below it (2.5%, and 2%
+ * rather than 2.0%), `%` without a space, `–` for none. `digits` fixes the decimals instead ({ digits: 0 } for a
+ * whole number always).
+ */
+export function formatPct(value: number | string | null | undefined, opts: { digits?: number } = {}): string {
+  if (value === null || value === undefined || value === '') return '–';
+  const n = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(n)) return '–';
+  const digits = opts.digits ?? (Math.abs(n) >= 9.95 ? 0 : 1);
+  const key = `${digits}:${opts.digits !== undefined}`;
+  let f = pctFormats.get(key);
+  if (!f) {
+    f = new Intl.NumberFormat('en-IN', { maximumFractionDigits: digits, minimumFractionDigits: opts.digits ?? 0 });
+    pctFormats.set(key, f);
+  }
+  // -0.04 rounds to "-0": a percentage that rounds to nothing reads 0%.
+  const text = f.format(n);
+  return `${/^-0(\.0+)?$/.test(text) ? text.slice(1) : text}%`;
 }
 
 export const STATUS_COLORS: Record<SubmissionStatus, string> = {
@@ -150,6 +168,20 @@ export function formatMonth(value: string | null | undefined): string {
   if (!value) return '-';
   const d = dayjs(value.length === 7 ? `${value}-01` : value);
   return d.isValid() ? d.format('MMM YYYY') : value;
+}
+
+/** "Oct": a month's short name, from YYYY-MM or a date (a home tile's "Billed in Oct"). */
+export function formatMonthName(value: string | null | undefined): string {
+  if (!value) return '-';
+  const d = dayjs(value.length === 7 ? `${value}-01` : value);
+  return d.isValid() ? d.format('MMM') : value;
+}
+
+/** "Oct 26": a month on a chart's axis or in its table, where the year is short. */
+export function formatMonthShort(value: string | null | undefined): string {
+  if (!value) return '-';
+  const d = dayjs(value.length === 7 ? `${value}-01` : value);
+  return d.isValid() ? d.format('MMM YY') : value;
 }
 
 /** "15 Oct": a day inside a range whose year is given once ("15 Oct to 21 Oct 2026"). */

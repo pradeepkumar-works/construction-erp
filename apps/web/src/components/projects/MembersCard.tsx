@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useCallback, useState } from 'react';
-import { App, Avatar, Button, Empty, Flex, Listy, Popconfirm, Space, Tag, Typography } from 'antd';
-import { DeleteOutlined, UserAddOutlined } from '@ant-design/icons';
+import { App, Avatar, Button, Dropdown, Empty, Flex, Listy, Space, Tag, Typography } from 'antd';
+import { EllipsisOutlined, UserAddOutlined, UserDeleteOutlined } from '@ant-design/icons';
 import type { ProjectDetail, UserSummary } from '@erp/shared';
 import { canEditProjects } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -16,7 +16,7 @@ import { themeFontSize } from '@/lib/theme';
 
 export function MembersCard({ project }: { project: ProjectDetail }) {
   const { user } = useAuth();
-  const { message } = App.useApp();
+  const { message, modal } = App.useApp();
   const qc = useQueryClient();
   const [adding, setAdding] = useState(false);
   const [userId, setUserId] = useState<string | undefined>();
@@ -40,6 +40,17 @@ export function MembersCard({ project }: { project: ProjectDetail }) {
     },
     onError: (err) => message.error(errorMessage(err)),
   });
+
+  // Removing someone is in each row's More menu (UX item 85), not a red button on every row, and asks first by name.
+  const confirmRemove = (m: { userId: string; fullName: string }) =>
+    modal.confirm({
+      title: `Remove ${m.fullName} from ${project.name}?`,
+      content: `${m.fullName} comes off this project's team. You can add them again later.`,
+      okText: 'Remove',
+      okButtonProps: { danger: true },
+      cancelText: 'Keep',
+      onOk: () => remove.mutateAsync(m.userId),
+    });
 
   // People already on the team are not offered again.
   const onTeam = useCallback((u: UserSummary) => u.id === project.projectManagerId || project.members.some((m) => m.userId === u.id), [project]);
@@ -97,9 +108,13 @@ export function MembersCard({ project }: { project: ProjectDetail }) {
                 description={<Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>{m.roleName}</Typography.Text>}
               />
               {editor && !m.isPm ? (
-                <Popconfirm title={`Remove ${m.fullName} from the project?`} okText="Remove" okButtonProps={{ danger: true }} onConfirm={() => remove.mutate(m.userId)}>
-                  <Button size="small" type="text" danger icon={<DeleteOutlined />} aria-label={`Remove ${m.fullName} from the project`} />
-                </Popconfirm>
+                <Dropdown
+                  trigger={['click']}
+                  placement="bottomRight"
+                  menu={{ items: [{ key: 'remove', icon: <UserDeleteOutlined />, label: 'Remove from project', danger: true, onClick: () => confirmRemove(m) }] }}
+                >
+                  <Button size="small" type="text" icon={<EllipsisOutlined />} aria-label={`More actions for ${m.fullName}`} />
+                </Dropdown>
               ) : null}
             </Flex>
           )}

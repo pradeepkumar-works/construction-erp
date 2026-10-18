@@ -13,6 +13,35 @@ import { PayablesService } from '../payables/payables.service';
 import { CostService } from '../cost/cost.service';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
 import { dateOnly, money, parseDate } from '../common/serialize';
+import { todayIn } from '../notifications/time';
+
+/**
+ * Share of the work planned to be done by `today` (UX item 85), each activity weighted as physical progress weighs it
+ * (planned quantity × BOQ rate, or the quantity without a rate) and spread evenly over its planned dates, inclusive.
+ * Only activities with both dates count; null when none has them.
+ */
+export function plannedProgress(
+  activities: { plannedQty: string; boqItemId: string | null; plannedStart: string | null; plannedEnd: string | null }[],
+  rates: Map<string, Prisma.Decimal>,
+  today: string,
+): number | null {
+  const at = Date.parse(`${today}T00:00:00Z`) + 86_400_000;
+  let planned = new Prisma.Decimal(0);
+  let total = new Prisma.Decimal(0);
+  for (const a of activities) {
+    if (!a.plannedStart || !a.plannedEnd) continue;
+    const qty = new Prisma.Decimal(a.plannedQty);
+    const rate = a.boqItemId ? rates.get(a.boqItemId) : undefined;
+    const weight = rate ? rate.mul(qty) : qty;
+    const start = Date.parse(`${a.plannedStart}T00:00:00Z`);
+    const end = Date.parse(`${a.plannedEnd}T00:00:00Z`) + 86_400_000;
+    const share = end > start ? Math.min(1, Math.max(0, (at - start) / (end - start))) : at >= end ? 1 : 0;
+    planned = planned.add(weight.mul(share));
+    total = total.add(weight);
+  }
+  if (total.lte(0)) return null;
+  return Math.round(planned.div(total).mul(1000).toNumber()) / 10;
+}
 
 @Injectable()
 export class DashboardService {
@@ -104,6 +133,7 @@ export class DashboardService {
       projectsByType: [...byType.entries()].map(([type, count]) => ({ type, count })),
       pendingApprovals: pending.length,
       delayedActivities,
+      dueActivities: activities.length,
       dprsToday,
       ...(receivables
         ? { receivables: { outstanding: receivables.totals.outstanding, over90: receivables.totals.ageing.over90, openBills: receivables.openBills.length } }
@@ -137,9 +167,11 @@ export class DashboardService {
     ]);
     const boqTotal = boq.reduce((s, i) => s.add(i.amount), new Prisma.Decimal(0));
     const boqExecuted = boq.reduce((s, i) => s.add(new Prisma.Decimal(i.rate).mul(i.executedQty)), new Prisma.Decimal(0));
+    const rates = new Map(boq.map((i) => [i.id, new Prisma.Decimal(i.rate)]));
     return {
       project,
       physicalProgressPct: project.physicalProgressPct,
+      plannedProgressPct: plannedProgress(activities, rates, todayIn()),
       boqTotalAmount: money(boqTotal)!,
       boqExecutedAmount: money(boqExecuted)!,
       activitiesTotal: activities.length,

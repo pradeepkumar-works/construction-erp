@@ -9,6 +9,18 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-10-home-five-seconds',
+    date: '2026-10-20',
+    title: 'Home and project overview at a glance',
+    points: [
+      'My work puts what waits longest first: payments overdue, deliveries late, approvals waiting longest. Cards with nothing in them fold into one line.',
+      'The approvals count shows once, in My work and the sidebar; its home tile now shows progress against plan.',
+      'Figures read against their plan: done against planned, billed against the contract, cost against the work done.',
+      'A month with nothing in it yet says so in words, such as "No bills raised in Oct yet", instead of a red 100% fall, and an empty chart says what will appear there.',
+      'A project\'s overview opens with whether it is on track or behind, and why. Removing someone from the team is in the More menu by their name, and asks first.',
+    ],
+  },
+  {
     id: '2026-10-speed',
     date: '2026-10-20',
     title: 'Faster pages',
