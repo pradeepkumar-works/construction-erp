@@ -5,7 +5,8 @@ import { App, Checkbox, Form, Input, Select } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ClientDto } from '@erp/shared';
 import { GST_STATES, GSTIN_PATTERN, PAN_PATTERN, gstStateCode } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { CODE_INPUT, EMAIL_INPUT, PHONE_INPUT, emailRule, phoneRule, upper } from '@/components/form/inputs';
 
@@ -75,7 +76,7 @@ export function ClientFormModal({ open, client, onClose, onSaved }: { open: bool
       qc.invalidateQueries({ queryKey: ['projects'] });
       onSaved?.(c);
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
 
   return (

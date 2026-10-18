@@ -7,6 +7,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, ReceivableOrderDto, ReceivableRequestDto, StockEntryDto } from '@erp/shared';
 import { MATERIAL_PRIORITY_LABELS, itemSimilarity, matchLines, readNumber, readText } from '@erp/shared';
 import { api, errorMessage } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { uploadFile, useProjects, useReceivable, useReceivableOrders } from '@/lib/queries';
 import { formatDate, formatQty } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
@@ -173,7 +174,7 @@ export function ReceiptModal({
       qc.invalidateQueries({ queryKey: ['material-requests'] });
       qc.invalidateQueries({ queryKey: ['purchase-orders'] });
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   return (

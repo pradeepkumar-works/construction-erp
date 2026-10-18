@@ -5,7 +5,8 @@ import { Alert, App, Button, Modal, Select, Space, Steps, Table, Typography, Upl
 import type { UploadProps } from 'antd';
 import { DownloadOutlined, InboxOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { loadXlsx } from '@/lib/exportExcel';
 
@@ -149,7 +150,7 @@ export function BoqImportModal({ open, onClose, projectId }: { open: boolean; on
       reset();
       onClose();
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   const step = rows.length === 0 ? 0 : missingRequired.length > 0 ? 1 : 2;

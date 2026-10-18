@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Checkbox, DatePicker, Form, Input, Popconfirm, Select, Space, Typography, theme } from 'antd';
+import { App, Button, Checkbox, DatePicker, Form, Input, Select, Space, Typography, theme } from 'antd';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, DriverDto, EquipmentDocType, EquipmentDocumentDto, ExpiryState } from '@erp/shared';
 import { DOC_ALERT_DAYS, EQUIPMENT_DOC_TYPES, EQUIPMENT_DOC_TYPE_LABELS, EXPIRY_STATE_LABELS, canManageMaintenance } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useDrivers, useEquipmentDocuments } from '@/lib/queries';
 import { EquipmentSelect, useEquipmentItem } from '@/components/common/SearchSelect';
@@ -24,6 +25,7 @@ import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { PHONE_INPUT, phoneRule } from '@/components/form/inputs';
 import { ExpiryTag } from './maintenanceUi';
 import { themeFontSize } from '@/lib/theme';
+import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 interface DocValues {
   equipmentId: string;
@@ -128,9 +130,9 @@ export function PapersPanel() {
                   </Button>
                 ) : null}
                 <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openDoc(r)} aria-label="Edit" />
-                <Popconfirm title="Delete this paper?" okText="Delete" okButtonProps={{ danger: true }} onConfirm={() => removeDoc.mutate(r)}>
+                <ConfirmDelete what={`the ${EQUIPMENT_DOC_TYPE_LABELS[r.type].replace(/^[A-Z](?=[a-z])/, (c) => c.toLowerCase())} paper${r.number ? ` ${r.number}` : ''} of ${r.equipmentCode}`} onConfirm={() => removeDoc.mutateAsync(r)}>
                   <Button type="text" size="small" danger icon={<DeleteOutlined />} aria-label="Delete" />
-                </Popconfirm>
+                </ConfirmDelete>
               </>
             ) : null}
           </Space>
@@ -184,15 +186,14 @@ export function PapersPanel() {
       message.success(`${EQUIPMENT_DOC_TYPE_LABELS[d.type]} of ${d.equipmentCode} saved`);
       qc.invalidateQueries({ queryKey: ['maintenance'] });
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
   const removeDoc = useMutation({
     mutationFn: async (d: EquipmentDocumentDto) => (await api.delete(`/equipment-documents/${d.id}`)).data,
     onSuccess: () => {
-      message.success('Paper deleted');
       qc.invalidateQueries({ queryKey: ['maintenance'] });
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
 
   /* ---------- drivers ---------- */
@@ -223,9 +224,9 @@ export function PapersPanel() {
               render: (_: unknown, r: DriverDto) => (
                 <Space size="small">
                   <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openDriver(r)} aria-label="Edit" />
-                  <Popconfirm title={`Delete ${r.name}?`} description="Or edit and untick Active to keep the record" okText="Delete" okButtonProps={{ danger: true }} onConfirm={() => removeDriver.mutate(r)}>
+                  <ConfirmDelete what={`driver ${r.name}`} description="Or edit and untick Active to keep the record." onConfirm={() => removeDriver.mutateAsync(r)}>
                     <Button type="text" size="small" danger icon={<DeleteOutlined />} aria-label="Delete" />
-                  </Popconfirm>
+                  </ConfirmDelete>
                 </Space>
               ),
             } satisfies ListColumn<DriverDto>,
@@ -271,15 +272,14 @@ export function PapersPanel() {
       message.success(`${d.name} saved`);
       qc.invalidateQueries({ queryKey: ['maintenance'] });
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
   const removeDriver = useMutation({
     mutationFn: async (d: DriverDto) => (await api.delete(`/drivers/${d.id}`)).data,
     onSuccess: () => {
-      message.success('Driver deleted');
       qc.invalidateQueries({ queryKey: ['maintenance'] });
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
 
   const newButton = manager ? (

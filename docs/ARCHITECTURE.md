@@ -81,6 +81,18 @@ hold points use the latter on progress. The clients keep a few per-type maps (we
 `approvalTypeParam`; mobile `TYPE_ICON`, `EDIT_PATH`, `REVIEW_PATH`, `OUTBOX_PATH`, push routes) that
 TypeScript flags when a type is added.
 
+### Undo after a delete
+
+Deletes are hard deletes. A kind whose delete is cheap to reverse (a single row, or a row with its own lines, and no
+other effects) registers with `UndoService` (`src/common/undo.service.ts`) next to its delete, with the same access rule
+its delete checks; its delete then returns `{ ok: true, undo }`. `undo` is the deleted rows (and the links the delete
+cleared, such as `worker.vendorId`) sealed with AES-GCM under the server's secret, for the deleting user in their
+organisation, for a minute. `POST /undo { token }` runs the access rule again and puts the same rows back with the same
+ids in one transaction (409 when a row with the same unique name came in since), writing `RESTORED` to `AuditLog`. The
+web's `ConfirmDelete` offers Undo for ten seconds whenever a delete returns `undo`. Kinds: holidays, units, clients,
+vendors, saved views, workers, milestones, drivers, close-out lines, checklists, stock items and quotations. Submissions
+and payments are not undoable: their deletes have side effects (measurements freed, bills back to outstanding, stock).
+
 ## Planning and progress
 
 - `BoqItem` carries the contract quantity and rate. `Activity` is the unit of site reporting and

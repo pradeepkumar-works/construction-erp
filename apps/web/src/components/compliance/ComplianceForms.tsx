@@ -6,7 +6,8 @@ import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, ComplianceDocDetailDto, ComplianceDocDto, ComplianceDocKind } from '@erp/shared';
 import { COMPLIANCE_AMOUNT_LABELS, COMPLIANCE_CATEGORIES, COMPLIANCE_DOC_KINDS, COMPLIANCE_DOC_KIND_LABELS, COMPLIANCE_ISSUER_LABELS } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { formatDate } from '@/lib/format';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
@@ -125,7 +126,7 @@ export function ComplianceFormModal({ action, onClose, onDone }: { action: Compl
       qc.invalidateQueries({ queryKey: ['compliance'] });
       onDone?.(d.id);
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
 
   const full = mode === 'new' || mode === 'edit';

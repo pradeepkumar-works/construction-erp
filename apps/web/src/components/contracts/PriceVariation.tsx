@@ -6,7 +6,8 @@ import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { PriceVariationComponentDto, ProjectContractDto } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { formatDate } from '@/lib/format';
 import { FormShell } from '@/components/form/FormShell';
 
@@ -102,7 +103,7 @@ function PriceVariationModal({ open, contract, onClose }: { open: boolean; contr
       qc.setQueryData(['contract', contract.projectId], d);
       message.success('Price variation formula saved');
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
 
   const total = 100 - fixedShare(shares);

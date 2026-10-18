@@ -8,7 +8,8 @@ import dayjs, { type Dayjs } from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { RollCallDto, RollCallRowDto, StaffAttendanceStatus } from '@erp/shared';
 import { TIME_HHMM, WORKER_SKILL_LABELS, canManageWorkers, manDays, workerOvertime } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useActivities, useRollCall } from '@/lib/queries';
 import { formatDate } from '@/lib/format';
@@ -83,7 +84,7 @@ export function RollCallPanel({ projectId: fixedProject }: { projectId?: string 
       qc.invalidateQueries({ queryKey: ['workers'] });
       qc.invalidateQueries({ queryKey: ['attendance'] });
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   const badTime = changed.some((r) => {

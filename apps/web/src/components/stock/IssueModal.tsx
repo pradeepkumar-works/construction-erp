@@ -7,7 +7,8 @@ import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { StockEntryDto } from '@erp/shared';
 import { MAX_PAGE_SIZE, canViewWorkOrders } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useActivities, useAttendanceSuggestions, useProjects, useStockBalances, useWorkOrders } from '@/lib/queries';
 import { useAuth } from '@/lib/auth';
 import { formatQty } from '@/lib/format';
@@ -64,7 +65,7 @@ export function IssueModal({ open, onClose, projectId }: { open: boolean; onClos
       message.success(`${e.entryNo} saved: issued to ${e.issuedTo}`);
       qc.invalidateQueries({ queryKey: ['stock'] });
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   const chosen = new Set((watchedLines ?? []).map((l) => l?.itemId).filter(Boolean));

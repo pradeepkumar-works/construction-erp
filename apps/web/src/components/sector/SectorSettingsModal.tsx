@@ -4,7 +4,8 @@ import React, { useEffect } from 'react';
 import { App, Form, Input, Select, Typography } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { DEFAULT_FLOORS, formatChainage, parseChainage, sectorKinds, type ProjectDetail } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 
 interface FormValues {
@@ -49,7 +50,7 @@ export function SectorSettingsModal({ open, onClose, project }: { open: boolean;
       qc.invalidateQueries({ queryKey: ['projects'] });
       qc.invalidateQueries({ queryKey: ['sector', project.id] });
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
 
   return (

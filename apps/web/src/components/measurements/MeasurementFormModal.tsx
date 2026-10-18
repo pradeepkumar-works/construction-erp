@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { Alert, App, Button, Checkbox, DatePicker, Form, Input, InputNumber, Select, Typography } from 'antd';
+import { Alert, Button, Checkbox, DatePicker, Form, Input, InputNumber, Select, Typography } from 'antd';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { AttachmentDto, MeasurementSheetDto } from '@erp/shared';
 import { canViewWorkOrders, hasDimensions, measurementLineQty, measurementTotal } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE, useNotify } from '@/lib/notify';
 import { useBoq, useProjects, useWorkOrders } from '@/lib/queries';
 import { useAuth } from '@/lib/auth';
 import { formatINR, formatQty, toNumber } from '@/lib/format';
@@ -17,6 +18,7 @@ import { SectorInputs, sectorBody, sectorFormValues, typedLocation, type SectorF
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { QuantityInput } from '@/components/form/inputs';
+import { recordPage } from '@/components/approvals/queue';
 
 interface LineValues {
   description?: string;
@@ -45,8 +47,8 @@ const str = (v: number | null | undefined) => (v === null || v === undefined ? n
 /** Record a measurement sheet against a BOQ item, or (with `sheet`) fix a returned one and resubmit it. */
 export function MeasurementFormModal({ open, onClose, projectId, boqItemId, sheet }: { open: boolean; onClose: () => void; projectId?: string; boqItemId?: string; sheet?: MeasurementSheetDto | null }) {
   const [form] = Form.useForm<FormValues>();
-  const { message } = App.useApp();
   const qc = useQueryClient();
+  const notify = useNotify();
   const { data: projects } = useProjects();
   const editing = !!sheet;
   const fixedProject = sheet?.projectId ?? projectId;
@@ -99,10 +101,10 @@ export function MeasurementFormModal({ open, onClose, projectId, boqItemId, shee
       return sheet ? (await api.patch(`/measurements/${sheet.id}`, body)).data : (await api.post('/measurements', { projectId: v.projectId, ...body })).data;
     },
     onSuccess: (x: MeasurementSheetDto) => {
-      message.success(editing ? `${x.mbNo} resubmitted for approval` : `${x.mbNo} submitted for approval`);
+      notify.saved(editing ? `${x.mbNo} resubmitted for approval` : `${x.mbNo} submitted for approval`, recordPage('MEASUREMENT', x.id));
       qc.invalidateQueries();
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   return (

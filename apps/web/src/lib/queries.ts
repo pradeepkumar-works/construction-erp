@@ -198,6 +198,7 @@ import type {
 } from '@erp/shared';
 import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, NOTIFICATION_TYPES_VERSION, SEARCH_MIN_LENGTH } from '@erp/shared';
 import { api } from './api';
+import { failNoticeSaying } from './notify';
 
 export interface RoleDto {
   id: string;
@@ -1419,12 +1420,67 @@ export function useInvalidateAll() {
   return () => qc.invalidateQueries();
 }
 
+const REVIEWED_STATUS: Record<ReviewDecision, SubmissionStatus> = { APPROVE: 'APPROVED', REJECT: 'REJECTED', REQUEST_CHANGES: 'CHANGES_REQUESTED' };
+
+/** `data` with every entry whose id is in `ids` (in a list, a page or a record) given `status`; the same object when nothing changed. */
+function withStatus(data: unknown, ids: Set<string>, status: SubmissionStatus, depth = 0): unknown {
+  if (depth > 4 || !data || typeof data !== 'object') return data;
+  if (Array.isArray(data)) {
+    let changed = false;
+    const next = data.map((d) => {
+      const n = withStatus(d, ids, status, depth + 1);
+      if (n !== d) changed = true;
+      return n;
+    });
+    return changed ? next : data;
+  }
+  const o = data as Record<string, unknown>;
+  if (typeof o.id === 'string' && ids.has(o.id) && typeof o.status === 'string') return o.status === status ? o : { ...o, status };
+  let changed = false;
+  const next: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(o)) {
+    const n = withStatus(v, ids, status, depth + 1);
+    if (n !== v) changed = true;
+    next[k] = n;
+  }
+  return changed ? next : data;
+}
+
+/**
+ * Shows a decision at once (UX item 86): every cached list and record of these entries takes the new status, and they
+ * leave the Approvals inbox (and its count). Hands back what puts the cache as it was, for when the server refuses.
+ */
+export async function showReviewed(qc: ReturnType<typeof useQueryClient>, ids: string[], decision: ReviewDecision): Promise<() => void> {
+  const set = new Set(ids);
+  const status = REVIEWED_STATUS[decision];
+  const before: [QueryKey, unknown][] = [];
+  const pending = (key: QueryKey) => key[0] === 'approvals' && key[1] === 'pending';
+  const patch = (key: QueryKey, data: unknown) => (pending(key) && Array.isArray(data) ? (data.some((p: PendingApprovalDto) => set.has(p.id)) ? data.filter((p: PendingApprovalDto) => !set.has(p.id)) : data) : withStatus(data, set, status));
+  const hits = qc.getQueryCache().getAll().filter((q) => q.state.data !== undefined && patch(q.queryKey, q.state.data) !== q.state.data);
+  // A refetch already on its way would put the old status back.
+  await Promise.all(hits.map((q) => qc.cancelQueries({ queryKey: q.queryKey, exact: true })));
+  for (const q of hits) {
+    const data = qc.getQueryData(q.queryKey);
+    const next = patch(q.queryKey, data);
+    if (next === data) continue;
+    before.push([q.queryKey, data]);
+    qc.setQueryData(q.queryKey, next);
+  }
+  return () => before.forEach(([key, data]) => qc.setQueryData(key, data));
+}
+
 export function useReview() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (vars: { type: ApprovalTypeParam; id: string; decision: ReviewDecision; note?: string }) =>
+    /** `batch`: one of several approved together (bulk approve), which refetches once at the end. */
+    mutationFn: async (vars: { type: ApprovalTypeParam; id: string; decision: ReviewDecision; note?: string; batch?: boolean }) =>
       (await api.post(`/approvals/${vars.type}/${vars.id}/review`, { decision: vars.decision, note: vars.note || undefined })).data,
-    onSuccess: () => qc.invalidateQueries(),
+    // An approval shows straight away; a refusal puts it back, and then everything is read again. Sending back and
+    // rejecting wait for the server, since the dialog with the reason stays open until then.
+    onMutate: async (vars) => ({ rollback: vars.batch || vars.decision !== 'APPROVE' ? null : await showReviewed(qc, [vars.id], vars.decision) }),
+    onError: (_err, _vars, ctx) => ctx?.rollback?.(),
+    onSettled: (_d, _e, vars) => (vars.batch ? undefined : qc.invalidateQueries()),
+    meta: failNoticeSaying((v: { decision: ReviewDecision }) => (v.decision === 'APPROVE' ? 'Approved' : v.decision === 'REJECT' ? 'Rejected' : 'Changes requested')),
   });
 }
 

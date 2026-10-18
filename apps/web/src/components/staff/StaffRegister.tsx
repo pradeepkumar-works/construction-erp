@@ -8,7 +8,8 @@ import dayjs from 'dayjs';
 import type { StaffAttendanceStatus, StaffRegisterDto, StaffRegisterRowDto } from '@erp/shared';
 import { LEAVE_TYPE_LABELS, STAFF_ATTENDANCE_LABELS, STAFF_ATTENDANCE_STATUSES } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useProjectScope } from '@/lib/project-scope';
 import { useProjects, useStaffRegister } from '@/lib/queries';
 import { QueryError } from '@/components/common/QueryState';
@@ -60,7 +61,7 @@ export function StaffRegister() {
       qc.setQueryData(['staff', 'register', projectId, day], d);
       qc.invalidateQueries({ queryKey: ['staff'] });
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   const markAllPresent = () =>

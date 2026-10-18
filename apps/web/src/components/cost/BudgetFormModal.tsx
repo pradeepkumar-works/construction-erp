@@ -5,7 +5,8 @@ import { App, Button, Form, Input, InputNumber, Space, Table, Tooltip, Typograph
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { BudgetBoqItemDto, CostHead, ProjectBudgetDto } from '@erp/shared';
 import { COST_HEADS, COST_HEAD_LABELS } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { formatINR, formatQty, toNumber } from '@/lib/format';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
@@ -53,7 +54,7 @@ export function BudgetFormModal({ open, onClose, budget }: { open: boolean; onCl
       message.success('Budget saved');
       qc.invalidateQueries({ queryKey: ['cost'] });
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   const fillRates = () => {

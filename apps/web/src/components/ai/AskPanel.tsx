@@ -3,7 +3,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { App, Button, Drawer, Empty, Flex, Popconfirm, Result, Spin, Tag, Tooltip, Typography, theme } from 'antd';
+import { App, Button, Drawer, Empty, Flex, Result, Spin, Tag, Tooltip, Typography, theme } from 'antd';
 import { ArrowLeftOutlined, CloseOutlined, CopyOutlined, DeleteOutlined, DislikeFilled, DislikeOutlined, HistoryOutlined, LikeFilled, LikeOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
 import { Bubble, Prompts, Sender, Welcome } from '@ant-design/x';
 import type { BubbleItemType } from '@ant-design/x';
@@ -20,6 +20,7 @@ import { askShortcutLabel } from '@/lib/shortcuts';
 import { SparkleIcon } from './SparkleIcon';
 import { suggestionsFor } from './suggestions';
 import { DraftCard } from './drafts';
+import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 /** One line of the conversation; `pending` while the answer streams, `error` when it failed or was stopped. */
 interface ChatItem extends AiMessageDto {
@@ -284,22 +285,16 @@ export default function AskPanel({
                     >
                       <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.title}</span>
                     </Button>
-                    <Popconfirm
-                      title="Delete this conversation?"
-                      okText="Delete"
-                      okButtonProps={{ danger: true }}
-                      onConfirm={() =>
-                        deleteThread.mutateAsync(t.id).then(
-                          () => {
-                            if (t.id === threadId) newChat();
-                            message.success('Conversation deleted');
-                          },
-                          (e) => void message.error(errorMessage(e)),
-                        )
-                      }
+                    <ConfirmDelete
+                      what={`the conversation “${t.title}”`}
+                      notice="Conversation deleted"
+                      onConfirm={() => deleteThread.mutateAsync(t.id)}
+                      onDone={() => {
+                        if (t.id === threadId) newChat();
+                      }}
                     >
                       <Button type="text" size="small" icon={<DeleteOutlined />} aria-label={`Delete “${t.title}”`} />
-                    </Popconfirm>
+                    </ConfirmDelete>
                   </Flex>
                 </li>
               ))}

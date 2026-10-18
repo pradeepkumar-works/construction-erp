@@ -5,7 +5,8 @@ import { Alert, App, Checkbox, Modal, Table, Tag, Typography } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ApplyTemplateResultDto, ProjectDetail } from '@erp/shared';
 import { PROJECT_TYPE_LABELS, scheduleTemplate } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useActivityTemplates } from '@/lib/queries';
 import { formatDate, inSentence } from '@/lib/format';
 
@@ -30,7 +31,7 @@ export function ApplyTemplateModal({ open, onClose, project, existing }: { open:
       qc.invalidateQueries({ queryKey: ['projects'] });
       onClose();
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
 
   return (

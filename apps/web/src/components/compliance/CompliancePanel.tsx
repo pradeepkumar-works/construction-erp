@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Descriptions, Drawer, Popconfirm, Segmented, Select, Space, Statistic, Table, Tag } from 'antd';
+import { Button, Descriptions, Drawer, Segmented, Select, Space, Statistic, Table, Tag } from 'antd';
 import type { TableProps } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -18,7 +18,8 @@ import {
   canManageCompliance,
 } from '@erp/shared';
 import { useProjectScope } from '@/lib/project-scope';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useComplianceDoc, useComplianceDocs } from '@/lib/queries';
 import { formatDate, formatINR } from '@/lib/format';
@@ -31,6 +32,7 @@ import { themeColor, themeFontSize } from '@/lib/theme';
 import { ExpiryTag } from '@/components/maintenance/maintenanceUi';
 import { RecordLink } from '@/components/record/RecordLink';
 import { ComplianceFormModal, type ComplianceAction } from './ComplianceForms';
+import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 const KIND_COLORS: Record<ComplianceDocKind, string> = { BANK_GUARANTEE: 'blue', EMD: 'cyan', INSURANCE: 'purple', LICENCE: 'geekblue' };
 const STATUS_COLORS: Record<ComplianceDocStatus, string> = { ACTIVE: 'green', RENEWED: 'default', RELEASED: 'default', INVOKED: 'red' };
@@ -60,7 +62,6 @@ function StandTag({ d }: { d: ComplianceDocDto }) {
 export function CompliancePanel({ initialId }: { initialId?: string }) {
   const { user } = useAuth();
   const keeper = !!user && canManageCompliance(user.roleKey);
-  const { message } = App.useApp();
   const qc = useQueryClient();
   const [kind, setKind] = useState<ComplianceDocKind | 'ALL'>('ALL');
   const [status, setStatus] = useState<ComplianceDocStatus | 'ALL'>('ACTIVE');
@@ -76,11 +77,10 @@ export function CompliancePanel({ initialId }: { initialId?: string }) {
   const remove = useMutation({
     mutationFn: async (id: string) => (await api.delete(`/compliance-docs/${id}`)).data,
     onSuccess: () => {
-      message.success('Entry deleted');
       qc.invalidateQueries({ queryKey: ['compliance'] });
       setOpenId(null);
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
 
   /** Enter and Space both press a role="button" element, as they do a real button. */
@@ -250,11 +250,11 @@ export function CompliancePanel({ initialId }: { initialId?: string }) {
                 </>
               ) : null}
               {!d.renewedById ? (
-                <Popconfirm title="Delete this entry?" description={d.renewedFromId ? 'The entry it renewed becomes active again.' : undefined} onConfirm={() => remove.mutate(d.id)}>
+                <ConfirmDelete what={d.reference} description={d.renewedFromId ? 'The entry it renewed becomes active again.' : undefined} onConfirm={() => remove.mutateAsync(d.id)}>
                   <Button size="small" danger type="text">
                     Delete
                   </Button>
-                </Popconfirm>
+                </ConfirmDelete>
               ) : null}
             </Space>
           ) : null

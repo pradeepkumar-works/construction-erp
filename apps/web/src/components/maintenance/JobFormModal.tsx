@@ -6,7 +6,8 @@ import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, MaintenanceJobDto, MaintenanceKind } from '@erp/shared';
 import { MAINTENANCE_KINDS, MAINTENANCE_KIND_LABELS, canManageMaintenance } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { EquipmentSelect } from '@/components/common/SearchSelect';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
@@ -79,7 +80,7 @@ export function JobFormModal({
       message.success(editing ? `${j.jobNo} saved` : j.kind === 'BREAKDOWN' ? `${j.jobNo} reported` : `${j.jobNo} raised`);
       qc.invalidateQueries({ queryKey: ['maintenance'] });
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
 
   const breakdown = (watchedKind ?? kind) !== 'SERVICE';

@@ -4,7 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { App, Button, Form, Input, Radio, Select, Switch } from 'antd';
 import { MIN_PASSWORD_LENGTH, type CreateUserResultDto, type RoleKey, type UserSummary } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useRoles } from '@/lib/queries';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { EMAIL_INPUT, PHONE_INPUT, emailRule, phoneRule } from '@/components/form/inputs';
@@ -54,7 +55,7 @@ export function UserFormModal({ open, onClose, user, onInvited }: { open: boolea
       if (!isEdit && created.invite) onInvited?.(created);
       qc.invalidateQueries({ queryKey: ['users'] });
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   return (

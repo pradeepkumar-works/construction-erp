@@ -20,6 +20,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
+import { UndoService } from '../common/undo.service';
 import { dateOnly, dec, iso, money, parseDate } from '../common/serialize';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import { todayIn } from '../notifications/time';
@@ -46,7 +47,10 @@ export class WorkersService {
     private access: ProjectAccessService,
     private audit: AuditService,
     private attendance: AttendanceService,
-  ) {}
+    private undo: UndoService,
+  ) {
+    undo.register('WORKER', { entityType: 'WORKER', check: (user, row) => this.access.assertCanManageWorkers(user, (row.projectId as string | null) ?? null) });
+  }
 
   private toDto(r: Row, lastSeen: Date | null): WorkerDto {
     return {
@@ -197,9 +201,10 @@ export class WorkersService {
     if (!row) throw new NotFoundException('Worker not found');
     await this.access.assertCanManageWorkers(user, row.projectId);
     if (row._count.attendance) throw new ConflictException('This worker has attendance on record. Mark them as left instead of deleting them.');
+    const raw = await this.prisma.worker.findUniqueOrThrow({ where: { id } });
     await this.prisma.worker.delete({ where: { id } });
     await this.audit.log(user, 'WORKER', id, 'DELETED', `${row.workerNo} ${row.name}`);
-    return { ok: true };
+    return { ok: true, undo: this.undo.offer(user, 'WORKER', { rows: [{ model: 'worker', data: raw }] }) };
   }
 
   /** On the roll call of a project on a day: posted there and working on that day, or already marked there. */

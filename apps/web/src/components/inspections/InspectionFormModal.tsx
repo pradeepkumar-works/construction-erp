@@ -1,16 +1,18 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { Alert, App, DatePicker, Form, Input, Select, Typography } from 'antd';
+import { Alert, DatePicker, Form, Input, Select, Typography } from 'antd';
 import dayjs from 'dayjs';
 import type { AttachmentDto, InspectionDto } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE, useNotify } from '@/lib/notify';
 import { useActivities, useChecklists, useProjects } from '@/lib/queries';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { editActionLabel } from '@/components/common/EditResubmitButton';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { themeFontSize } from '@/lib/theme';
+import { recordPage } from '@/components/approvals/queue';
 
 interface FormValues {
   projectId: string;
@@ -25,8 +27,8 @@ interface FormValues {
 /** Request an inspection of an activity at a location, or (with `inspection`) change a returned request and request it again. */
 export function InspectionFormModal({ open, onClose, projectId, inspection }: { open: boolean; onClose: () => void; projectId?: string; inspection?: InspectionDto | null }) {
   const [form] = Form.useForm<FormValues>();
-  const { message } = App.useApp();
   const qc = useQueryClient();
+  const notify = useNotify();
   const { data: projects } = useProjects();
   const { data: checklists } = useChecklists();
   const editing = !!inspection;
@@ -74,10 +76,10 @@ export function InspectionFormModal({ open, onClose, projectId, inspection }: { 
       return inspection ? (await api.patch(`/inspections/${inspection.id}`, body)).data : (await api.post('/inspections', { projectId: v.projectId, ...body })).data;
     },
     onSuccess: (x: InspectionDto) => {
-      message.success(`${x.inspectionNo} ${editing ? 'requested again' : 'requested'}`);
+      notify.saved(`${x.inspectionNo} ${editing ? 'requested again' : 'requested'}`, recordPage('INSPECTION', x.id));
       qc.invalidateQueries();
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   return (

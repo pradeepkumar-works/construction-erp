@@ -2,11 +2,12 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { App, Button, Descriptions, Divider, Drawer, Input, Modal, Popconfirm, Skeleton, Space, Timeline, Typography } from 'antd';
+import { App, Button, Descriptions, Divider, Drawer, Input, Modal, Skeleton, Space, Timeline, Typography } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { RiskDto } from '@erp/shared';
 import { DELAY_PARTY_LABELS, RISK_CATEGORY_LABELS, RISK_RATING_LABELS, canApprove, canEditRisk, canViewLetters, LETTER_DIRECTION_LABELS } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useLetters, useRisk, useRiskHistory } from '@/lib/queries';
 import { formatDate, formatDateTime } from '@/lib/format';
@@ -14,6 +15,7 @@ import { QueryError } from '@/components/common/QueryState';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { KindTag, RiskStatusTag, ScoreTag } from './riskUi';
 import { themeColor, themeFontSize } from '@/lib/theme';
+import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 const HISTORY_COLORS: Record<string, string> = { CREATED: 'gray', UPDATED: 'blue', CLOSED: 'green', REOPENED: 'orange', DELETED: 'red' };
 
@@ -36,16 +38,15 @@ export function RiskDrawer({ id, open, onClose, onEdit }: { id: string | null; o
       qc.invalidateQueries({ queryKey: ['risks'] });
       setClosing(false);
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
   const remove = useMutation({
     mutationFn: async () => (await api.delete(`/risks/${id}`)).data,
     onSuccess: () => {
-      message.success('Entry deleted');
       qc.invalidateQueries({ queryKey: ['risks'] });
       onClose();
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
 
   return (
@@ -85,11 +86,11 @@ export function RiskDrawer({ id, open, onClose, onEdit }: { id: string | null; o
               </Button>
             )}
             {user && canApprove(user.roleKey) ? (
-              <Popconfirm title="Delete this entry?" description="Only for an entry raised by mistake. A resolved one should be closed." onConfirm={() => remove.mutate()}>
+              <ConfirmDelete what={data.riskNo} description="Only for an entry raised by mistake. A resolved one should be closed." onConfirm={() => remove.mutateAsync()}>
                 <Button size="small" danger loading={remove.isPending}>
                   Delete
                 </Button>
-              </Popconfirm>
+              </ConfirmDelete>
             ) : null}
           </Space>
         ) : null

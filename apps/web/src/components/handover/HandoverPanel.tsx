@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Checkbox, Descriptions, Drawer, Empty, Flex, Input, Popconfirm, Progress, Segmented, Select, Space, Statistic, Table, Tag, Typography, theme } from 'antd';
+import { Button, Checkbox, Descriptions, Drawer, Empty, Flex, Input, Progress, Segmented, Select, Space, Statistic, Table, Tag, Typography, theme } from 'antd';
 import type { TableProps } from 'antd';
 import { CheckCircleOutlined, DeleteOutlined, PlusOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -18,6 +18,7 @@ import {
   canReportDefect,
 } from '@erp/shared';
 import { api, errorMessage } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useDefect, useDefects, useHandover } from '@/lib/queries';
 import { formatDate, formatINR } from '@/lib/format';
@@ -27,6 +28,7 @@ import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { PhotosWithChecks } from '@/components/photo-checks/PhotoChecksSection';
 import { DefectFormModal, HandoverFormModal, type DefectAction } from './HandoverForms';
 import { Section } from '@/components/common/Section';
+import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 const STATUS_COLORS: Record<DefectStatus, string> = { OPEN: 'orange', FIXED: 'blue', CLOSED: 'green' };
 const PRIORITY_COLORS: Record<DefectPriority, string> = { LOW: 'default', MEDIUM: 'gold', HIGH: 'red' };
@@ -63,7 +65,6 @@ export function HandoverPanel({ projectId, members, initialDefectId }: { project
   const manager = !!role && canManageHandover(role);
   const reporter = !!role && canReportDefect(role);
   const closer = !!role && canCloseDefect(role);
-  const { message } = App.useApp();
   const { token } = theme.useToken();
   const qc = useQueryClient();
   const summary = useHandover(projectId);
@@ -84,21 +85,19 @@ export function HandoverPanel({ projectId, members, initialDefectId }: { project
   const removeHandover = useMutation({
     mutationFn: async () => (await api.delete<HandoverSummaryDto>(`/projects/${projectId}/handover`)).data,
     onSuccess: (s) => {
-      message.success('Completion removed; the project is active again');
       qc.setQueryData(['handover', projectId], s);
       qc.invalidateQueries({ queryKey: ['projects'] });
       qc.invalidateQueries({ queryKey: ['project', projectId] });
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
   const removeDefect = useMutation({
     mutationFn: async (id: string) => (await api.delete(`/defects/${id}`)).data,
     onSuccess: () => {
-      message.success('Deleted');
       setOpenId(null);
       refresh();
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
 
   if (summary.isLoading) return <Loading />;
@@ -171,11 +170,11 @@ export function HandoverPanel({ projectId, members, initialDefectId }: { project
                 {h ? 'Edit' : 'Record completion'}
               </Button>
               {h ? (
-                <Popconfirm title="Remove the completion?" description="The project goes back to active." onConfirm={() => removeHandover.mutate()}>
+                <ConfirmDelete verb="Remove" what="the completion" description="The project goes back to active." notice="Completion removed; the project is active again" onConfirm={() => removeHandover.mutateAsync()}>
                   <Button size="small" type="text" danger>
                     Remove
                   </Button>
-                </Popconfirm>
+                </ConfirmDelete>
               ) : null}
             </Space>
           ) : null
@@ -320,9 +319,9 @@ export function HandoverPanel({ projectId, members, initialDefectId }: { project
                 </Button>
               ) : null}
               {closer ? (
-                <Popconfirm title="Delete this entry?" onConfirm={() => removeDefect.mutate(d.id)}>
+                <ConfirmDelete what={`${d.defectNo} “${d.title}”`} onConfirm={() => removeDefect.mutateAsync(d.id)}>
                   <Button size="small" type="text" danger icon={<DeleteOutlined />} aria-label="Delete" />
-                </Popconfirm>
+                </ConfirmDelete>
               ) : null}
             </Space>
           ) : null
@@ -386,23 +385,21 @@ export function HandoverPanel({ projectId, members, initialDefectId }: { project
 
 /** The close-out checklist, by category: tick lines off, add or remove project-specific ones. */
 function CloseoutChecklist({ projectId, items, editable, doneCount }: { projectId: string; items: CloseoutItemDto[]; editable: boolean; doneCount: number }) {
-  const { message } = App.useApp();
   const { token } = theme.useToken();
   const qc = useQueryClient();
   const [adding, setAdding] = useState<{ category: CloseoutCategory; title: string }>({ category: 'SITE', title: '' });
   const refresh = () => qc.invalidateQueries({ queryKey: ['handover', projectId] });
-  const onError = (e: unknown) => message.error(errorMessage(e));
 
-  const start = useMutation({ mutationFn: async () => (await api.post(`/projects/${projectId}/closeout/defaults`)).data, onSuccess: refresh, onError });
-  const toggle = useMutation({ mutationFn: async (v: { id: string; done: boolean }) => (await api.patch(`/closeout/${v.id}`, { done: v.done })).data, onSuccess: refresh, onError });
-  const remove = useMutation({ mutationFn: async (id: string) => (await api.delete(`/closeout/${id}`)).data, onSuccess: refresh, onError });
+  const start = useMutation({ mutationFn: async () => (await api.post(`/projects/${projectId}/closeout/defaults`)).data, onSuccess: refresh, meta: FAIL_NOTICE });
+  const toggle = useMutation({ mutationFn: async (v: { id: string; done: boolean }) => (await api.patch(`/closeout/${v.id}`, { done: v.done })).data, onSuccess: refresh, meta: FAIL_NOTICE });
+  const remove = useMutation({ mutationFn: async (id: string) => (await api.delete(`/closeout/${id}`)).data, onSuccess: refresh, meta: FAIL_NOTICE });
   const add = useMutation({
     mutationFn: async () => (await api.post(`/projects/${projectId}/closeout`, { category: adding.category, title: adding.title.trim() })).data,
     onSuccess: () => {
       setAdding((a) => ({ ...a, title: '' }));
       refresh();
     },
-    onError,
+    meta: FAIL_NOTICE,
   });
 
   return (
@@ -442,9 +439,9 @@ function CloseoutChecklist({ projectId, items, editable, doneCount }: { projectI
                       ) : null}
                       <span style={{ flex: 1 }} />
                       {editable ? (
-                        <Popconfirm title="Remove this line?" onConfirm={() => remove.mutate(i.id)}>
+                        <ConfirmDelete verb="Remove" what={`“${i.title}” from the checklist`} notice={`“${i.title}” removed`} onConfirm={() => remove.mutateAsync(i.id)}>
                           <Button size="small" type="text" icon={<DeleteOutlined />} aria-label={`Remove ${i.title}`} />
-                        </Popconfirm>
+                        </ConfirmDelete>
                       ) : null}
                     </Flex>
                   ))}

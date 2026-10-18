@@ -6,6 +6,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
+import { UndoService } from '../common/undo.service';
 import { dateOnly, iso, parseDate, pct } from '../common/serialize';
 import { todayIn } from '../notifications/time';
 import { CreateMilestoneDto, FreezeBaselineDto, UpdateMilestoneDto } from './schedule.dto';
@@ -19,7 +20,14 @@ const maxDate = (dates: (string | null)[]) => dates.reduce<string | null>((m, d)
  */
 @Injectable()
 export class ScheduleService {
-  constructor(private prisma: PrismaService, private access: ProjectAccessService, private audit: AuditService) {}
+  constructor(
+    private prisma: PrismaService,
+    private access: ProjectAccessService,
+    private audit: AuditService,
+    private undo: UndoService,
+  ) {
+    undo.register('MILESTONE', { entityType: 'MILESTONE', check: (user, row) => this.access.assertCanAccessProject(user, row.projectId as string) });
+  }
 
   private toMilestoneDto(m: Prisma.MilestoneGetPayload<object>, today: string): MilestoneDto {
     const dueDate = dateOnly(m.dueDate)!;
@@ -176,9 +184,10 @@ export class ScheduleService {
 
   async deleteMilestone(user: RequestUser, projectId: string, id: string) {
     await this.access.assertCanAccessProject(user, projectId);
+    const row = await this.prisma.milestone.findFirst({ where: { id, projectId } });
     const { count } = await this.prisma.milestone.deleteMany({ where: { id, projectId } });
-    if (!count) throw new NotFoundException('Milestone not found');
+    if (!count || !row) throw new NotFoundException('Milestone not found');
     await this.audit.log(user, 'MILESTONE', id, 'DELETED');
-    return { ok: true };
+    return { ok: true, undo: this.undo.offer(user, 'MILESTONE', { rows: [{ model: 'milestone', data: row }] }) };
   }
 }

@@ -1,18 +1,20 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { Alert, App, DatePicker, Form, Input, InputNumber, Select } from 'antd';
+import { Alert, DatePicker, Form, Input, InputNumber, Select } from 'antd';
 import dayjs from 'dayjs';
 import type { AiDraftDto, AttachmentDto, ProgressEntryDto } from '@erp/shared';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { QuantityInput } from '@/components/form/inputs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE, useNotify } from '@/lib/notify';
 import { useActivities, useProjects } from '@/lib/queries';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { editActionLabel } from '@/components/common/EditResubmitButton';
 import { aiFlagItem, draftDate } from '@/components/ai/drafts';
 import { SectorInputs, sectorBody, sectorFormValues, typedLocation, type SectorFormValues } from '@/components/sector/SectorInputs';
+import { recordPage } from '@/components/approvals/queue';
 
 interface FormValues extends SectorFormValues {
   projectId: string;
@@ -32,8 +34,8 @@ interface FormValues extends SectorFormValues {
  */
 export function ProgressFormModal({ open, onClose, projectId, defaultProjectId, entry, prefill }: { open: boolean; onClose: () => void; projectId?: string; /** A new entry starts on this project (the header's), still changeable. */ defaultProjectId?: string; entry?: ProgressEntryDto | null; /** Filled in by Ask Nirmaan (AI item 71) */ prefill?: AiDraftDto | null }) {
   const [form] = Form.useForm<FormValues>();
-  const { message } = App.useApp();
   const qc = useQueryClient();
+  const notify = useNotify();
   const { data: projects } = useProjects();
   const editing = !!entry;
   const fixedProject = entry?.projectId ?? projectId;
@@ -86,11 +88,11 @@ export function ProgressFormModal({ open, onClose, projectId, defaultProjectId, 
       };
       return entry ? (await api.patch(`/progress/${entry.id}`, body)).data : (await api.post('/progress', { projectId: v.projectId, ...body })).data;
     },
-    onSuccess: () => {
-      message.success(editing ? 'Progress entry resubmitted for approval' : 'Progress entry submitted for approval');
+    onSuccess: (x: { id: string }) => {
+      notify.saved(editing ? 'Progress entry resubmitted for approval' : 'Progress entry submitted for approval', recordPage('PROGRESS', x.id));
       qc.invalidateQueries();
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   return (
