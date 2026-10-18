@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { DELAY_PARTY_LABELS, RISK_CATEGORY_LABELS, RISK_STATUS_LABELS, canRaiseRisk, riskLevel, type DelaySuggestionDto, type Paginated, type RiskDto, type RiskKind, type RiskSummaryDto } from '@erp/shared';
 import { useAuth } from '../src/auth/AuthContext';
 import { useFetch } from '../src/api/hooks';
-import { Button, Card, Chips, EmptyState, ErrorBanner, Loading, Pill, Screen, SectionTitle, Select, Stat } from '../src/components';
+import { Button, Card, Chips, EmptyState, ErrorBanner, Loading, Pill, Screen, SectionTitle, Select, Stat, Touchable } from '../src/components';
 import { LEVEL_TONE, RISK_STATUS_TONE } from '../src/components/riskTone';
 import { useProjectOptions } from '../src/forms/common';
-import { colors, radius, spacing, typography } from '../src/theme';
+import { colors, radius, spacing, touch, typography } from '../src/theme';
 import { formatDate } from '../src/utils/format';
 import { useT } from '../src/i18n/LanguageContext';
 
@@ -69,8 +69,9 @@ export default function RisksScreen() {
       {mayRaise && suggestions.data?.length ? (
         <Card title={t('Behind schedule, no delay recorded')}>
           {suggestions.data.slice(0, 5).map((x) => (
-            <Pressable
+            <Touchable
               key={x.activityId}
+              accessibilityRole="button"
               style={styles.suggestion}
               onPress={() => router.push(`/risk/new?kind=DELAY&projectId=${x.projectId}&activityId=${x.activityId}&title=${encodeURIComponent(t('{activity} behind schedule', { activity: x.activityName }))}`)}
             >
@@ -81,7 +82,7 @@ export default function RisksScreen() {
                 </Text>
               </View>
               <Text style={styles.link}>{t('Record')}</Text>
-            </Pressable>
+            </Touchable>
           ))}
         </Card>
       ) : null}
@@ -96,7 +97,7 @@ export default function RisksScreen() {
           {rows.map((r) => {
             const tone = LEVEL_TONE[riskLevel(r.score)];
             return (
-              <Pressable key={r.id} onPress={() => router.push(`/risk/${r.id}`)} style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
+              <Touchable key={r.id} accessibilityRole="button" onPress={() => router.push(`/risk/${r.id}`)} style={styles.row}>
                 <View style={[styles.score, { backgroundColor: tone.bg }]}>
                   <Text style={[styles.scoreText, { color: tone.fg }]}>{r.score}</Text>
                 </View>
@@ -118,7 +119,7 @@ export default function RisksScreen() {
                   {r.status !== 'OPEN' ? <Pill text={t(RISK_STATUS_LABELS[r.status])} {...RISK_STATUS_TONE[r.status]} /> : null}
                   <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
                 </View>
-              </Pressable>
+              </Touchable>
             );
           })}
         </>
@@ -131,9 +132,9 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   actions: { flexDirection: 'row', gap: spacing.sm },
   stats: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
-  suggestion: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
+  suggestion: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border, minHeight: touch.min },
   link: { color: colors.primary, fontWeight: '700' },
-  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md, marginBottom: spacing.sm },
+  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md, marginBottom: spacing.sm, minHeight: touch.min },
   pressed: { opacity: 0.7 },
   score: { minWidth: 44, minHeight: 44, paddingHorizontal: 4, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
   scoreText: { fontSize: 18, fontWeight: '800' },

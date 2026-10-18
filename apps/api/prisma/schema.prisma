@@ -2174,6 +2174,8 @@ model Attachment {
   textIndexedAt     DateTime?
   /// Pages with text found; 0 for a scanned PDF or one that could not be read
   textPages         Int?
+  /// Why the PDF could not be read, when it could not (shown on its page view); null when it was read
+  textError         String?
   createdAt         DateTime           @default(now())
 
   pages DocumentPage[]

@@ -93,15 +93,29 @@ async function demo(): Promise<number> {
   try {
     // Read from scratch, as the first search after filing does.
     await prisma.documentPage.deleteMany({ where: { attachmentId: { in: files.map((f) => f.id) } } });
-    await prisma.attachment.updateMany({ where: { id: { in: files.map((f) => f.id) } }, data: { textIndexedAt: null, textPages: null } });
+    await prisma.attachment.updateMany({ where: { id: { in: files.map((f) => f.id) } }, data: { textIndexedAt: null, textPages: null, textError: null } });
     const md = as('md@demo.com');
     const askOnly = await search.search(md, { query: 'liquidated damages', projectId: projectOf.get('RD-AGR-01'), read: false });
     check("Ask's search reads nothing itself and says what is unread", !askOnly.hits.some((h) => h.title.startsWith('RD-AGR-01')) && askOnly.unread >= 1, JSON.stringify({ hits: askOnly.hits.length, unread: askOnly.unread }));
     const first = await search.search(md, { query: 'liquidated damages', projectId: projectOf.get('RD-AGR-01') });
     check('the first search reads the filed contract', first.hits.some((h) => h.title.startsWith('RD-AGR-01') && h.page === 4), JSON.stringify(first.hits.map((h) => [h.title, h.page])));
     await search.readPending(org.id, null, 20);
-    const read = await prisma.attachment.findMany({ where: { id: { in: files.map((f) => f.id) } }, select: { textPages: true } });
-    check('every contract is read, a row per page', read.every((r) => (r.textPages ?? 0) >= 5), JSON.stringify(read));
+    const read = await prisma.attachment.findMany({ where: { id: { in: files.map((f) => f.id) } }, select: { textPages: true, textError: true } });
+    check('every contract is read, a row per page', read.every((r) => (r.textPages ?? 0) >= 5 && !r.textError), JSON.stringify(read));
+
+    // A file that failed is tried again a day later, not on every search.
+    const [failedRecently, failedYesterday] = files;
+    const hour = 60 * 60 * 1000;
+    await prisma.attachment.update({ where: { id: failedRecently.id }, data: { textError: 'test failure', textPages: 0, textIndexedAt: new Date(Date.now() - hour) } });
+    await prisma.attachment.update({ where: { id: failedYesterday.id }, data: { textError: 'test failure', textPages: 0, textIndexedAt: new Date(Date.now() - 25 * hour) } });
+    await search.readPending(org.id, null, 20);
+    const retried = await prisma.attachment.findMany({ where: { id: { in: [failedRecently.id, failedYesterday.id] } }, select: { id: true, textPages: true, textError: true } });
+    const recent = retried.find((r) => r.id === failedRecently.id);
+    const older = retried.find((r) => r.id === failedYesterday.id);
+    check('a file that failed an hour ago waits', recent?.textError === 'test failure', JSON.stringify(recent));
+    check('a file that failed a day ago is read again', !older?.textError && (older?.textPages ?? 0) >= 5, JSON.stringify(older));
+    await prisma.attachment.update({ where: { id: failedRecently.id }, data: { textIndexedAt: null, textError: null } });
+    await search.readPending(org.id, null, 20);
 
     let top1 = 0;
     let top3 = 0;

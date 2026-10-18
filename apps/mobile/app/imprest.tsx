@@ -4,11 +4,12 @@ import { IMPREST_ENTRY_KIND_LABELS, IMPREST_ENTRY_STATUS_LABELS, type ImprestDet
 import { useApi, useFetch } from '../src/api/hooks';
 import { errorMessage } from '../src/api/client';
 import { Button, Card, EmptyState, ErrorBanner, Input, KeyValue, Loading, Pill, ProgressBar, Screen, SectionTitle } from '../src/components';
-import { colors, spacing, typography } from '../src/theme';
-import { formatDate } from '../src/utils/format';
+import { colors, spacing, typography, toneIcon } from '../src/theme';
+import { formatDate, formatMoney } from '../src/utils/format';
 import { useT } from '../src/i18n/LanguageContext';
+import { useFieldChain } from '../src/forms/keyboard';
 
-const rupees = (v: string | number) => `₹${Number(v).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const rupees = (v: string | number) => formatMoney(v);
 
 /**
  * The site in-charge's imprests (v4 item 45): the float, the cash in hand after their cash expenses, and asking for
@@ -30,6 +31,7 @@ export default function ImprestScreen() {
 function ImprestCard({ imprest: i, onChanged }: { imprest: ImprestDto; onChanged: () => void }) {
   const api = useApi();
   const t = useT();
+  const field = useFieldChain();
   const [asking, setAsking] = useState(false);
   const [amount, setAmount] = useState('');
   const [reason, setReason] = useState('');
@@ -69,7 +71,7 @@ function ImprestCard({ imprest: i, onChanged }: { imprest: ImprestDto; onChanged
       </View>
       {i.openRequest ? (
         <View style={styles.request}>
-          <Pill text={t(IMPREST_ENTRY_STATUS_LABELS[i.openRequest.status])} fg={colors.warning} bg={colors.warningSoft} />
+          <Pill text={t(IMPREST_ENTRY_STATUS_LABELS[i.openRequest.status])} fg={colors.warning} bg={colors.warningSoft} icon={toneIcon.waiting} />
           <Text style={typography.body}>
             {t('{kind}: {amount} on {date}', { kind: t(IMPREST_ENTRY_KIND_LABELS[i.openRequest.kind]), amount: rupees(i.openRequest.amount), date: formatDate(i.openRequest.date) })}
             {i.openRequest.reason ? `. ${i.openRequest.reason}` : ''}
@@ -78,8 +80,8 @@ function ImprestCard({ imprest: i, onChanged }: { imprest: ImprestDto; onChanged
       ) : asking ? (
         <View>
           <ErrorBanner message={error} />
-          <Input label={t('Amount (₹)')} value={amount} onChangeText={(v) => setAmount(v.replace(/[^0-9.]/g, ''))} keyboardType="decimal-pad" placeholder={Number(i.topUpDue) ? i.topUpDue : '0'} hint={t('Empty: what brings the cash back to the float')} />
-          <Input label={t('What for')} value={reason} onChangeText={setReason} placeholder={t("Diesel for the DG, the week's tea")} />
+          <Input {...field()} label={t('Amount (₹)')} value={amount} onChangeText={(v) => setAmount(v.replace(/[^0-9.]/g, ''))} keyboardType="decimal-pad" placeholder={Number(i.topUpDue) ? i.topUpDue : '0'} hint={t('Empty: what brings the cash back to the float')} />
+          <Input {...field({ done: () => void ask() })} label={t('What for')} value={reason} onChangeText={setReason} placeholder={t("Diesel for the DG, the week's tea")} />
           <View style={styles.actions}>
             <Button title={t('Cancel')} variant="ghost" onPress={() => setAsking(false)} />
             <Button title={t('Ask for top-up')} loading={busy} onPress={() => void ask()} />

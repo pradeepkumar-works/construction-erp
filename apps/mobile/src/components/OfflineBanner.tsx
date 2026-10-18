@@ -1,9 +1,10 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useOffline } from '../offline/OfflineContext';
-import { colors, radius, spacing } from '../theme';
+import { colors, fontSize, maxFontScale, radius, spacing, touch } from '../theme';
+import { Touchable } from './Touchable';
 import { useT } from '../i18n/LanguageContext';
 
 /** Shows when the phone is offline or has entries waiting in the outbox; taps through to the outbox. */
@@ -18,15 +19,17 @@ export function OfflineBanner() {
   if (failedCount) parts.push(t('{n} need attention', { n: failedCount }));
   const tone = failedCount ? colors.danger : colors.warning;
   return (
-    <Pressable onPress={() => router.push('/outbox')} style={[styles.banner, { borderColor: tone }]} accessibilityRole="button">
+    <Touchable onPress={() => router.push('/outbox')} style={[styles.banner, { borderColor: tone }]} accessibilityRole="button" accessibilityLabel={parts.join(', ')} accessibilityHint={t('Opens the outbox')}>
       <Ionicons name={online ? 'cloud-upload-outline' : 'cloud-offline-outline'} size={20} color={tone} />
-      <Text style={[styles.text, { color: tone }]}>{parts.join(' · ')}</Text>
+      <Text style={[styles.text, { color: tone }]} maxFontSizeMultiplier={maxFontScale}>
+        {parts.join(' · ')}
+      </Text>
       <Ionicons name="chevron-forward" size={18} color={tone} />
-    </Pressable>
+    </Touchable>
   );
 }
 
 const styles = StyleSheet.create({
-  banner: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md, borderRadius: radius.md, borderWidth: 1, backgroundColor: colors.warningSoft, marginBottom: spacing.md },
-  text: { flex: 1, fontWeight: '700', fontSize: 14 },
+  banner: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md, minHeight: touch.min, borderRadius: radius.md, borderWidth: 1, backgroundColor: colors.warningSoft, marginBottom: spacing.md },
+  text: { flex: 1, fontWeight: '700', fontSize: fontSize.secondary },
 });

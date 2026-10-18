@@ -1,14 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import type { BoqItemDto, MeasurementSheetDto, Paginated, WorkOrderDto } from '@erp/shared';
 import { sectorLocation } from '@erp/shared';
 import { canViewWorkOrders, hasDimensions, measurementLineQty, measurementTotal } from '@erp/shared';
 import { useAuth } from '../../src/auth/AuthContext';
 import { useApi, useFetch } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
-import { Button, Card, Chips, DatePicker, ErrorBanner, ErrorState, Input, Loading, PhotoPicker, Screen, Select, type LocalPhoto, type SelectOption } from '../../src/components';
+import { Button, Card, Chips, DatePicker, ErrorBanner, ErrorState, Input, Loading, PhotoPicker, Screen, Select, type LocalPhoto, type SelectOption, IconButton } from '../../src/components';
 import { attachmentIds, photosFailed, photosQueued, photosUploading, QueuedSuccess, SubmitSuccess, toOutboxPhotos, useProjectOptions } from '../../src/forms/common';
 import { attachmentsToPhotos, outboxToPhotos, OutboxRefusal, ReviewerNote, useOutboxEntry } from '../../src/forms/edit';
 import { DraftNotice, restorePhotos, useFormDraft, useLeaveGuard } from '../../src/forms/draft';
@@ -16,8 +15,9 @@ import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
 import { useSectorInputs, type SectorDraft } from '../../src/forms/sector';
 import { useT } from '../../src/i18n/LanguageContext';
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
-import { colors, radius, spacing, typography } from '../../src/theme';
+import { colors, fontSize, radius, spacing, typography } from '../../src/theme';
 import { fmtQty, formatDate, isIsoDate, today } from '../../src/utils/format';
+import { useFieldChain } from '../../src/forms/keyboard';
 
 interface Line {
   key: string;
@@ -43,6 +43,7 @@ export default function NewMeasurementScreen() {
   const editId = params.editId ?? null;
   const outboxId = params.outboxId ?? null;
   const t = useT();
+  const field = useFieldChain();
   const api = useApi();
   const { online, enqueue, discard, newId } = useOffline();
   const refused = useOutboxEntry(outboxId);
@@ -314,8 +315,8 @@ export default function NewMeasurementScreen() {
         {woOptions.length ? (
           <Select label={t('Done by (work order)')} value={workOrderId} options={[{ value: '', label: t('Departmental (no work order)') }, ...woOptions]} onChange={setWorkOrderId} placeholder={t('Departmental (no work order)')} />
         ) : null}
-        {sector.fields(errors)}
-        <Input label={t('Location')} value={location} onChangeText={setLocation} placeholder={t('Grid, side or zone')} error={errors.location} />
+        {sector.fields(errors, field)}
+        <Input {...field()} label={t('Location')} value={location} onChangeText={setLocation} placeholder={t('Grid, side or zone')} error={errors.location} />
         <DatePicker label={t('Measured on')} required value={date} onChange={setDate} error={errors.date} />
       </Card>
       {lines.map((l, i) => {
@@ -325,12 +326,10 @@ export default function NewMeasurementScreen() {
             <View style={styles.lineHead}>
               <Text style={typography.label}>{t('Line {n}', { n: i + 1 })}</Text>
               {lines.length > 1 ? (
-                <Pressable onPress={() => setLines((ls) => ls.filter((x) => x.key !== l.key))} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('Remove line {n}', { n: i + 1 })}>
-                  <Ionicons name="trash-outline" size={20} color={colors.danger} />
-                </Pressable>
+                <IconButton icon="trash-outline" size={20} color={colors.danger} onPress={() => setLines((ls) => ls.filter((x) => x.key !== l.key))} accessibilityLabel={t('Remove line {n}', { n: i + 1 })} />
               ) : null}
             </View>
-            <Input label={t('Description')} required value={l.description} onChangeText={(v) => setLine(l.key, { description: v })} placeholder={t('e.g. Footing F1')} error={errors[`d${l.key}`]} />
+            <Input {...field()} label={t('Description')} required value={l.description} onChangeText={(v) => setLine(l.key, { description: v })} placeholder={t('e.g. Footing F1')} error={errors[`d${l.key}`]} />
             <View style={styles.dims}>
               {(
                 [
@@ -340,7 +339,7 @@ export default function NewMeasurementScreen() {
                   ['depth', 'D / H', 'Line {n}: depth or height'],
                 ] as const
               ).map(([k, label, name]) => (
-                <Input key={k} label={label} accessibilityLabel={t(name, { n: i + 1 })} value={l[k]} onChangeText={(v) => setLine(l.key, { [k]: v })} keyboardType="decimal-pad" containerStyle={styles.dim} />
+                <Input {...field()} key={k} label={label} accessibilityLabel={t(name, { n: i + 1 })} value={l[k]} onChangeText={(v) => setLine(l.key, { [k]: v })} keyboardType="decimal-pad" containerStyle={styles.dim} />
               ))}
             </View>
             {errors[`n${l.key}`] ? <Text style={styles.err}>{errors[`n${l.key}`]}</Text> : null}
@@ -366,7 +365,7 @@ export default function NewMeasurementScreen() {
         {errors.photos ? <Text style={styles.err}>{errors.photos}</Text> : null}
       </Card>
       <Card>
-        <Input label={t('Remarks')} value={remarks} onChangeText={setRemarks} multiline />
+        <Input {...field({ multiline: true })} label={t('Remarks')} value={remarks} onChangeText={setRemarks} multiline />
       </Card>
       <Button title={editId ? t('Resubmit for approval') : t('Submit for approval')} icon="send" onPress={submit} loading={busy} />
     </Screen>
@@ -382,5 +381,5 @@ const styles = StyleSheet.create({
   lineQty: { fontSize: 18, fontWeight: '700', color: colors.text },
   totalBox: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: colors.primarySoft, padding: spacing.md, borderRadius: radius.md, marginBottom: spacing.lg },
   total: { fontSize: 22, fontWeight: '800', color: colors.primaryDark },
-  err: { color: colors.danger, marginTop: -spacing.sm, marginBottom: spacing.sm, fontSize: 13 },
+  err: { color: colors.danger, marginTop: -spacing.sm, marginBottom: spacing.sm, fontSize: fontSize.secondary },
 });

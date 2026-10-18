@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { FlatList, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import type { DailyReportDto, ExpenseDto, InspectionDto, MeasurementSheetDto, MachineryLogDto, MaterialRequestDto, Paginated, ProgressEntryDto, SubmissionType } from '@erp/shared';
 import { useApi, useFetch, type Api } from '../src/api/hooks';
 import { errorMessage } from '../src/api/client';
-import { Button, EmptyState, ErrorState, Input, Loading, OfflineBanner, Screen, SubmissionRow } from '../src/components';
+import { Button, EmptyState, ErrorState, Input, Loading, OfflineBanner, Screen, SubmissionRow, Touchable } from '../src/components';
 import { OUTBOX_DETAIL, useOffline } from '../src/offline';
-import { colors, radius, spacing } from '../src/theme';
-import { fmtQty, formatDate, timeAgo } from '../src/utils/format';
+import { colors, fontSize, maxFontScale, radius, spacing, touch } from '../src/theme';
+import { fmtQty, formatDate, formatMoney, timeAgo } from '../src/utils/format';
 import { useT } from '../src/i18n/LanguageContext';
 import type { TranslateVars } from '../src/i18n/translate';
 
@@ -53,7 +53,7 @@ async function loadPage(api: Api, type: SubmissionType, page: number, q: string,
   }
   if (type === 'EXPENSE') {
     const res = await api.get<Paginated<ExpenseDto>>('/expenses', params);
-    return { total: res.total, rows: res.items.map((x) => ({ id: x.id, title: `${x.expenseNo} · ₹${Number(x.totalAmount).toLocaleString('en-IN')}`, subtitle: `${x.projectName} · ${x.description}`, status: x.status, createdAt: x.createdAt })) };
+    return { total: res.total, rows: res.items.map((x) => ({ id: x.id, title: `${x.expenseNo} · ${formatMoney(x.totalAmount, { paise: false })}`, subtitle: `${x.projectName} · ${x.description}`, status: x.status, createdAt: x.createdAt })) };
   }
   const res = await api.get<Paginated<MaterialRequestDto>>('/material-requests', params);
   return { total: res.total, rows: res.items.map((m) => ({ id: m.id, title: `${m.requestNo} · ${m.items.length === 1 ? t('1 item') : t('{n} items', { n: m.items.length })}`, subtitle: `${m.projectName} · ${t('needed {date}', { date: formatDate(m.requiredDate) })}`, status: m.status, createdAt: m.createdAt })) };
@@ -104,15 +104,20 @@ export default function SubmissionsScreen() {
 
   return (
     <Screen scroll={false} padded={false}>
-      <View style={styles.segments}>
-        {SEGMENTS.map((s) => {
-          const active = s.type === type;
-          return (
-            <Pressable key={s.type} onPress={() => setType(s.type)} style={[styles.segment, active && styles.segmentActive]}>
-              <Text numberOfLines={1} adjustsFontSizeToFit style={[styles.segmentText, active && styles.segmentTextActive]}>{t(s.label)}</Text>
-            </Pressable>
-          );
-        })}
+      {/* A row of tabs that scrolls sideways, so each keeps a 48 dp target and its full label (UX item 88). */}
+      <View style={styles.segmentsWrap}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.segments} accessibilityRole="tablist">
+          {SEGMENTS.map((s) => {
+            const active = s.type === type;
+            return (
+              <Touchable key={s.type} onPress={() => setType(s.type)} accessibilityRole="tab" accessibilityState={{ selected: active }} style={[styles.segment, active && styles.segmentActive]}>
+                <Text numberOfLines={1} maxFontSizeMultiplier={maxFontScale} style={[styles.segmentText, active && styles.segmentTextActive]}>
+                  {t(s.label)}
+                </Text>
+              </Touchable>
+            );
+          })}
+        </ScrollView>
       </View>
       <View style={styles.banner}>
         <OfflineBanner />
@@ -147,15 +152,16 @@ export default function SubmissionsScreen() {
 }
 
 const styles = StyleSheet.create({
-  segments: { flexDirection: 'row', margin: spacing.lg, marginBottom: spacing.sm, backgroundColor: colors.neutralSoft, borderRadius: radius.md, padding: 4 },
-  segment: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: radius.sm },
-  segmentActive: { backgroundColor: colors.surface },
-  segmentText: { fontWeight: '600', color: colors.textMuted, fontSize: 13 },
+  segmentsWrap: { margin: spacing.lg, marginBottom: spacing.sm, backgroundColor: colors.neutralSoft, borderRadius: radius.md },
+  segments: { flexDirection: 'row', padding: 4, gap: 2 },
+  segment: { minHeight: touch.min, minWidth: touch.min, paddingHorizontal: spacing.md, alignItems: 'center', justifyContent: 'center', borderRadius: radius.sm },
+  segmentActive: { backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.primary },
+  segmentText: { fontWeight: '600', color: colors.textMuted, fontSize: fontSize.secondary },
   segmentTextActive: { color: colors.primary },
   banner: { paddingHorizontal: spacing.lg },
   search: { marginBottom: 0 },
   footer: { paddingVertical: spacing.sm },
-  moreError: { color: colors.danger, fontSize: 13, textAlign: 'center', marginBottom: spacing.xs },
+  moreError: { color: colors.danger, fontSize: fontSize.secondary, textAlign: 'center', marginBottom: spacing.xs },
   list: { padding: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.xxl, flexGrow: 1 },
 });
 

@@ -5,10 +5,10 @@ import type { SubcontractBillDto } from '@erp/shared';
 import { useFetch } from '../../src/api/hooks';
 import { useT } from '../../src/i18n/LanguageContext';
 import { AttachmentGallery, Button, Card, ErrorState, KeyValue, Loading, ReviewActions, Screen, SubmissionHeader } from '../../src/components';
-import { colors, spacing, typography } from '../../src/theme';
-import { fmtQty, formatDate } from '../../src/utils/format';
+import { colors, fontSize, spacing, typography } from '../../src/theme';
+import { fmtQty, formatDate, formatMoney } from '../../src/utils/format';
 
-const rupees = (v: string | number) => `₹${Number(v).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const rupees = (v: string | number) => formatMoney(v);
 
 /** A subcontractor's bill on the phone: work as measured, the recoveries, the net payable, and approval. Bills are prepared on the web. */
 export default function SubcontractBillScreen() {
@@ -91,8 +91,8 @@ const styles = StyleSheet.create({
   box: { alignItems: 'center', paddingVertical: spacing.md, marginBottom: spacing.sm, backgroundColor: colors.primarySoft, borderRadius: 12 },
   total: { fontSize: 28, fontWeight: '800', color: colors.primaryDark },
   warn: { padding: spacing.sm, borderRadius: 10, marginBottom: spacing.sm, backgroundColor: colors.dangerSoft },
-  warnText: { fontSize: 13, color: colors.danger },
+  warnText: { fontSize: fontSize.secondary, color: colors.danger },
   line: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
-  lineTitle: { fontSize: 15, fontWeight: '600', color: colors.text },
-  amount: { fontSize: 15, fontWeight: '700', color: colors.text, marginLeft: spacing.md },
+  lineTitle: { fontSize: fontSize.body, fontWeight: '600', color: colors.text },
+  amount: { fontSize: fontSize.body, fontWeight: '700', color: colors.text, marginLeft: spacing.md },
 });

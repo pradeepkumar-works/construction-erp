@@ -9,10 +9,11 @@ import { useAuth } from '../../src/auth/AuthContext';
 import { Button, Card, Chips, DatePicker, ErrorBanner, Input, Loading, PhotoPicker, Screen, Select, type LocalPhoto } from '../../src/components';
 import { attachmentIds, photosFailed, photosQueued, photosUploading, QueuedSuccess, SubmitSuccess, toOutboxPhotos, useProjectOptions } from '../../src/forms/common';
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
-import { colors, spacing } from '../../src/theme';
+import { colors, fontSize, spacing } from '../../src/theme';
 import { formatDate, isIsoDate, today } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
 import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
+import { useFieldChain } from '../../src/forms/keyboard';
 
 const OTHER = '__other';
 /** English labels; shown through t(). The value of a listed topic is the English text the API stores. */
@@ -24,6 +25,7 @@ export default function TalkFormScreen() {
   const params = useLocalSearchParams<{ projectId?: string }>();
   const api = useApi();
   const t = useT();
+  const field = useFieldChain();
   const errorSummary = useErrorSummary();
   const { user } = useAuth();
   const { online, enqueue, newId } = useOffline();
@@ -133,15 +135,15 @@ export default function TalkFormScreen() {
         <Select label={t('Project')} required value={projectId} options={projects.options} onChange={setProjectId} placeholder={t('Choose project')} error={errors.projectId} />
         <DatePicker label={t('Date')} required value={date} onChange={setDate} error={errors.date} />
         <Select label={t('Topic')} required value={topic} options={TOPICS.map((o) => ({ ...o, label: t(o.label) }))} onChange={setTopic} placeholder={t('Choose topic')} searchable error={topic === OTHER ? null : errors.topic} />
-        {topic === OTHER ? <Input label={t('Topic')} required value={otherTopic} onChangeText={setOtherTopic} maxLength={200} error={errors.topic} /> : null}
-        <Input label={t('Given by')} required value={conductedBy} onChangeText={setConductedBy} maxLength={120} error={errors.conductedBy} />
+        {topic === OTHER ? <Input {...field()} label={t('Topic')} required value={otherTopic} onChangeText={setOtherTopic} maxLength={200} error={errors.topic} /> : null}
+        <Input {...field()} label={t('Given by')} required value={conductedBy} onChangeText={setConductedBy} maxLength={120} error={errors.conductedBy} />
         <Chips label={t('How long')} value={duration} onChange={setDuration} options={DURATIONS.map((v) => ({ value: v, label: t('{n} min', { n: v }) }))} />
       </Card>
       <Card title={t('Who attended')}>
-        <Input label={t('Number attended')} required value={count} onChangeText={setCount} keyboardType="number-pad" maxLength={4} error={errors.count} />
-        <Input label={t('Whose workers')} value={contractor} onChangeText={setContractor} placeholder={t('Contractor (optional)')} maxLength={200} />
-        <Input label={t('Names')} value={attendees} onChangeText={setAttendees} multiline maxLength={4000} placeholder={t('Optional; or photograph the signed sheet')} />
-        <Input label={t('Notes')} value={notes} onChangeText={setNotes} multiline maxLength={2000} />
+        <Input {...field()} label={t('Number attended')} required value={count} onChangeText={setCount} keyboardType="number-pad" maxLength={4} error={errors.count} />
+        <Input {...field()} label={t('Whose workers')} value={contractor} onChangeText={setContractor} placeholder={t('Contractor (optional)')} maxLength={200} />
+        <Input {...field({ multiline: true })} label={t('Names')} value={attendees} onChangeText={setAttendees} multiline maxLength={4000} placeholder={t('Optional; or photograph the signed sheet')} />
+        <Input {...field({ multiline: true })} label={t('Notes')} value={notes} onChangeText={setNotes} multiline maxLength={2000} />
       </Card>
       <Card title={t('Photo of the talk or signed sheet')}>
         <PhotoPicker photos={photos} onChange={setPhotos} />
@@ -153,5 +155,5 @@ export default function TalkFormScreen() {
 }
 
 const styles = StyleSheet.create({
-  err: { color: colors.danger, marginTop: -spacing.sm, marginBottom: spacing.sm, fontSize: 13 },
+  err: { color: colors.danger, marginTop: -spacing.sm, marginBottom: spacing.sm, fontSize: fontSize.secondary },
 });

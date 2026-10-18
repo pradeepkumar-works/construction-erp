@@ -11,17 +11,19 @@ import { attachmentsToPhotos, ReviewerNote } from '../../src/forms/edit';
 import { useT } from '../../src/i18n/LanguageContext';
 import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
-import { colors, radius, spacing, typography } from '../../src/theme';
-import { formatDate, isIsoDate, today } from '../../src/utils/format';
+import { colors, fontSize, radius, spacing, typography } from '../../src/theme';
+import { formatDate, formatMoney, isIsoDate, today } from '../../src/utils/format';
+import { useFieldChain } from '../../src/forms/keyboard';
 
 const MONEY = /^\d+(\.\d{1,2})?$/;
-const rupees = (n: number) => `₹${n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const rupees = (n: number) => formatMoney(n);
 
 /** File a site expense with the bill photo (works offline through the outbox), or (with `editId`) fix and resubmit one. */
 export default function NewExpenseScreen() {
   const params = useLocalSearchParams<{ projectId?: string; editId?: string }>();
   const editId = params.editId ?? null;
   const t = useT();
+  const field = useFieldChain();
   const errorSummary = useErrorSummary();
   const api = useApi();
   const { online, enqueue, newId } = useOffline();
@@ -187,11 +189,11 @@ export default function NewExpenseScreen() {
       <Card>
         <Select label={t('Project')} required value={projectId} options={projects.options} onChange={setProjectId} placeholder={t('Choose project')} error={errors.projectId} disabled={!!editId} />
         <Select label={t('Category')} required value={category} options={categoryOptions} onChange={setCategory} placeholder={t('Choose category')} error={errors.category} />
-        <Input label={t('What was it for')} required value={description} onChangeText={setDescription} placeholder={t('e.g. Hydraulic hose for grader')} error={errors.description} />
+        <Input {...field()} label={t('What was it for')} required value={description} onChangeText={setDescription} placeholder={t('e.g. Hydraulic hose for grader')} error={errors.description} />
         <DatePicker label={t('Bill date')} required value={date} onChange={setDate} error={errors.date} />
       </Card>
       <Card title={t('Amount')}>
-        <Input label={t('Amount before GST (₹)')} required value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder={t('e.g. 2400')} error={errors.amount} style={styles.bigInput} />
+        <Input {...field()} label={t('Amount before GST (₹)')} required value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder={t('e.g. 2400')} error={errors.amount} style={styles.bigInput} />
         <Chips label={t('GST rate')} value={gstRate} onChange={(v) => setGstRate(v ?? '0')} clearable={false} options={GST_RATES.map((r) => ({ value: String(r), label: `${r}%` }))} />
         <View style={styles.totalBox}>
           <Text style={typography.caption}>GST {rupees(gst)}</Text>
@@ -205,11 +207,11 @@ export default function NewExpenseScreen() {
         {!photos.length ? <Text style={typography.caption}>{t('Take a photo of the bill; the PM may send it back without one.')}</Text> : null}
       </Card>
       <Card title={t('Bill details (optional)')}>
-        <Input label={t('Vendor')} value={vendor} onChangeText={setVendor} />
-        <Input label={t('Vendor GSTIN')} value={gstin} onChangeText={setGstin} autoCapitalize="characters" maxLength={15} error={errors.gstin} />
-        <Input label={t('Bill no.')} value={billNo} onChangeText={setBillNo} />
+        <Input {...field()} label={t('Vendor')} value={vendor} onChangeText={setVendor} />
+        <Input {...field()} label={t('Vendor GSTIN')} value={gstin} onChangeText={setGstin} autoCapitalize="characters" maxLength={15} error={errors.gstin} />
+        <Input {...field()} label={t('Bill no.')} value={billNo} onChangeText={setBillNo} />
         <Select label={t('Activity')} value={activityId} options={activityOptions} onChange={setActivityId} placeholder={projectId ? t('Choose activity') : t('Choose a project first')} disabled={!projectId} emptyText={t('No activities in this project')} />
-        <Input label={t('Remarks')} value={remarks} onChangeText={setRemarks} multiline />
+        <Input {...field({ multiline: true })} label={t('Remarks')} value={remarks} onChangeText={setRemarks} multiline />
       </Card>
       <Button title={editId ? t('Resubmit for approval') : t('Submit for approval')} icon="send" onPress={submit} loading={busy} />
     </Screen>
@@ -220,5 +222,5 @@ const styles = StyleSheet.create({
   bigInput: { fontSize: 22, fontWeight: '700' },
   totalBox: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: colors.primarySoft, padding: spacing.md, borderRadius: radius.md, marginBottom: spacing.lg },
   total: { fontSize: 22, fontWeight: '800', color: colors.primaryDark },
-  err: { color: colors.danger, marginTop: -spacing.sm, marginBottom: spacing.sm, fontSize: 13 },
+  err: { color: colors.danger, marginTop: -spacing.sm, marginBottom: spacing.sm, fontSize: fontSize.secondary },
 });

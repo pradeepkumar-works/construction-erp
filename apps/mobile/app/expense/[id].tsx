@@ -6,10 +6,10 @@ import { EXPENSE_CATEGORY_LABELS, PAYMENT_MODE_LABELS } from '@erp/shared';
 import { useFetch } from '../../src/api/hooks';
 import { AttachmentGallery, Card, ErrorState, KeyValue, Loading, ReviewActions, Screen, SubmissionHeader, SubmitterActions } from '../../src/components';
 import { colors, spacing, typography } from '../../src/theme';
-import { formatDate } from '../../src/utils/format';
+import { formatDate, formatMoney } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
 
-const rupees = (v: string) => `₹${Number(v).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const rupees = (v: string) => formatMoney(v);
 
 export default function ExpenseScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();

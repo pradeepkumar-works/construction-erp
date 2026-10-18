@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { PRODUCT_NAME } from '@erp/shared';
 import { useAuth } from '../auth/AuthContext';
-import { colors, radius, spacing } from '../theme';
+import { colors, fontSize, radius, spacing } from '../theme';
 import { useT } from '../i18n/LanguageContext';
 
 /** The company's trial or subscription has ended: entries wait on the phone until an admin renews on the web. */
@@ -23,5 +23,5 @@ export function BillingBanner() {
 
 const styles = StyleSheet.create({
   banner: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md, borderRadius: radius.md, borderWidth: 1, borderColor: colors.danger, backgroundColor: colors.dangerSoft, marginBottom: spacing.md },
-  text: { flex: 1, fontWeight: '600', fontSize: 14, color: colors.danger },
+  text: { flex: 1, fontWeight: '600', fontSize: fontSize.secondary, color: colors.danger },
 });

@@ -8,7 +8,7 @@ import { errorMessage } from '../../src/api/client';
 import { useAuth } from '../../src/auth/AuthContext';
 import { AttachmentGallery, Button, Card, ErrorBanner, ErrorState, Input, KeyValue, Loading, Pill, Screen } from '../../src/components';
 import { LEVEL_TONE, RISK_STATUS_TONE } from '../../src/components/riskTone';
-import { colors, spacing, typography } from '../../src/theme';
+import { colors, spacing, typography, toneIcon } from '../../src/theme';
 import { formatDate, formatDateTime } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
 
@@ -55,7 +55,7 @@ export default function RiskScreen() {
         <View style={styles.pills}>
           <Pill text={t(RISK_STATUS_LABELS[data.status])} {...RISK_STATUS_TONE[data.status]} />
           <Pill text={`${t('Score {n}', { n: data.score })} · ${t(RISK_LEVEL_LABELS[level])}`} {...LEVEL_TONE[level]} />
-          {data.overdue ? <Pill text={t('Action overdue')} fg={colors.danger} bg={colors.dangerSoft} /> : null}
+          {data.overdue ? <Pill text={t('Action overdue')} fg={colors.danger} bg={colors.dangerSoft} icon={toneIcon.alert} /> : null}
         </View>
       </View>
       <ErrorBanner message={actionError} />

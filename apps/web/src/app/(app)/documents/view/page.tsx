@@ -66,6 +66,8 @@ function DocumentPageView() {
                 <Typography.Paragraph copyable={{ text: data.text }} style={{ whiteSpace: 'pre-wrap', marginBottom: 0 }}>
                   {data.text}
                 </Typography.Paragraph>
+              ) : data.readError ? (
+                <Typography.Text type="secondary">This file could not be read ({data.readError}), so Ask Nirmaan cannot search it. Read it in the file above.</Typography.Text>
               ) : (
                 <Typography.Text type="secondary">No text was read from this page. It may be a scanned image; read it in the file above.</Typography.Text>
               ),

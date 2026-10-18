@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import type { AttachmentDto, ReviewDecision, SubmissionBase, SubmissionType } from '@erp/shared';
 import { absoluteUrl } from '../config';
-import { colors, radius, spacing, typography } from '../theme';
+import { colors, fontSize, radius, spacing, touch, typography } from '../theme';
 import { formatDateTime } from '../utils/format';
+import { takenAtFromName } from '../utils/photoTime';
+import { IconButton, Touchable } from './Touchable';
 import { Card } from './Card';
 import { KeyValue } from './Layout';
 import { StatusBadge } from './StatusBadge';
@@ -15,7 +17,7 @@ import { Input } from './Input';
 import { BottomSheet, SheetActions, type SheetAction } from './BottomSheet';
 import { useApi } from '../api/hooks';
 import { errorMessage } from '../api/client';
-import { reviewSubmission } from '../api/review';
+import { reviewNoteProblem, reviewSubmission } from '../api/review';
 import { ErrorBanner } from './States';
 import { useSnackbar } from './Snackbar';
 import { useAuth } from '../auth/AuthContext';
@@ -38,9 +40,7 @@ export function SubmissionHeader({ item, title, subtitle, labels }: { item: Subm
           <Text style={typography.h2}>{title}</Text>
           {subtitle ? <Text style={[typography.caption, styles.subtitle]}>{subtitle}</Text> : null}
         </View>
-        <Pressable onPress={() => setMore(true)} accessibilityRole="button" accessibilityLabel={t('More actions')} hitSlop={8} style={({ pressed }) => [styles.more, pressed && styles.pressed]}>
-          <Ionicons name="ellipsis-horizontal" size={22} color={colors.primary} />
-        </Pressable>
+        <IconButton icon="ellipsis-horizontal" filled={colors.primarySoft} onPress={() => setMore(true)} accessibilityLabel={t('More actions')} style={styles.more} />
       </View>
       <BottomSheet visible={more} onClose={() => setMore(false)} title={t('More')} subtitle={title}>
         <SheetActions actions={actions} onClose={() => setMore(false)} />
@@ -74,11 +74,26 @@ export function AttachmentGallery({ attachments }: { attachments: AttachmentDto[
   return (
     <Card title={t('Photos ({n})', { n: attachments.length })}>
       <View style={styles.grid}>
-        {images.map((a) => (
-          <Pressable key={a.id} onPress={() => setOpen(a)} style={styles.thumbWrap}>
-            <Image source={{ uri: absoluteUrl(a.url) }} style={styles.thumb} contentFit="cover" transition={150} />
-          </Pressable>
-        ))}
+        {images.map((a, i) => {
+          const taken = takenAtFromName(a.fileName);
+          return (
+            <Touchable
+              key={a.id}
+              onPress={() => setOpen(a)}
+              style={styles.thumbWrap}
+              accessibilityRole="imagebutton"
+              accessibilityLabel={taken ? t('Photo {n} of {total}, taken {time}', { n: i + 1, total: images.length, time: formatDateTime(taken) }) : t('Photo {n} of {total}', { n: i + 1, total: images.length })}
+              accessibilityHint={t('Opens the photo')}
+            >
+              <Image source={{ uri: absoluteUrl(a.url) }} style={styles.thumb} contentFit="cover" transition={150} />
+              {taken ? (
+                <Text style={styles.stamp} numberOfLines={1}>
+                  {formatDateTime(taken)}
+                </Text>
+              ) : null}
+            </Touchable>
+          );
+        })}
       </View>
       {files.map((f) => (
         <View key={f.id} style={styles.fileRow}>
@@ -89,21 +104,53 @@ export function AttachmentGallery({ attachments }: { attachments: AttachmentDto[
         </View>
       ))}
       <Modal visible={!!open} transparent animationType="fade" onRequestClose={() => setOpen(null)}>
-        <Pressable style={styles.lightbox} onPress={() => setOpen(null)} accessibilityRole="button" accessibilityLabel={t('Close photo')}>
+        <Touchable style={styles.lightbox} onPress={() => setOpen(null)} accessibilityRole="button" accessibilityLabel={t('Close photo')} pressedStyle={styles.lightboxPressed}>
           {open ? <Image source={{ uri: absoluteUrl(open.url) }} style={styles.full} contentFit="contain" /> : null}
+          {open && takenAtFromName(open.fileName) ? <Text style={styles.lightboxStamp}>{t('Taken {time}', { time: formatDateTime(takenAtFromName(open.fileName)) })}</Text> : null}
           <View style={styles.lightboxClose}>
             <Ionicons name="close-circle" size={36} color={colors.onOverlay} />
           </View>
-        </Pressable>
+        </Touchable>
       </Modal>
     </Card>
   );
 }
 
-const DECISIONS: { decision: ReviewDecision; label: string; confirm: string; done: string; variant: 'success' | 'accent' | 'danger'; icon: 'checkmark' | 'create-outline' | 'close' }[] = [
-  { decision: 'APPROVE', label: 'Approve', confirm: 'Confirm approve', done: 'Approved', variant: 'success', icon: 'checkmark' },
-  { decision: 'REQUEST_CHANGES', label: 'Request changes', confirm: 'Confirm request changes', done: 'Sent back for changes', variant: 'accent', icon: 'create-outline' },
-  { decision: 'REJECT', label: 'Reject', confirm: 'Confirm reject', done: 'Rejected', variant: 'danger', icon: 'close' },
+const DECISIONS: {
+  decision: ReviewDecision;
+  label: string;
+  confirm: string;
+  done: string;
+  variant: 'success' | 'accent' | 'danger';
+  icon: 'checkmark' | 'create-outline' | 'close';
+  /** What the sheet asks for, and reasons a tap fills in (the approver can add to them). */
+  ask: string;
+  field: string;
+  quick: string[];
+}[] = [
+  { decision: 'APPROVE', label: 'Approve', confirm: 'Confirm approve', done: 'Approved', variant: 'success', icon: 'checkmark', ask: 'Add an optional note for the submitter.', field: 'Note (optional)', quick: [] },
+  {
+    decision: 'REQUEST_CHANGES',
+    label: 'Request changes',
+    confirm: 'Confirm request changes',
+    done: 'Sent back for changes',
+    variant: 'accent',
+    icon: 'create-outline',
+    ask: 'Say what needs changing. The submitter sees it with the entry.',
+    field: 'What needs changing',
+    quick: ['Add photos of the work', 'Quantities do not match the site', 'Wrong date or project'],
+  },
+  {
+    decision: 'REJECT',
+    label: 'Reject',
+    confirm: 'Confirm reject',
+    done: 'Rejected',
+    variant: 'danger',
+    icon: 'close',
+    ask: 'Say why you are rejecting it. The submitter sees it with the entry.',
+    field: 'Reason for rejecting',
+    quick: ['Entered twice', 'Work not done on site'],
+  },
 ];
 
 /** Entry forms on the phone; RA bills, purchase orders and vendor bills are prepared on the web. */
@@ -133,6 +180,7 @@ export function ReviewActions<T extends SubmissionBase>({ type, item, onReviewed
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [noteError, setNoteError] = useState<string | null>(null);
   const t = useT();
   const snackbar = useSnackbar();
 
@@ -142,8 +190,18 @@ export function ReviewActions<T extends SubmissionBase>({ type, item, onReviewed
   if (!user || type === 'INSPECTION' || !mayApproveType(user, type, amount) || item.status !== 'SUBMITTED') return null;
   const meta = DECISIONS.find((d) => d.decision === pending);
 
+  const choose = (d: ReviewDecision) => {
+    setNote('');
+    setNoteError(null);
+    setError(null);
+    setPending(d);
+  };
+
   const confirm = async () => {
     if (!pending) return;
+    const problem = reviewNoteProblem(pending, note);
+    setNoteError(problem ? t(problem) : null);
+    if (problem) return;
     setBusy(true);
     setError(null);
     try {
@@ -165,11 +223,42 @@ export function ReviewActions<T extends SubmissionBase>({ type, item, onReviewed
       <Text style={[typography.caption, styles.reviewHint]}>{t('This entry is awaiting your decision.')}</Text>
       <View style={styles.actions}>
         {DECISIONS.map((d) => (
-          <Button key={d.decision} title={t(d.label)} variant={d.variant} icon={d.icon} onPress={() => setPending(d.decision)} style={styles.actionBtn} />
+          <Button key={d.decision} title={t(d.label)} variant={d.variant} icon={d.icon} onPress={() => choose(d.decision)} style={styles.actionBtn} />
         ))}
       </View>
-      <BottomSheet visible={!!pending} onClose={() => setPending(null)} dismissable={!busy} title={meta ? t(meta.label) : undefined} subtitle={t('Add an optional note for the submitter.')}>
-        <Input value={note} onChangeText={setNote} placeholder={t('Note (optional)')} accessibilityLabel={t('Note for the submitter (optional)')} multiline autoFocus />
+      <BottomSheet visible={!!pending} onClose={() => setPending(null)} dismissable={!busy} title={meta ? t(meta.label) : undefined} subtitle={meta ? t(meta.ask) : undefined}>
+        {meta?.quick.length ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quick} keyboardShouldPersistTaps="handled">
+            {meta.quick.map((q) => (
+              <Touchable
+                key={q}
+                accessibilityRole="button"
+                accessibilityHint={t('Puts this reason in the note')}
+                onPress={() => {
+                  setNote((n) => (n.trim() ? `${n.trim()}. ${t(q)}` : t(q)));
+                  setNoteError(null);
+                }}
+                style={styles.quickChip}
+              >
+                <Text style={styles.quickText}>{t(q)}</Text>
+              </Touchable>
+            ))}
+          </ScrollView>
+        ) : null}
+        <Input
+          label={meta ? t(meta.field) : undefined}
+          required={pending !== 'APPROVE'}
+          value={note}
+          onChangeText={(v) => {
+            setNote(v);
+            if (noteError) setNoteError(null);
+          }}
+          placeholder={pending === 'APPROVE' ? t('Note (optional)') : t('A few words for the submitter')}
+          accessibilityLabel={pending === 'APPROVE' ? t('Note for the submitter (optional)') : meta ? t(meta.field) : undefined}
+          error={noteError}
+          multiline
+          autoFocus
+        />
         <ErrorBanner message={error} />
         <View style={styles.sheetBtns}>
           <Button title={t('Cancel')} variant="ghost" onPress={() => setPending(null)} disabled={busy} style={styles.flex} />
@@ -208,8 +297,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   flex2: { flex: 1.6, marginLeft: spacing.sm },
   headRow: { flexDirection: 'row', alignItems: 'flex-start' },
-  more: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primarySoft, marginLeft: spacing.sm },
-  pressed: { opacity: 0.7 },
+  more: { marginLeft: spacing.sm },
   subtitle: { marginTop: 2 },
   statusRow: { marginVertical: spacing.md },
   note: { flexDirection: 'row', gap: spacing.sm, backgroundColor: colors.infoSoft, borderRadius: radius.md, padding: spacing.md, marginTop: spacing.md },
@@ -218,13 +306,19 @@ const styles = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   thumbWrap: { width: '31%', aspectRatio: 1, borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.neutralSoft },
   thumb: { width: '100%', height: '100%' },
+  stamp: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 4, paddingVertical: 2, backgroundColor: colors.scrim, color: colors.onOverlay, fontSize: fontSize.small, textAlign: 'center' },
   fileRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm },
   fileName: { ...typography.body, flex: 1 },
   lightbox: { flex: 1, backgroundColor: colors.scrimDeep, alignItems: 'center', justifyContent: 'center' },
   full: { width: '100%', height: '85%' },
+  lightboxPressed: { opacity: 1 },
+  lightboxStamp: { color: colors.onOverlay, fontSize: fontSize.secondary, marginTop: spacing.sm },
   lightboxClose: { position: 'absolute', top: 48, right: 20 },
   reviewHint: { marginBottom: spacing.md },
   actions: { gap: spacing.sm },
   actionBtn: {},
   sheetBtns: { flexDirection: 'row' },
+  quick: { gap: spacing.sm, paddingBottom: spacing.md },
+  quickChip: { minHeight: touch.min, justifyContent: 'center', paddingHorizontal: spacing.md, borderRadius: radius.pill, borderWidth: 1.5, borderColor: colors.borderStrong, backgroundColor: colors.surface },
+  quickText: { fontSize: fontSize.secondary, fontWeight: '600', color: colors.text },
 });

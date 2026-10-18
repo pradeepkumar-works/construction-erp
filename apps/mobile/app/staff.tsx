@@ -20,17 +20,17 @@ import { errorMessage } from '../src/api/client';
 import { useT } from '../src/i18n/LanguageContext';
 import type { TranslateVars } from '../src/i18n/translate';
 import { Button, Card, Chips, DatePicker, EmptyState, ErrorBanner, ErrorState, Input, Loading, Pill, Screen, SectionTitle } from '../src/components';
-import { colors, spacing, typography } from '../src/theme';
-import { formatDate, isIsoDate, today } from '../src/utils/format';
+import { colors, fontSize, spacing, toneIcon, typography, type Tone } from '../src/theme';
+import { formatDate, formatTime, isIsoDate, today } from '../src/utils/format';
 
-const STATUS_TONE: Record<LeaveStatus, { fg: string; bg: string }> = {
-  PENDING: { fg: colors.warning, bg: colors.warningSoft },
-  APPROVED: { fg: colors.success, bg: colors.successSoft },
-  REJECTED: { fg: colors.danger, bg: colors.dangerSoft },
-  CANCELLED: { fg: colors.neutral, bg: colors.neutralSoft },
+const STATUS_TONE: Record<LeaveStatus, Tone> = {
+  PENDING: { fg: colors.warning, bg: colors.warningSoft, icon: toneIcon.waiting },
+  APPROVED: { fg: colors.success, bg: colors.successSoft, icon: toneIcon.done },
+  REJECTED: { fg: colors.danger, bg: colors.dangerSoft, icon: toneIcon.failed },
+  CANCELLED: { fg: colors.neutral, bg: colors.neutralSoft, icon: 'remove-circle-outline' },
 };
 
-const clock = (iso: string | null) => (iso ? new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-');
+const clock = (iso: string | null) => (iso ? formatTime(iso) : '-');
 type T = (en: string, vars?: TranslateVars) => string;
 const span = (l: Pick<LeaveRequestDto, 'fromDate' | 'toDate' | 'halfDay'>, t: T) =>
   l.fromDate === l.toDate ? (l.halfDay ? t('{date} (half day)', { date: formatDate(l.fromDate) }) : formatDate(l.fromDate)) : t('{from} to {to}', { from: formatDate(l.fromDate), to: formatDate(l.toDate) });
@@ -289,6 +289,6 @@ const styles = StyleSheet.create({
   balances: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.md },
   balance: { width: '50%', paddingVertical: spacing.sm },
   holiday: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6 },
-  err: { color: colors.danger, fontSize: 13, marginTop: -4, marginBottom: spacing.sm },
+  err: { color: colors.danger, fontSize: fontSize.secondary, marginTop: -4, marginBottom: spacing.sm },
   errText: { color: colors.danger },
 });

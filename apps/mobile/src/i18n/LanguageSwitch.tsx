@@ -1,6 +1,7 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, maxFontScale, radius, spacing, touch } from '../theme';
+import { StyleSheet, Text, View } from 'react-native';
+import { colors, fontSize, maxFontScale, radius, spacing, touch } from '../theme';
+import { Touchable } from '../components/Touchable';
 import { LANGUAGES, useLanguage } from './LanguageContext';
 
 /**
@@ -16,7 +17,7 @@ export function LanguageSwitch() {
         const active = l.code === language;
         const name = l.code === 'hi' ? 'हिन्दी' : 'English';
         return (
-          <Pressable
+          <Touchable
             key={l.code}
             onPress={() => setLanguage(l.code)}
             style={[styles.option, active && styles.active]}
@@ -24,12 +25,12 @@ export function LanguageSwitch() {
             accessibilityState={{ selected: active }}
             accessibilityLabel={l.label}
             accessibilityLanguage={l.code}
-            hitSlop={4}
+            hitSlop={2}
           >
             <Text style={[styles.text, active && styles.activeText]} maxFontSizeMultiplier={maxFontScale}>
               {name}
             </Text>
-          </Pressable>
+          </Touchable>
         );
       })}
     </View>
@@ -38,8 +39,8 @@ export function LanguageSwitch() {
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', borderWidth: 1.5, borderColor: colors.borderStrong, borderRadius: radius.pill, padding: 2, alignSelf: 'flex-start' },
-  option: { minHeight: touch.heightSm - 4, paddingHorizontal: spacing.md, justifyContent: 'center', borderRadius: radius.pill },
+  option: { minHeight: touch.min - 4, paddingHorizontal: spacing.md, justifyContent: 'center', borderRadius: radius.pill },
   active: { backgroundColor: colors.primary },
-  text: { fontSize: 14, fontWeight: '600', color: colors.text },
+  text: { fontSize: fontSize.secondary, fontWeight: '600', color: colors.text },
   activeText: { color: colors.textOnPrimary },
 });
