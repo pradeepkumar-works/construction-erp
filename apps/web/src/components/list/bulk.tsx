@@ -6,32 +6,43 @@ import { CheckOutlined, DownloadOutlined } from '@ant-design/icons';
 import type { SubmissionStatus, SubmissionType } from '@erp/shared';
 import { mayApproveType } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
-import { errorMessage } from '@/lib/api';
+import { useQueryClient } from '@tanstack/react-query';
+import { handledInPlace, useNotify } from '@/lib/notify';
 import { downloadXlsx, exportFileName, type ExportColumn } from '@/lib/exportExcel';
-import { useReview, type ApprovalTypeParam } from '@/lib/queries';
+import { showReviewed, useReview, type ApprovalTypeParam } from '@/lib/queries';
 import type { BulkAction } from './DataTable';
 
 /**
- * Approves entries one after another, as if one by one (each writes its own audit line and tells its submitter); stops
- * at the first that fails and says how far it got. Resolves to the number approved.
+ * Approves entries one after another, as if one by one (each writes its own audit line and tells its submitter). They
+ * all show as approved at once (UX item 86); if one is refused it stops there, puts the list back as the server has it,
+ * and says how far it got, with Retry for the rest. Resolves to the number approved.
  */
 export function useApproveMany() {
   const { message } = App.useApp();
+  const qc = useQueryClient();
+  const notify = useNotify();
   const review = useReview();
-  return async (type: ApprovalTypeParam, ids: string[]) => {
+  const run = async (type: ApprovalTypeParam, ids: string[]): Promise<number> => {
+    const rollback = await showReviewed(qc, ids, 'APPROVE');
     let done = 0;
-    for (const id of ids) {
-      try {
-        await review.mutateAsync({ type, id, decision: 'APPROVE' });
-        done += 1;
-      } catch (err) {
-        message.error(`Stopped after ${done} of ${ids.length}: ${errorMessage(err)}`);
-        return done;
+    try {
+      for (const id of ids) {
+        try {
+          await handledInPlace(() => review.mutateAsync({ type, id, decision: 'APPROVE', batch: true }));
+          done += 1;
+        } catch (err) {
+          rollback();
+          notify.failed(err, () => void run(type, ids.slice(done)), `Stopped after ${done} of ${ids.length}.`);
+          return done;
+        }
       }
+      message.success(`Approved ${done} ${done === 1 ? 'entry' : 'entries'}`);
+      return done;
+    } finally {
+      void qc.invalidateQueries();
     }
-    message.success(`Approved ${done} ${done === 1 ? 'entry' : 'entries'}`);
-    return done;
   };
+  return run;
 }
 
 /** "Approve n" for a selection that is all waiting and within this user's approval limit. */

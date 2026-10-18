@@ -67,7 +67,7 @@ test('home draws without layout shift above the charts', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByText(/^Welcome, /)).toBeVisible();
   await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
-  await expect(page.getByText('Projects by Type')).toBeVisible();
+  await expect(page.getByText('Projects by type')).toBeVisible();
   await page.waitForLoadState('networkidle');
   await page.waitForTimeout(500);
   const cls = await page.evaluate(() => (window as unknown as { __cls: number }).__cls);

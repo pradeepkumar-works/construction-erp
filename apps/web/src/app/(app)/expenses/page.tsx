@@ -8,7 +8,7 @@ import { ExpenseList } from '@/components/expenses/ExpenseList';
 export default function Page() {
   return (
     <div className="page-container">
-      <PageHeader title="Site Expenses" subtitle="Bills paid at site with GST and bill photo. Approved expenses count as project cost." />
+      <PageHeader title="Site expenses" subtitle="Bills paid at site with GST and bill photo. Approved expenses count as project cost." />
       <Card size="small">
         <ExpenseList />
       </Card>

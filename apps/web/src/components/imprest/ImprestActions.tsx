@@ -6,7 +6,8 @@ import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ImprestDetailDto, ImprestDto, PaymentMode } from '@erp/shared';
 import { PAYMENT_MODES, PAYMENT_MODE_LABELS, ROLE_KEYS, canHoldImprest } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { UserSelect } from '@/components/common/SearchSelect';
 import { formatINR } from '@/lib/format';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
@@ -29,7 +30,7 @@ export type ImprestAction =
   | { kind: 'float'; imprest: ImprestDto };
 
 const TITLES: Record<ImprestAction['kind'], string> = {
-  open: 'Open an imprest',
+  open: 'New imprest',
   topup: 'Ask for a top-up',
   pay: 'Pay the top-up',
   reject: 'Turn down the top-up',
@@ -38,7 +39,7 @@ const TITLES: Record<ImprestAction['kind'], string> = {
   float: 'Change the float',
 };
 
-const OK: Record<ImprestAction['kind'], string> = { open: 'Open imprest', topup: 'Ask for top-up', pay: 'Pay', reject: 'Turn down', advance: 'Advance cash', return: 'Record return', float: 'Save' };
+const OK: Record<ImprestAction['kind'], string> = { open: 'Save', topup: 'Ask for top-up', pay: 'Pay', reject: 'Turn down', advance: 'Advance cash', return: 'Record return', float: 'Save' };
 
 interface Values {
   projectId?: string;
@@ -106,7 +107,7 @@ export function ImprestActionModal({ action, onClose, onDone }: { action: Impres
       qc.invalidateQueries({ queryKey: ['imprests'] });
       onDone?.(d.id);
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   const needsAmount = kind !== 'reject';

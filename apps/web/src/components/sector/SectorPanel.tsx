@@ -14,7 +14,7 @@ import { SectorSettingsModal } from './SectorSettingsModal';
 import { Section } from '@/components/common/Section';
 
 /** Tab label for a project's sector view. */
-export const sectorTabLabel = (type: ProjectDetail['type']) => (type === 'ROAD' ? 'Chainage' : type === 'BUILDING' ? 'Floors' : 'Villages & Pipeline');
+export const sectorTabLabel = (type: ProjectDetail['type']) => (type === 'ROAD' ? 'Chainage' : type === 'BUILDING' ? 'Floors' : 'Villages and pipeline');
 
 /** Progress where it happened: along the road, floor by floor, or village by village with the pipe stages. */
 export function SectorPanel({ project, editable }: { project: ProjectDetail; editable: boolean }) {

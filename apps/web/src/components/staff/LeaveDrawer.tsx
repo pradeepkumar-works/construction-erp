@@ -5,7 +5,8 @@ import { App, Button, Descriptions, Divider, Drawer, Input, Modal, Popconfirm, S
 import type { LeaveRequestDto } from '@erp/shared';
 import { LEAVE_TYPE_LABELS } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useLeaveBalances, useLeaveHistory, useLeaveRequest } from '@/lib/queries';
 import { formatDateTime } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
@@ -30,7 +31,7 @@ export function LeaveDrawer({ id, open, onClose }: { id: string | null; open: bo
       setNote('');
       qc.invalidateQueries({ queryKey: ['staff'] });
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   return (

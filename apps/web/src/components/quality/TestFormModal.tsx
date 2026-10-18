@@ -6,7 +6,8 @@ import dayjs from 'dayjs';
 import type { AttachmentDto, QualityTestDto, TestKind, TestResult } from '@erp/shared';
 import { TEST_KINDS, TEST_KIND_DEFAULTS, TEST_KIND_LABELS } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useActivities, useProjects } from '@/lib/queries';
 import { formatDate } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
@@ -95,12 +96,12 @@ export function TestFormModal({ open, onClose, projectId, test }: { open: boolea
       message.success(editing ? `${x.testNo} updated` : `${x.testNo} recorded`);
       qc.invalidateQueries({ queryKey: ['quality'] });
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   const plan = kind && !editing ? TEST_KIND_DEFAULTS[kind].readings : [];
   return (
-    <FormShell open={open} onClose={onClose} form={form} layout="drawer" title={test ? `Update ${test.testNo}` : 'Record a test'} okText={editing ? 'Save' : 'Record test'} onSubmit={(v) => mutation.mutateAsync(v)}>
+    <FormShell open={open} onClose={onClose} form={form} layout="drawer" title={test ? `Update ${test.testNo}` : 'Record test'} okText={editing ? 'Save' : 'Record test'} onSubmit={(v) => mutation.mutateAsync(v)}>
       <Form form={form} layout="vertical">
         <FormSection title="Sample">
           <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!fixedProject}>

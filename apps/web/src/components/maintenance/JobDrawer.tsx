@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { Alert, App, Button, DatePicker, Descriptions, Divider, Drawer, Form, Input, Popconfirm, Select, Skeleton, Space, Table, Typography } from 'antd';
+import { Alert, App, Button, DatePicker, Descriptions, Divider, Drawer, Form, Input, Select, Skeleton, Space, Table, Typography } from 'antd';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { MaintenanceJobDto } from '@erp/shared';
 import { MAX_PAGE_SIZE, canManageMaintenance } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useMaintenanceJob, useStockBalances } from '@/lib/queries';
 import { formatDate, formatINR, formatQty } from '@/lib/format';
@@ -16,6 +17,7 @@ import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { MoneyInput, QuantityInput } from '@/components/form/inputs';
 import { JobKindTag, JobStatusTag } from './maintenanceUi';
+import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 interface CloseValues {
   closedDate: dayjs.Dayjs;
@@ -70,7 +72,7 @@ export function JobDrawer({ id, open, onClose, onEdit }: { id: string | null; op
     onSuccess: (x) => {
       done(`${x.jobNo} closed`);
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
   const spares = useMutation({
     mutationFn: async (v: SpareValues) => {
@@ -82,15 +84,15 @@ export function JobDrawer({ id, open, onClose, onEdit }: { id: string | null; op
       done(`Spares issued against ${x.jobNo}`);
       qc.invalidateQueries({ queryKey: ['stock'] });
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
   const remove = useMutation({
     mutationFn: async () => (await api.delete(`/maintenance/jobs/${id}`)).data,
     onSuccess: () => {
-      done('Job card deleted');
+      qc.invalidateQueries({ queryKey: ['maintenance'] });
       onClose();
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
 
   const startClose = () => {
@@ -140,9 +142,9 @@ export function JobDrawer({ id, open, onClose, onEdit }: { id: string | null; op
               </Button>
             ) : null}
             {manager ? (
-              <Popconfirm title={`Delete ${j.jobNo}?`} okText="Delete" okButtonProps={{ danger: true }} onConfirm={() => remove.mutate()} disabled={j.spares.length > 0}>
+              <ConfirmDelete what={`job card ${j.jobNo}`} onConfirm={() => remove.mutateAsync()} disabled={j.spares.length > 0}>
                 <Button size="small" danger icon={<DeleteOutlined />} disabled={j.spares.length > 0} title={j.spares.length ? 'Spares were issued; delete those stock issues first' : undefined} aria-label="Delete" />
-              </Popconfirm>
+              </ConfirmDelete>
             ) : null}
           </Space>
         ) : null

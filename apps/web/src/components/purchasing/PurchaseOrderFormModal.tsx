@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useEffect, useMemo } from 'react';
-import { Alert, App, DatePicker, Form, Input, InputNumber, Select, Table, Typography } from 'antd';
+import { Alert, DatePicker, Form, Input, InputNumber, Select, Table, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, PurchaseOrderDto } from '@erp/shared';
 import { GST_RATES, MSME_CATEGORY_LABELS } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE, useNotify } from '@/lib/notify';
 import { useProjects } from '@/lib/queries';
 import { VendorSelect, useVendor } from '@/components/common/SearchSelect';
 import { formatINR, toNumber } from '@/lib/format';
@@ -16,6 +17,7 @@ import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { LineTable } from '@/components/form/LineTable';
 import { MoneyInput, QuantityInput } from '@/components/form/inputs';
 import { themeFontSize } from '@/lib/theme';
+import { recordPage } from '@/components/approvals/queue';
 
 export interface PoLineValue {
   materialRequestItemId?: string | null;
@@ -72,8 +74,8 @@ export function PurchaseOrderFormModal({
   onSaved?: (o: PurchaseOrderDto) => void;
 }) {
   const [form] = Form.useForm<FormValues>();
-  const { message } = App.useApp();
   const qc = useQueryClient();
+  const notify = useNotify();
   const { data: projects } = useProjects();
   // preserve: lines from a request keep their item and unit without a field for them
   const lines = Form.useWatch('lines', { form, preserve: true }) as PoLineValue[] | undefined;
@@ -157,23 +159,23 @@ export function PurchaseOrderFormModal({
       ).data;
     },
     onSuccess: (o, { submit }) => {
-      message.success(submit ? `${o.poNo} submitted for approval` : `${o.poNo} saved as a draft`);
+      notify.saved(submit ? `${o.poNo} submitted for approval` : `${o.poNo} saved as a draft`, recordPage('PURCHASE_ORDER', o.id));
       for (const k of ['purchase-orders', 'material-requests', 'quotations']) qc.invalidateQueries({ queryKey: [k] });
       onSaved?.(o);
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
 
   const summary = (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '4px 12px' }}>
       <span>Items</span>
-      <span className="mono">{formatINR(totals.subtotal, true)}</span>
+      <span className="mono" translate="no">{formatINR(totals.subtotal, true)}</span>
       <span>GST</span>
-      <span className="mono">{formatINR(totals.gst, true)}</span>
+      <span className="mono" translate="no">{formatINR(totals.gst, true)}</span>
       <span>Freight</span>
-      <span className="mono">{formatINR(toNumber(freight), true)}</span>
+      <span className="mono" translate="no">{formatINR(toNumber(freight), true)}</span>
       <strong>Order total</strong>
-      <strong className="mono">{formatINR(totals.total, true)}</strong>
+      <strong className="mono" translate="no">{formatINR(totals.total, true)}</strong>
     </div>
   );
 
@@ -290,7 +292,7 @@ export function PurchaseOrderFormModal({
                   </Form.Item>
                 ),
               },
-              { title: 'Amount', key: 'amount', width: 130, align: 'right', render: (f) => <span className="mono">{formatINR(lineAmount(lines?.[f.name]), true)}</span> },
+              { title: 'Amount', key: 'amount', width: 130, align: 'right', render: (f) => <span className="mono" translate="no">{formatINR(lineAmount(lines?.[f.name]), true)}</span> },
             ]}
             footer={() => (
               <Table.Summary.Row>
@@ -298,7 +300,7 @@ export function PurchaseOrderFormModal({
                   <Typography.Text type="secondary">Items before GST</Typography.Text>
                 </Table.Summary.Cell>
                 <Table.Summary.Cell index={1} align="right">
-                  <span className="mono">{formatINR(totals.subtotal, true)}</span>
+                  <span className="mono" translate="no">{formatINR(totals.subtotal, true)}</span>
                 </Table.Summary.Cell>
                 <Table.Summary.Cell index={2} />
               </Table.Summary.Row>

@@ -2,12 +2,13 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { App, Button, Divider, Popconfirm, Table, Tag, Typography } from 'antd';
+import { App, Button, Divider, Table, Tag, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { VendorBillDto, VendorBillLineDto } from '@erp/shared';
 import { MSME_CATEGORY_LABELS, canEditSubmission, canRecordVendorBill, canResubmit, canViewPayables } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useVendorBill } from '@/lib/queries';
 import { formatDate, formatINR, formatQty, toNumber } from '@/lib/format';
@@ -22,8 +23,9 @@ import { checksSection } from '@/components/checks/ChecksSection';
 import { submissionLifecycle } from '@/components/record/lifecycle';
 import { themeFontSize } from '@/lib/theme';
 import { Section } from '@/components/common/Section';
+import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
-const money = (v: string | number) => <span className="mono">{formatINR(v, true)}</span>;
+const money = (v: string | number) => <span className="mono" translate="no">{formatINR(v, true)}</span>;
 
 export const MatchTag = ({ matched }: { matched: boolean }) => (matched ? <Tag color="green" style={{ margin: 0 }}>Matches PO</Tag> : <Tag color="red" style={{ margin: 0 }}>Exceptions</Tag>);
 
@@ -56,15 +58,16 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
   const submit = useMutation({
     mutationFn: async () => (await api.post<VendorBillDto>(`/vendor-bills/${id}/submit`)).data,
     onSuccess: (b) => done(`${b.billNo} submitted for approval`),
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
   const remove = useMutation({
     mutationFn: async () => (await api.delete(`/vendor-bills/${id}`)).data,
     onSuccess: () => {
-      done('Vendor bill deleted');
+      qc.invalidateQueries({ queryKey: ['vendor-bills'] });
+      qc.invalidateQueries({ queryKey: ['purchase-orders'] });
       onClose?.();
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
 
   const editable = !!data && !!user && recorder && canEditSubmission(user, data) && data.status !== 'APPROVED';
@@ -78,7 +81,7 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
       onClose={onClose}
       drawerSize={980}
       kind="Vendor bill"
-      list={{ href: '/vendor-bills', label: 'Vendor Bills' }}
+      list={{ href: '/vendor-bills', label: 'Vendor bills' }}
       loading={isLoading}
       error={error}
       onRetry={() => refetch()}
@@ -99,7 +102,7 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
               children: (
                 <span>
                   {data.vendorName}
-                  {data.vendorGstin && <span className="text-muted"> · GSTIN {data.vendorGstin}</span>}
+                  {data.vendorGstin && <span className="text-muted"> · GSTIN <span translate="no">{data.vendorGstin}</span></span>}
                   {data.vendorMsme && <Tag color={data.vendorMsme === 'MEDIUM' ? 'default' : 'orange'} style={{ marginLeft: 8 }}>{MSME_CATEGORY_LABELS[data.vendorMsme]}</Tag>}
                 </span>
               ),
@@ -149,8 +152,8 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
                           return <Typography.Text type={over ? 'danger' : undefined} className="mono">{formatQty(v)} {l.unit}</Typography.Text>;
                         },
                       },
-                      { title: 'Received', dataIndex: 'receivedQty', width: 90, align: 'right', render: (v) => <span className="mono">{formatQty(v)}</span> },
-                      { title: 'On other bills', dataIndex: 'billedElsewhere', width: 110, align: 'right', render: (v) => <span className="mono">{formatQty(v)}</span> },
+                      { title: 'Received', dataIndex: 'receivedQty', width: 90, align: 'right', render: (v) => <span className="mono" translate="no">{formatQty(v)}</span> },
+                      { title: 'On other bills', dataIndex: 'billedElsewhere', width: 110, align: 'right', render: (v) => <span className="mono" translate="no">{formatQty(v)}</span> },
                       {
                         title: 'Rate',
                         dataIndex: 'rate',
@@ -161,7 +164,7 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
                             <Typography.Text type={toNumber(v) > toNumber(l.poRate) ? 'danger' : undefined} className="mono">
                               {formatINR(v, true)}
                             </Typography.Text>
-                            {v !== l.poRate && <div className="text-muted mono" style={{ fontSize: themeFontSize('fontSizeSM') }}>PO {formatINR(l.poRate, true)}</div>}
+                            {v !== l.poRate && <div className="text-muted mono" translate="no" style={{ fontSize: themeFontSize('fontSizeSM') }}>PO {formatINR(l.poRate, true)}</div>}
                           </span>
                         ),
                       },
@@ -242,11 +245,11 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
               )}
               <ReviewActions type="vendor_bill" id={data.id} status={data.status} amount={data.total} size={size} />
               {editable ? (
-                <Popconfirm title={`Delete ${data.billNo}?`} okText="Delete" okButtonProps={{ danger: true }} onConfirm={() => remove.mutate()}>
+                <ConfirmDelete what={`vendor bill ${data.billNo}`} onConfirm={() => remove.mutateAsync()}>
                   <Button size={size} danger loading={remove.isPending}>
                     Delete
                   </Button>
-                </Popconfirm>
+                </ConfirmDelete>
               ) : null}
             </>
           ),

@@ -74,7 +74,7 @@ export function MaintenancePanel({ projectId: fixedProject, initialOpenId }: { p
         width: 220,
         render: (_, r) => (
           <span>
-            <b className="mono">{r.equipmentCode}</b> {r.equipmentName}
+            <b className="mono" translate="no">{r.equipmentCode}</b> {r.equipmentName}
           </span>
         ),
       },
@@ -100,7 +100,7 @@ export function MaintenancePanel({ projectId: fixedProject, initialOpenId }: { p
       key: 'm',
       render: (_, r) => (
         <div>
-          <b className="mono">{r.equipmentCode}</b> {r.equipmentName}
+          <b className="mono" translate="no">{r.equipmentCode}</b> {r.equipmentName}
           {!projectId ? <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{r.projectName ?? 'Yard'}</div> : null}
         </div>
       ),

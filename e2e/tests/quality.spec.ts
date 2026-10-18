@@ -18,7 +18,7 @@ test.describe.serial('a failed cube test through its NCR', () => {
     await page.getByRole('link', { name: 'Quality' }).click();
     await page.getByRole('tab', { name: /Tests/ }).click();
     await page.getByRole('button', { name: 'Record test' }).click();
-    const form = page.locator('.ant-drawer-open').filter({ hasText: 'Record a test' });
+    const form = page.locator('.ant-drawer-open').filter({ hasText: 'Record test' });
     await chooseOption(form.getByLabel('Project'), 'RD-2026-01');
     await expect(form.getByText(/Readings: 7 days on .*, 28 days on/)).toBeVisible();
     await form.getByLabel('What was sampled').fill(title);
@@ -51,11 +51,11 @@ test.describe.serial('a failed cube test through its NCR', () => {
     await signIn(page, 'qaqc@demo.com');
     await page.goto(`/inspections?tab=tests&id=${testId}`);
     const drawer = page.locator('.ant-drawer-open');
-    await drawer.getByRole('button', { name: 'Raise NCR' }).click();
+    await drawer.getByRole('button', { name: 'New NCR' }).click();
     const modal = page.locator('.ant-modal').filter({ hasText: 'From TST-' });
     await expect(modal.getByLabel('Non-conformance')).toHaveValue(new RegExp(title));
     await modal.getByText('Major', { exact: true }).click();
-    await modal.getByRole('button', { name: 'Raise NCR' }).click();
+    await modal.getByRole('button', { name: 'Save NCR' }).click();
     await expect(page.getByText(/NCR-\d{4}-\d{4} raised/)).toBeVisible();
     const qa = await apiToken('qaqc@demo.com');
     const ncrs = (await api<{ items: Ncr[] }>(qa, `/quality/ncrs?qualityTestId=${testId}`)).items;

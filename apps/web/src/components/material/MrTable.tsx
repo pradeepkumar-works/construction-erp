@@ -40,7 +40,7 @@ export function mrColumns({
 }): ListColumn<MaterialRequestDto>[] {
   const sort = (key: MaterialRequestSortField) => ({ key, sorter: true, sortOrder: sortOrderFor(key), sortDirections: ['descend', 'ascend'] as ('descend' | 'ascend')[] });
   return [
-    { card: 'title', title: 'Request No.', dataIndex: 'requestNo', width: 150, locked: true, ...sort('requestNo'), render: (v, r) => <RecordLink href={`/material-requests/${r.id}`} onOpen={() => onOpen(r.id)}>{v}</RecordLink> },
+    { card: 'title', title: 'Request no.', dataIndex: 'requestNo', width: 150, locked: true, ...sort('requestNo'), render: (v, r) => <RecordLink href={`/material-requests/${r.id}`} onOpen={() => onOpen(r.id)}>{v}</RecordLink> },
     ...(showProject
       ? [{ card: 'meta' as const, cardText: (r: MaterialRequestDto) => r.projectName, title: 'Project', dataIndex: 'projectName', ...sort('project'), width: 220, ellipsis: true, render: (v: string, r: MaterialRequestDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> }]
       : []),

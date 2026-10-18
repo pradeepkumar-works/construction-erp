@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Alert, App, Button, DatePicker, Form, Input, InputNumber, Select, Typography } from 'antd';
+import { Alert, Button, DatePicker, Form, Input, InputNumber, Select, Typography } from 'antd';
 import dayjs from 'dayjs';
 import type { AiDraftDto, AttachmentDto, DailyReportDto, Weather } from '@erp/shared';
 import { MANPOWER_CATEGORIES, WEATHER_LABELS, WEATHER_OPTIONS } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE, useNotify } from '@/lib/notify';
 import { useAttendanceDay, useDprList, useProjects } from '@/lib/queries';
 import { formatDate } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
@@ -15,6 +16,7 @@ import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { LineTable } from '@/components/form/LineTable';
 import { aiFlagItem, draftDate } from '@/components/ai/drafts';
 import { themeFontSize } from '@/lib/theme';
+import { recordPage } from '@/components/approvals/queue';
 
 interface FormValues {
   projectId: string;
@@ -35,8 +37,8 @@ interface FormValues {
 /** Create a DPR, or (with `entry`) edit a draft / rejected / changes-requested one and resubmit it. */
 export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry, prefill }: { open: boolean; onClose: () => void; projectId?: string; /** A new entry starts on this project (the header's), still changeable. */ defaultProjectId?: string; entry?: DailyReportDto | null; /** Filled in by Ask Nirmaan from rough notes (AI item 71) */ prefill?: AiDraftDto | null }) {
   const [form] = Form.useForm<FormValues>();
-  const { message } = App.useApp();
   const qc = useQueryClient();
+  const notify = useNotify();
   const { data: projects } = useProjects();
   const editing = !!entry;
   const fixedProject = entry?.projectId ?? projectId;
@@ -161,11 +163,11 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
       };
       return entry ? (await api.patch(`/dpr/${entry.id}`, body)).data : (await api.post('/dpr', { projectId: v.projectId, ...body })).data;
     },
-    onSuccess: () => {
-      message.success(editing ? 'DPR resubmitted for approval' : 'DPR submitted for approval');
+    onSuccess: (x: { id: string }) => {
+      notify.saved(editing ? 'DPR resubmitted for approval' : 'DPR submitted for approval', recordPage('DPR', x.id));
       qc.invalidateQueries();
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   return (
@@ -173,7 +175,7 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
       open={open}
       onClose={onClose}
       form={form}
-      title={entry ? `${editActionLabel(entry.status)} · DPR ${dayjs(entry.date).format('DD MMM YYYY')}` : 'New Daily Progress Report'}
+      title={entry ? `${editActionLabel(entry.status)} · DPR ${dayjs(entry.date).format('DD MMM YYYY')}` : 'New daily report'}
       okText={editing ? 'Resubmit DPR' : 'Submit DPR'}
       onSubmit={(v) => mutation.mutateAsync(v)}
       draftKey={editing ? undefined : `dpr:${projectId ?? 'any'}`}

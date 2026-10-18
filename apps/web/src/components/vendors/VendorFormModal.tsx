@@ -7,7 +7,8 @@ import { CODE_INPUT, EMAIL_INPUT, PHONE_INPUT, emailRule, phoneRule, upper } fro
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { MsmeCategory, VendorDto, VendorKind } from '@erp/shared';
 import { GST_STATES, GSTIN_PATTERN, IFSC_PATTERN, MSME_CATEGORIES, MSME_CATEGORY_LABELS, PAN_PATTERN, UDYAM_PATTERN, VENDOR_KINDS, VENDOR_KIND_LABELS, canSeeVendorBank, gstStateCode } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 
 interface FormValues {
@@ -115,7 +116,7 @@ export function VendorFormModal({
       for (const k of ['vendors', 'expenses', 'machinery', 'stock']) qc.invalidateQueries({ queryKey: [k] });
       onSaved?.(v);
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
 
   return (

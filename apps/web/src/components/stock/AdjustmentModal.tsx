@@ -7,7 +7,8 @@ import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ItemDto, StockEntryDto } from '@erp/shared';
 import { MAX_PAGE_SIZE } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useProjects, useStockBalances } from '@/lib/queries';
 import { SearchSelect } from '@/components/common/SearchSelect';
 import { formatQty } from '@/lib/format';
@@ -71,7 +72,7 @@ export function AdjustmentModal({ open, onClose, projectId }: { open: boolean; o
       message.success(`${e.entryNo} saved`);
       qc.invalidateQueries({ queryKey: ['stock'] });
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   return (
@@ -85,7 +86,7 @@ export function AdjustmentModal({ open, onClose, projectId }: { open: boolean; o
             <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
           <Form.Item name="remarks" label="Reason" rules={[{ required: true, whitespace: true, min: 3, message: 'Say why, e.g. Opening stock or Physical count on 30 Sep' }]}>
-            <Input maxLength={1000} placeholder="Opening stock, physical count, damaged material..." />
+            <Input maxLength={1000} placeholder="Opening stock, physical count, damaged material…" />
           </Form.Item>
         </FormGrid>
         <Form.Item label="Lines" required extra="Positive adds to stock, negative takes it off." style={{ marginBottom: 8 }}>

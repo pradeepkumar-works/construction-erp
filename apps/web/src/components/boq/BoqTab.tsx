@@ -1,26 +1,27 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { App, Button, Input, Popconfirm, Progress, Space, Statistic, Table, Tooltip, Typography } from 'antd';
+import { Button, Input, Progress, Space, Statistic, Table, Tooltip, Typography } from 'antd';
 import type { TableProps } from 'antd';
 import { DeleteOutlined, DownloadOutlined, EditOutlined, FileExcelOutlined, PlusOutlined } from '@ant-design/icons';
 import type { BoqItemDto } from '@erp/shared';
 import { canEditProjects } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useBoq } from '@/lib/queries';
 import { useAuth } from '@/lib/auth';
-import { formatINR, formatQty, toNumber } from '@/lib/format';
+import { formatINR, formatQty, toNumber, RUPEE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { BoqFormModal } from './BoqFormModal';
 import { BoqImportModal, downloadBoqTemplate } from './BoqImportModal';
 import { BRAND } from '@/lib/brand';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { loadXlsx } from '@/lib/exportExcel';
+import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 export function BoqTab({ projectId }: { projectId: string }) {
   const { user } = useAuth();
-  const { message } = App.useApp();
   const qc = useQueryClient();
   const { data, isLoading, error, refetch } = useBoq(projectId);
   const [search, setSearch] = useState('');
@@ -32,11 +33,10 @@ export function BoqTab({ projectId }: { projectId: string }) {
   const del = useMutation({
     mutationFn: async (id: string) => api.delete(`/projects/${projectId}/boq/${id}`),
     onSuccess: () => {
-      message.success('BOQ item deleted');
       qc.invalidateQueries({ queryKey: ['boq', projectId] });
       qc.invalidateQueries({ queryKey: ['dashboard'] });
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   const filtered = useMemo(() => {
@@ -56,17 +56,17 @@ export function BoqTab({ projectId }: { projectId: string }) {
     const XLSX = await loadXlsx();
     const ws = XLSX.utils.json_to_sheet(
       (data ?? []).map((i) => ({
-        'Item No': i.itemNo,
+        'Item no.': i.itemNo,
         Description: i.description,
         Unit: i.unit,
         Rate: toNumber(i.rate),
-        'Original Qty': toNumber(i.originalQty),
-        'Revised Qty': i.revisedQty !== null ? toNumber(i.revisedQty) : '',
-        'Executed Qty': toNumber(i.executedQty),
-        'Balance Qty': toNumber(i.balanceQty),
-        'Measured Qty': toNumber(i.measuredQty),
+        'Original qty': toNumber(i.originalQty),
+        'Revised qty': i.revisedQty !== null ? toNumber(i.revisedQty) : '',
+        'Executed qty': toNumber(i.executedQty),
+        'Balance qty': toNumber(i.balanceQty),
+        'Measured qty': toNumber(i.measuredQty),
         'Measured awaiting approval': toNumber(i.pendingMeasuredQty),
-        'Measured Value': toNumber(i.measuredAmount),
+        'Measured value': toNumber(i.measuredAmount),
         Amount: toNumber(i.amount),
       })),
     );
@@ -79,9 +79,9 @@ export function BoqTab({ projectId }: { projectId: string }) {
     { title: 'Item', dataIndex: 'itemNo', width: 70, fixed: 'left', sorter: (a, b) => a.sortOrder - b.sortOrder || a.itemNo.localeCompare(b.itemNo, undefined, { numeric: true }) },
     { title: 'Description', dataIndex: 'description', ellipsis: { showTitle: false }, render: (v) => <Tooltip title={v}>{v}</Tooltip> },
     { title: 'Unit', dataIndex: 'unit', width: 60 },
-    { title: 'Rate (₹)', dataIndex: 'rate', width: 120, align: 'right', className: 'mono', render: (v) => formatINR(v, true).replace('₹ ', '') },
-    { title: 'Original Qty', dataIndex: 'originalQty', width: 100, align: 'right', className: 'mono', render: (v) => formatQty(v) },
-    { title: 'Revised Qty', dataIndex: 'revisedQty', width: 95, align: 'right', className: 'mono', render: (v) => (v === null ? <span className="text-muted">-</span> : formatQty(v)) },
+    { title: 'Rate (₹)', dataIndex: 'rate', width: 120, align: 'right', className: 'mono', render: (v) => formatINR(v, true).replace(RUPEE, '') },
+    { title: 'Original qty', dataIndex: 'originalQty', width: 100, align: 'right', className: 'mono', render: (v) => formatQty(v) },
+    { title: 'Revised qty', dataIndex: 'revisedQty', width: 95, align: 'right', className: 'mono', render: (v) => (v === null ? <span className="text-muted">-</span> : formatQty(v)) },
     {
       title: 'Executed',
       dataIndex: 'executedQty',
@@ -136,9 +136,9 @@ export function BoqTab({ projectId }: { projectId: string }) {
                     setFormOpen(true);
                   }}
                 />
-                <Popconfirm title="Delete this BOQ item?" okText="Delete" okButtonProps={{ danger: true }} onConfirm={() => del.mutate(r.id)}>
+                <ConfirmDelete what={`BOQ item ${r.itemNo}`} onConfirm={() => del.mutateAsync(r.id)}>
                   <Button size="small" type="text" danger icon={<DeleteOutlined />} aria-label={`Delete BOQ item ${r.itemNo}`} />
-                </Popconfirm>
+                </ConfirmDelete>
               </Space>
             ),
           },
@@ -173,7 +173,7 @@ export function BoqTab({ projectId }: { projectId: string }) {
                   setFormOpen(true);
                 }}
               >
-                Add item
+                New BOQ item
               </Button>
             </>
           )}

@@ -6,7 +6,8 @@ import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { MaterialRequestDto, MaterialRequestItemDto, QuotationDto } from '@erp/shared';
 import { GST_RATES } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { VendorSelect } from '@/components/common/SearchSelect';
 import { formatQty, toNumber } from '@/lib/format';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
@@ -80,7 +81,7 @@ export function QuotationFormModal({ open, request, quotation, onClose }: { open
       message.success(`Quotation from ${q.vendorName} ${quotation ? 'updated' : 'added'}`);
       qc.invalidateQueries({ queryKey: ['quotations'] });
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
 
   return (
@@ -91,8 +92,8 @@ export function QuotationFormModal({ open, request, quotation, onClose }: { open
       layout="drawer"
       width={860}
       allValues
-      title={quotation ? `Quotation from ${quotation.vendorName}` : `Add quotation for ${request.requestNo}`}
-      okText={quotation ? 'Save changes' : 'Add quotation'}
+      title={quotation ? `Quotation from ${quotation.vendorName}` : `Record quotation for ${request.requestNo}`}
+      okText={quotation ? 'Save changes' : 'Save quotation'}
       onSubmit={(v) => save.mutateAsync(v)}
     >
       <Form form={form} layout="vertical">

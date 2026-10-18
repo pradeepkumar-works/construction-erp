@@ -6,7 +6,7 @@ import { sectorLocation } from '@erp/shared';
 import { useProgressEntry } from '@/lib/queries';
 import { formatDate, formatQty } from '@/lib/format';
 import { StatusTag } from '@/components/common/StatusTag';
-import { AttachmentGallery } from '@/components/common/AttachmentGallery';
+import { photosSection } from '@/components/photo-checks/PhotoChecksSection';
 import { ReviewActions } from '@/components/common/ReviewActions';
 import { EditResubmitButton } from '@/components/common/EditResubmitButton';
 import { submissionMetaItems } from '@/components/common/SubmitterInfo';
@@ -30,7 +30,7 @@ export function ProgressRecord({ id, mode, open, onClose, onEdit }: RecordProps 
       onClose={onClose}
       drawerSize={640}
       kind="Progress entry"
-      list={{ href: '/progress', label: 'Progress Entries' }}
+      list={{ href: '/progress', label: 'Progress entries' }}
       loading={isLoading}
       error={error}
       onRetry={() => refetch()}
@@ -43,7 +43,7 @@ export function ProgressRecord({ id, mode, open, onClose, onEdit }: RecordProps 
             { key: 'date', label: 'Date', children: formatDate(data.date) },
             { key: 'qty', label: 'Quantity', children: `${formatQty(data.quantity)} ${data.unit}` },
             { key: 'activity', label: 'Activity', children: data.activityName },
-            { key: 'location', label: 'Location / Chainage', children: [data.location, sectorLocation(data)].filter((x, i, a) => x && a.indexOf(x) === i).join(' · ') || '-' },
+            { key: 'location', label: 'Location / chainage', children: [data.location, sectorLocation(data)].filter((x, i, a) => x && a.indexOf(x) === i).join(' · ') || '-' },
             { key: 'manpower', label: 'Manpower', children: data.manpowerCount ?? '-' },
             { key: 'machinery', label: 'Machinery used', children: data.machineryUsed ?? '-' },
             ...submissionMetaItems(data).filter((i) => i.key !== 'status'),
@@ -51,12 +51,7 @@ export function ProgressRecord({ id, mode, open, onClose, onEdit }: RecordProps 
           lifecycle: submissionLifecycle(data),
           sections: [
             ...(data.remarks ? [{ key: 'remarks', title: 'Remarks', children: <div style={{ whiteSpace: 'pre-wrap' }}>{data.remarks}</div> }] : []),
-            {
-              key: 'photos',
-              title: 'Photos',
-              count: data.attachments.length,
-              children: <AttachmentGallery attachments={data.attachments} />,
-            },
+            photosSection('progress', data.id, data.attachments),
           ],
           activity: { type: 'progress', id: data.id, submission: data },
           actions: (size) => (

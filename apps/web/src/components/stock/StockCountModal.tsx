@@ -7,7 +7,8 @@ import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { StockBalanceDto, StockCountResultDto } from '@erp/shared';
 import { MAX_PAGE_SIZE } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useProjects, useStockBalances } from '@/lib/queries';
 import { formatQty } from '@/lib/format';
 import { downloadXlsx, exportFileName, type ExportColumn } from '@/lib/exportExcel';
@@ -72,7 +73,7 @@ export function StockCountModal({ open, onClose, projectId: fixedProject }: { op
       message.success(e ? `${e.entryNo} posted: ${e.lines.length} item${e.lines.length === 1 ? '' : 's'} corrected` : 'Every count matched the books; nothing to adjust');
       qc.invalidateQueries({ queryKey: ['stock'] });
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   // Posting asks first; the form closes once the count is posted and stays open if the question is turned down.
@@ -138,7 +139,7 @@ export function StockCountModal({ open, onClose, projectId: fixedProject }: { op
           locale={{ emptyText: projectId ? 'Nothing has moved at this project yet' : 'Pick a project' }}
           columns={[
             { title: 'Item', dataIndex: 'itemName', render: (v, r) => <span>{v}{r.category ? <span className="text-muted"> · {r.category}</span> : null}</span> },
-            { title: 'Book balance', dataIndex: 'balance', width: 150, align: 'right', render: (v, r) => <span className="mono">{`${formatQty(v)} ${r.unit}`}</span> },
+            { title: 'Book balance', dataIndex: 'balance', width: 150, align: 'right', render: (v, r) => <span className="mono" translate="no">{`${formatQty(v)} ${r.unit}`}</span> },
             {
               title: 'Counted',
               key: 'counted',

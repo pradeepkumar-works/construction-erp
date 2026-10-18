@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
+import { UndoService } from '../common/undo.service';
 import { isUniqueViolation } from '../common/idempotency';
 import { CreateUnitDto, UpdateUnitDto } from './units.dto';
 
@@ -17,7 +18,10 @@ export class UnitsService {
     private prisma: PrismaService,
     private access: ProjectAccessService,
     private audit: AuditService,
-  ) {}
+    private undo: UndoService,
+  ) {
+    undo.register('UNIT', { entityType: 'UNIT', check: (user) => this.access.assertCanManageStore(user) });
+  }
 
   async list(user: RequestUser): Promise<UnitDto[]> {
     if (!(await this.prisma.unit.count({ where: { organizationId: user.organizationId } }))) {
@@ -74,8 +78,9 @@ export class UnitsService {
     const row = await this.one(user, id);
     const inUse = await this.prisma.item.count({ where: { organizationId: user.organizationId, unit: { equals: row.code, mode: 'insensitive' } } });
     if (inUse) throw new ConflictException(`${inUse} item${inUse === 1 ? '' : 's'} use ${row.code}; switch it off instead`);
+    const raw = await this.prisma.unit.findUniqueOrThrow({ where: { id } });
     await this.prisma.unit.delete({ where: { id } });
     await this.audit.log(user, 'UNIT', id, 'DELETED', row.code);
-    return { ok: true };
+    return { ok: true, undo: this.undo.offer(user, 'UNIT', { rows: [{ model: 'unit', data: raw }] }) };
   }
 }

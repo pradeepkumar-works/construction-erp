@@ -40,12 +40,12 @@ test('quotation to PO to GRN to a matched vendor bill', async ({ page, browser }
   await signIn(page, 'procurement@demo.com');
   await page.goto(`/material-requests?id=${mr.id}`);
   const drawer = page.locator('.ant-drawer').filter({ hasText: 'Quotations and purchase orders' });
-  await drawer.getByRole('button', { name: 'Add quotation' }).click();
-  let modal = formPanel(page, 'Add quotation');
+  await drawer.getByRole('button', { name: 'Record quotation' }).click();
+  let modal = formPanel(page, 'Record quotation');
   await chooseOption(modal.getByLabel('Vendor'), 'Sahoo Auto');
   await modal.getByLabel('Their quotation no.').fill('SAP/E2E/1');
   await modal.getByLabel('Rate for Binding wire 18 SWG (e2e)').fill('85');
-  await modal.getByRole('button', { name: 'Add quotation' }).click();
+  await modal.getByRole('button', { name: 'Save quotation' }).click();
   await expect(page.getByText('Quotation from Sahoo Auto Parts added')).toBeVisible();
 
   // The cheaper quotation is the lowest; raise the PO on it.
@@ -102,6 +102,6 @@ test('quotation to PO to GRN to a matched vendor bill', async ({ page, browser }
 
 test('a site engineer sees purchase orders but not vendor bills', async ({ page }) => {
   await signIn(page, 'engineer@demo.com');
-  await expect(page.getByRole('link', { name: 'Purchase Orders' })).toHaveCount(1);
-  await expect(page.getByRole('link', { name: 'Vendor Bills' })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Purchase orders' })).toHaveCount(1);
+  await expect(page.getByRole('link', { name: 'Vendor bills' })).toHaveCount(0);
 });

@@ -2,11 +2,12 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Alert, App, Button, Divider, Popconfirm, Table, Tag, Typography } from 'antd';
+import { Alert, App, Button, Divider, Table, Tag, Typography } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { SubcontractBillDto, SubcontractBillLineDto } from '@erp/shared';
 import { MSME_CATEGORY_LABELS, canEditSubmission, canPrepareSubcontractBill, canResubmit, canViewPayables } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useSubcontractBill } from '@/lib/queries';
 import { formatDate, formatINR, formatPct, formatQty, toNumber } from '@/lib/format';
@@ -22,8 +23,9 @@ import { checksSection } from '@/components/checks/ChecksSection';
 import { submissionLifecycle } from '@/components/record/lifecycle';
 import { openSubBillPrint } from './subcontractPrint';
 import { Section } from '@/components/common/Section';
+import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
-const money = (v: string | number) => <span className="mono">{formatINR(v, true)}</span>;
+const money = (v: string | number) => <span className="mono" translate="no">{formatINR(v, true)}</span>;
 
 interface RecordProps {
   id: string | null;
@@ -51,15 +53,16 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
   const submit = useMutation({
     mutationFn: async () => (await api.post<SubcontractBillDto>(`/subcontract-bills/${id}/submit`)).data,
     onSuccess: (b) => done(`${b.label} submitted for approval`),
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
   const remove = useMutation({
     mutationFn: async () => (await api.delete(`/subcontract-bills/${id}`)).data,
     onSuccess: () => {
-      done('Bill deleted');
+      qc.invalidateQueries({ queryKey: ['subcontract-bills'] });
+      qc.invalidateQueries({ queryKey: ['work-orders'] });
       onClose?.();
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
 
   const editable = !!data && !!user && preparer && canEditSubmission(user, data) && data.status !== 'APPROVED';
@@ -75,7 +78,7 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
       onClose={onClose}
       drawerSize={1040}
       kind="Subcontractor bill"
-      list={{ href: '/subcontract-bills', label: 'Subcontractor Bills' }}
+      list={{ href: '/subcontract-bills', label: 'Subcontractor bills' }}
       loading={isLoading}
       error={error}
       onRetry={() => refetch()}
@@ -175,9 +178,9 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
                           </div>
                         ),
                       },
-                      { title: 'Rate', dataIndex: 'rate', width: 150, align: 'right', render: (v, l) => <span className="mono" style={{ whiteSpace: 'nowrap' }}>{formatINR(v, true)}/{l.unit}</span> },
-                      { title: 'Previous', dataIndex: 'prevQty', width: 100, align: 'right', render: (v) => <span className="mono">{formatQty(v)}</span> },
-                      { title: 'This bill', dataIndex: 'thisQty', width: 100, align: 'right', render: (v) => <strong className="mono">{formatQty(v)}</strong> },
+                      { title: 'Rate', dataIndex: 'rate', width: 150, align: 'right', render: (v, l) => <span className="mono" translate="no" style={{ whiteSpace: 'nowrap' }}>{formatINR(v, true)}/{l.unit}</span> },
+                      { title: 'Previous', dataIndex: 'prevQty', width: 100, align: 'right', render: (v) => <span className="mono" translate="no">{formatQty(v)}</span> },
+                      { title: 'This bill', dataIndex: 'thisQty', width: 100, align: 'right', render: (v) => <strong className="mono" translate="no">{formatQty(v)}</strong> },
                       {
                         title: 'Up to date',
                         dataIndex: 'uptoQty',
@@ -213,7 +216,7 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
                               {d.pct ? ` @ ${formatPct(d.pct)}` : ''}
                               {d.key === 'other' && data.otherDeductionNote ? <span className="text-muted"> ({data.otherDeductionNote})</span> : null}
                             </span>
-                            <span className="mono">({formatINR(d.amount, true)})</span>
+                            <span className="mono" translate="no">({formatINR(d.amount, true)})</span>
                           </div>
                         ))}
                       <Divider style={{ margin: '6px 0' }} />
@@ -239,7 +242,7 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
                           dataSource={data.materials}
                           columns={[
                             { title: 'Item', dataIndex: 'itemName' },
-                            { title: 'Quantity', dataIndex: 'quantity', width: 130, align: 'right', render: (v, m) => <span className="mono">{formatQty(v)} {m.unit}</span> },
+                            { title: 'Quantity', dataIndex: 'quantity', width: 130, align: 'right', render: (v, m) => <span className="mono" translate="no">{formatQty(v)} {m.unit}</span> },
                             { title: 'Rate', dataIndex: 'rate', width: 120, align: 'right', render: (v) => money(v) },
                             { title: 'Recovered', dataIndex: 'amount', width: 140, align: 'right', render: (v) => <strong>{money(v)}</strong> },
                           ]}
@@ -289,7 +292,7 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
                     { title: 'Date', dataIndex: 'date', width: 120, render: (v) => formatDate(v) },
                     { title: 'Item', dataIndex: 'boqItemNo', width: 90 },
                     { title: 'Location', dataIndex: 'location' },
-                    { title: 'Quantity', dataIndex: 'totalQty', width: 130, align: 'right', render: (v, m) => <span className="mono">{formatQty(v)} {m.unit}</span> },
+                    { title: 'Quantity', dataIndex: 'totalQty', width: 130, align: 'right', render: (v, m) => <span className="mono" translate="no">{formatQty(v)} {m.unit}</span> },
                   ]}
                 />
               ),
@@ -334,11 +337,11 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
               )}
               <ReviewActions type="subcontract_bill" id={data.id} status={data.status} amount={data.grossAmount} size={size} />
               {editable ? (
-                <Popconfirm title={`Delete ${data.label}?`} okText="Delete" okButtonProps={{ danger: true }} onConfirm={() => remove.mutate()}>
+                <ConfirmDelete what={data.label} onConfirm={() => remove.mutateAsync()}>
                   <Button size={size} danger loading={remove.isPending}>
                     Delete
                   </Button>
-                </Popconfirm>
+                </ConfirmDelete>
               ) : null}
             </>
           ),

@@ -64,7 +64,7 @@ function vendorBillColumns({ showProject, onOpen, onEdit, sortOrderFor }: { show
       width: 140,
       align: 'right',
       ...sort('total'),
-      render: (v) => <strong className="mono">{formatINR(v)}</strong>,
+      render: (v) => <strong className="mono" translate="no">{formatINR(v)}</strong>,
       total: (rows) => formatINR(rows.reduce((n, r) => n + toNumber(r.total), 0)),
     },
     {
@@ -94,7 +94,7 @@ function vendorBillColumns({ showProject, onOpen, onEdit, sortOrderFor }: { show
   ];
 }
 
-/** Vendor bills, on the Vendor Bills page and as a project tab. `openId` opens one bill (from a link). */
+/** Vendor bills, on the Vendor bills page and as a project tab. `openId` opens one bill (from a link). */
 export function VendorBillList({ projectId: fixedProject, openId: initialOpen }: { projectId?: string; openId?: string | null }) {
   const { user } = useAuth();
   const [openId, setOpenId] = useState<string | null>(initialOpen ?? null);

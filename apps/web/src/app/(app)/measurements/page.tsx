@@ -8,7 +8,7 @@ import { MeasurementList } from '@/components/measurements/MeasurementList';
 export default function Page() {
   return (
     <div className="page-container">
-      <PageHeader title="Measurement Book" subtitle="Measurements by BOQ item and location. Approved quantities are what gets billed." />
+      <PageHeader title="Measurement book" subtitle="Measurements by BOQ item and location. Approved quantities are what gets billed." />
       <Card size="small">
         <MeasurementList />
       </Card>

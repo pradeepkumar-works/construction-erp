@@ -1,17 +1,19 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Form, Input, Popconfirm, Space, Switch, Table, Typography } from 'antd';
+import { App, Button, Form, Input, Space, Switch, Table, Typography } from 'antd';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { UnitDto } from '@erp/shared';
 import { canManageStore } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useUnits } from '@/lib/queries';
 import { QueryError } from '@/components/common/QueryState';
 import { CardToolbar } from '@/components/common/CardToolbar';
 import { FormShell } from '@/components/form/FormShell';
+import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 interface UnitForm {
   code: string;
@@ -38,17 +40,17 @@ export function UnitsTable() {
       return editing && editing !== 'new' ? (await api.patch<UnitDto>(`/units/${editing.id}`, body)).data : (await api.post<UnitDto>('/units', body)).data;
     },
     onSuccess: (u) => done(`${u.code} saved`),
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
   const toggle = useMutation({
     mutationFn: async (u: UnitDto) => (await api.patch<UnitDto>(`/units/${u.id}`, { isActive: !u.isActive })).data,
     onSuccess: (u) => done(`${u.code} ${u.isActive ? 'switched on' : 'switched off'}`),
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
   const remove = useMutation({
     mutationFn: async (u: UnitDto) => (await api.delete(`/units/${u.id}`)).data,
-    onSuccess: () => done('Unit removed'),
-    onError: (e) => message.error(errorMessage(e)),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['units'] }),
+    meta: FAIL_NOTICE,
   });
 
   const open = (u: UnitDto | 'new') => {
@@ -64,7 +66,7 @@ export function UnitsTable() {
         <Typography.Text type="secondary">Quantity fields across the app suggest these units. Switch off the ones your company does not use.</Typography.Text>
         {mayManage ? (
           <Button icon={<PlusOutlined />} onClick={() => open('new')} style={{ marginLeft: 'auto' }}>
-            Add unit
+            New unit
           </Button>
         ) : null}
       </CardToolbar>
@@ -95,9 +97,9 @@ export function UnitsTable() {
                     <Space size={4}>
                       <Button size="small" type="text" icon={<EditOutlined />} aria-label={`Edit ${u.code}`} onClick={() => open(u)} />
                       {u.itemCount === 0 ? (
-                        <Popconfirm title={`Remove ${u.code}?`} okText="Remove" okButtonProps={{ danger: true }} onConfirm={() => remove.mutate(u)}>
+                        <ConfirmDelete verb="Remove" what={`the unit ${u.code}`} onConfirm={() => remove.mutateAsync(u)}>
                           <Button size="small" type="text" danger icon={<DeleteOutlined />} aria-label={`Remove ${u.code}`} />
-                        </Popconfirm>
+                        </ConfirmDelete>
                       ) : null}
                     </Space>
                   ),
@@ -106,7 +108,7 @@ export function UnitsTable() {
             : []),
         ]}
       />
-      <FormShell open={!!editing} onClose={() => setEditing(null)} form={form} layout="modal" width={520} title={editing === 'new' ? 'Add unit' : 'Edit unit'} okText={editing === 'new' ? 'Add unit' : 'Save'} onSubmit={(v) => save.mutateAsync(v)}>
+      <FormShell open={!!editing} onClose={() => setEditing(null)} form={form} layout="modal" width={520} title={editing === 'new' ? 'New unit' : 'Edit unit'} okText="Save" onSubmit={(v) => save.mutateAsync(v)}>
         <Form form={form} layout="vertical" className="unit-form">
           <Form.Item
             name="code"

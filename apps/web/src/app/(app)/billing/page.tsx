@@ -32,14 +32,14 @@ export default function BillingPage() {
   if (!user.billing)
     return (
       <div className="page-container" style={{ maxWidth: 948, marginLeft: 0 }}>
-        <PageHeader title="Billing" />
+        <PageHeader title="Subscription" />
         <Alert type="info" title={`Billing is not switched on for this ${PRODUCT_NAME} server.`} />
       </div>
     );
   if (!admin)
     return (
       <div className="page-container" style={{ maxWidth: 948, marginLeft: 0 }}>
-        <PageHeader title="Billing" />
+        <PageHeader title="Subscription" />
         <Alert type="info" title="Only an admin can see and pay for the subscription." />
       </div>
     );
@@ -65,7 +65,7 @@ export default function BillingPage() {
 
   return (
     <div className="page-container" style={{ maxWidth: 948, marginLeft: 0 }}>
-      <PageHeader title="Billing" subtitle={`Your ${PRODUCT_NAME} subscription and GST invoices`} />
+      <PageHeader title="Subscription" subtitle={`Your ${PRODUCT_NAME} subscription and GST invoices`} />
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       {isLoading || !data || !amount || !unit ? (
         error ? null : <PageSkeleton shape="record" header={false} />

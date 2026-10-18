@@ -8,7 +8,7 @@ import { useDpr } from '@/lib/queries';
 import { useAuth } from '@/lib/auth';
 import { formatDate } from '@/lib/format';
 import { StatusTag } from '@/components/common/StatusTag';
-import { AttachmentGallery } from '@/components/common/AttachmentGallery';
+import { photosSection } from '@/components/photo-checks/PhotoChecksSection';
 import { ReviewActions } from '@/components/common/ReviewActions';
 import { EditResubmitButton } from '@/components/common/EditResubmitButton';
 import { submissionMetaItems } from '@/components/common/SubmitterInfo';
@@ -54,7 +54,7 @@ export function DprRecord({ id, mode, open, onClose, onEdit }: RecordProps & { m
       onClose={onClose}
       drawerSize={820}
       kind="Daily report"
-      list={{ href: '/dpr', label: 'Daily Reports' }}
+      list={{ href: '/dpr', label: 'Daily reports' }}
       loading={isLoading}
       error={error}
       onRetry={() => refetch()}
@@ -129,7 +129,7 @@ export function DprRecord({ id, mode, open, onClose, onEdit }: RecordProps & { m
                 </>
               ),
             },
-            { key: 'photos', title: 'Photos', count: data.attachments.length, children: <AttachmentGallery attachments={data.attachments} /> },
+            photosSection('dpr', data.id, data.attachments),
           ],
           activity: { type: 'dpr', id: data.id, submission: data },
           actions: (size) => (

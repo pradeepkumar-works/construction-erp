@@ -66,8 +66,8 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
   const trail = useMemo(() => navTrail(sections, pathname), [sections, pathname]);
   const guest = isGuest(user.roleKey);
   const { data: projects } = useProjects(!guest);
-  const { current: pinnable, isFavourite, toggleFavourite, pinSections } = usePins(user.id, sections);
-  // Favourites and Recent sit under the top links.
+  const { current: pinnable, isFavourite, toggleFavourite, pinSections, recentPages } = usePins(user.id, sections);
+  // Favourites sit under the top links; pages and records opened lately are in Search (Ctrl K).
   const sidebarSections = useMemo(() => [...sections.filter((x) => !x.title), ...pinSections, ...sections.filter((x) => x.title)], [sections, pinSections]);
   const projectCrumb = useMemo(() => {
     const id = pathname.match(/^\/projects\/([\w-]+)/)?.[1];
@@ -231,7 +231,7 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
           <Sidebar user={user} sections={sidebarSections} pendingCount={pendingCount} onNavigate={() => setMobileOpen(false)} />
         </Drawer>
       )}
-      {!guest && <CommandPalette open={searchOpen} onClose={() => setSearchOpen(false)} sections={sections} withProjects user={user} onAsk={askVisible ? openAsk : undefined} />}
+      {!guest && <CommandPalette open={searchOpen} onClose={() => setSearchOpen(false)} sections={sections} recentPages={recentPages} withProjects user={user} onAsk={askVisible ? openAsk : undefined} />}
       <ProductTour user={user} mobile={isMobile} open={touring} onClose={() => setTouring(false)} />
       <Layout>
         <Header
@@ -362,7 +362,9 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
                   )}
                   {roomy && (
                     <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: 1.1 }}>
-                      <span style={{ fontWeight: 600, fontSize: token.fontSize }}>{user.fullName}</span>
+                      <span style={{ fontWeight: 600, fontSize: token.fontSize }} translate="no">
+                        {user.fullName}
+                      </span>
                       <span className="text-muted" style={{ fontSize: token.fontSizeSM }}>
                         {user.roleName}
                       </span>

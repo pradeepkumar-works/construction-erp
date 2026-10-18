@@ -68,7 +68,7 @@ test("rough notes become a DPR on the list already open, keeping the manpower th
   await ask(page, 'Write a DPR for RD-2026-01: 6 masons and 8 helpers, gsb laying 40 cum at km 14, rain stopped work at 3 pm');
   const card = panel(page).getByRole('group', { name: 'Drafted daily report' });
   await card.getByRole('button', { name: 'Open form' }).click();
-  const form = page.locator('.ant-drawer').filter({ hasText: 'New Daily Progress Report' });
+  const form = page.locator('.ant-drawer').filter({ hasText: 'New daily report' });
   await expect(form.getByText('Filled in by Ask Nirmaan from what you wrote')).toBeVisible();
   await expect(form.getByLabel('Work executed')).toHaveValue(/gsb laying 40 cum at km 14/);
   await expect(form.getByText('Rainy')).toBeVisible();
@@ -86,7 +86,7 @@ test('a letter is drafted for the correspondence register', async ({ page }) => 
   const card = panel(page).getByRole('group', { name: 'Drafted letter' });
   await card.getByRole('button', { name: 'Open form' }).click();
   await expect(page).toHaveURL(/\/documents\?tab=letters/);
-  const form = formPanel(page, 'Record a letter');
+  const form = formPanel(page, 'Record letter');
   await expect(form.getByText('Filled in by Ask Nirmaan from what you wrote')).toBeVisible();
   await expect(form.getByLabel('Subject')).toHaveValue('the land handover delay at km 18');
   // Going out, to the project's client.

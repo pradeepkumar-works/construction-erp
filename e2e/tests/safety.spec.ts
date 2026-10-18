@@ -26,7 +26,7 @@ test('an incident is reported at site and closed by the safety officer', async (
   await signIn(page, 'engineer2@demo.com');
   await page.goto(`/projects/${project.id}?tab=safety`);
   await page.getByRole('button', { name: /Report incident/ }).click();
-  const form = page.locator('.ant-drawer-open').filter({ hasText: 'Report an incident' });
+  const form = page.locator('.ant-drawer-open').filter({ hasText: 'Report incident' });
   await chooseOption(form.getByLabel('Type'), 'First aid');
   await form.getByLabel('Where').fill(where);
   await form.getByLabel('What happened').fill('Mason twisted an ankle on loose stair shuttering.');
@@ -71,8 +71,8 @@ test('a permit to work is asked for, issued by the safety officer and closed', a
   await signIn(page, 'engineer2@demo.com');
   await page.goto(`/projects/${project.id}?tab=safety`);
   await page.getByRole('tab', { name: /Permits to work/ }).click();
-  await page.getByRole('button', { name: /Ask for permit/ }).click();
-  const form = page.locator('.ant-drawer-open').filter({ hasText: 'Ask for a permit to work' });
+  await page.getByRole('button', { name: /Request permit/ }).click();
+  const form = page.locator('.ant-drawer-open').filter({ hasText: 'Request permit to work' });
   await chooseOption(form.getByLabel('Work', { exact: true }), 'Hot work');
   await form.getByLabel('Where').fill(where);
   await form.getByLabel('The work').fill('Cutting the shaft door frames');
@@ -117,7 +117,7 @@ test('a toolbox talk counts on the safety summary', async ({ page }) => {
   await page.goto(`/projects/${project.id}?tab=safety`);
   await page.getByRole('tab', { name: 'Toolbox talks' }).click();
   await page.getByRole('button', { name: /Record talk/ }).click();
-  const form = page.locator('.ant-modal').filter({ hasText: 'Record a toolbox talk' });
+  const form = page.locator('.ant-modal').filter({ hasText: 'Record toolbox talk' });
   await form.getByLabel('Topic').fill('E2E: scaffold safety');
   await form.getByLabel('Attended').fill('27');
   await form.getByRole('button', { name: 'Save' }).click();

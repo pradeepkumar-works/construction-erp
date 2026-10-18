@@ -5,7 +5,8 @@ import { App, DatePicker, Form, Input, Select } from 'antd';
 import dayjs from 'dayjs';
 import type { EmployeeDto } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useLinkableUsers, useProjects } from '@/lib/queries';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { PHONE_INPUT, phoneRule } from '@/components/form/inputs';
@@ -70,12 +71,12 @@ export function EmployeeFormModal({ open, onClose, employee, onSaved }: { open: 
       qc.invalidateQueries({ queryKey: ['staff'] });
       onSaved?.(e);
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   return (
     // Blank Posted at is head office, so the header's project is not put in.
-    <FormShell open={open} onClose={onClose} form={form} layout="modal" title={employee ? `Edit ${employee.fullName}` : 'Add staff'} okText={editing ? 'Save' : 'Add'} onSubmit={(v) => mutation.mutateAsync(v)} projectDefault={false}>
+    <FormShell open={open} onClose={onClose} form={form} layout="modal" title={employee ? `Edit ${employee.fullName}` : 'New staff member'} okText="Save" onSubmit={(v) => mutation.mutateAsync(v)} projectDefault={false}>
       <Form form={form} layout="vertical">
         <FormGrid cols={2}>
           <Form.Item name="fullName" label="Name" rules={[{ required: true, whitespace: true, message: 'Enter the name' }]}>

@@ -2,12 +2,13 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Alert, App, Button, Form, Input, Popconfirm, Progress, Table, Tag, Typography } from 'antd';
+import { Alert, App, Button, Form, Input, Progress, Table, Tag, Typography } from 'antd';
 import { FileAddOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { WorkOrderDto, WorkOrderLineDto } from '@erp/shared';
 import { MSME_CATEGORY_LABELS, canEditSubmission, canIssueWorkOrder, canPrepareSubcontractBill, canResubmit } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useWorkOrder } from '@/lib/queries';
 import { formatDate, formatDateTime, formatINR, formatPct, formatQty, toNumber } from '@/lib/format';
@@ -23,8 +24,9 @@ import { SubBillFormModal } from './SubBillFormModal';
 import { openWoPrint } from './subcontractPrint';
 import { themeFontSize } from '@/lib/theme';
 import { Section } from '@/components/common/Section';
+import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
-const money = (v: string | number) => <span className="mono">{formatINR(v, true)}</span>;
+const money = (v: string | number) => <span className="mono" translate="no">{formatINR(v, true)}</span>;
 
 /** Tag for where an approved order stands: open for work and bills, or closed. */
 export function WoStateTag({ order }: { order: Pick<WorkOrderDto, 'status' | 'closedAt' | 'open'> }) {
@@ -62,20 +64,20 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
   const submit = useMutation({
     mutationFn: async () => (await api.post<WorkOrderDto>(`/work-orders/${id}/submit`)).data,
     onSuccess: (o) => done(`${o.woNo} submitted for approval`),
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
   const close = useMutation({
     mutationFn: async (note: string) => (await api.post<WorkOrderDto>(`/work-orders/${id}/close`, { note })).data,
     onSuccess: (o) => done(`${o.woNo} closed`),
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
   const remove = useMutation({
     mutationFn: async () => (await api.delete(`/work-orders/${id}`)).data,
     onSuccess: () => {
-      done('Work order deleted');
+      qc.invalidateQueries({ queryKey: ['work-orders'] });
       onClose?.();
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
 
   const editable = !!data && !!user && issuer && canEditSubmission(user, data) && data.status !== 'APPROVED';
@@ -91,7 +93,7 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
       onClose={onClose}
       drawerSize={1000}
       kind="Work order"
-      list={{ href: '/work-orders', label: 'Work Orders' }}
+      list={{ href: '/work-orders', label: 'Work orders' }}
       loading={isLoading}
       error={error}
       onRetry={() => refetch()}
@@ -134,7 +136,7 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
                 <span>
                   {data.vendorName}
                   {data.vendorPan && <span className="text-muted"> · PAN {data.vendorPan}</span>}
-                  {data.vendorGstin && <span className="text-muted"> · GSTIN {data.vendorGstin}</span>}
+                  {data.vendorGstin && <span className="text-muted"> · GSTIN <span translate="no">{data.vendorGstin}</span></span>}
                   {data.vendorMsme && (
                     <Tag color={data.vendorMsme === 'MEDIUM' ? 'default' : 'orange'} style={{ marginLeft: 8 }}>
                       {MSME_CATEGORY_LABELS[data.vendorMsme]}
@@ -199,7 +201,7 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
                           </div>
                         ),
                       },
-                      { title: 'Quantity', dataIndex: 'quantity', width: 130, align: 'right', render: (v, l) => <span className="mono">{formatQty(v)} {l.unit}</span> },
+                      { title: 'Quantity', dataIndex: 'quantity', width: 130, align: 'right', render: (v, l) => <span className="mono" translate="no">{formatQty(v)} {l.unit}</span> },
                       { title: 'Rate', dataIndex: 'rate', width: 110, align: 'right', render: (v) => money(v) },
                       { title: 'Amount', dataIndex: 'amount', width: 140, align: 'right', render: (v) => <strong>{money(v)}</strong> },
                       ...(approved
@@ -218,7 +220,7 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
                                   <span className="text-muted">-</span>
                                 ),
                             },
-                            { title: 'Billed', dataIndex: 'billedQty', width: 100, align: 'right' as const, render: (v: string) => <span className="mono">{formatQty(v)}</span> },
+                            { title: 'Billed', dataIndex: 'billedQty', width: 100, align: 'right' as const, render: (v: string) => <span className="mono" translate="no">{formatQty(v)}</span> },
                           ]
                         : []),
                     ]}
@@ -295,11 +297,11 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
                 </Button>
               ) : null}
               {editable ? (
-                <Popconfirm title={`Delete ${data.woNo}?`} okText="Delete" okButtonProps={{ danger: true }} onConfirm={() => remove.mutate()}>
+                <ConfirmDelete what={`work order ${data.woNo}`} onConfirm={() => remove.mutateAsync()}>
                   <Button size={size} danger loading={remove.isPending}>
                     Delete
                   </Button>
-                </Popconfirm>
+                </ConfirmDelete>
               ) : null}
             </>
           ),

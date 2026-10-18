@@ -43,7 +43,7 @@ export function measurementColumns({
       render: (_, r) => (
         <div>
           <RecordLink href={`/measurements/${r.id}`} onOpen={() => onOpen(r.id)}>
-            <span className="mono">{r.boqItemNo}</span> {r.boqDescription}
+            <span className="mono" translate="no">{r.boqItemNo}</span> {r.boqDescription}
           </RecordLink>
           <Sub>{r.location}</Sub>
         </div>
@@ -57,7 +57,7 @@ export function measurementColumns({
       align: 'right',
       ...sort('totalQty'),
       render: (v, r) => (
-        <span className="mono">
+        <span className="mono" translate="no">
           {formatQty(v)} {r.unit}
         </span>
       ),
@@ -69,7 +69,7 @@ export function measurementColumns({
       dataIndex: 'amount',
       width: 140,
       align: 'right',
-      render: (v) => <span className="mono">{formatINR(v)}</span>,
+      render: (v) => <span className="mono" translate="no">{formatINR(v)}</span>,
       total: (rows) => formatINR(rows.reduce((n, r) => n + toNumber(r.amount), 0)),
     },
     { title: 'Submitted by', dataIndex: 'submittedByName', width: 140, defaultFrom: 1400, ...sort('submittedBy') },

@@ -2,15 +2,17 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Alert, App, Button, DatePicker, Divider, Form, Input, InputNumber, Popconfirm, Space, Table, Typography } from 'antd';
+import { Alert, App, Button, DatePicker, Divider, Form, Input, InputNumber, Space, Table, Typography } from 'antd';
 import { EditOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { RaBillDto, RaBillPvLineDto } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useContract } from '@/lib/queries';
 import { formatINR, toNumber, formatMonth } from '@/lib/format';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
+import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 interface FormValues {
   indexMonth?: dayjs.Dayjs | null;
@@ -57,8 +59,8 @@ export function BillPriceVariation({ bill, editable }: { bill: RaBillDto; editab
           columns={[
             { title: 'Component', dataIndex: 'name' },
             { title: 'Share', dataIndex: 'sharePct', align: 'right', render: (v: string) => `${v}%` },
-            { title: 'Base index', dataIndex: 'baseIndex', align: 'right', render: (v: string) => <span className="mono">{v}</span> },
-            { title: 'This bill', dataIndex: 'currentIndex', align: 'right', render: (v: string) => <span className="mono">{v}</span> },
+            { title: 'Base index', dataIndex: 'baseIndex', align: 'right', render: (v: string) => <span className="mono" translate="no">{v}</span> },
+            { title: 'This bill', dataIndex: 'currentIndex', align: 'right', render: (v: string) => <span className="mono" translate="no">{v}</span> },
             {
               title: 'Amount',
               dataIndex: 'amount',
@@ -126,7 +128,7 @@ function IndicesModal({ open, bill, components, onClose }: { open: boolean; bill
       qc.invalidateQueries({ queryKey: ['bills'] });
       message.success(b.pvLines.length ? `Price variation ${formatINR(b.pvAmount, true)} added to ${b.billLabel}` : `Price variation taken off ${b.billLabel}`);
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
 
   const submit = (v: FormValues) =>
@@ -147,11 +149,11 @@ function IndicesModal({ open, bill, components, onClose }: { open: boolean; bill
       onSubmit={submit}
       footerExtra={
         bill.pvLines.length ? (
-          <Popconfirm title="Take the price variation off this bill?" onConfirm={() => save.mutate({ indices: [] }, { onSuccess: onClose })}>
+          <ConfirmDelete verb="Remove" what="the price variation from this bill" notice={false} onConfirm={() => save.mutateAsync({ indices: [] })} onDone={onClose}>
             <Button danger loading={save.isPending}>
               Remove
             </Button>
-          </Popconfirm>
+          </ConfirmDelete>
         ) : null
       }
     >

@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Alert, App, Button, Descriptions, Divider, Drawer, Popconfirm, Skeleton, Space, Table, Timeline, Typography } from 'antd';
+import { Alert, Button, Descriptions, Divider, Drawer, Skeleton, Space, Table, Timeline, Typography } from 'antd';
 import { DeleteOutlined, EditOutlined, PlusOutlined, SendOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { DocumentRevisionDto } from '@erp/shared';
 import { DOCUMENT_DISCIPLINE_LABELS, DOCUMENT_KIND_LABELS, canManageDocuments, isBuildable } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useDocument, useDocumentHistory } from '@/lib/queries';
 import { formatDate, formatDateTime } from '@/lib/format';
@@ -16,11 +17,11 @@ import { DocumentFormModal } from './DocumentFormModal';
 import { RevisionFormModal } from './RevisionFormModal';
 import { RecordLink } from '@/components/record/RecordLink';
 import { themeFontSize } from '@/lib/theme';
+import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 /** A drawing or document: its current revision first, every revision with its files and transmittals, and the history. */
 export function DocumentDrawer({ id, open, onClose, onSend, onOpenTransmittal }: { id: string | null; open: boolean; onClose: () => void; onSend?: (projectId: string, revisionIds: string[]) => void; onOpenTransmittal?: (id: string) => void }) {
   const { user } = useAuth();
-  const { message } = App.useApp();
   const qc = useQueryClient();
   const { data, isLoading, error, refetch } = useDocument(id ?? undefined);
   const { data: history } = useDocumentHistory(id ?? undefined);
@@ -32,19 +33,17 @@ export function DocumentDrawer({ id, open, onClose, onSend, onOpenTransmittal }:
   const removeDoc = useMutation({
     mutationFn: async () => (await api.delete(`/documents/${id}`)).data,
     onSuccess: () => {
-      message.success('Document deleted');
       qc.invalidateQueries({ queryKey: ['documents'] });
       onClose();
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
   const removeRevision = useMutation({
     mutationFn: async (revisionId: string) => (await api.delete(`/documents/${id}/revisions/${revisionId}`)).data,
     onSuccess: () => {
-      message.success('Revision deleted');
       qc.invalidateQueries({ queryKey: ['documents'] });
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   const cur = data?.current;
@@ -67,9 +66,9 @@ export function DocumentDrawer({ id, open, onClose, onSend, onOpenTransmittal }:
             ) : null}
             <Button size="small" icon={<EditOutlined />} onClick={() => setEditing(true)} aria-label="Edit document" />
             {!sent ? (
-              <Popconfirm title={`Delete ${data.docNo}?`} description="All its revisions and files go with it." okText="Delete" okButtonProps={{ danger: true }} onConfirm={() => removeDoc.mutate()}>
+              <ConfirmDelete what={`document ${data.docNo}`} description="All its revisions and files go with it." onConfirm={() => removeDoc.mutateAsync()}>
                 <Button size="small" danger icon={<DeleteOutlined />} aria-label="Delete document" />
-              </Popconfirm>
+              </ConfirmDelete>
             ) : null}
           </Space>
         ) : null
@@ -142,9 +141,9 @@ export function DocumentDrawer({ id, open, onClose, onSend, onOpenTransmittal }:
                         <Space size={4}>
                           <Button size="small" type="text" icon={<EditOutlined />} onClick={() => setRevision(r)} aria-label={`Edit revision ${r.revision}`} />
                           {!r.transmittals.length ? (
-                            <Popconfirm title={`Delete revision ${r.revision}?`} okText="Delete" okButtonProps={{ danger: true }} onConfirm={() => removeRevision.mutate(r.id)}>
+                            <ConfirmDelete what={`revision ${r.revision}`} onConfirm={() => removeRevision.mutateAsync(r.id)}>
                               <Button size="small" type="text" danger icon={<DeleteOutlined />} aria-label={`Delete revision ${r.revision}`} />
-                            </Popconfirm>
+                            </ConfirmDelete>
                           ) : null}
                         </Space>
                       ),

@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Checkbox, DatePicker, Form, Input, InputNumber, Popconfirm, Select, Space, Tag, theme } from 'antd';
+import { App, Button, Checkbox, DatePicker, Form, Input, InputNumber, Select, Space, Tag, theme } from 'antd';
 import dayjs from 'dayjs';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { EquipmentDto, EquipmentOwnership, EquipmentRateUnit, EquipmentSortField } from '@erp/shared';
 import { EQUIPMENT_OWNERSHIPS, EQUIPMENT_OWNERSHIP_LABELS, EQUIPMENT_RATE_UNITS, EQUIPMENT_RATE_UNIT_LABELS, LIST_SORT_FIELDS, canManageEquipment } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useEquipment, useProjects } from '@/lib/queries';
 import { formatDate, formatINR } from '@/lib/format';
@@ -25,6 +26,7 @@ import { OwnershipTag } from './hours';
 import { VendorPicker } from '@/components/vendors/VendorPicker';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
+import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 const KEYS = ['ownership', 'inactive'] as const;
 
@@ -83,15 +85,14 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
       message.success(`${e.code} saved`);
       qc.invalidateQueries({ queryKey: ['machinery'] });
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
   const remove = useMutation({
     mutationFn: async (e: EquipmentDto) => (await api.delete(`/equipment/${e.id}`)).data,
     onSuccess: () => {
-      message.success('Machine deleted');
       qc.invalidateQueries({ queryKey: ['machinery'] });
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   const open = (e: EquipmentDto | 'new') => {
@@ -172,9 +173,9 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
                 render: (_: unknown, r: EquipmentDto) => (
                   <Space size="small">
                     <Button type="text" size="small" icon={<EditOutlined />} onClick={() => open(r)} aria-label="Edit" />
-                    <Popconfirm title={`Delete ${r.code}?`} okText="Delete" okButtonProps={{ danger: true }} onConfirm={() => remove.mutate(r)} disabled={!!r.lastLogDate}>
+                    <ConfirmDelete what={`machine ${r.code}`} onConfirm={() => remove.mutateAsync(r)} disabled={!!r.lastLogDate}>
                       <Button type="text" size="small" danger icon={<DeleteOutlined />} disabled={!!r.lastLogDate} title={r.lastLogDate ? 'Has logs; mark it inactive instead' : undefined} aria-label="Delete" />
-                    </Popconfirm>
+                    </ConfirmDelete>
                   </Space>
                 ),
               } satisfies ListColumn<EquipmentDto>,
@@ -192,7 +193,7 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
 
   const newButton = mayManage ? (
     <Button icon={<PlusOutlined />} onClick={() => open('new')}>
-      Add machine
+      New machine
     </Button>
   ) : null;
 
@@ -244,7 +245,7 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
         empty={frame.empty}
         failed={!!error}
         scrollX={1000}
-        emptyText={<EmptyArt art="entries" title={ownership || includeInactive || page.params.q ? 'No machine matches these filters' : mayManage ? 'No machines yet. Add the fleet with Add machine.' : 'No machines yet'} />}
+        emptyText={<EmptyArt art="entries" title={ownership || includeInactive || page.params.q ? 'No machine matches these filters' : mayManage ? 'No machines yet. Add the fleet with New machine.' : 'No machines yet'} />}
         emptyAction={newButton}
       />
       {/* Where a new machine is deployed is a deliberate choice (the yard by default), not the header's project. */}
@@ -253,8 +254,8 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
         onClose={() => setEditing(null)}
         form={form}
         layout="drawer"
-        title={editing === 'new' ? 'Add machine' : 'Edit machine'}
-        okText={editing === 'new' ? 'Add machine' : 'Save'}
+        title={editing === 'new' ? 'New machine' : 'Edit machine'}
+        okText="Save"
         projectDefault={false}
         onSubmit={(v) => save.mutateAsync(v)}
       >
@@ -279,7 +280,7 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
           </FormSection>
           <FormSection title="Ownership and rate">
             <FormGrid cols={2}>
-              <Form.Item name="ownership" label="Owned / hired" rules={[{ required: true }]}>
+              <Form.Item name="ownership" label="Owned / hired" rules={[{ required: true, message: 'Choose owned or hired' }]}>
                 <Select options={EQUIPMENT_OWNERSHIPS.map((o) => ({ value: o, label: EQUIPMENT_OWNERSHIP_LABELS[o] }))} />
               </Form.Item>
               <Form.Item name="supplier" label="Hire agency" hidden={formOwnership !== 'HIRED'}>
@@ -290,7 +291,7 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
               <Form.Item name="rate" label={formOwnership === 'HIRED' ? 'Hire rate' : 'Internal rate'} extra="Used for the project cost view">
                 <MoneyInput />
               </Form.Item>
-              <Form.Item name="rateUnit" label="Rate per" rules={[{ required: true }]}>
+              <Form.Item name="rateUnit" label="Rate per" rules={[{ required: true, message: 'Choose what the rate is per' }]}>
                 <Select options={EQUIPMENT_RATE_UNITS.map((u) => ({ value: u, label: EQUIPMENT_RATE_UNIT_LABELS[u] }))} />
               </Form.Item>
             </FormGrid>

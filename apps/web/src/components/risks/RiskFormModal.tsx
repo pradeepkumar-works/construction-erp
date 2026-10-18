@@ -7,7 +7,8 @@ import type { AttachmentDto, DelayParty, RiskCategory, RiskDto, RiskKind, RiskSt
 import { DELAY_PARTIES, DELAY_PARTY_LABELS, RISK_CATEGORIES, RISK_CATEGORY_LABELS, RISK_LEVEL_LABELS, RISK_STATUSES, RISK_STATUS_LABELS, delayDays, riskLevel, riskScore } from '@erp/shared';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useActivities, useProject, useProjects } from '@/lib/queries';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { LEVEL_TAG, RATING_OPTIONS } from './riskUi';
@@ -151,7 +152,7 @@ export function RiskFormModal({ open, onClose, projectId, defaultProjectId, risk
       qc.invalidateQueries({ queryKey: ['risks'] });
       qc.invalidateQueries({ queryKey: ['notifications'] });
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   return (
@@ -159,8 +160,8 @@ export function RiskFormModal({ open, onClose, projectId, defaultProjectId, risk
       open={open}
       onClose={onClose}
       form={form}
-      title={risk ? `Update ${risk.riskNo}` : isDelay ? 'Record a delay' : 'Raise a risk'}
-      okText={editing ? 'Save' : isDelay ? 'Record delay' : 'Raise risk'}
+      title={risk ? `Update ${risk.riskNo}` : isDelay ? 'Record delay' : 'New risk'}
+      okText={editing ? 'Save' : isDelay ? 'Record delay' : 'Save risk'}
       onSubmit={(v) => mutation.mutateAsync(v)}
       layout="drawer"
       width={720}
@@ -232,10 +233,10 @@ export function RiskFormModal({ open, onClose, projectId, defaultProjectId, risk
           </>
         ) : null}
         <FormGrid cols={3}>
-          <Form.Item name="probability" label="Probability" rules={[{ required: true }]}>
+          <Form.Item name="probability" label="Probability" rules={[{ required: true, message: 'Choose the probability' }]}>
             <Select options={RATING_OPTIONS} />
           </Form.Item>
-          <Form.Item name="impact" label="Impact on time / cost" rules={[{ required: true }]}>
+          <Form.Item name="impact" label="Impact on time / cost" rules={[{ required: true, message: 'Choose the impact' }]}>
             <Select options={RATING_OPTIONS} />
           </Form.Item>
           <Form.Item label="Score">

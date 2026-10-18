@@ -11,19 +11,22 @@ export function toNumber(value: string | number | null | undefined): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+/** ₹ and a no-break space, so the symbol never wraps away from its figure (docs/WRITING.md). */
+export const RUPEE = '₹\u00A0';
+
 /** Full INR with Indian digit grouping: ₹ 18,65,00,000 */
 export function formatINR(value: string | number | null | undefined, decimals = false): string {
   const n = toNumber(value);
-  return `₹ ${decimals ? inr2.format(n) : inr.format(n)}`;
+  return `${RUPEE}${decimals ? inr2.format(n) : inr.format(n)}`;
 }
 
 /** Compact INR for KPIs: ₹ 1.87 Cr / ₹ 12.5 L / ₹ 85,000 */
 export function formatINRCompact(value: string | number | null | undefined): string {
   const n = toNumber(value);
   const abs = Math.abs(n);
-  if (abs >= 1e7) return `₹ ${(n / 1e7).toFixed(2)} Cr`;
-  if (abs >= 1e5) return `₹ ${(n / 1e5).toFixed(2)} L`;
-  return `₹ ${inr.format(n)}`;
+  if (abs >= 1e7) return `${RUPEE}${(n / 1e7).toFixed(2)}\u00A0Cr`;
+  if (abs >= 1e5) return `${RUPEE}${(n / 1e5).toFixed(2)}\u00A0L`;
+  return `${RUPEE}${inr.format(n)}`;
 }
 
 export function formatQty(value: string | number | null | undefined): string {

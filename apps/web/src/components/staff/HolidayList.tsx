@@ -1,18 +1,20 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, DatePicker, Form, Input, Popconfirm, Select, Table, Typography } from 'antd';
+import { App, Button, DatePicker, Form, Input, Select, Table, Typography } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { HolidayDto } from '@erp/shared';
 import { canManageStaff } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useHolidays, useProjects } from '@/lib/queries';
 import { QueryError } from '@/components/common/QueryState';
 import { CardToolbar } from '@/components/common/CardToolbar';
 import { FormShell } from '@/components/form/FormShell';
+import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 /** Holidays for the year: for every site or one site. Leave does not count them; working one earns a comp-off. */
 export function HolidayList() {
@@ -32,15 +34,14 @@ export function HolidayList() {
       message.success(`${h.name} added`);
       qc.invalidateQueries({ queryKey: ['staff'] });
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
   const remove = useMutation({
     mutationFn: async (id: string) => (await api.delete(`/staff/holidays/${id}`)).data,
     onSuccess: () => {
-      message.success('Holiday removed');
       qc.invalidateQueries({ queryKey: ['staff'] });
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   return (
@@ -58,7 +59,7 @@ export function HolidayList() {
               setAdding(true);
             }}
           >
-            Add holiday
+            New holiday
           </Button>
         )}
       </CardToolbar>
@@ -81,11 +82,11 @@ export function HolidayList() {
                   key: 'actions',
                   width: 90,
                   render: (_: unknown, h: HolidayDto) => (
-                    <Popconfirm title={`Remove ${h.name}?`} okText="Remove" onConfirm={() => remove.mutate(h.id)}>
+                    <ConfirmDelete verb="Remove" what={h.name} description="It comes off the holiday calendar." onConfirm={() => remove.mutateAsync(h.id)}>
                       <Button size="small" danger>
                         Remove
                       </Button>
-                    </Popconfirm>
+                    </ConfirmDelete>
                   ),
                 },
               ]
@@ -93,7 +94,7 @@ export function HolidayList() {
         ]}
       />
       {/* Blank Where is every site, so the header's project is not put in. */}
-      <FormShell open={adding} onClose={() => setAdding(false)} form={form} layout="modal" title="Add holiday" okText="Add" onSubmit={(v) => add.mutateAsync(v)} projectDefault={false}>
+      <FormShell open={adding} onClose={() => setAdding(false)} form={form} layout="modal" title="New holiday" okText="Save" onSubmit={(v) => add.mutateAsync(v)} projectDefault={false}>
         <Form form={form} layout="vertical">
           <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date' }]}>
             <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" />

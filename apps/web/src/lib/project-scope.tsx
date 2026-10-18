@@ -13,7 +13,7 @@ const Ctx = createContext<Scope | null>(null);
 
 /**
  * The project the signed-in user is working on, chosen in the header and remembered on this browser: every list's
- * project filter reads and writes it, so picking a project once narrows Daily Reports, Stock, Bills and the rest.
+ * project filter reads and writes it, so picking a project once narrows Daily reports, Stock, Bills and the rest.
  */
 export function ProjectScopeProvider({ userId, enabled, children }: { userId: string; enabled: boolean; children: React.ReactNode }) {
   const key = `nirmaan.project.${userId}`;

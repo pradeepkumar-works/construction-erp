@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Alert, App, Button, Flex, Form, Input, Skeleton, Spin, Tag, Typography, theme } from 'antd';
 import { CheckCircleFilled, CheckOutlined, ExclamationCircleFilled } from '@ant-design/icons';
 import type { BillCheckDto, CheckKind } from '@erp/shared';
-import { errorMessage } from '@/lib/api';
+import { useNotify } from '@/lib/notify';
 import { useAcceptCheck, useBillCheckSummary, useBillChecks } from '@/lib/queries';
 import { formatDateTime } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
@@ -25,6 +25,7 @@ export function ChecksSection({ kind, id, version }: { kind: CheckKind; id: stri
   const { data, isLoading, error, refetch } = useBillChecks(kind, id, version);
   const summary = useBillCheckSummary(kind, id, !!data?.aiSummaryPending);
   const accept = useAcceptCheck(kind, id);
+  const notify = useNotify();
   const [accepting, setAccepting] = useState<BillCheckDto | null>(null);
   const [form] = Form.useForm<{ note: string }>();
 
@@ -33,7 +34,7 @@ export function ChecksSection({ kind, id, version }: { kind: CheckKind; id: stri
 
   const line = summary.data && data.aiSummaryPending ? summary.data : { summary: data.summary, summaryBy: data.summaryBy };
   const reopen = (c: BillCheckDto) =>
-    accept.mutate({ key: c.key, note: '', reopen: true }, { onSuccess: () => message.success('Flag reopened'), onError: (e) => message.error(errorMessage(e)) });
+    accept.mutate({ key: c.key, note: '', reopen: true }, { onSuccess: () => message.success('Flag reopened'), onError: (e) => notify.failed(e, () => reopen(c)) });
 
   return (
     <div className="bill-checks">
@@ -78,19 +79,14 @@ export function ChecksSection({ kind, id, version }: { kind: CheckKind; id: stri
         okText="Accept flag"
         form={form}
         onSubmit={async (v) => {
-          try {
-            await accept.mutateAsync({ key: accepting!.key, note: v.note });
-          } catch (e) {
-            message.error(errorMessage(e));
-            throw e;
-          }
+          await accept.mutateAsync({ key: accepting!.key, note: v.note });
           message.success('Flag accepted');
         }}
       >
         <Typography.Paragraph>{accepting?.title}</Typography.Paragraph>
         {/* A fresh note for each flag. */}
         <Form form={form} layout="vertical" preserve={false} key={accepting?.key ?? 'none'}>
-          <Form.Item name="note" label="Why it is all right" rules={[{ required: true, message: 'Required' }, { min: 3, message: 'A few words at least' }]}>
+          <Form.Item name="note" label="Why it is all right" rules={[{ required: true, message: 'Say why it is all right' }, { min: 3, message: 'A few words at least' }]}>
             <Input.TextArea rows={3} maxLength={500} showCount placeholder="Rate revised by the PM on site; letter on file" />
           </Form.Item>
         </Form>

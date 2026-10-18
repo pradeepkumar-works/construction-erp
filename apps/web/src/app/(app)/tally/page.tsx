@@ -14,6 +14,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { TallyExportDto, TallyLedgerKind, TallyLedgerRowDto, TallySettingsDto, TallyVoucherDto, TallyVoucherKind } from '@erp/shared';
 import { TALLY_VOUCHER_KINDS, TALLY_VOUCHER_KIND_LABELS, TALLY_VOUCHER_TYPES, canExportTally } from '@erp/shared';
 import { api, errorMessage } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useTallyExports, useTallyPreview, useTallySettings } from '@/lib/queries';
 import { formatDate, formatDateTime, formatINR } from '@/lib/format';
@@ -22,7 +23,7 @@ import { QueryError } from '@/components/common/QueryState';
 import { CardToolbar } from '@/components/common/CardToolbar';
 import { themeColor, themeFontSize } from '@/lib/theme';
 
-const money = (v: string | null) => (v ? <span className="mono">{formatINR(v, true)}</span> : null);
+const money = (v: string | null) => (v ? <span className="mono" translate="no">{formatINR(v, true)}</span> : null);
 const KIND_COLORS: Record<TallyVoucherKind, string> = { SALES: 'green', RECEIPT: 'cyan', PURCHASE: 'orange', SUBCONTRACT: 'volcano', PAYMENT: 'purple', EXPENSE: 'gold' };
 const LEDGER_KIND_LABELS: Record<TallyLedgerKind, string> = { FIXED: 'Accounts', EXPENSE: 'Expense categories', CLIENT: 'Clients', VENDOR: 'Vendors' };
 
@@ -63,7 +64,7 @@ function ToExport() {
       await downloadXml(`/tally/exports/${e.id}/xml`, exportFile(e));
       message.success(`${e.voucherCount} vouchers exported. Import the file in TallyPrime: Import → Transactions.`);
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
 
   const rows = useMemo(() => vouchers.map((v) => ({ ...v, id: v.key })), [vouchers]);
@@ -80,7 +81,7 @@ function ToExport() {
       width: 200,
       render: (v: string, r) => (
         <div>
-          <span className="mono">{v}</span>
+          <span className="mono" translate="no">{v}</span>
           <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
             {TALLY_VOUCHER_TYPES[r.kind]}
           </div>
@@ -102,7 +103,7 @@ function ToExport() {
         </div>
       ),
     },
-    { key: 'amount', title: 'Amount', dataIndex: 'amount', width: 150, align: 'right', card: 'amount', render: (v) => <strong className="mono">{formatINR(v, true)}</strong> },
+    { key: 'amount', title: 'Amount', dataIndex: 'amount', width: 150, align: 'right', card: 'amount', render: (v) => <strong className="mono" translate="no">{formatINR(v, true)}</strong> },
   ];
 
   return (
@@ -204,7 +205,7 @@ function Exports() {
       qc.invalidateQueries({ queryKey: ['tally'] });
       for (const k of ['ra-bills', 'receipts', 'vendor-payments']) qc.invalidateQueries({ queryKey: [k] });
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
   const columns: ListColumn<TallyExportDto>[] = [
     {
@@ -318,7 +319,7 @@ function Ledgers() {
       qc.invalidateQueries({ queryKey: ['tally', 'preview'] });
       message.success('Tally settings saved');
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
   const rows = (data?.ledgers ?? []).filter((l) => (kind === 'ALL' || l.kind === kind) && (!q || `${l.defaultName} ${l.use} ${names[l.key] ?? ''}`.toLowerCase().includes(q.toLowerCase())));
   const columns: TableProps<TallyLedgerRowDto>['columns'] = [
@@ -404,14 +405,14 @@ export default function TallyPage() {
   if (user && !canExportTally(user.roleKey))
     return (
       <div className="page-container">
-        <PageHeader title="Tally Export" />
+        <PageHeader title="Tally export" />
         <Alert type="info" showIcon title="Only admin, management and accounts export to Tally." />
       </div>
     );
   return (
     <div className="page-container">
       <PageHeader
-        title="Tally Export"
+        title="Tally export"
         subtitle="Certified RA bills, money received, vendor and subcontractor bills, payments and site expenses as TallyPrime vouchers, each sent once. Tally stays the books."
       />
       <Typography.Paragraph type="secondary" style={{ maxWidth: 900 }}>

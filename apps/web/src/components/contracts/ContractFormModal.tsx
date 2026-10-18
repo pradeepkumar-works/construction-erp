@@ -7,7 +7,8 @@ import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ContractPercentField, LdPeriod, ProjectContractDto } from '@erp/shared';
 import { CONTRACT_PERCENT_FIELDS, CONTRACT_PERCENT_LABELS, LD_PERIODS, LD_PERIOD_LABELS, MAX_GST_RATE } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { ClientSelect } from '@/components/common/SearchSelect';
 import { ClientFormModal } from '@/components/clients/ClientFormModal';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
@@ -94,7 +95,7 @@ export function ContractFormModal({ open, contract, onClose }: { open: boolean; 
       qc.invalidateQueries({ queryKey: ['projects'] });
       qc.invalidateQueries({ queryKey: ['clients'] });
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
 
   return (

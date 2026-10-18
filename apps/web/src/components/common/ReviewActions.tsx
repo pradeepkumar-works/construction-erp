@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
-import { App, Button, ConfigProvider, Form, Input, Modal, Space, Tooltip, Typography } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { Alert, App, Button, ConfigProvider, Form, Input, Modal, Space, Tooltip, Typography } from 'antd';
 import { CheckOutlined, CloseOutlined, EditOutlined } from '@ant-design/icons';
 import type { ReviewDecision, SubmissionStatus, SubmissionType } from '@erp/shared';
 import { mayApproveType } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { errorMessage } from '@/lib/api';
+import { handledInPlace } from '@/lib/notify';
 import { useReview, type ApprovalTypeParam } from '@/lib/queries';
 import { approveTheme, themeFontSize } from '@/lib/theme';
 import { inSentence } from '@/lib/format';
@@ -95,19 +96,49 @@ export function ReviewDialog({ type, id, decision, onClose, onDone }: { type: Ap
   const { message } = App.useApp();
   const review = useReview();
   const [form] = Form.useForm<{ note?: string }>();
+  const [problem, setProblem] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
+  // The entry the dialog was opened for: in the inbox the picked entry moves on as soon as a decision shows.
+  const [forId, setForId] = useState(id);
+  useEffect(() => {
+    if (decision) setForId(id);
+    setProblem(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [decision]);
 
   const submit = async () => {
     if (!decision) return;
+    let values: { note?: string };
     try {
-      const values = await form.validateFields();
-      await review.mutateAsync({ type, id, decision, note: values.note });
-      message.success(decision === 'APPROVE' ? 'Approved' : decision === 'REJECT' ? 'Rejected' : 'Changes requested');
+      values = await form.validateFields();
+    } catch {
+      return;
+    }
+    const vars = { type, id: forId, decision, note: values.note };
+    if (decision === 'APPROVE') {
+      // Shown as approved at once (UX item 86); a refusal puts it back and says why, with Retry.
+      form.resetFields();
+      onClose();
+      onDone?.();
+      review.mutateAsync(vars).then(
+        () => message.success('Approved'),
+        () => undefined,
+      );
+      return;
+    }
+    // Sending back or rejecting waits for the server, with the reason kept here if it fails.
+    setSending(true);
+    setProblem(null);
+    try {
+      await handledInPlace(() => review.mutateAsync(vars));
+      message.success(decision === 'REJECT' ? 'Rejected' : 'Changes requested');
       form.resetFields();
       onClose();
       onDone?.();
     } catch (err) {
-      if (err && typeof err === 'object' && 'errorFields' in err) return;
-      message.error(errorMessage(err));
+      setProblem(errorMessage(err));
+    } finally {
+      setSending(false);
     }
   };
 
@@ -116,7 +147,7 @@ export function ReviewDialog({ type, id, decision, onClose, onDone }: { type: Ap
       open={!!decision}
       title={decision ? REVIEW_LABELS[decision] : ''}
       okText={decision ? REVIEW_LABELS[decision] : 'OK'}
-      okButtonProps={{ danger: decision === 'REJECT', loading: review.isPending }}
+      okButtonProps={{ danger: decision === 'REJECT', loading: sending }}
       onOk={submit}
       onCancel={() => {
         onClose();
@@ -124,6 +155,7 @@ export function ReviewDialog({ type, id, decision, onClose, onDone }: { type: Ap
       }}
       destroyOnHidden
     >
+      {problem ? <Alert type="error" showIcon role="alert" title={problem} style={{ marginTop: 12 }} /> : null}
       <Form form={form} layout="vertical" style={{ marginTop: 12 }}>
         <Form.Item
           name="note"

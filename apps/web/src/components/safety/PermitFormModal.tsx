@@ -6,7 +6,8 @@ import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, WorkPermitDto, WorkPermitType } from '@erp/shared';
 import { PERMIT_MAX_DAYS, PERMIT_PRECAUTIONS, WORK_PERMIT_TYPES, WORK_PERMIT_TYPE_LABELS } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useProjects } from '@/lib/queries';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
@@ -91,11 +92,11 @@ export function PermitFormModal({ open, onClose, projectId, permit }: { open: bo
       message.success(permit ? `${x.permitNo} saved` : `${x.permitNo} requested`);
       qc.invalidateQueries({ queryKey: ['safety'] });
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
 
   return (
-    <FormShell open={open} onClose={onClose} form={form} layout="drawer" title={permit ? `Change ${permit.permitNo}` : 'Ask for a permit to work'} okText={permit ? 'Save' : 'Request permit'} onSubmit={(v) => save.mutateAsync(v)}>
+    <FormShell open={open} onClose={onClose} form={form} layout="drawer" title={permit ? `Change ${permit.permitNo}` : 'Request permit to work'} okText={permit ? 'Save' : 'Request permit'} onSubmit={(v) => save.mutateAsync(v)}>
       <Form form={form} layout="vertical">
         <FormSection title="Permit">
           <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!projectId || !!permit}>
@@ -103,7 +104,7 @@ export function PermitFormModal({ open, onClose, projectId, permit }: { open: bo
           </Form.Item>
           <FormGrid cols={2}>
             <Form.Item name="type" label="Work" rules={[{ required: true, message: 'Pick the kind of work' }]}>
-              <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Hot work, height..." options={WORK_PERMIT_TYPES.map((t) => ({ value: t, label: WORK_PERMIT_TYPE_LABELS[t] }))} onChange={() => form.setFieldsValue({ precautions: [] })} />
+              <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Hot work, height…" options={WORK_PERMIT_TYPES.map((t) => ({ value: t, label: WORK_PERMIT_TYPE_LABELS[t] }))} onChange={() => form.setFieldsValue({ precautions: [] })} />
             </Form.Item>
             <Form.Item name="location" label="Where" rules={[{ required: true, whitespace: true, message: 'Where is the work?' }]}>
               <Input maxLength={200} />

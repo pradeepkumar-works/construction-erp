@@ -6,7 +6,8 @@ import dayjs from 'dayjs';
 import type { AiDraftDto, AttachmentDto, LetterDirection, LetterDto } from '@erp/shared';
 import { LETTER_DIRECTION_LABELS } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useLetters, useProjects, useRisks } from '@/lib/queries';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
@@ -123,7 +124,7 @@ export function LetterFormModal({ open, onClose, projectId, letter, prefill, aiD
       qc.invalidateQueries({ queryKey: ['risks'] });
       onSaved?.(l);
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   return (
@@ -133,7 +134,7 @@ export function LetterFormModal({ open, onClose, projectId, letter, prefill, aiD
       form={form}
       layout="drawer"
       width={680}
-      title={letter ? `Edit ${letter.letterNo}` : prefill?.inReplyToId ? 'Reply' : 'Record a letter'}
+      title={letter ? `Edit ${letter.letterNo}` : prefill?.inReplyToId ? 'Reply' : 'Record letter'}
       okText={editing ? 'Save' : 'Record'}
       onSubmit={(v) => mutation.mutateAsync(v)}
       draftKey={editing || prefill ? undefined : `letter:${projectId ?? 'any'}`}

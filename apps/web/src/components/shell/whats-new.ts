@@ -9,6 +9,40 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-10-navigation',
+    date: '2026-10-22',
+    title: 'A shorter sidebar, in plain words',
+    points: [
+      'The sidebar shows the pages your role works with. A section you close stays closed for you, and the section of the page you are on opens by itself.',
+      'Recent pages and records are in Search: press Ctrl K (⌘K on a Mac) and the ones you opened last come first, before you type.',
+      'Each page has one name, the same in the sidebar, its heading, the browser tab and Search, such as Daily reports, Staff and leave and Payroll inputs. The first link is Home, and the subscription page under Admin is Subscription.',
+      "A page's own New button is the one to press; New in the header starts an entry from any page. Buttons say New for a record you make, and Record, Report or Request for something that happened or that you ask for.",
+    ],
+  },
+  {
+    id: '2026-10-undo',
+    date: '2026-10-22',
+    title: 'Undo, and clearer messages',
+    points: [
+      'Deleting asks once, naming what goes, with a red Delete. It waits until it is done and says so there if it could not be deleted.',
+      'After deleting a holiday, unit, client, vendor, worker, item, quotation, milestone, driver, checklist, close-out line or saved view, Undo brings it back for ten seconds. Ctrl Z (⌘Z on a Mac) does the same. Taking someone off a project team can be undone too.',
+      'Saving a new entry says what was made, with View to open it.',
+      'Approving shows the entry as approved straight away, one or many at once. If it does not go through, it goes back to waiting and the message says why.',
+      'When you are offline or something goes wrong on our side, the message says so in plain words, with Retry. What you typed in a form stays there, with Try again.',
+    ],
+  },
+  {
+    id: '2026-10-photo-checks',
+    date: '2026-10-22',
+    title: 'Ask Nirmaan looks at site photos',
+    points: [
+      'Photos on a DPR, a progress entry, a safety incident or a snag get a short caption from Ask Nirmaan, under the photos.',
+      'It flags what it is sure of: workers without helmets or harnesses, an open edge without a barricade, a scaffold that looks unsafe, or a photo of other work than the entry says. Flags are advice and never hold up a submission.',
+      "The project's safety officer can switch the flags off for a project; captions still show.",
+      'Reporting a snag, Describe from photo fills in what is wrong, the details, where and the trade from its photo. Check it, then save.',
+    ],
+  },
+  {
     id: '2026-10-phone-lists',
     date: '2026-10-21',
     title: 'Lists that fit a phone',

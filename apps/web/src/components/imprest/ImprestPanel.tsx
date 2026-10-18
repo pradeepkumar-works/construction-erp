@@ -8,7 +8,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ImprestDto, ImprestEntryDto, ImprestLedgerLine } from '@erp/shared';
 import { IMPREST_ENTRY_KIND_LABELS, IMPREST_ENTRY_STATUS_LABELS, PAYMENT_MODE_LABELS, SUBMISSION_STATUS_LABELS, canManageImprest } from '@erp/shared';
 import { useProjectScope } from '@/lib/project-scope';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useImprest, useImprests } from '@/lib/queries';
 import { STATUS_COLORS, formatDate, formatINR } from '@/lib/format';
@@ -114,7 +115,7 @@ export function ImprestPanel({ projectId: fixedProject, initialId }: { projectId
         <div style={{ flex: 1 }} />
         {admin ? (
           <Button type="primary" icon={<PlusOutlined />} onClick={() => setAction({ kind: 'open', projectId })}>
-            Open an imprest
+            New imprest
           </Button>
         ) : null}
       </CardToolbar>
@@ -129,7 +130,7 @@ export function ImprestPanel({ projectId: fixedProject, initialId }: { projectId
         pagination={false}
         scroll={{ x: 900 }}
         onRow={(i) => ({ onClick: () => setOpenId(i.id), style: { cursor: 'pointer' } })}
-        locale={{ emptyText: active ? (admin ? 'No imprests yet. Open one to give a site in-charge a petty cash float.' : 'You hold no imprest') : 'None closed' }}
+        locale={{ emptyText: active ? (admin ? 'No imprests yet. Give a site in-charge a petty cash float with New imprest.' : 'You hold no imprest') : 'None closed' }}
       />
       <ImprestDrawer id={openId} onClose={() => setOpenId(null)} admin={admin} onAction={setAction} />
       <ImprestActionModal action={action} onClose={() => setAction(null)} onDone={(id) => setOpenId(id)} />
@@ -150,7 +151,7 @@ function ImprestDrawer({ id, onClose, admin, onAction }: { id: string | null; on
       message.success(isActive ? 'Imprest reopened' : 'Imprest closed');
       qc.invalidateQueries({ queryKey: ['imprests'] });
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   const ledgerCols: TableProps<ImprestLedgerLine>['columns'] = [

@@ -16,8 +16,8 @@ import { unpricedText } from './UnpricedNote';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { Section, SectionStack } from '@/components/common/Section';
 
-const money = (v: string) => <span className="mono">{formatINR(v)}</span>;
-const rateOrDash = (v: string | null, suffix: string) => (v === null ? <span style={{ color: themeColor('gold7') }}>no rate</span> : <span className="mono">{`${formatINR(v, true)} ${suffix}`}</span>);
+const money = (v: string) => <span className="mono" translate="no">{formatINR(v)}</span>;
+const rateOrDash = (v: string | null, suffix: string) => (v === null ? <span style={{ color: themeColor('gold7') }}>no rate</span> : <span className="mono" translate="no">{`${formatINR(v, true)} ${suffix}`}</span>);
 
 /** One project's cost heads, month by month, and what makes them up. */
 export function ProjectCostPanel({ projectId }: { projectId: string }) {
@@ -140,7 +140,7 @@ export function ProjectCostPanel({ projectId }: { projectId: string }) {
                       scroll={{ x: 640 }}
                       columns={[
                         { title: 'Item', dataIndex: 'name' },
-                        { title: 'Issued', dataIndex: 'quantity', width: 130, align: 'right', render: (v, r) => <span className="mono">{`${formatQty(v)} ${r.unit}`}</span> },
+                        { title: 'Issued', dataIndex: 'quantity', width: 130, align: 'right', render: (v, r) => <span className="mono" translate="no">{`${formatQty(v)} ${r.unit}`}</span> },
                         { title: 'Rate', dataIndex: 'rate', width: 170, align: 'right', render: (v, r) => rateOrDash(v, `/ ${r.unit}`) },
                         { title: 'Amount', dataIndex: 'amount', width: 140, align: 'right', render: money },
                       ]}
@@ -158,7 +158,7 @@ export function ProjectCostPanel({ projectId }: { projectId: string }) {
                       dataSource={data.machineryByEquipment}
                       scroll={{ x: 720 }}
                       columns={[
-                        { title: 'Machine', dataIndex: 'code', render: (v, r) => <span><span className="mono">{v}</span> {r.name}</span> },
+                        { title: 'Machine', dataIndex: 'code', render: (v, r) => <span><span className="mono" translate="no">{v}</span> {r.name}</span> },
                         { title: 'Days', dataIndex: 'days', width: 70, align: 'right' },
                         { title: 'Hours', dataIndex: 'hours', width: 80, align: 'right', render: (v) => formatQty(v) },
                         { title: 'Rate', dataIndex: 'rate', width: 180, align: 'right', render: (v, r) => rateOrDash(v, inSentence(EQUIPMENT_RATE_UNIT_LABELS[r.rateUnit])) },

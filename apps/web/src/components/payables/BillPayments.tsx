@@ -1,16 +1,18 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Divider, Popconfirm, Space, Table, Tag, Typography } from 'antd';
+import { Button, Divider, Space, Table, Tag, Typography } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { PayableBillType, VendorPaymentDto } from '@erp/shared';
 import { RECEIPT_MODE_LABELS, canRecordPayment, canViewPayables } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useVendorPayments } from '@/lib/queries';
 import { formatDate, formatINR, toNumber } from '@/lib/format';
 import { PAYMENT_QUERY_KEYS, PaymentFormModal, type PayTarget } from './PaymentFormModal';
 import { InTallyTag } from '@/components/tally/InTallyTag';
+import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 /** Tag for how much of an approved bill is paid. */
 export function PaidTag({ bill }: { bill: { status: string; paidAmount: string; outstanding: string; paidDate: string | null } }) {
@@ -26,7 +28,6 @@ export function PaidTag({ bill }: { bill: { status: string; paidAmount: string; 
  */
 export function BillPayments({ target, approved, heading = true }: { target: PayTarget & { paidAmount: string }; approved: boolean; heading?: boolean }) {
   const { user } = useAuth();
-  const { message } = App.useApp();
   const qc = useQueryClient();
   const [paying, setPaying] = useState(false);
   const [editing, setEditing] = useState<VendorPaymentDto | null>(null);
@@ -37,10 +38,9 @@ export function BillPayments({ target, approved, heading = true }: { target: Pay
   const remove = useMutation({
     mutationFn: async (id: string) => (await api.delete(`/vendor-payments/${id}`)).data,
     onSuccess: () => {
-      message.success('Payment deleted');
       for (const k of PAYMENT_QUERY_KEYS) qc.invalidateQueries({ queryKey: [k] });
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
   if (!visible) return null;
   const outstanding = toNumber(target.outstanding);
@@ -77,15 +77,15 @@ export function BillPayments({ target, approved, heading = true }: { target: Pay
         locale={{ emptyText: 'Nothing paid yet' }}
         columns={[
           { title: 'Date', dataIndex: 'paymentDate', width: 110, render: (v) => formatDate(v) },
-          { title: 'Paid', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <strong className="mono">{formatINR(v, true)}</strong> },
-          { title: 'Deducted', key: 'ded', width: 120, align: 'right', render: (_, p) => <span className="mono">{formatINR(toNumber(p.tdsAmount) + toNumber(p.otherDeduction), true)}</span> },
+          { title: 'Paid', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <strong className="mono" translate="no">{formatINR(v, true)}</strong> },
+          { title: 'Deducted', key: 'ded', width: 120, align: 'right', render: (_, p) => <span className="mono" translate="no">{formatINR(toNumber(p.tdsAmount) + toNumber(p.otherDeduction), true)}</span> },
           {
             title: 'Mode / reference',
             key: 'ref',
             render: (_, p) => (
               <span>
                 {RECEIPT_MODE_LABELS[p.mode]}
-                {p.reference ? <span className="mono text-muted"> · {p.reference}</span> : null}
+                {p.reference ? <span className="mono text-muted" translate="no"> · {p.reference}</span> : null}
               </span>
             ),
           },
@@ -103,11 +103,11 @@ export function BillPayments({ target, approved, heading = true }: { target: Pay
                         <Button size="small" onClick={() => setEditing(p)}>
                           Edit
                         </Button>
-                        <Popconfirm title="Delete this payment?" description="The bill goes back to outstanding." onConfirm={() => remove.mutate(p.id)}>
+                        <ConfirmDelete what={`the payment of ${formatINR(p.amount)} on ${formatDate(p.paymentDate)}`} notice="Payment deleted" description="The bill goes back to outstanding." onConfirm={() => remove.mutateAsync(p.id)}>
                           <Button size="small" danger>
                             Delete
                           </Button>
-                        </Popconfirm>
+                        </ConfirmDelete>
                       </Space>
                   ),
                 },

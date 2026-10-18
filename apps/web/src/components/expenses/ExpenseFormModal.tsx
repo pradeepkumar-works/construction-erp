@@ -1,14 +1,15 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { Alert, App, DatePicker, Form, Input, Select, Typography } from 'antd';
+import { Alert, DatePicker, Form, Input, Select, Typography } from 'antd';
 import dayjs from 'dayjs';
 import type { AiDraftDto, AttachmentDto, ExpenseCategory, ExpenseDto, PaymentMode } from '@erp/shared';
 import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_LABELS, GSTIN_PATTERN, GST_RATES, GST_TOLERANCE, PAYMENT_MODES, PAYMENT_MODE_LABELS, gstFor } from '@erp/shared';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { CODE_INPUT, MoneyInput, upper } from '@/components/form/inputs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE, useNotify } from '@/lib/notify';
 import { useActivities, useProjects } from '@/lib/queries';
 import { formatINR } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
@@ -16,6 +17,7 @@ import { editActionLabel } from '@/components/common/EditResubmitButton';
 import { VendorPicker } from '@/components/vendors/VendorPicker';
 import { aiFlagItem, draftDate } from '@/components/ai/drafts';
 import { themeFontSize } from '@/lib/theme';
+import { recordPage } from '@/components/approvals/queue';
 
 interface FormValues {
   projectId: string;
@@ -37,8 +39,8 @@ interface FormValues {
 /** File a site expense, or (with `expense`) fix a returned one and resubmit it. */
 export function ExpenseFormModal({ open, onClose, projectId, defaultProjectId, expense, prefill }: { open: boolean; onClose: () => void; projectId?: string; /** A new entry starts on this project (the header's), still changeable. */ defaultProjectId?: string; expense?: ExpenseDto | null; /** Filled in by Ask Nirmaan (AI item 71) */ prefill?: AiDraftDto | null }) {
   const [form] = Form.useForm<FormValues>();
-  const { message } = App.useApp();
   const qc = useQueryClient();
+  const notify = useNotify();
   const { data: projects } = useProjects();
   const editing = !!expense;
   const fixedProject = expense?.projectId ?? projectId;
@@ -106,10 +108,10 @@ export function ExpenseFormModal({ open, onClose, projectId, defaultProjectId, e
       return expense ? (await api.patch(`/expenses/${expense.id}`, body)).data : (await api.post('/expenses', { projectId: v.projectId, ...body })).data;
     },
     onSuccess: (x: ExpenseDto) => {
-      message.success(editing ? `${x.expenseNo} resubmitted for approval` : `${x.expenseNo} submitted for approval`);
+      notify.saved(editing ? `${x.expenseNo} resubmitted for approval` : `${x.expenseNo} submitted for approval`, recordPage('EXPENSE', x.id));
       qc.invalidateQueries();
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   return (
@@ -174,7 +176,7 @@ export function ExpenseFormModal({ open, onClose, projectId, defaultProjectId, e
           </Form.Item>
         </FormGrid>
         <FormGrid cols={2}>
-          <Form.Item name="paymentMode" label="Paid by" rules={[{ required: true }]} {...aiFlagItem(draft, 'paymentMode', paymentMode)}>
+          <Form.Item name="paymentMode" label="Paid by" rules={[{ required: true, message: 'Choose how it was paid' }]} {...aiFlagItem(draft, 'paymentMode', paymentMode)}>
             <Select options={PAYMENT_MODES.map((m) => ({ value: m, label: PAYMENT_MODE_LABELS[m] }))} />
           </Form.Item>
           <Form.Item name="activityId" label="Activity (optional)">

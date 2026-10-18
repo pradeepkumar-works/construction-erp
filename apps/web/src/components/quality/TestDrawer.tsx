@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Descriptions, Divider, Drawer, InputNumber, Popconfirm, Skeleton, Space, Table, Typography } from 'antd';
+import { App, Button, Descriptions, Divider, Drawer, InputNumber, Skeleton, Space, Table, Typography } from 'antd';
 import { DeleteOutlined, EditOutlined, WarningOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { QualityTestDto, QualityTestReadingDto } from '@erp/shared';
 import { TEST_KIND_LABELS, canEditTest, canRaiseNcr, canRecordTest, specRange } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useNcrs, useQualityTest } from '@/lib/queries';
 import { formatDate, formatDateTime } from '@/lib/format';
@@ -17,6 +18,7 @@ import { TestFormModal } from './TestFormModal';
 import { NcrFormModal, type NcrPrefill } from './NcrFormModal';
 import { RecordLink } from '@/components/record/RecordLink';
 import { themeFontSize } from '@/lib/theme';
+import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 /** One reading's value with a Save button; a recorded value can be corrected the same way. */
 function ReadingInput({ test, reading }: { test: QualityTestDto; reading: QualityTestReadingDto }) {
@@ -29,7 +31,7 @@ function ReadingInput({ test, reading }: { test: QualityTestDto; reading: Qualit
       message.success(x.result === 'FAIL' ? `${x.testNo} failed` : `${reading.label} result saved`);
       qc.invalidateQueries({ queryKey: ['quality'] });
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
   const changed = (value ?? null) !== (reading.value ?? null);
   return (
@@ -57,11 +59,10 @@ export function TestDrawer({ id, open, onClose, onOpenNcr }: { id: string | null
   const remove = useMutation({
     mutationFn: async () => (await api.delete(`/quality/tests/${id}`)).data,
     onSuccess: () => {
-      message.success('Test deleted');
       qc.invalidateQueries({ queryKey: ['quality'] });
       onClose();
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   const spec = data ? specRange(data.specMin, data.specMax, data.unit) : null;
@@ -102,7 +103,7 @@ export function TestDrawer({ id, open, onClose, onOpenNcr }: { id: string | null
                   })
                 }
               >
-                Raise NCR
+                New NCR
               </Button>
             ) : null}
             {mayEdit ? (
@@ -111,9 +112,9 @@ export function TestDrawer({ id, open, onClose, onOpenNcr }: { id: string | null
               </Button>
             ) : null}
             {mayEdit ? (
-              <Popconfirm title={`Delete ${data.testNo}?`} description="Its NCRs stay on record." okText="Delete" okButtonProps={{ danger: true }} onConfirm={() => remove.mutate()}>
+              <ConfirmDelete what={`test ${data.testNo}`} description="Its NCRs stay on record." onConfirm={() => remove.mutateAsync()}>
                 <Button size="small" danger icon={<DeleteOutlined />} aria-label="Delete test" />
-              </Popconfirm>
+              </ConfirmDelete>
             ) : null}
           </Space>
         ) : null

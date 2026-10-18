@@ -29,7 +29,7 @@ export function IncomingTransfers({ projectId }: { projectId?: string }) {
             {data.map((t) => (
               <div key={t.id} style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
                 <Typography.Text>
-                  <span className="mono">{t.entryNo}</span> from {t.projectName}
+                  <span className="mono" translate="no">{t.entryNo}</span> from {t.projectName}
                   {projectId ? '' : ` to ${t.toProjectName}`}, sent {formatDate(t.date)}: {t.lines.map((l) => l.itemName).join(', ')}
                 </Typography.Text>
                 {keeper ? (

@@ -5,7 +5,8 @@ import { Alert, App, Button, Form, Input, Modal, Skeleton, Tag, Typography } fro
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { canSetLabourRates } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useLabourRates } from '@/lib/queries';
 import { formatINR } from '@/lib/format';
@@ -37,7 +38,7 @@ export function LabourRatesModal({ open, onClose }: { open: boolean; onClose: ()
       message.success('Labour rates saved');
       qc.invalidateQueries({ queryKey: ['cost'] });
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   const intro = (
@@ -88,7 +89,7 @@ export function LabourRatesModal({ open, onClose }: { open: boolean; onClose: ()
             {data.rates.map((r) => (
               <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: `1px solid ${themeColor('colorBorderSecondary')}` }}>
                 <span>{r.category}</span>
-                <span className="mono">{formatINR(r.dailyRate, true)} / day</span>
+                <span className="mono" translate="no">{formatINR(r.dailyRate, true)} / day</span>
               </div>
             ))}
           </div>

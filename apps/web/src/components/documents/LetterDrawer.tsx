@@ -2,12 +2,13 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { App, Button, Descriptions, Divider, Drawer, Popconfirm, Skeleton, Space, Tag } from 'antd';
+import { Button, Descriptions, Divider, Drawer, Skeleton, Space, Tag } from 'antd';
 import { DeleteOutlined, EditOutlined, RollbackOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { LetterRefDto } from '@erp/shared';
 import { LETTER_DIRECTION_LABELS, canApprove } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useLetter } from '@/lib/queries';
 import { formatDate } from '@/lib/format';
@@ -16,6 +17,7 @@ import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { LetterFormModal, type LetterPrefill } from './LetterFormModal';
 import { RecordLink } from '@/components/record/RecordLink';
 import { themeFontSize } from '@/lib/theme';
+import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 export const DirectionTag = ({ direction }: { direction: LetterRefDto['direction'] }) => (
   <Tag color={direction === 'IN' ? 'blue' : 'purple'} style={{ margin: 0 }}>
@@ -26,7 +28,6 @@ export const DirectionTag = ({ direction }: { direction: LetterRefDto['direction
 /** A letter with what it answers and its replies; "Reply" records the answer linked to it (and to the same delay). */
 export function LetterDrawer({ id, open, onClose, onOpen }: { id: string | null; open: boolean; onClose: () => void; onOpen: (id: string) => void }) {
   const { user } = useAuth();
-  const { message } = App.useApp();
   const qc = useQueryClient();
   const { data, isLoading, error, refetch } = useLetter(id ?? undefined);
   const [editing, setEditing] = useState(false);
@@ -34,11 +35,10 @@ export function LetterDrawer({ id, open, onClose, onOpen }: { id: string | null;
   const remove = useMutation({
     mutationFn: async () => (await api.delete(`/letters/${id}`)).data,
     onSuccess: () => {
-      message.success('Letter deleted');
       qc.invalidateQueries({ queryKey: ['documents'] });
       onClose();
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
   const ref = (l: LetterRefDto) => (
     <div key={l.id} style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
@@ -82,9 +82,9 @@ export function LetterDrawer({ id, open, onClose, onOpen }: { id: string | null;
             ) : null}
             <Button size="small" icon={<EditOutlined />} onClick={() => setEditing(true)} aria-label="Edit letter" />
             {user && (data.createdById === user.id || canApprove(user.roleKey)) ? (
-              <Popconfirm title={`Delete ${data.letterNo}?`} okText="Delete" okButtonProps={{ danger: true }} onConfirm={() => remove.mutate()}>
+              <ConfirmDelete what={`letter ${data.letterNo}`} onConfirm={() => remove.mutateAsync()}>
                 <Button size="small" danger icon={<DeleteOutlined />} aria-label="Delete letter" />
-              </Popconfirm>
+              </ConfirmDelete>
             ) : null}
           </Space>
         ) : null

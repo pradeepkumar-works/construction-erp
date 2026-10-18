@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Descriptions, Divider, Drawer, Form, Input, Modal, Popconfirm, Skeleton, Space, Timeline, Typography } from 'antd';
+import { App, Button, Descriptions, Divider, Drawer, Form, Input, Modal, Skeleton, Space, Timeline, Typography } from 'antd';
 import { CheckOutlined, DeleteOutlined, EditOutlined, RedoOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, NcrDto } from '@erp/shared';
 import { canActOnNcr, canApprove, canRaiseNcr } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useNcr, useNcrHistory } from '@/lib/queries';
 import { formatDate, formatDateTime } from '@/lib/format';
@@ -16,6 +17,7 @@ import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { NcrStatusTag, SeverityTag } from './qualityUi';
 import { NcrFormModal } from './NcrFormModal';
 import { themeFontSize } from '@/lib/theme';
+import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 const HISTORY_COLORS: Record<string, string> = { CREATED: 'red', ACTION_TAKEN: 'blue', CLOSED: 'green', REOPENED: 'orange', UPDATED: 'gray' };
 
@@ -45,7 +47,7 @@ function ActionForm({ ncr }: { ncr: NcrDto }) {
       message.success(`Action recorded on ${x.ncrNo}`);
       qc.invalidateQueries({ queryKey: ['quality'] });
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
   return (
     <Form
@@ -95,15 +97,15 @@ export function NcrDrawer({ id, open, onClose }: { id: string | null; open: bool
   const transition = useMutation({
     mutationFn: async (s: 'close' | 'reopen') => (await api.post<NcrDto>(`/quality/ncrs/${id}/${s}`, { note: note.trim() || undefined })).data,
     onSuccess: (x, s) => done(s === 'close' ? `${x.ncrNo} closed` : `${x.ncrNo} reopened`),
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
   const remove = useMutation({
     mutationFn: async () => (await api.delete(`/quality/ncrs/${id}`)).data,
     onSuccess: () => {
-      done('NCR deleted');
+      qc.invalidateQueries({ queryKey: ['quality'] });
       onClose();
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   return (
@@ -139,9 +141,9 @@ export function NcrDrawer({ id, open, onClose }: { id: string | null; open: bool
               </Button>
             ) : null}
             {mayDelete ? (
-              <Popconfirm title={`Delete ${data.ncrNo}?`} description="Only for an NCR raised by mistake." okText="Delete" okButtonProps={{ danger: true }} onConfirm={() => remove.mutate()}>
+              <ConfirmDelete what={data.ncrNo} description="Only for an NCR raised by mistake." onConfirm={() => remove.mutateAsync()}>
                 <Button size="small" danger icon={<DeleteOutlined />} aria-label="Delete NCR" />
-              </Popconfirm>
+              </ConfirmDelete>
             ) : null}
           </Space>
         ) : null

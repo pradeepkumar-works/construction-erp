@@ -7,6 +7,7 @@ import type { AttachmentDto, DocumentDetailDto, DocumentDiscipline, DocumentKind
 import { DOCUMENT_DISCIPLINES, DOCUMENT_DISCIPLINE_LABELS, DOCUMENT_KINDS, DOCUMENT_KIND_LABELS, disciplineOf, readText } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, errorMessage } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { uploadFile, useProjects } from '@/lib/queries';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { ReadDocumentButton, ReadPreview, readFieldProps, type ReadState } from '@/components/ai/ReadDocument';
@@ -90,11 +91,11 @@ export function DocumentFormModal({ open, onClose, projectId, doc, onSaved }: { 
       qc.invalidateQueries({ queryKey: ['documents'] });
       onSaved?.(d);
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   return (
-    <FormShell open={open} onClose={onClose} form={form} layout="drawer" width={680} title={doc ? `Edit ${doc.docNo}` : 'Add drawing or document'} okText={editing ? 'Save' : 'Add'} onSubmit={(v) => mutation.mutateAsync(v)}>
+    <FormShell open={open} onClose={onClose} form={form} layout="drawer" width={680} title={doc ? `Edit ${doc.docNo}` : 'New drawing or document'} okText="Save" onSubmit={(v) => mutation.mutateAsync(v)}>
       <Form form={form} layout="vertical">
         {!editing && !readState ? (
           <Flex justify="flex-end" style={{ marginBottom: 8 }}>

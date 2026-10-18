@@ -44,7 +44,7 @@ test.describe.serial('staff attendance and leave', () => {
     const [from, to] = await twoWorkingDays(se);
 
     await signIn(page, 'engineer@demo.com');
-    await page.getByRole('link', { name: 'Staff & Leave' }).click();
+    await page.getByRole('link', { name: 'Staff and leave' }).click();
     await page.getByRole('button', { name: 'Check in' }).click();
     await expect(page.getByText('Checked in', { exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Check out' })).toBeVisible();
@@ -101,12 +101,12 @@ test.describe.serial('staff attendance and leave', () => {
     const hrPage = await (await browser.newContext()).newPage();
     await signIn(hrPage, 'hr@demo.com');
     await hrPage.goto('/staff?tab=staff');
-    await hrPage.getByRole('button', { name: 'Add staff' }).click();
-    const modal = hrPage.locator('.ant-modal').filter({ hasText: 'Add staff' });
+    await hrPage.getByRole('button', { name: 'New staff member' }).click();
+    const modal = hrPage.locator('.ant-modal').filter({ hasText: 'New staff member' });
     await modal.getByLabel('Name').fill(name);
     await modal.getByLabel('Designation').fill('Surveyor');
     await chooseOption(modal.getByLabel('Posted at'), 'WS-2026-03');
-    await modal.getByRole('button', { name: 'Add', exact: true }).click();
+    await modal.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(hrPage.getByText(new RegExp(`${name} added as EMP-\\d+`))).toBeVisible();
     const hr = await apiToken('hr@demo.com');
     const added = (await api<{ items: { id: string; projectName: string | null }[] }>(hr, `/staff/employees?q=${encodeURIComponent(name)}`)).items;

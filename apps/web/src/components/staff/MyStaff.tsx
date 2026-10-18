@@ -7,7 +7,8 @@ import { LoginOutlined, LogoutOutlined, PlusOutlined } from '@ant-design/icons';
 import type { LeaveRequestDto } from '@erp/shared';
 import { LEAVE_TYPE_LABELS } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useMyStaff } from '@/lib/queries';
 import { formatDate } from '@/lib/format';
 import { Loading, QueryError } from '@/components/common/QueryState';
@@ -30,7 +31,7 @@ export function MyStaff() {
       message.success(what === 'check-in' ? 'Checked in' : what === 'check-out' ? 'Checked out' : 'Leave cancelled');
       qc.invalidateQueries({ queryKey: ['staff'] });
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   if (isLoading) return <Loading />;

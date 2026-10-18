@@ -6,7 +6,8 @@ import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, SafetyIncidentDto, SafetyIncidentType } from '@erp/shared';
 import { INJURY_TYPES, SAFETY_INCIDENT_TYPES, SAFETY_INCIDENT_TYPE_LABELS } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useProjects } from '@/lib/queries';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
@@ -88,7 +89,7 @@ export function IncidentFormModal({ open, onClose, projectId, incident, nearMiss
       message.success(editing ? `${x.incidentNo} saved` : `${x.incidentNo} reported`);
       qc.invalidateQueries({ queryKey: ['safety'] });
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
 
   return (
@@ -97,7 +98,7 @@ export function IncidentFormModal({ open, onClose, projectId, incident, nearMiss
       onClose={onClose}
       form={form}
       layout="drawer"
-      title={editing ? `Change ${incident?.incidentNo}` : nearMiss ? 'Report a near miss' : 'Report an incident'}
+      title={editing ? `Change ${incident?.incidentNo}` : nearMiss ? 'Report near miss' : 'Report incident'}
       okText={editing ? 'Save' : 'Report'}
       draftKey={editing ? undefined : `${nearMiss ? 'near-miss' : 'incident'}:${projectId ?? 'any'}`}
       onSubmit={(v) => save.mutateAsync(v)}
@@ -109,7 +110,7 @@ export function IncidentFormModal({ open, onClose, projectId, incident, nearMiss
           </Form.Item>
           <FormGrid cols={3}>
             <Form.Item name="type" label="Type" rules={[{ required: true, message: 'Choose the type' }]}>
-              <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Near miss, first aid..." options={SAFETY_INCIDENT_TYPES.map((t) => ({ value: t, label: SAFETY_INCIDENT_TYPE_LABELS[t] }))} />
+              <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Near miss, first aid…" options={SAFETY_INCIDENT_TYPES.map((t) => ({ value: t, label: SAFETY_INCIDENT_TYPE_LABELS[t] }))} />
             </Form.Item>
             <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date' }]}>
               <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} allowClear={false} />

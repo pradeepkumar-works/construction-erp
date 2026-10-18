@@ -6,7 +6,8 @@ import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { WorkerDto, WorkerIdType, WorkerSkill } from '@erp/shared';
 import { WORKER_ID_TYPES, WORKER_ID_TYPE_LABELS, WORKER_SKILLS, WORKER_SKILL_LABELS } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useAttendanceSuggestions } from '@/lib/queries';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
@@ -85,11 +86,11 @@ export function WorkerFormModal({ open, onClose, worker, projectId }: { open: bo
       message.success(worker ? 'Worker saved' : `Worker ${w.workerNo} added`);
       qc.invalidateQueries({ queryKey: ['workers'] });
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   return (
-    <FormShell open={open} onClose={onClose} form={form} layout="drawer" title={worker ? `${worker.workerNo} ${worker.name}` : 'Add a worker'} okText={worker ? 'Save' : 'Add worker'} onSubmit={(v) => save.mutateAsync(v)}>
+    <FormShell open={open} onClose={onClose} form={form} layout="drawer" title={worker ? `${worker.workerNo} ${worker.name}` : 'New worker'} okText="Save" onSubmit={(v) => save.mutateAsync(v)}>
       <Form form={form} layout="vertical" requiredMark="optional">
         <FormSection title="Worker">
           <FormGrid cols={2}>

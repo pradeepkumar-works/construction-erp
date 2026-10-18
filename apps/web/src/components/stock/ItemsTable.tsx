@@ -1,15 +1,16 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Form, Input, Popconfirm, Space, Tag, Typography } from 'antd';
+import { App, Button, Form, Input, Space, Tag, Typography } from 'antd';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ItemDto, ItemSortField } from '@erp/shared';
 import { LIST_SORT_FIELDS, canManageStore } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useStockItems } from '@/lib/queries';
-import { formatDate, formatINR } from '@/lib/format';
+import { formatDate, formatINR, RUPEE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { SearchBox } from '@/components/common/SearchBox';
 import { UnitInput } from '@/components/common/UnitInput';
@@ -19,6 +20,7 @@ import { DataTable, type ListColumn } from '@/components/list/DataTable';
 import { useListFrame } from '@/components/list/useListFrame';
 import { FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
+import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 const NO_KEYS: string[] = [];
 
@@ -48,15 +50,14 @@ export function ItemsTable() {
       qc.invalidateQueries({ queryKey: ['stock'] });
       qc.invalidateQueries({ queryKey: ['cost'] });
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
   const remove = useMutation({
     mutationFn: async (i: ItemDto) => (await api.delete(`/stock/items/${i.id}`)).data,
     onSuccess: () => {
-      message.success('Item deleted');
       qc.invalidateQueries({ queryKey: ['stock'] });
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   const open = (i: ItemDto | 'new') => {
@@ -87,7 +88,7 @@ export function ItemsTable() {
           width: 130,
           align: 'right',
           className: 'mono',
-          render: (v: string | null, r) => (v === null ? <Typography.Text type="secondary">-</Typography.Text> : `${formatINR(v, true).replace('₹ ', '')} / ${r.unit}`),
+          render: (v: string | null, r) => (v === null ? <Typography.Text type="secondary">-</Typography.Text> : `${formatINR(v, true).replace(RUPEE, '')} / ${r.unit}`),
         },
         { key: 'projectCount', title: 'Projects with stock', dataIndex: 'projectCount', width: 160, align: 'center' },
         { title: 'Added', dataIndex: 'createdAt', width: 130, ...sort('createdAt'), render: (v) => formatDate(v) },
@@ -102,9 +103,9 @@ export function ItemsTable() {
                 render: (_: unknown, r: ItemDto) => (
                   <Space size="small">
                     <Button type="text" size="small" icon={<EditOutlined />} onClick={() => open(r)} aria-label="Edit" />
-                    <Popconfirm title={`Delete ${r.name}?`} okText="Delete" okButtonProps={{ danger: true }} onConfirm={() => remove.mutate(r)} disabled={r.projectCount > 0}>
+                    <ConfirmDelete what={`item ${r.name}`} onConfirm={() => remove.mutateAsync(r)} disabled={r.projectCount > 0}>
                       <Button type="text" size="small" danger icon={<DeleteOutlined />} disabled={r.projectCount > 0} title={r.projectCount > 0 ? 'Has stock movements' : undefined} aria-label="Delete" />
-                    </Popconfirm>
+                    </ConfirmDelete>
                   </Space>
                 ),
               } satisfies ListColumn<ItemDto>,
@@ -119,7 +120,7 @@ export function ItemsTable() {
 
   const newButton = mayManage ? (
     <Button icon={<PlusOutlined />} onClick={() => open('new')} style={{ marginLeft: 'auto' }}>
-      Add item
+      New item
     </Button>
   ) : null;
 
@@ -153,7 +154,7 @@ export function ItemsTable() {
         emptyText={<EmptyArt art="entries" title={page.params.q ? 'No item matches this search' : 'No items yet. GRNs add them from the request lines.'} />}
         emptyAction={newButton}
       />
-      <FormShell open={!!editing} onClose={() => setEditing(null)} form={form} layout="modal" width={520} title={editing === 'new' ? 'Add item' : 'Edit item'} okText={editing === 'new' ? 'Add item' : 'Save'} onSubmit={(v) => save.mutateAsync(v)}>
+      <FormShell open={!!editing} onClose={() => setEditing(null)} form={form} layout="modal" width={520} title={editing === 'new' ? 'New item' : 'Edit item'} okText="Save" onSubmit={(v) => save.mutateAsync(v)}>
         <Form form={form} layout="vertical">
           <Form.Item name="name" label="Name" rules={[{ required: true, whitespace: true, message: 'Enter the item name' }]}>
             <Input maxLength={200} />

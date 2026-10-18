@@ -2,13 +2,14 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { App, Button, DatePicker, Descriptions, Divider, Drawer, Form, Input, Popconfirm, Segmented, Skeleton, Space, Table, Tag, Typography } from 'antd';
+import { App, Button, DatePicker, Descriptions, Divider, Drawer, Form, Input, Segmented, Skeleton, Space, Table, Tag, Typography } from 'antd';
 import { CheckCircleOutlined, DeleteOutlined, EditOutlined, SendOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import type { VariationDto, VariationLineDto, VariationStatus } from '@erp/shared';
 import { VARIATION_CAUSE_LABELS, VARIATION_STATUS_LABELS, canManageVariations } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useVariation } from '@/lib/queries';
 import { formatDate, formatINR, formatQty, toNumber } from '@/lib/format';
@@ -18,6 +19,7 @@ import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { MoneyInput, QuantityInput } from '@/components/form/inputs';
 import { VariationFormModal } from './VariationFormModal';
 import { themeFontSize } from '@/lib/theme';
+import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 const STATUS_COLORS: Record<VariationStatus, string> = { DRAFT: 'default', SUBMITTED: 'gold', APPROVED: 'green', REJECTED: 'red' };
 
@@ -40,11 +42,10 @@ export function VariationDrawer({ id, open, onClose }: { id: string | null; open
   const remove = useMutation({
     mutationFn: async () => (await api.delete(`/variations/${id}`)).data,
     onSuccess: () => {
-      message.success('Variation deleted');
       qc.invalidateQueries({ queryKey: ['variations'] });
       onClose();
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   const decided = data?.status === 'APPROVED';
@@ -54,7 +55,7 @@ export function VariationDrawer({ id, open, onClose }: { id: string | null; open
       key: 'item',
       render: (_: unknown, l: VariationLineDto) => (
         <div>
-          <span className="mono">{l.itemNo}</span> {l.description}
+          <span className="mono" translate="no">{l.itemNo}</span> {l.description}
           {l.isNewItem ? (
             <Tag color="orange" style={{ marginLeft: 6 }}>
               New item
@@ -115,9 +116,9 @@ export function VariationDrawer({ id, open, onClose }: { id: string | null; open
               </Button>
             )}
             <Button size="small" icon={<EditOutlined />} onClick={() => setEditing(true)} aria-label="Edit variation" />
-            <Popconfirm title={`Delete ${data.label}?`} okText="Delete" okButtonProps={{ danger: true }} onConfirm={() => remove.mutate()}>
+            <ConfirmDelete what={data.label} onConfirm={() => remove.mutateAsync()}>
               <Button size="small" danger icon={<DeleteOutlined />} aria-label="Delete variation" />
-            </Popconfirm>
+            </ConfirmDelete>
           </Space>
         ) : null
       }
@@ -136,8 +137,8 @@ export function VariationDrawer({ id, open, onClose }: { id: string | null; open
               { key: 'cause', label: 'Cause', children: VARIATION_CAUSE_LABELS[data.cause] },
               { key: 'by', label: 'Prepared by', children: `${data.createdByName}, ${formatDate(data.createdAt.slice(0, 10))}` },
               ...(data.description ? [{ key: 'desc', label: 'Justification', span: 2, children: <span style={{ whiteSpace: 'pre-wrap' }}>{data.description}</span> }] : []),
-              { key: 'claimed', label: 'Claimed', children: <span className="mono">{formatINR(data.claimedAmount)}</span> },
-              { key: 'approved', label: 'Approved', children: data.approvedAmount ? <strong className="mono">{formatINR(data.approvedAmount)}</strong> : '-' },
+              { key: 'claimed', label: 'Claimed', children: <span className="mono" translate="no">{formatINR(data.claimedAmount)}</span> },
+              { key: 'approved', label: 'Approved', children: data.approvedAmount ? <strong className="mono" translate="no">{formatINR(data.approvedAmount)}</strong> : '-' },
               ...(data.submittedDate ? [{ key: 'sent', label: 'Sent to client', span: 2, children: `${formatDate(data.submittedDate)}${data.submittedRef ? `, our ref ${data.submittedRef}` : ''}` }] : []),
               ...(data.decidedDate
                 ? [
@@ -186,7 +187,7 @@ function SendModal({ open, onClose, variation }: { open: boolean; onClose: () =>
       message.success(`${v.label} is with the client`);
       qc.invalidateQueries({ queryKey: ['variations'] });
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
   return (
     <FormShell open={open} onClose={onClose} form={form} layout="modal" title={`Send ${variation.label} to the client`} okText="Record" onSubmit={(v) => mutation.mutateAsync(v)}>
@@ -254,7 +255,7 @@ function DecisionModal({ open, onClose, variation }: { open: boolean; onClose: (
       qc.invalidateQueries({ queryKey: ['projects'] });
       qc.invalidateQueries({ queryKey: ['dashboard'] });
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
   return (
     <FormShell open={open} onClose={onClose} form={form} layout="modal" title={`Client's decision on ${variation.label}`} okText="Record" onSubmit={(v) => mutation.mutateAsync(v)} width={760}>
@@ -286,7 +287,7 @@ function DecisionModal({ open, onClose, variation }: { open: boolean; onClose: (
                     return (
                       <div key={f.key} style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 140px 160px', gap: '0 12px', alignItems: 'center' }}>
                         <div style={{ paddingBottom: 24 }}>
-                          <span className="mono">{l.itemNo}</span> {l.description}
+                          <span className="mono" translate="no">{l.itemNo}</span> {l.description}
                           <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                             Claimed {formatQty(l.qty)} {l.unit} @ {formatINR(l.rate, true)}
                           </div>
@@ -301,7 +302,7 @@ function DecisionModal({ open, onClose, variation }: { open: boolean; onClose: (
                           </Form.Item>
                         ) : (
                           <Form.Item label="Rate">
-                            <span className="mono">{formatINR(l.rate, true)}</span>
+                            <span className="mono" translate="no">{formatINR(l.rate, true)}</span>
                           </Form.Item>
                         )}
                       </div>
@@ -311,7 +312,7 @@ function DecisionModal({ open, onClose, variation }: { open: boolean; onClose: (
               )}
             </Form.List>
             <Typography.Paragraph>
-              Approved <strong className="mono">{formatINR(approvedTotal)}</strong> of {formatINR(variation.claimedAmount)} claimed. Recording this changes the BOQ quantities and adds new items to the BOQ.
+              Approved <strong className="mono" translate="no">{formatINR(approvedTotal)}</strong> of {formatINR(variation.claimedAmount)} claimed. Recording this changes the BOQ quantities and adds new items to the BOQ.
             </Typography.Paragraph>
           </>
         ) : null}

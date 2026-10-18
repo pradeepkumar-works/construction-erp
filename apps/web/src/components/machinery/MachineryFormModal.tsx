@@ -6,13 +6,15 @@ import dayjs from 'dayjs';
 import type { AttachmentDto, EquipmentDto, MachineryLogDto } from '@erp/shared';
 import { MAX_LOG_HOURS, machineryLogProblem } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE, useNotify } from '@/lib/notify';
 import { useActivities, useProjects } from '@/lib/queries';
 import { EquipmentSelect } from '@/components/common/SearchSelect';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { editActionLabel } from '@/components/common/EditResubmitButton';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { QuantityInput } from '@/components/form/inputs';
+import { recordPage } from '@/components/approvals/queue';
 
 interface FormValues {
   projectId: string;
@@ -37,6 +39,7 @@ export function MachineryFormModal({ open, onClose, projectId, log }: { open: bo
   const [form] = Form.useForm<FormValues>();
   const { message } = App.useApp();
   const qc = useQueryClient();
+  const notify = useNotify();
   const { data: projects } = useProjects();
   const editing = !!log;
   const fixedProject = log?.projectId ?? projectId;
@@ -97,19 +100,17 @@ export function MachineryFormModal({ open, onClose, projectId, log }: { open: bo
       };
       return log ? (await api.patch(`/machinery-logs/${log.id}`, body)).data : (await api.post('/machinery-logs', { projectId: v.projectId, ...body })).data;
     },
-    onSuccess: () => {
-      message.success(editing ? 'Machinery log resubmitted for approval' : 'Machinery log submitted for approval');
+    onSuccess: (x: { id: string }) => {
+      notify.saved(editing ? 'Machinery log resubmitted for approval' : 'Machinery log submitted for approval', recordPage('MACHINERY', x.id));
       qc.invalidateQueries();
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   const submit = async (v: FormValues) => {
     const problem = machineryLogProblem(v);
-    if (problem) {
-      message.error(problem);
-      throw new Error(problem);
-    }
+    // FormShell says it at the top of the form.
+    if (problem) throw new Error(problem);
     return mutation.mutateAsync(v);
   };
 
@@ -119,7 +120,7 @@ export function MachineryFormModal({ open, onClose, projectId, log }: { open: bo
       onClose={onClose}
       form={form}
       layout="drawer"
-      title={log ? `${editActionLabel(log.status)} · ${log.equipmentCode}` : 'Log machinery'}
+      title={log ? `${editActionLabel(log.status)} · ${log.equipmentCode}` : 'New machinery log'}
       okText={editing ? 'Resubmit for approval' : 'Submit'}
       onSubmit={submit}
     >

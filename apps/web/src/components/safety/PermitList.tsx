@@ -97,7 +97,7 @@ export function PermitList({ projectId: fixedProject, initialOpenId }: { project
 
   const newButton = user && canReportSafety(user.roleKey) ? (
     <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
-      Ask for permit
+      Request permit
     </Button>
   ) : null;
 

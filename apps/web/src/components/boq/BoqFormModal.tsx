@@ -4,7 +4,8 @@ import React, { useEffect } from 'react';
 import { App, Form, Input } from 'antd';
 import type { BoqItemDto } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { UnitInput } from '@/components/common/UnitInput';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { MoneyInput, QuantityInput } from '@/components/form/inputs';
@@ -58,13 +59,13 @@ export function BoqFormModal({ open, onClose, projectId, item }: { open: boolean
       qc.invalidateQueries({ queryKey: ['boq', projectId] });
       qc.invalidateQueries({ queryKey: ['dashboard'] });
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   const unit = Form.useWatch('unit', form);
 
   return (
-    <FormShell open={open} onClose={onClose} form={form} layout="modal" title={isEdit ? `Edit BOQ item ${item?.itemNo}` : 'Add BOQ item'} okText={isEdit ? 'Save' : 'Add item'} onSubmit={(v) => mutation.mutateAsync(v)}>
+    <FormShell open={open} onClose={onClose} form={form} layout="modal" title={isEdit ? `Edit BOQ item ${item?.itemNo}` : 'New BOQ item'} okText="Save" onSubmit={(v) => mutation.mutateAsync(v)}>
       <Form form={form} layout="vertical">
         <FormGrid cols={2}>
           <Form.Item name="itemNo" label="Item no." rules={[{ required: true, whitespace: true, message: 'Enter the item number, e.g. 1.01' }]}>

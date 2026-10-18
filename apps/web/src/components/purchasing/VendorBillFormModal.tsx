@@ -7,6 +7,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, PurchaseOrderLineDto, VendorBillDto } from '@erp/shared';
 import { GST_RATES, readNumber, readText } from '@erp/shared';
 import { api, errorMessage } from '@/lib/api';
+import { FAIL_NOTICE, useNotify } from '@/lib/notify';
 import { uploadFile, usePurchaseOrder, usePurchaseOrders } from '@/lib/queries';
 import { formatINR, formatQty, toNumber } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
@@ -15,6 +16,7 @@ import { MoneyInput, QuantityInput } from '@/components/form/inputs';
 import { ReadDocumentButton, ReadPreview, ReadSource, readFieldProps, type ReadState } from '@/components/ai/ReadDocument';
 import { DraftBillChecks } from './DraftBillChecks';
 import { themeFontSize } from '@/lib/theme';
+import { recordPage } from '@/components/approvals/queue';
 
 interface FormValues {
   purchaseOrderId: string;
@@ -53,6 +55,7 @@ export function VendorBillFormModal({
   const [form] = Form.useForm<FormValues>();
   const { message } = App.useApp();
   const qc = useQueryClient();
+  const notify = useNotify();
   const watchedPo = Form.useWatch('purchaseOrderId', form);
   const freight = Form.useWatch('freight', form);
   const invoiceNo = Form.useWatch('invoiceNo', form) as string | undefined;
@@ -199,12 +202,12 @@ export function VendorBillFormModal({
       return (await api.post<VendorBillDto>('/vendor-bills', { ...body, id: crypto.randomUUID(), purchaseOrderId: v.purchaseOrderId })).data;
     },
     onSuccess: (b, { submit }) => {
-      message.success(`${b.billNo} ${submit ? 'submitted for approval' : 'saved as a draft'}${b.matched ? '' : ', with exceptions for the approver'}`);
+      notify.saved(`${b.billNo} ${submit ? 'submitted for approval' : 'saved as a draft'}${b.matched ? '' : ', with exceptions for the approver'}`, recordPage('VENDOR_BILL', b.id));
       qc.invalidateQueries({ queryKey: ['vendor-bills'] });
       qc.invalidateQueries({ queryKey: ['purchase-orders'] });
       onSaved?.(b);
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
 
   const setLine = (id: string, patch: Partial<LineValue>) => setLines((ls) => ({ ...ls, [id]: { ...ls[id], ...patch } }));
@@ -345,7 +348,7 @@ export function VendorBillFormModal({
                     />
                   ),
                 },
-                { title: 'Amount', key: 'amt', width: 120, align: 'right', render: (_, l) => <span className="mono">{formatINR(amountOf(lines[l.id]), true)}</span> },
+                { title: 'Amount', key: 'amt', width: 120, align: 'right', render: (_, l) => <span className="mono" translate="no">{formatINR(amountOf(lines[l.id]), true)}</span> },
               ]}
             />
           ) : (
@@ -395,17 +398,17 @@ export function VendorBillFormModal({
               title={
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '4px 12px' }}>
                   <span>Items</span>
-                  <span className="mono">{formatINR(totals.subtotal, true)}</span>
+                  <span className="mono" translate="no">{formatINR(totals.subtotal, true)}</span>
                   <span>GST</span>
-                  <span className="mono">{formatINR(totals.gst, true)}</span>
+                  <span className="mono" translate="no">{formatINR(totals.gst, true)}</span>
                   <span>Freight</span>
-                  <span className="mono">{formatINR(toNumber(freight), true)}</span>
+                  <span className="mono" translate="no">{formatINR(toNumber(freight), true)}</span>
                   <strong>Invoice total</strong>
-                  <strong className="mono">{formatINR(totals.total, true)}</strong>
+                  <strong className="mono" translate="no">{formatINR(totals.total, true)}</strong>
                   {printedTotal !== null ? (
                     <>
                       <span>Printed on the invoice</span>
-                      <span className="mono">{formatINR(printedTotal, true)}</span>
+                      <span className="mono" translate="no">{formatINR(printedTotal, true)}</span>
                     </>
                   ) : null}
                 </div>

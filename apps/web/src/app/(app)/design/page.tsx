@@ -9,7 +9,7 @@ import { StatusTag } from '@/components/common/StatusTag';
 import { BRAND } from '@/lib/brand';
 import { approveTheme, makeTheme, themeFontSize } from '@/lib/theme';
 import { Section } from '@/components/common/Section';
-import { formatINR } from '@/lib/format';
+import { formatINR, formatINRCompact } from '@/lib/format';
 import { useAppearance, type Density, type ThemeMode } from '@/lib/appearance';
 
 /** Semantic tokens worth seeing side by side in each mode. */
@@ -161,7 +161,7 @@ export default function DesignPage() {
             rowKey="token"
             dataSource={TYPE_SCALE.map((t) => ({ ...t, px: token[t.token] }))}
             columns={[
-              { title: 'Size', dataIndex: 'px', width: 70, align: 'right', render: (v: number) => <span className="mono">{v} px</span> },
+              { title: 'Size', dataIndex: 'px', width: 70, align: 'right', render: (v: number) => <span className="mono" translate="no">{v} px</span> },
               {
                 title: 'Token',
                 dataIndex: 'token',
@@ -170,7 +170,7 @@ export default function DesignPage() {
                   <>
                     <Typography.Text code>{k}</Typography.Text>
                     {t.alias ? <Typography.Text code>{t.alias}</Typography.Text> : null}
-                    <div className="text-muted mono" style={{ fontSize: token.fontSizeSM }}>
+                    <div className="text-muted mono" translate="no" style={{ fontSize: token.fontSizeSM }}>
                       var(--ant-{kebab(k)})
                     </div>
                   </>
@@ -190,7 +190,7 @@ export default function DesignPage() {
             <Typography.Text type="warning">Warning</Typography.Text>
             <Typography.Text type="danger">Danger</Typography.Text>
             <Typography.Link>Link</Typography.Link>
-            <span className="mono">{formatINR('18650000')}</span>
+            <span className="mono" translate="no">{formatINR('18650000')}</span>
           </Space>
         </Card>
 
@@ -228,15 +228,15 @@ export default function DesignPage() {
               </Flex>
               <Row gutter={[token.margin, token.margin]}>
                 <Col span={8}>
-                  <Statistic title="Contract value" value="₹ 59.27 Cr" styles={{ content: { fontSize: token.fontSizeXL } }} />
+                  <Statistic title="Contract value" value={formatINRCompact(592700000)} styles={{ content: { fontSize: token.fontSizeXL } }} />
                 </Col>
                 <Col span={8}>
                   <Statistic title="Pending approvals" value={34} styles={{ content: { fontSize: token.fontSizeXL } }} />
                 </Col>
                 <Col span={8}>
-                  <Statistic title="Vendor payable" value="₹ 1.84 Cr" styles={{ content: { fontSize: token.fontSizeXL, color: token.colorErrorText } }} />
+                  <Statistic title="Vendor payable" value={formatINRCompact(18400000)} styles={{ content: { fontSize: token.fontSizeXL, color: token.colorErrorText } }} />
                   <Typography.Text type="danger" style={{ fontSize: token.fontSizeSM }}>
-                    ₹ 13.26 L overdue
+                    {formatINRCompact(1326000)} overdue
                   </Typography.Text>
                 </Col>
               </Row>
@@ -248,13 +248,13 @@ export default function DesignPage() {
               </Flex>
               <Row gutter={[token.margin, token.margin]}>
                 <Col span={8}>
-                  <Statistic title="Contract value" value="₹ 59.27 Cr" styles={{ content: { fontSize: token.fontSizeXL, color: token.colorSuccessText } }} />
+                  <Statistic title="Contract value" value={formatINRCompact(592700000)} styles={{ content: { fontSize: token.fontSizeXL, color: token.colorSuccessText } }} />
                 </Col>
                 <Col span={8}>
                   <Statistic title="Pending approvals" value={34} styles={{ content: { fontSize: token.fontSizeXL, color: token.colorWarningText } }} />
                 </Col>
                 <Col span={8}>
-                  <Statistic title="Vendor payable" value="₹ 1.84 Cr" styles={{ content: { fontSize: token.fontSizeXL, color: token.colorPrimaryText } }} />
+                  <Statistic title="Vendor payable" value={formatINRCompact(18400000)} styles={{ content: { fontSize: token.fontSizeXL, color: token.colorPrimaryText } }} />
                   <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
                     the overdue part gets lost
                   </Typography.Text>
@@ -294,7 +294,7 @@ export default function DesignPage() {
         <Card title="Actions and status" size="small">
           <Flex wrap gap={token.marginSM} style={{ marginBottom: token.margin }}>
             <Button type="primary" icon={<PlusOutlined />}>
-              New DPR
+              New daily report
             </Button>
             <Button>Export</Button>
             <Button type="dashed">Add line</Button>
@@ -319,7 +319,7 @@ export default function DesignPage() {
         <Row gutter={[token.margin, token.margin]}>
           <Col xs={24} md={8}>
             <Card size="small">
-              <Statistic title="Total contract value" value="₹ 59.27 Cr" />
+              <Statistic title="Total contract value" value={formatINRCompact(592700000)} />
             </Card>
           </Col>
           <Col xs={24} md={8}>
@@ -382,7 +382,7 @@ export default function DesignPage() {
               <Space orientation="vertical" style={{ width: '100%' }}>
                 <Alert type="info" showIcon title="1 transfer on the way" />
                 <Alert type="warning" showIcon title="2 activities are delayed" />
-                <Alert type="error" showIcon title="Vendor payable ₹ 13.26 L overdue" />
+                <Alert type="error" showIcon title={`Vendor payable ${formatINRCompact(1326000)} overdue`} />
                 <Empty description="No entries yet" />
               </Space>
             </Card>

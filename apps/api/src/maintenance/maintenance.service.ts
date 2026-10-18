@@ -16,6 +16,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
+import { UndoService } from '../common/undo.service';
 import { AttachmentsService, ATTACHMENT_FIELDS } from '../common/attachments.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { StockService } from '../stock/stock.service';
@@ -86,7 +87,10 @@ export class MaintenanceService {
     private attachments: AttachmentsService,
     private notifications: NotificationsService,
     private stock: StockService,
-  ) {}
+    private undo: UndoService,
+  ) {
+    undo.register('DRIVER', { entityType: 'DRIVER', check: (user) => this.access.assertCanManageMaintenance(user, null) });
+  }
 
   /* ---------- job cards ---------- */
 
@@ -552,8 +556,9 @@ export class MaintenanceService {
   async removeDriver(user: RequestUser, id: string) {
     await this.access.assertCanManageMaintenance(user, null);
     await this.getDriver(user, id);
+    const raw = await this.prisma.driver.findUniqueOrThrow({ where: { id } });
     await this.prisma.driver.delete({ where: { id } });
     await this.audit.log(user, 'DRIVER', id, 'DELETED');
-    return { ok: true };
+    return { ok: true, undo: this.undo.offer(user, 'DRIVER', { rows: [{ model: 'driver', data: raw }] }) };
   }
 }

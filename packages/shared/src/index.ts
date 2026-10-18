@@ -44,3 +44,4 @@ export * from './checks';
 export * from './doc-read';
 export * from './warnings';
 export * from './briefs';
+export * from './photo-checks';

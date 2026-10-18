@@ -27,7 +27,7 @@ test('a breakdown is reported at site, spares issued and the job card closed', a
   await signIn(page, 'engineer@demo.com');
   await page.goto('/machinery?tab=maintenance');
   await page.getByRole('button', { name: /Report breakdown/ }).click();
-  const form = page.locator('.ant-modal').filter({ hasText: 'Report a breakdown' });
+  const form = page.locator('.ant-modal').filter({ hasText: 'Report breakdown' });
   await chooseOption(form.getByLabel('Machine'), 'EXC-01');
   await form.getByLabel('What broke down').fill(what);
   await form.getByRole('button', { name: 'Report' }).click();
@@ -81,10 +81,10 @@ test('closing a service job card restarts the machine’s schedule', async ({ pa
   await page.goto('/machinery?tab=maintenance');
   await page.locator('.job-table').waitFor();
   await page.getByRole('button', { name: /Raise service/ }).last().click();
-  const form = page.locator('.ant-modal').filter({ hasText: 'Raise a service job card' });
+  const form = page.locator('.ant-modal').filter({ hasText: 'New service job card' });
   await chooseOption(form.getByLabel('Machine'), 'MIX-01');
   await form.getByLabel('Work to do').fill('E2E 500-hour service');
-  await form.getByRole('button', { name: 'Raise job card' }).click();
+  await form.getByRole('button', { name: 'Save job card' }).click();
   await expect(page.getByText(/MNT-\d{4}-\d{4} raised/)).toBeVisible();
 
   const job = (await api<Page<Job>>(store, '/maintenance/jobs?q=E2E%20500-hour&status=OPEN')).items[0];
@@ -113,7 +113,7 @@ test('a lapsed vehicle paper is renewed and drops off the due list', async ({ pa
   await page.goto('/machinery?tab=papers');
   const row = page.locator('.papers-table tr').filter({ hasText: 'TIP-07' }).filter({ hasText: 'PUC (pollution)' });
   await row.getByRole('button', { name: 'Renew' }).click();
-  const form = page.locator('.ant-modal').filter({ hasText: 'Add a paper' });
+  const form = page.locator('.ant-modal').filter({ hasText: 'New paper' });
   await form.getByLabel('Number').fill(number);
   await form.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByText('PUC (pollution) of TIP-07 saved')).toBeVisible();

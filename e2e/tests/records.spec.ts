@@ -47,7 +47,7 @@ test('a quick look opens the full page, whose link can be copied and whose secti
   await expect(page.getByText('Link copied')).toBeVisible();
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(url);
 
-  await page.getByRole('toolbar', { name: 'Record actions' }).getByRole('link', { name: 'RA Bills' }).click();
+  await page.getByRole('toolbar', { name: 'Record actions' }).getByRole('link', { name: 'RA bills' }).click();
   await expect(page).toHaveURL(/\/bills$/);
 });
 

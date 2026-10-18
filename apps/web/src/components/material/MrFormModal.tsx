@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { Alert, App, DatePicker, Form, Input, Select } from 'antd';
+import { Alert, DatePicker, Form, Input, Select } from 'antd';
 import dayjs from 'dayjs';
 import type { AiDraftDto, MaterialPriority, MaterialRequestDto } from '@erp/shared';
 import { MATERIAL_PRIORITIES, MATERIAL_PRIORITY_LABELS } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE, useNotify } from '@/lib/notify';
 import { useProjects } from '@/lib/queries';
 import { editActionLabel } from '@/components/common/EditResubmitButton';
 import { UnitInput } from '@/components/common/UnitInput';
@@ -14,6 +15,7 @@ import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { LineTable } from '@/components/form/LineTable';
 import { QuantityInput } from '@/components/form/inputs';
 import { aiFlagInput, aiFlagItem, draftDate } from '@/components/ai/drafts';
+import { recordPage } from '@/components/approvals/queue';
 
 interface FormValues {
   projectId: string;
@@ -26,8 +28,8 @@ interface FormValues {
 /** Create a material request, or (with `entry`) edit a draft / rejected / changes-requested one and resubmit it. */
 export function MrFormModal({ open, onClose, projectId, defaultProjectId, entry, prefill }: { open: boolean; onClose: () => void; projectId?: string; /** A new entry starts on this project (the header's), still changeable. */ defaultProjectId?: string; entry?: MaterialRequestDto | null; /** Filled in by Ask Nirmaan (AI item 71) */ prefill?: AiDraftDto | null }) {
   const [form] = Form.useForm<FormValues>();
-  const { message } = App.useApp();
   const qc = useQueryClient();
+  const notify = useNotify();
   const { data: projects } = useProjects();
   const editing = !!entry;
   const fixedProject = entry?.projectId ?? projectId;
@@ -66,11 +68,11 @@ export function MrFormModal({ open, onClose, projectId, defaultProjectId, entry,
       };
       return entry ? (await api.patch(`/material-requests/${entry.id}`, body)).data : (await api.post('/material-requests', { projectId: v.projectId, ...body })).data;
     },
-    onSuccess: () => {
-      message.success(editing ? 'Material request resubmitted for approval' : 'Material request submitted for approval');
+    onSuccess: (x: { id: string }) => {
+      notify.saved(editing ? 'Material request resubmitted for approval' : 'Material request submitted for approval', recordPage('MATERIAL_REQUEST', x.id));
       qc.invalidateQueries();
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   return (
@@ -96,7 +98,7 @@ export function MrFormModal({ open, onClose, projectId, defaultProjectId, entry,
           <Form.Item name="requiredDate" label="Required by" rules={[{ required: true, message: 'Pick the date it is needed by' }]} {...aiFlagItem(draft, 'requiredDate', requiredDate)}>
             <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" />
           </Form.Item>
-          <Form.Item name="priority" label="Priority" rules={[{ required: true }]}>
+          <Form.Item name="priority" label="Priority" rules={[{ required: true, message: 'Choose the priority' }]}>
             <Select options={MATERIAL_PRIORITIES.map((p) => ({ value: p, label: MATERIAL_PRIORITY_LABELS[p] }))} />
           </Form.Item>
         </FormGrid>

@@ -5,7 +5,8 @@ import { App, Checkbox, DatePicker, Form, Input, Select } from 'antd';
 import dayjs from 'dayjs';
 import type { ActivityDto, ProjectMemberDto } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useBoq, useChecklists } from '@/lib/queries';
 import { UnitInput } from '@/components/common/UnitInput';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
@@ -81,7 +82,7 @@ export function ActivityFormModal({
       qc.invalidateQueries({ queryKey: ['activities', projectId] });
       qc.invalidateQueries({ queryKey: ['dashboard'] });
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   const onBoqChange = (id?: string) => {
@@ -96,7 +97,7 @@ export function ActivityFormModal({
   const unit = Form.useWatch('unit', form);
 
   return (
-    <FormShell open={open} onClose={onClose} form={form} layout="modal" title={isEdit ? 'Edit activity' : 'Add activity'} okText={isEdit ? 'Save' : 'Add activity'} onSubmit={(v) => mutation.mutateAsync(v)}>
+    <FormShell open={open} onClose={onClose} form={form} layout="modal" title={isEdit ? 'Edit activity' : 'New activity'} okText="Save" onSubmit={(v) => mutation.mutateAsync(v)}>
       <Form form={form} layout="vertical">
         <Form.Item name="boqItemId" label="Linked BOQ item">
           <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Optional - pick a BOQ item to link" onChange={onBoqChange} options={(boq ?? []).map((b) => ({ value: b.id, label: `${b.itemNo} - ${b.description}` }))} />

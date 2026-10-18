@@ -33,7 +33,7 @@ export function ExpenseRecord({ id, mode, open, onClose, onEdit }: RecordProps &
       onClose={onClose}
       drawerSize={640}
       kind="Site expense"
-      list={{ href: '/expenses', label: 'Site Expenses' }}
+      list={{ href: '/expenses', label: 'Site expenses' }}
       loading={isLoading}
       error={error}
       onRetry={() => refetch()}
@@ -47,12 +47,12 @@ export function ExpenseRecord({ id, mode, open, onClose, onEdit }: RecordProps &
             { key: 'date', label: 'Date', children: formatDate(data.date) },
             { key: 'cat', label: 'Category', children: EXPENSE_CATEGORY_LABELS[data.category] },
             { key: 'vendor', label: 'Vendor', children: data.vendor ?? '-' },
-            { key: 'gstin', label: 'Vendor GSTIN', children: data.vendorGstin ?? '-' },
+            { key: 'gstin', label: 'Vendor GSTIN', children: data.vendorGstin ? <span translate="no">{data.vendorGstin}</span> : '-' },
             { key: 'bill', label: 'Bill no.', children: data.billNo ?? '-' },
             { key: 'mode', label: 'Paid by', children: PAYMENT_MODE_LABELS[data.paymentMode] },
-            { key: 'amount', label: 'Taxable value', children: <span className="mono">{formatINR(data.amount, true)}</span> },
-            { key: 'gst', label: `GST (${formatPct(data.gstRate)})`, children: <span className="mono">{formatINR(data.gstAmount, true)}</span> },
-            { key: 'total', label: 'Total', children: <strong className="mono">{formatINR(data.totalAmount, true)}</strong> },
+            { key: 'amount', label: 'Taxable value', children: <span className="mono" translate="no">{formatINR(data.amount, true)}</span> },
+            { key: 'gst', label: `GST (${formatPct(data.gstRate)})`, children: <span className="mono" translate="no">{formatINR(data.gstAmount, true)}</span> },
+            { key: 'total', label: 'Total', children: <strong className="mono" translate="no">{formatINR(data.totalAmount, true)}</strong> },
             { key: 'activity', label: 'Activity', children: data.activityName ?? '-' },
             ...submissionMetaItems(data).filter((i) => i.key !== 'status'),
           ],

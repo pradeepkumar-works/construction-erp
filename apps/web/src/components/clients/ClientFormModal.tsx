@@ -5,7 +5,8 @@ import { App, Checkbox, Form, Input, Select } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ClientDto } from '@erp/shared';
 import { GST_STATES, GSTIN_PATTERN, PAN_PATTERN, gstStateCode } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { CODE_INPUT, EMAIL_INPUT, PHONE_INPUT, emailRule, phoneRule, upper } from '@/components/form/inputs';
 
@@ -75,11 +76,11 @@ export function ClientFormModal({ open, client, onClose, onSaved }: { open: bool
       qc.invalidateQueries({ queryKey: ['projects'] });
       onSaved?.(c);
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
 
   return (
-    <FormShell open={open} onClose={onClose} form={form} layout="drawer" title={client ? `Edit ${client.name}` : 'New client'} okText={client ? 'Save changes' : 'Add client'} onSubmit={(v) => save.mutateAsync(v)}>
+    <FormShell open={open} onClose={onClose} form={form} layout="drawer" title={client ? `Edit ${client.name}` : 'New client'} okText={client ? 'Save changes' : 'Save client'} onSubmit={(v) => save.mutateAsync(v)}>
       <Form form={form} layout="vertical">
         <FormSection title="Client">
           <Form.Item name="name" label="Client name" rules={[{ required: true, whitespace: true, message: 'Enter the client name' }]}>

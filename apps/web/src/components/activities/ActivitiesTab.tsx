@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Popconfirm, Progress, Space, Table, Tag } from 'antd';
+import { Button, Progress, Space, Table, Tag } from 'antd';
 import type { TableProps } from 'antd';
 import { DeleteOutlined, EditOutlined, PlusOutlined, WarningOutlined } from '@ant-design/icons';
 import type { ActivityDto, ProjectDetail, ProjectMemberDto } from '@erp/shared';
 import { canEditProjects } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useActivities } from '@/lib/queries';
 import { useAuth } from '@/lib/auth';
 import { formatDate, formatQty } from '@/lib/format';
@@ -19,10 +20,10 @@ import { ActivityFormModal } from './ActivityFormModal';
 import { ApplyTemplateModal } from '@/components/templates/ApplyTemplateModal';
 import { AskButton } from '@/components/ai/AskButton';
 import { themeFontSize } from '@/lib/theme';
+import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 export function ActivitiesTab({ projectId, members, project }: { projectId: string; members: ProjectMemberDto[]; project?: ProjectDetail }) {
   const { user } = useAuth();
-  const { message } = App.useApp();
   const qc = useQueryClient();
   const { data, isLoading, error, refetch } = useActivities(projectId);
   const [formOpen, setFormOpen] = useState(false);
@@ -33,11 +34,10 @@ export function ActivitiesTab({ projectId, members, project }: { projectId: stri
   const del = useMutation({
     mutationFn: async (id: string) => api.delete(`/projects/${projectId}/activities/${id}`),
     onSuccess: () => {
-      message.success('Activity deleted');
       qc.invalidateQueries({ queryKey: ['activities', projectId] });
       qc.invalidateQueries({ queryKey: ['dashboard'] });
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   const columns: TableProps<ActivityDto>['columns'] = [
@@ -116,9 +116,9 @@ export function ActivitiesTab({ projectId, members, project }: { projectId: stri
                     setFormOpen(true);
                   }}
                 />
-                <Popconfirm title="Delete this activity?" okText="Delete" okButtonProps={{ danger: true }} onConfirm={() => del.mutate(r.id)}>
+                <ConfirmDelete what={`activity ${r.name}`} onConfirm={() => del.mutateAsync(r.id)}>
                   <Button size="small" type="text" danger icon={<DeleteOutlined />} aria-label={`Delete activity ${r.name}`} />
-                </Popconfirm>
+                </ConfirmDelete>
               </Space>
             ),
           },
@@ -149,7 +149,7 @@ export function ActivitiesTab({ projectId, members, project }: { projectId: stri
               setFormOpen(true);
             }}
           >
-            Add activity
+            New activity
           </Button>
         )}
         </Space>

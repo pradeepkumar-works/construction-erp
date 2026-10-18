@@ -2,13 +2,19 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { HistoryOutlined, ProjectOutlined, StarOutlined } from '@ant-design/icons';
+import { ProjectOutlined, StarOutlined } from '@ant-design/icons';
 import { useProjects } from '@/lib/queries';
 import { readPref, writePref } from '@/lib/prefs';
 import { activeHref, type NavItem, type NavSection } from './nav';
 
-const RECENT_MAX = 5;
+const RECENT_MAX = 6;
 const PROJECT_PAGE = /^\/projects\/([\w-]+)$/;
+
+/** A page opened lately, for Search (Ctrl K) before anything is typed. */
+export interface RecentPage {
+  item: NavItem;
+  at: number;
+}
 
 /** The page a path can be pinned as: a sidebar page itself, or one project's page. */
 export function pinnableHref(sections: NavSection[], pathname: string): string | null {
@@ -17,24 +23,30 @@ export function pinnableHref(sections: NavSection[], pathname: string): string |
   return pathname === href && href !== '/' && sections.some((s) => s.items.some((i) => i.href === href)) ? href : null;
 }
 
+/** Earlier builds kept bare addresses; they read as opened long ago. */
+const readRecent = (key: string): { href: string; at: number }[] =>
+  readPref<unknown[]>(key, [])
+    .map((r) => (typeof r === 'string' ? { href: r, at: 0 } : (r as { href: string; at: number })))
+    .filter((r) => r && typeof r.href === 'string');
+
 /**
- * Favourites (pages and projects starred from the header) and Recent (the last few opened), kept per user on this
- * browser, as sidebar sections. Both only hold links the user can still open: pages from their own sidebar and
- * projects they still see.
+ * Favourites (pages and projects starred from the header) as a sidebar section, and the pages opened lately for Search
+ * (Ctrl K), kept per user on this browser (UX item 87 moved Recent out of the sidebar). Both only hold links the user can
+ * still open: pages from their own sidebar and projects they still see.
  */
 export function usePins(userId: string, sections: NavSection[]) {
   const pathname = usePathname();
   const favKey = `nirmaan.favourites.${userId}`;
   const recentKey = `nirmaan.recent.${userId}`;
   const [favourites, setFavourites] = useState<string[]>(() => readPref<string[]>(favKey, []));
-  const [recent, setRecent] = useState<string[]>(() => readPref<string[]>(recentKey, []));
+  const [recent, setRecent] = useState<{ href: string; at: number }[]>(() => readRecent(recentKey));
   const { data: projects } = useProjects();
 
   const current = pinnableHref(sections, pathname);
   useEffect(() => {
     if (!current) return;
     setRecent((old) => {
-      const next = [current, ...old.filter((h) => h !== current)].slice(0, RECENT_MAX + 1);
+      const next = [{ href: current, at: Date.now() }, ...old.filter((r) => r.href !== current)].slice(0, RECENT_MAX + 1);
       writePref(recentKey, next);
       return next;
     });
@@ -50,9 +62,9 @@ export function usePins(userId: string, sections: NavSection[]) {
     [favKey],
   );
 
-  const pinSections = useMemo<NavSection[]>(() => {
+  const toItem = useMemo(() => {
     const pages = new Map(sections.flatMap((s) => s.items.map((i) => [i.href, i] as const)));
-    const toItem = (href: string): NavItem | null => {
+    return (href: string): NavItem | null => {
       const project = href.match(PROJECT_PAGE);
       if (project) {
         const p = projects?.find((x) => x.id === project[1]);
@@ -60,19 +72,24 @@ export function usePins(userId: string, sections: NavSection[]) {
       }
       return pages.get(href) ?? null;
     };
-    const fav = favourites.map(toItem).filter((i): i is NavItem => !!i);
-    // Not the page you are on (nor its sidebar page), nor what is already a favourite.
-    const here = activeHref(pathname);
-    const rec = recent
-      .filter((h) => h !== pathname && h !== here && !favourites.includes(h))
-      .map(toItem)
-      .filter((i): i is NavItem => !!i)
-      .slice(0, RECENT_MAX);
-    return [
-      ...(fav.length ? [{ key: 'favourites', title: 'Favourites', icon: StarOutlined, items: fav, exact: true }] : []),
-      ...(rec.length ? [{ key: 'recent', title: 'Recent', icon: HistoryOutlined, items: rec, exact: true }] : []),
-    ];
-  }, [sections, projects, favourites, recent, pathname]);
+  }, [sections, projects]);
 
-  return { current, isFavourite: !!current && favourites.includes(current), toggleFavourite, pinSections };
+  const pinSections = useMemo<NavSection[]>(() => {
+    const fav = favourites.map(toItem).filter((i): i is NavItem => !!i);
+    return fav.length ? [{ key: 'favourites', title: 'Favourites', icon: StarOutlined, items: fav, exact: true }] : [];
+  }, [favourites, toItem]);
+
+  // Not the page you are on (nor its sidebar page).
+  const here = activeHref(pathname);
+  const recentPages = useMemo<RecentPage[]>(
+    () =>
+      recent
+        .filter((r) => r.href !== pathname && r.href !== here)
+        .map((r) => ({ item: toItem(r.href), at: r.at }))
+        .filter((r): r is RecentPage => !!r.item)
+        .slice(0, RECENT_MAX),
+    [recent, pathname, here, toItem],
+  );
+
+  return { current, isFavourite: !!current && favourites.includes(current), toggleFavourite, pinSections, recentPages };
 }

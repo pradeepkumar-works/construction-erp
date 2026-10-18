@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, DatePicker, Descriptions, Divider, Drawer, Form, Input, Popconfirm, Skeleton, Space, Table } from 'antd';
+import { App, Button, DatePicker, Descriptions, Divider, Drawer, Form, Input, Skeleton, Space, Table } from 'antd';
 import { DeleteOutlined, EditOutlined, PrinterOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { TransmittalDto, TransmittalItemDto } from '@erp/shared';
 import { TRANSMITTAL_PURPOSE_LABELS, canManageDocuments } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useTransmittal } from '@/lib/queries';
 import { formatDate } from '@/lib/format';
@@ -16,6 +17,7 @@ import { RevisionStatusTag } from './docUi';
 import { TransmittalFormModal } from './TransmittalFormModal';
 import { openTransmittalPrint } from './transmittalPrint';
 import { RecordLink } from '@/components/record/RecordLink';
+import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 /** The receiver signed for it: date and name. */
 function AcknowledgeForm({ t }: { t: TransmittalDto }) {
@@ -28,7 +30,7 @@ function AcknowledgeForm({ t }: { t: TransmittalDto }) {
       message.success(`${x.transmittalNo} acknowledged`);
       qc.invalidateQueries({ queryKey: ['documents'] });
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
   return (
     <Form form={form} layout="inline" initialValues={{ on: dayjs() }} onFinish={(v) => save.mutate(v)} style={{ rowGap: 8 }}>
@@ -55,11 +57,10 @@ export function TransmittalDrawer({ id, open, onClose, onOpenDocument }: { id: s
   const remove = useMutation({
     mutationFn: async () => (await api.delete(`/transmittals/${id}`)).data,
     onSuccess: () => {
-      message.success('Transmittal deleted');
       qc.invalidateQueries({ queryKey: ['documents'] });
       onClose();
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   return (
@@ -76,9 +77,9 @@ export function TransmittalDrawer({ id, open, onClose, onOpenDocument }: { id: s
             </Button>
             {manage ? <Button size="small" icon={<EditOutlined />} onClick={() => setEditing(true)} aria-label="Edit transmittal" /> : null}
             {manage && !data.acknowledgedOn ? (
-              <Popconfirm title={`Delete ${data.transmittalNo}?`} okText="Delete" okButtonProps={{ danger: true }} onConfirm={() => remove.mutate()}>
+              <ConfirmDelete what={`transmittal ${data.transmittalNo}`} onConfirm={() => remove.mutateAsync()}>
                 <Button size="small" danger icon={<DeleteOutlined />} aria-label="Delete transmittal" />
-              </Popconfirm>
+              </ConfirmDelete>
             ) : null}
           </Space>
         ) : null

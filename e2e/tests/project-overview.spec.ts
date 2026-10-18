@@ -21,7 +21,7 @@ test('the overview leads with on track or behind, and figures against plan', asy
   const panel = page.getByRole('tabpanel', { name: 'Overview' }).last();
   await expect(panel.getByText('Progress', { exact: true }).first()).toBeVisible();
   await expect(panel.getByText(/^\d+(\.\d)?% planned by today$/)).toBeVisible();
-  await expect(panel.getByText(/^of ₹ [\d.]+ (Cr|L) BOQ, /)).toBeVisible();
+  await expect(panel.getByText(/^of ₹\s[\d.]+\s(Cr|L) BOQ, /)).toBeVisible();
   // The project's approvals are a line of what waits, not a figure tile of their own.
   await expect(panel.getByText('Pending approvals', { exact: true })).toHaveCount(0);
   await expect(panel.getByText('Financial progress', { exact: true })).toHaveCount(0);

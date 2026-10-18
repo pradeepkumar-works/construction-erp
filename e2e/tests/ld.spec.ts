@@ -12,7 +12,7 @@ const addDays = (iso: string, n: number) => new Date(Date.parse(`${iso}T00:00:00
 
 /**
  * Liquidated damages (v4 item 50): the contract's LD rate, period and cap, and what late completion costs, on the
- * project's Contract tab and across projects on Delays & Risks.
+ * project's Contract tab and across projects on Delays and risks.
  */
 test('LD terms on the contract give the exposure for a late project', async ({ page }) => {
   const pm = await apiToken('pm2@demo.com');

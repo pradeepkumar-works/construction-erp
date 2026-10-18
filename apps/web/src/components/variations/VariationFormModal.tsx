@@ -6,7 +6,8 @@ import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, BoqItemDto, VariationCause, VariationDto } from '@erp/shared';
 import { VARIATION_CAUSES, VARIATION_CAUSE_LABELS, isUnapprovedExtra } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useBoq, useProjects } from '@/lib/queries';
 import { formatINR, formatQty, toNumber } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
@@ -108,7 +109,7 @@ export function VariationFormModal({ open, onClose, projectId, variation, onSave
       qc.invalidateQueries({ queryKey: ['variations'] });
       onSaved?.(v);
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   return (
@@ -190,11 +191,11 @@ export function VariationFormModal({ open, onClose, projectId, variation, onSave
                           </Form.Item>
                         ) : (
                           <Form.Item label="BOQ rate">
-                            <span className="mono">{b ? formatINR(b.rate) : '-'}</span>
+                            <span className="mono" translate="no">{b ? formatINR(b.rate) : '-'}</span>
                           </Form.Item>
                         )}
                         <Form.Item label="Amount">
-                          <span className="mono">{formatINR(amount)}</span>
+                          <span className="mono" translate="no">{formatINR(amount)}</span>
                         </Form.Item>
                       </FormGrid>
                     </div>
@@ -206,7 +207,7 @@ export function VariationFormModal({ open, onClose, projectId, variation, onSave
                     Add item
                   </Button>
                   <Typography.Text strong>
-                    Claimed <span className="mono">{formatINR(total)}</span>
+                    Claimed <span className="mono" translate="no">{formatINR(total)}</span>
                   </Typography.Text>
                 </div>
               </>

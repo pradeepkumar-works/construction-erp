@@ -11,6 +11,7 @@ import { useIsPhone } from '@/lib/screen';
 import { errorMessage } from '@/lib/api';
 import { sameFilters, type ListFilters } from '@/lib/listPage';
 import { useDeleteView, useSaveView, useSavedViews } from '@/lib/queries';
+import { useConfirmDelete } from '@/components/common/ConfirmDelete';
 
 export interface BuiltInView {
   key: string;
@@ -41,7 +42,8 @@ export function ListViews({
   const { user } = useAuth();
   // A phone has no room for a row of tabs: the views are a drop-down (UX item 84).
   const phone = useIsPhone();
-  const { message, modal } = App.useApp();
+  const { message } = App.useApp();
+  const [askDelete, deleteDialog] = useConfirmDelete();
   const { data: saved } = useSavedViews(list);
   const save = useSaveView();
   const remove = useDeleteView();
@@ -103,18 +105,12 @@ export function ListViews({
       label: 'Delete',
       danger: true,
       onClick: () =>
-        modal.confirm({
-          title: `Delete the view "${v.name}"?`,
-          content: v.shared ? 'It is shared, so it goes for everyone in the company.' : undefined,
-          okText: 'Delete',
-          okButtonProps: { danger: true },
-          onOk: async () => {
-            try {
-              await remove.mutateAsync({ id: v.id, list });
-              if (active === v.id) onApply({});
-            } catch (err) {
-              message.error(errorMessage(err));
-            }
+        askDelete({
+          what: `the view “${v.name}”`,
+          description: v.shared ? 'It is shared, so it goes for everyone in the company.' : undefined,
+          onConfirm: () => remove.mutateAsync({ id: v.id, list }),
+          onDone: () => {
+            if (active === v.id) onApply({});
           },
         }),
     },
@@ -195,6 +191,7 @@ export function ListViews({
           </Form.Item>
         </Form>
       </Modal>
+      {deleteDialog}
     </>
   );
 }

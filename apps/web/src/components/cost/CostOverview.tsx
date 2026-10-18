@@ -19,7 +19,7 @@ import { UnpricedNote, unpricedText } from './UnpricedNote';
 import { CardToolbar } from '@/components/common/CardToolbar';
 import { themeColor, themeFontSize } from '@/lib/theme';
 
-const money = (v: string) => <span className="mono">{formatINR(v)}</span>;
+const money = (v: string) => <span className="mono" translate="no">{formatINR(v)}</span>;
 
 const EXPORT: ExportColumn<ProjectCostSummaryDto>[] = [
   { header: 'Project code', value: (r) => r.projectCode, width: 14 },
@@ -78,7 +78,7 @@ export function CostOverview() {
       render: (_, r) => (
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-            <span className="mono">{formatINR(r.cost.total)}</span>
+            <span className="mono" translate="no">{formatINR(r.cost.total)}</span>
             <UnpricedNote unpriced={r.unpriced} />
           </div>
           <CostBar cost={r.cost} scale={scale} height={8} />
@@ -91,7 +91,7 @@ export function CostOverview() {
       width: 140,
       align: 'right',
       sorter: (a, b) => toNumber(a.margin) - toNumber(b.margin),
-      render: (v) => <span className="mono" style={{ color: toNumber(v) < 0 ? themeColor('colorErrorText') : themeColor('colorSuccessText') }}>{formatINR(v)}</span>,
+      render: (v) => <span className="mono" translate="no" style={{ color: toNumber(v) < 0 ? themeColor('colorErrorText') : themeColor('colorSuccessText') }}>{formatINR(v)}</span>,
     },
     { title: 'Billed', dataIndex: 'billedValue', width: 130, align: 'right', render: money, sorter: (a, b) => toNumber(a.billedValue) - toNumber(b.billedValue) },
     { title: 'Cash in', dataIndex: 'cashIn', width: 130, align: 'right', render: money, sorter: (a, b) => toNumber(a.cashIn) - toNumber(b.cashIn) },

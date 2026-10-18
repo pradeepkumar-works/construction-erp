@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Popconfirm, Segmented, Space, Tag, theme } from 'antd';
+import { Button, Segmented, Space, Tag, theme } from 'antd';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { WorkerDto } from '@erp/shared';
 import { WORKER_ID_TYPE_LABELS, WORKER_SKILL_LABELS, canManageWorkers } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useWorkers } from '@/lib/queries';
 import { formatDate, formatINR } from '@/lib/format';
@@ -20,6 +21,7 @@ import { exportSelected } from '@/components/list/bulk';
 import { useListFrame } from '@/components/list/useListFrame';
 import { RecordLink } from '@/components/record/RecordLink';
 import { WorkerFormModal } from './WorkerFormModal';
+import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 const EXPORT: ExportColumn<WorkerDto>[] = [
   { header: 'No.', value: (w) => w.workerNo },
@@ -48,18 +50,16 @@ function Sub({ children, as = 'div' }: { children: React.ReactNode; as?: 'div' |
 /** The named worker register: contractor labour by name with trade, skill, ID and wage. */
 export function WorkerList({ projectId: fixedProject }: { projectId?: string }) {
   const { user } = useAuth();
-  const { message } = App.useApp();
   const qc = useQueryClient();
   const editor = !!user && canManageWorkers(user.roleKey);
   const [form, setForm] = useState<{ worker: WorkerDto | null } | null>(null);
 
   const remove = useMutation({
-    mutationFn: async (id: string) => api.delete(`/workers/${id}`),
+    mutationFn: async (id: string) => (await api.delete(`/workers/${id}`)).data,
     onSuccess: () => {
-      message.success('Worker deleted');
       qc.invalidateQueries({ queryKey: ['workers'] });
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   const frame = useListFrame<'name', WorkerDto>({
@@ -110,9 +110,9 @@ export function WorkerList({ projectId: fixedProject }: { projectId?: string }) 
                 <Space size={4}>
                   <Button size="small" type="text" aria-label="Edit" icon={<EditOutlined />} onClick={() => setForm({ worker: w })} />
                   {!w.lastSeenOn ? (
-                    <Popconfirm title="Delete this worker?" okText="Delete" okButtonProps={{ danger: true }} onConfirm={() => remove.mutate(w.id)}>
-                      <Button size="small" type="text" danger aria-label="Delete" icon={<DeleteOutlined />} />
-                    </Popconfirm>
+                    <ConfirmDelete what={`worker ${w.workerNo} ${w.name}`} onConfirm={() => remove.mutateAsync(w.id)}>
+                      <Button size="small" type="text" danger aria-label={`Delete ${w.name}`} icon={<DeleteOutlined />} />
+                    </ConfirmDelete>
                   ) : null}
                 </Space>
               ),
@@ -129,7 +129,7 @@ export function WorkerList({ projectId: fixedProject }: { projectId?: string }) 
 
   const newButton = editor ? (
     <Button type="primary" icon={<PlusOutlined />} onClick={() => setForm({ worker: null })}>
-      Add worker
+      New worker
     </Button>
   ) : null;
 
