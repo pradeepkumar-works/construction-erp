@@ -79,7 +79,7 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
   // Ask Nirmaan: shown when the company has it on, and to admins while it is off so they can find the switch.
   const mayAsk = canUseAi(user.roleKey) && !user.support;
   const { data: aiStatus } = useAiStatus(mayAsk);
-  const askVisible = mayAsk && (aiStatus ? aiStatus.enabled || aiStatus.reason === 'CAP_REACHED' || (aiStatus.canManage && aiStatus.reason === 'COMPANY_OFF') : !!user.ai);
+  const askVisible = mayAsk && (aiStatus ? aiStatus.enabled || aiStatus.reason === 'CAP_REACHED' || aiStatus.reason === 'READ_ONLY' || (aiStatus.canManage && aiStatus.reason === 'COMPANY_OFF') : !!user.ai);
   const [askOpen, setAskOpen] = useState(false);
   const [askLoaded, setAskLoaded] = useState(false);
   const [askQuestion, setAskQuestion] = useState<string | null>(null);

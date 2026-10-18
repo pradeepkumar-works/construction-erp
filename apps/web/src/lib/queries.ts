@@ -11,6 +11,8 @@ import type {
   BillCheckSummaryDto,
   CheckKind,
   AiSettingsDto,
+  AiConversationDetailDto,
+  AiConversationDto,
   AiStatusDto,
   AiThreadDto,
   SavedViewDto,
@@ -1899,18 +1901,35 @@ export function useDeleteAiThread() {
 export const useAiFeedback = () =>
   useMutation({ mutationFn: async ({ id, value }: { id: string; value: 1 | -1 | null }) => (await api.post(`/ai/messages/${id}/feedback`, { value })).data });
 
-export const useAiSettings = (enabled: boolean) => useQuery({ queryKey: ['ai', 'settings'], queryFn: async () => (await api.get<AiSettingsDto>('/ai/settings')).data, enabled });
+/** The settings and a month's use (AI item 77: `month` YYYY-MM, the current one when left out). */
+export const useAiSettings = (enabled: boolean, month?: string) =>
+  useQuery({ queryKey: ['ai', 'settings', month ?? 'now'], queryFn: async () => (await api.get<AiSettingsDto>('/ai/settings', { params: { month } })).data, enabled, placeholderData: keepPreviousData });
 
 export function useUpdateAiSettings() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (d: { enabled?: boolean; monthlyCapInr?: number | null }) => (await api.patch<AiSettingsDto>('/ai/settings', d)).data,
-    onSuccess: (d) => {
-      qc.setQueryData(['ai', 'settings'], d);
+    mutationFn: async (d: { enabled?: boolean; monthlyCapInr?: number | null; roles?: RoleKey[] }) => (await api.patch<AiSettingsDto>('/ai/settings', d)).data,
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['ai', 'settings'] });
       void qc.invalidateQueries({ queryKey: ['ai', 'status'] });
     },
   });
 }
+
+export interface AiConversationFilters {
+  userId?: string;
+  month?: string;
+  q?: string;
+  page: number;
+  pageSize: number;
+}
+
+/** The admins' log of the company's conversations (AI item 77). */
+export const useAiConversations = (f: AiConversationFilters, enabled: boolean) =>
+  useQuery({ queryKey: ['ai', 'conversations', f], queryFn: async () => (await api.get<Paginated<AiConversationDto>>('/ai/conversations', { params: f })).data, enabled, placeholderData: keepPreviousData });
+
+export const useAiConversation = (id: string | null) =>
+  useQuery({ queryKey: ['ai', 'conversation', id], queryFn: async () => (await api.get<AiConversationDetailDto>(`/ai/conversations/${id}`)).data, enabled: !!id });
 
 /** A bill's checks before approval (AI item 69); `version` refetches them when the bill itself was reloaded. */
 export const useBillChecks = (kind: CheckKind, id: string | undefined, version?: number) =>

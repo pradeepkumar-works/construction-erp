@@ -123,6 +123,9 @@ cd e2e && npx playwright test         # browser tests; needs API + web running (
   through `PhotoChecksService`, which loads the record with its own service; flags are advice and never gate a submission.
   A record with photos shows them with `photosSection(kind, id, attachments)` / `PhotosWithChecks`; a new flag is a key in
   `PHOTO_FLAGS` (+ `PHOTO_FLAG_INFO`, the prompt and its Hindi label). Keep `src/scripts/photo-checks-test.ts` passing.
+- AI controls (item 77, ARCHITECTURE "Ask Nirmaan", Usage, roles and pricing): every AI call is gated by `AiService.status(user)`
+  (company on, `aiRoles`, read-only billing state, the cap held under the plan's allowance from `aiPlanAllowanceInr`); never
+  check `aiEnabled` on its own. The admins' conversation log is audited on open and export. Keep `src/scripts/ai-billing-test.ts` passing.
 - Mobile: screens in `app/`, shared UI in `src/components`, API in `src/api`, no new native deps
   without checking `node_modules/expo/bundledNativeModules.json` for the SDK-pinned version.
 - Mobile theme: `src/theme.ts` picks the light or dark palette once at start-up (Profile > Appearance, stored in

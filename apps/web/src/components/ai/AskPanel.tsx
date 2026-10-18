@@ -349,7 +349,7 @@ export default function AskPanel({
             suffix={(_, { components: { SendButton, LoadingButton } }) => (busy ? <LoadingButton aria-label="Stop the answer" /> : <SendButton aria-label="Ask" />)}
           />
           <Typography.Paragraph type="secondary" style={{ fontSize: token.fontSizeSM, margin: `${token.marginXXS}px 0 0` }}>
-            Answers can be wrong; open the linked records before you act.
+            Answers can be wrong; open the linked records before you act. Your company&apos;s admins can read conversations.
             {status && status.questionsLeftToday <= 10 ? ` ${status.questionsLeftToday} question${status.questionsLeftToday === 1 ? '' : 's'} left today.` : ''}
           </Typography.Paragraph>
         </div>
@@ -521,6 +521,30 @@ function OffState({ status, onNavigate }: { status?: AiStatusDto; onNavigate: ()
   ) : null;
   if (status.reason === 'CAP_REACHED') {
     return <Result status="info" title="This month's allowance is used up" subTitle={status.canManage ? 'Raise the monthly allowance to keep asking this month.' : 'An admin can raise the monthly allowance in Admin.'} extra={settings} />;
+  }
+  if (status.reason === 'READ_ONLY') {
+    const billing = status.canManage ? (
+      <Button
+        type="primary"
+        onClick={() => {
+          onNavigate();
+          router.push('/billing');
+        }}
+      >
+        Open Billing
+      </Button>
+    ) : null;
+    return (
+      <Result
+        status="info"
+        title={`Ask ${PRODUCT_NAME} is paused`}
+        subTitle={`The ${PRODUCT_NAME} trial or subscription has ended, so the company is read-only. ${status.canManage ? 'Renew under Billing to ask again.' : 'An admin can renew it under Billing.'}`}
+        extra={billing}
+      />
+    );
+  }
+  if (status.reason === 'ROLE_OFF') {
+    return <Result status="info" title={`Ask ${PRODUCT_NAME} is not open to your role`} subTitle="Your company's admin chooses which roles can use it." />;
   }
   if (status.reason === 'NOT_CONFIGURED') {
     return <Result status="info" title={`Ask ${PRODUCT_NAME} is not set up yet`} subTitle="The server needs an AI key before anyone can ask questions." />;

@@ -101,6 +101,36 @@ test('a company whose trial has ended is read-only until an admin pays', async (
   expect(log.some((l) => l.action === 'SUBSCRIPTION_PAID')).toBe(true);
 });
 
+test('Ask Nirmaan is included in the trial and pauses when the company is read-only (AI item 77)', async ({ page }) => {
+  const { email, token, me } = await newCompany('E2E AI Plan');
+  type Settings = { effectiveCapInr: number; plan: { status: string; allowanceInr: number } | null };
+  type Status = { enabled: boolean; reason: string | null };
+  // A new company starts with it off; its admin switches it on in the trial.
+  await api(token, '/ai/settings', { method: 'PATCH', body: { enabled: true } });
+  const trial = await api<Settings>(token, '/ai/settings');
+  expect(trial.plan).toMatchObject({ status: 'TRIAL', allowanceInr: 1000 });
+  expect(trial.effectiveCapInr).toBe(1000);
+  // Its own cap can be lower than the plan's, never higher.
+  await api(token, '/ai/settings', { method: 'PATCH', body: { monthlyCapInr: 50_000 } });
+  expect((await api<Settings>(token, '/ai/settings')).effectiveCapInr).toBe(1000);
+  await api(token, '/ai/settings', { method: 'PATCH', body: { monthlyCapInr: 300 } });
+  expect((await api<Settings>(token, '/ai/settings')).effectiveCapInr).toBe(300);
+  expect((await api<Status>(token, '/ai/status')).enabled).toBe(true);
+  expect((await api<{ ai: { allowanceInr: number; perUnitInr: number } }>(token, '/billing')).ai).toMatchObject({ allowanceInr: 1000, perUnitInr: 150 });
+
+  const staff = await apiToken('admin@demo.com');
+  await api(staff, `/platform/companies/${me.organizationId}/trial`, { method: 'POST', body: { until: yesterday() } });
+  expect(await api<Status>(token, '/ai/status')).toMatchObject({ enabled: false, reason: 'READ_ONLY' });
+  const ask = await fetch(`${API_URL}/ai/ask`, { method: 'POST', headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' }, body: JSON.stringify({ question: 'Show me the bills' }) });
+  expect(ask.status).toBe(402);
+  expect((await api<Settings>(token, '/ai/settings')).plan).toMatchObject({ status: 'READ_ONLY', allowanceInr: 0 });
+
+  await signIn(page, email);
+  await page.keyboard.press('Alt+j');
+  await expect(page.getByText('Ask Nirmaan is paused')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Open Billing' })).toBeVisible();
+});
+
 test("Razorpay's webhook records a payment whose browser closed, once", async () => {
   const { token } = await newCompany('E2E Webhook');
   await api(token, '/billing/details', { method: 'PUT', body: { name: 'E2E Webhook Pvt Ltd', gstin: '27AAACW1234F1Z5', address: 'Pune' } });

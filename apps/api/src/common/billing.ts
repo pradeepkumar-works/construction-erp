@@ -1,7 +1,8 @@
 import { CanActivate, ExecutionContext, HttpException, HttpStatus, Injectable, SetMetadata } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import type { BillingStateDto, BillingUnit } from '@erp/shared';
-import { PRODUCT_NAME, gstStateCode } from '@erp/shared';
+import type { BillingStateDto, BillingStatus, BillingUnit, RoleKey } from '@erp/shared';
+import { GUEST_ROLES, PRODUCT_NAME, gstStateCode } from '@erp/shared';
+import type { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from './current-user';
 
 /**
@@ -20,6 +21,9 @@ export interface BillingConfig {
   exemptCodes: string[];
   seller: { name: string; gstin: string; address: string; stateCode: string; sac: string };
   invoicePrefix: string;
+  /** Ask Nirmaan included in the price (AI item 77): rupees a month per unit once paid, and for the whole trial month */
+  aiPerUnitInr: number;
+  aiTrialInr: number;
 }
 
 export function billingConfig(): BillingConfig | null {
@@ -38,7 +42,31 @@ export function billingConfig(): BillingConfig | null {
     exemptCodes: (e.BILLING_EXEMPT_ORG_CODES ?? 'DEMO').split(',').map((c) => c.trim().toUpperCase()).filter(Boolean),
     seller: { name: e.BILLING_SELLER_NAME, gstin, address: e.BILLING_SELLER_ADDRESS ?? '', stateCode: gstStateCode(gstin)!, sac: e.BILLING_SAC || '998314' },
     invoicePrefix: (e.BILLING_INVOICE_PREFIX || 'NIR').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5),
+    aiPerUnitInr: wholeRupees(e.BILLING_AI_INR_PER_UNIT, 150),
+    aiTrialInr: wholeRupees(e.BILLING_AI_TRIAL_INR, 1000),
   };
+}
+
+const wholeRupees = (v: string | undefined, fallback: number) => (v !== undefined && /^\d+$/.test(v.trim()) ? Number(v.trim()) : fallback);
+
+/** Active projects, or active staff (guests are free); at least one. What the price, and the AI allowance, are counted by. */
+export async function billingUnits(prisma: PrismaService, cfg: BillingConfig, organizationId: string): Promise<number> {
+  const n =
+    cfg.unit === 'PROJECT'
+      ? await prisma.project.count({ where: { organizationId, status: 'ACTIVE' } })
+      : await prisma.user.count({ where: { organizationId, isActive: true, role: { key: { notIn: GUEST_ROLES as RoleKey[] } } } });
+  return Math.max(1, n);
+}
+
+/**
+ * Rupees a month of Ask Nirmaan the plan includes (AI item 77): a fixed amount in the trial, the per-unit amount for
+ * each unit paid for, nothing while read-only. Null for a company that is not charged, which keeps its own cap.
+ */
+export function aiPlanAllowanceInr(cfg: BillingConfig, status: BillingStatus, units: number): number | null {
+  if (status === 'EXEMPT') return null;
+  if (status === 'READ_ONLY') return 0;
+  if (status === 'TRIAL') return cfg.aiTrialInr;
+  return cfg.aiPerUnitInr * Math.max(1, units);
 }
 
 const iso = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : null);

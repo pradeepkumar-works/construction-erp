@@ -1,6 +1,9 @@
 import type { RoleKey } from './enums';
-import { isGuest } from './permissions';
+import { ROLE_KEYS } from './enums';
+import { GUEST_ROLES, isGuest } from './permissions';
 import type { AiFeature } from './briefs';
+import type { BillingStatus } from './types';
+import type { BillingUnit } from './billing';
 
 /**
  * Ask Nirmaan (AI roadmap item 67): an assistant that answers from the company's own records through read-only tools
@@ -11,6 +14,11 @@ import type { AiFeature } from './briefs';
 export const canUseAi = (role: RoleKey) => !isGuest(role);
 /** Switch the assistant on or off for the company and set its monthly cap: admins. */
 export const canManageAi = (role: RoleKey) => role === 'ADMIN';
+
+/** Roles an admin can open or close the assistant to (AI item 77). Admins always have it; guests never do. */
+export const AI_ROLE_CHOICES: RoleKey[] = ROLE_KEYS.filter((r) => r !== 'ADMIN' && !GUEST_ROLES.includes(r));
+/** Whether a role may use the assistant in a company that limits it to `roles` (empty: all staff). */
+export const aiRoleAllowed = (role: RoleKey, roles: readonly string[]) => canUseAi(role) && (role === 'ADMIN' || !roles.length || roles.includes(role));
 
 /** Longest question accepted. */
 export const AI_QUESTION_MAX = 2000;
@@ -80,31 +88,100 @@ export interface AiThreadDetailDto extends AiThreadDto {
 export interface AiStatusDto {
   /** The company has the assistant on and the server has a model to call */
   enabled: boolean;
-  /** Why it is off, for the panel: not switched on for the company, or not set up on this server */
-  reason: 'COMPANY_OFF' | 'NOT_CONFIGURED' | 'CAP_REACHED' | null;
+  /**
+   * Why it is off, for the panel: not switched on for the company, not set up on this server, the month's allowance
+   * used, not open to the user's role (AI item 77), or the company is read-only because its trial or subscription ended
+   */
+  reason: 'COMPANY_OFF' | 'NOT_CONFIGURED' | 'CAP_REACHED' | 'ROLE_OFF' | 'READ_ONLY' | null;
   /** Questions this user may still ask today */
   questionsLeftToday: number;
   /** Admins can switch it on */
   canManage: boolean;
 }
 
+/** What the plan includes for Ask Nirmaan (AI item 77), when billing is on and the company is charged. */
+export interface AiPlanDto {
+  status: BillingStatus;
+  /** Rupees a month the plan includes: the trial's amount, units × the per-unit amount once paid, 0 when read-only */
+  allowanceInr: number;
+  unit: BillingUnit;
+  units: number;
+  perUnitInr: number;
+  trialInr: number;
+}
+
 export interface AiSettingsDto {
   enabled: boolean;
-  /** Rupees per month for the whole company; null = the server default */
+  /** Rupees per month for the whole company; null = the server default (or the plan's allowance) */
   monthlyCapInr: number | null;
-  /** The cap in force (the company's or the server default) */
+  /** The cap in force: the company's own, never above the plan's allowance; the server default when no plan applies */
   effectiveCapInr: number;
-  /** Spent this calendar month, in rupees (as billed by OpenRouter, or estimated at list prices) */
+  /** The plan's AI allowance; null when billing is off or the company is not charged */
+  plan: AiPlanDto | null;
+  /** Roles that may use it besides admins (AI_ROLE_CHOICES); empty = all staff */
+  roles: RoleKey[];
+  /** The month the figures below are for, YYYY-MM (the current one unless asked for another) */
+  month: string;
+  /** Spent in that month, in rupees (as billed by OpenRouter, or estimated at list prices) */
   spentThisMonthInr: number;
   questionsThisMonth: number;
-  /** Most active users this month */
-  byUser: { userId: string; fullName: string; questions: number; spentInr: number }[];
+  /** Who used it in that month: questions, documents read and briefs, and what they cost */
+  byUser: AiUserUsageDto[];
   /** What the month's spend went on (AI item 74): how many of each and their cost */
   byFeature: { feature: AiFeature; count: number; spentInr: number }[];
   /** The server has a model key (OPENROUTER_API_KEY, ANTHROPIC_API_KEY or the test provider) */
   configured: boolean;
   model: string;
 }
+
+export interface AiUserUsageDto {
+  userId: string;
+  fullName: string;
+  roleKey: RoleKey;
+  questions: number;
+  /** Invoices, challans and drawings read */
+  reads: number;
+  /** Morning briefs written for them */
+  briefs: number;
+  /** Notes rated not helpful */
+  notHelpful: number;
+  spentInr: number;
+}
+
+/** One conversation in the admins' log (AI item 77). */
+export interface AiConversationDto {
+  id: string;
+  title: string;
+  userId: string;
+  fullName: string;
+  questions: number;
+  /** Answers rated not helpful */
+  notHelpful: number;
+  spentInr: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AiConversationDetailDto extends AiConversationDto {
+  messages: (AiMessageDto & { model: string | null; costInr: number; tools: string[] })[];
+}
+
+/** One question or answer in the log's export. */
+export interface AiConversationExportRowDto {
+  conversationId: string;
+  title: string;
+  fullName: string;
+  /** ISO time */
+  at: string;
+  role: 'Question' | 'Answer';
+  text: string;
+  model: string | null;
+  costInr: number;
+  rating: 'Helpful' | 'Not helpful' | null;
+}
+
+/** Most rows one export returns. */
+export const AI_EXPORT_MAX_ROWS = 5000;
 
 /** Where the user is when they ask, so "this project" and "this bill" mean something. */
 export interface AiPageContext {

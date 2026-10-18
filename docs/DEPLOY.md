@@ -171,6 +171,8 @@ set these on the API project and redeploy:
 | `BILLING_SAC` | SAC code on invoices, default `998314`; confirm with your CA |
 | `BILLING_INVOICE_PREFIX` | default `NIR`, giving invoice numbers like `NIR2627-00001` (per financial year) |
 | `BILLING_EXEMPT_ORG_CODES` | comma-separated organisation codes never charged, default `DEMO`; add your own company's code |
+| `BILLING_AI_TRIAL_INR` | Ask Nirmaan included in the free trial, rupees a month, default `1000` |
+| `BILLING_AI_INR_PER_UNIT` | Ask Nirmaan included in the price once paid, rupees a month per billed unit, default `150`; a company's own monthly allowance can be lower, never higher |
 
 Staff can move a company's trial end in the platform console (for a pilot, or to end it).
 

@@ -366,9 +366,11 @@ model Organization {
   billingRemindedFor String?
 
   /// Ask Nirmaan (AI item 67): switched on by an admin; off until then
-  aiEnabled       Boolean @default(false)
+  aiEnabled       Boolean  @default(false)
   /// Rupees per calendar month for the company's AI use; null = the server's AI_DEFAULT_MONTHLY_CAP_INR
   aiMonthlyCapInr Int?
+  /// Roles besides admins that may use Ask Nirmaan (AI item 77); empty = all staff
+  aiRoles         String[] @default([])
 
   users                User[]
   roles                Role[]
