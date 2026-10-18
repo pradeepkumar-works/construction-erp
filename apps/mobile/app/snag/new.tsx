@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import type { DefectDto, DefectPriority } from '@erp/shared';
+import type { AiStatusDto, DefectDto, DefectPriority, SnagDraftDto } from '@erp/shared';
 import { DEFECT_PHASE_LABELS, DEFECT_PRIORITIES, DEFECT_PRIORITY_LABELS } from '@erp/shared';
-import { useApi } from '../../src/api/hooks';
+import { useApi, useFetch } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
 import { Button, Card, Chips, DatePicker, ErrorBanner, Input, Loading, PhotoPicker, Screen, Select, type LocalPhoto } from '../../src/components';
 import { attachmentIds, photosFailed, photosQueued, photosUploading, SubmitSuccess, useProjectOptions } from '../../src/forms/common';
 import { useOffline } from '../../src/offline';
-import { colors, fontSize, spacing } from '../../src/theme';
+import { colors, fontSize, maxFontScale, spacing, typography } from '../../src/theme';
 import { isIsoDate, today } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
 import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
@@ -39,6 +39,33 @@ export default function ReportSnagScreen() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState<DefectDto | null>(null);
+  const ai = useFetch<AiStatusDto>((a) => a.get('/ai/status'), [], { refetchOnFocus: false });
+  const [describing, setDescribing] = useState(false);
+  const [described, setDescribed] = useState<string | null>(null);
+  const photoId = photos.find((p) => p.attachmentId)?.attachmentId;
+
+  // Ask Nirmaan drafts the snag from its first photo (AI item 76) and fills in the fields still empty; nothing is sent.
+  const describe = async () => {
+    if (!photoId) return;
+    if (!projectId) {
+      setErrors((e) => ({ ...e, projectId: t('Choose a project') }));
+      return;
+    }
+    setDescribing(true);
+    setSubmitError(null);
+    try {
+      const d = await api.post<SnagDraftDto>('/photo-checks/snag-draft', { attachmentId: photoId, projectId });
+      if (!title.trim()) setTitle(d.title);
+      if (!description.trim()) setDescription(d.description);
+      if (!location.trim() && d.location) setLocation(d.location);
+      if (!trade.trim() && d.trade) setTrade(d.trade);
+      setDescribed(t('Filled in by Ask Nirmaan from the photo. Check it before you report.'));
+    } catch (e) {
+      setSubmitError(errorMessage(e));
+    } finally {
+      setDescribing(false);
+    }
+  };
 
   useEffect(() => {
     if (!projectId && projects.options.length === 1) setProjectId(projects.options[0].value);
@@ -89,6 +116,7 @@ export default function ReportSnagScreen() {
     setDescription('');
     setPhotos([]);
     setErrors({});
+    setDescribed(null);
   };
 
   if (saved) return <SubmitSuccess title={t('{phase} reported', { phase: t(DEFECT_PHASE_LABELS[saved.phase]) })} subtitle={`${saved.defectNo}: ${saved.title}. ${t('The project manager has been told.')}`} onAnother={reset} />;
@@ -112,6 +140,14 @@ export default function ReportSnagScreen() {
       <Card title={t('Photos')}>
         <PhotoPicker photos={photos} onChange={setPhotos} />
         {errors.photos ? <Text style={styles.err}>{errors.photos}</Text> : null}
+        {ai.data?.enabled && photoId ? (
+          <>
+            <Button title={t('Describe from photo')} icon="sparkles-outline" variant="secondary" size="sm" onPress={describe} loading={describing} disabled={!online} />
+            <Text style={styles.hint} maxFontSizeMultiplier={maxFontScale}>
+              {described ?? t('Ask Nirmaan fills in the empty fields from the first photo')}
+            </Text>
+          </>
+        ) : null}
       </Card>
       <Button title={t('Report')} icon="send" onPress={submit} loading={busy} disabled={!online} />
     </Screen>
@@ -120,4 +156,5 @@ export default function ReportSnagScreen() {
 
 const styles = StyleSheet.create({
   err: { color: colors.danger, marginTop: -spacing.sm, marginBottom: spacing.sm, fontSize: fontSize.secondary },
+  hint: { ...typography.caption, marginTop: spacing.xs },
 });

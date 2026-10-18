@@ -192,6 +192,9 @@ import type {
   WorkPermitStatus,
   WorkPermitType,
   DocumentPageViewDto,
+  PhotoCheckKind,
+  PhotoChecksDto,
+  SnagDraftDto,
 } from '@erp/shared';
 import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, NOTIFICATION_TYPES_VERSION, SEARCH_MIN_LENGTH } from '@erp/shared';
 import { api } from './api';
@@ -1879,6 +1882,39 @@ export function useAcceptCheck(kind: CheckKind, id: string) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['checks', kind, id] }),
   });
 }
+
+// ---- Site photo checks (AI item 76) ----
+
+/** A record's photo captions and flags; `version` refetches them when the record was reloaded (a photo added). */
+export const usePhotoChecks = (kind: PhotoCheckKind, id: string | undefined, enabled = true, version?: number) =>
+  useQuery({
+    queryKey: ['photo-checks', kind, id, version],
+    queryFn: async () => (await api.get<PhotoChecksDto>(`/photo-checks/${kind}/${id}`)).data,
+    enabled: !!id && enabled,
+    placeholderData: keepPreviousData,
+  });
+
+/** Checks the record's next few photos; the page asks again while some are left. */
+export function useRunPhotoChecks(kind: PhotoCheckKind, id: string, version?: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => (await api.post<PhotoChecksDto>(`/photo-checks/${kind}/${id}/run`)).data,
+    onSuccess: (d) => qc.setQueryData(['photo-checks', kind, id, version], d),
+  });
+}
+
+/** The project's safety officer switches photo flags off or back on. */
+export function useSetPhotoFlags() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { projectId: string; flagsOff: boolean }) => (await api.put<{ projectId: string; flagsOff: boolean }>(`/photo-checks/projects/${v.projectId}`, { flagsOff: v.flagsOff })).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['photo-checks'] }),
+  });
+}
+
+/** A new snag's title, description and place from its photo, for the form; nothing is saved. */
+export const useSnagDraft = () =>
+  useMutation({ mutationFn: async (v: { attachmentId: string; projectId: string }) => (await api.post<SnagDraftDto>('/photo-checks/snag-draft', v)).data });
 
 // ---- Early warnings, the watch list (AI item 73) ----
 

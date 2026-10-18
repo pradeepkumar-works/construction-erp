@@ -447,6 +447,7 @@ model Organization {
   warningDismissals    WarningDismissal[]
   aiBriefs             AiBrief[]
   documentPages        DocumentPage[]
+  photoChecks          PhotoCheck[]
   billCheckSummaries   BillCheckSummary[]
   aiDocumentReads      AiDocumentRead[]
 }
@@ -604,6 +605,9 @@ model Project {
   organization          Organization   @relation(fields: [organizationId], references: [id])
   aiBriefs              AiBrief[]
   documentPages         DocumentPage[]
+  photoChecks           PhotoCheck[]
+  /// Site photo checks (AI item 76): the safety officer switched the photo flags off for this project; captions still show
+  photoFlagsOff         Boolean        @default(false)
   code                  String
   name                  String
   type                  ProjectType
@@ -2178,7 +2182,8 @@ model Attachment {
   textError         String?
   createdAt         DateTime           @default(now())
 
-  pages DocumentPage[]
+  pages      DocumentPage[]
+  photoCheck PhotoCheck?
 
   @@index([organizationId])
   // Every record lists its files: one index per parent column (item 83).
@@ -3681,4 +3686,31 @@ model DocumentPage {
   @@unique([attachmentId, page])
   @@index([search], type: Gin)
   @@index([organizationId, projectId])
+}
+
+/// Site photo checks (AI item 76): what the model saw in one photo, read once and kept. Advisory only.
+model PhotoCheck {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  attachmentId   String       @unique
+  attachment     Attachment   @relation(fields: [attachmentId], references: [id], onDelete: Cascade)
+  /// DONE | SKIPPED | FAILED
+  status         String
+  caption        String?
+  /// [{ key, detail, confidence }], every flag the model gave; the page shows those above the confidence bar
+  flags          Json         @default("[]")
+  /// A snag's drafted title, description, location and trade, when it was read for the snag form
+  draft          Json?
+  reason         String?
+  model          String?
+  /// Counted in the company's monthly Ask Nirmaan allowance
+  costPaise      Int          @default(0)
+  ms             Int?
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId, createdAt])
+  @@index([projectId])
 }

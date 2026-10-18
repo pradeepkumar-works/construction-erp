@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-10-photo-checks',
+    date: '2026-10-22',
+    title: 'Ask Nirmaan looks at site photos',
+    points: [
+      'Photos on a DPR, a progress entry, a safety incident or a snag get a short caption from Ask Nirmaan, under the photos.',
+      'It flags what it is sure of: workers without helmets or harnesses, an open edge without a barricade, a scaffold that looks unsafe, or a photo of other work than the entry says. Flags are advice and never hold up a submission.',
+      "The project's safety officer can switch the flags off for a project; captions still show.",
+      'Reporting a snag, Describe from photo fills in what is wrong, the details, where and the trade from its photo. Check it, then save.',
+    ],
+  },
+  {
     id: '2026-10-phone-lists',
     date: '2026-10-21',
     title: 'Lists that fit a phone',

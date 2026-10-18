@@ -6,7 +6,7 @@ import { sectorLocation } from '@erp/shared';
 import { useProgressEntry } from '@/lib/queries';
 import { formatDate, formatQty } from '@/lib/format';
 import { StatusTag } from '@/components/common/StatusTag';
-import { AttachmentGallery } from '@/components/common/AttachmentGallery';
+import { photosSection } from '@/components/photo-checks/PhotoChecksSection';
 import { ReviewActions } from '@/components/common/ReviewActions';
 import { EditResubmitButton } from '@/components/common/EditResubmitButton';
 import { submissionMetaItems } from '@/components/common/SubmitterInfo';
@@ -51,12 +51,7 @@ export function ProgressRecord({ id, mode, open, onClose, onEdit }: RecordProps 
           lifecycle: submissionLifecycle(data),
           sections: [
             ...(data.remarks ? [{ key: 'remarks', title: 'Remarks', children: <div style={{ whiteSpace: 'pre-wrap' }}>{data.remarks}</div> }] : []),
-            {
-              key: 'photos',
-              title: 'Photos',
-              count: data.attachments.length,
-              children: <AttachmentGallery attachments={data.attachments} />,
-            },
+            photosSection('progress', data.id, data.attachments),
           ],
           activity: { type: 'progress', id: data.id, submission: data },
           actions: (size) => (

@@ -6,7 +6,7 @@ import { DEFECT_PHASE_LABELS, DEFECT_PRIORITY_LABELS, DEFECT_STATUS_LABELS, canC
 import { useApi, useFetch } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
 import { useAuth } from '../../src/auth/AuthContext';
-import { AttachmentGallery, Button, Card, ErrorBanner, ErrorState, Input, KeyValue, Loading, PhotoPicker, Pill, Screen, type LocalPhoto } from '../../src/components';
+import { AttachmentGallery, PhotoChecks, Button, Card, ErrorBanner, ErrorState, Input, KeyValue, Loading, PhotoPicker, Pill, Screen, type LocalPhoto } from '../../src/components';
 import { DEFECT_STATUS_TONE, DEFECT_TONE } from '../../src/components/defectTone';
 import { attachmentIds, photosFailed, photosQueued, photosUploading } from '../../src/forms/common';
 import { colors, spacing, typography, toneIcon } from '../../src/theme';
@@ -87,6 +87,7 @@ export default function SnagScreen() {
         {data.closedAt ? <KeyValue label={t('Closed')} value={`${data.closedByName ?? ''}, ${formatDateTime(data.closedAt)}${data.closeNote ? `: ${data.closeNote}` : ''}`} multiline /> : null}
       </Card>
       <AttachmentGallery attachments={data.attachments} />
+      <PhotoChecks kind="defect" id={data.id} attachments={data.attachments} />
       {step ? (
         <Card title={TITLE[step]}>
           <Input label={t(step === 'fix' ? 'What was done' : step === 'reopen' ? 'Why it is not right yet' : 'Note')} value={note} onChangeText={setNote} multiline maxLength={1000} />

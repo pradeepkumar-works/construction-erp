@@ -18,3 +18,4 @@ export { OfflineBanner } from './OfflineBanner';
 export { BillingBanner } from './BillingBanner';
 export { Intro, useIntroSeen } from './Intro';
 export { SnackbarProvider, useSnackbar, confirmResult } from './Snackbar';
+export { PhotoChecks } from './PhotoChecks';
