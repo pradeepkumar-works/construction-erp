@@ -91,6 +91,8 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
     if (question) setAskQuestion(question);
   }, []);
   const takeAskQuestion = useCallback(() => setAskQuestion(null), []);
+  // Stable, so the palette's targets (built with it) are not rebuilt on every render of the shell.
+  const closeSearch = useCallback(() => setSearchOpen(false), []);
   const askContext = useMemo(() => ({ available: askVisible && !!aiStatus?.enabled, ask: (q: string) => openAsk(q) }), [askVisible, aiStatus?.enabled, openAsk]);
 
   // The first time someone signs in on this browser, once the shell has laid out.
@@ -231,7 +233,7 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
           <Sidebar user={user} sections={sidebarSections} pendingCount={pendingCount} onNavigate={() => setMobileOpen(false)} />
         </Drawer>
       )}
-      {!guest && <CommandPalette open={searchOpen} onClose={() => setSearchOpen(false)} sections={sections} recentPages={recentPages} withProjects user={user} onAsk={askVisible ? openAsk : undefined} />}
+      {!guest && <CommandPalette open={searchOpen} onClose={closeSearch} sections={sections} recentPages={recentPages} withProjects user={user} onAsk={askVisible ? openAsk : undefined} />}
       <ProductTour user={user} mobile={isMobile} open={touring} onClose={() => setTouring(false)} />
       <Layout>
         <Header

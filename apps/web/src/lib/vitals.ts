@@ -24,6 +24,7 @@ const routeOf = (path: string) => path.replace(/\/[0-9a-f-]{8,}(?=\/|$)/gi, '/:i
 
 let queue: VitalReport[] = [];
 let listening = false;
+let flushing = false;
 
 /** Sends what has been measured in one beacon, as the tab is hidden or closed (form-encoded, so no CORS preflight). */
 function flush() {
@@ -57,6 +58,19 @@ export function reportWebVital(metric: { name: string; value: number; rating?: s
     return;
   }
   queue = [...queue.filter((r) => r.id !== report.id), report];
+  // web-vitals hands over what it still holds (CLS, and LCP when no idle moment came after the first key or click) while the
+  // tab is hiding, inside the visibilitychange that flushes: a listener added now would miss that event, and one added
+  // earlier may already have run. So a report made while hidden is sent straight after, batched in a microtask.
+  if (document.visibilityState === 'hidden') {
+    if (!flushing) {
+      flushing = true;
+      queueMicrotask(() => {
+        flushing = false;
+        flush();
+      });
+    }
+    return;
+  }
   if (!listening) {
     listening = true;
     document.addEventListener('visibilitychange', () => document.visibilityState === 'hidden' && flush());
