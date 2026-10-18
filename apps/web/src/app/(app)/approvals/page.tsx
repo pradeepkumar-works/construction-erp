@@ -7,6 +7,7 @@ import { CheckOutlined } from '@ant-design/icons';
 import type { PendingApprovalDto, ReviewDecision, SubmissionType } from '@erp/shared';
 import { APPROVAL_AMOUNT_BASIS, SUBMISSION_TYPE_LABELS, approvalRightsOf, mayApprove } from '@erp/shared';
 import { useProjectScope } from '@/lib/project-scope';
+import { useUrlParam } from '@/lib/url-state';
 import { approvalTypeParam, usePendingApprovals } from '@/lib/queries';
 import { useAuth } from '@/lib/auth';
 import { approveTheme } from '@/lib/theme';
@@ -56,10 +57,16 @@ export default function ApprovalsPage() {
   const { data, isLoading, error, refetch } = usePendingApprovals(approver);
   const approveMany = useApproveMany();
 
-  const [type, setType] = useState<SubmissionType | undefined>();
+  // The search, type and order are in the URL (UX item 84): a reload or a link sent on opens the same queue.
+  const [typeParam, setTypeParam] = useUrlParam('type');
+  const type = QUEUE_TYPES.some(([t]) => t === typeParam) ? (typeParam as SubmissionType) : undefined;
+  const setType = (t?: SubmissionType) => setTypeParam(t);
   const [projectId, setProjectId] = useProjectScope();
-  const [search, setSearch] = useState('');
-  const [newestFirst, setNewestFirst] = useState(false);
+  const [searchParam, setSearch] = useUrlParam('q');
+  const search = searchParam ?? '';
+  const [order, setOrder] = useUrlParam('order');
+  const newestFirst = order === 'newest';
+  const setNewestFirst = (on: boolean) => setOrder(on ? 'newest' : undefined);
   const [collapsed, setCollapsed] = useState<Set<SubmissionType>>(new Set());
   const [current, setCurrent] = useState<string | null>(null);
   const lastIndex = useRef(0);

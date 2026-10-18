@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Anchor, App, Button, Card, Col, Descriptions, Divider, Drawer, Flex, Row, Skeleton, Space, Steps, Tooltip, theme } from 'antd';
 import type { DescriptionsProps } from 'antd';
 import { ArrowLeftOutlined, ExpandOutlined, LinkOutlined, PrinterOutlined } from '@ant-design/icons';
 import type { ApprovalTypeParam } from '@/lib/queries';
 import { useStickyTop } from '@/lib/sticky';
+import { useIsPhone } from '@/lib/screen';
 import { rememberRecord } from '@/lib/recent';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -63,6 +64,31 @@ export interface RecordFrameProps {
 }
 
 const sectionId = (key: string) => `record-${key}`;
+
+/** Whether the actions came out as nothing (no button this user may press), looking through fragments. */
+function hasContent(node: React.ReactNode): boolean {
+  if (node === null || node === undefined || typeof node === 'boolean' || node === '') return false;
+  if (Array.isArray(node)) return node.some(hasContent);
+  if (React.isValidElement(node) && node.type === React.Fragment) return hasContent((node.props as { children?: React.ReactNode }).children);
+  return true;
+}
+
+/** The height of an element, following changes (the bar wraps onto a second line). */
+function useHeight<E extends HTMLElement>(): [React.RefObject<E | null>, number] {
+  const ref = useRef<E>(null);
+  const [height, setHeight] = useState(0);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => setHeight(el.getBoundingClientRect().height));
+    ro.observe(el);
+    return () => ro.disconnect();
+  });
+  return [ref, height];
+}
+
+/** On a phone the actions sit in a bar fixed to the bottom of the screen, above the home indicator (UX item 84). */
+const safeBottom = (padding: number) => `calc(${padding}px + env(safe-area-inset-bottom))`;
 const sectionTitle = (s: RecordSection) => (s.count === undefined ? s.title : `${s.title} (${s.count})`);
 
 /**
@@ -141,6 +167,9 @@ function RecordPane({ loading, error, onRetry, record, children }: RecordFramePr
 
 function RecordDrawer({ open, onClose, drawerSize = 820, kind, loading, error, onRetry, record, children }: RecordFrameProps) {
   const { token } = theme.useToken();
+  // On a phone Approve, Submit and the rest are in the drawer's footer, always in reach of a thumb, not at its top.
+  const phone = useIsPhone();
+  const footerActions = phone && record ? record.actions?.('middle') : null;
   return (
     <Drawer
       open={open}
@@ -167,10 +196,18 @@ function RecordDrawer({ open, onClose, drawerSize = 820, kind, loading, error, o
             <Tooltip title="Open full page">
               <LinkButton href={record.href} size="small" icon={<ExpandOutlined />} aria-label="Open full page" />
             </Tooltip>
-            {record.actions?.('small')}
+            {phone ? null : record.actions?.('small')}
           </Space>
         ) : null
       }
+      footer={
+        hasContent(footerActions) ? (
+          <Flex wrap gap={token.marginXS} justify="flex-end" role="toolbar" aria-label="Record actions">
+            {footerActions}
+          </Flex>
+        ) : undefined
+      }
+      styles={phone ? { footer: { paddingBottom: safeBottom(token.paddingSM) } } : undefined}
       destroyOnHidden
     >
       {loading && <Skeleton active />}
@@ -212,6 +249,8 @@ function RecordPage({ kind, list, loading, error, onRetry, record, children }: R
   const { message } = App.useApp();
   const top = useStickyTop();
   const anchorHeight = 46;
+  const phone = useIsPhone();
+  const [barRef, barHeight] = useHeight<HTMLDivElement>();
 
   const copyLink = async () => {
     if (!record) return;
@@ -299,30 +338,54 @@ function RecordPage({ kind, list, loading, error, onRetry, record, children }: R
             )}
           </Row>
           <Flex
+            ref={barRef}
             data-record-chrome
             justify="space-between"
             align="center"
-            gap={token.marginSM}
+            gap={phone ? token.marginXS : token.marginSM}
             wrap
             role="toolbar"
             aria-label="Record actions"
-            style={{
-              position: 'sticky',
-              bottom: 0,
-              zIndex: 5,
-              marginTop: token.margin,
-              padding: `${token.paddingSM}px ${token.padding}px`,
-              background: token.colorBgContainer,
-              border: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}`,
-              borderRadius: token.borderRadiusLG,
-              boxShadow: token.boxShadowTertiary,
-            }}
+            style={
+              phone
+                ? {
+                    position: 'fixed',
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    zIndex: 20,
+                    padding: `${token.paddingXS}px ${token.paddingSM}px`,
+                    paddingBottom: safeBottom(token.paddingXS),
+                    background: token.colorBgContainer,
+                    borderTop: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}`,
+                    boxShadow: token.boxShadowTertiary,
+                  }
+                : {
+                    position: 'sticky',
+                    bottom: 0,
+                    zIndex: 5,
+                    marginTop: token.margin,
+                    padding: `${token.paddingSM}px ${token.padding}px`,
+                    background: token.colorBgContainer,
+                    border: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}`,
+                    borderRadius: token.borderRadiusLG,
+                    boxShadow: token.boxShadowTertiary,
+                  }
+            }
           >
-            <LinkButton href={list.href} icon={<ArrowLeftOutlined />}>
-              {list.label}
+            <LinkButton href={list.href} icon={<ArrowLeftOutlined />} aria-label={phone ? `Back to ${list.label}` : undefined}>
+              {phone ? null : list.label}
             </LinkButton>
-            <Space wrap>{record.actions?.('middle')}</Space>
+            {phone ? (
+              <Flex wrap gap={token.marginXS} justify="flex-end" style={{ flex: 1 }}>
+                {record.actions?.('middle')}
+              </Flex>
+            ) : (
+              <Space wrap>{record.actions?.('middle')}</Space>
+            )}
           </Flex>
+          {/* Room under the content for the fixed bar, so nothing hides behind it. */}
+          {phone ? <div aria-hidden style={{ height: barHeight + token.margin }} /> : null}
         </>
       )}
       {children}

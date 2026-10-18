@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Tabs } from 'antd';
 import { canViewWorkers } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
@@ -8,16 +8,18 @@ import { AttendanceList } from '@/components/attendance/AttendanceList';
 import { RollCallPanel } from './RollCallPanel';
 import { WorkerList } from './WorkerList';
 import { MusterPanel } from './MusterPanel';
+import { useUrlTab } from '@/lib/url-state';
 
-export type AttendanceTab = 'headcount' | 'rollcall' | 'workers' | 'muster';
+const ATTENDANCE_TABS = ['headcount', 'rollcall', 'workers', 'muster'] as const;
+export type AttendanceTab = (typeof ATTENDANCE_TABS)[number];
 
 /**
  * Attendance page and project tab: the daily head count, and for those who keep it the named worker register with its
- * roll call, muster and output per man-day (v4 item 44).
+ * roll call, muster and output per man-day (v4 item 44). The open tab is `?sub=` in the URL (UX item 84).
  */
 export function AttendancePanel({ projectId }: { projectId?: string }) {
   const { user } = useAuth();
-  const [tab, setTab] = useState<AttendanceTab>('headcount');
+  const [tab, setTab] = useUrlTab<AttendanceTab>(ATTENDANCE_TABS, 'headcount');
   if (!user || !canViewWorkers(user.roleKey)) return <AttendanceList projectId={projectId} />;
   return (
     <Tabs

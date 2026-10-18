@@ -82,8 +82,22 @@ export function useListFrame<S extends string, T>(opts: ListFrameTarget & {
     />
   );
 
+  // The phone's "Filters (N)": each filter on counts once (a date range is one), and so does the project unless it is fixed.
+  const filterKeys = Object.entries(page.filters).filter(([k, v]) => !!v && k !== 'q' && k !== 'sortBy' && k !== 'sortOrder' && k !== 'to').map(([k]) => k);
+  const ownCount = filterKeys.length + (page.filters.to && !page.filters.from ? 1 : 0);
+  const projectCounts = !opts.fixedProject && scoped && !!projectFilter;
+  const filterState = {
+    count: ownCount + (projectCounts ? 1 : 0),
+    clear: () => {
+      page.clear();
+      if (projectCounts) setProjectFilter(undefined);
+    },
+  };
+
   return {
     page,
+    /** For `ListToolbar`'s `filters`: how many are on, and Clear. */
+    filterState,
     columns,
     projectId,
     projectFilter,

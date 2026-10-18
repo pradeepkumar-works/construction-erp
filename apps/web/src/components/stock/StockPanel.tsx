@@ -15,6 +15,7 @@ import {
   canViewCost,
 } from "@erp/shared";
 import { useAuth } from "@/lib/auth";
+import { useUrlTab } from "@/lib/url-state";
 import { tabBarWithExtra } from "@/components/common/tabBarWithExtra";
 import { StockBalances } from "./StockBalances";
 import { StockEntries } from "./StockEntries";
@@ -133,10 +134,17 @@ export function StockPanel({
   /** Stock on hand opens searched for this (an item picked in Search). */
   initialSearch?: string;
 }) {
-  const [tab, setTab] = useState("balances");
   const { user } = useAuth();
   const valuer =
     !!user && (canManageStore(user.roleKey) || canViewCost(user.roleKey));
+  // The open tab is `?sub=` in the URL (UX item 84), so a reload or a link keeps it.
+  const tabs = [
+    "balances",
+    "register",
+    ...(valuer ? ["valuation"] : []),
+    ...(projectId ? [] : ["items", "units"]),
+  ];
+  const [tab, setTab] = useUrlTab<string>(tabs, "balances");
   return (
     <>
       <IncomingTransfers projectId={projectId} />

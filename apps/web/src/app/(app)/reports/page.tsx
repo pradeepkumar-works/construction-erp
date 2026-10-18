@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Suspense, useEffect, useState } from 'react';
+import React, { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Select } from 'antd';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -26,13 +26,9 @@ export default function ReportsPage() {
 function Reports() {
   const params = useSearchParams();
   const { data: projects } = useProjects();
-  const [scope] = useProjectScope();
-  const [projectId, setProjectId] = useState<string | undefined>(params.get('projectId') ?? undefined);
-
-  useEffect(() => {
-    // The project chosen in the header, else the first.
-    if (!projectId && projects?.length) setProjectId(scope ?? projects[0].id);
-  }, [projects, projectId, scope]);
+  // The header's project (a link's ?projectId= switches it), else the first: the same project as every list (UX item 84).
+  const [scope, setProjectId] = useProjectScope(params.get('projectId') ?? undefined);
+  const projectId = scope ?? projects?.[0]?.id;
 
   return (
     <div className="page-container">

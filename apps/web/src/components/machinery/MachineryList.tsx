@@ -70,7 +70,7 @@ export function MachineryList({ projectId: fixedProject }: { projectId?: string 
     <>
       {frame.views}
       {error && <QueryError error={error} onRetry={() => refetch()} />}
-      <ListToolbar
+      <ListToolbar filters={frame.filterState}
         projectId={frame.projectFilter}
         onProject={frame.setProjectFilter}
         hideProject={!!fixedProject}

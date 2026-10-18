@@ -8,6 +8,7 @@ import { ChecklistsPanel } from '@/components/inspections/ChecklistsPanel';
 import { TestList } from './TestList';
 import { NcrList } from './NcrList';
 import { NcrDrawer } from './NcrDrawer';
+import { useUrlTab } from '@/lib/url-state';
 
 export const QUALITY_TABS = ['inspections', 'tests', 'ncrs', 'checklists'] as const;
 export type QualityTab = (typeof QUALITY_TABS)[number];
@@ -44,8 +45,8 @@ export function QualityTabs({ projectId, tab, onTab, openId, withChecklists }: {
   );
 }
 
-/** A project's Quality tab: its inspections, tests and NCRs. */
+/** A project's Quality tab: its inspections, tests and NCRs; the one open is `?sub=` in the URL (UX item 84). */
 export function ProjectQualityTab({ projectId }: { projectId: string }) {
-  const [tab, setTab] = useState<QualityTab>('inspections');
+  const [tab, setTab] = useUrlTab<QualityTab>(QUALITY_TABS, 'inspections');
   return <QualityTabs projectId={projectId} tab={tab} onTab={setTab} />;
 }

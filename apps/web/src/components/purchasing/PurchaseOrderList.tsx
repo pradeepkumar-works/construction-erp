@@ -44,6 +44,8 @@ function poColumns({ showProject, onOpen, sortOrderFor }: { showProject: boolean
   const sort = (key: PurchaseOrderSortField) => ({ key, sorter: true, sortOrder: sortOrderFor(key), sortDirections: ['descend', 'ascend'] as ('descend' | 'ascend')[] });
   return [
     {
+      card: 'title',
+      cardText: (r) => r.poNo,
       title: 'PO',
       label: 'PO no.',
       locked: true,
@@ -60,12 +62,13 @@ function poColumns({ showProject, onOpen, sortOrderFor }: { showProject: boolean
         />
       ),
     },
-    { title: 'Vendor', ...sort('vendor'), render: (_, r) => <TwoLine top={r.vendorName} sub={r.lines.map((l) => l.itemName).join(', ')} /> },
-    ...(showProject ? [{ title: 'Project', dataIndex: 'projectName', ...sort('project'), ellipsis: true, render: (v: string, r: PurchaseOrderDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> }] : []),
-    { key: 'request', title: 'Request', dataIndex: 'requestNo', width: 140, render: (v, r) => (v ? <Link href={`/material-requests?id=${r.materialRequestId}`} className="mono">{v}</Link> : '-') },
-    { title: 'Total', dataIndex: 'total', width: 150, align: 'right', ...sort('total'), render: (v) => <strong className="mono">{formatINR(v)}</strong>, total: (rows) => sumMoney(rows.map((r) => r.total)) },
-    { title: 'Raised on', dataIndex: 'createdAt', width: 130, defaultHidden: true, render: (v) => formatDate(v), ...sort('createdAt') },
+    { card: 'meta', cardText: (r) => r.vendorName, title: 'Vendor', ...sort('vendor'), render: (_, r) => <TwoLine top={r.vendorName} sub={r.lines.map((l) => l.itemName).join(', ')} /> },
+    ...(showProject ? [{ card: 'meta' as const, cardText: (r: PurchaseOrderDto) => r.projectName, title: 'Project', dataIndex: 'projectName', ...sort('project'), ellipsis: true, render: (v: string, r: PurchaseOrderDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> }] : []),
+    { defaultFrom: 1400, key: 'request', title: 'Request', dataIndex: 'requestNo', width: 140, render: (v, r) => (v ? <Link href={`/material-requests?id=${r.materialRequestId}`} className="mono">{v}</Link> : '-') },
+    { card: 'amount', title: 'Total', dataIndex: 'total', width: 150, align: 'right', ...sort('total'), render: (v) => <strong className="mono">{formatINR(v)}</strong>, total: (rows) => sumMoney(rows.map((r) => r.total)) },
+    { card: 'date', cardText: (r) => formatDate(r.poDate), title: 'Raised on', dataIndex: 'createdAt', width: 130, defaultHidden: true, render: (v) => formatDate(v), ...sort('createdAt') },
     {
+      card: 'status',
       title: 'Status',
       dataIndex: 'status',
       width: 180,
@@ -77,7 +80,7 @@ function poColumns({ showProject, onOpen, sortOrderFor }: { showProject: boolean
         </Space>
       ),
     },
-    { key: 'received', title: 'Received', width: 130, render: (_, r) => (r.status === 'APPROVED' ? <Progress percent={r.receivedPct} size="small" style={{ margin: 0 }} aria-label={`${r.receivedPct}% received`} /> : '-') },
+    { defaultFrom: 1600, key: 'received', title: 'Received', width: 130, render: (_, r) => (r.status === 'APPROVED' ? <Progress percent={r.receivedPct} size="small" style={{ margin: 0 }} aria-label={`${r.receivedPct}% received`} /> : '-') },
     { key: 'actions', title: '', label: 'Actions', locked: true, fixed: 'right' as const, width: 56, render: (_, r) => <RowActions type="purchase_order" row={r} amount={r.total} href={`/purchase-orders/${r.id}`} onOpen={onOpen} /> },
   ];
 }
@@ -132,7 +135,7 @@ export function PurchaseOrderList({ projectId: fixedProject, openId: initialOpen
     <>
       {frame.views}
       {error && <QueryError error={error} onRetry={() => refetch()} />}
-      <ListToolbar
+      <ListToolbar filters={frame.filterState}
         projectId={frame.projectFilter}
         onProject={frame.setProjectFilter}
         hideProject={!!fixedProject}

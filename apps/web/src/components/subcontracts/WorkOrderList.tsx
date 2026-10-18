@@ -38,6 +38,8 @@ function workOrderColumns({ showProject, onOpen, onEdit, sortOrderFor }: { showP
   const sort = (key: WorkOrderSortField) => ({ key, sorter: true, sortOrder: sortOrderFor(key), sortDirections: ['descend', 'ascend'] as ('descend' | 'ascend')[] });
   return [
     {
+      card: 'title',
+      cardText: (r) => r.woNo,
       title: 'WO',
       locked: true,
       ...sort('woNo'),
@@ -52,6 +54,8 @@ function workOrderColumns({ showProject, onOpen, onEdit, sortOrderFor }: { showP
       ),
     },
     {
+      card: 'meta',
+      cardText: (r) => [r.vendorName, r.title].filter(Boolean).join(' · '),
       title: 'Subcontractor',
       ...sort('vendor'),
       render: (_, r) => (
@@ -61,8 +65,9 @@ function workOrderColumns({ showProject, onOpen, onEdit, sortOrderFor }: { showP
         </div>
       ),
     },
-    ...(showProject ? [{ title: 'Project', dataIndex: 'projectName', ...sort('project'), ellipsis: true, render: (v: string, r: WorkOrderDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> }] : []),
+    ...(showProject ? [{ card: 'meta' as const, cardText: (r: WorkOrderDto) => r.projectName, title: 'Project', dataIndex: 'projectName', ...sort('project'), ellipsis: true, render: (v: string, r: WorkOrderDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> }] : []),
     {
+      card: 'amount',
       title: 'Value',
       dataIndex: 'value',
       width: 150,
@@ -71,9 +76,10 @@ function workOrderColumns({ showProject, onOpen, onEdit, sortOrderFor }: { showP
       render: (v) => <strong className="mono">{formatINR(v)}</strong>,
       total: (rows) => formatINR(rows.reduce((n, r) => n + toNumber(r.value), 0)),
     },
-    { title: 'Billed', key: 'billed', width: 130, render: (_, r) => (r.status === 'APPROVED' ? <Progress percent={r.billedPct} size="small" style={{ margin: 0 }} aria-label={`${r.billedPct}% billed`} /> : '-') },
+    { defaultFrom: 1400, title: 'Billed', key: 'billed', width: 130, render: (_, r) => (r.status === 'APPROVED' ? <Progress percent={r.billedPct} size="small" style={{ margin: 0 }} aria-label={`${r.billedPct}% billed`} /> : '-') },
     { key: 'submittedByName', title: 'Raised by', dataIndex: 'submittedByName', width: 140, defaultHidden: true },
     {
+      card: 'status',
       title: 'Status',
       dataIndex: 'status',
       width: 170,
@@ -139,7 +145,7 @@ export function WorkOrderList({ projectId: fixedProject, openId: initialOpen }: 
     <>
       {frame.views}
       {error && <QueryError error={error} onRetry={() => refetch()} />}
-      <ListToolbar
+      <ListToolbar filters={frame.filterState}
         projectId={frame.projectFilter}
         onProject={frame.setProjectFilter}
         hideProject={!!fixedProject}

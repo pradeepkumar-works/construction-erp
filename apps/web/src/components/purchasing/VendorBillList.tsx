@@ -38,6 +38,8 @@ function vendorBillColumns({ showProject, onOpen, onEdit, sortOrderFor }: { show
   const sort = (key: VendorBillSortField) => ({ key, sorter: true, sortOrder: sortOrderFor(key), sortDirections: ['descend', 'ascend'] as ('descend' | 'ascend')[] });
   return [
     {
+      card: 'title',
+      cardText: (r) => r.billNo,
       title: 'Bill',
       locked: true,
       ...sort('billNo'),
@@ -51,11 +53,12 @@ function vendorBillColumns({ showProject, onOpen, onEdit, sortOrderFor }: { show
         </div>
       ),
     },
-    { title: 'Invoice date', dataIndex: 'invoiceDate', width: 120, ...sort('invoiceDate'), render: (v) => formatDate(v) },
-    { title: 'Vendor', dataIndex: 'vendorName', ...sort('vendor') },
-    { key: 'poNo', title: 'PO', dataIndex: 'poNo', width: 130, render: (v, r) => <Link href={`/purchase-orders/${r.purchaseOrderId}`} className="mono">{v}</Link> },
-    ...(showProject ? [{ title: 'Project', dataIndex: 'projectName', ...sort('project'), ellipsis: true, render: (v: string, r: VendorBillDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> }] : []),
+    { defaultFrom: 1400, card: 'date', title: 'Invoice date', dataIndex: 'invoiceDate', width: 120, ...sort('invoiceDate'), render: (v) => formatDate(v) },
+    { card: 'meta', title: 'Vendor', dataIndex: 'vendorName', ...sort('vendor') },
+    { defaultFrom: 1600, key: 'poNo', title: 'PO', dataIndex: 'poNo', width: 130, render: (v, r) => <Link href={`/purchase-orders/${r.purchaseOrderId}`} className="mono">{v}</Link> },
+    ...(showProject ? [{ card: 'meta' as const, cardText: (r: VendorBillDto) => r.projectName, title: 'Project', dataIndex: 'projectName', ...sort('project'), ellipsis: true, render: (v: string, r: VendorBillDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> }] : []),
     {
+      card: 'amount',
       title: 'Total',
       dataIndex: 'total',
       width: 140,
@@ -71,9 +74,10 @@ function vendorBillColumns({ showProject, onOpen, onEdit, sortOrderFor }: { show
       ...sort('dueDate'),
       render: (v, r) => (overdueDays(r) ? <Tag color="red">{formatDate(v)}</Tag> : formatDate(v)),
     },
-    { key: 'matched', title: 'Match', label: 'Match with the PO', dataIndex: 'matched', width: 120, render: (v, r) => <span title={r.exceptions.join('\n')}><MatchTag matched={v} /></span> },
+    { defaultFrom: 1400, key: 'matched', title: 'Match', label: 'Match with the PO', dataIndex: 'matched', width: 120, render: (v, r) => <span title={r.exceptions.join('\n')}><MatchTag matched={v} /></span> },
     { key: 'submittedByName', title: 'Recorded by', dataIndex: 'submittedByName', width: 140, defaultHidden: true },
     {
+      card: 'status',
       title: 'Status',
       dataIndex: 'status',
       width: 150,
@@ -139,7 +143,7 @@ export function VendorBillList({ projectId: fixedProject, openId: initialOpen }:
     <>
       {frame.views}
       {error && <QueryError error={error} onRetry={() => refetch()} />}
-      <ListToolbar
+      <ListToolbar filters={frame.filterState}
         projectId={frame.projectFilter}
         onProject={frame.setProjectFilter}
         hideProject={!!fixedProject}

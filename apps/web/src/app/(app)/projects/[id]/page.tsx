@@ -115,6 +115,8 @@ function ProjectPage({ project }: { project: ProjectDetail }) {
   const open = (key: string) => {
     const sp = new URLSearchParams(search.toString());
     sp.delete('defect');
+    // A tab's own tabs (`?sub=`, UX item 84) start again on the first in the next tab.
+    sp.delete('sub');
     if (key === 'overview') sp.delete('tab');
     else sp.set('tab', key);
     const qs = sp.toString();

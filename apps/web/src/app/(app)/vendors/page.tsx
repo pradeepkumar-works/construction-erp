@@ -73,6 +73,8 @@ function VendorsTab({ editable, onEdit, emptyAction }: { editable: boolean; onEd
     },
     columns: (sortOrderFor): ListColumn<VendorDto>[] => [
       {
+        card: 'title',
+        cardText: (v) => v.name,
         title: 'Vendor',
         key: 'name',
         locked: true,
@@ -103,6 +105,7 @@ function VendorsTab({ editable, onEdit, emptyAction }: { editable: boolean; onEd
         ),
       },
       {
+        card: 'status',
         title: 'MSME',
         key: 'msme',
         width: 120,
@@ -116,6 +119,8 @@ function VendorsTab({ editable, onEdit, emptyAction }: { editable: boolean; onEd
           ),
       },
       {
+        card: 'meta',
+        cardText: (v) => [v.kinds.map((k) => VENDOR_KIND_LABELS[k]).join(', '), v.contactPerson, v.phone].filter(Boolean).join(' · '),
         title: 'Contact',
         key: 'contact',
         render: (_, v) => (
@@ -143,7 +148,7 @@ function VendorsTab({ editable, onEdit, emptyAction }: { editable: boolean; onEd
             } satisfies ListColumn<VendorDto>,
           ]
         : []),
-      { title: 'Used on', key: 'used', width: 190, render: (_, v) => usedOn(v) },
+      { title: 'Used on', key: 'used', width: 190, defaultFrom: 1400, render: (_, v) => usedOn(v) },
       { title: 'Added', label: 'Added on', key: 'createdAt', dataIndex: 'createdAt', width: 120, defaultHidden: true, sorter: true, sortOrder: sortOrderFor('createdAt'), render: (v: string) => formatDate(v) },
       ...(editable
         ? [
@@ -188,7 +193,7 @@ function VendorsTab({ editable, onEdit, emptyAction }: { editable: boolean; onEd
     <>
       {frame.views}
       {error && <QueryError error={error} onRetry={() => refetch()} />}
-      <ListToolbar projectId={undefined} onProject={() => undefined} hideProject search={page.search} onSearch={page.setSearch} searchPlaceholder="Search name, GSTIN, PAN, contact" searchLabel="Search vendors" extra={<ExportButton onExport={exportRows} />}>
+      <ListToolbar filters={frame.filterState} projectId={undefined} onProject={() => undefined} hideProject search={page.search} onSearch={page.setSearch} searchPlaceholder="Search name, GSTIN, PAN, contact" searchLabel="Search vendors" extra={<ExportButton onExport={exportRows} />}>
         <Select<VendorKind> allowClear placeholder="Supplies anything" aria-label="Supplies" style={{ width: 190 }} value={kind} onChange={(v) => page.setFilter('kind', v)} options={VENDOR_KINDS.map((k) => ({ value: k, label: VENDOR_KIND_LABELS[k] }))} />
         <Select<MsmeCategory> allowClear placeholder="MSME or not" aria-label="MSME" style={{ width: 150 }} value={msme} onChange={(v) => page.setFilter('msme', v)} options={MSME_CATEGORIES.map((c) => ({ value: c, label: MSME_CATEGORY_LABELS[c] }))} />
         <Checkbox checked={includeInactive} onChange={(e) => page.setFilter('inactive', e.target.checked ? '1' : undefined)}>

@@ -42,8 +42,9 @@ export function StockEntries({ projectId: fixedProject }: { projectId?: string }
     columns: (sortOrderFor): ListColumn<StockEntryDto>[] => {
       const sort = (key: StockEntrySortField) => ({ key, sorter: true, sortOrder: sortOrderFor(key), sortDirections: ['descend', 'ascend'] as ('descend' | 'ascend')[] });
       return [
-        { title: 'Date', dataIndex: 'date', width: 120, ...sort('date'), render: (v) => formatDate(v) },
+        { card: 'date', title: 'Date', dataIndex: 'date', width: 120, ...sort('date'), render: (v) => formatDate(v) },
         {
+          card: 'title',
           title: 'Entry no.',
           dataIndex: 'entryNo',
           locked: true,
@@ -56,6 +57,7 @@ export function StockEntries({ projectId: fixedProject }: { projectId?: string }
           ),
         },
         {
+          card: 'status',
           title: 'Type',
           dataIndex: 'type',
           width: 170,
@@ -69,11 +71,12 @@ export function StockEntries({ projectId: fixedProject }: { projectId?: string }
         },
         ...(fixedProject
           ? []
-          : [{ title: 'Project', dataIndex: 'projectName', ...sort('project'), width: 220, ellipsis: true, render: (v: string, r: StockEntryDto) => <Link href={`/projects/${r.projectId}?tab=stock`}>{v}</Link> } satisfies ListColumn<StockEntryDto>]),
+          : [{ card: 'meta', cardText: (r: StockEntryDto) => r.projectName, title: 'Project', dataIndex: 'projectName', ...sort('project'), width: 220, ellipsis: true, render: (v: string, r: StockEntryDto) => <Link href={`/projects/${r.projectId}?tab=stock`}>{v}</Link> } satisfies ListColumn<StockEntryDto>]),
         {
+          card: 'meta',
           title: 'Items',
           key: 'items',
-          width: 280,
+          width: 240,
           render: (_, r) => (
             <span>
               {r.lines.slice(0, 3).map((l, i) => (
@@ -86,8 +89,8 @@ export function StockEntries({ projectId: fixedProject }: { projectId?: string }
             </span>
           ),
         },
-        { title: 'Details', key: 'details', width: 260, ellipsis: true, render: (_, r) => entrySummary(r) },
-        { title: 'By', label: 'Entered by', dataIndex: 'createdByName', width: 150, ...sort('createdBy') },
+        { title: 'Details', key: 'details', width: 260, defaultFrom: 1600, ellipsis: true, render: (_, r) => entrySummary(r) },
+        { title: 'By', label: 'Entered by', dataIndex: 'createdByName', width: 150, defaultFrom: 1400, ...sort('createdBy') },
         { title: 'Entered on', dataIndex: 'createdAt', width: 120, defaultHidden: true, ...sort('createdAt'), render: (v) => formatDate(v) },
       ];
     },
@@ -107,7 +110,7 @@ export function StockEntries({ projectId: fixedProject }: { projectId?: string }
   return (
     <>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
-      <ListToolbar
+      <ListToolbar filters={frame.filterState}
         projectId={frame.projectFilter}
         onProject={frame.setProjectFilter}
         hideProject={!!fixedProject}

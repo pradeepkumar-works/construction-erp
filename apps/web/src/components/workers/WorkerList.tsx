@@ -136,7 +136,7 @@ export function WorkerList({ projectId: fixedProject }: { projectId?: string }) 
   return (
     <div className="worker-list">
       {error && <QueryError error={error} onRetry={() => refetch()} />}
-      <ListToolbar
+      <ListToolbar filters={frame.filterState}
         projectId={frame.projectFilter}
         onProject={frame.setProjectFilter}
         hideProject={!!fixedProject}

@@ -29,12 +29,14 @@ export function measurementColumns({
 }): ListColumn<MeasurementSheetDto>[] {
   const sort = (key: MeasurementSortField) => ({ key, sorter: true, sortOrder: sortOrderFor(key), sortDirections: ['descend', 'ascend'] as ('descend' | 'ascend')[] });
   return [
-    { title: 'Date', dataIndex: 'date', width: 110, render: (v) => formatDate(v), ...sort('date') },
-    { title: 'MB no.', dataIndex: 'mbNo', width: 130, className: 'mono', ...sort('mbNo') },
+    { card: 'date', title: 'Date', dataIndex: 'date', width: 110, render: (v) => formatDate(v), ...sort('date') },
+    { card: 'meta', title: 'MB no.', dataIndex: 'mbNo', width: 130, defaultFrom: 1600, className: 'mono', ...sort('mbNo') },
     ...(showProject
-      ? [{ title: 'Project', dataIndex: 'projectName', ...sort('project'), width: 200, ellipsis: true, render: (v: string, r: MeasurementSheetDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> }]
+      ? [{ card: 'meta' as const, cardText: (r: MeasurementSheetDto) => r.projectName, title: 'Project', dataIndex: 'projectName', ...sort('project'), width: 180, ellipsis: true, render: (v: string, r: MeasurementSheetDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> }]
       : []),
     {
+      card: 'title',
+      cardText: (r) => `${r.boqItemNo} ${r.boqDescription}`,
       title: 'BOQ item',
       locked: true,
       ...sort('boqItem'),
@@ -61,6 +63,7 @@ export function measurementColumns({
       ),
     },
     {
+      card: 'amount',
       key: 'amount',
       title: 'Value',
       dataIndex: 'amount',
@@ -69,9 +72,10 @@ export function measurementColumns({
       render: (v) => <span className="mono">{formatINR(v)}</span>,
       total: (rows) => formatINR(rows.reduce((n, r) => n + toNumber(r.amount), 0)),
     },
-    { title: 'Submitted by', dataIndex: 'submittedByName', width: 140, ...sort('submittedBy') },
+    { title: 'Submitted by', dataIndex: 'submittedByName', width: 140, defaultFrom: 1400, ...sort('submittedBy') },
     { title: 'Submitted on', dataIndex: 'submittedAt', width: 130, defaultHidden: true, render: (v) => formatDate(v), ...sort('submittedAt') },
     {
+      card: 'status',
       title: 'Status',
       fixed: 'right' as const,
       dataIndex: 'status',

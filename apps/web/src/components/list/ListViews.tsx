@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Checkbox, Dropdown, Flex, Form, Input, Modal, Tabs, Tooltip, theme } from 'antd';
+import { App, Button, Checkbox, Dropdown, Flex, Form, Input, Modal, Select, Tabs, Tooltip, theme } from 'antd';
 import type { MenuProps } from 'antd';
 import { DeleteOutlined, EditOutlined, EllipsisOutlined, SaveOutlined, TeamOutlined } from '@ant-design/icons';
 import type { SavedViewDto, SavedViewList } from '@erp/shared';
 import { canManageSharedViews } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
+import { useIsPhone } from '@/lib/screen';
 import { errorMessage } from '@/lib/api';
 import { sameFilters, type ListFilters } from '@/lib/listPage';
 import { useDeleteView, useSaveView, useSavedViews } from '@/lib/queries';
@@ -38,6 +39,8 @@ export function ListViews({
 }) {
   const { token } = theme.useToken();
   const { user } = useAuth();
+  // A phone has no room for a row of tabs: the views are a drop-down (UX item 84).
+  const phone = useIsPhone();
   const { message, modal } = App.useApp();
   const { data: saved } = useSavedViews(list);
   const save = useSaveView();
@@ -152,17 +155,34 @@ export function ListViews({
     <>
       {/* Save view sits beside the tabs, not in antd's tab bar, whose role="tablist" may hold only tabs. */}
       <Flex align="center" gap={token.marginSM} style={{ padding: `0 ${token.paddingSM}px`, borderBottom: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}` }}>
-        <Tabs size="small" activeKey={active ?? '__none'} onChange={pick} items={items} tabBarStyle={{ marginBottom: -token.lineWidth }} style={{ flex: 1, minWidth: 0 }} />
+        {phone ? (
+          <Select
+            aria-label="View"
+            value={active}
+            placeholder="Own filters"
+            onChange={pick}
+            style={{ flex: 1, minWidth: 0, margin: `${token.marginXS}px 0` }}
+            options={[...builtIns.map((v) => ({ value: v.key, label: v.label })), ...(saved ?? []).map((v) => ({ value: v.id, label: v.shared ? `${v.name} (shared)` : v.name }))]}
+          />
+        ) : (
+          <Tabs size="small" activeKey={active ?? '__none'} onChange={pick} items={items} tabBarStyle={{ marginBottom: -token.lineWidth }} style={{ flex: 1, minWidth: 0 }} />
+        )}
+        {phone && savedMatch && mayEdit(savedMatch) ? (
+          <Dropdown menu={{ items: menuFor(savedMatch) }} trigger={['click']}>
+            <Button size="small" icon={<EllipsisOutlined />} aria-label={`${savedMatch.name} view options`} />
+          </Dropdown>
+        ) : null}
         <Button
           size="small"
           icon={<SaveOutlined />}
+          aria-label={phone ? 'Save view' : undefined}
           disabled={unchanged}
           onClick={() => {
             form.setFieldsValue({ name: '', shared: false });
             setEditing('new');
           }}
         >
-          Save view
+          {phone ? null : 'Save view'}
         </Button>
       </Flex>
       <Modal open={!!editing} title={editing === 'new' ? 'Save this view' : 'Rename or share'} okText="Save" onOk={submit} okButtonProps={{ loading: save.isPending }} onCancel={() => setEditing(null)} destroyOnHidden>
