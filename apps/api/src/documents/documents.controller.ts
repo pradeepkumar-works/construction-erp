@@ -1,7 +1,8 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { DocumentsService } from './documents.service';
+import { DocumentTextService } from './document-text.service';
 import {
   AcknowledgeTransmittalDto,
   CreateDocumentDto,
@@ -12,6 +13,7 @@ import {
   ListLettersQuery,
   ListTransmittalsQuery,
   ProjectQuery,
+  SearchDocumentsQuery,
   SiteDocumentsQuery,
   UpdateDocumentDto,
   UpdateLetterDto,
@@ -23,7 +25,22 @@ import {
 @ApiBearerAuth()
 @Controller('documents')
 export class DocumentsController {
-  constructor(private docs: DocumentsService) {}
+  constructor(
+    private docs: DocumentsService,
+    private text: DocumentTextService,
+  ) {}
+
+  @ApiOperation({ summary: 'Search inside filed PDFs and letters (Ask the contract)', description: 'Pages of the current revisions\' PDFs and letters (for roles that see letters) in the projects the user can open, best match first.' })
+  @Get('search')
+  search(@CurrentUser() user: RequestUser, @Query() q: SearchDocumentsQuery) {
+    return this.text.search(user, { query: q.q, projectId: q.projectId });
+  }
+
+  @ApiOperation({ summary: 'One page of a filed PDF: the file, its document or letter, and the page text' })
+  @Get('files/:id/pages/:page')
+  filePage(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string, @Param('page', ParseIntPipe) page: number) {
+    return this.text.page(user, id, Math.max(1, page));
+  }
 
   @ApiOperation({ summary: 'Counts for the Documents page: documents, awaiting approval, unacknowledged transmittals, letters awaiting a reply' })
   @Get('summary')

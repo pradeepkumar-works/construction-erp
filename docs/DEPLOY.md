@@ -117,7 +117,8 @@ Each user's **Send a test** button shows whether a channel works end to end.
   `GET /api/notifications/jobs/...` with `Authorization: Bearer $CRON_SECRET`; set `CRON_SECRET` in
   the project's environment variables (Hobby plans allow once-a-day schedules, which these are). The digest run
   also sends the quality test-due reminders and writes and sends the morning briefs (and on Mondays the weekly
-  narratives), so no third cron is needed; `jobs/briefs` writes the briefs alone.
+  narratives) and reads newly filed PDFs for Ask the contract, so no third cron is needed; `jobs/briefs` writes the
+  briefs alone and `jobs/read-documents` reads PDFs alone. Reading PDFs needs Node 22 or later on the API project.
   Run a job by hand with `curl -H "Authorization: Bearer $CRON_SECRET" $API_URL/notifications/jobs/dpr-reminder`.
 - **Web on Vercel**: root directory `apps/web`; build command builds `packages/shared` then `next build`.
 - **Git auto-deploy**: both Vercel projects are linked to `pradeepkumar-works/construction-erp`.

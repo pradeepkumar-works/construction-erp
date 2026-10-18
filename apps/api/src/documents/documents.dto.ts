@@ -59,6 +59,11 @@ export class ProjectQuery {
   @ApiPropertyOptional() @IsOptional() @IsUUID() projectId?: string;
 }
 
+export class SearchDocumentsQuery {
+  @ApiProperty({ example: 'liquidated damages cap' }) @trim() @IsString() @IsNotEmpty() @MaxLength(300) q!: string;
+  @ApiPropertyOptional() @IsOptional() @IsUUID() projectId?: string;
+}
+
 export class SiteDocumentsQuery {
   @ApiProperty() @IsUUID() projectId: string;
 }

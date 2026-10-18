@@ -19,6 +19,7 @@ import {
   type TransmittalSortField,
 } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
+import { DocumentTextService } from './document-text.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
@@ -123,7 +124,13 @@ export class DocumentsService {
     private audit: AuditService,
     private attachments: AttachmentsService,
     private notifications: NotificationsService,
+    private text: DocumentTextService,
   ) {}
+
+  /** Reads newly filed PDFs of the project into searchable pages (Ask the contract), so they can be asked about at once. */
+  private async readFiles(user: RequestUser, projectId: string) {
+    await this.text.readPending(user.organizationId, [projectId], 3, 15_000).catch((e: Error) => this.log.warn(`reading files: ${e.message}`));
+  }
 
   /* ---------- documents ---------- */
 
@@ -267,6 +274,7 @@ export class DocumentsService {
       this.duplicate(e, `Document ${dto.docNo} is already in this project's register`);
     }
     if (created.revisionId) await this.attachments.link(user, 'revisionId', created.revisionId, dto.revision?.attachmentIds);
+    if (dto.revision?.attachmentIds?.length) await this.readFiles(user, dto.projectId);
     await this.audit.log(user, 'DOCUMENT', created.id, 'CREATED', dto.revision ? `Rev ${dto.revision.revision} ${REVISION_STATUS_LABELS[dto.revision.status]}` : null);
     const doc = await this.getDocument(user, created.id);
     if (doc.current) await this.notifyIssued(user, doc, doc.current);
@@ -330,6 +338,7 @@ export class DocumentsService {
       this.duplicate(e, `Revision ${dto.revision} of ${cur.docNo} is already recorded`);
     }
     await this.attachments.link(user, 'revisionId', revisionId, dto.attachmentIds);
+    await this.readFiles(user, cur.projectId);
     await this.audit.log(user, 'DOCUMENT', id, 'REVISION_ADDED', `Rev ${dto.revision} ${REVISION_STATUS_LABELS[dto.status]}`);
     const doc = await this.getDocument(user, id);
     if (currentId === revisionId && doc.current) await this.notifyIssued(user, doc, doc.current);
@@ -364,6 +373,7 @@ export class DocumentsService {
       this.duplicate(e, `Revision ${dto.revision} of ${doc.docNo} is already recorded`);
     }
     await this.attachments.sync(user, 'revisionId', revisionId, dto.attachmentIds);
+    await this.readFiles(user, doc.projectId);
     const statusChanged = dto.status !== undefined && dto.status !== rev.status;
     await this.audit.log(user, 'DOCUMENT', id, 'REVISION_UPDATED', `Rev ${dto.revision ?? rev.revision}${statusChanged ? ` ${REVISION_STATUS_LABELS[dto.status!]}` : ''}`);
     const updated = await this.getDocument(user, id);
@@ -663,6 +673,7 @@ export class DocumentsService {
       return row.id;
     });
     await this.attachments.link(user, 'letterId', id, dto.attachmentIds);
+    if (dto.attachmentIds?.length) await this.readFiles(user, dto.projectId);
     await this.audit.log(user, 'LETTER', id, 'CREATED');
     return this.getLetter(user, id);
   }
@@ -692,6 +703,7 @@ export class DocumentsService {
     if (dto.riskId !== undefined) data.riskId = dto.riskId || null;
     await this.prisma.letter.update({ where: { id }, data });
     await this.attachments.sync(user, 'letterId', id, dto.attachmentIds);
+    await this.readFiles(user, cur.projectId);
     await this.audit.log(user, 'LETTER', id, 'UPDATED');
     return this.getLetter(user, id);
   }

@@ -9,13 +9,20 @@ import { CronGuard } from './cron.guard';
 import { CompanyDataService } from '../company-data/company-data.service';
 import { BillingService } from '../billing/billing.service';
 import { AllowWhenUnpaid } from '../common/billing';
+import { DocumentTextService } from '../documents/document-text.service';
 
 @ApiTags('notifications')
 @ApiBearerAuth()
 @AllowWhenUnpaid()
 @Controller('notifications')
 export class NotificationsController {
-  constructor(private notifications: NotificationsService, private jobs: NotificationJobsService, private companyData: CompanyDataService, private billing: BillingService) {}
+  constructor(
+    private notifications: NotificationsService,
+    private jobs: NotificationJobsService,
+    private companyData: CompanyDataService,
+    private billing: BillingService,
+    private documentText: DocumentTextService,
+  ) {}
 
   /** The current user's notifications, newest first, plus the unread count. */
   @GuestAllowed()
@@ -70,7 +77,7 @@ export class NotificationsController {
   @Public()
   @UseGuards(CronGuard)
   @ApiSecurity('cron')
-  @ApiOperation({ summary: 'Daily digest of pending approvals (in-app, push, email and WhatsApp); also writes and sends the morning briefs, and sends the test-due, payments-due, machinery-due, guarantee and licence expiry and defect liability reminders, and on Mondays the watch list. Auth: Authorization: Bearer <CRON_SECRET>.' })
+  @ApiOperation({ summary: 'Daily digest of pending approvals (in-app, push, email and WhatsApp); also writes and sends the morning briefs, reads filed PDFs for Ask the contract, and sends the test-due, payments-due, machinery-due, guarantee and licence expiry and defect liability reminders, and on Mondays the watch list. Auth: Authorization: Bearer <CRON_SECRET>.' })
   @Get('jobs/approval-digest')
   async approvalDigest(@Query() q: JobQuery) {
     // Vercel Hobby has no third cron for the overnight batch, so morning briefs not yet written are written first
@@ -90,7 +97,18 @@ export class NotificationsController {
     await this.companyData.purgeDue(q.date).catch(() => undefined);
     // ...and starting trials and billing reminders.
     await this.billing.daily(q.date).catch(() => undefined);
+    // ...and reading filed PDFs no search has read yet (Ask the contract), for a minute at most.
+    await this.documentText.readAllPending(60_000).catch(() => undefined);
     return digest;
+  }
+
+  @Public()
+  @UseGuards(CronGuard)
+  @ApiSecurity('cron')
+  @ApiOperation({ summary: 'Reads the text of filed PDFs (current document revisions and letters) not read yet, page by page, for Ask the contract (AI item 75); searches read their own projects\' files too. Auth: Authorization: Bearer <CRON_SECRET>.' })
+  @Get('jobs/read-documents')
+  async readDocuments() {
+    return { job: 'READ_DOCUMENTS', read: await this.documentText.readAllPending(240_000) };
   }
 
   @Public()
