@@ -20,6 +20,7 @@ import {
   CreditCardOutlined,
   DatabaseOutlined,
   DiffOutlined,
+  EyeOutlined,
   ExportOutlined,
   FileDoneOutlined,
   FilePdfOutlined,
@@ -77,6 +78,7 @@ import {
   canApprove,
   canViewCompliance,
   canManageAi,
+  canSeeWatchList,
   isGuest,
 } from '@erp/shared';
 
@@ -128,6 +130,7 @@ export function navFor(user: AuthUser): NavSection[] {
         { href: '/', label: 'Dashboard', icon: AppstoreOutlined, keywords: 'home overview kpi' },
         { href: '/projects', label: 'Projects', icon: ProjectOutlined, keywords: 'sites boq contract' },
         { href: '/approvals', label: 'Approvals', icon: CheckSquareOutlined, keywords: 'pending queue approve', approvals: true },
+        ...when(canSeeWatchList(role), { href: '/watch-list', label: 'Watch list', icon: EyeOutlined, keywords: 'early warnings alerts forecast risk slipping cash gap running out' }),
       ],
     },
     {

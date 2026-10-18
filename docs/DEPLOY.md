@@ -36,9 +36,10 @@ API (`apps/api`):
 | `ORG_SIGNUP` | `open` lets new companies create an organisation at `/signup`; unset = closed |
 | `DEMO_LOGIN` | `false` hides the demo accounts on the web and phone sign-in screens (set it on a customer's own server); unset = shown, as on the demo site |
 | `EXPO_ACCESS_TOKEN` | optional; only if push security is enforced on the Expo project |
-| `NOTIFICATION_JOBS_INPROCESS`, `DPR_REMINDER_TIME`, `APPROVAL_DIGEST_TIME` | run the jobs from a timer inside the API (Docker / Railway) instead of Vercel Cron; times are `HH:mm` in `NOTIFICATION_TIMEZONE` |
+| `NOTIFICATION_JOBS_INPROCESS`, `DPR_REMINDER_TIME`, `APPROVAL_DIGEST_TIME`, `MORNING_BRIEF_TIME` | run the jobs from a timer inside the API (Docker / Railway) instead of Vercel Cron; times are `HH:mm` in `NOTIFICATION_TIMEZONE` |
 | `WATI_API_ENDPOINT`, `WATI_ACCESS_TOKEN` | WhatsApp alerts through WATI, see "WhatsApp and SMS" below: the API endpoint (`https://live-mt-server.wati.io/<account number>`) and access token from WATI's API Docs page. `WATI_CHANNEL_NUMBER` is only needed when the WATI account has more than one WhatsApp number. WATI is used when both it and the Cloud API keys are set. |
 | `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID` | Alternative to WATI: WhatsApp through Meta's Cloud API directly. `WHATSAPP_TEMPLATE_LANGUAGE` (default `en`), `WHATSAPP_TEMPLATE_PREFIX` (default `nirmaan_`) and `WHATSAPP_API_URL` (default `https://graph.facebook.com/v21.0`) are optional. |
+| `WHATSAPP_APPROVED_TEMPLATES` | comma-separated templates Meta has approved that are newer than the first eight, e.g. `MORNING_BRIEF`. Until a template is listed it goes by email and the bell only. |
 | `MSG91_AUTH_KEY`, `MSG91_TEMPLATE_IDS` | SMS alerts through MSG91 with DLT-registered templates: `MSG91_TEMPLATE_IDS=APPROVAL_REQUEST=<id>,SENT_BACK=<id>,DPR_REMINDER=<id>,APPROVAL_DIGEST=<id>,TEST_DUE=<id>,BILLS_DUE=<id>,INVITE=<id>,TEST=<id>`. A message without an id is not sent by SMS. `MSG91_API_URL` overrides the service URL. |
 | `PUSH_DISABLED`, `EMAIL_DISABLED`, `MESSAGING_DISABLED` | `true` switches a channel off (useful on preview deployments); `MESSAGING_DISABLED` stops WhatsApp and SMS |
 | `PLATFORM_ADMIN_EMAILS` | comma-separated emails of staff who get the console at `/platform` (all companies, suspend, read-only support views). Use staff's own accounts, never a demo account: demo passwords are public. Unset = nobody. |
@@ -96,6 +97,9 @@ WhatsApp through Meta's Cloud API directly (instead of WATI):
 3. Submit the same templates in English (`en`) with `{{1}}`, `{{2}}`… in place of the named variables
    (`MESSAGE_TEMPLATE_TEXT`). The test button uses Meta's own `hello_world`.
 
+The morning brief (`MORNING_BRIEF`) is a newer template: submit it the same way, then add it to
+`WHATSAPP_APPROVED_TEMPLATES` once Meta approves it.
+
 SMS (India): register the sender ID and the same eight texts on a DLT portal (each parameter as `{#var#}`, at most
 30 characters; links whitelisted), add them as MSG91 templates with variables `var1`, `var2`…, then set
 `MSG91_AUTH_KEY` and `MSG91_TEMPLATE_IDS`.
@@ -112,7 +116,8 @@ Each user's **Send a test** button shows whether a channel works end to end.
   for the approvals digest and `11:30 UTC` (17:00 IST) for the DPR reminder. Vercel calls
   `GET /api/notifications/jobs/...` with `Authorization: Bearer $CRON_SECRET`; set `CRON_SECRET` in
   the project's environment variables (Hobby plans allow once-a-day schedules, which these are). The digest run
-  also sends the quality test-due reminders, so no third cron is needed.
+  also sends the quality test-due reminders and writes and sends the morning briefs (and on Mondays the weekly
+  narratives), so no third cron is needed; `jobs/briefs` writes the briefs alone.
   Run a job by hand with `curl -H "Authorization: Bearer $CRON_SECRET" $API_URL/notifications/jobs/dpr-reminder`.
 - **Web on Vercel**: root directory `apps/web`; build command builds `packages/shared` then `next build`.
 - **Git auto-deploy**: both Vercel projects are linked to `pradeepkumar-works/construction-erp`.

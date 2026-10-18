@@ -8,6 +8,8 @@ import { EmailService } from './email.service';
 import { MessagingService } from '../messaging/messaging.service';
 import { MessagingController } from '../messaging/messaging.controller';
 import { PayablesModule } from '../payables/payables.module';
+import { WarningsModule } from '../warnings/warnings.module';
+import { BriefsModule } from '../briefs/briefs.module';
 import { CompanyDataService } from '../company-data/company-data.service';
 import { CompanyDataController } from '../company-data/company-data.controller';
 import { BillingService } from '../billing/billing.service';
@@ -19,7 +21,7 @@ import { BillingController } from '../billing/billing.controller';
  */
 @Global()
 @Module({
-  imports: [PayablesModule],
+  imports: [PayablesModule, WarningsModule, BriefsModule],
   controllers: [NotificationsController, MessagingController, CompanyDataController, BillingController],
   providers: [NotificationsService, NotificationJobsService, NotificationSchedulerService, ExpoPushService, EmailService, MessagingService, CompanyDataService, BillingService],
   exports: [NotificationsService, NotificationJobsService, EmailService, MessagingService],

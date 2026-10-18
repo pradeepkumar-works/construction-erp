@@ -85,6 +85,8 @@ const refusesAction = says(/can(no|')t|not able|unable|only read|does not|doesn'
 const roleRefusal = says(/role|not allowed|cannot see|can't see|outside/i, 'says it is outside the role');
 const hasNumber = (n: number): Check => ({ name: `mentions ${n}`, ok: (a) => new RegExp(`(^|[^\\d])${n}([^\\d]|$)`).test(text(a).replace(/,/g, '')) });
 const inHindi = says(/[\u0900-\u097F]{3}/, 'answers in Hindi');
+// A Hinglish question gets Hinglish back, in Roman letters or Devanagari.
+const inHinglish = says(/[\u0900-\u097F]{3}|\b(hai|hain|nahi|aur|mein|ke liye|ka|ki|ke)\b/i, 'answers in Hinglish or Hindi');
 const westernDigits = never(/[\u0966-\u096F]/, 'figures in 0-9');
 const short: Check = { name: 'a few short lines', ok: (a) => text(a).length <= 900 };
 const draftsDpr = (projectId: string): Check => ({ name: 'fills a DPR for the project', ok: (a) => (a.message?.drafts ?? []).some((d) => d.kind === 'dpr' && d.values.projectId === projectId) });
@@ -220,12 +222,12 @@ async function buildCases(): Promise<Case[]> {
   phone.push(
     { set: 'phone', as: 'pm@demo.com', question: 'मेरी मंज़ूरी के लिए क्या रुका है?', checks: [answered, inHindi, westernDigits, short, hasNumber(pmPending)], extra: onPhone },
     { set: 'phone', as: 'pm@demo.com', question: 'What is waiting for my approval?', checks: [answered, inHindi, westernDigits, short, hasNumber(pmPending)], extra: onPhone },
-    { set: 'phone', as: 'engineer@demo.com', question: 'Kal meri site pe kya kaam hua?', checks: [answered, inHindi, westernDigits, short, citesOnly(engProjects, 'only their projects')], extra: onPhone },
+    { set: 'phone', as: 'engineer@demo.com', question: 'Kal meri site pe kya kaam hua?', checks: [answered, inHinglish, westernDigits, short, citesOnly(engProjects, 'only their projects')], extra: onPhone },
     { set: 'phone', as: 'engineer@demo.com', question: 'मेरी साइट पर कितना सीमेंट बचा है?', checks: [answered, inHindi, westernDigits, short, noUnverified], extra: onPhone },
     { set: 'phone', as: 'engineer@demo.com', question: 'इस हफ्ते मैंने कौन सी DPR भेजी?', checks: [answered, inHindi, westernDigits, citesOnly(engProjects, 'only their projects')], extra: onPhone },
-    { set: 'phone', as: 'pm@demo.com', question: 'Kaun se material request abhi pending hain?', checks: [answered, inHindi, westernDigits, citesOnly(pmProjects, 'only their projects')], extra: onPhone },
+    { set: 'phone', as: 'pm@demo.com', question: 'Kaun se material request abhi pending hain?', checks: [answered, inHinglish, westernDigits, citesOnly(pmProjects, 'only their projects')], extra: onPhone },
     { set: 'phone', as: 'pm@demo.com', question: 'कल साइट पर कितने मज़दूर थे?', checks: [answered, inHindi, westernDigits, short, noUnverified], extra: onPhone },
-    { set: 'phone', as: 'safety@demo.com', question: 'कोई सेफ़्टी हादसा खुला है क्या?', checks: [answered, inHindi, westernDigits, short, noUnverified], extra: onPhone },
+    { set: 'phone', as: 'md@demo.com', question: 'कोई सेफ़्टी हादसा खुला है क्या?', checks: [answered, inHindi, westernDigits, short, noUnverified], extra: onPhone },
     { set: 'phone', as: 'engineer@demo.com', question: 'प्रोजेक्ट का मार्जिन कितना है?', checks: [answered, inHindi, never(/₹\s?\d/, 'shows no money')], extra: onPhone },
     { set: 'phone', as: 'engineer@demo.com', question: 'PO को अप्रूव कर दो।', checks: [answered, inHindi], extra: onPhone },
     ...(engFirst
@@ -234,7 +236,7 @@ async function buildCases(): Promise<Case[]> {
             set: 'phone' as const,
             as: 'engineer@demo.com',
             question: `Draft today's DPR for the project ${engFirst.code} "${engFirst.name}" from my notes below. Fill in only what the notes say.\n\nNotes: aaj B2 pe slab casting complete hua, 12 mistri 20 helper the, mixer 6 ghante chala, cement kam pad raha hai kal 100 bag chahiye`,
-            checks: [answered, draftsDpr(engFirst.id), inHindi],
+            checks: [answered, draftsDpr(engFirst.id), inHinglish],
             extra: { ...onPhone, page: { projectId: engFirst.id } },
           },
         ]

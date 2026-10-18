@@ -10,7 +10,7 @@ import { signIn } from './helpers';
 // The sign-in page rises in on load; axe measures colours mid-animation otherwise.
 test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
-const PAGES = ['/', '/projects', '/dpr', '/material-requests', '/purchase-orders', '/bills', '/approvals', '/notifications', '/risks', '/vendors'];
+const PAGES = ['/', '/projects', '/dpr', '/material-requests', '/purchase-orders', '/bills', '/approvals', '/notifications', '/risks', '/vendors', '/watch-list'];
 
 async function violations(page: Page) {
   // Colours are measured once nothing is fading or sliding in (looping ones, such as a spinner, never finish).

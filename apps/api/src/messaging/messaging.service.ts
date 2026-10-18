@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { normalisePhone, renderMessage, WATI_PARAM_NAMES, type MessageChannel, type MessageTemplate, type MessagingPrefsDto, type OutboundMessageDto, type Paginated, type WhatsAppProvider } from '@erp/shared';
+import { normalisePhone, renderMessage, TEMPLATES_NEEDING_APPROVAL, WATI_PARAM_NAMES, type MessageChannel, type MessageTemplate, type MessagingPrefsDto, type OutboundMessageDto, type Paginated, type WhatsAppProvider } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -20,7 +20,7 @@ interface SendResult {
 }
 
 /** The parameter (1-based) of each template that is a link: SMS keeps it whole, other SMS parameters are cut to 30 characters (the DLT limit). */
-const LINK_PARAM: Partial<Record<MessageTemplate, number>> = { APPROVAL_REQUEST: 4, SENT_BACK: 6, DPR_REMINDER: 2, APPROVAL_DIGEST: 4, TEST_DUE: 5, BILLS_DUE: 3, INVITE: 2 };
+const LINK_PARAM: Partial<Record<MessageTemplate, number>> = { APPROVAL_REQUEST: 4, SENT_BACK: 6, DPR_REMINDER: 2, APPROVAL_DIGEST: 4, TEST_DUE: 5, BILLS_DUE: 3, INVITE: 2, MORNING_BRIEF: 3 };
 const SMS_VAR_MAX = 30;
 const TIMEOUT_MS = 8000;
 
@@ -82,10 +82,13 @@ export class MessagingService {
     return null;
   }
 
+  private readonly approvedTemplates = new Set((process.env.WHATSAPP_APPROVED_TEMPLATES || '').split(',').map((t) => t.trim().toUpperCase()).filter(Boolean));
+
   /** The channel can send this template from this server. */
   ready(channel: MessageChannel, template?: MessageTemplate): boolean {
     if (this.disabled) return false;
-    if (channel === 'WHATSAPP') return this.whatsappProvider !== null;
+    // A template added after launch goes on WhatsApp only once Meta has approved it (WHATSAPP_APPROVED_TEMPLATES).
+    if (channel === 'WHATSAPP') return this.whatsappProvider !== null && (!template || !TEMPLATES_NEEDING_APPROVAL.includes(template) || this.approvedTemplates.has(template));
     return !!this.smsKey && (template ? !!this.smsTemplates[template] : Object.keys(this.smsTemplates).length > 0);
   }
 

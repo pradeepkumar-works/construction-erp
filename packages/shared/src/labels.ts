@@ -90,6 +90,8 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   IMPREST: 'Site imprest',
   COMPLIANCE: 'Guarantees & licences',
   DEFECT: 'Snags & defects',
+  WATCH_LIST: 'Watch list',
+  MORNING_BRIEF: 'Morning brief',
 };
 
 export const STOCK_ENTRY_TYPE_LABELS: Record<StockEntryType, string> = {

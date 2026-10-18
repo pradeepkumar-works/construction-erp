@@ -1,5 +1,5 @@
 import type { ProgressReportDto } from '@erp/shared';
-import { DELAY_PARTY_LABELS, PROJECT_TYPE_LABELS } from '@erp/shared';
+import { DELAY_PARTY_LABELS, PRODUCT_NAME, PROJECT_TYPE_LABELS } from '@erp/shared';
 import { fileUrl } from '@/lib/api';
 import { BRAND } from '@/lib/brand';
 import { AUTO_PRINT_SCRIPT, brandFooter, PRINT_BRAND_CSS, PRINT_FONT_LINKS } from '@/components/print/printBrand';
@@ -72,6 +72,8 @@ ${PRINT_FONT_LINKS}
   .kpi b { display: block; font-size: 9px; color: #666; text-transform: uppercase; letter-spacing: .04em; }
   .kpi span { font-size: 15px; font-weight: 700; color: ${BRAND.colors.ink}; }
   .kpi small { color: #555; display: block; }
+  .narrative { margin: 4px 0 8px; line-height: 1.5; }
+  .narrative small { color: #555; display: block; margin-top: 2px; }
   .bar { height: 6px; background: #e8edf3; border-radius: 3px; margin-top: 4px; position: relative; overflow: hidden; }
   .bar i { position: absolute; left: 0; top: 0; bottom: 0; background: ${BRAND.colors.primary}; }
   .bar i.t { background: #f0a020; height: 2px; top: auto; }
@@ -115,6 +117,7 @@ ${PRINT_FONT_LINKS}
   </div>
 
   <h2>1. Summary</h2>
+  ${r.narrative ? `<p class="narrative">${esc(r.narrative.text)}<small>${r.narrative.byAssistant ? `Written by Ask ${esc(PRODUCT_NAME)} from this report's figures.` : "From this report's figures."}</small></p>` : ''}
   <div class="kpis">
     <div class="kpi"><b>Physical progress</b><span>${esc(r.physical.atEndPct)}%</span><small>${gain >= 0 ? '+' : ''}${esc(gain)} points this period (from ${esc(r.physical.atStartPct)}%)</small>
       <div class="bar"><i style="width:${Math.min(100, r.physical.atEndPct)}%"></i>${r.timeElapsedPct !== null ? `<i class="t" style="width:${Math.min(100, r.timeElapsedPct)}%"></i>` : ''}</div></div>
