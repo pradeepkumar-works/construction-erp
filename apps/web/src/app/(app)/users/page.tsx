@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Alert, App, Button, Card, Result, Select, Space, Switch, Tag, Tooltip, theme } from 'antd';
+import { Alert, Button, Card, Result, Select, Space, Switch, Tag, Tooltip, theme } from 'antd';
 import { useSearchParams } from 'next/navigation';
 import { EditOutlined, LinkOutlined, PlusOutlined } from '@ant-design/icons';
 import type { PasswordLinkDto, RoleKey, UserSortField, UserSummary } from '@erp/shared';
 import { LIST_SORT_FIELDS, ROLE_KEYS, ROLE_LABELS, canManageUsers } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useUsersPage } from '@/lib/queries';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { USER_EXPORT } from '@/lib/exportColumns';
@@ -33,7 +34,6 @@ function Sub({ children }: { children: React.ReactNode }) {
 
 export default function UsersPage() {
   const { user } = useAuth();
-  const { message } = App.useApp();
   const qc = useQueryClient();
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<UserSummary | null>(null);
@@ -43,13 +43,13 @@ export default function UsersPage() {
   const sendLink = useMutation({
     mutationFn: async (u: UserSummary) => ({ u, link: (await api.post<PasswordLinkDto>(`/users/${u.id}/password-link`)).data }),
     onSuccess: ({ u, link }) => setLinkResult({ name: u.fullName, email: u.email, invite: u.invitePending, link }),
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   const toggle = useMutation({
     mutationFn: async (vars: { id: string; isActive: boolean }) => api.patch(`/users/${vars.id}`, { isActive: vars.isActive }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['users'] }),
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   const frame = useListFrame<UserSortField, UserSummary>({

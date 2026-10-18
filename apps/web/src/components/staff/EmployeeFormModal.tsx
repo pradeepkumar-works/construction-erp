@@ -5,7 +5,8 @@ import { App, DatePicker, Form, Input, Select } from 'antd';
 import dayjs from 'dayjs';
 import type { EmployeeDto } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useLinkableUsers, useProjects } from '@/lib/queries';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { PHONE_INPUT, phoneRule } from '@/components/form/inputs';
@@ -70,7 +71,7 @@ export function EmployeeFormModal({ open, onClose, employee, onSaved }: { open: 
       qc.invalidateQueries({ queryKey: ['staff'] });
       onSaved?.(e);
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   return (

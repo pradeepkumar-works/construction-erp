@@ -6,7 +6,8 @@ import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { PayableBillDto, PayableBillType, PaymentMode, VendorPaymentDto } from '@erp/shared';
 import { MSME_CATEGORY_LABELS, RECEIPT_MODES, RECEIPT_MODE_LABELS } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { usePayables } from '@/lib/queries';
 import { formatDate, formatINR, toNumber } from '@/lib/format';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
@@ -102,7 +103,7 @@ export function PaymentFormModal({ open, onClose, bill, payment }: { open: boole
       message.success(`${formatINR(p.amount, true)} ${editing ? 'updated' : 'paid'} against ${p.billLabel}`);
       for (const k of PAYMENT_QUERY_KEYS) qc.invalidateQueries({ queryKey: [k] });
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
 
   const over = target && !editing ? settles - toNumber(target.outstanding) : 0;

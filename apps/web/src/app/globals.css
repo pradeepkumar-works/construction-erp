@@ -723,3 +723,17 @@ a.text-link:hover {
   font: inherit;
   color: inherit;
 }
+
+/* A notice with its action (View, Undo, Retry) beside the text (UX item 86, lib/notify.tsx). */
+.notice-line {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0 4px;
+}
+.notice-line .ant-btn-link {
+  padding-inline: 4px;
+  height: auto;
+  min-height: 24px;
+  font-weight: 600;
+}

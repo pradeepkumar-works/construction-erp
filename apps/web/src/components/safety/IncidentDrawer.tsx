@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Descriptions, Divider, Drawer, Form, Input, Popconfirm, Skeleton, Space, Typography } from 'antd';
+import { App, Button, Descriptions, Divider, Drawer, Form, Input, Skeleton, Space, Typography } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { SafetyIncidentDto } from '@erp/shared';
 import { canEditSafetyRecord, canManageSafety } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useSafetyIncident, useSafetyIncidentHistory } from '@/lib/queries';
 import { formatDate, formatDateTime } from '@/lib/format';
@@ -13,6 +14,7 @@ import { QueryError } from '@/components/common/QueryState';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { FormShell } from '@/components/form/FormShell';
 import { IncidentStatusTag, IncidentTypeTag, SafetyHistory } from './safetyUi';
+import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 /** One incident or near miss: what happened, the investigation, and closing it with the root cause and the action. */
 export function IncidentDrawer({ id, open, onClose, onEdit }: { id: string | null; open: boolean; onClose: () => void; onEdit: (i: SafetyIncidentDto) => void }) {
@@ -34,20 +36,20 @@ export function IncidentDrawer({ id, open, onClose, onEdit }: { id: string | nul
     mutationFn: async (v: { rootCause: string; correctiveAction: string; closureNote?: string }) =>
       (await api.post<SafetyIncidentDto>(`/safety/incidents/${id}/close`, { rootCause: v.rootCause.trim(), correctiveAction: v.correctiveAction.trim(), closureNote: v.closureNote?.trim() || null })).data,
     onSuccess: (i) => done(`${i.incidentNo} closed`),
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
   const reopen = useMutation({
     mutationFn: async () => (await api.post<SafetyIncidentDto>(`/safety/incidents/${id}/reopen`)).data,
     onSuccess: (i) => done(`${i.incidentNo} reopened`),
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
   const remove = useMutation({
     mutationFn: async () => (await api.delete(`/safety/incidents/${id}`)).data,
     onSuccess: () => {
-      done('Incident deleted');
+      qc.invalidateQueries({ queryKey: ['safety'] });
       onClose();
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
 
   return (
@@ -88,11 +90,11 @@ export function IncidentDrawer({ id, open, onClose, onEdit }: { id: string | nul
               </Button>
             ) : null}
             {manager ? (
-              <Popconfirm title="Delete this incident?" description="Only for an entry made by mistake." onConfirm={() => remove.mutate()}>
+              <ConfirmDelete what={`incident ${data.incidentNo}`} description="Only for an entry made by mistake." onConfirm={() => remove.mutateAsync()}>
                 <Button size="small" danger loading={remove.isPending}>
                   Delete
                 </Button>
-              </Popconfirm>
+              </ConfirmDelete>
             ) : null}
           </Space>
         ) : null

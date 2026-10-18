@@ -14,6 +14,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { TallyExportDto, TallyLedgerKind, TallyLedgerRowDto, TallySettingsDto, TallyVoucherDto, TallyVoucherKind } from '@erp/shared';
 import { TALLY_VOUCHER_KINDS, TALLY_VOUCHER_KIND_LABELS, TALLY_VOUCHER_TYPES, canExportTally } from '@erp/shared';
 import { api, errorMessage } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useTallyExports, useTallyPreview, useTallySettings } from '@/lib/queries';
 import { formatDate, formatDateTime, formatINR } from '@/lib/format';
@@ -63,7 +64,7 @@ function ToExport() {
       await downloadXml(`/tally/exports/${e.id}/xml`, exportFile(e));
       message.success(`${e.voucherCount} vouchers exported. Import the file in TallyPrime: Import → Transactions.`);
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
 
   const rows = useMemo(() => vouchers.map((v) => ({ ...v, id: v.key })), [vouchers]);
@@ -204,7 +205,7 @@ function Exports() {
       qc.invalidateQueries({ queryKey: ['tally'] });
       for (const k of ['ra-bills', 'receipts', 'vendor-payments']) qc.invalidateQueries({ queryKey: [k] });
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
   const columns: ListColumn<TallyExportDto>[] = [
     {
@@ -318,7 +319,7 @@ function Ledgers() {
       qc.invalidateQueries({ queryKey: ['tally', 'preview'] });
       message.success('Tally settings saved');
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
   const rows = (data?.ledgers ?? []).filter((l) => (kind === 'ALL' || l.kind === kind) && (!q || `${l.defaultName} ${l.use} ${names[l.key] ?? ''}`.toLowerCase().includes(q.toLowerCase())));
   const columns: TableProps<TallyLedgerRowDto>['columns'] = [

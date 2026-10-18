@@ -5,6 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
+import { UndoService } from '../common/undo.service';
 import { dateOnly, dec, iso, money, parseDate } from '../common/serialize';
 import { isUniqueViolation } from '../common/idempotency';
 import { CreateQuotationDto, QuotationLineInput, UpdateQuotationDto } from './purchasing.dto';
@@ -24,7 +25,20 @@ type Row = Prisma.QuotationGetPayload<{ include: typeof include }>;
  */
 @Injectable()
 export class QuotationsService {
-  constructor(private prisma: PrismaService, private access: ProjectAccessService, private audit: AuditService) {}
+  constructor(
+    private prisma: PrismaService,
+    private access: ProjectAccessService,
+    private audit: AuditService,
+    private undo: UndoService,
+  ) {
+    undo.register('QUOTATION', {
+      entityType: 'QUOTATION',
+      check: async (user, row) => {
+        this.assertCanPurchase(user);
+        await this.request(user, row.materialRequestId as string);
+      },
+    });
+  }
 
   toDto(r: Row): QuotationDto {
     const items = [...r.materialRequest.items].sort((a, b) => a.sortOrder - b.sortOrder);
@@ -166,9 +180,13 @@ export class QuotationsService {
     const q = await this.prisma.quotation.findFirst({ where: { id, ...this.access.submissionWhere(user) }, include: { purchaseOrders: { where: { status: { not: 'REJECTED' } }, select: { poNo: true } } } });
     if (!q) throw new NotFoundException('Quotation not found');
     if (q.purchaseOrders.length) throw new ConflictException(`${q.purchaseOrders[0].poNo} was raised on this quotation; it cannot be deleted`);
+    const lines = await this.prisma.quotationLine.findMany({ where: { quotationId: id } });
+    // A rejected order raised on it keeps its rows but loses the link on delete (SetNull); Undo puts it back.
+    const orders = await this.prisma.purchaseOrder.findMany({ where: { quotationId: id }, select: { id: true } });
     await this.prisma.quotation.delete({ where: { id } });
     await this.audit.log(user, 'QUOTATION', id, 'DELETED');
-    return { ok: true };
+    const rows = [{ model: 'quotation', data: q as Record<string, unknown> }, ...lines.map((l) => ({ model: 'quotationLine', data: l }))];
+    return { ok: true, undo: this.undo.offer(user, 'QUOTATION', { rows, relink: [{ model: 'purchaseOrder', field: 'quotationId', ids: orders.map((o) => o.id) }] }) };
   }
 
   /**

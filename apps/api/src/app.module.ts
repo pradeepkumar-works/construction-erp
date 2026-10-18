@@ -59,6 +59,7 @@ import { ApprovalsModule } from './approvals/approvals.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { UndoModule } from './undo/undo.module';
 import { HealthController } from './health.controller';
 import { VitalsController } from './vitals.controller';
 
@@ -116,6 +117,7 @@ import { VitalsController } from './vitals.controller';
     DashboardModule,
     UploadsModule,
     NotificationsModule,
+    UndoModule,
     PortalModule,
     PlatformModule,
   ],

@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { SAVED_VIEW_MAX_PER_USER, SAVED_VIEW_MAX_STATE, canManageSharedViews, type SavedViewDto, type SavedViewList, type SavedViewState } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
+import { UndoService } from '../common/undo.service';
 import { iso } from '../common/serialize';
 import { CreateSavedViewDto, UpdateSavedViewDto } from './saved-views.dto';
 
@@ -27,7 +28,17 @@ function cleanState(raw: unknown): SavedViewState {
 /** Saved views on the busiest lists (UI roadmap item 55): personal, or shared with everyone in the company. */
 @Injectable()
 export class SavedViewsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private undo: UndoService,
+  ) {
+    undo.register('SAVED_VIEW', {
+      entityType: 'SAVED_VIEW',
+      check: (user, row) => {
+        if (row.userId !== user.id && !(row.shared && canManageSharedViews(user.roleKey))) throw new ForbiddenException('Only the person who saved this view can change it');
+      },
+    });
+  }
 
   private toDto(user: RequestUser, r: Row): SavedViewDto {
     return {
@@ -87,9 +98,9 @@ export class SavedViewsService {
     return this.toDto(user, row);
   }
 
-  async remove(user: RequestUser, id: string): Promise<{ ok: true }> {
-    await this.editable(user, id);
+  async remove(user: RequestUser, id: string): Promise<{ ok: true; undo: string }> {
+    const row = await this.editable(user, id);
     await this.prisma.savedView.delete({ where: { id } });
-    return { ok: true };
+    return { ok: true, undo: this.undo.offer(user, 'SAVED_VIEW', { rows: [{ model: 'savedView', data: row }] }) };
   }
 }

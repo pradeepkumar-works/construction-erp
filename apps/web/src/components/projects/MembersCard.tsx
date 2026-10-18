@@ -6,7 +6,9 @@ import { EllipsisOutlined, UserAddOutlined, UserDeleteOutlined } from '@ant-desi
 import type { ProjectDetail, UserSummary } from '@erp/shared';
 import { canEditProjects } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
+import { useConfirmDelete } from '@/components/common/ConfirmDelete';
 import { UserSelect } from '@/components/common/SearchSelect';
 import { Section } from '@/components/common/Section';
 import { useAuth } from '@/lib/auth';
@@ -16,7 +18,8 @@ import { themeFontSize } from '@/lib/theme';
 
 export function MembersCard({ project }: { project: ProjectDetail }) {
   const { user } = useAuth();
-  const { message, modal } = App.useApp();
+  const { message } = App.useApp();
+  const [askRemove, removeDialog] = useConfirmDelete();
   const qc = useQueryClient();
   const [adding, setAdding] = useState(false);
   const [userId, setUserId] = useState<string | undefined>();
@@ -30,26 +33,29 @@ export function MembersCard({ project }: { project: ProjectDetail }) {
       setAdding(false);
       qc.invalidateQueries({ queryKey: ['projects', project.id] });
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
   const remove = useMutation({
     mutationFn: async (uid: string) => api.delete(`/projects/${project.id}/members/${uid}`),
     onSuccess: () => {
-      message.success('Member removed');
       qc.invalidateQueries({ queryKey: ['projects', project.id] });
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   // Removing someone is in each row's More menu (UX item 85), not a red button on every row, and asks first by name.
+  // Undo adds them back, as adding them again would.
   const confirmRemove = (m: { userId: string; fullName: string }) =>
-    modal.confirm({
-      title: `Remove ${m.fullName} from ${project.name}?`,
-      content: `${m.fullName} comes off this project's team. You can add them again later.`,
-      okText: 'Remove',
-      okButtonProps: { danger: true },
-      cancelText: 'Keep',
-      onOk: () => remove.mutateAsync(m.userId),
+    askRemove({
+      verb: 'Remove',
+      what: `${m.fullName} from ${project.name}`,
+      description: `${m.fullName} comes off this project's team. You can add them again later.`,
+      notice: `${m.fullName} removed from the team`,
+      onConfirm: () => remove.mutateAsync(m.userId),
+      undo: async () => {
+        await api.post(`/projects/${project.id}/members`, { userId: m.userId });
+        await qc.invalidateQueries({ queryKey: ['projects', project.id] });
+      },
     });
 
   // People already on the team are not offered again.
@@ -122,6 +128,7 @@ export function MembersCard({ project }: { project: ProjectDetail }) {
       ) : (
         <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No team members yet" />
       )}
+      {removeDialog}
     </Section>
   );
 }

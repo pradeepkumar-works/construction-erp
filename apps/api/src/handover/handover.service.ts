@@ -18,6 +18,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
+import { UndoService } from '../common/undo.service';
 import { AttachmentsService, ATTACHMENT_FIELDS } from '../common/attachments.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { dateOnly, iso, money, parseDate } from '../common/serialize';
@@ -67,7 +68,10 @@ export class HandoverService {
     private audit: AuditService,
     private attachments: AttachmentsService,
     private notifications: NotificationsService,
-  ) {}
+    private undo: UndoService,
+  ) {
+    undo.register('CLOSEOUT_ITEM', { entityType: 'CLOSEOUT_ITEM', check: (user, row) => this.access.assertCanManageHandover(user, row.projectId as string) });
+  }
 
   /* ---------- the handover page ---------- */
 
@@ -233,9 +237,9 @@ export class HandoverService {
   }
 
   async removeChecklistItem(user: RequestUser, id: string) {
-    await this.loadItem(user, id);
+    const row = await this.loadItem(user, id);
     await this.prisma.closeoutItem.delete({ where: { id } });
-    return { ok: true };
+    return { ok: true, undo: this.undo.offer(user, 'CLOSEOUT_ITEM', { rows: [{ model: 'closeoutItem', data: row }] }) };
   }
 
   /* ---------- snags and defects ---------- */

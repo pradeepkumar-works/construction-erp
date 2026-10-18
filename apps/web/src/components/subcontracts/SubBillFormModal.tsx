@@ -1,17 +1,19 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { Alert, App, Checkbox, DatePicker, Form, Input, Select, Table, Typography } from 'antd';
+import { Alert, Checkbox, DatePicker, Form, Input, Select, Table, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, SubcontractBillDto, WorkOrderLineDto } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE, useNotify } from '@/lib/notify';
 import { useWorkOrder, useWorkOrders } from '@/lib/queries';
 import { formatINR, formatQty, toNumber } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput, QuantityInput } from '@/components/form/inputs';
 import { themeFontSize } from '@/lib/theme';
+import { recordPage } from '@/components/approvals/queue';
 
 interface FormValues {
   workOrderId: string;
@@ -46,8 +48,8 @@ export function SubBillFormModal({
   onSaved?: (b: SubcontractBillDto) => void;
 }) {
   const [form] = Form.useForm<FormValues>();
-  const { message } = App.useApp();
   const qc = useQueryClient();
+  const notify = useNotify();
   const watchedWo = Form.useWatch('workOrderId', form);
   const woId = bill?.workOrderId ?? workOrderId ?? watchedWo;
   const orders = useWorkOrders({ open: true, pageSize: 100, sortBy: 'woDate', sortOrder: 'desc' }, open && !bill && !workOrderId);
@@ -95,13 +97,13 @@ export function SubBillFormModal({
       return (await api.post<SubcontractBillDto>('/subcontract-bills', { ...body, id: crypto.randomUUID(), workOrderId: v.workOrderId })).data;
     },
     onSuccess: (b, { submit }) => {
-      message.success(submit ? `${b.label} submitted for approval: net payable ${formatINR(b.netPayable, true)}` : `${b.label} saved as a draft: net payable ${formatINR(b.netPayable, true)}`);
+      notify.saved(submit ? `${b.label} submitted for approval: net payable ${formatINR(b.netPayable, true)}` : `${b.label} saved as a draft: net payable ${formatINR(b.netPayable, true)}`, recordPage('SUBCONTRACT_BILL', b.id));
       qc.invalidateQueries({ queryKey: ['subcontract-bills'] });
       qc.invalidateQueries({ queryKey: ['work-orders'] });
       qc.invalidateQueries({ queryKey: ['stock'] });
       onSaved?.(b);
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
 
   return (

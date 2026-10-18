@@ -2,11 +2,12 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Alert, App, Button, Divider, Popconfirm, Table, Tag, Typography } from 'antd';
+import { Alert, App, Button, Divider, Table, Tag, Typography } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { SubcontractBillDto, SubcontractBillLineDto } from '@erp/shared';
 import { MSME_CATEGORY_LABELS, canEditSubmission, canPrepareSubcontractBill, canResubmit, canViewPayables } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useSubcontractBill } from '@/lib/queries';
 import { formatDate, formatINR, formatPct, formatQty, toNumber } from '@/lib/format';
@@ -22,6 +23,7 @@ import { checksSection } from '@/components/checks/ChecksSection';
 import { submissionLifecycle } from '@/components/record/lifecycle';
 import { openSubBillPrint } from './subcontractPrint';
 import { Section } from '@/components/common/Section';
+import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 const money = (v: string | number) => <span className="mono">{formatINR(v, true)}</span>;
 
@@ -51,15 +53,16 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
   const submit = useMutation({
     mutationFn: async () => (await api.post<SubcontractBillDto>(`/subcontract-bills/${id}/submit`)).data,
     onSuccess: (b) => done(`${b.label} submitted for approval`),
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
   const remove = useMutation({
     mutationFn: async () => (await api.delete(`/subcontract-bills/${id}`)).data,
     onSuccess: () => {
-      done('Bill deleted');
+      qc.invalidateQueries({ queryKey: ['subcontract-bills'] });
+      qc.invalidateQueries({ queryKey: ['work-orders'] });
       onClose?.();
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
 
   const editable = !!data && !!user && preparer && canEditSubmission(user, data) && data.status !== 'APPROVED';
@@ -334,11 +337,11 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
               )}
               <ReviewActions type="subcontract_bill" id={data.id} status={data.status} amount={data.grossAmount} size={size} />
               {editable ? (
-                <Popconfirm title={`Delete ${data.label}?`} okText="Delete" okButtonProps={{ danger: true }} onConfirm={() => remove.mutate()}>
+                <ConfirmDelete what={data.label} onConfirm={() => remove.mutateAsync()}>
                   <Button size={size} danger loading={remove.isPending}>
                     Delete
                   </Button>
-                </Popconfirm>
+                </ConfirmDelete>
               ) : null}
             </>
           ),

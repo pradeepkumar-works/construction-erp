@@ -9,8 +9,10 @@ import type { AiDraftDto } from '@erp/shared';
 import { PRODUCT_NAME } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { SparkleIcon } from '@/components/ai/SparkleIcon';
+import { describeError } from '@/lib/api';
 import { formatDateTime } from '@/lib/format';
 import { setLeaveGuard } from '@/lib/leave-guard';
+import { handledInPlace } from '@/lib/notify';
 import { useProjectScope } from '@/lib/project-scope';
 import { useProjects } from '@/lib/queries';
 import { clearDraft, draftStorageKey, readDraft, snapshot, writeDraft } from './drafts';
@@ -132,6 +134,9 @@ export function FormShell<T>({ open, onClose, title, form, okText, onSubmit, sec
   const summaryRef = useRef<HTMLDivElement>(null);
   const [submitting, setSubmitting] = useState<false | 'primary' | 'secondary'>(false);
   const [problems, setProblems] = useState<Problem[] | null>(null);
+  // A save that failed for a reason no field shows (offline, a server fault, a refusal): said at the top, with Try again.
+  const [failure, setFailure] = useState<{ text: string; retry: boolean; secondary: boolean } | null>(null);
+  const failureRef = useRef<HTMLDivElement>(null);
   const [restored, setRestored] = useState<{ at: number; base: unknown } | null>(null);
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const storageKey = draftKey && user ? draftStorageKey(user.id, draftKey) : null;
@@ -148,6 +153,7 @@ export function FormShell<T>({ open, onClose, title, form, okText, onSubmit, sec
   // Opening a new entry brings back its draft, after the form has put in its own defaults.
   useEffect(() => {
     setProblems(null);
+    setFailure(null);
     setRestored(null);
     setSavedAt(null);
     fromAi.current = false;
@@ -278,14 +284,24 @@ export function FormShell<T>({ open, onClose, title, form, okText, onSubmit, sec
       return;
     }
     setProblems(null);
+    setFailure(null);
     setSubmitting(secondary ? 'secondary' : 'primary');
     try {
-      await onSubmit(allValues ? (form.getFieldsValue(true) as T) : validated, secondary);
+      // The form says what went wrong itself (UX item 86), so the save gets no toast as well.
+      await handledInPlace(() => onSubmit(allValues ? (form.getFieldsValue(true) as T) : validated, secondary));
       if (storageKey) clearDraft(storageKey);
       onClose();
     } catch (err) {
-      // The mutation said what went wrong; what was typed stays, and a message about a field shows on that field.
+      // What was typed stays; a message about a field shows on that field, anything else at the top in plain words.
       const fields = serverFieldErrors(err, form.getFieldsValue() as Record<string, unknown>);
+      if (!fields.length) {
+        const d = describeError(err);
+        setFailure({ text: d.text, retry: d.retry, secondary });
+        window.setTimeout(() => {
+          failureRef.current?.scrollIntoView({ block: 'nearest' });
+          failureRef.current?.focus({ preventScroll: true });
+        }, 50);
+      }
       if (fields.length) {
         form.setFields(fields as never);
         window.setTimeout(() => {
@@ -394,6 +410,25 @@ export function FormShell<T>({ open, onClose, title, form, okText, onSubmit, sec
             </Button>
           }
         />
+      )}
+      {failure && (
+        <div ref={failureRef} tabIndex={-1} style={{ outline: 'none' }}>
+          <Alert
+            type="error"
+            showIcon
+            role="alert"
+            style={{ marginBottom: token.margin }}
+            title={failure.retry ? 'Not saved yet' : 'Not saved'}
+            description={failure.text}
+            action={
+              failure.retry ? (
+                <Button size="small" onClick={() => void submit(failure.secondary)} loading={!!submitting}>
+                  Try again
+                </Button>
+              ) : undefined
+            }
+          />
+        </div>
       )}
       {problems && problems.length > 0 && (
         <div ref={summaryRef} tabIndex={-1} style={{ outline: 'none' }}>

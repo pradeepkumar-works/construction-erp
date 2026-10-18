@@ -140,12 +140,7 @@ export default function Page() {
         okText="Dismiss"
         form={form}
         onSubmit={async (v) => {
-          try {
-            await act.mutateAsync({ key: dismissing!.key, reason: v.reason });
-          } catch (e) {
-            message.error(errorMessage(e));
-            throw e;
-          }
+          await act.mutateAsync({ key: dismissing!.key, reason: v.reason });
           message.success('Dismissed for everyone in the company');
         }}
       >

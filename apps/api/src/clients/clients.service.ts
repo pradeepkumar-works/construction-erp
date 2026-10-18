@@ -4,6 +4,7 @@ import { canEditContract, gstStateCode, type ClientDto, type Paginated } from '@
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { AuditService } from '../common/audit.service';
+import { UndoService } from '../common/undo.service';
 import { isUniqueViolation } from '../common/idempotency';
 import { iso } from '../common/serialize';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
@@ -15,7 +16,13 @@ type Row = Prisma.ClientGetPayload<{ include: typeof include }>;
 /** Client master: the departments and owners the organisation builds for. Projects link to a client for billing. */
 @Injectable()
 export class ClientsService {
-  constructor(private prisma: PrismaService, private audit: AuditService) {}
+  constructor(
+    private prisma: PrismaService,
+    private audit: AuditService,
+    private undo: UndoService,
+  ) {
+    undo.register('CLIENT', { entityType: 'CLIENT', check: (user) => this.assertCanEdit(user) });
+  }
 
   static toDto(r: Prisma.ClientGetPayload<object> & { _count?: { projects: number } }): ClientDto {
     return {
@@ -122,6 +129,6 @@ export class ClientsService {
     if (row._count.projects > 0) throw new ConflictException(`${row.name} has ${row._count.projects} project(s); mark the client inactive instead`);
     await this.prisma.client.delete({ where: { id } });
     await this.audit.log(user, 'CLIENT', id, 'DELETED');
-    return { ok: true };
+    return { ok: true, undo: this.undo.offer(user, 'CLIENT', { rows: [{ model: 'client', data: row }] }) };
   }
 }

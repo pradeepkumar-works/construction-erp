@@ -2,12 +2,13 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { App, Button, Descriptions, Divider, Drawer, Popconfirm, Skeleton, Space, Table, Typography } from 'antd';
+import { Button, Descriptions, Divider, Drawer, Skeleton, Space, Table, Typography } from 'antd';
 import { DeleteOutlined, ImportOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { StockEntryType, StockLineDto } from '@erp/shared';
 import { canAdjustStock, canCheckGrn, canKeepStock } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useStockEntry } from '@/lib/queries';
 import { formatDate, formatDateTime, formatQty } from '@/lib/format';
@@ -16,6 +17,7 @@ import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { StockTypeTag } from './StockTypeTag';
 import { ReceiveTransferModal } from './ReceiveTransferModal';
 import { GrnQcModal, GrnQcTag } from './GrnQc';
+import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 const KIND: Record<StockEntryType, string> = {
   RECEIPT: 'Goods received note',
@@ -29,19 +31,17 @@ const KIND: Record<StockEntryType, string> = {
 
 /** A GRN, issue slip, adjustment, transfer or return. Approvers can delete a wrong entry; a transfer in transit can be received. */
 export function StockEntryDrawer({ id, onClose }: { id: string | null; onClose: () => void }) {
-  const { message } = App.useApp();
   const { user } = useAuth();
   const qc = useQueryClient();
   const { data, isLoading, error, refetch } = useStockEntry(id ?? undefined);
   const remove = useMutation({
     mutationFn: async () => (await api.delete(`/stock/entries/${id}`)).data,
     onSuccess: () => {
-      message.success(`${data?.entryNo} deleted`);
       qc.invalidateQueries({ queryKey: ['stock'] });
       qc.invalidateQueries({ queryKey: ['material-requests'] });
       onClose();
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
   const mayDelete = !!user && canAdjustStock(user.roleKey);
   const kind = data ? KIND[data.type] : '';
@@ -70,17 +70,11 @@ export function StockEntryDrawer({ id, onClose }: { id: string | null; onClose: 
             </Button>
           ) : null}
           {data && mayDelete ? (
-          <Popconfirm
-            title={`Delete ${data.entryNo}?`}
-            description="Its quantities come off the stock register."
-            okText="Delete"
-            okButtonProps={{ danger: true }}
-            onConfirm={() => remove.mutate()}
-          >
+          <ConfirmDelete what={data.entryNo} description="Its quantities come off the stock register." onConfirm={() => remove.mutateAsync()}>
             <Button danger size="small" icon={<DeleteOutlined />} loading={remove.isPending}>
               Delete
             </Button>
-          </Popconfirm>
+          </ConfirmDelete>
           ) : null}
         </Space>
       }

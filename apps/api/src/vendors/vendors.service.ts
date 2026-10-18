@@ -4,6 +4,7 @@ import { canEditVendors, canSeeVendorBank, gstStateCode, type Paginated, type Un
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { AuditService } from '../common/audit.service';
+import { UndoService } from '../common/undo.service';
 import { isUniqueViolation } from '../common/idempotency';
 import { iso } from '../common/serialize';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
@@ -29,7 +30,13 @@ export interface VendorLink {
  */
 @Injectable()
 export class VendorsService {
-  constructor(private prisma: PrismaService, private audit: AuditService) {}
+  constructor(
+    private prisma: PrismaService,
+    private audit: AuditService,
+    private undo: UndoService,
+  ) {
+    undo.register('VENDOR', { entityType: 'VENDOR', check: (user) => this.assertCanEdit(user, {}) });
+  }
 
   private toDto(r: Row, user: RequestUser): VendorDto {
     const bank = canSeeVendorBank(user.roleKey);
@@ -183,9 +190,18 @@ export class VendorsService {
     if (!row) throw new NotFoundException('Vendor not found');
     const used = row._count.expenses + row._count.equipment + row._count.stockEntries;
     if (used > 0) throw new ConflictException(`${row.name} is on ${used} expense(s), machine(s) or GRN(s); mark the vendor inactive instead`);
+    // Workers and attendance lines that name the vendor lose the link on delete (SetNull); Undo puts it back.
+    const [workers, lines] = await Promise.all([
+      this.prisma.worker.findMany({ where: { vendorId: id }, select: { id: true } }),
+      this.prisma.attendanceLine.findMany({ where: { vendorId: id }, select: { id: true } }),
+    ]);
     await this.prisma.vendor.delete({ where: { id } });
     await this.audit.log(user, 'VENDOR', id, 'DELETED');
-    return { ok: true };
+    const relink = [
+      { model: 'worker', field: 'vendorId', ids: workers.map((w) => w.id) },
+      { model: 'attendanceLine', field: 'vendorId', ids: lines.map((l) => l.id) },
+    ];
+    return { ok: true, undo: this.undo.offer(user, 'VENDOR', { rows: [{ model: 'vendor', data: row }], relink }) };
   }
 
   /** Vendor names typed on expenses, machines and GRNs that are not in the master, most used first. */

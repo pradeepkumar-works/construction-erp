@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Checkbox, DatePicker, Form, Input, InputNumber, Popconfirm, Select, Space, Tag, theme } from 'antd';
+import { App, Button, Checkbox, DatePicker, Form, Input, InputNumber, Select, Space, Tag, theme } from 'antd';
 import dayjs from 'dayjs';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { EquipmentDto, EquipmentOwnership, EquipmentRateUnit, EquipmentSortField } from '@erp/shared';
 import { EQUIPMENT_OWNERSHIPS, EQUIPMENT_OWNERSHIP_LABELS, EQUIPMENT_RATE_UNITS, EQUIPMENT_RATE_UNIT_LABELS, LIST_SORT_FIELDS, canManageEquipment } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useEquipment, useProjects } from '@/lib/queries';
 import { formatDate, formatINR } from '@/lib/format';
@@ -25,6 +26,7 @@ import { OwnershipTag } from './hours';
 import { VendorPicker } from '@/components/vendors/VendorPicker';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
+import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 const KEYS = ['ownership', 'inactive'] as const;
 
@@ -83,15 +85,14 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
       message.success(`${e.code} saved`);
       qc.invalidateQueries({ queryKey: ['machinery'] });
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
   const remove = useMutation({
     mutationFn: async (e: EquipmentDto) => (await api.delete(`/equipment/${e.id}`)).data,
     onSuccess: () => {
-      message.success('Machine deleted');
       qc.invalidateQueries({ queryKey: ['machinery'] });
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   const open = (e: EquipmentDto | 'new') => {
@@ -172,9 +173,9 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
                 render: (_: unknown, r: EquipmentDto) => (
                   <Space size="small">
                     <Button type="text" size="small" icon={<EditOutlined />} onClick={() => open(r)} aria-label="Edit" />
-                    <Popconfirm title={`Delete ${r.code}?`} okText="Delete" okButtonProps={{ danger: true }} onConfirm={() => remove.mutate(r)} disabled={!!r.lastLogDate}>
+                    <ConfirmDelete what={`machine ${r.code}`} onConfirm={() => remove.mutateAsync(r)} disabled={!!r.lastLogDate}>
                       <Button type="text" size="small" danger icon={<DeleteOutlined />} disabled={!!r.lastLogDate} title={r.lastLogDate ? 'Has logs; mark it inactive instead' : undefined} aria-label="Delete" />
-                    </Popconfirm>
+                    </ConfirmDelete>
                   </Space>
                 ),
               } satisfies ListColumn<EquipmentDto>,

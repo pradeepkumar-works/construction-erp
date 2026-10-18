@@ -8,7 +8,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ImprestDto, ImprestEntryDto, ImprestLedgerLine } from '@erp/shared';
 import { IMPREST_ENTRY_KIND_LABELS, IMPREST_ENTRY_STATUS_LABELS, PAYMENT_MODE_LABELS, SUBMISSION_STATUS_LABELS, canManageImprest } from '@erp/shared';
 import { useProjectScope } from '@/lib/project-scope';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useImprest, useImprests } from '@/lib/queries';
 import { STATUS_COLORS, formatDate, formatINR } from '@/lib/format';
@@ -150,7 +151,7 @@ function ImprestDrawer({ id, onClose, admin, onAction }: { id: string | null; on
       message.success(isActive ? 'Imprest reopened' : 'Imprest closed');
       qc.invalidateQueries({ queryKey: ['imprests'] });
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   const ledgerCols: TableProps<ImprestLedgerLine>['columns'] = [

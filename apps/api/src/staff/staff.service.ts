@@ -28,6 +28,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
+import { UndoService } from '../common/undo.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { todayIn } from '../notifications/time';
 import { dateOnly, dec, iso, parseDate } from '../common/serialize';
@@ -107,7 +108,10 @@ export class StaffService {
     private access: ProjectAccessService,
     private audit: AuditService,
     private notifications: NotificationsService,
-  ) {}
+    private undo: UndoService,
+  ) {
+    undo.register('HOLIDAY', { entityType: 'HOLIDAY', check: (user) => this.access.assertCanManageStaff(user) });
+  }
 
   /* ---------- mapping ---------- */
 
@@ -738,6 +742,6 @@ export class StaffService {
     if (!h) throw new NotFoundException('Holiday not found');
     await this.prisma.holiday.delete({ where: { id } });
     await this.audit.log(user, 'HOLIDAY', id, 'DELETED', `${dateOnly(h.date)} ${h.name}`);
-    return { ok: true };
+    return { ok: true, undo: this.undo.offer(user, 'HOLIDAY', { rows: [{ model: 'holiday', data: h }] }) };
   }
 }

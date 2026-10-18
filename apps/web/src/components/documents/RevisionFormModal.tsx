@@ -5,7 +5,8 @@ import { App, Form } from 'antd';
 import dayjs from 'dayjs';
 import type { AttachmentDto, DocumentDetailDto, DocumentRevisionDto, RevisionStatus } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { FormShell } from '@/components/form/FormShell';
 import { RevisionFields } from './RevisionFields';
 
@@ -66,7 +67,7 @@ export function RevisionFormModal({ open, onClose, doc, revision }: { open: bool
       qc.invalidateQueries({ queryKey: ['documents'] });
       qc.invalidateQueries({ queryKey: ['notifications'] });
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   return (

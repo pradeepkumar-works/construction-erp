@@ -6,7 +6,8 @@ import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, ToolboxTalkDto } from '@erp/shared';
 import { TOOLBOX_TOPICS } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useProjects } from '@/lib/queries';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
@@ -72,7 +73,7 @@ export function TalkFormModal({ open, onClose, projectId, talk }: { open: boolea
       message.success(`${x.talkNo} saved`);
       qc.invalidateQueries({ queryKey: ['safety'] });
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
 
   return (

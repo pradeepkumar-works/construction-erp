@@ -9,6 +9,18 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-10-undo',
+    date: '2026-10-21',
+    title: 'Undo, and clearer messages',
+    points: [
+      'Deleting asks once, naming what goes, with a red Delete. It waits until it is done and says so there if it could not be deleted.',
+      'After deleting a holiday, unit, client, vendor, worker, item, quotation, milestone, driver, checklist, close-out line or saved view, Undo brings it back for ten seconds. Ctrl Z (⌘Z on a Mac) does the same. Taking someone off a project team can be undone too.',
+      'Saving a new entry says what was made, with View to open it.',
+      'Approving shows the entry as approved straight away, one or many at once. If it does not go through, it goes back to waiting and the message says why.',
+      'When you are offline or something goes wrong on our side, the message says so in plain words, with Retry. What you typed in a form stays there, with Try again.',
+    ],
+  },
+  {
     id: '2026-10-phone-lists',
     date: '2026-10-21',
     title: 'Lists that fit a phone',

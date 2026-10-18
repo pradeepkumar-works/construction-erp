@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Empty, Popconfirm, Space, Table, Tag, Tooltip, Typography } from 'antd';
+import { Button, Empty, Space, Table, Tag, Tooltip, Typography } from 'antd';
 import { DeleteOutlined, EditOutlined, PlusOutlined, ShoppingCartOutlined, TrophyOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ComparativeStatementDto, MaterialRequestDto, QuotationDto } from '@erp/shared';
 import { canPurchase } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useComparative, usePurchaseOrders } from '@/lib/queries';
 import { formatDate, formatINR, formatQty, toNumber } from '@/lib/format';
@@ -17,6 +18,7 @@ import { PurchaseOrderFormModal, type PoStart } from './PurchaseOrderFormModal';
 import { PoStateTag, PurchaseOrderDrawer } from './PurchaseOrderDrawer';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { RecordLink } from '@/components/record/RecordLink';
+import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 type Line = ComparativeStatementDto['lines'][number];
 
@@ -26,7 +28,6 @@ type Line = ComparativeStatementDto['lines'][number];
  */
 export function QuotationsPanel({ request }: { request: MaterialRequestDto }) {
   const { user } = useAuth();
-  const { message } = App.useApp();
   const qc = useQueryClient();
   const buyer = !!user && canPurchase(user.roleKey);
   const { data, isLoading } = useComparative(request.id);
@@ -38,10 +39,9 @@ export function QuotationsPanel({ request }: { request: MaterialRequestDto }) {
   const remove = useMutation({
     mutationFn: async (id: string) => (await api.delete(`/quotations/${id}`)).data,
     onSuccess: () => {
-      message.success('Quotation deleted');
       qc.invalidateQueries({ queryKey: ['quotations'] });
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
 
   const toOrder = new Map(request.items.map((i) => [i.id, toNumber(i.toOrderQty)]));
@@ -163,9 +163,9 @@ export function QuotationsPanel({ request }: { request: MaterialRequestDto }) {
                           </Button>
                         )}
                         <Button size="small" type="text" icon={<EditOutlined />} aria-label={`Edit quotation from ${q.vendorName}`} onClick={() => setQuoting(q)} />
-                        <Popconfirm title={`Delete the quotation from ${q.vendorName}?`} okText="Delete" okButtonProps={{ danger: true }} onConfirm={() => remove.mutate(q.id)}>
+                        <ConfirmDelete what={`the quotation from ${q.vendorName}`} onConfirm={() => remove.mutateAsync(q.id)}>
                           <Button size="small" type="text" danger icon={<DeleteOutlined />} aria-label={`Delete quotation from ${q.vendorName}`} />
-                        </Popconfirm>
+                        </ConfirmDelete>
                       </Space>
                     )}
                   </Table.Summary.Cell>

@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { App, Button, Input, Popconfirm, Progress, Space, Statistic, Table, Tooltip, Typography } from 'antd';
+import { Button, Input, Progress, Space, Statistic, Table, Tooltip, Typography } from 'antd';
 import type { TableProps } from 'antd';
 import { DeleteOutlined, DownloadOutlined, EditOutlined, FileExcelOutlined, PlusOutlined } from '@ant-design/icons';
 import type { BoqItemDto } from '@erp/shared';
 import { canEditProjects } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useBoq } from '@/lib/queries';
 import { useAuth } from '@/lib/auth';
 import { formatINR, formatQty, toNumber } from '@/lib/format';
@@ -17,10 +18,10 @@ import { BoqImportModal, downloadBoqTemplate } from './BoqImportModal';
 import { BRAND } from '@/lib/brand';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { loadXlsx } from '@/lib/exportExcel';
+import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 export function BoqTab({ projectId }: { projectId: string }) {
   const { user } = useAuth();
-  const { message } = App.useApp();
   const qc = useQueryClient();
   const { data, isLoading, error, refetch } = useBoq(projectId);
   const [search, setSearch] = useState('');
@@ -32,11 +33,10 @@ export function BoqTab({ projectId }: { projectId: string }) {
   const del = useMutation({
     mutationFn: async (id: string) => api.delete(`/projects/${projectId}/boq/${id}`),
     onSuccess: () => {
-      message.success('BOQ item deleted');
       qc.invalidateQueries({ queryKey: ['boq', projectId] });
       qc.invalidateQueries({ queryKey: ['dashboard'] });
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   const filtered = useMemo(() => {
@@ -136,9 +136,9 @@ export function BoqTab({ projectId }: { projectId: string }) {
                     setFormOpen(true);
                   }}
                 />
-                <Popconfirm title="Delete this BOQ item?" okText="Delete" okButtonProps={{ danger: true }} onConfirm={() => del.mutate(r.id)}>
+                <ConfirmDelete what={`BOQ item ${r.itemNo}`} onConfirm={() => del.mutateAsync(r.id)}>
                   <Button size="small" type="text" danger icon={<DeleteOutlined />} aria-label={`Delete BOQ item ${r.itemNo}`} />
-                </Popconfirm>
+                </ConfirmDelete>
               </Space>
             ),
           },

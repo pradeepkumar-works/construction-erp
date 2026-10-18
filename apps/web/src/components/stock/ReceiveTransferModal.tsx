@@ -5,7 +5,8 @@ import { App, DatePicker, Form, Input, Table, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { StockEntryDto, StockLineDto } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { formatDate, formatQty } from '@/lib/format';
 import { FormShell } from '@/components/form/FormShell';
 
@@ -24,7 +25,7 @@ export function ReceiveTransferModal({ open, onClose, transfer }: { open: boolea
       message.success(`${e.entryNo} saved: received at ${e.projectName}`);
       qc.invalidateQueries({ queryKey: ['stock'] });
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
   return (
     <FormShell open={open} onClose={onClose} form={form} layout="modal" width={520} title={`Receive ${transfer.entryNo} at ${transfer.toProjectName}`} okText="Receive" onSubmit={(v) => save.mutateAsync(v)}>

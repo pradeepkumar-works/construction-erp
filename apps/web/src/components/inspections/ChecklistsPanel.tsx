@@ -1,17 +1,19 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Form, Input, Popconfirm, Space, Table, Typography } from 'antd';
+import { App, Button, Form, Input, Space, Table, Typography } from 'antd';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ChecklistTemplateDto } from '@erp/shared';
 import { canManageChecklists } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useChecklists } from '@/lib/queries';
 import { QueryError } from '@/components/common/QueryState';
 import { CardToolbar } from '@/components/common/CardToolbar';
 import { FormShell } from '@/components/form/FormShell';
+import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 const lines = (v: string) =>
   v
@@ -38,15 +40,14 @@ export function ChecklistsPanel() {
       message.success('Checklist saved');
       qc.invalidateQueries({ queryKey: ['inspections', 'checklists'] });
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
   const remove = useMutation({
     mutationFn: async (id: string) => (await api.delete(`/inspections/checklists/${id}`)).data,
     onSuccess: () => {
-      message.success('Checklist deleted');
       qc.invalidateQueries();
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
   const standard = useMutation({
     mutationFn: async () => (await api.post<ChecklistTemplateDto[]>('/inspections/checklists/standard')).data,
@@ -54,7 +55,7 @@ export function ChecklistsPanel() {
       message.success('Standard checklists added');
       qc.invalidateQueries({ queryKey: ['inspections', 'checklists'] });
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
 
   const open = (t: ChecklistTemplateDto | 'new') => {
@@ -107,9 +108,9 @@ export function ChecklistsPanel() {
                   render: (_: unknown, t: ChecklistTemplateDto) => (
                     <Space size={4}>
                       <Button size="small" icon={<EditOutlined />} onClick={() => open(t)} aria-label={`Edit ${t.name}`} />
-                      <Popconfirm title={`Delete ${t.name}?`} description="Inspections already requested keep their points." okText="Delete" okButtonProps={{ danger: true }} onConfirm={() => remove.mutate(t.id)}>
+                      <ConfirmDelete what={`the checklist “${t.name}”`} description="Inspections already requested keep their points." onConfirm={() => remove.mutateAsync(t.id)}>
                         <Button size="small" danger icon={<DeleteOutlined />} aria-label={`Delete ${t.name}`} />
-                      </Popconfirm>
+                      </ConfirmDelete>
                     </Space>
                   ),
                 },

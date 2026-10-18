@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
-import { App, Checkbox, DatePicker, Form, Input, Select } from 'antd';
+import { Checkbox, DatePicker, Form, Input, Select } from 'antd';
 import dayjs from 'dayjs';
 import type { ProjectDetail, ProjectStatus, ProjectType } from '@erp/shared';
 import { PROJECT_STATUSES, PROJECT_STATUS_LABELS, PROJECT_TYPES, PROJECT_TYPE_LABELS } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE, useNotify } from '@/lib/notify';
 import { useActivityTemplates } from '@/lib/queries';
 import { ClientSelect, UserSelect } from '@/components/common/SearchSelect';
 import { inSentence } from '@/lib/format';
@@ -44,8 +45,8 @@ export function ProjectFormModal({
   onSaved?: (id: string) => void;
 }) {
   const [form] = Form.useForm<FormValues>();
-  const { message } = App.useApp();
   const qc = useQueryClient();
+  const notify = useNotify();
   const isEdit = !!project;
   const { data: templates } = useActivityTemplates(open && !project);
   const type = Form.useWatch('type', form);
@@ -99,11 +100,11 @@ export function ProjectFormModal({
       return (await api.post<ProjectDetail>('/projects', body)).data;
     },
     onSuccess: (data) => {
-      message.success(isEdit ? 'Project updated' : 'Project created');
+      notify.saved(isEdit ? `${data.name} updated` : `${data.name} created`, `/projects/${data.id}`);
       qc.invalidateQueries();
       saved.current = data.id;
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   return (

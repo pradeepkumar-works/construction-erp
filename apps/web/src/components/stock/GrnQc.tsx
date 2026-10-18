@@ -5,7 +5,8 @@ import { App, Form, Input, Segmented, Table, Tag, Typography } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { GrnQcStatus, StockEntryDto, StockLineDto } from '@erp/shared';
 import { GRN_QC_STATUSES, GRN_QC_STATUS_LABELS } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { formatQty, inSentence } from '@/lib/format';
 import { FormShell } from '@/components/form/FormShell';
 import { QuantityInput } from '@/components/form/inputs';
@@ -64,7 +65,7 @@ export function GrnQcModal({ entry, open, onClose }: { entry: StockEntryDto; ope
       qc.invalidateQueries({ queryKey: ['stock'] });
       qc.invalidateQueries({ queryKey: ['purchase-orders', 'status'] });
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
 
   return (

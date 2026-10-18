@@ -7,7 +7,8 @@ import { EditOutlined, WarningOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { StockBalanceDto, StockBalanceSortField } from '@erp/shared';
 import { LIST_SORT_FIELDS, canManageStore } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useStockBalances } from '@/lib/queries';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
@@ -37,7 +38,7 @@ function MinLevelEditor({ row }: { row: StockBalanceDto }) {
       qc.invalidateQueries({ queryKey: ['stock'] });
       setOpen(false);
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
   return (
     <Popover

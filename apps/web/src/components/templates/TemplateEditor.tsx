@@ -7,7 +7,8 @@ import type { TableProps } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ActivityTemplateDto, ActivityTemplateItem } from '@erp/shared';
 import { MAX_TEMPLATE_DAYS, MAX_TEMPLATE_ITEMS, PROJECT_TYPE_LABELS, templateSpan } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { TimelineBar } from './TimelineBar';
 import { UnitInput } from '@/components/common/UnitInput';
 import { inSentence } from '@/lib/format';
@@ -48,7 +49,7 @@ export function TemplateEditor({ template, editable }: { template: ActivityTempl
       message.success(t.isDefault ? 'Back to the standard list' : 'Template saved');
       qc.invalidateQueries({ queryKey: ['activity-templates'] });
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
 
   const names = rows.map((r) => r.name.trim().toLowerCase());
@@ -121,7 +122,7 @@ export function TemplateEditor({ template, editable }: { template: ActivityTempl
         {editable ? (
           <Space>
             {!template.isDefault ? (
-              <Popconfirm title="Go back to the standard list?" description="Your changes to this type are removed." onConfirm={() => save.mutate([])}>
+              <Popconfirm title="Go back to the standard list?" description="Your changes to this type are removed." okText="Go back to standard" okButtonProps={{ danger: true }} onConfirm={() => save.mutate([])}>
                 <Button>Reset to standard</Button>
               </Popconfirm>
             ) : null}

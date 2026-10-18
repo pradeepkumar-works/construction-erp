@@ -2,12 +2,13 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Alert, App, Button, DatePicker, Divider, Form, Input, Popconfirm, Table, Tag, Typography } from 'antd';
+import { Alert, App, Button, DatePicker, Divider, Form, Input, Table, Tag, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { RaBillDto, RaBillItemDto, ReceiptDto } from '@erp/shared';
 import { GST_STATES, RECEIPT_MODE_LABELS, canEditSubmission, canPrepareBill, canRecordReceipt, canResubmit } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useBill } from '@/lib/queries';
 import { formatDate, formatINR, formatPct, formatQty, toNumber } from '@/lib/format';
@@ -29,6 +30,7 @@ import { submissionLifecycle } from '@/components/record/lifecycle';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { QuantityInput } from '@/components/form/inputs';
 import { Section } from '@/components/common/Section';
+import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 type StageAction = 'send' | 'certify';
 const ACTION_TITLES: Record<StageAction, string> = { send: 'Record as sent to the client', certify: 'Record the client’s certificate' };
@@ -74,20 +76,21 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
     onSuccess: (b, { act }) => {
       done(act === 'send' ? `${b.billLabel} recorded as sent` : `${b.billLabel} certified for ${formatINR(b.netPayable, true)} net`);
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
   const submit = useMutation({
     mutationFn: async () => (await api.post<RaBillDto>(`/ra-bills/${id}/submit`)).data,
     onSuccess: (b) => done(`${b.billLabel} submitted for approval`),
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
   const remove = useMutation({
     mutationFn: async () => (await api.delete(`/ra-bills/${id}`)).data,
     onSuccess: () => {
-      done('Bill deleted. Its measurements can be billed again.');
+      qc.invalidateQueries({ queryKey: ['bills'] });
+      qc.invalidateQueries({ queryKey: ['measurements'] });
       onClose?.();
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
 
   const openAction = (act: StageAction, b: RaBillDto) => {
@@ -360,11 +363,11 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
                 </Button>
               ) : null}
               {editable ? (
-                <Popconfirm title="Delete this bill?" description="Its measurements become billable again." onConfirm={() => remove.mutate()}>
+                <ConfirmDelete what={data.billLabel} description="Its measurements become billable again." onConfirm={() => remove.mutateAsync()}>
                   <Button size={size} danger loading={remove.isPending}>
                     Delete
                   </Button>
-                </Popconfirm>
+                </ConfirmDelete>
               ) : null}
             </>
           ),

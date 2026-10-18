@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Card, Checkbox, Flex, Popconfirm, Select, Space, Table, Tabs, Tag, Typography, theme } from 'antd';
+import { Button, Card, Checkbox, Flex, Select, Space, Table, Tabs, Tag, Typography, theme } from 'antd';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { MsmeCategory, UnlistedVendorDto, VendorDto, VendorKind, VendorSortField } from '@erp/shared';
 import { GST_STATES, LIST_SORT_FIELDS, MSME_CATEGORIES, MSME_CATEGORY_LABELS, VENDOR_KINDS, VENDOR_KIND_LABELS, canEditVendors, canSeeVendorBank } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useUnlistedVendors, useVendorsPage } from '@/lib/queries';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { VENDOR_EXPORT } from '@/lib/exportColumns';
@@ -21,6 +22,7 @@ import { DataTable, type ListColumn } from '@/components/list/DataTable';
 import { exportSelected } from '@/components/list/bulk';
 import { useListFrame } from '@/components/list/useListFrame';
 import { formatDate } from '@/lib/format';
+import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 const usedOn = (r: { expenseCount: number; equipmentCount: number; grnCount: number }) =>
   [
@@ -40,17 +42,15 @@ function Sub({ children }: { children: React.ReactNode }) {
 
 function VendorsTab({ editable, onEdit, emptyAction }: { editable: boolean; onEdit: (v: VendorDto) => void; emptyAction?: React.ReactNode }) {
   const { user } = useAuth();
-  const { message } = App.useApp();
   const qc = useQueryClient();
   const bank = !!user && canSeeVendorBank(user.roleKey);
 
   const remove = useMutation({
     mutationFn: async (id: string) => (await api.delete(`/vendors/${id}`)).data,
     onSuccess: () => {
-      message.success('Vendor deleted');
       qc.invalidateQueries({ queryKey: ['vendors'] });
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
 
   const frame = useListFrame<VendorSortField, VendorDto>({
@@ -163,9 +163,9 @@ function VendorsTab({ editable, onEdit, emptyAction }: { editable: boolean; onEd
                 <Space size={4}>
                   <Button size="small" type="text" icon={<EditOutlined />} aria-label={`Edit ${v.name}`} onClick={() => onEdit(v)} />
                   {v.expenseCount + v.equipmentCount + v.grnCount === 0 ? (
-                    <Popconfirm title={`Delete ${v.name}?`} okText="Delete" okButtonProps={{ danger: true }} onConfirm={() => remove.mutate(v.id)}>
+                    <ConfirmDelete what={`vendor ${v.name}`} onConfirm={() => remove.mutateAsync(v.id)}>
                       <Button size="small" type="text" danger icon={<DeleteOutlined />} aria-label={`Delete ${v.name}`} />
-                    </Popconfirm>
+                    </ConfirmDelete>
                   ) : null}
                 </Space>
               ),

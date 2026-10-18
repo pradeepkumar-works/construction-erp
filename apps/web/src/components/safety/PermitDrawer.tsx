@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Alert, App, Button, Checkbox, Descriptions, Divider, Drawer, Form, Input, Modal, Popconfirm, Skeleton, Space, Typography } from 'antd';
+import { Alert, App, Button, Checkbox, Descriptions, Divider, Drawer, Form, Input, Modal, Skeleton, Space, Typography } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { WorkPermitDto } from '@erp/shared';
 import { PERMIT_PRECAUTIONS, canEditSafetyRecord, canManageSafety } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useWorkPermit, useWorkPermitHistory } from '@/lib/queries';
 import { formatDateTime } from '@/lib/format';
@@ -13,6 +14,7 @@ import { QueryError } from '@/components/common/QueryState';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { PermitStatusTag, SafetyHistory, permitTypeLabel, permitWindow } from './safetyUi';
 import { joinPrecautions, splitPrecautions } from './PermitFormModal';
+import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 type Action = 'issue' | 'reject' | 'close';
 
@@ -39,16 +41,15 @@ export function PermitDrawer({ id, open, onClose, onEdit }: { id: string | null;
       qc.invalidateQueries({ queryKey: ['safety'] });
       setAction(null);
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
   const remove = useMutation({
     mutationFn: async () => (await api.delete(`/safety/permits/${id}`)).data,
     onSuccess: () => {
-      message.success('Permit deleted');
       qc.invalidateQueries({ queryKey: ['safety'] });
       onClose();
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
   const split = data ? splitPrecautions(data.type, data.precautions) : { ticked: [], other: '' };
 
@@ -91,11 +92,11 @@ export function PermitDrawer({ id, open, onClose, onEdit }: { id: string | null;
               </Button>
             ) : null}
             {manager || (own && data.status === 'REQUESTED') ? (
-              <Popconfirm title="Delete this permit?" description="Only for one made by mistake." onConfirm={() => remove.mutate()}>
+              <ConfirmDelete what={`permit ${data.permitNo}`} description="Only for one made by mistake." onConfirm={() => remove.mutateAsync()}>
                 <Button size="small" danger loading={remove.isPending}>
                   Delete
                 </Button>
-              </Popconfirm>
+              </ConfirmDelete>
             ) : null}
           </Space>
         ) : null
