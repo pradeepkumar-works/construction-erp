@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { AiEffort, AiUsage } from './ai.config';
+import { fakePhotoReply } from '../photo-checks/fake-photos';
 
 type Block = Anthropic.Beta.BetaContentBlock;
 export type ModelMessage = Anthropic.Beta.BetaMessageParam;
@@ -111,6 +112,9 @@ export class FakeModel implements AiModel {
     const usage = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 };
     // A page to read (item 70) gets a fixed reading of its kind, so the forms it fills can be tested without a model.
     if (blocks.some((b) => b.type === 'image')) {
+      const said = blocks.map((b) => (b.type === 'text' ? b.text : '')).join(' ');
+      // A site photo (item 76) is read from words in its file name.
+      if (said.includes('Photo check.')) return { content: [{ type: 'text', text: fakePhotoReply(said), citations: null } as Block], stopReason: 'end_turn', usage, model: this.name };
       const kind = blocks.map((b) => (b.type === 'text' ? b.text : '')).join(' ').match(/Kind: (\w+)/)?.[1] ?? 'invoice';
       return { content: [{ type: 'text', text: JSON.stringify(FAKE_READS[kind] ?? FAKE_READS.invoice), citations: null } as Block], stopReason: 'end_turn', usage, model: this.name };
     }

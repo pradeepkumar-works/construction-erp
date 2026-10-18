@@ -25,6 +25,7 @@ import { formatDate, formatINR } from '@/lib/format';
 import { Loading, QueryError } from '@/components/common/QueryState';
 import { SearchBox } from '@/components/common/SearchBox';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
+import { PhotosWithChecks } from '@/components/photo-checks/PhotoChecksSection';
 import { DefectFormModal, HandoverFormModal, type DefectAction } from './HandoverForms';
 import { Section } from '@/components/common/Section';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
@@ -370,7 +371,7 @@ export function HandoverPanel({ projectId, members, initialDefectId }: { project
               <Typography.Title level={5} style={{ marginTop: 0 }}>
                 Photos
               </Typography.Title>
-              <AttachmentGallery attachments={d.attachments} size={72} />
+              <PhotosWithChecks kind="defect" id={d.id} attachments={d.attachments} size={72} />
             </div>
           </Flex>
         ) : null}

@@ -1290,6 +1290,32 @@ export; the client portal and the phone app show the amount.
   the letters, who sees what and that a superseded revision is not searched. `scripts/ai-eval.ts` has a `contract` set for
   the real model.
 
+## Site photo checks
+
+- **What it is.** AI item 76. Each photo on a DPR, a progress entry, a safety incident or a snag gets a caption and, when
+  the model is sure enough, flags: `NO_HELMET`, `NO_HARNESS`, `NO_BARRICADE`, `UNSAFE_SCAFFOLD`, `OTHER_WORK` (the photo
+  shows other work than the entry says; DPR and progress only), `UNCLEAR`, `NOT_SITE` (`packages/shared/src/photo-checks.ts`).
+  Advisory only: nothing reads a flag to block or change a record.
+- **When.** Not on upload: the first time someone who can use Ask Nirmaan opens the record, its page calls
+  `POST /photo-checks/:kind/:id/run`, which checks up to four unchecked photos (45 s at most) and returns
+  `GET /photo-checks/:kind/:id`; the page asks again while `pending` drops. The record is loaded through its own
+  service (`DprService.get`, `ProgressService.get`, `SafetyService.getIncident`, `HandoverService.getDefect`), so who
+  sees the checks is who sees the record. One `PhotoCheck` row per attachment (status DONE, SKIPPED for HEIC or files
+  over 3.7 MB, FAILED tried again after a day), with every flag and its confidence; the page shows those at or above
+  0.75 (`shownFlags`). Counted in the month's AI spend as `PHOTO_CHECKS`.
+- **Rules.** `photo-rules.ts` (pure): the prompt, the record's words sent with the photo, `normalisePhotoReply` (known
+  flags only, one per key, confidence clamped) and `shownFlags`. The test model reads a photo from words in its file name
+  (`fake-photos.ts`, with 50 labelled cases).
+- **Switch.** `Project.photoFlagsOff`: the safety officer or an approver (`canManageSafety`) switches flags off for a
+  project from any record's photos (`PUT /photo-checks/projects/:id`, audited); captions still show.
+- **Snag from a photo.** `POST /photo-checks/snag-draft` drafts a snag's title, details, place and trade from a photo
+  the user uploaded (or one already on a snag of the project) for the form (web `DescribeFromPhoto`, phone
+  `app/snag/new.tsx`), filling only empty fields. Nothing is saved until the user reports the snag.
+- **Tests.** `src/scripts/photo-checks-test.ts` (CI): the reply checks, the 50 labelled cases, and on the demo data the
+  run, the bar, skipped files, retries, the switch, the snag draft and who sees what. `scripts/photo-eval.ts` scores the
+  real model on a folder of labelled real photos through a deployed API. Web uploads shrink photos over 1.5 MB to
+  1600 px JPEG (`src/lib/shrink-photo.ts`), as the phone app does.
+
 ## Money and quantities
 
 Decimal columns everywhere (`Decimal(18,2)` for money, `Decimal(18,3)` for quantities) and strings

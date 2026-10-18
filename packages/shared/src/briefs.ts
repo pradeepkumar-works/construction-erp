@@ -39,11 +39,12 @@ export interface ProgressNarrativeDto {
 }
 
 /** What Ask Nirmaan's spend this month went on, for Admin > Ask Nirmaan. */
-export const AI_FEATURES = ['QUESTIONS', 'BILL_CHECKS', 'DOCUMENT_READS', 'BRIEFS'] as const;
+export const AI_FEATURES = ['QUESTIONS', 'BILL_CHECKS', 'DOCUMENT_READS', 'BRIEFS', 'PHOTO_CHECKS'] as const;
 export type AiFeature = (typeof AI_FEATURES)[number];
 export const AI_FEATURE_LABELS: Record<AiFeature, string> = {
   QUESTIONS: 'Questions and drafts',
   BILL_CHECKS: 'Bill check summaries',
   DOCUMENT_READS: 'Invoices and drawings read',
   BRIEFS: 'Morning briefs and weekly summaries',
+  PHOTO_CHECKS: 'Site photos checked',
 };

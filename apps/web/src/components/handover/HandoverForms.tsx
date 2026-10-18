@@ -10,6 +10,7 @@ import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { formatDate } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
+import { DescribeFromPhoto } from '@/components/photo-checks/DescribeFromPhoto';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
 
@@ -283,6 +284,7 @@ export function DefectFormModal({
               <Form.Item name="photos" label="Photos">
                 <PhotoUpload max={6} />
               </Form.Item>
+              {mode === 'new' ? <DescribeFromPhoto form={form} projectId={projectId} /> : null}
             </FormSection>
             <FormSection title="Putting it right">
               <FormGrid cols={2}>

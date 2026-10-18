@@ -75,6 +75,9 @@ jobs:
       - name: Ask the contract finds each of the 30 sample questions on its page and shows each role only its own documents
         working-directory: apps/api
         run: DATABASE_URL="$RUNTIME_URL" node dist/scripts/contract-search-test.js
+      - name: Site photo checks keep the confidence bar, the 50 labelled photos and the safety officer's switch
+        working-directory: apps/api
+        run: DATABASE_URL="$RUNTIME_URL" node dist/scripts/photo-checks-test.js
       - name: Build and start the web app
         working-directory: apps/web
         run: |
