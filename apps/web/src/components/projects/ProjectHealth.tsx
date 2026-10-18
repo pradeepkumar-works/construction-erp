@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Badge, Flex, Tag, Tooltip, theme } from 'antd';
-import type { ProjectDetail } from '@erp/shared';
+import type { ProjectDashboard, ProjectDetail } from '@erp/shared';
 import { canViewCost } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { formatPct } from '@/lib/format';
@@ -30,6 +30,40 @@ export function timeElapsedPct(start: string | null, end: string | null, on = to
   return Math.min(100, Math.max(0, (days(start, on) / total) * 100));
 }
 
+/** Points of progress a project may trail its plan (or the time gone) by before it counts as behind. */
+const BEHIND_BY = 10;
+
+export interface ScheduleStatus {
+  level: Level;
+  /** Behind its plan (or the time gone, without a plan) by 10 points or more, or past its end date unfinished */
+  behind: boolean;
+  done: number;
+  /** % planned by today from the activities' dates, else null */
+  planned: number | null;
+  /** % of the time between the project's start and end gone by, else null */
+  elapsed: number | null;
+  late: number;
+  /** Past its end date and not finished */
+  overrun: boolean;
+}
+
+/**
+ * Where the project stands against its schedule (UX item 85), the one reading behind the header's chip and the
+ * overview's lead line: progress against what the activities' dates planned by today (against the time gone when they
+ * have no dates), and activities past their finish.
+ */
+export function scheduleStatus(project: ProjectDetail, dash: ProjectDashboard, on = today()): ScheduleStatus {
+  const done = dash.physicalProgressPct ?? project.physicalProgressPct;
+  const planned = dash.plannedProgressPct ?? null;
+  const elapsed = timeElapsedPct(project.startDate, project.endDate, on);
+  const mark = planned ?? elapsed;
+  const overrun = !!project.endDate && project.endDate < on && done < 100;
+  const behind = overrun || (mark !== null && done <= mark - BEHIND_BY);
+  const late = dash.activitiesDelayed;
+  const level: Level = late > 0 && behind ? 'error' : late > 0 || behind ? 'warning' : 'success';
+  return { level, behind, done, planned, elapsed, late, overrun };
+}
+
 /**
  * The project's health at a glance (UI roadmap item 56): schedule from activities running late and progress against
  * time gone; for those who see cost, cost against the value of work done and how much of that work is billed.
@@ -42,13 +76,10 @@ export function useProjectHealth(project: ProjectDetail): HealthSignal[] {
   const out: HealthSignal[] = [];
 
   if (dash) {
-    const elapsed = timeElapsedPct(project.startDate, project.endDate);
-    const done = project.physicalProgressPct;
-    const behind = elapsed !== null && done < elapsed - 10;
-    const late = dash.activitiesDelayed;
-    const level: Level = late > 0 && behind ? 'error' : late > 0 || behind ? 'warning' : 'success';
+    const { level, behind, done, planned, elapsed, late } = scheduleStatus(project, dash);
     const text = late > 0 ? `Schedule: ${late} ${late === 1 ? 'activity' : 'activities'} late` : behind ? 'Schedule: behind' : 'Schedule: on track';
-    const detail = `${formatPct(done)} done${elapsed !== null ? `, ${formatPct(Math.round(elapsed))} of the time gone` : ''}; ${late} of ${dash.activitiesTotal} activities past their finish date.`;
+    const against = planned !== null ? `, ${formatPct(planned)} planned by today` : elapsed !== null ? `, ${formatPct(elapsed)} of the time gone` : '';
+    const detail = `${formatPct(done)} done${against}; ${late} of ${dash.activitiesTotal} activities past their finish date.`;
     out.push({ key: 'schedule', level, text, detail });
   }
 
@@ -59,7 +90,7 @@ export function useProjectHealth(project: ProjectDetail): HealthSignal[] {
       out.push({
         key: 'cost',
         level: pct <= 90 ? 'success' : pct <= 100 ? 'warning' : 'error',
-        text: `Cost: ${formatPct(Math.round(pct))} of work value`,
+        text: `Cost: ${formatPct(pct)} of work value`,
         detail: 'Cost booked so far against the value of approved work (progress × BOQ rate).',
       });
     }
@@ -68,7 +99,7 @@ export function useProjectHealth(project: ProjectDetail): HealthSignal[] {
       out.push({
         key: 'billing',
         level: pct >= 80 ? 'success' : pct >= 50 ? 'warning' : 'error',
-        text: `Billed: ${formatPct(Math.round(pct))} of work value`,
+        text: `Billed: ${formatPct(pct)} of work value`,
         detail: 'Approved RA bills against the value of approved work. Work not yet billed is cash still to ask for.',
       });
     }

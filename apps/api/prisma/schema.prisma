@@ -446,6 +446,7 @@ model Organization {
   billCheckAcceptances BillCheckAcceptance[]
   warningDismissals    WarningDismissal[]
   aiBriefs             AiBrief[]
+  documentPages        DocumentPage[]
   billCheckSummaries   BillCheckSummary[]
   aiDocumentReads      AiDocumentRead[]
 }
@@ -598,14 +599,15 @@ model User {
 // ---------- Projects ----------
 
 model Project {
-  id                    String        @id @default(uuid())
+  id                    String         @id @default(uuid())
   organizationId        String
-  organization          Organization  @relation(fields: [organizationId], references: [id])
+  organization          Organization   @relation(fields: [organizationId], references: [id])
   aiBriefs              AiBrief[]
+  documentPages         DocumentPage[]
   code                  String
   name                  String
   type                  ProjectType
-  status                ProjectStatus @default(PLANNED)
+  status                ProjectStatus  @default(PLANNED)
   clientName            String?
   consultantName        String?
   location              String?
@@ -613,57 +615,57 @@ model Project {
   chainageStart         Int?
   chainageEnd           Int?
   /// Building floors in order, bottom up; progress and measurements pick one
-  floors                String[]      @default([])
+  floors                String[]       @default([])
   /// Water supply: villages / habitations served; progress and measurements pick one
-  villages              String[]      @default([])
+  villages              String[]       @default([])
   workOrderNo           String?
   description           String?
-  startDate             DateTime?     @db.Date
-  endDate               DateTime?     @db.Date
-  contractValue         Decimal?      @db.Decimal(18, 2)
+  startDate             DateTime?      @db.Date
+  endDate               DateTime?      @db.Date
+  contractValue         Decimal?       @db.Decimal(18, 2)
   projectManagerId      String?
-  projectManager        User?         @relation("ProjectManager", fields: [projectManagerId], references: [id])
+  projectManager        User?          @relation("ProjectManager", fields: [projectManagerId], references: [id])
   /// Client from the client master; `clientName` keeps a copy of its name (and stays free text without one)
   clientId              String?
-  client                Client?       @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  client                Client?        @relation(fields: [clientId], references: [id], onDelete: SetNull)
   // ----- Contract terms (what RA bills are built on) -----
   agreementNo           String?
-  agreementDate         DateTime?     @db.Date
+  agreementDate         DateTime?      @db.Date
   /// Retention money deducted from each bill, % of the work value; released after the defect liability period
-  retentionPct          Decimal       @default(0) @db.Decimal(5, 2)
+  retentionPct          Decimal        @default(0) @db.Decimal(5, 2)
   /// Security deposit deducted from each bill, % of the work value
-  securityDepositPct    Decimal       @default(0) @db.Decimal(5, 2)
+  securityDepositPct    Decimal        @default(0) @db.Decimal(5, 2)
   /// Mobilisation advance paid by the client, recovered from bills
-  mobilisationAdvance   Decimal       @default(0) @db.Decimal(18, 2)
+  mobilisationAdvance   Decimal        @default(0) @db.Decimal(18, 2)
   /// Advance recovered from each bill, % of the work value, until all of it is recovered
-  advanceRecoveryPct    Decimal       @default(0) @db.Decimal(5, 2)
+  advanceRecoveryPct    Decimal        @default(0) @db.Decimal(5, 2)
   defectLiabilityMonths Int?
   /// The contract has a price variation (escalation) clause
-  priceVariation        Boolean       @default(false)
+  priceVariation        Boolean        @default(false)
   /// Price variation: the date the base indices are taken at (usually the month before the bid was due)
-  pvBaseDate            DateTime?     @db.Date
+  pvBaseDate            DateTime?      @db.Date
   /// Liquidated damages for late completion: % of the contract value per day, week or month past the revised completion date
-  ldRatePct             Decimal       @default(0) @db.Decimal(6, 3)
-  ldPeriod              LdPeriod      @default(WEEK)
+  ldRatePct             Decimal        @default(0) @db.Decimal(6, 3)
+  ldPeriod              LdPeriod       @default(WEEK)
   /// Liquidated damages are capped at this % of the contract value
-  ldCapPct              Decimal       @default(10) @db.Decimal(5, 2)
+  ldCapPct              Decimal        @default(10) @db.Decimal(5, 2)
   /// GST charged on bills, % of the work value
-  gstRate               Decimal       @default(18) @db.Decimal(5, 2)
+  gstRate               Decimal        @default(18) @db.Decimal(5, 2)
   /// Income-tax TDS the client deducts (section 194C), % of the work value
-  tdsPct                Decimal       @default(0) @db.Decimal(5, 2)
+  tdsPct                Decimal        @default(0) @db.Decimal(5, 2)
   /// GST TDS a government client deducts, % of the work value
-  gstTdsPct             Decimal       @default(0) @db.Decimal(5, 2)
+  gstTdsPct             Decimal        @default(0) @db.Decimal(5, 2)
   /// Building and other construction workers' welfare cess, % of the work value
-  labourCessPct         Decimal       @default(0) @db.Decimal(5, 2)
+  labourCessPct         Decimal        @default(0) @db.Decimal(5, 2)
   /// Days the client takes to pay a bill once it is sent; the cash-flow forecast assumes 30 when not set
   clientPaymentDays     Int?
   /// When the schedule baseline was last frozen (activity planned dates and milestone due dates copied to their baseline)
   baselineAt            DateTime?
   baselineById          String?
-  baselineBy            User?         @relation("ProjectBaselineBy", fields: [baselineById], references: [id])
+  baselineBy            User?          @relation("ProjectBaselineBy", fields: [baselineById], references: [id])
   baselineNote          String?
-  createdAt             DateTime      @default(now())
-  updatedAt             DateTime      @updatedAt
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
 
   members          ProjectMember[]
   boqItems         BoqItem[]
@@ -2168,7 +2170,13 @@ model Attachment {
   defect            Defect?            @relation(fields: [defectId], references: [id], onDelete: Cascade)
   handoverId        String?
   handover          ProjectHandover?   @relation(fields: [handoverId], references: [id], onDelete: Cascade)
+  /// When the PDF's text was read into DocumentPage (Ask the contract); null = not yet
+  textIndexedAt     DateTime?
+  /// Pages with text found; 0 for a scanned PDF or one that could not be read
+  textPages         Int?
   createdAt         DateTime           @default(now())
+
+  pages DocumentPage[]
 
   @@index([organizationId])
   // Every record lists its files: one index per parent column (item 83).
@@ -3650,4 +3658,25 @@ model AiBrief {
 
   @@unique([organizationId, key])
   @@index([organizationId, createdAt])
+}
+
+/// One page of a PDF filed with a document revision or a letter, as text (Ask the contract, AI item 75). `search` is a
+/// generated tsvector (english) with a GIN index, made in the migration; Postgres full-text search, no vector database.
+model DocumentPage {
+  id             String                   @id @default(uuid())
+  organizationId String
+  organization   Organization             @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project                  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  attachmentId   String
+  attachment     Attachment               @relation(fields: [attachmentId], references: [id], onDelete: Cascade)
+  /// 1-based
+  page           Int
+  text           String
+  search         Unsupported("tsvector")?
+  createdAt      DateTime                 @default(now())
+
+  @@unique([attachmentId, page])
+  @@index([search], type: Gin)
+  @@index([organizationId, projectId])
 }

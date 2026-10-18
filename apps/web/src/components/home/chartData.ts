@@ -1,5 +1,5 @@
 import type { CostHeadsDto, HomeTrendsDto } from '@erp/shared';
-import { formatINRCompact, formatPct, toNumber } from '@/lib/format';
+import { formatINRCompact, formatMonthShort, formatPct, toNumber } from '@/lib/format';
 
 /**
  * The figures behind the home page's charts, in words and as rows (UX item 81, WCAG 1.1.1): each chart has a one-line
@@ -8,10 +8,7 @@ import { formatINRCompact, formatPct, toNumber } from '@/lib/format';
  */
 
 /** "2026-10" → "Oct 26" */
-export const monthLabel = (m: string) => {
-  const [y, mo] = m.split('-').map(Number);
-  return new Date(Date.UTC(y, mo - 1, 1)).toLocaleDateString('en-GB', { month: 'short', year: '2-digit', timeZone: 'UTC' });
-};
+export const monthLabel = (m: string) => formatMonthShort(m);
 
 export const COST_HEADS: [keyof Omit<CostHeadsDto, 'total'>, string][] = [
   ['material', 'Material'],
@@ -58,5 +55,8 @@ export function costHeadRows(heads: CostHeadsDto): CostHeadRow[] {
 export function costByHeadSummary(heads: CostHeadsDto): string {
   const [top] = costHeadRows(heads);
   if (!top) return 'No cost booked';
-  return `${top.head} is the largest head, ${Math.round(top.share)}% of ${formatINRCompact(heads.total)}`;
+  return `${top.head} is the largest head, ${formatPct(top.share)} of ${formatINRCompact(heads.total)}`;
 }
+
+/** Whether a series has nothing in it yet (every month nil): its chart says so in words instead of drawing zeros. */
+export const allZero = (...series: (string[] | undefined)[]) => series.every((xs) => !xs || xs.every((v) => toNumber(v) === 0));

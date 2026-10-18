@@ -29,6 +29,9 @@ export function phoneRoute(href: string): string | null {
   const [, first, second] = path.split('/');
   const params = new URLSearchParams(query);
   if (first && second && ID.test(second) && RECORDS[first]) return `${RECORDS[first]}${second}`;
+  // A page of a filed PDF (Ask the contract, AI item 75)
+  const file = params.get('file');
+  if (first === 'documents' && second === 'view' && file && ID.test(file)) return `/document-page?file=${file}&page=${Number(params.get('page')) || 1}`;
   const id = params.get('id');
   if (first === 'risks' && id && ID.test(id)) return `/risk/${id}`;
   if (first === 'safety' && params.get('tab') === 'incidents' && id && ID.test(id)) return `/incident/${id}`;

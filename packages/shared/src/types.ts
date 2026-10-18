@@ -339,6 +339,8 @@ export interface CompanyDashboard {
   projectsByType: { type: ProjectType; count: number }[];
   pendingApprovals: number;
   delayedActivities: number;
+  /** Activities whose planned finish has passed, finished or not: what `delayedActivities` is out of (UX item 85) */
+  dueActivities?: number;
   dprsToday: number;
   /** Only for roles that see bills */
   receivables?: { outstanding: string; over90: string; openBills: number };
@@ -372,6 +374,11 @@ export interface MyWorkCard {
   amount: string | null;
   /** The most urgent few */
   items: MyWorkItem[];
+  /**
+   * How pressing the card is, in days (UX item 85): how long its most pressing entry is overdue, late or past its mark
+   * (0 when it is due today, negative while it is still ahead); null when nothing waits. My work puts the highest first.
+   */
+  urgencyDays?: number | null;
 }
 
 /**
@@ -380,6 +387,8 @@ export interface MyWorkCard {
  */
 export interface MyWorkDto {
   approvals?: { type: SubmissionType; count: number }[];
+  /** Days the oldest entry waiting for the caller's approval has waited (UX item 85); null when none waits */
+  approvalsWaitingDays?: number | null;
   /** Active projects with no daily report for today */
   dprsMissing?: MyWorkCard;
   /** Early warnings not dismissed (AI item 73): finishes slipping, a cash gap, stock running out… */
@@ -428,6 +437,11 @@ export interface HomeTrendsDto {
 export interface ProjectDashboard {
   project: ProjectSummary;
   physicalProgressPct: number;
+  /**
+   * Share of the work planned to be done by today, weighted as physical progress is (UX item 85), over the activities
+   * with planned dates; null when none has dates.
+   */
+  plannedProgressPct?: number | null;
   boqTotalAmount: string;
   boqExecutedAmount: string;
   activitiesTotal: number;
@@ -2359,6 +2373,40 @@ export interface LetterRefDto {
   direction: LetterDirection;
   letterDate: string;
   subject: string;
+}
+
+/** Where a search inside the filed documents found its words (Ask the contract, AI item 75). */
+export interface DocumentSearchHitDto {
+  source: 'DOCUMENT' | 'LETTER';
+  projectId: string;
+  title: string;
+  kind: string;
+  /** 1-based; null for a letter's own subject and summary */
+  page: number | null;
+  pages: number | null;
+  date: string | null;
+  /** Opens the PDF at the page (`/documents/view?file=…&page=…`), or the letter */
+  href: string;
+  text: string;
+}
+
+export interface DocumentSearchResultDto {
+  hits: DocumentSearchHitDto[];
+  /** Files in these projects not read yet */
+  unread: number;
+}
+
+/** One page of a filed PDF, for the page an answer's citation opens. */
+export interface DocumentPageViewDto {
+  attachmentId: string;
+  fileName: string;
+  url: string;
+  page: number;
+  /** Pages with text; 0 when the file has not been read or has no text (a scan) */
+  pages: number;
+  title: string;
+  recordHref: string;
+  text: string | null;
 }
 
 export interface LetterDto {

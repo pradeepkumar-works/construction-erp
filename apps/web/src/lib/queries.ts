@@ -191,6 +191,7 @@ import type {
   WorkPermitDto,
   WorkPermitStatus,
   WorkPermitType,
+  DocumentPageViewDto,
 } from '@erp/shared';
 import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, NOTIFICATION_TYPES_VERSION, SEARCH_MIN_LENGTH } from '@erp/shared';
 import { api } from './api';
@@ -1909,6 +1910,12 @@ export function useSetMorningBrief() {
     onSuccess: (d) => qc.setQueryData(['brief-today'], d),
   });
 }
+
+// ---- Ask the contract (AI item 75) ----
+
+/** One page of a filed PDF: the page an answer's citation opens. */
+export const useDocumentPage = (file: string | null, page: number) =>
+  useQuery({ queryKey: ['document-page', file, page], queryFn: async () => (await api.get<DocumentPageViewDto>(`/documents/files/${file}/pages/${page}`)).data, enabled: !!file });
 
 // ---- Reading invoices, challans and drawings (AI item 70) ----
 

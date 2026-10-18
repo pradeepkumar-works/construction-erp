@@ -5,7 +5,7 @@ import { Grid, theme } from 'antd';
 import { Column, Line, Pie } from '@ant-design/plots';
 import type { CostHeadsDto, HomeTrendsDto } from '@erp/shared';
 import { useAppearance, useReducedMotion } from '@/lib/appearance';
-import { formatINRCompact, toNumber } from '@/lib/format';
+import { formatINRCompact, formatPct, toNumber } from '@/lib/format';
 import { COST_HEADS, monthLabel } from './chartData';
 
 /**
@@ -49,10 +49,10 @@ export function SCurveChart({ data }: { data: HomeTrendsDto['sCurve'] }) {
       yField="pct"
       colorField="series"
       scale={{ color: { domain: ['Planned', 'Actual'], range: [token.colorTextQuaternary, token.colorPrimary] }, y: { domainMin: 0 } }}
-      axis={{ ...base.axis, y: { ...base.axis.y, labelFormatter: (v: number) => `${v}%` } }}
+      axis={{ ...base.axis, y: { ...base.axis.y, labelFormatter: (v: number) => formatPct(v) } }}
       style={{ lineWidth: 2.5, lineDash: (d: { series: string }[]) => (d[0]?.series === 'Planned' ? [6, 4] : [0, 0]) }}
       point={{ shapeField: 'circle', sizeField: 2 }}
-      tooltip={{ channel: 'y', valueFormatter: (v: number) => `${v}%` }}
+      tooltip={{ channel: 'y', valueFormatter: (v: number) => formatPct(v) }}
     />
   );
 }

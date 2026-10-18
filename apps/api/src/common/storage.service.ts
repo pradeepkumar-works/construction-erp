@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { existsSync, mkdirSync, rmSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { extname, join } from 'path';
 import { randomUUID } from 'crypto';
 
@@ -59,6 +59,18 @@ export class StorageService {
     }
     const root = join(process.cwd(), process.env.UPLOAD_DIR || './uploads');
     for (const p of storagePaths.filter((x) => !x.startsWith('db:') && !/^https?:\/\//.test(x))) rmSync(join(root, p), { force: true });
+  }
+
+  /** A stored file's bytes: from the row (db), the blob store's URL, or the disk. */
+  async read(storagePath: string, data: Uint8Array | null): Promise<Buffer> {
+    if (data) return Buffer.from(data);
+    if (/^https?:\/\//.test(storagePath)) {
+      const res = await fetch(storagePath);
+      if (!res.ok) throw new Error(`file ${res.status}`);
+      return Buffer.from(await res.arrayBuffer());
+    }
+    if (storagePath.startsWith('db:')) throw new Error('file has no bytes');
+    return readFileSync(join(process.cwd(), process.env.UPLOAD_DIR || './uploads', storagePath));
   }
 
   /** Absolute URLs pass through; db-stored files are served by the API; disk files under /uploads. */

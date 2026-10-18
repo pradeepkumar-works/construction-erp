@@ -9,7 +9,7 @@ import { MSME_CATEGORY_LABELS, canEditSubmission, canPrepareSubcontractBill, can
 import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useSubcontractBill } from '@/lib/queries';
-import { formatDate, formatINR, formatQty, toNumber } from '@/lib/format';
+import { formatDate, formatINR, formatPct, formatQty, toNumber } from '@/lib/format';
 import { StatusTag } from '@/components/common/StatusTag';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { ReviewActions } from '@/components/common/ReviewActions';
@@ -197,7 +197,7 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
                     <Section style={{ width: 380 }}>
                       {[
                         ['Work in this bill', data.grossAmount],
-                        [`GST ${data.gstRate}%`, data.gstAmount],
+                        [`GST ${formatPct(data.gstRate)}`, data.gstAmount],
                       ].map(([k, v]) => (
                         <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
                           <span>{k}</span>
@@ -210,7 +210,7 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
                           <div key={d.key} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
                             <span>
                               Less {d.label}
-                              {d.pct ? ` @ ${d.pct}%` : ''}
+                              {d.pct ? ` @ ${formatPct(d.pct)}` : ''}
                               {d.key === 'other' && data.otherDeductionNote ? <span className="text-muted"> ({data.otherDeductionNote})</span> : null}
                             </span>
                             <span className="mono">({formatINR(d.amount, true)})</span>

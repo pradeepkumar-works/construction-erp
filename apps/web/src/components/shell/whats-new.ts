@@ -10,7 +10,7 @@ export interface WhatsNew {
 export const WHATS_NEW: WhatsNew[] = [
   {
     id: '2026-10-phone-lists',
-    date: '2026-10-20',
+    date: '2026-10-21',
     title: 'Lists that fit a phone',
     points: [
       'On a phone each list shows a card per entry with its name, status, amount and date. Tap a card to open it.',
@@ -18,6 +18,28 @@ export const WHATS_NEW: WhatsNew[] = [
       'On a phone Approve, Submit and the other actions of an entry stay at the bottom of the screen while you read it. Help and Ask are in your account menu.',
       'Daily reports and the other main lists fit a laptop screen without scrolling sideways. Add any column back under Columns.',
       'Payables, receivables, GST and Tally lists page, choose columns and show as cards on a phone like every other list. Their search, filters and open tab stay in the address bar, as do the tabs inside Quality, Safety, Stock and the rest, and the Approvals search.',
+    ],
+  },
+  {
+    id: '2026-10-home-five-seconds',
+    date: '2026-10-21',
+    title: 'Home and project overview at a glance',
+    points: [
+      'My work puts what waits longest first: payments overdue, deliveries late, approvals waiting longest. Cards with nothing in them fold into one line.',
+      'The approvals count shows once, in My work and the sidebar; its home tile now shows progress against plan.',
+      'Figures read against their plan: done against planned, billed against the contract, cost against the work done.',
+      'A month with nothing in it yet says so in words, such as "No bills raised in Oct yet", instead of a red 100% fall, and an empty chart says what will appear there.',
+      'A project\'s overview opens with whether it is on track or behind, and why. Removing someone from the team is in the More menu by their name, and asks first.',
+    ],
+  },
+  {
+    id: '2026-10-ask-the-contract',
+    date: '2026-10-21',
+    title: 'Ask the contract',
+    points: [
+      'Ask Nirmaan now reads the PDFs you file in Documents (contracts, specifications, method statements, reports) and your letters in and out. Ask "What is the LD cap?", "Which clause allows price variation?" or "Did we notify the client about the land delay?".',
+      'Answers quote the contract\'s own words with the document and page. The link opens the PDF at that page, with the page\'s text under it to copy.',
+      'Only the current revision is searched, and you see only the projects and letters your role can see. A quote that is not in the document is flagged for you to check.',
     ],
   },
   {
