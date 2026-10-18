@@ -14,17 +14,65 @@ interface TextItem {
   hasEOL?: boolean;
 }
 
+/** Stands in for the browser's DOMMatrix, which pdf.js needs to load but not to read text. */
+class TextOnlyMatrix {
+  a = 1;
+  b = 0;
+  c = 0;
+  d = 1;
+  e = 0;
+  f = 0;
+  constructor(init?: ArrayLike<number>) {
+    if (init?.length === 6) [this.a, this.b, this.c, this.d, this.e, this.f] = Array.from(init);
+  }
+  multiplySelf() { return this; }
+  preMultiplySelf() { return this; }
+  scaleSelf() { return this; }
+  translateSelf() { return this; }
+  invertSelf() { return this; }
+  multiply() { return this; }
+  scale() { return this; }
+  translate() { return this; }
+  inverse() { return this; }
+}
+
+type PdfJs = { getDocument(src: object): { promise: Promise<PdfDoc> } };
+type PdfDoc = { numPages: number; getPage(n: number): Promise<{ getTextContent(): Promise<{ items: unknown[] }>; cleanup(): void }>; destroy(): Promise<void> };
+let pdfjsLoad: Promise<PdfJs> | null = null;
+
 /**
- * The text of each page of a PDF, in order (an empty string for a page with no text, such as a scan). Uses pdf.js'
- * legacy build, which runs in Node; it is an ES module, loaded with require (Node 22 and later).
+ * pdf.js' legacy build, which runs in Node. It is an ES module: Node 22.12 and later require it, earlier versions
+ * import it. The worker runs in this thread; the literal requires also let the deploy's file tracing find both files.
  */
+function loadPdfJs(): Promise<PdfJs> {
+  pdfjsLoad ??= (async () => {
+    const g = globalThis as { pdfjsWorker?: unknown; DOMMatrix?: unknown };
+    // pdf.js makes a DOMMatrix when it loads and takes one from @napi-rs/canvas when Node has none, but the deploy
+    // leaves that native package out. Reading text never draws, so an identity matrix that ignores changes will do.
+    g.DOMMatrix ??= TextOnlyMatrix;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const pdfjs = require('pdfjs-dist/legacy/build/pdf.mjs') as PdfJs;
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      g.pdfjsWorker ??= require('pdfjs-dist/legacy/build/pdf.worker.mjs');
+      return pdfjs;
+    } catch (e) {
+      if ((e as { code?: string }).code !== 'ERR_REQUIRE_ESM') throw e;
+      // A real import(), which TypeScript would otherwise turn into require().
+      const load = new Function('s', 'return import(s)') as (s: string) => Promise<unknown>;
+      g.pdfjsWorker ??= await load('pdfjs-dist/legacy/build/pdf.worker.mjs');
+      return (await load('pdfjs-dist/legacy/build/pdf.mjs')) as PdfJs;
+    }
+  })().catch((e) => {
+    pdfjsLoad = null;
+    throw e;
+  });
+  return pdfjsLoad;
+}
+
+/** The text of each page of a PDF, in order (an empty string for a page with no text, such as a scan). */
 export async function readPdfPages(data: Uint8Array, maxPages = MAX_PDF_PAGES): Promise<string[]> {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const pdfjs = require('pdfjs-dist/legacy/build/pdf.mjs');
-  // The worker runs in this thread; requiring it here also lets the deploy's file tracing find it.
-  const g = globalThis as { pdfjsWorker?: unknown };
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  g.pdfjsWorker ??= require('pdfjs-dist/legacy/build/pdf.worker.mjs');
+  const pdfjs = await loadPdfJs();
   const doc = await pdfjs.getDocument({ data: new Uint8Array(data), isEvalSupported: false, useSystemFonts: false, verbosity: 0 }).promise;
   try {
     const pages: string[] = [];
