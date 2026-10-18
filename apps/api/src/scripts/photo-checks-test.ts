@@ -11,6 +11,9 @@ import { PHOTO_FLAG_MIN_CONFIDENCE, type RoleKey } from '@erp/shared';
 import { PHOTO_CASES, fakePhotoReply } from '../photo-checks/fake-photos';
 import { normalisePhotoReply, parsePhotoReply, photoContextText, shownFlags, storedFlags } from '../photo-checks/photo-rules';
 
+// The test model, whatever the environment says: these tests never call the real one.
+process.env.AI_PROVIDER = 'fake';
+
 const tests: [string, () => void | Promise<void>][] = [];
 const test = (name: string, fn: () => void | Promise<void>) => tests.push([name, fn]);
 
