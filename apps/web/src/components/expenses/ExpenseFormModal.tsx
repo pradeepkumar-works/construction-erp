@@ -174,7 +174,7 @@ export function ExpenseFormModal({ open, onClose, projectId, defaultProjectId, e
           </Form.Item>
         </FormGrid>
         <FormGrid cols={2}>
-          <Form.Item name="paymentMode" label="Paid by" rules={[{ required: true }]} {...aiFlagItem(draft, 'paymentMode', paymentMode)}>
+          <Form.Item name="paymentMode" label="Paid by" rules={[{ required: true, message: 'Choose how it was paid' }]} {...aiFlagItem(draft, 'paymentMode', paymentMode)}>
             <Select options={PAYMENT_MODES.map((m) => ({ value: m, label: PAYMENT_MODE_LABELS[m] }))} />
           </Form.Item>
           <Form.Item name="activityId" label="Activity (optional)">

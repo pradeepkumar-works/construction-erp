@@ -59,7 +59,7 @@ export function SafetyPanel({ projectId, initialTab, initialId }: { projectId?: 
         onChange={(k) => setTab(k as SafetyTab)}
         tabBarStyle={{ padding: '0 16px', marginBottom: 0 }}
         items={[
-          { key: 'incidents', label: 'Incidents & near misses', children: <IncidentList projectId={projectId} initialOpenId={initialTab === 'incidents' || !initialTab ? initialId : undefined} /> },
+          { key: 'incidents', label: 'Incidents and near misses', children: <IncidentList projectId={projectId} initialOpenId={initialTab === 'incidents' || !initialTab ? initialId : undefined} /> },
           { key: 'talks', label: 'Toolbox talks', children: <TalkList projectId={projectId} /> },
           { key: 'permits', label: `Permits to work${s && s.permitsRequested ? ` (${s.permitsRequested} waiting)` : ''}`, children: <PermitList projectId={projectId} initialOpenId={initialTab === 'permits' ? initialId : undefined} /> },
         ]}

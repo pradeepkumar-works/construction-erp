@@ -206,7 +206,7 @@ export function ListCards<T extends { id: string }>({
                   {date || amount ? (
                     <div className="list-card-foot">
                       <span>{date}</span>
-                      {amount && amount !== '-' ? <span className="mono list-card-amount">{amount}</span> : null}
+                      {amount && amount !== '-' ? <span className="mono list-card-amount" translate="no">{amount}</span> : null}
                     </div>
                   ) : null}
                 </div>
@@ -221,7 +221,7 @@ export function ListCards<T extends { id: string }>({
               {totalColumns.map((c) => (
                 <div key={c.key}>
                   <dt>{labelOf(c)}</dt>
-                  <dd className="mono">{c.total!(pageRows)}</dd>
+                  <dd className="mono" translate="no">{c.total!(pageRows)}</dd>
                 </div>
               ))}
             </dl>

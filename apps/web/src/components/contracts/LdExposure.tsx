@@ -53,7 +53,7 @@ export function LdExposureCard({ ld }: { ld: LdExposureDto }) {
   );
 }
 
-/** Liquidated damages exposure across projects (v4 item 50), on the Delays & Risks page. */
+/** Liquidated damages exposure across projects (v4 item 50), on the Delays and risks page. */
 export function LdExposureTable() {
   const { data, isLoading, error, refetch } = useLdExposure();
   const rows = data ?? [];

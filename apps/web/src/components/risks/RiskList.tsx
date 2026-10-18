@@ -29,7 +29,7 @@ type StatusFilter = RiskStatus | 'ACTIVE' | 'ALL';
 const big = { content: { fontSize: themeFontSize('fontSizeXL') } };
 const KEYS = ['kind', 'status', 'category', 'mine', 'overdue'] as const;
 
-/** Delay and risk register with totals and the heat map; the Delays & Risks page and a project tab. */
+/** Delay and risk register with totals and the heat map; the Delays and risks page and a project tab. */
 export function RiskList({ projectId: fixedProject, initialProject, initialOpenId }: { projectId?: string; initialProject?: string; initialOpenId?: string }) {
   const { user } = useAuth();
   const [openId, setOpenId] = useState<string | null>(initialOpenId ?? null);
@@ -101,7 +101,7 @@ export function RiskList({ projectId: fixedProject, initialProject, initialOpenI
 
   const newButton = mayRaise ? (
     <Button type="primary" icon={<PlusOutlined />} onClick={() => raise({ kind: 'RISK', projectId })}>
-      Raise risk
+      New risk
     </Button>
   ) : null;
 

@@ -42,7 +42,7 @@ test.describe.serial('material request: changes requested, then resubmitted', ()
     const row = page.locator('tr').filter({ hasText: mr.requestNo });
     await expect(row.getByText('Changes Requested', { exact: false })).toBeVisible();
     await row.getByRole('button', { name: 'Actions' }).click();
-    await page.getByRole('menuitem', { name: 'Edit & resubmit' }).click();
+    await page.getByRole('menuitem', { name: 'Edit and resubmit' }).click();
     const modal = formPanel(page, mr.requestNo);
     await expect(modal.getByText(reason)).toBeVisible();
     await modal.getByRole('button', { name: 'Resubmit request' }).click();

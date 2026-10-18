@@ -54,7 +54,7 @@ export function DprRecord({ id, mode, open, onClose, onEdit }: RecordProps & { m
       onClose={onClose}
       drawerSize={820}
       kind="Daily report"
-      list={{ href: '/dpr', label: 'Daily Reports' }}
+      list={{ href: '/dpr', label: 'Daily reports' }}
       loading={isLoading}
       error={error}
       onRetry={() => refetch()}

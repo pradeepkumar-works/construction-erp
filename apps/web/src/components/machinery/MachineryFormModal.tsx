@@ -119,7 +119,7 @@ export function MachineryFormModal({ open, onClose, projectId, log }: { open: bo
       onClose={onClose}
       form={form}
       layout="drawer"
-      title={log ? `${editActionLabel(log.status)} · ${log.equipmentCode}` : 'Log machinery'}
+      title={log ? `${editActionLabel(log.status)} · ${log.equipmentCode}` : 'New machinery log'}
       okText={editing ? 'Resubmit for approval' : 'Submit'}
       onSubmit={submit}
     >

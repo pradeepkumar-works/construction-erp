@@ -65,8 +65,8 @@ function billColumns({ showProject, onOpen, sortOrderFor }: { showProject: boole
     ...(showProject
       ? [{ card: 'meta' as const, cardText: (r: RaBillDto) => [r.projectName, r.clientName].filter(Boolean).join(' · '), title: 'Project', dataIndex: 'projectName', ...sort('project'), ellipsis: true, render: (v: string, r: RaBillDto) => <TwoLine top={<Link href={`/projects/${r.projectId}?tab=bills`}>{v}</Link>} sub={r.clientName ?? ''} /> }]
       : []),
-    { defaultFrom: 1600, title: 'Work value', dataIndex: 'grossAmount', width: 150, align: 'right', ...sort('grossAmount'), render: (v) => <span className="mono">{formatINR(v)}</span>, total: (rows) => sumMoney(rows.map((r) => r.grossAmount)) },
-    { card: 'amount', title: 'Net payable', dataIndex: 'netPayable', width: 150, align: 'right', ...sort('netPayable'), render: (v) => <strong className="mono">{formatINR(v)}</strong>, total: (rows) => sumMoney(rows.map((r) => r.netPayable)) },
+    { defaultFrom: 1600, title: 'Work value', dataIndex: 'grossAmount', width: 150, align: 'right', ...sort('grossAmount'), render: (v) => <span className="mono" translate="no">{formatINR(v)}</span>, total: (rows) => sumMoney(rows.map((r) => r.grossAmount)) },
+    { card: 'amount', title: 'Net payable', dataIndex: 'netPayable', width: 150, align: 'right', ...sort('netPayable'), render: (v) => <strong className="mono" translate="no">{formatINR(v)}</strong>, total: (rows) => sumMoney(rows.map((r) => r.netPayable)) },
     { title: 'Prepared on', dataIndex: 'createdAt', width: 130, defaultHidden: true, render: (v) => formatDate(v), ...sort('createdAt') },
     { card: 'status', title: 'Status', dataIndex: 'status', width: 150, ...sort('status'), render: (s) => <StatusTag status={s} /> },
     { defaultFrom: 1400, title: 'With client', dataIndex: 'stage', width: 140, ...sort('stage'), render: (s, r) => (r.status === 'APPROVED' ? <BillStageTag stage={s} /> : '-') },
@@ -74,7 +74,7 @@ function billColumns({ showProject, onOpen, sortOrderFor }: { showProject: boole
   ];
 }
 
-/** RA bills, on the RA Bills page and as a project tab. `openId` opens one bill (from a link). */
+/** RA bills, on the RA bills page and as a project tab. `openId` opens one bill (from a link). */
 export function BillList({ projectId: fixedProject, openId: initialOpen }: { projectId?: string; openId?: string | null }) {
   const { user } = useAuth();
   const [openId, setOpenId] = useState<string | null>(initialOpen ?? null);
@@ -111,7 +111,7 @@ export function BillList({ projectId: fixedProject, openId: initialOpen }: { pro
 
   const newButton = preparer ? (
     <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
-      Prepare RA bill
+      New RA bill
     </Button>
   ) : null;
 
@@ -161,7 +161,7 @@ export function BillList({ projectId: fixedProject, openId: initialOpen }: { pro
         empty={frame.empty}
         failed={!!error}
         scrollX={fixedProject ? 1000 : 1200}
-        emptyText={<EmptyArt art="entries" title={preparer ? 'No bills yet. Prepare the first one from the approved measurements.' : 'No bills yet'} />}
+        emptyText={<EmptyArt art="entries" title={preparer ? 'No RA bills yet. Bill the approved measurements with New RA bill.' : 'No bills yet'} />}
         emptyAction={newButton}
       />
       <BillDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onEdit={setEditing} />

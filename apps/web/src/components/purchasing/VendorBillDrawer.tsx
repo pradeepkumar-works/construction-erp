@@ -23,7 +23,7 @@ import { submissionLifecycle } from '@/components/record/lifecycle';
 import { themeFontSize } from '@/lib/theme';
 import { Section } from '@/components/common/Section';
 
-const money = (v: string | number) => <span className="mono">{formatINR(v, true)}</span>;
+const money = (v: string | number) => <span className="mono" translate="no">{formatINR(v, true)}</span>;
 
 export const MatchTag = ({ matched }: { matched: boolean }) => (matched ? <Tag color="green" style={{ margin: 0 }}>Matches PO</Tag> : <Tag color="red" style={{ margin: 0 }}>Exceptions</Tag>);
 
@@ -78,7 +78,7 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
       onClose={onClose}
       drawerSize={980}
       kind="Vendor bill"
-      list={{ href: '/vendor-bills', label: 'Vendor Bills' }}
+      list={{ href: '/vendor-bills', label: 'Vendor bills' }}
       loading={isLoading}
       error={error}
       onRetry={() => refetch()}
@@ -99,7 +99,7 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
               children: (
                 <span>
                   {data.vendorName}
-                  {data.vendorGstin && <span className="text-muted"> · GSTIN {data.vendorGstin}</span>}
+                  {data.vendorGstin && <span className="text-muted"> · GSTIN <span translate="no">{data.vendorGstin}</span></span>}
                   {data.vendorMsme && <Tag color={data.vendorMsme === 'MEDIUM' ? 'default' : 'orange'} style={{ marginLeft: 8 }}>{MSME_CATEGORY_LABELS[data.vendorMsme]}</Tag>}
                 </span>
               ),
@@ -149,8 +149,8 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
                           return <Typography.Text type={over ? 'danger' : undefined} className="mono">{formatQty(v)} {l.unit}</Typography.Text>;
                         },
                       },
-                      { title: 'Received', dataIndex: 'receivedQty', width: 90, align: 'right', render: (v) => <span className="mono">{formatQty(v)}</span> },
-                      { title: 'On other bills', dataIndex: 'billedElsewhere', width: 110, align: 'right', render: (v) => <span className="mono">{formatQty(v)}</span> },
+                      { title: 'Received', dataIndex: 'receivedQty', width: 90, align: 'right', render: (v) => <span className="mono" translate="no">{formatQty(v)}</span> },
+                      { title: 'On other bills', dataIndex: 'billedElsewhere', width: 110, align: 'right', render: (v) => <span className="mono" translate="no">{formatQty(v)}</span> },
                       {
                         title: 'Rate',
                         dataIndex: 'rate',
@@ -161,7 +161,7 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
                             <Typography.Text type={toNumber(v) > toNumber(l.poRate) ? 'danger' : undefined} className="mono">
                               {formatINR(v, true)}
                             </Typography.Text>
-                            {v !== l.poRate && <div className="text-muted mono" style={{ fontSize: themeFontSize('fontSizeSM') }}>PO {formatINR(l.poRate, true)}</div>}
+                            {v !== l.poRate && <div className="text-muted mono" translate="no" style={{ fontSize: themeFontSize('fontSizeSM') }}>PO {formatINR(l.poRate, true)}</div>}
                           </span>
                         ),
                       },

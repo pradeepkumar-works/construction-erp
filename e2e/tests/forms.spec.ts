@@ -9,16 +9,16 @@ import { formPanel, signIn } from './helpers';
 test('a new daily report keeps its draft through a refresh, and Start over clears it', async ({ page }) => {
   await signIn(page, 'engineer@demo.com');
   await page.goto('/dpr');
-  await page.getByRole('button', { name: /New DPR/ }).click();
-  let form = formPanel(page, 'New Daily Progress Report');
+  await page.getByRole('button', { name: /New daily report/ }).click();
+  let form = formPanel(page, 'New daily report');
   await expect(form).toBeVisible();
   const text = `Draft check ${Date.now()}`;
   await form.getByLabel('Work executed').fill(text);
   await expect(form.getByText('Draft kept on this device')).toBeVisible();
 
   await page.reload();
-  await page.getByRole('button', { name: /New DPR/ }).click();
-  form = formPanel(page, 'New Daily Progress Report');
+  await page.getByRole('button', { name: /New daily report/ }).click();
+  form = formPanel(page, 'New daily report');
   await expect(form.getByText(/^Brought back what you typed/)).toBeVisible();
   await expect(form.getByLabel('Work executed')).toHaveValue(text);
 
@@ -34,8 +34,8 @@ test('a new daily report keeps its draft through a refresh, and Start over clear
   await expect(form.getByLabel('Work executed')).toHaveValue('');
   await form.getByRole('button', { name: 'Cancel' }).click();
   await expect(form).toBeHidden();
-  await page.getByRole('button', { name: /New DPR/ }).click();
-  await expect(formPanel(page, 'New Daily Progress Report').getByText(/^Brought back what you typed/)).toHaveCount(0);
+  await page.getByRole('button', { name: /New daily report/ }).click();
+  await expect(formPanel(page, 'New daily report').getByText(/^Brought back what you typed/)).toHaveCount(0);
 });
 
 test('a failed submit lists what is missing, and Enter in the item table adds a line', async ({ page }) => {

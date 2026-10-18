@@ -12,12 +12,12 @@ import { loadXlsx } from '@/lib/exportExcel';
 type Field = 'itemNo' | 'description' | 'unit' | 'rate' | 'originalQty' | 'revisedQty';
 
 const FIELDS: { key: Field; label: string; required: boolean; aliases: string[] }[] = [
-  { key: 'itemNo', label: 'Item No.', required: true, aliases: ['itemno', 'item', 'sno', 'slno', 'sl', 'no', 'srno', 'itemcode', 'code'] },
+  { key: 'itemNo', label: 'Item no.', required: true, aliases: ['itemno', 'item', 'sno', 'slno', 'sl', 'no', 'srno', 'itemcode', 'code'] },
   { key: 'description', label: 'Description', required: true, aliases: ['description', 'desc', 'descriptionofitem', 'item description', 'particulars', 'work'] },
   { key: 'unit', label: 'Unit', required: true, aliases: ['unit', 'uom', 'units'] },
   { key: 'rate', label: 'Rate', required: true, aliases: ['rate', 'unitrate', 'rateinr', 'rate(rs)', 'price'] },
   { key: 'originalQty', label: 'Quantity', required: true, aliases: ['qty', 'quantity', 'originalqty', 'boqqty', 'contractqty'] },
-  { key: 'revisedQty', label: 'Revised Qty (optional)', required: false, aliases: ['revisedqty', 'revised', 'revisedquantity'] },
+  { key: 'revisedQty', label: 'Revised qty (optional)', required: false, aliases: ['revisedqty', 'revised', 'revisedquantity'] },
 ];
 
 const norm = (s: unknown) => String(s ?? '').toLowerCase().replace(/[^a-z0-9()]/g, '');
@@ -36,7 +36,7 @@ interface ParsedRow {
 export async function downloadBoqTemplate() {
   const XLSX = await loadXlsx();
   const ws = XLSX.utils.aoa_to_sheet([
-    ['Item No', 'Description', 'Unit', 'Rate', 'Quantity', 'Revised Qty'],
+    ['Item no.', 'Description', 'Unit', 'Rate', 'Quantity', 'Revised qty'],
     ['1.01', 'Clearing and grubbing including removal of vegetation', 'Sqm', 18.5, 85000, ''],
     ['1.02', 'Earthwork in embankment with borrowed earth', 'Cum', 245, 42000, ''],
   ]);
@@ -228,7 +228,7 @@ export function BoqImportModal({ open, onClose, projectId }: { open: boolean; on
             rowClassName={(r) => (r.error ? 'boq-row-error' : '')}
             columns={[
               { title: '#', dataIndex: 'key', width: 50, render: (k: number) => k + 2 },
-              { title: 'Item No', dataIndex: 'itemNo', width: 90 },
+              { title: 'Item no.', dataIndex: 'itemNo', width: 90 },
               { title: 'Description', dataIndex: 'description', ellipsis: true },
               { title: 'Unit', dataIndex: 'unit', width: 70 },
               { title: 'Rate', dataIndex: 'rate', width: 100, align: 'right' },

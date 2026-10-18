@@ -33,7 +33,7 @@ import { Section } from '@/components/common/Section';
 type StageAction = 'send' | 'certify';
 const ACTION_TITLES: Record<StageAction, string> = { send: 'Record as sent to the client', certify: 'Record the client’s certificate' };
 
-const money = (v: string) => <span className="mono">{formatINR(v, true)}</span>;
+const money = (v: string) => <span className="mono" translate="no">{formatINR(v, true)}</span>;
 
 function Row({ label, value, strong, muted }: { label: React.ReactNode; value: string; strong?: boolean; muted?: boolean }) {
   return (
@@ -127,7 +127,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
       onClose={onClose}
       drawerSize={1000}
       kind="RA bill"
-      list={{ href: '/bills', label: 'RA Bills' }}
+      list={{ href: '/bills', label: 'RA bills' }}
       loading={isLoading}
       error={error}
       onRetry={() => refetch()}
@@ -176,7 +176,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
               children: data.client ? (
                 <span>
                   {data.client.name}
-                  {data.client.gstin && <span className="text-muted"> · GSTIN {data.client.gstin}{data.client.stateCode ? ` (${GST_STATES[data.client.stateCode] ?? data.client.stateCode})` : ''}</span>}
+                  {data.client.gstin && <span className="text-muted"> · GSTIN <span translate="no">{data.client.gstin}</span>{data.client.stateCode ? ` (${GST_STATES[data.client.stateCode] ?? data.client.stateCode})` : ''}</span>}
                 </span>
               ) : (
                 data.clientName ?? '-'
@@ -213,20 +213,20 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
                         title: 'Item',
                         render: (_, i) => (
                           <div>
-                            <span className="mono">{i.itemNo}</span> {i.description}
+                            <span className="mono" translate="no">{i.itemNo}</span> {i.description}
                             {i.extraItem ? <Tag color="orange" style={{ marginLeft: 6 }}>Extra item</Tag> : toNumber(i.excessQty) > 0 ? <Tag color="red" style={{ marginLeft: 6 }}>Excess {formatQty(i.excessQty)} {i.unit}</Tag> : null}
                           </div>
                         ),
                       },
-                      { title: 'BOQ qty', dataIndex: 'boqQty', width: 100, align: 'right', render: (v, i) => <span className="mono">{formatQty(v)} {i.unit}</span> },
-                      { title: 'Rate', dataIndex: 'rate', width: 100, align: 'right', render: (v) => <span className="mono">{formatINR(v, true)}</span> },
-                      { title: 'Previous', dataIndex: 'prevQty', width: 90, align: 'right', render: (v) => <span className="mono">{formatQty(v)}</span> },
-                      { title: 'This bill', dataIndex: 'thisQty', width: 90, align: 'right', render: (v) => <strong className="mono">{formatQty(v)}</strong> },
+                      { title: 'BOQ qty', dataIndex: 'boqQty', width: 100, align: 'right', render: (v, i) => <span className="mono" translate="no">{formatQty(v)} {i.unit}</span> },
+                      { title: 'Rate', dataIndex: 'rate', width: 100, align: 'right', render: (v) => <span className="mono" translate="no">{formatINR(v, true)}</span> },
+                      { title: 'Previous', dataIndex: 'prevQty', width: 90, align: 'right', render: (v) => <span className="mono" translate="no">{formatQty(v)}</span> },
+                      { title: 'This bill', dataIndex: 'thisQty', width: 90, align: 'right', render: (v) => <strong className="mono" translate="no">{formatQty(v)}</strong> },
                       ...(certified
-                        ? [{ title: 'Certified', dataIndex: 'certifiedQty', width: 90, align: 'right' as const, render: (v: string | null, i: RaBillItemDto) => <span className="mono" style={v !== null && v !== i.thisQty ? { color: themeColor('colorErrorText') } : undefined}>{formatQty(v)}</span> }]
+                        ? [{ title: 'Certified', dataIndex: 'certifiedQty', width: 90, align: 'right' as const, render: (v: string | null, i: RaBillItemDto) => <span className="mono" translate="no" style={v !== null && v !== i.thisQty ? { color: themeColor('colorErrorText') } : undefined}>{formatQty(v)}</span> }]
                         : []),
-                      { title: 'Up to date', dataIndex: 'uptoQty', width: 100, align: 'right', render: (v) => <span className="mono">{formatQty(v)}</span> },
-                      { title: 'Amount', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <strong className="mono">{formatINR(v, true)}</strong> },
+                      { title: 'Up to date', dataIndex: 'uptoQty', width: 100, align: 'right', render: (v) => <span className="mono" translate="no">{formatQty(v)}</span> },
+                      { title: 'Amount', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <strong className="mono" translate="no">{formatINR(v, true)}</strong> },
                     ]}
                   />
                   <BillPriceVariation bill={data} editable={editable} />
@@ -293,9 +293,9 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
                         columns={[
                           { title: 'Date', dataIndex: 'receiptDate', width: 110, render: (v) => formatDate(v) },
                           { title: 'Mode', dataIndex: 'mode', width: 80, render: (v: ReceiptDto['mode']) => RECEIPT_MODE_LABELS[v] },
-                          { title: 'Reference', dataIndex: 'reference', render: (v) => (v ? <span className="mono">{v}</span> : '-') },
-                          { title: 'Received', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <strong className="mono">{formatINR(v, true)}</strong> },
-                          { title: 'Deducted', dataIndex: 'deductedAmount', width: 130, align: 'right', render: (v) => <span className="mono">{formatINR(v, true)}</span> },
+                          { title: 'Reference', dataIndex: 'reference', render: (v) => (v ? <span className="mono" translate="no">{v}</span> : '-') },
+                          { title: 'Received', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <strong className="mono" translate="no">{formatINR(v, true)}</strong> },
+                          { title: 'Deducted', dataIndex: 'deductedAmount', width: 130, align: 'right', render: (v) => <span className="mono" translate="no">{formatINR(v, true)}</span> },
                           { title: 'By', dataIndex: 'createdByName', width: 140 },
                           ...(accounts
                             ? [{ title: '', key: 'edit', width: 70, render: (_: unknown, r: ReceiptDto) => (r.exportedToTally ? <InTallyTag /> : <Button size="small" type="link" onClick={() => setCorrecting(r)}>Edit</Button>) }]
@@ -321,7 +321,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
                     { title: 'Date', dataIndex: 'date', width: 110, render: (v) => formatDate(v) },
                     { title: 'Item', dataIndex: 'boqItemNo', width: 80, className: 'mono' },
                     { title: 'Location', dataIndex: 'location' },
-                    { title: 'Quantity', dataIndex: 'totalQty', width: 130, align: 'right', render: (v, m) => <span className="mono">{formatQty(v)} {m.unit}</span> },
+                    { title: 'Quantity', dataIndex: 'totalQty', width: 130, align: 'right', render: (v, m) => <span className="mono" translate="no">{formatQty(v)} {m.unit}</span> },
                   ]}
                 />
               ),
@@ -393,13 +393,13 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
                 dataSource={data.items.filter((i) => toNumber(i.thisQty) > 0)}
                 onRow={(i) => ({ 'data-line-label': `Certified quantity of ${i.itemNo}` }) as React.HTMLAttributes<HTMLElement>}
                 columns={[
-                  { title: 'Item', render: (_, i) => <span><span className="mono">{i.itemNo}</span> {i.description}</span> },
-                  { title: 'Claimed', dataIndex: 'thisQty', width: 120, align: 'right', render: (v, i) => <span className="mono">{formatQty(v)} {i.unit}</span> },
+                  { title: 'Item', render: (_, i) => <span><span className="mono" translate="no">{i.itemNo}</span> {i.description}</span> },
+                  { title: 'Claimed', dataIndex: 'thisQty', width: 120, align: 'right', render: (v, i) => <span className="mono" translate="no">{formatQty(v)} {i.unit}</span> },
                   {
                     title: 'Certified',
                     width: 150,
                     render: (_, i) => (
-                      <Form.Item name={['qty', i.boqItemId]} noStyle rules={[{ required: true }]}>
+                      <Form.Item name={['qty', i.boqItemId]} noStyle rules={[{ required: true, message: 'Enter the quantity passed' }]}>
                         <QuantityInput unit={i.unit} max={toNumber(i.thisQty)} aria-label={`Certified quantity of ${i.itemNo}`} />
                       </Form.Item>
                     ),

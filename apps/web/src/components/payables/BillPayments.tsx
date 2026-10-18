@@ -77,15 +77,15 @@ export function BillPayments({ target, approved, heading = true }: { target: Pay
         locale={{ emptyText: 'Nothing paid yet' }}
         columns={[
           { title: 'Date', dataIndex: 'paymentDate', width: 110, render: (v) => formatDate(v) },
-          { title: 'Paid', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <strong className="mono">{formatINR(v, true)}</strong> },
-          { title: 'Deducted', key: 'ded', width: 120, align: 'right', render: (_, p) => <span className="mono">{formatINR(toNumber(p.tdsAmount) + toNumber(p.otherDeduction), true)}</span> },
+          { title: 'Paid', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <strong className="mono" translate="no">{formatINR(v, true)}</strong> },
+          { title: 'Deducted', key: 'ded', width: 120, align: 'right', render: (_, p) => <span className="mono" translate="no">{formatINR(toNumber(p.tdsAmount) + toNumber(p.otherDeduction), true)}</span> },
           {
             title: 'Mode / reference',
             key: 'ref',
             render: (_, p) => (
               <span>
                 {RECEIPT_MODE_LABELS[p.mode]}
-                {p.reference ? <span className="mono text-muted"> · {p.reference}</span> : null}
+                {p.reference ? <span className="mono text-muted" translate="no"> · {p.reference}</span> : null}
               </span>
             ),
           },

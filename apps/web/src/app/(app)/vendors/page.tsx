@@ -99,7 +99,7 @@ function VendorsTab({ editable, onEdit, emptyAction }: { editable: boolean; onEd
         width: 190,
         render: (_, v) => (
           <div>
-            <div className="mono">{v.gstin ?? '-'}</div>
+            <div className="mono" translate="no">{v.gstin ?? '-'}</div>
             <Sub>{[v.pan, v.stateCode ? GST_STATES[v.stateCode] : null].filter(Boolean).join(' · ')}</Sub>
           </div>
         ),
@@ -139,7 +139,7 @@ function VendorsTab({ editable, onEdit, emptyAction }: { editable: boolean; onEd
               render: (_: unknown, v: VendorDto) =>
                 v.bankAccountNo ? (
                   <div>
-                    <div className="mono">{v.bankAccountNo}</div>
+                    <div className="mono" translate="no">{v.bankAccountNo}</div>
                     <Sub>{[v.bankIfsc, v.bankName].filter(Boolean).join(' · ')}</Sub>
                   </div>
                 ) : (
@@ -238,7 +238,7 @@ function UnlistedTab({ editable, onAdd }: { editable: boolean; onAdd: (u: Unlist
         locale={{ emptyText: 'Every vendor name in use is in the master' }}
         columns={[
           { title: 'Name as typed', dataIndex: 'name', render: (v: string) => <Typography.Text strong>{v}</Typography.Text> },
-          { title: 'GSTIN typed with it', dataIndex: 'gstin', width: 190, render: (v: string | null) => (v ? <span className="mono">{v}</span> : '-') },
+          { title: 'GSTIN typed with it', dataIndex: 'gstin', width: 190, render: (v: string | null) => (v ? <span className="mono" translate="no">{v}</span> : '-') },
           { title: 'Used on', key: 'used', width: 220, render: (_, u) => usedOn(u) },
           ...(editable
             ? [

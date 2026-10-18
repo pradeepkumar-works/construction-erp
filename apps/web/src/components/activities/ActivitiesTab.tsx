@@ -149,7 +149,7 @@ export function ActivitiesTab({ projectId, members, project }: { projectId: stri
               setFormOpen(true);
             }}
           >
-            Add activity
+            New activity
           </Button>
         )}
         </Space>

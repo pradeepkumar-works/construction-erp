@@ -129,7 +129,7 @@ export function WorkerList({ projectId: fixedProject }: { projectId?: string }) 
 
   const newButton = editor ? (
     <Button type="primary" icon={<PlusOutlined />} onClick={() => setForm({ worker: null })}>
-      Add worker
+      New worker
     </Button>
   ) : null;
 

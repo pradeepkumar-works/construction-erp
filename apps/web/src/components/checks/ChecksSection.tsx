@@ -90,7 +90,7 @@ export function ChecksSection({ kind, id, version }: { kind: CheckKind; id: stri
         <Typography.Paragraph>{accepting?.title}</Typography.Paragraph>
         {/* A fresh note for each flag. */}
         <Form form={form} layout="vertical" preserve={false} key={accepting?.key ?? 'none'}>
-          <Form.Item name="note" label="Why it is all right" rules={[{ required: true, message: 'Required' }, { min: 3, message: 'A few words at least' }]}>
+          <Form.Item name="note" label="Why it is all right" rules={[{ required: true, message: 'Say why it is all right' }, { min: 3, message: 'A few words at least' }]}>
             <Input.TextArea rows={3} maxLength={500} showCount placeholder="Rate revised by the PM on site; letter on file" />
           </Form.Item>
         </Form>

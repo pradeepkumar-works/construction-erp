@@ -81,7 +81,7 @@ export function ExpenseList({ projectId: fixedProject }: { projectId?: string })
 
   const newButton = mayFile ? (
     <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
-      New expense
+      New site expense
     </Button>
   ) : null;
 

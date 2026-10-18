@@ -45,7 +45,7 @@ export function machineryColumns({
       render: (_, r) => (
         <div>
           <RecordLink href={`/machinery/${r.id}`} onOpen={() => onOpen(r.id)}>
-            <span className="mono">{r.equipmentCode}</span> {r.equipmentName}
+            <span className="mono" translate="no">{r.equipmentCode}</span> {r.equipmentName}
           </RecordLink>
           <Sub>{[r.operatorName, r.activityName ?? r.workDone].filter(Boolean).join(' · ') || ' '}</Sub>
         </div>

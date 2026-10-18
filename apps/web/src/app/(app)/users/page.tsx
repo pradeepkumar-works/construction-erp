@@ -152,7 +152,7 @@ export default function UsersPage() {
         setFormOpen(true);
       }}
     >
-      Add user
+      New user
     </Button>
   );
 
@@ -170,7 +170,7 @@ export default function UsersPage() {
           closable
           style={{ marginBottom: 16 }}
           title={`${user?.organizationName ?? 'Your organisation'} is ready.`}
-          description="Add your team with Add user: each person gets an invite link to choose a password. Then create your first project; it starts with the standard activities for its type."
+          description="Add your team with New user: each person gets an invite link to choose a password. Then create your first project; it starts with the standard activities for its type."
         />
       )}
       {error && <QueryError error={error} onRetry={() => refetch()} />}

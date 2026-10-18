@@ -73,7 +73,7 @@ function workOrderColumns({ showProject, onOpen, onEdit, sortOrderFor }: { showP
       width: 150,
       align: 'right',
       ...sort('value'),
-      render: (v) => <strong className="mono">{formatINR(v)}</strong>,
+      render: (v) => <strong className="mono" translate="no">{formatINR(v)}</strong>,
       total: (rows) => formatINR(rows.reduce((n, r) => n + toNumber(r.value), 0)),
     },
     { defaultFrom: 1400, title: 'Billed', key: 'billed', width: 130, render: (_, r) => (r.status === 'APPROVED' ? <Progress percent={r.billedPct} size="small" style={{ margin: 0 }} aria-label={`${r.billedPct}% billed`} /> : '-') },
@@ -96,7 +96,7 @@ function workOrderColumns({ showProject, onOpen, onEdit, sortOrderFor }: { showP
   ];
 }
 
-/** Work orders, on the Work Orders page and as a project tab. `openId` opens one order (from a link). */
+/** Work orders, on the Work orders page and as a project tab. `openId` opens one order (from a link). */
 export function WorkOrderList({ projectId: fixedProject, openId: initialOpen }: { projectId?: string; openId?: string | null }) {
   const { user } = useAuth();
   const [openId, setOpenId] = useState<string | null>(initialOpen ?? null);

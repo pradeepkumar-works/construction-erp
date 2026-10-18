@@ -102,7 +102,7 @@ test('a stock count posts the differences as one adjustment, and stock value sho
   expect(same.entry).toBeNull();
   await api(pm, '/stock/counts', { method: 'POST', body: { projectId: road.id, date: localToday(), lines: [{ itemId: first.itemId, countedQty: first.balance }] } });
 
-  await page.getByRole('tab', { name: 'Value & ageing' }).click();
+  await page.getByRole('tab', { name: 'Value and ageing' }).click();
   await expect(page.locator('.stock-valuation').getByText('Stock value')).toBeVisible();
   const value = await api<{ totalValue: string; ageingValue: string[] }>(pm, `/stock/valuation?projectId=${road.id}`);
   expect(value.ageingValue.reduce((s, v) => s + Number(v), 0)).toBeCloseTo(Number(value.totalValue), 0);

@@ -46,7 +46,7 @@ test('"new DPR for" a project starts the report there', async ({ page }) => {
   await expect(page.getByRole('option').first()).toContainText(`New daily report (DPR) for ${project.name}`);
   await search.press('Enter');
   await expect(page).toHaveURL(/\/dpr$/);
-  const form = page.getByRole('dialog', { name: 'New Daily Progress Report' });
+  const form = page.getByRole('dialog', { name: 'New daily report' });
   await expect(form).toBeVisible();
   await expect(form).toContainText(project.name);
 });

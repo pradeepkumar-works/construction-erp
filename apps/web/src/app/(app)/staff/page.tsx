@@ -41,14 +41,14 @@ function StaffPage() {
 
   return (
     <div className="page-container">
-      <PageHeader title="Staff & leave" subtitle="Check in, apply for leave and see your balance. Site in-charges mark the staff register; HR keeps staff records and holidays." />
+      <PageHeader title="Staff and leave" subtitle="Check in, apply for leave and see your balance. Site in-charges mark the staff register; HR keeps staff records and holidays." />
       <Card size="small">
         <Tabs
           activeKey={tab}
           onChange={(k) => router.replace(`${pathname}?tab=${k}`, { scroll: false })}
           tabBarStyle={{ padding: '0 12px', marginBottom: 0 }}
           items={[
-            { key: 'me', label: 'My attendance & leave', children: <MyStaff /> },
+            { key: 'me', label: 'My attendance and leave', children: <MyStaff /> },
             ...(deciding
               ? [
                   {

@@ -29,7 +29,7 @@ export type ImprestAction =
   | { kind: 'float'; imprest: ImprestDto };
 
 const TITLES: Record<ImprestAction['kind'], string> = {
-  open: 'Open an imprest',
+  open: 'New imprest',
   topup: 'Ask for a top-up',
   pay: 'Pay the top-up',
   reject: 'Turn down the top-up',
@@ -38,7 +38,7 @@ const TITLES: Record<ImprestAction['kind'], string> = {
   float: 'Change the float',
 };
 
-const OK: Record<ImprestAction['kind'], string> = { open: 'Open imprest', topup: 'Ask for top-up', pay: 'Pay', reject: 'Turn down', advance: 'Advance cash', return: 'Record return', float: 'Save' };
+const OK: Record<ImprestAction['kind'], string> = { open: 'Save', topup: 'Ask for top-up', pay: 'Pay', reject: 'Turn down', advance: 'Advance cash', return: 'Record return', float: 'Save' };
 
 interface Values {
   projectId?: string;

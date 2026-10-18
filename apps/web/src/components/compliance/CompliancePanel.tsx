@@ -201,7 +201,7 @@ export function CompliancePanel({ initialId }: { initialId?: string }) {
         <span style={{ flex: 1 }} />
         {keeper ? (
           <Button type="primary" icon={<PlusOutlined />} onClick={() => setAction({ kind: 'new' })}>
-            Add entry
+            New guarantee or licence
           </Button>
         ) : null}
       </div>
@@ -218,7 +218,7 @@ export function CompliancePanel({ initialId }: { initialId?: string }) {
           pagination={false}
           scroll={{ x: 900 }}
           onRow={(r) => ({ onClick: () => setOpenId(r.id), style: { cursor: 'pointer' } })}
-          locale={{ emptyText: status === 'ACTIVE' && !state && !q && kind === 'ALL' && !projectId ? 'Nothing in the register yet. Add your bank guarantees, EMDs, insurance policies and licences.' : 'Nothing matches' }}
+          locale={{ emptyText: status === 'ACTIVE' && !state && !q && kind === 'ALL' && !projectId ? 'Nothing in the register yet. Add your bank guarantees, EMDs, insurance policies and licences with New guarantee or licence.' : 'Nothing matches' }}
         />
       )}
 

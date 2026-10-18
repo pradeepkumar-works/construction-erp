@@ -82,7 +82,7 @@ export function BillFormModal({ open, onClose, projectId, defaultProjectId, bill
       open={open}
       onClose={onClose}
       form={form}
-      title={bill ? `${bill.status === 'DRAFT' ? 'Edit' : editActionLabel(bill.status)} · ${bill.billLabel}` : 'Prepare RA bill'}
+      title={bill ? `${bill.status === 'DRAFT' ? 'Edit' : editActionLabel(bill.status)} · ${bill.billLabel}` : 'New RA bill'}
       okText={bill && bill.status !== 'DRAFT' ? 'Resubmit for approval' : 'Submit for approval'}
       secondaryText={editing ? 'Save' : 'Save as draft'}
       onSubmit={(v, draft) => mutation.mutateAsync({ v, submit: !draft })}

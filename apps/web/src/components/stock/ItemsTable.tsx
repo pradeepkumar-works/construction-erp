@@ -9,7 +9,7 @@ import { LIST_SORT_FIELDS, canManageStore } from '@erp/shared';
 import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useStockItems } from '@/lib/queries';
-import { formatDate, formatINR } from '@/lib/format';
+import { formatDate, formatINR, RUPEE } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { SearchBox } from '@/components/common/SearchBox';
 import { UnitInput } from '@/components/common/UnitInput';
@@ -87,7 +87,7 @@ export function ItemsTable() {
           width: 130,
           align: 'right',
           className: 'mono',
-          render: (v: string | null, r) => (v === null ? <Typography.Text type="secondary">-</Typography.Text> : `${formatINR(v, true).replace('₹ ', '')} / ${r.unit}`),
+          render: (v: string | null, r) => (v === null ? <Typography.Text type="secondary">-</Typography.Text> : `${formatINR(v, true).replace(RUPEE, '')} / ${r.unit}`),
         },
         { key: 'projectCount', title: 'Projects with stock', dataIndex: 'projectCount', width: 160, align: 'center' },
         { title: 'Added', dataIndex: 'createdAt', width: 130, ...sort('createdAt'), render: (v) => formatDate(v) },
@@ -119,7 +119,7 @@ export function ItemsTable() {
 
   const newButton = mayManage ? (
     <Button icon={<PlusOutlined />} onClick={() => open('new')} style={{ marginLeft: 'auto' }}>
-      Add item
+      New item
     </Button>
   ) : null;
 
@@ -153,7 +153,7 @@ export function ItemsTable() {
         emptyText={<EmptyArt art="entries" title={page.params.q ? 'No item matches this search' : 'No items yet. GRNs add them from the request lines.'} />}
         emptyAction={newButton}
       />
-      <FormShell open={!!editing} onClose={() => setEditing(null)} form={form} layout="modal" width={520} title={editing === 'new' ? 'Add item' : 'Edit item'} okText={editing === 'new' ? 'Add item' : 'Save'} onSubmit={(v) => save.mutateAsync(v)}>
+      <FormShell open={!!editing} onClose={() => setEditing(null)} form={form} layout="modal" width={520} title={editing === 'new' ? 'New item' : 'Edit item'} okText="Save" onSubmit={(v) => save.mutateAsync(v)}>
         <Form form={form} layout="vertical">
           <Form.Item name="name" label="Name" rules={[{ required: true, whitespace: true, message: 'Enter the item name' }]}>
             <Input maxLength={200} />

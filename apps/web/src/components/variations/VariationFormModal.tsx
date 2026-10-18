@@ -190,11 +190,11 @@ export function VariationFormModal({ open, onClose, projectId, variation, onSave
                           </Form.Item>
                         ) : (
                           <Form.Item label="BOQ rate">
-                            <span className="mono">{b ? formatINR(b.rate) : '-'}</span>
+                            <span className="mono" translate="no">{b ? formatINR(b.rate) : '-'}</span>
                           </Form.Item>
                         )}
                         <Form.Item label="Amount">
-                          <span className="mono">{formatINR(amount)}</span>
+                          <span className="mono" translate="no">{formatINR(amount)}</span>
                         </Form.Item>
                       </FormGrid>
                     </div>
@@ -206,7 +206,7 @@ export function VariationFormModal({ open, onClose, projectId, variation, onSave
                     Add item
                   </Button>
                   <Typography.Text strong>
-                    Claimed <span className="mono">{formatINR(total)}</span>
+                    Claimed <span className="mono" translate="no">{formatINR(total)}</span>
                   </Typography.Text>
                 </div>
               </>

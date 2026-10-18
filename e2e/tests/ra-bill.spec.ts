@@ -30,8 +30,8 @@ test('prepare, approve, send and certify an RA bill', async ({ page }) => {
 
   await signIn(page, 'qs@demo.com');
   await page.goto('/bills');
-  await page.getByRole('button', { name: 'Prepare RA bill' }).click();
-  const modal = page.locator('.ant-modal').filter({ hasText: 'Prepare RA bill' });
+  await page.getByRole('button', { name: 'New RA bill' }).click();
+  const modal = page.locator('.ant-modal').filter({ hasText: 'New RA bill' });
   await modal.getByLabel('Project').click();
   await modal.getByLabel('Project').fill('RD-2026-01');
   await page.locator('.ant-select-dropdown:not(.ant-select-dropdown-hidden) .ant-select-item-option-active').filter({ visible: true }).last().waitFor();
@@ -74,5 +74,5 @@ test('a site engineer has no RA bills', async ({ page }) => {
   await page.getByText('RD-2026-01').first().click();
   await openProjectTab(page, 'Money');
   await expect(projectTabs(page, 'Money').getByText('Expenses', { exact: true })).toBeVisible();
-  await expect(projectTabs(page, 'Money').getByText('RA Bills', { exact: true })).toHaveCount(0);
+  await expect(projectTabs(page, 'Money').getByText('RA bills', { exact: true })).toHaveCount(0);
 });

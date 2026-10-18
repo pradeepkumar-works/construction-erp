@@ -26,8 +26,8 @@ test('accounts add a bank guarantee, see it expiring and renew it', async ({ pag
 
   await signIn(page, email);
   await page.goto('/compliance');
-  await page.getByRole('button', { name: 'Add entry' }).click();
-  const form = page.locator('.ant-drawer-open').filter({ hasText: 'Add to the register' });
+  await page.getByRole('button', { name: 'New guarantee or licence' }).click();
+  const form = page.locator('.ant-drawer-open').filter({ hasText: 'New guarantee or licence' });
   await form.getByLabel('Number').fill('BG/E2E/1');
   await form.getByLabel('Bank').fill('State Bank of India');
   await chooseOption(form.getByLabel('Project'), 'BG-01');
@@ -36,7 +36,7 @@ test('accounts add a bank guarantee, see it expiring and renew it', async ({ pag
   await form.getByLabel('Margin money').fill('125000');
   await form.getByLabel('Valid to').fill(typed(shift(today, 10)));
   await form.getByLabel('Valid to').press('Enter');
-  await form.getByRole('button', { name: 'Add', exact: true }).click();
+  await form.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(page.locator('.ant-message').getByText('Bank guarantee BG/E2E/1 added')).toBeVisible();
 
   const drawer = page.locator('.compliance-drawer');

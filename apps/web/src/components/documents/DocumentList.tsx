@@ -80,7 +80,7 @@ export function DocumentList({ projectId: fixedProject, onOpen }: { projectId?: 
 
   const newButton = user && canManageDocuments(user.roleKey) ? (
     <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
-      Add document
+      New document
     </Button>
   ) : null;
 

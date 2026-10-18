@@ -100,7 +100,7 @@ export function TestFormModal({ open, onClose, projectId, test }: { open: boolea
 
   const plan = kind && !editing ? TEST_KIND_DEFAULTS[kind].readings : [];
   return (
-    <FormShell open={open} onClose={onClose} form={form} layout="drawer" title={test ? `Update ${test.testNo}` : 'Record a test'} okText={editing ? 'Save' : 'Record test'} onSubmit={(v) => mutation.mutateAsync(v)}>
+    <FormShell open={open} onClose={onClose} form={form} layout="drawer" title={test ? `Update ${test.testNo}` : 'Record test'} okText={editing ? 'Save' : 'Record test'} onSubmit={(v) => mutation.mutateAsync(v)}>
       <Form form={form} layout="vertical">
         <FormSection title="Sample">
           <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!fixedProject}>

@@ -159,8 +159,8 @@ export function RiskFormModal({ open, onClose, projectId, defaultProjectId, risk
       open={open}
       onClose={onClose}
       form={form}
-      title={risk ? `Update ${risk.riskNo}` : isDelay ? 'Record a delay' : 'Raise a risk'}
-      okText={editing ? 'Save' : isDelay ? 'Record delay' : 'Raise risk'}
+      title={risk ? `Update ${risk.riskNo}` : isDelay ? 'Record delay' : 'New risk'}
+      okText={editing ? 'Save' : isDelay ? 'Record delay' : 'Save risk'}
       onSubmit={(v) => mutation.mutateAsync(v)}
       layout="drawer"
       width={720}
@@ -232,10 +232,10 @@ export function RiskFormModal({ open, onClose, projectId, defaultProjectId, risk
           </>
         ) : null}
         <FormGrid cols={3}>
-          <Form.Item name="probability" label="Probability" rules={[{ required: true }]}>
+          <Form.Item name="probability" label="Probability" rules={[{ required: true, message: 'Choose the probability' }]}>
             <Select options={RATING_OPTIONS} />
           </Form.Item>
-          <Form.Item name="impact" label="Impact on time / cost" rules={[{ required: true }]}>
+          <Form.Item name="impact" label="Impact on time / cost" rules={[{ required: true, message: 'Choose the impact' }]}>
             <Select options={RATING_OPTIONS} />
           </Form.Item>
           <Form.Item label="Score">

@@ -10,7 +10,7 @@ function SubcontractBillsPage() {
   const search = useSearchParams();
   return (
     <div className="page-container">
-      <PageHeader title="Subcontractor Bills" subtitle="Running bills on work orders: work as measured, less retention, advance, TDS and material issued to them." />
+      <PageHeader title="Subcontractor bills" subtitle="Running bills on work orders: work as measured, less retention, advance, TDS and material issued to them." />
       <Card size="small">
         <SubBillList openId={search.get('id')} />
       </Card>

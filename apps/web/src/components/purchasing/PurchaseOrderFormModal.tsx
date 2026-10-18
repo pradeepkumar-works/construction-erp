@@ -167,13 +167,13 @@ export function PurchaseOrderFormModal({
   const summary = (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '4px 12px' }}>
       <span>Items</span>
-      <span className="mono">{formatINR(totals.subtotal, true)}</span>
+      <span className="mono" translate="no">{formatINR(totals.subtotal, true)}</span>
       <span>GST</span>
-      <span className="mono">{formatINR(totals.gst, true)}</span>
+      <span className="mono" translate="no">{formatINR(totals.gst, true)}</span>
       <span>Freight</span>
-      <span className="mono">{formatINR(toNumber(freight), true)}</span>
+      <span className="mono" translate="no">{formatINR(toNumber(freight), true)}</span>
       <strong>Order total</strong>
-      <strong className="mono">{formatINR(totals.total, true)}</strong>
+      <strong className="mono" translate="no">{formatINR(totals.total, true)}</strong>
     </div>
   );
 
@@ -290,7 +290,7 @@ export function PurchaseOrderFormModal({
                   </Form.Item>
                 ),
               },
-              { title: 'Amount', key: 'amount', width: 130, align: 'right', render: (f) => <span className="mono">{formatINR(lineAmount(lines?.[f.name]), true)}</span> },
+              { title: 'Amount', key: 'amount', width: 130, align: 'right', render: (f) => <span className="mono" translate="no">{formatINR(lineAmount(lines?.[f.name]), true)}</span> },
             ]}
             footer={() => (
               <Table.Summary.Row>
@@ -298,7 +298,7 @@ export function PurchaseOrderFormModal({
                   <Typography.Text type="secondary">Items before GST</Typography.Text>
                 </Table.Summary.Cell>
                 <Table.Summary.Cell index={1} align="right">
-                  <span className="mono">{formatINR(totals.subtotal, true)}</span>
+                  <span className="mono" translate="no">{formatINR(totals.subtotal, true)}</span>
                 </Table.Summary.Cell>
                 <Table.Summary.Cell index={2} />
               </Table.Summary.Row>

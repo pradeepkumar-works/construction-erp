@@ -241,7 +241,9 @@ export default function AskPanel({
   const title = (
     <Flex align="center" gap={token.marginXS}>
       <SparkleIcon style={{ color: token.colorPrimary }} />
-      <span>Ask {PRODUCT_NAME}</span>
+      <span>
+        Ask <span translate="no">{PRODUCT_NAME}</span>
+      </span>
     </Flex>
   );
 
@@ -398,7 +400,7 @@ export default function AskPanel({
         <Flex align="center" justify="space-between" gap={token.marginXS} style={{ padding: `${token.paddingSM}px ${token.padding}px`, borderBottom: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}` }}>
           <Typography.Title level={2} style={{ fontSize: token.fontSizeLG, margin: 0, display: 'flex', alignItems: 'center', gap: token.marginXS }}>
             <SparkleIcon style={{ color: token.colorPrimary }} />
-            Ask {PRODUCT_NAME}
+            Ask <span translate="no">{PRODUCT_NAME}</span>
           </Typography.Title>
           <Flex gap={token.marginXXS}>
             {extra}

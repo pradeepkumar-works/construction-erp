@@ -29,7 +29,7 @@ test('staff view a company read-only once its admin allows it, and suspend it', 
   await expect(drawer.getByText('Not allowed')).toBeVisible();
   await expect(drawer.getByRole('button', { name: 'Open read-only' })).toBeDisabled();
 
-  // The company's admin allows support from Data & Privacy.
+  // The company's admin allows support from Data and privacy.
   const owner = await (await browser.newContext()).newPage();
   await signIn(owner, email);
   await owner.goto('/company-data');

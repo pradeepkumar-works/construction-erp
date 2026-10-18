@@ -53,7 +53,7 @@ export function MilestoneFormModal({ open, onClose, projectId, milestone, achiev
       onClose={onClose}
       form={form}
       layout="modal"
-      title={achieving ? 'Mark milestone achieved' : isEdit ? 'Edit milestone' : 'Add a milestone'}
+      title={achieving ? 'Mark milestone achieved' : isEdit ? 'Edit milestone' : 'New milestone'}
       okText={achieving ? 'Mark achieved' : 'Save'}
       onSubmit={(v) => save.mutateAsync(v)}
     >

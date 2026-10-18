@@ -16,7 +16,7 @@ export default function Page() {
   return (
     <div className="page-container">
       <PageHeader
-        title="Activity Templates"
+        title="Activity templates"
         subtitle={`Standard activities for each project type, added when a project is created (or later from its Activities tab).${editable ? '' : ' Admin and management can change them.'}`}
       />
       {error && <QueryError error={error} onRetry={() => refetch()} />}

@@ -31,7 +31,7 @@ export function AttendancePanel({ projectId }: { projectId?: string }) {
         { key: 'headcount', label: 'Head count', children: <AttendanceList projectId={projectId} /> },
         { key: 'rollcall', label: 'Roll call', children: <RollCallPanel projectId={projectId} /> },
         { key: 'workers', label: 'Workers', children: <WorkerList projectId={projectId} /> },
-        { key: 'muster', label: 'Muster & output', children: <MusterPanel projectId={projectId} /> },
+        { key: 'muster', label: 'Muster and output', children: <MusterPanel projectId={projectId} /> },
       ]}
     />
   );

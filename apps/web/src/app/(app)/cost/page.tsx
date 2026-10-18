@@ -13,7 +13,7 @@ export default function Page() {
   if (user && !canViewCost(user.roleKey)) return <Result status="403" title="Project cost is for approvers and accounts" />;
   return (
     <div className="page-container">
-      <PageHeader title="Project Cost" subtitle="Cost against the value of work executed, and the cash expected in and out over the coming months." />
+      <PageHeader title="Project cost" subtitle="Cost against the value of work executed, and the cash expected in and out over the coming months." />
       <Card size="small">
         <Tabs
           style={{ padding: '0 12px' }}

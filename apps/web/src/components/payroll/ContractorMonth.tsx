@@ -65,7 +65,7 @@ export function ContractorMonth({ month, projectId }: { month: string; projectId
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       <div style={{ padding: 12, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
         <Typography.Text type="secondary">
-          From the attendance register, at the daily rates under Project Cost.{unpriced ? ` ${unpriced} line${unpriced === 1 ? ' has' : 's have'} no rate.` : ''}
+          From the attendance register, at the daily rates under Project cost.{unpriced ? ` ${unpriced} line${unpriced === 1 ? ' has' : 's have'} no rate.` : ''}
         </Typography.Text>
         <div style={{ flex: 1 }} />
         <Button icon={<DownloadOutlined />} disabled={!rows.length} onClick={() => downloadXlsx(`labour-contractors-${month}`, `Contractors ${month}`, exportColumns, rows)}>

@@ -57,8 +57,8 @@ export function BillPriceVariation({ bill, editable }: { bill: RaBillDto; editab
           columns={[
             { title: 'Component', dataIndex: 'name' },
             { title: 'Share', dataIndex: 'sharePct', align: 'right', render: (v: string) => `${v}%` },
-            { title: 'Base index', dataIndex: 'baseIndex', align: 'right', render: (v: string) => <span className="mono">{v}</span> },
-            { title: 'This bill', dataIndex: 'currentIndex', align: 'right', render: (v: string) => <span className="mono">{v}</span> },
+            { title: 'Base index', dataIndex: 'baseIndex', align: 'right', render: (v: string) => <span className="mono" translate="no">{v}</span> },
+            { title: 'This bill', dataIndex: 'currentIndex', align: 'right', render: (v: string) => <span className="mono" translate="no">{v}</span> },
             {
               title: 'Amount',
               dataIndex: 'amount',

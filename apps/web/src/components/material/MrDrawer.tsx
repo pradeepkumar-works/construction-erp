@@ -41,7 +41,7 @@ export function MrRecord({ id, mode, open, onClose, onEdit }: RecordProps & { mo
       onClose={onClose}
       drawerSize={purchasing ? 960 : 680}
       kind="Material request"
-      list={{ href: '/material-requests', label: 'Material Requests' }}
+      list={{ href: '/material-requests', label: 'Material requests' }}
       loading={isLoading}
       error={error}
       onRetry={() => refetch()}

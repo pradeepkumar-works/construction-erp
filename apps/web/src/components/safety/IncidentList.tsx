@@ -79,7 +79,7 @@ export function IncidentList({ projectId: fixedProject, initialOpenId }: { proje
         render: (v, r) => (
           <div>
             <RecordLink onOpen={() => setOpenId(r.id)}>{r.location}</RecordLink>
-            <Sub>{v.length > 140 ? `${v.slice(0, 137)}...` : v}</Sub>
+            <Sub>{v.length > 140 ? `${v.slice(0, 139)}…` : v}</Sub>
           </div>
         ),
       },
@@ -124,7 +124,7 @@ export function IncidentList({ projectId: fixedProject, initialOpenId }: { proje
             />
             {mayReport ? (
               <Button icon={<PlusOutlined />} onClick={() => setForm({ nearMiss: true })}>
-                Near miss
+                Report near miss
               </Button>
             ) : null}
             {newButton}

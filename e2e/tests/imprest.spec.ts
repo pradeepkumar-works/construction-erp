@@ -20,12 +20,12 @@ test('accounts give a site a petty cash float and top it back up after its cash 
 
   await signIn(page, email);
   await page.goto('/imprest');
-  await page.getByRole('button', { name: 'Open an imprest' }).click();
-  const open = page.locator('.ant-modal').filter({ hasText: 'Open an imprest' });
+  await page.getByRole('button', { name: 'New imprest' }).click();
+  const open = page.locator('.ant-modal').filter({ hasText: 'New imprest' });
   await chooseOption(open.getByLabel('Project'), 'IMP-01');
   await chooseOption(open.getByLabel('Held by'), 'Chitra');
   await open.getByLabel('Float', { exact: true }).fill('5000');
-  await open.getByRole('button', { name: 'Open imprest' }).click();
+  await open.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(page.getByText('Imprest opened for Chitra Cash')).toBeVisible();
   const drawer = page.locator('.imprest-drawer');
   await expect(drawer).toContainText('₹ 5,000.00');

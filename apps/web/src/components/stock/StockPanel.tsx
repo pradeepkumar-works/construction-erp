@@ -177,7 +177,7 @@ export function StockPanel({
             ? [
                 {
                   key: "valuation",
-                  label: "Value & ageing",
+                  label: "Value and ageing",
                   children: <StockValuation projectId={projectId} />,
                 },
               ]

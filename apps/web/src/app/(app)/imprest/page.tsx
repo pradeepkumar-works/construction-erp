@@ -11,7 +11,7 @@ function ImprestPage() {
   const id = useSearchParams().get('id') ?? undefined;
   return (
     <div className="page-container">
-      <PageHeader title="Site Imprest" subtitle="Petty cash floats held at the sites: the cash in hand after each holder's cash expenses, and top-ups to bring it back to the float." />
+      <PageHeader title="Site imprest" subtitle="Petty cash floats held at the sites: the cash in hand after each holder's cash expenses, and top-ups to bring it back to the float." />
       <Card size="small">
         <ImprestPanel key={id ?? ''} initialId={id} />
       </Card>

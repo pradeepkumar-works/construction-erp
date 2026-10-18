@@ -171,7 +171,7 @@ export function ProjectFormModal({
             </Form.Item>
           </FormGrid>
           {!isEdit ? (
-            <Form.Item name="applyTemplate" valuePropName="checked" style={{ marginBottom: 0 }} extra="Scheduled across the start and end dates; planned quantities are filled in later. Templates are under Activity Templates.">
+            <Form.Item name="applyTemplate" valuePropName="checked" style={{ marginBottom: 0 }} extra="Scheduled across the start and end dates; planned quantities are filled in later. Templates are under Activity templates.">
               <Checkbox>Add the {template ? `${template.items.length} ` : ''}standard {type ? inSentence(PROJECT_TYPE_LABELS[type as ProjectType]) : ''} activities</Checkbox>
             </Form.Item>
           ) : null}

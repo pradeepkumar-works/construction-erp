@@ -114,7 +114,7 @@ export function ImprestPanel({ projectId: fixedProject, initialId }: { projectId
         <div style={{ flex: 1 }} />
         {admin ? (
           <Button type="primary" icon={<PlusOutlined />} onClick={() => setAction({ kind: 'open', projectId })}>
-            Open an imprest
+            New imprest
           </Button>
         ) : null}
       </CardToolbar>
@@ -129,7 +129,7 @@ export function ImprestPanel({ projectId: fixedProject, initialId }: { projectId
         pagination={false}
         scroll={{ x: 900 }}
         onRow={(i) => ({ onClick: () => setOpenId(i.id), style: { cursor: 'pointer' } })}
-        locale={{ emptyText: active ? (admin ? 'No imprests yet. Open one to give a site in-charge a petty cash float.' : 'You hold no imprest') : 'None closed' }}
+        locale={{ emptyText: active ? (admin ? 'No imprests yet. Give a site in-charge a petty cash float with New imprest.' : 'You hold no imprest') : 'None closed' }}
       />
       <ImprestDrawer id={openId} onClose={() => setOpenId(null)} admin={admin} onAction={setAction} />
       <ImprestActionModal action={action} onClose={() => setAction(null)} onDone={(id) => setOpenId(id)} />

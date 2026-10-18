@@ -34,8 +34,8 @@ import { RecordLink } from '@/components/record/RecordLink';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { VendorSelect } from '@/components/common/SearchSelect';
 
-const money = (v: string, strong?: boolean) => (strong ? <strong className="mono">{formatINR(v)}</strong> : <span className="mono">{formatINR(v)}</span>);
-const late = (v: string) => (toNumber(v) > 0 ? <span className="mono" style={{ color: themeColor('colorErrorText') }}>{formatINR(v)}</span> : <span className="mono text-muted">-</span>);
+const money = (v: string, strong?: boolean) => (strong ? <strong className="mono" translate="no">{formatINR(v)}</strong> : <span className="mono" translate="no">{formatINR(v)}</span>);
+const late = (v: string) => (toNumber(v) > 0 ? <span className="mono" translate="no" style={{ color: themeColor('colorErrorText') }}>{formatINR(v)}</span> : <span className="mono text-muted" translate="no">-</span>);
 const sumMoney = (values: string[]) => formatINR(values.reduce((n, v) => n + toNumber(v), 0));
 const isSmall = (m: string | null) => m === 'MICRO' || m === 'SMALL';
 
@@ -133,7 +133,7 @@ function PaymentsTab({ projectId, vendorId, onBill }: { projectId?: string; vend
       render: (_, r) => (
         <span>
           {RECEIPT_MODE_LABELS[r.mode]}
-          {r.reference ? <span className="mono text-muted"> · {r.reference}</span> : null}
+          {r.reference ? <span className="mono text-muted" translate="no"> · {r.reference}</span> : null}
         </span>
       ),
     },
@@ -169,7 +169,7 @@ function PaymentsTab({ projectId, vendorId, onBill }: { projectId?: string; vend
 
   const newButton = accounts ? (
     <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
-      Record a payment
+      Record payment
     </Button>
   ) : null;
 

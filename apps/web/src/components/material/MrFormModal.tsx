@@ -96,7 +96,7 @@ export function MrFormModal({ open, onClose, projectId, defaultProjectId, entry,
           <Form.Item name="requiredDate" label="Required by" rules={[{ required: true, message: 'Pick the date it is needed by' }]} {...aiFlagItem(draft, 'requiredDate', requiredDate)}>
             <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" />
           </Form.Item>
-          <Form.Item name="priority" label="Priority" rules={[{ required: true }]}>
+          <Form.Item name="priority" label="Priority" rules={[{ required: true, message: 'Choose the priority' }]}>
             <Select options={MATERIAL_PRIORITIES.map((p) => ({ value: p, label: MATERIAL_PRIORITY_LABELS[p] }))} />
           </Form.Item>
         </FormGrid>

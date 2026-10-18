@@ -22,14 +22,14 @@ test.describe.serial('drawings, transmittals and letters', () => {
   test('the project manager adds a drawing and issues a new revision', async ({ page }) => {
     await signIn(page, 'pm@demo.com');
     await page.getByRole('link', { name: 'Documents' }).click();
-    await page.getByRole('button', { name: 'Add document' }).click();
-    const modal = formPanel(page, 'Add drawing or document');
+    await page.getByRole('button', { name: 'New document' }).click();
+    const modal = formPanel(page, 'New drawing or document');
     await chooseOption(modal.getByLabel('Project'), 'RD-2026-01');
     await modal.getByLabel('Number').fill(docNo);
     await modal.getByLabel('Title').fill('Retaining wall at Km 14+100');
     await modal.locator('input[type=file]').setInputFiles({ name: `${docNo}-R0.pdf`, mimeType: 'application/pdf', buffer: PDF });
     await expect(modal.getByText(`${docNo}-R0.pdf`)).toBeVisible();
-    await modal.getByRole('button', { name: 'Add', exact: true }).click();
+    await modal.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(page.getByText(`${docNo} added to the register`)).toBeVisible();
     await expect(modal).toBeHidden();
 
@@ -88,7 +88,7 @@ test.describe.serial('drawings, transmittals and letters', () => {
     await signIn(page, 'pm@demo.com');
     await page.goto('/documents?tab=letters');
     await page.getByRole('button', { name: 'Record letter' }).click();
-    const modal = formPanel(page, 'Record a letter');
+    const modal = formPanel(page, 'Record letter');
     await chooseOption(modal.getByLabel('Project'), 'RD-2026-01');
     await modal.getByLabel('From').fill('Executive Engineer, R&B Division, Khordha');
     await modal.getByLabel('Subject').fill(subject);

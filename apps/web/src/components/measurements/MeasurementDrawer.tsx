@@ -34,7 +34,7 @@ export function MeasurementRecord({ id, mode, open, onClose, onEdit }: RecordPro
       onClose={onClose}
       drawerSize={760}
       kind="Measurement"
-      list={{ href: '/measurements', label: 'Measurement Book' }}
+      list={{ href: '/measurements', label: 'Measurement book' }}
       loading={isLoading}
       error={error}
       onRetry={() => refetch()}
@@ -48,8 +48,8 @@ export function MeasurementRecord({ id, mode, open, onClose, onEdit }: RecordPro
             { key: 'date', label: 'Date', children: formatDate(data.date) },
             { key: 'loc', label: 'Location', children: [data.location, sectorLocation(data)].filter((x, i, a) => x && a.indexOf(x) === i).join(' · ') || '-' },
             ...(data.woNo ? [{ key: 'wo', label: 'Done by', children: `${data.contractorName ?? ''} (${data.woNo})` }] : []),
-            { key: 'qty', label: 'Quantity', children: <strong className="mono">{`${formatQty(data.totalQty)} ${data.unit}`}</strong> },
-            { key: 'amount', label: `Value at ${formatINR(data.rate, true)} / ${data.unit}`, children: <strong className="mono">{formatINR(data.amount, true)}</strong> },
+            { key: 'qty', label: 'Quantity', children: <strong className="mono" translate="no">{`${formatQty(data.totalQty)} ${data.unit}`}</strong> },
+            { key: 'amount', label: `Value at ${formatINR(data.rate, true)} / ${data.unit}`, children: <strong className="mono" translate="no">{formatINR(data.amount, true)}</strong> },
             ...(data.raBillNo !== null ? [{ key: 'bill', label: 'Billed in', children: `RA bill ${data.raBillNo}` }] : []),
             ...submissionMetaItems(data).filter((i) => i.key !== 'status'),
           ],
@@ -72,7 +72,7 @@ export function MeasurementRecord({ id, mode, open, onClose, onEdit }: RecordPro
                     { title: 'L', dataIndex: 'length', width: 80, align: 'right', render: dim },
                     { title: 'B', dataIndex: 'breadth', width: 80, align: 'right', render: dim },
                     { title: 'D / H', dataIndex: 'depth', width: 80, align: 'right', render: dim },
-                    { title: `Qty (${data.unit})`, dataIndex: 'quantity', width: 110, align: 'right', render: (v) => <span className="mono">{formatQty(v)}</span> },
+                    { title: `Qty (${data.unit})`, dataIndex: 'quantity', width: 110, align: 'right', render: (v) => <span className="mono" translate="no">{formatQty(v)}</span> },
                   ]}
                   summary={() => (
                     <Table.Summary.Row>
@@ -80,7 +80,7 @@ export function MeasurementRecord({ id, mode, open, onClose, onEdit }: RecordPro
                         <strong>Total</strong>
                       </Table.Summary.Cell>
                       <Table.Summary.Cell index={1} align="right">
-                        <strong className="mono">{formatQty(data.totalQty)}</strong>
+                        <strong className="mono" translate="no">{formatQty(data.totalQty)}</strong>
                       </Table.Summary.Cell>
                     </Table.Summary.Row>
                   )}

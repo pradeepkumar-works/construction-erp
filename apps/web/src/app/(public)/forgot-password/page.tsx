@@ -48,7 +48,7 @@ export default function ForgotPasswordPage() {
           ) : null}
           {error && <Alert type="error" showIcon title={error} style={{ marginBottom: 16 }} />}
           <Form layout="vertical" onFinish={onFinish} requiredMark={false}>
-            <Form.Item name="email" label="Email" rules={[{ required: true, message: 'Email is required' }, { type: 'email', message: 'Enter a valid email' }]}>
+            <Form.Item name="email" label="Email" rules={[{ required: true, message: 'Enter your email' }, { type: 'email', message: 'Enter an email address, e.g. name@company.com' }]}>
               <Input autoComplete="username" size="large" placeholder="you@company.com" autoFocus />
             </Form.Item>
             <Button type="primary" htmlType="submit" block size="large" loading={submitting}>

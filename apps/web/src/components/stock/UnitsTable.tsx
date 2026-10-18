@@ -64,7 +64,7 @@ export function UnitsTable() {
         <Typography.Text type="secondary">Quantity fields across the app suggest these units. Switch off the ones your company does not use.</Typography.Text>
         {mayManage ? (
           <Button icon={<PlusOutlined />} onClick={() => open('new')} style={{ marginLeft: 'auto' }}>
-            Add unit
+            New unit
           </Button>
         ) : null}
       </CardToolbar>
@@ -106,7 +106,7 @@ export function UnitsTable() {
             : []),
         ]}
       />
-      <FormShell open={!!editing} onClose={() => setEditing(null)} form={form} layout="modal" width={520} title={editing === 'new' ? 'Add unit' : 'Edit unit'} okText={editing === 'new' ? 'Add unit' : 'Save'} onSubmit={(v) => save.mutateAsync(v)}>
+      <FormShell open={!!editing} onClose={() => setEditing(null)} form={form} layout="modal" width={520} title={editing === 'new' ? 'New unit' : 'Edit unit'} okText="Save" onSubmit={(v) => save.mutateAsync(v)}>
         <Form form={form} layout="vertical" className="unit-form">
           <Form.Item
             name="code"

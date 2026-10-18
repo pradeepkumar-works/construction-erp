@@ -192,7 +192,7 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
 
   const newButton = mayManage ? (
     <Button icon={<PlusOutlined />} onClick={() => open('new')}>
-      Add machine
+      New machine
     </Button>
   ) : null;
 
@@ -244,7 +244,7 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
         empty={frame.empty}
         failed={!!error}
         scrollX={1000}
-        emptyText={<EmptyArt art="entries" title={ownership || includeInactive || page.params.q ? 'No machine matches these filters' : mayManage ? 'No machines yet. Add the fleet with Add machine.' : 'No machines yet'} />}
+        emptyText={<EmptyArt art="entries" title={ownership || includeInactive || page.params.q ? 'No machine matches these filters' : mayManage ? 'No machines yet. Add the fleet with New machine.' : 'No machines yet'} />}
         emptyAction={newButton}
       />
       {/* Where a new machine is deployed is a deliberate choice (the yard by default), not the header's project. */}
@@ -253,8 +253,8 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
         onClose={() => setEditing(null)}
         form={form}
         layout="drawer"
-        title={editing === 'new' ? 'Add machine' : 'Edit machine'}
-        okText={editing === 'new' ? 'Add machine' : 'Save'}
+        title={editing === 'new' ? 'New machine' : 'Edit machine'}
+        okText="Save"
         projectDefault={false}
         onSubmit={(v) => save.mutateAsync(v)}
       >
@@ -279,7 +279,7 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
           </FormSection>
           <FormSection title="Ownership and rate">
             <FormGrid cols={2}>
-              <Form.Item name="ownership" label="Owned / hired" rules={[{ required: true }]}>
+              <Form.Item name="ownership" label="Owned / hired" rules={[{ required: true, message: 'Choose owned or hired' }]}>
                 <Select options={EQUIPMENT_OWNERSHIPS.map((o) => ({ value: o, label: EQUIPMENT_OWNERSHIP_LABELS[o] }))} />
               </Form.Item>
               <Form.Item name="supplier" label="Hire agency" hidden={formOwnership !== 'HIRED'}>
@@ -290,7 +290,7 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
               <Form.Item name="rate" label={formOwnership === 'HIRED' ? 'Hire rate' : 'Internal rate'} extra="Used for the project cost view">
                 <MoneyInput />
               </Form.Item>
-              <Form.Item name="rateUnit" label="Rate per" rules={[{ required: true }]}>
+              <Form.Item name="rateUnit" label="Rate per" rules={[{ required: true, message: 'Choose what the rate is per' }]}>
                 <Select options={EQUIPMENT_RATE_UNITS.map((u) => ({ value: u, label: EQUIPMENT_RATE_UNIT_LABELS[u] }))} />
               </Form.Item>
             </FormGrid>

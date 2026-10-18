@@ -78,7 +78,7 @@ export function QuotationsPanel({ request }: { request: MaterialRequestDto }) {
         {buyer && (
           <Space wrap>
             <Button size="small" icon={<PlusOutlined />} onClick={() => setQuoting('new')}>
-              Add quotation
+              Record quotation
             </Button>
             {remaining && (
               <Button size="small" icon={<ShoppingCartOutlined />} onClick={() => raise(null)}>
@@ -135,8 +135,8 @@ export function QuotationsPanel({ request }: { request: MaterialRequestDto }) {
                 if (!r) return <span className="text-muted">Not quoted</span>;
                 return (
                   <div style={best(l, q) ? { background: themeColor('colorSuccessBg'), borderRadius: 4, padding: '0 4px' } : undefined}>
-                    <span className="mono">{formatINR(r.rate, true)}</span> <span className="text-muted">+{r.gstRate}%</span>
-                    <div className="text-muted mono" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                    <span className="mono" translate="no">{formatINR(r.rate, true)}</span> <span className="text-muted">+{r.gstRate}%</span>
+                    <div className="text-muted mono" translate="no" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                       {formatINR(r.amount, true)}
                     </div>
                   </div>
@@ -152,7 +152,7 @@ export function QuotationsPanel({ request }: { request: MaterialRequestDto }) {
                 </Table.Summary.Cell>
                 {quotes.map((q, i) => (
                   <Table.Summary.Cell key={q.id} index={i + 1} align="right">
-                    <strong className="mono">{formatINR(q.total, true)}</strong>
+                    <strong className="mono" translate="no">{formatINR(q.total, true)}</strong>
                     {q.missingLines > 0 && <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{q.missingLines} item{q.missingLines === 1 ? '' : 's'} not quoted</div>}
                     {toNumber(q.freight) > 0 && <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>freight {formatINR(q.freight)}</div>}
                     {buyer && (
@@ -185,7 +185,7 @@ export function QuotationsPanel({ request }: { request: MaterialRequestDto }) {
           columns={[
             { title: 'Purchase order', dataIndex: 'poNo', width: 150, render: (v, o) => <RecordLink href={`/purchase-orders/${o.id}`} onOpen={() => setOpenPo(o.id)} className="mono">{v}</RecordLink> },
             { title: 'Vendor', dataIndex: 'vendorName' },
-            { title: 'Total', dataIndex: 'total', width: 140, align: 'right', render: (v) => <span className="mono">{formatINR(v, true)}</span> },
+            { title: 'Total', dataIndex: 'total', width: 140, align: 'right', render: (v) => <span className="mono" translate="no">{formatINR(v, true)}</span> },
             { title: 'Status', key: 'status', width: 190, render: (_, o) => <Space size={4}><StatusTag status={o.status} /><PoStateTag order={o} /></Space> },
           ]}
         />

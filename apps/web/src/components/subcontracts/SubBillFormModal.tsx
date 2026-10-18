@@ -171,9 +171,9 @@ export function SubBillFormModal({
                   style={{ margin: '6px 0 16px' }}
                   columns={[
                     { title: 'Item', dataIndex: 'description' },
-                    { title: 'Ordered', width: 120, align: 'right', render: (_, l) => <span className="mono">{formatQty(l.quantity)} {l.unit}</span> },
-                    { title: 'Billed before', width: 110, align: 'right', render: (_, l) => <span className="mono">{formatQty(billedElsewhere(l))}</span> },
-                    { title: 'Rate', dataIndex: 'rate', width: 110, align: 'right', render: (v) => <span className="mono">{formatINR(v, true)}</span> },
+                    { title: 'Ordered', width: 120, align: 'right', render: (_, l) => <span className="mono" translate="no">{formatQty(l.quantity)} {l.unit}</span> },
+                    { title: 'Billed before', width: 110, align: 'right', render: (_, l) => <span className="mono" translate="no">{formatQty(billedElsewhere(l))}</span> },
+                    { title: 'Rate', dataIndex: 'rate', width: 110, align: 'right', render: (v) => <span className="mono" translate="no">{formatINR(v, true)}</span> },
                     {
                       title: 'This bill',
                       width: 130,

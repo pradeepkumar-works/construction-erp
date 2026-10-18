@@ -28,7 +28,7 @@ const APPEARANCE_SCRIPT = `try{if(!/^\\/(login|signup|welcome|privacy|forgot-pas
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${display.variable} ${body.variable}`} suppressHydrationWarning>
+    <html lang="en-IN" className={`${display.variable} ${body.variable}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: APPEARANCE_SCRIPT }} />
       </head>

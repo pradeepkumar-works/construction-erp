@@ -37,7 +37,7 @@ export function VendorPicker({
     label: (
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
         <span>{v.name}</span>
-        {v.gstin && <span className="text-muted mono" style={{ fontSize: themeFontSize('fontSizeSM') }}>{v.gstin}</span>}
+        {v.gstin && <span className="text-muted mono" translate="no" style={{ fontSize: themeFontSize('fontSizeSM') }}>{v.gstin}</span>}
       </div>
     ),
   }));

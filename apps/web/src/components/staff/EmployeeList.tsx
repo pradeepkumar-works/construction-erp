@@ -66,7 +66,7 @@ export function EmployeeList({ onOpen, onNew }: { onOpen: (id: string) => void; 
 
   const newButton = user && canManageStaff(user.roleKey) ? (
     <Button type="primary" icon={<PlusOutlined />} onClick={onNew}>
-      Add staff
+      New staff member
     </Button>
   ) : null;
 
