@@ -160,14 +160,86 @@ test('an admin sees the switch, the allowance and this month’s use', async ({ 
   await signIn(page, 'admin@demo.com');
   await page.goto('/ai-settings');
   await expect(page.getByRole('heading', { name: 'Ask Nirmaan' })).toBeVisible();
-  const toggle = page.getByRole('switch', { name: 'On for everyone in the company' });
+  const toggle = page.getByRole('switch', { name: 'On for the company' });
   await expect(toggle).toBeChecked();
   await expect(page.getByRole('spinbutton', { name: 'Monthly allowance' })).toBeVisible();
-  await expect(page.getByText('This month', { exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'By person' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'By feature' })).toBeVisible();
   // Not for other roles.
   const pm = await apiToken('pm@demo.com');
   const res = await fetch(`${API_URL}/ai/settings`, { headers: { authorization: `Bearer ${pm}` } });
   expect(res.status).toBe(403);
+});
+
+test('an admin opens Ask Nirmaan to some roles only, and the others lose it (AI item 77)', async ({ page }) => {
+  const admin = await apiToken('admin@demo.com');
+  const engineer = await apiToken('engineer@demo.com');
+  const pm = await apiToken('pm@demo.com');
+  await signIn(page, 'admin@demo.com');
+  await page.goto('/ai-settings');
+  const roles = page.getByRole('group', { name: 'Who can use it' });
+  await roles.getByRole('radio', { name: 'Only the roles I choose' }).check();
+  await expect(roles.getByRole('button', { name: 'Save roles' })).toBeDisabled();
+  await roles.getByRole('checkbox', { name: 'Project Manager' }).check();
+  await roles.getByRole('button', { name: 'Save roles' }).click();
+  await expect(page.getByText('Roles saved')).toBeVisible();
+  try {
+    expect(await api<Status>(engineer, '/ai/status')).toMatchObject({ enabled: false, reason: 'ROLE_OFF' });
+    const refused = await askApi(engineer, 'Show me the bills');
+    expect(refused.status).toBe(403);
+    expect(refused.body).toContain('not opened Ask Nirmaan to your role');
+    expect((await api<{ ai?: boolean }>(engineer, '/auth/me')).ai).toBeFalsy();
+    expect((await api<Status>(pm, '/ai/status')).enabled).toBe(true);
+    expect((await api<Status>(admin, '/ai/status')).enabled).toBe(true);
+  } finally {
+    await roles.getByRole('radio', { name: 'All staff' }).check();
+    await roles.getByRole('button', { name: 'Save roles' }).click();
+    await expect(page.getByText('Open to all staff')).toBeVisible();
+  }
+  expect((await api<Status>(engineer, '/ai/status')).enabled).toBe(true);
+  // Only admins choose.
+  const denied = await fetch(`${API_URL}/ai/settings`, { method: 'PATCH', headers: { authorization: `Bearer ${pm}`, 'content-type': 'application/json' }, body: JSON.stringify({ roles: [] }) });
+  expect(denied.status).toBe(403);
+});
+
+test('admins read and export the conversation log; nobody else can (AI item 77)', async ({ page }) => {
+  const pm = await apiToken('pm@demo.com');
+  const words = `log check ${Date.now()}`;
+  expect((await askApi(pm, `Show me the bills ${words}`)).status).toBe(200);
+  const denied = await fetch(`${API_URL}/ai/conversations`, { headers: { authorization: `Bearer ${pm}` } });
+  expect(denied.status).toBe(403);
+
+  await signIn(page, 'admin@demo.com');
+  await page.goto('/ai-settings');
+  const log = page.locator('.ant-card').filter({ has: page.getByText('Conversation log', { exact: true }) });
+  await log.getByRole('searchbox', { name: 'Search the conversations' }).fill(words);
+  await log.getByRole('searchbox', { name: 'Search the conversations' }).press('Enter');
+  const row = log.locator('.ant-table-row').filter({ hasText: words });
+  await expect(row).toHaveCount(1);
+  await row.getByRole('button', { name: new RegExp(words) }).click();
+  const drawer = page.getByRole('dialog');
+  // The title, then the question as asked, then the answer.
+  await expect(drawer.getByText(`Show me the bills ${words}`, { exact: true }).nth(1)).toBeVisible();
+  await expect(drawer.getByText(/^Question ·/)).toHaveCount(1);
+  await expect(drawer.getByText(/^Answer ·/)).toHaveCount(1);
+  await drawer.getByRole('button', { name: 'Close' }).click();
+
+  const download = page.waitForEvent('download');
+  await log.getByRole('button', { name: 'Export' }).click();
+  expect((await download).suggestedFilename()).toMatch(/^ask-nirmaan-\d{4}-\d{2}\.xlsx$/);
+
+  const admin = await apiToken('admin@demo.com');
+  const audit = await api<{ action: string }[]>(admin, '/company-data/log');
+  expect(audit.some((l) => l.action === 'AI_CONVERSATIONS_EXPORTED')).toBe(true);
+});
+
+test('the settings page passes axe', async ({ page }) => {
+  await signIn(page, 'admin@demo.com');
+  await page.goto('/ai-settings');
+  await expect(page.getByRole('heading', { name: 'Conversation log' }).or(page.getByText('Conversation log', { exact: true }))).toBeVisible();
+  await page.getByRole('radio', { name: 'Only the roles I choose' }).check();
+  const result = await new AxeBuilder({ page }).include('main').withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();
+  expect(result.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).slice(0, 3).join(', ')}`)).toEqual([]);
 });
 
 test('the panel passes axe', async ({ page }) => {

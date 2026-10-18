@@ -60,7 +60,7 @@ export class BriefsService {
 
   /** Whether the brief is offered to this user: their role may use Ask Nirmaan and the company has it on. */
   private async offered(user: RequestUser): Promise<boolean> {
-    return canUseAi(user.roleKey) && !user.support && (await this.ai.enabledFor(user.organizationId));
+    return this.ai.offeredTo(user);
   }
 
   async today(user: RequestUser, date = todayIn()): Promise<BriefStatusDto> {

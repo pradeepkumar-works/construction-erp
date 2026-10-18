@@ -1126,6 +1126,19 @@ export; the client portal and the phone app show the amount.
   `aiMonthlyCapInr` (null = `AI_DEFAULT_MONTHLY_CAP_INR`) are set by admins at `/ai-settings` (audited `AI_SETTINGS`);
   each user may ask `AI_DAILY_QUESTIONS` a day. Refusals (off, cap, limit, guests, support sessions) come back as plain
   HTTP errors before the stream starts. History sent to the model is the last 12 questions and answers as text.
+- **Usage, roles and pricing (item 77).** Every AI gate goes through `AiService.status(user)`, which answers, in order:
+  NOT_CONFIGURED, COMPANY_OFF, ROLE_OFF (`Organization.aiRoles`, empty = all staff; admins always pass, `aiRoleAllowed`
+  in shared), READ_ONLY (the company's billing state computed from the organisation row, so the overnight briefs and GET
+  routes such as the bill-check summary stop too, not only writes) and CAP_REACHED. `/auth/me`'s `ai` flag also applies
+  the roles, which hides the phone's Ask tab. With billing on, AI is included in the price: `aiPlanAllowanceInr`
+  (`common/billing.ts`) gives `BILLING_AI_TRIAL_INR` in the trial, `BILLING_AI_INR_PER_UNIT` × the billed units once paid,
+  0 when read-only and null for exempt companies; the cap in force is the company's own cap held at or under that
+  allowance (exempt companies and servers without billing keep their own cap or the default). `GET /ai/settings?month=`
+  gives a month's use by feature and by person (questions, documents read, briefs, answers rated not helpful) and the
+  plan. The conversation log (`GET /ai/conversations`, `/:id`, `/export`) is for admins outside support sessions; opening a
+  conversation (`AI_CONVERSATION_READ`) and exporting (`AI_CONVERSATIONS_EXPORTED`) are audited, and the panel tells people
+  admins can read conversations. Tests: `src/scripts/ai-billing-test.ts` (CI), and the item 77 tests in
+  `e2e/tests/ask-nirmaan.spec.ts` and `billing.spec.ts`.
 - **Never acts.** No tool writes. The instructions treat record text as data, not instructions.
 - **Evaluation.** `apps/api/scripts/ai-eval.ts` asks a deployed API a golden set (expected facts read live from the API)
   and a red-team set as the demo accounts, and prints the share of checks passed, cost per answer and latency. It

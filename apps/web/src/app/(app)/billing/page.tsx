@@ -80,6 +80,20 @@ export default function BillingPage() {
                 ...(data.paidUntil ? [{ key: 'paid', label: 'Paid until', children: formatDate(data.paidUntil) }] : []),
                 ...(data.trialEndsAt ? [{ key: 'trial', label: 'Free trial ends', children: formatDate(data.trialEndsAt) }] : []),
                 { key: 'price', label: 'Price', children: `${formatINR(data.unitPrice)} per ${unit.one} per month, plus GST` },
+                ...(data.status !== 'EXEMPT'
+                  ? [
+                      {
+                        key: 'ai',
+                        label: `Ask ${PRODUCT_NAME}`,
+                        children:
+                          data.status === 'READ_ONLY'
+                            ? 'Paused until the subscription is paid'
+                            : data.status === 'TRIAL'
+                              ? `${formatINR(data.ai.trialInr)} a month included in the trial, then ${formatINR(data.ai.perUnitInr)} per ${unit.one} a month in the price`
+                              : `${formatINR(data.ai.allowanceInr ?? 0)} a month included (${formatINR(data.ai.perUnitInr)} per ${unit.one})`,
+                      },
+                    ]
+                  : []),
               ]}
             />
             {data.status === 'READ_ONLY' && (
@@ -88,7 +102,7 @@ export default function BillingPage() {
                 type="error"
                 showIcon
                 title="The company is read-only"
-                description="Everyone can still see and export everything, but nothing new can be entered until the subscription is paid. Nothing has been deleted."
+                description={`Everyone can still see and export everything, but nothing new can be entered and Ask ${PRODUCT_NAME} is paused until the subscription is paid. Nothing has been deleted.`}
               />
             )}
           </Card>

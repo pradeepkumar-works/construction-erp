@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Res, UploadedFiles, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Query, Res, UploadedFiles, UseInterceptors } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiProduces, ApiTags } from '@nestjs/swagger';
@@ -8,7 +8,7 @@ import { DOC_READ_MAX_PAGES, DOC_READ_MAX_PAGE_BYTES } from '@erp/shared';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { AiService } from './ai.service';
 import { AiReadService } from './ai-read.service';
-import { AiFeedbackDto, AskDto, ReadDocumentDto, UpdateAiSettingsDto } from './ai.dto';
+import { AiConversationsQueryDto, AiFeedbackDto, AiSettingsQueryDto, AskDto, ReadDocumentDto, UpdateAiSettingsDto } from './ai.dto';
 
 @ApiTags('ai')
 @ApiBearerAuth()
@@ -89,13 +89,31 @@ export class AiController {
     return this.ai.feedback(user, id, dto.value);
   }
 
-  @ApiOperation({ summary: "The company's Ask Nirmaan settings and this month's use", description: 'Admins.' })
+  @ApiOperation({ summary: "The company's Ask Nirmaan settings and a month's use", description: 'Admins. Use by person and by feature for `month` (YYYY-MM, the current one when left out), and what the plan includes.' })
   @Get('settings')
-  settings(@CurrentUser() user: RequestUser) {
-    return this.ai.settings(user);
+  settings(@CurrentUser() user: RequestUser, @Query() q: AiSettingsQueryDto) {
+    return this.ai.settings(user, q.month);
   }
 
-  @ApiOperation({ summary: 'Switch Ask Nirmaan on or off, or set the monthly allowance', description: 'Admins.' })
+  @ApiOperation({ summary: "The company's conversations with Ask Nirmaan", description: "Admins, outside support sessions. Newest first; `q` searches titles, questions and answers." })
+  @Get('conversations')
+  conversations(@CurrentUser() user: RequestUser, @Query() q: AiConversationsQueryDto) {
+    return this.ai.conversations(user, q);
+  }
+
+  @ApiOperation({ summary: 'Every question and answer of the matching conversations, for a spreadsheet', description: 'Admins, outside support sessions. The same filters as the list; recorded in the audit log.' })
+  @Get('conversations/export')
+  exportConversations(@CurrentUser() user: RequestUser, @Query() q: AiConversationsQueryDto) {
+    return this.ai.exportConversations(user, q);
+  }
+
+  @ApiOperation({ summary: 'One conversation from the log', description: 'Admins, outside support sessions. Recorded in the audit log.' })
+  @Get('conversations/:id')
+  conversation(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string) {
+    return this.ai.conversation(user, id);
+  }
+
+  @ApiOperation({ summary: 'Switch Ask Nirmaan on or off, set the monthly allowance, or choose the roles that may use it', description: 'Admins.' })
   @Patch('settings')
   updateSettings(@CurrentUser() user: RequestUser, @Body() dto: UpdateAiSettingsDto) {
     return this.ai.updateSettings(user, dto);
