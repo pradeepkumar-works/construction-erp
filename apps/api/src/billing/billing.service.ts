@@ -1,12 +1,12 @@
 import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { BillingPayment, Prisma } from '@prisma/client';
 import { createHmac, randomUUID, timingSafeEqual } from 'crypto';
-import type { BillingAmountDto, BillingDetailsDto, BillingInvoiceDto, BillingOrderDto, BillingSummaryDto, BillingUnit, RoleKey } from '@erp/shared';
-import { BILLING_GST_PCT, BILLING_REMIND_DAYS, BILLING_UNIT_LABELS, BILLING_YEAR_CHARGED_MONTHS, GUEST_ROLES, PRODUCT_NAME, canManageBilling, gstStateCode } from '@erp/shared';
+import type { BillingAmountDto, BillingDetailsDto, BillingInvoiceDto, BillingOrderDto, BillingSummaryDto, BillingUnit } from '@erp/shared';
+import { BILLING_GST_PCT, BILLING_REMIND_DAYS, BILLING_UNIT_LABELS, BILLING_YEAR_CHARGED_MONTHS, PRODUCT_NAME, canManageBilling, gstStateCode } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { withoutTenant } from '../prisma/tenant-context';
 import { RequestUser } from '../common/current-user';
-import { BillingConfig, billingConfig, billingState } from '../common/billing';
+import { BillingConfig, aiPlanAllowanceInr, billingConfig, billingState, billingUnits } from '../common/billing';
 import { EmailService, escapeHtml } from '../notifications/email.service';
 import { emailButton, emailLayout } from '../notifications/email-layout';
 import { MessagingService } from '../messaging/messaging.service';
@@ -56,13 +56,8 @@ export class BillingService {
     if (!canManageBilling(user.roleKey)) throw new ForbiddenException('Only an admin can manage billing');
   }
 
-  /** Active projects, or active staff (guests are free); at least one. */
-  private async units(cfg: BillingConfig, organizationId: string) {
-    const n =
-      cfg.unit === 'PROJECT'
-        ? await this.prisma.project.count({ where: { organizationId, status: 'ACTIVE' } })
-        : await this.prisma.user.count({ where: { organizationId, isActive: true, role: { key: { notIn: GUEST_ROLES as RoleKey[] } } } });
-    return Math.max(1, n);
+  private units(cfg: BillingConfig, organizationId: string) {
+    return billingUnits(this.prisma, cfg, organizationId);
   }
 
   private amount(cfg: BillingConfig, units: number, months: 1 | 12, buyerState: string | null): BillingAmountDto {
@@ -85,8 +80,9 @@ export class BillingService {
     const org = await this.prisma.organization.findUniqueOrThrow({ where: { id: user.organizationId } });
     const details = this.details(org);
     const units = await this.units(cfg, org.id);
+    const state = billingState(cfg, org, todayIn());
     return {
-      ...billingState(cfg, org, todayIn()),
+      ...state,
       unit: cfg.unit,
       unitPrice: money(new D(cfg.price)),
       units,
@@ -96,6 +92,7 @@ export class BillingService {
       detailsComplete: !!(details.name && details.address && details.stateCode),
       seller: { name: cfg.seller.name, gstin: cfg.seller.gstin, address: cfg.seller.address, stateCode: cfg.seller.stateCode },
       keyId: cfg.keyId,
+      ai: { allowanceInr: aiPlanAllowanceInr(cfg, state.status, units), perUnitInr: cfg.aiPerUnitInr, trialInr: cfg.aiTrialInr },
     };
   }
 

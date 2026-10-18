@@ -58,6 +58,8 @@ export interface BillingSummaryDto extends BillingStateDto {
   seller: { name: string; gstin: string; address: string; stateCode: string };
   /** Razorpay key id for Checkout */
   keyId: string;
+  /** Ask Nirmaan included in the plan (AI item 77): rupees a month now, per unit once paid, and in the trial */
+  ai: { allowanceInr: number | null; perUnitInr: number; trialInr: number };
 }
 
 /** What the browser needs to open Razorpay Checkout for one payment. */

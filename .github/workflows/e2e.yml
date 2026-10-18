@@ -113,6 +113,9 @@ jobs:
       - name: Site photo checks keep the confidence bar, the 50 labelled photos and the safety officer's switch
         working-directory: apps/api
         run: DATABASE_URL="$RUNTIME_URL" node dist/scripts/photo-checks-test.js
+      - name: Ask Nirmaan stays within the plan's allowance, stops when read-only and keeps its log for admins
+        working-directory: apps/api
+        run: DATABASE_URL="$RUNTIME_URL" node dist/scripts/ai-billing-test.js
       - name: Build and start the web app
         working-directory: apps/web
         run: |
