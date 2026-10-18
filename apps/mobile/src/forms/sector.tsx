@@ -4,6 +4,7 @@ import { formatChainage, parseChainage, sectorKinds } from '@erp/shared';
 import { useFetch } from '../api/hooks';
 import { Chips, Input, Select } from '../components';
 import { useT } from '../i18n/LanguageContext';
+import type { FieldProps } from './keyboard';
 
 /** The sector fields as typed, kept in a form's draft. */
 export interface SectorDraft {
@@ -67,13 +68,14 @@ export function useSectorInputs(projectId: string | null) {
     setVillage(v?.village ?? null);
   };
 
-  const fields = (errors: Record<string, string>) =>
+  /** `field` is the form's `useFieldChain()`, so Next runs through the chainage too. */
+  const fields = (errors: Record<string, string>, field: () => Partial<FieldProps> = () => ({})) =>
     p ? (
       <>
         {k.chainage ? (
           <>
-            <Input label={t('Chainage from')} value={from} onChangeText={setFrom} placeholder={t('e.g. {example}', { example: '14+200' })} keyboardType="numbers-and-punctuation" error={errors.chainageFrom} />
-            <Input label={t('Chainage to')} value={to} onChangeText={setTo} placeholder={t('Blank for one point')} keyboardType="numbers-and-punctuation" error={errors.chainageTo} />
+            <Input {...field()} label={t('Chainage from')} value={from} onChangeText={setFrom} placeholder={t('e.g. {example}', { example: '14+200' })} keyboardType="numbers-and-punctuation" error={errors.chainageFrom} />
+            <Input {...field()} label={t('Chainage to')} value={to} onChangeText={setTo} placeholder={t('Blank for one point')} keyboardType="numbers-and-punctuation" error={errors.chainageTo} />
           </>
         ) : null}
         {k.floor && p.floors.length ? <Chips label={t('Floor')} value={floor} onChange={setFloor} options={p.floors.map((f) => ({ value: f, label: f }))} /> : null}

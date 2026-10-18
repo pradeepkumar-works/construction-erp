@@ -1,10 +1,10 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { canManageWorkers, canMarkStaff, canKeepStock, canLogMachinery, canManageMaintenance, canMeasure, canRaiseRisk, canRecordAttendance, canReportDefect, canReportSafety, canRequestInspection, canSubmitExpense } from '@erp/shared';
 import { useAuth } from '../../src/auth/AuthContext';
-import { Button, Screen } from '../../src/components';
+import { Button, Screen, Touchable } from '../../src/components';
 import { colors, radius, shadow, spacing, typography } from '../../src/theme';
 import { useT } from '../../src/i18n/LanguageContext';
 
@@ -75,7 +75,7 @@ export default function SubmitHub() {
       <Text style={typography.caption}>{t('Choose what to submit. Progress, DPRs, material requests, machinery logs, expenses and measurements go straight to your project manager for approval.')}</Text>
       <View style={styles.list}>
         {forms.map((f) => (
-          <Pressable key={f.href} onPress={() => router.push(f.href)} style={({ pressed }) => [styles.tile, pressed && styles.pressed]}>
+          <Touchable key={f.href} accessibilityRole="button" onPress={() => router.push(f.href)} style={styles.tile}>
             <View style={[styles.icon, { backgroundColor: f.tone }]}>
               <Ionicons name={f.icon} size={28} color={colors.onTile} />
             </View>
@@ -84,7 +84,7 @@ export default function SubmitHub() {
               <Text style={[typography.caption, styles.text]}>{t(f.text)}</Text>
             </View>
             <Ionicons name="chevron-forward" size={22} color={colors.textMuted} />
-          </Pressable>
+          </Touchable>
         ))}
       </View>
       <Button title={t('My submissions')} variant="secondary" icon="list" onPress={() => router.push('/submissions')} />

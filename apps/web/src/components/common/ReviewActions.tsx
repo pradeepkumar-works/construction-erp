@@ -83,7 +83,14 @@ export function useMayReview(type: ApprovalTypeParam, status: SubmissionStatus, 
   return !!user && status === 'SUBMITTED' && mayApproveType(user, type.toUpperCase() as SubmissionType, amount);
 }
 
-/** The note dialog behind Approve, Request changes and Reject (a reason is required for the last two). */
+/** Fewest characters a reason to reject or send back may have (the API and the phone ask the same, UX item 88). */
+const MIN_REASON = 5;
+const REASON_MESSAGE: Partial<Record<ReviewDecision, string>> = {
+  REJECT: 'Say why you are rejecting it',
+  REQUEST_CHANGES: 'Say what needs changing',
+};
+
+/** The note dialog behind Approve, Request changes and Reject (a reason of a few words is required for the last two). */
 export function ReviewDialog({ type, id, decision, onClose, onDone }: { type: ApprovalTypeParam; id: string; decision: ReviewDecision | null; onClose: () => void; onDone?: () => void }) {
   const { message } = App.useApp();
   const review = useReview();
@@ -118,11 +125,22 @@ export function ReviewDialog({ type, id, decision, onClose, onDone }: { type: Ap
       destroyOnHidden
     >
       <Form form={form} layout="vertical" style={{ marginTop: 12 }}>
-        <Form.Item name="note" label={decision === 'APPROVE' ? 'Note (optional)' : 'Reason'} rules={decision === 'APPROVE' ? [] : [{ required: true, message: 'Please enter a reason' }]}>
+        <Form.Item
+          name="note"
+          label={decision === 'APPROVE' ? 'Note (optional)' : 'Reason'}
+          rules={
+            decision && decision !== 'APPROVE'
+              ? [
+                  { required: true, whitespace: true, message: REASON_MESSAGE[decision] },
+                  { validator: (_, v?: string) => ((v ?? '').trim().length >= MIN_REASON || !(v ?? '').trim() ? Promise.resolve() : Promise.reject(new Error(`${REASON_MESSAGE[decision]} in a few words`))) },
+                ]
+              : []
+          }
+        >
           <Input.TextArea
             rows={3}
             autoFocus
-            placeholder={decision === 'APPROVE' ? 'Any remarks for the submitter' : 'Explain what needs to change'}
+            placeholder={decision === 'APPROVE' ? 'Any remarks for the submitter' : decision === 'REJECT' ? 'Why it cannot be approved' : 'Explain what needs to change'}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                 e.preventDefault();

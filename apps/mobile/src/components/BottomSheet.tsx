@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radius, spacing, touch, typography } from '../theme';
 import { useT } from '../i18n/LanguageContext';
+import { IconButton, Touchable } from './Touchable';
 
 export interface SheetAction {
   label: string;
@@ -50,9 +51,7 @@ export function BottomSheet({
               ) : null}
               {subtitle ? <Text style={[typography.caption, styles.subtitle]}>{subtitle}</Text> : null}
             </View>
-            <Pressable onPress={close} disabled={!dismissable} accessibilityRole="button" accessibilityLabel={t('Close')} hitSlop={8} style={({ pressed }) => [styles.close, pressed && styles.pressed, !dismissable && styles.disabled]}>
-              <Ionicons name="close" size={22} color={colors.textMuted} />
-            </Pressable>
+            <IconButton icon="close" color={colors.textMuted} filled={colors.neutralSoft} onPress={close} disabled={!dismissable} accessibilityLabel={t('Close')} style={styles.close} />
           </View>
           {children}
         </View>
@@ -68,18 +67,18 @@ export function SheetActions({ actions, onClose }: { actions: SheetAction[]; onC
       {actions.map((a) => {
         const fg = a.tone === 'danger' ? colors.danger : colors.text;
         return (
-          <Pressable
+          <Touchable
             key={a.label}
             onPress={() => {
               onClose();
               a.onPress();
             }}
             accessibilityRole="button"
-            style={({ pressed }) => [styles.action, pressed && styles.pressed]}
+            style={styles.action}
           >
             <Ionicons name={a.icon} size={22} color={a.tone === 'danger' ? colors.danger : colors.primary} />
             <Text style={[typography.bodyStrong, { color: fg }]}>{a.label}</Text>
-          </Pressable>
+          </Touchable>
         );
       })}
     </View>
@@ -94,8 +93,6 @@ const styles = StyleSheet.create({
   handle: { alignSelf: 'center', width: 40, height: 5, borderRadius: radius.pill, backgroundColor: colors.border, marginBottom: spacing.md },
   head: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: spacing.md },
   subtitle: { marginTop: 2 },
-  close: { width: touch.heightSm, height: touch.heightSm, borderRadius: touch.heightSm / 2, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.neutralSoft, marginLeft: spacing.sm },
+  close: { marginLeft: spacing.sm },
   action: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: touch.height, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
-  pressed: { opacity: 0.7 },
-  disabled: { opacity: 0.4 },
 });

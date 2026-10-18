@@ -1,14 +1,15 @@
 import type { RiskLevel, RiskStatus } from '@erp/shared';
-import { colors } from '../theme';
+import { colors, toneIcon, type Tone } from '../theme';
 
-export const LEVEL_TONE: Record<RiskLevel, { fg: string; bg: string }> = {
-  LOW: { fg: colors.success, bg: colors.successSoft },
-  MEDIUM: { fg: colors.warning, bg: colors.warningSoft },
-  HIGH: { fg: colors.danger, bg: colors.dangerSoft },
+/** Each level and status with a shape as well as a colour (UX item 88). */
+export const LEVEL_TONE: Record<RiskLevel, Tone> = {
+  LOW: { fg: colors.success, bg: colors.successSoft, icon: 'arrow-down-circle-outline' },
+  MEDIUM: { fg: colors.warning, bg: colors.warningSoft, icon: 'remove-circle-outline' },
+  HIGH: { fg: colors.danger, bg: colors.dangerSoft, icon: 'arrow-up-circle' },
 };
 
-export const RISK_STATUS_TONE: Record<RiskStatus, { fg: string; bg: string }> = {
-  OPEN: { fg: colors.danger, bg: colors.dangerSoft },
-  MONITORING: { fg: colors.primary, bg: colors.primarySoft },
-  CLOSED: { fg: colors.neutral, bg: colors.neutralSoft },
+export const RISK_STATUS_TONE: Record<RiskStatus, Tone> = {
+  OPEN: { fg: colors.danger, bg: colors.dangerSoft, icon: toneIcon.alert },
+  MONITORING: { fg: colors.primary, bg: colors.primarySoft, icon: toneIcon.watch },
+  CLOSED: { fg: colors.neutral, bg: colors.neutralSoft, icon: toneIcon.closed },
 };

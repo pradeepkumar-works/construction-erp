@@ -1,6 +1,7 @@
 export { Screen } from './Screen';
 export { Card } from './Card';
 export { Button } from './Button';
+export { Touchable, IconButton, slopFor, type TouchableProps } from './Touchable';
 export { Input } from './Input';
 export { Select, type SelectOption } from './Select';
 export { DatePicker, TimePicker } from './DatePicker';

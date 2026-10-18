@@ -11,8 +11,9 @@ import { useT } from '../../src/i18n/LanguageContext';
 import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
 import type { TranslateVars } from '../../src/i18n/translate';
 import { useOffline } from '../../src/offline';
-import { colors, spacing, typography } from '../../src/theme';
+import { colors, fontSize, spacing, typography } from '../../src/theme';
 import { fmtQty, formatDate, isIsoDate, today } from '../../src/utils/format';
+import { useFieldChain } from '../../src/forms/keyboard';
 
 const QTY = /^\d+(\.\d{1,3})?$/;
 
@@ -57,6 +58,7 @@ export default function ReceiveScreen() {
   const params = useLocalSearchParams<{ projectId?: string; materialRequestId?: string; purchaseOrderId?: string }>();
   const { user } = useAuth();
   const t = useT();
+  const field = useFieldChain();
   const errorSummary = useErrorSummary();
   const api = useApi();
   const { online } = useOffline();
@@ -202,7 +204,7 @@ export default function ReceiveScreen() {
                   : t('Requested {due} · received {received} · pending {pending} {unit}', { due: fmtQty(l.due), received: fmtQty(l.received), pending: fmtQty(l.pending), unit: l.unit })}
               </Text>
               {Number(l.pending) > 0 ? (
-                <Input
+                <Input {...field()}
                   value={qty[l.id] ?? ''}
                   onChangeText={(v) => setQty((q) => ({ ...q, [l.id]: v }))}
                   keyboardType="decimal-pad"
@@ -225,13 +227,13 @@ export default function ReceiveScreen() {
         {request?.kind === 'PO' ? (
           <Input label={t('Supplier')} value={request.vendorName ?? ''} editable={false} />
         ) : (
-          <Input label={t('Supplier')} value={supplier} onChangeText={setSupplier} placeholder={t('Supplier name')} />
+          <Input {...field()} label={t('Supplier')} value={supplier} onChangeText={setSupplier} placeholder={t('Supplier name')} />
         )}
-        <Input label={t('Challan / invoice no.')} value={challanNo} onChangeText={setChallanNo} />
-        <Input label={t('Vehicle no.')} value={vehicleNo} onChangeText={setVehicleNo} autoCapitalize="characters" />
+        <Input {...field()} label={t('Challan / invoice no.')} value={challanNo} onChangeText={setChallanNo} />
+        <Input {...field()} label={t('Vehicle no.')} value={vehicleNo} onChangeText={setVehicleNo} autoCapitalize="characters" />
         <PhotoPicker label={t('Challan photo')} photos={photos} onChange={setPhotos} max={4} />
         {errors.photos ? <Text style={styles.err}>{errors.photos}</Text> : null}
-        <Input label={t('Remarks')} value={remarks} onChangeText={setRemarks} multiline containerStyle={styles.last} />
+        <Input {...field({ multiline: true })} label={t('Remarks')} value={remarks} onChangeText={setRemarks} multiline containerStyle={styles.last} />
       </Card>
       <Button title={t('Save GRN')} icon="checkmark" onPress={save} loading={busy} disabled={!online || !request} />
     </Screen>
@@ -242,6 +244,6 @@ const styles = StyleSheet.create({
   line: { paddingVertical: spacing.sm, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
   qty: { marginTop: spacing.sm, marginBottom: 0 },
   done: { color: colors.success, fontWeight: '600', marginTop: spacing.xs },
-  err: { color: colors.danger, marginTop: spacing.sm, fontSize: 13 },
+  err: { color: colors.danger, marginTop: spacing.sm, fontSize: fontSize.secondary },
   last: { marginBottom: 0 },
 });

@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SUBMISSION_STATUS_LABELS, canKeepStock, canRecordAttendance } from '@erp/shared';
@@ -7,11 +7,11 @@ import type { DailyReportDto, MaterialRequestDto, MyWorkDto, Paginated, Progress
 import { useFetch } from '../../src/api/hooks';
 import { fetchProjects } from '../../src/api/lists';
 import { useAuth } from '../../src/auth/AuthContext';
-import { BillingBanner, Button, Card, EmptyState, ErrorState, NotificationBell, OfflineBanner, Screen, SectionTitle, Stat, SubmissionRow } from '../../src/components';
+import { BillingBanner, Button, Card, EmptyState, ErrorState, NotificationBell, OfflineBanner, Screen, SectionTitle, Stat, SubmissionRow, Touchable } from '../../src/components';
 import { MyWorkPanel } from '../../src/components/MyWork';
 import { Skeleton } from '../../src/components/Skeleton';
 import { useOffline } from '../../src/offline';
-import { colors, radius, spacing, statusTone, typography } from '../../src/theme';
+import { colors, fontSize, radius, spacing, statusTone, typography } from '../../src/theme';
 import { fmtQty, formatDate, timeAgo, today } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
 
@@ -166,14 +166,14 @@ export default function HomeScreen() {
 function QuickAction({ icon, label, onPress, tone, iconColor = colors.onBrand }: { icon: keyof typeof Ionicons.glyphMap; label: string; onPress: () => void; tone: string; iconColor?: string }) {
   const t = useT();
   return (
-    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={t('New {label}', { label })} style={({ pressed }) => [styles.quickBtn, pressed && styles.pressed]}>
+    <Touchable onPress={onPress} accessibilityRole="button" accessibilityLabel={t('New {label}', { label })} style={styles.quickBtn}>
       <View style={[styles.quickIcon, { backgroundColor: tone }]}>
         <Ionicons name={icon} size={24} color={iconColor} />
       </View>
-      <Text style={styles.quickLabel} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+      <Text style={styles.quickLabel} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.86}>
         {label}
       </Text>
-    </Pressable>
+    </Touchable>
   );
 }
 
@@ -184,10 +184,10 @@ const styles = StyleSheet.create({
   quick: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg },
   quickBtn: { flex: 1, backgroundColor: colors.surface, borderRadius: radius.lg, paddingVertical: spacing.md, paddingHorizontal: spacing.xs, alignItems: 'center', borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, minHeight: 96, justifyContent: 'center' },
   quickIcon: { width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm },
-  quickLabel: { fontSize: 13, fontWeight: '700', color: colors.text, textAlign: 'center' },
+  quickLabel: { fontSize: fontSize.secondary, fontWeight: '700', color: colors.text, textAlign: 'center' },
   pressed: { opacity: 0.8 },
   stats: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm },
   dprRow: { flexDirection: 'row', alignItems: 'center' },
   dprState: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: spacing.sm, paddingVertical: 6, borderRadius: radius.pill, marginLeft: spacing.sm },
-  dprStateText: { fontSize: 12, fontWeight: '700' },
+  dprStateText: { fontSize: fontSize.small, fontWeight: '700' },
 });

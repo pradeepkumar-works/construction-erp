@@ -1,14 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Image, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Animated, Image, StyleSheet, Text, View, type TextInput } from 'react-native';
 import { useAuth } from '../src/auth/AuthContext';
-import { Button, ErrorBanner, Input, Intro, Screen, useIntroSeen } from '../src/components';
+import { Button, ErrorBanner, Input, Intro, Screen, useIntroSeen, IconButton, Touchable } from '../src/components';
 import { errorMessage, request } from '../src/api/client';
 import type { AuthOptionsDto } from '@erp/shared';
 import { PRODUCT_NAME } from '@erp/shared';
 import { useT } from '../src/i18n/LanguageContext';
 import { LanguageSwitch } from '../src/i18n/LanguageSwitch';
-import { colors, fonts, radius, spacing, touch, typography } from '../src/theme';
+import { colors, fonts, fontSize, radius, spacing, touch, typography } from '../src/theme';
 
 const DEMO_ACCOUNTS = [
   { email: 'engineer@demo.com', role: 'Site Engineer' },
@@ -24,6 +23,7 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
+  const passwordRef = useRef<TextInput>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -100,6 +100,7 @@ export default function LoginScreen() {
 
         <ErrorBanner message={error} />
         <Text style={styles.label}>{t('Email')}</Text>
+        {/* Autofill hints (UX item 88) so a password manager, or Android's own, fills both fields. */}
         <Input
           accessibilityLabel={t('Email')}
           value={email}
@@ -107,29 +108,36 @@ export default function LoginScreen() {
           autoCapitalize="none"
           autoCorrect={false}
           keyboardType="email-address"
-          textContentType="emailAddress"
+          textContentType="username"
+          autoComplete="email"
+          importantForAutofill="yes"
           placeholder="you@company.com"
           returnKeyType="next"
+          submitBehavior="submit"
+          onSubmitEditing={() => passwordRef.current?.focus()}
         />
         <View style={styles.labelRow}>
           <Text style={styles.label}>{t('Password')}</Text>
-          <Pressable onPress={forgot} hitSlop={12} accessibilityRole="button">
+          <Touchable onPress={forgot} accessibilityRole="button" style={styles.linkBtn}>
             <Text style={styles.link}>{t('Forgot password?')}</Text>
-          </Pressable>
+          </Touchable>
         </View>
         <Input
+          ref={passwordRef}
           accessibilityLabel={t('Password')}
           value={password}
           onChangeText={setPassword}
           secureTextEntry={!showPw}
           textContentType="password"
+          autoComplete="password"
+          importantForAutofill="yes"
+          autoCapitalize="none"
+          autoCorrect={false}
           placeholder={t('Your password')}
           returnKeyType="go"
           onSubmitEditing={submit}
           right={
-            <Pressable onPress={() => setShowPw((s) => !s)} hitSlop={10} accessibilityRole="button" accessibilityLabel={showPw ? t('Hide password') : t('Show password')}>
-              <Ionicons name={showPw ? 'eye-off-outline' : 'eye-outline'} size={22} color={colors.textMuted} />
-            </Pressable>
+            <IconButton icon={showPw ? 'eye-off-outline' : 'eye-outline'} size={22} color={colors.textMuted} onPress={() => setShowPw((s) => !s)} accessibilityLabel={showPw ? t('Hide password') : t('Show password')} />
           }
         />
         {notice ? <Text style={styles.notice}>{notice}</Text> : null}
@@ -146,7 +154,7 @@ export default function LoginScreen() {
               {DEMO_ACCOUNTS.map((a) => {
                 const on = email.trim().toLowerCase() === a.email;
                 return (
-                  <Pressable
+                  <Touchable
                     key={a.email}
                     onPress={() => {
                       setEmail(a.email);
@@ -156,10 +164,10 @@ export default function LoginScreen() {
                     accessibilityRole="button"
                     accessibilityState={{ selected: on }}
                     accessibilityHint={t('Fills in {email}', { email: a.email })}
-                    style={({ pressed }) => [styles.chip, on && styles.chipOn, pressed && styles.pressed]}
+                    style={[styles.chip, on && styles.chipOn]}
                   >
                     <Text style={[styles.chipText, on && styles.chipTextOn]}>{t(a.role)}</Text>
-                  </Pressable>
+                  </Touchable>
                 );
               })}
             </View>
@@ -179,20 +187,20 @@ const styles = StyleSheet.create({
   logo: { width: 36, height: 36 },
   wordmark: { ...typography.wordmark, fontSize: 20, letterSpacing: 1.5, color: colors.primaryDark },
   title: { fontFamily: fonts.display, fontSize: 32, color: colors.primaryDark, marginBottom: spacing.sm },
-  subtitle: { fontSize: 15, lineHeight: 22, color: colors.textMuted, marginBottom: spacing.xxl },
-  label: { fontSize: 14, fontWeight: '600', color: colors.primaryDark, marginBottom: spacing.sm },
-  labelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
-  link: { fontSize: 14, fontWeight: '600', color: colors.primary },
+  subtitle: { fontSize: fontSize.body, lineHeight: 22, color: colors.textMuted, marginBottom: spacing.xxl },
+  label: { fontSize: fontSize.secondary, fontWeight: '600', color: colors.primaryDark, marginBottom: spacing.sm },
+  labelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  linkBtn: { minHeight: touch.min, justifyContent: 'center', paddingLeft: spacing.md },
+  link: { fontSize: fontSize.secondary, fontWeight: '600', color: colors.primary },
   notice: { ...typography.body, color: colors.text, marginBottom: spacing.lg },
   submit: { marginTop: spacing.xs },
   divider: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: 40, marginBottom: spacing.lg },
   rule: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: colors.border },
-  dividerText: { fontSize: 12, fontWeight: '600', letterSpacing: 0.8, textTransform: 'uppercase', color: colors.textMuted },
+  dividerText: { fontSize: fontSize.small, fontWeight: '600', letterSpacing: 0.8, textTransform: 'uppercase', color: colors.textMuted },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   chip: { minHeight: touch.heightSm, justifyContent: 'center', paddingHorizontal: spacing.lg, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
   chipOn: { borderColor: colors.primary, backgroundColor: colors.primarySoft },
-  chipText: { fontSize: 14, color: colors.text },
+  chipText: { fontSize: fontSize.secondary, color: colors.text },
   chipTextOn: { color: colors.primary, fontWeight: '600' },
-  pressed: { opacity: 0.7 },
   demoNote: { ...typography.caption, marginTop: spacing.md },
 });

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { api, apiToken, newestFirst, queueItem, signIn, formPanel } from './helpers';
+import { API_URL, api, apiToken, newestFirst, queueItem, signIn, formPanel } from './helpers';
 
 interface Project { id: string; code: string }
 interface MaterialRequest { id: string; requestNo: string; status: string; reviewNote: string | null }
@@ -21,6 +21,23 @@ test.describe.serial('material request: changes requested, then resubmitted', ()
     expect(mr.status).toBe('SUBMITTED');
   });
 
+  test('the API refuses to reject or send back without a reason', async () => {
+    const pm = await apiToken('pm@demo.com');
+    for (const [decision, message] of [
+      ['REQUEST_CHANGES', 'Say what needs changing'],
+      ['REJECT', 'Say why you are rejecting it'],
+    ] as const) {
+      const res = await fetch(`${API_URL}/approvals/material_request/${mr.id}/review`, {
+        method: 'POST',
+        headers: { authorization: `Bearer ${pm}`, 'content-type': 'application/json' },
+        body: JSON.stringify({ decision, note: '  ' }),
+      });
+      expect(res.status).toBe(400);
+      expect(((await res.json()) as { message: string }).message).toContain(message);
+    }
+    expect((await api<MaterialRequest>(pm, `/material-requests/${mr.id}`)).status).toBe('SUBMITTED');
+  });
+
   test('the project manager requests changes with a reason', async ({ page }) => {
     await signIn(page, 'pm@demo.com');
     await page.goto('/approvals');
@@ -30,7 +47,7 @@ test.describe.serial('material request: changes requested, then resubmitted', ()
     await entry.decision.getByRole('button', { name: /Request changes/ }).click();
     const modal = page.locator('.ant-modal').filter({ hasText: 'Reason' });
     await modal.getByRole('button', { name: 'Request changes' }).click();
-    await expect(modal.getByText('Please enter a reason')).toBeVisible();
+    await expect(modal.getByText('Say what needs changing')).toBeVisible();
     await modal.getByLabel('Reason').fill(reason);
     await modal.getByRole('button', { name: 'Request changes' }).click();
     await expect(page.getByText('Changes requested', { exact: true }).first()).toBeVisible();

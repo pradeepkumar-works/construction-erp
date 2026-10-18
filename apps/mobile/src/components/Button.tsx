@@ -1,7 +1,8 @@
 import React from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, maxFontScale, radius, spacing, touch } from '../theme';
+import { colors, fontSize, maxFontScale, radius, spacing, touch } from '../theme';
+import { Touchable } from './Touchable';
 
 type Variant = 'primary' | 'secondary' | 'danger' | 'ghost' | 'success' | 'accent';
 
@@ -29,27 +30,24 @@ export function Button({ title, onPress, variant = 'primary', loading, disabled,
   const p = palette[variant];
   const isDisabled = disabled || loading;
   return (
-    <Pressable
+    <Touchable
       onPress={onPress}
       disabled={isDisabled}
       accessibilityRole="button"
-      style={({ pressed }) => [
-        styles.base,
-        { backgroundColor: p.bg, borderColor: p.border, minHeight: size === 'sm' ? touch.heightSm : touch.height },
-        pressed && styles.pressed,
-        isDisabled && styles.disabled,
-        style,
-      ]}
+      accessibilityLabel={title}
+      accessibilityState={{ disabled: !!isDisabled, busy: !!loading }}
+      pressedStyle={styles.pressed}
+      style={[styles.base, { backgroundColor: p.bg, borderColor: p.border, minHeight: size === 'sm' ? touch.heightSm : touch.height }, isDisabled && styles.disabled, style]}
     >
       {loading ? (
         <ActivityIndicator color={p.fg} />
       ) : (
         <View style={styles.row}>
           {icon ? <Ionicons name={icon} size={20} color={p.fg} style={styles.icon} /> : null}
-          <Text maxFontSizeMultiplier={maxFontScale} style={[styles.text, { color: p.fg, fontSize: size === 'sm' ? 14 : 16 }]}>{title}</Text>
+          <Text maxFontSizeMultiplier={maxFontScale} style={[styles.text, { color: p.fg, fontSize: size === 'sm' ? fontSize.secondary : fontSize.body }]}>{title}</Text>
         </View>
       )}
-    </Pressable>
+    </Touchable>
   );
 }
 

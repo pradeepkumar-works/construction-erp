@@ -8,9 +8,10 @@ import { useApi, useFetch } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
 import { AttachmentGallery, Button, Card, Chips, ErrorBanner, ErrorState, Input, KeyValue, Loading, PhotoPicker, Screen, SubmissionHeader, SubmitterActions, type LocalPhoto } from '../../src/components';
 import { attachmentIds, photosFailed, photosQueued, photosUploading } from '../../src/forms/common';
-import { colors, radius, spacing, typography } from '../../src/theme';
+import { colors, fontSize, radius, spacing, typography } from '../../src/theme';
 import { formatDate } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
+import { useFieldChain } from '../../src/forms/keyboard';
 
 const RESULT_TONE: Record<InspectionResult, { fg: string; bg: string }> = {
   PASS: { fg: colors.success, bg: colors.successSoft },
@@ -31,6 +32,7 @@ type Point = { result: InspectionResult | null; remark: string };
 function Inspect({ data, onDone }: { data: InspectionDto; onDone: (x: InspectionDto) => void }) {
   const api = useApi();
   const t = useT();
+  const field = useFieldChain();
   const [points, setPoints] = useState<Point[]>([]);
   const [photos, setPhotos] = useState<LocalPhoto[]>([]);
   const [pending, setPending] = useState<ReviewDecision | null>(null);
@@ -91,7 +93,7 @@ function Inspect({ data, onDone }: { data: InspectionDto; onDone: (x: Inspection
                   { value: 'NA', label: t('N/A') },
                 ]}
               />
-              {points[i]?.result === 'FAIL' ? <Input value={points[i].remark} onChangeText={(v) => set(i, { remark: v })} placeholder={t('What is wrong')} accessibilityLabel={t('What is wrong with point {n}', { n: i + 1 })} /> : null}
+              {points[i]?.result === 'FAIL' ? <Input {...field()} value={points[i].remark} onChangeText={(v) => set(i, { remark: v })} placeholder={t('What is wrong')} accessibilityLabel={t('What is wrong with point {n}', { n: i + 1 })} /> : null}
             </View>
           ))}
           {open ? <Button title={t('Mark the rest OK')} variant="ghost" icon="checkmark-done" onPress={() => setPoints((ps) => ps.map((p) => (p.result ? p : { ...p, result: 'PASS' })))} /> : null}
@@ -179,10 +181,10 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   flex2: { flex: 1.6, marginLeft: spacing.sm },
   point: { paddingVertical: spacing.sm, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
-  pointText: { fontSize: 15, fontWeight: '600', color: colors.text, marginBottom: spacing.xs },
+  pointText: { fontSize: fontSize.body, fontWeight: '600', color: colors.text, marginBottom: spacing.xs },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
   result: { paddingHorizontal: spacing.sm, paddingVertical: 4, borderRadius: radius.pill },
-  resultText: { fontSize: 12, fontWeight: '700' },
+  resultText: { fontSize: fontSize.small, fontWeight: '700' },
   actions: { gap: spacing.sm },
   backdrop: { flex: 1, backgroundColor: colors.scrim, justifyContent: 'flex-end' },
   sheet: { backgroundColor: colors.surface, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: spacing.xl, paddingBottom: spacing.xxl },

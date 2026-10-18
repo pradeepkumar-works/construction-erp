@@ -1,4 +1,5 @@
 import { Appearance } from 'react-native';
+import type { Ionicons } from '@expo/vector-icons';
 import type { SubmissionStatus } from '@erp/shared';
 import { kvGet, kvSet } from './utils/kv';
 
@@ -108,6 +109,8 @@ const LIGHT = {
   infoSoft: '#EDE9FE',
   neutral: '#4B5563',
   neutralSoft: '#E9ECF0',
+  /** Android ripple and the pressed wash on rows (UX item 88). */
+  ripple: 'rgba(15,27,45,0.12)',
 };
 
 /**
@@ -142,6 +145,7 @@ const DARK: typeof LIGHT = {
   infoSoft: '#221B3D',
   neutral: '#A3AEBD',
   neutralSoft: '#1F2834',
+  ripple: 'rgba(227,234,244,0.16)',
 };
 
 export const colors = { ...(scheme === 'dark' ? DARK : LIGHT), ...TILES };
@@ -159,27 +163,59 @@ export const fonts = { display: 'Archivo_700Bold', displayHeavy: 'Archivo_800Ext
  */
 export const maxFontScale = 1.6;
 
+/**
+ * Sizes for reading outdoors (UX item 88): body text 16, labels and secondary text 14, and nothing under 12 (`small`,
+ * for badges and tab labels only). Screens use these rather than their own numbers.
+ */
+export const fontSize = { small: 12, secondary: 14, body: 16, large: 18 };
+
 export const typography = {
   h1: { fontSize: 26, fontFamily: fonts.display, color: colors.text },
   h2: { fontSize: 20, fontFamily: fonts.display, color: colors.text },
   wordmark: { fontSize: 30, fontFamily: fonts.displayHeavy, letterSpacing: 3, color: colors.text },
-  h3: { fontSize: 16, fontWeight: '600' as const, color: colors.text },
-  body: { fontSize: 15, color: colors.text },
-  bodyStrong: { fontSize: 15, fontWeight: '600' as const, color: colors.text },
-  caption: { fontSize: 13, color: colors.textMuted },
-  label: { fontSize: 13, fontWeight: '600' as const, color: colors.textMuted, textTransform: 'uppercase' as const, letterSpacing: 0.4 },
+  h3: { fontSize: 17, fontWeight: '600' as const, color: colors.text },
+  body: { fontSize: fontSize.body, color: colors.text },
+  bodyStrong: { fontSize: fontSize.body, fontWeight: '600' as const, color: colors.text },
+  caption: { fontSize: fontSize.secondary, color: colors.textMuted },
+  label: { fontSize: fontSize.secondary, fontWeight: '600' as const, color: colors.textMuted, textTransform: 'uppercase' as const, letterSpacing: 0.4 },
 };
 
-/** Minimum touch target height for site use (gloves, sunlight). */
-export const touch = { height: 52, heightSm: 44 };
+/**
+ * Touch targets for site use (gloves, sunlight): 48 dp at the least (Material's minimum, UX item 88) for anything
+ * tappable, `height` for primary buttons and fields. An icon that must stay small gets `hitSlop` up to `min`.
+ */
+export const touch = { height: 52, heightSm: 48, min: 48 };
 
-export const statusTone: Record<SubmissionStatus, { fg: string; bg: string }> = {
-  DRAFT: { fg: colors.neutral, bg: colors.neutralSoft },
-  SUBMITTED: { fg: colors.warning, bg: colors.warningSoft },
-  APPROVED: { fg: colors.success, bg: colors.successSoft },
-  REJECTED: { fg: colors.danger, bg: colors.dangerSoft },
-  CHANGES_REQUESTED: { fg: colors.info, bg: colors.infoSoft },
+export type IconName = keyof typeof Ionicons.glyphMap;
+
+/** A status's colours plus a shape, so it reads without colour vision and in sun glare (UX item 88). */
+export interface Tone {
+  fg: string;
+  bg: string;
+  icon?: IconName;
+}
+
+export const statusTone: Record<SubmissionStatus, Tone & { icon: IconName }> = {
+  DRAFT: { fg: colors.neutral, bg: colors.neutralSoft, icon: 'ellipse-outline' },
+  SUBMITTED: { fg: colors.warning, bg: colors.warningSoft, icon: 'time-outline' },
+  APPROVED: { fg: colors.success, bg: colors.successSoft, icon: 'checkmark-circle' },
+  REJECTED: { fg: colors.danger, bg: colors.dangerSoft, icon: 'close-circle' },
+  CHANGES_REQUESTED: { fg: colors.info, bg: colors.infoSoft, icon: 'create-outline' },
 };
+
+/** Shapes for the other status words (open, closed, overdue…), by what they mean rather than their colour. */
+export const toneIcon = {
+  open: 'ellipse-outline',
+  waiting: 'time-outline',
+  done: 'checkmark-circle',
+  failed: 'close-circle',
+  alert: 'alert-circle',
+  warning: 'warning',
+  info: 'information-circle',
+  watch: 'eye-outline',
+  closed: 'lock-closed-outline',
+  edit: 'create-outline',
+} satisfies Record<string, IconName>;
 
 export const shadow = {
   card: {

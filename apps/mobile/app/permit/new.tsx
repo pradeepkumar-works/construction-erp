@@ -9,10 +9,11 @@ import { Button, Card, DatePicker, ErrorBanner, Input, TimePicker, Loading, Phot
 import { Checklist, permitWindow } from '../../src/components/safetyTone';
 import { attachmentIds, photosFailed, photosQueued, photosUploading, QueuedSuccess, SubmitSuccess, toOutboxPhotos, useProjectOptions } from '../../src/forms/common';
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
-import { colors, spacing, typography } from '../../src/theme';
+import { colors, fontSize, spacing, typography } from '../../src/theme';
 import { isIsoDate, today } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
 import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
+import { useFieldChain } from '../../src/forms/keyboard';
 
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 const at = (date: string, time: string) => new Date(`${date}T${time}:00`);
@@ -23,6 +24,7 @@ export default function PermitFormScreen() {
   const params = useLocalSearchParams<{ projectId?: string }>();
   const api = useApi();
   const t = useT();
+  const field = useFieldChain();
   const errorSummary = useErrorSummary();
   const { online, enqueue, newId } = useOffline();
   // The same id for a direct send and the outbox, so a send that timed out but arrived is never made twice
@@ -155,8 +157,8 @@ export default function PermitFormScreen() {
           placeholder={t('Hot work, height...')}
           error={errors.type}
         />
-        <Input label={t('Where')} required value={location} onChangeText={setLocation} maxLength={200} error={errors.location} />
-        <Input label={t('The work')} required value={description} onChangeText={setDescription} multiline maxLength={2000} error={errors.description} />
+        <Input {...field()} label={t('Where')} required value={location} onChangeText={setLocation} maxLength={200} error={errors.location} />
+        <Input {...field({ multiline: true })} label={t('The work')} required value={description} onChangeText={setDescription} multiline maxLength={2000} error={errors.description} />
       </Card>
       <Card title={t('Valid (at most {n} days)', { n: PERMIT_MAX_DAYS })}>
         <DatePicker label={t('From')} required value={fromDate} onChange={setFromDate} error={errors.from} />
@@ -165,13 +167,13 @@ export default function PermitFormScreen() {
         <TimePicker label={t('Till time')} value={toTime} onChange={setToTime} />
       </Card>
       <Card title={t('Workers')}>
-        <Input label={t('Contractor')} value={contractor} onChangeText={setContractor} placeholder={t('Optional')} maxLength={200} />
-        <Input label={t('How many')} value={workerCount} onChangeText={setWorkerCount} keyboardType="number-pad" maxLength={3} error={errors.workerCount} />
-        <Input label={t('Names')} value={workers} onChangeText={setWorkers} placeholder={t('Optional')} maxLength={2000} />
+        <Input {...field()} label={t('Contractor')} value={contractor} onChangeText={setContractor} placeholder={t('Optional')} maxLength={200} />
+        <Input {...field()} label={t('How many')} value={workerCount} onChangeText={setWorkerCount} keyboardType="number-pad" maxLength={3} error={errors.workerCount} />
+        <Input {...field()} label={t('Names')} value={workers} onChangeText={setWorkers} placeholder={t('Optional')} maxLength={2000} />
       </Card>
       <Card title={t('Precautions in place')}>
         {type ? <Checklist items={PERMIT_PRECAUTIONS[type]} value={ticked} onChange={setTicked} /> : <Text style={[typography.caption, styles.gap]}>{t('Pick the kind of work to see its precautions.')}</Text>}
-        <Input label={t('Other precautions')} value={other} onChangeText={setOther} multiline maxLength={2000} placeholder={t('One per line')} />
+        <Input {...field({ multiline: true })} label={t('Other precautions')} value={other} onChangeText={setOther} multiline maxLength={2000} placeholder={t('One per line')} />
       </Card>
       <Card title={t('Photos / drawings')}>
         <PhotoPicker photos={photos} onChange={setPhotos} />
@@ -184,5 +186,5 @@ export default function PermitFormScreen() {
 
 const styles = StyleSheet.create({
   gap: { marginBottom: spacing.sm },
-  err: { color: colors.danger, marginTop: -spacing.sm, marginBottom: spacing.sm, fontSize: 13 },
+  err: { color: colors.danger, marginTop: -spacing.sm, marginBottom: spacing.sm, fontSize: fontSize.secondary },
 });

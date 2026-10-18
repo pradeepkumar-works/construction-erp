@@ -1,14 +1,16 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SUBMISSION_TYPE_LABELS, mayApprove, type MyWorkCard, type MyWorkDto, type RoleKey } from '@erp/shared';
 import { useAuth } from '../auth/AuthContext';
-import { colors, radius, spacing, typography } from '../theme';
+import { colors, fontSize, radius, spacing, touch, typography } from '../theme';
+import { formatMoneyCompact } from '../utils/format';
 import { useT } from '../i18n/LanguageContext';
 import { Card } from './Card';
 import { SectionTitle } from './Layout';
 import { Skeleton } from './Skeleton';
+import { Touchable } from './Touchable';
 
 // `approvalsWaitingDays` is a figure on the approvals card, not a card of its own.
 type MyWorkKey = Exclude<keyof MyWorkDto, 'approvalsWaitingDays'>;
@@ -85,16 +87,7 @@ function phoneRoute(href: string): string | null {
   return null;
 }
 
-/** ₹ in lakh / crore, as the web's formatINRCompact. */
-function rupeesCompact(value: string | null): string | null {
-  if (value === null) return null;
-  const n = Number(value);
-  if (!Number.isFinite(n)) return null;
-  const abs = Math.abs(n);
-  if (abs >= 1e7) return `₹${(n / 1e7).toFixed(2)} Cr`;
-  if (abs >= 1e5) return `₹${(n / 1e5).toFixed(2)} L`;
-  return `₹${Math.round(n).toLocaleString('en-IN')}`;
-}
+const rupeesCompact = (value: string | null) => formatMoneyCompact(value);
 
 interface Row {
   key: string;
@@ -176,7 +169,7 @@ function WorkCard({ title, icon, tone, count, amount, rows, route }: { title: st
   const rest = count - rows.length;
   return (
     <Card style={styles.card}>
-      <Pressable onPress={go(route)} disabled={!route} accessibilityRole={route ? 'button' : 'summary'} accessibilityLabel={t('{title}: {n}', { title, n: count })} style={({ pressed }) => [styles.head, pressed && styles.pressed]}>
+      <Touchable onPress={go(route)} disabled={!route} accessibilityRole={route ? 'link' : 'summary'} accessibilityLabel={t('{title}: {n}', { title, n: count })} style={styles.head}>
         <View style={[styles.icon, { backgroundColor: c.bg }]}>
           <Ionicons name={icon} size={20} color={c.fg} />
         </View>
@@ -187,9 +180,9 @@ function WorkCard({ title, icon, tone, count, amount, rows, route }: { title: st
           {total ? <Text style={typography.caption}>{total}</Text> : null}
         </View>
         <Text style={[styles.count, { color: c.fg }]}>{count}</Text>
-      </Pressable>
+      </Touchable>
       {rows.map((r) => (
-        <Pressable key={r.key} onPress={go(r.route)} disabled={!r.route} accessibilityRole={r.route ? 'button' : undefined} style={({ pressed }) => [styles.item, pressed && styles.pressed]}>
+        <Touchable key={r.key} onPress={go(r.route)} disabled={!r.route} accessibilityRole={r.route ? 'link' : 'text'} style={styles.item}>
           <View style={styles.flex}>
             <Text style={typography.body} numberOfLines={1}>
               {r.label}
@@ -202,12 +195,12 @@ function WorkCard({ title, icon, tone, count, amount, rows, route }: { title: st
           </View>
           {r.right ? <Text style={styles.right}>{r.right}</Text> : null}
           {r.route ? <Ionicons name="chevron-forward" size={16} color={colors.textMuted} /> : null}
-        </Pressable>
+        </Touchable>
       ))}
       {rest > 0 && rows.length > 0 && route ? (
-        <Pressable onPress={go(route)} accessibilityRole="link" hitSlop={8}>
+        <Touchable onPress={go(route)} accessibilityRole="link" style={styles.moreBtn}>
           <Text style={styles.more}>{t('{n} more', { n: rest })}</Text>
-        </Pressable>
+        </Touchable>
       ) : null}
     </Card>
   );
@@ -217,11 +210,11 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   card: { paddingVertical: spacing.md },
   clear: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  head: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 44 },
+  head: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: touch.min },
   icon: { width: 36, height: 36, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
   count: { fontSize: 24, fontWeight: '800', fontVariant: ['tabular-nums'] },
-  item: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm, marginTop: spacing.xs, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, minHeight: 48 },
+  item: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm, marginTop: spacing.xs, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, minHeight: touch.min },
   right: { ...typography.caption, color: colors.text, fontWeight: '600' },
-  pressed: { opacity: 0.7 },
-  more: { ...typography.caption, color: colors.primary, fontWeight: '600', marginTop: spacing.xs },
+  moreBtn: { minHeight: touch.min, justifyContent: 'center', alignSelf: 'flex-start', paddingRight: spacing.lg },
+  more: { ...typography.caption, fontSize: fontSize.secondary, color: colors.primary, fontWeight: '600' },
 });

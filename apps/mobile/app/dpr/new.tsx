@@ -1,11 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { MANPOWER_CATEGORIES, WEATHER_LABELS, WEATHER_OPTIONS, attendanceToManpower, type AttendanceDayDto, type AttendanceLineInput, type DailyReportDto, type ManpowerLine, type Weather } from '@erp/shared';
 import { useApi, useFetch } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
-import { Button, Card, Chips, DatePicker, ErrorBanner, ErrorState, Input, Loading, PhotoPicker, Screen, Select, type LocalPhoto } from '../../src/components';
+import { Button, Card, Chips, DatePicker, ErrorBanner, ErrorState, Input, Loading, PhotoPicker, Screen, Select, type LocalPhoto, IconButton } from '../../src/components';
 import { attachmentIds, photosFailed, photosQueued, photosUploading, QueuedSuccess, SubmitSuccess, toOutboxPhotos, useProjectOptions } from '../../src/forms/common';
 import { attachmentsToPhotos, outboxToPhotos, OutboxRefusal, ReviewerNote, useOutboxEntry } from '../../src/forms/edit';
 import { DraftNotice, restorePhotos, useFormDraft, useLeaveGuard } from '../../src/forms/draft';
@@ -14,8 +13,9 @@ import { useT } from '../../src/i18n/LanguageContext';
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
 import { draftFor } from '../../src/ai/ask';
 import { AskDraftNotice } from '../../src/ai/AskDraftNotice';
-import { colors, spacing, typography } from '../../src/theme';
+import { colors, fontSize, spacing, touch, typography } from '../../src/theme';
 import { formatDate, isIsoDate, today } from '../../src/utils/format';
+import { useFieldChain } from '../../src/forms/keyboard';
 
 interface ManpowerRow {
   key: string;
@@ -44,6 +44,7 @@ export default function NewDprScreen() {
   // Filled in by Ask Nirmaan (AI item 72): it takes the place of a draft kept on the phone and is itself kept as one.
   const [askDraft] = useState(() => (editId || outboxId ? null : draftFor(params.fromAsk)));
   const t = useT();
+  const field = useFieldChain();
   const api = useApi();
   const { online, enqueue, discard, newId, items: outbox } = useOffline();
   const refused = useOutboxEntry(outboxId);
@@ -329,7 +330,7 @@ export default function NewDprScreen() {
         <Select label={t('Project')} required value={projectId} options={projects.options} onChange={setProjectId} placeholder={t('Choose project')} error={errors.projectId} disabled={!!editId} />
         <DatePicker label={t('Report date')} required value={date} onChange={setDate} error={errors.date} />
         <Chips label={t('Weather')} value={weather} options={weatherChips} onChange={setWeather} />
-        <Input label={t('Site condition')} value={siteCondition} onChangeText={setSiteCondition} placeholder={t('e.g. Workable, waterlogged at Km 16')} containerStyle={styles.last} />
+        <Input {...field()} label={t('Site condition')} value={siteCondition} onChangeText={setSiteCondition} placeholder={t('e.g. Workable, waterlogged at Km 16')} containerStyle={styles.last} />
       </Card>
 
       <Card title={t('Manpower')} right={<Text style={styles.total}>{t('Total {n}', { n: totalManpower })}</Text>}>
@@ -345,7 +346,7 @@ export default function NewDprScreen() {
             <View style={styles.grow}>
               <Select value={r.category} options={withValue(categoryOptions, r.category)} onChange={(v) => updateMan(r.key, { category: v })} placeholder={t('Category')} />
             </View>
-            <Input
+            <Input {...field()}
               value={r.count}
               onChangeText={(v) => updateMan(r.key, { count: v })}
               keyboardType="number-pad"
@@ -377,8 +378,8 @@ export default function NewDprScreen() {
       <Card title={t('Machinery')}>
         {machinery.map((r) => (
           <View key={r.key} style={styles.row}>
-            <Input value={r.name} onChangeText={(v) => updateMach(r.key, { name: v })} placeholder={t('e.g. Excavator')} accessibilityLabel={t('Machine')} containerStyle={styles.grow} />
-            <Input
+            <Input {...field()} value={r.name} onChangeText={(v) => updateMach(r.key, { name: v })} placeholder={t('e.g. Excavator')} accessibilityLabel={t('Machine')} containerStyle={styles.grow} />
+            <Input {...field()}
               value={r.hours}
               onChangeText={(v) => updateMach(r.key, { hours: v })}
               keyboardType="decimal-pad"
@@ -394,12 +395,12 @@ export default function NewDprScreen() {
       </Card>
 
       <Card title={t('Work')}>
-        <Input label={t('Work executed')} required value={workExecuted} onChangeText={setWorkExecuted} multiline placeholder={t('What was done today, where, and how much')} error={errors.workExecuted} />
-        <Input label={t('Material received')} value={materialReceived} onChangeText={setMaterialReceived} multiline placeholder={t('e.g. 200 bags cement, 20 MT steel')} />
-        <Input label={t('Tests conducted')} value={tests} onChangeText={setTests} multiline placeholder={t('e.g. Cube test, FDD')} />
-        <Input label={t('Safety observations')} value={safety} onChangeText={setSafety} multiline placeholder={t('Toolbox talk, PPE, incidents')} />
-        <Input label={t('Issues / hindrances')} value={issues} onChangeText={setIssues} multiline placeholder={t('Anything blocking work')} />
-        <Input label={t('Next-day plan')} value={nextDayPlan} onChangeText={setNextDayPlan} multiline placeholder={t('Planned activities for tomorrow')} />
+        <Input {...field({ multiline: true })} label={t('Work executed')} required value={workExecuted} onChangeText={setWorkExecuted} multiline placeholder={t('What was done today, where, and how much')} error={errors.workExecuted} />
+        <Input {...field({ multiline: true })} label={t('Material received')} value={materialReceived} onChangeText={setMaterialReceived} multiline placeholder={t('e.g. 200 bags cement, 20 MT steel')} />
+        <Input {...field({ multiline: true })} label={t('Tests conducted')} value={tests} onChangeText={setTests} multiline placeholder={t('e.g. Cube test, FDD')} />
+        <Input {...field({ multiline: true })} label={t('Safety observations')} value={safety} onChangeText={setSafety} multiline placeholder={t('Toolbox talk, PPE, incidents')} />
+        <Input {...field({ multiline: true })} label={t('Issues / hindrances')} value={issues} onChangeText={setIssues} multiline placeholder={t('Anything blocking work')} />
+        <Input {...field({ multiline: true })} label={t('Next-day plan')} value={nextDayPlan} onChangeText={setNextDayPlan} multiline placeholder={t('Planned activities for tomorrow')} />
         <PhotoPicker photos={photos} onChange={setPhotos} />
         {errors.photos ? <Text style={styles.err}>{errors.photos}</Text> : null}
       </Card>
@@ -411,9 +412,7 @@ export default function NewDprScreen() {
 function RemoveBtn({ onPress }: { onPress: () => void }) {
   const t = useT();
   return (
-    <Pressable onPress={onPress} style={styles.remove} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('Remove row')}>
-      <Ionicons name="trash-outline" size={20} color={colors.danger} />
-    </Pressable>
+    <IconButton icon="trash-outline" size={20} color={colors.danger} onPress={onPress} accessibilityLabel={t('Remove row')} style={styles.remove} />
   );
 }
 
@@ -423,7 +422,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   grow: { flex: 1, marginBottom: spacing.sm },
   small: { width: 84, marginBottom: spacing.sm },
-  remove: { width: 44, height: 52, alignItems: 'center', justifyContent: 'center' },
-  err: { color: colors.danger, marginBottom: spacing.sm, fontSize: 13 },
+  remove: { height: touch.height },
+  err: { color: colors.danger, marginBottom: spacing.sm, fontSize: fontSize.secondary },
   fromAttendance: { ...typography.caption, color: colors.success, marginBottom: spacing.sm },
 });

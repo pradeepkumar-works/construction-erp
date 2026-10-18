@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import type { DefectDto, Paginated } from '@erp/shared';
 import { DEFECT_PHASE_LABELS, canReportDefect } from '@erp/shared';
 import { useAuth } from '../src/auth/AuthContext';
 import { useFetch } from '../src/api/hooks';
-import { Button, Card, Chips, EmptyState, ErrorBanner, Loading, Pill, Screen, SectionTitle, Select } from '../src/components';
+import { Button, Card, Chips, EmptyState, ErrorBanner, Loading, Pill, Screen, SectionTitle, Select, Touchable } from '../src/components';
 import { DEFECT_TONE } from '../src/components/defectTone';
 import { useProjectOptions } from '../src/forms/common';
-import { colors, radius, spacing, typography } from '../src/theme';
+import { colors, radius, spacing, touch, typography, toneIcon } from '../src/theme';
 import { formatDate } from '../src/utils/format';
 import { useT } from '../src/i18n/LanguageContext';
 
@@ -61,7 +61,7 @@ export default function SnagsScreen() {
         <>
           <SectionTitle title={t(show === 'OPEN' ? '{n} open' : show === 'FIXED' ? '{n} fixed, to check' : '{n} closed', { n: total })} />
           {(list.data?.items ?? []).map((d) => (
-            <Pressable key={d.id} onPress={() => router.push(`/snag/${d.id}`)} style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
+            <Touchable key={d.id} accessibilityRole="button" onPress={() => router.push(`/snag/${d.id}`)} style={styles.row}>
               <View style={styles.icon}>
                 <Ionicons name="construct" size={20} color={colors.primary} />
               </View>
@@ -78,10 +78,10 @@ export default function SnagsScreen() {
                 </Text>
               </View>
               <View style={styles.side}>
-                {d.overdue ? <Pill text={t('Overdue')} fg={colors.danger} bg={colors.dangerSoft} /> : <Pill text={t(d.priority === 'HIGH' ? 'High' : DEFECT_PHASE_LABELS[d.phase])} {...DEFECT_TONE[d.priority]} />}
+                {d.overdue ? <Pill text={t('Overdue')} fg={colors.danger} bg={colors.dangerSoft} icon={toneIcon.alert} /> : <Pill text={t(d.priority === 'HIGH' ? 'High' : DEFECT_PHASE_LABELS[d.phase])} {...DEFECT_TONE[d.priority]} />}
                 <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
               </View>
-            </Pressable>
+            </Touchable>
           ))}
         </>
       )}
@@ -91,7 +91,7 @@ export default function SnagsScreen() {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md, marginBottom: spacing.sm },
+  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md, marginBottom: spacing.sm, minHeight: touch.min },
   pressed: { opacity: 0.7 },
   icon: { width: 40, height: 40, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primarySoft },
   side: { alignItems: 'flex-end', gap: 4 },

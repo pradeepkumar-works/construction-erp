@@ -1,5 +1,5 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { Pressable, RefreshControl, SectionList, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { RefreshControl, SectionList, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import ReanimatedSwipeable, { type SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable';
@@ -7,10 +7,11 @@ import { SUBMISSION_TYPE_LABELS, type PendingApprovalDto, type SubmissionType } 
 import { useApi, useFetch } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
 import { canQuickReview, reviewSubmission } from '../../src/api/review';
-import { Button, EmptyState, ErrorBanner, ErrorState, Input, Loading, Screen, SubmissionRow, useSnackbar } from '../../src/components';
+import { Button, EmptyState, ErrorBanner, ErrorState, Input, Loading, Screen, SubmissionRow, useSnackbar, Touchable } from '../../src/components';
 import { BottomSheet } from '../../src/components/BottomSheet';
-import { colors, radius, spacing, touch, typography } from '../../src/theme';
-import { timeAgo } from '../../src/utils/format';
+import { useNotifications } from '../../src/notifications/NotificationsContext';
+import { colors, fontSize, radius, spacing, touch, typography } from '../../src/theme';
+import { formatMoney, timeAgo } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
 
 const ORDER: SubmissionType[] = ['DPR', 'PROGRESS', 'MATERIAL_REQUEST', 'MACHINERY', 'EXPENSE', 'MEASUREMENT', 'BILL', 'PURCHASE_ORDER', 'VENDOR_BILL', 'WORK_ORDER', 'SUBCONTRACT_BILL', 'INSPECTION'];
@@ -24,6 +25,11 @@ export default function ApprovalsScreen() {
   const t = useT();
   const snackbar = useSnackbar();
   const { data, loading, refreshing, error, refresh, reload, setData } = useFetch<PendingApprovalDto[]>((api) => api.get('/approvals/pending'), []);
+  const { refreshPending } = useNotifications();
+  // The tab's badge follows the list just loaded (and each approval taken off it).
+  useEffect(() => {
+    if (data) void refreshPending(data.length);
+  }, [data, refreshPending]);
   const [approving, setApproving] = useState<PendingApprovalDto | null>(null);
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
@@ -128,7 +134,7 @@ export default function ApprovalsScreen() {
 function SwipeRow({ item, onOpen, onApprove, onSwipeOpen }: { item: PendingApprovalDto; onOpen: () => void; onApprove?: () => void; onSwipeOpen: (row: SwipeableMethods) => void }) {
   const t = useT();
   const ref = useRef<SwipeableMethods>(null);
-  const meta = `${item.amount && item.type !== 'EXPENSE' ? `₹${Number(item.amount).toLocaleString('en-IN')} · ` : ''}${item.submittedByName} · ${timeAgo(item.submittedAt)}`;
+  const meta = `${item.amount && item.type !== 'EXPENSE' ? `${formatMoney(item.amount, { paise: false })} · ` : ''}${item.submittedByName} · ${timeAgo(item.submittedAt)}`;
   return (
     <ReanimatedSwipeable
       ref={ref}
@@ -140,23 +146,23 @@ function SwipeRow({ item, onOpen, onApprove, onSwipeOpen }: { item: PendingAppro
       renderRightActions={(_progress, _translation, methods) => (
         <View style={styles.actions}>
           {onApprove ? (
-            <Pressable onPress={onApprove} accessibilityRole="button" accessibilityLabel={t('Approve')} style={({ pressed }) => [styles.action, styles.approve, pressed && styles.pressed]}>
+            <Touchable onPress={onApprove} accessibilityRole="button" accessibilityLabel={t('Approve')} style={[styles.action, styles.approve]}>
               <Ionicons name="checkmark-circle" size={24} color={colors.textOnPrimary} />
               <Text style={styles.actionText}>{t('Approve')}</Text>
-            </Pressable>
+            </Touchable>
           ) : null}
-          <Pressable
+          <Touchable
             onPress={() => {
               methods.close();
               onOpen();
             }}
             accessibilityRole="button"
             accessibilityLabel={t('Open entry')}
-            style={({ pressed }) => [styles.action, styles.openAction, pressed && styles.pressed]}
+            style={[styles.action, styles.openAction]}
           >
             <Ionicons name="open-outline" size={22} color={colors.textOnPrimary} />
             <Text style={styles.actionText}>{t('Open entry')}</Text>
-          </Pressable>
+          </Touchable>
         </View>
       )}
     >
@@ -191,7 +197,7 @@ const styles = StyleSheet.create({
   approve: { backgroundColor: colors.success },
   openAction: { backgroundColor: colors.primary },
   // textOnPrimary: white on the day tones, night ink on the brighter night tones (AA in both palettes).
-  actionText: { color: colors.textOnPrimary, fontSize: 13, fontWeight: '700' },
+  actionText: { color: colors.textOnPrimary, fontSize: fontSize.secondary, fontWeight: '700' },
   pressed: { opacity: 0.8 },
   sheetBtns: { flexDirection: 'row' },
 });

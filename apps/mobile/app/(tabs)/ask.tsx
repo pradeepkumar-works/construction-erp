@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { AI_DRAFT_LABELS, AI_QUESTION_MAX, PRODUCT_NAME, type AiDraftDto, type AiMessageDto } from '@erp/shared';
 import { useAuth } from '../../src/auth/AuthContext';
-import { Button, Screen, Select } from '../../src/components';
+import { Button, Screen, Select, IconButton, Touchable } from '../../src/components';
 import { useProjectOptions } from '../../src/forms/common';
 import { keepDraft, streamAsk } from '../../src/ai/ask';
 import { AnswerText } from '../../src/ai/AnswerText';
@@ -12,7 +12,7 @@ import { phoneRoute } from '../../src/ai/links';
 import { useOffline } from '../../src/offline';
 import { useLanguage, useT } from '../../src/i18n/LanguageContext';
 import { errorMessage } from '../../src/api/client';
-import { colors, maxFontScale, radius, spacing, touch, typography } from '../../src/theme';
+import { colors, fontSize, maxFontScale, radius, spacing, touch, typography } from '../../src/theme';
 import { today } from '../../src/utils/format';
 
 interface Turn {
@@ -121,7 +121,7 @@ export default function AskScreen() {
               </Text>
               <Text style={styles.introText}>{t('Ask about your projects in Hindi, English or Hinglish. Type, or tap the microphone on your keyboard and speak. It only reads; nothing is saved until you send a form yourself.')}</Text>
             </View>
-            <Pressable onPress={dictate} disabled={!online} style={({ pressed }) => [styles.dictateTile, pressed && styles.pressed, !online && styles.disabled]} accessibilityRole="button" accessibilityLabel={t("Dictate today's DPR")}>
+            <Touchable onPress={dictate} disabled={!online} style={[styles.dictateTile, !online && styles.disabled]} accessibilityRole="button" accessibilityLabel={t("Dictate today's DPR")}>
               <Ionicons name="mic" size={26} color={colors.onBrand} />
               <View style={styles.flex}>
                 <Text style={styles.dictateTitle} maxFontSizeMultiplier={maxFontScale}>
@@ -131,14 +131,14 @@ export default function AskScreen() {
                   {t('Say the work done, manpower, machines and any problems; check the filled form and send it.')}
                 </Text>
               </View>
-            </Pressable>
+            </Touchable>
             {suggestions.map((s) => (
-              <Pressable key={s} onPress={() => send(s)} disabled={!online} style={({ pressed }) => [styles.suggestion, pressed && styles.pressed, !online && styles.disabled]} accessibilityRole="button">
+              <Touchable key={s} onPress={() => send(s)} disabled={!online} style={[styles.suggestion, !online && styles.disabled]} accessibilityRole="button">
                 <Text style={styles.suggestionText} maxFontSizeMultiplier={maxFontScale}>
                   {s}
                 </Text>
                 <Ionicons name="arrow-forward" size={18} color={colors.primary} />
-              </Pressable>
+              </Touchable>
             ))}
           </View>
         ) : (
@@ -171,9 +171,7 @@ export default function AskScreen() {
             <View style={styles.dictatingHead}>
               <Ionicons name="mic" size={18} color={colors.primary} />
               <Text style={styles.dictatingText}>{t("Today's DPR: tap the microphone on your keyboard and say what was done.")}</Text>
-              <Pressable onPress={() => setDictating(false)} hitSlop={12} accessibilityRole="button" accessibilityLabel={t('Cancel')}>
-                <Ionicons name="close" size={20} color={colors.textMuted} />
-              </Pressable>
+              <IconButton icon="close" size={20} color={colors.textMuted} onPress={() => setDictating(false)} accessibilityLabel={t('Cancel')} />
             </View>
             {projects.options.length > 1 ? <Select label={t('Project')} required value={projectId} options={projects.options} onChange={setProjectId} placeholder={t('Choose project')} /> : null}
           </View>
@@ -193,15 +191,15 @@ export default function AskScreen() {
             accessibilityLabel={dictating ? t("Notes for today's DPR") : t('Question')}
             accessibilityHint={t('Type, or tap the microphone on your keyboard to speak')}
           />
-          <Pressable
+          <Touchable
             onPress={() => (busy ? abort.current?.abort() : send(question))}
             disabled={!online || (!busy && (question.trim().length < 2 || (dictating && !projectId)))}
-            style={({ pressed }) => [styles.send, pressed && styles.pressed, (!online || (!busy && (question.trim().length < 2 || (dictating && !projectId)))) && styles.disabled]}
+            style={[styles.send, (!online || (!busy && (question.trim().length < 2 || (dictating && !projectId)))) && styles.disabled]}
             accessibilityRole="button"
             accessibilityLabel={busy ? t('Stop') : dictating ? t('Make the DPR') : t('Send')}
           >
             <Ionicons name={busy ? 'stop' : dictating ? 'document-text' : 'send'} size={22} color={colors.onBrand} />
-          </Pressable>
+          </Touchable>
         </View>
       </View>
     </Screen>
@@ -228,11 +226,11 @@ function Answer({ turn, onOpenDraft }: { turn: Turn; onOpenDraft: (d: AiDraftDto
       {links.length ? (
         <View style={styles.chips}>
           {links.map((c) => (
-            <Pressable key={c.href} onPress={() => router.push(c.route as never)} style={({ pressed }) => [styles.chip, pressed && styles.pressed]} accessibilityRole="link">
+            <Touchable key={c.href} onPress={() => router.push(c.route as never)} style={styles.chip} accessibilityRole="link">
               <Text style={styles.chipText} maxFontSizeMultiplier={maxFontScale}>
                 {c.label}
               </Text>
-            </Pressable>
+            </Touchable>
           ))}
         </View>
       ) : null}
@@ -262,7 +260,7 @@ const styles = StyleSheet.create({
   introText: { ...typography.body, color: colors.textMuted, lineHeight: 22 },
   dictateTile: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: colors.brand, borderRadius: radius.lg, padding: spacing.lg, minHeight: touch.height, marginBottom: spacing.md },
   dictateTitle: { fontSize: 17, fontWeight: '700', color: colors.onBrand },
-  dictateText: { fontSize: 13, color: colors.onBrand, marginTop: 2 },
+  dictateText: { fontSize: fontSize.secondary, color: colors.onBrand, marginTop: 2 },
   suggestion: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: radius.md, paddingHorizontal: spacing.md, minHeight: touch.height, marginBottom: spacing.sm },
   suggestionText: { ...typography.body, flex: 1 },
   topRow: { flexDirection: 'row', justifyContent: 'flex-end', marginBottom: spacing.sm },
@@ -275,7 +273,7 @@ const styles = StyleSheet.create({
   caption: { ...typography.caption, marginTop: spacing.xs, marginBottom: spacing.xs },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.sm },
   chip: { backgroundColor: colors.primarySoft, borderRadius: radius.pill, paddingHorizontal: spacing.md, minHeight: touch.heightSm, justifyContent: 'center' },
-  chipText: { color: colors.primary, fontWeight: '600', fontSize: 14 },
+  chipText: { color: colors.primary, fontWeight: '600', fontSize: fontSize.secondary },
   draft: { marginTop: spacing.md, borderColor: colors.primary, borderWidth: 1, borderRadius: radius.md, padding: spacing.md, gap: spacing.xs },
   draftKind: { ...typography.label, color: colors.primary },
   draftTitle: { ...typography.bodyStrong, marginBottom: spacing.xs },

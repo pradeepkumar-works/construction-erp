@@ -8,10 +8,11 @@ import { errorMessage } from '../../src/api/client';
 import { Button, Card, Chips, DatePicker, ErrorBanner, Input, Loading, PhotoPicker, Screen, Select, type LocalPhoto } from '../../src/components';
 import { attachmentIds, photosFailed, photosQueued, photosUploading, SubmitSuccess, useProjectOptions } from '../../src/forms/common';
 import { useOffline } from '../../src/offline';
-import { colors, spacing } from '../../src/theme';
+import { colors, fontSize, spacing } from '../../src/theme';
 import { isIsoDate, today } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
 import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
+import { useFieldChain } from '../../src/forms/keyboard';
 
 /**
  * Report a snag (before handover) or a defect (in the defect liability period) with photos (v4 item 47). Which one it is
@@ -21,6 +22,7 @@ export default function ReportSnagScreen() {
   const params = useLocalSearchParams<{ projectId?: string }>();
   const api = useApi();
   const t = useT();
+  const field = useFieldChain();
   const errorSummary = useErrorSummary();
   const { online } = useOffline();
   const projects = useProjectOptions();
@@ -99,13 +101,13 @@ export default function ReportSnagScreen() {
       <ErrorBanner message={submitError ?? projects.error ?? (online ? null : t('You are offline. A snag is sent straight away, so it needs a connection.'))} />
       <Card>
         <Select label={t('Project')} required value={projectId} options={projects.options} onChange={setProjectId} placeholder={t('Choose project')} error={errors.projectId} />
-        <Input label={t('What is wrong')} required value={title} onChangeText={setTitle} maxLength={200} placeholder={t('Toilet floor slopes away from the drain')} error={errors.title} />
-        <Input label={t('Where')} value={location} onChangeText={setLocation} maxLength={200} placeholder={t('Block B, 2nd floor, toilet T4')} />
-        <Input label={t('Trade')} value={trade} onChangeText={setTrade} maxLength={80} placeholder={t('Tiling, plaster, plumbing...')} />
+        <Input {...field()} label={t('What is wrong')} required value={title} onChangeText={setTitle} maxLength={200} placeholder={t('Toilet floor slopes away from the drain')} error={errors.title} />
+        <Input {...field()} label={t('Where')} value={location} onChangeText={setLocation} maxLength={200} placeholder={t('Block B, 2nd floor, toilet T4')} />
+        <Input {...field()} label={t('Trade')} value={trade} onChangeText={setTrade} maxLength={80} placeholder={t('Tiling, plaster, plumbing...')} />
         <Chips label={t('Priority')} value={priority} clearable={false} onChange={(v) => v && setPriority(v)} options={DEFECT_PRIORITIES.map((p) => ({ value: p, label: t(DEFECT_PRIORITY_LABELS[p]) }))} />
-        <Input label={t('Subcontractor to put it right')} value={contractor} onChangeText={setContractor} maxLength={160} />
+        <Input {...field()} label={t('Subcontractor to put it right')} value={contractor} onChangeText={setContractor} maxLength={160} />
         <DatePicker label={t('Put right by')} value={dueDate} onChange={setDueDate} error={errors.dueDate} />
-        <Input label={t('Details')} value={description} onChangeText={setDescription} multiline maxLength={2000} />
+        <Input {...field({ multiline: true })} label={t('Details')} value={description} onChangeText={setDescription} multiline maxLength={2000} />
       </Card>
       <Card title={t('Photos')}>
         <PhotoPicker photos={photos} onChange={setPhotos} />
@@ -117,5 +119,5 @@ export default function ReportSnagScreen() {
 }
 
 const styles = StyleSheet.create({
-  err: { color: colors.danger, marginTop: -spacing.sm, marginBottom: spacing.sm, fontSize: 13 },
+  err: { color: colors.danger, marginTop: -spacing.sm, marginBottom: spacing.sm, fontSize: fontSize.secondary },
 });

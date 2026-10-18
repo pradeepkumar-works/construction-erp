@@ -6,7 +6,7 @@ import { PROJECT_STATUS_LABELS, PROJECT_TYPE_LABELS, canManageWorkers, canRecord
 import { useAuth } from '../../src/auth/AuthContext';
 import { useFetch } from '../../src/api/hooks';
 import { Button, Card, EmptyState, ErrorState, KeyValue, Loading, Pill, ProgressBar, Screen, SectionTitle, Stat } from '../../src/components';
-import { colors, spacing, typography } from '../../src/theme';
+import { colors, fontSize, spacing, typography } from '../../src/theme';
 import { fmtQty, formatDate } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
 
@@ -36,7 +36,7 @@ export default function ProjectScreen() {
       <Card>
         <View style={styles.top}>
           <Text style={styles.code}>{project.code}</Text>
-          <Pill text={t(PROJECT_STATUS_LABELS[project.status])} fg={project.status === 'ACTIVE' ? colors.success : colors.neutral} bg={project.status === 'ACTIVE' ? colors.successSoft : colors.neutralSoft} />
+          <Pill text={t(PROJECT_STATUS_LABELS[project.status])} fg={project.status === 'ACTIVE' ? colors.success : colors.neutral} bg={project.status === 'ACTIVE' ? colors.successSoft : colors.neutralSoft} icon={project.status === 'ACTIVE' ? 'play-circle-outline' : 'pause-circle-outline'} />
         </View>
         <Text style={typography.h2}>{project.name}</Text>
         <Text style={typography.caption}>{t(PROJECT_TYPE_LABELS[project.type])}</Text>
@@ -117,6 +117,6 @@ const styles = StyleSheet.create({
   attendance: { marginBottom: spacing.sm },
   actTop: { flexDirection: 'row', alignItems: 'flex-start' },
   delayed: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.dangerSoft, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999, marginLeft: spacing.sm },
-  delayedText: { color: colors.danger, fontSize: 12, fontWeight: '700' },
+  delayedText: { color: colors.danger, fontSize: fontSize.small, fontWeight: '700' },
   actBar: { marginVertical: spacing.md },
 });
