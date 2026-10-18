@@ -42,7 +42,11 @@ test('a project manager sees approvals, missing DPRs and the progress curve', as
   const approvals = section(page, 'Waiting for your approval');
   await expect(approvals).toBeVisible();
   await expect(approvals.getByRole('link', { name: 'Waiting for your approval' })).toHaveAttribute('href', '/approvals');
-  await expect(section(page, 'DPRs not filed today')).toBeVisible();
+  // The card sits third, after the watch list, so it shows only while a DPR is missing: the seed files today's DPRs by
+  // the UTC date, so whether any is missing depends on the hour the test runs.
+  const missing = section(page, 'DPRs not filed today');
+  if (work.dprsMissing!.count > 0) await expect(missing).toBeVisible();
+  else await expect(missing).toHaveCount(0);
   await expect(page.getByText(/^Work done in [A-Z][a-z]{2,3}$/)).toBeVisible();
   await expect(page.getByText('Pending approvals', { exact: true })).toBeVisible();
   await expect(page.getByRole('img', { name: /^Planned against actual progress\. / })).toBeVisible();
