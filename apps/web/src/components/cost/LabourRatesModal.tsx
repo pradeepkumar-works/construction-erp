@@ -5,7 +5,8 @@ import { Alert, App, Button, Form, Input, Modal, Skeleton, Tag, Typography } fro
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { canSetLabourRates } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useLabourRates } from '@/lib/queries';
 import { formatINR } from '@/lib/format';
@@ -37,7 +38,7 @@ export function LabourRatesModal({ open, onClose }: { open: boolean; onClose: ()
       message.success('Labour rates saved');
       qc.invalidateQueries({ queryKey: ['cost'] });
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   const intro = (

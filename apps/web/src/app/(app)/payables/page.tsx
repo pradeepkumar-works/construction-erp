@@ -2,13 +2,14 @@
 
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { App, Button, Card, Col, Popconfirm, Row, Space, Statistic, Tabs, Tag, Typography } from 'antd';
+import { Button, Card, Col, Row, Space, Statistic, Tabs, Tag, Typography } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { PayableBillDto, PayableTotalsDto, ProjectPayableDto, VendorPayableDto, VendorPaymentDto, VendorPaymentSortField } from '@erp/shared';
 import { LIST_SORT_FIELDS, MSME_CATEGORY_LABELS, RECEIPT_MODE_LABELS, canRecordPayment } from '@erp/shared';
 import { useProjectScope } from '@/lib/project-scope';
-import { api, errorMessage, errorStatus } from '@/lib/api';
+import { api, errorStatus } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { usePayables, useVendorPayments } from '@/lib/queries';
 import { useListPage } from '@/lib/listPage';
@@ -33,6 +34,7 @@ import { exportSelected } from '@/components/list/bulk';
 import { RecordLink } from '@/components/record/RecordLink';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { VendorSelect } from '@/components/common/SearchSelect';
+import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 const money = (v: string, strong?: boolean) => (strong ? <strong className="mono" translate="no">{formatINR(v)}</strong> : <span className="mono" translate="no">{formatINR(v)}</span>);
 const late = (v: string) => (toNumber(v) > 0 ? <span className="mono" translate="no" style={{ color: themeColor('colorErrorText') }}>{formatINR(v)}</span> : <span className="mono text-muted" translate="no">-</span>);
@@ -73,7 +75,6 @@ const billHref = (r: VendorPaymentDto) => (r.billType === 'VENDOR_BILL' ? `/vend
 
 function PaymentsTab({ projectId, vendorId, onBill }: { projectId?: string; vendorId?: string; onBill: (b: { billType: PayableBillDto['billType']; billId: string }) => void }) {
   const { user } = useAuth();
-  const { message } = App.useApp();
   const qc = useQueryClient();
   const page = useListPage<VendorPaymentSortField>({ keys: NO_KEYS, sortBy: 'paymentDate', sortOrder: 'desc', sortFields: LIST_SORT_FIELDS.vendorPayments, url: false, scope: `${projectId}:${vendorId}` });
   const [formOpen, setFormOpen] = useState(false);
@@ -86,10 +87,9 @@ function PaymentsTab({ projectId, vendorId, onBill }: { projectId?: string; vend
   const remove = useMutation({
     mutationFn: async (id: string) => (await api.delete(`/vendor-payments/${id}`)).data,
     onSuccess: () => {
-      message.success('Payment deleted');
       for (const k of PAYMENT_QUERY_KEYS) qc.invalidateQueries({ queryKey: [k] });
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
   const exportRows = async () => {
     const all = await fetchAllPages<VendorPaymentDto>('/vendor-payments', { ...filters });
@@ -154,11 +154,11 @@ function PaymentsTab({ projectId, vendorId, onBill }: { projectId?: string; vend
                   <Button size="small" onClick={() => setEditing(r)}>
                     Edit
                   </Button>
-                  <Popconfirm title="Delete this payment?" description="The bill goes back to outstanding." onConfirm={() => remove.mutate(r.id)}>
+                  <ConfirmDelete what={`the payment of ${formatINR(r.amount)} to ${r.vendorName}`} notice="Payment deleted" description="The bill goes back to outstanding." onConfirm={() => remove.mutateAsync(r.id)}>
                     <Button size="small" danger>
                       Delete
                     </Button>
-                  </Popconfirm>
+                  </ConfirmDelete>
                 </Space>
               ),
           } satisfies ListColumn<VendorPaymentDto>,

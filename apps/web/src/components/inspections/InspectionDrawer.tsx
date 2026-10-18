@@ -6,7 +6,8 @@ import { CheckOutlined, CloseOutlined, RedoOutlined, WarningOutlined } from '@an
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, InspectionDto, InspectionResult, ReviewDecision } from '@erp/shared';
 import { INSPECTION_RESULT_LABELS, INSPECTION_STATUS_LABELS, canRaiseNcr, checklistCounts, mayApproveType } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useInspection } from '@/lib/queries';
 import { formatDate } from '@/lib/format';
@@ -65,7 +66,7 @@ function InspectPanel({ data }: { data: InspectionDto }) {
       setDecision(null);
       qc.invalidateQueries();
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
   const set = (i: number, patch: Partial<{ result: InspectionResult | null; remark: string }>) => setResults((rs) => rs.map((r, j) => (j === i ? { ...r, ...patch } : r)));
 

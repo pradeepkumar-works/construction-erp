@@ -7,7 +7,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ApprovalMatrixDto, ApprovalRuleDto, RoleKey, SubmissionType } from '@erp/shared';
 import { APPROVAL_AMOUNT_BASIS, SUBMISSION_TYPES, SUBMISSION_TYPE_LABELS, canManageUsers } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useApprovalMatrix } from '@/lib/queries';
 import { PageHeader } from '@/components/common/PageHeader';
 import { QueryError } from '@/components/common/QueryState';
@@ -53,7 +54,7 @@ export default function ApprovalRulesPage() {
       void qc.invalidateQueries({ queryKey: ['approvals'] });
       message.success(m.custom ? 'Approval rules saved' : 'Back to the standard rule');
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
 
   const set = (role: string, t: SubmissionType, patch: Partial<Cell>) => {
@@ -133,7 +134,7 @@ export default function ApprovalRulesPage() {
         extra={
           <Space wrap>
             {data?.custom ? (
-              <Popconfirm title="Go back to the standard rule?" description="Admin, management and project managers approve everything, with no limit." onConfirm={() => save.mutate([])}>
+              <Popconfirm title="Go back to the standard rule?" description="Admin, management and project managers approve everything, with no limit." okText="Go back to standard" okButtonProps={{ danger: true }} onConfirm={() => save.mutate([])}>
                 <Button disabled={save.isPending}>Use standard rule</Button>
               </Popconfirm>
             ) : null}

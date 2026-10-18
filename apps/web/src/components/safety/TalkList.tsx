@@ -2,12 +2,13 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { App, Button, Flex, Popconfirm, Space, Typography, theme } from 'antd';
+import { Button, Flex, Space, Typography, theme } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ToolboxTalkDto } from '@erp/shared';
 import { canEditSafetyRecord, canReportSafety } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useToolboxTalks } from '@/lib/queries';
 import { formatDate } from '@/lib/format';
@@ -21,6 +22,7 @@ import { exportSelected } from '@/components/list/bulk';
 import { useListFrame } from '@/components/list/useListFrame';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { TalkFormModal } from './TalkFormModal';
+import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 const EXPORT: ExportColumn<ToolboxTalkDto>[] = [
   { header: 'No.', value: (r) => r.talkNo, width: 15 },
@@ -46,17 +48,15 @@ const NO_KEYS: string[] = [];
 /** Toolbox talks held at site. */
 export function TalkList({ projectId: fixedProject }: { projectId?: string }) {
   const { user } = useAuth();
-  const { message } = App.useApp();
   const qc = useQueryClient();
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<ToolboxTalkDto | null>(null);
   const remove = useMutation({
     mutationFn: async (id: string) => (await api.delete(`/safety/talks/${id}`)).data,
     onSuccess: () => {
-      message.success('Toolbox talk deleted');
       qc.invalidateQueries({ queryKey: ['safety'] });
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
   const frame = useListFrame<'date', ToolboxTalkDto>({
     list: 'toolbox-talks',
@@ -98,11 +98,11 @@ export function TalkList({ projectId: fixedProject }: { projectId?: string }) {
               <Button size="small" onClick={() => setEditing(r)}>
                 Edit
               </Button>
-              <Popconfirm title="Delete this toolbox talk?" onConfirm={() => remove.mutate(r.id)}>
+              <ConfirmDelete what={`toolbox talk ${r.talkNo}`} onConfirm={() => remove.mutateAsync(r.id)}>
                 <Button size="small" danger>
                   Delete
                 </Button>
-              </Popconfirm>
+              </ConfirmDelete>
             </Space>
           ) : null,
       },

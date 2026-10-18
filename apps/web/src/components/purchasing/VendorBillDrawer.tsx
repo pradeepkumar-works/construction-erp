@@ -2,12 +2,13 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { App, Button, Divider, Popconfirm, Table, Tag, Typography } from 'antd';
+import { App, Button, Divider, Table, Tag, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { VendorBillDto, VendorBillLineDto } from '@erp/shared';
 import { MSME_CATEGORY_LABELS, canEditSubmission, canRecordVendorBill, canResubmit, canViewPayables } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useVendorBill } from '@/lib/queries';
 import { formatDate, formatINR, formatQty, toNumber } from '@/lib/format';
@@ -22,6 +23,7 @@ import { checksSection } from '@/components/checks/ChecksSection';
 import { submissionLifecycle } from '@/components/record/lifecycle';
 import { themeFontSize } from '@/lib/theme';
 import { Section } from '@/components/common/Section';
+import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 const money = (v: string | number) => <span className="mono" translate="no">{formatINR(v, true)}</span>;
 
@@ -56,15 +58,16 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
   const submit = useMutation({
     mutationFn: async () => (await api.post<VendorBillDto>(`/vendor-bills/${id}/submit`)).data,
     onSuccess: (b) => done(`${b.billNo} submitted for approval`),
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
   const remove = useMutation({
     mutationFn: async () => (await api.delete(`/vendor-bills/${id}`)).data,
     onSuccess: () => {
-      done('Vendor bill deleted');
+      qc.invalidateQueries({ queryKey: ['vendor-bills'] });
+      qc.invalidateQueries({ queryKey: ['purchase-orders'] });
       onClose?.();
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
 
   const editable = !!data && !!user && recorder && canEditSubmission(user, data) && data.status !== 'APPROVED';
@@ -242,11 +245,11 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
               )}
               <ReviewActions type="vendor_bill" id={data.id} status={data.status} amount={data.total} size={size} />
               {editable ? (
-                <Popconfirm title={`Delete ${data.billNo}?`} okText="Delete" okButtonProps={{ danger: true }} onConfirm={() => remove.mutate()}>
+                <ConfirmDelete what={`vendor bill ${data.billNo}`} onConfirm={() => remove.mutateAsync()}>
                   <Button size={size} danger loading={remove.isPending}>
                     Delete
                   </Button>
-                </Popconfirm>
+                </ConfirmDelete>
               ) : null}
             </>
           ),

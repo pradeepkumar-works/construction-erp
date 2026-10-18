@@ -119,6 +119,10 @@ cd e2e && npx playwright test         # browser tests; needs API + web running (
   `DocumentTextService`, searched with Postgres full-text search); a new kind of filed PDF is a branch in its `pendingWhere`
   and search join. `search_documents` never reads files itself. Sample contracts and their questions are
   `src/documents/demo-contracts.ts`; keep `src/scripts/contract-search-test.ts` passing when changing search words.
+- Site photo checks (item 76, `apps/api/src/photo-checks`, ARCHITECTURE "Site photo checks"): a record's photos go to the model
+  through `PhotoChecksService`, which loads the record with its own service; flags are advice and never gate a submission.
+  A record with photos shows them with `photosSection(kind, id, attachments)` / `PhotosWithChecks`; a new flag is a key in
+  `PHOTO_FLAGS` (+ `PHOTO_FLAG_INFO`, the prompt and its Hindi label). Keep `src/scripts/photo-checks-test.ts` passing.
 - Mobile: screens in `app/`, shared UI in `src/components`, API in `src/api`, no new native deps
   without checking `node_modules/expo/bundledNativeModules.json` for the SDK-pinned version.
 - Mobile theme: `src/theme.ts` picks the light or dark palette once at start-up (Profile > Appearance, stored in

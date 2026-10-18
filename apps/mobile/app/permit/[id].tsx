@@ -64,7 +64,7 @@ export default function PermitScreen() {
           {t(WORK_PERMIT_TYPE_LABELS[data.type])} · {data.location}
         </Text>
         <View style={styles.pills}>
-          <Pill text={st.text} fg={st.fg} bg={st.bg} />
+          <Pill text={st.text} fg={st.fg} bg={st.bg} icon={st.icon} />
         </View>
       </View>
       <ErrorBanner message={actionError} />

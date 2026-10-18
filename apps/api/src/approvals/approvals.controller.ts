@@ -7,6 +7,9 @@ import { AuditService } from '../common/audit.service';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { ReviewDto } from './approvals.dto';
 
+/** Fewest characters a reason to reject or send back may have (the web and the phone ask the same). */
+const MIN_REASON_LENGTH = 5;
+
 @ApiTags('approvals')
 @ApiBearerAuth()
 @Controller('approvals')
@@ -33,7 +36,12 @@ export class ApprovalsController {
     const t = type.toUpperCase() as SubmissionType;
     if (!SUBMISSION_TYPES.includes(t)) throw new BadRequestException('Unknown submission type');
     if (t === 'INSPECTION') throw new BadRequestException('Record the checklist with the inspection: POST /inspections/:id/inspect');
-    await this.lifecycle.review(user, t, id, dto.decision, dto.note);
+    // Rejecting or sending back needs a reason of a few words, so the submitter knows what to fix (UX item 88).
+    const note = dto.note?.trim() || null;
+    if (dto.decision !== 'APPROVE' && (note?.length ?? 0) < MIN_REASON_LENGTH) {
+      throw new BadRequestException(dto.decision === 'REJECT' ? 'Say why you are rejecting it' : 'Say what needs changing');
+    }
+    await this.lifecycle.review(user, t, id, dto.decision, note);
     return { ok: true };
   }
 

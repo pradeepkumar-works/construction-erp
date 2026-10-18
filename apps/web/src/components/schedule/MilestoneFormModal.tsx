@@ -5,7 +5,8 @@ import { App, DatePicker, Form, Input } from 'antd';
 import dayjs from 'dayjs';
 import type { MilestoneDto } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 
 interface FormValues {
@@ -44,7 +45,7 @@ export function MilestoneFormModal({ open, onClose, projectId, milestone, achiev
       message.success(m.achievedOn && !milestone?.achievedOn ? `${m.name} marked achieved` : isEdit ? 'Milestone saved' : 'Milestone added');
       qc.invalidateQueries({ queryKey: ['activities', projectId] });
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   return (

@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Alert, App, Button, Checkbox, Form, Input, Modal, Popconfirm, Segmented, Space, Statistic, Table, Tag } from 'antd';
+import { Alert, App, Button, Checkbox, Form, Input, Modal, Segmented, Space, Statistic, Table, Tag } from 'antd';
 import type { TableProps } from 'antd';
 import { CheckOutlined, DeleteOutlined, EditOutlined, FlagOutlined, LockOutlined, PlusOutlined } from '@ant-design/icons';
 import type { MilestoneDto, MilestoneState } from '@erp/shared';
 import { MILESTONE_STATE_LABELS, canEditProjects, canFreezeBaseline } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useGantt } from '@/lib/queries';
 import { formatDate, formatDateTime } from '@/lib/format';
@@ -16,6 +17,7 @@ import { themeColor, themeFontSize } from '@/lib/theme';
 import { GanttChart, GanttLegend, type GanttScale } from './GanttChart';
 import { MilestoneFormModal } from './MilestoneFormModal';
 import { AskButton } from '@/components/ai/AskButton';
+import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 const MILESTONE_COLORS: Record<MilestoneState, string> = { UPCOMING: 'blue', DUE_SOON: 'orange', MISSED: 'red', ACHIEVED: 'green', ACHIEVED_LATE: 'gold' };
 const big = { content: { fontSize: themeFontSize('fontSizeXL') } };
@@ -48,15 +50,14 @@ export function GanttPanel({ projectId }: { projectId: string }) {
       setNote('');
       qc.invalidateQueries({ queryKey: ['activities', projectId] });
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
   const remove = useMutation({
-    mutationFn: async (id: string) => api.delete(`/projects/${projectId}/milestones/${id}`),
+    mutationFn: async (id: string) => (await api.delete(`/projects/${projectId}/milestones/${id}`)).data,
     onSuccess: () => {
-      message.success('Milestone deleted');
       qc.invalidateQueries({ queryKey: ['activities', projectId] });
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   if (isLoading) return <Loading />;
@@ -88,9 +89,9 @@ export function GanttPanel({ projectId }: { projectId: string }) {
                   </Button>
                 ) : null}
                 <Button size="small" type="text" aria-label="Edit" icon={<EditOutlined />} onClick={() => setForm({ milestone: r })} />
-                <Popconfirm title="Delete this milestone?" okText="Delete" okButtonProps={{ danger: true }} onConfirm={() => remove.mutate(r.id)}>
+                <ConfirmDelete what={`milestone “${r.name}”`} onConfirm={() => remove.mutateAsync(r.id)}>
                   <Button size="small" type="text" danger aria-label="Delete" icon={<DeleteOutlined />} />
-                </Popconfirm>
+                </ConfirmDelete>
               </Space>
             ),
           },

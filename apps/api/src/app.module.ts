@@ -27,6 +27,7 @@ import { AiModule } from './ai/ai.module';
 import { BillChecksModule } from './checks/bill-checks.module';
 import { WarningsModule } from './warnings/warnings.module';
 import { BriefsModule } from './briefs/briefs.module';
+import { PhotoChecksModule } from './photo-checks/photo-checks.module';
 import { SafetyModule } from './safety/safety.module';
 import { MaintenanceModule } from './maintenance/maintenance.module';
 import { UnitsModule } from './units/units.module';
@@ -59,6 +60,7 @@ import { ApprovalsModule } from './approvals/approvals.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { UndoModule } from './undo/undo.module';
 import { HealthController } from './health.controller';
 import { VitalsController } from './vitals.controller';
 
@@ -107,6 +109,7 @@ import { VitalsController } from './vitals.controller';
     BillChecksModule,
     WarningsModule,
     BriefsModule,
+    PhotoChecksModule,
     SafetyModule,
     MaintenanceModule,
     UnitsModule,
@@ -116,6 +119,7 @@ import { VitalsController } from './vitals.controller';
     DashboardModule,
     UploadsModule,
     NotificationsModule,
+    UndoModule,
     PortalModule,
     PlatformModule,
   ],

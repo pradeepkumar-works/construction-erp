@@ -6,7 +6,8 @@ import dayjs from 'dayjs';
 import type { AttachmentDto, NcrDto, NcrSeverity } from '@erp/shared';
 import { NCR_SEVERITIES, NCR_SEVERITY_LABELS } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useActivities, useProject, useProjects } from '@/lib/queries';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
@@ -108,7 +109,7 @@ export function NcrFormModal({ open, onClose, projectId, ncr, prefill, onSaved }
       qc.invalidateQueries({ queryKey: ['notifications'] });
       onSaved?.(x);
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   // A new NCR keeps its draft per test or inspection it is raised from, or per project.

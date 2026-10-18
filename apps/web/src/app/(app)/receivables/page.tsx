@@ -2,13 +2,14 @@
 
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { App, Button, Card, Col, Popconfirm, Row, Select, Space, Statistic, Tabs, Typography, theme } from 'antd';
+import { Button, Card, Col, Row, Select, Space, Statistic, Tabs, Typography, theme } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ClientReceivableDto, OpenBillDto, ProjectReceivableDto, ReceiptDto, ReceiptKind, ReceiptSortField } from '@erp/shared';
 import { LIST_SORT_FIELDS, RECEIPT_KINDS, RECEIPT_KIND_LABELS, RECEIPT_MODE_LABELS, canRecordReceipt } from '@erp/shared';
 import { useProjectScope } from '@/lib/project-scope';
-import { api, errorMessage, errorStatus } from '@/lib/api';
+import { api, errorStatus } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useReceipts, useReceivables } from '@/lib/queries';
 import { useListPage } from '@/lib/listPage';
@@ -32,6 +33,7 @@ import { LocalDataTable } from '@/components/list/LocalDataTable';
 import { exportSelected } from '@/components/list/bulk';
 import { RecordLink } from '@/components/record/RecordLink';
 import { themeColor, themeFontSize } from '@/lib/theme';
+import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 const money = (v: string, strong?: boolean) => (strong ? <strong className="mono" translate="no">{formatINR(v)}</strong> : <span className="mono" translate="no">{formatINR(v)}</span>);
 function Sub({ children }: { children: React.ReactNode }) {
@@ -68,7 +70,6 @@ const RECEIPT_KEYS = ['kind'] as const;
 
 function ReceiptsTab({ projectId }: { projectId?: string }) {
   const { user } = useAuth();
-  const { message } = App.useApp();
   const qc = useQueryClient();
   const page = useListPage<ReceiptSortField>({ keys: RECEIPT_KEYS, sortBy: 'receiptDate', sortOrder: 'desc', sortFields: LIST_SORT_FIELDS.receipts, url: false, scope: projectId });
   const kind = page.filters.kind as ReceiptKind | undefined;
@@ -84,10 +85,9 @@ function ReceiptsTab({ projectId }: { projectId?: string }) {
   const remove = useMutation({
     mutationFn: async (id: string) => (await api.delete(`/receipts/${id}`)).data,
     onSuccess: () => {
-      message.success('Receipt deleted');
       for (const k of ['receipts', 'receivables', 'bills', 'dashboard', 'cost']) qc.invalidateQueries({ queryKey: [k] });
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
 
   const exportRows = async () => {
@@ -155,11 +155,11 @@ function ReceiptsTab({ projectId }: { projectId?: string }) {
                   <Button size="small" onClick={() => setEditing(r)}>
                     Edit
                   </Button>
-                  <Popconfirm title="Delete this receipt?" description={r.billId ? 'The bill goes back to outstanding.' : undefined} onConfirm={() => remove.mutate(r.id)}>
+                  <ConfirmDelete what={`the receipt of ${formatINR(r.amount)}${r.clientName ? ` from ${r.clientName}` : ''}`} notice="Receipt deleted" description={r.billId ? 'The bill goes back to outstanding.' : undefined} onConfirm={() => remove.mutateAsync(r.id)}>
                     <Button size="small" danger>
                       Delete
                     </Button>
-                  </Popconfirm>
+                  </ConfirmDelete>
                 </Space>
               ),
           } satisfies ListColumn<ReceiptDto>,

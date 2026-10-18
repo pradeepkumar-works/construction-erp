@@ -72,6 +72,9 @@ export function MessagingCard() {
         value={phone}
         onChangeText={setPhone}
         keyboardType="phone-pad"
+        textContentType="telephoneNumber"
+        autoComplete="tel"
+        returnKeyType="done"
         maxLength={20}
         placeholder="98765 43210"
         error={phone.trim() && !sendTo ? t('Not a mobile number') : null}

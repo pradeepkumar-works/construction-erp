@@ -1,16 +1,18 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { Alert, App, Checkbox, DatePicker, Form, Input, Select, Typography } from 'antd';
+import { Alert, Checkbox, DatePicker, Form, Input, Select, Typography } from 'antd';
 import dayjs from 'dayjs';
 import type { AttachmentDto, RaBillDto } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE, useNotify } from '@/lib/notify';
 import { useProjects } from '@/lib/queries';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { editActionLabel } from '@/components/common/EditResubmitButton';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
+import { recordPage } from '@/components/approvals/queue';
 
 interface FormValues {
   projectId: string;
@@ -29,8 +31,8 @@ interface FormValues {
  */
 export function BillFormModal({ open, onClose, projectId, defaultProjectId, bill, onSaved }: { open: boolean; onClose: () => void; projectId?: string; /** A new bill starts on this project (the header's), still changeable. */ defaultProjectId?: string; bill?: RaBillDto | null; onSaved?: (b: RaBillDto) => void }) {
   const [form] = Form.useForm<FormValues>();
-  const { message } = App.useApp();
   const qc = useQueryClient();
+  const notify = useNotify();
   const { data: projects } = useProjects();
   const editing = !!bill;
   const fixedProject = bill?.projectId ?? projectId;
@@ -70,11 +72,11 @@ export function BillFormModal({ open, onClose, projectId, defaultProjectId, bill
       return bill ? (await api.patch<RaBillDto>(`/ra-bills/${bill.id}`, body)).data : (await api.post<RaBillDto>('/ra-bills', { projectId: v.projectId, ...body })).data;
     },
     onSuccess: (b, { submit }) => {
-      message.success(submit ? `${b.billLabel} submitted for approval` : `${b.billLabel} saved as a draft`);
+      notify.saved(submit ? `${b.billLabel} submitted for approval` : `${b.billLabel} saved as a draft`, recordPage('BILL', b.id));
       qc.invalidateQueries();
       onSaved?.(b);
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   return (

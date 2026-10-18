@@ -2,12 +2,13 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Alert, App, Button, Divider, Form, Input, Popconfirm, Progress, Table, Tag, Typography } from 'antd';
+import { Alert, App, Button, Divider, Form, Input, Progress, Table, Tag, Typography } from 'antd';
 import { ImportOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { PurchaseOrderDto, PurchaseOrderLineDto } from '@erp/shared';
 import { MSME_CATEGORY_LABELS, canEditSubmission, canKeepStock, canPurchase, canRecordVendorBill, canResubmit, canViewVendorBills } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { usePurchaseOrder } from '@/lib/queries';
 import { formatDate, formatDateTime, formatINR, formatPct, formatQty, toNumber } from '@/lib/format';
@@ -24,6 +25,7 @@ import { submissionLifecycle } from '@/components/record/lifecycle';
 import { FormShell } from '@/components/form/FormShell';
 import { themeFontSize } from '@/lib/theme';
 import { Section } from '@/components/common/Section';
+import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 const money = (v: string | number) => <span className="mono" translate="no" style={{ whiteSpace: 'nowrap' }}>{formatINR(v, true)}</span>;
 
@@ -61,20 +63,21 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
   const submit = useMutation({
     mutationFn: async () => (await api.post<PurchaseOrderDto>(`/purchase-orders/${id}/submit`)).data,
     onSuccess: (o) => done(`${o.poNo} submitted for approval`),
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
   const close = useMutation({
     mutationFn: async (note: string) => (await api.post<PurchaseOrderDto>(`/purchase-orders/${id}/close`, { note })).data,
     onSuccess: (o) => done(`${o.poNo} closed`),
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
   const remove = useMutation({
     mutationFn: async () => (await api.delete(`/purchase-orders/${id}`)).data,
     onSuccess: () => {
-      done('Purchase order deleted');
+      qc.invalidateQueries({ queryKey: ['purchase-orders'] });
+      qc.invalidateQueries({ queryKey: ['material-requests'] });
       onClose?.();
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
 
   const editable = !!data && !!user && buyer && canEditSubmission(user, data) && data.status !== 'APPROVED';
@@ -282,11 +285,11 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
                 </Button>
               ) : null}
               {editable ? (
-                <Popconfirm title={`Delete ${data.poNo}?`} okText="Delete" okButtonProps={{ danger: true }} onConfirm={() => remove.mutate()}>
+                <ConfirmDelete what={`purchase order ${data.poNo}`} onConfirm={() => remove.mutateAsync()}>
                   <Button size={size} danger loading={remove.isPending}>
                     Delete
                   </Button>
-                </Popconfirm>
+                </ConfirmDelete>
               ) : null}
             </>
           ),

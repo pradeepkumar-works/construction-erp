@@ -7,6 +7,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import type { AttachmentDto } from '@erp/shared';
 import { errorMessage, fileUrl } from '@/lib/api';
 import { uploadFile } from '@/lib/queries';
+import { shrinkPhoto } from '@/lib/shrink-photo';
 
 const toUploadFile = (a: AttachmentDto): UploadFile => ({ uid: a.id, name: a.fileName, status: 'done', url: fileUrl(a.url), response: a });
 
@@ -37,7 +38,7 @@ export function PhotoUpload({
   const customRequest: UploadProps['customRequest'] = async (options) => {
     const file = options.file as File;
     try {
-      const att = await uploadFile(file);
+      const att = await uploadFile(await shrinkPhoto(file));
       options.onSuccess?.(att);
     } catch (err) {
       message.error(errorMessage(err, 'Upload failed'));

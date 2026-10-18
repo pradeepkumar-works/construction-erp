@@ -151,14 +151,13 @@ export default function ApprovalsPage() {
       title: `Approve ${ids.length} ${ids.length === 1 ? 'entry' : 'entries'} in ${inSentence(QUEUE_TYPE_LABELS[t])}?`,
       content: 'Each is approved on its own, as if one by one: its submitter is told and its activity shows your approval.',
       okText: `Approve ${ids.length}`,
-      onOk: async () => {
+      // They leave the queue at once (UX item 86) while they are sent one by one; a refusal brings back the rest.
+      onOk: () => {
         setBulkRunning(true);
-        try {
-          await approveMany(approvalTypeParam[t], ids);
-        } finally {
+        void approveMany(approvalTypeParam[t], ids).finally(() => {
           setBulkRunning(false);
           clearSelection();
-        }
+        });
       },
     });
   };

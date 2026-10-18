@@ -1,18 +1,18 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { COMMON_UNITS, MATERIAL_PRIORITIES, MATERIAL_PRIORITY_LABELS, type MaterialPriority, type MaterialRequestDto } from '@erp/shared';
 import { useApi, useFetch } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
-import { Button, Card, Chips, DatePicker, ErrorBanner, ErrorState, Input, Loading, Screen, Select } from '../../src/components';
+import { Button, Card, Chips, DatePicker, ErrorBanner, ErrorState, Input, Loading, Screen, Select, IconButton } from '../../src/components';
 import { QueuedSuccess, SubmitSuccess, useProjectOptions } from '../../src/forms/common';
 import { ReviewerNote } from '../../src/forms/edit';
 import { useT } from '../../src/i18n/LanguageContext';
 import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
-import { colors, spacing, typography } from '../../src/theme';
+import { colors, fontSize, spacing, typography } from '../../src/theme';
 import { addDays, formatDate, isIsoDate, today } from '../../src/utils/format';
+import { useFieldChain } from '../../src/forms/keyboard';
 
 interface ItemRow {
   key: string;
@@ -31,6 +31,7 @@ export default function NewMaterialRequestScreen() {
   const params = useLocalSearchParams<{ projectId?: string; editId?: string }>();
   const editId = params.editId ?? null;
   const t = useT();
+  const field = useFieldChain();
   const errorSummary = useErrorSummary();
   const api = useApi();
   const { online, enqueue, newId } = useOffline();
@@ -159,18 +160,16 @@ export default function NewMaterialRequestScreen() {
             <View style={styles.itemHead}>
               <Text style={typography.label}>{t('Item {n}', { n: i + 1 })}</Text>
               {items.length > 1 ? (
-                <Pressable onPress={() => setItems((rows) => rows.filter((x) => x.key !== r.key))} hitSlop={8} style={styles.remove} accessibilityRole="button" accessibilityLabel={t('Remove item {n}', { n: i + 1 })}>
-                  <Ionicons name="trash-outline" size={20} color={colors.danger} />
-                </Pressable>
+                <IconButton icon="trash-outline" size={20} color={colors.danger} onPress={() => setItems((rows) => rows.filter((x) => x.key !== r.key))} accessibilityLabel={t('Remove item {n}', { n: i + 1 })} style={styles.remove} />
               ) : null}
             </View>
-            <Input value={r.itemName} onChangeText={(v) => update(r.key, { itemName: v })} placeholder={t('Item name, e.g. Cement OPC 53')} accessibilityLabel={t('Item {n} name', { n: i + 1 })} containerStyle={styles.field} />
-            <Input value={r.specification} onChangeText={(v) => update(r.key, { specification: v })} placeholder={t('Specification (optional)')} accessibilityLabel={t('Item {n} specification (optional)', { n: i + 1 })} containerStyle={styles.field} />
+            <Input {...field()} value={r.itemName} onChangeText={(v) => update(r.key, { itemName: v })} placeholder={t('Item name, e.g. Cement OPC 53')} accessibilityLabel={t('Item {n} name', { n: i + 1 })} containerStyle={styles.field} />
+            <Input {...field()} value={r.specification} onChangeText={(v) => update(r.key, { specification: v })} placeholder={t('Specification (optional)')} accessibilityLabel={t('Item {n} specification (optional)', { n: i + 1 })} containerStyle={styles.field} />
             <View style={styles.row}>
               <View style={styles.grow}>
                 <Select value={r.unit} options={UNIT_OPTIONS} onChange={(v) => update(r.key, { unit: v })} placeholder={t('Unit')} />
               </View>
-              <Input value={r.quantity} onChangeText={(v) => update(r.key, { quantity: v })} keyboardType="decimal-pad" placeholder={t('Qty')} accessibilityLabel={t('Item {n} quantity', { n: i + 1 })} containerStyle={styles.qty} />
+              <Input {...field()} value={r.quantity} onChangeText={(v) => update(r.key, { quantity: v })} keyboardType="decimal-pad" placeholder={t('Qty')} accessibilityLabel={t('Item {n} quantity', { n: i + 1 })} containerStyle={styles.qty} />
             </View>
           </View>
         ))}
@@ -179,7 +178,7 @@ export default function NewMaterialRequestScreen() {
       </Card>
 
       <Card>
-        <Input label={t('Remarks')} value={remarks} onChangeText={setRemarks} multiline placeholder={t('Delivery instructions, purpose, etc.')} containerStyle={styles.field} />
+        <Input {...field({ multiline: true })} label={t('Remarks')} value={remarks} onChangeText={setRemarks} multiline placeholder={t('Delivery instructions, purpose, etc.')} containerStyle={styles.field} />
       </Card>
       <Button title={editId ? t('Resubmit request') : t('Submit request')} icon="send" onPress={submit} loading={busy} />
     </Screen>
@@ -189,10 +188,10 @@ export default function NewMaterialRequestScreen() {
 const styles = StyleSheet.create({
   item: { borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.border, paddingBottom: spacing.sm, marginBottom: spacing.md },
   itemHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
-  remove: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
+  remove: { marginRight: -spacing.sm },
   field: { marginBottom: spacing.sm },
   row: { flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-start' },
   grow: { flex: 1 },
   qty: { width: 110, marginBottom: spacing.sm },
-  err: { color: colors.danger, marginBottom: spacing.sm, fontSize: 13 },
+  err: { color: colors.danger, marginBottom: spacing.sm, fontSize: fontSize.secondary },
 });

@@ -2,13 +2,14 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { App, Button, DatePicker, Descriptions, Divider, Drawer, Form, Input, Popconfirm, Segmented, Skeleton, Space, Table, Tag, Typography } from 'antd';
+import { App, Button, DatePicker, Descriptions, Divider, Drawer, Form, Input, Segmented, Skeleton, Space, Table, Tag, Typography } from 'antd';
 import { CheckCircleOutlined, DeleteOutlined, EditOutlined, SendOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import type { VariationDto, VariationLineDto, VariationStatus } from '@erp/shared';
 import { VARIATION_CAUSE_LABELS, VARIATION_STATUS_LABELS, canManageVariations } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useVariation } from '@/lib/queries';
 import { formatDate, formatINR, formatQty, toNumber } from '@/lib/format';
@@ -18,6 +19,7 @@ import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { MoneyInput, QuantityInput } from '@/components/form/inputs';
 import { VariationFormModal } from './VariationFormModal';
 import { themeFontSize } from '@/lib/theme';
+import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 const STATUS_COLORS: Record<VariationStatus, string> = { DRAFT: 'default', SUBMITTED: 'gold', APPROVED: 'green', REJECTED: 'red' };
 
@@ -40,11 +42,10 @@ export function VariationDrawer({ id, open, onClose }: { id: string | null; open
   const remove = useMutation({
     mutationFn: async () => (await api.delete(`/variations/${id}`)).data,
     onSuccess: () => {
-      message.success('Variation deleted');
       qc.invalidateQueries({ queryKey: ['variations'] });
       onClose();
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   const decided = data?.status === 'APPROVED';
@@ -115,9 +116,9 @@ export function VariationDrawer({ id, open, onClose }: { id: string | null; open
               </Button>
             )}
             <Button size="small" icon={<EditOutlined />} onClick={() => setEditing(true)} aria-label="Edit variation" />
-            <Popconfirm title={`Delete ${data.label}?`} okText="Delete" okButtonProps={{ danger: true }} onConfirm={() => remove.mutate()}>
+            <ConfirmDelete what={data.label} onConfirm={() => remove.mutateAsync()}>
               <Button size="small" danger icon={<DeleteOutlined />} aria-label="Delete variation" />
-            </Popconfirm>
+            </ConfirmDelete>
           </Space>
         ) : null
       }
@@ -186,7 +187,7 @@ function SendModal({ open, onClose, variation }: { open: boolean; onClose: () =>
       message.success(`${v.label} is with the client`);
       qc.invalidateQueries({ queryKey: ['variations'] });
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
   return (
     <FormShell open={open} onClose={onClose} form={form} layout="modal" title={`Send ${variation.label} to the client`} okText="Record" onSubmit={(v) => mutation.mutateAsync(v)}>
@@ -254,7 +255,7 @@ function DecisionModal({ open, onClose, variation }: { open: boolean; onClose: (
       qc.invalidateQueries({ queryKey: ['projects'] });
       qc.invalidateQueries({ queryKey: ['dashboard'] });
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
   return (
     <FormShell open={open} onClose={onClose} form={form} layout="modal" title={`Client's decision on ${variation.label}`} okText="Record" onSubmit={(v) => mutation.mutateAsync(v)} width={760}>

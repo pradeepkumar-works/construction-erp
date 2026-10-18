@@ -9,10 +9,11 @@ import { Button, Card, Chips, DatePicker, ErrorBanner, ErrorState, Input, Loadin
 import { attachmentIds, photosFailed, photosQueued, photosUploading, QueuedSuccess, SubmitSuccess, toOutboxPhotos, useProjectOptions } from '../../src/forms/common';
 import { attachmentsToPhotos } from '../../src/forms/edit';
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
-import { colors, radius, spacing, typography } from '../../src/theme';
+import { colors, fontSize, radius, spacing, typography } from '../../src/theme';
 import { addDays, formatDate, isIsoDate, today } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
 import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
+import { useFieldChain } from '../../src/forms/keyboard';
 
 const RATINGS = ['1', '2', '3', '4', '5'].map((v) => ({ value: v, label: v }));
 /** English labels; shown through t(). */
@@ -30,6 +31,7 @@ export default function RiskFormScreen() {
   const editId = params.editId ?? null;
   const api = useApi();
   const t = useT();
+  const field = useFieldChain();
   const errorSummary = useErrorSummary();
   const { online, enqueue, newId } = useOffline();
   // The same id for a direct send and the outbox, so a send that timed out but arrived is never made twice
@@ -231,10 +233,10 @@ export default function RiskFormScreen() {
           ]}
         />
         <Select label={t('Project')} required value={projectId} options={projects.options} onChange={(v) => { setProjectId(v); setActivityId(null); setOwnerId(null); }} placeholder={t('Choose project')} error={errors.projectId} disabled={!!editId} />
-        <Input label={t(isDelay ? 'What is holding up work' : 'What might happen')} required value={title} onChangeText={setTitle} placeholder={t(isDelay ? 'e.g. Encroachment at Ch 12+300' : 'e.g. HT line not shifted before WMM')} error={errors.title} />
+        <Input {...field()} label={t(isDelay ? 'What is holding up work' : 'What might happen')} required value={title} onChangeText={setTitle} placeholder={t(isDelay ? 'e.g. Encroachment at Ch 12+300' : 'e.g. HT line not shifted before WMM')} error={errors.title} />
         <Select label={t('Category')} required value={category} options={categoryOptions} onChange={setCategory} placeholder={t('Choose category')} error={errors.category} />
         <Select label={t('Activity affected')} value={activityId} options={activityOptions} onChange={setActivityId} placeholder={t(projectId ? 'Choose activity (optional)' : 'Choose a project first')} disabled={!projectId} emptyText={t('No activities in this project')} />
-        <Input label={t('Details')} value={description} onChangeText={setDescription} multiline />
+        <Input {...field({ multiline: true })} label={t('Details')} value={description} onChangeText={setDescription} multiline />
       </Card>
       {isDelay ? (
         <Card title={t('Delay')}>
@@ -256,7 +258,7 @@ export default function RiskFormScreen() {
         </View>
       </Card>
       <Card title={t('Follow-up')}>
-        <Input label={t(isDelay ? 'Action being taken' : 'Mitigation')} value={mitigation} onChangeText={setMitigation} multiline />
+        <Input {...field({ multiline: true })} label={t(isDelay ? 'Action being taken' : 'Mitigation')} value={mitigation} onChangeText={setMitigation} multiline />
         <Select label={t('Owner')} value={ownerId} options={ownerOptions} onChange={setOwnerId} placeholder={t(projectId ? 'Who follows it up (optional)' : 'Choose a project first')} disabled={!projectId} emptyText={t('No team members')} />
         <Chips
           label={`${t('Action due')}${due ? `: ${formatDate(due)}` : ''}`}
@@ -271,7 +273,7 @@ export default function RiskFormScreen() {
       {editId ? (
         <Card title={t('Status')}>
           <Chips value={status} clearable={false} onChange={(v) => setStatus(v ?? 'OPEN')} options={RISK_STATUSES.map((s) => ({ value: s, label: t(RISK_STATUS_LABELS[s]) }))} />
-          {status === 'CLOSED' ? <Input label={t('How was it resolved')} required value={closureNote} onChangeText={setClosureNote} multiline error={errors.closureNote} /> : null}
+          {status === 'CLOSED' ? <Input {...field({ multiline: true })} label={t('How was it resolved')} required value={closureNote} onChangeText={setClosureNote} multiline error={errors.closureNote} /> : null}
         </Card>
       ) : null}
       <Card title={t('Photos / letters')}>
@@ -287,5 +289,5 @@ const styles = StyleSheet.create({
   days: { ...typography.bodyStrong, color: colors.danger, marginBottom: spacing.md },
   scoreBox: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 2, padding: spacing.md, borderRadius: radius.md },
   score: { fontSize: 20, fontWeight: '800' },
-  err: { color: colors.danger, marginTop: -spacing.sm, marginBottom: spacing.sm, fontSize: 13 },
+  err: { color: colors.danger, marginTop: -spacing.sm, marginBottom: spacing.sm, fontSize: fontSize.secondary },
 });

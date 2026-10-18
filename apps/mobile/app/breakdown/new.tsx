@@ -10,8 +10,9 @@ import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
 import { Button, Card, DatePicker, ErrorBanner, ErrorState, Input, Loading, PhotoPicker, Screen, Select, type LocalPhoto, type SelectOption } from '../../src/components';
 import { attachmentIds, photosFailed, photosQueued, photosUploading, SubmitSuccess } from '../../src/forms/common';
 import { useOffline } from '../../src/offline';
-import { colors, spacing } from '../../src/theme';
+import { colors, fontSize, spacing } from '../../src/theme';
 import { isIsoDate, today } from '../../src/utils/format';
+import { useFieldChain } from '../../src/forms/keyboard';
 
 const NUM = /^\d+(\.\d+)?$/;
 
@@ -23,6 +24,7 @@ export default function BreakdownScreen() {
   const params = useLocalSearchParams<{ equipmentId?: string; projectId?: string }>();
   const api = useApi();
   const t = useT();
+  const field = useFieldChain();
   const errorSummary = useErrorSummary();
   const { online } = useOffline();
   const fleet = useFetch<Paginated<EquipmentDto>>((a) => a.get('/equipment', { pageSize: MAX_PAGE_SIZE }), [], { refetchOnFocus: false, cacheKey: 'equipment:v1' });
@@ -107,8 +109,8 @@ export default function BreakdownScreen() {
       <Card>
         <Select label={t('Machine')} required value={equipmentId} options={options} onChange={setEquipmentId} placeholder={t('Choose the machine')} error={errors.equipmentId} />
         <DatePicker label={t('Stopped on')} required value={date} onChange={setDate} error={errors.date} />
-        <Input label={t('Hour meter / km')} value={meter} onChangeText={setMeter} keyboardType="decimal-pad" maxLength={12} error={errors.meter} />
-        <Input label={t('What broke down')} required value={description} onChangeText={setDescription} multiline maxLength={2000} placeholder={t('Hydraulic hose burst on the boom; machine stopped at Ch 14+600')} error={errors.description} />
+        <Input {...field()} label={t('Hour meter / km')} value={meter} onChangeText={setMeter} keyboardType="decimal-pad" maxLength={12} error={errors.meter} />
+        <Input {...field({ multiline: true })} label={t('What broke down')} required value={description} onChangeText={setDescription} multiline maxLength={2000} placeholder={t('Hydraulic hose burst on the boom; machine stopped at Ch 14+600')} error={errors.description} />
       </Card>
       <Card title={t('Photos')}>
         <PhotoPicker photos={photos} onChange={setPhotos} />
@@ -120,5 +122,5 @@ export default function BreakdownScreen() {
 }
 
 const styles = StyleSheet.create({
-  err: { color: colors.danger, marginTop: -spacing.sm, marginBottom: spacing.sm, fontSize: 13 },
+  err: { color: colors.danger, marginTop: -spacing.sm, marginBottom: spacing.sm, fontSize: fontSize.secondary },
 });

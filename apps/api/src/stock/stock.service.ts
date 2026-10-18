@@ -26,6 +26,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
+import { UndoService } from '../common/undo.service';
 import { VendorsService } from '../vendors/vendors.service';
 import { assertOpenWorkOrder } from '../subcontracts/work-orders.service';
 import { AttachmentsService, ATTACHMENT_FIELDS } from '../common/attachments.service';
@@ -141,7 +142,10 @@ export class StockService {
     private attachments: AttachmentsService,
     private notifications: NotificationsService,
     private vendors: VendorsService,
-  ) {}
+    private undo: UndoService,
+  ) {
+    undo.register('ITEM', { entityType: 'ITEM', check: (user) => this.access.assertCanManageStore(user) });
+  }
 
   /* ---------- helpers ---------- */
 
@@ -1124,8 +1128,10 @@ export class StockService {
     const row = await this.prisma.item.findFirst({ where: { id, organizationId: user.organizationId } });
     if (!row) throw new NotFoundException('Item not found');
     if ((await this.prisma.stockTxn.count({ where: { itemId: id } })) > 0) throw new ConflictException(`${row.name} has stock movements and cannot be deleted`);
+    const minLevels = await this.prisma.stockMinLevel.findMany({ where: { itemId: id } });
     await this.prisma.item.delete({ where: { id } });
     await this.audit.log(user, 'ITEM', id, 'DELETED', `${row.name} (${row.unit})`);
-    return { ok: true };
+    const rows = [{ model: 'item', data: row }, ...minLevels.map((m) => ({ model: 'stockMinLevel', data: m }))];
+    return { ok: true, undo: this.undo.offer(user, 'ITEM', { rows }) };
   }
 }

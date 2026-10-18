@@ -6,10 +6,10 @@ import { MSME_CATEGORY_LABELS, SUBMISSION_STATUS_LABELS } from '@erp/shared';
 import { useFetch } from '../../src/api/hooks';
 import { useT } from '../../src/i18n/LanguageContext';
 import { AttachmentGallery, Card, ErrorState, KeyValue, Loading, ReviewActions, Screen, SubmissionHeader } from '../../src/components';
-import { colors, spacing, typography } from '../../src/theme';
-import { fmtQty, formatDate } from '../../src/utils/format';
+import { colors, fontSize, spacing, typography } from '../../src/theme';
+import { fmtQty, formatDate, formatMoney } from '../../src/utils/format';
 
-const rupees = (v: string | number) => `₹${Number(v).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const rupees = (v: string | number) => formatMoney(v);
 
 /** A subcontractor's work order on the phone: scope, rates and terms, what is measured and billed, and approval. Orders are issued on the web. */
 export default function WorkOrderScreen() {
@@ -84,6 +84,6 @@ const styles = StyleSheet.create({
   box: { alignItems: 'center', paddingVertical: spacing.md, marginBottom: spacing.sm, backgroundColor: colors.primarySoft, borderRadius: 12 },
   total: { fontSize: 28, fontWeight: '800', color: colors.primaryDark },
   line: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
-  lineTitle: { fontSize: 15, fontWeight: '600', color: colors.text },
-  amount: { fontSize: 15, fontWeight: '700', color: colors.text, marginLeft: spacing.md },
+  lineTitle: { fontSize: fontSize.body, fontWeight: '600', color: colors.text },
+  amount: { fontSize: fontSize.body, fontWeight: '700', color: colors.text, marginLeft: spacing.md },
 });

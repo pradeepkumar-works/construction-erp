@@ -1,6 +1,7 @@
 export { Screen } from './Screen';
 export { Card } from './Card';
 export { Button } from './Button';
+export { Touchable, IconButton, slopFor, type TouchableProps } from './Touchable';
 export { Input } from './Input';
 export { Select, type SelectOption } from './Select';
 export { DatePicker, TimePicker } from './DatePicker';
@@ -17,3 +18,4 @@ export { OfflineBanner } from './OfflineBanner';
 export { BillingBanner } from './BillingBanner';
 export { Intro, useIntroSeen } from './Intro';
 export { SnackbarProvider, useSnackbar, confirmResult } from './Snackbar';
+export { PhotoChecks } from './PhotoChecks';

@@ -6,7 +6,8 @@ import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, BoqItemDto, VariationCause, VariationDto } from '@erp/shared';
 import { VARIATION_CAUSES, VARIATION_CAUSE_LABELS, isUnapprovedExtra } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useBoq, useProjects } from '@/lib/queries';
 import { formatINR, formatQty, toNumber } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
@@ -108,7 +109,7 @@ export function VariationFormModal({ open, onClose, projectId, variation, onSave
       qc.invalidateQueries({ queryKey: ['variations'] });
       onSaved?.(v);
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   return (

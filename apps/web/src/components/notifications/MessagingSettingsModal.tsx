@@ -36,14 +36,9 @@ export function MessagingSettingsModal({ open, onClose }: { open: boolean; onClo
   }, [open, data, form]);
 
   const save = async (v: Values) => {
-    try {
-      await update.mutateAsync({ phone: v.phone.trim() || null, whatsapp: v.whatsapp, sms: v.sms });
-      await refresh();
-      message.success(v.whatsapp || v.sms ? `Alerts on ${[v.whatsapp && 'WhatsApp', v.sms && 'SMS'].filter(Boolean).join(' and ')} saved` : 'WhatsApp and SMS alerts are off');
-    } catch (e) {
-      message.error(errorMessage(e));
-      throw e;
-    }
+    await update.mutateAsync({ phone: v.phone.trim() || null, whatsapp: v.whatsapp, sms: v.sms });
+    await refresh();
+    message.success(v.whatsapp || v.sms ? `Alerts on ${[v.whatsapp && 'WhatsApp', v.sms && 'SMS'].filter(Boolean).join(' and ')} saved` : 'WhatsApp and SMS alerts are off');
   };
 
   const sendTest = async (channel: MessageChannel) => {

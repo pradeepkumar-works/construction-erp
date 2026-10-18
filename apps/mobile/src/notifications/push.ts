@@ -12,7 +12,9 @@ export type PushStatus =
   /** User declined the notification permission. */
   | 'denied'
   /** Simulator, web, Expo Go on Android, or no EAS projectId: remote push is not possible here. */
-  | 'unavailable';
+  | 'unavailable'
+  /** Not asked yet, or "Not now" on the explanation shown before the phone's own prompt (UX item 88). */
+  | 'off';
 
 export interface PushRegistration {
   status: PushStatus;
@@ -33,21 +35,49 @@ export function configureForegroundHandler() {
 
 const platform: PushPlatform = Platform.OS === 'ios' ? 'IOS' : Platform.OS === 'android' ? 'ANDROID' : 'WEB';
 
-/**
- * Ask for permission and fetch this device's Expo push token.
- * Never throws: an unavailable push channel just means the user relies on the in-app list.
- */
-export async function getPushRegistration(): Promise<PushRegistration> {
-  const deviceName = Device.modelName ?? Device.deviceName ?? null;
-  const base = { token: null, platform, deviceName };
+const deviceName = () => Device.modelName ?? Device.deviceName ?? null;
+const projectIdOf = (): string | undefined => Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId ?? undefined;
+
+/** Why push cannot work on this phone at all, or null when it can. */
+function unavailable(): PushRegistration | null {
+  const base = { token: null, platform, deviceName: deviceName() };
   if (Platform.OS === 'web') return { ...base, status: 'unavailable', reason: 'Push is only available in the native app.' };
   if (!Device.isDevice) return { ...base, status: 'unavailable', reason: 'Push needs a physical device.' };
   // Expo Go on Android dropped remote push in SDK 53; a development build is required.
   if (Platform.OS === 'android' && Constants.executionEnvironment === ExecutionEnvironment.StoreClient && Constants.appOwnership === 'expo') {
     return { ...base, status: 'unavailable', reason: 'Expo Go on Android cannot receive push. Use a development build.' };
   }
-  const projectId: string | undefined = Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId ?? undefined;
-  if (!projectId) return { ...base, status: 'unavailable', reason: 'No EAS projectId in app config (run `eas init`).' };
+  if (!projectIdOf()) return { ...base, status: 'unavailable', reason: 'No EAS projectId in app config (run `eas init`).' };
+  return null;
+}
+
+/**
+ * Whether the phone's own permission prompt would still show (`ask`), so the app can first say why it wants to send
+ * notifications; `granted` and `blocked` need no question, `unavailable` cannot have push at all.
+ */
+export async function pushPermission(): Promise<'granted' | 'ask' | 'blocked' | 'unavailable'> {
+  if (unavailable()) return 'unavailable';
+  try {
+    const p = await Notifications.getPermissionsAsync();
+    if (p.status === 'granted') return 'granted';
+    return p.canAskAgain ? 'ask' : 'blocked';
+  } catch {
+    return 'unavailable';
+  }
+}
+
+/** Not asked yet, or put off with "Not now"; Profile offers to turn it on. */
+export const pushOff = (): PushRegistration => ({ status: 'off', token: null, platform, deviceName: deviceName(), reason: 'Notifications are off on this phone.' });
+
+/**
+ * Ask for permission and fetch this device's Expo push token.
+ * Never throws: an unavailable push channel just means the user relies on the in-app list.
+ */
+export async function getPushRegistration(): Promise<PushRegistration> {
+  const base = { token: null, platform, deviceName: deviceName() };
+  const cannot = unavailable();
+  if (cannot) return cannot;
+  const projectId = projectIdOf();
   try {
     if (Platform.OS === 'android') {
       await Notifications.setNotificationChannelAsync('default', {
@@ -65,6 +95,20 @@ export async function getPushRegistration(): Promise<PushRegistration> {
   } catch (e) {
     return { ...base, status: 'unavailable', reason: (e as Error).message };
   }
+}
+
+/**
+ * Opens a notification's screen without stacking a copy of the one already showing (UX item 88): the same screen is
+ * left as it is (or replaced, when only its filters differ), anything else is pushed.
+ */
+export function openNotificationRoute(router: { push: (href: never) => void; replace: (href: never) => void }, currentPath: string, route: string) {
+  const [path, query] = route.split('?');
+  const target = path.replace('/(tabs)', '') || '/';
+  if (target === currentPath) {
+    if (query) router.replace(route as never);
+    return;
+  }
+  router.push(route as never);
 }
 
 /** Route inside the app for a notification payload (`data` sent by the API). */

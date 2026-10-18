@@ -6,7 +6,8 @@ import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ImprestDetailDto, ImprestDto, PaymentMode } from '@erp/shared';
 import { PAYMENT_MODES, PAYMENT_MODE_LABELS, ROLE_KEYS, canHoldImprest } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { UserSelect } from '@/components/common/SearchSelect';
 import { formatINR } from '@/lib/format';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
@@ -106,7 +107,7 @@ export function ImprestActionModal({ action, onClose, onDone }: { action: Impres
       qc.invalidateQueries({ queryKey: ['imprests'] });
       onDone?.(d.id);
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   const needsAmount = kind !== 'reject';

@@ -6,7 +6,8 @@ import dayjs from 'dayjs';
 import type { LeaveRequestDto, LeaveType } from '@erp/shared';
 import { LEAVE_TYPES, LEAVE_TYPE_LABELS, canManageStaff, leaveDays } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useEmployees, useHolidays, useLeaveBalances, useMyStaff } from '@/lib/queries';
 import { days } from './staffUi';
@@ -74,7 +75,7 @@ export function LeaveFormModal({ open, onClose, employeeId: fixedEmployee, onSav
       qc.invalidateQueries({ queryKey: ['staff'] });
       onSaved?.(l);
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   const noRecord = open && !admin && me && !me.employee;

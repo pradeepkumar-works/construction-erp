@@ -47,8 +47,12 @@ test('a view saved and shared shows for the company, and only its owner can chan
   // The owner deletes it.
   await page.getByRole('button', { name: `${name} view options` }).click();
   await page.getByRole('menuitem', { name: 'Delete' }).click();
-  await page.locator('.ant-modal-confirm').getByRole('button', { name: 'Delete' }).click();
+  // The one delete confirmation (UX item 86): it names the view, and once it is gone the notice offers Undo.
+  const confirm = page.getByRole('dialog').filter({ hasText: `Delete the view “${name}”?` });
+  await confirm.getByRole('button', { name: 'Delete' }).click();
+  await expect(confirm).toHaveCount(0);
   await expect(page.getByRole('tab', { name })).toHaveCount(0);
+  await expect(page.locator('.ant-message-notice').filter({ hasText: `The view “${name}” deleted` }).getByRole('button', { name: 'Undo' })).toBeVisible();
 });
 
 test('columns can be hidden and stay hidden, and Reset brings them back', async ({ page }) => {

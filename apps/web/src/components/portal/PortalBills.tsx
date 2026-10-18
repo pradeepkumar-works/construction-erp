@@ -7,7 +7,6 @@ import dayjs from 'dayjs';
 import type { PortalBillDto, RaBillItemDto } from '@erp/shared';
 import { isGuest } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
-import { errorMessage } from '@/lib/api';
 import { useCertifyAsClient, usePortalBill } from '@/lib/queries';
 import { formatDate, formatINR, formatQty } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
@@ -155,13 +154,8 @@ function CertifyModal({ bill, onClose }: { bill: PortalBillDto | null; onClose: 
   const submit = async (v: { date: dayjs.Dayjs; certificateNo?: string; qty: Record<string, number | null> }) => {
     if (!bill) return;
     const items = lines.filter((l) => v.qty[l.boqItemId] != null && v.qty[l.boqItemId] !== Number(l.thisQty)).map((l) => ({ boqItemId: l.boqItemId, certifiedQty: String(v.qty[l.boqItemId]) }));
-    try {
-      const out = await certify.mutateAsync({ id: bill.id, date: v.date.format('YYYY-MM-DD'), certificateNo: v.certificateNo?.trim() || null, items });
-      message.success(`${out.billLabel} certified: work value ${formatINR(out.grossAmount)}`);
-    } catch (e) {
-      message.error(errorMessage(e));
-      throw e;
-    }
+    const out = await certify.mutateAsync({ id: bill.id, date: v.date.format('YYYY-MM-DD'), certificateNo: v.certificateNo?.trim() || null, items });
+    message.success(`${out.billLabel} certified: work value ${formatINR(out.grossAmount)}`);
   };
 
   return (

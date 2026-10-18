@@ -5,7 +5,7 @@ import { Alert, App, Button, Card, Descriptions, Flex, InputNumber, Progress, Sp
 import type { AiFeature, AiSettingsDto } from '@erp/shared';
 import { AI_FEATURE_LABELS, PRODUCT_NAME, canManageAi } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
-import { errorMessage } from '@/lib/api';
+import { useNotify } from '@/lib/notify';
 import { formatINR } from '@/lib/format';
 import { useAiSettings, useUpdateAiSettings } from '@/lib/queries';
 import { askShortcutLabel } from '@/lib/shortcuts';
@@ -16,11 +16,12 @@ function SettingsCard({ data }: { data: AiSettingsDto }) {
   const { message } = App.useApp();
   const { token } = theme.useToken();
   const update = useUpdateAiSettings();
+  const notify = useNotify();
   const [cap, setCap] = useState<number | null>(data.monthlyCapInr);
   useEffect(() => setCap(data.monthlyCapInr), [data.monthlyCapInr]);
 
   const save = (change: { enabled?: boolean; monthlyCapInr?: number | null }, done: string) =>
-    update.mutate(change, { onSuccess: () => message.success(done), onError: (e) => message.error(errorMessage(e)) });
+    update.mutate(change, { onSuccess: () => message.success(done), onError: (e) => notify.failed(e, () => save(change, done)) });
 
   return (
     <Card title="Settings" style={{ marginBottom: token.margin }}>

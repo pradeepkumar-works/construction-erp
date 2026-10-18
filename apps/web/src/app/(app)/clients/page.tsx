@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Card, Checkbox, Popconfirm, Space, Tag, Typography, theme } from 'antd';
+import { Button, Card, Checkbox, Space, Tag, Typography, theme } from 'antd';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ClientDto } from '@erp/shared';
 import { GST_STATES, canEditContract } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useClientsPage } from '@/lib/queries';
 import { formatDate } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -17,6 +18,7 @@ import { EmptyArt } from '@/components/common/EmptyArt';
 import { ClientFormModal } from '@/components/clients/ClientFormModal';
 import { DataTable, type ListColumn } from '@/components/list/DataTable';
 import { useListFrame } from '@/components/list/useListFrame';
+import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 type ClientSortField = 'name' | 'createdAt';
 const KEYS = ['inactive'] as const;
@@ -28,7 +30,6 @@ function Sub({ children }: { children: React.ReactNode }) {
 
 export default function ClientsPage() {
   const { user } = useAuth();
-  const { message } = App.useApp();
   const qc = useQueryClient();
   const [editing, setEditing] = useState<ClientDto | null>(null);
   const [adding, setAdding] = useState(false);
@@ -37,10 +38,9 @@ export default function ClientsPage() {
   const remove = useMutation({
     mutationFn: async (id: string) => (await api.delete(`/clients/${id}`)).data,
     onSuccess: () => {
-      message.success('Client deleted');
       qc.invalidateQueries({ queryKey: ['clients'] });
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
 
   const frame = useListFrame<ClientSortField, ClientDto>({
@@ -92,9 +92,9 @@ export default function ClientsPage() {
                 <Space size={4}>
                   <Button size="small" type="text" icon={<EditOutlined />} aria-label={`Edit ${c.name}`} onClick={() => setEditing(c)} />
                   {c.projectCount === 0 ? (
-                    <Popconfirm title={`Delete ${c.name}?`} okText="Delete" okButtonProps={{ danger: true }} onConfirm={() => remove.mutate(c.id)}>
+                    <ConfirmDelete what={`client ${c.name}`} onConfirm={() => remove.mutateAsync(c.id)}>
                       <Button size="small" type="text" danger icon={<DeleteOutlined />} aria-label={`Delete ${c.name}`} />
-                    </Popconfirm>
+                    </ConfirmDelete>
                   ) : null}
                 </Space>
               ),

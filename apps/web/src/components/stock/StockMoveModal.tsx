@@ -7,7 +7,8 @@ import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { StockEntryDto } from '@erp/shared';
 import { MAX_PAGE_SIZE } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useActivities, useAttendanceSuggestions, useProjects, useStockBalances } from '@/lib/queries';
 import { formatQty } from '@/lib/format';
 import { VendorPicker } from '@/components/vendors/VendorPicker';
@@ -90,7 +91,7 @@ export function StockMoveModal({ move, open, onClose, projectId }: { move: Stock
       qc.invalidateQueries({ queryKey: ['stock'] });
       qc.invalidateQueries({ queryKey: ['cost'] });
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   const chosen = new Set((watchedLines ?? []).map((l) => l?.itemId).filter(Boolean));

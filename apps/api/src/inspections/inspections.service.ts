@@ -1,11 +1,12 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { STANDARD_CHECKLISTS, sameLocation, type ChecklistTemplateDto, type InspectionCheck, type InspectionDto, type InspectionSortField, type Paginated, type PortalInspectionDto, type SortOrder } from '@erp/shared';
+import { CHECKLIST_ADMIN_ROLES, STANDARD_CHECKLISTS, sameLocation, type ChecklistTemplateDto, type InspectionCheck, type InspectionDto, type InspectionSortField, type Paginated, type PortalInspectionDto, type SortOrder } from '@erp/shared';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
+import { UndoService } from '../common/undo.service';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
 import { AttachmentsService, ATTACHMENT_FIELDS } from '../common/attachments.service';
 import { dateOnly, iso, parseDate } from '../common/serialize';
@@ -53,7 +54,14 @@ export class InspectionsService {
     private lifecycle: SubmissionLifecycleService,
     private attachments: AttachmentsService,
     private notifications: NotificationsService,
+    private undo: UndoService,
   ) {
+    undo.register('CHECKLIST', {
+      entityType: 'CHECKLIST',
+      check: (user) => {
+        if (!(CHECKLIST_ADMIN_ROLES as readonly string[]).includes(user.roleKey)) throw new ForbiddenException('Your role cannot change checklists');
+      },
+    });
     lifecycle.beforeApprove('PROGRESS', (_user, id) => this.assertHoldPointCleared(id));
   }
 
@@ -361,10 +369,14 @@ export class InspectionsService {
 
   /** Inspections already requested keep their copy of the points. */
   async deleteChecklist(user: RequestUser, id: string) {
-    const { count } = await this.prisma.checklistTemplate.deleteMany({ where: { id, organizationId: user.organizationId } });
-    if (!count) throw new NotFoundException('Checklist not found');
+    const row = await this.prisma.checklistTemplate.findFirst({ where: { id, organizationId: user.organizationId } });
+    if (!row) throw new NotFoundException('Checklist not found');
+    // Activities that use it lose the link on delete (SetNull); Undo puts it back.
+    const activities = await this.prisma.activity.findMany({ where: { checklistTemplateId: id }, select: { id: true } });
+    await this.prisma.checklistTemplate.delete({ where: { id } });
     await this.audit.log(user, 'CHECKLIST', id, 'DELETED');
-    return { ok: true };
+    const relink = [{ model: 'activity', field: 'checklistTemplateId', ids: activities.map((a) => a.id) }];
+    return { ok: true, undo: this.undo.offer(user, 'CHECKLIST', { rows: [{ model: 'checklistTemplate', data: row }], relink }) };
   }
 
   /** Add the standard checklists the organisation does not have yet (by name). */

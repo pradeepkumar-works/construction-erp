@@ -11,8 +11,9 @@ import { Button, Card, DatePicker, ErrorBanner, ErrorState, Input, Loading, Phot
 import { attachmentIds, photosFailed, photosQueued, photosUploading, QueuedSuccess, SubmitSuccess, toOutboxPhotos, useProjectOptions } from '../../src/forms/common';
 import { attachmentsToPhotos, ReviewerNote } from '../../src/forms/edit';
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
-import { colors, spacing } from '../../src/theme';
+import { colors, fontSize, spacing } from '../../src/theme';
 import { fmtQty, formatDate, isIsoDate, today } from '../../src/utils/format';
+import { useFieldChain } from '../../src/forms/keyboard';
 
 const NUM = /^\d+(\.\d+)?$/;
 
@@ -22,6 +23,7 @@ export default function NewMachineryLogScreen() {
   const editId = params.editId ?? null;
   const api = useApi();
   const t = useT();
+  const field = useFieldChain();
   const errorSummary = useErrorSummary();
   const { online, enqueue, newId } = useOffline();
   // The same id for a direct send and the outbox, so a send that timed out but arrived is never made twice
@@ -233,33 +235,33 @@ export default function NewMachineryLogScreen() {
         <DatePicker label={t('Date')} required value={date} onChange={setDate} error={errors.date} />
         <View style={styles.row}>
           <View style={styles.cell}>
-            <Input label={t('Worked (h)')} required value={worked} onChangeText={setWorked} keyboardType="decimal-pad" placeholder="8" error={errors.worked} style={styles.bigInput} />
+            <Input {...field()} label={t('Worked (h)')} required value={worked} onChangeText={setWorked} keyboardType="decimal-pad" placeholder="8" error={errors.worked} style={styles.bigInput} />
           </View>
           <View style={styles.cell}>
-            <Input label={t('Idle (h)')} value={idle} onChangeText={setIdle} keyboardType="decimal-pad" placeholder="0" error={errors.idle} />
+            <Input {...field()} label={t('Idle (h)')} value={idle} onChangeText={setIdle} keyboardType="decimal-pad" placeholder="0" error={errors.idle} />
           </View>
           <View style={styles.cell}>
-            <Input label={t('Breakdown (h)')} value={down} onChangeText={setDown} keyboardType="decimal-pad" placeholder="0" error={errors.down} />
+            <Input {...field()} label={t('Breakdown (h)')} value={down} onChangeText={setDown} keyboardType="decimal-pad" placeholder="0" error={errors.down} />
           </View>
         </View>
-        {Number(down) > 0 ? <Input label={t('What broke down')} required value={breakdownNote} onChangeText={setBreakdownNote} placeholder={t('e.g. Hydraulic hose burst')} /> : null}
+        {Number(down) > 0 ? <Input {...field()} label={t('What broke down')} required value={breakdownNote} onChangeText={setBreakdownNote} placeholder={t('e.g. Hydraulic hose burst')} /> : null}
       </Card>
       <Card title={t('Meter and diesel')}>
         <View style={styles.row}>
           <View style={styles.cell}>
-            <Input label={t('Meter start')} value={meterStart} onChangeText={setMeterStart} keyboardType="decimal-pad" error={errors.meterStart} />
+            <Input {...field()} label={t('Meter start')} value={meterStart} onChangeText={setMeterStart} keyboardType="decimal-pad" error={errors.meterStart} />
           </View>
           <View style={styles.cell}>
-            <Input label={t('Meter end')} value={meterEnd} onChangeText={setMeterEnd} keyboardType="decimal-pad" error={errors.meterEnd} />
+            <Input {...field()} label={t('Meter end')} value={meterEnd} onChangeText={setMeterEnd} keyboardType="decimal-pad" error={errors.meterEnd} />
           </View>
         </View>
-        <Input label={t('Diesel filled (litres)')} value={diesel} onChangeText={setDiesel} keyboardType="decimal-pad" placeholder={t('e.g. 60')} error={errors.diesel} />
+        <Input {...field()} label={t('Diesel filled (litres)')} value={diesel} onChangeText={setDiesel} keyboardType="decimal-pad" placeholder={t('e.g. 60')} error={errors.diesel} />
       </Card>
       <Card title={t('Details (optional)')}>
-        <Input label={t('Operator')} value={operator} onChangeText={setOperator} />
+        <Input {...field()} label={t('Operator')} value={operator} onChangeText={setOperator} />
         <Select label={t('Activity')} value={activityId} options={activityOptions} onChange={setActivityId} placeholder={projectId ? t('Choose activity') : t('Choose a project first')} disabled={!projectId} emptyText={t('No activities in this project')} />
-        <Input label={t('Work done')} value={workDone} onChangeText={setWorkDone} placeholder={t('e.g. Excavation for drain Ch. 2+400')} />
-        <Input label={t('Remarks')} value={remarks} onChangeText={setRemarks} multiline />
+        <Input {...field()} label={t('Work done')} value={workDone} onChangeText={setWorkDone} placeholder={t('e.g. Excavation for drain Ch. 2+400')} />
+        <Input {...field({ multiline: true })} label={t('Remarks')} value={remarks} onChangeText={setRemarks} multiline />
         <PhotoPicker photos={photos} onChange={setPhotos} />
         {errors.photos ? <Text style={styles.err}>{errors.photos}</Text> : null}
       </Card>
@@ -272,5 +274,5 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', gap: spacing.sm },
   cell: { flex: 1 },
   bigInput: { fontSize: 20, fontWeight: '700' },
-  err: { color: colors.danger, marginTop: -spacing.sm, marginBottom: spacing.sm, fontSize: 13 },
+  err: { color: colors.danger, marginTop: -spacing.sm, marginBottom: spacing.sm, fontSize: fontSize.secondary },
 });

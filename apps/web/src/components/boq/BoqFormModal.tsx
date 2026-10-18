@@ -4,7 +4,8 @@ import React, { useEffect } from 'react';
 import { App, Form, Input } from 'antd';
 import type { BoqItemDto } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { UnitInput } from '@/components/common/UnitInput';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { MoneyInput, QuantityInput } from '@/components/form/inputs';
@@ -58,7 +59,7 @@ export function BoqFormModal({ open, onClose, projectId, item }: { open: boolean
       qc.invalidateQueries({ queryKey: ['boq', projectId] });
       qc.invalidateQueries({ queryKey: ['dashboard'] });
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   const unit = Form.useWatch('unit', form);

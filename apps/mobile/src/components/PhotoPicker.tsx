@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,8 +7,11 @@ import { useApi } from '../api/hooks';
 import { errorMessage } from '../api/client';
 import { isOfflineError, useOffline } from '../offline/OfflineContext';
 import { shrinkPhoto } from '../offline/shrink';
-import { colors, radius, spacing, typography } from '../theme';
+import { colors, fontSize, maxFontScale, radius, spacing, touch, typography } from '../theme';
 import { useT } from '../i18n/LanguageContext';
+import { formatDateTime, formatTime } from '../utils/format';
+import { captureTime, stampedName, takenAtFromName } from '../utils/photoTime';
+import { slopFor, Touchable } from './Touchable';
 
 export interface LocalPhoto {
   key: string;
@@ -23,12 +26,17 @@ export interface LocalPhoto {
   queued?: boolean;
 }
 
+/** When a photo was taken, from the time stamped into its name (`takenAtFromName`), or null for an older photo. */
+export const photoTakenAt = (p: Pick<LocalPhoto, 'name'>) => takenAtFromName(p.name);
+
 interface Props {
   label?: string;
   photos: LocalPhoto[];
   onChange: React.Dispatch<React.SetStateAction<LocalPhoto[]>>;
   max?: number;
 }
+
+let shot = 0;
 
 function guessType(uri: string, mime?: string | null): string {
   if (mime) return mime;
@@ -42,12 +50,19 @@ function guessType(uri: string, mime?: string | null): string {
 /**
  * Camera + library picker that uploads each photo immediately and keeps the returned attachment ids.
  * Without a connection the photo stays on the phone (`queued`) and travels with the entry through the outbox.
+ *
+ * Several at a time (UX item 88): the library picks many in one go, and the camera opens again after each shot until
+ * Back is pressed, so a walk round the site is one tap. Each photo keeps the time it was taken (the camera's EXIF time,
+ * or the moment of the shot) in its file name, shown on its thumbnail and kept with the attachment.
  */
-export function PhotoPicker({ label, photos, onChange, max = 6 }: Props) {
+export function PhotoPicker({ label, photos, onChange, max = 10 }: Props) {
   const api = useApi();
   const t = useT();
   const { online } = useOffline();
   const [busy, setBusy] = useState(false);
+  // How many photos are in the form, for the camera loop (which runs past the render that started it).
+  const count = useRef(photos.length);
+  count.current = photos.length;
 
   const upload = useCallback(
     async (photo: LocalPhoto) => {
@@ -69,21 +84,28 @@ export function PhotoPicker({ label, photos, onChange, max = 6 }: Props) {
     [api, online, onChange],
   );
 
+  /** Adds picked photos (as many as there is room for); resolves to how many were added. */
   const addAssets = useCallback(
-    async (assets: ImagePicker.ImagePickerAsset[]) => {
-      const room = Math.max(0, max - photos.length);
+    async (assets: ImagePicker.ImagePickerAsset[], fromCamera: boolean) => {
+      const room = Math.max(0, max - count.current);
       const fresh: LocalPhoto[] = [];
       for (const [i, a] of assets.slice(0, room).entries()) {
         const type = guessType(a.uri, a.mimeType);
         const ext = type.split('/')[1] === 'jpeg' ? 'jpg' : type.split('/')[1];
-        const small = await shrinkPhoto({ uri: a.uri, width: a.width, height: a.height, name: a.fileName ?? `site-photo-${Date.now()}-${i}.${ext}`, type });
+        // A photo just taken was taken now; one from the library keeps its own time when the phone tells us it.
+        const takenAt = fromCamera ? captureTime(a.exif) : captureTime(a.exif, new Date(NaN));
+        shot += 1;
+        const name = Number.isNaN(takenAt.getTime()) ? (a.fileName ?? `site-photo-${Date.now()}-${i}.${ext}`) : stampedName(takenAt, shot, ext);
+        const small = await shrinkPhoto({ uri: a.uri, width: a.width, height: a.height, name, type });
         fresh.push({ key: `${Date.now()}-${i}-${Math.random().toString(36).slice(2, 8)}`, uri: small.uri, name: small.name, type: small.type, uploading: true });
       }
-      if (!fresh.length) return;
+      if (!fresh.length) return 0;
+      count.current += fresh.length;
       onChange((prev) => [...prev, ...fresh]);
       fresh.forEach((p) => void upload(p));
+      return fresh.length;
     },
-    [max, photos.length, onChange, upload],
+    [max, onChange, upload],
   );
 
   const takePhoto = useCallback(async () => {
@@ -94,14 +116,17 @@ export function PhotoPicker({ label, photos, onChange, max = 6 }: Props) {
         Alert.alert(t('Camera permission needed'), t('Allow camera access to take site photos.'));
         return;
       }
-      const res = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.6 });
-      if (!res.canceled) await addAssets(res.assets);
+      // Shot after shot: the camera comes back after each photo until Back is pressed or the form is full.
+      while (count.current < max) {
+        const res = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.6, exif: true });
+        if (res.canceled || !(await addAssets(res.assets, true))) break;
+      }
     } catch (e) {
       Alert.alert(t('Camera unavailable'), errorMessage(e));
     } finally {
       setBusy(false);
     }
-  }, [addAssets, t]);
+  }, [addAssets, max, t]);
 
   const pickFromLibrary = useCallback(async () => {
     setBusy(true);
@@ -114,16 +139,18 @@ export function PhotoPicker({ label, photos, onChange, max = 6 }: Props) {
       const res = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
         quality: 0.6,
+        exif: true,
         allowsMultipleSelection: true,
-        selectionLimit: Math.max(1, max - photos.length),
+        orderedSelection: true,
+        selectionLimit: Math.max(1, max - count.current),
       });
-      if (!res.canceled) await addAssets(res.assets);
+      if (!res.canceled) await addAssets(res.assets, false);
     } catch (e) {
       Alert.alert(t('Could not open photos'), errorMessage(e));
     } finally {
       setBusy(false);
     }
-  }, [addAssets, max, photos.length, t]);
+  }, [addAssets, max, t]);
 
   // Android may close the app while the camera is open; the photo taken then is handed back once the app restarts, to
   // the next photo field opened, which is the form with the reopened draft (UX item 80).
@@ -133,7 +160,7 @@ export function PhotoPicker({ label, photos, onChange, max = 6 }: Props) {
     recovered.current = true;
     ImagePicker.getPendingResultAsync()
       .then((r) => {
-        if (r && 'assets' in r && !r.canceled && r.assets?.length) void addAssets(r.assets);
+        if (r && 'assets' in r && !r.canceled && r.assets?.length) void addAssets(r.assets, true);
       })
       .catch(() => undefined);
   }, [addAssets]);
@@ -144,53 +171,69 @@ export function PhotoPicker({ label, photos, onChange, max = 6 }: Props) {
     void upload({ ...photo, uploading: true, error: undefined, queued: false });
   };
   const full = photos.length >= max;
+  const stateOf = (p: LocalPhoto) => (p.uploading ? t('uploading') : p.error ? t('upload failed') : p.queued ? t('waiting for connection') : t('uploaded'));
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>
+      <Text style={styles.label} maxFontSizeMultiplier={maxFontScale}>
         {label ?? t('Photos')} <Text style={styles.count}>({photos.length}/{max})</Text>
       </Text>
       <View style={styles.actions}>
-        <Pressable onPress={takePhoto} disabled={busy || full} style={[styles.actionBtn, (busy || full) && styles.disabled]}>
+        <Touchable onPress={takePhoto} disabled={busy || full} accessibilityRole="button" accessibilityHint={t('The camera opens again after each photo. Press Back when you are done.')} style={[styles.actionBtn, (busy || full) && styles.disabled]}>
           <Ionicons name="camera" size={22} color={colors.primary} />
-          <Text style={styles.actionText}>{t('Camera')}</Text>
-        </Pressable>
-        <Pressable onPress={pickFromLibrary} disabled={busy || full} style={[styles.actionBtn, (busy || full) && styles.disabled]}>
+          <Text style={styles.actionText} maxFontSizeMultiplier={maxFontScale}>
+            {t('Camera')}
+          </Text>
+        </Touchable>
+        <Touchable onPress={pickFromLibrary} disabled={busy || full} accessibilityRole="button" accessibilityHint={t('Pick several photos at once')} style={[styles.actionBtn, (busy || full) && styles.disabled]}>
           <Ionicons name="images" size={22} color={colors.primary} />
-          <Text style={styles.actionText}>{t('Library')}</Text>
-        </Pressable>
+          <Text style={styles.actionText} maxFontSizeMultiplier={maxFontScale}>
+            {t('Library')}
+          </Text>
+        </Touchable>
       </View>
       {photos.length ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.strip}>
-          {photos.map((p) => (
-            <View key={p.key} style={styles.thumbWrap}>
-              <Image source={{ uri: p.uri }} style={styles.thumb} contentFit="cover" />
-              {p.uploading ? (
-                <View style={styles.overlay}>
-                  <ActivityIndicator color={colors.onOverlay} />
-                </View>
-              ) : p.error ? (
-                <Pressable onPress={() => retry(p)} style={[styles.overlay, styles.overlayError]}>
-                  <Ionicons name="refresh" size={22} color={colors.onOverlay} />
-                  <Text style={styles.overlayText}>{t('Retry')}</Text>
-                </Pressable>
-              ) : p.queued ? (
-                <Pressable onPress={() => (online ? retry(p) : undefined)} style={styles.okMark} accessibilityLabel={t('Waiting for connection')}>
-                  <Ionicons name="cloud-offline" size={18} color={colors.warning} />
-                </Pressable>
-              ) : (
-                <View style={styles.okMark}>
-                  <Ionicons name="checkmark-circle" size={18} color={colors.success} />
-                </View>
-              )}
-              <Pressable onPress={() => remove(p.key)} style={styles.removeBtn} hitSlop={8} accessibilityLabel={t('Remove photo')}>
-                <Ionicons name="close" size={16} color={colors.onOverlay} />
-              </Pressable>
-            </View>
-          ))}
+          {photos.map((p, i) => {
+            const taken = photoTakenAt(p);
+            const name = taken ? t('Photo {n} of {total}, taken {time}', { n: i + 1, total: photos.length, time: formatDateTime(taken) }) : t('Photo {n} of {total}', { n: i + 1, total: photos.length });
+            return (
+              <View key={p.key} style={styles.thumbWrap}>
+                <Image source={{ uri: p.uri }} style={styles.thumb} contentFit="cover" accessible accessibilityRole="image" accessibilityLabel={`${name}, ${stateOf(p)}`} />
+                {taken ? (
+                  <Text style={styles.stamp} numberOfLines={1} maxFontSizeMultiplier={1.2}>
+                    {formatTime(taken)}
+                  </Text>
+                ) : null}
+                {p.uploading ? (
+                  <View style={styles.overlay}>
+                    <ActivityIndicator color={colors.onOverlay} accessibilityLabel={t('uploading')} />
+                  </View>
+                ) : p.error ? (
+                  <Touchable onPress={() => retry(p)} style={[styles.overlay, styles.overlayError]} accessibilityRole="button" accessibilityLabel={t('Retry upload of photo {n}', { n: i + 1 })}>
+                    <Ionicons name="refresh" size={22} color={colors.onOverlay} />
+                    <Text style={styles.overlayText}>{t('Retry')}</Text>
+                  </Touchable>
+                ) : p.queued ? (
+                  <Touchable onPress={() => (online ? retry(p) : undefined)} style={styles.okMark} hitSlop={slopFor(18)} accessibilityRole="button" accessibilityLabel={t('Waiting for connection')} accessibilityHint={online ? t('Uploads it now') : undefined}>
+                    <Ionicons name="cloud-offline" size={18} color={colors.warning} />
+                  </Touchable>
+                ) : (
+                  <View style={styles.okMark}>
+                    <Ionicons name="checkmark-circle" size={18} color={colors.success} />
+                  </View>
+                )}
+                <Touchable onPress={() => remove(p.key)} style={styles.removeBtn} hitSlop={8} borderless accessibilityRole="button" accessibilityLabel={t('Remove photo {n}', { n: i + 1 })}>
+                  <Ionicons name="close" size={18} color={colors.onOverlay} />
+                </Touchable>
+              </View>
+            );
+          })}
         </ScrollView>
       ) : (
-        <Text style={styles.hint}>{online ? t('Optional. Photos upload immediately and are attached on submit.') : t('Optional. You are offline: photos stay on the phone and upload with the entry.')}</Text>
+        <Text style={styles.hint} maxFontSizeMultiplier={maxFontScale}>
+          {online ? t('Optional. Photos upload immediately and are attached on submit.') : t('Optional. You are offline: photos stay on the phone and upload with the entry.')}
+        </Text>
       )}
     </View>
   );
@@ -206,22 +249,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 52,
+    minHeight: touch.height,
     borderRadius: radius.md,
     borderWidth: 1.5,
     borderColor: colors.primary,
     borderStyle: 'dashed',
     backgroundColor: colors.surface,
   },
-  actionText: { marginLeft: spacing.sm, color: colors.primary, fontWeight: '700', fontSize: 15 },
+  actionText: { marginLeft: spacing.sm, color: colors.primary, fontWeight: '700', fontSize: fontSize.body },
   disabled: { opacity: 0.5 },
   strip: { gap: spacing.sm, paddingTop: spacing.md },
-  thumbWrap: { width: 96, height: 96, borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.neutralSoft },
+  thumbWrap: { width: 104, height: 104, borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.neutralSoft },
   thumb: { width: '100%', height: '100%' },
+  stamp: { position: 'absolute', right: 0, bottom: 0, paddingHorizontal: 6, paddingVertical: 2, borderTopLeftRadius: radius.sm, backgroundColor: colors.scrim, color: colors.onOverlay, fontSize: fontSize.small, fontWeight: '700', fontVariant: ['tabular-nums'] },
   overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: colors.scrim, alignItems: 'center', justifyContent: 'center' },
-  overlayError: { backgroundColor: 'rgba(220,38,38,0.7)' },
-  overlayText: { color: colors.onOverlay, fontSize: 12, fontWeight: '700' },
+  overlayError: { backgroundColor: colors.scrimDeep, borderWidth: 3, borderColor: colors.danger, borderRadius: radius.md },
+  overlayText: { color: colors.onOverlay, fontSize: fontSize.small, fontWeight: '700' },
   okMark: { position: 'absolute', left: 6, bottom: 6, backgroundColor: colors.surface, borderRadius: 10 },
-  removeBtn: { position: 'absolute', top: 4, right: 4, width: 24, height: 24, borderRadius: 12, backgroundColor: colors.scrim, alignItems: 'center', justifyContent: 'center' },
+  // 40 dp of visible button in the photo's corner; hitSlop takes the touch area to 56.
+  removeBtn: { position: 'absolute', top: 0, right: 0, width: 40, height: 40, borderBottomLeftRadius: radius.md, backgroundColor: colors.scrim, alignItems: 'center', justifyContent: 'center' },
   hint: { ...typography.caption, marginTop: spacing.sm },
 });

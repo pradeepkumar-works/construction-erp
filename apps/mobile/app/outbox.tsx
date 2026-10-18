@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, Card, EmptyState, Screen, SubmissionRow } from '../src/components';
 import { OUTBOX_FIX_PATH, useOffline, type OutboxItem } from '../src/offline';
-import { colors, spacing, typography } from '../src/theme';
+import { colors, fontSize, spacing, typography } from '../src/theme';
 import { formatDateTime, timeAgo } from '../src/utils/format';
 import { useT } from '../src/i18n/LanguageContext';
 
@@ -16,7 +16,7 @@ const STATUS_TEXT: Record<OutboxItem['status'], string> = {
 
 /** Entries saved on this phone while offline, with fix, retry and discard for ones the server refused. */
 export default function OutboxScreen() {
-  const { items, online, syncing, sync, retry, discard, lastSyncedAt } = useOffline();
+  const { items, online, syncing, sync, retry, discard, lastSyncedAt, pendingCount, failedCount } = useOffline();
   const t = useT();
   const router = useRouter();
   const fix = (item: OutboxItem) => {
@@ -42,6 +42,11 @@ export default function OutboxScreen() {
               <Ionicons name={online ? 'cloud-done-outline' : 'cloud-offline-outline'} size={22} color={online ? colors.success : colors.warning} />
               <Text style={[typography.bodyStrong, styles.flex]}>{online ? (syncing ? t('Sending queued entries…') : t('Online')) : t('Offline: entries will send when the connection is back')}</Text>
             </View>
+            {items.length ? (
+              <Text style={[typography.body, styles.count]} accessibilityLiveRegion="polite">
+                {[pendingCount ? t('{n} waiting to send', { n: pendingCount }) : null, failedCount ? t('{n} need attention', { n: failedCount }) : null].filter(Boolean).join(' · ')}
+              </Text>
+            ) : null}
             <Text style={[typography.caption, styles.synced]}>{lastSyncedAt ? t('Last sent to the server {when}', { when: formatDateTime(lastSyncedAt) }) : t('Nothing sent from this phone yet')}</Text>
             {items.length ? <Button title={t('Send now')} icon="cloud-upload-outline" variant="secondary" onPress={() => void sync()} disabled={!online || syncing} /> : null}
           </Card>
@@ -68,11 +73,12 @@ export default function OutboxScreen() {
 }
 
 const styles = StyleSheet.create({
+  count: { marginTop: spacing.sm },
   list: { padding: spacing.lg, paddingBottom: spacing.xxl, flexGrow: 1 },
   head: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
   flex: { flex: 1 },
   failed: { marginTop: -spacing.xs, marginBottom: spacing.md, paddingHorizontal: spacing.md },
-  error: { color: colors.danger, fontSize: 13, marginBottom: spacing.sm },
+  error: { color: colors.danger, fontSize: fontSize.secondary, marginBottom: spacing.sm },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   synced: { marginBottom: spacing.sm },
 });

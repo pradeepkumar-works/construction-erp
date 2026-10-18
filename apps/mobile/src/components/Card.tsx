@@ -1,6 +1,7 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
+import { StyleSheet, Text, View, type ViewStyle } from 'react-native';
 import { colors, radius, shadow, spacing, typography } from '../theme';
+import { Touchable } from './Touchable';
 
 interface Props {
   children: React.ReactNode;
@@ -8,14 +9,24 @@ interface Props {
   style?: ViewStyle;
   title?: string;
   right?: React.ReactNode;
+  /** A tappable card is a button unless it opens a page in the way a link does. */
+  accessibilityRole?: 'button' | 'link';
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
 }
 
-export function Card({ children, onPress, style, title, right }: Props) {
+export function Card({ children, onPress, style, title, right, accessibilityRole = 'button', accessibilityLabel, accessibilityHint }: Props) {
   const content = (
     <>
       {(title || right) && (
         <View style={styles.header}>
-          {title ? <Text style={typography.h3}>{title}</Text> : <View />}
+          {title ? (
+            <Text style={typography.h3} accessibilityRole={onPress ? undefined : 'header'}>
+              {title}
+            </Text>
+          ) : (
+            <View />
+          )}
           {right}
         </View>
       )}
@@ -24,9 +35,9 @@ export function Card({ children, onPress, style, title, right }: Props) {
   );
   if (onPress) {
     return (
-      <Pressable onPress={onPress} style={({ pressed }) => [styles.card, pressed && styles.pressed, style]} android_ripple={{ color: colors.border }}>
+      <Touchable onPress={onPress} accessibilityRole={accessibilityRole} accessibilityLabel={accessibilityLabel} accessibilityHint={accessibilityHint} style={[styles.card, style]} pressedStyle={styles.pressed}>
         {content}
-      </Pressable>
+      </Touchable>
     );
   }
   return <View style={[styles.card, style]}>{content}</View>;

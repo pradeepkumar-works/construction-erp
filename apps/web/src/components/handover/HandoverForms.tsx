@@ -6,9 +6,11 @@ import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, DefectDto, DefectPhase, DefectPriority, HandoverSummaryDto, ProjectMemberDto } from '@erp/shared';
 import { DEFAULT_DLP_MONTHS, DEFECT_PHASES, DEFECT_PHASE_LABELS, DEFECT_PRIORITIES, DEFECT_PRIORITY_LABELS, dlpEnd } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { formatDate } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
+import { DescribeFromPhoto } from '@/components/photo-checks/DescribeFromPhoto';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
 
@@ -75,7 +77,7 @@ export function HandoverFormModal({ open, summary, onClose }: { open: boolean; s
       qc.invalidateQueries({ queryKey: ['projects'] });
       qc.invalidateQueries({ queryKey: ['project', summary.projectId] });
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
 
   const ends = completedOn && typeof months === 'number' ? dlpEnd(completedOn.format('YYYY-MM-DD'), months) : null;
@@ -226,7 +228,7 @@ export function DefectFormModal({
       qc.invalidateQueries({ queryKey: ['handover', projectId] });
       onDone?.(d.id);
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
 
   const full = mode === 'new' || mode === 'edit';
@@ -282,6 +284,7 @@ export function DefectFormModal({
               <Form.Item name="photos" label="Photos">
                 <PhotoUpload max={6} />
               </Form.Item>
+              {mode === 'new' ? <DescribeFromPhoto form={form} projectId={projectId} /> : null}
             </FormSection>
             <FormSection title="Putting it right">
               <FormGrid cols={2}>

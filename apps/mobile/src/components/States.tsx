@@ -1,7 +1,7 @@
 import React from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing, typography } from '../theme';
+import { colors, fontSize, spacing, typography } from '../theme';
 import { ILLUSTRATIONS, type EmptyArt } from '../illustrations';
 import { Button } from './Button';
 import { Skeleton } from './Skeleton';
@@ -81,5 +81,5 @@ const styles = StyleSheet.create({
   text: { ...typography.caption, marginTop: spacing.sm, textAlign: 'center' },
   action: { marginTop: spacing.lg, alignSelf: 'stretch' },
   banner: { flexDirection: 'row', alignItems: 'flex-start', backgroundColor: colors.dangerSoft, padding: spacing.md, borderRadius: 10, marginBottom: spacing.lg },
-  bannerText: { flex: 1, marginLeft: spacing.sm, color: colors.danger, fontSize: 14 },
+  bannerText: { flex: 1, marginLeft: spacing.sm, color: colors.danger, fontSize: fontSize.secondary },
 });

@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from 'react';
-import { FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FlatList, Modal, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, maxFontScale, radius, spacing, touch, typography } from '../theme';
+import { colors, fontSize, maxFontScale, radius, spacing, touch, typography } from '../theme';
+import { IconButton, Touchable } from './Touchable';
 import { useT } from '../i18n/LanguageContext';
 
 export interface SelectOption<V extends string = string> {
@@ -45,13 +46,14 @@ export function Select<V extends string>({ label, value, options, onChange, plac
           {required ? <Text style={styles.req}> *</Text> : null}
         </Text>
       ) : null}
-      <Pressable
-        onPress={() => !disabled && setOpen(true)}
+      <Touchable
+        onPress={() => setOpen(true)}
+        disabled={disabled}
         style={[styles.field, !!error && styles.fieldError, disabled && styles.disabled]}
         accessibilityRole="button"
         accessibilityLabel={`${label ?? placeholder ?? t('Select')}${required ? `, ${t('required')}` : ''}: ${selected ? selected.label : t('not chosen')}`}
         accessibilityHint={error ?? undefined}
-        accessibilityState={{ disabled: !!disabled }}
+        accessibilityState={{ expanded: open }}
       >
         <View style={styles.flex}>
           <Text style={[styles.value, !selected && styles.placeholder]} numberOfLines={1} maxFontSizeMultiplier={maxFontScale}>
@@ -64,16 +66,16 @@ export function Select<V extends string>({ label, value, options, onChange, plac
           ) : null}
         </View>
         <Ionicons name="chevron-down" size={20} color={colors.textMuted} />
-      </Pressable>
+      </Touchable>
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       <Modal visible={open} animationType="slide" onRequestClose={() => setOpen(false)}>
         <SafeAreaView style={styles.modal}>
           <View style={styles.modalHeader}>
-            <Text style={typography.h2}>{label ?? t('Select')}</Text>
-            <Pressable onPress={() => setOpen(false)} hitSlop={12} style={styles.close} accessibilityRole="button" accessibilityLabel={t('Close')}>
-              <Ionicons name="close" size={26} color={colors.text} />
-            </Pressable>
+            <Text style={[typography.h2, styles.flex]} accessibilityRole="header">
+              {label ?? t('Select')}
+            </Text>
+            <IconButton icon="close" size={26} color={colors.text} onPress={() => setOpen(false)} accessibilityLabel={t('Close')} />
           </View>
           {showSearch ? (
             <View style={styles.search}>
@@ -90,7 +92,7 @@ export function Select<V extends string>({ label, value, options, onChange, plac
             renderItem={({ item }) => {
               const active = item.value === value;
               return (
-                <Pressable
+                <Touchable
                   onPress={() => {
                     onChange(item.value);
                     setOpen(false);
@@ -105,7 +107,7 @@ export function Select<V extends string>({ label, value, options, onChange, plac
                     {item.hint ? <Text style={styles.hint}>{item.hint}</Text> : null}
                   </View>
                   {active ? <Ionicons name="checkmark-circle" size={22} color={colors.primary} /> : null}
-                </Pressable>
+                </Touchable>
               );
             }}
           />
@@ -133,19 +135,18 @@ const styles = StyleSheet.create({
   },
   fieldError: { borderColor: colors.danger },
   disabled: { opacity: 0.6 },
-  value: { fontSize: 16, color: colors.text },
+  value: { fontSize: fontSize.body, color: colors.text },
   placeholder: { color: colors.textMuted },
   hint: { ...typography.caption, marginTop: 2 },
-  error: { color: colors.danger, marginTop: spacing.xs, fontSize: 13 },
+  error: { color: colors.danger, marginTop: spacing.xs, fontSize: fontSize.secondary },
   modal: { flex: 1, backgroundColor: colors.surface },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: spacing.lg, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
-  close: { padding: spacing.xs },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: spacing.sm, paddingLeft: spacing.lg, paddingRight: spacing.sm, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
   search: { flexDirection: 'row', alignItems: 'center', margin: spacing.lg, marginBottom: spacing.sm, paddingHorizontal: spacing.md, backgroundColor: colors.bg, borderRadius: radius.md, minHeight: touch.heightSm },
-  searchInput: { flex: 1, marginLeft: spacing.sm, fontSize: 16, color: colors.text, paddingVertical: spacing.sm },
+  searchInput: { flex: 1, marginLeft: spacing.sm, fontSize: fontSize.body, color: colors.text, paddingVertical: spacing.sm },
   sep: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border, marginLeft: spacing.lg },
   row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.lg, minHeight: touch.height + 8 },
   rowActive: { backgroundColor: colors.primarySoft },
-  rowLabel: { fontSize: 16, color: colors.text },
+  rowLabel: { fontSize: fontSize.body, color: colors.text },
   rowLabelActive: { fontWeight: '700', color: colors.primaryDark },
   empty: { ...typography.caption, textAlign: 'center', padding: spacing.xl },
 });

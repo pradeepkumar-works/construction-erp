@@ -6,7 +6,8 @@ import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { OpenBillDto, PaymentMode, RaBillDto, ReceiptDto, ReceiptKind } from '@erp/shared';
 import { RECEIPT_KIND_LABELS, RECEIPT_MODES, RECEIPT_MODE_LABELS } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useBill, useProjects, useReceivables } from '@/lib/queries';
 import { formatDate, formatINR, toNumber } from '@/lib/format';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
@@ -111,7 +112,7 @@ export function ReceiptFormModal({ open, onClose, bill, receipt }: { open: boole
       qc.invalidateQueries({ queryKey: ['dashboard'] });
       qc.invalidateQueries({ queryKey: ['cost'] });
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
 
   const over = kind === 'BILL' && target && !editing ? settles - toNumber(target.outstanding) : 0;

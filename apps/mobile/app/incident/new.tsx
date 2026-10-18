@@ -8,10 +8,11 @@ import { errorMessage } from '../../src/api/client';
 import { Button, Card, DatePicker, ErrorBanner, Input, TimePicker, Loading, PhotoPicker, Screen, Select, type LocalPhoto } from '../../src/components';
 import { attachmentIds, photosFailed, photosQueued, photosUploading, QueuedSuccess, SubmitSuccess, toOutboxPhotos, useProjectOptions } from '../../src/forms/common';
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
-import { colors, spacing } from '../../src/theme';
+import { colors, fontSize, spacing } from '../../src/theme';
 import { formatDate, isIsoDate, today } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
 import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
+import { useFieldChain } from '../../src/forms/keyboard';
 
 const nowTime = () => {
   const d = new Date();
@@ -23,6 +24,7 @@ export default function IncidentFormScreen() {
   const params = useLocalSearchParams<{ projectId?: string; nearMiss?: string }>();
   const api = useApi();
   const t = useT();
+  const field = useFieldChain();
   const errorSummary = useErrorSummary();
   const { online, enqueue, newId } = useOffline();
   // The same id for a direct send and the outbox, so a send that timed out but arrived is never made twice
@@ -146,19 +148,19 @@ export default function IncidentFormScreen() {
         <Select label={t('What kind')} required value={type} options={SAFETY_INCIDENT_TYPES.map((k) => ({ value: k, label: t(SAFETY_INCIDENT_TYPE_LABELS[k]) }))} onChange={setType} placeholder={t('Near miss, first aid...')} error={errors.type} />
         <DatePicker label={t('Date')} required value={date} onChange={setDate} error={errors.date} />
         <TimePicker label={t('Time')} value={time} onChange={setTime} error={errors.time} />
-        <Input label={t('Where')} required value={location} onChangeText={setLocation} placeholder={t('Chainage, block and floor, yard')} maxLength={200} error={errors.location} />
-        <Input label={t('What happened')} required value={description} onChangeText={setDescription} multiline maxLength={4000} error={errors.description} />
+        <Input {...field()} label={t('Where')} required value={location} onChangeText={setLocation} placeholder={t('Chainage, block and floor, yard')} maxLength={200} error={errors.location} />
+        <Input {...field({ multiline: true })} label={t('What happened')} required value={description} onChangeText={setDescription} multiline maxLength={4000} error={errors.description} />
       </Card>
       {hurt ? (
         <Card title={t('People hurt')}>
-          <Input label={t('How many')} required value={injured} onChangeText={setInjured} keyboardType="number-pad" maxLength={3} error={errors.injured} />
-          <Input label={t('Names')} value={names} onChangeText={setNames} placeholder={t('Name (trade)')} maxLength={1000} />
-          {type === 'LOST_TIME' ? <Input label={t('Days off work')} value={daysLost} onChangeText={setDaysLost} keyboardType="number-pad" maxLength={4} /> : null}
+          <Input {...field()} label={t('How many')} required value={injured} onChangeText={setInjured} keyboardType="number-pad" maxLength={3} error={errors.injured} />
+          <Input {...field()} label={t('Names')} value={names} onChangeText={setNames} placeholder={t('Name (trade)')} maxLength={1000} />
+          {type === 'LOST_TIME' ? <Input {...field()} label={t('Days off work')} value={daysLost} onChangeText={setDaysLost} keyboardType="number-pad" maxLength={4} /> : null}
         </Card>
       ) : null}
       <Card>
-        <Input label={t('Whose workers')} value={contractor} onChangeText={setContractor} placeholder={t('Labour contractor or subcontractor')} maxLength={200} />
-        <Input label={t('Immediate action')} value={action} onChangeText={setAction} multiline maxLength={2000} placeholder={t('First aid given, area cordoned off, work stopped')} />
+        <Input {...field()} label={t('Whose workers')} value={contractor} onChangeText={setContractor} placeholder={t('Labour contractor or subcontractor')} maxLength={200} />
+        <Input {...field({ multiline: true })} label={t('Immediate action')} value={action} onChangeText={setAction} multiline maxLength={2000} placeholder={t('First aid given, area cordoned off, work stopped')} />
       </Card>
       <Card title={t('Photos of the spot')}>
         <PhotoPicker photos={photos} onChange={setPhotos} />
@@ -170,5 +172,5 @@ export default function IncidentFormScreen() {
 }
 
 const styles = StyleSheet.create({
-  err: { color: colors.danger, marginTop: -spacing.sm, marginBottom: spacing.sm, fontSize: 13 },
+  err: { color: colors.danger, marginTop: -spacing.sm, marginBottom: spacing.sm, fontSize: fontSize.secondary },
 });

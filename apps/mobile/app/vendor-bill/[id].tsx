@@ -6,10 +6,10 @@ import type { VendorBillDto } from '@erp/shared';
 import { useFetch } from '../../src/api/hooks';
 import { useT } from '../../src/i18n/LanguageContext';
 import { AttachmentGallery, Card, ErrorState, KeyValue, Loading, ReviewActions, Screen, SubmissionHeader } from '../../src/components';
-import { colors, spacing, typography } from '../../src/theme';
-import { fmtQty, formatDate } from '../../src/utils/format';
+import { colors, fontSize, spacing, typography } from '../../src/theme';
+import { fmtQty, formatDate, formatMoney } from '../../src/utils/format';
 
-const rupees = (v: string) => `₹${Number(v).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const rupees = (v: string) => formatMoney(v);
 
 /** A vendor's invoice on the phone: the match against its PO and GRNs, and approval. Bills are entered on the web. */
 export default function VendorBillScreen() {
@@ -71,9 +71,9 @@ const styles = StyleSheet.create({
   box: { alignItems: 'center', paddingVertical: spacing.md, marginBottom: spacing.sm, backgroundColor: colors.primarySoft, borderRadius: 12 },
   total: { fontSize: 28, fontWeight: '800', color: colors.primaryDark },
   match: { flexDirection: 'row', gap: spacing.sm, padding: spacing.sm, borderRadius: 10, marginBottom: spacing.sm },
-  matchTitle: { fontSize: 14, fontWeight: '700' },
-  exception: { fontSize: 13, color: colors.text, marginTop: 2 },
+  matchTitle: { fontSize: fontSize.secondary, fontWeight: '700' },
+  exception: { fontSize: fontSize.secondary, color: colors.text, marginTop: 2 },
   line: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
-  lineTitle: { fontSize: 15, fontWeight: '600', color: colors.text },
-  amount: { fontSize: 15, fontWeight: '700', color: colors.text, marginLeft: spacing.md },
+  lineTitle: { fontSize: fontSize.body, fontWeight: '600', color: colors.text },
+  amount: { fontSize: fontSize.body, fontWeight: '700', color: colors.text, marginLeft: spacing.md },
 });

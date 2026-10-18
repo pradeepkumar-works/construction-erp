@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
-import { App, Button, ConfigProvider, Form, Input, Modal, Space, Tooltip, Typography } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { Alert, App, Button, ConfigProvider, Form, Input, Modal, Space, Tooltip, Typography } from 'antd';
 import { CheckOutlined, CloseOutlined, EditOutlined } from '@ant-design/icons';
 import type { ReviewDecision, SubmissionStatus, SubmissionType } from '@erp/shared';
 import { mayApproveType } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { errorMessage } from '@/lib/api';
+import { handledInPlace } from '@/lib/notify';
 import { useReview, type ApprovalTypeParam } from '@/lib/queries';
 import { approveTheme, themeFontSize } from '@/lib/theme';
 import { inSentence } from '@/lib/format';
@@ -83,24 +84,61 @@ export function useMayReview(type: ApprovalTypeParam, status: SubmissionStatus, 
   return !!user && status === 'SUBMITTED' && mayApproveType(user, type.toUpperCase() as SubmissionType, amount);
 }
 
-/** The note dialog behind Approve, Request changes and Reject (a reason is required for the last two). */
+/** Fewest characters a reason to reject or send back may have (the API and the phone ask the same, UX item 88). */
+const MIN_REASON = 5;
+const REASON_MESSAGE: Partial<Record<ReviewDecision, string>> = {
+  REJECT: 'Say why you are rejecting it',
+  REQUEST_CHANGES: 'Say what needs changing',
+};
+
+/** The note dialog behind Approve, Request changes and Reject (a reason of a few words is required for the last two). */
 export function ReviewDialog({ type, id, decision, onClose, onDone }: { type: ApprovalTypeParam; id: string; decision: ReviewDecision | null; onClose: () => void; onDone?: () => void }) {
   const { message } = App.useApp();
   const review = useReview();
   const [form] = Form.useForm<{ note?: string }>();
+  const [problem, setProblem] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
+  // The entry the dialog was opened for: in the inbox the picked entry moves on as soon as a decision shows.
+  const [forId, setForId] = useState(id);
+  useEffect(() => {
+    if (decision) setForId(id);
+    setProblem(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [decision]);
 
   const submit = async () => {
     if (!decision) return;
+    let values: { note?: string };
     try {
-      const values = await form.validateFields();
-      await review.mutateAsync({ type, id, decision, note: values.note });
-      message.success(decision === 'APPROVE' ? 'Approved' : decision === 'REJECT' ? 'Rejected' : 'Changes requested');
+      values = await form.validateFields();
+    } catch {
+      return;
+    }
+    const vars = { type, id: forId, decision, note: values.note };
+    if (decision === 'APPROVE') {
+      // Shown as approved at once (UX item 86); a refusal puts it back and says why, with Retry.
+      form.resetFields();
+      onClose();
+      onDone?.();
+      review.mutateAsync(vars).then(
+        () => message.success('Approved'),
+        () => undefined,
+      );
+      return;
+    }
+    // Sending back or rejecting waits for the server, with the reason kept here if it fails.
+    setSending(true);
+    setProblem(null);
+    try {
+      await handledInPlace(() => review.mutateAsync(vars));
+      message.success(decision === 'REJECT' ? 'Rejected' : 'Changes requested');
       form.resetFields();
       onClose();
       onDone?.();
     } catch (err) {
-      if (err && typeof err === 'object' && 'errorFields' in err) return;
-      message.error(errorMessage(err));
+      setProblem(errorMessage(err));
+    } finally {
+      setSending(false);
     }
   };
 
@@ -109,7 +147,7 @@ export function ReviewDialog({ type, id, decision, onClose, onDone }: { type: Ap
       open={!!decision}
       title={decision ? REVIEW_LABELS[decision] : ''}
       okText={decision ? REVIEW_LABELS[decision] : 'OK'}
-      okButtonProps={{ danger: decision === 'REJECT', loading: review.isPending }}
+      okButtonProps={{ danger: decision === 'REJECT', loading: sending }}
       onOk={submit}
       onCancel={() => {
         onClose();
@@ -117,12 +155,24 @@ export function ReviewDialog({ type, id, decision, onClose, onDone }: { type: Ap
       }}
       destroyOnHidden
     >
+      {problem ? <Alert type="error" showIcon role="alert" title={problem} style={{ marginTop: 12 }} /> : null}
       <Form form={form} layout="vertical" style={{ marginTop: 12 }}>
-        <Form.Item name="note" label={decision === 'APPROVE' ? 'Note (optional)' : 'Reason'} rules={decision === 'APPROVE' ? [] : [{ required: true, message: 'Please enter a reason' }]}>
+        <Form.Item
+          name="note"
+          label={decision === 'APPROVE' ? 'Note (optional)' : 'Reason'}
+          rules={
+            decision && decision !== 'APPROVE'
+              ? [
+                  { required: true, whitespace: true, message: REASON_MESSAGE[decision] },
+                  { validator: (_, v?: string) => ((v ?? '').trim().length >= MIN_REASON || !(v ?? '').trim() ? Promise.resolve() : Promise.reject(new Error(`${REASON_MESSAGE[decision]} in a few words`))) },
+                ]
+              : []
+          }
+        >
           <Input.TextArea
             rows={3}
             autoFocus
-            placeholder={decision === 'APPROVE' ? 'Any remarks for the submitter' : 'Explain what needs to change'}
+            placeholder={decision === 'APPROVE' ? 'Any remarks for the submitter' : decision === 'REJECT' ? 'Why it cannot be approved' : 'Explain what needs to change'}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                 e.preventDefault();

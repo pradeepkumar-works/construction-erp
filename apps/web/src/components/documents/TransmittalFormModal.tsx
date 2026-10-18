@@ -7,7 +7,8 @@ import dayjs from 'dayjs';
 import type { TransmittalDto, TransmittalPurpose } from '@erp/shared';
 import { TRANSMITTAL_PURPOSES, TRANSMITTAL_PURPOSE_LABELS } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useProjects, useSiteDocuments } from '@/lib/queries';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 
@@ -92,7 +93,7 @@ export function TransmittalFormModal({
       qc.invalidateQueries({ queryKey: ['documents'] });
       onSaved?.(t);
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   const chosen = new Set((items ?? []).map((i) => i?.revisionId));

@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Form, Input, Popconfirm, Space, Tag, Typography } from 'antd';
+import { App, Button, Form, Input, Space, Tag, Typography } from 'antd';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ItemDto, ItemSortField } from '@erp/shared';
 import { LIST_SORT_FIELDS, canManageStore } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useStockItems } from '@/lib/queries';
 import { formatDate, formatINR, RUPEE } from '@/lib/format';
@@ -19,6 +20,7 @@ import { DataTable, type ListColumn } from '@/components/list/DataTable';
 import { useListFrame } from '@/components/list/useListFrame';
 import { FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
+import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 const NO_KEYS: string[] = [];
 
@@ -48,15 +50,14 @@ export function ItemsTable() {
       qc.invalidateQueries({ queryKey: ['stock'] });
       qc.invalidateQueries({ queryKey: ['cost'] });
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
   const remove = useMutation({
     mutationFn: async (i: ItemDto) => (await api.delete(`/stock/items/${i.id}`)).data,
     onSuccess: () => {
-      message.success('Item deleted');
       qc.invalidateQueries({ queryKey: ['stock'] });
     },
-    onError: (err) => message.error(errorMessage(err)),
+    meta: FAIL_NOTICE,
   });
 
   const open = (i: ItemDto | 'new') => {
@@ -102,9 +103,9 @@ export function ItemsTable() {
                 render: (_: unknown, r: ItemDto) => (
                   <Space size="small">
                     <Button type="text" size="small" icon={<EditOutlined />} onClick={() => open(r)} aria-label="Edit" />
-                    <Popconfirm title={`Delete ${r.name}?`} okText="Delete" okButtonProps={{ danger: true }} onConfirm={() => remove.mutate(r)} disabled={r.projectCount > 0}>
+                    <ConfirmDelete what={`item ${r.name}`} onConfirm={() => remove.mutateAsync(r)} disabled={r.projectCount > 0}>
                       <Button type="text" size="small" danger icon={<DeleteOutlined />} disabled={r.projectCount > 0} title={r.projectCount > 0 ? 'Has stock movements' : undefined} aria-label="Delete" />
-                    </Popconfirm>
+                    </ConfirmDelete>
                   </Space>
                 ),
               } satisfies ListColumn<ItemDto>,

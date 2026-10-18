@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, TextInput, View, type TextInputProps, type ViewStyle } from 'react-native';
-import { colors, maxFontScale, radius, spacing, touch, typography } from '../theme';
+import { colors, fontSize, maxFontScale, radius, spacing, touch, typography } from '../theme';
 import { useT } from '../i18n/LanguageContext';
 
 interface Props extends TextInputProps {
@@ -10,13 +10,15 @@ interface Props extends TextInputProps {
   required?: boolean;
   containerStyle?: ViewStyle;
   right?: React.ReactNode;
+  /** The text field, so Next on the keyboard can move here (`useFieldChain`). */
+  ref?: React.Ref<TextInput>;
 }
 
 /**
  * A text field with its label above. Screen readers hear the label (or, for a field in a table row, the
  * `accessibilityLabel` or placeholder), "required", and the error or hint after it.
  */
-export function Input({ label, error, hint, required, containerStyle, right, style, multiline, accessibilityLabel, ...rest }: Props) {
+export function Input({ label, error, hint, required, containerStyle, right, style, multiline, accessibilityLabel, ref, ...rest }: Props) {
   const t = useT();
   const name = accessibilityLabel ?? label ?? rest.placeholder;
   return (
@@ -29,6 +31,7 @@ export function Input({ label, error, hint, required, containerStyle, right, sty
       ) : null}
       <View style={[styles.inputWrap, !!error && styles.inputError, multiline && styles.multilineWrap]}>
         <TextInput
+          ref={ref}
           placeholderTextColor={colors.textMuted}
           maxFontSizeMultiplier={maxFontScale}
           multiline={multiline}
@@ -68,8 +71,8 @@ const styles = StyleSheet.create({
   },
   multilineWrap: { alignItems: 'flex-start' },
   inputError: { borderColor: colors.danger },
-  input: { flex: 1, fontSize: 16, color: colors.text, paddingVertical: spacing.md },
+  input: { flex: 1, fontSize: fontSize.body, color: colors.text, paddingVertical: spacing.md },
   multiline: { minHeight: 96, textAlignVertical: 'top' },
-  error: { color: colors.danger, marginTop: spacing.xs, fontSize: 13 },
+  error: { color: colors.danger, marginTop: spacing.xs, fontSize: fontSize.secondary },
   hint: { ...typography.caption, marginTop: spacing.xs },
 });

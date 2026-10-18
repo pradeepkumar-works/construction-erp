@@ -13,6 +13,13 @@ const READ_PER_SEARCH = 6;
 /** Time spent reading files before a search, at most (ms). */
 const READ_BUDGET_MS = 20_000;
 const HITS = 6;
+/** A file that could not be read is tried again after this long (ms), so a fixed reader or a passing fault heals it. */
+const RETRY_AFTER_MS = 24 * 60 * 60 * 1000;
+
+/** Not read yet, or failed and due another try. */
+const unreadFile = (): Prisma.AttachmentWhereInput => ({
+  OR: [{ textIndexedAt: null }, { textError: { not: null }, textIndexedAt: { lt: new Date(Date.now() - RETRY_AFTER_MS) } }],
+});
 
 type PageRow = { attachmentId: string; page: number; text: string; projectId: string; rank: number };
 type LetterRow = { id: string; rank: number };
@@ -34,13 +41,12 @@ export class DocumentTextService {
   ) {}
 
   /** PDFs on current document revisions and on letters, in these projects, whose text has not been read yet. */
-  private pendingWhere(organizationId: string, projectIds: string[] | null): Prisma.AttachmentWhereInput {
+  private pendingWhere(organizationId: string | null, projectIds: string[] | null): Prisma.AttachmentWhereInput {
     const inProjects = projectIds ? { projectId: { in: projectIds } } : {};
     return {
-      organizationId,
+      ...(organizationId ? { organizationId } : {}),
       mimeType: 'application/pdf',
-      textIndexedAt: null,
-      OR: [{ revision: { currentOf: { isNot: null }, document: inProjects } }, { letter: inProjects }],
+      AND: [unreadFile(), { OR: [{ revision: { currentOf: { isNot: null }, document: inProjects } }, { letter: projectIds ? { is: inProjects } : { isNot: null } }] }],
     };
   }
 
@@ -59,18 +65,20 @@ export class DocumentTextService {
       const projectId = f.revision?.document.projectId ?? f.letter?.projectId;
       if (!projectId) continue;
       let pages: string[] = [];
+      let error: string | null = null;
       try {
         if (f.size > MAX_PDF_BYTES) throw new Error(`too large (${f.size} bytes)`);
         const row = await this.prisma.attachment.findUniqueOrThrow({ where: { id: f.id }, select: { data: true } });
         pages = await readPdfPages(await this.storage.read(f.storagePath, row.data));
       } catch (e) {
-        this.log.warn(`reading ${f.id}: ${(e as Error).message}`);
+        error = ((e as Error).message || String(e)).slice(0, 500);
+        this.log.warn(`reading ${f.id}: ${error}`);
       }
       const rows = pages.map((text, i) => ({ organizationId, projectId, attachmentId: f.id, page: i + 1, text })).filter((r) => r.text.length > 0);
       await this.prisma.$transaction([
         this.prisma.documentPage.deleteMany({ where: { attachmentId: f.id } }),
         this.prisma.documentPage.createMany({ data: rows }),
-        this.prisma.attachment.update({ where: { id: f.id }, data: { textIndexedAt: new Date(), textPages: rows.length } }),
+        this.prisma.attachment.update({ where: { id: f.id }, data: { textIndexedAt: new Date(), textPages: rows.length, textError: error } }),
       ]);
       read++;
     }
@@ -82,7 +90,7 @@ export class DocumentTextService {
     const started = Date.now();
     let read = 0;
     for (;;) {
-      const next = await this.prisma.attachment.findFirst({ where: { mimeType: 'application/pdf', textIndexedAt: null, OR: [{ revision: { currentOf: { isNot: null } } }, { letterId: { not: null } }] }, select: { organizationId: true } });
+      const next = await this.prisma.attachment.findFirst({ where: this.pendingWhere(null, null), select: { organizationId: true } });
       const left = budgetMs - (Date.now() - started);
       if (!next || left <= 0) break;
       const n = await this.readPending(next.organizationId, null, 20, left);
@@ -182,7 +190,7 @@ export class DocumentTextService {
     const f = await this.prisma.attachment.findFirst({
       where: { id: attachmentId, organizationId: user.organizationId, OR: [{ revision: { document: { project: this.access.projectWhere(user) } } }, ...(canViewLetters(user.roleKey) ? [{ letter: { project: this.access.projectWhere(user) } }] : [])] },
       select: {
-        id: true, fileName: true, storagePath: true, textPages: true,
+        id: true, fileName: true, storagePath: true, textPages: true, textError: true,
         revision: { select: { revision: true, document: { select: { id: true, docNo: true, title: true } } } },
         letter: { select: { id: true, letterNo: true, subject: true } },
       },
@@ -199,6 +207,7 @@ export class DocumentTextService {
       title: r ? `${r.document.docNo} ${r.document.title}, rev ${r.revision}` : `${f.letter!.letterNo} ${f.letter!.subject}`,
       recordHref: r ? `/documents?id=${r.document.id}` : `/documents?tab=letters&letter=${f.letter!.id}`,
       text: row?.text ?? null,
+      readError: f.textError,
     };
   }
 }

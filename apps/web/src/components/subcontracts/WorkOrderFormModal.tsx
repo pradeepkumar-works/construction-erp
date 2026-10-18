@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useEffect, useMemo } from 'react';
-import { Alert, App, Button, DatePicker, Form, Input, InputNumber, Select, Table, Typography } from 'antd';
+import { Alert, Button, DatePicker, Form, Input, InputNumber, Select, Table, Typography } from 'antd';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, VendorDto, VendorKind, WorkOrderDto } from '@erp/shared';
 import { GST_RATES, MSME_CATEGORY_LABELS, contractorTdsPct } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
+import { FAIL_NOTICE, useNotify } from '@/lib/notify';
 import { useBoq, useProjects } from '@/lib/queries';
 import { VendorSelect, useVendor } from '@/components/common/SearchSelect';
 import { formatINR, toNumber } from '@/lib/format';
@@ -16,6 +17,7 @@ import { UnitInput } from '@/components/common/UnitInput';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { MoneyInput, QuantityInput } from '@/components/form/inputs';
 import { themeFontSize } from '@/lib/theme';
+import { recordPage } from '@/components/approvals/queue';
 
 interface LineValue {
   boqItemId?: string | null;
@@ -63,8 +65,8 @@ export function WorkOrderFormModal({
   onSaved?: (o: WorkOrderDto) => void;
 }) {
   const [form] = Form.useForm<FormValues>();
-  const { message } = App.useApp();
   const qc = useQueryClient();
+  const notify = useNotify();
   const { data: projects } = useProjects();
   const projectId = Form.useWatch('projectId', form) as string | undefined;
   const { data: boq } = useBoq(open ? projectId : undefined);
@@ -135,11 +137,11 @@ export function WorkOrderFormModal({
       return (await api.post<WorkOrderDto>('/work-orders', { ...body, id: crypto.randomUUID(), projectId: v.projectId })).data;
     },
     onSuccess: (o, { submit }) => {
-      message.success(submit ? `${o.woNo} submitted for approval` : `${o.woNo} saved as a draft`);
+      notify.saved(submit ? `${o.woNo} submitted for approval` : `${o.woNo} saved as a draft`, recordPage('WORK_ORDER', o.id));
       qc.invalidateQueries({ queryKey: ['work-orders'] });
       onSaved?.(o);
     },
-    onError: (e) => message.error(errorMessage(e)),
+    meta: FAIL_NOTICE,
   });
 
   const usedBoq = new Set((lines ?? []).map((l) => l.boqItemId).filter(Boolean));
