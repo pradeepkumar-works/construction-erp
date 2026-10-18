@@ -234,6 +234,7 @@ export function NcrDrawer({ id, open, onClose }: { id: string | null; open: bool
           onChange={(e) => setNote(e.target.value)}
           placeholder={step === 'close' ? 'How it was verified (optional)' : 'What is still not right'}
           aria-label={step === 'close' ? 'Closure note' : 'Reason to reopen'}
+          // eslint-disable-next-line jsx-a11y/no-autofocus -- focus moves into the dialog that just opened, as the dialog pattern asks
           autoFocus
         />
       </Modal>

@@ -189,7 +189,7 @@ export default function DesignPage() {
             <Typography.Text type="success">Success</Typography.Text>
             <Typography.Text type="warning">Warning</Typography.Text>
             <Typography.Text type="danger">Danger</Typography.Text>
-            <Typography.Link>Link</Typography.Link>
+            <Typography.Link href="/design">Link</Typography.Link>
             <span className="mono" translate="no">{formatINR('18650000')}</span>
           </Space>
         </Card>

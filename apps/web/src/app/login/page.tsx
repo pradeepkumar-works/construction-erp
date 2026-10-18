@@ -48,7 +48,17 @@ export default function LoginPage() {
 
       <Form form={form} layout="vertical" onFinish={onFinish} requiredMark={false}>
         <Form.Item name="email" label="Email" rules={[{ required: true, message: 'Enter your email' }, { type: 'email', message: 'Enter an email address, e.g. name@company.com' }]}>
-          <Input type="email" inputMode="email" placeholder="you@company.com" autoComplete="username" autoCapitalize="none" spellCheck={false} size="large" autoFocus />
+          <Input
+            type="email"
+            inputMode="email"
+            placeholder="you@company.com"
+            autoComplete="username"
+            autoCapitalize="none"
+            spellCheck={false}
+            size="large"
+            // eslint-disable-next-line jsx-a11y/no-autofocus -- a page that is this one form: the field the visitor came to fill
+            autoFocus
+          />
         </Form.Item>
         <div className="auth-field">
           <Form.Item name="password" label="Password" rules={[{ required: true, message: 'Enter your password' }]}>

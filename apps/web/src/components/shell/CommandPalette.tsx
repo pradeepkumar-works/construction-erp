@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Modal } from 'antd';
 import {
@@ -104,11 +104,14 @@ export function CommandPalette({
   const search = useSearch(term, open && withProjects);
   const searching = search.isFetching || (query.trim() !== term.trim() && query.trim().length >= SEARCH_MIN_LENGTH);
 
-  const navigate = (href: string) => {
-    onClose();
-    // An open form with unsaved changes asks first.
-    void confirmLeave().then((ok) => ok && router.push(href));
-  };
+  const navigate = useCallback(
+    (href: string) => {
+      onClose();
+      // An open form with unsaved changes asks first.
+      void confirmLeave().then((ok) => ok && router.push(href));
+    },
+    [onClose, router],
+  );
 
   const pages = useMemo<Target[]>(() => {
     const list: Target[] = sections.flatMap((sec) =>
@@ -118,8 +121,7 @@ export function CommandPalette({
       list.push({ key: '/notifications', label: 'Notifications', hint: '', icon: BellOutlined, group: 'Pages', text: 'notifications alerts inbox', go: () => navigate('/notifications') });
     }
     return list;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sections]);
+  }, [sections, navigate]);
 
   const projectTargets = useMemo<Target[]>(
     () =>
@@ -132,8 +134,7 @@ export function CommandPalette({
         text: `${p.name} ${p.code} ${p.clientName ?? ''} ${p.location ?? ''}`.toLowerCase(),
         go: () => navigate(`/projects/${p.id}`),
       })),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [projects],
+    [projects, navigate],
   );
 
   /** "New DPR", or "new dpr for jajpur": the project after "for" is picked in the header before the form opens. */
@@ -161,8 +162,7 @@ export function CommandPalette({
       entries.map((e) => ({ key: e.kind, label: e.action, icon: () => e.icon, group: 'Actions', text: `${e.action} ${e.label} new`.toLowerCase(), go: () => start(e) })),
       q,
     );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, user, projectTargets]);
+  }, [query, user, projectTargets, projects, withProjects, setProjectScope, router, onClose]);
 
   const records = useMemo<Target[]>(() => {
     if (query.trim().length < SEARCH_MIN_LENGTH) return [];
@@ -184,8 +184,7 @@ export function CommandPalette({
           navigate(h.href);
         },
       }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search.data, query]);
+  }, [search.data, query, navigate]);
 
   /** Records and pages opened lately, newest first, in one group. */
   const recentTargets = useMemo<Target[]>(
@@ -199,8 +198,7 @@ export function CommandPalette({
         .sort((a, b) => b.at - a.at)
         .slice(0, RECENT_SHOWN)
         .map((r) => r.t),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [recent, recentPages],
+    [recent, recentPages, navigate],
   );
 
   const askTarget = useMemo<Target | null>(() => {
@@ -276,6 +274,7 @@ export function CommandPalette({
                     {t.group}
                   </li>
                 )}
+                {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events -- an option of the combobox: the search box takes the keys (aria-activedescendant) */}
                 <li
                   id={`palette-${i}`}
                   data-index={i}

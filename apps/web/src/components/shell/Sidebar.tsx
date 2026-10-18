@@ -211,7 +211,7 @@ function RailSection({ section, active, onNavigate }: { section: NavSection; act
   };
 
   const content = (
-    <div className={s.flyout} onKeyDown={onListKey}>
+    <div className={s.flyout} role="presentation" onKeyDown={onListKey}>
       <div className={s.flyoutTitle}>{section.title}</div>
       <ul ref={list} className={s.list}>
         {section.items.map((item) => (

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, App, Button, DatePicker, Descriptions, Drawer, Form, Input, Skeleton, Table, Typography } from 'antd';
 import type { UseQueryResult } from '@tanstack/react-query';
 import dayjs from 'dayjs';
@@ -144,12 +144,11 @@ function CertifyModal({ bill, onClose }: { bill: PortalBillDto | null; onClose: 
   const { message } = App.useApp();
   const certify = useCertifyAsClient();
   const [form] = Form.useForm<{ date: dayjs.Dayjs; certificateNo?: string; qty: Record<string, number | null> }>();
-  const lines = (bill?.items ?? []).filter((i) => Number(i.thisQty) > 0);
+  const lines = useMemo(() => (bill?.items ?? []).filter((i) => Number(i.thisQty) > 0), [bill]);
 
   useEffect(() => {
     if (bill) form.setFieldsValue({ date: dayjs(), certificateNo: '', qty: Object.fromEntries(lines.map((l) => [l.boqItemId, Number(l.thisQty)])) });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bill, form]);
+  }, [bill, form, lines]);
 
   const submit = async (v: { date: dayjs.Dayjs; certificateNo?: string; qty: Record<string, number | null> }) => {
     if (!bill) return;

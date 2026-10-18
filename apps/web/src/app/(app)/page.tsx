@@ -12,7 +12,6 @@ import {
   CreditCardOutlined,
   FileTextOutlined,
   FundProjectionScreenOutlined,
-  PieChartOutlined,
   ProjectOutlined,
   RiseOutlined,
   ShoppingCartOutlined,

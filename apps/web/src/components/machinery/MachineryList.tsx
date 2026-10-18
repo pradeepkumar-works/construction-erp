@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button, Checkbox, Select } from 'antd';
+import { Button, Checkbox } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import type { MachineryLogDto } from '@erp/shared';
 import { LIST_SORT_FIELDS, canLogMachinery } from '@erp/shared';

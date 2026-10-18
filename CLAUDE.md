@@ -20,6 +20,7 @@ pnpm db:migrate && pnpm db:seed       # apps/api/.env needs DATABASE_URL
 pnpm dev:api | pnpm dev:web | pnpm dev:mobile
 pnpm typecheck                        # all packages, must pass before committing
 cd apps/web && npx next build         # web must build clean
+pnpm --filter @erp/web lint           # ESLint (typescript-eslint, hooks, Next, jsx-a11y) on the web; 0 errors, CI runs it
 cd apps/mobile && npx tsc --noEmit && CI=1 npx expo export --platform android
 cd e2e && npx playwright test         # browser tests; needs API + web running (docs/TESTING.md), CI runs them on PRs
 cd e2e && npx playwright test --project=walk --workers=2   # just the route walk (every sidebar page, see Accessibility)
@@ -84,7 +85,8 @@ and the pre-delivery checklist.
   (`src/lib/shortcuts.ts`, off from Help > Keyboard shortcuts); Ask is Alt J (⌘J on a Mac), never Ctrl J.
 - Words: follow `docs/WRITING.md` (sentence case, one name per module in nav, page title and Search, New / Record / Report /
   Request for create, errors that say what to do, `…`, money through `format.ts`, `translate="no"` on numbers and names).
-- Accessibility (WCAG 2.2 AA, `e2e/tests/accessibility.spec.ts` runs axe on the main pages in both themes): text colours come
+- Accessibility (WCAG 2.2 AA, `e2e/tests/accessibility.spec.ts` runs axe on the main pages in both themes; `pnpm --filter @erp/web lint`
+  (jsx-a11y, antd components mapped to their elements in `apps/web/eslint.config.mjs`) must pass): text colours come
   from tokens, never antd's raw `colorWarning`/`colorSuccess` for text (use the `…Text` token); a filter or search control outside a
   labelled `Form.Item` gets an `aria-label` (`ListToolbar` takes `searchLabel`), a `Progress` gets one too; buttons beside a
   tab bar go through `renderTabBar={tabBarWithExtra(…)}` (`components/common/tabBarWithExtra.tsx`), not `tabBarExtraContent`.

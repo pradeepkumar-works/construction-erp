@@ -207,7 +207,15 @@ export function RiskDrawer({ id, open, onClose, onEdit }: { id: string | null; o
         <Typography.Paragraph type="secondary">
           {data?.kind === 'DELAY' && !data.delayEnd ? 'The delay will be recorded as ending today. Use Update to give another date. ' : ''}How was it resolved?
         </Typography.Paragraph>
-        <Input.TextArea rows={3} maxLength={2000} value={note} onChange={(e) => setNote(e.target.value)} autoFocus />
+        <Input.TextArea
+          rows={3}
+          maxLength={2000}
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          aria-label="How it was resolved"
+          // eslint-disable-next-line jsx-a11y/no-autofocus -- focus moves into the dialog that just opened, as the dialog pattern asks
+          autoFocus
+        />
       </Modal>
     </Drawer>
   );

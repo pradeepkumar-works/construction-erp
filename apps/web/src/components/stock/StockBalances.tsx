@@ -52,7 +52,17 @@ function MinLevelEditor({ row }: { row: StockBalanceDto }) {
       content={
         <Space orientation="vertical" size={8}>
           <Space.Compact>
-            <InputNumber<string> stringMode min="0" value={value} onChange={(v) => setValue(v)} placeholder="None" style={{ width: 140 }} autoFocus />
+            <InputNumber<string>
+              stringMode
+              min="0"
+              value={value}
+              onChange={(v) => setValue(v)}
+              placeholder="None"
+              style={{ width: 140 }}
+              aria-label={`Minimum stock of ${row.itemName}`}
+              // eslint-disable-next-line jsx-a11y/no-autofocus -- focus moves into the popover that just opened, as the dialog pattern asks
+              autoFocus
+            />
             <Button disabled>{row.unit}</Button>
           </Space.Compact>
           <Space>

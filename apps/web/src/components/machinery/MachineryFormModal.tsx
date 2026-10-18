@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect } from 'react';
-import { Alert, App, DatePicker, Form, Input, InputNumber, Select } from 'antd';
+import { Alert, DatePicker, Form, Input, InputNumber, Select } from 'antd';
 import dayjs from 'dayjs';
 import type { AttachmentDto, EquipmentDto, MachineryLogDto } from '@erp/shared';
 import { MAX_LOG_HOURS, machineryLogProblem } from '@erp/shared';
@@ -37,7 +37,6 @@ interface FormValues {
 /** Log a machine's day, or (with `log`) fix a returned log and resubmit it. */
 export function MachineryFormModal({ open, onClose, projectId, log }: { open: boolean; onClose: () => void; projectId?: string; log?: MachineryLogDto | null }) {
   const [form] = Form.useForm<FormValues>();
-  const { message } = App.useApp();
   const qc = useQueryClient();
   const notify = useNotify();
   const { data: projects } = useProjects();

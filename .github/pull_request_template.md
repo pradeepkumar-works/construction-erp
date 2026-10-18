@@ -14,6 +14,7 @@
 
 - [ ] `pnpm typecheck`
 - [ ] `cd apps/web && npx next build`
+- [ ] `pnpm --filter @erp/web lint`
 - [ ] `npx @ant-design/cli lint apps/web/src/<folder>` on each folder changed
 - [ ] e2e: `cd e2e && npx playwright test` (flows and the route walk; CI runs both)
 - [ ] Phone changed: `cd apps/mobile && npx tsc --noEmit && CI=1 npx expo export --platform android && npm run i18n:check`

@@ -56,7 +56,7 @@ export function NotificationBell() {
     if (!open) return;
     const first = NOTIFICATION_TABS.find((t) => (counts?.unreadByTab?.[t] ?? 0) > 0);
     if (first) setTab(first);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only on opening: counts arriving later must not move the tab under the reader
   }, [open]);
 
   const openItem = (n: NotificationDto) => {

@@ -17,7 +17,7 @@ import {
   canManageHandover,
   canReportDefect,
 } from '@erp/shared';
-import { api, errorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { useDefect, useDefects, useHandover } from '@/lib/queries';

@@ -51,8 +51,7 @@ export function IssueModal({ open, onClose, projectId }: { open: boolean; onClos
     if (!open) return;
     form.resetFields();
     form.setFieldsValue({ projectId: projectId as string, date: dayjs(), lines: [{}] });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, projectId]);
+  }, [open, projectId, form]);
 
   const save = useMutation({
     mutationFn: async (v: FormValues) => {

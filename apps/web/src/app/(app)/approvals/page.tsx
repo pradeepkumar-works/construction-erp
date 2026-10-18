@@ -124,7 +124,7 @@ export default function ApprovalsPage() {
       if (split) setCurrent(queueKey(p));
       else setDrawer({ type: p.type, id: p.id });
     },
-    [split],
+    [split, setCurrent, setDrawer],
   );
 
   const select = (keys: string[], t: SubmissionType, on: boolean) => {

@@ -103,7 +103,7 @@ export function ReviewDialog({ type, id, decision, onClose, onDone }: { type: Ap
   useEffect(() => {
     if (decision) setForId(id);
     setProblem(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only when a decision is picked: in the inbox `id` moves on as soon as one shows
   }, [decision]);
 
   const submit = async () => {
@@ -171,6 +171,7 @@ export function ReviewDialog({ type, id, decision, onClose, onDone }: { type: Ap
         >
           <Input.TextArea
             rows={3}
+            // eslint-disable-next-line jsx-a11y/no-autofocus -- focus moves into the dialog that just opened, as the dialog pattern asks
             autoFocus
             placeholder={decision === 'APPROVE' ? 'Any remarks for the submitter' : decision === 'REJECT' ? 'Why it cannot be approved' : 'Explain what needs to change'}
             onKeyDown={(e) => {

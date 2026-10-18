@@ -2,7 +2,7 @@ name: End-to-end tests
 
 # Runs the API and the web app against a fresh Postgres with the demo seed, the API connected as the
 # erp_runtime role (row-level security enforced, as in production), then the Playwright browser tests.
-# Three jobs side by side, each with its own database and servers: the flows (and the API checks and the antd lint),
+# Three jobs side by side, each with its own database and servers: the flows (and the API checks, the antd lint and ESLint),
 # and the route walk (item 89: every sidebar page in both widths and themes) in two shards, so the slowest job stays
 # well under 25 minutes.
 on:
@@ -61,6 +61,11 @@ jobs:
           done
           echo "antd lint: $found issues"
           [ "$found" -eq 0 ]
+      # ESLint on the web app (UX item 89, follow-up): typescript-eslint, React hooks, Next.js and jsx-a11y. Any error fails the step,
+      # and so does a warning beyond the count the lint script allows (apps/web/eslint.config.mjs says which are left).
+      - name: ESLint (with jsx-a11y) on the web app
+        if: matrix.suite == 'flows'
+        run: pnpm --filter @erp/web lint
       - name: Database owner like Neon's (BYPASSRLS, not superuser)
         run: |
           psql "postgresql://postgres:postgres@localhost:5432/postgres" -c "CREATE ROLE erp_owner LOGIN PASSWORD 'owner' CREATEROLE BYPASSRLS" -c "CREATE DATABASE erp OWNER erp_owner"

@@ -49,7 +49,13 @@ export default function ForgotPasswordPage() {
           {error && <Alert type="error" showIcon title={error} style={{ marginBottom: 16 }} />}
           <Form layout="vertical" onFinish={onFinish} requiredMark={false}>
             <Form.Item name="email" label="Email" rules={[{ required: true, message: 'Enter your email' }, { type: 'email', message: 'Enter an email address, e.g. name@company.com' }]}>
-              <Input autoComplete="username" size="large" placeholder="you@company.com" autoFocus />
+              <Input
+                autoComplete="username"
+                size="large"
+                placeholder="you@company.com"
+                // eslint-disable-next-line jsx-a11y/no-autofocus -- a page that is this one form: the field the visitor came to fill
+                autoFocus
+              />
             </Form.Item>
             <Button type="primary" htmlType="submit" block size="large" loading={submitting}>
               Email me a reset link

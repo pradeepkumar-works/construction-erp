@@ -9,7 +9,6 @@ import type { TabsProps } from 'antd';
  * hold only tabs (WCAG, UI roadmap item 65), so pass this as `renderTabBar` instead.
  */
 export function tabBarWithExtra(extra: React.ReactNode): TabsProps['renderTabBar'] {
-  // eslint-disable-next-line react/display-name
   return (props, DefaultTabBar) => (
     <Flex align="center" style={{ ...(props.style as React.CSSProperties) }}>
       <DefaultTabBar {...props} style={{ flex: 1, minWidth: 0, marginBottom: 0 }} />

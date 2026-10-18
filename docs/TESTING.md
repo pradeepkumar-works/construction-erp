@@ -5,7 +5,7 @@
 | Check | Where | What it covers |
 |-------|-------|----------------|
 | `pnpm typecheck`, `next build`, mobile `tsc` and `expo export` | before every commit (see CLAUDE.md) | types and builds |
-| `.github/workflows/e2e.yml` | every pull request | the API and web app on a fresh Postgres with the demo seed, the API connected as `erp_runtime` (row-level security enforced), then the Playwright browser tests in `e2e/`: the flows (with the API checks and the antd lint) and the route walk in two shards, three jobs side by side, then the `e2e` check that passes only when all three do |
+| `.github/workflows/e2e.yml` | every pull request | the API and web app on a fresh Postgres with the demo seed, the API connected as `erp_runtime` (row-level security enforced), then the Playwright browser tests in `e2e/`: the flows (with the API checks, the antd lint and ESLint) and the route walk in two shards, three jobs side by side, then the `e2e` check that passes only when all three do |
 | `.github/workflows/smoke.yml` | by hand, against production | the API contract of every module, read-mostly, with the demo accounts |
 | Phone checklist below | by hand on a real phone, before a store release | offline entry, photos and sync |
 
@@ -70,6 +70,16 @@ cd e2e
 E2E_API_URL=http://localhost:4000/api E2E_WEB_URL=http://localhost:3000 npx playwright test --project=walk --workers=2
 ls route-walk/screens                  # the screenshots; the flows alone are --project=chromium
 ```
+
+## ESLint on the web app
+
+`pnpm --filter @erp/web lint` runs ESLint over `apps/web/src` with typescript-eslint's recommended rules, React hooks,
+Next.js (core web vitals) and jsx-a11y; CI runs it in the flows job. jsx-a11y checks DOM elements only, so
+`eslint.config.mjs` maps antd's and the app's components to the element they draw (`Button` to `button`, `Input` to
+`input`, `Typography.Link`, `Link` and `LinkButton` to `a`, …). Every rule is an error except the ones the config lists as
+still warnings, and the script's `--max-warnings` is their count today, so a new warning fails as well; lower it when you
+fix one. An `eslint-disable-next-line` names the rule and says why it is wrong for that line (`-- reason`); an unused one
+is an error.
 
 ## Web Vitals budgets (`speed.spec.ts`)
 
