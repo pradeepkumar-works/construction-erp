@@ -1,81 +1,185 @@
 'use client';
 
 import React from 'react';
-import { Col, Descriptions, Progress, Row, Statistic, Table, Typography, theme } from 'antd';
-import type { ProjectDetail } from '@erp/shared';
-import { useProjectDashboard } from '@/lib/queries';
-import { formatDate, formatINR, formatINRCompact, formatQty, toNumber } from '@/lib/format';
+import Link from 'next/link';
+import dayjs from 'dayjs';
+import { Col, Descriptions, Flex, Progress, Row, Statistic, Table, Typography, theme } from 'antd';
+import { CheckCircleOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import type { ProjectDashboard, ProjectDetail } from '@erp/shared';
+import { canViewCost } from '@erp/shared';
+import { useAuth } from '@/lib/auth';
+import { useProjectCost, useProjectDashboard } from '@/lib/queries';
+import { formatDate, formatINR, formatINRCompact, formatPct, formatQty, toNumber } from '@/lib/format';
 import { ProjectStatusTag, ProjectTypeTag } from '@/components/common/StatusTag';
 import { QueryError } from '@/components/common/QueryState';
 import { FigureBlock, Section } from '@/components/common/Section';
 import { MembersCard } from './MembersCard';
-import { themeColor } from '@/lib/theme';
+import { scheduleStatus, type ScheduleStatus } from './ProjectHealth';
 
-/** The project's Overview tab: figures, progress by activity, details and team, as sections of the workspace's surface. */
+const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+
+/** "8 months left", "12 days left", "ended 3 days ago" */
+function timeLeft(end: string | null): string | null {
+  if (!end) return null;
+  const days = dayjs(end).startOf('day').diff(dayjs().startOf('day'), 'day');
+  if (days < 0) return `ended ${plural(-days, 'day')} ago`;
+  if (days === 0) return 'ends today';
+  if (days > 60) return `${plural(Math.round(days / 30.4), 'month')} left`;
+  return `${plural(days, 'day')} left`;
+}
+
+/** The overview's first line, in words: on track or behind, and why (UX item 85). */
+function headline(project: ProjectDetail, s: ScheduleStatus): string {
+  if (project.status === 'COMPLETED' || project.status === 'CLOSED') return 'Completed';
+  if (project.status === 'ON_HOLD') return 'On hold';
+  if (s.overrun) return 'Past its end date';
+  if (s.behind) return 'Behind plan';
+  if (s.late > 0) return `On track overall, ${plural(s.late, 'activity', 'activities')} late`;
+  return 'On track';
+}
+
+function StatusLead({ project, dash }: { project: ProjectDetail; dash: ProjectDashboard }) {
+  const { token } = theme.useToken();
+  const s = scheduleStatus(project, dash);
+  const against = s.planned !== null ? `${formatPct(s.planned)} planned by today` : s.elapsed !== null ? `${formatPct(s.elapsed)} of the time gone` : null;
+  const left = timeLeft(project.endDate);
+  const facts = [
+    `${formatPct(s.done)} done${against ? `, ${against}` : ''}.`,
+    dash.activitiesTotal ? `${s.late} of ${plural(dash.activitiesTotal, 'activity', 'activities')} past their finish.` : null,
+    project.endDate ? `Ends ${formatDate(project.endDate)}${left ? `, ${left}` : ''}.` : null,
+  ].filter(Boolean);
+  // Colour marks the exception only (UX item 82): behind is in the error text shade; on track stays neutral.
+  const bad = s.behind;
+  return (
+    <div style={{ marginBottom: token.marginSM }} data-testid="project-status">
+      <Flex align="center" gap={token.marginXS}>
+        {bad ? <ExclamationCircleOutlined aria-hidden style={{ color: token.colorErrorText }} /> : <CheckCircleOutlined aria-hidden style={{ color: token.colorTextSecondary }} />}
+        <Typography.Text strong style={{ fontSize: token.fontSizeLG, color: bad ? token.colorErrorText : undefined }}>
+          {headline(project, s)}
+        </Typography.Text>
+      </Flex>
+      <Typography.Text type="secondary" style={{ display: 'block' }}>
+        {facts.join(' ')}
+      </Typography.Text>
+    </div>
+  );
+}
+
+/** "today", "yesterday", "5 days ago" */
+const ago = (date: string) => {
+  const days = dayjs().startOf('day').diff(dayjs(date).startOf('day'), 'day');
+  return days <= 0 ? 'today' : days === 1 ? 'yesterday' : `${days} days ago`;
+};
+
+/**
+ * The project's Overview tab (UX item 85): where it stands in words first, then the few figures that matter, each against
+ * its plan (done against planned, work against the BOQ, billed against the contract, cost against the work), then
+ * progress by activity, details and team.
+ */
 export function ProjectOverview({ project }: { project: ProjectDetail }) {
   const { token } = theme.useToken();
+  const { user } = useAuth();
+  const seesCost = !!user && canViewCost(user.roleKey);
   const { data: dash, isLoading, error, refetch } = useProjectDashboard(project.id);
+  // The same request as the header's health chips, so it costs nothing more here.
+  const { data: cost, isLoading: costLoading } = useProjectCost(seesCost ? project.id : undefined, {});
   const boqTotal = toNumber(dash?.boqTotalAmount);
   const boqExec = toNumber(dash?.boqExecutedAmount);
-  const finPct = boqTotal > 0 ? Math.round((boqExec / boqTotal) * 1000) / 10 : 0;
+  const contract = toNumber(project.revisedContractValue ?? project.contractValue);
+  const small = { fontSize: token.fontSizeSM } as const;
+  const done = dash?.physicalProgressPct ?? project.physicalProgressPct;
+  const planned = dash?.plannedProgressPct ?? null;
+  const behind = !!dash && scheduleStatus(project, dash).behind;
+  const costPct = cost?.costPct ?? null;
 
   return (
     <Row gutter={[token.margin, token.margin]} style={{ padding: `0 ${token.paddingSM}px ${token.paddingSM}px` }}>
       <Col xs={24} xl={16}>
         {error && <QueryError error={error} onRetry={() => refetch()} />}
+        {dash && <StatusLead project={project} dash={dash} />}
         <Row gutter={[token.marginSM, token.marginSM]}>
-          <Col xs={12} md={6}>
+          <Col xs={12} md={8}>
             <FigureBlock loading={isLoading}>
-              <Statistic title="Physical progress" value={dash?.physicalProgressPct ?? project.physicalProgressPct} suffix="%" precision={1} />
-              <Progress percent={dash?.physicalProgressPct ?? project.physicalProgressPct} size="small" showInfo={false} aria-label={`Physical progress ${dash?.physicalProgressPct ?? project.physicalProgressPct}%`} />
-            </FigureBlock>
-          </Col>
-          <Col xs={12} md={6}>
-            <FigureBlock loading={isLoading}>
-              <Statistic title="Financial progress" value={finPct} suffix="%" precision={1} />
-              <Progress percent={finPct} size="small" showInfo={false} strokeColor={themeColor('colorTextHeading')} aria-label={`Financial progress ${finPct}%`} />
-            </FigureBlock>
-          </Col>
-          <Col xs={12} md={6}>
-            <FigureBlock loading={isLoading}>
-              <Statistic title="Executed value" value={formatINRCompact(dash?.boqExecutedAmount)} />
-              <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
-                of {formatINRCompact(dash?.boqTotalAmount)} BOQ
+              <Statistic title="Progress" value={`${formatPct(done)} done`} />
+              <Progress percent={done} size="small" showInfo={false} aria-label={`Physical progress ${formatPct(done)}`} />
+              <Typography.Text type={behind ? 'danger' : 'secondary'} style={small}>
+                {planned !== null ? `${formatPct(planned)} planned by today` : 'No planned dates to compare with'}
               </Typography.Text>
             </FigureBlock>
           </Col>
-          <Col xs={12} md={6}>
+          <Col xs={12} md={8}>
+            <FigureBlock loading={isLoading}>
+              <Statistic title="Work done" value={formatINRCompact(boqExec)} />
+              <Typography.Text type="secondary" style={small}>
+                {boqTotal > 0 ? `of ${formatINRCompact(boqTotal)} BOQ, ${formatPct((boqExec / boqTotal) * 100)}` : 'No BOQ yet'}
+              </Typography.Text>
+            </FigureBlock>
+          </Col>
+          <Col xs={12} md={8}>
+            {seesCost && contract > 0 ? (
+              <FigureBlock loading={costLoading}>
+                <Statistic title="Billed" value={formatINRCompact(cost?.billedValue)} />
+                <Typography.Text type="secondary" style={small}>
+                  of {formatINRCompact(contract)} contract, {formatPct((toNumber(cost?.billedValue) / contract) * 100)}
+                </Typography.Text>
+              </FigureBlock>
+            ) : (
+              <FigureBlock>
+                <Statistic title="Contract value" value={formatINRCompact(project.revisedContractValue ?? project.contractValue)} />
+                <Typography.Text type="secondary" style={small}>
+                  {contract > 0 ? formatINR(project.revisedContractValue ?? project.contractValue) : 'Not set'}
+                </Typography.Text>
+              </FigureBlock>
+            )}
+          </Col>
+          {seesCost && (
+            <Col xs={12} md={8}>
+              <FigureBlock loading={costLoading}>
+                <Statistic title="Cost to date" value={formatINRCompact(cost?.cost.total)} />
+                <Typography.Text type={costPct !== null && costPct > 100 ? 'danger' : 'secondary'} style={small}>
+                  {costPct !== null ? `${formatPct(costPct)} of the work done` : 'No work done to compare with'}
+                </Typography.Text>
+              </FigureBlock>
+            </Col>
+          )}
+          <Col xs={12} md={8}>
             <FigureBlock loading={isLoading}>
               <Statistic title="Activities" value={dash?.activitiesCompleted ?? 0} suffix={`/ ${dash?.activitiesTotal ?? 0} done`} />
-              <Typography.Text type={dash?.activitiesDelayed ? 'danger' : 'secondary'} style={{ fontSize: token.fontSizeSM }}>
-                {dash?.activitiesDelayed ?? 0} delayed
+              <Typography.Text type={dash?.activitiesDelayed ? 'danger' : 'secondary'} style={small}>
+                {dash?.activitiesDelayed ? `${dash.activitiesDelayed} late` : 'None late'}
               </Typography.Text>
             </FigureBlock>
           </Col>
-          <Col xs={12} md={6}>
+          <Col xs={12} md={8}>
             <FigureBlock loading={isLoading}>
-              <Statistic title="Pending approvals" value={dash?.pendingApprovals ?? project.pendingApprovals} />
-            </FigureBlock>
-          </Col>
-          <Col xs={12} md={6}>
-            <FigureBlock loading={isLoading}>
-              <Statistic title="Open material requests" value={dash?.openMaterialRequests ?? 0} />
-            </FigureBlock>
-          </Col>
-          <Col xs={12} md={6}>
-            <FigureBlock loading={isLoading}>
-              <Statistic title="Last DPR" value={dash?.lastDprDate ? formatDate(dash.lastDprDate) : 'None'} styles={{ content: { fontSize: token.fontSizeXL } }} />
-            </FigureBlock>
-          </Col>
-          <Col xs={12} md={6}>
-            <FigureBlock>
-              <Statistic title="Contract value" value={formatINRCompact(project.contractValue)} styles={{ content: { fontSize: token.fontSizeXL } }} />
-              <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
-                {project.contractValue ? formatINR(project.contractValue) : '-'}
-              </Typography.Text>
+              <Statistic title="Last DPR" value={dash?.lastDprDate ? formatDate(dash.lastDprDate) : 'None yet'} styles={{ content: { fontSize: token.fontSizeXL } }} />
+              {dash?.lastDprDate && (
+                <Typography.Text type="secondary" style={small}>
+                  {ago(dash.lastDprDate)}
+                </Typography.Text>
+              )}
             </FigureBlock>
           </Col>
         </Row>
+        {dash && (dash.pendingApprovals > 0 || dash.openMaterialRequests > 0) && (
+          <Typography.Paragraph type="secondary" style={{ ...small, marginTop: token.marginSM, marginBottom: 0 }}>
+            Waiting on this project:{' '}
+            {[
+              dash.pendingApprovals > 0 ? (
+                <Link key="a" href="/approvals" className="text-link">
+                  {plural(dash.pendingApprovals, 'entry', 'entries')} for approval
+                </Link>
+              ) : null,
+              dash.openMaterialRequests > 0 ? (
+                <Link key="m" href={`/projects/${project.id}?tab=material`} className="text-link">
+                  {plural(dash.openMaterialRequests, 'material request')} open
+                </Link>
+              ) : null,
+            ]
+              .filter(Boolean)
+              .flatMap((node, i) => (i ? [' · ', node] : [node]))}
+          </Typography.Paragraph>
+        )}
 
         <Section title="Planned vs executed by activity" style={{ marginTop: token.margin }} loading={isLoading}>
           <Table
@@ -88,7 +192,12 @@ export function ProjectOverview({ project }: { project: ProjectDetail }) {
               { title: 'Activity', dataIndex: 'name' },
               { title: 'Planned', dataIndex: 'plannedQty', width: 110, align: 'right', className: 'mono', render: (v) => formatQty(v) },
               { title: 'Executed', dataIndex: 'executedQty', width: 110, align: 'right', className: 'mono', render: (v) => formatQty(v) },
-              { title: 'Progress', dataIndex: 'progressPct', width: 260, render: (v: number) => <Progress percent={Math.round(v * 10) / 10} size="small" status={v >= 100 ? 'success' : 'active'} aria-label={`${Math.round(v * 10) / 10}% done`} /> },
+              {
+                title: 'Progress',
+                dataIndex: 'progressPct',
+                width: 260,
+                render: (v: number) => <Progress percent={v} size="small" status={v >= 100 ? 'success' : 'active'} format={() => formatPct(v)} aria-label={`${formatPct(v)} done`} />,
+              },
             ]}
           />
         </Section>

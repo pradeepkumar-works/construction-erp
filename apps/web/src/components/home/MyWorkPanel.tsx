@@ -31,9 +31,45 @@ const CARDS: Record<Exclude<MyWorkKey, 'approvals'>, { title: string; icon: Reac
   lowStock: { title: 'Below minimum stock', icon: <InboxOutlined />, href: '/stock', tone: 'warning' },
 };
 
+const APPROVALS_TITLE = 'Waiting for your approval';
+
+/** What each card is about, inside the "Nothing else waiting" line. */
+const CLEAR: Record<MyWorkKey, string> = {
+  approvals: 'approvals',
+  watchList: 'watch list',
+  dprsMissing: 'DPRs',
+  sentBack: 'entries sent back',
+  receivables: 'client bills',
+  payablesDue: 'payments due',
+  expiring: 'expiring guarantees and policies',
+  lateDeliveries: 'deliveries',
+  lowStock: 'stock levels',
+};
+
 /**
- * What needs this user now (UI roadmap item 59), in the order their layout gives. Empty cards are left out, except the
- * first two, which say there is nothing to do; when everything is clear one line says so.
+ * How pressing a card is, in days overdue, late or waiting (UX item 85): the API's `urgencyDays`, and for approvals how
+ * long the oldest has waited. A card with no figure (an older API) ranks as due today.
+ */
+export function urgencyOf(data: MyWorkDto, k: MyWorkKey): number {
+  const days = k === 'approvals' ? data.approvalsWaitingDays : (data[k] as MyWorkCard | undefined)?.urgencyDays;
+  return days ?? 0;
+}
+
+/**
+ * The cards that have something waiting, most urgent first (UX item 85): longest overdue or waiting first; cards
+ * equally urgent keep the order of the role's layout (`homeLayout`). Cards with nothing waiting are left out.
+ */
+export function myWorkOrder(data: MyWorkDto, order: MyWorkKey[], count: (k: MyWorkKey) => number): MyWorkKey[] {
+  return order
+    .filter((k) => data[k] !== undefined && count(k) > 0)
+    .map((k, i) => ({ k, i, u: urgencyOf(data, k) }))
+    .sort((a, b) => b.u - a.u || a.i - b.i)
+    .map((x) => x.k);
+}
+
+/**
+ * What needs this user now (UI roadmap item 59), most urgent first (UX item 85). Cards with nothing waiting fold into
+ * one "Nothing else waiting" line; when everything is clear one line says so.
  */
 export function MyWorkPanel({ data, loading, order }: { data: MyWorkDto | undefined; loading: boolean; order: MyWorkKey[] }) {
   const { token } = theme.useToken();
@@ -47,8 +83,8 @@ export function MyWorkPanel({ data, loading, order }: { data: MyWorkDto | undefi
   if (!data) return null;
   const present = order.filter((k) => data[k] !== undefined);
   const count = (k: MyWorkKey) => (k === 'approvals' ? (data.approvals ?? []).reduce((n, a) => n + a.count, 0) : (data[k] as MyWorkCard).count);
-  const busy = present.filter((k) => count(k) > 0);
-  const shown = present.filter((k, i) => count(k) > 0 || (i < 2 && k !== 'sentBack'));
+  const busy = myWorkOrder(data, order, count);
+  const clear = present.filter((k) => count(k) === 0);
   if (!present.length) return null;
 
   return (
@@ -59,23 +95,32 @@ export function MyWorkPanel({ data, loading, order }: { data: MyWorkDto | undefi
           <Typography.Text type="secondary">Nothing waits for you right now.</Typography.Text>
         </Flex>
       ) : (
-        <Row gutter={[token.margin, token.margin]}>
-          {shown.map((k) => (
-            <Col key={k} xs={24} md={12} xl={8}>
-              {k === 'approvals' ? <ApprovalsCard approvals={data.approvals ?? []} /> : <WorkCard k={k} card={data[k] as MyWorkCard} />}
-            </Col>
-          ))}
-        </Row>
+        <>
+          <Row gutter={[token.margin, token.margin]}>
+            {busy.map((k) => (
+              <Col key={k} xs={24} md={12} xl={8}>
+                {k === 'approvals' ? <ApprovalsCard approvals={data.approvals ?? []} waitingDays={data.approvalsWaitingDays ?? null} /> : <WorkCard k={k} card={data[k] as MyWorkCard} />}
+              </Col>
+            ))}
+          </Row>
+          {clear.length > 0 && (
+            <Flex align="center" gap={token.marginXS} style={{ marginTop: token.margin }}>
+              <CheckCircleOutlined style={{ color: token.colorSuccess }} aria-hidden />
+              <Typography.Text type="secondary">Nothing else waiting: {clear.map((k) => CLEAR[k]).join(', ')}.</Typography.Text>
+            </Flex>
+          )}
+        </>
       )}
     </Card>
   );
 }
 
-function Frame({ title, icon, href, count, tone, children, amount }: { title: string; icon: React.ReactNode; href: string | null; count: number; tone: 'warning' | 'error' | 'info'; amount?: string | null; children: React.ReactNode }) {
+function Frame({ title, icon, href, count, tone, children, amount, overdue }: { title: string; icon: React.ReactNode; href: string | null; count: number; tone: 'warning' | 'error' | 'info'; amount?: string | null; overdue?: boolean; children: React.ReactNode }) {
   const { token } = theme.useToken();
   const color = count === 0 ? token.colorSuccess : tone === 'error' ? token.colorError : tone === 'warning' ? token.colorWarning : token.colorPrimary;
-  // A count is neutral; only a card of exceptions (late deliveries, payments due) colours it, in the text shade (UX item 82).
-  const figure = tone === 'error' ? token.colorErrorText : token.colorText;
+  // A count is neutral; only a card of exceptions (late deliveries, payments due) colours it, in the text shade (UX item
+  // 82), and only while something in it is actually overdue (UX item 85): payments due later this week stay neutral.
+  const figure = tone === 'error' && overdue !== false ? token.colorErrorText : token.colorText;
   const bg = count === 0 ? token.colorSuccessBg : tone === 'error' ? token.colorErrorBg : tone === 'warning' ? token.colorWarningBg : token.colorPrimaryBg;
   return (
     <section
@@ -111,15 +156,20 @@ function Frame({ title, icon, href, count, tone, children, amount }: { title: st
   );
 }
 
-function ApprovalsCard({ approvals }: { approvals: NonNullable<MyWorkDto['approvals']> }) {
+function ApprovalsCard({ approvals, waitingDays }: { approvals: NonNullable<MyWorkDto['approvals']>; waitingDays: number | null }) {
   const { token } = theme.useToken();
   const total = approvals.reduce((n, a) => n + a.count, 0);
   return (
-    <Frame title="Waiting for your approval" icon={<CheckSquareOutlined />} href="/approvals" count={total} tone="warning">
+    <Frame title={APPROVALS_TITLE} icon={<CheckSquareOutlined />} href="/approvals" count={total} tone="warning">
       {total === 0 ? (
         <Typography.Text type="secondary">Nothing to approve.</Typography.Text>
       ) : (
         <Flex wrap gap={token.marginXXS}>
+          {waitingDays !== null && (
+            <Typography.Text type="secondary" style={{ display: 'block', width: '100%', fontSize: token.fontSizeSM }}>
+              {waitingDays === 0 ? 'All sent today' : `Oldest waiting ${waitingDays} day${waitingDays === 1 ? '' : 's'}`}
+            </Typography.Text>
+          )}
           {[...approvals]
             .sort((a, b) => b.count - a.count)
             .map((a) => (
@@ -141,7 +191,7 @@ function WorkCard({ k, card }: { k: Exclude<MyWorkKey, 'approvals'>; card: MyWor
   // A phone stacks the cards, so each shows its first item only and links to the rest.
   const items = Grid.useBreakpoint().sm === false ? card.items.slice(0, 1) : card.items;
   return (
-    <Frame title={meta.title} icon={meta.icon} href={meta.href} count={card.count} tone={meta.tone} amount={card.amount}>
+    <Frame title={meta.title} icon={meta.icon} href={meta.href} count={card.count} tone={meta.tone} amount={card.amount} overdue={card.urgencyDays == null ? undefined : card.urgencyDays > 0}>
       {card.count === 0 ? (
         <Typography.Text type="secondary">Nothing to do.</Typography.Text>
       ) : (

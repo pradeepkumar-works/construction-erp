@@ -36,7 +36,18 @@ const ZERO = new Prisma.Decimal(0);
 const TOP = 3;
 const monthOf = (d: Date) => d.toISOString().slice(0, 7);
 const days = (n: number) => `${n} day${n === 1 ? '' : 's'}`;
-const card = (count: number, items: MyWorkItem[], amount: D | null = null): MyWorkCard => ({ count, amount: amount === null ? null : money(amount)!, items: items.slice(0, TOP) });
+/** A My work card; `urgency` is how many days its most pressing entry is overdue or late (see MyWorkCard.urgencyDays). */
+const card = (count: number, items: MyWorkItem[], amount: D | null = null, urgency: number | null = 0): MyWorkCard => ({
+  count,
+  amount: amount === null ? null : money(amount)!,
+  items: items.slice(0, TOP),
+  urgencyDays: count > 0 ? urgency : null,
+});
+const most = (xs: number[]) => (xs.length ? Math.max(...xs) : null);
+/** Whole days from one YYYY-MM-DD to another. */
+const daysBetween = (from: string, to: string) => Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000);
+/** A client bill counts as late once it is past the last ageing bucket the receivables page flags (over 90 days). */
+const RECEIVABLE_LATE_AFTER = 90;
 
 /** The last `n` months up to and including the one `today` is in, oldest first (YYYY-MM). */
 export function lastMonths(today: string, n: number): string[] {
@@ -96,6 +107,8 @@ export class HomeService {
       const counts = new Map<SubmissionType, number>();
       for (const p of pending) counts.set(p.type, (counts.get(p.type) ?? 0) + 1);
       out.approvals = [...counts.entries()].map(([type, count]) => ({ type, count }));
+      // `pending` is oldest first: how long the first has waited is how pressing the approvals are.
+      out.approvalsWaitingDays = pending.length ? Math.max(0, daysBetween(todayIn(undefined, new Date(pending[0].submittedAt)), today)) : null;
     }
     if (watch) out.watchList = card(watch.length, watch.map((w) => ({ label: w.title, note: w.detail, projectName: w.projectName, amount: null, href: '/watch-list' })));
     if (missing) out.dprsMissing = card(missing.length, missing.map((p) => ({ label: p.name, note: `No DPR for today`, projectName: null, amount: null, href: `/projects/${p.id}?tab=dpr` })));
@@ -115,6 +128,7 @@ export class HomeService {
           href: `/bills/${b.billId}`,
         })),
         new Prisma.Decimal(receivables.totals.outstanding),
+        most(open.map((b) => b.daysOutstanding - RECEIVABLE_LATE_AFTER)),
       );
     }
     if (payables) {
@@ -129,6 +143,7 @@ export class HomeService {
           href: '/payables',
         })),
         due.reduce((s, b) => s.add(b.outstanding), ZERO),
+        most(due.map((b) => -b.daysToDue)),
       );
     }
     if (expiring && expired) {
@@ -142,6 +157,8 @@ export class HomeService {
           amount: d.amount,
           href: '/compliance',
         })),
+        null,
+        most(docs.map((d) => -(d.daysLeft ?? 0))),
       );
     }
     if (late) {
@@ -149,6 +166,7 @@ export class HomeService {
         late.rows.length,
         late.rows.map((r) => ({ label: `${r.poNo} · ${r.vendorName}`, note: `${days(r.daysLate)} late`, projectName: r.projectName, amount: r.pendingValue, href: `/purchase-orders/${r.purchaseOrderId}` })),
         late.rows.reduce((s, r) => s.add(r.pendingValue), ZERO),
+        most(late.rows.map((r) => r.daysLate)),
       );
     }
     if (low) {
