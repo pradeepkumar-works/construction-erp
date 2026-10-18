@@ -29,7 +29,7 @@ export default function ProjectsScreen() {
           <Card onPress={() => router.push(`/project/${item.id}`)}>
             <View style={styles.top}>
               <Text style={styles.code}>{item.code}</Text>
-              <Pill text={t(PROJECT_STATUS_LABELS[item.status])} fg={item.status === 'ACTIVE' ? colors.success : colors.neutral} bg={item.status === 'ACTIVE' ? colors.successSoft : colors.neutralSoft} />
+              <Pill text={t(PROJECT_STATUS_LABELS[item.status])} fg={item.status === 'ACTIVE' ? colors.success : colors.neutral} bg={item.status === 'ACTIVE' ? colors.successSoft : colors.neutralSoft} icon={item.status === 'ACTIVE' ? 'play-circle-outline' : 'pause-circle-outline'} />
             </View>
             <Text style={styles.name}>{item.name}</Text>
             <Text style={typography.caption}>{t(PROJECT_TYPE_LABELS[item.type])}</Text>

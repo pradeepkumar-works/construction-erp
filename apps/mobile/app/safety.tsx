@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import type { Paginated, SafetyIncidentDto, SafetySummaryDto, ToolboxTalkDto, WorkPermitDto } from '@erp/shared';
 import { SAFETY_INCIDENT_STATUS_LABELS, SAFETY_INCIDENT_TYPE_LABELS, WORK_PERMIT_TYPE_LABELS, canReportSafety } from '@erp/shared';
 import { useAuth } from '../src/auth/AuthContext';
 import { useFetch } from '../src/api/hooks';
-import { Button, Card, Chips, EmptyState, ErrorBanner, Loading, Pill, Screen, SectionTitle, Select, Stat } from '../src/components';
+import { Button, Card, Chips, EmptyState, ErrorBanner, Loading, Pill, Screen, SectionTitle, Select, Stat, Touchable } from '../src/components';
 import { INCIDENT_TONE, permitStatus, permitWindow } from '../src/components/safetyTone';
 import { useProjectOptions } from '../src/forms/common';
-import { colors, radius, spacing, typography } from '../src/theme';
+import { colors, radius, spacing, touch, typography, toneIcon } from '../src/theme';
 import { formatDate } from '../src/utils/format';
 import { useT } from '../src/i18n/LanguageContext';
 
@@ -125,7 +125,7 @@ export default function SafetyScreen() {
           {show === 'incidents'
             ? (incidents.data?.items ?? []).map((r) => (
                 <Row key={r.id} onPress={() => router.push(`/incident/${r.id}`)} icon="medkit" title={`${t(SAFETY_INCIDENT_TYPE_LABELS[r.type])} · ${r.location}`} sub={`${r.incidentNo} · ${formatDate(r.date)}${r.injuredCount ? ` · ${t('{n} hurt', { n: r.injuredCount })}` : ''}`} meta={projectId ? r.reportedByName : `${r.projectName} · ${r.reportedByName}`}>
-                  <Pill text={t(SAFETY_INCIDENT_STATUS_LABELS[r.status])} fg={r.status === 'OPEN' ? INCIDENT_TONE[r.type].fg : colors.neutral} bg={r.status === 'OPEN' ? INCIDENT_TONE[r.type].bg : colors.neutralSoft} />
+                  <Pill text={t(SAFETY_INCIDENT_STATUS_LABELS[r.status])} fg={r.status === 'OPEN' ? INCIDENT_TONE[r.type].fg : colors.neutral} bg={r.status === 'OPEN' ? INCIDENT_TONE[r.type].bg : colors.neutralSoft} icon={r.status === 'OPEN' ? toneIcon.open : toneIcon.closed} />
                 </Row>
               ))
             : show === 'permits'
@@ -133,7 +133,7 @@ export default function SafetyScreen() {
                   const st = permitStatus(r, t);
                   return (
                     <Row key={r.id} onPress={() => router.push(`/permit/${r.id}`)} icon="key" title={`${t(WORK_PERMIT_TYPE_LABELS[r.type])} · ${r.location}`} sub={`${r.permitNo} · ${permitWindow(r, t)}`} meta={projectId ? r.requestedByName : `${r.projectName} · ${r.requestedByName}`}>
-                      <Pill text={st.text} fg={st.fg} bg={st.bg} />
+                      <Pill text={st.text} fg={st.fg} bg={st.bg} icon={st.icon} />
                     </Row>
                   );
                 })
@@ -148,7 +148,7 @@ export default function SafetyScreen() {
 
 function Row({ icon, title, sub, meta, onPress, children }: { icon: keyof typeof Ionicons.glyphMap; title: string; sub: string; meta: string; onPress?: () => void; children?: React.ReactNode }) {
   return (
-    <Pressable onPress={onPress} disabled={!onPress} style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
+    <Touchable accessibilityRole={onPress ? 'button' : 'text'} onPress={onPress} disabled={!onPress} style={styles.row}>
       <View style={styles.icon}>
         <Ionicons name={icon} size={20} color={colors.primary} />
       </View>
@@ -167,7 +167,7 @@ function Row({ icon, title, sub, meta, onPress, children }: { icon: keyof typeof
         {children}
         {onPress ? <Ionicons name="chevron-forward" size={18} color={colors.textMuted} /> : null}
       </View>
-    </Pressable>
+    </Touchable>
   );
 }
 
@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
   banner: { alignItems: 'center', padding: spacing.md, borderRadius: radius.lg, marginBottom: spacing.md },
   bannerValue: { fontSize: 32, fontWeight: '800' },
   stats: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
-  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md, marginBottom: spacing.sm },
+  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md, marginBottom: spacing.sm, minHeight: touch.min },
   pressed: { opacity: 0.7 },
   icon: { width: 40, height: 40, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primarySoft },
   side: { alignItems: 'flex-end', gap: 4 },

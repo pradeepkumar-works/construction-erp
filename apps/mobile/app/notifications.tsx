@@ -1,13 +1,13 @@
 import React, { useCallback, useState } from 'react';
-import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { usePathname, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { NOTIFICATION_TYPE_LABELS, NOTIFICATION_TYPES_VERSION, type NotificationDto, type NotificationListDto, type NotificationType } from '@erp/shared';
 import { useApi, useFetch } from '../src/api/hooks';
 import { useNotifications } from '../src/notifications/NotificationsContext';
-import { notificationRoute } from '../src/notifications/push';
-import { Button, EmptyState, ErrorState, Loading, Screen } from '../src/components';
-import { colors, radius, spacing, typography } from '../src/theme';
+import { notificationRoute, openNotificationRoute } from '../src/notifications/push';
+import { Button, EmptyState, ErrorState, Loading, Screen, Touchable, useSnackbar } from '../src/components';
+import { colors, fontSize, radius, spacing, touch, typography } from '../src/theme';
 import { timeAgo } from '../src/utils/format';
 import { useT } from '../src/i18n/LanguageContext';
 
@@ -39,6 +39,8 @@ const ICON: Record<NotificationType, { name: keyof typeof Ionicons.glyphMap; col
 
 export default function NotificationsScreen() {
   const router = useRouter();
+  const pathname = usePathname();
+  const snackbar = useSnackbar();
   const t = useT();
   const api = useApi();
   const { refreshUnread } = useNotifications();
@@ -51,17 +53,20 @@ export default function NotificationsScreen() {
         setData((prev) => (prev ? { unreadCount: Math.max(0, prev.unreadCount - 1), items: prev.items.map((i) => (i.id === n.id ? { ...i, readAt: new Date().toISOString() } : i)) } : prev));
         api.post(`/notifications/${n.id}/read`).then(() => refreshUnread()).catch(() => undefined);
       }
-      router.push(notificationRoute({ type: n.type, entityType: n.entityType, entityId: n.entityId, projectId: n.projectId }) as never);
+      // A notification with nothing of its own to open leads back here: stay put rather than stack this screen again.
+      openNotificationRoute(router, pathname, notificationRoute({ type: n.type, entityType: n.entityType, entityId: n.entityId, projectId: n.projectId }));
     },
-    [api, router, setData, refreshUnread],
+    [api, router, pathname, setData, refreshUnread],
   );
 
-  const markAll = async () => {
+  const markAll = async (): Promise<void> => {
     setBusy(true);
     try {
       await api.post('/notifications/read-all');
       setData((prev) => (prev ? { unreadCount: 0, items: prev.items.map((i) => ({ ...i, readAt: i.readAt ?? new Date().toISOString() })) } : prev));
       await refreshUnread();
+    } catch {
+      snackbar.show(t('Could not mark all as read'), { tone: 'error', action: { label: t('Retry'), onPress: () => void markAll() } });
     } finally {
       setBusy(false);
     }
@@ -84,7 +89,7 @@ export default function NotificationsScreen() {
           items.length ? (
             <View style={styles.headerRow}>
               <Text style={typography.caption}>{unread ? t('{n} unread', { n: unread }) : t('All read')}</Text>
-              {unread ? <Button title={t('Mark all read')} variant="ghost" size="sm" icon="checkmark-done" onPress={markAll} loading={busy} /> : null}
+              {unread ? <Button title={t('Mark all read')} variant="ghost" size="sm" icon="checkmark-done" onPress={() => void markAll()} loading={busy} /> : null}
             </View>
           ) : null
         }
@@ -100,7 +105,7 @@ function Row({ item, onPress }: { item: NotificationDto; onPress: () => void }) 
   const icon = ICON[item.type] ?? FALLBACK_ICON;
   const t = useT();
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.row, !item.readAt && styles.unread, pressed && styles.pressed]} android_ripple={{ color: colors.border }}>
+    <Touchable onPress={onPress} style={[styles.row, !item.readAt && styles.unread]} accessibilityRole="button" accessibilityLabel={`${item.readAt ? '' : `${t('Unread')}, `}${item.title}. ${item.body}`}>
       <View style={[styles.iconWrap, { backgroundColor: icon.bg }]}>
         <Ionicons name={icon.name} size={22} color={icon.color} />
       </View>
@@ -120,16 +125,15 @@ function Row({ item, onPress }: { item: NotificationDto; onPress: () => void }) 
         </Text>
       </View>
       <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-    </Pressable>
+    </Touchable>
   );
 }
 
 const styles = StyleSheet.create({
   list: { padding: spacing.lg, paddingBottom: spacing.xxl, flexGrow: 1 },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm, minHeight: 36 },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm, minHeight: touch.min },
   row: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md, marginBottom: spacing.sm, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, gap: spacing.md },
   unread: { borderColor: colors.primary, borderWidth: 1 },
-  pressed: { opacity: 0.85 },
   iconWrap: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   body: { flex: 1, gap: 2 },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
@@ -137,5 +141,5 @@ const styles = StyleSheet.create({
   titleUnread: { fontWeight: '700' },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.primary },
   text: { ...typography.caption, color: colors.text },
-  meta: { ...typography.caption, fontSize: 12 },
+  meta: { ...typography.caption, fontSize: fontSize.small },
 });

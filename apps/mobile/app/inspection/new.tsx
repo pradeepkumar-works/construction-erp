@@ -10,8 +10,9 @@ import { attachmentsToPhotos, ReviewerNote } from '../../src/forms/edit';
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
 import { useT } from '../../src/i18n/LanguageContext';
 import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
-import { colors, spacing, typography } from '../../src/theme';
+import { colors, fontSize, spacing, typography } from '../../src/theme';
 import { formatDate, isIsoDate, today } from '../../src/utils/format';
+import { useFieldChain } from '../../src/forms/keyboard';
 
 /** Request an inspection of an activity at a location (works offline through the outbox), or (with `editId`) change a returned one and request it again. */
 export default function RequestInspectionScreen() {
@@ -19,6 +20,7 @@ export default function RequestInspectionScreen() {
   const editId = params.editId ?? null;
   const api = useApi();
   const t = useT();
+  const field = useFieldChain();
   const errorSummary = useErrorSummary();
   const { online, enqueue, newId } = useOffline();
   // The same id for a direct send and the outbox, so a send that timed out but arrived is never made twice
@@ -185,7 +187,7 @@ export default function RequestInspectionScreen() {
           emptyText={t('No activities in this project')}
         />
         {activity?.holdPoint ? <Text style={[typography.caption, styles.hold]}>{t('Hold point: its progress is approved after this inspection passes.')}</Text> : null}
-        <Input label={t('Location')} required value={location} onChangeText={setLocation} placeholder={t('Chainage, grid, floor or zone')} error={errors.location} />
+        <Input {...field()} label={t('Location')} required value={location} onChangeText={setLocation} placeholder={t('Chainage, grid, floor or zone')} error={errors.location} />
         <DatePicker label={t('Ready on')} required value={date} onChange={setDate} error={errors.date} />
         <Select label={t('Checklist')} value={checklistId} options={checklistOptions} onChange={(v) => setChecklistId(v ?? '')} placeholder={t('No checklist')} />
       </Card>
@@ -194,7 +196,7 @@ export default function RequestInspectionScreen() {
         {errors.photos ? <Text style={styles.err}>{errors.photos}</Text> : null}
       </Card>
       <Card>
-        <Input label={t('Remarks')} value={remarks} onChangeText={setRemarks} placeholder={t('What is ready, anything the inspector should know')} multiline />
+        <Input {...field({ multiline: true })} label={t('Remarks')} value={remarks} onChangeText={setRemarks} placeholder={t('What is ready, anything the inspector should know')} multiline />
       </Card>
       <Button title={t(editId ? 'Request again' : 'Request inspection')} icon="send" onPress={submit} loading={busy} />
     </Screen>
@@ -203,5 +205,5 @@ export default function RequestInspectionScreen() {
 
 const styles = StyleSheet.create({
   hold: { marginTop: -spacing.sm, marginBottom: spacing.md, color: colors.warning },
-  err: { color: colors.danger, marginTop: spacing.sm, fontSize: 13 },
+  err: { color: colors.danger, marginTop: spacing.sm, fontSize: fontSize.secondary },
 });

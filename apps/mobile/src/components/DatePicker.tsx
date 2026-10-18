@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Platform, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, maxFontScale, radius, scheme, spacing, touch, typography } from '../theme';
+import { colors, fontSize, maxFontScale, radius, scheme, spacing, touch, typography } from '../theme';
+import { Touchable } from './Touchable';
 import { addDays, formatDate, isIsoDate, toIsoDate, today } from '../utils/format';
 import { useT } from '../i18n/LanguageContext';
 import { BottomSheet } from './BottomSheet';
@@ -36,6 +37,8 @@ interface Props {
 export function DatePicker({ label, value, onChange, error, required, max, min }: Props) {
   const valid = isIsoDate(value);
   const t = useT();
+  // On a 360 dp phone the row has no room for the calendar icon beside the date.
+  const roomy = useWindowDimensions().width >= 400;
   const [iosOpen, setIosOpen] = useState(false);
   const [iosValue, setIosValue] = useState<Date>(() => fromIso(value));
   const shown = valid ? (value === today() ? t('Today, {date}', { date: formatDate(value) }) : formatDate(value)) : t('Choose a date');
@@ -70,9 +73,9 @@ export function DatePicker({ label, value, onChange, error, required, max, min }
         </Text>
       ) : null}
       <View style={styles.row}>
-        <Pressable onPress={() => step(-1)} style={styles.stepBtn} accessibilityRole="button" accessibilityLabel={t('Previous day')}>
+        <Touchable onPress={() => step(-1)} style={styles.stepBtn} accessibilityRole="button" accessibilityLabel={t('Previous day')}>
           <Ionicons name="chevron-back" size={22} color={colors.primary} />
-        </Pressable>
+        </Touchable>
         {Platform.OS === 'web' ? (
           <View style={[styles.field, (!valid || !!error) && styles.fieldError]}>
             <TextInput
@@ -89,27 +92,27 @@ export function DatePicker({ label, value, onChange, error, required, max, min }
             />
           </View>
         ) : (
-          <Pressable
+          <Touchable
             onPress={open}
             style={[styles.field, styles.fieldRow, (!valid || !!error) && styles.fieldError]}
             accessibilityRole="button"
             accessibilityLabel={a11yName}
             accessibilityHint={error ?? t('Opens the calendar')}
           >
-            <Ionicons name="calendar-outline" size={20} color={colors.primary} />
-            <Text style={styles.value} numberOfLines={1} maxFontSizeMultiplier={maxFontScale}>
+            {roomy ? <Ionicons name="calendar-outline" size={20} color={colors.primary} /> : null}
+            <Text style={styles.value} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85} maxFontSizeMultiplier={maxFontScale}>
               {valid ? formatDate(value) : t('Choose a date')}
             </Text>
-          </Pressable>
+          </Touchable>
         )}
-        <Pressable onPress={() => step(1)} style={styles.stepBtn} accessibilityRole="button" accessibilityLabel={t('Next day')}>
+        <Touchable onPress={() => step(1)} style={styles.stepBtn} accessibilityRole="button" accessibilityLabel={t('Next day')}>
           <Ionicons name="chevron-forward" size={22} color={colors.primary} />
-        </Pressable>
-        <Pressable onPress={() => onChange(today())} style={styles.todayBtn} accessibilityRole="button" accessibilityLabel={t('Today')}>
+        </Touchable>
+        <Touchable onPress={() => onChange(today())} style={styles.todayBtn} accessibilityRole="button" accessibilityLabel={t('Today')}>
           <Text style={styles.todayText} maxFontSizeMultiplier={maxFontScale}>
             {t('Today')}
           </Text>
-        </Pressable>
+        </Touchable>
       </View>
       {error ? (
         <Text style={styles.error}>{error}</Text>
@@ -185,7 +188,7 @@ export function TimePicker({ label, value, onChange, error, required }: { label?
             <TextInput value={value} onChangeText={onChange} placeholder="HH:mm" placeholderTextColor={colors.textMuted} maxLength={5} style={styles.input} accessibilityLabel={label ?? t('Time')} />
           </View>
         ) : (
-          <Pressable
+          <Touchable
             onPress={open}
             style={[styles.field, styles.fieldRow, styles.noMargin, !!error && styles.fieldError]}
             accessibilityRole="button"
@@ -196,12 +199,12 @@ export function TimePicker({ label, value, onChange, error, required }: { label?
             <Text style={[styles.value, !set && styles.placeholder]} maxFontSizeMultiplier={maxFontScale}>
               {set ? value : t('Set time')}
             </Text>
-          </Pressable>
+          </Touchable>
         )}
         {set && !required ? (
-          <Pressable onPress={() => onChange('')} style={styles.clearBtn} accessibilityRole="button" accessibilityLabel={t('Clear time')}>
+          <Touchable onPress={() => onChange('')} style={styles.clearBtn} accessibilityRole="button" accessibilityLabel={t('Clear time')}>
             <Ionicons name="close-circle-outline" size={22} color={colors.textMuted} />
-          </Pressable>
+          </Touchable>
         ) : null}
       </View>
       {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -263,6 +266,6 @@ const styles = StyleSheet.create({
   todayBtn: { marginLeft: spacing.sm, minHeight: touch.height, paddingHorizontal: spacing.md, justifyContent: 'center', borderRadius: radius.md, borderWidth: 1.5, borderColor: colors.primary },
   todayText: { color: colors.primary, fontWeight: '700' },
   clearBtn: { width: touch.heightSm, height: touch.height, alignItems: 'center', justifyContent: 'center' },
-  error: { color: colors.danger, marginTop: spacing.xs, fontSize: 13 },
+  error: { color: colors.danger, marginTop: spacing.xs, fontSize: fontSize.secondary },
   hint: { ...typography.caption, marginTop: spacing.xs },
 });

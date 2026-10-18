@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { NCR_SEVERITY_LABELS, NCR_STATUS_LABELS, TEST_KIND_LABELS, TEST_RESULT_LABELS, type NcrDto, type Paginated, type QualityTestDto } from '@erp/shared';
 import { useFetch } from '../src/api/hooks';
 import { useT } from '../src/i18n/LanguageContext';
-import { Chips, EmptyState, ErrorBanner, Loading, Pill, Screen, SectionTitle } from '../src/components';
+import { Chips, EmptyState, ErrorBanner, Loading, Pill, Screen, SectionTitle, Touchable } from '../src/components';
 import { NCR_STATUS_TONE, SEVERITY_TONE, TEST_RESULT_TONE } from '../src/components/qualityTone';
-import { colors, radius, spacing, typography } from '../src/theme';
+import { colors, fontSize, radius, spacing, touch, typography } from '../src/theme';
 import { formatDate } from '../src/utils/format';
 
 type Show = 'ncrs' | 'tests';
@@ -46,7 +46,7 @@ export default function QualityScreen() {
           <>
             <SectionTitle title={t('{n} open', { n: ncrs.data?.total ?? 0 })} />
             {ncrs.data!.items.map((n) => (
-              <Pressable key={n.id} onPress={() => router.push(`/ncr/${n.id}`)} style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
+              <Touchable key={n.id} accessibilityRole="button" onPress={() => router.push(`/ncr/${n.id}`)} style={styles.row}>
                 <View style={styles.flex}>
                   <Text style={typography.caption}>
                     {n.ncrNo} · {n.projectName}
@@ -62,7 +62,7 @@ export default function QualityScreen() {
                   <Pill text={t(NCR_STATUS_LABELS[n.status])} {...NCR_STATUS_TONE[n.status]} />
                   <Pill text={t(NCR_SEVERITY_LABELS[n.severity])} {...SEVERITY_TONE[n.severity]} />
                 </View>
-              </Pressable>
+              </Touchable>
             ))}
           </>
         )
@@ -72,7 +72,7 @@ export default function QualityScreen() {
         <>
           <SectionTitle title={t('{n} pending', { n: tests.data?.total ?? 0 })} />
           {tests.data!.items.map((x) => (
-            <Pressable key={x.id} onPress={() => router.push(`/test/${x.id}`)} style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
+            <Touchable key={x.id} accessibilityRole="button" onPress={() => router.push(`/test/${x.id}`)} style={styles.row}>
               <View style={styles.flex}>
                 <Text style={typography.caption}>
                   {x.testNo} · {t(TEST_KIND_LABELS[x.kind])}
@@ -85,7 +85,7 @@ export default function QualityScreen() {
                 </Text>
               </View>
               <Pill text={t(TEST_RESULT_LABELS[x.result])} {...TEST_RESULT_TONE[x.result]} />
-            </Pressable>
+            </Touchable>
           ))}
         </>
       )}
@@ -95,9 +95,9 @@ export default function QualityScreen() {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md, marginBottom: spacing.sm },
+  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md, marginBottom: spacing.sm, minHeight: touch.min },
   pressed: { opacity: 0.7 },
-  title: { fontSize: 15, fontWeight: '600', color: colors.text, marginVertical: 2 },
+  title: { fontSize: fontSize.body, fontWeight: '600', color: colors.text, marginVertical: 2 },
   side: { alignItems: 'flex-end', gap: 4 },
   overdue: { color: colors.danger, fontWeight: '700' },
 });

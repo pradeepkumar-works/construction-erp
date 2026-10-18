@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Modal, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -9,9 +9,9 @@ import { useFetch } from '../src/api/hooks';
 import { useOffline } from '../src/offline';
 import { canSaveOffline, localUri, openPdf, saveProjectFiles, savedFileIds } from '../src/offline/drawings';
 import { useProjectOptions } from '../src/forms/common';
-import { Button, EmptyState, ErrorBanner, Input, Loading, Pill, Screen, SectionTitle, Select } from '../src/components';
+import { Button, EmptyState, ErrorBanner, Input, Loading, Pill, Screen, SectionTitle, Select, Touchable } from '../src/components';
 import { absoluteUrl } from '../src/config';
-import { colors, radius, spacing, typography } from '../src/theme';
+import { colors, fontSize, radius, spacing, toneIcon, touch, typography } from '../src/theme';
 import { formatDate } from '../src/utils/format';
 import { useT } from '../src/i18n/LanguageContext';
 
@@ -100,7 +100,7 @@ export default function DocumentsScreen() {
         }}
         searchable
       />
-      <Input placeholder={t('Search number or title')} accessibilityLabel={t('Search documents by number or title')} value={search} onChangeText={setSearch} autoCorrect={false} />
+      <Input returnKeyType="search" placeholder={t('Search number or title')} accessibilityLabel={t('Search documents by number or title')} value={search} onChangeText={setSearch} autoCorrect={false} />
       {canSaveOffline && files.length ? (
         <View style={styles.offline}>
           <Ionicons name={missing ? 'cloud-download-outline' : 'checkmark-circle'} size={20} color={missing ? colors.textMuted : colors.success} />
@@ -122,7 +122,7 @@ export default function DocumentsScreen() {
               const buildable = isBuildable(cur.status);
               const f = cur.attachments[0];
               return (
-                <Pressable key={d.id} onPress={() => void open(d)} style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
+                <Touchable key={d.id} accessibilityRole="button" onPress={() => void open(d)} style={styles.row}>
                   <View style={styles.flex}>
                     <Text style={typography.caption}>
                       {d.docNo} · {t('Rev {rev}', { rev: cur.revision })} · {formatDate(cur.issuedOn)}
@@ -138,10 +138,10 @@ export default function DocumentsScreen() {
                     ) : null}
                   </View>
                   <View style={styles.side}>
-                    <Pill text={t(REVISION_STATUS_LABELS[cur.status])} fg={buildable ? colors.success : colors.warning} bg={buildable ? colors.successSoft : colors.warningSoft} />
+                    <Pill text={t(REVISION_STATUS_LABELS[cur.status])} fg={buildable ? colors.success : colors.warning} bg={buildable ? colors.successSoft : colors.warningSoft} icon={buildable ? toneIcon.done : toneIcon.warning} />
                     {f ? <Ionicons name={saved.has(f.id) ? 'phone-portrait-outline' : 'cloud-outline'} size={18} color={saved.has(f.id) ? colors.success : colors.textMuted} accessibilityLabel={t(saved.has(f.id) ? 'Saved on this phone' : 'Online only')} /> : null}
                   </View>
-                </Pressable>
+                </Touchable>
               );
             })}
           </View>
@@ -149,12 +149,12 @@ export default function DocumentsScreen() {
       )}
       {docs.fromCache ? <Text style={[typography.caption, styles.center]}>{t('Showing the list saved on this phone.')}</Text> : null}
       <Modal visible={!!image} transparent animationType="fade" onRequestClose={() => setImage(null)}>
-        <Pressable style={styles.lightbox} onPress={() => setImage(null)} accessibilityRole="button" accessibilityLabel={t('Close photo')}>
+        <Touchable style={styles.lightbox} onPress={() => setImage(null)} accessibilityRole="button" accessibilityLabel={t('Close photo')}>
           {image ? <Image source={{ uri: saved.has(image.id) && canSaveOffline ? localUri(image) : absoluteUrl(image.url) }} style={styles.full} contentFit="contain" /> : null}
           <View style={styles.lightboxClose}>
             <Ionicons name="close-circle" size={36} color={colors.onOverlay} />
           </View>
-        </Pressable>
+        </Touchable>
       </Modal>
     </Screen>
   );
@@ -164,10 +164,10 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   center: { textAlign: 'center', marginTop: spacing.md },
   offline: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md, marginBottom: spacing.md },
-  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md, marginBottom: spacing.sm },
+  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md, marginBottom: spacing.sm, minHeight: touch.min },
   pressed: { opacity: 0.7 },
-  title: { fontSize: 15, fontWeight: '600', color: colors.text, marginVertical: 2 },
-  warn: { color: colors.warning, fontWeight: '700', fontSize: 12 },
+  title: { fontSize: fontSize.body, fontWeight: '600', color: colors.text, marginVertical: 2 },
+  warn: { color: colors.warning, fontWeight: '700', fontSize: fontSize.small },
   side: { alignItems: 'flex-end', gap: 6 },
   lightbox: { flex: 1, backgroundColor: colors.scrimDeep, alignItems: 'center', justifyContent: 'center' },
   full: { width: '100%', height: '85%' },

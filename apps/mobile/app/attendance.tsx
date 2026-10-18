@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import {
@@ -17,15 +17,16 @@ import {
 import { useAuth } from '../src/auth/AuthContext';
 import { useApi, useFetch } from '../src/api/hooks';
 import { errorMessage } from '../src/api/client';
-import { Button, Card, Chips, DatePicker, ErrorBanner, Input, Loading, Screen, Select } from '../src/components';
+import { Button, Card, Chips, DatePicker, ErrorBanner, Input, Loading, Screen, Select, IconButton } from '../src/components';
 import { QueuedSuccess, SubmitSuccess, useProjectOptions } from '../src/forms/common';
 import { DraftNotice, useFormDraft, useLeaveGuard } from '../src/forms/draft';
 import { OutboxRefusal, useOutboxEntry } from '../src/forms/edit';
 import { ErrorSummary, useErrorSummary } from '../src/forms/errors';
 import { useT } from '../src/i18n/LanguageContext';
 import { isOfflineError, useOffline, type OutboxItem } from '../src/offline';
-import { colors, radius, spacing, typography } from '../src/theme';
+import { colors, fontSize, radius, spacing, touch, typography } from '../src/theme';
 import { formatDate, isIsoDate, today } from '../src/utils/format';
+import { useFieldChain } from '../src/forms/keyboard';
 
 interface TradeRow {
   key: string;
@@ -70,6 +71,7 @@ export default function AttendanceScreen() {
   const outboxId = params.outboxId ?? null;
   const { user } = useAuth();
   const t = useT();
+  const field = useFieldChain();
   const api = useApi();
   const { online, enqueue, discard, newId, items: outbox } = useOffline();
   const refused = useOutboxEntry(outboxId);
@@ -307,13 +309,11 @@ export default function AttendanceScreen() {
           title={g.contractor.trim() === DEPARTMENTAL_CONTRACTOR ? t('Own workers') : t('Contractor workers')}
           right={
             groups.length > 1 && !readOnly ? (
-              <Pressable onPress={() => setGroups((gs) => gs.filter((x) => x.key !== g.key))} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('Remove contractor')}>
-                <Ionicons name="trash-outline" size={20} color={colors.danger} />
-              </Pressable>
+              <IconButton icon="trash-outline" size={20} color={colors.danger} onPress={() => setGroups((gs) => gs.filter((x) => x.key !== g.key))} accessibilityLabel={t('Remove contractor')} />
             ) : null
           }
         >
-          <Input label={t('Contractor')} value={g.contractor} onChangeText={(v) => updateGroup(g.key, { contractor: v })} placeholder={t('Labour contractor')} error={errors[`c-${g.key}`]} editable={!readOnly} />
+          <Input {...field()} label={t('Contractor')} value={g.contractor} onChangeText={(v) => updateGroup(g.key, { contractor: v })} placeholder={t('Labour contractor')} error={errors[`c-${g.key}`]} editable={!readOnly} />
           {!readOnly && contractorNames.length > 1 ? (
             <Chips value={null} clearable={false} options={contractorNames.filter((c) => !groups.some((x) => x.contractor.trim() === c)).slice(0, 8).map((c) => ({ value: c, label: c }))} onChange={(v) => v && updateGroup(g.key, { contractor: v })} />
           ) : null}
@@ -322,7 +322,7 @@ export default function AttendanceScreen() {
               <View style={styles.grow}>
                 <Select value={r.category} options={r.category && !categoryOptions.some((o) => o.value === r.category) ? [...categoryOptions, { value: r.category, label: r.category }] : categoryOptions} onChange={(v) => updateRow(g.key, r.key, { category: v })} placeholder={t('Trade')} disabled={readOnly} />
               </View>
-              <Input
+              <Input {...field()}
                 value={r.count}
                 onChangeText={(v) => updateRow(g.key, r.key, { count: v })}
                 keyboardType="number-pad"
@@ -332,15 +332,7 @@ export default function AttendanceScreen() {
                 editable={!readOnly}
               />
               {!readOnly ? (
-                <Pressable
-                  onPress={() => updateGroup(g.key, { rows: g.rows.filter((x) => x.key !== r.key) })}
-                  style={styles.remove}
-                  hitSlop={8}
-                  accessibilityRole="button"
-                  accessibilityLabel={r.category ? t('Remove {item}', { item: t(r.category) }) : t('Remove row')}
-                >
-                  <Ionicons name="close-circle-outline" size={22} color={colors.textMuted} />
-                </Pressable>
+                <IconButton icon="close-circle-outline" size={22} color={colors.textMuted} onPress={() => updateGroup(g.key, { rows: g.rows.filter((x) => x.key !== r.key) })} accessibilityLabel={r.category ? t('Remove {item}', { item: t(r.category) }) : t('Remove row')} style={styles.remove} />
               ) : null}
             </View>
           ))}
@@ -373,7 +365,7 @@ export default function AttendanceScreen() {
         ) : null}
         <Text style={[typography.caption, styles.hint]}>{t("These totals fill the manpower of this day's DPR.")}</Text>
         {errors.lines ? <Text style={styles.err}>{errors.lines}</Text> : null}
-        <Input label={t('Remarks')} value={remarks} onChangeText={setRemarks} multiline placeholder={t('e.g. Holiday, rain stopped work at 3 pm')} containerStyle={styles.last} editable={!readOnly} />
+        <Input {...field({ multiline: true })} label={t('Remarks')} value={remarks} onChangeText={setRemarks} multiline placeholder={t('e.g. Holiday, rain stopped work at 3 pm')} containerStyle={styles.last} editable={!readOnly} />
       </Card>
       {!readOnly ? <Button title={sheet ? t('Update attendance') : t('Save attendance')} icon="checkmark" onPress={save} loading={busy} disabled={validDay && day.loading} /> : null}
     </Screen>
@@ -395,12 +387,12 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   grow: { flex: 1, marginBottom: spacing.sm },
   small: { width: 84, marginBottom: spacing.sm },
-  remove: { width: 32, height: 52, alignItems: 'center', justifyContent: 'center' },
-  err: { color: colors.danger, marginBottom: spacing.sm, fontSize: 13 },
+  remove: { height: touch.height },
+  err: { color: colors.danger, marginBottom: spacing.sm, fontSize: fontSize.secondary },
   addContractor: { marginBottom: spacing.lg },
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.sm },
   tag: { backgroundColor: colors.bg, borderRadius: radius.sm, paddingHorizontal: spacing.sm, paddingVertical: 4, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
-  tagText: { fontSize: 13, color: colors.text, fontWeight: '600' },
+  tagText: { fontSize: fontSize.secondary, color: colors.text, fontWeight: '600' },
   hint: { marginBottom: spacing.md },
   notice: { flexDirection: 'row', gap: spacing.sm, alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.md, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
   noticeText: { flex: 1, color: colors.text },

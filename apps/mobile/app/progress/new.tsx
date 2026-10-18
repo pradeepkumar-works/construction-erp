@@ -13,8 +13,9 @@ import { ErrorSummary, useErrorSummary } from '../../src/forms/errors';
 import { useSectorInputs, type SectorDraft } from '../../src/forms/sector';
 import { useT } from '../../src/i18n/LanguageContext';
 import { isOfflineError, useOffline, type OutboxItem } from '../../src/offline';
-import { colors, spacing, typography } from '../../src/theme';
+import { colors, fontSize, spacing, typography } from '../../src/theme';
 import { fmtQty, formatDate, isIsoDate, today } from '../../src/utils/format';
+import { useFieldChain } from '../../src/forms/keyboard';
 
 /**
  * New progress entry, or (with `editId`) edit a draft / rejected / changes-requested entry and resubmit it, or (with
@@ -25,6 +26,7 @@ export default function NewProgressScreen() {
   const editId = params.editId ?? null;
   const outboxId = params.outboxId ?? null;
   const t = useT();
+  const field = useFieldChain();
   const api = useApi();
   const { online, enqueue, discard, newId } = useOffline();
   const refused = useOutboxEntry(outboxId);
@@ -273,7 +275,7 @@ export default function NewProgressScreen() {
           </View>
         ) : null}
         <DatePicker label={t('Date')} required value={date} onChange={setDate} error={errors.date} />
-        <Input
+        <Input {...field()}
           label={`${t('Quantity executed')}${activity ? ` (${activity.unit})` : ''}`}
           required
           value={quantity}
@@ -283,13 +285,13 @@ export default function NewProgressScreen() {
           error={errors.quantity}
           style={styles.bigInput}
         />
-        {sector.fields(errors)}
+        {sector.fields(errors, field)}
       </Card>
       <Card title={t('Details (optional)')}>
-        <Input label={t('Location')} value={location} onChangeText={setLocation} placeholder={t('e.g. LHS, grid C4-D7')} />
-        <Input label={t('Manpower count')} value={manpower} onChangeText={setManpower} keyboardType="number-pad" placeholder={t('e.g. 18')} error={errors.manpower} />
-        <Input label={t('Machinery used')} value={machinery} onChangeText={setMachinery} placeholder={t('e.g. Grader, Roller')} />
-        <Input label={t('Remarks')} value={remarks} onChangeText={setRemarks} multiline placeholder={t('Anything the PM should know')} />
+        <Input {...field()} label={t('Location')} value={location} onChangeText={setLocation} placeholder={t('e.g. LHS, grid C4-D7')} />
+        <Input {...field()} label={t('Manpower count')} value={manpower} onChangeText={setManpower} keyboardType="number-pad" placeholder={t('e.g. 18')} error={errors.manpower} />
+        <Input {...field()} label={t('Machinery used')} value={machinery} onChangeText={setMachinery} placeholder={t('e.g. Grader, Roller')} />
+        <Input {...field({ multiline: true })} label={t('Remarks')} value={remarks} onChangeText={setRemarks} multiline placeholder={t('Anything the PM should know')} />
         <PhotoPicker photos={photos} onChange={setPhotos} />
         {errors.photos ? <Text style={styles.err}>{errors.photos}</Text> : null}
       </Card>
@@ -302,5 +304,5 @@ const styles = StyleSheet.create({
   activityInfo: { backgroundColor: colors.primarySoft, padding: spacing.md, borderRadius: 10, marginBottom: spacing.lg, marginTop: -spacing.sm },
   strong: { fontWeight: '700', color: colors.text },
   bigInput: { fontSize: 22, fontWeight: '700' },
-  err: { color: colors.danger, marginTop: -spacing.sm, marginBottom: spacing.sm, fontSize: 13 },
+  err: { color: colors.danger, marginTop: -spacing.sm, marginBottom: spacing.sm, fontSize: fontSize.secondary },
 });

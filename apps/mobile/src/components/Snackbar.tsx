@@ -1,9 +1,10 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { AccessibilityInfo, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { AccessibilityInfo, Platform, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { colors, maxFontScale, radius, shadow, spacing, touch } from '../theme';
+import { colors, fontSize, maxFontScale, radius, shadow, spacing, touch } from '../theme';
+import { Touchable } from './Touchable';
 
 /**
  * Confirmation after something worked or failed (UX item 80): a short bar above the tab bar, the same words read by
@@ -73,7 +74,7 @@ export function SnackbarProvider({ children }: { children: React.ReactNode }) {
               {snack.text}
             </Text>
             {snack.action ? (
-              <Pressable
+              <Touchable
                 onPress={() => {
                   snack.action?.onPress();
                   hide();
@@ -84,7 +85,7 @@ export function SnackbarProvider({ children }: { children: React.ReactNode }) {
                 <Text style={styles.actionText} maxFontSizeMultiplier={maxFontScale}>
                   {snack.action.label}
                 </Text>
-              </Pressable>
+              </Touchable>
             ) : null}
           </View>
         </View>
@@ -112,7 +113,7 @@ const styles = StyleSheet.create({
     ...shadow.card,
     elevation: 6,
   },
-  text: { flex: 1, fontSize: 15, color: colors.text },
-  action: { minHeight: touch.heightSm, justifyContent: 'center', paddingHorizontal: spacing.sm },
-  actionText: { color: colors.primary, fontWeight: '700', fontSize: 15 },
+  text: { flex: 1, fontSize: fontSize.body, color: colors.text },
+  action: { minHeight: touch.min, minWidth: touch.min, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.sm },
+  actionText: { color: colors.primary, fontWeight: '700', fontSize: fontSize.body },
 });

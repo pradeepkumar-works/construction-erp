@@ -8,7 +8,7 @@ import { errorMessage } from '../../src/api/client';
 import { useAuth } from '../../src/auth/AuthContext';
 import { AttachmentGallery, Button, Card, ErrorBanner, ErrorState, Input, KeyValue, Loading, Pill, Screen } from '../../src/components';
 import { INCIDENT_TONE } from '../../src/components/safetyTone';
-import { colors, spacing, typography } from '../../src/theme';
+import { colors, spacing, typography, toneIcon } from '../../src/theme';
 import { formatDate, formatDateTime } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
 
@@ -61,7 +61,7 @@ export default function IncidentScreen() {
         <Text style={typography.h2}>{data.location}</Text>
         <View style={styles.pills}>
           <Pill text={t(SAFETY_INCIDENT_TYPE_LABELS[data.type])} {...tone} />
-          <Pill text={t(SAFETY_INCIDENT_STATUS_LABELS[data.status])} {...(data.status === 'OPEN' ? { fg: colors.warning, bg: colors.warningSoft } : { fg: colors.neutral, bg: colors.neutralSoft })} />
+          <Pill text={t(SAFETY_INCIDENT_STATUS_LABELS[data.status])} {...(data.status === 'OPEN' ? { fg: colors.warning, bg: colors.warningSoft, icon: toneIcon.open } : { fg: colors.neutral, bg: colors.neutralSoft, icon: toneIcon.closed })} />
         </View>
       </View>
       <ErrorBanner message={actionError} />

@@ -9,7 +9,7 @@ import { useAuth } from '../../src/auth/AuthContext';
 import { AttachmentGallery, Button, Card, ErrorBanner, ErrorState, Input, KeyValue, Loading, PhotoPicker, Pill, Screen, type LocalPhoto } from '../../src/components';
 import { DEFECT_STATUS_TONE, DEFECT_TONE } from '../../src/components/defectTone';
 import { attachmentIds, photosFailed, photosQueued, photosUploading } from '../../src/forms/common';
-import { colors, spacing, typography } from '../../src/theme';
+import { colors, spacing, typography, toneIcon } from '../../src/theme';
 import { formatDate, formatDateTime, today } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
 
@@ -71,7 +71,7 @@ export default function SnagScreen() {
           <Pill text={t(DEFECT_PHASE_LABELS[data.phase])} fg={colors.neutral} bg={colors.neutralSoft} />
           <Pill text={t('{priority} priority', { priority: t(DEFECT_PRIORITY_LABELS[data.priority]) })} {...DEFECT_TONE[data.priority]} />
           <Pill text={t(DEFECT_STATUS_LABELS[data.status])} {...DEFECT_STATUS_TONE[data.status]} />
-          {data.overdue ? <Pill text={t('Overdue')} fg={colors.danger} bg={colors.dangerSoft} /> : null}
+          {data.overdue ? <Pill text={t('Overdue')} fg={colors.danger} bg={colors.dangerSoft} icon={toneIcon.alert} /> : null}
         </View>
       </View>
       <ErrorBanner message={actionError} />

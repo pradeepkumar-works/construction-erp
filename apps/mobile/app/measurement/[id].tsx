@@ -4,11 +4,11 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { MeasurementSheetDto } from '@erp/shared';
 import { useFetch } from '../../src/api/hooks';
 import { AttachmentGallery, Card, ErrorState, KeyValue, Loading, ReviewActions, Screen, SubmissionHeader, SubmitterActions } from '../../src/components';
-import { colors, spacing, typography } from '../../src/theme';
-import { fmtQty, formatDate } from '../../src/utils/format';
+import { colors, fontSize, spacing, typography } from '../../src/theme';
+import { fmtQty, formatDate, formatMoney } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
 
-const rupees = (v: string) => `₹${Number(v).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
+const rupees = (v: string) => formatMoney(v, { paise: false });
 const factors = (l: MeasurementSheetDto['lines'][number]) => [l.nos, l.length, l.breadth, l.depth].filter((v) => v !== null).map((v) => fmtQty(v as string)).join(' × ');
 
 export default function MeasurementScreen() {
@@ -62,6 +62,6 @@ const styles = StyleSheet.create({
   box: { alignItems: 'center', paddingVertical: spacing.md, marginBottom: spacing.sm, backgroundColor: colors.primarySoft, borderRadius: 12 },
   total: { fontSize: 30, fontWeight: '800', color: colors.primaryDark },
   line: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
-  lineTitle: { fontSize: 15, fontWeight: '600', color: colors.text },
-  qty: { fontSize: 16, fontWeight: '700', color: colors.text, marginLeft: spacing.md },
+  lineTitle: { fontSize: fontSize.body, fontWeight: '600', color: colors.text },
+  qty: { fontSize: fontSize.body, fontWeight: '700', color: colors.text, marginLeft: spacing.md },
 });

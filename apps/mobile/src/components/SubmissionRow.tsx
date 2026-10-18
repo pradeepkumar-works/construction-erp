@@ -1,9 +1,10 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View, type AccessibilityActionEvent, type AccessibilityActionInfo, type ViewStyle } from 'react-native';
+import { StyleSheet, Text, View, type AccessibilityActionEvent, type AccessibilityActionInfo, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { SubmissionStatus, SubmissionType } from '@erp/shared';
 import { colors, radius, spacing, typography } from '../theme';
 import { StatusBadge } from './StatusBadge';
+import { Touchable } from './Touchable';
 
 /** Submissions plus attendance sheets, register entries and safety records (which can also sit in the outbox). */
 export type EntryType = SubmissionType | 'ATTENDANCE' | 'RISK' | 'SAFETY_INCIDENT' | 'TOOLBOX_TALK' | 'WORK_PERMIT';
@@ -63,10 +64,10 @@ interface Props {
 
 export function SubmissionRow({ type, title, subtitle, meta, status, onPress, style, accessibilityActions, onAccessibilityAction }: Props) {
   return (
-    <Pressable
+    <Touchable
       onPress={onPress}
-      style={({ pressed }) => [styles.row, style, pressed && styles.pressed]}
-      android_ripple={{ color: colors.border }}
+      style={[styles.row, style]}
+      pressedStyle={styles.pressed}
       accessibilityRole="button"
       accessibilityActions={accessibilityActions}
       onAccessibilityAction={onAccessibilityAction}
@@ -89,7 +90,7 @@ export function SubmissionRow({ type, title, subtitle, meta, status, onPress, st
         </View>
       </View>
       <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-    </Pressable>
+    </Touchable>
   );
 }
 

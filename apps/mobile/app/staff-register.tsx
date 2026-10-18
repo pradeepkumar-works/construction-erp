@@ -7,7 +7,7 @@ import { useT } from '../src/i18n/LanguageContext';
 import { Button, Card, Chips, DatePicker, EmptyState, ErrorBanner, Loading, Screen, Select } from '../src/components';
 import { useProjectOptions } from '../src/forms/common';
 import { colors, spacing, typography } from '../src/theme';
-import { isIsoDate, today } from '../src/utils/format';
+import { formatTime, isIsoDate, today } from '../src/utils/format';
 
 /**
  * The staff register of one site for one day: the site in-charge marks each person present, half day or absent.
@@ -62,7 +62,7 @@ export default function StaffRegisterScreen() {
       <Text style={typography.caption}>
         {r.employee.designation}
         {r.leave ? ` · ${t(LEAVE_TYPE_LABELS[r.leave.type])}${r.leave.halfDay ? `, ${t('half day')}` : ''}${r.leave.status === 'PENDING' ? ` (${t('waiting')})` : ''}` : ''}
-        {r.attendance?.checkIn ? ` · ${t('checked in {time}', { time: new Date(r.attendance.checkIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) })}` : ''}
+        {r.attendance?.checkIn ? ` · ${t('checked in {time}', { time: formatTime(r.attendance.checkIn) })}` : ''}
       </Text>
       <Chips value={marks[r.employee.id] ?? null} onChange={(v) => setMarks((m) => ({ ...m, [r.employee.id]: v }))} options={STAFF_ATTENDANCE_STATUSES.map((s) => ({ value: s, label: t(STAFF_ATTENDANCE_LABELS[s]) }))} />
     </View>

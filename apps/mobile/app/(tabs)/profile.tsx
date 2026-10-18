@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, Appearance, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Appearance, Linking, Platform, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { reloadAppAsync } from 'expo';
@@ -7,14 +7,15 @@ import { ROLE_LABELS, SUBMISSION_TYPE_LABELS, approvalRightsOf } from '@erp/shar
 import { useAuth } from '../../src/auth/AuthContext';
 import { useNotifications } from '../../src/notifications/NotificationsContext';
 import { MessagingCard } from '../../src/notifications/MessagingCard';
-import { Button, Card, KeyValue, Screen } from '../../src/components';
+import { Button, Card, KeyValue, Screen, Touchable } from '../../src/components';
 import { API_URL } from '../../src/config';
 import { LANGUAGES, useLanguage, useT } from '../../src/i18n/LanguageContext';
+import { formatNumber } from '../../src/utils/format';
 import { APPEARANCE_CHOICES, appearance, colors, saveAppearance, spacing, touch, typography, type AppearanceChoice } from '../../src/theme';
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
-  const { push } = useNotifications();
+  const { push, askForPush } = useNotifications();
   const t = useT();
   if (!user) return null;
   const initials = user.fullName
@@ -48,8 +49,12 @@ export default function ProfileScreen() {
         <KeyValue label={t('Can approve')} value={approvalRightsLine(user, t)} />
       </Card>
       <Card title={t('Notifications')}>
-        <KeyValue label={t('Push to this device')} value={t(push ? (push.status === 'ready' ? 'On' : push.status === 'denied' ? 'Permission denied' : 'Not available') : 'Checking…')} />
+        <KeyValue label={t('Push to this device')} value={t(push ? (push.status === 'ready' ? 'On' : push.status === 'off' ? 'Off' : push.status === 'denied' ? 'Permission denied' : 'Not available') : 'Checking…')} />
         {push && push.status !== 'ready' && push.reason ? <Text style={typography.caption}>{t(push.reason)}</Text> : null}
+        {push?.status === 'off' ? <Button title={t('Turn on notifications')} icon="notifications-outline" variant="secondary" onPress={askForPush} style={styles.pushBtn} /> : null}
+        {push?.status === 'denied' && Platform.OS !== 'web' ? (
+          <Button title={t('Open phone settings')} icon="settings-outline" variant="secondary" onPress={() => void Linking.openSettings()} style={styles.pushBtn} />
+        ) : null}
         <Text style={typography.caption}>{t('Approvals, rejections and change requests on your submissions, plus the daily DPR reminder, also appear under Notifications on the Home screen.')}</Text>
       </Card>
       <MessagingCard />
@@ -73,6 +78,7 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+  pushBtn: { marginVertical: spacing.sm },
   hero: { alignItems: 'center', marginBottom: spacing.xl, gap: 2 },
   avatar: { width: 76, height: 76, borderRadius: 38, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm },
   avatarText: { color: colors.textOnPrimary, fontSize: 28, fontWeight: '800' },
@@ -93,7 +99,7 @@ function LanguageCard() {
       {LANGUAGES.map((l) => {
         const active = l.code === language;
         return (
-          <Pressable
+          <Touchable
             key={l.code}
             disabled={!l.available}
             onPress={() => setLanguage(l.code)}
@@ -109,7 +115,7 @@ function LanguageCard() {
             ) : (
               <Ionicons name="ellipse-outline" size={22} color={colors.borderStrong} />
             )}
-          </Pressable>
+          </Touchable>
         );
       })}
     </Card>
@@ -143,10 +149,10 @@ function AppearanceCard() {
       {APPEARANCE_CHOICES.map((o) => {
         const active = o.value === choice;
         return (
-          <Pressable key={o.value} onPress={() => pick(o.value)} style={styles.choiceRow} accessibilityRole="radio" accessibilityState={{ selected: active }}>
+          <Touchable key={o.value} onPress={() => pick(o.value)} style={styles.choiceRow} accessibilityRole="radio" accessibilityState={{ selected: active }}>
             <Text style={active ? typography.bodyStrong : typography.body}>{t(o.label)}</Text>
             <Ionicons name={active ? 'checkmark-circle' : 'ellipse-outline'} size={22} color={active ? colors.primary : colors.borderStrong} />
-          </Pressable>
+          </Touchable>
         );
       })}
       <Text style={[typography.caption, styles.note]}>{t('The app restarts in the new colours. Anything you were typing is kept as a draft.')}</Text>
@@ -158,5 +164,5 @@ function approvalRightsLine(user: Parameters<typeof approvalRightsOf>[0], t: (en
   const rights = approvalRightsOf(user);
   if (!rights.length) return t('No');
   if (rights.length === Object.keys(SUBMISSION_TYPE_LABELS).length && rights.every((r) => r.maxAmount === null)) return t('Everything');
-  return rights.map((r) => (r.maxAmount === null ? t(SUBMISSION_TYPE_LABELS[r.type]) : t('{type} up to ₹{amount}', { type: t(SUBMISSION_TYPE_LABELS[r.type]), amount: Number(r.maxAmount).toLocaleString('en-IN') }))).join(', ');
+  return rights.map((r) => (r.maxAmount === null ? t(SUBMISSION_TYPE_LABELS[r.type]) : t('{type} up to ₹{amount}', { type: t(SUBMISSION_TYPE_LABELS[r.type]), amount: formatNumber(r.maxAmount, 0) }))).join(', ');
 }

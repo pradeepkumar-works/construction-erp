@@ -9,7 +9,7 @@ import { useAuth } from '../../src/auth/AuthContext';
 import { AttachmentGallery, Button, Card, ErrorBanner, ErrorState, Input, KeyValue, Loading, PhotoPicker, Pill, Screen, type LocalPhoto } from '../../src/components';
 import { attachmentIds, photosFailed, photosQueued, photosUploading } from '../../src/forms/common';
 import { NCR_STATUS_TONE, SEVERITY_TONE } from '../../src/components/qualityTone';
-import { colors, spacing, typography } from '../../src/theme';
+import { colors, spacing, typography, toneIcon } from '../../src/theme';
 import { formatDate, formatDateTime } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
 
@@ -66,7 +66,7 @@ export default function NcrScreen() {
         <View style={styles.pills}>
           <Pill text={t(NCR_STATUS_LABELS[data.status])} {...NCR_STATUS_TONE[data.status]} />
           <Pill text={t(NCR_SEVERITY_LABELS[data.severity])} {...SEVERITY_TONE[data.severity]} />
-          {data.overdue ? <Pill text={t('Overdue')} fg={colors.danger} bg={colors.dangerSoft} /> : null}
+          {data.overdue ? <Pill text={t('Overdue')} fg={colors.danger} bg={colors.dangerSoft} icon={toneIcon.alert} /> : null}
         </View>
       </View>
       <ErrorBanner message={actionError} />
