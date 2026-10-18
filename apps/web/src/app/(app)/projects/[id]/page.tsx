@@ -148,7 +148,7 @@ function ProjectPage({ project }: { project: ProjectDetail }) {
           </Space>
         }
         extra={
-          <Space>
+          <Space wrap>
             <div style={{ width: 160 }}>
               <Typography.Text type="secondary" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                 Physical progress

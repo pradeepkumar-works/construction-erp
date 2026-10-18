@@ -91,6 +91,11 @@ and the pre-delivery checklist.
   The route walk (`e2e/tests/route-walk.spec.ts`) opens every `nav.ts` link for each role in `WALK_ROLES` and every project
   tab, at 1440 and 390 (touch) in both themes: axe, one `<h1>`, own tab title, targets 24 px (44 touch), text 12 px, no
   sideways scroll at 390. A new page is in it with no test edit and must pass it; a link no listed role sees needs a role.
+  Nothing is excluded from it. Shared fixes live in one place: a scrolling table or `data-scroll-region` box with nothing
+  focusable inside becomes a Tab stop, and a table's hidden measure row leaves the Tab order (`src/lib/a11y-patches.ts`,
+  mounted in `Providers`); on a phone a tab bar scrolls
+  by swipe with antd's overflow button hidden, and the touch sizes (Segmented, CheckableTag, checkbox, tab) are in the
+  `pointer: coarse` block of `globals.css`. Running text with links is a `<p>`; a row that opens something is 44 px high.
 - Records: a submission's drawer and its own page (`/dpr/[id]`, `/bills/[id]`, …) are one `XRecord` component on
   `RecordFrame` (`components/record/`: facts, `submissionLifecycle` stage bar, sections, activity, actions); the drawer
   export is `<XRecord mode="drawer">`. List links to it use `RecordLink` and `RowActions href`.

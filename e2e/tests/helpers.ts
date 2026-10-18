@@ -102,12 +102,12 @@ export async function settle(page: Page, path?: string) {
 
 /**
  * axe's WCAG 2.2 AA findings on the page, as "rule: first three elements". Colours are measured once nothing is fading
- * or sliding in (looping ones, such as a spinner, never finish). Excluded: antd's zero-height table measure row
- * (aria-hidden, never shown) and the tab bar's own overflow menu, both inside antd and not ours to change.
+ * or sliding in (looping ones, such as a spinner, never finish). Nothing is excluded: a finding inside an antd part is
+ * fixed in the app (a phone's tab bar hides its overflow button, a scrolling table becomes a Tab stop, `a11y-patches.ts`).
  */
 export async function axeViolations(page: Page): Promise<string[]> {
   await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running' || a.effect?.getTiming().iterations === Infinity));
-  const result = await new AxeBuilder({ page }).withTags(WCAG_TAGS).exclude('.ant-table-measure-row').exclude('.ant-tabs-nav-operations').analyze();
+  const result = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
   return result.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).slice(0, 3).join(', ')}`);
 }
 

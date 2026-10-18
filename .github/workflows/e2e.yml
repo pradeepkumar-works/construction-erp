@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  e2e:
+  suite:
     name: e2e (${{ matrix.suite }})
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -140,3 +140,12 @@ jobs:
           path: e2e/route-walk/screens
           if-no-files-found: ignore
           retention-days: 7
+
+  # One check named `e2e` (what branch protection asks for): green only when all three jobs above are.
+  e2e:
+    name: e2e
+    needs: suite
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - run: '[ "${{ needs.suite.result }}" = "success" ] || { echo "e2e jobs: ${{ needs.suite.result }}"; exit 1; }'

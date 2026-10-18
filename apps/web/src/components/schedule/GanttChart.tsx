@@ -11,7 +11,8 @@ import { formatDate, formatPct } from '@/lib/format';
 export type GanttScale = 'week' | 'month';
 
 const LABEL_W = 260;
-const ROW_H = 34;
+// 44 px: each row is a touch target (opens the activity or milestone), WCAG 2.5.8 on a phone.
+const ROW_H = 44;
 const PX_PER_DAY: Record<GanttScale, number> = { week: 7, month: 2.2 };
 
 interface Range {
@@ -182,10 +183,10 @@ export function GanttChart({ data, scale, showBaseline, onMilestone }: { data: G
       <Tooltip title={tip}>
         <div style={{ position: 'absolute', inset: 0 }}>
           {showBaseline && a.baselineStart && a.baselineEnd ? (
-            <div className="gantt-baseline" style={{ position: 'absolute', ...span(a.baselineStart, a.baselineEnd), top: ROW_H - 10, height: 5, borderRadius: 2, background: token.colorTextQuaternary }} />
+            <div className="gantt-baseline" style={{ position: 'absolute', ...span(a.baselineStart, a.baselineEnd), top: ROW_H / 2 + 7, height: 5, borderRadius: 2, background: token.colorTextQuaternary }} />
           ) : null}
           {a.plannedStart && a.plannedEnd ? (
-            <div className="gantt-bar" style={{ position: 'absolute', ...span(a.plannedStart, a.plannedEnd), top: 7, height: 15, borderRadius: 3, overflow: 'hidden', background: token.colorFillSecondary, border: `1px solid ${color}` }}>
+            <div className="gantt-bar" style={{ position: 'absolute', ...span(a.plannedStart, a.plannedEnd), top: ROW_H / 2 - 12, height: 15, borderRadius: 3, overflow: 'hidden', background: token.colorFillSecondary, border: `1px solid ${color}` }}>
               <div style={{ width: `${Math.min(a.progressPct, 100)}%`, height: '100%', background: color }} />
             </div>
           ) : null}

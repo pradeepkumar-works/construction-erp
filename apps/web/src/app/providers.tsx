@@ -6,6 +6,7 @@ import { App as AntApp, ConfigProvider } from 'antd';
 import { errorStatus } from '@/lib/api';
 import { AuthProvider } from '@/lib/auth';
 import { FeedbackHost, mutationFailed } from '@/lib/notify';
+import { A11yPatches } from '@/lib/a11y-patches';
 import { appTheme, componentConfig, themeCssVariables } from '@/lib/theme';
 
 const isClientError = (err: unknown) => {
@@ -36,6 +37,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <AntApp>
         <QueryClientProvider client={queryClient}>
           <FeedbackHost />
+          <A11yPatches />
           <AuthProvider>{children}</AuthProvider>
         </QueryClientProvider>
       </AntApp>

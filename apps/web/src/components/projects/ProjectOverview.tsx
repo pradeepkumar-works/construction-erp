@@ -162,7 +162,7 @@ export function ProjectOverview({ project }: { project: ProjectDetail }) {
           </Col>
         </Row>
         {dash && (dash.pendingApprovals > 0 || dash.openMaterialRequests > 0) && (
-          <Typography.Paragraph type="secondary" style={{ ...small, marginTop: token.marginSM, marginBottom: 0 }}>
+          <p style={{ ...small, color: token.colorTextSecondary, marginTop: token.marginSM, marginBottom: 0 }}>
             Waiting on this project:{' '}
             {[
               dash.pendingApprovals > 0 ? (
@@ -178,7 +178,7 @@ export function ProjectOverview({ project }: { project: ProjectDetail }) {
             ]
               .filter(Boolean)
               .flatMap((node, i) => (i ? [' · ', node] : [node]))}
-          </Typography.Paragraph>
+          </p>
         )}
 
         <Section title="Planned vs executed by activity" style={{ marginTop: token.margin }} loading={isLoading}>

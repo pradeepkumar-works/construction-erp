@@ -25,7 +25,7 @@ export const PRINT_BRAND_CSS = `
   .brand { font-weight: 800; letter-spacing: .01em; }
   h1 { font-weight: 800; }
   h2 { font-weight: 700; letter-spacing: .06em; }
-  .nirmaan-foot { display: flex; align-items: center; gap: 8px; margin-top: 18px; padding-top: 8px; border-top: 1px solid ${BRAND.colors.border}; color: #666; font-size: 9px; page-break-inside: avoid; }
+  .nirmaan-foot { display: flex; align-items: center; gap: 8px; margin-top: 18px; padding-top: 8px; border-top: 1px solid ${BRAND.colors.border}; color: ${BRAND.colors.muted}; font-size: 9px; page-break-inside: avoid; }
   .nirmaan-foot .wm { font-family: ${DISPLAY}; font-stretch: 75%; font-weight: 800; font-size: 11px; letter-spacing: .08em; color: ${BRAND.colors.ink}; }
   .nirmaan-foot .txt { flex: 1; }
 `;

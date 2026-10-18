@@ -96,6 +96,7 @@ export function ContractPanel({ projectId }: { projectId: string }) {
         <Table<ContractExtensionDto>
           rowKey="riskId"
           size="small"
+          scroll={{ x: 'max-content' }}
           pagination={false}
           dataSource={c.extensions}
           locale={{ emptyText: 'No extension claimed. Tick "Extension of time claimed" on a delay, and enter the days once the client grants them.' }}

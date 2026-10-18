@@ -5,7 +5,7 @@
 | Check | Where | What it covers |
 |-------|-------|----------------|
 | `pnpm typecheck`, `next build`, mobile `tsc` and `expo export` | before every commit (see CLAUDE.md) | types and builds |
-| `.github/workflows/e2e.yml` | every pull request | the API and web app on a fresh Postgres with the demo seed, the API connected as `erp_runtime` (row-level security enforced), then the Playwright browser tests in `e2e/`: the flows (with the API checks and the antd lint) and the route walk in two shards, three jobs side by side |
+| `.github/workflows/e2e.yml` | every pull request | the API and web app on a fresh Postgres with the demo seed, the API connected as `erp_runtime` (row-level security enforced), then the Playwright browser tests in `e2e/`: the flows (with the API checks and the antd lint) and the route walk in two shards, three jobs side by side, then the `e2e` check that passes only when all three do |
 | `.github/workflows/smoke.yml` | by hand, against production | the API contract of every module, read-mostly, with the demo accounts |
 | Phone checklist below | by hand on a real phone, before a store release | offline entry, photos and sync |
 
@@ -54,10 +54,16 @@ differ between machines, so a diff would fail on noise more often than on a real
 (the PR template asks for 1440 and 390 in both themes).
 
 Each page waits for the app's own ready signal (no `aria-busy` region, skeleton or spinner left, the `<h1>` drawn,
-fonts loaded), never a fixed sleep or network idle. Each page in each view is its own test (a role's test for a page
-outside its sidebar is skipped), so a failure names the role, view, page, check and element. The walk only reads, so it
-runs on two workers, and it never retries: its checks answer the same each time, and a retry would hide a page that only
-sometimes breaks. CI splits it into two shards (`--shard=1/2`, `2/2`) beside the flows job.
+fonts loaded), never a fixed sleep or network idle. Each role has one test per view that opens the pages of its sidebar
+one by one, each in a fresh browser context, and each project tab is a test of its own; every page's findings are a
+separate soft check, so a failure names the role, view, page, check and element, and nothing is skipped. Nothing is
+excluded from axe either: a finding inside an antd part is fixed in the app, once for every page (on a phone the tab
+bar's overflow button is hidden and the bar scrolls by swipe; a scrolling table with nothing focusable becomes a Tab
+stop and a table's hidden measure row leaves the Tab order, `apps/web/src/lib/a11y-patches.ts`; touch sizes are in the
+`pointer: coarse` block of `globals.css`). The walk only reads, so it runs on two workers, and it never retries: its
+checks answer the same each time, and a retry would hide a page that only sometimes breaks. CI splits it into two
+shards (`--shard=1/2`, `2/2`) beside the flows job, and a last job named `e2e` (the check branch protection asks for)
+passes only when all three did. Screenshots and the HTML report are kept for 7 days.
 
 ```bash
 cd e2e

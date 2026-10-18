@@ -26,8 +26,9 @@ export default defineConfig({
     // The route walk (item 89, `route-walk.spec.ts`): reads only, so it may run on several workers (`--workers=2`), after
     // one sign-in per role. CI runs it as its own jobs beside the flows. Its checks give the same answer every time, so a
     // retry would only hide a page that sometimes breaks and double the time of every finding; no trace either (each
-    // finding names its page, check and element, and the screenshots are kept).
+    // finding names its page, check and element, and the screenshots are kept), and no failure screenshot (the walk takes
+    // its own of every page, each in a context it opens and closes itself).
     { name: 'walk-setup', use: { ...devices['Desktop Chrome'] }, testMatch: /route-walk\.setup\.ts/ },
-    { name: 'walk', use: { ...devices['Desktop Chrome'], trace: 'off' }, retries: 0, testMatch: /route-walk\.spec\.ts/, dependencies: ['walk-setup'] },
+    { name: 'walk', use: { ...devices['Desktop Chrome'], trace: 'off', screenshot: 'off' }, retries: 0, testMatch: /route-walk\.spec\.ts/, dependencies: ['walk-setup'] },
   ],
 });

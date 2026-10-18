@@ -18,6 +18,7 @@ import {
 import type { MyWorkCard, MyWorkDto } from '@erp/shared';
 import { formatINRCompact } from '@/lib/format';
 import { QUEUE_TYPE_LABELS } from '@/components/approvals/queue';
+import { LinkButton } from '@/components/common/LinkButton';
 import type { MyWorkKey } from './layout';
 
 const CARDS: Record<Exclude<MyWorkKey, 'approvals'>, { title: string; icon: React.ReactNode; href: string | null; tone: 'warning' | 'error' | 'info' }> = {
@@ -173,11 +174,9 @@ function ApprovalsCard({ approvals, waitingDays }: { approvals: NonNullable<MyWo
           {[...approvals]
             .sort((a, b) => b.count - a.count)
             .map((a) => (
-              <Link key={a.type} href="/approvals">
-                <Tag style={{ margin: 0, cursor: 'pointer' }}>
-                  {QUEUE_TYPE_LABELS[a.type]} <strong>{a.count}</strong>
-                </Tag>
-              </Link>
+              <LinkButton key={a.type} href="/approvals" size="small">
+                {QUEUE_TYPE_LABELS[a.type]} <strong>{a.count}</strong>
+              </LinkButton>
             ))}
         </Flex>
       )}

@@ -9,8 +9,8 @@ import { SCREENS_DIR, WALK_ROLES, WALK_VIEWS, navHrefs, routesFile, stateFile, t
  * (a touch screen) in the light and the dark theme, plus every tab of a project page for the project manager.
  *
  * The pages come from the app itself: one test per link in nav.ts and per tab key in the project page's source, and
- * `route-walk.setup.ts` (one sign-in per role) saves the links each role's sidebar draws, so a role's test for a page
- * it cannot open is skipped. A new module is walked without editing this file. On each page:
+ * `route-walk.setup.ts` (one sign-in per role) saves the links each role's sidebar draws, which that role's test for
+ * each view then walks (nothing is skipped). A new module is walked without editing this file. On each page:
  * - axe finds nothing at WCAG 2.2 AA (every view);
  * - one `<h1>`, and a tab title of its own, not just the product name (1440, light);
  * - controls at least 24 px, 44 px on the touch screen, and no text under 12 px (`measureTargets`; light views, as
@@ -76,36 +76,56 @@ async function walkPage(page: Page, url: string, name: string, role: WalkRole, v
   return found;
 }
 
-for (const role of WALK_ROLES) {
-  for (const view of WALK_VIEWS) {
-    test.describe(`${role.key} at ${view.key}`, () => {
-      test.use({ storageState: stateFile(role), viewport: view.viewport, hasTouch: view.touch, contextOptions: { reducedMotion: 'reduce' } });
-
-      for (const route of navHrefs()) {
-        test(route, async ({ page }) => {
-          test.skip(!sidebarOf(role).includes(route), `not in ${role.email}'s sidebar`);
-          await setAppearance(page, view.mode);
-          expect(await walkPage(page, route, route, role, view)).toEqual([]);
-        });
+/**
+ * The pages one role's sidebar draws (known only once the setup has signed in), in one view, each in a fresh browser
+ * context so one page's state never reaches the next. Each page's findings are a soft check of their own, so the report
+ * names every failing page of the role and view.
+ */
+function sidebarTest(role: WalkRole, view: WalkView) {
+  test(`${role.key} at ${view.key}: every page in the sidebar`, async ({ browser, baseURL }) => {
+    const routes = sidebarOf(role);
+    test.setTimeout(routes.length * 30_000);
+    for (const route of routes) {
+      const context = await browser.newContext({ baseURL, storageState: stateFile(role), viewport: view.viewport, hasTouch: view.touch, reducedMotion: 'reduce' });
+      try {
+        const page = await context.newPage();
+        await setAppearance(page, view.mode);
+        expect.soft(await walkPage(page, route, route, role, view), route).toEqual([]);
+      } finally {
+        await context.close();
       }
-
-      if (role.key !== 'pm') return;
-      for (const key of projectTabKeys()) {
-        const name = `/projects/:id?tab=${key}`;
-        test(name, async ({ page }) => {
-          await setAppearance(page, view.mode);
-          const id = await firstProject(role);
-          const found = await walkPage(page, key === 'overview' ? `/projects/${id}` : `/projects/${id}?tab=${key}`, name, role, view);
-          // A tab the role may not open falls back to the overview: note it rather than pass the overview off as the tab.
-          if (key !== 'overview' && (await page.getByRole('tabpanel').first().getAttribute('aria-label')) === 'Overview') {
-            test.info().annotations.push({ type: 'not offered', description: `?tab=${key} to ${role.email}` });
-          }
-          expect(found).toEqual([]);
-        });
-      }
-    });
-  }
+    }
+  });
 }
+
+/** Every tab of the project manager's first project, one test per tab, in one view. */
+function projectTabTests(role: WalkRole, view: WalkView) {
+  test.describe(`${role.key} at ${view.key}`, () => {
+    test.use({ storageState: stateFile(role), viewport: view.viewport, hasTouch: view.touch, contextOptions: { reducedMotion: 'reduce' } });
+    for (const key of projectTabKeys()) {
+      const name = `/projects/:id?tab=${key}`;
+      test(name, async ({ page }) => {
+        await setAppearance(page, view.mode);
+        const id = await firstProject(role);
+        const found = await walkPage(page, key === 'overview' ? `/projects/${id}` : `/projects/${id}?tab=${key}`, name, role, view);
+        // A tab the role may not open falls back to the overview: note it rather than pass the overview off as the tab.
+        if (key !== 'overview' && (await page.getByRole('tabpanel').first().getAttribute('aria-label')) === 'Overview') {
+          test.info().annotations.push({ type: 'not offered', description: `?tab=${key} to ${role.email}` });
+        }
+        expect(found).toEqual([]);
+      });
+    }
+  });
+}
+
+// CI splits the walk into two shards by test count, so the long sidebar tests go half before and half after the
+// one-page tab tests, and each shard gets about the same number of pages.
+const combos = WALK_ROLES.flatMap((role) => WALK_VIEWS.map((view) => ({ role, view })));
+const half = Math.ceil(combos.length / 2);
+combos.slice(0, half).forEach(({ role, view }) => sidebarTest(role, view));
+const pm = WALK_ROLES.find((r) => r.key === 'pm')!;
+WALK_VIEWS.forEach((view) => projectTabTests(pm, view));
+combos.slice(half).forEach(({ role, view }) => sidebarTest(role, view));
 
 test('every sidebar link is walked by at least one role', async () => {
   const walked = new Set(WALK_ROLES.flatMap(sidebarOf));
