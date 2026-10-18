@@ -252,7 +252,7 @@ export function InspectionRecord({ id, mode, open, onClose, onEdit }: RecordProp
             <>
               {mayRaise ? (
                 <Button size={size} danger icon={<WarningOutlined />} onClick={() => raise(data)}>
-                  Raise NCR
+                  New NCR
                 </Button>
               ) : null}
               <EditResubmitButton entry={data} onEdit={onEdit} size={size} />

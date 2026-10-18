@@ -5,7 +5,7 @@ import { Grid, theme } from 'antd';
 import { Column, Line, Pie } from '@ant-design/plots';
 import type { CostHeadsDto, HomeTrendsDto } from '@erp/shared';
 import { useAppearance, useReducedMotion } from '@/lib/appearance';
-import { formatINRCompact, formatPct, toNumber } from '@/lib/format';
+import { formatINRCompact, formatPct, toNumber, RUPEE } from '@/lib/format';
 import { COST_HEADS, monthLabel } from './chartData';
 
 /**
@@ -74,7 +74,7 @@ export function CashFlowChart({ months, cashIn, cashOut }: { months: string[]; c
       colorField="series"
       group
       scale={{ color: { domain: ['Received', 'Paid'], range: [token.colorSuccess, token.colorWarning] } }}
-      axis={{ ...base.axis, y: { ...base.axis.y, labelFormatter: (v: number) => formatINRCompact(v).replace('₹ ', '₹') } }}
+      axis={{ ...base.axis, y: { ...base.axis.y, labelFormatter: (v: number) => formatINRCompact(v).replace(RUPEE, '₹') } }}
       style={{ radiusTopLeft: 3, radiusTopRight: 3, maxWidth: 28 }}
       tooltip={{ channel: 'y', valueFormatter: (v: number) => formatINRCompact(v) }}
     />

@@ -3,14 +3,14 @@ import { MSME_CATEGORY_LABELS } from '@erp/shared';
 import { AUTO_PRINT_SCRIPT, brandFooter, PRINT_BRAND_CSS, PRINT_FONT_LINKS } from '@/components/print/printBrand';
 import { rupeesInWords } from '@/components/bills/billPrint';
 import { BRAND } from '@/lib/brand';
-import { formatDate, formatDateTime, formatINR, formatQty, toNumber } from '@/lib/format';
+import { formatDate, formatDateTime, formatINR, formatQty, toNumber, RUPEE } from '@/lib/format';
 
 const esc = (v: unknown) =>
   String(v ?? '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
-const inr = (v: string | number) => esc(formatINR(v, true).replace('₹ ', ''));
+const inr = (v: string | number) => esc(formatINR(v, true).replace(RUPEE, ''));
 
 const STYLE = `
   @page { size: A4; margin: 14mm; }

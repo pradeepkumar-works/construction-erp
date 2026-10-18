@@ -90,8 +90,8 @@ export function JobFormModal({
       onClose={onClose}
       form={form}
       layout="modal"
-      title={editing ? `Change ${job?.jobNo}` : breakdown ? 'Report a breakdown' : 'Raise a service job card'}
-      okText={editing ? 'Save' : breakdown ? 'Report' : 'Raise job card'}
+      title={editing ? `Change ${job?.jobNo}` : breakdown ? 'Report breakdown' : 'New service job card'}
+      okText={editing ? 'Save' : breakdown ? 'Report' : 'Save job card'}
       onSubmit={(v) => save.mutateAsync(v)}
       draftKey={editing ? undefined : `maintenance-job:${kind ?? 'BREAKDOWN'}:${equipmentId ?? projectId ?? 'any'}`}
     >

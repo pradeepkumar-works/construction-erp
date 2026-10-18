@@ -43,7 +43,7 @@ function stepsFor(user: AuthUser, mobile: boolean): Step[] {
           title: 'Your pages',
           description: guest
             ? 'The projects you follow and what the contractor shares with you.'
-            : 'Every page your role uses, grouped by Site, Materials & plant, Billing, Reports and more. Press [ to fold it to icons and back.',
+            : 'Every page your role uses, grouped by Site, Materials and plant, Billing, Reports and more. Press [ to fold it to icons and back.',
           placement: 'right',
         },
     mayApprove(user) && {

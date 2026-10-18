@@ -25,8 +25,8 @@ test('the project manager adds a milestone and marks it achieved', async ({ page
   await signIn(page, 'pm@demo.com');
   await page.goto(`/projects/${road.id}?tab=schedule`);
   await expect(page.locator('.baseline-info')).toContainText('Baseline frozen');
-  await page.getByRole('button', { name: 'Add milestone' }).click();
-  const form = page.locator('.ant-modal').filter({ hasText: 'Add a milestone' });
+  await page.getByRole('button', { name: 'New milestone' }).click();
+  const form = page.locator('.ant-modal').filter({ hasText: 'New milestone' });
   await form.getByLabel('Milestone').fill(name);
   await form.getByLabel('Due on').fill(shown(iso(-2)));
   await form.getByLabel('Due on').press('Enter');

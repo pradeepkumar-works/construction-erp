@@ -150,7 +150,7 @@ export function GanttPanel({ projectId }: { projectId: string }) {
         </Space>
         {editor ? (
           <Button icon={<PlusOutlined />} onClick={() => setForm({ milestone: null })}>
-            Add milestone
+            New milestone
           </Button>
         ) : null}
       </div>

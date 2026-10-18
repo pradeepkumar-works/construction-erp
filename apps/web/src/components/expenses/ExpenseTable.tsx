@@ -61,7 +61,7 @@ export function expenseColumns({
       align: 'right',
       ...sort('totalAmount'),
       render: (_, r) => (
-        <div className="mono">
+        <div className="mono" translate="no">
           {formatINR(r.totalAmount, true)}
           {toNumber(r.gstAmount) > 0 ? <Sub>incl. GST {formatINR(r.gstAmount, true)}</Sub> : null}
         </div>

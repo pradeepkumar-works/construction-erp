@@ -18,9 +18,9 @@ import { Section, SectionStack } from '@/components/common/Section';
 
 const RED = themeColor('colorErrorText');
 const GREEN = themeColor('colorSuccessText');
-const money = (v: string | null) => (v === null ? <span className="text-muted">-</span> : <span className="mono">{formatINR(v)}</span>);
+const money = (v: string | null) => (v === null ? <span className="text-muted">-</span> : <span className="mono" translate="no">{formatINR(v)}</span>);
 const variance = (v: string | null) =>
-  v === null ? <span className="text-muted">-</span> : <span className="mono" style={{ color: toNumber(v) < 0 ? RED : GREEN }}>{formatINR(v)}</span>;
+  v === null ? <span className="text-muted">-</span> : <span className="mono" translate="no" style={{ color: toNumber(v) < 0 ? RED : GREEN }}>{formatINR(v)}</span>;
 
 /** A project's budget against actual cost, the forecast to complete, and its cash-flow forecast. */
 export function ProjectBudgetPanel({ projectId }: { projectId: string }) {
@@ -197,9 +197,9 @@ export function ProjectBudgetPanel({ projectId }: { projectId: string }) {
               columns={[
                 { title: 'Item', dataIndex: 'itemNo', width: 70, className: 'mono' },
                 { title: 'Description', dataIndex: 'description', ellipsis: true },
-                { title: 'Qty', dataIndex: 'qty', width: 130, align: 'right', render: (v, r) => <span className="mono">{`${formatQty(v)} ${r.unit}`}</span> },
-                { title: 'Rate', dataIndex: 'rate', width: 140, align: 'right', render: (v) => <span className="mono">{formatINR(v, true)}</span> },
-                { title: 'Budget rate', dataIndex: 'budgetRate', width: 140, align: 'right', render: (v: string | null) => (v === null ? <span className="text-muted">-</span> : <span className="mono">{formatINR(v, true)}</span>) },
+                { title: 'Qty', dataIndex: 'qty', width: 130, align: 'right', render: (v, r) => <span className="mono" translate="no">{`${formatQty(v)} ${r.unit}`}</span> },
+                { title: 'Rate', dataIndex: 'rate', width: 140, align: 'right', render: (v) => <span className="mono" translate="no">{formatINR(v, true)}</span> },
+                { title: 'Budget rate', dataIndex: 'budgetRate', width: 140, align: 'right', render: (v: string | null) => (v === null ? <span className="text-muted">-</span> : <span className="mono" translate="no">{formatINR(v, true)}</span>) },
                 {
                   title: 'Planned margin',
                   dataIndex: 'plannedMarginPct',
@@ -208,7 +208,7 @@ export function ProjectBudgetPanel({ projectId }: { projectId: string }) {
                   render: (v: number | null) => (v === null ? <span className="text-muted">-</span> : <span style={{ color: v < 0 ? RED : undefined }}>{v}%</span>),
                 },
                 { title: 'Budget', dataIndex: 'budgetAmount', width: 130, align: 'right', render: money },
-                { title: 'Done', dataIndex: 'executedQty', width: 120, align: 'right', render: (v) => <span className="mono">{formatQty(v)}</span> },
+                { title: 'Done', dataIndex: 'executedQty', width: 120, align: 'right', render: (v) => <span className="mono" translate="no">{formatQty(v)}</span> },
                 { title: 'Earned', dataIndex: 'earnedBudget', width: 130, align: 'right', render: money },
               ]}
             />

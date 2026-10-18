@@ -10,7 +10,7 @@ import { useHoverIntent, usePrefetch } from '@/lib/prefetch';
  * yet passes no `href`: it is then a button that looks like a link, so it still takes focus and opens on Enter or Space
  * (UX item 81; a link without `href` cannot be reached from the keyboard). With `href`, resting the pointer on it or
  * focusing it fetches the record ahead (item 83), for the quick look and the page alike; `data-record-link` lets its row
- * do the same.
+ * do the same. Its text is a number or a name, so a browser's translation leaves it alone (`translate="no"`).
  */
 export function RecordLink({ href, onOpen, strong, className, children }: { href?: string; onOpen: () => void; strong?: boolean; className?: string; children: React.ReactNode }) {
   const prefetch = usePrefetch();
@@ -20,6 +20,7 @@ export function RecordLink({ href, onOpen, strong, className, children }: { href
       <Typography.Link
         href="#"
         role="button"
+        translate="no"
         strong={strong}
         className={className}
         onClick={(e) => {
@@ -41,6 +42,7 @@ export function RecordLink({ href, onOpen, strong, className, children }: { href
       strong={strong}
       className={className}
       data-record-link=""
+      translate="no"
       {...ahead}
       onClick={(e) => {
         if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;

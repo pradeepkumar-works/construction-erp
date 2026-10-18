@@ -27,7 +27,7 @@ import { themeFontSize } from '@/lib/theme';
 import { Section } from '@/components/common/Section';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
-const money = (v: string | number) => <span className="mono" style={{ whiteSpace: 'nowrap' }}>{formatINR(v, true)}</span>;
+const money = (v: string | number) => <span className="mono" translate="no" style={{ whiteSpace: 'nowrap' }}>{formatINR(v, true)}</span>;
 
 /** Tag for where an approved order stands: open, fully received or closed short. */
 export function PoStateTag({ order }: { order: Pick<PurchaseOrderDto, 'status' | 'closedAt' | 'open'> }) {
@@ -90,7 +90,7 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
       onClose={onClose}
       drawerSize={1000}
       kind="Purchase order"
-      list={{ href: '/purchase-orders', label: 'Purchase Orders' }}
+      list={{ href: '/purchase-orders', label: 'Purchase orders' }}
       loading={isLoading}
       error={error}
       onRetry={() => refetch()}
@@ -120,7 +120,7 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
               children: (
                 <span>
                   {data.vendorName}
-                  {data.vendorGstin && <span className="text-muted"> · GSTIN {data.vendorGstin}</span>}
+                  {data.vendorGstin && <span className="text-muted"> · GSTIN <span translate="no">{data.vendorGstin}</span></span>}
                   {data.vendorMsme && <Tag color={data.vendorMsme === 'MEDIUM' ? 'default' : 'orange'} style={{ marginLeft: 8 }}>{MSME_CATEGORY_LABELS[data.vendorMsme]}</Tag>}
                 </span>
               ),
@@ -156,7 +156,7 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
                     scroll={{ x: 760 }}
                     columns={[
                       { title: 'Item', render: (_, l) => <div>{l.itemName}{l.specification && <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{l.specification}</div>}</div> },
-                      { title: 'Quantity', dataIndex: 'quantity', width: 120, align: 'right', render: (v, l) => <span className="mono">{formatQty(v)} {l.unit}</span> },
+                      { title: 'Quantity', dataIndex: 'quantity', width: 120, align: 'right', render: (v, l) => <span className="mono" translate="no">{formatQty(v)} {l.unit}</span> },
                       { title: 'Rate', dataIndex: 'rate', width: 110, align: 'right', render: (v) => money(v) },
                       { title: 'GST', dataIndex: 'gstRate', width: 60, align: 'right', render: (v) => formatPct(v) },
                       { title: 'Amount', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <strong>{money(v)}</strong> },
@@ -169,7 +169,7 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
                               align: 'right' as const,
                               render: (v: string, l: PurchaseOrderLineDto) => <Typography.Text type={toNumber(v) >= toNumber(l.quantity) ? 'success' : toNumber(v) > 0 ? 'warning' : undefined} className="mono">{formatQty(v)}</Typography.Text>,
                             },
-                            { title: 'Billed', dataIndex: 'billedQty', width: 90, align: 'right' as const, render: (v: string) => <span className="mono">{formatQty(v)}</span> },
+                            { title: 'Billed', dataIndex: 'billedQty', width: 90, align: 'right' as const, render: (v: string) => <span className="mono" translate="no">{formatQty(v)}</span> },
                           ]
                         : []),
                     ]}

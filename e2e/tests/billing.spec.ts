@@ -129,5 +129,5 @@ test('the demo company is not charged, and only admins see billing', async ({ pa
   const denied = await fetch(`${API_URL}/billing`, { headers: { authorization: `Bearer ${pm}` } });
   expect(denied.status).toBe(403);
   await signIn(page, 'pm@demo.com');
-  await expect(page.getByRole('link', { name: 'Billing', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Subscription', exact: true })).toHaveCount(0);
 });

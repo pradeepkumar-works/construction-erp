@@ -11,9 +11,9 @@ test('each page has its own tab title, one h1 and one breadcrumb', async ({ page
   await expect(page.locator('h1')).toHaveCount(1);
 
   await page.goto('/dpr');
-  await expect(page).toHaveTitle('Daily Progress Reports · Nirmaan');
+  await expect(page).toHaveTitle('Daily reports · Nirmaan');
   await expect(page.locator('h1')).toHaveCount(1);
-  await expect(page.locator('h1')).toHaveText('Daily Progress Reports');
+  await expect(page.locator('h1')).toHaveText('Daily reports');
 
   // A record's page is named after the record, and the header's breadcrumb carries its kind (no second one on the page).
   const md = await apiToken('md@demo.com');
@@ -30,8 +30,8 @@ test('each page has its own tab title, one h1 and one breadcrumb', async ({ page
 
 test('moving to another page puts focus on its heading', async ({ page }) => {
   await signIn(page, 'pm@demo.com');
-  await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Daily Reports' }).click();
-  await expect(page.locator('h1')).toHaveText('Daily Progress Reports');
+  await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Daily reports' }).click();
+  await expect(page.locator('h1')).toHaveText('Daily reports');
   await expect(page.locator('h1')).toBeFocused();
 });
 

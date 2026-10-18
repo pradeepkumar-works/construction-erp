@@ -30,7 +30,7 @@ export function ProgressRecord({ id, mode, open, onClose, onEdit }: RecordProps 
       onClose={onClose}
       drawerSize={640}
       kind="Progress entry"
-      list={{ href: '/progress', label: 'Progress Entries' }}
+      list={{ href: '/progress', label: 'Progress entries' }}
       loading={isLoading}
       error={error}
       onRetry={() => refetch()}
@@ -43,7 +43,7 @@ export function ProgressRecord({ id, mode, open, onClose, onEdit }: RecordProps 
             { key: 'date', label: 'Date', children: formatDate(data.date) },
             { key: 'qty', label: 'Quantity', children: `${formatQty(data.quantity)} ${data.unit}` },
             { key: 'activity', label: 'Activity', children: data.activityName },
-            { key: 'location', label: 'Location / Chainage', children: [data.location, sectorLocation(data)].filter((x, i, a) => x && a.indexOf(x) === i).join(' · ') || '-' },
+            { key: 'location', label: 'Location / chainage', children: [data.location, sectorLocation(data)].filter((x, i, a) => x && a.indexOf(x) === i).join(' · ') || '-' },
             { key: 'manpower', label: 'Manpower', children: data.manpowerCount ?? '-' },
             { key: 'machinery', label: 'Machinery used', children: data.machineryUsed ?? '-' },
             ...submissionMetaItems(data).filter((i) => i.key !== 'status'),

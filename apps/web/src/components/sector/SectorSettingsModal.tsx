@@ -85,7 +85,7 @@ export function SectorSettingsModal({ open, onClose, project }: { open: boolean;
         ) : null}
         {k.floor ? (
           <Form.Item name="floors" label="Floors, bottom up" extra="Type a floor and press Enter. Site entries pick one of these.">
-            <Select mode="tags" tokenSeparators={[',']} open={false} placeholder="Foundation, Plinth, Ground floor..." />
+            <Select mode="tags" tokenSeparators={[',']} open={false} placeholder="Foundation, plinth, ground floor…" />
           </Form.Item>
         ) : null}
         {k.village ? (

@@ -8,9 +8,9 @@ import { DprList } from '@/components/dpr/DprList';
 export default function Page() {
   return (
     <div className="page-container">
-      <PageHeader title="Daily Progress Reports" subtitle="Site diary: manpower, machinery, work executed, safety and issues" />
+      <PageHeader title="Daily reports" subtitle="Site diary: manpower, machinery, work executed, safety and issues" />
       <Card size="small">
-        <DprList newLabel="New DPR" />
+        <DprList newLabel="New daily report" />
       </Card>
     </div>
   );

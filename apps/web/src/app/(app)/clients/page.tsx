@@ -66,7 +66,7 @@ export default function ClientsPage() {
           </div>
         ),
       },
-      { key: 'gstin', title: 'GSTIN', dataIndex: 'gstin', width: 190, render: (v: string | null) => (v ? <span className="mono">{v}</span> : '-') },
+      { key: 'gstin', title: 'GSTIN', dataIndex: 'gstin', width: 190, render: (v: string | null) => (v ? <span className="mono" translate="no">{v}</span> : '-') },
       { key: 'stateCode', title: 'State', dataIndex: 'stateCode', width: 170, render: (v: string | null) => (v ? `${v} ${GST_STATES[v] ?? ''}` : '-') },
       {
         title: 'Contact',

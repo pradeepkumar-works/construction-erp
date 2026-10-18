@@ -105,7 +105,7 @@ function NotificationsPageInner() {
         extra={
           <Space wrap>
             <Button icon={<MessageOutlined />} onClick={() => setSettings(true)}>
-              WhatsApp & SMS
+              WhatsApp and SMS
             </Button>
             <Button icon={<CheckOutlined />} disabled={unread === 0} loading={markAll.isPending} onClick={() => markAll.mutate(kind === 'ALL' ? undefined : kind)}>
               Mark all as read
@@ -128,7 +128,7 @@ function NotificationsPageInner() {
               },
               {
                 key: 'messages',
-                label: 'WhatsApp & SMS log',
+                label: 'WhatsApp and SMS log',
                 children: <MessageLog />,
               },
             ]}

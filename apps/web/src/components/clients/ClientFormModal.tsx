@@ -80,7 +80,7 @@ export function ClientFormModal({ open, client, onClose, onSaved }: { open: bool
   });
 
   return (
-    <FormShell open={open} onClose={onClose} form={form} layout="drawer" title={client ? `Edit ${client.name}` : 'New client'} okText={client ? 'Save changes' : 'Add client'} onSubmit={(v) => save.mutateAsync(v)}>
+    <FormShell open={open} onClose={onClose} form={form} layout="drawer" title={client ? `Edit ${client.name}` : 'New client'} okText={client ? 'Save changes' : 'Save client'} onSubmit={(v) => save.mutateAsync(v)}>
       <Form form={form} layout="vertical">
         <FormSection title="Client">
           <Form.Item name="name" label="Client name" rules={[{ required: true, whitespace: true, message: 'Enter the client name' }]}>

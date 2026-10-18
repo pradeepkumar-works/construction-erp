@@ -32,7 +32,7 @@ function Reports() {
 
   return (
     <div className="page-container">
-      <PageHeader title="Progress Reports" subtitle="Weekly and monthly progress report from approved data, ready to print or save as PDF." />
+      <PageHeader title="Progress reports" subtitle="Weekly and monthly progress report from approved data, ready to print or save as PDF." />
       <ProgressReportView
         projectId={projectId}
         picker={

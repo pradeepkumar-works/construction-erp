@@ -95,7 +95,7 @@ export function DocumentFormModal({ open, onClose, projectId, doc, onSaved }: { 
   });
 
   return (
-    <FormShell open={open} onClose={onClose} form={form} layout="drawer" width={680} title={doc ? `Edit ${doc.docNo}` : 'Add drawing or document'} okText={editing ? 'Save' : 'Add'} onSubmit={(v) => mutation.mutateAsync(v)}>
+    <FormShell open={open} onClose={onClose} form={form} layout="drawer" width={680} title={doc ? `Edit ${doc.docNo}` : 'New drawing or document'} okText="Save" onSubmit={(v) => mutation.mutateAsync(v)}>
       <Form form={form} layout="vertical">
         {!editing && !readState ? (
           <Flex justify="flex-end" style={{ marginBottom: 8 }}>

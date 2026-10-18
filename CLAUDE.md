@@ -77,6 +77,8 @@ cd e2e && npx playwright test         # browser tests; needs API + web running (
   the header's breadcrumb, so a page never draws a second one. A link styled as a button is `LinkButton`
   (`components/common/LinkButton.tsx`), never a `Button` inside a `Link`. Single-key shortcuts check `singleKeysOn()`
   (`src/lib/shortcuts.ts`, off from Help > Keyboard shortcuts); Ask is Alt J (⌘J on a Mac), never Ctrl J.
+- Words: follow `docs/WRITING.md` (sentence case, one name per module in nav, page title and Search, New / Record / Report /
+  Request for create, errors that say what to do, `…`, money through `format.ts`, `translate="no"` on numbers and names).
 - Accessibility (WCAG 2.2 AA, `e2e/tests/accessibility.spec.ts` runs axe on the main pages in both themes): text colours come
   from tokens, never antd's raw `colorWarning`/`colorSuccess` for text (use the `…Text` token); a filter or search control outside a
   labelled `Form.Item` gets an `aria-label` (`ListToolbar` takes `searchLabel`), a `Progress` gets one too; buttons beside a

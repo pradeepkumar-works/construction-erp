@@ -9,11 +9,11 @@ import { useAuth } from '@/lib/auth';
 
 /** Label for the edit / resubmit action, by the entry's current status. */
 export function editActionLabel(status: SubmissionBase['status']) {
-  return status === 'DRAFT' ? 'Edit & submit' : 'Edit & resubmit';
+  return status === 'DRAFT' ? 'Edit and submit' : 'Edit and resubmit';
 }
 
 /**
- * "Edit & resubmit" for the author of a rejected / changes-requested entry (or an approver).
+ * "Edit and resubmit" for the author of a rejected / changes-requested entry (or an approver).
  * Renders nothing when the current user cannot resubmit this entry.
  */
 export function EditResubmitButton<T extends SubmissionBase>({

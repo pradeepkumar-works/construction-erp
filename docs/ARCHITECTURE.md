@@ -498,7 +498,7 @@ flow, not `SubmissionLifecycleService`: it is a person's request, not site data 
   admin (any time) cancels.
 - **Notification.** `LEAVE`: an application goes to HR managers and the posting's project manager (admins and
   management when the company has no HR); a decision goes to the employee and whoever applied.
-- **Clients.** Web: People → Staff & Leave with tabs My attendance & leave, Leave (`?leave=` opens one), Staff
+- **Clients.** Web: People → Staff and leave with tabs My attendance and leave, Leave (`?leave=` opens one), Staff
   register, Staff and Holidays. Site app: My attendance & leave (`app/staff.tsx`: check in and out, balances, apply,
   leave waiting on you) and Staff register (`app/staff-register.tsx`).
 

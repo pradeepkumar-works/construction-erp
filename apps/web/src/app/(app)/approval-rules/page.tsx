@@ -120,7 +120,7 @@ export default function ApprovalRulesPage() {
   if (!admin) {
     return (
       <div className="page-container">
-        <PageHeader title="Approval Rules" />
+        <PageHeader title="Approval rules" />
         <Alert type="info" showIcon title="Only an admin can see and change the approval rules." />
       </div>
     );
@@ -129,7 +129,7 @@ export default function ApprovalRulesPage() {
   return (
     <div className="page-container">
       <PageHeader
-        title="Approval Rules"
+        title="Approval rules"
         subtitle="Which roles approve which submissions, and up to what amount. Anything above a limit goes to a role with a higher (or no) limit. Admin can always approve everything."
         extra={
           <Space wrap>

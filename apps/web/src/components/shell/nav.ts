@@ -76,10 +76,16 @@ import {
   canHoldImprest,
   canManageImprest,
   canApprove,
+  canMeasure,
+  canPurchase,
+  canReportSafety,
+  canViewWorkers,
   canViewCompliance,
   canManageAi,
   canSeeWatchList,
+  canSubmitExpense,
   isGuest,
+  mayApprove,
 } from '@erp/shared';
 
 export type NavIcon = React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>;
@@ -122,14 +128,17 @@ export function navFor(user: AuthUser): NavSection[] {
     ];
   }
   const role = user.roleKey;
+  // The site team and the managers over it: every role that reports from site (safety, delays, defects). Site-only modules
+  // (daily reports, progress, quality…) are theirs; an office role such as accounts or HR does not get them.
+  const onSite = canReportSafety(role);
   const approves = (type: string) => approvalRightsOf(user).some((r) => r.type === type);
   const sections: NavSection[] = [
     {
       key: 'top',
       items: [
-        { href: '/', label: 'Dashboard', icon: AppstoreOutlined, keywords: 'home overview kpi' },
+        { href: '/', label: 'Home', icon: AppstoreOutlined, keywords: 'dashboard overview kpi my work' },
         { href: '/projects', label: 'Projects', icon: ProjectOutlined, keywords: 'sites boq contract' },
-        { href: '/approvals', label: 'Approvals', icon: CheckSquareOutlined, keywords: 'pending queue approve', approvals: true },
+        ...when(mayApprove(user), { href: '/approvals', label: 'Approvals', icon: CheckSquareOutlined, keywords: 'pending queue approve inbox', approvals: true }),
         ...when(canSeeWatchList(role), { href: '/watch-list', label: 'Watch list', icon: EyeOutlined, keywords: 'early warnings alerts forecast risk slipping cash gap running out' }),
       ],
     },
@@ -138,26 +147,26 @@ export function navFor(user: AuthUser): NavSection[] {
       title: 'Site',
       icon: BuildOutlined,
       items: [
-        { href: '/dpr', label: 'Daily Reports', icon: FileTextOutlined, keywords: 'dpr daily progress report diary' },
-        { href: '/attendance', label: 'Attendance', icon: ScheduleOutlined, keywords: 'labour manpower muster' },
-        { href: '/progress', label: 'Progress Entries', icon: LineChartOutlined, keywords: 'work done quantity' },
-        { href: '/measurements', label: 'Measurement Book', icon: CalculatorOutlined, keywords: 'mb measurements' },
-        { href: '/inspections', label: 'Quality', icon: SafetyOutlined, keywords: 'qa qc inspections tests ncr hold point' },
+        ...when(onSite, { href: '/dpr', label: 'Daily reports', icon: FileTextOutlined, keywords: 'dpr daily progress report diary' }),
+        ...when(onSite || canViewWorkers(role), { href: '/attendance', label: 'Attendance', icon: ScheduleOutlined, keywords: 'labour manpower muster workers' }),
+        ...when(onSite, { href: '/progress', label: 'Progress entries', icon: LineChartOutlined, keywords: 'work done quantity' }),
+        ...when(canMeasure(role), { href: '/measurements', label: 'Measurement book', icon: CalculatorOutlined, keywords: 'mb measurements' }),
+        ...when(onSite, { href: '/inspections', label: 'Quality', icon: SafetyOutlined, keywords: 'qa qc inspections tests ncr hold point' }),
         { href: '/documents', label: 'Documents', icon: FolderOpenOutlined, keywords: 'drawings files rfi' },
-        { href: '/expenses', label: 'Site Expenses', icon: WalletOutlined, keywords: 'petty cash imprest' },
-        ...when(canHoldImprest(role) || canManageImprest(role) || canApprove(role), { href: '/imprest', label: 'Site Imprest', icon: MoneyCollectOutlined, keywords: 'petty cash float top-up' }),
-        { href: '/risks', label: 'Delays & Risks', icon: AlertOutlined, keywords: 'hindrance issues' },
-        { href: '/safety', label: 'Safety', icon: MedicineBoxOutlined, keywords: 'incident near miss toolbox talk permit to work ppe accident' },
+        ...when(canSubmitExpense(role) || canViewCost(role), { href: '/expenses', label: 'Site expenses', icon: WalletOutlined, keywords: 'petty cash imprest' }),
+        ...when(canHoldImprest(role) || canManageImprest(role) || canApprove(role), { href: '/imprest', label: 'Site imprest', icon: MoneyCollectOutlined, keywords: 'petty cash float top-up' }),
+        ...when(onSite || canViewContract(role), { href: '/risks', label: 'Delays and risks', icon: AlertOutlined, keywords: 'hindrance issues eot ld' }),
+        ...when(onSite, { href: '/safety', label: 'Safety', icon: MedicineBoxOutlined, keywords: 'incident near miss toolbox talk permit to work ppe accident' }),
       ],
     },
     {
       key: 'materials',
-      title: 'Materials & plant',
+      title: 'Materials and plant',
       icon: InboxOutlined,
       items: [
-        { href: '/material-requests', label: 'Material Requests', icon: ShoppingCartOutlined, keywords: 'indent mr' },
-        { href: '/stock', label: 'Stock', icon: InboxOutlined, keywords: 'inventory grn store issue' },
-        { href: '/machinery', label: 'Machinery', icon: ToolOutlined, keywords: 'plant equipment fuel hours' },
+        ...when(onSite || canPurchase(role), { href: '/material-requests', label: 'Material requests', icon: ShoppingCartOutlined, keywords: 'indent mr' }),
+        ...when(onSite || canPurchase(role) || canViewCost(role), { href: '/stock', label: 'Stock', icon: InboxOutlined, keywords: 'inventory grn store issue' }),
+        ...when(onSite || canPurchase(role), { href: '/machinery', label: 'Machinery', icon: ToolOutlined, keywords: 'plant equipment fuel hours' }),
       ],
     },
     {
@@ -165,10 +174,10 @@ export function navFor(user: AuthUser): NavSection[] {
       title: 'Purchases',
       icon: ShoppingCartOutlined,
       items: [
-        ...when(canViewPurchaseOrders(role), { href: '/purchase-orders', label: 'Purchase Orders', icon: ContainerOutlined, keywords: 'po' }),
-        ...when(canViewVendorBills(role), { href: '/vendor-bills', label: 'Vendor Bills', icon: ReconciliationOutlined, keywords: 'supplier invoice' }),
-        ...when(canViewWorkOrders(role), { href: '/work-orders', label: 'Work Orders', icon: SolutionOutlined, keywords: 'wo subcontract' }),
-        ...when(canPrepareSubcontractBill(role) || approves('SUBCONTRACT_BILL'), { href: '/subcontract-bills', label: 'Subcontractor Bills', icon: ProfileOutlined, keywords: 'petty contractor' }),
+        ...when(canViewPurchaseOrders(role), { href: '/purchase-orders', label: 'Purchase orders', icon: ContainerOutlined, keywords: 'po' }),
+        ...when(canViewVendorBills(role), { href: '/vendor-bills', label: 'Vendor bills', icon: ReconciliationOutlined, keywords: 'supplier invoice' }),
+        ...when(canViewWorkOrders(role), { href: '/work-orders', label: 'Work orders', icon: SolutionOutlined, keywords: 'wo subcontract' }),
+        ...when(canPrepareSubcontractBill(role) || approves('SUBCONTRACT_BILL'), { href: '/subcontract-bills', label: 'Subcontractor bills', icon: ProfileOutlined, keywords: 'petty contractor' }),
         ...when(canViewPayables(role), { href: '/payables', label: 'Payables', icon: PayCircleOutlined, keywords: 'payments due msme' }),
         ...when(canEditVendors(role) || canSeeVendorBank(role), { href: '/vendors', label: 'Vendors', icon: ShopOutlined, keywords: 'suppliers' }),
       ],
@@ -178,13 +187,13 @@ export function navFor(user: AuthUser): NavSection[] {
       title: 'Billing',
       icon: FileDoneOutlined,
       items: [
-        ...when(canPrepareBill(role) || approves('BILL'), { href: '/bills', label: 'RA Bills', icon: FileDoneOutlined, keywords: 'running account invoice client bill' }),
+        ...when(canPrepareBill(role) || approves('BILL'), { href: '/bills', label: 'RA bills', icon: FileDoneOutlined, keywords: 'running account invoice client bill' }),
         ...when(canViewVariations(role), { href: '/variations', label: 'Variations', icon: DiffOutlined, keywords: 'extra items deviation' }),
         ...when(canViewContract(role), { href: '/receivables', label: 'Receivables', icon: AccountBookOutlined, keywords: 'collections retention' }),
         ...when(canViewContract(role) || canEditContract(role), { href: '/clients', label: 'Clients', icon: BankOutlined, keywords: 'customers' }),
-        ...when(canViewCompliance(role), { href: '/compliance', label: 'Guarantees & Licences', icon: AuditOutlined, keywords: 'bank guarantee bg insurance car policy licence labour expiry' }),
-        ...when(canViewGstRegisters(role), { href: '/gst', label: 'GST Registers', icon: PercentageOutlined, keywords: 'tax gstr' }),
-        ...when(canExportTally(role), { href: '/tally', label: 'Tally Export', icon: ExportOutlined, keywords: 'accounts vouchers' }),
+        ...when(canViewCompliance(role), { href: '/compliance', label: 'Guarantees and licences', icon: AuditOutlined, keywords: 'bank guarantee bg insurance car policy licence labour expiry' }),
+        ...when(canViewGstRegisters(role), { href: '/gst', label: 'GST registers', icon: PercentageOutlined, keywords: 'tax gstr' }),
+        ...when(canExportTally(role), { href: '/tally', label: 'Tally export', icon: ExportOutlined, keywords: 'accounts vouchers' }),
       ],
     },
     {
@@ -192,8 +201,8 @@ export function navFor(user: AuthUser): NavSection[] {
       title: 'People',
       icon: TeamOutlined,
       items: [
-        { href: '/staff', label: 'Staff & Leave', icon: IdcardOutlined, keywords: 'employees hr' },
-        ...when(canViewPayroll(role) || canViewLabourSummary(role), { href: '/payroll', label: 'Payroll Inputs', icon: CarryOutOutlined, keywords: 'salary wages' }),
+        { href: '/staff', label: 'Staff and leave', icon: IdcardOutlined, keywords: 'employees hr' },
+        ...when(canViewPayroll(role) || canViewLabourSummary(role), { href: '/payroll', label: 'Payroll inputs', icon: CarryOutOutlined, keywords: 'salary wages' }),
       ],
     },
     {
@@ -201,8 +210,8 @@ export function navFor(user: AuthUser): NavSection[] {
       title: 'Reports',
       icon: BarChartOutlined,
       items: [
-        { href: '/reports', label: 'Progress Reports', icon: FilePdfOutlined, keywords: 'pdf mis monthly' },
-        ...when(canViewCost(role), { href: '/cost', label: 'Project Cost', icon: FundOutlined, keywords: 'budget cash flow margin' }),
+        ...when(onSite || canViewContract(role), { href: '/reports', label: 'Progress reports', icon: FilePdfOutlined, keywords: 'pdf mis monthly weekly' }),
+        ...when(canViewCost(role), { href: '/cost', label: 'Project cost', icon: FundOutlined, keywords: 'budget cash flow margin' }),
       ],
     },
     {
@@ -210,15 +219,15 @@ export function navFor(user: AuthUser): NavSection[] {
       title: 'Admin',
       icon: SettingOutlined,
       items: [
-        ...when(canEditProjects(role), { href: '/templates', label: 'Activity Templates', icon: PartitionOutlined, keywords: 'wbs' }),
+        ...when(canEditProjects(role), { href: '/templates', label: 'Activity templates', icon: PartitionOutlined, keywords: 'wbs' }),
         ...when(
           canManageUsers(role),
           { href: '/users', label: 'Users', icon: TeamOutlined, keywords: 'invite roles access' },
-          { href: '/approval-rules', label: 'Approval Rules', icon: SafetyCertificateOutlined, keywords: 'matrix limits' },
+          { href: '/approval-rules', label: 'Approval rules', icon: SafetyCertificateOutlined, keywords: 'matrix limits' },
         ),
-        ...when(canManageCompanyData(role), { href: '/company-data', label: 'Data & Privacy', icon: DatabaseOutlined, keywords: 'export delete' }),
+        ...when(canManageCompanyData(role), { href: '/company-data', label: 'Data and privacy', icon: DatabaseOutlined, keywords: 'export delete' }),
         ...when(canManageAi(role), { href: '/ai-settings', label: `Ask ${PRODUCT_NAME}`, icon: SparkleIcon, keywords: 'ai assistant chat allowance' }),
-        ...when(!!user.billing && canManageBilling(role), { href: '/billing', label: 'Billing', icon: CreditCardOutlined, keywords: 'subscription plan invoice' }),
+        ...when(!!user.billing && canManageBilling(role), { href: '/billing', label: 'Subscription', icon: CreditCardOutlined, keywords: 'billing plan invoice pay renew' }),
         ...when(!!user.platformAdmin, { href: '/platform', label: `${PRODUCT_NAME} console`, icon: CloudServerOutlined, keywords: 'platform companies support' }),
       ],
     },

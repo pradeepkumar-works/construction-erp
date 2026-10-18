@@ -55,7 +55,7 @@ export function VariationDrawer({ id, open, onClose }: { id: string | null; open
       key: 'item',
       render: (_: unknown, l: VariationLineDto) => (
         <div>
-          <span className="mono">{l.itemNo}</span> {l.description}
+          <span className="mono" translate="no">{l.itemNo}</span> {l.description}
           {l.isNewItem ? (
             <Tag color="orange" style={{ marginLeft: 6 }}>
               New item
@@ -137,8 +137,8 @@ export function VariationDrawer({ id, open, onClose }: { id: string | null; open
               { key: 'cause', label: 'Cause', children: VARIATION_CAUSE_LABELS[data.cause] },
               { key: 'by', label: 'Prepared by', children: `${data.createdByName}, ${formatDate(data.createdAt.slice(0, 10))}` },
               ...(data.description ? [{ key: 'desc', label: 'Justification', span: 2, children: <span style={{ whiteSpace: 'pre-wrap' }}>{data.description}</span> }] : []),
-              { key: 'claimed', label: 'Claimed', children: <span className="mono">{formatINR(data.claimedAmount)}</span> },
-              { key: 'approved', label: 'Approved', children: data.approvedAmount ? <strong className="mono">{formatINR(data.approvedAmount)}</strong> : '-' },
+              { key: 'claimed', label: 'Claimed', children: <span className="mono" translate="no">{formatINR(data.claimedAmount)}</span> },
+              { key: 'approved', label: 'Approved', children: data.approvedAmount ? <strong className="mono" translate="no">{formatINR(data.approvedAmount)}</strong> : '-' },
               ...(data.submittedDate ? [{ key: 'sent', label: 'Sent to client', span: 2, children: `${formatDate(data.submittedDate)}${data.submittedRef ? `, our ref ${data.submittedRef}` : ''}` }] : []),
               ...(data.decidedDate
                 ? [
@@ -287,7 +287,7 @@ function DecisionModal({ open, onClose, variation }: { open: boolean; onClose: (
                     return (
                       <div key={f.key} style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 140px 160px', gap: '0 12px', alignItems: 'center' }}>
                         <div style={{ paddingBottom: 24 }}>
-                          <span className="mono">{l.itemNo}</span> {l.description}
+                          <span className="mono" translate="no">{l.itemNo}</span> {l.description}
                           <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                             Claimed {formatQty(l.qty)} {l.unit} @ {formatINR(l.rate, true)}
                           </div>
@@ -302,7 +302,7 @@ function DecisionModal({ open, onClose, variation }: { open: boolean; onClose: (
                           </Form.Item>
                         ) : (
                           <Form.Item label="Rate">
-                            <span className="mono">{formatINR(l.rate, true)}</span>
+                            <span className="mono" translate="no">{formatINR(l.rate, true)}</span>
                           </Form.Item>
                         )}
                       </div>
@@ -312,7 +312,7 @@ function DecisionModal({ open, onClose, variation }: { open: boolean; onClose: (
               )}
             </Form.List>
             <Typography.Paragraph>
-              Approved <strong className="mono">{formatINR(approvedTotal)}</strong> of {formatINR(variation.claimedAmount)} claimed. Recording this changes the BOQ quantities and adds new items to the BOQ.
+              Approved <strong className="mono" translate="no">{formatINR(approvedTotal)}</strong> of {formatINR(variation.claimedAmount)} claimed. Recording this changes the BOQ quantities and adds new items to the BOQ.
             </Typography.Paragraph>
           </>
         ) : null}

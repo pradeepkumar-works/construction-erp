@@ -11,9 +11,9 @@ test('a project opens in groups, keeps its last tab and still takes old tab link
   await expect(bar.getByRole('tab')).toHaveText(['Overview', 'Plan', 'Site', 'Materials', 'Money', 'Handover']);
   await expect(page.getByRole('list', { name: 'Project health' }).first()).toContainText('Schedule');
 
-  await openProjectTab(page, 'Site', 'Daily Reports');
+  await openProjectTab(page, 'Site', 'Daily reports');
   await expect(page).toHaveURL(/\?tab=dpr$/);
-  await expect(page.getByRole('tabpanel', { name: 'Daily Reports' })).toBeVisible();
+  await expect(page.getByRole('tabpanel', { name: 'Daily reports' })).toBeVisible();
   const projectUrl = page.url().replace(/\?.*$/, '');
 
   // A group opens on the tab last used in it.
@@ -24,7 +24,7 @@ test('a project opens in groups, keeps its last tab and still takes old tab link
 
   // Coming back to the project opens the tab last used on it.
   await page.goto(projectUrl);
-  await expect(projectTabs(page, 'Site').getByRole('radio', { name: 'Daily Reports' })).toBeChecked();
+  await expect(projectTabs(page, 'Site').getByRole('radio', { name: 'Daily reports' })).toBeChecked();
 
   // Links from before the groups still open their tab.
   await page.goto(`${projectUrl}?tab=stock`);

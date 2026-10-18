@@ -76,7 +76,7 @@ export function EmployeeFormModal({ open, onClose, employee, onSaved }: { open: 
 
   return (
     // Blank Posted at is head office, so the header's project is not put in.
-    <FormShell open={open} onClose={onClose} form={form} layout="modal" title={employee ? `Edit ${employee.fullName}` : 'Add staff'} okText={editing ? 'Save' : 'Add'} onSubmit={(v) => mutation.mutateAsync(v)} projectDefault={false}>
+    <FormShell open={open} onClose={onClose} form={form} layout="modal" title={employee ? `Edit ${employee.fullName}` : 'New staff member'} okText="Save" onSubmit={(v) => mutation.mutateAsync(v)} projectDefault={false}>
       <Form form={form} layout="vertical">
         <FormGrid cols={2}>
           <Form.Item name="fullName" label="Name" rules={[{ required: true, whitespace: true, message: 'Enter the name' }]}>

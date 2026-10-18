@@ -57,7 +57,7 @@ export function ContractPanel({ projectId }: { projectId: string }) {
             )}
           </Descriptions.Item>
           <Descriptions.Item label="Client GSTIN">
-            {c.client?.gstin ?? '-'}
+            {c.client?.gstin ? <span translate="no">{c.client.gstin}</span> : '-'}
             {c.client?.stateCode && <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{GST_STATES[c.client.stateCode] ?? c.client.stateCode}</div>}
           </Descriptions.Item>
           <Descriptions.Item label="Work order">{c.workOrderNo ?? '-'}</Descriptions.Item>

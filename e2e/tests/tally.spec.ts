@@ -23,7 +23,7 @@ test('export vouchers to Tally, lock them, and undo the export', async ({ page }
   expect(waiting.some((v) => v.kind === 'RECEIPT')).toBe(true);
 
   await signIn(page, 'accounts@demo.com');
-  await page.getByRole('link', { name: 'Tally Export' }).click();
+  await page.getByRole('link', { name: 'Tally export' }).click();
   await page.getByRole('tab', { name: 'Ledgers' }).click();
   await page.getByPlaceholder('The company open in Tally').fill('E2E Infra Pvt Ltd');
   await page.getByLabel('Tally ledger for Work value of RA bills').fill('Contract Receipts');
@@ -68,5 +68,5 @@ test('a site engineer cannot export to Tally', async ({ page }) => {
   const engineer = await apiToken('engineer@demo.com');
   expect((await fetch(`${API_URL}/tally/preview?upTo=${upTo()}`, { headers: { authorization: `Bearer ${engineer}` } })).status).toBe(403);
   await signIn(page, 'engineer@demo.com');
-  await expect(page.getByRole('link', { name: 'Tally Export' })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Tally export' })).toHaveCount(0);
 });

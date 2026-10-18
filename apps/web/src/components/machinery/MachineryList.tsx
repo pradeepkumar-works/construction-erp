@@ -62,7 +62,7 @@ export function MachineryList({ projectId: fixedProject }: { projectId?: string 
 
   const newButton = mayLog ? (
     <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
-      Log machinery
+      New machinery log
     </Button>
   ) : null;
 

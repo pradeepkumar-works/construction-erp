@@ -97,7 +97,7 @@ export function NcrList({ projectId: fixedProject, onOpen }: { projectId?: strin
 
   const newButton = user && canRaiseNcr(user.roleKey) ? (
     <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
-      Raise NCR
+      New NCR
     </Button>
   ) : null;
 

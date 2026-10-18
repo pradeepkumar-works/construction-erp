@@ -114,7 +114,7 @@ export function PaymentFormModal({ open, onClose, bill, payment }: { open: boole
       onClose={onClose}
       form={form}
       layout="modal"
-      title={editing ? `Correct payment · ${payment.billLabel}` : bill ? `Pay ${bill.vendorName} · ${bill.billLabel}` : 'Record a payment'}
+      title={editing ? `Correct payment · ${payment.billLabel}` : bill ? `Pay ${bill.vendorName} · ${bill.billLabel}` : 'Record payment'}
       okText={editing ? 'Save' : 'Record payment'}
       onSubmit={(v) => mutation.mutateAsync(v)}
     >

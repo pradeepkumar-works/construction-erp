@@ -291,7 +291,7 @@ export function WorkOrderFormModal({
                       );
                     },
                   },
-                  { title: 'Amount', key: 'amount', width: 130, align: 'right', render: (_, f) => <span className="mono">{formatINR(lineAmount(lines?.[f.name]), true)}</span> },
+                  { title: 'Amount', key: 'amount', width: 130, align: 'right', render: (_, f) => <span className="mono" translate="no">{formatINR(lineAmount(lines?.[f.name]), true)}</span> },
                   {
                     title: '',
                     key: 'x',
@@ -350,9 +350,9 @@ export function WorkOrderFormModal({
               title={
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '4px 12px' }}>
                   <span>Work order value</span>
-                  <strong className="mono">{formatINR(value, true)}</strong>
+                  <strong className="mono" translate="no">{formatINR(value, true)}</strong>
                   <span>GST at {toNumber(gstRate)}%</span>
-                  <span className="mono">{formatINR(Math.round(value * toNumber(gstRate)) / 100, true)}</span>
+                  <span className="mono" translate="no">{formatINR(Math.round(value * toNumber(gstRate)) / 100, true)}</span>
                 </div>
               }
               description="Material issued to them from the store is recovered from their bills at the item's rate."

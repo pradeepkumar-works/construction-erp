@@ -3,7 +3,7 @@ import type { RaBillDto } from '@erp/shared';
 import { BILL_STAGE_LABELS, GST_STATES } from '@erp/shared';
 import { AUTO_PRINT_SCRIPT, brandFooter, PRINT_BRAND_CSS, PRINT_FONT_LINKS } from '@/components/print/printBrand';
 import { BRAND } from '@/lib/brand';
-import { formatDate, formatDateTime, formatINR, formatQty, toNumber } from '@/lib/format';
+import { formatDate, formatDateTime, formatINR, formatQty, toNumber, RUPEE } from '@/lib/format';
 
 const esc = (v: unknown) =>
   String(v ?? '')
@@ -11,7 +11,7 @@ const esc = (v: unknown) =>
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
 
-const inr = (v: string | null | undefined) => esc(formatINR(v, true).replace('₹ ', ''));
+const inr = (v: string | null | undefined) => esc(formatINR(v, true).replace(RUPEE, ''));
 const qty = (v: string | null | undefined) => esc(v === null || v === undefined ? '' : formatQty(v));
 
 /** Rupees in words, Indian style: "Rupees Twelve Lakh Thirty Four Thousand ... and Fifty Paise Only". */

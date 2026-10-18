@@ -20,7 +20,7 @@ function RisksPage() {
   const seesLd = !!user && canViewContract(user.roleKey);
   return (
     <div className="page-container">
-      <PageHeader title="Delays & Risks" subtitle="What has held up work (days lost, who caused it, extension of time) and what might, scored probability × impact, with owners and due dates." />
+      <PageHeader title="Delays and risks" subtitle="What has held up work (days lost, who caused it, extension of time) and what might, scored probability × impact, with owners and due dates." />
       <Card size="small">
         {seesLd ? (
           <Tabs

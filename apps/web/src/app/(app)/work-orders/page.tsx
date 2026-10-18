@@ -10,7 +10,7 @@ function WorkOrdersPage() {
   const search = useSearchParams();
   return (
     <div className="page-container">
-      <PageHeader title="Work Orders" subtitle="Work given to subcontractors at agreed rates, with the retention, advance and TDS terms their bills follow." />
+      <PageHeader title="Work orders" subtitle="Work given to subcontractors at agreed rates, with the retention, advance and TDS terms their bills follow." />
       <Card size="small">
         <WorkOrderList openId={search.get('id')} />
       </Card>

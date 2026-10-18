@@ -35,12 +35,12 @@ import { RecordLink } from '@/components/record/RecordLink';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
-const money = (v: string, strong?: boolean) => (strong ? <strong className="mono">{formatINR(v)}</strong> : <span className="mono">{formatINR(v)}</span>);
+const money = (v: string, strong?: boolean) => (strong ? <strong className="mono" translate="no">{formatINR(v)}</strong> : <span className="mono" translate="no">{formatINR(v)}</span>);
 function Sub({ children }: { children: React.ReactNode }) {
   const { token } = theme.useToken();
   return <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{children}</div>;
 }
-const late = (v: string) => (toNumber(v) > 0 ? <span className="mono" style={{ color: themeColor('colorErrorText') }}>{formatINR(v)}</span> : <span className="mono text-muted">-</span>);
+const late = (v: string) => (toNumber(v) > 0 ? <span className="mono" translate="no" style={{ color: themeColor('colorErrorText') }}>{formatINR(v)}</span> : <span className="mono text-muted" translate="no">-</span>);
 
 /** Ageing columns shared by the project and client tables (keys are stable: the column chooser keeps them). */
 function ageingColumns<T extends ProjectReceivableDto | ClientReceivableDto>(): ListColumn<T>[] {
@@ -134,7 +134,7 @@ function ReceiptsTab({ projectId }: { projectId?: string }) {
       render: (_, r) => (
         <span>
           {RECEIPT_MODE_LABELS[r.mode]}
-          {r.reference ? <span className="mono text-muted"> · {r.reference}</span> : null}
+          {r.reference ? <span className="mono text-muted" translate="no"> · {r.reference}</span> : null}
         </span>
       ),
     },

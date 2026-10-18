@@ -21,7 +21,7 @@ import { LocalDataTable } from '@/components/list/LocalDataTable';
 import type { ListColumn } from '@/components/list/DataTable';
 import { themeFontSize } from '@/lib/theme';
 
-const money = (v: string | number) => <span className="mono">{formatINR(v)}</span>;
+const money = (v: string | number) => <span className="mono" translate="no">{formatINR(v)}</span>;
 const taxColumns = <T extends { igst: string; cgst: string; sgst: string }>(): ListColumn<T>[] => [
   { key: 'igst', title: 'IGST', dataIndex: 'igst', width: 120, align: 'right', render: money },
   { key: 'cgst', title: 'CGST', dataIndex: 'cgst', width: 120, align: 'right', render: money },
@@ -54,7 +54,7 @@ function GstRegistersPage() {
   if (user && !canViewGstRegisters(user.roleKey))
     return (
       <div className="page-container">
-        <PageHeader title="GST Registers" />
+        <PageHeader title="GST registers" />
         <Alert type="warning" showIcon title="Only admin, management and accounts see the GST registers." />
       </div>
     );
@@ -86,8 +86,8 @@ function GstRegistersPage() {
       render: (_, r) => (
         <div>
           {r.recipientName} <Tag style={{ marginLeft: 4 }}>{r.section}</Tag>
-          <div className="text-muted mono" style={{ fontSize: themeFontSize('fontSizeSM') }}>
-            {r.recipientGstin ?? 'Unregistered'} · {placeOfSupply(r.placeOfSupply) || 'place of supply not known'}
+          <div className="text-muted mono" translate="no" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+            {r.recipientGstin ? <span translate="no">{r.recipientGstin}</span> : 'Unregistered'} · {placeOfSupply(r.placeOfSupply) || 'place of supply not known'}
           </div>
         </div>
       ),
@@ -96,7 +96,7 @@ function GstRegistersPage() {
     { key: 'rate', title: 'Rate', dataIndex: 'rate', width: 70, align: 'right', render: (v) => `${toNumber(v)}%` },
     { key: 'taxable', title: 'Taxable value', dataIndex: 'taxable', width: 140, align: 'right', render: money },
     ...taxColumns<Keyed<GstOutwardRowDto>>(),
-    { key: 'invoiceValue', title: 'Invoice value', dataIndex: 'invoiceValue', card: 'amount', width: 140, align: 'right', render: (v) => <strong className="mono">{formatINR(v)}</strong> },
+    { key: 'invoiceValue', title: 'Invoice value', dataIndex: 'invoiceValue', card: 'amount', width: 140, align: 'right', render: (v) => <strong className="mono" translate="no">{formatINR(v)}</strong> },
   ];
   const inwardColumns: ListColumn<Keyed<GstInwardRowDto>>[] = [
     {
@@ -108,7 +108,7 @@ function GstRegistersPage() {
       width: 190,
       render: (_, r) => (
         <div>
-          <span className="mono">{r.invoiceNo ?? <Typography.Text type="warning">no invoice no.</Typography.Text>}</span>
+          <span className="mono" translate="no">{r.invoiceNo ?? <Typography.Text type="warning">no invoice no.</Typography.Text>}</span>
           <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
             {formatDate(r.invoiceDate)}
           </div>
@@ -129,7 +129,7 @@ function GstRegistersPage() {
             </Tag>
           )}
           <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
-            <span className="mono">{r.supplierGstin ?? '-'}</span> · {GST_SOURCE_LABELS[r.source]} {r.ref} · {r.projectCode}
+            <span className="mono" translate="no">{r.supplierGstin ?? '-'}</span> · {GST_SOURCE_LABELS[r.source]} {r.ref} · {r.projectCode}
           </div>
         </div>
       ),
@@ -146,7 +146,7 @@ function GstRegistersPage() {
   return (
     <div className="page-container">
       <PageHeader
-        title="GST Registers"
+        title="GST registers"
         subtitle="Outward supplies from approved RA bills in the GSTR-1 layout, and input tax from vendor bills, subcontractor bills and site expenses to reconcile with GSTR-2B."
         extra={
           <DatePicker.RangePicker presets={rangePresets()}
@@ -268,7 +268,7 @@ function GstRegistersPage() {
                   scroll={{ x: 900 }}
                   locale={{ emptyText: 'No outward supply in this period' }}
                   columns={[
-                    { title: 'SAC', key: 'sac', width: 90, render: () => <span className="mono">{CONSTRUCTION_SAC}</span> },
+                    { title: 'SAC', key: 'sac', width: 90, render: () => <span className="mono" translate="no">{CONSTRUCTION_SAC}</span> },
                     { title: 'Rate', dataIndex: 'rate', width: 80, align: 'right', render: (v: number) => `${v}%` },
                     { title: 'Total value', dataIndex: 'value', align: 'right', render: money },
                     { title: 'Taxable value', dataIndex: 'taxable', align: 'right', render: money },

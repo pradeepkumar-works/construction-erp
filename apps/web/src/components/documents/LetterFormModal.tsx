@@ -134,7 +134,7 @@ export function LetterFormModal({ open, onClose, projectId, letter, prefill, aiD
       form={form}
       layout="drawer"
       width={680}
-      title={letter ? `Edit ${letter.letterNo}` : prefill?.inReplyToId ? 'Reply' : 'Record a letter'}
+      title={letter ? `Edit ${letter.letterNo}` : prefill?.inReplyToId ? 'Reply' : 'Record letter'}
       okText={editing ? 'Save' : 'Record'}
       onSubmit={(v) => mutation.mutateAsync(v)}
       draftKey={editing || prefill ? undefined : `letter:${projectId ?? 'any'}`}

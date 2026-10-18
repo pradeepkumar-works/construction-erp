@@ -65,17 +65,17 @@ test('the unit master adds a unit that quantity fields then suggest', async ({ p
   await page.goto('/stock');
   await page.getByRole('tab', { name: 'Units' }).click();
   await expect(page.locator('.units-table')).toContainText('Cubic metre');
-  await page.getByRole('button', { name: 'Add unit' }).click();
-  const modal = page.locator('.ant-modal').filter({ hasText: 'Add unit' });
+  await page.getByRole('button', { name: 'New unit' }).click();
+  const modal = page.locator('.ant-modal').filter({ hasText: 'New unit' });
   await modal.getByLabel('Unit', { exact: true }).fill(code);
   await modal.getByLabel('Name').fill('E2E test unit');
-  await modal.getByRole('button', { name: 'Add unit' }).click();
+  await modal.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(page.getByText(`${code} saved`)).toBeVisible();
 
   // The item form suggests it.
   await page.getByRole('tab', { name: 'Item master' }).click();
-  await page.getByRole('button', { name: 'Add item' }).click();
-  const item = page.locator('.ant-modal').filter({ hasText: 'Add item' });
+  await page.getByRole('button', { name: 'New item' }).click();
+  const item = page.locator('.ant-modal').filter({ hasText: 'New item' });
   await item.getByLabel('Unit', { exact: true }).fill(code.slice(0, 5));
   await expect(page.locator('.ant-select-dropdown:not(.ant-select-dropdown-hidden)')).toContainText(`${code} · E2E test unit`);
   await item.getByRole('button', { name: 'Cancel' }).click();

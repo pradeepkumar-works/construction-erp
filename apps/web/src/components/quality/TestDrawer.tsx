@@ -103,7 +103,7 @@ export function TestDrawer({ id, open, onClose, onOpenNcr }: { id: string | null
                   })
                 }
               >
-                Raise NCR
+                New NCR
               </Button>
             ) : null}
             {mayEdit ? (

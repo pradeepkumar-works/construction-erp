@@ -39,15 +39,28 @@ interface SidebarProps {
 export function Sidebar({ user, sections, pendingCount, rail = false, onToggleRail, onNavigate }: SidebarProps) {
   const pathname = usePathname();
   const active = activeHref(pathname);
-  const [closed, setClosed] = useState<string[]>(() => readPref<string[]>(PREF_CLOSED, []));
+  // The sections someone closed stay closed for them on this browser.
+  const closedKey = `${PREF_CLOSED}.${user.id}`;
+  const [closed, setClosed] = useState<string[]>(() => readPref<string[]>(closedKey, []));
   const navRef = useRef<HTMLElement>(null);
 
-  const toggle = (key: string) =>
+  const top = sections.filter((sec) => !sec.title);
+  const groups = sections.filter((sec) => sec.title);
+  // The current page's section opens itself on arrival, without forgetting that it was closed (Favourites do not count).
+  const here = groups.find((sec) => !sec.exact && sec.items.some((i) => i.href === active))?.key;
+  const [opened, setOpened] = useState(here);
+  useEffect(() => setOpened(here), [active, here]);
+  const isOpen = (key: string) => !closed.includes(key) || opened === key;
+
+  const toggle = (key: string) => {
+    const close = isOpen(key);
+    if (close && opened === key) setOpened(undefined);
     setClosed((prev) => {
-      const next = prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key];
-      writePref(PREF_CLOSED, next);
+      const next = close ? [...prev.filter((k) => k !== key), key] : prev.filter((k) => k !== key);
+      writePref(closedKey, next);
       return next;
     });
+  };
 
   // Keep the current page in view when the list is longer than the window (scrolling only the list, not the page).
   useEffect(() => {
@@ -60,8 +73,6 @@ export function Sidebar({ user, sections, pendingCount, rail = false, onToggleRa
     else if (at.top < box.top) nav.scrollTop -= box.top - at.top + 24;
   }, [active, rail]);
 
-  const top = sections.filter((sec) => !sec.title);
-  const groups = sections.filter((sec) => sec.title);
   const countFor = (item: NavItem) => (item.approvals ? pendingCount : 0);
 
   return (
@@ -71,7 +82,7 @@ export function Sidebar({ user, sections, pendingCount, rail = false, onToggleRa
         {!rail && (
           <div style={{ lineHeight: 1.15, minWidth: 0 }}>
             <Wordmark color={BRAND.colors.onAccent} size={18} />
-            <div className={s.org} title={user.organizationName}>
+            <div className={s.org} title={user.organizationName} translate="no">
               {user.organizationName}
             </div>
           </div>
@@ -91,7 +102,7 @@ export function Sidebar({ user, sections, pendingCount, rail = false, onToggleRa
           rail ? (
             <RailSection key={sec.key} section={sec} active={sec.exact ? pathname : active} onNavigate={onNavigate} />
           ) : (
-            <Group key={sec.key} section={sec} open={!closed.includes(sec.key)} onToggle={() => toggle(sec.key)} active={sec.exact ? pathname : active} onNavigate={onNavigate} />
+            <Group key={sec.key} section={sec} open={isOpen(sec.key)} onToggle={() => toggle(sec.key)} active={sec.exact ? pathname : active} onNavigate={onNavigate} />
           ),
         )}
       </nav>

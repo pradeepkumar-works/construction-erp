@@ -11,7 +11,7 @@ function CompliancePage() {
   const id = useSearchParams().get('id') ?? undefined;
   return (
     <div className="page-container">
-      <PageHeader title="Guarantees & Licences" subtitle="Bank guarantees, EMDs, insurance policies and licences, soonest expiry first. Accounts and admins are reminded 30 days before each expires." />
+      <PageHeader title="Guarantees and licences" subtitle="Bank guarantees, EMDs, insurance policies and licences, soonest expiry first. Accounts and admins are reminded 30 days before each expires." />
       <Card size="small">
         <CompliancePanel key={id ?? ''} initialId={id} />
       </Card>

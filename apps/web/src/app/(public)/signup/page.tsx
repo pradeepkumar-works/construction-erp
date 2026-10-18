@@ -57,7 +57,7 @@ export default function SignupPage() {
           <Form.Item name="fullName" label="Your name" rules={[{ required: true, whitespace: true, min: 2, message: 'Enter your name' }]}>
             <Input autoComplete="name" size="large" maxLength={80} />
           </Form.Item>
-          <Form.Item name="email" label="Work email" rules={[{ required: true, message: 'Email is required' }, { type: 'email', message: 'Enter a valid email' }]}>
+          <Form.Item name="email" label="Work email" rules={[{ required: true, message: 'Enter your email' }, { type: 'email', message: 'Enter an email address, e.g. name@company.com' }]}>
             <Input autoComplete="username" size="large" />
           </Form.Item>
           <Form.Item name="phone" label="Mobile (optional)">

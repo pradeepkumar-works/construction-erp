@@ -26,6 +26,7 @@ import { requestNew } from '@/lib/new-intent';
 import { recentRecords, rememberRecord, type RecentRecord } from '@/lib/recent';
 import { StatusTag } from '@/components/common/StatusTag';
 import type { NavIcon, NavSection } from './nav';
+import type { RecentPage } from './pins';
 import { newEntriesFor, type NewEntry } from './NewMenu';
 import { SparkleIcon } from '@/components/ai/SparkleIcon';
 import s from './Sidebar.module.css';
@@ -47,6 +48,8 @@ interface Target {
 
 const KIND_ICONS: Partial<Record<SearchKind, NavIcon>> = { risk: AlertOutlined, document: FolderOpenOutlined, vendor: ShopOutlined, client: BankOutlined, item: InboxOutlined, person: UserOutlined };
 const STATUSES = new Set<string>(SUBMISSION_STATUSES);
+/** How many recently opened records and pages lead the list before anything is typed. */
+const RECENT_SHOWN = 8;
 /** Typed as a question: Ask Nirmaan goes first rather than last. */
 const QUESTION = /\?\s*$|^(what|which|who|how|why|when|where|is|are|did|do|does|show|list|tell|kitn|kya|kaun|kab|kahan|kaise)\b/i;
 
@@ -67,13 +70,14 @@ function rank(targets: Target[], query: string): Target[] {
 
 /**
  * Search everything (UI roadmap item 62), from the keyboard (Ctrl K / ⌘K) or the header's search box: pages, projects,
- * records by number or name (through `GET /search`, which applies each list's own access rules), recently opened records,
- * and actions such as "New daily report for Jajpur".
+ * records by number or name (through `GET /search`, which applies each list's own access rules), and actions such as
+ * "New daily report for Jajpur". With nothing typed it leads with the records and pages opened lately (UX item 87).
  */
 export function CommandPalette({
   open,
   onClose,
   sections,
+  recentPages = [],
   withProjects,
   user,
   onAsk,
@@ -81,6 +85,8 @@ export function CommandPalette({
   open: boolean;
   onClose: () => void;
   sections: NavSection[];
+  /** Pages opened lately (from the sidebar's pins), newest first. */
+  recentPages?: RecentPage[];
   withProjects: boolean;
   user: AuthUser;
   /** Hands what was typed to Ask Nirmaan, when the assistant is on */
@@ -181,10 +187,20 @@ export function CommandPalette({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search.data, query]);
 
+  /** Records and pages opened lately, newest first, in one group. */
   const recentTargets = useMemo<Target[]>(
-    () => recent.map((r) => ({ key: r.href, label: r.title, sub: r.kind, icon: HistoryOutlined, group: 'Recent', text: `${r.title} ${r.kind}`.toLowerCase(), go: () => navigate(r.href) })),
+    () =>
+      [
+        ...recent.map((r) => ({ at: r.at, t: { key: r.href, label: r.title, sub: r.kind, icon: HistoryOutlined, group: 'Recent', text: `${r.title} ${r.kind}`.toLowerCase(), go: () => navigate(r.href) } })),
+        ...recentPages
+          .filter((p) => !recent.some((r) => r.href === p.item.href))
+          .map((p) => ({ at: p.at, t: { key: p.item.href, label: p.item.label, sub: p.item.href.startsWith('/projects/') ? 'Project' : 'Page', icon: p.item.icon, group: 'Recent', text: '', go: () => navigate(p.item.href) } })),
+      ]
+        .sort((a, b) => b.at - a.at)
+        .slice(0, RECENT_SHOWN)
+        .map((r) => r.t),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [recent],
+    [recent, recentPages],
   );
 
   const askTarget = useMemo<Target | null>(() => {

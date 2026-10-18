@@ -14,9 +14,9 @@ import { themeColor, themeFontSize } from '@/lib/theme';
 
 const RED = themeColor('colorErrorText');
 const GREEN = themeColor('colorSuccessText');
-const money = (v: string) => <span className="mono">{formatINR(v)}</span>;
+const money = (v: string) => <span className="mono" translate="no">{formatINR(v)}</span>;
 const signed = (v: string) => (
-  <span className="mono" style={{ color: toNumber(v) < 0 ? RED : undefined }}>
+  <span className="mono" translate="no" style={{ color: toNumber(v) < 0 ? RED : undefined }}>
     {formatINR(v)}
   </span>
 );
@@ -58,10 +58,10 @@ export function CashFlowPanel({ projectId: fixedProject }: { projectId?: string 
     { title: 'Client bills', dataIndex: 'clientBills', width: 130, align: 'right', render: money },
     { title: 'Retention release', dataIndex: 'retentionRelease', width: 130, align: 'right', render: money },
     { title: 'Work still to bill', dataIndex: 'futureBilling', width: 140, align: 'right', render: money },
-    { title: 'Money in', dataIndex: 'inTotal', width: 140, align: 'right', render: (v) => <strong className="mono">{formatINR(v)}</strong> },
+    { title: 'Money in', dataIndex: 'inTotal', width: 140, align: 'right', render: (v) => <strong className="mono" translate="no">{formatINR(v)}</strong> },
     { title: 'Vendor bills', dataIndex: 'vendorBills', width: 130, align: 'right', render: money },
     { title: 'Cost still to spend', dataIndex: 'remainingBudget', width: 140, align: 'right', render: money },
-    { title: 'Money out', dataIndex: 'outTotal', width: 140, align: 'right', render: (v) => <strong className="mono">{formatINR(v)}</strong> },
+    { title: 'Money out', dataIndex: 'outTotal', width: 140, align: 'right', render: (v) => <strong className="mono" translate="no">{formatINR(v)}</strong> },
     { title: 'Net', dataIndex: 'net', width: 130, align: 'right', render: signed },
     { title: 'Cumulative', dataIndex: 'cumulative', width: 140, align: 'right', render: signed },
     {

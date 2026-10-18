@@ -92,8 +92,8 @@ export function QuotationFormModal({ open, request, quotation, onClose }: { open
       layout="drawer"
       width={860}
       allValues
-      title={quotation ? `Quotation from ${quotation.vendorName}` : `Add quotation for ${request.requestNo}`}
-      okText={quotation ? 'Save changes' : 'Add quotation'}
+      title={quotation ? `Quotation from ${quotation.vendorName}` : `Record quotation for ${request.requestNo}`}
+      okText={quotation ? 'Save changes' : 'Save quotation'}
       onSubmit={(v) => save.mutateAsync(v)}
     >
       <Form form={form} layout="vertical">

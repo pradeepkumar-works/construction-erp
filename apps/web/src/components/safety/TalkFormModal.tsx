@@ -77,7 +77,7 @@ export function TalkFormModal({ open, onClose, projectId, talk }: { open: boolea
   });
 
   return (
-    <FormShell open={open} onClose={onClose} form={form} layout="modal" width={680} title={talk ? `Change ${talk.talkNo}` : 'Record a toolbox talk'} okText="Save" onSubmit={(v) => save.mutateAsync(v)}>
+    <FormShell open={open} onClose={onClose} form={form} layout="modal" width={680} title={talk ? `Change ${talk.talkNo}` : 'Record toolbox talk'} okText="Save" onSubmit={(v) => save.mutateAsync(v)}>
       <Form form={form} layout="vertical">
         <Form.Item name="projectId" label="Project" rules={[{ required: true, message: 'Choose the project' }]} hidden={!!projectId || !!talk}>
           <Select showSearch={{ optionFilterProp: 'label' }} placeholder="Select project" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />

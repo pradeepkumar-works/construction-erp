@@ -47,11 +47,11 @@ export default function LoginPage() {
       {error && <Alert type="error" showIcon title={error} style={{ marginBottom: 24 }} />}
 
       <Form form={form} layout="vertical" onFinish={onFinish} requiredMark={false}>
-        <Form.Item name="email" label="Email" rules={[{ required: true, message: 'Email is required' }, { type: 'email', message: 'Enter a valid email' }]}>
+        <Form.Item name="email" label="Email" rules={[{ required: true, message: 'Enter your email' }, { type: 'email', message: 'Enter an email address, e.g. name@company.com' }]}>
           <Input type="email" inputMode="email" placeholder="you@company.com" autoComplete="username" autoCapitalize="none" spellCheck={false} size="large" autoFocus />
         </Form.Item>
         <div className="auth-field">
-          <Form.Item name="password" label="Password" rules={[{ required: true, message: 'Password is required' }]}>
+          <Form.Item name="password" label="Password" rules={[{ required: true, message: 'Enter your password' }]}>
             <Input.Password placeholder="Your password" autoComplete="current-password" size="large" />
           </Form.Item>
           <Link href="/forgot-password" className="auth-link auth-field-aside">

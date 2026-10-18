@@ -213,7 +213,7 @@ export function MeasurementFormModal({ open, onClose, projectId, boqItemId, shee
                       <Form.Item name={[f.name, 'deduct']} valuePropName="checked">
                         <Checkbox />
                       </Form.Item>
-                      <div className="mono" style={{ textAlign: 'right', lineHeight: '32px', color: qty < 0 ? themeColor('colorErrorText') : undefined }}>
+                      <div className="mono" translate="no" style={{ textAlign: 'right', lineHeight: '32px', color: qty < 0 ? themeColor('colorErrorText') : undefined }}>
                         {formatQty(qty)}
                       </div>
                       <Button type="text" icon={<DeleteOutlined />} disabled={fields.length === 1} onClick={() => remove(f.name)} aria-label="Remove line" />

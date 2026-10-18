@@ -24,7 +24,7 @@ import { MeasurementFormModal } from './MeasurementFormModal';
 
 const KEYS = ['status', 'mine', 'from', 'to', 'boqItemId'] as const;
 
-/** Measurement book sheets, used on the Measurement Book page and as a project tab. */
+/** Measurement book sheets, used on the Measurement book page and as a project tab. */
 export function MeasurementList({ projectId: fixedProject }: { projectId?: string }) {
   const { user } = useAuth();
   const [openId, setOpenId] = useState<string | null>(null);

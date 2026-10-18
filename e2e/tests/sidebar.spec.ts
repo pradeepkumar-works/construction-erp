@@ -7,7 +7,7 @@ test('quick-jump opens a page or a project from the keyboard', async ({ page }) 
   const search = page.getByRole('combobox', { name: 'Search', exact: true });
   await expect(search).toBeFocused();
   await search.fill('mb');
-  await expect(page.getByRole('option').first()).toContainText('Measurement Book');
+  await expect(page.getByRole('option').first()).toContainText('Measurement book');
   await search.press('Enter');
   await expect(page).toHaveURL(/\/measurements$/);
 
@@ -24,7 +24,7 @@ test('sections fold and stay folded, and the rail opens a section beside it', as
   await expect(site).toHaveAttribute('aria-expanded', 'true');
   await site.click();
   await expect(site).toHaveAttribute('aria-expanded', 'false');
-  await expect(page.getByRole('link', { name: 'Daily Reports', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Daily reports', exact: true })).toHaveCount(0);
   await page.reload();
   await expect(page.getByRole('button', { name: 'Site', exact: true })).toHaveAttribute('aria-expanded', 'false');
 

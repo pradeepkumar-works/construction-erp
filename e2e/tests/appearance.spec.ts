@@ -35,7 +35,7 @@ test('dark mode and compact density are chosen from the account menu and kept af
   await expect.poll(() => backgroundLuminance(page, '.ant-card')).toBeLessThan(0.2);
 
   await page.goto('/dpr');
-  const newDpr = page.getByRole('button', { name: 'New DPR' });
+  const newDpr = page.getByRole('button', { name: 'New daily report' });
   const comfortable = (await newDpr.boundingBox())?.height ?? 0;
   await pick(page, 'Density', 'Compact');
   await expect.poll(async () => (await newDpr.boundingBox())?.height ?? 0).toBeLessThan(comfortable);

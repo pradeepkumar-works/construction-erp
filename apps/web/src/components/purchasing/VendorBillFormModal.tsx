@@ -348,7 +348,7 @@ export function VendorBillFormModal({
                     />
                   ),
                 },
-                { title: 'Amount', key: 'amt', width: 120, align: 'right', render: (_, l) => <span className="mono">{formatINR(amountOf(lines[l.id]), true)}</span> },
+                { title: 'Amount', key: 'amt', width: 120, align: 'right', render: (_, l) => <span className="mono" translate="no">{formatINR(amountOf(lines[l.id]), true)}</span> },
               ]}
             />
           ) : (
@@ -398,17 +398,17 @@ export function VendorBillFormModal({
               title={
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '4px 12px' }}>
                   <span>Items</span>
-                  <span className="mono">{formatINR(totals.subtotal, true)}</span>
+                  <span className="mono" translate="no">{formatINR(totals.subtotal, true)}</span>
                   <span>GST</span>
-                  <span className="mono">{formatINR(totals.gst, true)}</span>
+                  <span className="mono" translate="no">{formatINR(totals.gst, true)}</span>
                   <span>Freight</span>
-                  <span className="mono">{formatINR(toNumber(freight), true)}</span>
+                  <span className="mono" translate="no">{formatINR(toNumber(freight), true)}</span>
                   <strong>Invoice total</strong>
-                  <strong className="mono">{formatINR(totals.total, true)}</strong>
+                  <strong className="mono" translate="no">{formatINR(totals.total, true)}</strong>
                   {printedTotal !== null ? (
                     <>
                       <span>Printed on the invoice</span>
-                      <span className="mono">{formatINR(printedTotal, true)}</span>
+                      <span className="mono" translate="no">{formatINR(printedTotal, true)}</span>
                     </>
                   ) : null}
                 </div>

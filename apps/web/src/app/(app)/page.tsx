@@ -66,9 +66,9 @@ export default function DashboardPage() {
     },
     { title: 'Type', dataIndex: 'type', key: 'type', width: 150, render: (t) => <ProjectTypeTag type={t} /> },
     { title: 'Status', dataIndex: 'status', key: 'status', width: 100, render: (s) => <ProjectStatusTag status={s} /> },
-    { title: 'Project Manager', dataIndex: 'projectManagerName', key: 'pm', width: 150, render: (v) => v ?? <span className="text-muted">Unassigned</span> },
+    { title: 'Project manager', dataIndex: 'projectManagerName', key: 'pm', width: 150, render: (v) => v ?? <span className="text-muted">Unassigned</span> },
     {
-      title: 'Contract Value',
+      title: 'Contract value',
       dataIndex: 'contractValue',
       key: 'cv',
       width: 150,
@@ -77,14 +77,14 @@ export default function DashboardPage() {
       render: (v) => (v ? formatINR(v) : '-'),
     },
     {
-      title: 'Physical Progress',
+      title: 'Physical progress',
       dataIndex: 'physicalProgressPct',
       key: 'progress',
       width: 170,
       render: (v: number) => <Progress percent={v} size="small" status={progressStatus(v)} format={() => formatPct(v)} aria-label={`${formatPct(v)} done`} />,
     },
     // No pending-approvals column: that count is My work's and the sidebar's (UX item 85).
-    { title: 'End Date', dataIndex: 'endDate', key: 'end', width: 110, render: (v) => formatDate(v) },
+    { title: 'End date', dataIndex: 'endDate', key: 'end', width: 110, render: (v) => formatDate(v) },
   ];
 
   const layout = homeLayout(user?.roleKey ?? 'SITE_ENGINEER');
@@ -137,7 +137,7 @@ export default function DashboardPage() {
 
           <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
             <Col xs={24}>
-              <Card size="small" title="Projects by Type" styles={{ body: { paddingTop: 8, paddingBottom: 8 } }}>
+              <Card size="small" title="Projects by type" styles={{ body: { paddingTop: 8, paddingBottom: 8 } }}>
                 {data.projectsByType.length === 0 ? (
                   <Typography.Text type="secondary">No projects yet</Typography.Text>
                 ) : (

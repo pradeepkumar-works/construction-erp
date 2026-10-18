@@ -65,7 +65,7 @@ export function BoqFormModal({ open, onClose, projectId, item }: { open: boolean
   const unit = Form.useWatch('unit', form);
 
   return (
-    <FormShell open={open} onClose={onClose} form={form} layout="modal" title={isEdit ? `Edit BOQ item ${item?.itemNo}` : 'Add BOQ item'} okText={isEdit ? 'Save' : 'Add item'} onSubmit={(v) => mutation.mutateAsync(v)}>
+    <FormShell open={open} onClose={onClose} form={form} layout="modal" title={isEdit ? `Edit BOQ item ${item?.itemNo}` : 'New BOQ item'} okText="Save" onSubmit={(v) => mutation.mutateAsync(v)}>
       <Form form={form} layout="vertical">
         <FormGrid cols={2}>
           <Form.Item name="itemNo" label="Item no." rules={[{ required: true, whitespace: true, message: 'Enter the item number, e.g. 1.01' }]}>

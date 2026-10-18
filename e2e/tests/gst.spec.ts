@@ -28,7 +28,7 @@ test('GST registers show outward supplies and input tax, and download as Excel',
   }
 
   await signIn(page, 'accounts@demo.com');
-  await expect(page.getByRole('link', { name: 'GST Registers' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'GST registers' })).toBeVisible();
   await page.goto(`/gst?from=${fromMonth}&to=${toMonth}`);
   await expect(page.getByText('Output tax')).toBeVisible();
   await expect(page.getByRole('link', { name: reg.outward[0].invoiceNo })).toBeVisible();
@@ -49,5 +49,5 @@ test('a site engineer has no GST registers', async ({ page }) => {
   const { from, to } = months();
   expect((await fetch(`${API_URL}/gst/registers?from=${from}&to=${to}`, { headers: { authorization: `Bearer ${engineer}` } })).status).toBe(403);
   await signIn(page, 'engineer@demo.com');
-  await expect(page.getByRole('link', { name: 'GST Registers' })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'GST registers' })).toHaveCount(0);
 });

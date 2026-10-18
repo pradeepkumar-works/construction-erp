@@ -15,7 +15,7 @@ export function BrandMark({ size = 34 }: { size?: number }) {
 /** "NIRMAAN" in the display face, for the sidebar and sign-in card. */
 export function Wordmark({ color, size = 17 }: { color?: string; size?: number }) {
   return (
-    <span className="wordmark" style={{ color, fontSize: size }}>
+    <span className="wordmark" style={{ color, fontSize: size }} translate="no">
       {BRAND.wordmark}
     </span>
   );

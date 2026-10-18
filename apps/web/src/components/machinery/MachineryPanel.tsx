@@ -35,7 +35,7 @@ export function MachineryPanel({ projectId, initialTab, initialId }: { projectId
           label: `Maintenance${s && s.openBreakdowns ? ` (${s.openBreakdowns} down)` : ''}`,
           children: <MaintenancePanel projectId={projectId} initialOpenId={initialTab === 'maintenance' ? initialId : undefined} />,
         },
-        ...(projectId ? [] : [{ key: 'papers', label: `Papers & drivers${due ? ` (${due} due)` : ''}`, children: <PapersPanel /> }]),
+        ...(projectId ? [] : [{ key: 'papers', label: `Papers and drivers${due ? ` (${due} due)` : ''}`, children: <PapersPanel /> }]),
         { key: 'equipment', label: projectId ? 'Equipment here' : 'Equipment', children: <EquipmentTable projectId={projectId} /> },
       ]}
     />

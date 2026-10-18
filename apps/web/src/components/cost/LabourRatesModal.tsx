@@ -89,7 +89,7 @@ export function LabourRatesModal({ open, onClose }: { open: boolean; onClose: ()
             {data.rates.map((r) => (
               <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: `1px solid ${themeColor('colorBorderSecondary')}` }}>
                 <span>{r.category}</span>
-                <span className="mono">{formatINR(r.dailyRate, true)} / day</span>
+                <span className="mono" translate="no">{formatINR(r.dailyRate, true)} / day</span>
               </div>
             ))}
           </div>

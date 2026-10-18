@@ -129,7 +129,7 @@ function PendingSummary({ item, onOpenDetails }: { item: PendingApprovalDto; onO
         column={{ xs: 1, sm: 2 }}
         items={[
           { key: 'project', label: 'Project', children: <Link href={`/projects/${item.projectId}`}>{item.projectName}</Link> },
-          { key: 'amount', label: 'Amount', children: item.amount === null ? '-' : <span className="mono">{formatINR(item.amount)}</span> },
+          { key: 'amount', label: 'Amount', children: item.amount === null ? '-' : <span className="mono" translate="no">{formatINR(item.amount)}</span> },
           { key: 'by', label: 'Submitted by', children: item.submittedByName },
           { key: 'at', label: 'Submitted', children: formatDateTime(item.submittedAt) },
         ]}

@@ -94,7 +94,7 @@ export function PapersPanel() {
                 {r.equipmentCode}
               </RecordLink>
             ) : (
-              <b className="mono">{r.equipmentCode}</b>
+              <b className="mono" translate="no">{r.equipmentCode}</b>
             )}{' '}
             {r.equipmentName}
           </span>
@@ -212,7 +212,7 @@ export function PapersPanel() {
       { title: 'Licence', key: 'l', render: (_, r) => <div>{r.licenceNo ?? '-'}<Sub>{r.licenceClass ?? ' '}</Sub></div> },
       { key: 'licenceValidTo', title: 'Valid to', dataIndex: 'licenceValidTo', width: 120, render: (v: string | null) => (v ? formatDate(v) : '-') },
       { title: '', key: 's', label: 'Validity', width: 120, render: (_, r) => <ExpiryTag state={r.licenceState} daysLeft={r.daysLeft} /> },
-      { title: 'Drives', key: 'e', width: 220, render: (_, r) => (r.equipmentCode ? <span><b className="mono">{r.equipmentCode}</b> {r.equipmentName}</span> : <Typography.Text type="secondary">-</Typography.Text>) },
+      { title: 'Drives', key: 'e', width: 220, render: (_, r) => (r.equipmentCode ? <span><b className="mono" translate="no">{r.equipmentCode}</b> {r.equipmentName}</span> : <Typography.Text type="secondary">-</Typography.Text>) },
       ...(manager
         ? [
             {
@@ -284,12 +284,12 @@ export function PapersPanel() {
 
   const newButton = manager ? (
     <Button type="primary" icon={<PlusOutlined />} onClick={() => openDoc('new')}>
-      Add paper
+      New paper
     </Button>
   ) : null;
   const newDriverButton = manager ? (
     <Button icon={<PlusOutlined />} onClick={() => openDriver('new')}>
-      Add driver
+      New driver
     </Button>
   ) : null;
 
@@ -373,7 +373,7 @@ export function PapersPanel() {
         emptyAction={newDriverButton}
       />
 
-      <FormShell open={!!docEditing} onClose={() => setDocEditing(null)} form={docForm} layout="modal" title={docEditing === 'new' ? 'Add a paper' : 'Change paper'} okText="Save" onSubmit={(v) => saveDoc.mutateAsync(v)}>
+      <FormShell open={!!docEditing} onClose={() => setDocEditing(null)} form={docForm} layout="modal" title={docEditing === 'new' ? 'New paper' : 'Change paper'} okText="Save" onSubmit={(v) => saveDoc.mutateAsync(v)}>
         <Form form={docForm} layout="vertical">
           <FormGrid cols={2}>
             <Form.Item name="equipmentId" label="Machine" rules={[{ required: true, message: 'Pick the machine' }]}>
@@ -403,7 +403,7 @@ export function PapersPanel() {
         </Form>
       </FormShell>
 
-      <FormShell open={!!drvEditing} onClose={() => setDrvEditing(null)} form={drvForm} layout="modal" title={drvEditing === 'new' ? 'Add a driver' : 'Change driver'} okText="Save" onSubmit={(v) => saveDriver.mutateAsync(v)} width={600}>
+      <FormShell open={!!drvEditing} onClose={() => setDrvEditing(null)} form={drvForm} layout="modal" title={drvEditing === 'new' ? 'New driver' : 'Change driver'} okText="Save" onSubmit={(v) => saveDriver.mutateAsync(v)} width={600}>
         <Form form={drvForm} layout="vertical">
           <FormGrid cols={2}>
             <Form.Item name="name" label="Name" rules={[{ required: true, whitespace: true, message: 'Enter the name' }]}>

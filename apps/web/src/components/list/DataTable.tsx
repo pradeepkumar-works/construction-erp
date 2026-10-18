@@ -493,7 +493,7 @@ export function DataTable<T extends { id: string }>({
                           >
                             {c.total ? (
                               <span
-                                className="mono"
+                                className="mono" translate="no"
                                 style={{ fontWeight: token.fontWeightStrong }}
                               >
                                 {c.total([...data])}

@@ -14,9 +14,9 @@ test('an empty submit says how to fix each field, and an amount reads in lakhs',
   await signIn(page, 'md@demo.com');
   await page.goto(`/projects/${road.id}`);
   await openProjectTab(page, 'Plan', 'BOQ');
-  await page.getByRole('button', { name: 'Add item' }).click();
-  const form = formPanel(page, 'Add BOQ item');
-  await form.getByRole('button', { name: 'Add item' }).click();
+  await page.getByRole('button', { name: 'New BOQ item' }).click();
+  const form = formPanel(page, 'New BOQ item');
+  await form.getByRole('button', { name: 'Save', exact: true }).click();
   const summary = form.locator('.ant-alert-error');
   await expect(summary.getByRole('link', { name: 'Item no.' })).toBeVisible();
   await expect(summary).toContainText('Enter the item number');
@@ -60,8 +60,8 @@ test('Back closes an edited form only after asking, and stays on the page', asyn
 test('a new DPR starts from the previous report\'s gang and machines, and Clear empties them', async ({ page }) => {
   await signIn(page, 'engineer@demo.com');
   await page.goto('/dpr');
-  await page.getByRole('button', { name: /New DPR/ }).click();
-  const form = formPanel(page, 'New Daily Progress Report');
+  await page.getByRole('button', { name: /New daily report/ }).click();
+  const form = formPanel(page, 'New daily report');
   const project = form.getByLabel('Project');
   if (await project.isVisible()) {
     if (!(await form.locator('.ant-select-selection-item').first().isVisible())) await chooseOption(project);

@@ -90,7 +90,7 @@ export function WorkerFormModal({ open, onClose, worker, projectId }: { open: bo
   });
 
   return (
-    <FormShell open={open} onClose={onClose} form={form} layout="drawer" title={worker ? `${worker.workerNo} ${worker.name}` : 'Add a worker'} okText={worker ? 'Save' : 'Add worker'} onSubmit={(v) => save.mutateAsync(v)}>
+    <FormShell open={open} onClose={onClose} form={form} layout="drawer" title={worker ? `${worker.workerNo} ${worker.name}` : 'New worker'} okText="Save" onSubmit={(v) => save.mutateAsync(v)}>
       <Form form={form} layout="vertical" requiredMark="optional">
         <FormSection title="Worker">
           <FormGrid cols={2}>

@@ -121,8 +121,8 @@ export function NcrFormModal({ open, onClose, projectId, ncr, prefill, onSaved }
       form={form}
       layout="modal"
       width={680}
-      title={ncr ? `Update ${ncr.ncrNo}` : 'Raise NCR'}
-      okText={editing ? 'Save' : 'Raise NCR'}
+      title={ncr ? `Update ${ncr.ncrNo}` : 'New NCR'}
+      okText={editing ? 'Save' : 'Save NCR'}
       draftKey={draftKey}
       onSubmit={(v) => mutation.mutateAsync(v)}
     >

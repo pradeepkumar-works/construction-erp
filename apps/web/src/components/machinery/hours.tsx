@@ -19,7 +19,7 @@ export function HoursCell({ log }: { log: Pick<MachineryLogDto, 'hoursWorked' | 
   const down = toNumber(log.breakdownHours);
   return (
     <div>
-      <span className="mono">{formatQty(log.hoursWorked)} h</span>
+      <span className="mono" translate="no">{formatQty(log.hoursWorked)} h</span>
       {idle > 0 || down > 0 ? (
         <div style={{ fontSize: themeFontSize('fontSizeSM') }}>
           {idle > 0 ? <span className="text-muted">{formatQty(idle)} idle</span> : null}

@@ -37,13 +37,13 @@ test('a site team marks the roll call of named workers and the head count follow
   await signIn(page, email);
   await page.goto(`/projects/${project.id}?tab=attendance`);
   await page.locator('.attendance-tabs').getByRole('tab', { name: 'Workers' }).click();
-  await page.getByRole('button', { name: 'Add worker' }).click();
-  const form = page.locator('.ant-drawer-open').filter({ hasText: 'Add a worker' });
+  await page.getByRole('button', { name: 'New worker' }).click();
+  const form = page.locator('.ant-drawer-open').filter({ hasText: 'New worker' });
   await form.getByLabel('Name', { exact: true }).fill('Sania Barik');
   await form.getByLabel('Labour contractor').fill('Kalia Contractors');
   await form.getByLabel('Trade').fill('Helper');
   await form.getByRole('spinbutton', { name: /^Daily wage/ }).fill('600');
-  await form.getByRole('button', { name: 'Add worker' }).click();
+  await form.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(page.getByText('Worker W-0004 added')).toBeVisible();
   await expect(page.locator('.worker-list tr').filter({ hasText: 'Sania Barik' })).toContainText('Kalia Contractors');
 
@@ -73,7 +73,7 @@ test('a site team marks the roll call of named workers and the head count follow
   expect(output.untaggedManDays).toBe(0.5);
 
   // The muster: 1 day at ₹800 plus 2 hours at ₹100, and half a day at ₹600.
-  await page.locator('.attendance-tabs').getByRole('tab', { name: 'Muster & output' }).click();
+  await page.locator('.attendance-tabs').getByRole('tab', { name: 'Muster and output' }).click();
   await expect(page.locator('.muster-table tr').filter({ hasText: 'Bhagaban Sahu' })).toContainText('₹ 1,000');
   await expect(page.locator('.muster-summary')).toContainText('₹ 1,300');
   await expect(page.locator('.output-table')).toContainText('Brickwork');
