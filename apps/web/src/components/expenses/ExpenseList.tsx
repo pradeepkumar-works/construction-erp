@@ -22,7 +22,6 @@ import { useListFrame } from '@/components/list/useListFrame';
 import { expenseColumns } from './ExpenseTable';
 import { ExpenseDrawer } from './ExpenseDrawer';
 import { ExpenseFormModal } from './ExpenseFormModal';
-import { BRAND } from '@/lib/brand';
 import { CardToolbar } from '@/components/common/CardToolbar';
 import { themeColor, themeFontSize } from '@/lib/theme';
 
@@ -118,7 +117,7 @@ export function ExpenseList({ projectId: fixedProject }: { projectId?: string })
           <Statistic title={`Total (${summary.count})`} value={formatINR(summary.totalAmount, true)} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
           <Statistic title="GST in it" value={formatINR(summary.gstAmount, true)} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
           <Statistic title="Approved (project cost)" value={formatINR(summary.approvedTotal, true)} styles={{ content: { fontSize: themeFontSize('fontSizeXL'), color: themeColor('colorSuccessText') } }} />
-          <Statistic title="Waiting for approval" value={formatINR(summary.pendingTotal, true)} styles={{ content: { fontSize: themeFontSize('fontSizeXL'), color: BRAND.colors.pending } }} />
+          <Statistic title="Waiting for approval" value={formatINR(summary.pendingTotal, true)} styles={{ content: { fontSize: themeFontSize('fontSizeXL'), color: themeColor('colorWarningText') } }} />
           <Space size={[4, 4]} wrap style={{ flex: 1, minWidth: 240 }}>
             {summary.byCategory.slice(0, 6).map((c) => (
               <Tooltip key={c.category} title={`${c.count} expense(s)`}>

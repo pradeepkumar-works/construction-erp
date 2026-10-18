@@ -43,7 +43,7 @@ ${PRINT_FONT_LINKS}
   th { background: #f1f4f8; font-size: 11px; }
   td.num, th.num { text-align: right; width: 90px; }
   .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  .muted { color: #888; }
+  .muted { color: ${BRAND.colors.muted}; }
   .photos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
   figure { margin: 0; }
   figure img { width: 100%; height: 150px; object-fit: cover; border: 1px solid #ccc; }

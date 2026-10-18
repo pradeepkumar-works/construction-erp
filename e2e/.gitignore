@@ -1,3 +1,5 @@
 node_modules
 test-results
 playwright-report
+# The route walk's saved sign-ins and screenshots (route-walk.spec.ts).
+route-walk

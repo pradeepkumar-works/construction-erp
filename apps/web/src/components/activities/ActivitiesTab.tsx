@@ -132,7 +132,7 @@ export function ActivitiesTab({ projectId, members, project }: { projectId: stri
         <span className="text-muted">
           {data?.length ?? 0} activities · {data?.filter((a) => a.isDelayed).length ?? 0} delayed · {data?.filter((a) => a.progressPct >= 100).length ?? 0} completed
         </span>
-        <Space>
+        <Space wrap>
         <ExportButton
           onExport={async () => {
             await downloadXlsx(exportFileName('activities'), 'Activities', ACTIVITY_EXPORT, data ?? []);

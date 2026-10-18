@@ -635,26 +635,73 @@ kbd {
     display: inline-flex;
     align-items: center;
   }
-  :root .ant-segmented-item-label {
+  /* Doubled class: a small Segmented's own label height outranks a single one. */
+  :root .ant-segmented.ant-segmented .ant-segmented-item-label {
     display: flex;
     align-items: center;
     justify-content: center;
     min-height: 44px;
+    min-width: 44px;
   }
-  :root .ant-tabs-tab {
+  :root .ant-tabs .ant-tabs-tab {
     min-height: 44px;
+    min-width: 44px;
+    justify-content: center;
+  }
+  /* A clickable filter tag (Tag.CheckableTag: the category chips on expenses and risks). */
+  :root .ant-tag.ant-tag-checkable {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+  /* antd sizes the pager from this variable, and a small pager's own value outranks the rule below. */
+  :root .ant-pagination.ant-pagination {
+    --ant-pagination-item-size-actual: 44px;
   }
   :root :is(.ant-pagination-item, .ant-pagination-prev, .ant-pagination-next, .ant-pagination-jump-prev, .ant-pagination-jump-next) {
     min-width: 44px;
     height: 44px;
     line-height: 42px;
   }
+  /* A checkbox on its own (no label text) still takes a 44 px square, and a table's selection column widens to hold it. */
   :root :is(.ant-checkbox-wrapper, .ant-radio-wrapper) {
     min-height: 44px;
+    min-width: 44px;
     align-items: center;
+    justify-content: center;
+  }
+  :root .ant-table-wrapper col.ant-table-selection-col {
+    width: 60px;
   }
   :root :is(.ant-dropdown-menu-item, .ant-select-item-option) {
     min-height: 44px;
+  }
+}
+
+/* A Space and its items are never wider than what holds them, so what is inside can give way; on a phone a Segmented
+   with more options than the width holds scrolls inside itself instead of widening the page (only there, so a wide
+   screen keeps its focus ring unclipped). */
+:root :is(.ant-space, .ant-space-item) {
+  max-width: 100%;
+}
+@media (max-width: 575px) {
+  :root .ant-segmented {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+  /* The same for a table with no `scroll` of its own: a phone scrolls it inside its box (antd sets this only with
+     `scroll.x`). Its minimum width rides on the font's metrics, so one that just fits on one machine overflows on another. */
+  :root .ant-table-wrapper .ant-table-content {
+    overflow-x: auto;
+  }
+}
+
+/* A tab bar wider than a phone scrolls by swipe, and the arrow keys move along it and bring the focused tab into view.
+   Its overflow "more" button is hidden there: antd draws it inside the tablist, where only tabs may be (axe
+   aria-required-children). */
+@media (pointer: coarse), (max-width: 575px) {
+  :root .ant-tabs .ant-tabs-nav .ant-tabs-nav-operations {
+    display: none;
   }
 }
 
@@ -708,6 +755,11 @@ kbd {
 a.text-link {
   color: var(--ant-color-link);
 }
+/* In running text the colour alone does not set a link apart from grey text (WCAG 1.4.1): it is underlined too. */
+a.text-link {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
 .ant-table-cell a:not(.ant-btn):not(.ant-tag):not(.ant-typography):hover,
 .ant-descriptions-item-content a:not(.ant-btn):not(.ant-tag):not(.ant-typography):hover,
 .ant-card-extra a:not(.ant-btn):not(.ant-tag):not(.ant-typography):hover,
@@ -722,6 +774,11 @@ a.text-link:hover {
   margin: 0;
   font: inherit;
   color: inherit;
+}
+
+/* A table's plain-text empty message: antd draws it in the disabled grey (1.8:1); it is content, so secondary text. */
+.ant-table-placeholder :is(.ant-table-cell, .ant-table-expanded-row-fixed) {
+  color: var(--ant-color-text-secondary);
 }
 
 /* A notice with its action (View, Undo, Retry) beside the text (UX item 86, lib/notify.tsx). */

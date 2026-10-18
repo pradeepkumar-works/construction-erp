@@ -5,11 +5,11 @@ import Link from 'next/link';
 import { Alert, Button, Col, Empty, Row, Skeleton, Statistic, Table, Tabs, Typography } from 'antd';
 import { TeamOutlined } from '@ant-design/icons';
 import type { ProjectCostDto } from '@erp/shared';
-import { COST_HEADS, COST_HEAD_LABELS, EQUIPMENT_RATE_UNIT_LABELS, EXPENSE_CATEGORY_LABELS } from '@erp/shared';
+import { COST_HEADS, EQUIPMENT_RATE_UNIT_LABELS, EXPENSE_CATEGORY_LABELS } from '@erp/shared';
 import { useProjectCost } from '@/lib/queries';
 import { formatINR, formatQty, toNumber, formatMonth, inSentence } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
-import { CostBar, CostLegend, HEAD_COLORS } from './CostBar';
+import { CostBar, CostHeadTitle, CostLegend } from './CostBar';
 import { DEFAULT_PERIOD, PeriodPicker, periodLabel, periodParams, type PeriodState } from './PeriodPicker';
 import { LabourRatesModal } from './LabourRatesModal';
 import { unpricedText } from './UnpricedNote';
@@ -76,7 +76,7 @@ export function ProjectCostPanel({ projectId }: { projectId: string }) {
             <CostBar cost={data.cost} scale={toNumber(data.cost.total)} height={18} />
             <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap', marginTop: 12 }}>
               {COST_HEADS.map((h) => (
-                <Statistic key={h} title={<span style={{ color: HEAD_COLORS[h] }}>{COST_HEAD_LABELS[h]}</span>} value={formatINR(data.cost[h])} styles={{ content: { fontSize: themeFontSize('fontSizeLG') } }} />
+                <Statistic key={h} title={<CostHeadTitle head={h} />} value={formatINR(data.cost[h])} styles={{ content: { fontSize: themeFontSize('fontSizeLG') } }} />
               ))}
             </div>
           </Section>

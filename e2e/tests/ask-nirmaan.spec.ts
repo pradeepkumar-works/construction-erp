@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { API_URL, api, apiToken, signIn } from './helpers';
+import { API_URL, WCAG_TAGS, api, apiToken, signIn } from './helpers';
 
 /**
  * Ask Nirmaan (AI item 67). CI runs the API with AI_PROVIDER=fake: a scripted stand-in for the model that calls one
@@ -248,6 +248,6 @@ test('the panel passes axe', async ({ page }) => {
   await ask(page, 'What is waiting for my approval?');
   await expect(panel(page).getByRole('button', { name: 'Copy answer' })).toBeVisible();
   await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running' || a.effect?.getTiming().iterations === Infinity));
-  const result = await new AxeBuilder({ page }).include('.ask-panel').withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();
+  const result = await new AxeBuilder({ page }).include('.ask-panel').withTags(WCAG_TAGS).analyze();
   expect(result.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).slice(0, 3).join(', ')}`)).toEqual([]);
 });

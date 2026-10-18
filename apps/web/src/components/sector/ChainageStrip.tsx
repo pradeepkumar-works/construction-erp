@@ -28,7 +28,7 @@ export function ChainageStrip({ layers, start, end }: { layers: ChainageLayer[];
   for (let t = Math.ceil(lo / step) * step; t <= hi; t += step) ticks.push(t);
 
   return (
-    <div className="chainage-strip" style={{ overflowX: 'auto' }}>
+    <div className="chainage-strip" data-scroll-region aria-label="Chainage strip" style={{ overflowX: 'auto' }}>
       <div style={{ minWidth: 720 }}>
         <div style={{ display: 'flex', alignItems: 'flex-end', height: 22 }}>
           <div style={{ width: LABEL, flex: 'none' }} />

@@ -86,7 +86,7 @@ ${PRINT_FONT_LINKS}
   tr.late td { background: #fff7e6; }
   .tag { font-size: 9px; color: #ad4e00; border: 1px solid #ffa940; border-radius: 8px; padding: 0 5px; }
   .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-  .muted { color: #888; }
+  .muted { color: ${BRAND.colors.muted}; }
   ul { margin: 0; padding-left: 16px; } li { margin-bottom: 3px; }
   .photos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
   figure { margin: 0; page-break-inside: avoid; }

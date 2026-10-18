@@ -1,7 +1,10 @@
 import { expect, test, type Page } from '@playwright/test';
-import { formPanel, signIn } from './helpers';
+import { api, apiToken, formPanel, settle, signIn, webVitalBudgets } from './helpers';
 
-/** Speed you can feel (item 83): lists keep their rows while paging, pickers search as you type, home does not jump. */
+/**
+ * Speed you can feel (item 83): lists keep their rows while paging, pickers search as you type, home does not jump, and
+ * the main pages keep to the Web Vitals budgets (item 89).
+ */
 
 const rows = (page: Page) => page.locator('.ant-table-tbody .ant-table-row');
 
@@ -69,4 +72,61 @@ test('home draws without layout shift above the charts', async ({ page }) => {
   await page.waitForTimeout(500);
   const cls = await page.evaluate(() => (window as unknown as { __cls: number }).__cls);
   expect(cls).toBeLessThan(0.1);
+});
+
+/**
+ * The budgets in `apps/web/src/lib/vitals.ts` (item 83), measured by the app's own reporting (next/web-vitals into
+ * `reportWebVital`, which sends `POST /api/vitals` when the tab is hidden) on home, a list, a record and Approvals, each
+ * opened fresh and used once (the search palette, and a row on the list).
+ * CI shares two to four slow cores between Postgres, the API, the web server and the browser, with no GPU, so the timed
+ * vitals (LCP, INP) get VITALS_SLACK times their budget (2 unless set). A real phone has its own costs (the network, a
+ * slower CPU) that this does not measure; the field reports from `/api/vitals` cover those. Layout shift is not a matter
+ * of speed and keeps its budget as it is.
+ */
+test('home, a list, a record and Approvals keep to the Web Vitals budgets', async ({ page }) => {
+  test.setTimeout(120_000);
+  const budgets = webVitalBudgets();
+  const slack = Number(process.env.VITALS_SLACK ?? 2);
+  const reports: { name: 'LCP' | 'CLS' | 'INP'; value: number; path: string }[] = [];
+  await page.route(/\/api\/vitals$/, async (route) => {
+    const data = new URLSearchParams(route.request().postData() ?? '').get('data');
+    if (data) reports.push(...JSON.parse(data));
+    await route.fulfill({ status: 204 });
+  });
+
+  const token = await apiToken('pm@demo.com');
+  const dpr = (await api<{ items: { id: string }[] }>(token, '/dpr?pageSize=1')).items[0];
+  await signIn(page, 'pm@demo.com');
+  const pages = [
+    { path: '/', route: '/' },
+    { path: '/dpr', route: '/dpr', row: true },
+    { path: `/dpr/${dpr.id}`, route: '/dpr/:id' },
+    { path: '/approvals', route: '/approvals' },
+  ];
+  const over: string[] = [];
+  for (const p of pages) {
+    await page.goto(p.path);
+    await settle(page);
+    // One real use of the page: open the search palette and close it; on the list, open a row too.
+    await page.keyboard.press('Control+k');
+    await expect(page.getByRole('combobox', { name: 'Search', exact: true })).toBeFocused();
+    await page.keyboard.press('Escape');
+    if (p.row) {
+      await page.locator('.ant-table-tbody > tr[data-row-key]').first().click();
+      await expect(page.locator('.ant-drawer-open')).toBeVisible();
+      await page.keyboard.press('Escape');
+    }
+    // The tab "hides": web-vitals reports what it has, and the app sends it.
+    await page.evaluate(() => {
+      Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
+      document.dispatchEvent(new Event('visibilitychange', { bubbles: true }));
+    });
+    await expect.poll(() => reports.filter((r) => r.path === p.route).map((r) => r.name).sort().join(','), { message: `vitals reported for ${p.route}` }).toMatch(/CLS.*LCP/);
+    for (const r of reports.filter((x) => x.path === p.route)) {
+      const allowed = r.name === 'CLS' ? budgets.CLS : budgets[r.name] * slack;
+      if (r.value > allowed) over.push(`${p.route} ${r.name} ${r.value} (budget ${budgets[r.name]}${r.name === 'CLS' ? '' : `, ×${slack} on CI = ${allowed}`})`);
+    }
+    test.info().annotations.push({ type: 'vitals', description: `${p.route} ${reports.filter((r) => r.path === p.route).map((r) => `${r.name} ${r.value}`).join(', ')}` });
+  }
+  expect(over).toEqual([]);
 });

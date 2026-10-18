@@ -103,7 +103,7 @@ ${PRINT_FONT_LINKS}
   .annex { page-break-before: always; }
   .sign { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-top: 40px; page-break-inside: avoid; }
   .sign div { border-top: 1px solid #333; padding-top: 4px; font-size: 10px; }
-  .muted { color: #777; }
+  .muted { color: ${BRAND.colors.muted}; }
   @media print { body { padding: 0; } }
   ${PRINT_BRAND_CSS}
 </style></head>

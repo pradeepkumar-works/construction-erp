@@ -43,7 +43,7 @@ ${PRINT_FONT_LINKS}
   td.num, th.num { text-align: right; white-space: nowrap; }
   td.c, th.c { text-align: center; }
   .total td { font-weight: 700; background: #fafafa; }
-  .muted { color: #777; }
+  .muted { color: ${BRAND.colors.muted}; }
   .words { margin-top: 4px; font-style: italic; }
   .draft { display: inline-block; padding: 2px 8px; border: 1px solid #c77; color: #a33; border-radius: 10px; font-size: 10px; text-transform: uppercase; }
   .sign { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 48px; page-break-inside: avoid; }
