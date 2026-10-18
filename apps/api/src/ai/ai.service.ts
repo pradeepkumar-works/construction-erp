@@ -337,18 +337,20 @@ export class AiService {
   /** This calendar month's spend by what it went on: how many of each and their cost in paise. */
   private async spendByFeature(organizationId: string): Promise<{ feature: AiFeature; count: number; paise: number }[]> {
     const where = { organizationId, createdAt: { gte: istStart(`${todayIn().slice(0, 7)}-01`) } };
-    const [answers, questions, summaries, reads, briefs] = await Promise.all([
+    const [answers, questions, summaries, reads, briefs, photos] = await Promise.all([
       this.prisma.aiMessage.aggregate({ where, _sum: { costPaise: true } }),
       this.prisma.aiMessage.count({ where: { ...where, role: 'user' } }),
       this.prisma.billCheckSummary.aggregate({ where, _sum: { costPaise: true }, _count: { _all: true } }),
       this.prisma.aiDocumentRead.aggregate({ where, _sum: { costPaise: true }, _count: { _all: true } }),
       this.prisma.aiBrief.aggregate({ where, _sum: { costPaise: true }, _count: { _all: true } }),
+      this.prisma.photoCheck.aggregate({ where: { ...where, model: { not: null } }, _sum: { costPaise: true }, _count: { _all: true } }),
     ]);
     return [
       { feature: 'QUESTIONS', count: questions, paise: answers._sum.costPaise ?? 0 },
       { feature: 'BILL_CHECKS', count: summaries._count._all, paise: summaries._sum.costPaise ?? 0 },
       { feature: 'DOCUMENT_READS', count: reads._count._all, paise: reads._sum.costPaise ?? 0 },
       { feature: 'BRIEFS', count: briefs._count._all, paise: briefs._sum.costPaise ?? 0 },
+      { feature: 'PHOTO_CHECKS', count: photos._count._all, paise: photos._sum.costPaise ?? 0 },
     ];
   }
 

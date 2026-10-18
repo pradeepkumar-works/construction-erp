@@ -6,7 +6,7 @@ import { SAFETY_INCIDENT_STATUS_LABELS, SAFETY_INCIDENT_TYPE_LABELS, canManageSa
 import { useApi, useFetch } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
 import { useAuth } from '../../src/auth/AuthContext';
-import { AttachmentGallery, Button, Card, ErrorBanner, ErrorState, Input, KeyValue, Loading, Pill, Screen } from '../../src/components';
+import { AttachmentGallery, PhotoChecks, Button, Card, ErrorBanner, ErrorState, Input, KeyValue, Loading, Pill, Screen } from '../../src/components';
 import { INCIDENT_TONE } from '../../src/components/safetyTone';
 import { colors, spacing, typography, toneIcon } from '../../src/theme';
 import { formatDate, formatDateTime } from '../../src/utils/format';
@@ -78,6 +78,7 @@ export default function IncidentScreen() {
         {data.status === 'CLOSED' ? <KeyValue label={t('Closed')} value={`${data.closedByName ?? ''}, ${formatDateTime(data.closedAt)}${data.closureNote ? `: ${data.closureNote}` : ''}`} multiline /> : null}
       </Card>
       <AttachmentGallery attachments={data.attachments} />
+      <PhotoChecks kind="incident" id={data.id} attachments={data.attachments} />
       {manager ? (
         closing ? (
           <Card title={t('Close {no}', { no: data.incidentNo })}>

@@ -10,7 +10,7 @@ import { useAuth } from '@/lib/auth';
 import { useSafetyIncident, useSafetyIncidentHistory } from '@/lib/queries';
 import { formatDate, formatDateTime } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
-import { AttachmentGallery } from '@/components/common/AttachmentGallery';
+import { PhotosWithChecks } from '@/components/photo-checks/PhotoChecksSection';
 import { FormShell } from '@/components/form/FormShell';
 import { IncidentStatusTag, IncidentTypeTag, SafetyHistory } from './safetyUi';
 
@@ -131,7 +131,7 @@ export function IncidentDrawer({ id, open, onClose, onEdit }: { id: string | nul
           <Divider titlePlacement="start" plain>
             Photos ({data.attachments.length})
           </Divider>
-          <AttachmentGallery attachments={data.attachments} />
+          <PhotosWithChecks kind="incident" id={data.id} attachments={data.attachments} />
           <Divider titlePlacement="start" plain>
             History
           </Divider>

@@ -27,6 +27,7 @@ import { AiModule } from './ai/ai.module';
 import { BillChecksModule } from './checks/bill-checks.module';
 import { WarningsModule } from './warnings/warnings.module';
 import { BriefsModule } from './briefs/briefs.module';
+import { PhotoChecksModule } from './photo-checks/photo-checks.module';
 import { SafetyModule } from './safety/safety.module';
 import { MaintenanceModule } from './maintenance/maintenance.module';
 import { UnitsModule } from './units/units.module';
@@ -107,6 +108,7 @@ import { VitalsController } from './vitals.controller';
     BillChecksModule,
     WarningsModule,
     BriefsModule,
+    PhotoChecksModule,
     SafetyModule,
     MaintenanceModule,
     UnitsModule,
