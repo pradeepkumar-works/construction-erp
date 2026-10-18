@@ -2393,6 +2393,8 @@ export interface DocumentPageViewDto {
   title: string;
   recordHref: string;
   text: string | null;
+  /** Why the file could not be read, when it could not */
+  readError: string | null;
 }
 
 export interface LetterDto {

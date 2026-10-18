@@ -93,15 +93,15 @@ async function demo(): Promise<number> {
   try {
     // Read from scratch, as the first search after filing does.
     await prisma.documentPage.deleteMany({ where: { attachmentId: { in: files.map((f) => f.id) } } });
-    await prisma.attachment.updateMany({ where: { id: { in: files.map((f) => f.id) } }, data: { textIndexedAt: null, textPages: null } });
+    await prisma.attachment.updateMany({ where: { id: { in: files.map((f) => f.id) } }, data: { textIndexedAt: null, textPages: null, textError: null } });
     const md = as('md@demo.com');
     const askOnly = await search.search(md, { query: 'liquidated damages', projectId: projectOf.get('RD-AGR-01'), read: false });
     check("Ask's search reads nothing itself and says what is unread", !askOnly.hits.some((h) => h.title.startsWith('RD-AGR-01')) && askOnly.unread >= 1, JSON.stringify({ hits: askOnly.hits.length, unread: askOnly.unread }));
     const first = await search.search(md, { query: 'liquidated damages', projectId: projectOf.get('RD-AGR-01') });
     check('the first search reads the filed contract', first.hits.some((h) => h.title.startsWith('RD-AGR-01') && h.page === 4), JSON.stringify(first.hits.map((h) => [h.title, h.page])));
     await search.readPending(org.id, null, 20);
-    const read = await prisma.attachment.findMany({ where: { id: { in: files.map((f) => f.id) } }, select: { textPages: true } });
-    check('every contract is read, a row per page', read.every((r) => (r.textPages ?? 0) >= 5), JSON.stringify(read));
+    const read = await prisma.attachment.findMany({ where: { id: { in: files.map((f) => f.id) } }, select: { textPages: true, textError: true } });
+    check('every contract is read, a row per page', read.every((r) => (r.textPages ?? 0) >= 5 && !r.textError), JSON.stringify(read));
 
     let top1 = 0;
     let top3 = 0;

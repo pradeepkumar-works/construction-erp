@@ -59,18 +59,20 @@ export class DocumentTextService {
       const projectId = f.revision?.document.projectId ?? f.letter?.projectId;
       if (!projectId) continue;
       let pages: string[] = [];
+      let error: string | null = null;
       try {
         if (f.size > MAX_PDF_BYTES) throw new Error(`too large (${f.size} bytes)`);
         const row = await this.prisma.attachment.findUniqueOrThrow({ where: { id: f.id }, select: { data: true } });
         pages = await readPdfPages(await this.storage.read(f.storagePath, row.data));
       } catch (e) {
-        this.log.warn(`reading ${f.id}: ${(e as Error).message}`);
+        error = ((e as Error).message || String(e)).slice(0, 500);
+        this.log.warn(`reading ${f.id}: ${error}`);
       }
       const rows = pages.map((text, i) => ({ organizationId, projectId, attachmentId: f.id, page: i + 1, text })).filter((r) => r.text.length > 0);
       await this.prisma.$transaction([
         this.prisma.documentPage.deleteMany({ where: { attachmentId: f.id } }),
         this.prisma.documentPage.createMany({ data: rows }),
-        this.prisma.attachment.update({ where: { id: f.id }, data: { textIndexedAt: new Date(), textPages: rows.length } }),
+        this.prisma.attachment.update({ where: { id: f.id }, data: { textIndexedAt: new Date(), textPages: rows.length, textError: error } }),
       ]);
       read++;
     }
@@ -182,7 +184,7 @@ export class DocumentTextService {
     const f = await this.prisma.attachment.findFirst({
       where: { id: attachmentId, organizationId: user.organizationId, OR: [{ revision: { document: { project: this.access.projectWhere(user) } } }, ...(canViewLetters(user.roleKey) ? [{ letter: { project: this.access.projectWhere(user) } }] : [])] },
       select: {
-        id: true, fileName: true, storagePath: true, textPages: true,
+        id: true, fileName: true, storagePath: true, textPages: true, textError: true,
         revision: { select: { revision: true, document: { select: { id: true, docNo: true, title: true } } } },
         letter: { select: { id: true, letterNo: true, subject: true } },
       },
@@ -199,6 +201,7 @@ export class DocumentTextService {
       title: r ? `${r.document.docNo} ${r.document.title}, rev ${r.revision}` : `${f.letter!.letterNo} ${f.letter!.subject}`,
       recordHref: r ? `/documents?id=${r.document.id}` : `/documents?tab=letters&letter=${f.letter!.id}`,
       text: row?.text ?? null,
+      readError: f.textError,
     };
   }
 }
