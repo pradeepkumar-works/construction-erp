@@ -128,7 +128,7 @@ test('Ask Nirmaan is included in the trial and pauses when the company is read-o
   await signIn(page, email);
   await page.keyboard.press('Alt+j');
   await expect(page.getByText('Ask Nirmaan is paused')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Open Billing' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Open Subscription' })).toBeVisible();
 });
 
 test("Razorpay's webhook records a payment whose browser closed, once", async () => {

@@ -16,7 +16,7 @@ export const WHATS_NEW: WhatsNew[] = [
       'Admin > Ask Nirmaan shows each month by person (questions, documents read, briefs) and by feature, and you can look back over the last year.',
       'Admins can choose which roles may use Ask Nirmaan. Admins always can.',
       'A conversation log lets admins read any conversation and export them to Excel. Opening or exporting one is recorded in the audit log, and Ask Nirmaan tells people admins can read conversations.',
-      'Ask Nirmaan is included in the price: an allowance in the free trial, then an amount per active project each month, shown under Billing. If the trial or subscription ends, Ask Nirmaan pauses with the rest of the changes.',
+      'Ask Nirmaan is included in the price: an allowance in the free trial, then an amount per active project each month, shown under Admin > Subscription. If the trial or subscription ends, Ask Nirmaan pauses with the rest of the changes.',
     ],
   },
   {

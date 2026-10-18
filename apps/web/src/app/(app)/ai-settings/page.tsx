@@ -139,7 +139,7 @@ function SettingsCard({ data }: { data: AiSettingsDto }) {
               showIcon
               style={{ marginTop: token.marginSM }}
               title={`Paused: ${BILLING_STATUS_LABELS.READ_ONLY}`}
-              description={`The trial or subscription has ended, so Ask ${PRODUCT_NAME} is paused with the rest of the company's changes. Renew under Billing to use it again.`}
+              description={`The trial or subscription has ended, so Ask ${PRODUCT_NAME} is paused with the rest of the company's changes. Renew it under Subscription to use it again.`}
             />
           )}
         </div>
@@ -249,7 +249,7 @@ function ConversationsCard({ month, people }: { month: string; people: AiUserUsa
         { header: 'Model', value: (r) => r.model ?? '', width: 24 },
         { header: 'Cost (₹)', value: (r) => r.costInr },
       ], rows);
-      if (rows.length >= AI_EXPORT_MAX_ROWS) message.warning(`Only the first ${AI_EXPORT_MAX_ROWS.toLocaleString('en-IN')} questions and answers were exported; narrow the search for the rest.`);
+      if (rows.length >= AI_EXPORT_MAX_ROWS) message.warning(`Only the first ${AI_EXPORT_MAX_ROWS} questions and answers were exported; narrow the search for the rest.`);
     } catch (e) {
       notify.failed(e, () => void exportLog());
     } finally {

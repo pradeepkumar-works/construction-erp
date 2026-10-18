@@ -531,14 +531,14 @@ function OffState({ status, onNavigate }: { status?: AiStatusDto; onNavigate: ()
           router.push('/billing');
         }}
       >
-        Open Billing
+        Open Subscription
       </Button>
     ) : null;
     return (
       <Result
         status="info"
         title={`Ask ${PRODUCT_NAME} is paused`}
-        subTitle={`The ${PRODUCT_NAME} trial or subscription has ended, so the company is read-only. ${status.canManage ? 'Renew under Billing to ask again.' : 'An admin can renew it under Billing.'}`}
+        subTitle={`The ${PRODUCT_NAME} trial or subscription has ended, so the company is read-only. ${status.canManage ? 'Renew it under Subscription to ask again.' : 'An admin can renew it under Admin > Subscription.'}`}
         extra={billing}
       />
     );

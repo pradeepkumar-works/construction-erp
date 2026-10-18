@@ -191,7 +191,7 @@ export class AiService {
     if (s.reason === 'COMPANY_OFF') throw new ForbiddenException('Ask Nirmaan is switched off for your company. An admin can switch it on in Admin > Ask Nirmaan.');
     if (s.reason === 'ROLE_OFF') throw new ForbiddenException("Your company's admin has not opened Ask Nirmaan to your role.");
     if (s.reason === 'READ_ONLY')
-      throw new HttpException(`Your ${PRODUCT_NAME} trial or subscription has ended, so Ask Nirmaan is paused. An admin can renew under Billing.`, HttpStatus.PAYMENT_REQUIRED);
+      throw new HttpException(`Your ${PRODUCT_NAME} trial or subscription has ended, so Ask Nirmaan is paused. An admin can renew it under Admin > Subscription.`, HttpStatus.PAYMENT_REQUIRED);
     if (s.reason === 'CAP_REACHED') throw new HttpException("Your company has used this month's Ask Nirmaan allowance. An admin can raise it in Admin > Ask Nirmaan.", HttpStatus.TOO_MANY_REQUESTS);
     return s;
   }
