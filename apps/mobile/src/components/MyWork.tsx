@@ -12,7 +12,8 @@ import { SectionTitle } from './Layout';
 import { Skeleton } from './Skeleton';
 import { Touchable } from './Touchable';
 
-type MyWorkKey = keyof MyWorkDto;
+// `approvalsWaitingDays` is a figure on the approvals card, not a card of its own.
+type MyWorkKey = Exclude<keyof MyWorkDto, 'approvalsWaitingDays'>;
 type CardKey = Exclude<MyWorkKey, 'approvals'>;
 type Tone = 'warning' | 'error' | 'info';
 

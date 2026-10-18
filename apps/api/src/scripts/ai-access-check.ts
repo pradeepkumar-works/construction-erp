@@ -6,7 +6,7 @@
  *   DATABASE_URL=… node dist/scripts/ai-access-check.js
  */
 import { NestFactory } from '@nestjs/core';
-import type { RoleKey } from '@erp/shared';
+import { canViewLetters, type RoleKey } from '@erp/shared';
 import { AppModule } from '../app.module';
 import { AiToolsService } from '../ai/ai-tools.service';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -79,6 +79,10 @@ async function main() {
         if (d.name === 'list_records') kinds.forEach((kind) => calls.push([d.name, { kind }]));
         else if (d.name === 'get_record') samples.forEach((s) => calls.push([d.name, s]));
         else if (d.name === 'search_records') ['a', 'cement', 'PO', 'bill'].forEach((q) => calls.push([d.name, { q }]));
+        else if (d.name === 'search_documents') {
+          ['liquidated damages', 'encroachment hindrance', 'drawing'].forEach((query) => calls.push([d.name, { query }]));
+          projects.forEach((p) => calls.push([d.name, { query: 'payment', projectId: p.id }]));
+        }
         else if ('projectId' in props) {
           if (!(d.input_schema.required ?? []).includes('projectId')) calls.push([d.name, {}]);
           projects.forEach((p) => calls.push([d.name, { projectId: p.id }]));
@@ -94,6 +98,7 @@ async function main() {
         }
         if (r.isError) continue;
         for (const id of projectIdsIn(r.result)) if (!visible.has(id)) failures.push(`${label}: shows project ${id}, which this user cannot open`);
+        if (name === 'search_documents' && !canViewLetters(user.roleKey) && JSON.stringify(r.result).includes('"source":"LETTER"')) failures.push(`${label}: shows a letter to a role that does not see letters`);
       }
     }
   });

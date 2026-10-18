@@ -1253,6 +1253,31 @@ export; the client portal and the phone app show the amount.
 - **Tests.** `src/scripts/briefs-test.ts` (CI runs it, fake model): the rules, grounding, opt-in, AI off, re-runs and
   sending once, and narratives on the demo projects.
 
+## Ask the contract (filed documents)
+
+- **What it is.** AI item 75. Ask Nirmaan answers from the text of PDFs filed with a document revision (contracts,
+  specifications, method statements, reports, drawings) and with letters, quoting the words with the page, and links to
+  `/documents/view?file=<attachment>&page=<n>` (web: the browser's PDF viewer at that page plus the page's text; phone:
+  `document-page`, with the file opened in the browser).
+- **Pages.** `DocumentTextService.readPending` reads a PDF with pdf.js (`document-text.ts`, legacy build, required as an ES
+  module on Node 22+) into `DocumentPage`, a row per page with a generated `tsvector` (english) and a GIN index. No vector
+  database. `Attachment.textIndexedAt`/`textPages` mark a file read (0 pages for a scan or a file that could not be
+  read). Files are read when filed (`DocumentsService` after linking attachments), by the documents search route, and by
+  the daily cron (`readAllPending`, a minute, after the digest) or `GET /notifications/jobs/read-documents`.
+- **Search.** `GET /documents/search?q=&projectId=`: the question's words plus construction synonyms (`SEARCH_SYNONYMS`:
+  LD, PV, DLP, EOT, ROW, land…) OR'd into `to_tsquery`, ranked by `ts_rank_cd`; letters also match on their own subject,
+  summary and party. Only pages of a document's current revision, in projects the user can open (`projectWhere`), and
+  letters only for `canViewLetters`. Each hit carries an excerpt of the page (`excerpt`, about 2,400 characters).
+- **Ask.** The `search_documents` tool calls the same search with `read: false` (tools never write) and says how many files
+  are not searchable yet. The prompt asks for exact quotes in double quotes and a page link, and to say when the documents
+  do not cover a question. `unverifiedQuotes` flags a quoted passage that is not in the text the tools returned, next to
+  unverified figures.
+- **Samples and tests.** `src/documents/demo-contracts.ts` holds three sample contracts (one per demo project, filed by the
+  seed as CONTRACT documents with a generated text PDF) and 30 questions with the page and words of each answer.
+  `src/scripts/contract-search-test.ts` (CI) checks every question finds its page in the first three results (29 first),
+  the letters, who sees what and that a superseded revision is not searched. `scripts/ai-eval.ts` has a `contract` set for
+  the real model.
+
 ## Money and quantities
 
 Decimal columns everywhere (`Decimal(18,2)` for money, `Decimal(18,3)` for quantities) and strings

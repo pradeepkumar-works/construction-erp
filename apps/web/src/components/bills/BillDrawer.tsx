@@ -10,7 +10,7 @@ import { GST_STATES, RECEIPT_MODE_LABELS, canEditSubmission, canPrepareBill, can
 import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useBill } from '@/lib/queries';
-import { formatDate, formatINR, formatQty, toNumber } from '@/lib/format';
+import { formatDate, formatINR, formatPct, formatQty, toNumber } from '@/lib/format';
 import { StatusTag } from '@/components/common/StatusTag';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { ReviewActions } from '@/components/common/ReviewActions';
@@ -244,7 +244,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
                     <Row label="Work up to date" value={data.grossUpto} muted />
                     {data.pvLines.length ? <Row label="Price variation" value={data.pvAmount} strong /> : null}
                     <Divider style={{ margin: '6px 0' }} />
-                    <Row label={`GST @ ${data.gstRate}%`} value={data.gstAmount} />
+                    <Row label={`GST @ ${formatPct(data.gstRate)}`} value={data.gstAmount} />
                     <Row label="Less deductions" value={data.totalDeductions} />
                     <Divider style={{ margin: '6px 0' }} />
                     <Row label={<span style={{ fontSize: themeFontSize('fontSizeLG') }}>Net payable</span>} value={data.netPayable} strong />
@@ -265,7 +265,7 @@ export function BillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { 
                   <Section title="Deductions">
                     {data.deductions.length === 0 && <Typography.Text type="secondary">None</Typography.Text>}
                     {data.deductions.map((d) => (
-                      <Row key={d.key} label={d.pct !== null ? `${d.label} @ ${d.pct}%` : d.label} value={d.amount} />
+                      <Row key={d.key} label={d.pct !== null ? `${d.label} @ ${formatPct(d.pct)}` : d.label} value={d.amount} />
                     ))}
                     {data.deductions.length > 0 && (
                       <>

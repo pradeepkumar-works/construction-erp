@@ -10,7 +10,7 @@ import { MSME_CATEGORY_LABELS, canEditSubmission, canIssueWorkOrder, canPrepareS
 import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useWorkOrder } from '@/lib/queries';
-import { formatDate, formatDateTime, formatINR, formatQty, toNumber } from '@/lib/format';
+import { formatDate, formatDateTime, formatINR, formatPct, formatQty, toNumber } from '@/lib/format';
 import { StatusTag } from '@/components/common/StatusTag';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { ReviewActions } from '@/components/common/ReviewActions';
@@ -148,16 +148,16 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
             { key: 'value', label: 'Value before GST', children: <strong>{money(data.value)}</strong> },
             { key: 'project', label: 'Project', children: <Link href={`/projects/${data.projectId}`}>{data.projectName}</Link> },
             { key: 'period', label: 'Period', children: `${data.startDate ? formatDate(data.startDate) : '-'} to ${data.endDate ? formatDate(data.endDate) : '-'}` },
-            { key: 'gst', label: 'GST on their bills', children: `${data.gstRate}%` },
-            { key: 'ret', label: 'Retention', children: `${data.retentionPct}%` },
-            { key: 'tds', label: 'TDS (194C)', children: `${data.tdsPct}%` },
+            { key: 'gst', label: 'GST on their bills', children: formatPct(data.gstRate) },
+            { key: 'ret', label: 'Retention', children: formatPct(data.retentionPct) },
+            { key: 'tds', label: 'TDS (194C)', children: formatPct(data.tdsPct) },
             {
               key: 'adv',
               label: 'Advance',
               children:
                 toNumber(data.advanceAmount) > 0 ? (
                   <span>
-                    {money(data.advanceAmount)} at {data.advanceRecoveryPct}% a bill
+                    {money(data.advanceAmount)} at {formatPct(data.advanceRecoveryPct)} a bill
                     <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                       {formatINR(data.advanceRecovered, true)} recovered, {formatINR(Math.max(advanceLeft, 0), true)} to go
                     </div>
@@ -167,14 +167,14 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
                 ),
             },
             { key: 'pay', label: 'Payment', children: data.paymentDays !== null ? `${data.paymentDays} days from the bill` : '-' },
-            ...(approved ? [{ key: 'billed', label: 'Billed', children: <Progress percent={data.billedPct} size="small" style={{ maxWidth: 320, margin: 0 }} format={(p) => `${p}% · ${formatINR(data.billedAmount, true)}`} aria-label={`${data.billedPct}% billed`} /> }] : []),
+            ...(approved ? [{ key: 'billed', label: 'Billed', children: <Progress percent={data.billedPct} size="small" style={{ maxWidth: 320, margin: 0 }} format={() => `${formatPct(data.billedPct)} · ${formatINR(data.billedAmount, true)}`} aria-label={`${formatPct(data.billedPct)} billed`} /> }] : []),
             ...(data.remarks ? [{ key: 'remarks', label: 'Remarks', children: data.remarks }] : []),
             ...submissionMetaItems(data).filter((i) => i.key !== 'status' && i.key !== 'project'),
           ],
           lifecycle: submissionLifecycle(data, [
             data.closedAt
-              ? { title: 'Closed', done: true, content: `${data.billedPct}% billed` }
-              : { title: 'Billed', done: !!finalBilled && !data.open, content: approved ? `${data.billedPct}% billed` : undefined },
+              ? { title: 'Closed', done: true, content: `${formatPct(data.billedPct)} billed` }
+              : { title: 'Billed', done: !!finalBilled && !data.open, content: approved ? `${formatPct(data.billedPct)} billed` : undefined },
           ]),
           sections: [
             {

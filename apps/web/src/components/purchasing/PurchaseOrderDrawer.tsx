@@ -10,7 +10,7 @@ import { MSME_CATEGORY_LABELS, canEditSubmission, canKeepStock, canPurchase, can
 import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { usePurchaseOrder } from '@/lib/queries';
-import { formatDate, formatDateTime, formatINR, formatQty, toNumber } from '@/lib/format';
+import { formatDate, formatDateTime, formatINR, formatPct, formatQty, toNumber } from '@/lib/format';
 import { StatusTag } from '@/components/common/StatusTag';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { ReviewActions } from '@/components/common/ReviewActions';
@@ -129,14 +129,14 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
             { key: 'deliver', label: 'Deliver by', children: data.deliveryBy ? formatDate(data.deliveryBy) : '-' },
             { key: 'address', label: 'Delivery address', children: data.deliveryAddress ?? '-' },
             { key: 'pay', label: 'Payment', children: data.paymentTerms ?? (data.paymentDays !== null ? `${data.paymentDays} days from invoice` : '-') },
-            ...(approved ? [{ key: 'recv', label: 'Received', children: <Progress percent={data.receivedPct} size="small" style={{ maxWidth: 240, margin: 0 }} aria-label={`${data.receivedPct}% received`} /> }] : []),
+            ...(approved ? [{ key: 'recv', label: 'Received', children: <Progress percent={data.receivedPct} size="small" style={{ maxWidth: 240, margin: 0 }} format={() => formatPct(data.receivedPct)} aria-label={`${formatPct(data.receivedPct)} received`} /> }] : []),
             ...(data.remarks ? [{ key: 'remarks', label: 'Remarks', children: data.remarks }] : []),
             ...submissionMetaItems(data).filter((i) => i.key !== 'status' && i.key !== 'project'),
           ],
           lifecycle: submissionLifecycle(data, [
             data.closedAt
-              ? { title: 'Closed', done: true, content: `${data.receivedPct}% received` }
-              : { title: 'Received', done: !data.open, content: approved ? `${data.receivedPct}% received` : undefined },
+              ? { title: 'Closed', done: true, content: `${formatPct(data.receivedPct)} received` }
+              : { title: 'Received', done: !data.open, content: approved ? `${formatPct(data.receivedPct)} received` : undefined },
           ]),
           sections: [
             {
@@ -155,7 +155,7 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
                       { title: 'Item', render: (_, l) => <div>{l.itemName}{l.specification && <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{l.specification}</div>}</div> },
                       { title: 'Quantity', dataIndex: 'quantity', width: 120, align: 'right', render: (v, l) => <span className="mono">{formatQty(v)} {l.unit}</span> },
                       { title: 'Rate', dataIndex: 'rate', width: 110, align: 'right', render: (v) => money(v) },
-                      { title: 'GST', dataIndex: 'gstRate', width: 60, align: 'right', render: (v) => `${v}%` },
+                      { title: 'GST', dataIndex: 'gstRate', width: 60, align: 'right', render: (v) => formatPct(v) },
                       { title: 'Amount', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <strong>{money(v)}</strong> },
                       ...(approved
                         ? [
