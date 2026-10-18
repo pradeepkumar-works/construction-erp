@@ -13,6 +13,13 @@ const READ_PER_SEARCH = 6;
 /** Time spent reading files before a search, at most (ms). */
 const READ_BUDGET_MS = 20_000;
 const HITS = 6;
+/** A file that could not be read is tried again after this long (ms), so a fixed reader or a passing fault heals it. */
+const RETRY_AFTER_MS = 24 * 60 * 60 * 1000;
+
+/** Not read yet, or failed and due another try. */
+const unreadFile = (): Prisma.AttachmentWhereInput => ({
+  OR: [{ textIndexedAt: null }, { textError: { not: null }, textIndexedAt: { lt: new Date(Date.now() - RETRY_AFTER_MS) } }],
+});
 
 type PageRow = { attachmentId: string; page: number; text: string; projectId: string; rank: number };
 type LetterRow = { id: string; rank: number };
@@ -34,13 +41,12 @@ export class DocumentTextService {
   ) {}
 
   /** PDFs on current document revisions and on letters, in these projects, whose text has not been read yet. */
-  private pendingWhere(organizationId: string, projectIds: string[] | null): Prisma.AttachmentWhereInput {
+  private pendingWhere(organizationId: string | null, projectIds: string[] | null): Prisma.AttachmentWhereInput {
     const inProjects = projectIds ? { projectId: { in: projectIds } } : {};
     return {
-      organizationId,
+      ...(organizationId ? { organizationId } : {}),
       mimeType: 'application/pdf',
-      textIndexedAt: null,
-      OR: [{ revision: { currentOf: { isNot: null }, document: inProjects } }, { letter: inProjects }],
+      AND: [unreadFile(), { OR: [{ revision: { currentOf: { isNot: null }, document: inProjects } }, { letter: projectIds ? { is: inProjects } : { isNot: null } }] }],
     };
   }
 
@@ -84,7 +90,7 @@ export class DocumentTextService {
     const started = Date.now();
     let read = 0;
     for (;;) {
-      const next = await this.prisma.attachment.findFirst({ where: { mimeType: 'application/pdf', textIndexedAt: null, OR: [{ revision: { currentOf: { isNot: null } } }, { letterId: { not: null } }] }, select: { organizationId: true } });
+      const next = await this.prisma.attachment.findFirst({ where: this.pendingWhere(null, null), select: { organizationId: true } });
       const left = budgetMs - (Date.now() - started);
       if (!next || left <= 0) break;
       const n = await this.readPending(next.organizationId, null, 20, left);

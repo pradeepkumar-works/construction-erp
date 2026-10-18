@@ -103,6 +103,20 @@ async function demo(): Promise<number> {
     const read = await prisma.attachment.findMany({ where: { id: { in: files.map((f) => f.id) } }, select: { textPages: true, textError: true } });
     check('every contract is read, a row per page', read.every((r) => (r.textPages ?? 0) >= 5 && !r.textError), JSON.stringify(read));
 
+    // A file that failed is tried again a day later, not on every search.
+    const [failedRecently, failedYesterday] = files;
+    const hour = 60 * 60 * 1000;
+    await prisma.attachment.update({ where: { id: failedRecently.id }, data: { textError: 'test failure', textPages: 0, textIndexedAt: new Date(Date.now() - hour) } });
+    await prisma.attachment.update({ where: { id: failedYesterday.id }, data: { textError: 'test failure', textPages: 0, textIndexedAt: new Date(Date.now() - 25 * hour) } });
+    await search.readPending(org.id, null, 20);
+    const retried = await prisma.attachment.findMany({ where: { id: { in: [failedRecently.id, failedYesterday.id] } }, select: { id: true, textPages: true, textError: true } });
+    const recent = retried.find((r) => r.id === failedRecently.id);
+    const older = retried.find((r) => r.id === failedYesterday.id);
+    check('a file that failed an hour ago waits', recent?.textError === 'test failure', JSON.stringify(recent));
+    check('a file that failed a day ago is read again', !older?.textError && (older?.textPages ?? 0) >= 5, JSON.stringify(older));
+    await prisma.attachment.update({ where: { id: failedRecently.id }, data: { textIndexedAt: null, textError: null } });
+    await search.readPending(org.id, null, 20);
+
     let top1 = 0;
     let top3 = 0;
     for (const q of CONTRACT_QUESTIONS) {
