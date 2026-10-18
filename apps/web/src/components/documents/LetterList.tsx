@@ -87,7 +87,7 @@ export function LetterList({ projectId: fixedProject, onOpen, onNew }: { project
   return (
     <>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
-      <ListToolbar
+      <ListToolbar filters={frame.filterState}
         projectId={frame.projectFilter}
         onProject={frame.setProjectFilter}
         hideProject={!!fixedProject}

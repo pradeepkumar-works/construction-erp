@@ -35,10 +35,12 @@ function projectColumns(sortOrderFor: (key: ProjectSortField) => 'ascend' | 'des
   const sort = (key: ProjectSortField) => ({ key, sorter: true, sortOrder: sortOrderFor(key) });
   return [
     {
+      card: 'title',
+      cardText: (p) => p.name,
       title: 'Project',
       ...sort('name'),
       locked: true,
-      width: 320,
+      width: 290,
       render: (_, p) => (
         <div>
           <Link href={`/projects/${p.id}`} className="link-strong">
@@ -48,10 +50,11 @@ function projectColumns(sortOrderFor: (key: ProjectSortField) => 'ascend' | 'des
         </div>
       ),
     },
-    { title: 'Type', dataIndex: 'type', width: 150, render: (t) => <ProjectTypeTag type={t} />, ...sort('type') },
-    { title: 'Status', dataIndex: 'status', width: 110, render: (s) => <ProjectStatusTag status={s} />, ...sort('status') },
-    { key: 'projectManagerName', title: 'PM', label: 'Project manager', dataIndex: 'projectManagerName', width: 140, render: (v) => v ?? <Sub>Unassigned</Sub> },
+    { card: 'meta', cardText: (p) => [p.code, p.clientName, p.location].filter(Boolean).join(' · '), title: 'Type', dataIndex: 'type', width: 150, defaultFrom: 1600, render: (t) => <ProjectTypeTag type={t} />, ...sort('type') },
+    { card: 'status', title: 'Status', dataIndex: 'status', width: 110, render: (s) => <ProjectStatusTag status={s} />, ...sort('status') },
+    { key: 'projectManagerName', title: 'PM', label: 'Project manager', dataIndex: 'projectManagerName', width: 140, defaultFrom: 1400, render: (v) => v ?? <Sub>Unassigned</Sub> },
     {
+      card: 'amount',
       title: 'Contract Value',
       label: 'Contract value',
       dataIndex: 'contractValue',
@@ -64,7 +67,7 @@ function projectColumns(sortOrderFor: (key: ProjectSortField) => 'ascend' | 'des
     },
     { key: 'physicalProgressPct', title: 'Progress', dataIndex: 'physicalProgressPct', width: 160, render: (v: number) => <Progress percent={Math.round(v * 10) / 10} size="small" status={progressStatus(v)} aria-label={`${Math.round(v * 10) / 10}% done`} /> },
     { title: 'Start Date', label: 'Start date', dataIndex: 'startDate', width: 120, defaultHidden: true, render: (v) => formatDate(v), ...sort('startDate') },
-    { title: 'End Date', label: 'End date', dataIndex: 'endDate', width: 120, render: (v) => formatDate(v), ...sort('endDate') },
+    { card: 'date', title: 'End Date', label: 'End date', dataIndex: 'endDate', width: 120, render: (v) => formatDate(v), ...sort('endDate') },
     {
       key: 'pendingApprovals',
       title: 'Pending',
@@ -130,7 +133,7 @@ export default function ProjectsPage() {
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       <Card size="small">
         {frame.views}
-        <ListToolbar
+        <ListToolbar filters={frame.filterState}
           projectId={undefined}
           onProject={() => undefined}
           hideProject

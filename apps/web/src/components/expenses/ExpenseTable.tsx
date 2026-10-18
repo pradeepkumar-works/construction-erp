@@ -34,12 +34,14 @@ export function expenseColumns({
 }): ListColumn<ExpenseDto>[] {
   const sort = (key: ExpenseSortField) => ({ key, sorter: true, sortOrder: sortOrderFor(key), sortDirections: ['descend', 'ascend'] as ('descend' | 'ascend')[] });
   return [
-    { title: 'Date', dataIndex: 'date', width: 110, render: (v) => formatDate(v), ...sort('date') },
+    { card: 'date', title: 'Date', dataIndex: 'date', width: 110, render: (v) => formatDate(v), ...sort('date') },
     { title: 'No.', dataIndex: 'expenseNo', width: 130, className: 'mono', ...sort('expenseNo') },
     ...(showProject
-      ? [{ title: 'Project', dataIndex: 'projectName', ...sort('project'), width: 200, ellipsis: true, render: (v: string, r: ExpenseDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> }]
+      ? [{ card: 'meta' as const, cardText: (r: ExpenseDto) => r.projectName, title: 'Project', dataIndex: 'projectName', ...sort('project'), width: 180, ellipsis: true, render: (v: string, r: ExpenseDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> }]
       : []),
     {
+      card: 'title',
+      cardText: (r) => r.description,
       key: 'description',
       title: 'Expense',
       locked: true,
@@ -50,8 +52,10 @@ export function expenseColumns({
         </div>
       ),
     },
-    { title: 'Category', dataIndex: 'category', width: 170, ...sort('category'), render: (c) => <Tag style={{ margin: 0 }}>{EXPENSE_CATEGORY_LABELS[c as ExpenseDto['category']]}</Tag> },
+    { defaultFrom: 1400, card: 'meta', title: 'Category', dataIndex: 'category', width: 170, ...sort('category'), render: (c) => <Tag style={{ margin: 0 }}>{EXPENSE_CATEGORY_LABELS[c as ExpenseDto['category']]}</Tag> },
     {
+      card: 'amount',
+      cardText: (r) => formatINR(r.totalAmount, true),
       title: 'Amount',
       width: 140,
       align: 'right',
@@ -64,8 +68,9 @@ export function expenseColumns({
       ),
       total: (rows) => sumMoney(rows.map((r) => r.totalAmount)),
     },
-    { key: 'paymentMode', title: 'Paid by', dataIndex: 'paymentMode', width: 110, render: (m) => PAYMENT_MODE_LABELS[m as ExpenseDto['paymentMode']].replace(/ \(.*\)$/, '') },
+    { defaultFrom: 1600, key: 'paymentMode', title: 'Paid by', dataIndex: 'paymentMode', width: 110, render: (m) => PAYMENT_MODE_LABELS[m as ExpenseDto['paymentMode']].replace(/ \(.*\)$/, '') },
     {
+      defaultFrom: 1600,
       key: 'attachments',
       title: 'Bill',
       label: 'Bill photo',
@@ -82,9 +87,9 @@ export function expenseColumns({
           </Tooltip>
         ),
     },
-    { title: 'Submitted by', dataIndex: 'submittedByName', width: 140, ...sort('submittedBy') },
+    { defaultFrom: 1600, title: 'Submitted by', dataIndex: 'submittedByName', width: 140, ...sort('submittedBy') },
     { title: 'Submitted on', dataIndex: 'submittedAt', width: 130, defaultHidden: true, render: (v) => formatDate(v), ...sort('submittedAt') },
-    { title: 'Status', fixed: 'right' as const, dataIndex: 'status', width: 140, render: (s) => <StatusTag status={s} />, ...sort('status') },
+    { card: 'status', title: 'Status', fixed: 'right' as const, dataIndex: 'status', width: 140, render: (s) => <StatusTag status={s} />, ...sort('status') },
     { key: 'actions', title: '', label: 'Actions', locked: true, fixed: 'right' as const, width: 56, render: (_, r) => <RowActions type="expense" row={r} href={`/expenses/${r.id}`} amount={r.totalAmount} onOpen={onOpen} onEdit={onEdit} /> },
   ];
 }

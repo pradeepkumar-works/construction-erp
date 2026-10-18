@@ -15,6 +15,7 @@ import { formatDate } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { CardToolbar } from '@/components/common/CardToolbar';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
+import { useProjectScope } from '@/lib/project-scope';
 import { themeFontSize } from '@/lib/theme';
 
 interface Mark {
@@ -45,7 +46,8 @@ export function RollCallPanel({ projectId: fixedProject }: { projectId?: string 
   const { user } = useAuth();
   const { message } = App.useApp();
   const qc = useQueryClient();
-  const [projectPick, setProjectPick] = useState<string | undefined>();
+  // The header's project (UX item 84): picking one here picks it for every list.
+  const [projectPick, setProjectPick] = useProjectScope();
   const projectId = fixedProject ?? projectPick;
   const [date, setDate] = useState<Dayjs>(dayjs());
   const dateStr = date.format('YYYY-MM-DD');

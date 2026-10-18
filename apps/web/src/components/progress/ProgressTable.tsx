@@ -36,17 +36,17 @@ export function progressColumns({
 }): ListColumn<ProgressEntryDto>[] {
   const sort = (key: ProgressSortField) => ({ key, sorter: true, sortOrder: sortOrderFor(key), sortDirections: ['descend', 'ascend'] as ('descend' | 'ascend')[] });
   return [
-    { title: 'Date', dataIndex: 'date', width: 120, render: (v) => formatDate(v), ...sort('date') },
+    { card: 'date', title: 'Date', dataIndex: 'date', width: 120, render: (v) => formatDate(v), ...sort('date') },
     ...(showProject
-      ? [{ title: 'Project', dataIndex: 'projectName', ...sort('project'), width: 220, ellipsis: true, render: (v: string, r: ProgressEntryDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> }]
+      ? [{ card: 'meta' as const, cardText: (r: ProgressEntryDto) => r.projectName, title: 'Project', dataIndex: 'projectName', ...sort('project'), width: 220, ellipsis: true, render: (v: string, r: ProgressEntryDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> }]
       : []),
-    { title: 'Activity', locked: true, ...sort('activity'), render: (_, r) => <ActivityCell row={r} onOpen={onOpen} /> },
-    { title: 'Quantity', ...sort('quantity'), width: 130, align: 'right', className: 'mono', render: (_, r) => `${formatQty(r.quantity)} ${r.unit}` },
-    { key: 'manpower', title: 'Manpower', dataIndex: 'manpowerCount', width: 110, align: 'right', render: (v) => v ?? '-', total: (rows) => rows.reduce((n, r) => n + (r.manpowerCount ?? 0), 0) },
-    { key: 'photos', title: 'Photos', dataIndex: 'attachments', width: 130, render: (a) => <PhotoThumbs attachments={a} /> },
-    { title: 'Submitted by', dataIndex: 'submittedByName', width: 150, ellipsis: true, ...sort('submittedBy') },
+    { card: 'title', cardText: (r) => r.activityName, title: 'Activity', locked: true, ...sort('activity'), render: (_, r) => <ActivityCell row={r} onOpen={onOpen} /> },
+    { card: 'amount', title: 'Quantity', ...sort('quantity'), width: 130, align: 'right', className: 'mono', render: (_, r) => `${formatQty(r.quantity)} ${r.unit}` },
+    { defaultFrom: 1600, key: 'manpower', title: 'Manpower', dataIndex: 'manpowerCount', width: 110, align: 'right', render: (v) => v ?? '-', total: (rows) => rows.reduce((n, r) => n + (r.manpowerCount ?? 0), 0) },
+    { defaultFrom: 1600, key: 'photos', title: 'Photos', dataIndex: 'attachments', width: 130, render: (a) => <PhotoThumbs attachments={a} /> },
+    { defaultFrom: 1400, card: 'meta', title: 'Submitted by', dataIndex: 'submittedByName', width: 150, ellipsis: true, ...sort('submittedBy') },
     { title: 'Submitted on', dataIndex: 'submittedAt', width: 130, defaultHidden: true, render: (v) => (v ? formatDate(v) : '-'), ...sort('submittedAt') },
-    { title: 'Status', fixed: 'right' as const, dataIndex: 'status', width: 150, render: (s) => <StatusTag status={s} />, ...sort('status') },
+    { card: 'status', title: 'Status', fixed: 'right' as const, dataIndex: 'status', width: 150, render: (s) => <StatusTag status={s} />, ...sort('status') },
     { key: 'actions', title: '', label: 'Actions', locked: true, fixed: 'right' as const, width: 56, render: (_, r) => <RowActions type="progress" row={r} href={`/progress/${r.id}`} onOpen={onOpen} onEdit={onEdit} /> },
   ];
 }

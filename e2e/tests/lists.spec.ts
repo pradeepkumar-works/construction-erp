@@ -54,10 +54,10 @@ test('a view saved and shared shows for the company, and only its owner can chan
 test('columns can be hidden and stay hidden, and Reset brings them back', async ({ page }) => {
   await signIn(page, 'pm@demo.com');
   await page.goto('/dpr');
-  const header = page.locator('.ant-table-thead th').filter({ hasText: /^Weather$/ });
+  const header = page.locator('.ant-table-thead th').filter({ hasText: /^Work executed$/ });
   await expect(header).toBeVisible();
   await page.getByRole('button', { name: 'Columns' }).click();
-  await page.getByRole('checkbox', { name: 'Weather' }).uncheck();
+  await page.getByRole('checkbox', { name: 'Work executed' }).uncheck();
   await expect(header).toHaveCount(0);
   await page.reload();
   await expect(page.locator('.ant-table-thead th').filter({ hasText: /^Date$/ })).toBeVisible();
@@ -181,6 +181,6 @@ test('registers have views, and lists in a tab keep chips and columns', async ({
     await page.locator('.ant-select-dropdown:visible .ant-select-item-option').filter({ hasText: /^Issue$/ }).click();
     await expect(chip).toBeVisible({ timeout: 2000 });
   }).toPass();
-  // A tab list keeps its filters to itself: nothing goes in the address bar.
-  await expect(page).toHaveURL(/\/stock$/);
+  // A tab list keeps its filters to itself: only the open tab goes in the address bar (UX item 84).
+  await expect(page).toHaveURL(/\/stock\?sub=register$/);
 });

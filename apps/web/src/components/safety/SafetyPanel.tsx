@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Statistic, Tabs, Tag, Tooltip } from 'antd';
 import { SAFETY_INCIDENT_TYPE_LABELS } from '@erp/shared';
 import { useSafetySummary } from '@/lib/queries';
@@ -11,14 +11,16 @@ import { PermitList } from './PermitList';
 import { INCIDENT_TYPE_COLORS } from './safetyUi';
 import { CardToolbar } from '@/components/common/CardToolbar';
 import { themeColor, themeFontSize } from '@/lib/theme';
+import { useUrlTab } from '@/lib/url-state';
 
-export type SafetyTab = 'incidents' | 'talks' | 'permits';
+export const SAFETY_TABS = ['incidents', 'talks', 'permits'] as const;
+export type SafetyTab = (typeof SAFETY_TABS)[number];
 const big = { content: { fontSize: themeFontSize('fontSizeXL') } };
 
-/** Safety at a glance and its three registers; the Safety page and a project tab. */
+/** Safety at a glance and its three registers; the Safety page and a project tab. The open register is `?sub=` in the URL (UX item 84). */
 export function SafetyPanel({ projectId, initialTab, initialId }: { projectId?: string; initialTab?: SafetyTab; initialId?: string }) {
   const { data: s } = useSafetySummary(projectId);
-  const [tab, setTab] = useState<SafetyTab>(initialTab ?? 'incidents');
+  const [tab, setTab] = useUrlTab<SafetyTab>(SAFETY_TABS, 'incidents', { initial: initialTab });
   return (
     <div className="safety-panel">
       {s ? (

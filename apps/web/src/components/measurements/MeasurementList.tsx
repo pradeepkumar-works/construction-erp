@@ -72,7 +72,7 @@ export function MeasurementList({ projectId: fixedProject }: { projectId?: strin
     <>
       {frame.views}
       {error && <QueryError error={error} onRetry={() => refetch()} />}
-      <ListToolbar
+      <ListToolbar filters={frame.filterState}
         projectId={frame.projectFilter}
         onProject={(v) => {
           page.setFilter('boqItemId', undefined);

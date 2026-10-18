@@ -104,7 +104,7 @@ export function NcrList({ projectId: fixedProject, onOpen }: { projectId?: strin
   return (
     <>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
-      <ListToolbar
+      <ListToolbar filters={frame.filterState}
         projectId={frame.projectFilter}
         onProject={frame.setProjectFilter}
         hideProject={!!fixedProject}

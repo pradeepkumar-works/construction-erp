@@ -304,7 +304,7 @@ export function PapersPanel() {
         </Typography.Text>
       </div>
       {docs.error && <QueryError error={docs.error} onRetry={() => docs.refetch()} />}
-      <ListToolbar
+      <ListToolbar filters={docFrame.filterState}
         hideProject
         onProject={() => undefined}
         search={docList.search}
@@ -343,7 +343,7 @@ export function PapersPanel() {
         </Typography.Title>
       </div>
       {drivers.error && <QueryError error={drivers.error} onRetry={() => drivers.refetch()} />}
-      <ListToolbar
+      <ListToolbar filters={drvFrame.filterState}
         hideProject
         onProject={() => undefined}
         search={drvList.search}

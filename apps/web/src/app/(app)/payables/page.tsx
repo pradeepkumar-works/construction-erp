@@ -1,9 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { App, Button, Card, Col, Popconfirm, Row, Select, Space, Statistic, Table, Tabs, Tag, Typography } from 'antd';
-import type { TableProps } from 'antd';
+import { App, Button, Card, Col, Popconfirm, Row, Space, Statistic, Tabs, Tag, Typography } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { PayableBillDto, PayableTotalsDto, ProjectPayableDto, VendorPayableDto, VendorPaymentDto, VendorPaymentSortField } from '@erp/shared';
@@ -13,6 +12,7 @@ import { api, errorMessage, errorStatus } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { usePayables, useVendorPayments } from '@/lib/queries';
 import { useListPage } from '@/lib/listPage';
+import { useUrlTab } from '@/lib/url-state';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { PAYABLE_BILL_EXPORT, PAYABLE_VENDOR_EXPORT, VENDOR_PAYMENT_EXPORT } from '@/lib/exportColumns';
 import { formatDate, formatINR, formatINRCompact, toNumber } from '@/lib/format';
@@ -28,6 +28,7 @@ import { InTallyTag } from '@/components/tally/InTallyTag';
 import { CardToolbar } from '@/components/common/CardToolbar';
 import { EmptyArt } from '@/components/common/EmptyArt';
 import { DataTable, useColumnChoice, type ListColumn } from '@/components/list/DataTable';
+import { LocalDataTable } from '@/components/list/LocalDataTable';
 import { exportSelected } from '@/components/list/bulk';
 import { RecordLink } from '@/components/record/RecordLink';
 import { themeColor, themeFontSize } from '@/lib/theme';
@@ -35,6 +36,7 @@ import { VendorSelect } from '@/components/common/SearchSelect';
 
 const money = (v: string, strong?: boolean) => (strong ? <strong className="mono">{formatINR(v)}</strong> : <span className="mono">{formatINR(v)}</span>);
 const late = (v: string) => (toNumber(v) > 0 ? <span className="mono" style={{ color: themeColor('colorErrorText') }}>{formatINR(v)}</span> : <span className="mono text-muted">-</span>);
+const sumMoney = (values: string[]) => formatINR(values.reduce((n, v) => n + toNumber(v), 0));
 const isSmall = (m: string | null) => m === 'MICRO' || m === 'SMALL';
 
 /** When a bill falls due, in words: "in 5 days", "today", "12 days late". */
@@ -44,20 +46,27 @@ function DueText({ days }: { days: number }) {
   return <Typography.Text type={days <= 7 ? 'warning' : undefined}>in {days} days</Typography.Text>;
 }
 
-function ageingColumns<T extends PayableTotalsDto>(): NonNullable<TableProps<T>['columns']> {
+/** The ageing columns of the by-vendor and by-project tables (keys are stable: the column chooser keeps them). */
+function ageingColumns<T extends PayableTotalsDto>(): ListColumn<T>[] {
   return [
-    { title: 'Billed', dataIndex: 'billed', width: 130, align: 'right', render: (v) => money(v) },
-    { title: 'Paid', dataIndex: 'paid', width: 130, align: 'right', render: (v) => money(v) },
-    { title: 'Outstanding', dataIndex: 'outstanding', width: 130, align: 'right', render: (v) => money(v, true) },
-    { title: 'Not due', key: 'a0', width: 110, align: 'right', render: (_, r) => money(r.ageing.notDue) },
-    { title: '1-30 late', key: 'a1', width: 110, align: 'right', render: (_, r) => late(r.ageing.days1to30) },
-    { title: '31-60', key: 'a2', width: 110, align: 'right', render: (_, r) => late(r.ageing.days31to60) },
-    { title: '61-90', key: 'a3', width: 110, align: 'right', render: (_, r) => late(r.ageing.days61to90) },
-    { title: 'Over 90', key: 'a4', width: 110, align: 'right', render: (_, r) => late(r.ageing.over90) },
-    { title: 'MSME at risk', dataIndex: 'msmeAtRisk', width: 120, align: 'right', render: (v) => late(v) },
-    { title: 'Retention held', dataIndex: 'retentionHeld', width: 130, align: 'right', render: (v) => money(v) },
+    { key: 'billed', title: 'Billed', dataIndex: 'billed', width: 130, align: 'right', render: (v) => money(v) },
+    { key: 'paid', title: 'Paid', dataIndex: 'paid', width: 130, align: 'right', render: (v) => money(v) },
+    { key: 'outstanding', card: 'amount', title: 'Outstanding', dataIndex: 'outstanding', width: 130, align: 'right', render: (v) => money(v, true) },
+    { key: 'a0', title: 'Not due', width: 110, align: 'right', render: (_, r) => money(r.ageing.notDue) },
+    { key: 'a1', title: '1-30 late', width: 110, align: 'right', render: (_, r) => late(r.ageing.days1to30) },
+    { key: 'a2', title: '31-60', label: '31-60 days late', width: 110, align: 'right', render: (_, r) => late(r.ageing.days31to60) },
+    { key: 'a3', title: '61-90', label: '61-90 days late', width: 110, align: 'right', render: (_, r) => late(r.ageing.days61to90) },
+    { key: 'a4', title: 'Over 90', label: 'Over 90 days late', width: 110, align: 'right', render: (_, r) => late(r.ageing.over90) },
+    { key: 'msmeAtRisk', title: 'MSME at risk', dataIndex: 'msmeAtRisk', width: 120, align: 'right', render: (v) => late(v) },
+    { key: 'retentionHeld', title: 'Retention held', dataIndex: 'retentionHeld', width: 130, align: 'right', render: (v) => money(v) },
   ];
 }
+
+/** Rows of a list worked out in the browser, with the `id` the list template keys them by. */
+type Keyed<T> = T & { id: string };
+const PAGE_KEYS = ['vendorId'] as const;
+const TAB_KEYS = ['due', 'vendors', 'projects', 'payments'] as const;
+type PayablesTab = (typeof TAB_KEYS)[number];
 
 const NO_KEYS: string[] = [];
 const billHref = (r: VendorPaymentDto) => (r.billType === 'VENDOR_BILL' ? `/vendor-bills/${r.vendorBillId}` : `/subcontract-bills/${r.subcontractBillId}`);
@@ -214,17 +223,34 @@ function PaymentsTab({ projectId, vendorId, onBill }: { projectId?: string; vend
 export default function PayablesPage() {
   const { user } = useAuth();
   const [projectId, setProjectId] = useProjectScope();
-  const [vendorId, setVendorId] = useState<string | undefined>();
+  // The due list is the page's own list: its search and the vendor go in the address bar (UX item 84), as does the tab.
+  const page = useListPage<'dueDate'>({ keys: PAGE_KEYS, sortBy: 'dueDate', sortOrder: 'asc', sortFields: [], scope: projectId });
+  const vendorId = page.filters.vendorId;
+  const [tab, setTab] = useUrlTab<PayablesTab>(TAB_KEYS, 'due', { param: 'tab' });
   const [bill, setBill] = useState<{ billType: PayableBillDto['billType']; billId: string } | null>(null);
   const [paying, setPaying] = useState<PayTarget | null>(null);
   const { data, isLoading, error, refetch } = usePayables({ projectId, vendorId });
   const accounts = !!user && canRecordPayment(user.roleKey);
   const t = data?.totals;
+  const q = page.params.q?.toLowerCase();
+  const openBills = useMemo<Keyed<PayableBillDto>[]>(
+    () =>
+      (data?.openBills ?? [])
+        .filter((r) => !q || `${r.billLabel} ${r.vendorName} ${r.projectCode} ${r.projectName}`.toLowerCase().includes(q))
+        .map((r) => ({ ...r, id: `${r.billType}-${r.billId}` })),
+    [data, q],
+  );
+  const vendors = useMemo<Keyed<VendorPayableDto>[]>(() => (data?.vendors ?? []).map((r) => ({ ...r, id: r.vendorId })), [data]);
+  const projects = useMemo<Keyed<ProjectPayableDto>[]>(() => (data?.projects ?? []).map((r) => ({ ...r, id: r.projectId })), [data]);
+  const failed = !!error;
 
-  const openColumns: TableProps<PayableBillDto>['columns'] = [
+  const openColumns: ListColumn<Keyed<PayableBillDto>>[] = [
     {
-      title: 'Bill',
       key: 'bill',
+      title: 'Bill',
+      locked: true,
+      card: 'title',
+      cardText: (r) => r.billLabel,
       width: 190,
       render: (_, r) => (
         <div>
@@ -238,8 +264,10 @@ export default function PayablesPage() {
       ),
     },
     {
-      title: 'Vendor',
       key: 'vendor',
+      title: 'Vendor',
+      card: 'meta',
+      cardText: (r) => `${r.vendorName} · ${r.projectCode} · ${r.projectName}`,
       render: (_, r) => (
         <div>
           {r.vendorName}
@@ -254,11 +282,14 @@ export default function PayablesPage() {
         </div>
       ),
     },
-    { title: 'Payable', dataIndex: 'payable', width: 130, align: 'right', render: (v) => money(v) },
-    { title: 'Paid', dataIndex: 'paid', width: 120, align: 'right', render: (v) => money(v) },
-    { title: 'Outstanding', dataIndex: 'outstanding', width: 140, align: 'right', render: (v) => money(v, true) },
+    { key: 'payable', title: 'Payable', dataIndex: 'payable', width: 130, align: 'right', render: (v) => money(v), total: (rows) => sumMoney(rows.map((r) => r.payable)) },
+    { key: 'paid', title: 'Paid', dataIndex: 'paid', width: 120, align: 'right', render: (v) => money(v), total: (rows) => sumMoney(rows.map((r) => r.paid)) },
+    { key: 'outstanding', card: 'amount', title: 'Outstanding', dataIndex: 'outstanding', width: 140, align: 'right', render: (v) => money(v, true), total: (rows) => sumMoney(rows.map((r) => r.outstanding)) },
     {
+      key: 'dueDate',
       title: 'Due',
+      card: 'date',
+      cardText: (r) => (r.daysToDue < 0 ? `Due ${formatDate(r.dueDate)}, ${-r.daysToDue} days late` : r.daysToDue === 0 ? `Due today` : `Due ${formatDate(r.dueDate)}, in ${r.daysToDue} days`),
       dataIndex: 'dueDate',
       width: 140,
       render: (v, r) => (
@@ -273,8 +304,11 @@ export default function PayablesPage() {
     ...(accounts
       ? [
           {
-            title: '',
             key: 'pay',
+            title: '',
+            label: 'Pay',
+            locked: true,
+            card: false,
             fixed: 'right' as const,
             width: 90,
             render: (_: unknown, r: PayableBillDto) => (
@@ -282,15 +316,19 @@ export default function PayablesPage() {
                 Pay
               </Button>
             ),
-          },
+          } satisfies ListColumn<Keyed<PayableBillDto>>,
         ]
       : []),
   ];
+  const openChoice = useColumnChoice('payables-due', openColumns);
 
-  const vendorColumns: TableProps<VendorPayableDto>['columns'] = [
+  const vendorColumns: ListColumn<Keyed<VendorPayableDto>>[] = [
     {
+      key: 'vendorName',
       title: 'Vendor',
       dataIndex: 'vendorName',
+      locked: true,
+      card: 'title',
       fixed: 'left',
       width: 240,
       ellipsis: true,
@@ -305,12 +343,12 @@ export default function PayablesPage() {
         </span>
       ),
     },
-    { title: 'Open bills', dataIndex: 'openBills', width: 100, align: 'right' },
-    ...ageingColumns<VendorPayableDto>(),
+    { key: 'openBills', title: 'Open bills', dataIndex: 'openBills', width: 100, align: 'right', card: 'meta', cardText: (r) => `${r.openBills} open bill${r.openBills === 1 ? '' : 's'}` },
+    ...ageingColumns<Keyed<VendorPayableDto>>(),
   ];
-  const projectColumns: TableProps<ProjectPayableDto>['columns'] = [
-    { title: 'Project', dataIndex: 'projectName', fixed: 'left', width: 240, ellipsis: true, render: (v: string, r) => <Link href={`/projects/${r.projectId}`}>{v}</Link> },
-    ...ageingColumns<ProjectPayableDto>(),
+  const projectColumns: ListColumn<Keyed<ProjectPayableDto>>[] = [
+    { key: 'projectName', title: 'Project', dataIndex: 'projectName', locked: true, card: 'title', fixed: 'left', width: 240, ellipsis: true, render: (v: string, r) => <Link href={`/projects/${r.projectId}`}>{v}</Link> },
+    ...ageingColumns<Keyed<ProjectPayableDto>>(),
   ];
 
   const toolbar = (onExport: () => Promise<number>) => (
@@ -336,7 +374,7 @@ export default function PayablesPage() {
         subtitle="What is owed to vendors and subcontractors on their approved bills, by due date, with micro and small enterprises flagged before their 45 days run out."
         extra={
           <Space wrap>
-            <VendorSelect allowClear placeholder="Any vendor" aria-label="Vendor" style={{ width: 220 }} value={vendorId} onChange={setVendorId} />
+            <VendorSelect allowClear placeholder="Any vendor" aria-label="Vendor" style={{ width: 220 }} value={vendorId} onChange={(v) => page.setFilter('vendorId', v)} />
             <ProjectSelect value={projectId} onChange={(v) => setProjectId(v)} />
           </Space>
         }
@@ -379,8 +417,11 @@ export default function PayablesPage() {
           </Col>
         </Row>
       )}
+      {isLoading ? null : (
       <Card size="small">
         <Tabs
+          activeKey={tab}
+          onChange={(k) => setTab(k as PayablesTab)}
           tabBarStyle={{ padding: '0 12px', marginBottom: 0 }}
           items={[
             {
@@ -388,19 +429,40 @@ export default function PayablesPage() {
               label: `Due list${data ? ` (${data.openBills.length})` : ''}`,
               children: (
                 <>
-                  {toolbar(async () => {
-                    await downloadXlsx(exportFileName('due-list'), 'Due list', PAYABLE_BILL_EXPORT, data?.openBills ?? []);
-                    return data?.openBills.length ?? 0;
-                  })}
-                  <Table<PayableBillDto>
-                    rowKey={(r) => `${r.billType}-${r.billId}`}
-                    size="middle"
-                    loading={isLoading}
+                  <ListToolbar
+                    projectId={projectId}
+                    onProject={setProjectId}
+                    hideProject
+                    search={page.search}
+                    onSearch={page.setSearch}
+                    searchPlaceholder="Search bill, vendor, project"
+                    searchLabel="Search the due list"
+                    extra={
+                      <ExportButton
+                        onExport={async () => {
+                          await downloadXlsx(exportFileName('due-list'), 'Due list', PAYABLE_BILL_EXPORT, openBills);
+                          return openBills.length;
+                        }}
+                      />
+                    }
+                  />
+                  <DataTable<Keyed<PayableBillDto>>
                     columns={openColumns}
-                    dataSource={data?.openBills ?? []}
-                    pagination={{ pageSize: 50, hideOnSinglePage: true }}
-                    scroll={{ x: 1050 }}
-                    locale={{ emptyText: 'Every approved bill is paid' }}
+                    visible={openChoice.visible}
+                    onChooseColumns={openChoice.setChosen}
+                    chosenIsDefault={openChoice.isDefault}
+                    rows={openBills}
+                    loading={isLoading}
+                    failed={failed}
+                    table={page.tableProps<Keyed<PayableBillDto>>(openBills.length)}
+                    onOpen={(id) => {
+                      const r = openBills.find((x) => x.id === id);
+                      if (r) setBill(r);
+                    }}
+                    bulk={[exportSelected<Keyed<PayableBillDto>, PayableBillDto>('due-list', 'Due list', PAYABLE_BILL_EXPORT)]}
+                    scrollX={1050}
+                    empty={{ filtered: !!page.params.q || !!vendorId, clear: () => page.clear() }}
+                    emptyText={<EmptyArt art="entries" title={page.params.q || vendorId ? 'No open bill matches these filters' : 'Every approved bill is paid'} />}
                   />
                 </>
               ),
@@ -414,19 +476,29 @@ export default function PayablesPage() {
                     await downloadXlsx(exportFileName('payables-by-vendor'), 'Payables by vendor', PAYABLE_VENDOR_EXPORT, data?.vendors ?? []);
                     return data?.vendors.length ?? 0;
                   })}
-                  <Table<VendorPayableDto> rowKey="vendorId" size="middle" loading={isLoading} columns={vendorColumns} dataSource={data?.vendors ?? []} pagination={false} scroll={{ x: 1650 }} />
+                  <LocalDataTable<Keyed<VendorPayableDto>>
+                    list="payables-vendors"
+                    columns={vendorColumns}
+                    rows={vendors}
+                    loading={isLoading}
+                    failed={failed}
+                    bulk={[exportSelected<Keyed<VendorPayableDto>, VendorPayableDto>('payables-by-vendor', 'Payables by vendor', PAYABLE_VENDOR_EXPORT)]}
+                    scrollX={1650}
+                    emptyText="Nothing owed to any vendor"
+                  />
                 </>
               ),
             },
             {
               key: 'projects',
               label: 'By project',
-              children: <Table<ProjectPayableDto> rowKey="projectId" size="middle" loading={isLoading} columns={projectColumns} dataSource={data?.projects ?? []} pagination={false} scroll={{ x: 1550 }} />,
+              children: <LocalDataTable<Keyed<ProjectPayableDto>> list="payables-projects" columns={projectColumns} rows={projects} loading={isLoading} failed={failed} scrollX={1550} emptyText="Nothing owed on any project" />,
             },
             { key: 'payments', label: 'Payments', children: <PaymentsTab projectId={projectId} vendorId={vendorId} onBill={setBill} /> },
           ]}
         />
       </Card>
+      )}
       <VendorBillDrawer id={bill?.billType === 'VENDOR_BILL' ? bill.billId : null} open={bill?.billType === 'VENDOR_BILL'} onClose={() => setBill(null)} />
       <SubBillDrawer id={bill?.billType === 'SUBCONTRACT_BILL' ? bill.billId : null} open={bill?.billType === 'SUBCONTRACT_BILL'} onClose={() => setBill(null)} />
       <PaymentFormModal open={!!paying} bill={paying} onClose={() => setPaying(null)} />

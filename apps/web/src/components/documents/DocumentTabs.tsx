@@ -15,6 +15,7 @@ import { TransmittalFormModal, type TransmittalPrefill } from './TransmittalForm
 import { LetterList } from './LetterList';
 import { LetterDrawer } from './LetterDrawer';
 import { LetterFormModal } from './LetterFormModal';
+import { useUrlTab } from '@/lib/url-state';
 
 export const DOCUMENT_TABS = ['register', 'transmittals', 'letters'] as const;
 export type DocumentTab = (typeof DOCUMENT_TABS)[number];
@@ -109,6 +110,7 @@ export function DocumentTabs({ projectId, tab, onTab, openId, openLetterId }: { 
 
 /** A project's Documents tab. */
 export function ProjectDocumentsTab({ projectId }: { projectId: string }) {
-  const [tab, setTab] = useState<DocumentTab>('register');
+  // The open tab is `?sub=` in the URL (UX item 84), so a reload keeps it.
+  const [tab, setTab] = useUrlTab<DocumentTab>(DOCUMENT_TABS, 'register');
   return <DocumentTabs projectId={projectId} tab={tab} onTab={setTab} />;
 }

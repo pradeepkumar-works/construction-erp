@@ -9,6 +9,18 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-10-phone-lists',
+    date: '2026-10-21',
+    title: 'Lists that fit a phone',
+    points: [
+      'On a phone each list shows a card per entry with its name, status, amount and date. Tap a card to open it.',
+      'Filters sit behind a Filters button that says how many are on, and open from the bottom of the screen.',
+      'On a phone Approve, Submit and the other actions of an entry stay at the bottom of the screen while you read it. Help and Ask are in your account menu.',
+      'Daily reports and the other main lists fit a laptop screen without scrolling sideways. Add any column back under Columns.',
+      'Payables, receivables, GST and Tally lists page, choose columns and show as cards on a phone like every other list. Their search, filters and open tab stay in the address bar, as do the tabs inside Quality, Safety, Stock and the rest, and the Approvals search.',
+    ],
+  },
+  {
     id: '2026-10-home-five-seconds',
     date: '2026-10-21',
     title: 'Home and project overview at a glance',

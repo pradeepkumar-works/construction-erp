@@ -167,7 +167,7 @@ export function MaintenancePanel({ projectId: fixedProject, initialOpenId }: { p
         </Typography.Title>
       </div>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
-      <ListToolbar
+      <ListToolbar filters={frame.filterState}
         search={page.search}
         onSearch={page.setSearch}
         projectId={frame.projectFilter}

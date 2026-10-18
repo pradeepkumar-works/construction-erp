@@ -24,6 +24,8 @@ import { useStickyTop } from "@/lib/sticky";
 import { useSingleKeys } from "@/lib/shortcuts";
 import { EmptyArt } from "@/components/common/EmptyArt";
 import { HOVER_INTENT_MS, usePrefetch } from "@/lib/prefetch";
+import { useIsPhone, useWidthsReached } from "@/lib/screen";
+import { ListCards, type CardRole } from "./ListCards";
 
 /** A list column: antd's, with a stable `key`, a plain-text `label` for the column chooser, and an optional page total. */
 export type ListColumn<T> = TableColumnType<T> & {
@@ -34,6 +36,15 @@ export type ListColumn<T> = TableColumnType<T> & {
   locked?: boolean;
   /** Off until someone turns it on. */
   defaultHidden?: boolean;
+  /**
+   * A lower-priority column: on by default only on a window at least this wide (CSS pixels), so the default view fits
+   * without sideways scrolling (UX item 84). The column chooser still turns it on anywhere.
+   */
+  defaultFrom?: number;
+  /** What it is on a phone's card (see `cardFields`); false keeps it off the card. */
+  card?: CardRole | false;
+  /** The card's words for it, where the cell holds a link or more than text. */
+  cardText?: (row: T) => React.ReactNode;
   /** Figure for the totals row, over the rows on this page. */
   total?: (rows: T[]) => React.ReactNode;
 };
@@ -44,9 +55,24 @@ const labelOf = <T,>(c: ListColumn<T>) =>
 /** Which columns show, in order, kept per list on this browser. */
 export function useColumnChoice<T>(list: string, columns: ListColumn<T>[]) {
   const key = `nirmaan.columns.${list}`;
-  const defaults = useMemo(
-    () => columns.filter((c) => !c.defaultHidden).map((c) => c.key),
+  const widths = useMemo(
+    () => [
+      ...new Set(
+        columns.map((c) => c.defaultFrom).filter((w): w is number => !!w),
+      ),
+    ],
     [columns],
+  );
+  const reached = useWidthsReached(widths);
+  const defaults = useMemo(
+    () =>
+      columns
+        .filter(
+          (c) =>
+            !c.defaultHidden && (!c.defaultFrom || reached.has(c.defaultFrom)),
+        )
+        .map((c) => c.key),
+    [columns, reached],
   );
   const [chosen, setChosenRaw] = useState<string[] | null>(() =>
     readPref<string[] | null>(key, null),
@@ -124,6 +150,8 @@ export function DataTable<T extends { id: string }>({
 }) {
   const { token } = theme.useToken();
   const stickyTop = useStickyTop();
+  // Below 768 px each row is a card (UX item 84).
+  const phone = useIsPhone();
   const [wrap, setWrap] = useState(() =>
     readPref<boolean>("nirmaan.table.wrap", false),
   );
@@ -141,7 +169,9 @@ export function DataTable<T extends { id: string }>({
   const hoverTimer = useRef<number | undefined>(undefined);
   const fetchRowAhead = (tr: HTMLElement) =>
     prefetch.record(
-      tr.querySelector<HTMLAnchorElement>("a[data-record-link][href]")?.getAttribute("href"),
+      tr
+        .querySelector<HTMLAnchorElement>("a[data-record-link][href]")
+        ?.getAttribute("href"),
     );
   const focusRow = (i: number) => {
     const trs = tableRef.current?.querySelectorAll<HTMLTableRowElement>(
@@ -183,6 +213,13 @@ export function DataTable<T extends { id: string }>({
   }, [columns, visible, wrap]);
 
   const hasTotals = shown.some((c) => c.total);
+  // The table scrolls sideways only as far as the columns on show need, not to the width of all of them.
+  const shownWidth =
+    shown.reduce(
+      (n, c) => n + (typeof c.width === "number" ? c.width : 140),
+      0,
+    ) + (bulk.length ? 40 : 0);
+  const scrollWidth = scrollX ? Math.min(scrollX, shownWidth) : undefined;
   // The first load draws rows of placeholders, not a spinner over "No data".
   const firstLoad = !!loading && rows.length === 0;
   const emptyNext = empty?.filtered ? (
@@ -297,7 +334,9 @@ export function DataTable<T extends { id: string }>({
         wrap
         style={{
           padding: `${token.paddingXS}px ${token.paddingSM}px`,
-          minHeight: token.controlHeight + token.paddingXS * 2,
+          minHeight: phone
+            ? undefined
+            : token.controlHeight + token.paddingXS * 2,
         }}
       >
         {selected.length > 0 ? (
@@ -345,113 +384,135 @@ export function DataTable<T extends { id: string }>({
             {chips}
           </Flex>
         )}
-        <Tooltip
-          title={wrap ? "Cut long text to one line" : "Show long text in full"}
-        >
-          <Button
-            size="small"
-            type={wrap ? "primary" : "default"}
-            ghost={wrap}
-            icon={<LineHeightOutlined />}
-            aria-pressed={wrap}
-            aria-label="Wrap long text"
-            onClick={() => {
-              setWrap(!wrap);
-              writePref("nirmaan.table.wrap", !wrap);
-            }}
-          />
-        </Tooltip>
-        {chooser}
+        {/* Cards show every line in full and choose their own fields. */}
+        {phone ? null : (
+          <Tooltip
+            title={
+              wrap ? "Cut long text to one line" : "Show long text in full"
+            }
+          >
+            <Button
+              size="small"
+              type={wrap ? "primary" : "default"}
+              ghost={wrap}
+              icon={<LineHeightOutlined />}
+              aria-pressed={wrap}
+              aria-label="Wrap long text"
+              onClick={() => {
+                setWrap(!wrap);
+                writePref("nirmaan.table.wrap", !wrap);
+              }}
+            />
+          </Tooltip>
+        )}
+        {phone ? null : chooser}
       </Flex>
-      <div ref={tableRef}>
-        <Table<T>
-          rowKey="id"
-          className={className}
-          expandable={expandable}
-          loading={loading && !firstLoad}
-          columns={shown}
-          dataSource={rows}
-          size="middle"
-          sticky={{ offsetHeader: stickyTop }}
-          {...table}
-          scroll={{ x: scrollX }}
-          rowSelection={
-            bulk.length
-              ? {
-                  selectedRowKeys: selectedKeys,
-                  onChange: setSelectedKeys,
-                  columnWidth: 40,
-                }
-              : undefined
-          }
-          rowClassName={onOpen ? () => "row-click" : undefined}
-          onRow={
-            onOpen
-              ? (r, index = 0) => ({
-                  tabIndex: index === tabRow ? 0 : -1,
-                  "aria-keyshortcuts": "Enter",
-                  onFocus: (e) => {
-                    if (e.target !== e.currentTarget) return;
-                    setActiveRow(index);
-                    fetchRowAhead(e.currentTarget);
-                  },
-                  onMouseEnter: (e) => {
-                    const tr = e.currentTarget;
-                    window.clearTimeout(hoverTimer.current);
-                    hoverTimer.current = window.setTimeout(
-                      () => fetchRowAhead(tr),
-                      HOVER_INTENT_MS,
-                    );
-                  },
-                  onMouseLeave: () => window.clearTimeout(hoverTimer.current),
-                  onKeyDown: (e) => onRowKey(e, r, index),
-                  onClick: (e) => {
-                    // Links, buttons, checkboxes, switches and menus in the row do their own thing.
-                    if (
-                      (e.target as HTMLElement).closest(
-                        "a, button, input, label, .ant-dropdown, .ant-checkbox-wrapper, .ant-image, .ant-switch",
-                      )
-                    )
-                      return;
-                    onOpen(r.id);
-                  },
-                })
-              : undefined
-          }
-          locale={{ emptyText: emptyState }}
-          summary={
-            hasTotals && rows.length > 1
-              ? (data) => (
-                  <Table.Summary>
-                    <Table.Summary.Row>
-                      {bulk.length ? <Table.Summary.Cell index={0} /> : null}
-                      {shown.map((c, i) => (
-                        <Table.Summary.Cell
-                          key={c.key}
-                          index={i + (bulk.length ? 1 : 0)}
-                          align={c.align}
-                        >
-                          {c.total ? (
-                            <span
-                              className="mono"
-                              style={{ fontWeight: token.fontWeightStrong }}
-                            >
-                              {c.total([...data])}
-                            </span>
-                          ) : i === 0 ? (
-                            <Typography.Text type="secondary">
-                              Total, this page
-                            </Typography.Text>
-                          ) : null}
-                        </Table.Summary.Cell>
-                      ))}
-                    </Table.Summary.Row>
-                  </Table.Summary>
-                )
-              : undefined
-          }
+      {phone ? (
+        <ListCards<T>
+          columns={columns}
+          rows={rows}
+          loading={!!loading && !firstLoad}
+          firstLoad={firstLoad}
+          emptyState={emptyState}
+          table={table}
+          onOpen={onOpen}
+          selectable={bulk.length > 0}
+          selectedKeys={selectedKeys}
+          onSelect={setSelectedKeys}
+          totals={hasTotals || columns.some((c) => c.total)}
+          labelOf={labelOf}
         />
-      </div>
+      ) : (
+        <div ref={tableRef}>
+          <Table<T>
+            rowKey="id"
+            className={className}
+            expandable={expandable}
+            loading={loading && !firstLoad}
+            columns={shown}
+            dataSource={rows}
+            size="middle"
+            sticky={{ offsetHeader: stickyTop }}
+            {...table}
+            scroll={{ x: scrollWidth }}
+            rowSelection={
+              bulk.length
+                ? {
+                    selectedRowKeys: selectedKeys,
+                    onChange: setSelectedKeys,
+                    columnWidth: 40,
+                  }
+                : undefined
+            }
+            rowClassName={onOpen ? () => "row-click" : undefined}
+            onRow={
+              onOpen
+                ? (r, index = 0) => ({
+                    tabIndex: index === tabRow ? 0 : -1,
+                    "aria-keyshortcuts": "Enter",
+                    onFocus: (e) => {
+                      if (e.target !== e.currentTarget) return;
+                      setActiveRow(index);
+                      fetchRowAhead(e.currentTarget);
+                    },
+                    onMouseEnter: (e) => {
+                      const tr = e.currentTarget;
+                      window.clearTimeout(hoverTimer.current);
+                      hoverTimer.current = window.setTimeout(
+                        () => fetchRowAhead(tr),
+                        HOVER_INTENT_MS,
+                      );
+                    },
+                    onMouseLeave: () => window.clearTimeout(hoverTimer.current),
+                    onKeyDown: (e) => onRowKey(e, r, index),
+                    onClick: (e) => {
+                      // Links, buttons, checkboxes, switches and menus in the row do their own thing.
+                      if (
+                        (e.target as HTMLElement).closest(
+                          "a, button, input, label, .ant-dropdown, .ant-checkbox-wrapper, .ant-image, .ant-switch",
+                        )
+                      )
+                        return;
+                      onOpen(r.id);
+                    },
+                  })
+                : undefined
+            }
+            locale={{ emptyText: emptyState }}
+            summary={
+              hasTotals && rows.length > 1
+                ? (data) => (
+                    <Table.Summary>
+                      <Table.Summary.Row>
+                        {bulk.length ? <Table.Summary.Cell index={0} /> : null}
+                        {shown.map((c, i) => (
+                          <Table.Summary.Cell
+                            key={c.key}
+                            index={i + (bulk.length ? 1 : 0)}
+                            align={c.align}
+                          >
+                            {c.total ? (
+                              <span
+                                className="mono"
+                                style={{ fontWeight: token.fontWeightStrong }}
+                              >
+                                {c.total([...data])}
+                              </span>
+                            ) : i === 0 ? (
+                              <Typography.Text type="secondary">
+                                Total, this page
+                              </Typography.Text>
+                            ) : null}
+                          </Table.Summary.Cell>
+                        ))}
+                      </Table.Summary.Row>
+                    </Table.Summary>
+                  )
+                : undefined
+            }
+          />
+        </div>
+      )}
     </>
   );
 }

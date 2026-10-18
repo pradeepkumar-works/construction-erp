@@ -185,12 +185,14 @@ type FontSizeKey = (typeof FONT_SIZE_KEYS)[number];
  */
 export const themeFontSize = (key: FontSizeKey) => `var(${token2CSSVar(key, 'ant')})`;
 
+const SPACING_KEYS = ['paddingXXS', 'paddingXS', 'paddingSM', 'padding', 'paddingLG', 'marginXXS', 'marginXS', 'marginSM', 'margin', 'marginLG', 'lineWidth', 'borderRadius', 'borderRadiusLG'] as const;
+
 const kebab = (key: string) => key.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
 
 /**
  * antd scopes its CSS variables to each component, so plain elements (the sign-in page, the website, the
  * sidebar) cannot read them. This declares a theme's colour tokens on :root under antd's own names
- * (`--ant-color-text-tertiary`) and its motion tokens, plus the brand palette as `--brand-*`, so CSS files never hold a
+ * (`--ant-color-text-tertiary`), its type scale, spacing and motion tokens, plus the brand palette as `--brand-*`, so CSS files never hold a
  * colour or a duration.
  */
 export function cssVariablesFor(config: ThemeConfig): string {
@@ -205,6 +207,10 @@ export function cssVariablesFor(config: ThemeConfig): string {
   for (const key of FONT_SIZE_KEYS) {
     vars.push(`${token2CSSVar(key, 'ant')}:${token[key]}px`);
   }
+  // Spacing, line and corner sizes, so CSS for plain elements (a list's cards on a phone) keeps antd's rhythm and density.
+  for (const key of SPACING_KEYS) vars.push(`${token2CSSVar(key, 'ant')}:${token[key]}px`);
+  vars.push(`--ant-font-weight-strong:${token.fontWeightStrong}`);
+  vars.push(`--ant-control-item-bg-active:${token.controlItemBgActive}`);
   // antd's own motion, so CSS transitions (the sidebar) move at the same pace as antd's components.
   for (const key of ['motionDurationFast', 'motionDurationMid', 'motionDurationSlow', 'motionEaseInOut', 'motionEaseOut'] as const) vars.push(`${token2CSSVar(key, 'ant')}:${token[key]}`);
   return `:root{${vars.join(';')}}`;
