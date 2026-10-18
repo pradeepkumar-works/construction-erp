@@ -689,6 +689,11 @@ kbd {
     max-width: 100%;
     overflow-x: auto;
   }
+  /* The same for a table with no `scroll` of its own: a phone scrolls it inside its box (antd sets this only with
+     `scroll.x`). Its minimum width rides on the font's metrics, so one that just fits on one machine overflows on another. */
+  :root .ant-table-wrapper .ant-table-content {
+    overflow-x: auto;
+  }
 }
 
 /* A tab bar wider than a phone scrolls by swipe, and the arrow keys move along it and bring the focused tab into view.
