@@ -21,9 +21,10 @@ export const viewport: Viewport = { themeColor: BRAND.colors.canvas };
 /**
  * Runs before the first paint (UX item 81): a signed-in page in dark mode, chosen or from the system, starts dark instead of
  * flashing white until the app loads. It reads the same stored choice as `AppearanceProvider`; sign-in and the public
- * pages stay light.
+ * pages stay light. It leaves the theme-colour meta to `AppearanceProvider`: changed before hydration, React adds a second
+ * one. (The `\\/` keep the regex's slashes once the template literal is read: with a bare `\/` the script did not parse.)
  */
-const APPEARANCE_SCRIPT = `try{if(!/^\/(login|signup|welcome|privacy|forgot-password|set-password)(\/|$)/.test(location.pathname)){var a=JSON.parse(localStorage.getItem('nirmaan.appearance')||'{}');var d=a.mode==='dark'||(a.mode==='system'&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.dataset.theme=d?'dark':'light';if(d){var r=document.documentElement.style;r.colorScheme='dark';r.background='${BRAND.colors.nightLayout}';var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content','${BRAND.colors.nightLayout}')}}}catch(e){}`;
+const APPEARANCE_SCRIPT = `try{if(!/^\\/(login|signup|welcome|privacy|forgot-password|set-password)(\\/|$)/.test(location.pathname)){var a=JSON.parse(localStorage.getItem('nirmaan.appearance')||'{}');var d=a.mode==='dark'||(a.mode==='system'&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.dataset.theme=d?'dark':'light';if(d){var r=document.documentElement.style;r.colorScheme='dark';r.background='${BRAND.colors.nightLayout}'}}}catch(e){}`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

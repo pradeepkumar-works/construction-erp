@@ -34,8 +34,11 @@ function Keys({ keys }: { keys: string[] }) {
   );
 }
 
-/** The header's Help: keyboard shortcuts (also on ?), what's new, contact support and the tour. */
-export function HelpMenu({ onTour, withSearch, withAsk = false }: { onTour: () => void; withSearch: boolean; withAsk?: boolean }) {
+/**
+ * Help's menu items (keyboard shortcuts, also on ?; what's new; contact support; the tour) and the dialogs they open. The
+ * header shows them under its Help button, or on a phone inside the account menu (UX item 84), with `dialogs` on the page.
+ */
+export function useHelpMenu({ onTour, withSearch, withAsk = false }: { onTour: () => void; withSearch: boolean; withAsk?: boolean }) {
   const { token } = theme.useToken();
   const [keysOpen, setKeysOpen] = useState(false);
   const [newsOpen, setNewsOpen] = useState(false);
@@ -99,11 +102,8 @@ export function HelpMenu({ onTour, withSearch, withAsk = false }: { onTour: () =
     ['Confirm the decision', ['Ctrl', 'Enter']],
   ];
 
-  return (
+  const dialogs = (
     <>
-      <Dropdown menu={{ items }} trigger={['click']} placement="bottomRight">
-        <Button type="text" aria-label="Help" data-tour="help" icon={<Badge dot={unseen}>{<QuestionCircleOutlined style={{ fontSize: token.fontSizeLG }} />}</Badge>} />
-      </Dropdown>
       <Modal open={keysOpen} onCancel={() => setKeysOpen(false)} footer={null} title="Keyboard shortcuts" width={460}>
         <Flex vertical gap={token.marginSM}>
           <Flex justify="space-between" align="flex-start" gap={token.margin} style={{ paddingBottom: token.paddingSM, borderBottom: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}` }}>
@@ -155,5 +155,16 @@ export function HelpMenu({ onTour, withSearch, withAsk = false }: { onTour: () =
         />
       </Drawer>
     </>
+  );
+  return { items, unseen, dialogs };
+}
+
+/** The header's Help button, opening the menu `useHelpMenu` gives. */
+export function HelpButton({ items, unseen }: { items: MenuProps['items']; unseen: boolean }) {
+  const { token } = theme.useToken();
+  return (
+    <Dropdown menu={{ items }} trigger={['click']} placement="bottomRight">
+      <Button type="text" aria-label="Help" data-tour="help" icon={<Badge dot={unseen}>{<QuestionCircleOutlined style={{ fontSize: token.fontSizeLG }} />}</Badge>} />
+    </Dropdown>
   );
 }

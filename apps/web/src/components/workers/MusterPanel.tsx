@@ -12,6 +12,7 @@ import { QueryError } from '@/components/common/QueryState';
 import { CardToolbar } from '@/components/common/CardToolbar';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
+import { useProjectScope } from '@/lib/project-scope';
 import { ExportButton } from '@/components/common/ExportButton';
 
 const MARK: Record<StaffAttendanceStatus, { text: string; color: string }> = {
@@ -40,7 +41,8 @@ const musterExport = (m: MusterDto): ExportColumn<MusterRowDto>[] => [
  * the roll call put on each activity against the progress approved in the same days.
  */
 export function MusterPanel({ projectId: fixedProject }: { projectId?: string }) {
-  const [projectPick, setProjectPick] = useState<string | undefined>();
+  // The header's project (UX item 84): picking one here picks it for every list.
+  const [projectPick, setProjectPick] = useProjectScope();
   const projectId = fixedProject ?? projectPick;
   const [month, setMonth] = useState<Dayjs>(dayjs());
   const monthStr = month.format('YYYY-MM');

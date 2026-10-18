@@ -28,17 +28,14 @@ export function StaffRegister() {
   const { message } = App.useApp();
   const qc = useQueryClient();
   const { data: projects } = useProjects();
-  const [scope] = useProjectScope();
-  const [projectId, setProjectId] = useState<string | undefined>();
+  // The header's project (UX item 84), else the first: picking one here picks it for every list.
+  const [scope, setProjectId] = useProjectScope();
+  const projectId = scope ?? projects?.[0]?.id;
   const [date, setDate] = useState(dayjs());
   const day = date.format('YYYY-MM-DD');
   const { data, isLoading, isFetching, error, refetch } = useStaffRegister(projectId, day);
   const [marks, setMarks] = useState<Record<string, Mark>>({});
 
-  useEffect(() => {
-    // The project chosen in the header, else the first.
-    if (!projectId && projects?.length) setProjectId(scope ?? projects[0].id);
-  }, [projects, projectId, scope]);
   useEffect(() => {
     setMarks(Object.fromEntries((data?.rows ?? []).map((r) => [r.employee.id, fromRow(r)])));
   }, [data]);

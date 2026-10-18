@@ -1,10 +1,9 @@
 'use client';
 
-import React, { Suspense, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import React, { Suspense, useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Alert, Button, Card, Col, DatePicker, Row, Statistic, Table, Tabs, Tag, Typography } from 'antd';
-import type { TableProps } from 'antd';
 import { DownloadOutlined } from '@ant-design/icons';
 import dayjs, { type Dayjs } from 'dayjs';
 import type { GstInwardRowDto, GstOutwardRowDto } from '@erp/shared';
@@ -17,14 +16,21 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { tabBarWithExtra } from '@/components/common/tabBarWithExtra';
 import { rangePresets } from '@/lib/dates';
+import { useUrlTab, writeUrlParam } from '@/lib/url-state';
+import { LocalDataTable } from '@/components/list/LocalDataTable';
+import type { ListColumn } from '@/components/list/DataTable';
 import { themeFontSize } from '@/lib/theme';
 
 const money = (v: string | number) => <span className="mono">{formatINR(v)}</span>;
-const taxColumns = <T extends { igst: string; cgst: string; sgst: string }>(): NonNullable<TableProps<T>['columns']> => [
-  { title: 'IGST', dataIndex: 'igst', width: 120, align: 'right', render: money },
-  { title: 'CGST', dataIndex: 'cgst', width: 120, align: 'right', render: money },
-  { title: 'SGST', dataIndex: 'sgst', width: 120, align: 'right', render: money },
+const taxColumns = <T extends { igst: string; cgst: string; sgst: string }>(): ListColumn<T>[] => [
+  { key: 'igst', title: 'IGST', dataIndex: 'igst', width: 120, align: 'right', render: money },
+  { key: 'cgst', title: 'CGST', dataIndex: 'cgst', width: 120, align: 'right', render: money },
+  { key: 'sgst', title: 'SGST', dataIndex: 'sgst', width: 120, align: 'right', render: money },
 ];
+const TAB_KEYS = ['outward', 'inward', 'hsn'] as const;
+type GstTab = (typeof TAB_KEYS)[number];
+/** Rows of a register with the `id` the list template keys them by. */
+type Keyed<T> = T & { id: string };
 
 /** `?from=2026-08&to=2026-10` opens those months; this month otherwise. */
 const monthParam = (v: string | null) => (v && /^\d{4}-\d{2}$/.test(v) ? dayjs(`${v}-01`) : null);
@@ -32,9 +38,19 @@ const monthParam = (v: string | null) => (v && /^\d{4}-\d{2}$/.test(v) ? dayjs(`
 function GstRegistersPage() {
   const { user } = useAuth();
   const search = useSearchParams();
-  const [range, setRange] = useState<[Dayjs, Dayjs]>(() => [monthParam(search.get('from')) ?? dayjs().startOf('month'), monthParam(search.get('to')) ?? dayjs()]);
+  const router = useRouter();
+  const [range, setRangeRaw] = useState<[Dayjs, Dayjs]>(() => [monthParam(search.get('from')) ?? dayjs().startOf('month'), monthParam(search.get('to')) ?? dayjs()]);
+  // The months and the tab go in the address bar (UX item 84), so a reload or a link sent on opens the same register.
+  const setRange = (next: [Dayjs, Dayjs]) => {
+    setRangeRaw(next);
+    writeUrlParam('from', next[0].format('YYYY-MM'));
+    writeUrlParam('to', next[1].format('YYYY-MM'));
+  };
+  const [tab, setTab] = useUrlTab<GstTab>(TAB_KEYS, 'outward', { param: 'tab' });
   const params = { from: range[0].startOf('month').format('YYYY-MM-DD'), to: range[1].endOf('month').format('YYYY-MM-DD') };
   const { data, isLoading, isFetching, error, refetch } = useGstRegisters(params);
+  const outward = useMemo<Keyed<GstOutwardRowDto>[]>(() => (data?.outward ?? []).map((r) => ({ ...r, id: r.billId })), [data]);
+  const inward = useMemo<Keyed<GstInwardRowDto>[]>(() => (data?.inward ?? []).map((r) => ({ ...r, id: r.key })), [data]);
   if (user && !canViewGstRegisters(user.roleKey))
     return (
       <div className="page-container">
@@ -43,10 +59,13 @@ function GstRegistersPage() {
       </div>
     );
 
-  const outwardColumns: TableProps<GstOutwardRowDto>['columns'] = [
+  const outwardColumns: ListColumn<Keyed<GstOutwardRowDto>>[] = [
     {
+      key: 'invoiceNo',
       title: 'Invoice',
       dataIndex: 'invoiceNo',
+      locked: true,
+      card: 'title',
       width: 190,
       render: (v: string, r) => (
         <div>
@@ -62,6 +81,8 @@ function GstRegistersPage() {
     {
       title: 'Recipient',
       key: 'recipient',
+      card: 'meta',
+      cardText: (r) => [r.recipientName, r.section, r.recipientGstin ?? 'Unregistered'].join(' · '),
       render: (_, r) => (
         <div>
           {r.recipientName} <Tag style={{ marginLeft: 4 }}>{r.section}</Tag>
@@ -71,15 +92,19 @@ function GstRegistersPage() {
         </div>
       ),
     },
-    { title: 'Rate', dataIndex: 'rate', width: 70, align: 'right', render: (v) => `${toNumber(v)}%` },
-    { title: 'Taxable value', dataIndex: 'taxable', width: 140, align: 'right', render: money },
-    ...taxColumns<GstOutwardRowDto>(),
-    { title: 'Invoice value', dataIndex: 'invoiceValue', width: 140, align: 'right', render: (v) => <strong className="mono">{formatINR(v)}</strong> },
+    { key: 'invoiceDate', title: 'Invoice date', dataIndex: 'invoiceDate', card: 'date', defaultHidden: true, width: 120, render: (v) => formatDate(v) },
+    { key: 'rate', title: 'Rate', dataIndex: 'rate', width: 70, align: 'right', render: (v) => `${toNumber(v)}%` },
+    { key: 'taxable', title: 'Taxable value', dataIndex: 'taxable', width: 140, align: 'right', render: money },
+    ...taxColumns<Keyed<GstOutwardRowDto>>(),
+    { key: 'invoiceValue', title: 'Invoice value', dataIndex: 'invoiceValue', card: 'amount', width: 140, align: 'right', render: (v) => <strong className="mono">{formatINR(v)}</strong> },
   ];
-  const inwardColumns: TableProps<GstInwardRowDto>['columns'] = [
+  const inwardColumns: ListColumn<Keyed<GstInwardRowDto>>[] = [
     {
       title: 'Invoice',
       key: 'invoice',
+      locked: true,
+      card: 'title',
+      cardText: (r) => r.invoiceNo ?? 'No invoice no.',
       width: 190,
       render: (_, r) => (
         <div>
@@ -93,6 +118,8 @@ function GstRegistersPage() {
     {
       title: 'Supplier',
       key: 'supplier',
+      card: 'meta',
+      cardText: (r) => [r.supplierName, r.supplierGstin ?? 'No GSTIN', `${GST_SOURCE_LABELS[r.source]} ${r.ref}`, r.projectCode].join(' · '),
       render: (_, r) => (
         <div>
           {r.supplierName}
@@ -107,10 +134,11 @@ function GstRegistersPage() {
         </div>
       ),
     },
-    { title: 'Rate', dataIndex: 'rate', width: 70, align: 'right', render: (v) => `${toNumber(v)}%` },
-    { title: 'Taxable value', dataIndex: 'taxable', width: 140, align: 'right', render: money },
-    ...taxColumns<GstInwardRowDto>(),
-    { title: 'Invoice value', dataIndex: 'invoiceValue', width: 140, align: 'right', render: money },
+    { key: 'invoiceDate', title: 'Invoice date', dataIndex: 'invoiceDate', card: 'date', defaultHidden: true, width: 120, render: (v) => formatDate(v) },
+    { key: 'rate', title: 'Rate', dataIndex: 'rate', width: 70, align: 'right', render: (v) => `${toNumber(v)}%` },
+    { key: 'taxable', title: 'Taxable value', dataIndex: 'taxable', width: 140, align: 'right', render: money },
+    ...taxColumns<Keyed<GstInwardRowDto>>(),
+    { key: 'invoiceValue', title: 'Invoice value', dataIndex: 'invoiceValue', card: 'amount', width: 140, align: 'right', render: money },
   ];
   const hsn = data ? hsnSummary(data.outward) : [];
   const net = data ? toNumber(data.outwardTotals.tax) - toNumber(data.inwardTotals.tax) : 0;
@@ -188,6 +216,8 @@ function GstRegistersPage() {
       )}
       <Card size="small">
         <Tabs
+          activeKey={tab}
+          onChange={(k) => setTab(k as GstTab)}
           tabBarStyle={{ padding: '0 12px', marginBottom: 0 }}
           renderTabBar={tabBarWithExtra(
             <Button icon={<DownloadOutlined />} disabled={!data} onClick={() => data && downloadGstWorkbook(data)} style={{ marginRight: 12 }}>
@@ -199,15 +229,15 @@ function GstRegistersPage() {
               key: 'outward',
               label: `Outward supplies${data ? ` (${data.outward.length})` : ''}`,
               children: (
-                <Table<GstOutwardRowDto>
-                  rowKey="billId"
-                  size="middle"
-                  loading={isFetching}
+                <LocalDataTable<Keyed<GstOutwardRowDto>>
+                  list="gst-outward"
                   columns={outwardColumns}
-                  dataSource={data?.outward ?? []}
-                  pagination={{ pageSize: 50, hideOnSinglePage: true }}
-                  scroll={{ x: 1150 }}
-                  locale={{ emptyText: 'No approved RA bill in this period' }}
+                  rows={outward}
+                  loading={isFetching}
+                  failed={!!error}
+                  onOpen={(id) => router.push(`/bills?id=${id}`)}
+                  scrollX={1150}
+                  emptyText="No approved RA bill in this period"
                 />
               ),
             },
@@ -215,15 +245,14 @@ function GstRegistersPage() {
               key: 'inward',
               label: `Input tax${data ? ` (${data.inward.length})` : ''}`,
               children: (
-                <Table<GstInwardRowDto>
-                  rowKey="key"
-                  size="middle"
-                  loading={isFetching}
+                <LocalDataTable<Keyed<GstInwardRowDto>>
+                  list="gst-inward"
                   columns={inwardColumns}
-                  dataSource={data?.inward ?? []}
-                  pagination={{ pageSize: 50, hideOnSinglePage: true }}
-                  scroll={{ x: 1150 }}
-                  locale={{ emptyText: 'No purchase with GST in this period' }}
+                  rows={inward}
+                  loading={isFetching}
+                  failed={!!error}
+                  scrollX={1150}
+                  emptyText="No purchase with GST in this period"
                 />
               ),
             },

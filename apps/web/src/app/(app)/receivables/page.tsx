@@ -1,9 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { App, Button, Card, Col, Popconfirm, Row, Select, Space, Statistic, Table, Tabs, Typography, theme } from 'antd';
-import type { TableProps } from 'antd';
+import { App, Button, Card, Col, Popconfirm, Row, Select, Space, Statistic, Tabs, Typography, theme } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ClientReceivableDto, OpenBillDto, ProjectReceivableDto, ReceiptDto, ReceiptKind, ReceiptSortField } from '@erp/shared';
@@ -13,6 +12,7 @@ import { api, errorMessage, errorStatus } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useReceipts, useReceivables } from '@/lib/queries';
 import { useListPage } from '@/lib/listPage';
+import { useUrlTab } from '@/lib/url-state';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { OPEN_BILL_EXPORT, RECEIPT_EXPORT, RECEIVABLE_EXPORT } from '@/lib/exportColumns';
 import { formatDate, formatINR, formatINRCompact, toNumber } from '@/lib/format';
@@ -28,6 +28,7 @@ import { InTallyTag } from '@/components/tally/InTallyTag';
 import { CardToolbar } from '@/components/common/CardToolbar';
 import { EmptyArt } from '@/components/common/EmptyArt';
 import { DataTable, useColumnChoice, type ListColumn } from '@/components/list/DataTable';
+import { LocalDataTable } from '@/components/list/LocalDataTable';
 import { exportSelected } from '@/components/list/bulk';
 import { RecordLink } from '@/components/record/RecordLink';
 import { themeColor, themeFontSize } from '@/lib/theme';
@@ -39,22 +40,29 @@ function Sub({ children }: { children: React.ReactNode }) {
 }
 const late = (v: string) => (toNumber(v) > 0 ? <span className="mono" style={{ color: themeColor('colorErrorText') }}>{formatINR(v)}</span> : <span className="mono text-muted">-</span>);
 
-/** Ageing columns shared by the project and client tables. */
-function ageingColumns<T extends ProjectReceivableDto | ClientReceivableDto>(): NonNullable<TableProps<T>['columns']> {
+/** Ageing columns shared by the project and client tables (keys are stable: the column chooser keeps them). */
+function ageingColumns<T extends ProjectReceivableDto | ClientReceivableDto>(): ListColumn<T>[] {
   return [
-    { title: 'Billed', dataIndex: 'billed', width: 130, align: 'right', render: (v) => money(v) },
-    { title: 'Received', dataIndex: 'received', width: 130, align: 'right', render: (v) => money(v) },
-    { title: 'Deducted', dataIndex: 'deducted', width: 120, align: 'right', render: (v) => money(v) },
-    { title: 'Outstanding', dataIndex: 'outstanding', width: 130, align: 'right', render: (v) => money(v, true) },
-    { title: '0-30 days', key: 'a0', width: 110, align: 'right', render: (_, r) => money(r.ageing.current) },
-    { title: '31-60', key: 'a1', width: 110, align: 'right', render: (_, r) => money(r.ageing.days31to60) },
-    { title: '61-90', key: 'a2', width: 110, align: 'right', render: (_, r) => late(r.ageing.days61to90) },
-    { title: 'Over 90', key: 'a3', width: 110, align: 'right', render: (_, r) => late(r.ageing.over90) },
-    { title: 'Not sent yet', dataIndex: 'notSent', width: 120, align: 'right', render: (v) => money(v) },
-    { title: 'Retention held', dataIndex: 'retentionHeld', width: 130, align: 'right', render: (v) => money(v) },
-    { title: 'Deposit held', dataIndex: 'depositHeld', width: 120, align: 'right', render: (v) => money(v) },
+    { key: 'billed', title: 'Billed', dataIndex: 'billed', width: 130, align: 'right', render: (v) => money(v) },
+    { key: 'received', title: 'Received', dataIndex: 'received', width: 130, align: 'right', render: (v) => money(v) },
+    { key: 'deducted', title: 'Deducted', dataIndex: 'deducted', width: 120, align: 'right', render: (v) => money(v) },
+    { key: 'outstanding', card: 'amount', title: 'Outstanding', dataIndex: 'outstanding', width: 130, align: 'right', render: (v) => money(v, true) },
+    { key: 'a0', title: '0-30 days', width: 110, align: 'right', render: (_, r) => money(r.ageing.current) },
+    { key: 'a1', title: '31-60', label: '31-60 days', width: 110, align: 'right', render: (_, r) => money(r.ageing.days31to60) },
+    { key: 'a2', title: '61-90', label: '61-90 days', width: 110, align: 'right', render: (_, r) => late(r.ageing.days61to90) },
+    { key: 'a3', title: 'Over 90', label: 'Over 90 days', width: 110, align: 'right', render: (_, r) => late(r.ageing.over90) },
+    { key: 'notSent', title: 'Not sent yet', dataIndex: 'notSent', width: 120, align: 'right', render: (v) => money(v) },
+    { key: 'retentionHeld', title: 'Retention held', dataIndex: 'retentionHeld', width: 130, align: 'right', render: (v) => money(v) },
+    { key: 'depositHeld', title: 'Deposit held', dataIndex: 'depositHeld', width: 120, align: 'right', render: (v) => money(v) },
   ];
 }
+
+/** Rows of a list worked out in the browser, with the `id` the list template keys them by. */
+type Keyed<T> = T & { id: string };
+const NO_KEYS: string[] = [];
+const TAB_KEYS = ['open', 'projects', 'clients', 'receipts'] as const;
+type ReceivablesTab = (typeof TAB_KEYS)[number];
+const sumMoney = (values: string[]) => formatINR(values.reduce((n, v) => n + toNumber(v), 0));
 
 const RECEIPT_KEYS = ['kind'] as const;
 
@@ -227,23 +235,43 @@ function ReceiptsTab({ projectId }: { projectId?: string }) {
 
 export default function ReceivablesPage() {
   const [projectId, setProjectId] = useProjectScope();
+  // The open bills are the page's own list: their search goes in the address bar (UX item 84), as does the tab.
+  const page = useListPage<'daysOutstanding'>({ keys: NO_KEYS, sortBy: 'daysOutstanding', sortOrder: 'desc', sortFields: ['daysOutstanding'], scope: projectId });
+  const [tab, setTab] = useUrlTab<ReceivablesTab>(TAB_KEYS, 'open', { param: 'tab' });
   const [billId, setBillId] = useState<string | null>(null);
   const { data, isLoading, error, refetch } = useReceivables(projectId);
   const t = data?.totals;
+  const q = page.params.q?.toLowerCase();
+  // Longest outstanding first, unless the Days arrow says otherwise.
+  const longestFirst = page.params.sortOrder === 'desc';
+  const openBills = useMemo<Keyed<OpenBillDto>[]>(
+    () =>
+      (data?.openBills ?? [])
+        .filter((r) => !q || `${r.billLabel} ${r.projectName} ${r.clientName ?? ''}`.toLowerCase().includes(q))
+        .sort((a, b) => (longestFirst ? b.daysOutstanding - a.daysOutstanding : a.daysOutstanding - b.daysOutstanding))
+        .map((r) => ({ ...r, id: r.billId })),
+    [data, q, longestFirst],
+  );
+  const projects = useMemo<Keyed<ProjectReceivableDto>[]>(() => (data?.projects ?? []).map((r) => ({ ...r, id: r.projectId })), [data]);
+  const clients = useMemo<Keyed<ClientReceivableDto>[]>(() => (data?.clients ?? []).map((r) => ({ ...r, id: r.clientName })), [data]);
+  const failed = !!error;
 
   const exportProjects = async () => {
     await downloadXlsx(exportFileName('receivables'), 'Receivables', RECEIVABLE_EXPORT, data?.projects ?? []);
     return data?.projects.length ?? 0;
   };
   const exportOpen = async () => {
-    await downloadXlsx(exportFileName('open-bills'), 'Open bills', OPEN_BILL_EXPORT, data?.openBills ?? []);
-    return data?.openBills.length ?? 0;
+    await downloadXlsx(exportFileName('open-bills'), 'Open bills', OPEN_BILL_EXPORT, openBills);
+    return openBills.length;
   };
 
-  const openColumns: TableProps<OpenBillDto>['columns'] = [
+  const openColumns: ListColumn<Keyed<OpenBillDto>>[] = [
     {
-      title: 'Bill',
       key: 'bill',
+      title: 'Bill',
+      locked: true,
+      card: 'title',
+      cardText: (r) => r.billLabel,
       width: 140,
       render: (_, r) => (
         <RecordLink href={`/bills/${r.billId}`} onOpen={() => setBillId(r.billId)} strong>
@@ -252,8 +280,11 @@ export default function ReceivablesPage() {
       ),
     },
     {
+      key: 'projectName',
       title: 'Project',
       dataIndex: 'projectName',
+      card: 'meta',
+      cardText: (r) => [r.projectName, r.clientName].filter(Boolean).join(' · '),
       ellipsis: true,
       render: (v: string, r) => (
         <div>
@@ -264,26 +295,33 @@ export default function ReceivablesPage() {
         </div>
       ),
     },
-    { title: 'Sent', dataIndex: 'sentDate', width: 110, render: (v) => formatDate(v) },
-    { title: 'With client', dataIndex: 'stage', width: 120, render: (s) => <BillStageTag stage={s} /> },
-    { title: 'Work + GST', dataIndex: 'invoiceAmount', width: 140, align: 'right', render: (v) => money(v) },
-    { title: 'Settled', dataIndex: 'settledAmount', width: 130, align: 'right', render: (v) => money(v) },
-    { title: 'Outstanding', dataIndex: 'outstanding', width: 140, align: 'right', render: (v) => money(v, true) },
+    { key: 'sentDate', title: 'Sent', dataIndex: 'sentDate', width: 110, card: 'date', render: (v) => formatDate(v) },
+    { key: 'stage', title: 'With client', dataIndex: 'stage', width: 120, card: 'status', render: (s) => <BillStageTag stage={s} /> },
+    { key: 'invoiceAmount', title: 'Work + GST', dataIndex: 'invoiceAmount', width: 140, align: 'right', render: (v) => money(v), total: (rows) => sumMoney(rows.map((r) => r.invoiceAmount)) },
+    { key: 'settledAmount', title: 'Settled', dataIndex: 'settledAmount', width: 130, align: 'right', render: (v) => money(v), total: (rows) => sumMoney(rows.map((r) => r.settledAmount)) },
+    { key: 'outstanding', title: 'Outstanding', dataIndex: 'outstanding', width: 140, align: 'right', card: 'amount', render: (v) => money(v, true), total: (rows) => sumMoney(rows.map((r) => r.outstanding)) },
     {
+      key: 'daysOutstanding',
       title: 'Days',
+      label: 'Days outstanding',
       dataIndex: 'daysOutstanding',
       width: 80,
       align: 'right',
-      defaultSortOrder: 'descend',
-      sorter: (a, b) => a.daysOutstanding - b.daysOutstanding,
+      sorter: true,
+      sortOrder: page.sortOrderFor('daysOutstanding'),
+      sortDirections: ['descend', 'ascend'],
       render: (v: number) => <span style={{ color: v > 90 ? themeColor('colorErrorText') : v > 60 ? themeColor('orange7') : undefined }}>{v}</span>,
     },
   ];
+  const openChoice = useColumnChoice('receivables-open', openColumns);
 
-  const projectColumns: TableProps<ProjectReceivableDto>['columns'] = [
+  const projectColumns: ListColumn<Keyed<ProjectReceivableDto>>[] = [
     {
+      key: 'projectName',
       title: 'Project',
       dataIndex: 'projectName',
+      locked: true,
+      card: 'title',
       fixed: 'left',
       width: 240,
       ellipsis: true,
@@ -296,13 +334,13 @@ export default function ReceivablesPage() {
         </div>
       ),
     },
-    ...ageingColumns<ProjectReceivableDto>(),
-    { title: 'Retention due', dataIndex: 'retentionReleaseDate', width: 120, render: (v) => (v ? formatDate(v) : '-') },
+    ...ageingColumns<Keyed<ProjectReceivableDto>>(),
+    { key: 'retentionReleaseDate', title: 'Retention due', dataIndex: 'retentionReleaseDate', width: 120, card: 'date', render: (v) => (v ? formatDate(v) : '-') },
   ];
-  const clientColumns: TableProps<ClientReceivableDto>['columns'] = [
-    { title: 'Client', dataIndex: 'clientName', fixed: 'left', width: 220, ellipsis: true },
-    { title: 'Projects', dataIndex: 'projectCount', width: 90, align: 'right' },
-    ...ageingColumns<ClientReceivableDto>(),
+  const clientColumns: ListColumn<Keyed<ClientReceivableDto>>[] = [
+    { key: 'clientName', title: 'Client', dataIndex: 'clientName', locked: true, card: 'title', fixed: 'left', width: 220, ellipsis: true },
+    { key: 'projectCount', title: 'Projects', dataIndex: 'projectCount', width: 90, align: 'right', card: 'meta', cardText: (r) => `${r.projectCount} project${r.projectCount === 1 ? '' : 's'}` },
+    ...ageingColumns<Keyed<ClientReceivableDto>>(),
   ];
 
   // A role that may not see this gets the reason alone, not empty tabs under it.
@@ -360,8 +398,11 @@ export default function ReceivablesPage() {
           </Col>
         </Row>
       )}
+      {isLoading ? null : (
       <Card size="small">
         <Tabs
+          activeKey={tab}
+          onChange={(k) => setTab(k as ReceivablesTab)}
           tabBarStyle={{ padding: '0 12px', marginBottom: 0 }}
           items={[
             {
@@ -369,10 +410,31 @@ export default function ReceivablesPage() {
               label: `Open bills${data ? ` (${data.openBills.length})` : ''}`,
               children: (
                 <>
-                  <CardToolbar justify="flex-end">
-                    <ExportButton onExport={exportOpen} />
-                  </CardToolbar>
-                  <Table<OpenBillDto> rowKey="billId" size="middle" loading={isLoading} columns={openColumns} dataSource={data?.openBills ?? []} pagination={false} scroll={{ x: 1000 }} locale={{ emptyText: 'Every bill sent has been settled' }} />
+                  <ListToolbar
+                    projectId={projectId}
+                    onProject={setProjectId}
+                    hideProject
+                    search={page.search}
+                    onSearch={page.setSearch}
+                    searchPlaceholder="Search bill, project, client"
+                    searchLabel="Search open bills"
+                    extra={<ExportButton onExport={exportOpen} />}
+                  />
+                  <DataTable<Keyed<OpenBillDto>>
+                    columns={openColumns}
+                    visible={openChoice.visible}
+                    onChooseColumns={openChoice.setChosen}
+                    chosenIsDefault={openChoice.isDefault}
+                    rows={openBills}
+                    loading={isLoading}
+                    failed={failed}
+                    table={page.tableProps<Keyed<OpenBillDto>>(openBills.length)}
+                    onOpen={setBillId}
+                    bulk={[exportSelected<Keyed<OpenBillDto>, OpenBillDto>('open-bills', 'Open bills', OPEN_BILL_EXPORT)]}
+                    scrollX={1000}
+                    empty={{ filtered: !!page.params.q, clear: () => page.clear() }}
+                    emptyText={<EmptyArt art="entries" title={page.params.q ? 'No open bill matches this search' : 'Every bill sent has been settled'} />}
+                  />
                 </>
               ),
             },
@@ -384,19 +446,29 @@ export default function ReceivablesPage() {
                   <CardToolbar justify="flex-end">
                     <ExportButton onExport={exportProjects} />
                   </CardToolbar>
-                  <Table<ProjectReceivableDto> rowKey="projectId" size="middle" loading={isLoading} columns={projectColumns} dataSource={data?.projects ?? []} pagination={false} scroll={{ x: 1700 }} />
+                  <LocalDataTable<Keyed<ProjectReceivableDto>>
+                    list="receivables-projects"
+                    columns={projectColumns}
+                    rows={projects}
+                    loading={isLoading}
+                    failed={failed}
+                    bulk={[exportSelected<Keyed<ProjectReceivableDto>, ProjectReceivableDto>('receivables', 'Receivables', RECEIVABLE_EXPORT)]}
+                    scrollX={1700}
+                    emptyText="No client owes anything on any project"
+                  />
                 </>
               ),
             },
             {
               key: 'clients',
               label: 'By client',
-              children: <Table<ClientReceivableDto> rowKey="clientName" size="middle" loading={isLoading} columns={clientColumns} dataSource={data?.clients ?? []} pagination={false} scroll={{ x: 1650 }} />,
+              children: <LocalDataTable<Keyed<ClientReceivableDto>> list="receivables-clients" columns={clientColumns} rows={clients} loading={isLoading} failed={failed} scrollX={1650} emptyText="No client owes anything" />,
             },
             { key: 'receipts', label: 'Money received', children: <ReceiptsTab projectId={projectId} /> },
           ]}
         />
       </Card>
+      )}
       <BillDrawer id={billId} open={!!billId} onClose={() => setBillId(null)} />
     </div>
   );

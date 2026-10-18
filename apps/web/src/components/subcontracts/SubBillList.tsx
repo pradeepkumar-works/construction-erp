@@ -41,6 +41,8 @@ function subBillColumns({ showProject, onOpen, onEdit, sortOrderFor }: { showPro
   const sort = (key: SubcontractBillSortField) => ({ key, sorter: true, sortOrder: sortOrderFor(key), sortDirections: ['descend', 'ascend'] as ('descend' | 'ascend')[] });
   return [
     {
+      card: 'title',
+      cardText: (r) => r.label,
       title: 'Bill',
       locked: true,
       ...sort('billDate'),
@@ -55,6 +57,8 @@ function subBillColumns({ showProject, onOpen, onEdit, sortOrderFor }: { showPro
       ),
     },
     {
+      card: 'meta',
+      cardText: (r) => r.vendorName,
       title: 'Subcontractor',
       ...sort('vendor'),
       render: (_, r) => (
@@ -64,10 +68,11 @@ function subBillColumns({ showProject, onOpen, onEdit, sortOrderFor }: { showPro
         </div>
       ),
     },
-    ...(showProject ? [{ title: 'Project', dataIndex: 'projectName', ...sort('project'), ellipsis: true, render: (v: string, r: SubcontractBillDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> }] : []),
+    ...(showProject ? [{ card: 'meta' as const, cardText: (r: SubcontractBillDto) => r.projectName, title: 'Project', dataIndex: 'projectName', ...sort('project'), ellipsis: true, render: (v: string, r: SubcontractBillDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> }] : []),
     { title: 'Work value', dataIndex: 'grossAmount', width: 140, align: 'right', ...sort('grossAmount'), render: (v) => <span className="mono">{formatINR(v)}</span>, total: (rows) => sumMoney(rows.map((r) => r.grossAmount)) },
-    { title: 'Net payable', dataIndex: 'netPayable', width: 140, align: 'right', ...sort('netPayable'), render: (v) => <strong className="mono">{formatINR(v)}</strong>, total: (rows) => sumMoney(rows.map((r) => r.netPayable)) },
+    { card: 'amount', title: 'Net payable', dataIndex: 'netPayable', width: 140, align: 'right', ...sort('netPayable'), render: (v) => <strong className="mono">{formatINR(v)}</strong>, total: (rows) => sumMoney(rows.map((r) => r.netPayable)) },
     {
+      card: 'date',
       title: 'Due',
       dataIndex: 'dueDate',
       width: 130,
@@ -90,6 +95,7 @@ function subBillColumns({ showProject, onOpen, onEdit, sortOrderFor }: { showPro
     },
     { key: 'submittedByName', title: 'Prepared by', dataIndex: 'submittedByName', width: 140, defaultHidden: true },
     {
+      card: 'status',
       title: 'Status',
       dataIndex: 'status',
       width: 150,
@@ -151,7 +157,7 @@ export function SubBillList({ projectId: fixedProject, openId: initialOpen }: { 
     <>
       {frame.views}
       {error && <QueryError error={error} onRetry={() => refetch()} />}
-      <ListToolbar
+      <ListToolbar filters={frame.filterState}
         projectId={frame.projectFilter}
         onProject={frame.setProjectFilter}
         hideProject={!!fixedProject}

@@ -1,21 +1,26 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Tabs } from 'antd';
 import { useMaintenanceSummary } from '@/lib/queries';
 import { MachineryList } from './MachineryList';
 import { EquipmentTable } from './EquipmentTable';
 import { MaintenancePanel } from '@/components/maintenance/MaintenancePanel';
 import { PapersPanel } from '@/components/maintenance/PapersPanel';
+import { useUrlTab } from '@/lib/url-state';
 
-export type MachineryTab = 'logs' | 'maintenance' | 'papers' | 'equipment';
+const FLEET_TABS = ['logs', 'maintenance', 'papers', 'equipment'] as const;
+// Papers and drivers belong to the fleet, not to a project.
+const PROJECT_TABS = ['logs', 'maintenance', 'equipment'] as const;
+export type MachineryTab = (typeof FLEET_TABS)[number];
 
 /**
  * Daily logs, maintenance, papers and drivers, and the equipment master, for one project (project tab) or the whole
- * fleet (Machinery page). Papers and drivers belong to the fleet, so a project shows only its maintenance.
+ * fleet (Machinery page). Papers and drivers belong to the fleet, so a project shows only its maintenance. The open tab
+ * is `?sub=` in the URL (UX item 84).
  */
 export function MachineryPanel({ projectId, initialTab, initialId }: { projectId?: string; initialTab?: MachineryTab; initialId?: string }) {
-  const [tab, setTab] = useState<MachineryTab>(initialTab === 'papers' && projectId ? 'logs' : (initialTab ?? 'logs'));
+  const [tab, setTab] = useUrlTab<MachineryTab>(projectId ? PROJECT_TABS : FLEET_TABS, 'logs', { initial: initialTab });
   const { data: s } = useMaintenanceSummary(projectId);
   const due = s ? s.documentsDue.length + s.licencesDue.length : 0;
   return (

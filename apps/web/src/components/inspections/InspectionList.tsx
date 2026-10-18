@@ -32,10 +32,12 @@ function Sub({ children }: { children: React.ReactNode }) {
 function inspectionColumns({ showProject, onOpen, onEdit, sortOrderFor }: { showProject: boolean; onOpen: (id: string) => void; onEdit: (row: InspectionDto) => void; sortOrderFor: (key: InspectionSortField) => 'ascend' | 'descend' | null }): ListColumn<InspectionDto>[] {
   const sort = (key: InspectionSortField) => ({ key, sorter: true, sortOrder: sortOrderFor(key), sortDirections: ['descend', 'ascend'] as ('descend' | 'ascend')[] });
   return [
-    { title: 'Ready on', dataIndex: 'date', width: 110, render: (v) => formatDate(v), ...sort('date') },
-    { title: 'No.', dataIndex: 'inspectionNo', width: 130, className: 'mono', ...sort('inspectionNo') },
-    ...(showProject ? [{ title: 'Project', dataIndex: 'projectName', ...sort('project'), width: 200, ellipsis: true, render: (v: string, r: InspectionDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> }] : []),
+    { card: 'date', title: 'Ready on', dataIndex: 'date', width: 110, render: (v) => formatDate(v), ...sort('date') },
+    { card: 'meta', title: 'No.', dataIndex: 'inspectionNo', width: 130, className: 'mono', ...sort('inspectionNo') },
+    ...(showProject ? [{ card: 'meta' as const, cardText: (r: InspectionDto) => r.projectName, title: 'Project', dataIndex: 'projectName', ...sort('project'), width: 200, ellipsis: true, render: (v: string, r: InspectionDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> }] : []),
     {
+      card: 'title',
+      cardText: (r) => [r.activityName, r.location].filter(Boolean).join(', '),
       title: 'Activity and location',
       locked: true,
       width: 280,
@@ -54,6 +56,7 @@ function inspectionColumns({ showProject, onOpen, onEdit, sortOrderFor }: { show
     },
     {
       title: 'Checklist',
+      defaultFrom: 1400,
       key: 'checklist',
       width: 170,
       render: (_, r) => {
@@ -67,10 +70,10 @@ function inspectionColumns({ showProject, onOpen, onEdit, sortOrderFor }: { show
         );
       },
     },
-    { title: 'Requested by', dataIndex: 'submittedByName', width: 140, ...sort('submittedBy') },
+    { title: 'Requested by', dataIndex: 'submittedByName', width: 140, defaultFrom: 1600, ...sort('submittedBy') },
     { title: 'Requested on', dataIndex: 'submittedAt', width: 130, defaultHidden: true, render: (v) => formatDate(v), ...sort('submittedAt') },
-    { key: 'reviewedByName', title: 'Inspected by', dataIndex: 'reviewedByName', width: 140, render: (v: string | null) => v ?? '-' },
-    { title: 'Status', fixed: 'right' as const, dataIndex: 'status', width: 120, ...sort('status'), render: (s: SubmissionStatus) => <StatusTag status={s} labels={INSPECTION_STATUS_LABELS} /> },
+    { key: 'reviewedByName', title: 'Inspected by', dataIndex: 'reviewedByName', width: 140, defaultFrom: 1600, render: (v: string | null) => v ?? '-' },
+    { card: 'status', title: 'Status', fixed: 'right' as const, dataIndex: 'status', width: 120, ...sort('status'), render: (s: SubmissionStatus) => <StatusTag status={s} labels={INSPECTION_STATUS_LABELS} /> },
     // Passing an inspection means filling its checklist, so the row menu opens it rather than approving.
     { key: 'actions', title: '', label: 'Actions', locked: true, fixed: 'right' as const, width: 56, render: (_, r) => <RowActions type="inspection" row={r} href={`/inspections/${r.id}`} review={false} onOpen={onOpen} onEdit={onEdit} /> },
   ];
@@ -110,7 +113,7 @@ export function InspectionList({ projectId: fixedProject }: { projectId?: string
     <>
       {frame.views}
       {error && <QueryError error={error} onRetry={() => refetch()} />}
-      <ListToolbar
+      <ListToolbar filters={frame.filterState}
         projectId={frame.projectFilter}
         onProject={(v) => {
           page.setFilter('activityId', undefined);

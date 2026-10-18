@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Input } from 'antd';
 
 /** Search input that reports its value 300 ms after typing stops (server-side search). */
-export function SearchBox({ value, onChange, placeholder, width = 280, 'aria-label': ariaLabel = 'Search' }: { value: string; onChange: (v: string) => void; placeholder?: string; width?: number; 'aria-label'?: string }) {
+export function SearchBox({ value, onChange, placeholder, width = 280, 'aria-label': ariaLabel = 'Search' }: { value: string; onChange: (v: string) => void; placeholder?: string; width?: number | string; 'aria-label'?: string }) {
   const [text, setText] = useState(value);
   useEffect(() => setText(value), [value]);
   useEffect(() => {

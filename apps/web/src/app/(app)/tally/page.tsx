@@ -2,8 +2,12 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Alert, App, Button, Card, DatePicker, Empty, Input, Popconfirm, Select, Space, Switch, Table, Tabs, Tag, Typography } from 'antd';
+import { Alert, App, Button, Card, DatePicker, Input, Popconfirm, Select, Space, Switch, Table, Tabs, Tag, Typography } from 'antd';
 import type { TableProps } from 'antd';
+import { useIsPhone } from '@/lib/screen';
+import { useUrlTab } from '@/lib/url-state';
+import { LocalDataTable } from '@/components/list/LocalDataTable';
+import type { ListColumn } from '@/components/list/DataTable';
 import { DownloadOutlined, ExportOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -62,12 +66,17 @@ function ToExport() {
     onError: (e) => message.error(errorMessage(e)),
   });
 
-  const columns: TableProps<TallyVoucherDto>['columns'] = [
-    { title: 'Date', dataIndex: 'date', width: 110, render: (v) => formatDate(v) },
-    { title: 'Voucher', dataIndex: 'kind', width: 170, render: (k: TallyVoucherKind) => <KindTag kind={k} /> },
+  const rows = useMemo(() => vouchers.map((v) => ({ ...v, id: v.key })), [vouchers]);
+  const columns: ListColumn<TallyVoucherDto & { id: string }>[] = [
+    { key: 'date', title: 'Date', dataIndex: 'date', width: 110, card: 'date', render: (v) => formatDate(v) },
+    { key: 'kind', title: 'Voucher', dataIndex: 'kind', width: 170, card: 'status', render: (k: TallyVoucherKind) => <KindTag kind={k} /> },
     {
+      key: 'number',
       title: 'Number',
       dataIndex: 'number',
+      locked: true,
+      card: 'title',
+      cardText: (r) => r.number,
       width: 200,
       render: (v: string, r) => (
         <div>
@@ -79,8 +88,11 @@ function ToExport() {
       ),
     },
     {
+      key: 'party',
       title: 'Party',
       dataIndex: 'party',
+      card: 'meta',
+      cardText: (r) => `${r.party} · ${r.projectCode} · ${r.projectName}`,
       render: (v: string, r) => (
         <div>
           {v}
@@ -90,7 +102,7 @@ function ToExport() {
         </div>
       ),
     },
-    { title: 'Amount', dataIndex: 'amount', width: 150, align: 'right', render: (v) => <strong className="mono">{formatINR(v, true)}</strong> },
+    { key: 'amount', title: 'Amount', dataIndex: 'amount', width: 150, align: 'right', card: 'amount', render: (v) => <strong className="mono">{formatINR(v, true)}</strong> },
   ];
 
   return (
@@ -145,15 +157,14 @@ function ToExport() {
           </Typography.Paragraph>
         )}
       </div>
-      <Table<TallyVoucherDto>
-        rowKey="key"
-        size="middle"
-        loading={isLoading || isFetching}
+      <LocalDataTable<TallyVoucherDto & { id: string }>
+        list="tally-vouchers"
         columns={columns}
-        dataSource={vouchers}
-        pagination={{ pageSize: 50, hideOnSinglePage: true }}
-        scroll={{ x: 900 }}
-        locale={{ emptyText: <Empty description="Nothing new to export up to this month" /> }}
+        rows={rows}
+        loading={isLoading || isFetching}
+        failed={!!error}
+        scrollX={900}
+        emptyText="Nothing new to export up to this month"
         expandable={{
           expandedRowRender: (v) => (
             <div style={{ maxWidth: 760 }}>
@@ -183,6 +194,9 @@ function Exports() {
   const { message } = App.useApp();
   const qc = useQueryClient();
   const { data, isLoading, error, refetch } = useTallyExports();
+  // On a phone a card has room for one control: a tap downloads the file; Undo is at a desk, in the table.
+  const phone = useIsPhone();
+  const download = (r: Pick<TallyExportDto, 'id' | 'upTo'>) => downloadXml(`/tally/exports/${r.id}/xml`, exportFile(r)).catch((e) => message.error(errorMessage(e)));
   const undo = useMutation({
     mutationFn: async (id: string) => (await api.delete(`/tally/exports/${id}`)).data,
     onSuccess: () => {
@@ -192,12 +206,23 @@ function Exports() {
     },
     onError: (e) => message.error(errorMessage(e)),
   });
-  const columns: TableProps<TallyExportDto>['columns'] = [
-    { title: 'Exported', dataIndex: 'createdAt', width: 180, render: (v, r) => <div>{formatDateTime(v)}<div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{r.createdByName}</div></div> },
-    { title: 'Up to', dataIndex: 'upTo', width: 120, render: (v) => formatDate(v) },
+  const columns: ListColumn<TallyExportDto>[] = [
+    {
+      key: 'createdAt',
+      title: 'Exported',
+      dataIndex: 'createdAt',
+      locked: true,
+      card: 'date',
+      cardText: (r) => `Exported ${formatDateTime(r.createdAt)} by ${r.createdByName}`,
+      width: 180,
+      render: (v, r) => <div>{formatDateTime(v)}<div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{r.createdByName}</div></div>,
+    },
+    { key: 'upTo', title: 'Up to', dataIndex: 'upTo', width: 120, card: 'title', cardText: (r) => `Up to ${formatDate(r.upTo)}`, render: (v) => formatDate(v) },
     {
       title: 'Vouchers',
       key: 'counts',
+      card: 'meta',
+      cardText: (r) => [`${r.voucherCount} vouchers`, ...TALLY_VOUCHER_KINDS.filter((k) => r.counts[k]).map((k) => `${TALLY_VOUCHER_KIND_LABELS[k]}: ${r.counts[k]}`)].join(' · '),
       render: (_, r) => (
         <Space wrap size={4}>
           <strong>{r.voucherCount}</strong>
@@ -212,10 +237,12 @@ function Exports() {
     {
       title: '',
       key: 'actions',
+      label: 'Actions',
+      locked: true,
       width: 210,
       render: (_, r) => (
         <Space size={4}>
-          <Button size="small" icon={<DownloadOutlined />} onClick={() => downloadXml(`/tally/exports/${r.id}/xml`, exportFile(r)).catch((e) => message.error(errorMessage(e)))}>
+          <Button size="small" icon={<DownloadOutlined />} onClick={() => download(r)}>
             Download
           </Button>
           <Popconfirm
@@ -236,7 +263,23 @@ function Exports() {
   return (
     <>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
-      <Table<TallyExportDto> rowKey="id" size="middle" loading={isLoading} columns={columns} dataSource={data ?? []} pagination={false} scroll={{ x: 800 }} locale={{ emptyText: 'Nothing exported yet' }} />
+      <LocalDataTable<TallyExportDto>
+        list="tally-exports"
+        columns={columns}
+        rows={data ?? []}
+        loading={isLoading}
+        failed={!!error}
+        onOpen={
+          phone
+            ? (id) => {
+                const r = data?.find((x) => x.id === id);
+                if (r) download(r);
+              }
+            : undefined
+        }
+        scrollX={800}
+        emptyText="Nothing exported yet"
+      />
     </>
   );
 }
@@ -352,8 +395,12 @@ function Ledgers() {
   );
 }
 
+const TAB_KEYS = ['export', 'exports', 'ledgers'] as const;
+type TallyTab = (typeof TAB_KEYS)[number];
+
 export default function TallyPage() {
   const { user } = useAuth();
+  const [tab, setTab] = useUrlTab<TallyTab>(TAB_KEYS, 'export', { param: 'tab' });
   if (user && !canExportTally(user.roleKey))
     return (
       <div className="page-container">
@@ -374,6 +421,8 @@ export default function TallyPage() {
       </Typography.Paragraph>
       <Card size="small">
         <Tabs
+          activeKey={tab}
+          onChange={(k) => setTab(k as TallyTab)}
           tabBarStyle={{ padding: '0 12px', marginBottom: 0 }}
           items={[
             { key: 'export', label: 'To export', children: <ToExport /> },

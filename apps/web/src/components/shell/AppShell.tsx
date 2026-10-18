@@ -4,9 +4,9 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
-import { Avatar, Breadcrumb, Button, Drawer, Dropdown, Flex, Grid, Layout, Space, Tag, Tooltip, Typography, theme } from 'antd';
+import { Avatar, Badge, Breadcrumb, Button, Drawer, Dropdown, Flex, Grid, Layout, Space, Tag, Tooltip, Typography, theme } from 'antd';
 import type { MenuProps } from 'antd';
-import { BgColorsOutlined, CheckOutlined, ColumnHeightOutlined, LogoutOutlined, MenuOutlined, SearchOutlined, StarFilled, StarOutlined, UserOutlined } from '@ant-design/icons';
+import { BgColorsOutlined, CheckOutlined, ColumnHeightOutlined, LogoutOutlined, MenuOutlined, QuestionCircleOutlined, SearchOutlined, StarFilled, StarOutlined, UserOutlined } from '@ant-design/icons';
 import type { AuthUser } from '@erp/shared';
 import { PRODUCT_NAME, canUseAi, isGuest, mayApprove } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
@@ -21,7 +21,7 @@ import { AskContext } from '@/lib/ask';
 import { BRAND } from '@/lib/brand';
 import { BrandMark } from './BrandMark';
 import { CommandPalette } from './CommandPalette';
-import { HelpMenu, dialogOpen, isTyping } from './HelpMenu';
+import { HelpButton, dialogOpen, isTyping, useHelpMenu } from './HelpMenu';
 import { MessageBar } from './MessageBar';
 import { NewMenu } from './NewMenu';
 import { ProjectSwitcher } from './ProjectSwitcher';
@@ -163,9 +163,26 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
         setSearchOpen(true);
       };
 
+  const help = useHelpMenu({
+    withSearch: !!openSearch,
+    withAsk: askVisible,
+    onTour: () => {
+      setMobileOpen(false);
+      setTouring(true);
+    },
+  });
+
   const userMenu: MenuProps['items'] = [
     { key: 'info', icon: <UserOutlined />, label: `${user.email}`, disabled: true },
     { type: 'divider' },
+    // A phone's header has room for search, New, the bell and the account only (UX item 84): Ask and Help live here.
+    ...(isMobile
+      ? [
+          ...(askVisible ? [{ key: 'ask', icon: <SparkleIcon style={{ color: token.colorPrimary }} />, label: `Ask ${PRODUCT_NAME}`, onClick: () => openAsk() }] : []),
+          { key: 'help', icon: <QuestionCircleOutlined />, label: help.unseen ? <Badge dot offset={[6, 0]}>Help</Badge> : 'Help', children: help.items },
+          { type: 'divider' as const },
+        ]
+      : []),
     {
       key: 'mode',
       icon: <BgColorsOutlined />,
@@ -233,7 +250,7 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
             gap: token.marginSM,
           }}
         >
-          <Flex gap={token.marginSM} align="center" style={{ minWidth: 0, flex: 1 }}>
+          <Flex gap={isMobile ? token.marginXS : token.marginSM} align="center" style={{ minWidth: 0, flex: 1 }}>
             {isMobile ? (
               <>
                 <Button type="text" icon={<MenuOutlined />} onClick={() => setMobileOpen(true)} aria-label="Open menu" data-tour="menu" />
@@ -307,8 +324,8 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
                   </Typography.Text>
                 </Button>
               ))}
-            {askVisible && (
-              <Tooltip title={isMobile ? undefined : `Ask ${PRODUCT_NAME}  ${askShortcutLabel()}`}>
+            {askVisible && !isMobile && (
+              <Tooltip title={`Ask ${PRODUCT_NAME}  ${askShortcutLabel()}`}>
                 <Button
                   type="text"
                   icon={<SparkleIcon style={{ color: token.colorPrimary }} />}
@@ -325,23 +342,24 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
             <span style={{ marginInline: token.marginXXS }}>
               <NewMenu user={user} compact={isMobile || !roomy} />
             </span>
-            <HelpMenu
-              withSearch={!!openSearch}
-              withAsk={askVisible}
-              onTour={() => {
-                setMobileOpen(false);
-                setTouring(true);
-              }}
-            />
+            {isMobile ? null : <HelpButton items={help.items} unseen={help.unseen} />}
             <span data-tour="notifications">
               <NotificationBell />
             </span>
             <Dropdown menu={{ items: userMenu }} trigger={['click']}>
               <Button type="text" style={{ height: 40, padding: `0 ${token.paddingXS}px` }} data-tour="account" aria-label={roomy ? undefined : `${user.fullName}, account`}>
                 <Space>
+                  {isMobile && help.unseen ? (
+                    <Badge dot offset={[-2, 2]}>
+                      <Avatar size="small" style={{ background: BRAND.colors.accent, color: BRAND.colors.onAccent, fontWeight: 700 }}>
+                        {initials}
+                      </Avatar>
+                    </Badge>
+                  ) : (
                   <Avatar size="small" style={{ background: BRAND.colors.accent, color: BRAND.colors.onAccent, fontWeight: 700 }}>
                     {initials}
                   </Avatar>
+                  )}
                   {roomy && (
                     <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: 1.1 }}>
                       <span style={{ fontWeight: 600, fontSize: token.fontSize }}>{user.fullName}</span>
@@ -363,6 +381,7 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
               <AskContext.Provider value={askContext}>{children}</AskContext.Provider>
             </PageTrailProvider>
           </Content>
+          {help.dialogs}
           {askVisible && askLoaded && <AskPanel open={askOpen} onClose={() => setAskOpen(false)} user={user} status={aiStatus} mobile={isMobile} question={askQuestion} onQuestionTaken={takeAskQuestion} />}
         </div>
       </Layout>
