@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { APPROVER_ROLES, type SubmissionType, COMPANY_WIDE_ROLES, isCompanyWide, canAdjustStock, canApprove, canKeepStock, canLogMachinery, canManageEquipment, canManageStore, canMeasure, canRaiseRisk, canRecordAttendance, canRequestInspection, canSubmitExpense, canRecordTest, canRaiseNcr, canCheckGrn, canManageDocuments, canViewLetters, canManageStaff, canMarkStaff, canViewMessageLog, canReportSafety, canManageSafety, canManageMaintenance, canFreezeBaseline, canManageWorkers, canViewWorkers, canReportDefect, canCloseDefect, canManageHandover, GUEST_ROLES, isGuest } from '@erp/shared';
+import { APPROVER_ROLES, type SubmissionType, COMPANY_WIDE_ROLES, isCompanyWide, canAdjustStock, canApprove, canKeepStock, canLogMachinery, canManageEquipment, canManageStore, canMeasure, canRaiseRisk, canRecordAttendance, canRequestInspection, canSubmitExpense, canRecordTest, canRaiseNcr, canCheckGrn, canManageDocuments, canViewLetters, canManageStaff, canMarkStaff, canViewMessageLog, canReportSafety, canManageSafety, canIssuePpe, canManageMaintenance, canFreezeBaseline, canManageWorkers, canViewWorkers, canReportDefect, canCloseDefect, canManageHandover, GUEST_ROLES, isGuest } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { ApprovalRightsService } from './approval-rights.service';
 import { RequestUser } from './current-user';
@@ -322,6 +322,12 @@ export class ProjectAccessService {
   /** Report an incident, record a toolbox talk or request a permit: site roles with access to the project. */
   async assertCanReportSafety(user: RequestUser, projectId: string) {
     if (!canReportSafety(user.roleKey)) throw new ForbiddenException('Your role cannot record safety entries');
+    await this.assertCanAccessProject(user, projectId);
+  }
+
+  /** Hand PPE to workers or take it back: the safety officer, stores, site staff or an approver, with access to the project. */
+  async assertCanIssuePpe(user: RequestUser, projectId: string) {
+    if (!canIssuePpe(user.roleKey)) throw new ForbiddenException('Your role cannot issue PPE');
     await this.assertCanAccessProject(user, projectId);
   }
 

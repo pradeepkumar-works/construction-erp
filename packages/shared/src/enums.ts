@@ -116,6 +116,13 @@ export type WorkPermitType = (typeof WORK_PERMIT_TYPES)[number];
 export const WORK_PERMIT_STATUSES = ['REQUESTED', 'ISSUED', 'REJECTED', 'CLOSED'] as const;
 export type WorkPermitStatus = (typeof WORK_PERMIT_STATUSES)[number];
 
+/** Personal protective equipment handed to a named worker. */
+export const PPE_KINDS = ['HELMET', 'SAFETY_SHOES', 'REFLECTIVE_JACKET', 'GLOVES', 'SAFETY_HARNESS', 'GOGGLES', 'EAR_PROTECTION', 'DUST_MASK', 'GUMBOOTS'] as const;
+export type PpeKind = (typeof PPE_KINDS)[number];
+/** ISSUED = with the worker; RETURNED, REPLACED (by a newer issue) or LOST close it. */
+export const PPE_ISSUE_STATUSES = ['ISSUED', 'RETURNED', 'REPLACED', 'LOST'] as const;
+export type PpeIssueStatus = (typeof PPE_ISSUE_STATUSES)[number];
+
 /** A scheduled service when it falls due, or a breakdown repair. */
 export const MAINTENANCE_KINDS = ['SERVICE', 'BREAKDOWN'] as const;
 export type MaintenanceKind = (typeof MAINTENANCE_KINDS)[number];

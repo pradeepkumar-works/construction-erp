@@ -437,6 +437,7 @@ model Organization {
   projectBudgets       ProjectBudget[]
   safetyIncidents      SafetyIncident[]
   toolboxTalks         ToolboxTalk[]
+  ppeIssues            PpeIssue[]
   workPermits          WorkPermit[]
   variationLines       VariationLine[]
   maintenanceJobs      MaintenanceJob[]
@@ -573,6 +574,8 @@ model User {
   incidentsReported    SafetyIncident[]      @relation("IncidentReporter")
   incidentsClosed      SafetyIncident[]      @relation("IncidentCloser")
   toolboxTalks         ToolboxTalk[]         @relation("ToolboxTalkRecorder")
+  ppeIssued            PpeIssue[]            @relation("PpeIssuer")
+  ppeClosed            PpeIssue[]            @relation("PpeCloser")
   permitsRequested     WorkPermit[]          @relation("PermitRequester")
   permitsIssued        WorkPermit[]          @relation("PermitIssuer")
   permitsClosed        WorkPermit[]          @relation("PermitCloser")
@@ -612,6 +615,8 @@ model Project {
   photoChecks           PhotoCheck[]
   /// Site photo checks (AI item 76): the safety officer switched the photo flags off for this project; captions still show
   photoFlagsOff         Boolean        @default(false)
+  /// Kit every worker at the project must have (PPE register); new projects start with the standard three
+  ppeRequired           PpeKind[]      @default([HELMET, SAFETY_SHOES, REFLECTIVE_JACKET])
   code                  String
   name                  String
   type                  ProjectType
@@ -722,6 +727,7 @@ model Project {
   budget           ProjectBudget?
   safetyIncidents  SafetyIncident[]
   toolboxTalks     ToolboxTalk[]
+  ppeIssues        PpeIssue[]
   workPermits      WorkPermit[]
   maintenanceJobs  MaintenanceJob[]
 
@@ -2782,6 +2788,7 @@ model Worker {
   updatedAt      DateTime      @updatedAt
 
   attendance WorkerAttendance[]
+  ppeIssues  PpeIssue[]
 
   @@unique([organizationId, workerNo])
   @@index([organizationId, projectId])
@@ -3063,6 +3070,61 @@ enum WorkPermitStatus {
   ISSUED
   REJECTED
   CLOSED
+}
+
+enum PpeKind {
+  HELMET
+  SAFETY_SHOES
+  REFLECTIVE_JACKET
+  GLOVES
+  SAFETY_HARNESS
+  GOGGLES
+  EAR_PROTECTION
+  DUST_MASK
+  GUMBOOTS
+}
+
+enum PpeIssueStatus {
+  ISSUED
+  RETURNED
+  REPLACED
+  LOST
+}
+
+/// One item of PPE handed to a named worker at a project. ISSUED while they have it; returning it, losing it or
+/// issuing the same kind to them again (REPLACED) closes it. Issues made together share a batchId, the phone's id for
+/// the batch, so a send that is retried from the outbox is never issued twice.
+model PpeIssue {
+  id             String         @id @default(uuid())
+  organizationId String
+  organization   Organization   @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  workerId       String
+  worker         Worker         @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  kind           PpeKind
+  size           String?
+  issuedOn       DateTime       @db.Date
+  /// Issued on + the kind's usual life; past it the item is due for replacement
+  replaceBy      DateTime?      @db.Date
+  status         PpeIssueStatus @default(ISSUED)
+  batchId        String?
+  closedOn       DateTime?      @db.Date
+  closeNote      String?
+  /// To be recovered from the labour contractor (lost, or kept when the worker left)
+  recoverable    Boolean        @default(false)
+  note           String?
+  issuedById     String
+  issuedBy       User           @relation("PpeIssuer", fields: [issuedById], references: [id])
+  closedById     String?
+  closedBy       User?          @relation("PpeCloser", fields: [closedById], references: [id], onDelete: SetNull)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@unique([batchId, workerId, kind])
+  @@index([projectId, status])
+  @@index([workerId, status])
+  @@index([organizationId])
 }
 
 /// Incident and near-miss register per project (v4 item 40). Not an approval submission: an entry stays open
