@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-10-material-reconciliation',
+    date: '2026-10-24',
+    title: 'Material reconciliation',
+    points: [
+      'A project\'s Materials now has Reconciliation: how much cement, steel or any other item the approved work should have used, against what the store issued to site less what came back.',
+      'The QS sets the norms, such as 8.2 bags of cement per cum of M25, with the wastage allowed. Items used beyond the allowance or well below theoretical are flagged, and approvers see the excess in rupees.',
+      'Pick any period, open an item to see which BOQ items it went into, and export the whole reconciliation to Excel.',
+    ],
+  },
+  {
     id: '2026-10-ai-controls',
     date: '2026-10-23',
     title: 'Ask Nirmaan: who uses it and what it costs',

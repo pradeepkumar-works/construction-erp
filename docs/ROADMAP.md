@@ -381,6 +381,12 @@ preview deployments run them against the production database before a PR is merg
     Done: an antd Tour over the web app's shell (pages, search, approvals, notifications, account) the first time
     someone signs in on a browser, and again from the account menu (Take the tour). The repo carries the antd MCP
     server and llms.txt references for working on the web app.
+52. ~~**Material reconciliation** (M). Norms per BOQ item, theoretical against issued, wastage flags.~~
+    Done: the QS sets norms (store item per unit of a BOQ item, with the wastage allowed) on a Reconciliation tab under
+    Materials. For any period, approved progress × norms gives the theoretical consumption, checked against issues less
+    returns from site; items over their allowance (with the excess valued at item rates for cost viewers) or more than
+    5% below theoretical are flagged, items issued with no norm are listed, and it all exports to Excel. Demo: the
+    hospital project has cement over, steel within and bricks below.
 
 ## AI – Ask Nirmaan and what follows
 

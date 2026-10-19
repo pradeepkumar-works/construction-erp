@@ -103,6 +103,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/doc-read-test.js
+      - name: Material reconciliation adds up theoretical, allowed and consumed quantities and flags each item
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/reconciliation-test.js
       - name: Early warnings forecast right, show each role its own kinds and backtest on the demo history
         if: matrix.suite == 'flows'
         working-directory: apps/api

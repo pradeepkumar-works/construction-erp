@@ -92,6 +92,8 @@ import type {
   LabourRatesDto,
   ProjectCostDto,
   ProjectBudgetDto,
+  ProjectReconciliationDto,
+  MaterialNormDto,
   CashFlowDto,
   CashFlowGranularity,
   ProjectCostSummaryDto,
@@ -1261,6 +1263,43 @@ export const useCashFlow = (params: { projectId?: string; granularity: CashFlowG
     queryFn: async () => (await api.get<CashFlowDto>('/cost/cash-flow', { params: clean(params) })).data,
     placeholderData: keepPreviousData,
   });
+
+/* ---------- material reconciliation ---------- */
+
+/** A project's norms and its theoretical against issued material for a period (all time when empty). */
+export const useProjectReconciliation = (projectId: string | undefined, period: CostPeriod) =>
+  useQuery({
+    queryKey: ['reconciliation', projectId, clean(period)],
+    queryFn: async () => (await api.get<ProjectReconciliationDto>(`/reconciliation/projects/${projectId}`, { params: clean(period) })).data,
+    placeholderData: keepPreviousData,
+    enabled: !!projectId,
+  });
+
+export interface SaveMaterialNormInput {
+  projectId: string;
+  boqItemId: string;
+  itemId: string;
+  qtyPerUnit: string;
+  wastagePct: string;
+  note: string | null;
+}
+
+/** Add a norm, or change the one the BOQ item has for that store item. */
+export function useSaveMaterialNorm() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ projectId, ...body }: SaveMaterialNormInput) => (await api.put<MaterialNormDto>(`/reconciliation/projects/${projectId}/norms`, body)).data,
+    onSuccess: (_, v) => qc.invalidateQueries({ queryKey: ['reconciliation', v.projectId] }),
+  });
+}
+
+export function useRemoveMaterialNorm() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ projectId, normId }: { projectId: string; normId: string }) => (await api.delete<{ ok: true }>(`/reconciliation/projects/${projectId}/norms/${normId}`)).data,
+    onSuccess: (_, v) => qc.invalidateQueries({ queryKey: ['reconciliation', v.projectId] }),
+  });
+}
 
 export const useProjectCost = (projectId: string | undefined, period: CostPeriod) =>
   useQuery({

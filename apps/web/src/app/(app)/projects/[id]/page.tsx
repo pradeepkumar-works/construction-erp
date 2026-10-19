@@ -5,7 +5,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Button, Card, Progress, Space, Typography } from 'antd';
 import { EditOutlined, FilePdfOutlined } from '@ant-design/icons';
 import type { ProjectDetail } from '@erp/shared';
-import { canEditProjects, isGuest, canViewContract, canViewVariations, canViewCost, canViewPurchaseOrders, canViewWorkOrders } from '@erp/shared';
+import { canEditProjects, isGuest, canViewContract, canViewVariations, canViewCost, canViewPurchaseOrders, canViewReconciliation, canViewWorkOrders } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useProject } from '@/lib/queries';
 import { readPref, writePref } from '@/lib/prefs';
@@ -35,6 +35,7 @@ import { ContractPanel } from '@/components/contracts/ContractPanel';
 import { VariationsPanel } from '@/components/variations/VariationsPanel';
 import { BillList } from '@/components/bills/BillList';
 import { StockPanel } from '@/components/stock/StockPanel';
+import { ReconciliationPanel } from '@/components/reconciliation/ReconciliationPanel';
 import { AttendancePanel } from '@/components/workers/AttendancePanel';
 import { MrList } from '@/components/material/MrList';
 import { PurchaseOrderList } from '@/components/purchasing/PurchaseOrderList';
@@ -94,6 +95,7 @@ function ProjectPage({ project }: { project: ProjectDetail }) {
     { key: 'material', group: 'materials', label: 'Material requests', children: <MrList projectId={project.id} newLabel="New material request" /> },
     can(!!user && canViewPurchaseOrders(user.roleKey)) && { key: 'po', group: 'materials', label: 'Purchase orders', children: <PurchaseOrderList projectId={project.id} /> },
     { key: 'stock', group: 'materials', label: 'Stock', children: <StockPanel projectId={project.id} /> },
+    can(!!user && canViewReconciliation(user.roleKey)) && { key: 'reconciliation', group: 'materials', label: 'Reconciliation', children: <ReconciliationPanel projectId={project.id} /> },
     { key: 'machinery', group: 'materials', label: 'Machinery', children: <MachineryPanel projectId={project.id} /> },
     can(!!user && canViewContract(user.roleKey)) && { key: 'contract', group: 'money', label: 'Contract', children: <ContractPanel projectId={project.id} /> },
     can(!!user && canViewContract(user.roleKey)) && { key: 'bills', group: 'money', label: 'RA bills', children: <BillList projectId={project.id} /> },
