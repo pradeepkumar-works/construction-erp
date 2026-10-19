@@ -6,7 +6,7 @@
   "build": {
     "base": {
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://construction-erp-api-pradeep15.vercel.app/api"
+        "EXPO_PUBLIC_API_URL": "https://nirmaan-api.cogitrex.ai/api"
       }
     },
     "preview": {
