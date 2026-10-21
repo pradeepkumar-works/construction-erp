@@ -75,6 +75,7 @@ export class QuotationsService {
       gstAmount: money(t.gstAmount)!,
       total: money(t.total)!,
       missingLines: items.length - priced.length,
+      fromSupplier: r.fromSupplier,
       createdByName: r.createdBy.fullName,
       createdAt: iso(r.createdAt)!,
     };

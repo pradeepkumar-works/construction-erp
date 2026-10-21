@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button, Table, Typography } from 'antd';
-import { ImportOutlined } from '@ant-design/icons';
-import type { MaterialRequestDto, MaterialRequestItemDto } from '@erp/shared';
+import { Button, Popover, Table, Typography } from 'antd';
+import { ImportOutlined, InboxOutlined } from '@ant-design/icons';
+import type { MaterialRequestDto, MaterialRequestItemDto, RequestLineStockDto } from '@erp/shared';
 import { canKeepStock, canViewPurchaseOrders } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
-import { useMaterialRequest } from '@/lib/queries';
-import { formatDate, formatQty } from '@/lib/format';
+import { useMaterialRequest, useRequestStock } from '@/lib/queries';
+import { formatDate, formatQty, toNumber } from '@/lib/format';
+import { themeFontSize } from '@/lib/theme';
 import { PriorityTag, StatusTag } from '@/components/common/StatusTag';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { ReviewActions } from '@/components/common/ReviewActions';
@@ -15,6 +16,7 @@ import { EditResubmitButton } from '@/components/common/EditResubmitButton';
 import { submissionMetaItems } from '@/components/common/SubmitterInfo';
 import { ReceiptModal } from '@/components/stock/ReceiptModal';
 import { QuotationsPanel } from '@/components/purchasing/QuotationsPanel';
+import { CoverFromStockModal } from './CoverFromStockModal';
 import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
 import { submissionLifecycle } from '@/components/record/lifecycle';
 
@@ -30,10 +32,20 @@ export function MrRecord({ id, mode, open, onClose, onEdit }: RecordProps & { mo
   const { data, isLoading, error, refetch } = useMaterialRequest(id ?? undefined);
   const { user } = useAuth();
   const [receiving, setReceiving] = useState(false);
-  const pending = data?.status === 'APPROVED' && data.items.some((i) => Number(i.receivedQty) < Number(i.quantity));
+  const [covering, setCovering] = useState(false);
+  const approved = data?.status === 'APPROVED';
+  // Received and met from stock both count towards a line (v5 item 95).
+  const got = (i: MaterialRequestItemDto) => Number(i.receivedQty) + Number(i.coveredQty);
+  const pending = approved && !!data && data.items.some((i) => got(i) < Number(i.quantity));
   const mayReceive = pending && !!user && canKeepStock(user.roleKey);
-  const purchasing = data?.status === 'APPROVED' && !!user && canViewPurchaseOrders(user.roleKey);
-  const receivedLines = data?.items.filter((i) => Number(i.receivedQty) >= Number(i.quantity)).length ?? 0;
+  const purchasing = approved && !!user && canViewPurchaseOrders(user.roleKey);
+  const receivedLines = data?.items.filter((i) => got(i) >= Number(i.quantity)).length ?? 0;
+  const stock = useRequestStock(data?.id, approved);
+  const stockOf = (id: string) => stock.data?.lines.find((l) => l.materialRequestItemId === id);
+  const anyCovered = !!data?.items.some((i) => Number(i.coveredQty) > 0);
+  const mayCover =
+    !!stock.data &&
+    stock.data.lines.some((l) => toNumber(l.toOrderQty) > 0 && ((stock.data!.canIssue && toNumber(l.here) > 0) || l.others.some((o) => o.canSend && toNumber(o.balance) > 0)));
   return (
     <RecordFrame
       mode={mode}
@@ -87,6 +99,23 @@ export function MrRecord({ id, mode, open, onClose, onEdit }: RecordProps & { mo
                             render: (v: string) => (Number(v) > 0 ? formatQty(v) : <span className="text-muted">0</span>),
                           },
                           {
+                            title: 'In stock',
+                            key: 'stock',
+                            width: 150,
+                            render: (_: unknown, i: MaterialRequestItemDto) => <StockCell line={stockOf(i.id)} loading={stock.isLoading} />,
+                          },
+                          ...(anyCovered
+                            ? [
+                                {
+                                  title: 'From stock',
+                                  dataIndex: 'coveredQty',
+                                  align: 'right' as const,
+                                  width: 100,
+                                  render: (v: string) => (Number(v) > 0 ? formatQty(v) : <span className="text-muted">0</span>),
+                                },
+                              ]
+                            : []),
+                          {
                             title: 'Received',
                             dataIndex: 'receivedQty',
                             align: 'right' as const,
@@ -112,6 +141,11 @@ export function MrRecord({ id, mode, open, onClose, onEdit }: RecordProps & { mo
           activity: { type: 'material_request', id: data.id, submission: data },
           actions: (size) => (
             <>
+              {mayCover ? (
+                <Button size={size} icon={<InboxOutlined />} onClick={() => setCovering(true)}>
+                  Take from stock
+                </Button>
+              ) : null}
               {mayReceive ? (
                 <Button type="primary" size={size} icon={<ImportOutlined />} onClick={() => setReceiving(true)}>
                   Receive material
@@ -124,8 +158,42 @@ export function MrRecord({ id, mode, open, onClose, onEdit }: RecordProps & { mo
         }
       }
     >
+      {data && approved ? <CoverFromStockModal open={covering} onClose={() => setCovering(false)} request={data} stock={stock.data} /> : null}
       <ReceiptModal open={receiving} onClose={() => setReceiving(false)} projectId={data?.projectId} materialRequestId={data?.id} />
     </RecordFrame>
+  );
+}
+
+/** A line's stock (v5 item 95): at the request's own site, and how much the other sites hold, listed in a popover. */
+function StockCell({ line, loading }: { line: RequestLineStockDto | undefined; loading: boolean }) {
+  if (loading) return <span className="text-muted">…</span>;
+  if (!line) return <span className="text-muted">-</span>;
+  const elsewhere = line.others.reduce((s, o) => s + toNumber(o.balance), 0);
+  return (
+    <div>
+      {toNumber(line.here) > 0 ? <span translate="no">{formatQty(line.here)} here</span> : <span className="text-muted">None here</span>}
+      {line.others.length ? (
+        <div>
+          <Popover
+            trigger="click"
+            title={`${line.itemName} at other sites`}
+            content={
+              <ul style={{ margin: 0, paddingInlineStart: 16 }}>
+                {line.others.map((o) => (
+                  <li key={o.projectId} translate="no">
+                    {o.projectName}: {formatQty(o.balance)} {line.unit}
+                  </li>
+                ))}
+              </ul>
+            }
+          >
+            <Button type="link" size="small" style={{ padding: 0, height: 'auto', minHeight: 24, fontSize: themeFontSize('fontSizeSM') }}>
+              {formatQty(elsewhere)} at {line.others.length} other site{line.others.length === 1 ? '' : 's'}
+            </Button>
+          </Popover>
+        </div>
+      ) : null}
+    </div>
   );
 }
 

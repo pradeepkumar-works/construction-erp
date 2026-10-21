@@ -5,10 +5,10 @@ import { Alert, DatePicker, Form, Input, InputNumber, Select, Table, Typography 
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentDto, PurchaseOrderDto } from '@erp/shared';
-import { GST_RATES, MSME_CATEGORY_LABELS } from '@erp/shared';
+import { GST_RATES, MSME_CATEGORY_LABELS, lastRateKey } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
-import { useProjects } from '@/lib/queries';
+import { useLastRates, useProjects } from '@/lib/queries';
 import { VendorSelect, useVendor } from '@/components/common/SearchSelect';
 import { formatINR, toNumber } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
@@ -18,6 +18,7 @@ import { LineTable } from '@/components/form/LineTable';
 import { MoneyInput, QuantityInput } from '@/components/form/inputs';
 import { themeFontSize } from '@/lib/theme';
 import { recordPage } from '@/components/approvals/queue';
+import { LastRates } from './LastRates';
 
 export interface PoLineValue {
   materialRequestItemId?: string | null;
@@ -79,6 +80,7 @@ export function PurchaseOrderFormModal({
   const { data: projects } = useProjects();
   // preserve: lines from a request keep their item and unit without a field for them
   const lines = Form.useWatch('lines', { form, preserve: true }) as PoLineValue[] | undefined;
+  const last = useLastRates((lines ?? []).map((l) => ({ itemName: l?.itemName ?? '', unit: l?.unit ?? '' })), open, order?.id);
   const freight = Form.useWatch('freight', form);
   const vendorId = Form.useWatch('vendorId', form);
   const vendor = useVendor(open ? vendorId : undefined);
@@ -275,11 +277,16 @@ export function PurchaseOrderFormModal({
               {
                 title: 'Rate',
                 key: 'rate',
-                width: 130,
+                width: 150,
                 render: (f) => (
-                  <Form.Item name={[f.name, 'rate']} noStyle rules={[{ required: true, message: 'Enter the rate' }]}>
-                    <MoneyInput aria-label={`Rate of line ${f.name + 1}`} />
-                  </Form.Item>
+                  <>
+                    <Form.Item name={[f.name, 'rate']} noStyle rules={[{ required: true, message: 'Enter the rate' }]}>
+                      <MoneyInput aria-label={`Rate of line ${f.name + 1}`} />
+                    </Form.Item>
+                    {lines?.[f.name]?.itemName && lines[f.name].unit ? (
+                      <LastRates itemName={lines[f.name].itemName!} rates={last.data?.[lastRateKey(lines[f.name].itemName!, lines[f.name].unit!)]} loading={last.isLoading} />
+                    ) : null}
+                  </>
                 ),
               },
               {

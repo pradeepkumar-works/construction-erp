@@ -125,6 +125,15 @@ export class ClosePurchaseOrderDto {
   @ApiProperty({ example: 'Balance 40 bags not required; vendor informed' }) @trim() @IsString() @IsNotEmpty() @MaxLength(500) note: string;
 }
 
+/** Last orders of items (v5 item 95). */
+export class LastRatesQuery {
+  @ApiProperty({ description: 'Item name and unit as `name|unit`; repeat for several items', type: [String], example: ['Cement OPC 53|Bag'] })
+  @Transform(({ value }) => (Array.isArray(value) ? value : [value]))
+  @IsArray() @ArrayMinSize(1) @ArrayMaxSize(50) @IsString({ each: true }) @MaxLength(240, { each: true })
+  item: string[];
+  @ApiPropertyOptional({ description: 'Leave out this order (the one being edited)' }) @IsOptional() @IsUUID() excludePoId?: string;
+}
+
 export class ListPurchaseOrdersQuery extends PageQuery {
   @ApiPropertyOptional() @IsOptional() @IsUUID() projectId?: string;
   @ApiPropertyOptional() @IsOptional() @IsUUID() vendorId?: string;

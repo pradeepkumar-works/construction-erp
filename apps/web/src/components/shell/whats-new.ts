@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-small-purchase',
+    date: '2026-11-01',
+    title: 'Stock first, last orders and enquiries to suppliers',
+    points: [
+      "An approved material request shows each item's stock at its own site and at the other sites. Take from stock issues what this site holds, or transfers from another site, and only the rest is left to order.",
+      'The quotation form, the comparative statement and the purchase order form show the last order of each item, with the last five (vendor, date, project and rate) a click away.',
+      'Send enquiry emails the request to chosen suppliers with a link to quote. They type rates, GST, freight and delivery days without signing in, and the quote lands on the comparative statement marked From supplier. No email? Copy the link for WhatsApp.',
+    ],
+  },
+  {
     id: '2026-10-approval-levels',
     date: '2026-10-31',
     title: 'Second and third approvals, reminders and escalation',

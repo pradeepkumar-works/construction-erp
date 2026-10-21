@@ -59,6 +59,7 @@ import { ImprestModule } from './imprest/imprest.module';
 import { ComplianceModule } from './compliance/compliance.module';
 import { HandoverModule } from './handover/handover.module';
 import { MaterialRequestsModule } from './material-requests/material-requests.module';
+import { EnquiriesModule } from './enquiries/enquiries.module';
 import { ApprovalsModule } from './approvals/approvals.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { UploadsModule } from './uploads/uploads.module';
@@ -84,6 +85,7 @@ import { VitalsController } from './vitals.controller';
     ComplianceModule,
     HandoverModule,
     MaterialRequestsModule,
+    EnquiriesModule,
     StockModule,
     MachineryModule,
     ExpensesModule,

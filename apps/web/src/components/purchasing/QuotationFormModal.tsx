@@ -5,14 +5,16 @@ import { App, DatePicker, Form, Input, InputNumber, Select, Table } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { MaterialRequestDto, MaterialRequestItemDto, QuotationDto } from '@erp/shared';
-import { GST_RATES } from '@erp/shared';
+import { GST_RATES, lastRateKey } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
+import { useLastRates } from '@/lib/queries';
 import { VendorSelect } from '@/components/common/SearchSelect';
 import { formatQty, toNumber } from '@/lib/format';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
 import { themeFontSize } from '@/lib/theme';
+import { LastRates } from './LastRates';
 
 interface FormValues {
   vendorId: string;
@@ -31,6 +33,7 @@ export function QuotationFormModal({ open, request, quotation, onClose }: { open
   const [form] = Form.useForm<FormValues>();
   const { message } = App.useApp();
   const qc = useQueryClient();
+  const last = useLastRates(request.items, open);
 
   useEffect(() => {
     if (!open) return;
@@ -125,11 +128,14 @@ export function QuotationFormModal({ open, request, quotation, onClose }: { open
               {
                 title: 'Rate (per unit, before GST)',
                 key: 'rate',
-                width: 200,
+                width: 220,
                 render: (_, i) => (
-                  <Form.Item name={['rates', i.id, 'rate']} noStyle>
-                    <MoneyInput placeholder="Not quoted" aria-label={`Rate for ${i.itemName}`} />
-                  </Form.Item>
+                  <>
+                    <Form.Item name={['rates', i.id, 'rate']} noStyle>
+                      <MoneyInput placeholder="Not quoted" aria-label={`Rate for ${i.itemName}`} />
+                    </Form.Item>
+                    <LastRates itemName={i.itemName} rates={last.data?.[lastRateKey(i.itemName, i.unit)]} loading={last.isLoading} />
+                  </>
                 ),
               },
               {

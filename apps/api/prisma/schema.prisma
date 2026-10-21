@@ -406,6 +406,9 @@ model Organization {
   excessRecoveries     ExcessMaterialRecovery[]
   equipmentParts       EquipmentPart[]
   equipment            Equipment[]
+  requestCovers        MaterialRequestCover[]
+  enquiries            Enquiry[]
+  enquiryTokens        EnquiryToken[]
   machineryLogs        MachineryLog[]
   expenses             Expense[]
   risks                Risk[]
@@ -600,6 +603,7 @@ model User {
   excessRecoveries     ExcessMaterialRecovery[]
   equipmentParts       EquipmentPart[]
   approvalSteps        ApprovalStep[]           @relation("ApprovalStepActor")
+  enquiries            Enquiry[]                @relation("EnquiryCreator")
   submittedMachinery   MachineryLog[]           @relation("MachinerySubmitter")
   reviewedMachinery    MachineryLog[]           @relation("MachineryReviewer")
   submittedExpenses    Expense[]                @relation("ExpenseSubmitter")
@@ -880,6 +884,7 @@ model Vendor {
   workers         Worker[]
   payments        VendorPayment[]
   paymentRequests PaymentRequest[]
+  enquiryTokens   EnquiryToken[]
 
   @@unique([organizationId, name])
 }
@@ -904,6 +909,8 @@ model Quotation {
   paymentTerms      String?
   freight           Decimal         @default(0) @db.Decimal(18, 2)
   remarks           String?
+  /// Typed by the supplier on the enquiry link (v5 item 95), not entered by us
+  fromSupplier      Boolean         @default(false)
   createdById       String
   createdBy         User            @relation("QuotationCreator", fields: [createdById], references: [id])
   createdAt         DateTime        @default(now())
@@ -911,6 +918,7 @@ model Quotation {
 
   lines          QuotationLine[]
   purchaseOrders PurchaseOrder[]
+  enquiryTokens  EnquiryToken[]
 
   @@unique([materialRequestId, vendorId])
   @@index([organizationId])
@@ -1648,6 +1656,7 @@ model MaterialRequest {
   stockEntries   StockEntry[]
   quotations     Quotation[]
   purchaseOrders PurchaseOrder[]
+  enquiries      Enquiry[]
 
   @@unique([organizationId, requestNo])
   @@index([projectId, status])
@@ -1668,6 +1677,70 @@ model MaterialRequestItem {
   stockTxns      StockTxn[]
   quotationLines QuotationLine[]
   poLines        PurchaseOrderLine[]
+  covers         MaterialRequestCover[]
+}
+
+/// Part of a request line met from stock instead of buying it (v5 item 95): an issue from the request's own site, or a
+/// transfer from another site. It goes with its store entry: deleting the entry deletes it.
+model MaterialRequestCover {
+  id                    String              @id @default(uuid())
+  organizationId        String
+  organization          Organization        @relation(fields: [organizationId], references: [id])
+  materialRequestItemId String
+  materialRequestItem   MaterialRequestItem @relation(fields: [materialRequestItemId], references: [id], onDelete: Cascade)
+  stockEntryId          String
+  stockEntry            StockEntry          @relation(fields: [stockEntryId], references: [id], onDelete: Cascade)
+  quantity              Decimal             @db.Decimal(18, 3)
+  createdAt             DateTime            @default(now())
+
+  @@index([materialRequestItemId])
+  @@index([stockEntryId])
+  @@index([organizationId])
+}
+
+/// Prices asked from vendors for an approved material request (v5 item 95). Each vendor gets its own one-time link.
+model Enquiry {
+  id                String          @id @default(uuid())
+  organizationId    String
+  organization      Organization    @relation(fields: [organizationId], references: [id])
+  materialRequestId String
+  materialRequest   MaterialRequest @relation(fields: [materialRequestId], references: [id], onDelete: Cascade)
+  /// Last day to quote; the links stop working after it
+  closesOn          DateTime        @db.Date
+  message           String?
+  createdById       String
+  createdBy         User            @relation("EnquiryCreator", fields: [createdById], references: [id])
+  createdAt         DateTime        @default(now())
+
+  tokens EnquiryToken[]
+
+  @@index([materialRequestId])
+  @@index([organizationId])
+}
+
+/// One vendor's link on an enquiry. The raw token only exists in the link; the table keeps its SHA-256 (like
+/// PasswordToken). The supplier's answer becomes their quotation on the request.
+model EnquiryToken {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  enquiryId      String
+  enquiry        Enquiry      @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
+  vendorId       String
+  vendor         Vendor       @relation(fields: [vendorId], references: [id])
+  email          String?
+  tokenHash      String       @unique
+  expiresAt      DateTime
+  emailedAt      DateTime?
+  emailError     String?
+  openedAt       DateTime?
+  respondedAt    DateTime?
+  quotationId    String?
+  quotation      Quotation?   @relation(fields: [quotationId], references: [id], onDelete: SetNull)
+
+  @@unique([enquiryId, vendorId])
+  @@index([vendorId])
+  @@index([organizationId])
 }
 
 // ---------- Attendance (daily register, not an approval submission) ----------
@@ -1826,6 +1899,7 @@ model StockEntry {
   debitNotes  DebitNote[]
   attachments Attachment[]
   parts       EquipmentPart[]
+  covers      MaterialRequestCover[]
 
   @@unique([organizationId, entryNo])
   @@index([projectId, date])
