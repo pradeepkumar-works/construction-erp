@@ -426,8 +426,11 @@ carries on after the UX items (to 89). Migrations stay additive. Design notes fo
     Subcontractors view with `ExcessMaterialRecovery` taken off the next subcontract bill; `StockEntry.adjustmentReason`
     and a Wastage view; the Estimate view of built-up rates against the BOQ; `MATERIAL_OVERUSE` on the watch list and
     a `material_reconciliation` tool for Ask. ARCHITECTURE "Material reconciliation".
-93. **Fuel and fleet use** (M). Diesel issued from stock to a machine (web and phone), daily fuel position per site, a
-    consumption norm per machine with alerts, availability against utilisation, tyre and battery history.
+93. ~~**Fuel and fleet use** (M). Diesel issued from stock to a machine (web and phone), daily fuel position per site, a
+    consumption norm per machine with alerts, availability against utilisation, tyre and battery history.~~ Done:
+    `Item.isFuel` and fuel issues (`StockEntry.equipmentId`, `meterReading`) on the web and offline on the phone; the
+    Fuel tab with each site's daily position; `Equipment.fuelNorm` with `FUEL_NORM` on the watch list; the Utilisation
+    tab; `EquipmentPart` for tyres and batteries with their life. ARCHITECTURE "Fuel and fleet use".
 94. **Approval levels and escalation** (M). Up to three levels per submission type above an amount (`ApprovalStep`
     records each step, the status columns stay as they are), reminders and escalation when an entry waits, and
     Waiting with others.

@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import type { WarningDto, WarningKind, WatchListDto } from '@erp/shared';
-import { DEFAULT_CLIENT_PAYMENT_DAYS, WARNING_DISMISS_MIN, WARNING_KINDS, watchListKinds } from '@erp/shared';
+import { DEFAULT_CLIENT_PAYMENT_DAYS, FUEL_TOLERANCE_DEFAULT_PCT, WARNING_DISMISS_MIN, WARNING_KINDS, fuelNormText, watchListKinds } from '@erp/shared';
 import type { RequestUser } from '../common/current-user';
 import { AuditService } from '../common/audit.service';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -23,6 +23,8 @@ import {
   cashWeeks,
   daysToPay,
   dprGap,
+  fuelNormCheck,
+  fuelStep,
   leadDays,
   machineTrend,
   materialOveruse,
@@ -144,6 +146,7 @@ export class WarningsService {
         if (k === 'STOCK') return this.stock(user.organizationId, projects, today);
         if (k === 'MACHINE') return this.machines(projects, today);
         if (k === 'MATERIAL_OVERUSE') return this.overuse(active, today);
+        if (k === 'FUEL_NORM') return this.fuel(projects, today);
         return this.dprs(active, today);
       }),
     );
@@ -244,6 +247,88 @@ export class WarningsService {
       }
     }
     return out.sort((a, b) => b.overPct - a.overPct).map(({ overPct: _o, ...w }) => w);
+  }
+
+  /**
+   * Machines with a fuel norm whose average over their latest logs strays from it (v5 item 93). A log's litres are
+   * what was typed on it, else the fuel issued from the store to the machine that day.
+   */
+  private async fuel(projects: Project[], today: string): Promise<Draft[]> {
+    if (!projects.length) return [];
+    const projectIds = projects.map((p) => p.id);
+    const since = parseDate(addDays(today, -120));
+    const logs = await this.prisma.machineryLog.findMany({
+      where: { projectId: { in: projectIds }, status: sent, date: { gte: since, lte: parseDate(today) }, equipment: { fuelNorm: { not: null }, fuelNormUnit: { not: null } } },
+      select: {
+        equipmentId: true,
+        projectId: true,
+        date: true,
+        hoursWorked: true,
+        dieselLitres: true,
+        meterStart: true,
+        meterEnd: true,
+        equipment: { select: { code: true, name: true, fuelNorm: true, fuelNormUnit: true, fuelTolerancePct: true } },
+      },
+      orderBy: { date: 'asc' },
+    });
+    if (!logs.length) return [];
+    const issues = await this.prisma.stockEntry.findMany({
+      where: { projectId: { in: projectIds }, type: 'ISSUE', equipmentId: { in: [...new Set(logs.map((l) => l.equipmentId))] }, date: { gte: since, lte: parseDate(today) } },
+      select: { equipmentId: true, date: true, lines: { select: { quantity: true } } },
+    });
+    const issued = new Map<string, number>();
+    for (const e of issues) {
+      const k = `${e.equipmentId}|${dateOnly(e.date)}`;
+      issued.set(k, (issued.get(k) ?? 0) - e.lines.reduce((s, l) => s + n(l.quantity), 0));
+    }
+    const byMachine = new Map<string, typeof logs>();
+    for (const l of logs) byMachine.set(l.equipmentId, [...(byMachine.get(l.equipmentId) ?? []), l]);
+    const byId = new Map(projects.map((p) => [p.id, p]));
+    const out: (Draft & { off: number })[] = [];
+    for (const [id, ls] of byMachine) {
+      const eq = ls[0].equipment;
+      const unit = eq.fuelNormUnit!;
+      const norm = n(eq.fuelNorm);
+      const tolerance = eq.fuelTolerancePct ? n(eq.fuelTolerancePct) : FUEL_TOLERANCE_DEFAULT_PCT;
+      const f = fuelNormCheck(
+        ls.map((l) => {
+          const date = dateOnly(l.date)!;
+          return {
+            date,
+            hoursWorked: n(l.hoursWorked),
+            km: l.meterStart && l.meterEnd ? n(l.meterEnd) - n(l.meterStart) : null,
+            litres: l.dieselLitres ? n(l.dieselLitres) : (issued.get(`${id}|${date}`) ?? 0),
+          };
+        }),
+        norm,
+        unit,
+        tolerance,
+        today,
+      );
+      if (!f) continue;
+      const p = byId.get(ls[ls.length - 1].projectId);
+      const avg = `${qty(f.average)} ${unit === 'KM_PER_LITRE' ? 'km a litre' : 'litres an hour'}`;
+      out.push({
+        key: `fuel:${id}:${f.thirsty ? 'more' : 'less'}:${fuelStep(f.deviationPct)}`,
+        kind: 'FUEL_NORM',
+        title: `${eq.code} ${eq.name} ${f.thirsty ? 'is using more fuel than its norm' : 'is using less fuel than its norm'}: ${avg}`,
+        detail: `${avg} over its last ${f.logs} logs (${day(f.from)} to ${day(f.to)}) against ${fuelNormText(norm, unit)}, ${Math.abs(Math.round(f.deviationPct))}% ${f.deviationPct > 0 ? 'above' : 'below'} it (tolerance ${tolerance}%). ${f.thirsty ? 'Check for leaks, idling counted as work, or fuel going elsewhere.' : 'Check that hours or km are not written up and that fuel is booked to the right machine.'}`,
+        facts: [
+          { label: 'Average', value: avg },
+          { label: 'Norm', value: fuelNormText(norm, unit) },
+          { label: 'Off by', value: `${Math.round(f.deviationPct) > 0 ? '+' : ''}${Math.round(f.deviationPct)}%` },
+          { label: 'Logs', value: String(f.logs) },
+        ],
+        links: [
+          { label: 'Fuel position', href: '/machinery?tab=fuel' },
+          { label: 'Machinery logs', href: p ? `/projects/${p.id}?tab=machinery` : '/machinery' },
+        ],
+        projectId: p?.id ?? null,
+        projectName: p?.name ?? null,
+        off: Math.abs(f.deviationPct),
+      });
+    }
+    return out.sort((a, b) => b.off - a.off).map(({ off: _o, ...w }) => w);
   }
 
   private async dprs(projects: Project[], today: string): Promise<Draft[]> {

@@ -1,4 +1,4 @@
-import type { LdPeriod, GrnQcStatus, ComplianceDocKind, ComplianceDocStatus, DefectPhase, DefectPriority, DefectStatus, ImprestEntryKind, ImprestEntryStatus, WorkerIdType, WorkerSkill, EquipmentDocType, MaintenanceKind, MaintenanceStatus, BillStage, ReceiptKind, VendorKind, MsmeCategory, EquipmentOwnership, ExpenseCategory, PaymentMode, EquipmentRateUnit, MaterialPriority, NotificationType, ProjectStatus, ProjectType, DelayParty, PasswordTokenPurpose, RiskCategory, RiskKind, RiskStatus, RoleKey, SafetyIncidentStatus, SafetyIncidentType, StockEntryType, SubmissionStatus, SubmissionType, Weather, WorkPermitStatus, WorkPermitType, PpeKind, PpeIssueStatus, RfiStatus, RfiPriority, PaymentRequestKind, VendorBillKind, HireFuelBy, DebitNoteReason, BoqResourceKind, StockAdjustmentReason } from './enums';
+import type { LdPeriod, GrnQcStatus, ComplianceDocKind, ComplianceDocStatus, DefectPhase, DefectPriority, DefectStatus, ImprestEntryKind, ImprestEntryStatus, WorkerIdType, WorkerSkill, EquipmentDocType, MaintenanceKind, MaintenanceStatus, BillStage, ReceiptKind, VendorKind, MsmeCategory, EquipmentOwnership, ExpenseCategory, PaymentMode, EquipmentRateUnit, MaterialPriority, NotificationType, ProjectStatus, ProjectType, DelayParty, PasswordTokenPurpose, RiskCategory, RiskKind, RiskStatus, RoleKey, SafetyIncidentStatus, SafetyIncidentType, StockEntryType, SubmissionStatus, SubmissionType, Weather, WorkPermitStatus, WorkPermitType, PpeKind, PpeIssueStatus, RfiStatus, RfiPriority, PaymentRequestKind, VendorBillKind, HireFuelBy, DebitNoteReason, BoqResourceKind, StockAdjustmentReason, FuelNormUnit, EquipmentPartKind } from './enums';
 
 export const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {
   ROAD: 'Road / Infrastructure',
@@ -54,6 +54,16 @@ export const VENDOR_BILL_KIND_LABELS: Record<VendorBillKind, string> = {
 export const HIRE_FUEL_BY_LABELS: Record<HireFuelBy, string> = {
   OWNER: 'Owner fuels it',
   COMPANY: 'We fuel it',
+};
+
+export const FUEL_NORM_UNIT_LABELS: Record<FuelNormUnit, string> = {
+  LITRES_PER_HOUR: 'Litres an hour',
+  KM_PER_LITRE: 'Km a litre',
+};
+
+export const EQUIPMENT_PART_KIND_LABELS: Record<EquipmentPartKind, string> = {
+  TYRE: 'Tyre',
+  BATTERY: 'Battery',
 };
 
 export const DEBIT_NOTE_REASON_LABELS: Record<DebitNoteReason, string> = {

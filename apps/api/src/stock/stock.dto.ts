@@ -73,6 +73,26 @@ export class CreateIssueDto {
   lines: IssueLineDto[];
 }
 
+/* ---------- fuel ---------- */
+
+/** Fuel from the store into one machine (v5 item 93). */
+export class CreateFuelIssueDto {
+  @ApiPropertyOptional(CLIENT_ID_DOC) @IsOptional() @IsUUID('4') id?: string;
+  @ApiProperty() @IsUUID() projectId: string;
+  @ApiProperty({ example: '2026-10-13' }) @IsDateString() @dateOnly() date: string;
+  @ApiProperty({ description: 'The machine fuelled; an active machine of the company' }) @IsUUID() equipmentId: string;
+  @ApiProperty({ description: 'A fuel item of the item master (isFuel)' }) @IsUUID() itemId: string;
+  @ApiProperty({ example: '120', description: 'Litres (in the item unit); at most the stock at the project' }) @qty() @IsNumberString() quantity: string;
+  @ApiPropertyOptional({ example: '2154.5', description: 'Hour meter or odometer when fuelled' })
+  @IsOptional()
+  @qty()
+  @ValidateIf((_, v) => v !== null)
+  @IsNumberString()
+  meterReading?: string | null;
+  @ApiPropertyOptional({ example: 'Ramesh (operator)', description: 'Who took it; the machine when left out' }) @IsOptional() @IsString() @trim() @MaxLength(200) issuedTo?: string | null;
+  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(1000) remarks?: string | null;
+}
+
 /* ---------- adjustments ---------- */
 
 export class AdjustmentLineDto {
@@ -199,6 +219,7 @@ export class ListStockBalancesQuery extends PageQuery {
   @ApiPropertyOptional() @IsOptional() @IsUUID() projectId?: string;
   @ApiPropertyOptional({ description: 'Only items below their minimum level' }) @IsOptional() @QueryBool() @IsBoolean() lowOnly?: boolean;
   @ApiPropertyOptional({ description: 'Only items with stock on hand (balance above zero)' }) @IsOptional() @QueryBool() @IsBoolean() inStock?: boolean;
+  @ApiPropertyOptional({ description: 'Only fuel items (v5 item 93)' }) @IsOptional() @QueryBool() @IsBoolean() fuel?: boolean;
   @ApiPropertyOptional({ enum: LIST_SORT_FIELDS.stockBalances, default: 'item' }) @IsOptional() @IsIn(LIST_SORT_FIELDS.stockBalances as unknown as string[]) sortBy?: StockBalanceSortField;
 }
 
@@ -209,6 +230,7 @@ export class ReceivableQuery {
 /* ---------- item master and minimum levels ---------- */
 
 export class ListItemsQuery extends PageQuery {
+  @ApiPropertyOptional({ description: 'Only fuel items (v5 item 93)' }) @IsOptional() @QueryBool() @IsBoolean() fuel?: boolean;
   @ApiPropertyOptional({ enum: LIST_SORT_FIELDS.items, default: 'name' }) @IsOptional() @IsIn(LIST_SORT_FIELDS.items as unknown as string[]) sortBy?: ItemSortField;
 }
 
@@ -217,6 +239,7 @@ export class CreateItemDto {
   @ApiProperty({ example: 'Bags' }) @IsString() @trim() @MinLength(1) @MaxLength(30) unit: string;
   @ApiPropertyOptional({ example: 'Cement' }) @IsOptional() @IsString() @trim() @MaxLength(60) category?: string | null;
   @ApiPropertyOptional({ example: '395.00', description: 'Standard rate per unit; values issues in the cost view' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsNumberString() rate?: string | null;
+  @ApiPropertyOptional({ description: 'Diesel, petrol and the like: issued to machines and in the daily fuel position (v5 item 93)' }) @IsOptional() @IsBoolean() isFuel?: boolean;
 }
 
 export class UpdateItemDto {
@@ -224,6 +247,7 @@ export class UpdateItemDto {
   @ApiPropertyOptional() @IsOptional() @IsString() @trim() @MinLength(1) @MaxLength(30) unit?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() @trim() @MaxLength(60) category?: string | null;
   @ApiPropertyOptional({ example: '395.00' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsNumberString() rate?: string | null;
+  @ApiPropertyOptional() @IsOptional() @IsBoolean() isFuel?: boolean;
 }
 
 export class SetMinLevelDto {

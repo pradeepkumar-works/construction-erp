@@ -153,6 +153,7 @@ async function main() {
     await seedStoreMoves(org.id);
     await seedReconciliation(org.id);
     await seedRateAnalysis(org.id);
+    await seedFleet(org.id);
     await seedSafety(org.id);
     await seedSectors(org.id);
     await seedMaintenance(org.id);
@@ -335,6 +336,7 @@ async function main() {
   await seedStoreMoves(org.id);
   await seedReconciliation(org.id);
   await seedRateAnalysis(org.id);
+  await seedFleet(org.id);
   await seedSafety(org.id);
   await seedSectors(org.id);
   await seedMaintenance(org.id);
@@ -1465,6 +1467,88 @@ async function seedStock(organizationId: string) {
         },
       });
     }
+  }
+}
+
+/** Fuel norms by machine code (v5 item 93): litres an hour, or km a litre for vehicles. */
+const FUEL_NORMS: Record<string, [string, 'LITRES_PER_HOUR' | 'KM_PER_LITRE']> = {
+  'EXC-01': ['11', 'LITRES_PER_HOUR'],
+  'GRD-01': ['12', 'LITRES_PER_HOUR'],
+  'RLR-01': ['6', 'LITRES_PER_HOUR'],
+  'MIX-01': ['3', 'LITRES_PER_HOUR'],
+  'JCB-01': ['7', 'LITRES_PER_HOUR'],
+  'DG-01': ['9', 'LITRES_PER_HOUR'],
+  'TIP-07': ['3.5', 'KM_PER_LITRE'],
+};
+
+/**
+ * Fuel and fleet use (v5 item 93): diesel marked as fuel, a norm on each machine (the excavator's is set below what it
+ * burns, so the watch list flags it), fuel issued from the store into each machine for its recent logs, and the
+ * tyres on the grader and the battery on the backhoe, one of each replaced. Skipped once any part exists.
+ */
+async function seedFleet(organizationId: string) {
+  if (await prisma.equipmentPart.count({ where: { organizationId } })) return;
+  await prisma.item.updateMany({ where: { organizationId, OR: [{ category: { equals: 'Fuel', mode: 'insensitive' } }, { name: { startsWith: 'Diesel', mode: 'insensitive' } }] }, data: { isFuel: true } });
+  const machines = await prisma.equipment.findMany({ where: { organizationId } });
+  for (const m of machines) {
+    const norm = FUEL_NORMS[m.code.replace(/^[A-Z]{2}-(?=[A-Z]+-\d)/, '')];
+    if (norm) await prisma.equipment.update({ where: { id: m.id }, data: { fuelNorm: D(norm[0]), fuelNormUnit: norm[1], fuelTolerancePct: D(15) } });
+  }
+
+  const year = day(0).getUTCFullYear();
+  const nextNo = async () => {
+    const last = await prisma.stockEntry.findFirst({ where: { organizationId, entryNo: { startsWith: `ISS-${year}-` } }, orderBy: { entryNo: 'desc' }, select: { entryNo: true } });
+    return `ISS-${year}-${String((last ? parseInt(last.entryNo.slice(9), 10) : 0) + 1).padStart(4, '0')}`;
+  };
+  const keeper = await prisma.user.findFirst({ where: { organizationId, email: 'store@demo.com' } });
+  if (!keeper) return;
+  const logs = await prisma.machineryLog.findMany({
+    where: { organizationId, date: { gte: day(-1) }, dieselLitres: { gt: 0 }, status: { not: 'REJECTED' } },
+    include: { equipment: true, project: { include: { members: { include: { user: { include: { role: true } } } } } } },
+    orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
+  });
+  for (const log of logs) {
+    const fuel = await prisma.stockTxn.groupBy({
+      by: ['itemId'], where: { projectId: log.projectId, item: { isFuel: true } }, _sum: { quantity: true },
+      orderBy: { _sum: { quantity: 'desc' } }, take: 1,
+    });
+    const balance = Number(fuel[0]?._sum.quantity ?? 0);
+    const litres = Number(log.dieselLitres);
+    if (!fuel.length || balance < litres) continue;
+    const by = log.project.members.find((x) => x.user.role.key === 'STORE_MANAGER')?.userId ?? log.project.projectManagerId ?? keeper.id;
+    const e = await prisma.stockEntry.create({
+      data: {
+        organizationId, projectId: log.projectId, type: 'ISSUE', entryNo: await nextNo(), date: log.date, createdById: by, createdAt: log.date,
+        equipmentId: log.equipmentId, meterReading: log.meterStart, issuedTo: `${log.operatorName ?? `${log.equipment.code} ${log.equipment.name}`} (operator)`,
+        remarks: `Into ${log.equipment.code} for the day`,
+        lines: { create: [{ organizationId, projectId: log.projectId, itemId: fuel[0].itemId, type: 'ISSUE', date: log.date, quantity: D(-litres) }] },
+      },
+    });
+    await prisma.auditLog.create({ data: { organizationId, entityType: 'STOCK', entityId: e.id, action: 'CREATED', actorId: by, note: e.entryNo, createdAt: log.date } });
+  }
+
+  const meterOf = async (equipmentId: string) =>
+    Number((await prisma.machineryLog.findFirst({ where: { equipmentId, meterEnd: { not: null } }, orderBy: { date: 'desc' }, select: { meterEnd: true } }))?.meterEnd ?? 0);
+  const part = (equipmentId: string, data: Omit<Prisma.EquipmentPartUncheckedCreateInput, 'organizationId' | 'equipmentId' | 'createdById'>) =>
+    prisma.equipmentPart.create({ data: { organizationId, equipmentId, createdById: keeper.id, createdAt: data.fittedOn as Date, ...data } });
+
+  const grader = machines.find((m) => m.code === 'GRD-01');
+  if (grader) {
+    const now = await meterOf(grader.id);
+    for (const [i, position] of ['Front left', 'Front right', 'Rear left front', 'Rear left back', 'Rear right front', 'Rear right back'].entries()) {
+      const cut = position === 'Rear right back';
+      await part(grader.id, {
+        kind: 'TYRE', position, make: 'MRF Muscle Grip 14.00-24', serialNo: `MRF-24-${71830 + i}`, fittedOn: day(-210), fittedMeter: D(now - 1480), cost: D('38500'),
+        ...(cut ? { removedOn: day(-35), removedMeter: D(now - 260), removalReason: 'Sidewall cut on the rocky shoulder at Ch. 3+200' } : {}),
+      });
+      if (cut) await part(grader.id, { kind: 'TYRE', position, make: 'MRF Muscle Grip 14.00-24', serialNo: 'MRF-24-80412', fittedOn: day(-35), fittedMeter: D(now - 260), cost: D('39200') });
+    }
+  }
+  const backhoe = machines.find((m) => m.code === 'JCB-01');
+  if (backhoe) {
+    const now = await meterOf(backhoe.id);
+    await part(backhoe.id, { kind: 'BATTERY', position: 'Battery 1', make: 'Exide Xpress 88 Ah', serialNo: 'EX88-2291', fittedOn: day(-400), fittedMeter: D(Math.max(now - 2100, 0)), removedOn: day(-20), removedMeter: D(Math.max(now - 120, 0)), removalReason: 'Would not hold charge overnight', cost: D('9800') });
+    await part(backhoe.id, { kind: 'BATTERY', position: 'Battery 1', make: 'Exide Xpress 88 Ah', serialNo: 'EX88-5530', fittedOn: day(-20), fittedMeter: D(Math.max(now - 120, 0)), cost: D('10450') });
   }
 }
 

@@ -346,6 +346,38 @@ The store register per project, fed by approved material requests:
   export of both). Site app: `app/machinery/new.tsx` (offline-capable) and `[id].tsx`, a Submit tile,
   a Machinery segment in My submissions and a section in Approvals.
 
+### Fuel and fleet use (v5 item 93)
+
+- **Fuel issue.** `Item.isFuel` marks diesel and petrol (the migration marks items in a Fuel category or named diesel,
+  petrol or HSD). `POST /stock/fuel-issues` is an issue slip (`ISS-…`) of one fuel item into one machine:
+  `StockEntry.equipmentId` and `meterReading` (hour meter, or odometer for a vehicle). It goes through
+  `StockService.issue`, so the stock check, minimum-level alert and numbering are the same as any issue; it refuses an
+  item not marked as fuel and an inactive machine, and takes a client `id` (the phone's outbox, `FUEL_ISSUE`). Roles:
+  `canIssueFuel` (whoever issues material).
+- **Fuel position.** `GET /fleet/fuel-position?date&projectId` (`FleetService`): per site the user sees and fuel item,
+  opening (all movements before the day), received (any positive movement), into machines (issues with a machine),
+  other issues and closing, against the item's minimum level, with the day's issues into machines.
+  `GET /fleet/fuel-issues?from&to&projectId&equipmentId` lists issues over a period.
+- **Norm.** `Equipment.fuelNorm` in `fuelNormUnit` (`LITRES_PER_HOUR`, or `KM_PER_LITRE` for a vehicle, whose meter
+  is then km) with `fuelTolerancePct` (default 15). `fuelNormCheck` in `warning-rules.ts` averages the machine's latest
+  ten logs with fuel (at least five); a log's litres are its diesel, or the fuel issued into it that day when the log
+  has none. Off by more than the tolerance gives a `FUEL_NORM` watch-list warning (store manager and approvers,
+  `canManageMaintenance`), keyed by machine, direction and 10% step. A log's record shows the fuel issued beside its
+  diesel, and a hire bill whose owner fuels the machine recovers the month's fuel issues into it (else the logs'
+  diesel).
+- **Utilisation.** `GET /fleet/utilisation?from&to&projectId`: approved logs per machine; a day with a log is a day on
+  site, available for `SHIFT_HOURS` (8) or the hours logged when longer; utilisation = worked ÷ available,
+  availability = (available − breakdown) ÷ available; totals by category and for the fleet.
+- **Tyres and batteries.** `EquipmentPart` (tenant table, RLS): kind (`TYRE` / `BATTERY`), position, make, serial,
+  fitted on and at what meter, removed on and at what meter with the reason, cost (cost viewers only), optional job
+  card or store entry. `GET/POST /equipment/:id/parts`, `PATCH/DELETE /equipment/:id/parts/:partId` (writes:
+  `canRecordEquipmentParts`, audited on the machine). Life is the meter run to removal, or to the machine's latest
+  reading (logs, fuel issues, job cards) while still on.
+- **Clients.** Web: Machinery page and project tab gain Fuel (position, issues, Fuel issue form, Excel) and
+  Utilisation (period, by machine and category, Excel); the machine form has the norm; Equipment's tool button opens
+  the tyres and batteries drawer; the item master has a Fuel tick. Site app: `app/stock/fuel.tsx` from Stock
+  (offline through the outbox, with today's fuel position for the site).
+
 ## Site expenses
 
 - **Table.** `Expense`: project, `expenseNo` (`EXP-<year>-0001` per organisation, allocated under an

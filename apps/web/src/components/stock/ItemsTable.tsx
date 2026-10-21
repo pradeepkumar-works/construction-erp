@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Form, Input, Space, Tag, Typography } from 'antd';
+import { App, Button, Checkbox, Form, Input, Space, Tag, Typography } from 'antd';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ItemDto, ItemSortField } from '@erp/shared';
@@ -29,6 +29,7 @@ interface ItemForm {
   unit: string;
   category?: string;
   rate?: number | null;
+  isFuel?: boolean;
 }
 
 /** Item master. GRNs add items from the request lines; the store manager or an approver can add, rename and tidy them here. */
@@ -42,7 +43,7 @@ export function ItemsTable() {
 
   const save = useMutation({
     mutationFn: async (v: ItemForm) => {
-      const body = { name: v.name, unit: v.unit, category: v.category?.trim() || null, rate: v.rate === undefined || v.rate === null ? null : String(v.rate) };
+      const body = { name: v.name, unit: v.unit, category: v.category?.trim() || null, rate: v.rate === undefined || v.rate === null ? null : String(v.rate), isFuel: !!v.isFuel };
       return editing && editing !== 'new' ? (await api.patch<ItemDto>(`/stock/items/${editing.id}`, body)).data : (await api.post<ItemDto>('/stock/items', body)).data;
     },
     onSuccess: (i) => {
@@ -63,7 +64,7 @@ export function ItemsTable() {
   const open = (i: ItemDto | 'new') => {
     setEditing(i);
     form.resetFields();
-    if (i !== 'new') form.setFieldsValue({ name: i.name, unit: i.unit, category: i.category ?? undefined, rate: i.rate === null ? undefined : Number(i.rate) });
+    if (i !== 'new') form.setFieldsValue({ name: i.name, unit: i.unit, category: i.category ?? undefined, rate: i.rate === null ? undefined : Number(i.rate), isFuel: !!i.isFuel });
   };
 
   const frame = useListFrame<ItemSortField, ItemDto>({
@@ -77,7 +78,22 @@ export function ItemsTable() {
     columns: (sortOrderFor): ListColumn<ItemDto>[] => {
       const sort = (key: ItemSortField) => ({ key, sorter: true, sortOrder: sortOrderFor(key), sortDirections: ['ascend', 'descend'] as ('descend' | 'ascend')[] });
       return [
-        { title: 'Item', dataIndex: 'name', locked: true, ...sort('name') },
+        {
+          title: 'Item',
+          dataIndex: 'name',
+          locked: true,
+          ...sort('name'),
+          render: (v: string, r) => (
+            <span>
+              {v}
+              {r.isFuel ? (
+                <Tag color="volcano" style={{ marginLeft: 6 }}>
+                  Fuel
+                </Tag>
+              ) : null}
+            </span>
+          ),
+        },
         { title: 'Unit', dataIndex: 'unit', width: 100, ...sort('unit') },
         { title: 'Category', dataIndex: 'category', width: 160, ...sort('category'), render: (v) => (v ? <Tag style={{ margin: 0 }}>{v}</Tag> : <Typography.Text type="secondary">-</Typography.Text>) },
         {
@@ -172,6 +188,9 @@ export function ItemsTable() {
           </Form.Item>
           <Form.Item name="rate" label="Standard rate per unit" extra="Values material issued in the project cost view.">
             <MoneyInput />
+          </Form.Item>
+          <Form.Item name="isFuel" valuePropName="checked" extra="Fuel goes into machines with Fuel issue, and shows in Machinery > Fuel.">
+            <Checkbox>Fuel (diesel, petrol)</Checkbox>
           </Form.Item>
         </Form>
       </FormShell>

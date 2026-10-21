@@ -303,5 +303,8 @@ DROP POLICY IF EXISTS tenant_isolation ON "BoqResource";
 ALTER TABLE "ExcessMaterialRecovery" NO FORCE ROW LEVEL SECURITY;
 ALTER TABLE "ExcessMaterialRecovery" DISABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS tenant_isolation ON "ExcessMaterialRecovery";
+ALTER TABLE "EquipmentPart" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "EquipmentPart" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "EquipmentPart";
 
 DROP FUNCTION IF EXISTS app_current_org();

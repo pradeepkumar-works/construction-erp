@@ -13,7 +13,7 @@ function MachineryPage() {
   const id = search.get('id') ?? undefined;
   return (
     <div className="page-container">
-      <PageHeader title="Machinery" subtitle="Daily hours, idle time, breakdowns and diesel per machine; job cards, service schedule, vehicle papers and drivers; and the equipment master." />
+      <PageHeader title="Machinery" subtitle="Daily hours, idle time, breakdowns and fuel per machine; utilisation; job cards, service schedule, tyres, vehicle papers and drivers; and the equipment master." />
       <Card size="small">
         <MachineryPanel key={`${tab ?? ''}|${id ?? ''}`} initialTab={tab} initialId={id} />
       </Card>

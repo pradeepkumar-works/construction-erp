@@ -43,10 +43,10 @@ test('the MD sees warnings with their figures, dismisses one with a reason and r
   expect((await api<WatchList>(md, '/warnings')).open.some((w) => w.key === first.key)).toBe(true);
 });
 
-test('the store manager sees only stock and machines; a site engineer has no watch list', async ({ page }) => {
+test('the store manager sees only stock, machines and fuel; a site engineer has no watch list', async ({ page }) => {
   const store = await api<WatchList>(await apiToken('store@demo.com'), '/warnings');
-  expect(store.kinds).toEqual(['STOCK', 'MACHINE']);
-  expect(store.open.every((w) => w.kind === 'STOCK' || w.kind === 'MACHINE')).toBe(true);
+  expect(store.kinds).toEqual(['STOCK', 'MACHINE', 'FUEL_NORM']);
+  expect(store.open.every((w) => w.kind === 'STOCK' || w.kind === 'MACHINE' || w.kind === 'FUEL_NORM')).toBe(true);
 
   await signIn(page, 'engineer@demo.com');
   await page.goto('/watch-list');

@@ -1,14 +1,30 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { MachineryService } from './machinery.service';
-import { CreateEquipmentDto, CreateMachineryLogDto, ListEquipmentQuery, ListMachineryLogsQuery, UpdateEquipmentDto, UpdateMachineryLogDto } from './machinery.dto';
+import { FleetService } from './fleet.service';
+import {
+  CreateEquipmentDto,
+  CreateMachineryLogDto,
+  FleetPeriodQuery,
+  FuelIssuesQuery,
+  FuelPositionQuery,
+  ListEquipmentQuery,
+  ListMachineryLogsQuery,
+  SaveEquipmentPartDto,
+  UpdateEquipmentDto,
+  UpdateEquipmentPartDto,
+  UpdateMachineryLogDto,
+} from './machinery.dto';
 import { CurrentUser, RequestUser } from '../common/current-user';
 
 @ApiTags('machinery')
 @ApiBearerAuth()
 @Controller()
 export class MachineryController {
-  constructor(private machinery: MachineryService) {}
+  constructor(
+    private machinery: MachineryService,
+    private fleet: FleetService,
+  ) {}
 
   /* ---------- equipment master ---------- */
 
@@ -39,6 +55,54 @@ export class MachineryController {
   @Delete('equipment/:id')
   removeEquipment(@CurrentUser() user: RequestUser, @Param('id') id: string) {
     return this.machinery.removeEquipment(user, id);
+  }
+
+  /* ---------- tyres and batteries (v5 item 93) ---------- */
+
+  @ApiOperation({ summary: "A machine's tyres and batteries", description: 'With each one\'s life in hours or km (to removal, or to the latest meter reading while still on). `cost` only for cost viewers.' })
+  @Get('equipment/:id/parts')
+  parts(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string) {
+    return this.fleet.parts(user, id);
+  }
+
+  @ApiOperation({ summary: 'Record a tyre or battery fitted (store manager or approver)' })
+  @Post('equipment/:id/parts')
+  addPart(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: SaveEquipmentPartDto) {
+    return this.fleet.addPart(user, id, dto);
+  }
+
+  @ApiOperation({ summary: 'Change a tyre or battery, or record it coming off with `removedOn`, `removedMeter` and `removalReason`' })
+  @Patch('equipment/:id/parts/:partId')
+  updatePart(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string, @Param('partId', ParseUUIDPipe) partId: string, @Body() dto: UpdateEquipmentPartDto) {
+    return this.fleet.updatePart(user, id, partId, dto);
+  }
+
+  @Delete('equipment/:id/parts/:partId')
+  removePart(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string, @Param('partId', ParseUUIDPipe) partId: string) {
+    return this.fleet.removePart(user, id, partId);
+  }
+
+  /* ---------- fleet use (v5 item 93) ---------- */
+
+  @ApiOperation({ summary: "Each site's fuel position on a day", description: 'Per fuel item and site: opening, received, issued into machines, other issues and closing; and the day\'s fuel issues into machines.' })
+  @Get('fleet/fuel-position')
+  fuelPosition(@CurrentUser() user: RequestUser, @Query() q: FuelPositionQuery) {
+    return this.fleet.fuelPosition(user, q);
+  }
+
+  @ApiOperation({ summary: 'Fuel issued into machines over a period' })
+  @Get('fleet/fuel-issues')
+  fuelIssues(@CurrentUser() user: RequestUser, @Query() q: FuelIssuesQuery) {
+    return this.fleet.fuelIssues(user, q);
+  }
+
+  @ApiOperation({
+    summary: 'Utilisation and availability per machine and category',
+    description: 'From approved logs: available = days on site (days with a log) × the 8-hour shift; utilisation = worked ÷ available; availability = (available − breakdown) ÷ available.',
+  })
+  @Get('fleet/utilisation')
+  utilisation(@CurrentUser() user: RequestUser, @Query() q: FleetPeriodQuery) {
+    return this.fleet.utilisation(user, q);
   }
 
   /* ---------- daily logs ---------- */

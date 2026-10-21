@@ -420,7 +420,14 @@ export class VendorBillsService {
     const workedDays = logs.filter((l) => l.hoursWorked.gt(0)).length;
     const hireQuantity = !logs.length ? ZERO : eq.rateUnit === 'HOUR' ? workedHours : eq.rateUnit === 'DAY' ? D(workedDays) : D(1);
     const minTopUp = logs.length && eq.rateUnit === 'HOUR' && eq.hireMinHours && workedHours.lt(eq.hireMinHours) ? eq.hireMinHours.sub(workedHours) : ZERO;
-    const fuelLitres = eq.hireFuelBy === 'OWNER' ? sum(logs, (l) => l.dieselLitres ?? ZERO) : ZERO;
+    // Fuel we put into a machine the owner fuels comes back off the bill: what the store issued into it in the month
+    // (v5 item 93), or, before fuel was issued to machines, the litres typed on its logs.
+    let fuelLitres = ZERO;
+    if (eq.hireFuelBy === 'OWNER') {
+      const issues = await db.stockEntry.findMany({ where: { type: 'ISSUE', ...inMonth }, select: { lines: { select: { quantity: true } } } });
+      const issued = issues.reduce((t, e) => e.lines.reduce((u, l) => u.sub(l.quantity), t), ZERO);
+      fuelLitres = issued.gt(0) ? issued : sum(logs, (l) => l.dieselLitres ?? ZERO);
+    }
     return { eq, from, logs, pendingLogs, existing, workedHours, workedDays, hireQuantity, minTopUp, fuelLitres };
   }
 

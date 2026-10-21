@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-10-fuel-and-fleet',
+    date: '2026-10-30',
+    title: 'Fuel, utilisation, and tyres and batteries',
+    points: [
+      'Fuel issue puts diesel from the site store into one machine, with its hour meter or odometer, on the web and on the phone (offline too). Machinery has a Fuel tab with each site\'s fuel position for the day: opening, received, into machines, other issues and closing against its minimum level.',
+      "Give a machine a fuel norm (litres an hour, or km a litre for a vehicle) and a tolerance. The watch list flags a machine whose average over its recent logs is off the norm, and a hired machine's bill recovers the diesel actually issued into it.",
+      "Utilisation shows each machine's hours worked against the hours it was on site, and its availability less breakdowns, by machine and by category, for any period, with an Excel export.",
+      'Each machine keeps its tyres and batteries: when each was fitted and came off, at what meter reading, why, and its life in hours or km. Open it from the tool button in Equipment.',
+    ],
+  },
+  {
     id: '2026-10-rate-analysis',
     date: '2026-10-29',
     title: 'Rate analysis, subcontractor material and wastage',

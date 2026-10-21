@@ -179,6 +179,14 @@ export type VendorBillKind = (typeof VENDOR_BILL_KINDS)[number];
 export const HIRE_FUEL_BY = ['OWNER', 'COMPANY'] as const;
 export type HireFuelBy = (typeof HIRE_FUEL_BY)[number];
 
+/** How a machine's fuel norm is measured (v5 item 93): litres per working hour, or km per litre for vehicles. */
+export const FUEL_NORM_UNITS = ['LITRES_PER_HOUR', 'KM_PER_LITRE'] as const;
+export type FuelNormUnit = (typeof FUEL_NORM_UNITS)[number];
+
+/** Parts tracked per machine with their life (v5 item 93). */
+export const EQUIPMENT_PART_KINDS = ['TYRE', 'BATTERY'] as const;
+export type EquipmentPartKind = (typeof EQUIPMENT_PART_KINDS)[number];
+
 /** Why a debit note takes money off a bill (v5 item 91). */
 export const DEBIT_NOTE_REASONS = ['SHORTAGE', 'EXCESS', 'REJECTED', 'RETURNED', 'RATE_DIFFERENCE', 'OTHER'] as const;
 export type DebitNoteReason = (typeof DEBIT_NOTE_REASONS)[number];

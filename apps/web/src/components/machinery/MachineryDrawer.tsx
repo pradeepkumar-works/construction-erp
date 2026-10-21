@@ -53,6 +53,7 @@ export function MachineryRecord({ id, mode, open, onClose, onEdit }: RecordProps
             { key: 'idle', label: 'Idle', children: h(data.idleHours) },
             { key: 'down', label: 'Breakdown', children: h(data.breakdownHours) },
             { key: 'diesel', label: 'Diesel', children: data.dieselLitres === null ? '-' : `${formatQty(data.dieselLitres)} L` },
+            ...(data.fuelIssuedLitres ? [{ key: 'fuel', label: 'Fuel issued', children: `${formatQty(data.fuelIssuedLitres)} L from the store` }] : []),
             {
               key: 'meter',
               label: 'Hour meter',
