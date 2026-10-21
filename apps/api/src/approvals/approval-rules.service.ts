@@ -14,7 +14,8 @@ export class ApprovalRulesService {
   constructor(private prisma: PrismaService) {}
 
   async get(user: RequestUser): Promise<ApprovalMatrixDto> {
-    const [roles, rules] = await Promise.all([
+    const [org, roles, rules] = await Promise.all([
+      this.prisma.organization.findUniqueOrThrow({ where: { id: user.organizationId }, select: { paymentsNeedRequest: true } }),
       this.prisma.role.findMany({ where: { organizationId: user.organizationId }, include: { _count: { select: { users: { where: { isActive: true } } } } } }),
       this.prisma.approvalRule.findMany({ where: { organizationId: user.organizationId }, include: { role: { select: { key: true } } } }),
     ]);
@@ -30,11 +31,14 @@ export class ApprovalRulesService {
       custom,
       roles: known.map((r) => ({ roleKey: r.key as RoleKey, roleName: r.name, users: r._count.users })),
       rules: list.sort((a, b) => order(a) - order(b)),
+      paymentsNeedRequest: org.paymentsNeedRequest,
     };
   }
 
-  /** Replace the whole matrix. An empty list resets to the fixed rule. */
+  /** Replace the whole matrix. An empty list resets to the fixed rule. `paymentsNeedRequest`, when sent, is saved too. */
   async save(user: RequestUser, dto: SaveApprovalRulesDto): Promise<ApprovalMatrixDto> {
+    if (dto.paymentsNeedRequest !== undefined) await this.prisma.organization.update({ where: { id: user.organizationId }, data: { paymentsNeedRequest: dto.paymentsNeedRequest } });
+    if (dto.rules === undefined) return this.get(user);
     const roles = await this.prisma.role.findMany({ where: { organizationId: user.organizationId }, select: { id: true, key: true } });
     const roleId = new Map(roles.map((r) => [r.key, r.id]));
     const seen = new Set<string>();

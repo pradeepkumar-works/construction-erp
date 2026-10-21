@@ -57,6 +57,7 @@ const RECORD_PATHS: Record<string, string> = {
   expenses: 'expense',
   inspections: 'inspection',
   machinery: 'machinery_log',
+  'payment-requests': 'payment_request',
 };
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

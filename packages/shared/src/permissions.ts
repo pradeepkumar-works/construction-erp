@@ -229,6 +229,13 @@ export const PAYMENT_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'ACCOUNTS_MANAGE
 export const canRecordPayment = (role: RoleKey) => PAYMENT_ROLES.includes(role);
 /** See payables (what is owed to vendors and subcontractors, and when): those who pay and project managers. */
 export const canViewPayables = (role: RoleKey) => PAYMENT_ROLES.includes(role) || role === 'PROJECT_MANAGER';
+/**
+ * Ask for a bill to be paid or an advance released (v5 item 90): those who record bills and orders, and project
+ * managers. The same roles see the requests.
+ */
+export const PAYMENT_REQUEST_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER', 'ACCOUNTS_MANAGER', 'PROCUREMENT_MANAGER', 'QUANTITY_SURVEYOR'];
+export const canRequestPayment = (role: RoleKey) => PAYMENT_REQUEST_ROLES.includes(role);
+export const canViewPaymentRequests = (role: RoleKey) => PAYMENT_REQUEST_ROLES.includes(role);
 /** Export vouchers to Tally and set the ledger names: those who keep the books. */
 export const TALLY_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'ACCOUNTS_MANAGER'];
 export const canExportTally = (role: RoleKey) => TALLY_ROLES.includes(role);

@@ -139,6 +139,7 @@ async function main() {
     await seedPurchasing(org.id);
     await seedSubcontracts(org.id);
     await seedPayables(org.id);
+    await seedPaymentRequests(org.id);
     await seedQuality(org.id);
     await seedTestsAndNcrs(org.id);
     await seedDocuments(org.id);
@@ -318,6 +319,7 @@ async function main() {
   await seedPurchasing(org.id);
   await seedSubcontracts(org.id);
   await seedPayables(org.id);
+  await seedPaymentRequests(org.id);
   await seedQuality(org.id);
   await seedTestsAndNcrs(org.id);
   await seedDocuments(org.id);
@@ -1821,6 +1823,11 @@ const SUBCONTRACT_RULES: typeof BILL_RULES = ['WORK_ORDER', 'SUBCONTRACT_BILL'].
   { roleKey: 'MANAGEMENT', type, maxAmount: null },
   { roleKey: 'PROJECT_MANAGER', type, maxAmount: D(500000) },
 ]);
+/** Payment requests (v5 item 90): management approves any, project managers up to ₹5 lakh. */
+const PAYMENT_RULES: typeof BILL_RULES = [
+  { roleKey: 'MANAGEMENT', type: 'PAYMENT_REQUEST', maxAmount: null },
+  { roleKey: 'PROJECT_MANAGER', type: 'PAYMENT_REQUEST', maxAmount: D(500000) },
+];
 /** QA/QC passes inspections; management and project managers can too. */
 const QUALITY_RULES: typeof BILL_RULES = ['MANAGEMENT', 'PROJECT_MANAGER', 'QA_QC_ENGINEER'].map((roleKey) => ({ roleKey, type: 'INSPECTION', maxAmount: null }));
 
@@ -1839,9 +1846,9 @@ async function seedApprovalRules(organizationId: string) {
       skipDuplicates: true,
     });
   if ((await prisma.approvalRule.count({ where: { organizationId } })) > 0) {
-    for (const type of ['BILL', 'PURCHASE_ORDER', 'VENDOR_BILL', 'WORK_ORDER', 'SUBCONTRACT_BILL', 'INSPECTION'])
+    for (const type of ['BILL', 'PURCHASE_ORDER', 'VENDOR_BILL', 'WORK_ORDER', 'SUBCONTRACT_BILL', 'INSPECTION', 'PAYMENT_REQUEST'])
       if ((await prisma.approvalRule.count({ where: { organizationId, submissionType: type } })) === 0)
-        await write([...BILL_RULES, ...PURCHASE_RULES, ...SUBCONTRACT_RULES, ...QUALITY_RULES].filter((r) => r.type === type));
+        await write([...BILL_RULES, ...PURCHASE_RULES, ...SUBCONTRACT_RULES, ...QUALITY_RULES, ...PAYMENT_RULES].filter((r) => r.type === type));
     return;
   }
   const types = ['PROGRESS', 'DPR', 'MATERIAL_REQUEST', 'MACHINERY', 'EXPENSE', 'MEASUREMENT'];
@@ -1853,6 +1860,7 @@ async function seedApprovalRules(organizationId: string) {
     ...PURCHASE_RULES,
     ...SUBCONTRACT_RULES,
     ...QUALITY_RULES,
+    ...PAYMENT_RULES,
   ];
   await write(rows);
 }
@@ -2189,6 +2197,62 @@ async function seedPayables(organizationId: string) {
       { organizationId, entityType: 'VENDOR_BILL', entityId: bill.id, action: 'PAYMENT_MADE', actorId: accounts, note: `₹${paid.toFixed(2)} paid (SBIN526287700412)`, createdAt: day(-12) },
     ],
   });
+}
+
+/**
+ * Demo payment requests (v5 item 90): the road subcontractor's mobilisation advance on its work order, asked for by the
+ * project manager, approved by management and paid by accounts (their bills recover it); and an advance on the cement
+ * PO, asked for and waiting in the approvals queue. Only when the organisation has no payment requests yet.
+ */
+async function seedPaymentRequests(organizationId: string) {
+  if ((await prisma.paymentRequest.count({ where: { organizationId } })) > 0) return;
+  const userOf = async (role: string) => (await prisma.user.findFirst({ where: { organizationId, role: { key: role } }, select: { id: true } }))?.id;
+  const [pm, md, accounts] = [await userOf('PROJECT_MANAGER'), await userOf('MANAGEMENT'), await userOf('ACCOUNTS_MANAGER')];
+  if (!pm || !md || !accounts) return;
+  const year = new Date().getUTCFullYear();
+  let n = 0;
+  const no = () => `PR-${year}-${String(++n).padStart(4, '0')}`;
+  const wo = await prisma.workOrder.findFirst({ where: { organizationId, status: 'APPROVED', advanceAmount: { gt: 0 } }, orderBy: { createdAt: 'asc' } });
+  if (wo) {
+    const req = await prisma.paymentRequest.create({
+      data: {
+        organizationId, projectId: wo.projectId, vendorId: wo.vendorId, requestNo: no(), kind: 'WO_ADVANCE', workOrderId: wo.id, amount: wo.advanceAmount, mode: 'BANK', neededBy: day(-16),
+        reason: 'Mobilisation advance as per the work order, recovered at 10% from each bill', paidAmount: wo.advanceAmount, paidDate: day(-15),
+        status: 'APPROVED', submittedById: pm, submittedAt: day(-18), reviewedById: md, reviewedAt: day(-17), createdAt: day(-18),
+      },
+    });
+    const payment = await prisma.vendorPayment.create({
+      data: {
+        organizationId, projectId: wo.projectId, vendorId: wo.vendorId, workOrderId: wo.id, paymentRequestId: req.id, paymentDate: day(-15), amount: wo.advanceAmount, mode: 'BANK',
+        reference: 'SBIN526287700388', remarks: 'Mobilisation advance', createdById: accounts, createdAt: day(-15),
+      },
+    });
+    await prisma.auditLog.createMany({
+      data: [
+        { organizationId, entityType: 'PAYMENT_REQUEST', entityId: req.id, action: 'CREATED', actorId: pm, createdAt: day(-18) },
+        { organizationId, entityType: 'PAYMENT_REQUEST', entityId: req.id, action: 'SUBMITTED', actorId: pm, createdAt: day(-18) },
+        { organizationId, entityType: 'PAYMENT_REQUEST', entityId: req.id, action: 'APPROVED', actorId: md, createdAt: day(-17) },
+        { organizationId, entityType: 'VENDOR_PAYMENT', entityId: payment.id, action: 'CREATED', actorId: accounts, createdAt: day(-15) },
+        { organizationId, entityType: 'PAYMENT_REQUEST', entityId: req.id, action: 'PAYMENT_MADE', actorId: accounts, note: `₹${wo.advanceAmount.toFixed(2)} paid (SBIN526287700388)`, createdAt: day(-15) },
+      ],
+    });
+  }
+  const po = await prisma.purchaseOrder.findFirst({ where: { organizationId, status: 'APPROVED', closedAt: null, project: { type: 'BUILDING' } }, orderBy: { createdAt: 'asc' } });
+  if (po) {
+    const amount = po.total.mul(0.1).toDecimalPlaces(0);
+    const req = await prisma.paymentRequest.create({
+      data: {
+        organizationId, projectId: po.projectId, vendorId: po.vendorId, requestNo: no(), kind: 'PO_ADVANCE', purchaseOrderId: po.id, amount, mode: 'BANK', neededBy: day(3),
+        reason: '10% advance against the order so the supplier releases the next lot', status: 'SUBMITTED', submittedById: pm, submittedAt: day(-1), createdAt: day(-1),
+      },
+    });
+    await prisma.auditLog.createMany({
+      data: [
+        { organizationId, entityType: 'PAYMENT_REQUEST', entityId: req.id, action: 'CREATED', actorId: pm, createdAt: day(-1) },
+        { organizationId, entityType: 'PAYMENT_REQUEST', entityId: req.id, action: 'SUBMITTED', actorId: pm, createdAt: day(-1) },
+      ],
+    });
+  }
 }
 
 /** The GSTIN typed on the demo expenses that have GST, with its proper check character. */

@@ -6,7 +6,7 @@ import { Alert, App, Button, Form, Input, Progress, Table, Tag, Typography } fro
 import { FileAddOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { WorkOrderDto, WorkOrderLineDto } from '@erp/shared';
-import { MSME_CATEGORY_LABELS, canEditSubmission, canIssueWorkOrder, canPrepareSubcontractBill, canResubmit } from '@erp/shared';
+import { MSME_CATEGORY_LABELS, canEditSubmission, canIssueWorkOrder, canPrepareSubcontractBill, canResubmit, canViewPaymentRequests } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
@@ -25,6 +25,7 @@ import { openWoPrint } from './subcontractPrint';
 import { themeFontSize } from '@/lib/theme';
 import { Section } from '@/components/common/Section';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
+import { TargetRequests } from '@/components/payables/TargetRequests';
 
 const money = (v: string | number) => <span className="mono" translate="no">{formatINR(v, true)}</span>;
 
@@ -84,7 +85,10 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
   const approved = data?.status === 'APPROVED';
   const openBill = data?.bills?.find((b) => b.status !== 'APPROVED' && b.status !== 'REJECTED');
   const finalBilled = data?.bills?.some((b) => b.isFinal && b.status !== 'REJECTED');
-  const advanceLeft = data ? toNumber(data.advanceAmount) - toNumber(data.advanceRecovered) : 0;
+  // Once an advance is paid through a payment request (v5 item 90), bills recover what was paid, not what the order says.
+  const advancePaid = data ? toNumber(data.advancePaid) : 0;
+  const advanceLeft = data ? (advancePaid > 0 ? advancePaid : toNumber(data.advanceAmount)) - toNumber(data.advanceRecovered) : 0;
+  const requests = approved && !data?.closedAt && !!user && canViewPaymentRequests(user.roleKey);
 
   return (
     <RecordFrame
@@ -157,10 +161,11 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
               key: 'adv',
               label: 'Advance',
               children:
-                toNumber(data.advanceAmount) > 0 ? (
+                toNumber(data.advanceAmount) > 0 || advancePaid > 0 ? (
                   <span>
                     {money(data.advanceAmount)} at {formatPct(data.advanceRecoveryPct)} a bill
                     <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                      {advancePaid > 0 ? `${formatINR(advancePaid, true)} paid, ` : ''}
                       {formatINR(data.advanceRecovered, true)} recovered, {formatINR(Math.max(advanceLeft, 0), true)} to go
                     </div>
                   </span>
@@ -261,6 +266,9 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
                     ),
                   },
                 ]
+              : []),
+            ...(requests
+              ? [{ key: 'advances', title: 'Advance requests', children: <TargetRequests approved target={{ kind: 'WO_ADVANCE', workOrderId: data.id, label: data.woNo, vendorName: data.vendorName }} base={String(toNumber(data.value) - toNumber(data.advanceRequested))} /> }]
               : []),
             { key: 'documents', title: 'Documents', count: data.attachments.length, children: <AttachmentGallery attachments={data.attachments} /> },
           ],

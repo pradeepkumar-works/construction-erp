@@ -60,6 +60,8 @@ import type {
   SubcontractBillDto,
   PayablesDto,
   VendorPaymentDto,
+  PaymentRequestDto,
+  PaymentRequestKind,
   ClientDto,
   MsmeCategory,
   UnlistedVendorDto,
@@ -221,7 +223,7 @@ export interface RoleDto {
   name: string;
 }
 
-export type ApprovalTypeParam = 'progress' | 'dpr' | 'material_request' | 'machinery' | 'expense' | 'measurement' | 'bill' | 'purchase_order' | 'vendor_bill' | 'work_order' | 'subcontract_bill' | 'inspection';
+export type ApprovalTypeParam = 'progress' | 'dpr' | 'material_request' | 'machinery' | 'expense' | 'measurement' | 'bill' | 'purchase_order' | 'vendor_bill' | 'work_order' | 'subcontract_bill' | 'inspection' | 'payment_request';
 
 export const approvalTypeParam: Record<SubmissionType, ApprovalTypeParam> = {
   PROGRESS: 'progress',
@@ -236,6 +238,7 @@ export const approvalTypeParam: Record<SubmissionType, ApprovalTypeParam> = {
   WORK_ORDER: 'work_order',
   SUBCONTRACT_BILL: 'subcontract_bill',
   INSPECTION: 'inspection',
+  PAYMENT_REQUEST: 'payment_request',
 };
 
 /** Paging, search and sort understood by every paged list endpoint. */
@@ -353,6 +356,7 @@ const RECORD_QUERIES = {
   '/work-orders': { key: (id: string) => ['work-orders', 'detail', id], path: '/work-orders' },
   '/subcontract-bills': { key: (id: string) => ['subcontract-bills', 'detail', id], path: '/subcontract-bills' },
   '/inspections': { key: (id: string) => ['inspections', 'detail', id], path: '/inspections' },
+  '/payment-requests': { key: (id: string) => ['payment-requests', 'detail', id], path: '/payment-requests' },
   '/projects': { key: (id: string) => ['projects', id], path: '/projects' },
 } satisfies Record<string, { key: (id: string) => QueryKey; path: string }>;
 type RecordRoute = keyof typeof RECORD_QUERIES;
@@ -1147,6 +1151,9 @@ export interface VendorPaymentFilters extends PageParams {
   vendorId?: string;
   vendorBillId?: string;
   subcontractBillId?: string;
+  paymentRequestId?: string;
+  purchaseOrderId?: string;
+  workOrderId?: string;
   from?: string;
   to?: string;
 }
@@ -1158,6 +1165,30 @@ export const useVendorPayments = (filters: VendorPaymentFilters, enabled = true)
     placeholderData: keepPreviousData,
     enabled,
   });
+
+export interface PaymentRequestFilters extends PageParams {
+  projectId?: string;
+  vendorId?: string;
+  kind?: PaymentRequestKind;
+  status?: SubmissionStatus;
+  toPay?: boolean;
+  mine?: boolean;
+  vendorBillId?: string;
+  subcontractBillId?: string;
+  purchaseOrderId?: string;
+  workOrderId?: string;
+}
+
+/** Payment requests (v5 item 90): asking for a bill to be paid or an advance released, approved before accounts pays. */
+export const usePaymentRequests = (filters: PaymentRequestFilters, enabled = true) =>
+  useQuery({
+    queryKey: ['payment-requests', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<PaymentRequestDto>>('/payment-requests', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+
+export const usePaymentRequest = (id: string | undefined) => useQuery({ ...recordQuery<PaymentRequestDto>('/payment-requests', id), enabled: !!id });
 
 export const usePayables = (filters: { projectId?: string; vendorId?: string } = {}, enabled = true) =>
   useQuery({

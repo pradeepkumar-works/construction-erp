@@ -6,7 +6,7 @@ import { App, Button, Divider, Table, Tag, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { VendorBillDto, VendorBillLineDto } from '@erp/shared';
-import { MSME_CATEGORY_LABELS, canEditSubmission, canRecordVendorBill, canResubmit, canViewPayables } from '@erp/shared';
+import { MSME_CATEGORY_LABELS, canEditSubmission, canRecordVendorBill, canResubmit, canViewPaymentRequests, canViewPayables } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
@@ -18,6 +18,7 @@ import { ReviewActions } from '@/components/common/ReviewActions';
 import { EditResubmitButton } from '@/components/common/EditResubmitButton';
 import { submissionMetaItems } from '@/components/common/SubmitterInfo';
 import { BillPayments, PaidTag } from '@/components/payables/BillPayments';
+import { TargetRequests } from '@/components/payables/TargetRequests';
 import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
 import { checksSection } from '@/components/checks/ChecksSection';
 import { submissionLifecycle } from '@/components/record/lifecycle';
@@ -73,6 +74,8 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
   const editable = !!data && !!user && recorder && canEditSubmission(user, data) && data.status !== 'APPROVED';
   const late = data ? overdueDays(data) : null;
   const payments = data?.status === 'APPROVED' && !!user && canViewPayables(user.roleKey);
+  const requests = data?.status === 'APPROVED' && !!user && canViewPaymentRequests(user.roleKey);
+  const adjusted = data ? toNumber(data.advanceAdjusted) : 0;
 
   return (
     <RecordFrame
@@ -110,6 +113,19 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
             { key: 'po', label: 'Purchase order', children: <Link href={`/purchase-orders/${data.purchaseOrderId}`}>{data.poNo}</Link> },
             { key: 'invoice', label: 'Invoice', children: `${data.invoiceNo}, ${formatDate(data.invoiceDate)}` },
             { key: 'total', label: 'Invoice total', children: <strong>{money(data.total)}</strong> },
+            ...(adjusted > 0 || toNumber(data.poAdvancePaid) > 0
+              ? [
+                  {
+                    key: 'advance',
+                    label: 'Advance adjusted',
+                    children: (
+                      <span>
+                        {money(data.advanceAdjusted)} <span className="text-muted">of {formatINR(data.poAdvancePaid, true)} paid on the PO</span>
+                      </span>
+                    ),
+                  },
+                ]
+              : []),
             {
               key: 'due',
               label: 'Due',
@@ -196,6 +212,18 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
                         <span>Invoice total</span>
                         {money(data.total)}
                       </div>
+                      {adjusted > 0 && (
+                        <>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
+                            <span>Less advance adjusted</span>
+                            {money(-adjusted)}
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600 }}>
+                            <span>Payable</span>
+                            {money(data.payable)}
+                          </div>
+                        </>
+                      )}
                     </Section>
                   </div>
                 </>
@@ -217,7 +245,7 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
                           vendorName: data.vendorName,
                           billDate: data.invoiceDate,
                           dueDate: data.dueDate,
-                          payable: data.total,
+                          payable: data.payable,
                           outstanding: data.outstanding,
                           paidAmount: data.paidAmount,
                         }}
@@ -226,6 +254,7 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
                   },
                 ]
               : []),
+            ...(requests ? [{ key: 'requests', title: 'Payment requests', children: <TargetRequests approved target={{ kind: 'BILL', vendorBillId: data.id, label: data.billNo, vendorName: data.vendorName }} base={data.outstanding} /> }] : []),
             { key: 'invoice', title: 'Invoice', count: data.attachments.length, children: <AttachmentGallery attachments={data.attachments} /> },
           ],
           activity: { type: 'vendor_bill', id: data.id, submission: data },

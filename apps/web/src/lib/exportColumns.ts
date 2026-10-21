@@ -22,6 +22,8 @@ import {
   RECEIPT_KIND_LABELS,
   WEATHER_LABELS,
   SUB_BILL_DEDUCTION_LABELS,
+  PAYMENT_REQUEST_KIND_LABELS,
+  type PaymentRequestDto,
   type WorkOrderDto,
   type SubcontractBillDto,
   type ActivityDto,
@@ -443,7 +445,7 @@ export const OPEN_BILL_EXPORT: ExportColumn<OpenBillDto>[] = [
   { header: 'Days since sent', value: (r) => r.daysOutstanding },
 ];
 
-const billKind = (t: PayableBillDto['billType']) => (t === 'VENDOR_BILL' ? 'Vendor bill' : 'Subcontractor bill');
+const billKind = (t: PayableBillDto['billType'] | null) => (t === 'VENDOR_BILL' ? 'Vendor bill' : t === 'SUBCONTRACT_BILL' ? 'Subcontractor bill' : 'Advance');
 
 export const PAYABLE_BILL_EXPORT: ExportColumn<PayableBillDto>[] = [
   { header: 'Bill', value: (r) => r.billLabel, width: 22 },
@@ -477,6 +479,7 @@ export const PAYABLE_VENDOR_EXPORT: ExportColumn<VendorPayableDto>[] = [
   { header: 'MSME at risk', value: (r) => toNumber(r.msmeAtRisk) },
   { header: 'Retention held', value: (r) => toNumber(r.retentionHeld) },
   { header: 'TDS deducted', value: (r) => toNumber(r.tdsDeducted) },
+  { header: 'Advance not yet adjusted', value: (r) => toNumber(r.advanceOutstanding) },
 ];
 
 export const VENDOR_PAYMENT_EXPORT: ExportColumn<VendorPaymentDto>[] = [
@@ -495,6 +498,24 @@ export const VENDOR_PAYMENT_EXPORT: ExportColumn<VendorPaymentDto>[] = [
   { header: 'Reference', value: (r) => r.reference, width: 22 },
   { header: 'Remarks', value: (r) => r.remarks, width: 30 },
   { header: 'Recorded by', value: (r) => r.createdByName, width: 20 },
+];
+
+export const PAYMENT_REQUEST_EXPORT: ExportColumn<PaymentRequestDto>[] = [
+  { header: 'Request', value: (r) => r.requestNo, width: 16 },
+  { header: 'For', value: (r) => PAYMENT_REQUEST_KIND_LABELS[r.kind], width: 26 },
+  { header: 'Bill or order', value: (r) => r.targetLabel, width: 22 },
+  { header: 'Vendor', value: (r) => r.vendorName, width: 30 },
+  { header: 'Project code', value: (r) => r.projectCode, width: 14 },
+  { header: 'Project', value: (r) => r.projectName, width: 34 },
+  { header: 'Amount', value: (r) => toNumber(r.amount) },
+  { header: 'Pay by', value: (r) => RECEIPT_MODE_LABELS[r.mode] ?? PAYMENT_MODE_LABELS[r.mode], width: 14 },
+  { header: 'Needed by', value: (r) => r.neededBy, width: 12 },
+  { header: 'Reason', value: (r) => r.reason, width: 40 },
+  { header: 'Status', value: (r) => status(r.status), width: 16 },
+  { header: 'Paid', value: (r) => toNumber(r.paidAmount) },
+  { header: 'Paid on', value: (r) => r.paidDate, width: 12 },
+  { header: 'Asked by', value: (r) => r.submittedByName, width: 20 },
+  { header: 'Approved by', value: (r) => (r.status === 'APPROVED' ? r.reviewedByName : null), width: 20 },
 ];
 
 export const VENDOR_EXPORT: ExportColumn<VendorDto>[] = [

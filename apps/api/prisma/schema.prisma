@@ -366,11 +366,14 @@ model Organization {
   billingRemindedFor String?
 
   /// Ask Nirmaan (AI item 67): switched on by an admin; off until then
-  aiEnabled       Boolean  @default(false)
+  aiEnabled           Boolean  @default(false)
   /// Rupees per calendar month for the company's AI use; null = the server's AI_DEFAULT_MONTHLY_CAP_INR
-  aiMonthlyCapInr Int?
+  aiMonthlyCapInr     Int?
   /// Roles besides admins that may use Ask Nirmaan (AI item 77); empty = all staff
-  aiRoles         String[] @default([])
+  aiRoles             String[] @default([])
+  /// Payment requests (v5 item 90): accounts may pay a bill only against an approved payment request. Off for companies
+  /// made before item 90, on for new sign-ups.
+  paymentsNeedRequest Boolean  @default(false)
 
   users                User[]
   roles                Role[]
@@ -418,6 +421,7 @@ model Organization {
   raBills              RaBill[]
   receipts             Receipt[]
   vendorPayments       VendorPayment[]
+  paymentRequests      PaymentRequest[]
   tallyConfig          TallyConfig?
   tallyExports         TallyExport[]
   checklists           ChecklistTemplate[]
@@ -480,7 +484,7 @@ model ApprovalRule {
   organization   Organization @relation(fields: [organizationId], references: [id])
   roleId         String
   role           Role         @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  /// SubmissionType: PROGRESS | DPR | MATERIAL_REQUEST | MACHINERY | EXPENSE | MEASUREMENT | BILL | PURCHASE_ORDER | VENDOR_BILL | WORK_ORDER | SUBCONTRACT_BILL | INSPECTION
+  /// SubmissionType: PROGRESS | DPR | MATERIAL_REQUEST | MACHINERY | EXPENSE | MEASUREMENT | BILL | PURCHASE_ORDER | VENDOR_BILL | WORK_ORDER | SUBCONTRACT_BILL | INSPECTION | PAYMENT_REQUEST
   submissionType String
   maxAmount      Decimal?     @db.Decimal(18, 2)
   createdAt      DateTime     @default(now())
@@ -550,6 +554,8 @@ model User {
   receiptsRecorded     Receipt[]             @relation("ReceiptCreator")
   tallyExports         TallyExport[]
   vendorPaymentsMade   VendorPayment[]       @relation("VendorPaymentCreator")
+  submittedPayRequests PaymentRequest[]      @relation("PayRequestSubmitter")
+  reviewedPayRequests  PaymentRequest[]      @relation("PayRequestReviewer")
   quotationsEntered    Quotation[]           @relation("QuotationCreator")
   submittedPos         PurchaseOrder[]       @relation("PoSubmitter")
   reviewedPos          PurchaseOrder[]       @relation("PoReviewer")
@@ -713,6 +719,7 @@ model Project {
   raBills          RaBill[]
   receipts         Receipt[]
   vendorPayments   VendorPayment[]
+  paymentRequests  PaymentRequest[]
   quotations       Quotation[]
   purchaseOrders   PurchaseOrder[]
   vendorBills      VendorBill[]
@@ -796,16 +803,17 @@ model Vendor {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
-  expenses       Expense[]
-  equipment      Equipment[]
-  stockEntries   StockEntry[]
-  quotations     Quotation[]
-  purchaseOrders PurchaseOrder[]
-  vendorBills    VendorBill[]
-  workOrders     WorkOrder[]
-  attendance     AttendanceLine[]
-  workers        Worker[]
-  payments       VendorPayment[]
+  expenses        Expense[]
+  equipment       Equipment[]
+  stockEntries    StockEntry[]
+  quotations      Quotation[]
+  purchaseOrders  PurchaseOrder[]
+  vendorBills     VendorBill[]
+  workOrders      WorkOrder[]
+  attendance      AttendanceLine[]
+  workers         Worker[]
+  payments        VendorPayment[]
+  paymentRequests PaymentRequest[]
 
   @@unique([organizationId, name])
 }
@@ -899,10 +907,12 @@ model PurchaseOrder {
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
 
-  lines        PurchaseOrderLine[]
-  stockEntries StockEntry[]
-  vendorBills  VendorBill[]
-  attachments  Attachment[]
+  lines           PurchaseOrderLine[]
+  stockEntries    StockEntry[]
+  vendorBills     VendorBill[]
+  attachments     Attachment[]
+  paymentRequests PaymentRequest[]
+  advances        VendorPayment[]
 
   @@unique([organizationId, poNo])
   @@index([organizationId, status])
@@ -956,6 +966,8 @@ model VendorBill {
   subtotal        Decimal          @default(0) @db.Decimal(18, 2)
   gstAmount       Decimal          @default(0) @db.Decimal(18, 2)
   total           Decimal          @default(0) @db.Decimal(18, 2)
+  /// Advance paid on the PO and taken off this bill (v5 item 90); what is payable is total less this
+  advanceAdjusted Decimal          @default(0) @db.Decimal(18, 2)
   /// Settled by payments so far (paid + deducted at payment), kept in step by payables
   paidAmount      Decimal          @default(0) @db.Decimal(18, 2)
   /// The day the last payment settled it in full; null while anything is outstanding
@@ -979,9 +991,10 @@ model VendorBill {
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
 
-  lines       VendorBillLine[]
-  attachments Attachment[]
-  payments    VendorPayment[]
+  lines           VendorBillLine[]
+  attachments     Attachment[]
+  payments        VendorPayment[]
+  paymentRequests PaymentRequest[]
 
   @@unique([organizationId, billNo])
   @@unique([vendorId, invoiceNo])
@@ -1052,11 +1065,13 @@ model WorkOrder {
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
 
-  lines        WorkOrderLine[]
-  bills        SubcontractBill[]
-  measurements MeasurementSheet[]
-  issues       StockEntry[]
-  attachments  Attachment[]
+  lines           WorkOrderLine[]
+  bills           SubcontractBill[]
+  measurements    MeasurementSheet[]
+  issues          StockEntry[]
+  attachments     Attachment[]
+  paymentRequests PaymentRequest[]
+  advances        VendorPayment[]
 
   @@unique([organizationId, woNo])
   @@index([organizationId, status])
@@ -1144,12 +1159,13 @@ model SubcontractBill {
   createdAt             DateTime         @default(now())
   updatedAt             DateTime         @updatedAt
 
-  lines        SubcontractBillLine[]
-  materials    SubcontractBillMaterial[]
-  measurements MeasurementSheet[]
-  issues       StockEntry[]
-  attachments  Attachment[]
-  payments     VendorPayment[]
+  lines           SubcontractBillLine[]
+  materials       SubcontractBillMaterial[]
+  measurements    MeasurementSheet[]
+  issues          StockEntry[]
+  attachments     Attachment[]
+  payments        VendorPayment[]
+  paymentRequests PaymentRequest[]
 
   @@unique([workOrderId, billNo])
   @@index([organizationId, status])
@@ -2123,11 +2139,18 @@ model VendorPayment {
   project            Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
   vendorId           String
   vendor             Vendor           @relation(fields: [vendorId], references: [id])
-  /// Exactly one of the two bills
+  /// One of the two bills, or (an advance, v5 item 90) the purchase order or work order it is paid against
   vendorBillId       String?
   vendorBill         VendorBill?      @relation(fields: [vendorBillId], references: [id], onDelete: Restrict)
   subcontractBillId  String?
   subcontractBill    SubcontractBill? @relation(fields: [subcontractBillId], references: [id], onDelete: Restrict)
+  purchaseOrderId    String?
+  purchaseOrder      PurchaseOrder?   @relation(fields: [purchaseOrderId], references: [id], onDelete: Restrict)
+  workOrderId        String?
+  workOrder          WorkOrder?       @relation(fields: [workOrderId], references: [id], onDelete: Restrict)
+  /// The approved payment request it draws on
+  paymentRequestId   String?
+  paymentRequest     PaymentRequest?  @relation(fields: [paymentRequestId], references: [id], onDelete: Restrict)
   paymentDate        DateTime         @db.Date
   /// Paid out of the bank (or cash)
   amount             Decimal          @db.Decimal(18, 2)
@@ -2152,7 +2175,72 @@ model VendorPayment {
   @@index([vendorId])
   @@index([vendorBillId])
   @@index([subcontractBillId])
+  @@index([purchaseOrderId])
+  @@index([workOrderId])
+  @@index([paymentRequestId])
   @@index([tallyExportId])
+}
+
+/// What a payment request is for (v5 item 90).
+enum PaymentRequestKind {
+  BILL
+  PO_ADVANCE
+  WO_ADVANCE
+}
+
+/// A request to release money (v5 item 90): pay an approved vendor or subcontractor bill, or an advance against a
+/// purchase order or work order. Approved through the approval matrix (submission type PAYMENT_REQUEST) before accounts
+/// pays; payments draw on it up to its amount.
+model PaymentRequest {
+  id                String             @id @default(uuid())
+  organizationId    String
+  organization      Organization       @relation(fields: [organizationId], references: [id])
+  projectId         String
+  project           Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  vendorId          String
+  vendor            Vendor             @relation(fields: [vendorId], references: [id])
+  /// PR-<year>-0001 per organisation
+  requestNo         String
+  kind              PaymentRequestKind
+  /// Exactly one, by kind: a bill (BILL), the purchase order (PO_ADVANCE) or the work order (WO_ADVANCE)
+  vendorBillId      String?
+  vendorBill        VendorBill?        @relation(fields: [vendorBillId], references: [id], onDelete: Cascade)
+  subcontractBillId String?
+  subcontractBill   SubcontractBill?   @relation(fields: [subcontractBillId], references: [id], onDelete: Cascade)
+  purchaseOrderId   String?
+  purchaseOrder     PurchaseOrder?     @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  workOrderId       String?
+  workOrder         WorkOrder?         @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  amount            Decimal            @db.Decimal(18, 2)
+  /// How it should be paid (bank, UPI, cash)
+  mode              PaymentMode        @default(BANK)
+  neededBy          DateTime?          @db.Date
+  reason            String?
+  /// Settled by payments drawing on it, kept in step by payables
+  paidAmount        Decimal            @default(0) @db.Decimal(18, 2)
+  /// The day the last payment settled it in full
+  paidDate          DateTime?          @db.Date
+  status            SubmissionStatus   @default(DRAFT)
+  submittedById     String
+  submittedBy       User               @relation("PayRequestSubmitter", fields: [submittedById], references: [id])
+  submittedAt       DateTime?
+  reviewedById      String?
+  reviewedBy        User?              @relation("PayRequestReviewer", fields: [reviewedById], references: [id])
+  reviewedAt        DateTime?
+  reviewNote        String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  payments    VendorPayment[]
+  attachments Attachment[]
+
+  @@unique([organizationId, requestNo])
+  @@index([organizationId, status])
+  @@index([projectId, status])
+  @@index([vendorBillId])
+  @@index([subcontractBillId])
+  @@index([purchaseOrderId])
+  @@index([workOrderId])
 }
 
 model Attachment {
@@ -2224,6 +2312,8 @@ model Attachment {
   handover          ProjectHandover?   @relation(fields: [handoverId], references: [id], onDelete: Cascade)
   rfiId             String?
   rfi               Rfi?               @relation(fields: [rfiId], references: [id], onDelete: Cascade)
+  paymentRequestId  String?
+  paymentRequest    PaymentRequest?    @relation(fields: [paymentRequestId], references: [id], onDelete: Cascade)
   /// When the PDF's text was read into DocumentPage (Ask the contract); null = not yet
   textIndexedAt     DateTime?
   /// Pages with text found; 0 for a scanned PDF or one that could not be read
@@ -2265,6 +2355,7 @@ model Attachment {
   @@index([defectId])
   @@index([handoverId])
   @@index([rfiId])
+  @@index([paymentRequestId])
 }
 
 model AuditLog {

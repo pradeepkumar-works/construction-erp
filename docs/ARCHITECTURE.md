@@ -801,6 +801,40 @@ retention, advance, TDS and material recovery (`apps/api/src/subcontracts`).
   `q`), `GET|PATCH|DELETE /vendor-payments/:id`, `GET /payables`. Web: Purchases → Payables (KPIs, due list with
   Pay, by vendor, by project, payments), and the payments list with "Record payment" in both bill drawers.
 
+## Payment requests and advances
+
+Releasing money is approved before accounts pays it (v5 item 90).
+
+- **Table.** `PaymentRequest` (tenant table, RLS policy): `requestNo` PR-<year>-0001, project, vendor, `kind`
+  (`BILL`, `PO_ADVANCE`, `WO_ADVANCE`) and exactly one target by kind (a CHECK constraint): `vendorBillId` or
+  `subcontractBillId`, `purchaseOrderId`, `workOrderId`. Then `amount`, `mode`, `neededBy`, `reason`, attachments
+  (proforma, letter), `paidAmount` and `paidDate` kept by its payments, and the six status columns. It is the submission
+  type `PAYMENT_REQUEST` in `SubmissionLifecycleService`, with rupee limits on `amount` in the approval matrix (demo:
+  project managers up to ₹5 lakh, management any).
+- **How much** (`PaymentRequestsService.target`, checked on create, edit, submit and again before approval). A bill must
+  be approved: at most its payable less paid, less what its other open requests ask (submitted, or approved and not yet
+  paid). An order must be approved and not closed: at most its value (PO total, WO value before GST) less advances asked
+  for on its other submitted or approved requests.
+- **Paying.** `VendorPayment` gains `paymentRequestId`, `purchaseOrderId` and `workOrderId`; its CHECK now allows one
+  bill, or no bill and one order (an advance). `POST /vendor-payments` with `paymentRequestId` draws on an approved request
+  and may not settle more than it has left (advisory lock `PAYREQ:<id>`); the bill or order comes from the request. An
+  advance is paid only that way. `Organization.paymentsNeedRequest` (off for existing companies, on for new sign-ups,
+  switched on Approval rules) refuses a payment on a bill without one. Approving a request tells the project's payers
+  (`BILLS_DUE`), except whoever approved or asked for it.
+- **Advances on bills.** `VendorBill.advanceAdjusted` takes advance off the invoice total: payable = total less it, and it
+  may not exceed what was paid in advance on the PO less what its other bills adjusted. A subcontractor bill's advance
+  recovery caps at the advance actually paid on the work order once any advance payment exists, else at the order's
+  `advanceAmount` (paid before Nirmaan). Editing or deleting an advance payment may not leave less paid than bills have
+  already taken off. Payables totals add `advanceOutstanding` (paid, not yet adjusted or recovered) per vendor and
+  project, and every payment of an advance is left out of the bills' paid and deducted.
+- **Roles.** Asked for, edited and seen by admin, management, project managers, accounts, procurement and QS in their
+  projects (`canRequestPayment`, `canViewPaymentRequests`); approved by the matrix; paid by `canRecordPayment`.
+- **API.** `GET|POST /payment-requests` (paged; `projectId`, `vendorId`, `kind`, `status`, `toPay`, `mine`, the four
+  target ids, `q`), `GET|PATCH|DELETE /payment-requests/:id`, `POST /payment-requests/:id/submit`; the open bills in
+  `GET /payables` carry their latest open `request`. Web: the Payment requests tab in Payables, `/payment-requests/[id]`,
+  "Request payment" on approved bills (and in the due list) and "Request advance" on approved orders, Pay against an
+  approved request, the approvals pane, Search and Ask. Phone: approve in the Approvals tab (`/payment-request/[id]`).
+
 ## Tally export
 
 Tally stays the books; Nirmaan sends it vouchers as TallyPrime "Import Data" XML (`src/tally/vouchers.ts`) and keeps
@@ -815,7 +849,9 @@ no ledger of its own.
   - Vendor bill: **Purchase**. Dr purchases, freight, input GST; Cr the vendor (`New Ref` = their invoice number).
   - Subcontractor bill: **Journal**. Dr subcontract charges and input GST; Cr the subcontractor with the net payable,
     and retention, advance, TDS, material recovered and other deductions to their ledgers.
-  - Vendor payment: **Payment**. Dr the vendor (paid + deducted), Cr bank or cash, TDS payable, other deductions.
+  - Vendor payment: **Payment**. Dr the vendor (paid + deducted), Cr bank or cash, TDS payable, other deductions. An
+    advance (no bill) is the same voucher against `Advance <PO or WO number>` (bill type `Advance`), so the bill that
+    later adjusts it can be set off in Tally.
   - Site expense: **Payment**. Dr the category (input GST apart only with the vendor's GSTIN), Cr cash or bank, or the
     vendor (or "Site creditors") when on credit.
 

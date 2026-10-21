@@ -23,6 +23,7 @@ interface FormValues {
   invoiceNo: string;
   invoiceDate: dayjs.Dayjs;
   freight?: number | null;
+  advanceAdjusted?: number | null;
   remarks?: string;
   docs?: AttachmentDto[];
 }
@@ -58,10 +59,13 @@ export function VendorBillFormModal({
   const notify = useNotify();
   const watchedPo = Form.useWatch('purchaseOrderId', form);
   const freight = Form.useWatch('freight', form);
+  const advance = Form.useWatch('advanceAdjusted', form) as number | null | undefined;
   const invoiceNo = Form.useWatch('invoiceNo', form) as string | undefined;
   const poId = bill?.purchaseOrderId ?? purchaseOrderId ?? watchedPo;
   const orders = usePurchaseOrders({ status: 'APPROVED', pageSize: 100, sortBy: 'poDate', sortOrder: 'desc' }, open && !bill && !purchaseOrderId);
   const { data: po, isLoading: poLoading } = usePurchaseOrder(open ? poId : undefined);
+  // Advance paid on the PO and not yet taken off its other bills (v5 item 90): this bill may adjust up to that.
+  const advanceAvailable = bill ? toNumber(bill.poAdvanceAvailable) : po ? Math.max(toNumber(po.advancePaid) - toNumber(po.advanceAdjusted), 0) : 0;
   const [lines, setLines] = useState<Record<string, LineValue>>({});
   // A scanned invoice read to fill the form (AI item 70): what came back, the line values waiting for its PO to load,
   // and the field whose place on the page is shown.
@@ -78,6 +82,7 @@ export function VendorBillFormModal({
         invoiceNo: bill.invoiceNo,
         invoiceDate: dayjs(bill.invoiceDate),
         freight: toNumber(bill.freight),
+        advanceAdjusted: toNumber(bill.advanceAdjusted) || null,
         remarks: bill.remarks ?? undefined,
         docs: bill.attachments,
       });
@@ -193,6 +198,7 @@ export function VendorBillFormModal({
         invoiceNo: v.invoiceNo.trim(),
         invoiceDate: v.invoiceDate.format('YYYY-MM-DD'),
         freight: String(v.freight ?? 0),
+        advanceAdjusted: String(v.advanceAdjusted ?? 0),
         remarks: v.remarks?.trim() || null,
         attachmentIds: (v.docs ?? []).map((d) => d.id),
         lines: billLines,
@@ -276,6 +282,16 @@ export function VendorBillFormModal({
               <MoneyInput />
             </Form.Item>
           </FormGrid>
+          {advanceAvailable > 0 || toNumber(advance) > 0 ? (
+            <Form.Item
+              name="advanceAdjusted"
+              label="Advance adjusted"
+              extra={`Advance paid on ${po?.poNo ?? 'the PO'} and not yet adjusted: ${formatINR(advanceAvailable, true)}`}
+              rules={[{ validator: async (_, v) => (toNumber(v ?? 0) <= advanceAvailable + 1 ? undefined : Promise.reject(new Error(`Adjust at most ${formatINR(advanceAvailable, true)}, the advance not yet taken off other bills`))) }]}
+            >
+              <MoneyInput style={{ maxWidth: 240 }} />
+            </Form.Item>
+          ) : null}
         </FormSection>
         <FormSection title="Lines">
           {po ? (
@@ -405,6 +421,14 @@ export function VendorBillFormModal({
                   <span className="mono" translate="no">{formatINR(toNumber(freight), true)}</span>
                   <strong>Invoice total</strong>
                   <strong className="mono" translate="no">{formatINR(totals.total, true)}</strong>
+                  {toNumber(advance) > 0 ? (
+                    <>
+                      <span>Less advance adjusted</span>
+                      <span className="mono" translate="no">{formatINR(-toNumber(advance), true)}</span>
+                      <strong>Payable</strong>
+                      <strong className="mono" translate="no">{formatINR(totals.total - toNumber(advance), true)}</strong>
+                    </>
+                  ) : null}
                   {printedTotal !== null ? (
                     <>
                       <span>Printed on the invoice</span>

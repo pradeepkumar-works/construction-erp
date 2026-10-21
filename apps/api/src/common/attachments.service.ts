@@ -8,7 +8,7 @@ import { RequestUser } from './current-user';
 /** The columns an attachment's DTO needs: never `data`, the file's bytes when they are kept in the database. */
 export const ATTACHMENT_FIELDS = { id: true, fileName: true, mimeType: true, size: true, storagePath: true, createdAt: true } satisfies Prisma.AttachmentSelect;
 
-type Parent = 'progressEntryId' | 'dailyReportId' | 'materialRequestId' | 'stockEntryId' | 'machineryLogId' | 'expenseId' | 'measurementId' | 'riskId' | 'raBillId' | 'purchaseOrderId' | 'vendorBillId' | 'workOrderId' | 'subcontractBillId' | 'inspectionId' | 'qualityTestId' | 'ncrId' | 'revisionId' | 'letterId' | 'variationId' | 'safetyIncidentId' | 'toolboxTalkId' | 'workPermitId' | 'maintenanceJobId' | 'equipmentDocId' | 'complianceDocId' | 'defectId' | 'handoverId' | 'rfiId';
+type Parent = 'progressEntryId' | 'dailyReportId' | 'materialRequestId' | 'stockEntryId' | 'machineryLogId' | 'expenseId' | 'measurementId' | 'riskId' | 'raBillId' | 'purchaseOrderId' | 'vendorBillId' | 'workOrderId' | 'subcontractBillId' | 'inspectionId' | 'qualityTestId' | 'ncrId' | 'revisionId' | 'letterId' | 'variationId' | 'safetyIncidentId' | 'toolboxTalkId' | 'workPermitId' | 'maintenanceJobId' | 'equipmentDocId' | 'complianceDocId' | 'defectId' | 'handoverId' | 'rfiId' | 'paymentRequestId';
 
 @Injectable()
 export class AttachmentsService {

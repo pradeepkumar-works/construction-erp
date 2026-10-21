@@ -14,6 +14,7 @@ import { VendorBillDrawer } from '@/components/purchasing/VendorBillDrawer';
 import { WorkOrderDrawer } from '@/components/subcontracts/WorkOrderDrawer';
 import { SubBillDrawer } from '@/components/subcontracts/SubBillDrawer';
 import { InspectionDrawer } from '@/components/inspections/InspectionDrawer';
+import { PaymentRequestDrawer } from '@/components/payables/PaymentRequestRecord';
 
 export type OpenSubmission = { type: SubmissionType; id: string } | null;
 
@@ -34,6 +35,7 @@ export function SubmissionRecordDrawer({ open, onClose }: { open: OpenSubmission
       <WorkOrderDrawer {...at('WORK_ORDER')} />
       <SubBillDrawer {...at('SUBCONTRACT_BILL')} />
       <InspectionDrawer {...at('INSPECTION')} />
+      <PaymentRequestDrawer {...at('PAYMENT_REQUEST')} />
     </>
   );
 }

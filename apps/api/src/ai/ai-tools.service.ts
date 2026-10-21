@@ -25,6 +25,7 @@ import { DocumentsService } from '../documents/documents.service';
 import { AttendanceService } from '../attendance/attendance.service';
 import { ReceivablesService } from '../receivables/receivables.service';
 import { PayablesService } from '../payables/payables.service';
+import { PaymentRequestsService } from '../payables/payment-requests.service';
 import { StockService } from '../stock/stock.service';
 import { ProjectsService } from '../projects/projects.service';
 import { DashboardService } from '../dashboard/dashboard.service';
@@ -130,6 +131,7 @@ export class AiToolsService {
     attendance: AttendanceService,
     receivables: ReceivablesService,
     payables: PayablesService,
+    paymentRequests: PaymentRequestsService,
     stock: StockService,
     projects: ProjectsService,
     dashboard: DashboardService,
@@ -165,7 +167,14 @@ export class AiToolsService {
       document: { label: 'Document register (drawings, specifications)', list: any(documents.listDocuments.bind(documents)), get: any(documents.getDocument.bind(documents)), href: (id) => `/documents?id=${id}` },
       attendance: { label: 'Daily labour attendance sheets', list: any(attendance.list.bind(attendance)), get: any(attendance.get.bind(attendance)), href: () => '/attendance', statuses: SUBMISSION_STATUSES },
       receipt: { label: 'Receipts from clients', list: any(receivables.list.bind(receivables)), get: any(receivables.get.bind(receivables)), href: () => '/receivables' },
-      vendor_payment: { label: 'Payments to vendors and subcontractors', list: any(payables.list.bind(payables)), get: any(payables.get.bind(payables)), href: () => '/payables' },
+      vendor_payment: { label: 'Payments to vendors and subcontractors (bills and advances)', list: any(payables.list.bind(payables)), get: any(payables.get.bind(payables)), href: () => '/payables' },
+      payment_request: {
+        label: 'Payment requests (asking for a bill to be paid, or an advance on a PO or work order, before accounts pays)',
+        list: any(paymentRequests.list.bind(paymentRequests)),
+        get: any(paymentRequests.get.bind(paymentRequests)),
+        href: (id) => `/payment-requests/${id}`,
+        statuses: SUBMISSION_STATUSES,
+      },
       stock_entry: { label: 'Stock entries (GRN receipts, issues, transfers, returns)', list: any(stock.list.bind(stock)), get: any(stock.get.bind(stock)), href: () => '/stock' },
     };
     const kindNames = Object.keys(this.kinds);

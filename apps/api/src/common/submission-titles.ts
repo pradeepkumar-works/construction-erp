@@ -43,3 +43,7 @@ export const vendorBillTitle = (billNo: string, invoiceNo: string, vendor: strin
 
 /** "INS-2026-0004: Reinforcement for slab, at Block A, 2nd floor". */
 export const inspectionTitle = (inspectionNo: string, activity: string, location: string) => `${inspectionNo}: ${activity}, at ${location}`;
+
+/** "PR-2026-0003: ₹1,50,000.00 to Utkal Cement Traders against VB-2026-0004". */
+export const paymentRequestTitle = (requestNo: string, amount: string, vendor: string, target: string, advance: boolean) =>
+  `${requestNo}: ${inr(amount)} to ${vendor} ${advance ? `as an advance on ${target}` : `against ${target}`}`;

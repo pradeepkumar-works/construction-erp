@@ -153,6 +153,11 @@ export class VendorBillLineInput {
 
 class VendorBillFields {
   @ApiPropertyOptional({ example: '2500.00' }) @IsOptional() @num() @IsNumberString() freight?: string;
+  @ApiPropertyOptional({ example: '50000.00', description: 'Advance paid on the PO taken off this bill (at most what is paid and not yet taken off its other bills)' })
+  @IsOptional()
+  @num()
+  @IsNumberString()
+  advanceAdjusted?: string;
   @ApiPropertyOptional() @IsOptional() @trim() @IsString() @MaxLength(1000) remarks?: string | null;
   @ApiPropertyOptional({ type: [String], description: 'Invoice scan' }) @IsOptional() @IsArray() @IsUUID('all', { each: true }) attachmentIds?: string[];
   @ApiPropertyOptional({ default: false, description: 'Submit for approval as well' }) @IsOptional() @IsBoolean() submit?: boolean;

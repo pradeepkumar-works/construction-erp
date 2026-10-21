@@ -6,7 +6,7 @@ import { Button, Card, Col, Row, Space, Statistic, Tabs, Tag, Typography } from 
 import { PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { PayableBillDto, PayableTotalsDto, ProjectPayableDto, VendorPayableDto, VendorPaymentDto, VendorPaymentSortField } from '@erp/shared';
-import { LIST_SORT_FIELDS, MSME_CATEGORY_LABELS, RECEIPT_MODE_LABELS, canRecordPayment } from '@erp/shared';
+import { LIST_SORT_FIELDS, MSME_CATEGORY_LABELS, RECEIPT_MODE_LABELS, SUBMISSION_STATUS_LABELS, canRecordPayment, canRequestPayment } from '@erp/shared';
 import { useProjectScope } from '@/lib/project-scope';
 import { api, errorStatus } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
@@ -25,6 +25,9 @@ import { ExportButton } from '@/components/common/ExportButton';
 import { VendorBillDrawer } from '@/components/purchasing/VendorBillDrawer';
 import { SubBillDrawer } from '@/components/subcontracts/SubBillDrawer';
 import { PAYMENT_QUERY_KEYS, PaymentFormModal, type PayTarget } from '@/components/payables/PaymentFormModal';
+import { PaymentRequestFormModal, type RequestFor } from '@/components/payables/PaymentRequestFormModal';
+import { PaymentRequestDrawer } from '@/components/payables/PaymentRequestRecord';
+import { PaymentRequestList } from '@/components/payables/PaymentRequestList';
 import { InTallyTag } from '@/components/tally/InTallyTag';
 import { CardToolbar } from '@/components/common/CardToolbar';
 import { EmptyArt } from '@/components/common/EmptyArt';
@@ -61,17 +64,23 @@ function ageingColumns<T extends PayableTotalsDto>(): ListColumn<T>[] {
     { key: 'a4', title: 'Over 90', label: 'Over 90 days late', width: 110, align: 'right', render: (_, r) => late(r.ageing.over90) },
     { key: 'msmeAtRisk', title: 'MSME at risk', dataIndex: 'msmeAtRisk', width: 120, align: 'right', render: (v) => late(v) },
     { key: 'retentionHeld', title: 'Retention held', dataIndex: 'retentionHeld', width: 130, align: 'right', render: (v) => money(v) },
+    { key: 'advanceOutstanding', title: 'Advance not adjusted', label: 'Advance paid, not yet adjusted on bills', dataIndex: 'advanceOutstanding', width: 150, align: 'right', render: (v) => money(v) },
   ];
 }
 
 /** Rows of a list worked out in the browser, with the `id` the list template keys them by. */
 type Keyed<T> = T & { id: string };
 const PAGE_KEYS = ['vendorId'] as const;
-const TAB_KEYS = ['due', 'vendors', 'projects', 'payments'] as const;
+const TAB_KEYS = ['due', 'requests', 'vendors', 'projects', 'payments'] as const;
 type PayablesTab = (typeof TAB_KEYS)[number];
 
 const NO_KEYS: string[] = [];
-const billHref = (r: VendorPaymentDto) => (r.billType === 'VENDOR_BILL' ? `/vendor-bills/${r.vendorBillId}` : `/subcontract-bills/${r.subcontractBillId}`);
+const billHref = (r: VendorPaymentDto) => {
+  if (r.billType === 'VENDOR_BILL') return `/vendor-bills/${r.vendorBillId}`;
+  if (r.billType === 'SUBCONTRACT_BILL') return `/subcontract-bills/${r.subcontractBillId}`;
+  // An advance has no bill: it leads to the request it was paid on.
+  return r.paymentRequestId ? `/payment-requests/${r.paymentRequestId}` : r.purchaseOrderId ? `/purchase-orders/${r.purchaseOrderId}` : `/work-orders/${r.workOrderId}`;
+};
 
 function PaymentsTab({ projectId, vendorId, onBill }: { projectId?: string; vendorId?: string; onBill: (b: { billType: PayableBillDto['billType']; billId: string }) => void }) {
   const { user } = useAuth();
@@ -79,6 +88,7 @@ function PaymentsTab({ projectId, vendorId, onBill }: { projectId?: string; vend
   const page = useListPage<VendorPaymentSortField>({ keys: NO_KEYS, sortBy: 'paymentDate', sortOrder: 'desc', sortFields: LIST_SORT_FIELDS.vendorPayments, url: false, scope: `${projectId}:${vendorId}` });
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<VendorPaymentDto | null>(null);
+  const [request, setRequest] = useState<string | null>(null);
   const filters = { page: page.params.page, pageSize: page.params.pageSize, q: page.params.q, sortBy: page.params.sortBy, sortOrder: page.params.sortOrder, projectId, vendorId };
   const { data, isLoading, isFetching, error, refetch } = useVendorPayments(filters);
   const rows = data?.items ?? [];
@@ -96,7 +106,7 @@ function PaymentsTab({ projectId, vendorId, onBill }: { projectId?: string; vend
     await downloadXlsx(exportFileName('payments'), 'Payments', VENDOR_PAYMENT_EXPORT, all);
     return all.length;
   };
-  const openBill = (r: VendorPaymentDto) => onBill({ billType: r.billType, billId: (r.vendorBillId ?? r.subcontractBillId)! });
+  const openBill = (r: VendorPaymentDto) => (r.billType ? onBill({ billType: r.billType, billId: (r.vendorBillId ?? r.subcontractBillId)! }) : r.paymentRequestId ? setRequest(r.paymentRequestId) : undefined);
 
   const columns: ListColumn<VendorPaymentDto>[] = [
     { title: 'Date', dataIndex: 'paymentDate', width: 110, ...sort('paymentDate'), render: (v) => formatDate(v) },
@@ -216,6 +226,7 @@ function PaymentsTab({ projectId, vendorId, onBill }: { projectId?: string; vend
           setEditing(null);
         }}
       />
+      <PaymentRequestDrawer id={request} open={!!request} onClose={() => setRequest(null)} />
     </>
   );
 }
@@ -229,8 +240,12 @@ export default function PayablesPage() {
   const [tab, setTab] = useUrlTab<PayablesTab>(TAB_KEYS, 'due', { param: 'tab' });
   const [bill, setBill] = useState<{ billType: PayableBillDto['billType']; billId: string } | null>(null);
   const [paying, setPaying] = useState<PayTarget | null>(null);
+  const [asking, setAsking] = useState<RequestFor | null>(null);
+  const [request, setRequest] = useState<string | null>(null);
   const { data, isLoading, error, refetch } = usePayables({ projectId, vendorId });
   const accounts = !!user && canRecordPayment(user.roleKey);
+  const requester = !!user && canRequestPayment(user.roleKey);
+  const needRequest = !!data?.paymentsNeedRequest;
   const t = data?.totals;
   const q = page.params.q?.toLowerCase();
   const openBills = useMemo<Keyed<PayableBillDto>[]>(
@@ -301,7 +316,24 @@ export default function PayablesPage() {
         </div>
       ),
     },
-    ...(accounts
+    {
+      key: 'request',
+      title: 'Payment request',
+      width: 170,
+      card: false,
+      render: (_, r) =>
+        r.request ? (
+          <div>
+            <RecordLink href={`/payment-requests/${r.request.id}`} onOpen={() => setRequest(r.request!.id)} className="mono">
+              {r.request.requestNo}
+            </RecordLink>
+            <div style={{ fontSize: themeFontSize('fontSizeSM') }}>{r.request.status === 'APPROVED' ? `Approved, ${formatINR(r.request.unpaid)} to pay` : SUBMISSION_STATUS_LABELS[r.request.status]}</div>
+          </div>
+        ) : (
+          <span className="text-muted">-</span>
+        ),
+    },
+    ...(accounts || requester
       ? [
           {
             key: 'pay',
@@ -310,12 +342,30 @@ export default function PayablesPage() {
             locked: true,
             card: false,
             fixed: 'right' as const,
-            width: 90,
-            render: (_: unknown, r: PayableBillDto) => (
-              <Button size="small" type={r.daysToDue <= 7 ? 'primary' : 'default'} onClick={() => setPaying(r)}>
-                Pay
-              </Button>
-            ),
+            width: 150,
+            render: (_: unknown, r: PayableBillDto) => {
+              const req = r.request;
+              // Pay against an approved request; pay directly only when the company does not ask for one; else ask.
+              if (accounts && req?.status === 'APPROVED' && toNumber(req.unpaid) > 0)
+                return (
+                  <Button size="small" type="primary" onClick={() => setPaying({ ...r, payable: req.amount, outstanding: String(Math.min(toNumber(req.unpaid), toNumber(r.outstanding))), billLabel: `${req.requestNo} · ${r.billLabel}`, paymentRequestId: req.id })}>
+                    Pay
+                  </Button>
+                );
+              if (accounts && !needRequest)
+                return (
+                  <Button size="small" type={r.daysToDue <= 7 ? 'primary' : 'default'} onClick={() => setPaying(r)}>
+                    Pay
+                  </Button>
+                );
+              if (requester && !req)
+                return (
+                  <Button size="small" onClick={() => setAsking({ kind: 'BILL', ...(r.billType === 'VENDOR_BILL' ? { vendorBillId: r.billId } : { subcontractBillId: r.billId }), label: r.billLabel, vendorName: r.vendorName, open: r.outstanding })}>
+                    Request payment
+                  </Button>
+                );
+              return null;
+            },
           } satisfies ListColumn<Keyed<PayableBillDto>>,
         ]
       : []),
@@ -460,13 +510,14 @@ export default function PayablesPage() {
                       if (r) setBill(r);
                     }}
                     bulk={[exportSelected<Keyed<PayableBillDto>, PayableBillDto>('due-list', 'Due list', PAYABLE_BILL_EXPORT)]}
-                    scrollX={1050}
+                    scrollX={1250}
                     empty={{ filtered: !!page.params.q || !!vendorId, clear: () => page.clear() }}
                     emptyText={<EmptyArt art="entries" title={page.params.q || vendorId ? 'No open bill matches these filters' : 'Every approved bill is paid'} />}
                   />
                 </>
               ),
             },
+            { key: 'requests', label: 'Payment requests', children: <PaymentRequestList projectId={projectId} vendorId={vendorId} /> },
             {
               key: 'vendors',
               label: 'By vendor',
@@ -483,7 +534,7 @@ export default function PayablesPage() {
                     loading={isLoading}
                     failed={failed}
                     bulk={[exportSelected<Keyed<VendorPayableDto>, VendorPayableDto>('payables-by-vendor', 'Payables by vendor', PAYABLE_VENDOR_EXPORT)]}
-                    scrollX={1650}
+                    scrollX={1800}
                     emptyText="Nothing owed to any vendor"
                   />
                 </>
@@ -492,7 +543,7 @@ export default function PayablesPage() {
             {
               key: 'projects',
               label: 'By project',
-              children: <LocalDataTable<Keyed<ProjectPayableDto>> list="payables-projects" columns={projectColumns} rows={projects} loading={isLoading} failed={failed} scrollX={1550} emptyText="Nothing owed on any project" />,
+              children: <LocalDataTable<Keyed<ProjectPayableDto>> list="payables-projects" columns={projectColumns} rows={projects} loading={isLoading} failed={failed} scrollX={1700} emptyText="Nothing owed on any project" />,
             },
             { key: 'payments', label: 'Payments', children: <PaymentsTab projectId={projectId} vendorId={vendorId} onBill={setBill} /> },
           ]}
@@ -502,6 +553,8 @@ export default function PayablesPage() {
       <VendorBillDrawer id={bill?.billType === 'VENDOR_BILL' ? bill.billId : null} open={bill?.billType === 'VENDOR_BILL'} onClose={() => setBill(null)} />
       <SubBillDrawer id={bill?.billType === 'SUBCONTRACT_BILL' ? bill.billId : null} open={bill?.billType === 'SUBCONTRACT_BILL'} onClose={() => setBill(null)} />
       <PaymentFormModal open={!!paying} bill={paying} onClose={() => setPaying(null)} />
+      <PaymentRequestFormModal open={!!asking} target={asking} onClose={() => setAsking(null)} />
+      <PaymentRequestDrawer id={request} open={!!request} onClose={() => setRequest(null)} />
     </div>
   );
 }

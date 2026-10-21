@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-10-payment-requests',
+    date: '2026-10-27',
+    title: 'Payment requests and advances',
+    points: [
+      'Ask for a bill to be paid, or an advance released on a purchase order or work order, with Request payment on the bill or order. The request goes to approval like any other entry, with rupee limits in Approval rules.',
+      'Accounts pays against the approved request from Payables, which has a Payment requests tab, and is told as soon as one is approved. An admin can make every payment need an approved request.',
+      "A vendor bill takes the advance paid on its PO off what is payable, and a subcontractor bill recovers what was actually paid on the work order. Payables shows each vendor's advance not yet adjusted.",
+      'Advances go to Tally as payment vouchers against the party, and approvers can decide requests from the phone.',
+    ],
+  },
+  {
     id: '2026-10-rfi-register',
     date: '2026-10-26',
     title: 'RFI register',

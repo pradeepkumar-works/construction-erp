@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, App, Button, Card, Checkbox, InputNumber, Popconfirm, Skeleton, Space, Table, Tag, Typography } from 'antd';
+import { Alert, App, Button, Card, Checkbox, Flex, InputNumber, Popconfirm, Skeleton, Space, Switch, Table, Tag, Typography } from 'antd';
 import type { TableProps } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ApprovalMatrixDto, ApprovalRuleDto, RoleKey, SubmissionType } from '@erp/shared';
@@ -53,6 +53,17 @@ export default function ApprovalRulesPage() {
       qc.setQueryData(['approval-rules'], m);
       void qc.invalidateQueries({ queryKey: ['approvals'] });
       message.success(m.custom ? 'Approval rules saved' : 'Back to the standard rule');
+    },
+    meta: FAIL_NOTICE,
+  });
+
+  // Payments only against an approved payment request (v5 item 90): a company switch beside the matrix.
+  const payRule = useMutation({
+    mutationFn: async (paymentsNeedRequest: boolean) => (await api.put<ApprovalMatrixDto>('/approval-rules', { paymentsNeedRequest })).data,
+    onSuccess: (m) => {
+      qc.setQueryData(['approval-rules'], (old: ApprovalMatrixDto | undefined) => (old ? { ...old, paymentsNeedRequest: m.paymentsNeedRequest } : m));
+      void qc.invalidateQueries({ queryKey: ['payables'] });
+      message.success(m.paymentsNeedRequest ? 'Payments now need an approved payment request' : 'Accounts can pay approved bills directly');
     },
     meta: FAIL_NOTICE,
   });
@@ -183,6 +194,21 @@ export default function ApprovalRulesPage() {
           />
         ) : null}
       </Card>
+      {data ? (
+        <Card size="small" style={{ marginTop: 16 }}>
+          <Flex gap={12} align="flex-start">
+            <Switch checked={data.paymentsNeedRequest} loading={payRule.isPending} onChange={(v) => payRule.mutate(v)} aria-labelledby="pay-request-rule" aria-describedby="pay-request-rule-note" />
+            <div>
+              <Typography.Text strong id="pay-request-rule">
+                Payments need an approved payment request
+              </Typography.Text>
+              <Typography.Paragraph type="secondary" id="pay-request-rule-note" style={{ margin: 0 }}>
+                Accounts pays a bill only against a payment request approved under the {SUBMISSION_TYPE_LABELS.PAYMENT_REQUEST} column above. Off, accounts can also pay any approved bill directly. Advances always need a request.
+              </Typography.Paragraph>
+            </div>
+          </Flex>
+        </Card>
+      ) : null}
     </div>
   );
 }

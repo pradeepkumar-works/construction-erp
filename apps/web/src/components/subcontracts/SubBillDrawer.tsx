@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Alert, App, Button, Divider, Table, Tag, Typography } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { SubcontractBillDto, SubcontractBillLineDto } from '@erp/shared';
-import { MSME_CATEGORY_LABELS, canEditSubmission, canPrepareSubcontractBill, canResubmit, canViewPayables } from '@erp/shared';
+import { MSME_CATEGORY_LABELS, canEditSubmission, canPrepareSubcontractBill, canResubmit, canViewPaymentRequests, canViewPayables } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
@@ -18,6 +18,7 @@ import { EditResubmitButton } from '@/components/common/EditResubmitButton';
 import { submissionMetaItems } from '@/components/common/SubmitterInfo';
 import { overdueDays } from '@/components/purchasing/VendorBillDrawer';
 import { BillPayments, PaidTag } from '@/components/payables/BillPayments';
+import { TargetRequests } from '@/components/payables/TargetRequests';
 import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
 import { checksSection } from '@/components/checks/ChecksSection';
 import { submissionLifecycle } from '@/components/record/lifecycle';
@@ -70,6 +71,7 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
   const excess = data?.lines.filter((l) => toNumber(l.excessQty) > 0) ?? [];
 
   const payments = data?.status === 'APPROVED' && !!user && canViewPayables(user.roleKey);
+  const requests = data?.status === 'APPROVED' && !!user && canViewPaymentRequests(user.roleKey);
 
   return (
     <RecordFrame
@@ -276,6 +278,7 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
                   },
                 ]
               : []),
+            ...(requests ? [{ key: 'requests', title: 'Payment requests', children: <TargetRequests approved target={{ kind: 'BILL', subcontractBillId: data.id, label: data.label, vendorName: data.vendorName }} base={data.outstanding} /> }] : []),
             {
               key: 'measurements',
               title: 'Measurements',

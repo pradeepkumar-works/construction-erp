@@ -170,6 +170,7 @@ const DETAIL_API: Record<SubmissionType, string> = {
   WORK_ORDER: 'work-orders',
   SUBCONTRACT_BILL: 'subcontract-bills',
   INSPECTION: 'inspections',
+  PAYMENT_REQUEST: 'payment-requests',
 };
 
 /** Approve / request changes / reject with an optional note. Rendered only for approvers on SUBMITTED entries. */

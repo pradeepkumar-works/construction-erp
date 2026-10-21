@@ -26,6 +26,24 @@ export const COMMERCIAL: Record<string, string> = {
   '{qty} received': '{qty} प्राप्त',
   '{from} to {to}': '{from} से {to} तक',
 
+  // Payment requests (v5 item 90)
+  'Payment request': 'भुगतान अनुरोध',
+  'Bill payment': 'बिल का भुगतान',
+  'Advance on a purchase order': 'परचेज़ ऑर्डर पर एडवांस',
+  'Advance on a work order': 'वर्क ऑर्डर पर एडवांस',
+  'to pay by {date}': '{date} तक भुगतान करना है',
+  'to pay': 'भुगतान करना है',
+  Bill: 'बिल',
+  Order: 'ऑर्डर',
+  'Bill payable': 'बिल की देय राशि',
+  'Order value': 'ऑर्डर की राशि',
+  'Bill due': 'बिल की देय तारीख',
+  'Most it may ask': 'अधिकतम माँगी जा सकने वाली राशि',
+  'Pay by': 'भुगतान का तरीका',
+  '{amount} on {date}': '{date} को {amount}',
+  'Open bill': 'बिल खोलें',
+  'Open order': 'ऑर्डर खोलें',
+
   // Bill deductions (labels from @erp/shared)
   'Security deposit': 'सिक्योरिटी डिपॉज़िट',
   'Mobilisation advance recovery': 'मोबिलाइज़ेशन एडवांस की वसूली',

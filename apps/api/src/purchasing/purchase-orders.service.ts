@@ -40,6 +40,10 @@ const include = {
     orderBy: [{ sortOrder: 'asc' as const }, { id: 'asc' as const }],
     include: { stockTxns: { select: { quantity: true } }, billLines: { where: { bill: { status: { not: 'REJECTED' as const } } }, select: { quantity: true } } },
   },
+  // Advances (v5 item 90): paid with no bill, asked for on open requests, taken off its bills.
+  advances: { where: { vendorBillId: null }, select: { amount: true, tdsAmount: true, otherDeduction: true } },
+  paymentRequests: { where: { kind: 'PO_ADVANCE' as const, status: { in: ['SUBMITTED' as const, 'APPROVED' as const] } }, select: { amount: true } },
+  vendorBills: { where: { status: { not: 'REJECTED' as const } }, select: { advanceAdjusted: true, status: true } },
 } satisfies Prisma.PurchaseOrderInclude;
 type Row = Prisma.PurchaseOrderGetPayload<{ include: typeof include }>;
 
@@ -131,6 +135,9 @@ export class PurchaseOrdersService {
       open: r.status === 'APPROVED' && !r.closedAt && pending,
       receivedPct: ordered.isZero() ? 0 : Math.min(100, Math.round(received.div(ordered).mul(100).toNumber())),
       lines,
+      advancePaid: money(sum(r.advances, (p) => p.amount.add(p.tdsAmount).add(p.otherDeduction)))!,
+      advanceRequested: money(sum(r.paymentRequests, (p) => p.amount))!,
+      advanceAdjusted: money(sum(r.vendorBills.filter((b) => b.status !== 'REJECTED'), (b) => b.advanceAdjusted))!,
       status: r.status,
       submittedById: r.submittedById,
       submittedByName: r.submittedBy.fullName,
@@ -192,7 +199,7 @@ export class PurchaseOrdersService {
       include: {
         ...include,
         stockEntries: { orderBy: { date: 'asc' }, select: { id: true, entryNo: true, date: true, _count: { select: { lines: true } } } },
-        vendorBills: { orderBy: { invoiceDate: 'asc' }, select: { id: true, billNo: true, invoiceNo: true, invoiceDate: true, total: true, status: true, matched: true } },
+        vendorBills: { orderBy: { invoiceDate: 'asc' }, select: { id: true, billNo: true, invoiceNo: true, invoiceDate: true, total: true, status: true, matched: true, advanceAdjusted: true } },
       },
     });
     if (!row) throw new NotFoundException('Purchase order not found');

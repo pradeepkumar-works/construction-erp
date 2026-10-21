@@ -4,18 +4,21 @@ import React, { useEffect, useMemo } from 'react';
 import { Alert, App, DatePicker, Form, Input, Select, Tag, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { PayableBillDto, PayableBillType, PaymentMode, VendorPaymentDto } from '@erp/shared';
+import type { PayableBillDto, PayableBillType, PaymentMode, PaymentRequestDto, VendorPaymentDto } from '@erp/shared';
 import { MSME_CATEGORY_LABELS, RECEIPT_MODES, RECEIPT_MODE_LABELS } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
-import { usePayables } from '@/lib/queries';
+import { usePayables, usePaymentRequests } from '@/lib/queries';
 import { formatDate, formatINR, toNumber } from '@/lib/format';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
 
-/** The bill a payment is for, when the modal is opened from the bill itself. */
+/**
+ * The bill a payment is for, when the modal is opened from the bill itself, or the approved payment request it draws on
+ * (`paymentRequestId`; an advance on an order has no bill, so its `billType` is null).
+ */
 export interface PayTarget {
-  billType: PayableBillType;
+  billType: PayableBillType | null;
   billId: string;
   billLabel: string;
   vendorName: string;
@@ -23,6 +26,23 @@ export interface PayTarget {
   dueDate: string;
   payable: string;
   outstanding: string;
+  paymentRequestId?: string;
+}
+
+/** Paying an approved request: what is left on it, capped at what the bill still has outstanding. */
+export function requestPayTarget(r: PaymentRequestDto, billOutstanding?: string): PayTarget {
+  const left = billOutstanding === undefined ? toNumber(r.outstanding) : Math.min(toNumber(r.outstanding), toNumber(billOutstanding));
+  return {
+    billType: r.vendorBillId ? 'VENDOR_BILL' : r.subcontractBillId ? 'SUBCONTRACT_BILL' : null,
+    billId: r.vendorBillId ?? r.subcontractBillId ?? r.purchaseOrderId ?? r.workOrderId ?? r.id,
+    billLabel: `${r.requestNo} · ${r.targetLabel}`,
+    vendorName: r.vendorName,
+    billDate: r.reviewedAt?.slice(0, 10) ?? r.createdAt.slice(0, 10),
+    dueDate: r.neededBy ?? r.dueDate ?? r.createdAt.slice(0, 10),
+    payable: r.amount,
+    outstanding: String(left),
+    paymentRequestId: r.id,
+  };
 }
 
 interface FormValues {
@@ -37,26 +57,32 @@ interface FormValues {
   remarks?: string;
 }
 
-const keyOf = (b: { billType: PayableBillType; billId: string }) => `${b.billType}:${b.billId}`;
+const keyOf = (b: { billType: PayableBillType | null; billId: string; paymentRequestId?: string }) => (b.paymentRequestId ? `REQUEST:${b.paymentRequestId}` : `${b.billType}:${b.billId}`);
 
 /** Every query a payment changes: the due list, the bills, the cost view and the dashboard. */
-export const PAYMENT_QUERY_KEYS = ['vendor-payments', 'payables', 'vendor-bills', 'subcontract-bills', 'purchase-orders', 'work-orders', 'cost', 'dashboard'];
+export const PAYMENT_QUERY_KEYS = ['vendor-payments', 'payables', 'payment-requests', 'vendor-bills', 'subcontract-bills', 'purchase-orders', 'work-orders', 'cost', 'dashboard'];
 
 /**
- * Pay a vendor or subcontractor against an approved bill (from the due list, or the bill given in `bill`), or correct a
- * payment (`payment`). TDS at payment is for vendor bills only: a subcontractor bill already deducts its TDS.
+ * Pay a vendor or subcontractor against an approved bill (from the due list, or the bill given in `bill`), or against an
+ * approved payment request (v5 item 90: a bill or an advance on an order), or correct a payment (`payment`). TDS at payment
+ * is for vendor bills and advances only: a subcontractor bill already deducts its TDS.
  */
 export function PaymentFormModal({ open, onClose, bill, payment }: { open: boolean; onClose: () => void; bill?: PayTarget | null; payment?: VendorPaymentDto | null }) {
   const [form] = Form.useForm<FormValues>();
   const { message } = App.useApp();
   const qc = useQueryClient();
   const editing = !!payment;
-  const { data: payables } = usePayables({}, open && !bill && !editing);
-  const openBills: PayableBillDto[] = useMemo(() => payables?.openBills ?? [], [payables]);
+  const choosing = open && !bill && !editing;
+  const { data: payables } = usePayables({}, choosing);
+  const { data: toPay } = usePaymentRequests({ toPay: true, pageSize: 100, sortBy: 'neededBy', sortOrder: 'asc' }, choosing);
+  // With requests required, only approved requests can be paid; otherwise any open bill too.
+  const openBills: PayableBillDto[] = useMemo(() => (payables?.paymentsNeedRequest ? [] : (payables?.openBills ?? [])), [payables]);
+  const requests: PayTarget[] = useMemo(() => (toPay?.items ?? []).map((r) => requestPayTarget(r)), [toPay]);
   const billKey = Form.useWatch('billKey', form) as string | undefined;
-  const chosen = openBills.find((b) => keyOf(b) === billKey);
+  const chosenBill = openBills.find((b) => keyOf(b) === billKey);
+  const chosen: PayTarget | undefined = chosenBill ?? requests.find((r) => keyOf(r) === billKey);
   const target: PayTarget | undefined = bill ?? chosen;
-  const billType: PayableBillType | undefined = payment?.billType ?? target?.billType;
+  const billType: PayableBillType | null | undefined = payment ? payment.billType : target?.billType;
   const values = Form.useWatch([], form) as FormValues | undefined;
   const settles = toNumber(values?.amount ?? 0) + toNumber(values?.tdsAmount ?? 0) + toNumber(values?.otherDeduction ?? 0);
 
@@ -90,14 +116,15 @@ export function PaymentFormModal({ open, onClose, bill, payment }: { open: boole
         amount: String(v.amount ?? 0),
         mode: v.mode,
         reference: v.reference?.trim() || null,
-        tdsAmount: String(billType === 'VENDOR_BILL' ? (v.tdsAmount ?? 0) : 0),
+        tdsAmount: String(billType !== 'SUBCONTRACT_BILL' ? (v.tdsAmount ?? 0) : 0),
         otherDeduction: String(v.otherDeduction ?? 0),
         otherDeductionNote: v.otherDeductionNote?.trim() || null,
         remarks: v.remarks?.trim() || null,
       };
       if (payment) return (await api.patch<VendorPaymentDto>(`/vendor-payments/${payment.id}`, body)).data;
       const t = target!;
-      return (await api.post<VendorPaymentDto>('/vendor-payments', { ...body, id: crypto.randomUUID(), ...(t.billType === 'VENDOR_BILL' ? { vendorBillId: t.billId } : { subcontractBillId: t.billId }) })).data;
+      const on = t.paymentRequestId ? { paymentRequestId: t.paymentRequestId } : t.billType === 'VENDOR_BILL' ? { vendorBillId: t.billId } : { subcontractBillId: t.billId };
+      return (await api.post<VendorPaymentDto>('/vendor-payments', { ...body, id: crypto.randomUUID(), ...on })).data;
     },
     onSuccess: (p) => {
       message.success(`${formatINR(p.amount, true)} ${editing ? 'updated' : 'paid'} against ${p.billLabel}`);
@@ -120,21 +147,32 @@ export function PaymentFormModal({ open, onClose, bill, payment }: { open: boole
     >
       <Form form={form} layout="vertical">
         {!bill && !editing && (
-          <Form.Item name="billKey" label="Bill" rules={[{ required: true, message: 'Choose the bill' }]}>
+          <Form.Item name="billKey" label={requests.length > 0 ? 'Bill or payment request' : 'Bill'} rules={[{ required: true, message: 'Choose what to pay' }]}>
             <Select
               showSearch={{ optionFilterProp: 'label' }}
-              placeholder="Approved bills with something to pay"
-              options={openBills.map((b) => ({ value: keyOf(b), label: `${b.billLabel} · ${b.vendorName} · ${formatINR(b.outstanding)} due ${formatDate(b.dueDate)}` }))}
+              placeholder={payables?.paymentsNeedRequest ? 'Approved payment requests with something to pay' : 'Approved bills and payment requests with something to pay'}
+              options={[
+                ...(requests.length > 0 ? [{ label: 'Approved payment requests', options: requests.map((r) => ({ value: keyOf(r), label: `${r.billLabel} · ${r.vendorName} · ${formatINR(r.outstanding)}` })) }] : []),
+                ...(openBills.length > 0 ? [{ label: 'Approved bills', options: openBills.map((b) => ({ value: keyOf(b), label: `${b.billLabel} · ${b.vendorName} · ${formatINR(b.outstanding)} due ${formatDate(b.dueDate)}` })) }] : []),
+              ]}
               notFoundContent="Nothing is waiting to be paid"
             />
           </Form.Item>
         )}
         {target && !editing && (
           <Typography.Paragraph type="secondary">
-            {target.billLabel} of {formatDate(target.billDate)}, due {formatDate(target.dueDate)}: payable {formatINR(target.payable, true)}, outstanding <strong>{formatINR(target.outstanding, true)}</strong>.
-            {chosen?.vendorMsme && (chosen.vendorMsme === 'MICRO' || chosen.vendorMsme === 'SMALL') ? (
+            {target.paymentRequestId ? (
+              <>
+                {target.billLabel}: approved {formatINR(target.payable, true)}, left to pay <strong>{formatINR(target.outstanding, true)}</strong>.
+              </>
+            ) : (
+              <>
+                {target.billLabel} of {formatDate(target.billDate)}, due {formatDate(target.dueDate)}: payable {formatINR(target.payable, true)}, outstanding <strong>{formatINR(target.outstanding, true)}</strong>.
+              </>
+            )}
+            {chosenBill?.vendorMsme && (chosenBill.vendorMsme === 'MICRO' || chosenBill.vendorMsme === 'SMALL') ? (
               <Tag color="orange" style={{ marginLeft: 8 }}>
-                {MSME_CATEGORY_LABELS[chosen.vendorMsme]}: 45 days at most
+                {MSME_CATEGORY_LABELS[chosenBill.vendorMsme]}: 45 days at most
               </Tag>
             ) : null}
           </Typography.Paragraph>
@@ -168,9 +206,9 @@ export function PaymentFormModal({ open, onClose, bill, payment }: { open: boole
         </FormGrid>
         {billType === 'SUBCONTRACT_BILL' && <Typography.Paragraph type="secondary">Their TDS, retention and recoveries are already deducted in the bill&apos;s net payable.</Typography.Paragraph>}
         <Typography.Paragraph>
-          This settles <strong>{formatINR(settles, true)}</strong> of the bill (paid plus deducted).
+          This settles <strong>{formatINR(settles, true)}</strong> of the {billType === null ? 'advance' : 'bill'} (paid plus deducted).
         </Typography.Paragraph>
-        {over > 1 && <Alert type="warning" showIcon style={{ marginBottom: 12 }} title={`That is ${formatINR(over, true)} more than the bill has outstanding.`} />}
+        {over > 1 && <Alert type="warning" showIcon style={{ marginBottom: 12 }} title={`That is ${formatINR(over, true)} more than ${target?.paymentRequestId ? 'the request has left to pay' : 'the bill has outstanding'}.`} />}
         <Form.Item name="remarks" label="Remarks">
           <Input.TextArea rows={2} maxLength={1000} />
         </Form.Item>
