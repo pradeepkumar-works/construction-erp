@@ -2,10 +2,10 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Button, Checkbox, Space, Tag, theme } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
-import type { VendorBillDto, VendorBillSortField } from '@erp/shared';
-import { LIST_SORT_FIELDS, canRecordVendorBill } from '@erp/shared';
+import { Button, Checkbox, Dropdown, Select, Space, Tag, theme } from 'antd';
+import { DownOutlined, PlusOutlined } from '@ant-design/icons';
+import type { VendorBillDto, VendorBillKind, VendorBillSortField } from '@erp/shared';
+import { LIST_SORT_FIELDS, VENDOR_BILL_KINDS, VENDOR_BILL_KIND_LABELS, canRecordVendorBill } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useVendorBills, LIST_START } from '@/lib/queries';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
@@ -24,10 +24,18 @@ import { RecordLink } from '@/components/record/RecordLink';
 import { exportSelected, useBulkApprove } from '@/components/list/bulk';
 import { useListFrame } from '@/components/list/useListFrame';
 import { MatchTag, VendorBillDrawer, overdueDays } from './VendorBillDrawer';
-import { VendorBillFormModal } from './VendorBillFormModal';
+import { VendorBillForm } from './VendorBillFormModal';
 import { VendorSelect, useVendorName } from '@/components/common/SearchSelect';
 
-const KEYS = ['status', 'mine', 'from', 'to', 'vendorId', 'exceptions'] as const;
+const KEYS = ['status', 'mine', 'from', 'to', 'vendorId', 'exceptions', 'kind'] as const;
+
+/** What each kind of bill is recorded against, in the Record menu (v5 item 91). */
+const KIND_HINTS: Record<VendorBillKind, string> = {
+  PO: 'Matched against the order and its GRNs',
+  HIRE: "A hired machine's month, from its approved logs",
+  SERVICE: 'Closed job cards of a workshop',
+  OTHER: 'Transport, testing, consultancy and the like',
+};
 
 function Sub({ children }: { children: React.ReactNode }) {
   const { token } = theme.useToken();
@@ -55,7 +63,25 @@ function vendorBillColumns({ showProject, onOpen, onEdit, sortOrderFor }: { show
     },
     { defaultFrom: 1400, card: 'date', title: 'Invoice date', dataIndex: 'invoiceDate', width: 120, ...sort('invoiceDate'), render: (v) => formatDate(v) },
     { card: 'meta', title: 'Vendor', dataIndex: 'vendorName', ...sort('vendor') },
-    { defaultFrom: 1600, key: 'poNo', title: 'PO', dataIndex: 'poNo', width: 130, render: (v, r) => <Link href={`/purchase-orders/${r.purchaseOrderId}`} className="mono">{v}</Link> },
+    {
+      defaultFrom: 1600,
+      key: 'poNo',
+      title: 'Against',
+      label: 'PO or kind',
+      dataIndex: 'poNo',
+      width: 150,
+      render: (v: string | null, r) =>
+        r.purchaseOrderId ? (
+          <Link href={`/purchase-orders/${r.purchaseOrderId}`} className="mono">
+            {v}
+          </Link>
+        ) : (
+          <div>
+            {VENDOR_BILL_KIND_LABELS[r.kind]}
+            {r.equipmentCode ? <Sub>{r.equipmentCode}</Sub> : null}
+          </div>
+        ),
+    },
     ...(showProject ? [{ card: 'meta' as const, cardText: (r: VendorBillDto) => r.projectName, title: 'Project', dataIndex: 'projectName', ...sort('project'), ellipsis: true, render: (v: string, r: VendorBillDto) => <Link href={`/projects/${r.projectId}`}>{v}</Link> }] : []),
     {
       card: 'amount',
@@ -74,7 +100,7 @@ function vendorBillColumns({ showProject, onOpen, onEdit, sortOrderFor }: { show
       ...sort('dueDate'),
       render: (v, r) => (overdueDays(r) ? <Tag color="red">{formatDate(v)}</Tag> : formatDate(v)),
     },
-    { defaultFrom: 1400, key: 'matched', title: 'Match', label: 'Match with the PO', dataIndex: 'matched', width: 120, render: (v, r) => <span title={r.exceptions.join('\n')}><MatchTag matched={v} /></span> },
+    { defaultFrom: 1400, key: 'matched', title: 'Match', label: 'Match with the PO', dataIndex: 'matched', width: 120, render: (v, r) => <span title={r.exceptions.join('\n')}><MatchTag matched={v} po={!!r.purchaseOrderId} /></span> },
     { key: 'submittedByName', title: 'Recorded by', dataIndex: 'submittedByName', width: 140, defaultHidden: true },
     {
       card: 'status',
@@ -98,7 +124,7 @@ function vendorBillColumns({ showProject, onOpen, onEdit, sortOrderFor }: { show
 export function VendorBillList({ projectId: fixedProject, openId: initialOpen }: { projectId?: string; openId?: string | null }) {
   const { user } = useAuth();
   const [openId, setOpenId] = useState<string | null>(initialOpen ?? null);
-  const [formOpen, setFormOpen] = useState(false);
+  const [creating, setCreating] = useState<VendorBillKind | null>(null);
   const [editing, setEditing] = useState<VendorBillDto | null>(null);
   useEffect(() => {
     if (initialOpen) setOpenId(initialOpen);
@@ -113,16 +139,17 @@ export function VendorBillList({ projectId: fixedProject, openId: initialOpen }:
     sortFields: LIST_SORT_FIELDS.vendorBills,
     fixedProject,
     columns: (sortOrderFor) => vendorBillColumns({ showProject: !fixedProject, onOpen: setOpenId, onEdit: setEditing, sortOrderFor }),
-    moreViews: [{ key: 'exceptions', label: 'Not matching the PO', filters: { exceptions: '1' } }],
+    moreViews: [{ key: 'exceptions', label: 'With exceptions', filters: { exceptions: '1' } }],
     chipLabels: {
       vendorId: () => `Vendor: ${vendorName ?? 'one vendor'}`,
-      exceptions: () => 'Not matching the PO',
+      exceptions: () => 'With exceptions',
+      kind: (v) => VENDOR_BILL_KIND_LABELS[v as VendorBillKind] ?? 'One kind',
     },
   });
   const { page } = frame;
   // Read by the chip's label once the list has drawn.
   const vendorName = useVendorName(page.filters.vendorId);
-  const filters = { ...page.params, projectId: frame.projectId, status: frame.status, vendorId: page.filters.vendorId, exceptions: page.filters.exceptions === '1' || undefined };
+  const filters = { ...page.params, projectId: frame.projectId, status: frame.status, vendorId: page.filters.vendorId, exceptions: page.filters.exceptions === '1' || undefined, kind: page.filters.kind as VendorBillKind | undefined };
   const { data, isLoading, isFetching, error, refetch } = useVendorBills(filters);
   const approve = useBulkApprove<VendorBillDto>('vendor_bill', (r) => r.total);
   const recorder = !!user && canRecordVendorBill(user.roleKey);
@@ -134,9 +161,25 @@ export function VendorBillList({ projectId: fixedProject, openId: initialOpen }:
   };
 
   const newButton = recorder ? (
-    <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
-      Record vendor bill
-    </Button>
+    <Dropdown
+      trigger={['click']}
+      menu={{
+        items: VENDOR_BILL_KINDS.map((k) => ({
+          key: k,
+          label: (
+            <div>
+              {VENDOR_BILL_KIND_LABELS[k]}
+              <Sub>{KIND_HINTS[k]}</Sub>
+            </div>
+          ),
+        })),
+        onClick: ({ key }) => setCreating(key as VendorBillKind),
+      }}
+    >
+      <Button type="primary" icon={<PlusOutlined />}>
+        Record vendor bill <DownOutlined />
+      </Button>
+    </Dropdown>
   ) : null;
 
   return (
@@ -161,9 +204,18 @@ export function VendorBillList({ projectId: fixedProject, openId: initialOpen }:
         }
       >
         <VendorSelect allowClear placeholder="Any vendor" aria-label="Vendor" style={{ width: 220 }} value={filters.vendorId} onChange={(v) => page.setFilter('vendorId', v)} />
+        <Select
+          allowClear
+          placeholder="Any kind"
+          aria-label="Kind of bill"
+          style={{ width: 200 }}
+          value={filters.kind}
+          onChange={(v) => page.setFilter('kind', v)}
+          options={VENDOR_BILL_KINDS.map((k) => ({ value: k, label: VENDOR_BILL_KIND_LABELS[k] }))}
+        />
         <DateRangeFilter {...frame.dateRange} placeholder={['Invoices from', 'To']} />
         <Checkbox checked={!!filters.exceptions} onChange={(e) => page.setFilter('exceptions', e.target.checked ? '1' : undefined)}>
-          Not matching the PO
+          With exceptions
         </Checkbox>
       </ListToolbar>
       <DataTable<VendorBillDto>
@@ -184,11 +236,13 @@ export function VendorBillList({ projectId: fixedProject, openId: initialOpen }:
         emptyAction={newButton}
       />
       <VendorBillDrawer id={openId} open={!!openId} onClose={() => setOpenId(null)} onEdit={setEditing} />
-      <VendorBillFormModal
-        open={formOpen || !!editing}
+      <VendorBillForm
+        open={!!creating || !!editing}
+        kind={creating ?? undefined}
         bill={editing}
+        start={{ projectId: fixedProject }}
         onClose={() => {
-          setFormOpen(false);
+          setCreating(null);
           setEditing(null);
         }}
         onSaved={(b) => setOpenId(b.id)}

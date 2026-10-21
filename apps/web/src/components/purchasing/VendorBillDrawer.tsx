@@ -5,8 +5,8 @@ import Link from 'next/link';
 import { App, Button, Divider, Table, Tag, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { VendorBillDto, VendorBillLineDto } from '@erp/shared';
-import { MSME_CATEGORY_LABELS, canEditSubmission, canRecordVendorBill, canResubmit, canViewPaymentRequests, canViewPayables } from '@erp/shared';
+import type { VendorBillDto, VendorBillLineDto, VendorBillSourceDto } from '@erp/shared';
+import { EXPENSE_CATEGORY_LABELS, MSME_CATEGORY_LABELS, VENDOR_BILL_KIND_LABELS, canEditSubmission, canRecordVendorBill, canResubmit, canViewPaymentRequests, canViewPayables } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
@@ -19,6 +19,7 @@ import { EditResubmitButton } from '@/components/common/EditResubmitButton';
 import { submissionMetaItems } from '@/components/common/SubmitterInfo';
 import { BillPayments, PaidTag } from '@/components/payables/BillPayments';
 import { TargetRequests } from '@/components/payables/TargetRequests';
+import { BillDebitNotes, showsDebitNotes } from '@/components/payables/BillDebitNotes';
 import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
 import { checksSection } from '@/components/checks/ChecksSection';
 import { submissionLifecycle } from '@/components/record/lifecycle';
@@ -28,7 +29,17 @@ import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 const money = (v: string | number) => <span className="mono" translate="no">{formatINR(v, true)}</span>;
 
-export const MatchTag = ({ matched }: { matched: boolean }) => (matched ? <Tag color="green" style={{ margin: 0 }}>Matches PO</Tag> : <Tag color="red" style={{ margin: 0 }}>Exceptions</Tag>);
+/** Whether a bill matches its PO and GRNs, or (a bill without a PO) passed its own checks. */
+export const MatchTag = ({ matched, po = true }: { matched: boolean; po?: boolean }) =>
+  matched ? (
+    <Tag color="green" style={{ margin: 0 }}>
+      {po ? 'Matches PO' : 'Checked'}
+    </Tag>
+  ) : (
+    <Tag color="red" style={{ margin: 0 }}>
+      Exceptions
+    </Tag>
+  );
 
 /** Days past the due date of an approved bill not yet paid in full; null when it is not yet due or is settled. */
 export const overdueDays = (b: Pick<VendorBillDto, 'dueDate' | 'status' | 'paidDate'>) => {
@@ -43,7 +54,10 @@ interface RecordProps {
   onEdit?: (b: VendorBillDto) => void;
 }
 
-/** A vendor bill with its three-way match against the purchase order and the GRNs, in a drawer or at `/vendor-bills/<id>`. */
+/**
+ * A vendor bill, in a drawer or at `/vendor-bills/<id>`: against a PO with its three-way match against the order and the
+ * GRNs, or (v5 item 91) a hire bill with the machine's logs, a workshop bill with its job cards, or another service bill.
+ */
 export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProps & { mode: RecordMode }) {
   const { user } = useAuth();
   const { message } = App.useApp();
@@ -76,6 +90,10 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
   const payments = data?.status === 'APPROVED' && !!user && canViewPayables(user.roleKey);
   const requests = data?.status === 'APPROVED' && !!user && canViewPaymentRequests(user.roleKey);
   const adjusted = data ? toNumber(data.advanceAdjusted) : 0;
+  const fuel = data ? toNumber(data.fuelRecovery) : 0;
+  const debited = data ? toNumber(data.debitNoteAmount) : 0;
+  const withPo = !!data?.purchaseOrderId;
+  const notes = !!data && showsDebitNotes(user?.roleKey, data.status);
 
   return (
     <RecordFrame
@@ -94,7 +112,7 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
           title: `${data.billNo} · ${data.vendorName}`,
           tags: (
             <>
-              <StatusTag status={data.status} /> <MatchTag matched={data.matched} /> <PaidTag bill={data} />
+              <StatusTag status={data.status} /> <MatchTag matched={data.matched} po={withPo} /> <PaidTag bill={data} />
             </>
           ),
           facts: [
@@ -110,10 +128,18 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
                 </span>
               ),
             },
-            { key: 'po', label: 'Purchase order', children: <Link href={`/purchase-orders/${data.purchaseOrderId}`}>{data.poNo}</Link> },
+            ...(withPo
+              ? [{ key: 'po', label: 'Purchase order', children: <Link href={`/purchase-orders/${data.purchaseOrderId}`}>{data.poNo}</Link> }]
+              : [
+                  { key: 'kind', label: 'Kind', children: VENDOR_BILL_KIND_LABELS[data.kind] },
+                  ...(data.equipmentCode
+                    ? [{ key: 'machine', label: 'Machine', children: `${data.equipmentCode} · ${data.equipmentName ?? ''}${data.hireMonth ? `, ${dayjs(data.hireMonth).format('MMMM YYYY')}` : ''}` }]
+                    : []),
+                  ...(data.expenseCategory ? [{ key: 'head', label: 'Cost head', children: EXPENSE_CATEGORY_LABELS[data.expenseCategory] }] : []),
+                ]),
             { key: 'invoice', label: 'Invoice', children: `${data.invoiceNo}, ${formatDate(data.invoiceDate)}` },
             { key: 'total', label: 'Invoice total', children: <strong>{money(data.total)}</strong> },
-            ...(adjusted > 0 || toNumber(data.poAdvancePaid) > 0
+            ...(withPo && (adjusted > 0 || toNumber(data.poAdvancePaid) > 0)
               ? [
                   {
                     key: 'advance',
@@ -135,6 +161,8 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
                 </span>
               ),
             },
+            ...(fuel > 0 ? [{ key: 'fuel', label: 'Diesel recovered', children: <span>{money(data.fuelRecovery)} <span className="text-muted">for {formatQty(data.fuelLitres)} L at {formatINR(data.fuelRate, true)}</span></span> }] : []),
+            ...(debited > 0 ? [{ key: 'debit', label: 'Debit notes', children: money(data.debitNoteAmount) }] : []),
             { key: 'project', label: 'Project', children: <Link href={`/projects/${data.projectId}`}>{data.projectName}</Link> },
             ...(data.remarks ? [{ key: 'remarks', label: 'Remarks', children: data.remarks }] : []),
             ...submissionMetaItems(data).filter((i) => i.key !== 'status' && i.key !== 'project'),
@@ -146,7 +174,7 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
             checksSection('vendor-bill', data.id, dataUpdatedAt),
             {
               key: 'items',
-              title: 'Items, matched against the PO and GRNs',
+              title: withPo ? 'Items, matched against the PO and GRNs' : 'Lines',
               count: data.lines.length,
               children: (
                 <>
@@ -155,8 +183,8 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
                     size="small"
                     pagination={false}
                     dataSource={data.lines}
-                    scroll={{ x: 950 }}
-                    columns={[
+                    scroll={{ x: withPo ? 950 : 700 }}
+                    columns={withPo ? [
                       { title: 'Item', dataIndex: 'itemName' },
                       {
                         title: 'Billed',
@@ -193,6 +221,13 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
                       },
                       { title: 'Amount', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <strong>{money(v)}</strong> },
                       { title: 'GST amount', dataIndex: 'gstAmount', width: 120, align: 'right', render: (v) => money(v) },
+                    ] : [
+                      { title: 'Line', dataIndex: 'itemName' },
+                      { title: 'Quantity', dataIndex: 'quantity', width: 130, align: 'right', render: (v, l) => <span className="mono" translate="no">{formatQty(v)} {l.unit}</span> },
+                      { title: 'Rate', dataIndex: 'rate', width: 130, align: 'right', render: (v) => money(v) },
+                      { title: 'GST', dataIndex: 'gstRate', width: 70, align: 'right', render: (v) => `${v}%` },
+                      { title: 'Amount', dataIndex: 'amount', width: 130, align: 'right', render: (v) => <strong>{money(v)}</strong> },
+                      { title: 'GST amount', dataIndex: 'gstAmount', width: 120, align: 'right', render: (v) => money(v) },
                     ]}
                   />
                   <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
@@ -212,12 +247,22 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
                         <span>Invoice total</span>
                         {money(data.total)}
                       </div>
-                      {adjusted > 0 && (
+                      {adjusted + fuel + debited > 0 && (
                         <>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
-                            <span>Less advance adjusted</span>
-                            {money(-adjusted)}
-                          </div>
+                          {(
+                            [
+                              ['Less advance adjusted', adjusted],
+                              ['Less diesel recovered', fuel],
+                              ['Less debit notes', debited],
+                            ] as const
+                          )
+                            .filter(([, v]) => v > 0)
+                            .map(([k, v]) => (
+                              <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
+                                <span>{k}</span>
+                                {money(-v)}
+                              </div>
+                            ))}
                           <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600 }}>
                             <span>Payable</span>
                             {money(data.payable)}
@@ -229,6 +274,27 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
                 </>
               ),
             },
+            ...(data.sources?.length
+              ? [
+                  {
+                    key: 'sources',
+                    title: data.kind === 'HIRE' ? 'Machine logs billed' : 'Job cards billed',
+                    count: data.sources.length,
+                    children: <BillSources kind={data.kind} rows={data.sources} />,
+                  },
+                ]
+              : []),
+            ...(notes
+              ? [
+                  {
+                    key: 'debit-notes',
+                    title: 'Debit notes',
+                    children: (
+                      <BillDebitNotes bill={{ billType: 'VENDOR_BILL', billId: data.id, label: `${data.billNo} · ${data.invoiceNo}`, vendorName: data.vendorName, billDate: data.invoiceDate, outstanding: data.outstanding }} />
+                    ),
+                  },
+                ]
+              : []),
             ...(payments
               ? [
                   {
@@ -284,6 +350,38 @@ export function VendorBillRecord({ id, mode, open, onClose, onEdit }: RecordProp
           ),
         }
       }
+    />
+  );
+}
+
+/** The machine logs a hire bill is made from, or the job cards a workshop bills (v5 item 91). */
+function BillSources({ kind, rows }: { kind: VendorBillDto['kind']; rows: VendorBillSourceDto[] }) {
+  const hire = kind === 'HIRE';
+  return (
+    <Table<VendorBillSourceDto>
+      rowKey="id"
+      size="small"
+      pagination={false}
+      dataSource={rows}
+      scroll={{ x: 560 }}
+      columns={[
+        {
+          title: hire ? 'Log of' : 'Job card',
+          dataIndex: 'label',
+          width: 140,
+          render: (v: string, r) =>
+            hire ? (
+              <Link href={`/machinery/${r.id}`}>{formatDate(v)}</Link>
+            ) : (
+              <Link href={`/machinery?tab=maintenance&id=${r.id}`} className="mono">
+                {v}
+              </Link>
+            ),
+        },
+        ...(hire ? [] : [{ title: 'Closed', dataIndex: 'date', width: 110, render: (v: string) => formatDate(v) }]),
+        { title: hire ? 'Hours' : 'Work', dataIndex: 'detail' },
+        ...(hire ? [] : [{ title: 'Labour and parts', dataIndex: 'amount', width: 150, align: 'right' as const, render: (v: string | null) => (v ? money(v) : '-') }]),
+      ]}
     />
   );
 }

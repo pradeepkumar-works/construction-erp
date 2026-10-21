@@ -14,12 +14,23 @@ import {
   IsString,
   IsUUID,
   Max,
+  Matches,
   MaxLength,
   Min,
   ValidateIf,
   ValidateNested,
 } from 'class-validator';
-import { LIST_SORT_FIELDS, SUBMISSION_STATUSES, type PurchaseOrderSortField, type SubmissionStatus, type VendorBillSortField } from '@erp/shared';
+import {
+  EXPENSE_CATEGORIES,
+  LIST_SORT_FIELDS,
+  SUBMISSION_STATUSES,
+  VENDOR_BILL_KINDS,
+  type ExpenseCategory,
+  type PurchaseOrderSortField,
+  type SubmissionStatus,
+  type VendorBillKind,
+  type VendorBillSortField,
+} from '@erp/shared';
 import { PageQuery, QueryBool } from '../common/paging';
 import { CLIENT_ID_DOC } from '../common/idempotency';
 
@@ -145,14 +156,35 @@ export class ProcurementStatusQuery {
 /* ---------- vendor bills ---------- */
 
 export class VendorBillLineInput {
-  @ApiProperty() @IsUUID() purchaseOrderLineId: string;
+  @ApiPropertyOptional({ description: 'PO bills: the PO line billed' }) @IsOptional() @IsUUID() purchaseOrderLineId?: string;
+  @ApiPropertyOptional({ example: 'Transport of shuttering, Cuttack to site', description: 'Bills without a PO: what the line is for' })
+  @IsOptional()
+  @trim()
+  @IsString()
+  @MaxLength(200)
+  description?: string;
+  @ApiPropertyOptional({ example: 'trip' }) @IsOptional() @trim() @IsString() @MaxLength(20) unit?: string;
   @ApiProperty({ example: '460' }) @num() @IsNumberString() quantity: string;
   @ApiProperty({ example: '385.00' }) @num() @IsNumberString() rate: string;
-  @ApiPropertyOptional({ example: '28', description: "The PO line's rate when left out" }) @IsOptional() @num() @IsNumberString() gstRate?: string;
+  @ApiPropertyOptional({ example: '28', description: "The PO line's rate when left out (0 on a line without a PO)" }) @IsOptional() @num() @IsNumberString() gstRate?: string;
 }
 
 class VendorBillFields {
   @ApiPropertyOptional({ example: '2500.00' }) @IsOptional() @num() @IsNumberString() freight?: string;
+  @ApiPropertyOptional({ example: '172', description: 'HIRE: hours, days or months the vendor bills (the approved logs when left out)' })
+  @IsOptional()
+  @num()
+  @IsNumberString()
+  hireQuantity?: string;
+  @ApiPropertyOptional({ example: '1800.00', description: "HIRE: the hire rate billed (the machine's rate when left out)" }) @IsOptional() @num() @IsNumberString() hireRate?: string;
+  @ApiPropertyOptional({ example: '18', description: 'HIRE: GST on the hire charge' }) @IsOptional() @num() @IsNumberString() hireGstRate?: string;
+  @ApiPropertyOptional({ example: '92.50', description: 'HIRE: rate a litre at which diesel we issued to an owner-fuelled machine is recovered' })
+  @IsOptional()
+  @num()
+  @IsNumberString()
+  fuelRate?: string;
+  @ApiPropertyOptional({ type: [String], description: 'SERVICE: the closed job cards billed' }) @IsOptional() @IsArray() @ArrayMaxSize(100) @IsUUID('all', { each: true }) jobIds?: string[];
+  @ApiPropertyOptional({ enum: EXPENSE_CATEGORIES, description: 'OTHER: the cost head' }) @IsOptional() @IsIn(EXPENSE_CATEGORIES as unknown as string[]) expenseCategory?: ExpenseCategory;
   @ApiPropertyOptional({ example: '50000.00', description: 'Advance paid on the PO taken off this bill (at most what is paid and not yet taken off its other bills)' })
   @IsOptional()
   @num()
@@ -165,10 +197,23 @@ class VendorBillFields {
 
 export class CreateVendorBillDto extends VendorBillFields {
   @ApiPropertyOptional(CLIENT_ID_DOC) @IsOptional() @IsUUID('4') id?: string;
-  @ApiProperty({ description: 'An approved purchase order' }) @IsUUID() purchaseOrderId: string;
+  @ApiPropertyOptional({ enum: VENDOR_BILL_KINDS, default: 'PO', description: 'PO, HIRE (a hired machine and month), SERVICE (closed job cards) or OTHER' })
+  @IsOptional()
+  @IsIn(VENDOR_BILL_KINDS as unknown as string[])
+  kind?: VendorBillKind;
+  @ApiPropertyOptional({ description: 'PO: an approved purchase order' }) @IsOptional() @IsUUID() purchaseOrderId?: string;
+  @ApiPropertyOptional({ description: 'HIRE, SERVICE and OTHER: the project' }) @IsOptional() @IsUUID() projectId?: string;
+  @ApiPropertyOptional({ description: "SERVICE and OTHER: the vendor (a hire bill's vendor is the machine's hire agency)" }) @IsOptional() @IsUUID() vendorId?: string;
+  @ApiPropertyOptional({ description: 'HIRE: the hired machine' }) @IsOptional() @IsUUID() equipmentId?: string;
+  @ApiPropertyOptional({ example: '2026-10', description: 'HIRE: the month billed' }) @IsOptional() @Matches(/^\d{4}-(0[1-9]|1[0-2])$/, { message: 'hireMonth is YYYY-MM' }) hireMonth?: string;
   @ApiProperty({ example: 'UCT/551' }) @trim() @IsString() @IsNotEmpty() @MaxLength(60) invoiceNo: string;
   @ApiProperty({ example: '2026-10-18' }) @IsDateString() invoiceDate: string;
-  @ApiProperty({ type: [VendorBillLineInput] }) @IsArray() @ArrayMinSize(1) @ArrayMaxSize(200) @ValidateNested({ each: true }) @Type(() => VendorBillLineInput) lines: VendorBillLineInput[];
+  @ApiProperty({ type: [VendorBillLineInput], description: 'A hire bill may leave it empty: its hire lines come from the logs' })
+  @IsArray()
+  @ArrayMaxSize(200)
+  @ValidateNested({ each: true })
+  @Type(() => VendorBillLineInput)
+  lines: VendorBillLineInput[];
 }
 
 export class UpdateVendorBillDto extends VendorBillFields {
@@ -177,7 +222,6 @@ export class UpdateVendorBillDto extends VendorBillFields {
   @ApiPropertyOptional({ type: [VendorBillLineInput], description: 'Replaces the lines' })
   @IsOptional()
   @IsArray()
-  @ArrayMinSize(1)
   @ArrayMaxSize(200)
   @ValidateNested({ each: true })
   @Type(() => VendorBillLineInput)
@@ -188,10 +232,24 @@ export class ListVendorBillsQuery extends PageQuery {
   @ApiPropertyOptional() @IsOptional() @IsUUID() projectId?: string;
   @ApiPropertyOptional() @IsOptional() @IsUUID() vendorId?: string;
   @ApiPropertyOptional() @IsOptional() @IsUUID() purchaseOrderId?: string;
+  @ApiPropertyOptional() @IsOptional() @IsUUID() equipmentId?: string;
+  @ApiPropertyOptional({ enum: VENDOR_BILL_KINDS }) @IsOptional() @IsIn(VENDOR_BILL_KINDS as unknown as string[]) kind?: VendorBillKind;
   @ApiPropertyOptional({ enum: SUBMISSION_STATUSES }) @IsOptional() @IsIn(SUBMISSION_STATUSES as unknown as string[]) status?: SubmissionStatus;
   @ApiPropertyOptional({ description: 'Only bills that do not match their PO' }) @IsOptional() @QueryBool() @IsBoolean() exceptions?: boolean;
   @ApiPropertyOptional({ enum: LIST_SORT_FIELDS.vendorBills, default: 'invoiceDate' }) @IsOptional() @IsIn(LIST_SORT_FIELDS.vendorBills as unknown as string[]) sortBy?: VendorBillSortField;
   @ApiPropertyOptional({ example: '2026-10-01', description: 'Invoices dated from this day (inclusive)' }) @IsOptional() @IsDateString() from?: string;
   @ApiPropertyOptional({ example: '2026-10-31', description: 'Invoices dated up to this day (inclusive)' }) @IsOptional() @IsDateString() to?: string;
   @ApiPropertyOptional({ description: 'Only entries the current user submitted' }) @IsOptional() @QueryBool() @IsBoolean() mine?: boolean;
+}
+
+export class HirePreviewQuery {
+  @ApiProperty() @IsUUID() equipmentId: string;
+  @ApiProperty() @IsUUID() projectId: string;
+  @ApiProperty({ example: '2026-10' }) @Matches(/^\d{4}-(0[1-9]|1[0-2])$/, { message: 'month is YYYY-MM' }) month: string;
+  @ApiPropertyOptional({ description: 'The bill being edited, whose own logs count as free' }) @IsOptional() @IsUUID() billId?: string;
+}
+
+export class BillableJobsQuery {
+  @ApiProperty() @IsUUID() projectId: string;
+  @ApiPropertyOptional({ description: 'The bill being edited, whose own job cards count as free' }) @IsOptional() @IsUUID() billId?: string;
 }

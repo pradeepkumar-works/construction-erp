@@ -78,6 +78,16 @@ export const COMMERCIAL: Record<string, string> = {
   'Invoice {invoice} of {date} · {po}': 'इनवॉइस {invoice}, तारीख {date} · {po}',
   'Matches the PO and what was received': 'PO और प्राप्त माल से मेल खाता है',
   'Does not match': 'मेल नहीं खाता',
+  'No exceptions': 'कोई अपवाद नहीं',
+  'Has exceptions': 'अपवाद हैं',
+  'Diesel recovered': 'डीज़ल वसूली',
+  '{amount} for {litres} L': '{litres} लीटर के {amount}',
+  'Debit notes': 'डेबिट नोट',
+  Payable: 'देय',
+  'Against a purchase order': 'खरीद ऑर्डर के सामने',
+  'Machine hire': 'मशीन किराया',
+  'Workshop service': 'वर्कशॉप सेवा',
+  'Other service': 'अन्य सेवा',
 
   // Work order
   '{pct}% billed': '{pct}% बिल हुआ',

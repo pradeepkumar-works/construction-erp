@@ -8,7 +8,9 @@ import {
   ClosePurchaseOrderDto,
   CreatePurchaseOrderDto,
   CreateQuotationDto,
+  BillableJobsQuery,
   CreateVendorBillDto,
+  HirePreviewQuery,
   ListPurchaseOrdersQuery,
   ListVendorBillsQuery,
   ProcurementStatusQuery,
@@ -125,15 +127,30 @@ export class PurchasingController {
     return this.bills.list(user, q);
   }
 
+  @ApiOperation({
+    summary: 'What a hire bill for a hired machine, project and month would bill (v5 item 91)',
+    description: 'Approved logs of the month not on another bill, hours or days by the rate unit, the minimum-hours top-up, diesel to recover when the owner fuels it, and any bill already made.',
+  })
+  @Get('vendor-bills/hire-preview')
+  hirePreview(@CurrentUser() user: RequestUser, @Query() q: HirePreviewQuery) {
+    return this.bills.hirePreview(user, q);
+  }
+
+  @ApiOperation({ summary: 'Closed job cards on the project (or in the yard) a workshop can bill (v5 item 91)' })
+  @Get('vendor-bills/billable-jobs')
+  billableJobs(@CurrentUser() user: RequestUser, @Query() q: BillableJobsQuery) {
+    return this.bills.billableJobs(user, q);
+  }
+
   @Get('vendor-bills/:id')
   getBill(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string) {
     return this.bills.get(user, id);
   }
 
   @ApiOperation({
-    summary: 'Record a vendor invoice against a purchase order',
+    summary: 'Record a vendor invoice: against a purchase order, a hired machine\'s month, closed job cards, or other services',
     description:
-      'Numbered VB-<year>-0001. Matched against the PO and its GRNs: quantity over what is received and not on other bills, rate above the PO, a different GST rate or freight over the PO are recorded as exceptions for the approver. Due date = invoice date + the PO payment days (45 at most for micro and small enterprises).',
+      'Numbered VB-<year>-0001. A PO bill is matched against the PO and its GRNs: quantity over what is received and not on other bills, rate above the PO, a different GST rate or freight over the PO are recorded as exceptions for the approver. Due date = invoice date + the PO payment days (45 at most for micro and small enterprises). A HIRE bill takes its hire lines from the approved logs of the month (one bill per machine, project and month), a SERVICE bill links closed job cards, an OTHER bill names its cost head (v5 item 91); these are due 30 days from the invoice.',
   })
   @Post('vendor-bills')
   createBill(@CurrentUser() user: RequestUser, @Body() dto: CreateVendorBillDto) {

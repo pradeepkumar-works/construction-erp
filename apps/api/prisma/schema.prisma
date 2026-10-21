@@ -416,6 +416,7 @@ model Organization {
   quotations           Quotation[]
   purchaseOrders       PurchaseOrder[]
   vendorBills          VendorBill[]
+  debitNotes           DebitNote[]
   workOrders           WorkOrder[]
   subcontractBills     SubcontractBill[]
   raBills              RaBill[]
@@ -560,6 +561,8 @@ model User {
   submittedPos         PurchaseOrder[]       @relation("PoSubmitter")
   reviewedPos          PurchaseOrder[]       @relation("PoReviewer")
   submittedVendorBills VendorBill[]          @relation("VendorBillSubmitter")
+  createdDebitNotes    DebitNote[]           @relation("DebitNoteCreator")
+  cancelledDebitNotes  DebitNote[]           @relation("DebitNoteCanceller")
   reviewedVendorBills  VendorBill[]          @relation("VendorBillReviewer")
   submittedWorkOrders  WorkOrder[]           @relation("WorkOrderSubmitter")
   reviewedWorkOrders   WorkOrder[]           @relation("WorkOrderReviewer")
@@ -723,6 +726,7 @@ model Project {
   quotations       Quotation[]
   purchaseOrders   PurchaseOrder[]
   vendorBills      VendorBill[]
+  debitNotes       DebitNote[]
   workOrders       WorkOrder[]
   subcontractBills SubcontractBill[]
   inspections      Inspection[]
@@ -809,6 +813,7 @@ model Vendor {
   quotations      Quotation[]
   purchaseOrders  PurchaseOrder[]
   vendorBills     VendorBill[]
+  debitNotes      DebitNote[]
   workOrders      WorkOrder[]
   attendance      AttendanceLine[]
   workers         Worker[]
@@ -953,8 +958,24 @@ model VendorBill {
   project         Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
   vendorId        String
   vendor          Vendor           @relation(fields: [vendorId], references: [id])
-  purchaseOrderId String
-  purchaseOrder   PurchaseOrder    @relation(fields: [purchaseOrderId], references: [id])
+  /// PO (against a purchase order, matched three ways), HIRE (a hired machine's month from its logs), SERVICE (closed
+  /// job cards), OTHER (transport, testing, consultancy against an expense category) (v5 item 91)
+  kind            VendorBillKind   @default(PO)
+  /// PO bills only
+  purchaseOrderId String?
+  purchaseOrder   PurchaseOrder?   @relation(fields: [purchaseOrderId], references: [id], onDelete: Restrict)
+  /// HIRE: the hired machine and the month billed (its first day)
+  equipmentId     String?
+  equipment       Equipment?       @relation(fields: [equipmentId], references: [id])
+  hireMonth       DateTime?        @db.Date
+  /// HIRE: diesel we issued to a machine the owner should fuel, recovered on the bill at fuelRate a litre
+  fuelLitres      Decimal          @default(0) @db.Decimal(18, 3)
+  fuelRate        Decimal          @default(0) @db.Decimal(18, 2)
+  fuelRecovery    Decimal          @default(0) @db.Decimal(18, 2)
+  /// OTHER: the cost head
+  expenseCategory ExpenseCategory?
+  /// Debit notes against the bill that are not cancelled; what is payable drops by them
+  debitNoteAmount Decimal          @default(0) @db.Decimal(18, 2)
   /// VB-<year>-0001 per organisation
   billNo          String
   /// The vendor's invoice number and date
@@ -995,6 +1016,9 @@ model VendorBill {
   attachments     Attachment[]
   payments        VendorPayment[]
   paymentRequests PaymentRequest[]
+  debitNotes      DebitNote[]
+  machineryLogs   MachineryLog[]
+  maintenanceJobs MaintenanceJob[]
 
   @@unique([organizationId, billNo])
   @@unique([vendorId, invoiceNo])
@@ -1002,22 +1026,111 @@ model VendorBill {
   @@index([projectId, status])
   @@index([tallyExportId])
   @@index([organizationId, invoiceDate])
+  @@index([equipmentId, hireMonth])
 }
 
 model VendorBillLine {
-  id                  String            @id @default(uuid())
+  id                  String             @id @default(uuid())
   billId              String
-  bill                VendorBill        @relation(fields: [billId], references: [id], onDelete: Cascade)
-  purchaseOrderLineId String
-  purchaseOrderLine   PurchaseOrderLine @relation(fields: [purchaseOrderLineId], references: [id])
-  quantity            Decimal           @db.Decimal(18, 3)
-  rate                Decimal           @db.Decimal(18, 2)
-  gstRate             Decimal           @default(0) @db.Decimal(5, 2)
-  amount              Decimal           @db.Decimal(18, 2)
-  gstAmount           Decimal           @db.Decimal(18, 2)
-  sortOrder           Int               @default(0)
+  bill                VendorBill         @relation(fields: [billId], references: [id], onDelete: Cascade)
+  /// PO bills: the PO line billed; other bills describe the line themselves
+  purchaseOrderLineId String?
+  purchaseOrderLine   PurchaseOrderLine? @relation(fields: [purchaseOrderLineId], references: [id], onDelete: Restrict)
+  description         String?
+  unit                String?
+  quantity            Decimal            @db.Decimal(18, 3)
+  rate                Decimal            @db.Decimal(18, 2)
+  gstRate             Decimal            @default(0) @db.Decimal(5, 2)
+  amount              Decimal            @db.Decimal(18, 2)
+  gstAmount           Decimal            @db.Decimal(18, 2)
+  sortOrder           Int                @default(0)
 
   @@index([purchaseOrderLineId])
+}
+
+enum VendorBillKind {
+  PO
+  HIRE
+  SERVICE
+  OTHER
+}
+
+/// Who fuels a hired machine
+enum HireFuelBy {
+  OWNER
+  COMPANY
+}
+
+enum DebitNoteReason {
+  SHORTAGE
+  EXCESS
+  REJECTED
+  RETURNED
+  RATE_DIFFERENCE
+  OTHER
+}
+
+/// What we take off a vendor's or subcontractor's approved bill (v5 item 91): DN-<year>-0001, against exactly one bill.
+/// The bill's payable drops by its total, input GST is reversed in the GST registers, and Tally gets a debit note.
+model DebitNote {
+  id                String           @id @default(uuid())
+  organizationId    String
+  organization      Organization     @relation(fields: [organizationId], references: [id])
+  projectId         String
+  project           Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  vendorId          String
+  vendor            Vendor           @relation(fields: [vendorId], references: [id])
+  noteNo            String
+  date              DateTime         @db.Date
+  reason            DebitNoteReason
+  vendorBillId      String?
+  vendorBill        VendorBill?      @relation(fields: [vendorBillId], references: [id], onDelete: Cascade)
+  subcontractBillId String?
+  subcontractBill   SubcontractBill? @relation(fields: [subcontractBillId], references: [id], onDelete: Cascade)
+  /// The GRN rejected at QA/QC or the return to the supplier it came from
+  stockEntryId      String?
+  stockEntry        StockEntry?      @relation(fields: [stockEntryId], references: [id], onDelete: SetNull)
+  subtotal          Decimal          @db.Decimal(18, 2)
+  gstAmount         Decimal          @db.Decimal(18, 2)
+  total             Decimal          @db.Decimal(18, 2)
+  remarks           String?
+  createdById       String
+  createdBy         User             @relation("DebitNoteCreator", fields: [createdById], references: [id])
+  /// A cancelled note no longer reduces the bill
+  cancelledAt       DateTime?
+  cancelledById     String?
+  cancelledBy       User?            @relation("DebitNoteCanceller", fields: [cancelledById], references: [id])
+  cancelNote        String?
+  tallyExportId     String?
+  tallyExport       TallyExport?     @relation(fields: [tallyExportId], references: [id], onDelete: SetNull)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  lines DebitNoteLine[]
+
+  @@unique([organizationId, noteNo])
+  @@index([organizationId, date])
+  @@index([vendorBillId])
+  @@index([subcontractBillId])
+  @@index([stockEntryId])
+  @@index([tallyExportId])
+}
+
+model DebitNoteLine {
+  id          String    @id @default(uuid())
+  debitNoteId String
+  debitNote   DebitNote @relation(fields: [debitNoteId], references: [id], onDelete: Cascade)
+  description String
+  /// With a quantity and rate, or a lump sum (amount alone)
+  quantity    Decimal?  @db.Decimal(18, 3)
+  unit        String?
+  rate        Decimal?  @db.Decimal(18, 2)
+  amount      Decimal   @db.Decimal(18, 2)
+  gstRate     Decimal   @default(0) @db.Decimal(5, 2)
+  gstAmount   Decimal   @default(0) @db.Decimal(18, 2)
+  sortOrder   Int       @default(0)
+
+  @@index([debitNoteId])
 }
 
 /// Work order to a subcontractor or labour contractor (v3 item 22): rates per BOQ item or for its own items, with the
@@ -1140,6 +1253,8 @@ model SubcontractBill {
   totalDeductions       Decimal          @db.Decimal(18, 2)
   /// gross + GST - deductions
   netPayable            Decimal          @db.Decimal(18, 2)
+  /// Debit notes against the bill that are not cancelled; what is payable drops by them (v5 item 91)
+  debitNoteAmount       Decimal          @default(0) @db.Decimal(18, 2)
   /// Settled by payments so far (paid + deducted at payment), kept in step by payables
   paidAmount            Decimal          @default(0) @db.Decimal(18, 2)
   /// The day the last payment settled it in full; null while anything is outstanding
@@ -1166,6 +1281,7 @@ model SubcontractBill {
   attachments     Attachment[]
   payments        VendorPayment[]
   paymentRequests PaymentRequest[]
+  debitNotes      DebitNote[]
 
   @@unique([workOrderId, billNo])
   @@index([organizationId, status])
@@ -1603,6 +1719,7 @@ model StockEntry {
   updatedAt         DateTime         @updatedAt
 
   lines       StockTxn[]
+  debitNotes  DebitNote[]
   attachments Attachment[]
 
   @@unique([organizationId, entryNo])
@@ -1704,6 +1821,11 @@ model Equipment {
   registrationNo       String?
   rate                 Decimal?           @db.Decimal(18, 2)
   rateUnit             EquipmentRateUnit  @default(HOUR)
+  /// Hire terms of a hired machine (v5 item 91): hours paid for a month even if it worked less, who fuels it, and
+  /// whether the owner's operator comes with it
+  hireMinHours         Decimal?           @db.Decimal(18, 2)
+  hireFuelBy           HireFuelBy?
+  hireOperator         Boolean?
   projectId            String?
   project              Project?           @relation(fields: [projectId], references: [id], onDelete: SetNull)
   isActive             Boolean            @default(true)
@@ -1719,6 +1841,7 @@ model Equipment {
   maintenanceJobs MaintenanceJob[]
   documents       EquipmentDocument[]
   drivers         Driver[]
+  vendorBills     VendorBill[]
 
   @@unique([organizationId, code])
   @@index([organizationId, projectId])
@@ -1754,6 +1877,9 @@ model MachineryLog {
   reviewedBy     User?            @relation("MachineryReviewer", fields: [reviewedById], references: [id])
   reviewedAt     DateTime?
   reviewNote     String?
+  /// The hire bill that billed this approved log (v5 item 91)
+  vendorBillId   String?
+  vendorBill     VendorBill?      @relation(fields: [vendorBillId], references: [id], onDelete: SetNull)
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
 
@@ -1763,6 +1889,7 @@ model MachineryLog {
   @@index([equipmentId, date])
   @@index([organizationId, status])
   @@index([organizationId, date])
+  @@index([vendorBillId])
 }
 
 /// A site expense paid at the project (bill with GST), approved like other submissions. Approved expenses are project cost.
@@ -2513,6 +2640,7 @@ model TallyExport {
   raBills          RaBill[]
   receipts         Receipt[]
   vendorBills      VendorBill[]
+  debitNotes       DebitNote[]
   subcontractBills SubcontractBill[]
   vendorPayments   VendorPayment[]
   expenses         Expense[]
@@ -3456,6 +3584,9 @@ model MaintenanceJob {
   labourCost     Decimal           @default(0) @db.Decimal(18, 2)
   /// Parts bought outside (spares from the store are stock issues linked to the job)
   partsCost      Decimal           @default(0) @db.Decimal(18, 2)
+  /// The workshop's service bill for the job (v5 item 91)
+  vendorBillId   String?
+  vendorBill     VendorBill?       @relation(fields: [vendorBillId], references: [id], onDelete: SetNull)
   reportedById   String
   reportedBy     User              @relation("MaintenanceReporter", fields: [reportedById], references: [id])
   closedById     String?
@@ -3470,6 +3601,7 @@ model MaintenanceJob {
   @@index([organizationId, status])
   @@index([equipmentId, date])
   @@index([projectId])
+  @@index([vendorBillId])
 }
 
 /// Insurance, fitness, permit, PUC, road tax or registration of a machine or vehicle, with its validity.

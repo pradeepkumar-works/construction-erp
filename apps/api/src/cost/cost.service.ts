@@ -182,7 +182,7 @@ export class CostService {
     if (!projectIds.length) return out;
     const scope = { organizationId, projectId: { in: projectIds }, ...(date ? { date } : {}) };
     const inProjects = { organizationId, projectId: { in: projectIds } };
-    const [progress, measurements, expenses, issues, logs, attendance, rates, bills, receipts, subBills, vendorBills, payments, subVendors] = await Promise.all([
+    const [progress, measurements, expenses, issues, logs, attendance, rates, bills, receipts, subBills, vendorBills, payments, subVendors, otherBills, debitNotes] = await Promise.all([
       this.prisma.progressEntry.findMany({ where: { ...scope, status: 'APPROVED' }, select: { projectId: true, date: true, quantity: true, activity: { select: { boqItem: { select: { rate: true } } } } } }),
       this.prisma.measurementSheet.findMany({ where: { ...scope, status: 'APPROVED' }, select: { projectId: true, totalQty: true, boqItem: { select: { rate: true } } } }),
       this.prisma.expense.findMany({ where: { ...scope, status: 'APPROVED' }, select: { projectId: true, date: true, category: true, totalAmount: true } }),
@@ -192,7 +192,10 @@ export class CostService {
         where: { ...scope, type: { in: ['ISSUE', 'RETURN_FROM_SITE'] }, NOT: { entry: { subcontractBill: { status: 'APPROVED' } } } },
         select: { projectId: true, date: true, quantity: true, item: { select: { id: true, name: true, unit: true, rate: true } } },
       }),
-      this.prisma.machineryLog.findMany({ where: { ...scope, status: 'APPROVED' }, select: { projectId: true, date: true, hoursWorked: true, equipment: { select: { id: true, code: true, name: true, rate: true, rateUnit: true } } } }),
+      this.prisma.machineryLog.findMany({
+        where: { ...scope, status: 'APPROVED' },
+        select: { projectId: true, date: true, hoursWorked: true, vendorBill: { select: { status: true } }, equipment: { select: { id: true, code: true, name: true, rate: true, rateUnit: true } } },
+      }),
       this.prisma.attendanceLine.findMany({
         where: { sheet: { organizationId, projectId: { in: projectIds }, ...(date ? { date } : {}) } },
         select: { category: true, count: true, vendorId: true, sheet: { select: { projectId: true, date: true } } },
@@ -208,6 +211,25 @@ export class CostService {
       this.prisma.vendorPayment.groupBy({ by: ['projectId'], where: { ...inProjects, ...(date ? { paymentDate: date } : {}) }, _sum: { amount: true } }),
       // Gangs of a subcontractor with an approved work order on the project are paid through its bills, not as labour.
       this.prisma.workOrder.findMany({ where: { ...inProjects, status: 'APPROVED' }, select: { projectId: true, vendorId: true }, distinct: ['projectId', 'vendorId'] }),
+      // Approved bills without a PO (v5 item 91): a hire bill is the machine's cost for its month in place of rate × hours,
+      // a workshop's service bill is machinery cost, any other bill is cost under its expense head. Before GST.
+      this.prisma.vendorBill.findMany({
+        where: { ...inProjects, status: 'APPROVED', kind: { not: 'PO' }, ...(date ? { OR: [{ kind: 'HIRE', hireMonth: date }, { kind: { not: 'HIRE' }, invoiceDate: date }] } : {}) },
+        select: { projectId: true, kind: true, invoiceDate: true, hireMonth: true, subtotal: true, freight: true, fuelRecovery: true, expenseCategory: true, vendorId: true, vendor: { select: { name: true } }, equipment: { select: { id: true, code: true, name: true, rate: true, rateUnit: true } } },
+      }),
+      // Debit notes take their amount (before GST) off the head their bill is in; material on PO bills is costed when issued.
+      this.prisma.debitNote.findMany({
+        where: { ...scope, cancelledAt: null, OR: [{ vendorBill: { status: 'APPROVED', kind: { not: 'PO' } } }, { subcontractBill: { status: 'APPROVED' } }] },
+        select: {
+          projectId: true,
+          date: true,
+          subtotal: true,
+          vendorId: true,
+          vendor: { select: { name: true } },
+          vendorBill: { select: { kind: true, expenseCategory: true, equipment: { select: { id: true, code: true, name: true, rate: true, rateUnit: true } } } },
+          subcontractBill: { select: { workOrderId: true, workOrder: { select: { woNo: true } } } },
+        },
+      }),
     ]);
     for (const b of vendorBills) out.get(b.projectId)!.payableBilled = b._sum.total ?? ZERO;
     for (const p of payments) out.get(p.projectId)!.cashOut = p._sum.amount ?? ZERO;
@@ -256,7 +278,9 @@ export class CostService {
     }
     for (const l of logs) {
       const acc = out.get(l.projectId)!;
-      const c = machineryLogCost(l.equipment.rate?.toString(), l.equipment.rateUnit, l.hoursWorked.toString());
+      // A log on an approved hire bill is costed by the bill.
+      const billed = l.vendorBill?.status === 'APPROVED';
+      const c = billed ? 0 : machineryLogCost(l.equipment.rate?.toString(), l.equipment.rateUnit, l.hoursWorked.toString());
       const amount = c === null ? ZERO : new Dec(c).toDecimalPlaces(2);
       if (c === null) acc.unpricedLogs += 1;
       add(acc, l.date, 'machinery', amount);
@@ -269,6 +293,37 @@ export class CostService {
       acc.payableBilled = acc.payableBilled.plus(b.grossAmount).plus(b.gstAmount);
       const r = acc.subcontract.get(b.workOrderId) ?? { woNo: b.workOrder.woNo, vendorName: b.workOrder.vendor.name, bills: 0, amount: ZERO };
       acc.subcontract.set(b.workOrderId, { ...r, bills: r.bills + 1, amount: r.amount.plus(b.grossAmount) });
+    }
+    type Machine = { id: string; code: string; name: string; rate: D | null; rateUnit: 'HOUR' | 'DAY' | 'MONTH' };
+    const machine = (acc: Acc, d: Date, m: Machine, amount: D) => {
+      add(acc, d, 'machinery', amount);
+      const r = acc.machinery.get(m.id) ?? { code: m.code, name: m.name, rateUnit: m.rateUnit, rate: m.rate, days: 0, hours: ZERO, amount: ZERO };
+      acc.machinery.set(m.id, { ...r, amount: r.amount.plus(amount) });
+    };
+    const workshop = (vendorId: string, name: string): Machine => ({ id: `workshop:${vendorId}`, code: 'Workshop', name, rate: null, rateUnit: 'MONTH' });
+    const expense = (acc: Acc, d: Date, category: ExpenseCategory, amount: D, count: number) => {
+      add(acc, d, 'expenses', amount);
+      const c = acc.expenses.get(category) ?? { count: 0, amount: ZERO };
+      acc.expenses.set(category, { count: c.count + count, amount: c.amount.plus(amount) });
+    };
+    for (const b of otherBills) {
+      const acc = out.get(b.projectId)!;
+      const amount = b.subtotal.plus(b.freight).minus(b.fuelRecovery);
+      if (b.kind === 'HIRE' && b.equipment) machine(acc, b.hireMonth ?? b.invoiceDate, b.equipment, amount);
+      else if (b.kind === 'SERVICE') machine(acc, b.invoiceDate, workshop(b.vendorId, b.vendor.name), amount);
+      else expense(acc, b.invoiceDate, b.expenseCategory ?? 'OTHER', amount, 1);
+    }
+    for (const n of debitNotes) {
+      const acc = out.get(n.projectId)!;
+      const amount = n.subtotal.neg();
+      const vb = n.vendorBill;
+      if (n.subcontractBill) {
+        add(acc, n.date, 'subcontract', amount);
+        const r = acc.subcontract.get(n.subcontractBill.workOrderId) ?? { woNo: n.subcontractBill.workOrder.woNo, vendorName: n.vendor.name, bills: 0, amount: ZERO };
+        acc.subcontract.set(n.subcontractBill.workOrderId, { ...r, amount: r.amount.plus(amount) });
+      } else if (vb?.kind === 'HIRE' && vb.equipment) machine(acc, n.date, vb.equipment, amount);
+      else if (vb?.kind === 'SERVICE') machine(acc, n.date, workshop(n.vendorId, n.vendor.name), amount);
+      else if (vb) expense(acc, n.date, vb.expenseCategory ?? 'OTHER', amount, 0);
     }
     const rateOf = new Map(rates.map((r) => [key(r.category), r.dailyRate]));
     for (const a of attendance) {

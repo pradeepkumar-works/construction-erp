@@ -43,7 +43,7 @@ const totals = (rows: { taxable: string; igst: string; cgst: string; sgst: strin
  * are approved RA bills by bill date: works on a site are supplied where the site is, which is where the contractor
  * bills from, so their GST is CGST + SGST. Input tax comes from approved vendor bills (by invoice date, a row per GST
  * rate of their lines), subcontractor bills and site expenses with GST; only invoices with the supplier's GSTIN can be
- * claimed. E-invoicing is not done here.
+ * claimed; debit notes against those bills reverse their input tax (v5 item 91). E-invoicing is not done here.
  */
 @Injectable()
 export class GstService {
@@ -57,7 +57,7 @@ export class GstService {
     const org = user.organizationId;
     const range = { gte: from, lte: to };
     const project = { select: { code: true, name: true } };
-    const [config, raBills, vendorBills, subBills, expenses] = await Promise.all([
+    const [config, raBills, vendorBills, subBills, expenses, debitNotes] = await Promise.all([
       this.prisma.tallyConfig.findUnique({ where: { organizationId: org }, select: { stateCode: true } }),
       this.prisma.raBill.findMany({
         where: { organizationId: org, status: 'APPROVED', billDate: range },
@@ -75,6 +75,11 @@ export class GstService {
         orderBy: { billDate: 'asc' },
       }),
       this.prisma.expense.findMany({ where: { organizationId: org, status: 'APPROVED', date: range, gstAmount: { gt: 0 } }, include: { project }, orderBy: { date: 'asc' } }),
+      this.prisma.debitNote.findMany({
+        where: { organizationId: org, cancelledAt: null, date: range, gstAmount: { gt: 0 } },
+        include: { project, vendor: { select: { name: true, gstin: true, stateCode: true } }, vendorBill: { select: { invoiceNo: true } }, subcontractBill: { select: { invoiceNo: true } }, lines: { select: { gstRate: true, amount: true, gstAmount: true } } },
+        orderBy: { date: 'asc' },
+      }),
     ]);
     const ours = config?.stateCode ?? null;
     const warnings: string[] = [];
@@ -187,6 +192,37 @@ export class GstService {
         e.gstAmount,
         gstStateCode(e.vendorGstin),
       );
+    }
+    // A debit note against a bill reverses that much of its input tax (v5 item 91): negative rows, a row per GST rate.
+    for (const n of debitNotes) {
+      const byRate = new Map<string, { rate: Prisma.Decimal; taxable: Prisma.Decimal; gst: Prisma.Decimal }>();
+      for (const l of n.lines) {
+        const k = l.gstRate.toFixed(2);
+        const g = byRate.get(k) ?? { rate: l.gstRate, taxable: ZERO, gst: ZERO };
+        byRate.set(k, { rate: g.rate, taxable: g.taxable.add(l.amount), gst: g.gst.add(l.gstAmount) });
+      }
+      for (const [k, g] of byRate) {
+        if (g.gst.isZero()) continue;
+        push(
+          {
+            key: `DEBIT_NOTE:${n.id}:${k}`,
+            source: 'DEBIT_NOTE',
+            sourceId: n.id,
+            ref: n.noteNo,
+            projectCode: n.project.code,
+            projectName: n.project.name,
+            supplierGstin: n.vendor.gstin,
+            supplierName: n.vendor.name,
+            invoiceNo: n.vendorBill?.invoiceNo ?? n.subcontractBill?.invoiceNo ?? null,
+            invoiceDate: dateOnly(n.date)!,
+            invoiceValue: money(n.total.neg())!,
+          },
+          g.rate,
+          g.taxable.neg(),
+          g.gst.neg(),
+          gstStateCode(n.vendor.gstin) ?? n.vendor.stateCode,
+        );
+      }
     }
     inward.sort((a, b) => a.invoiceDate.localeCompare(b.invoiceDate) || a.ref.localeCompare(b.ref));
     const missing = inward.filter((r) => !r.itcEligible).length;

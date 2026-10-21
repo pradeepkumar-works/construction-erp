@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-10-bills-without-po',
+    date: '2026-10-28',
+    title: 'Hire, workshop and service bills, and debit notes',
+    points: [
+      "Record vendor bill now offers bills without a purchase order: a hired machine's month, filled in from its approved logs at the agreed rate, with any minimum hours and the diesel we issued recovered; a workshop's bill for closed job cards; and other services such as transport or testing, booked to a cost head.",
+      'What does not match the logs or job cards is flagged for the approver, a machine and month can be billed only once, and billed logs and job cards show the bill they are on.',
+      'Raise a debit note on an approved vendor or subcontractor bill for short supply, excess billing, a rate difference or material rejected or returned (also from the GRN). It comes off what is payable, reverses the input GST and goes to Tally as a debit note. Payables has a Debit notes tab.',
+      "Machines have hire terms (minimum hours, who fuels it, operator), and the cost view takes a machine's hire bill in place of its logged hours.",
+    ],
+  },
+  {
     id: '2026-10-payment-requests',
     date: '2026-10-27',
     title: 'Payment requests and advances',

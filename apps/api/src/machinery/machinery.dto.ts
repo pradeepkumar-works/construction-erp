@@ -5,10 +5,12 @@ import { VENDOR_ID_DOC } from '../vendors/vendors.dto';
 import {
   EQUIPMENT_OWNERSHIPS,
   EQUIPMENT_RATE_UNITS,
+  HIRE_FUEL_BY,
   LIST_SORT_FIELDS,
   SUBMISSION_STATUSES,
   type EquipmentOwnership,
   type EquipmentRateUnit,
+  type HireFuelBy,
   type EquipmentSortField,
   type MachineryLogSortField,
   type SubmissionStatus,
@@ -37,6 +39,18 @@ export class CreateEquipmentDto {
   @IsNumberString()
   rate?: string | null;
   @ApiPropertyOptional({ enum: EQUIPMENT_RATE_UNITS, default: 'HOUR' }) @IsOptional() @IsIn(EQUIPMENT_RATE_UNITS as unknown as string[]) rateUnit?: EquipmentRateUnit;
+  @ApiPropertyOptional({ example: '200', description: 'Hire terms (v5 item 91): hours paid for a month even if it worked less; null = none' })
+  @IsOptional()
+  @num()
+  @ValidateIf((_, v) => v !== null)
+  @IsNumberString()
+  hireMinHours?: string | null;
+  @ApiPropertyOptional({ enum: HIRE_FUEL_BY, description: 'Who fuels a hired machine; fuel we issue to one the owner fuels is recovered on its hire bill' })
+  @IsOptional()
+  @ValidateIf((_, v) => v !== null)
+  @IsIn(HIRE_FUEL_BY as unknown as string[])
+  hireFuelBy?: HireFuelBy | null;
+  @ApiPropertyOptional({ description: "The owner's operator comes with the machine" }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsBoolean() hireOperator?: boolean | null;
   @ApiPropertyOptional({ description: 'Project it is deployed at now; null = yard / unassigned' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsUUID() projectId?: string | null;
   @ApiPropertyOptional({ example: '250', description: 'Service every so many working hours (from the daily logs); null = no hour schedule' })
   @IsOptional()

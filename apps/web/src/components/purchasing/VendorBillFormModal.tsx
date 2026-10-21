@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, App, DatePicker, Flex, Form, Input, Select, Table, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { AttachmentDto, PurchaseOrderLineDto, VendorBillDto } from '@erp/shared';
+import type { AttachmentDto, PurchaseOrderLineDto, VendorBillDto, VendorBillKind } from '@erp/shared';
 import { GST_RATES, readNumber, readText } from '@erp/shared';
 import { api, errorMessage } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
@@ -17,6 +17,7 @@ import { ReadDocumentButton, ReadPreview, ReadSource, readFieldProps, type ReadS
 import { DraftBillChecks } from './DraftBillChecks';
 import { themeFontSize } from '@/lib/theme';
 import { recordPage } from '@/components/approvals/queue';
+import { OtherBillFormModal } from './OtherBillFormModal';
 
 interface FormValues {
   purchaseOrderId: string;
@@ -61,7 +62,7 @@ export function VendorBillFormModal({
   const freight = Form.useWatch('freight', form);
   const advance = Form.useWatch('advanceAdjusted', form) as number | null | undefined;
   const invoiceNo = Form.useWatch('invoiceNo', form) as string | undefined;
-  const poId = bill?.purchaseOrderId ?? purchaseOrderId ?? watchedPo;
+  const poId = bill?.purchaseOrderId ?? purchaseOrderId ?? watchedPo ?? undefined;
   const orders = usePurchaseOrders({ status: 'APPROVED', pageSize: 100, sortBy: 'poDate', sortOrder: 'desc' }, open && !bill && !purchaseOrderId);
   const { data: po, isLoading: poLoading } = usePurchaseOrder(open ? poId : undefined);
   // Advance paid on the PO and not yet taken off its other bills (v5 item 90): this bill may adjust up to that.
@@ -78,7 +79,7 @@ export function VendorBillFormModal({
     form.resetFields();
     if (bill)
       form.setFieldsValue({
-        purchaseOrderId: bill.purchaseOrderId,
+        purchaseOrderId: bill.purchaseOrderId ?? undefined,
         invoiceNo: bill.invoiceNo,
         invoiceDate: dayjs(bill.invoiceDate),
         freight: toNumber(bill.freight),
@@ -447,5 +448,35 @@ export function VendorBillFormModal({
         )}
       </Form>
     </FormShell>
+  );
+}
+
+/**
+ * Record or edit a vendor bill of any kind (v5 item 91): against a PO here, or a hire, workshop or other bill in
+ * `OtherBillFormModal`. An edited bill opens the form of its own kind.
+ */
+export function VendorBillForm({
+  open,
+  kind = 'PO',
+  bill,
+  purchaseOrderId,
+  start,
+  onClose,
+  onSaved,
+}: {
+  open: boolean;
+  kind?: VendorBillKind;
+  bill?: VendorBillDto | null;
+  purchaseOrderId?: string;
+  start?: { projectId?: string; equipmentId?: string };
+  onClose: () => void;
+  onSaved?: (b: VendorBillDto) => void;
+}) {
+  const k = bill?.kind ?? kind;
+  return (
+    <>
+      <VendorBillFormModal open={open && k === 'PO'} bill={k === 'PO' ? bill : null} purchaseOrderId={purchaseOrderId} onClose={onClose} onSaved={onSaved} />
+      <OtherBillFormModal open={open && k !== 'PO'} kind={k === 'PO' ? 'OTHER' : k} bill={k !== 'PO' ? bill : null} start={start} onClose={onClose} onSaved={onSaved} />
+    </>
   );
 }

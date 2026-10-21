@@ -19,6 +19,7 @@ import { submissionMetaItems } from '@/components/common/SubmitterInfo';
 import { overdueDays } from '@/components/purchasing/VendorBillDrawer';
 import { BillPayments, PaidTag } from '@/components/payables/BillPayments';
 import { TargetRequests } from '@/components/payables/TargetRequests';
+import { BillDebitNotes, showsDebitNotes } from '@/components/payables/BillDebitNotes';
 import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
 import { checksSection } from '@/components/checks/ChecksSection';
 import { submissionLifecycle } from '@/components/record/lifecycle';
@@ -68,6 +69,8 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
 
   const editable = !!data && !!user && preparer && canEditSubmission(user, data) && data.status !== 'APPROVED';
   const late = data ? overdueDays(data) : null;
+  const debited = data ? toNumber(data.debitNoteAmount) : 0;
+  const payable = data ? Math.round((toNumber(data.netPayable) - debited) * 100) / 100 : 0;
   const excess = data?.lines.filter((l) => toNumber(l.excessQty) > 0) ?? [];
 
   const payments = data?.status === 'APPROVED' && !!user && canViewPayables(user.roleKey);
@@ -226,6 +229,18 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
                         <span>Net payable</span>
                         {money(data.netPayable)}
                       </div>
+                      {debited > 0 ? (
+                        <>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
+                            <span>Less debit notes</span>
+                            <span className="mono" translate="no">({formatINR(debited, true)})</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600 }}>
+                            <span>Payable</span>
+                            {money(payable)}
+                          </div>
+                        </>
+                      ) : null}
                     </Section>
                   </div>
                 </>
@@ -269,7 +284,7 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
                           vendorName: data.vendorName,
                           billDate: data.billDate,
                           dueDate: data.dueDate,
-                          payable: data.netPayable,
+                          payable: String(payable),
                           outstanding: data.outstanding,
                           paidAmount: data.paidAmount,
                         }}
@@ -279,6 +294,15 @@ export function SubBillRecord({ id, mode, open, onClose, onEdit }: RecordProps &
                 ]
               : []),
             ...(requests ? [{ key: 'requests', title: 'Payment requests', children: <TargetRequests approved target={{ kind: 'BILL', subcontractBillId: data.id, label: data.label, vendorName: data.vendorName }} base={data.outstanding} /> }] : []),
+            ...(showsDebitNotes(user?.roleKey, data.status)
+              ? [
+                  {
+                    key: 'debit-notes',
+                    title: 'Debit notes',
+                    children: <BillDebitNotes bill={{ billType: 'SUBCONTRACT_BILL', billId: data.id, label: data.label, vendorName: data.vendorName, billDate: data.billDate, outstanding: data.outstanding }} />,
+                  },
+                ]
+              : []),
             {
               key: 'measurements',
               title: 'Measurements',

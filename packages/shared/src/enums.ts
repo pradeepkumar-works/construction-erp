@@ -168,6 +168,21 @@ export const RECEIPT_MODES = ['BANK', 'UPI', 'CASH'] as const satisfies readonly
 export const PAYMENT_REQUEST_KINDS = ['BILL', 'PO_ADVANCE', 'WO_ADVANCE'] as const;
 export type PaymentRequestKind = (typeof PAYMENT_REQUEST_KINDS)[number];
 
+/**
+ * What a vendor bill is against (v5 item 91): a purchase order (matched three ways), a hired machine's month from its
+ * approved logs, closed workshop job cards, or anything else (transport, testing, consultancy) under an expense head.
+ */
+export const VENDOR_BILL_KINDS = ['PO', 'HIRE', 'SERVICE', 'OTHER'] as const;
+export type VendorBillKind = (typeof VENDOR_BILL_KINDS)[number];
+
+/** Who fuels a hired machine: the owner (fuel we issue is recovered on the hire bill) or us. */
+export const HIRE_FUEL_BY = ['OWNER', 'COMPANY'] as const;
+export type HireFuelBy = (typeof HIRE_FUEL_BY)[number];
+
+/** Why a debit note takes money off a bill (v5 item 91). */
+export const DEBIT_NOTE_REASONS = ['SHORTAGE', 'EXCESS', 'REJECTED', 'RETURNED', 'RATE_DIFFERENCE', 'OTHER'] as const;
+export type DebitNoteReason = (typeof DEBIT_NOTE_REASONS)[number];
+
 /** A payment for the Nirmaan subscription (v3 item 34): created with a Razorpay order, paid once Razorpay confirms it. */
 export const BILLING_PAYMENT_STATUSES = ['CREATED', 'PAID'] as const;
 export type BillingPaymentStatus = (typeof BILLING_PAYMENT_STATUSES)[number];

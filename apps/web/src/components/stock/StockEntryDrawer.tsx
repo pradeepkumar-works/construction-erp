@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Button, Descriptions, Divider, Drawer, Skeleton, Space, Table, Typography } from 'antd';
-import { DeleteOutlined, ImportOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
+import { DeleteOutlined, FileExcelOutlined, ImportOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { StockEntryType, StockLineDto } from '@erp/shared';
-import { canAdjustStock, canCheckGrn, canKeepStock } from '@erp/shared';
+import type { StockEntryDto, StockEntryType, StockLineDto } from '@erp/shared';
+import { canAdjustStock, canCheckGrn, canKeepStock, canRaiseDebitNote } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
@@ -18,6 +18,7 @@ import { StockTypeTag } from './StockTypeTag';
 import { ReceiveTransferModal } from './ReceiveTransferModal';
 import { GrnQcModal, GrnQcTag } from './GrnQc';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
+import { DebitNoteFormModal, type DebitNoteGrn } from '@/components/payables/DebitNoteFormModal';
 
 const KIND: Record<StockEntryType, string> = {
   RECEIPT: 'Goods received note',
@@ -28,6 +29,16 @@ const KIND: Record<StockEntryType, string> = {
   RETURN_TO_VENDOR: 'Return to supplier',
   RETURN_FROM_SITE: 'Return from site',
 };
+
+/** What a debit note starts from: a GRN's rejected quantities, or what went back to the supplier (v5 item 91). */
+function debitNoteFrom(e: StockEntryDto): DebitNoteGrn | null {
+  const returned = e.type === 'RETURN_TO_VENDOR';
+  const lines = e.lines
+    .map((l) => ({ purchaseOrderLineId: l.purchaseOrderLineId, itemName: l.itemName, unit: l.unit, quantity: Math.abs(Number(returned ? l.quantity : (l.rejectedQty ?? 0))) }))
+    .filter((l) => l.quantity > 0);
+  if ((!returned && e.type !== 'RECEIPT') || !lines.length) return null;
+  return { stockEntryId: e.id, entryNo: e.entryNo, projectId: e.projectId, purchaseOrderId: e.purchaseOrderId, vendorId: e.vendorId, reason: returned ? 'RETURNED' : 'REJECTED', lines };
+}
 
 /** A GRN, issue slip, adjustment, transfer or return. Approvers can delete a wrong entry; a transfer in transit can be received. */
 export function StockEntryDrawer({ id, onClose }: { id: string | null; onClose: () => void }) {
@@ -50,6 +61,10 @@ export function StockEntryDrawer({ id, onClose }: { id: string | null; onClose: 
   const mayCheck = !!data && data.type === 'RECEIPT' && !!user && canCheckGrn(user.roleKey);
   const anyRejected = !!data && data.lines.some((l) => l.rejectedQty && Number(l.rejectedQty) > 0);
   const canReceive = !!data && data.type === 'TRANSFER_OUT' && !data.transferInId && !!user && canKeepStock(user.roleKey);
+  const [debiting, setDebiting] = useState(false);
+  // Kept stable: the form starts again whenever what it starts from changes.
+  const raiser = !!user && canRaiseDebitNote(user.roleKey);
+  const debit = useMemo(() => (data && raiser ? debitNoteFrom(data) : null), [data, raiser]);
 
   return (
     <Drawer
@@ -62,6 +77,11 @@ export function StockEntryDrawer({ id, onClose }: { id: string | null; onClose: 
           {mayCheck ? (
             <Button type={data!.qcStatus ? 'default' : 'primary'} size="small" icon={<SafetyCertificateOutlined />} onClick={() => setChecking(true)}>
               {data!.qcStatus ? 'Change QA/QC check' : 'QA/QC check'}
+            </Button>
+          ) : null}
+          {debit ? (
+            <Button size="small" icon={<FileExcelOutlined />} onClick={() => setDebiting(true)}>
+              Raise debit note
             </Button>
           ) : null}
           {canReceive ? (
@@ -176,6 +196,7 @@ export function StockEntryDrawer({ id, onClose }: { id: string | null; onClose: 
         </>
       )}
       {data && mayCheck ? <GrnQcModal entry={data} open={checking} onClose={() => setChecking(false)} /> : null}
+      {debit ? <DebitNoteFormModal open={debiting} grn={debit} onClose={() => setDebiting(false)} /> : null}
       {data && canReceive ? <ReceiveTransferModal open={receiving} onClose={() => setReceiving(false)} transfer={data} /> : null}
     </Drawer>
   );

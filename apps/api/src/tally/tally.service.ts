@@ -13,6 +13,7 @@ import {
   tallyClientKey,
   tallyExpenseDefault,
   tallyExpenseKey,
+  DEBIT_NOTE_REASON_LABELS,
   tallyVendorKey,
   type TallyExportDto,
   type TallyHeldDto,
@@ -21,6 +22,8 @@ import {
   type TallySettingsDto,
   type TallyVoucherDto,
   type TallyVoucherKind,
+  type ExpenseCategory,
+  type VendorBillKind,
 } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
@@ -46,6 +49,19 @@ import {
 type Tx = Prisma.TransactionClient | PrismaService;
 const D = (v: Prisma.Decimal.Value) => new Prisma.Decimal(v);
 const FIXED = new Map(TALLY_FIXED_LEDGERS.map((l) => [l.key, l]));
+/**
+ * The ledger a vendor bill's value is booked to: purchases for a PO bill, machine hire, repairs to machinery, or the
+ * expense head of any other bill (v5 item 91).
+ */
+function billHead(b: { kind: VendorBillKind; expenseCategory: ExpenseCategory | null }): { key: string; fallback?: string } {
+  if (b.kind === 'HIRE') return { key: 'MACHINE_HIRE' };
+  if (b.kind === 'SERVICE') return { key: 'REPAIRS' };
+  if (b.kind === 'OTHER') {
+    const c = b.expenseCategory ?? 'OTHER';
+    return { key: tallyExpenseKey(c), fallback: tallyExpenseDefault(c) };
+  }
+  return { key: 'PURCHASE' };
+}
 const GST_HEADS: Record<string, LedgerMaster['gstHead']> = {
   OUTPUT_CGST: 'Central Tax',
   INPUT_CGST: 'Central Tax',
@@ -55,7 +71,7 @@ const GST_HEADS: Record<string, LedgerMaster['gstHead']> = {
   INPUT_IGST: 'Integrated Tax',
 };
 /** Lines that carry the project as cost centre: income and expense ledgers. */
-const COST_CENTRE_KEYS = new Set(['SALES', 'PURCHASE', 'FREIGHT', 'SUBCONTRACT', 'MATERIAL_RECOVERY', 'LABOUR_CESS', 'CLIENT_DEDUCTIONS', 'VENDOR_DEDUCTIONS']);
+const COST_CENTRE_KEYS = new Set(['SALES', 'PURCHASE', 'FREIGHT', 'MACHINE_HIRE', 'REPAIRS', 'FUEL_RECOVERY', 'SUBCONTRACT', 'MATERIAL_RECOVERY', 'LABOUR_CESS', 'CLIENT_DEDUCTIONS', 'VENDOR_DEDUCTIONS']);
 const DEFAULT_RECEIPT_LEDGER = { BILL: null, RETENTION_RELEASE: 'RETENTION_RECEIVABLE', DEPOSIT_RELEASE: 'DEPOSIT_RECEIVABLE' } as const;
 
 interface Config {
@@ -199,7 +215,7 @@ export class TallyService {
     const org = user.organizationId;
     const name = this.namer(cfg);
     const open = { organizationId: org, tallyExportId: null };
-    const [raBills, awaitingCertification, receipts, vendorBills, subBills, payments, expenses] = await Promise.all([
+    const [raBills, awaitingCertification, receipts, vendorBills, subBills, payments, expenses, debitNotes] = await Promise.all([
       db.raBill.findMany({ where: { ...open, status: 'APPROVED', stage: { in: ['CERTIFIED', 'PAID'] }, ...this.range('billDate', q) }, include: { project: { select: projectSelect } } }),
       db.raBill.count({ where: { ...open, status: 'APPROVED', stage: { in: ['NOT_SENT', 'SENT'] }, ...this.range('billDate', q) } }),
       db.receipt.findMany({ where: { ...open, ...this.range('receiptDate', q) }, include: { project: { select: projectSelect }, bill: { select: { id: true, billNo: true, tallyExportId: true } } } }),
@@ -220,6 +236,15 @@ export class TallyService {
         },
       }),
       db.expense.findMany({ where: { ...open, status: 'APPROVED', ...this.range('date', q) }, include: { project: { select: projectSelect } } }),
+      db.debitNote.findMany({
+        where: { ...open, cancelledAt: null, ...this.range('date', q) },
+        include: {
+          project: { select: projectSelect },
+          vendor: { select: { name: true, stateCode: true, gstin: true } },
+          vendorBill: { select: { invoiceNo: true, kind: true, expenseCategory: true } },
+          subcontractBill: { select: { billNo: true, isFinal: true, workOrder: { select: { woNo: true } } } },
+        },
+      }),
     ]);
 
     const vouchers: Voucher[] = [];
@@ -296,12 +321,15 @@ export class TallyService {
       });
     }
 
-    // Vendor bills: Dr purchases, freight and input GST; Cr the vendor with the invoice total.
+    // Vendor bills: Dr purchases (machine hire, repairs or the expense head on a bill without a PO), freight and input
+    // GST; Cr the vendor with the invoice total, less diesel recovered on a hire bill (Cr diesel recovered).
     for (const b of vendorBills) {
       const vendorState = gstStateCode(b.vendor.gstin) ?? b.vendor.stateCode;
-      const l = new Lines(name).dr('PURCHASE', b.subtotal, cc).dr('FREIGHT', b.freight, cc);
+      const l = new Lines(name);
+      const head = billHead(b);
+      l.dr(head.key, b.subtotal, { ...cc, fallback: head.fallback }).dr('FREIGHT', b.freight, cc);
       gstLines(l, 'dr', 'INPUT', b.gstAmount, isInterState(cfg.stateCode, vendorState));
-      l.cr(tallyVendorKey(b.vendorId), b.total, { fallback: b.vendor.name, party: true });
+      l.cr(tallyVendorKey(b.vendorId), b.total.sub(b.fuelRecovery), { fallback: b.vendor.name, party: true }).cr('FUEL_RECOVERY', b.fuelRecovery, cc);
       add({
         kind: 'PURCHASE',
         sourceId: b.id,
@@ -341,6 +369,28 @@ export class TallyService {
         projectName: b.project.name,
         narration: `${label} of ${v.name} on ${b.project.name}: work ₹${b.grossAmount.toFixed(2)}, measured up to ${dateOnly(b.measuredUpTo)}`,
         billRef: { name: label, type: 'New Ref' },
+        lines: l.lines,
+      });
+    }
+
+    // Debit notes (v5 item 91): Dr the party against the bill; Cr the head the bill was booked to and the input GST it
+    // reverses.
+    for (const n of debitNotes) {
+      const label = n.vendorBill ? n.vendorBill.invoiceNo : n.subcontractBill ? subBillLabel(n.subcontractBill.workOrder.woNo, n.subcontractBill.billNo, n.subcontractBill.isFinal) : '';
+      const head = n.vendorBill ? billHead(n.vendorBill) : { key: 'SUBCONTRACT', fallback: undefined };
+      const l = new Lines(name).dr(tallyVendorKey(n.vendorId), n.total, { fallback: n.vendor.name, party: true }).cr(head.key, n.subtotal, { ...cc, fallback: head.fallback });
+      gstLines(l, 'cr', 'INPUT', n.gstAmount, isInterState(cfg.stateCode, gstStateCode(n.vendor.gstin) ?? n.vendor.stateCode));
+      add({
+        kind: 'DEBIT_NOTE',
+        sourceId: n.id,
+        date: n.date,
+        number: n.noteNo,
+        reference: label,
+        party: n.vendor.name,
+        projectCode: n.project.code,
+        projectName: n.project.name,
+        narration: `${n.noteNo} to ${n.vendor.name} against ${label} (${DEBIT_NOTE_REASON_LABELS[n.reason].toLowerCase()})${n.remarks ? `: ${n.remarks}` : ''}`,
+        billRef: { name: label, type: 'Agst Ref' },
         lines: l.lines,
       });
     }
@@ -471,6 +521,7 @@ export class TallyService {
       await tx.subcontractBill.updateMany({ where: { id: { in: ids('SUBCONTRACT') }, tallyExportId: null }, data: mark });
       await tx.vendorPayment.updateMany({ where: { id: { in: ids('PAYMENT') }, tallyExportId: null }, data: mark });
       await tx.expense.updateMany({ where: { id: { in: ids('EXPENSE') }, tallyExportId: null }, data: mark });
+      await tx.debitNote.updateMany({ where: { id: { in: ids('DEBIT_NOTE') }, tallyExportId: null }, data: mark });
       return created.id;
     });
     const row = await this.prisma.tallyExport.findUniqueOrThrow({ where: { id }, include: { createdBy: { select: { fullName: true } } } });

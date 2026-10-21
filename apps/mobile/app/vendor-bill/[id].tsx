@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import type { VendorBillDto } from '@erp/shared';
+import { VENDOR_BILL_KIND_LABELS } from '@erp/shared';
 import { useFetch } from '../../src/api/hooks';
 import { useT } from '../../src/i18n/LanguageContext';
 import { AttachmentGallery, Card, ErrorState, KeyValue, Loading, ReviewActions, Screen, SubmissionHeader } from '../../src/components';
@@ -11,7 +12,10 @@ import { fmtQty, formatDate, formatMoney } from '../../src/utils/format';
 
 const rupees = (v: string) => formatMoney(v);
 
-/** A vendor's invoice on the phone: the match against its PO and GRNs, and approval. Bills are entered on the web. */
+/**
+ * A vendor's invoice on the phone: the match against its PO and GRNs (or, for a hire, workshop or other bill, its own
+ * checks), and approval. Bills are entered on the web.
+ */
 export default function VendorBillScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -21,10 +25,11 @@ export default function VendorBillScreen() {
   if (loading && !data) return <Loading />;
   if (error && !data) return <ErrorState message={error} onRetry={reload} />;
   if (!data) return null;
+  const withPo = !!data.purchaseOrderId;
 
   return (
     <Screen refreshing={refreshing} onRefresh={refresh}>
-      <SubmissionHeader item={data} title={`${data.billNo} · ${data.vendorName}`} subtitle={t('Invoice {invoice} of {date} · {po}', { invoice: data.invoiceNo, date: formatDate(data.invoiceDate), po: data.poNo })} />
+      <SubmissionHeader item={data} title={`${data.billNo} · ${data.vendorName}`} subtitle={t('Invoice {invoice} of {date} · {po}', { invoice: data.invoiceNo, date: formatDate(data.invoiceDate), po: data.poNo ?? t(VENDOR_BILL_KIND_LABELS[data.kind]) })} />
       <Card>
         <View style={styles.box}>
           <Text style={styles.total}>{rupees(data.total)}</Text>
@@ -33,7 +38,7 @@ export default function VendorBillScreen() {
         <View style={[styles.match, { backgroundColor: data.matched ? colors.successSoft : colors.dangerSoft }]}>
           <Ionicons name={data.matched ? 'checkmark-circle' : 'alert-circle'} size={18} color={data.matched ? colors.success : colors.danger} />
           <View style={{ flex: 1 }}>
-            <Text style={[styles.matchTitle, { color: data.matched ? colors.success : colors.danger }]}>{data.matched ? t('Matches the PO and what was received') : t('Does not match')}</Text>
+            <Text style={[styles.matchTitle, { color: data.matched ? colors.success : colors.danger }]}>{data.matched ? (withPo ? t('Matches the PO and what was received') : t('No exceptions')) : withPo ? t('Does not match') : t('Has exceptions')}</Text>
             {data.exceptions.map((e) => (
               <Text key={e} style={styles.exception}>
                 {e}
@@ -44,6 +49,12 @@ export default function VendorBillScreen() {
         <KeyValue label={t('Before GST')} value={rupees(data.subtotal)} />
         <KeyValue label={t('GST')} value={rupees(data.gstAmount)} />
         {Number(data.freight) > 0 ? <KeyValue label={t('Freight')} value={rupees(data.freight)} /> : null}
+        {data.equipmentCode ? <KeyValue label={t('Machine')} value={`${data.equipmentCode} · ${data.equipmentName ?? ''}`} /> : null}
+        {Number(data.fuelRecovery) > 0 ? (
+          <KeyValue label={t('Diesel recovered')} value={t('{amount} for {litres} L', { amount: rupees(data.fuelRecovery), litres: fmtQty(data.fuelLitres) })} />
+        ) : null}
+        {Number(data.debitNoteAmount) > 0 ? <KeyValue label={t('Debit notes')} value={rupees(data.debitNoteAmount)} /> : null}
+        <KeyValue label={t('Payable')} value={rupees(data.payable)} />
         <KeyValue label={t('Remarks')} value={data.remarks} multiline />
       </Card>
       <Card title={t('Items ({n})', { n: data.lines.length })}>
@@ -54,7 +65,8 @@ export default function VendorBillScreen() {
                 {l.itemName}
               </Text>
               <Text style={typography.caption}>
-                {fmtQty(l.quantity)} {l.unit} @ {rupees(l.rate)} (PO {rupees(l.poRate)}) · {t('{qty} received', { qty: fmtQty(l.receivedQty) })}
+                {fmtQty(l.quantity)} {l.unit} @ {rupees(l.rate)}
+                {l.poRate !== null ? ` (PO ${rupees(l.poRate)}) · ${t('{qty} received', { qty: fmtQty(l.receivedQty ?? '0') })}` : ''}
               </Text>
             </View>
             <Text style={styles.amount}>{rupees(l.amount)}</Text>

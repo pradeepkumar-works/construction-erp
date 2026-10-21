@@ -8,7 +8,20 @@
  */
 import assert from 'node:assert/strict';
 import { gstinCheckChar, gstinChecksumOk } from '@erp/shared';
-import { type Check, type ExpenseFacts, type RaBillFacts, type SubcontractBillFacts, type VendorBillFacts, expenseChecks, raBillChecks, rulesSummary, subcontractBillChecks, vendorBillChecks } from '../checks/bill-rules';
+import {
+  type Check,
+  type ExpenseFacts,
+  type OtherVendorBillFacts,
+  type RaBillFacts,
+  type SubcontractBillFacts,
+  type VendorBillFacts,
+  expenseChecks,
+  otherVendorBillChecks,
+  raBillChecks,
+  rulesSummary,
+  subcontractBillChecks,
+  vendorBillChecks,
+} from '../checks/bill-rules';
 
 const cases: [string, () => void][] = [];
 const test = (name: string, fn: () => void) => cases.push([name, fn]);
@@ -77,6 +90,52 @@ test('vendor bill: freight above what is left on the PO', () => {
   const f = clone(vb);
   f.poFreightLeft = 400;
   assert.equal(flagged(vendorBillChecks(f), 'freight:')[0].title, 'Freight ₹1,000 is above the ₹400 left on the PO');
+});
+
+// Hire and service bills without a PO (v5 item 91)
+
+const hire: OtherVendorBillFacts = {
+  invoiceNo: 'SRH/221',
+  freight: 0,
+  subtotal: 324000,
+  gstAmount: 58320,
+  total: 382320,
+  duplicates: [],
+  lines: [{ id: 'h1', no: 1, item: 'EXC-02 Excavator, hire for Oct 2026', qty: 180, rate: 1800, gstRate: 18, amount: 324000, gstAmount: 58320 }],
+  hire: { machine: 'EXC-02 for Oct 2026', unit: 'hour', billedQty: 180, loggedQty: 180, rate: 1800, agreedRate: 1800, otherBills: [], fuelLitres: 0, fuelRecovered: 0 },
+  service: null,
+};
+
+test('hire bill: a clean bill has only ticks', () => assert.deepEqual(flags(otherVendorBillChecks(hire)), []));
+test('hire bill: hours above the logs', () => {
+  const f = clone(hire);
+  f.hire!.loggedQty = 172;
+  assert.equal(flagged(otherVendorBillChecks(f), 'hire-qty:')[0].title, '180 hours billed, 172 in the approved logs');
+});
+test('hire bill: rate above the agreed rate', () => {
+  const f = clone(hire);
+  f.hire!.agreedRate = 1700;
+  assert.equal(flagged(otherVendorBillChecks(f), 'hire-rate:')[0].title, 'Hire rate ₹1,800 is above the agreed ₹1,700');
+});
+test('hire bill: a second bill for the machine and month', () => {
+  const f = clone(hire);
+  f.hire!.otherBills = [{ label: 'VB-2026-0012', href: '/vendor-bills/x' }];
+  const [c] = flagged(otherVendorBillChecks(f), 'hire-second:');
+  assert.equal(c.title, 'EXC-02 for Oct 2026 is also billed on VB-2026-0012');
+  assert.deepEqual(c.links, [{ label: 'VB-2026-0012', href: '/vendor-bills/x' }]);
+});
+test('hire bill: diesel issued to an owner-fuelled machine not recovered', () => {
+  const f = clone(hire);
+  f.hire!.fuelLitres = 240;
+  assert.equal(flagged(otherVendorBillChecks(f), 'fuel:')[0].title, '240 litres of diesel we issued are not recovered');
+  f.hire!.fuelRecovered = 22200;
+  assert.equal(flagged(otherVendorBillChecks(f), 'fuel:').length, 0);
+});
+test('service bill: billed above the job cards', () => {
+  const f: OtherVendorBillFacts = { ...clone(hire), hire: null, subtotal: 324000, service: { billed: 324000, recorded: 300000, jobs: [{ label: 'MNT-2026-0004', href: '/machinery?tab=maintenance&id=j' }] } };
+  const checks = otherVendorBillChecks(f);
+  assert.equal(flagged(checks, 'service:')[0].title, '₹3,24,000 billed before GST; the job cards record ₹3,00,000');
+  assert.equal(checks.filter((c) => c.key.startsWith('hire')).length, 0);
 });
 test('vendor bill: invoice already billed', () => {
   const f = clone(vb);

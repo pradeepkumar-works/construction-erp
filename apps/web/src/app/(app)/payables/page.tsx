@@ -28,6 +28,7 @@ import { PAYMENT_QUERY_KEYS, PaymentFormModal, type PayTarget } from '@/componen
 import { PaymentRequestFormModal, type RequestFor } from '@/components/payables/PaymentRequestFormModal';
 import { PaymentRequestDrawer } from '@/components/payables/PaymentRequestRecord';
 import { PaymentRequestList } from '@/components/payables/PaymentRequestList';
+import { DebitNoteList } from '@/components/payables/DebitNoteList';
 import { InTallyTag } from '@/components/tally/InTallyTag';
 import { CardToolbar } from '@/components/common/CardToolbar';
 import { EmptyArt } from '@/components/common/EmptyArt';
@@ -71,7 +72,7 @@ function ageingColumns<T extends PayableTotalsDto>(): ListColumn<T>[] {
 /** Rows of a list worked out in the browser, with the `id` the list template keys them by. */
 type Keyed<T> = T & { id: string };
 const PAGE_KEYS = ['vendorId'] as const;
-const TAB_KEYS = ['due', 'requests', 'vendors', 'projects', 'payments'] as const;
+const TAB_KEYS = ['due', 'requests', 'vendors', 'projects', 'payments', 'debit-notes'] as const;
 type PayablesTab = (typeof TAB_KEYS)[number];
 
 const NO_KEYS: string[] = [];
@@ -546,6 +547,7 @@ export default function PayablesPage() {
               children: <LocalDataTable<Keyed<ProjectPayableDto>> list="payables-projects" columns={projectColumns} rows={projects} loading={isLoading} failed={failed} scrollX={1700} emptyText="Nothing owed on any project" />,
             },
             { key: 'payments', label: 'Payments', children: <PaymentsTab projectId={projectId} vendorId={vendorId} onBill={setBill} /> },
+            { key: 'debit-notes', label: 'Debit notes', children: <DebitNoteList projectId={projectId} vendorId={vendorId} /> },
           ]}
         />
       </Card>
