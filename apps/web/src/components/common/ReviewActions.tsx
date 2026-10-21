@@ -4,11 +4,11 @@ import React, { useEffect, useState } from 'react';
 import { Alert, App, Button, ConfigProvider, Form, Input, Modal, Space, Tooltip, Typography } from 'antd';
 import { CheckOutlined, CloseOutlined, EditOutlined } from '@ant-design/icons';
 import type { ReviewDecision, SubmissionStatus, SubmissionType } from '@erp/shared';
-import { mayApproveType } from '@erp/shared';
+import { mayApproveType, mayApproveTypeAtAll } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { errorMessage } from '@/lib/api';
 import { handledInPlace } from '@/lib/notify';
-import { useReview, type ApprovalTypeParam } from '@/lib/queries';
+import { useApprovalStage, usePendingApprovals, useReview, type ApprovalTypeParam } from '@/lib/queries';
 import { approveTheme, themeFontSize } from '@/lib/theme';
 import { inSentence } from '@/lib/format';
 
@@ -39,8 +39,12 @@ export function ReviewActions({
 }) {
   const { user } = useAuth();
   const [decision, setDecision] = useState<ReviewDecision | null>(null);
-
-  if (!user || !mayApproveType(user, type.toUpperCase() as SubmissionType, amount) || status !== 'SUBMITTED') return null;
+  const kind = type.toUpperCase() as SubmissionType;
+  const could = !!user && status === 'SUBMITTED' && mayApproveTypeAtAll(user, kind);
+  // With approval levels (v5 item 94) the API says whether this user decides the entry at the level it waits at;
+  // until it answers, the user's level-1 limit decides, which is the whole answer for a company without levels.
+  const { data: stage } = useApprovalStage(type, id, could);
+  if (!user || !could || !(stage && stage.status === 'SUBMITTED' ? stage.canReview : mayApproveType(user, kind, amount))) return null;
 
   return (
     <>
@@ -78,10 +82,17 @@ export function ReviewActions({
   );
 }
 
-/** Whether this user may approve, reject or send back this entry now. */
-export function useMayReview(type: ApprovalTypeParam, status: SubmissionStatus, amount?: string | null) {
+/**
+ * Whether this user may approve, reject or send back this entry now: it is in their Approvals queue, which knows the
+ * level it waits at and escalation (v5 item 94); until the queue has loaded, their level-1 limit decides.
+ */
+export function useMayReview(type: ApprovalTypeParam, status: SubmissionStatus, amount: string | null | undefined, id: string) {
   const { user } = useAuth();
-  return !!user && status === 'SUBMITTED' && mayApproveType(user, type.toUpperCase() as SubmissionType, amount);
+  const kind = type.toUpperCase() as SubmissionType;
+  const could = !!user && status === 'SUBMITTED' && mayApproveTypeAtAll(user, kind);
+  const { data: queue } = usePendingApprovals(could);
+  if (!user || !could) return false;
+  return queue ? queue.some((p) => p.type === kind && p.id === id) : mayApproveType(user, kind, amount);
 }
 
 /** Fewest characters a reason to reject or send back may have (the API and the phone ask the same, UX item 88). */
@@ -121,7 +132,7 @@ export function ReviewDialog({ type, id, decision, onClose, onDone }: { type: Ap
       onClose();
       onDone?.();
       review.mutateAsync(vars).then(
-        () => message.success('Approved'),
+        (r) => message.success(r.status === 'SUBMITTED' && r.levels > 1 ? `Approved level ${r.level} of ${r.levels}. It goes to level ${r.level + 1} next.` : 'Approved'),
         () => undefined,
       );
       return;

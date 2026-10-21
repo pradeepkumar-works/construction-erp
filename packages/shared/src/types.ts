@@ -1,6 +1,6 @@
 import type { NotificationTab } from './notifications';
 import type { InspectionCheck, NcrSeverity, NcrStatus, TestKind, TestResult } from './quality';
-import type { ApprovalRightDto } from './approvals';
+import type { ApprovalEscalationDto, ApprovalRightDto } from './approvals';
 import type { TallyVoucherKind } from './tally';
 import type { BillingUnit } from './billing';
 import type { ProgressNarrativeDto } from './briefs';
@@ -319,6 +319,11 @@ export interface PendingApprovalDto {
   submittedAt: string;
   /** Rupees the approval limit is checked against (see APPROVAL_AMOUNT_BASIS); null for types without an amount. */
   amount: string | null;
+  /** v5 item 94: the level waiting and the levels it needs (left out when it needs one) */
+  level?: number;
+  levels?: number;
+  /** In this queue because it waited past its escalation time */
+  escalated?: boolean;
 }
 
 /** An entry the current user approved, rejected or sent back: the Approvals inbox's "reviewed today". */
@@ -326,6 +331,25 @@ export interface ReviewedItemDto extends PendingApprovalDto {
   decision: 'APPROVED' | 'REJECTED' | 'CHANGES_REQUESTED';
   note: string | null;
   reviewedAt: string;
+}
+
+/** What a decision did (v5 item 94): below its last level an approval leaves the entry SUBMITTED for the next level. */
+export interface ReviewResultDto {
+  ok: true;
+  status: SubmissionStatus;
+  /** The level just decided, of `levels` */
+  level: number;
+  levels: number;
+}
+
+/** One of the caller's own entries waiting for approval, and whose queue it is in (v5 item 94, Waiting with others). */
+export interface WaitingEntryDto extends PendingApprovalDto {
+  level: number;
+  levels: number;
+  /** Role names whose queue it is in */
+  waitingWith: string[];
+  /** Since when it has waited at this level */
+  waitingSince: string;
 }
 
 export interface AuditLogDto {
@@ -401,6 +425,8 @@ export interface MyWorkDto {
   watchList?: MyWorkCard;
   /** The caller's own entries rejected or sent back for changes */
   sentBack?: MyWorkCard;
+  /** The caller's own entries waiting for someone's approval, longest first, with whose queue (v5 item 94) */
+  waitingWithOthers?: MyWorkCard;
   /** Sent RA bills not fully received, oldest first */
   receivables?: MyWorkCard;
   /** Vendor and subcontractor bills due in the next 7 days or overdue */
@@ -496,7 +522,7 @@ export interface PushTokenDto {
 
 /** Result of a scheduled notification job (DPR reminder / approval digest). */
 export interface NotificationJobResult {
-  job: 'DPR_REMINDER' | 'APPROVAL_DIGEST' | 'TESTS_DUE' | 'BILLS_DUE' | 'MACHINERY_DUE' | 'COMPLIANCE_DUE' | 'HANDOVER_DUE' | 'WATCH_LIST' | 'MORNING_BRIEF' | 'WEEK_NARRATIVE';
+  job: 'DPR_REMINDER' | 'APPROVAL_DIGEST' | 'TESTS_DUE' | 'BILLS_DUE' | 'MACHINERY_DUE' | 'COMPLIANCE_DUE' | 'HANDOVER_DUE' | 'WATCH_LIST' | 'MORNING_BRIEF' | 'WEEK_NARRATIVE' | 'APPROVAL_ESCALATION';
   date: string;
   created: number;
   pushed: number;
@@ -1217,6 +1243,10 @@ export interface ApprovalRuleDto {
   type: SubmissionType;
   /** null = no limit */
   maxAmount: string | null;
+  /** v5 item 94: 1 (the matrix) when left out; 2 or 3 for a higher level */
+  level?: number;
+  /** Higher levels: the amount from which this level applies; null = always */
+  minAmount?: string | null;
 }
 
 export interface ApprovalMatrixDto {
@@ -1226,6 +1256,8 @@ export interface ApprovalMatrixDto {
   rules: ApprovalRuleDto[];
   /** Accounts pays a bill only against an approved payment request (v5 item 90) */
   paymentsNeedRequest: boolean;
+  /** Reminders and escalation per submission type (v5 item 94); types left out have neither */
+  escalations: ApprovalEscalationDto[];
 }
 
 /* ---------- clients and contracts ---------- */

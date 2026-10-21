@@ -3,7 +3,7 @@ import { Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import type { AttachmentDto, ReviewDecision, SubmissionBase, SubmissionType } from '@erp/shared';
+import type { ApprovalStageDto, AttachmentDto, ReviewDecision, SubmissionBase, SubmissionType } from '@erp/shared';
 import { absoluteUrl } from '../config';
 import { colors, fontSize, radius, spacing, touch, typography } from '../theme';
 import { formatDateTime } from '../utils/format';
@@ -15,9 +15,9 @@ import { StatusBadge } from './StatusBadge';
 import { Button } from './Button';
 import { Input } from './Input';
 import { BottomSheet, SheetActions, type SheetAction } from './BottomSheet';
-import { useApi } from '../api/hooks';
+import { useApi, useFetch } from '../api/hooks';
 import { errorMessage } from '../api/client';
-import { reviewNoteProblem, reviewSubmission } from '../api/review';
+import { REVIEW_PATH, approvedLine, reviewNoteProblem, reviewSubmission } from '../api/review';
 import { ErrorBanner } from './States';
 import { useSnackbar } from './Snackbar';
 import { useAuth } from '../auth/AuthContext';
@@ -173,7 +173,10 @@ const DETAIL_API: Record<SubmissionType, string> = {
   PAYMENT_REQUEST: 'payment-requests',
 };
 
-/** Approve / request changes / reject with an optional note. Rendered only for approvers on SUBMITTED entries. */
+/**
+ * Approve / request changes / reject with an optional note, for whoever decides a SUBMITTED entry at the level it waits
+ * at (v5 item 94, the API's stage). Everyone else sees whose queue it is in, since when, and why they cannot decide it.
+ */
 export function ReviewActions<T extends SubmissionBase>({ type, item, onReviewed }: { type: SubmissionType; item: T; onReviewed: (updated: T) => void }) {
   const { user } = useAuth();
   const api = useApi();
@@ -187,8 +190,12 @@ export function ReviewActions<T extends SubmissionBase>({ type, item, onReviewed
 
   const known = item as unknown as { totalAmount?: string; amount?: string; grossAmount?: string };
   const amount = type === 'EXPENSE' ? known.totalAmount : type === 'MEASUREMENT' ? known.amount : type === 'BILL' ? known.grossAmount : undefined;
+  const waiting = item.status === 'SUBMITTED' && type !== 'INSPECTION';
+  const { data: stage } = useFetch<ApprovalStageDto>((a) => a.get(`/approvals/${REVIEW_PATH[type]}/${item.id}/stage`), [type, item.id, item.status], { enabled: waiting });
   // An inspection is reviewed with its checklist on its own screen.
-  if (!user || type === 'INSPECTION' || !mayApproveType(user, type, amount) || item.status !== 'SUBMITTED') return null;
+  if (!user || !waiting) return null;
+  // Until the stage arrives, the user's level-1 limit decides (the whole answer for a company without levels).
+  if (!(stage ? stage.canReview : mayApproveType(user, type, amount))) return stage ? <StageCard stage={stage} /> : null;
   const meta = DECISIONS.find((d) => d.decision === pending);
 
   const choose = (d: ReviewDecision) => {
@@ -206,12 +213,13 @@ export function ReviewActions<T extends SubmissionBase>({ type, item, onReviewed
     setBusy(true);
     setError(null);
     try {
-      await reviewSubmission(api, type, item.id, pending, note);
+      const result = await reviewSubmission(api, type, item.id, pending, note);
       const updated = await api.get<T>(`/${DETAIL_API[type]}/${item.id}`);
       setPending(null);
       setNote('');
       onReviewed(updated);
-      if (meta) snackbar.show(t(meta.done), { tone: pending === 'APPROVE' ? 'success' : 'info' });
+      const level = approvedLine(result);
+      if (meta) snackbar.show(level ? t(...level) : t(meta.done), { tone: pending === 'APPROVE' ? 'success' : 'info' });
     } catch (e) {
       setError(errorMessage(e));
     } finally {
@@ -221,7 +229,10 @@ export function ReviewActions<T extends SubmissionBase>({ type, item, onReviewed
 
   return (
     <Card title={t('Review')}>
-      <Text style={[typography.caption, styles.reviewHint]}>{t('This entry is awaiting your decision.')}</Text>
+      <Text style={[typography.caption, styles.reviewHint]}>
+        {t('This entry is awaiting your decision.')}
+        {stage && stage.levels > 1 ? ` ${t('Level {level} of {levels}.', { level: stage.level, levels: stage.levels })}` : ''}
+      </Text>
       <View style={styles.actions}>
         {DECISIONS.map((d) => (
           <Button key={d.decision} title={t(d.label)} variant={d.variant} icon={d.icon} onPress={() => choose(d.decision)} style={styles.actionBtn} />
@@ -266,6 +277,21 @@ export function ReviewActions<T extends SubmissionBase>({ type, item, onReviewed
           <Button title={meta ? t(meta.confirm) : ''} variant={meta?.variant ?? 'primary'} onPress={confirm} loading={busy} style={styles.flex2} />
         </View>
       </BottomSheet>
+    </Card>
+  );
+}
+
+/** Where a waiting entry stands (v5 item 94): its level, whose queue it is in and since when, and why this user cannot decide it. */
+function StageCard({ stage }: { stage: ApprovalStageDto }) {
+  const t = useT();
+  const who = stage.waitingWith.map((r) => t(r)).join(', ');
+  return (
+    <Card title={t('Approval')}>
+      {stage.levels > 1 ? <KeyValue label={t('Level')} value={t('{level} of {levels}', { level: stage.level, levels: stage.levels })} /> : null}
+      <KeyValue label={t('Waiting with')} value={who || t('No approver yet')} />
+      {stage.waitingSince ? <KeyValue label={t('Since')} value={formatDateTime(stage.waitingSince)} /> : null}
+      {stage.escalated ? <KeyValue label={t('Escalated')} value={t('Yes, the next level can decide it too')} /> : null}
+      {stage.reason ? <Text style={[typography.caption, styles.stageReason]}>{stage.reason}</Text> : null}
     </Card>
   );
 }
@@ -316,6 +342,7 @@ const styles = StyleSheet.create({
   lightboxStamp: { color: colors.onOverlay, fontSize: fontSize.secondary, marginTop: spacing.sm },
   lightboxClose: { position: 'absolute', top: 48, right: 20 },
   reviewHint: { marginBottom: spacing.md },
+  stageReason: { marginTop: spacing.sm },
   actions: { gap: spacing.sm },
   actionBtn: {},
   sheetBtns: { flexDirection: 'row' },

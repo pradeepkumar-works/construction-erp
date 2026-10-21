@@ -43,7 +43,7 @@ export function RowActions<T extends SubmissionBase & { id: string }>({
   const router = useRouter();
   const prefetch = usePrefetch();
   const [decision, setDecision] = useState<ReviewDecision | null>(null);
-  const mayReview = useMayReview(type, row.status, amount) && review;
+  const mayReview = useMayReview(type, row.status, amount, row.id) && review;
   const mayEdit = !!user && !!onEdit && canEditSubmission(user, row) && canResubmit(user, row);
 
   const items: MenuProps['items'] = [

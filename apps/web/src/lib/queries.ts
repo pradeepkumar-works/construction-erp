@@ -166,6 +166,8 @@ import type {
   NotificationTab,
   Paginated,
   PendingApprovalDto,
+  ApprovalStageDto,
+  ReviewResultDto,
   ReviewedItemDto,
   MyWorkDto,
   HomeTrendsDto,
@@ -1842,6 +1844,14 @@ export const useAudit = (type: ApprovalTypeParam, id: string | undefined) =>
     enabled: !!id,
   });
 
+/** Where an entry stands in its approval levels and whether the user may decide it now (v5 item 94). */
+export const useApprovalStage = (type: ApprovalTypeParam, id: string | undefined, enabled = true) =>
+  useQuery({
+    queryKey: ['approvals', 'stage', type, id],
+    queryFn: async () => (await api.get<ApprovalStageDto>(`/approvals/${type}/${id}/stage`)).data,
+    enabled: enabled && !!id,
+  });
+
 /* ---------- mutations ---------- */
 
 export function useInvalidateAll() {
@@ -1903,7 +1913,7 @@ export function useReview() {
   return useMutation({
     /** `batch`: one of several approved together (bulk approve), which refetches once at the end. */
     mutationFn: async (vars: { type: ApprovalTypeParam; id: string; decision: ReviewDecision; note?: string; batch?: boolean }) =>
-      (await api.post(`/approvals/${vars.type}/${vars.id}/review`, { decision: vars.decision, note: vars.note || undefined })).data,
+      (await api.post<ReviewResultDto>(`/approvals/${vars.type}/${vars.id}/review`, { decision: vars.decision, note: vars.note || undefined })).data,
     // An approval shows straight away; a refusal puts it back, and then everything is read again. Sending back and
     // rejecting wait for the server, since the dialog with the reason stays open until then.
     onMutate: async (vars) => ({ rollback: vars.batch || vars.decision !== 'APPROVE' ? null : await showReviewed(qc, [vars.id], vars.decision) }),

@@ -119,6 +119,9 @@ Each user's **Send a test** button shows whether a channel works end to end.
   also sends the quality test-due reminders and writes and sends the morning briefs (and on Mondays the weekly
   narratives) and reads newly filed PDFs for Ask the contract, so no third cron is needed; `jobs/briefs` writes the
   briefs alone and `jobs/read-documents` reads PDFs alone. Reading PDFs needs Node 22 or later on the API project.
+  Approval reminders and escalation (`jobs/approval-escalation`) run inside both daily crons; for hourly reminders
+  point an external hourly cron (any uptime or cron service) at that endpoint with the same header, or on a host that
+  keeps the API running set `NOTIFICATION_JOBS_INPROCESS=true`, which runs it on the hour.
   Run a job by hand with `curl -H "Authorization: Bearer $CRON_SECRET" $API_URL/notifications/jobs/dpr-reminder`.
 - **Web on Vercel**: root directory `apps/web`; build command builds `packages/shared` then `next build`.
 - **Git auto-deploy**: both Vercel projects are linked to `pradeepkumar-works/construction-erp`.

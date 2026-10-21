@@ -9,6 +9,10 @@ export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
 export const SUBMISSION_STATUSES = ['DRAFT', 'SUBMITTED', 'APPROVED', 'REJECTED', 'CHANGES_REQUESTED'] as const;
 export type SubmissionStatus = (typeof SUBMISSION_STATUSES)[number];
 
+/** What an approval step records (v5 item 94): one level approved, an entry escalated past its waiting time, or its approvers reminded. */
+export const APPROVAL_STEP_ACTIONS = ['APPROVED', 'ESCALATED', 'REMINDED'] as const;
+export type ApprovalStepAction = (typeof APPROVAL_STEP_ACTIONS)[number];
+
 export const REVIEW_DECISIONS = ['APPROVE', 'REJECT', 'REQUEST_CHANGES'] as const;
 export type ReviewDecision = (typeof REVIEW_DECISIONS)[number];
 

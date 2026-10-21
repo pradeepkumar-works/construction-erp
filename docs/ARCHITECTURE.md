@@ -81,6 +81,33 @@ hold points use the latter on progress. The clients keep a few per-type maps (we
 `approvalTypeParam`; mobile `TYPE_ICON`, `EDIT_PATH`, `REVIEW_PATH`, `OUTBOX_PATH`, push routes) that
 TypeScript flags when a type is added.
 
+### Approval levels and escalation (v5 item 94)
+
+Who approves a type is the approval matrix (`ApprovalRule`, Settings > Approval rules), or the fixed rule while a company
+has none. A rule has a `level` (1 to 3): level 1 is the matrix as before (each role up to its `maxAmount`); levels 2 and 3
+apply from their `minAmount` (one amount per level, the third at least the second; no amount means every entry). An
+entry whose amount needs a higher level stays `SUBMITTED` after the level before approves it: `review()` writes an
+`ApprovalStep` (`APPROVED`, the level, who, the note, and the round, which is its `submittedAt`) and a `LEVEL_APPROVED`
+audit line, tells the next level, and returns `{ status, level, levels }`; the last level approves it as before. So the
+six status columns stay as they are on every submission table, and a company without levels behaves exactly as before.
+Rejecting or sending back at any level ends the round; a resubmission starts a new round, so earlier steps no longer
+count.
+
+All decisions read one pure module, `src/common/approval-levels.ts` (tested in `scripts/approval-levels-test.ts`):
+`stageOf` (the level an entry waits at, from the round's steps), `levelRoles`, `escalationRoles` (the next level's roles,
+management above the last), `queueRoles` and `mayDecide`, which also refuses the person who approved an earlier level of
+the same entry and says why ("It has moved on to level 2…"). `ApprovalRightsService.decide` loads the rules and steps
+for `ProjectAccessService.assertCanApproveSubmission`; `pending()` keeps only entries the caller decides now;
+`GET /approvals/:type/:id/stage` gives a record its levels, steps, whose queue it is in (`waitingWith`) and since when,
+`canReview` and the reason; `GET /approvals/waiting` lists the caller's own waiting entries (Home's Waiting with others
+card and the phone's My submissions). The web's buttons follow the stage on a record and the Approvals queue in lists.
+
+`ApprovalEscalation` (per type: `remindAfterHours`, `escalateAfterHours`) drives `NotificationJobsService.approvalEscalation`,
+run hourly (`GET /notifications/jobs/approval-escalation`, the in-process scheduler on the hour, and inside both daily
+crons): once per level it reminds the level's approvers (a `REMINDED` step), and after the escalation time it records
+`ESCALATED`, after which the next level's roles (management above the last level) may decide the entry too and are
+told by push and WhatsApp.
+
 ### Undo after a delete
 
 Deletes are hard deletes. A kind whose delete is cheap to reverse (a single row, or a row with its own lines, and no

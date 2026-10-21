@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-10-approval-levels',
+    date: '2026-10-31',
+    title: 'Second and third approvals, reminders and escalation',
+    points: [
+      "Approval rules can ask for a second and a third approval above an amount, per kind of entry: a purchase order over ₹2 lakh, say, goes to management after the project manager approves it. Nobody approves two levels of one entry.",
+      "Set when the approvers are reminded about an entry still waiting, and when it escalates: after that the next level (management above the last) can decide it too, and they are told.",
+      "Every record shows its levels: who approved each and when, whose queue it is in now and since when. The Approvals inbox marks the level and escalated entries.",
+      "Home has a Waiting with others card: your own entries waiting for approval, at which level and with whom. The phone shows the same in My submissions.",
+    ],
+  },
+  {
     id: '2026-10-fuel-and-fleet',
     date: '2026-10-30',
     title: 'Fuel, utilisation, and tyres and batteries',

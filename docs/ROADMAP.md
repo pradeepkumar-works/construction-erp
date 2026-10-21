@@ -431,9 +431,12 @@ carries on after the UX items (to 89). Migrations stay additive. Design notes fo
     `Item.isFuel` and fuel issues (`StockEntry.equipmentId`, `meterReading`) on the web and offline on the phone; the
     Fuel tab with each site's daily position; `Equipment.fuelNorm` with `FUEL_NORM` on the watch list; the Utilisation
     tab; `EquipmentPart` for tyres and batteries with their life. ARCHITECTURE "Fuel and fleet use".
-94. **Approval levels and escalation** (M). Up to three levels per submission type above an amount (`ApprovalStep`
+94. ~~**Approval levels and escalation** (M). Up to three levels per submission type above an amount (`ApprovalStep`
     records each step, the status columns stay as they are), reminders and escalation when an entry waits, and
-    Waiting with others.
+    Waiting with others.~~ Done: `ApprovalRule.level` and `minAmount`, `ApprovalStep` and `ApprovalEscalation`; the
+    pure rules in `approval-levels.ts`; the stage on every record, the level in the Approvals inbox, the higher levels
+    and escalation card on Approval rules, the hourly `jobs/approval-escalation`, and Waiting with others on Home and
+    the phone. ARCHITECTURE "Approval levels and escalation".
 95. **Purchase small items** (S each). Stock on hand at every site on a material request line, issue or transfer first;
     the item's last five POs on the purchase forms; enquiries emailed to suppliers with a one-time link to quote.
 96. **Management view on the phone** (M). Company tiles for admin, management, accounts and project managers: money

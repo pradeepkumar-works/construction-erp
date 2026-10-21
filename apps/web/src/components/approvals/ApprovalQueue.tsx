@@ -134,7 +134,7 @@ export function ApprovalQueue({ groups, current, onOpen, selected, selectedType,
                         </Flex>
                         <Flex justify="space-between" gap={token.marginXS} style={{ fontSize: token.fontSizeSM }}>
                           <Typography.Text type="secondary" ellipsis style={{ minWidth: 0, fontSize: token.fontSizeSM }}>
-                            {p.projectName} · {p.submittedByName}
+                            {[p.projectName, p.submittedByName, p.levels ? `Level ${p.level} of ${p.levels}` : null, p.escalated ? 'Escalated' : null].filter(Boolean).join(' · ')}
                           </Typography.Text>
                           <Tooltip title={formatDateTime(p.submittedAt)}>
                             <Typography.Text type="secondary" style={{ whiteSpace: 'nowrap', fontSize: token.fontSizeSM }}>

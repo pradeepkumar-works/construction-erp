@@ -1,7 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { COMPLIANCE_DOC_KIND_LABELS, COMPLIANCE_ROLES, DLP_ALERT_DAYS, DOC_ALERT_DAYS, EQUIPMENT_DOC_TYPE_LABELS, SERVICE_STATE_LABELS, expiryState, APPROVER_ROLES, DPR_SUBMITTER_ROLES, PAYMENT_ROLES, SPECIALIST_APPROVERS, SUBMISSION_TYPE_LABELS, TEST_KIND_LABELS, canSeeWatchList, type BriefLineDto, type NotificationJobResult, type PendingApprovalDto, type RoleKey } from '@erp/shared';
+import { COMPLIANCE_DOC_KIND_LABELS, COMPLIANCE_ROLES, DLP_ALERT_DAYS, DOC_ALERT_DAYS, EQUIPMENT_DOC_TYPE_LABELS, SERVICE_STATE_LABELS, expiryState, APPROVER_ROLES, DPR_SUBMITTER_ROLES, PAYMENT_ROLES, SPECIALIST_APPROVERS, SUBMISSION_TYPE_LABELS, TEST_KIND_LABELS, canSeeWatchList, type BriefLineDto, type NotificationJobResult, type PendingApprovalDto, type RoleKey, type SubmissionType } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
+import { ApprovalRightsService } from '../common/approval-rights.service';
+import { escalationRoles, levelRoles } from '../common/approval-levels';
 import { ProjectAccessService } from '../common/project-access.service';
 import { RequestUser } from '../common/current-user';
 import { parseDate } from '../common/serialize';
@@ -39,7 +41,54 @@ export class NotificationJobsService {
     private payables: PayablesService,
     private warnings: WarningsService,
     private briefs: BriefsService,
+    private rights: ApprovalRightsService,
   ) {}
+
+  /**
+   * Reminders and escalation (v5 item 94), meant to run hourly: an entry that has waited at its level past its type's
+   * `remindAfterHours` reminds that level's approvers once; past `escalateAfterHours`, the next level's roles
+   * (management above the top level) may decide it too and are told. Each is an `ApprovalStep` of the entry's round,
+   * so it happens once per level, however often the job runs.
+   */
+  async approvalEscalation(now = new Date()): Promise<NotificationJobResult> {
+    const result: NotificationJobResult = { job: 'APPROVAL_ESCALATION', date: todayIn(), created: 0, pushed: 0, emailed: 0, messaged: 0, skipped: 0 };
+    const settings = await this.prisma.approvalEscalation.findMany({ where: { OR: [{ remindAfterHours: { not: null } }, { escalateAfterHours: { not: null } }] } });
+    for (const set of settings) {
+      const type = set.submissionType as SubmissionType;
+      const model = this.rights.submissionModel(type);
+      if (!model) continue;
+      const rows = (await model.findMany({
+        where: { organizationId: set.organizationId, status: 'SUBMITTED' },
+        select: { id: true, projectId: true, submittedAt: true, createdAt: true },
+      })) as { id: string; projectId: string; submittedAt: Date | null; createdAt: Date }[];
+      if (!rows.length) continue;
+      const entries = await Promise.all(
+        rows.map(async (r) => ({ type, id: r.id, amount: (await this.rights.amountOf(type, r.id))?.toString() ?? null, round: r.submittedAt ?? r.createdAt, projectId: r.projectId })),
+      );
+      const { rules, stages } = await this.rights.stages(set.organizationId, entries);
+      for (const e of entries) {
+        const stage = stages.get(`${type}:${e.id}`)!;
+        const hours = (now.getTime() - stage.since.getTime()) / 3_600_000;
+        const escalate = !!set.escalateAfterHours && hours >= set.escalateAfterHours && !stage.escalated;
+        const remind = !escalate && !!set.remindAfterHours && hours >= set.remindAfterHours && !stage.reminded && !stage.escalated;
+        if (!escalate && !remind) {
+          result.skipped++;
+          continue;
+        }
+        await this.prisma.approvalStep.create({
+          data: { organizationId: set.organizationId, entityType: type, entityId: e.id, level: stage.level, action: escalate ? 'ESCALATED' : 'REMINDED', round: e.round, note: `Waited ${Math.floor(hours)} hours` },
+        });
+        const roles: RoleKey[] = escalate ? escalationRoles(type, rules, stage.level) : ['ADMIN', ...levelRoles(type, rules, stage.level, e.amount)];
+        const users = await this.access.usersWithRoles(set.organizationId, e.projectId, [...new Set(roles)]);
+        const r = await this.notifications.onWaiting(set.organizationId, type, e.id, users.map((u) => u.id), hours, escalate);
+        result.created += r.created;
+        result.pushed += r.pushed;
+        result.messaged! += r.messaged ?? 0;
+      }
+    }
+    this.log.log(`Approval escalation: ${JSON.stringify(result)}`);
+    return result;
+  }
 
   /**
    * The overnight batch (AI item 74): today's morning briefs for everyone who asked, and on Mondays last week's summary

@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { FlatList, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import type { DailyReportDto, ExpenseDto, InspectionDto, MeasurementSheetDto, MachineryLogDto, MaterialRequestDto, Paginated, ProgressEntryDto, SubmissionType } from '@erp/shared';
+import type { DailyReportDto, ExpenseDto, InspectionDto, MeasurementSheetDto, MachineryLogDto, MaterialRequestDto, Paginated, ProgressEntryDto, SubmissionType, WaitingEntryDto } from '@erp/shared';
 import { useApi, useFetch, type Api } from '../src/api/hooks';
 import { errorMessage } from '../src/api/client';
 import { Button, EmptyState, ErrorState, Input, Loading, OfflineBanner, Screen, SubmissionRow, Touchable } from '../src/components';
@@ -82,9 +82,23 @@ export default function SubmissionsScreen() {
     setMoreError(null);
   }, [first.data]);
 
+  // Waiting with others (v5 item 94): for an entry waiting for approval, whose queue it is in and since when.
+  const waiting = useFetch<WaitingEntryDto[]>((a) => a.get('/approvals/waiting'), [syncedCount], { cacheKey: 'approvals:waiting:v1' });
+  const waitingOf = useMemo(() => new Map((waiting.data ?? []).map((w) => [`${w.type}:${w.id}`, w])), [waiting.data]);
+  const metaOf = (r: Row) => {
+    const w = r.status === 'SUBMITTED' ? waitingOf.get(`${type}:${r.id}`) : undefined;
+    if (!w) return timeAgo(r.createdAt);
+    const who = w.waitingWith.length ? t('With {who}', { who: w.waitingWith.map((x) => t(x)).join(', ') }) : t('No approver yet');
+    return [w.levels > 1 ? t('Level {level} of {levels}', { level: w.level, levels: w.levels }) : null, who, timeAgo(w.waitingSince)].filter(Boolean).join(' · ');
+  };
+
   const data = first.data ? [...first.data.rows, ...more.rows] : null;
   const total = first.data?.total ?? 0;
-  const { loading, refreshing, error, refresh, reload } = first;
+  const { loading, refreshing, error, reload } = first;
+  const refresh = () => {
+    void first.refresh();
+    void waiting.refresh();
+  };
 
   const loadMore = async () => {
     if (moreBusy || !data || data.length >= total) return;
@@ -144,7 +158,7 @@ export default function SubmissionsScreen() {
               </View>
             ) : null
           }
-          renderItem={({ item }) => <SubmissionRow type={type} title={item.title} subtitle={item.subtitle} status={item.status} meta={timeAgo(item.createdAt)} onPress={() => router.push(`${path}${item.id}`)} />}
+          renderItem={({ item }) => <SubmissionRow type={type} title={item.title} subtitle={item.subtitle} status={item.status} meta={metaOf(item)} onPress={() => router.push(`${path}${item.id}`)} />}
         />
       )}
     </Screen>
