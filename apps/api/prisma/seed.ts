@@ -1033,12 +1033,14 @@ async function seedRfis(organizationId: string) {
   const risk = (projectId: string, title: string) => prisma.risk.findFirst({ where: { projectId, title: { startsWith: title } }, select: { id: true } });
   const year = new Date().getUTCFullYear();
   let n = 0;
-  const rfi = async (projectId: string, raisedOffset: number, replyOffset: number, data: Omit<Prisma.RfiUncheckedCreateInput, 'organizationId' | 'projectId' | 'rfiNo' | 'raisedOn' | 'replyBy'>) => {
+  type RfiSeed = Omit<Prisma.RfiUncheckedCreateInput, 'organizationId' | 'projectId' | 'rfiNo' | 'raisedOn' | 'replyBy' | 'raisedById'> & { raisedById?: string };
+  const rfi = async (projectId: string, raisedOffset: number, replyOffset: number, { raisedById, ...data }: RfiSeed) => {
     n += 1;
+    const by = raisedById ?? raiser.id;
     const r = await prisma.rfi.create({
-      data: { organizationId, projectId, rfiNo: `RFI-${year}-${String(n).padStart(4, '0')}`, raisedOn: day(raisedOffset), replyBy: day(replyOffset), raisedById: raiser.id, createdAt: day(raisedOffset), ...data },
+      data: { organizationId, projectId, rfiNo: `RFI-${year}-${String(n).padStart(4, '0')}`, raisedOn: day(raisedOffset), replyBy: day(replyOffset), raisedById: by, createdAt: day(raisedOffset), ...data },
     });
-    await prisma.auditLog.create({ data: { organizationId, entityType: 'RFI', entityId: r.id, action: 'CREATED', actorId: data.raisedById ?? raiser.id, note: r.rfiNo, createdAt: day(raisedOffset) } });
+    await prisma.auditLog.create({ data: { organizationId, entityType: 'RFI', entityId: r.id, action: 'CREATED', actorId: by, note: r.rfiNo, createdAt: day(raisedOffset) } });
     return r;
   };
   const toRoad = road.consultantName ?? road.clientName ?? "Client's engineer";
