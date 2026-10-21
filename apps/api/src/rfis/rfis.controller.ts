@@ -61,7 +61,7 @@ export class RfisController {
     return this.rfis.withdraw(user, id, dto);
   }
 
-  @ApiOperation({ summary: 'Link the variation or delay raised from the answer (null unlinks)' })
+  @ApiOperation({ summary: 'Link the variation or delay raised from the answer (null unlinks)', description: 'Site and office engineers and approvers; the variation or delay must be on the same project.' })
   @Put(':id/links')
   link(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: LinkRfiDto) {
     return this.rfis.link(user, id, dto);
