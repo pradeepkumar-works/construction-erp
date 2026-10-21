@@ -297,7 +297,9 @@ export interface MaterialRequestItemDto {
   receivedQty: string;
   /** Quantity on purchase orders that are not rejected ("0" when none); a closed order counts what it received */
   orderedQty: string;
-  /** Still to be ordered: requested less what orders hold and what was received without an order */
+  /** Met from stock (v5 item 95): issued at this site or transferred from another ("0" when none) */
+  coveredQty: string;
+  /** Still to be ordered: requested less what orders hold, what was received without an order and what stock met */
   toOrderQty: string;
 }
 
@@ -1693,6 +1695,8 @@ export interface QuotationDto {
   total: string;
   /** Lines of the request it has no rate for */
   missingLines: number;
+  /** Typed by the supplier on an enquiry link (v5 item 95) */
+  fromSupplier: boolean;
   createdByName: string;
   createdAt: string;
 }

@@ -4,6 +4,9 @@ import {
   SUBMISSION_STATUS_LABELS,
   canPurchase,
   canViewPurchaseOrders,
+  LAST_RATES_COUNT,
+  lastRateKey,
+  type LastRatesDto,
   type Paginated,
   type DeliveryState,
   type ProcurementStatusDto,
@@ -23,7 +26,7 @@ import { dateOnly, dec, iso, money, parseDate } from '../common/serialize';
 import { isUniqueViolation } from '../common/idempotency';
 import { nextDocNo } from '../common/doc-number';
 import { ilike, pageArgs, paginated, searchWords, dateRange } from '../common/paging';
-import { ClosePurchaseOrderDto, CreatePurchaseOrderDto, ListPurchaseOrdersQuery, PoLineInput, ProcurementStatusQuery, ReceivableOrdersQuery, UpdatePurchaseOrderDto } from './purchasing.dto';
+import { ClosePurchaseOrderDto, CreatePurchaseOrderDto, LastRatesQuery, ListPurchaseOrdersQuery, PoLineInput, ProcurementStatusQuery, ReceivableOrdersQuery, UpdatePurchaseOrderDto } from './purchasing.dto';
 import { todayIn } from '../notifications/time';
 import { MSME_MAX_PAYMENT_DAYS, ZERO, lineAmounts, orderedOn, parseFreight, parseGstRate, parseQty, parseRate, sum, totals } from './purchase-math';
 
@@ -190,6 +193,47 @@ export class PurchaseOrdersService {
       this.prisma.purchaseOrder.count({ where }),
     ]);
     return paginated(rows.map((r) => this.toDto(r)), total, args);
+  }
+
+  /**
+   * The last approved orders of each item (v5 item 95), newest first: vendor, date, project and rate, for the
+   * quotation, comparative and PO forms. Items are matched by name and unit, ignoring case; only orders the user may see.
+   */
+  async lastRates(user: RequestUser, q: LastRatesQuery): Promise<LastRatesDto> {
+    if (!canViewPurchaseOrders(user.roleKey)) throw new ForbiddenException('Your role cannot see purchase orders');
+    const wanted = new Map<string, { name: string; unit: string }>();
+    for (const raw of q.item) {
+      const cut = raw.lastIndexOf('|');
+      const name = (cut < 0 ? raw : raw.slice(0, cut)).trim();
+      const unit = cut < 0 ? '' : raw.slice(cut + 1).trim();
+      if (name && unit) wanted.set(lastRateKey(name, unit), { name, unit });
+    }
+    const out: LastRatesDto = {};
+    await Promise.all(
+      [...wanted].map(async ([key, w]) => {
+        const rows = await this.prisma.purchaseOrderLine.findMany({
+          where: {
+            itemName: { equals: w.name, mode: 'insensitive' },
+            unit: { equals: w.unit, mode: 'insensitive' },
+            purchaseOrder: { status: 'APPROVED', ...this.access.submissionWhere(user), ...(q.excludePoId ? { id: { not: q.excludePoId } } : {}) },
+          },
+          orderBy: [{ purchaseOrder: { poDate: 'desc' } }, { purchaseOrder: { createdAt: 'desc' } }],
+          take: LAST_RATES_COUNT,
+          select: { quantity: true, rate: true, gstRate: true, purchaseOrder: { select: { id: true, poNo: true, poDate: true, vendor: { select: { name: true } }, project: { select: { name: true } } } } },
+        });
+        out[key] = rows.map((r) => ({
+          purchaseOrderId: r.purchaseOrder.id,
+          poNo: r.purchaseOrder.poNo,
+          poDate: dateOnly(r.purchaseOrder.poDate)!,
+          vendorName: r.purchaseOrder.vendor.name,
+          projectName: r.purchaseOrder.project.name,
+          quantity: dec(r.quantity)!,
+          rate: money(r.rate)!,
+          gstRate: r.gstRate.toString(),
+        }));
+      }),
+    );
+    return out;
   }
 
   async get(user: RequestUser, id: string): Promise<PurchaseOrderDto> {
@@ -367,7 +411,8 @@ export class PurchaseOrdersService {
 
   /**
    * Priced lines. A line raised from a request line takes its name, unit and specification and may order at most what
-   * the request still needs: requested, less what other orders hold (see `orderedOn`) and what was received without one.
+   * the request still needs: requested, less what other orders hold (see `orderedOn`), what was received without one
+   * and what stock met (v5 item 95).
    */
   private async lines(tx: Tx | PrismaService, mr: Prisma.MaterialRequestGetPayload<{ include: { items: true } }> | null, input: PoLineInput[], excludePoId?: string): Promise<LineData[]> {
     const linked = input.map((l) => l.materialRequestItemId).filter((x): x is string => !!x);
@@ -383,6 +428,7 @@ export class PurchaseOrdersService {
     const direct = linked.length
       ? await tx.stockTxn.groupBy({ by: ['materialRequestItemId'], where: { materialRequestItemId: { in: linked }, purchaseOrderLineId: null }, _sum: { quantity: true } })
       : [];
+    const covered = linked.length ? await tx.materialRequestCover.groupBy({ by: ['materialRequestItemId'], where: { materialRequestItemId: { in: linked } }, _sum: { quantity: true } }) : [];
     return input.map((l, i) => {
       const item = l.materialRequestItemId ? mr!.items.find((x) => x.id === l.materialRequestItemId) : null;
       if (l.materialRequestItemId && !item) throw new BadRequestException(`A line is not part of ${mr!.requestNo}`);
@@ -393,7 +439,8 @@ export class PurchaseOrdersService {
       if (item) {
         const free = item.quantity
           .sub(sum(held.filter((h) => h.materialRequestItemId === item.id), orderedOn))
-          .sub(direct.find((d) => d.materialRequestItemId === item.id)?._sum.quantity ?? ZERO);
+          .sub(direct.find((d) => d.materialRequestItemId === item.id)?._sum.quantity ?? ZERO)
+          .sub(covered.find((c) => c.materialRequestItemId === item.id)?._sum.quantity ?? ZERO);
         if (quantity.gt(free))
           throw new ConflictException(
             free.lte(0)

@@ -132,6 +132,25 @@ export class CreateTransferDto {
   lines: IssueLineDto[];
 }
 
+/* ---------- a material request met from stock (v5 item 95) ---------- */
+
+export class CoverLineDto {
+  @ApiProperty() @IsUUID() materialRequestItemId: string;
+  @ApiProperty({ example: '20' }) @qty() @IsNumberString() quantity: string;
+}
+
+export class CoverRequestDto {
+  @ApiPropertyOptional(CLIENT_ID_DOC) @IsOptional() @IsUUID('4') id?: string;
+  @ApiProperty({ description: "The site the material comes from: the request's own site issues it, another site transfers it" }) @IsUUID() fromProjectId: string;
+  @ApiProperty({ example: '2026-10-21' }) @IsDateString() @dateOnly() date: string;
+  @ApiPropertyOptional({ example: 'OD-02-AB-1234' }) @IsOptional() @IsString() @trim() @MaxLength(30) vehicleNo?: string | null;
+  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(1000) remarks?: string | null;
+
+  @ApiProperty({ type: [CoverLineDto], description: 'Each at most what the line still needs and what the sending site holds.' })
+  @IsArray() @ArrayMinSize(1) @ArrayMaxSize(100) @ValidateNested({ each: true }) @Type(() => CoverLineDto)
+  lines: CoverLineDto[];
+}
+
 export class ReceiveTransferDto {
   @ApiPropertyOptional(CLIENT_ID_DOC) @IsOptional() @IsUUID('4') id?: string;
   @ApiProperty({ example: '2026-10-14' }) @IsDateString() @dateOnly() date: string;

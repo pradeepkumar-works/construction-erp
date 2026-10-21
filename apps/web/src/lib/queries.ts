@@ -231,6 +231,9 @@ import type {
   PhotoCheckKind,
   PhotoChecksDto,
   SnagDraftDto,
+  MaterialRequestStockDto,
+  LastRatesDto,
+  EnquiryDto,
 } from '@erp/shared';
 import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, NOTIFICATION_TYPES_VERSION, SEARCH_MIN_LENGTH } from '@erp/shared';
 import { api } from './api';
@@ -1399,6 +1402,70 @@ export const useComparative = (materialRequestId: string | undefined, enabled = 
     queryFn: async () => (await api.get<ComparativeStatementDto>(`/material-requests/${materialRequestId}/comparative`)).data,
     enabled: enabled && !!materialRequestId,
   });
+
+/* ---------- small purchase items (v5 item 95) ---------- */
+
+/** Stock of a request's lines at its own site and the other sites (stock first). */
+export const useRequestStock = (materialRequestId: string | undefined, enabled = true) =>
+  useQuery({
+    queryKey: ['material-requests', 'stock', materialRequestId],
+    queryFn: async () => (await api.get<MaterialRequestStockDto>(`/material-requests/${materialRequestId}/stock`)).data,
+    enabled: enabled && !!materialRequestId,
+  });
+
+export interface CoverRequestInput {
+  id?: string;
+  fromProjectId: string;
+  date: string;
+  vehicleNo?: string | null;
+  remarks?: string | null;
+  lines: { materialRequestItemId: string; quantity: string }[];
+}
+
+/** Meet request lines from stock: an issue at its own site or a transfer from another. */
+export function useCoverRequest(materialRequestId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: CoverRequestInput) => (await api.post<StockEntryDto>(`/material-requests/${materialRequestId}/cover`, body)).data,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['material-requests'] });
+      qc.invalidateQueries({ queryKey: ['stock'] });
+      qc.invalidateQueries({ queryKey: ['quotations'] });
+    },
+  });
+}
+
+/** The last approved orders of items (`name|unit` each), keyed by `lastRateKey`. */
+export const useLastRates = (items: { itemName: string; unit: string }[], enabled = true, excludePoId?: string) => {
+  const keys = [...new Set(items.filter((i) => i.itemName?.trim() && i.unit?.trim()).map((i) => `${i.itemName.trim()}|${i.unit.trim()}`))].sort();
+  return useQuery({
+    queryKey: ['purchase-orders', 'last-rates', keys, excludePoId ?? null],
+    queryFn: async () => {
+      const q = new URLSearchParams(keys.map((k) => ['item', k]));
+      if (excludePoId) q.set('excludePoId', excludePoId);
+      return (await api.get<LastRatesDto>(`/purchase-orders/last-rates?${q}`)).data;
+    },
+    enabled: enabled && keys.length > 0,
+    staleTime: 60_000,
+  });
+};
+
+export const useEnquiries = (materialRequestId: string | undefined, enabled = true) =>
+  useQuery({
+    queryKey: ['quotations', 'enquiries', materialRequestId],
+    queryFn: async () => (await api.get<EnquiryDto[]>(`/material-requests/${materialRequestId}/enquiries`)).data,
+    enabled: enabled && !!materialRequestId,
+  });
+
+export function useSendEnquiry(materialRequestId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: { vendorIds: string[]; closesOn: string; message?: string | null }) => (await api.post<EnquiryDto>(`/material-requests/${materialRequestId}/enquiries`, body)).data,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['quotations', 'enquiries', materialRequestId] });
+    },
+  });
+}
 
 export interface VendorBillFilters extends PageParams {
   projectId?: string;

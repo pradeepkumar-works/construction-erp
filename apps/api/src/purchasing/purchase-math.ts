@@ -20,6 +20,20 @@ export function orderedOn(l: { quantity: Decimal; purchaseOrder: { closedAt: Dat
   return l.purchaseOrder.closedAt ? sum(l.stockTxns, (t) => t.quantity) : l.quantity;
 }
 
+/**
+ * What a request line still needs arranged: requested less what orders hold, what was received without an order and
+ * what stock met (an issue here or a transfer in, v5 item 95). Never below zero.
+ */
+export function toOrderOf(i: {
+  quantity: Decimal;
+  poLines: Parameters<typeof orderedOn>[0][];
+  stockTxns: { quantity: Decimal; purchaseOrderLineId: string | null }[];
+  covers: { quantity: Decimal }[];
+}): Decimal {
+  const received = sum(i.stockTxns.filter((t) => !t.purchaseOrderLineId), (t) => t.quantity);
+  return Prisma.Decimal.max(0, i.quantity.sub(sum(i.poLines, orderedOn)).sub(received).sub(sum(i.covers, (c) => c.quantity)));
+}
+
 export function parseQty(raw: string, what: string): Decimal {
   const q = parseNum(raw, what);
   if (q.lte(0)) throw new BadRequestException(`${what}: the quantity must be more than zero`);

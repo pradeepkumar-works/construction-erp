@@ -18,6 +18,8 @@ import {
   type ReceivableRequestDto,
   type SortOrder,
   type StockBalanceDto,
+  type MaterialRequestStockDto,
+  canKeepStock,
   type StockBalanceSortField,
   type StockEntryDto,
   type StockEntrySortField,
@@ -34,9 +36,11 @@ import { AttachmentsService, ATTACHMENT_FIELDS } from '../common/attachments.ser
 import { NotificationsService } from '../notifications/notifications.service';
 import { dateOnly, dec, iso, money, parseDate } from '../common/serialize';
 import { isUniqueViolation } from '../common/idempotency';
+import { toOrderOf } from '../purchasing/purchase-math';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import {
   CheckGrnDto,
+  CoverRequestDto,
   CreateAdjustmentDto,
   CreateFuelIssueDto,
   CreateIssueDto,
@@ -444,11 +448,13 @@ export class StockService {
     const saved = await this.createGuarded(user, dto.id, () =>
       this.inLock(user.organizationId, async (tx) => {
         const got = await tx.stockTxn.groupBy({ by: ['materialRequestItemId'], where: { materialRequestItemId: { in: [...want.keys()] } }, _sum: { quantity: true } });
+        const covered = await tx.materialRequestCover.groupBy({ by: ['materialRequestItemId'], where: { materialRequestItemId: { in: [...want.keys()] } }, _sum: { quantity: true } });
         const lines: Line[] = [];
         for (const [lineId, quantity] of want) {
           const line = mr.items.find((i) => i.id === lineId)!;
           const received = got.find((g) => g.materialRequestItemId === lineId)?._sum.quantity ?? ZERO;
-          const pending = line.quantity.sub(received);
+          // What stock met (v5 item 95) is not received again.
+          const pending = line.quantity.sub(received).sub(covered.find((c) => c.materialRequestItemId === lineId)?._sum.quantity ?? ZERO);
           if (quantity.gt(pending))
             throw new ConflictException(
               pending.lte(0)
@@ -1062,7 +1068,7 @@ export class StockService {
     if (q.projectId) await this.access.assertCanAccessProject(user, q.projectId);
     const rows = await this.prisma.materialRequest.findMany({
       where: { ...this.access.submissionWhere(user), status: 'APPROVED', ...(q.projectId ? { projectId: q.projectId } : {}) },
-      include: { project: { select: { name: true } }, items: { orderBy: { sortOrder: 'asc' }, include: { stockTxns: { select: { quantity: true } } } } },
+      include: { project: { select: { name: true } }, items: { orderBy: { sortOrder: 'asc' }, include: { stockTxns: { select: { quantity: true } }, covers: { select: { quantity: true } } } } },
       orderBy: [{ requiredDate: 'asc' }, { requestNo: 'asc' }],
       take: 200,
     });
@@ -1076,7 +1082,7 @@ export class StockService {
         priority: r.priority,
         lines: r.items.map((i) => {
           const received = i.stockTxns.reduce((s, t) => s.add(t.quantity), ZERO);
-          const pending = i.quantity.sub(received);
+          const pending = i.quantity.sub(received).sub(i.covers.reduce((s, c) => s.add(c.quantity), ZERO));
           return {
             materialRequestItemId: i.id,
             itemName: i.itemName,
@@ -1089,6 +1095,157 @@ export class StockService {
         }),
       }))
       .filter((r) => r.lines.some((l) => Number(l.pending) > 0));
+  }
+
+  /* ---------- a material request met from stock (v5 item 95) ---------- */
+
+  /** A request with what each line still needs, for stock first. */
+  private async coverableRequest(user: RequestUser, id: string) {
+    const mr = await this.prisma.materialRequest.findFirst({
+      where: { id, ...this.access.submissionWhere(user) },
+      include: {
+        project: { select: { name: true, status: true } },
+        submittedBy: { select: { fullName: true } },
+        items: {
+          orderBy: { sortOrder: 'asc' },
+          include: {
+            stockTxns: { select: { quantity: true, purchaseOrderLineId: true } },
+            covers: { select: { quantity: true } },
+            poLines: { where: { purchaseOrder: { status: { not: 'REJECTED' } } }, select: { quantity: true, purchaseOrder: { select: { closedAt: true } }, stockTxns: { select: { quantity: true } } } },
+          },
+        },
+      },
+    });
+    if (!mr) throw new NotFoundException('Material request not found');
+    return mr;
+  }
+
+  /** The item master rows a request's free-text lines name (by name and unit, ignoring case); none are added. */
+  private async itemsNamed(organizationId: string, lines: { itemName: string; unit: string }[]) {
+    const items = lines.length
+      ? await this.prisma.item.findMany({
+          where: { organizationId, OR: lines.map((l) => ({ name: { equals: l.itemName.trim(), mode: 'insensitive' as const }, unit: { equals: l.unit.trim(), mode: 'insensitive' as const } })) },
+          select: { id: true, name: true, unit: true },
+        })
+      : [];
+    return (l: { itemName: string; unit: string }) => items.find((i) => i.name.toLowerCase() === l.itemName.trim().toLowerCase() && i.unit.toLowerCase() === l.unit.trim().toLowerCase()) ?? null;
+  }
+
+  /**
+   * Stock first (v5 item 95): for each line of a request, what its own site holds and what the other sites the user can
+   * see hold, so the store issues or transfers before the rest is bought.
+   */
+  async requestStock(user: RequestUser, materialRequestId: string): Promise<MaterialRequestStockDto> {
+    const mr = await this.coverableRequest(user, materialRequestId);
+    const itemOf = await this.itemsNamed(user.organizationId, mr.items);
+    const itemIds = [...new Set(mr.items.map((i) => itemOf(i)?.id).filter((x): x is string => !!x))];
+    const sums = itemIds.length
+      ? await this.prisma.stockTxn.groupBy({ by: ['projectId', 'itemId'], where: { organizationId: user.organizationId, itemId: { in: itemIds }, project: this.access.projectWhere(user) }, _sum: { quantity: true } })
+      : [];
+    const projects = await this.prisma.project.findMany({ where: { id: { in: [...new Set(sums.map((s) => s.projectId))] } }, select: { id: true, name: true } });
+    const sender = canKeepStock(user.roleKey);
+    return {
+      materialRequestId: mr.id,
+      projectId: mr.projectId,
+      canIssue: sender,
+      lines: mr.items.map((i) => {
+        const item = itemOf(i);
+        const at = sums.filter((s) => item && s.itemId === item.id && (s._sum.quantity ?? ZERO).gt(0));
+        return {
+          materialRequestItemId: i.id,
+          itemName: i.itemName,
+          unit: i.unit,
+          itemId: item?.id ?? null,
+          toOrderQty: dec(toOrderOf(i))!,
+          coveredQty: dec(i.covers.reduce((s, c) => s.add(c.quantity), ZERO))!,
+          here: dec(at.find((s) => s.projectId === mr.projectId)?._sum.quantity ?? ZERO)!,
+          others: at
+            .filter((s) => s.projectId !== mr.projectId)
+            .sort((a, b) => (b._sum.quantity ?? ZERO).cmp(a._sum.quantity ?? ZERO))
+            .map((s) => ({ projectId: s.projectId, projectName: projects.find((p) => p.id === s.projectId)?.name ?? '', balance: dec(s._sum.quantity)!, canSend: sender })),
+        };
+      }),
+    };
+  }
+
+  /**
+   * Meet request lines from stock (v5 item 95): from the request's own site an issue to whoever raised it, from another
+   * site a transfer to the request's site (received there as usual). Each line at most what it still needs; what is
+   * met no longer needs ordering or receiving. Deleting the entry gives the need back.
+   */
+  async coverRequest(user: RequestUser, materialRequestId: string, dto: CoverRequestDto): Promise<StockEntryDto> {
+    const existing = await this.findExisting(user, dto.id);
+    if (existing) return existing;
+    const mr = await this.coverableRequest(user, materialRequestId);
+    if (mr.status !== 'APPROVED') throw new ConflictException(`Stock is issued against approved requests. ${mr.requestNo} is ${SUBMISSION_STATUS_LABELS[mr.status].toLowerCase()}.`);
+    await this.access.assertCanKeepStock(user, dto.fromProjectId);
+    const here = dto.fromProjectId === mr.projectId;
+    if (!here && mr.project.status === 'CLOSED') throw new BadRequestException(`${mr.project.name} is closed`);
+    const date = this.entryDate(dto.date);
+    const want = new Map<string, Decimal>();
+    for (const l of dto.lines) {
+      const line = mr.items.find((i) => i.id === l.materialRequestItemId);
+      if (!line) throw new BadRequestException(`A line is not part of ${mr.requestNo}`);
+      want.set(line.id, (want.get(line.id) ?? ZERO).add(this.parseQty(l.quantity, line.itemName)));
+    }
+    const itemOf = await this.itemsNamed(user.organizationId, mr.items);
+    const items: { id: string; name: string; unit: string }[] = [];
+    const lines: Line[] = [];
+    for (const [lineId, quantity] of want) {
+      const line = mr.items.find((i) => i.id === lineId)!;
+      const item = itemOf(line);
+      if (!item) throw new ConflictException(`${line.itemName} (${line.unit}) is not in any store yet`);
+      items.push(item);
+      lines.push({ itemId: item.id, quantity });
+    }
+    const merged = this.mergeLines(lines);
+    let before = new Map<string, Decimal>();
+    const saved = await this.createGuarded(user, dto.id, () =>
+      this.inLock(user.organizationId, async (tx) => {
+        // What each line still needs, read again under the lock so two stores cannot both meet it.
+        const fresh = await tx.materialRequestItem.findMany({
+          where: { id: { in: [...want.keys()] } },
+          include: {
+            stockTxns: { select: { quantity: true, purchaseOrderLineId: true } },
+            covers: { select: { quantity: true } },
+            poLines: { where: { purchaseOrder: { status: { not: 'REJECTED' } } }, select: { quantity: true, purchaseOrder: { select: { closedAt: true } }, stockTxns: { select: { quantity: true } } } },
+          },
+        });
+        for (const f of fresh) {
+          const need = toOrderOf(f);
+          const quantity = want.get(f.id)!;
+          if (quantity.gt(need))
+            throw new ConflictException(
+              need.lte(0) ? `${f.itemName} on ${mr.requestNo} needs nothing more.` : `Only ${dec(need)} ${f.unit} of ${f.itemName} on ${mr.requestNo} is still needed.`,
+            );
+        }
+        before = await this.assertInStock(tx, dto.fromProjectId, merged, items);
+        const entry = await this.insertEntry(
+          tx,
+          user,
+          {
+            id: dto.id,
+            type: here ? 'ISSUE' : 'TRANSFER_OUT',
+            projectId: dto.fromProjectId,
+            date,
+            materialRequestId: mr.id,
+            issuedTo: here ? mr.submittedBy.fullName : mr.project.name,
+            toProjectId: here ? null : mr.projectId,
+            vehicleNo: dto.vehicleNo,
+            remarks: dto.remarks || `For ${mr.requestNo}`,
+          },
+          merged.map((l) => ({ ...l, quantity: l.quantity.neg() })),
+        );
+        await tx.materialRequestCover.createMany({
+          data: [...want].map(([materialRequestItemId, quantity]) => ({ organizationId: user.organizationId, materialRequestItemId, stockEntryId: entry.id, quantity })),
+        });
+        return entry;
+      }),
+    );
+    if ('existing' in saved) return this.get(user, saved.id);
+    await this.audit.log(user, 'STOCK', saved.id, 'CREATED', `${saved.entryNo} for ${mr.requestNo}${here ? '' : ` to ${mr.project.name}`}`);
+    await this.alertLowStock(user, dto.fromProjectId, before, saved.id, saved.entryNo);
+    return this.get(user, saved.id);
   }
 
   /* ---------- item master ---------- */

@@ -400,4 +400,9 @@ export const SITE: Record<string, string> = {
   'No fuel has gone into machines today.': 'आज किसी मशीन में ईंधन नहीं डाला गया।',
   'Receipts and issues need a connection: the stock must be checked on the server. A fuel issue is kept on this phone and sent later.':
     'माल आना और जारी करना इंटरनेट से ही होगा: स्टॉक सर्वर पर जाँचा जाता है। ईंधन जारी इस फ़ोन पर रखा जाता है और बाद में भेजा जाता है।',
+  // Stock first on a material request (v5 item 95)
+  '{qty} in stock here': 'यहाँ स्टॉक में {qty}',
+  'None in stock here': 'यहाँ स्टॉक में नहीं',
+  '{qty} at {n} other sites': '{n} अन्य साइटों पर {qty}',
+  '{qty} from stock': 'स्टॉक से {qty}',
 };

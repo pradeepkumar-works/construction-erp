@@ -81,6 +81,32 @@ hold points use the latter on progress. The clients keep a few per-type maps (we
 `approvalTypeParam`; mobile `TYPE_ICON`, `EDIT_PATH`, `REVIEW_PATH`, `OUTBOX_PATH`, push routes) that
 TypeScript flags when a type is added.
 
+### Small purchase items (v5 item 95)
+
+**Stock first.** A material request's lines are free text; `StockService.requestStock` matches each to the item master
+by name and unit (ignoring case, adding nothing) and sums `StockTxn` per project over the projects the user can see:
+what the request's own site holds and what the others hold. Take from stock (`POST /material-requests/:id/cover`, store
+keepers of the sending site, approved requests only) is an `ISSUE` to whoever raised the request when it comes from the
+request's site, or a `TRANSFER_OUT` to it from another site (received there as any transfer). Each line gets a
+`MaterialRequestCover` row with the quantity, tied to the store entry (deleting the entry deletes it). What a line still
+needs is `toOrderOf` in `purchase-math.ts`: requested less what orders hold, what was received without an order and what
+stock met; the PO form, the GRN against the request and `toOrderQty` all use it, so met quantities are neither ordered
+nor received again. A line can never be met beyond its need: the check runs again under the stock lock.
+
+**Last orders.** `GET /purchase-orders/last-rates?item=name|unit` returns, per item, the last five approved PO lines
+(PO, date, vendor, project, quantity, rate, GST) the user may see, newest first. The quotation form, the comparative
+statement and the PO form show the latest under each rate and the five in a popover (`LastRates`).
+
+**Enquiries.** Procurement sends an `Enquiry` for an approved request to chosen suppliers with a closing date. Each
+vendor gets an `EnquiryToken`: the raw token exists only in its link (`/quote/<token>` on the web), the table keeps its
+SHA-256, as for `PasswordToken`; it expires at the end of the closing day (IST), and a new enquiry to the same vendor on the
+same request closes the old link. The link is emailed when the vendor has an email and email is set up; the answer to
+sending carries every link once, to pass on by WhatsApp. The supplier's page (`GET`/`POST /public/quotes/:token`, no
+sign-in, sixty tries in ten minutes per address) is looked up with `withoutTenant` and shows the company, site, items
+and closing date. The reply is saved once (the token's `respondedAt` is claimed in the same transaction) as that vendor's
+`Quotation` on the request with `fromSupplier` (an earlier one of theirs is replaced unless an order was raised on it),
+audited under the buyer who sent the enquiry, who is emailed. It then sits on the comparative statement like any other.
+
 ### Approval levels and escalation (v5 item 94)
 
 Who approves a type is the approval matrix (`ApprovalRule`, Settings > Approval rules), or the fixed rule while a company

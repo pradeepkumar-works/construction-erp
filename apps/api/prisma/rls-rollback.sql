@@ -312,5 +312,14 @@ DROP POLICY IF EXISTS tenant_isolation ON "ApprovalStep";
 ALTER TABLE "ApprovalEscalation" NO FORCE ROW LEVEL SECURITY;
 ALTER TABLE "ApprovalEscalation" DISABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS tenant_isolation ON "ApprovalEscalation";
+ALTER TABLE "MaterialRequestCover" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "MaterialRequestCover" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "MaterialRequestCover";
+ALTER TABLE "Enquiry" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "Enquiry" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "Enquiry";
+ALTER TABLE "EnquiryToken" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "EnquiryToken" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "EnquiryToken";
 
 DROP FUNCTION IF EXISTS app_current_org();

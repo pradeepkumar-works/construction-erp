@@ -2,15 +2,15 @@
 
 import React, { useState } from 'react';
 import { Button, Empty, Space, Table, Tag, Tooltip, Typography } from 'antd';
-import { DeleteOutlined, EditOutlined, PlusOutlined, ShoppingCartOutlined, TrophyOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, MailOutlined, PlusOutlined, ShoppingCartOutlined, TrophyOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { ComparativeStatementDto, MaterialRequestDto, QuotationDto } from '@erp/shared';
-import { canPurchase } from '@erp/shared';
+import type { ComparativeStatementDto, EnquiryDto, MaterialRequestDto, QuotationDto } from '@erp/shared';
+import { canPurchase, lastRateKey } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
-import { useComparative, usePurchaseOrders } from '@/lib/queries';
+import { useComparative, useLastRates, usePurchaseOrders } from '@/lib/queries';
 import { formatDate, formatINR, formatQty, toNumber } from '@/lib/format';
 import { StatusTag } from '@/components/common/StatusTag';
 import { QuotationFormModal } from './QuotationFormModal';
@@ -19,6 +19,8 @@ import { PoStateTag, PurchaseOrderDrawer } from './PurchaseOrderDrawer';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { RecordLink } from '@/components/record/RecordLink';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
+import { LastRates } from './LastRates';
+import { EnquiriesList, EnquiryFormModal, EnquirySentModal } from './Enquiries';
 
 type Line = ComparativeStatementDto['lines'][number];
 
@@ -35,6 +37,9 @@ export function QuotationsPanel({ request }: { request: MaterialRequestDto }) {
   const [quoting, setQuoting] = useState<QuotationDto | 'new' | null>(null);
   const [start, setStart] = useState<PoStart | null>(null);
   const [openPo, setOpenPo] = useState<string | null>(null);
+  const [enquiring, setEnquiring] = useState(false);
+  const [sent, setSent] = useState<EnquiryDto | null>(null);
+  const last = useLastRates(request.items);
 
   const remove = useMutation({
     mutationFn: async (id: string) => (await api.delete(`/quotations/${id}`)).data,
@@ -77,6 +82,11 @@ export function QuotationsPanel({ request }: { request: MaterialRequestDto }) {
         </Typography.Text>
         {buyer && (
           <Space wrap>
+            {remaining && (
+              <Button size="small" icon={<MailOutlined />} onClick={() => setEnquiring(true)}>
+                Send enquiry
+              </Button>
+            )}
             <Button size="small" icon={<PlusOutlined />} onClick={() => setQuoting('new')}>
               Record quotation
             </Button>
@@ -88,6 +98,7 @@ export function QuotationsPanel({ request }: { request: MaterialRequestDto }) {
           </Space>
         )}
       </div>
+      <EnquiriesList requestId={request.id} />
       {quotes.length > 0 && data ? (
         <Table<Line>
           size="small"
@@ -108,6 +119,7 @@ export function QuotationsPanel({ request }: { request: MaterialRequestDto }) {
                     {formatQty(l.quantity)} {l.unit}
                     {toNumber(l.orderedQty) > 0 ? ` · ${formatQty(l.orderedQty)} ordered` : ''}
                   </div>
+                  <LastRates itemName={l.itemName} rates={last.data?.[lastRateKey(l.itemName, l.unit)]} loading={last.isLoading} />
                 </div>
               ),
             },
@@ -128,6 +140,13 @@ export function QuotationsPanel({ request }: { request: MaterialRequestDto }) {
                   <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM'), fontWeight: 400 }}>
                     {[q.quoteRef, formatDate(q.quoteDate), q.deliveryDays != null ? `${q.deliveryDays} days` : null].filter(Boolean).join(' · ')}
                   </div>
+                  {q.fromSupplier && (
+                    <Tooltip title="Typed by the supplier on the enquiry link">
+                      <Tag color="blue" style={{ margin: 0, fontWeight: 400 }}>
+                        From supplier
+                      </Tag>
+                    </Tooltip>
+                  )}
                 </div>
               ),
               render: (_: unknown, l: Line) => {
@@ -193,6 +212,8 @@ export function QuotationsPanel({ request }: { request: MaterialRequestDto }) {
         <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No quotations or purchase orders yet" />
       ) : null}
       {!remaining && <Tag color="green" style={{ marginTop: 8 }}>Everything on this request is ordered or received</Tag>}
+      <EnquiryFormModal open={enquiring} request={request} onClose={() => setEnquiring(false)} onSent={setSent} />
+      <EnquirySentModal enquiry={sent} onClose={() => setSent(null)} />
       <QuotationFormModal open={!!quoting} request={request} quotation={quoting === 'new' ? null : quoting} onClose={() => setQuoting(null)} />
       <PurchaseOrderFormModal open={!!start} start={start} onClose={() => setStart(null)} onSaved={(o) => setOpenPo(o.id)} />
       <PurchaseOrderDrawer id={openPo} open={!!openPo} onClose={() => setOpenPo(null)} />

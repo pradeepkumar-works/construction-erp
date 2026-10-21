@@ -11,6 +11,7 @@ import {
   BillableJobsQuery,
   CreateVendorBillDto,
   HirePreviewQuery,
+  LastRatesQuery,
   ListPurchaseOrdersQuery,
   ListVendorBillsQuery,
   ProcurementStatusQuery,
@@ -81,6 +82,12 @@ export class PurchasingController {
   @Get('purchase-orders/status')
   status(@CurrentUser() user: RequestUser, @Query() q: ProcurementStatusQuery) {
     return this.orders.status(user, q);
+  }
+
+  @ApiOperation({ summary: 'The last approved orders of items, newest first', description: 'v5 item 95. Up to five per item (`item=name|unit`, repeated), keyed by `name|unit` in lower case.' })
+  @Get('purchase-orders/last-rates')
+  lastRates(@CurrentUser() user: RequestUser, @Query() q: LastRatesQuery) {
+    return this.orders.lastRates(user, q);
   }
 
   @Get('purchase-orders/:id')

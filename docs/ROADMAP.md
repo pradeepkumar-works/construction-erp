@@ -437,8 +437,12 @@ carries on after the UX items (to 89). Migrations stay additive. Design notes fo
     pure rules in `approval-levels.ts`; the stage on every record, the level in the Approvals inbox, the higher levels
     and escalation card on Approval rules, the hourly `jobs/approval-escalation`, and Waiting with others on Home and
     the phone. ARCHITECTURE "Approval levels and escalation".
-95. **Purchase small items** (S each). Stock on hand at every site on a material request line, issue or transfer first;
-    the item's last five POs on the purchase forms; enquiries emailed to suppliers with a one-time link to quote.
+95. ~~**Purchase small items** (S each). Stock on hand at every site on a material request line, issue or transfer first;
+    the item's last five POs on the purchase forms; enquiries emailed to suppliers with a one-time link to quote.~~ Done:
+    `GET /material-requests/:id/stock` and Take from stock (`MaterialRequestCover`: an issue here or a transfer from
+    another site, taken off what is left to order); `GET /purchase-orders/last-rates` under the rates of the quotation,
+    comparative and PO forms; `Enquiry` and `EnquiryToken` (SHA-256 only) with the public page `/quote/<token>`, whose
+    answer is a quotation `fromSupplier`. ARCHITECTURE "Small purchase items".
 96. **Management view on the phone** (M). Company tiles for admin, management, accounts and project managers: money
     today, dues, attendance today, fuel today, purchase pipeline, approvals by module.
 97. **Attendance extras** (S + M, kept by Pradeep on 21 Oct). GPS check-in inside the site's area (new `expo-location`,
