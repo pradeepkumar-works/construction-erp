@@ -15,6 +15,7 @@ const REVIEW_PATH: Record<SubmissionType, string> = {
   VENDOR_BILL: 'vendor_bill',
   WORK_ORDER: 'work_order',
   SUBCONTRACT_BILL: 'subcontract_bill',
+  PAYMENT_REQUEST: 'payment_request',
   INSPECTION: 'inspection',
 };
 

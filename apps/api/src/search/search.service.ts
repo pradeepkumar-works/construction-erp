@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import type { Paginated, SearchHitDto, SearchKind, SearchResultDto } from '@erp/shared';
-import { SEARCH_MIN_LENGTH, VENDOR_KIND_LABELS, canEditContract, canEditVendors, canSeeVendorBank, canViewContract } from '@erp/shared';
+import { SEARCH_MIN_LENGTH, VENDOR_KIND_LABELS, canViewPaymentRequests, canEditContract, canEditVendors, canSeeVendorBank, canViewContract } from '@erp/shared';
 import type { RequestUser } from '../common/current-user';
 import { MaterialRequestsService } from '../material-requests/material-requests.service';
 import { PurchaseOrdersService } from '../purchasing/purchase-orders.service';
@@ -18,6 +18,7 @@ import { VendorsService } from '../vendors/vendors.service';
 import { ClientsService } from '../clients/clients.service';
 import { StockService } from '../stock/stock.service';
 import { StaffService } from '../staff/staff.service';
+import { PaymentRequestsService } from '../payables/payment-requests.service';
 
 /** Hits per kind: enough to spot the one meant, few enough to keep the palette short. */
 const PER_KIND = 4;
@@ -53,6 +54,7 @@ export class SearchService {
     clients: ClientsService,
     stock: StockService,
     staff: StaffService,
+    paymentRequests: PaymentRequestsService,
   ) {
     const page = (q: string) => ({ q, page: 1, pageSize: PER_KIND });
     const sources: Source<any>[] = [
@@ -61,6 +63,12 @@ export class SearchService {
       { kind: 'vendor_bill', list: (u, q) => vendorBills.list(u, page(q) as never), hit: (r) => ({ id: r.id, title: r.billNo, subtitle: join(r.vendorName, r.invoiceNo ? `invoice ${r.invoiceNo}` : null, r.projectName), href: `/vendor-bills/${r.id}`, status: r.status }) },
       { kind: 'work_order', list: (u, q) => workOrders.list(u, page(q) as never), hit: (r) => ({ id: r.id, title: r.woNo, subtitle: join(r.vendorName, r.title), href: `/work-orders/${r.id}`, status: r.status }) },
       { kind: 'subcontract_bill', list: (u, q) => subcontractBills.list(u, page(q) as never), hit: (r) => ({ id: r.id, title: r.label, subtitle: join(r.vendorName, r.projectName), href: `/subcontract-bills/${r.id}`, status: r.status }) },
+      {
+        kind: 'payment_request',
+        allowed: (u) => canViewPaymentRequests(u.roleKey),
+        list: (u, q) => paymentRequests.list(u, page(q) as never),
+        hit: (r) => ({ id: r.id, title: r.requestNo, subtitle: join(r.vendorName, r.targetLabel, r.projectName), href: `/payment-requests/${r.id}`, status: r.status }),
+      },
       { kind: 'ra_bill', list: (u, q) => raBills.list(u, page(q) as never), hit: (r) => ({ id: r.id, title: r.billLabel, subtitle: r.projectName, href: `/bills/${r.id}`, status: r.status }) },
       { kind: 'measurement', list: (u, q) => measurements.list(u, page(q) as never), hit: (r) => ({ id: r.id, title: r.mbNo, subtitle: join(r.contractorName, r.projectName), href: `/measurements/${r.id}`, status: r.status }) },
       { kind: 'expense', list: (u, q) => expenses.list(u, page(q) as never), hit: (r) => ({ id: r.id, title: r.expenseNo, subtitle: join(r.description, r.projectName), href: `/expenses/${r.id}`, status: r.status }) },

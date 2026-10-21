@@ -405,9 +405,13 @@ ledger (Tally keeps the books), RMC plant production, a full supplier portal and
 carries on after the UX items (to 89). Migrations stay additive. Design notes for each item are in the project's
 `roadmap/v5-plan.md`.
 
-90. **Payment requests and advances** (M). A request to pay a bill, or an advance against a PO or work order, approved
+90. ~~**Payment requests and advances** (M). A request to pay a bill, or an advance against a PO or work order, approved
     through the matrix (new submission type `PAYMENT_REQUEST`) before accounts pays; advances adjusted on later vendor
-    bills and capping subcontract advance recovery; a company setting that makes every payment need a request.
+    bills and capping subcontract advance recovery; a company setting that makes every payment need a request.~~ Done:
+    `PaymentRequest` (PR-<year>-0001) on a bill, PO or work order, capped at what is unpaid or not yet advanced, approved
+    through the matrix; payments draw on it, and advances have no bill. Vendor bills adjust PO advances, subcontract
+    recovery caps at what was paid, Payables shows advances not yet adjusted, Tally gets advance vouchers. Approval
+    rules switch `paymentsNeedRequest` (on for new sign-ups). ARCHITECTURE "Payment requests and advances".
 91. **Bills without a PO** (M). Vendor bill kinds: hire bills from a hired machine's approved logs with hire terms
     (minimum hours, fuel, operator), workshop bills against job cards, other service bills; debit notes for shortage,
     excess, rejection, returns and rate difference that reduce the payable, reverse input GST and go to Tally.

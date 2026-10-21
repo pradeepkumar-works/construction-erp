@@ -1,13 +1,13 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { canApprove, canEditSubmission, canResubmit, machineryLogCost, type PendingApprovalDto, type ReviewDecision, type ReviewedItemDto, type SubmissionStatus, type SubmissionType } from '@erp/shared';
+import { subBillLabel, canApprove, canEditSubmission, canResubmit, machineryLogCost, type PendingApprovalDto, type ReviewDecision, type ReviewedItemDto, type SubmissionStatus, type SubmissionType } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from './current-user';
 import { ProjectAccessService } from './project-access.service';
 import { ApprovalRightsService } from './approval-rights.service';
 import { AuditService } from './audit.service';
 import { NotificationsService } from '../notifications/notifications.service';
-import { dprTitle, expenseTitle, machineryTitle, measurementTitle, progressTitle, billTitle, poTitle, vendorBillTitle, woTitle, subBillTitle, inspectionTitle } from './submission-titles';
+import { dprTitle, expenseTitle, machineryTitle, measurementTitle, progressTitle, billTitle, poTitle, vendorBillTitle, woTitle, subBillTitle, inspectionTitle, paymentRequestTitle } from './submission-titles';
 
 const REVIEW_ACTIONS = ['APPROVED', 'REJECTED', 'CHANGES_REQUESTED'] as const;
 
@@ -23,7 +23,7 @@ interface SubmissionRow {
  * One state machine for every site submission:
  *   DRAFT / REJECTED / CHANGES_REQUESTED --submit--> SUBMITTED --review--> APPROVED | REJECTED | CHANGES_REQUESTED
  * A rejected or changes-requested entry is edited in place and resubmitted (audit action RESUBMITTED), so the
- * review history stays on one record. Every submission type (progress, DPRs, material requests, machinery logs, expenses, measurements, bills, orders, inspections) goes through here.
+ * review history stays on one record. Every submission type (progress, DPRs, material requests, machinery logs, expenses, measurements, bills, orders, inspections, payment requests) goes through here.
  */
 /** The queue's line reads only the project's and the submitter's names. */
 const NAME = { select: { name: true } } as const;
@@ -62,6 +62,8 @@ export class SubmissionLifecycleService {
         return this.prisma.subcontractBill;
       case 'INSPECTION':
         return this.prisma.inspection;
+      case 'PAYMENT_REQUEST':
+        return this.prisma.paymentRequest;
     }
   }
 
@@ -160,7 +162,7 @@ export class SubmissionLifecycleService {
     const none = Promise.resolve([] as never[]);
     const allowed = (t: SubmissionType) => whereFor(t) !== null;
     const where = (t: SubmissionType) => whereFor(t) as any;
-    const [progress, dprs, mrs, logs, expenses, mbs, bills, pos, vbills, wos, sbills, inspections] = await Promise.all([
+    const [progress, dprs, mrs, logs, expenses, mbs, bills, pos, vbills, wos, sbills, inspections, payRequests] = await Promise.all([
       allowed('PROGRESS') ? this.prisma.progressEntry.findMany({ where: where('PROGRESS'), include: { project: NAME, activity: { include: { boqItem: { select: { rate: true } } } }, submittedBy: BY }, orderBy: { submittedAt: 'asc' } }) : none,
       allowed('DPR') ? this.prisma.dailyReport.findMany({ where: where('DPR'), include: { project: NAME, submittedBy: BY }, orderBy: { submittedAt: 'asc' } }) : none,
       allowed('MATERIAL_REQUEST') ? this.prisma.materialRequest.findMany({ where: where('MATERIAL_REQUEST'), include: { project: NAME, submittedBy: BY, items: { select: { id: true } } }, orderBy: { submittedAt: 'asc' } }) : none,
@@ -175,6 +177,21 @@ export class SubmissionLifecycleService {
         ? this.prisma.subcontractBill.findMany({ where: where('SUBCONTRACT_BILL'), include: { project: NAME, submittedBy: BY, workOrder: { select: { woNo: true, vendor: { select: { name: true } } } } }, orderBy: { submittedAt: 'asc' } })
         : none,
       allowed('INSPECTION') ? this.prisma.inspection.findMany({ where: where('INSPECTION'), include: { project: NAME, submittedBy: BY, activity: { select: { name: true } } }, orderBy: { submittedAt: 'asc' } }) : none,
+      allowed('PAYMENT_REQUEST')
+        ? this.prisma.paymentRequest.findMany({
+            where: where('PAYMENT_REQUEST'),
+            include: {
+              project: NAME,
+              submittedBy: BY,
+              vendor: { select: { name: true } },
+              vendorBill: { select: { billNo: true } },
+              subcontractBill: { select: { billNo: true, isFinal: true, workOrder: { select: { woNo: true } } } },
+              purchaseOrder: { select: { poNo: true } },
+              workOrder: { select: { woNo: true } },
+            },
+            orderBy: { submittedAt: 'asc' },
+          })
+        : none,
     ]);
     const amt = (d: Prisma.Decimal | null): string | null => (d === null ? null : d.toDecimalPlaces(2).toFixed(2));
     const machineCost = (l: (typeof logs)[number]) => {
@@ -301,6 +318,22 @@ export class SubmissionLifecycleService {
         submittedByName: i.submittedBy.fullName,
         submittedAt: (i.submittedAt ?? i.createdAt).toISOString(),
         amount: null,
+      })),
+      ...payRequests.map((r) => ({
+        type: 'PAYMENT_REQUEST' as const,
+        id: r.id,
+        projectId: r.projectId,
+        projectName: r.project.name,
+        title: paymentRequestTitle(
+          r.requestNo,
+          r.amount.toFixed(2),
+          r.vendor.name,
+          r.vendorBill?.billNo ?? (r.subcontractBill ? subBillLabel(r.subcontractBill.workOrder.woNo, r.subcontractBill.billNo, r.subcontractBill.isFinal) : (r.purchaseOrder?.poNo ?? r.workOrder?.woNo ?? '')),
+          r.kind !== 'BILL',
+        ),
+        submittedByName: r.submittedBy.fullName,
+        submittedAt: (r.submittedAt ?? r.createdAt).toISOString(),
+        amount: amt(r.amount),
       })),
     ];
     return out;

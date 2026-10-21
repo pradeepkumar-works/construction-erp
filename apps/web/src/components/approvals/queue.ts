@@ -13,6 +13,7 @@ export const QUEUE_TYPES: [SubmissionType, string][] = [
   ['VENDOR_BILL', 'Vendor bills'],
   ['WORK_ORDER', 'Work orders'],
   ['SUBCONTRACT_BILL', 'Subcontract bills'],
+  ['PAYMENT_REQUEST', 'Payment requests'],
   ['INSPECTION', 'Inspections'],
 ];
 
@@ -30,6 +31,7 @@ export const TYPE_COLORS: Record<SubmissionType, string> = {
   VENDOR_BILL: 'volcano',
   WORK_ORDER: 'lime',
   SUBCONTRACT_BILL: 'green',
+  PAYMENT_REQUEST: 'red',
   INSPECTION: 'orange',
 };
 
@@ -47,6 +49,7 @@ export const RECORD_PAGES: Partial<Record<SubmissionType, string>> = {
   WORK_ORDER: '/work-orders',
   SUBCONTRACT_BILL: '/subcontract-bills',
   INSPECTION: '/inspections',
+  PAYMENT_REQUEST: '/payment-requests',
 };
 
 export const recordPage = (type: SubmissionType, id: string) => (RECORD_PAGES[type] ? `${RECORD_PAGES[type]}/${id}` : null);

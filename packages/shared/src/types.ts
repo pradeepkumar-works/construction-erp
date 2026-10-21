@@ -33,6 +33,7 @@ import type {
   SubmissionType,
   Weather,
   GrnQcStatus,
+  PaymentRequestKind,
 } from './enums';
 
 /** API response shapes. Decimal columns are serialised as strings to preserve precision. */
@@ -1197,6 +1198,8 @@ export interface ApprovalMatrixDto {
   custom: boolean;
   roles: { roleKey: RoleKey; roleName: string; users: number }[];
   rules: ApprovalRuleDto[];
+  /** Accounts pays a bill only against an approved payment request (v5 item 90) */
+  paymentsNeedRequest: boolean;
 }
 
 /* ---------- clients and contracts ---------- */
@@ -1705,6 +1708,12 @@ export interface PurchaseOrderDto extends SubmissionBase {
   /** Only on GET /purchase-orders/:id */
   grns?: { id: string; entryNo: string; date: string; lines: number }[];
   bills?: { id: string; billNo: string; invoiceNo: string; invoiceDate: string; total: string; status: SubmissionStatus; matched: boolean }[];
+  /** Advances paid against the order (v5 item 90) */
+  advancePaid: string;
+  /** Advances asked for on requests that are not rejected; an advance request may go up to total less this */
+  advanceRequested: string;
+  /** Advance taken off its bills so far (bills not rejected) */
+  advanceAdjusted: string;
 }
 
 /** An approved, open PO line with what is still to be received (GRN against a PO). */
@@ -1756,9 +1765,16 @@ export interface VendorBillDto extends SubmissionBase {
   exceptions: string[];
   remarks: string | null;
   lines: VendorBillLineDto[];
+  /** Advance paid on the PO taken off this bill (v5 item 90) */
+  advanceAdjusted: string;
+  /** What the bill asks to be paid: total less advanceAdjusted */
+  payable: string;
+  /** Advance paid on the PO, and how much of it is not yet taken off its other bills (not rejected) */
+  poAdvancePaid: string;
+  poAdvanceAvailable: string;
   /** Settled by payments (paid plus deducted at payment) */
   paidAmount: string;
-  /** What is still to pay: total less paidAmount */
+  /** What is still to pay: payable less paidAmount */
   outstanding: string;
   /** The day it was paid in full */
   paidDate: string | null;
@@ -1799,6 +1815,10 @@ export interface WorkOrderDto extends SubmissionBase {
   advanceRecoveryPct: string;
   /** Advance recovered on their bills so far (not rejected) */
   advanceRecovered: string;
+  /** Advances paid against the order (v5 item 90); once any is paid, recovery is capped at this instead of advanceAmount */
+  advancePaid: string;
+  /** Advances asked for on requests that are not rejected */
+  advanceRequested: string;
   tdsPct: string;
   paymentDays: number | null;
   /** Sum of the lines before GST */
@@ -1921,6 +1941,53 @@ export interface WorkOrderMarginDto {
 
 export type PayableBillType = 'VENDOR_BILL' | 'SUBCONTRACT_BILL';
 
+/** A request to pay a bill or release an advance (v5 item 90), approved through the matrix before accounts pays. */
+export interface PaymentRequestDto extends SubmissionBase {
+  /** PR-2026-0001 */
+  requestNo: string;
+  kind: PaymentRequestKind;
+  projectCode: string;
+  vendorId: string;
+  vendorName: string;
+  vendorMsme: MsmeCategory | null;
+  /** Exactly one, by kind */
+  vendorBillId: string | null;
+  subcontractBillId: string | null;
+  purchaseOrderId: string | null;
+  workOrderId: string | null;
+  /** What it pays: "VB-2026-0004", "WO-2026-0002 bill 3", "PO-2026-0007" */
+  targetLabel: string;
+  /** A bill's payable, or an order's value */
+  targetValue: string;
+  /**
+   * What this request may ask for: a bill's outstanding less other open requests on it, or the order value less other
+   * advances asked for. Only on GET /payment-requests/:id (null in lists).
+   */
+  targetOpen: string | null;
+  /** A bill's due date */
+  dueDate: string | null;
+  amount: string;
+  mode: PaymentMode;
+  neededBy: string | null;
+  reason: string | null;
+  /** Settled by payments drawing on it (paid plus deducted) */
+  paidAmount: string;
+  /** Approved and not yet paid: amount less paidAmount ("0" otherwise) */
+  outstanding: string;
+  /** The day it was paid in full */
+  paidDate: string | null;
+}
+
+/** The latest open payment request on a bill (not rejected, not yet paid in full). */
+export interface BillRequestDto {
+  id: string;
+  requestNo: string;
+  status: SubmissionStatus;
+  amount: string;
+  /** Approved and not yet paid */
+  unpaid: string;
+}
+
 export interface VendorPaymentDto {
   id: string;
   /** In a Tally export: cannot be changed until that export is undone */
@@ -1930,11 +1997,17 @@ export interface VendorPaymentDto {
   projectName: string;
   vendorId: string;
   vendorName: string;
-  billType: PayableBillType;
+  /** null for an advance (v5 item 90), which is paid against the order */
+  billType: PayableBillType | null;
   vendorBillId: string | null;
   subcontractBillId: string | null;
-  /** "VB-2026-0004" or "WO-2026-0002 bill 3" */
+  purchaseOrderId: string | null;
+  workOrderId: string | null;
+  /** "VB-2026-0004", "WO-2026-0002 bill 3", or for an advance "Advance on PO-2026-0007" */
   billLabel: string;
+  /** The approved payment request it drew on */
+  paymentRequestId: string | null;
+  requestNo: string | null;
   paymentDate: string;
   amount: string;
   mode: PaymentMode;
@@ -1975,6 +2048,8 @@ export interface PayableTotalsDto {
   retentionHeld: string;
   /** TDS deducted: on subcontractor bills and at payment */
   tdsDeducted: string;
+  /** Advances paid against orders not yet taken off their bills (v5 item 90) */
+  advanceOutstanding: string;
 }
 
 export interface VendorPayableDto extends PayableTotalsDto {
@@ -2011,6 +2086,8 @@ export interface PayableBillDto {
   daysToDue: number;
   /** A micro or small enterprise whose bill is due within 7 days or overdue */
   msmeFlag: boolean;
+  /** The latest payment request on it that is open (v5 item 90) */
+  request: BillRequestDto | null;
 }
 
 export interface PayablesDto {
@@ -2020,6 +2097,8 @@ export interface PayablesDto {
   projects: ProjectPayableDto[];
   /** Most urgent first: overdue longest, then due soonest */
   openBills: PayableBillDto[];
+  /** Accounts pays a bill only against an approved payment request */
+  paymentsNeedRequest: boolean;
 }
 
 // ----- Tally export -----

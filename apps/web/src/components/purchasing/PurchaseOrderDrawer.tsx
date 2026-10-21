@@ -6,7 +6,7 @@ import { Alert, App, Button, Divider, Form, Input, Progress, Table, Tag, Typogra
 import { ImportOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { PurchaseOrderDto, PurchaseOrderLineDto } from '@erp/shared';
-import { MSME_CATEGORY_LABELS, canEditSubmission, canKeepStock, canPurchase, canRecordVendorBill, canResubmit, canViewVendorBills } from '@erp/shared';
+import { MSME_CATEGORY_LABELS, canEditSubmission, canKeepStock, canPurchase, canRecordVendorBill, canResubmit, canViewPaymentRequests, canViewVendorBills } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
@@ -26,6 +26,7 @@ import { FormShell } from '@/components/form/FormShell';
 import { themeFontSize } from '@/lib/theme';
 import { Section } from '@/components/common/Section';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
+import { TargetRequests } from '@/components/payables/TargetRequests';
 
 const money = (v: string | number) => <span className="mono" translate="no" style={{ whiteSpace: 'nowrap' }}>{formatINR(v, true)}</span>;
 
@@ -127,6 +128,22 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
             },
             { key: 'date', label: 'PO date', children: formatDate(data.poDate) },
             { key: 'total', label: 'Order total', children: <strong>{money(data.total)}</strong> },
+            ...(toNumber(data.advancePaid) > 0 || toNumber(data.advanceRequested) > 0
+              ? [
+                  {
+                    key: 'advance',
+                    label: 'Advance',
+                    children: (
+                      <span>
+                        {money(data.advancePaid)} paid
+                        <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+                          {formatINR(data.advanceRequested, true)} asked for, {formatINR(data.advanceAdjusted, true)} adjusted on bills
+                        </div>
+                      </span>
+                    ),
+                  },
+                ]
+              : []),
             { key: 'project', label: 'Project', children: <Link href={`/projects/${data.projectId}`}>{data.projectName}</Link> },
             { key: 'mr', label: 'Material request', children: data.requestNo ? <Link href={`/material-requests/${data.materialRequestId}`}>{data.requestNo}</Link> : '-' },
             { key: 'deliver', label: 'Deliver by', children: data.deliveryBy ? formatDate(data.deliveryBy) : '-' },
@@ -244,6 +261,9 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
                     ),
                   },
                 ]
+              : []),
+            ...(approved && !data.closedAt && user && canViewPaymentRequests(user.roleKey)
+              ? [{ key: 'advances', title: 'Advance requests', children: <TargetRequests approved target={{ kind: 'PO_ADVANCE', purchaseOrderId: data.id, label: data.poNo, vendorName: data.vendorName }} base={String(toNumber(data.total) - toNumber(data.advanceRequested))} /> }]
               : []),
             { key: 'documents', title: 'Documents', count: data.attachments.length, children: <AttachmentGallery attachments={data.attachments} /> },
           ],

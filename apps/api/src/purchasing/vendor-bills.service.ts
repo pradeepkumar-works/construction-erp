@@ -20,6 +20,7 @@ import { isUniqueViolation } from '../common/idempotency';
 import { nextDocNo } from '../common/doc-number';
 import { dateRange, ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import { CreateVendorBillDto, ListVendorBillsQuery, UpdateVendorBillDto, VendorBillLineInput } from './purchasing.dto';
+import { advanceAdjusted, advancePaid } from '../payables/advances';
 import { DEFAULT_PAYMENT_DAYS, MSME_MAX_PAYMENT_DAYS, ZERO, lineAmounts, parseFreight, parseGstRate, parseQty, parseRate, sum, totals } from './purchase-math';
 
 type Tx = Prisma.TransactionClient;
@@ -28,7 +29,14 @@ type Decimal = Prisma.Decimal;
 const include = {
   project: { select: { name: true } },
   vendor: { select: { name: true, gstin: true, msmeCategory: true } },
-  purchaseOrder: { select: { poNo: true } },
+  purchaseOrder: {
+    select: {
+      poNo: true,
+      // Advance paid on the PO (v5 item 90), and what its other bills have taken off
+      advances: { where: { vendorBillId: null }, select: { amount: true, tdsAmount: true, otherDeduction: true } },
+      vendorBills: { where: { status: { not: 'REJECTED' as const } }, select: { id: true, advanceAdjusted: true } },
+    },
+  },
   submittedBy: { select: { fullName: true } },
   reviewedBy: { select: { fullName: true } },
   attachments: { select: ATTACHMENT_FIELDS },
@@ -93,6 +101,9 @@ export class VendorBillsService {
   ) {}
 
   toDto(r: Row): VendorBillDto {
+    const payable = r.total.sub(r.advanceAdjusted);
+    const advancePaid = sum(r.purchaseOrder.advances, (p) => p.amount.add(p.tdsAmount).add(p.otherDeduction));
+    const adjustedElsewhere = sum(r.purchaseOrder.vendorBills.filter((b) => b.id !== r.id), (b) => b.advanceAdjusted);
     return {
       id: r.id,
       projectId: r.projectId,
@@ -113,8 +124,12 @@ export class VendorBillsService {
       total: money(r.total)!,
       matched: r.matched,
       exceptions: r.exceptions,
+      advanceAdjusted: money(r.advanceAdjusted)!,
+      payable: money(payable)!,
+      poAdvancePaid: money(advancePaid)!,
+      poAdvanceAvailable: money(Prisma.Decimal.max(advancePaid.sub(adjustedElsewhere), 0))!,
       paidAmount: money(r.paidAmount)!,
-      outstanding: money(Prisma.Decimal.max(r.total.sub(r.paidAmount), 0))!,
+      outstanding: money(Prisma.Decimal.max(payable.sub(r.paidAmount), 0))!,
       paidDate: dateOnly(r.paidDate),
       remarks: r.remarks,
       lines: r.lines.map((l) => ({
@@ -251,6 +266,24 @@ export class VendorBillsService {
     return out;
   }
 
+  /**
+   * Advance taken off this bill (v5 item 90): at most what was paid against the PO in advances and not yet taken off
+   * its other bills (not rejected), and never more than the bill.
+   */
+  private async checkAdvance(db: Tx | PrismaService, purchaseOrderId: string, amount: Decimal, total: Decimal, billId?: string) {
+    if (amount.isZero()) return;
+    if (amount.lt(0)) throw new BadRequestException('The advance adjusted cannot be negative');
+    if (amount.decimalPlaces() > 2) throw new BadRequestException('Amounts are in rupees and paise');
+    if (amount.gt(total)) throw new BadRequestException(`The advance adjusted (${rupees(amount)}) cannot be more than the bill (${rupees(total)})`);
+    const [paid, elsewhere] = await Promise.all([advancePaid(db as Tx, { purchaseOrderId }), advanceAdjusted(db as Tx, purchaseOrderId, billId)]);
+    const left = paid.paid.sub(elsewhere);
+    if (amount.gt(left)) throw new BadRequestException(`Only ${rupees(Prisma.Decimal.max(left, ZERO))} of the advance paid on this PO is not yet taken off its bills`);
+  }
+
+  private parseAdvance(v: string | undefined) {
+    return v === undefined || v === '' ? undefined : new Prisma.Decimal(v);
+  }
+
   private async findExisting(user: RequestUser, id: string | undefined) {
     if (!id) return null;
     const row = await this.prisma.vendorBill.findFirst({ where: { id, organizationId: user.organizationId }, select: { id: true } });
@@ -271,6 +304,8 @@ export class VendorBillsService {
     const lines = this.priced(po, dto.lines);
     const freight = parseFreight(dto.freight);
     const invoiceDate = parseDate(dto.invoiceDate);
+    const advance = this.parseAdvance(dto.advanceAdjusted) ?? ZERO;
+    await this.checkAdvance(this.prisma, po.id, advance, totals(lines, freight).total);
     let id: string | null;
     try {
       id = await this.prisma.$transaction(async (tx) => {
@@ -292,6 +327,7 @@ export class VendorBillsService {
             dueDate: this.dueDate(invoiceDate, po.paymentDays, po.vendor.msmeCategory),
             freight,
             ...totals(lines, freight),
+            advanceAdjusted: advance,
             matched: exceptions.length === 0,
             exceptions,
             remarks: dto.remarks || null,
@@ -328,6 +364,8 @@ export class VendorBillsService {
     const freight = dto.freight !== undefined ? parseFreight(dto.freight) : current.freight;
     const invoiceDate = dto.invoiceDate !== undefined ? parseDate(dto.invoiceDate) : current.invoiceDate;
     const invoiceNo = dto.invoiceNo ?? current.invoiceNo;
+    const advance = this.parseAdvance(dto.advanceAdjusted) ?? current.advanceAdjusted;
+    await this.checkAdvance(this.prisma, po.id, advance, totals(lines, freight).total, id);
     try {
       await this.prisma.$transaction(async (tx) => {
         const exceptions = await this.match(tx, po, lines, freight, id);
@@ -339,6 +377,7 @@ export class VendorBillsService {
             dueDate: this.dueDate(invoiceDate, po.paymentDays, po.vendor.msmeCategory),
             freight,
             ...totals(lines, freight),
+            advanceAdjusted: advance,
             matched: exceptions.length === 0,
             exceptions,
             ...(dto.remarks !== undefined ? { remarks: dto.remarks || null } : {}),
@@ -362,6 +401,7 @@ export class VendorBillsService {
     if (row.status !== 'SUBMITTED' && row.status !== 'APPROVED') {
       const po = await this.order(user, bill.purchaseOrderId);
       const exceptions = await this.match(this.prisma, po, bill.lines, bill.freight, id);
+      await this.checkAdvance(this.prisma, po.id, bill.advanceAdjusted, bill.total, id);
       await this.prisma.vendorBill.update({ where: { id }, data: { matched: exceptions.length === 0, exceptions } });
     }
     await this.lifecycle.submit(user, 'VENDOR_BILL', id);

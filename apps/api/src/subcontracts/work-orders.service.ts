@@ -40,6 +40,9 @@ const include = {
   },
   bills: { where: { status: { not: 'REJECTED' as const } }, select: { grossAmount: true, advanceRecoveryAmount: true } },
   measurements: { where: { status: 'APPROVED' as const }, select: { boqItemId: true, totalQty: true } },
+  // Advances (v5 item 90): paid with no bill, and asked for on open requests.
+  advances: { where: { subcontractBillId: null }, select: { amount: true, tdsAmount: true, otherDeduction: true } },
+  paymentRequests: { where: { kind: 'WO_ADVANCE' as const, status: { in: ['SUBMITTED' as const, 'APPROVED' as const] } }, select: { amount: true } },
 } satisfies Prisma.WorkOrderInclude;
 type Row = Prisma.WorkOrderGetPayload<{ include: typeof include }>;
 
@@ -110,6 +113,8 @@ export class WorkOrdersService {
       advanceAmount: money(r.advanceAmount)!,
       advanceRecoveryPct: pctStr(r.advanceRecoveryPct),
       advanceRecovered: money(sum(r.bills, (b) => b.advanceRecoveryAmount))!,
+      advancePaid: money(sum(r.advances, (p) => p.amount.add(p.tdsAmount).add(p.otherDeduction)))!,
+      advanceRequested: money(sum(r.paymentRequests, (p) => p.amount))!,
       tdsPct: pctStr(r.tdsPct),
       paymentDays: r.paymentDays,
       value: money(r.value)!,

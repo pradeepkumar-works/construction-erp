@@ -23,6 +23,7 @@ import { dateRange, ilike, pageArgs, paginated, searchWords } from '../common/pa
 import { D, DEFAULT_PAYMENT_DAYS, MSME_MAX_PAYMENT_DAYS, ZERO, sum } from '../purchasing/purchase-math';
 import { CreateSubcontractBillDto, ListSubcontractBillsQuery, OwnItemQtyInput, UpdateSubcontractBillDto } from './subcontracts.dto';
 import { pctStr } from './work-orders.service';
+import { workOrderAdvanceBase } from '../payables/advances';
 
 type Tx = Prisma.TransactionClient;
 const round2 = (v: Prisma.Decimal) => v.toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
@@ -283,7 +284,9 @@ export class SubcontractBillsService {
     const grossAmount = sum(lines, (l) => l.amount);
     const grossPrevious = sum(lines, (l) => round2(l.prevQty.mul(l.rate)));
     const base = Prisma.Decimal.max(grossAmount, ZERO);
-    const outstanding = Prisma.Decimal.max(wo.advanceAmount.sub(recovered._sum.advanceRecoveryAmount ?? ZERO), ZERO);
+    // Recovered from what was actually paid against the order once an advance payment is on record (v5 item 90).
+    const advanceBase = await workOrderAdvanceBase(tx, wo);
+    const outstanding = Prisma.Decimal.max(advanceBase.sub(recovered._sum.advanceRecoveryAmount ?? ZERO), ZERO);
     const materialRecovery = sum(materials, (m) => m.amount);
     const data = {
       grossPrevious,

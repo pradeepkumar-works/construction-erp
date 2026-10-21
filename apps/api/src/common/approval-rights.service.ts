@@ -87,6 +87,10 @@ export class ApprovalRightsService {
         const b = await this.prisma.subcontractBill.findUnique({ where: { id }, select: { grossAmount: true } });
         return b?.grossAmount ?? null;
       }
+      case 'PAYMENT_REQUEST': {
+        const r = await this.prisma.paymentRequest.findUnique({ where: { id }, select: { amount: true } });
+        return r?.amount ?? null;
+      }
       default:
         return null;
     }

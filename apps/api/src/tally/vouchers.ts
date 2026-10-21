@@ -28,7 +28,7 @@ export interface Voucher {
   projectName: string;
   narration: string;
   /** Bill-wise reference on the party line: a new bill, or a payment against one */
-  billRef: { name: string; type: 'New Ref' | 'Agst Ref' } | null;
+  billRef: { name: string; type: 'New Ref' | 'Agst Ref' | 'Advance' } | null;
   lines: Line[];
 }
 

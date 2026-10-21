@@ -1,3 +1,4 @@
+import { PayablesModule } from '../payables/payables.module';
 import { Module } from '@nestjs/common';
 import { RfisModule } from '../rfis/rfis.module';
 import { MaterialRequestsModule } from '../material-requests/material-requests.module';
@@ -17,7 +18,7 @@ import { SearchController } from './search.controller';
 import { SearchService } from './search.service';
 
 @Module({
-  imports: [MaterialRequestsModule, PurchasingModule, SubcontractsModule, RaBillsModule, MeasurementsModule, ExpensesModule, InspectionsModule, RisksModule, DocumentsModule, RfisModule, VendorsModule, ClientsModule, StockModule, StaffModule],
+  imports: [MaterialRequestsModule, PurchasingModule, SubcontractsModule, RaBillsModule, MeasurementsModule, ExpensesModule, InspectionsModule, RisksModule, DocumentsModule, RfisModule, VendorsModule, ClientsModule, StockModule, StaffModule, PayablesModule],
   controllers: [SearchController],
   providers: [SearchService],
   exports: [SearchService],

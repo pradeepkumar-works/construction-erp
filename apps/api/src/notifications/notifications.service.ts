@@ -1,13 +1,13 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { LEGACY_NOTIFICATION_TYPES, NOTIFICATION_TABS, NOTIFICATION_TAB_OF, NOTIFICATION_TYPES_VERSION, notificationTypesFor, notificationTypesIn, type NotificationDto, type NotificationListDto, type NotificationTab, type NotificationType, type PushTokenDto, type SubmissionType } from '@erp/shared';
+import { COMPANY_WIDE_ROLES, PAYMENT_ROLES, subBillLabel, LEGACY_NOTIFICATION_TYPES, NOTIFICATION_TABS, NOTIFICATION_TAB_OF, NOTIFICATION_TYPES_VERSION, notificationTypesFor, notificationTypesIn, type NotificationDto, type NotificationListDto, type NotificationTab, type NotificationType, type PushTokenDto, type SubmissionType } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { ApprovalRightsService } from '../common/approval-rights.service';
 import { dateOnly, iso } from '../common/serialize';
 import { ExpoPushService } from './expo-push.service';
-import { dprTitle, expenseTitle, machineryTitle, measurementTitle, progressTitle, billTitle, poTitle, vendorBillTitle, woTitle, subBillTitle, inspectionTitle } from '../common/submission-titles';
+import { dprTitle, expenseTitle, machineryTitle, measurementTitle, progressTitle, billTitle, poTitle, vendorBillTitle, woTitle, subBillTitle, inspectionTitle, paymentRequestTitle } from '../common/submission-titles';
 import { ListNotificationsQuery, RegisterPushTokenDto } from './notifications.dto';
 import { MessagingService, type OutgoingMessage } from '../messaging/messaging.service';
 
@@ -29,7 +29,7 @@ export interface NotifyInput {
 const include = { project: { select: { name: true } } } satisfies Prisma.NotificationInclude;
 type Row = Prisma.NotificationGetPayload<{ include: typeof include }>;
 
-const SUBMISSION_LABEL: Record<SubmissionType, string> = { PROGRESS: 'Progress entry', DPR: 'DPR', MATERIAL_REQUEST: 'Material request', MACHINERY: 'Machinery log', EXPENSE: 'Site expense', MEASUREMENT: 'Measurement', BILL: 'RA bill', PURCHASE_ORDER: 'Purchase order', VENDOR_BILL: 'Vendor bill', WORK_ORDER: 'Work order', SUBCONTRACT_BILL: 'Subcontractor bill', INSPECTION: 'Inspection' };
+const SUBMISSION_LABEL: Record<SubmissionType, string> = { PROGRESS: 'Progress entry', DPR: 'DPR', MATERIAL_REQUEST: 'Material request', MACHINERY: 'Machinery log', EXPENSE: 'Site expense', MEASUREMENT: 'Measurement', BILL: 'RA bill', PURCHASE_ORDER: 'Purchase order', VENDOR_BILL: 'Vendor bill', WORK_ORDER: 'Work order', SUBCONTRACT_BILL: 'Subcontractor bill', INSPECTION: 'Inspection', PAYMENT_REQUEST: 'Payment request' };
 
 /**
  * Creates in-app notifications and pushes them to the users' devices.
@@ -234,7 +234,49 @@ export class NotificationsService {
         const i = await this.prisma.inspection.findUnique({ where: { id }, include: { project: { select: { name: true } }, activity: { select: { name: true } } } });
         return i ? { title: inspectionTitle(i.inspectionNo, i.activity.name, i.location), projectId: i.projectId, projectName: i.project.name, submittedById: i.submittedById } : null;
       }
+      case 'PAYMENT_REQUEST': {
+        const r = await this.prisma.paymentRequest.findUnique({
+          where: { id },
+          include: {
+            project: { select: { name: true } },
+            vendor: { select: { name: true } },
+            vendorBill: { select: { billNo: true } },
+            subcontractBill: { select: { billNo: true, isFinal: true, workOrder: { select: { woNo: true } } } },
+            purchaseOrder: { select: { poNo: true } },
+            workOrder: { select: { woNo: true } },
+          },
+        });
+        if (!r) return null;
+        const target = r.vendorBill?.billNo ?? (r.subcontractBill ? subBillLabel(r.subcontractBill.workOrder.woNo, r.subcontractBill.billNo, r.subcontractBill.isFinal) : (r.purchaseOrder?.poNo ?? r.workOrder?.woNo ?? ''));
+        return { title: paymentRequestTitle(r.requestNo, r.amount.toFixed(2), r.vendor.name, target, r.kind !== 'BILL'), projectId: r.projectId, projectName: r.project.name, submittedById: r.submittedById };
+      }
     }
+  }
+
+  /** An approved payment request (v5 item 90) is money to release: tell the project's payers (admin, management, accounts). */
+  private async onPaymentApproved(actor: RequestUser, id: string, s: { title: string; projectId: string; projectName: string; submittedById: string }) {
+    const payers = await this.prisma.user.findMany({
+      where: {
+        organizationId: actor.organizationId,
+        isActive: true,
+        // The approver and the one who asked hear of it already.
+        id: { notIn: [actor.id, s.submittedById] },
+        role: { key: { in: PAYMENT_ROLES } },
+        OR: [{ role: { key: { in: COMPANY_WIDE_ROLES } } }, { managedProjects: { some: { id: s.projectId } } }, { memberships: { some: { projectId: s.projectId } } }],
+      },
+      select: { id: true },
+    });
+    if (!payers.length) return;
+    await this.notify({
+      organizationId: actor.organizationId,
+      userIds: payers.map((u) => u.id),
+      type: 'BILLS_DUE',
+      title: 'Payment request approved: ready to pay',
+      body: `${actor.fullName} approved ${s.title} on ${s.projectName}.`,
+      projectId: s.projectId,
+      entityType: 'PAYMENT_REQUEST',
+      entityId: id,
+    });
   }
 
   /** "Progress entry (GSB laying: 2400 Cum on 13 Oct 2026)", "DPR for 13 Oct 2026": what a WhatsApp / SMS names. */
@@ -282,6 +324,7 @@ export class NotificationsService {
   async onReviewed(actor: RequestUser, type: SubmissionType, id: string, status: 'APPROVED' | 'REJECTED' | 'CHANGES_REQUESTED', note?: string | null) {
     try {
       const s = await this.describeSubmission(type, id);
+      if (s && type === 'PAYMENT_REQUEST' && status === 'APPROVED') await this.onPaymentApproved(actor, id, s);
       if (!s || s.submittedById === actor.id) return;
       const map: Record<typeof status, { type: NotificationType; verb: string }> = {
         APPROVED: { type: 'SUBMISSION_APPROVED', verb: 'approved' },
