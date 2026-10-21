@@ -1,9 +1,15 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import type { HomeTrendsDto, MyWorkCard, MyWorkDto, MyWorkItem, SubmissionType } from '@erp/shared';
+import type { CompanyTodayDto, DueRowDto, HomeTrendsDto, MyWorkCard, MyWorkDto, MyWorkItem, PurchaseTodayDto, SubmissionType } from '@erp/shared';
 import {
+  COMPANY_TODAY_ROWS,
   COMPLIANCE_DOC_KIND_LABELS,
+  DEFAULT_CLIENT_PAYMENT_DAYS,
+  billLabel,
   canApprove,
+  canPurchase,
+  canReportSafety,
+  canViewLabourSummary,
   canKeepStock,
   canManageStore,
   canSeeWatchList,
@@ -12,6 +18,8 @@ import {
   canViewCost,
   canViewPayables,
   canViewPurchaseOrders,
+  isCompanyWide,
+  seesCompanyToday,
   submissionHref,
   submitsDpr,
 } from '@erp/shared';
@@ -20,7 +28,7 @@ import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
 import { ApprovalRightsService } from '../common/approval-rights.service';
-import { money, parseDate } from '../common/serialize';
+import { dec, money, parseDate } from '../common/serialize';
 import { todayIn } from '../notifications/time';
 import { ReceivablesService } from '../receivables/receivables.service';
 import { PayablesService } from '../payables/payables.service';
@@ -30,6 +38,8 @@ import { ComplianceService } from '../compliance/compliance.service';
 import { StockService } from '../stock/stock.service';
 import { ProjectsService } from '../projects/projects.service';
 import { WarningsService } from '../warnings/warnings.service';
+import { FleetService } from '../machinery/fleet.service';
+import { toOrderOf } from '../purchasing/purchase-math';
 
 type D = Prisma.Decimal;
 const ZERO = new Prisma.Decimal(0);
@@ -48,6 +58,9 @@ const most = (xs: number[]) => (xs.length ? Math.max(...xs) : null);
 const daysBetween = (from: string, to: string) => Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000);
 /** A client bill counts as late once it is past the last ageing bucket the receivables page flags (over 90 days). */
 const RECEIVABLE_LATE_AFTER = 90;
+/** The day before a YYYY-MM-DD. */
+const dayBefore = (d: string) => new Date(Date.parse(`${d}T00:00:00Z`) - 86_400_000).toISOString().slice(0, 10);
+const sumOf = <T>(rows: T[], f: (r: T) => D) => rows.reduce((s, r) => s.add(f(r)), ZERO);
 
 /** The last `n` months up to and including the one `today` is in, oldest first (YYYY-MM). */
 export function lastMonths(today: string, n: number): string[] {
@@ -83,6 +96,7 @@ export class HomeService {
     private stock: StockService,
     private projectsService: ProjectsService,
     private warnings: WarningsService,
+    private fleet: FleetService,
   ) {}
 
   async myWork(user: RequestUser): Promise<MyWorkDto> {
@@ -191,6 +205,243 @@ export class HomeService {
       );
     }
     return out;
+  }
+
+  /**
+   * The company's day for the phone's Home (v5 item 96): money in and out today against yesterday, what is owed both
+   * ways, attendance, fuel, the purchase pipeline and approvals by module. Each part is gated by the same helper as its
+   * module and covers only the caller's projects.
+   */
+  async companyToday(user: RequestUser): Promise<CompanyTodayDto> {
+    const role = user.roleKey;
+    if (!seesCompanyToday(role)) throw new ForbiddenException('The company view is for owners, directors, accounts and project managers');
+    const today = todayIn();
+    const yesterday = dayBefore(today);
+    const days2 = { gte: parseDate(yesterday), lte: parseDate(today) };
+    const projects = await this.prisma.project.findMany({ where: this.access.projectWhere(user), select: { id: true, name: true, status: true, clientName: true, clientPaymentDays: true, client: { select: { name: true } } }, orderBy: { code: 'asc' } });
+    const ids = projects.map((p) => p.id);
+    const inProjects = { organizationId: user.organizationId, projectId: { in: ids } };
+    const seesMachinery = canReportSafety(role) || canPurchase(role);
+
+    const [payments, receipts, receivables, payables, attendance, fuel, purchase, submitted, waiting] = await Promise.all([
+      canViewPayables(role)
+        ? this.prisma.vendorPayment.findMany({
+            where: { ...inProjects, paymentDate: days2 },
+            select: {
+              paymentDate: true,
+              amount: true,
+              reference: true,
+              project: { select: { name: true } },
+              vendor: { select: { name: true } },
+              vendorBill: { select: { id: true, billNo: true } },
+              subcontractBill: { select: { id: true, billNo: true, workOrder: { select: { woNo: true } } } },
+              purchaseOrder: { select: { id: true, poNo: true } },
+              workOrder: { select: { id: true, woNo: true } },
+            },
+          })
+        : null,
+      canViewContract(role)
+        ? this.prisma.receipt.findMany({
+            where: { ...inProjects, receiptDate: days2 },
+            select: { receiptDate: true, amount: true, reference: true, projectId: true, project: { select: { name: true } }, bill: { select: { id: true, billNo: true, isFinal: true } } },
+          })
+        : null,
+      canViewContract(role) ? this.receivables.summary(user) : null,
+      canViewPayables(role) ? this.payables.summary(user) : null,
+      canViewLabourSummary(role) ? this.attendanceToday(user, projects, today) : null,
+      seesMachinery ? this.fleet.fuelPosition(user, { date: today }) : null,
+      canViewPurchaseOrders(role) ? this.purchaseToday(user, today) : null,
+      this.lifecycle.submitted(user),
+      this.lifecycle.waiting(user),
+    ]);
+
+    const out: CompanyTodayDto = { date: today, yesterday };
+    const isToday = (d: Date) => d.toISOString().slice(0, 10) === today;
+    if (payments) {
+      const now = payments.filter((p) => isToday(p.paymentDate));
+      out.payments = {
+        today: money(sumOf(now, (p) => p.amount))!,
+        yesterday: money(sumOf(payments.filter((p) => !isToday(p.paymentDate)), (p) => p.amount))!,
+        countToday: now.length,
+        rows: [...now]
+          .sort((a, b) => b.amount.cmp(a.amount))
+          .slice(0, COMPANY_TODAY_ROWS)
+          .map((p) => ({
+            party: p.vendor.name,
+            reference: p.vendorBill?.billNo ?? (p.subcontractBill ? `${p.subcontractBill.workOrder.woNo} bill ${p.subcontractBill.billNo}` : null) ?? p.purchaseOrder?.poNo ?? p.workOrder?.woNo ?? p.reference,
+            projectName: p.project.name,
+            amount: money(p.amount)!,
+            href: p.vendorBill
+              ? submissionHref('VENDOR_BILL', p.vendorBill.id)
+              : p.subcontractBill
+                ? submissionHref('SUBCONTRACT_BILL', p.subcontractBill.id)
+                : p.purchaseOrder
+                  ? submissionHref('PURCHASE_ORDER', p.purchaseOrder.id)
+                  : p.workOrder
+                    ? submissionHref('WORK_ORDER', p.workOrder.id)
+                    : null,
+          })),
+      };
+    }
+    if (receipts) {
+      const client = new Map(projects.map((p) => [p.id, p.client?.name ?? p.clientName ?? p.name]));
+      const now = receipts.filter((r) => isToday(r.receiptDate));
+      out.receipts = {
+        today: money(sumOf(now, (r) => r.amount))!,
+        yesterday: money(sumOf(receipts.filter((r) => !isToday(r.receiptDate)), (r) => r.amount))!,
+        countToday: now.length,
+        rows: [...now]
+          .sort((a, b) => b.amount.cmp(a.amount))
+          .slice(0, COMPANY_TODAY_ROWS)
+          .map((r) => ({
+            party: client.get(r.projectId) ?? r.project.name,
+            reference: r.bill ? billLabel(r.bill.billNo, r.bill.isFinal) : r.reference,
+            projectName: r.project.name,
+            amount: money(r.amount)!,
+            href: r.bill ? `/bills/${r.bill.id}` : null,
+          })),
+      };
+    }
+    if (receivables) {
+      // A client bill is overdue once it is past the project's payment days (30 when not set) from the day it was sent.
+      const termsOf = new Map(projects.map((p) => [p.id, p.clientPaymentDays ?? DEFAULT_CLIENT_PAYMENT_DAYS]));
+      const rows: DueRowDto[] = receivables.openBills
+        .map((b) => ({
+          label: [b.billLabel, b.clientName].filter(Boolean).join(' · '),
+          projectName: b.projectName,
+          outstanding: b.outstanding,
+          daysOverdue: b.daysOutstanding - (termsOf.get(b.projectId) ?? DEFAULT_CLIENT_PAYMENT_DAYS),
+          href: `/bills/${b.billId}`,
+        }))
+        .sort((a, b) => b.daysOverdue - a.daysOverdue);
+      const overdue = rows.filter((r) => r.daysOverdue > 0);
+      out.receivables = { outstanding: receivables.totals.outstanding, overdue: money(sumOf(overdue, (r) => new Prisma.Decimal(r.outstanding)))!, overdueCount: overdue.length, rows: rows.slice(0, COMPANY_TODAY_ROWS) };
+    }
+    if (payables) {
+      const rows: DueRowDto[] = payables.openBills.map((b) => ({ label: `${b.billLabel} · ${b.vendorName}`, projectName: b.projectName, outstanding: b.outstanding, daysOverdue: -b.daysToDue, href: submissionHref(b.billType, b.billId) }));
+      out.payables = { outstanding: payables.totals.outstanding, overdue: payables.totals.overdue, overdueCount: rows.filter((r) => r.daysOverdue > 0).length, rows: rows.slice(0, COMPANY_TODAY_ROWS) };
+    }
+    if (attendance) out.attendance = attendance;
+    if (fuel) {
+      const items = new Map<string, { itemName: string; unit: string; issued: D; closing: D; sitesBelowMin: number }>();
+      for (const r of fuel.rows) {
+        const i = items.get(r.itemId) ?? { itemName: r.itemName, unit: r.unit, issued: ZERO, closing: ZERO, sitesBelowMin: 0 };
+        i.issued = i.issued.add(r.issuedToMachines);
+        i.closing = i.closing.add(r.closing);
+        if (r.minLevel !== null && new Prisma.Decimal(r.closing).lt(r.minLevel)) i.sitesBelowMin += 1;
+        items.set(r.itemId, i);
+      }
+      out.fuel = {
+        items: [...items.values()].map((i) => ({ ...i, issued: dec(i.issued)!, closing: dec(i.closing)! })),
+        rows: fuel.rows
+          .map((r) => ({ projectId: r.projectId, projectName: r.projectName, itemName: r.itemName, unit: r.unit, issued: r.issuedToMachines, closing: r.closing, belowMin: r.minLevel !== null && new Prisma.Decimal(r.closing).lt(r.minLevel) }))
+          .sort((a, b) => Number(b.belowMin) - Number(a.belowMin) || new Prisma.Decimal(a.closing).cmp(b.closing)),
+      };
+    }
+    if (purchase) out.purchase = purchase;
+
+    // Approvals by module: everything waiting in the caller's projects, whoever decides it. Amounts for roles that see cost.
+    const seesAmounts = canViewCost(role);
+    const waitedDays = (since: string) => Math.max(0, daysBetween(todayIn(undefined, new Date(since)), today));
+    const modules = new Map<SubmissionType, { type: SubmissionType; count: number; amount: D | null; oldestDays: number }>();
+    for (const p of submitted) {
+      const m = modules.get(p.type) ?? { type: p.type, count: 0, amount: null, oldestDays: 0 };
+      m.count += 1;
+      if (seesAmounts && p.amount !== null) m.amount = (m.amount ?? ZERO).add(p.amount);
+      m.oldestDays = Math.max(m.oldestDays, waitedDays(p.submittedAt));
+      modules.set(p.type, m);
+    }
+    const anyAmount = [...modules.values()].some((m) => m.amount !== null);
+    out.approvals = {
+      total: submitted.length,
+      amount: seesAmounts && anyAmount ? money([...modules.values()].reduce((s, m) => s.add(m.amount ?? ZERO), ZERO))! : null,
+      oldestDays: submitted.length ? waitedDays(submitted[0].submittedAt) : null,
+      modules: [...modules.values()].sort((a, b) => b.count - a.count || b.oldestDays - a.oldestDays).map((m) => ({ ...m, amount: m.amount === null ? null : money(m.amount)! })),
+    };
+    const withAmount = waiting.filter((w) => w.amount !== null);
+    out.waitingWithOthers = {
+      count: waiting.length,
+      amount: withAmount.length ? money(sumOf(withAmount, (w) => new Prisma.Decimal(w.amount!)))! : null,
+      oldestDays: waiting.length ? waitedDays(waiting[0].waitingSince) : null,
+    };
+    return out;
+  }
+
+  /** Staff present (company-wide roles: everyone; a project manager: those posted at their sites) and labour per active site. */
+  private async attendanceToday(user: RequestUser, projects: { id: string; name: string; status: string }[], today: string): Promise<NonNullable<CompanyTodayDto['attendance']>> {
+    const day = parseDate(today);
+    const active = projects.filter((p) => p.status === 'ACTIVE');
+    const ids = projects.map((p) => p.id);
+    const everyone = isCompanyWide(user.roleKey);
+    const staffWhere = { organizationId: user.organizationId, ...(everyone ? {} : { projectId: { in: ids } }) };
+    const [staff, marks, sheets, workers] = await Promise.all([
+      this.prisma.employee.count({ where: { ...staffWhere, isActive: true, OR: [{ leftOn: null }, { leftOn: { gte: day } }] } }),
+      this.prisma.staffAttendance.findMany({ where: { ...staffWhere, date: day }, select: { status: true, projectId: true } }),
+      this.prisma.attendanceSheet.findMany({ where: { organizationId: user.organizationId, projectId: { in: ids }, date: day }, select: { projectId: true, totalWorkers: true } }),
+      this.prisma.workerAttendance.groupBy({ by: ['projectId'], where: { organizationId: user.organizationId, projectId: { in: ids }, date: day, status: { in: ['PRESENT', 'HALF_DAY'] } }, _count: { _all: true } }),
+    ]);
+    const present = marks.filter((m) => m.status !== 'ABSENT');
+    const labourAt = new Map<string, number>();
+    for (const s of sheets) labourAt.set(s.projectId, (labourAt.get(s.projectId) ?? 0) + s.totalWorkers);
+    for (const w of workers) labourAt.set(w.projectId, (labourAt.get(w.projectId) ?? 0) + w._count._all);
+    const staffAt = new Map<string, number>();
+    for (const m of present) if (m.projectId) staffAt.set(m.projectId, (staffAt.get(m.projectId) ?? 0) + 1);
+    const rows = active
+      .map((p) => ({ projectId: p.id, projectName: p.name, staffPresent: staffAt.get(p.id) ?? 0, labour: labourAt.get(p.id) ?? 0, reported: labourAt.has(p.id) || staffAt.has(p.id) }))
+      .sort((a, b) => Number(a.reported) - Number(b.reported) || b.labour - a.labour);
+    return {
+      staffPresent: present.length,
+      staffAbsent: marks.length - present.length,
+      staffTotal: staff,
+      labour: [...labourAt.values()].reduce((s, n) => s + n, 0),
+      sitesReported: rows.filter((r) => r.reported).length,
+      sites: active.length,
+      rows,
+    };
+  }
+
+  /** Requests still to order, orders still to come (late first), and today's receipts. */
+  private async purchaseToday(user: RequestUser, today: string): Promise<PurchaseTodayDto> {
+    const day = parseDate(today);
+    const where = this.access.submissionWhere(user);
+    const [orders, requests, grnsToday, unchecked] = await Promise.all([
+      this.purchaseOrders.status(user, { show: 'PENDING' }),
+      this.prisma.materialRequest.findMany({
+        where: { ...where, status: 'APPROVED' },
+        select: {
+          id: true,
+          requestNo: true,
+          requiredDate: true,
+          project: { select: { name: true } },
+          items: {
+            select: {
+              quantity: true,
+              stockTxns: { select: { quantity: true, purchaseOrderLineId: true } },
+              covers: { select: { quantity: true } },
+              poLines: { where: { purchaseOrder: { status: { not: 'REJECTED' } } }, select: { quantity: true, purchaseOrder: { select: { closedAt: true } }, stockTxns: { select: { quantity: true } } } },
+            },
+          },
+        },
+        orderBy: { requiredDate: 'asc' },
+      }),
+      this.prisma.stockEntry.count({ where: { ...where, type: 'RECEIPT', date: day } }),
+      this.prisma.stockEntry.count({ where: { ...where, type: 'RECEIPT', purchaseOrderId: { not: null }, qcStatus: null, date: { gte: new Date(day.getTime() - 30 * 86_400_000) } } }),
+    ]);
+    const toOrder = requests.filter((r) => r.items.some((i) => toOrderOf(i).gt(0)));
+    const late = orders.rows.filter((r) => r.daysLate > 0);
+    const rows: PurchaseTodayDto['rows'] = [
+      ...late.map((r) => ({ kind: 'ORDER' as const, label: `${r.poNo} · ${r.vendorName}`, projectName: r.projectName, amount: r.pendingValue, daysLate: r.daysLate, href: `/purchase-orders/${r.purchaseOrderId}` })),
+      ...toOrder.map((r) => ({ kind: 'REQUEST' as const, label: r.requestNo, projectName: r.project.name, amount: null, daysLate: Math.max(0, daysBetween(r.requiredDate.toISOString().slice(0, 10), today)), href: `/material-requests/${r.id}` })),
+    ].slice(0, COMPANY_TODAY_ROWS);
+    return {
+      requestsToOrder: toOrder.length,
+      ordersOpen: orders.totals.pending,
+      ordersOpenValue: orders.totals.pendingValue,
+      ordersLate: orders.totals.late,
+      grnsToday,
+      grnsAwaitingCheck: unchecked,
+      rows,
+    };
   }
 
   private async dprsMissing(user: RequestUser, today: string) {

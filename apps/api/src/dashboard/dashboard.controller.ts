@@ -33,6 +33,12 @@ export class DashboardController {
     return this.home.trends(user);
   }
 
+  /** The company's day for the phone's Home (v5 item 96): admin, management, accounts and project managers. */
+  @Get('company-today')
+  companyToday(@CurrentUser() user: RequestUser) {
+    return this.home.companyToday(user);
+  }
+
   @Get('projects/:id')
   project(@CurrentUser() user: RequestUser, @Param('id') id: string) {
     return this.dashboard.project(user, id);
