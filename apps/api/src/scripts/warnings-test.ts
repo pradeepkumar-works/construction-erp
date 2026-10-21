@@ -9,8 +9,8 @@
  */
 import assert from 'node:assert/strict';
 import type { RoleKey } from '@erp/shared';
-import { watchListKinds } from '@erp/shared';
-import { activityForecast, addDays, cashGap, cashWeeks, daysToPay, dprGap, leadDays, machineTrend, scheduleWarns, stockRunout, vendorTrend } from '../warnings/warning-rules';
+import { WARNING_KINDS, watchListKinds } from '@erp/shared';
+import { activityForecast, addDays, cashGap, cashWeeks, daysToPay, dprGap, leadDays, machineTrend, materialOveruse, overuseStep, scheduleWarns, stockRunout, vendorTrend } from '../warnings/warning-rules';
 
 const cases: [string, () => void][] = [];
 const test = (name: string, fn: () => void) => cases.push([name, fn]);
@@ -152,10 +152,28 @@ test('dpr: three days running without a DPR warns, counted back from yesterday',
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
+// Material used over the norm
+
+test('material: within the allowance, or over it by less than 3%, does not warn', () => {
+  assert.equal(materialOveruse({ allowed: 1000, consumed: 980 }), null);
+  assert.equal(materialOveruse({ allowed: 1000, consumed: 1020 }), null, '2% over');
+  assert.equal(materialOveruse({ allowed: 0, consumed: 50 }), null, 'no work yet is the reconciliation\'s to show');
+});
+test('material: 3% or more over the allowance warns, and the key moves on in steps of 5%', () => {
+  const f = materialOveruse({ allowed: 1000, consumed: 1120 })!;
+  assert.equal(f.excess, 120);
+  assert.equal(Math.round(f.overPct), 12);
+  assert.equal(overuseStep(f.overPct), 10);
+  assert.equal(overuseStep(materialOveruse({ allowed: 1000, consumed: 1030 })!.overPct), 0);
+  assert.equal(overuseStep(16.2), 15);
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
 // Roles
 
 test('roles: each kind goes to the role that can act on it', () => {
-  assert.deepEqual(watchListKinds('MANAGEMENT'), ['SCHEDULE', 'CASH', 'VENDOR', 'STOCK', 'MACHINE', 'DPR']);
+  assert.deepEqual(watchListKinds('MANAGEMENT'), ['SCHEDULE', 'CASH', 'VENDOR', 'STOCK', 'MACHINE', 'DPR', 'MATERIAL_OVERUSE']);
+  assert.deepEqual(watchListKinds('QUANTITY_SURVEYOR'), ['MATERIAL_OVERUSE']);
   assert.deepEqual(watchListKinds('STORE_MANAGER'), ['STOCK', 'MACHINE']);
   assert.deepEqual(watchListKinds('ACCOUNTS_MANAGER'), ['CASH']);
   assert.deepEqual(watchListKinds('PROCUREMENT_MANAGER'), ['VENDOR']);
@@ -205,7 +223,7 @@ async function demo(): Promise<number> {
         const md = await warnings.list(as('md@demo.com'));
         console.log(`\nDemo company on ${today}: ${md.open.length} open warnings for the MD`);
         for (const w of md.open) console.log(`  [${w.kind}] ${w.title}\n      ${w.detail}`);
-        check('the MD gets every kind', md.kinds.length === 6, md.kinds.join(','));
+        check('the MD gets every kind', md.kinds.length === WARNING_KINDS.length, md.kinds.join(','));
 
         // Access: each role only its kinds, a project manager only their projects.
         for (const email of ['pm@demo.com', 'store@demo.com', 'accounts@demo.com', 'procurement@demo.com']) {

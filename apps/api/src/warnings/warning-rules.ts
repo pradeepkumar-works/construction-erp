@@ -3,6 +3,7 @@
  * and no model, so `src/scripts/warnings-test.ts` can test each one and replay them over the demo history. Dates are
  * YYYY-MM-DD; every rule takes the day it is run for, so a backtest can ask what it would have said on any day.
  */
+import { MATERIAL_OVERUSE_MIN_PCT } from '@erp/shared';
 
 const DAY = 24 * 3600 * 1000;
 const toTime = (d: string) => Date.parse(`${d}T00:00:00Z`);
@@ -269,3 +270,24 @@ export function dprGap(sent: Set<string>, today: string, startDate: string | nul
   }
   return days >= DPR_MISSING_DAYS ? { from: addDays(today, -days), days } : null;
 }
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Material used over the norm (v5 item 92), from the material reconciliation.
+
+export interface OveruseFacts {
+  /** Theoretical with the norms' wastage */
+  allowed: number;
+  /** Issued less returned from site */
+  consumed: number;
+}
+
+/** Warns when consumption is over the allowance by at least MATERIAL_OVERUSE_MIN_PCT of the allowed quantity. */
+export function materialOveruse(f: OveruseFacts): { excess: number; overPct: number } | null {
+  if (f.allowed <= 0 || f.consumed <= f.allowed) return null;
+  const excess = f.consumed - f.allowed;
+  const overPct = (excess / f.allowed) * 100;
+  return overPct >= MATERIAL_OVERUSE_MIN_PCT ? { excess, overPct } : null;
+}
+
+/** The step of the overuse a dismissal holds for: 5 points of %, so the warning comes back as the overuse grows. */
+export const overuseStep = (overPct: number) => Math.floor(overPct / 5) * 5;

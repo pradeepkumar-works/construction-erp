@@ -3,9 +3,9 @@
 import React, { useMemo, useState } from 'react';
 import { Button, Input, Progress, Space, Statistic, Table, Tooltip, Typography } from 'antd';
 import type { TableProps } from 'antd';
-import { DeleteOutlined, DownloadOutlined, EditOutlined, FileExcelOutlined, PlusOutlined } from '@ant-design/icons';
+import { CalculatorOutlined, DeleteOutlined, DownloadOutlined, EditOutlined, FileExcelOutlined, PlusOutlined } from '@ant-design/icons';
 import type { BoqItemDto } from '@erp/shared';
-import { canEditProjects } from '@erp/shared';
+import { canEditProjects, canSetRateAnalysis, canViewReconciliation } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
@@ -19,6 +19,8 @@ import { BRAND } from '@/lib/brand';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { loadXlsx } from '@/lib/exportExcel';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
+import { RateAnalysisDrawer } from '@/components/reconciliation/RateAnalysisDrawer';
+import { RateAnalysisImportModal } from '@/components/reconciliation/RateAnalysisImportModal';
 
 export function BoqTab({ projectId }: { projectId: string }) {
   const { user } = useAuth();
@@ -29,6 +31,11 @@ export function BoqTab({ projectId }: { projectId: string }) {
   const [editing, setEditing] = useState<BoqItemDto | null>(null);
   const [importOpen, setImportOpen] = useState(false);
   const editor = !!user && canEditProjects(user.roleKey);
+  // Rate analysis (v5 item 92): what one unit of each item takes, for the reconciliation and the estimate.
+  const analyst = !!user && canViewReconciliation(user.roleKey);
+  const rateSetter = !!user && canSetRateAnalysis(user.roleKey);
+  const [analysis, setAnalysis] = useState<string | null>(null);
+  const [importRates, setImportRates] = useState(false);
 
   const del = useMutation({
     mutationFn: async (id: string) => api.delete(`/projects/${projectId}/boq/${id}`),
@@ -117,28 +124,37 @@ export function BoqTab({ projectId }: { projectId: string }) {
     },
     { title: 'Balance', dataIndex: 'balanceQty', width: 90, align: 'right', className: 'mono', render: (v) => formatQty(v) },
     { title: 'Amount', dataIndex: 'amount', width: 140, align: 'right', className: 'mono', render: (v) => formatINR(v), sorter: (a, b) => toNumber(a.amount) - toNumber(b.amount) },
-    ...(editor
+    ...(editor || analyst
       ? [
           {
             title: '',
             key: 'actions',
-            width: 76,
+            width: (editor ? 68 : 0) + (analyst ? 36 : 0) + 8,
             fixed: 'right' as const,
             render: (_: unknown, r: BoqItemDto) => (
               <Space size={4}>
-                <Button
-                  size="small"
-                  type="text"
-                  icon={<EditOutlined />}
-                  aria-label={`Edit BOQ item ${r.itemNo}`}
-                  onClick={() => {
-                    setEditing(r);
-                    setFormOpen(true);
-                  }}
-                />
-                <ConfirmDelete what={`BOQ item ${r.itemNo}`} onConfirm={() => del.mutateAsync(r.id)}>
-                  <Button size="small" type="text" danger icon={<DeleteOutlined />} aria-label={`Delete BOQ item ${r.itemNo}`} />
-                </ConfirmDelete>
+                {analyst ? (
+                  <Tooltip title="Rate analysis">
+                    <Button size="small" type="text" icon={<CalculatorOutlined />} aria-label={`Rate analysis of BOQ item ${r.itemNo}`} onClick={() => setAnalysis(r.id)} />
+                  </Tooltip>
+                ) : null}
+                {editor ? (
+                  <>
+                    <Button
+                      size="small"
+                      type="text"
+                      icon={<EditOutlined />}
+                      aria-label={`Edit BOQ item ${r.itemNo}`}
+                      onClick={() => {
+                        setEditing(r);
+                        setFormOpen(true);
+                      }}
+                    />
+                    <ConfirmDelete what={`BOQ item ${r.itemNo}`} onConfirm={() => del.mutateAsync(r.id)}>
+                      <Button size="small" type="text" danger icon={<DeleteOutlined />} aria-label={`Delete BOQ item ${r.itemNo}`} />
+                    </ConfirmDelete>
+                  </>
+                ) : null}
               </Space>
             ),
           },
@@ -160,6 +176,11 @@ export function BoqTab({ projectId }: { projectId: string }) {
           <Button icon={<DownloadOutlined />} onClick={exportExcel} disabled={!data || data.length === 0}>
             Export
           </Button>
+          {rateSetter && data && data.length > 0 ? (
+            <Button icon={<CalculatorOutlined />} onClick={() => setImportRates(true)}>
+              Import rate analysis
+            </Button>
+          ) : null}
           {editor && (
             <>
               <Button icon={<FileExcelOutlined />} onClick={() => setImportOpen(true)}>
@@ -213,7 +234,7 @@ export function BoqTab({ projectId }: { projectId: string }) {
                 <Table.Summary.Cell index={8} align="right">
                   <strong>{formatINR(filtered.reduce((s, i) => s + toNumber(i.amount), 0))}</strong>
                 </Table.Summary.Cell>
-                {editor && <Table.Summary.Cell index={9} />}
+                {(editor || analyst) && <Table.Summary.Cell index={9} />}
               </Table.Summary.Row>
             </Table.Summary>
           ) : null
@@ -221,6 +242,8 @@ export function BoqTab({ projectId }: { projectId: string }) {
       />
       <BoqFormModal open={formOpen} onClose={() => setFormOpen(false)} projectId={projectId} item={editing} />
       <BoqImportModal open={importOpen} onClose={() => setImportOpen(false)} projectId={projectId} />
+      {analyst ? <RateAnalysisDrawer projectId={projectId} boqItemId={analysis} open={!!analysis} onClose={() => setAnalysis(null)} /> : null}
+      {rateSetter ? <RateAnalysisImportModal open={importRates} onClose={() => setImportRates(false)} projectId={projectId} /> : null}
     </div>
   );
 }

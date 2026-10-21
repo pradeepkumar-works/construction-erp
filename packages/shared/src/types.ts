@@ -37,6 +37,7 @@ import type {
   VendorBillKind,
   HireFuelBy,
   DebitNoteReason,
+  StockAdjustmentReason,
 } from './enums';
 
 /** API response shapes. Decimal columns are serialised as strings to preserve precision. */
@@ -610,6 +611,8 @@ export interface StockEntryDto {
   transferOutNo: string | null;
   fromProjectName: string | null;
   remarks: string | null;
+  /** Adjustments: why (v5 item 92); null on adjustments made before reasons were asked */
+  adjustmentReason?: StockAdjustmentReason | null;
   /** Receipts: QA/QC's check of the material (null until checked) */
   qcStatus?: GrnQcStatus | null;
   qcAt?: string | null;
@@ -1912,7 +1915,7 @@ export interface SubcontractBillMaterialDto {
 }
 
 export interface SubcontractBillDeductionDto {
-  key: 'retention' | 'advanceRecovery' | 'tds' | 'material' | 'other';
+  key: 'retention' | 'advanceRecovery' | 'tds' | 'material' | 'excessMaterial' | 'other';
   label: string;
   /** Percentage of the work value, for the percentage deductions */
   pct: string | null;
@@ -1945,6 +1948,8 @@ export interface SubcontractBillDto extends SubmissionBase {
   advanceRecoveryPct: string;
   tdsPct: string;
   materialRecovery: string;
+  /** Material used beyond the norm and its wastage, from the reconciliation (v5 item 92) */
+  excessRecovery: string;
   otherDeduction: string;
   otherDeductionNote: string | null;
   deductions: SubcontractBillDeductionDto[];

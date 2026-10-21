@@ -391,6 +391,7 @@ export class BillChecksService {
       tdsPct: n(bill.tdsPct),
       tdsAmount: n(bill.tdsAmount),
       materialRecovery: n(bill.materialRecovery),
+      excessRecovery: n(bill.excessRecovery),
       otherDeduction: n(bill.otherDeduction),
       totalDeductions: n(bill.totalDeductions),
       netPayable: n(bill.netPayable),

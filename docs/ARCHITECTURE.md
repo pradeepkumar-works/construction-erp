@@ -629,8 +629,57 @@ Nirmaan hands the payroll provider its inputs; PF, ESI, professional tax and sal
   by `MATERIAL_NORM_ROLES` (QS, PM, management, admin). Every change is in the project's audit log.
 - **API.** `GET /reconciliation/projects/:id?from&to`, `PUT /reconciliation/projects/:id/norms` (adds or changes by BOQ
   item + store item), `DELETE /reconciliation/projects/:id/norms/:normId`.
-- **Web.** Project > Materials > Reconciliation (`components/reconciliation/`): period picker, the reconciliation with
-  each item's BOQ lines, items without a norm, the norms with add/edit/remove, and an Excel export.
+- **Web.** Project > Materials > Reconciliation (`components/reconciliation/`), with four views under `?sub=`:
+  Materials (period picker, the reconciliation with each item's BOQ lines, items without a norm, the norms with
+  add/edit/remove, and an Excel export), Subcontractors, Wastage and Estimate (below).
+
+### Rate analysis and the estimate (v5 item 92)
+
+- **Tables.** `BoqResource` (per BOQ item: `kind` LABOUR with a trade and man-days per unit, or EQUIPMENT with an
+  equipment category and machine hours per unit; one per BOQ item, kind and name). Materials stay in `MaterialNorm`, so
+  a BOQ item's rate analysis is its norms plus its resources. `Project.estimateOverheadPct` (default 5) and
+  `estimateProfitPct` (default 10). Tenant table with RLS.
+- **Filling it** (`RateAnalysisService`). By hand in the BOQ item's drawer (BOQ tab, calculator button, or an item in
+  the Estimate view); from `RATE_LIBRARY` (`packages/shared/src/reconciliation.ts`: PCC, RCC M20 to M30, steel,
+  brickwork, plaster, WBM, GSB, DBM, pipes), whose materials are matched to store items by words in the name and the
+  unit (`pickLibraryItem`; a line with no match is reported and left out); from another BOQ item in any project the
+  user sees; or from Excel (`POST .../rate-analysis/import`, all or nothing: one bad row and nothing is saved). Set by
+  `canSetRateAnalysis` (the norm setters); every change is in the project's audit log.
+- **Estimate** (`builtUpRate` in `reconciliation-rules.ts`). Per BOQ unit: materials = quantity × (1 + wastage %) ×
+  item rate; labour = man-days × `LabourRate.dailyRate` of the trade (case-insensitive); machines = hours × the average
+  hourly rate of the company's active machines of the category (`equipmentHourlyRate`: a day is 8 hours, a month 30
+  days). Overheads and profit are % of that cost; built-up rate = cost + both; margin = BOQ rate − built-up rate. A line
+  with no rate counts as nothing and is flagged. Values only for `canViewEstimate`; the QS sees the quantities.
+- **API.** `GET /reconciliation/projects/:id/estimate`, `PUT .../estimate-terms`, `PUT .../resources`,
+  `DELETE .../resources/:resourceId`, `POST .../rate-analysis/copy` (`fromBoqItemId` or `libraryKey`),
+  `POST .../rate-analysis/import`.
+
+### A subcontractor's material
+
+- **Arithmetic.** Per approved work order, since the start: allowed = Σ approved measurements on the order × the
+  norms with wastage; issued = ISSUE rows to the order − RETURN_FROM_SITE rows from it. Over the allowance by any amount
+  is OVER; the excess not yet raised is what can be recovered.
+- **Recovery.** `ExcessMaterialRecovery` (work order, item, quantity, rate, amount, the bill it went on). The rate
+  starts at the item rate: the issue rate is already recovered on their bills, so this is the penalty on top, as in
+  CPWD clause 42. Raised by `canRecoverExcessMaterial` (prepares subcontract bills and sees cost). It goes on the
+  order's bill being prepared (DRAFT, CHANGES_REQUESTED or REJECTED, recomputed by `retakeOpenBill`) or on the next
+  one: `SubcontractBillsService.recompute` attaches recoveries with no bill and adds their total as `excessRecovery`
+  ("Material used over the norm" among the deductions; Tally posts it with the material recovery). It can be removed
+  until its bill is submitted.
+- **API.** `GET /reconciliation/projects/:id/subcontractors`, `POST .../work-orders/:workOrderId/recoveries`,
+  `DELETE .../recoveries/:recoveryId`.
+
+### Wastage and the overuse warning
+
+- **Reasons.** A stock adjustment takes `reason` (`StockAdjustmentReason`: OPENING, WASTAGE, DAMAGE, THEFT,
+  COUNT_DIFFERENCE, OTHER) into `StockEntry.adjustmentReason`; a stock count posts COUNT_DIFFERENCE. Older adjustments
+  have none ("Not given").
+- **Report.** `GET /reconciliation/projects/:id/wastage?from&to`: adjustments by reason and item (`wastageGroups`),
+  quantity off and on, valued at item rates for cost viewers; OPENING is left out.
+- **Watch list.** `MATERIAL_OVERUSE` (`materialOveruse` in `warning-rules.ts`) when a project's consumed passes its
+  allowed by `MATERIAL_OVERUSE_MIN_PCT` (3%) or more, all time; its key moves on in steps of 5%. Shown to the norm
+  setters. Ask has a `material_reconciliation` tool (views MATERIALS, SUBCONTRACTORS, WASTAGE) for
+  `canViewReconciliation`.
 
 ## Vendors
 

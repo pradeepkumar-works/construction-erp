@@ -8,6 +8,7 @@ import {
   stockAgeingBucket,
   type StockCountResultDto,
   type StockValuationDto,
+  type StockAdjustmentReason,
   SUBMISSION_STATUS_LABELS,
   crossesBelowMin,
   isLowStock,
@@ -119,6 +120,8 @@ interface Header {
   toProjectId?: string | null;
   transferOutId?: string | null;
   remarks?: string | null;
+  /** Adjustments: why (v5 item 92) */
+  adjustmentReason?: StockAdjustmentReason | null;
   /** Issues: spares for this maintenance job card */
   maintenanceJobId?: string | null;
 }
@@ -179,6 +182,7 @@ export class StockService {
       transferOutNo: r.transferOut?.entryNo ?? null,
       fromProjectName: r.transferOut?.project.name ?? null,
       remarks: r.remarks,
+      adjustmentReason: r.adjustmentReason,
       qcStatus: r.qcStatus,
       qcAt: iso(r.qcAt),
       qcByName: r.qcBy?.fullName ?? null,
@@ -292,6 +296,7 @@ export class StockService {
         toProjectId: h.toProjectId ?? null,
         transferOutId: h.transferOutId ?? null,
         remarks: blank(h.remarks),
+        adjustmentReason: h.type === 'ADJUSTMENT' ? (h.adjustmentReason ?? null) : null,
         maintenanceJobId: h.maintenanceJobId ?? null,
         createdById: user.id,
         lines: {
@@ -563,7 +568,7 @@ export class StockService {
             throw new ConflictException(`Only ${dec(before.get(l.itemId))} ${item.unit} of ${item.name} is in stock; the adjustment would take it below zero.`);
           }
         }
-        return this.insertEntry(tx, user, { ...dto, type: 'ADJUSTMENT', date }, lines);
+        return this.insertEntry(tx, user, { ...dto, type: 'ADJUSTMENT', date, adjustmentReason: dto.reason ?? null }, lines);
       }),
     );
     if ('existing' in saved) return this.get(user, saved.id);
@@ -832,7 +837,7 @@ export class StockService {
         differences = lines.length;
         if (!lines.length) return null;
         const note = `Physical stock count: ${counted.length} item${counted.length === 1 ? '' : 's'} counted, ${lines.length} differ${lines.length === 1 ? 's' : ''}${dto.remarks?.trim() ? `. ${dto.remarks.trim()}` : ''}`;
-        return this.insertEntry(tx, user, { id: dto.id, type: 'ADJUSTMENT', projectId: dto.projectId, date, remarks: note }, lines);
+        return this.insertEntry(tx, user, { id: dto.id, type: 'ADJUSTMENT', projectId: dto.projectId, date, remarks: note, adjustmentReason: 'COUNT_DIFFERENCE' }, lines);
       }).then((r) => r ?? { id: '', entryNo: '' }),
     );
     if ('existing' in saved) return { counted: counted.length, entry: await this.get(user, saved.id) };

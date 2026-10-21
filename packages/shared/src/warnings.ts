@@ -1,11 +1,11 @@
 import type { RoleKey } from './enums';
-import { canApprove, canManageMaintenance, canManageStore, canPurchase, canViewCost } from './permissions';
+import { canApprove, canManageMaintenance, canManageStore, canPurchase, canSetMaterialNorms, canViewCost } from './permissions';
 
 /**
  * Early warnings (AI roadmap item 73): plain forecasts over the records, shown as the Watch list (a My work card and its
  * own page) and a weekly notification. Each kind is calculated in `apps/api/src/warnings/warning-rules.ts`.
  */
-export const WARNING_KINDS = ['SCHEDULE', 'CASH', 'VENDOR', 'STOCK', 'MACHINE', 'DPR'] as const;
+export const WARNING_KINDS = ['SCHEDULE', 'CASH', 'VENDOR', 'STOCK', 'MACHINE', 'DPR', 'MATERIAL_OVERUSE'] as const;
 export type WarningKind = (typeof WARNING_KINDS)[number];
 
 export const WARNING_KIND_LABELS: Record<WarningKind, string> = {
@@ -15,6 +15,7 @@ export const WARNING_KIND_LABELS: Record<WarningKind, string> = {
   STOCK: 'Stock running out',
   MACHINE: 'Machine idle or breaking down',
   DPR: 'DPRs missing',
+  MATERIAL_OVERUSE: 'Material used over the norm',
 };
 
 /** The warning kinds a role sees: each is the business of the role that can act on it. */
@@ -26,6 +27,7 @@ export function watchListKinds(role: RoleKey): WarningKind[] {
   if (canManageStore(role)) out.push('STOCK');
   if (canManageMaintenance(role)) out.push('MACHINE');
   if (canApprove(role)) out.push('DPR');
+  if (canSetMaterialNorms(role)) out.push('MATERIAL_OVERUSE');
   return out;
 }
 

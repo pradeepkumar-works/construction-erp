@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-10-rate-analysis',
+    date: '2026-10-29',
+    title: 'Rate analysis, subcontractor material and wastage',
+    points: [
+      "Each BOQ item has a rate analysis: the materials one unit uses, the labour days and the machine hours it takes. Fill it by hand, from the starter library (PCC, RCC, steel, brickwork, plaster, road layers, pipes), from another BOQ item, or from an Excel sheet.",
+      "Reconciliation has an Estimate view for those who see cost: each item's built-up rate at today's item, labour and machine rates, with overheads and profit, against the BOQ rate, so items quoted under cost stand out.",
+      "Its Subcontractors view checks the material issued to each work order against its measured work. Material used beyond the norm can be raised for recovery, and it comes off the subcontractor's next bill as its own deduction.",
+      'A stock adjustment now asks for its reason (wastage, damage, theft or loss, count difference), and the Wastage view totals what was written off by reason and item. The watch list warns when a material runs over its norm.',
+    ],
+  },
+  {
     id: '2026-10-bills-without-po',
     date: '2026-10-28',
     title: 'Hire, workshop and service bills, and debit notes',

@@ -297,5 +297,11 @@ DROP POLICY IF EXISTS tenant_isolation ON "PaymentRequest";
 ALTER TABLE "DebitNote" NO FORCE ROW LEVEL SECURITY;
 ALTER TABLE "DebitNote" DISABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS tenant_isolation ON "DebitNote";
+ALTER TABLE "BoqResource" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "BoqResource" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "BoqResource";
+ALTER TABLE "ExcessMaterialRecovery" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "ExcessMaterialRecovery" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "ExcessMaterialRecovery";
 
 DROP FUNCTION IF EXISTS app_current_org();

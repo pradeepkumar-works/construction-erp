@@ -419,9 +419,13 @@ carries on after the UX items (to 89). Migrations stay additive. Design notes fo
     one per machine and month), a workshop bill for closed job cards, an other bill with a cost head; exceptions and bill
     checks for each. `DebitNote` (DN-<year>-0001) on an approved vendor or subcontract bill, also from a GRN; it reduces
     the payable, GST and cost, and goes to Tally. ARCHITECTURE "Bills without a PO and debit notes".
-92. **Material reconciliation** (L). Resources per BOQ unit (rate analysis); theoretical against issued material per
+92. ~~**Material reconciliation** (L). Resources per BOQ unit (rate analysis); theoretical against issued material per
     project and per subcontractor, with recovery on their next bill; wastage reasons on adjustments; a built-up cost
-    estimate per BOQ item; a material overuse warning.
+    estimate per BOQ item; a material overuse warning.~~ Done: `BoqResource` (labour and machine hours per BOQ unit) beside
+    the material norms, filled by hand, from a starter library, from another BOQ item or from Excel; Reconciliation's
+    Subcontractors view with `ExcessMaterialRecovery` taken off the next subcontract bill; `StockEntry.adjustmentReason`
+    and a Wastage view; the Estimate view of built-up rates against the BOQ; `MATERIAL_OVERUSE` on the watch list and
+    a `material_reconciliation` tool for Ask. ARCHITECTURE "Material reconciliation".
 93. **Fuel and fleet use** (M). Diesel issued from stock to a machine (web and phone), daily fuel position per site, a
     consumption norm per machine with alerts, availability against utilisation, tyre and battery history.
 94. **Approval levels and escalation** (M). Up to three levels per submission type above an amount (`ApprovalStep`

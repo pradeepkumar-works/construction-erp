@@ -175,6 +175,7 @@ const sb: SubcontractBillFacts = {
   tdsPct: 1,
   tdsAmount: 300,
   materialRecovery: 1000,
+  excessRecovery: 0,
   otherDeduction: 0,
   totalDeductions: 4800,
   netPayable: 30600,

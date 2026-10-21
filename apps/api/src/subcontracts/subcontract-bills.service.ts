@@ -89,6 +89,7 @@ export class SubcontractBillsService {
     pct('advanceRecovery', r.advanceRecoveryPct, r.advanceRecoveryAmount);
     pct('tds', r.tdsPct, r.tdsAmount);
     if (!r.materialRecovery.isZero()) deductions.push({ key: 'material', label: SUB_BILL_DEDUCTION_LABELS.material, pct: null, amount: money(r.materialRecovery)! });
+    if (!r.excessRecovery.isZero()) deductions.push({ key: 'excessMaterial', label: SUB_BILL_DEDUCTION_LABELS.excessMaterial, pct: null, amount: money(r.excessRecovery)! });
     if (!r.otherDeduction.isZero()) deductions.push({ key: 'other', label: r.otherDeductionNote || SUB_BILL_DEDUCTION_LABELS.other, pct: null, amount: money(r.otherDeduction)! });
     const w = r.workOrder;
     return {
@@ -119,6 +120,7 @@ export class SubcontractBillsService {
       advanceRecoveryPct: pctStr(r.advanceRecoveryPct),
       tdsPct: pctStr(r.tdsPct),
       materialRecovery: money(r.materialRecovery)!,
+      excessRecovery: money(r.excessRecovery)!,
       otherDeduction: money(r.otherDeduction)!,
       otherDeductionNote: r.otherDeductionNote,
       deductions,
@@ -254,13 +256,17 @@ export class SubcontractBillsService {
     await tx.stockEntry.updateMany({ where: { subcontractBillId: id }, data: { subcontractBillId: null } });
     await tx.measurementSheet.updateMany({ where: { workOrderId: wo.id, status: 'APPROVED', subcontractBillId: null, date: { lte: bill.measuredUpTo } }, data: { subcontractBillId: id } });
     await tx.stockEntry.updateMany({ where: { workOrderId: wo.id, type: 'ISSUE', subcontractBillId: null, date: { lte: bill.measuredUpTo } }, data: { subcontractBillId: id } });
+    // Material used over the norm, raised from the reconciliation and not yet on a bill (v5 item 92).
+    await tx.excessMaterialRecovery.updateMany({ where: { subcontractBillId: id }, data: { subcontractBillId: null } });
+    await tx.excessMaterialRecovery.updateMany({ where: { workOrderId: wo.id, subcontractBillId: null }, data: { subcontractBillId: id } });
 
     const earlier = { workOrderId: wo.id, billNo: { lt: bill.billNo } };
-    const [measured, billed, issued, recovered] = await Promise.all([
+    const [measured, billed, issued, recovered, excess] = await Promise.all([
       tx.measurementSheet.groupBy({ by: ['boqItemId'], where: { workOrderId: wo.id, OR: [{ subcontractBillId: id }, { subcontractBill: earlier }] }, _sum: { totalQty: true } }),
       tx.subcontractBillLine.findMany({ where: { bill: earlier }, select: { workOrderLineId: true, thisQty: true } }),
       tx.stockTxn.groupBy({ by: ['itemId'], where: { entry: { subcontractBillId: id } }, _sum: { quantity: true } }),
       tx.subcontractBill.aggregate({ where: earlier, _sum: { advanceRecoveryAmount: true } }),
+      tx.excessMaterialRecovery.aggregate({ where: { subcontractBillId: id }, _sum: { amount: true } }),
     ]);
     const upto = new Map(measured.map((m) => [m.boqItemId, m._sum.totalQty ?? ZERO]));
     const prev = new Map<string, Prisma.Decimal>();
@@ -290,6 +296,7 @@ export class SubcontractBillsService {
     const advanceBase = await workOrderAdvanceBase(tx, wo);
     const outstanding = Prisma.Decimal.max(advanceBase.sub(recovered._sum.advanceRecoveryAmount ?? ZERO), ZERO);
     const materialRecovery = sum(materials, (m) => m.amount);
+    const excessRecovery = excess._sum.amount ?? ZERO;
     const data = {
       grossPrevious,
       grossAmount,
@@ -303,10 +310,11 @@ export class SubcontractBillsService {
       advanceRecoveryAmount: Prisma.Decimal.min(pctOf(base, wo.advanceRecoveryPct), outstanding),
       tdsAmount: pctOf(base, wo.tdsPct),
       materialRecovery,
+      excessRecovery,
       dueDate: addDays(bill.billDate, this.paymentDays(wo.paymentDays, wo.vendor.msmeCategory)),
     };
-    const totalDeductions = data.retentionAmount.add(data.advanceRecoveryAmount).add(data.tdsAmount).add(materialRecovery).add(bill.otherDeduction);
-    if (strict && grossAmount.lte(0) && materialRecovery.isZero())
+    const totalDeductions = data.retentionAmount.add(data.advanceRecoveryAmount).add(data.tdsAmount).add(materialRecovery).add(excessRecovery).add(bill.otherDeduction);
+    if (strict && grossAmount.lte(0) && materialRecovery.isZero() && excessRecovery.isZero())
       throw new BadRequestException(
         'Nothing to bill: there are no approved measurements of their work up to this date beyond earlier bills, and no quantities for the work order’s own items',
       );
@@ -315,6 +323,17 @@ export class SubcontractBillsService {
     await tx.subcontractBillMaterial.deleteMany({ where: { billId: id } });
     if (materials.length) await tx.subcontractBillMaterial.createMany({ data: materials.map((m) => ({ ...m, billId: id })) });
     await tx.subcontractBill.update({ where: { id }, data: { ...data, totalDeductions, netPayable: grossAmount.add(data.gstAmount).sub(totalDeductions) } });
+  }
+
+  /**
+   * After a recovery is raised or cancelled on a work order (v5 item 92): re-take the bill being prepared on it, if one
+   * can still be edited, so the recovery shows on it now. Returns that bill's id, or null when none was re-taken.
+   */
+  async retakeOpenBill(workOrderId: string): Promise<string | null> {
+    const open = await this.prisma.subcontractBill.findFirst({ where: { workOrderId, status: { in: ['DRAFT', 'CHANGES_REQUESTED', 'REJECTED'] } }, select: { id: true } });
+    if (!open) return null;
+    await this.prisma.$transaction((tx) => this.recompute(tx, open.id, undefined, false));
+    return open.id;
   }
 
   /** Days to pay: the work order's, or 30; never more than 45 for micro and small enterprises. */

@@ -2,7 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsDateString, IsIn, IsNumberString, IsOptional, IsString, IsUUID, Matches, MaxLength, MinLength, ValidateIf, ValidateNested } from 'class-validator';
 import { VENDOR_ID_DOC } from '../vendors/vendors.dto';
-import { GRN_QC_STATUSES, LIST_SORT_FIELDS, STOCK_ENTRY_TYPES, type GrnQcStatus, type ItemSortField, type StockBalanceSortField, type StockEntrySortField, type StockEntryType } from '@erp/shared';
+import { GRN_QC_STATUSES, LIST_SORT_FIELDS, STOCK_ADJUSTMENT_REASONS, STOCK_ENTRY_TYPES, type GrnQcStatus, type StockAdjustmentReason, type ItemSortField, type StockBalanceSortField, type StockEntrySortField, type StockEntryType } from '@erp/shared';
 import { PageQuery, QueryBool } from '../common/paging';
 import { CLIENT_ID_DOC } from '../common/idempotency';
 
@@ -87,7 +87,9 @@ export class CreateAdjustmentDto {
   @ApiPropertyOptional(CLIENT_ID_DOC) @IsOptional() @IsUUID('4') id?: string;
   @ApiProperty() @IsUUID() projectId: string;
   @ApiProperty({ example: '2026-10-13' }) @IsDateString() @dateOnly() date: string;
-  @ApiProperty({ example: 'Opening stock as on 1 Oct', description: 'Reason, required' }) @IsString() @trim() @MinLength(3) @MaxLength(1000) remarks: string;
+  @ApiProperty({ example: 'Opening stock as on 1 Oct', description: 'What happened, required' }) @IsString() @trim() @MinLength(3) @MaxLength(1000) remarks: string;
+  @ApiPropertyOptional({ enum: STOCK_ADJUSTMENT_REASONS, description: 'Why (v5 item 92): opening stock, or a loss or gain the wastage report counts. Left out on older phone builds.' })
+  @IsOptional() @IsIn(STOCK_ADJUSTMENT_REASONS) reason?: StockAdjustmentReason;
 
   @ApiProperty({ type: [AdjustmentLineDto] })
   @IsArray() @ArrayMinSize(1) @ArrayMaxSize(200) @ValidateNested({ each: true }) @Type(() => AdjustmentLineDto)
