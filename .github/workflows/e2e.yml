@@ -107,6 +107,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/reconciliation-test.js
+      - name: PPE replace-by dates and what each worker lacks
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/ppe-test.js
       - name: Early warnings forecast right, show each role its own kinds and backtest on the demo history
         if: matrix.suite == 'flows'
         working-directory: apps/api

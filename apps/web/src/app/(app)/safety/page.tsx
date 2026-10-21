@@ -13,7 +13,7 @@ function SafetyPage() {
   const id = search.get('id') ?? undefined;
   return (
     <div className="page-container">
-      <PageHeader title="Safety" subtitle="Incidents and near misses with their root cause and corrective action, toolbox talks, and permits to work for risky jobs." />
+      <PageHeader title="Safety" subtitle="Incidents and near misses with their root cause and corrective action, toolbox talks, permits to work for risky jobs, and the PPE each worker has." />
       <Card size="small">
         <SafetyPanel key={`${tab ?? ''}|${id ?? ''}`} initialTab={tab} initialId={id} />
       </Card>

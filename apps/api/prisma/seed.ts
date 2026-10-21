@@ -5,7 +5,7 @@ import * as bcrypt from 'bcryptjs';
 import { deflateSync } from 'zlib';
 import { dprTitle, progressTitle, titleDate } from '../src/common/submission-titles';
 import { DEMO_CONTRACTS, textPdf } from '../src/documents/demo-contracts';
-import { DEFAULT_CLOSEOUT_ITEMS, PERMIT_PRECAUTIONS, STANDARD_CHECKLISTS, gstinCheckChar, isWeeklyOff, leaveDays } from '@erp/shared';
+import { DEFAULT_CLOSEOUT_ITEMS, PERMIT_PRECAUTIONS, STANDARD_CHECKLISTS, gstinCheckChar, isWeeklyOff, leaveDays, ppeReplaceBy, type PpeKind } from '@erp/shared';
 
 const prisma = new PrismaClient();
 const D = (v: string | number) => new Prisma.Decimal(v);
@@ -154,6 +154,7 @@ async function main() {
     await seedMaintenance(org.id);
     await seedSchedule(org.id);
     await seedWorkers(org.id);
+    await seedPpe(org.id);
     await seedImprests(org.id);
     await seedCompliance(org.id);
     await seedHandover(org.id);
@@ -331,6 +332,7 @@ async function main() {
   await seedMaintenance(org.id);
   await seedSchedule(org.id);
   await seedWorkers(org.id);
+  await seedPpe(org.id);
   await seedImprests(org.id);
   await seedCompliance(org.id);
   await seedHandover(org.id);
@@ -520,6 +522,38 @@ async function seedWorkers(organizationId: string) {
         },
       });
     }
+  }
+}
+
+/**
+ * Demo PPE register on the road project's named workers: the standard kit issued as they joined, gloves for the
+ * masons (now due for replacement), a helmet lost and re-issued (to recover from the contractor), and three helpers
+ * on today's roll call still without a reflective jacket (one without a helmet either). Only when the
+ * organisation has no PPE issue yet.
+ */
+async function seedPpe(organizationId: string) {
+  if (await prisma.ppeIssue.count({ where: { organizationId } })) return;
+  const workers = await prisma.worker.findMany({ where: { organizationId, isActive: true, projectId: { not: null } }, orderBy: { workerNo: 'asc' } });
+  const issuer = (await prisma.user.findFirst({ where: { organizationId, email: 'safety@demo.com' } })) ?? (await prisma.user.findFirst({ where: { organizationId, email: 'store@demo.com' } }));
+  if (!workers.length || !issuer) return;
+  const iso = (d: Date) => d.toISOString().slice(0, 10);
+  const issue = async (w: (typeof workers)[number], kind: PpeKind, on: Date, extra: Partial<Prisma.PpeIssueUncheckedCreateInput> = {}) =>
+    prisma.ppeIssue.create({
+      data: { organizationId, projectId: w.projectId!, workerId: w.id, kind, issuedOn: on, replaceBy: new Date(`${ppeReplaceBy(kind, iso(on))}T00:00:00Z`), issuedById: issuer.id, createdAt: on, ...extra },
+    });
+  const helpers = workers.filter((w) => w.trade === 'Helper');
+  for (const [i, w] of workers.entries()) {
+    const joined = w.joinedOn ?? day(-40);
+    const h = helpers.indexOf(w);
+    // Three helpers on today's roll call have no jacket yet (jackets ran out); one of them has no helmet either.
+    const kinds: PpeKind[] = h >= 9 && h <= 11 ? (h === 11 ? ['SAFETY_SHOES'] : ['HELMET', 'SAFETY_SHOES']) : ['HELMET', 'SAFETY_SHOES', 'REFLECTIVE_JACKET'];
+    for (const kind of kinds) {
+      if (kind === 'HELMET' && i === 4) {
+        await issue(w, kind, joined, { status: 'LOST', closedOn: day(-20), closeNote: 'Fell into the culvert pit', recoverable: true, closedById: issuer.id });
+        await issue(w, kind, day(-20), { note: 'Replacement for the one lost' });
+      } else await issue(w, kind, joined, { size: kind === 'SAFETY_SHOES' ? String(7 + (i % 4)) : kind === 'REFLECTIVE_JACKET' ? (i % 3 ? 'L' : 'XL') : null });
+    }
+    if (w.trade === 'Mason') await issue(w, 'GLOVES', day(-45), { note: 'Cotton gloves for concreting' });
   }
 }
 

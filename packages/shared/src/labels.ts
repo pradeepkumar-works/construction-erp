@@ -1,4 +1,4 @@
-import type { LdPeriod, GrnQcStatus, ComplianceDocKind, ComplianceDocStatus, DefectPhase, DefectPriority, DefectStatus, ImprestEntryKind, ImprestEntryStatus, WorkerIdType, WorkerSkill, EquipmentDocType, MaintenanceKind, MaintenanceStatus, BillStage, ReceiptKind, VendorKind, MsmeCategory, EquipmentOwnership, ExpenseCategory, PaymentMode, EquipmentRateUnit, MaterialPriority, NotificationType, ProjectStatus, ProjectType, DelayParty, PasswordTokenPurpose, RiskCategory, RiskKind, RiskStatus, RoleKey, SafetyIncidentStatus, SafetyIncidentType, StockEntryType, SubmissionStatus, SubmissionType, Weather, WorkPermitStatus, WorkPermitType } from './enums';
+import type { LdPeriod, GrnQcStatus, ComplianceDocKind, ComplianceDocStatus, DefectPhase, DefectPriority, DefectStatus, ImprestEntryKind, ImprestEntryStatus, WorkerIdType, WorkerSkill, EquipmentDocType, MaintenanceKind, MaintenanceStatus, BillStage, ReceiptKind, VendorKind, MsmeCategory, EquipmentOwnership, ExpenseCategory, PaymentMode, EquipmentRateUnit, MaterialPriority, NotificationType, ProjectStatus, ProjectType, DelayParty, PasswordTokenPurpose, RiskCategory, RiskKind, RiskStatus, RoleKey, SafetyIncidentStatus, SafetyIncidentType, StockEntryType, SubmissionStatus, SubmissionType, Weather, WorkPermitStatus, WorkPermitType, PpeKind, PpeIssueStatus } from './enums';
 
 export const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {
   ROAD: 'Road / Infrastructure',
@@ -293,3 +293,22 @@ export const GRN_QC_STATUS_LABELS: Record<GrnQcStatus, string> = { ACCEPTED: 'Ac
 export const LD_PERIOD_LABELS: Record<LdPeriod, string> = { DAY: 'per day', WEEK: 'per week', MONTH: 'per month' };
 /** Days in one LD period: part periods count pro rata. */
 export const LD_PERIOD_DAYS: Record<LdPeriod, number> = { DAY: 1, WEEK: 7, MONTH: 30 };
+
+export const PPE_KIND_LABELS: Record<PpeKind, string> = {
+  HELMET: 'Helmet',
+  SAFETY_SHOES: 'Safety shoes',
+  REFLECTIVE_JACKET: 'Reflective jacket',
+  GLOVES: 'Gloves',
+  SAFETY_HARNESS: 'Safety harness',
+  GOGGLES: 'Goggles',
+  EAR_PROTECTION: 'Ear protection',
+  DUST_MASK: 'Dust mask',
+  GUMBOOTS: 'Gumboots',
+};
+
+export const PPE_ISSUE_STATUS_LABELS: Record<PpeIssueStatus, string> = {
+  ISSUED: 'With the worker',
+  RETURNED: 'Returned',
+  REPLACED: 'Replaced',
+  LOST: 'Lost',
+};

@@ -991,6 +991,28 @@ export; the client portal and the phone app show the amount.
   talk and permit forms (offline through the outbox), incident detail with close / reopen and permit detail
   with issue, reject and close.
 
+### PPE register
+
+- **Tables.** `PpeIssue` (project, named `Worker`, `PpeKind`, size, issued on, replace-by, `PpeIssueStatus` ISSUED /
+  RETURNED / REPLACED / LOST, closed on and note, `recoverable` from the contractor, `batchId`) with RLS, and
+  `Project.ppeRequired` (the kit every worker must have; helmet, safety shoes and reflective jacket to start with).
+- **Rules** (`packages/shared/src/ppe.ts`, tested in `apps/api/src/scripts/ppe-test.ts`). Replace-by = issued on +
+  `PPE_LIFE_DAYS[kind]`; due once past it. A worker's holding is their newest open issue of each kind; missing = the
+  required kinds they hold none of. Issuing a kind a worker still holds (at any project) marks the old one REPLACED.
+  A batch carries the phone's id as `batchId` (unique with worker and kind), so a retried send issues nothing twice.
+- **Register** (`PpeService.register`). The project's active workers with holdings and gaps, today's roll call
+  (`WorkerAttendance`), totals (fully kitted, on site today without kit, due, lost this financial year), by
+  contractor (missing, items to recover) and kit still open with workers who left or moved.
+- **Roles.** Read by anyone with project access; issue, return and mark lost by `PPE_ISSUER_ROLES` (safety officer,
+  stores, site engineer, team leader, approvers); delete by whoever issued it or a safety manager; the required kit
+  by `SAFETY_MANAGER_ROLES`. Every change is in the audit log.
+- **API.** `GET /ppe/projects/:id/register`, `PUT /ppe/projects/:id/required`, `GET /ppe/issues` (project, worker,
+  status, kind, `due`, `recoverable`), `POST /ppe/issues` (workers × kinds), `POST /ppe/issues/:id/close`,
+  `DELETE /ppe/issues/:id`.
+- **Clients.** Web: a PPE tab in Safety (`components/safety/PpePanel.tsx`, `PpeForms.tsx`) with the register, issue
+  drawer, return or lost, required kit, contractor totals, issue history and Excel export. Site app: Issue PPE from the
+  Safety screen (`app/ppe/new.tsx`), offline through the outbox (`PPE_ISSUE`), in Hindi too.
+
 ## Machinery maintenance and vehicle papers
 
 - **Tables.** `MaintenanceJob` (`MNT-<year>-0001`): machine, the project it was at (null in the yard), `kind`

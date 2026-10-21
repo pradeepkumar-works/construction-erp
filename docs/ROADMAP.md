@@ -387,6 +387,11 @@ preview deployments run them against the production database before a PR is merg
     returns from site; items over their allowance (with the excess valued at item rates for cost viewers) or more than
     5% below theoretical are flagged, items issued with no norm are listed, and it all exports to Excel. Demo: the
     hospital project has cement over, steel within and bricks below.
+53. ~~**PPE register** (M). PPE issued to named workers, replacements, recovery, missing PPE, from the phone.~~
+    Done: a PPE tab in Safety and an Issue PPE screen on the phone (offline, in Hindi). Each project sets the kit every
+    worker must have; issuing kit to workers sets a replace-by date from the kind's usual life and marks any older
+    one replaced. The register shows who lacks what, who is on site today without it (from the roll call), what is due
+    for replacement, kit still out with workers who left, and items lost or kept to recover from each contractor.
 
 ## AI – Ask Nirmaan and what follows
 

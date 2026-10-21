@@ -8,12 +8,13 @@ import { formatDate } from '@/lib/format';
 import { IncidentList } from './IncidentList';
 import { TalkList } from './TalkList';
 import { PermitList } from './PermitList';
+import { PpePanel } from './PpePanel';
 import { INCIDENT_TYPE_COLORS } from './safetyUi';
 import { CardToolbar } from '@/components/common/CardToolbar';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { useUrlTab } from '@/lib/url-state';
 
-export const SAFETY_TABS = ['incidents', 'talks', 'permits'] as const;
+export const SAFETY_TABS = ['incidents', 'talks', 'permits', 'ppe'] as const;
 export type SafetyTab = (typeof SAFETY_TABS)[number];
 const big = { content: { fontSize: themeFontSize('fontSizeXL') } };
 
@@ -62,6 +63,7 @@ export function SafetyPanel({ projectId, initialTab, initialId }: { projectId?: 
           { key: 'incidents', label: 'Incidents and near misses', children: <IncidentList projectId={projectId} initialOpenId={initialTab === 'incidents' || !initialTab ? initialId : undefined} /> },
           { key: 'talks', label: 'Toolbox talks', children: <TalkList projectId={projectId} /> },
           { key: 'permits', label: `Permits to work${s && s.permitsRequested ? ` (${s.permitsRequested} waiting)` : ''}`, children: <PermitList projectId={projectId} initialOpenId={initialTab === 'permits' ? initialId : undefined} /> },
+          { key: 'ppe', label: 'PPE', children: <PpePanel projectId={projectId} /> },
         ]}
       />
     </div>

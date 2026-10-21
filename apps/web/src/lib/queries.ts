@@ -191,6 +191,11 @@ import type {
   SafetyIncidentStatus,
   SafetyIncidentType,
   SafetySummaryDto,
+  PpeRegisterDto,
+  PpeIssueDto,
+  PpeIssueResultDto,
+  PpeKind,
+  PpeIssueStatus,
   ToolboxTalkDto,
   WorkPermitDto,
   WorkPermitStatus,
@@ -1712,6 +1717,67 @@ export interface PermitFilters extends PageParams {
   type?: WorkPermitType;
   status?: WorkPermitStatus;
   active?: boolean;
+}
+
+/* ---------- PPE register ---------- */
+
+/** A project's workers with the PPE they hold and lack. */
+export const usePpeRegister = (projectId: string | undefined) =>
+  useQuery({
+    queryKey: ['ppe', 'register', projectId],
+    queryFn: async () => (await api.get<PpeRegisterDto>(`/ppe/projects/${projectId}/register`)).data,
+    enabled: !!projectId,
+    placeholderData: keepPreviousData,
+  });
+
+export interface PpeIssueFilters {
+  projectId?: string;
+  workerId?: string;
+  status?: PpeIssueStatus;
+  page?: number;
+  pageSize?: number;
+  q?: string;
+}
+
+export const usePpeIssues = (filters: PpeIssueFilters, enabled = true) =>
+  useQuery({
+    queryKey: ['ppe', 'issues', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<PpeIssueDto>>('/ppe/issues', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+
+export function useIssuePpe() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: { id?: string; projectId: string; workerIds: string[]; kinds: PpeKind[]; issuedOn: string; size?: string | null; note?: string | null }) =>
+      (await api.post<PpeIssueResultDto>('/ppe/issues', body)).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['ppe'] }),
+  });
+}
+
+export function useClosePpe() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...body }: { id: string; status: 'RETURNED' | 'LOST'; on: string; recoverable?: boolean; note?: string | null }) => (await api.post<PpeIssueDto>(`/ppe/issues/${id}/close`, body)).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['ppe'] }),
+  });
+}
+
+export function useDeletePpe() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => (await api.delete<{ ok: true }>(`/ppe/issues/${id}`)).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['ppe'] }),
+  });
+}
+
+export function useSetPpeRequired() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ projectId, kinds }: { projectId: string; kinds: PpeKind[] }) => (await api.put<PpeRegisterDto>(`/ppe/projects/${projectId}/required`, { kinds })).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['ppe'] }),
+  });
 }
 
 export const useSafetySummary = (projectId?: string) =>

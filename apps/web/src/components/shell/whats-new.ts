@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-10-ppe-register',
+    date: '2026-10-25',
+    title: 'PPE register',
+    points: [
+      'Safety has a PPE tab: every worker at a project against the kit it requires, with who is on site today without it at the top.',
+      'Issue a helmet, shoes, jacket or any other item to one worker or a whole gang at once. Each item gets a replace-by date, and issuing it again replaces the old one.',
+      'Record kit handed back or lost; lost items are marked to recover from the labour contractor, with totals per contractor.',
+      'Site staff can issue PPE from the phone, even without signal, in English or Hindi.',
+    ],
+  },
+  {
     id: '2026-10-material-reconciliation',
     date: '2026-10-24',
     title: 'Material reconciliation',

@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import type { Paginated, SafetyIncidentDto, SafetySummaryDto, ToolboxTalkDto, WorkPermitDto } from '@erp/shared';
-import { SAFETY_INCIDENT_STATUS_LABELS, SAFETY_INCIDENT_TYPE_LABELS, WORK_PERMIT_TYPE_LABELS, canReportSafety } from '@erp/shared';
+import { SAFETY_INCIDENT_STATUS_LABELS, SAFETY_INCIDENT_TYPE_LABELS, WORK_PERMIT_TYPE_LABELS, canIssuePpe, canReportSafety } from '@erp/shared';
 import { useAuth } from '../src/auth/AuthContext';
 import { useFetch } from '../src/api/hooks';
 import { Button, Card, Chips, EmptyState, ErrorBanner, Loading, Pill, Screen, SectionTitle, Select, Stat, Touchable } from '../src/components';
@@ -25,6 +25,7 @@ export default function SafetyScreen() {
   const [projectId, setProjectId] = useState<string | null>(params.projectId ?? null);
   const [show, setShow] = useState<Show>(params.show ?? 'incidents');
   const mayReport = !!user && canReportSafety(user.roleKey);
+  const mayIssuePpe = !!user && canIssuePpe(user.roleKey);
 
   const p = projectId ?? undefined;
   const key = projectId ?? 'all';
@@ -62,6 +63,7 @@ export default function SafetyScreen() {
             </View>
           </>
         ) : null}
+        {mayIssuePpe ? <Button title={t('Issue PPE')} icon="shield-half-outline" variant="secondary" onPress={() => router.push(href('/ppe/new'))} /> : null}
       </Card>
 
       {s ? (

@@ -85,6 +85,7 @@ function RootNavigator() {
         <Stack.Screen name="snag/new" options={{ title: t('Report Snag') }} />
         <Stack.Screen name="snag/[id]" options={{ title: t('Snag') }} />
         <Stack.Screen name="talk/new" options={{ title: t('Toolbox Talk') }} />
+        <Stack.Screen name="ppe/new" options={{ title: t('Issue PPE') }} />
         <Stack.Screen name="permit/new" options={{ title: t('Ask for a Permit') }} />
         <Stack.Screen name="permit/[id]" options={{ title: t('Permit to Work') }} />
         <Stack.Screen name="quality" options={{ title: t('Tests & NCRs') }} />
