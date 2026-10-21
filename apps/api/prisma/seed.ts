@@ -140,6 +140,7 @@ async function main() {
     await seedSubcontracts(org.id);
     await seedPayables(org.id);
     await seedPaymentRequests(org.id);
+    await seedHireBills(org.id);
     await seedQuality(org.id);
     await seedTestsAndNcrs(org.id);
     await seedDocuments(org.id);
@@ -320,6 +321,7 @@ async function main() {
   await seedSubcontracts(org.id);
   await seedPayables(org.id);
   await seedPaymentRequests(org.id);
+  await seedHireBills(org.id);
   await seedQuality(org.id);
   await seedTestsAndNcrs(org.id);
   await seedDocuments(org.id);
@@ -2255,6 +2257,104 @@ async function seedPaymentRequests(organizationId: string) {
   }
 }
 
+/**
+ * Demo bills without a PO and a debit note (v5 item 91): the road project's hired grader (the owner fuels it and its
+ * operator comes with it) billed for its approved logs of the month with the diesel in them recovered, approved and
+ * waiting to be paid; a crane agency's transport bill booked to its expense head; and a debit note for material short
+ * on the road supplier's PO bill. Only when the organisation has no bill without a PO yet.
+ */
+async function seedHireBills(organizationId: string) {
+  if ((await prisma.vendorBill.count({ where: { organizationId, kind: { not: 'PO' } } })) > 0) return;
+  const userOf = async (role: string) => (await prisma.user.findFirst({ where: { organizationId, role: { key: role } }, select: { id: true } }))?.id;
+  const [md, accounts] = [await userOf('MANAGEMENT'), await userOf('ACCOUNTS_MANAGER')];
+  if (!md || !accounts) return;
+  const year = new Date().getUTCFullYear();
+  const nextBillNo = async () => {
+    const last = await prisma.vendorBill.findFirst({ where: { organizationId, billNo: { startsWith: `VB-${year}-` } }, orderBy: { billNo: 'desc' }, select: { billNo: true } });
+    return `VB-${year}-${String((last ? parseInt(last.billNo.slice(8), 10) : 0) + 1).padStart(4, '0')}`;
+  };
+  const audit = (entityId: string, at: number, by: string) =>
+    prisma.auditLog.createMany({
+      data: [
+        { organizationId, entityType: 'VENDOR_BILL', entityId, action: 'CREATED', actorId: by, createdAt: day(at) },
+        { organizationId, entityType: 'VENDOR_BILL', entityId, action: 'SUBMITTED', actorId: by, createdAt: day(at) },
+        { organizationId, entityType: 'VENDOR_BILL', entityId, action: 'APPROVED', actorId: md, createdAt: day(at) },
+      ],
+    });
+
+  const eq = await prisma.equipment.findFirst({
+    where: { organizationId, ownership: 'HIRED', rateUnit: 'HOUR', vendorId: { not: null }, projectId: { not: null }, rate: { not: null } },
+    include: { vendor: true },
+    orderBy: { code: 'asc' },
+  });
+  const latest = eq && (await prisma.machineryLog.findFirst({ where: { equipmentId: eq.id, projectId: eq.projectId!, status: 'APPROVED' }, orderBy: { date: 'desc' } }));
+  if (eq?.vendor && latest) {
+    await prisma.equipment.update({ where: { id: eq.id }, data: { hireFuelBy: 'OWNER', hireOperator: true } });
+    const from = new Date(Date.UTC(latest.date.getUTCFullYear(), latest.date.getUTCMonth(), 1));
+    const to = new Date(Date.UTC(from.getUTCFullYear(), from.getUTCMonth() + 1, 1));
+    const logs = await prisma.machineryLog.findMany({ where: { equipmentId: eq.id, projectId: eq.projectId!, status: 'APPROVED', date: { gte: from, lt: to } } });
+    const hours = logs.reduce((t, l) => t.add(l.hoursWorked), D(0));
+    const litres = logs.reduce((t, l) => t.add(l.dieselLitres ?? 0), D(0));
+    const amount = hours.mul(eq.rate!).toDecimalPlaces(2);
+    const gstAmount = amount.mul(18).div(100).toDecimalPlaces(2);
+    const fuelRate = D('92.50');
+    const month = from.toLocaleDateString('en-IN', { month: 'short', year: 'numeric', timeZone: 'UTC' });
+    const bill = await prisma.vendorBill.create({
+      data: {
+        organizationId, projectId: eq.projectId!, vendorId: eq.vendorId!, kind: 'HIRE', equipmentId: eq.id, hireMonth: from, billNo: await nextBillNo(), invoiceNo: `MEM/${year % 100}-${(year % 100) + 1}/0087`,
+        invoiceDate: day(-1), dueDate: day(29), subtotal: amount, gstAmount, total: amount.add(gstAmount), fuelLitres: litres, fuelRate, fuelRecovery: litres.mul(fuelRate).toDecimalPlaces(2),
+        matched: true, exceptions: [], status: 'APPROVED', submittedById: accounts, submittedAt: day(-1), reviewedById: md, reviewedAt: day(0), createdAt: day(-1),
+        lines: { create: [{ description: `${eq.code} ${eq.name}, hire for ${month}`, unit: 'hour', quantity: hours, rate: eq.rate!, gstRate: D(18), amount, gstAmount, sortOrder: 0 }] },
+      },
+    });
+    await prisma.machineryLog.updateMany({ where: { id: { in: logs.map((l) => l.id) } }, data: { vendorBillId: bill.id } });
+    await audit(bill.id, -1, accounts);
+  }
+
+  const cranes = await prisma.vendor.findFirst({ where: { organizationId, name: 'Kalinga Cranes' } });
+  const water = await prisma.project.findFirst({ where: { organizationId, type: 'WATER_SUPPLY' }, orderBy: { code: 'asc' } });
+  if (cranes && water) {
+    const amount = D('16400');
+    const gstAmount = amount.mul(18).div(100).toDecimalPlaces(2);
+    const bill = await prisma.vendorBill.create({
+      data: {
+        organizationId, projectId: water.id, vendorId: cranes.id, kind: 'OTHER', expenseCategory: 'TRANSPORT', billNo: await nextBillNo(), invoiceNo: `KC/${year % 100}-${(year % 100) + 1}/0141`,
+        invoiceDate: day(-3), dueDate: day(27), subtotal: amount, gstAmount, total: amount.add(gstAmount), matched: true, exceptions: [],
+        status: 'APPROVED', submittedById: accounts, submittedAt: day(-3), reviewedById: md, reviewedAt: day(-2), createdAt: day(-3),
+        lines: {
+          create: [
+            { description: 'Hydra crane for lowering DI pipes, 2 shifts', unit: 'shift', quantity: D(2), rate: D('6200'), gstRate: D(18), amount: D('12400'), gstAmount: D('2232'), sortOrder: 0 },
+            { description: 'Mobilisation and return of the crane', unit: 'trip', quantity: D(1), rate: D('4000'), gstRate: D(18), amount: D('4000'), gstAmount: D('720'), sortOrder: 1 },
+          ],
+        },
+      },
+    });
+    await audit(bill.id, -3, accounts);
+  }
+
+  const poBill = await prisma.vendorBill.findFirst({ where: { organizationId, kind: 'PO', invoiceNo: 'KBA/26-27/0213', status: 'APPROVED' }, include: { lines: { include: { purchaseOrderLine: true }, orderBy: { sortOrder: 'asc' } } } });
+  const line = poBill?.lines[0];
+  if (poBill && line?.purchaseOrderLine) {
+    const short = line.quantity.mul(0.02).toDecimalPlaces(3);
+    const amount = short.mul(line.rate).toDecimalPlaces(2);
+    const gst = amount.mul(line.gstRate).div(100).toDecimalPlaces(2);
+    const note = await prisma.debitNote.create({
+      data: {
+        organizationId, projectId: poBill.projectId, vendorId: poBill.vendorId, noteNo: `DN-${year}-0001`, date: day(-30), reason: 'SHORTAGE', vendorBillId: poBill.id,
+        subtotal: amount, gstAmount: gst, total: amount.add(gst), remarks: 'Weighbridge slips show the last two loads short', createdById: accounts, createdAt: day(-30),
+        lines: { create: [{ description: `${line.purchaseOrderLine.itemName}, short supplied`, quantity: short, unit: line.purchaseOrderLine.unit, rate: line.rate, amount, gstRate: line.gstRate, gstAmount: gst, sortOrder: 0 }] },
+      },
+    });
+    await prisma.vendorBill.update({ where: { id: poBill.id }, data: { debitNoteAmount: amount.add(gst) } });
+    await prisma.auditLog.createMany({
+      data: [
+        { organizationId, entityType: 'DEBIT_NOTE', entityId: note.id, action: 'CREATED', actorId: accounts, createdAt: day(-30) },
+        { organizationId, entityType: 'VENDOR_BILL', entityId: poBill.id, action: 'DEBIT_NOTE', actorId: accounts, note: `₹${amount.add(gst).toFixed(2)} taken off`, createdAt: day(-30) },
+      ],
+    });
+  }
+}
+
 /** The GSTIN typed on the demo expenses that have GST, with its proper check character. */
 const DEMO_EXPENSE_GSTIN = `21AAKFS1234M1Z${gstinCheckChar('21AAKFS1234M1Z')}`;
 
@@ -2320,7 +2420,7 @@ async function seedCheckAnomalies(organizationId: string) {
         organizationId, projectId: first.projectId, vendorId: first.vendorId, purchaseOrderId: first.purchaseOrderId, billNo: `VB-${year}-${String(count + 1).padStart(4, '0')}`, invoiceNo: 'KBA-26-27-0213',
         invoiceDate: first.invoiceDate, dueDate: first.dueDate, freight: D(0), subtotal: first.subtotal, gstAmount: first.gstAmount, total: first.subtotal.add(first.gstAmount),
         matched: false,
-        exceptions: first.lines.map((l) => `${l.purchaseOrderLine.itemName}: ${l.quantity.toFixed(3).replace(/\.?0+$/, '')} ${l.purchaseOrderLine.unit} billed, ${l.quantity.toFixed(3).replace(/\.?0+$/, '')} received of which ${l.quantity.toFixed(3).replace(/\.?0+$/, '')} is on other bills`),
+        exceptions: first.lines.map((l) => `${l.purchaseOrderLine?.itemName}: ${l.quantity.toFixed(3).replace(/\.?0+$/, '')} ${l.purchaseOrderLine?.unit} billed, ${l.quantity.toFixed(3).replace(/\.?0+$/, '')} received of which ${l.quantity.toFixed(3).replace(/\.?0+$/, '')} is on other bills`),
         remarks: 'Invoice copy received by post', status: 'SUBMITTED', submittedById: accounts, submittedAt: day(-1), createdAt: day(-1),
         lines: { create: first.lines.map((l) => ({ purchaseOrderLineId: l.purchaseOrderLineId, quantity: l.quantity, rate: l.rate, gstRate: l.gstRate, amount: l.amount, gstAmount: l.gstAmount, sortOrder: l.sortOrder })) },
       },

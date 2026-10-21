@@ -28,6 +28,7 @@ const logInclude = {
   project: { select: { name: true } },
   equipment: { select: { code: true, name: true, ownership: true } },
   activity: { select: { name: true } },
+  vendorBill: { select: { billNo: true } },
   submittedBy: { select: { fullName: true } },
   reviewedBy: { select: { fullName: true } },
   attachments: { select: ATTACHMENT_FIELDS },
@@ -92,6 +93,9 @@ export class MachineryService {
       registrationNo: r.registrationNo,
       rate: canManageEquipment(user.roleKey) ? money(r.rate) : null,
       rateUnit: r.rateUnit,
+      hireMinHours: dec(r.hireMinHours),
+      hireFuelBy: r.hireFuelBy,
+      hireOperator: r.hireOperator,
       projectId: r.projectId,
       projectName: r.project?.name ?? null,
       isActive: r.isActive,
@@ -145,6 +149,13 @@ export class MachineryService {
       data.rate = rate;
     }
     if (dto.rateUnit !== undefined) data.rateUnit = dto.rateUnit;
+    if (dto.hireMinHours !== undefined) {
+      const h = decimalOrNull(dto.hireMinHours);
+      if (h && h.lt(0)) throw new BadRequestException('Minimum hours cannot be negative');
+      data.hireMinHours = h && h.isZero() ? null : h;
+    }
+    if (dto.hireFuelBy !== undefined) data.hireFuelBy = dto.hireFuelBy;
+    if (dto.hireOperator !== undefined) data.hireOperator = dto.hireOperator;
     if (dto.projectId !== undefined) {
       if (dto.projectId) await this.access.assertCanAccessProject(user, dto.projectId);
       data.projectId = dto.projectId;
@@ -229,6 +240,8 @@ export class MachineryService {
       workDone: r.workDone,
       breakdownNote: r.breakdownNote,
       remarks: r.remarks,
+      vendorBillId: r.vendorBillId,
+      vendorBillNo: r.vendorBill?.billNo ?? null,
       status: r.status,
       submittedById: r.submittedById,
       submittedByName: r.submittedBy.fullName,

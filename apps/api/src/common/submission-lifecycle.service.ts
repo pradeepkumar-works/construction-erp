@@ -284,7 +284,7 @@ export class SubmissionLifecycleService {
         id: v.id,
         projectId: v.projectId,
         projectName: v.project.name,
-        title: `${vendorBillTitle(v.billNo, v.invoiceNo, v.vendor.name, v.total.toFixed(2))}${v.matched ? '' : ' (does not match the PO)'}`,
+        title: `${vendorBillTitle(v.billNo, v.invoiceNo, v.vendor.name, v.total.toFixed(2))}${v.matched ? '' : v.purchaseOrderId ? ' (does not match the PO)' : ' (has exceptions)'}`,
         submittedByName: v.submittedBy.fullName,
         submittedAt: (v.submittedAt ?? v.createdAt).toISOString(),
         amount: amt(v.total),

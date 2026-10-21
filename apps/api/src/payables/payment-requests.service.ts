@@ -23,6 +23,7 @@ import { isUniqueViolation } from '../common/idempotency';
 import { nextDocNo } from '../common/doc-number';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import { advanceRequested } from './advances';
+import { SUB_BILL_PAYABLE, VENDOR_BILL_PAYABLE, subBillPayable, vendorBillPayable } from './payable';
 import { CreatePaymentRequestDto, ListPaymentRequestsQuery, UpdatePaymentRequestDto } from './payables.dto';
 
 type Db = Prisma.TransactionClient | PrismaService;
@@ -35,8 +36,8 @@ const rupees = (d: Prisma.Decimal) => `₹${d.toFixed(2)}`;
 const include = {
   project: { select: { code: true, name: true } },
   vendor: { select: { name: true, msmeCategory: true } },
-  vendorBill: { select: { billNo: true, total: true, advanceAdjusted: true, dueDate: true } },
-  subcontractBill: { select: { billNo: true, isFinal: true, netPayable: true, dueDate: true, workOrder: { select: { woNo: true } } } },
+  vendorBill: { select: { billNo: true, ...VENDOR_BILL_PAYABLE, dueDate: true } },
+  subcontractBill: { select: { billNo: true, isFinal: true, ...SUB_BILL_PAYABLE, dueDate: true, workOrder: { select: { woNo: true } } } },
   purchaseOrder: { select: { poNo: true, total: true } },
   workOrder: { select: { woNo: true, value: true } },
   submittedBy: { select: { fullName: true } },
@@ -116,7 +117,7 @@ export class PaymentRequestsService {
   }
 
   toDto(r: Row, open: Prisma.Decimal | null = null): PaymentRequestDto {
-    const value = r.vendorBill ? r.vendorBill.total.sub(r.vendorBill.advanceAdjusted) : r.subcontractBill ? r.subcontractBill.netPayable : (r.purchaseOrder?.total ?? r.workOrder?.value ?? ZERO);
+    const value = r.vendorBill ? vendorBillPayable(r.vendorBill) : r.subcontractBill ? subBillPayable(r.subcontractBill) : (r.purchaseOrder?.total ?? r.workOrder?.value ?? ZERO);
     return {
       id: r.id,
       projectId: r.projectId,
@@ -223,10 +224,10 @@ export class PaymentRequestsService {
     if (kind === 'BILL') {
       if (!!ids.vendorBillId === !!ids.subcontractBillId || ids.purchaseOrderId || ids.workOrderId) throw new BadRequestException('Choose the one bill to pay');
       const bill = ids.vendorBillId
-        ? await db.vendorBill.findFirst({ where: { id: ids.vendorBillId, organizationId } }).then((b) => b && { label: b.billNo, projectId: b.projectId, vendorId: b.vendorId, status: b.status, payable: b.total.sub(b.advanceAdjusted), paid: b.paidAmount, vendorBillId: b.id as string | null, subcontractBillId: null as string | null })
+        ? await db.vendorBill.findFirst({ where: { id: ids.vendorBillId, organizationId } }).then((b) => b && { label: b.billNo, projectId: b.projectId, vendorId: b.vendorId, status: b.status, payable: vendorBillPayable(b), paid: b.paidAmount, vendorBillId: b.id as string | null, subcontractBillId: null as string | null })
         : await db.subcontractBill
             .findFirst({ where: { id: ids.subcontractBillId!, organizationId }, include: { workOrder: { select: { woNo: true, vendorId: true } } } })
-            .then((b) => b && { label: subBillLabel(b.workOrder.woNo, b.billNo, b.isFinal), projectId: b.projectId, vendorId: b.workOrder.vendorId, status: b.status, payable: b.netPayable, paid: b.paidAmount, vendorBillId: null as string | null, subcontractBillId: b.id as string | null });
+            .then((b) => b && { label: subBillLabel(b.workOrder.woNo, b.billNo, b.isFinal), projectId: b.projectId, vendorId: b.workOrder.vendorId, status: b.status, payable: subBillPayable(b), paid: b.paidAmount, vendorBillId: null as string | null, subcontractBillId: b.id as string | null });
       if (!bill) throw new NotFoundException('Bill not found');
       if (bill.status !== 'APPROVED') throw notApproved(bill.label, bill.status);
       const others = await db.paymentRequest.findMany({

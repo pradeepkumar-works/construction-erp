@@ -48,6 +48,7 @@ const jobInclude = {
   project: { select: { name: true } },
   reportedBy: { select: { fullName: true } },
   closedBy: { select: { fullName: true } },
+  vendorBill: { select: { billNo: true } },
   attachments: { select: ATTACHMENT_FIELDS },
   spareIssues: {
     select: { id: true, entryNo: true, date: true, lines: { select: { itemId: true, quantity: true, item: { select: { name: true, unit: true, rate: true } } }, orderBy: { sortOrder: 'asc' } } },
@@ -136,6 +137,8 @@ export class MaintenanceService {
       reportedById: r.reportedById,
       reportedByName: r.reportedBy.fullName,
       closedByName: r.closedBy?.fullName ?? null,
+      vendorBillId: r.vendorBillId,
+      vendorBillNo: r.vendorBill?.billNo ?? null,
       attachments: r.attachments.map((a) => this.attachments.toDto(a)),
       createdAt: iso(r.createdAt)!,
       updatedAt: iso(r.updatedAt)!,
@@ -306,6 +309,7 @@ export class MaintenanceService {
     const job = await this.getJob(user, id);
     await this.access.assertCanManageMaintenance(user, job.projectId);
     if (job.spares.length) throw new ConflictException(`Spares were issued against ${job.jobNo}; delete those stock issues first`);
+    if (job.vendorBillNo) throw new ConflictException(`${job.jobNo} is billed on ${job.vendorBillNo}`);
     await this.prisma.maintenanceJob.delete({ where: { id } });
     await this.audit.log(user, 'MAINTENANCE_JOB', id, 'DELETED');
     return { ok: true };

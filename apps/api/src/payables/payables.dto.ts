@@ -1,7 +1,20 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
-import { IsArray, IsBoolean, IsDateString, IsIn, IsNumberString, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
-import { LIST_SORT_FIELDS, PAYMENT_REQUEST_KINDS, RECEIPT_MODES, SUBMISSION_STATUSES, type PaymentMode, type PaymentRequestKind, type PaymentRequestSortField, type SubmissionStatus, type VendorPaymentSortField } from '@erp/shared';
+import { Transform, Type } from 'class-transformer';
+import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsDateString, IsIn, IsNotEmpty, IsNumberString, IsOptional, IsString, IsUUID, MaxLength, ValidateNested } from 'class-validator';
+import {
+  DEBIT_NOTE_REASONS,
+  LIST_SORT_FIELDS,
+  PAYMENT_REQUEST_KINDS,
+  RECEIPT_MODES,
+  SUBMISSION_STATUSES,
+  type DebitNoteReason,
+  type DebitNoteSortField,
+  type PaymentMode,
+  type PaymentRequestKind,
+  type PaymentRequestSortField,
+  type SubmissionStatus,
+  type VendorPaymentSortField,
+} from '@erp/shared';
 import { PageQuery, QueryBool } from '../common/paging';
 import { CLIENT_ID_DOC } from '../common/idempotency';
 
@@ -88,4 +101,44 @@ export class ListPaymentRequestsQuery extends PageQuery {
   @ApiPropertyOptional() @IsOptional() @IsUUID() workOrderId?: string;
   @ApiPropertyOptional({ description: 'Only entries the current user submitted' }) @IsOptional() @QueryBool() @IsBoolean() mine?: boolean;
   @ApiPropertyOptional({ enum: LIST_SORT_FIELDS.paymentRequests, default: 'requestNo' }) @IsOptional() @IsIn(LIST_SORT_FIELDS.paymentRequests as unknown as string[]) sortBy?: PaymentRequestSortField;
+}
+
+/* ---------- debit notes (v5 item 91) ---------- */
+
+export class DebitNoteLineInput {
+  @ApiProperty({ example: 'Cement OPC 53, 20 bags short' }) @trim() @IsString() @IsNotEmpty() @MaxLength(200) description: string;
+  @ApiPropertyOptional({ example: '20', description: 'With a rate: amount = quantity × rate' }) @IsOptional() @num() @IsNumberString() quantity?: string;
+  @ApiPropertyOptional({ example: 'bag' }) @IsOptional() @trim() @IsString() @MaxLength(20) unit?: string | null;
+  @ApiPropertyOptional({ example: '385.00' }) @IsOptional() @num() @IsNumberString() rate?: string;
+  @ApiPropertyOptional({ example: '7700.00', description: 'A lump sum, when there is no quantity and rate' }) @IsOptional() @num() @IsNumberString() amount?: string;
+  @ApiPropertyOptional({ example: '28', default: '0' }) @IsOptional() @num() @IsNumberString() gstRate?: string;
+}
+
+export class CreateDebitNoteDto {
+  @ApiPropertyOptional(CLIENT_ID_DOC) @IsOptional() @IsUUID('4') id?: string;
+  @ApiPropertyOptional({ description: 'An approved vendor bill (or subcontractBillId)' }) @IsOptional() @IsUUID() vendorBillId?: string;
+  @ApiPropertyOptional({ description: 'An approved subcontract bill (or vendorBillId)' }) @IsOptional() @IsUUID() subcontractBillId?: string;
+  @ApiPropertyOptional({ description: 'The GRN rejected at QA/QC, or the return to the supplier, it comes from' }) @IsOptional() @IsUUID() stockEntryId?: string;
+  @ApiProperty({ example: '2026-10-20' }) @IsDateString() date: string;
+  @ApiProperty({ enum: DEBIT_NOTE_REASONS }) @IsIn(DEBIT_NOTE_REASONS as unknown as string[]) reason: DebitNoteReason;
+  @ApiPropertyOptional() @IsOptional() @trim() @IsString() @MaxLength(1000) remarks?: string | null;
+  @ApiProperty({ type: [DebitNoteLineInput] }) @IsArray() @ArrayMinSize(1) @ArrayMaxSize(100) @ValidateNested({ each: true }) @Type(() => DebitNoteLineInput) lines: DebitNoteLineInput[];
+}
+
+export class CancelDebitNoteDto {
+  @ApiProperty({ example: 'Supplier replaced the short bags' }) @trim() @IsString() @IsNotEmpty() @MaxLength(500) note: string;
+}
+
+/** `q` matches the note number, the vendor, the project and the bill. */
+export class ListDebitNotesQuery extends PageQuery {
+  @ApiPropertyOptional() @IsOptional() @IsUUID() projectId?: string;
+  @ApiPropertyOptional() @IsOptional() @IsUUID() vendorId?: string;
+  @ApiPropertyOptional() @IsOptional() @IsUUID() vendorBillId?: string;
+  @ApiPropertyOptional() @IsOptional() @IsUUID() subcontractBillId?: string;
+  @ApiPropertyOptional() @IsOptional() @IsUUID() stockEntryId?: string;
+  @ApiPropertyOptional({ enum: DEBIT_NOTE_REASONS }) @IsOptional() @IsIn(DEBIT_NOTE_REASONS as unknown as string[]) reason?: DebitNoteReason;
+  @ApiPropertyOptional({ description: 'Cancelled notes too' }) @IsOptional() @QueryBool() @IsBoolean() includeCancelled?: boolean;
+  @ApiPropertyOptional({ example: '2026-10-01' }) @IsOptional() @IsDateString() from?: string;
+  @ApiPropertyOptional({ example: '2026-10-31' }) @IsOptional() @IsDateString() to?: string;
+  @ApiPropertyOptional({ enum: LIST_SORT_FIELDS.debitNotes, default: 'noteNo' }) @IsOptional() @IsIn(LIST_SORT_FIELDS.debitNotes as unknown as string[]) sortBy?: DebitNoteSortField;
 }

@@ -25,6 +25,7 @@ export const LIST_SORT_FIELDS = {
   bills: ['billDate', 'billNo', 'grossAmount', 'netPayable', 'status', 'stage', 'project', 'createdAt'],
   receipts: ['receiptDate', 'amount', 'project', 'kind', 'createdAt'],
   vendorPayments: ['paymentDate', 'amount', 'vendor', 'project', 'createdAt'],
+  debitNotes: ['noteNo', 'date', 'total', 'vendor', 'project', 'createdAt'],
   paymentRequests: ['requestNo', 'neededBy', 'amount', 'status', 'vendor', 'project', 'createdAt'],
   vendors: ['name', 'createdAt'],
   purchaseOrders: ['poDate', 'poNo', 'total', 'status', 'project', 'vendor', 'createdAt'],
@@ -70,6 +71,7 @@ export type BillSortField = (typeof LIST_SORT_FIELDS.bills)[number];
 export type ReceiptSortField = (typeof LIST_SORT_FIELDS.receipts)[number];
 export type VendorPaymentSortField = (typeof LIST_SORT_FIELDS.vendorPayments)[number];
 export type PaymentRequestSortField = (typeof LIST_SORT_FIELDS.paymentRequests)[number];
+export type DebitNoteSortField = (typeof LIST_SORT_FIELDS.debitNotes)[number];
 export type VendorSortField = (typeof LIST_SORT_FIELDS.vendors)[number];
 export type PurchaseOrderSortField = (typeof LIST_SORT_FIELDS.purchaseOrders)[number];
 export type VendorBillSortField = (typeof LIST_SORT_FIELDS.vendorBills)[number];

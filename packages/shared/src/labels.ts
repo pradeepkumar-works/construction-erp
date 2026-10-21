@@ -1,4 +1,4 @@
-import type { LdPeriod, GrnQcStatus, ComplianceDocKind, ComplianceDocStatus, DefectPhase, DefectPriority, DefectStatus, ImprestEntryKind, ImprestEntryStatus, WorkerIdType, WorkerSkill, EquipmentDocType, MaintenanceKind, MaintenanceStatus, BillStage, ReceiptKind, VendorKind, MsmeCategory, EquipmentOwnership, ExpenseCategory, PaymentMode, EquipmentRateUnit, MaterialPriority, NotificationType, ProjectStatus, ProjectType, DelayParty, PasswordTokenPurpose, RiskCategory, RiskKind, RiskStatus, RoleKey, SafetyIncidentStatus, SafetyIncidentType, StockEntryType, SubmissionStatus, SubmissionType, Weather, WorkPermitStatus, WorkPermitType, PpeKind, PpeIssueStatus, RfiStatus, RfiPriority, PaymentRequestKind } from './enums';
+import type { LdPeriod, GrnQcStatus, ComplianceDocKind, ComplianceDocStatus, DefectPhase, DefectPriority, DefectStatus, ImprestEntryKind, ImprestEntryStatus, WorkerIdType, WorkerSkill, EquipmentDocType, MaintenanceKind, MaintenanceStatus, BillStage, ReceiptKind, VendorKind, MsmeCategory, EquipmentOwnership, ExpenseCategory, PaymentMode, EquipmentRateUnit, MaterialPriority, NotificationType, ProjectStatus, ProjectType, DelayParty, PasswordTokenPurpose, RiskCategory, RiskKind, RiskStatus, RoleKey, SafetyIncidentStatus, SafetyIncidentType, StockEntryType, SubmissionStatus, SubmissionType, Weather, WorkPermitStatus, WorkPermitType, PpeKind, PpeIssueStatus, RfiStatus, RfiPriority, PaymentRequestKind, VendorBillKind, HireFuelBy, DebitNoteReason } from './enums';
 
 export const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {
   ROAD: 'Road / Infrastructure',
@@ -42,6 +42,27 @@ export const PAYMENT_REQUEST_KIND_LABELS: Record<PaymentRequestKind, string> = {
   BILL: 'Bill payment',
   PO_ADVANCE: 'Advance on a purchase order',
   WO_ADVANCE: 'Advance on a work order',
+};
+
+export const VENDOR_BILL_KIND_LABELS: Record<VendorBillKind, string> = {
+  PO: 'Against a purchase order',
+  HIRE: 'Machine hire',
+  SERVICE: 'Workshop service',
+  OTHER: 'Other service',
+};
+
+export const HIRE_FUEL_BY_LABELS: Record<HireFuelBy, string> = {
+  OWNER: 'Owner fuels it',
+  COMPANY: 'We fuel it',
+};
+
+export const DEBIT_NOTE_REASON_LABELS: Record<DebitNoteReason, string> = {
+  SHORTAGE: 'Short supply',
+  EXCESS: 'Billed in excess',
+  REJECTED: 'Rejected at QA/QC',
+  RETURNED: 'Returned to supplier',
+  RATE_DIFFERENCE: 'Rate difference',
+  OTHER: 'Other',
 };
 
 export const MATERIAL_PRIORITY_LABELS: Record<MaterialPriority, string> = {

@@ -14,7 +14,7 @@ import { PurchaseOrdersService } from '../purchasing/purchase-orders.service';
 import { SubcontractBillsService } from '../subcontracts/subcontract-bills.service';
 import { ExpensesService } from '../expenses/expenses.service';
 import { RaBillsService } from '../ra-bills/ra-bills.service';
-import { type Check, type Link, expenseChecks, raBillChecks, rulesSummary, subcontractBillChecks, vendorBillChecks } from './bill-rules';
+import { type Check, type Link, expenseChecks, otherVendorBillChecks, raBillChecks, rulesSummary, subcontractBillChecks, vendorBillChecks } from './bill-rules';
 
 const TYPE_OF: Record<CheckKind, SubmissionType> = { 'vendor-bill': 'VENDOR_BILL', 'subcontract-bill': 'SUBCONTRACT_BILL', expense: 'EXPENSE', 'ra-bill': 'BILL' };
 const n = (d: Prisma.Decimal | null | undefined) => (d ? d.toNumber() : 0);
@@ -164,6 +164,8 @@ export class BillChecksService {
       where: { id, organizationId: user.organizationId },
       include: { vendor: { select: { gstin: true } }, purchaseOrder: { include: { lines: true } }, lines: { orderBy: { sortOrder: 'asc' } } },
     });
+    const label = `${dto.billNo}, invoice ${dto.invoiceNo} of ${dto.vendorName}, total ${dto.total}`;
+    if (!bill.purchaseOrder) return { type: 'VENDOR_BILL', projectId: dto.projectId, status: dto.status, label, checks: await this.otherVendorBillChecksOf(user, bill) };
     const checks = await this.vendorBillChecksOf(user, {
       id,
       vendorId: bill.vendorId,
@@ -175,9 +177,61 @@ export class BillChecksService {
       subtotal: n(bill.subtotal),
       gstAmount: n(bill.gstAmount),
       total: n(bill.total),
-      lines: bill.lines.map((l) => ({ id: l.id, purchaseOrderLineId: l.purchaseOrderLineId, qty: n(l.quantity), rate: n(l.rate), gstRate: n(l.gstRate), amount: n(l.amount), gstAmount: n(l.gstAmount) })),
+      lines: bill.lines.map((l) => ({ id: l.id, purchaseOrderLineId: l.purchaseOrderLineId ?? '', qty: n(l.quantity), rate: n(l.rate), gstRate: n(l.gstRate), amount: n(l.amount), gstAmount: n(l.gstAmount) })),
     });
-    return { type: 'VENDOR_BILL', projectId: dto.projectId, status: dto.status, label: `${dto.billNo}, invoice ${dto.invoiceNo} of ${dto.vendorName}, total ${dto.total}`, checks };
+    return { type: 'VENDOR_BILL', projectId: dto.projectId, status: dto.status, label, checks };
+  }
+
+  /** Duplicate invoices, then a hire bill against the machine's logs or a service bill against its job cards (v5 item 91). */
+  private async otherVendorBillChecksOf(
+    user: RequestUser,
+    bill: Prisma.VendorBillGetPayload<{ include: { vendor: { select: { gstin: true } }; lines: true } }>,
+  ): Promise<Check[]> {
+    const before = { createdAt: { lt: bill.createdAt } };
+    const dupBills = await this.prisma.vendorBill.findMany({
+      where: { organizationId: user.organizationId, id: { not: bill.id }, ...notRejected, ...before, OR: [{ vendorId: bill.vendorId }, ...(bill.vendor.gstin ? [{ vendor: { gstin: bill.vendor.gstin } }] : [])] },
+      select: { id: true, billNo: true, invoiceNo: true },
+    });
+    const invoice = norm(bill.invoiceNo);
+    let hire: Parameters<typeof otherVendorBillChecks>[0]['hire'] = null;
+    let service: Parameters<typeof otherVendorBillChecks>[0]['service'] = null;
+    if (bill.kind === 'HIRE' && bill.equipmentId && bill.hireMonth) {
+      const [eq, logs, others] = await Promise.all([
+        this.prisma.equipment.findUniqueOrThrow({ where: { id: bill.equipmentId }, select: { code: true, rate: true, rateUnit: true } }),
+        this.prisma.machineryLog.findMany({ where: { vendorBillId: bill.id }, select: { hoursWorked: true } }),
+        this.prisma.vendorBill.findMany({ where: { kind: 'HIRE', equipmentId: bill.equipmentId, projectId: bill.projectId, hireMonth: bill.hireMonth, id: { not: bill.id }, ...notRejected }, select: { id: true, billNo: true } }),
+      ]);
+      const hireLine = bill.lines.find((l) => l.sortOrder === 0);
+      const worked = logs.reduce((s, l) => s + n(l.hoursWorked), 0);
+      const days = logs.filter((l) => n(l.hoursWorked) > 0).length;
+      const month = bill.hireMonth.toLocaleDateString('en-IN', { month: 'short', year: 'numeric', timeZone: 'UTC' });
+      hire = {
+        machine: `${eq.code} for ${month}`,
+        unit: eq.rateUnit.toLowerCase(),
+        billedQty: n(hireLine?.quantity),
+        loggedQty: !logs.length ? 0 : eq.rateUnit === 'HOUR' ? worked : eq.rateUnit === 'DAY' ? days : 1,
+        rate: n(hireLine?.rate),
+        agreedRate: eq.rate ? n(eq.rate) : null,
+        otherBills: others.map((b) => ({ label: b.billNo, href: `/vendor-bills/${b.id}` })),
+        fuelLitres: n(bill.fuelLitres),
+        fuelRecovered: n(bill.fuelRecovery),
+      };
+    }
+    if (bill.kind === 'SERVICE') {
+      const jobs = await this.prisma.maintenanceJob.findMany({ where: { vendorBillId: bill.id }, select: { id: true, jobNo: true, labourCost: true, partsCost: true } });
+      service = { billed: n(bill.subtotal), recorded: jobs.reduce((s, j) => s + n(j.labourCost) + n(j.partsCost), 0), jobs: jobs.map((j) => ({ label: j.jobNo, href: `/machinery?tab=maintenance&id=${j.id}` })) };
+    }
+    return otherVendorBillChecks({
+      invoiceNo: bill.invoiceNo,
+      freight: n(bill.freight),
+      subtotal: n(bill.subtotal),
+      gstAmount: n(bill.gstAmount),
+      total: n(bill.total),
+      lines: bill.lines.map((l, i) => ({ id: l.id, no: i + 1, item: l.description ?? '', qty: n(l.quantity), rate: n(l.rate), gstRate: n(l.gstRate), amount: n(l.amount), gstAmount: n(l.gstAmount) })),
+      duplicates: dupBills.filter((b) => norm(b.invoiceNo) === invoice).map((b) => ({ label: b.billNo, href: `/vendor-bills/${b.id}` })),
+      hire,
+      service,
+    });
   }
 
   /**

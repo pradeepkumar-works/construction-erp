@@ -236,6 +236,12 @@ export const canViewPayables = (role: RoleKey) => PAYMENT_ROLES.includes(role) |
 export const PAYMENT_REQUEST_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER', 'ACCOUNTS_MANAGER', 'PROCUREMENT_MANAGER', 'QUANTITY_SURVEYOR'];
 export const canRequestPayment = (role: RoleKey) => PAYMENT_REQUEST_ROLES.includes(role);
 export const canViewPaymentRequests = (role: RoleKey) => PAYMENT_REQUEST_ROLES.includes(role);
+/**
+ * Raise or cancel a debit note against an approved vendor or subcontract bill (v5 item 91): those who record vendor
+ * bills. Those who see payables see the notes.
+ */
+export const canRaiseDebitNote = (role: RoleKey) => VENDOR_BILL_ROLES.includes(role);
+export const canViewDebitNotes = (role: RoleKey) => VENDOR_BILL_ROLES.includes(role) || role === 'PROJECT_MANAGER';
 /** Export vouchers to Tally and set the ledger names: those who keep the books. */
 export const TALLY_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'ACCOUNTS_MANAGER'];
 export const canExportTally = (role: RoleKey) => TALLY_ROLES.includes(role);

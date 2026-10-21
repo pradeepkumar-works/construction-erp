@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
+import Link from 'next/link';
 import { Alert, App, Button, DatePicker, Descriptions, Divider, Drawer, Form, Input, Select, Skeleton, Space, Table, Typography } from 'antd';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -142,8 +143,15 @@ export function JobDrawer({ id, open, onClose, onEdit }: { id: string | null; op
               </Button>
             ) : null}
             {manager ? (
-              <ConfirmDelete what={`job card ${j.jobNo}`} onConfirm={() => remove.mutateAsync()} disabled={j.spares.length > 0}>
-                <Button size="small" danger icon={<DeleteOutlined />} disabled={j.spares.length > 0} title={j.spares.length ? 'Spares were issued; delete those stock issues first' : undefined} aria-label="Delete" />
+              <ConfirmDelete what={`job card ${j.jobNo}`} onConfirm={() => remove.mutateAsync()} disabled={j.spares.length > 0 || !!j.vendorBillId}>
+                <Button
+                  size="small"
+                  danger
+                  icon={<DeleteOutlined />}
+                  disabled={j.spares.length > 0 || !!j.vendorBillId}
+                  title={j.vendorBillId ? `Billed on ${j.vendorBillNo}` : j.spares.length ? 'Spares were issued; delete those stock issues first' : undefined}
+                  aria-label="Delete"
+                />
               </ConfirmDelete>
             ) : null}
           </Space>
@@ -186,6 +194,13 @@ export function JobDrawer({ id, open, onClose, onEdit }: { id: string | null; op
             <Descriptions.Item label="Total cost">
               <b>{formatINR(j.totalCost)}</b>
             </Descriptions.Item>
+            {j.vendorBillId ? (
+              <Descriptions.Item label="Billed on" span={2}>
+                <Link href={`/vendor-bills/${j.vendorBillId}`} className="mono">
+                  {j.vendorBillNo}
+                </Link>
+              </Descriptions.Item>
+            ) : null}
           </Descriptions>
           <Divider titlePlacement="start" plain>
             Spares issued

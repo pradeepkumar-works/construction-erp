@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { Typography } from 'antd';
 import type { MachineryLogDto } from '@erp/shared';
 import { EQUIPMENT_OWNERSHIP_LABELS } from '@erp/shared';
@@ -58,6 +59,7 @@ export function MachineryRecord({ id, mode, open, onClose, onEdit }: RecordProps
               children: data.meterStart === null && data.meterEnd === null ? '-' : `${data.meterStart ?? '?'} → ${data.meterEnd ?? '?'}${meterRun !== null ? ` (${formatQty(meterRun)})` : ''}`,
             },
             { key: 'activity', label: 'Activity', children: data.activityName ?? '-' },
+            ...(data.vendorBillId ? [{ key: 'bill', label: 'Billed on', children: <Link href={`/vendor-bills/${data.vendorBillId}`} className="mono">{data.vendorBillNo}</Link> }] : []),
             ...submissionMetaItems(data).filter((i) => i.key !== 'status'),
           ],
           lifecycle: submissionLifecycle(data),

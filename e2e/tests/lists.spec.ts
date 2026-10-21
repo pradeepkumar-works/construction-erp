@@ -118,9 +118,9 @@ test('the other approval lists have the same views, chips, columns and totals', 
 
   // A list's own view goes in the address bar and shows as a chip.
   await page.goto('/vendor-bills');
-  await page.getByRole('tab', { name: 'Not matching the PO' }).click();
+  await page.getByRole('tab', { name: 'With exceptions' }).click();
   await expect(page).toHaveURL(/\/vendor-bills\?exceptions=1$/);
-  await expect(page.locator('.ant-tag').filter({ hasText: 'Not matching the PO' })).toBeVisible();
+  await expect(page.locator('.ant-tag').filter({ hasText: 'With exceptions' })).toBeVisible();
 
   // Dates now filter work orders too; the chip takes them off.
   await page.goto('/work-orders?from=2026-01-01');

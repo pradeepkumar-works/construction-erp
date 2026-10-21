@@ -26,6 +26,7 @@ import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import { CreatePaymentDto, ListPaymentsQuery, PayablesQuery, UpdatePaymentDto } from './payables.dto';
 import { assertNotExported } from '../tally/exported';
 import { advanceAdjusted, advancePaid, advanceRecovered } from './advances';
+import { SUB_BILL_PAYABLE, VENDOR_BILL_PAYABLE, subBillPayable, vendorBillPayable } from './payable';
 import { syncRequestPaid, targetLabel } from './payment-requests.service';
 
 const D = (v: Prisma.Decimal.Value) => new Prisma.Decimal(v);
@@ -88,12 +89,12 @@ export async function syncPaid(tx: Prisma.TransactionClient, type: PayableBillTy
   const payments = await tx.vendorPayment.findMany({ where, select: PAYMENT_SUMS, orderBy: { paymentDate: 'desc' } });
   const paid = settledOf(payments);
   if (type === 'VENDOR_BILL') {
-    const bill = await tx.vendorBill.findUniqueOrThrow({ where: { id: billId }, select: { total: true, advanceAdjusted: true } });
-    const payable = bill.total.sub(bill.advanceAdjusted);
+    const bill = await tx.vendorBill.findUniqueOrThrow({ where: { id: billId }, select: VENDOR_BILL_PAYABLE });
+    const payable = vendorBillPayable(bill);
     await tx.vendorBill.update({ where: { id: billId }, data: { paidAmount: paid, paidDate: payments.length && paid.add(TOLERANCE).gte(payable) ? payments[0].paymentDate : null } });
   } else {
-    const bill = await tx.subcontractBill.findUniqueOrThrow({ where: { id: billId }, select: { netPayable: true } });
-    await tx.subcontractBill.update({ where: { id: billId }, data: { paidAmount: paid, paidDate: payments.length && paid.add(TOLERANCE).gte(bill.netPayable) ? payments[0].paymentDate : null } });
+    const bill = await tx.subcontractBill.findUniqueOrThrow({ where: { id: billId }, select: SUB_BILL_PAYABLE });
+    await tx.subcontractBill.update({ where: { id: billId }, data: { paidAmount: paid, paidDate: payments.length && paid.add(TOLERANCE).gte(subBillPayable(bill)) ? payments[0].paymentDate : null } });
   }
 }
 
@@ -238,10 +239,10 @@ export class PayablesService {
     let bill: Bill | null = null;
     if (dto.vendorBillId) {
       const b = await this.prisma.vendorBill.findFirst({ where: { id: dto.vendorBillId, organizationId: org } });
-      if (b) bill = { type: 'VENDOR_BILL', id: b.id, label: b.billNo, projectId: b.projectId, vendorId: b.vendorId, status: b.status, billDate: b.invoiceDate, payable: b.total.sub(b.advanceAdjusted) };
+      if (b) bill = { type: 'VENDOR_BILL', id: b.id, label: b.billNo, projectId: b.projectId, vendorId: b.vendorId, status: b.status, billDate: b.invoiceDate, payable: vendorBillPayable(b) };
     } else {
       const b = await this.prisma.subcontractBill.findFirst({ where: { id: dto.subcontractBillId, organizationId: org }, include: { workOrder: { select: { woNo: true, vendorId: true } } } });
-      if (b) bill = { type: 'SUBCONTRACT_BILL', id: b.id, label: subBillLabel(b.workOrder.woNo, b.billNo, b.isFinal), projectId: b.projectId, vendorId: b.workOrder.vendorId, status: b.status, billDate: b.billDate, payable: b.netPayable };
+      if (b) bill = { type: 'SUBCONTRACT_BILL', id: b.id, label: subBillLabel(b.workOrder.woNo, b.billNo, b.isFinal), projectId: b.projectId, vendorId: b.workOrder.vendorId, status: b.status, billDate: b.billDate, payable: subBillPayable(b) };
     }
     if (!bill) throw new NotFoundException('Bill not found');
     await this.access.assertCanAccessProject(user, bill.projectId);
@@ -472,7 +473,7 @@ export class PayablesService {
       this.prisma.organization.findUniqueOrThrow({ where: { id: user.organizationId }, select: { paymentsNeedRequest: true } }),
       this.prisma.vendorBill.findMany({
         where: { project: projectWhere, status: 'APPROVED', ...(q.vendorId ? { vendorId: q.vendorId } : {}) },
-        select: { id: true, billNo: true, invoiceDate: true, dueDate: true, total: true, advanceAdjusted: true, paidAmount: true, purchaseOrderId: true, vendor: vendorSel, project: projectSel },
+        select: { id: true, billNo: true, invoiceDate: true, dueDate: true, ...VENDOR_BILL_PAYABLE, paidAmount: true, purchaseOrderId: true, vendor: vendorSel, project: projectSel },
       }),
       this.prisma.subcontractBill.findMany({
         where: { project: projectWhere, status: 'APPROVED', ...(q.vendorId ? { workOrder: { vendorId: q.vendorId } } : {}) },
@@ -482,7 +483,7 @@ export class PayablesService {
           isFinal: true,
           billDate: true,
           dueDate: true,
-          netPayable: true,
+          ...SUB_BILL_PAYABLE,
           paidAmount: true,
           retentionAmount: true,
           tdsAmount: true,
@@ -547,9 +548,9 @@ export class PayablesService {
           request: null,
         });
     };
-    for (const b of vbills) take('VENDOR_BILL', b.id, b.billNo, b.vendor, b.project, b.invoiceDate, b.dueDate, b.total.sub(b.advanceAdjusted), b.paidAmount);
+    for (const b of vbills) take('VENDOR_BILL', b.id, b.billNo, b.vendor, b.project, b.invoiceDate, b.dueDate, vendorBillPayable(b), b.paidAmount);
     for (const b of sbills) {
-      take('SUBCONTRACT_BILL', b.id, subBillLabel(b.workOrder.woNo, b.billNo, b.isFinal), b.workOrder.vendor, b.project, b.billDate, b.dueDate, b.netPayable, b.paidAmount);
+      take('SUBCONTRACT_BILL', b.id, subBillLabel(b.workOrder.woNo, b.billNo, b.isFinal), b.workOrder.vendor, b.project, b.billDate, b.dueDate, subBillPayable(b), b.paidAmount);
       for (const t of tallies(b.workOrder.vendor, b.project)) {
         t.retentionHeld = t.retentionHeld.add(b.retentionAmount);
         t.tdsDeducted = t.tdsDeducted.add(b.tdsAmount);
@@ -573,7 +574,7 @@ export class PayablesService {
         t.tdsDeducted = t.tdsDeducted.add(r.tdsAmount);
       }
     }
-    for (const b of vbills) if (advances.has(b.purchaseOrderId)) advances.get(b.purchaseOrderId)!.taken = advances.get(b.purchaseOrderId)!.taken.add(b.advanceAdjusted);
+    for (const b of vbills) if (b.purchaseOrderId && advances.has(b.purchaseOrderId)) advances.get(b.purchaseOrderId)!.taken = advances.get(b.purchaseOrderId)!.taken.add(b.advanceAdjusted);
     for (const b of sbills) if (advances.has(b.workOrderId)) advances.get(b.workOrderId)!.taken = advances.get(b.workOrderId)!.taken.add(b.advanceRecoveryAmount);
     for (const a of advances.values()) {
       const left = Prisma.Decimal.max(a.paid.sub(a.taken), ZERO);

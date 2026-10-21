@@ -93,6 +93,9 @@ export interface MaintenanceJobDto {
   reportedById: string;
   reportedByName: string;
   closedByName: string | null;
+  /** The workshop's service bill for the job (v5 item 91) */
+  vendorBillId: string | null;
+  vendorBillNo: string | null;
   attachments: AttachmentDto[];
   createdAt: string;
   updatedAt: string;

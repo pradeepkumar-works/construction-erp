@@ -24,6 +24,7 @@ import { D, DEFAULT_PAYMENT_DAYS, MSME_MAX_PAYMENT_DAYS, ZERO, sum } from '../pu
 import { CreateSubcontractBillDto, ListSubcontractBillsQuery, OwnItemQtyInput, UpdateSubcontractBillDto } from './subcontracts.dto';
 import { pctStr } from './work-orders.service';
 import { workOrderAdvanceBase } from '../payables/advances';
+import { subBillPayable } from '../payables/payable';
 
 type Tx = Prisma.TransactionClient;
 const round2 = (v: Prisma.Decimal) => v.toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
@@ -123,8 +124,9 @@ export class SubcontractBillsService {
       deductions,
       totalDeductions: money(r.totalDeductions)!,
       netPayable: money(r.netPayable)!,
+      debitNoteAmount: money(r.debitNoteAmount)!,
       paidAmount: money(r.paidAmount)!,
-      outstanding: money(Prisma.Decimal.max(r.netPayable.sub(r.paidAmount), 0))!,
+      outstanding: money(Prisma.Decimal.max(subBillPayable(r).sub(r.paidAmount), 0))!,
       paidDate: dateOnly(r.paidDate),
       remarks: r.remarks,
       measurementCount: r._count.measurements,

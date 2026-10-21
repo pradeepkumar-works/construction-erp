@@ -5,8 +5,8 @@ import { App, Button, Checkbox, DatePicker, Form, Input, InputNumber, Select, Sp
 import dayjs from 'dayjs';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { EquipmentDto, EquipmentOwnership, EquipmentRateUnit, EquipmentSortField } from '@erp/shared';
-import { EQUIPMENT_OWNERSHIPS, EQUIPMENT_OWNERSHIP_LABELS, EQUIPMENT_RATE_UNITS, EQUIPMENT_RATE_UNIT_LABELS, LIST_SORT_FIELDS, canManageEquipment } from '@erp/shared';
+import type { EquipmentDto, EquipmentOwnership, EquipmentRateUnit, EquipmentSortField, HireFuelBy } from '@erp/shared';
+import { EQUIPMENT_OWNERSHIPS, EQUIPMENT_OWNERSHIP_LABELS, EQUIPMENT_RATE_UNITS, EQUIPMENT_RATE_UNIT_LABELS, HIRE_FUEL_BY, HIRE_FUEL_BY_LABELS, LIST_SORT_FIELDS, canManageEquipment } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
@@ -25,7 +25,7 @@ import { RecordLink } from '@/components/record/RecordLink';
 import { OwnershipTag } from './hours';
 import { VendorPicker } from '@/components/vendors/VendorPicker';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
-import { MoneyInput } from '@/components/form/inputs';
+import { MoneyInput, QuantityInput } from '@/components/form/inputs';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
 const KEYS = ['ownership', 'inactive'] as const;
@@ -49,6 +49,9 @@ interface EquipmentForm {
   serviceIntervalHours?: number | null;
   serviceIntervalDays?: number | null;
   lastServiceDate?: dayjs.Dayjs | null;
+  hireMinHours?: number | null;
+  hireFuelBy?: HireFuelBy | null;
+  hireOperator?: 'yes' | 'no' | null;
 }
 
 /** Equipment master. Everyone sees the fleet and where it is deployed; approvers add machines, set rates and move them. */
@@ -77,6 +80,10 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
         serviceIntervalHours: v.serviceIntervalHours ? String(v.serviceIntervalHours) : null,
         serviceIntervalDays: v.serviceIntervalDays || null,
         lastServiceDate: v.lastServiceDate ? v.lastServiceDate.format('YYYY-MM-DD') : null,
+        // Hire terms (v5 item 91): what its hire bill is checked against.
+        hireMinHours: v.ownership === 'HIRED' && v.hireMinHours ? String(v.hireMinHours) : null,
+        hireFuelBy: v.ownership === 'HIRED' ? (v.hireFuelBy ?? null) : null,
+        hireOperator: v.ownership === 'HIRED' && v.hireOperator ? v.hireOperator === 'yes' : null,
         ...(editing && editing !== 'new' ? { isActive: v.isActive ?? true } : {}),
       };
       return editing && editing !== 'new' ? (await api.patch<EquipmentDto>(`/equipment/${editing.id}`, body)).data : (await api.post<EquipmentDto>('/equipment', body)).data;
@@ -114,6 +121,9 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
         serviceIntervalHours: e.serviceIntervalHours === null ? null : Number(e.serviceIntervalHours),
         serviceIntervalDays: e.serviceIntervalDays,
         lastServiceDate: e.lastServiceDate ? dayjs(e.lastServiceDate) : null,
+        hireMinHours: e.hireMinHours === null ? null : Number(e.hireMinHours),
+        hireFuelBy: e.hireFuelBy,
+        hireOperator: e.hireOperator === null ? null : e.hireOperator ? 'yes' : 'no',
       });
   };
 
@@ -295,6 +305,26 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
                 <Select options={EQUIPMENT_RATE_UNITS.map((u) => ({ value: u, label: EQUIPMENT_RATE_UNIT_LABELS[u] }))} />
               </Form.Item>
             </FormGrid>
+            {formOwnership === 'HIRED' ? (
+              <FormGrid cols={3}>
+                <Form.Item name="hireMinHours" label="Minimum hours a month" extra="Paid for even if not worked">
+                  <QuantityInput unit="hour" />
+                </Form.Item>
+                <Form.Item name="hireFuelBy" label="Diesel">
+                  <Select allowClear placeholder="Not agreed" options={HIRE_FUEL_BY.map((f) => ({ value: f, label: HIRE_FUEL_BY_LABELS[f] }))} />
+                </Form.Item>
+                <Form.Item name="hireOperator" label="Operator">
+                  <Select
+                    allowClear
+                    placeholder="Not agreed"
+                    options={[
+                      { value: 'yes', label: 'Comes with the machine' },
+                      { value: 'no', label: 'Ours' },
+                    ]}
+                  />
+                </Form.Item>
+              </FormGrid>
+            ) : null}
           </FormSection>
           <FormSection title="Deployment and service">
             <Form.Item name="projectId" label="Deployed at">

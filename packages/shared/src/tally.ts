@@ -3,7 +3,7 @@ import type { ExpenseCategory } from './enums';
 import { EXPENSE_CATEGORY_LABELS } from './labels';
 
 /** What a Nirmaan record becomes in Tally. */
-export const TALLY_VOUCHER_KINDS = ['SALES', 'RECEIPT', 'PURCHASE', 'SUBCONTRACT', 'PAYMENT', 'EXPENSE'] as const;
+export const TALLY_VOUCHER_KINDS = ['SALES', 'RECEIPT', 'PURCHASE', 'SUBCONTRACT', 'PAYMENT', 'EXPENSE', 'DEBIT_NOTE'] as const;
 export type TallyVoucherKind = (typeof TALLY_VOUCHER_KINDS)[number];
 export const TALLY_VOUCHER_KIND_LABELS: Record<TallyVoucherKind, string> = {
   SALES: 'RA bills',
@@ -12,6 +12,7 @@ export const TALLY_VOUCHER_KIND_LABELS: Record<TallyVoucherKind, string> = {
   SUBCONTRACT: 'Subcontractor bills',
   PAYMENT: 'Payments to vendors',
   EXPENSE: 'Site expenses',
+  DEBIT_NOTE: 'Debit notes',
 };
 /** The Tally voucher type each kind is imported as. */
 export const TALLY_VOUCHER_TYPES: Record<TallyVoucherKind, string> = {
@@ -21,6 +22,7 @@ export const TALLY_VOUCHER_TYPES: Record<TallyVoucherKind, string> = {
   SUBCONTRACT: 'Journal',
   PAYMENT: 'Payment',
   EXPENSE: 'Payment',
+  DEBIT_NOTE: 'Debit Note',
 };
 
 /** A ledger Nirmaan posts to that is not a client, vendor or expense category. */
@@ -48,6 +50,9 @@ export const TALLY_FIXED_LEDGERS: TallyFixedLedger[] = [
   { key: 'CLIENT_DEDUCTIONS', use: 'Other deductions by clients', name: 'Deductions by Clients', group: 'Indirect Expenses' },
   { key: 'PURCHASE', use: 'Material on vendor bills', name: 'Purchase of Materials', group: 'Purchase Accounts' },
   { key: 'FREIGHT', use: 'Freight on vendor bills', name: 'Freight Inward', group: 'Direct Expenses' },
+  { key: 'MACHINE_HIRE', use: 'Hire bills for hired machines', name: 'Machinery Hire Charges', group: 'Direct Expenses' },
+  { key: 'REPAIRS', use: 'Workshop bills for job cards', name: 'Repairs to Machinery', group: 'Direct Expenses' },
+  { key: 'FUEL_RECOVERY', use: 'Diesel recovered on hire bills', name: 'Diesel Recovered from Hire Agencies', group: 'Direct Expenses' },
   { key: 'INPUT_CGST', use: 'GST on bills and expenses (within the state)', name: 'Input CGST', group: 'Duties & Taxes' },
   { key: 'INPUT_SGST', use: 'GST on bills and expenses (within the state)', name: 'Input SGST', group: 'Duties & Taxes' },
   { key: 'INPUT_IGST', use: 'GST on bills and expenses (other states)', name: 'Input IGST', group: 'Duties & Taxes' },

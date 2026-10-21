@@ -34,6 +34,9 @@ import type {
   Weather,
   GrnQcStatus,
   PaymentRequestKind,
+  VendorBillKind,
+  HireFuelBy,
+  DebitNoteReason,
 } from './enums';
 
 /** API response shapes. Decimal columns are serialised as strings to preserve precision. */
@@ -711,6 +714,10 @@ export interface EquipmentDto {
   /** Only returned to roles that manage equipment (rates are commercial); null otherwise. */
   rate: string | null;
   rateUnit: EquipmentRateUnit;
+  /** Hire terms of a hired machine (v5 item 91): hours paid for a month at least, who fuels it, operator included */
+  hireMinHours: string | null;
+  hireFuelBy: HireFuelBy | null;
+  hireOperator: boolean | null;
   projectId: string | null;
   projectName: string | null;
   isActive: boolean;
@@ -742,6 +749,9 @@ export interface MachineryLogDto extends SubmissionBase {
   workDone: string | null;
   breakdownNote: string | null;
   remarks: string | null;
+  /** The hire bill that billed it (v5 item 91); a billed log is locked */
+  vendorBillId: string | null;
+  vendorBillNo: string | null;
 }
 
 /* ---------- measurement book ---------- */
@@ -1730,7 +1740,9 @@ export interface ReceivableOrderDto {
 
 export interface VendorBillLineDto {
   id: string;
-  purchaseOrderLineId: string;
+  /** PO bills: the PO line billed; null on hire, service and other bills (v5 item 91) */
+  purchaseOrderLineId: string | null;
+  /** The PO line's item, or the line's own description */
   itemName: string;
   unit: string;
   quantity: string;
@@ -1738,12 +1750,27 @@ export interface VendorBillLineDto {
   gstRate: string;
   amount: string;
   gstAmount: string;
-  /** From the PO and its GRNs, for the match */
-  poRate: string;
-  poGstRate: string;
-  receivedQty: string;
+  /** From the PO and its GRNs, for the match; null on a line without a PO */
+  poRate: string | null;
+  poGstRate: string | null;
+  receivedQty: string | null;
   /** Billed on the vendor's other bills against this line (not rejected) */
-  billedElsewhere: string;
+  billedElsewhere: string | null;
+  /** Hire bills: 0 the hire line, 1 the minimum-hours top-up, 10 on the lines typed in (v5 item 91) */
+  sortOrder: number;
+}
+
+/** A machine log or job card billed on a hire or service bill (v5 item 91). */
+export interface VendorBillSourceDto {
+  id: string;
+  /** The log's date, or the job's number */
+  label: string;
+  date: string;
+  /** Hours worked (a log), or the job's description */
+  detail: string;
+  /** A log's hours worked or a job's labour and parts */
+  quantity: string | null;
+  amount: string | null;
 }
 
 export interface VendorBillDto extends SubmissionBase {
@@ -1752,8 +1779,26 @@ export interface VendorBillDto extends SubmissionBase {
   vendorName: string;
   vendorGstin: string | null;
   vendorMsme: MsmeCategory | null;
-  purchaseOrderId: string;
-  poNo: string;
+  /** What the bill is against (v5 item 91) */
+  kind: VendorBillKind;
+  /** PO bills only */
+  purchaseOrderId: string | null;
+  poNo: string | null;
+  /** HIRE: the machine and the month (its first day) */
+  equipmentId: string | null;
+  equipmentCode: string | null;
+  equipmentName: string | null;
+  hireMonth: string | null;
+  /** HIRE: diesel we issued to an owner-fuelled machine, recovered at fuelRate a litre */
+  fuelLitres: string;
+  fuelRate: string;
+  fuelRecovery: string;
+  /** OTHER: the cost head */
+  expenseCategory: ExpenseCategory | null;
+  /** Debit notes against it that are not cancelled */
+  debitNoteAmount: string;
+  /** HIRE: the logs it billed; SERVICE: the job cards. Only on GET /vendor-bills/:id */
+  sources?: VendorBillSourceDto[];
   invoiceNo: string;
   invoiceDate: string;
   dueDate: string;
@@ -1767,7 +1812,7 @@ export interface VendorBillDto extends SubmissionBase {
   lines: VendorBillLineDto[];
   /** Advance paid on the PO taken off this bill (v5 item 90) */
   advanceAdjusted: string;
-  /** What the bill asks to be paid: total less advanceAdjusted */
+  /** What the bill asks to be paid: total less advanceAdjusted, fuel recovered and debit notes */
   payable: string;
   /** Advance paid on the PO, and how much of it is not yet taken off its other bills (not rejected) */
   poAdvancePaid: string;
@@ -1905,9 +1950,11 @@ export interface SubcontractBillDto extends SubmissionBase {
   deductions: SubcontractBillDeductionDto[];
   totalDeductions: string;
   netPayable: string;
+  /** Debit notes against it that are not cancelled (v5 item 91) */
+  debitNoteAmount: string;
   /** Settled by payments (paid plus deducted at payment) */
   paidAmount: string;
-  /** What is still to pay: net payable less paidAmount */
+  /** What is still to pay: net payable less debit notes and paidAmount */
   outstanding: string;
   /** The day it was paid in full */
   paidDate: string | null;
@@ -1976,6 +2023,101 @@ export interface PaymentRequestDto extends SubmissionBase {
   outstanding: string;
   /** The day it was paid in full */
   paidDate: string | null;
+}
+
+/** A line of a debit note: quantity × rate, or a lump sum. */
+export interface DebitNoteLineDto {
+  id: string;
+  description: string;
+  quantity: string | null;
+  unit: string | null;
+  rate: string | null;
+  amount: string;
+  gstRate: string;
+  gstAmount: string;
+}
+
+/**
+ * What we take off an approved vendor or subcontract bill (v5 item 91): DN-2026-0001. Not approved separately (it is
+ * raised by those who record bills); a cancelled note no longer reduces the bill.
+ */
+export interface DebitNoteDto {
+  id: string;
+  noteNo: string;
+  date: string;
+  reason: DebitNoteReason;
+  projectId: string;
+  projectCode: string;
+  projectName: string;
+  vendorId: string;
+  vendorName: string;
+  vendorGstin: string | null;
+  billType: PayableBillType;
+  vendorBillId: string | null;
+  subcontractBillId: string | null;
+  /** "VB-2026-0004 · INV/551", or "WO-2026-0002 bill 3" */
+  billLabel: string;
+  /** The GRN it came from (rejected at QA/QC or returned) */
+  stockEntryId: string | null;
+  stockEntryNo: string | null;
+  subtotal: string;
+  gstAmount: string;
+  total: string;
+  remarks: string | null;
+  createdById: string;
+  createdByName: string;
+  createdAt: string;
+  cancelledAt: string | null;
+  cancelledByName: string | null;
+  cancelNote: string | null;
+  /** In a Tally export: cannot be cancelled until that export is undone */
+  exportedToTally: boolean;
+  lines: DebitNoteLineDto[];
+}
+
+/** What a hire bill for one machine, project and month would hold (GET /vendor-bills/hire-preview, v5 item 91). */
+export interface HireBillPreviewDto {
+  equipmentId: string;
+  equipmentCode: string;
+  equipmentName: string;
+  vendorId: string | null;
+  vendorName: string | null;
+  projectId: string;
+  /** First day of the month */
+  month: string;
+  rate: string | null;
+  rateUnit: EquipmentRateUnit;
+  hireMinHours: string | null;
+  hireFuelBy: HireFuelBy | null;
+  hireOperator: boolean | null;
+  /** Approved logs of the month on the project not on another bill (not rejected) */
+  logs: { id: string; date: string; hoursWorked: string; idleHours: string; breakdownHours: string; dieselLitres: string | null }[];
+  /** Approved logs of the month still waiting or in draft, which a bill now would leave out */
+  pendingLogs: number;
+  workedHours: string;
+  workedDays: number;
+  /** Hours, days or 1 month, by the rate unit */
+  hireQuantity: string;
+  /** Hours paid for though not worked: the minimum less hours worked */
+  minTopUpHours: string;
+  /** Diesel in the logs, recovered when the owner fuels the machine */
+  fuelLitres: string;
+  /** A bill for the machine and month already (not rejected) */
+  existingBill: { id: string; billNo: string } | null;
+}
+
+/** A closed job card a workshop can bill (GET /vendor-bills/billable-jobs, v5 item 91). */
+export interface BillableJobDto {
+  id: string;
+  jobNo: string;
+  date: string;
+  closedDate: string | null;
+  equipmentCode: string;
+  equipmentName: string;
+  description: string;
+  workshop: string | null;
+  labourCost: string;
+  partsCost: string;
 }
 
 /** The latest open payment request on a bill (not rejected, not yet paid in full). */
@@ -2206,7 +2348,8 @@ export interface GstOutwardRowDto {
   invoiceValue: string;
 }
 
-export type GstInwardSource = 'VENDOR_BILL' | 'SUBCONTRACT_BILL' | 'EXPENSE';
+/** DEBIT_NOTE rows are negative: a note against a bill reverses its input tax (v5 item 91). */
+export type GstInwardSource = 'VENDOR_BILL' | 'SUBCONTRACT_BILL' | 'EXPENSE' | 'DEBIT_NOTE';
 
 /** A purchase with GST, one row per invoice and rate, laid out like GSTR-2B. */
 export interface GstInwardRowDto {

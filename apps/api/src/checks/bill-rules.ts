@@ -140,6 +140,73 @@ export function vendorBillChecks(f: VendorBillFacts): Check[] {
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+// Vendor bills without a PO (v5 item 91): a hire bill against the machine's logs, a service bill against its job cards.
+
+export interface OtherVendorBillFacts {
+  invoiceNo: string;
+  freight: number;
+  subtotal: number;
+  gstAmount: number;
+  total: number;
+  lines: { id: string; no: number; item: string; qty: number; rate: number; gstRate: number; amount: number; gstAmount: number }[];
+  duplicates: Link[];
+  hire: {
+    /** "EXC-02 for Oct 2026" */
+    machine: string;
+    unit: string;
+    /** Hours, days or months billed on the hire line, and what the approved logs give */
+    billedQty: number;
+    loggedQty: number;
+    rate: number;
+    agreedRate: number | null;
+    /** Other bills for the same machine, project and month (not rejected) */
+    otherBills: Link[];
+    /** Diesel we issued to a machine the owner fuels, and what the bill recovers */
+    fuelLitres: number;
+    fuelRecovered: number;
+  } | null;
+  service: { billed: number; recorded: number; jobs: Link[] } | null;
+}
+
+export function otherVendorBillChecks(f: OtherVendorBillFacts): Check[] {
+  const duplicates = f.duplicates.map((d) => flag(`duplicate:${d.href}`, `Invoice ${f.invoiceNo} already billed on ${d.label}`, null, [d]));
+  const h = f.hire;
+  const hours = h && h.billedQty > h.loggedQty + QTY_TOLERANCE ? [flag(`hire-qty:${fig(h.billedQty)}:${fig(h.loggedQty)}`, `${qty(h.billedQty)} ${h.unit}s billed, ${qty(h.loggedQty)} in the approved logs`, h.machine)] : [];
+  const rates = h && h.agreedRate !== null && h.rate > h.agreedRate + 0.005 ? [flag(`hire-rate:${fig(h.rate)}`, `Hire rate ${inr(h.rate)} is above the agreed ${inr(h.agreedRate)}`, h.machine)] : [];
+  const second = h && h.otherBills.length ? [flag(`hire-second:${h.otherBills.map((b) => b.label).join(':')}`, `${h.machine} is also billed on ${listOf(h.otherBills.map((b) => b.label))}`, null, h.otherBills)] : [];
+  const fuel =
+    h && h.fuelLitres > 0 && h.fuelRecovered <= 0
+      ? [flag(`fuel:${fig(h.fuelLitres)}`, `${qty(h.fuelLitres)} litres of diesel we issued are not recovered`, `${h.machine}: the owner fuels it, so the diesel in its logs comes off the bill`)]
+      : [];
+  const s = f.service;
+  const service = s && s.billed > s.recorded + MONEY_TOLERANCE ? [flag(`service:${fig(s.billed)}:${fig(s.recorded)}`, `${inr(s.billed)} billed before GST; the job cards record ${inr(s.recorded)}`, null, s.jobs)] : [];
+  const lineParts = f.lines.flatMap((l) => [
+    { label: `Line ${l.no} amount`, expected: Math.round(l.qty * l.rate * 100) / 100, actual: l.amount },
+    { label: `Line ${l.no} GST`, expected: pctOf(l.amount, l.gstRate), actual: l.gstAmount },
+  ]);
+  const sum = (pick: (l: OtherVendorBillFacts['lines'][number]) => number) => f.lines.reduce((t, l) => t + pick(l), 0);
+  const totals = totalsRule('totals', 'GST and totals add up', 'GST does not add up', [
+    ...lineParts,
+    { label: 'Subtotal', expected: sum((l) => l.amount), actual: f.subtotal },
+    { label: 'GST', expected: sum((l) => l.gstAmount), actual: f.gstAmount },
+    { label: 'Total', expected: f.subtotal + f.gstAmount + f.freight, actual: f.total },
+  ]);
+  return [
+    ...rule('duplicates', 'No other bill for this invoice', duplicates),
+    ...(h
+      ? [
+          ...rule('hire-second', 'No other bill for this machine and month', second),
+          ...rule('hire-qty', 'Hours within the approved logs', hours),
+          ...rule('hire-rate', 'Hire rate as agreed', rates),
+          ...rule('fuel', 'Diesel we issued is recovered', fuel),
+        ]
+      : []),
+    ...(s ? rule('service', 'Within the job cards', service) : []),
+    ...totals,
+  ];
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 // Subcontract bills: against the work order and the measurement book.
 
 export interface SubcontractBillFacts {

@@ -412,9 +412,13 @@ carries on after the UX items (to 89). Migrations stay additive. Design notes fo
     through the matrix; payments draw on it, and advances have no bill. Vendor bills adjust PO advances, subcontract
     recovery caps at what was paid, Payables shows advances not yet adjusted, Tally gets advance vouchers. Approval
     rules switch `paymentsNeedRequest` (on for new sign-ups). ARCHITECTURE "Payment requests and advances".
-91. **Bills without a PO** (M). Vendor bill kinds: hire bills from a hired machine's approved logs with hire terms
+91. ~~**Bills without a PO** (M). Vendor bill kinds: hire bills from a hired machine's approved logs with hire terms
     (minimum hours, fuel, operator), workshop bills against job cards, other service bills; debit notes for shortage,
-    excess, rejection, returns and rate difference that reduce the payable, reverse input GST and go to Tally.
+    excess, rejection, returns and rate difference that reduce the payable, reverse input GST and go to Tally.~~ Done:
+    `VendorBill.kind` with a nullable PO; a hire bill from the month's approved logs (minimum hours, diesel recovered,
+    one per machine and month), a workshop bill for closed job cards, an other bill with a cost head; exceptions and bill
+    checks for each. `DebitNote` (DN-<year>-0001) on an approved vendor or subcontract bill, also from a GRN; it reduces
+    the payable, GST and cost, and goes to Tally. ARCHITECTURE "Bills without a PO and debit notes".
 92. **Material reconciliation** (L). Resources per BOQ unit (rate analysis); theoretical against issued material per
     project and per subcontractor, with recovery on their next bill; wastage reasons on adjustments; a built-up cost
     estimate per BOQ item; a material overuse warning.

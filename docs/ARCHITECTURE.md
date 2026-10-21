@@ -835,6 +835,47 @@ Releasing money is approved before accounts pays it (v5 item 90).
   "Request payment" on approved bills (and in the due list) and "Request advance" on approved orders, Pay against an
   approved request, the approvals pane, Search and Ask. Phone: approve in the Approvals tab (`/payment-request/[id]`).
 
+## Bills without a PO and debit notes
+
+Hire, workshop and other service bills, and what a vendor owes back (v5 item 91).
+
+- **Kinds.** `VendorBill.kind` (`PO` default, `HIRE`, `SERVICE`, `OTHER`); `purchaseOrderId` and
+  `VendorBillLine.purchaseOrderLineId` are nullable (a CHECK keeps a `PO` bill on an order), and a line without a PO line
+  has its own `description` and `unit`. `POST /vendor-bills` with a kind other than `PO` takes `projectId` and:
+  - `HIRE`: `equipmentId` (a hired machine linked to its hire agency, which is the vendor) and `hireMonth` (YYYY-MM). The
+    approved logs of that machine, project and month not on another bill (not rejected) give line 0: hours, days or 1
+    month by the machine's `rateUnit`, at its rate, unless `hireQuantity`, `hireRate` or `hireGstRate` say otherwise. With
+    `Equipment.hireMinHours` and an hourly rate, line 1 tops the hours up to the minimum. Typed lines (mobilisation,
+    transport) start at sort order 10. Diesel in the logs of an owner-fuelled machine is recovered at `fuelRate`
+    (`fuelLitres`, `fuelRecovery`). One bill per machine, project and month (advisory lock `HIRE:<machine>:<project>:<month>`,
+    409 on a second); the logs point at the bill (`MachineryLog.vendorBillId`).
+  - `SERVICE`: `vendorId` and `jobIds`, closed job cards of the project (or the yard) not on another bill
+    (`MaintenanceJob.vendorBillId`; a billed job card cannot be deleted).
+  - `OTHER`: `vendorId` and `expenseCategory`, the cost head.
+  What does not match is an exception for the approver, as on a PO bill: more hours or days than the logs, a rate above
+  the machine's, logs of the month not yet approved, diesel not recovered, more than the job cards' labour and parts.
+  `GET /vendor-bills/hire-preview` and `/billable-jobs` feed the form; `GET /vendor-bills/:id` adds `sources` (the logs or
+  job cards). Bill checks (`otherVendorBillChecks` in `bill-rules.ts`) add a second bill for the machine and month, hours
+  against the logs, the rate, diesel and job-card totals. A bill without a PO is due 30 days from the invoice and takes no
+  PO advance. Equipment gains the hire terms `hireMinHours`, `hireFuelBy` (`OWNER`, `COMPANY`) and `hireOperator`.
+- **Payable** (`src/payables/payable.ts`, used by payments, requests and Payables): a vendor bill's total less advance
+  adjusted, diesel recovered and debit notes; a subcontract bill's net payable less debit notes.
+- **Debit notes.** `DebitNote` (tenant table, RLS policy): `noteNo` DN-<year>-0001, `reason` (`SHORTAGE`, `EXCESS`,
+  `REJECTED`, `RETURNED`, `RATE_DIFFERENCE`, `OTHER`), exactly one approved vendor or subcontract bill (a CHECK), an
+  optional GRN or return to the supplier (`stockEntryId`), lines with quantity and rate or a lump sum and GST, totals,
+  and `cancelledAt` / `cancelNote`. Not approved separately: raised by `canRaiseDebitNote` (those who record vendor bills)
+  under the bill's `PAY:<billId>` lock, at most what is still unpaid (+₹1), and kept on the bill as `debitNoteAmount`. A
+  cancelled note stops counting; one in a Tally export cannot be cancelled. `GET|POST /debit-notes`, `GET /debit-notes/:id`,
+  `POST /debit-notes/:id/cancel`. Web: Debit notes on approved bill records, "Raise debit note" on a GRN with QA/QC
+  rejections or a return to the supplier, the Debit notes tab in Payables and `/debit-notes/[id]`.
+- **Elsewhere.** Project cost: an approved hire bill replaces rate × hours for its machine and month (its logs cost
+  nothing), a workshop bill goes to a Workshop row, an other bill to expenses under its head, each net of diesel
+  recovered, and debit notes come off the matching head. GST: debit notes are negative inward rows (source `DEBIT_NOTE`).
+  Tally: hire bills post to Machinery Hire Charges, workshop bills to Repairs to Machinery, other bills to their expense
+  ledger, diesel recovered to Diesel Recovered from Hire Agencies, and a debit note is a Debit Note voucher (Dr party
+  against the bill, Cr the head and input GST). Phone: the vendor bill screen shows the kind, machine, diesel recovered
+  and debit notes.
+
 ## Tally export
 
 Tally stays the books; Nirmaan sends it vouchers as TallyPrime "Import Data" XML (`src/tally/vouchers.ts`) and keeps

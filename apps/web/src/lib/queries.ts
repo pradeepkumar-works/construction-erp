@@ -55,6 +55,11 @@ import type {
   QuotationDto,
   ReceivableOrderDto,
   VendorBillDto,
+  VendorBillKind,
+  HireBillPreviewDto,
+  BillableJobDto,
+  DebitNoteDto,
+  DebitNoteReason,
   WorkOrderDto,
   WorkOrderMarginDto,
   SubcontractBillDto,
@@ -357,6 +362,7 @@ const RECORD_QUERIES = {
   '/subcontract-bills': { key: (id: string) => ['subcontract-bills', 'detail', id], path: '/subcontract-bills' },
   '/inspections': { key: (id: string) => ['inspections', 'detail', id], path: '/inspections' },
   '/payment-requests': { key: (id: string) => ['payment-requests', 'detail', id], path: '/payment-requests' },
+  '/debit-notes': { key: (id: string) => ['debit-notes', 'detail', id], path: '/debit-notes' },
   '/projects': { key: (id: string) => ['projects', id], path: '/projects' },
 } satisfies Record<string, { key: (id: string) => QueryKey; path: string }>;
 type RecordRoute = keyof typeof RECORD_QUERIES;
@@ -1298,6 +1304,8 @@ export interface VendorBillFilters extends PageParams {
   projectId?: string;
   vendorId?: string;
   purchaseOrderId?: string;
+  equipmentId?: string;
+  kind?: VendorBillKind;
   status?: SubmissionStatus;
   exceptions?: boolean;
 }
@@ -1311,6 +1319,44 @@ export const useVendorBills = (filters: VendorBillFilters, enabled = true) =>
   });
 
 export const useVendorBill = (id: string | undefined) => useQuery({ ...recordQuery<VendorBillDto>('/vendor-bills', id), enabled: !!id });
+
+/** A hired machine's approved logs of a month on a project, not yet billed: what its hire bill starts from (v5 item 91). */
+export const useHirePreview = (q: { equipmentId?: string; projectId?: string; month?: string; billId?: string }) =>
+  useQuery({
+    queryKey: ['vendor-bills', 'hire-preview', clean(q)],
+    queryFn: async () => (await api.get<HireBillPreviewDto>('/vendor-bills/hire-preview', { params: clean(q) })).data,
+    enabled: !!q.equipmentId && !!q.projectId && !!q.month,
+    retry: false,
+  });
+
+/** Closed job cards on a project a workshop can bill (v5 item 91). */
+export const useBillableJobs = (q: { projectId?: string; billId?: string }) =>
+  useQuery({
+    queryKey: ['vendor-bills', 'billable-jobs', clean(q)],
+    queryFn: async () => (await api.get<BillableJobDto[]>('/vendor-bills/billable-jobs', { params: clean(q) })).data,
+    enabled: !!q.projectId,
+  });
+
+export interface DebitNoteFilters extends PageParams {
+  projectId?: string;
+  vendorId?: string;
+  vendorBillId?: string;
+  subcontractBillId?: string;
+  stockEntryId?: string;
+  reason?: DebitNoteReason;
+  includeCancelled?: boolean;
+}
+
+/** Debit notes (v5 item 91): what a vendor or subcontractor owes back, taken off their bill. */
+export const useDebitNotes = (filters: DebitNoteFilters, enabled = true) =>
+  useQuery({
+    queryKey: ['debit-notes', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<DebitNoteDto>>('/debit-notes', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+
+export const useDebitNote = (id: string | undefined) => useQuery({ ...recordQuery<DebitNoteDto>('/debit-notes', id), enabled: !!id });
 
 export interface WorkOrderFilters extends PageParams {
   projectId?: string;

@@ -94,7 +94,7 @@ const HSN: ExportColumn<HsnRow>[] = [
   { header: 'State/UT Tax Amount', value: (r) => r.sgst },
   { header: 'Cess Amount', value: () => 0 },
 ];
-const SOURCE_LABELS: Record<GstInwardRowDto['source'], string> = { VENDOR_BILL: 'Vendor bill', SUBCONTRACT_BILL: 'Subcontractor bill', EXPENSE: 'Site expense' };
+const SOURCE_LABELS: Record<GstInwardRowDto['source'], string> = { VENDOR_BILL: 'Vendor bill', SUBCONTRACT_BILL: 'Subcontractor bill', EXPENSE: 'Site expense', DEBIT_NOTE: 'Debit note' };
 // Laid out like GSTR-2B (B2B) so the two can be matched on GSTIN and invoice number.
 const INWARD: ExportColumn<GstInwardRowDto>[] = [
   { header: 'GSTIN of supplier', value: (r) => r.supplierGstin, width: 18 },
