@@ -115,6 +115,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/rfi-test.js
+      - name: Approval levels place an entry at its level, pick who decides it and escalate it
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/approval-levels-test.js
       - name: Early warnings forecast right, show each role its own kinds and backtest on the demo history
         if: matrix.suite == 'flows'
         working-directory: apps/api

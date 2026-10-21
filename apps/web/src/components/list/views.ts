@@ -1,5 +1,5 @@
 import type { AuthUser, SubmissionType } from '@erp/shared';
-import { mayApproveType } from '@erp/shared';
+import { mayApproveTypeAtAll } from '@erp/shared';
 import { thisWeek } from '@/lib/listPage';
 import type { BuiltInView } from './ListViews';
 
@@ -10,7 +10,7 @@ import type { BuiltInView } from './ListViews';
 export function standardViews(user: AuthUser | null, type: SubmissionType): BuiltInView[] {
   return [
     { key: 'all', label: 'All', filters: {} },
-    ...(user && mayApproveType(user, type) ? [{ key: 'waiting', label: 'Waiting for me', filters: { status: 'SUBMITTED' } }] : []),
+    ...(user && mayApproveTypeAtAll(user, type) ? [{ key: 'waiting', label: 'Waiting for me', filters: { status: 'SUBMITTED' } }] : []),
     { key: 'mine', label: 'Mine', filters: { mine: '1' } },
     { key: 'sent-back', label: 'Sent back', filters: { status: 'CHANGES_REQUESTED' } },
     { key: 'week', label: 'This week', filters: thisWeek() },

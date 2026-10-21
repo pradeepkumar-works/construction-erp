@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { SUBMISSION_TYPES, type SubmissionType } from '@erp/shared';
 import { BadRequestException } from '@nestjs/common';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
@@ -22,6 +22,12 @@ export class ApprovalsController {
     return this.lifecycle.pending(user);
   }
 
+  @ApiOperation({ summary: 'My entries waiting for approval', description: 'v5 item 94, Waiting with others: each one\'s level, the roles whose queue it is in and since when, longest waiting first.' })
+  @Get('waiting')
+  waiting(@CurrentUser() user: RequestUser) {
+    return this.lifecycle.waiting(user);
+  }
+
   /** What the current user reviewed since `since` (an ISO time, by default the last 24 hours), newest first. */
   @Get('reviewed')
   reviewed(@CurrentUser() user: RequestUser, @Query('since') since?: string) {
@@ -41,8 +47,16 @@ export class ApprovalsController {
     if (dto.decision !== 'APPROVE' && (note?.length ?? 0) < MIN_REASON_LENGTH) {
       throw new BadRequestException(dto.decision === 'REJECT' ? 'Say why you are rejecting it' : 'Say what needs changing');
     }
-    await this.lifecycle.review(user, t, id, dto.decision, note);
-    return { ok: true };
+    // The status it now has, and the level decided: below the last level it stays SUBMITTED for the next (v5 item 94).
+    return { ok: true, ...(await this.lifecycle.review(user, t, id, dto.decision, note)) };
+  }
+
+  @ApiOperation({ summary: "An entry's approval levels", description: 'v5 item 94: the level it waits at of the levels its amount needs, the steps so far, whose queue it is in, and whether the caller may decide it now (with the reason when not).' })
+  @Get(':type/:id/stage')
+  stage(@CurrentUser() user: RequestUser, @Param('type') type: string, @Param('id') id: string) {
+    const t = type.toUpperCase() as SubmissionType;
+    if (!SUBMISSION_TYPES.includes(t)) throw new BadRequestException('Unknown submission type');
+    return this.lifecycle.stage(user, t, id);
   }
 
   @Get(':type/:id/audit')

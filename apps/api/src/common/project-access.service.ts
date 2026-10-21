@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { APPROVER_ROLES, type SubmissionType, COMPANY_WIDE_ROLES, isCompanyWide, canAdjustStock, canApprove, canKeepStock, canLogMachinery, canManageEquipment, canManageStore, canMeasure, canRaiseRisk, canRecordAttendance, canRequestInspection, canSubmitExpense, canRecordTest, canRaiseNcr, canCheckGrn, canManageDocuments, canViewLetters, canManageStaff, canMarkStaff, canViewMessageLog, canReportSafety, canManageSafety, canIssuePpe, canManageMaintenance, canFreezeBaseline, canManageWorkers, canViewWorkers, canReportDefect, canCloseDefect, canManageHandover, GUEST_ROLES, isGuest } from '@erp/shared';
+import { APPROVER_ROLES, type RoleKey, type SubmissionType, COMPANY_WIDE_ROLES, isCompanyWide, canAdjustStock, canApprove, canKeepStock, canLogMachinery, canManageEquipment, canManageStore, canMeasure, canRaiseRisk, canRecordAttendance, canRequestInspection, canSubmitExpense, canRecordTest, canRaiseNcr, canCheckGrn, canManageDocuments, canViewLetters, canManageStaff, canMarkStaff, canViewMessageLog, canReportSafety, canManageSafety, canIssuePpe, canManageMaintenance, canFreezeBaseline, canManageWorkers, canViewWorkers, canReportDefect, canCloseDefect, canManageHandover, GUEST_ROLES, isGuest } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { ApprovalRightsService } from './approval-rights.service';
 import { RequestUser } from './current-user';
@@ -40,8 +40,12 @@ export class ProjectAccessService {
    * (company-wide approvers plus approvers who manage or are a member of it). With a submission type (and amount),
    * only the roles the organisation's approval matrix allows for it; without one, the fixed approver roles.
    */
-  async approversForProject(organizationId: string, projectId: string, type?: SubmissionType, amount: Prisma.Decimal | null = null) {
-    const roleKeys = type ? await this.rights.roleKeysFor(organizationId, type, amount) : APPROVER_ROLES;
+  async approversForProject(organizationId: string, projectId: string, type?: SubmissionType, amount: Prisma.Decimal | null = null, level = 1) {
+    return this.usersWithRoles(organizationId, projectId, type ? await this.rights.roleKeysFor(organizationId, type, amount, level) : APPROVER_ROLES);
+  }
+
+  /** Active users of these roles who see the project (company-wide roles, its manager and its members). */
+  async usersWithRoles(organizationId: string, projectId: string, roleKeys: RoleKey[]) {
     return this.prisma.user.findMany({
       where: {
         organizationId,
@@ -62,15 +66,15 @@ export class ProjectAccessService {
     await this.assertCanAccessProject(user, projectId);
   }
 
-  /** Review a submission: the approval matrix must give the user's role this type, up to this amount. */
+  /**
+   * Review a submission: the approval matrix must give the user's role this type at the level the entry waits at, up
+   * to its amount (or the entry escalated to the role); one person approves only one level of an entry (v5 item 94).
+   */
   async assertCanApproveSubmission(user: RequestUser, type: SubmissionType, id: string, projectId: string) {
-    const right = (await this.rights.rightsFor(user.organizationId, user.roleKey)).find((r) => r.type === type);
-    if (!right) throw new ForbiddenException('Your role cannot approve this type of submission');
-    const amount = await this.rights.amountOf(type, id);
-    if (!ApprovalRightsService.within(right, type, amount)) {
-      throw new ForbiddenException(`This needs a higher approver: ₹${amount!.toFixed(2)} is above your limit of ₹${right.maxAmount}`);
-    }
     await this.assertCanAccessProject(user, projectId);
+    const decision = await this.rights.decide(user, await this.rights.entryOf(type, id));
+    if (!decision.ok) throw new ForbiddenException(decision.reason!.replace(/\.$/, ''));
+    return decision;
   }
 
   /** Record or correct attendance: a recorder role with access to the project. */

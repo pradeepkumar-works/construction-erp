@@ -306,5 +306,11 @@ DROP POLICY IF EXISTS tenant_isolation ON "ExcessMaterialRecovery";
 ALTER TABLE "EquipmentPart" NO FORCE ROW LEVEL SECURITY;
 ALTER TABLE "EquipmentPart" DISABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS tenant_isolation ON "EquipmentPart";
+ALTER TABLE "ApprovalStep" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "ApprovalStep" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "ApprovalStep";
+ALTER TABLE "ApprovalEscalation" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "ApprovalEscalation" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "ApprovalEscalation";
 
 DROP FUNCTION IF EXISTS app_current_org();

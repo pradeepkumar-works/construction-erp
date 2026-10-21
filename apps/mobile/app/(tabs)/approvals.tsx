@@ -6,7 +6,7 @@ import ReanimatedSwipeable, { type SwipeableMethods } from 'react-native-gesture
 import { SUBMISSION_TYPE_LABELS, type PendingApprovalDto, type SubmissionType } from '@erp/shared';
 import { useApi, useFetch } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
-import { canQuickReview, reviewSubmission } from '../../src/api/review';
+import { approvedLine, canQuickReview, reviewSubmission } from '../../src/api/review';
 import { Button, EmptyState, ErrorBanner, ErrorState, Input, Loading, Screen, SubmissionRow, useSnackbar, Touchable } from '../../src/components';
 import { BottomSheet } from '../../src/components/BottomSheet';
 import { useNotifications } from '../../src/notifications/NotificationsContext';
@@ -57,11 +57,12 @@ export default function ApprovalsScreen() {
     setSheetError(null);
     try {
       // The same review call the record screen makes.
-      await reviewSubmission(api, approving.type, approving.id, 'APPROVE', note);
+      const result = await reviewSubmission(api, approving.type, approving.id, 'APPROVE', note);
       const done = keyOf(approving);
       setData((prev) => (prev ? prev.filter((p) => keyOf(p) !== done) : prev));
       setApproving(null);
-      snackbar.show(t('Approved: {title}', { title: approving.title }));
+      const level = approvedLine(result);
+      snackbar.show(level ? t(...level) : t('Approved: {title}', { title: approving.title }));
       void reload();
     } catch (e) {
       setSheetError(errorMessage(e));
@@ -134,7 +135,8 @@ export default function ApprovalsScreen() {
 function SwipeRow({ item, onOpen, onApprove, onSwipeOpen }: { item: PendingApprovalDto; onOpen: () => void; onApprove?: () => void; onSwipeOpen: (row: SwipeableMethods) => void }) {
   const t = useT();
   const ref = useRef<SwipeableMethods>(null);
-  const meta = `${item.amount && item.type !== 'EXPENSE' ? `${formatMoney(item.amount, { paise: false })} · ` : ''}${item.submittedByName} · ${timeAgo(item.submittedAt)}`;
+  const level = item.levels ? `${t('Level {level} of {levels}', { level: item.level ?? 1, levels: item.levels })} · ` : '';
+  const meta = `${item.escalated ? `${t('Escalated')} · ` : ''}${level}${item.amount && item.type !== 'EXPENSE' ? `${formatMoney(item.amount, { paise: false })} · ` : ''}${item.submittedByName} · ${timeAgo(item.submittedAt)}`;
   return (
     <ReanimatedSwipeable
       ref={ref}

@@ -4,12 +4,12 @@ import React from 'react';
 import { App } from 'antd';
 import { CheckOutlined, DownloadOutlined } from '@ant-design/icons';
 import type { SubmissionStatus, SubmissionType } from '@erp/shared';
-import { mayApproveType } from '@erp/shared';
+import { mayApproveType, mayApproveTypeAtAll } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useQueryClient } from '@tanstack/react-query';
 import { handledInPlace, useNotify } from '@/lib/notify';
 import { downloadXlsx, exportFileName, type ExportColumn } from '@/lib/exportExcel';
-import { showReviewed, useReview, type ApprovalTypeParam } from '@/lib/queries';
+import { showReviewed, usePendingApprovals, useReview, type ApprovalTypeParam } from '@/lib/queries';
 import type { BulkAction } from './DataTable';
 
 /**
@@ -45,18 +45,24 @@ export function useApproveMany() {
   return run;
 }
 
-/** "Approve n" for a selection that is all waiting and within this user's approval limit. */
+/**
+ * "Approve n" for a selection that is all waiting for this user: in their Approvals queue, which knows each entry's
+ * level (v5 item 94); until it has loaded, within their level-1 limit.
+ */
 export function useBulkApprove<T extends { id: string; status: SubmissionStatus }>(type: ApprovalTypeParam, amountOf?: (row: T) => string | null | undefined): BulkAction<T> | null {
   const { user } = useAuth();
   const approveMany = useApproveMany();
   const kind = type.toUpperCase() as SubmissionType;
-  if (!user || !mayApproveType(user, kind)) return null;
+  const could = !!user && mayApproveTypeAtAll(user, kind);
+  const { data: queue } = usePendingApprovals(could);
+  if (!user || !could) return null;
+  const queued = queue ? new Set(queue.filter((p) => p.type === kind).map((p) => p.id)) : null;
   return {
     key: 'approve',
     label: 'Approve',
     icon: <CheckOutlined />,
     primary: true,
-    allowed: (rows) => rows.every((r) => r.status === 'SUBMITTED' && mayApproveType(user, kind, amountOf?.(r) ?? null)),
+    allowed: (rows) => rows.every((r) => r.status === 'SUBMITTED' && (queued ? queued.has(r.id) : mayApproveType(user, kind, amountOf?.(r) ?? null))),
     run: async (rows) => {
       await approveMany(type, rows.map((r) => r.id));
     },

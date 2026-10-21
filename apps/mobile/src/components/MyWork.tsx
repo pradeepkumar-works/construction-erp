@@ -22,12 +22,12 @@ type Tone = 'warning' | 'error' | 'info';
  * only: the API leaves out a card the role may not see.
  */
 const ORDERS: Record<'director' | 'manager' | 'accounts' | 'stores' | 'qs' | 'site', MyWorkKey[]> = {
-  director: ['approvals', 'watchList', 'receivables', 'payablesDue', 'expiring', 'lateDeliveries', 'dprsMissing', 'lowStock', 'sentBack'],
-  manager: ['approvals', 'watchList', 'dprsMissing', 'lateDeliveries', 'expiring', 'lowStock', 'payablesDue', 'receivables', 'sentBack'],
-  accounts: ['payablesDue', 'watchList', 'receivables', 'approvals', 'expiring', 'lateDeliveries', 'sentBack'],
-  stores: ['lateDeliveries', 'lowStock', 'watchList', 'approvals', 'sentBack', 'dprsMissing'],
-  qs: ['sentBack', 'approvals', 'receivables', 'dprsMissing'],
-  site: ['sentBack', 'dprsMissing', 'approvals', 'lateDeliveries', 'lowStock'],
+  director: ['approvals', 'watchList', 'receivables', 'payablesDue', 'expiring', 'lateDeliveries', 'dprsMissing', 'lowStock', 'sentBack', 'waitingWithOthers'],
+  manager: ['approvals', 'watchList', 'dprsMissing', 'lateDeliveries', 'expiring', 'lowStock', 'payablesDue', 'receivables', 'sentBack', 'waitingWithOthers'],
+  accounts: ['payablesDue', 'watchList', 'receivables', 'approvals', 'expiring', 'lateDeliveries', 'sentBack', 'waitingWithOthers'],
+  stores: ['lateDeliveries', 'lowStock', 'watchList', 'approvals', 'sentBack', 'waitingWithOthers', 'dprsMissing'],
+  qs: ['sentBack', 'waitingWithOthers', 'approvals', 'receivables', 'dprsMissing'],
+  site: ['sentBack', 'waitingWithOthers', 'dprsMissing', 'approvals', 'lateDeliveries', 'lowStock'],
 };
 
 function myWorkOrder(role: RoleKey): MyWorkKey[] {
@@ -54,6 +54,7 @@ function myWorkOrder(role: RoleKey): MyWorkKey[] {
 const CARDS: Record<CardKey, { title: string; icon: keyof typeof Ionicons.glyphMap; tone: Tone; route: string | null }> = {
   dprsMissing: { title: 'DPRs not filed today', icon: 'document-text-outline', tone: 'warning', route: '/dpr/new' },
   sentBack: { title: 'Sent back to you', icon: 'arrow-undo-outline', tone: 'warning', route: '/submissions' },
+  waitingWithOthers: { title: 'Waiting with others', icon: 'hourglass-outline', tone: 'info', route: '/submissions' },
   receivables: { title: 'Bills awaiting payment', icon: 'wallet-outline', tone: 'info', route: null },
   payablesDue: { title: 'Payments due this week', icon: 'card-outline', tone: 'error', route: null },
   expiring: { title: 'Guarantees and policies expiring', icon: 'shield-checkmark-outline', tone: 'warning', route: null },
@@ -151,7 +152,7 @@ export function MyWorkPanel({ data, loading }: { data: MyWorkDto | null; loading
             // The API's notes are English; the fixed ones have Hindi, the rest show as they come.
             note: [t(i.note), i.projectName].filter(Boolean).join(' · '),
             right: rupeesCompact(i.amount),
-            route: phoneRoute(i.href) ?? (k === 'sentBack' ? meta.route : null),
+            route: phoneRoute(i.href) ?? (k === 'sentBack' || k === 'waitingWithOthers' ? meta.route : null),
           }));
           return <WorkCard key={k} title={t(meta.title)} icon={meta.icon} tone={meta.tone} count={card.count} amount={card.amount} rows={rows} route={meta.route} />;
         })

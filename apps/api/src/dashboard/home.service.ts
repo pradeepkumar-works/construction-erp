@@ -89,10 +89,11 @@ export class HomeService {
     const role = user.roleKey;
     const today = todayIn();
     const rights = await this.rights.rightsFor(user.organizationId, role);
-    const [pending, missing, sentBack, receivables, payables, expiring, expired, late, low, watch] = await Promise.all([
+    const [pending, missing, sentBack, waiting, receivables, payables, expiring, expired, late, low, watch] = await Promise.all([
       rights.length ? this.lifecycle.pending(user) : null,
       canApprove(role) || submitsDpr(role) ? this.dprsMissing(user, today) : null,
       this.lifecycle.mine(user, ['REJECTED', 'CHANGES_REQUESTED']),
+      this.lifecycle.waiting(user),
       canViewContract(role) ? this.receivables.summary(user) : null,
       canViewPayables(role) ? this.payables.summary(user) : null,
       canViewCompliance(role) ? this.compliance.list(user, { state: 'EXPIRING' }) : null,
@@ -115,6 +116,20 @@ export class HomeService {
     out.sentBack = card(
       sentBack.length,
       sentBack.map((s) => ({ label: s.title, note: 'Sent back to you', projectName: s.projectName, amount: s.amount, href: submissionHref(s.type, s.id) })),
+    );
+    // Waiting with others (v5 item 94): oldest first; it starts to press after two days at one level.
+    const waited = (since: string) => Math.max(0, daysBetween(todayIn(undefined, new Date(since)), today));
+    out.waitingWithOthers = card(
+      waiting.length,
+      waiting.map((w) => ({
+        label: w.title,
+        note: [w.levels > 1 ? `Level ${w.level} of ${w.levels}` : null, w.waitingWith.length ? `with ${w.waitingWith.join(', ')}` : 'No approver yet', waited(w.waitingSince) ? days(waited(w.waitingSince)) : 'since today'].filter(Boolean).join(' · '),
+        projectName: w.projectName,
+        amount: w.amount,
+        href: submissionHref(w.type, w.id),
+      })),
+      null,
+      most(waiting.map((w) => waited(w.waitingSince) - 2)),
     );
     if (receivables) {
       const open = [...receivables.openBills].sort((a, b) => b.daysOutstanding - a.daysOutstanding);

@@ -70,8 +70,21 @@ export class NotificationsController {
   @ApiSecurity('cron')
   @ApiOperation({ summary: 'Daily "DPR not submitted" reminder. Auth: Authorization: Bearer <CRON_SECRET>.' })
   @Get('jobs/dpr-reminder')
-  dprReminder(@Query() q: JobQuery) {
+  async dprReminder(@Query() q: JobQuery) {
+    // Reminders and escalation of waiting approvals ride on both daily crons where nothing runs them hourly.
+    await this.jobs.approvalEscalation().catch(() => undefined);
     return this.jobs.dprReminder(q.date);
+  }
+
+  @Public()
+  @UseGuards(CronGuard)
+  @ApiSecurity('cron')
+  @ApiOperation({
+    summary: 'Reminders and escalation of approvals waiting too long (v5 item 94). Run it hourly (an external cron, or NOTIFICATION_JOBS_INPROCESS); the two daily jobs run it too. Auth: Authorization: Bearer <CRON_SECRET>.',
+  })
+  @Get('jobs/approval-escalation')
+  approvalEscalation() {
+    return this.jobs.approvalEscalation();
   }
 
   @Public()
@@ -83,6 +96,7 @@ export class NotificationsController {
     // Vercel Hobby has no third cron for the overnight batch, so morning briefs not yet written are written first
     // (a no-op where jobs/briefs already ran), go into the digest email, and are sent after it.
     await this.jobs.writeBriefs(q.date).catch(() => undefined);
+    await this.jobs.approvalEscalation().catch(() => undefined);
     const digest = await this.jobs.approvalDigest(q.date);
     await this.jobs.morningBrief(q.date).catch(() => undefined);
     // Vercel Hobby allows two crons, so the daily test and payment reminders ride on the digest's.

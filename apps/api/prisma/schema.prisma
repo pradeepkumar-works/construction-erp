@@ -411,6 +411,8 @@ model Organization {
   risks                Risk[]
   activityTemplates    ActivityTemplate[]
   approvalRules        ApprovalRule[]
+  approvalSteps        ApprovalStep[]
+  approvalEscalations  ApprovalEscalation[]
   passwordTokens       PasswordToken[]
   measurements         MeasurementSheet[]
   labourRates          LabourRate[]
@@ -491,11 +493,58 @@ model ApprovalRule {
   /// SubmissionType: PROGRESS | DPR | MATERIAL_REQUEST | MACHINERY | EXPENSE | MEASUREMENT | BILL | PURCHASE_ORDER | VENDOR_BILL | WORK_ORDER | SUBCONTRACT_BILL | INSPECTION | PAYMENT_REQUEST
   submissionType String
   maxAmount      Decimal?     @db.Decimal(18, 2)
+  /// v5 item 94: 1 is the matrix; 2 and 3 are further approvals of the same entry
+  level          Int          @default(1)
+  /// Levels 2 and 3: the amount from which the level applies (null = always)
+  minAmount      Decimal?     @db.Decimal(18, 2)
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
-  @@unique([roleId, submissionType])
+  @@unique([roleId, submissionType, level])
   @@index([organizationId])
+}
+
+enum ApprovalStepAction {
+  APPROVED
+  ESCALATED
+  REMINDED
+}
+
+/// One step of a submission through its approval levels (v5 item 94). The submission's own status columns stay as they
+/// are: it is SUBMITTED until the last level approves. `round` is the submission's submittedAt the step belongs to, so a
+/// resubmitted entry starts again at level 1 and keeps the earlier steps as history.
+model ApprovalStep {
+  id             String             @id @default(uuid())
+  organizationId String
+  organization   Organization       @relation(fields: [organizationId], references: [id])
+  /// SubmissionType
+  entityType     String
+  entityId       String
+  level          Int
+  action         ApprovalStepAction
+  round          DateTime
+  /// null for steps the system took (reminders, escalation)
+  actorId        String?
+  actor          User?              @relation("ApprovalStepActor", fields: [actorId], references: [id], onDelete: SetNull)
+  note           String?
+  createdAt      DateTime           @default(now())
+
+  @@index([entityType, entityId])
+  @@index([organizationId, createdAt])
+}
+
+/// Reminders and escalation for one submission type (v5 item 94), set on the Approval rules page.
+model ApprovalEscalation {
+  id                 String       @id @default(uuid())
+  organizationId     String
+  organization       Organization @relation(fields: [organizationId], references: [id])
+  submissionType     String
+  remindAfterHours   Int?
+  escalateAfterHours Int?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  @@unique([organizationId, submissionType])
 }
 
 model User {
@@ -550,6 +599,7 @@ model User {
   boqResources         BoqResource[]
   excessRecoveries     ExcessMaterialRecovery[]
   equipmentParts       EquipmentPart[]
+  approvalSteps        ApprovalStep[]           @relation("ApprovalStepActor")
   submittedMachinery   MachineryLog[]           @relation("MachinerySubmitter")
   reviewedMachinery    MachineryLog[]           @relation("MachineryReviewer")
   submittedExpenses    Expense[]                @relation("ExpenseSubmitter")

@@ -5,7 +5,8 @@ import { JOB_TIMEZONE, todayIn, wallClockIn } from './time';
 /**
  * Optional in-process scheduler for hosts that keep the API running (Docker / Railway).
  * Enabled with NOTIFICATION_JOBS_INPROCESS=true; fires the DPR reminder at DPR_REMINDER_TIME and the
- * approval digest at APPROVAL_DIGEST_TIME (HH:mm in NOTIFICATION_TIMEZONE). On Vercel use Cron instead.
+ * approval digest at APPROVAL_DIGEST_TIME (HH:mm in NOTIFICATION_TIMEZONE), and approval reminders and escalation
+ * every hour on the hour. On Vercel use Cron instead.
  */
 @Injectable()
 export class NotificationSchedulerService implements OnModuleInit, OnModuleDestroy {
@@ -42,6 +43,7 @@ export class NotificationSchedulerService implements OnModuleInit, OnModuleDestr
     await this.runIfDue('COMPLIANCE_DUE', digestAt, now, today, () => this.jobs.complianceDue(today));
     await this.runIfDue('HANDOVER_DUE', digestAt, now, today, () => this.jobs.handoverDue(today));
     await this.runIfDue('WATCH_LIST', digestAt, now, today, () => this.jobs.watchList(today));
+    if (now.endsWith(':00')) await this.runIfDue(`ESCALATION_${now}`, now, now, today, () => this.jobs.approvalEscalation());
   }
 
   private async runIfDue(key: string, at: string, now: string, today: string, run: () => Promise<unknown>) {

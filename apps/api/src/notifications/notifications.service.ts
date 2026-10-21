@@ -320,6 +320,57 @@ export class NotificationsService {
     }
   }
 
+  /** One approval level done (v5 item 94): the next level's approvers on the project are asked, like a new submission. */
+  async onLevelApproved(actor: RequestUser, type: SubmissionType, id: string, nextLevel: number, levels: number) {
+    try {
+      const s = await this.describeSubmission(type, id);
+      if (!s) return;
+      const approvers = await this.access.approversForProject(actor.organizationId, s.projectId, type, await this.rights.amountOf(type, id), nextLevel);
+      await this.notify({
+        organizationId: actor.organizationId,
+        userIds: approvers.map((a) => a.id).filter((uid) => uid !== actor.id),
+        type: 'SUBMISSION_SUBMITTED',
+        title: `${SUBMISSION_LABEL[type]} awaiting your approval (level ${nextLevel} of ${levels})`,
+        body: `${actor.fullName} approved ${s.title} on ${s.projectName} at level ${nextLevel - 1}; it needs your approval next.`,
+        projectId: s.projectId,
+        entityType: type,
+        entityId: id,
+        message: { template: 'APPROVAL_REQUEST', params: [this.subject(type, s.title), s.projectName, actor.fullName, this.messaging.webUrl(`/notifications?type=${type}&id=${id}`)] },
+      });
+    } catch (e) {
+      this.log.warn(`onLevelApproved(${type}, ${id}) failed: ${(e as Error).message}`);
+    }
+  }
+
+  /**
+   * An entry waited too long at its level (v5 item 94): remind its approvers, or tell the roles it escalated to that it
+   * is in their queue now. `hours` is how long it has waited.
+   */
+  async onWaiting(organizationId: string, type: SubmissionType, id: string, userIds: string[], hours: number, escalated: boolean) {
+    try {
+      const s = await this.describeSubmission(type, id);
+      if (!s || !userIds.length) return { created: 0, pushed: 0, messaged: 0 };
+      const by = await this.prisma.user.findUnique({ where: { id: s.submittedById }, select: { fullName: true } });
+      const waited = hours >= 48 ? `${Math.floor(hours / 24)} days` : `${Math.floor(hours)} hours`;
+      return await this.notify({
+        organizationId,
+        userIds: userIds.filter((u) => u !== s.submittedById),
+        type: 'SUBMISSION_SUBMITTED',
+        title: escalated ? `${SUBMISSION_LABEL[type]} escalated to you after ${waited}` : `${SUBMISSION_LABEL[type]} waiting ${waited} for approval`,
+        body: escalated
+          ? `${s.title} on ${s.projectName} has waited ${waited} without a decision, so you can decide it too.`
+          : `${s.title} on ${s.projectName} has waited ${waited} for your decision.`,
+        projectId: s.projectId,
+        entityType: type,
+        entityId: id,
+        message: { template: 'APPROVAL_REQUEST', params: [this.subject(type, s.title), s.projectName, by?.fullName ?? '-', this.messaging.webUrl(`/notifications?type=${type}&id=${id}`)] },
+      });
+    } catch (e) {
+      this.log.warn(`onWaiting(${type}, ${id}) failed: ${(e as Error).message}`);
+      return { created: 0, pushed: 0, messaged: 0 };
+    }
+  }
+
   /** Tell the author how the review went. */
   async onReviewed(actor: RequestUser, type: SubmissionType, id: string, status: 'APPROVED' | 'REJECTED' | 'CHANGES_REQUESTED', note?: string | null) {
     try {

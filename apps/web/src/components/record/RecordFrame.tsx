@@ -12,6 +12,7 @@ import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { PageHeader } from '@/components/common/PageHeader';
 import { LinkButton } from '@/components/common/LinkButton';
 import { AuditTrail } from '@/components/common/AuditTrail';
+import { ApprovalLevels } from './ApprovalLevels';
 import type { Lifecycle } from './lifecycle';
 import type { SubmissionBase } from '@erp/shared';
 
@@ -64,6 +65,10 @@ export interface RecordFrameProps {
 }
 
 const sectionId = (key: string) => `record-${key}`;
+
+/** The approval levels under the stage bar (v5 item 94), once the entry has been submitted. */
+const levelsOf = (record: NonNullable<RecordFrameProps['record']>) =>
+  record.activity && record.lifecycle && record.lifecycle.current >= 2 ? <ApprovalLevels type={record.activity.type} id={record.activity.id} /> : null;
 
 /** Whether the actions came out as nothing (no button this user may press), looking through fragments. */
 function hasContent(node: React.ReactNode): boolean {
@@ -140,6 +145,7 @@ function RecordPane({ loading, error, onRetry, record, children }: RecordFramePr
           {record.lifecycle && (
             <div role="group" aria-label="Stage">
               <Steps size="small" {...record.lifecycle} style={{ marginBottom: token.marginXS }} />
+              {levelsOf(record)}
             </div>
           )}
           {record.sections.map((s) => (
@@ -219,6 +225,7 @@ function RecordDrawer({ open, onClose, drawerSize = 820, kind, loading, error, o
           {record.lifecycle && (
             <div role="group" aria-label="Stage">
               <Steps size="small" {...record.lifecycle} style={{ marginBottom: token.marginXS }} />
+              {levelsOf(record)}
             </div>
           )}
           {record.sections.map((s) => (
@@ -302,6 +309,7 @@ function RecordPage({ kind, list, loading, error, onRetry, record, children }: R
             {record.lifecycle && (
               <div role="group" aria-label="Stage" style={{ marginTop: token.margin, paddingTop: token.padding, borderTop: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}` }}>
                 <Steps size="small" {...record.lifecycle} />
+                {levelsOf(record)}
               </div>
             )}
           </Card>
