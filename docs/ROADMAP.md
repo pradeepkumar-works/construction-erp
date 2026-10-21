@@ -392,6 +392,11 @@ preview deployments run them against the production database before a PR is merg
     worker must have; issuing kit to workers sets a replace-by date from the kind's usual life and marks any older
     one replaced. The register shows who lacks what, who is on site today without it (from the roll call), what is due
     for replacement, kit still out with workers who left, and items lost or kept to recover from each contractor.
+54. ~~**RFI register** (M). Requests for information with answers, ageing, and the variation or delay they lead to.~~
+    Done: an RFIs tab in Documents, the client portal and the site app. Site and office engineers raise an RFI (with a
+    drawing, location, photos, priority and the date the answer is needed, offline from the phone); the client's
+    engineer or consultant answers in the portal, or staff record an answer from a letter. Overdue RFIs and the average
+    days to answer show on the list; an answer that changes the work raises a variation or a delay linked back to it.
 
 ## AI – Ask Nirmaan and what follows
 

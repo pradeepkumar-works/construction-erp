@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-10-rfi-register',
+    date: '2026-10-26',
+    title: 'RFI register',
+    points: [
+      'Documents has an RFIs tab: questions to the client or consultant about a drawing or the work, with the date the answer is needed and how late it is.',
+      "The client's engineer or consultant sees the project's RFIs in their portal and answers them there; you are told when they do. An answer that came by letter can be recorded too.",
+      'When an answer changes the work, raise a variation or record a delay from the RFI, and it stays linked.',
+      'Raise an RFI from the phone with a photo of what you found, even without signal, in English or Hindi.',
+    ],
+  },
+  {
     id: '2026-10-ppe-register',
     date: '2026-10-25',
     title: 'PPE register',

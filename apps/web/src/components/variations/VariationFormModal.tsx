@@ -47,7 +47,14 @@ const lineRate = (l: LineValues | undefined, boq: Map<string, BoqItemDto>) => {
 };
 
 /** Prepare a variation (or, with `variation`, change one the client has not approved). */
-export function VariationFormModal({ open, onClose, projectId, variation, onSaved }: { open: boolean; onClose: () => void; projectId?: string; variation?: VariationDto | null; onSaved?: (v: VariationDto) => void }) {
+/** A new variation can start from what led to it, such as an RFI's answer. */
+export interface VariationPrefill {
+  title?: string;
+  cause?: VariationCause;
+  description?: string;
+}
+
+export function VariationFormModal({ open, onClose, projectId, variation, prefill, onSaved }: { open: boolean; onClose: () => void; projectId?: string; variation?: VariationDto | null; prefill?: VariationPrefill | null; onSaved?: (v: VariationDto) => void }) {
   const [form] = Form.useForm<FormValues>();
   const { message } = App.useApp();
   const qc = useQueryClient();
@@ -86,8 +93,8 @@ export function VariationFormModal({ open, onClose, projectId, variation, onSave
         ),
         files: variation.attachments,
       });
-    else form.setFieldsValue({ projectId, cause: 'CLIENT_INSTRUCTION', lines: [{}] });
-  }, [open, projectId, variation, form]);
+    else form.setFieldsValue({ projectId, cause: prefill?.cause ?? 'CLIENT_INSTRUCTION', title: prefill?.title, description: prefill?.description, lines: [{}] });
+  }, [open, projectId, variation, prefill, form]);
 
   const mutation = useMutation({
     mutationFn: async (v: FormValues) => {

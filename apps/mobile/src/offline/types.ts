@@ -3,7 +3,7 @@ import type { SubmissionType } from '@erp/shared';
 export type OutboxStatus = 'PENDING' | 'SYNCING' | 'FAILED';
 
 /** What an outbox entry creates: one of the approval submissions, a day's attendance sheet, a delay / risk register entry or a safety record. */
-export type OutboxType = SubmissionType | 'ATTENDANCE' | 'RISK' | 'SAFETY_INCIDENT' | 'TOOLBOX_TALK' | 'WORK_PERMIT' | 'PPE_ISSUE';
+export type OutboxType = SubmissionType | 'ATTENDANCE' | 'RISK' | 'SAFETY_INCIDENT' | 'TOOLBOX_TALK' | 'WORK_PERMIT' | 'PPE_ISSUE' | 'RFI';
 
 export interface OutboxPhoto {
   /** Local file URI (copied into the app's document directory so it survives cache clean-ups). */
@@ -50,6 +50,7 @@ export const OUTBOX_PATH: Record<OutboxType, string> = {
   TOOLBOX_TALK: '/safety/talks',
   WORK_PERMIT: '/safety/permits',
   PPE_ISSUE: '/ppe/issues',
+  RFI: '/rfis',
 };
 
 export const OUTBOX_DETAIL: Record<SubmissionType, string> = {

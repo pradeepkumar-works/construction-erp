@@ -7,7 +7,7 @@ import { StatusBadge } from './StatusBadge';
 import { Touchable } from './Touchable';
 
 /** Submissions plus attendance sheets, register entries and safety records (which can also sit in the outbox). */
-export type EntryType = SubmissionType | 'ATTENDANCE' | 'RISK' | 'SAFETY_INCIDENT' | 'TOOLBOX_TALK' | 'WORK_PERMIT' | 'PPE_ISSUE';
+export type EntryType = SubmissionType | 'ATTENDANCE' | 'RISK' | 'SAFETY_INCIDENT' | 'TOOLBOX_TALK' | 'WORK_PERMIT' | 'PPE_ISSUE' | 'RFI';
 
 export const TYPE_ICON: Record<EntryType, keyof typeof Ionicons.glyphMap> = {
   PROGRESS: 'trending-up',
@@ -28,6 +28,7 @@ export const TYPE_ICON: Record<EntryType, keyof typeof Ionicons.glyphMap> = {
   TOOLBOX_TALK: 'megaphone',
   WORK_PERMIT: 'key',
   PPE_ISSUE: 'shield-half',
+  RFI: 'help-circle',
 };
 
 export const TYPE_SHORT: Record<EntryType, string> = {
@@ -49,6 +50,7 @@ export const TYPE_SHORT: Record<EntryType, string> = {
   TOOLBOX_TALK: 'Toolbox talk',
   WORK_PERMIT: 'Permit',
   PPE_ISSUE: 'PPE',
+  RFI: 'RFI',
 };
 
 interface Props {

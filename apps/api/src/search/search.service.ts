@@ -13,6 +13,7 @@ import { ExpensesService } from '../expenses/expenses.service';
 import { InspectionsService } from '../inspections/inspections.service';
 import { RisksService } from '../risks/risks.service';
 import { DocumentsService } from '../documents/documents.service';
+import { RfisService } from '../rfis/rfis.service';
 import { VendorsService } from '../vendors/vendors.service';
 import { ClientsService } from '../clients/clients.service';
 import { StockService } from '../stock/stock.service';
@@ -47,6 +48,7 @@ export class SearchService {
     inspections: InspectionsService,
     risks: RisksService,
     documents: DocumentsService,
+    rfis: RfisService,
     vendors: VendorsService,
     clients: ClientsService,
     stock: StockService,
@@ -65,6 +67,7 @@ export class SearchService {
       { kind: 'inspection', list: (u, q) => inspections.list(u, page(q) as never), hit: (r) => ({ id: r.id, title: r.inspectionNo, subtitle: join(r.activityName, r.projectName), href: `/inspections/${r.id}`, status: r.status }) },
       { kind: 'risk', list: (u, q) => risks.list(u, page(q) as never), hit: (r) => ({ id: r.id, title: r.riskNo, subtitle: join(r.title, r.projectName), href: `/risks?id=${r.id}`, status: null }) },
       { kind: 'document', list: (u, q) => documents.listDocuments(u, page(q) as never), hit: (r) => ({ id: r.id, title: r.docNo, subtitle: join(r.title, r.projectName), href: `/documents?id=${r.id}`, status: null }) },
+      { kind: 'rfi', list: (u, q) => rfis.list(u, page(q) as never), hit: (r) => ({ id: r.id, title: r.rfiNo, subtitle: join(r.subject, r.projectName), href: `/documents?tab=rfis&rfi=${r.id}`, status: null }) },
       {
         kind: 'vendor',
         // The vendor master is readable by anyone for pickers, but its page is for these roles.

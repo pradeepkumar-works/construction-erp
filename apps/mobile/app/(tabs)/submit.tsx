@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { canManageWorkers, canMarkStaff, canKeepStock, canLogMachinery, canManageMaintenance, canMeasure, canRaiseRisk, canRecordAttendance, canReportDefect, canReportSafety, canRequestInspection, canSubmitExpense } from '@erp/shared';
+import { canManageWorkers, canMarkStaff, canKeepStock, canLogMachinery, canManageMaintenance, canMeasure, canRaiseRisk, canRecordAttendance, canReportDefect, canRaiseRfi, canReportSafety, canRequestInspection, canSubmitExpense } from '@erp/shared';
 import { useAuth } from '../../src/auth/AuthContext';
 import { Button, Screen, Touchable } from '../../src/components';
 import { colors, radius, shadow, spacing, typography } from '../../src/theme';
@@ -42,6 +42,8 @@ const RISK = { href: '/risks', icon: 'alert-circle' as const, tone: colors.tileR
 
 const SNAGS = { href: '/snags', icon: 'construct-outline' as const, tone: colors.tileRust, title: 'Snags & defects', text: 'Log what needs putting right before handover or in the defect liability period, with photos; mark it fixed.' };
 
+const RFIS = { href: '/rfis', icon: 'help-circle' as const, tone: colors.tileIndigo, title: 'RFIs', text: 'Ask the client or consultant about a drawing or the work, with a photo; see their answers.' };
+
 const SAFETY = { href: '/safety', icon: 'medkit' as const, tone: colors.tileCrimson, title: 'Safety', text: 'Report an incident or near miss, record a toolbox talk, ask for a permit to work.' };
 
 const STOCK = [
@@ -60,6 +62,7 @@ export default function SubmitHub() {
     ...(user && canMarkStaff(user.roleKey) ? [STAFF_REGISTER] : []),
     ...FORMS,
     DRAWINGS,
+    ...(user && canRaiseRfi(user.roleKey) ? [RFIS] : []),
     ...(user && canLogMachinery(user.roleKey) ? [MACHINERY] : []),
     ...(user && (canLogMachinery(user.roleKey) || canManageMaintenance(user.roleKey)) ? [BREAKDOWN] : []),
     ...(user && canSubmitExpense(user.roleKey) ? [EXPENSE, IMPREST] : []),

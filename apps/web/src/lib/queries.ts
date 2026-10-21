@@ -192,6 +192,12 @@ import type {
   SafetyIncidentType,
   SafetySummaryDto,
   PpeRegisterDto,
+  RfiDto,
+  RfiSummaryDto,
+  RfiStatus,
+  RfiPriority,
+  RfiSortField,
+  PortalRfiDto,
   PpeIssueDto,
   PpeIssueResultDto,
   PpeKind,
@@ -886,6 +892,90 @@ export const useLetter = (id: string | undefined) =>
     queryFn: async () => (await api.get<LetterDto>(`/letters/${id}`)).data,
     enabled: !!id,
   });
+
+/* ---------- RFIs ---------- */
+
+export interface RfiFilters extends PageParams {
+  projectId?: string;
+  status?: RfiStatus;
+  priority?: RfiPriority;
+  overdue?: boolean;
+  documentId?: string;
+  sortBy?: RfiSortField;
+}
+
+export const useRfis = (filters?: RfiFilters, enabled = true) =>
+  useQuery({
+    queryKey: ['documents', 'rfis', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<RfiDto>>('/rfis', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+
+export const useRfi = (id: string | undefined) =>
+  useQuery({
+    queryKey: ['documents', 'rfis', 'detail', id],
+    queryFn: async () => (await api.get<RfiDto>(`/rfis/${id}`)).data,
+    enabled: !!id,
+  });
+
+export const useRfiSummary = (projectId?: string) =>
+  useQuery({
+    queryKey: ['documents', 'rfis', 'summary', projectId ?? null],
+    queryFn: async () => (await api.get<RfiSummaryDto>('/rfis/summary', { params: clean({ projectId }) })).data,
+  });
+
+/** Every RFI change refreshes the lists, the record, the counts and the notifications. */
+function useRfiMutation<V, R = RfiDto>(fn: (v: V) => Promise<R>) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: fn,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['documents', 'rfis'] });
+      qc.invalidateQueries({ queryKey: ['notifications'] });
+    },
+  });
+}
+
+export interface SaveRfiInput {
+  id?: string;
+  projectId: string;
+  subject: string;
+  question: string;
+  proposal: string | null;
+  location: string | null;
+  priority: RfiPriority;
+  toParty: string | null;
+  raisedOn: string;
+  replyBy: string;
+  documentId: string | null;
+  boqItemId: string | null;
+  costImpact: boolean;
+  timeImpact: boolean;
+  attachmentIds: string[];
+}
+
+export const useCreateRfi = () => useRfiMutation(async (v: SaveRfiInput) => (await api.post<RfiDto>('/rfis', v)).data);
+export const useUpdateRfi = () =>
+  useRfiMutation(async ({ rfiId, ...v }: Omit<Partial<SaveRfiInput>, 'projectId' | 'raisedOn' | 'id'> & { rfiId: string }) => (await api.patch<RfiDto>(`/rfis/${rfiId}`, v)).data);
+export const useRecordRfiAnswer = () =>
+  useRfiMutation(async ({ id, ...v }: { id: string; answer: string; answeredOn: string; answeredByName: string; answerRef: string | null }) => (await api.post<RfiDto>(`/rfis/${id}/answer`, v)).data);
+export const useCloseRfi = () => useRfiMutation(async ({ id, ...v }: { id: string; on: string; note: string | null }) => (await api.post<RfiDto>(`/rfis/${id}/close`, v)).data);
+export const useWithdrawRfi = () => useRfiMutation(async ({ id, note }: { id: string; note: string }) => (await api.post<RfiDto>(`/rfis/${id}/withdraw`, { note })).data);
+export const useLinkRfi = () =>
+  useRfiMutation(async ({ id, ...v }: { id: string; variationId?: string | null; riskId?: string | null }) => (await api.put<RfiDto>(`/rfis/${id}/links`, v)).data);
+export const useDeleteRfi = () => useRfiMutation(async (id: string) => (await api.delete<{ ok: true }>(`/rfis/${id}`)).data);
+
+export const usePortalRfis = (projectId: string | undefined) =>
+  useQuery({ queryKey: ['portal', 'rfis', projectId], queryFn: async () => (await api.get<PortalRfiDto[]>(`/portal/projects/${projectId}/rfis`)).data, enabled: !!projectId });
+
+export function useAnswerRfiAsClient() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, answer }: { id: string; answer: string }) => (await api.post<PortalRfiDto>(`/portal/rfis/${id}/answer`, { answer })).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['portal'] }),
+  });
+}
 
 /* ---------- staff and leave ---------- */
 

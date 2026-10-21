@@ -16,11 +16,13 @@ function DocumentsPage() {
   const id = search.get('id') ?? undefined;
   // Delays link their letters with ?tab=letters&letter=<id>
   const letter = search.get('letter') ?? undefined;
+  // RFI notifications and Search link with ?tab=rfis&rfi=<id>
+  const rfi = search.get('rfi') ?? undefined;
   return (
     <div className="page-container">
-      <PageHeader title="Documents" subtitle="Drawings and documents with their current revision, transmittals sent with what was signed for, and letters in and out." />
+      <PageHeader title="Documents" subtitle="Drawings and documents with their current revision, transmittals sent with what was signed for, letters in and out, and RFIs waiting for an answer." />
       <Card size="small">
-        <DocumentTabs key={`${id ?? ''}:${letter ?? ''}`} tab={tab} onTab={(t) => router.replace(`${pathname}?tab=${t}`, { scroll: false })} openId={id} openLetterId={letter} />
+        <DocumentTabs key={`${id ?? ''}:${letter ?? ''}:${rfi ?? ''}`} tab={tab} onTab={(t) => router.replace(`${pathname}?tab=${t}`, { scroll: false })} openId={id} openLetterId={letter} openRfiId={rfi} />
       </Card>
     </div>
   );

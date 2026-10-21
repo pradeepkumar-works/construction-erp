@@ -7,6 +7,8 @@ import { CertifyBillDto } from '../ra-bills/ra-bills.dto';
 import { InspectionsService } from '../inspections/inspections.service';
 import { ReportsService } from '../reports/reports.service';
 import { PortalService } from './portal.service';
+import { RfisService } from '../rfis/rfis.service';
+import { PortalAnswerDto } from '../rfis/rfis.dto';
 import { PortalDprQuery, PortalReportQuery, WitnessDto } from './portal.dto';
 
 /** The client portal: the only routes the client's engineer and consultant (guest roles) may call, besides their account. Staff use the full screens. */
@@ -16,7 +18,7 @@ import { PortalDprQuery, PortalReportQuery, WitnessDto } from './portal.dto';
 @GuestOnly()
 @Controller('portal')
 export class PortalController {
-  constructor(private portal: PortalService, private bills: RaBillsService, private inspections: InspectionsService, private reports: ReportsService) {}
+  constructor(private portal: PortalService, private bills: RaBillsService, private inspections: InspectionsService, private reports: ReportsService, private rfis: RfisService) {}
 
   @ApiOperation({ summary: 'Projects the caller is on, with approved progress, open bills and inspections' })
   @Get('projects')
@@ -70,5 +72,17 @@ export class PortalController {
   @Post('inspections/:id/witness')
   witness(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: WitnessDto) {
     return this.inspections.witness(user, id, dto.note ?? null);
+  }
+
+  @ApiOperation({ summary: 'RFIs we raised on the project: waiting for an answer first, then the latest' })
+  @Get('projects/:id/rfis')
+  projectRfis(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string) {
+    return this.rfis.listForClient(user, id);
+  }
+
+  @ApiOperation({ summary: "Answer an RFI (client's engineer or consultant); whoever raised it and the project manager are told" })
+  @Post('rfis/:id/answer')
+  answerRfi(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: PortalAnswerDto) {
+    return this.rfis.answerAsClient(user, id, dto.answer);
   }
 }

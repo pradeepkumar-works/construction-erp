@@ -13,6 +13,7 @@ import {
   InboxOutlined,
   LoadingOutlined,
   ProjectOutlined,
+  QuestionCircleOutlined,
   SearchOutlined,
   ShopOutlined,
   UserOutlined,
@@ -46,7 +47,7 @@ interface Target {
   go: () => void;
 }
 
-const KIND_ICONS: Partial<Record<SearchKind, NavIcon>> = { risk: AlertOutlined, document: FolderOpenOutlined, vendor: ShopOutlined, client: BankOutlined, item: InboxOutlined, person: UserOutlined };
+const KIND_ICONS: Partial<Record<SearchKind, NavIcon>> = { risk: AlertOutlined, document: FolderOpenOutlined, rfi: QuestionCircleOutlined, vendor: ShopOutlined, client: BankOutlined, item: InboxOutlined, person: UserOutlined };
 const STATUSES = new Set<string>(SUBMISSION_STATUSES);
 /** How many recently opened records and pages lead the list before anything is typed. */
 const RECENT_SHOWN = 8;

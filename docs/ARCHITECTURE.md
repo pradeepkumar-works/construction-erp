@@ -1013,6 +1013,30 @@ export; the client portal and the phone app show the amount.
   drawer, return or lost, required kit, contractor totals, issue history and Excel export. Site app: Issue PPE from the
   Safety screen (`app/ppe/new.tsx`), offline through the outbox (`PPE_ISSUE`), in Hindi too.
 
+### RFI register
+
+- **Table.** `Rfi` (RFI-<year>-0001 per organisation; project, subject, question, our proposal, location, priority
+  NORMAL / URGENT, status OPEN / ANSWERED / CLOSED / WITHDRAWN, addressed to, raised on, answer-by, optional drawing
+  and BOQ item, cost and time impact flags, the answer with its date, who answered (a guest user, or a name and
+  reference recorded by staff), closing note, and links to a `Variation` and a `Risk`), with RLS; `Attachment.rfiId`
+  for photos and marked-up drawings.
+- **Rules** (`packages/shared/src/rfi.ts`, tested in `apps/api/src/scripts/rfi-test.ts`). Answer-by defaults to 7 days
+  after raising (2 when urgent). Days open run to the answer (or today while open); overdue = open and past the
+  answer-by date; ageing buckets by days late. Raising takes the phone's id, so a retried outbox send makes no second RFI.
+- **Flow** (`RfisService`). Raised by `RFI_RAISER_ROLES` (site engineer, team leader, QS, QA/QC, approvers); the
+  project's guests are told (`PORTAL`, entity `RFI`). The client's engineer or consultant answers in the portal
+  (`POST /portal/rfis/:id/answer`; the raiser and PM are told as `DOCUMENT_ISSUED`), or staff record an answer from a
+  letter. Whoever raised it or an approver changes, closes (once answered), withdraws or deletes (only while open,
+  never once answered). A variation or delay raised from the answer is linked with `PUT /rfis/:id/links`. Every
+  change is in the audit log.
+- **API.** `GET /rfis` (project, status, priority, drawing, `overdue`), `GET /rfis/summary`, `GET /rfis/:id`,
+  `POST /rfis`, `PATCH /rfis/:id`, `POST /rfis/:id/answer`, `/close`, `/withdraw`, `PUT /rfis/:id/links`,
+  `DELETE /rfis/:id`; portal `GET /portal/projects/:id/rfis` (no cost, delay or variation fields). Searchable in Ctrl K.
+- **Clients.** Web: an RFIs tab in Documents (page and project tab, `components/documents/Rfi*.tsx`) with counts,
+  filters, Excel export, the record drawer (record answer, close, withdraw, raise a variation or record a delay from
+  the answer) and the form; an RFIs tab in the client portal (`components/portal/PortalRfis.tsx`). Site app: RFIs
+  list, detail and Raise RFI with photos (`app/rfis.tsx`, `app/rfi/`), offline through the outbox (`RFI`), in Hindi.
+
 ## Machinery maintenance and vehicle papers
 
 - **Tables.** `MaintenanceJob` (`MNT-<year>-0001`): machine, the project it was at (null in the yard), `kind`

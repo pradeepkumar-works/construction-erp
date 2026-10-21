@@ -47,3 +47,4 @@ export * from './briefs';
 export * from './photo-checks';
 export * from './reconciliation';
 export * from './ppe';
+export * from './rfi';
