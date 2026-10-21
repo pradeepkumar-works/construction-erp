@@ -196,6 +196,12 @@ export class SubmissionLifecycleService {
       .sort((a, b) => a.submittedAt.localeCompare(b.submittedAt));
   }
 
+  /** Everything waiting for approval in the projects the caller sees, whoever decides it (the phone's company view, v5 item 96). */
+  async submitted(user: RequestUser): Promise<PendingApprovalDto[]> {
+    const where = { ...this.access.submissionWhere(user), status: 'SUBMITTED' as const };
+    return (await this.describe(() => where)).sort((a, b) => a.submittedAt.localeCompare(b.submittedAt));
+  }
+
   /** Types with an entry escalated in the last 90 days (management's queue looks at these too). */
   private async escalatedTypes(organizationId: string): Promise<SubmissionType[]> {
     const rows = await this.prisma.approvalStep.findMany({

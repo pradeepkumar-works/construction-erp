@@ -12,7 +12,8 @@ import { PurchasingModule } from '../purchasing/purchasing.module';
 import { ComplianceModule } from '../compliance/compliance.module';
 import { StockModule } from '../stock/stock.module';
 import { WarningsModule } from '../warnings/warnings.module';
+import { MachineryModule } from '../machinery/machinery.module';
 import { HomeService } from './home.service';
 
-@Module({ imports: [ProjectsModule, PlanningModule, ProgressModule, DprModule, ReceivablesModule, PayablesModule, CostModule, PurchasingModule, ComplianceModule, StockModule, WarningsModule], controllers: [DashboardController], providers: [DashboardService, HomeService], exports: [DashboardService, HomeService] })
+@Module({ imports: [ProjectsModule, PlanningModule, ProgressModule, DprModule, ReceivablesModule, PayablesModule, CostModule, PurchasingModule, ComplianceModule, StockModule, WarningsModule, MachineryModule], controllers: [DashboardController], providers: [DashboardService, HomeService], exports: [DashboardService, HomeService] })
 export class DashboardModule {}

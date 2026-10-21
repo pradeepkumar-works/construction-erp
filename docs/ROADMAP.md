@@ -443,8 +443,11 @@ carries on after the UX items (to 89). Migrations stay additive. Design notes fo
     another site, taken off what is left to order); `GET /purchase-orders/last-rates` under the rates of the quotation,
     comparative and PO forms; `Enquiry` and `EnquiryToken` (SHA-256 only) with the public page `/quote/<token>`, whose
     answer is a quotation `fromSupplier`. ARCHITECTURE "Small purchase items".
-96. **Management view on the phone** (M). Company tiles for admin, management, accounts and project managers: money
-    today, dues, attendance today, fuel today, purchase pipeline, approvals by module.
+96. ~~**Management view on the phone** (M). Company tiles for admin, management, accounts and project managers: money
+    today, dues, attendance today, fuel today, purchase pipeline, approvals by module.~~ Done: `GET
+    /dashboard/company-today` in `HomeService` (`seesCompanyToday`, each part behind its module's helper) and Company
+    today at the top of the phone's Home, each tile's list in a sheet, kept for offline, in Hindi. ARCHITECTURE
+    "Management view on the phone".
 97. **Attendance extras** (S + M, kept by Pradeep on 21 Oct). GPS check-in inside the site's area (new `expo-location`,
     next store build), on-duty and tour requests, overtime approval.
 

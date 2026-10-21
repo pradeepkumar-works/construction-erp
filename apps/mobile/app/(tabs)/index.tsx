@@ -2,12 +2,13 @@ import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { SUBMISSION_STATUS_LABELS, canKeepStock, canRecordAttendance } from '@erp/shared';
-import type { DailyReportDto, MaterialRequestDto, MyWorkDto, Paginated, ProgressEntryDto, ProjectSummary, SubmissionBase, SubmissionType } from '@erp/shared';
+import { SUBMISSION_STATUS_LABELS, canKeepStock, canRecordAttendance, seesCompanyToday } from '@erp/shared';
+import type { CompanyTodayDto, DailyReportDto, MaterialRequestDto, MyWorkDto, Paginated, ProgressEntryDto, ProjectSummary, SubmissionBase, SubmissionType } from '@erp/shared';
 import { useFetch } from '../../src/api/hooks';
 import { fetchProjects } from '../../src/api/lists';
 import { useAuth } from '../../src/auth/AuthContext';
 import { BillingBanner, Button, Card, EmptyState, ErrorState, NotificationBell, OfflineBanner, Screen, SectionTitle, Stat, SubmissionRow, Touchable } from '../../src/components';
+import { CompanyTodayPanel } from '../../src/components/CompanyToday';
 import { MyWorkPanel } from '../../src/components/MyWork';
 import { Skeleton } from '../../src/components/Skeleton';
 import { useOffline } from '../../src/offline';
@@ -45,8 +46,11 @@ export default function HomeScreen() {
   );
   // What the role should act on now, as on the web home; pull to refresh reloads it with the rest.
   const myWork = useFetch<MyWorkDto>((api) => api.get('/dashboard/my-work'), [syncedCount], { cacheKey: 'my-work' });
+  // Owners, directors, accounts and project managers lead with the company's day (v5 item 96); site roles keep the rest.
+  const leads = !!user && seesCompanyToday(user.roleKey);
+  const company = useFetch<CompanyTodayDto | null>((api) => (leads ? api.get('/dashboard/company-today') : Promise.resolve(null)), [syncedCount, leads], { cacheKey: 'company-today' });
   const refreshAll = async () => {
-    await Promise.all([refresh(), myWork.refresh()]);
+    await Promise.all([refresh(), myWork.refresh(), leads ? company.refresh() : null]);
   };
 
   const derived = useMemo(() => {
@@ -78,7 +82,7 @@ export default function HomeScreen() {
   };
 
   return (
-    <Screen refreshing={refreshing || myWork.refreshing} onRefresh={refreshAll} edges={['top', 'left', 'right', 'bottom']}>
+    <Screen refreshing={refreshing || myWork.refreshing || company.refreshing} onRefresh={refreshAll} edges={['top', 'left', 'right', 'bottom']}>
       <View style={styles.topRow}>
         <View style={styles.flex}>
           <Text style={typography.h1}>
@@ -91,6 +95,7 @@ export default function HomeScreen() {
       <BillingBanner />
       <OfflineBanner />
 
+      {leads ? <CompanyTodayPanel data={company.data} loading={company.loading} /> : null}
       <MyWorkPanel data={myWork.data} loading={myWork.loading} />
 
       <SectionTitle title={t('New entry')} />

@@ -81,6 +81,27 @@ hold points use the latter on progress. The clients keep a few per-type maps (we
 `approvalTypeParam`; mobile `TYPE_ICON`, `EDIT_PATH`, `REVIEW_PATH`, `OUTBOX_PATH`, push routes) that
 TypeScript flags when a type is added.
 
+### Management view on the phone (v5 item 96)
+
+`GET /dashboard/company-today` (`HomeService.companyToday`) is the company's day for the roles in `COMPANY_TODAY_ROLES`
+(admin, management, accounts and project managers; anyone else gets 403). Each part is left out unless the role sees its
+module, and covers only the projects the caller sees (`projectWhere`):
+
+| Part | Shown to | From |
+|---|---|---|
+| Paid and received, today against yesterday | `canViewPayables`, `canViewContract` | `VendorPayment.paymentDate`, `Receipt.receiptDate` |
+| To pay and to collect, with the overdue part | `canViewPayables`, `canViewContract` | `PayablesService.summary` (due dates), `ReceivablesService.summary` (overdue once past the project's `clientPaymentDays`, 30 when unset) |
+| Attendance today | `canViewLabourSummary` | `StaffAttendance` (company-wide roles: all staff; a project manager: staff posted at their sites), attendance sheets and the roll call per active site |
+| Fuel today | the Machinery page's gate | `FleetService.fuelPosition` summed per fuel item, sites below their minimum |
+| Purchase | `canViewPurchaseOrders` | `PurchaseOrdersService.status` (orders still to come, late), approved requests with something `toOrderOf`, today's GRNs and those QA/QC has not checked in 30 days |
+| Approvals by module | everyone here (amounts with `canViewCost`) | `SubmissionLifecycleService.submitted`: every entry waiting in the caller's projects, whoever decides it |
+| Waiting with others | everyone here | `SubmissionLifecycleService.waiting` |
+
+Lists carry at most `COMPANY_TODAY_ROWS` rows. The phone (`src/components/CompanyToday.tsx`) puts the tiles above My
+work on Home for these roles, in an order per role (accounts lead with money to pay); a tile opens its list in a
+`BottomSheet`, and a row opens its record through `phoneRoute` where the phone has a screen for it. The answer is kept
+under the `company-today` cache key, so the tiles show offline with the last figures.
+
 ### Small purchase items (v5 item 95)
 
 **Stock first.** A material request's lines are free text; `StockService.requestStock` matches each to the item master

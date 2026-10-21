@@ -94,6 +94,8 @@ export const TEMPLATE_ADMIN_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT'];
 export const USER_ADMIN_ROLES: RoleKey[] = ['ADMIN'];
 /** Who sees the first-week setup checklist on the dashboard. */
 export const GETTING_STARTED_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT'];
+/** Who gets the company's day on the phone's Home (v5 item 96): owners, directors, accounts and project managers. */
+export const COMPANY_TODAY_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'ACCOUNTS_MANAGER', 'PROJECT_MANAGER'];
 
 export const isCompanyWide = (role: RoleKey) => COMPANY_WIDE_ROLES.includes(role);
 export const canApprove = (role: RoleKey) => APPROVER_ROLES.includes(role);
@@ -124,6 +126,7 @@ export const canManageBilling = (role: RoleKey) => role === 'ADMIN';
 /** Changing or deleting a view someone else shared with the company (owners always can). */
 export const canManageSharedViews = (role: RoleKey) => role === 'ADMIN';
 export const seesGettingStarted = (role: RoleKey) => GETTING_STARTED_ROLES.includes(role);
+export const seesCompanyToday = (role: RoleKey) => COMPANY_TODAY_ROLES.includes(role);
 export const submitsDpr = (role: RoleKey) => DPR_SUBMITTER_ROLES.includes(role);
 export const canRecordAttendance = (role: RoleKey) => ATTENDANCE_RECORDER_ROLES.includes(role);
 /** Keep the named worker register and its roll call: the attendance recorders. */

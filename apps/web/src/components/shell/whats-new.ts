@@ -9,6 +9,15 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-company-today',
+    date: '2026-11-02',
+    title: 'The company today, on the phone',
+    points: [
+      "On the phone app, owners, directors, accounts and project managers now open Home on the company's day: money paid and received today against yesterday, what is owed both ways and how much is overdue, staff and labour present, diesel issued and left, orders still to come and requests still to order, and approvals waiting by module.",
+      'Tap a tile for its list: the bills most overdue, each site\'s attendance, fuel by site, late orders, approvals by kind. A row opens its record. The figures stay on the phone for when there is no signal.',
+    ],
+  },
+  {
     id: '2026-11-small-purchase',
     date: '2026-11-01',
     title: 'Stock first, last orders and enquiries to suppliers',
