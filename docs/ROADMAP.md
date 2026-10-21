@@ -407,7 +407,7 @@ carries on after the UX items (to 89). Migrations stay additive. Design notes fo
     the item's last five POs on the purchase forms; enquiries emailed to suppliers with a one-time link to quote.
 96. **Management view on the phone** (M). Company tiles for admin, management, accounts and project managers: money
     today, dues, attendance today, fuel today, purchase pipeline, approvals by module.
-97. **Attendance extras** (S + M, waiting for Pradeep's yes). GPS check-in inside the site's area (new `expo-location`,
+97. **Attendance extras** (S + M, kept by Pradeep on 21 Oct). GPS check-in inside the site's area (new `expo-location`,
     next store build), on-duty and tour requests, overtime approval.
 
 Later, when a customer asks: group companies under one login, head-office overheads to projects, leads and tendering,
