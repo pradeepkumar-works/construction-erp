@@ -123,6 +123,12 @@ export type PpeKind = (typeof PPE_KINDS)[number];
 export const PPE_ISSUE_STATUSES = ['ISSUED', 'RETURNED', 'REPLACED', 'LOST'] as const;
 export type PpeIssueStatus = (typeof PPE_ISSUE_STATUSES)[number];
 
+/** A request for information to the client or consultant: OPEN until answered, CLOSED once acted on, or WITHDRAWN. */
+export const RFI_STATUSES = ['OPEN', 'ANSWERED', 'CLOSED', 'WITHDRAWN'] as const;
+export type RfiStatus = (typeof RFI_STATUSES)[number];
+export const RFI_PRIORITIES = ['NORMAL', 'URGENT'] as const;
+export type RfiPriority = (typeof RFI_PRIORITIES)[number];
+
 /** A scheduled service when it falls due, or a breakdown repair. */
 export const MAINTENANCE_KINDS = ['SERVICE', 'BREAKDOWN'] as const;
 export type MaintenanceKind = (typeof MAINTENANCE_KINDS)[number];

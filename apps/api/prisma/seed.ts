@@ -146,6 +146,7 @@ async function main() {
     await seedStaff(org.id);
     await seedGuests(org.id);
     await seedVariations(org.id);
+    await seedRfis(org.id);
     await seedBudgets(org.id);
     await seedStoreMoves(org.id);
     await seedReconciliation(org.id);
@@ -324,6 +325,7 @@ async function main() {
   await seedStaff(org.id);
   await seedGuests(org.id);
   await seedVariations(org.id);
+  await seedRfis(org.id);
   await seedBudgets(org.id);
   await seedStoreMoves(org.id);
   await seedReconciliation(org.id);
@@ -1010,6 +1012,98 @@ async function seedReconciliation(organizationId: string) {
       await prisma.auditLog.create({ data: { organizationId, entityType: 'STOCK', entityId: e.id, action: 'CREATED', actorId: keeper.id, note: e.entryNo, createdAt: date } });
     }
   }
+}
+
+/**
+ * Demo RFI register. Road: RFI 1 (culverts between Km 17 and 19) answered by the client's engineer in the portal and
+ * closed with variation V-1; RFI 2 (kerb stones) answered by letter and waiting to be closed, linked to V-2; RFI 3
+ * (HT line at Ch 14+100) waiting and 9 days late, linked to the risk. Hospital: RFI 4 (footing level) urgent and due
+ * tomorrow, on STR-201; RFI 5 (fire door rating) not yet due. Only when the organisation has no RFI yet.
+ */
+async function seedRfis(organizationId: string) {
+  if (await prisma.rfi.count({ where: { organizationId } })) return;
+  const user = (email: string) => prisma.user.findFirst({ where: { organizationId, email }, select: { id: true } });
+  const [engineer, qs, client] = await Promise.all([user('engineer@demo.com'), user('qs@demo.com'), user('client@demo.com')]);
+  const road = await prisma.project.findFirst({ where: { organizationId, type: 'ROAD' }, orderBy: { code: 'asc' } });
+  const building = await prisma.project.findFirst({ where: { organizationId, type: 'BUILDING' }, orderBy: { code: 'asc' } });
+  const raiser = engineer ?? qs;
+  if (!road || !building || !raiser) return;
+  const doc = (projectId: string, docNo: string) => prisma.document.findFirst({ where: { projectId, docNo }, select: { id: true } });
+  const variation = (projectId: string, varNo: number) => prisma.variation.findFirst({ where: { projectId, varNo }, select: { id: true } });
+  const risk = (projectId: string, title: string) => prisma.risk.findFirst({ where: { projectId, title: { startsWith: title } }, select: { id: true } });
+  const year = new Date().getUTCFullYear();
+  let n = 0;
+  const rfi = async (projectId: string, raisedOffset: number, replyOffset: number, data: Omit<Prisma.RfiUncheckedCreateInput, 'organizationId' | 'projectId' | 'rfiNo' | 'raisedOn' | 'replyBy'>) => {
+    n += 1;
+    const r = await prisma.rfi.create({
+      data: { organizationId, projectId, rfiNo: `RFI-${year}-${String(n).padStart(4, '0')}`, raisedOn: day(raisedOffset), replyBy: day(replyOffset), raisedById: raiser.id, createdAt: day(raisedOffset), ...data },
+    });
+    await prisma.auditLog.create({ data: { organizationId, entityType: 'RFI', entityId: r.id, action: 'CREATED', actorId: data.raisedById ?? raiser.id, note: r.rfiNo, createdAt: day(raisedOffset) } });
+    return r;
+  };
+  const toRoad = road.consultantName ?? road.clientName ?? "Client's engineer";
+  await rfi(road.id, -34, -27, {
+    subject: 'Cross drainage between Km 17 and Km 19',
+    question: 'Water ponds on both sides of the embankment between Km 17+200 and Km 18+900; the plan and profile show no cross drainage there. Should culverts be added, and of what size?',
+    proposal: 'Two 1.2 m pipe culverts at Km 17+640 and Km 18+410, and a 2 x 2 m box culvert at Km 18+860.',
+    location: 'Km 17+200 to Km 18+900',
+    toParty: toRoad,
+    documentId: (await doc(road.id, 'RD-PP-03'))?.id ?? null,
+    costImpact: true,
+    status: 'CLOSED',
+    answer: 'Agreed. Provide the two pipe culverts and the box culvert as proposed; submit the variation with rates.',
+    answeredOn: day(-29),
+    answeredById: client?.id ?? null,
+    answeredByName: client ? null : "Client's engineer",
+    closedOn: day(-20),
+    closeNote: 'Variation V-1 submitted and approved',
+    closedById: qs?.id ?? raiser.id,
+    variationId: (await variation(road.id, 1))?.id ?? null,
+  });
+  await rfi(road.id, -16, -9, {
+    subject: 'Kerb stones on the bridge approaches',
+    question: 'The typical cross section shows a kerb on the bridge approaches but the BOQ has no quantity for it. Should kerbs be laid, and to which type?',
+    proposal: 'Precast M30 kerb 300 x 250 mm on both sides, 150 m per approach.',
+    location: 'Bridge approaches, Km 15+100 and Km 21+700',
+    toParty: toRoad,
+    documentId: (await doc(road.id, 'RD-TCS-01'))?.id ?? null,
+    costImpact: true,
+    status: 'ANSWERED',
+    answer: 'Kerbs are to be provided as per IRC:86. Precast M30 type is acceptable. Submit a variation for the quantity.',
+    answeredOn: day(-6),
+    answeredByName: 'Executive Engineer, Odisha Works Department (by letter)',
+    answerRef: 'EE/OWD/R&B/2026/1182',
+    variationId: (await variation(road.id, 2))?.id ?? null,
+  });
+  await rfi(road.id, -16, -9, {
+    subject: 'HT line crossing at Ch 14+100',
+    question: 'The 33 kV line crossing at Ch 14+100 has not been shifted and blocks the embankment and the WMM on the LHS. When will OPTCL shift it, and should we leave a gap in the meantime?',
+    location: 'Ch 14+100, LHS',
+    toParty: toRoad,
+    priority: 'URGENT',
+    timeImpact: true,
+    riskId: (await risk(road.id, 'HT line crossing'))?.id ?? null,
+  });
+  const toBuilding = building.consultantName ?? building.clientName ?? 'Consultant';
+  await rfi(building.id, -1, 1, {
+    subject: 'Footing F12 level differs between drawings',
+    question: 'STR-201 shows the founding level of footing F12 at -1.50 m; the architectural section shows -1.80 m. Which level do we follow? Excavation at grid C-4 is complete to -1.50 m.',
+    proposal: 'Follow the structural drawing (-1.50 m).',
+    location: 'Grid C-4, footing F12',
+    toParty: toBuilding,
+    priority: 'URGENT',
+    documentId: (await doc(building.id, 'STR-201'))?.id ?? null,
+    timeImpact: true,
+  });
+  await rfi(building.id, -3, 4, {
+    subject: 'Fire rating of the stair core doors',
+    question: 'The door schedule lists the stair core doors as flush doors; the fire NOC drawings call for 2-hour fire-rated doors. Please confirm the rating and the hardware.',
+    location: 'Stair cores A and B, all floors',
+    toParty: toBuilding,
+    documentId: (await doc(building.id, 'ARC-101'))?.id ?? null,
+    costImpact: true,
+    raisedById: qs?.id ?? raiser.id,
+  });
 }
 
 /**

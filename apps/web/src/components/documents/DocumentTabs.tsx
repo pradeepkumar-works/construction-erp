@@ -5,7 +5,7 @@ import { Badge, Tabs } from 'antd';
 import type { AiDraftDto } from '@erp/shared';
 import { canViewLetters } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
-import { useDocumentSummary } from '@/lib/queries';
+import { useDocumentSummary, useRfiSummary } from '@/lib/queries';
 import { useNewIntent } from '@/lib/new-intent';
 import { DocumentList } from './DocumentList';
 import { DocumentDrawer } from './DocumentDrawer';
@@ -15,9 +15,12 @@ import { TransmittalFormModal, type TransmittalPrefill } from './TransmittalForm
 import { LetterList } from './LetterList';
 import { LetterDrawer } from './LetterDrawer';
 import { LetterFormModal } from './LetterFormModal';
+import { RfiList } from './RfiList';
+import { RfiDrawer } from './RfiDrawer';
+import { RfiFormModal } from './RfiFormModal';
 import { useUrlTab } from '@/lib/url-state';
 
-export const DOCUMENT_TABS = ['register', 'transmittals', 'letters'] as const;
+export const DOCUMENT_TABS = ['register', 'transmittals', 'letters', 'rfis'] as const;
 export type DocumentTab = (typeof DOCUMENT_TABS)[number];
 
 const count = (label: string, n: number | null | undefined, title: string) => (
@@ -30,12 +33,15 @@ const count = (label: string, n: number | null | undefined, title: string) => (
 /**
  * The register, transmittals and letters: on the Documents page and as a project tab. The drawers live here so a
  * document can open its transmittals and a transmittal its documents. `openId` opens a document (from a notification),
- * `openLetterId` a letter (from a delay).
+ * `openLetterId` a letter (from a delay), `openRfiId` an RFI (from a notification or Search).
  */
-export function DocumentTabs({ projectId, tab, onTab, openId, openLetterId }: { projectId?: string; tab: DocumentTab; onTab: (t: DocumentTab) => void; openId?: string; openLetterId?: string }) {
+export function DocumentTabs({ projectId, tab, onTab, openId, openLetterId, openRfiId }: { projectId?: string; tab: DocumentTab; onTab: (t: DocumentTab) => void; openId?: string; openLetterId?: string; openRfiId?: string }) {
   const { user } = useAuth();
   const letters = !!user && canViewLetters(user.roleKey);
   const { data: summary } = useDocumentSummary(projectId);
+  const { data: rfiSummary } = useRfiSummary(projectId);
+  const [rfiId, setRfiId] = useState<string | null>(openRfiId ?? null);
+  const [newRfi, setNewRfi] = useState(false);
   const [docId, setDocId] = useState<string | null>(openId ?? null);
   const [transmittalId, setTransmittalId] = useState<string | null>(null);
   const [letterId, setLetterId] = useState<string | null>(openLetterId ?? null);
@@ -58,6 +64,7 @@ export function DocumentTabs({ projectId, tab, onTab, openId, openLetterId }: { 
           { key: 'register', label: count('Register', summary?.awaitingApproval, 'Current revision awaiting approval'), children: <DocumentList projectId={projectId} onOpen={setDocId} /> },
           { key: 'transmittals', label: count('Transmittals', summary?.unacknowledged, 'Not acknowledged'), children: <TransmittalList projectId={projectId} onOpen={setTransmittalId} onNew={() => setSend('new')} /> },
           ...(letters ? [{ key: 'letters', label: count('Letters', summary?.lettersAwaitingReply, 'Reply due'), children: <LetterList projectId={projectId} onOpen={setLetterId} onNew={() => setNewLetter(true)} /> }] : []),
+          { key: 'rfis', label: count('RFIs', rfiSummary?.open, 'Waiting for an answer'), children: <RfiList projectId={projectId} onOpen={setRfiId} onNew={() => setNewRfi(true)} /> },
         ]}
       />
       <DocumentDrawer
@@ -89,6 +96,8 @@ export function DocumentTabs({ projectId, tab, onTab, openId, openLetterId }: { 
           setTransmittalId(t.id);
         }}
       />
+      <RfiDrawer id={rfiId} open={!!rfiId} onClose={() => setRfiId(null)} />
+      <RfiFormModal open={newRfi} onClose={() => setNewRfi(false)} projectId={projectId} onSaved={(r) => setRfiId(r.id)} />
       {letters ? (
         <>
           <LetterDrawer id={letterId} open={!!letterId} onClose={() => setLetterId(null)} onOpen={setLetterId} />

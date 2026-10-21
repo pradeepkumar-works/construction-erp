@@ -31,6 +31,7 @@ import { BriefsModule } from './briefs/briefs.module';
 import { PhotoChecksModule } from './photo-checks/photo-checks.module';
 import { SafetyModule } from './safety/safety.module';
 import { PpeModule } from './ppe/ppe.module';
+import { RfisModule } from './rfis/rfis.module';
 import { MaintenanceModule } from './maintenance/maintenance.module';
 import { UnitsModule } from './units/units.module';
 import { SectorModule } from './sector/sector.module';
@@ -115,6 +116,7 @@ import { VitalsController } from './vitals.controller';
     PhotoChecksModule,
     SafetyModule,
     PpeModule,
+    RfisModule,
     MaintenanceModule,
     UnitsModule,
     SectorModule,

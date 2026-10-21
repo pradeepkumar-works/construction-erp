@@ -4,16 +4,17 @@ import React, { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Badge, Card, Tabs } from 'antd';
-import { usePortalBills, usePortalInspections, usePortalProject } from '@/lib/queries';
+import { usePortalBills, usePortalInspections, usePortalProject, usePortalRfis } from '@/lib/queries';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { PortalOverview } from '@/components/portal/PortalOverview';
 import { PortalDprs } from '@/components/portal/PortalDprs';
 import { PortalBills } from '@/components/portal/PortalBills';
 import { PortalInspections } from '@/components/portal/PortalInspections';
+import { PortalRfis } from '@/components/portal/PortalRfis';
 import { ProgressReportView } from '@/components/reports/ProgressReportView';
 
-const TABS = ['overview', 'dprs', 'report', 'bills', 'inspections'] as const;
+const TABS = ['overview', 'dprs', 'report', 'bills', 'inspections', 'rfis'] as const;
 type Tab = (typeof TABS)[number];
 
 function PortalProject() {
@@ -24,13 +25,15 @@ function PortalProject() {
   const { data, isLoading, error, refetch } = usePortalProject(id);
   const bills = usePortalBills(id);
   const inspections = usePortalInspections(id);
+  const rfis = usePortalRfis(id);
   const [billId, setBillId] = useState<string | null>(null);
   const [inspectionId, setInspectionId] = useState<string | null>(null);
+  const [rfiId, setRfiId] = useState<string | null>(null);
   const raw = search.get('tab') as Tab | null;
   const tab: Tab = raw && TABS.includes(raw) ? raw : 'overview';
   const go = (t: Tab) => router.replace(`${pathname}?tab=${t}`, { scroll: false });
 
-  // A notification links here with ?open=<bill or inspection id>.
+  // A notification links here with ?open=<bill, inspection or RFI id>.
   const open = search.get('open');
   useEffect(() => {
     if (!open) return;
@@ -40,11 +43,15 @@ function PortalProject() {
     } else if (inspections.data?.some((i) => i.id === open)) {
       setInspectionId(open);
       router.replace(`${pathname}?tab=inspections`, { scroll: false });
+    } else if (rfis.data?.some((r) => r.id === open)) {
+      setRfiId(open);
+      router.replace(`${pathname}?tab=rfis`, { scroll: false });
     }
-  }, [open, bills.data, inspections.data, pathname, router]);
+  }, [open, bills.data, inspections.data, rfis.data, pathname, router]);
 
   const toCertify = bills.data?.filter((b) => b.stage === 'SENT').length ?? 0;
   const requested = inspections.data?.filter((i) => i.status === 'SUBMITTED').length ?? 0;
+  const toAnswer = rfis.data?.filter((r) => r.status === 'OPEN').length ?? 0;
 
   return (
     <div className="page-container">
@@ -80,6 +87,16 @@ function PortalProject() {
                   </span>
                 ),
                 children: <PortalInspections inspections={inspections} openId={inspectionId} onOpen={setInspectionId} />,
+              },
+              {
+                key: 'rfis',
+                label: (
+                  <span>
+                    RFIs
+                    {toAnswer ? <Badge count={toAnswer} size="small" title="Waiting for your answer" style={{ marginLeft: 6 }} /> : null}
+                  </span>
+                ),
+                children: <PortalRfis rfis={rfis} openId={rfiId} onOpen={setRfiId} />,
               },
             ]}
           />

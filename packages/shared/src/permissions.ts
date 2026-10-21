@@ -189,6 +189,9 @@ export const canManageSafety = (role: RoleKey) => SAFETY_MANAGER_ROLES.includes(
 /** Hand PPE to workers and take it back: the safety officer, stores, site staff and approvers. Anyone who reports safety reads the register. */
 export const PPE_ISSUER_ROLES: RoleKey[] = ['SAFETY_OFFICER', 'STORE_MANAGER', 'SITE_ENGINEER', 'TEAM_LEADER', 'ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER'];
 export const canIssuePpe = (role: RoleKey) => PPE_ISSUER_ROLES.includes(role);
+/** Raise RFIs and record answers received by letter or mail: site and office engineers and approvers. Anyone on the project reads them. */
+export const RFI_RAISER_ROLES: RoleKey[] = ['SITE_ENGINEER', 'TEAM_LEADER', 'QUANTITY_SURVEYOR', 'QA_QC_ENGINEER', 'ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER'];
+export const canRaiseRfi = (role: RoleKey) => RFI_RAISER_ROLES.includes(role);
 export const canEditSafetyRecord = (user: SubmissionActor, byId: string): boolean => byId === user.id || canManageSafety(user.roleKey);
 
 /** Raise a delay or risk. */

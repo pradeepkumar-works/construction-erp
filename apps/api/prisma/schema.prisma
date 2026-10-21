@@ -438,6 +438,7 @@ model Organization {
   safetyIncidents      SafetyIncident[]
   toolboxTalks         ToolboxTalk[]
   ppeIssues            PpeIssue[]
+  rfis                 Rfi[]
   workPermits          WorkPermit[]
   variationLines       VariationLine[]
   maintenanceJobs      MaintenanceJob[]
@@ -575,6 +576,9 @@ model User {
   incidentsClosed      SafetyIncident[]      @relation("IncidentCloser")
   toolboxTalks         ToolboxTalk[]         @relation("ToolboxTalkRecorder")
   ppeIssued            PpeIssue[]            @relation("PpeIssuer")
+  rfisRaised           Rfi[]                 @relation("RfiRaiser")
+  rfisAnswered         Rfi[]                 @relation("RfiAnswerer")
+  rfisClosed           Rfi[]                 @relation("RfiCloser")
   ppeClosed            PpeIssue[]            @relation("PpeCloser")
   permitsRequested     WorkPermit[]          @relation("PermitRequester")
   permitsIssued        WorkPermit[]          @relation("PermitIssuer")
@@ -728,6 +732,7 @@ model Project {
   safetyIncidents  SafetyIncident[]
   toolboxTalks     ToolboxTalk[]
   ppeIssues        PpeIssue[]
+  rfis             Rfi[]
   workPermits      WorkPermit[]
   maintenanceJobs  MaintenanceJob[]
 
@@ -1223,6 +1228,7 @@ model BoqItem {
   workOrderLines WorkOrderLine[]
   variationLines VariationLine[]
   materialNorms  MaterialNorm[]
+  rfis           Rfi[]
 
   @@unique([projectId, itemNo])
   @@index([organizationId])
@@ -1840,6 +1846,7 @@ model Risk {
 
   attachments Attachment[]
   letters     Letter[]
+  rfis        Rfi[]
 
   @@unique([organizationId, riskNo])
   @@index([projectId, status])
@@ -2215,6 +2222,8 @@ model Attachment {
   defect            Defect?            @relation(fields: [defectId], references: [id], onDelete: Cascade)
   handoverId        String?
   handover          ProjectHandover?   @relation(fields: [handoverId], references: [id], onDelete: Cascade)
+  rfiId             String?
+  rfi               Rfi?               @relation(fields: [rfiId], references: [id], onDelete: Cascade)
   /// When the PDF's text was read into DocumentPage (Ask the contract); null = not yet
   textIndexedAt     DateTime?
   /// Pages with text found; 0 for a scanned PDF or one that could not be read
@@ -2255,6 +2264,7 @@ model Attachment {
   @@index([complianceDocId])
   @@index([defectId])
   @@index([handoverId])
+  @@index([rfiId])
 }
 
 model AuditLog {
@@ -2603,6 +2613,7 @@ model Document {
   updatedAt         DateTime           @updatedAt
 
   revisions DocumentRevision[] @relation("DocumentRevisions")
+  rfis      Rfi[]
 
   @@unique([projectId, docNo])
   @@index([organizationId, kind])
@@ -2984,6 +2995,7 @@ model Variation {
 
   lines       VariationLine[]
   attachments Attachment[]
+  rfis        Rfi[]
 
   @@unique([projectId, varNo])
   @@index([organizationId, status])
@@ -3082,6 +3094,74 @@ enum PpeKind {
   EAR_PROTECTION
   DUST_MASK
   GUMBOOTS
+}
+
+enum RfiStatus {
+  OPEN
+  ANSWERED
+  CLOSED
+  WITHDRAWN
+}
+
+enum RfiPriority {
+  NORMAL
+  URGENT
+}
+
+/// A request for information to the client or consultant. OPEN until answered (by the client's engineer in their
+/// portal, or recorded by staff from a letter), CLOSED once acted on, or WITHDRAWN. Raised with the phone's id, so a
+/// retried send from the outbox makes no second RFI.
+model Rfi {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  /// RFI-<year>-0001 per organisation
+  rfiNo          String
+  subject        String
+  question       String
+  /// What we suggest, so the client can just agree
+  proposal       String?
+  location       String?
+  priority       RfiPriority  @default(NORMAL)
+  status         RfiStatus    @default(OPEN)
+  /// Addressed to, as written: the client's engineer or the consultant
+  toParty        String
+  raisedOn       DateTime     @db.Date
+  replyBy        DateTime     @db.Date
+  documentId     String?
+  document       Document?    @relation(fields: [documentId], references: [id], onDelete: SetNull)
+  boqItemId      String?
+  boqItem        BoqItem?     @relation(fields: [boqItemId], references: [id], onDelete: SetNull)
+  costImpact     Boolean      @default(false)
+  timeImpact     Boolean      @default(false)
+  answer         String?
+  answeredOn     DateTime?    @db.Date
+  /// The client's engineer or consultant who answered in the portal
+  answeredById   String?
+  answeredBy     User?        @relation("RfiAnswerer", fields: [answeredById], references: [id], onDelete: SetNull)
+  /// Who answered, as recorded by staff from a letter or mail
+  answeredByName String?
+  answerRef      String?
+  closedOn       DateTime?    @db.Date
+  closeNote      String?
+  closedById     String?
+  closedBy       User?        @relation("RfiCloser", fields: [closedById], references: [id], onDelete: SetNull)
+  variationId    String?
+  variation      Variation?   @relation(fields: [variationId], references: [id], onDelete: SetNull)
+  riskId         String?
+  risk           Risk?        @relation(fields: [riskId], references: [id], onDelete: SetNull)
+  raisedById     String
+  raisedBy       User         @relation("RfiRaiser", fields: [raisedById], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  attachments Attachment[]
+
+  @@unique([organizationId, rfiNo])
+  @@index([projectId, status])
+  @@index([organizationId, status])
 }
 
 enum PpeIssueStatus {

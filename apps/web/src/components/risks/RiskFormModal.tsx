@@ -43,12 +43,14 @@ export interface RiskPrefill {
   kind?: RiskKind;
   activityId?: string;
   title?: string;
+  description?: string;
+  category?: FormValues['category'];
 }
 
 const ymd = (d: dayjs.Dayjs | null | undefined) => (d ? d.format('YYYY-MM-DD') : null);
 
 /** Raise a delay or a risk, or (with `risk`) update one, including its status. */
-export function RiskFormModal({ open, onClose, projectId, defaultProjectId, risk, prefill }: { open: boolean; onClose: () => void; projectId?: string; /** A new entry starts on this project (the header's), still changeable. */ defaultProjectId?: string; risk?: RiskDto | null; prefill?: RiskPrefill | null }) {
+export function RiskFormModal({ open, onClose, projectId, defaultProjectId, risk, prefill, onSaved }: { open: boolean; onClose: () => void; projectId?: string; /** A new entry starts on this project (the header's), still changeable. */ defaultProjectId?: string; risk?: RiskDto | null; prefill?: RiskPrefill | null; onSaved?: (r: RiskDto) => void }) {
   const [form] = Form.useForm<FormValues>();
   const { message } = App.useApp();
   const qc = useQueryClient();
@@ -113,6 +115,8 @@ export function RiskFormModal({ open, onClose, projectId, defaultProjectId, risk
         kind: k,
         activityId: prefill?.activityId,
         title: prefill?.title,
+        description: prefill?.description,
+        ...(prefill?.category ? { category: prefill.category } : {}),
         probability: k === 'DELAY' ? 5 : 3,
         impact: 3,
         delayStart: k === 'DELAY' ? dayjs() : null,
@@ -151,6 +155,7 @@ export function RiskFormModal({ open, onClose, projectId, defaultProjectId, risk
       message.success(editing ? `${x.riskNo} updated` : `${x.riskNo} raised`);
       qc.invalidateQueries({ queryKey: ['risks'] });
       qc.invalidateQueries({ queryKey: ['notifications'] });
+      onSaved?.(x);
     },
     meta: FAIL_NOTICE,
   });

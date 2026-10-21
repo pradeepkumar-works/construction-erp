@@ -1,4 +1,4 @@
-import type { LdPeriod, GrnQcStatus, ComplianceDocKind, ComplianceDocStatus, DefectPhase, DefectPriority, DefectStatus, ImprestEntryKind, ImprestEntryStatus, WorkerIdType, WorkerSkill, EquipmentDocType, MaintenanceKind, MaintenanceStatus, BillStage, ReceiptKind, VendorKind, MsmeCategory, EquipmentOwnership, ExpenseCategory, PaymentMode, EquipmentRateUnit, MaterialPriority, NotificationType, ProjectStatus, ProjectType, DelayParty, PasswordTokenPurpose, RiskCategory, RiskKind, RiskStatus, RoleKey, SafetyIncidentStatus, SafetyIncidentType, StockEntryType, SubmissionStatus, SubmissionType, Weather, WorkPermitStatus, WorkPermitType, PpeKind, PpeIssueStatus } from './enums';
+import type { LdPeriod, GrnQcStatus, ComplianceDocKind, ComplianceDocStatus, DefectPhase, DefectPriority, DefectStatus, ImprestEntryKind, ImprestEntryStatus, WorkerIdType, WorkerSkill, EquipmentDocType, MaintenanceKind, MaintenanceStatus, BillStage, ReceiptKind, VendorKind, MsmeCategory, EquipmentOwnership, ExpenseCategory, PaymentMode, EquipmentRateUnit, MaterialPriority, NotificationType, ProjectStatus, ProjectType, DelayParty, PasswordTokenPurpose, RiskCategory, RiskKind, RiskStatus, RoleKey, SafetyIncidentStatus, SafetyIncidentType, StockEntryType, SubmissionStatus, SubmissionType, Weather, WorkPermitStatus, WorkPermitType, PpeKind, PpeIssueStatus, RfiStatus, RfiPriority } from './enums';
 
 export const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {
   ROAD: 'Road / Infrastructure',
@@ -311,4 +311,16 @@ export const PPE_ISSUE_STATUS_LABELS: Record<PpeIssueStatus, string> = {
   RETURNED: 'Returned',
   REPLACED: 'Replaced',
   LOST: 'Lost',
+};
+
+export const RFI_STATUS_LABELS: Record<RfiStatus, string> = {
+  OPEN: 'Waiting for answer',
+  ANSWERED: 'Answered',
+  CLOSED: 'Closed',
+  WITHDRAWN: 'Withdrawn',
+};
+
+export const RFI_PRIORITY_LABELS: Record<RfiPriority, string> = {
+  NORMAL: 'Normal',
+  URGENT: 'Urgent',
 };

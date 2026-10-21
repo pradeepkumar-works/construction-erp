@@ -5,6 +5,7 @@ import { InspectionsModule } from '../inspections/inspections.module';
 import { ReportsModule } from '../reports/reports.module';
 import { PortalController } from './portal.controller';
 import { PortalService } from './portal.service';
+import { RfisModule } from '../rfis/rfis.module';
 
-@Module({ imports: [DprModule, RaBillsModule, InspectionsModule, ReportsModule], controllers: [PortalController], providers: [PortalService] })
+@Module({ imports: [DprModule, RaBillsModule, InspectionsModule, ReportsModule, RfisModule], controllers: [PortalController], providers: [PortalService] })
 export class PortalModule {}
