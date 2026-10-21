@@ -12,7 +12,7 @@ import { FAIL_NOTICE } from '@/lib/notify';
 import { useMyStaff } from '@/lib/queries';
 import { formatDate } from '@/lib/format';
 import { Loading, QueryError } from '@/components/common/QueryState';
-import { AttendanceTag, LeaveStatusTag, clock, leaveSpan } from './staffUi';
+import { AttendanceTag, CheckInPlaceTag, LeaveStatusTag, OvertimeTag, clock, currentPosition, leaveSpan, metres } from './staffUi';
 import { LeaveFormModal } from './LeaveFormModal';
 import { themeFontSize } from '@/lib/theme';
 import { Section } from '@/components/common/Section';
@@ -25,8 +25,12 @@ export function MyStaff() {
   const [apply, setApply] = useState(false);
 
   const act = useMutation({
-    mutationFn: async (what: 'check-in' | 'check-out' | { cancel: string }) =>
-      typeof what === 'string' ? (await api.post(`/staff/me/${what}`, {})).data : (await api.post(`/staff/leave/${what.cancel}/cancel`)).data,
+    mutationFn: async (what: 'check-in' | 'check-out' | { cancel: string }) => {
+      if (typeof what !== 'string') return (await api.post(`/staff/leave/${what.cancel}/cancel`)).data;
+      // Check-in sends where the browser is (v5 item 97) when the site has a location to measure from.
+      const at = what === 'check-in' && data?.site ? await currentPosition() : null;
+      return (await api.post(`/staff/me/${what}`, at ?? {})).data;
+    },
     onSuccess: (_, what) => {
       message.success(what === 'check-in' ? 'Checked in' : what === 'check-out' ? 'Checked out' : 'Leave cancelled');
       qc.invalidateQueries({ queryKey: ['staff'] });
@@ -80,13 +84,25 @@ export function MyStaff() {
                 </Space>
                 <Typography.Text>
                   In {clock(t.checkIn)} · Out {clock(t.checkOut)}
-                  {t.overtimeHours && Number(t.overtimeHours) > 0 ? ` · Overtime ${t.overtimeHours} h` : ''}
                 </Typography.Text>
+                <CheckInPlaceTag place={t.checkInPlace} />
+                {t.overtimeHours && Number(t.overtimeHours) > 0 ? (
+                  <Space size={4} wrap>
+                    <Typography.Text>Overtime {t.overtimeHours} h</Typography.Text>
+                    {t.overtimeStatus && <OvertimeTag status={t.overtimeStatus} />}
+                    {t.overtimeStatus === 'PENDING' && <Typography.Text type="secondary">Paid once your manager approves it</Typography.Text>}
+                  </Space>
+                ) : null}
                 {!t.checkIn && <Typography.Text type="secondary">Marked by {t.markedByName}</Typography.Text>}
               </Space>
             ) : (
               <Typography.Text type="secondary">Not checked in yet.</Typography.Text>
             )}
+            {!t?.checkIn && data.site ? (
+              <Typography.Paragraph type="secondary" style={{ marginTop: 8, marginBottom: 0 }}>
+                Check-in records your location: {data.site.strict ? 'it must be' : 'it is flagged unless'} within {metres(data.site.radiusM)} of {data.site.projectName}.
+              </Typography.Paragraph>
+            ) : null}
             <div style={{ marginTop: 12 }}>
               {!t?.checkIn ? (
                 <Button type="primary" icon={<LoginOutlined />} loading={act.isPending} onClick={() => act.mutate('check-in')}>

@@ -25,6 +25,7 @@ const ICON: Record<NotificationType, { name: keyof typeof Ionicons.glyphMap; col
   TEST_FAILED: { name: 'flask', color: colors.danger, bg: colors.dangerSoft },
   DOCUMENT_ISSUED: { name: 'document-text', color: colors.success, bg: colors.successSoft },
   LEAVE: { name: 'calendar', color: colors.info, bg: colors.infoSoft },
+  OVERTIME: { name: 'time', color: colors.info, bg: colors.infoSoft },
   NCR: { name: 'warning', color: colors.warning, bg: colors.warningSoft },
   BILLS_DUE: { name: 'wallet', color: colors.accent, bg: colors.accentSoft },
   PORTAL: { name: 'business', color: colors.info, bg: colors.infoSoft },

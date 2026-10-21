@@ -37,6 +37,12 @@
         }
       ],
       [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Nirmaan checks you are at the site when you check in for the day."
+        }
+      ],
+      [
         "expo-notifications",
         {
           "color": "#1E63D6",

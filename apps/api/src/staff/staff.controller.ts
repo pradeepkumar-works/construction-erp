@@ -148,6 +148,25 @@ export class StaffController {
     return this.staff.rejectLeave(user, id, dto);
   }
 
+  /* overtime (v5 item 97) */
+
+  @ApiOperation({ summary: 'Overtime waiting for a decision that the caller may decide, oldest first' })
+  @Get('overtime')
+  overtime(@CurrentUser() user: RequestUser) {
+    return this.staff.overtimeToDecide(user);
+  }
+
+  @ApiOperation({ summary: 'Approve overtime: HR or the manager of the employee’s site, never their own' })
+  @Post('attendance/:id/overtime/approve')
+  approveOvertime(@CurrentUser() user: RequestUser, @Param('id') id: string, @Body() dto: DecideLeaveDto) {
+    return this.staff.decideOvertime(user, id, 'APPROVED', dto.note);
+  }
+
+  @Post('attendance/:id/overtime/reject')
+  rejectOvertime(@CurrentUser() user: RequestUser, @Param('id') id: string, @Body() dto: RejectLeaveDto) {
+    return this.staff.decideOvertime(user, id, 'REJECTED', dto.note);
+  }
+
   @ApiOperation({ summary: 'Cancel leave: the employee before it starts, or HR at any time' })
   @Post('leave/:id/cancel')
   cancel(@CurrentUser() user: RequestUser, @Param('id') id: string) {

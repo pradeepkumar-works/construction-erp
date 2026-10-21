@@ -35,6 +35,9 @@ export class ListEmployeesQuery extends PageQuery {
 
 export class CheckInDto {
   @ApiPropertyOptional({ description: 'Site worked at today when not their posting' }) @IsOptional() @IsUUID() projectId?: string;
+  @ApiPropertyOptional({ description: 'Where the phone or browser is (v5 item 97), decimal degrees' }) @IsOptional() @IsNumber() @Min(-90) @Max(90) lat?: number;
+  @ApiPropertyOptional() @IsOptional() @IsNumber() @Min(-180) @Max(180) lng?: number;
+  @ApiPropertyOptional({ description: 'How sure the position is, metres' }) @IsOptional() @IsNumber() @Min(0) @Max(100_000) accuracyM?: number;
 }
 
 export class RegisterQuery {

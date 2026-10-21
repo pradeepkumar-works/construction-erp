@@ -146,6 +146,7 @@ async function main() {
     await seedDocuments(org.id);
     await seedContractDocuments(org.id);
     await seedStaff(org.id);
+    await seedAttendanceExtras(org.id);
     await seedGuests(org.id);
     await seedVariations(org.id);
     await seedRfis(org.id);
@@ -329,6 +330,7 @@ async function main() {
   await seedDocuments(org.id);
   await seedContractDocuments(org.id);
   await seedStaff(org.id);
+  await seedAttendanceExtras(org.id);
   await seedGuests(org.id);
   await seedVariations(org.id);
   await seedRfis(org.id);
@@ -2969,6 +2971,55 @@ const DEMO_STAFF: [string, string, string, string, string | null, string | null]
  * national and site holidays for the year, the last 30 days of attendance at the sites (today is left unmarked so
  * check-in and the register can be demoed) and leave in every state. Priya worked a Sunday, so she has a comp-off.
  */
+/**
+ * Attendance extras (v5 item 97): the demo sites get a location for GPS check-in; on a fresh seed the last week's
+ * overtime waits for the site manager (older overtime approved), and the surveyor was on duty at the client's office.
+ * Each part runs once.
+ */
+async function seedAttendanceExtras(organizationId: string) {
+  const sites: [string, string, string, number][] = [
+    ['RD-2026-01', '20.114600', '85.831400', 500],
+    ['BL-2026-02', '20.462500', '85.883000', 200],
+    ['WS-2026-03', '20.848500', '86.336600', 400],
+  ];
+  for (const [code, lat, lng, radius] of sites)
+    await prisma.project.updateMany({ where: { organizationId, code, siteLat: null }, data: { siteLat: D(lat), siteLng: D(lng), siteRadiusM: radius } });
+
+  if ((await prisma.staffAttendance.count({ where: { organizationId, overtimeStatus: { not: null } } })) === 0) {
+    const rows = await prisma.staffAttendance.findMany({
+      where: { organizationId, overtimeHours: { gt: 0 } },
+      select: { id: true, date: true, markedById: true, employee: { select: { project: { select: { projectManagerId: true } } } } },
+    });
+    for (const r of rows) {
+      const recent = r.date >= day(-7);
+      const decider = r.employee.project?.projectManagerId ?? r.markedById;
+      await prisma.staffAttendance.update({
+        where: { id: r.id },
+        data: recent ? { overtimeStatus: 'PENDING' } : { overtimeStatus: 'APPROVED', overtimeDecidedById: decider, overtimeDecidedAt: new Date(r.date.getTime() + 86_400_000) },
+      });
+    }
+  }
+
+  if ((await prisma.leaveRequest.count({ where: { organizationId, type: 'ON_DUTY' } })) === 0) {
+    const e = await prisma.employee.findFirst({ where: { organizationId, employeeCode: 'EMP-014' }, select: { id: true, project: { select: { projectManagerId: true } } } });
+    const hr = await prisma.user.findFirst({ where: { organizationId, email: 'hr@demo.com' }, select: { id: true } });
+    let from = -2;
+    while (isWeeklyOff(day(from).toISOString().slice(0, 10))) from -= 1;
+    const decider = e?.project?.projectManagerId ?? hr?.id;
+    if (e && hr && decider) {
+      const l = await prisma.leaveRequest.create({
+        data: {
+          organizationId, employeeId: e.id, type: 'ON_DUTY', fromDate: day(from), toDate: day(from), halfDay: false, days: D(1),
+          reason: 'Joint survey with the Works Department at their Khordha office', status: 'APPROVED', appliedById: hr.id,
+          decidedById: decider, decidedAt: day(from - 1), createdAt: day(from - 2),
+        },
+      });
+      await prisma.staffAttendance.deleteMany({ where: { employeeId: e.id, date: day(from) } });
+      await prisma.auditLog.create({ data: { organizationId, entityType: 'LEAVE', entityId: l.id, action: 'APPROVED', actorId: decider, note: null, createdAt: day(from - 1) } });
+    }
+  }
+}
+
 async function seedStaff(organizationId: string) {
   if ((await prisma.employee.count({ where: { organizationId } })) > 0) return;
   const year = new Date().getUTCFullYear();

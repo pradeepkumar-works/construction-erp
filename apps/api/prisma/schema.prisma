@@ -142,6 +142,7 @@ enum NotificationType {
   NCR
   DOCUMENT_ISSUED
   LEAVE
+  OVERTIME
   PORTAL
   BILLS_DUE
   SAFETY
@@ -243,6 +244,17 @@ enum LeaveType {
   EARNED
   COMP_OFF
   UNPAID
+  /// Attendance extras (v5 item 97): away on company work for the day; counted present, not against a balance
+  ON_DUTY
+  /// Away on a site visit or tour for one or more days; counted present, not against a balance
+  TOUR
+}
+
+/// Attendance extras (v5 item 97): overtime from a check-out waits for the posting's project manager or HR
+enum OvertimeStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 enum LeaveStatus {
@@ -656,6 +668,7 @@ model User {
   maintenanceClosed    MaintenanceJob[]         @relation("MaintenanceCloser")
   employee             Employee?                @relation("EmployeeLogin")
   staffMarked          StaffAttendance[]        @relation("StaffAttendanceMarker")
+  overtimeDecided      StaffAttendance[]        @relation("StaffOvertimeDecider")
   workerDaysMarked     WorkerAttendance[]       @relation("WorkerAttendanceMarker")
   imprestsHeld         Imprest[]                @relation("ImprestHolder")
   imprestsOpened       Imprest[]                @relation("ImprestOpener")
@@ -753,6 +766,12 @@ model Project {
   /// Estimate (v5 item 92): overheads and profit added to the cost of each BOQ item's resources for its built-up rate, %
   estimateOverheadPct   Decimal        @default(5) @db.Decimal(5, 2)
   estimateProfitPct     Decimal        @default(10) @db.Decimal(5, 2)
+  /// Attendance extras (v5 item 97): where the site is, for GPS check-in; a check-in further than the radius is flagged
+  siteLat               Decimal?       @db.Decimal(9, 6)
+  siteLng               Decimal?       @db.Decimal(9, 6)
+  siteRadiusM           Int?
+  /// Refuse a check-in from outside the radius (or without a position) instead of only flagging it
+  siteCheckInStrict     Boolean        @default(false)
   createdAt             DateTime       @default(now())
   updatedAt             DateTime       @updatedAt
 
@@ -3329,24 +3348,36 @@ model WorkerAttendance {
 
 /// One employee's day: marked by the site in-charge or by themselves (check in / check out).
 model StaffAttendance {
-  id             String                @id @default(uuid())
-  organizationId String
-  organization   Organization          @relation(fields: [organizationId], references: [id])
-  employeeId     String
-  employee       Employee              @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  date           DateTime              @db.Date
+  id                  String                @id @default(uuid())
+  organizationId      String
+  organization        Organization          @relation(fields: [organizationId], references: [id])
+  employeeId          String
+  employee            Employee              @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  date                DateTime              @db.Date
   /// Where they worked that day (their posting unless marked elsewhere)
-  projectId      String?
-  project        Project?              @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  status         StaffAttendanceStatus
-  checkIn        DateTime?
-  checkOut       DateTime?
-  overtimeHours  Decimal?              @db.Decimal(4, 1)
-  note           String?
-  markedById     String
-  markedBy       User                  @relation("StaffAttendanceMarker", fields: [markedById], references: [id])
-  createdAt      DateTime              @default(now())
-  updatedAt      DateTime              @updatedAt
+  projectId           String?
+  project             Project?              @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  status              StaffAttendanceStatus
+  checkIn             DateTime?
+  checkOut            DateTime?
+  overtimeHours       Decimal?              @db.Decimal(4, 1)
+  /// Attendance extras (v5 item 97): where the phone or browser was at check-in, and whether that was inside the site's radius
+  checkInLat          Decimal?              @db.Decimal(9, 6)
+  checkInLng          Decimal?              @db.Decimal(9, 6)
+  checkInAccuracyM    Int?
+  checkInDistanceM    Int?
+  checkInInside       Boolean?
+  /// Overtime waits for a decision; payroll pays approved overtime only
+  overtimeStatus      OvertimeStatus?
+  overtimeDecidedById String?
+  overtimeDecidedBy   User?                 @relation("StaffOvertimeDecider", fields: [overtimeDecidedById], references: [id])
+  overtimeDecidedAt   DateTime?
+  overtimeNote        String?
+  note                String?
+  markedById          String
+  markedBy            User                  @relation("StaffAttendanceMarker", fields: [markedById], references: [id])
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
 
   @@unique([employeeId, date])
   @@index([organizationId, date])

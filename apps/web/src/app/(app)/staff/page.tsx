@@ -16,8 +16,9 @@ import { EmployeeList } from '@/components/staff/EmployeeList';
 import { EmployeeDrawer } from '@/components/staff/EmployeeDrawer';
 import { EmployeeFormModal } from '@/components/staff/EmployeeFormModal';
 import { HolidayList } from '@/components/staff/HolidayList';
+import { OvertimeList } from '@/components/staff/OvertimeList';
 
-const TABS = ['me', 'leave', 'register', 'staff', 'holidays'] as const;
+const TABS = ['me', 'leave', 'overtime', 'register', 'staff', 'holidays'] as const;
 type Tab = (typeof TABS)[number];
 
 function StaffPage() {
@@ -29,8 +30,9 @@ function StaffPage() {
   const marks = !!user && canMarkStaff(user.roleKey);
   const admin = !!user && canManageStaff(user.roleKey);
   const deciding = marks || !!summary?.leaveToDecide;
+  const overtime = marks || !!summary?.overtimeToDecide;
   const raw = search.get('tab') as Tab | null;
-  const allowed = (t: Tab) => t === 'me' || t === 'holidays' || (t === 'leave' && deciding) || ((t === 'register' || t === 'staff') && marks);
+  const allowed = (t: Tab) => t === 'me' || t === 'holidays' || (t === 'leave' && deciding) || (t === 'overtime' && overtime) || ((t === 'register' || t === 'staff') && marks);
   const tab: Tab = raw && TABS.includes(raw) && allowed(raw) ? raw : 'me';
   // Leave notifications link here with ?tab=leave&leave=<id>
   const [leaveId, setLeaveId] = useState<string | null>(search.get('leave'));
@@ -60,6 +62,20 @@ function StaffPage() {
                       </span>
                     ),
                     children: <LeaveList onOpen={setLeaveId} onNew={() => setApplyFor(true)} toDecideFirst={!!summary?.leaveToDecide} />,
+                  },
+                ]
+              : []),
+            ...(overtime
+              ? [
+                  {
+                    key: 'overtime',
+                    label: (
+                      <span>
+                        Overtime
+                        {summary?.overtimeToDecide ? <Badge count={summary.overtimeToDecide} size="small" title="Waiting on you" style={{ marginLeft: 6 }} /> : null}
+                      </span>
+                    ),
+                    children: <OvertimeList />,
                   },
                 ]
               : []),

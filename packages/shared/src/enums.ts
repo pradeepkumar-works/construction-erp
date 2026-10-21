@@ -57,6 +57,7 @@ export const NOTIFICATION_TYPES = [
   'NCR',
   'DOCUMENT_ISSUED',
   'LEAVE',
+  'OVERTIME',
   'BILLS_DUE',
   'PORTAL',
   'SAFETY',

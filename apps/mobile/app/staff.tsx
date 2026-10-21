@@ -5,6 +5,7 @@ import {
   LEAVE_STATUS_LABELS,
   LEAVE_TYPES,
   LEAVE_TYPE_LABELS,
+  OVERTIME_STATUS_LABELS,
   STAFF_ATTENDANCE_LABELS,
   canMarkStaff,
   leaveDays,
@@ -12,7 +13,9 @@ import {
   type LeaveStatus,
   type LeaveType,
   type MyStaffDto,
+  type OvertimeStatus,
   type Paginated,
+  type StaffAttendanceDto,
 } from '@erp/shared';
 import { useAuth } from '../src/auth/AuthContext';
 import { useApi, useFetch } from '../src/api/hooks';
@@ -22,12 +25,19 @@ import type { TranslateVars } from '../src/i18n/translate';
 import { Button, Card, Chips, DatePicker, EmptyState, ErrorBanner, ErrorState, Input, Loading, Pill, Screen, SectionTitle } from '../src/components';
 import { colors, fontSize, spacing, toneIcon, typography, type Tone } from '../src/theme';
 import { formatDate, formatTime, isIsoDate, today } from '../src/utils/format';
+import { checkInPosition, metres } from '../src/utils/location';
 
 const STATUS_TONE: Record<LeaveStatus, Tone> = {
   PENDING: { fg: colors.warning, bg: colors.warningSoft, icon: toneIcon.waiting },
   APPROVED: { fg: colors.success, bg: colors.successSoft, icon: toneIcon.done },
   REJECTED: { fg: colors.danger, bg: colors.dangerSoft, icon: toneIcon.failed },
   CANCELLED: { fg: colors.neutral, bg: colors.neutralSoft, icon: 'remove-circle-outline' },
+};
+
+const OVERTIME_TONE: Record<OvertimeStatus, Tone> = {
+  PENDING: { fg: colors.warning, bg: colors.warningSoft, icon: toneIcon.waiting },
+  APPROVED: { fg: colors.success, bg: colors.successSoft, icon: toneIcon.done },
+  REJECTED: { fg: colors.danger, bg: colors.dangerSoft, icon: toneIcon.failed },
 };
 
 const clock = (iso: string | null) => (iso ? formatTime(iso) : '-');
@@ -66,6 +76,45 @@ function LeaveRow({ l, mine, busy, onCancel, onApprove, onReject }: { l: LeaveRe
   );
 }
 
+/** Where a check-in was (v5 item 97): at the site, outside it, or a position with no site location to measure from. */
+function PlacePill({ place }: { place: StaffAttendanceDto['checkInPlace'] }) {
+  const t = useT();
+  if (!place) return null;
+  if (place.inside === null) return <Pill text={t('Location recorded')} fg={colors.neutral} bg={colors.neutralSoft} icon="location-outline" />;
+  const far = place.distanceM !== null ? metres(place.distanceM) : null;
+  return place.inside ? (
+    <Pill text={far ? t('At the site ({distance})', { distance: far }) : t('At the site')} fg={colors.success} bg={colors.successSoft} icon="location-outline" />
+  ) : (
+    <Pill text={far ? t('Outside the site, {distance} away', { distance: far }) : t('Outside the site')} fg={colors.warning} bg={colors.warningSoft} icon="warning-outline" />
+  );
+}
+
+/** A day's overtime waiting on the site manager or HR (v5 item 97). */
+function OvertimeRow({ a, busy, onApprove, onReject }: { a: StaffAttendanceDto; busy: boolean; onApprove: () => void; onReject: () => void }) {
+  const t = useT();
+  return (
+    <View style={styles.row}>
+      <View style={styles.rowHead}>
+        <Text style={typography.bodyStrong}>{a.employeeName}</Text>
+        <Text style={typography.bodyStrong}>{t('{h} h', { h: a.overtimeHours ?? '0' })}</Text>
+      </View>
+      <Text style={typography.caption}>
+        {formatDate(a.date)} · {a.checkIn ? t('In {in} · Out {out}', { in: clock(a.checkIn), out: clock(a.checkOut) }) : t('In the register')}
+      </Text>
+      {a.projectName ? <Text style={typography.caption}>{a.projectName}</Text> : null}
+      <View style={styles.pills}>
+        <PlacePill place={a.checkInPlace} />
+      </View>
+      {a.canDecideOvertime ? (
+        <View style={styles.actions}>
+          <Button title={t('Reject')} size="sm" variant="secondary" disabled={busy} onPress={onReject} />
+          <Button title={t('Approve')} size="sm" disabled={busy} onPress={onApprove} />
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
 /**
  * The signed-in person's staff record: check in and out for today, leave left for the year, apply for leave and see
  * their requests. Site managers and HR also approve the leave waiting on them here.
@@ -77,6 +126,7 @@ export default function StaffScreen() {
   const { user } = useAuth();
   const me = useFetch<MyStaffDto>((a) => a.get('/staff/me'), [], { cacheKey: 'staff:me' });
   const toDecide = useFetch<Paginated<LeaveRequestDto>>((a) => a.get('/staff/leave', { toDecide: 'true', pageSize: 50, sortBy: 'fromDate', sortOrder: 'asc' }), []);
+  const overtime = useFetch<StaffAttendanceDto[]>((a) => a.get('/staff/overtime'), []);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [applying, setApplying] = useState(false);
@@ -97,7 +147,7 @@ export default function StaffScreen() {
     setError(null);
     try {
       await fn();
-      await Promise.all([me.reload(), toDecide.reload()]);
+      await Promise.all([me.reload(), toDecide.reload(), overtime.reload()]);
       Alert.alert(done);
       return true;
     } catch (e) {
@@ -133,14 +183,32 @@ export default function StaffScreen() {
           { text: t('Reject'), style: 'destructive', onPress: () => void run(() => api.post(`/staff/leave/${l.id}/reject`, { note: 'Not possible on these dates; please speak to me' }), t('Leave rejected')) },
         ]);
 
+  const rejectOvertime = (a: StaffAttendanceDto) => {
+    const send = (note: string) => void run(() => api.post(`/staff/attendance/${a.id}/overtime/reject`, { note }), t('Overtime rejected'));
+    return Platform.OS === 'ios'
+      ? Alert.prompt(t('Reject overtime'), t('Why, so they know what counts'), (note) => note?.trim() && send(note.trim()))
+      : Alert.alert(t('Reject overtime'), t("Reject {name}'s {h} h overtime on {date}?", { name: a.employeeName, h: a.overtimeHours ?? '0', date: formatDate(a.date) }), [
+          { text: t('Keep'), style: 'cancel' },
+          { text: t('Reject'), style: 'destructive', onPress: () => send('Not agreed in advance; please speak to me') },
+        ]);
+  };
+
+  // Check-in sends where the phone is when the site has a location to measure from (v5 item 97).
+  const checkIn = () =>
+    void run(async () => {
+      const at = data?.site ? await checkInPosition() : null;
+      return api.post('/staff/me/check-in', at ?? {});
+    }, t('Checked in'));
+
   if (me.loading && !data) return <Loading />;
   if (me.error && !data) return <ErrorState message={me.error} onRetry={me.reload} />;
   if (!data) return null;
 
   const day = data.today;
   const waiting = toDecide.data?.items ?? [];
+  const otWaiting = overtime.data ?? [];
   return (
-    <Screen keyboard refreshing={me.refreshing} onRefresh={() => void Promise.all([me.refresh(), toDecide.refresh()])}>
+    <Screen keyboard refreshing={me.refreshing} onRefresh={() => void Promise.all([me.refresh(), toDecide.refresh(), overtime.refresh()])}>
       <ErrorBanner message={error} />
       {!data.employee ? (
         <Card>
@@ -164,13 +232,28 @@ export default function StaffScreen() {
                   {t('In {in} · Out {out}', { in: clock(day.checkIn), out: clock(day.checkOut) })}
                   {day.overtimeHours && Number(day.overtimeHours) > 0 ? ` · ${t('Overtime {h} h', { h: day.overtimeHours })}` : ''}
                 </Text>
+                <View style={styles.pills}>
+                  <PlacePill place={day.checkInPlace} />
+                  {day.overtimeStatus && day.overtimeHours && Number(day.overtimeHours) > 0 ? (
+                    <Pill text={t('Overtime: {status}', { status: t(OVERTIME_STATUS_LABELS[day.overtimeStatus]).toLowerCase() })} {...OVERTIME_TONE[day.overtimeStatus]} />
+                  ) : null}
+                </View>
+                {day.overtimeStatus === 'PENDING' ? <Text style={typography.caption}>{t('Overtime is paid once your manager approves it.')}</Text> : null}
               </>
             ) : (
               <Text style={typography.caption}>{t('Not checked in yet.')}</Text>
             )}
+            {!day?.checkIn && data.site ? (
+              <Text style={typography.caption}>
+                {t(data.site.strict ? 'Check-in records your location: you must be within {distance} of {site}.' : 'Check-in records your location: it is flagged if you are more than {distance} from {site}.', {
+                  distance: metres(data.site.radiusM),
+                  site: data.site.projectName,
+                })}
+              </Text>
+            ) : null}
             <View style={styles.actions}>
               {!day?.checkIn ? (
-                <Button title={t('Check in')} icon="log-in-outline" loading={busy} onPress={() => void run(() => api.post('/staff/me/check-in', {}), t('Checked in'))} />
+                <Button title={t('Check in')} icon="log-in-outline" loading={busy} onPress={checkIn} />
               ) : !day.checkOut ? (
                 <Button title={t('Check out')} icon="log-out-outline" variant="secondary" loading={busy} onPress={() => void run(() => api.post('/staff/me/check-out'), t('Checked out'))} />
               ) : null}
@@ -242,6 +325,21 @@ export default function StaffScreen() {
         </>
       ) : null}
 
+      {otWaiting.length ? (
+        <>
+          <SectionTitle title={t('Overtime waiting on you ({n})', { n: otWaiting.length })} />
+          {otWaiting.map((a) => (
+            <OvertimeRow
+              key={a.id}
+              a={a}
+              busy={busy}
+              onApprove={() => void run(() => api.post(`/staff/attendance/${a.id}/overtime/approve`, {}), t('Overtime approved for {name}', { name: a.employeeName }))}
+              onReject={() => rejectOvertime(a)}
+            />
+          ))}
+        </>
+      ) : null}
+
       {data.employee ? (
         <>
           <SectionTitle title={t('My leave')} />
@@ -285,6 +383,7 @@ export default function StaffScreen() {
 const styles = StyleSheet.create({
   row: { backgroundColor: colors.surface, borderRadius: 12, padding: spacing.md, marginBottom: spacing.sm, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, gap: 2 },
   rowHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  pills: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginTop: spacing.xs },
   actions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md, flexWrap: 'wrap' },
   balances: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.md },
   balance: { width: '50%', paddingVertical: spacing.sm },

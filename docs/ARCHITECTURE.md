@@ -604,9 +604,32 @@ flow, not `SubmissionLifecycleService`: it is a person's request, not site data 
   admin (any time) cancels.
 - **Notification.** `LEAVE`: an application goes to HR managers and the posting's project manager (admins and
   management when the company has no HR); a decision goes to the employee and whoever applied.
-- **Clients.** Web: People → Staff and leave with tabs My attendance and leave, Leave (`?leave=` opens one), Staff
-  register, Staff and Holidays. Site app: My attendance & leave (`app/staff.tsx`: check in and out, balances, apply,
-  leave waiting on you) and Staff register (`app/staff-register.tsx`).
+- **Clients.** Web: People → Staff and leave with tabs My attendance and leave, Leave (`?leave=` opens one), Overtime,
+  Staff register, Staff and Holidays. Site app: My attendance & leave (`app/staff.tsx`: check in and out, balances,
+  apply, leave and overtime waiting on you) and Staff register (`app/staff-register.tsx`).
+
+### Attendance extras (v5 item 97)
+
+- **GPS check-in.** A project can carry its site's location (`siteLat`, `siteLng`, `siteRadiusM`, default 300 m) and
+  `siteCheckInStrict`, set in the project form (both coordinates or neither; strict needs a location). `MyStaffDto.site`
+  is the posting's location. The web (browser geolocation) and the phone (`expo-location`, `src/utils/location.ts`,
+  while in use) send `lat`, `lng` and `accuracyM` with the check-in when the site has a location; the server works out
+  the distance (`checkInPlace` in `packages/shared/src/staff.ts`, haversine, allowing the position's accuracy up to
+  50 m) and stores `checkInLat/Lng/AccuracyM/DistanceM/Inside` on `StaffAttendance`. Outside is flagged (orange tag in
+  the register, on My attendance and on the overtime list); a strict site refuses a check-in from outside or without a
+  position, with a message saying what to do. The register is the fallback: the site manager can still mark anyone.
+  `expo-location` is a native module, so the phone needs the next store build; until then a check-in sends no position.
+- **On duty and tour.** `LeaveType` `ON_DUTY` and `TOUR` are requested and decided like leave but have no balance
+  (`LEAVE_ENTITLEMENT` null) and count present and paid in payroll (`countsAsPresent`), each still shown in its own
+  column.
+- **Overtime approval.** `StaffAttendance.overtimeStatus` (`OvertimeStatus` PENDING / APPROVED / REJECTED, with who and
+  when, and a note). Overtime from a check-out waits; overtime typed in the register is approved when the person
+  saving it may decide it (`canDecideLeave`: a staff admin or the posting's project manager), else it waits; an
+  unchanged value keeps its decision. `GET /staff/overtime` lists what waits on the caller (`leaveDeciderWhere`),
+  `POST /staff/attendance/:id/overtime/approve|reject` decides it (reject needs a reason), audited as
+  `STAFF_OVERTIME`. Notification `OVERTIME`: a check-out with overtime tells the leave approvers, a decision tells the
+  employee. `StaffSummaryDto.overtimeToDecide` badges the Overtime tab. Payroll's `overtimeHours` is approved overtime
+  only (rows from before the migration were set approved), and `overtimePendingHours` shows what still waits.
 
 ## Payroll inputs
 

@@ -448,8 +448,11 @@ carries on after the UX items (to 89). Migrations stay additive. Design notes fo
     /dashboard/company-today` in `HomeService` (`seesCompanyToday`, each part behind its module's helper) and Company
     today at the top of the phone's Home, each tile's list in a sheet, kept for offline, in Hindi. ARCHITECTURE
     "Management view on the phone".
-97. **Attendance extras** (S + M, kept by Pradeep on 21 Oct). GPS check-in inside the site's area (new `expo-location`,
-    next store build), on-duty and tour requests, overtime approval.
+97. ~~**Attendance extras** (S + M, kept by Pradeep on 21 Oct). GPS check-in inside the site's area (new `expo-location`,
+    next store build), on-duty and tour requests, overtime approval.~~ Done: a project's site location and radius (and
+    whether to refuse from outside), check-in records the position and whether it was inside (`checkInPlace`), `ON_DUTY`
+    and `TOUR` leave counted present and paid, overtime from check-out waits for the site manager or HR (`/staff/overtime`)
+    and payroll pays approved overtime only. `expo-location` needs the next store build. ARCHITECTURE "Attendance extras".
 
 Later, when a customer asks: group companies under one login, head-office overheads to projects, leads and tendering,
 TDS payable summary, a terms and conditions library, scrap sale bills, client dues reminders, multi-currency.

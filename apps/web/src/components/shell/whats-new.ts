@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-attendance-extras',
+    date: '2026-11-03',
+    title: 'Check-in at the site, on duty and tour, overtime approval',
+    points: [
+      "A project can now hold its site's location and a radius (in the project form). Check-in records where the phone or browser is and shows At the site or Outside the site; tick Refuse a check-in from outside to make it a rule. The phone app needs its next update for this.",
+      'On duty and Tour are new kinds of leave request for work away from the site: approved like leave, with no balance, and counted present and paid in payroll.',
+      'Overtime from a check-out now waits for the site manager or HR under Staff and leave → Overtime. Payroll pays approved overtime only and shows what still waits.',
+    ],
+  },
+  {
     id: '2026-11-company-today',
     date: '2026-11-02',
     title: 'The company today, on the phone',

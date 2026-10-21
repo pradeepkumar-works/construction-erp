@@ -137,6 +137,7 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   NCR: 'Non-conformance',
   DOCUMENT_ISSUED: 'Drawing issued',
   LEAVE: 'Leave',
+  OVERTIME: 'Overtime',
   BILLS_DUE: 'Payments due',
   PORTAL: 'Client portal',
   SAFETY: 'Safety',
