@@ -382,6 +382,37 @@ preview deployments run them against the production database before a PR is merg
     someone signs in on a browser, and again from the account menu (Take the tour). The repo carries the antd MCP
     server and llms.txt references for working on the web app.
 
+## v5 – close the gaps against Concord ERP
+
+From the gap analysis against Concord's workflow diagrams, brochure and phone app (21 Oct 2026). Payroll, a general
+ledger (Tally keeps the books), RMC plant production, a full supplier portal and biometric hardware stay out. Numbering
+carries on after the UX items (to 89). Migrations stay additive. Design notes for each item are in the project's
+`roadmap/v5-plan.md`.
+
+90. **Payment requests and advances** (M). A request to pay a bill, or an advance against a PO or work order, approved
+    through the matrix (new submission type `PAYMENT_REQUEST`) before accounts pays; advances adjusted on later vendor
+    bills and capping subcontract advance recovery; a company setting that makes every payment need a request.
+91. **Bills without a PO** (M). Vendor bill kinds: hire bills from a hired machine's approved logs with hire terms
+    (minimum hours, fuel, operator), workshop bills against job cards, other service bills; debit notes for shortage,
+    excess, rejection, returns and rate difference that reduce the payable, reverse input GST and go to Tally.
+92. **Material reconciliation** (L). Resources per BOQ unit (rate analysis); theoretical against issued material per
+    project and per subcontractor, with recovery on their next bill; wastage reasons on adjustments; a built-up cost
+    estimate per BOQ item; a material overuse warning.
+93. **Fuel and fleet use** (M). Diesel issued from stock to a machine (web and phone), daily fuel position per site, a
+    consumption norm per machine with alerts, availability against utilisation, tyre and battery history.
+94. **Approval levels and escalation** (M). Up to three levels per submission type above an amount (`ApprovalStep`
+    records each step, the status columns stay as they are), reminders and escalation when an entry waits, and
+    Waiting with others.
+95. **Purchase small items** (S each). Stock on hand at every site on a material request line, issue or transfer first;
+    the item's last five POs on the purchase forms; enquiries emailed to suppliers with a one-time link to quote.
+96. **Management view on the phone** (M). Company tiles for admin, management, accounts and project managers: money
+    today, dues, attendance today, fuel today, purchase pipeline, approvals by module.
+97. **Attendance extras** (S + M, waiting for Pradeep's yes). GPS check-in inside the site's area (new `expo-location`,
+    next store build), on-duty and tour requests, overtime approval.
+
+Later, when a customer asks: group companies under one login, head-office overheads to projects, leads and tendering,
+TDS payable summary, a terms and conditions library, scrap sale bills, client dues reminders, multi-currency.
+
 ## AI – Ask Nirmaan and what follows
 
 Rules for every AI item: the AI reads only what the asking user can see (through `AiToolsService`), never submits,
