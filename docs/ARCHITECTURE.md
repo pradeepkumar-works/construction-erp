@@ -615,6 +615,23 @@ Nirmaan hands the payroll provider its inputs; PF, ESI, professional tax and sal
 - **API.** `GET /cost/projects/:id/budget`, `PUT /cost/projects/:id/budget` (`heads` null removes the cost-head
   budget; `items` sets BOQ budget rates, the rest keep theirs), `GET /cost/cash-flow?projectId&granularity=MONTH|WEEK`.
 
+## Material reconciliation
+
+- **Table.** `MaterialNorm` (per project: a BOQ item, a store item, `qtyPerUnit` with six decimals, allowed `wastagePct`,
+  a note, who set it); one norm per BOQ item and store item. Tenant table with RLS.
+- **Arithmetic** (`apps/api/src/reconciliation/reconciliation-rules.ts`, pure, tested in `src/scripts/reconciliation-test.ts`).
+  For a period (all time by default): theoretical = Σ approved progress on the BOQ item × norm; allowed = theoretical +
+  Σ theoretical × wastage %; consumed = ISSUE rows − RETURN_FROM_SITE rows. Transfers, returns to vendor and adjustments
+  are not consumption. Status: OVER when consumed > allowed (or anything consumed with no theoretical), UNDER when more
+  than `RECONCILIATION_UNDER_PCT` (5%) below theoretical, else WITHIN; NO_WORK when both are zero. Excess = consumed −
+  allowed, valued at the item rate for cost viewers only. Issued items with no norm are listed as unreconciled.
+- **Roles.** Seen by `RECONCILIATION_VIEW_ROLES` (QS, approvers, stores, procurement, accounts, site engineer); norms set
+  by `MATERIAL_NORM_ROLES` (QS, PM, management, admin). Every change is in the project's audit log.
+- **API.** `GET /reconciliation/projects/:id?from&to`, `PUT /reconciliation/projects/:id/norms` (adds or changes by BOQ
+  item + store item), `DELETE /reconciliation/projects/:id/norms/:normId`.
+- **Web.** Project > Materials > Reconciliation (`components/reconciliation/`): period picker, the reconciliation with
+  each item's BOQ lines, items without a norm, the norms with add/edit/remove, and an Excel export.
+
 ## Vendors
 
 - **Table.** `Vendor` (tenant table, name unique per organisation, case-insensitive in the service): `kinds`

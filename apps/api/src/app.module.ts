@@ -20,6 +20,7 @@ import { StockModule } from './stock/stock.module';
 import { MachineryModule } from './machinery/machinery.module';
 import { ExpensesModule } from './expenses/expenses.module';
 import { CostModule } from './cost/cost.module';
+import { ReconciliationModule } from './reconciliation/reconciliation.module';
 import { ReportsModule } from './reports/reports.module';
 import { RisksModule } from './risks/risks.module';
 import { SearchModule } from './search/search.module';
@@ -102,6 +103,7 @@ import { VitalsController } from './vitals.controller';
     DocumentsModule,
     StaffModule,
     CostModule,
+    ReconciliationModule,
     ReportsModule,
     RisksModule,
     SearchModule,

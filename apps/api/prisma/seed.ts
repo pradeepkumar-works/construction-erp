@@ -148,6 +148,7 @@ async function main() {
     await seedVariations(org.id);
     await seedBudgets(org.id);
     await seedStoreMoves(org.id);
+    await seedReconciliation(org.id);
     await seedSafety(org.id);
     await seedSectors(org.id);
     await seedMaintenance(org.id);
@@ -324,6 +325,7 @@ async function main() {
   await seedVariations(org.id);
   await seedBudgets(org.id);
   await seedStoreMoves(org.id);
+  await seedReconciliation(org.id);
   await seedSafety(org.id);
   await seedSectors(org.id);
   await seedMaintenance(org.id);
@@ -876,6 +878,104 @@ async function seedStoreMoves(organizationId: string) {
   const line = grn?.lines.find((l) => balance(l.itemId).gt(2));
   if (grn && line)
     await entry(road.id, 'RETURN_TO_VENDOR', 0, { supplier: grn.supplier, vendorId: grn.vendorId, challanNo: 'DN-07', remarks: 'Part of the load was below the specified grade' }, [{ itemId: line.itemId, quantity: D(-1) }]);
+}
+
+/**
+ * Demo material reconciliation on the first building project: the QS's norms for cement, steel and bricks on its
+ * concrete and masonry items, and a receipt and an issue of them for each month with progress (so stock balances do
+ * not move; months before the register in Nirmaan opened are marked as copied from the old register). The history is sized so that cement comes out over its allowance,
+ * steel within it and bricks below theoretical; binding wire, plywood and diesel stay without a norm. Only when the
+ * organisation has no norms yet.
+ */
+async function seedReconciliation(organizationId: string) {
+  if (await prisma.materialNorm.count({ where: { organizationId } })) return;
+  const project = await prisma.project.findFirst({ where: { organizationId, type: 'BUILDING' }, orderBy: { code: 'asc' } });
+  const qs = (await prisma.user.findFirst({ where: { organizationId, email: 'qs@demo.com' } })) ?? (await prisma.user.findFirst({ where: { organizationId, email: 'pm@demo.com' } }));
+  const keeper = (await prisma.user.findFirst({ where: { organizationId, email: 'store@demo.com' } })) ?? qs;
+  if (!project || !qs || !keeper) return;
+  const item = async (name: string, unit: string, rate: string | null) =>
+    (await prisma.item.findFirst({ where: { organizationId, name, unit } })) ?? prisma.item.create({ data: { organizationId, name, unit, rate: rate === null ? null : D(rate) } });
+  const cement = await item('OPC 53 Grade Cement', 'Bags', '395.00');
+  const steel = await item('TMT Fe500D 12mm', 'MT', '61500.00');
+  const bricks = await item('Fly ash bricks 230mm', 'Nos', '8.50');
+  // [BOQ item no., item, quantity per unit, wastage %, note]
+  const NORMS: [string, { id: string }, string, number, string][] = [
+    ['2.01', cement, '3.4', 2, 'PCC 1:4:8, nominal mix'],
+    ['3.01', cement, '8.2', 2, 'M25 design mix, 410 kg per cum'],
+    ['3.01', steel, '0.11', 3, 'Footings and columns, from the bar bending schedule'],
+    ['3.02', cement, '8.2', 2, 'M25 design mix, 410 kg per cum'],
+    ['3.02', steel, '0.09', 3, 'Slabs and beams, from the bar bending schedule'],
+    ['3.03', cement, '8.2', 2, 'M25 design mix, 410 kg per cum'],
+    ['3.03', steel, '0.09', 3, 'Slabs and beams, from the bar bending schedule'],
+    ['4.01', bricks, '500', 3, '230 mm wall'],
+    ['4.01', cement, '1.25', 2, 'CM 1:6 mortar'],
+  ];
+  const boq = new Map((await prisma.boqItem.findMany({ where: { projectId: project.id } })).map((b) => [b.itemNo, b]));
+  const norms: { boqItemId: string; itemId: string; qty: Prisma.Decimal }[] = [];
+  for (const [no, it, qty, wastage, note] of NORMS) {
+    const b = boq.get(no);
+    if (!b) continue;
+    await prisma.materialNorm.create({ data: { organizationId, projectId: project.id, boqItemId: b.id, itemId: it.id, qtyPerUnit: D(qty), wastagePct: D(wastage), note, updatedById: qs.id } });
+    norms.push({ boqItemId: b.id, itemId: it.id, qty: D(qty) });
+  }
+  await prisma.auditLog.create({ data: { organizationId, entityType: 'PROJECT', entityId: project.id, action: 'MATERIAL_NORM_ADDED', actorId: qs.id, note: `${norms.length} norms from the rate analysis` } });
+
+  // Store history before the register opened: theoretical × factor, less what the register already shows used.
+  const opened = (await prisma.stockEntry.findFirst({ where: { projectId: project.id }, orderBy: { date: 'asc' }, select: { date: true } }))?.date ?? day(0);
+  const progress = await prisma.progressEntry.findMany({
+    where: { projectId: project.id, status: 'APPROVED', activity: { boqItemId: { in: norms.map((n) => n.boqItemId) } } },
+    select: { date: true, quantity: true, activity: { select: { boqItemId: true } } },
+  });
+  // [item, consumption as a factor of theoretical, decimal places (-2 = hundreds)]
+  const FACTOR: [{ id: string }, number, number][] = [[cement, 1.05, 0], [steel, 1.016, 3], [bricks, 0.905, -2]];
+  const used = await prisma.stockTxn.groupBy({ by: ['itemId', 'type'], where: { projectId: project.id, type: { in: ['ISSUE', 'RETURN_FROM_SITE'] } }, _sum: { quantity: true } });
+  const months = new Map<string, { first: Date; last: Date; theo: Map<string, Prisma.Decimal> }>();
+  const total = new Map<string, Prisma.Decimal>();
+  for (const p of progress) {
+    for (const n of norms.filter((x) => x.boqItemId === p.activity.boqItemId)) {
+      const t = p.quantity.mul(n.qty);
+      total.set(n.itemId, (total.get(n.itemId) ?? D(0)).add(t));
+      const key = p.date.toISOString().slice(0, 7);
+      const m = months.get(key) ?? { first: p.date, last: p.date, theo: new Map() };
+      if (p.date < m.first) m.first = p.date;
+      if (p.date > m.last) m.last = p.date;
+      m.theo.set(n.itemId, (m.theo.get(n.itemId) ?? D(0)).add(t));
+      months.set(key, m);
+    }
+  }
+  const year = new Date().getUTCFullYear();
+  const nextNo = async (prefix: string) => {
+    const last = await prisma.stockEntry.findFirst({ where: { organizationId, entryNo: { startsWith: `${prefix}-${year}-` } }, orderBy: { entryNo: 'desc' }, select: { entryNo: true } });
+    return `${prefix}-${year}-${String((last ? parseInt(last.entryNo.slice(prefix.length + 6), 10) : 0) + 1).padStart(4, '0')}`;
+  };
+  const histTotal = new Map<string, Prisma.Decimal>();
+  for (const m of months.values()) for (const [id, t] of m.theo) histTotal.set(id, (histTotal.get(id) ?? D(0)).add(t));
+  for (const [key, m] of [...months].sort((a, b) => a[0].localeCompare(b[0]))) {
+    const lines: { itemId: string; quantity: Prisma.Decimal }[] = [];
+    for (const [it, factor, places] of FACTOR) {
+      const hist = histTotal.get(it.id);
+      const theo = m.theo.get(it.id);
+      if (!hist || !theo || hist.lte(0)) continue;
+      const already = used.filter((u) => u.itemId === it.id).reduce((s, u) => s.add(u._sum.quantity ?? 0), D(0)).neg();
+      const target = (total.get(it.id) ?? D(0)).mul(factor).minus(already);
+      const share = target.mul(theo).div(hist);
+      const qty = places < 0 ? share.div(10 ** -places).toDecimalPlaces(0).mul(10 ** -places) : share.toDecimalPlaces(places);
+      if (qty.gt(0)) lines.push({ itemId: it.id, quantity: qty });
+    }
+    if (!lines.length) continue;
+    for (const [type, prefix, date, sign, data] of [
+      ['RECEIPT', 'GRN', m.first, 1, { supplier: 'Various suppliers', remarks: m.first < opened ? `Receipts for ${key}, from the store register before Nirmaan` : `Receipts for ${key}` }],
+      ['ISSUE', 'ISS', m.last, -1, { issuedTo: 'Departmental (concrete and masonry gangs)', remarks: m.last < opened ? `Issues for ${key}, from the store register before Nirmaan` : `Issues for ${key}` }],
+    ] as const) {
+      const e = await prisma.stockEntry.create({
+        data: {
+          organizationId, projectId: project.id, type, entryNo: await nextNo(prefix), date, createdById: keeper.id, createdAt: date, ...data,
+          lines: { create: lines.map((l, i) => ({ organizationId, projectId: project.id, itemId: l.itemId, type, date, quantity: l.quantity.mul(sign), sortOrder: i })) },
+        },
+      });
+      await prisma.auditLog.create({ data: { organizationId, entityType: 'STOCK', entityId: e.id, action: 'CREATED', actorId: keeper.id, note: e.entryNo, createdAt: date } });
+    }
+  }
 }
 
 /**

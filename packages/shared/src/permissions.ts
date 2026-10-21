@@ -174,6 +174,13 @@ export const canSetLabourRates = (role: RoleKey) => LABOUR_RATE_ROLES.includes(r
 export const BUDGET_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER'];
 export const canSetBudget = (role: RoleKey) => BUDGET_ROLES.includes(role);
 
+/** Set material norms for reconciliation (quantity of an item per unit of a BOQ item): the QS and the project's managers. */
+export const MATERIAL_NORM_ROLES: RoleKey[] = ['QUANTITY_SURVEYOR', 'ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER'];
+export const canSetMaterialNorms = (role: RoleKey) => MATERIAL_NORM_ROLES.includes(role);
+/** See material reconciliation (theoretical against issued): norm setters, stores, procurement and accounts. Values need canViewCost. */
+export const RECONCILIATION_VIEW_ROLES: RoleKey[] = [...MATERIAL_NORM_ROLES, 'STORE_MANAGER', 'SITE_ENGINEER', 'PROCUREMENT_MANAGER', 'ACCOUNTS_MANAGER'];
+export const canViewReconciliation = (role: RoleKey) => RECONCILIATION_VIEW_ROLES.includes(role);
+
 /** Report an incident or near miss, record a toolbox talk, request a permit to work. */
 export const canReportSafety = (role: RoleKey) => SAFETY_REPORTER_ROLES.includes(role);
 /** Issue / reject permits, close incidents. */
