@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
-import { Checkbox, DatePicker, Form, Input, Select } from 'antd';
+import { App, Button, Checkbox, DatePicker, Form, Input, InputNumber, Select, Typography } from 'antd';
+import { AimOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { ProjectDetail, ProjectStatus, ProjectType } from '@erp/shared';
-import { PROJECT_STATUSES, PROJECT_STATUS_LABELS, PROJECT_TYPES, PROJECT_TYPE_LABELS } from '@erp/shared';
+import { DEFAULT_SITE_RADIUS_M, PROJECT_STATUSES, PROJECT_STATUS_LABELS, PROJECT_TYPES, PROJECT_TYPE_LABELS } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
@@ -13,6 +14,7 @@ import { ClientSelect, UserSelect } from '@/components/common/SearchSelect';
 import { inSentence } from '@/lib/format';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
+import { currentPosition } from '@/components/staff/staffUi';
 
 interface FormValues {
   code: string;
@@ -28,6 +30,11 @@ interface FormValues {
   contractValue?: number | null;
   projectManagerId?: string;
   applyTemplate?: boolean;
+  /** Attendance extras (v5 item 97): where the site is, for GPS check-in */
+  siteLat?: number | null;
+  siteLng?: number | null;
+  siteRadiusM?: number | null;
+  siteCheckInStrict?: boolean;
 }
 
 /** Who can manage a project. */
@@ -45,6 +52,7 @@ export function ProjectFormModal({
   onSaved?: (id: string) => void;
 }) {
   const [form] = Form.useForm<FormValues>();
+  const { message } = App.useApp();
   const qc = useQueryClient();
   const notify = useNotify();
   const isEdit = !!project;
@@ -70,6 +78,10 @@ export function ProjectFormModal({
         dates: [project.startDate ? dayjs(project.startDate) : null, project.endDate ? dayjs(project.endDate) : null],
         contractValue: project.contractValue ? Number(project.contractValue) : null,
         projectManagerId: project.projectManagerId ?? undefined,
+        siteLat: project.siteLat === null ? null : Number(project.siteLat),
+        siteLng: project.siteLng === null ? null : Number(project.siteLng),
+        siteRadiusM: project.siteRadiusM,
+        siteCheckInStrict: project.siteCheckInStrict,
       });
     } else {
       form.resetFields();
@@ -95,6 +107,10 @@ export function ProjectFormModal({
         contractValue: values.contractValue !== null && values.contractValue !== undefined ? String(values.contractValue) : undefined,
         projectManagerId: values.projectManagerId || undefined,
         ...(isEdit ? {} : { applyTemplate: !!values.applyTemplate }),
+        siteLat: values.siteLat ?? (isEdit ? null : undefined),
+        siteLng: values.siteLng ?? (isEdit ? null : undefined),
+        siteRadiusM: values.siteRadiusM ?? (isEdit ? null : undefined),
+        siteCheckInStrict: !!values.siteCheckInStrict,
       };
       if (isEdit && project) return (await api.patch<ProjectDetail>(`/projects/${project.id}`, body)).data;
       return (await api.post<ProjectDetail>('/projects', body)).data;
@@ -176,6 +192,55 @@ export function ProjectFormModal({
               <Checkbox>Add the {template ? `${template.items.length} ` : ''}standard {type ? inSentence(PROJECT_TYPE_LABELS[type as ProjectType]) : ''} activities</Checkbox>
             </Form.Item>
           ) : null}
+        </FormSection>
+        <FormSection title="Site location for check-in">
+          <Typography.Paragraph type="secondary">Staff check-ins record where the phone is; one further from the site than the radius is flagged.</Typography.Paragraph>
+          <FormGrid cols={3}>
+            <Form.Item
+              name="siteLat"
+              label="Latitude"
+              dependencies={['siteLng']}
+              rules={[{ validator: (_, v) => (v == null && form.getFieldValue('siteLng') != null ? Promise.reject(new Error('Enter the latitude too, or clear the longitude')) : Promise.resolve()) }]}
+            >
+              <InputNumber style={{ width: '100%' }} min={-90} max={90} precision={6} step={0.0001} placeholder="20.296100" />
+            </Form.Item>
+            <Form.Item
+              name="siteLng"
+              label="Longitude"
+              dependencies={['siteLat']}
+              rules={[{ validator: (_, v) => (v == null && form.getFieldValue('siteLat') != null ? Promise.reject(new Error('Enter the longitude too, or clear the latitude')) : Promise.resolve()) }]}
+            >
+              <InputNumber style={{ width: '100%' }} min={-180} max={180} precision={6} step={0.0001} placeholder="85.824500" />
+            </Form.Item>
+            <Form.Item name="siteRadiusM" label="Radius" extra={`Default ${DEFAULT_SITE_RADIUS_M} m`}>
+              <InputNumber style={{ width: '100%' }} min={25} max={10000} step={50} precision={0} suffix="m" placeholder={String(DEFAULT_SITE_RADIUS_M)} />
+            </Form.Item>
+          </FormGrid>
+          <Button
+            icon={<AimOutlined />}
+            style={{ marginBottom: 16 }}
+            onClick={async () => {
+              const at = await currentPosition();
+              if (!at) {
+                message.warning('Could not get your location. Allow location for this site in the browser, or type the coordinates.');
+                return;
+              }
+              form.setFieldsValue({ siteLat: at.lat, siteLng: at.lng });
+              message.success(`Location set, accurate to about ${at.accuracyM} m`);
+            }}
+          >
+            Use my location
+          </Button>
+          <Form.Item
+            name="siteCheckInStrict"
+            valuePropName="checked"
+            style={{ marginBottom: 0 }}
+            dependencies={['siteLat']}
+            rules={[{ validator: (_, v) => (v && form.getFieldValue('siteLat') == null ? Promise.reject(new Error('Set the site location first')) : Promise.resolve()) }]}
+            extra="The site manager can still mark anyone in the staff register."
+          >
+            <Checkbox>Refuse a check-in from outside the radius</Checkbox>
+          </Form.Item>
         </FormSection>
       </Form>
     </FormShell>

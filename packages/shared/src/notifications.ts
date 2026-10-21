@@ -23,6 +23,7 @@ export const NOTIFICATION_TAB_OF: Record<NotificationType, NotificationTab> = {
   NCR: 'FOR_ME',
   DOCUMENT_ISSUED: 'FOR_ME',
   LEAVE: 'FOR_ME',
+  OVERTIME: 'FOR_ME',
   PORTAL: 'FOR_ME',
   SAFETY: 'FOR_ME',
   IMPREST: 'FOR_ME',

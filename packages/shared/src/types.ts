@@ -5,7 +5,7 @@ import type { TallyVoucherKind } from './tally';
 import type { BillingUnit } from './billing';
 import type { ProgressNarrativeDto } from './briefs';
 import type { DocumentDiscipline, DocumentKind, LetterDirection, RevisionStatus, TransmittalPurpose } from './documents';
-import type { LeaveStatus, LeaveType, StaffAttendanceStatus } from './staff';
+import type { LeaveStatus, LeaveType, OvertimeStatus, StaffAttendanceStatus } from './staff';
 import type { CostHead } from './cost';
 import type {
   FuelNormUnit,
@@ -168,6 +168,13 @@ export interface ProjectDetail extends ProjectSummary {
   chainageEnd: number | null;
   floors: string[];
   villages: string[];
+  /** Attendance extras (v5 item 97): the site's location for GPS check-in (decimal degrees as strings) */
+  siteLat: string | null;
+  siteLng: string | null;
+  /** Check-in radius in metres; null = the default 300 */
+  siteRadiusM: number | null;
+  /** Refuse a check-in from outside the radius, or without a position */
+  siteCheckInStrict: boolean;
   members: ProjectMemberDto[];
   createdAt: string;
   updatedAt: string;
@@ -2761,6 +2768,14 @@ export interface StaffAttendanceDto {
   checkOut: string | null;
   /** Decimal(4,1) as a string */
   overtimeHours: string | null;
+  /** Attendance extras (v5 item 97): overtime waits for a decision; payroll pays approved overtime only */
+  overtimeStatus: OvertimeStatus | null;
+  overtimeDecidedByName: string | null;
+  overtimeNote: string | null;
+  /** Where the check-in was, when a position was sent; inside is null when the site has no location */
+  checkInPlace: { lat: string; lng: string; accuracyM: number | null; distanceM: number | null; inside: boolean | null } | null;
+  /** The caller may approve or reject the waiting overtime */
+  canDecideOvertime: boolean;
   note: string | null;
   markedByName: string;
 }
@@ -2840,11 +2855,26 @@ export interface MyStaffDto {
   balances: LeaveBalanceDto[];
   leave: LeaveRequestDto[];
   holidays: HolidayDto[];
+  /** Attendance extras (v5 item 97): the site check-in is measured against (their posting); null when it has no location */
+  site: CheckInSiteDto | null;
+}
+
+/** A site's location for GPS check-in. */
+export interface CheckInSiteDto {
+  projectId: string;
+  projectName: string;
+  lat: string;
+  lng: string;
+  radiusM: number;
+  /** A check-in from outside the radius, or without a position, is refused */
+  strict: boolean;
 }
 
 export interface StaffSummaryDto {
   /** Leave requests waiting on the caller */
   leaveToDecide: number;
+  /** Attendance extras (v5 item 97): days of overtime waiting on the caller */
+  overtimeToDecide: number;
   /** Active employees the caller can see (null when they cannot see the staff list) */
   employees: number | null;
   onLeaveToday: number | null;
@@ -2876,7 +2906,10 @@ export interface PayrollRowDto {
   notMarked: number;
   /** Sundays and holidays worked (comp-off earned) */
   offDaysWorked: number;
+  /** Approved overtime only (v5 item 97) */
   overtimeHours: number;
+  /** Overtime still waiting for a decision; not paid until approved */
+  overtimePendingHours: number;
   /** Loss of pay: absent, unpaid leave and the other half of half days */
   lopDays: number;
   /** calendarDays - lopDays */

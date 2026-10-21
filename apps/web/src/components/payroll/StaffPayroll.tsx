@@ -12,7 +12,7 @@ import { formatDate } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
 import { themeFontSize } from '@/lib/theme';
 
-const SHORT: Record<LeaveType, string> = { CASUAL: 'CL', SICK: 'SL', EARNED: 'EL', COMP_OFF: 'Comp-off', UNPAID: 'LWP' };
+const SHORT: Record<LeaveType, string> = { CASUAL: 'CL', SICK: 'SL', EARNED: 'EL', COMP_OFF: 'Comp-off', UNPAID: 'LWP', ON_DUTY: 'OD', TOUR: 'Tour' };
 const n = (v: number) => (v ? v : '');
 
 /** The month's sheet for the payroll provider: one row per employee, exported as Excel. */
@@ -39,6 +39,7 @@ export function StaffPayroll({ month, projectId }: { month: string; projectId?: 
     { header: 'Loss of pay days', value: (r) => r.lopDays },
     { header: 'Paid days', value: (r) => r.paidDays },
     { header: 'Overtime hours', value: (r) => r.overtimeHours },
+    { header: 'Overtime waiting approval', value: (r) => r.overtimePendingHours },
     { header: 'Off days worked', value: (r) => r.offDaysWorked },
   ];
 
@@ -67,7 +68,8 @@ export function StaffPayroll({ month, projectId }: { month: string; projectId?: 
     { title: <Tooltip title="Working days with no attendance or leave; not deducted">Not marked</Tooltip>, dataIndex: 'notMarked', width: 100, align: 'right', render: (v: number) => (v ? <Typography.Text type="warning">{v}</Typography.Text> : '') },
     { title: <Tooltip title="Loss of pay: absent, leave without pay, the other half of half days">LOP</Tooltip>, dataIndex: 'lopDays', width: 65, align: 'right', render: n },
     { title: 'Paid days', dataIndex: 'paidDays', width: 90, align: 'right', render: (v: number) => <strong>{v}</strong> },
-    { title: <Tooltip title="Overtime hours">OT h</Tooltip>, dataIndex: 'overtimeHours', width: 70, align: 'right', render: n },
+    { title: <Tooltip title="Approved overtime hours">OT h</Tooltip>, dataIndex: 'overtimeHours', width: 70, align: 'right', render: n },
+    { title: <Tooltip title="Overtime hours still waiting for the site manager or HR; not paid until approved">OT waiting</Tooltip>, dataIndex: 'overtimePendingHours', width: 90, align: 'right', render: n },
     { title: <Tooltip title="Sundays and holidays worked: comp-off earned">Off worked</Tooltip>, dataIndex: 'offDaysWorked', width: 95, align: 'right', render: n },
     { title: 'On rolls', key: 'rolls', width: 200, render: (_, r) => (r.leftOn ? `Left ${formatDate(r.leftOn)}` : r.joinedOn && r.joinedOn >= (data?.from ?? '') ? `Joined ${formatDate(r.joinedOn)}` : '') },
   ];
@@ -92,7 +94,7 @@ export function StaffPayroll({ month, projectId }: { month: string; projectId?: 
         columns={columns}
         dataSource={rows}
         pagination={false}
-        scroll={{ x: 1800 }}
+        scroll={{ x: 1890 }}
         locale={{ emptyText: 'No staff on the rolls this month' }}
       />
     </>

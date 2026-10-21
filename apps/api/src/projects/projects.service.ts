@@ -97,6 +97,10 @@ export class ProjectsService {
       chainageEnd: p.chainageEnd,
       floors: p.floors,
       villages: p.villages,
+      siteLat: p.siteLat?.toString() ?? null,
+      siteLng: p.siteLng?.toString() ?? null,
+      siteRadiusM: p.siteRadiusM,
+      siteCheckInStrict: p.siteCheckInStrict,
       members: p.members.map((m) => ({ id: m.id, userId: m.userId, fullName: m.user.fullName, roleKey: m.user.role.key as RoleKey, roleName: m.user.role.name })),
       createdAt: iso(p.createdAt)!,
       updatedAt: iso(p.updatedAt)!,
@@ -150,12 +154,22 @@ export class ProjectsService {
     if (dto.chainageEnd !== undefined) data.chainageEnd = dto.chainageEnd;
     if (dto.floors !== undefined) data.floors = dto.floors;
     if (dto.villages !== undefined) data.villages = dto.villages;
+    if (dto.siteLat !== undefined) data.siteLat = dto.siteLat === null ? null : new Prisma.Decimal(dto.siteLat.toFixed(6));
+    if (dto.siteLng !== undefined) data.siteLng = dto.siteLng === null ? null : new Prisma.Decimal(dto.siteLng.toFixed(6));
+    if (dto.siteRadiusM !== undefined) data.siteRadiusM = dto.siteRadiusM;
+    if (dto.siteCheckInStrict !== undefined) data.siteCheckInStrict = dto.siteCheckInStrict;
     if (dto.projectManagerId !== undefined) data.projectManager = dto.projectManagerId ? { connect: { id: dto.projectManagerId } } : { disconnect: true };
     return data;
   }
 
   private checkChainage(start: number | null, end: number | null) {
     if (start !== null && end !== null && end <= start) throw new BadRequestException('The chainage must end after it starts');
+  }
+
+  /** The site location is both coordinates or neither; a strict check-in needs a location. */
+  private checkSite(lat: unknown, lng: unknown, strict: boolean) {
+    if ((lat === null) !== (lng === null)) throw new BadRequestException('Give both the latitude and the longitude of the site, or clear both');
+    if (strict && lat === null) throw new BadRequestException('Set the site location before refusing check-ins from outside it');
   }
 
   /** A client from the master sets the project's client name too; null unlinks it and keeps the name as text. */
@@ -175,6 +189,7 @@ export class ProjectsService {
     const dup = await this.prisma.project.findFirst({ where: { organizationId: user.organizationId, code: dto.code } });
     if (dup) throw new ConflictException(`Project code ${dto.code} already exists`);
     this.checkChainage(dto.chainageStart ?? null, dto.chainageEnd ?? null);
+    this.checkSite(dto.siteLat ?? null, dto.siteLng ?? null, dto.siteCheckInStrict ?? false);
     const data = this.toData(dto) as Prisma.ProjectCreateInput;
     await this.withClient(user, dto, data);
     if (dto.clientId === null) delete data.client;
@@ -189,6 +204,10 @@ export class ProjectsService {
     if (dto.chainageStart !== undefined || dto.chainageEnd !== undefined) {
       const cur = await this.prisma.project.findUniqueOrThrow({ where: { id }, select: { chainageStart: true, chainageEnd: true } });
       this.checkChainage(dto.chainageStart !== undefined ? dto.chainageStart : cur.chainageStart, dto.chainageEnd !== undefined ? dto.chainageEnd : cur.chainageEnd);
+    }
+    if (dto.siteLat !== undefined || dto.siteLng !== undefined || dto.siteCheckInStrict !== undefined) {
+      const cur = await this.prisma.project.findUniqueOrThrow({ where: { id }, select: { siteLat: true, siteLng: true, siteCheckInStrict: true } });
+      this.checkSite(dto.siteLat !== undefined ? dto.siteLat : cur.siteLat, dto.siteLng !== undefined ? dto.siteLng : cur.siteLng, dto.siteCheckInStrict ?? cur.siteCheckInStrict);
     }
     const data = this.toData(dto);
     await this.withClient(user, dto, data);

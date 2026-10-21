@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { ArrayMaxSize, IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsNumberString, IsOptional, IsString, IsUUID, Max, MaxLength, Min, MinLength, ValidateIf } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsNumber, IsNumberString, IsOptional, IsString, IsUUID, Max, MaxLength, Min, MinLength, ValidateIf } from 'class-validator';
 import { MAX_CHAINAGE_M, MAX_SECTOR_NAMES, LIST_SORT_FIELDS, PROJECT_STATUSES, PROJECT_TYPES, ProjectStatus, ProjectType, type ProjectSortField } from '@erp/shared';
 import { PageQuery } from '../common/paging';
 
@@ -44,6 +44,10 @@ export class CreateProjectDto {
   @IsString({ each: true })
   @MaxLength(120, { each: true })
   villages?: string[];
+  @ApiPropertyOptional({ description: 'Site latitude for GPS check-in (v5 item 97), decimal degrees', nullable: true }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsNumber({ maxDecimalPlaces: 6 }) @Min(-90) @Max(90) siteLat?: number | null;
+  @ApiPropertyOptional({ description: 'Site longitude, decimal degrees', nullable: true }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsNumber({ maxDecimalPlaces: 6 }) @Min(-180) @Max(180) siteLng?: number | null;
+  @ApiPropertyOptional({ description: 'Check-in radius in metres (default 300)', nullable: true }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsInt() @Min(25) @Max(10_000) siteRadiusM?: number | null;
+  @ApiPropertyOptional({ description: 'Refuse a check-in from outside the radius, or without a position' }) @IsOptional() @IsBoolean() siteCheckInStrict?: boolean;
   @ApiPropertyOptional({ description: 'Add the standard activities for the project type (see /activity-templates), scheduled over the project dates' })
   @IsOptional()
   @IsBoolean()

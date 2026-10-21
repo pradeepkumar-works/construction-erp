@@ -1098,6 +1098,14 @@ export const useStaffSummary = () =>
     queryFn: async () => (await api.get<StaffSummaryDto>('/staff/summary')).data,
   });
 
+/** Overtime waiting on the caller (v5 item 97), oldest first. */
+export const useOvertimeToDecide = (enabled = true) =>
+  useQuery({
+    queryKey: ['staff', 'overtime'],
+    queryFn: async () => (await api.get<StaffAttendanceDto[]>('/staff/overtime')).data,
+    enabled,
+  });
+
 export const useMyStaff = () =>
   useQuery({
     queryKey: ['staff', 'me'],

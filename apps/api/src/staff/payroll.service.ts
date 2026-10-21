@@ -1,6 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { LEAVE_TYPES, canViewLabourSummary, canViewPayroll, isWeeklyOff, type ContractorMonthDto, type ContractorMonthRowDto, type LeaveType, type PayrollDto, type PayrollRowDto } from '@erp/shared';
+import { LEAVE_TYPES, canViewLabourSummary, countsAsPresent, canViewPayroll, isWeeklyOff, type ContractorMonthDto, type ContractorMonthRowDto, type LeaveType, type PayrollDto, type PayrollRowDto } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -51,7 +51,7 @@ export class PayrollService {
     });
     const ids = employees.map((e) => e.id);
     const [attendance, leave, holidays] = await Promise.all([
-      this.prisma.staffAttendance.findMany({ where: { employeeId: { in: ids }, date: { gte: start, lte: end } }, select: { employeeId: true, date: true, status: true, overtimeHours: true, projectId: true } }),
+      this.prisma.staffAttendance.findMany({ where: { employeeId: { in: ids }, date: { gte: start, lte: end } }, select: { employeeId: true, date: true, status: true, overtimeHours: true, overtimeStatus: true, projectId: true } }),
       this.prisma.leaveRequest.findMany({ where: { employeeId: { in: ids }, status: 'APPROVED', fromDate: { lte: end }, toDate: { gte: start } }, select: { employeeId: true, type: true, fromDate: true, toDate: true, halfDay: true } }),
       this.prisma.holiday.findMany({ where: { organizationId: user.organizationId, date: { gte: start, lte: end } }, select: { date: true, projectId: true } }),
     ]);
@@ -64,12 +64,14 @@ export class PayrollService {
       for (const l of leave.filter((x) => x.employeeId === e.id)) for (const d of days(dateOnly(l.fromDate)!, dateOnly(l.toDate)!)) onLeave.set(d, { type: l.type, half: l.halfDay });
       const first = e.joinedOn && dateOnly(e.joinedOn)! > from ? dateOnly(e.joinedOn)! : from;
       const last = e.leftOn && dateOnly(e.leftOn)! < to ? dateOnly(e.leftOn)! : to;
-      const r = { calendarDays: 0, offDays: 0, workingDays: 0, present: 0, absent: 0, notMarked: 0, offDaysWorked: 0, overtimeHours: 0, lopDays: 0 };
+      const r = { calendarDays: 0, offDays: 0, workingDays: 0, present: 0, absent: 0, notMarked: 0, offDaysWorked: 0, overtimeHours: 0, overtimePendingHours: 0, lopDays: 0 };
       const byType = Object.fromEntries(LEAVE_TYPES.map((t) => [t, 0])) as Record<LeaveType, number>;
       for (const d of days(first, last)) {
         r.calendarDays += 1;
         const a = att.get(d);
-        if (a?.overtimeHours) r.overtimeHours += Number(a.overtimeHours);
+        // Only approved overtime is paid (v5 item 97); what waits is shown apart, rejected is dropped.
+        if (a?.overtimeHours && a.overtimeStatus === 'PENDING') r.overtimePendingHours += Number(a.overtimeHours);
+        else if (a?.overtimeHours && a.overtimeStatus !== 'REJECTED') r.overtimeHours += Number(a.overtimeHours);
         if (isWeeklyOff(d) || isHoliday(d, a?.projectId ?? e.projectId)) {
           r.offDays += 1;
           if (a && a.status !== 'ABSENT') r.offDaysWorked += a.status === 'HALF_DAY' ? 0.5 : 1;
@@ -81,6 +83,8 @@ export class PayrollService {
         if (l) {
           byType[l.type] += share;
           if (l.type === 'UNPAID') r.lopDays += share;
+          // On duty and tour are work away from the site: present and paid.
+          if (countsAsPresent(l.type)) r.present += share;
           if (share === 1) continue;
         }
         // What is left of the day (all of it, or the other half of a half-day leave).

@@ -125,6 +125,7 @@ export const NOTIFICATION_COLORS: Record<NotificationType, string> = {
   NCR: 'volcano',
   DOCUMENT_ISSUED: 'cyan',
   LEAVE: 'lime',
+  OVERTIME: 'lime',
   BILLS_DUE: 'gold',
   PORTAL: 'geekblue',
   SAFETY: 'red',

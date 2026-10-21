@@ -14,7 +14,7 @@ import { useProjectScope } from '@/lib/project-scope';
 import { useProjects, useStaffRegister } from '@/lib/queries';
 import { QueryError } from '@/components/common/QueryState';
 import { ProjectSelect } from '@/components/common/ProjectSelect';
-import { clock } from './staffUi';
+import { CheckInPlaceTag, OvertimeTag, clock } from './staffUi';
 import { CardToolbar } from '@/components/common/CardToolbar';
 import { themeFontSize } from '@/lib/theme';
 
@@ -115,23 +115,40 @@ export function StaffRegister() {
         />
       ),
     },
-    { title: 'In / out', key: 'io', width: 110, render: (_, r) => (r.attendance?.checkIn ? `${clock(r.attendance.checkIn)} - ${clock(r.attendance.checkOut)}` : '') },
+    {
+      title: 'In / out',
+      key: 'io',
+      width: 180,
+      render: (_, r) =>
+        r.attendance?.checkIn ? (
+          <Space orientation="vertical" size={2}>
+            <span translate="no">{`${clock(r.attendance.checkIn)} - ${clock(r.attendance.checkOut)}`}</span>
+            <CheckInPlaceTag place={r.attendance.checkInPlace} />
+          </Space>
+        ) : (
+          ''
+        ),
+    },
     {
       title: 'OT h',
       key: 'ot',
-      width: 90,
+      width: 110,
       render: (_, r) => (
-        <InputNumber
-          size="small"
-          min={0}
-          max={16}
-          step={0.5}
-          style={{ width: 70 }}
-          aria-label={`Overtime for ${r.employee.fullName}`}
-          disabled={!marks[r.employee.id]?.status || marks[r.employee.id]?.status === 'ABSENT'}
-          value={marks[r.employee.id]?.overtimeHours ?? null}
-          onChange={(v) => set(r.employee.id, { overtimeHours: v })}
-        />
+        <Space orientation="vertical" size={2}>
+          <InputNumber
+            size="small"
+            min={0}
+            max={16}
+            step={0.5}
+            style={{ width: 70 }}
+            aria-label={`Overtime for ${r.employee.fullName}`}
+            disabled={!marks[r.employee.id]?.status || marks[r.employee.id]?.status === 'ABSENT'}
+            value={marks[r.employee.id]?.overtimeHours ?? null}
+            onChange={(v) => set(r.employee.id, { overtimeHours: v })}
+          />
+          {/* Overtime from a check-out waits for a decision (v5 item 97); a decider's own entry is approved as saved. */}
+          {r.attendance?.overtimeStatus && r.attendance.overtimeStatus !== 'APPROVED' ? <OvertimeTag status={r.attendance.overtimeStatus} /> : null}
+        </Space>
       ),
     },
     {
@@ -167,7 +184,7 @@ export function StaffRegister() {
         dataSource={data?.rows ?? []}
         size="small"
         pagination={false}
-        scroll={{ x: 1100 }}
+        scroll={{ x: 1260 }}
         locale={{ emptyText: projectId ? 'No staff posted at this site' : 'Select a project' }}
       />
     </>
