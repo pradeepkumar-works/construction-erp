@@ -238,7 +238,7 @@ export class PayablesService {
     let bill: Bill | null = null;
     if (dto.vendorBillId) {
       const b = await this.prisma.vendorBill.findFirst({ where: { id: dto.vendorBillId, organizationId: org } });
-      if (b) bill = { type: 'VENDOR_BILL', id: b.id, label: b.billNo, projectId: b.projectId, vendorId: b.vendorId, status: b.status, billDate: b.invoiceDate, payable: b.total };
+      if (b) bill = { type: 'VENDOR_BILL', id: b.id, label: b.billNo, projectId: b.projectId, vendorId: b.vendorId, status: b.status, billDate: b.invoiceDate, payable: b.total.sub(b.advanceAdjusted) };
     } else {
       const b = await this.prisma.subcontractBill.findFirst({ where: { id: dto.subcontractBillId, organizationId: org }, include: { workOrder: { select: { woNo: true, vendorId: true } } } });
       if (b) bill = { type: 'SUBCONTRACT_BILL', id: b.id, label: subBillLabel(b.workOrder.woNo, b.billNo, b.isFinal), projectId: b.projectId, vendorId: b.workOrder.vendorId, status: b.status, billDate: b.billDate, payable: b.netPayable };
