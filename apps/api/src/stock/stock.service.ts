@@ -38,6 +38,7 @@ import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import {
   CheckGrnDto,
   CreateAdjustmentDto,
+  CreateFuelIssueDto,
   CreateIssueDto,
   CreateSiteReturnDto,
   CreateTransferDto,
@@ -73,6 +74,7 @@ const include = {
   transferOut: { select: { entryNo: true, project: { select: { name: true } } } },
   lines: { orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }], include: { item: { select: { name: true, unit: true } } } },
   qcBy: { select: { fullName: true } },
+  equipment: { select: { code: true } },
   attachments: { select: ATTACHMENT_FIELDS },
 } satisfies Prisma.StockEntryInclude;
 type Row = Prisma.StockEntryGetPayload<{ include: typeof include }>;
@@ -124,7 +126,13 @@ interface Header {
   adjustmentReason?: StockAdjustmentReason | null;
   /** Issues: spares for this maintenance job card */
   maintenanceJobId?: string | null;
+  /** Fuel issues: the machine and its meter (v5 item 93) */
+  equipmentId?: string | null;
+  meterReading?: Decimal | null;
 }
+
+/** What an issue is for besides the site: a job card's spares, or fuel into a machine. */
+type IssueLink = { maintenanceJobId?: string; equipmentId?: string; meterReading?: Decimal | null };
 
 const blank = (s: string | null | undefined) => s?.trim() || null;
 const key = (projectId: string, itemId: string) => `${projectId}|${itemId}`;
@@ -183,6 +191,9 @@ export class StockService {
       fromProjectName: r.transferOut?.project.name ?? null,
       remarks: r.remarks,
       adjustmentReason: r.adjustmentReason,
+      equipmentId: r.equipmentId,
+      equipmentCode: r.equipment?.code ?? null,
+      meterReading: dec(r.meterReading),
       qcStatus: r.qcStatus,
       qcAt: iso(r.qcAt),
       qcByName: r.qcBy?.fullName ?? null,
@@ -298,6 +309,8 @@ export class StockService {
         remarks: blank(h.remarks),
         adjustmentReason: h.type === 'ADJUSTMENT' ? (h.adjustmentReason ?? null) : null,
         maintenanceJobId: h.maintenanceJobId ?? null,
+        equipmentId: h.equipmentId ?? null,
+        meterReading: h.meterReading ?? null,
         createdById: user.id,
         lines: {
           create: lines.map((l, i) => ({
@@ -501,7 +514,7 @@ export class StockService {
   }
 
   /** Issue material at site; each quantity may not exceed the project's stock. `link` ties the issue to a maintenance job card. */
-  async issue(user: RequestUser, dto: CreateIssueDto, link?: { maintenanceJobId: string }): Promise<StockEntryDto> {
+  async issue(user: RequestUser, dto: CreateIssueDto, link?: IssueLink): Promise<StockEntryDto> {
     const existing = await this.findExisting(user, dto.id);
     if (existing) return existing;
     await this.access.assertCanKeepStock(user, dto.projectId);
@@ -538,6 +551,30 @@ export class StockService {
     await this.audit.log(user, 'STOCK', saved.id, 'CREATED', `${saved.entryNo} to ${issuedTo}`);
     await this.alertLowStock(user, dto.projectId, before, saved.id, saved.entryNo);
     return this.get(user, saved.id);
+  }
+
+  /**
+   * Fuel into a machine (v5 item 93): an issue of a fuel item with the machine and its meter, by whoever issues
+   * material. Offline phones send it through the outbox with their own id, so a retry returns the same entry.
+   */
+  async fuelIssue(user: RequestUser, dto: CreateFuelIssueDto): Promise<StockEntryDto> {
+    const existing = await this.findExisting(user, dto.id);
+    if (existing) return existing;
+    const [item, machine] = await Promise.all([
+      this.prisma.item.findFirst({ where: { id: dto.itemId, organizationId: user.organizationId }, select: { name: true, isFuel: true } }),
+      this.prisma.equipment.findFirst({ where: { id: dto.equipmentId, organizationId: user.organizationId }, select: { code: true, name: true, isActive: true } }),
+    ]);
+    if (!item) throw new NotFoundException('Item not found');
+    if (!item.isFuel) throw new BadRequestException(`${item.name} is not marked as fuel in the item master`);
+    if (!machine) throw new NotFoundException('Machine not found');
+    if (!machine.isActive) throw new BadRequestException(`${machine.code} is marked inactive`);
+    const meter = dto.meterReading === undefined || dto.meterReading === null || dto.meterReading === '' ? null : D(dto.meterReading);
+    if (meter && meter.isNegative()) throw new BadRequestException('The meter reading cannot be negative');
+    return this.issue(
+      user,
+      { id: dto.id, projectId: dto.projectId, date: dto.date, issuedTo: dto.issuedTo?.trim() || `${machine.code} ${machine.name}`, remarks: dto.remarks ?? null, lines: [{ itemId: dto.itemId, quantity: dto.quantity }] },
+      { equipmentId: dto.equipmentId, meterReading: meter },
+    );
   }
 
   /** Opening stock or a count correction (approvers). A negative line may not take the balance below zero. */
@@ -982,6 +1019,10 @@ export class StockService {
     if (words.length) rows = rows.filter((r) => words.every((w) => [r.itemName, r.category ?? '', r.projectName].some((s) => s.toLowerCase().includes(w))));
     if (q.lowOnly) rows = rows.filter((r) => r.low);
     if (q.inStock) rows = rows.filter((r) => Number(r.balance) > 0);
+    if (q.fuel) {
+      const fuel = new Set((await this.prisma.item.findMany({ where: { organizationId: user.organizationId, isFuel: true }, select: { id: true } })).map((i) => i.id));
+      rows = rows.filter((r) => fuel.has(r.itemId));
+    }
     const sortBy: StockBalanceSortField = q.sortBy ?? 'item';
     const dir = (q.sortOrder ?? (BALANCE_DESC_DEFAULT.has(sortBy) ? 'desc' : 'asc')) === 'asc' ? 1 : -1;
     const text = (a: string, b: string) => a.localeCompare(b, undefined, { sensitivity: 'base' });
@@ -1054,6 +1095,7 @@ export class StockService {
 
   async listItems(user: RequestUser, q: ListItemsQuery): Promise<Paginated<ItemDto>> {
     const where: Prisma.ItemWhereInput = { organizationId: user.organizationId };
+    if (q.fuel) where.isFuel = true;
     const words = searchWords(q.q);
     if (words.length) where.AND = words.map((w) => ({ OR: [{ name: ilike(w) }, { category: ilike(w) }, { unit: ilike(w) }] }));
     const sortBy = q.sortBy ?? 'name';
@@ -1067,7 +1109,7 @@ export class StockService {
       ? await this.prisma.stockTxn.groupBy({ by: ['itemId', 'projectId'], where: { itemId: { in: rows.map((r) => r.id) } } })
       : [];
     return paginated(
-      rows.map((r) => ({ id: r.id, name: r.name, unit: r.unit, category: r.category, rate: money(r.rate), projectCount: used.filter((u) => u.itemId === r.id).length, createdAt: iso(r.createdAt)! })),
+      rows.map((r) => ({ id: r.id, name: r.name, unit: r.unit, category: r.category, rate: money(r.rate), isFuel: r.isFuel, projectCount: used.filter((u) => u.itemId === r.id).length, createdAt: iso(r.createdAt)! })),
       total,
       args,
     );
@@ -1093,14 +1135,14 @@ export class StockService {
     const r = await this.prisma.item.findFirst({ where: { id, organizationId: user.organizationId } });
     if (!r) throw new NotFoundException('Item not found');
     const used = await this.prisma.stockTxn.groupBy({ by: ['projectId'], where: { itemId: id } });
-    return { id: r.id, name: r.name, unit: r.unit, category: r.category, rate: money(r.rate), projectCount: used.length, createdAt: iso(r.createdAt)! };
+    return { id: r.id, name: r.name, unit: r.unit, category: r.category, rate: money(r.rate), isFuel: r.isFuel, projectCount: used.length, createdAt: iso(r.createdAt)! };
   }
 
   async createItem(user: RequestUser, dto: CreateItemDto): Promise<ItemDto> {
     await this.access.assertCanManageStore(user);
     await this.assertItemUnique(user.organizationId, dto.name, dto.unit);
     try {
-      const row = await this.prisma.item.create({ data: { organizationId: user.organizationId, name: dto.name, unit: dto.unit, category: blank(dto.category), rate: this.rate(dto.rate) ?? null } });
+      const row = await this.prisma.item.create({ data: { organizationId: user.organizationId, name: dto.name, unit: dto.unit, category: blank(dto.category), rate: this.rate(dto.rate) ?? null, isFuel: dto.isFuel ?? false } });
       await this.audit.log(user, 'ITEM', row.id, 'CREATED', `${row.name} (${row.unit})`);
       return this.getItem(user, row.id);
     } catch (e) {
@@ -1119,7 +1161,7 @@ export class StockService {
       throw new ConflictException('The unit cannot change once the item has stock movements');
     await this.assertItemUnique(user.organizationId, name, unit, id);
     try {
-      await this.prisma.item.update({ where: { id }, data: { name, unit, ...(dto.category !== undefined ? { category: blank(dto.category) } : {}), ...(dto.rate !== undefined ? { rate: this.rate(dto.rate) } : {}) } });
+      await this.prisma.item.update({ where: { id }, data: { name, unit, ...(dto.category !== undefined ? { category: blank(dto.category) } : {}), ...(dto.rate !== undefined ? { rate: this.rate(dto.rate) } : {}), ...(dto.isFuel !== undefined ? { isFuel: dto.isFuel } : {}) } });
     } catch (e) {
       if (isUniqueViolation(e)) throw new ConflictException(`${name} (${unit}) is already in the item master`);
       throw e;

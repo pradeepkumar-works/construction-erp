@@ -156,6 +156,9 @@ export function StockEntryDrawer({ id, onClose }: { id: string | null; onClose: 
               ...(data.type === 'ISSUE' || data.type === 'RETURN_FROM_SITE'
                 ? [
                     { key: 'to', label: data.type === 'ISSUE' ? 'Issued to' : 'Returned by', children: data.issuedTo ?? '-' },
+                    ...(data.equipmentCode
+                      ? [{ key: 'machine', label: 'Into machine', children: `${data.equipmentCode}${data.meterReading ? ` at meter ${formatQty(data.meterReading)}` : ''}` }]
+                      : []),
                     ...(data.woNo ? [{ key: 'wo', label: 'Work order', children: `${data.woNo}${data.subcontractBillId ? ', recovered in their bill' : ', to be recovered from their next bill'}` }] : []),
                     { key: 'activity', label: 'Activity', children: data.activityName ?? '-' },
                   ]

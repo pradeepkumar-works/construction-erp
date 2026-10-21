@@ -104,6 +104,9 @@ export class MachineryService {
       serviceIntervalDays: r.serviceIntervalDays,
       lastServiceDate: dateOnly(r.lastServiceDate),
       lastServiceMeter: dec(r.lastServiceMeter),
+      fuelNorm: dec(r.fuelNorm),
+      fuelNormUnit: r.fuelNormUnit,
+      fuelTolerancePct: dec(r.fuelTolerancePct),
       createdAt: iso(r.createdAt)!,
     };
   }
@@ -172,6 +175,18 @@ export class MachineryService {
       data.lastServiceDate = dto.lastServiceDate ? parseDate(dto.lastServiceDate) : null;
     }
     if (dto.lastServiceMeter !== undefined) data.lastServiceMeter = decimalOrNull(dto.lastServiceMeter);
+    if (dto.fuelNorm !== undefined) {
+      const norm = decimalOrNull(dto.fuelNorm);
+      if (norm && norm.lte(0)) throw new BadRequestException('The fuel norm must be more than 0');
+      data.fuelNorm = norm;
+    }
+    if (dto.fuelNormUnit !== undefined) data.fuelNormUnit = dto.fuelNormUnit;
+    if (dto.fuelTolerancePct !== undefined) {
+      const t = decimalOrNull(dto.fuelTolerancePct);
+      if (t && (t.lte(0) || t.gt(100))) throw new BadRequestException('The tolerance is a % from 1 to 100');
+      data.fuelTolerancePct = t;
+    }
+    if ((dto.fuelNorm ?? null) !== null && dto.fuelNormUnit === null) throw new BadRequestException('Say whether the fuel norm is litres an hour or km a litre');
     return data;
   }
 
@@ -218,7 +233,27 @@ export class MachineryService {
 
   /* ---------- logs ---------- */
 
-  toDto(r: LogRow): MachineryLogDto {
+  /** Fuel issued from the store into each log's machine on its day (v5 item 93), by log id. */
+  private async fuelIssued(rows: LogRow[]): Promise<Map<string, string>> {
+    if (!rows.length) return new Map();
+    const entries = await this.prisma.stockEntry.findMany({
+      where: { type: 'ISSUE', equipmentId: { in: [...new Set(rows.map((r) => r.equipmentId))] }, date: { in: [...new Set(rows.map((r) => r.date.getTime()))].map((t) => new Date(t)) } },
+      select: { equipmentId: true, date: true, lines: { select: { quantity: true } } },
+    });
+    const sum = new Map<string, Prisma.Decimal>();
+    for (const e of entries) {
+      const k = `${e.equipmentId}|${e.date.getTime()}`;
+      sum.set(k, e.lines.reduce((s, l) => s.sub(l.quantity), sum.get(k) ?? new Prisma.Decimal(0)));
+    }
+    const out = new Map<string, string>();
+    for (const r of rows) {
+      const v = sum.get(`${r.equipmentId}|${r.date.getTime()}`);
+      if (v) out.set(r.id, dec(v)!);
+    }
+    return out;
+  }
+
+  toDto(r: LogRow, fuelIssued?: Map<string, string>): MachineryLogDto {
     return {
       id: r.id,
       projectId: r.projectId,
@@ -232,6 +267,7 @@ export class MachineryService {
       idleHours: dec(r.idleHours)!,
       breakdownHours: dec(r.breakdownHours)!,
       dieselLitres: dec(r.dieselLitres),
+      fuelIssuedLitres: fuelIssued?.get(r.id) ?? null,
       meterStart: dec(r.meterStart),
       meterEnd: dec(r.meterEnd),
       operatorName: r.operatorName,
@@ -283,13 +319,14 @@ export class MachineryService {
       this.prisma.machineryLog.findMany({ where, include: logInclude, orderBy: [...LOG_ORDER[sortBy](order), { id: 'asc' }], skip: args.skip, take: args.take }),
       this.prisma.machineryLog.count({ where }),
     ]);
-    return paginated(rows.map((r) => this.toDto(r)), total, args);
+    const fuel = await this.fuelIssued(rows);
+    return paginated(rows.map((r) => this.toDto(r, fuel)), total, args);
   }
 
   async get(user: RequestUser, id: string): Promise<MachineryLogDto> {
     const row = await this.prisma.machineryLog.findFirst({ where: { id, ...this.access.submissionWhere(user) }, include: logInclude });
     if (!row) throw new NotFoundException('Machinery log not found');
-    return this.toDto(row);
+    return this.toDto(row, await this.fuelIssued([row]));
   }
 
   /** Logs may be back-dated but not set in the future (a day of slack covers time zones). */

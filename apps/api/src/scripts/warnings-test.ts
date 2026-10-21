@@ -10,7 +10,7 @@
 import assert from 'node:assert/strict';
 import type { RoleKey } from '@erp/shared';
 import { WARNING_KINDS, watchListKinds } from '@erp/shared';
-import { activityForecast, addDays, cashGap, cashWeeks, daysToPay, dprGap, leadDays, machineTrend, materialOveruse, overuseStep, scheduleWarns, stockRunout, vendorTrend } from '../warnings/warning-rules';
+import { activityForecast, addDays, cashGap, cashWeeks, daysToPay, dprGap, leadDays, machineTrend, fuelNormCheck, fuelStep, materialOveruse, overuseStep, scheduleWarns, stockRunout, vendorTrend } from '../warnings/warning-rules';
 
 const cases: [string, () => void][] = [];
 const test = (name: string, fn: () => void) => cases.push([name, fn]);
@@ -169,12 +169,42 @@ test('material: 3% or more over the allowance warns, and the key moves on in ste
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
+// Fuel use off the norm
+
+const fuelDays = (n: number, hours: number, litres: number, km: number | null = null) =>
+  Array.from({ length: n }, (_, i) => ({ date: addDays('2026-10-20', -i), hoursWorked: hours, km, litres }));
+
+test('fuel: within the tolerance, or fewer than five logs with fuel, does not warn', () => {
+  assert.equal(fuelNormCheck(fuelDays(10, 8, 40), 4.5, 'LITRES_PER_HOUR', 15, '2026-10-20'), null, '5 L/h against 4.5 is 11% over');
+  assert.equal(fuelNormCheck(fuelDays(4, 8, 80), 4.5, 'LITRES_PER_HOUR', 15, '2026-10-20'), null, 'four logs are too few');
+  assert.equal(fuelNormCheck(fuelDays(10, 0, 30), 4.5, 'LITRES_PER_HOUR', 15, '2026-10-20'), null, 'no hours worked, nothing to average');
+});
+test('fuel: litres an hour over the norm warns as thirsty, over the latest ten logs only', () => {
+  const logs = [...fuelDays(10, 8, 48), ...fuelDays(20, 8, 30).map((l) => ({ ...l, date: addDays(l.date, -30) }))];
+  const f = fuelNormCheck(logs, 4.5, 'LITRES_PER_HOUR', 15, '2026-10-20')!;
+  assert.equal(f.logs, 10);
+  assert.equal(f.average, 6);
+  assert.equal(Math.round(f.deviationPct), 33);
+  assert.equal(f.thirsty, true);
+  assert.equal(f.from, '2026-10-11');
+  assert.equal(fuelStep(f.deviationPct), 30);
+});
+test('fuel: a vehicle short of its km a litre is thirsty; far over it warns the other way', () => {
+  const short = fuelNormCheck(fuelDays(6, 6, 50, 100), 3, 'KM_PER_LITRE', 15, '2026-10-20')!;
+  assert.equal(short.average, 2);
+  assert.equal(short.thirsty, true);
+  const far = fuelNormCheck(fuelDays(6, 6, 20, 100), 3, 'KM_PER_LITRE', 15, '2026-10-20')!;
+  assert.equal(far.thirsty, false);
+  assert.equal(fuelNormCheck(fuelDays(6, 6, 20, null), 3, 'KM_PER_LITRE', 15, '2026-10-20'), null, 'no odometer readings');
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
 // Roles
 
 test('roles: each kind goes to the role that can act on it', () => {
-  assert.deepEqual(watchListKinds('MANAGEMENT'), ['SCHEDULE', 'CASH', 'VENDOR', 'STOCK', 'MACHINE', 'DPR', 'MATERIAL_OVERUSE']);
+  assert.deepEqual(watchListKinds('MANAGEMENT'), ['SCHEDULE', 'CASH', 'VENDOR', 'STOCK', 'MACHINE', 'DPR', 'MATERIAL_OVERUSE', 'FUEL_NORM']);
   assert.deepEqual(watchListKinds('QUANTITY_SURVEYOR'), ['MATERIAL_OVERUSE']);
-  assert.deepEqual(watchListKinds('STORE_MANAGER'), ['STOCK', 'MACHINE']);
+  assert.deepEqual(watchListKinds('STORE_MANAGER'), ['STOCK', 'MACHINE', 'FUEL_NORM']);
   assert.deepEqual(watchListKinds('ACCOUNTS_MANAGER'), ['CASH']);
   assert.deepEqual(watchListKinds('PROCUREMENT_MANAGER'), ['VENDOR']);
   assert.deepEqual(watchListKinds('SITE_ENGINEER'), []);

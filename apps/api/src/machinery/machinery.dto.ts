@@ -4,11 +4,15 @@ import { IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsNotEmpty, IsNumberStri
 import { VENDOR_ID_DOC } from '../vendors/vendors.dto';
 import {
   EQUIPMENT_OWNERSHIPS,
+  EQUIPMENT_PART_KINDS,
+  FUEL_NORM_UNITS,
   EQUIPMENT_RATE_UNITS,
   HIRE_FUEL_BY,
   LIST_SORT_FIELDS,
   SUBMISSION_STATUSES,
   type EquipmentOwnership,
+  type EquipmentPartKind,
+  type FuelNormUnit,
   type EquipmentRateUnit,
   type HireFuelBy,
   type EquipmentSortField,
@@ -72,6 +76,14 @@ export class CreateEquipmentDto {
   @IsDateString()
   lastServiceDate?: string | null;
   @ApiPropertyOptional({ example: '2150' }) @IsOptional() @num() @ValidateIf((_, v) => v !== null) @IsNumberString() lastServiceMeter?: string | null;
+  @ApiPropertyOptional({ example: '4.5', description: 'Fuel norm (v5 item 93) in `fuelNormUnit`; null = none' }) @IsOptional() @num() @ValidateIf((_, v) => v !== null) @IsNumberString() fuelNorm?: string | null;
+  @ApiPropertyOptional({ enum: FUEL_NORM_UNITS }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsIn(FUEL_NORM_UNITS as unknown as string[]) fuelNormUnit?: FuelNormUnit | null;
+  @ApiPropertyOptional({ example: '15', description: 'How far the average may stray from the norm, %; null = the default 15' })
+  @IsOptional()
+  @num()
+  @ValidateIf((_, v) => v !== null)
+  @IsNumberString()
+  fuelTolerancePct?: string | null;
 }
 
 export class UpdateEquipmentDto extends PartialType(CreateEquipmentDto) {
@@ -122,3 +134,41 @@ export class ListMachineryLogsQuery extends PageQuery {
   @ApiPropertyOptional({ description: 'Only logs created by the current user' }) @IsOptional() @QueryBool() @IsBoolean() mine?: boolean;
   @ApiPropertyOptional({ enum: LIST_SORT_FIELDS.machinery, default: 'date' }) @IsOptional() @IsIn(LIST_SORT_FIELDS.machinery as unknown as string[]) sortBy?: MachineryLogSortField;
 }
+
+/* ---------- fleet use (v5 item 93) ---------- */
+
+export class FleetPeriodQuery {
+  @ApiPropertyOptional({ example: '2026-10-01', description: 'From the first log when left out' }) @IsOptional() @IsDateString() from?: string;
+  @ApiPropertyOptional({ example: '2026-10-31' }) @IsOptional() @IsDateString() to?: string;
+  @ApiPropertyOptional({ description: 'Logs at this project only' }) @IsOptional() @IsUUID() projectId?: string;
+}
+
+export class FuelIssuesQuery {
+  @ApiPropertyOptional() @IsOptional() @IsUUID() projectId?: string;
+  @ApiPropertyOptional() @IsOptional() @IsUUID() equipmentId?: string;
+  @ApiProperty({ example: '2026-10-01' }) @IsDateString() from: string;
+  @ApiProperty({ example: '2026-10-31' }) @IsDateString() to: string;
+}
+
+export class FuelPositionQuery {
+  @ApiPropertyOptional({ example: '2026-10-13', description: 'Default today' }) @IsOptional() @IsDateString() date?: string;
+  @ApiPropertyOptional({ description: 'One site; left out, every site the user sees' }) @IsOptional() @IsUUID() projectId?: string;
+}
+
+export class SaveEquipmentPartDto {
+  @ApiProperty({ enum: EQUIPMENT_PART_KINDS }) @IsIn(EQUIPMENT_PART_KINDS as unknown as string[]) kind: EquipmentPartKind;
+  @ApiPropertyOptional({ example: 'Front left' }) @IsOptional() @trim() @IsString() @MaxLength(60) position?: string | null;
+  @ApiPropertyOptional({ example: 'MRF Muscle Rock' }) @IsOptional() @trim() @IsString() @MaxLength(80) make?: string | null;
+  @ApiPropertyOptional({ example: 'MRF2309A1123' }) @IsOptional() @trim() @IsString() @MaxLength(60) serialNo?: string | null;
+  @ApiProperty({ example: '2026-08-01' }) @IsDateString() fittedOn: string;
+  @ApiPropertyOptional({ example: '1850', description: 'Hour meter or odometer when fitted' }) @IsOptional() @num() @ValidateIf((_, v) => v !== null) @IsNumberString() fittedMeter?: string | null;
+  @ApiPropertyOptional({ example: '2026-10-10', description: 'Set when it comes off' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsDateString() removedOn?: string | null;
+  @ApiPropertyOptional({ example: '3120' }) @IsOptional() @num() @ValidateIf((_, v) => v !== null) @IsNumberString() removedMeter?: string | null;
+  @ApiPropertyOptional({ example: 'Sidewall cut' }) @IsOptional() @trim() @IsString() @MaxLength(200) removalReason?: string | null;
+  @ApiPropertyOptional({ example: '42000' }) @IsOptional() @num() @ValidateIf((_, v) => v !== null) @IsNumberString() cost?: string | null;
+  @ApiPropertyOptional({ description: "A job card of this machine it was fitted on" }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsUUID() maintenanceJobId?: string | null;
+  @ApiPropertyOptional({ description: 'The store issue it came from' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsUUID() stockEntryId?: string | null;
+  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(500) note?: string | null;
+}
+
+export class UpdateEquipmentPartDto extends PartialType(SaveEquipmentPartDto) {}

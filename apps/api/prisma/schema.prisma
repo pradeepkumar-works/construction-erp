@@ -404,6 +404,7 @@ model Organization {
   materialNorms        MaterialNorm[]
   boqResources         BoqResource[]
   excessRecoveries     ExcessMaterialRecovery[]
+  equipmentParts       EquipmentPart[]
   equipment            Equipment[]
   machineryLogs        MachineryLog[]
   expenses             Expense[]
@@ -548,6 +549,7 @@ model User {
   materialNorms        MaterialNorm[]
   boqResources         BoqResource[]
   excessRecoveries     ExcessMaterialRecovery[]
+  equipmentParts       EquipmentPart[]
   submittedMachinery   MachineryLog[]           @relation("MachinerySubmitter")
   reviewedMachinery    MachineryLog[]           @relation("MachineryReviewer")
   submittedExpenses    Expense[]                @relation("ExpenseSubmitter")
@@ -1068,6 +1070,17 @@ enum VendorBillKind {
 enum HireFuelBy {
   OWNER
   COMPANY
+}
+
+/// How a machine's fuel norm is measured (v5 item 93): litres per working hour, or km per litre for vehicles
+enum FuelNormUnit {
+  LITRES_PER_HOUR
+  KM_PER_LITRE
+}
+
+enum EquipmentPartKind {
+  TYRE
+  BATTERY
 }
 
 enum DebitNoteReason {
@@ -1667,6 +1680,8 @@ model Item {
   category       String?
   /// Standard rate per unit; values issues in the project cost view
   rate           Decimal?     @db.Decimal(18, 2)
+  /// Diesel, petrol and the like (v5 item 93): issued to machines and counted in the daily fuel position
+  isFuel         Boolean      @default(false)
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
@@ -1742,6 +1757,10 @@ model StockEntry {
   /// Issues: spares for this maintenance job
   maintenanceJobId  String?
   maintenanceJob    MaintenanceJob?        @relation(fields: [maintenanceJobId], references: [id], onDelete: SetNull)
+  /// Fuel issues (v5 item 93): the machine the fuel went into, and its hour meter or odometer then
+  equipmentId       String?
+  equipment         Equipment?             @relation(fields: [equipmentId], references: [id], onDelete: SetNull)
+  meterReading      Decimal?               @db.Decimal(18, 2)
   /// Receipts: QA/QC's check of the material (null = not checked yet)
   qcStatus          GrnQcStatus?
   qcAt              DateTime?
@@ -1756,9 +1775,11 @@ model StockEntry {
   lines       StockTxn[]
   debitNotes  DebitNote[]
   attachments Attachment[]
+  parts       EquipmentPart[]
 
   @@unique([organizationId, entryNo])
   @@index([projectId, date])
+  @@index([equipmentId, date])
   @@index([organizationId, type, date])
   @@index([toProjectId])
 }
@@ -1923,10 +1944,16 @@ model Equipment {
   serviceIntervalDays  Int?
   lastServiceDate      DateTime?          @db.Date
   lastServiceMeter     Decimal?           @db.Decimal(18, 2)
+  /// Fuel norm (v5 item 93): litres an hour, or km a litre for vehicles, and how far the average may stray (%)
+  fuelNorm             Decimal?           @db.Decimal(18, 3)
+  fuelNormUnit         FuelNormUnit?
+  fuelTolerancePct     Decimal?           @db.Decimal(5, 2)
   createdAt            DateTime           @default(now())
   updatedAt            DateTime           @updatedAt
 
   logs            MachineryLog[]
+  fuelIssues      StockEntry[]
+  parts           EquipmentPart[]
   maintenanceJobs MaintenanceJob[]
   documents       EquipmentDocument[]
   drivers         Driver[]
@@ -1934,6 +1961,40 @@ model Equipment {
 
   @@unique([organizationId, code])
   @@index([organizationId, projectId])
+}
+
+/// A tyre or battery on a machine (v5 item 93): fitted with the meter then, removed with the meter and why. Its life is
+/// the meter run between the two (hours or km), or up to the machine's latest reading while still on.
+model EquipmentPart {
+  id               String            @id @default(uuid())
+  organizationId   String
+  organization     Organization      @relation(fields: [organizationId], references: [id])
+  equipmentId      String
+  equipment        Equipment         @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  kind             EquipmentPartKind
+  /// e.g. Front left, Rear right outer, Battery 1
+  position         String?
+  make             String?
+  serialNo         String?
+  fittedOn         DateTime          @db.Date
+  fittedMeter      Decimal?          @db.Decimal(18, 2)
+  removedOn        DateTime?         @db.Date
+  removedMeter     Decimal?          @db.Decimal(18, 2)
+  removalReason    String?
+  cost             Decimal?          @db.Decimal(18, 2)
+  /// Fitted on this job card, or issued from the store on this entry
+  maintenanceJobId String?
+  maintenanceJob   MaintenanceJob?   @relation(fields: [maintenanceJobId], references: [id], onDelete: SetNull)
+  stockEntryId     String?
+  stockEntry       StockEntry?       @relation(fields: [stockEntryId], references: [id], onDelete: SetNull)
+  note             String?
+  createdById      String
+  createdBy        User              @relation(fields: [createdById], references: [id])
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@index([equipmentId, kind])
+  @@index([organizationId])
 }
 
 /// One machine's day at one project: hours worked / idle / breakdown, diesel and hour-meter. Goes through approval.
@@ -3685,6 +3746,7 @@ model MaintenanceJob {
 
   spareIssues StockEntry[]
   attachments Attachment[]
+  parts       EquipmentPart[]
 
   @@unique([organizationId, jobNo])
   @@index([organizationId, status])

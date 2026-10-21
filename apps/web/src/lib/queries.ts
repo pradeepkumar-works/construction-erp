@@ -75,7 +75,12 @@ import type {
   ProjectContractDto,
   GettingStartedDto,
   EquipmentDto,
+  EquipmentPartsDto,
+  FleetUtilisationDto,
+  FuelIssueDto,
+  FuelPositionDto,
   EquipmentOwnership,
+  EquipmentPartKind,
   ExpenseCategory,
   ExpenseDto,
   ExpenseSummaryDto,
@@ -309,6 +314,8 @@ export interface StockBalanceFilters extends PageParams {
   projectId?: string;
   lowOnly?: boolean;
   inStock?: boolean;
+  /** Fuel items only (v5 item 93) */
+  fuel?: boolean;
 }
 
 export interface MachineryFilters extends ListFilters {
@@ -669,6 +676,90 @@ export const useEquipment = (filters?: EquipmentFilters, enabled = true) =>
     placeholderData: keepPreviousData,
     enabled,
   });
+
+/* ---------- fuel and fleet use (v5 item 93) ---------- */
+
+/** Each site's fuel on a day (today when left out) and the day's fuel issues into machines. */
+export const useFuelPosition = (q: { date?: string; projectId?: string }) =>
+  useQuery({
+    queryKey: ['machinery', 'fuel-position', clean(q)],
+    queryFn: async () => (await api.get<FuelPositionDto>('/fleet/fuel-position', { params: clean(q) })).data,
+    placeholderData: keepPreviousData,
+  });
+
+export const useFuelIssues = (q: { from: string; to: string; projectId?: string; equipmentId?: string }, enabled = true) =>
+  useQuery({
+    queryKey: ['machinery', 'fuel-issues', clean(q)],
+    queryFn: async () => (await api.get<FuelIssueDto[]>('/fleet/fuel-issues', { params: clean(q) })).data,
+    enabled,
+  });
+
+export const useFleetUtilisation = (q: { from?: string; to?: string; projectId?: string }) =>
+  useQuery({
+    queryKey: ['machinery', 'utilisation', clean(q)],
+    queryFn: async () => (await api.get<FleetUtilisationDto>('/fleet/utilisation', { params: clean(q) })).data,
+    placeholderData: keepPreviousData,
+  });
+
+export interface FuelIssueInput {
+  projectId: string;
+  date: string;
+  equipmentId: string;
+  itemId: string;
+  quantity: string;
+  meterReading?: string | null;
+  issuedTo?: string | null;
+  remarks?: string | null;
+}
+
+/** Fuel from the store into a machine: an issue slip that names the machine and its meter. */
+export function useFuelIssue() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: FuelIssueInput) => (await api.post<StockEntryDto>('/stock/fuel-issues', body)).data,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['stock'] });
+      qc.invalidateQueries({ queryKey: ['machinery'] });
+    },
+  });
+}
+
+/** A machine's tyres and batteries with each one's life. */
+export const useEquipmentParts = (equipmentId: string | undefined) =>
+  useQuery({
+    queryKey: ['machinery', 'parts', equipmentId],
+    queryFn: async () => (await api.get<EquipmentPartsDto>(`/equipment/${equipmentId}/parts`)).data,
+    enabled: !!equipmentId,
+  });
+
+export interface EquipmentPartInput {
+  kind?: EquipmentPartKind;
+  position?: string | null;
+  make?: string | null;
+  serialNo?: string | null;
+  fittedOn?: string;
+  fittedMeter?: string | null;
+  removedOn?: string | null;
+  removedMeter?: string | null;
+  removalReason?: string | null;
+  cost?: string | null;
+  note?: string | null;
+}
+
+/** Fit (no `partId`), change or take off (`removedOn`) a tyre or battery; `remove` deletes a wrong entry. */
+export function useSaveEquipmentPart() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ equipmentId, partId, remove, ...body }: EquipmentPartInput & { equipmentId: string; partId?: string; remove?: boolean }) =>
+      (remove
+        ? await api.delete<EquipmentPartsDto>(`/equipment/${equipmentId}/parts/${partId}`)
+        : partId
+          ? await api.patch<EquipmentPartsDto>(`/equipment/${equipmentId}/parts/${partId}`, body)
+          : await api.post<EquipmentPartsDto>(`/equipment/${equipmentId}/parts`, body)
+      ).data,
+    onSuccess: (data) => qc.setQueryData(['machinery', 'parts', data.equipmentId], data),
+  });
+}
 
 export const useExpenses = (filters?: ExpenseFilters) =>
   useQuery({

@@ -162,6 +162,10 @@ export const canManageEquipment = (role: RoleKey) => canApprove(role);
 /** Report a breakdown from site: the roles that log machinery. Close job cards, keep vehicle papers and drivers: the store manager and approvers. */
 export const MAINTENANCE_MANAGER_ROLES: RoleKey[] = ['STORE_MANAGER', ...APPROVER_ROLES];
 export const canManageMaintenance = (role: RoleKey) => MAINTENANCE_MANAGER_ROLES.includes(role);
+/** Issue fuel from the store into a machine (v5 item 93): whoever issues material. */
+export const canIssueFuel = (role: RoleKey) => canKeepStock(role);
+/** Record the tyres and batteries fitted to a machine: whoever closes job cards. */
+export const canRecordEquipmentParts = (role: RoleKey) => canManageMaintenance(role);
 
 /** File site expenses. */
 export const canSubmitExpense = (role: RoleKey) => EXPENSE_SUBMITTER_ROLES.includes(role);

@@ -5,6 +5,7 @@ import { StockService } from './stock.service';
 import {
   CheckGrnDto,
   CreateAdjustmentDto,
+  CreateFuelIssueDto,
   CreateIssueDto,
   CreateItemDto,
   CreateReceiptDto,
@@ -71,6 +72,15 @@ export class StockController {
   @Post('issues')
   issue(@CurrentUser() user: RequestUser, @Body() dto: CreateIssueDto) {
     return this.stock.issue(user, dto);
+  }
+
+  @ApiOperation({
+    summary: 'Fuel into a machine (v5 item 93)',
+    description: 'An issue of a fuel item to one machine, with its meter reading. Same rules as an issue; the phone sends it through its outbox with its own id.',
+  })
+  @Post('fuel-issues')
+  fuelIssue(@CurrentUser() user: RequestUser, @Body() dto: CreateFuelIssueDto) {
+    return this.stock.fuelIssue(user, dto);
   }
 
   @ApiOperation({ summary: 'Adjust stock (opening balance or count correction)', description: 'Approvers only. Signed quantities; a reason is required. Lines may name a new item by `itemName` + `unit`.' })

@@ -3,10 +3,23 @@
 import React, { useState } from 'react';
 import { App, Button, Checkbox, DatePicker, Form, Input, InputNumber, Select, Space, Tag, theme } from 'antd';
 import dayjs from 'dayjs';
-import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, PlusOutlined, ToolOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { EquipmentDto, EquipmentOwnership, EquipmentRateUnit, EquipmentSortField, HireFuelBy } from '@erp/shared';
-import { EQUIPMENT_OWNERSHIPS, EQUIPMENT_OWNERSHIP_LABELS, EQUIPMENT_RATE_UNITS, EQUIPMENT_RATE_UNIT_LABELS, HIRE_FUEL_BY, HIRE_FUEL_BY_LABELS, LIST_SORT_FIELDS, canManageEquipment } from '@erp/shared';
+import type { EquipmentDto, EquipmentOwnership, EquipmentRateUnit, EquipmentSortField, FuelNormUnit, HireFuelBy } from '@erp/shared';
+import {
+  EQUIPMENT_OWNERSHIPS,
+  EQUIPMENT_OWNERSHIP_LABELS,
+  EQUIPMENT_RATE_UNITS,
+  EQUIPMENT_RATE_UNIT_LABELS,
+  FUEL_NORM_UNITS,
+  FUEL_NORM_UNIT_LABELS,
+  FUEL_TOLERANCE_DEFAULT_PCT,
+  HIRE_FUEL_BY,
+  HIRE_FUEL_BY_LABELS,
+  LIST_SORT_FIELDS,
+  canManageEquipment,
+  fuelNormText,
+} from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
@@ -27,6 +40,7 @@ import { VendorPicker } from '@/components/vendors/VendorPicker';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput, QuantityInput } from '@/components/form/inputs';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
+import { EquipmentPartsDrawer } from './EquipmentPartsDrawer';
 
 const KEYS = ['ownership', 'inactive'] as const;
 
@@ -52,6 +66,9 @@ interface EquipmentForm {
   hireMinHours?: number | null;
   hireFuelBy?: HireFuelBy | null;
   hireOperator?: 'yes' | 'no' | null;
+  fuelNorm?: number | null;
+  fuelNormUnit?: FuelNormUnit | null;
+  fuelTolerancePct?: number | null;
 }
 
 /** Equipment master. Everyone sees the fleet and where it is deployed; approvers add machines, set rates and move them. */
@@ -62,6 +79,7 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
   const mayManage = !!user && canManageEquipment(user.roleKey);
   const { data: projects } = useProjects();
   const [editing, setEditing] = useState<EquipmentDto | 'new' | null>(null);
+  const [partsOf, setPartsOf] = useState<EquipmentDto | null>(null);
   const [form] = Form.useForm<EquipmentForm>();
   const formOwnership = Form.useWatch('ownership', form);
 
@@ -84,6 +102,10 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
         hireMinHours: v.ownership === 'HIRED' && v.hireMinHours ? String(v.hireMinHours) : null,
         hireFuelBy: v.ownership === 'HIRED' ? (v.hireFuelBy ?? null) : null,
         hireOperator: v.ownership === 'HIRED' && v.hireOperator ? v.hireOperator === 'yes' : null,
+        // Fuel norm (v5 item 93): what its fuel use is checked against.
+        fuelNorm: v.fuelNorm ? String(v.fuelNorm) : null,
+        fuelNormUnit: v.fuelNorm ? (v.fuelNormUnit ?? 'LITRES_PER_HOUR') : null,
+        fuelTolerancePct: v.fuelNorm && v.fuelTolerancePct ? String(v.fuelTolerancePct) : null,
         ...(editing && editing !== 'new' ? { isActive: v.isActive ?? true } : {}),
       };
       return editing && editing !== 'new' ? (await api.patch<EquipmentDto>(`/equipment/${editing.id}`, body)).data : (await api.post<EquipmentDto>('/equipment', body)).data;
@@ -105,7 +127,7 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
   const open = (e: EquipmentDto | 'new') => {
     setEditing(e);
     form.resetFields();
-    if (e === 'new') form.setFieldsValue({ ownership: 'OWNED', rateUnit: 'HOUR', projectId: fixedProject });
+    if (e === 'new') form.setFieldsValue({ ownership: 'OWNED', rateUnit: 'HOUR', projectId: fixedProject, fuelNormUnit: 'LITRES_PER_HOUR' });
     else
       form.setFieldsValue({
         code: e.code,
@@ -124,6 +146,9 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
         hireMinHours: e.hireMinHours === null ? null : Number(e.hireMinHours),
         hireFuelBy: e.hireFuelBy,
         hireOperator: e.hireOperator === null ? null : e.hireOperator ? 'yes' : 'no',
+        fuelNorm: e.fuelNorm ? Number(e.fuelNorm) : null,
+        fuelNormUnit: e.fuelNormUnit ?? 'LITRES_PER_HOUR',
+        fuelTolerancePct: e.fuelTolerancePct ? Number(e.fuelTolerancePct) : null,
       });
   };
 
@@ -160,7 +185,7 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
                 r.name
               )}{' '}
               {r.isActive ? null : <Tag style={{ marginLeft: 4 }}>Inactive</Tag>}
-              <Sub>{[r.registrationNo, r.supplier].filter(Boolean).join(' · ') || ' '}</Sub>
+              <Sub>{[r.registrationNo, r.supplier, r.fuelNorm && r.fuelNormUnit ? `Norm ${fuelNormText(r.fuelNorm, r.fuelNormUnit)}` : null].filter(Boolean).join(' · ') || ' '}</Sub>
             </div>
           ),
         },
@@ -171,26 +196,27 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
           ? [{ title: 'Rate', key: 'rate', width: 150, align: 'right' as const, render: (_: unknown, r: EquipmentDto) => (r.rate === null ? '-' : `${formatINR(r.rate)} ${EQUIPMENT_RATE_UNIT_LABELS[r.rateUnit]}`) } satisfies ListColumn<EquipmentDto>]
           : []),
         { key: 'lastLogDate', title: 'Last log', dataIndex: 'lastLogDate', width: 120, render: (v: string | null) => (v ? formatDate(v) : <Sub>never</Sub>) },
-        ...(mayManage
-          ? [
-              {
-                title: '',
-                key: 'actions',
-                label: 'Actions',
-                locked: true,
-                fixed: 'right' as const,
-                width: 90,
-                render: (_: unknown, r: EquipmentDto) => (
-                  <Space size="small">
-                    <Button type="text" size="small" icon={<EditOutlined />} onClick={() => open(r)} aria-label="Edit" />
-                    <ConfirmDelete what={`machine ${r.code}`} onConfirm={() => remove.mutateAsync(r)} disabled={!!r.lastLogDate}>
-                      <Button type="text" size="small" danger icon={<DeleteOutlined />} disabled={!!r.lastLogDate} title={r.lastLogDate ? 'Has logs; mark it inactive instead' : undefined} aria-label="Delete" />
-                    </ConfirmDelete>
-                  </Space>
-                ),
-              } satisfies ListColumn<EquipmentDto>,
-            ]
-          : []),
+        {
+          title: '',
+          key: 'actions',
+          label: 'Actions',
+          locked: true,
+          fixed: 'right' as const,
+          width: mayManage ? 120 : 56,
+          render: (_: unknown, r: EquipmentDto) => (
+            <Space size="small">
+              <Button type="text" size="small" icon={<ToolOutlined />} onClick={() => setPartsOf(r)} aria-label={`Tyres and batteries of ${r.code}`} title="Tyres and batteries" />
+              {mayManage ? (
+                <>
+                  <Button type="text" size="small" icon={<EditOutlined />} onClick={() => open(r)} aria-label="Edit" />
+                  <ConfirmDelete what={`machine ${r.code}`} onConfirm={() => remove.mutateAsync(r)} disabled={!!r.lastLogDate}>
+                    <Button type="text" size="small" danger icon={<DeleteOutlined />} disabled={!!r.lastLogDate} title={r.lastLogDate ? 'Has logs; mark it inactive instead' : undefined} aria-label="Delete" />
+                  </ConfirmDelete>
+                </>
+              ) : null}
+            </Space>
+          ),
+        } satisfies ListColumn<EquipmentDto>,
       ];
     },
   });
@@ -249,7 +275,12 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
         rows={rows}
         loading={isLoading || isFetching}
         table={page.tableProps<EquipmentDto>(data?.total)}
-        onOpen={mayManage ? (id) => { const r = rows.find((x) => x.id === id); if (r) open(r); } : undefined}
+        // A row opens its edit form for those who manage the fleet, and its tyres and batteries for the rest (a phone's
+        // cards have no actions column).
+        onOpen={(id) => {
+          const r = rows.find((x) => x.id === id);
+          if (r) (mayManage ? open : setPartsOf)(r);
+        }}
         bulk={[exportSelected<EquipmentDto>('equipment', 'equipment', EQUIPMENT_EXPORT)]}
         chips={frame.chips}
         empty={frame.empty}
@@ -268,6 +299,13 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
         okText="Save"
         projectDefault={false}
         onSubmit={(v) => save.mutateAsync(v)}
+        footerExtra={
+          editing && editing !== 'new' ? (
+            <Button icon={<ToolOutlined />} onClick={() => setPartsOf(editing)}>
+              Tyres and batteries
+            </Button>
+          ) : null
+        }
       >
         <Form form={form} layout="vertical">
           <FormSection title="Machine">
@@ -326,6 +364,19 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
               </FormGrid>
             ) : null}
           </FormSection>
+          <FormSection title="Fuel norm">
+            <FormGrid cols={3}>
+              <Form.Item name="fuelNorm" label="Norm" extra="Leave blank for no fuel check">
+                <QuantityInput />
+              </Form.Item>
+              <Form.Item name="fuelNormUnit" label="In">
+                <Select options={FUEL_NORM_UNITS.map((u) => ({ value: u, label: FUEL_NORM_UNIT_LABELS[u] }))} />
+              </Form.Item>
+              <Form.Item name="fuelTolerancePct" label="Tolerance" tooltip="How far its average over recent logs may stray before the watch list flags it">
+                <QuantityInput unit="%" precision={1} max={100} placeholder={String(FUEL_TOLERANCE_DEFAULT_PCT)} />
+              </Form.Item>
+            </FormGrid>
+          </FormSection>
           <FormSection title="Deployment and service">
             <Form.Item name="projectId" label="Deployed at">
               <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Yard / unassigned" options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))} />
@@ -349,6 +400,7 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
           </FormSection>
         </Form>
       </FormShell>
+      <EquipmentPartsDrawer machine={partsOf} onClose={() => setPartsOf(null)} />
     </>
   );
 }

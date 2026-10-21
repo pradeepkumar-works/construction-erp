@@ -60,6 +60,7 @@ function RootNavigator() {
         <Stack.Screen name="stock/index" options={{ title: t('Stock') }} />
         <Stack.Screen name="stock/receive" options={{ title: t('Receive Material') }} />
         <Stack.Screen name="stock/issue" options={{ title: t('Issue Material') }} />
+        <Stack.Screen name="stock/fuel" options={{ title: t('Fuel issue') }} />
         <Stack.Screen name="machinery/new" options={{ title: t('Log Machinery') }} />
         <Stack.Screen name="machinery/[id]" options={{ title: t('Machinery Log') }} />
         <Stack.Screen name="breakdown/new" options={{ title: t('Report Breakdown') }} />

@@ -8,6 +8,7 @@ import type { DocumentDiscipline, DocumentKind, LetterDirection, RevisionStatus,
 import type { LeaveStatus, LeaveType, StaffAttendanceStatus } from './staff';
 import type { CostHead } from './cost';
 import type {
+  FuelNormUnit,
   LdPeriod,
   BillStage,
   ReceiptKind,
@@ -560,6 +561,8 @@ export interface ItemDto {
   category: string | null;
   /** Standard rate per unit used to value issues in the cost view. */
   rate: string | null;
+  /** Fuel (v5 item 93): issued to machines and counted in the daily fuel position */
+  isFuel?: boolean;
   /** Projects in which this item has stock movements. */
   projectCount: number;
   createdAt: string;
@@ -613,6 +616,10 @@ export interface StockEntryDto {
   remarks: string | null;
   /** Adjustments: why (v5 item 92); null on adjustments made before reasons were asked */
   adjustmentReason?: StockAdjustmentReason | null;
+  /** Fuel issues (v5 item 93): the machine fuelled and its meter then */
+  equipmentId?: string | null;
+  equipmentCode?: string | null;
+  meterReading?: string | null;
   /** Receipts: QA/QC's check of the material (null until checked) */
   qcStatus?: GrnQcStatus | null;
   qcAt?: string | null;
@@ -731,6 +738,10 @@ export interface EquipmentDto {
   serviceIntervalDays: number | null;
   lastServiceDate: string | null;
   lastServiceMeter: string | null;
+  /** Fuel norm (v5 item 93): litres an hour, or km a litre, and the % the average may stray; null when not set */
+  fuelNorm?: string | null;
+  fuelNormUnit?: FuelNormUnit | null;
+  fuelTolerancePct?: string | null;
   createdAt: string;
 }
 
@@ -744,6 +755,8 @@ export interface MachineryLogDto extends SubmissionBase {
   idleHours: string;
   breakdownHours: string;
   dieselLitres: string | null;
+  /** Fuel issued from the store to this machine on the day (v5 item 93), to set beside the litres typed */
+  fuelIssuedLitres?: string | null;
   meterStart: string | null;
   meterEnd: string | null;
   operatorName: string | null;

@@ -3,7 +3,7 @@
  * and no model, so `src/scripts/warnings-test.ts` can test each one and replay them over the demo history. Dates are
  * YYYY-MM-DD; every rule takes the day it is run for, so a backtest can ask what it would have said on any day.
  */
-import { MATERIAL_OVERUSE_MIN_PCT } from '@erp/shared';
+import { FUEL_NORM_LOGS, FUEL_NORM_MIN_LOGS, MATERIAL_OVERUSE_MIN_PCT, type FuelNormUnit } from '@erp/shared';
 
 const DAY = 24 * 3600 * 1000;
 const toTime = (d: string) => Date.parse(`${d}T00:00:00Z`);
@@ -291,3 +291,48 @@ export function materialOveruse(f: OveruseFacts): { excess: number; overPct: num
 
 /** The step of the overuse a dismissal holds for: 5 points of %, so the warning comes back as the overuse grows. */
 export const overuseStep = (overPct: number) => Math.floor(overPct / 5) * 5;
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Fuel use off the norm (v5 item 93): a machine's average over its latest logs against its norm.
+
+export interface FuelLog {
+  date: string;
+  hoursWorked: number;
+  /** Meter run of the day for a vehicle (odometer); null without both readings */
+  km: number | null;
+  litres: number;
+}
+
+export interface FuelCheck {
+  /** Litres an hour, or km a litre, over the logs used */
+  average: number;
+  /** (average − norm) ÷ norm, in %; positive is more litres an hour or more km a litre */
+  deviationPct: number;
+  /** True when the machine burns more fuel than the norm allows: more litres an hour, or fewer km a litre */
+  thirsty: boolean;
+  logs: number;
+  from: string;
+  to: string;
+}
+
+/**
+ * The machine's latest FUEL_NORM_LOGS logs that have fuel and use (hours, or km for a vehicle), up to `today`; a
+ * warning when there are at least FUEL_NORM_MIN_LOGS and their average strays from the norm by more than the tolerance,
+ * either way (less fuel than the norm can mean hours written up or fuel booked to another machine).
+ */
+export function fuelNormCheck(logs: FuelLog[], norm: number, unit: FuelNormUnit, tolerancePct: number, today: string): FuelCheck | null {
+  if (!(norm > 0)) return null;
+  const used = logs
+    .filter((l) => l.date <= today && l.litres > 0 && (unit === 'KM_PER_LITRE' ? (l.km ?? 0) > 0 : l.hoursWorked > 0))
+    .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0))
+    .slice(0, FUEL_NORM_LOGS);
+  if (used.length < FUEL_NORM_MIN_LOGS) return null;
+  const litres = used.reduce((s, l) => s + l.litres, 0);
+  const average = unit === 'KM_PER_LITRE' ? used.reduce((s, l) => s + (l.km ?? 0), 0) / litres : litres / used.reduce((s, l) => s + l.hoursWorked, 0);
+  const deviationPct = ((average - norm) / norm) * 100;
+  if (Math.abs(deviationPct) <= tolerancePct) return null;
+  return { average, deviationPct, thirsty: unit === 'KM_PER_LITRE' ? deviationPct < 0 : deviationPct > 0, logs: used.length, from: used[used.length - 1].date, to: used[0].date };
+}
+
+/** The step a dismissal holds for: 10 points of %, so the warning comes back when the machine drifts further. */
+export const fuelStep = (deviationPct: number) => Math.floor(Math.abs(deviationPct) / 10) * 10;

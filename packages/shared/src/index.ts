@@ -46,5 +46,6 @@ export * from './warnings';
 export * from './briefs';
 export * from './photo-checks';
 export * from './reconciliation';
+export * from './fleet';
 export * from './ppe';
 export * from './rfi';
