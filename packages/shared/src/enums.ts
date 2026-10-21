@@ -183,6 +183,14 @@ export type HireFuelBy = (typeof HIRE_FUEL_BY)[number];
 export const DEBIT_NOTE_REASONS = ['SHORTAGE', 'EXCESS', 'REJECTED', 'RETURNED', 'RATE_DIFFERENCE', 'OTHER'] as const;
 export type DebitNoteReason = (typeof DEBIT_NOTE_REASONS)[number];
 
+/** A rate-analysis resource besides material (v5 item 92): a trade in man-days or an equipment category in hours per BOQ unit. */
+export const BOQ_RESOURCE_KINDS = ['LABOUR', 'EQUIPMENT'] as const;
+export type BoqResourceKind = (typeof BOQ_RESOURCE_KINDS)[number];
+
+/** Why stock was adjusted (v5 item 92). Everything but OPENING counts in the wastage report. */
+export const STOCK_ADJUSTMENT_REASONS = ['OPENING', 'WASTAGE', 'DAMAGE', 'THEFT', 'COUNT_DIFFERENCE', 'OTHER'] as const;
+export type StockAdjustmentReason = (typeof STOCK_ADJUSTMENT_REASONS)[number];
+
 /** A payment for the Nirmaan subscription (v3 item 34): created with a Razorpay order, paid once Razorpay confirms it. */
 export const BILLING_PAYMENT_STATUSES = ['CREATED', 'PAID'] as const;
 export type BillingPaymentStatus = (typeof BILLING_PAYMENT_STATUSES)[number];

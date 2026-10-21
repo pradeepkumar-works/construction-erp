@@ -19,7 +19,7 @@ interface Values {
  * Add a material norm (how much of a store item one unit of a BOQ item uses, with the wastage allowed) or change one.
  * A norm's BOQ item and store item are fixed once it exists; to move it, remove it and add another.
  */
-export function NormFormModal({ open, onClose, projectId, norm }: { open: boolean; onClose: () => void; projectId: string; norm: MaterialNormDto | null }) {
+export function NormFormModal({ open, onClose, projectId, norm, boqItemId: presetBoq }: { open: boolean; onClose: () => void; projectId: string; norm: MaterialNormDto | null; boqItemId?: string }) {
   const [form] = Form.useForm<Values>();
   const { message } = App.useApp();
   const save = useSaveMaterialNorm();
@@ -31,8 +31,8 @@ export function NormFormModal({ open, onClose, projectId, norm }: { open: boolea
     if (!open) return;
     form.resetFields();
     if (norm) form.setFieldsValue({ boqItemId: norm.boqItemId, itemId: norm.itemId, qtyPerUnit: Number(norm.qtyPerUnit), wastagePct: Number(norm.wastagePct), note: norm.note ?? undefined });
-    else form.setFieldsValue({ wastagePct: 2 });
-  }, [open, norm, form]);
+    else form.setFieldsValue({ wastagePct: 2, boqItemId: presetBoq });
+  }, [open, norm, form, presetBoq]);
 
   const submit = async (v: Values) => {
     const saved = await save.mutateAsync({
@@ -64,7 +64,7 @@ export function NormFormModal({ open, onClose, projectId, norm }: { open: boolea
           </Typography.Paragraph>
         ) : (
           <>
-            <Form.Item name="boqItemId" label="BOQ item" rules={[{ required: true, message: 'Choose the BOQ item the material goes into' }]}>
+            <Form.Item name="boqItemId" label="BOQ item" hidden={!!presetBoq} rules={[{ required: true, message: 'Choose the BOQ item the material goes into' }]}>
               <Select
                 showSearch={{ optionFilterProp: 'label' }}
                 loading={boqLoading}

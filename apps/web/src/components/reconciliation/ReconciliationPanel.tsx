@@ -1,11 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Alert, Button, Col, Empty, Row, Skeleton, Space, Statistic, Table, Tag, Tooltip, Typography } from 'antd';
+import { Alert, Button, Col, Empty, Row, Skeleton, Space, Statistic, Table, Tabs, Tag, Tooltip, Typography } from 'antd';
 import type { TableProps } from 'antd';
 import { DeleteOutlined, EditOutlined, FileExcelOutlined, PlusOutlined } from '@ant-design/icons';
 import type { MaterialNormDto, ReconciliationItemDto, ReconciliationLineDto, ReconciliationStatus, UnreconciledItemDto } from '@erp/shared';
-import { RECONCILIATION_STATUS_HINTS, RECONCILIATION_STATUS_LABELS, RECONCILIATION_UNDER_PCT } from '@erp/shared';
+import { RECONCILIATION_STATUS_HINTS, RECONCILIATION_STATUS_LABELS, RECONCILIATION_UNDER_PCT, canViewCost } from '@erp/shared';
+import { useAuth } from '@/lib/auth';
+import { useUrlTab } from '@/lib/url-state';
 import { useProjectReconciliation, useRemoveMaterialNorm } from '@/lib/queries';
 import { formatDateTime, formatINR, formatQty, toNumber } from '@/lib/format';
 import { downloadWorkbook, exportFileName, workbookSheet } from '@/lib/exportExcel';
@@ -15,18 +17,21 @@ import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 import { Section, SectionStack } from '@/components/common/Section';
 import { PeriodPicker, periodLabel, periodParams, type PeriodState } from '@/components/cost/PeriodPicker';
 import { NormFormModal } from './NormFormModal';
+import { SubconReconciliation } from './SubconReconciliation';
+import { WastageReport } from './WastageReport';
+import { EstimatePanel } from './EstimatePanel';
 
 const RED = themeColor('colorErrorText');
 const STATUS_COLOR: Record<ReconciliationStatus, string> = { OVER: 'error', UNDER: 'warning', WITHIN: 'success', NO_WORK: 'default' };
 
-const qty = (v: string, unit?: string) => (
+export const qty = (v: string, unit?: string) => (
   <span className="mono" translate="no">
     {formatQty(v)}
     {unit ? ` ${unit}` : ''}
   </span>
 );
 
-function StatusCell({ status }: { status: ReconciliationStatus }) {
+export function StatusCell({ status }: { status: ReconciliationStatus }) {
   return (
     <Tooltip title={RECONCILIATION_STATUS_HINTS[status]}>
       <Tag color={STATUS_COLOR[status]} style={{ margin: 0 }}>
@@ -48,11 +53,38 @@ function VarianceCell({ r }: { r: ReconciliationItemDto }) {
   );
 }
 
+const VIEWS = ['materials', 'subcontractors', 'wastage', 'estimate'] as const;
+type View = (typeof VIEWS)[number];
+
 /**
- * A project's material reconciliation: approved work × the QS's norms (theoretical) against what the store issued to
- * site less what came back (consumed), item by item, with the norms that drive it.
+ * A project's material reconciliation (v4, extended in v5 item 92): materials against the work, each subcontractor's
+ * issues against their measured work, stock written off by reason, and the estimate built from the rate analysis. The
+ * open view is `?sub=` in the URL.
  */
 export function ReconciliationPanel({ projectId }: { projectId: string }) {
+  const { user } = useAuth();
+  const [view, setView] = useUrlTab<View>(VIEWS, 'materials');
+  const cost = !!user && canViewCost(user.roleKey);
+  return (
+    <Tabs
+      activeKey={view}
+      onChange={(k) => setView(k as View)}
+      tabBarStyle={{ marginBottom: 12 }}
+      items={[
+        { key: 'materials', label: 'Materials', children: <MaterialsView projectId={projectId} /> },
+        { key: 'subcontractors', label: 'Subcontractors', children: <SubconReconciliation projectId={projectId} /> },
+        { key: 'wastage', label: 'Wastage', children: <WastageReport projectId={projectId} /> },
+        { key: 'estimate', label: cost ? 'Estimate' : 'Rate analysis', children: <EstimatePanel projectId={projectId} /> },
+      ]}
+    />
+  );
+}
+
+/**
+ * Materials: approved work × the QS's norms (theoretical) against what the store issued to site less what came back
+ * (consumed), item by item, with the norms that drive it.
+ */
+function MaterialsView({ projectId }: { projectId: string }) {
   const [period, setPeriod] = useState<PeriodState>({ preset: 'all', range: null });
   const [editing, setEditing] = useState<MaterialNormDto | null>(null);
   const [formOpen, setFormOpen] = useState(false);

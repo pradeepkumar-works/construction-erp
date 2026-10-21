@@ -21,6 +21,7 @@ import { StockModule } from '../stock/stock.module';
 import { ProjectsModule } from '../projects/projects.module';
 import { DashboardModule } from '../dashboard/dashboard.module';
 import { CostModule } from '../cost/cost.module';
+import { ReconciliationModule } from '../reconciliation/reconciliation.module';
 import { ContractsModule } from '../contracts/contracts.module';
 import { QualityModule } from '../quality/quality.module';
 import { MaintenanceModule } from '../maintenance/maintenance.module';
@@ -58,6 +59,7 @@ import { AiDraftsService } from './ai-drafts.service';
     ProjectsModule,
     DashboardModule,
     CostModule,
+    ReconciliationModule,
     ContractsModule,
     QualityModule,
     MaintenanceModule,

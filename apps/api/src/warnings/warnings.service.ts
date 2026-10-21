@@ -10,6 +10,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { todayIn } from '../notifications/time';
 import { ReceivablesService } from '../receivables/receivables.service';
 import { PayablesService } from '../payables/payables.service';
+import { ReconciliationService } from '../reconciliation/reconciliation.service';
 import {
   type Delivery,
   type MachineDay,
@@ -24,6 +25,8 @@ import {
   dprGap,
   leadDays,
   machineTrend,
+  materialOveruse,
+  overuseStep,
   scheduleWarns,
   stockRunout,
   vendorTrend,
@@ -70,6 +73,7 @@ export class WarningsService {
     private audit: AuditService,
     private receivables: ReceivablesService,
     private payables: PayablesService,
+    private reconciliation: ReconciliationService,
   ) {}
 
   async list(user: RequestUser): Promise<WatchListDto> {
@@ -139,6 +143,7 @@ export class WarningsService {
         if (k === 'VENDOR') return this.vendors(projects, today);
         if (k === 'STOCK') return this.stock(user.organizationId, projects, today);
         if (k === 'MACHINE') return this.machines(projects, today);
+        if (k === 'MATERIAL_OVERUSE') return this.overuse(active, today);
         return this.dprs(active, today);
       }),
     );
@@ -204,6 +209,41 @@ export class WarningsService {
       });
     }
     return out.sort((a, b) => b.slip - a.slip).map(({ slip: _slip, ...w }) => w);
+  }
+
+  /** Materials consumed beyond their norms' allowance at active projects with norms (v5 item 92), largest overuse first. */
+  private async overuse(projects: Project[], today: string): Promise<Draft[]> {
+    if (!projects.length) return [];
+    const withNorms = new Set((await this.prisma.materialNorm.groupBy({ by: ['projectId'], where: { projectId: { in: projects.map((p) => p.id) } } })).map((g) => g.projectId));
+    const out: (Draft & { overPct: number })[] = [];
+    for (const p of projects.filter((x) => withNorms.has(x.id))) {
+      const rec = await this.reconciliation.forWarnings(p.id, today);
+      for (const item of rec.items) {
+        const f = materialOveruse({ allowed: Number(item.allowedQty), consumed: Number(item.consumedQty) });
+        if (!f) continue;
+        const value = item.excessValue !== null ? Number(item.excessValue) : null;
+        out.push({
+          key: `material:${p.id}:${item.itemId}:${overuseStep(f.overPct)}`,
+          kind: 'MATERIAL_OVERUSE',
+          title: `${item.itemName} at ${p.code} is ${Math.round(f.overPct)}% over what the work allows`,
+          detail: `${qty(Number(item.consumedQty))} ${item.unit} used against ${qty(Number(item.allowedQty))} ${item.unit} allowed for the approved progress, wastage included${value ? `: ${rupees(value)} at the item rate` : ''}. Check for wastage, theft, or issues booked to the wrong project or activity.`,
+          facts: [
+            { label: 'Used', value: `${qty(Number(item.consumedQty))} ${item.unit}` },
+            { label: 'Allowed', value: `${qty(Number(item.allowedQty))} ${item.unit}` },
+            { label: 'Over', value: `${qty(f.excess)} ${item.unit}` },
+            ...(value ? [{ label: 'Value', value: rupees(value) }] : []),
+          ],
+          links: [
+            { label: 'Reconciliation', href: `/projects/${p.id}?tab=reconciliation` },
+            { label: 'Stock', href: `/stock?projectId=${p.id}` },
+          ],
+          projectId: p.id,
+          projectName: p.name,
+          overPct: f.overPct,
+        });
+      }
+    }
+    return out.sort((a, b) => b.overPct - a.overPct).map(({ overPct: _o, ...w }) => w);
   }
 
   private async dprs(projects: Project[], today: string): Promise<Draft[]> {

@@ -5,8 +5,8 @@ import { App, Button, DatePicker, Form, Input, InputNumber, Select, Space, Typog
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { ItemDto, StockEntryDto } from '@erp/shared';
-import { MAX_PAGE_SIZE } from '@erp/shared';
+import type { ItemDto, StockAdjustmentReason, StockEntryDto } from '@erp/shared';
+import { MAX_PAGE_SIZE, STOCK_ADJUSTMENT_REASONS, STOCK_ADJUSTMENT_REASON_LABELS } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useProjects, useStockBalances } from '@/lib/queries';
@@ -29,11 +29,15 @@ interface LineValue {
 interface FormValues {
   projectId: string;
   date: dayjs.Dayjs;
+  reason: StockAdjustmentReason;
   remarks: string;
   lines?: LineValue[];
 }
 
-/** Opening stock or a physical-count correction (approvers). Quantities are signed; a line can add a new item. */
+/**
+ * Opening stock, wastage, damage or a count correction (approvers). Quantities are signed; a line can add a new item.
+ * The reason feeds the wastage report (v5 item 92).
+ */
 export function AdjustmentModal({ open, onClose, projectId }: { open: boolean; onClose: () => void; projectId?: string }) {
   const [form] = Form.useForm<FormValues>();
   const { message } = App.useApp();
@@ -64,7 +68,7 @@ export function AdjustmentModal({ open, onClose, projectId }: { open: boolean; o
         .filter((l) => l && l.quantity && Number(l.quantity) !== 0 && l.itemId)
         .map((l) => (l.itemId === NEW ? { itemName: l.itemName?.trim(), unit: l.unit?.trim(), quantity: l.quantity } : { itemId: l.itemId, quantity: l.quantity }));
       if (!lines.length) throw new Error('Add at least one line with a quantity.');
-      const body = { projectId: v.projectId, date: v.date.format('YYYY-MM-DD'), remarks: v.remarks.trim(), lines };
+      const body = { projectId: v.projectId, date: v.date.format('YYYY-MM-DD'), reason: v.reason, remarks: v.remarks.trim(), lines };
       return (await api.post<StockEntryDto>('/stock/adjustments', body)).data;
     },
     onSuccess: (e) => {
@@ -84,10 +88,17 @@ export function AdjustmentModal({ open, onClose, projectId }: { open: boolean; o
           <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date' }]}>
             <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
           </Form.Item>
-          <Form.Item name="remarks" label="Reason" rules={[{ required: true, whitespace: true, min: 3, message: 'Say why, e.g. Opening stock or Physical count on 30 Sep' }]}>
-            <Input maxLength={1000} placeholder="Opening stock, physical count, damaged material…" />
+          <Form.Item name="reason" label="Reason" rules={[{ required: true, message: 'Choose the reason, e.g. Wastage' }]}>
+            <Select<StockAdjustmentReason>
+              placeholder="Choose the reason"
+              showSearch={{ optionFilterProp: 'label' }}
+              options={STOCK_ADJUSTMENT_REASONS.map((r) => ({ value: r, label: STOCK_ADJUSTMENT_REASON_LABELS[r] }))}
+            />
           </Form.Item>
         </FormGrid>
+        <Form.Item name="remarks" label="Details" rules={[{ required: true, whitespace: true, min: 3, message: 'Say what happened, e.g. 2 bags set hard in the rain' }]}>
+          <Input maxLength={1000} placeholder="What happened, where, who found it…" />
+        </Form.Item>
         <Form.Item label="Lines" required extra="Positive adds to stock, negative takes it off." style={{ marginBottom: 8 }}>
           <Form.List name="lines">
             {(fields, { add, remove }) => (
@@ -103,6 +114,7 @@ export function AdjustmentModal({ open, onClose, projectId }: { open: boolean; o
                           toOption={itemOption}
                           extra={NEW_OPTION}
                           placeholder="Type an item"
+                          aria-label={`Item of line ${f.name + 1}`}
                           onChange={() => form.setFieldValue(['lines', f.name, 'quantity'], null)}
                         />
                       </Form.Item>
@@ -131,7 +143,7 @@ export function AdjustmentModal({ open, onClose, projectId }: { open: boolean; o
                           },
                         ]}
                       >
-                        <InputNumber<string> stringMode placeholder="+/- qty" style={{ width: '100%' }} />
+                        <InputNumber<string> stringMode placeholder="+/- qty" aria-label={`Quantity of line ${f.name + 1}`} style={{ width: '100%' }} />
                       </Form.Item>
                       <Button icon={<DeleteOutlined />} onClick={() => remove(f.name)} disabled={fields.length === 1} aria-label="Remove line" />
                     </div>

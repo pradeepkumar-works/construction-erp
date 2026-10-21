@@ -1,7 +1,7 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import type Anthropic from '@anthropic-ai/sdk';
 import type { Paginated } from '@erp/shared';
-import { EXPENSE_CATEGORIES, MATERIAL_PRIORITIES, PAYMENT_MODES, PROJECT_STATUSES, SUBMISSION_STATUSES, WEATHER_OPTIONS, canSubmitExpense, canViewContract, canViewCost, canViewLetters, canViewPurchaseOrders, submissionHref } from '@erp/shared';
+import { EXPENSE_CATEGORIES, MATERIAL_PRIORITIES, PAYMENT_MODES, PROJECT_STATUSES, SUBMISSION_STATUSES, WEATHER_OPTIONS, canSubmitExpense, canViewContract, canViewCost, canViewLetters, canViewPurchaseOrders, canViewReconciliation, submissionHref } from '@erp/shared';
 import type { AiDraftDto } from '@erp/shared';
 import type { RequestUser } from '../common/current-user';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
@@ -32,6 +32,7 @@ import { DashboardService } from '../dashboard/dashboard.service';
 import { HomeService } from '../dashboard/home.service';
 import { CostService } from '../cost/cost.service';
 import { BudgetService } from '../cost/budget.service';
+import { ReconciliationService } from '../reconciliation/reconciliation.service';
 import { CashFlowService } from '../cost/cash-flow.service';
 import { ContractsService } from '../contracts/contracts.service';
 import { QualityService } from '../quality/quality.service';
@@ -138,6 +139,7 @@ export class AiToolsService {
     home: HomeService,
     cost: CostService,
     budget: BudgetService,
+    reconciliation: ReconciliationService,
     cashFlow: CashFlowService,
     contracts: ContractsService,
     quality: QualityService,
@@ -308,6 +310,26 @@ export class AiToolsService {
         def: { name: 'project_budget', description: 'A project\'s budget by BOQ item and cost head against actual and forecast to complete.', input_schema: { type: 'object', properties: { projectId: { type: 'string' } }, required: ['projectId'] } },
         allowed: (u) => canViewCost(u.roleKey),
         run: (user, i) => budget.get(user, uuid(i.projectId, 'projectId')),
+      },
+      {
+        def: {
+          name: 'material_reconciliation',
+          description:
+            "A project's material reconciliation: per material, theoretical use (approved progress × the QS's norms), allowed (with wastage), issued less returned, the variance and whether it is over the allowance; with view SUBCONTRACTORS, each subcontractor's issues against their measured work, and with view WASTAGE, stock adjustments by reason (wastage, damage, theft, count differences). Values only for roles that see cost.",
+          input_schema: {
+            type: 'object',
+            properties: { projectId: { type: 'string' }, view: { type: 'string', enum: ['MATERIALS', 'SUBCONTRACTORS', 'WASTAGE'] }, from: fromProp, to: toProp },
+            required: ['projectId'],
+          },
+        },
+        allowed: (u) => canViewReconciliation(u.roleKey),
+        run: (user, i) => {
+          const projectId = uuid(i.projectId, 'projectId');
+          const q = { from: optDate(i.from, 'from'), to: optDate(i.to, 'to') };
+          if (i.view === 'SUBCONTRACTORS') return reconciliation.subcontractors(user, projectId);
+          if (i.view === 'WASTAGE') return reconciliation.wastage(user, projectId, q);
+          return reconciliation.get(user, projectId, q);
+        },
       },
       {
         def: {

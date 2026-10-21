@@ -356,7 +356,7 @@ export class TallyService {
         .cr('RETENTION_PAYABLE', b.retentionAmount)
         .cr('SUB_ADVANCE', b.advanceRecoveryAmount)
         .cr('TDS_PAYABLE', b.tdsAmount)
-        .cr('MATERIAL_RECOVERY', b.materialRecovery, cc)
+        .cr('MATERIAL_RECOVERY', b.materialRecovery.add(b.excessRecovery), cc)
         .cr('VENDOR_DEDUCTIONS', b.otherDeduction, cc);
       add({
         kind: 'SUBCONTRACT',

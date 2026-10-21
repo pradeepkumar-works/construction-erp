@@ -80,6 +80,7 @@ const TOOL_STATUS: Record<string, string> = {
   schedule: 'Reading the schedule',
   project_cost: 'Reading project cost',
   project_budget: 'Reading the budget',
+  material_reconciliation: 'Reading the material reconciliation',
   cash_flow: 'Reading the cash-flow forecast',
   stock_on_hand: 'Checking stock',
   delivery_status: 'Checking deliveries',

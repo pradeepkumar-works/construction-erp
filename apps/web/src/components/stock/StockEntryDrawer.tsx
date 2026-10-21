@@ -6,7 +6,7 @@ import { Button, Descriptions, Divider, Drawer, Skeleton, Space, Table, Typograp
 import { DeleteOutlined, FileExcelOutlined, ImportOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { StockEntryDto, StockEntryType, StockLineDto } from '@erp/shared';
-import { canAdjustStock, canCheckGrn, canKeepStock, canRaiseDebitNote } from '@erp/shared';
+import { STOCK_ADJUSTMENT_REASON_LABELS, canAdjustStock, canCheckGrn, canKeepStock, canRaiseDebitNote } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
@@ -160,7 +160,13 @@ export function StockEntryDrawer({ id, onClose }: { id: string | null; onClose: 
                     { key: 'activity', label: 'Activity', children: data.activityName ?? '-' },
                   ]
                 : []),
-              { key: 'remarks', label: data.type === 'ADJUSTMENT' || data.type === 'RETURN_TO_VENDOR' ? 'Reason' : 'Remarks', children: data.remarks ?? '-', span: 2 },
+              ...(data.adjustmentReason ? [{ key: 'reason', label: 'Reason', children: STOCK_ADJUSTMENT_REASON_LABELS[data.adjustmentReason], span: 2 }] : []),
+              {
+                key: 'remarks',
+                label: data.adjustmentReason ? 'Details' : data.type === 'ADJUSTMENT' || data.type === 'RETURN_TO_VENDOR' ? 'Reason' : 'Remarks',
+                children: data.remarks ?? '-',
+                span: 2,
+              },
               { key: 'by', label: 'Entered by', children: `${data.createdByName}, ${formatDateTime(data.createdAt)}`, span: 2 },
             ]}
           />

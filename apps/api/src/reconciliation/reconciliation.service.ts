@@ -1,15 +1,26 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import type { MaterialNormDto, ProjectReconciliationDto, ReconciliationItemDto } from '@erp/shared';
-import { canSetMaterialNorms, canViewCost, canViewReconciliation } from '@erp/shared';
+import type {
+  ExcessRecoveryDto,
+  MaterialNormDto,
+  ProjectReconciliationDto,
+  ProjectSubconReconciliationDto,
+  ReconciliationItemDto,
+  StockAdjustmentReason,
+  SubconMaterialDto,
+  WastageReportDto,
+  WastageRowDto,
+} from '@erp/shared';
+import { STOCK_ADJUSTMENT_REASONS, canRecoverExcessMaterial, canSetMaterialNorms, canViewCost, canViewReconciliation, subBillLabel } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
 import { dec, iso, money, parseDate } from '../common/serialize';
 import { todayIn } from '../notifications/time';
-import { movementsFrom, reconcile } from './reconciliation-rules';
-import { ReconciliationQuery, SaveMaterialNormDto } from './reconciliation.dto';
+import { SubcontractBillsService } from '../subcontracts/subcontract-bills.service';
+import { type ItemMovement, movementsFrom, reconcile, wastageGroups } from './reconciliation-rules';
+import { ReconciliationQuery, RecoverExcessDto, SaveMaterialNormDto } from './reconciliation.dto';
 
 type D = Prisma.Decimal;
 const Dec = Prisma.Decimal;
@@ -17,6 +28,7 @@ const ZERO = new Dec(0);
 
 /** Norms keep six decimals; trailing zeros dropped. */
 const norm6 = (v: D) => v.toFixed(6).replace(/\.?0+$/, '') || '0';
+const pctStr = (v: D) => v.toFixed(2).replace(/\.?0+$/, '') || '0';
 
 const NORM_INCLUDE = {
   boqItem: { select: { itemNo: true, description: true, unit: true, sortOrder: true } },
@@ -51,6 +63,7 @@ export class ReconciliationService {
     private prisma: PrismaService,
     private access: ProjectAccessService,
     private audit: AuditService,
+    private subBills: SubcontractBillsService,
   ) {}
 
   private async assertView(user: RequestUser, projectId: string) {
@@ -65,6 +78,15 @@ export class ReconciliationService {
 
   async get(user: RequestUser, projectId: string, q: ReconciliationQuery): Promise<ProjectReconciliationDto> {
     await this.assertView(user, projectId);
+    return this.build(projectId, q, canViewCost(user.roleKey), canSetMaterialNorms(user.roleKey));
+  }
+
+  /** The report without the caller's checks, for the watch list (which has already scoped the projects). */
+  async forWarnings(projectId: string, to: string): Promise<ProjectReconciliationDto> {
+    return this.build(projectId, { to }, true, false);
+  }
+
+  private async build(projectId: string, q: ReconciliationQuery, seeValues: boolean, canEditNorms: boolean): Promise<ProjectReconciliationDto> {
     const project = await this.prisma.project.findUnique({ where: { id: projectId }, select: { id: true, code: true, name: true } });
     if (!project) throw new NotFoundException('Project not found');
     const to = q.to ?? todayIn();
@@ -92,7 +114,6 @@ export class ReconciliationService {
     const movements = movementsFrom(stock.map((s) => ({ itemId: s.itemId, type: s.type, quantity: s._sum.quantity ?? ZERO })));
     const result = reconcile(norms, executed, movements);
 
-    const seeValues = canViewCost(user.roleKey);
     const itemIds = [...new Set([...result.map((r) => r.itemId), ...movements.keys()])];
     const items = new Map((await this.prisma.item.findMany({ where: { id: { in: itemIds } }, select: { id: true, name: true, unit: true, rate: true } })).map((i) => [i.id, i]));
     const normById = new Map(norms.map((n) => [n.id, n]));
@@ -156,7 +177,7 @@ export class ReconciliationService {
       overCount: rows.filter((r) => r.status === 'OVER').length,
       underCount: rows.filter((r) => r.status === 'UNDER').length,
       excessValue: seeValues ? money(excessValue) : null,
-      canEditNorms: canSetMaterialNorms(user.roleKey),
+      canEditNorms,
       canSeeValues: seeValues,
     };
   }
@@ -196,5 +217,217 @@ export class ReconciliationService {
     await this.prisma.materialNorm.delete({ where: { id: n.id } });
     await this.audit.log(user, 'PROJECT', projectId, 'MATERIAL_NORM_REMOVED', `${n.boqItem.itemNo}: ${n.item.name}`);
     return { ok: true };
+  }
+
+  // -------------------------------------------------------------------------------------------------------------------
+  // Per subcontractor (v5 item 92)
+
+  /**
+   * Material issued to each subcontractor's work order against what their approved measured work should have taken
+   * (measured quantity × the project's norms, with wastage), since the start, and the excess already raised for recovery.
+   */
+  async subcontractors(user: RequestUser, projectId: string, workOrderId?: string): Promise<ProjectSubconReconciliationDto> {
+    await this.assertView(user, projectId);
+    const seeValues = canViewCost(user.roleKey);
+    const woWhere = { projectId, status: 'APPROVED' as const, ...(workOrderId ? { id: workOrderId } : {}) };
+    const [orders, norms, measured, issues, recoveries] = await Promise.all([
+      this.prisma.workOrder.findMany({
+        where: woWhere,
+        select: {
+          id: true,
+          woNo: true,
+          title: true,
+          closedAt: true,
+          vendor: { select: { name: true } },
+          bills: { where: { status: { not: 'APPROVED' } }, select: { id: true, billNo: true, isFinal: true, status: true }, orderBy: { billNo: 'desc' }, take: 1 },
+        },
+        orderBy: { woNo: 'asc' },
+      }),
+      this.prisma.materialNorm.findMany({ where: { projectId }, include: NORM_INCLUDE }),
+      this.prisma.measurementSheet.groupBy({ by: ['workOrderId', 'boqItemId'], where: { projectId, status: 'APPROVED', workOrder: woWhere }, _sum: { totalQty: true } }),
+      this.prisma.stockTxn.findMany({ where: { projectId, type: 'ISSUE', entry: { workOrder: woWhere } }, select: { itemId: true, quantity: true, entry: { select: { workOrderId: true } } } }),
+      this.prisma.excessMaterialRecovery.findMany({
+        where: { projectId, workOrder: woWhere },
+        include: { item: { select: { name: true, unit: true } }, createdBy: { select: { fullName: true } }, subcontractBill: { select: { billNo: true, isFinal: true, status: true } } },
+        orderBy: { createdAt: 'asc' },
+      }),
+    ]);
+    const normById = new Map(norms.map((n) => [n.id, n]));
+    const itemIds = [...new Set([...norms.map((n) => n.itemId), ...issues.map((i) => i.itemId)])];
+    const items = new Map((await this.prisma.item.findMany({ where: { id: { in: itemIds } }, select: { id: true, name: true, unit: true, rate: true } })).map((i) => [i.id, i]));
+
+    const workOrders = orders.map((wo) => {
+      const executed = new Map<string, D>();
+      for (const m of measured) if (m.workOrderId === wo.id) executed.set(m.boqItemId, m._sum.totalQty ?? ZERO);
+      const movements = new Map<string, ItemMovement>();
+      for (const t of issues) {
+        if (t.entry.workOrderId !== wo.id) continue;
+        const cur = movements.get(t.itemId) ?? { issued: ZERO, returned: ZERO };
+        movements.set(t.itemId, { issued: cur.issued.plus(t.quantity.neg()), returned: ZERO });
+      }
+      const mine = recoveries.filter((r) => r.workOrderId === wo.id);
+      const result = reconcile(norms, executed, movements).filter((r) => r.theoretical.gt(0) || r.issued.gt(0));
+      const label = (b: { billNo: number; isFinal: boolean }) => subBillLabel(wo.woNo, b.billNo, b.isFinal);
+      let toRecoverValue = ZERO;
+      const rows: SubconMaterialDto[] = result.map((r) => {
+        const item = items.get(r.itemId)!;
+        const recovered = mine.filter((x) => x.itemId === r.itemId).reduce((sum, x) => sum.plus(x.quantity), ZERO);
+        const toRecover = Prisma.Decimal.max(r.excess.minus(recovered), ZERO);
+        if (seeValues && item.rate) toRecoverValue = toRecoverValue.plus(toRecover.mul(item.rate));
+        return {
+          itemId: r.itemId,
+          itemName: item.name,
+          unit: item.unit,
+          rate: seeValues ? money(item.rate) : null,
+          theoreticalQty: dec(r.theoretical)!,
+          allowedQty: dec(r.allowed)!,
+          issuedQty: dec(r.issued)!,
+          varianceQty: dec(r.variance)!,
+          variancePct: r.variancePct,
+          status: r.status,
+          excessQty: dec(r.excess)!,
+          excessValue: seeValues && item.rate ? money(r.excess.mul(item.rate)) : null,
+          recoveredQty: dec(recovered)!,
+          toRecoverQty: dec(toRecover)!,
+          lines: r.lines
+            .filter((l) => l.executed.gt(0))
+            .map((l) => {
+              const b = normById.get(l.normId)!.boqItem;
+              return { boqItemNo: b.itemNo, description: b.description, unit: b.unit, measuredQty: dec(l.executed)!, qtyPerUnit: norm6(l.qtyPerUnit), wastagePct: pctStr(l.wastagePct), theoreticalQty: dec(l.theoretical)! };
+            }),
+        };
+      });
+      const order = { OVER: 0, UNDER: 1, WITHIN: 2, NO_WORK: 3 } as const;
+      rows.sort((a, b) => order[a.status] - order[b.status] || a.itemName.localeCompare(b.itemName));
+      const open = wo.bills[0];
+      return {
+        workOrderId: wo.id,
+        woNo: wo.woNo,
+        title: wo.title,
+        vendorName: wo.vendor.name,
+        closed: !!wo.closedAt,
+        openBill: open ? { id: open.id, label: label(open), status: open.status } : null,
+        items: rows,
+        overCount: rows.filter((r) => r.status === 'OVER').length,
+        toRecoverValue: seeValues ? money(toRecoverValue) : null,
+        recoveries: mine.map(
+          (x): ExcessRecoveryDto => ({
+            id: x.id,
+            workOrderId: x.workOrderId,
+            itemId: x.itemId,
+            itemName: x.item.name,
+            unit: x.item.unit,
+            quantity: dec(x.quantity)!,
+            rate: money(x.rate)!,
+            amount: money(x.amount)!,
+            note: x.note,
+            billId: x.subcontractBillId,
+            billLabel: x.subcontractBill ? label(x.subcontractBill) : null,
+            billStatus: x.subcontractBill?.status ?? null,
+            createdByName: x.createdBy.fullName,
+            createdAt: iso(x.createdAt)!,
+            canCancel: !x.subcontractBill || (x.subcontractBill.status !== 'APPROVED' && x.subcontractBill.status !== 'SUBMITTED'),
+          }),
+        ),
+      };
+    });
+    return {
+      projectId,
+      // Work orders with nothing to reconcile and nothing raised are left out.
+      workOrders: workOrders.filter((w) => w.items.length || w.recoveries.length),
+      canRecover: canRecoverExcessMaterial(user.roleKey),
+      canSeeValues: seeValues,
+    };
+  }
+
+  /** Raise material used beyond the allowance for recovery on the subcontractor's next bill (or the one being prepared). */
+  async recover(user: RequestUser, projectId: string, workOrderId: string, dto: RecoverExcessDto): Promise<{ recovery: ExcessRecoveryDto; billLabel: string | null }> {
+    if (!canRecoverExcessMaterial(user.roleKey)) throw new ForbiddenException('Recoveries are raised by those who prepare subcontractor bills and see cost');
+    await this.access.assertCanAccessProject(user, projectId);
+    const wo = await this.prisma.workOrder.findFirst({ where: { id: workOrderId, projectId }, select: { id: true, woNo: true, status: true, closedAt: true } });
+    if (!wo) throw new NotFoundException('Work order not found');
+    if (wo.status !== 'APPROVED') throw new ConflictException(`${wo.woNo} is not approved`);
+    if (wo.closedAt) throw new ConflictException(`${wo.woNo} is closed; there is no next bill to take it off`);
+    const view = (await this.subcontractors(user, projectId, wo.id)).workOrders[0];
+    const row = view?.items.find((i) => i.itemId === dto.itemId);
+    if (!row) throw new BadRequestException('That material has no reconciliation on this work order');
+    const quantity = new Dec(dto.quantity).toDecimalPlaces(3);
+    const rate = new Dec(dto.rate).toDecimalPlaces(2);
+    const most = new Dec(row.toRecoverQty);
+    if (quantity.lte(0)) throw new BadRequestException('Enter a quantity above zero');
+    if (quantity.gt(most)) throw new BadRequestException(most.isZero() ? `Nothing of ${row.itemName} is left to recover` : `At most ${dec(most)} ${row.unit} of ${row.itemName} is over the allowance and not yet raised`);
+    if (rate.lte(0)) throw new BadRequestException('Enter a rate above zero');
+    const amount = quantity.mul(rate).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+    const created = await this.prisma.excessMaterialRecovery.create({
+      data: { organizationId: user.organizationId, projectId, workOrderId: wo.id, itemId: dto.itemId, quantity, rate, amount, note: dto.note?.trim() || null, createdById: user.id },
+      select: { id: true },
+    });
+    await this.audit.log(user, 'WORK_ORDER', wo.id, 'EXCESS_MATERIAL_RECOVERY_RAISED', `${dec(quantity)} ${row.unit} of ${row.itemName} at ${money(rate)}: ${money(amount)}`);
+    await this.subBills.retakeOpenBill(wo.id);
+    const after = (await this.subcontractors(user, projectId, wo.id)).workOrders[0];
+    const recovery = after.recoveries.find((r) => r.id === created.id)!;
+    return { recovery, billLabel: recovery.billLabel };
+  }
+
+  /** Withdraw a recovery while the bill that takes it is not waiting for approval or approved. */
+  async cancelRecovery(user: RequestUser, projectId: string, id: string): Promise<{ ok: true }> {
+    if (!canRecoverExcessMaterial(user.roleKey)) throw new ForbiddenException('Recoveries are withdrawn by those who prepare subcontractor bills and see cost');
+    await this.access.assertCanAccessProject(user, projectId);
+    const r = await this.prisma.excessMaterialRecovery.findFirst({
+      where: { id, projectId },
+      include: { item: { select: { name: true } }, workOrder: { select: { woNo: true } }, subcontractBill: { select: { billNo: true, isFinal: true, status: true } } },
+    });
+    if (!r) throw new NotFoundException('That recovery was not found');
+    const bill = r.subcontractBill;
+    if (bill && (bill.status === 'APPROVED' || bill.status === 'SUBMITTED'))
+      throw new ConflictException(`${subBillLabel(r.workOrder.woNo, bill.billNo, bill.isFinal)} ${bill.status === 'APPROVED' ? 'is approved with it' : 'is waiting for approval; send it back first'}`);
+    await this.prisma.excessMaterialRecovery.delete({ where: { id: r.id } });
+    await this.audit.log(user, 'WORK_ORDER', r.workOrderId, 'EXCESS_MATERIAL_RECOVERY_WITHDRAWN', `${r.item.name}: ${money(r.amount)}`);
+    if (r.subcontractBillId) await this.subBills.retakeOpenBill(r.workOrderId);
+    return { ok: true };
+  }
+
+  // -------------------------------------------------------------------------------------------------------------------
+  // Wastage (v5 item 92)
+
+  /** Stock adjustments in the period by reason and item, opening stock left out, valued at item rates. */
+  async wastage(user: RequestUser, projectId: string, q: ReconciliationQuery): Promise<WastageReportDto> {
+    await this.assertView(user, projectId);
+    const to = q.to ?? todayIn();
+    if (q.from && q.from > to) throw new BadRequestException('The period starts after it ends: choose an earlier From date');
+    const date = { ...(q.from ? { gte: parseDate(q.from) } : {}), lte: parseDate(to) };
+    const lines = await this.prisma.stockTxn.findMany({ where: { projectId, type: 'ADJUSTMENT', date }, select: { itemId: true, quantity: true, entryId: true, entry: { select: { adjustmentReason: true } } } });
+    const groups = wastageGroups(lines.map((l) => ({ reason: l.entry.adjustmentReason, itemId: l.itemId, entryId: l.entryId, quantity: l.quantity })));
+    const seeValues = canViewCost(user.roleKey);
+    const items = new Map((await this.prisma.item.findMany({ where: { id: { in: [...new Set(groups.map((g) => g.itemId))] } }, select: { id: true, name: true, unit: true, rate: true } })).map((i) => [i.id, i]));
+    const order = (r: string | null) => (r === null ? STOCK_ADJUSTMENT_REASONS.length : STOCK_ADJUSTMENT_REASONS.indexOf(r as StockAdjustmentReason));
+    const rows: WastageRowDto[] = groups
+      .map((g) => {
+        const item = items.get(g.itemId)!;
+        return {
+          reason: g.reason as StockAdjustmentReason | null,
+          itemId: g.itemId,
+          itemName: item.name,
+          unit: item.unit,
+          lostQty: dec(g.lost)!,
+          gainedQty: dec(g.gained)!,
+          rate: seeValues ? money(item.rate) : null,
+          lostValue: seeValues && item.rate ? money(g.lost.mul(item.rate)) : null,
+          entries: g.entries,
+        };
+      })
+      .sort((a, b) => order(a.reason) - order(b.reason) || a.itemName.localeCompare(b.itemName));
+    const reasons = [...new Set(rows.map((r) => r.reason))];
+    const value = (rs: WastageRowDto[]) => (seeValues ? money(rs.reduce((s, r) => s.plus(r.lostValue ?? 0), ZERO)) : null);
+    const entryIds = (reason: string | null) => new Set(lines.filter((l) => l.entry.adjustmentReason === reason && reason !== 'OPENING').map((l) => l.entryId)).size;
+    return {
+      projectId,
+      from: q.from ?? null,
+      to,
+      rows,
+      byReason: reasons.map((reason) => ({ reason, lostValue: value(rows.filter((r) => r.reason === reason)), entries: entryIds(reason) })),
+      lostValue: value(rows),
+      canSeeValues: seeValues,
+    };
   }
 }

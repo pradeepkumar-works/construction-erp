@@ -9,6 +9,7 @@ export const SUB_BILL_DEDUCTION_LABELS = {
   advanceRecovery: 'Advance recovery',
   tds: 'TDS (section 194C)',
   material: 'Material issued',
+  excessMaterial: 'Material used over the norm',
   other: 'Other deduction',
 } as const;
 export type SubBillDeductionKey = keyof typeof SUB_BILL_DEDUCTION_LABELS;

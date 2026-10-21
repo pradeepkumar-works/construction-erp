@@ -180,6 +180,12 @@ export const canSetMaterialNorms = (role: RoleKey) => MATERIAL_NORM_ROLES.includ
 /** See material reconciliation (theoretical against issued): norm setters, stores, procurement and accounts. Values need canViewCost. */
 export const RECONCILIATION_VIEW_ROLES: RoleKey[] = [...MATERIAL_NORM_ROLES, 'STORE_MANAGER', 'SITE_ENGINEER', 'PROCUREMENT_MANAGER', 'ACCOUNTS_MANAGER'];
 export const canViewReconciliation = (role: RoleKey) => RECONCILIATION_VIEW_ROLES.includes(role);
+/** Rate analysis (labour and machine hours per BOQ unit) is set by the same people as the material norms. */
+export const canSetRateAnalysis = canSetMaterialNorms;
+/** The estimate (built-up rates against the BOQ rate) is about cost: norm setters who see cost. */
+export const canViewEstimate = (role: RoleKey) => canViewReconciliation(role) && canViewCost(role);
+/** Take material used beyond the norm off a subcontractor's next bill: whoever prepares their bills and sees the reconciliation. */
+export const canRecoverExcessMaterial = (role: RoleKey) => canPrepareSubcontractBill(role) && canViewReconciliation(role) && canViewCost(role);
 
 /** Report an incident or near miss, record a toolbox talk, request a permit to work. */
 export const canReportSafety = (role: RoleKey) => SAFETY_REPORTER_ROLES.includes(role);

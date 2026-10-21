@@ -402,6 +402,8 @@ model Organization {
   stockTxns            StockTxn[]
   stockMinLevels       StockMinLevel[]
   materialNorms        MaterialNorm[]
+  boqResources         BoqResource[]
+  excessRecoveries     ExcessMaterialRecovery[]
   equipment            Equipment[]
   machineryLogs        MachineryLog[]
   expenses             Expense[]
@@ -518,100 +520,102 @@ model User {
 
   savedViews           SavedView[]
   aiThreads            AiThread[]
-  billChecksAccepted   BillCheckAcceptance[] @relation("BillCheckAcceptedBy")
-  warningsDismissed    WarningDismissal[]    @relation("WarningDismissedBy")
+  billChecksAccepted   BillCheckAcceptance[]    @relation("BillCheckAcceptedBy")
+  warningsDismissed    WarningDismissal[]       @relation("WarningDismissedBy")
   aiBriefs             AiBrief[]
   aiDocumentReads      AiDocumentRead[]
   memberships          ProjectMember[]
-  managedProjects      Project[]             @relation("ProjectManager")
-  baselinedProjects    Project[]             @relation("ProjectBaselineBy")
-  responsibleFor       Activity[]            @relation("ActivityResponsible")
-  submittedProgress    ProgressEntry[]       @relation("ProgressSubmitter")
-  reviewedProgress     ProgressEntry[]       @relation("ProgressReviewer")
-  submittedReports     DailyReport[]         @relation("DprSubmitter")
-  reviewedReports      DailyReport[]         @relation("DprReviewer")
-  submittedRequests    MaterialRequest[]     @relation("MrSubmitter")
-  reviewedRequests     MaterialRequest[]     @relation("MrReviewer")
+  managedProjects      Project[]                @relation("ProjectManager")
+  baselinedProjects    Project[]                @relation("ProjectBaselineBy")
+  responsibleFor       Activity[]               @relation("ActivityResponsible")
+  submittedProgress    ProgressEntry[]          @relation("ProgressSubmitter")
+  reviewedProgress     ProgressEntry[]          @relation("ProgressReviewer")
+  submittedReports     DailyReport[]            @relation("DprSubmitter")
+  reviewedReports      DailyReport[]            @relation("DprReviewer")
+  submittedRequests    MaterialRequest[]        @relation("MrSubmitter")
+  reviewedRequests     MaterialRequest[]        @relation("MrReviewer")
   uploadedAttachments  Attachment[]
   auditLogs            AuditLog[]
   notifications        Notification[]
   pushTokens           PushToken[]
   outboundMessages     OutboundMessage[]
   passwordTokens       PasswordToken[]
-  recordedAttendance   AttendanceSheet[]     @relation("AttendanceRecorder")
-  updatedAttendance    AttendanceSheet[]     @relation("AttendanceUpdater")
+  recordedAttendance   AttendanceSheet[]        @relation("AttendanceRecorder")
+  updatedAttendance    AttendanceSheet[]        @relation("AttendanceUpdater")
   stockEntries         StockEntry[]
-  grnsChecked          StockEntry[]          @relation("GrnQcBy")
+  grnsChecked          StockEntry[]             @relation("GrnQcBy")
   stockMinLevels       StockMinLevel[]
   materialNorms        MaterialNorm[]
-  submittedMachinery   MachineryLog[]        @relation("MachinerySubmitter")
-  reviewedMachinery    MachineryLog[]        @relation("MachineryReviewer")
-  submittedExpenses    Expense[]             @relation("ExpenseSubmitter")
-  reviewedExpenses     Expense[]             @relation("ExpenseReviewer")
-  submittedMeasures    MeasurementSheet[]    @relation("MeasurementSubmitter")
-  reviewedMeasures     MeasurementSheet[]    @relation("MeasurementReviewer")
-  submittedBills       RaBill[]              @relation("BillSubmitter")
-  reviewedBills        RaBill[]              @relation("BillReviewer")
-  receiptsRecorded     Receipt[]             @relation("ReceiptCreator")
+  boqResources         BoqResource[]
+  excessRecoveries     ExcessMaterialRecovery[]
+  submittedMachinery   MachineryLog[]           @relation("MachinerySubmitter")
+  reviewedMachinery    MachineryLog[]           @relation("MachineryReviewer")
+  submittedExpenses    Expense[]                @relation("ExpenseSubmitter")
+  reviewedExpenses     Expense[]                @relation("ExpenseReviewer")
+  submittedMeasures    MeasurementSheet[]       @relation("MeasurementSubmitter")
+  reviewedMeasures     MeasurementSheet[]       @relation("MeasurementReviewer")
+  submittedBills       RaBill[]                 @relation("BillSubmitter")
+  reviewedBills        RaBill[]                 @relation("BillReviewer")
+  receiptsRecorded     Receipt[]                @relation("ReceiptCreator")
   tallyExports         TallyExport[]
-  vendorPaymentsMade   VendorPayment[]       @relation("VendorPaymentCreator")
-  submittedPayRequests PaymentRequest[]      @relation("PayRequestSubmitter")
-  reviewedPayRequests  PaymentRequest[]      @relation("PayRequestReviewer")
-  quotationsEntered    Quotation[]           @relation("QuotationCreator")
-  submittedPos         PurchaseOrder[]       @relation("PoSubmitter")
-  reviewedPos          PurchaseOrder[]       @relation("PoReviewer")
-  submittedVendorBills VendorBill[]          @relation("VendorBillSubmitter")
-  createdDebitNotes    DebitNote[]           @relation("DebitNoteCreator")
-  cancelledDebitNotes  DebitNote[]           @relation("DebitNoteCanceller")
-  reviewedVendorBills  VendorBill[]          @relation("VendorBillReviewer")
-  submittedWorkOrders  WorkOrder[]           @relation("WorkOrderSubmitter")
-  reviewedWorkOrders   WorkOrder[]           @relation("WorkOrderReviewer")
-  submittedSubBills    SubcontractBill[]     @relation("SubBillSubmitter")
-  reviewedSubBills     SubcontractBill[]     @relation("SubBillReviewer")
-  requestedInspections Inspection[]          @relation("InspectionRequester")
-  inspectionsDone      Inspection[]          @relation("InspectionInspector")
-  inspectionsWitnessed Inspection[]          @relation("InspectionWitness")
-  qualityTests         QualityTest[]         @relation("TestCreator")
-  ncrsRaised           Ncr[]                 @relation("NcrRaiser")
-  ncrsToAct            Ncr[]                 @relation("NcrActionBy")
-  ncrsClosed           Ncr[]                 @relation("NcrCloser")
-  documentsCreated     Document[]            @relation("DocumentCreator")
-  revisionsIssued      DocumentRevision[]    @relation("RevisionIssuer")
-  transmittalsSent     Transmittal[]         @relation("TransmittalSender")
-  lettersRecorded      Letter[]              @relation("LetterRecorder")
-  variationsCreated    Variation[]           @relation("VariationCreator")
-  budgetsUpdated       ProjectBudget[]       @relation("BudgetUpdater")
-  incidentsReported    SafetyIncident[]      @relation("IncidentReporter")
-  incidentsClosed      SafetyIncident[]      @relation("IncidentCloser")
-  toolboxTalks         ToolboxTalk[]         @relation("ToolboxTalkRecorder")
-  ppeIssued            PpeIssue[]            @relation("PpeIssuer")
-  rfisRaised           Rfi[]                 @relation("RfiRaiser")
-  rfisAnswered         Rfi[]                 @relation("RfiAnswerer")
-  rfisClosed           Rfi[]                 @relation("RfiCloser")
-  ppeClosed            PpeIssue[]            @relation("PpeCloser")
-  permitsRequested     WorkPermit[]          @relation("PermitRequester")
-  permitsIssued        WorkPermit[]          @relation("PermitIssuer")
-  permitsClosed        WorkPermit[]          @relation("PermitCloser")
-  maintenanceReported  MaintenanceJob[]      @relation("MaintenanceReporter")
-  maintenanceClosed    MaintenanceJob[]      @relation("MaintenanceCloser")
-  employee             Employee?             @relation("EmployeeLogin")
-  staffMarked          StaffAttendance[]     @relation("StaffAttendanceMarker")
-  workerDaysMarked     WorkerAttendance[]    @relation("WorkerAttendanceMarker")
-  imprestsHeld         Imprest[]             @relation("ImprestHolder")
-  imprestsOpened       Imprest[]             @relation("ImprestOpener")
-  imprestRequests      ImprestEntry[]        @relation("ImprestRequester")
-  imprestDecisions     ImprestEntry[]        @relation("ImprestDecider")
+  vendorPaymentsMade   VendorPayment[]          @relation("VendorPaymentCreator")
+  submittedPayRequests PaymentRequest[]         @relation("PayRequestSubmitter")
+  reviewedPayRequests  PaymentRequest[]         @relation("PayRequestReviewer")
+  quotationsEntered    Quotation[]              @relation("QuotationCreator")
+  submittedPos         PurchaseOrder[]          @relation("PoSubmitter")
+  reviewedPos          PurchaseOrder[]          @relation("PoReviewer")
+  submittedVendorBills VendorBill[]             @relation("VendorBillSubmitter")
+  createdDebitNotes    DebitNote[]              @relation("DebitNoteCreator")
+  cancelledDebitNotes  DebitNote[]              @relation("DebitNoteCanceller")
+  reviewedVendorBills  VendorBill[]             @relation("VendorBillReviewer")
+  submittedWorkOrders  WorkOrder[]              @relation("WorkOrderSubmitter")
+  reviewedWorkOrders   WorkOrder[]              @relation("WorkOrderReviewer")
+  submittedSubBills    SubcontractBill[]        @relation("SubBillSubmitter")
+  reviewedSubBills     SubcontractBill[]        @relation("SubBillReviewer")
+  requestedInspections Inspection[]             @relation("InspectionRequester")
+  inspectionsDone      Inspection[]             @relation("InspectionInspector")
+  inspectionsWitnessed Inspection[]             @relation("InspectionWitness")
+  qualityTests         QualityTest[]            @relation("TestCreator")
+  ncrsRaised           Ncr[]                    @relation("NcrRaiser")
+  ncrsToAct            Ncr[]                    @relation("NcrActionBy")
+  ncrsClosed           Ncr[]                    @relation("NcrCloser")
+  documentsCreated     Document[]               @relation("DocumentCreator")
+  revisionsIssued      DocumentRevision[]       @relation("RevisionIssuer")
+  transmittalsSent     Transmittal[]            @relation("TransmittalSender")
+  lettersRecorded      Letter[]                 @relation("LetterRecorder")
+  variationsCreated    Variation[]              @relation("VariationCreator")
+  budgetsUpdated       ProjectBudget[]          @relation("BudgetUpdater")
+  incidentsReported    SafetyIncident[]         @relation("IncidentReporter")
+  incidentsClosed      SafetyIncident[]         @relation("IncidentCloser")
+  toolboxTalks         ToolboxTalk[]            @relation("ToolboxTalkRecorder")
+  ppeIssued            PpeIssue[]               @relation("PpeIssuer")
+  rfisRaised           Rfi[]                    @relation("RfiRaiser")
+  rfisAnswered         Rfi[]                    @relation("RfiAnswerer")
+  rfisClosed           Rfi[]                    @relation("RfiCloser")
+  ppeClosed            PpeIssue[]               @relation("PpeCloser")
+  permitsRequested     WorkPermit[]             @relation("PermitRequester")
+  permitsIssued        WorkPermit[]             @relation("PermitIssuer")
+  permitsClosed        WorkPermit[]             @relation("PermitCloser")
+  maintenanceReported  MaintenanceJob[]         @relation("MaintenanceReporter")
+  maintenanceClosed    MaintenanceJob[]         @relation("MaintenanceCloser")
+  employee             Employee?                @relation("EmployeeLogin")
+  staffMarked          StaffAttendance[]        @relation("StaffAttendanceMarker")
+  workerDaysMarked     WorkerAttendance[]       @relation("WorkerAttendanceMarker")
+  imprestsHeld         Imprest[]                @relation("ImprestHolder")
+  imprestsOpened       Imprest[]                @relation("ImprestOpener")
+  imprestRequests      ImprestEntry[]           @relation("ImprestRequester")
+  imprestDecisions     ImprestEntry[]           @relation("ImprestDecider")
   complianceDocs       ComplianceDoc[]
   handoversRecorded    ProjectHandover[]
-  defectsReported      Defect[]              @relation("DefectReporter")
-  defectsAssigned      Defect[]              @relation("DefectAssignee")
-  defectsFixed         Defect[]              @relation("DefectFixer")
-  defectsClosed        Defect[]              @relation("DefectCloser")
+  defectsReported      Defect[]                 @relation("DefectReporter")
+  defectsAssigned      Defect[]                 @relation("DefectAssignee")
+  defectsFixed         Defect[]                 @relation("DefectFixer")
+  defectsClosed        Defect[]                 @relation("DefectCloser")
   closeoutItemsDone    CloseoutItem[]
-  leaveDecided         LeaveRequest[]        @relation("LeaveDecider")
-  leaveApplied         LeaveRequest[]        @relation("LeaveApplicant")
-  raisedRisks          Risk[]                @relation("RiskRaiser")
-  ownedRisks           Risk[]                @relation("RiskOwner")
+  leaveDecided         LeaveRequest[]           @relation("LeaveDecider")
+  leaveApplied         LeaveRequest[]           @relation("LeaveApplicant")
+  raisedRisks          Risk[]                   @relation("RiskRaiser")
+  ownedRisks           Risk[]                   @relation("RiskOwner")
 
   @@unique([organizationId, email])
   @@index([organizationId])
@@ -690,6 +694,9 @@ model Project {
   baselineById          String?
   baselineBy            User?          @relation("ProjectBaselineBy", fields: [baselineById], references: [id])
   baselineNote          String?
+  /// Estimate (v5 item 92): overheads and profit added to the cost of each BOQ item's resources for its built-up rate, %
+  estimateOverheadPct   Decimal        @default(5) @db.Decimal(5, 2)
+  estimateProfitPct     Decimal        @default(10) @db.Decimal(5, 2)
   createdAt             DateTime       @default(now())
   updatedAt             DateTime       @updatedAt
 
@@ -709,11 +716,13 @@ model Project {
   materialRequests MaterialRequest[]
   notifications    Notification[]
   attendanceSheets AttendanceSheet[]
-  stockEntries     StockEntry[]       @relation("StockEntryProject")
-  transfersIn      StockEntry[]       @relation("StockTransferTo")
+  stockEntries     StockEntry[]             @relation("StockEntryProject")
+  transfersIn      StockEntry[]             @relation("StockTransferTo")
   stockTxns        StockTxn[]
   stockMinLevels   StockMinLevel[]
   materialNorms    MaterialNorm[]
+  boqResources     BoqResource[]
+  excessRecoveries ExcessMaterialRecovery[]
   equipment        Equipment[]
   machineryLogs    MachineryLog[]
   expenses         Expense[]
@@ -1070,6 +1079,24 @@ enum DebitNoteReason {
   OTHER
 }
 
+/// What a rate-analysis resource is besides material (v5 item 92); materials are MaterialNorm rows
+enum BoqResourceKind {
+  /// A trade (matches LabourRate.category), in man-days per BOQ unit
+  LABOUR
+  /// An equipment category (matches Equipment.category), in machine hours per BOQ unit
+  EQUIPMENT
+}
+
+/// Why stock was adjusted (v5 item 92); everything but OPENING is a loss or gain the wastage report counts
+enum StockAdjustmentReason {
+  OPENING
+  WASTAGE
+  DAMAGE
+  THEFT
+  COUNT_DIFFERENCE
+  OTHER
+}
+
 /// What we take off a vendor's or subcontractor's approved bill (v5 item 91): DN-<year>-0001, against exactly one bill.
 /// The bill's payable drops by its total, input GST is reversed in the GST registers, and Tally gets a debit note.
 model DebitNote {
@@ -1178,13 +1205,14 @@ model WorkOrder {
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
 
-  lines           WorkOrderLine[]
-  bills           SubcontractBill[]
-  measurements    MeasurementSheet[]
-  issues          StockEntry[]
-  attachments     Attachment[]
-  paymentRequests PaymentRequest[]
-  advances        VendorPayment[]
+  lines            WorkOrderLine[]
+  bills            SubcontractBill[]
+  measurements     MeasurementSheet[]
+  issues           StockEntry[]
+  attachments      Attachment[]
+  paymentRequests  PaymentRequest[]
+  advances         VendorPayment[]
+  excessRecoveries ExcessMaterialRecovery[]
 
   @@unique([organizationId, woNo])
   @@index([organizationId, status])
@@ -1248,6 +1276,8 @@ model SubcontractBill {
   tdsAmount             Decimal          @db.Decimal(18, 2)
   /// Material issued to them from stock, at the item's rate
   materialRecovery      Decimal          @db.Decimal(18, 2)
+  /// Material used beyond the norm and its wastage, recovered from the reconciliation (v5 item 92)
+  excessRecovery        Decimal          @default(0) @db.Decimal(18, 2)
   otherDeduction        Decimal          @default(0) @db.Decimal(18, 2)
   otherDeductionNote    String?
   totalDeductions       Decimal          @db.Decimal(18, 2)
@@ -1274,14 +1304,15 @@ model SubcontractBill {
   createdAt             DateTime         @default(now())
   updatedAt             DateTime         @updatedAt
 
-  lines           SubcontractBillLine[]
-  materials       SubcontractBillMaterial[]
-  measurements    MeasurementSheet[]
-  issues          StockEntry[]
-  attachments     Attachment[]
-  payments        VendorPayment[]
-  paymentRequests PaymentRequest[]
-  debitNotes      DebitNote[]
+  lines            SubcontractBillLine[]
+  materials        SubcontractBillMaterial[]
+  measurements     MeasurementSheet[]
+  issues           StockEntry[]
+  attachments      Attachment[]
+  payments         VendorPayment[]
+  paymentRequests  PaymentRequest[]
+  debitNotes       DebitNote[]
+  excessRecoveries ExcessMaterialRecovery[]
 
   @@unique([workOrderId, billNo])
   @@index([organizationId, status])
@@ -1360,6 +1391,7 @@ model BoqItem {
   workOrderLines WorkOrderLine[]
   variationLines VariationLine[]
   materialNorms  MaterialNorm[]
+  resources      BoqResource[]
   rfis           Rfi[]
 
   @@unique([projectId, itemNo])
@@ -1638,10 +1670,11 @@ model Item {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
-  txns       StockTxn[]
-  minLevels  StockMinLevel[]
-  recoveries SubcontractBillMaterial[]
-  norms      MaterialNorm[]
+  txns             StockTxn[]
+  minLevels        StockMinLevel[]
+  recoveries       SubcontractBillMaterial[]
+  norms            MaterialNorm[]
+  excessRecoveries ExcessMaterialRecovery[]
 
   @@unique([organizationId, name, unit])
 }
@@ -1665,58 +1698,60 @@ model Unit {
 
 /// One document in the store register: a GRN, an issue slip or a stock adjustment. Its lines are StockTxn rows.
 model StockEntry {
-  id                String           @id @default(uuid())
+  id                String                 @id @default(uuid())
   organizationId    String
-  organization      Organization     @relation(fields: [organizationId], references: [id])
+  organization      Organization           @relation(fields: [organizationId], references: [id])
   projectId         String
-  project           Project          @relation("StockEntryProject", fields: [projectId], references: [id], onDelete: Cascade)
+  project           Project                @relation("StockEntryProject", fields: [projectId], references: [id], onDelete: Cascade)
   type              StockEntryType
   /// GRN-2026-0001, ISS-2026-0001, ADJ-2026-0001 (TRO, TRI, RTV, RFS for transfers and returns), numbered per organisation and type
   entryNo           String
-  date              DateTime         @db.Date
+  date              DateTime               @db.Date
   /// Receipts: the approved material request this GRN is against
   materialRequestId String?
-  materialRequest   MaterialRequest? @relation(fields: [materialRequestId], references: [id])
+  materialRequest   MaterialRequest?       @relation(fields: [materialRequestId], references: [id])
   /// Receipts: the approved purchase order this GRN is against
   purchaseOrderId   String?
-  purchaseOrder     PurchaseOrder?   @relation(fields: [purchaseOrderId], references: [id])
+  purchaseOrder     PurchaseOrder?         @relation(fields: [purchaseOrderId], references: [id])
   supplier          String?
   vendorId          String?
-  vendor            Vendor?          @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  vendor            Vendor?                @relation(fields: [vendorId], references: [id], onDelete: SetNull)
   challanNo         String?
   vehicleNo         String?
   /// Issues: who took the material (contractor, gang or person)
   issuedTo          String?
   /// Issues: the activity the material is for
   activityId        String?
-  activity          Activity?        @relation(fields: [activityId], references: [id], onDelete: SetNull)
+  activity          Activity?              @relation(fields: [activityId], references: [id], onDelete: SetNull)
   /// Issues: the subcontractor's work order the material went to; recovered in their next bill
   workOrderId       String?
-  workOrder         WorkOrder?       @relation(fields: [workOrderId], references: [id])
+  workOrder         WorkOrder?             @relation(fields: [workOrderId], references: [id])
   /// Issues against a work order: the subcontractor bill that recovered it
   subcontractBillId String?
-  subcontractBill   SubcontractBill? @relation(fields: [subcontractBillId], references: [id], onDelete: SetNull)
+  subcontractBill   SubcontractBill?       @relation(fields: [subcontractBillId], references: [id], onDelete: SetNull)
   /// Transfers out: the project the material is going to
   toProjectId       String?
-  toProject         Project?         @relation("StockTransferTo", fields: [toProjectId], references: [id], onDelete: SetNull)
+  toProject         Project?               @relation("StockTransferTo", fields: [toProjectId], references: [id], onDelete: SetNull)
   /// Transfers in: the transfer out it receives (one receipt per transfer)
-  transferOutId     String?          @unique
-  transferOut       StockEntry?      @relation("StockTransfer", fields: [transferOutId], references: [id], onDelete: SetNull)
-  transferIn        StockEntry?      @relation("StockTransfer")
+  transferOutId     String?                @unique
+  transferOut       StockEntry?            @relation("StockTransfer", fields: [transferOutId], references: [id], onDelete: SetNull)
+  transferIn        StockEntry?            @relation("StockTransfer")
   remarks           String?
+  /// Adjustments: why (v5 item 92); null on adjustments made before reasons were asked
+  adjustmentReason  StockAdjustmentReason?
   /// Issues: spares for this maintenance job
   maintenanceJobId  String?
-  maintenanceJob    MaintenanceJob?  @relation(fields: [maintenanceJobId], references: [id], onDelete: SetNull)
+  maintenanceJob    MaintenanceJob?        @relation(fields: [maintenanceJobId], references: [id], onDelete: SetNull)
   /// Receipts: QA/QC's check of the material (null = not checked yet)
   qcStatus          GrnQcStatus?
   qcAt              DateTime?
   qcById            String?
-  qcBy              User?            @relation("GrnQcBy", fields: [qcById], references: [id], onDelete: SetNull)
+  qcBy              User?                  @relation("GrnQcBy", fields: [qcById], references: [id], onDelete: SetNull)
   qcNote            String?
   createdById       String
-  createdBy         User             @relation(fields: [createdById], references: [id])
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
+  createdBy         User                   @relation(fields: [createdById], references: [id])
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
 
   lines       StockTxn[]
   debitNotes  DebitNote[]
@@ -1802,6 +1837,60 @@ model MaterialNorm {
 
   @@unique([boqItemId, itemId])
   @@index([projectId])
+  @@index([organizationId])
+}
+
+/// Rate analysis (v5 item 92): the labour and machine hours one unit of a BOQ item takes, next to its material norms.
+/// The estimate prices them at LabourRate and the company's equipment rates for the item's built-up rate.
+model BoqResource {
+  id             String          @id @default(uuid())
+  organizationId String
+  organization   Organization    @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  boqItemId      String
+  boqItem        BoqItem         @relation(fields: [boqItemId], references: [id], onDelete: Cascade)
+  kind           BoqResourceKind
+  /// The trade (Mason, Helper) or the equipment category (Concreting, Compaction), as the rates are kept
+  name           String
+  /// Man-days or machine hours per unit of the BOQ item
+  qtyPerUnit     Decimal         @db.Decimal(18, 6)
+  note           String?
+  updatedById    String
+  updatedBy      User            @relation(fields: [updatedById], references: [id])
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@unique([boqItemId, kind, name])
+  @@index([projectId])
+  @@index([organizationId])
+}
+
+/// Material a subcontractor used beyond the norm and its wastage, to be taken off their next running bill (v5 item 92).
+/// Raised from the reconciliation's subcontractor view; the next bill prepared or re-saved on the work order takes it.
+model ExcessMaterialRecovery {
+  id                String           @id @default(uuid())
+  organizationId    String
+  organization      Organization     @relation(fields: [organizationId], references: [id])
+  projectId         String
+  project           Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  workOrderId       String
+  workOrder         WorkOrder        @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  itemId            String
+  item              Item             @relation(fields: [itemId], references: [id])
+  quantity          Decimal          @db.Decimal(18, 3)
+  rate              Decimal          @db.Decimal(18, 2)
+  amount            Decimal          @db.Decimal(18, 2)
+  note              String?
+  /// The bill that takes it off; null until a bill on the work order is prepared or re-saved
+  subcontractBillId String?
+  subcontractBill   SubcontractBill? @relation(fields: [subcontractBillId], references: [id], onDelete: SetNull)
+  createdById       String
+  createdBy         User             @relation(fields: [createdById], references: [id])
+  createdAt         DateTime         @default(now())
+
+  @@index([workOrderId])
+  @@index([subcontractBillId])
   @@index([organizationId])
 }
 

@@ -152,6 +152,7 @@ async function main() {
     await seedBudgets(org.id);
     await seedStoreMoves(org.id);
     await seedReconciliation(org.id);
+    await seedRateAnalysis(org.id);
     await seedSafety(org.id);
     await seedSectors(org.id);
     await seedMaintenance(org.id);
@@ -333,6 +334,7 @@ async function main() {
   await seedBudgets(org.id);
   await seedStoreMoves(org.id);
   await seedReconciliation(org.id);
+  await seedRateAnalysis(org.id);
   await seedSafety(org.id);
   await seedSectors(org.id);
   await seedMaintenance(org.id);
@@ -1015,6 +1017,111 @@ async function seedReconciliation(organizationId: string) {
       });
       await prisma.auditLog.create({ data: { organizationId, entityType: 'STOCK', entityId: e.id, action: 'CREATED', actorId: keeper.id, note: e.entryNo, createdAt: date } });
     }
+  }
+}
+
+/**
+ * Demo rate analysis and subcontractor reconciliation (v5 item 92) on the first building project: labour and machine
+ * hours on its concrete, masonry and PCC items (from the starter library's figures), a brickwork work order to Kalinga
+ * Builders whose measured 60 cum took more bricks and cement than the norms allow, the receipt and issue of that
+ * material to the order, and two adjustments with reasons (bricks broken in unloading, cement set hard). The opening
+ * stock adjustments get their reason too. Only when the organisation has no labour or machine lines yet.
+ */
+async function seedRateAnalysis(organizationId: string) {
+  if (await prisma.boqResource.count({ where: { organizationId } })) return;
+  await prisma.stockEntry.updateMany({ where: { organizationId, type: 'ADJUSTMENT', adjustmentReason: null, remarks: { startsWith: 'Opening stock' } }, data: { adjustmentReason: 'OPENING' } });
+  const project = await prisma.project.findFirst({ where: { organizationId, type: 'BUILDING' }, orderBy: { code: 'asc' }, include: { boqItems: true } });
+  const user = async (email: string) => (await prisma.user.findFirst({ where: { organizationId, email } }))?.id;
+  const [qs, pm, md, keeper] = [await user('qs@demo.com'), await user('pm@demo.com'), await user('md@demo.com'), await user('store@demo.com')];
+  if (!project || !qs || !pm || !md || !keeper) return;
+  const boq = (no: string) => project.boqItems.find((b) => b.itemNo === no);
+  type Line = [string, 'LABOUR' | 'EQUIPMENT', string, string, string | null];
+  // [BOQ item no., kind, trade or equipment category, per unit, note]
+  const LINES: Line[] = [
+    ['2.01', 'LABOUR', 'Mason', '0.17', null],
+    ['2.01', 'LABOUR', 'Helper', '2', null],
+    ['2.01', 'EQUIPMENT', 'Concreting', '0.4', 'Mixer'],
+    ...['3.01', '3.02', '3.03'].flatMap((no): Line[] => [
+      [no, 'LABOUR', 'Mason', '0.25', null],
+      [no, 'LABOUR', 'Helper', '2.5', null],
+      [no, 'LABOUR', 'Carpenter', no === '3.01' ? '0.6' : '0.9', 'Shuttering, from the last slab'],
+      [no, 'LABOUR', 'Bar Bender', no === '3.01' ? '0.77' : '0.63', 'Reinforcement at the norm × 7 days a tonne'],
+      [no, 'EQUIPMENT', 'Concreting', '0.8', 'Mixer and vibrator'],
+      [no, 'EQUIPMENT', 'Lifting', no === '3.01' ? '0.1' : '0.25', 'Tower crane'],
+    ]),
+    ['4.01', 'LABOUR', 'Mason', '0.75', null],
+    ['4.01', 'LABOUR', 'Helper', '1.75', null],
+  ];
+  for (const [no, kind, name, qty, note] of LINES) {
+    const b = boq(no);
+    if (b) await prisma.boqResource.create({ data: { organizationId, projectId: project.id, boqItemId: b.id, kind, name, qtyPerUnit: D(qty), note, updatedById: qs } });
+  }
+  await prisma.auditLog.create({ data: { organizationId, entityType: 'PROJECT', entityId: project.id, action: 'RATE_ANALYSIS_COPIED', actorId: qs, note: 'Labour and machine hours from the rate analysis' } });
+
+  // Brickwork by a subcontractor: 60 cum measured and approved, bricks and cement issued to the order beyond the norms.
+  const masonry = boq('4.01');
+  const bricks = await prisma.item.findFirst({ where: { organizationId, name: 'Fly ash bricks 230mm' } });
+  const cement = await prisma.item.findFirst({ where: { organizationId, name: 'OPC 53 Grade Cement', unit: 'Bags' } });
+  if (!masonry || !bricks || !cement) return;
+  const name = 'Kalinga Builders';
+  const vendor =
+    (await prisma.vendor.findFirst({ where: { organizationId, name } })) ??
+    (await prisma.vendor.create({ data: { organizationId, name, kinds: ['SUBCONTRACTOR', 'LABOUR_CONTRACTOR'], pan: 'AAGFK4410L', stateCode: '21', contactPerson: 'S. Pradhan', phone: '9437112233', address: 'Bhubaneswar, Odisha' } }));
+  const year = new Date().getUTCFullYear();
+  const lastWo = await prisma.workOrder.findFirst({ where: { organizationId, woNo: { startsWith: `WO-${year}-` } }, orderBy: { woNo: 'desc' }, select: { woNo: true } });
+  const quantity = masonry.revisedQty ?? masonry.originalQty;
+  const rate = D(6100);
+  const wo = await prisma.workOrder.create({
+    data: {
+      organizationId, projectId: project.id, vendorId: vendor.id, woNo: `WO-${year}-${String((lastWo ? parseInt(lastWo.woNo.slice(8), 10) : 0) + 1).padStart(4, '0')}`, woDate: day(-14),
+      title: 'Brick masonry, ground floor', startDate: day(-12), endDate: day(75), gstRate: D(0), retentionPct: D(5), tdsPct: D(2), paymentDays: 15, value: quantity.mul(rate).toDecimalPlaces(2),
+      terms: 'Rate with material. Bricks and cement issued from our store are recovered at the store rate; use beyond the norm and its wastage is recovered again as a penalty.',
+      status: 'APPROVED', submittedById: pm, submittedAt: day(-14), reviewedById: md, reviewedAt: day(-13), createdAt: day(-14),
+      lines: { create: [{ boqItemId: masonry.id, description: `${masonry.itemNo} ${masonry.description}`, unit: masonry.unit, quantity, rate, amount: quantity.mul(rate).toDecimalPlaces(2), sortOrder: 0 }] },
+    },
+  });
+  await prisma.auditLog.createMany({
+    data: [
+      { organizationId, entityType: 'WORK_ORDER', entityId: wo.id, action: 'CREATED', actorId: pm, createdAt: day(-14) },
+      { organizationId, entityType: 'WORK_ORDER', entityId: wo.id, action: 'APPROVED', actorId: md, createdAt: day(-13) },
+    ],
+  });
+  const lastMb = await prisma.measurementSheet.findFirst({ where: { organizationId, mbNo: { startsWith: `MB-${year}-` } }, orderBy: { mbNo: 'desc' }, select: { mbNo: true } });
+  const sheet = await prisma.measurementSheet.create({
+    data: {
+      organizationId, projectId: project.id, boqItemId: masonry.id, mbNo: `MB-${year}-${String((lastMb ? parseInt(lastMb.mbNo.slice(8), 10) : 0) + 1).padStart(4, '0')}`, date: day(-3),
+      location: 'Ground floor, grids A-D', floor: project.floors[0] ?? null, totalQty: D(60), status: 'APPROVED', workOrderId: wo.id,
+      submittedById: qs, submittedAt: day(-3), reviewedById: pm, reviewedAt: day(-2), createdAt: day(-3),
+      lines: { create: [{ description: 'External and partition walls, 230 mm', nos: D(1), length: D('86.957'), breadth: D('0.23'), depth: D(3), quantity: D(60), sortOrder: 0 }] },
+    },
+  });
+  await prisma.auditLog.createMany({
+    data: [
+      { organizationId, entityType: 'MEASUREMENT', entityId: sheet.id, action: 'SUBMITTED', actorId: qs, createdAt: day(-3) },
+      { organizationId, entityType: 'MEASUREMENT', entityId: sheet.id, action: 'APPROVED', actorId: pm, createdAt: day(-2) },
+    ],
+  });
+  const nextNo = async (prefix: string) => {
+    const last = await prisma.stockEntry.findFirst({ where: { organizationId, entryNo: { startsWith: `${prefix}-${year}-` } }, orderBy: { entryNo: 'desc' }, select: { entryNo: true } });
+    return `${prefix}-${year}-${String((last ? parseInt(last.entryNo.slice(prefix.length + 6), 10) : 0) + 1).padStart(4, '0')}`;
+  };
+  // 60 cum takes 30,000 bricks (30,900 with 3%) and 75 bags (76.5 with 2%); the order drew 31,800 and 81.
+  const moves: [string, 'RECEIPT' | 'ISSUE' | 'ADJUSTMENT', number, Partial<Prisma.StockEntryUncheckedCreateInput>, [string, number][]][] = [
+    ['GRN', 'RECEIPT', -10, { supplier: 'Utkal Cement Traders', challanNo: 'CH-2231', remarks: 'Bricks and cement for the ground-floor masonry' }, [[bricks.id, 32300], [cement.id, 87]]],
+    ['ISS', 'ISSUE', -9, { issuedTo: name, workOrderId: wo.id, remarks: 'Ground-floor masonry, first lot' }, [[bricks.id, -18000], [cement.id, -45]]],
+    ['ADJ', 'ADJUSTMENT', -8, { remarks: 'Broken in unloading from the truck', adjustmentReason: 'WASTAGE' }, [[bricks.id, -500]]],
+    ['ADJ', 'ADJUSTMENT', -5, { remarks: 'Six bags set hard after rain got into the shed', adjustmentReason: 'DAMAGE' }, [[cement.id, -6]]],
+    ['ISS', 'ISSUE', -4, { issuedTo: name, workOrderId: wo.id, remarks: 'Ground-floor masonry, second lot' }, [[bricks.id, -13800], [cement.id, -36]]],
+  ];
+  for (const [prefix, type, ago, data, lines] of moves) {
+    const by = type === 'ADJUSTMENT' ? pm : keeper;
+    const e = await prisma.stockEntry.create({
+      data: {
+        organizationId, projectId: project.id, type, entryNo: await nextNo(prefix), date: day(ago), createdById: by, createdAt: day(ago), ...data,
+        lines: { create: lines.map(([itemId, q], i) => ({ organizationId, projectId: project.id, itemId, type, date: day(ago), quantity: D(q), sortOrder: i })) },
+      },
+    });
+    await prisma.auditLog.create({ data: { organizationId, entityType: 'STOCK', entityId: e.id, action: 'CREATED', actorId: by, note: e.entryNo, createdAt: day(ago) } });
   }
 }
 

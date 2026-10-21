@@ -101,6 +101,13 @@ import type {
   ProjectBudgetDto,
   ProjectReconciliationDto,
   MaterialNormDto,
+  BoqResourceDto,
+  BoqResourceKind,
+  ProjectEstimateDto,
+  ProjectSubconReconciliationDto,
+  RateAnalysisResultDto,
+  WastageReportDto,
+  ExcessRecoveryDto,
   CashFlowDto,
   CashFlowGranularity,
   ProjectCostSummaryDto,
@@ -220,7 +227,7 @@ import type {
 } from '@erp/shared';
 import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, NOTIFICATION_TYPES_VERSION, SEARCH_MIN_LENGTH } from '@erp/shared';
 import { api } from './api';
-import { failNoticeSaying } from './notify';
+import { FAIL_NOTICE, failNoticeSaying } from './notify';
 
 export interface RoleDto {
   id: string;
@@ -1470,6 +1477,124 @@ export function useRemoveMaterialNorm() {
   return useMutation({
     mutationFn: async ({ projectId, normId }: { projectId: string; normId: string }) => (await api.delete<{ ok: true }>(`/reconciliation/projects/${projectId}/norms/${normId}`)).data,
     onSuccess: (_, v) => qc.invalidateQueries({ queryKey: ['reconciliation', v.projectId] }),
+  });
+}
+
+/** Each BOQ item's rate analysis priced into a built-up rate (v5 item 92). */
+export const useProjectEstimate = (projectId: string | undefined, enabled = true) =>
+  useQuery({
+    queryKey: ['reconciliation', projectId, 'estimate'],
+    queryFn: async () => (await api.get<ProjectEstimateDto>(`/reconciliation/projects/${projectId}/estimate`)).data,
+    enabled: !!projectId && enabled,
+  });
+
+export const useSubconReconciliation = (projectId: string | undefined) =>
+  useQuery({
+    queryKey: ['reconciliation', projectId, 'subcontractors'],
+    queryFn: async () => (await api.get<ProjectSubconReconciliationDto>(`/reconciliation/projects/${projectId}/subcontractors`)).data,
+    enabled: !!projectId,
+  });
+
+export const useWastageReport = (projectId: string | undefined, period: CostPeriod) =>
+  useQuery({
+    queryKey: ['reconciliation', projectId, 'wastage', clean(period)],
+    queryFn: async () => (await api.get<WastageReportDto>(`/reconciliation/projects/${projectId}/wastage`, { params: clean(period) })).data,
+    placeholderData: keepPreviousData,
+    enabled: !!projectId,
+  });
+
+export interface SaveBoqResourceInput {
+  projectId: string;
+  id?: string;
+  boqItemId: string;
+  kind: BoqResourceKind;
+  name: string;
+  qtyPerUnit: string;
+  note: string | null;
+}
+
+/** Add or change a labour or machine line of a BOQ item's rate analysis. */
+export function useSaveBoqResource() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ projectId, ...body }: SaveBoqResourceInput) => (await api.put<BoqResourceDto>(`/reconciliation/projects/${projectId}/resources`, body)).data,
+    onSuccess: (_, v) => qc.invalidateQueries({ queryKey: ['reconciliation', v.projectId] }),
+    meta: FAIL_NOTICE,
+  });
+}
+
+export function useRemoveBoqResource() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ projectId, id }: { projectId: string; id: string }) => (await api.delete<{ ok: true }>(`/reconciliation/projects/${projectId}/resources/${id}`)).data,
+    onSuccess: (_, v) => qc.invalidateQueries({ queryKey: ['reconciliation', v.projectId] }),
+    meta: FAIL_NOTICE,
+  });
+}
+
+/** Fill a BOQ item from another BOQ item or the starter library. */
+export function useCopyRateAnalysis() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ projectId, ...body }: { projectId: string; boqItemId: string; fromBoqItemId?: string; libraryKey?: string; replace?: boolean }) =>
+      (await api.post<RateAnalysisResultDto>(`/reconciliation/projects/${projectId}/rate-analysis/copy`, body)).data,
+    onSuccess: (_, v) => qc.invalidateQueries({ queryKey: ['reconciliation', v.projectId] }),
+    meta: FAIL_NOTICE,
+  });
+}
+
+export interface RateImportRow {
+  row: number;
+  boqItemNo: string;
+  kind: 'MATERIAL' | BoqResourceKind;
+  name: string;
+  unit?: string;
+  qtyPerUnit: string;
+  wastagePct?: string;
+  note?: string;
+}
+
+export function useImportRateAnalysis() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ projectId, rows }: { projectId: string; rows: RateImportRow[] }) => (await api.post<RateAnalysisResultDto>(`/reconciliation/projects/${projectId}/rate-analysis/import`, { rows })).data,
+    onSuccess: (_, v) => qc.invalidateQueries({ queryKey: ['reconciliation', v.projectId] }),
+  });
+}
+
+export function useSetEstimateTerms() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ projectId, ...body }: { projectId: string; overheadPct: string; profitPct: string }) =>
+      (await api.put<{ overheadPct: string; profitPct: string }>(`/reconciliation/projects/${projectId}/estimate-terms`, body)).data,
+    onSuccess: (_, v) => qc.invalidateQueries({ queryKey: ['reconciliation', v.projectId] }),
+    meta: FAIL_NOTICE,
+  });
+}
+
+/** Raise material a subcontractor used over the allowance for recovery on their next bill. */
+export function useRecoverExcess() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ projectId, workOrderId, ...body }: { projectId: string; workOrderId: string; itemId: string; quantity: string; rate: string; note?: string }) =>
+      (await api.post<{ recovery: ExcessRecoveryDto; billLabel: string | null }>(`/reconciliation/projects/${projectId}/work-orders/${workOrderId}/recoveries`, body)).data,
+    onSuccess: (_, v) => {
+      qc.invalidateQueries({ queryKey: ['reconciliation', v.projectId] });
+      qc.invalidateQueries({ queryKey: ['subcontract-bills'] });
+    },
+    meta: FAIL_NOTICE,
+  });
+}
+
+export function useCancelRecovery() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ projectId, id }: { projectId: string; id: string }) => (await api.delete<{ ok: true }>(`/reconciliation/projects/${projectId}/recoveries/${id}`)).data,
+    onSuccess: (_, v) => {
+      qc.invalidateQueries({ queryKey: ['reconciliation', v.projectId] });
+      qc.invalidateQueries({ queryKey: ['subcontract-bills'] });
+    },
+    meta: FAIL_NOTICE,
   });
 }
 

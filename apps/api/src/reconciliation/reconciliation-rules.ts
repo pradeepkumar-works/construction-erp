@@ -117,3 +117,109 @@ export function movementsFrom(rows: { itemId: string; type: string; quantity: D 
   }
   return out;
 }
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Estimate (v5 item 92): a BOQ item's built-up rate from its rate analysis.
+
+export interface EstimateLineInput {
+  kind: 'MATERIAL' | 'LABOUR' | 'EQUIPMENT';
+  qtyPerUnit: D;
+  /** Materials only */
+  wastagePct: D | null;
+  /** null when no rate is set */
+  rate: D | null;
+}
+
+export interface PricedLine {
+  /** Per unit of the BOQ item, wastage included */
+  quantity: D;
+  amount: D | null;
+}
+
+export interface BuiltUpRate {
+  lines: PricedLine[];
+  material: D;
+  labour: D;
+  equipment: D;
+  cost: D;
+  overheads: D;
+  profit: D;
+  builtUpRate: D;
+  /** BOQ rate − built-up rate */
+  margin: D;
+  marginPct: number | null;
+  unpriced: number;
+}
+
+const r2 = (v: D) => v.toDecimalPlaces(2, Dec.ROUND_HALF_UP);
+
+/**
+ * Price one BOQ item's lines: each line's quantity (with a material's wastage) × its rate, summed by kind; overheads and
+ * profit are both % of that cost. A line without a rate counts as nothing and is reported as unpriced.
+ */
+export function builtUpRate(lines: EstimateLineInput[], overheadPct: D, profitPct: D, boqRate: D): BuiltUpRate {
+  const sums = { MATERIAL: ZERO, LABOUR: ZERO, EQUIPMENT: ZERO };
+  let unpriced = 0;
+  const priced = lines.map((l) => {
+    const quantity = l.wastagePct ? l.qtyPerUnit.mul(HUNDRED.plus(l.wastagePct)).div(HUNDRED) : l.qtyPerUnit;
+    if (!l.rate) {
+      unpriced++;
+      return { quantity: quantity.toDecimalPlaces(6), amount: null };
+    }
+    const amount = r2(quantity.mul(l.rate));
+    sums[l.kind] = sums[l.kind].plus(amount);
+    return { quantity: quantity.toDecimalPlaces(6), amount };
+  });
+  const cost = sums.MATERIAL.plus(sums.LABOUR).plus(sums.EQUIPMENT);
+  const overheads = r2(cost.mul(overheadPct).div(HUNDRED));
+  const profit = r2(cost.mul(profitPct).div(HUNDRED));
+  const rate = cost.plus(overheads).plus(profit);
+  const margin = boqRate.minus(rate);
+  return {
+    lines: priced,
+    material: sums.MATERIAL,
+    labour: sums.LABOUR,
+    equipment: sums.EQUIPMENT,
+    cost,
+    overheads,
+    profit,
+    builtUpRate: rate,
+    margin,
+    marginPct: boqRate.gt(0) ? Math.round(margin.div(boqRate).mul(1000).toNumber()) / 10 : null,
+    unpriced,
+  };
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Wastage (v5 item 92): stock adjustments by reason and item.
+
+export interface AdjustmentRow {
+  reason: string | null;
+  itemId: string;
+  entryId: string;
+  quantity: D;
+}
+
+export interface WastageGroup {
+  reason: string | null;
+  itemId: string;
+  lost: D;
+  gained: D;
+  entries: number;
+}
+
+/** Adjustment lines grouped by reason and item, opening stock left out; a negative line is lost, a positive one gained. */
+export function wastageGroups(rows: AdjustmentRow[]): WastageGroup[] {
+  const out = new Map<string, WastageGroup & { ids: Set<string> }>();
+  for (const r of rows) {
+    if (r.reason === 'OPENING') continue;
+    const k = `${r.reason ?? ''}:${r.itemId}`;
+    const g = out.get(k) ?? { reason: r.reason, itemId: r.itemId, lost: ZERO, gained: ZERO, entries: 0, ids: new Set<string>() };
+    if (r.quantity.isNegative()) g.lost = g.lost.plus(r.quantity.neg());
+    else g.gained = g.gained.plus(r.quantity);
+    g.ids.add(r.entryId);
+    g.entries = g.ids.size;
+    out.set(k, g);
+  }
+  return [...out.values()].map(({ ids: _ids, ...g }) => g);
+}

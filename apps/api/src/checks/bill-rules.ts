@@ -238,6 +238,7 @@ export interface SubcontractBillFacts {
   tdsPct: number;
   tdsAmount: number;
   materialRecovery: number;
+  excessRecovery: number;
   otherDeduction: number;
   totalDeductions: number;
   netPayable: number;
@@ -282,7 +283,7 @@ export function subcontractBillChecks(f: SubcontractBillFacts): Check[] {
     { label: 'TDS', expected: pctOf(base, f.tdsPct), actual: f.tdsAmount },
     // Advance recovery stops at what is left of the advance, so it may be less than its percentage, never more.
     { label: 'Advance recovery', expected: Math.min(pctOf(base, f.advanceRecoveryPct), f.advanceRecoveryAmount), actual: f.advanceRecoveryAmount },
-    { label: 'Deductions', expected: f.retentionAmount + f.advanceRecoveryAmount + f.tdsAmount + f.materialRecovery + f.otherDeduction, actual: f.totalDeductions },
+    { label: 'Deductions', expected: f.retentionAmount + f.advanceRecoveryAmount + f.tdsAmount + f.materialRecovery + f.excessRecovery + f.otherDeduction, actual: f.totalDeductions },
     { label: 'Net payable', expected: f.grossAmount + f.gstAmount - f.totalDeductions, actual: f.netPayable },
   ]);
 

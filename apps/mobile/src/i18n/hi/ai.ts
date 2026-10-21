@@ -65,6 +65,7 @@ export const AI: Record<string, string> = {
   'Reading the schedule': 'शेड्यूल पढ़ रहा है',
   'Reading project cost': 'प्रोजेक्ट की लागत पढ़ रहा है',
   'Reading the budget': 'बजट पढ़ रहा है',
+  'Reading the material reconciliation': 'सामग्री मिलान पढ़ रहा है',
   'Reading the cash-flow forecast': 'कैश-फ़्लो अनुमान पढ़ रहा है',
   'Checking stock': 'स्टॉक देख रहा है',
   'Checking deliveries': 'डिलीवरी देख रहा है',
