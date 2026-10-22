@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { App, Checkbox, Divider, Form, Input, Select } from 'antd';
+import { App, Button, Checkbox, Divider, Form, Input, Select } from 'antd';
+import { ContactsOutlined } from '@ant-design/icons';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { CODE_INPUT, EMAIL_INPUT, PHONE_INPUT, emailRule, phoneRule, upper } from '@/components/form/inputs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -44,12 +45,15 @@ export function VendorFormModal({
   initial,
   onClose,
   onSaved,
+  onPortal,
 }: {
   open: boolean;
   vendor?: VendorDto | null;
   initial?: Partial<FormValues> | null;
   onClose: () => void;
   onSaved?: (v: VendorDto) => void;
+  /** Opens the vendor's supplier-portal logins (v6 item 105); the way there on a phone, where the list has no actions */
+  onPortal?: () => void;
 }) {
   const [form] = Form.useForm<FormValues>();
   const { message } = App.useApp();
@@ -132,6 +136,11 @@ export function VendorFormModal({
       draftKey={vendor ? undefined : 'vendor'}
     >
       <Form form={form} layout="vertical">
+        {vendor && onPortal ? (
+          <Button type="link" icon={<ContactsOutlined />} onClick={onPortal} style={{ paddingInline: 0, marginBottom: 8 }}>
+            Supplier portal logins
+          </Button>
+        ) : null}
         <FormGrid cols={2}>
           <Form.Item name="name" label="Vendor name" rules={[{ required: true, whitespace: true, message: 'Enter the vendor name' }]}>
             <Input placeholder="Maa Tarini Traders" maxLength={200} />

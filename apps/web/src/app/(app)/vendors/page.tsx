@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button, Card, Checkbox, Flex, Select, Space, Table, Tabs, Tag, Typography, theme } from 'antd';
-import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
+import { Button, Card, Checkbox, Flex, Select, Space, Table, Tabs, Tag, Tooltip, Typography, theme } from 'antd';
+import { ContactsOutlined, DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { MsmeCategory, UnlistedVendorDto, VendorDto, VendorKind, VendorSortField } from '@erp/shared';
-import { GST_STATES, LIST_SORT_FIELDS, MSME_CATEGORIES, MSME_CATEGORY_LABELS, VENDOR_KINDS, VENDOR_KIND_LABELS, canEditVendors, canSeeVendorBank } from '@erp/shared';
+import { GST_STATES, LIST_SORT_FIELDS, MSME_CATEGORIES, MSME_CATEGORY_LABELS, VENDOR_KINDS, VENDOR_KIND_LABELS, canEditVendors, canManageSupplierLogins, canSeeVendorBank } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
@@ -18,6 +18,7 @@ import { ListToolbar } from '@/components/common/ListToolbar';
 import { ExportButton } from '@/components/common/ExportButton';
 import { EmptyArt } from '@/components/common/EmptyArt';
 import { VendorFormModal } from '@/components/vendors/VendorFormModal';
+import { VendorPortalDrawer } from '@/components/supplier/VendorPortalDrawer';
 import { DataTable, type ListColumn } from '@/components/list/DataTable';
 import { exportSelected } from '@/components/list/bulk';
 import { useListFrame } from '@/components/list/useListFrame';
@@ -40,7 +41,7 @@ function Sub({ children }: { children: React.ReactNode }) {
   return <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{children}</div>;
 }
 
-function VendorsTab({ editable, onEdit, emptyAction }: { editable: boolean; onEdit: (v: VendorDto) => void; emptyAction?: React.ReactNode }) {
+function VendorsTab({ editable, onEdit, onPortal, emptyAction }: { editable: boolean; onEdit: (v: VendorDto) => void; onPortal?: (v: VendorDto) => void; emptyAction?: React.ReactNode }) {
   const { user } = useAuth();
   const qc = useQueryClient();
   const bank = !!user && canSeeVendorBank(user.roleKey);
@@ -150,7 +151,7 @@ function VendorsTab({ editable, onEdit, emptyAction }: { editable: boolean; onEd
         : []),
       { title: 'Used on', key: 'used', width: 190, defaultFrom: 1400, render: (_, v) => usedOn(v) },
       { title: 'Added', label: 'Added on', key: 'createdAt', dataIndex: 'createdAt', width: 120, defaultHidden: true, sorter: true, sortOrder: sortOrderFor('createdAt'), render: (v: string) => formatDate(v) },
-      ...(editable
+      ...(editable || onPortal
         ? [
             {
               title: '',
@@ -158,11 +159,16 @@ function VendorsTab({ editable, onEdit, emptyAction }: { editable: boolean; onEd
               label: 'Actions',
               locked: true,
               fixed: 'right' as const,
-              width: 96,
+              width: onPortal ? 128 : 96,
               render: (_: unknown, v: VendorDto) => (
                 <Space size={4}>
-                  <Button size="small" type="text" icon={<EditOutlined />} aria-label={`Edit ${v.name}`} onClick={() => onEdit(v)} />
-                  {v.expenseCount + v.equipmentCount + v.grnCount === 0 ? (
+                  {onPortal ? (
+                    <Tooltip title="Supplier portal logins">
+                      <Button size="small" type="text" icon={<ContactsOutlined />} aria-label={`Supplier portal logins for ${v.name}`} onClick={() => onPortal(v)} />
+                    </Tooltip>
+                  ) : null}
+                  {editable ? <Button size="small" type="text" icon={<EditOutlined />} aria-label={`Edit ${v.name}`} onClick={() => onEdit(v)} /> : null}
+                  {editable && v.expenseCount + v.equipmentCount + v.grnCount === 0 ? (
                     <ConfirmDelete what={`vendor ${v.name}`} onConfirm={() => remove.mutateAsync(v.id)}>
                       <Button size="small" type="text" danger icon={<DeleteOutlined />} aria-label={`Delete ${v.name}`} />
                     </ConfirmDelete>
@@ -265,6 +271,8 @@ export default function VendorsPage() {
   const editable = !!user && canEditVendors(user.roleKey);
   const [editing, setEditing] = useState<VendorDto | null>(null);
   const [adding, setAdding] = useState<Partial<{ name: string; gstin: string; kinds: VendorKind[] }> | null>(null);
+  const [portal, setPortal] = useState<VendorDto | null>(null);
+  const logins = !!user && canManageSupplierLogins(user.roleKey);
   const { data: unlisted } = useUnlistedVendors(editable);
 
   const newButton = editable ? (
@@ -284,7 +292,7 @@ export default function VendorsPage() {
         <Tabs
           tabBarStyle={{ padding: '0 12px', marginBottom: 0 }}
           items={[
-            { key: 'vendors', label: 'Vendor master', children: <VendorsTab editable={editable} onEdit={setEditing} emptyAction={newButton} /> },
+            { key: 'vendors', label: 'Vendor master', children: <VendorsTab editable={editable} onEdit={setEditing} onPortal={logins ? setPortal : undefined} emptyAction={newButton} /> },
             {
               key: 'unlisted',
               label: `Not in the master${unlisted?.length ? ` (${unlisted.length})` : ''}`,
@@ -307,12 +315,14 @@ export default function VendorsPage() {
       <VendorFormModal
         open={!!adding || !!editing}
         vendor={editing}
+        onPortal={logins && editing ? () => setPortal(editing) : undefined}
         initial={adding}
         onClose={() => {
           setAdding(null);
           setEditing(null);
         }}
       />
+      <VendorPortalDrawer vendor={portal} onClose={() => setPortal(null)} />
     </div>
   );
 }

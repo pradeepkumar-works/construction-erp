@@ -37,6 +37,7 @@ export const ROLE_KEYS = [
   'HR_MANAGER',
   'CLIENT_ENGINEER',
   'CONSULTANT',
+  'SUPPLIER',
 ] as const;
 export type RoleKey = (typeof ROLE_KEYS)[number];
 
@@ -67,6 +68,7 @@ export const NOTIFICATION_TYPES = [
   'DEFECT',
   'WATCH_LIST',
   'MORNING_BRIEF',
+  'SUPPLIER',
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 

@@ -372,10 +372,32 @@ export class NotificationsService {
   }
 
   /** Tell the author how the review went. */
+  /** An approved purchase or work order goes to the supplier's portal logins to accept (v6 item 105). */
+  private async onOrderApproved(actor: RequestUser, type: 'PURCHASE_ORDER' | 'WORK_ORDER', id: string, projectName: string) {
+    const order =
+      type === 'PURCHASE_ORDER'
+        ? await this.prisma.purchaseOrder.findUnique({ where: { id }, select: { vendorId: true, poNo: true } }).then((o) => o && { vendorId: o.vendorId, no: o.poNo })
+        : await this.prisma.workOrder.findUnique({ where: { id }, select: { vendorId: true, woNo: true, title: true } }).then((o) => o && { vendorId: o.vendorId, no: `${o.woNo} (${o.title})` });
+    if (!order) return;
+    await this.notifyVendor(actor.organizationId, order.vendorId, {
+      title: `New ${type === 'PURCHASE_ORDER' ? 'purchase' : 'work'} order ${order.no}`,
+      body: `${projectName}: open it to read the terms and accept it.`,
+      entityType: type === 'PURCHASE_ORDER' ? 'PORTAL_PO' : 'PORTAL_WO',
+      entityId: id,
+    });
+  }
+
+  /** A supplier's portal logins (v6 item 105) are told what concerns their vendor: an order to accept, an enquiry, a payment. */
+  async notifyVendor(organizationId: string, vendorId: string, n: Omit<NotifyInput, 'organizationId' | 'userIds' | 'type'>) {
+    const logins = await this.prisma.user.findMany({ where: { organizationId, vendorId, isActive: true }, select: { id: true } });
+    if (logins.length) await this.notify({ organizationId, userIds: logins.map((u) => u.id), type: 'SUPPLIER', ...n });
+  }
+
   async onReviewed(actor: RequestUser, type: SubmissionType, id: string, status: 'APPROVED' | 'REJECTED' | 'CHANGES_REQUESTED', note?: string | null) {
     try {
       const s = await this.describeSubmission(type, id);
       if (s && type === 'PAYMENT_REQUEST' && status === 'APPROVED') await this.onPaymentApproved(actor, id, s);
+      if (s && status === 'APPROVED' && (type === 'PURCHASE_ORDER' || type === 'WORK_ORDER')) await this.onOrderApproved(actor, type, id, s.projectName);
       if (!s || s.submittedById === actor.id) return;
       const map: Record<typeof status, { type: NotificationType; verb: string }> = {
         APPROVED: { type: 'SUBMISSION_APPROVED', verb: 'approved' },

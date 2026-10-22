@@ -58,6 +58,7 @@ import { BiometricModule } from './biometric/biometric.module';
 import { BooksModule } from './books/books.module';
 import { StatementsModule } from './statements/statements.module';
 import { RmcModule } from './rmc/rmc.module';
+import { SupplierModule } from './supplier/supplier.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { WorkersModule } from './workers/workers.module';
 import { ImprestModule } from './imprest/imprest.module';
@@ -116,6 +117,7 @@ import { VitalsController } from './vitals.controller';
     BooksModule,
     StatementsModule,
     RmcModule,
+    SupplierModule,
     CostModule,
     ReconciliationModule,
     ReportsModule,

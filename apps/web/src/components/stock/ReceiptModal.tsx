@@ -25,6 +25,8 @@ interface FormValues {
   vehicleNo?: string;
   remarks?: string;
   photos?: AttachmentDto[];
+  /** The supplier's dispatch note this delivery came with (supplier portal, v6 item 105) */
+  dispatchId?: string;
 }
 
 /** What a GRN is received against: an approved purchase order or material request. */
@@ -35,6 +37,7 @@ interface Source {
   label: string;
   vendorName: string | null;
   lines: { id: string; itemName: string; specification: string | null; unit: string; due: string; received: string; pending: string }[];
+  dispatches: ReceivableOrderDto['dispatches'];
 }
 
 const fromOrder = (o: ReceivableOrderDto, withProject: boolean): Source => ({
@@ -44,6 +47,7 @@ const fromOrder = (o: ReceivableOrderDto, withProject: boolean): Source => ({
   label: `${o.poNo} · ${o.vendorName} · ${o.lines.map((l) => l.itemName).join(', ')}${withProject ? ` · ${o.projectName}` : ''}${o.deliveryBy ? ` · due ${formatDate(o.deliveryBy)}` : ''}`,
   vendorName: o.vendorName,
   lines: o.lines.map((l) => ({ id: l.purchaseOrderLineId, itemName: l.itemName, specification: l.specification, unit: l.unit, due: l.ordered, received: l.received, pending: l.pending })),
+  dispatches: o.dispatches ?? [],
 });
 
 const fromRequest = (r: ReceivableRequestDto, withProject: boolean): Source => ({
@@ -53,6 +57,7 @@ const fromRequest = (r: ReceivableRequestDto, withProject: boolean): Source => (
   label: `${r.requestNo} · ${r.lines.map((l) => l.itemName).join(', ')}${withProject ? ` · ${r.projectName}` : ''} · needed ${formatDate(r.requiredDate)} (${MATERIAL_PRIORITY_LABELS[r.priority]})`,
   vendorName: null,
   lines: r.lines.map((l) => ({ id: l.materialRequestItemId, itemName: l.itemName, specification: l.specification, unit: l.unit, due: l.requested, received: l.received, pending: l.pending })),
+  dispatches: [],
 });
 
 /** Goods received note against an approved purchase order or material request. Each line defaults to what is still pending. */
@@ -106,8 +111,22 @@ export function ReceiptModal({
     if (!request) return;
     const read = pendingQty.current?.key === request.key ? pendingQty.current.qty : null;
     pendingQty.current = null;
+    form.setFieldValue('dispatchId', undefined);
     setQty(read ?? Object.fromEntries(request.lines.map((l) => [l.id, Number(l.pending) > 0 ? l.pending : null])));
-  }, [request]);
+  }, [request, form]);
+
+  /** Picking the supplier's dispatch note fills the quantities on it, its challan and vehicle numbers. */
+  const pickDispatch = (id: string | undefined) => {
+    if (!request) return;
+    const d = request.dispatches.find((x) => x.id === id);
+    if (!d) {
+      setQty(Object.fromEntries(request.lines.map((l) => [l.id, Number(l.pending) > 0 ? l.pending : null])));
+      return;
+    }
+    const sent = new Map(d.lines.map((l) => [l.purchaseOrderLineId, l.quantity]));
+    setQty(Object.fromEntries(request.lines.map((l) => [l.id, sent.get(l.id) ?? null])));
+    form.setFieldsValue({ challanNo: d.dispatchNo, vehicleNo: d.vehicleNo ?? undefined });
+  };
 
   /**
    * Fills the GRN from a read challan: the purchase order it is most like (its printed number, the supplier, then its
@@ -163,6 +182,7 @@ export function ReceiptModal({
         vehicleNo: v.vehicleNo?.trim() || null,
         remarks: v.remarks?.trim() || null,
         attachmentIds: (v.photos ?? []).map((p) => p.id),
+        ...(po && v.dispatchId ? { supplierDispatchId: v.dispatchId } : {}),
         lines,
       };
       return (await api.post<StockEntryDto>('/stock/receipts', body)).data;
@@ -209,6 +229,17 @@ export function ReceiptModal({
             ]}
           />
         </Form.Item>
+        {request?.dispatches.length ? (
+          <Form.Item name="dispatchId" label="Supplier's dispatch note" extra="Sent by the supplier from their portal. Picking one fills its quantities; correct them to what actually arrived.">
+            <Select
+              allowClear
+              showSearch={{ optionFilterProp: 'label' }}
+              placeholder="Pick the note that came with this truck"
+              onChange={(id?: string) => pickDispatch(id)}
+              options={request.dispatches.map((d) => ({ value: d.id, label: `${d.dispatchNo} · sent ${formatDate(d.date)}${d.vehicleNo ? ` · ${d.vehicleNo}` : ''}` }))}
+            />
+          </Form.Item>
+        ) : null}
 
         {request ? (
           <Table<Source['lines'][number]>

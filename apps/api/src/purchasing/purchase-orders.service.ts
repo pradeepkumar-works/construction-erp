@@ -38,6 +38,7 @@ const include = {
   materialRequest: { select: { requestNo: true } },
   submittedBy: { select: { fullName: true } },
   reviewedBy: { select: { fullName: true } },
+  supplierAcceptedBy: { select: { fullName: true } },
   attachments: { select: ATTACHMENT_FIELDS },
   lines: {
     orderBy: [{ sortOrder: 'asc' as const }, { id: 'asc' as const }],
@@ -133,6 +134,9 @@ export class PurchaseOrdersService {
       gstAmount: money(r.gstAmount)!,
       total: money(r.total)!,
       remarks: r.remarks,
+      supplierAcceptedAt: iso(r.supplierAcceptedAt),
+      supplierAcceptedBy: r.supplierAcceptedBy?.fullName ?? null,
+      supplierNote: r.supplierNote,
       closedAt: iso(r.closedAt),
       closeNote: r.closeNote,
       open: r.status === 'APPROVED' && !r.closedAt && pending,
@@ -244,12 +248,14 @@ export class PurchaseOrdersService {
         ...include,
         stockEntries: { orderBy: { date: 'asc' }, select: { id: true, entryNo: true, date: true, _count: { select: { lines: true } } } },
         vendorBills: { orderBy: { invoiceDate: 'asc' }, select: { id: true, billNo: true, invoiceNo: true, invoiceDate: true, total: true, status: true, matched: true, advanceAdjusted: true } },
+        dispatches: { orderBy: [{ date: 'asc' }, { createdAt: 'asc' }], select: { id: true, dispatchNo: true, date: true, vehicleNo: true, cancelledAt: true, grn: { select: { entryNo: true } } } },
       },
     });
     if (!row) throw new NotFoundException('Purchase order not found');
     return {
       ...this.toDto(row),
       grns: row.stockEntries.map((e) => ({ id: e.id, entryNo: e.entryNo, date: dateOnly(e.date)!, lines: e._count.lines })),
+      dispatches: row.dispatches.map((d) => ({ id: d.id, dispatchNo: d.dispatchNo, date: dateOnly(d.date)!, vehicleNo: d.vehicleNo, status: d.cancelledAt ? 'CANCELLED' : d.grn ? 'RECEIVED' : 'ON_THE_WAY', grnNo: d.grn?.entryNo ?? null })),
       bills: row.vendorBills.map((b) => ({ id: b.id, billNo: b.billNo, invoiceNo: b.invoiceNo, invoiceDate: dateOnly(b.invoiceDate)!, total: money(b.total)!, status: b.status, matched: b.matched })),
     };
   }
@@ -259,7 +265,12 @@ export class PurchaseOrdersService {
     if (q.projectId) await this.access.assertCanAccessProject(user, q.projectId);
     const rows = await this.prisma.purchaseOrder.findMany({
       where: { ...this.access.submissionWhere(user), status: 'APPROVED', closedAt: null, ...(q.projectId ? { projectId: q.projectId } : {}) },
-      include: { project: { select: { name: true } }, vendor: { select: { name: true } }, lines: { orderBy: { sortOrder: 'asc' }, include: { stockTxns: { select: { quantity: true } } } } },
+      include: {
+        project: { select: { name: true } },
+        vendor: { select: { name: true } },
+        lines: { orderBy: { sortOrder: 'asc' }, include: { stockTxns: { select: { quantity: true } } } },
+        dispatches: { where: { cancelledAt: null, grn: null }, orderBy: { date: 'asc' }, include: { lines: { select: { purchaseOrderLineId: true, quantity: true } } } },
+      },
       orderBy: [{ deliveryBy: { sort: 'asc', nulls: 'last' } }, { poNo: 'asc' }],
       take: 200,
     });
@@ -285,6 +296,7 @@ export class PurchaseOrdersService {
             pending: dec(pending.gt(0) ? pending : ZERO)!,
           };
         }),
+        dispatches: r.dispatches.map((d) => ({ id: d.id, dispatchNo: d.dispatchNo, date: dateOnly(d.date)!, vehicleNo: d.vehicleNo, lines: d.lines.map((l) => ({ purchaseOrderLineId: l.purchaseOrderLineId, quantity: dec(l.quantity)! })) })),
       }))
       .filter((r) => r.lines.some((l) => Number(l.pending) > 0));
   }

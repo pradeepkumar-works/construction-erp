@@ -12,6 +12,14 @@ export function notificationHref(n: NotificationDto): string {
   // An RFI: the client's engineer or consultant answers it in their portal; staff open it in Documents.
   if (n.entityType === 'RFI' && n.entityId) return n.type === 'PORTAL' && n.projectId ? `/portal/${n.projectId}?tab=rfis&open=${n.entityId}` : `/documents?tab=rfis&rfi=${n.entityId}`;
   if (n.type === 'MORNING_BRIEF') return '/';
+  // The supplier portal (v6 item 105): the supplier's own notices open their pages; the company's open the inbox or the vendor.
+  if (n.entityType === 'PORTAL_PO' || n.entityType === 'PORTAL_WO') return `/supplier/orders?open=${n.entityType === 'PORTAL_PO' ? 'po' : 'wo'}:${n.entityId}`;
+  if (n.entityType === 'PORTAL_INVOICE') return '/supplier/invoices';
+  if (n.entityType === 'PORTAL_CHANGE') return '/supplier/profile';
+  if (n.entityType === 'PORTAL_ENQUIRY') return `/supplier/enquiries${n.entityId ? `?open=${n.entityId}` : ''}`;
+  if (n.entityType === 'PORTAL_PAYMENT') return '/supplier/statement';
+  if (n.entityType === 'SUPPLIER_INVOICE') return `/supplier-inbox${n.entityId ? `?id=${n.entityId}` : ''}`;
+  if (n.entityType === 'SUPPLIER_CHANGE') return '/supplier-inbox?tab=changes';
   if (n.entityType && n.entityId) return `/notifications?type=${n.entityType}&id=${n.entityId}`;
   if (n.type === 'APPROVAL_DIGEST') return '/approvals';
   if (n.type === 'DPR_REMINDER' && n.projectId) return `/projects/${n.projectId}?tab=dpr`;

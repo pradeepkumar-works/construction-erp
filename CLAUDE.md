@@ -156,6 +156,10 @@ and the pre-delivery checklist.
   leave the plant's store only through `StockService.issue`, and cubes are a quality test through `QualityService`. Its
   figures are pure functions in `rmc-rules.ts` tested in `src/scripts/rmc-test.ts` (CI runs it); bills and receipts post
   through the posting service (`RMC_SALE`, `RMC_RECEIPT`).
+- Supplier portal (item 105, `apps/api/src/supplier`, ARCHITECTURE "Supplier portal"): a `SUPPLIER` login has a `vendorId`
+  and sees only that vendor; its routes are `@SupplierAllowed()` (`/supplier/*` also `@SupplierOnly()`), and every query
+  filters by `supplierVendor(user)`. Logins are given from Vendors, never Users. Its figures are in `supplier-rules.ts`
+  (tested in `src/scripts/supplier-test.ts`, CI runs it); web pages under `app/(app)/supplier`, the company's side at `/supplier-inbox`.
 - Statements (item 103, `apps/api/src/statements`, ARCHITECTURE "Financial statements"): where an account shows is
   `statementLineOf` (`packages/shared/src/statements.ts`), the bank file reader, matching and reconciliation are pure functions in
   `statements-rules.ts` tested in `src/scripts/statements-test.ts` (CI runs it). Vouchers the books make themselves (`OPENING`,

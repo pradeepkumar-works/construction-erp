@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-supplier-portal',
+    date: '2026-11-11',
+    title: 'Supplier portal',
+    points: [
+      "Give a supplier's or subcontractor's people a login from Vendors. They see only their own enquiries, orders, invoices and payments, nothing about your projects or other vendors.",
+      'Suppliers quote on enquiries, accept purchase and work orders, and send a dispatch note with each truck. The store picks the note when receiving, and the GRN fills in from it.',
+      'Invoices they send arrive in the Supplier inbox with the file. Accounts record the bill from it or return it with what to fix, and the supplier follows it through to payment.',
+      'Suppliers see their statement, what is due and every payment with TDS. A change to their details, above all a new bank account, waits for your approval before it counts.',
+    ],
+  },
+  {
     id: '2026-11-rmc',
     date: '2026-11-10',
     title: 'RMC plant',

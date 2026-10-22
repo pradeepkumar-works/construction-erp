@@ -22,7 +22,7 @@ export class AttachmentsService {
   async link(user: RequestUser, parent: Parent, parentId: string, attachmentIds: string[] | undefined) {
     if (!attachmentIds || attachmentIds.length === 0) return;
     await this.prisma.attachment.updateMany({
-      where: { id: { in: attachmentIds }, organizationId: user.organizationId, progressEntryId: null, dailyReportId: null, materialRequestId: null, stockEntryId: null, machineryLogId: null, expenseId: null, measurementId: null, riskId: null, raBillId: null, purchaseOrderId: null, vendorBillId: null, workOrderId: null, subcontractBillId: null, inspectionId: null, qualityTestId: null, ncrId: null, revisionId: null, letterId: null, variationId: null, safetyIncidentId: null, toolboxTalkId: null, workPermitId: null, maintenanceJobId: null, equipmentDocId: null, complianceDocId: null, defectId: null, handoverId: null, rfiId: null, paymentRequestId: null, employeeId: null },
+      where: { id: { in: attachmentIds }, organizationId: user.organizationId, progressEntryId: null, dailyReportId: null, materialRequestId: null, stockEntryId: null, machineryLogId: null, expenseId: null, measurementId: null, riskId: null, raBillId: null, purchaseOrderId: null, vendorBillId: null, workOrderId: null, subcontractBillId: null, inspectionId: null, qualityTestId: null, ncrId: null, revisionId: null, letterId: null, variationId: null, safetyIncidentId: null, toolboxTalkId: null, workPermitId: null, maintenanceJobId: null, equipmentDocId: null, complianceDocId: null, defectId: null, handoverId: null, rfiId: null, paymentRequestId: null, employeeId: null, supplierInvoiceId: null },
       data: { [parent]: parentId },
     });
   }

@@ -2,7 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { isGuest } from '@erp/shared';
+import { isGuest, isSupplier } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { AppShell } from '@/components/shell/AppShell';
 import { ShellSkeleton } from '@/components/shell/ShellSkeleton';
@@ -19,11 +19,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }
   }, [loading, user, router, pathname]);
 
-  // The client's engineer and consultant only have the portal (and their notifications).
-  const guestAway = !!user && isGuest(user.roleKey) && !pathname.startsWith('/portal') && !pathname.startsWith('/notifications');
+  // The client's engineer and consultant only have the client portal, a supplier the supplier portal (and their notifications).
+  const portal = user && isSupplier(user.roleKey) ? '/supplier' : '/portal';
+  const guestAway = !!user && isGuest(user.roleKey) && !(pathname === portal || pathname.startsWith(`${portal}/`)) && !pathname.startsWith('/notifications');
   useEffect(() => {
-    if (guestAway) router.replace('/portal');
-  }, [guestAway, router]);
+    if (guestAway) router.replace(portal);
+  }, [guestAway, router, portal]);
 
   // While the sign-in is checked: the shell's outline and a page of placeholders, where the app will draw them.
   if (loading || !user || guestAway) return <ShellSkeleton />;

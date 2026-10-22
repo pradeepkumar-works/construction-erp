@@ -32,6 +32,7 @@ const ROLES: [string, string][] = [
   ['HR_MANAGER', 'HR Manager'],
   ['CLIENT_ENGINEER', "Client's Engineer (guest)"],
   ['CONSULTANT', 'Consultant / PMC (guest)'],
+  ['SUPPLIER', 'Supplier (portal)'],
 ];
 
 const USERS: { email: string; name: string; role: string; phone: string }[] = [
@@ -52,6 +53,8 @@ const USERS: { email: string; name: string; role: string; phone: string }[] = [
   // Guests from outside the company: they use the client portal only, on the projects below (seedGuests).
   { email: 'client@demo.com', name: 'Er. Bijay Kumar Panda', role: 'CLIENT_ENGINEER', phone: '9800000014' },
   { email: 'pmc@demo.com', name: 'Lakshmi Menon', role: 'CONSULTANT', phone: '9800000015' },
+  // A supplier's own login (v6 item 105): Kalinga Bitumen & Aggregates on the supplier portal (seedSupplierPortal).
+  { email: 'supplier@demo.com', name: 'R. K. Mohanty', role: 'SUPPLIER', phone: '9800000017' },
 ];
 
 /** The client's engineer (Executive Engineer's office, road) and the consultant (PMC, building) on their projects. */
@@ -173,6 +176,7 @@ async function main() {
     await seedBooks(org.id);
     await seedOpening(org.id);
     await seedRmc(org.id);
+    await seedSupplierPortal(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
   }
@@ -364,6 +368,7 @@ async function main() {
   await seedBooks(org.id);
   await seedOpening(org.id);
   await seedRmc(org.id);
+  await seedSupplierPortal(org.id);
 
   console.log('Seed complete. Login with any of these (password: password123):');
   for (const u of USERS) console.log(`  ${u.email.padEnd(24)} ${u.role}`);
@@ -3691,4 +3696,57 @@ async function seedRmc(organizationId: string) {
   });
   await prisma.rmcBatch.updateMany({ where: { id: { in: first.map((b) => b.id) } }, data: { invoiceId: invoice.id } });
   await prisma.rmcReceipt.create({ data: { organizationId, clientId: sai.id, invoiceId: invoice.id, date: day(0), amount: D(75000), mode: 'BANK', reference: 'NEFT UTR SBIN226104471', createdById: accounts } });
+}
+
+/**
+ * The supplier portal (v6 item 105): supplier@demo.com is Kalinga Bitumen & Aggregates' login. Their road PO waits for
+ * them to accept it; a dispatch note for part of what is left is on the way, so the store can fill a GRN from it; an
+ * invoice waits with accounts; and they asked for their bank account to change. Only once per organisation.
+ */
+async function seedSupplierPortal(organizationId: string) {
+  const vendor = await prisma.vendor.findFirst({ where: { organizationId, name: 'Kalinga Bitumen & Aggregates' } });
+  const login = await prisma.user.findFirst({ where: { organizationId, email: 'supplier@demo.com' } });
+  if (!vendor || !login) return;
+  await prisma.user.update({ where: { id: login.id }, data: { vendorId: vendor.id } });
+  if ((await prisma.supplierDispatch.count({ where: { organizationId } })) > 0) return;
+  const po = await prisma.purchaseOrder.findFirst({
+    where: { organizationId, vendorId: vendor.id, status: 'APPROVED' },
+    include: { lines: { orderBy: { sortOrder: 'asc' }, include: { stockTxns: { select: { quantity: true } } } } },
+    orderBy: { poDate: 'asc' },
+  });
+  if (!po) return;
+  const left = po.lines
+    .map((l) => ({ line: l, left: l.quantity.sub(l.stockTxns.reduce((t, x) => t.add(x.quantity), D(0))) }))
+    .filter((x) => x.left.gt(0));
+  if (left.length) {
+    await prisma.supplierDispatch.create({
+      data: {
+        organizationId, vendorId: vendor.id, purchaseOrderId: po.id, dispatchNo: 'KBA/DC/0412', date: day(0), vehicleNo: 'OD02AB1234', transporter: 'Own truck',
+        remarks: 'First lot; the rest follows when the plant restarts', createdById: login.id, createdAt: day(0),
+        lines: { create: left.slice(0, 1).map((x) => ({ organizationId, purchaseOrderLineId: x.line.id, quantity: x.left.div(2).toDecimalPlaces(3) })) },
+      },
+    });
+  }
+  const invoiceLine = po.lines[po.lines.length - 1];
+  const received = invoiceLine.stockTxns.reduce((t, x) => t.add(x.quantity), D(0));
+  const amount = received.mul(invoiceLine.rate).mul(D(1).add(invoiceLine.gstRate.div(100))).toDecimalPlaces(2);
+  if (amount.gt(0)) {
+    const inv = await prisma.supplierInvoice.create({
+      data: {
+        organizationId, vendorId: vendor.id, purchaseOrderId: po.id, invoiceNo: 'KBA/2026/0388', invoiceDate: day(-1), amount, gstAmount: amount.sub(received.mul(invoiceLine.rate)).toDecimalPlaces(2),
+        notes: `${invoiceLine.itemName} received at site`, createdById: login.id, createdAt: day(-1),
+      },
+    });
+    const file = new Uint8Array(billImage());
+    await prisma.attachment.create({
+      data: { organizationId, fileName: 'KBA-2026-0388.png', mimeType: 'image/png', size: file.length, storagePath: 'db:seed/KBA-2026-0388.png', data: file, uploadedById: login.id, supplierInvoiceId: inv.id, createdAt: day(-1) },
+    });
+  }
+  await prisma.supplierChangeRequest.create({
+    data: {
+      organizationId, vendorId: vendor.id, createdById: login.id, createdAt: day(-1), note: 'We moved our account to the Bhubaneswar branch',
+      changes: { bankAccountNo: '39281726999', bankIfsc: 'SBIN0000052', bankName: 'State Bank of India, Bhubaneswar Main' },
+      previous: { bankAccountNo: vendor.bankAccountNo, bankIfsc: vendor.bankIfsc, bankName: vendor.bankName },
+    },
+  });
 }

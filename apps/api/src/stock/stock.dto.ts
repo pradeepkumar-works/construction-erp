@@ -30,6 +30,7 @@ export class CreateReceiptDto {
   @IsUUID()
   materialRequestId?: string;
   @ApiPropertyOptional({ description: 'An approved, open purchase order; the supplier is its vendor' }) @IsOptional() @IsUUID() purchaseOrderId?: string;
+  @ApiPropertyOptional({ description: "With purchaseOrderId: the supplier's dispatch note this GRN receives (supplier portal)" }) @IsOptional() @IsUUID() supplierDispatchId?: string;
   @ApiProperty({ example: '2026-10-13' }) @IsDateString() @dateOnly() date: string;
   @ApiPropertyOptional({ example: 'Maa Tarini Traders' }) @IsOptional() @IsString() @trim() @MaxLength(200) supplier?: string | null;
   @ApiPropertyOptional(VENDOR_ID_DOC) @IsOptional() @ValidateIf((_, v) => v !== null) @IsUUID() vendorId?: string | null;

@@ -37,15 +37,18 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         organizationId: true,
         email: true,
         fullName: true,
+        vendorId: true,
         role: { select: { key: true } },
         organization: { select: { code: true, trialEndsAt: true, paidUntil: true } },
       },
     });
     if (!user) throw new UnauthorizedException();
+    // A supplier's login acts only for its vendor; one without a vendor cannot act at all.
+    if (user.role.key === 'SUPPLIER' && !user.vendorId) throw new UnauthorizedException();
     setTenant(user.organizationId);
     const billing = billingConfig();
     const readOnly = !!billing && billingState(billing, user.organization, todayIn()).status === 'READ_ONLY';
-    return { id: user.id, organizationId: user.organizationId, roleKey: user.role.key as RoleKey, email: user.email, fullName: user.fullName, ...(readOnly ? { billingReadOnly: true } : {}) };
+    return { id: user.id, organizationId: user.organizationId, roleKey: user.role.key as RoleKey, email: user.email, fullName: user.fullName, ...(user.vendorId ? { vendorId: user.vendorId } : {}), ...(readOnly ? { billingReadOnly: true } : {}) };
   }
 
   /** Staff still on the platform list, and the company's consent still running: act as a read-only admin there. */

@@ -2,7 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import type { AuthUser, LoginResponse } from '@erp/shared';
-import { isGuest } from '@erp/shared';
+import { isGuest, isSupplier } from '@erp/shared';
 import { request, setUnauthorizedHandler } from '../api/client';
 
 const TOKEN_KEY = 'siteapp.token';
@@ -115,7 +115,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = useCallback(async (email: string, password: string) => {
     const res = await request<LoginResponse>('/auth/login', { method: 'POST', body: { email: email.trim(), password } });
-    // Client and consultant guests only have the web portal.
+    // Client and consultant guests, and suppliers, only have their portals on the web.
+    if (isSupplier(res.user.roleKey)) throw new Error('Supplier accounts use the supplier portal on the web.');
     if (isGuest(res.user.roleKey)) throw new Error('Client and consultant accounts use the client portal on the web.');
     setToken(res.accessToken);
     setUser(res.user);

@@ -62,12 +62,14 @@ export class UsersService {
   }
 
   async roles(req: RequestUser) {
-    return this.prisma.role.findMany({ where: { organizationId: req.organizationId }, select: { id: true, key: true, name: true }, orderBy: { name: 'asc' } });
+    // A supplier's login is made from their vendor (the supplier portal), never here.
+    return this.prisma.role.findMany({ where: { organizationId: req.organizationId, key: { not: 'SUPPLIER' } }, select: { id: true, key: true, name: true }, orderBy: { name: 'asc' } });
   }
 
   /** With a password the user can sign in at once; without one they are invited (set-password link). */
   async create(req: RequestUser, dto: CreateUserDto, origin?: string): Promise<CreateUserResultDto> {
     const email = dto.email.toLowerCase();
+    if (dto.roleKey === 'SUPPLIER') throw new BadRequestException("Give a supplier a login from their vendor's page (Portal logins)");
     await this.assertEmailFree(email);
     const role = await this.prisma.role.findUniqueOrThrow({ where: { organizationId_key: { organizationId: req.organizationId, key: dto.roleKey } } });
     const invite = !dto.password;
@@ -109,6 +111,7 @@ export class UsersService {
       data.passwordHash = await bcrypt.hash(dto.password, 10);
       data.invitedAt = null;
     }
+    if (dto.roleKey && (dto.roleKey === 'SUPPLIER') !== (existing.vendorId !== null)) throw new BadRequestException('A supplier login stays a supplier login, tied to its vendor');
     if (dto.roleKey) {
       const role = await this.prisma.role.findUniqueOrThrow({ where: { organizationId_key: { organizationId: req.organizationId, key: dto.roleKey } } });
       data.roleId = role.id;

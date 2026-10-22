@@ -12,6 +12,8 @@ export interface RequestUser {
   support?: { staffName: string; expiresAt: string };
   /** The company's trial or subscription has ended: reads only (BillingReadOnlyGuard) */
   billingReadOnly?: boolean;
+  /** A supplier-portal login (role SUPPLIER): the vendor it acts for */
+  vendorId?: string;
 }
 
 export const CurrentUser = createParamDecorator((_data: unknown, ctx: ExecutionContext): RequestUser => {

@@ -36,6 +36,7 @@ const ICON: Record<NotificationType, { name: keyof typeof Ionicons.glyphMap; col
   DEFECT: { name: 'construct', color: colors.warning, bg: colors.warningSoft },
   WATCH_LIST: { name: 'eye', color: colors.warning, bg: colors.warningSoft },
   MORNING_BRIEF: { name: 'cafe', color: colors.primary, bg: colors.primarySoft },
+  SUPPLIER: { name: 'cube', color: colors.info, bg: colors.infoSoft },
 };
 
 export default function NotificationsScreen() {

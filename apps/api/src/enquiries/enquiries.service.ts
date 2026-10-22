@@ -9,6 +9,7 @@ import {
   type EnquiryDto,
   type EnquiryVendorState,
   type PublicEnquiryDto,
+  type SupplierEnquiryDto,
 } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { withoutTenant } from '../prisma/tenant-context';
@@ -17,6 +18,7 @@ import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
 import { dateOnly, dec, iso, parseDate } from '../common/serialize';
 import { EmailService, escapeHtml } from '../notifications/email.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { EMAIL_COLORS, emailButton, emailLayout } from '../notifications/email-layout';
 import { PasswordLinksService } from '../auth/password-links.service';
 import { todayIn } from '../notifications/time';
@@ -32,6 +34,19 @@ const include = {
   tokens: { include: { vendor: { select: { name: true } } }, orderBy: { vendor: { name: 'asc' as const } } },
 } satisfies Prisma.EnquiryInclude;
 type Row = Prisma.EnquiryGetPayload<{ include: typeof include }>;
+
+/** A vendor's link with what its page shows. */
+const tokenInclude = {
+  vendor: { select: { name: true } },
+  enquiry: {
+    include: {
+      organization: { select: { name: true } },
+      createdBy: { select: { id: true, email: true, fullName: true, isActive: true } },
+      materialRequest: { include: { project: { select: { name: true, location: true } }, items: { orderBy: { sortOrder: 'asc' as const } } } },
+    },
+  },
+} satisfies Prisma.EnquiryTokenInclude;
+type TokenRow = Prisma.EnquiryTokenGetPayload<{ include: typeof tokenInclude }>;
 
 /** The end of a closing date in India (the links work all of that day). */
 function endOfDayIst(day: Date): Date {
@@ -52,6 +67,7 @@ export class EnquiriesService {
     private audit: AuditService,
     private email: EmailService,
     private links: PasswordLinksService,
+    private notifications: NotificationsService,
   ) {}
 
   private stateOf(t: Row['tokens'][number], now: Date): EnquiryVendorState {
@@ -176,6 +192,15 @@ export class EnquiriesService {
     }
     await this.audit.log(user, 'ENQUIRY', enquiry.id, 'CREATED', `${mr.requestNo} to ${vendors.map((v) => v.name).join(', ')}`);
     const row = await this.prisma.enquiry.findUniqueOrThrow({ where: { id: enquiry.id }, include });
+    // A vendor with supplier-portal logins (v6 item 105) also finds it there.
+    for (const t of row.tokens)
+      await this.notifications.notifyVendor(user.organizationId, t.vendorId, {
+        title: `Enquiry for ${mr.requestNo}`,
+        body: `Send your rates by ${dateOnly(row.closesOn)}.`,
+        projectId: mr.projectId,
+        entityType: 'PORTAL_ENQUIRY',
+        entityId: t.id,
+      });
     return this.toDto(row, links);
   }
 
@@ -184,26 +209,16 @@ export class EnquiriesService {
   /** The link's row, looked up across companies (the page has no signed-in user). */
   private async byToken(token: string) {
     if (!/^[A-Za-z0-9_-]{20,100}$/.test(token)) throw new BadRequestException(INVALID);
-    const row = await withoutTenant(() =>
-      this.prisma.enquiryToken.findUnique({
-        where: { tokenHash: hash(token) },
-        include: {
-          vendor: { select: { name: true } },
-          enquiry: {
-            include: {
-              organization: { select: { name: true } },
-              createdBy: { select: { id: true, email: true, fullName: true, isActive: true } },
-              materialRequest: { include: { project: { select: { name: true, location: true } }, items: { orderBy: { sortOrder: 'asc' } } } },
-            },
-          },
-        },
-      }),
-    );
+    const row = await withoutTenant(() => this.prisma.enquiryToken.findUnique({ where: { tokenHash: hash(token) }, include: tokenInclude }));
     if (!row) throw new BadRequestException(INVALID);
     return row;
   }
 
-  private assertOpen(row: Awaited<ReturnType<EnquiriesService['byToken']>>) {
+  private isOpen(row: TokenRow) {
+    return !row.respondedAt && row.expiresAt >= new Date() && row.enquiry.materialRequest.status === 'APPROVED';
+  }
+
+  private assertOpen(row: TokenRow) {
     if (row.expiresAt < new Date() || row.enquiry.materialRequest.status !== 'APPROVED') throw new BadRequestException(CLOSED);
   }
 
@@ -211,6 +226,25 @@ export class EnquiriesService {
     const row = await this.byToken(token);
     if (!row.respondedAt) this.assertOpen(row);
     if (!row.openedAt && !row.respondedAt) await withoutTenant(() => this.prisma.enquiryToken.update({ where: { id: row.id }, data: { openedAt: new Date() } }));
+    return this.info(row);
+  }
+
+  /* ---------- the supplier portal (v6 item 105): the same enquiries, for a signed-in supplier ---------- */
+
+  /** The enquiries sent to a vendor, newest first. */
+  async forVendor(organizationId: string, vendorId: string): Promise<SupplierEnquiryDto[]> {
+    const rows = await this.prisma.enquiryToken.findMany({ where: { organizationId, vendorId }, include: tokenInclude, orderBy: { enquiry: { createdAt: 'desc' } }, take: 100 });
+    return rows.map((r) => ({ ...this.info(r), id: r.id, sentAt: r.enquiry.createdAt.toISOString(), open: this.isOpen(r) }));
+  }
+
+  /** A signed-in supplier quotes on an enquiry sent to their vendor: the same as answering its link. */
+  async respondForVendor(organizationId: string, vendorId: string, id: string, dto: PublicQuoteDto) {
+    const row = await this.prisma.enquiryToken.findFirst({ where: { id, organizationId, vendorId }, include: tokenInclude });
+    if (!row) throw new NotFoundException('Enquiry not found');
+    return this.respondTo(row, dto);
+  }
+
+  private info(row: TokenRow): PublicEnquiryDto {
     const mr = row.enquiry.materialRequest;
     return {
       organizationName: row.enquiry.organization.name,
@@ -231,7 +265,10 @@ export class EnquiriesService {
    * was raised on it), dated today, marked from the supplier. The link then only shows that it was received.
    */
   async respond(token: string, dto: PublicQuoteDto): Promise<{ ok: true; respondedAt: string }> {
-    const row = await this.byToken(token);
+    return this.respondTo(await this.byToken(token), dto);
+  }
+
+  private async respondTo(row: TokenRow, dto: PublicQuoteDto): Promise<{ ok: true; respondedAt: string }> {
     if (row.respondedAt) throw new ConflictException('Your quote was already received. Thank you.');
     this.assertOpen(row);
     const mr = row.enquiry.materialRequest;

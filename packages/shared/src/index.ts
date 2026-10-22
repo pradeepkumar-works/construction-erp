@@ -59,3 +59,4 @@ export * from './biometric';
 export * from './books';
 export * from './statements';
 export * from './rmc';
+export * from './supplier';

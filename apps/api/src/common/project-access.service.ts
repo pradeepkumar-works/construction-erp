@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { APPROVER_ROLES, type RoleKey, type SubmissionType, COMPANY_WIDE_ROLES, isCompanyWide, canAdjustStock, canApprove, canKeepStock, canLogMachinery, canManageEquipment, canManageStore, canMeasure, canRaiseRisk, canRecordAttendance, canRequestInspection, canSubmitExpense, canRecordTest, canRaiseNcr, canCheckGrn, canManageDocuments, canViewLetters, canManageStaff, canMarkStaff, canViewEmployeePrivate, canViewMessageLog, canReportSafety, canManageSafety, canIssuePpe, canManageMaintenance, canFreezeBaseline, canManageWorkers, canViewWorkers, canReportDefect, canCloseDefect, canManageHandover, GUEST_ROLES, isGuest } from '@erp/shared';
+import { APPROVER_ROLES, type RoleKey, type SubmissionType, COMPANY_WIDE_ROLES, isCompanyWide, canAdjustStock, canApprove, canKeepStock, canLogMachinery, canManageEquipment, canManageStore, canMeasure, canRaiseRisk, canRecordAttendance, canRequestInspection, canSubmitExpense, canRecordTest, canRaiseNcr, canCheckGrn, canManageDocuments, canViewLetters, canManageStaff, canMarkStaff, canViewEmployeePrivate, canViewMessageLog, canReportSafety, canManageSafety, canIssuePpe, canManageMaintenance, canFreezeBaseline, canManageWorkers, canViewWorkers, canReportDefect, canCloseDefect, canManageHandover, CLIENT_GUEST_ROLES, isClientGuest, isGuest, isSupplier, canManageSupplierLogins, canCheckSupplierInvoices, canApproveSupplierChange } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { ApprovalRightsService } from './approval-rights.service';
 import { RequestUser } from './current-user';
@@ -174,16 +174,42 @@ export class ProjectAccessService {
    * and only on projects they are a member of (guests are never company-wide).
    */
   async assertCanActAsClient(user: RequestUser, projectId: string) {
-    if (!isGuest(user.roleKey)) throw new ForbiddenException("Only the client's engineer or the consultant does this, from the client portal");
+    if (!isClientGuest(user.roleKey)) throw new ForbiddenException("Only the client's engineer or the consultant does this, from the client portal");
     await this.assertCanAccessProject(user, projectId);
   }
 
   /** The client's engineers and consultants on a project: told when a bill is sent or an inspection requested. */
   projectGuests(organizationId: string, projectId: string) {
     return this.prisma.user.findMany({
-      where: { organizationId, isActive: true, role: { key: { in: GUEST_ROLES } }, OR: [{ managedProjects: { some: { id: projectId } } }, { memberships: { some: { projectId } } }] },
+      where: { organizationId, isActive: true, role: { key: { in: CLIENT_GUEST_ROLES } }, OR: [{ managedProjects: { some: { id: projectId } } }, { memberships: { some: { projectId } } }] },
       select: { id: true, fullName: true },
     });
+  }
+
+  /** A supplier-portal login (v6 item 105): the vendor it acts for. Everything it sees is that vendor's. */
+  supplierVendor(user: RequestUser): string {
+    if (!isSupplier(user.roleKey) || !user.vendorId) throw new ForbiddenException('The supplier portal is for supplier accounts');
+    return user.vendorId;
+  }
+
+  /** Give a vendor's people supplier-portal logins, and see what they send. */
+  assertCanManageSupplierLogins(user: RequestUser) {
+    if (!canManageSupplierLogins(user.roleKey)) throw new ForbiddenException('Only admin, management, procurement or accounts manage supplier logins');
+  }
+
+  /** Turn a supplier's invoice into a bill, or return it. */
+  assertCanCheckSupplierInvoices(user: RequestUser) {
+    if (!canCheckSupplierInvoices(user.roleKey)) throw new ForbiddenException('Only those who record vendor bills check supplier invoices');
+  }
+
+  /** Approve or turn down a change to a vendor's details a supplier asked for; a new bank account needs one who pays vendors. */
+  assertCanDecideSupplierChange(user: RequestUser, bank: boolean) {
+    if (!canApproveSupplierChange(user.roleKey, bank)) throw new ForbiddenException(bank ? 'Only admin, management or accounts approve a new bank account' : 'Only admin, management, procurement or accounts approve a supplier’s changes');
+  }
+
+  /** Active users of these company-wide roles, for supplier-portal notices to the office. */
+  companyUsersWithRoles(organizationId: string, roleKeys: RoleKey[]) {
+    return this.prisma.user.findMany({ where: { organizationId, isActive: true, role: { key: { in: roleKeys } } }, select: { id: true } });
   }
 
   assertCanViewMessageLog(user: RequestUser) {

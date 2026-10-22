@@ -5,13 +5,14 @@ import Link from 'next/link';
 import { Alert, App, Button, Divider, Form, Input, Progress, Table, Tag, Typography } from 'antd';
 import { ImportOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { PurchaseOrderDto, PurchaseOrderLineDto } from '@erp/shared';
+import type { PurchaseOrderDto, PurchaseOrderLineDto, SupplierDispatchStatus } from '@erp/shared';
 import { MSME_CATEGORY_LABELS, canEditSubmission, canKeepStock, canPurchase, canRecordVendorBill, canResubmit, canViewPaymentRequests, canViewVendorBills } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
 import { usePurchaseOrder } from '@/lib/queries';
 import { formatDate, formatDateTime, formatINR, formatPct, formatQty, toNumber } from '@/lib/format';
+import { DispatchStatusTag } from '@/components/supplier/supplierUi';
 import { StatusTag } from '@/components/common/StatusTag';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { ReviewActions } from '@/components/common/ReviewActions';
@@ -150,6 +151,9 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
             { key: 'address', label: 'Delivery address', children: data.deliveryAddress ?? '-' },
             { key: 'pay', label: 'Payment', children: data.paymentTerms ?? (data.paymentDays !== null ? `${data.paymentDays} days from invoice` : '-') },
             ...(approved ? [{ key: 'recv', label: 'Received', children: <Progress percent={data.receivedPct} size="small" style={{ maxWidth: 240, margin: 0 }} format={() => formatPct(data.receivedPct)} aria-label={`${formatPct(data.receivedPct)} received`} /> }] : []),
+            ...(data.supplierAcceptedAt
+              ? [{ key: 'accepted', label: 'Supplier accepted', children: `${formatDateTime(data.supplierAcceptedAt)}${data.supplierAcceptedBy ? ` by ${data.supplierAcceptedBy}` : ''}${data.supplierNote ? `: ${data.supplierNote}` : ''}` }]
+              : []),
             ...(data.remarks ? [{ key: 'remarks', label: 'Remarks', children: data.remarks }] : []),
             ...submissionMetaItems(data).filter((i) => i.key !== 'status' && i.key !== 'project'),
           ],
@@ -213,6 +217,40 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
                 </>
               ),
             },
+            ...(data.dispatches?.length
+              ? [
+                  {
+                    key: 'dispatches',
+                    title: 'Dispatch notes from the supplier',
+                    count: data.dispatches.length,
+                    children: (
+                      <Table
+                        rowKey="id"
+                        size="small"
+                        pagination={false}
+                        dataSource={data.dispatches}
+                        scroll={{ x: 560 }}
+                        columns={[
+                          { title: 'Challan', dataIndex: 'dispatchNo', render: (v: string) => <span className="mono" translate="no">{v}</span> },
+                          { title: 'Sent', dataIndex: 'date', width: 110, render: (v: string) => formatDate(v) },
+                          { title: 'Vehicle', dataIndex: 'vehicleNo', width: 130, render: (v: string | null) => <span translate="no">{v ?? '-'}</span> },
+                          {
+                            title: 'State',
+                            dataIndex: 'status',
+                            width: 180,
+                            render: (st: SupplierDispatchStatus, d: { grnNo: string | null }) => (
+                              <span>
+                                <DispatchStatusTag status={st} />
+                                {d.grnNo ? <span className="mono" translate="no">{d.grnNo}</span> : null}
+                              </span>
+                            ),
+                          },
+                        ]}
+                      />
+                    ),
+                  },
+                ]
+              : []),
             ...(approved
               ? [
                   {

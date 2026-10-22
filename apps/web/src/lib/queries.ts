@@ -2,6 +2,16 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
 import type {
+  SupplierChangeDto,
+  SupplierDispatchDto,
+  SupplierEnquiryDto,
+  SupplierHomeDto,
+  SupplierInvoiceDto,
+  SupplierInvoiceStage,
+  SupplierOrderDto,
+  SupplierProfileDto,
+  SupplierStatementDto,
+  VendorPortalDto,
   MixDesignDto,
   RmcBatchDto,
   RmcBatchStatus,
@@ -3008,3 +3018,39 @@ export function useRmcAction<T = unknown>() {
 
 export const useRmcOrder = (id: string | null) => useQuery({ queryKey: ['rmc', 'order', id], queryFn: async () => (await api.get<RmcOrderDto>(`/rmc/orders/${id}`)).data, enabled: !!id });
 export const useRmcBatch = (id: string | null) => useQuery({ queryKey: ['rmc', 'batch', id], queryFn: async () => (await api.get<RmcBatchDto>(`/rmc/batches/${id}`)).data, enabled: !!id });
+
+/* ---------- the supplier portal (v6 item 105) ---------- */
+
+export const useSupplierHome = () => useQuery({ queryKey: ['supplier', 'home'], queryFn: async () => (await api.get<SupplierHomeDto>('/supplier/home')).data });
+export const useSupplierEnquiries = () => useQuery({ queryKey: ['supplier', 'enquiries'], queryFn: async () => (await api.get<SupplierEnquiryDto[]>('/supplier/enquiries')).data });
+export const useSupplierOrders = () => useQuery({ queryKey: ['supplier', 'orders'], queryFn: async () => (await api.get<SupplierOrderDto[]>('/supplier/orders')).data });
+export const useSupplierDispatches = () => useQuery({ queryKey: ['supplier', 'dispatches'], queryFn: async () => (await api.get<SupplierDispatchDto[]>('/supplier/dispatches')).data });
+export const useSupplierInvoices = () => useQuery({ queryKey: ['supplier', 'invoices'], queryFn: async () => (await api.get<SupplierInvoiceDto[]>('/supplier/invoices')).data });
+export const useSupplierStatement = (from?: string) =>
+  useQuery({ queryKey: ['supplier', 'statement', from ?? null], queryFn: async () => (await api.get<SupplierStatementDto>('/supplier/statement', { params: clean({ from }) })).data, placeholderData: keepPreviousData });
+export const useSupplierProfile = () => useQuery({ queryKey: ['supplier', 'profile'], queryFn: async () => (await api.get<SupplierProfileDto>('/supplier/profile')).data });
+
+/** Every write on the supplier portal, and the company's side of it: refreshes both, and the notifications. */
+export function useSupplierAction<T = unknown>() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ method = 'post', path, body }: { method?: 'post' | 'patch'; path: string; body?: unknown }) => (await api[method]<T>(path, body ?? {})).data,
+    onSuccess: () => {
+      for (const key of [['supplier'], ['supplier-portal'], ['vendors'], ['purchase-orders'], ['stock']]) void qc.invalidateQueries({ queryKey: key });
+    },
+  });
+}
+
+export const useVendorPortal = (vendorId: string | null) =>
+  useQuery({ queryKey: ['supplier-portal', 'vendor', vendorId], queryFn: async () => (await api.get<VendorPortalDto>(`/supplier-portal/vendors/${vendorId}`)).data, enabled: !!vendorId });
+export const useSupplierInbox = (filters: { stage?: SupplierInvoiceStage; vendorId?: string; all?: boolean }, enabled = true) =>
+  useQuery({
+    queryKey: ['supplier-portal', 'invoices', clean(filters)],
+    queryFn: async () => (await api.get<SupplierInvoiceDto[]>('/supplier-portal/invoices', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+export const useSupplierInboxInvoice = (id: string | null) =>
+  useQuery({ queryKey: ['supplier-portal', 'invoice', id], queryFn: async () => (await api.get<SupplierInvoiceDto>(`/supplier-portal/invoices/${id}`)).data, enabled: !!id });
+export const useSupplierChanges = (enabled = true) =>
+  useQuery({ queryKey: ['supplier-portal', 'changes'], queryFn: async () => (await api.get<SupplierChangeDto[]>('/supplier-portal/changes')).data, enabled });

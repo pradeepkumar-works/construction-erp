@@ -114,6 +114,7 @@ export const ROLE_LABELS: Record<RoleKey, string> = {
   HR_MANAGER: 'HR Manager',
   CLIENT_ENGINEER: "Client's Engineer (guest)",
   CONSULTANT: 'Consultant / PMC (guest)',
+  SUPPLIER: 'Supplier (portal)',
 };
 
 export const WEATHER_LABELS: Record<Weather, string> = {
@@ -148,6 +149,7 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   DEFECT: 'Snags & defects',
   WATCH_LIST: 'Watch list',
   MORNING_BRIEF: 'Morning brief',
+  SUPPLIER: 'Supplier portal',
 };
 
 export const STOCK_ENTRY_TYPE_LABELS: Record<StockEntryType, string> = {

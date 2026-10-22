@@ -1579,6 +1579,37 @@ export; the client portal and the phone app show the amount.
   progress report, RA bills, inspections; `?tab=` and `?open=` deep links); any other page redirects there. The site
   app refuses guest sign-in.
 
+## Supplier portal (v6 item 105)
+
+- **Who.** A `SUPPLIER` login is a `User` with `vendorId` (relation `VendorPortalLogins`). It belongs to one vendor in one
+  company, holds no project, and sees only that vendor's records. Logins are given from Vendors (the portal action,
+  `canManageSupplierLogins`) with an invite link; Users never creates or turns a login into one, and the JWT strategy
+  refuses a `SUPPLIER` without a `vendorId`. `GUEST_ROLES` now holds the client guests (`CLIENT_GUEST_ROLES`) and the
+  supplier, so the shell's guest rules (no project switcher, no Search, no Ask) apply to both.
+- **Deny by default.** `GuestGuard` refuses a supplier everywhere but routes marked `@SupplierAllowed()` and
+  `@GuestAllowed()` ones not `@GuestOnly()` (their account, notifications, uploads). `SupplierController`
+  (`/api/supplier/*`) is `@SupplierOnly()`, so staff and client guests get 403 there, and a supplier gets 403 on `/portal`.
+  Every query in `SupplierService` filters by `organizationId` and the caller's `vendorId` (`ProjectAccessService.supplierVendor`).
+- **What they do.** Quote on enquiries sent to their vendor (`EnquiriesService.respondForVendor`, the same answer as the
+  public quote link); accept a PO or WO (`supplierAcceptedAt/By`, `supplierNote`; the raiser is told); send a dispatch note
+  (`SupplierDispatch` with lines, never more than ordered less received and on the way, `toSend`); send an invoice with its
+  file (`SupplierInvoice`, one number per vendor; a returned or withdrawn one is resent in place); read their statement
+  (`statement()` in `supplier-rules.ts`: bills as credits after recoveries, payments, TDS and debit notes as debits, from a
+  date); and ask for a change to their details (`SupplierChangeRequest`, one waiting at a time).
+- **The company's side.** The store picks the dispatch note on a GRN against the PO (`supplierDispatchId`, unique, so a note
+  is received once; it must be the PO's and not cancelled). The note's quantities, challan and vehicle fill the GRN, and
+  the store corrects them to what arrived. Invoices land in the Supplier inbox (`/supplier-inbox`, `canCheckSupplierInvoices`).
+  Accounts record the vendor bill from one, its number and date filled in. A bill with the same vendor and invoice
+  number moves the invoice to Billed, then Paid (`invoiceStage`), or they return it with a note. Changes to details are
+  approved there or in the vendor's portal drawer (`canApproveSupplierChange`). A bank change needs `PAYMENT_ROLES`;
+  the requester cannot approve their own; the approved values are written to the vendor (state code from the GSTIN).
+- **Notifications.** Type `SUPPLIER`. To the supplier (`notifyVendor`): an order approved (`PORTAL_PO`/`PORTAL_WO`), an
+  enquiry sent, an invoice returned, a change decided, a payment made. To the company: a dispatch note (store, engineers,
+  PO raiser), an invoice (`VENDOR_BILL_ROLES`), a change (`PAYMENT_ROLES` or `VENDOR_BANK_ROLES`).
+- **Rules.** Pure functions in `apps/api/src/supplier/supplier-rules.ts`, tested in `src/scripts/supplier-test.ts` (CI runs it).
+- **Clients.** Web pages under `/supplier` (home, enquiries, orders with dispatch notes, invoices, payments, your
+  details). Any other page redirects there. The phone app refuses supplier sign-in.
+
 ## Company data (export and deletion)
 
 - **Export.** `CompanyDataService` works out every table and how its rows belong to an organisation from the Prisma
