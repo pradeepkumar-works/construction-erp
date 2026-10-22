@@ -14,7 +14,7 @@ export interface WalkRole {
 
 /**
  * One account per sidebar: each of these roles sees a different set of links (README, demo accounts). Between them they
- * see every link in nav.ts; the walk fails when a new link is seen by none of them, so add a role here then.
+ * see every sidebar link; the walk fails when a new link is seen by none of them, so add a role here then.
  */
 export const WALK_ROLES: WalkRole[] = [
   { key: 'pm', email: 'pm@demo.com' },

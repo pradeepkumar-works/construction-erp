@@ -81,24 +81,32 @@ hold points use the latter on progress. The clients keep a few per-type maps (we
 `approvalTypeParam`; mobile `TYPE_ICON`, `EDIT_PATH`, `REVIEW_PATH`, `OUTBOX_PATH`, push routes) that
 TypeScript flags when a type is added.
 
-### Module home pages (v6 item 98)
+### Navigation tree and module screens (v6 item 98, launcher phase 1)
 
-Every sidebar section of `nav.ts` that is a module (`NavSection.module`, the keys in `MODULE_KEYS`: site, materials,
-purchases, billing, people; HR, accounts and RMC join as they are built) leads with an overview link to `/modules/<key>`
-when the person sees two or more of its pages. `activeHref` keeps the whole `/modules/<key>` path so each lights up on its
-own. The page (`components/modules/ModuleHome.tsx`) shows:
+One tree, `NAV_TREE` in `packages/shared/src/navigation.ts`, lists every module and every page and tab in it: id, parent,
+label, Lucide icon, route (or `projectTab`, or `shortcutOf` another node), access key, status (`live`, `building`,
+`planned` with its roadmap item), description, keywords and the Concord brochure items it covers. Modules on Home have
+`parent: null`; one with a route (Home, Approvals, Watch list) is a page, the others have a screen at `/modules/<key>` (the
+keys in `MODULE_KEYS`, which `MODULE_LABELS` and `MODULE_INTROS` take from the tree).
 
-- **Figures** from `GET /dashboard/modules/:key?projectId=` (`ModuleHomeService`), each behind the same helper as the list
-  it counts and linking to it, for the header's project or every project the person sees. A figure is a count, rupees or
-  "x of y", with a note that says what it stands against; `tone` marks the ones that need someone (the note says so too).
-- **Waiting for you:** the caller's approvals queue (`SubmissionLifecycleService.pending`) for the module's submission types
-  (`MODULE_SUBMISSION_TYPES`), per type with the oldest wait, each opening `/approvals?type=`; their own entries sent back,
-  and theirs waiting with others.
-- **Pages:** the section's links as cards with the line from `NAV_DESCRIPTIONS`, and the module's `NewMenu` entries as
-  buttons in the header.
+- **Access.** `access` names a check in `NAV_ACCESS`, which wraps the same `@erp/shared` helper the page uses, so a tile or
+  link never shows more than the page lets in. A module shows when any of its pages does (`canSeeNav`, `navTilesFor`).
+- **Sidebar.** `navSidebar(user)` (shared, so the route walk reads it too) gives the top links, then each module with its
+  pages: a node with a plain route is a link under its label, one whose route is a tab or a filter (`/inspections?tab=tests`)
+  only when `nav` names the page it stands for ('Quality'), and a page is one link, under the first node that names it. A
+  module with two or more tiles leads with its overview link. `components/shell/nav.ts` adds the icons (`nav-icons.tsx`).
+- **Module screen** (`components/modules/ModuleHome.tsx`): a `TileGrid` of the module's tiles for this person (one Tab stop,
+  arrow keys between tiles; a project tab with no project chosen in the header asks for one), then the figures from
+  `GET /dashboard/modules/:key?projectId=` (`ModuleHomeService`, each behind the helper of the list it counts) and Waiting
+  for you (the caller's approvals for `MODULE_SUBMISSION_TYPES`, their own entries sent back, theirs waiting with others).
+  The module's `NewMenu` entries are buttons in the header. With one tile for the person, the screen opens that page.
+- **Checks.** `apps/web/scripts/nav-check.ts` (CI) fails when a live node's route is not a page of the app, a project tab is
+  not one of the project page's, an icon or access key is missing, a module is not in `MODULE_KEYS`, or a Concord item
+  (`apps/web/scripts/concord-items.ts`) has no place.
 
-A new module is a section with `module` set, a key in `MODULE_KEYS` (label, intro, submission types) and a branch in
-`ModuleHomeService.figures`; a new page in a module needs its line in `NAV_DESCRIPTIONS`.
+A new page is one node in its module (and an `NAV_ACCESS` line if it needs a new rule). A roadmap item that ships a planned
+node turns it `live` and gives it its route. A new module is a node with `parent: null`, its key in `MODULE_KEYS` with its
+submission types, and, if it has figures, a branch in `ModuleHomeService.figures`.
 
 ### Books of account (v6 item 102)
 

@@ -1,44 +1,44 @@
 import type { SubmissionType } from './enums';
+import { NAV_TREE } from './navigation';
 
 /**
- * Module home pages (v6 item 98): every sidebar section is a module with an overview page at `/modules/<key>`, from
- * `GET /dashboard/modules/:key`. Each figure is left out for a role that may not see its list, and covers only the
- * projects the caller sees (or the header's project).
+ * Module screens (v6 item 98, launcher phase 1): every module on Home that is not a page itself has a screen at
+ * `/modules/<key>`, with a tile for each of its pages (from the navigation tree) above its figures from
+ * `GET /dashboard/modules/:key`. Each figure is left out for a role that may not see its list, and covers only the projects
+ * the caller sees (or the header's project). The keys are the modules' ids in `NAV_TREE`.
  */
-export const MODULE_KEYS = ['site', 'materials', 'purchases', 'billing', 'rmc', 'accounts', 'people'] as const;
+export const MODULE_KEYS = ['projects', 'site', 'quality', 'documents', 'materials', 'plant', 'purchases', 'subcontracts', 'billing', 'rmc', 'accounts', 'people', 'payroll', 'reports', 'admin'] as const;
 export type ModuleKey = (typeof MODULE_KEYS)[number];
 
-/** The module's name: the same as its sidebar section, its page title and in Search. */
-export const MODULE_LABELS: Record<ModuleKey, string> = {
-  site: 'Site',
-  materials: 'Materials and plant',
-  purchases: 'Purchases',
-  billing: 'Billing',
-  rmc: 'RMC',
-  accounts: 'Accounts',
-  people: 'People',
+const moduleNode = (key: ModuleKey) => {
+  const node = NAV_TREE.find((n) => n.id === key && n.parent === null);
+  if (!node) throw new Error(`Module ${key} is not in NAV_TREE`);
+  return node;
 };
 
+/** The module's name: its tile on Home, its sidebar section, its screen's title and in Search. */
+export const MODULE_LABELS = Object.fromEntries(MODULE_KEYS.map((k) => [k, moduleNode(k).label])) as Record<ModuleKey, string>;
+
 /** One line under the module's title. */
-export const MODULE_INTROS: Record<ModuleKey, string> = {
-  site: 'Daily reports, attendance, progress, quality, safety and site cash at your sites.',
-  materials: 'Material requests, stock at each site, machines and fuel.',
-  purchases: 'Orders, supplier and subcontractor bills, and what we owe.',
-  billing: 'Client bills, variations, what clients owe us and guarantees.',
-  rmc: 'Ready-mix concrete: quotes and orders, the day at the plant, batches and challans, cube tests and bills.',
-  accounts: 'The books: vouchers, cash and bank, ledgers, GST registers and the Tally export.',
-  people: 'Staff, attendance, leave and payroll inputs.',
-};
+export const MODULE_INTROS = Object.fromEntries(MODULE_KEYS.map((k) => [k, moduleNode(k).description])) as Record<ModuleKey, string>;
 
 /** The submission types each module's "Waiting for you" counts. */
 export const MODULE_SUBMISSION_TYPES: Record<ModuleKey, SubmissionType[]> = {
-  site: ['DPR', 'PROGRESS', 'MEASUREMENT', 'INSPECTION', 'EXPENSE'],
-  materials: ['MATERIAL_REQUEST', 'MACHINERY'],
-  purchases: ['PURCHASE_ORDER', 'VENDOR_BILL', 'WORK_ORDER', 'SUBCONTRACT_BILL', 'PAYMENT_REQUEST'],
+  projects: [],
+  site: ['DPR', 'PROGRESS', 'MEASUREMENT', 'EXPENSE'],
+  quality: ['INSPECTION'],
+  documents: [],
+  materials: ['MATERIAL_REQUEST'],
+  plant: ['MACHINERY'],
+  purchases: ['PURCHASE_ORDER', 'VENDOR_BILL'],
+  subcontracts: ['WORK_ORDER', 'SUBCONTRACT_BILL'],
   billing: ['BILL'],
   rmc: [],
-  accounts: [],
+  accounts: ['PAYMENT_REQUEST'],
   people: [],
+  payroll: [],
+  reports: [],
+  admin: [],
 };
 
 export const isModuleKey = (k: string): k is ModuleKey => (MODULE_KEYS as readonly string[]).includes(k);

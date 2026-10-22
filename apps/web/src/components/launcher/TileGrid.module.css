@@ -1,0 +1,101 @@
+/* The launcher's tile grid (module screens now, Home in phase 2): 2 columns on a phone, more as the screen widens. */
+.grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--ant-margin-sm);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (min-width: 576px) {
+  .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--ant-margin);
+  }
+}
+
+@media (min-width: 992px) {
+  .grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1600px) {
+  .grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+.groupTitle {
+  margin: 0 0 var(--ant-margin-xs);
+  font-size: var(--ant-font-size-sm);
+  font-weight: var(--ant-font-weight-strong);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ant-color-text-secondary);
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ant-margin-xs);
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  min-height: 112px;
+  padding: var(--ant-padding);
+  border: var(--ant-line-width) solid var(--ant-color-border-secondary);
+  border-radius: var(--ant-border-radius-lg);
+  background: var(--ant-color-bg-container);
+  color: var(--ant-color-text);
+  text-align: start;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: none;
+  transition: border-color var(--ant-motion-duration-fast) var(--ant-motion-ease-out), box-shadow var(--ant-motion-duration-fast) var(--ant-motion-ease-out);
+}
+
+.tile:hover {
+  border-color: var(--ant-color-primary);
+  color: var(--ant-color-text);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--ant-color-text) 8%, transparent);
+}
+
+.tile:focus-visible {
+  outline: 2px solid var(--ant-color-primary);
+  outline-offset: 2px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  font-size: 22px;
+}
+
+.label {
+  font-weight: var(--ant-font-weight-strong);
+  line-height: 1.35;
+}
+
+.desc {
+  font-size: var(--ant-font-size-sm);
+  line-height: 1.45;
+  color: var(--ant-color-text-secondary);
+}
+
+@media (max-width: 575px) {
+  .tile {
+    min-height: 96px;
+    padding: var(--ant-padding-sm);
+  }
+  /* Two columns on a phone: the name says enough, the line under it is on the module's screen at a wider size. */
+  .desc {
+    display: none;
+  }
+}

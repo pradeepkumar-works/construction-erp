@@ -21,11 +21,11 @@ for (const role of WALK_ROLES) {
     await expect(nav.getByRole('link').first()).toBeVisible();
 
     // Every section open (a fresh browser starts so), then the links the sidebar draws, in its order. Favourites and
-    // Recent link to pages already in the sidebar; only links that nav.ts defines are walked.
+    // Recent link to pages already in the sidebar; only links the navigation tree (or nav.ts, for guests) defines are walked.
     const known = new Set(navHrefs());
     const shown = await nav.locator('a[href]').evaluateAll((links) => links.map((a) => a.getAttribute('href') ?? ''));
     const routes = [...new Set(shown)].filter((href) => known.has(href));
-    expect(routes.length, `${role.email} sees no sidebar links from nav.ts`).toBeGreaterThan(0);
+    expect(routes.length, `${role.email} sees no sidebar links from the navigation tree`).toBeGreaterThan(0);
     fs.writeFileSync(routesFile(role), JSON.stringify(routes, null, 2));
     await page.context().storageState({ path: stateFile(role) });
   });

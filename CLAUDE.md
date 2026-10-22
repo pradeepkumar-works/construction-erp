@@ -20,6 +20,7 @@ pnpm db:migrate && pnpm db:seed       # apps/api/.env needs DATABASE_URL
 pnpm dev:api | pnpm dev:web | pnpm dev:mobile
 pnpm typecheck                        # all packages, must pass before committing
 cd apps/web && npx next build         # web must build clean
+cd apps/web && npx tsx --tsconfig tsconfig.json scripts/nav-check.ts   # navigation tree: routes, icons, access, Concord
 pnpm --filter @erp/web lint           # ESLint (typescript-eslint, hooks, Next, jsx-a11y) on the web; 0 errors, CI runs it
 cd apps/mobile && npx tsc --noEmit && CI=1 npx expo export --platform android
 cd e2e && npx playwright test         # browser tests; needs API + web running (docs/TESTING.md), CI runs them on PRs
@@ -45,9 +46,12 @@ and the pre-delivery checklist.
   cloud DB by hand. The Vercel build runs `prisma migrate deploy`.
 - Add new enums to both `schema.prisma` and `packages/shared/src/enums.ts` (+ labels).
 - Web: `'use client'` components, `App.useApp()` for message/modal, data via hooks in
-  `src/lib/queries.ts`, formatting in `src/lib/format.ts`. Sidebar links (and quick-jump search) come from
-  `src/components/shell/nav.ts`: a new module is one line in its section, gated by the same `@erp/shared` permission helper as its page. A section that is a module
-  (`module`, v6 item 98) has a home at `/modules/<key>` (`ModuleHomeService`); a new page needs its line in `NAV_DESCRIPTIONS`. The product name (Nirmaan) is `PRODUCT_NAME` in
+  `src/lib/queries.ts`, formatting in `src/lib/format.ts`. Sidebar links, quick-jump search and module screens come from the
+  navigation tree, `NAV_TREE` in `packages/shared/src/navigation.ts` (ARCHITECTURE "Navigation tree"): a new page is one node
+  in its module, with its `access` key (a check in `NAV_ACCESS` wrapping the page's own `@erp/shared` helper), a Lucide icon
+  (add it to `components/shell/nav-icons.tsx`) and a one-line description; a planned node turns `live` when its item ships.
+  A module (`parent: null`, no route) has a screen at `/modules/<key>` (a key in `MODULE_KEYS`, figures in `ModuleHomeService`).
+  `apps/web/scripts/nav-check.ts` (CI) checks routes, icons, access keys and the Concord items. The product name (Nirmaan) is `PRODUCT_NAME` in
   `packages/shared/src/brand.ts`; web brand colours live only in `src/lib/brand.ts` (plus `BrandMark` and
   `app/icon.svg`), mobile ones in `src/theme.ts`. Use `BRAND.colors` instead of hex literals.
   Check antd 6 typings in node_modules before using a prop you are unsure of.
@@ -91,7 +95,7 @@ and the pre-delivery checklist.
   from tokens, never antd's raw `colorWarning`/`colorSuccess` for text (use the `…Text` token); a filter or search control outside a
   labelled `Form.Item` gets an `aria-label` (`ListToolbar` takes `searchLabel`), a `Progress` gets one too; buttons beside a
   tab bar go through `renderTabBar={tabBarWithExtra(…)}` (`components/common/tabBarWithExtra.tsx`), not `tabBarExtraContent`.
-  The route walk (`e2e/tests/route-walk.spec.ts`) opens every `nav.ts` link for each role in `WALK_ROLES` and every project
+  The route walk (`e2e/tests/route-walk.spec.ts`) opens every sidebar link (the navigation tree) for each role in `WALK_ROLES` and every project
   tab, at 1440 and 390 (touch) in both themes: axe, one `<h1>`, own tab title, targets 24 px (44 touch), text 12 px, no
   sideways scroll at 390. A new page is in it with no test edit and must pass it; a link no listed role sees needs a role.
   Nothing is excluded from it. Shared fixes live in one place: a scrolling table or `data-scroll-region` box with nothing

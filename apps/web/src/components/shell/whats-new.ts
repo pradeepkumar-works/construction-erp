@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-module-tiles',
+    date: '2026-12-05',
+    title: 'More modules in the menu, each with its own tiles',
+    points: [
+      'The menu now has a section for each module: Quality and safety, Documents, Plant and machinery, Subcontracts, Tenders and RMC plant have their own, and Payables sits in Accounts with the books. You see the same pages as before.',
+      "Each module's overview starts with a tile for every page and tab in it (Material tests, Permits to work, Delivery status…), each with a line on what it is for. Use the arrow keys to move between tiles; a tile for a project's tab asks which project when none is picked at the top.",
+      'Project cost now remembers its open tab in the address, so a link to Cash flow opens Cash flow.',
+    ],
+  },
+  {
     id: '2026-12-takeoff',
     date: '2026-12-04',
     title: 'Measure on drawings',

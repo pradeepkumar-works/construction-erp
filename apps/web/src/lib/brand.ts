@@ -70,6 +70,31 @@ export const BRAND = {
     siteMuted: '#64748B',
     siteRule: '#E3E9F1',
     siteFrame: '#F7F9FC',
+    /** Module families on tiles (launcher): the icon's colour, the pale fill behind it, and the icon on the night surfaces. */
+    familyWork: '#1E63D6',
+    familyWorkBg: '#EAF1FC',
+    familyWorkNight: '#6EA8FF',
+    familyMaterials: '#0F766E',
+    familyMaterialsBg: '#E3F3F1',
+    familyMaterialsNight: '#4FD1C5',
+    familyBuying: '#B45309',
+    familyBuyingBg: '#FDF0E1',
+    familyBuyingNight: '#F6AD55',
+    familyMoney: '#167A3E',
+    familyMoneyBg: '#E8F5EC',
+    familyMoneyNight: '#5FD08A',
+    familyPeople: '#7C3AED',
+    familyPeopleBg: '#F1EBFD',
+    familyPeopleNight: '#B794F4',
+    familyBusiness: '#BE185D',
+    familyBusinessBg: '#FCE8F1',
+    familyBusinessNight: '#F687B3',
+    familyInsight: '#4338CA',
+    familyInsightBg: '#ECEBFB',
+    familyInsightNight: '#A3A8F5',
+    familyAdmin: '#475569',
+    familyAdminBg: '#EEF1F5',
+    familyAdminNight: '#A0AEC0',
     /** Dark mode surfaces: a near-neutral night with a little of the blueprint navy (page, cards, menus and popups). */
     nightLayout: '#0B1119',
     nightSurface: '#121A25',
@@ -86,3 +111,18 @@ export const BRAND = {
     nightDanger: '#F26D6F',
   },
 } as const;
+
+type Family = 'work' | 'materials' | 'buying' | 'money' | 'people' | 'business' | 'insight' | 'admin';
+const cap = (f: Family) => (f[0].toUpperCase() + f.slice(1)) as Capitalize<Family>;
+
+/** A module family's icon colour and fill, for the theme in use (the night fill is the icon colour at 16%). */
+export function familyColors(family: Family | undefined, dark: boolean): { fg: string; bg: string } {
+  const c = BRAND.colors;
+  const k = cap(family ?? 'work');
+  if (dark) {
+    const fg = c[`family${k}Night`];
+    return { fg, bg: `color-mix(in srgb, ${fg} 16%, transparent)` };
+  }
+  return { fg: c[`family${k}`], bg: c[`family${k}Bg`] };
+}
+
