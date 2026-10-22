@@ -53,6 +53,7 @@ import { InspectionsModule } from './inspections/inspections.module';
 import { QualityModule } from './quality/quality.module';
 import { DocumentsModule } from './documents/documents.module';
 import { StaffModule } from './staff/staff.module';
+import { PayrollModule } from './payroll/payroll.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { WorkersModule } from './workers/workers.module';
 import { ImprestModule } from './imprest/imprest.module';
@@ -106,6 +107,7 @@ import { VitalsController } from './vitals.controller';
     QualityModule,
     DocumentsModule,
     StaffModule,
+    PayrollModule,
     CostModule,
     ReconciliationModule,
     ReportsModule,

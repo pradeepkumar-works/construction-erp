@@ -288,6 +288,44 @@ enum EmployeeEventType {
   RETIRED
 }
 
+/// Payroll (v6 item 100): which tax regime an employee's TDS is worked out under.
+enum TaxRegime {
+  NEW
+  OLD
+}
+
+/// Days a month's salary is divided by: the month's own days, or a fixed 26.
+enum PaidDaysBasis {
+  CALENDAR
+  FIXED_26
+}
+
+/// A salary run: HR prepares it, management approves it, accounts pays it; paid runs are locked.
+enum PayrollRunStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  PAID
+}
+
+enum PayslipLineKind {
+  EARNING
+  DEDUCTION
+  EMPLOYER
+}
+
+enum StaffLoanKind {
+  LOAN
+  ADVANCE
+}
+
+/// Full and final settlement: worked out, approved, paid.
+enum SettlementStatus {
+  DRAFT
+  APPROVED
+  PAID
+}
+
 enum LeaveType {
   CASUAL
   SICK
@@ -505,6 +543,13 @@ model Organization {
   letters              Letter[]
   employees            Employee[]
   employeeEvents       EmployeeEvent[]
+  payrollSettings      PayrollSettings?
+  salaryStructures     SalaryStructure[]
+  staffLoans           StaffLoan[]
+  payrollRuns          PayrollRun[]
+  payslips             Payslip[]
+  payslipLines         PayslipLine[]
+  finalSettlements     FinalSettlement[]
   staffAttendance      StaffAttendance[]
   leaveRequests        LeaveRequest[]
   holidays             Holiday[]
@@ -722,6 +767,13 @@ model User {
   maintenanceClosed    MaintenanceJob[]         @relation("MaintenanceCloser")
   employee             Employee?                @relation("EmployeeLogin")
   employeeEvents       EmployeeEvent[]          @relation("EmployeeEventCreator")
+  salaryStructures     SalaryStructure[]        @relation("SalaryStructureCreator")
+  staffLoans           StaffLoan[]              @relation("StaffLoanCreator")
+  payrollPrepared      PayrollRun[]             @relation("PayrollPreparer")
+  payrollApproved      PayrollRun[]             @relation("PayrollApprover")
+  payrollPaid          PayrollRun[]             @relation("PayrollPayer")
+  settlementsPrepared  FinalSettlement[]        @relation("SettlementPreparer")
+  settlementsApproved  FinalSettlement[]        @relation("SettlementApprover")
   staffMarked          StaffAttendance[]        @relation("StaffAttendanceMarker")
   overtimeDecided      StaffAttendance[]        @relation("StaffOvertimeDecider")
   workerDaysMarked     WorkerAttendance[]       @relation("WorkerAttendanceMarker")
@@ -878,6 +930,7 @@ model Project {
   staff              Employee[]
   employeeEventsFrom EmployeeEvent[]          @relation("EmployeeEventFrom")
   employeeEventsTo   EmployeeEvent[]          @relation("EmployeeEventTo")
+  payrollRuns        PayrollRun[]
   staffAttendance    StaffAttendance[]
   holidays           Holiday[]
   variations         Variation[]
@@ -3396,10 +3449,14 @@ model Employee {
   /// Why they left (resignation, termination, retirement), with the exit event
   exitReason         String?
 
-  attendance  StaffAttendance[]
-  leave       LeaveRequest[]
-  events      EmployeeEvent[]
-  attachments Attachment[]
+  attendance       StaffAttendance[]
+  leave            LeaveRequest[]
+  events           EmployeeEvent[]
+  attachments      Attachment[]
+  salaryStructures SalaryStructure[]
+  loans            StaffLoan[]
+  payslips         Payslip[]
+  settlement       FinalSettlement?
 
   @@unique([organizationId, employeeCode])
   @@index([organizationId, projectId])
@@ -4600,4 +4657,232 @@ model PhotoCheck {
 
   @@index([organizationId, createdAt])
   @@index([projectId])
+}
+
+/**
+ * ---------- Payroll (v6 item 100) ----------
+ */
+
+/// The company's payroll rules: PF, ESI, professional tax state, paid days and overtime rate.
+model PayrollSettings {
+  organizationId     String        @id
+  organization       Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  pfEmployeePct      Decimal       @default(12) @db.Decimal(5, 2)
+  pfEmployerPct      Decimal       @default(12) @db.Decimal(5, 2)
+  /// Of the employer's share, this much goes to the pension scheme (EPS), on wages up to the ceiling
+  epsPct             Decimal       @default(8.33) @db.Decimal(5, 2)
+  pfWageCeiling      Decimal       @default(15000) @db.Decimal(18, 2)
+  /// PF on wages up to the ceiling only (the usual), or on the full basic and DA
+  pfCapAtCeiling     Boolean       @default(true)
+  esiEmployeePct     Decimal       @default(0.75) @db.Decimal(5, 2)
+  esiEmployerPct     Decimal       @default(3.25) @db.Decimal(5, 2)
+  /// ESI applies while the monthly gross is at most this
+  esiGrossCeiling    Decimal       @default(21000) @db.Decimal(18, 2)
+  /// Professional tax slabs by state (code from GST_STATES), null = none
+  ptState            String?       @default("21")
+  paidDaysBasis      PaidDaysBasis @default(CALENDAR)
+  /// Overtime pay: (basic + DA) / 26 / 8 an hour, times this
+  overtimeMultiplier Decimal       @default(2) @db.Decimal(4, 2)
+  /// The company account salaries are paid from, for the bank file
+  debitAccountNo     String?
+  debitBankName      String?
+  updatedAt          DateTime      @updatedAt
+}
+
+/// An employee's salary from a date: monthly earnings and what is deducted. The latest one on or before a month is used.
+model SalaryStructure {
+  id                 String       @id @default(uuid())
+  organizationId     String
+  organization       Organization @relation(fields: [organizationId], references: [id])
+  employeeId         String
+  employee           Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  effectiveFrom      DateTime     @db.Date
+  basic              Decimal      @db.Decimal(18, 2)
+  da                 Decimal      @default(0) @db.Decimal(18, 2)
+  hra                Decimal      @default(0) @db.Decimal(18, 2)
+  conveyance         Decimal      @default(0) @db.Decimal(18, 2)
+  special            Decimal      @default(0) @db.Decimal(18, 2)
+  otherEarnings      Decimal      @default(0) @db.Decimal(18, 2)
+  pf                 Boolean      @default(true)
+  /// ESI when the gross is under the ceiling; off to leave it out
+  esi                Boolean      @default(true)
+  pt                 Boolean      @default(true)
+  taxRegime          TaxRegime    @default(NEW)
+  /// Old regime: deductions declared for the year (80C, 80D, home loan interest...)
+  declaredDeductions Decimal      @default(0) @db.Decimal(18, 2)
+  /// Other income or salary from an earlier employer this year, for TDS
+  otherIncome        Decimal      @default(0) @db.Decimal(18, 2)
+  note               String?
+  createdById        String
+  createdBy          User         @relation("SalaryStructureCreator", fields: [createdById], references: [id])
+  createdAt          DateTime     @default(now())
+
+  payslips Payslip[]
+
+  @@unique([employeeId, effectiveFrom])
+  @@index([organizationId])
+}
+
+/// Money lent to an employee (loan) or paid ahead (advance), recovered from salary a month at a time.
+model StaffLoan {
+  id             String        @id @default(uuid())
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id])
+  employeeId     String
+  employee       Employee      @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  kind           StaffLoanKind
+  issuedOn       DateTime      @db.Date
+  amount         Decimal       @db.Decimal(18, 2)
+  /// Taken from each month's salary until recovered
+  emi            Decimal       @db.Decimal(18, 2)
+  /// First month recovered, YYYY-MM
+  startMonth     String
+  note           String?
+  createdById    String
+  createdBy      User          @relation("StaffLoanCreator", fields: [createdById], references: [id])
+  createdAt      DateTime      @default(now())
+
+  lines PayslipLine[]
+
+  @@index([organizationId, employeeId])
+}
+
+/// A month's salary run, for the company or one site.
+model PayrollRun {
+  id             String           @id @default(uuid())
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  /// SAL-2026-10, with -<project code> for a site's run
+  runNo          String
+  month          String
+  projectId      String?
+  project        Project?         @relation(fields: [projectId], references: [id])
+  status         PayrollRunStatus @default(DRAFT)
+  gross          Decimal          @default(0) @db.Decimal(18, 2)
+  deductions     Decimal          @default(0) @db.Decimal(18, 2)
+  net            Decimal          @default(0) @db.Decimal(18, 2)
+  employerCost   Decimal          @default(0) @db.Decimal(18, 2)
+  preparedById   String
+  preparedBy     User             @relation("PayrollPreparer", fields: [preparedById], references: [id])
+  submittedAt    DateTime?
+  approvedById   String?
+  approvedBy     User?            @relation("PayrollApprover", fields: [approvedById], references: [id])
+  approvedAt     DateTime?
+  /// Sent back with a note
+  reviewNote     String?
+  paidById       String?
+  paidBy         User?            @relation("PayrollPayer", fields: [paidById], references: [id])
+  paidOn         DateTime?        @db.Date
+  paymentRef     String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  payslips Payslip[]
+
+  @@unique([organizationId, runNo])
+  @@index([organizationId, month])
+}
+
+/// One employee's salary for a run, with who they were then (name, bank, UAN) so it stays as paid.
+model Payslip {
+  id             String           @id @default(uuid())
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  runId          String
+  run            PayrollRun       @relation(fields: [runId], references: [id], onDelete: Cascade)
+  employeeId     String
+  employee       Employee         @relation(fields: [employeeId], references: [id])
+  structureId    String?
+  structure      SalaryStructure? @relation(fields: [structureId], references: [id], onDelete: SetNull)
+  employeeCode   String
+  employeeName   String
+  designation    String
+  projectName    String?
+  pan            String?
+  uan            String?
+  esiNumber      String?
+  bankName       String?
+  bankAccountNo  String?
+  bankIfsc       String?
+  /// Days of the month (or 26), days paid, loss of pay
+  monthDays      Decimal          @db.Decimal(5, 1)
+  paidDays       Decimal          @db.Decimal(5, 1)
+  lopDays        Decimal          @db.Decimal(5, 1)
+  overtimeHours  Decimal          @default(0) @db.Decimal(6, 2)
+  gross          Decimal          @db.Decimal(18, 2)
+  deductions     Decimal          @db.Decimal(18, 2)
+  net            Decimal          @db.Decimal(18, 2)
+  /// Employer PF (EPF and EPS) and ESI, on top of gross
+  employerCost   Decimal          @db.Decimal(18, 2)
+  /// PF wages (basic + DA earned, capped) and ESI wages, for the returns
+  pfWages        Decimal          @default(0) @db.Decimal(18, 2)
+  esiWages       Decimal          @default(0) @db.Decimal(18, 2)
+  createdAt      DateTime         @default(now())
+
+  lines PayslipLine[]
+
+  @@unique([runId, employeeId])
+  @@index([organizationId, employeeId])
+}
+
+/// A line of a payslip: an earning, a deduction or the employer's contribution. Manual lines (arrears, bonus, other
+/// deductions) are kept when the payslip is worked out again.
+model PayslipLine {
+  id             String          @id @default(uuid())
+  organizationId String
+  organization   Organization    @relation(fields: [organizationId], references: [id])
+  payslipId      String
+  payslip        Payslip         @relation(fields: [payslipId], references: [id], onDelete: Cascade)
+  kind           PayslipLineKind
+  /// BASIC, DA, HRA, CONVEYANCE, SPECIAL, OTHER, OVERTIME, ARREARS, BONUS, PF, ESI, PT, TDS, LOAN, ADVANCE,
+  /// OTHER_DEDUCTION, PF_EMPLOYER, EPS_EMPLOYER, ESI_EMPLOYER
+  code           String
+  label          String
+  amount         Decimal         @db.Decimal(18, 2)
+  manual         Boolean         @default(false)
+  loanId         String?
+  loan           StaffLoan?      @relation(fields: [loanId], references: [id], onDelete: SetNull)
+  sortOrder      Int             @default(0)
+
+  @@index([payslipId])
+  @@index([loanId])
+}
+
+/// Full and final settlement of someone who has left: the last month's salary, leave encashed, gratuity, notice pay
+/// and what they owe, worked out once and approved.
+model FinalSettlement {
+  id              String           @id @default(uuid())
+  organizationId  String
+  organization    Organization     @relation(fields: [organizationId], references: [id])
+  employeeId      String           @unique
+  employee        Employee         @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  settlementNo    String
+  lastWorkingDay  DateTime         @db.Date
+  status          SettlementStatus @default(DRAFT)
+  /// Salary for days of the last month not paid in a run
+  salaryDays      Decimal          @default(0) @db.Decimal(5, 1)
+  salary          Decimal          @default(0) @db.Decimal(18, 2)
+  leaveDays       Decimal          @default(0) @db.Decimal(6, 1)
+  leaveEncashment Decimal          @default(0) @db.Decimal(18, 2)
+  serviceYears    Decimal          @default(0) @db.Decimal(5, 2)
+  gratuity        Decimal          @default(0) @db.Decimal(18, 2)
+  /// Notice days not served, recovered at a day's gross
+  noticeShortDays Int              @default(0)
+  noticeRecovery  Decimal          @default(0) @db.Decimal(18, 2)
+  loanRecovery    Decimal          @default(0) @db.Decimal(18, 2)
+  otherEarnings   Decimal          @default(0) @db.Decimal(18, 2)
+  otherDeductions Decimal          @default(0) @db.Decimal(18, 2)
+  net             Decimal          @default(0) @db.Decimal(18, 2)
+  note            String?
+  preparedById    String
+  preparedBy      User             @relation("SettlementPreparer", fields: [preparedById], references: [id])
+  approvedById    String?
+  approvedBy      User?            @relation("SettlementApprover", fields: [approvedById], references: [id])
+  approvedAt      DateTime?
+  paidOn          DateTime?        @db.Date
+  paymentRef      String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@unique([organizationId, settlementNo])
 }

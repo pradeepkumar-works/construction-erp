@@ -4,6 +4,9 @@ import type { ModuleFigureDto, ModuleHomeDto, ModuleKey, ModuleWaitingDto, Submi
 import {
   MODULE_SUBMISSION_TYPES,
   canMarkStaff,
+  canApprovePayroll,
+  canPayPayroll,
+  canViewPayroll,
   canManageStaff,
   canPurchase,
   canReportSafety,
@@ -31,6 +34,7 @@ import { PurchaseOrdersService } from '../purchasing/purchase-orders.service';
 import { ComplianceService } from '../compliance/compliance.service';
 import { StockService } from '../stock/stock.service';
 import { StaffService } from '../staff/staff.service';
+import { PayrollRunService } from '../payroll/payroll-run.service';
 
 type D = Prisma.Decimal;
 const ZERO = new Prisma.Decimal(0);
@@ -56,6 +60,7 @@ export class ModuleHomeService {
     private compliance: ComplianceService,
     private stock: StockService,
     private staff: StaffService,
+    private payrollRuns: PayrollRunService,
   ) {}
 
   async home(user: RequestUser, key: string, projectId?: string): Promise<ModuleHomeDto> {
@@ -250,6 +255,13 @@ export class ModuleHomeService {
     ];
     if (summary.leaveToDecide !== undefined) out.push(count('leaveToDecide', 'Leave to decide', summary.leaveToDecide, '/staff?tab=leave', { tone: summary.leaveToDecide ? 'warning' : 'default', note: summary.leaveToDecide ? 'Waiting for your decision' : 'Nothing waiting' }));
     if (summary.overtimeToDecide !== undefined) out.push(count('overtimeToDecide', 'Overtime to decide', summary.overtimeToDecide, '/staff?tab=overtime', { tone: summary.overtimeToDecide ? 'warning' : 'default', note: summary.overtimeToDecide ? 'Waiting for your decision' : 'Nothing waiting' }));
+    // Salary runs (v6 item 100): drafts for HR, submitted ones for management, approved ones for accounts.
+    if (canViewPayroll(role) && !projectId) {
+      const runs = await this.payrollRuns.waiting(user);
+      const net = runs.reduce((t, r) => t + Number(r.net), 0);
+      const step = canApprovePayroll(role) && runs.some((r) => r.status === 'SUBMITTED') ? 'to approve' : canPayPayroll(role) && runs.some((r) => r.status === 'APPROVED') ? 'to pay' : 'in draft';
+      out.push(count('salaryRuns', 'Salary runs waiting', runs.length, '/payroll?tab=runs', runs.length ? { tone: 'warning', note: `${runs.map((r) => r.runNo).join(', ')} ${step}: {money}`, noteMoney: String(net) } : { note: 'Nothing waiting on you' }));
+    }
     return out;
   }
 }

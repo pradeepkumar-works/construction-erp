@@ -117,6 +117,10 @@ export const canViewPayroll = (role: RoleKey) => PAYROLL_ROLES.includes(role);
 /** HR records (v6 item 99): an employee's personal, statutory and bank details and service history. Staff admins and payroll see
  *  everyone's; each person sees their own (checked by the API). Site managers who mark the register see the job details only. */
 export const canViewEmployeePrivate = (role: RoleKey) => PAYROLL_ROLES.includes(role);
+/** Payroll (v6 item 100): HR sets salaries and prepares the run, management approves it, accounts pays it. */
+export const canRunPayroll = (role: RoleKey) => role === 'ADMIN' || role === 'HR_MANAGER';
+export const canApprovePayroll = (role: RoleKey) => role === 'ADMIN' || role === 'MANAGEMENT';
+export const canPayPayroll = (role: RoleKey) => role === 'ADMIN' || role === 'ACCOUNTS_MANAGER';
 /** The monthly labour contractor summary: payroll roles and those who see project cost. */
 export const canViewLabourSummary = (role: RoleKey) => PAYROLL_ROLES.includes(role) || COST_VIEW_ROLES.includes(role);
 /** See the staff posted at their projects and mark their attendance: staff admins and attendance recorders. */

@@ -5,7 +5,8 @@ import * as bcrypt from 'bcryptjs';
 import { deflateSync } from 'zlib';
 import { dprTitle, progressTitle, titleDate } from '../src/common/submission-titles';
 import { DEMO_CONTRACTS, textPdf } from '../src/documents/demo-contracts';
-import { DEFAULT_CLOSEOUT_ITEMS, PERMIT_PRECAUTIONS, STANDARD_CHECKLISTS, gstinCheckChar, isWeeklyOff, leaveDays, ppeReplaceBy, type PpeKind } from '@erp/shared';
+import { DEFAULT_SETTINGS, computePayslip, structureCost, type RulesStructure } from '../src/payroll/payroll-rules';
+import { DEFAULT_CLOSEOUT_ITEMS, PAYSLIP_CODES, PERMIT_PRECAUTIONS, STANDARD_CHECKLISTS, gstinCheckChar, isWeeklyOff, leaveDays, ppeReplaceBy, type PpeKind } from '@erp/shared';
 
 const prisma = new PrismaClient();
 const D = (v: string | number) => new Prisma.Decimal(v);
@@ -148,6 +149,7 @@ async function main() {
     await seedStaff(org.id);
     await seedAttendanceExtras(org.id);
     await seedHrRecords(org.id);
+    await seedPayroll(org.id);
     await seedGuests(org.id);
     await seedVariations(org.id);
     await seedRfis(org.id);
@@ -334,6 +336,7 @@ async function main() {
   await seedStaff(org.id);
   await seedAttendanceExtras(org.id);
   await seedHrRecords(org.id);
+  await seedPayroll(org.id);
   await seedGuests(org.id);
   await seedVariations(org.id);
   await seedRfis(org.id);
@@ -3236,6 +3239,84 @@ async function seedHrRecords(organizationId: string) {
   letters.clear();
   for (const ev of events) ev.letterNo = letterNo(ev.effectiveDate as Date);
   await prisma.employeeEvent.createMany({ data: events });
+}
+
+/**
+ * Payroll (v6 item 100) for the demo company, once: Odisha settings, a salary structure for everyone from their joining
+ * (worked back from their CTC; the pump operator is under the ESI ceiling and the quantity surveyor is on the old tax
+ * regime), a loan and a salary advance being recovered, and last month's salary run approved and paid.
+ */
+async function seedPayroll(organizationId: string) {
+  if (await prisma.payrollSettings.findUnique({ where: { organizationId } })) return;
+  const staff = await prisma.employee.findMany({ where: { organizationId, isActive: true }, orderBy: { employeeCode: 'asc' } });
+  const [hr, md, accounts] = await Promise.all(['hr@demo.com', 'md@demo.com', 'accounts@demo.com'].map((email) => prisma.user.findFirst({ where: { organizationId, email }, select: { id: true } })));
+  if (!staff.length || !hr || !md || !accounts) return;
+  await prisma.payrollSettings.create({ data: { organizationId, ptState: '21', debitAccountNo: '50200012345678', debitBankName: 'HDFC Bank' } });
+  const st = DEFAULT_SETTINGS;
+  const structures = new Map<string, { id: string; rules: RulesStructure }>();
+  for (const e of staff) {
+    const ctc = Number(e.ctcAnnual ?? 360000);
+    const monthly = Math.round(ctc / 12);
+    const basic = Math.round((monthly * 0.4) / 100) * 100;
+    const hra = Math.round((basic * 0.5) / 100) * 100;
+    const rules: RulesStructure = { basic, da: 0, hra, conveyance: 1600, special: 0, otherEarnings: 0, pf: true, esi: true, pt: true, taxRegime: e.employeeCode === 'EMP-009' ? 'OLD' : 'NEW', declaredDeductions: e.employeeCode === 'EMP-009' ? 150000 : 0, otherIncome: 0 };
+    // The special allowance fills the rest, so gross plus the employer's PF and ESI comes to the CTC.
+    rules.special = Math.max(0, monthly - basic - hra - 1600);
+    const over = Math.round(structureCost(rules, st).ctcAnnual / 12) - monthly;
+    rules.special = Math.max(0, rules.special - over);
+    const from = e.joinedOn ?? new Date(Date.UTC(2024, 3, 1));
+    const row = await prisma.salaryStructure.create({
+      data: { organizationId, employeeId: e.id, effectiveFrom: from, createdById: hr.id, ...rules, note: 'From the appointment letter' },
+    });
+    structures.set(e.id, { id: row.id, rules });
+    await prisma.employee.update({ where: { id: e.id }, data: { ctcAnnual: structureCost(rules, st).ctcAnnual } });
+  }
+  const now = new Date();
+  const ym = (d: Date) => d.toISOString().slice(0, 7);
+  const last = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
+  const month = ym(last);
+  const byCode = new Map(staff.map((e) => [e.employeeCode, e]));
+  const loans = [
+    { code: 'EMP-008', kind: 'LOAN' as const, amount: 30000, emi: 3000, note: 'Medical emergency' },
+    { code: 'EMP-016', kind: 'ADVANCE' as const, amount: 10000, emi: 2500, note: 'Festival advance' },
+  ];
+  const loanIds = new Map<string, { id: string; kind: 'LOAN' | 'ADVANCE'; emi: number; balance: number }>();
+  for (const l of loans) {
+    const e = byCode.get(l.code);
+    if (!e) continue;
+    const row = await prisma.staffLoan.create({ data: { organizationId, employeeId: e.id, kind: l.kind, issuedOn: new Date(Date.UTC(last.getUTCFullYear(), last.getUTCMonth(), 3)), amount: l.amount, emi: l.emi, startMonth: month, note: l.note, createdById: hr.id } });
+    loanIds.set(e.id, { id: row.id, kind: l.kind, emi: l.emi, balance: l.amount });
+  }
+  // Last month's run, approved by the MD and paid by accounts on the 1st.
+  const calendarDays = new Date(Date.UTC(last.getUTCFullYear(), last.getUTCMonth() + 1, 0)).getUTCDate();
+  const run = await prisma.payrollRun.create({
+    data: { organizationId, runNo: `SAL-${month}`, month, status: 'PAID', preparedById: hr.id, submittedAt: now, approvedById: md.id, approvedAt: now, paidById: accounts.id, paidOn: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)), paymentRef: 'NEFT batch 1' },
+  });
+  const ORDER = Object.keys(PAYSLIP_CODES);
+  const totals = { gross: 0, deductions: 0, net: 0, cost: 0 };
+  for (const e of staff) {
+    const s = structures.get(e.id)!;
+    const joined = e.joinedOn ? e.joinedOn.toISOString().slice(0, 10) : null;
+    if (joined && joined.slice(0, 7) > month) continue;
+    const daysOnRolls = joined && joined.slice(0, 7) === month ? calendarDays - Number(joined.slice(8, 10)) + 1 : calendarDays;
+    const loan = loanIds.get(e.id);
+    const slip = computePayslip({ month, calendarDays, daysOnRolls, lopDays: e.employeeCode === 'EMP-020' ? 1 : 0, overtimeHours: e.employeeCode === 'EMP-016' ? 6 : 0, structure: s.rules, settings: st, gender: e.gender, loans: loan ? [loan] : [] });
+    await prisma.payslip.create({
+      data: {
+        organizationId, runId: run.id, employeeId: e.id, structureId: s.id, employeeCode: e.employeeCode, employeeName: e.fullName, designation: e.designation,
+        projectName: e.projectId ? (await prisma.project.findUnique({ where: { id: e.projectId }, select: { name: true } }))?.name ?? null : null,
+        pan: e.pan, uan: e.uan, esiNumber: e.esiNumber, bankName: e.bankName, bankAccountNo: e.bankAccountNo, bankIfsc: e.bankIfsc,
+        monthDays: slip.monthDays, paidDays: slip.paidDays, lopDays: slip.lopDays, overtimeHours: e.employeeCode === 'EMP-016' ? 6 : 0,
+        gross: slip.gross, deductions: slip.deductions, net: slip.net, employerCost: slip.employerCost, pfWages: slip.pfWages, esiWages: slip.esiWages,
+        lines: { create: slip.lines.map((l) => ({ organizationId, kind: l.kind, code: l.code, label: l.label, amount: l.amount, loanId: l.loanId ?? null, sortOrder: ORDER.indexOf(l.code) })) },
+      },
+    });
+    totals.gross += slip.gross;
+    totals.deductions += slip.deductions;
+    totals.net += slip.net;
+    totals.cost += slip.gross + slip.employerCost;
+  }
+  await prisma.payrollRun.update({ where: { id: run.id }, data: { gross: totals.gross, deductions: totals.deductions, net: totals.net, employerCost: totals.cost } });
 }
 
 async function seedStaff(organizationId: string) {

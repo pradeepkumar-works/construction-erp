@@ -46,6 +46,12 @@ const WEEKDAYS: Record<string, string[]> = {
 };
 const monthName = (i: number) => (MONTHS[language] ?? MONTHS.en)[i];
 
+/** "2026-10" -> "Oct 2026" (Hindi: "अक्तू॰ 2026"), for a payslip's month. */
+export function formatMonth(value: string | null | undefined): string {
+  const m = /^(\d{4})-(\d{2})/.exec(value ?? '');
+  return m ? `${monthName(Number(m[2]) - 1)} ${m[1]}` : '—';
+}
+
 /** "2026-10-13" or an ISO timestamp -> "13 Oct 2026" (Hindi: "13 अक्तू॰ 2026"), in the app's language. */
 export function formatDate(value: string | null | undefined): string {
   if (!value) return '—';
