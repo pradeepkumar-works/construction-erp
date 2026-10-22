@@ -300,6 +300,8 @@ import type {
   MeetingLinkOptionsDto,
   MaterialApprovalListDto,
   LookaheadDto,
+  EarnedValueDto,
+  EvBasis,
   MaterialApprovalDetailDto,
   ApprovedMakeDto,
   MakeWarningDto,
@@ -2108,6 +2110,13 @@ export const useCostSummary = (period: CostPeriod, enabled = true) =>
     enabled,
   });
 
+/** A project's earned value (v6 item 115), earned from approved progress or measured work. */
+export const useEarnedValue = (projectId: string | undefined, basis: EvBasis) =>
+  useQuery({
+    queryKey: ['cost', 'earned-value', projectId, basis],
+    queryFn: async () => (await api.get<EarnedValueDto>(`/cost/projects/${projectId}/earned-value`, { params: { basis } })).data,
+    enabled: !!projectId,
+  });
 export const useProjectBudget = (projectId: string | undefined) =>
   useQuery({
     queryKey: ['cost', 'budget', projectId],

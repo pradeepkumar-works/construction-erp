@@ -171,6 +171,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/schedule-links-test.js
+      - name: Earned value spreads the plan over its days and gives the indices, forecasts and earned schedule
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/earned-value-test.js
       - name: Early warnings forecast right, show each role its own kinds and backtest on the demo history
         if: matrix.suite == 'flows'
         working-directory: apps/api

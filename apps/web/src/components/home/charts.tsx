@@ -3,7 +3,7 @@
 import React from 'react';
 import { Grid, theme } from 'antd';
 import { Column, Line, Pie } from '@ant-design/plots';
-import type { CostHeadsDto, HomeTrendsDto } from '@erp/shared';
+import type { CostHeadsDto, EarnedValuePointDto, HomeTrendsDto } from '@erp/shared';
 import { useAppearance, useReducedMotion } from '@/lib/appearance';
 import { formatINRCompact, formatPct, toNumber, RUPEE } from '@/lib/format';
 import { COST_HEADS, monthLabel } from './chartData';
@@ -53,6 +53,32 @@ export function SCurveChart({ data }: { data: HomeTrendsDto['sCurve'] }) {
       style={{ lineWidth: 2.5, lineDash: (d: { series: string }[]) => (d[0]?.series === 'Planned' ? [6, 4] : [0, 0]) }}
       point={{ shapeField: 'circle', sizeField: 2 }}
       tooltip={{ channel: 'y', valueFormatter: (v: number) => formatPct(v) }}
+    />
+  );
+}
+
+/** A project's planned value, earned value and actual cost, cumulative by month (v6 item 115). */
+export function EarnedValueChart({ data }: { data: EarnedValuePointDto[] }) {
+  const { token, base } = useChartTheme();
+  const series = ['Planned value', 'Earned value', 'Actual cost'] as const;
+  const rows = data.flatMap((d) => [
+    { month: monthLabel(d.month), series: series[0], amount: toNumber(d.pv) },
+    ...(d.ev === null ? [] : [{ month: monthLabel(d.month), series: series[1], amount: toNumber(d.ev) }]),
+    ...(d.ac === null ? [] : [{ month: monthLabel(d.month), series: series[2], amount: toNumber(d.ac) }]),
+  ]);
+  return (
+    <Line
+      {...base}
+      height={300}
+      data={rows}
+      xField="month"
+      yField="amount"
+      colorField="series"
+      scale={{ color: { domain: [...series], range: [token.colorTextQuaternary, token.colorPrimary, token.colorWarning] }, y: { domainMin: 0 } }}
+      axis={{ ...base.axis, y: { ...base.axis.y, labelFormatter: (v: number) => formatINRCompact(v).replace(RUPEE, '₹') } }}
+      style={{ lineWidth: 2.5, lineDash: (d: { series: string }[]) => (d[0]?.series === series[0] ? [6, 4] : [0, 0]) }}
+      point={{ shapeField: 'circle', sizeField: 2 }}
+      tooltip={{ channel: 'y', valueFormatter: (v: number) => formatINRCompact(v) }}
     />
   );
 }

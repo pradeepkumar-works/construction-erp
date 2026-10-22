@@ -1,11 +1,16 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import { ArrayMaxSize, IsArray, IsDateString, IsIn, IsNumberString, IsOptional, IsString, IsUUID, MaxLength, MinLength, ValidateIf, ValidateNested } from 'class-validator';
-import type { CashFlowGranularity } from '@erp/shared';
+import type { CashFlowGranularity, EvBasis } from '@erp/shared';
+import { EV_BASES } from '@erp/shared';
 
 export class CostQuery {
   @ApiPropertyOptional({ example: '2026-04-01', description: 'Start of the period (inclusive); omit for since the start' }) @IsOptional() @IsDateString() from?: string;
   @ApiPropertyOptional({ example: '2027-03-31', description: 'End of the period (inclusive); omit for up to today' }) @IsOptional() @IsDateString() to?: string;
+}
+
+export class EarnedValueQuery {
+  @ApiPropertyOptional({ enum: EV_BASES, description: 'Earned from approved progress (default) or approved measurement sheets' }) @IsOptional() @IsIn(EV_BASES) basis?: EvBasis;
 }
 
 export class LabourRateInputDto {

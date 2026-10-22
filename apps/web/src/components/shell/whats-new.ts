@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-earned-value',
+    date: '2026-11-27',
+    title: 'Earned value',
+    points: [
+      'A project’s Money group has an Earned value tab: how far the work is behind or ahead of the baseline (SPI) and over or under its budget (CPI), with the finish and the cost at completion they point to.',
+      'The S-curve sets planned value, earned value and actual cost month by month, and the activities furthest behind are listed first.',
+      'Earn from approved progress or, switched, from measured work.',
+    ],
+  },
+  {
     id: '2026-11-schedule-links',
     date: '2026-11-24',
     title: 'Schedule links, critical path and look-ahead',

@@ -32,6 +32,7 @@ import { DashboardService } from '../dashboard/dashboard.service';
 import { HomeService } from '../dashboard/home.service';
 import { CostService } from '../cost/cost.service';
 import { BudgetService } from '../cost/budget.service';
+import { EarnedValueService } from '../cost/earned-value.service';
 import { ReconciliationService } from '../reconciliation/reconciliation.service';
 import { CashFlowService } from '../cost/cash-flow.service';
 import { ContractsService } from '../contracts/contracts.service';
@@ -139,6 +140,7 @@ export class AiToolsService {
     home: HomeService,
     cost: CostService,
     budget: BudgetService,
+    earnedValue: EarnedValueService,
     reconciliation: ReconciliationService,
     cashFlow: CashFlowService,
     contracts: ContractsService,
@@ -310,6 +312,16 @@ export class AiToolsService {
         def: { name: 'project_budget', description: 'A project\'s budget by BOQ item and cost head against actual and forecast to complete.', input_schema: { type: 'object', properties: { projectId: { type: 'string' } }, required: ['projectId'] } },
         allowed: (u) => canViewCost(u.roleKey),
         run: (user, i) => budget.get(user, uuid(i.projectId, 'projectId')),
+      },
+      {
+        def: {
+          name: 'earned_value',
+          description:
+            "A project's earned value: planned value from the baseline, earned value from approved progress (or measured work with basis MEASURED) and actual cost, with SPI, CPI, the estimate at completion, the earned schedule and forecast finish, the monthly S-curve, and each activity's planned and done share, furthest behind first.",
+          input_schema: { type: 'object', properties: { projectId: { type: 'string' }, basis: { type: 'string', enum: ['PROGRESS', 'MEASURED'] } }, required: ['projectId'] },
+        },
+        allowed: (u) => canViewCost(u.roleKey),
+        run: (user, i) => earnedValue.get(user, uuid(i.projectId, 'projectId'), i.basis === 'MEASURED' ? 'MEASURED' : 'PROGRESS'),
       },
       {
         def: {

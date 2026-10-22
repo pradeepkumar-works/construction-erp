@@ -32,6 +32,7 @@ import { ProjectQualityTab } from '@/components/quality/QualityTabs';
 import { ProjectDocumentsTab } from '@/components/documents/DocumentTabs';
 import { ProjectCostPanel } from '@/components/cost/ProjectCostPanel';
 import { ProjectBudgetPanel } from '@/components/cost/ProjectBudgetPanel';
+import { EarnedValuePanel } from '@/components/cost/EarnedValuePanel';
 import { ContractPanel } from '@/components/contracts/ContractPanel';
 import { VariationsPanel } from '@/components/variations/VariationsPanel';
 import { BillList } from '@/components/bills/BillList';
@@ -112,6 +113,7 @@ function ProjectPage({ project }: { project: ProjectDetail }) {
     { key: 'expenses', group: 'money', label: 'Expenses', children: <ExpenseList projectId={project.id} /> },
     can(!!user && canViewCost(user.roleKey)) && { key: 'cost', group: 'money', label: 'Cost', children: <ProjectCostPanel projectId={project.id} /> },
     can(!!user && canViewCost(user.roleKey)) && { key: 'budget', group: 'money', label: 'Budget and cash flow', children: <ProjectBudgetPanel projectId={project.id} /> },
+    can(!!user && canViewCost(user.roleKey)) && { key: 'earned-value', group: 'money', label: 'Earned value', children: <EarnedValuePanel projectId={project.id} /> },
     can(!!user && !isGuest(user.roleKey)) && { key: 'handover', group: 'handover', label: 'Handover', children: <HandoverPanel projectId={project.id} members={project.members} initialDefectId={search.get('defect') ?? undefined} /> },
   ];
   const tabs = all.filter((t): t is WorkspaceTab => !!t);
