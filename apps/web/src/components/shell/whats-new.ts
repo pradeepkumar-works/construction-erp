@@ -9,6 +9,15 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-module-homes',
+    date: '2026-11-04',
+    title: 'A home page for each module',
+    points: [
+      'Each section of the menu now starts with its overview: Site, Materials and plant, Purchases, Billing and People. It shows the figures of that module for your sites (or the project picked at the top), what waits for your approval there, and every page in it with a line on what it is for.',
+      "Each figure opens its list, and a red or orange line says when one needs someone: sites that have not sent today's report, deliveries running late, money overdue.",
+    ],
+  },
+  {
     id: '2026-11-attendance-extras',
     date: '2026-11-03',
     title: 'Check-in at the site, on duty and tour, overtime approval',

@@ -18,6 +18,7 @@ import {
   CloudServerOutlined,
   ContainerOutlined,
   CreditCardOutlined,
+  DashboardOutlined,
   DatabaseOutlined,
   DiffOutlined,
   EyeOutlined,
@@ -48,10 +49,12 @@ import {
   ToolOutlined,
   WalletOutlined,
 } from '@ant-design/icons';
-import type { AuthUser } from '@erp/shared';
+import type { AuthUser, ModuleKey } from '@erp/shared';
 import { SparkleIcon } from '@/components/ai/SparkleIcon';
 import {
+  MODULE_LABELS,
   PRODUCT_NAME,
+  isModuleKey,
   approvalRightsOf,
   canEditContract,
   canEditProjects,
@@ -98,6 +101,8 @@ export interface NavItem {
   keywords?: string;
   /** Shows the pending-approvals count. */
   approvals?: boolean;
+  /** A module's home page (v6 item 98), drawn first in its section. */
+  overview?: boolean;
 }
 
 export interface NavSection {
@@ -110,7 +115,46 @@ export interface NavSection {
   items: NavItem[];
   /** Links light up on their own page only (Favourites, Recent), not on the pages under them. */
   exact?: boolean;
+  /** The module this section is (v6 item 98): it gets a home page at `/modules/<key>`. */
+  module?: ModuleKey;
 }
+
+/** What each page is for, in a line: the cards on a module's home page (v6 item 98). */
+export const NAV_DESCRIPTIONS: Record<string, string> = {
+  '/dpr': 'The day at each site: work done, labour, machines, weather and hold-ups.',
+  '/attendance': "Labour head count and the named workers' roll call, by site and day.",
+  '/progress': 'Quantities done against each activity, for approval.',
+  '/measurements': "Measurement book: measured quantities that go on the client's bill.",
+  '/inspections': 'Inspections with hold points, material tests and NCRs.',
+  '/documents': 'Drawings, revisions, RFIs, transmittals and letters.',
+  '/expenses': 'Petty expenses at the sites, with bills and approval.',
+  '/imprest': 'Cash floats held at the sites, top-ups and the cash book.',
+  '/risks': 'Delays and risks, extensions of time and liquidated damages.',
+  '/safety': 'Incidents, permits to work, toolbox talks and PPE.',
+  '/material-requests': 'What the sites need, approved and ordered or taken from stock.',
+  '/stock': 'Stock at each site: receipts, issues, transfers and counts.',
+  '/machinery': 'Machine logs, fuel, use, job cards, papers and drivers.',
+  '/purchase-orders': 'Quotations, comparisons, orders and what is still to come.',
+  '/vendor-bills': 'Supplier bills checked against orders and receipts.',
+  '/work-orders': 'Orders to subcontractors and petty contractors.',
+  '/subcontract-bills': "Subcontractors' running bills with recoveries.",
+  '/payables': 'What we owe, payment requests, payments and debit notes.',
+  '/vendors': 'Suppliers and subcontractors, with GST, MSME and bank details.',
+  '/bills': 'Running account bills to clients, from the measurement book.',
+  '/variations': 'Extra and changed items sent to the client.',
+  '/receivables': 'What clients owe us, receipts and retention.',
+  '/clients': 'Clients and their contacts.',
+  '/compliance': 'Bank guarantees, EMDs, insurance and licences with renewals.',
+  '/gst': 'GST on sales and purchases: GSTR-1 and 2B.',
+  '/tally': 'Vouchers for Tally, with projects as cost centres.',
+  '/staff': 'Staff, their attendance, leave, overtime and holidays.',
+  '/payroll': "Monthly days, leave and overtime per person, and labour contractors' man-days.",
+  '/reports': 'Monthly and weekly progress reports as PDF.',
+  '/cost': 'Budget, actual cost, cash flow and margin per project.',
+};
+
+/** A module's home page link, first in its section when the section has two or more pages. */
+export const moduleHref = (key: ModuleKey) => `/modules/${key}`;
 
 const when = (ok: boolean, ...items: NavItem[]): NavItem[] => (ok ? items : []);
 
@@ -144,6 +188,7 @@ export function navFor(user: AuthUser): NavSection[] {
     },
     {
       key: 'site',
+      module: 'site',
       title: 'Site',
       icon: BuildOutlined,
       items: [
@@ -161,6 +206,7 @@ export function navFor(user: AuthUser): NavSection[] {
     },
     {
       key: 'materials',
+      module: 'materials',
       title: 'Materials and plant',
       icon: InboxOutlined,
       items: [
@@ -171,6 +217,7 @@ export function navFor(user: AuthUser): NavSection[] {
     },
     {
       key: 'purchases',
+      module: 'purchases',
       title: 'Purchases',
       icon: ShoppingCartOutlined,
       items: [
@@ -184,6 +231,7 @@ export function navFor(user: AuthUser): NavSection[] {
     },
     {
       key: 'billing',
+      module: 'billing',
       title: 'Billing',
       icon: FileDoneOutlined,
       items: [
@@ -198,6 +246,7 @@ export function navFor(user: AuthUser): NavSection[] {
     },
     {
       key: 'people',
+      module: 'people',
       title: 'People',
       icon: TeamOutlined,
       items: [
@@ -232,13 +281,27 @@ export function navFor(user: AuthUser): NavSection[] {
       ],
     },
   ];
+  // Each module with two or more pages leads with its home page (v6 item 98).
+  for (const s of sections) {
+    if (s.module && s.items.length >= 2)
+      s.items.unshift({ href: moduleHref(s.module), label: `${MODULE_LABELS[s.module]} overview`, icon: DashboardOutlined, keywords: 'module home summary dashboard', overview: true });
+  }
   return sections.filter((s) => s.items.length > 0);
+}
+
+/** The section a module's home page shows, as this user's sidebar draws it (null when they do not see it). */
+export function moduleSection(user: AuthUser, key: string): NavSection | null {
+  if (!isModuleKey(key)) return null;
+  return navFor(user).find((s) => s.module === key && s.items.some((i) => i.overview)) ?? null;
 }
 
 /** The nav link a path belongs to: "/" only for the dashboard, otherwise the link whose path is the first segment. */
 export function activeHref(pathname: string): string {
   if (pathname === '/') return '/';
-  return '/' + pathname.split('/')[1];
+  const [, first, second] = pathname.split('/');
+  // A module's home page is /modules/<key>: the link is the whole path.
+  if (first === 'modules' && second) return `/modules/${second}`;
+  return '/' + first;
 }
 
 /** Where a path sits in the sidebar, for the header: the section's title (none for the top links) and the link. */

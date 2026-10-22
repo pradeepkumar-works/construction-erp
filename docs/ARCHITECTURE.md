@@ -81,6 +81,25 @@ hold points use the latter on progress. The clients keep a few per-type maps (we
 `approvalTypeParam`; mobile `TYPE_ICON`, `EDIT_PATH`, `REVIEW_PATH`, `OUTBOX_PATH`, push routes) that
 TypeScript flags when a type is added.
 
+### Module home pages (v6 item 98)
+
+Every sidebar section of `nav.ts` that is a module (`NavSection.module`, the keys in `MODULE_KEYS`: site, materials,
+purchases, billing, people; HR, accounts and RMC join as they are built) leads with an overview link to `/modules/<key>`
+when the person sees two or more of its pages. `activeHref` keeps the whole `/modules/<key>` path so each lights up on its
+own. The page (`components/modules/ModuleHome.tsx`) shows:
+
+- **Figures** from `GET /dashboard/modules/:key?projectId=` (`ModuleHomeService`), each behind the same helper as the list
+  it counts and linking to it, for the header's project or every project the person sees. A figure is a count, rupees or
+  "x of y", with a note that says what it stands against; `tone` marks the ones that need someone (the note says so too).
+- **Waiting for you:** the caller's approvals queue (`SubmissionLifecycleService.pending`) for the module's submission types
+  (`MODULE_SUBMISSION_TYPES`), per type with the oldest wait, each opening `/approvals?type=`; their own entries sent back,
+  and theirs waiting with others.
+- **Pages:** the section's links as cards with the line from `NAV_DESCRIPTIONS`, and the module's `NewMenu` entries as
+  buttons in the header.
+
+A new module is a section with `module` set, a key in `MODULE_KEYS` (label, intro, submission types) and a branch in
+`ModuleHomeService.figures`; a new page in a module needs its line in `NAV_DESCRIPTIONS`.
+
 ### Management view on the phone (v5 item 96)
 
 `GET /dashboard/company-today` (`HomeService.companyToday`) is the company's day for the roles in `COMPANY_TODAY_ROLES`

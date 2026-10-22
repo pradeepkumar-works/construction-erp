@@ -1,14 +1,15 @@
-import { Controller, Get, Param } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { Controller, Get, Param, Query } from '@nestjs/common';
+import { ApiBearerAuth, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { DashboardService } from './dashboard.service';
 import { HomeService } from './home.service';
+import { ModuleHomeService } from './module-home.service';
 import { CurrentUser, RequestUser } from '../common/current-user';
 
 @ApiTags('dashboard')
 @ApiBearerAuth()
 @Controller('dashboard')
 export class DashboardController {
-  constructor(private dashboard: DashboardService, private home: HomeService) {}
+  constructor(private dashboard: DashboardService, private home: HomeService, private modules: ModuleHomeService) {}
 
   @Get('company')
   company(@CurrentUser() user: RequestUser) {
@@ -37,6 +38,13 @@ export class DashboardController {
   @Get('company-today')
   companyToday(@CurrentUser() user: RequestUser) {
     return this.home.companyToday(user);
+  }
+
+  /** A module's home page (v6 item 98): its figures, what waits for the caller in it, their entries sent back. */
+  @Get('modules/:key')
+  @ApiQuery({ name: 'projectId', required: false, description: "The header's project; every project the caller sees when left out" })
+  moduleHome(@CurrentUser() user: RequestUser, @Param('key') key: string, @Query('projectId') projectId?: string) {
+    return this.modules.home(user, key, projectId || undefined);
   }
 
   @Get('projects/:id')
