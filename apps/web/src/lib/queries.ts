@@ -2,6 +2,9 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
 import type {
+  CommentKind,
+  CommentThreadsDto,
+  MentionableDto,
   SupplierChangeDto,
   SupplierDispatchDto,
   SupplierEnquiryDto,
@@ -3245,3 +3248,20 @@ export const useSupplierInboxInvoice = (id: string | null) =>
   useQuery({ queryKey: ['supplier-portal', 'invoice', id], queryFn: async () => (await api.get<SupplierInvoiceDto>(`/supplier-portal/invoices/${id}`)).data, enabled: !!id });
 export const useSupplierChanges = (enabled = true) =>
   useQuery({ queryKey: ['supplier-portal', 'changes'], queryFn: async () => (await api.get<SupplierChangeDto[]>('/supplier-portal/changes')).data, enabled });
+
+/* ---------- Comments and mentions (v6 item 116) ---------- */
+
+export const useComments = (kind: CommentKind, entityId?: string) =>
+  useQuery({ queryKey: ['comments', kind, entityId], queryFn: async () => (await api.get<CommentThreadsDto>('/comments', { params: { kind, entityId } })).data, enabled: !!entityId });
+/** Staff who see the record's project, for the @ list; fetched once someone starts writing. */
+export const useMentionable = (kind: CommentKind, entityId: string | undefined, enabled: boolean) =>
+  useQuery({ queryKey: ['comments', 'people', kind, entityId], queryFn: async () => (await api.get<MentionableDto[]>('/comments/people', { params: { kind, entityId } })).data, enabled: enabled && !!entityId, staleTime: 5 * 60_000 });
+/** Any change to a record's comments; every route answers with the threads as they now stand. */
+export function useCommentAction(kind: CommentKind, entityId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ method = 'post', path, body }: { method?: 'post' | 'patch' | 'delete'; path: string; body?: unknown }) =>
+      (method === 'delete' ? await api.delete<CommentThreadsDto>(path) : await api[method]<CommentThreadsDto>(path, body ?? {})).data,
+    onSuccess: (data) => qc.setQueryData(['comments', kind, entityId], data),
+  });
+}

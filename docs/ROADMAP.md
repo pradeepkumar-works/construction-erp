@@ -579,7 +579,10 @@ Migrations stay additive. Design notes for each item are in the project's `roadm
     item's value is spread over its activities' baseline (else planned) days; earned from approved progress or measured
     work; actual cost is the Cost tab's. SPI, CPI, EAC (two ways), ETC, VAC, TCPI, the earned schedule and the finish it
     points to, the S-curve and the activities furthest behind. Not built: earned value by cost head or on the phone.
-116. **Comments and mentions** (S). Threaded comments on any record, @mentions that notify, resolved threads.
+116. ~~**Comments and mentions** (S). Threaded comments on any record, @mentions that notify, resolved threads.~~ Done:
+    Comments on every submission's record (page, drawer and the Approvals pane), meetings and material approvals; @mentions
+    of staff who can open the record, notices for mentions and replies, resolve and reopen. Not built: comments on the
+    phone (the notice opens the record there), comments on registers without a page of their own, email of a mention.
 117. **Module switches** (S). An admin turns modules off for the company; they leave the sidebar, search, New menu and
     Ask, the API refuses them, the data is kept. Plans can set which modules a tier has.
 118. **Measure on drawings** (M). In the drawing viewer (item 109): scale from two points, length, area and count, saved as

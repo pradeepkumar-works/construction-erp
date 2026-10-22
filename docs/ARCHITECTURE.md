@@ -1063,6 +1063,29 @@ Nirmaan hands the payroll provider its inputs; PF, ESI, professional tax and sal
 - **API.** `GET /cost/projects/:id/earned-value?basis=PROGRESS|MEASURED`.
 - **Web.** Project > Money > Earned value (`components/cost/EarnedValuePanel.tsx`), the chart in `components/home/charts.tsx`.
 
+## Comments and mentions (v6 item 116)
+
+- **Table.** `Comment` (kind and record id, project, author, body up to 4000 characters, `mentions` as user ids, edited,
+  removed, and on a thread's first comment whether and by whom it is resolved; replies point at the first comment). CHECKs
+  on the length and on resolving only a first comment. Tenant table with RLS.
+- **Kinds** (`COMMENT_KINDS`, `packages/shared/src/comments.ts`): every submission type, `MEETING` and `MATERIAL_APPROVAL`.
+  `CommentTargetsService` loads the record through its own service with the caller, so whoever may open it reads and writes
+  its comments; guests and suppliers have none. A new kind is a key there, a loader here and the section on its page.
+- **Mentions.** Written as `@Full Name` in the text with the ids alongside (antd `Mentions` on the web); a mention whose
+  name is no longer in the text is dropped. The @ list is staff who see the record's project; each person mentioned is
+  checked on save by loading the record as them ("… cannot open this purchase order, so cannot be mentioned on it").
+- **Notices** (`COMMENT`, For me). Those mentioned are told they were; on a reply, everyone already in the thread (who wrote
+  in it or was mentioned in it) is told of the reply; never the writer, never twice (`whoToTell`). An edit tells only those
+  newly mentioned. The notice opens the record's page at `#record-comments`.
+- **Rules** (`apps/api/src/comments/comment-rules.ts`, tested in `src/scripts/comments-test.ts`, CI runs it). Only the author
+  edits; the author or an admin removes (the text is cleared, a first comment stays as "Comment removed" while it has
+  replies); anyone who can open the record resolves or reopens a thread, and a reply to a resolved thread opens it again.
+  Edits, removals and resolving are audited as `COMMENT`.
+- **API.** `GET /comments?kind&entityId`, `GET /comments/people`, `POST /comments` (`parentId` for a reply),
+  `PATCH /comments/:id`, `DELETE /comments/:id`, `POST /comments/:id/resolve|reopen`; each answers with the threads.
+- **Web.** `components/comments/CommentsSection.tsx`: `RecordFrame` adds it as the last section of every submission's record
+  (with the open count), and `CommentsCard` on the meeting and material approval pages.
+
 ## Material reconciliation
 
 - **Table.** `MaterialNorm` (per project: a BOQ item, a store item, `qtyPerUnit` with six decimals, allowed `wastagePct`,

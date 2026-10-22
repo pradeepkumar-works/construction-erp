@@ -62,6 +62,7 @@ import { MachineLoansModule } from './machine-loans/machine-loans.module';
 import { TendersModule } from './tenders/tenders.module';
 import { MeetingsModule } from './meetings/meetings.module';
 import { MaterialApprovalsModule } from './material-approvals/material-approvals.module';
+import { CommentsModule } from './comments/comments.module';
 import { SupplierModule } from './supplier/supplier.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { WorkersModule } from './workers/workers.module';
@@ -125,6 +126,7 @@ import { VitalsController } from './vitals.controller';
     TendersModule,
     MeetingsModule,
     MaterialApprovalsModule,
+    CommentsModule,
     SupplierModule,
     CostModule,
     ReconciliationModule,

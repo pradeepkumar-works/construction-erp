@@ -160,6 +160,7 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   WATCH_LIST: 'Watch list',
   MORNING_BRIEF: 'Morning brief',
   SUPPLIER: 'Supplier portal',
+  COMMENT: 'Comments',
 };
 
 export const STOCK_ENTRY_TYPE_LABELS: Record<StockEntryType, string> = {

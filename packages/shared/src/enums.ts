@@ -69,6 +69,7 @@ export const NOTIFICATION_TYPES = [
   'WATCH_LIST',
   'MORNING_BRIEF',
   'SUPPLIER',
+  'COMMENT',
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 

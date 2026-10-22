@@ -4,7 +4,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Anchor, App, Button, Card, Col, Descriptions, Divider, Drawer, Flex, Row, Skeleton, Space, Steps, Tooltip, theme } from 'antd';
 import type { DescriptionsProps } from 'antd';
 import { ArrowLeftOutlined, ExpandOutlined, LinkOutlined, PrinterOutlined } from '@ant-design/icons';
-import type { ApprovalTypeParam } from '@/lib/queries';
+import { useComments, type ApprovalTypeParam } from '@/lib/queries';
+import type { CommentKind } from '@erp/shared';
+import { CommentsSection } from '@/components/comments/CommentsSection';
 import { useStickyTop } from '@/lib/sticky';
 import { useIsPhone } from '@/lib/screen';
 import { rememberRecord } from '@/lib/recent';
@@ -66,6 +68,19 @@ export interface RecordFrameProps {
 
 const sectionId = (key: string) => `record-${key}`;
 
+/**
+ * The record's sections, and its comments after them (v6 item 116) when it is a submission: the activity's type is the
+ * comment kind, and the count is its threads.
+ */
+function useSections(record: RecordFrameProps['record']): RecordSection[] {
+  const kind = record?.activity ? (record.activity.type.toUpperCase() as CommentKind) : null;
+  const id = record?.activity?.id;
+  const comments = useComments(kind ?? 'DPR', kind ? id : undefined);
+  if (!record) return [];
+  if (!kind || !id) return record.sections;
+  return [...record.sections, { key: 'comments', title: 'Comments', count: comments.data ? comments.data.threads.length : undefined, children: <CommentsSection kind={kind} entityId={id} /> }];
+}
+
 /** The approval levels under the stage bar (v5 item 94), once the entry has been submitted. */
 const levelsOf = (record: NonNullable<RecordFrameProps['record']>) =>
   record.activity && record.lifecycle && record.lifecycle.current >= 2 ? <ApprovalLevels type={record.activity.type} id={record.activity.id} /> : null;
@@ -115,6 +130,7 @@ export function RecordFrame(props: RecordFrameProps) {
 
 /** The record without a frame of its own and without its actions, which the host page supplies. */
 function RecordPane({ loading, error, onRetry, record, children }: RecordFrameProps) {
+  const sections = useSections(record);
   const { token } = theme.useToken();
   return (
     <div className="record-pane">
@@ -148,7 +164,7 @@ function RecordPane({ loading, error, onRetry, record, children }: RecordFramePr
               {levelsOf(record)}
             </div>
           )}
-          {record.sections.map((s) => (
+          {sections.map((s) => (
             <React.Fragment key={s.key}>
               <Divider titlePlacement="start" plain>
                 {sectionTitle(s)}
@@ -172,6 +188,7 @@ function RecordPane({ loading, error, onRetry, record, children }: RecordFramePr
 }
 
 function RecordDrawer({ open, onClose, drawerSize = 820, kind, loading, error, onRetry, record, children }: RecordFrameProps) {
+  const sections = useSections(record);
   const { token } = theme.useToken();
   // On a phone Approve, Submit and the rest are in the drawer's footer, always in reach of a thumb, not at its top.
   const phone = useIsPhone();
@@ -228,7 +245,7 @@ function RecordDrawer({ open, onClose, drawerSize = 820, kind, loading, error, o
               {levelsOf(record)}
             </div>
           )}
-          {record.sections.map((s) => (
+          {sections.map((s) => (
             <React.Fragment key={s.key}>
               <Divider titlePlacement="start" plain>
                 {sectionTitle(s)}
@@ -252,6 +269,7 @@ function RecordDrawer({ open, onClose, drawerSize = 820, kind, loading, error, o
 }
 
 function RecordPage({ kind, list, loading, error, onRetry, record, children }: RecordFrameProps) {
+  const sections = useSections(record);
   const { token } = theme.useToken();
   const { message } = App.useApp();
   const top = useStickyTop();
@@ -316,18 +334,18 @@ function RecordPage({ kind, list, loading, error, onRetry, record, children }: R
           {record.notices}
           <Row gutter={[token.margin, token.margin]}>
             <Col xs={24} xl={17}>
-              {record.sections.length > 1 && (
+              {sections.length > 1 && (
                 <div data-record-chrome style={{ position: 'sticky', top, zIndex: 4, background: token.colorBgLayout, marginBottom: token.marginSM }}>
                   <Anchor
                     direction="horizontal"
                     affix={false}
                     replace
                     targetOffset={top + anchorHeight}
-                    items={record.sections.map((s) => ({ key: s.key, href: `#${sectionId(s.key)}`, title: sectionTitle(s) }))}
+                    items={sections.map((s) => ({ key: s.key, href: `#${sectionId(s.key)}`, title: sectionTitle(s) }))}
                   />
                 </div>
               )}
-              {record.sections.map((s) => (
+              {sections.map((s) => (
                 <Card key={s.key} id={sectionId(s.key)} title={sectionTitle(s)} size="small" style={{ marginBottom: token.margin, scrollMarginTop: top + anchorHeight }}>
                   {s.children}
                 </Card>

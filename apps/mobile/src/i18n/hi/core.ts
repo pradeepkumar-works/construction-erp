@@ -137,6 +137,7 @@ export const CORE: Record<string, string> = {
   'Watch list': 'निगरानी सूची',
   'Morning brief': 'सुबह की झलक',
   'Supplier portal': 'सप्लायर पोर्टल',
+  'Comments': 'टिप्पणियाँ',
   'No DPR for today': 'आज का DPR नहीं',
   'Sent today': 'आज भेजा गया',
   'Due today': 'आज देय',

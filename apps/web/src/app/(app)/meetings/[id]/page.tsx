@@ -15,6 +15,7 @@ import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { useConfirmDelete } from '@/components/common/ConfirmDelete';
 import { ActionControls, ActionStatusTag, MeetingForm, MeetingStatusTag, actionWhen } from '@/components/meetings/MeetingForms';
 import { minutesText, openMinutesPrint } from '@/components/meetings/meetingPrint';
+import { CommentsCard } from '@/components/comments/CommentsSection';
 
 /**
  * One meeting (v6 item 112): its minutes (who came, what was noted and decided), the actions it gave out with who does
@@ -185,6 +186,7 @@ function MeetingView({ m }: { m: MeetingDetailDto }) {
             {m.earlierActions.length ? (
               <ActionsCard title={`Open from earlier meetings (${m.earlierActions.length})`} list={m.earlierActions} from empty="" />
             ) : null}
+            <CommentsCard kind="MEETING" entityId={m.id} heading={(t) => <CardTitle>{t}</CardTitle>} />
           </Flex>
         </Col>
         <Col xs={24} lg={8}>
@@ -257,7 +259,7 @@ function ActionsCard({ title, list, from, empty }: { title: string; list: Meetin
                   {[a.ownerName, actionWhen(a), a.link?.label].filter(Boolean).join(' · ')}
                 </Typography.Text>
                 {from ? (
-                  <Typography.Link style={small} href={`/meetings/${a.meetingId}`} onClick={(e) => (e.preventDefault(), router.push(`/meetings/${a.meetingId}`))}>
+                  <Typography.Link style={{ ...small, display: 'inline-flex', alignItems: 'center', minHeight: 24 }} href={`/meetings/${a.meetingId}`} onClick={(e) => (e.preventDefault(), router.push(`/meetings/${a.meetingId}`))}>
                     <span translate="no">{`${a.meetingNo}, ${formatDate(a.heldOn)}`}</span>
                   </Typography.Link>
                 ) : null}
