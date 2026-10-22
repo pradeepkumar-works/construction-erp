@@ -288,6 +288,10 @@ import type {
   StoreSummaryDto,
   StockDestinationDto,
   EquipmentLoanListDto,
+  SorBookDto,
+  SorItemListDto,
+  TenderDetailDto,
+  TenderListDto,
   EquipmentLoanDetailDto,
   EquipmentLoanStatus,
   LoanPreviewDto,
@@ -494,6 +498,7 @@ export const PICKER_SOURCES = {
   clients: { key: ['clients'], path: '/clients', sortBy: 'name', byId: true },
   equipment: { key: ['machinery', 'equipment'], path: '/equipment', sortBy: 'code', byId: true },
   items: { key: ['stock', 'items'], path: '/stock/items', sortBy: 'name', byId: false },
+  sorItems: { key: ['tenders', 'sor-items'], path: '/sor-items', sortBy: 'code', byId: false },
 } as const;
 export type PickerSource = keyof typeof PICKER_SOURCES;
 
@@ -708,6 +713,27 @@ export const useLoanPreview = (terms: { amount?: number | null; ratePct?: number
     staleTime: 60_000,
   });
 };
+
+/* ---------- tender bidding (v6 item 110) ---------- */
+
+/** The tender register: open ones by default (soonest due first), with the year's figures. */
+export const useTenders = (filters?: { status?: string; q?: string }, enabled = true) =>
+  useQuery({ queryKey: ['tenders', 'list', clean(filters)], queryFn: async () => (await api.get<TenderListDto>('/tenders', { params: clean(filters) })).data, placeholderData: keepPreviousData, enabled });
+export const useTender = (id?: string) => useQuery({ queryKey: ['tenders', 'one', id], queryFn: async () => (await api.get<TenderDetailDto>(`/tenders/${id}`)).data, enabled: !!id });
+export const useSorBooks = (enabled = true) => useQuery({ queryKey: ['tenders', 'sor-books'], queryFn: async () => (await api.get<SorBookDto[]>('/sor-books')).data, enabled });
+export const useSorItems = (filters: { bookId?: string; q?: string; page?: number; pageSize?: number }, enabled = true) =>
+  useQuery({ queryKey: ['tenders', 'sor-items', clean(filters)], queryFn: async () => (await api.get<SorItemListDto>('/sor-items', { params: clean(filters) })).data, placeholderData: keepPreviousData, enabled: enabled && !!filters.bookId });
+/** Any change to a tender or a schedule of rates; a won tender's project and the guarantees refresh too. */
+export function useTenderAction<T = TenderDetailDto>() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ method = 'post', path, body }: { method?: 'post' | 'patch' | 'put' | 'delete'; path: string; body?: unknown }) =>
+      (method === 'delete' ? await api.delete<T>(path) : await api[method]<T>(path, body ?? {})).data,
+    onSuccess: () => {
+      for (const key of [['tenders'], ['compliance'], ['projects']]) void qc.invalidateQueries({ queryKey: key });
+    },
+  });
+}
 
 /** Central stores and yards (v6 item 106), each with its stock, value and transfers on the road. */
 export const useStores = (enabled = true) => useQuery({ queryKey: ['stock', 'stores'], queryFn: async () => (await api.get<StoreSummaryDto[]>('/stock/stores')).data, enabled });

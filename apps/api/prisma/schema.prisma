@@ -596,6 +596,12 @@ model Organization {
   supplierChanges      SupplierChangeRequest[]
   equipmentLoans       EquipmentLoan[]
   loanEmis             LoanEmi[]
+  sorBooks             SorBook[]
+  sorItems             SorItem[]
+  tenders              Tender[]
+  tenderItems          TenderItem[]
+  tenderItemLines      TenderItemLine[]
+  tenderBids           TenderBid[]
   staffAttendance      StaffAttendance[]
   leaveRequests        LeaveRequest[]
   holidays             Holiday[]
@@ -857,6 +863,8 @@ model User {
   supplierChangesDone  SupplierChangeRequest[]  @relation("SupplierChangeDecider")
   equipmentLoans       EquipmentLoan[]          @relation("EquipmentLoanCreator")
   loanEmisPaid         LoanEmi[]                @relation("LoanEmiPayer")
+  sorBooksCreated      SorBook[]                @relation("SorBookCreator")
+  tendersCreated       Tender[]                 @relation("TenderCreator")
   posAccepted          PurchaseOrder[]          @relation("PoSupplierAccepter")
   wosAccepted          WorkOrder[]              @relation("WoSupplierAccepter")
 
@@ -1011,6 +1019,8 @@ model Project {
   holidays           Holiday[]
   variations         Variation[]
   budget             ProjectBudget?
+  /// The tender this project was won from (v6 item 110)
+  tender             Tender?
   safetyIncidents    SafetyIncident[]
   toolboxTalks       ToolboxTalk[]
   ppeIssues          PpeIssue[]
@@ -1049,6 +1059,7 @@ model Client {
   rmcOrders   RmcOrder[]
   rmcInvoices RmcInvoice[]
   rmcReceipts RmcReceipt[]
+  tenders     Tender[]
 
   @@unique([organizationId, name])
 }
@@ -2043,6 +2054,7 @@ model Item {
   excessRecoveries ExcessMaterialRecovery[]
   mixDesignLines   MixDesignLine[]
   rmcBatchLines    RmcBatchLine[]
+  tenderLines      TenderItemLine[]
 
   @@unique([organizationId, name, unit])
 }
@@ -2967,6 +2979,8 @@ model Attachment {
   equipmentDoc      EquipmentDocument? @relation(fields: [equipmentDocId], references: [id], onDelete: Cascade)
   complianceDocId   String?
   complianceDoc     ComplianceDoc?     @relation(fields: [complianceDocId], references: [id], onDelete: Cascade)
+  tenderId          String?
+  tender            Tender?            @relation(fields: [tenderId], references: [id], onDelete: Cascade)
   defectId          String?
   defect            Defect?            @relation(fields: [defectId], references: [id], onDelete: Cascade)
   handoverId        String?
@@ -3019,6 +3033,7 @@ model Attachment {
   @@index([maintenanceJobId])
   @@index([equipmentDocId])
   @@index([complianceDocId])
+  @@index([tenderId])
   @@index([defectId])
   @@index([handoverId])
   @@index([rfiId])
@@ -4472,6 +4487,8 @@ model ComplianceDoc {
   updatedAt      DateTime            @updatedAt
 
   attachments Attachment[]
+  /// The tender this EMD was paid for (v6 item 110)
+  tender      Tender?      @relation("TenderEmd")
 
   @@index([organizationId, status, expiresOn])
   @@index([projectId])
@@ -5742,4 +5759,206 @@ model LoanEmi {
   @@unique([loanId, no])
   @@index([organizationId, dueDate])
   @@index([tallyExportId])
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Tender bidding (v6 item 110)
+
+/// Where a schedule of rates comes from.
+enum SorBookKind {
+  STATE
+  CPWD
+  OWN
+  OTHER
+}
+
+/// PREPARING while the bid is priced; SUBMITTED once it is in; then WON, LOST, DROPPED (decided not to bid) or
+/// CANCELLED (the client called it off).
+enum TenderStatus {
+  PREPARING
+  SUBMITTED
+  WON
+  LOST
+  DROPPED
+  CANCELLED
+}
+
+/// PERCENTAGE: one percentage above or below the SOR on every item; ITEM_RATE: a rate quoted for each item.
+enum TenderBidType {
+  PERCENTAGE
+  ITEM_RATE
+}
+
+enum TenderLineKind {
+  MATERIAL
+  LABOUR
+  EQUIPMENT
+}
+
+/// A schedule of rates: a state SOR, the CPWD DSR or the company's own rates, imported from Excel.
+model SorBook {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  name           String
+  kind           SorBookKind
+  /// Year or edition, e.g. 2024-25
+  edition        String?
+  /// The state or circle it applies in
+  region         String?
+  note           String?
+  createdById    String
+  createdBy      User         @relation("SorBookCreator", fields: [createdById], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  items   SorItem[]
+  tenders Tender[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+}
+
+model SorItem {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  bookId         String
+  book           SorBook      @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  /// The item's number in the schedule, e.g. 4.1.3
+  code           String
+  chapter        String?
+  description    String
+  unit           String
+  rate           Decimal      @db.Decimal(18, 2)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  tenderItems TenderItem[]
+
+  @@unique([bookId, code])
+  @@index([organizationId])
+}
+
+/// A tender the company bids or considers: the notice, dates, EMD, the priced bid BOQ, the bids read out at opening and
+/// the result. A won tender becomes a project (projectId).
+model Tender {
+  id               String         @id @default(uuid())
+  organizationId   String
+  organization     Organization   @relation(fields: [organizationId], references: [id])
+  /// Our own number, e.g. TND-2026-007
+  tenderNo         String
+  /// The client's notice inviting tender (NIT) number
+  nitNo            String?
+  title            String
+  clientId         String?
+  client           Client?        @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  /// The client's name (a copy of the client master's, or free text without one)
+  clientName       String?
+  location         String?
+  bidType          TenderBidType  @default(PERCENTAGE)
+  sorBookId        String?
+  sorBook          SorBook?       @relation(fields: [sorBookId], references: [id], onDelete: SetNull)
+  /// Put-to-tender value: the client's estimate
+  estimatedValue   Decimal?       @db.Decimal(18, 2)
+  /// Time for completion, in months
+  completionMonths Int?
+  publishedOn      DateTime?      @db.Date
+  /// Last date to submit the bid
+  submitBy         DateTime       @db.Date
+  submittedOn      DateTime?      @db.Date
+  /// When the price bids were opened
+  openedOn         DateTime?      @db.Date
+  /// Percentage tenders: the quote above (+) or below (-) the SOR rates, in %
+  quotedPct        Decimal?       @db.Decimal(7, 2)
+  /// Added to the cost of each item's rate analysis
+  overheadPct      Decimal        @default(10) @db.Decimal(5, 2)
+  profitPct        Decimal        @default(8) @db.Decimal(5, 2)
+  tenderFee        Decimal?       @db.Decimal(18, 2)
+  /// The EMD paid with the bid, kept with the guarantees
+  emdDocId         String?        @unique
+  emdDoc           ComplianceDoc? @relation("TenderEmd", fields: [emdDocId], references: [id], onDelete: SetNull)
+  status           TenderStatus   @default(PREPARING)
+  resultOn         DateTime?      @db.Date
+  resultNote       String?
+  projectId        String?        @unique
+  project          Project?       @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  note             String?
+  createdById      String
+  createdBy        User           @relation("TenderCreator", fields: [createdById], references: [id])
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  items       TenderItem[]
+  bids        TenderBid[]
+  attachments Attachment[]
+
+  @@unique([organizationId, tenderNo])
+  @@index([organizationId, status, submitBy])
+}
+
+/// A line of the bid BOQ, priced from its rate analysis (TenderItemLine) or quoted against the SOR.
+model TenderItem {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  tenderId       String
+  tender         Tender       @relation(fields: [tenderId], references: [id], onDelete: Cascade)
+  itemNo         String
+  description    String
+  unit           String
+  qty            Decimal      @db.Decimal(18, 3)
+  sorItemId      String?
+  sorItem        SorItem?     @relation(fields: [sorItemId], references: [id], onDelete: SetNull)
+  /// The SOR (estimate) rate, from the SOR item or the client's BOQ
+  sorRate        Decimal?     @db.Decimal(18, 2)
+  /// Item-rate tenders: the rate quoted, when not the built-up rate
+  quotedRate     Decimal?     @db.Decimal(18, 2)
+  sortOrder      Int          @default(0)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  lines TenderItemLine[]
+
+  @@unique([tenderId, itemNo])
+  @@index([organizationId])
+}
+
+/// What one unit of a bid item takes: a material (with its wastage), labour man-days or machine hours, at a rate.
+model TenderItemLine {
+  id             String         @id @default(uuid())
+  organizationId String
+  organization   Organization   @relation(fields: [organizationId], references: [id])
+  tenderItemId   String
+  tenderItem     TenderItem     @relation(fields: [tenderItemId], references: [id], onDelete: Cascade)
+  kind           TenderLineKind
+  /// The store item of a material, carried to the project's material norms when the tender is won
+  itemId         String?
+  item           Item?          @relation(fields: [itemId], references: [id], onDelete: SetNull)
+  /// The material, the trade (as labour rates keep it) or the equipment category
+  name           String
+  unit           String
+  qtyPerUnit     Decimal        @db.Decimal(18, 6)
+  wastagePct     Decimal        @default(0) @db.Decimal(5, 2)
+  rate           Decimal?       @db.Decimal(18, 2)
+  sortOrder      Int            @default(0)
+
+  @@index([tenderItemId])
+  @@index([organizationId])
+}
+
+/// Another bidder's price as read out when the bids were opened.
+model TenderBid {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  tenderId       String
+  tender         Tender       @relation(fields: [tenderId], references: [id], onDelete: Cascade)
+  bidderName     String
+  amount         Decimal      @db.Decimal(18, 2)
+  note           String?
+  createdAt      DateTime     @default(now())
+
+  @@unique([tenderId, bidderName])
+  @@index([organizationId])
 }

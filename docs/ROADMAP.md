@@ -534,10 +534,15 @@ Migrations stay additive. Design notes for each item are in the project's `roadm
     the watch list, and posts the loan and each EMI to the books and Tally (interest to finance costs); each loan shows
     the interest per hour the machine works. Not built: floating rates (a rate change re-schedules nothing), part
     prepayments that keep the loan running, and loans from the phone.
-110. **Tender bidding** (L). A tender register (NIT, client, EMD, dates, documents, result), a company Schedule of Rates
+110. ~~**Tender bidding** (L). A tender register (NIT, client, EMD, dates, documents, result), a company Schedule of Rates
     library imported from Excel (state SOR, CPWD DSR, own rates), the bid BOQ priced from rate analysis with the quoted
     percentage above or below the SOR, others' bids after opening (L1, L2), and a won tender turned into a project with
-    its BOQ, budget and guarantees.
+    its BOQ, budget and guarantees.~~
+    Done: Billing → Tenders keeps the register with the EMD in the guarantees, prices the bid BOQ (imported from Excel and
+    matched by SOR code) from each item's rate analysis with overheads and profit, quotes a percentage on the SOR or item
+    rates with the margin shown, ranks the bids read out at opening, and makes a won tender a project with its BOQ, norms,
+    resources, budget and guarantees. Billing → Schedule of rates keeps the SOR books, imported from Excel. Not built:
+    e-tender portal downloads, corrigenda as versions, a bid's own documents checklist, and tenders on the phone.
 111. **Subcontract enquiries and comparison** (M). Quotes from several subcontractors on chosen BOQ items, a comparative
     statement by item and total, and the chosen quote becoming the work order.
 112. **Meetings and action items** (M). Attendees, minutes, decisions and actions (owner, due date, linked RFI, NCR or

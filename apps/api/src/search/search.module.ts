@@ -14,11 +14,12 @@ import { VendorsModule } from '../vendors/vendors.module';
 import { ClientsModule } from '../clients/clients.module';
 import { StockModule } from '../stock/stock.module';
 import { StaffModule } from '../staff/staff.module';
+import { TendersModule } from '../tenders/tenders.module';
 import { SearchController } from './search.controller';
 import { SearchService } from './search.service';
 
 @Module({
-  imports: [MaterialRequestsModule, PurchasingModule, SubcontractsModule, RaBillsModule, MeasurementsModule, ExpensesModule, InspectionsModule, RisksModule, DocumentsModule, RfisModule, VendorsModule, ClientsModule, StockModule, StaffModule, PayablesModule],
+  imports: [MaterialRequestsModule, PurchasingModule, SubcontractsModule, RaBillsModule, MeasurementsModule, ExpensesModule, InspectionsModule, RisksModule, DocumentsModule, RfisModule, VendorsModule, ClientsModule, StockModule, StaffModule, PayablesModule, TendersModule],
   controllers: [SearchController],
   providers: [SearchService],
   exports: [SearchService],

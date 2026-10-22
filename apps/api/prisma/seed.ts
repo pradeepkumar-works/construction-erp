@@ -181,6 +181,7 @@ async function main() {
     await seedCentralStore(org.id);
     await seedFundRequests(org.id);
     await seedMachineLoans(org.id);
+    await seedTenders(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
   }
@@ -376,6 +377,7 @@ async function main() {
   await seedCentralStore(org.id);
   await seedFundRequests(org.id);
   await seedMachineLoans(org.id);
+  await seedTenders(org.id);
 
   console.log('Seed complete. Login with any of these (password: password123):');
   for (const u of USERS) console.log(`  ${u.email.padEnd(24)} ${u.role}`);
@@ -3922,5 +3924,121 @@ async function seedMachineLoans(organizationId: string) {
       });
       await prisma.bookVoucher.update({ where: { id: opening.id }, data: { amount: opening.amount.add(owed) } });
     }
+  }
+}
+
+/**
+ * Tender bidding (v6 item 110): a demo schedule of rates (made-up figures in the shape of a state SOR), a road tender
+ * being priced, a hospital building whose bids are opened with us lowest, a water supply tender lost at L2 with its EMD
+ * still to come back, and one not bid.
+ */
+async function seedTenders(organizationId: string) {
+  if (await prisma.tender.count({ where: { organizationId } })) return;
+  const qs = (await prisma.user.findFirst({ where: { organizationId, email: 'qs@demo.com' }, select: { id: true } })) ?? (await prisma.user.findFirst({ where: { organizationId, email: 'admin@demo.com' }, select: { id: true } }));
+  if (!qs) return;
+  const book = await prisma.sorBook.create({ data: { organizationId, name: 'Odisha SOR 2024-25 (demo)', kind: 'STATE', edition: '2024-25', region: 'Odisha, Works Department', note: 'Demo figures in the shape of a state schedule; import the real one from Excel.', createdById: qs.id } });
+  await prisma.sorBook.create({ data: { organizationId, name: 'Own rates 2026', kind: 'OWN', edition: '2026', note: 'Our rates for private work', createdById: qs.id } });
+  const sor: [string, string, string, string, number][] = [
+    ['2.1', 'Earthwork', 'Earthwork in excavation by mechanical means in ordinary soil, lead up to 1 km', 'cum', 168],
+    ['2.4', 'Earthwork', 'Embankment with approved borrow material, compacted to 97% density', 'cum', 312],
+    ['3.2', 'Sub-base and base', 'Granular sub-base, grading II, mixed in place and compacted', 'cum', 2140],
+    ['3.5', 'Sub-base and base', 'Wet mix macadam laid with a paver and compacted', 'cum', 2985],
+    ['4.1', 'Bituminous work', 'Prime coat over a granular surface', 'sqm', 52],
+    ['4.3', 'Bituminous work', 'Tack coat on a bituminous surface', 'sqm', 21],
+    ['4.6', 'Bituminous work', 'Dense bituminous macadam, grade II, 50 to 75 mm', 'cum', 11850],
+    ['4.8', 'Bituminous work', 'Bituminous concrete, grade II, 30 to 40 mm', 'cum', 13420],
+    ['5.1', 'Concrete', 'PCC 1:4:8 (M7.5) in foundation', 'cum', 6150],
+    ['5.3', 'Concrete', 'RCC M25 in superstructure, concrete only', 'cum', 8960],
+    ['5.6', 'Concrete', 'Reinforcement steel Fe 500D, cut, bent and placed', 'MT', 78400],
+    ['6.2', 'Masonry', 'Brickwork in fly ash bricks in cement mortar 1:6', 'cum', 6420],
+    ['7.1', 'Finishing', '12 mm cement plaster 1:6', 'sqm', 285],
+    ['8.4', 'Water supply', 'Laying and jointing DI K9 pipe, 400 mm', 'Rmt', 6150],
+    ['9.2', 'Drainage', 'RCC hume pipe culvert NP3, 900 mm', 'Rmt', 9850],
+  ];
+  await prisma.sorItem.createMany({ data: sor.map(([code, chapter, description, unit, rate]) => ({ organizationId, bookId: book.id, code, chapter, description, unit, rate: D(rate) })) });
+  const sorItems = new Map((await prisma.sorItem.findMany({ where: { bookId: book.id } })).map((s) => [s.code, s]));
+  const store = async (word: string) => prisma.item.findFirst({ where: { organizationId, name: { contains: word, mode: 'insensitive' } }, select: { id: true, name: true, unit: true, rate: true } });
+  const [cement, sand, agg20, agg10, bitumen, bricks, pipe] = await Promise.all(['Cement', 'Sand', 'Aggregate 20', 'Aggregate 10', 'Bitumen', 'bricks', 'DI K9'].map(store));
+  // A material line from the store when the item is there (else by name), labour by trade, machines by category.
+  const mat = (it: Awaited<ReturnType<typeof store>>, name: string, unit: string, qty: number, rate: number, waste = 0) => ({ kind: 'MATERIAL' as const, itemId: it?.id ?? null, name: it?.name ?? name, unit: it?.unit ?? unit, qtyPerUnit: D(qty), wastagePct: D(waste), rate: it?.rate ?? D(rate) });
+  const res = (kind: 'LABOUR' | 'EQUIPMENT', name: string, qty: number, rate: number) => ({ kind, itemId: null, name, unit: kind === 'LABOUR' ? 'day' : 'hour', qtyPerUnit: D(qty), wastagePct: D(0), rate: D(rate) });
+  const lab = (n: string, q: number) => res('LABOUR', n, q, { Mason: 900, Helper: 550, Operator: 1100, 'Bar Bender': 850 }[n] ?? 600);
+  const mach = (n: string, q: number) => res('EQUIPMENT', n, q, { Earthmoving: 1450, Compaction: 1200, Concreting: 650, Lifting: 1800 }[n] ?? 1000);
+  type Item = { no: string; code: string; qty: number; lines: ReturnType<typeof mat | typeof res>[] };
+  const tenders: {
+    no: string; nit: string; title: string; client: string; location: string; bidType: 'PERCENTAGE' | 'ITEM_RATE'; status: 'PREPARING' | 'SUBMITTED' | 'LOST' | 'DROPPED';
+    submitBy: number; submitted?: number; opened?: number; result?: number; pct?: number; months: number; emd?: [string, string]; items: Item[]; bids?: [string, number][]; note?: string; estimate?: number;
+  }[] = [
+    {
+      no: 'TND-2026-0001', nit: 'OWD/RD/NIT-14/2026-27', title: 'Improvement of Khurda-Begunia road, km 0.000 to 14.200', client: 'Odisha Works Department', location: 'Khurda', bidType: 'PERCENTAGE', status: 'PREPARING', submitBy: 9, pct: -3.5, months: 18, emd: ['DD 004512', 'State Bank of India'],
+      items: [
+        { no: '1', code: '2.1', qty: 18500, lines: [mach('Earthmoving', 0.06), lab('Helper', 0.03)] },
+        { no: '2', code: '2.4', qty: 42000, lines: [mat(null, 'Borrow earth', 'cum', 1.25, 95), mach('Earthmoving', 0.05), mach('Compaction', 0.03), lab('Helper', 0.04)] },
+        { no: '3', code: '3.2', qty: 9800, lines: [mat(null, 'GSB material, grading II', 'cum', 1.32, 1150, 2), mach('Compaction', 0.04), mach('Earthmoving', 0.03), lab('Helper', 0.1)] },
+        { no: '4', code: '3.5', qty: 6400, lines: [mat(agg20, 'Aggregate 20mm', 'cum', 0.9, 1150, 2), mat(agg10, 'Aggregate 10mm', 'cum', 0.35, 1250, 2), mat(null, 'Stone dust', 'cum', 0.3, 900), mach('Earthmoving', 0.2), mach('Compaction', 0.05), lab('Helper', 0.12), lab('Operator', 0.03)] },
+        { no: '5', code: '4.6', qty: 2100, lines: [mat(bitumen, 'Bitumen VG-30', 'MT', 0.11, 48500, 1), mat(agg20, 'Aggregate 20mm', 'cum', 1.05, 1150, 2), mat(agg10, 'Aggregate 10mm', 'cum', 0.35, 1250, 2), mach('Compaction', 0.15), lab('Helper', 0.3), lab('Operator', 0.1)] },
+        { no: '6', code: '4.8', qty: 1150, lines: [mat(bitumen, 'Bitumen VG-30', 'MT', 0.135, 48500, 1), mat(agg10, 'Aggregate 10mm', 'cum', 1.1, 1250, 2), mach('Compaction', 0.2), lab('Helper', 0.35), lab('Operator', 0.12)] },
+      ],
+    },
+    {
+      no: 'TND-2026-0002', nit: 'H&FW/CHC/07/2026', title: 'Construction of 30-bed CHC building at Pipili', client: 'Dept. of Health & Family Welfare', location: 'Pipili, Puri', bidType: 'ITEM_RATE', status: 'SUBMITTED', submitBy: -6, submitted: -7, opened: -2, months: 15, emd: ['BG 0090/2026', 'Bank of India'],
+      items: [
+        { no: '1.01', code: '5.1', qty: 240, lines: [mat(cement, 'Cement', 'bag', 3.4, 385, 2), mat(sand, 'Sand', 'cum', 0.47, 1600, 5), mat(agg20, 'Aggregate 20mm', 'cum', 0.94, 1150, 3), lab('Mason', 0.17), lab('Helper', 2), mach('Concreting', 0.4)] },
+        { no: '1.02', code: '5.3', qty: 1450, lines: [mat(cement, 'Cement', 'bag', 8.2, 385, 2), mat(sand, 'Sand', 'cum', 0.41, 1600, 5), mat(agg20, 'Aggregate 20mm', 'cum', 0.83, 1150, 3), lab('Mason', 0.25), lab('Helper', 2.5), mach('Concreting', 0.8)] },
+        { no: '1.03', code: '5.6', qty: 182, lines: [mat(null, 'TMT bars Fe 500D', 'MT', 1, 62000, 3), lab('Bar Bender', 6), lab('Helper', 6)] },
+        { no: '1.04', code: '6.2', qty: 980, lines: [mat(bricks, 'Fly ash bricks', 'Nos', 500, 8.5, 3), mat(cement, 'Cement', 'bag', 1.3, 385, 2), mat(sand, 'Sand', 'cum', 0.27, 1600, 5), lab('Mason', 1), lab('Helper', 1.4)] },
+        { no: '1.05', code: '7.1', qty: 12400, lines: [mat(cement, 'Cement', 'bag', 0.13, 385, 2), mat(sand, 'Sand', 'cum', 0.016, 1600, 5), lab('Mason', 0.06), lab('Helper', 0.07)] },
+      ],
+      bids: [['Utkal Builders', 1.031], ['Mahanadi Infra', 1.062]],
+    },
+    {
+      no: 'TND-2026-0003', nit: 'RWSS/JJM/NIT-22/2026-27', title: 'Rural piped water supply to 12 villages, Jatni block', client: 'RWSS Odisha (Jal Jeevan Mission)', location: 'Jatni', bidType: 'PERCENTAGE', status: 'LOST', submitBy: -62, submitted: -63, opened: -45, result: -30, pct: 2.8, months: 12, emd: ['DD 118206', 'Union Bank of India'],
+      items: [
+        { no: 'A1', code: '8.4', qty: 5200, lines: [mat(pipe, 'DI K9 pipe 400mm', 'Rmt', 1, 5200, 1), lab('Mason', 0.05), lab('Helper', 0.15), mach('Lifting', 0.08)] },
+        { no: 'A2', code: '2.1', qty: 9800, lines: [mach('Earthmoving', 0.06), lab('Helper', 0.03)] },
+      ],
+      bids: [['Kalinga Infra Projects', -1.5], ['Jagannath Constructions', 4.1]],
+      note: 'L1 Kalinga Infra Projects at 1.50% below',
+    },
+    { no: 'TND-2026-0004', nit: 'KH/BW/2026/03', title: 'Boundary wall and gate, Kalinga Homes phase 2', client: 'Kalinga Homes LLP', location: 'Bhubaneswar', bidType: 'ITEM_RATE', status: 'DROPPED', submitBy: -20, months: 4, items: [], estimate: 4_800_000, note: 'Not bid: our crews are on the Khurda road at the time' },
+  ];
+  const clients = new Map((await prisma.client.findMany({ where: { organizationId }, select: { id: true, name: true } })).map((c) => [c.name, c.id]));
+  for (const t of tenders) {
+    const sorValue = t.items.reduce((s, i) => s.plus(D(i.qty).mul(sorItems.get(i.code)!.rate)), D(0));
+    const estimate = t.estimate ? D(t.estimate) : sorValue;
+    const tender = await prisma.tender.create({
+      data: {
+        organizationId, tenderNo: t.no, nitNo: t.nit, title: t.title, clientId: clients.get(t.client) ?? null, clientName: t.client, location: t.location, bidType: t.bidType, sorBookId: book.id,
+        estimatedValue: estimate, completionMonths: t.months, publishedOn: day(t.submitBy - 30), submitBy: day(t.submitBy), submittedOn: t.submitted !== undefined ? day(t.submitted) : null,
+        openedOn: t.opened !== undefined ? day(t.opened) : null, quotedPct: t.pct !== undefined ? D(t.pct) : null, tenderFee: D(t.items.length ? 5900 : 1180), status: t.status,
+        resultOn: t.result !== undefined ? day(t.result) : t.status === 'DROPPED' ? day(t.submitBy - 3) : null, resultNote: t.note ?? null, createdById: qs.id, createdAt: day(t.submitBy - 25),
+      },
+    });
+    for (const [n, i] of t.items.entries()) {
+      const s = sorItems.get(i.code)!;
+      const item = await prisma.tenderItem.create({ data: { organizationId, tenderId: tender.id, itemNo: i.no, description: s.description, unit: s.unit, qty: D(i.qty), sorItemId: s.id, sorRate: s.rate, sortOrder: n } });
+      await prisma.tenderItemLine.createMany({ data: i.lines.map((l, k) => ({ ...l, organizationId, tenderItemId: item.id, sortOrder: k })) });
+    }
+    if (t.emd) {
+      // 1% of the estimate, as most notices ask.
+      const doc = await prisma.complianceDoc.create({
+        data: { organizationId, kind: 'EMD', category: 'EMD', reference: t.emd[0], issuer: t.emd[1], beneficiary: t.client, amount: estimate.div(100).toDecimalPlaces(0), issuedOn: day(t.submitBy - 3), expiresOn: day(t.submitBy + 180), note: `Tender ${t.no}: ${t.title}`, createdById: qs.id },
+      });
+      await prisma.tender.update({ where: { id: tender.id }, data: { emdDocId: doc.id } });
+    }
+    if (t.bids) {
+      // Our quote, to price the others' bids against: the built-up rates on an item-rate tender, the percentage on the SOR otherwise.
+      const ours = t.bidType === 'PERCENTAGE'
+        ? sorValue.mul(D(100).plus(t.pct!)).div(100)
+        : t.items.reduce((sum, i) => {
+            const cost = i.lines.reduce((c, l) => c.plus(l.qtyPerUnit.mul(D(100).plus(l.wastagePct)).div(100).mul(l.rate!).toDecimalPlaces(2)), D(0));
+            const rate = cost.plus(cost.mul(10).div(100).toDecimalPlaces(2)).plus(cost.mul(8).div(100).toDecimalPlaces(2));
+            return sum.plus(D(i.qty).mul(rate).toDecimalPlaces(2));
+          }, D(0));
+      await prisma.tenderBid.createMany({
+        data: t.bids.map(([name, f]) => ({ organizationId, tenderId: tender.id, bidderName: name, amount: (t.bidType === 'PERCENTAGE' ? sorValue.mul(D(100).plus(f)).div(100) : ours.mul(f)).toDecimalPlaces(0) })),
+      });
+    }
+    await prisma.auditLog.create({ data: { organizationId, entityType: 'TENDER', entityId: tender.id, action: 'CREATED', actorId: qs.id, createdAt: day(t.submitBy - 25) } });
   }
 }

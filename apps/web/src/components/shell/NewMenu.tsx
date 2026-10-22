@@ -4,9 +4,9 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Dropdown } from 'antd';
 import type { MenuProps } from 'antd';
-import { AccountBookOutlined, AlertOutlined, BankOutlined, CarOutlined, ContainerOutlined, FileDoneOutlined, FileTextOutlined, LineChartOutlined, MailOutlined, PlusOutlined, ShoppingCartOutlined, WalletOutlined } from '@ant-design/icons';
+import { AccountBookOutlined, AlertOutlined, BankOutlined, CarOutlined, ContainerOutlined, FileDoneOutlined, FileTextOutlined, LineChartOutlined, MailOutlined, PlusOutlined, ShoppingCartOutlined, TrophyOutlined, WalletOutlined } from '@ant-design/icons';
 import type { AuthUser } from '@erp/shared';
-import { canKeepBooks, canManageMachineLoans, canSellRmc, canPrepareBill, canPurchase, canRaiseRisk, canRequestFunds, canRequestPayment, canSubmitExpense, canViewLetters, canViewPayables, isGuest } from '@erp/shared';
+import { canKeepBooks, canManageMachineLoans, canSellRmc, canPrepareBill, canPurchase, canRaiseRisk, canRequestFunds, canRequestPayment, canSubmitExpense, canManageTenders, canViewLetters, canViewPayables, isGuest } from '@erp/shared';
 import { requestNew, type NewKind } from '@/lib/new-intent';
 
 export interface NewEntry {
@@ -32,6 +32,7 @@ export function newEntriesFor(user: AuthUser): NewEntry[][] {
   ];
   const office: NewEntry[] = [
     ...(canPurchase(role) ? [{ kind: 'purchase-order' as const, label: 'Purchase order', action: 'New purchase order (PO)', href: '/purchase-orders', icon: <ContainerOutlined /> }] : []),
+    ...(canManageTenders(role) ? [{ kind: 'tender' as const, label: 'Tender', action: 'Record tender', href: '/tenders', icon: <TrophyOutlined /> }] : []),
     ...(canPrepareBill(role) ? [{ kind: 'ra-bill' as const, label: 'RA bill', action: 'New RA bill', href: '/bills', icon: <FileDoneOutlined /> }] : []),
     ...(canRequestPayment(role) && canViewPayables(role) ? [{ kind: 'payment-request' as const, label: 'Payment request', action: 'Request payment', href: '/payables?tab=requests', icon: <BankOutlined /> }] : []),
     ...(canSellRmc(role) ? [{ kind: 'rmc-order' as const, label: 'RMC quote', action: 'New RMC quote', href: '/rmc?tab=orders', icon: <FileDoneOutlined /> }] : []),
