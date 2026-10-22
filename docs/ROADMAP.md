@@ -487,8 +487,12 @@ Migrations stay additive. Design notes for each item are in the project's `roadm
     files, user numbers matched to employees and workers (one by one or by employee code), punches kept once and turned
     into staff and worker attendance, with what each punch did. Device commands (enrolling users from the server) are not
     sent; enrol people on the device itself.
-102. **Accounting books** (L). Chart of accounts, vouchers with approval, automatic postings from every module through one
-    posting service (shared with the Tally export), cash, bank and day books, ledgers with projects as cost centres.
+102. ~~**Accounting books** (L). Chart of accounts, vouchers with approval, automatic postings from every module through one
+    posting service (shared with the Tally export), cash, bank and day books, ledgers with projects as cost centres.~~
+    Done: the posting service shared with the Tally export (now with salary runs, salary payments and loans to staff),
+    the chart of accounts by Tally's groups, journal, payment, receipt and contra vouchers with approval and cancelling,
+    the day book, cash and bank books and ledgers with running balances and projects as cost centres, and the Accounts
+    module. Opening balances, the statements and the year close follow in 103.
 103. **Financial statements** (M). Opening balances, trial balance (also by project), profit and loss, balance sheet,
     bank reconciliation, financial year close and lock.
 104. **RMC production and sales** (L). A plant, mix designs, quotations and sales orders, production schedule, batch

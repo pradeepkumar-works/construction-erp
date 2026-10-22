@@ -5,7 +5,7 @@ import type { SubmissionType } from './enums';
  * `GET /dashboard/modules/:key`. Each figure is left out for a role that may not see its list, and covers only the
  * projects the caller sees (or the header's project).
  */
-export const MODULE_KEYS = ['site', 'materials', 'purchases', 'billing', 'people'] as const;
+export const MODULE_KEYS = ['site', 'materials', 'purchases', 'billing', 'accounts', 'people'] as const;
 export type ModuleKey = (typeof MODULE_KEYS)[number];
 
 /** The module's name: the same as its sidebar section, its page title and in Search. */
@@ -14,6 +14,7 @@ export const MODULE_LABELS: Record<ModuleKey, string> = {
   materials: 'Materials and plant',
   purchases: 'Purchases',
   billing: 'Billing',
+  accounts: 'Accounts',
   people: 'People',
 };
 
@@ -22,7 +23,8 @@ export const MODULE_INTROS: Record<ModuleKey, string> = {
   site: 'Daily reports, attendance, progress, quality, safety and site cash at your sites.',
   materials: 'Material requests, stock at each site, machines and fuel.',
   purchases: 'Orders, supplier and subcontractor bills, and what we owe.',
-  billing: 'Client bills, variations, what clients owe us, guarantees and tax.',
+  billing: 'Client bills, variations, what clients owe us and guarantees.',
+  accounts: 'The books: vouchers, cash and bank, ledgers, GST registers and the Tally export.',
   people: 'Staff, attendance, leave and payroll inputs.',
 };
 
@@ -32,6 +34,7 @@ export const MODULE_SUBMISSION_TYPES: Record<ModuleKey, SubmissionType[]> = {
   materials: ['MATERIAL_REQUEST', 'MACHINERY'],
   purchases: ['PURCHASE_ORDER', 'VENDOR_BILL', 'WORK_ORDER', 'SUBCONTRACT_BILL', 'PAYMENT_REQUEST'],
   billing: ['BILL'],
+  accounts: [],
   people: [],
 };
 

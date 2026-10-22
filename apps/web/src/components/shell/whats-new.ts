@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-books',
+    date: '2026-11-08',
+    title: 'The books of account',
+    points: [
+      'A new Accounts section holds the books, the GST registers and the Tally export, with an overview of cash and bank in the books, vouchers to approve and records not posted.',
+      'Accounts → Books keeps the day book, the cash and bank books and every ledger from what the modules already hold: RA bills, money received, vendor and subcontractor bills, payments, site expenses, debit notes, salaries and loans to staff. Projects are the cost centres.',
+      'Make journal, payment, receipt and contra vouchers for the rest (rent, capital, cash drawn). Management approves them before they count, and can cancel one later.',
+      'The Tally export now sends salary runs, salary payments and loans to staff too.',
+    ],
+  },
+  {
     id: '2026-11-biometric',
     date: '2026-11-07',
     title: 'Biometric devices mark attendance',

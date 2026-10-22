@@ -271,6 +271,7 @@ export class PayrollRunService {
     const r = await this.runFor(user, id);
     const may = (r.status === 'SUBMITTED' && canApprovePayroll(user.roleKey)) || (r.status === 'APPROVED' && (canApprovePayroll(user.roleKey) || canPayPayroll(user.roleKey)));
     if (!may) throw new BadRequestException(r.status === 'PAID' ? 'A paid run is locked' : 'Only management (or accounts before paying) can send the run back');
+    if (r.tallyExportId) throw new BadRequestException('Its salary journal has gone to Tally. Undo that Tally export first, then send the run back.');
     await this.prisma.payrollRun.update({ where: { id }, data: { status: 'DRAFT', reviewNote: note, approvedById: null, approvedAt: null, submittedAt: null } });
     await this.audit.log(user, 'PAYROLL_RUN', id, 'CHANGES_REQUESTED', note);
     return this.detail(user, id);

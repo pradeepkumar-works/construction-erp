@@ -55,6 +55,7 @@ import { DocumentsModule } from './documents/documents.module';
 import { StaffModule } from './staff/staff.module';
 import { PayrollModule } from './payroll/payroll.module';
 import { BiometricModule } from './biometric/biometric.module';
+import { BooksModule } from './books/books.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { WorkersModule } from './workers/workers.module';
 import { ImprestModule } from './imprest/imprest.module';
@@ -110,6 +111,7 @@ import { VitalsController } from './vitals.controller';
     StaffModule,
     PayrollModule,
     BiometricModule,
+    BooksModule,
     CostModule,
     ReconciliationModule,
     ReportsModule,

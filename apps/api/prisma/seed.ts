@@ -170,6 +170,7 @@ async function main() {
     await seedHandover(org.id);
     await seedCheckAnomalies(org.id);
     await seedBiometric(org.id);
+    await seedBooks(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
   }
@@ -358,6 +359,7 @@ async function main() {
   await seedHandover(org.id);
   await seedCheckAnomalies(org.id);
   await seedBiometric(org.id);
+  await seedBooks(org.id);
 
   console.log('Seed complete. Login with any of these (password: password123):');
   for (const u of USERS) console.log(`  ${u.email.padEnd(24)} ${u.role}`);
@@ -3434,6 +3436,59 @@ async function seedStaff(organizationId: string) {
  * head office posting to the webhook, and an old eSSL at the yard whose punch files are imported. Staff are enrolled
  * under their code number and five workers under 1001 onwards; two numbers punched yesterday are not matched yet.
  */
+/**
+ * Books (v6 item 102): the promoters' capital into the bank, office rent paid and cash drawn for the sites, approved, and
+ * the office electricity bill waiting for the MD. The modules' own vouchers are posted the first time someone opens the books.
+ */
+async function seedBooks(organizationId: string) {
+  if (await prisma.bookVoucher.count({ where: { organizationId, source: 'MANUAL' } })) return;
+  const [accounts, md] = await Promise.all([
+    prisma.user.findFirst({ where: { organizationId, email: 'accounts@demo.com' }, select: { id: true } }),
+    prisma.user.findFirst({ where: { organizationId, email: 'md@demo.com' }, select: { id: true } }),
+  ]);
+  if (!accounts || !md) return;
+  const account = (key: string, name: string, group: 'BANK_ACCOUNTS' | 'CASH_IN_HAND' | 'CAPITAL_ACCOUNT' | 'INDIRECT_EXPENSES', isSystem: boolean) =>
+    prisma.ledgerAccount.upsert({ where: { organizationId_key: { organizationId, key } }, create: { organizationId, key, name, group, isSystem }, update: {}, select: { id: true } });
+  const bank = await account('BANK', 'Bank Account', 'BANK_ACCOUNTS', true);
+  const cash = await account('CASH', 'Cash', 'CASH_IN_HAND', true);
+  const capital = await account('ACCOUNT:demo-capital', 'Capital - Promoters', 'CAPITAL_ACCOUNT', false);
+  const rent = await account('ACCOUNT:demo-office-rent', 'Office Rent', 'INDIRECT_EXPENSES', false);
+  const fy = (d: Date) => {
+    const y = d.getUTCFullYear() - (d.getUTCMonth() < 3 ? 1 : 0);
+    return `${y}-${String((y + 1) % 100).padStart(2, '0')}`;
+  };
+  const voucher = async (no: string, type: 'RECEIPT' | 'PAYMENT' | 'CONTRA', date: Date, narration: string, amount: number, dr: string, cr: string, approved: boolean, reference: string | null, seq = 1) =>
+    prisma.bookVoucher.create({
+      data: {
+        organizationId,
+        voucherNo: `${no}/${fy(date)}/${String(seq).padStart(4, '0')}`,
+        type,
+        date,
+        source: 'MANUAL',
+        reference,
+        narration,
+        amount,
+        status: approved ? 'APPROVED' : 'SUBMITTED',
+        preparedById: accounts.id,
+        submittedAt: new Date(),
+        ...(approved ? { approvedById: md.id, approvedAt: new Date() } : {}),
+        lines: {
+          createMany: {
+            data: [
+              { organizationId, accountId: dr, debit: amount, sortOrder: 0 },
+              { organizationId, accountId: cr, credit: amount, sortOrder: 1 },
+            ],
+          },
+        },
+      },
+    });
+  await voucher('RV', 'RECEIPT', day(-40), "Promoters' capital brought in", 5_000_000, bank.id, capital.id, true, 'NEFT HDFC0001234');
+  await voucher('PV', 'PAYMENT', day(-20), 'Head office rent for the month', 85_000, rent.id, bank.id, true, 'CHQ 104522');
+  await voucher('CV', 'CONTRA', day(-30), 'Cash drawn for site expenses', 200_000, cash.id, bank.id, true, 'Self cheque 104530');
+  const power = await account('ACCOUNT:demo-office-power', 'Office Electricity', 'INDIRECT_EXPENSES', false);
+  await voucher('PV', 'PAYMENT', day(-1), 'Head office electricity bill', 12_400, power.id, bank.id, false, 'TPCODL 7781', 2);
+}
+
 async function seedBiometric(organizationId: string) {
   if (await prisma.biometricDevice.count({ where: { organizationId } })) return;
   const org = await prisma.organization.findUnique({ where: { id: organizationId }, select: { code: true } });

@@ -575,6 +575,10 @@ model Organization {
   biometricDevices     BiometricDevice[]
   biometricUsers       BiometricUser[]
   biometricPunches     BiometricPunch[]
+  ledgerAccounts       LedgerAccount[]
+  bookVouchers         BookVoucher[]
+  bookLines            BookLine[]
+  booksState           BooksState?
   staffAttendance      StaffAttendance[]
   leaveRequests        LeaveRequest[]
   holidays             Holiday[]
@@ -799,6 +803,8 @@ model User {
   payrollPaid          PayrollRun[]             @relation("PayrollPayer")
   settlementsPrepared  FinalSettlement[]        @relation("SettlementPreparer")
   biometricDevices     BiometricDevice[]        @relation("BiometricDeviceCreator")
+  vouchersPrepared     BookVoucher[]            @relation("BookVoucherPreparer")
+  vouchersApproved     BookVoucher[]            @relation("BookVoucherApprover")
   settlementsApproved  FinalSettlement[]        @relation("SettlementApprover")
   staffMarked          StaffAttendance[]        @relation("StaffAttendanceMarker")
   overtimeDecided      StaffAttendance[]        @relation("StaffOvertimeDecider")
@@ -958,6 +964,8 @@ model Project {
   employeeEventsTo   EmployeeEvent[]          @relation("EmployeeEventTo")
   payrollRuns        PayrollRun[]
   biometricDevices   BiometricDevice[]
+  bookVouchers       BookVoucher[]
+  bookLines          BookLine[]
   staffAttendance    StaffAttendance[]
   holidays           Holiday[]
   variations         Variation[]
@@ -3080,6 +3088,9 @@ model TallyExport {
   subcontractBills SubcontractBill[]
   vendorPayments   VendorPayment[]
   expenses         Expense[]
+  payrollRuns      PayrollRun[]      @relation("PayrollRunTally")
+  payrollPayments  PayrollRun[]      @relation("PayrollRunPaymentTally")
+  staffLoans       StaffLoan[]
 
   @@index([organizationId, createdAt])
 }
@@ -4776,6 +4787,9 @@ model StaffLoan {
   createdById    String
   createdBy      User          @relation("StaffLoanCreator", fields: [createdById], references: [id])
   createdAt      DateTime      @default(now())
+  /// The Tally export that took the money given (v6 item 102)
+  tallyExportId  String?
+  tallyExport    TallyExport?  @relation(fields: [tallyExportId], references: [id], onDelete: SetNull)
 
   lines PayslipLine[]
 
@@ -4784,33 +4798,38 @@ model StaffLoan {
 
 /// A month's salary run, for the company or one site.
 model PayrollRun {
-  id             String           @id @default(uuid())
-  organizationId String
-  organization   Organization     @relation(fields: [organizationId], references: [id])
+  id                   String           @id @default(uuid())
+  organizationId       String
+  organization         Organization     @relation(fields: [organizationId], references: [id])
   /// SAL-2026-10, with -<project code> for a site's run
-  runNo          String
-  month          String
-  projectId      String?
-  project        Project?         @relation(fields: [projectId], references: [id])
-  status         PayrollRunStatus @default(DRAFT)
-  gross          Decimal          @default(0) @db.Decimal(18, 2)
-  deductions     Decimal          @default(0) @db.Decimal(18, 2)
-  net            Decimal          @default(0) @db.Decimal(18, 2)
-  employerCost   Decimal          @default(0) @db.Decimal(18, 2)
-  preparedById   String
-  preparedBy     User             @relation("PayrollPreparer", fields: [preparedById], references: [id])
-  submittedAt    DateTime?
-  approvedById   String?
-  approvedBy     User?            @relation("PayrollApprover", fields: [approvedById], references: [id])
-  approvedAt     DateTime?
+  runNo                String
+  month                String
+  projectId            String?
+  project              Project?         @relation(fields: [projectId], references: [id])
+  status               PayrollRunStatus @default(DRAFT)
+  gross                Decimal          @default(0) @db.Decimal(18, 2)
+  deductions           Decimal          @default(0) @db.Decimal(18, 2)
+  net                  Decimal          @default(0) @db.Decimal(18, 2)
+  employerCost         Decimal          @default(0) @db.Decimal(18, 2)
+  preparedById         String
+  preparedBy           User             @relation("PayrollPreparer", fields: [preparedById], references: [id])
+  submittedAt          DateTime?
+  approvedById         String?
+  approvedBy           User?            @relation("PayrollApprover", fields: [approvedById], references: [id])
+  approvedAt           DateTime?
   /// Sent back with a note
-  reviewNote     String?
-  paidById       String?
-  paidBy         User?            @relation("PayrollPayer", fields: [paidById], references: [id])
-  paidOn         DateTime?        @db.Date
-  paymentRef     String?
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
+  reviewNote           String?
+  paidById             String?
+  paidBy               User?            @relation("PayrollPayer", fields: [paidById], references: [id])
+  paidOn               DateTime?        @db.Date
+  paymentRef           String?
+  /// The Tally export that took the salary journal, and the one that took the payment (v6 item 102)
+  tallyExportId        String?
+  tallyExport          TallyExport?     @relation("PayrollRunTally", fields: [tallyExportId], references: [id], onDelete: SetNull)
+  tallyPaymentExportId String?
+  tallyPaymentExport   TallyExport?     @relation("PayrollRunPaymentTally", fields: [tallyPaymentExportId], references: [id], onDelete: SetNull)
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
 
   payslips Payslip[]
 
@@ -4992,4 +5011,143 @@ model BiometricPunch {
   @@unique([deviceId, pin, punchedAt])
   @@index([organizationId, date])
   @@index([organizationId, pin, date])
+}
+
+// ---------- Books of account (v6 item 102) ----------
+
+enum AccountGroup {
+  CAPITAL_ACCOUNT
+  RESERVES_SURPLUS
+  LOANS_LIABILITY
+  SECURED_LOANS
+  UNSECURED_LOANS
+  CURRENT_LIABILITIES
+  DUTIES_TAXES
+  PROVISIONS
+  SUNDRY_CREDITORS
+  FIXED_ASSETS
+  INVESTMENTS
+  CURRENT_ASSETS
+  BANK_ACCOUNTS
+  CASH_IN_HAND
+  DEPOSITS_ASSET
+  LOANS_ADVANCES_ASSET
+  STOCK_IN_HAND
+  SUNDRY_DEBTORS
+  SALES_ACCOUNTS
+  DIRECT_INCOMES
+  INDIRECT_INCOMES
+  PURCHASE_ACCOUNTS
+  DIRECT_EXPENSES
+  INDIRECT_EXPENSES
+  SUSPENSE
+}
+
+enum BookVoucherType {
+  JOURNAL
+  PAYMENT
+  RECEIPT
+  CONTRA
+  SALES
+  PURCHASE
+  DEBIT_NOTE
+  CREDIT_NOTE
+}
+
+enum BookVoucherStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+/// An account in the chart of accounts. The posting service makes one for each ledger key a module posts to (the same
+/// keys and names as the Tally export); accounts add their own (key ACCOUNT:<id>).
+model LedgerAccount {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  /// PURCHASE, VENDOR:<id>, CLIENT:<id>, EXPENSE:<category>, ACCOUNT:<id> …
+  key            String
+  name           String
+  code           String?
+  group          AccountGroup
+  isSystem       Boolean      @default(false)
+  isActive       Boolean      @default(true)
+  description    String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  lines          BookLine[]
+
+  @@unique([organizationId, key])
+  @@unique([organizationId, name])
+}
+
+/// A voucher in the books: posted from a module's record (source and sourceId, always approved), or made by hand by
+/// accounts (source MANUAL) and approved by management before it counts.
+model BookVoucher {
+  id             String            @id @default(uuid())
+  organizationId String
+  organization   Organization      @relation(fields: [organizationId], references: [id])
+  voucherNo      String
+  type           BookVoucherType
+  date           DateTime          @db.Date
+  /// MANUAL, or the posting kind (SALES, RECEIPT, PURCHASE, SUBCONTRACT, PAYMENT, EXPENSE, DEBIT_NOTE, SALARY, SALARY_PAYMENT)
+  source         String
+  sourceId       String?
+  reference      String?
+  party          String?
+  narration      String
+  projectId      String?
+  project        Project?          @relation(fields: [projectId], references: [id])
+  amount         Decimal           @db.Decimal(18, 2)
+  status         BookVoucherStatus @default(DRAFT)
+  /// What a posted voucher was built from, so the next posting run changes only what moved
+  hash           String?
+  preparedById   String?
+  preparedBy     User?             @relation("BookVoucherPreparer", fields: [preparedById], references: [id])
+  submittedAt    DateTime?
+  approvedById   String?
+  approvedBy     User?             @relation("BookVoucherApprover", fields: [approvedById], references: [id])
+  approvedAt     DateTime?
+  reviewNote     String?
+  cancelledAt    DateTime?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  lines          BookLine[]
+
+  @@unique([organizationId, source, sourceId])
+  @@index([organizationId, date])
+  @@index([organizationId, status])
+}
+
+/// A debit or a credit to an account, with the project as cost centre.
+model BookLine {
+  id             String        @id @default(uuid())
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id])
+  voucherId      String
+  voucher        BookVoucher   @relation(fields: [voucherId], references: [id], onDelete: Cascade)
+  accountId      String
+  account        LedgerAccount @relation(fields: [accountId], references: [id])
+  projectId      String?
+  project        Project?      @relation(fields: [projectId], references: [id])
+  debit          Decimal       @default(0) @db.Decimal(18, 2)
+  credit         Decimal       @default(0) @db.Decimal(18, 2)
+  narration      String?
+  sortOrder      Int           @default(0)
+
+  @@index([accountId])
+  @@index([voucherId])
+  @@index([organizationId, projectId])
+}
+
+/// When the posting service last brought the books up to date.
+model BooksState {
+  organizationId String       @id
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  lastPostedAt   DateTime?
+  /// Records that could not be posted, with why: [{ source, sourceId, date, number, party, reason }]
+  held           Json         @default("[]")
 }

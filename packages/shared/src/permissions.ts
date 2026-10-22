@@ -271,6 +271,9 @@ export const TALLY_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'ACCOUNTS_MANAGER'
 export const canExportTally = (role: RoleKey) => TALLY_ROLES.includes(role);
 /** See the GST registers (outward supplies and input tax): those who keep the books. */
 export const canViewGstRegisters = (role: RoleKey) => TALLY_ROLES.includes(role);
+/** The books (v6 item 102): accounts keep them and make vouchers; management approves what accounts makes by hand. */
+export const canKeepBooks = (role: RoleKey) => TALLY_ROLES.includes(role);
+export const canApproveVouchers = (role: RoleKey) => role === 'ADMIN' || role === 'MANAGEMENT';
 /** Issue work orders to subcontractors and labour contractors. */
 export const WORK_ORDER_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER', 'PROCUREMENT_MANAGER', 'QUANTITY_SURVEYOR'];
 export const canIssueWorkOrder = (role: RoleKey) => WORK_ORDER_ROLES.includes(role);

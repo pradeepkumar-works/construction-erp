@@ -3,7 +3,7 @@ import type { ExpenseCategory } from './enums';
 import { EXPENSE_CATEGORY_LABELS } from './labels';
 
 /** What a Nirmaan record becomes in Tally. */
-export const TALLY_VOUCHER_KINDS = ['SALES', 'RECEIPT', 'PURCHASE', 'SUBCONTRACT', 'PAYMENT', 'EXPENSE', 'DEBIT_NOTE'] as const;
+export const TALLY_VOUCHER_KINDS = ['SALES', 'RECEIPT', 'PURCHASE', 'SUBCONTRACT', 'PAYMENT', 'EXPENSE', 'DEBIT_NOTE', 'SALARY', 'SALARY_PAYMENT', 'STAFF_LOAN'] as const;
 export type TallyVoucherKind = (typeof TALLY_VOUCHER_KINDS)[number];
 export const TALLY_VOUCHER_KIND_LABELS: Record<TallyVoucherKind, string> = {
   SALES: 'RA bills',
@@ -13,6 +13,9 @@ export const TALLY_VOUCHER_KIND_LABELS: Record<TallyVoucherKind, string> = {
   PAYMENT: 'Payments to vendors',
   EXPENSE: 'Site expenses',
   DEBIT_NOTE: 'Debit notes',
+  SALARY: 'Salary runs',
+  SALARY_PAYMENT: 'Salaries paid',
+  STAFF_LOAN: 'Loans to staff',
 };
 /** The Tally voucher type each kind is imported as. */
 export const TALLY_VOUCHER_TYPES: Record<TallyVoucherKind, string> = {
@@ -23,6 +26,9 @@ export const TALLY_VOUCHER_TYPES: Record<TallyVoucherKind, string> = {
   PAYMENT: 'Payment',
   EXPENSE: 'Payment',
   DEBIT_NOTE: 'Debit Note',
+  SALARY: 'Journal',
+  SALARY_PAYMENT: 'Payment',
+  STAFF_LOAN: 'Payment',
 };
 
 /** A ledger Nirmaan posts to that is not a client, vendor or expense category. */
@@ -65,6 +71,16 @@ export const TALLY_FIXED_LEDGERS: TallyFixedLedger[] = [
   { key: 'BANK', use: 'Payments and receipts by bank, UPI or card', name: 'Bank Account', group: 'Bank Accounts' },
   { key: 'CASH', use: 'Cash payments and receipts', name: 'Cash', group: 'Cash-in-Hand' },
   { key: 'SITE_CREDITORS', use: 'Expenses on credit from a vendor not in the vendor master', name: 'Site Creditors', group: 'Sundry Creditors' },
+  { key: 'SALARIES', use: 'Gross salaries of approved salary runs', name: 'Salaries and Wages', group: 'Indirect Expenses' },
+  { key: 'EMPLOYER_PF', use: "The company's PF and pension on salaries", name: 'Employer Contribution to PF', group: 'Indirect Expenses' },
+  { key: 'EMPLOYER_ESI', use: "The company's ESI on salaries", name: 'Employer Contribution to ESI', group: 'Indirect Expenses' },
+  { key: 'PF_PAYABLE', use: 'PF to deposit (both shares)', name: 'PF Payable', group: 'Duties & Taxes' },
+  { key: 'ESI_PAYABLE', use: 'ESI to deposit (both shares)', name: 'ESI Payable', group: 'Duties & Taxes' },
+  { key: 'PT_PAYABLE', use: 'Professional tax deducted from salaries', name: 'Professional Tax Payable', group: 'Duties & Taxes' },
+  { key: 'SALARY_TDS_PAYABLE', use: 'Income tax deducted from salaries', name: 'TDS on Salaries Payable', group: 'Duties & Taxes' },
+  { key: 'STAFF_LOANS', use: 'Loans and salary advances to staff, recovered from salary', name: 'Loans and Advances to Staff', group: 'Loans & Advances (Asset)' },
+  { key: 'STAFF_RECOVERIES', use: 'Other deductions from salaries', name: 'Recoveries from Staff', group: 'Indirect Incomes' },
+  { key: 'SALARY_PAYABLE', use: 'Net salaries approved, not yet paid', name: 'Salaries Payable', group: 'Current Liabilities' },
 ];
 
 /** Ledger keys for the parties and categories: `CLIENT:<id>`, `VENDOR:<id>`, `EXPENSE:<category>`. */
