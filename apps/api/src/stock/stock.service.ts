@@ -20,6 +20,9 @@ import {
   type StockBalanceDto,
   type MaterialRequestStockDto,
   canKeepStock,
+  canSeeStores,
+  type StockDestinationDto,
+  type StoreSummaryDto,
   type StockBalanceSortField,
   type StockEntryDto,
   type StockEntrySortField,
@@ -1150,9 +1153,14 @@ export class StockService {
     const itemOf = await this.itemsNamed(user.organizationId, mr.items);
     const itemIds = [...new Set(mr.items.map((i) => itemOf(i)?.id).filter((x): x is string => !!x))];
     const sums = itemIds.length
-      ? await this.prisma.stockTxn.groupBy({ by: ['projectId', 'itemId'], where: { organizationId: user.organizationId, itemId: { in: itemIds }, project: this.access.projectWhere(user) }, _sum: { quantity: true } })
+      ? await this.prisma.stockTxn.groupBy({ by: ['projectId', 'itemId'], where: { organizationId: user.organizationId, itemId: { in: itemIds }, project: this.access.stockSourceWhere(user) }, _sum: { quantity: true } })
       : [];
-    const projects = await this.prisma.project.findMany({ where: { id: { in: [...new Set(sums.map((s) => s.projectId))] } }, select: { id: true, name: true } });
+    const holders = [...new Set(sums.map((s) => s.projectId))];
+    const [projects, visible] = await Promise.all([
+      this.prisma.project.findMany({ where: { id: { in: holders } }, select: { id: true, name: true, type: true } }),
+      this.prisma.project.findMany({ where: { id: { in: holders }, ...this.access.projectWhere(user) }, select: { id: true } }),
+    ]);
+    const seen = new Set(visible.map((p) => p.id));
     const sender = canKeepStock(user.roleKey);
     return {
       materialRequestId: mr.id,
@@ -1172,7 +1180,13 @@ export class StockService {
           others: at
             .filter((s) => s.projectId !== mr.projectId)
             .sort((a, b) => (b._sum.quantity ?? ZERO).cmp(a._sum.quantity ?? ZERO))
-            .map((s) => ({ projectId: s.projectId, projectName: projects.find((p) => p.id === s.projectId)?.name ?? '', balance: dec(s._sum.quantity)!, canSend: sender })),
+            .map((s) => {
+              const p = projects.find((x) => x.id === s.projectId);
+              // A central store not the user's own is listed for its balance; its keepers send from it.
+              return { projectId: s.projectId, projectName: p?.name ?? '', balance: dec(s._sum.quantity)!, canSend: sender && seen.has(s.projectId), store: p?.type === 'STORE' };
+            })
+            // Central stores first: they hold stock for the sites.
+            .sort((a, b) => Number(b.store) - Number(a.store)),
         };
       }),
     };
@@ -1256,6 +1270,61 @@ export class StockService {
     await this.audit.log(user, 'STOCK', saved.id, 'CREATED', `${saved.entryNo} for ${mr.requestNo}${here ? '' : ` to ${mr.project.name}`}`);
     await this.alertLowStock(user, dto.fromProjectId, before, saved.id, saved.entryNo);
     return this.get(user, saved.id);
+  }
+
+  /* ---------- central stores (v6 item 106) ---------- */
+
+  /** The central stores and yards the user sees, with what each holds, its value and what is on the road to or from it. */
+  async stores(user: RequestUser): Promise<StoreSummaryDto[]> {
+    if (!canSeeStores(user.roleKey)) throw new ForbiddenException('Central stores are for those who keep, buy or account for stock');
+    const where: Prisma.ProjectWhereInput = { ...this.access.projectWhere(user), type: 'STORE' };
+    const stores = await this.prisma.project.findMany({ where, select: { id: true, code: true, name: true, location: true, status: true }, orderBy: { code: 'asc' } });
+    if (!stores.length) return [];
+    const ids = stores.map((s) => s.id);
+    const showValue = canManageStore(user.roleKey) || canViewCost(user.roleKey);
+    const [balances, open] = await Promise.all([
+      this.buildBalances(user.organizationId, where),
+      this.prisma.stockEntry.findMany({
+        where: { organizationId: user.organizationId, type: 'TRANSFER_OUT', transferIn: null, OR: [{ projectId: { in: ids } }, { toProjectId: { in: ids } }] },
+        select: { projectId: true, toProjectId: true },
+      }),
+    ]);
+    const rates = showValue
+      ? new Map((await this.prisma.item.findMany({ where: { id: { in: [...new Set(balances.map((b) => b.itemId))] } }, select: { id: true, rate: true } })).map((i) => [i.id, i.rate]))
+      : null;
+    return stores.map((s) => {
+      const held = balances.filter((b) => b.projectId === s.id);
+      const value = rates ? held.reduce((t, b) => (D(b.balance).gt(0) ? t.add(D(b.balance).mul(rates.get(b.itemId) ?? ZERO)) : t), ZERO) : null;
+      const last = held.map((b) => b.lastMovement).filter((d): d is string => !!d).sort().pop() ?? null;
+      return {
+        id: s.id,
+        code: s.code,
+        name: s.name,
+        location: s.location,
+        status: s.status,
+        items: held.filter((b) => D(b.balance).gt(0)).length,
+        value: value ? money(value.toDecimalPlaces(2)) : null,
+        low: held.filter((b) => b.low).length,
+        lastMovement: last,
+        outInTransit: open.filter((e) => e.projectId === s.id).length,
+        inInTransit: open.filter((e) => e.toProjectId === s.id).length,
+        canKeep: canKeepStock(user.roleKey),
+      };
+    });
+  }
+
+  /**
+   * Where a stock keeper can send material (v6 item 106): every open site and store of the company, not only the ones
+   * they are a member of, as `transfer` already allows. The receiving site's own keepers receive it.
+   */
+  async destinations(user: RequestUser): Promise<StockDestinationDto[]> {
+    if (!canKeepStock(user.roleKey)) throw new ForbiddenException('Your role cannot send stock');
+    const rows = await this.prisma.project.findMany({
+      where: { organizationId: user.organizationId, status: { notIn: ['CLOSED', 'COMPLETED'] } },
+      select: { id: true, code: true, name: true, type: true },
+      orderBy: [{ code: 'asc' }],
+    });
+    return rows.map((p) => ({ id: p.id, code: p.code, name: p.name, store: p.type === 'STORE' })).sort((a, b) => Number(b.store) - Number(a.store));
   }
 
   /* ---------- item master ---------- */

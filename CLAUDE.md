@@ -160,6 +160,9 @@ and the pre-delivery checklist.
   and sees only that vendor; its routes are `@SupplierAllowed()` (`/supplier/*` also `@SupplierOnly()`), and every query
   filters by `supplierVendor(user)`. Logins are given from Vendors, never Users. Its figures are in `supplier-rules.ts`
   (tested in `src/scripts/supplier-test.ts`, CI runs it); web pages under `app/(app)/supplier`, the company's side at `/supplier-inbox`.
+- Central store (item 106, ARCHITECTURE "Stock"): a store or yard is a project of type `STORE`; its stock is the normal
+  stock service. Sites see store stock through `ProjectAccessService.stockSourceWhere`, never a role check of their own;
+  anything per site that a store has no part in (DPRs, progress) filters `type: { not: 'STORE' }`. Pages at `/stores`.
 - Statements (item 103, `apps/api/src/statements`, ARCHITECTURE "Financial statements"): where an account shows is
   `statementLineOf` (`packages/shared/src/statements.ts`), the bank file reader, matching and reconciliation are pure functions in
   `statements-rules.ts` tested in `src/scripts/statements-test.ts` (CI runs it). Vouchers the books make themselves (`OPENING`,

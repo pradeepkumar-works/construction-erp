@@ -23,6 +23,15 @@ export class ProjectAccessService {
     };
   }
 
+  /**
+   * Where stock can come from for a material request (v6 item 106): the projects the user sees, and every central store
+   * of the company, so a site asking for material sees what the store holds even when no one there is a member of it.
+   * Only the balance is shown; sending still needs a stock keeper of the store.
+   */
+  stockSourceWhere(user: RequestUser): Prisma.ProjectWhereInput {
+    return { organizationId: user.organizationId, OR: [this.projectWhere(user), { type: 'STORE' }] };
+  }
+
   /** Where-clause for submissions (progress/DPR/MR) visible to the user. */
   submissionWhere(user: RequestUser): { organizationId: string; project?: Prisma.ProjectWhereInput } {
     if (isCompanyWide(user.roleKey)) return { organizationId: user.organizationId };

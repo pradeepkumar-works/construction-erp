@@ -45,11 +45,14 @@ export function ProjectFormModal({
   onClose,
   project,
   onSaved,
+  initialType,
 }: {
   open: boolean;
   onClose: () => void;
   project?: ProjectDetail | null;
   onSaved?: (id: string) => void;
+  /** A new project's type to start with, e.g. a central store from Central stores (v6 item 106) */
+  initialType?: ProjectType;
 }) {
   const [form] = Form.useForm<FormValues>();
   const { message } = App.useApp();
@@ -85,9 +88,9 @@ export function ProjectFormModal({
       });
     } else {
       form.resetFields();
-      form.setFieldsValue({ status: 'PLANNED', type: 'ROAD', applyTemplate: true });
+      form.setFieldsValue({ status: initialType === 'STORE' ? 'ACTIVE' : 'PLANNED', type: initialType ?? 'ROAD', applyTemplate: initialType !== 'STORE' });
     }
-  }, [open, project, form]);
+  }, [open, project, form, initialType]);
 
   const mutation = useMutation({
     mutationFn: async (values: FormValues) => {
@@ -106,7 +109,7 @@ export function ProjectFormModal({
         endDate: values.dates?.[1] ? values.dates[1].format('YYYY-MM-DD') : undefined,
         contractValue: values.contractValue !== null && values.contractValue !== undefined ? String(values.contractValue) : undefined,
         projectManagerId: values.projectManagerId || undefined,
-        ...(isEdit ? {} : { applyTemplate: !!values.applyTemplate }),
+        ...(isEdit ? {} : { applyTemplate: !!values.applyTemplate && values.type !== 'STORE' }),
         siteLat: values.siteLat ?? (isEdit ? null : undefined),
         siteLng: values.siteLng ?? (isEdit ? null : undefined),
         siteRadiusM: values.siteRadiusM ?? (isEdit ? null : undefined),
@@ -133,7 +136,7 @@ export function ProjectFormModal({
       }}
       form={form}
       layout="drawer"
-      title={isEdit ? 'Edit project' : 'New project'}
+      title={isEdit ? (project?.type === 'STORE' ? 'Edit store' : 'Edit project') : initialType === 'STORE' ? 'New central store' : 'New project'}
       okText={isEdit ? 'Save changes' : 'Create project'}
       onSubmit={(v) => mutation.mutateAsync(v)}
     >
@@ -187,7 +190,7 @@ export function ProjectFormModal({
               <MoneyInput />
             </Form.Item>
           </FormGrid>
-          {!isEdit ? (
+          {!isEdit && type !== 'STORE' ? (
             <Form.Item name="applyTemplate" valuePropName="checked" style={{ marginBottom: 0 }} extra="Scheduled across the start and end dates; planned quantities are filled in later. Templates are under Activity templates.">
               <Checkbox>Add the {template ? `${template.items.length} ` : ''}standard {type ? inSentence(PROJECT_TYPE_LABELS[type as ProjectType]) : ''} activities</Checkbox>
             </Form.Item>

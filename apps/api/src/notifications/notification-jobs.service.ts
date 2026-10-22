@@ -203,7 +203,8 @@ export class NotificationJobsService {
   async dprReminder(date = todayIn()): Promise<NotificationJobResult> {
     const result: NotificationJobResult = { job: 'DPR_REMINDER', date, created: 0, pushed: 0, emailed: 0, messaged: 0, skipped: 0 };
     const projects = await this.prisma.project.findMany({
-      where: { status: 'ACTIVE' },
+      // A central store files no DPR (v6 item 106).
+      where: { status: 'ACTIVE', type: { not: 'STORE' } },
       include: {
         dailyReports: { where: { date: parseDate(date), status: { not: 'DRAFT' } }, select: { id: true } },
         projectManager: { select: { id: true, isActive: true } },

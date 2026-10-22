@@ -17,6 +17,8 @@ enum ProjectType {
   BUILDING
   WATER_SUPPLY
   PLANT
+  /// A central store or yard (v6 item 106): holds stock and sends it to sites; no works of its own
+  STORE
 }
 
 enum ProjectStatus {

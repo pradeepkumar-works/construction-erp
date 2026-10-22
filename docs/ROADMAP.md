@@ -515,8 +515,12 @@ Migrations stay additive. Design notes for each item are in the project's `roadm
     where accounts record the bill or return it, follows each to payment, reads a statement from any date, and asks for
     changes to their details (bank changes approved only by those who pay). Not built: suppliers on the phone app, and
     e-invoice (IRN) checks on their invoices.
-106. **Central store** (M). Stock held at a store or yard that is not a project, with receipts, issues and transfers
-    to and from sites.
+106. ~~**Central store** (M). Stock held at a store or yard that is not a project, with receipts, issues and transfers
+    to and from sites.~~
+    Done: a store is a project of type Central store or yard (no DPR, no activities), with its own GRNs, issues, counts
+    and valuation; Central stores lists each with its value, low items and transfers on the way; transfers go site to
+    store, store to site or store to store; a site's material request shows the store's stock, and the store's people
+    send from it. Not built: bin locations inside a store, and a store-wide reorder run.
 107. **Site fund requests** (S). A site asks head office for money, or a payment on behalf of another site, as a payment
     request kind; released into its imprest or paid to the party.
 108. **Machine finance** (M). Loans on financed machines with the EMI schedule, EMIs paid and due, reminders, posted to the

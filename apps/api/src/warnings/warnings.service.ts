@@ -57,6 +57,7 @@ interface Project {
   code: string;
   name: string;
   status: string;
+  type: string;
   startDate: Date | null;
 }
 
@@ -134,7 +135,7 @@ export class WarningsService {
     if (!kinds.length) return [];
     const projects: Project[] = await this.prisma.project.findMany({
       where: this.access.projectWhere(user),
-      select: { id: true, code: true, name: true, status: true, startDate: true },
+      select: { id: true, code: true, name: true, status: true, type: true, startDate: true },
       orderBy: { code: 'asc' },
     });
     const active = projects.filter((p) => p.status === 'ACTIVE');
@@ -147,7 +148,8 @@ export class WarningsService {
         if (k === 'MACHINE') return this.machines(projects, today);
         if (k === 'MATERIAL_OVERUSE') return this.overuse(active, today);
         if (k === 'FUEL_NORM') return this.fuel(projects, today);
-        return this.dprs(active, today);
+        // A central store files no DPR (v6 item 106).
+        return this.dprs(active.filter((p) => p.type !== 'STORE'), today);
       }),
     );
     return parts.flat();

@@ -39,7 +39,7 @@ export function CoverFromStockModal({ open, onClose, request, stock }: { open: b
     const out: { value: string; label: string }[] = [];
     if (stock?.canIssue && needed.some((l) => toNumber(l.here) > 0)) out.push({ value: request.projectId, label: `${request.projectName} (this site): issue to ${request.submittedByName}` });
     const others = new Map<string, string>();
-    for (const l of needed) for (const o of l.others) if (o.canSend && toNumber(o.balance) > 0) others.set(o.projectId, o.projectName);
+    for (const l of needed) for (const o of l.others) if (o.canSend && toNumber(o.balance) > 0) others.set(o.projectId, o.store ? `${o.projectName} (central store)` : o.projectName);
     for (const [id, name] of others) out.push({ value: id, label: `${name}: transfer to this site` });
     return out;
   }, [stock, needed, request]);

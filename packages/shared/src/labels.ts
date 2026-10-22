@@ -5,6 +5,7 @@ export const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {
   BUILDING: 'Building',
   WATER_SUPPLY: 'Water Supply',
   PLANT: 'RMC plant',
+  STORE: 'Central store or yard',
 };
 
 export const PROJECT_STATUS_LABELS: Record<ProjectStatus, string> = {

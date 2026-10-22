@@ -9,7 +9,7 @@ import type { StockEntryDto } from '@erp/shared';
 import { MAX_PAGE_SIZE } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
-import { useActivities, useAttendanceSuggestions, useProjects, useStockBalances } from '@/lib/queries';
+import { useActivities, useAttendanceSuggestions, useProjects, useStockBalances, useStockDestinations } from '@/lib/queries';
 import { formatQty } from '@/lib/format';
 import { VendorPicker } from '@/components/vendors/VendorPicker';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
@@ -36,10 +36,10 @@ interface FormValues {
 
 const COPY: Record<StockMove, { title: string; ok: string; path: string; help: string }> = {
   transfer: {
-    title: 'Transfer to another project',
+    title: 'Transfer to a site or store',
     ok: 'Send',
     path: '/stock/transfers',
-    help: 'The material leaves this store now and shows as in transit until the other project receives it.',
+    help: 'The material leaves this store now and shows as in transit until the site or store it goes to receives it.',
   },
   vendor: { title: 'Return to supplier', ok: 'Save return', path: '/stock/vendor-returns', help: 'The material leaves stock. Raise the debit note on the supplier separately.' },
   site: {
@@ -56,6 +56,8 @@ export function StockMoveModal({ move, open, onClose, projectId }: { move: Stock
   const { message } = App.useApp();
   const qc = useQueryClient();
   const { data: projects } = useProjects();
+  // Any open site or central store, not only the sender's own (v6 item 106); its keepers receive it.
+  const { data: destinations } = useStockDestinations(open && move === 'transfer');
   const watchedProject = Form.useWatch('projectId', form);
   const watchedLines = Form.useWatch('lines', form);
   const scope = projectId ?? watchedProject;
@@ -113,11 +115,18 @@ export function StockMoveModal({ move, open, onClose, projectId }: { move: Stock
         </Form.Item>
         <FormGrid cols={2}>
           {move === 'transfer' && (
-            <Form.Item name="toProjectId" label="To project" rules={[{ required: true, message: 'Where is it going?' }]}>
+            <Form.Item name="toProjectId" label="To site or store" rules={[{ required: true, message: 'Choose where it is going' }]}>
               <Select
                 showSearch={{ optionFilterProp: 'label' }}
-                placeholder="Receiving project"
-                options={(projects ?? []).filter((p) => p.id !== scope && p.status !== 'CLOSED').map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))}
+                placeholder="Receiving site or store"
+                options={(['Central stores', 'Sites'] as const)
+                  .map((group) => ({
+                    label: group,
+                    options: (destinations ?? [])
+                      .filter((d) => d.id !== scope && d.store === (group === 'Central stores'))
+                      .map((d) => ({ value: d.id, label: `${d.code} - ${d.name}` })),
+                  }))
+                  .filter((g) => g.options.length)}
               />
             </Form.Item>
           )}

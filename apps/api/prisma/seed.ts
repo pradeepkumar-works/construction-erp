@@ -177,6 +177,7 @@ async function main() {
     await seedOpening(org.id);
     await seedRmc(org.id);
     await seedSupplierPortal(org.id);
+    await seedCentralStore(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
   }
@@ -369,6 +370,7 @@ async function main() {
   await seedOpening(org.id);
   await seedRmc(org.id);
   await seedSupplierPortal(org.id);
+  await seedCentralStore(org.id);
 
   console.log('Seed complete. Login with any of these (password: password123):');
   for (const u of USERS) console.log(`  ${u.email.padEnd(24)} ${u.role}`);
@@ -3749,4 +3751,60 @@ async function seedSupplierPortal(organizationId: string) {
       previous: { bankAccountNo: vendor.bankAccountNo, bankIfsc: vendor.bankIfsc, bankName: vendor.bankName },
     },
   });
+}
+
+/**
+ * Central store (v6 item 106): the company's store at Khordha, a project of type STORE kept by the store manager, with
+ * its opening stock, a cement delivery, cement sent to the highway and received there, steel on the road to the hospital,
+ * and shuttering plywood the hospital sent back that has not arrived yet.
+ */
+async function seedCentralStore(organizationId: string) {
+  if (await prisma.project.count({ where: { organizationId, type: 'STORE' } })) return;
+  const user = async (email: string) => (await prisma.user.findFirst({ where: { organizationId, email }, select: { id: true } }))?.id;
+  // Run by the MD's office, not a site's project manager.
+  const [pm, store] = await Promise.all(['md@demo.com', 'store@demo.com'].map(user));
+  const road = await prisma.project.findFirst({ where: { organizationId, code: 'RD-2026-01' }, select: { id: true, name: true } });
+  const hospital = await prisma.project.findFirst({ where: { organizationId, type: 'BUILDING' }, select: { id: true, name: true } });
+  if (!pm || !store || !road || !hospital) return;
+  const year = new Date().getUTCFullYear();
+  const cs = await prisma.project.create({
+    data: {
+      organizationId, code: 'CS-01', name: 'Khordha Central Store', type: 'STORE', status: 'ACTIVE', location: 'NH-16 yard, Khordha', startDate: day(-200), projectManagerId: pm,
+      description: 'Company store and yard: bulk cement, steel and shuttering held for the sites',
+      members: { create: [{ userId: store }] },
+    },
+  });
+  const item = async (name: string, unit: string, rate: string) =>
+    (await prisma.item.findFirst({ where: { organizationId, name, unit } })) ?? prisma.item.create({ data: { organizationId, name, unit, rate: D(rate) } });
+  const cement = await item('OPC 53 Grade Cement', 'Bags', '395.00');
+  const steel = await item('TMT Fe500D 12mm', 'MT', '61500.00');
+  const wire = await item('Binding wire', 'Kg', '78.00');
+  const ply = await item('Shuttering plywood 12mm', 'Nos', '1450.00');
+  const last: Record<string, number> = {};
+  const nextNo = async (prefix: string) => {
+    if (last[prefix] === undefined) {
+      const row = await prisma.stockEntry.findFirst({ where: { organizationId, entryNo: { startsWith: `${prefix}-${year}-` } }, orderBy: { entryNo: 'desc' }, select: { entryNo: true } });
+      last[prefix] = row ? parseInt(row.entryNo.slice(prefix.length + 6), 10) : 0;
+    }
+    last[prefix] += 1;
+    return `${prefix}-${year}-${String(last[prefix]).padStart(4, '0')}`;
+  };
+  const PREFIX = { ADJUSTMENT: 'ADJ', RECEIPT: 'GRN', TRANSFER_OUT: 'TRO', TRANSFER_IN: 'TRI' } as const;
+  const entry = async (type: keyof typeof PREFIX, projectId: string, offset: number, by: string, data: Partial<Prisma.StockEntryUncheckedCreateInput>, lines: [string, Prisma.Decimal][]) =>
+    prisma.stockEntry.create({
+      data: {
+        organizationId, projectId, type, entryNo: await nextNo(PREFIX[type]), date: day(offset), createdById: by, createdAt: day(offset), ...data,
+        lines: { create: lines.map(([itemId, quantity], i) => ({ organizationId, projectId, itemId, type, date: day(offset), quantity, sortOrder: i })) },
+      },
+    });
+  await entry('ADJUSTMENT', cs.id, -60, pm, { remarks: 'Opening stock as per physical count at the yard' }, [[cement.id, D(1200)], [steel.id, D(24)], [wire.id, D(600)], [ply.id, D(180)]]);
+  await entry('RECEIPT', cs.id, -10, store, { supplier: 'Utkal Cement Traders', challanNo: 'UCT-5491', vehicleNo: 'OD-02-BT-7781' }, [[cement.id, D(600)]]);
+  for (const [m, min] of [[cement, 400], [steel, 8], [wire, 150]] as const) await prisma.stockMinLevel.create({ data: { organizationId, projectId: cs.id, itemId: m.id, minQty: D(min), updatedById: pm } });
+  // Cement to the highway, received there the next day
+  const toRoad = await entry('TRANSFER_OUT', cs.id, -4, store, { toProjectId: road.id, issuedTo: road.name, vehicleNo: 'OD-02-AK-4410', remarks: 'For the culvert at Km 18' }, [[cement.id, D(-200)]]);
+  await entry('TRANSFER_IN', road.id, -3, store, { transferOutId: toRoad.id, supplier: cs.name, vehicleNo: 'OD-02-AK-4410' }, [[cement.id, D(200)]]);
+  // Steel on the road to the hospital, not received yet
+  await entry('TRANSFER_OUT', cs.id, -1, store, { toProjectId: hospital.id, issuedTo: hospital.name, vehicleNo: 'OD-05-C-2290', challanNo: 'CS/DC/0031', remarks: 'Block B second-floor slab' }, [[steel.id, D(-5)], [wire.id, D(-80)]]);
+  // Plywood the hospital no longer needs, on its way back to the yard
+  await entry('TRANSFER_OUT', hospital.id, 0, store, { toProjectId: cs.id, issuedTo: cs.name, vehicleNo: 'OD-05-C-2290', remarks: 'Spare after the first-floor slab' }, [[ply.id, D(-30)]]);
 }

@@ -1,6 +1,6 @@
 /** String-literal unions that mirror the Prisma enums in apps/api. Keep both in sync. */
 
-export const PROJECT_TYPES = ['ROAD', 'BUILDING', 'WATER_SUPPLY', 'PLANT'] as const;
+export const PROJECT_TYPES = ['ROAD', 'BUILDING', 'WATER_SUPPLY', 'PLANT', 'STORE'] as const;
 export type ProjectType = (typeof PROJECT_TYPES)[number];
 
 export const PROJECT_STATUSES = ['PLANNED', 'ACTIVE', 'ON_HOLD', 'COMPLETED', 'CLOSED'] as const;
