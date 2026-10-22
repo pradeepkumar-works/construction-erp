@@ -150,7 +150,6 @@ async function main() {
     await seedGuests(org.id);
     await seedVariations(org.id);
     await seedRfis(org.id);
-  await seedDrawingMarkups(org.id);
     await seedDrawingMarkups(org.id);
     await seedBudgets(org.id);
     await seedStoreMoves(org.id);
@@ -336,6 +335,7 @@ async function main() {
   await seedGuests(org.id);
   await seedVariations(org.id);
   await seedRfis(org.id);
+  await seedDrawingMarkups(org.id);
   await seedBudgets(org.id);
   await seedStoreMoves(org.id);
   await seedReconciliation(org.id);
