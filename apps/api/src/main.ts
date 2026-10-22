@@ -15,6 +15,8 @@ async function bootstrap() {
   // Biometric devices with the ADMS push protocol (v6 item 101) call /iclock/… at the server's root, so it stays outside /api.
   app.setGlobalPrefix('api', { exclude: ['iclock/cdata', 'iclock/getrequest', 'iclock/devicecmd'] });
   // …and they post their punch tables as plain text, often with no content type.
+  // Schedule files imported as text in JSON (v6 item 114) run to a few MB; Vercel takes at most 4.5 MB a request.
+  app.useBodyParser('json', { limit: '4mb' });
   app.useBodyParser('text', { type: (req: IncomingMessage) => !req.headers['content-type'] || /^text\//.test(req.headers['content-type']), limit: '5mb' });
   app.use(tenantMiddleware);
   // CORS_ORIGINS: comma-separated list of allowed origins; unset = allow any origin (dev / mobile apps)

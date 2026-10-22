@@ -167,6 +167,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/material-approvals-test.js
+      - name: Schedule links refuse loops, give the critical path and float, and go to and from MS Project and P6
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/schedule-links-test.js
       - name: Early warnings forecast right, show each role its own kinds and backtest on the demo history
         if: matrix.suite == 'flows'
         working-directory: apps/api

@@ -398,10 +398,34 @@ end date is set. `POST /projects` with `applyTemplate: true`, or `POST /projects
   DONE), plus finish slip in days against the baseline; milestones with a `MilestoneState` (UPCOMING, DUE_SOON
   within 14 days, MISSED, ACHIEVED, ACHIEVED_LATE). Helpers in `packages/shared/src/schedule.ts`.
 - **Milestones.** `/projects/:id/milestones` CRUD for project editors; achieving one is a `PATCH` with
-  `achievedOn`. Dependencies and the critical path are not modelled yet.
+  `achievedOn`.
+- **Links and the critical path (v6 item 114).** `ActivityLink`: project, predecessor, successor, type `ActivityLinkType`
+  (FS, SS, FF, SF) and `lagDays` (negative is a lead), one per pair, with CHECKs against a self link and a lag over 365
+  days and a `tenant_isolation` policy. The rules are pure functions in `apps/api/src/planning/schedule-rules.ts`, tested
+  in `src/scripts/schedule-links-test.ts` (CI runs it): `linkProblem` refuses a self link, a repeat and a loop (naming
+  it), and `criticalPath` runs the forward pass in link order (each activity keeps its planned length and starts no
+  earlier than planned, later when a link says so; one already started is fixed at its actual start, a done one where it
+  ran) and the backward pass from the latest early finish (a successor that has started no longer holds its
+  predecessors through FS or SS links), giving early and late dates, total float and `critical` (float 0 or less, not
+  done). The Gantt carries them per activity with `linkStartsOn` (planned before its links allow, not started) and the
+  summary's links, critical count, conflicts and `networkFinish`. `POST/PATCH/DELETE /projects/:id/links`,
+  `POST /projects/:id/schedule/apply-links` (moves each conflict to its link date, length kept; audited
+  `SCHEDULED_FROM_LINKS`) are for project editors.
+- **Look-ahead.** `GET /projects/:id/lookahead`: the three weeks from this Monday (`lookaheadWeeks`), the open activities
+  planned in each and those past their end, each with `readiness` (under way; ready when its finish links' predecessors
+  are done, its start links' have started and the lag lets it start by today; else waiting, naming what on).
+- **Files.** `schedule-files.ts`: MS Project XML and Primavera P6 XER, out (`GET /projects/:id/schedule/export?format=`,
+  anyone who sees the project) and in (`POST /projects/:id/schedule/import`, project editors, `dryRun` previews). Days
+  are calendar days, 8 working hours a day. Summary rows and milestones in a file are left out (and listed), activities
+  are matched by name (a match takes the file's dates, the rest are added with unit "job"), and the file's links replace
+  those between the activities it touched, refused whole if they make a loop. The JSON body limit is 4 MB for this.
 - **Web.** Project tab Gantt: summary, baseline banner with Freeze / Re-baseline, a week or month scale with the
   plan bar filled to progress, the baseline as a grey bar under it, milestones as diamonds and a line for today,
-  and the milestone list. The Activities tab shows the baseline end under a moved planned end.
+  and the milestone list. The Activities tab shows the baseline end under a moved planned end. Critical bars have a
+  red top edge, float shows as a dotted line to the late finish and a marker shows where the links let a bar start;
+  an activity's row opens its links drawer (waits on, followed by, float). A banner counts the activities planned before
+  their links allow, with Move them; Export and Import take MS Project XML or P6 XER. Project tab Look-ahead: the three
+  weeks as a grid of days per activity, critical ones marked, what is ready and what waits.
 
 ### Named worker register
 

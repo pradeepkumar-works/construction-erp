@@ -299,6 +299,7 @@ import type {
   MeetingDetailDto,
   MeetingLinkOptionsDto,
   MaterialApprovalListDto,
+  LookaheadDto,
   MaterialApprovalDetailDto,
   ApprovedMakeDto,
   MakeWarningDto,
@@ -622,6 +623,19 @@ export const useGantt = (projectId: string | undefined) =>
     queryFn: async () => (await api.get<GanttDto>(`/projects/${projectId}/gantt`)).data,
     enabled: !!projectId,
   });
+
+/** Three weeks from this Monday on a project (v6 item 114); under the activities key so a change to the plan refreshes it. */
+export const useLookahead = (projectId: string | undefined) =>
+  useQuery({ queryKey: ['activities', projectId, 'lookahead'], queryFn: async () => (await api.get<LookaheadDto>(`/projects/${projectId}/lookahead`)).data, enabled: !!projectId });
+/** Links, moving to the links' dates and importing a schedule file: the Gantt, look-ahead and activities refresh. */
+export function useScheduleAction<T = unknown>(projectId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ method = 'post', path, body }: { method?: 'post' | 'patch' | 'delete'; path: string; body?: unknown }) =>
+      (method === 'delete' ? await api.delete<T>(`/projects/${projectId}${path}`) : await api[method]<T>(`/projects/${projectId}${path}`, body ?? {})).data,
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['activities', projectId] }),
+  });
+}
 
 export const useProgressList = (filters?: ListFilters) =>
   useQuery({

@@ -463,5 +463,8 @@ DROP POLICY IF EXISTS tenant_isolation ON "MaterialApprovalRevision";
 ALTER TABLE "ApprovedMake" NO FORCE ROW LEVEL SECURITY;
 ALTER TABLE "ApprovedMake" DISABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS tenant_isolation ON "ApprovedMake";
+ALTER TABLE "ActivityLink" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "ActivityLink" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "ActivityLink";
 
 DROP FUNCTION IF EXISTS app_current_org();
