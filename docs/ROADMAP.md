@@ -464,8 +464,11 @@ production and sales, a supplier login portal and biometric attendance devices, 
 own section and home). Items 106 to 108 are the gaps found on re-checking the Concord documents, added the same day.
 Migrations stay additive. Design notes for each item are in the project's `roadmap/v6-plan.md`.
 
-98. **Module home pages** (M). Every sidebar section is a module with an overview page: its figures, what waits for me,
-    its lists with counts, its reports and its New actions. Each new module below gets a section and a home.
+98. ~~**Module home pages** (M). Every sidebar section is a module with an overview page: its figures, what waits for me,
+    its lists with counts, its reports and its New actions. Each new module below gets a section and a home.~~ Done:
+    `/modules/<key>` for Site, Materials and plant, Purchases, Billing and People, first in each sidebar section;
+    `GET /dashboard/modules/:key` (`ModuleHomeService`) with each figure behind its list's helper, Waiting for you by type,
+    the section's pages with a line each and its New actions. ARCHITECTURE "Module home pages".
 99. **HR records** (M). The full employee master (personal, statutory and bank details, documents), joining,
     confirmation, transfer, increment, exit with full and final settlement, HR letters, an HR dashboard.
 100. **Payroll** (L). Salary structures, PF, ESI, professional tax and salary TDS, a monthly salary run from attendance

@@ -38,3 +38,6 @@ export const submissionPage = (type: SubmissionType, id: string): string | null 
 
 /** Where to open a submission on the web: its page, else its list. */
 export const submissionHref = (type: SubmissionType, id: string): string => submissionPage(type, id) ?? LIST_PAGES[type];
+
+/** The list page of a submission type. */
+export const submissionListHref = (type: SubmissionType): string => LIST_PAGES[type];
