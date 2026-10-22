@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-drawing-viewer',
+    date: '2026-11-04',
+    title: 'View and mark up drawings',
+    points: [
+      'Open a drawing from Documents with View and mark up: PDF, DXF (with its layers) and scanned or photographed drawings show in the app, to zoom and move round with the mouse, keys or two fingers.',
+      'Mark it up with comment pins, clouds, boxes, arrows, text and freehand lines in four colours. Each mark is numbered (M1, M2…), can be resolved, and an open mark carries onto the next revision until it is. Raise RFI from a mark fills the RFI form for you.',
+      'Compare with an earlier revision shows what changed: only on the older one in red, only on the newer one in blue. Save image gives the sheet with its marks as a picture to share.',
+      'Revisions now take DXF and DWG files. DWG is kept for download, so add the PDF or DXF beside it. On the phone, Drawings lists open marks and you can pin comments on image drawings.',
+    ],
+  },
+  {
     id: '2026-11-module-homes',
     date: '2026-11-04',
     title: 'A home page for each module',

@@ -33,8 +33,8 @@ export function RevisionFields({ prefix = [], read }: { prefix?: string[]; read?
       <Form.Item name={n('remarks')} label="What changed">
         <Input.TextArea rows={2} maxLength={1000} placeholder="Clouded changes, or the consultant's comments" />
       </Form.Item>
-      <Form.Item name={n('files')} label="Drawing (PDF or image)" extra="PDF or image, up to about 4 MB a file on the hosted app.">
-        <PhotoUpload />
+      <Form.Item name={n('files')} label="Drawing (PDF, DXF, DWG or image)" extra="PDF, DXF or an image opens in the drawing viewer to mark up; a DWG is kept for download, so add its PDF or DXF too.">
+        <PhotoUpload drawings />
       </Form.Item>
     </>
   );

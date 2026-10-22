@@ -11,15 +11,20 @@ import { shrinkPhoto } from '@/lib/shrink-photo';
 
 const toUploadFile = (a: AttachmentDto): UploadFile => ({ uid: a.id, name: a.fileName, status: 'done', url: fileUrl(a.url), response: a });
 
-/** Form-friendly uploader: value is the list of uploaded AttachmentDto. */
+/**
+ * Form-friendly uploader: value is the list of uploaded AttachmentDto. `drawings` takes CAD files too (DXF, DWG) and
+ * keeps scans at full size, since a drawing shrunk like a site photo loses its small print.
+ */
 export function PhotoUpload({
   value,
   onChange,
   max = 6,
+  drawings,
 }: {
   value?: AttachmentDto[];
   onChange?: (v: AttachmentDto[]) => void;
   max?: number;
+  drawings?: boolean;
 }) {
   const { message } = App.useApp();
   const [files, setFiles] = useState<UploadFile[]>(() => (value ?? []).map(toUploadFile));
@@ -38,7 +43,7 @@ export function PhotoUpload({
   const customRequest: UploadProps['customRequest'] = async (options) => {
     const file = options.file as File;
     try {
-      const att = await uploadFile(await shrinkPhoto(file));
+      const att = await uploadFile(drawings ? file : await shrinkPhoto(file));
       options.onSuccess?.(att);
     } catch (err) {
       message.error(errorMessage(err, 'Upload failed'));
@@ -63,7 +68,7 @@ export function PhotoUpload({
   return (
     <Upload
       listType="picture-card"
-      accept="image/*,.pdf"
+      accept={drawings ? 'image/*,.pdf,.dxf,.dwg' : 'image/*,.pdf'}
       fileList={files}
       customRequest={customRequest}
       onChange={handleChange}

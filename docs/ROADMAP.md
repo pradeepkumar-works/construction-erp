@@ -490,6 +490,25 @@ Migrations stay additive. Design notes for each item are in the project's `roadm
 108. **Machine finance** (M). Loans on financed machines with the EMI schedule, EMIs paid and due, reminders, posted to the
     books and the machine's cost.
 
+## Drawings in the app (item 109, numbered after v6's 98 to 108)
+
+Asked by Pradeep on 22 Oct 2026: "can we integrate drawing tools, to view and edit drawing files". Options weighed: Autodesk
+Platform Services (full DWG and Revit, but paid per file converted and needs an Autodesk account), Apryse and Nutrient
+(complete PDF and CAD markup, thousands of dollars a year), the free DWG readers (LibreDWG and its web builds, GPL, and
+patchy), dxf-viewer (MPL, three.js), a whiteboard such as Excalidraw over an image, and PDF.js with our own markup layer.
+No open-source web CAD editor is good enough to change drawings, so editing stays in AutoCAD and Nirmaan views, marks up
+and tracks revisions.
+
+109. ~~**Drawing viewer and markup** (L). View a revision's PDF, DXF or image in the app, mark it up (comment pins,
+     clouds, boxes, arrows, text, freehand), resolve marks, carry open ones onto the next revision, compare two
+     revisions, raise an RFI from a mark; the phone shows the marks and adds comment pins on image drawings.~~ Done:
+     `DrawingMarkup` (M1, M2… per document, points 0 to 1 of the page, `OPEN` / `RESOLVED`, optional RFI) and
+     `/documents/:id/markups`; the viewer at `/documents/drawing` (pdf.js legacy build, dxf-parser with our own canvas
+     renderer and layers, images), an overlay compare of two revisions, a marked-up PNG; uploads take `.dxf` and `.dwg`
+     (DWG kept for download). Phone: `drawing/[id]` from Drawings. ARCHITECTURE "Drawing viewer and markup". Later, if
+     wanted: DWG opened directly through Autodesk Platform Services on the company's own account, marks on PDFs on the
+     phone (needs a WebView in a store build), measuring with a calibrated scale (planned as item 118).
+
 ## AI – Ask Nirmaan and what follows
 
 Rules for every AI item: the AI reads only what the asking user can see (through `AiToolsService`), never submits,

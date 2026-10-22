@@ -1,22 +1,27 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, ParseUUIDPipe, Patch, Post, Put, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { DocumentsService } from './documents.service';
 import { DocumentTextService } from './document-text.service';
+import { DrawingMarkupsService } from './drawing-markups.service';
 import {
   AcknowledgeTransmittalDto,
   CreateDocumentDto,
   CreateLetterDto,
   CreateRevisionDto,
   CreateTransmittalDto,
+  CreateMarkupDto,
+  LinkMarkupRfiDto,
   ListDocumentsQuery,
   ListLettersQuery,
   ListTransmittalsQuery,
   ProjectQuery,
+  ResolveMarkupDto,
   SearchDocumentsQuery,
   SiteDocumentsQuery,
   UpdateDocumentDto,
   UpdateLetterDto,
+  UpdateMarkupDto,
   UpdateRevisionDto,
   UpdateTransmittalDto,
 } from './documents.dto';
@@ -28,6 +33,7 @@ export class DocumentsController {
   constructor(
     private docs: DocumentsService,
     private text: DocumentTextService,
+    private markups: DrawingMarkupsService,
   ) {}
 
   @ApiOperation({ summary: 'Search inside filed PDFs and letters (Ask the contract)', description: 'Pages of the current revisions\' PDFs and letters (for roles that see letters) in the projects the user can open, best match first.' })
@@ -102,6 +108,48 @@ export class DocumentsController {
   @Delete(':id/revisions/:revisionId')
   removeRevision(@CurrentUser() user: RequestUser, @Param('id') id: string, @Param('revisionId') revisionId: string) {
     return this.docs.removeRevision(user, id, revisionId);
+  }
+
+  /* ---------- drawing markup (item 109) ---------- */
+
+  @ApiOperation({ summary: "Every mark on the document's revisions (M1, M2…), with the file and page each sits on" })
+  @Get(':id/markups')
+  listMarkups(@CurrentUser() user: RequestUser, @Param('id') id: string) {
+    return this.markups.list(user, id);
+  }
+
+  @ApiOperation({ summary: 'Mark up a drawing', description: 'Anyone who can open the document. Points are 0 to 1 of the page. A repeated `id` returns the mark already saved.' })
+  @Post(':id/markups')
+  createMarkup(@CurrentUser() user: RequestUser, @Param('id') id: string, @Body() dto: CreateMarkupDto) {
+    return this.markups.create(user, id, dto);
+  }
+
+  @ApiOperation({ summary: 'Move a mark, or change its comment or colour (whoever made it, or document control)' })
+  @Patch(':id/markups/:markupId')
+  updateMarkup(@CurrentUser() user: RequestUser, @Param('id') id: string, @Param('markupId', ParseUUIDPipe) markupId: string, @Body() dto: UpdateMarkupDto) {
+    return this.markups.update(user, id, markupId, dto);
+  }
+
+  @ApiOperation({ summary: 'Resolve a mark: it stops being carried onto later revisions' })
+  @Post(':id/markups/:markupId/resolve')
+  resolveMarkup(@CurrentUser() user: RequestUser, @Param('id') id: string, @Param('markupId', ParseUUIDPipe) markupId: string, @Body() dto: ResolveMarkupDto) {
+    return this.markups.resolve(user, id, markupId, dto);
+  }
+
+  @Post(':id/markups/:markupId/reopen')
+  reopenMarkup(@CurrentUser() user: RequestUser, @Param('id') id: string, @Param('markupId', ParseUUIDPipe) markupId: string) {
+    return this.markups.reopen(user, id, markupId);
+  }
+
+  @ApiOperation({ summary: 'Link the RFI raised from a mark' })
+  @Put(':id/markups/:markupId/rfi')
+  linkMarkupRfi(@CurrentUser() user: RequestUser, @Param('id') id: string, @Param('markupId', ParseUUIDPipe) markupId: string, @Body() dto: LinkMarkupRfiDto) {
+    return this.markups.linkRfi(user, id, markupId, dto);
+  }
+
+  @Delete(':id/markups/:markupId')
+  removeMarkup(@CurrentUser() user: RequestUser, @Param('id') id: string, @Param('markupId', ParseUUIDPipe) markupId: string) {
+    return this.markups.remove(user, id, markupId);
   }
 }
 

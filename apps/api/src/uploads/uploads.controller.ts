@@ -10,9 +10,13 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AttachmentsService } from '../common/attachments.service';
 import { StorageService } from '../common/storage.service';
 import { CurrentUser, RequestUser } from '../common/current-user';
+import { CAD_MIME_TYPES } from '@erp/shared';
 import { CompleteDirectUploadDto, StartDirectUploadDto } from './uploads.dto';
 
-const ALLOWED = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'application/pdf'];
+const ALLOWED = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'application/pdf', ...Object.values(CAD_MIME_TYPES)];
+const ALLOWED_WORDS = 'jpeg, png, webp, heic, pdf, dxf, dwg';
+/** The type a file is kept as: CAD drawings (item 109) by their extension, since browsers send them as octet-stream or nothing. */
+const typeOf = (fileName: string, sent: string) => CAD_MIME_TYPES[extname(fileName).toLowerCase()] ?? sent;
 /** A file sent straight to Blob storage may be this large (a drawing set, a long invoice PDF). */
 const DIRECT_MAX_BYTES = 100 * 1024 * 1024;
 
@@ -33,11 +37,14 @@ export class UploadsController {
     FileInterceptor('file', {
       limits: { fileSize: 15 * 1024 * 1024 },
       storage: memoryStorage(),
-      fileFilter: (_req, file, cb) => cb(null, ALLOWED.includes(file.mimetype)),
+      fileFilter: (_req, file, cb) => {
+        file.mimetype = typeOf(file.originalname, file.mimetype);
+        cb(null, ALLOWED.includes(file.mimetype));
+      },
     }),
   )
   async upload(@CurrentUser() user: RequestUser, @UploadedFile() file?: Express.Multer.File) {
-    if (!file) throw new BadRequestException('No file uploaded or file type not allowed (jpeg, png, webp, heic, pdf)');
+    if (!file) throw new BadRequestException(`No file uploaded or file type not allowed (${ALLOWED_WORDS})`);
     const saved = await this.storage.save(file, user.organizationId);
     const row = await this.prisma.attachment.create({
       data: {
@@ -60,7 +67,8 @@ export class UploadsController {
   @Post('direct')
   async startDirect(@CurrentUser() user: RequestUser, @Body() dto: StartDirectUploadDto) {
     if (this.storage.mode !== 'blob') throw new ConflictException('Files over 4 MB need Blob storage, which this server does not use. Attach a smaller copy.');
-    if (!ALLOWED.includes(dto.mimeType)) throw new BadRequestException('File type not allowed (jpeg, png, webp, heic, pdf)');
+    const mimeType = typeOf(dto.fileName, dto.mimeType);
+    if (!ALLOWED.includes(mimeType)) throw new BadRequestException(`File type not allowed (${ALLOWED_WORDS})`);
     if (dto.size > DIRECT_MAX_BYTES) throw new BadRequestException('Files up to 100 MB');
     const ext = extname(dto.fileName).toLowerCase().replace(/[^.a-z0-9]/g, '') || '.pdf';
     const pathname = `${user.organizationId}/${new Date().toISOString().slice(0, 10)}/${randomUUID()}${ext}`;
@@ -68,12 +76,12 @@ export class UploadsController {
     const clientToken = await generateClientTokenFromReadWriteToken({
       token: process.env.BLOB_READ_WRITE_TOKEN!,
       pathname,
-      allowedContentTypes: [dto.mimeType],
+      allowedContentTypes: [mimeType],
       maximumSizeInBytes: DIRECT_MAX_BYTES,
       validUntil: Date.now() + 15 * 60_000,
       addRandomSuffix: false,
     });
-    return { pathname, clientToken };
+    return { pathname, clientToken, mimeType };
   }
 
   @ApiOperation({ summary: 'Record a file sent straight to Blob storage', description: 'Returns the attachment, to pass in `attachmentIds` like any upload.' })

@@ -6,6 +6,10 @@ import {
   DOCUMENT_KINDS,
   LETTER_DIRECTIONS,
   LIST_SORT_FIELDS,
+  MARKUP_COLORS,
+  MARKUP_KINDS,
+  MARKUP_MAX_POINTS,
+  MARKUP_NOTE_MAX,
   REVISION_STATUSES,
   TRANSMITTAL_PURPOSES,
   type DocumentDiscipline,
@@ -13,11 +17,14 @@ import {
   type DocumentSortField,
   type LetterDirection,
   type LetterSortField,
+  type MarkupColor,
+  type MarkupKind,
   type RevisionStatus,
   type TransmittalPurpose,
   type TransmittalSortField,
 } from '@erp/shared';
 import { PageQuery, QueryBool } from '../common/paging';
+import { CLIENT_ID_DOC } from '../common/idempotency';
 
 const trim = () => Transform(({ value }) => (typeof value === 'string' ? value.trim() : value));
 const opt = () => ValidateIf((_, v) => v !== null && v !== undefined);
@@ -123,4 +130,35 @@ export class ListLettersQuery extends PageQuery {
   @ApiPropertyOptional() @IsOptional() @IsUUID() riskId?: string;
   @ApiPropertyOptional({ description: 'Received, reply due and not sent' }) @IsOptional() @QueryBool() @IsBoolean() awaitingReply?: boolean;
   @ApiPropertyOptional({ enum: LIST_SORT_FIELDS.letters, default: 'letterDate' }) @IsOptional() @IsIn(LIST_SORT_FIELDS.letters as unknown as string[]) sortBy?: LetterSortField;
+}
+
+/* ---------- drawing markup (item 109) ---------- */
+
+export class CreateMarkupDto {
+  @ApiPropertyOptional(CLIENT_ID_DOC) @IsOptional() @IsUUID('4') id?: string;
+  @ApiProperty({ description: 'The revision it is drawn on' }) @IsUUID() revisionId: string;
+  @ApiProperty({ description: "One of that revision's files" }) @IsUUID() attachmentId: string;
+  @ApiPropertyOptional({ default: 1 }) @IsOptional() @IsInt() @Min(1) @Max(5000) page?: number;
+  @ApiProperty({ enum: MARKUP_KINDS }) @IsIn(MARKUP_KINDS as unknown as string[]) kind: MarkupKind;
+  @ApiProperty({ example: [[0.42, 0.31]], description: '[x, y] from 0 to 1 of the page: one for a pin or text, two corners or ends for a cloud, box or arrow, up to 1000 for freehand' })
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(MARKUP_MAX_POINTS)
+  points: [number, number][];
+  @ApiPropertyOptional({ enum: MARKUP_COLORS, default: 'RED' }) @IsOptional() @IsIn(MARKUP_COLORS as unknown as string[]) color?: MarkupColor;
+  @ApiPropertyOptional({ description: 'The comment (needed on a pin), or the words of a text mark' }) @IsOptional() @trim() @IsString() @MaxLength(MARKUP_NOTE_MAX) note?: string | null;
+}
+
+export class UpdateMarkupDto {
+  @ApiPropertyOptional({ description: 'Moved or reshaped' }) @IsOptional() @IsArray() @ArrayMinSize(1) @ArrayMaxSize(MARKUP_MAX_POINTS) points?: [number, number][];
+  @ApiPropertyOptional({ enum: MARKUP_COLORS }) @IsOptional() @IsIn(MARKUP_COLORS as unknown as string[]) color?: MarkupColor;
+  @ApiPropertyOptional() @IsOptional() @trim() @IsString() @MaxLength(MARKUP_NOTE_MAX) note?: string | null;
+}
+
+export class ResolveMarkupDto {
+  @ApiPropertyOptional({ example: 'Shown correctly on Rev R2' }) @IsOptional() @trim() @IsString() @MaxLength(MARKUP_NOTE_MAX) note?: string | null;
+}
+
+export class LinkMarkupRfiDto {
+  @ApiPropertyOptional({ nullable: true, description: 'The RFI raised from this mark; null removes the link' }) @IsOptional() @IsUUID() rfiId: string | null;
 }

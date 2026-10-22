@@ -32,8 +32,9 @@ export async function pagesOf(file: File): Promise<PageImage[]> {
 }
 
 async function pdfPages(file: File): Promise<PageImage[]> {
-  const pdfjs = await import('pdfjs-dist');
-  pdfjs.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString();
+  // The legacy build: the modern one needs very recent browsers (Map.getOrInsertComputed), which older phones lack.
+  const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
+  pdfjs.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/legacy/build/pdf.worker.min.mjs', import.meta.url).toString();
   let doc: Awaited<ReturnType<typeof pdfjs.getDocument>['promise']>;
   try {
     doc = await pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;

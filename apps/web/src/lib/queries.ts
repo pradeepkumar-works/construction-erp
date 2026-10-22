@@ -235,8 +235,12 @@ import type {
   MaterialRequestStockDto,
   LastRatesDto,
   EnquiryDto,
+  DrawingMarkupDto,
+  MarkupColor,
+  MarkupKind,
+  MarkupPoint,
 } from '@erp/shared';
-import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, NOTIFICATION_TYPES_VERSION, SEARCH_MIN_LENGTH } from '@erp/shared';
+import { CAD_MIME_TYPES, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, NOTIFICATION_TYPES_VERSION, SEARCH_MIN_LENGTH } from '@erp/shared';
 import { api } from './api';
 import { FAIL_NOTICE, failNoticeSaying } from './notify';
 
@@ -959,6 +963,49 @@ export const useDocumentHistory = (id: string | undefined) =>
     queryFn: async () => (await api.get<AuditLogDto[]>(`/documents/${id}/history`)).data,
     enabled: !!id,
   });
+
+/* ---------- drawing markup (item 109) ---------- */
+
+/** Every mark on a document's revisions; the viewer picks the ones on the sheet it shows. */
+export const useDrawingMarkups = (documentId: string | undefined) =>
+  useQuery({ queryKey: ['documents', 'markups', documentId], queryFn: async () => (await api.get<DrawingMarkupDto[]>(`/documents/${documentId}/markups`)).data, enabled: !!documentId });
+
+export interface NewMarkupInput {
+  id: string;
+  revisionId: string;
+  attachmentId: string;
+  page: number;
+  kind: MarkupKind;
+  points: MarkupPoint[];
+  color: MarkupColor;
+  note: string | null;
+}
+
+function useMarkupMutation<V, R>(documentId: string | undefined, fn: (v: V) => Promise<R>) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: fn,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['documents', 'markups', documentId] });
+      // Open counts on the register, and the document's history.
+      qc.invalidateQueries({ queryKey: ['documents', 'list'] });
+      qc.invalidateQueries({ queryKey: ['documents', 'history', documentId] });
+    },
+    meta: FAIL_NOTICE,
+  });
+}
+
+export const useCreateMarkup = (documentId: string | undefined) =>
+  useMarkupMutation(documentId, async (v: NewMarkupInput) => (await api.post<DrawingMarkupDto>(`/documents/${documentId}/markups`, v)).data);
+export const useUpdateMarkup = (documentId: string | undefined) =>
+  useMarkupMutation(documentId, async ({ id, ...v }: { id: string; points?: MarkupPoint[]; color?: MarkupColor; note?: string | null }) => (await api.patch<DrawingMarkupDto>(`/documents/${documentId}/markups/${id}`, v)).data);
+export const useResolveMarkup = (documentId: string | undefined) =>
+  useMarkupMutation(documentId, async ({ id, resolved, note }: { id: string; resolved: boolean; note?: string | null }) =>
+    (await api.post<DrawingMarkupDto>(`/documents/${documentId}/markups/${id}/${resolved ? 'resolve' : 'reopen'}`, resolved ? { note: note || null } : {})).data,
+  );
+export const useLinkMarkupRfi = (documentId: string | undefined) =>
+  useMarkupMutation(documentId, async ({ id, rfiId }: { id: string; rfiId: string | null }) => (await api.put<DrawingMarkupDto>(`/documents/${documentId}/markups/${id}/rfi`, { rfiId })).data);
+export const useDeleteMarkup = (documentId: string | undefined) => useMarkupMutation(documentId, async (id: string) => (await api.delete(`/documents/${documentId}/markups/${id}`)).data);
 
 /** Every document of a project with its current revision (to pick revisions for a transmittal). */
 export const useSiteDocuments = (projectId: string | undefined) =>
@@ -2030,7 +2077,8 @@ const DIRECT_UPLOAD_BYTES = 4 * 1024 * 1024;
 
 export async function uploadFile(file: File): Promise<AttachmentDto> {
   if (file.size > DIRECT_UPLOAD_BYTES) {
-    const mimeType = file.type || (file.name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'application/octet-stream');
+    const ext = file.name.toLowerCase().slice(file.name.lastIndexOf('.'));
+    const mimeType = CAD_MIME_TYPES[ext] ?? (file.type || (ext === '.pdf' ? 'application/pdf' : 'application/octet-stream'));
     const { pathname, clientToken } = (await api.post<{ pathname: string; clientToken: string }>('/uploads/direct', { fileName: file.name, mimeType, size: file.size })).data;
     const { put } = await import('@vercel/blob/client');
     const blob = await put(pathname, file, { access: 'public', token: clientToken, contentType: mimeType, multipart: file.size > 8 * 1024 * 1024 });

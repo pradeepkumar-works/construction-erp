@@ -2608,6 +2608,8 @@ export interface DocumentDto {
   /** The current revision, null until the first one is added */
   current: DocumentRevisionDto | null;
   revisionCount: number;
+  /** Marks on its drawings not yet resolved (item 109) */
+  openMarkups: number;
   createdById: string;
   createdByName: string;
   createdAt: string;

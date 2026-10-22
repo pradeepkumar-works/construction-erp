@@ -150,6 +150,12 @@ const DARK: typeof LIGHT = {
 
 export const colors = { ...(scheme === 'dark' ? DARK : LIGHT), ...TILES };
 
+/**
+ * Drawing markup ink (item 109), as the web's `BRAND.colors.markup*`. Marks sit on the white of a drawing sheet in either
+ * theme, so these do not change with it; a pin's number is `onInk` on its ink.
+ */
+export const markupInk = { RED: '#D92D20', BLUE: '#1E63D6', GREEN: '#167A3E', ORANGE: '#C2410C', sheet: '#FFFFFF', onInk: '#FFFFFF' } as const;
+
 export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 };
 
 export const radius = { sm: 6, md: 10, lg: 16, pill: 999 };

@@ -1,16 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Modal, StyleSheet, Text, View } from 'react-native';
-import { Image } from 'expo-image';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useLocalSearchParams } from 'expo-router';
-import { DOCUMENT_DISCIPLINE_LABELS, REVISION_STATUS_LABELS, isBuildable, type AttachmentDto, type DocumentDto } from '@erp/shared';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { DOCUMENT_DISCIPLINE_LABELS, REVISION_STATUS_LABELS, isBuildable, type DocumentDto } from '@erp/shared';
 import { useFetch } from '../src/api/hooks';
 import { useOffline } from '../src/offline';
-import { canSaveOffline, localUri, openPdf, saveProjectFiles, savedFileIds } from '../src/offline/drawings';
+import { canSaveOffline, saveProjectFiles, savedFileIds } from '../src/offline/drawings';
 import { useProjectOptions } from '../src/forms/common';
 import { Button, EmptyState, ErrorBanner, Input, Loading, Pill, Screen, SectionTitle, Select, Touchable } from '../src/components';
-import { absoluteUrl } from '../src/config';
 import { colors, fontSize, radius, spacing, toneIcon, touch, typography } from '../src/theme';
 import { formatDate } from '../src/utils/format';
 import { useT } from '../src/i18n/LanguageContext';
@@ -19,10 +17,12 @@ const LAST_PROJECT = 'documents:lastProject';
 
 /**
  * Drawings on site: the current revision of every drawing and document of a project, with a warning on anything not
- * for construction. "Save offline" keeps the files on the phone (and drops superseded ones), so they open without a signal.
+ * for construction and its open marks. "Save offline" keeps the files on the phone (and drops superseded ones), so they open
+ * without a signal; a tap opens the drawing with its marks (`drawing/[id]`).
  */
 export default function DocumentsScreen() {
   const params = useLocalSearchParams<{ projectId?: string }>();
+  const router = useRouter();
   const projects = useProjectOptions();
   const t = useT();
   const { online } = useOffline();
@@ -31,7 +31,6 @@ export default function DocumentsScreen() {
   const [search, setSearch] = useState('');
   const [saved, setSaved] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState<string | null>(null);
-  const [image, setImage] = useState<AttachmentDto | null>(null);
 
   useEffect(() => {
     void AsyncStorage.getItem(LAST_PROJECT).then((p) => p && setProjectId((cur) => cur ?? p));
@@ -67,19 +66,6 @@ export default function DocumentsScreen() {
       if (r.failed) Alert.alert(t('Some drawings were not saved'), r.failed > 1 ? t('{n} files could not be downloaded. Try again with a better signal.', { n: r.failed }) : t('1 file could not be downloaded. Try again with a better signal.'));
     } finally {
       setSaving(null);
-    }
-  };
-
-  const open = async (d: DocumentDto) => {
-    const f = d.current?.attachments[0];
-    if (!f) return Alert.alert(t('No file'), t('{doc} Rev {rev} has no file attached yet.', { doc: d.docNo, rev: d.current?.revision ?? '' }));
-    const isSaved = saved.has(f.id);
-    if (!isSaved && !online) return Alert.alert(t('Not saved on this phone'), t('Connect to the internet, or save the drawings offline when you have a signal.'));
-    if (f.mimeType.startsWith('image/')) return setImage(f);
-    try {
-      await openPdf(f, isSaved);
-    } catch {
-      Alert.alert(t('Could not open the drawing'), t('Install a PDF viewer, or open it online.'));
     }
   };
 
@@ -122,7 +108,7 @@ export default function DocumentsScreen() {
               const buildable = isBuildable(cur.status);
               const f = cur.attachments[0];
               return (
-                <Touchable key={d.id} accessibilityRole="button" onPress={() => void open(d)} style={styles.row}>
+                <Touchable key={d.id} accessibilityRole="button" onPress={() => router.push(`/drawing/${d.id}`)} style={styles.row}>
                   <View style={styles.flex}>
                     <Text style={typography.caption}>
                       {d.docNo} · {t('Rev {rev}', { rev: cur.revision })} · {formatDate(cur.issuedOn)}
@@ -136,6 +122,7 @@ export default function DocumentsScreen() {
                         {cur.remarks}
                       </Text>
                     ) : null}
+                    {d.openMarkups ? <Text style={styles.marks}>{d.openMarkups === 1 ? t('1 open mark') : t('{n} open marks', { n: d.openMarkups })}</Text> : null}
                   </View>
                   <View style={styles.side}>
                     <Pill text={t(REVISION_STATUS_LABELS[cur.status])} fg={buildable ? colors.success : colors.warning} bg={buildable ? colors.successSoft : colors.warningSoft} icon={buildable ? toneIcon.done : toneIcon.warning} />
@@ -148,14 +135,6 @@ export default function DocumentsScreen() {
         ))
       )}
       {docs.fromCache ? <Text style={[typography.caption, styles.center]}>{t('Showing the list saved on this phone.')}</Text> : null}
-      <Modal visible={!!image} transparent animationType="fade" onRequestClose={() => setImage(null)}>
-        <Touchable style={styles.lightbox} onPress={() => setImage(null)} accessibilityRole="button" accessibilityLabel={t('Close photo')}>
-          {image ? <Image source={{ uri: saved.has(image.id) && canSaveOffline ? localUri(image) : absoluteUrl(image.url) }} style={styles.full} contentFit="contain" /> : null}
-          <View style={styles.lightboxClose}>
-            <Ionicons name="close-circle" size={36} color={colors.onOverlay} />
-          </View>
-        </Touchable>
-      </Modal>
     </Screen>
   );
 }
@@ -168,8 +147,6 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.7 },
   title: { fontSize: fontSize.body, fontWeight: '600', color: colors.text, marginVertical: 2 },
   warn: { color: colors.warning, fontWeight: '700', fontSize: fontSize.small },
+  marks: { color: colors.primary, fontWeight: '600', fontSize: fontSize.small },
   side: { alignItems: 'flex-end', gap: 6 },
-  lightbox: { flex: 1, backgroundColor: colors.scrimDeep, alignItems: 'center', justifyContent: 'center' },
-  full: { width: '100%', height: '85%' },
-  lightboxClose: { position: 'absolute', top: 48, right: 20 },
 });
