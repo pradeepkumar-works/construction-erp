@@ -59,6 +59,7 @@ import { BooksModule } from './books/books.module';
 import { StatementsModule } from './statements/statements.module';
 import { RmcModule } from './rmc/rmc.module';
 import { MachineLoansModule } from './machine-loans/machine-loans.module';
+import { TendersModule } from './tenders/tenders.module';
 import { SupplierModule } from './supplier/supplier.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { WorkersModule } from './workers/workers.module';
@@ -119,6 +120,7 @@ import { VitalsController } from './vitals.controller';
     StatementsModule,
     RmcModule,
     MachineLoansModule,
+    TendersModule,
     SupplierModule,
     CostModule,
     ReconciliationModule,

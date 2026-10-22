@@ -1670,6 +1670,32 @@ export; the client portal and the phone app show the amount.
 - **Clients.** Web pages under `/supplier` (home, enquiries, orders with dispatch notes, invoices, payments, your
   details). Any other page redirects there. The phone app refuses supplier sign-in.
 
+## Tender bidding (v6 item 110)
+
+- **Tables.** `SorBook` (a schedule of rates: state SOR, CPWD DSR, own rates; name unique per company) with `SorItem` (code
+  unique per book, chapter, description, unit, rate). `Tender` (number from `nextDocNo('TND')`, NIT, client from the master
+  or typed, dates, `bidType` PERCENTAGE or ITEM_RATE, the SOR book, estimate, `quotedPct`, overheads and profit on cost,
+  tender fee, status, result, `projectId` once made a project) with `TenderItem` (the bid BOQ: quantity, SOR item and rate,
+  `quotedRate` for an item-rate quote typed by hand), `TenderItemLine` (the rate analysis per unit: material with wastage,
+  labour, machinery) and `TenderBid` (others' prices at opening). All six have `tenant_isolation` policies.
+- **Pricing.** Pure functions in `apps/api/src/tenders/tender-rules.ts`, tested in `src/scripts/tenders-test.ts` (CI runs
+  it). An item's cost is `builtUpRate` from the reconciliation rules over its lines; overheads and profit are percentages of
+  cost. A percentage tender quotes every SOR rate with the one percentage; an item-rate tender quotes the typed rate, else
+  the built-up one. Totals give the BOQ at SOR rates (or the estimate), the cost, the built-up and quoted values each as a
+  percentage on the SOR, and the margin (quote less cost and overheads). `rankBids` puts our quote among the others, lowest
+  first, ties sharing a rank. A line without a rate takes the store item's rate, the trade's labour rate or the machines'
+  category rate when saved; the starter library (the BOQ analysis library) fills common items.
+- **Life.** PREPARING → SUBMITTED (the quote is checked by `submitProblem` and fixed) → WON / LOST, or DROPPED / CANCELLED;
+  `moveProblem` allows one step back to correct a mistake, never once a project is made. The EMD is a `ComplianceDoc` of
+  kind EMD (`emdDocId`), so it shows and is reminded in Guarantees and licences, and is released from the tender page.
+- **Project.** `makeProject` (admin and management) calls `ProjectsService.create`, then in one transaction writes the BOQ
+  at the quoted rates, the lines as material norms and resources, the cost budget from the analysis, moves the EMD to the
+  project, adds the performance guarantee and links the tender; the project is deleted again if that fails.
+- **Who.** `canManageTenders` (admin, management, QS) price and record; project and accounts managers read
+  (`canViewTenders`). Search kind `tender`.
+- **Clients.** Web: Billing → Tenders (`/tenders`, the register with the year's figures; `/tenders/[id]` with the bid BOQ,
+  pricing, bids and details) and Billing → Schedule of rates (`/schedule-of-rates`, books and items, Excel import).
+
 ## Company data (export and deletion)
 
 - **Export.** `CompanyDataService` works out every table and how its rows belong to an organisation from the Prisma

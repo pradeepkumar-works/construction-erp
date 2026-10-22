@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import type { Paginated, SearchHitDto, SearchKind, SearchResultDto } from '@erp/shared';
-import { SEARCH_MIN_LENGTH, VENDOR_KIND_LABELS, canViewPaymentRequests, canRequestFunds, canEditContract, canEditVendors, canSeeVendorBank, canViewContract } from '@erp/shared';
+import { SEARCH_MIN_LENGTH, VENDOR_KIND_LABELS, canViewPaymentRequests, canRequestFunds, canEditContract, canEditVendors, canSeeVendorBank, canViewContract, canViewTenders } from '@erp/shared';
 import type { RequestUser } from '../common/current-user';
 import { MaterialRequestsService } from '../material-requests/material-requests.service';
 import { PurchaseOrdersService } from '../purchasing/purchase-orders.service';
@@ -19,6 +19,7 @@ import { ClientsService } from '../clients/clients.service';
 import { StockService } from '../stock/stock.service';
 import { StaffService } from '../staff/staff.service';
 import { PaymentRequestsService } from '../payables/payment-requests.service';
+import { TendersService } from '../tenders/tenders.service';
 
 /** Hits per kind: enough to spot the one meant, few enough to keep the palette short. */
 const PER_KIND = 4;
@@ -55,6 +56,7 @@ export class SearchService {
     stock: StockService,
     staff: StaffService,
     paymentRequests: PaymentRequestsService,
+    tenders: TendersService,
   ) {
     const page = (q: string) => ({ q, page: 1, pageSize: PER_KIND });
     const sources: Source<any>[] = [
@@ -88,6 +90,15 @@ export class SearchService {
         allowed: (u) => canViewContract(u.roleKey) || canEditContract(u.roleKey),
         list: (u, q) => clients.list(u, page(q) as never),
         hit: (r) => ({ id: r.id, title: r.name, subtitle: join(r.department, r.gstin), href: `/clients?q=${encodeURIComponent(r.name)}`, status: null }),
+      },
+      {
+        kind: 'tender',
+        allowed: (u) => canViewTenders(u.roleKey),
+        list: async (u, q) => {
+          const found = (await tenders.list(u, { q, status: 'all' })).items;
+          return { items: found.slice(0, PER_KIND), total: found.length, page: 1, pageSize: PER_KIND };
+        },
+        hit: (r) => ({ id: r.id, title: r.tenderNo, subtitle: join(r.title, r.clientName), href: `/tenders/${r.id}`, status: null }),
       },
       { kind: 'item', list: (u, q) => stock.listItems(u, page(q) as never), hit: (r) => ({ id: r.id, title: r.name, subtitle: join(r.category, r.unit), href: `/stock?q=${encodeURIComponent(r.name)}`, status: null }) },
       { kind: 'person', list: (u, q) => staff.listEmployees(u, page(q) as never), hit: (r) => ({ id: r.id, title: r.fullName, subtitle: join(r.employeeCode, r.designation, r.projectName ?? 'Head office'), href: `/staff?employee=${r.id}`, status: null }) },

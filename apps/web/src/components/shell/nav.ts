@@ -5,6 +5,8 @@
 import type React from 'react';
 import {
   ExperimentOutlined,
+  TrophyOutlined,
+  OrderedListOutlined,
   CarOutlined,
   MailOutlined,
   ContactsOutlined,
@@ -72,6 +74,7 @@ import {
   canViewRmc,
   canKeepBooks,
   canManageMachineLoans,
+  canViewTenders,
   canManageBilling,
   canManageCompanyData,
   canManageUsers,
@@ -159,6 +162,8 @@ export const NAV_DESCRIPTIONS: Record<string, string> = {
   '/payables': 'What we owe, payment requests, payments and debit notes.',
   '/vendors': 'Suppliers and subcontractors, with GST, MSME and bank details.',
   '/supplier-inbox': 'Invoices suppliers sent on their portal, and the changes to their details they asked for.',
+  '/tenders': 'Tenders being priced and bid: the bid BOQ from rate analysis, the quote on the SOR, bids at opening and the result.',
+  '/schedule-of-rates': 'State SORs, the CPWD DSR and own rates that bids are priced against, imported from Excel.',
   '/bills': 'Running account bills to clients, from the measurement book.',
   '/variations': 'Extra and changed items sent to the client.',
   '/receivables': 'What clients owe us, receipts and retention.',
@@ -278,6 +283,8 @@ export function navFor(user: AuthUser): NavSection[] {
       title: 'Billing',
       icon: FileDoneOutlined,
       items: [
+        ...when(canViewTenders(role), { href: '/tenders', label: 'Tenders', icon: TrophyOutlined, keywords: 'bid bidding nit tender emd l1 quote estimate rate analysis percentage above below sor' }),
+        ...when(canViewTenders(role), { href: '/schedule-of-rates', label: 'Schedule of rates', icon: OrderedListOutlined, keywords: 'sor dsr cpwd pwd rates book item code analysis' }),
         ...when(canPrepareBill(role) || approves('BILL'), { href: '/bills', label: 'RA bills', icon: FileDoneOutlined, keywords: 'running account invoice client bill' }),
         ...when(canViewVariations(role), { href: '/variations', label: 'Variations', icon: DiffOutlined, keywords: 'extra items deviation' }),
         ...when(canViewContract(role), { href: '/receivables', label: 'Receivables', icon: AccountBookOutlined, keywords: 'collections retention' }),

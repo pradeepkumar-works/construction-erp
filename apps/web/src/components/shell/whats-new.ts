@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-tenders',
+    date: '2026-11-15',
+    title: 'Tenders and schedules of rates',
+    points: [
+      'Keep the tenders you are bidding under Billing → Tenders: the notice, the client, the last date to submit and the EMD, which goes to Guarantees and licences until it comes back.',
+      'Price the bid BOQ from each item’s rate analysis (materials with wastage, labour and machinery, with overheads and profit), against the state SOR, the CPWD DSR or your own rates kept under Billing → Schedule of rates and imported from Excel. Quote one percentage above or below the SOR, or a rate per item, and see the margin it leaves.',
+      'Record the bids read out at opening to see where you stand (L1, L2…), then the result. A won tender becomes a project in one step, with its BOQ, rate analysis, cost budget and guarantees.',
+    ],
+  },
+  {
     id: '2026-11-machine-loans',
     date: '2026-11-14',
     title: 'Machine loans',

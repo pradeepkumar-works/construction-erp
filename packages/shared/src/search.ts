@@ -15,6 +15,7 @@ export const SEARCH_KINDS = [
   'rfi',
   'vendor',
   'client',
+  'tender',
   'item',
   'person',
 ] as const;
@@ -36,6 +37,7 @@ export const SEARCH_KIND_LABELS: Record<SearchKind, string> = {
   rfi: 'RFIs',
   vendor: 'Vendors',
   client: 'Clients',
+  tender: 'Tenders',
   item: 'Items',
   person: 'People',
 };

@@ -3,7 +3,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { Select, Spin, Typography } from 'antd';
 import type { SelectProps } from 'antd';
-import type { ClientDto, EquipmentDto, ItemDto, RoleKey, UserSummary, VendorDto, VendorKind } from '@erp/shared';
+import type { ClientDto, EquipmentDto, ItemDto, RoleKey, SorItemDto, UserSummary, VendorDto, VendorKind } from '@erp/shared';
 import { usePickerPage, usePickerRecord, type PickerSource } from '@/lib/queries';
 import { useDebounced } from '@/lib/debounce';
 
@@ -135,6 +135,14 @@ export function EquipmentSelect(props: Picker<EquipmentDto>) {
 /** An item from the item master. */
 export function ItemSelect(props: Picker<ItemDto>) {
   return <SearchSelect<ItemDto> source="items" toOption={itemOption} placeholder="Type an item" {...props} />;
+}
+
+const sorOption = (s: SorItemDto): PickerOption => ({ value: s.id, label: `${s.code} · ${s.description.length > 70 ? `${s.description.slice(0, 70)}…` : s.description} (${s.unit})` });
+
+/** An item of a schedule of rates (v6 item 110), searched by code or words of its description. */
+export function SorItemSelect({ bookId, ...props }: Picker<SorItemDto> & { bookId?: string | null }) {
+  const query = useMemo(() => ({ bookId: bookId ?? undefined }), [bookId]);
+  return <SearchSelect<SorItemDto> source="sorItems" params={query} toOption={sorOption} placeholder="Type a code or words of the item" {...props} />;
 }
 
 /** One vendor by id (a form's PAN and GSTIN notes, a filter chip's name), fetched once and cached. */

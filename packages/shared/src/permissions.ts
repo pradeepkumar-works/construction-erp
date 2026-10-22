@@ -290,6 +290,13 @@ export const canKeepBooks = (role: RoleKey) => TALLY_ROLES.includes(role);
 export const canApproveVouchers = (role: RoleKey) => role === 'ADMIN' || role === 'MANAGEMENT';
 /** Machine finance (v6 item 108): loans on machines, their EMIs and what is owed, kept and seen by those who keep the books. */
 export const canManageMachineLoans = (role: RoleKey) => TALLY_ROLES.includes(role);
+/** Tender bidding (v6 item 110): head office prices and submits bids (admin, management and the QS); the project managers
+ *  who help price them and accounts, who pay the EMD, see the register. */
+export const TENDER_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'QUANTITY_SURVEYOR'];
+export const canManageTenders = (role: RoleKey) => TENDER_ROLES.includes(role);
+export const canViewTenders = (role: RoleKey) => canManageTenders(role) || role === 'PROJECT_MANAGER' || role === 'ACCOUNTS_MANAGER';
+/** A won tender becomes a project by those who both price tenders and open projects: admin and management. */
+export const canMakeProjectFromTender = (role: RoleKey) => role === 'ADMIN' || role === 'MANAGEMENT';
 /** RMC (v6 item 104): quote and take orders from customers (sales), on the plants the caller sees. */
 export const RMC_SALES_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER', 'ACCOUNTS_MANAGER'];
 export const canSellRmc = (role: RoleKey) => RMC_SALES_ROLES.includes(role);
