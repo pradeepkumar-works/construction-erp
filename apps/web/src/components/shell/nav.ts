@@ -147,7 +147,7 @@ export const NAV_DESCRIPTIONS: Record<string, string> = {
   '/compliance': 'Bank guarantees, EMDs, insurance and licences with renewals.',
   '/gst': 'GST on sales and purchases: GSTR-1 and 2B.',
   '/tally': 'Vouchers for Tally, with projects as cost centres.',
-  '/staff': 'Staff, their attendance, leave, overtime and holidays.',
+  '/staff': 'Staff records and their service letters, attendance, leave, overtime and holidays.',
   '/payroll': "Monthly days, leave and overtime per person, and labour contractors' man-days.",
   '/reports': 'Monthly and weekly progress reports as PDF.',
   '/cost': 'Budget, actual cost, cash flow and margin per project.',
@@ -250,7 +250,7 @@ export function navFor(user: AuthUser): NavSection[] {
       title: 'People',
       icon: TeamOutlined,
       items: [
-        { href: '/staff', label: 'Staff and leave', icon: IdcardOutlined, keywords: 'employees hr' },
+        { href: '/staff', label: 'Staff and leave', icon: IdcardOutlined, keywords: 'employees hr letters transfer promotion increment' },
         ...when(canViewPayroll(role) || canViewLabourSummary(role), { href: '/payroll', label: 'Payroll inputs', icon: CarryOutOutlined, keywords: 'salary wages' }),
       ],
     },

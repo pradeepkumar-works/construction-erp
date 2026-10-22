@@ -114,6 +114,9 @@ export const MESSAGE_LOG_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT'];
 export const canViewMessageLog = (role: RoleKey) => MESSAGE_LOG_ROLES.includes(role);
 export const canManageStaff = (role: RoleKey) => STAFF_ADMIN_ROLES.includes(role);
 export const canViewPayroll = (role: RoleKey) => PAYROLL_ROLES.includes(role);
+/** HR records (v6 item 99): an employee's personal, statutory and bank details and service history. Staff admins and payroll see
+ *  everyone's; each person sees their own (checked by the API). Site managers who mark the register see the job details only. */
+export const canViewEmployeePrivate = (role: RoleKey) => PAYROLL_ROLES.includes(role);
 /** The monthly labour contractor summary: payroll roles and those who see project cost. */
 export const canViewLabourSummary = (role: RoleKey) => PAYROLL_ROLES.includes(role) || COST_VIEW_ROLES.includes(role);
 /** See the staff posted at their projects and mark their attendance: staff admins and attendance recorders. */

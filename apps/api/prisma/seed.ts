@@ -147,6 +147,7 @@ async function main() {
     await seedContractDocuments(org.id);
     await seedStaff(org.id);
     await seedAttendanceExtras(org.id);
+    await seedHrRecords(org.id);
     await seedGuests(org.id);
     await seedVariations(org.id);
     await seedRfis(org.id);
@@ -332,6 +333,7 @@ async function main() {
   await seedContractDocuments(org.id);
   await seedStaff(org.id);
   await seedAttendanceExtras(org.id);
+  await seedHrRecords(org.id);
   await seedGuests(org.id);
   await seedVariations(org.id);
   await seedRfis(org.id);
@@ -3130,6 +3132,110 @@ async function seedAttendanceExtras(organizationId: string) {
       await prisma.auditLog.create({ data: { organizationId, entityType: 'LEAVE', entityId: l.id, action: 'APPROVED', actorId: decider, note: null, createdAt: day(from - 1) } });
     }
   }
+}
+
+/** Yearly CTC by designation for the demo staff (v6 item 99), rupees. */
+const DEMO_CTC: Record<string, number> = {
+  'Managing Director': 3600000, 'IT and systems head': 1500000, 'Project manager': 1440000, 'Site supervisor': 420000, 'Site engineer': 540000,
+  'Store keeper': 300000, 'Quantity surveyor': 720000, 'Procurement manager': 960000, 'QA/QC engineer': 600000, 'Accounts manager': 900000,
+  'HR manager': 840000, Surveyor: 360000, Driver: 240000, 'Safety officer': 480000, 'Pump operator': 216000,
+};
+
+/**
+ * HR records (v6 item 99) for the demo staff, once: personal, statutory and bank details, terms, who they report to, and
+ * the service events behind today's record (joining for everyone, a confirmation, a transfer, a promotion and an
+ * increment). Two people have a birthday in the coming weeks and the newest site engineer's probation ends soon.
+ * Bikash Swain has no PAN or bank account yet, so the dashboard's "details missing" has an entry.
+ */
+async function seedHrRecords(organizationId: string) {
+  if ((await prisma.employeeEvent.count({ where: { organizationId } })) > 0) return;
+  const staff = await prisma.employee.findMany({ where: { organizationId }, orderBy: { employeeCode: 'asc' } });
+  if (!staff.length) return;
+  const hr = await prisma.user.findFirst({ where: { organizationId, email: 'hr@demo.com' }, select: { id: true } });
+  if (!hr) return;
+  const byCode = new Map(staff.map((e) => [e.employeeCode, e]));
+  const md = byCode.get('EMP-001');
+  const projects = await prisma.project.findMany({ where: { organizationId }, select: { id: true, projectManagerId: true } });
+  const pmEmployee = new Map(staff.filter((e) => e.userId).map((e) => [e.userId!, e.id]));
+  const letters = new Map<string, number>();
+  const letterNo = (date: Date) => {
+    const y = String(date.getUTCFullYear());
+    const n = (letters.get(y) ?? 0) + 1;
+    letters.set(y, n);
+    return `HR-${y}-${String(n).padStart(4, '0')}`;
+  };
+  const banks = [['State Bank of India', 'SBIN0001234'], ['Punjab National Bank', 'PUNB0123400'], ['HDFC Bank', 'HDFC0001234'], ['Odisha Gramya Bank', 'IOBA0OGB001']];
+  const today = new Date();
+  const events: Prisma.EmployeeEventCreateManyInput[] = [];
+  for (const e of staff) {
+    const n = Number(e.employeeCode.slice(4));
+    const ctc = DEMO_CTC[e.designation] ?? 360000;
+    const projectManager = projects.find((p) => p.id === e.projectId)?.projectManagerId;
+    const reportsTo = e.employeeCode === 'EMP-001' ? null : e.projectId && projectManager && pmEmployee.get(projectManager) !== e.id ? pmEmployee.get(projectManager) ?? md?.id : md?.id;
+    const [bank, ifsc] = banks[n % banks.length];
+    // Two birthdays soon (in 5 and 12 days), the rest spread over the year.
+    const birthday = n === 6 ? day(5) : n === 15 ? day(12) : new Date(Date.UTC(1975 + (n * 3) % 25, n % 12, 1 + (n * 7) % 27));
+    const born = new Date(Date.UTC(n === 6 ? 1996 : n === 15 ? 1988 : birthday.getUTCFullYear(), birthday.getUTCMonth(), birthday.getUTCDate()));
+    const missing = e.employeeCode === 'EMP-014';
+    const onProbation = e.employeeCode === 'EMP-019';
+    await prisma.employee.update({
+      where: { id: e.id },
+      data: {
+        dateOfBirth: born,
+        gender: [6, 9, 11, 13, 18].includes(n) ? 'FEMALE' : 'MALE',
+        fatherOrSpouseName: `${['Bijay', 'Sarat', 'Prafulla', 'Hari', 'Ashok'][n % 5]} ${e.fullName.split(' ').slice(-1)[0]}`,
+        email: e.userId ? null : `${e.fullName.toLowerCase().replace(/[^a-z]+/g, '.')}@demo-staff.in`,
+        address: ['Plot 112, Saheed Nagar, Bhubaneswar 751007', 'At/Po Balianta, Khordha 752101', 'Qr. 4B, Unit 8, Bhubaneswar 751012', 'Near Jagannath Temple, Puri 752001'][n % 4],
+        bloodGroup: ['B+', 'O+', 'A+', 'AB+', 'O-'][n % 5],
+        emergencyContact: `${['Spouse', 'Father', 'Brother', 'Mother'][n % 4]}`,
+        emergencyPhone: `98610${String(10000 + n * 137).slice(-5)}`,
+        pan: missing ? null : `ABC${'PQRST'[n % 5]}${String.fromCharCode(65 + (n % 26))}${String(1000 + n * 37).slice(-4)}${String.fromCharCode(65 + ((n * 5) % 26))}`,
+        aadhaarLast4: String(1000 + n * 211).slice(-4),
+        uan: missing ? null : `1012${String(34567800 + n).padStart(8, '0')}`,
+        pfNumber: `OR/BBS/0034567/000/${String(n).padStart(7, '0')}`,
+        esiNumber: ctc / 12 <= 21000 ? `31${String(12345600 + n).padStart(8, '0')}` : null,
+        bankName: missing ? null : bank,
+        bankAccountNo: missing ? null : `3${String(2010000000 + n * 7919)}`,
+        bankIfsc: missing ? null : ifsc,
+        employmentType: onProbation ? 'PROBATION' : e.designation === 'Driver' || e.designation === 'Pump operator' ? 'CONTRACT' : 'PERMANENT',
+        grade: ctc >= 1400000 ? 'M3' : ctc >= 800000 ? 'M2' : ctc >= 500000 ? 'M1' : 'S1',
+        reportingToId: reportsTo ?? null,
+        probationEndsOn: onProbation ? day(18) : e.joinedOn ? new Date(e.joinedOn.getTime() + 180 * 86_400_000) : null,
+        confirmedOn: onProbation ? null : e.joinedOn ? new Date(e.joinedOn.getTime() + 182 * 86_400_000) : null,
+        noticeDays: ctc >= 800000 ? 60 : 30,
+        ctcAnnual: D(ctc),
+        ...(onProbation ? { joinedOn: day(-162) } : {}),
+      },
+    });
+    const joined = onProbation ? day(-162) : e.joinedOn;
+    if (!joined) continue;
+    const firstCtc = e.employeeCode === 'EMP-006' ? ctc - 60000 : ctc;
+    const firstDesignation = e.employeeCode === 'EMP-005' ? 'Foreman' : e.designation;
+    const firstProject = e.employeeCode === 'EMP-017' ? projects.find((p) => p.id !== e.projectId)?.id ?? e.projectId : e.projectId;
+    events.push({ organizationId, employeeId: e.id, type: 'JOINED', effectiveDate: joined, letterNo: letterNo(joined), toProjectId: firstProject, toDesignation: firstDesignation, toDepartment: e.department, toCtc: D(firstCtc), createdById: hr.id, createdAt: joined });
+    if (!onProbation) {
+      const confirmed = new Date(joined.getTime() + 182 * 86_400_000);
+      if (confirmed < today && ['EMP-006', 'EMP-008', 'EMP-012'].includes(e.employeeCode))
+        events.push({ organizationId, employeeId: e.id, type: 'CONFIRMED', effectiveDate: confirmed, letterNo: letterNo(confirmed), createdById: hr.id, createdAt: confirmed });
+    }
+    if (e.employeeCode === 'EMP-005') {
+      const on = day(-90);
+      events.push({ organizationId, employeeId: e.id, type: 'PROMOTED', effectiveDate: on, letterNo: letterNo(on), fromDesignation: 'Foreman', toDesignation: e.designation, note: 'For running the embankment gang through the monsoon without a lost-time injury', createdById: hr.id, createdAt: on });
+    }
+    if (e.employeeCode === 'EMP-006') {
+      const on = day(-200);
+      events.push({ organizationId, employeeId: e.id, type: 'INCREMENT', effectiveDate: on, letterNo: letterNo(on), fromCtc: D(firstCtc), toCtc: D(ctc), note: 'Annual increment', createdById: hr.id, createdAt: on });
+    }
+    if (e.employeeCode === 'EMP-017' && firstProject !== e.projectId) {
+      const on = day(-60);
+      events.push({ organizationId, employeeId: e.id, type: 'TRANSFERRED', effectiveDate: on, letterNo: letterNo(on), fromProjectId: firstProject, toProjectId: e.projectId, note: 'To take charge of the structure works', createdById: hr.id, createdAt: on });
+    }
+  }
+  // Letter numbers run in date order through each year.
+  events.sort((a, b) => (a.effectiveDate as Date).getTime() - (b.effectiveDate as Date).getTime());
+  letters.clear();
+  for (const ev of events) ev.letterNo = letterNo(ev.effectiveDate as Date);
+  await prisma.employeeEvent.createMany({ data: events });
 }
 
 async function seedStaff(organizationId: string) {

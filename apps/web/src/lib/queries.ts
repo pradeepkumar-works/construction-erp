@@ -170,6 +170,9 @@ import type {
   ReviewResultDto,
   ReviewedItemDto,
   MyWorkDto,
+  EmployeeEventDto,
+  EmployeeEventType,
+  HrDashboardDto,
   ModuleHomeDto,
   HomeTrendsDto,
   ProgressEntryDto,
@@ -1247,6 +1250,59 @@ export const useEmployeeHistory = (id: string | undefined, enabled = true) =>
     queryFn: async () => (await api.get<AuditLogDto[]>(`/staff/employees/${id}/history`)).data,
     enabled: !!id && enabled,
   });
+
+/* ---------- HR records (v6 item 99) ---------- */
+
+export interface EmployeeEventFilters extends PageParams {
+  employeeId?: string;
+  type?: EmployeeEventType;
+  from?: string;
+  to?: string;
+}
+
+/** Service events (joining to exit), newest first. */
+export const useEmployeeEvents = (filters?: EmployeeEventFilters, enabled = true) =>
+  useQuery({
+    queryKey: ['staff', 'events', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<EmployeeEventDto>>('/staff/events', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+
+export const useHrDashboard = (enabled = true) =>
+  useQuery({ queryKey: ['staff', 'hr-dashboard'], queryFn: async () => (await api.get<HrDashboardDto>('/staff/hr-dashboard')).data, enabled });
+
+export const useEmployeeDocuments = (employeeId: string | undefined, enabled = true) =>
+  useQuery({
+    queryKey: ['staff', 'documents', employeeId],
+    queryFn: async () => (await api.get<AttachmentDto[]>(`/staff/employees/${employeeId}/documents`)).data,
+    enabled: !!employeeId && enabled,
+  });
+
+/** Record a confirmation, transfer, promotion, increment, warning or exit; the staff record changes to match. */
+export function useRecordEmployeeEvent(employeeId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: Record<string, unknown>) => (await api.post<EmployeeEventDto>(`/staff/employees/${employeeId}/events`, body)).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['staff'] }),
+  });
+}
+
+export function useRemoveEmployeeEvent() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => (await api.delete(`/staff/events/${id}`)).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['staff'] }),
+  });
+}
+
+export function useSetEmployeeDocuments(employeeId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (attachmentIds: string[]) => (await api.put<AttachmentDto[]>(`/staff/employees/${employeeId}/documents`, { attachmentIds })).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['staff', 'documents', employeeId] }),
+  });
+}
 
 export const useLeaveBalances = (employeeId: string | undefined, year?: number, enabled = true) =>
   useQuery({

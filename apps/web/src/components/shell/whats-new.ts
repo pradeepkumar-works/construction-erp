@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-hr-records',
+    date: '2026-11-05',
+    title: 'HR records, service events and letters',
+    points: [
+      'A staff record now holds the employment terms, personal details, PAN, UAN, PF and ESI numbers and the salary account. Only HR, payroll and the person see the private parts.',
+      'Record a confirmation, transfer, promotion, increment, warning or exit from the record\'s Service and letters tab. The record changes to match, and each step gets a letter number and a letter to print. Take back the latest one if it was a mistake.',
+      'Staff and leave → Service records lists every step across the company. The People overview now shows head count by site, department and employment, probation ending, birthdays and work anniversaries, and whose details payroll still needs.',
+    ],
+  },
+  {
     id: '2026-11-drawing-viewer',
     date: '2026-11-04',
     title: 'View and mark up drawings',

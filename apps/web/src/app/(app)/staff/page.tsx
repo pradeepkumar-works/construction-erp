@@ -3,7 +3,7 @@
 import React, { Suspense, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Badge, Card, Tabs } from 'antd';
-import { canManageStaff, canMarkStaff } from '@erp/shared';
+import { canManageStaff, canMarkStaff, canViewEmployeePrivate } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useStaffSummary } from '@/lib/queries';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -17,8 +17,9 @@ import { EmployeeDrawer } from '@/components/staff/EmployeeDrawer';
 import { EmployeeFormModal } from '@/components/staff/EmployeeFormModal';
 import { HolidayList } from '@/components/staff/HolidayList';
 import { OvertimeList } from '@/components/staff/OvertimeList';
+import { ServiceRecords } from '@/components/staff/ServiceRecords';
 
-const TABS = ['me', 'leave', 'overtime', 'register', 'staff', 'holidays'] as const;
+const TABS = ['me', 'leave', 'overtime', 'register', 'staff', 'service', 'holidays'] as const;
 type Tab = (typeof TABS)[number];
 
 function StaffPage() {
@@ -29,10 +30,11 @@ function StaffPage() {
   const { data: summary } = useStaffSummary();
   const marks = !!user && canMarkStaff(user.roleKey);
   const admin = !!user && canManageStaff(user.roleKey);
+  const hr = admin || (!!user && canViewEmployeePrivate(user.roleKey));
   const deciding = marks || !!summary?.leaveToDecide;
   const overtime = marks || !!summary?.overtimeToDecide;
   const raw = search.get('tab') as Tab | null;
-  const allowed = (t: Tab) => t === 'me' || t === 'holidays' || (t === 'leave' && deciding) || (t === 'overtime' && overtime) || ((t === 'register' || t === 'staff') && marks);
+  const allowed = (t: Tab) => t === 'me' || t === 'holidays' || (t === 'leave' && deciding) || (t === 'overtime' && overtime) || ((t === 'register' || t === 'staff') && marks) || (t === 'service' && hr);
   const tab: Tab = raw && TABS.includes(raw) && allowed(raw) ? raw : 'me';
   // Leave notifications link here with ?tab=leave&leave=<id>
   const [leaveId, setLeaveId] = useState<string | null>(search.get('leave'));
@@ -85,6 +87,7 @@ function StaffPage() {
                   { key: 'staff', label: admin ? 'Staff' : 'My site staff', children: <EmployeeList onOpen={setEmployeeId} onNew={() => setNewEmployee(true)} /> },
                 ]
               : []),
+            ...(hr ? [{ key: 'service', label: 'Service records', children: <ServiceRecords onOpen={setEmployeeId} /> }] : []),
             { key: 'holidays', label: 'Holidays', children: <HolidayList /> },
           ]}
         />

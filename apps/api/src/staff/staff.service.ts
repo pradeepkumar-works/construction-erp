@@ -9,6 +9,7 @@ import {
   canManageStaff,
   checkInPlace,
   canMarkStaff,
+  canViewEmployeePrivate,
   isWeeklyOff,
   leaveDays,
   overtimeHours,
@@ -34,7 +35,7 @@ import { AuditService } from '../common/audit.service';
 import { UndoService } from '../common/undo.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { todayIn } from '../notifications/time';
-import { dateOnly, dec, iso, parseDate } from '../common/serialize';
+import { dateOnly, dec, iso, money, parseDate } from '../common/serialize';
 import { isUniqueViolation } from '../common/idempotency';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import {
@@ -56,6 +57,7 @@ import {
 const employeeInclude = {
   user: { select: { email: true } },
   project: { select: { name: true } },
+  reportingTo: { select: { fullName: true } },
 } satisfies Prisma.EmployeeInclude;
 type EmployeeRow = Prisma.EmployeeGetPayload<{ include: typeof employeeInclude }>;
 
@@ -91,6 +93,47 @@ const LEAVE_ORDER: Record<LeaveSortField, (o: SortOrder) => Prisma.LeaveRequestO
 const DESC_DEFAULT = new Set<string>(['fromDate', 'createdAt']);
 const order = (sortBy: string, o: SortOrder | undefined): SortOrder => o ?? (DESC_DEFAULT.has(sortBy) ? 'desc' : 'asc');
 
+const opt = <T>(v: T | null | undefined, editing: boolean): T | null | undefined => (v === undefined ? (editing ? undefined : null) : v === '' ? null : v);
+const optDate = (v: string | null | undefined, editing: boolean) => (v === undefined ? (editing ? undefined : null) : v ? parseDate(v) : null);
+
+/** The HR record's fields (v6 item 99) from a create or edit: on an edit, a field left out stays as it is. */
+function hrFields(dto: Partial<CreateEmployeeDto>, editing: boolean) {
+  return {
+    dateOfBirth: optDate(dto.dateOfBirth, editing),
+    gender: opt(dto.gender, editing),
+    fatherOrSpouseName: opt(dto.fatherOrSpouseName, editing),
+    email: opt(dto.email, editing),
+    address: opt(dto.address, editing),
+    bloodGroup: opt(dto.bloodGroup, editing),
+    emergencyContact: opt(dto.emergencyContact, editing),
+    emergencyPhone: opt(dto.emergencyPhone, editing),
+    pan: opt(dto.pan, editing),
+    aadhaarLast4: opt(dto.aadhaarLast4, editing),
+    uan: opt(dto.uan, editing),
+    pfNumber: opt(dto.pfNumber, editing),
+    esiNumber: opt(dto.esiNumber, editing),
+    bankName: opt(dto.bankName, editing),
+    bankAccountNo: opt(dto.bankAccountNo, editing),
+    bankIfsc: opt(dto.bankIfsc, editing),
+    employmentType: opt(dto.employmentType, editing),
+    grade: opt(dto.grade, editing),
+    reportingToId: opt(dto.reportingToId, editing),
+    probationEndsOn: optDate(dto.probationEndsOn, editing),
+    confirmedOn: optDate(dto.confirmedOn, editing),
+    noticeDays: opt(dto.noticeDays, editing),
+    ctcAnnual: dto.ctcAnnual === undefined ? (editing ? undefined : null) : dto.ctcAnnual === null ? null : new Prisma.Decimal(dto.ctcAnnual),
+  };
+}
+
+/** The next HR letter number of the year an event takes effect in: HR-2026-0001 (v6 item 99). */
+export async function nextLetterNo(tx: Prisma.TransactionClient, organizationId: string, date: string) {
+  const prefix = `HR-${date.slice(0, 4)}-`;
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`HRLETTER:${organizationId}:${prefix}`}))`;
+  const last = await tx.employeeEvent.findFirst({ where: { organizationId, letterNo: { startsWith: prefix } }, orderBy: { letterNo: 'desc' }, select: { letterNo: true } });
+  const n = last ? parseInt(last.letterNo.slice(prefix.length), 10) + 1 : 1;
+  return `${prefix}${String(n).padStart(4, '0')}`;
+}
+
 /** Leave that counts: waiting or approved. */
 const LIVE_LEAVE = ['PENDING', 'APPROVED'] as const;
 const yearOf = (d: string) => Number(d.slice(0, 4));
@@ -121,7 +164,12 @@ export class StaffService {
 
   /* ---------- mapping ---------- */
 
-  private toEmployeeDto(e: EmployeeRow): EmployeeDto {
+  /** HR records (v6 item 99): personal, statutory and bank details go to staff admins, payroll and the person only. */
+  private seesPrivate(user: RequestUser | undefined, e: { userId: string | null }) {
+    return !!user && (canViewEmployeePrivate(user.roleKey) || (!!e.userId && e.userId === user.id));
+  }
+
+  private toEmployeeDto(e: EmployeeRow, user?: RequestUser): EmployeeDto {
     return {
       id: e.id,
       employeeCode: e.employeeCode,
@@ -136,6 +184,35 @@ export class StaffService {
       joinedOn: dateOnly(e.joinedOn),
       leftOn: dateOnly(e.leftOn),
       isActive: e.isActive,
+      employmentType: e.employmentType,
+      grade: e.grade,
+      reportingToId: e.reportingToId,
+      reportingToName: e.reportingTo?.fullName ?? null,
+      probationEndsOn: dateOnly(e.probationEndsOn),
+      confirmedOn: dateOnly(e.confirmedOn),
+      noticeDays: e.noticeDays,
+      private: this.seesPrivate(user, e)
+        ? {
+            dateOfBirth: dateOnly(e.dateOfBirth),
+            gender: e.gender,
+            fatherOrSpouseName: e.fatherOrSpouseName,
+            email: e.email,
+            address: e.address,
+            bloodGroup: e.bloodGroup,
+            emergencyContact: e.emergencyContact,
+            emergencyPhone: e.emergencyPhone,
+            pan: e.pan,
+            aadhaarLast4: e.aadhaarLast4,
+            uan: e.uan,
+            pfNumber: e.pfNumber,
+            esiNumber: e.esiNumber,
+            bankName: e.bankName,
+            bankAccountNo: e.bankAccountNo,
+            bankIfsc: e.bankIfsc,
+            ctcAnnual: money(e.ctcAnnual),
+            exitReason: e.exitReason,
+          }
+        : null,
     };
   }
 
@@ -263,7 +340,7 @@ export class StaffService {
       e.projectId ? this.prisma.project.findUnique({ where: { id: e.projectId }, select: siteSelect }) : null,
     ]);
     return {
-      employee: this.toEmployeeDto(e),
+      employee: this.toEmployeeDto(e, user),
       today: att ? this.toAttendanceDto(att, user) : null,
       todayOff,
       year,
@@ -352,11 +429,11 @@ export class StaffService {
       this.prisma.employee.findMany({ where, include: employeeInclude, orderBy: [...EMPLOYEE_ORDER[sortBy](order(sortBy, q.sortOrder)), { id: 'asc' }], skip: args.skip, take: args.take }),
       this.prisma.employee.count({ where }),
     ]);
-    return paginated(rows.map((r) => this.toEmployeeDto(r)), total, args);
+    return paginated(rows.map((r) => this.toEmployeeDto(r, user)), total, args);
   }
 
   async getEmployee(user: RequestUser, id: string): Promise<EmployeeDto> {
-    return this.toEmployeeDto(await this.visibleEmployee(user, id));
+    return this.toEmployeeDto(await this.visibleEmployee(user, id), user);
   }
 
   /** Logins that can be linked to a staff record: active users not linked to anyone else. */
@@ -370,7 +447,9 @@ export class StaffService {
     return rows.map((u) => ({ id: u.id, fullName: u.fullName, email: u.email, roleName: u.role.name }));
   }
 
-  private async checkLinks(user: RequestUser, dto: { userId?: string | null; projectId?: string | null }) {
+  private async checkLinks(user: RequestUser, dto: { userId?: string | null; projectId?: string | null; reportingToId?: string | null }, self?: string) {
+    if (dto.reportingToId && (dto.reportingToId === self || !(await this.prisma.employee.findFirst({ where: { id: dto.reportingToId, organizationId: user.organizationId }, select: { id: true } }))))
+      throw new BadRequestException(dto.reportingToId === self ? 'Someone cannot report to themselves. Choose their manager.' : 'Reports to: employee not found');
     if (dto.userId && !(await this.prisma.user.findFirst({ where: { id: dto.userId, organizationId: user.organizationId }, select: { id: true } }))) throw new BadRequestException('Login not found');
     if (dto.projectId && !(await this.prisma.project.findFirst({ where: { id: dto.projectId, organizationId: user.organizationId }, select: { id: true } }))) throw new BadRequestException('Project not found');
   }
@@ -394,8 +473,8 @@ export class StaffService {
     this.access.assertCanManageStaff(user);
     await this.checkLinks(user, dto);
     const created = await this.prisma
-      .$transaction(async (tx) =>
-        tx.employee.create({
+      .$transaction(async (tx) => {
+        const e = await tx.employee.create({
           data: {
             organizationId: user.organizationId,
             employeeCode: dto.employeeCode || (await this.nextEmployeeCode(tx, user.organizationId)),
@@ -406,19 +485,37 @@ export class StaffService {
             userId: dto.userId ?? null,
             projectId: dto.projectId ?? null,
             joinedOn: dto.joinedOn ? parseDate(dto.joinedOn) : null,
+            ...hrFields(dto, false),
           },
           include: employeeInclude,
-        }),
-      )
+        });
+        // The joining is the first event of their service, and prints the appointment letter (v6 item 99).
+        if (e.joinedOn)
+          await tx.employeeEvent.create({
+            data: {
+              organizationId: user.organizationId,
+              employeeId: e.id,
+              type: 'JOINED',
+              effectiveDate: e.joinedOn,
+              letterNo: await nextLetterNo(tx, user.organizationId, dateOnly(e.joinedOn)!),
+              toProjectId: e.projectId,
+              toDesignation: e.designation,
+              toDepartment: e.department,
+              toCtc: e.ctcAnnual,
+              createdById: user.id,
+            },
+          });
+        return e;
+      })
       .catch((e) => this.uniqueError(e, dto.employeeCode));
     await this.audit.log(user, 'EMPLOYEE', created.id, 'CREATED', created.employeeCode);
-    return this.toEmployeeDto(created);
+    return this.toEmployeeDto(created, user);
   }
 
   async updateEmployee(user: RequestUser, id: string, dto: UpdateEmployeeDto): Promise<EmployeeDto> {
     this.access.assertCanManageStaff(user);
     const cur = await this.visibleEmployee(user, id);
-    await this.checkLinks(user, dto);
+    await this.checkLinks(user, dto, id);
     if (dto.employeeCode === '') throw new BadRequestException('Employee code cannot be empty');
     const leftOn = dto.leftOn === undefined ? undefined : dto.leftOn ? parseDate(dto.leftOn) : null;
     const isActive = dto.isActive ?? (dto.leftOn === undefined ? undefined : !dto.leftOn);
@@ -436,13 +533,14 @@ export class StaffService {
           joinedOn: dto.joinedOn === undefined ? undefined : dto.joinedOn ? parseDate(dto.joinedOn) : null,
           leftOn,
           isActive,
+          ...hrFields(dto, true),
         },
         include: employeeInclude,
       })
       .catch((e) => this.uniqueError(e, dto.employeeCode));
     const moved = dto.projectId !== undefined && dto.projectId !== cur.projectId;
     await this.audit.log(user, 'EMPLOYEE', id, isActive === false && cur.isActive ? 'LEFT' : 'UPDATED', moved ? `Posted to ${updated.project?.name ?? 'head office'}` : null);
-    return this.toEmployeeDto(updated);
+    return this.toEmployeeDto(updated, user);
   }
 
   employeeHistory(user: RequestUser, id: string) {
@@ -485,7 +583,7 @@ export class StaffService {
         const a = attBy.get(e.id);
         const l = leaveBy.get(e.id);
         return {
-          employee: this.toEmployeeDto(e),
+          employee: this.toEmployeeDto(e, user),
           attendance: a ? this.toAttendanceDto(a, user) : null,
           leave: l ? { id: l.id, type: l.type, status: l.status, halfDay: l.halfDay } : null,
         };

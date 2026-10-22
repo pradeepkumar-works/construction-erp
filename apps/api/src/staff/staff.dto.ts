@@ -1,11 +1,12 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
-import { ArrayMaxSize, IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, Matches, Max, MaxLength, Min, ValidateIf, ValidateNested } from 'class-validator';
-import { LEAVE_STATUSES, LEAVE_TYPES, LIST_SORT_FIELDS, STAFF_ATTENDANCE_STATUSES, type EmployeeSortField, type LeaveSortField, type LeaveStatus, type LeaveType, type StaffAttendanceStatus } from '@erp/shared';
+import { ArrayMaxSize, IsArray, IsBoolean, IsDateString, IsEmail, IsIn, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, Matches, Max, MaxLength, Min, ValidateIf, ValidateNested } from 'class-validator';
+import { EMPLOYEE_EVENT_TYPES, EMPLOYMENT_TYPES, ESI_PATTERN, GENDERS, IFSC_PATTERN, PAN_PATTERN, RECORDABLE_EVENT_TYPES, UAN_PATTERN, type EmployeeEventType, type EmploymentType, type Gender, LEAVE_STATUSES, LEAVE_TYPES, LIST_SORT_FIELDS, STAFF_ATTENDANCE_STATUSES, type EmployeeSortField, type LeaveSortField, type LeaveStatus, type LeaveType, type StaffAttendanceStatus } from '@erp/shared';
 import { PageQuery, QueryBool } from '../common/paging';
 
 const trim = () => Transform(({ value }) => (typeof value === 'string' ? value.trim() : value));
 const opt = () => ValidateIf((_, v) => v !== null && v !== undefined);
+const upper = () => Transform(({ value }) => (typeof value === 'string' ? value.trim().toUpperCase() : value));
 
 /* ---------- employees ---------- */
 
@@ -18,6 +19,55 @@ export class CreateEmployeeDto {
   @ApiPropertyOptional({ description: 'Their login, for self check-in and leave from the app' }) @IsOptional() @opt() @IsUUID() userId?: string | null;
   @ApiPropertyOptional({ description: 'Posting; null = head office' }) @IsOptional() @opt() @IsUUID() projectId?: string | null;
   @ApiPropertyOptional({ example: '2025-04-01' }) @IsOptional() @opt() @IsDateString() joinedOn?: string | null;
+
+  /* HR records (v6 item 99) */
+  @ApiPropertyOptional({ example: '1990-06-15' }) @IsOptional() @opt() @IsDateString() dateOfBirth?: string | null;
+  @ApiPropertyOptional({ enum: GENDERS }) @IsOptional() @opt() @IsIn(GENDERS as unknown as string[]) gender?: Gender | null;
+  @ApiPropertyOptional() @IsOptional() @trim() @IsString() @MaxLength(120) fatherOrSpouseName?: string | null;
+  @ApiPropertyOptional() @IsOptional() @trim() @opt() @IsEmail({}, { message: 'Enter an email address like name@company.com' }) @MaxLength(160) email?: string | null;
+  @ApiPropertyOptional() @IsOptional() @trim() @IsString() @MaxLength(400) address?: string | null;
+  @ApiPropertyOptional({ example: 'B+' }) @IsOptional() @trim() @IsString() @MaxLength(5) bloodGroup?: string | null;
+  @ApiPropertyOptional({ description: 'Who to call in an emergency, and how they are related' }) @IsOptional() @trim() @IsString() @MaxLength(120) emergencyContact?: string | null;
+  @ApiPropertyOptional() @IsOptional() @trim() @IsString() @MaxLength(20) emergencyPhone?: string | null;
+  @ApiPropertyOptional({ example: 'ABCDE1234F' }) @IsOptional() @upper() @opt() @Matches(PAN_PATTERN, { message: 'PAN is five letters, four digits and a letter, like ABCDE1234F' }) pan?: string | null;
+  @ApiPropertyOptional({ example: '1234', description: 'Last four digits of the Aadhaar number only' }) @IsOptional() @trim() @opt() @Matches(/^\d{4}$/, { message: 'Enter only the last four digits of the Aadhaar number' }) aadhaarLast4?: string | null;
+  @ApiPropertyOptional({ example: '100123456789' }) @IsOptional() @trim() @opt() @Matches(UAN_PATTERN, { message: 'UAN is the 12-digit number on the PF passbook' }) uan?: string | null;
+  @ApiPropertyOptional({ example: 'OR/BBS/0012345/000/0000123' }) @IsOptional() @upper() @IsString() @MaxLength(40) pfNumber?: string | null;
+  @ApiPropertyOptional({ example: '3112345678' }) @IsOptional() @trim() @opt() @Matches(ESI_PATTERN, { message: 'The ESI number is 10 digits (17 on older cards)' }) esiNumber?: string | null;
+  @ApiPropertyOptional() @IsOptional() @trim() @IsString() @MaxLength(80) bankName?: string | null;
+  @ApiPropertyOptional() @IsOptional() @trim() @opt() @Matches(/^\d{6,18}$/, { message: 'The account number is 6 to 18 digits' }) bankAccountNo?: string | null;
+  @ApiPropertyOptional({ example: 'SBIN0001234' }) @IsOptional() @upper() @opt() @Matches(IFSC_PATTERN, { message: 'IFSC is four letters, a zero and six letters or digits, like SBIN0001234' }) bankIfsc?: string | null;
+  @ApiPropertyOptional({ enum: EMPLOYMENT_TYPES }) @IsOptional() @opt() @IsIn(EMPLOYMENT_TYPES as unknown as string[]) employmentType?: EmploymentType | null;
+  @ApiPropertyOptional({ example: 'M2' }) @IsOptional() @trim() @IsString() @MaxLength(20) grade?: string | null;
+  @ApiPropertyOptional({ description: 'The employee they report to' }) @IsOptional() @opt() @IsUUID() reportingToId?: string | null;
+  @ApiPropertyOptional() @IsOptional() @opt() @IsDateString() probationEndsOn?: string | null;
+  @ApiPropertyOptional() @IsOptional() @opt() @IsDateString() confirmedOn?: string | null;
+  @ApiPropertyOptional({ example: 30 }) @IsOptional() @opt() @IsInt() @Min(0) @Max(180) noticeDays?: number | null;
+  @ApiPropertyOptional({ example: 540000, description: 'Cost to company a year, rupees; later changes go through an increment' }) @IsOptional() @opt() @IsNumber({ maxDecimalPlaces: 2 }) @Min(0) @Max(1_000_000_000) ctcAnnual?: number | null;
+}
+
+/* ---------- HR records (v6 item 99) ---------- */
+
+export class RecordEmployeeEventDto {
+  @ApiProperty({ enum: RECORDABLE_EVENT_TYPES }) @IsIn(RECORDABLE_EVENT_TYPES as unknown as string[]) type: EmployeeEventType;
+  @ApiProperty({ example: '2026-11-01', description: 'The day it takes effect; for an exit, the last working day' }) @IsDateString() effectiveDate: string;
+  @ApiPropertyOptional({ description: 'Transfer: the new posting; null = head office' }) @IsOptional() @opt() @IsUUID() toProjectId?: string | null;
+  @ApiPropertyOptional({ description: 'Promotion or transfer: the new designation' }) @IsOptional() @trim() @IsString() @MaxLength(80) toDesignation?: string | null;
+  @ApiPropertyOptional({ description: 'Transfer or promotion: the new department' }) @IsOptional() @trim() @IsString() @MaxLength(80) toDepartment?: string | null;
+  @ApiPropertyOptional({ example: 600000, description: 'Increment or promotion: the new cost to company a year' }) @IsOptional() @opt() @IsNumber({ maxDecimalPlaces: 2 }) @Min(0) @Max(1_000_000_000) toCtc?: number | null;
+  @ApiPropertyOptional({ description: 'Resignation: the day it was handed in' }) @IsOptional() @opt() @IsDateString() noticeGivenOn?: string | null;
+  @ApiPropertyOptional({ description: 'The reason, the matter of a warning, or what the letter should say' }) @IsOptional() @trim() @IsString() @MaxLength(1000) note?: string | null;
+}
+
+export class ListEmployeeEventsQuery extends PageQuery {
+  @ApiPropertyOptional() @IsOptional() @IsUUID() employeeId?: string;
+  @ApiPropertyOptional({ enum: EMPLOYEE_EVENT_TYPES }) @IsOptional() @IsIn(EMPLOYEE_EVENT_TYPES as unknown as string[]) type?: EmployeeEventType;
+  @ApiPropertyOptional({ example: '2026-10-01' }) @IsOptional() @IsDateString() from?: string;
+  @ApiPropertyOptional({ example: '2026-10-31' }) @IsOptional() @IsDateString() to?: string;
+}
+
+export class EmployeeDocumentsDto {
+  @ApiProperty({ type: [String], description: 'The complete list of the employee’s documents' }) @IsArray() @ArrayMaxSize(50) @IsUUID('4', { each: true }) attachmentIds: string[];
 }
 
 export class UpdateEmployeeDto extends PartialType(CreateEmployeeDto) {

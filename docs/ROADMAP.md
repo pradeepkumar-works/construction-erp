@@ -469,8 +469,11 @@ Migrations stay additive. Design notes for each item are in the project's `roadm
     `/modules/<key>` for Site, Materials and plant, Purchases, Billing and People, first in each sidebar section;
     `GET /dashboard/modules/:key` (`ModuleHomeService`) with each figure behind its list's helper, Waiting for you by type,
     the section's pages with a line each and its New actions. ARCHITECTURE "Module home pages".
-99. **HR records** (M). The full employee master (personal, statutory and bank details, documents), joining,
-    confirmation, transfer, increment, exit with full and final settlement, HR letters, an HR dashboard.
+99. ~~**HR records** (M). The full employee master (personal, statutory and bank details, documents), joining,
+    confirmation, transfer, increment, exit with full and final settlement, HR letters, an HR dashboard.~~ Done: the staff
+    record's personal, statutory, bank and terms fields (private to HR, payroll and the person), `EmployeeEvent` from
+    joining to exit with letter numbers and printed letters, documents, Service records on Staff and leave, and the HR
+    dashboard on the People home. Full and final settlement moves to item 100. ARCHITECTURE "HR records".
 100. **Payroll** (L). Salary structures, PF, ESI, professional tax and salary TDS, a monthly salary run from attendance
     approved through the matrix, payslips on the web and phone, staff loans and advances, the bank file, statutory returns.
 101. **Biometric attendance** (M). A device register, the ZKTeco / eSSL push protocol (ADMS), a generic webhook and a
@@ -489,6 +492,27 @@ Migrations stay additive. Design notes for each item are in the project's `roadm
     request kind; released into its imprest or paid to the party.
 108. **Machine finance** (M). Loans on financed machines with the EMI schedule, EMIs paid and due, reminders, posted to the
     books and the machine's cost.
+110. **Tender bidding** (L). A tender register (NIT, client, EMD, dates, documents, result), a company Schedule of Rates
+    library imported from Excel (state SOR, CPWD DSR, own rates), the bid BOQ priced from rate analysis with the quoted
+    percentage above or below the SOR, others' bids after opening (L1, L2), and a won tender turned into a project with
+    its BOQ, budget and guarantees.
+111. **Subcontract enquiries and comparison** (M). Quotes from several subcontractors on chosen BOQ items, a comparative
+    statement by item and total, and the chosen quote becoming the work order.
+112. **Meetings and action items** (M). Attendees, minutes, decisions and actions (owner, due date, linked RFI, NCR or
+    variation), the MOM as a PDF by email or WhatsApp, open actions in My work.
+113. **Material approvals** (M). The approved makes list, material and sample approval requests with review outcomes and
+    revisions, days outstanding, and a warning on a PO for a make not approved.
+114. **Schedule links and critical path** (M). Finish-to-start and other links with lag, the critical path, a three-week
+    look-ahead, Primavera XER and MS Project XML import and export.
+115. **Earned value** (M). Planned value from the baseline and BOQ, earned value from measured or certified work, actual
+    cost from the books; SPI, CPI, EAC and the S-curve per project.
+116. **Comments and mentions** (S). Threaded comments on any record, @mentions that notify, resolved threads.
+117. **Module switches** (S). An admin turns modules off for the company; they leave the sidebar, search, New menu and
+    Ask, the API refuses them, the data is kept. Plans can set which modules a tier has.
+118. **Measure on drawings** (M). In the drawing viewer (item 109): scale from two points, length, area and count, saved as
+    measurement sheet lines or a BOQ quantity.
+
+Items 110 to 118 come from the comparison with OpenConstructionERP (AGPL-3.0: its ideas only, never its code or cost data).
 
 ## Drawings in the app (item 109, numbered after v6's 98 to 108)
 
