@@ -46,7 +46,8 @@ and the pre-delivery checklist.
 - Add new enums to both `schema.prisma` and `packages/shared/src/enums.ts` (+ labels).
 - Web: `'use client'` components, `App.useApp()` for message/modal, data via hooks in
   `src/lib/queries.ts`, formatting in `src/lib/format.ts`. Sidebar links (and quick-jump search) come from
-  `src/components/shell/nav.ts`: a new module is one line in its section, gated by the same `@erp/shared` permission helper as its page. The product name (Nirmaan) is `PRODUCT_NAME` in
+  `src/components/shell/nav.ts`: a new module is one line in its section, gated by the same `@erp/shared` permission helper as its page. A section that is a module
+  (`module`, v6 item 98) has a home at `/modules/<key>` (`ModuleHomeService`); a new page needs its line in `NAV_DESCRIPTIONS`. The product name (Nirmaan) is `PRODUCT_NAME` in
   `packages/shared/src/brand.ts`; web brand colours live only in `src/lib/brand.ts` (plus `BrandMark` and
   `app/icon.svg`), mobile ones in `src/theme.ts`. Use `BRAND.colors` instead of hex literals.
   Check antd 6 typings in node_modules before using a prop you are unsure of.

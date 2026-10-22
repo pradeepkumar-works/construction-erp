@@ -170,6 +170,7 @@ import type {
   ReviewResultDto,
   ReviewedItemDto,
   MyWorkDto,
+  ModuleHomeDto,
   HomeTrendsDto,
   ProgressEntryDto,
   ProjectDashboard,
@@ -476,6 +477,15 @@ export const useMyWork = () =>
 
 /** Six months of trends for the home page's tiles and charts. */
 export const useHomeTrends = () => useQuery({ queryKey: ['dashboard', 'trends'], queryFn: async () => (await api.get<HomeTrendsDto>('/dashboard/trends')).data });
+
+/** A module's home page (v6 item 98): its figures and what waits for the caller in it, for the header's project or all. */
+export const useModuleHome = (key: string, projectId: string | undefined, enabled = true) =>
+  useQuery({
+    queryKey: ['dashboard', 'module', key, projectId ?? null],
+    queryFn: async () => (await api.get<ModuleHomeDto>(`/dashboard/modules/${key}`, { params: projectId ? { projectId } : {} })).data,
+    enabled,
+    refetchInterval: 60_000,
+  });
 
 export const useCompanyDashboard = () =>
   useQuery({ queryKey: ['dashboard', 'company'], queryFn: async () => (await api.get<CompanyDashboard>('/dashboard/company')).data });
