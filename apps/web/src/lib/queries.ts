@@ -288,6 +288,9 @@ import type {
   LastRatesDto,
   EnquiryDto,
   DrawingMarkupDto,
+  DrawingTakeoffsDto,
+  TakeoffBoqField,
+  TakeoffKind,
   MarkupColor,
   MarkupKind,
   MarkupPoint,
@@ -1240,6 +1243,56 @@ export const useResolveMarkup = (documentId: string | undefined) =>
 export const useLinkMarkupRfi = (documentId: string | undefined) =>
   useMarkupMutation(documentId, async ({ id, rfiId }: { id: string; rfiId: string | null }) => (await api.put<DrawingMarkupDto>(`/documents/${documentId}/markups/${id}/rfi`, { rfiId })).data);
 export const useDeleteMarkup = (documentId: string | undefined) => useMarkupMutation(documentId, async (id: string) => (await api.delete(`/documents/${documentId}/markups/${id}`)).data);
+
+/* ---------- measuring on drawings (v6 item 118) ---------- */
+
+/** The scales of a document's sheets and every measure on them. */
+export const useDrawingTakeoffs = (documentId: string | undefined) =>
+  useQuery({ queryKey: ['documents', 'takeoffs', documentId], queryFn: async () => (await api.get<DrawingTakeoffsDto>(`/documents/${documentId}/takeoffs`)).data, enabled: !!documentId });
+
+export interface NewTakeoffInput {
+  id: string;
+  revisionId: string;
+  attachmentId: string;
+  page: number;
+  kind: TakeoffKind;
+  points: MarkupPoint[];
+  label: string;
+}
+
+/** Every takeoff call answers with the whole set, which replaces the cached one. */
+function useTakeoffMutation<V>(documentId: string | undefined, fn: (v: V) => Promise<DrawingTakeoffsDto>, also?: (qc: ReturnType<typeof useQueryClient>) => void) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: fn,
+    onSuccess: (data) => {
+      qc.setQueryData(['documents', 'takeoffs', documentId], data);
+      qc.invalidateQueries({ queryKey: ['documents', 'history', documentId] });
+      also?.(qc);
+    },
+    meta: FAIL_NOTICE,
+  });
+}
+
+export const useSetDrawingScale = (documentId: string | undefined) =>
+  useTakeoffMutation(documentId, async (v: { attachmentId: string; page: number; points: MarkupPoint[]; lengthM: number; aspect: number }) => (await api.put<DrawingTakeoffsDto>(`/documents/${documentId}/takeoffs/scale`, v)).data);
+export const useCreateTakeoff = (documentId: string | undefined) =>
+  useTakeoffMutation(documentId, async (v: NewTakeoffInput) => (await api.post<DrawingTakeoffsDto>(`/documents/${documentId}/takeoffs`, v)).data);
+export const useRenameTakeoff = (documentId: string | undefined) =>
+  useTakeoffMutation(documentId, async ({ id, label }: { id: string; label: string }) => (await api.patch<DrawingTakeoffsDto>(`/documents/${documentId}/takeoffs/${id}`, { label })).data);
+export const useDeleteTakeoff = (documentId: string | undefined) =>
+  useTakeoffMutation(documentId, async (id: string) => (await api.delete<DrawingTakeoffsDto>(`/documents/${documentId}/takeoffs/${id}`)).data);
+export const useTakeoffsToMeasurement = (documentId: string | undefined) =>
+  useTakeoffMutation(documentId, async (v: { ids: string[]; measurementId: string }) => (await api.put<DrawingTakeoffsDto>(`/documents/${documentId}/takeoffs/measurement`, v)).data);
+export const useTakeoffsToBoq = (documentId: string | undefined, projectId: string | undefined) =>
+  useTakeoffMutation(
+    documentId,
+    async (v: { ids: string[]; boqItemId: string; field: TakeoffBoqField; factor?: number }) => (await api.put<DrawingTakeoffsDto>(`/documents/${documentId}/takeoffs/boq`, v)).data,
+    (qc) => {
+      qc.invalidateQueries({ queryKey: ['boq', projectId] });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  );
 
 /** Every document of a project with its current revision (to pick revisions for a transmittal). */
 export const useSiteDocuments = (projectId: string | undefined) =>

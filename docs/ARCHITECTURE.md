@@ -872,9 +872,43 @@ Item 109: a revision's drawing opened in the app and marked up, instead of print
   or online), and the marks (own and carried) with resolve and delete in a sheet. On an image drawing the marks are
   numbered dots and Add a comment drops a pin where tapped (online). PDFs and DXF are marked up on the web; showing PDF
   pages inside the app needs a WebView, so it waits for a store build.
-- **Measuring later** (item 118). A measure tool can reuse the same page fractions: `Sheet.aspect(page)` gives the
-  page's shape, a PDF page's size in points comes from pdf.js at scale 1, and a DXF's `width`/`height` are already in
-  drawing units, so a DXF needs no calibration while a PDF or scan takes its scale from two known points.
+- **Measuring** (v6 item 118, below).
+
+### Measuring on drawings (v6 item 118)
+
+Lengths, areas and counts taken off a revision's sheet in the viewer, instead of a scale rule on a print, and put into
+the measurement book or a BOQ item's quantity.
+
+- **Tables** (RLS, migration `20261204090000_drawing_takeoff`). `DrawingScale`: one per file and page, two `points` in
+  the markup's 0 to 1 page space, the real `lengthM` between them and the page's `aspect` (width over height) when it was
+  set. `DrawingTakeoff`: T1, T2… per document (next free number, retried on a clash; a client `id` makes a repeat return
+  the saved one), the revision, file and page, `kind` (`LENGTH`, `AREA`, `COUNT`), `points`, `label`, `value`
+  (`Decimal(18,3)` in m, m² or nos) and `measurementId`, the measurement sheet it went into.
+- **Rules** (`packages/shared/src/takeoff.ts`, tested in `apps/api/src/scripts/takeoff-test.ts`, CI runs it). A point is
+  (x × aspect, y) in page heights, so the scale is metres per page height (`scaleFrom`) and lengths (`polylineLength`) and
+  areas (shoelace, `polygonArea`) come out in metres and square metres whatever the page's shape. `takeoffProblem` and
+  `scaleProblem` say what is missing; a length or area needs the sheet's scale, a count does not. A DXF's scale can come
+  from its drawing units instead of two clicks (`dxfScalePoints`: the page is the drawing's extents wide).
+  `takeoffLine` makes a measurement book line: a length is nos 1 × L, a rectangle (four right angles) L × B, any other
+  area its area as L, a count nos. `takeoffBoqQty` adds measures of one kind and multiplies by a factor (a slab's
+  thickness).
+- **API** (`DrawingTakeoffsService`, `/documents/:id/takeoffs`): `GET` (scales and measures), `PUT scale` (works the
+  page's lengths and areas out again), `POST` (a measure), `PATCH /:takeoffId` (rename), `DELETE /:takeoffId`,
+  `PUT measurement` (records the sheet the measures went into, once saved) and `PUT boq` (sets a BOQ item's original or
+  revised quantity through `PlanningService.updateBoq`, so its rules hold; for `PROJECT_EDITOR_ROLES`). Anyone who can
+  open the document measures and sets the scale; `canEditMarkup` renames and deletes. Each step is on the document's
+  history, and a BOQ quantity from a drawing on the BOQ item's too (`QTY_FROM_DRAWING`).
+- **Web.** The viewer's toolbar has Set the scale, Measure a length, Measure an area and Count. Points are clicks (a
+  drag still pans, two fingers zoom); a double-click, Enter or Finish ends a measure, closing on the first corner ends an
+  area, Backspace or Undo point takes the last point back, Escape drops it. A bar over the drawing shows the figure so far
+  with the pointer's point, and the measure is named when finished. Beside the drawing, Marks | Measures (`?panel=`):
+  the sheet's scale (or how to set it, and for a DXF its drawing units), totals by kind, and the measures (this sheet or
+  the whole drawing, `?take=` picks one) with ticks; Add to measurement book opens the measurement form with a line per
+  measure (`MeasurementFormModal`'s `prefill`), Set BOQ quantity picks the item, original or revised, and a factor.
+- **Demo.** The toilet block DXF (ARC-110) has its scale along the 12 m wall, a partition's length, two floors and the
+  doors counted.
+- **Not built.** Measuring on the phone, measures carried onto a later revision, a scale per viewport on a sheet with
+  details at other scales, and arcs in a length.
 
 ## Staff and leave
 

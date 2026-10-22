@@ -4,6 +4,7 @@ import { CurrentUser, RequestUser } from '../common/current-user';
 import { DocumentsService } from './documents.service';
 import { DocumentTextService } from './document-text.service';
 import { DrawingMarkupsService } from './drawing-markups.service';
+import { DrawingTakeoffsService } from './drawing-takeoffs.service';
 import {
   AcknowledgeTransmittalDto,
   CreateDocumentDto,
@@ -11,6 +12,11 @@ import {
   CreateRevisionDto,
   CreateTransmittalDto,
   CreateMarkupDto,
+  CreateTakeoffDto,
+  SetDrawingScaleDto,
+  TakeoffsToBoqDto,
+  TakeoffsToMeasurementDto,
+  UpdateTakeoffDto,
   LinkMarkupRfiDto,
   ListDocumentsQuery,
   ListLettersQuery,
@@ -34,6 +40,7 @@ export class DocumentsController {
     private docs: DocumentsService,
     private text: DocumentTextService,
     private markups: DrawingMarkupsService,
+    private takeoffs: DrawingTakeoffsService,
   ) {}
 
   @ApiOperation({ summary: 'Search inside filed PDFs and letters (Ask the contract)', description: 'Pages of the current revisions\' PDFs and letters (for roles that see letters) in the projects the user can open, best match first.' })
@@ -150,6 +157,49 @@ export class DocumentsController {
   @Delete(':id/markups/:markupId')
   removeMarkup(@CurrentUser() user: RequestUser, @Param('id') id: string, @Param('markupId', ParseUUIDPipe) markupId: string) {
     return this.markups.remove(user, id, markupId);
+  }
+
+  /* ---------- measuring on drawings (v6 item 118) ---------- */
+
+  @ApiOperation({ summary: "The scales of the document's sheets and every measure on them (T1, T2…)" })
+  @Get(':id/takeoffs')
+  listTakeoffs(@CurrentUser() user: RequestUser, @Param('id') id: string) {
+    return this.takeoffs.list(user, id);
+  }
+
+  @ApiOperation({ summary: "Set a sheet's scale from two points a known distance apart", description: "Anyone who can open the document. The page's lengths and areas are worked out again." })
+  @Put(':id/takeoffs/scale')
+  setScale(@CurrentUser() user: RequestUser, @Param('id') id: string, @Body() dto: SetDrawingScaleDto) {
+    return this.takeoffs.setScale(user, id, dto);
+  }
+
+  @ApiOperation({ summary: 'Measure a length, an area or a count on a drawing', description: 'A length or area needs the sheet’s scale. A repeated `id` returns what is already saved.' })
+  @Post(':id/takeoffs')
+  createTakeoff(@CurrentUser() user: RequestUser, @Param('id') id: string, @Body() dto: CreateTakeoffDto) {
+    return this.takeoffs.create(user, id, dto);
+  }
+
+  @ApiOperation({ summary: 'Record the measurement sheet some measures were put in' })
+  @Put(':id/takeoffs/measurement')
+  takeoffsToMeasurement(@CurrentUser() user: RequestUser, @Param('id') id: string, @Body() dto: TakeoffsToMeasurementDto) {
+    return this.takeoffs.toMeasurement(user, id, dto);
+  }
+
+  @ApiOperation({ summary: "Set a BOQ item's original or revised quantity to measures' total", description: 'For those who keep the BOQ; the measures must be of one kind.' })
+  @Put(':id/takeoffs/boq')
+  takeoffsToBoq(@CurrentUser() user: RequestUser, @Param('id') id: string, @Body() dto: TakeoffsToBoqDto) {
+    return this.takeoffs.toBoq(user, id, dto);
+  }
+
+  @ApiOperation({ summary: 'Rename a measure (whoever measured it, or document control)' })
+  @Patch(':id/takeoffs/:takeoffId')
+  renameTakeoff(@CurrentUser() user: RequestUser, @Param('id') id: string, @Param('takeoffId', ParseUUIDPipe) takeoffId: string, @Body() dto: UpdateTakeoffDto) {
+    return this.takeoffs.rename(user, id, takeoffId, dto);
+  }
+
+  @Delete(':id/takeoffs/:takeoffId')
+  removeTakeoff(@CurrentUser() user: RequestUser, @Param('id') id: string, @Param('takeoffId', ParseUUIDPipe) takeoffId: string) {
+    return this.takeoffs.remove(user, id, takeoffId);
   }
 }
 

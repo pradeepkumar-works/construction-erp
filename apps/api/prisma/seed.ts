@@ -7,7 +7,7 @@ import { dprTitle, progressTitle, titleDate } from '../src/common/submission-tit
 import { DEMO_CONTRACTS, textPdf } from '../src/documents/demo-contracts';
 import { addMonths, schedule as loanSchedule } from '../src/machine-loans/loan-rules';
 import { DEFAULT_SETTINGS, computePayslip, structureCost, type RulesStructure } from '../src/payroll/payroll-rules';
-import { DEFAULT_CLOSEOUT_ITEMS, PAYSLIP_CODES, PERMIT_PRECAUTIONS, STANDARD_CHECKLISTS, gstinCheckChar, isWeeklyOff, leaveDays, ppeReplaceBy, type PpeKind } from '@erp/shared';
+import { DEFAULT_CLOSEOUT_ITEMS, PAYSLIP_CODES, PERMIT_PRECAUTIONS, STANDARD_CHECKLISTS, gstinCheckChar, isWeeklyOff, leaveDays, ppeReplaceBy, scaleFrom, takeoffValue, type MarkupPoint, type PpeKind, type TakeoffKind } from '@erp/shared';
 
 const prisma = new PrismaClient();
 const D = (v: string | number) => new Prisma.Decimal(v);
@@ -158,6 +158,7 @@ async function main() {
     await seedVariations(org.id);
     await seedRfis(org.id);
     await seedDrawingMarkups(org.id);
+    await seedDrawingTakeoffs(org.id);
     await seedBudgets(org.id);
     await seedStoreMoves(org.id);
     await seedReconciliation(org.id);
@@ -359,6 +360,7 @@ async function main() {
   await seedVariations(org.id);
   await seedRfis(org.id);
   await seedDrawingMarkups(org.id);
+  await seedDrawingTakeoffs(org.id);
   await seedBudgets(org.id);
   await seedStoreMoves(org.id);
   await seedReconciliation(org.id);
@@ -3009,6 +3011,44 @@ async function seedDrawingMarkups(organizationId: string) {
       },
     });
     await prisma.auditLog.create({ data: { organizationId, entityType: 'DOCUMENT', entityId: plan.id, action: 'MARKUP_ADDED', actorId: m.by, note: `M${i + 1}: ${m.note}`, createdAt: day(-m.ago) } });
+  }
+}
+
+/**
+ * Measures on the toilet block DXF (v6 item 118), once per organisation: its scale along the 12 m outer wall, a
+ * partition's length, two floor areas and the doors counted. The sheet's coordinates follow the viewer's DXF extents
+ * (the drawing's points plus a 3 % margin), so the measures sit on the walls they name.
+ */
+async function seedDrawingTakeoffs(organizationId: string) {
+  if (await prisma.drawingTakeoff.count({ where: { organizationId } })) return;
+  const doc = await prisma.document.findFirst({ where: { organizationId, docNo: 'ARC-110' }, include: { revisions: { include: { attachments: true } } } });
+  const rev = doc?.revisions[0];
+  const file = rev?.attachments[0];
+  const project = doc ? await prisma.project.findUnique({ where: { id: doc.projectId }, select: { projectManagerId: true } }) : null;
+  const qs = await prisma.user.findFirst({ where: { organizationId, role: { key: 'QUANTITY_SURVEYOR' } }, select: { id: true } });
+  const by = qs?.id ?? project?.projectManagerId;
+  if (!doc || !rev || !file || !by) return;
+  // Extents of drawingDxf: x from -450 to 12450 (the grid bubbles), y from -2500 (the title) to 10450, and the margin.
+  const m = 12950 * 0.03;
+  const [minX, maxY, w, h] = [-450 - m, 10450 + m, 12900 + 2 * m, 12950 + 2 * m];
+  const at = (x: number, y: number): MarkupPoint => [Math.round(((x - minX) / w) * 1e6) / 1e6, Math.round(((maxY - y) / h) * 1e6) / 1e6];
+  const aspect = w / h;
+  const scalePoints: [MarkupPoint, MarkupPoint] = [at(0, 0), at(12000, 0)];
+  const scale = scaleFrom(scalePoints, 12, aspect)!;
+  await prisma.drawingScale.create({ data: { organizationId, documentId: doc.id, attachmentId: file.id, page: 1, points: scalePoints, lengthM: 12, aspect, setById: by, createdAt: day(-8), updatedAt: day(-8) } });
+  await prisma.auditLog.create({ data: { organizationId, entityType: 'DOCUMENT', entityId: doc.id, action: 'SCALE_SET', actorId: by, note: 'Scale set on page 1: 12.000 m between two points', createdAt: day(-8) } });
+  const measures: { kind: TakeoffKind; label: string; points: MarkupPoint[] }[] = [
+    { kind: 'LENGTH', label: 'Partition between store and janitor, 115 mm brickwork', points: [at(8000, 4000), at(11770, 4000)] },
+    { kind: 'AREA', label: 'Gents toilet floor, anti-skid tiles', points: [at(230, 230), at(4000, 230), at(4000, 7770), at(230, 7770)] },
+    { kind: 'AREA', label: 'Store floor, IPS flooring', points: [at(8000, 230), at(11770, 230), at(11770, 4000), at(8000, 4000)] },
+    { kind: 'COUNT', label: 'Doors D1, 900 mm flush', points: [at(1950, 680), at(5950, 680), at(9650, 4450)] },
+  ];
+  for (const [i, t] of measures.entries()) {
+    const value = takeoffValue(t.kind, t.points, aspect, scale)!;
+    await prisma.drawingTakeoff.create({
+      data: { organizationId, projectId: doc.projectId, documentId: doc.id, takeoffNo: i + 1, revisionId: rev.id, attachmentId: file.id, page: 1, kind: t.kind, points: t.points, label: t.label, value, createdById: by, createdAt: day(-7) },
+    });
+    await prisma.auditLog.create({ data: { organizationId, entityType: 'DOCUMENT', entityId: doc.id, action: 'TAKEOFF_ADDED', actorId: by, note: `T${i + 1}: ${t.label}`, createdAt: day(-7) } });
   }
 }
 

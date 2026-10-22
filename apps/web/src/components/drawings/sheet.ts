@@ -17,6 +17,8 @@ export interface Sheet {
   /** Draws the page filling the canvas; a newer call on the same canvas cancels an unfinished one. */
   draw(canvas: HTMLCanvasElement, page: number, opts?: { hiddenLayers?: Set<string> }): Promise<void>;
   layers: DxfLayer[];
+  /** A DXF's width in its own drawing units, for a scale from those units (item 118) */
+  drawingWidth?: number;
   /** Pixels can be read back (comparing revisions, saving a marked-up copy) */
   readable: boolean;
   destroy(): void;
@@ -107,6 +109,7 @@ async function openDxf(url: string): Promise<Sheet> {
     kind: 'dxf',
     pages: 1,
     layers: drawing.layers,
+    drawingWidth: drawing.width,
     readable: true,
     aspect: async () => drawing.width / drawing.height,
     async draw(canvas, _page, opts) {

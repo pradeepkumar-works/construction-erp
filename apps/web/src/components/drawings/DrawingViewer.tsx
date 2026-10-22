@@ -2,11 +2,13 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Alert, App, Button, Checkbox, Flex, Popover, Result, Select, Space, Spin, Switch, Tooltip, Typography, theme } from 'antd';
+import { Alert, App, Button, Checkbox, Flex, Popover, Result, Segmented, Select, Space, Spin, Switch, Tooltip, Typography, theme } from 'antd';
 import {
   ArrowRightOutlined,
+  BorderOuterOutlined,
   BorderOutlined,
   CloudOutlined,
+  ColumnWidthOutlined,
   CommentOutlined,
   DownloadOutlined,
   DragOutlined,
@@ -15,26 +17,77 @@ import {
   FontSizeOutlined,
   HighlightOutlined,
   LeftOutlined,
+  LineOutlined,
+  NumberOutlined,
   RightOutlined,
   UnorderedListOutlined,
   ZoomInOutlined,
   ZoomOutOutlined,
 } from '@ant-design/icons';
-import type { DocumentRevisionDto, DrawingMarkupDto, MarkupColor, MarkupKind, MarkupPoint } from '@erp/shared';
-import { MARKUP_COLORS, MARKUP_COLOR_LABELS, MARKUP_KIND_LABELS, MARKUP_MAX_POINTS, REVISION_STATUS_LABELS, canViewDrawingFile, drawingFileKind, marksForSheet, roundPoint } from '@erp/shared';
+import type { DocumentRevisionDto, DrawingMarkupDto, DrawingTakeoffDto, MarkupColor, MarkupKind, MarkupPoint, TakeoffKind } from '@erp/shared';
+import {
+  MARKUP_COLORS,
+  MARKUP_COLOR_LABELS,
+  MARKUP_KIND_LABELS,
+  MARKUP_MAX_POINTS,
+  REVISION_STATUS_LABELS,
+  TAKEOFF_KIND_LABELS,
+  TAKEOFF_MAX_POINTS,
+  canEditProjects,
+  canMeasure,
+  canViewDrawingFile,
+  drawingFileKind,
+  dxfScalePoints,
+  marksForSheet,
+  roundPoint,
+  scaleFrom,
+  takeoffLine,
+  takeoffProblem,
+  takeoffValue,
+} from '@erp/shared';
 import { fileUrl } from '@/lib/api';
 import { BRAND } from '@/lib/brand';
 import { singleKeysOn } from '@/lib/shortcuts';
-import { useCreateMarkup, useDeleteMarkup, useDocument, useDrawingMarkups, useLinkMarkupRfi, useResolveMarkup } from '@/lib/queries';
+import { useAuth } from '@/lib/auth';
+import { formatQty } from '@/lib/format';
+import {
+  useCreateMarkup,
+  useCreateTakeoff,
+  useDeleteMarkup,
+  useDeleteTakeoff,
+  useDocument,
+  useDrawingMarkups,
+  useDrawingTakeoffs,
+  useLinkMarkupRfi,
+  useRenameTakeoff,
+  useResolveMarkup,
+  useSetDrawingScale,
+  useTakeoffsToBoq,
+  useTakeoffsToMeasurement,
+} from '@/lib/queries';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { RfiFormModal } from '@/components/documents/RfiFormModal';
 import { RevisionStatusTag } from '@/components/documents/docUi';
+import { MeasurementFormModal, type MeasurementPrefill } from '@/components/measurements/MeasurementFormModal';
 import { MarkShape, MARKUP_INK, VB_W, type ShownMark } from './MarkupLayer';
 import { MarkupList, MarkupNoteForm, ResolveMarkupForm, type ListScope } from './MarkupList';
 import { canvasSize, compareInto, openSheet, type Sheet } from './sheet';
+import { TakeoffShape } from './TakeoffLayer';
+import { ScaleForm, TakeoffBoqForm, TakeoffLabelForm, TakeoffList, takeoffFigure } from './TakeoffList';
 
-type Tool = 'MOVE' | MarkupKind;
+type MeasureKind = 'SCALE' | TakeoffKind;
+type Tool = 'MOVE' | MarkupKind | MeasureKind;
+const MEASURE_TOOLS: { tool: MeasureKind; label: string; icon: React.ReactNode }[] = [
+  { tool: 'SCALE', label: 'Set the scale', icon: <ColumnWidthOutlined /> },
+  { tool: 'LENGTH', label: 'Measure a length', icon: <LineOutlined /> },
+  { tool: 'AREA', label: 'Measure an area', icon: <BorderOuterOutlined /> },
+  { tool: 'COUNT', label: 'Count', icon: <NumberOutlined /> },
+];
+const isMeasure = (t: Tool): t is MeasureKind => t === 'SCALE' || t === 'LENGTH' || t === 'AREA' || t === 'COUNT';
+/** Clicking within this many screen pixels of the last point (a double-click) finishes a measure. */
+const FINISH_PX = 6;
+type Panel = 'marks' | 'measures';
 const TOOLS: { tool: Tool; label: string; icon: React.ReactNode }[] = [
   { tool: 'MOVE', label: 'Move and pick', icon: <DragOutlined /> },
   { tool: 'PIN', label: 'Comment pin', icon: <CommentOutlined /> },
@@ -57,6 +110,10 @@ interface Draft {
   kind: MarkupKind;
   points: MarkupPoint[];
 }
+interface Measuring {
+  kind: MeasureKind;
+  points: MarkupPoint[];
+}
 
 /** Keeps a freehand stroke to the most points a mark may have, evenly. */
 function thin(points: MarkupPoint[]) {
@@ -72,6 +129,8 @@ function thin(points: MarkupPoint[]) {
  * The drawing viewer (item 109): a revision's PDF, image or DXF on a sheet that pans and zooms (drag, wheel, pinch,
  * keys), with marks drawn over it in the sheet's own 0 to 1 coordinates. Open marks from earlier revisions show dashed
  * until resolved. Two revisions can be overlaid to show what changed, and the marked-up sheet saved as an image.
+ * Lengths, areas and counts are measured on a sheet once its scale is set (v6 item 118), and go into the measurement
+ * book or a BOQ item's quantity.
  */
 export function DrawingViewer({ documentId }: { documentId: string }) {
   const router = useRouter();
@@ -84,6 +143,14 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
   const resolve = useResolveMarkup(documentId);
   const remove = useDeleteMarkup(documentId);
   const linkRfi = useLinkMarkupRfi(documentId);
+  const { user } = useAuth();
+  const { data: takeoffData } = useDrawingTakeoffs(documentId);
+  const setScale = useSetDrawingScale(documentId);
+  const createTakeoff = useCreateTakeoff(documentId);
+  const renameTakeoff = useRenameTakeoff(documentId);
+  const deleteTakeoff = useDeleteTakeoff(documentId);
+  const toMeasurement = useTakeoffsToMeasurement(documentId);
+  const toBoq = useTakeoffsToBoq(documentId, doc?.projectId);
 
   /* ---------- which revision, file and page (in the URL) ---------- */
 
@@ -94,9 +161,11 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
   const fileIndex = file && revision ? revision.attachments.findIndex((a) => a.id === file.id) : -1;
   const pageParam = Math.max(1, Number(search.get('page')) || 1);
   const selectedId = search.get('mark');
+  const selectedTakeoff = search.get('take');
+  const panel: Panel = search.get('panel') === 'measures' ? 'measures' : 'marks';
 
   const go = useCallback(
-    (next: { rev?: string; file?: string | null; page?: number; mark?: string | null }) => {
+    (next: { rev?: string; file?: string | null; page?: number; mark?: string | null; take?: string | null; panel?: Panel | null }) => {
       const q = new URLSearchParams(search.toString());
       for (const [k, v] of Object.entries(next)) {
         if (v === null || v === undefined || v === '') q.delete(k);
@@ -296,6 +365,30 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
   const [resolving, setResolving] = useState<DrawingMarkupDto | null>(null);
   const [rfiFrom, setRfiFrom] = useState<DrawingMarkupDto | null>(null);
 
+  /* ---------- measures (v6 item 118) ---------- */
+
+  const [measuring, setMeasuring] = useState<Measuring | null>(null);
+  const [hover, setHover] = useState<MarkupPoint | null>(null);
+  const [labelFor, setLabelFor] = useState<{ kind: TakeoffKind; points: MarkupPoint[] } | null>(null);
+  const [scaleFor, setScaleFor] = useState<MarkupPoint[] | null>(null);
+  const [renaming, setRenaming] = useState<DrawingTakeoffDto | null>(null);
+  const [chosen, setChosen] = useState<Set<string>>(new Set());
+  const [toMb, setToMb] = useState<{ ids: string[]; prefill: MeasurementPrefill } | null>(null);
+  const [toBoqOf, setToBoqOf] = useState<DrawingTakeoffDto[] | null>(null);
+  const [takeScope, setTakeScope] = useState<ListScope>('sheet');
+  const scales = useMemo(() => takeoffData?.scales ?? [], [takeoffData]);
+  const allTakeoffs = useMemo(() => takeoffData?.takeoffs ?? [], [takeoffData]);
+  const sheetScale = scales.find((x) => x.attachmentId === file?.id && x.page === page) ?? null;
+  const scale = sheetScale && aspect ? scaleFrom(sheetScale.points, Number(sheetScale.lengthM), aspect) : null;
+  const sheetTakeoffs = useMemo(() => allTakeoffs.filter((t) => t.attachmentId === file?.id && t.page === page), [allTakeoffs, file, page]);
+  const listedTakeoffs = takeScope === 'sheet' ? sheetTakeoffs : allTakeoffs;
+  const showMeasures = panel === 'measures' || isMeasure(tool);
+  /** The figure a measure comes to, with the point under the pointer while it is being drawn. */
+  const measureFigure = (kind: TakeoffKind, points: MarkupPoint[]) => {
+    const v = takeoffValue(kind, points, aspect ?? 1, scale);
+    return v === null ? null : takeoffFigure(kind, v);
+  };
+
   const toSheet = (clientX: number, clientY: number): MarkupPoint => {
     const r = svgRef.current!.getBoundingClientRect();
     return [(clientX - r.left) / r.width, (clientY - r.top) / r.height];
@@ -320,11 +413,106 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
     });
   };
 
+  /** Shows a measure: opens its revision, file and page if need be, and centres it. */
+  const pickTakeoff = (t: DrawingTakeoffDto) => {
+    if (t.attachmentId !== file?.id || t.page !== page) {
+      go({ rev: t.revisionId, file: t.attachmentId, page: t.page, take: t.id, mark: null });
+      return;
+    }
+    go({ take: t.id });
+    if (!baseW) return;
+    const xs = t.points.map((p) => p[0]);
+    const ys = t.points.map((p) => p[1]);
+    const cx = ((Math.min(...xs) + Math.max(...xs)) / 2) * baseW;
+    const cy = ((Math.min(...ys) + Math.max(...ys)) / 2) * baseH;
+    setView((v) => {
+      const zoom = Math.max(v.zoom, 1.5);
+      return { zoom, x: box.w / 2 - cx * zoom, y: box.h / 2 - cy * zoom };
+    });
+  };
+
+  const chooseTool = (t: Tool) => {
+    setDraft(null);
+    setMeasuring(null);
+    if ((t === 'LENGTH' || t === 'AREA') && !scale) {
+      message.info('Set the scale on this sheet first: click two points a known distance apart');
+      setTool('SCALE');
+    } else setTool(t);
+    if (isMeasure(t) && panel !== 'measures') go({ panel: 'measures' });
+  };
+
+  /** Screen pixels between two sheet points at this zoom. */
+  const screenGap = (a: MarkupPoint, b: MarkupPoint) => Math.hypot((a[0] - b[0]) * baseW * view.zoom, (a[1] - b[1]) * baseH * view.zoom);
+
+  const finishMeasure = (m: Measuring | null = measuring) => {
+    if (!m || m.kind === 'SCALE') return;
+    const problem = takeoffProblem(m.kind, m.points, 'x', !!scale);
+    if (problem) {
+      message.info(problem);
+      return;
+    }
+    setLabelFor({ kind: m.kind, points: m.points.map(roundPoint) });
+    setMeasuring(null);
+    setHover(null);
+  };
+
+  /** A click (or tap) with a measuring tool: a point of the scale, a line, an outline or a count. */
+  const addPoint = (at: MarkupPoint) => {
+    if (!isMeasure(tool)) return;
+    const pts = measuring?.kind === tool ? measuring.points : [];
+    const last = pts[pts.length - 1];
+    if (tool !== 'SCALE' && last && screenGap(at, last) < FINISH_PX) return finishMeasure({ kind: tool, points: pts });
+    if (tool === 'AREA' && pts.length >= 3 && screenGap(at, pts[0]) < FINISH_PX * 2) return finishMeasure({ kind: tool, points: pts });
+    const next = [...pts, at];
+    if (tool === 'SCALE' && next.length === 2) {
+      setMeasuring({ kind: 'SCALE', points: next });
+      setScaleFor(next.map(roundPoint));
+      return;
+    }
+    if (next.length >= TAKEOFF_MAX_POINTS) return finishMeasure({ kind: tool, points: next });
+    setMeasuring({ kind: tool, points: next });
+  };
+
+  const saveTakeoff = async (label: string) => {
+    if (!labelFor || !revision || !file) return;
+    const id = crypto.randomUUID();
+    const res = await createTakeoff.mutateAsync({ id, revisionId: revision.id, attachmentId: file.id, page, kind: labelFor.kind, points: labelFor.points, label });
+    const saved = res.takeoffs.find((t) => t.id === id);
+    message.success(saved ? `T${saved.takeoffNo} saved: ${takeoffFigure(saved.kind, saved.value)}` : 'Measure saved');
+    go({ take: id });
+  };
+
+  const saveScale = async (lengthM: number, points: MarkupPoint[] | null = scaleFor) => {
+    if (!points || !file || !aspect) return;
+    const res = await setScale.mutateAsync({ attachmentId: file.id, page, points, lengthM, aspect });
+    const moved = res.takeoffs.filter((t) => t.attachmentId === file.id && t.page === page && t.kind !== 'COUNT').length;
+    message.success(`Scale set${moved ? `; ${moved} measure${moved === 1 ? '' : 's'} worked out again` : ''}`);
+    setMeasuring(null);
+    setTool('LENGTH');
+  };
+
+  /** The measurement book lines of the ticked measures, each on its own sheet's scale. */
+  const openToMeasurement = (ts: DrawingTakeoffDto[]) => {
+    if (!doc) return;
+    const lines = ts.map((t) => {
+      const sc = scales.find((x) => x.attachmentId === t.attachmentId && x.page === t.page);
+      return takeoffLine(t, sc?.aspect ?? null, sc ? sc.metresPerPage : null);
+    });
+    const revs = [...new Set(ts.map((t) => t.revision))];
+    setToMb({
+      ids: ts.map((t) => t.id),
+      prefill: {
+        lines: lines.map((l) => ({ description: l.description.slice(0, 200), nos: l.nos, length: l.length, breadth: l.breadth })),
+        remarks: `Taken off ${doc.docNo} Rev ${revs.join(', ')}: ${ts.map((t) => `T${t.takeoffNo}`).join(', ')}`,
+      },
+    });
+  };
+
   /* ---------- pointer: pan, pinch and draw ---------- */
 
   const pointers = useRef(new Map<number, { x: number; y: number }>());
   const gesture = useRef<
-    | { kind: 'pan'; sx: number; sy: number; view: View; moved: boolean; target: string | null }
+    | { kind: 'pan'; sx: number; sy: number; view: View; moved: boolean; target: { mark: string | null; take: string | null } | null }
     | { kind: 'pinch'; dist: number; cx: number; cy: number; view: View }
     | { kind: 'draw' }
     | null
@@ -347,8 +535,10 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
     if (pointers.current.size === 2) return startPinch();
     if (pointers.current.size > 2) return;
     const p = local(e);
-    if (tool === 'MOVE' || e.button === 1) {
-      const target = (e.target as Element).closest?.('[data-mark]')?.getAttribute('data-mark') ?? null;
+    // Measuring is by clicks, so a drag still moves the drawing.
+    if (tool === 'MOVE' || isMeasure(tool) || e.button === 1) {
+      const el = e.target as Element;
+      const target = tool === 'MOVE' ? { mark: el.closest?.('[data-mark]')?.getAttribute('data-mark') ?? null, take: el.closest?.('[data-takeoff]')?.getAttribute('data-takeoff') ?? null } : null;
       gesture.current = { kind: 'pan', sx: p.x, sy: p.y, view, moved: false, target };
       return;
     }
@@ -358,6 +548,8 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
   };
 
   const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    // The stretch still to be clicked follows a mouse over the drawing.
+    if (measuring && svgRef.current && (pointers.current.size === 0 || gesture.current?.kind === 'pan')) setHover(toSheet(e.clientX, e.clientY));
     if (!pointers.current.has(e.pointerId)) return;
     const p = local(e);
     pointers.current.set(e.pointerId, p);
@@ -402,7 +594,10 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
     }
     gesture.current = null;
     if (g?.kind === 'pan') {
-      if (!g.moved) go({ mark: g.target });
+      if (g.moved) return;
+      if (isMeasure(tool) && e.button !== 1) addPoint(toSheet(e.clientX, e.clientY));
+      else if (g.target?.take && !g.target.mark) go({ take: g.target.take, mark: null, panel: 'measures' });
+      else if (g.target) go({ mark: g.target.mark, take: null });
       return;
     }
     if (g?.kind !== 'draw' || !draft) return;
@@ -426,7 +621,12 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
     else if (keys && (e.key === '+' || e.key === '=')) zoomAt(box.w / 2, box.h / 2, 1.25);
     else if (keys && e.key === '-') zoomAt(box.w / 2, box.h / 2, 0.8);
     else if (keys && e.key === '0') fit();
-    else if (e.key === 'Escape' && (draft || tool !== 'MOVE')) {
+    else if (e.key === 'Enter' && measuring && measuring.kind !== 'SCALE') finishMeasure();
+    else if (e.key === 'Backspace' && measuring?.points.length) setMeasuring({ ...measuring, points: measuring.points.slice(0, -1) });
+    else if (e.key === 'Escape' && measuring) {
+      setMeasuring(null);
+      setHover(null);
+    } else if (e.key === 'Escape' && (draft || tool !== 'MOVE')) {
       setDraft(null);
       setTool('MOVE');
     } else return;
@@ -492,12 +692,16 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
               type={tool === t.tool ? 'primary' : 'default'}
               aria-label={t.label}
               aria-pressed={tool === t.tool}
-              onClick={() => {
-                setTool(t.tool);
-                setDraft(null);
-              }}
+              onClick={() => chooseTool(t.tool)}
               disabled={!sheet}
             />
+          </Tooltip>
+        ))}
+      </Space.Compact>
+      <Space.Compact>
+        {MEASURE_TOOLS.map((t) => (
+          <Tooltip key={t.tool} title={t.label}>
+            <Button icon={t.icon} type={tool === t.tool ? 'primary' : 'default'} aria-label={t.label} aria-pressed={tool === t.tool} onClick={() => chooseTool(t.tool)} disabled={!sheet} />
           </Tooltip>
         ))}
       </Space.Compact>
@@ -667,7 +871,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
             <div
               ref={attachViewport}
               role="application"
-              aria-label={`Drawing ${doc.docNo} Rev ${revision.revision}${pages > 1 ? `, page ${page} of ${pages}` : ''}. Arrow keys move it, plus and minus zoom, 0 fits the sheet.`}
+              aria-label={`Drawing ${doc.docNo} Rev ${revision.revision}${pages > 1 ? `, page ${page} of ${pages}` : ''}. Arrow keys move it, plus and minus zoom, 0 fits the sheet.${isMeasure(tool) ? ' Enter finishes a measure, Backspace removes its last point, Escape drops it.' : ''}`}
               aria-roledescription="drawing viewer"
               // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- keys move and zoom the drawing, so it takes focus
               tabIndex={0}
@@ -675,6 +879,7 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
               onPointerMove={onPointerMove}
               onPointerUp={onPointerUp}
               onPointerCancel={onPointerUp}
+              onPointerLeave={() => setHover(null)}
               onKeyDown={onKeyDown}
               className="drawing-viewport"
               style={{
@@ -698,9 +903,61 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
                       <MarkShape key={m.id} mark={m} vbH={vbH} px={px} selected={m.id === selectedId} />
                     ))}
                     {draft || noteFor ? <MarkShape mark={{ id: 'draft', label: 'New', kind: (draft ?? noteFor)!.kind, points: (draft ?? noteFor)!.points, color, note: null }} vbH={vbH} px={px} /> : null}
+                    {showMeasures && sheetScale ? <TakeoffShape t={{ id: 'scale', label: `Scale ${formatQty(sheetScale.lengthM)} m`, kind: 'SCALE', points: sheetScale.points }} vbH={vbH} px={px} /> : null}
+                    {showMeasures
+                      ? sheetTakeoffs.map((t) => <TakeoffShape key={t.id} t={{ id: t.id, label: `T${t.takeoffNo} ${takeoffFigure(t.kind, t.value)}`, kind: t.kind, points: t.points }} vbH={vbH} px={px} selected={t.id === selectedTakeoff} />)
+                      : null}
+                    {measuring ? <TakeoffShape t={{ id: 'measuring', label: '', kind: measuring.kind, points: measuring.points }} vbH={vbH} px={px} hover={hover} drafting /> : null}
+                    {labelFor ? <TakeoffShape t={{ id: 'new', label: measureFigure(labelFor.kind, labelFor.points) ?? '', kind: labelFor.kind, points: labelFor.points }} vbH={vbH} px={px} selected /> : null}
                   </svg>
                 </div>
               )}
+              {isMeasure(tool) && sheet ? (
+                // Over the drawing, so the sheet does not move while it is being clicked; its buttons do not draw.
+                // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- only stops pointer and key events reaching the drawing below
+                <div
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onPointerUp={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => e.stopPropagation()}
+                  style={{
+                    position: 'absolute',
+                    left: 8,
+                    top: 8,
+                    maxWidth: 'calc(100% - 16px)',
+                    padding: `${token.paddingXXS}px ${token.paddingXS}px`,
+                    background: token.colorBgElevated,
+                    borderRadius: token.borderRadius,
+                    boxShadow: token.boxShadowSecondary,
+                    cursor: 'default',
+                  }}
+                >
+                  <Flex gap={token.marginXS} wrap align="center">
+                    <span aria-live="polite">
+                      <Typography.Text strong>{tool === 'SCALE' ? 'Scale' : TAKEOFF_KIND_LABELS[tool]}</Typography.Text>{' '}
+                      <Typography.Text translate="no">
+                        {tool === 'SCALE'
+                          ? `${measuring?.kind === 'SCALE' ? measuring.points.length : 0} of 2 points`
+                          : measuring?.kind === tool
+                            ? `${measureFigure(tool, hover && tool !== 'COUNT' ? [...measuring.points, hover] : measuring.points) ?? ''} · ${measuring.points.length} point${measuring.points.length === 1 ? '' : 's'}`
+                            : ''}
+                      </Typography.Text>
+                    </span>
+                    <Space size={4}>
+                      <Button size="small" disabled={!measuring?.points.length} onClick={() => measuring && setMeasuring({ ...measuring, points: measuring.points.slice(0, -1) })}>
+                        Undo point
+                      </Button>
+                      {tool !== 'SCALE' ? (
+                        <Button size="small" type="primary" disabled={!measuring?.points.length} onClick={() => finishMeasure()}>
+                          Finish
+                        </Button>
+                      ) : null}
+                      <Button size="small" onClick={() => chooseTool('MOVE')}>
+                        Done
+                      </Button>
+                    </Space>
+                  </Flex>
+                </div>
+              ) : null}
               {drawing && sheet ? (
                 <div style={{ position: 'absolute', right: 8, top: 8 }}>
                   <Spin size="small" />
@@ -713,25 +970,71 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
                 <span id="carry-marks-label">Show open marks from earlier revisions</span>
               </Flex>
               <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
-                {tool === 'MOVE' ? 'Drag to move, wheel or pinch to zoom, tap a mark to pick it.' : `Draw a ${MARKUP_KIND_LABELS[tool].toLowerCase()}: ${tool === 'PIN' || tool === 'TEXT' ? 'tap where it goes' : 'drag on the drawing'}. Two fingers move and zoom.`}
+                {tool === 'MOVE'
+                  ? 'Drag to move, wheel or pinch to zoom, tap a mark to pick it.'
+                  : isMeasure(tool)
+                    ? tool === 'SCALE'
+                      ? 'Click two points a known distance apart. Dragging moves the drawing.'
+                      : `Click each ${tool === 'AREA' ? 'corner' : tool === 'COUNT' ? 'thing' : 'point'}; double-click${tool === 'AREA' ? ', the first corner' : ''} or Enter to finish.`
+                    : `Draw a ${MARKUP_KIND_LABELS[tool].toLowerCase()}: ${tool === 'PIN' || tool === 'TEXT' ? 'tap where it goes' : 'drag on the drawing'}. Two fingers move and zoom.`}
               </Typography.Text>
             </Flex>
           </Flex>
-          <MarkupList
-            marks={listed}
-            carriedIds={carriedIds}
-            scope={scope}
-            onScope={setScope}
-            selectedId={selectedId}
-            onPick={pick}
-            onResolve={setResolving}
-            onReopen={(m) => resolve.mutate({ id: m.id, resolved: false })}
-            onDelete={async (m) => {
-              await remove.mutateAsync(m.id);
-              if (selectedId === m.id) go({ mark: null });
-            }}
-            onRaiseRfi={setRfiFrom}
-          />
+          <Flex vertical gap={token.marginSM} style={{ minWidth: 0 }}>
+            <Segmented
+              block
+              value={panel}
+              onChange={(v) => go({ panel: v === 'measures' ? 'measures' : null })}
+              options={[
+                { value: 'marks', label: 'Marks' },
+                { value: 'measures', label: 'Measures' },
+              ]}
+              aria-label="Beside the drawing"
+            />
+            {panel === 'measures' ? (
+              <TakeoffList
+                takeoffs={listedTakeoffs}
+                scale={sheetScale}
+                scope={takeScope}
+                onScope={setTakeScope}
+                selectedId={selectedTakeoff}
+                onPick={pickTakeoff}
+                chosen={chosen}
+                onChoose={setChosen}
+                onSetScale={() => chooseTool('SCALE')}
+                drawingWidth={sheet?.drawingWidth}
+                onScaleFromUnits={(unit) => {
+                  const d = dxfScalePoints(sheet?.drawingWidth ?? 0, unit);
+                  return saveScale(d.lengthM, d.points);
+                }}
+                onRename={setRenaming}
+                onDelete={async (t) => {
+                  await deleteTakeoff.mutateAsync(t.id);
+                  if (selectedTakeoff === t.id) go({ take: null });
+                }}
+                onToMeasurement={openToMeasurement}
+                onToBoq={setToBoqOf}
+                canMeasure={!!user && canMeasure(user.roleKey)}
+                canSetBoq={!!user && canEditProjects(user.roleKey)}
+              />
+            ) : (
+              <MarkupList
+                marks={listed}
+                carriedIds={carriedIds}
+                scope={scope}
+                onScope={setScope}
+                selectedId={selectedId}
+                onPick={pick}
+                onResolve={setResolving}
+                onReopen={(m) => resolve.mutate({ id: m.id, resolved: false })}
+                onDelete={async (m) => {
+                  await remove.mutateAsync(m.id);
+                  if (selectedId === m.id) go({ mark: null });
+                }}
+                onRaiseRfi={setRfiFrom}
+              />
+            )}
+          </Flex>
         </div>
       )}
       <MarkupNoteForm
@@ -742,6 +1045,49 @@ export function DrawingViewer({ documentId }: { documentId: string }) {
           setDraft(null);
         }}
         onSubmit={saveMark}
+      />
+      <TakeoffLabelForm
+        open={!!labelFor}
+        title={labelFor ? `New ${TAKEOFF_KIND_LABELS[labelFor.kind].toLowerCase()}` : 'New measure'}
+        figure={labelFor ? measureFigure(labelFor.kind, labelFor.points) : null}
+        onClose={() => setLabelFor(null)}
+        onSubmit={saveTakeoff}
+      />
+      <TakeoffLabelForm
+        open={!!renaming}
+        title={renaming ? `Rename T${renaming.takeoffNo}` : 'Rename'}
+        initial={renaming?.label}
+        onClose={() => setRenaming(null)}
+        onSubmit={(label) => renameTakeoff.mutateAsync({ id: renaming!.id, label })}
+      />
+      <ScaleForm
+        open={!!scaleFor}
+        onClose={() => {
+          setScaleFor(null);
+          setMeasuring(null);
+        }}
+        onSubmit={(lengthM) => saveScale(lengthM)}
+      />
+      <MeasurementFormModal
+        open={!!toMb}
+        onClose={() => setToMb(null)}
+        projectId={doc.projectId}
+        prefill={toMb?.prefill}
+        onSaved={(mb) => {
+          if (toMb) toMeasurement.mutate({ ids: toMb.ids, measurementId: mb.id });
+          setChosen(new Set());
+        }}
+      />
+      <TakeoffBoqForm
+        open={!!toBoqOf}
+        projectId={doc.projectId}
+        measures={toBoqOf ?? []}
+        onClose={() => setToBoqOf(null)}
+        onSubmit={async (v) => {
+          await toBoq.mutateAsync({ ids: (toBoqOf ?? []).map((t) => t.id), boqItemId: v.boqItemId, field: v.field, factor: v.factor });
+          message.success(`${v.item.itemNo}'s ${v.field === 'ORIGINAL' ? 'original' : 'revised'} quantity is now ${formatQty(v.qty)} ${v.item.unit}`);
+          setChosen(new Set());
+        }}
       />
       <ResolveMarkupForm mark={resolving} onClose={() => setResolving(null)} onSubmit={(note) => resolve.mutateAsync({ id: resolving!.id, resolved: true, note })} />
       <RfiFormModal

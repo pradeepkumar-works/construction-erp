@@ -9,6 +9,15 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-12-takeoff',
+    date: '2026-12-04',
+    title: 'Measure on drawings',
+    points: [
+      'In the drawing viewer, set a sheet’s scale from two points a known distance apart (or a DXF’s own units), then measure lengths, areas and counts by clicking on the drawing.',
+      'Measures sit beside the drawing under Measures, with totals. Tick some and add them to the measurement book, a line each, or set a BOQ item’s quantity from them.',
+    ],
+  },
+  {
     id: '2026-12-modules',
     date: '2026-12-03',
     title: 'Turn off what you don’t use',
