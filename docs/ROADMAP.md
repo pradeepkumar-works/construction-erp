@@ -457,6 +457,36 @@ carries on after the UX items (to 89). Migrations stay additive. Design notes fo
 Later, when a customer asks: group companies under one login, head-office overheads to projects, leads and tendering,
 TDS payable summary, a terms and conditions library, scrap sale bills, client dues reminders, multi-currency.
 
+## v6 – HR, payroll, books, RMC, supplier portal and biometrics
+
+On 22 Oct 2026 Pradeep brought back what v5 left out: payroll and the rest of HR, a full set of accounting books, RMC
+production and sales, a supplier login portal and biometric attendance devices, with module wise views (each module its
+own section and home). Items 106 to 108 are the gaps found on re-checking the Concord documents, added the same day.
+Migrations stay additive. Design notes for each item are in the project's `roadmap/v6-plan.md`.
+
+98. **Module home pages** (M). Every sidebar section is a module with an overview page: its figures, what waits for me,
+    its lists with counts, its reports and its New actions. Each new module below gets a section and a home.
+99. **HR records** (M). The full employee master (personal, statutory and bank details, documents), joining,
+    confirmation, transfer, increment, exit with full and final settlement, HR letters, an HR dashboard.
+100. **Payroll** (L). Salary structures, PF, ESI, professional tax and salary TDS, a monthly salary run from attendance
+    approved through the matrix, payslips on the web and phone, staff loans and advances, the bank file, statutory returns.
+101. **Biometric attendance** (M). A device register, the ZKTeco / eSSL push protocol (ADMS), a generic webhook and a
+    punch file import; device users mapped to employees and workers; punches turned into attendance.
+102. **Accounting books** (L). Chart of accounts, vouchers with approval, automatic postings from every module through one
+    posting service (shared with the Tally export), cash, bank and day books, ledgers with projects as cost centres.
+103. **Financial statements** (M). Opening balances, trial balance (also by project), profit and loss, balance sheet,
+    bank reconciliation, financial year close and lock.
+104. **RMC production and sales** (L). A plant, mix designs, quotations and sales orders, production schedule, batch
+    reports drawing the plant's stock, delivery challans, cube tests, sales bills with GST and customer receipts.
+105. **Supplier portal** (L). Supplier and subcontractor logins: enquiries, POs and work orders to accept, dispatch notes,
+    invoices uploaded as bills to check, payments and a statement, profile and bank changes with approval.
+106. **Central store** (M). Stock held at a store or yard that is not a project, with receipts, issues and transfers
+    to and from sites.
+107. **Site fund requests** (S). A site asks head office for money, or a payment on behalf of another site, as a payment
+    request kind; released into its imprest or paid to the party.
+108. **Machine finance** (M). Loans on financed machines with the EMI schedule, EMIs paid and due, reminders, posted to the
+    books and the machine's cost.
+
 ## AI – Ask Nirmaan and what follows
 
 Rules for every AI item: the AI reads only what the asking user can see (through `AiToolsService`), never submits,
