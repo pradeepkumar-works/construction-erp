@@ -22,6 +22,7 @@ import {
   RECEIPT_KIND_LABELS,
   WEATHER_LABELS,
   SUB_BILL_DEDUCTION_LABELS,
+  FUND_PURPOSE_LABELS,
   PAYMENT_REQUEST_KIND_LABELS,
   VENDOR_BILL_KIND_LABELS,
   DEBIT_NOTE_REASON_LABELS,
@@ -505,9 +506,9 @@ export const VENDOR_PAYMENT_EXPORT: ExportColumn<VendorPaymentDto>[] = [
 
 export const PAYMENT_REQUEST_EXPORT: ExportColumn<PaymentRequestDto>[] = [
   { header: 'Request', value: (r) => r.requestNo, width: 16 },
-  { header: 'For', value: (r) => PAYMENT_REQUEST_KIND_LABELS[r.kind], width: 26 },
-  { header: 'Bill or order', value: (r) => r.targetLabel, width: 22 },
-  { header: 'Vendor', value: (r) => r.vendorName, width: 30 },
+  { header: 'For', value: (r) => (r.purpose ? `${PAYMENT_REQUEST_KIND_LABELS[r.kind]}: ${FUND_PURPOSE_LABELS[r.purpose].toLowerCase()}` : PAYMENT_REQUEST_KIND_LABELS[r.kind]), width: 26 },
+  { header: 'Bill, order or imprest', value: (r) => r.targetLabel, width: 22 },
+  { header: 'Pay to', value: (r) => r.vendorName ?? (r.imprestHolderName ? `${r.imprestHolderName}'s imprest` : null), width: 30 },
   { header: 'Project code', value: (r) => r.projectCode, width: 14 },
   { header: 'Project', value: (r) => r.projectName, width: 34 },
   { header: 'Amount', value: (r) => toNumber(r.amount) },

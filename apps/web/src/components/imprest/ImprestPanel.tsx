@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { App, Button, Descriptions, Drawer, Popconfirm, Progress, Segmented, Space, Table, Tag, Tooltip } from 'antd';
 import type { TableProps } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
@@ -185,10 +186,22 @@ function ImprestDrawer({ id, onClose, admin, onAction }: { id: string | null; on
     {
       title: 'Detail',
       key: 'd',
-      render: (_, e) =>
-        [e.reason, e.paymentMode ? `${PAYMENT_MODE_LABELS[e.paymentMode]}${e.reference ? ` ${e.reference}` : ''}` : null, e.decisionNote, e.requestedByName ? `asked by ${e.requestedByName}` : null, e.decidedByName ? `by ${e.decidedByName}` : null]
+      render: (_, e) => {
+        const text = [e.reason, e.paymentMode ? `${PAYMENT_MODE_LABELS[e.paymentMode]}${e.reference ? ` ${e.reference}` : ''}` : null, e.decisionNote, e.requestedByName ? `asked by ${e.requestedByName}` : null, e.decidedByName ? `by ${e.decidedByName}` : null]
           .filter(Boolean)
-          .join(' · '),
+          .join(' · ');
+        // Released from a site's fund request (v6 item 107).
+        return e.paymentRequestId ? (
+          <span>
+            <Link href={`/payment-requests/${e.paymentRequestId}`} className="mono" translate="no">
+              {e.requestNo}
+            </Link>{' '}
+            · {text}
+          </span>
+        ) : (
+          text
+        );
+      },
     },
   ];
 

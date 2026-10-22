@@ -44,6 +44,19 @@ export const COMMERCIAL: Record<string, string> = {
   'Open bill': 'बिल खोलें',
   'Open order': 'ऑर्डर खोलें',
 
+  // Site fund requests (v6 item 107)
+  'Fund request': 'फंड अनुरोध',
+  Wages: 'मज़दूरी',
+  'Local purchase': 'स्थानीय खरीद',
+  'Advance to a petty contractor': 'छोटे ठेकेदार को एडवांस',
+  'Site running costs': 'साइट का रोज़ का खर्च',
+  'Goes to': 'किसे जाएगा',
+  "{name}'s imprest": '{name} का इम्प्रेस्ट',
+  '{name}, on account': '{name}, खाते पर (ऑन अकाउंट)',
+  'Asked from': 'कहाँ से माँगा',
+  Released: 'जारी किया गया',
+  'Open imprest': 'इम्प्रेस्ट खोलें',
+
   // Bill deductions (labels from @erp/shared)
   'Security deposit': 'सिक्योरिटी डिपॉज़िट',
   'Mobilisation advance recovery': 'मोबिलाइज़ेशन एडवांस की वसूली',

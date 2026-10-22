@@ -1252,6 +1252,20 @@ Releasing money is approved before accounts pays it (v5 item 90).
   `GET /payables` carry their latest open `request`. Web: the Payment requests tab in Payables, `/payment-requests/[id]`,
   "Request payment" on approved bills (and in the due list) and "Request advance" on approved orders, Pay against an
   approved request, the approvals pane, Search and Ask. Phone: approve in the Approvals tab (`/payment-request/[id]`).
+- **Site fund requests (v6 item 107).** A site asks head office for money as a request of kind `FUND_REQUEST`: no bill or
+  order, a `purpose` (`FundPurpose`: wages, local purchase, petty contractor, running costs, other), the site it is for
+  (`projectId`, whose approvers decide) and exactly one of `imprestId` (an active imprest at that site) or `vendorId` (a
+  party paid on account); `raisedAtProjectId` names the asking site when it asks on behalf of another (the asker must
+  work at both). `vendorId` is nullable for this; the CHECK `PaymentRequest_one_target` keeps the other kinds on a vendor
+  and a target. Nothing caps the amount; the matrix decides. Anyone who pays site expenses asks (`canRequestFunds`);
+  those outside the payment request roles see only fund requests. Into an imprest, accounts release it
+  (`POST /payment-requests/:id/release`, `canReleaseFunds`): a paid `ImprestEntry` advance with `paymentRequestId`, up to
+  what is left, which raises the holder's cash in hand and notifies them. To a party, `POST /vendor-payments` with the
+  request pays on account (the `VendorPayment` CHECK allows a payment with no bill or order when it draws on a request):
+  payables count it as paid, the books post it as a payment to the party with an On Account reference, and the supplier
+  sees "On account" on their statement. `syncRequestPaid` adds releases to payments. Web: Site imprest → Fund requests
+  (`PaymentRequestList fund`, "Request funds", `FundRequestFormModal`, Release on approved ones); the request's page and
+  the approvals pane are the payment request's. Phone: approve, and see where the money goes.
 
 ## Bills without a PO and debit notes
 

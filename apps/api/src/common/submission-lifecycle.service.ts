@@ -23,7 +23,7 @@ import { ApprovalRightsService, type LevelEntry } from './approval-rights.servic
 import { mayDecide, queueRoles } from './approval-levels';
 import { AuditService } from './audit.service';
 import { NotificationsService } from '../notifications/notifications.service';
-import { dprTitle, expenseTitle, machineryTitle, measurementTitle, progressTitle, billTitle, poTitle, vendorBillTitle, woTitle, subBillTitle, inspectionTitle, paymentRequestTitle } from './submission-titles';
+import { dprTitle, expenseTitle, machineryTitle, measurementTitle, progressTitle, billTitle, poTitle, vendorBillTitle, woTitle, subBillTitle, inspectionTitle, payRequestTitle, PAY_REQUEST_TITLE } from './submission-titles';
 
 const REVIEW_ACTIONS = ['APPROVED', 'REJECTED', 'CHANGES_REQUESTED', 'LEVEL_APPROVED'] as const;
 
@@ -261,15 +261,7 @@ export class SubmissionLifecycleService {
       allowed('PAYMENT_REQUEST')
         ? this.prisma.paymentRequest.findMany({
             where: where('PAYMENT_REQUEST'),
-            include: {
-              project: NAME,
-              submittedBy: BY,
-              vendor: { select: { name: true } },
-              vendorBill: { select: { billNo: true } },
-              subcontractBill: { select: { billNo: true, isFinal: true, workOrder: { select: { woNo: true } } } },
-              purchaseOrder: { select: { poNo: true } },
-              workOrder: { select: { woNo: true } },
-            },
+            include: { project: NAME, submittedBy: BY, ...PAY_REQUEST_TITLE },
             orderBy: { submittedAt: 'asc' },
           })
         : none,
@@ -405,13 +397,7 @@ export class SubmissionLifecycleService {
         id: r.id,
         projectId: r.projectId,
         projectName: r.project.name,
-        title: paymentRequestTitle(
-          r.requestNo,
-          r.amount.toFixed(2),
-          r.vendor.name,
-          r.vendorBill?.billNo ?? (r.subcontractBill ? subBillLabel(r.subcontractBill.workOrder.woNo, r.subcontractBill.billNo, r.subcontractBill.isFinal) : (r.purchaseOrder?.poNo ?? r.workOrder?.woNo ?? '')),
-          r.kind !== 'BILL',
-        ),
+        title: payRequestTitle(r),
         submittedByName: r.submittedBy.fullName,
         submittedAt: (r.submittedAt ?? r.createdAt).toISOString(),
         amount: amt(r.amount),

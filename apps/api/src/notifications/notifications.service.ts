@@ -7,7 +7,7 @@ import { ProjectAccessService } from '../common/project-access.service';
 import { ApprovalRightsService } from '../common/approval-rights.service';
 import { dateOnly, iso } from '../common/serialize';
 import { ExpoPushService } from './expo-push.service';
-import { dprTitle, expenseTitle, machineryTitle, measurementTitle, progressTitle, billTitle, poTitle, vendorBillTitle, woTitle, subBillTitle, inspectionTitle, paymentRequestTitle } from '../common/submission-titles';
+import { dprTitle, expenseTitle, machineryTitle, measurementTitle, progressTitle, billTitle, poTitle, vendorBillTitle, woTitle, subBillTitle, inspectionTitle, payRequestTitle, PAY_REQUEST_TITLE } from '../common/submission-titles';
 import { ListNotificationsQuery, RegisterPushTokenDto } from './notifications.dto';
 import { MessagingService, type OutgoingMessage } from '../messaging/messaging.service';
 
@@ -235,20 +235,9 @@ export class NotificationsService {
         return i ? { title: inspectionTitle(i.inspectionNo, i.activity.name, i.location), projectId: i.projectId, projectName: i.project.name, submittedById: i.submittedById } : null;
       }
       case 'PAYMENT_REQUEST': {
-        const r = await this.prisma.paymentRequest.findUnique({
-          where: { id },
-          include: {
-            project: { select: { name: true } },
-            vendor: { select: { name: true } },
-            vendorBill: { select: { billNo: true } },
-            subcontractBill: { select: { billNo: true, isFinal: true, workOrder: { select: { woNo: true } } } },
-            purchaseOrder: { select: { poNo: true } },
-            workOrder: { select: { woNo: true } },
-          },
-        });
+        const r = await this.prisma.paymentRequest.findUnique({ where: { id }, include: { project: { select: { name: true } }, ...PAY_REQUEST_TITLE } });
         if (!r) return null;
-        const target = r.vendorBill?.billNo ?? (r.subcontractBill ? subBillLabel(r.subcontractBill.workOrder.woNo, r.subcontractBill.billNo, r.subcontractBill.isFinal) : (r.purchaseOrder?.poNo ?? r.workOrder?.woNo ?? ''));
-        return { title: paymentRequestTitle(r.requestNo, r.amount.toFixed(2), r.vendor.name, target, r.kind !== 'BILL'), projectId: r.projectId, projectName: r.project.name, submittedById: r.submittedById };
+        return { title: payRequestTitle(r), projectId: r.projectId, projectName: r.project.name, submittedById: r.submittedById };
       }
     }
   }

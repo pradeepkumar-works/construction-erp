@@ -16,6 +16,10 @@ import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { editActionLabel } from '@/components/common/EditResubmitButton';
 import { recordPage } from '@/components/approvals/queue';
 import { PAYMENT_QUERY_KEYS } from './PaymentFormModal';
+import { FundRequestFormModal } from './FundRequestFormModal';
+
+/** What this form asks for; a site's fund request (v6 item 107) has its own form. */
+const KINDS = PAYMENT_REQUEST_KINDS.filter((k) => k !== 'FUND_REQUEST');
 
 /** What a request is for, when the form is opened from that bill or order (its id goes in as the matching field). */
 export interface RequestFor {
@@ -50,9 +54,15 @@ const keyOf = (t: RequestFor) => t.vendorBillId ?? t.subcontractBillId ?? t.purc
 
 /**
  * Ask for a bill to be paid or an advance released on an order (v5 item 90), or (with `request`) fix a returned request
- * and resubmit it. It goes to approval through the matrix; accounts pays it once approved.
+ * and resubmit it. It goes to approval through the matrix; accounts pays it once approved. A returned fund request
+ * opens its own form.
  */
-export function PaymentRequestFormModal({ open, onClose, target, request }: { open: boolean; onClose: () => void; target?: RequestFor | null; request?: PaymentRequestDto | null }) {
+export function PaymentRequestFormModal(props: { open: boolean; onClose: () => void; target?: RequestFor | null; request?: PaymentRequestDto | null }) {
+  if (props.request?.kind === 'FUND_REQUEST') return <FundRequestFormModal open={props.open} onClose={props.onClose} request={props.request} />;
+  return <BillRequestFormModal {...props} />;
+}
+
+function BillRequestFormModal({ open, onClose, target, request }: { open: boolean; onClose: () => void; target?: RequestFor | null; request?: PaymentRequestDto | null }) {
   const [form] = Form.useForm<FormValues>();
   const qc = useQueryClient();
   const notify = useNotify();
@@ -192,7 +202,7 @@ export function PaymentRequestFormModal({ open, onClose, target, request }: { op
           <FormGrid cols={2}>
             <Form.Item name="kind" label="For" rules={[{ required: true, message: 'Choose what the payment is for' }]}>
               <Select
-                options={PAYMENT_REQUEST_KINDS.map((k) => ({
+                options={KINDS.map((k) => ({
                   value: k,
                   label: PAYMENT_REQUEST_KIND_LABELS[k],
                 }))}

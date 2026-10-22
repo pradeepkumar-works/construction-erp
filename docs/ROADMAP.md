@@ -521,8 +521,12 @@ Migrations stay additive. Design notes for each item are in the project's `roadm
     and valuation; Central stores lists each with its value, low items and transfers on the way; transfers go site to
     store, store to site or store to store; a site's material request shows the store's stock, and the store's people
     send from it. Not built: bin locations inside a store, and a store-wide reorder run.
-107. **Site fund requests** (S). A site asks head office for money, or a payment on behalf of another site, as a payment
-    request kind; released into its imprest or paid to the party.
+107. ~~**Site fund requests** (S). A site asks head office for money, or a payment on behalf of another site, as a payment
+    request kind; released into its imprest or paid to the party.~~
+    Done: a fund request is a payment request for a purpose, approved by the matrix, released into the site's imprest
+    (in parts if needed) or paid to a party on account, and a site may ask on behalf of another it works at; Site imprest
+    has a Fund requests tab, and the phone approves them. Not built: asking from the phone, and settling a party's
+    on-account payment against their later bill (the books and Tally carry it on account).
 108. **Machine finance** (M). Loans on financed machines with the EMI schedule, EMIs paid and due, reminders, posted to the
     books and the machine's cost.
 110. **Tender bidding** (L). A tender register (NIT, client, EMD, dates, documents, result), a company Schedule of Rates

@@ -37,6 +37,7 @@ import type {
   Weather,
   GrnQcStatus,
   PaymentRequestKind,
+  FundPurpose,
   VendorBillKind,
   HireFuelBy,
   DebitNoteReason,
@@ -2071,10 +2072,17 @@ export interface PaymentRequestDto extends SubmissionBase {
   requestNo: string;
   kind: PaymentRequestKind;
   projectCode: string;
-  vendorId: string;
-  vendorName: string;
+  /** The party paid; null for a fund request released into an imprest */
+  vendorId: string | null;
+  vendorName: string | null;
   vendorMsme: MsmeCategory | null;
-  /** Exactly one, by kind */
+  /** A fund request (v6 item 107): what for, the imprest it tops up (with its holder), and the site that asked when not the project */
+  purpose: FundPurpose | null;
+  imprestId: string | null;
+  imprestHolderName: string | null;
+  raisedAtProjectId: string | null;
+  raisedAtProjectName: string | null;
+  /** Exactly one, by kind (none for a fund request) */
   vendorBillId: string | null;
   subcontractBillId: string | null;
   purchaseOrderId: string | null;

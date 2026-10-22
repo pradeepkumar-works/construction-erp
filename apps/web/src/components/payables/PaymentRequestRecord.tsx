@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Button, Table, Tag, Typography } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { PaymentRequestDto, VendorPaymentDto } from '@erp/shared';
-import { MSME_CATEGORY_LABELS, PAYMENT_REQUEST_KIND_LABELS, RECEIPT_MODE_LABELS, canEditSubmission, canRecordPayment, canRequestPayment } from '@erp/shared';
+import { FUND_PURPOSE_LABELS, MSME_CATEGORY_LABELS, PAYMENT_REQUEST_KIND_LABELS, RECEIPT_MODE_LABELS, canEditSubmission, canRecordPayment, canReleaseFunds, canRequestFunds, canRequestPayment } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
@@ -20,6 +20,7 @@ import { submissionMetaItems } from '@/components/common/SubmitterInfo';
 import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
 import { submissionLifecycle } from '@/components/record/lifecycle';
 import { PaymentFormModal, requestPayTarget } from './PaymentFormModal';
+import { ReleaseFundsModal } from './FundRequestFormModal';
 
 const money = (v: string | number, strong?: boolean) =>
   strong ? (
@@ -32,32 +33,43 @@ const money = (v: string | number, strong?: boolean) =>
     </span>
   );
 
-/** Where a request's bill or order lives. */
-export const requestTargetHref = (r: Pick<PaymentRequestDto, 'vendorBillId' | 'subcontractBillId' | 'purchaseOrderId' | 'workOrderId'>) =>
+/** Where a request's bill or order lives; a fund request's imprest (none for one paid to a party on account). */
+export const requestTargetHref = (r: Pick<PaymentRequestDto, 'vendorBillId' | 'subcontractBillId' | 'purchaseOrderId' | 'workOrderId' | 'imprestId'>) =>
   r.vendorBillId
     ? `/vendor-bills/${r.vendorBillId}`
     : r.subcontractBillId
       ? `/subcontract-bills/${r.subcontractBillId}`
       : r.purchaseOrderId
         ? `/purchase-orders/${r.purchaseOrderId}`
-        : `/work-orders/${r.workOrderId}`;
+        : r.workOrderId
+          ? `/work-orders/${r.workOrderId}`
+          : r.imprestId
+            ? `/imprest?id=${r.imprestId}`
+            : null;
 
-/** How much of an approved request is paid. */
-export function RequestPaidTag({ request }: { request: Pick<PaymentRequestDto, 'status' | 'paidAmount' | 'paidDate'> }) {
+/** Who a request pays: the party, or for a fund request into an imprest (v6 item 107) its holder. */
+export const requestPayee = (r: Pick<PaymentRequestDto, 'vendorName' | 'imprestHolderName'>) => r.vendorName ?? (r.imprestHolderName ? `${r.imprestHolderName}'s imprest` : '-');
+
+/** Paying an approved request: a fund request into an imprest is released, anything else paid. */
+export const requestReleases = (r: Pick<PaymentRequestDto, 'kind' | 'imprestId'>) => r.kind === 'FUND_REQUEST' && !!r.imprestId;
+
+/** How much of an approved request is paid (or, a fund request into an imprest, released). */
+export function RequestPaidTag({ request }: { request: Pick<PaymentRequestDto, 'status' | 'paidAmount' | 'paidDate' | 'kind' | 'imprestId'> }) {
   if (request.status !== 'APPROVED') return null;
+  const released = requestReleases(request);
   if (request.paidDate)
     return (
       <Tag color="green" style={{ margin: 0 }}>
-        Paid
+        {released ? 'Released' : 'Paid'}
       </Tag>
     );
   if (toNumber(request.paidAmount) > 0)
     return (
       <Tag color="gold" style={{ margin: 0 }}>
-        Part paid
+        {released ? 'Part released' : 'Part paid'}
       </Tag>
     );
-  return <Tag style={{ margin: 0 }}>To pay</Tag>;
+  return <Tag style={{ margin: 0 }}>{released ? 'To release' : 'To pay'}</Tag>;
 }
 
 interface RecordProps {
@@ -67,11 +79,15 @@ interface RecordProps {
   onEdit?: (r: PaymentRequestDto) => void;
 }
 
-/** A payment request (v5 item 90): a bill to pay or an advance to release, in a drawer or at `/payment-requests/<id>`. */
+/**
+ * A payment request (v5 item 90): a bill to pay or an advance to release, or a site's fund request (v6 item 107), in a
+ * drawer or at `/payment-requests/<id>`.
+ */
 export function PaymentRequestRecord({ id, mode, open, onClose, onEdit }: RecordProps & { mode: RecordMode }) {
   const { user } = useAuth();
   const qc = useQueryClient();
   const [paying, setPaying] = useState(false);
+  const [releasing, setReleasing] = useState(false);
   const { data, isLoading, error, refetch } = usePaymentRequest(id ?? undefined);
   const { data: payments } = useVendorPayments(
     {
@@ -80,10 +96,12 @@ export function PaymentRequestRecord({ id, mode, open, onClose, onEdit }: Record
       sortBy: 'paymentDate',
       sortOrder: 'asc',
     },
-    !!data && data.status === 'APPROVED',
+    !!data && data.status === 'APPROVED' && !!data.vendorId,
   );
-  const accounts = !!user && canRecordPayment(user.roleKey);
-  const requester = !!user && canRequestPayment(user.roleKey);
+  const fund = data?.kind === 'FUND_REQUEST';
+  const releases = !!data && requestReleases(data);
+  const accounts = !!user && (releases ? canReleaseFunds(user.roleKey) : canRecordPayment(user.roleKey));
+  const requester = !!user && (fund ? canRequestFunds(user.roleKey) : canRequestPayment(user.roleKey));
   const remove = useMutation({
     mutationFn: async () => (await api.delete(`/payment-requests/${id}`)).data,
     onSuccess: () => {
@@ -95,6 +113,7 @@ export function PaymentRequestRecord({ id, mode, open, onClose, onEdit }: Record
   });
   const removable = !!data && !!user && requester && canEditSubmission(user, data) && data.status !== 'APPROVED' && data.status !== 'SUBMITTED';
   const advance = data?.kind !== 'BILL';
+  const targetHref = data ? requestTargetHref(data) : null;
 
   return (
     <>
@@ -111,7 +130,7 @@ export function PaymentRequestRecord({ id, mode, open, onClose, onEdit }: Record
         record={
           data && {
             href: `/payment-requests/${data.id}`,
-            title: `${data.requestNo} · ${data.vendorName}`,
+            title: `${data.requestNo} · ${requestPayee(data)}`,
             tags: (
               <>
                 <StatusTag status={data.status} /> <RequestPaidTag request={data} />
@@ -121,29 +140,43 @@ export function PaymentRequestRecord({ id, mode, open, onClose, onEdit }: Record
               {
                 key: 'kind',
                 label: 'For',
-                children: PAYMENT_REQUEST_KIND_LABELS[data.kind],
+                children: fund && data.purpose ? `${PAYMENT_REQUEST_KIND_LABELS[data.kind]}: ${FUND_PURPOSE_LABELS[data.purpose].toLowerCase()}` : PAYMENT_REQUEST_KIND_LABELS[data.kind],
               },
-              {
-                key: 'target',
-                label: advance ? 'Order' : 'Bill',
-                children: (
-                  <span>
-                    <Link href={requestTargetHref(data)} className="mono" translate="no">
-                      {data.targetLabel}
-                    </Link>{' '}
-                    <span className="text-muted">
-                      {advance ? 'value' : 'payable'} {formatINR(data.targetValue, true)}
-                      {data.dueDate ? `, due ${formatDate(data.dueDate)}` : ''}
-                    </span>
-                  </span>
-                ),
-              },
+              ...(data.raisedAtProjectName
+                ? [
+                    {
+                      key: 'raisedAt',
+                      label: 'Asked from',
+                      children: data.raisedAtProjectName,
+                    },
+                  ]
+                : []),
+              ...(fund
+                ? []
+                : [
+                  {
+                    key: 'target',
+                    label: advance ? 'Order' : 'Bill',
+                    children: (
+                      <span>
+                        <Link href={targetHref ?? '#'} className="mono" translate="no">
+                          {data.targetLabel}
+                        </Link>{' '}
+                        <span className="text-muted">
+                          {advance ? 'value' : 'payable'} {formatINR(data.targetValue, true)}
+                          {data.dueDate ? `, due ${formatDate(data.dueDate)}` : ''}
+                        </span>
+                      </span>
+                    ),
+                  },
+                  ]),
               {
                 key: 'vendor',
-                label: 'Pay to',
+                label: releases ? 'Release into' : 'Pay to',
                 children: (
                   <span>
-                    {data.vendorName}
+                    {releases && targetHref ? <Link href={targetHref}>{requestPayee(data)}</Link> : requestPayee(data)}
+                    {fund && !releases ? <span className="text-muted"> · on account</span> : null}
                     {data.vendorMsme && data.vendorMsme !== 'MEDIUM' ? (
                       <Tag color="orange" style={{ marginLeft: 8 }}>
                         {MSME_CATEGORY_LABELS[data.vendorMsme]}
@@ -180,7 +213,7 @@ export function PaymentRequestRecord({ id, mode, open, onClose, onEdit }: Record
                 ? [
                     {
                       key: 'paid',
-                      label: 'Paid',
+                      label: releases ? 'Released' : 'Paid',
                       children: (
                         <span>
                           {money(data.paidAmount)} {toNumber(data.outstanding) > 0 ? <span className="text-muted">· {formatINR(data.outstanding, true)} left</span> : null}
@@ -203,13 +236,13 @@ export function PaymentRequestRecord({ id, mode, open, onClose, onEdit }: Record
             ],
             lifecycle: submissionLifecycle(data, [
               {
-                title: 'Paid',
+                title: releases ? 'Released' : 'Paid',
                 done: !!data.paidDate,
-                content: data.status !== 'APPROVED' ? undefined : data.paidDate ? formatDate(data.paidDate) : `${formatINR(data.outstanding, true)} to pay`,
+                content: data.status !== 'APPROVED' ? undefined : data.paidDate ? formatDate(data.paidDate) : `${formatINR(data.outstanding, true)} ${releases ? 'to release' : 'to pay'}`,
               },
             ]),
             sections: [
-              ...(data.status === 'APPROVED'
+              ...(data.status === 'APPROVED' && !releases
                 ? [
                     {
                       key: 'payments',
@@ -267,7 +300,7 @@ export function PaymentRequestRecord({ id, mode, open, onClose, onEdit }: Record
                 : []),
               {
                 key: 'files',
-                title: 'Proforma or letter',
+                title: fund ? 'Wage sheet, quotation or letter' : 'Proforma or letter',
                 count: data.attachments.length,
                 children: data.attachments.length > 0 ? <AttachmentGallery attachments={data.attachments} /> : <Typography.Text type="secondary">Nothing attached.</Typography.Text>,
               },
@@ -280,8 +313,8 @@ export function PaymentRequestRecord({ id, mode, open, onClose, onEdit }: Record
             actions: (size) => (
               <>
                 {accounts && data.status === 'APPROVED' && toNumber(data.outstanding) > 0 ? (
-                  <Button size={size} type="primary" onClick={() => setPaying(true)}>
-                    Pay {formatINR(data.outstanding)}
+                  <Button size={size} type="primary" onClick={() => (releases ? setReleasing(true) : setPaying(true))}>
+                    {releases ? 'Release' : 'Pay'} {formatINR(data.outstanding)}
                   </Button>
                 ) : null}
                 {requester && <EditResubmitButton entry={data} onEdit={onEdit} size={size} />}
@@ -299,6 +332,7 @@ export function PaymentRequestRecord({ id, mode, open, onClose, onEdit }: Record
         }
       />
       <PaymentFormModal open={paying && !!data} bill={data ? requestPayTarget(data) : null} onClose={() => setPaying(false)} />
+      <ReleaseFundsModal request={releasing && data ? data : null} onClose={() => setReleasing(false)} />
     </>
   );
 }
@@ -307,7 +341,8 @@ export function PaymentRequestDrawer(props: RecordProps & { open: boolean; onClo
   return <PaymentRequestRecord mode="drawer" {...props} />;
 }
 
-/** Pay an approved request from anywhere it is listed. */
+/** Pay (or, a fund request into an imprest, release) an approved request from anywhere it is listed. */
 export function PayRequestModal({ request, onClose }: { request: PaymentRequestDto | null; onClose: () => void }) {
+  if (request && requestReleases(request)) return <ReleaseFundsModal request={request} onClose={onClose} />;
   return <PaymentFormModal open={!!request} bill={request ? requestPayTarget(request) : null} onClose={onClose} />;
 }

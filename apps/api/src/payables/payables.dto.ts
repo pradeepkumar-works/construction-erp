@@ -3,12 +3,14 @@ import { Transform, Type } from 'class-transformer';
 import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsDateString, IsIn, IsNotEmpty, IsNumberString, IsOptional, IsString, IsUUID, MaxLength, ValidateNested } from 'class-validator';
 import {
   DEBIT_NOTE_REASONS,
+  FUND_PURPOSES,
   LIST_SORT_FIELDS,
   PAYMENT_REQUEST_KINDS,
   RECEIPT_MODES,
   SUBMISSION_STATUSES,
   type DebitNoteReason,
   type DebitNoteSortField,
+  type FundPurpose,
   type PaymentMode,
   type PaymentRequestKind,
   type PaymentRequestSortField,
@@ -81,11 +83,25 @@ export class CreatePaymentRequestDto extends PaymentRequestFields {
   @ApiPropertyOptional({ description: 'BILL: an approved subcontractor bill (or vendorBillId)' }) @IsOptional() @IsUUID() subcontractBillId?: string;
   @ApiPropertyOptional({ description: 'PO_ADVANCE: an approved, open purchase order' }) @IsOptional() @IsUUID() purchaseOrderId?: string;
   @ApiPropertyOptional({ description: 'WO_ADVANCE: an approved, open work order' }) @IsOptional() @IsUUID() workOrderId?: string;
-  @ApiProperty({ example: '150000.00', description: "At most what is still unpaid on the bill, or the order's value less advances already asked for" }) @num() @IsNumberString() amount: string;
+  @ApiPropertyOptional({ description: 'FUND_REQUEST: the site the money is for' }) @IsOptional() @IsUUID() projectId?: string;
+  @ApiPropertyOptional({ enum: FUND_PURPOSES, description: 'FUND_REQUEST: what the money is for' }) @IsOptional() @IsIn(FUND_PURPOSES as unknown as string[]) purpose?: FundPurpose;
+  @ApiPropertyOptional({ description: "FUND_REQUEST: an active imprest at the site, to release the money into (or vendorId)" }) @IsOptional() @IsUUID() imprestId?: string;
+  @ApiPropertyOptional({ description: 'FUND_REQUEST: the party to pay on account (or imprestId)' }) @IsOptional() @IsUUID() vendorId?: string;
+  @ApiPropertyOptional({ description: 'FUND_REQUEST: the site asking, when it asks on behalf of another' }) @IsOptional() @IsUUID() raisedAtProjectId?: string | null;
+  @ApiProperty({ example: '150000.00', description: "At most what is still unpaid on the bill, or the order's value less advances already asked for (a fund request has no cap)" }) @num() @IsNumberString() amount: string;
 }
 
 export class UpdatePaymentRequestDto extends PaymentRequestFields {
   @ApiPropertyOptional({ example: '150000.00' }) @IsOptional() @num() @IsNumberString() amount?: string;
+  @ApiPropertyOptional({ enum: FUND_PURPOSES, description: 'FUND_REQUEST only' }) @IsOptional() @IsIn(FUND_PURPOSES as unknown as string[]) purpose?: FundPurpose;
+}
+
+/** Release an approved fund request (v6 item 107) into its imprest: a paid advance on it. */
+export class ReleaseFundsDto {
+  @ApiProperty({ example: '2026-10-22' }) @IsDateString() date: string;
+  @ApiPropertyOptional({ example: '50000.00', description: 'Defaults to what the request has left to release' }) @IsOptional() @num() @IsNumberString() amount?: string;
+  @ApiPropertyOptional({ enum: RECEIPT_MODES, description: "Defaults to the request's mode" }) @IsOptional() @IsIn(RECEIPT_MODES as unknown as string[]) mode?: PaymentMode;
+  @ApiPropertyOptional({ example: 'UTR 4471 2290' }) @IsOptional() @trim() @IsString() @MaxLength(100) reference?: string | null;
 }
 
 /** `q` matches the request number, the reason, the vendor, the project and the bill or order. */
@@ -95,6 +111,7 @@ export class ListPaymentRequestsQuery extends PageQuery {
   @ApiPropertyOptional({ enum: PAYMENT_REQUEST_KINDS }) @IsOptional() @IsIn(PAYMENT_REQUEST_KINDS as unknown as string[]) kind?: PaymentRequestKind;
   @ApiPropertyOptional({ enum: SUBMISSION_STATUSES }) @IsOptional() @IsIn(SUBMISSION_STATUSES as unknown as string[]) status?: SubmissionStatus;
   @ApiPropertyOptional({ description: 'Approved and not yet paid in full' }) @IsOptional() @QueryBool() @IsBoolean() toPay?: boolean;
+  @ApiPropertyOptional({ description: 'Fund requests released into this imprest' }) @IsOptional() @IsUUID() imprestId?: string;
   @ApiPropertyOptional() @IsOptional() @IsUUID() vendorBillId?: string;
   @ApiPropertyOptional() @IsOptional() @IsUUID() subcontractBillId?: string;
   @ApiPropertyOptional() @IsOptional() @IsUUID() purchaseOrderId?: string;

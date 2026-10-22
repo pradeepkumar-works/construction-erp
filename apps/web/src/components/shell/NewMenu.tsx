@@ -6,7 +6,7 @@ import { Button, Dropdown } from 'antd';
 import type { MenuProps } from 'antd';
 import { AccountBookOutlined, AlertOutlined, BankOutlined, ContainerOutlined, FileDoneOutlined, FileTextOutlined, LineChartOutlined, MailOutlined, PlusOutlined, ShoppingCartOutlined, WalletOutlined } from '@ant-design/icons';
 import type { AuthUser } from '@erp/shared';
-import { canKeepBooks, canSellRmc, canPrepareBill, canPurchase, canRaiseRisk, canRequestPayment, canSubmitExpense, canViewLetters, canViewPayables, isGuest } from '@erp/shared';
+import { canKeepBooks, canSellRmc, canPrepareBill, canPurchase, canRaiseRisk, canRequestFunds, canRequestPayment, canSubmitExpense, canViewLetters, canViewPayables, isGuest } from '@erp/shared';
 import { requestNew, type NewKind } from '@/lib/new-intent';
 
 export interface NewEntry {
@@ -28,6 +28,7 @@ export function newEntriesFor(user: AuthUser): NewEntry[][] {
     { kind: 'material-request', label: 'Material request', action: 'New material request (MR)', href: '/material-requests', icon: <ShoppingCartOutlined /> },
     ...(canSubmitExpense(role) ? [{ kind: 'expense' as const, label: 'Site expense', action: 'New site expense', href: '/expenses', icon: <WalletOutlined /> }] : []),
     ...(canRaiseRisk(role) ? [{ kind: 'risk' as const, label: 'Delay or risk', action: 'Record delay or risk', href: '/risks', icon: <AlertOutlined /> }] : []),
+    ...(canRequestFunds(role) ? [{ kind: 'fund-request' as const, label: 'Fund request', action: 'Request funds', href: '/imprest?tab=funds', icon: <BankOutlined /> }] : []),
   ];
   const office: NewEntry[] = [
     ...(canPurchase(role) ? [{ kind: 'purchase-order' as const, label: 'Purchase order', action: 'New purchase order (PO)', href: '/purchase-orders', icon: <ContainerOutlined /> }] : []),
