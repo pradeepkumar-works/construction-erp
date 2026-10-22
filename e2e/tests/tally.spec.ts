@@ -34,6 +34,8 @@ test('export vouchers to Tally, lock them, and undo the export', async ({ page }
   const exportButton = page.getByRole('button', { name: `Export ${waiting.length} vouchers` });
   await expect(exportButton).toBeEnabled();
   const sale = page.locator('tr.ant-table-row').filter({ hasText: waiting.find((v) => v.kind === 'SALES')!.number });
+  // Oldest first, 25 a page: the sale may be on a later page behind the machine loans' EMIs.
+  for (let i = 0; i < 10 && !(await sale.isVisible()); i++) await page.locator('.ant-pagination-next').first().click();
   await sale.locator('.ant-table-row-expand-icon').click();
   await expect(page.getByRole('cell', { name: 'Contract Receipts' }).first()).toBeVisible();
 
