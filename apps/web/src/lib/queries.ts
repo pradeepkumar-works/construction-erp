@@ -3,6 +3,9 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
 import type {
   CommentKind,
+  ModuleSwitchesDto,
+  ModuleTier,
+  SwitchableModule,
   CommentThreadsDto,
   MentionableDto,
   SupplierChangeDto,
@@ -314,6 +317,7 @@ import type {
 } from '@erp/shared';
 import { CAD_MIME_TYPES, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, NOTIFICATION_TYPES_VERSION, SEARCH_MIN_LENGTH } from '@erp/shared';
 import { api } from './api';
+import { useModuleOn } from './modules';
 import { FAIL_NOTICE, failNoticeSaying } from './notify';
 
 export interface RoleDto {
@@ -839,14 +843,17 @@ export const useApprovedMakes = (filters?: { projectId?: string; q?: string }, e
     enabled,
   });
 /** Order lines whose material has approved makes on the project but name another make, or none. */
-export const useMakeCheck = (projectId: string | undefined, lines: { itemName: string; make?: string | null }[]) =>
-  useQuery({
+export const useMakeCheck = (projectId: string | undefined, lines: { itemName: string; make?: string | null }[]) => {
+  // No check while the company has material approvals off (v6 item 117).
+  const on = useModuleOn('material_approvals');
+  return useQuery({
     queryKey: ['material-approvals', 'check', projectId, lines],
     queryFn: async () => (await api.post<MakeWarningDto[]>('/material-approvals/make-check', { projectId, lines })).data,
-    enabled: !!projectId && lines.some((l) => l.itemName.trim()),
+    enabled: on && !!projectId && lines.some((l) => l.itemName.trim()),
     placeholderData: keepPreviousData,
     staleTime: 30_000,
   });
+};
 export function useMaterialApprovalAction<T = MaterialApprovalDetailDto>() {
   const qc = useQueryClient();
   return useMutation({
@@ -2658,6 +2665,18 @@ export function useSetTrialEnd() {
   });
 }
 
+/** Set a company's plan, which decides its modules (v6 item 117). */
+export function useSetModuleTier() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, tier }: { id: string; tier: ModuleTier | null }) => (await api.post<PlatformCompanyDetailDto>(`/platform/companies/${id}/plan`, { tier })).data,
+    onSuccess: (d) => {
+      qc.setQueryData(['platform', 'companies', d.id], d);
+      void qc.invalidateQueries({ queryKey: ['platform', 'companies'], exact: true });
+    },
+  });
+}
+
 /* ---------- variations (v4 item 37) ---------- */
 
 export interface VariationFilters extends PageParams {
@@ -3263,5 +3282,22 @@ export function useCommentAction(kind: CommentKind, entityId: string) {
     mutationFn: async ({ method = 'post', path, body }: { method?: 'post' | 'patch' | 'delete'; path: string; body?: unknown }) =>
       (method === 'delete' ? await api.delete<CommentThreadsDto>(path) : await api[method]<CommentThreadsDto>(path, body ?? {})).data,
     onSuccess: (data) => qc.setQueryData(['comments', kind, entityId], data),
+  });
+}
+
+/** The company's optional modules (v6 item 117), for an admin. */
+export const useModuleSwitches = (enabled: boolean) =>
+  useQuery({ queryKey: ['module-switches'], queryFn: async () => (await api.get<ModuleSwitchesDto>('/module-switches')).data, enabled });
+
+/** Turn a module on or off; the caller refreshes the signed-in user so the sidebar follows. */
+export function useSetModuleSwitch() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (d: { key: SwitchableModule; on: boolean }) => (await api.put<ModuleSwitchesDto>(`/module-switches/${d.key}`, { on: d.on })).data,
+    onSuccess: (data) => {
+      qc.setQueryData(['module-switches'], data);
+      // Every list, count and search may now leave a module out, or bring one back.
+      void qc.invalidateQueries({ predicate: (q) => q.queryKey[0] !== 'module-switches' });
+    },
   });
 }

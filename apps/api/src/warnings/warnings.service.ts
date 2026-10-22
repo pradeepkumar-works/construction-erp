@@ -11,6 +11,7 @@ import { todayIn } from '../notifications/time';
 import { ReceivablesService } from '../receivables/receivables.service';
 import { PayablesService } from '../payables/payables.service';
 import { ReconciliationService } from '../reconciliation/reconciliation.service';
+import { moduleOn } from '../common/module-switch.guard';
 import {
   type Delivery,
   type MachineDay,
@@ -132,7 +133,8 @@ export class WarningsService {
 
   /** Every warning the caller's role and projects give on `today`, dismissed or not, most pressing kind first. */
   async compute(user: RequestUser, today: string, only?: WarningKind[]): Promise<Draft[]> {
-    const kinds = watchListKinds(user.roleKey).filter((k) => !only || only.includes(k));
+    // EMIs only while the company uses machine loans (v6 item 117).
+    const kinds = watchListKinds(user.roleKey).filter((k) => (!only || only.includes(k)) && (k !== 'LOAN_EMI' || moduleOn(user, 'machine_loans')));
     if (!kinds.length) return [];
     const projects: Project[] = await this.prisma.project.findMany({
       where: this.access.projectWhere(user),

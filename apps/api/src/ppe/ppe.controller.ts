@@ -3,9 +3,11 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { PpeService } from './ppe.service';
 import { ClosePpeDto, IssuePpeDto, ListPpeQuery, SetPpeRequiredDto } from './ppe.dto';
+import { ModuleSwitch } from '../common/decorators';
 
 @ApiTags('ppe')
 @ApiBearerAuth()
+@ModuleSwitch('safety')
 @Controller('ppe')
 export class PpeController {
   constructor(private ppe: PpeService) {}

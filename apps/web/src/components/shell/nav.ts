@@ -18,6 +18,7 @@ import {
   PieChartOutlined,
   AlertOutlined,
   AppstoreOutlined,
+  AppstoreAddOutlined,
   AuditOutlined,
   BankOutlined,
   BarChartOutlined,
@@ -114,6 +115,8 @@ import {
   canCheckSupplierInvoices,
   canManageSupplierLogins,
   mayApprove,
+  canManageModules,
+  pathIsOff,
 } from '@erp/shared';
 
 export type NavIcon = React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>;
@@ -355,12 +358,15 @@ export function navFor(user: AuthUser): NavSection[] {
           { href: '/approval-rules', label: 'Approval rules', icon: SafetyCertificateOutlined, keywords: 'matrix limits' },
         ),
         ...when(canManageCompanyData(role), { href: '/company-data', label: 'Data and privacy', icon: DatabaseOutlined, keywords: 'export delete' }),
+        ...when(canManageModules(role), { href: '/company-modules', label: 'Modules', icon: AppstoreAddOutlined, keywords: 'switch on off turn features plan hide' }),
         ...when(canManageAi(role), { href: '/ai-settings', label: `Ask ${PRODUCT_NAME}`, icon: SparkleIcon, keywords: 'ai assistant chat allowance' }),
         ...when(!!user.billing && canManageBilling(role), { href: '/billing', label: 'Subscription', icon: CreditCardOutlined, keywords: 'billing plan invoice pay renew' }),
         ...when(!!user.platformAdmin, { href: '/platform', label: `${PRODUCT_NAME} console`, icon: CloudServerOutlined, keywords: 'platform companies support' }),
       ],
     },
   ];
+  // A module the company has turned off (v6 item 117) leaves the sidebar.
+  if (user.modulesOff?.length) for (const s of sections) s.items = s.items.filter((i) => !pathIsOff(i.href, user.modulesOff));
   // Each module with two or more pages leads with its home page (v6 item 98).
   for (const s of sections) {
     if (s.module && s.items.length >= 2)

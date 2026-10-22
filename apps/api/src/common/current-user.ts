@@ -1,5 +1,5 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
-import type { RoleKey } from '@erp/shared';
+import type { RoleKey, SwitchableModule } from '@erp/shared';
 
 /** Shape attached to req.user by the JWT strategy. */
 export interface RequestUser {
@@ -14,6 +14,8 @@ export interface RequestUser {
   billingReadOnly?: boolean;
   /** A supplier-portal login (role SUPPLIER): the vendor it acts for */
   vendorId?: string;
+  /** The company's modules that are off (v6 item 117, `modulesOffFor`): their routes are refused (ModuleSwitchGuard) */
+  modulesOff?: SwitchableModule[];
 }
 
 export const CurrentUser = createParamDecorator((_data: unknown, ctx: ExecutionContext): RequestUser => {

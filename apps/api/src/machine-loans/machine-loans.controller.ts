@@ -3,10 +3,12 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { MachineLoansService } from './machine-loans.service';
 import { CreateEquipmentLoanDto, EquipmentLoanQuery, ForecloseDto, LoanPreviewQuery, PayEmiDto, UpdateEquipmentLoanDto } from './machine-loans.dto';
+import { ModuleSwitch } from '../common/decorators';
 
 /** Machine finance (v6 item 108): loans on financed machines, their EMI schedules and EMIs paid. Admin, management and accounts. */
 @ApiTags('machine-loans')
 @ApiBearerAuth()
+@ModuleSwitch('machine_loans')
 @Controller('machine-loans')
 export class MachineLoansController {
   constructor(private loans: MachineLoansService) {}

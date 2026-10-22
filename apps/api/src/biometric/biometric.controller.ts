@@ -3,13 +3,14 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { RawBodyRequest } from '@nestjs/common';
 import type { Request } from 'express';
 import { CurrentUser, RequestUser } from '../common/current-user';
-import { Public } from '../common/decorators';
+import { Public, ModuleSwitch } from '../common/decorators';
 import { BiometricService } from './biometric.service';
 import { CreateDeviceDto, ImportPunchesDto, MatchUserDto, PunchQuery, UpdateDeviceDto, WebhookPunchesDto } from './biometric.dto';
 
 /** Biometric attendance (v6 item 101): devices, the user numbers on them, punches, punch files, and the webhook. */
 @ApiTags('biometric')
 @ApiBearerAuth()
+@ModuleSwitch('biometric')
 @Controller('biometric')
 export class BiometricController {
   constructor(private bio: BiometricService) {}

@@ -1,7 +1,8 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import type { PlatformCompanyDetailDto, PlatformCompanyDto, SupportSessionDto } from '@erp/shared';
-import { PRODUCT_NAME, SUPPORT_SESSION_HOURS } from '@erp/shared';
+import type { ModuleTier, PlatformCompanyDetailDto, PlatformCompanyDto, SupportSessionDto } from '@erp/shared';
+import { PRODUCT_NAME, SUPPORT_SESSION_HOURS, modulesOffFor } from '@erp/shared';
+import { tierNote } from '../module-switches/module-switch-rules';
 import { PrismaService } from '../prisma/prisma.service';
 import { withoutTenant } from '../prisma/tenant-context';
 import { RequestUser } from '../common/current-user';
@@ -56,6 +57,8 @@ export class PlatformService {
         supportAccessUntil: o.supportAccessUntil && o.supportAccessUntil > new Date() ? o.supportAccessUntil.toISOString() : null,
         deletionScheduledFor: o.deletionScheduledFor?.toISOString().slice(0, 10) ?? null,
         ...(billing ? { billing: billingState(billing, o, today) } : {}),
+        moduleTier: o.moduleTier,
+        modulesOff: modulesOffFor(o),
       }));
     });
   }
@@ -108,6 +111,19 @@ export class PlatformService {
       if (!org) throw new NotFoundException('Company not found');
       await this.prisma.organization.update({ where: { id }, data: { trialEndsAt: new Date(`${until}T00:00:00Z`), billingRemindedFor: null } });
       await this.prisma.auditLog.create({ data: { organizationId: id, actorId: user.id, entityType: 'COMPANY', entityId: id, action: 'TRIAL_CHANGED', note: `Free trial set to end on ${until} by ${PRODUCT_NAME} (${user.fullName})` } });
+    });
+    return this.company(user, id);
+  }
+
+  /** Set the company's plan, which decides the modules it has (v6 item 117; audited in the company). */
+  async setModuleTier(user: RequestUser, id: string, tier: ModuleTier | null) {
+    this.assertStaff(user);
+    await withoutTenant(async () => {
+      const org = await this.prisma.organization.findUnique({ where: { id }, select: { moduleTier: true } });
+      if (!org) throw new NotFoundException('Company not found');
+      if (org.moduleTier === tier) return;
+      await this.prisma.organization.update({ where: { id }, data: { moduleTier: tier } });
+      await this.prisma.auditLog.create({ data: { organizationId: id, actorId: user.id, entityType: 'COMPANY', entityId: id, action: 'MODULE_PLAN', note: `${tierNote(org.moduleTier, tier)} by ${PRODUCT_NAME} (${user.fullName})` } });
     });
     return this.company(user, id);
   }

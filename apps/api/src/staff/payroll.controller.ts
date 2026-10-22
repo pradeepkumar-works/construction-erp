@@ -3,9 +3,11 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { PayrollService } from './payroll.service';
 import { PayrollQuery } from './staff.dto';
+import { ModuleSwitch } from '../common/decorators';
 
 @ApiTags('payroll')
 @ApiBearerAuth()
+@ModuleSwitch('payroll')
 @Controller('payroll')
 export class PayrollController {
   constructor(private payroll: PayrollService) {}

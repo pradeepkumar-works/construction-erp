@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import type { RoleKey } from '@erp/shared';
+import { modulesOffFor, type RoleKey } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { setTenant, withoutTenant } from '../prisma/tenant-context';
 import { isPlatformAdmin } from '../common/platform-admin';
@@ -39,7 +39,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         fullName: true,
         vendorId: true,
         role: { select: { key: true } },
-        organization: { select: { code: true, trialEndsAt: true, paidUntil: true } },
+        organization: { select: { code: true, trialEndsAt: true, paidUntil: true, modulesOff: true, moduleTier: true } },
       },
     });
     if (!user) throw new UnauthorizedException();
@@ -48,7 +48,17 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     setTenant(user.organizationId);
     const billing = billingConfig();
     const readOnly = !!billing && billingState(billing, user.organization, todayIn()).status === 'READ_ONLY';
-    return { id: user.id, organizationId: user.organizationId, roleKey: user.role.key as RoleKey, email: user.email, fullName: user.fullName, ...(user.vendorId ? { vendorId: user.vendorId } : {}), ...(readOnly ? { billingReadOnly: true } : {}) };
+    const off = modulesOffFor(user.organization);
+    return {
+      id: user.id,
+      organizationId: user.organizationId,
+      roleKey: user.role.key as RoleKey,
+      email: user.email,
+      fullName: user.fullName,
+      ...(user.vendorId ? { vendorId: user.vendorId } : {}),
+      ...(readOnly ? { billingReadOnly: true } : {}),
+      ...(off.length ? { modulesOff: off } : {}),
+    };
   }
 
   /** Staff still on the platform list, and the company's consent still running: act as a read-only admin there. */
@@ -56,11 +66,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const [staff, org] = await withoutTenant(() =>
       Promise.all([
         this.prisma.user.findFirst({ where: { id: payload.sub, isActive: true } }),
-        this.prisma.organization.findUnique({ where: { id: payload.org }, select: { supportAccessUntil: true } }),
+        this.prisma.organization.findUnique({ where: { id: payload.org }, select: { supportAccessUntil: true, modulesOff: true, moduleTier: true } }),
       ]),
     );
     if (!staff || !isPlatformAdmin(staff.email) || !org?.supportAccessUntil || org.supportAccessUntil < new Date()) throw new UnauthorizedException();
     setTenant(payload.org);
+    const off = modulesOffFor(org);
     return {
       id: staff.id,
       organizationId: payload.org,
@@ -68,6 +79,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       email: staff.email,
       fullName: staff.fullName,
       support: { staffName: staff.fullName, expiresAt: new Date((payload.exp ?? 0) * 1000).toISOString() },
+      ...(off.length ? { modulesOff: off } : {}),
     };
   }
 }

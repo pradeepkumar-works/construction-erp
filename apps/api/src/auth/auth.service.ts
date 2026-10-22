@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
-import { BILLING_YEAR_CHARGED_MONTHS, PRODUCT_NAME, aiRoleAllowed, ROLE_KEYS, ROLE_LABELS, orgCodeFrom, type AuthOptionsDto, type AuthUser, type LoginResponse, type PasswordTokenInfoDto, type RoleKey } from '@erp/shared';
+import { BILLING_YEAR_CHARGED_MONTHS, PRODUCT_NAME, aiRoleAllowed, ROLE_KEYS, ROLE_LABELS, orgCodeFrom, modulesOffFor, type ModuleTier, type AuthOptionsDto, type AuthUser, type LoginResponse, type PasswordTokenInfoDto, type RoleKey } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ApprovalRightsService } from '../common/approval-rights.service';
@@ -105,6 +105,7 @@ export class AuthService {
         approvalRights: [],
         support: req.support,
         ...billingOf(org),
+        ...modulesOf(org),
       };
     }
     const user = await this.prisma.user.findUniqueOrThrow({ where: { id: req.id }, include: { role: true, organization: true } });
@@ -118,7 +119,7 @@ export class AuthService {
     return { ok: true };
   }
 
-  private async toAuthUser(user: { id: string; email: string; fullName: string; phone: string | null; organizationId: string; vendorId: string | null; role: { key: string; name: string }; organization: BillingOrg & { name: string; aiEnabled: boolean; aiRoles: string[] } }): Promise<AuthUser> {
+  private async toAuthUser(user: { id: string; email: string; fullName: string; phone: string | null; organizationId: string; vendorId: string | null; role: { key: string; name: string }; organization: BillingOrg & ModulesOrg & { name: string; aiEnabled: boolean; aiRoles: string[] } }): Promise<AuthUser> {
     return {
       id: user.id,
       email: user.email,
@@ -131,6 +132,7 @@ export class AuthService {
       approvalRights: await this.rights.rightsFor(user.organizationId, user.role.key as RoleKey),
       ...(isPlatformAdmin(user.email) ? { platformAdmin: true } : {}),
       ...billingOf(user.organization),
+      ...modulesOf(user.organization),
       ...(user.organization.aiEnabled && aiConfigured() && aiRoleAllowed(user.role.key as RoleKey, user.organization.aiRoles) ? { ai: true } : {}),
       ...(user.vendorId ? { vendor: await this.prisma.vendor.findUniqueOrThrow({ where: { id: user.vendorId }, select: { id: true, name: true } }) } : {}),
     };
@@ -142,6 +144,13 @@ type BillingOrg = { code: string; trialEndsAt: Date | null; paidUntil: Date | nu
 const billingOf = (org: BillingOrg): Pick<AuthUser, 'billing'> => {
   const cfg = billingConfig();
   return cfg ? { billing: billingState(cfg, org, todayIn()) } : {};
+};
+
+type ModulesOrg = { modulesOff: string[]; moduleTier: ModuleTier | null };
+/** The modules the company does not use (v6 item 117), when there are any. */
+const modulesOf = (org: ModulesOrg): Pick<AuthUser, 'modulesOff'> => {
+  const off = modulesOffFor(org);
+  return off.length ? { modulesOff: off } : {};
 };
 
 const signupOpen = () => process.env.ORG_SIGNUP === 'open';

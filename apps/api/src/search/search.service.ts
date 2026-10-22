@@ -1,7 +1,8 @@
 import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
-import type { Paginated, SearchHitDto, SearchKind, SearchResultDto } from '@erp/shared';
+import type { Paginated, SearchHitDto, SearchKind, SearchResultDto, SwitchableModule } from '@erp/shared';
 import { SEARCH_MIN_LENGTH, VENDOR_KIND_LABELS, canViewPaymentRequests, canRequestFunds, canEditContract, canEditVendors, canSeeVendorBank, canViewContract, canViewTenders, canRunSubcontractEnquiries, canViewMeetings, canViewMaterialApprovals } from '@erp/shared';
 import type { RequestUser } from '../common/current-user';
+import { moduleOn } from '../common/module-switch.guard';
 import { MaterialRequestsService } from '../material-requests/material-requests.service';
 import { PurchaseOrdersService } from '../purchasing/purchase-orders.service';
 import { VendorBillsService } from '../purchasing/vendor-bills.service';
@@ -30,7 +31,7 @@ const PER_KIND = 4;
 const join = (...parts: (string | null | undefined)[]) => parts.filter(Boolean).join(' · ') || null;
 
 /** A paged list call made for the search: the same method its list page calls, so the same access rules apply. */
-type Source<T> = { kind: SearchKind; allowed?: (user: RequestUser) => boolean; list: (user: RequestUser, q: string) => Promise<Paginated<T>>; hit: (row: T) => Omit<SearchHitDto, 'kind'> };
+type Source<T> = { kind: SearchKind; module?: SwitchableModule; allowed?: (user: RequestUser) => boolean; list: (user: RequestUser, q: string) => Promise<Paginated<T>>; hit: (row: T) => Omit<SearchHitDto, 'kind'> };
 
 /**
  * Search everything (UI roadmap item 62). Each kind is found through its own list service with `q`, so a record shows
@@ -72,6 +73,7 @@ export class SearchService {
       { kind: 'work_order', list: (u, q) => workOrders.list(u, page(q) as never), hit: (r) => ({ id: r.id, title: r.woNo, subtitle: join(r.vendorName, r.title), href: `/work-orders/${r.id}`, status: r.status }) },
       {
         kind: 'subcontract_enquiry',
+        module: 'subcontract_enquiries',
         allowed: (u) => canRunSubcontractEnquiries(u.roleKey),
         list: async (u, q) => {
           const found = (await scEnquiries.list(u, { q, status: 'all' })).items;
@@ -95,6 +97,7 @@ export class SearchService {
       { kind: 'rfi', list: (u, q) => rfis.list(u, page(q) as never), hit: (r) => ({ id: r.id, title: r.rfiNo, subtitle: join(r.subject, r.projectName), href: `/documents?tab=rfis&rfi=${r.id}`, status: null }) },
       {
         kind: 'meeting',
+        module: 'meetings',
         allowed: (u) => canViewMeetings(u.roleKey),
         list: async (u, q) => {
           const found = (await meetings.list(u, { q })).items;
@@ -104,6 +107,7 @@ export class SearchService {
       },
       {
         kind: 'material_approval',
+        module: 'material_approvals',
         allowed: (u) => canViewMaterialApprovals(u.roleKey),
         list: async (u, q) => {
           const found = await materialApprovals.search(u, q);
@@ -126,6 +130,7 @@ export class SearchService {
       },
       {
         kind: 'tender',
+        module: 'tenders',
         allowed: (u) => canViewTenders(u.roleKey),
         list: async (u, q) => {
           const found = (await tenders.list(u, { q, status: 'all' })).items;
@@ -144,7 +149,8 @@ export class SearchService {
     if (q.length < SEARCH_MIN_LENGTH) return { q, hits: [] };
     const found = await Promise.all(
       this.sources
-        .filter((s) => !s.allowed || s.allowed(user))
+        // A kind whose module the company has off (v6 item 117) is not searched.
+        .filter((s) => (!s.module || moduleOn(user, s.module)) && (!s.allowed || s.allowed(user)))
         .map(async (s) => {
           try {
             const page = await s.list(user, q);

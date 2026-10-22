@@ -1,14 +1,14 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { Alert, App, Button, DatePicker, Descriptions, Divider, Drawer, Input, Modal, Space, Table, Tag, Tooltip, Typography } from 'antd';
+import { Alert, App, Button, DatePicker, Descriptions, Divider, Drawer, Flex, Input, Modal, Select, Space, Table, Tag, Tooltip, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { CheckCircleOutlined, EyeOutlined, StopOutlined } from '@ant-design/icons';
-import type { PlatformCompanyDto, PlatformUserDto } from '@erp/shared';
-import { BILLING_STATUS_LABELS, PRODUCT_NAME, SUPPORT_SESSION_HOURS } from '@erp/shared';
+import type { ModuleTier, PlatformCompanyDto, PlatformUserDto } from '@erp/shared';
+import { BILLING_STATUS_LABELS, PRODUCT_NAME, SUPPORT_SESSION_HOURS, MODULE_TIERS, MODULE_TIER_LABELS, SWITCHABLE_MODULE_INFO } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { errorMessage, startSupportSession } from '@/lib/api';
-import { useOpenSupportSession, usePlatformCompanies, usePlatformCompany, useSetTrialEnd, useSuspendCompany } from '@/lib/queries';
+import { useOpenSupportSession, usePlatformCompanies, usePlatformCompany, useSetModuleTier, useSetTrialEnd, useSuspendCompany } from '@/lib/queries';
 import { formatDate, formatDateTime } from '@/lib/format';
 import { PageHeader } from '@/components/common/PageHeader';
 import { QueryError } from '@/components/common/QueryState';
@@ -111,6 +111,7 @@ function CompanyDrawer({ id, ownOrgId, onClose }: { id: string | null; ownOrgId:
   const { data, error, refetch } = usePlatformCompany(id);
   const suspend = useSuspendCompany();
   const trial = useSetTrialEnd();
+  const plan = useSetModuleTier();
   const open = useOpenSupportSession();
   const [asking, setAsking] = useState(false);
   const [reason, setReason] = useState('');
@@ -133,6 +134,16 @@ function CompanyDrawer({ id, ownOrgId, onClose }: { id: string | null; ownOrgId:
     try {
       await trial.mutateAsync({ id: c.id, until });
       message.success(`Free trial for ${c.name} ends on ${formatDate(until)}`);
+    } catch (e) {
+      message.error(errorMessage(e));
+    }
+  };
+
+  const setPlan = async (tier: ModuleTier | null) => {
+    if (!c) return;
+    try {
+      await plan.mutateAsync({ id: c.id, tier });
+      message.success(`${c.name} is on ${tier ? `the ${MODULE_TIER_LABELS[tier]} plan` : 'every module'}`);
     } catch (e) {
       message.error(errorMessage(e));
     }
@@ -189,6 +200,25 @@ function CompanyDrawer({ id, ownOrgId, onClose }: { id: string | null; ownOrgId:
                 label: 'Support access',
                 span: 2,
                 children: supportOpen(c) ? `Allowed until ${formatDateTime(c.supportAccessUntil!)}${c.supportAccessGrantedByName ? ` by ${c.supportAccessGrantedByName}` : ''}` : 'Not allowed',
+              },
+              {
+                key: 'plan',
+                label: 'Module plan',
+                span: 2,
+                children: (
+                  <Flex vertical gap={4}>
+                    <Select<ModuleTier | 'ALL'>
+                      size="small"
+                      aria-label="Module plan"
+                      style={{ width: 220 }}
+                      disabled={plan.isPending}
+                      value={c.moduleTier ?? 'ALL'}
+                      onChange={(v) => setPlan(v === 'ALL' ? null : v)}
+                      options={[{ value: 'ALL', label: 'Every module' }, ...MODULE_TIERS.map((t) => ({ value: t, label: MODULE_TIER_LABELS[t] }))]}
+                    />
+                    <span className="text-muted">{c.modulesOff.length ? `Off: ${c.modulesOff.map((k) => SWITCHABLE_MODULE_INFO[k].label).join(', ')}` : 'Every module on'}</span>
+                  </Flex>
+                ),
               },
               ...(c.billing
                 ? [

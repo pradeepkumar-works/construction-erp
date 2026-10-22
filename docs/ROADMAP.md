@@ -583,8 +583,11 @@ Migrations stay additive. Design notes for each item are in the project's `roadm
     Comments on every submission's record (page, drawer and the Approvals pane), meetings and material approvals; @mentions
     of staff who can open the record, notices for mentions and replies, resolve and reopen. Not built: comments on the
     phone (the notice opens the record there), comments on registers without a page of their own, email of a mention.
-117. **Module switches** (S). An admin turns modules off for the company; they leave the sidebar, search, New menu and
-    Ask, the API refuses them, the data is kept. Plans can set which modules a tier has.
+117. ~~**Module switches** (S). An admin turns modules off for the company; they leave the sidebar, search, New menu and
+    Ask, the API refuses them, the data is kept. Plans can set which modules a tier has.~~ Done: twelve optional modules
+    under Admin > Modules, off everywhere on the web, the phone and the API with the data kept; three plans (Essentials,
+    Business, Enterprise) set from the console. Not built: switching off single pages inside a module, or a price per plan
+    (the subscription price stays per unit).
 118. **Measure on drawings** (M). In the drawing viewer (item 109): scale from two points, length, area and count, saved as
     measurement sheet lines or a BOQ quantity.
 

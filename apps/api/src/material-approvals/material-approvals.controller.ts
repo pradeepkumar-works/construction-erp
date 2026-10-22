@@ -13,10 +13,12 @@ import {
   UpdateMaterialApprovalDto,
   WithdrawMaterialApprovalDto,
 } from './material-approvals.dto';
+import { ModuleSwitch } from '../common/decorators';
 
 /** Material approvals (v6 item 113): requests to approve a make or a sample, and each project's approved makes. */
 @ApiTags('material-approvals')
 @ApiBearerAuth()
+@ModuleSwitch('material_approvals')
 @Controller('material-approvals')
 export class MaterialApprovalsController {
   constructor(private approvals: MaterialApprovalsService) {}

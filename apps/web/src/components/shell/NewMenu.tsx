@@ -6,7 +6,7 @@ import { Button, Dropdown } from 'antd';
 import type { MenuProps } from 'antd';
 import { AccountBookOutlined, AlertOutlined, BankOutlined, CarOutlined, CommentOutlined, ContainerOutlined, FileDoneOutlined, FileSearchOutlined, FileTextOutlined, LineChartOutlined, MailOutlined, PlusOutlined, SafetyCertificateOutlined, ShoppingCartOutlined, TrophyOutlined, WalletOutlined } from '@ant-design/icons';
 import type { AuthUser } from '@erp/shared';
-import { canKeepBooks, canManageMachineLoans, canSellRmc, canPrepareBill, canPurchase, canRaiseRisk, canRequestFunds, canRequestPayment, canSubmitExpense, canManageTenders, canRunSubcontractEnquiries, canRecordMeetings, canRaiseMaterialApprovals, canViewLetters, canViewPayables, isGuest } from '@erp/shared';
+import { canKeepBooks, canManageMachineLoans, canSellRmc, canPrepareBill, canPurchase, canRaiseRisk, canRequestFunds, canRequestPayment, canSubmitExpense, canManageTenders, canRunSubcontractEnquiries, canRecordMeetings, canRaiseMaterialApprovals, canViewLetters, canViewPayables, isGuest, pathIsOff } from '@erp/shared';
 import { requestNew, type NewKind } from '@/lib/new-intent';
 
 export interface NewEntry {
@@ -43,7 +43,8 @@ export function newEntriesFor(user: AuthUser): NewEntry[][] {
     ...(canManageMachineLoans(role) ? [{ kind: 'machine-loan' as const, label: 'Machine loan', action: 'Record machine loan', href: '/machine-loans', icon: <CarOutlined /> }] : []),
     ...(canViewLetters(role) ? [{ kind: 'letter' as const, label: 'Letter', action: 'Record letter', href: '/documents?tab=letters', icon: <MailOutlined /> }] : []),
   ];
-  return [site, office].filter((g) => g.length > 0);
+  // Nothing from a module the company has turned off (v6 item 117).
+  return [site, office].map((g) => g.filter((e) => !pathIsOff(e.href, user.modulesOff))).filter((g) => g.length > 0);
 }
 
 /**

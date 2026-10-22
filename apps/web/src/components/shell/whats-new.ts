@@ -9,6 +9,15 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-12-modules',
+    date: '2026-12-03',
+    title: 'Turn off what you don’t use',
+    points: [
+      'Admin > Modules lists the parts your company may not need: meetings, material approvals, safety, site imprest, guarantees, tenders, subcontract enquiries, books, payroll, biometric devices, the RMC plant and machine loans.',
+      'A module turned off leaves the sidebar, Search, New and Ask for everyone, on the web and the phone. Its records are kept, so turning it on again brings everything back.',
+    ],
+  },
+  {
     id: '2026-11-comments',
     date: '2026-11-30',
     title: 'Comments and mentions',

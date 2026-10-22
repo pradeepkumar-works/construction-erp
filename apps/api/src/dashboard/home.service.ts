@@ -43,6 +43,7 @@ import { WarningsService } from '../warnings/warnings.service';
 import { FleetService } from '../machinery/fleet.service';
 import { toOrderOf } from '../purchasing/purchase-math';
 import { MeetingsService } from '../meetings/meetings.service';
+import { moduleOn } from '../common/module-switch.guard';
 
 type D = Prisma.Decimal;
 const ZERO = new Prisma.Decimal(0);
@@ -114,12 +115,12 @@ export class HomeService {
       this.lifecycle.waiting(user),
       canViewContract(role) ? this.receivables.summary(user) : null,
       canViewPayables(role) ? this.payables.summary(user) : null,
-      canViewCompliance(role) ? this.compliance.list(user, { state: 'EXPIRING' }) : null,
-      canViewCompliance(role) ? this.compliance.list(user, { state: 'EXPIRED' }) : null,
+      canViewCompliance(role) && moduleOn(user, 'compliance') ? this.compliance.list(user, { state: 'EXPIRING' }) : null,
+      canViewCompliance(role) && moduleOn(user, 'compliance') ? this.compliance.list(user, { state: 'EXPIRED' }) : null,
       canViewPurchaseOrders(role) ? this.purchaseOrders.status(user, { show: 'LATE' }) : null,
       canKeepStock(role) || canManageStore(role) ? this.stock.balances(user, { lowOnly: true, page: 1, pageSize: TOP }) : null,
       canSeeWatchList(role) ? this.warnings.open(user) : null,
-      canViewMeetings(role) ? this.meetings.actions(user, { mine: true, status: 'open' }) : null,
+      canViewMeetings(role) && moduleOn(user, 'meetings') ? this.meetings.actions(user, { mine: true, status: 'open' }) : null,
     ]);
 
     const out: MyWorkDto = {};

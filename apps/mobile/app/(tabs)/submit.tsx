@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { canManageWorkers, canMarkStaff, canKeepStock, canLogMachinery, canManageMaintenance, canMeasure, canRaiseRisk, canRecordAttendance, canReportDefect, canRaiseRfi, canReportSafety, canRequestInspection, canSubmitExpense } from '@erp/shared';
+import { canManageWorkers, canMarkStaff, canKeepStock, canLogMachinery, canManageMaintenance, canMeasure, canRaiseRisk, canRecordAttendance, canReportDefect, canRaiseRfi, canReportSafety, canRequestInspection, canSubmitExpense, pathIsOff } from '@erp/shared';
 import { useAuth } from '../../src/auth/AuthContext';
 import { Button, Screen, Touchable } from '../../src/components';
 import { colors, radius, shadow, spacing, typography } from '../../src/theme';
@@ -75,7 +75,8 @@ export default function SubmitHub() {
     ...(user && canRaiseRisk(user.roleKey) ? [RISK] : []),
     ...(user && canReportSafety(user.roleKey) ? [SAFETY] : []),
     ...(user && canReportDefect(user.roleKey) ? [SNAGS] : []),
-  ];
+    // Nothing from a module the company has turned off (v6 item 117).
+  ].filter((f) => !pathIsOff(f.href, user?.modulesOff));
   return (
     <Screen>
       <Text style={typography.caption}>{t('Choose what to submit. Progress, DPRs, material requests, machinery logs, expenses and measurements go straight to your project manager for approval.')}</Text>
