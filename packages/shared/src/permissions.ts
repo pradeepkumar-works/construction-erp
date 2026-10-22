@@ -315,6 +315,8 @@ export const canIssueWorkOrder = (role: RoleKey) => WORK_ORDER_ROLES.includes(ro
 /** See work orders: those who issue them, the site (measures their work), the store (issues them material) and accounts. */
 export const WORK_ORDER_VIEW_ROLES: RoleKey[] = [...WORK_ORDER_ROLES, 'SITE_ENGINEER', 'STORE_MANAGER', 'ACCOUNTS_MANAGER'];
 export const canViewWorkOrders = (role: RoleKey) => WORK_ORDER_VIEW_ROLES.includes(role);
+/** Subcontract enquiries (v6 item 111): those who issue work orders ask for quotes and award them; quotes stay with them. */
+export const canRunSubcontractEnquiries = (role: RoleKey) => canIssueWorkOrder(role);
 /** Prepare subcontractor bills and see the margin per BOQ item: the billing roles. */
 export const canPrepareSubcontractBill = (role: RoleKey) => BILLING_ROLES.includes(role);
 /** Add and edit vendors: admin, management, project managers, procurement, accounts and stores. */

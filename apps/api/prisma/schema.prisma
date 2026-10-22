@@ -552,6 +552,10 @@ model Organization {
   vendorBills          VendorBill[]
   debitNotes           DebitNote[]
   workOrders           WorkOrder[]
+  scEnquiries          SubcontractEnquiry[]
+  scEnquiryItems       SubcontractEnquiryItem[]
+  scQuotes             SubcontractQuote[]
+  scQuoteLines         SubcontractQuoteLine[]
   subcontractBills     SubcontractBill[]
   raBills              RaBill[]
   receipts             Receipt[]
@@ -864,6 +868,7 @@ model User {
   equipmentLoans       EquipmentLoan[]          @relation("EquipmentLoanCreator")
   loanEmisPaid         LoanEmi[]                @relation("LoanEmiPayer")
   sorBooksCreated      SorBook[]                @relation("SorBookCreator")
+  scEnquiriesCreated   SubcontractEnquiry[]     @relation("ScEnquiryCreator")
   tendersCreated       Tender[]                 @relation("TenderCreator")
   posAccepted          PurchaseOrder[]          @relation("PoSupplierAccepter")
   wosAccepted          WorkOrder[]              @relation("WoSupplierAccepter")
@@ -995,6 +1000,7 @@ model Project {
   vendorBills        VendorBill[]
   debitNotes         DebitNote[]
   workOrders         WorkOrder[]
+  scEnquiries        SubcontractEnquiry[]
   subcontractBills   SubcontractBill[]
   inspections        Inspection[]
   qualityTests       QualityTest[]
@@ -1100,6 +1106,7 @@ model Vendor {
   vendorBills     VendorBill[]
   debitNotes      DebitNote[]
   workOrders      WorkOrder[]
+  scQuotes        SubcontractQuote[]
   attendance      AttendanceLine[]
   workers         Worker[]
   payments        VendorPayment[]
@@ -1523,6 +1530,7 @@ model WorkOrder {
   advances         VendorPayment[]
   excessRecoveries ExcessMaterialRecovery[]
   supplierInvoices SupplierInvoice[]
+  scEnquiry        SubcontractEnquiry?
 
   @@unique([organizationId, woNo])
   @@index([organizationId, status])
@@ -1699,6 +1707,7 @@ model BoqItem {
   measurements   MeasurementSheet[]
   billItems      RaBillItem[]
   workOrderLines WorkOrderLine[]
+  scEnquiryItems SubcontractEnquiryItem[]
   variationLines VariationLine[]
   materialNorms  MaterialNorm[]
   resources      BoqResource[]
@@ -5960,5 +5969,109 @@ model TenderBid {
   createdAt      DateTime     @default(now())
 
   @@unique([tenderId, bidderName])
+  @@index([organizationId])
+}
+
+// ---------- Subcontract enquiries (v6 item 111) ----------
+
+enum ScEnquiryStatus {
+  OPEN
+  AWARDED
+  CANCELLED
+}
+
+/// Subcontract enquiry SCE-<year>-0001 (v6 item 111): chosen items of a project's BOQ (or its own items) sent to several
+/// subcontractors; their rates are compared item by item and in total, and the chosen quote becomes a draft work order.
+model SubcontractEnquiry {
+  id             String            @id @default(uuid())
+  organizationId String
+  organization   Organization      @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  enquiryNo      String
+  title          String
+  /// What the rates must include, sent with the enquiry
+  scope          String?
+  /// Last day to quote
+  closesOn       DateTime?         @db.Date
+  status         ScEnquiryStatus   @default(OPEN)
+  awardedQuoteId String?           @unique
+  awardedQuote   SubcontractQuote? @relation("ScAwardedQuote", fields: [awardedQuoteId], references: [id], onDelete: SetNull)
+  workOrderId    String?           @unique
+  workOrder      WorkOrder?        @relation(fields: [workOrderId], references: [id], onDelete: SetNull)
+  /// Why this quote (not always the lowest), or why the enquiry was cancelled
+  decisionNote   String?
+  decidedAt      DateTime?
+  createdById    String
+  createdBy      User              @relation("ScEnquiryCreator", fields: [createdById], references: [id])
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  items  SubcontractEnquiryItem[]
+  quotes SubcontractQuote[]       @relation("ScEnquiryQuotes")
+
+  @@unique([organizationId, enquiryNo])
+  @@index([organizationId, status])
+  @@index([projectId])
+}
+
+/// One item asked for: a BOQ item of the project or the enquiry's own item, with the quantity to price.
+model SubcontractEnquiryItem {
+  id             String             @id @default(uuid())
+  organizationId String
+  organization   Organization       @relation(fields: [organizationId], references: [id])
+  enquiryId      String
+  enquiry        SubcontractEnquiry @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
+  boqItemId      String?
+  boqItem        BoqItem?           @relation(fields: [boqItemId], references: [id], onDelete: SetNull)
+  description    String
+  unit           String
+  quantity       Decimal            @db.Decimal(18, 3)
+  sortOrder      Int                @default(0)
+
+  lines SubcontractQuoteLine[]
+
+  @@unique([enquiryId, boqItemId])
+  @@index([organizationId])
+}
+
+/// A subcontractor asked to quote, and their quote once received: a rate for each item, GST on top.
+model SubcontractQuote {
+  id             String             @id @default(uuid())
+  organizationId String
+  organization   Organization       @relation(fields: [organizationId], references: [id])
+  enquiryId      String
+  enquiry        SubcontractEnquiry @relation("ScEnquiryQuotes", fields: [enquiryId], references: [id], onDelete: Cascade)
+  vendorId       String
+  vendor         Vendor             @relation(fields: [vendorId], references: [id])
+  /// Null until their rates are in
+  receivedOn     DateTime?          @db.Date
+  gstRate        Decimal            @default(0) @db.Decimal(5, 2)
+  validUntil     DateTime?          @db.Date
+  note           String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  lines     SubcontractQuoteLine[]
+  awardedOn SubcontractEnquiry?    @relation("ScAwardedQuote")
+
+  @@unique([enquiryId, vendorId])
+  @@index([organizationId])
+  @@index([vendorId])
+}
+
+model SubcontractQuoteLine {
+  id             String                 @id @default(uuid())
+  organizationId String
+  organization   Organization           @relation(fields: [organizationId], references: [id])
+  quoteId        String
+  quote          SubcontractQuote       @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  itemId         String
+  item           SubcontractEnquiryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  rate           Decimal                @db.Decimal(18, 2)
+  note           String?
+
+  @@unique([quoteId, itemId])
+  @@index([itemId])
   @@index([organizationId])
 }

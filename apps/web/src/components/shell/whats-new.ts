@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-subcontract-enquiries',
+    date: '2026-11-16',
+    title: 'Subcontract enquiries',
+    points: [
+      'Send work out to quote from Purchases → Subcontract enquiries: pick the BOQ items and the quantity to give out (or add your own items, like scaffolding), say what the rates must include, and choose the subcontractors to ask.',
+      'Enter each quote as it comes. The comparative statement sets every rate side by side, marks the lowest for each item and ranks the quotes L1, L2… on their total, each against the client’s rates.',
+      'Award a quote and it becomes a draft work order at its rates and GST, with your scope as its terms. Choosing one that is not the lowest asks for the reason, which stays on the enquiry.',
+    ],
+  },
+  {
     id: '2026-11-tenders',
     date: '2026-11-15',
     title: 'Tenders and schedules of rates',

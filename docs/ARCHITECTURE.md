@@ -1696,6 +1696,32 @@ export; the client portal and the phone app show the amount.
 - **Clients.** Web: Billing → Tenders (`/tenders`, the register with the year's figures; `/tenders/[id]` with the bid BOQ,
   pricing, bids and details) and Billing → Schedule of rates (`/schedule-of-rates`, books and items, Excel import).
 
+## Subcontract enquiries (v6 item 111)
+
+- **Tables.** `SubcontractEnquiry` (number from `nextDocNo('SCE')`, project, title, scope, last day to quote, status OPEN /
+  AWARDED / CANCELLED, the awarded quote, the work order it became, the decision note) with `SubcontractEnquiryItem` (a BOQ
+  item of the project at the quantity given out, once per enquiry, or the enquiry's own item with its description and
+  unit), `SubcontractQuote` (one per subcontractor asked; `receivedOn` null until their rates are in, GST rate, validity,
+  note) and `SubcontractQuoteLine` (their rate per item; an item they did not quote has no line). All four have
+  `tenant_isolation` policies.
+- **Comparison.** Pure functions in `apps/api/src/subcontracts/comparison-rules.ts`, tested in
+  `src/scripts/comparison-test.ts` (CI runs it). A quote's total is its lines rounded to the paisa, GST on the total.
+  `compare` gives each item's lowest rate among the quotes received (and whose, several when tied) and the spread from
+  lowest to highest; only a received quote pricing every item is ranked, on the total before GST (the company takes the
+  credit on a registered subcontractor's bills), ties sharing a rank; and each quote's margin against the client's rates
+  of the BOQ items it priced. The client's and budget rates come from the BOQ item.
+- **Life.** Items change only while open and before any rates are in (`itemsProblem`). `awardProblem` lets a complete
+  received quote be awarded, and one that is not L1 only with a reason. `award` calls `WorkOrdersService.create` for a
+  DRAFT work order at the quote's rates and GST, with the BOQ items as BOQ lines (so the measurement book bills them), the
+  own items as its own lines and the scope as its terms; if marking the enquiry fails the work order is deleted again. A
+  deleted work order leaves the enquiry awarded with no order, to be awarded again or reopened. Cancelling needs a reason.
+  Audited as `SC_ENQUIRY`.
+- **Who.** `canRunSubcontractEnquiries` (the roles that issue work orders), on the projects they can see. Search kind
+  `subcontract_enquiry`.
+- **Clients.** Web: Purchases → Subcontract enquiries (`/subcontract-enquiries`, open ones soonest closing with the year's
+  figures; `/subcontract-enquiries/[id]` with the comparative statement, the subcontractors asked and their quotes, and
+  the award).
+
 ## Company data (export and deletion)
 
 - **Export.** `CompanyDataService` works out every table and how its rows belong to an organisation from the Prisma
