@@ -37,6 +37,7 @@ import { StockService } from '../stock/stock.service';
 import { StaffService } from '../staff/staff.service';
 import { PayrollRunService } from '../payroll/payroll-run.service';
 import { BooksService } from '../books/books.service';
+import { StatementsService } from '../statements/statements.service';
 
 type D = Prisma.Decimal;
 const ZERO = new Prisma.Decimal(0);
@@ -64,6 +65,7 @@ export class ModuleHomeService {
     private staff: StaffService,
     private payrollRuns: PayrollRunService,
     private books: BooksService,
+    private statements: StatementsService,
   ) {}
 
   async home(user: RequestUser, key: string, projectId?: string): Promise<ModuleHomeDto> {
@@ -236,14 +238,17 @@ export class ModuleHomeService {
 
   /** The books are the company's, so these do not follow the header's project. */
   private async accounts(user: RequestUser): Promise<ModuleFigureDto[]> {
-    const f = await this.books.figures(user);
-    if (!f) return [];
+    const [f, s] = await Promise.all([this.books.figures(user), this.statements.figures(user)]);
+    if (!f || !s) return [];
+    const profit = Number(s.profitThisYear);
     const out: ModuleFigureDto[] = [
       rupees('cash', 'Cash in hand', f.cash, '/books?tab=cash', { note: 'In the books today, the whole company' }),
       rupees('bank', 'In the bank', f.bank, '/books?tab=cash', { note: 'In the books today, before reconciliation' }),
     ];
     if (canApproveVouchers(user.roleKey)) out.push(count('toApprove', 'Vouchers to approve', f.toApprove, '/books?tab=vouchers', { tone: f.toApprove ? 'warning' : 'default', note: f.toApprove ? 'Made by accounts, waiting for you' : 'Nothing waiting' }));
     out.push(count('held', 'Records not posted', f.held, '/books?tab=day', { tone: f.held ? 'warning' : 'default', note: f.held ? 'They do not balance; open the day book to see why' : 'Every record is in the books' }));
+    out.push(rupees('profit', profit < 0 ? 'Loss this year' : 'Profit this year', String(Math.abs(profit)), '/statements?tab=pl', { tone: profit < 0 ? 'danger' : 'default', note: 'From 1 April, before tax' }));
+    out.push(count('unmatched', 'Bank lines to match', s.unmatchedBankLines, '/statements?tab=bank', { tone: s.unmatchedBankLines ? 'warning' : 'default', note: s.unmatchedBankLines ? 'On the bank statement, not yet in the books' : 'Every imported line is matched' }));
     return out;
   }
 

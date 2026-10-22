@@ -676,6 +676,10 @@ kbd {
   :root :is(.ant-dropdown-menu-item, .ant-select-item-option) {
     min-height: 44px;
   }
+  /* A statement's rows open and close their accounts, so each is a 44 px row and the small expand buttons sit a row apart. */
+  :root .statement-table .ant-table-tbody > tr > td {
+    height: 44px;
+  }
 }
 
 /* A Space and its items are never wider than what holds them, so what is inside can give way; on a phone a Segmented

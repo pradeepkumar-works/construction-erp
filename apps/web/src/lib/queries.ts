@@ -181,6 +181,12 @@ import type {
   BookVoucherType,
   BooksStatusDto,
   LedgerAccountDto,
+  BalanceSheetDto,
+  BankReconciliationDto,
+  BooksYearDto,
+  ProfitLossDto,
+  TrialBalanceByProjectDto,
+  TrialBalanceDto,
   LedgerDto,
   BiometricUserDto,
   BiometricPunchDto,
@@ -1479,6 +1485,43 @@ export function useBooksAction<T = unknown>() {
     },
   });
 }
+
+// ----- Financial statements (v6 item 103); under ['books'] so every books action refreshes them -----
+
+export const useTrialBalance = (filters: { from: string; to: string; projectId?: string }, byProject = false) =>
+  useQuery({
+    queryKey: ['books', 'statements', 'trial', byProject, clean(filters)],
+    queryFn: async () => (await api.get<TrialBalanceDto | TrialBalanceByProjectDto>(byProject ? '/statements/trial-balance/by-project' : '/statements/trial-balance', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+  });
+
+export const useProfitLoss = (filters: { from: string; to: string; projectId?: string; byProject?: boolean }) =>
+  useQuery({
+    queryKey: ['books', 'statements', 'pl', clean(filters)],
+    queryFn: async () => (await api.get<ProfitLossDto>('/statements/profit-loss', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+  });
+
+export const useBalanceSheet = (asOn: string) =>
+  useQuery({
+    queryKey: ['books', 'statements', 'bs', asOn],
+    queryFn: async () => (await api.get<BalanceSheetDto>('/statements/balance-sheet', { params: { asOn } })).data,
+    placeholderData: keepPreviousData,
+  });
+
+export const useBankReconciliation = (filters: { accountId?: string; asOn: string; from?: string }) =>
+  useQuery({
+    queryKey: ['books', 'statements', 'bank', clean(filters)],
+    queryFn: async () => (await api.get<BankReconciliationDto>('/statements/bank', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+    enabled: !!filters.accountId,
+  });
+
+export const useBooksYear = () =>
+  useQuery({
+    queryKey: ['books', 'statements', 'year'],
+    queryFn: async () => (await api.get<BooksYearDto>('/statements/year')).data,
+  });
 
 /** A file the API makes (bank file, PF ECR, ESI sheet): its name, type, text and who was left out for missing details. */
 export interface PayrollFileDto {

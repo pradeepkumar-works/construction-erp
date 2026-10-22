@@ -113,7 +113,7 @@ marked by `tallyExportId`; a run's salary journal and payment are marked apart);
 `LedgerAccount` is the chart of accounts: one row per ledger key (`PURCHASE`, `VENDOR:<id>`, `CLIENT:<id>`,
 `EXPENSE:<category>`, …) made by the posting service with the Tally export's name and group, plus accounts that accounts
 add by hand (key `ACCOUNT:<id>`: bank accounts, capital, loans, office heads). Groups (`AccountGroup`) are Tally's primary
-groups, each with its nature (asset, liability, income, expense) for the statements in item 103. A system account can be
+groups, each with its nature (asset, liability, income, expense) for the statements (item 103). A system account can be
 renamed or regrouped but not closed or deleted.
 
 `BookVoucher` and `BookLine` hold the books. A posted voucher has its `source` (the posting kind) and `sourceId`, is
@@ -130,6 +130,46 @@ The day book, cash and bank books and ledgers read approved vouchers only; a led
 its period, each entry with what it was against and the running balance, and the closing balance. Only `canKeepBooks`
 (admin, management, accounts) sees them. The Accounts module (`/modules/accounts`) holds Books, GST registers and the
 Tally export, and leads with cash and bank in the books, vouchers to approve and records not posted.
+
+### Financial statements (v6 item 103)
+
+The statements read the books' approved vouchers (`apps/api/src/statements`). Each account lands on a Schedule III
+(Division I) line through `statementLineOf` in `packages/shared/src/statements.ts`: its group's line (salaries and the
+company's PF and ESI on employee benefits), unless accounts chose another for it (`LedgerAccount.statementLine`, offered
+only among lines of the same kind), with a balance on the other side moved across as accountants show it (an overdrawn
+bank under short-term borrowings, a debit with a supplier under loans and advances, a credit with a client under other
+current liabilities, GST credit under other current assets). The trial balance gives each account's opening, debits,
+credits and closing for a period (for a project), or each account's movement on each project; profit and loss gives
+the period beside the same period a year before (and by project); the balance sheet gives the day beside the same day a
+year before, with the profit of years not yet closed inside reserves and surplus. Every figure opens the account's ledger.
+
+Opening balances: `BooksState.booksFrom` is the day the books begin. The `OPENING` voucher holds the balances of assets
+and liabilities as on the day before, with whatever does not balance on a system account, Difference in opening balances.
+The posting run leaves out module records dated before `booksFrom` (the opening balances stand for them), and a voucher
+made by hand cannot be dated before it.
+
+The lock: nothing dated on or before `BooksState.lockedUpTo` is posted, changed or cancelled. A hand-made voucher in the
+locked period is refused; a module record added, changed or removed there after the lock keeps its old voucher (or none)
+and waits in `BooksState.held` with the reason until the lock moves. Management (`canApproveVouchers`) moves the lock.
+
+A year's close (`YEAR_CLOSE`, one voucher per year, `sourceId` the year's code) empties every income and expense balance
+(per project) into the system account Profit & Loss A/c under reserves and moves the lock to 31 March. It needs the year
+ended, earlier years with entries closed, no hand-made voucher of the year still open, and no record of the year held.
+The statements leave closing vouchers out of a period's movements, so a closed year's profit and loss still shows its
+own figures, and count them in balances after it. Only the latest closed year can be reopened (its voucher goes, the lock
+moves back to the year before). `OPENING`, `YEAR_CLOSE` and `MANUAL` are `BOOK_OWN_SOURCES`, which the posting run never
+touches.
+
+Bank reconciliation: `BankStatementLine` holds a bank account's statement, read from the bank's CSV or Excel by
+`readStatement` (the header row found by its names: date, narration, withdrawal and deposit or amount with Dr/Cr,
+balance; Indian date styles; a fingerprint per row so the same file imported twice adds nothing). `autoMatch` pairs a
+statement line with a bank book line one to one on the same amount and side, from three days before the book's date to
+fifteen after, preferring one whose reference the bank names; accounts match the rest by hand, or make a voucher from a
+bank-only line (charges, interest). `reconcile` gives the statement on a day: the books' balance, plus payments not yet
+presented, less receipts not yet cleared, plus and less the bank's own lines, against the statement's balance on that day;
+book entries before the statement's first day are taken as cleared. A posted voucher rewritten by the posting run keeps
+its match where the same account still has the same amount; cancelling a voucher unmatches it. All of it is tested in
+`src/scripts/statements-test.ts` (CI runs it). The Accounts home adds the year's profit and the bank lines to match.
 
 ### Biometric attendance (v6 item 101)
 

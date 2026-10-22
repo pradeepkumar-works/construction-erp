@@ -171,6 +171,7 @@ async function main() {
     await seedCheckAnomalies(org.id);
     await seedBiometric(org.id);
     await seedBooks(org.id);
+    await seedOpening(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
   }
@@ -360,6 +361,7 @@ async function main() {
   await seedCheckAnomalies(org.id);
   await seedBiometric(org.id);
   await seedBooks(org.id);
+  await seedOpening(org.id);
 
   console.log('Seed complete. Login with any of these (password: password123):');
   for (const u of USERS) console.log(`  ${u.email.padEnd(24)} ${u.role}`);
@@ -3487,6 +3489,43 @@ async function seedBooks(organizationId: string) {
   await voucher('CV', 'CONTRA', day(-30), 'Cash drawn for site expenses', 200_000, cash.id, bank.id, true, 'Self cheque 104530');
   const power = await account('ACCOUNT:demo-office-power', 'Office Electricity', 'INDIRECT_EXPENSES', false);
   await voucher('PV', 'PAYMENT', day(-1), 'Head office electricity bill', 12_400, power.id, bank.id, false, 'TPCODL 7781', 2);
+}
+
+/** The books begin on 1 April before the demo's records, with the balances brought in from the old books (v6 item 103). */
+async function seedOpening(organizationId: string) {
+  if (await prisma.bookVoucher.count({ where: { organizationId, source: 'OPENING' } })) return;
+  const accounts = await prisma.user.findFirst({ where: { organizationId, email: 'accounts@demo.com' }, select: { id: true } });
+  if (!accounts) return;
+  const back = day(-60);
+  const start = new Date(Date.UTC(back.getUTCFullYear() - (back.getUTCMonth() < 3 ? 1 : 0), 3, 1));
+  const openingDay = new Date(start.getTime() - 86_400_000);
+  const account = (key: string, name: string, group: 'BANK_ACCOUNTS' | 'CAPITAL_ACCOUNT' | 'FIXED_ASSETS' | 'SECURED_LOANS' | 'DEPOSITS_ASSET' | 'RESERVES_SURPLUS', isSystem: boolean) =>
+    prisma.ledgerAccount.upsert({ where: { organizationId_key: { organizationId, key } }, create: { organizationId, key, name, group, isSystem }, update: {}, select: { id: true } });
+  const lines: [{ id: string }, number, number][] = [
+    [await account('ACCOUNT:demo-plant', 'Plant and Machinery', 'FIXED_ASSETS', false), 4_200_000, 0],
+    [await account('BANK', 'Bank Account', 'BANK_ACCOUNTS', true), 650_000, 0],
+    [await account('ACCOUNT:demo-deposits', 'Security Deposits (EMD and Utilities)', 'DEPOSITS_ASSET', false), 300_000, 0],
+    [await account('ACCOUNT:demo-capital', 'Capital - Promoters', 'CAPITAL_ACCOUNT', false), 0, 2_500_000],
+    [await account('ACCOUNT:demo-term-loan', 'Term Loan - State Bank of India', 'SECURED_LOANS', false), 0, 1_800_000],
+    [await account('PROFIT_AND_LOSS', 'Profit & Loss A/c', 'RESERVES_SURPLUS', true), 0, 850_000],
+  ];
+  await prisma.booksState.upsert({ where: { organizationId }, create: { organizationId, booksFrom: start }, update: { booksFrom: start } });
+  await prisma.bookVoucher.create({
+    data: {
+      organizationId,
+      voucherNo: 'Opening',
+      type: 'JOURNAL',
+      date: openingDay,
+      source: 'OPENING',
+      narration: `Balances brought in as on ${openingDay.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}`,
+      amount: 5_150_000,
+      status: 'APPROVED',
+      preparedById: accounts.id,
+      approvedById: accounts.id,
+      approvedAt: new Date(),
+      lines: { createMany: { data: lines.map(([a, debit, credit], i) => ({ organizationId, accountId: a.id, debit, credit, sortOrder: i })) } },
+    },
+  });
 }
 
 async function seedBiometric(organizationId: string) {

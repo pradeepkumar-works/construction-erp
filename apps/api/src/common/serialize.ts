@@ -20,3 +20,7 @@ export const pct = (executed: Prisma.Decimal | number, planned: Prisma.Decimal |
 
 /** Parse a YYYY-MM-DD string into a UTC date for @db.Date columns. */
 export const parseDate = (s: string): Date => new Date(`${s}T00:00:00.000Z`);
+
+/** A YYYY-MM-DD day as people read it in a message: 31 Mar 2026. */
+export const formatDay = (d: string | null | undefined): string =>
+  d ? parseDate(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }) : '';

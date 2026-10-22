@@ -1,3 +1,5 @@
+import type { StatementLine } from './statements';
+
 /**
  * Books of account (v6 item 102): the chart of accounts, vouchers (posted by the modules or made by accounts with
  * approval), and the day book, cash and bank books and ledgers built from them. The posting rules are the API's
@@ -132,7 +134,7 @@ export const BOOK_VOUCHER_STATUS_LABELS: Record<BookVoucherStatus, string> = {
 };
 
 /** Where a voucher came from: made by hand, or posted from a module's record. */
-export const BOOK_SOURCES = ['MANUAL', 'SALES', 'RECEIPT', 'PURCHASE', 'SUBCONTRACT', 'PAYMENT', 'EXPENSE', 'DEBIT_NOTE', 'SALARY', 'SALARY_PAYMENT', 'STAFF_LOAN'] as const;
+export const BOOK_SOURCES = ['MANUAL', 'SALES', 'RECEIPT', 'PURCHASE', 'SUBCONTRACT', 'PAYMENT', 'EXPENSE', 'DEBIT_NOTE', 'SALARY', 'SALARY_PAYMENT', 'STAFF_LOAN', 'OPENING', 'YEAR_CLOSE'] as const;
 export type BookSource = (typeof BOOK_SOURCES)[number];
 export const BOOK_SOURCE_LABELS: Record<BookSource, string> = {
   MANUAL: 'Made by hand',
@@ -146,7 +148,11 @@ export const BOOK_SOURCE_LABELS: Record<BookSource, string> = {
   SALARY: 'Salary run',
   SALARY_PAYMENT: 'Salary paid',
   STAFF_LOAN: 'Loan to staff',
+  OPENING: 'Opening balances',
+  YEAR_CLOSE: 'Year close',
 };
+/** Vouchers the books make themselves (opening balances, the year's close), which the posting run leaves alone. */
+export const BOOK_OWN_SOURCES = ['MANUAL', 'OPENING', 'YEAR_CLOSE'] as const satisfies readonly BookSource[];
 
 export interface LedgerAccountDto {
   id: string;
@@ -160,6 +166,8 @@ export interface LedgerAccountDto {
   isSystem: boolean;
   isActive: boolean;
   description: string | null;
+  /** Where the statements show it, when accounts chose a line other than its group's */
+  statementLine: StatementLine | null;
   /** Totals in the books up to the date asked (all dates when none) */
   debit: string;
   credit: string;
