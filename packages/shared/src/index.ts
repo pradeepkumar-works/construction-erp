@@ -60,3 +60,4 @@ export * from './books';
 export * from './statements';
 export * from './rmc';
 export * from './supplier';
+export * from './loans';

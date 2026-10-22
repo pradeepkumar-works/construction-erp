@@ -3,7 +3,7 @@ import type { ExpenseCategory } from './enums';
 import { EXPENSE_CATEGORY_LABELS } from './labels';
 
 /** What a Nirmaan record becomes in Tally. */
-export const TALLY_VOUCHER_KINDS = ['SALES', 'RECEIPT', 'PURCHASE', 'SUBCONTRACT', 'PAYMENT', 'EXPENSE', 'DEBIT_NOTE', 'SALARY', 'SALARY_PAYMENT', 'STAFF_LOAN', 'RMC_SALE', 'RMC_RECEIPT'] as const;
+export const TALLY_VOUCHER_KINDS = ['SALES', 'RECEIPT', 'PURCHASE', 'SUBCONTRACT', 'PAYMENT', 'EXPENSE', 'DEBIT_NOTE', 'SALARY', 'SALARY_PAYMENT', 'STAFF_LOAN', 'RMC_SALE', 'RMC_RECEIPT', 'MACHINE_LOAN', 'LOAN_EMI'] as const;
 export type TallyVoucherKind = (typeof TALLY_VOUCHER_KINDS)[number];
 export const TALLY_VOUCHER_KIND_LABELS: Record<TallyVoucherKind, string> = {
   SALES: 'RA bills',
@@ -18,6 +18,8 @@ export const TALLY_VOUCHER_KIND_LABELS: Record<TallyVoucherKind, string> = {
   STAFF_LOAN: 'Loans to staff',
   RMC_SALE: 'RMC bills',
   RMC_RECEIPT: 'RMC money received',
+  MACHINE_LOAN: 'Machine loans taken',
+  LOAN_EMI: 'Machine loan EMIs paid',
 };
 /** The Tally voucher type each kind is imported as. */
 export const TALLY_VOUCHER_TYPES: Record<TallyVoucherKind, string> = {
@@ -33,6 +35,8 @@ export const TALLY_VOUCHER_TYPES: Record<TallyVoucherKind, string> = {
   STAFF_LOAN: 'Payment',
   RMC_SALE: 'Sales',
   RMC_RECEIPT: 'Receipt',
+  MACHINE_LOAN: 'Journal',
+  LOAN_EMI: 'Payment',
 };
 
 /** A ledger Nirmaan posts to that is not a client, vendor or expense category. */
@@ -86,12 +90,18 @@ export const TALLY_FIXED_LEDGERS: TallyFixedLedger[] = [
   { key: 'STAFF_RECOVERIES', use: 'Other deductions from salaries', name: 'Recoveries from Staff', group: 'Indirect Incomes' },
   { key: 'SALARY_PAYABLE', use: 'Net salaries approved, not yet paid', name: 'Salaries Payable', group: 'Current Liabilities' },
   { key: 'RMC_SALES', use: 'Concrete and pumping on RMC bills', name: 'Sales of Ready-Mix Concrete', group: 'Sales Accounts' },
+  { key: 'MACHINERY', use: 'Machines bought on a loan the lender paid to the dealer', name: 'Plant and Machinery', group: 'Fixed Assets' },
+  { key: 'LOAN_INTEREST', use: 'Interest in the EMIs of machine loans', name: 'Interest on Machinery Loans', group: 'Indirect Expenses' },
 ];
 
 /** Ledger keys for the parties and categories: `CLIENT:<id>`, `VENDOR:<id>`, `EXPENSE:<category>`. */
 export const tallyClientKey = (id: string) => `CLIENT:${id}`;
 export const tallyVendorKey = (id: string) => `VENDOR:${id}`;
 export const tallyExpenseKey = (c: ExpenseCategory) => `EXPENSE:${c}`;
+/** A machine loan's own ledger (v6 item 108), under Secured Loans: `LOAN:<id>`. */
+export const tallyLoanKey = (id: string) => `LOAN:${id}`;
+export const TALLY_LOAN_GROUP = 'Secured Loans';
+export const loanLedgerName = (l: { lenderName: string; loanNo: string }) => `${l.lenderName} Loan ${l.loanNo}`;
 export const TALLY_EXPENSE_GROUP = 'Direct Expenses';
 export const TALLY_CLIENT_GROUP = 'Sundry Debtors';
 export const TALLY_VENDOR_GROUP = 'Sundry Creditors';

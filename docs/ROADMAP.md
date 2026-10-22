@@ -527,8 +527,13 @@ Migrations stay additive. Design notes for each item are in the project's `roadm
     (in parts if needed) or paid to a party on account, and a site may ask on behalf of another it works at; Site imprest
     has a Fund requests tab, and the phone approves them. Not built: asking from the phone, and settling a party's
     on-account payment against their later bill (the books and Tally carry it on account).
-108. **Machine finance** (M). Loans on financed machines with the EMI schedule, EMIs paid and due, reminders, posted to the
-    books and the machine's cost.
+108. ~~**Machine finance** (M). Loans on financed machines with the EMI schedule, EMIs paid and due, reminders, posted to the
+    books and the machine's cost.~~
+    Done: Accounts → Machine loans records a loan on an owned machine, builds its EMI schedule, records EMIs paid in order
+    (or closes it early), shows what is owed by lender, reminds before and after each due date with an overdue EMI on
+    the watch list, and posts the loan and each EMI to the books and Tally (interest to finance costs); each loan shows
+    the interest per hour the machine works. Not built: floating rates (a rate change re-schedules nothing), part
+    prepayments that keep the loan running, and loans from the phone.
 110. **Tender bidding** (L). A tender register (NIT, client, EMD, dates, documents, result), a company Schedule of Rates
     library imported from Excel (state SOR, CPWD DSR, own rates), the bid BOQ priced from rate analysis with the quoted
     percentage above or below the SOR, others' bids after opening (L1, L2), and a won tender turned into a project with

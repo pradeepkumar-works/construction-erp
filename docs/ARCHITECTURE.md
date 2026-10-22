@@ -656,6 +656,41 @@ The store register per project, fed by approved material requests:
   the tyres and batteries drawer; the item master has a Fuel tick. Site app: `app/stock/fuel.tsx` from Stock
   (offline through the outbox, with today's fuel position for the site).
 
+### Machine finance (v6 item 108)
+
+- **Tables.** `EquipmentLoan` (tenant table, RLS): an owned machine, the lender (as typed, optionally a vendor), the
+  lender's loan account number (unique in the company), sanction date, amount, yearly rate, tenure, EMI, first EMI date,
+  `disbursal` (`MACHINE_COST`: the lender paid the dealer; `BANK`: credited to the company, a loan against a machine
+  already owned), `ACTIVE` / `CLOSED` with `closedOn`. `LoanEmi` (tenant table, RLS) is its schedule: number, due date,
+  owed before, principal, interest, EMI, owed after, and once paid the day, mode, reference and who recorded it. Checks
+  in the migration keep the terms sane and each EMI adding up.
+- **Rules.** `src/machine-loans/loan-rules.ts`, tested in `src/scripts/loans-test.ts` (CI runs it): the EMI by the
+  annuity formula to the rupee (or the lender's); each month's interest is the rate's twelfth on what is owed at its
+  start, the rest repays the loan, and the last EMI clears what is left; EMIs fall on the first EMI's day of each month
+  (the month's last day when shorter). EMIs are paid in order, not in the future and not before sanction; the last one
+  paid closes the loan. Closing early makes the next EMI repay all that is owed with the lender's interest and drops the
+  later ones; undoing the last payment (not once Tally has it) rebuilds the schedule from that EMI. Terms change only
+  until the first EMI is paid. Nothing is dated on or before `BooksState.lockedUpTo`.
+- **Books.** `PostingService.machineLoans`: a loan is `MACHINE_LOAN`, a journal on its sanction date, Dr Plant and
+  Machinery (`MACHINERY`) or the bank (then a Receipt in Tally, `Voucher.voucherType`), Cr the loan's own ledger
+  `LOAN:<id>` ("HDFC Bank Loan CEL-…", Secured Loans); each EMI paid is `LOAN_EMI`, a payment, Dr the loan with the
+  principal, Dr Interest on Machinery Loans (`LOAN_INTEREST`, shown on the Finance costs line), Cr bank or cash. The
+  Tally export marks both (`tallyExportId`) and its ledger list has a Machine loans group. A loan older than
+  `booksFrom` comes in with the opening balances.
+- **The machine's cost.** The loan page shows the interest paid over the hours the machine has worked (approved logs)
+  since the loan. Project cost keeps charging owned machines at their internal rate, which is meant to cover owning
+  them, so interest is not added to a project a second time.
+- **Due and overdue.** `NotificationJobsService.loanEmisDue` (with the digest, and `GET /notifications/jobs/loan-emis-due`)
+  reminds admin, management and accounts once when an EMI falls due within `EMI_DUE_DAYS` (7) and once more when it is
+  past its date (type `BILLS_DUE`, entity `EQUIPMENT_LOAN`). `emiOverdue` in `warning-rules.ts` gives a `LOAN_EMI`
+  watch-list warning once the oldest unpaid EMI is more than two days late, keyed by loan, EMI and count.
+- **API and roles.** `/machine-loans` (list with the running loans by lender, `preview` for the form, `:id` taking a
+  loan's or an EMI's id, create, PATCH, DELETE without EMIs paid, `pay`, `foreclose`, `undo-pay`), for
+  `canManageMachineLoans` (those who keep the books). `EquipmentDto.loan` names a machine's running loan to them.
+- **Clients.** Web: Accounts → Machine loans (`/machine-loans`: owed, overdue, due in 30 days, the year's interest, by
+  lender, and the loans) and each loan's page (`/machine-loans/[id]`: terms, cost of finance, the schedule, Pay EMI,
+  Close early, Edit, Undo, Delete); a financed machine in Equipment links to its loan. Not on the phone.
+
 ## Site expenses
 
 - **Table.** `Expense`: project, `expenseNo` (`EXP-<year>-0001` per organisation, allocated under an

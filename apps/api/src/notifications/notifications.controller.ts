@@ -102,6 +102,7 @@ export class NotificationsController {
     // Vercel Hobby allows two crons, so the daily test and payment reminders ride on the digest's.
     await this.jobs.testsDue(q.date).catch(() => undefined);
     await this.jobs.billsDue(q.date).catch(() => undefined);
+    await this.jobs.loanEmisDue(q.date).catch(() => undefined);
     await this.jobs.machineryDue(q.date).catch(() => undefined);
     await this.jobs.complianceDue(q.date).catch(() => undefined);
     await this.jobs.handoverDue(q.date).catch(() => undefined);
@@ -150,6 +151,15 @@ export class NotificationsController {
   @Get('jobs/bills-due')
   billsDue(@Query() q: JobQuery) {
     return this.jobs.billsDue(q.date);
+  }
+
+  @Public()
+  @UseGuards(CronGuard)
+  @ApiSecurity('cron')
+  @ApiOperation({ summary: 'Machine loan EMIs falling due within 7 days, and once more when overdue, to admin, management and accounts. Auth: Authorization: Bearer <CRON_SECRET>.' })
+  @Get('jobs/loan-emis-due')
+  loanEmisDue(@Query() q: JobQuery) {
+    return this.jobs.loanEmisDue(q.date);
   }
 
   @Public()

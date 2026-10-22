@@ -288,6 +288,8 @@ export const canViewGstRegisters = (role: RoleKey) => TALLY_ROLES.includes(role)
 /** The books (v6 item 102): accounts keep them and make vouchers; management approves what accounts makes by hand. */
 export const canKeepBooks = (role: RoleKey) => TALLY_ROLES.includes(role);
 export const canApproveVouchers = (role: RoleKey) => role === 'ADMIN' || role === 'MANAGEMENT';
+/** Machine finance (v6 item 108): loans on machines, their EMIs and what is owed, kept and seen by those who keep the books. */
+export const canManageMachineLoans = (role: RoleKey) => TALLY_ROLES.includes(role);
 /** RMC (v6 item 104): quote and take orders from customers (sales), on the plants the caller sees. */
 export const RMC_SALES_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER', 'ACCOUNTS_MANAGER'];
 export const canSellRmc = (role: RoleKey) => RMC_SALES_ROLES.includes(role);

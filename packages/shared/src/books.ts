@@ -134,7 +134,7 @@ export const BOOK_VOUCHER_STATUS_LABELS: Record<BookVoucherStatus, string> = {
 };
 
 /** Where a voucher came from: made by hand, or posted from a module's record. */
-export const BOOK_SOURCES = ['MANUAL', 'SALES', 'RECEIPT', 'PURCHASE', 'SUBCONTRACT', 'PAYMENT', 'EXPENSE', 'DEBIT_NOTE', 'SALARY', 'SALARY_PAYMENT', 'STAFF_LOAN', 'RMC_SALE', 'RMC_RECEIPT', 'OPENING', 'YEAR_CLOSE'] as const;
+export const BOOK_SOURCES = ['MANUAL', 'SALES', 'RECEIPT', 'PURCHASE', 'SUBCONTRACT', 'PAYMENT', 'EXPENSE', 'DEBIT_NOTE', 'SALARY', 'SALARY_PAYMENT', 'STAFF_LOAN', 'RMC_SALE', 'RMC_RECEIPT', 'MACHINE_LOAN', 'LOAN_EMI', 'OPENING', 'YEAR_CLOSE'] as const;
 export type BookSource = (typeof BOOK_SOURCES)[number];
 export const BOOK_SOURCE_LABELS: Record<BookSource, string> = {
   MANUAL: 'Made by hand',
@@ -150,6 +150,8 @@ export const BOOK_SOURCE_LABELS: Record<BookSource, string> = {
   STAFF_LOAN: 'Loan to staff',
   RMC_SALE: 'RMC bill',
   RMC_RECEIPT: 'RMC money received',
+  MACHINE_LOAN: 'Machine loan',
+  LOAN_EMI: 'Machine loan EMI',
   OPENING: 'Opening balances',
   YEAR_CLOSE: 'Year close',
 };

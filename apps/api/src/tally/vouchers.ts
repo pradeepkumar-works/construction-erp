@@ -32,6 +32,8 @@ export interface Voucher {
   /** Bill-wise reference on the party line: a new bill, or a payment against one */
   billRef: { name: string; type: 'New Ref' | 'Agst Ref' | 'Advance' | 'On Account' } | null;
   lines: Line[];
+  /** Tally's voucher type when not the kind's usual one (a machine loan paid into the bank is a receipt) */
+  voucherType?: string;
 }
 
 /** Resolves a ledger key to the Tally ledger name (the override, else the default). */
@@ -107,7 +109,7 @@ function envelope(report: 'Vouchers' | 'All Masters', company: string | null, me
 }
 
 function voucherXml(v: Voucher, costCentres: boolean): string {
-  const type = TALLY_VOUCHER_TYPES[v.kind];
+  const type = v.voucherType ?? TALLY_VOUCHER_TYPES[v.kind];
   const cc = costCentreName(v.projectCode, v.projectName);
   const entries = v.lines.map((l) => {
     const debit = l.amount.gt(0);

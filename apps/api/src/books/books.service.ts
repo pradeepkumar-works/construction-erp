@@ -50,6 +50,7 @@ function groupOfKey(key: string): AccountGroup {
   if (key.startsWith('VENDOR:')) return 'SUNDRY_CREDITORS';
   if (key.startsWith('CLIENT:') || key.startsWith('CLIENT_NAME:')) return 'SUNDRY_DEBTORS';
   if (key.startsWith('EXPENSE:')) return 'DIRECT_EXPENSES';
+  if (key.startsWith('LOAN:')) return 'SECURED_LOANS';
   return 'SUSPENSE';
 }
 
@@ -68,9 +69,13 @@ function typeOf(v: Voucher): BookVoucherType {
     STAFF_LOAN: 'PAYMENT',
     RMC_SALE: 'SALES',
     RMC_RECEIPT: 'RECEIPT',
+    MACHINE_LOAN: 'JOURNAL',
+    LOAN_EMI: 'PAYMENT',
   };
   // An expense bought on credit moves no money: it is a journal to the vendor.
   if (v.kind === 'EXPENSE' && !v.lines.some((l) => l.ledgerKey === 'CASH' || l.ledgerKey === 'BANK')) return 'JOURNAL';
+  // A machine loan the lender paid into the company's bank is money received.
+  if (v.kind === 'MACHINE_LOAN' && v.lines.some((l) => l.ledgerKey === 'BANK')) return 'RECEIPT';
   return byKind[v.kind];
 }
 

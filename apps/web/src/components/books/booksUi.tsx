@@ -56,6 +56,10 @@ export function sourceHref(source: BookSource, sourceId: string | null): string 
     case 'RMC_SALE':
     case 'RMC_RECEIPT':
       return '/rmc?tab=bills';
+    case 'MACHINE_LOAN':
+    case 'LOAN_EMI':
+      // An EMI's page is its loan's (the API finds the loan by either id).
+      return `/machine-loans/${sourceId}`;
     case 'OPENING':
     case 'YEAR_CLOSE':
       return '/statements?tab=year';

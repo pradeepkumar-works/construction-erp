@@ -5,6 +5,7 @@
 import type React from 'react';
 import {
   ExperimentOutlined,
+  CarOutlined,
   MailOutlined,
   ContactsOutlined,
   QuestionCircleOutlined,
@@ -70,6 +71,7 @@ import {
   canExportTally,
   canViewRmc,
   canKeepBooks,
+  canManageMachineLoans,
   canManageBilling,
   canManageCompanyData,
   canManageUsers,
@@ -167,6 +169,7 @@ export const NAV_DESCRIPTIONS: Record<string, string> = {
   '/statements': 'Trial balance, profit and loss, balance sheet, bank reconciliation and the year’s close.',
   '/gst': 'GST on sales and purchases: GSTR-1 and 2B.',
   '/tally': 'Vouchers for Tally, with projects as cost centres.',
+  '/machine-loans': 'Loans on financed machines: EMI schedules, EMIs paid and due, and what is owed to each lender.',
   '/staff': 'Staff records and their service letters, attendance, leave, overtime and holidays.',
   '/biometric': 'Fingerprint and face devices, who is enrolled on them, and their punches marking attendance.',
   '/payroll': "Salary runs with payslips, PF, ESI and TDS, salaries, loans, full and final settlements, and the month's attendance inputs.",
@@ -299,6 +302,7 @@ export function navFor(user: AuthUser): NavSection[] {
         ...when(canKeepBooks(role), { href: '/statements', label: 'Financial statements', icon: PieChartOutlined, keywords: 'trial balance profit and loss balance sheet schedule iii bank reconciliation brs opening balances year close lock' }),
         ...when(canViewGstRegisters(role), { href: '/gst', label: 'GST registers', icon: PercentageOutlined, keywords: 'tax gstr' }),
         ...when(canExportTally(role), { href: '/tally', label: 'Tally export', icon: ExportOutlined, keywords: 'accounts vouchers' }),
+        ...when(canManageMachineLoans(role), { href: '/machine-loans', label: 'Machine loans', icon: CarOutlined, keywords: 'equipment finance emi hypothecation lender bank nbfc loan schedule interest' }),
       ],
     },
     {

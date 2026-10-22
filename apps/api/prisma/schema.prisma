@@ -594,6 +594,8 @@ model Organization {
   supplierDispatches   SupplierDispatch[]
   supplierInvoices     SupplierInvoice[]
   supplierChanges      SupplierChangeRequest[]
+  equipmentLoans       EquipmentLoan[]
+  loanEmis             LoanEmi[]
   staffAttendance      StaffAttendance[]
   leaveRequests        LeaveRequest[]
   holidays             Holiday[]
@@ -853,6 +855,8 @@ model User {
   supplierInvoicesDone SupplierInvoice[]        @relation("SupplierInvoiceDecider")
   supplierChangesAsked SupplierChangeRequest[]  @relation("SupplierChangeAsker")
   supplierChangesDone  SupplierChangeRequest[]  @relation("SupplierChangeDecider")
+  equipmentLoans       EquipmentLoan[]          @relation("EquipmentLoanCreator")
+  loanEmisPaid         LoanEmi[]                @relation("LoanEmiPayer")
   posAccepted          PurchaseOrder[]          @relation("PoSupplierAccepter")
   wosAccepted          WorkOrder[]              @relation("WoSupplierAccepter")
 
@@ -1094,6 +1098,7 @@ model Vendor {
   dispatches      SupplierDispatch[]
   invoices        SupplierInvoice[]
   changeRequests  SupplierChangeRequest[]
+  equipmentLoans  EquipmentLoan[]
 
   @@unique([organizationId, name])
 }
@@ -2311,6 +2316,7 @@ model Equipment {
   documents       EquipmentDocument[]
   drivers         Driver[]
   vendorBills     VendorBill[]
+  loans           EquipmentLoan[]
 
   @@unique([organizationId, code])
   @@index([organizationId, projectId])
@@ -3185,6 +3191,8 @@ model TallyExport {
   staffLoans       StaffLoan[]
   rmcInvoices      RmcInvoice[]
   rmcReceipts      RmcReceipt[]
+  equipmentLoans   EquipmentLoan[]
+  loanEmis         LoanEmi[]
 
   @@index([organizationId, createdAt])
 }
@@ -5651,4 +5659,87 @@ model SupplierChangeRequest {
 
   @@index([organizationId, status])
   @@index([vendorId])
+}
+
+// ---------- Machine finance (v6 item 108) ----------
+
+/// What the lender did with a machine loan: paid the dealer for the machine, or credited the company's bank.
+enum LoanDisbursal {
+  MACHINE_COST
+  BANK
+}
+
+enum EquipmentLoanStatus {
+  ACTIVE
+  CLOSED
+}
+
+/// A loan on a financed machine (v6 item 108): its terms and the EMI schedule built from them (`loan-rules.ts`). Posts
+/// to the books as a journal (Dr Plant and Machinery or the bank, Cr the loan's own ledger under Secured Loans).
+model EquipmentLoan {
+  id             String              @id @default(uuid())
+  organizationId String
+  organization   Organization        @relation(fields: [organizationId], references: [id])
+  equipmentId    String
+  equipment      Equipment           @relation(fields: [equipmentId], references: [id], onDelete: Restrict)
+  /// The bank or finance company, as on the sanction letter
+  lenderName     String
+  /// The lender in the vendor master, when it is one
+  vendorId       String?
+  vendor         Vendor?             @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  /// The lender's loan account number
+  loanNo         String
+  sanctionDate   DateTime            @db.Date
+  amount         Decimal             @db.Decimal(18, 2)
+  /// Yearly rate, %
+  ratePct        Decimal             @db.Decimal(6, 3)
+  tenureMonths   Int
+  emi            Decimal             @db.Decimal(18, 2)
+  firstEmiDate   DateTime            @db.Date
+  disbursal      LoanDisbursal       @default(MACHINE_COST)
+  status         EquipmentLoanStatus @default(ACTIVE)
+  closedOn       DateTime?           @db.Date
+  note           String?
+  createdById    String
+  createdBy      User                @relation("EquipmentLoanCreator", fields: [createdById], references: [id])
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  /// The Tally export that took the loan's journal
+  tallyExportId  String?
+  tallyExport    TallyExport?        @relation(fields: [tallyExportId], references: [id], onDelete: SetNull)
+
+  emis LoanEmi[]
+
+  @@unique([organizationId, loanNo])
+  @@index([organizationId, equipmentId])
+  @@index([tallyExportId])
+}
+
+/// One EMI of a machine loan's schedule: interest on what is owed at the month's start, the rest repaying the loan. Paid
+/// in order; a paid EMI posts as a payment (Dr the loan with the principal, Dr interest, Cr bank or cash).
+model LoanEmi {
+  id             String        @id @default(uuid())
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id])
+  loanId         String
+  loan           EquipmentLoan @relation(fields: [loanId], references: [id], onDelete: Cascade)
+  no             Int
+  dueDate        DateTime      @db.Date
+  opening        Decimal       @db.Decimal(18, 2)
+  principal      Decimal       @db.Decimal(18, 2)
+  interest       Decimal       @db.Decimal(18, 2)
+  emi            Decimal       @db.Decimal(18, 2)
+  closing        Decimal       @db.Decimal(18, 2)
+  paidOn         DateTime?     @db.Date
+  mode           PaymentMode?
+  reference      String?
+  paidById       String?
+  paidBy         User?         @relation("LoanEmiPayer", fields: [paidById], references: [id])
+  /// The Tally export that took the payment
+  tallyExportId  String?
+  tallyExport    TallyExport?  @relation(fields: [tallyExportId], references: [id], onDelete: SetNull)
+
+  @@unique([loanId, no])
+  @@index([organizationId, dueDate])
+  @@index([tallyExportId])
 }

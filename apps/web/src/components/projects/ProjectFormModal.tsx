@@ -12,7 +12,7 @@ import { FAIL_NOTICE, useNotify } from '@/lib/notify';
 import { useActivityTemplates } from '@/lib/queries';
 import { ClientSelect, UserSelect } from '@/components/common/SearchSelect';
 import { inSentence } from '@/lib/format';
-import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
+import { afterFormLeaves, FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
 import { currentPosition } from '@/components/staff/staffUi';
 
@@ -131,8 +131,9 @@ export function ProjectFormModal({
       open={open}
       onClose={() => {
         onClose();
-        if (saved.current) onSaved?.(saved.current);
+        const id = saved.current;
         saved.current = null;
+        if (id && onSaved) afterFormLeaves(() => onSaved(id));
       }}
       form={form}
       layout="drawer"

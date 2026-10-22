@@ -336,3 +336,31 @@ export function fuelNormCheck(logs: FuelLog[], norm: number, unit: FuelNormUnit,
 
 /** The step a dismissal holds for: 10 points of %, so the warning comes back when the machine drifts further. */
 export const fuelStep = (deviationPct: number) => Math.floor(Math.abs(deviationPct) / 10) * 10;
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Machine loans (v6 item 108): an EMI past its date unpaid.
+
+/** An EMI paid this many days late is still a slip worth no warning (a cheque in clearing). */
+export const EMI_GRACE_DAYS = 2;
+
+export interface EmiOverdue {
+  count: number;
+  /** EMIs overdue, ₹ */
+  amount: number;
+  /** The oldest unpaid EMI */
+  oldestNo: number;
+  oldestDue: string;
+  days: number;
+}
+
+/**
+ * The EMIs of a loan unpaid past their due date on `today`; a warning once the oldest is more than EMI_GRACE_DAYS late.
+ * Its key moves on with the oldest EMI and the count, so a dismissal holds for this EMI only.
+ */
+export function emiOverdue(emis: { no: number; dueDate: string; emi: number; paidOn: string | null }[], today: string): EmiOverdue | null {
+  const late = emis.filter((e) => !e.paidOn && e.dueDate < today).sort((a, b) => a.no - b.no);
+  if (!late.length) return null;
+  const days = daysBetween(late[0].dueDate, today);
+  if (days <= EMI_GRACE_DAYS) return null;
+  return { count: late.length, amount: late.reduce((s, e) => s + e.emi, 0), oldestNo: late[0].no, oldestDue: late[0].dueDate, days };
+}

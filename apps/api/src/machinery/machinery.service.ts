@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import { Prisma } from '@prisma/client';
 import {
   canManageEquipment,
+  canManageMachineLoans,
   machineryLogProblem,
   type EquipmentDto,
   type EquipmentSortField,
@@ -38,6 +39,7 @@ type LogRow = Prisma.MachineryLogGetPayload<{ include: typeof logInclude }>;
 const equipmentInclude = {
   project: { select: { name: true } },
   logs: { where: { status: { not: 'REJECTED' } }, select: { date: true }, orderBy: { date: 'desc' }, take: 1 },
+  loans: { where: { status: 'ACTIVE' }, select: { id: true, lenderName: true }, orderBy: { sanctionDate: 'desc' }, take: 1 },
 } satisfies Prisma.EquipmentInclude;
 type EquipmentRow = Prisma.EquipmentGetPayload<{ include: typeof equipmentInclude }>;
 
@@ -107,6 +109,8 @@ export class MachineryService {
       fuelNorm: dec(r.fuelNorm),
       fuelNormUnit: r.fuelNormUnit,
       fuelTolerancePct: dec(r.fuelTolerancePct),
+      // Machine finance (v6 item 108): only those who keep the loans see that a machine is financed.
+      loan: canManageMachineLoans(user.roleKey) && r.loans[0] ? { id: r.loans[0].id, lenderName: r.loans[0].lenderName } : null,
       createdAt: iso(r.createdAt)!,
     };
   }
