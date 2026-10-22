@@ -1,3 +1,4 @@
+import { PayrollModule } from '../payroll/payroll.module';
 import { Module } from '@nestjs/common';
 import { DashboardController } from './dashboard.controller';
 import { DashboardService } from './dashboard.service';
@@ -17,5 +18,5 @@ import { StaffModule } from '../staff/staff.module';
 import { HomeService } from './home.service';
 import { ModuleHomeService } from './module-home.service';
 
-@Module({ imports: [ProjectsModule, PlanningModule, ProgressModule, DprModule, ReceivablesModule, PayablesModule, CostModule, PurchasingModule, ComplianceModule, StockModule, WarningsModule, MachineryModule, StaffModule], controllers: [DashboardController], providers: [DashboardService, HomeService, ModuleHomeService], exports: [DashboardService, HomeService] })
+@Module({ imports: [ProjectsModule, PlanningModule, ProgressModule, DprModule, ReceivablesModule, PayablesModule, CostModule, PurchasingModule, ComplianceModule, StockModule, WarningsModule, MachineryModule, StaffModule, PayrollModule], controllers: [DashboardController], providers: [DashboardService, HomeService, ModuleHomeService], exports: [DashboardService, HomeService] })
 export class DashboardModule {}

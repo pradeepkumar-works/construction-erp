@@ -98,6 +98,7 @@ function RootNavigator() {
         <Stack.Screen name="drawing/[id]" options={{ title: t('Drawing') }} />
         <Stack.Screen name="document-page" options={{ title: t('Document page') }} />
         <Stack.Screen name="staff" options={{ title: t('Attendance & leave') }} />
+        <Stack.Screen name="payslips" options={{ title: t('My payslips') }} />
         <Stack.Screen name="staff-register" options={{ title: t('Staff register') }} />
         <Stack.Screen name="ncr/[id]" options={{ title: t('NCR') }} />
         <Stack.Screen name="test/[id]" options={{ title: t('Test') }} />

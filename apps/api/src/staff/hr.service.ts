@@ -195,6 +195,8 @@ export class HrService {
     const latest = await this.prisma.employeeEvent.findFirst({ where: { employeeId: ev.employeeId }, orderBy: [{ effectiveDate: 'desc' }, { createdAt: 'desc' }], select: { id: true } });
     if (latest?.id !== ev.id) throw new BadRequestException('Only the latest event can be taken back. Take back the later ones first.');
     if (ev.type === 'JOINED') throw new BadRequestException('The joining cannot be taken back. Change the joining date on the staff record.');
+    if (isExitEvent(ev.type) && (await this.prisma.finalSettlement.findUnique({ where: { employeeId: ev.employeeId }, select: { id: true } })))
+      throw new BadRequestException('Their full and final settlement is worked out. Delete it under Payroll first.');
     const back: Prisma.EmployeeUncheckedUpdateInput = {};
     if (ev.type === 'CONFIRMED') back.confirmedOn = null;
     if (ev.type === 'TRANSFERRED') back.projectId = ev.fromProjectId;

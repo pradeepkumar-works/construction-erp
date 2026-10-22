@@ -13,7 +13,7 @@ test("a site engineer's sidebar has no finance module", async ({ page }) => {
   await signIn(page, 'engineer@demo.com');
   // What the engineer works with is there, so the checks below are not passing on an empty sidebar.
   for (const name of ['Daily reports', 'Progress entries', 'Attendance', 'Material requests', 'Safety']) await expect(link(page, name)).toBeVisible();
-  for (const name of ['Vendor bills', 'Payables', 'RA bills', 'Receivables', 'GST registers', 'Tally export', 'Project cost', 'Payroll inputs', 'Approvals']) {
+  for (const name of ['Vendor bills', 'Payables', 'RA bills', 'Receivables', 'GST registers', 'Tally export', 'Project cost', 'Payroll', 'Approvals']) {
     await expect(link(page, name)).toHaveCount(0);
   }
   await expect(sidebar(page).getByRole('button', { name: 'Billing', exact: true })).toHaveCount(0);

@@ -5,5 +5,5 @@ import { StaffService } from './staff.service';
 import { PayrollController } from './payroll.controller';
 import { PayrollService } from './payroll.service';
 
-@Module({ controllers: [StaffController, PayrollController], providers: [StaffService, PayrollService, HrService], exports: [StaffService, HrService] })
+@Module({ controllers: [StaffController, PayrollController], providers: [StaffService, PayrollService, HrService], exports: [StaffService, HrService, PayrollService] })
 export class StaffModule {}

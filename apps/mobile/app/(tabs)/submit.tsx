@@ -36,6 +36,8 @@ const IMPREST = { href: '/imprest', icon: 'cash' as const, tone: colors.tileOchr
 
 const MY_STAFF = { href: '/staff', icon: 'calendar' as const, tone: colors.tileLime, title: 'My attendance & leave', text: 'Check in and out, see your leave balance and apply for leave.' };
 
+const PAYSLIPS = { href: '/payslips', icon: 'wallet' as const, tone: colors.tileGreen, title: 'My payslips', text: 'Your salary each month once it is approved: days paid, earnings, PF, tax and net pay.' };
+
 const STAFF_REGISTER = { href: '/staff-register', icon: 'id-card' as const, tone: colors.tileOlive, title: 'Staff register', text: 'Mark the company staff at your site present, half day or absent.' };
 
 const RISK = { href: '/risks', icon: 'alert-circle' as const, tone: colors.tileRed, title: 'Delays & risks', text: 'Record work held up (days lost, who caused it) or raise a risk; see what is open.' };
@@ -59,6 +61,7 @@ export default function SubmitHub() {
     ...(user && canRecordAttendance(user.roleKey) ? [ATTENDANCE] : []),
     ...(user && canManageWorkers(user.roleKey) ? [ROLL_CALL] : []),
     MY_STAFF,
+    PAYSLIPS,
     ...(user && canMarkStaff(user.roleKey) ? [STAFF_REGISTER] : []),
     ...FORMS,
     DRAWINGS,

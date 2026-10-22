@@ -123,6 +123,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/approval-levels-test.js
+      - name: Payroll works out PF, ESI, professional tax, TDS, loans and full and final settlements right
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/payroll-test.js
       - name: Early warnings forecast right, show each role its own kinds and backtest on the demo history
         if: matrix.suite == 'flows'
         working-directory: apps/api

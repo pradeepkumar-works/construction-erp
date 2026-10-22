@@ -474,8 +474,13 @@ Migrations stay additive. Design notes for each item are in the project's `roadm
     record's personal, statutory, bank and terms fields (private to HR, payroll and the person), `EmployeeEvent` from
     joining to exit with letter numbers and printed letters, documents, Service records on Staff and leave, and the HR
     dashboard on the People home. Full and final settlement moves to item 100. ARCHITECTURE "HR records".
-100. **Payroll** (L). Salary structures, PF, ESI, professional tax and salary TDS, a monthly salary run from attendance
-    approved through the matrix, payslips on the web and phone, staff loans and advances, the bank file, statutory returns.
+100. ~~**Payroll** (L). Salary structures, PF, ESI, professional tax and salary TDS, a monthly salary run from attendance
+    approved through the matrix, payslips on the web and phone, staff loans and advances, the bank file, statutory returns.~~
+    Done: dated salary structures with CTC, payroll settings (PF, ESI, PT by state, paid days, overtime), loans and
+    advances, a monthly run for the company or a site (HR prepares, management approves, accounts pays) with payslips,
+    arrears and bonus by hand, the NEFT bank file, the PF ECR and the ESI file, full and final settlement with gratuity
+    and leave encashment, payslips on the Staff page and the phone (in Hindi). TDS quarterly returns (24Q) and Form 16
+    are left for the accounts work in 102 and 103.
 101. **Biometric attendance** (M). A device register, the ZKTeco / eSSL push protocol (ADMS), a generic webhook and a
     punch file import; device users mapped to employees and workers; punches turned into attendance.
 102. **Accounting books** (L). Chart of accounts, vouchers with approval, automatic postings from every module through one

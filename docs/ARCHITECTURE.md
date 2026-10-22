@@ -100,6 +100,38 @@ own. The page (`components/modules/ModuleHome.tsx`) shows:
 A new module is a section with `module` set, a key in `MODULE_KEYS` (label, intro, submission types) and a branch in
 `ModuleHomeService.figures`; a new page in a module needs its line in `NAV_DESCRIPTIONS`.
 
+### Payroll (v6 item 100)
+
+Salaries are `SalaryStructure` rows per employee from a date (basic, DA, HRA, conveyance, special, other a month; PF, ESI
+and PT on or off; tax regime, deductions declared for the old regime, other income for TDS), so a raise is a new row and
+earlier months keep what they paid; a structure cannot start in a month whose run is past draft. `PayrollSettings` (one
+row per organisation) holds the PF and ESI rates and ceilings, the professional tax state (`PT_RULES` in
+`@erp/shared` by GST state code, with women's slabs and the higher last month where a state has them), paid days on
+the calendar or 26, the overtime multiplier and the debit account for the bank file. `StaffLoan` is a loan or advance
+recovered by a fixed amount a month from `startMonth`; what is left counts deductions in runs past draft.
+
+Every figure comes from `apps/api/src/payroll/payroll-rules.ts`, pure functions tested by `src/scripts/payroll-test.ts`
+(CI runs it): `computePayslip` (days paid from attendance less loss of pay, earnings pro rata, overtime at the multiplier
+on (basic + DA) / 26 / 8, PF on basic + DA capped at the ceiling when set, ESI while gross is within the ceiling, rounded up,
+PT, TDS as the year's tax on the annualised salary under the person's regime, new-regime rebate with marginal relief and
+4% cess, spread over the months left, loans capped by what is left of net), `structureCost` (CTC) and `computeSettlement`.
+
+`PayrollRun` is one month for the company or one site (`SAL-YYYY-MM[-code]`), with a `Payslip` per employee on the rolls
+that month (a snapshot of designation, site and bank, the days, the totals) and `PayslipLine`s by code (`PAYSLIP_CODES`).
+A run is not a site submission: it has its own approval, not `SubmissionLifecycleService`. HR prepares it, works it out
+again while in draft (lines HR adds by hand, `MANUAL_PAYSLIP_CODES`, are kept) and submits it (`canRunPayroll`);
+management approves or sends it back (`canApprovePayroll`); accounts marks it paid (`canPayPayroll`) and may send an
+approved run back before paying. A paid run is locked. Each step writes `AuditLog` (entity `PAYROLL_RUN`). An approved run
+gives the NEFT bank file (CSV), the EPFO ECR 2.0 text (fields joined by `#~#`) and the ESIC monthly contribution CSV;
+the web adds the salary register (xlsx) and the payslips to print. A person sees their own payslips once their run is
+approved (`GET /payroll/my-payslips`, the Staff page's My payslips tab, the phone's My payslips).
+
+`FinalSettlement` (one per employee, `FNF-<code>`) is worked out once an exit is recorded: unpaid days of the last month,
+earned leave not taken (balance from `StaffService.balancesFor`, at (basic + DA) / 26), gratuity from 4.75 years of
+service (15/26 of the last basic + DA per year, capped at 25 lakh), notice not served from the resignation's `noticeGivenOn` (gross / 30 a
+day) and loans still owed. HR prepares it, management approves, accounts pays; the exit cannot be taken back while one
+exists. The web prints the statement with the lines to sign.
+
 ### HR records (v6 item 99)
 
 `Employee` carries the whole HR record: job and terms (employment type, grade, reports to, probation end, confirmation,

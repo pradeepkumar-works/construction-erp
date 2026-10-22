@@ -148,7 +148,7 @@ export const NAV_DESCRIPTIONS: Record<string, string> = {
   '/gst': 'GST on sales and purchases: GSTR-1 and 2B.',
   '/tally': 'Vouchers for Tally, with projects as cost centres.',
   '/staff': 'Staff records and their service letters, attendance, leave, overtime and holidays.',
-  '/payroll': "Monthly days, leave and overtime per person, and labour contractors' man-days.",
+  '/payroll': "Salary runs with payslips, PF, ESI and TDS, salaries, loans, full and final settlements, and the month's attendance inputs.",
   '/reports': 'Monthly and weekly progress reports as PDF.',
   '/cost': 'Budget, actual cost, cash flow and margin per project.',
 };
@@ -251,7 +251,7 @@ export function navFor(user: AuthUser): NavSection[] {
       icon: TeamOutlined,
       items: [
         { href: '/staff', label: 'Staff and leave', icon: IdcardOutlined, keywords: 'employees hr letters transfer promotion increment' },
-        ...when(canViewPayroll(role) || canViewLabourSummary(role), { href: '/payroll', label: 'Payroll inputs', icon: CarryOutOutlined, keywords: 'salary wages' }),
+        ...when(canViewPayroll(role) || canViewLabourSummary(role), { href: '/payroll', label: 'Payroll', icon: CarryOutOutlined, keywords: 'salary wages payslip pf esi tds loan advance gratuity settlement inputs' }),
       ],
     },
     {

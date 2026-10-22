@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-payroll',
+    date: '2026-11-06',
+    title: 'Payroll: salary runs, payslips and full and final',
+    points: [
+      'Payroll now runs the salary itself. Set each person\'s salary from a date under Payroll → Salaries; PF, ESI, professional tax and TDS a month and the CTC are worked out for you.',
+      'Each month HR prepares the salary run from approved attendance, adds arrears or a bonus where needed and submits it. Management approves it, and accounts downloads the bank file and marks it paid. The PF (ECR) and ESI files come from the same run.',
+      'Loans and advances are recovered from salary each month until nothing is left. When someone leaves, Full and final works out their last salary, leave encashment, gratuity, notice short and what they still owe.',
+      'Everyone sees their own payslips under Staff and leave → My payslips, and in the phone app (in Hindi too) once the month is approved.',
+    ],
+  },
+  {
     id: '2026-11-hr-records',
     date: '2026-11-05',
     title: 'HR records, service events and letters',

@@ -54,3 +54,4 @@ export * from './company-today';
 export * from './markup';
 export * from './modules';
 export * from './hr';
+export * from './payroll';

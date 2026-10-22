@@ -173,6 +173,13 @@ import type {
   EmployeeEventDto,
   EmployeeEventType,
   HrDashboardDto,
+  PayrollSettingsDto,
+  SalaryStructureDto,
+  StaffLoanDto,
+  PayrollRunDto,
+  PayrollRunDetailDto,
+  PayslipDto,
+  FinalSettlementDto,
   ModuleHomeDto,
   HomeTrendsDto,
   ProgressEntryDto,
@@ -1332,6 +1339,59 @@ export const useContractorMonth = (month: string, projectId?: string, enabled = 
     placeholderData: keepPreviousData,
     enabled,
   });
+
+/* ---------- payroll (v6 item 100) ---------- */
+
+export const usePayrollSettings = (enabled = true) =>
+  useQuery({ queryKey: ['payroll', 'settings'], queryFn: async () => (await api.get<PayrollSettingsDto>('/payroll/settings')).data, enabled });
+
+/** Each employee's salary in force today, or one employee's history. */
+export const useSalaryStructures = (employeeId?: string, enabled = true) =>
+  useQuery({
+    queryKey: ['payroll', 'structures', employeeId ?? null],
+    queryFn: async () => (await api.get<SalaryStructureDto[]>('/payroll/structures', { params: clean({ employeeId }) })).data,
+    enabled,
+  });
+
+export const useStaffLoans = (filters: { employeeId?: string; open?: boolean } = {}, enabled = true) =>
+  useQuery({ queryKey: ['payroll', 'loans', clean(filters)], queryFn: async () => (await api.get<StaffLoanDto[]>('/payroll/loans', { params: clean(filters) })).data, enabled });
+
+export const usePayrollRuns = (enabled = true) =>
+  useQuery({ queryKey: ['payroll', 'runs'], queryFn: async () => (await api.get<PayrollRunDto[]>('/payroll/runs')).data, enabled });
+
+export const usePayrollRun = (id: string | null | undefined) =>
+  useQuery({ queryKey: ['payroll', 'run', id], queryFn: async () => (await api.get<PayrollRunDetailDto>(`/payroll/runs/${id}`)).data, enabled: !!id });
+
+export const useMyPayslips = (enabled = true) =>
+  useQuery({ queryKey: ['payroll', 'mine'], queryFn: async () => (await api.get<PayslipDto[]>('/payroll/my-payslips')).data, enabled });
+
+export const useSettlements = (enabled = true) =>
+  useQuery({ queryKey: ['payroll', 'settlements'], queryFn: async () => (await api.get<FinalSettlementDto[]>('/payroll/settlements')).data, enabled });
+
+export const useSettlementsDue = (enabled = true) =>
+  useQuery({
+    queryKey: ['payroll', 'settlements', 'due'],
+    queryFn: async () => (await api.get<{ employeeId: string; fullName: string; employeeCode: string; designation: string; leftOn: string | null }[]>('/payroll/settlements/due')).data,
+    enabled,
+  });
+
+/** Any payroll write: POST, PUT or DELETE on a payroll path; everything payroll is fetched again after it. */
+export function usePayrollAction<T = unknown>() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ method = 'post', path, body }: { method?: 'post' | 'put' | 'delete'; path: string; body?: unknown }) =>
+      (method === 'delete' ? await api.delete<T>(path) : await api[method]<T>(path, body ?? {})).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['payroll'] }),
+  });
+}
+
+/** A file the API makes (bank file, PF ECR, ESI sheet): its name, type, text and who was left out for missing details. */
+export interface PayrollFileDto {
+  fileName: string;
+  mimeType: string;
+  content: string;
+  missing: string[];
+}
 
 export interface BillFilters extends PageParams {
   projectId?: string;
