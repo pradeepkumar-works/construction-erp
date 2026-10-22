@@ -143,6 +143,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/rmc-test.js
+      - name: Supplier statement, dispatch limits, invoice stages and profile changes add up
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/supplier-test.js
       - name: Early warnings forecast right, show each role its own kinds and backtest on the demo history
         if: matrix.suite == 'flows'
         working-directory: apps/api

@@ -5,6 +5,9 @@
 import type React from 'react';
 import {
   ExperimentOutlined,
+  MailOutlined,
+  ContactsOutlined,
+  QuestionCircleOutlined,
   MoneyCollectOutlined,
   AccountBookOutlined,
   BookOutlined,
@@ -95,6 +98,9 @@ import {
   canSeeWatchList,
   canSubmitExpense,
   isGuest,
+  isSupplier,
+  canCheckSupplierInvoices,
+  canManageSupplierLogins,
   mayApprove,
 } from '@erp/shared';
 
@@ -147,6 +153,7 @@ export const NAV_DESCRIPTIONS: Record<string, string> = {
   '/subcontract-bills': "Subcontractors' running bills with recoveries.",
   '/payables': 'What we owe, payment requests, payments and debit notes.',
   '/vendors': 'Suppliers and subcontractors, with GST, MSME and bank details.',
+  '/supplier-inbox': 'Invoices suppliers sent on their portal, and the changes to their details they asked for.',
   '/bills': 'Running account bills to clients, from the measurement book.',
   '/variations': 'Extra and changed items sent to the client.',
   '/receivables': 'What clients owe us, receipts and retention.',
@@ -170,6 +177,23 @@ export const moduleHref = (key: ModuleKey) => `/modules/${key}`;
 const when = (ok: boolean, ...items: NavItem[]): NavItem[] => (ok ? items : []);
 
 export function navFor(user: AuthUser): NavSection[] {
+  // A supplier's login has the supplier portal only (v6 item 105).
+  if (isSupplier(user.roleKey)) {
+    return [
+      {
+        key: 'top',
+        items: [
+          { href: '/supplier', label: 'Home', icon: AppstoreOutlined },
+          { href: '/supplier/enquiries', label: 'Enquiries', icon: QuestionCircleOutlined, keywords: 'quote rates rfq' },
+          { href: '/supplier/orders', label: 'Orders', icon: ContainerOutlined, keywords: 'po work order accept dispatch challan' },
+          { href: '/supplier/invoices', label: 'Invoices', icon: FileTextOutlined, keywords: 'bill' },
+          { href: '/supplier/statement', label: 'Payments', icon: WalletOutlined, keywords: 'statement ledger due paid tds' },
+          { href: '/supplier/profile', label: 'Profile', icon: ContactsOutlined, keywords: 'bank gst details' },
+          { href: '/notifications', label: 'Notifications', icon: AuditOutlined },
+        ],
+      },
+    ];
+  }
   // The client's engineer and consultant have the portal only.
   if (isGuest(user.roleKey)) {
     return [
@@ -238,6 +262,7 @@ export function navFor(user: AuthUser): NavSection[] {
         ...when(canPrepareSubcontractBill(role) || approves('SUBCONTRACT_BILL'), { href: '/subcontract-bills', label: 'Subcontractor bills', icon: ProfileOutlined, keywords: 'petty contractor' }),
         ...when(canViewPayables(role), { href: '/payables', label: 'Payables', icon: PayCircleOutlined, keywords: 'payments due msme' }),
         ...when(canEditVendors(role) || canSeeVendorBank(role), { href: '/vendors', label: 'Vendors', icon: ShopOutlined, keywords: 'suppliers' }),
+        ...when(canCheckSupplierInvoices(role) || canManageSupplierLogins(role), { href: '/supplier-inbox', label: 'Supplier inbox', icon: MailOutlined, keywords: 'supplier portal invoices bank change' }),
       ],
     },
     {
@@ -330,6 +355,8 @@ export function activeHref(pathname: string): string {
   const [, first, second] = pathname.split('/');
   // A module's home page is /modules/<key>: the link is the whole path.
   if (first === 'modules' && second) return `/modules/${second}`;
+  // The supplier portal's pages are each a link of their own (v6 item 105).
+  if (first === 'supplier' && second) return `/supplier/${second}`;
   return '/' + first;
 }
 

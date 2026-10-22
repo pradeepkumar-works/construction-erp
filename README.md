@@ -201,6 +201,7 @@ All passwords are `password123`.
 | store@demo.com, procurement@demo.com, qaqc@demo.com, accounts@demo.com, hr@demo.com | other roles | as per role |
 | client@demo.com | Client's Engineer (guest) | client portal for the road project: certifies bills, attends inspections |
 | pmc@demo.com | Consultant / PMC (guest) | client portal for the building project |
+| supplier@demo.com | Supplier (portal) | supplier portal for Kalinga Bitumen & Aggregates: quotes, accepts orders, sends dispatch notes and invoices, sees payments |
 
 Suggested demo flow: log in to the mobile app as `engineer@demo.com`, submit a progress entry
 with a photo and today's DPR; log in to the web as `pm@demo.com`, open Approvals, approve them,

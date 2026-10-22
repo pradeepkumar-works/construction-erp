@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Tour } from 'antd';
 import type { TourProps } from 'antd';
 import type { AuthUser } from '@erp/shared';
-import { PRODUCT_NAME, isGuest, mayApprove } from '@erp/shared';
+import { PRODUCT_NAME, isGuest, isSupplier, mayApprove } from '@erp/shared';
 import { readPref, writePref } from '@/lib/prefs';
 import { searchShortcut } from './Sidebar';
 
@@ -41,7 +41,9 @@ function stepsFor(user: AuthUser, mobile: boolean): Step[] {
       : {
           target: 'sidebar',
           title: 'Your pages',
-          description: guest
+          description: isSupplier(user.roleKey)
+            ? 'Your enquiries, orders, invoices and payments with this company.'
+            : guest
             ? 'The projects you follow and what the contractor shares with you.'
             : 'Every page your role uses, grouped by Site, Materials and plant, Billing, Reports and more. Press [ to fold it to icons and back.',
           placement: 'right',

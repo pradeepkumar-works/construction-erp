@@ -18,6 +18,7 @@ import {
 } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
+import { NotificationsService } from '../notifications/notifications.service';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
 import { dateOnly, iso, money, parseDate } from '../common/serialize';
@@ -148,7 +149,12 @@ const totalsDto = (t: Totals): PayableTotalsDto => ({
  */
 @Injectable()
 export class PayablesService {
-  constructor(private prisma: PrismaService, private access: ProjectAccessService, private audit: AuditService) {}
+  constructor(
+    private prisma: PrismaService,
+    private access: ProjectAccessService,
+    private audit: AuditService,
+    private notifications: NotificationsService,
+  ) {}
 
   toDto(r: Row): VendorPaymentDto {
     return {
@@ -405,6 +411,13 @@ export class PayablesService {
     await this.audit.log(user, 'VENDOR_PAYMENT', id, 'CREATED', `₹${a.amount.toFixed(2)} paid against ${bill.label}${request ? ` (${request.requestNo})` : ''}`);
     if (bill.type !== 'ADVANCE') await this.audit.log(user, bill.type, bill.id, 'PAYMENT_MADE', paidOn);
     if (request) await this.audit.log(user, 'PAYMENT_REQUEST', request.id, 'PAYMENT_MADE', paidOn);
+    // The supplier's portal logins (v6 item 105) see it on their statement.
+    await this.notifications.notifyVendor(user.organizationId, bill.vendorId, {
+      title: `Payment of ₹${a.amount.toFixed(2)} made`,
+      body: `Against ${bill.label}, on ${dto.paymentDate}${dto.reference ? `, reference ${dto.reference}` : ''}.`,
+      entityType: 'PORTAL_PAYMENT',
+      entityId: id,
+    });
     return this.get(user, id);
   }
 

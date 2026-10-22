@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { App, Button, Form, Input, Radio, Select, Switch } from 'antd';
-import { MIN_PASSWORD_LENGTH, type CreateUserResultDto, type RoleKey, type UserSummary } from '@erp/shared';
+import { MIN_PASSWORD_LENGTH, ROLE_LABELS, type CreateUserResultDto, type RoleKey, type UserSummary } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
@@ -73,9 +73,15 @@ export function UserFormModal({ open, onClose, user, onInvited }: { open: boolea
             <Input {...PHONE_INPUT} autoComplete="off" />
           </Form.Item>
         </FormGrid>
-        <Form.Item name="roleKey" label="Role" rules={[{ required: true, message: 'Choose the role' }]}>
-          <Select showSearch={{ optionFilterProp: 'label' }} options={(roles ?? []).map((r) => ({ value: r.key, label: r.name }))} />
-        </Form.Item>
+        {user?.roleKey === 'SUPPLIER' ? (
+          <Form.Item name="roleKey" label="Role" extra="A supplier's login stays one: give or switch off supplier logins from the vendor in Vendors.">
+            <Select disabled options={[{ value: 'SUPPLIER', label: ROLE_LABELS.SUPPLIER }]} />
+          </Form.Item>
+        ) : (
+          <Form.Item name="roleKey" label="Role" rules={[{ required: true, message: 'Choose the role' }]}>
+            <Select showSearch={{ optionFilterProp: 'label' }} options={(roles ?? []).map((r) => ({ value: r.key, label: r.name }))} />
+          </Form.Item>
+        )}
         {isEdit && (
           <Form.Item name="isActive" label="Active" valuePropName="checked">
             <Switch />

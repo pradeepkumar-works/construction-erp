@@ -45,12 +45,15 @@ export function VendorBillFormModal({
   open,
   bill,
   purchaseOrderId,
+  fromInvoice,
   onClose,
   onSaved,
 }: {
   open: boolean;
   bill?: VendorBillDto | null;
   purchaseOrderId?: string;
+  /** A supplier's invoice from the portal (v6 item 105): its number and date start the bill */
+  fromInvoice?: { invoiceNo: string; invoiceDate: string } | null;
   onClose: () => void;
   onSaved?: (b: VendorBillDto) => void;
 }) {
@@ -87,11 +90,11 @@ export function VendorBillFormModal({
         remarks: bill.remarks ?? undefined,
         docs: bill.attachments,
       });
-    else form.setFieldsValue({ purchaseOrderId, invoiceDate: dayjs() });
+    else form.setFieldsValue({ purchaseOrderId, invoiceNo: fromInvoice?.invoiceNo, invoiceDate: dayjs(fromInvoice?.invoiceDate) });
     setLines({});
     setReadState(null);
     pendingLines.current = null;
-  }, [open, bill, purchaseOrderId, form]);
+  }, [open, bill, purchaseOrderId, fromInvoice, form]);
 
   /** Billed on other bills of this PO (not rejected): the PO's figure less this bill's own lines when editing. */
   const billedElsewhere = useMemo(() => {

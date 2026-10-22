@@ -135,6 +135,7 @@ export const CORE: Record<string, string> = {
   'Below minimum stock': 'न्यूनतम स्टॉक से कम',
   'Watch list': 'निगरानी सूची',
   'Morning brief': 'सुबह की झलक',
+  'Supplier portal': 'सप्लायर पोर्टल',
   'No DPR for today': 'आज का DPR नहीं',
   'Sent today': 'आज भेजा गया',
   'Due today': 'आज देय',

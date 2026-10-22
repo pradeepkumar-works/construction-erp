@@ -394,5 +394,17 @@ DROP POLICY IF EXISTS tenant_isolation ON "RmcInvoice";
 ALTER TABLE "RmcReceipt" NO FORCE ROW LEVEL SECURITY;
 ALTER TABLE "RmcReceipt" DISABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS tenant_isolation ON "RmcReceipt";
+ALTER TABLE "SupplierDispatch" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "SupplierDispatch" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "SupplierDispatch";
+ALTER TABLE "SupplierDispatchLine" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "SupplierDispatchLine" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "SupplierDispatchLine";
+ALTER TABLE "SupplierInvoice" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "SupplierInvoice" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "SupplierInvoice";
+ALTER TABLE "SupplierChangeRequest" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "SupplierChangeRequest" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "SupplierChangeRequest";
 
 DROP FUNCTION IF EXISTS app_current_org();

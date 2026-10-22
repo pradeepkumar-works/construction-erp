@@ -2,7 +2,7 @@ import { BadRequestException, Body, ConflictException, Controller, Get, NotFound
 import { randomUUID } from 'crypto';
 import { extname } from 'path';
 import type { Response } from 'express';
-import { Public } from '../common/decorators';
+import { Public, SupplierAllowed } from '../common/decorators';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { memoryStorage } from 'multer';
@@ -30,6 +30,7 @@ export class UploadsController {
    * Upload a photo / document first, then pass the returned id in `attachmentIds` when creating
    * a progress entry, DPR or material request. Unlinked uploads are harmless orphans.
    */
+  @SupplierAllowed()
   @Post()
   @ApiConsumes('multipart/form-data')
   @ApiBody({ schema: { type: 'object', properties: { file: { type: 'string', format: 'binary' } } } })
@@ -64,6 +65,7 @@ export class UploadsController {
     summary: 'Start sending a large file straight to Blob storage',
     description: 'For files over the 4.5 MB a hosted request takes. Returns a short-lived token for that one path; send the file with `@vercel/blob/client` `put`, then call `/uploads/direct/complete`. 409 when the server keeps files in its database.',
   })
+  @SupplierAllowed()
   @Post('direct')
   async startDirect(@CurrentUser() user: RequestUser, @Body() dto: StartDirectUploadDto) {
     if (this.storage.mode !== 'blob') throw new ConflictException('Files over 4 MB need Blob storage, which this server does not use. Attach a smaller copy.');
@@ -85,6 +87,7 @@ export class UploadsController {
   }
 
   @ApiOperation({ summary: 'Record a file sent straight to Blob storage', description: 'Returns the attachment, to pass in `attachmentIds` like any upload.' })
+  @SupplierAllowed()
   @Post('direct/complete')
   async completeDirect(@CurrentUser() user: RequestUser, @Body() dto: CompleteDirectUploadDto) {
     if (this.storage.mode !== 'blob') throw new ConflictException('This server does not use Blob storage');

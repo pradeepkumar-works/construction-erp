@@ -116,6 +116,8 @@ interface Header {
   date: Date;
   materialRequestId?: string | null;
   purchaseOrderId?: string | null;
+  /** Receipts: the supplier's dispatch note it was filled from (v6 item 105) */
+  supplierDispatchId?: string | null;
   supplier?: string | null;
   vendorId?: string | null;
   challanNo?: string | null;
@@ -301,6 +303,7 @@ export class StockService {
         date: h.date,
         materialRequestId: h.materialRequestId ?? null,
         purchaseOrderId: h.purchaseOrderId ?? null,
+        supplierDispatchId: h.supplierDispatchId ?? null,
         supplier: blank(h.supplier),
         vendorId: h.vendorId ?? null,
         challanNo: blank(h.challanNo),
@@ -483,6 +486,13 @@ export class StockService {
     if (po.status !== 'APPROVED') throw new ConflictException(`Material can only be received against an approved PO. ${po.poNo} is ${SUBMISSION_STATUS_LABELS[po.status].toLowerCase()}.`);
     if (po.closedAt) throw new ConflictException(`${po.poNo} is closed; nothing more can be received against it.`);
     await this.access.assertCanKeepStock(user, po.projectId);
+    // Filled from the supplier's dispatch note (v6 item 105): it must be this order's, still on the way.
+    const dispatch = dto.supplierDispatchId
+      ? await this.prisma.supplierDispatch.findFirst({ where: { id: dto.supplierDispatchId, purchaseOrderId: po.id }, select: { dispatchNo: true, cancelledAt: true, grn: { select: { entryNo: true } } } })
+      : null;
+    if (dto.supplierDispatchId && !dispatch) throw new BadRequestException(`The dispatch note is not one of ${po.poNo}'s`);
+    if (dispatch?.cancelledAt) throw new ConflictException(`The supplier cancelled dispatch note ${dispatch.dispatchNo}`);
+    if (dispatch?.grn) throw new ConflictException(`Dispatch note ${dispatch.dispatchNo} was already received as ${dispatch.grn.entryNo}`);
     const date = this.entryDate(dto.date);
     const want = new Map<string, Decimal>();
     for (const l of dto.lines) {
@@ -515,7 +525,7 @@ export class StockService {
     );
     if ('existing' in saved) return this.get(user, saved.id);
     await this.attachments.link(user, 'stockEntryId', saved.id, dto.attachmentIds);
-    await this.audit.log(user, 'STOCK', saved.id, 'CREATED', `${saved.entryNo} against ${po.poNo}`);
+    await this.audit.log(user, 'STOCK', saved.id, 'CREATED', `${saved.entryNo} against ${po.poNo}${dispatch ? `, from the supplier's dispatch note ${dispatch.dispatchNo}` : ''}`);
     return this.get(user, saved.id);
   }
 

@@ -22,6 +22,7 @@ export const WALK_ROLES: WalkRole[] = [
   { key: 'accounts', email: 'accounts@demo.com' },
   { key: 'admin', email: 'admin@demo.com' },
   { key: 'client', email: 'client@demo.com' },
+  { key: 'supplier', email: 'supplier@demo.com' },
 ];
 
 export const stateFile = (role: WalkRole) => path.join(WALK_DIR, 'auth', `${role.key}.json`);

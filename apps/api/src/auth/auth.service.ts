@@ -118,7 +118,7 @@ export class AuthService {
     return { ok: true };
   }
 
-  private async toAuthUser(user: { id: string; email: string; fullName: string; phone: string | null; organizationId: string; role: { key: string; name: string }; organization: BillingOrg & { name: string; aiEnabled: boolean; aiRoles: string[] } }): Promise<AuthUser> {
+  private async toAuthUser(user: { id: string; email: string; fullName: string; phone: string | null; organizationId: string; vendorId: string | null; role: { key: string; name: string }; organization: BillingOrg & { name: string; aiEnabled: boolean; aiRoles: string[] } }): Promise<AuthUser> {
     return {
       id: user.id,
       email: user.email,
@@ -132,6 +132,7 @@ export class AuthService {
       ...(isPlatformAdmin(user.email) ? { platformAdmin: true } : {}),
       ...billingOf(user.organization),
       ...(user.organization.aiEnabled && aiConfigured() && aiRoleAllowed(user.role.key as RoleKey, user.organization.aiRoles) ? { ai: true } : {}),
+      ...(user.vendorId ? { vendor: await this.prisma.vendor.findUniqueOrThrow({ where: { id: user.vendorId }, select: { id: true, name: true } }) } : {}),
     };
   }
 }

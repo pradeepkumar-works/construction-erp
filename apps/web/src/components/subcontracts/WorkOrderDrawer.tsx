@@ -175,6 +175,9 @@ export function WorkOrderRecord({ id, mode, open, onClose, onEdit }: RecordProps
             },
             { key: 'pay', label: 'Payment', children: data.paymentDays !== null ? `${data.paymentDays} days from the bill` : '-' },
             ...(approved ? [{ key: 'billed', label: 'Billed', children: <Progress percent={data.billedPct} size="small" style={{ maxWidth: 320, margin: 0 }} format={() => `${formatPct(data.billedPct)} · ${formatINR(data.billedAmount, true)}`} aria-label={`${formatPct(data.billedPct)} billed`} /> }] : []),
+            ...(data.supplierAcceptedAt
+              ? [{ key: 'accepted', label: 'Subcontractor accepted', children: `${formatDateTime(data.supplierAcceptedAt)}${data.supplierAcceptedBy ? ` by ${data.supplierAcceptedBy}` : ''}${data.supplierNote ? `: ${data.supplierNote}` : ''}` }]
+              : []),
             ...(data.remarks ? [{ key: 'remarks', label: 'Remarks', children: data.remarks }] : []),
             ...submissionMetaItems(data).filter((i) => i.key !== 'status' && i.key !== 'project'),
           ],

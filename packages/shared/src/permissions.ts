@@ -10,11 +10,15 @@ export const COMPANY_WIDE_ROLES: RoleKey[] = [
 ];
 
 /**
- * Guests from outside the company: the client's engineer and the consultant (PMC). They only use the client portal,
- * on projects they are a member of, and see approved work only. The API refuses every other route for them.
+ * Guests from outside the company. The client's engineer and the consultant (PMC) only use the client portal, on
+ * projects they are a member of, and see approved work only. A supplier or subcontractor (v6 item 105) only uses the
+ * supplier portal, for the vendor their login belongs to. The API refuses every other route for a guest.
  */
-export const GUEST_ROLES: RoleKey[] = ['CLIENT_ENGINEER', 'CONSULTANT'];
+export const CLIENT_GUEST_ROLES: RoleKey[] = ['CLIENT_ENGINEER', 'CONSULTANT'];
+export const GUEST_ROLES: RoleKey[] = [...CLIENT_GUEST_ROLES, 'SUPPLIER'];
 export const isGuest = (role: RoleKey) => GUEST_ROLES.includes(role);
+export const isClientGuest = (role: RoleKey) => CLIENT_GUEST_ROLES.includes(role);
+export const isSupplier = (role: RoleKey) => role === 'SUPPLIER';
 
 /** Roles allowed to approve / reject site submissions (within their accessible projects). */
 export const APPROVER_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER'];
@@ -300,6 +304,14 @@ export const canEditVendors = (role: RoleKey) => VENDOR_EDITOR_ROLES.includes(ro
 /** A vendor's bank account is shown only to those who pay vendors. */
 export const VENDOR_BANK_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROCUREMENT_MANAGER', 'ACCOUNTS_MANAGER'];
 export const canSeeVendorBank = (role: RoleKey) => VENDOR_BANK_ROLES.includes(role);
+/**
+ * The supplier portal (v6 item 105). Those who see a vendor's bank account give its people portal logins and see what
+ * they send; those who record vendor bills turn a supplier's invoice into a bill or return it. A change to the vendor's
+ * details is approved by the same roles, except a new bank account, which only those who pay vendors approve.
+ */
+export const canManageSupplierLogins = (role: RoleKey) => VENDOR_BANK_ROLES.includes(role);
+export const canCheckSupplierInvoices = (role: RoleKey) => VENDOR_BILL_ROLES.includes(role);
+export const canApproveSupplierChange = (role: RoleKey, bank: boolean) => (bank ? PAYMENT_ROLES.includes(role) : VENDOR_BANK_ROLES.includes(role));
 /** Prepare RA bills and record them as sent and certified: the billing roles. */
 export const canPrepareBill = (role: RoleKey) => BILLING_ROLES.includes(role);
 /** Change the client master and a project's contract terms. */

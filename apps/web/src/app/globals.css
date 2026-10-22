@@ -676,6 +676,11 @@ kbd {
   :root :is(.ant-dropdown-menu-item, .ant-select-item-option) {
     min-height: 44px;
   }
+  /* A drawer's or dialog's close (X) is a 44 px square on a phone. */
+  :root :is(.ant-drawer-close, .ant-modal-close) {
+    min-width: 44px;
+    min-height: 44px;
+  }
   /* A statement's rows open and close their accounts, so each is a 44 px row and the small expand buttons sit a row apart. */
   :root .statement-table .ant-table-tbody > tr > td {
     height: 44px;

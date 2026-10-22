@@ -153,6 +153,7 @@ enum NotificationType {
   DEFECT
   WATCH_LIST
   MORNING_BRIEF
+  SUPPLIER
 }
 
 /// What a quality test is of. CONCRETE_CUBE gets 7 and 28-day readings; the others one result.
@@ -588,6 +589,9 @@ model Organization {
   rmcBatchLines        RmcBatchLine[]
   rmcInvoices          RmcInvoice[]
   rmcReceipts          RmcReceipt[]
+  supplierDispatches   SupplierDispatch[]
+  supplierInvoices     SupplierInvoice[]
+  supplierChanges      SupplierChangeRequest[]
   staffAttendance      StaffAttendance[]
   leaveRequests        LeaveRequest[]
   holidays             Holiday[]
@@ -715,6 +719,9 @@ model User {
   isActive       Boolean      @default(true)
   /// Set when invited; cleared once the user chooses a password.
   invitedAt      DateTime?
+  /// A supplier-portal login (role SUPPLIER, v6 item 105): the vendor it acts for. Null for everyone else.
+  vendorId       String?
+  vendor         Vendor?      @relation("VendorPortalLogins", fields: [vendorId], references: [id])
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
@@ -839,6 +846,13 @@ model User {
   rmcBatchesCreated    RmcBatch[]               @relation("RmcBatchCreator")
   rmcInvoicesCreated   RmcInvoice[]             @relation("RmcInvoiceCreator")
   rmcReceiptsCreated   RmcReceipt[]             @relation("RmcReceiptCreator")
+  dispatchesCreated    SupplierDispatch[]       @relation("SupplierDispatchCreator")
+  supplierInvoicesSent SupplierInvoice[]        @relation("SupplierInvoiceSender")
+  supplierInvoicesDone SupplierInvoice[]        @relation("SupplierInvoiceDecider")
+  supplierChangesAsked SupplierChangeRequest[]  @relation("SupplierChangeAsker")
+  supplierChangesDone  SupplierChangeRequest[]  @relation("SupplierChangeDecider")
+  posAccepted          PurchaseOrder[]          @relation("PoSupplierAccepter")
+  wosAccepted          WorkOrder[]              @relation("WoSupplierAccepter")
 
   @@unique([organizationId, email])
   @@index([organizationId])
@@ -1073,6 +1087,10 @@ model Vendor {
   payments        VendorPayment[]
   paymentRequests PaymentRequest[]
   enquiryTokens   EnquiryToken[]
+  portalLogins    User[]                  @relation("VendorPortalLogins")
+  dispatches      SupplierDispatch[]
+  invoices        SupplierInvoice[]
+  changeRequests  SupplierChangeRequest[]
 
   @@unique([organizationId, name])
 }
@@ -1129,52 +1147,59 @@ model QuotationLine {
 /// Purchase order to a vendor, approved through the approval matrix (submission type PURCHASE_ORDER). GRNs receive
 /// against its lines and vendor bills are matched to it.
 model PurchaseOrder {
-  id                String           @id @default(uuid())
-  organizationId    String
-  organization      Organization     @relation(fields: [organizationId], references: [id])
-  projectId         String
-  project           Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  vendorId          String
-  vendor            Vendor           @relation(fields: [vendorId], references: [id])
+  id                   String           @id @default(uuid())
+  organizationId       String
+  organization         Organization     @relation(fields: [organizationId], references: [id])
+  projectId            String
+  project              Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  vendorId             String
+  vendor               Vendor           @relation(fields: [vendorId], references: [id])
   /// PO-<year>-0001 per organisation
-  poNo              String
-  poDate            DateTime         @db.Date
-  materialRequestId String?
-  materialRequest   MaterialRequest? @relation(fields: [materialRequestId], references: [id], onDelete: SetNull)
-  quotationId       String?
-  quotation         Quotation?       @relation(fields: [quotationId], references: [id], onDelete: SetNull)
-  deliveryBy        DateTime?        @db.Date
-  deliveryAddress   String?
-  paymentTerms      String?
+  poNo                 String
+  poDate               DateTime         @db.Date
+  materialRequestId    String?
+  materialRequest      MaterialRequest? @relation(fields: [materialRequestId], references: [id], onDelete: SetNull)
+  quotationId          String?
+  quotation            Quotation?       @relation(fields: [quotationId], references: [id], onDelete: SetNull)
+  deliveryBy           DateTime?        @db.Date
+  deliveryAddress      String?
+  paymentTerms         String?
   /// Days from the vendor's invoice to payment; micro and small enterprises are capped at 45
-  paymentDays       Int?
-  freight           Decimal          @default(0) @db.Decimal(18, 2)
+  paymentDays          Int?
+  freight              Decimal          @default(0) @db.Decimal(18, 2)
   /// Sum of line amounts (quantity × rate)
-  subtotal          Decimal          @default(0) @db.Decimal(18, 2)
-  gstAmount         Decimal          @default(0) @db.Decimal(18, 2)
+  subtotal             Decimal          @default(0) @db.Decimal(18, 2)
+  gstAmount            Decimal          @default(0) @db.Decimal(18, 2)
   /// subtotal + freight + GST
-  total             Decimal          @default(0) @db.Decimal(18, 2)
-  remarks           String?
+  total                Decimal          @default(0) @db.Decimal(18, 2)
+  remarks              String?
   /// Short-closed: no more GRNs or bills against it
-  closedAt          DateTime?
-  closeNote         String?
-  status            SubmissionStatus @default(DRAFT)
-  submittedById     String
-  submittedBy       User             @relation("PoSubmitter", fields: [submittedById], references: [id])
-  submittedAt       DateTime?
-  reviewedById      String?
-  reviewedBy        User?            @relation("PoReviewer", fields: [reviewedById], references: [id])
-  reviewedAt        DateTime?
-  reviewNote        String?
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
+  closedAt             DateTime?
+  closeNote            String?
+  /// The supplier accepted it on the supplier portal (v6 item 105), with their remark
+  supplierAcceptedAt   DateTime?
+  supplierAcceptedById String?
+  supplierAcceptedBy   User?            @relation("PoSupplierAccepter", fields: [supplierAcceptedById], references: [id], onDelete: SetNull)
+  supplierNote         String?
+  status               SubmissionStatus @default(DRAFT)
+  submittedById        String
+  submittedBy          User             @relation("PoSubmitter", fields: [submittedById], references: [id])
+  submittedAt          DateTime?
+  reviewedById         String?
+  reviewedBy           User?            @relation("PoReviewer", fields: [reviewedById], references: [id])
+  reviewedAt           DateTime?
+  reviewNote           String?
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
 
-  lines           PurchaseOrderLine[]
-  stockEntries    StockEntry[]
-  vendorBills     VendorBill[]
-  attachments     Attachment[]
-  paymentRequests PaymentRequest[]
-  advances        VendorPayment[]
+  lines            PurchaseOrderLine[]
+  stockEntries     StockEntry[]
+  vendorBills      VendorBill[]
+  attachments      Attachment[]
+  paymentRequests  PaymentRequest[]
+  advances         VendorPayment[]
+  dispatches       SupplierDispatch[]
+  supplierInvoices SupplierInvoice[]
 
   @@unique([organizationId, poNo])
   @@index([organizationId, status])
@@ -1199,8 +1224,9 @@ model PurchaseOrderLine {
   gstAmount             Decimal              @db.Decimal(18, 2)
   sortOrder             Int                  @default(0)
 
-  stockTxns StockTxn[]
-  billLines VendorBillLine[]
+  stockTxns     StockTxn[]
+  billLines     VendorBillLine[]
+  dispatchLines SupplierDispatchLine[]
 
   @@index([purchaseOrderId])
 }
@@ -1422,47 +1448,52 @@ model DebitNoteLine {
 /// Work order to a subcontractor or labour contractor (v3 item 22): rates per BOQ item or for its own items, with the
 /// retention, advance and TDS their bills are made with. Approved through the approval matrix (submission type WORK_ORDER).
 model WorkOrder {
-  id                 String           @id @default(uuid())
-  organizationId     String
-  organization       Organization     @relation(fields: [organizationId], references: [id])
-  projectId          String
-  project            Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  vendorId           String
-  vendor             Vendor           @relation(fields: [vendorId], references: [id])
+  id                   String           @id @default(uuid())
+  organizationId       String
+  organization         Organization     @relation(fields: [organizationId], references: [id])
+  projectId            String
+  project              Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  vendorId             String
+  vendor               Vendor           @relation(fields: [vendorId], references: [id])
   /// WO-<year>-0001 per organisation
-  woNo               String
-  woDate             DateTime         @db.Date
+  woNo                 String
+  woDate               DateTime         @db.Date
   /// What the work order is for, e.g. "Brickwork and plaster, Block A"
-  title              String
-  startDate          DateTime?        @db.Date
-  endDate            DateTime?        @db.Date
+  title                String
+  startDate            DateTime?        @db.Date
+  endDate              DateTime?        @db.Date
   /// GST the subcontractor charges on their bills (0 when they are not registered)
-  gstRate            Decimal          @default(0) @db.Decimal(5, 2)
-  retentionPct       Decimal          @default(0) @db.Decimal(5, 2)
+  gstRate              Decimal          @default(0) @db.Decimal(5, 2)
+  retentionPct         Decimal          @default(0) @db.Decimal(5, 2)
   /// Mobilisation advance paid to them, recovered from their bills at advanceRecoveryPct
-  advanceAmount      Decimal          @default(0) @db.Decimal(18, 2)
-  advanceRecoveryPct Decimal          @default(0) @db.Decimal(5, 2)
+  advanceAmount        Decimal          @default(0) @db.Decimal(18, 2)
+  advanceRecoveryPct   Decimal          @default(0) @db.Decimal(5, 2)
   /// Income-tax TDS on their bills (section 194C: 1% for an individual or HUF, 2% otherwise)
-  tdsPct             Decimal          @default(0) @db.Decimal(5, 2)
+  tdsPct               Decimal          @default(0) @db.Decimal(5, 2)
   /// Days from their bill to payment; micro and small enterprises are capped at 45
-  paymentDays        Int?
+  paymentDays          Int?
   /// Sum of line amounts (quantity × rate), before GST
-  value              Decimal          @default(0) @db.Decimal(18, 2)
-  terms              String?
-  remarks            String?
+  value                Decimal          @default(0) @db.Decimal(18, 2)
+  terms                String?
+  remarks              String?
   /// Closed: no more measurements, issues or bills against it
-  closedAt           DateTime?
-  closeNote          String?
-  status             SubmissionStatus @default(DRAFT)
-  submittedById      String
-  submittedBy        User             @relation("WorkOrderSubmitter", fields: [submittedById], references: [id])
-  submittedAt        DateTime?
-  reviewedById       String?
-  reviewedBy         User?            @relation("WorkOrderReviewer", fields: [reviewedById], references: [id])
-  reviewedAt         DateTime?
-  reviewNote         String?
-  createdAt          DateTime         @default(now())
-  updatedAt          DateTime         @updatedAt
+  closedAt             DateTime?
+  closeNote            String?
+  /// The subcontractor accepted it on the supplier portal (v6 item 105), with their remark
+  supplierAcceptedAt   DateTime?
+  supplierAcceptedById String?
+  supplierAcceptedBy   User?            @relation("WoSupplierAccepter", fields: [supplierAcceptedById], references: [id], onDelete: SetNull)
+  supplierNote         String?
+  status               SubmissionStatus @default(DRAFT)
+  submittedById        String
+  submittedBy          User             @relation("WorkOrderSubmitter", fields: [submittedById], references: [id])
+  submittedAt          DateTime?
+  reviewedById         String?
+  reviewedBy           User?            @relation("WorkOrderReviewer", fields: [reviewedById], references: [id])
+  reviewedAt           DateTime?
+  reviewNote           String?
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
 
   lines            WorkOrderLine[]
   bills            SubcontractBill[]
@@ -1472,6 +1503,7 @@ model WorkOrder {
   paymentRequests  PaymentRequest[]
   advances         VendorPayment[]
   excessRecoveries ExcessMaterialRecovery[]
+  supplierInvoices SupplierInvoice[]
 
   @@unique([organizationId, woNo])
   @@index([organizationId, status])
@@ -2026,64 +2058,67 @@ model Unit {
 
 /// One document in the store register: a GRN, an issue slip or a stock adjustment. Its lines are StockTxn rows.
 model StockEntry {
-  id                String                 @id @default(uuid())
-  organizationId    String
-  organization      Organization           @relation(fields: [organizationId], references: [id])
-  projectId         String
-  project           Project                @relation("StockEntryProject", fields: [projectId], references: [id], onDelete: Cascade)
-  type              StockEntryType
+  id                 String                 @id @default(uuid())
+  organizationId     String
+  organization       Organization           @relation(fields: [organizationId], references: [id])
+  projectId          String
+  project            Project                @relation("StockEntryProject", fields: [projectId], references: [id], onDelete: Cascade)
+  type               StockEntryType
   /// GRN-2026-0001, ISS-2026-0001, ADJ-2026-0001 (TRO, TRI, RTV, RFS for transfers and returns), numbered per organisation and type
-  entryNo           String
-  date              DateTime               @db.Date
+  entryNo            String
+  date               DateTime               @db.Date
   /// Receipts: the approved material request this GRN is against
-  materialRequestId String?
-  materialRequest   MaterialRequest?       @relation(fields: [materialRequestId], references: [id])
+  materialRequestId  String?
+  materialRequest    MaterialRequest?       @relation(fields: [materialRequestId], references: [id])
   /// Receipts: the approved purchase order this GRN is against
-  purchaseOrderId   String?
-  purchaseOrder     PurchaseOrder?         @relation(fields: [purchaseOrderId], references: [id])
-  supplier          String?
-  vendorId          String?
-  vendor            Vendor?                @relation(fields: [vendorId], references: [id], onDelete: SetNull)
-  challanNo         String?
-  vehicleNo         String?
+  purchaseOrderId    String?
+  purchaseOrder      PurchaseOrder?         @relation(fields: [purchaseOrderId], references: [id])
+  /// Receipts: the supplier's dispatch note it was filled from (v6 item 105)
+  supplierDispatchId String?                @unique
+  supplierDispatch   SupplierDispatch?      @relation(fields: [supplierDispatchId], references: [id], onDelete: SetNull)
+  supplier           String?
+  vendorId           String?
+  vendor             Vendor?                @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  challanNo          String?
+  vehicleNo          String?
   /// Issues: who took the material (contractor, gang or person)
-  issuedTo          String?
+  issuedTo           String?
   /// Issues: the activity the material is for
-  activityId        String?
-  activity          Activity?              @relation(fields: [activityId], references: [id], onDelete: SetNull)
+  activityId         String?
+  activity           Activity?              @relation(fields: [activityId], references: [id], onDelete: SetNull)
   /// Issues: the subcontractor's work order the material went to; recovered in their next bill
-  workOrderId       String?
-  workOrder         WorkOrder?             @relation(fields: [workOrderId], references: [id])
+  workOrderId        String?
+  workOrder          WorkOrder?             @relation(fields: [workOrderId], references: [id])
   /// Issues against a work order: the subcontractor bill that recovered it
-  subcontractBillId String?
-  subcontractBill   SubcontractBill?       @relation(fields: [subcontractBillId], references: [id], onDelete: SetNull)
+  subcontractBillId  String?
+  subcontractBill    SubcontractBill?       @relation(fields: [subcontractBillId], references: [id], onDelete: SetNull)
   /// Transfers out: the project the material is going to
-  toProjectId       String?
-  toProject         Project?               @relation("StockTransferTo", fields: [toProjectId], references: [id], onDelete: SetNull)
+  toProjectId        String?
+  toProject          Project?               @relation("StockTransferTo", fields: [toProjectId], references: [id], onDelete: SetNull)
   /// Transfers in: the transfer out it receives (one receipt per transfer)
-  transferOutId     String?                @unique
-  transferOut       StockEntry?            @relation("StockTransfer", fields: [transferOutId], references: [id], onDelete: SetNull)
-  transferIn        StockEntry?            @relation("StockTransfer")
-  remarks           String?
+  transferOutId      String?                @unique
+  transferOut        StockEntry?            @relation("StockTransfer", fields: [transferOutId], references: [id], onDelete: SetNull)
+  transferIn         StockEntry?            @relation("StockTransfer")
+  remarks            String?
   /// Adjustments: why (v5 item 92); null on adjustments made before reasons were asked
-  adjustmentReason  StockAdjustmentReason?
+  adjustmentReason   StockAdjustmentReason?
   /// Issues: spares for this maintenance job
-  maintenanceJobId  String?
-  maintenanceJob    MaintenanceJob?        @relation(fields: [maintenanceJobId], references: [id], onDelete: SetNull)
+  maintenanceJobId   String?
+  maintenanceJob     MaintenanceJob?        @relation(fields: [maintenanceJobId], references: [id], onDelete: SetNull)
   /// Fuel issues (v5 item 93): the machine the fuel went into, and its hour meter or odometer then
-  equipmentId       String?
-  equipment         Equipment?             @relation(fields: [equipmentId], references: [id], onDelete: SetNull)
-  meterReading      Decimal?               @db.Decimal(18, 2)
+  equipmentId        String?
+  equipment          Equipment?             @relation(fields: [equipmentId], references: [id], onDelete: SetNull)
+  meterReading       Decimal?               @db.Decimal(18, 2)
   /// Receipts: QA/QC's check of the material (null = not checked yet)
-  qcStatus          GrnQcStatus?
-  qcAt              DateTime?
-  qcById            String?
-  qcBy              User?                  @relation("GrnQcBy", fields: [qcById], references: [id], onDelete: SetNull)
-  qcNote            String?
-  createdById       String
-  createdBy         User                   @relation(fields: [createdById], references: [id])
-  createdAt         DateTime               @default(now())
-  updatedAt         DateTime               @updatedAt
+  qcStatus           GrnQcStatus?
+  qcAt               DateTime?
+  qcById             String?
+  qcBy               User?                  @relation("GrnQcBy", fields: [qcById], references: [id], onDelete: SetNull)
+  qcNote             String?
+  createdById        String
+  createdBy          User                   @relation(fields: [createdById], references: [id])
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
 
   lines       StockTxn[]
   debitNotes  DebitNote[]
@@ -2910,6 +2945,9 @@ model Attachment {
   /// An employee's documents (v6 item 99): ID, certificates, signed letters
   employeeId        String?
   employee          Employee?          @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  /// A supplier's invoice sent on the supplier portal (v6 item 105)
+  supplierInvoiceId String?
+  supplierInvoice   SupplierInvoice?   @relation(fields: [supplierInvoiceId], references: [id], onDelete: Cascade)
   /// When the PDF's text was read into DocumentPage (Ask the contract); null = not yet
   textIndexedAt     DateTime?
   /// Pages with text found; 0 for a scanned PDF or one that could not be read
@@ -2953,6 +2991,7 @@ model Attachment {
   @@index([rfiId])
   @@index([paymentRequestId])
   @@index([employeeId])
+  @@index([supplierInvoiceId])
 }
 
 model AuditLog {
@@ -5464,4 +5503,120 @@ model RmcReceipt {
   createdAt      DateTime     @default(now())
 
   @@index([clientId])
+}
+
+// ---------- Supplier portal (v6 item 105) ----------
+
+enum SupplierInvoiceStatus {
+  SUBMITTED
+  RETURNED
+  WITHDRAWN
+}
+
+enum SupplierChangeStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+/// What a supplier sent against a purchase order: their challan, the truck and the quantities. The store's GRN is
+/// filled from it and then points back at it.
+model SupplierDispatch {
+  id              String        @id @default(uuid())
+  organizationId  String
+  organization    Organization  @relation(fields: [organizationId], references: [id])
+  vendorId        String
+  vendor          Vendor        @relation(fields: [vendorId], references: [id])
+  purchaseOrderId String
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  /// The supplier's own challan or dispatch number
+  dispatchNo      String
+  date            DateTime      @db.Date
+  vehicleNo       String?
+  /// Lorry receipt number, when a transporter carries it
+  lrNo            String?
+  transporter     String?
+  remarks         String?
+  cancelledAt     DateTime?
+  createdById     String
+  createdBy       User          @relation("SupplierDispatchCreator", fields: [createdById], references: [id])
+  createdAt       DateTime      @default(now())
+
+  lines SupplierDispatchLine[]
+  grn   StockEntry?
+
+  @@unique([vendorId, dispatchNo])
+  @@index([organizationId])
+  @@index([purchaseOrderId])
+}
+
+model SupplierDispatchLine {
+  id                  String            @id @default(uuid())
+  organizationId      String
+  dispatchId          String
+  dispatch            SupplierDispatch  @relation(fields: [dispatchId], references: [id], onDelete: Cascade)
+  purchaseOrderLineId String
+  purchaseOrderLine   PurchaseOrderLine @relation(fields: [purchaseOrderLineId], references: [id], onDelete: Cascade)
+  quantity            Decimal           @db.Decimal(18, 3)
+
+  @@index([dispatchId])
+  @@index([purchaseOrderLineId])
+}
+
+/// A supplier's invoice sent on the portal, waiting for accounts. A bill recorded with the same vendor and invoice
+/// number is the bill made from it (so it shows as billed, then paid); accounts can also return it with a reason.
+model SupplierInvoice {
+  id              String                @id @default(uuid())
+  organizationId  String
+  organization    Organization          @relation(fields: [organizationId], references: [id])
+  vendorId        String
+  vendor          Vendor                @relation(fields: [vendorId], references: [id])
+  purchaseOrderId String?
+  purchaseOrder   PurchaseOrder?        @relation(fields: [purchaseOrderId], references: [id], onDelete: SetNull)
+  workOrderId     String?
+  workOrder       WorkOrder?            @relation(fields: [workOrderId], references: [id], onDelete: SetNull)
+  invoiceNo       String
+  invoiceDate     DateTime              @db.Date
+  /// With GST, as on the invoice
+  amount          Decimal               @db.Decimal(18, 2)
+  gstAmount       Decimal?              @db.Decimal(18, 2)
+  notes           String?
+  status          SupplierInvoiceStatus @default(SUBMITTED)
+  returnNote      String?
+  decidedById     String?
+  decidedBy       User?                 @relation("SupplierInvoiceDecider", fields: [decidedById], references: [id], onDelete: SetNull)
+  decidedAt       DateTime?
+  createdById     String
+  createdBy       User                  @relation("SupplierInvoiceSender", fields: [createdById], references: [id])
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  attachments Attachment[]
+
+  @@unique([vendorId, invoiceNo])
+  @@index([organizationId, status])
+}
+
+/// A supplier asks for their details to change; the change is made only when the company approves it.
+model SupplierChangeRequest {
+  id             String               @id @default(uuid())
+  organizationId String
+  organization   Organization         @relation(fields: [organizationId], references: [id])
+  vendorId       String
+  vendor         Vendor               @relation(fields: [vendorId], references: [id])
+  /// { field: new value } for the fields in SUPPLIER_PROFILE_FIELDS; the old values are kept in `previous`
+  changes        Json
+  previous       Json
+  status         SupplierChangeStatus @default(PENDING)
+  note           String?
+  decisionNote   String?
+  decidedById    String?
+  decidedBy      User?                @relation("SupplierChangeDecider", fields: [decidedById], references: [id], onDelete: SetNull)
+  decidedAt      DateTime?
+  createdById    String
+  createdBy      User                 @relation("SupplierChangeAsker", fields: [createdById], references: [id])
+  createdAt      DateTime             @default(now())
+
+  @@index([organizationId, status])
+  @@index([vendorId])
 }

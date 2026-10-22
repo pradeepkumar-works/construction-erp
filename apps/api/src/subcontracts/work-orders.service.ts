@@ -33,6 +33,7 @@ const include = {
   vendor: { select: { name: true, gstin: true, pan: true, msmeCategory: true } },
   submittedBy: { select: { fullName: true } },
   reviewedBy: { select: { fullName: true } },
+  supplierAcceptedBy: { select: { fullName: true } },
   attachments: { select: ATTACHMENT_FIELDS },
   lines: {
     orderBy: [{ sortOrder: 'asc' as const }, { id: 'asc' as const }],
@@ -122,6 +123,9 @@ export class WorkOrdersService {
       remarks: r.remarks,
       closedAt: iso(r.closedAt),
       closeNote: r.closeNote,
+      supplierAcceptedAt: iso(r.supplierAcceptedAt),
+      supplierAcceptedBy: r.supplierAcceptedBy?.fullName ?? null,
+      supplierNote: r.supplierNote,
       open: r.status === 'APPROVED' && !r.closedAt,
       billedAmount: money(billed)!,
       billedPct: r.value.isZero() ? 0 : Math.round(billed.div(r.value).mul(100).toNumber()),

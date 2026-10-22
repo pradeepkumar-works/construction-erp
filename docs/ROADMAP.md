@@ -508,8 +508,13 @@ Migrations stay additive. Design notes for each item are in the project's `roadm
     test at the grade's strength; GST bills from delivered challans and money received, both posted to the books and the
     Tally export. Not built: a batching controller link (the weighed figures are typed from the printout), signatures
     on the phone, and returned concrete.
-105. **Supplier portal** (L). Supplier and subcontractor logins: enquiries, POs and work orders to accept, dispatch notes,
-    invoices uploaded as bills to check, payments and a statement, profile and bank changes with approval.
+105. ~~**Supplier portal** (L). Supplier and subcontractor logins: enquiries, POs and work orders to accept, dispatch notes,
+    invoices uploaded as bills to check, payments and a statement, profile and bank changes with approval.~~
+    Done: logins given from Vendors with an invite link; the supplier quotes on enquiries, accepts POs and WOs, sends a
+    dispatch note with each truck (the store picks it on the GRN), sends invoices with their file to the Supplier inbox
+    where accounts record the bill or return it, follows each to payment, reads a statement from any date, and asks for
+    changes to their details (bank changes approved only by those who pay). Not built: suppliers on the phone app, and
+    e-invoice (IRN) checks on their invoices.
 106. **Central store** (M). Stock held at a store or yard that is not a project, with receipts, issues and transfers
     to and from sites.
 107. **Site fund requests** (S). A site asks head office for money, or a payment on behalf of another site, as a payment

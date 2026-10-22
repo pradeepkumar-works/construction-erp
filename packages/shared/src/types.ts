@@ -8,6 +8,7 @@ import type { ProgressNarrativeDto } from './briefs';
 import type { DocumentDiscipline, DocumentKind, LetterDirection, RevisionStatus, TransmittalPurpose } from './documents';
 import type { LeaveStatus, LeaveType, OvertimeStatus, StaffAttendanceStatus } from './staff';
 import type { CostHead } from './cost';
+import type { SupplierDispatchStatus, SupplierNoticeEntity } from './supplier';
 import type {
   FuelNormUnit,
   LdPeriod,
@@ -63,6 +64,8 @@ export interface AuthUser {
   billing?: BillingStateDto;
   /** Ask Nirmaan is switched on for the company and set up on this server (AI roadmap item 67) */
   ai?: boolean;
+  /** A supplier-portal login (v6 item 105): the vendor it acts for */
+  vendor?: { id: string; name: string };
 }
 
 /** Where a company stands with its subscription. READ_ONLY: trial over and nothing paid, so it can read but not write. */
@@ -508,7 +511,7 @@ export interface NotificationDto {
    * Set when the notification points at a submission (or, for SAFETY, an incident or permit; for MACHINERY, a machine
    * due for service, a job card, a vehicle paper or a driver); open it with entityType + entityId.
    */
-  entityType: SubmissionType | 'SAFETY_INCIDENT' | 'WORK_PERMIT' | 'EQUIPMENT' | 'MAINTENANCE_JOB' | 'EQUIPMENT_DOCUMENT' | 'DRIVER' | 'IMPREST' | 'COMPLIANCE_DOC' | 'DEFECT' | 'HANDOVER' | 'RFI' | null;
+  entityType: SubmissionType | 'SAFETY_INCIDENT' | 'WORK_PERMIT' | 'EQUIPMENT' | 'MAINTENANCE_JOB' | 'EQUIPMENT_DOCUMENT' | 'DRIVER' | 'IMPREST' | 'COMPLIANCE_DOC' | 'DEFECT' | 'HANDOVER' | 'RFI' | SupplierNoticeEntity | null;
   entityId: string | null;
   readAt: string | null;
   createdAt: string;
@@ -1770,6 +1773,10 @@ export interface PurchaseOrderDto extends SubmissionBase {
   remarks: string | null;
   closedAt: string | null;
   closeNote: string | null;
+  /** Accepted by the supplier on the supplier portal (v6 item 105), with their remark */
+  supplierAcceptedAt: string | null;
+  supplierAcceptedBy: string | null;
+  supplierNote: string | null;
   /** Approved, not closed, and something still to receive */
   open: boolean;
   /** Share of the order value received, 0 to 100 */
@@ -1778,6 +1785,8 @@ export interface PurchaseOrderDto extends SubmissionBase {
   /** Only on GET /purchase-orders/:id */
   grns?: { id: string; entryNo: string; date: string; lines: number }[];
   bills?: { id: string; billNo: string; invoiceNo: string; invoiceDate: string; total: string; status: SubmissionStatus; matched: boolean }[];
+  /** Only on GET /purchase-orders/:id: the supplier's dispatch notes (supplier portal) */
+  dispatches?: { id: string; dispatchNo: string; date: string; vehicleNo: string | null; status: SupplierDispatchStatus; grnNo: string | null }[];
   /** Advances paid against the order (v5 item 90) */
   advancePaid: string;
   /** Advances asked for on requests that are not rejected; an advance request may go up to total less this */
@@ -1796,6 +1805,8 @@ export interface ReceivableOrderDto {
   vendorName: string;
   deliveryBy: string | null;
   lines: { purchaseOrderLineId: string; itemName: string; specification: string | null; unit: string; ordered: string; received: string; pending: string }[];
+  /** The supplier's dispatch notes still on the way (supplier portal, v6 item 105): a GRN can be filled from one */
+  dispatches: { id: string; dispatchNo: string; date: string; vehicleNo: string | null; lines: { purchaseOrderLineId: string; quantity: string }[] }[];
 }
 
 export interface VendorBillLineDto {
@@ -1932,6 +1943,10 @@ export interface WorkOrderDto extends SubmissionBase {
   remarks: string | null;
   closedAt: string | null;
   closeNote: string | null;
+  /** Accepted by the supplier on the supplier portal (v6 item 105), with their remark */
+  supplierAcceptedAt: string | null;
+  supplierAcceptedBy: string | null;
+  supplierNote: string | null;
   /** Approved and not closed: measurements, issues and bills can be made against it */
   open: boolean;
   /** Work value billed so far (bills not rejected), and as a share of the order value */
