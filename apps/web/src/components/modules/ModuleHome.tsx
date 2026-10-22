@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Button, Card, Col, Empty, Flex, Grid, Result, Row, Statistic, Typography, theme } from 'antd';
 import { CheckSquareOutlined, HourglassOutlined, RightOutlined, RollbackOutlined } from '@ant-design/icons';
 import type { ModuleFigureDto, ModuleHomeDto, ModuleKey } from '@erp/shared';
-import { MODULE_INTROS, MODULE_LABELS, SUBMISSION_TYPE_LABELS, submissionListHref } from '@erp/shared';
+import { MODULE_INTROS, MODULE_LABELS, SUBMISSION_TYPE_LABELS, canManageStaff, canViewEmployeePrivate, submissionListHref } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useModuleHome } from '@/lib/queries';
 import { useProjectScope } from '@/lib/project-scope';
@@ -16,6 +16,7 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { KpiTile, kpiColumns } from '@/components/home/KpiTile';
 import { newEntriesFor } from '@/components/shell/NewMenu';
+import { HrDashboard } from '@/components/staff/HrDashboard';
 import { NAV_DESCRIPTIONS, moduleSection, type NavItem } from '@/components/shell/nav';
 
 const days = (n: number) => (n === 0 ? 'today' : `${n} day${n === 1 ? '' : 's'}`);
@@ -195,6 +196,7 @@ export function ModuleHome({ moduleKey }: { moduleKey: string }) {
               </Card>
             </Col>
           </Row>
+          {key === 'people' && (canManageStaff(user.roleKey) || canViewEmployeePrivate(user.roleKey)) && <HrDashboard />}
         </Flex>
       )}
     </div>

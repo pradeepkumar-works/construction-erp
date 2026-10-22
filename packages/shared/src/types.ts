@@ -1,3 +1,4 @@
+import type { EmployeePrivateDto, EmploymentType } from './hr';
 import type { NotificationTab } from './notifications';
 import type { InspectionCheck, NcrSeverity, NcrStatus, TestKind, TestResult } from './quality';
 import type { ApprovalEscalationDto, ApprovalRightDto } from './approvals';
@@ -2754,6 +2755,16 @@ export interface EmployeeDto {
   joinedOn: string | null;
   leftOn: string | null;
   isActive: boolean;
+  /** HR records (v6 item 99): terms of employment, shown to whoever sees the staff record */
+  employmentType: EmploymentType | null;
+  grade: string | null;
+  reportingToId: string | null;
+  reportingToName: string | null;
+  probationEndsOn: string | null;
+  confirmedOn: string | null;
+  noticeDays: number | null;
+  /** Personal, statutory and bank details: only for staff admins, payroll and the person themselves; null otherwise */
+  private: EmployeePrivateDto | null;
 }
 
 export interface StaffAttendanceDto {

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { api, apiToken, chooseOption, signIn } from './helpers';
+import { api, apiToken, chooseOption, formPanel, signIn } from './helpers';
 
 type Me = { employee: { id: string; projectId: string } | null; balances: { type: string; taken: number; pending: number }[] };
 type Leave = { id: string; status: string; days: string; employeeName: string; reason: string };
@@ -102,8 +102,8 @@ test.describe.serial('staff attendance and leave', () => {
     await signIn(hrPage, 'hr@demo.com');
     await hrPage.goto('/staff?tab=staff');
     await hrPage.getByRole('button', { name: 'New staff member' }).click();
-    const modal = hrPage.locator('.ant-modal').filter({ hasText: 'New staff member' });
-    await modal.getByLabel('Name').fill(name);
+    const modal = formPanel(hrPage, 'New staff member');
+    await modal.getByLabel('Name', { exact: true }).fill(name);
     await modal.getByLabel('Designation').fill('Surveyor');
     await chooseOption(modal.getByLabel('Posted at'), 'WS-2026-03');
     await modal.getByRole('button', { name: 'Save', exact: true }).click();

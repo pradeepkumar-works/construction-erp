@@ -260,6 +260,34 @@ enum StaffAttendanceStatus {
   ABSENT
 }
 
+/// HR records (v6 item 99)
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum EmploymentType {
+  PERMANENT
+  PROBATION
+  CONTRACT
+  TRAINEE
+  CONSULTANT
+}
+
+/// What happened in an employee's service: each is dated, numbered and can print its letter.
+enum EmployeeEventType {
+  JOINED
+  CONFIRMED
+  TRANSFERRED
+  PROMOTED
+  INCREMENT
+  WARNING
+  RESIGNED
+  TERMINATED
+  RETIRED
+}
+
 enum LeaveType {
   CASUAL
   SICK
@@ -476,6 +504,7 @@ model Organization {
   transmittals         Transmittal[]
   letters              Letter[]
   employees            Employee[]
+  employeeEvents       EmployeeEvent[]
   staffAttendance      StaffAttendance[]
   leaveRequests        LeaveRequest[]
   holidays             Holiday[]
@@ -692,6 +721,7 @@ model User {
   maintenanceReported  MaintenanceJob[]         @relation("MaintenanceReporter")
   maintenanceClosed    MaintenanceJob[]         @relation("MaintenanceCloser")
   employee             Employee?                @relation("EmployeeLogin")
+  employeeEvents       EmployeeEvent[]          @relation("EmployeeEventCreator")
   staffMarked          StaffAttendance[]        @relation("StaffAttendanceMarker")
   overtimeDecided      StaffAttendance[]        @relation("StaffOvertimeDecider")
   workerDaysMarked     WorkerAttendance[]       @relation("WorkerAttendanceMarker")
@@ -800,62 +830,64 @@ model Project {
   createdAt             DateTime       @default(now())
   updatedAt             DateTime       @updatedAt
 
-  members          ProjectMember[]
-  boqItems         BoqItem[]
-  activities       Activity[]
-  milestones       Milestone[]
-  workers          Worker[]
-  workerAttendance WorkerAttendance[]
-  imprests         Imprest[]
-  complianceDocs   ComplianceDoc[]
-  handover         ProjectHandover?
-  defects          Defect[]
-  closeoutItems    CloseoutItem[]
-  progressEntries  ProgressEntry[]
-  dailyReports     DailyReport[]
-  materialRequests MaterialRequest[]
-  notifications    Notification[]
-  attendanceSheets AttendanceSheet[]
-  stockEntries     StockEntry[]             @relation("StockEntryProject")
-  transfersIn      StockEntry[]             @relation("StockTransferTo")
-  stockTxns        StockTxn[]
-  stockMinLevels   StockMinLevel[]
-  materialNorms    MaterialNorm[]
-  boqResources     BoqResource[]
-  excessRecoveries ExcessMaterialRecovery[]
-  equipment        Equipment[]
-  machineryLogs    MachineryLog[]
-  expenses         Expense[]
-  risks            Risk[]
-  measurements     MeasurementSheet[]
-  raBills          RaBill[]
-  receipts         Receipt[]
-  vendorPayments   VendorPayment[]
-  paymentRequests  PaymentRequest[]
-  quotations       Quotation[]
-  purchaseOrders   PurchaseOrder[]
-  vendorBills      VendorBill[]
-  debitNotes       DebitNote[]
-  workOrders       WorkOrder[]
-  subcontractBills SubcontractBill[]
-  inspections      Inspection[]
-  qualityTests     QualityTest[]
-  ncrs             Ncr[]
-  documents        Document[]
-  drawingMarkups   DrawingMarkup[]
-  transmittals     Transmittal[]
-  letters          Letter[]
-  staff            Employee[]
-  staffAttendance  StaffAttendance[]
-  holidays         Holiday[]
-  variations       Variation[]
-  budget           ProjectBudget?
-  safetyIncidents  SafetyIncident[]
-  toolboxTalks     ToolboxTalk[]
-  ppeIssues        PpeIssue[]
-  rfis             Rfi[]
-  workPermits      WorkPermit[]
-  maintenanceJobs  MaintenanceJob[]
+  members            ProjectMember[]
+  boqItems           BoqItem[]
+  activities         Activity[]
+  milestones         Milestone[]
+  workers            Worker[]
+  workerAttendance   WorkerAttendance[]
+  imprests           Imprest[]
+  complianceDocs     ComplianceDoc[]
+  handover           ProjectHandover?
+  defects            Defect[]
+  closeoutItems      CloseoutItem[]
+  progressEntries    ProgressEntry[]
+  dailyReports       DailyReport[]
+  materialRequests   MaterialRequest[]
+  notifications      Notification[]
+  attendanceSheets   AttendanceSheet[]
+  stockEntries       StockEntry[]             @relation("StockEntryProject")
+  transfersIn        StockEntry[]             @relation("StockTransferTo")
+  stockTxns          StockTxn[]
+  stockMinLevels     StockMinLevel[]
+  materialNorms      MaterialNorm[]
+  boqResources       BoqResource[]
+  excessRecoveries   ExcessMaterialRecovery[]
+  equipment          Equipment[]
+  machineryLogs      MachineryLog[]
+  expenses           Expense[]
+  risks              Risk[]
+  measurements       MeasurementSheet[]
+  raBills            RaBill[]
+  receipts           Receipt[]
+  vendorPayments     VendorPayment[]
+  paymentRequests    PaymentRequest[]
+  quotations         Quotation[]
+  purchaseOrders     PurchaseOrder[]
+  vendorBills        VendorBill[]
+  debitNotes         DebitNote[]
+  workOrders         WorkOrder[]
+  subcontractBills   SubcontractBill[]
+  inspections        Inspection[]
+  qualityTests       QualityTest[]
+  ncrs               Ncr[]
+  documents          Document[]
+  drawingMarkups     DrawingMarkup[]
+  transmittals       Transmittal[]
+  letters            Letter[]
+  staff              Employee[]
+  employeeEventsFrom EmployeeEvent[]          @relation("EmployeeEventFrom")
+  employeeEventsTo   EmployeeEvent[]          @relation("EmployeeEventTo")
+  staffAttendance    StaffAttendance[]
+  holidays           Holiday[]
+  variations         Variation[]
+  budget             ProjectBudget?
+  safetyIncidents    SafetyIncident[]
+  toolboxTalks       ToolboxTalk[]
+  ppeIssues          PpeIssue[]
+  rfis               Rfi[]
+  workPermits        WorkPermit[]
+  maintenanceJobs    MaintenanceJob[]
 
   pvComponents PriceVariationComponent[]
 
@@ -2761,6 +2793,9 @@ model Attachment {
   rfi               Rfi?               @relation(fields: [rfiId], references: [id], onDelete: Cascade)
   paymentRequestId  String?
   paymentRequest    PaymentRequest?    @relation(fields: [paymentRequestId], references: [id], onDelete: Cascade)
+  /// An employee's documents (v6 item 99): ID, certificates, signed letters
+  employeeId        String?
+  employee          Employee?          @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   /// When the PDF's text was read into DocumentPage (Ask the contract); null = not yet
   textIndexedAt     DateTime?
   /// Pages with text found; 0 for a scanned PDF or one that could not be read
@@ -2803,6 +2838,7 @@ model Attachment {
   @@index([handoverId])
   @@index([rfiId])
   @@index([paymentRequestId])
+  @@index([employeeId])
 }
 
 model AuditLog {
@@ -3326,8 +3362,44 @@ model Employee {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
-  attendance StaffAttendance[]
-  leave      LeaveRequest[]
+  /// HR records (v6 item 99). Personal details: shown to staff admins, payroll and the person themselves
+  dateOfBirth        DateTime?       @db.Date
+  gender             Gender?
+  fatherOrSpouseName String?
+  email              String?
+  address            String?
+  bloodGroup         String?
+  emergencyContact   String?
+  emergencyPhone     String?
+  /// Statutory numbers; for Aadhaar only the last four digits are kept
+  pan                String?
+  aadhaarLast4       String?
+  uan                String?
+  pfNumber           String?
+  esiNumber          String?
+  /// Salary account
+  bankName           String?
+  bankAccountNo      String?
+  bankIfsc           String?
+  /// Terms of employment
+  employmentType     EmploymentType?
+  grade              String?
+  reportingToId      String?
+  reportingTo        Employee?       @relation("ReportsTo", fields: [reportingToId], references: [id], onDelete: SetNull)
+  reports            Employee[]      @relation("ReportsTo")
+  probationEndsOn    DateTime?       @db.Date
+  confirmedOn        DateTime?       @db.Date
+  /// Days of notice either side gives
+  noticeDays         Int?
+  /// Cost to company a year, from the latest increment (payroll's salary structure, item 100, starts from it)
+  ctcAnnual          Decimal?        @db.Decimal(18, 2)
+  /// Why they left (resignation, termination, retirement), with the exit event
+  exitReason         String?
+
+  attendance  StaffAttendance[]
+  leave       LeaveRequest[]
+  events      EmployeeEvent[]
+  attachments Attachment[]
 
   @@unique([organizationId, employeeCode])
   @@index([organizationId, projectId])
@@ -3418,6 +3490,43 @@ model WorkerAttendance {
 }
 
 /// One employee's day: marked by the site in-charge or by themselves (check in / check out).
+/// HR records (v6 item 99): joining, confirmation, transfer, promotion, increment, warning and exit, each with its letter.
+/// Recording one updates the employee (posting, designation, CTC, confirmation, last working day).
+model EmployeeEvent {
+  id              String            @id @default(uuid())
+  organizationId  String
+  organization    Organization      @relation(fields: [organizationId], references: [id])
+  employeeId      String
+  employee        Employee          @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  type            EmployeeEventType
+  /// The day it takes effect; for an exit, the last working day
+  effectiveDate   DateTime          @db.Date
+  /// HR-<year>-0001, the letter's reference
+  letterNo        String
+  fromProjectId   String?
+  fromProject     Project?          @relation("EmployeeEventFrom", fields: [fromProjectId], references: [id], onDelete: SetNull)
+  toProjectId     String?
+  toProject       Project?          @relation("EmployeeEventTo", fields: [toProjectId], references: [id], onDelete: SetNull)
+  /// Head office on either side of a transfer when the project is empty
+  fromDesignation String?
+  toDesignation   String?
+  fromDepartment  String?
+  toDepartment    String?
+  fromCtc         Decimal?          @db.Decimal(18, 2)
+  toCtc           Decimal?          @db.Decimal(18, 2)
+  /// Resignation: the day it was handed in; days of notice served
+  noticeGivenOn   DateTime?         @db.Date
+  /// Reason, the warning's matter, or anything the letter should say
+  note            String?
+  createdById     String
+  createdBy       User              @relation("EmployeeEventCreator", fields: [createdById], references: [id])
+  createdAt       DateTime          @default(now())
+
+  @@unique([organizationId, letterNo])
+  @@index([organizationId, type, effectiveDate])
+  @@index([employeeId, effectiveDate])
+}
+
 model StaffAttendance {
   id                  String                @id @default(uuid())
   organizationId      String

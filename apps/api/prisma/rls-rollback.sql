@@ -324,5 +324,8 @@ DROP POLICY IF EXISTS tenant_isolation ON "EnquiryToken";
 ALTER TABLE "DrawingMarkup" NO FORCE ROW LEVEL SECURITY;
 ALTER TABLE "DrawingMarkup" DISABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS tenant_isolation ON "DrawingMarkup";
+ALTER TABLE "EmployeeEvent" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "EmployeeEvent" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "EmployeeEvent";
 
 DROP FUNCTION IF EXISTS app_current_org();

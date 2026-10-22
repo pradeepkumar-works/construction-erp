@@ -100,6 +100,26 @@ own. The page (`components/modules/ModuleHome.tsx`) shows:
 A new module is a section with `module` set, a key in `MODULE_KEYS` (label, intro, submission types) and a branch in
 `ModuleHomeService.figures`; a new page in a module needs its line in `NAV_DESCRIPTIONS`.
 
+### HR records (v6 item 99)
+
+`Employee` carries the whole HR record: job and terms (employment type, grade, reports to, probation end, confirmation,
+notice days) that anyone who sees the person sees, and personal, statutory and bank details plus CTC that only staff
+admins, payroll (`canViewEmployeePrivate`) and the person themselves get, as `EmployeeDto.private` (null otherwise;
+`StaffService.toEmployeeDto(e, user)` decides). Aadhaar is kept as its last four digits only.
+
+Each step of a person's service is an `EmployeeEvent` (`EMPLOYEE_EVENT_TYPES`: joined, confirmed, transferred, promoted,
+increment, warning, resigned, terminated, retired) with a letter number `HR-<year>-0001` per organisation
+(`nextLetterNo`, under an advisory lock) and the before and after of posting, designation, department and CTC.
+`HrService.recordEvent` changes the staff record to match in the same transaction (an exit sets the last working day and
+marks them as left); `removeEvent` takes back only the latest event, never the joining, and puts the record back.
+Creating a staff record with a joining date writes its JOINED event. `GET /staff/events/:id/letter` returns what the
+letter needs; the web prints it from `components/staff/hrLetterPrint.ts` (an exit also prints the experience certificate).
+Documents are attachments on `Attachment.employeeId` (`PUT /staff/employees/:id/documents`).
+
+`GET /staff/hr-dashboard` (staff admins and payroll) gives head count by site, department and employment type, who joined
+and left this month, probation ending in 30 days or overdue, birthdays and work anniversaries to the end of next month, and
+active staff with no PAN, UAN or bank account; the People home shows it under the module's figures.
+
 ### Management view on the phone (v5 item 96)
 
 `GET /dashboard/company-today` (`HomeService.companyToday`) is the company's day for the roles in `COMPANY_TODAY_ROLES`

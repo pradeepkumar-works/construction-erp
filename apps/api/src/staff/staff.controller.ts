@@ -2,6 +2,7 @@ import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query } from '@
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { StaffService } from './staff.service';
+import { HrService } from './hr.service';
 import {
   ApplyLeaveDto,
   AttendanceQuery,
@@ -9,6 +10,9 @@ import {
   CheckInDto,
   CreateEmployeeDto,
   CreateHolidayDto,
+  EmployeeDocumentsDto,
+  ListEmployeeEventsQuery,
+  RecordEmployeeEventDto,
   DecideLeaveDto,
   HolidayQuery,
   ListEmployeesQuery,
@@ -24,7 +28,7 @@ import {
 @ApiBearerAuth()
 @Controller('staff')
 export class StaffController {
-  constructor(private staff: StaffService) {}
+  constructor(private staff: StaffService, private hr: HrService) {}
 
   @ApiOperation({ summary: 'Counts for the Staff page: leave waiting on the caller, employees, on leave today' })
   @Get('summary')
@@ -83,6 +87,49 @@ export class StaffController {
   @Patch('employees/:id')
   updateEmployee(@CurrentUser() user: RequestUser, @Param('id') id: string, @Body() dto: UpdateEmployeeDto) {
     return this.staff.updateEmployee(user, id, dto);
+  }
+
+  /* HR records (v6 item 99) */
+
+  @ApiOperation({ summary: 'HR dashboard: head count, joiners and leavers this month, probation due, birthdays, details missing' })
+  @Get('hr-dashboard')
+  hrDashboard(@CurrentUser() user: RequestUser) {
+    return this.hr.dashboard(user);
+  }
+
+  @ApiOperation({ summary: 'Service events (joining to exit), newest first: staff admins and payroll see everyone, others their own' })
+  @Get('events')
+  listEvents(@CurrentUser() user: RequestUser, @Query() q: ListEmployeeEventsQuery) {
+    return this.hr.listEvents(user, q);
+  }
+
+  @ApiOperation({ summary: 'Record confirmation, transfer, promotion, increment, warning or exit; the staff record changes to match' })
+  @Post('employees/:id/events')
+  recordEvent(@CurrentUser() user: RequestUser, @Param('id') id: string, @Body() dto: RecordEmployeeEventDto) {
+    return this.hr.recordEvent(user, id, dto);
+  }
+
+  @ApiOperation({ summary: "Take back a person's latest event; the staff record goes back as it was" })
+  @Delete('events/:id')
+  removeEvent(@CurrentUser() user: RequestUser, @Param('id') id: string) {
+    return this.hr.removeEvent(user, id);
+  }
+
+  @ApiOperation({ summary: "What an event's letter needs: the company, the person and who signs" })
+  @Get('events/:id/letter')
+  letter(@CurrentUser() user: RequestUser, @Param('id') id: string) {
+    return this.hr.letter(user, id);
+  }
+
+  @Get('employees/:id/documents')
+  documents(@CurrentUser() user: RequestUser, @Param('id') id: string) {
+    return this.hr.documents(user, id);
+  }
+
+  @ApiOperation({ summary: "Set the employee's documents (the complete list)" })
+  @Put('employees/:id/documents')
+  setDocuments(@CurrentUser() user: RequestUser, @Param('id') id: string, @Body() dto: EmployeeDocumentsDto) {
+    return this.hr.setDocuments(user, id, dto);
   }
 
   /* attendance */
