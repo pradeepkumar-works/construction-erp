@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-meetings',
+    date: '2026-11-18',
+    title: 'Meetings and action items',
+    points: [
+      'Record a meeting from Site → Meetings: who came (your staff, and the client, consultant or subcontractor by name), what was noted and decided, and the actions, each with who does it by when and, if it is about one, the RFI, NCR or variation.',
+      'Issue the minutes and they are emailed to everyone on the list with an email; your staff are told of their actions, which then wait in their My work until done. Print them, or send them to the site group on WhatsApp.',
+      'The next meeting of the project shows what earlier ones left open, and the Actions tab lists every action by due date, the late ones first.',
+    ],
+  },
+  {
     id: '2026-11-subcontract-enquiries',
     date: '2026-11-16',
     title: 'Subcontract enquiries',

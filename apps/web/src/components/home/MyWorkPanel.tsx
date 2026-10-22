@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { Card, Col, Flex, Grid, Row, Skeleton, Tag, Typography, theme } from 'antd';
 import {
+  CarryOutOutlined,
   CheckCircleOutlined,
   CheckSquareOutlined,
   CreditCardOutlined,
@@ -32,6 +33,7 @@ const CARDS: Record<Exclude<MyWorkKey, 'approvals'>, { title: string; icon: Reac
   expiring: { title: 'Guarantees and policies expiring', icon: <SafetyCertificateOutlined />, href: '/compliance', tone: 'warning' },
   lateDeliveries: { title: 'Late deliveries', icon: <TruckOutlined />, href: '/purchase-orders', tone: 'error' },
   lowStock: { title: 'Below minimum stock', icon: <InboxOutlined />, href: '/stock', tone: 'warning' },
+  meetingActions: { title: 'Your actions from meetings', icon: <CarryOutOutlined />, href: '/meetings?view=actions&mine=1', tone: 'warning' },
 };
 
 const APPROVALS_TITLE = 'Waiting for your approval';
@@ -48,6 +50,7 @@ const CLEAR: Record<MyWorkKey, string> = {
   expiring: 'expiring guarantees and policies',
   lateDeliveries: 'deliveries',
   lowStock: 'stock levels',
+  meetingActions: 'meeting actions',
 };
 
 /**

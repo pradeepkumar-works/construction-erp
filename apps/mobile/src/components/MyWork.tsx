@@ -22,12 +22,12 @@ type Tone = 'warning' | 'error' | 'info';
  * only: the API leaves out a card the role may not see.
  */
 const ORDERS: Record<'director' | 'manager' | 'accounts' | 'stores' | 'qs' | 'site', MyWorkKey[]> = {
-  director: ['approvals', 'watchList', 'receivables', 'payablesDue', 'expiring', 'lateDeliveries', 'dprsMissing', 'lowStock', 'sentBack', 'waitingWithOthers'],
-  manager: ['approvals', 'watchList', 'dprsMissing', 'lateDeliveries', 'expiring', 'lowStock', 'payablesDue', 'receivables', 'sentBack', 'waitingWithOthers'],
-  accounts: ['payablesDue', 'watchList', 'receivables', 'approvals', 'expiring', 'lateDeliveries', 'sentBack', 'waitingWithOthers'],
-  stores: ['lateDeliveries', 'lowStock', 'watchList', 'approvals', 'sentBack', 'waitingWithOthers', 'dprsMissing'],
-  qs: ['sentBack', 'waitingWithOthers', 'approvals', 'receivables', 'dprsMissing'],
-  site: ['sentBack', 'waitingWithOthers', 'dprsMissing', 'approvals', 'lateDeliveries', 'lowStock'],
+  director: ['approvals', 'watchList', 'receivables', 'payablesDue', 'expiring', 'lateDeliveries', 'dprsMissing', 'lowStock', 'meetingActions', 'sentBack', 'waitingWithOthers'],
+  manager: ['approvals', 'watchList', 'meetingActions', 'dprsMissing', 'lateDeliveries', 'expiring', 'lowStock', 'payablesDue', 'receivables', 'sentBack', 'waitingWithOthers'],
+  accounts: ['payablesDue', 'watchList', 'receivables', 'approvals', 'expiring', 'lateDeliveries', 'meetingActions', 'sentBack', 'waitingWithOthers'],
+  stores: ['lateDeliveries', 'lowStock', 'watchList', 'approvals', 'meetingActions', 'sentBack', 'waitingWithOthers', 'dprsMissing'],
+  qs: ['sentBack', 'waitingWithOthers', 'approvals', 'meetingActions', 'receivables', 'dprsMissing'],
+  site: ['sentBack', 'meetingActions', 'waitingWithOthers', 'dprsMissing', 'approvals', 'lateDeliveries', 'lowStock'],
 };
 
 function myWorkOrder(role: RoleKey): MyWorkKey[] {
@@ -61,6 +61,7 @@ const CARDS: Record<CardKey, { title: string; icon: keyof typeof Ionicons.glyphM
   lateDeliveries: { title: 'Late deliveries', icon: 'bus-outline', tone: 'error', route: null },
   lowStock: { title: 'Below minimum stock', icon: 'file-tray-stacked-outline', tone: 'warning', route: '/stock' },
   watchList: { title: 'Watch list', icon: 'eye-outline', tone: 'warning', route: null },
+  meetingActions: { title: 'Your actions from meetings', icon: 'checkbox-outline', tone: 'warning', route: null },
 };
 
 const TONES: Record<Tone, { fg: string; bg: string }> = {

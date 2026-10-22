@@ -550,8 +550,13 @@ Migrations stay additive. Design notes for each item are in the project's `roadm
     L1, L2… against the client's rates, and awards one as a draft work order (a reason needed when it is not L1). Not
     built: sending the enquiry by email or WhatsApp from the app, subcontractors quoting through the supplier portal, and
     enquiries on the phone.
-112. **Meetings and action items** (M). Attendees, minutes, decisions and actions (owner, due date, linked RFI, NCR or
-    variation), the MOM as a PDF by email or WhatsApp, open actions in My work.
+112. ~~**Meetings and action items** (M). Attendees, minutes, decisions and actions (owner, due date, linked RFI, NCR or
+    variation), the MOM as a PDF by email or WhatsApp, open actions in My work.~~
+    Done: Site → Meetings records a project's meeting (our staff and outsiders by name, points noted and decided, actions
+    with an owner, a due date and an RFI, NCR or variation), issues the minutes (emailed in the body to everyone with an
+    address, our owners told), prints them (Save as PDF), shares them as a WhatsApp message, shows what earlier meetings
+    left open, lists every action by due date and puts each owner's open ones in My work. Not built: the minutes as a PDF
+    attachment, meetings on the phone (owners get the push and see the card on the phone's Home), and recurring meetings.
 113. **Material approvals** (M). The approved makes list, material and sample approval requests with review outcomes and
     revisions, days outstanding, and a warning on a PO for a make not approved.
 114. **Schedule links and critical path** (M). Finish-to-start and other links with lag, the critical path, a three-week

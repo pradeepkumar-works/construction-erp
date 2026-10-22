@@ -20,6 +20,7 @@ export function notificationHref(n: NotificationDto): string {
   if (n.entityType === 'PORTAL_PAYMENT') return '/supplier/statement';
   if (n.entityType === 'SUPPLIER_INVOICE') return `/supplier-inbox${n.entityId ? `?id=${n.entityId}` : ''}`;
   if (n.entityType === 'SUPPLIER_CHANGE') return '/supplier-inbox?tab=changes';
+  if (n.entityType === 'MEETING' && n.entityId) return `/meetings/${n.entityId}`;
   if (n.entityType === 'EQUIPMENT_LOAN' && n.entityId) return `/machine-loans/${n.entityId}`;
   if (n.entityType && n.entityId) return `/notifications?type=${n.entityType}&id=${n.entityId}`;
   if (n.type === 'APPROVAL_DIGEST') return '/approvals';
