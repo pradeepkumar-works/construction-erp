@@ -100,6 +100,34 @@ own. The page (`components/modules/ModuleHome.tsx`) shows:
 A new module is a section with `module` set, a key in `MODULE_KEYS` (label, intro, submission types) and a branch in
 `ModuleHomeService.figures`; a new page in a module needs its line in `NAV_DESCRIPTIONS`.
 
+### Biometric attendance (v6 item 101)
+
+`BiometricDevice` is a terminal in the device register (name, make and model, serial number, the site it stands at, its
+clock's UTC offset) that sends punches in one of three ways (`BiometricProtocol`): **ADMS**, the push protocol of ZKTeco,
+eSSL and their relatives, where the device calls `GET/POST /iclock/cdata`, `GET /iclock/getrequest` and
+`POST /iclock/devicecmd` on the API host (outside the `/api` prefix, `@Public`, found by serial number with
+`withoutTenant`; an unknown serial gets 401); **WEBHOOK**, `POST /api/biometric/webhook` with the device's own key in
+`X-Device-Key`, for cloud attendance services and middleware; and **FILE**, a CSV or Excel export from the device software
+that HR imports on the Punches tab (the web turns Excel into CSV; `parsePunchFile` finds the user number and date/time
+columns by their headings and reports lines it cannot read).
+
+Every format goes through `apps/api/src/biometric/biometric-rules.ts` (pure, tested in `src/scripts/biometric-test.ts`,
+CI runs it): device-local time to UTC with the device's offset, user numbers without leading zeros, a day's punches to
+check-in, check-out and hours with punches within `DOUBLE_PUNCH_MINUTES` of each other read as one. `BiometricPunch`
+keeps every punch once (unique on device, user number and instant, so a device that resends its log adds nothing) with
+what it did (`BiometricPunchResult`): APPLIED, UNMATCHED (the user number is not matched yet), LOCKED (the day's DPR is
+approved) or SKIPPED (with the reason, such as a worker punching at a device with no site, or a worker marked at another
+site that day).
+
+`BiometricUser` matches a user number (one per organisation, so a person enrolled on several devices under one number is
+one row) to an employee or a worker; HR matches them one by one or by employee code number. Matching re-applies the last
+62 days of that number's punches. An employee's day becomes `StaffAttendance` (first and last punch, present or half day
+by hours, overtime as PENDING for the usual approval), marked by the person who registered the device; a worker's day
+becomes `WorkerAttendance` at the device's site and recounts the DPR head count through `WorkersService.recountHeadCount`.
+A staff day already marked keeps the earlier check-in and the later check-out of the two; a worker's roll call at the
+same site takes the punches' times. Only `canManageBiometric` (admin, management, HR) sees the Biometric
+devices page.
+
 ### Payroll (v6 item 100)
 
 Salaries are `SalaryStructure` rows per employee from a date (basic, DA, HRA, conveyance, special, other a month; PF, ESI

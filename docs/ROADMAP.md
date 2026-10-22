@@ -481,8 +481,12 @@ Migrations stay additive. Design notes for each item are in the project's `roadm
     arrears and bonus by hand, the NEFT bank file, the PF ECR and the ESI file, full and final settlement with gratuity
     and leave encashment, payslips on the Staff page and the phone (in Hindi). TDS quarterly returns (24Q) and Form 16
     are left for the accounts work in 102 and 103.
-101. **Biometric attendance** (M). A device register, the ZKTeco / eSSL push protocol (ADMS), a generic webhook and a
-    punch file import; device users mapped to employees and workers; punches turned into attendance.
+101. ~~**Biometric attendance** (M). A device register, the ZKTeco / eSSL push protocol (ADMS), a generic webhook and a
+    punch file import; device users mapped to employees and workers; punches turned into attendance.~~
+    Done: the device register with setup steps, ADMS (`/iclock`), a webhook with a key per device, CSV and Excel punch
+    files, user numbers matched to employees and workers (one by one or by employee code), punches kept once and turned
+    into staff and worker attendance, with what each punch did. Device commands (enrolling users from the server) are not
+    sent; enrol people on the device itself.
 102. **Accounting books** (L). Chart of accounts, vouchers with approval, automatic postings from every module through one
     posting service (shared with the Tally export), cash, bank and day books, ledgers with projects as cost centres.
 103. **Financial statements** (M). Opening balances, trial balance (also by project), profit and loss, balance sheet,

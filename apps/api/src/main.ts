@@ -1,5 +1,6 @@
 import 'reflect-metadata';
 import { ValidationPipe } from '@nestjs/common';
+import type { IncomingMessage } from 'http';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
@@ -11,7 +12,10 @@ import { PRODUCT_NAME } from '@erp/shared';
 async function bootstrap() {
   // rawBody: the Razorpay webhook signature is over the exact bytes sent
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { rawBody: true });
-  app.setGlobalPrefix('api');
+  // Biometric devices with the ADMS push protocol (v6 item 101) call /iclock/… at the server's root, so it stays outside /api.
+  app.setGlobalPrefix('api', { exclude: ['iclock/cdata', 'iclock/getrequest', 'iclock/devicecmd'] });
+  // …and they post their punch tables as plain text, often with no content type.
+  app.useBodyParser('text', { type: (req: IncomingMessage) => !req.headers['content-type'] || /^text\//.test(req.headers['content-type']), limit: '5mb' });
   app.use(tenantMiddleware);
   // CORS_ORIGINS: comma-separated list of allowed origins; unset = allow any origin (dev / mobile apps)
   const origins = (process.env.CORS_ORIGINS || '').split(',').map((o) => o.trim()).filter(Boolean);

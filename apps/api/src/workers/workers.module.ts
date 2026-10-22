@@ -3,5 +3,5 @@ import { AttendanceModule } from '../attendance/attendance.module';
 import { WorkersController } from './workers.controller';
 import { WorkersService } from './workers.service';
 
-@Module({ imports: [AttendanceModule], controllers: [WorkersController], providers: [WorkersService] })
+@Module({ imports: [AttendanceModule], controllers: [WorkersController], providers: [WorkersService], exports: [WorkersService] })
 export class WorkersModule {}
