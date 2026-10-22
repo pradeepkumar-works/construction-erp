@@ -574,8 +574,11 @@ Migrations stay additive. Design notes for each item are in the project's `roadm
     shows the next three weeks day by day with what is under way, ready to start or waiting, and on what. The schedule
     goes out as MS Project XML or Primavera P6 XER and comes back in (previewed, matched by name). Not built: working
     calendars and holidays (days are calendar days), resource levelling, and links on the phone.
-115. **Earned value** (M). Planned value from the baseline and BOQ, earned value from measured or certified work, actual
-    cost from the books; SPI, CPI, EAC and the S-curve per project.
+115. ~~**Earned value** (M). Planned value from the baseline and BOQ, earned value from measured or certified work, actual
+    cost from the books; SPI, CPI, EAC and the S-curve per project.~~ Done: a project's Money > Earned value tab. Each BOQ
+    item's value is spread over its activities' baseline (else planned) days; earned from approved progress or measured
+    work; actual cost is the Cost tab's. SPI, CPI, EAC (two ways), ETC, VAC, TCPI, the earned schedule and the finish it
+    points to, the S-curve and the activities furthest behind. Not built: earned value by cost head or on the phone.
 116. **Comments and mentions** (S). Threaded comments on any record, @mentions that notify, resolved threads.
 117. **Module switches** (S). An admin turns modules off for the company; they leave the sidebar, search, New menu and
     Ask, the API refuses them, the data is kept. Plans can set which modules a tier has.

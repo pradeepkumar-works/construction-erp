@@ -1043,6 +1043,26 @@ Nirmaan hands the payroll provider its inputs; PF, ESI, professional tax and sal
 - **API.** `GET /cost/projects/:id/budget`, `PUT /cost/projects/:id/budget` (`heads` null removes the cost-head
   budget; `items` sets BOQ budget rates, the rest keep theirs), `GET /cost/cash-flow?projectId&granularity=MONTH|WEEK`.
 
+## Earned value (v6 item 115)
+
+- **Arithmetic** (`apps/api/src/cost/earned-value-rules.ts`, pure, tested in `src/scripts/earned-value-test.ts`, CI runs it).
+  Each BOQ item's value (revised, else original, qty × rate) is a slice spread evenly over the days of each activity linked
+  to it, weighted by the activities' planned quantity: baseline dates once a baseline is frozen, else planned dates. An item
+  with no dated activity is spread over the project's dates and reported as unscheduled. Planned share on a day = the share of
+  the slices due by its end. Earned share = approved progress (or, with `basis=MEASURED`, approved measurement sheets) × BOQ
+  rate ÷ BOQ value, capped at 1. Both shares are put on the budget at completion (`BudgetService.forecasts`: cost heads,
+  else BOQ budget rates, else the BOQ value itself, with a note that the cost index then includes the margin), so planned
+  value (PV) and earned value (EV) compare with actual cost (AC, `CostService.compute`, the Cost tab's figure).
+- **Indices.** SV = EV − PV, CV = EV − AC, SPI = EV ÷ PV, CPI = EV ÷ AC, EAC = BAC ÷ CPI, EAC with the schedule = AC +
+  (BAC − EV) ÷ (CPI × SPI), ETC = EAC − AC, VAC = BAC − EAC, TCPI = (BAC − EV) ÷ (BAC − AC). No index while its divisor is
+  zero. Earned schedule = the first day the plan had the earned share done; SPI(t) = earned schedule ÷ days elapsed, and the
+  forecast finish stretches the planned duration by it.
+- **Curve.** Month ends from the start to the later of the planned finish and today (at most 48); the current month is cut
+  at today; EV and AC are left out after it. Activities with value and dates are listed by schedule variance, most behind first.
+- **Roles.** Cost viewers (`COST_VIEW_ROLES`) on projects they can open.
+- **API.** `GET /cost/projects/:id/earned-value?basis=PROGRESS|MEASURED`.
+- **Web.** Project > Money > Earned value (`components/cost/EarnedValuePanel.tsx`), the chart in `components/home/charts.tsx`.
+
 ## Material reconciliation
 
 - **Table.** `MaterialNorm` (per project: a BOQ item, a store item, `qtyPerUnit` with six decimals, allowed `wastagePct`,

@@ -3,7 +3,8 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CostService } from './cost.service';
 import { BudgetService } from './budget.service';
 import { CashFlowService } from './cash-flow.service';
-import { CashFlowQuery, CostQuery, SetBudgetDto, SetLabourRatesDto } from './cost.dto';
+import { CashFlowQuery, CostQuery, EarnedValueQuery, SetBudgetDto, SetLabourRatesDto } from './cost.dto';
+import { EarnedValueService } from './earned-value.service';
 import { CurrentUser, RequestUser } from '../common/current-user';
 
 @ApiTags('cost')
@@ -14,6 +15,7 @@ export class CostController {
     private cost: CostService,
     private budget: BudgetService,
     private cashFlow: CashFlowService,
+    private earnedValue: EarnedValueService,
   ) {}
 
   @ApiOperation({
@@ -30,6 +32,15 @@ export class CostController {
   @Get('projects/:id/budget')
   getBudget(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string) {
     return this.budget.get(user, id);
+  }
+
+  @ApiOperation({
+    summary: "One project's earned value: planned value, earned value and actual cost to date and by month, SPI, CPI, EAC and the forecast finish",
+    description: 'Approvers and accounts. Planned value spreads the BOQ over the baseline (else planned) dates of its activities; earned value is approved progress or measurement at BOQ rates; both on the budget at completion.',
+  })
+  @Get('projects/:id/earned-value')
+  getEarnedValue(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string, @Query() q: EarnedValueQuery) {
+    return this.earnedValue.get(user, id, q.basis);
   }
 
   @ApiOperation({ summary: 'Set the budget by cost head and the budget rates of BOQ items', description: 'Admin, management or the project manager.' })

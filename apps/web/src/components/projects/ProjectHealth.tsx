@@ -115,7 +115,7 @@ export function ProjectHealth({ signals, compact }: { signals: HealthSignal[]; c
     <Flex gap={compact ? token.marginXS : token.marginXXS} wrap={!compact} align="center" role="list" aria-label="Project health">
       {signals.map((s) => (
         <Tooltip key={s.key} title={compact ? `${s.text}. ${s.detail}` : s.detail}>
-          <span role="listitem">{compact ? <Badge status={s.level} aria-label={s.text} /> : <Tag color={s.level} style={{ margin: 0 }}>{s.text}</Tag>}</span>
+          <span role="listitem">{compact ? <span role="img" aria-label={s.text}><Badge status={s.level} /></span> : <Tag color={s.level} style={{ margin: 0 }}>{s.text}</Tag>}</span>
         </Tooltip>
       ))}
     </Flex>
