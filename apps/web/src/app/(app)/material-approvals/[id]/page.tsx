@@ -13,6 +13,7 @@ import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { useConfirmDelete } from '@/components/common/ConfirmDelete';
 import { AttachmentGallery } from '@/components/common/AttachmentGallery';
 import { MaterialApprovalForm, MaterialApprovalStatusTag, OutcomeTag, ReviewDialog, SubmitDialog, WithdrawDialog } from '@/components/material-approvals/MaterialApprovalForms';
+import { CommentsCard } from '@/components/comments/CommentsSection';
 
 /**
  * One material approval request (v6 item 113): what is asked for, each revision sent to the reviewer with the outcome
@@ -183,6 +184,7 @@ function ApprovalView({ a }: { a: MaterialApprovalDetailDto }) {
             <Card size="small" title={<CardTitle>{`Files (${a.attachments.length})`}</CardTitle>}>
               {a.attachments.length ? <AttachmentGallery attachments={a.attachments} /> : <Typography.Text type="secondary">No file attached.</Typography.Text>}
             </Card>
+            <CommentsCard kind="MATERIAL_APPROVAL" entityId={a.id} heading={(t) => <CardTitle>{t}</CardTitle>} />
           </Flex>
         </Col>
         <Col xs={24} lg={8}>

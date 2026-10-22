@@ -85,7 +85,7 @@ export const permitExpired = (p: { status: WorkPermitStatus; validTo: string }, 
  * `allTypes`, because those builds crash on a type they have no icon for.
  */
 export const LEGACY_NOTIFICATION_TYPES: NotificationType[] = NOTIFICATION_TYPES.filter(
-  (t) => t !== 'SAFETY' && t !== 'MACHINERY' && t !== 'IMPREST' && t !== 'COMPLIANCE' && t !== 'DEFECT' && t !== 'WATCH_LIST' && t !== 'MORNING_BRIEF',
+  (t) => t !== 'SAFETY' && t !== 'MACHINERY' && t !== 'IMPREST' && t !== 'COMPLIANCE' && t !== 'DEFECT' && t !== 'WATCH_LIST' && t !== 'MORNING_BRIEF' && t !== 'COMMENT',
 );
 
 export interface SafetyIncidentDto {

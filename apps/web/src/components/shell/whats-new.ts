@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-comments',
+    date: '2026-11-30',
+    title: 'Comments and mentions',
+    points: [
+      'Every DPR, progress entry, request, order, bill, inspection, meeting and material approval has Comments: ask a question or note something for the team, and reply in the thread.',
+      'Type @ to bring someone in. They get a notice that opens the record at its comments, and everyone in a thread hears of a reply.',
+      'Resolve a thread once it is settled; a new reply opens it again.',
+    ],
+  },
+  {
     id: '2026-11-earned-value',
     date: '2026-11-27',
     title: 'Earned value',

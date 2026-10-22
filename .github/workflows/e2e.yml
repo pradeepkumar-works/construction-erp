@@ -175,6 +175,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/earned-value-test.js
+      - name: Comments need words and written mentions, tell the right people once, and only authors change them
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/comments-test.js
       - name: Early warnings forecast right, show each role its own kinds and backtest on the demo history
         if: matrix.suite == 'flows'
         working-directory: apps/api

@@ -597,6 +597,8 @@ h4.ant-typography,
 :root .ant-tag.ant-tag-warning:not(.ant-tag-disabled):is(.ant-tag-filled, .ant-tag-outlined) { color: var(--ant-color-warning-text); }
 :root .ant-tag.ant-tag-error:not(.ant-tag-disabled):is(.ant-tag-filled, .ant-tag-outlined) { color: var(--ant-color-error-text); }
 :root .ant-tag.ant-tag-processing:not(.ant-tag-disabled):is(.ant-tag-filled, .ant-tag-outlined) { color: var(--ant-color-primary-text); }
+/* The anchor bar's current section takes the AA text shade too (the plain primary is too faint on the dark page). */
+:root .ant-anchor-wrapper .ant-anchor .ant-anchor-link .ant-anchor-link-title.ant-anchor-link-title-active { color: var(--ant-color-primary-text); }
 
 /*
  * One type scale, 12 px the floor (UX item 82). antd sets <kbd> and <code> at 90% and 85% of the text around them, which

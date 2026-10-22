@@ -156,6 +156,7 @@ enum NotificationType {
   WATCH_LIST
   MORNING_BRIEF
   SUPPLIER
+  COMMENT
 }
 
 /// What a quality test is of. CONCRETE_CUBE gets 7 and 28-day readings; the others one result.
@@ -640,6 +641,7 @@ model Organization {
   meetingActions       MeetingAction[]
   materialApprovals    MaterialApproval[]
   materialApprovalRevs MaterialApprovalRevision[]
+  comments             Comment[]
   approvedMakes        ApprovedMake[]
 }
 
@@ -888,6 +890,8 @@ model User {
   materialApprovalsMade MaterialApproval[]         @relation("MaterialApprovalCreator")
   materialRevsSent      MaterialApprovalRevision[] @relation("MaterialRevSubmitter")
   materialRevsRecorded  MaterialApprovalRevision[] @relation("MaterialRevRecorder")
+  commentsWritten       Comment[]                  @relation("CommentAuthor")
+  commentsResolved      Comment[]                  @relation("CommentResolver")
   approvedMakesAdded    ApprovedMake[]             @relation("ApprovedMakeCreator")
 
   @@unique([organizationId, email])
@@ -1056,6 +1060,7 @@ model Project {
   meetings          Meeting[]
   meetingActions    MeetingAction[]
   materialApprovals MaterialApproval[]
+  comments          Comment[]
   approvedMakes     ApprovedMake[]
 
   @@unique([organizationId, code])
@@ -6409,4 +6414,35 @@ model ApprovedMake {
 
   @@index([organizationId, projectId])
   @@index([approvalId])
+}
+
+/// A comment on a record (v6 item 116). A thread's first comment has no parent and holds whether the thread is resolved;
+/// replies point at it. Staff only: guests and suppliers neither see nor write them.
+model Comment {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  /// A `CommentKind`: a submission type, MEETING or MATERIAL_APPROVAL
+  entityType     String
+  entityId       String
+  projectId      String?
+  project        Project?     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  parentId       String?
+  parent         Comment?     @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies        Comment[]    @relation("CommentReplies")
+  authorId       String
+  author         User         @relation("CommentAuthor", fields: [authorId], references: [id])
+  body           String
+  /// Users mentioned, each written as @Full Name in the body
+  mentions       String[]     @default([])
+  editedAt       DateTime?
+  /// Removed by its author or an admin: the body is cleared, the row stays while it has replies
+  removedAt      DateTime?
+  resolvedAt     DateTime?
+  resolvedById   String?
+  resolvedBy     User?        @relation("CommentResolver", fields: [resolvedById], references: [id])
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId, entityType, entityId])
+  @@index([parentId])
 }

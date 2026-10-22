@@ -1,7 +1,10 @@
-import type { NotificationDto } from '@erp/shared';
+import { commentKindHref, COMMENT_KINDS, type CommentKind, type NotificationDto } from '@erp/shared';
+import { COMMENTS_ANCHOR } from '@/components/comments/CommentsSection';
 
 /** Where a notification leads when clicked: a submission drawer on the notifications page, or a page. */
 export function notificationHref(n: NotificationDto): string {
+  // A mention or a reply (v6 item 116): the record's own page, at its comments.
+  if (n.type === 'COMMENT' && n.entityId && (COMMENT_KINDS as readonly string[]).includes(n.entityType ?? '')) return `${commentKindHref(n.entityType as CommentKind, n.entityId)}#${COMMENTS_ANCHOR}`;
   if (n.type === 'SAFETY') return `/safety?tab=${n.entityType === 'WORK_PERMIT' ? 'permits' : 'incidents'}${n.entityId ? `&id=${n.entityId}` : ''}`;
   if (n.type === 'MACHINERY')
     return n.entityType === 'EQUIPMENT_DOCUMENT' || n.entityType === 'DRIVER' ? '/machinery?tab=papers' : `/machinery?tab=maintenance${n.entityType === 'MAINTENANCE_JOB' && n.entityId ? `&id=${n.entityId}` : ''}`;

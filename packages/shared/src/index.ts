@@ -31,6 +31,7 @@ export * from './sector';
 export * from './maintenance';
 export * from './schedule';
 export * from './earned-value';
+export * from './comments';
 export * from './workers';
 export * from './imprest';
 export * from './compliance';

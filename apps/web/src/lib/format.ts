@@ -136,6 +136,7 @@ export const NOTIFICATION_COLORS: Record<NotificationType, string> = {
   WATCH_LIST: 'gold',
   MORNING_BRIEF: 'cyan',
   SUPPLIER: 'geekblue',
+  COMMENT: 'blue',
 };
 
 /** "2 min ago", "3 h ago", "4 d ago", then a date. */

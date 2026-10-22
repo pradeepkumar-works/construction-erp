@@ -186,6 +186,7 @@ async function main() {
     await seedMeetings(org.id);
     await seedMaterialApprovals(org.id);
     await seedActivityLinks(org.id);
+    await seedComments(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
   }
@@ -386,6 +387,7 @@ async function main() {
   await seedMeetings(org.id);
   await seedMaterialApprovals(org.id);
   await seedActivityLinks(org.id);
+  await seedComments(org.id);
 
   console.log('Seed complete. Login with any of these (password: password123):');
   for (const u of USERS) console.log(`  ${u.email.padEnd(24)} ${u.role}`);
@@ -4432,4 +4434,66 @@ async function seedActivityLinks(organizationId: string) {
       return projectId && p && s ? [{ organizationId, projectId, predecessorId: p, successorId: s, type, lagDays }] : [];
     }),
   });
+}
+
+/**
+ * Comments and mentions (v6 item 116): a question on today's road DPR waiting in the project manager's queue, answered by
+ * the engineer; a resolved thread on the hospital's first order about the cement make; and the team leader telling the
+ * project manager, on the last progress review, that night work has stopped. The mentions are in the bell.
+ */
+async function seedComments(organizationId: string) {
+  if (await prisma.comment.count({ where: { organizationId } })) return;
+  const users = new Map((await prisma.user.findMany({ where: { organizationId }, select: { id: true, email: true, fullName: true } })).map((u) => [u.email, u]));
+  const [pm, pm2, engineer, tl, procurement] = ['pm@demo.com', 'pm2@demo.com', 'engineer@demo.com', 'tl@demo.com', 'procurement@demo.com'].map((e) => users.get(e));
+  if (!pm || !pm2 || !engineer || !tl || !procurement) return;
+  const ago = (hours: number) => new Date(Date.now() - hours * 3_600_000);
+  type Note = { by: typeof pm; body: string; mentions?: (typeof pm)[]; at: number };
+  const thread = async (entityType: string, entityId: string, projectId: string, title: string, notes: Note[], resolvedBy?: typeof pm, resolvedAt?: number) => {
+    const [first, ...rest] = notes;
+    const root = await prisma.comment.create({
+      data: {
+        organizationId, entityType, entityId, projectId, authorId: first.by!.id, body: first.body, mentions: (first.mentions ?? []).map((m) => m!.id), createdAt: ago(first.at),
+        ...(resolvedBy ? { resolvedById: resolvedBy.id, resolvedAt: ago(resolvedAt ?? 0) } : {}),
+      },
+    });
+    for (const n of rest) {
+      await prisma.comment.create({ data: { organizationId, entityType, entityId, projectId, parentId: root.id, authorId: n.by!.id, body: n.body, mentions: (n.mentions ?? []).map((m) => m!.id), createdAt: ago(n.at) } });
+    }
+    // The bell: a notice for each mention in an open thread.
+    if (!resolvedBy) {
+      for (const n of notes) {
+        for (const m of n.mentions ?? []) {
+          await prisma.notification.create({
+            data: { organizationId, userId: m!.id, type: 'COMMENT', title: `${n.by!.fullName} mentioned you on ${title}`, body: n.body.slice(0, 140), projectId, entityType, entityId, createdAt: ago(n.at), dedupeKey: `COMMENT:seed:${root.id}:${m!.id}` },
+          });
+        }
+      }
+    }
+  };
+
+  const dpr = await prisma.dailyReport.findFirst({ where: { organizationId, project: { code: 'RD-2026-01' }, status: 'SUBMITTED' }, orderBy: { date: 'desc' }, select: { id: true, projectId: true, date: true } });
+  if (dpr) {
+    await thread('DPR', dpr.id, dpr.projectId, `Daily Progress Report of ${dpr.date.toISOString().slice(0, 10)}`, [
+      { by: pm, body: `@${engineer.fullName} labour on the WMM gang is 18 against 24 yesterday. Short of hands, or moved to the culvert?`, mentions: [engineer], at: 3 },
+      { by: engineer, body: 'Six went to the culvert at Km 17.4 for the top slab shuttering. They are back on WMM tomorrow morning.', at: 2 },
+    ]);
+  }
+  const po = await prisma.purchaseOrder.findFirst({ where: { organizationId, project: { code: 'BL-2026-02' } }, orderBy: { createdAt: 'asc' }, select: { id: true, projectId: true, poNo: true } });
+  if (po) {
+    await thread(
+      'PURCHASE_ORDER', po.id, po.projectId, `Purchase Order ${po.poNo}`,
+      [
+        { by: procurement, body: `@${pm2.fullName} UltraTech is not on the hospital's approved cement makes yet. Hold this line till the request comes back, or switch to ACC?`, mentions: [pm2], at: 50 },
+        { by: pm2, body: 'Keep UltraTech. The PMC said on the phone it will be approved this week; the order is for next month.', at: 46 },
+        { by: procurement, body: 'Noted, keeping it.', at: 45 },
+      ],
+      procurement, 45,
+    );
+  }
+  const meeting = await prisma.meeting.findFirst({ where: { organizationId, project: { code: 'RD-2026-01' }, status: 'ISSUED', kind: 'PROGRESS' }, orderBy: { heldOn: 'desc' }, select: { id: true, projectId: true, meetingNo: true, title: true } });
+  if (meeting) {
+    await thread('MEETING', meeting.id, meeting.projectId, `${meeting.meetingNo} ${meeting.title}`, [
+      { by: tl, body: `@${pm.fullName} the flagmen are on day shift only this week, so night work on the WMM stopped from Tuesday. Shall I ask the subcontractor for two more?`, mentions: [pm], at: 20 },
+    ]);
+  }
 }
