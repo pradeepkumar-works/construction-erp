@@ -240,6 +240,8 @@ export class TallyService {
       await tx.debitNote.updateMany({ where: { id: { in: ids('DEBIT_NOTE') }, tallyExportId: null }, data: mark });
       await tx.payrollRun.updateMany({ where: { id: { in: ids('SALARY') }, tallyExportId: null }, data: mark });
       await tx.staffLoan.updateMany({ where: { id: { in: ids('STAFF_LOAN') }, tallyExportId: null }, data: mark });
+      await tx.rmcInvoice.updateMany({ where: { id: { in: ids('RMC_SALE') }, tallyExportId: null }, data: mark });
+      await tx.rmcReceipt.updateMany({ where: { id: { in: ids('RMC_RECEIPT') }, tallyExportId: null }, data: mark });
       await tx.payrollRun.updateMany({ where: { id: { in: ids('SALARY_PAYMENT') }, tallyPaymentExportId: null }, data: { tallyPaymentExportId: created.id } });
       return created.id;
     });

@@ -152,6 +152,10 @@ and the pre-delivery checklist.
   `PostingService` (`apps/api/src/posting`), shared by the Tally export and the books; a new kind of record that moves money
   is a block there (and its Tally mark), never a second set of rules. Hand-made vouchers go through `voucherProblem` in
   `books-rules.ts` (tested in `src/scripts/books-test.ts`, CI runs it) and need someone other than their maker to approve.
+- RMC (item 104, `apps/api/src/rmc`, ARCHITECTURE "RMC plant"): a plant is a project of type `PLANT`; a truck's materials
+  leave the plant's store only through `StockService.issue`, and cubes are a quality test through `QualityService`. Its
+  figures are pure functions in `rmc-rules.ts` tested in `src/scripts/rmc-test.ts` (CI runs it); bills and receipts post
+  through the posting service (`RMC_SALE`, `RMC_RECEIPT`).
 - Statements (item 103, `apps/api/src/statements`, ARCHITECTURE "Financial statements"): where an account shows is
   `statementLineOf` (`packages/shared/src/statements.ts`), the bank file reader, matching and reconciliation are pure functions in
   `statements-rules.ts` tested in `src/scripts/statements-test.ts` (CI runs it). Vouchers the books make themselves (`OPENING`,

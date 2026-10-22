@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-rmc',
+    date: '2026-11-10',
+    title: 'RMC plant',
+    points: [
+      'Run a ready-mix concrete plant as a project of type RMC plant: its cement, sand, aggregates and admixture are bought, received and counted in its store as at any site.',
+      'Quality approves mix designs; sales quote customers and confirm orders; the plant sends trucks, each with its challan, and the materials go out of the store at the design or as weighed at the batcher.',
+      'The day at the plant shows the orders to pour, the trucks sent by grade and whether the store has enough for what is left. Take cubes from a truck and the 7 and 28 day results are due in Quality.',
+      'Accounts bill delivered challans with GST and record what customers pay; both go to the books and the Tally export.',
+    ],
+  },
+  {
     id: '2026-11-statements',
     date: '2026-11-09',
     title: 'Financial statements',

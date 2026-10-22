@@ -3,7 +3,7 @@ import type { ExpenseCategory } from './enums';
 import { EXPENSE_CATEGORY_LABELS } from './labels';
 
 /** What a Nirmaan record becomes in Tally. */
-export const TALLY_VOUCHER_KINDS = ['SALES', 'RECEIPT', 'PURCHASE', 'SUBCONTRACT', 'PAYMENT', 'EXPENSE', 'DEBIT_NOTE', 'SALARY', 'SALARY_PAYMENT', 'STAFF_LOAN'] as const;
+export const TALLY_VOUCHER_KINDS = ['SALES', 'RECEIPT', 'PURCHASE', 'SUBCONTRACT', 'PAYMENT', 'EXPENSE', 'DEBIT_NOTE', 'SALARY', 'SALARY_PAYMENT', 'STAFF_LOAN', 'RMC_SALE', 'RMC_RECEIPT'] as const;
 export type TallyVoucherKind = (typeof TALLY_VOUCHER_KINDS)[number];
 export const TALLY_VOUCHER_KIND_LABELS: Record<TallyVoucherKind, string> = {
   SALES: 'RA bills',
@@ -16,6 +16,8 @@ export const TALLY_VOUCHER_KIND_LABELS: Record<TallyVoucherKind, string> = {
   SALARY: 'Salary runs',
   SALARY_PAYMENT: 'Salaries paid',
   STAFF_LOAN: 'Loans to staff',
+  RMC_SALE: 'RMC bills',
+  RMC_RECEIPT: 'RMC money received',
 };
 /** The Tally voucher type each kind is imported as. */
 export const TALLY_VOUCHER_TYPES: Record<TallyVoucherKind, string> = {
@@ -29,6 +31,8 @@ export const TALLY_VOUCHER_TYPES: Record<TallyVoucherKind, string> = {
   SALARY: 'Journal',
   SALARY_PAYMENT: 'Payment',
   STAFF_LOAN: 'Payment',
+  RMC_SALE: 'Sales',
+  RMC_RECEIPT: 'Receipt',
 };
 
 /** A ledger Nirmaan posts to that is not a client, vendor or expense category. */
@@ -81,6 +85,7 @@ export const TALLY_FIXED_LEDGERS: TallyFixedLedger[] = [
   { key: 'STAFF_LOANS', use: 'Loans and salary advances to staff, recovered from salary', name: 'Loans and Advances to Staff', group: 'Loans & Advances (Asset)' },
   { key: 'STAFF_RECOVERIES', use: 'Other deductions from salaries', name: 'Recoveries from Staff', group: 'Indirect Incomes' },
   { key: 'SALARY_PAYABLE', use: 'Net salaries approved, not yet paid', name: 'Salaries Payable', group: 'Current Liabilities' },
+  { key: 'RMC_SALES', use: 'Concrete and pumping on RMC bills', name: 'Sales of Ready-Mix Concrete', group: 'Sales Accounts' },
 ];
 
 /** Ledger keys for the parties and categories: `CLIENT:<id>`, `VENDOR:<id>`, `EXPENSE:<category>`. */

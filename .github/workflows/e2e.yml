@@ -139,6 +139,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/statements-test.js
+      - name: RMC batches, dispatch limits, bills and the day's materials add up
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/rmc-test.js
       - name: Early warnings forecast right, show each role its own kinds and backtest on the demo history
         if: matrix.suite == 'flows'
         working-directory: apps/api

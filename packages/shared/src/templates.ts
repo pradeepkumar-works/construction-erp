@@ -51,6 +51,8 @@ export const DEFAULT_ACTIVITY_TEMPLATES: Record<ProjectType, ActivityTemplateIte
     { name: 'House connections', unit: 'Nos', startDay: 240, durationDays: 150 },
     { name: 'Trial run and commissioning', unit: 'LS', startDay: 330, durationDays: 60 },
   ],
+  // An RMC plant runs, it is not built; its schedule is the day's orders (v6 item 104).
+  PLANT: [],
 };
 
 export const MAX_TEMPLATE_ITEMS = 60;

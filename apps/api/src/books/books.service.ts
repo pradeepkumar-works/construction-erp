@@ -66,6 +66,8 @@ function typeOf(v: Voucher): BookVoucherType {
     SALARY: 'JOURNAL',
     SALARY_PAYMENT: 'PAYMENT',
     STAFF_LOAN: 'PAYMENT',
+    RMC_SALE: 'SALES',
+    RMC_RECEIPT: 'RECEIPT',
   };
   // An expense bought on credit moves no money: it is a journal to the vendor.
   if (v.kind === 'EXPENSE' && !v.lines.some((l) => l.ledgerKey === 'CASH' || l.ledgerKey === 'BANK')) return 'JOURNAL';

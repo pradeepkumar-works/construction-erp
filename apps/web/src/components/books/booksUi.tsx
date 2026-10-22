@@ -53,6 +53,9 @@ export function sourceHref(source: BookSource, sourceId: string | null): string 
     case 'PAYMENT':
     case 'DEBIT_NOTE':
       return '/payables';
+    case 'RMC_SALE':
+    case 'RMC_RECEIPT':
+      return '/rmc?tab=bills';
     case 'OPENING':
     case 'YEAR_CLOSE':
       return '/statements?tab=year';

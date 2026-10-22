@@ -172,6 +172,7 @@ async function main() {
     await seedBiometric(org.id);
     await seedBooks(org.id);
     await seedOpening(org.id);
+    await seedRmc(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
   }
@@ -362,6 +363,7 @@ async function main() {
   await seedBiometric(org.id);
   await seedBooks(org.id);
   await seedOpening(org.id);
+  await seedRmc(org.id);
 
   console.log('Seed complete. Login with any of these (password: password123):');
   for (const u of USERS) console.log(`  ${u.email.padEnd(24)} ${u.role}`);
@@ -3559,4 +3561,134 @@ async function seedBiometric(organizationId: string) {
     ].map(([pin, h, m]) => ({ organizationId, deviceId: gate.id, pin: String(pin), punchedAt: at(h, m), date: y, time: t(h, m), result: 'UNMATCHED' as const })),
   });
   await prisma.biometricDevice.update({ where: { id: gate.id }, data: { lastPunchAt: at(18, 5) } });
+}
+
+/**
+ * RMC (v6 item 104): a batching plant at Patia run as a project of type PLANT, with its store's opening stock and a
+ * cement delivery, three mix designs (M30 still waiting for quality), an order from a builder that has had trucks for
+ * three days (the first day's challans billed and part paid, cubes taken from one), the plant supplying the hospital
+ * site, and a quote not yet accepted.
+ */
+async function seedRmc(organizationId: string) {
+  if (await prisma.project.count({ where: { organizationId, type: 'PLANT' } })) return;
+  const user = async (email: string) => (await prisma.user.findFirst({ where: { organizationId, email }, select: { id: true } }))?.id;
+  const [pm, store, qa, accounts, md, engineer] = await Promise.all(['pm@demo.com', 'store@demo.com', 'qaqc@demo.com', 'accounts@demo.com', 'md@demo.com', 'engineer@demo.com'].map(user));
+  if (!pm || !store || !qa || !accounts || !md || !engineer) return;
+  const hospital = await prisma.project.findFirst({ where: { organizationId, type: 'BUILDING' }, select: { id: true } });
+  const year = new Date().getUTCFullYear();
+  const no = (prefix: string, n: number) => `${prefix}-${year}-${String(n).padStart(4, '0')}`;
+  const plant = await prisma.project.create({
+    data: {
+      organizationId, code: 'RMC-01', name: 'Patia RMC Plant (60 m³/h)', type: 'PLANT', status: 'ACTIVE', location: 'Patia, Bhubaneswar', startDate: day(-400), projectManagerId: pm,
+      description: 'Batching plant selling ready-mix concrete to builders and supplying our own sites',
+      members: { create: [store, qa, engineer].map((userId) => ({ userId })) },
+    },
+  });
+  const item = async (name: string, unit: string, rate: string) =>
+    (await prisma.item.findFirst({ where: { organizationId, name, unit } })) ?? prisma.item.create({ data: { organizationId, name, unit, rate: D(rate) } });
+  const cement = await item('OPC 53 Grade Cement', 'Bags', '395.00');
+  const sand = await item('River Sand (Zone II)', 'Cum', '1600.00');
+  const agg20 = await item('Aggregate 20mm', 'Cum', '1350.00');
+  const agg10 = await item('Aggregate 10mm', 'Cum', '1250.00');
+  const admix = await item('Admixture PCE (Master Glenium)', 'Kg', '145.00');
+  const mats = [cement, sand, agg20, agg10, admix];
+
+  // Stock: opening count, then a cement delivery
+  let stockNo = { ADJ: 0, GRN: 0, ISS: 0 };
+  const lastNo = async (prefix: 'ADJ' | 'GRN' | 'ISS') => {
+    const last = await prisma.stockEntry.findFirst({ where: { organizationId, entryNo: { startsWith: `${prefix}-${year}-` } }, orderBy: { entryNo: 'desc' }, select: { entryNo: true } });
+    return last ? parseInt(last.entryNo.slice(prefix.length + 6), 10) : 0;
+  };
+  stockNo = { ADJ: await lastNo('ADJ'), GRN: await lastNo('GRN'), ISS: await lastNo('ISS') };
+  const stockEntry = async (type: 'ADJUSTMENT' | 'RECEIPT' | 'ISSUE', offset: number, by: string, data: Partial<Prisma.StockEntryUncheckedCreateInput>, lines: [string, Prisma.Decimal][]) => {
+    const prefix = type === 'ADJUSTMENT' ? 'ADJ' : type === 'RECEIPT' ? 'GRN' : 'ISS';
+    stockNo[prefix] += 1;
+    return prisma.stockEntry.create({
+      data: {
+        organizationId, projectId: plant.id, type, entryNo: no(prefix, stockNo[prefix]), date: day(offset), createdById: by, createdAt: day(offset), ...data,
+        lines: { create: lines.map(([itemId, quantity], i) => ({ organizationId, projectId: plant.id, itemId, type, date: day(offset), quantity, sortOrder: i })) },
+      },
+    });
+  };
+  await stockEntry('ADJUSTMENT', -20, pm, { remarks: 'Opening stock as per physical count at the plant' }, [[cement.id, D(2400)], [sand.id, D(140)], [agg20.id, D(160)], [agg10.id, D(100)], [admix.id, D(900)]]);
+  await stockEntry('RECEIPT', -5, store, { supplier: 'Utkal Cement Traders', challanNo: 'UCT-5520', vehicleNo: 'OD-02-BT-7781' }, [[cement.id, D(800)]]);
+  for (const [m, min] of [[cement, 600], [sand, 40], [agg20, 40], [agg10, 30]] as const) await prisma.stockMinLevel.create({ data: { organizationId, projectId: plant.id, itemId: m.id, minQty: D(min), updatedById: pm } });
+
+  // Mix designs, per cubic metre: cement bags, sand, 20 mm, 10 mm, admixture kg
+  const design = async (code: string, grade: string, slumpMm: number, qty: number[], approved: boolean) =>
+    prisma.mixDesign.create({
+      data: {
+        organizationId, plantId: plant.id, code, grade, slumpMm, description: `${grade} with OPC 53, pumpable`, status: approved ? 'APPROVED' : 'DRAFT', createdById: engineer,
+        ...(approved ? { approvedById: qa, approvedAt: day(-30) } : {}), createdAt: day(approved ? -32 : -1),
+        lines: { create: qty.map((q, i) => ({ organizationId, itemId: mats[i].id, quantity: D(q), sortOrder: i })) },
+      },
+      include: { lines: true },
+    });
+  const m20 = await design('M20-OPC-01', 'M20', 100, [6.6, 0.48, 0.54, 0.34, 2.6], true);
+  const m25 = await design('M25-OPC-01', 'M25', 120, [7.6, 0.45, 0.52, 0.33, 3.2], true);
+  await design('M30-OPC-01', 'M30', 120, [8.4, 0.42, 0.5, 0.32, 3.8], false);
+
+  const client = async (name: string, gstin: string, contact: string, phone: string) =>
+    prisma.client.upsert({ where: { organizationId_name: { organizationId, name } }, update: {}, create: { organizationId, name, gstin, pan: gstin.slice(2, 12), stateCode: gstin.slice(0, 2), contactPerson: contact, phone, billingAddress: 'Bhubaneswar, Odisha' } });
+  const sai = await client('Sai Developers Pvt Ltd', '21AAKCS4471M1Z3', 'R. Sahoo', '9437220011');
+  const kalinga = await client('Kalinga Homes LLP', '21AAPFK9902Q1Z6', 'A. Behera', '9861440022');
+
+  const order = (n: number, data: Omit<Prisma.RmcOrderUncheckedCreateInput, 'organizationId' | 'orderNo' | 'plantId' | 'createdById'>) =>
+    prisma.rmcOrder.create({ data: { organizationId, orderNo: no('RMC', n), plantId: plant.id, createdById: pm, ...data } });
+  const tower = await order(1, { date: day(-6), status: 'CONFIRMED', confirmedAt: day(-5), clientId: sai.id, site: 'Sai Residency Tower B raft, Patia', mixDesignId: m25.id, quantity: D(60), rate: D(5950), pumpRate: D(350), pourDate: day(0), notes: 'Pour in three days; pump at site from 7 am' });
+  const own = hospital ? await order(2, { date: day(-3), status: 'CONFIRMED', confirmedAt: day(-3), projectId: hospital.id, site: 'Block B first-floor slab', mixDesignId: m20.id, quantity: D(30), rate: D(5300), pumpRate: null, pourDate: day(1) }) : null;
+  await order(3, { date: day(-1), status: 'QUOTED', clientId: kalinga.id, site: 'Kalinga Greens villas, Khandagiri', mixDesignId: m25.id, quantity: D(40), rate: D(6050), pumpRate: D(350), validUntil: day(10), notes: 'Asked for M30 too; quote once quality approves the design' });
+
+  // Trucks: each a batch, its challan and the materials issued from the plant's store
+  let dc = 0;
+  const truck = async (o: { id: string; orderNo: string }, d: typeof m25, offset: number, hour: number, m3: number, status: 'DELIVERED' | 'DISPATCHED', pumped: boolean, to: string, truckNo: string, receivedBy: string | null) => {
+    dc += 1;
+    const batchNo = no('DC', dc);
+    const at = new Date(day(offset).getTime() + (hour - 5.5) * 3_600_000);
+    const lines = d.lines.map((l, i) => {
+      const designQty = l.quantity.mul(m3).toDecimalPlaces(3);
+      // The weigh-bridge rarely agrees to the kilo: cement a touch over on the first truck of a day
+      const actualQty = i === 0 && hour < 9 ? designQty.mul(1.012).toDecimalPlaces(3) : designQty;
+      return { itemId: l.itemId, designQty, actualQty };
+    });
+    const entry = await stockEntry('ISSUE', offset, store, { issuedTo: `${batchNo} to ${to}`, remarks: `${m3} m³ ${d.grade} (${d.code}) on ${o.orderNo}, truck ${truckNo}`, createdAt: at }, lines.map((l) => [l.itemId, l.actualQty.neg()]));
+    return prisma.rmcBatch.create({
+      data: {
+        organizationId, batchNo, plantId: plant.id, orderId: o.id, mixDesignId: d.id, date: day(offset), dispatchedAt: at, quantity: D(m3), truck: truckNo, driver: ['Bapi Das', 'Raju Nayak', 'Sibu Mallick'][dc % 3], pumped, slumpMm: d.slumpMm,
+        status, deliveredAt: status === 'DELIVERED' ? new Date(at.getTime() + 50 * 60_000) : null, receivedBy, stockEntryId: entry.id, createdById: store, createdAt: at,
+        lines: { create: lines.map((l) => ({ organizationId, ...l })) },
+      },
+    });
+  };
+  const sai2 = 'Sai Developers Pvt Ltd';
+  const first = [];
+  for (const [i, t] of ['OD-02-AX-1101', 'OD-02-AX-1102', 'OD-02-AX-1103'].entries()) first.push(await truck(tower, m25, -2, 8 + i, 6, 'DELIVERED', true, sai2, t, 'R. Sahoo, site engineer'));
+  for (const [i, t] of ['OD-02-AX-1101', 'OD-02-AX-1102'].entries()) await truck(tower, m25, -1, 8 + i * 2, 6, 'DELIVERED', true, sai2, t, 'R. Sahoo, site engineer');
+  if (own && hospital) await truck(own, m20, -1, 13, 6, 'DELIVERED', false, 'Own site: District Hospital Block B', 'OD-02-AX-1103', 'Site engineer, Block B');
+  await truck(tower, m25, 0, 7, 6, 'DELIVERED', true, sai2, 'OD-02-AX-1101', 'R. Sahoo, site engineer');
+  await truck(tower, m25, 0, 9, 6, 'DISPATCHED', true, sai2, 'OD-02-AX-1102', null);
+
+  // Cubes from the first truck, cast at the plant
+  const lastTest = await prisma.qualityTest.findFirst({ where: { organizationId, testNo: { startsWith: `TST-${year}-` } }, orderBy: { testNo: 'desc' }, select: { testNo: true } });
+  const testNo = no('TST', (lastTest ? parseInt(lastTest.testNo.slice(9), 10) : 0) + 1);
+  await prisma.qualityTest.create({
+    data: {
+      organizationId, projectId: plant.id, testNo, kind: 'CONCRETE_CUBE', title: `M25 cubes, ${first[0].batchNo} to ${sai2}`, location: 'Sai Residency Tower B raft, Patia', sampledOn: day(-2), specification: 'Not less than 25 N/mm² at 28 days',
+      unit: 'N/mm²', specMin: D(25), result: 'PENDING', createdById: qa, rmcBatchId: first[0].id,
+      readings: { create: [{ label: '7 days', dueOn: day(5), sortOrder: 0 }, { label: '28 days', dueOn: day(26), sortOrder: 1 }] },
+    },
+  });
+
+  // The first day's challans billed, and part of it paid
+  const qty = D(18);
+  const concrete = qty.mul(5950);
+  const pumping = qty.mul(350);
+  const taxable = concrete.add(pumping);
+  const gst = taxable.mul(18).div(100).toDecimalPlaces(2);
+  const cgst = gst.div(2).toDecimalPlaces(2, Prisma.Decimal.ROUND_DOWN);
+  const invoice = await prisma.rmcInvoice.create({
+    data: { organizationId, invoiceNo: no('RINV', 1), plantId: plant.id, clientId: sai.id, orderId: tower.id, date: day(-1), quantity: qty, concrete, pumping, taxable, cgst, sgst: gst.sub(cgst), igst: D(0), total: taxable.add(gst), createdById: accounts, createdAt: day(-1) },
+  });
+  await prisma.rmcBatch.updateMany({ where: { id: { in: first.map((b) => b.id) } }, data: { invoiceId: invoice.id } });
+  await prisma.rmcReceipt.create({ data: { organizationId, clientId: sai.id, invoiceId: invoice.id, date: day(0), amount: D(75000), mode: 'BANK', reference: 'NEFT UTR SBIN226104471', createdById: accounts } });
 }

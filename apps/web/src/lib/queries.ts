@@ -2,6 +2,15 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
 import type {
+  MixDesignDto,
+  RmcBatchDto,
+  RmcBatchStatus,
+  RmcDayDto,
+  RmcInvoiceDto,
+  RmcOrderDto,
+  RmcOrderStatus,
+  RmcPlantDto,
+  RmcReceiptDto,
   DocReadKind,
   DocReadResultDto,
   DraftChecksDto,
@@ -2944,3 +2953,58 @@ export const useDraftVendorBillChecks = (draft: DraftVendorBill | null) =>
     enabled: !!draft && !!draft.invoiceNo && draft.lines.length > 0,
     placeholderData: keepPreviousData,
   });
+
+// ----- RMC (v6 item 104) -----
+
+export const useRmcPlants = (enabled = true) => useQuery({ queryKey: ['rmc', 'plants'], queryFn: async () => (await api.get<RmcPlantDto[]>('/rmc/plants')).data, enabled, staleTime: 5 * 60_000 });
+
+export const useRmcDay = (filters: { date?: string; plantId?: string }) =>
+  useQuery({ queryKey: ['rmc', 'day', clean(filters)], queryFn: async () => (await api.get<RmcDayDto>('/rmc/day', { params: clean(filters) })).data, placeholderData: keepPreviousData });
+
+export const useMixDesigns = (filters: { plantId?: string }, enabled = true) =>
+  useQuery({ queryKey: ['rmc', 'designs', clean(filters)], queryFn: async () => (await api.get<MixDesignDto[]>('/rmc/mix-designs', { params: clean(filters) })).data, enabled });
+
+export const useRmcOrders = (filters: PageParams & { plantId?: string; status?: RmcOrderStatus; clientId?: string }, enabled = true) =>
+  useQuery({
+    queryKey: ['rmc', 'orders', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<RmcOrderDto>>('/rmc/orders', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+
+export const useRmcBatches = (filters: PageParams & { plantId?: string; orderId?: string; status?: RmcBatchStatus; from?: string; to?: string }, enabled = true) =>
+  useQuery({
+    queryKey: ['rmc', 'batches', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<RmcBatchDto>>('/rmc/batches', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+
+export const useRmcInvoices = (filters: PageParams & { plantId?: string; clientId?: string; due?: boolean }) =>
+  useQuery({
+    queryKey: ['rmc', 'invoices', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<RmcInvoiceDto>>('/rmc/invoices', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+  });
+
+export const useRmcReceipts = (filters: PageParams & { clientId?: string }, enabled = true) =>
+  useQuery({
+    queryKey: ['rmc', 'receipts', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<RmcReceiptDto>>('/rmc/receipts', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+
+/** Any write in RMC: RMC is fetched again, and what it touches (the plant's stock, cube tests, the books, the module home). */
+export function useRmcAction<T = unknown>() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ method = 'post', path, body }: { method?: 'post' | 'patch'; path: string; body?: unknown }) => (await api[method]<T>(path, body ?? {})).data,
+    onSuccess: () => {
+      for (const key of [['rmc'], ['stock'], ['quality'], ['books'], ['dashboard', 'module', 'rmc']]) void qc.invalidateQueries({ queryKey: key });
+    },
+  });
+}
+
+export const useRmcOrder = (id: string | null) => useQuery({ queryKey: ['rmc', 'order', id], queryFn: async () => (await api.get<RmcOrderDto>(`/rmc/orders/${id}`)).data, enabled: !!id });
+export const useRmcBatch = (id: string | null) => useQuery({ queryKey: ['rmc', 'batch', id], queryFn: async () => (await api.get<RmcBatchDto>(`/rmc/batches/${id}`)).data, enabled: !!id });

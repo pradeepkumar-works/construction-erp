@@ -500,8 +500,14 @@ Migrations stay additive. Design notes for each item are in the project's `roadm
     accounts choose; bank statements imported from CSV or Excel, matched automatically or by hand, and the bank
     reconciliation statement; the lock date and closing (and reopening) a year. TDS returns (24Q, 26Q) and Form 16 are
     not built.
-104. **RMC production and sales** (L). A plant, mix designs, quotations and sales orders, production schedule, batch
-    reports drawing the plant's stock, delivery challans, cube tests, sales bills with GST and customer receipts.
+104. ~~**RMC production and sales** (L). A plant, mix designs, quotations and sales orders, production schedule, batch
+    reports drawing the plant's stock, delivery challans, cube tests, sales bills with GST and customer receipts.~~
+    Done: a plant is a project of type RMC plant; mix designs approved by quality; quotes that become orders; the plant's
+    day (orders to pour, trucks by grade, the store against what is left to pour); each truck a batch and its challan
+    issuing the materials from the plant's store at the design or as weighed; delivered or turned back; cubes as a quality
+    test at the grade's strength; GST bills from delivered challans and money received, both posted to the books and the
+    Tally export. Not built: a batching controller link (the weighed figures are typed from the printout), signatures
+    on the phone, and returned concrete.
 105. **Supplier portal** (L). Supplier and subcontractor logins: enquiries, POs and work orders to accept, dispatch notes,
     invoices uploaded as bills to check, payments and a statement, profile and bank changes with approval.
 106. **Central store** (M). Stock held at a store or yard that is not a project, with receipts, issues and transfers

@@ -23,7 +23,7 @@ export function ProjectStatusTag({ status }: { status: ProjectStatus }) {
   );
 }
 
-const TYPE_COLORS: Record<ProjectType, string> = { ROAD: 'geekblue', BUILDING: 'cyan', WATER_SUPPLY: 'blue' };
+const TYPE_COLORS: Record<ProjectType, string> = { ROAD: 'geekblue', BUILDING: 'cyan', WATER_SUPPLY: 'blue', PLANT: 'purple' };
 
 export function ProjectTypeTag({ type }: { type: ProjectType }) {
   return (
