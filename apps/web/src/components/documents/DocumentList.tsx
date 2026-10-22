@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Button, Select, theme } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import type { DocumentDiscipline, DocumentDto, DocumentKind, DocumentSortField, RevisionStatus } from '@erp/shared';
-import { DOCUMENT_DISCIPLINES, DOCUMENT_DISCIPLINE_LABELS, DOCUMENT_KINDS, DOCUMENT_KIND_LABELS, LIST_SORT_FIELDS, REVISION_STATUSES, REVISION_STATUS_LABELS, canManageDocuments } from '@erp/shared';
+import { DOCUMENT_DISCIPLINES, DOCUMENT_DISCIPLINE_LABELS, DOCUMENT_KINDS, DOCUMENT_KIND_LABELS, LIST_SORT_FIELDS, REVISION_STATUSES, REVISION_STATUS_LABELS, canManageDocuments, canViewDrawingFile } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { useDocuments } from '@/lib/queries';
 import { formatDate } from '@/lib/format';
@@ -15,7 +15,7 @@ import { EmptyArt } from '@/components/common/EmptyArt';
 import { DataTable, type ListColumn } from '@/components/list/DataTable';
 import { useListFrame } from '@/components/list/useListFrame';
 import { RecordLink } from '@/components/record/RecordLink';
-import { FileLinks, RevisionStatusTag } from './docUi';
+import { FileLinks, RevisionStatusTag, ViewDrawingLink } from './docUi';
 import { DocumentFormModal } from './DocumentFormModal';
 
 const KEYS = ['kind', 'discipline', 'status'] as const;
@@ -67,7 +67,18 @@ export function DocumentList({ projectId: fixedProject, onOpen }: { projectId?: 
         { title: 'Rev', label: 'Revision', key: 'rev', width: 70, render: (_, r) => r.current?.revision ?? <Sub>-</Sub> },
         { title: 'Issued', width: 110, ...sort('issuedOn'), render: (_, r) => (r.current ? formatDate(r.current.issuedOn) : '-') },
         { title: 'Status', width: 180, ...sort('status'), render: (_, r) => (r.current ? <RevisionStatusTag status={r.current.status} /> : <Sub>No revision</Sub>) },
-        { title: 'File', key: 'file', width: 120, render: (_, r) => (r.current ? <FileLinks files={r.current.attachments} compact /> : null) },
+        {
+          title: 'File',
+          key: 'file',
+          width: 170,
+          render: (_, r) =>
+            r.current ? (
+              <div>
+                <ViewDrawingLink documentId={r.id} files={r.current.attachments} openMarkups={r.openMarkups} label="View" />
+                {r.current.attachments.some((a) => !canViewDrawingFile(a)) || !r.current.attachments.length ? <FileLinks files={r.current.attachments.filter((a) => !canViewDrawingFile(a))} compact /> : null}
+              </div>
+            ) : null,
+        },
         { title: 'Updated', width: 110, defaultHidden: true, ...sort('updatedAt'), render: (_, r) => formatDate(r.updatedAt) },
       ];
     },

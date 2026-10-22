@@ -25,8 +25,24 @@ interface FormValues {
   files?: AttachmentDto[];
 }
 
-/** Raise an RFI, or (with `rfi`) change one still waiting for its answer. */
-export function RfiFormModal({ open, onClose, projectId, rfi, defaultDocumentId, onSaved }: { open: boolean; onClose: () => void; projectId?: string; rfi?: RfiDto | null; defaultDocumentId?: string; onSaved?: (r: RfiDto) => void }) {
+/** Raise an RFI, or (with `rfi`) change one still waiting for its answer. `defaults` fills a new one (a mark on a drawing). */
+export function RfiFormModal({
+  open,
+  onClose,
+  projectId,
+  rfi,
+  defaultDocumentId,
+  defaults,
+  onSaved,
+}: {
+  open: boolean;
+  onClose: () => void;
+  projectId?: string;
+  rfi?: RfiDto | null;
+  defaultDocumentId?: string;
+  defaults?: { subject?: string; question?: string; location?: string };
+  onSaved?: (r: RfiDto) => void;
+}) {
   const [form] = Form.useForm<FormValues>();
   const { message } = App.useApp();
   const create = useCreateRfi();
@@ -66,8 +82,9 @@ export function RfiFormModal({ open, onClose, projectId, rfi, defaultDocumentId,
       });
     else {
       const today = dayjs().format('YYYY-MM-DD');
-      form.setFieldsValue({ projectId: fixedProject, priority: 'NORMAL', raisedOn: dayjs(today), replyBy: dayjs(rfiReplyBy(today, 'NORMAL')), documentId: defaultDocumentId, impacts: [] });
+      form.setFieldsValue({ projectId: fixedProject, priority: 'NORMAL', raisedOn: dayjs(today), replyBy: dayjs(rfiReplyBy(today, 'NORMAL')), documentId: defaultDocumentId, impacts: [], ...defaults });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- defaults are read when the form opens, not followed
   }, [open, rfi, fixedProject, defaultDocumentId, form]);
 
   const followReplyBy = () => {
@@ -103,7 +120,7 @@ export function RfiFormModal({ open, onClose, projectId, rfi, defaultDocumentId,
   };
 
   return (
-    <FormShell open={open} onClose={onClose} form={form} layout="drawer" width={760} title={rfi ? `Change ${rfi.rfiNo}` : 'New RFI'} okText={editing ? 'Save' : 'Raise RFI'} onSubmit={submit} draftKey={editing ? undefined : `rfi:${projectId ?? 'any'}`}>
+    <FormShell open={open} onClose={onClose} form={form} layout="drawer" width={760} title={rfi ? `Change ${rfi.rfiNo}` : 'New RFI'} okText={editing ? 'Save' : 'Raise RFI'} onSubmit={submit} draftKey={editing || defaults ? undefined : `rfi:${projectId ?? 'any'}`}>
       <Form form={form} layout="vertical">
         <FormSection title="Question">
           {!fixedProject ? (

@@ -150,6 +150,8 @@ async function main() {
     await seedGuests(org.id);
     await seedVariations(org.id);
     await seedRfis(org.id);
+  await seedDrawingMarkups(org.id);
+    await seedDrawingMarkups(org.id);
     await seedBudgets(org.id);
     await seedStoreMoves(org.id);
     await seedReconciliation(org.id);
@@ -2790,12 +2792,14 @@ async function seedTestsAndNcrs(organizationId: string) {
 }
 
 /** A one-page placeholder drawing (A4 landscape PDF with a border and title block), so documents open on every host. */
-function drawingPdf(docNo: string, title: string, revision: string, project: string): Uint8Array<ArrayBuffer> {
+function drawingPdf(docNo: string, title: string, revision: string, project: string, revised = false): Uint8Array<ArrayBuffer> {
   const esc = (t: string) => t.replace(/[\\()]/g, (c) => `\\${c}`).replace(/[^\x20-\x7e]/g, '-');
   const text = (x: number, y: number, size: number, t: string) => `BT /F1 ${size} Tf ${x} ${y} Td (${esc(t)}) Tj ET`;
   const body = [
     '1 w 20 20 802 555 re S 0.5 w 522 20 300 110 re S 522 95 m 822 95 l S 522 60 m 822 60 l S 722 20 m 722 60 l S',
     '0.6 G 60 200 m 460 200 l 460 480 l 60 480 l h S 60 340 m 460 340 l S 260 200 m 260 480 l S 0 G',
+    // A later revision moves a wall and adds a room, so comparing revisions in the viewer shows a change.
+    ...(revised ? ['0.6 G 360 200 m 360 340 l S 260 410 m 460 410 l S 0 G', text(380, 260, 9, 'TOILET BLOCK')] : []),
     text(60, 520, 22, title),
     text(60, 160, 11, 'Placeholder drawing created by the Nirmaan demo data.'),
     text(530, 110, 9, project),
@@ -2863,6 +2867,114 @@ const DEMO_DOCUMENTS: Record<string, DemoDocument[]> = {
   ],
 };
 
+/** A small plan as an ASCII DXF (item 109): walls, a door swing, a column grid and labels on their own layers. */
+function drawingDxf(docNo: string, revision: string): Uint8Array<ArrayBuffer> {
+  const out: (string | number)[] = [];
+  const g = (...pairs: (string | number)[]) => out.push(...pairs);
+  const layer = (name: string, color: number) => g(0, 'LAYER', 2, name, 70, 0, 62, color, 6, 'CONTINUOUS');
+  const line = (l: string, x1: number, y1: number, x2: number, y2: number) => g(0, 'LINE', 8, l, 10, x1, 20, y1, 30, 0, 11, x2, 21, y2, 31, 0);
+  const rect = (l: string, x: number, y: number, w: number, h: number) => {
+    line(l, x, y, x + w, y);
+    line(l, x + w, y, x + w, y + h);
+    line(l, x + w, y + h, x, y + h);
+    line(l, x, y + h, x, y);
+  };
+  const text = (l: string, x: number, y: number, h: number, t: string) => g(0, 'TEXT', 8, l, 10, x, 20, y, 30, 0, 40, h, 1, t);
+  g(0, 'SECTION', 2, 'TABLES', 0, 'TABLE', 2, 'LAYER', 70, 4);
+  layer('WALLS', 7);
+  layer('DOORS', 3);
+  layer('GRID', 8);
+  layer('TEXT', 5);
+  g(0, 'ENDTAB', 0, 'ENDSEC', 0, 'SECTION', 2, 'ENTITIES');
+  // Outer walls 12 m × 8 m, 230 mm thick, and partitions (millimetres).
+  rect('WALLS', 0, 0, 12000, 8000);
+  rect('WALLS', 230, 230, 11540, 7540);
+  line('WALLS', 4000, 230, 4000, 7770);
+  line('WALLS', 8000, 230, 8000, 4000);
+  line('WALLS', 8000, 4000, 11770, 4000);
+  for (const [x, y] of [[1500, 230], [5500, 230], [9200, 4000]]) {
+    line('DOORS', x, y, x, y + 900);
+    g(0, 'ARC', 8, 'DOORS', 10, x, 20, y, 30, 0, 40, 900, 50, 0, 51, 90);
+  }
+  for (const [i, x] of [0, 4000, 8000, 12000].entries()) {
+    line('GRID', x, -1500, x, 9500);
+    g(0, 'CIRCLE', 8, 'GRID', 10, x, 20, 10000, 30, 0, 40, 450);
+    text('GRID', x - 150, 9850, 300, String(i + 1));
+  }
+  text('TEXT', 1200, 4000, 350, 'GENTS TOILET');
+  text('TEXT', 5200, 4000, 350, 'LADIES TOILET');
+  text('TEXT', 8800, 2000, 350, 'STORE');
+  text('TEXT', 8800, 6000, 350, 'JANITOR');
+  text('TEXT', 0, -2500, 400, `${docNo} Rev ${revision}  Toilet block layout (all dimensions in mm)`);
+  g(0, 'ENDSEC', 0, 'EOF');
+  const body = out.map((v, i) => (i % 2 === 0 ? String(v).padStart(3, ' ') : String(v))).join('\n') + '\n';
+  return new Uint8Array(Buffer.from(body, 'latin1'));
+}
+
+/**
+ * Marks on the demo drawings (item 109), once per organisation: comments and clouds on the building's ground floor plan
+ * (one carried open from Rev R0), and the toilet block as a DXF drawing to show the viewer's CAD side.
+ */
+async function seedDrawingMarkups(organizationId: string) {
+  const plan = await prisma.document.findFirst({ where: { organizationId, docNo: 'ARC-101' }, include: { revisions: { include: { attachments: { orderBy: { createdAt: 'asc' } } }, orderBy: { issuedOn: 'asc' } } } });
+  if (!plan || plan.revisions.length < 2) return;
+  const project = await prisma.project.findUnique({ where: { id: plan.projectId }, select: { projectManagerId: true } });
+  const pm = project?.projectManagerId;
+  const site = await prisma.user.findFirst({ where: { organizationId, email: 'engineer2@demo.com' }, select: { id: true } });
+  if (!pm) return;
+
+  if (!(await prisma.document.count({ where: { projectId: plan.projectId, docNo: 'ARC-110' } }))) {
+    const doc = await prisma.document.create({
+      data: { organizationId, projectId: plan.projectId, docNo: 'ARC-110', title: 'Toilet block layout (CAD)', kind: 'DRAWING', discipline: 'ARCHITECTURAL', createdById: pm, createdAt: day(-10) },
+    });
+    const rev = await prisma.documentRevision.create({
+      data: { documentId: doc.id, revision: 'R0', issuedOn: day(-10), status: 'FOR_CONSTRUCTION', receivedFrom: 'Shilpa Architects', remarks: 'DXF from the architect', issuedById: pm, createdAt: day(-10) },
+    });
+    const dxf = drawingDxf('ARC-110', 'R0');
+    await prisma.attachment.create({
+      data: { organizationId, fileName: 'ARC-110-R0.dxf', mimeType: 'image/vnd.dxf', size: dxf.length, storagePath: 'db:seed/ARC-110-R0.dxf', data: dxf, uploadedById: pm, revisionId: rev.id, createdAt: day(-10) },
+    });
+    await prisma.document.update({ where: { id: doc.id }, data: { currentRevisionId: rev.id } });
+    await prisma.auditLog.create({ data: { organizationId, entityType: 'DOCUMENT', entityId: doc.id, action: 'CREATED', actorId: pm, note: 'Rev R0', createdAt: day(-10) } });
+  }
+
+  if (await prisma.drawingMarkup.count({ where: { organizationId } })) return;
+  const [r0, r1] = plan.revisions;
+  const f0 = r0.attachments[0];
+  const f1 = r1.attachments[0];
+  if (!f0 || !f1) return;
+  const by = site?.id ?? pm;
+  const marks = [
+    { rev: r0, file: f0, kind: 'CLOUD' as const, points: [[0.31, 0.2], [0.55, 0.45]], color: 'RED' as const, note: 'Waiting area too small for the OPD queue; enlarge towards grid C', status: 'RESOLVED' as const, ago: 38, by: pm },
+    { rev: r0, file: f0, kind: 'PIN' as const, points: [[0.2, 0.62]], color: 'RED' as const, note: 'Sill level of this window is not shown. Confirm 900 mm?', status: 'OPEN' as const, ago: 36, by },
+    { rev: r1, file: f1, kind: 'PIN' as const, points: [[0.47, 0.5]], color: 'BLUE' as const, note: 'Toilet block now at grid 5: shift the soil pipe sleeve in the plinth beam before casting', status: 'OPEN' as const, ago: 20, by: pm },
+    { rev: r1, file: f1, kind: 'ARROW' as const, points: [[0.66, 0.2], [0.55, 0.33]], color: 'ORANGE' as const, note: 'Door swing clashes with the column', status: 'OPEN' as const, ago: 12, by },
+  ];
+  for (const [i, m] of marks.entries()) {
+    await prisma.drawingMarkup.create({
+      data: {
+        organizationId,
+        projectId: plan.projectId,
+        documentId: plan.id,
+        markupNo: i + 1,
+        revisionId: m.rev.id,
+        attachmentId: m.file.id,
+        kind: m.kind,
+        points: m.points,
+        color: m.color,
+        note: m.note,
+        status: m.status,
+        resolvedById: m.status === 'RESOLVED' ? pm : null,
+        resolvedAt: m.status === 'RESOLVED' ? day(-25) : null,
+        resolvedNote: m.status === 'RESOLVED' ? 'Enlarged on Rev R1' : null,
+        createdById: m.by,
+        createdAt: day(-m.ago),
+      },
+    });
+    await prisma.auditLog.create({ data: { organizationId, entityType: 'DOCUMENT', entityId: plan.id, action: 'MARKUP_ADDED', actorId: m.by, note: `M${i + 1}: ${m.note}`, createdAt: day(-m.ago) } });
+  }
+}
+
 async function seedDocuments(organizationId: string) {
   if ((await prisma.document.count({ where: { organizationId } })) > 0) return;
   const pmFor = async (projectId: string) => (await prisma.project.findUnique({ where: { id: projectId }, select: { projectManagerId: true } }))?.projectManagerId;
@@ -2883,7 +2995,7 @@ async function seedDocuments(organizationId: string) {
         const rev = await prisma.documentRevision.create({
           data: { documentId: doc.id, revision, issuedOn: day(-ago), status, receivedFrom: d.from, remarks, issuedById: by, createdAt: day(-ago) },
         });
-        const pdf = drawingPdf(d.docNo, d.title, revision, `${project.code} ${project.name}`);
+        const pdf = drawingPdf(d.docNo, d.title, revision, `${project.code} ${project.name}`, revision !== d.revisions[0][0]);
         await prisma.attachment.create({
           data: { organizationId, fileName: `${d.docNo}-${revision}.pdf`, mimeType: 'application/pdf', size: pdf.length, storagePath: `db:seed/${d.docNo}-${revision}.pdf`, data: pdf, uploadedById: by, revisionId: rev.id, createdAt: day(-ago) },
         });

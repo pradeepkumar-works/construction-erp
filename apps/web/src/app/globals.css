@@ -794,3 +794,26 @@ a.text-link:hover {
   min-height: 24px;
   font-weight: 600;
 }
+
+/* Drawing viewer (item 109): the sheet beside its marks, the marks under it on a phone. */
+.drawing-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 16px;
+  align-items: start;
+}
+.drawing-viewport {
+  position: relative;
+  overflow: hidden;
+  touch-action: none;
+  height: clamp(360px, calc(100vh - 290px), 1100px);
+  outline-offset: 2px;
+}
+@media (max-width: 991px) {
+  .drawing-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .drawing-viewport {
+    height: 62vh;
+  }
+}

@@ -219,6 +219,28 @@ enum RevisionStatus {
   WITHDRAWN
 }
 
+/// Drawing markup (item 109)
+enum MarkupKind {
+  PIN
+  CLOUD
+  RECT
+  ARROW
+  TEXT
+  PEN
+}
+
+enum MarkupStatus {
+  OPEN
+  RESOLVED
+}
+
+enum MarkupColor {
+  RED
+  BLUE
+  GREEN
+  ORANGE
+}
+
 enum TransmittalPurpose {
   FOR_CONSTRUCTION
   FOR_APPROVAL
@@ -450,6 +472,7 @@ model Organization {
   qualityTests         QualityTest[]
   ncrs                 Ncr[]
   documents            Document[]
+  drawingMarkups       DrawingMarkup[]
   transmittals         Transmittal[]
   letters              Letter[]
   employees            Employee[]
@@ -649,6 +672,8 @@ model User {
   ncrsClosed           Ncr[]                    @relation("NcrCloser")
   documentsCreated     Document[]               @relation("DocumentCreator")
   revisionsIssued      DocumentRevision[]       @relation("RevisionIssuer")
+  markupsMade          DrawingMarkup[]          @relation("MarkupCreator")
+  markupsResolved      DrawingMarkup[]          @relation("MarkupResolver")
   transmittalsSent     Transmittal[]            @relation("TransmittalSender")
   lettersRecorded      Letter[]                 @relation("LetterRecorder")
   variationsCreated    Variation[]              @relation("VariationCreator")
@@ -817,6 +842,7 @@ model Project {
   qualityTests     QualityTest[]
   ncrs             Ncr[]
   documents        Document[]
+  drawingMarkups   DrawingMarkup[]
   transmittals     Transmittal[]
   letters          Letter[]
   staff            Employee[]
@@ -2710,6 +2736,7 @@ model Attachment {
   ncr               Ncr?               @relation(fields: [ncrId], references: [id], onDelete: Cascade)
   revisionId        String?
   revision          DocumentRevision?  @relation(fields: [revisionId], references: [id], onDelete: Cascade)
+  drawingMarkups    DrawingMarkup[]
   letterId          String?
   letter            Letter?            @relation(fields: [letterId], references: [id], onDelete: Cascade)
   variationId       String?
@@ -3126,6 +3153,7 @@ model Document {
 
   revisions DocumentRevision[] @relation("DocumentRevisions")
   rfis      Rfi[]
+  markups   DrawingMarkup[]
 
   @@unique([projectId, docNo])
   @@index([organizationId, kind])
@@ -3150,9 +3178,52 @@ model DocumentRevision {
   attachments  Attachment[]
   transmittals TransmittalItem[]
   currentOf    Document?         @relation("CurrentRevision")
+  markups      DrawingMarkup[]
 
   @@unique([documentId, revision])
   @@index([documentId, createdAt])
+}
+
+/// A mark on a drawing (item 109): a comment pin, cloud, box, arrow, text or freehand line on one page of a revision's
+/// file. Points are normalised to the page (0 to 1). Open marks are carried onto later revisions until resolved.
+model DrawingMarkup {
+  id             String           @id @default(uuid())
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  documentId     String
+  document       Document         @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  /// M1, M2… within the document
+  markupNo       Int
+  revisionId     String
+  revision       DocumentRevision @relation(fields: [revisionId], references: [id], onDelete: Cascade)
+  attachmentId   String
+  attachment     Attachment       @relation(fields: [attachmentId], references: [id], onDelete: Cascade)
+  page           Int              @default(1)
+  kind           MarkupKind
+  /// [[x, y], …] from 0 to 1 of the page's width and height
+  points         Json
+  color          MarkupColor      @default(RED)
+  /// The comment, or the words of a TEXT mark
+  note           String?
+  status         MarkupStatus     @default(OPEN)
+  resolvedNote   String?
+  resolvedById   String?
+  resolvedBy     User?            @relation("MarkupResolver", fields: [resolvedById], references: [id], onDelete: SetNull)
+  resolvedAt     DateTime?
+  /// An RFI raised from this mark
+  rfiId          String?
+  rfi            Rfi?             @relation(fields: [rfiId], references: [id], onDelete: SetNull)
+  createdById    String
+  createdBy      User             @relation("MarkupCreator", fields: [createdById], references: [id])
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@unique([documentId, markupNo])
+  @@index([organizationId, status])
+  @@index([revisionId])
+  @@index([attachmentId])
 }
 
 /// A numbered cover sheet listing the revisions sent to someone, and their acknowledgement.
@@ -3682,6 +3753,7 @@ model Rfi {
   updatedAt      DateTime     @updatedAt
 
   attachments Attachment[]
+  markups     DrawingMarkup[]
 
   @@unique([organizationId, rfiNo])
   @@index([projectId, status])

@@ -55,7 +55,7 @@ const documentInclude = {
   project: { select: { name: true } },
   createdBy: { select: { fullName: true } },
   currentRevision: { include: revisionInclude },
-  _count: { select: { revisions: true } },
+  _count: { select: { revisions: true, markups: { where: { status: 'OPEN' } } } },
 } satisfies Prisma.DocumentInclude;
 type DocumentRow = Prisma.DocumentGetPayload<{ include: typeof documentInclude }>;
 
@@ -164,6 +164,7 @@ export class DocumentsService {
       remarks: d.remarks,
       current: d.currentRevision ? this.toRevisionDto(d.currentRevision, d.currentRevisionId) : null,
       revisionCount: d._count.revisions,
+      openMarkups: d._count.markups,
       createdById: d.createdById,
       createdByName: d.createdBy.fullName,
       createdAt: iso(d.createdAt)!,

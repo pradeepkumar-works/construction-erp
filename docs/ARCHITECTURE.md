@@ -577,6 +577,42 @@ Registers, not approval submissions (`DocumentsService`; `/documents`, `/transmi
   (Android: a PDF viewer through `expo-intent-launcher`; iOS: the preview sheet through `expo-sharing`), images in the
   app; unsaved files open online.
 
+## Drawing viewer and markup
+
+Item 109: a revision's drawing opened in the app and marked up, instead of printed, marked by hand and photographed.
+
+- **Table.** `DrawingMarkup` (RLS): document, `markupNo` (M1, M2… unique per document, the next free number, retried on
+  a clash), the revision and file (`attachmentId`) it was drawn on, `page`, `kind` (`PIN`, `CLOUD`, `RECT`, `ARROW`,
+  `TEXT`, `PEN`), `points` (JSON `[[x, y], …]`, each 0 to 1 of the page's width and height, y down, rounded to 5 places),
+  `color` (`RED`, `BLUE`, `GREEN`, `ORANGE`), `note` (needed on a pin, the words of a text mark), `status` OPEN /
+  RESOLVED with who, when and a note, and `rfiId`. A client `id` makes a repeated create return the saved mark.
+- **Rules** (`packages/shared/src/markup.ts`, tested in `apps/api/src/scripts/markup-test.ts`). `markupProblem` checks the
+  points each kind takes (one, two, or up to 1000 for freehand) and the comment. `marksForSheet` gives a sheet its own
+  marks and, when asked, the open marks of earlier revisions on the file in the same place (`fileIndex`) and page: the
+  carried marks, drawn dashed until someone resolves them. Anyone who can open the document adds marks;
+  `canEditMarkup` (whoever made it, and document control) changes, resolves and deletes them. Adding, resolving,
+  reopening and deleting are on the document's history. `Document.openMarkups` counts open marks for the register.
+- **API.** `GET /documents/:id/markups`, `POST` (create), `PATCH /:markupId` (points, colour, note), `POST /:markupId/resolve`
+  and `/reopen`, `PUT /:markupId/rfi` (link the RFI raised from it), `DELETE`. Uploads take `.dxf` and `.dwg` by extension
+  (`CAD_MIME_TYPES`, stored as `image/vnd.dxf` and `image/vnd.dwg`); the revision form's uploader keeps drawings at full size.
+- **Web viewer** (`/documents/drawing?id&rev&file&page&mark`, `components/drawings/`). `sheet.ts` opens a file as pages
+  drawn on a white canvas: PDF with pdf.js (the legacy build, for older phones and browsers), images, and DXF through
+  `dxf.ts` (dxf-parser, flattened once into lines and text in model space with blocks placed and arcs cut into segments,
+  layers listed to switch off, pale colours drawn dark on white). DWG is not drawn: the free readers are GPL and
+  incomplete, so the revision keeps it for download beside a PDF or DXF. The sheet pans and zooms by CSS transform and is
+  drawn again at the settled zoom (a canvas is capped at 16 million pixels); marks are an SVG overlay in the sheet's
+  0 to 1 space, with pins and line widths a fixed size on screen. Compare draws two revisions at the same size and
+  colours ink only on the older red, only on the newer blue, on both grey. Save image draws the canvas and the overlay
+  into a PNG. Raise RFI opens the RFI form filled from the mark and links the new RFI back. The register's File column
+  and the document drawer link to it with the open count.
+- **Phone** (`app/drawing/[id].tsx`, from Drawings). The current revision, its file opened as before (saved on the phone
+  or online), and the marks (own and carried) with resolve and delete in a sheet. On an image drawing the marks are
+  numbered dots and Add a comment drops a pin where tapped (online). PDFs and DXF are marked up on the web; showing PDF
+  pages inside the app needs a WebView, so it waits for a store build.
+- **Measuring later** (item 118). A measure tool can reuse the same page fractions: `Sheet.aspect(page)` gives the
+  page's shape, a PDF page's size in points comes from pdf.js at scale 1, and a DXF's `width`/`height` are already in
+  drawing units, so a DXF needs no calibration while a PDF or scan takes its scale from two known points.
+
 ## Staff and leave
 
 The company's own staff, separate from contractor labour (`StaffService`; `/staff/*`). Leave has its own approval

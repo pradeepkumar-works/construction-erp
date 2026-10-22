@@ -53,6 +53,15 @@ export const BRAND = {
     chartAmber: '#D97706',
     chartTeal: '#0F766E',
     chartPink: '#BE185D',
+    /** Drawing markup ink (item 109), on the white of a drawing sheet in either theme. */
+    markupRed: '#D92D20',
+    markupBlue: '#1E63D6',
+    markupGreen: '#167A3E',
+    markupOrange: '#C2410C',
+    /** Comparing revisions: lines only on the older one, only on the newer one, and on both. */
+    compareOld: '#D92D20',
+    compareNew: '#1E63D6',
+    compareBoth: '#9AA3AF',
     /** The website's body text, captions, hairlines and the browser-frame bar on its screenshots. */
     siteText: '#3B4A5F',
     siteMuted: '#64748B',

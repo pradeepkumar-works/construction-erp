@@ -12,7 +12,7 @@ import { useAuth } from '@/lib/auth';
 import { useDocument, useDocumentHistory } from '@/lib/queries';
 import { formatDate, formatDateTime } from '@/lib/format';
 import { QueryError } from '@/components/common/QueryState';
-import { FileLinks, RevisionStatusTag } from './docUi';
+import { FileLinks, RevisionStatusTag, ViewDrawingLink } from './docUi';
 import { DocumentFormModal } from './DocumentFormModal';
 import { RevisionFormModal } from './RevisionFormModal';
 import { RecordLink } from '@/components/record/RecordLink';
@@ -92,7 +92,19 @@ export function DocumentDrawer({ id, open, onClose, onSend, onOpenTransmittal }:
               { key: 'disc', label: 'Discipline', children: DOCUMENT_DISCIPLINE_LABELS[data.discipline] },
               { key: 'rev', label: 'Current revision', children: cur ? <Space>{cur.revision}<RevisionStatusTag status={cur.status} /></Space> : 'None yet' },
               { key: 'issued', label: 'Issued', children: cur ? `${formatDate(cur.issuedOn)}${cur.receivedFrom ? ` by ${cur.receivedFrom}` : ''}` : '-' },
-              { key: 'file', label: 'Drawing', children: cur ? <FileLinks files={cur.attachments} /> : '-', span: 2 },
+              {
+                key: 'file',
+                label: 'Drawing',
+                span: 2,
+                children: cur ? (
+                  <Space orientation="vertical" size={2}>
+                    <ViewDrawingLink documentId={data.id} revisionId={cur.id} files={cur.attachments} openMarkups={data.openMarkups} />
+                    <FileLinks files={cur.attachments} />
+                  </Space>
+                ) : (
+                  '-'
+                ),
+              },
               ...(data.remarks ? [{ key: 'remarks', label: 'Remarks', children: data.remarks, span: 2 }] : []),
             ]}
           />
@@ -115,7 +127,10 @@ export function DocumentDrawer({ id, open, onClose, onSend, onOpenTransmittal }:
                 render: (_, r) => (
                   <div>
                     {r.remarks ? <div style={{ fontSize: themeFontSize('fontSizeSM') }}>{r.remarks}</div> : null}
-                    <FileLinks files={r.attachments} compact />
+                    <Space size={8} wrap>
+                      <ViewDrawingLink documentId={data.id} revisionId={r.id} files={r.attachments} label="View" />
+                      <FileLinks files={r.attachments} compact />
+                    </Space>
                     {r.transmittals.length ? (
                       <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
                         Sent on{' '}

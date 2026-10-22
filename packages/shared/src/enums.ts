@@ -242,3 +242,12 @@ export type DefectPriority = (typeof DEFECT_PRIORITIES)[number];
 /** OPEN, FIXED by the site, CLOSED once checked (or reopened back to OPEN). */
 export const DEFECT_STATUSES = ['OPEN', 'FIXED', 'CLOSED'] as const;
 export type DefectStatus = (typeof DEFECT_STATUSES)[number];
+
+/** Drawing markup (item 109, `markup.ts`): what a mark is, whether it is still open, and its ink. */
+export const MARKUP_KINDS = ['PIN', 'CLOUD', 'RECT', 'ARROW', 'TEXT', 'PEN'] as const;
+export type MarkupKind = (typeof MARKUP_KINDS)[number];
+export const MARKUP_STATUSES = ['OPEN', 'RESOLVED'] as const;
+export type MarkupStatus = (typeof MARKUP_STATUSES)[number];
+/** Each app maps these to its own palette (web `BRAND.colors`, phone `theme.ts`). */
+export const MARKUP_COLORS = ['RED', 'BLUE', 'GREEN', 'ORANGE'] as const;
+export type MarkupColor = (typeof MARKUP_COLORS)[number];

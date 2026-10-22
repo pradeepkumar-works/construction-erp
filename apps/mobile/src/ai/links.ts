@@ -34,6 +34,8 @@ export function phoneRoute(href: string): string | null {
   const file = params.get('file');
   if (first === 'documents' && second === 'view' && file && ID.test(file)) return `/document-page?file=${file}&page=${Number(params.get('page')) || 1}`;
   const id = params.get('id');
+  // A drawing in the viewer (item 109), or a document opened in the register
+  if (first === 'documents' && (second === 'drawing' || !second) && id && ID.test(id)) return `/drawing/${id}`;
   if (first === 'risks' && id && ID.test(id)) return `/risk/${id}`;
   if (first === 'safety' && params.get('tab') === 'incidents' && id && ID.test(id)) return `/incident/${id}`;
   if (first && !second && LISTS[first]) return LISTS[first];

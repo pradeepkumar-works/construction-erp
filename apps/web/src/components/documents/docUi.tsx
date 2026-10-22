@@ -1,10 +1,11 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { Space, Tag } from 'antd';
-import { FilePdfOutlined, FileImageOutlined } from '@ant-design/icons';
+import { FileImageOutlined, FileOutlined, FilePdfOutlined, HighlightOutlined } from '@ant-design/icons';
 import type { AttachmentDto, RevisionStatus } from '@erp/shared';
-import { REVISION_STATUS_LABELS } from '@erp/shared';
+import { REVISION_STATUS_LABELS, canViewDrawingFile, drawingFileKind } from '@erp/shared';
 import { fileUrl } from '@/lib/api';
 
 const STATUS_TAG: Record<RevisionStatus, string> = {
@@ -31,9 +32,23 @@ export function FileLinks({ files, compact }: { files: AttachmentDto[]; compact?
     <Space size={compact ? 4 : 8} wrap>
       {files.map((a) => (
         <a key={a.id} href={fileUrl(a.url)} target="_blank" rel="noreferrer" title={a.fileName} style={{ whiteSpace: 'nowrap' }}>
-          {a.mimeType === 'application/pdf' ? <FilePdfOutlined /> : <FileImageOutlined />} {compact ? (files.length > 1 ? a.fileName : 'Open') : a.fileName}
+          {drawingFileKind(a) === 'pdf' ? <FilePdfOutlined /> : drawingFileKind(a) === 'image' ? <FileImageOutlined /> : <FileOutlined />} {compact ? (files.length > 1 ? a.fileName : 'Open') : a.fileName}
         </a>
       ))}
     </Space>
+  );
+}
+
+/** Where a revision opens in the drawing viewer (item 109). */
+export const drawingHref = (documentId: string, revisionId?: string) => `/documents/drawing?id=${documentId}${revisionId ? `&rev=${revisionId}` : ''}`;
+
+/** "View and mark up" for a revision with a PDF, image or DXF, with the drawing's open marks when it has any. */
+export function ViewDrawingLink({ documentId, revisionId, files, openMarkups, label = 'View and mark up' }: { documentId: string; revisionId?: string; files: AttachmentDto[]; openMarkups?: number; label?: string }) {
+  if (!files.some(canViewDrawingFile)) return null;
+  return (
+    <Link href={drawingHref(documentId, revisionId)} style={{ whiteSpace: 'nowrap' }}>
+      <HighlightOutlined /> {label}
+      {openMarkups ? <span translate="no"> ({openMarkups} open)</span> : null}
+    </Link>
   );
 }

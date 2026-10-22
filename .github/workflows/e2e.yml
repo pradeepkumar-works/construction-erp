@@ -115,6 +115,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/rfi-test.js
+      - name: Drawing marks need their points and comment, and open ones carry onto later revisions
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/markup-test.js
       - name: Approval levels place an entry at its level, pick who decides it and escalate it
         if: matrix.suite == 'flows'
         working-directory: apps/api
