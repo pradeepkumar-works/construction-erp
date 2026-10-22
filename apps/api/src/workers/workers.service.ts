@@ -317,9 +317,7 @@ export class WorkersService {
             update: data,
           });
         }
-        const roll = await tx.worker.findMany({ where: this.rollWhere(user.organizationId, dto.projectId, date), select: { contractor: true, trade: true, attendance: { where: { date, projectId: dto.projectId }, select: { status: true } } } });
-        const counts = rollCallHeadCount(roll.map((w) => ({ contractor: w.contractor, trade: w.trade, status: w.attendance[0]?.status ?? null })));
-        return this.attendance.applyRollCall(tx, user, dto.projectId, date, counts);
+        return this.recountHeadCount(tx, user, dto.projectId, date);
       },
       { timeout: 30_000 },
     );
@@ -328,6 +326,16 @@ export class WorkersService {
     const t = saved.totals;
     await this.audit.log(user, 'ROLL_CALL', dto.projectId, 'MARKED', `${dto.date}: ${t.present} present, ${t.halfDay} half day, ${t.absent} absent; head count ${headCount ? headCount.reduce((s, l) => s + l.count, 0) : 0}`);
     return saved;
+  }
+
+  /**
+   * The day's head-count sheet from the named workers' marks at the project: after a roll call, and after biometric
+   * punches (v6 item 101) mark workers. `by` is who the sheet records as having changed it.
+   */
+  async recountHeadCount(tx: Prisma.TransactionClient, by: Pick<RequestUser, 'id' | 'organizationId'>, projectId: string, date: Date) {
+    const roll = await tx.worker.findMany({ where: this.rollWhere(by.organizationId, projectId, date), select: { contractor: true, trade: true, attendance: { where: { date, projectId }, select: { status: true } } } });
+    const counts = rollCallHeadCount(roll.map((w) => ({ contractor: w.contractor, trade: w.trade, status: w.attendance[0]?.status ?? null })));
+    return this.attendance.applyRollCall(tx, by, projectId, date, counts);
   }
 
   /** The month's muster roll of a project: each worker's marks by day, man-days, overtime and wages at their current rates. */

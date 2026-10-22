@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-biometric',
+    date: '2026-11-07',
+    title: 'Biometric devices mark attendance',
+    points: [
+      'People → Biometric devices registers your fingerprint and face terminals. ZKTeco, eSSL and similar devices with ADMS (cloud) send punches straight in; Setup shows what to enter on the device.',
+      'Other devices and attendance services can send punches to a webhook with the device\'s own key, or you can import the punch file from the device software as Excel or CSV.',
+      'Match each user number on the device to an employee or a worker once. Punches then become staff attendance (with overtime to approve) and worker attendance at the device\'s site, and the Punches tab shows what each one did.',
+    ],
+  },
+  {
     id: '2026-11-payroll',
     date: '2026-11-06',
     title: 'Payroll: salary runs, payslips and full and final',

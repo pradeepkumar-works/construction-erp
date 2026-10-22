@@ -174,6 +174,10 @@ import type {
   EmployeeEventType,
   HrDashboardDto,
   PayrollSettingsDto,
+  BiometricDeviceDto,
+  BiometricUserDto,
+  BiometricPunchDto,
+  BiometricPunchResult,
   SalaryStructureDto,
   StaffLoanDto,
   PayrollRunDto,
@@ -1382,6 +1386,34 @@ export function usePayrollAction<T = unknown>() {
     mutationFn: async ({ method = 'post', path, body }: { method?: 'post' | 'put' | 'delete'; path: string; body?: unknown }) =>
       (method === 'delete' ? await api.delete<T>(path) : await api[method]<T>(path, body ?? {})).data,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['payroll'] }),
+  });
+}
+
+/* Biometric attendance (v6 item 101); every key starts with 'biometric'. */
+export const useBiometricDevices = (enabled = true) =>
+  useQuery({ queryKey: ['biometric', 'devices'], queryFn: async () => (await api.get<BiometricDeviceDto[]>('/biometric/devices')).data, enabled });
+
+export const useBiometricUsers = (enabled = true) =>
+  useQuery({ queryKey: ['biometric', 'users'], queryFn: async () => (await api.get<BiometricUserDto[]>('/biometric/users')).data, enabled });
+
+export const useBiometricPunches = (filters: { date: string; deviceId?: string; result?: BiometricPunchResult; pin?: string }) =>
+  useQuery({
+    queryKey: ['biometric', 'punches', clean(filters)],
+    queryFn: async () => (await api.get<BiometricPunchDto[]>('/biometric/punches', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+  });
+
+/** Any biometric write; devices, users and punches are fetched again after it, and the staff register too. */
+export function useBiometricAction<T = unknown>() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ method = 'post', path, body }: { method?: 'post' | 'put' | 'patch' | 'delete'; path: string; body?: unknown }) =>
+      (method === 'delete' ? await api.delete<T>(path) : await api[method]<T>(path, body ?? {})).data,
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['biometric'] });
+      void qc.invalidateQueries({ queryKey: ['staff'] });
+      void qc.invalidateQueries({ queryKey: ['workers'] });
+    },
   });
 }
 

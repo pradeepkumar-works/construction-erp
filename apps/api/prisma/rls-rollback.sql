@@ -348,5 +348,14 @@ DROP POLICY IF EXISTS tenant_isolation ON "PayslipLine";
 ALTER TABLE "FinalSettlement" NO FORCE ROW LEVEL SECURITY;
 ALTER TABLE "FinalSettlement" DISABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS tenant_isolation ON "FinalSettlement";
+ALTER TABLE "BiometricDevice" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "BiometricDevice" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "BiometricDevice";
+ALTER TABLE "BiometricUser" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "BiometricUser" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "BiometricUser";
+ALTER TABLE "BiometricPunch" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "BiometricPunch" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "BiometricPunch";
 
 DROP FUNCTION IF EXISTS app_current_org();

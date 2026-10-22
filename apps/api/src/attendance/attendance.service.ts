@@ -221,7 +221,7 @@ export class AttendanceService {
    * covers take its counts, other lines stay. Creates the sheet when the roll call has someone on site. Runs in the
    * roll call's transaction; the caller has checked access and the DPR lock.
    */
-  async applyRollCall(tx: Prisma.TransactionClient, user: RequestUser, projectId: string, date: Date, fromRollCall: AttendanceLineInput[]) {
+  async applyRollCall(tx: Prisma.TransactionClient, user: Pick<RequestUser, 'id' | 'organizationId'>, projectId: string, date: Date, fromRollCall: AttendanceLineInput[]) {
     const sheet = await tx.attendanceSheet.findUnique({ where: { projectId_date: { projectId, date } }, include: { lines: { orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }] } } });
     const merged = normalizeAttendanceLines(mergeHeadCount(sheet?.lines ?? [], fromRollCall));
     if (!merged.length && (!sheet || !sheet.remarks || sheet.remarks === ROLL_CALL_REMARK)) {

@@ -338,6 +338,28 @@ enum LeaveType {
   TOUR
 }
 
+/// Biometric attendance (v6 item 101): how a device sends its punches
+enum BiometricProtocol {
+  /// ZKTeco, eSSL and other devices with the ADMS (iclock) push protocol
+  ADMS
+  /// Any device or middleware that can post JSON with the device's key
+  WEBHOOK
+  /// Punch files exported from the device or its software, imported by hand
+  FILE
+}
+
+/// What became of a punch
+enum BiometricPunchResult {
+  /// Set the person's attendance for the day
+  APPLIED
+  /// The device user is not matched to an employee or a worker yet
+  UNMATCHED
+  /// The day's attendance is locked (its DPR is approved)
+  LOCKED
+  /// A worker punched on a device with no site, or is already marked at another site that day
+  SKIPPED
+}
+
 /// Attendance extras (v5 item 97): overtime from a check-out waits for the posting's project manager or HR
 enum OvertimeStatus {
   PENDING
@@ -550,6 +572,9 @@ model Organization {
   payslips             Payslip[]
   payslipLines         PayslipLine[]
   finalSettlements     FinalSettlement[]
+  biometricDevices     BiometricDevice[]
+  biometricUsers       BiometricUser[]
+  biometricPunches     BiometricPunch[]
   staffAttendance      StaffAttendance[]
   leaveRequests        LeaveRequest[]
   holidays             Holiday[]
@@ -773,6 +798,7 @@ model User {
   payrollApproved      PayrollRun[]             @relation("PayrollApprover")
   payrollPaid          PayrollRun[]             @relation("PayrollPayer")
   settlementsPrepared  FinalSettlement[]        @relation("SettlementPreparer")
+  biometricDevices     BiometricDevice[]        @relation("BiometricDeviceCreator")
   settlementsApproved  FinalSettlement[]        @relation("SettlementApprover")
   staffMarked          StaffAttendance[]        @relation("StaffAttendanceMarker")
   overtimeDecided      StaffAttendance[]        @relation("StaffOvertimeDecider")
@@ -931,6 +957,7 @@ model Project {
   employeeEventsFrom EmployeeEvent[]          @relation("EmployeeEventFrom")
   employeeEventsTo   EmployeeEvent[]          @relation("EmployeeEventTo")
   payrollRuns        PayrollRun[]
+  biometricDevices   BiometricDevice[]
   staffAttendance    StaffAttendance[]
   holidays           Holiday[]
   variations         Variation[]
@@ -3457,6 +3484,7 @@ model Employee {
   loans            StaffLoan[]
   payslips         Payslip[]
   settlement       FinalSettlement?
+  biometricUsers   BiometricUser[]
 
   @@unique([organizationId, employeeCode])
   @@index([organizationId, projectId])
@@ -3510,8 +3538,9 @@ model Worker {
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
-  attendance WorkerAttendance[]
-  ppeIssues  PpeIssue[]
+  attendance     WorkerAttendance[]
+  biometricUsers BiometricUser[]
+  ppeIssues      PpeIssue[]
 
   @@unique([organizationId, workerNo])
   @@index([organizationId, projectId])
@@ -3520,26 +3549,29 @@ model Worker {
 /// One named worker's day at a project: present, half day or absent, in and out, overtime, and the activity worked on.
 /// Saving a roll call also sets the head-count sheet's rows for the contractors and trades it covers.
 model WorkerAttendance {
-  id             String                @id @default(uuid())
-  organizationId String
-  organization   Organization          @relation(fields: [organizationId], references: [id])
-  workerId       String
-  worker         Worker                @relation(fields: [workerId], references: [id], onDelete: Cascade)
-  projectId      String
-  project        Project               @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  date           DateTime              @db.Date
-  status         StaffAttendanceStatus
+  id                String                @id @default(uuid())
+  organizationId    String
+  organization      Organization          @relation(fields: [organizationId], references: [id])
+  workerId          String
+  worker            Worker                @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  projectId         String
+  project           Project               @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  date              DateTime              @db.Date
+  status            StaffAttendanceStatus
   /// HH:mm, site local time
-  inTime         String?
-  outTime        String?
-  otHours        Decimal?              @db.Decimal(4, 1)
-  activityId     String?
-  activity       Activity?             @relation(fields: [activityId], references: [id], onDelete: SetNull)
-  note           String?
-  markedById     String
-  markedBy       User                  @relation("WorkerAttendanceMarker", fields: [markedById], references: [id])
-  createdAt      DateTime              @default(now())
-  updatedAt      DateTime              @updatedAt
+  inTime            String?
+  outTime           String?
+  otHours           Decimal?              @db.Decimal(4, 1)
+  activityId        String?
+  activity          Activity?             @relation(fields: [activityId], references: [id], onDelete: SetNull)
+  note              String?
+  /// Biometric attendance (v6 item 101): the device whose punches set in and out
+  biometricDeviceId String?
+  biometricDevice   BiometricDevice?      @relation(fields: [biometricDeviceId], references: [id], onDelete: SetNull)
+  markedById        String
+  markedBy          User                  @relation("WorkerAttendanceMarker", fields: [markedById], references: [id])
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
 
   @@unique([workerId, date])
   @@index([projectId, date])
@@ -3611,6 +3643,9 @@ model StaffAttendance {
   overtimeDecidedAt   DateTime?
   overtimeNote        String?
   note                String?
+  /// Biometric attendance (v6 item 101): the device whose punches set check-in and check-out
+  biometricDeviceId   String?
+  biometricDevice     BiometricDevice?      @relation(fields: [biometricDeviceId], references: [id], onDelete: SetNull)
   markedById          String
   markedBy            User                  @relation("StaffAttendanceMarker", fields: [markedById], references: [id])
   createdAt           DateTime              @default(now())
@@ -4885,4 +4920,76 @@ model FinalSettlement {
   updatedAt       DateTime         @updatedAt
 
   @@unique([organizationId, settlementNo])
+}
+
+/// Biometric attendance (v6 item 101): a fingerprint or face device at a site or office. ADMS devices are known by their
+/// serial number (unique across companies, as the device sends nothing else); a webhook device posts with its key.
+model BiometricDevice {
+  id             String            @id @default(uuid())
+  organizationId String
+  organization   Organization      @relation(fields: [organizationId], references: [id])
+  name           String
+  /// Make and model as the company knows it, e.g. ZKTeco K40, eSSL X990
+  model          String?
+  protocol       BiometricProtocol
+  serialNo       String?           @unique
+  /// For WEBHOOK: the key sent in the X-Device-Key header
+  apiKey         String?           @unique
+  /// The site it stands at: workers punching on it are marked there; staff are marked there too
+  projectId      String?
+  project        Project?          @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  /// Minutes the device clock is ahead of UTC (India 330)
+  utcOffsetMin   Int               @default(330)
+  isActive       Boolean           @default(true)
+  lastSeenAt     DateTime?
+  lastPunchAt    DateTime?
+  createdById    String
+  createdBy      User              @relation("BiometricDeviceCreator", fields: [createdById], references: [id])
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  punches          BiometricPunch[]
+  staffAttendance  StaffAttendance[]
+  workerAttendance WorkerAttendance[]
+
+  @@index([organizationId])
+}
+
+/// A user number on the company's devices (the same number on every device it is enrolled on), matched to one employee or
+/// one worker.
+model BiometricUser {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  pin            String
+  employeeId     String?
+  employee       Employee?    @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  workerId       String?
+  worker         Worker?      @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, pin])
+}
+
+/// One punch as the device sent it. The same punch sent twice is kept once.
+model BiometricPunch {
+  id             String               @id @default(uuid())
+  organizationId String
+  organization   Organization         @relation(fields: [organizationId], references: [id])
+  deviceId       String
+  device         BiometricDevice      @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  pin            String
+  punchedAt      DateTime
+  /// The day it counts for, in the device's time zone
+  date           DateTime             @db.Date
+  /// HH:mm on the device's clock
+  time           String
+  result         BiometricPunchResult
+  note           String?
+  createdAt      DateTime             @default(now())
+
+  @@unique([deviceId, pin, punchedAt])
+  @@index([organizationId, date])
+  @@index([organizationId, pin, date])
 }

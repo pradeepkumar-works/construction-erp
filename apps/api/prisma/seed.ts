@@ -169,6 +169,7 @@ async function main() {
     await seedCompliance(org.id);
     await seedHandover(org.id);
     await seedCheckAnomalies(org.id);
+    await seedBiometric(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
   }
@@ -356,6 +357,7 @@ async function main() {
   await seedCompliance(org.id);
   await seedHandover(org.id);
   await seedCheckAnomalies(org.id);
+  await seedBiometric(org.id);
 
   console.log('Seed complete. Login with any of these (password: password123):');
   for (const u of USERS) console.log(`  ${u.email.padEnd(24)} ${u.role}`);
@@ -3425,4 +3427,42 @@ async function seedStaff(organizationId: string) {
     }
     await prisma.staffAttendance.createMany({ data: rows });
   }
+}
+
+/**
+ * Biometric attendance (v6 item 101): a ZKTeco gate terminal (ADMS) at the site where the workers are, a face reader at
+ * head office posting to the webhook, and an old eSSL at the yard whose punch files are imported. Staff are enrolled
+ * under their code number and five workers under 1001 onwards; two numbers punched yesterday are not matched yet.
+ */
+async function seedBiometric(organizationId: string) {
+  if (await prisma.biometricDevice.count({ where: { organizationId } })) return;
+  const org = await prisma.organization.findUnique({ where: { id: organizationId }, select: { code: true } });
+  const hr = await prisma.user.findFirst({ where: { organizationId, email: 'hr@demo.com' }, select: { id: true } });
+  const worker = await prisma.worker.findFirst({ where: { organizationId, isActive: true, projectId: { not: null } }, select: { projectId: true } });
+  if (!org || !hr || !worker?.projectId) return;
+  const tag = org.code.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 12);
+  const gate = await prisma.biometricDevice.create({
+    data: { organizationId, name: 'Gate terminal', model: 'ZKTeco K40', protocol: 'ADMS', serialNo: `ZK${tag}0001`, projectId: worker.projectId, createdById: hr.id, lastSeenAt: new Date() },
+  });
+  await prisma.biometricDevice.create({ data: { organizationId, name: 'Head office face reader', model: 'eSSL F22', protocol: 'WEBHOOK', apiKey: `bio_demo_${tag.toLowerCase()}_headoffice`, createdById: hr.id } });
+  await prisma.biometricDevice.create({ data: { organizationId, name: 'Yard terminal', model: 'eSSL X990', protocol: 'FILE', createdById: hr.id } });
+  const staff = await prisma.employee.findMany({ where: { organizationId, isActive: true, employeeCode: { in: ['EMP-001', 'EMP-002', 'EMP-003', 'EMP-004', 'EMP-005', 'EMP-009', 'EMP-010', 'EMP-011', 'EMP-012'] } }, select: { id: true, employeeCode: true } });
+  const workers = await prisma.worker.findMany({ where: { organizationId, isActive: true, projectId: worker.projectId }, orderBy: { workerNo: 'asc' }, take: 5, select: { id: true } });
+  await prisma.biometricUser.createMany({
+    data: [
+      ...staff.map((e) => ({ organizationId, pin: String(Number(e.employeeCode.slice(4))), employeeId: e.id })),
+      ...workers.map((w, i) => ({ organizationId, pin: String(1001 + i), workerId: w.id })),
+    ],
+  });
+  const y = day(-1);
+  const at = (h: number, m: number) => new Date(y.getTime() + (h * 60 + m - 330) * 60_000);
+  const t = (h: number, m: number) => `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  await prisma.biometricPunch.createMany({
+    data: [
+      [31, 8, 52],
+      [31, 18, 5],
+      [1099, 7, 58],
+    ].map(([pin, h, m]) => ({ organizationId, deviceId: gate.id, pin: String(pin), punchedAt: at(h, m), date: y, time: t(h, m), result: 'UNMATCHED' as const })),
+  });
+  await prisma.biometricDevice.update({ where: { id: gate.id }, data: { lastPunchAt: at(18, 5) } });
 }

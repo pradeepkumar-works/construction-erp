@@ -118,6 +118,8 @@ export const canViewPayroll = (role: RoleKey) => PAYROLL_ROLES.includes(role);
  *  everyone's; each person sees their own (checked by the API). Site managers who mark the register see the job details only. */
 export const canViewEmployeePrivate = (role: RoleKey) => PAYROLL_ROLES.includes(role);
 /** Payroll (v6 item 100): HR sets salaries and prepares the run, management approves it, accounts pays it. */
+/** Biometric devices (v6 item 101): register them, match their user numbers and import punch files: staff admins. */
+export const canManageBiometric = (role: RoleKey) => STAFF_ADMIN_ROLES.includes(role);
 export const canRunPayroll = (role: RoleKey) => role === 'ADMIN' || role === 'HR_MANAGER';
 export const canApprovePayroll = (role: RoleKey) => role === 'ADMIN' || role === 'MANAGEMENT';
 export const canPayPayroll = (role: RoleKey) => role === 'ADMIN' || role === 'ACCOUNTS_MANAGER';

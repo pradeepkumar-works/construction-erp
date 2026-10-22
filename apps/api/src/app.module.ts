@@ -54,6 +54,7 @@ import { QualityModule } from './quality/quality.module';
 import { DocumentsModule } from './documents/documents.module';
 import { StaffModule } from './staff/staff.module';
 import { PayrollModule } from './payroll/payroll.module';
+import { BiometricModule } from './biometric/biometric.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { WorkersModule } from './workers/workers.module';
 import { ImprestModule } from './imprest/imprest.module';
@@ -108,6 +109,7 @@ import { VitalsController } from './vitals.controller';
     DocumentsModule,
     StaffModule,
     PayrollModule,
+    BiometricModule,
     CostModule,
     ReconciliationModule,
     ReportsModule,
