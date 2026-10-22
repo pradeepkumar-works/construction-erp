@@ -100,6 +100,37 @@ own. The page (`components/modules/ModuleHome.tsx`) shows:
 A new module is a section with `module` set, a key in `MODULE_KEYS` (label, intro, submission types) and a branch in
 `ModuleHomeService.figures`; a new page in a module needs its line in `NAV_DESCRIPTIONS`.
 
+### Books of account (v6 item 102)
+
+The books are kept from the same postings the Tally export sends. `PostingService` (`apps/api/src/posting`) turns each
+module's records into vouchers of keyed ledger lines: certified RA bills are sales, money received is a receipt, approved
+vendor bills are purchases, subcontractor bills journals, payments to vendors and site expenses payments (a journal when
+bought on credit), debit notes debit notes, an approved salary run a journal on the month's last day (salaries and the
+company's PF and ESI against each deduction's payable and salaries payable) and its payment a payment, and a loan or
+advance to staff a payment. The Tally export calls it for records not yet exported in its date range (`unexported`,
+marked by `tallyExportId`; a run's salary journal and payment are marked apart); the books call it for every record.
+
+`LedgerAccount` is the chart of accounts: one row per ledger key (`PURCHASE`, `VENDOR:<id>`, `CLIENT:<id>`,
+`EXPENSE:<category>`, …) made by the posting service with the Tally export's name and group, plus accounts that accounts
+add by hand (key `ACCOUNT:<id>`: bank accounts, capital, loans, office heads). Groups (`AccountGroup`) are Tally's primary
+groups, each with its nature (asset, liability, income, expense) for the statements in item 103. A system account can be
+renamed or regrouped but not closed or deleted.
+
+`BookVoucher` and `BookLine` hold the books. A posted voucher has its `source` (the posting kind) and `sourceId`, is
+always approved, and carries a `hash` of what it was built from: `BooksService.postAll` (under an advisory lock, at most
+once a minute when someone reads the books, or on Post now) adds new records, rewrites changed ones and removes vouchers
+whose record no longer posts. Records whose lines do not balance are held, with the reason, in `BooksState.held`. A
+hand-made voucher (`MANUAL`: journal, payment, receipt or contra, numbered `JV/2026-27/0001` by type and financial year)
+is checked by `voucherProblem` in `books-rules.ts` (balanced, one side per line, money through cash or bank as the type
+says; tested in `src/scripts/books-test.ts`, which CI runs), saved as a draft, submitted, and approved or sent back by
+management (`canApproveVouchers`) other than whoever made it; an approved one can be cancelled, which keeps its number.
+Every step writes `AuditLog` (entity `BOOK_VOUCHER`). Every line carries the project as cost centre.
+
+The day book, cash and bank books and ledgers read approved vouchers only; a ledger gives the opening balance before
+its period, each entry with what it was against and the running balance, and the closing balance. Only `canKeepBooks`
+(admin, management, accounts) sees them. The Accounts module (`/modules/accounts`) holds Books, GST registers and the
+Tally export, and leads with cash and bank in the books, vouchers to approve and records not posted.
+
 ### Biometric attendance (v6 item 101)
 
 `BiometricDevice` is a terminal in the device register (name, make and model, serial number, the site it stands at, its

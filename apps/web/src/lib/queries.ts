@@ -175,6 +175,13 @@ import type {
   HrDashboardDto,
   PayrollSettingsDto,
   BiometricDeviceDto,
+  BookSource,
+  BookVoucherDto,
+  BookVoucherStatus,
+  BookVoucherType,
+  BooksStatusDto,
+  LedgerAccountDto,
+  LedgerDto,
   BiometricUserDto,
   BiometricPunchDto,
   BiometricPunchResult,
@@ -1413,6 +1420,62 @@ export function useBiometricAction<T = unknown>() {
       void qc.invalidateQueries({ queryKey: ['biometric'] });
       void qc.invalidateQueries({ queryKey: ['staff'] });
       void qc.invalidateQueries({ queryKey: ['workers'] });
+    },
+  });
+}
+
+/* Books of account (v6 item 102); every key starts with 'books'. */
+export const useBooksStatus = (enabled = true) => useQuery({ queryKey: ['books', 'status'], queryFn: async () => (await api.get<BooksStatusDto>('/books/status')).data, enabled });
+
+export const useLedgerAccounts = (filters: { to?: string; projectId?: string } = {}, enabled = true) =>
+  useQuery({
+    queryKey: ['books', 'accounts', clean(filters)],
+    queryFn: async () => (await api.get<LedgerAccountDto[]>('/books/accounts', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+
+export const useLedger = (filters: { accountId?: string; from?: string; to?: string; projectId?: string }) =>
+  useQuery({
+    queryKey: ['books', 'ledger', clean(filters)],
+    queryFn: async () => (await api.get<LedgerDto>('/books/ledger', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+    enabled: !!filters.accountId,
+  });
+
+export interface DayBookFilters extends PageParams {
+  from?: string;
+  to?: string;
+  type?: BookVoucherType;
+  source?: BookSource;
+  projectId?: string;
+}
+export const useDayBook = (filters: DayBookFilters) =>
+  useQuery({
+    queryKey: ['books', 'day-book', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<BookVoucherDto> & { debit: string }>('/books/day-book', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+  });
+
+export const useBookVouchers = (filters: PageParams & { status?: BookVoucherStatus; toDecide?: boolean }) =>
+  useQuery({
+    queryKey: ['books', 'vouchers', clean(filters)],
+    queryFn: async () => (await api.get<Paginated<BookVoucherDto>>('/books/vouchers', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+  });
+
+export const useBookVoucher = (id: string | null) =>
+  useQuery({ queryKey: ['books', 'voucher', id], queryFn: async () => (await api.get<BookVoucherDto>(`/books/vouchers/${id}`)).data, enabled: !!id });
+
+/** Any write to the books; everything in them is fetched again after it, and the Accounts home too. */
+export function useBooksAction<T = unknown>() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ method = 'post', path, body }: { method?: 'post' | 'put' | 'patch' | 'delete'; path: string; body?: unknown }) =>
+      (method === 'delete' ? await api.delete<T>(path) : await api[method]<T>(path, body ?? {})).data,
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['books'] });
+      void qc.invalidateQueries({ queryKey: ['dashboard', 'module', 'accounts'] });
     },
   });
 }

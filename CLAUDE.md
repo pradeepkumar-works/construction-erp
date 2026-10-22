@@ -148,6 +148,10 @@ and the pre-delivery checklist.
 - Biometric (item 101, `apps/api/src/biometric`, ARCHITECTURE "Biometric attendance"): ADMS (`/iclock`, outside `/api`), the
   webhook and punch files all go through `biometric-rules.ts` (tested in `src/scripts/biometric-test.ts`, CI runs it) and
   `BiometricService.ingest`, and a punch reaches attendance only through `applyDay` (a worker never at a site other than the device's).
+- Books (item 102, `apps/api/src/books`, ARCHITECTURE "Books of account"): what a module's record becomes in the accounts is
+  `PostingService` (`apps/api/src/posting`), shared by the Tally export and the books; a new kind of record that moves money
+  is a block there (and its Tally mark), never a second set of rules. Hand-made vouchers go through `voucherProblem` in
+  `books-rules.ts` (tested in `src/scripts/books-test.ts`, CI runs it) and need someone other than their maker to approve.
 - Mobile: screens in `app/`, shared UI in `src/components`, API in `src/api`, no new native deps
   without checking `node_modules/expo/bundledNativeModules.json` for the SDK-pinned version.
 - Mobile theme: `src/theme.ts` picks the light or dark palette once at start-up (Profile > Appearance, stored in

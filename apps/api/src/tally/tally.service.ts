@@ -8,60 +8,33 @@ import {
   TALLY_FIXED_LEDGERS,
   TALLY_VENDOR_GROUP,
   canExportTally,
-  gstStateCode,
-  subBillLabel,
   tallyClientKey,
   tallyExpenseDefault,
   tallyExpenseKey,
-  DEBIT_NOTE_REASON_LABELS,
   tallyVendorKey,
   type TallyExportDto,
-  type TallyHeldDto,
   type TallyLedgerRowDto,
   type TallyPreviewDto,
   type TallySettingsDto,
   type TallyVoucherDto,
   type TallyVoucherKind,
-  type ExpenseCategory,
-  type VendorBillKind,
 } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { AuditService } from '../common/audit.service';
 import { dateOnly, iso, money, parseDate } from '../common/serialize';
 import { TallyRangeQuery, UpdateTallySettingsDto } from './tally.dto';
+import { PostingService, shortId } from '../posting/posting.service';
 import {
-  Lines,
-  balanced,
   costCentreName,
-  credits,
   debits,
-  gstLines,
-  isInterState,
   mastersXml,
-  moneyLedger,
   vouchersXml,
   type LedgerMaster,
-  type LedgerName,
   type Voucher,
 } from './vouchers';
 
 type Tx = Prisma.TransactionClient | PrismaService;
-const D = (v: Prisma.Decimal.Value) => new Prisma.Decimal(v);
-const FIXED = new Map(TALLY_FIXED_LEDGERS.map((l) => [l.key, l]));
-/**
- * The ledger a vendor bill's value is booked to: purchases for a PO bill, machine hire, repairs to machinery, or the
- * expense head of any other bill (v5 item 91).
- */
-function billHead(b: { kind: VendorBillKind; expenseCategory: ExpenseCategory | null }): { key: string; fallback?: string } {
-  if (b.kind === 'HIRE') return { key: 'MACHINE_HIRE' };
-  if (b.kind === 'SERVICE') return { key: 'REPAIRS' };
-  if (b.kind === 'OTHER') {
-    const c = b.expenseCategory ?? 'OTHER';
-    return { key: tallyExpenseKey(c), fallback: tallyExpenseDefault(c) };
-  }
-  return { key: 'PURCHASE' };
-}
 const GST_HEADS: Record<string, LedgerMaster['gstHead']> = {
   OUTPUT_CGST: 'Central Tax',
   INPUT_CGST: 'Central Tax',
@@ -71,52 +44,37 @@ const GST_HEADS: Record<string, LedgerMaster['gstHead']> = {
   INPUT_IGST: 'Integrated Tax',
 };
 /** Lines that carry the project as cost centre: income and expense ledgers. */
-const COST_CENTRE_KEYS = new Set(['SALES', 'PURCHASE', 'FREIGHT', 'MACHINE_HIRE', 'REPAIRS', 'FUEL_RECOVERY', 'SUBCONTRACT', 'MATERIAL_RECOVERY', 'LABOUR_CESS', 'CLIENT_DEDUCTIONS', 'VENDOR_DEDUCTIONS']);
-const DEFAULT_RECEIPT_LEDGER = { BILL: null, RETENTION_RELEASE: 'RETENTION_RECEIVABLE', DEPOSIT_RELEASE: 'DEPOSIT_RECEIVABLE' } as const;
-
-interface Config {
-  companyName: string | null;
-  stateCode: string | null;
-  costCentres: boolean;
-  ledgers: Record<string, string>;
-}
-
-const projectSelect = { code: true, name: true, clientId: true, clientName: true, client: { select: { name: true } } } satisfies Prisma.ProjectSelect;
-type ProjectRow = Prisma.ProjectGetPayload<{ select: typeof projectSelect }>;
-/** The client ledger of a project: its client in the master, else the client name typed on the project. */
-const clientOf = (p: ProjectRow) => (p.clientId ? { key: tallyClientKey(p.clientId), name: p.client!.name } : { key: `CLIENT_NAME:${p.clientName ?? p.name}`, name: p.clientName ?? p.name });
-const raBillRef = (projectCode: string, billNo: number) => `RA/${projectCode}/${billNo}`;
-const shortId = (id: string) => id.replace(/-/g, '').slice(0, 8).toUpperCase();
-
-interface Built {
-  vouchers: Voucher[];
-  held: TallyHeldDto[];
-  awaitingCertification: number;
-}
-
+const COST_CENTRE_KEYS = new Set([
+  'SALES',
+  'PURCHASE',
+  'FREIGHT',
+  'MACHINE_HIRE',
+  'REPAIRS',
+  'FUEL_RECOVERY',
+  'SUBCONTRACT',
+  'MATERIAL_RECOVERY',
+  'LABOUR_CESS',
+  'CLIENT_DEDUCTIONS',
+  'VENDOR_DEDUCTIONS',
+  'SALARIES',
+  'EMPLOYER_PF',
+  'EMPLOYER_ESI',
+  'STAFF_RECOVERIES',
+]);
 /**
- * Tally export (v3 item 24). Tally stays the books: Nirmaan sends it vouchers as TallyPrime XML, never keeps a ledger
- * of its own. Approved RA bills once the client certifies them are sales; money received against them (with what the
- * client deducted) and retention or deposit released are receipts; approved vendor bills are purchases; approved
- * subcontractor bills are journals that credit the subcontractor with the net payable and the deductions to their
- * ledgers; payments to vendors are payments; approved site expenses are payments out of cash or bank (or a journal to
- * the vendor when on credit). Every record goes once: an export marks what it took, and undoing the export releases it.
+ * Tally export (v3 item 24). Sends Tally the vouchers of the posting service (v6 item 102) as TallyPrime XML. Every
+ * record goes once: an export marks what it took, and undoing the export releases it.
  */
 @Injectable()
 export class TallyService {
-  constructor(private prisma: PrismaService, private audit: AuditService) {}
+  constructor(private prisma: PrismaService, private audit: AuditService, private posting: PostingService) {}
 
   private assertCan(user: RequestUser) {
     if (!canExportTally(user.roleKey)) throw new ForbiddenException('Only admin, management and accounts export to Tally');
   }
 
-  private async config(db: Tx, organizationId: string): Promise<Config> {
-    const c = await db.tallyConfig.findUnique({ where: { organizationId } });
-    return { companyName: c?.companyName ?? null, stateCode: c?.stateCode ?? null, costCentres: c?.costCentres ?? true, ledgers: (c?.ledgers as Record<string, string> | undefined) ?? {} };
-  }
-
-  private namer(cfg: Config): LedgerName {
-    return (key, fallback) => cfg.ledgers[key] ?? FIXED.get(key)?.name ?? (key.startsWith('EXPENSE:') ? tallyExpenseDefault(key.slice(8) as never) : (fallback ?? key));
+  private config(db: Tx, organizationId: string) {
+    return this.posting.config(db, organizationId);
   }
 
   // ----- Settings and ledger names -----
@@ -203,253 +161,11 @@ export class TallyService {
 
   // ----- Vouchers -----
 
-  private range(field: string, q: TallyRangeQuery) {
+  private range(q: TallyRangeQuery) {
     const upTo = parseDate(q.upTo);
     const from = q.from ? parseDate(q.from) : null;
     if (from && from > upTo) throw new BadRequestException('From is after up to');
-    return { [field]: { lte: upTo, ...(from ? { gte: from } : {}) } };
-  }
-
-  /** Every record not yet exported, dated in the range, as the vouchers it becomes (or held, with the reason). */
-  private async build(db: Tx, user: RequestUser, cfg: Config, q: TallyRangeQuery): Promise<Built> {
-    const org = user.organizationId;
-    const name = this.namer(cfg);
-    const open = { organizationId: org, tallyExportId: null };
-    const [raBills, awaitingCertification, receipts, vendorBills, subBills, payments, expenses, debitNotes] = await Promise.all([
-      db.raBill.findMany({ where: { ...open, status: 'APPROVED', stage: { in: ['CERTIFIED', 'PAID'] }, ...this.range('billDate', q) }, include: { project: { select: projectSelect } } }),
-      db.raBill.count({ where: { ...open, status: 'APPROVED', stage: { in: ['NOT_SENT', 'SENT'] }, ...this.range('billDate', q) } }),
-      db.receipt.findMany({ where: { ...open, ...this.range('receiptDate', q) }, include: { project: { select: projectSelect }, bill: { select: { id: true, billNo: true, tallyExportId: true } } } }),
-      db.vendorBill.findMany({ where: { ...open, status: 'APPROVED', ...this.range('invoiceDate', q) }, include: { project: { select: projectSelect }, vendor: { select: { name: true, stateCode: true, gstin: true } } } }),
-      db.subcontractBill.findMany({
-        where: { ...open, status: 'APPROVED', ...this.range('billDate', q) },
-        include: { project: { select: projectSelect }, workOrder: { select: { woNo: true, vendorId: true, vendor: { select: { name: true, stateCode: true, gstin: true } } } } },
-      }),
-      db.vendorPayment.findMany({
-        where: { ...open, ...this.range('paymentDate', q) },
-        include: {
-          project: { select: projectSelect },
-          vendor: { select: { name: true } },
-          vendorBill: { select: { invoiceNo: true } },
-          subcontractBill: { select: { billNo: true, isFinal: true, workOrder: { select: { woNo: true } } } },
-          purchaseOrder: { select: { poNo: true } },
-          workOrder: { select: { woNo: true } },
-        },
-      }),
-      db.expense.findMany({ where: { ...open, status: 'APPROVED', ...this.range('date', q) }, include: { project: { select: projectSelect } } }),
-      db.debitNote.findMany({
-        where: { ...open, cancelledAt: null, ...this.range('date', q) },
-        include: {
-          project: { select: projectSelect },
-          vendor: { select: { name: true, stateCode: true, gstin: true } },
-          vendorBill: { select: { invoiceNo: true, kind: true, expenseCategory: true } },
-          subcontractBill: { select: { billNo: true, isFinal: true, workOrder: { select: { woNo: true } } } },
-        },
-      }),
-    ]);
-
-    const vouchers: Voucher[] = [];
-    const held: TallyHeldDto[] = [];
-    const add = (v: Voucher) => {
-      if (balanced(v.lines)) vouchers.push(v);
-      else held.push({ kind: v.kind, sourceId: v.sourceId, date: dateOnly(v.date)!, number: v.number, party: v.party, reason: `Does not balance: debits ${debits(v.lines).toFixed(2)}, credits ${credits(v.lines).toFixed(2)}` });
-    };
-    const cc = { costCentre: true };
-
-    // RA bills: Dr client (work + GST), Cr works receipts, Cr output GST. Works on a site are supplied where the site is,
-    // which is where the contractor bills from, so GST is CGST + SGST.
-    const exportedBills = new Set<string>();
-    for (const b of raBills) {
-      const client = clientOf(b.project);
-      const ref = raBillRef(b.project.code, b.billNo);
-      // Price variation is part of the sale: works receipts carry work value + price variation.
-      const sale = b.grossAmount.add(b.pvAmount);
-      const l = new Lines(name).dr(client.key, sale.add(b.gstAmount), { fallback: client.name, party: true }).cr('SALES', sale, cc);
-      gstLines(l, 'cr', 'OUTPUT', b.gstAmount, false);
-      exportedBills.add(b.id);
-      add({
-        kind: 'SALES',
-        sourceId: b.id,
-        date: b.billDate,
-        number: ref,
-        reference: b.certificateNo,
-        party: client.name,
-        projectCode: b.project.code,
-        projectName: b.project.name,
-        narration: `RA bill ${b.billNo}${b.isFinal ? ' (final)' : ''} of ${b.project.name}: work ₹${b.grossAmount.toFixed(2)}${b.pvAmount.isZero() ? '' : ` + price variation ₹${b.pvAmount.toFixed(2)}`} + GST ₹${b.gstAmount.toFixed(2)}${b.certificateNo ? `, certificate ${b.certificateNo}` : ''}`,
-        billRef: { name: ref, type: 'New Ref' },
-        lines: l.lines,
-      });
-    }
-
-    // Receipts: Dr bank or cash, Dr what the client deducted; Cr the client (or retention / deposit held, for releases).
-    for (const r of receipts) {
-      const client = clientOf(r.project);
-      const number = `RCPT/${shortId(r.id)}`;
-      const ref = r.bill ? raBillRef(r.project.code, r.bill.billNo) : null;
-      if (r.bill && !r.bill.tallyExportId && !exportedBills.has(r.bill.id)) {
-        held.push({ kind: 'RECEIPT', sourceId: r.id, date: dateOnly(r.receiptDate)!, number, party: client.name, reason: `Its RA bill ${r.bill.billNo} goes to Tally once the client certifies it` });
-        continue;
-      }
-      const settled = [r.amount, r.tdsAmount, r.gstTdsAmount, r.retentionAmount, r.securityDepositAmount, r.advanceRecoveryAmount, r.labourCessAmount, r.otherDeduction].reduce((s, v) => s.add(v), D(0));
-      const l = new Lines(name)
-        .dr(moneyLedger(r.mode), r.amount)
-        .dr('TDS_RECEIVABLE', r.tdsAmount)
-        .dr('GST_TDS_RECEIVABLE', r.gstTdsAmount)
-        .dr('RETENTION_RECEIVABLE', r.retentionAmount)
-        .dr('DEPOSIT_RECEIVABLE', r.securityDepositAmount)
-        .dr('CLIENT_ADVANCE', r.advanceRecoveryAmount)
-        .dr('LABOUR_CESS', r.labourCessAmount, cc)
-        .dr('CLIENT_DEDUCTIONS', r.otherDeduction, cc);
-      const releaseKey = DEFAULT_RECEIPT_LEDGER[r.kind];
-      if (releaseKey) l.cr(releaseKey, settled);
-      else l.cr(client.key, settled, { fallback: client.name, party: true });
-      add({
-        kind: 'RECEIPT',
-        sourceId: r.id,
-        date: r.receiptDate,
-        number,
-        reference: r.reference,
-        party: client.name,
-        projectCode: r.project.code,
-        projectName: r.project.name,
-        narration:
-          r.kind === 'BILL'
-            ? `Received against RA bill ${r.bill?.billNo} of ${r.project.name}${r.reference ? `, ${r.reference}` : ''}${r.otherDeductionNote ? `; deducted: ${r.otherDeductionNote}` : ''}`
-            : `${r.kind === 'RETENTION_RELEASE' ? 'Retention' : 'Security deposit'} released on ${r.project.name}${r.reference ? `, ${r.reference}` : ''}`,
-        billRef: ref ? { name: ref, type: 'Agst Ref' } : null,
-        lines: l.lines,
-      });
-    }
-
-    // Vendor bills: Dr purchases (machine hire, repairs or the expense head on a bill without a PO), freight and input
-    // GST; Cr the vendor with the invoice total, less diesel recovered on a hire bill (Cr diesel recovered).
-    for (const b of vendorBills) {
-      const vendorState = gstStateCode(b.vendor.gstin) ?? b.vendor.stateCode;
-      const l = new Lines(name);
-      const head = billHead(b);
-      l.dr(head.key, b.subtotal, { ...cc, fallback: head.fallback }).dr('FREIGHT', b.freight, cc);
-      gstLines(l, 'dr', 'INPUT', b.gstAmount, isInterState(cfg.stateCode, vendorState));
-      l.cr(tallyVendorKey(b.vendorId), b.total.sub(b.fuelRecovery), { fallback: b.vendor.name, party: true }).cr('FUEL_RECOVERY', b.fuelRecovery, cc);
-      add({
-        kind: 'PURCHASE',
-        sourceId: b.id,
-        date: b.invoiceDate,
-        number: b.billNo,
-        reference: b.invoiceNo,
-        party: b.vendor.name,
-        projectCode: b.project.code,
-        projectName: b.project.name,
-        narration: `Invoice ${b.invoiceNo} of ${b.vendor.name} for ${b.project.name} (${b.billNo})`,
-        billRef: { name: b.invoiceNo, type: 'New Ref' },
-        lines: l.lines,
-      });
-    }
-
-    // Subcontractor bills: Dr subcontract charges and input GST; Cr the subcontractor with the net payable, and what
-    // the bill kept back to its ledgers (retention, advance, TDS, material recovered, other).
-    for (const b of subBills) {
-      const v = b.workOrder.vendor;
-      const label = subBillLabel(b.workOrder.woNo, b.billNo, b.isFinal);
-      const l = new Lines(name).dr('SUBCONTRACT', b.grossAmount, cc);
-      gstLines(l, 'dr', 'INPUT', b.gstAmount, isInterState(cfg.stateCode, gstStateCode(v.gstin) ?? v.stateCode));
-      l.cr(tallyVendorKey(b.workOrder.vendorId), b.netPayable, { fallback: v.name, party: true })
-        .cr('RETENTION_PAYABLE', b.retentionAmount)
-        .cr('SUB_ADVANCE', b.advanceRecoveryAmount)
-        .cr('TDS_PAYABLE', b.tdsAmount)
-        .cr('MATERIAL_RECOVERY', b.materialRecovery.add(b.excessRecovery), cc)
-        .cr('VENDOR_DEDUCTIONS', b.otherDeduction, cc);
-      add({
-        kind: 'SUBCONTRACT',
-        sourceId: b.id,
-        date: b.billDate,
-        number: label,
-        reference: b.invoiceNo,
-        party: v.name,
-        projectCode: b.project.code,
-        projectName: b.project.name,
-        narration: `${label} of ${v.name} on ${b.project.name}: work ₹${b.grossAmount.toFixed(2)}, measured up to ${dateOnly(b.measuredUpTo)}`,
-        billRef: { name: label, type: 'New Ref' },
-        lines: l.lines,
-      });
-    }
-
-    // Debit notes (v5 item 91): Dr the party against the bill; Cr the head the bill was booked to and the input GST it
-    // reverses.
-    for (const n of debitNotes) {
-      const label = n.vendorBill ? n.vendorBill.invoiceNo : n.subcontractBill ? subBillLabel(n.subcontractBill.workOrder.woNo, n.subcontractBill.billNo, n.subcontractBill.isFinal) : '';
-      const head = n.vendorBill ? billHead(n.vendorBill) : { key: 'SUBCONTRACT', fallback: undefined };
-      const l = new Lines(name).dr(tallyVendorKey(n.vendorId), n.total, { fallback: n.vendor.name, party: true }).cr(head.key, n.subtotal, { ...cc, fallback: head.fallback });
-      gstLines(l, 'cr', 'INPUT', n.gstAmount, isInterState(cfg.stateCode, gstStateCode(n.vendor.gstin) ?? n.vendor.stateCode));
-      add({
-        kind: 'DEBIT_NOTE',
-        sourceId: n.id,
-        date: n.date,
-        number: n.noteNo,
-        reference: label,
-        party: n.vendor.name,
-        projectCode: n.project.code,
-        projectName: n.project.name,
-        narration: `${n.noteNo} to ${n.vendor.name} against ${label} (${DEBIT_NOTE_REASON_LABELS[n.reason].toLowerCase()})${n.remarks ? `: ${n.remarks}` : ''}`,
-        billRef: { name: label, type: 'Agst Ref' },
-        lines: l.lines,
-      });
-    }
-
-    // Payments to vendors: Dr the vendor with what the payment settles; Cr bank or cash, TDS and other deductions. An
-    // advance (v5 item 90) has no bill: it goes against the party ledger as an advance on the order, which Tally
-    // sets off when the bill is booked.
-    for (const p of payments) {
-      const number = `PAY/${shortId(p.id)}`;
-      const advance = !p.vendorBill && !p.subcontractBill;
-      const billName = p.vendorBill ? p.vendorBill.invoiceNo : p.subcontractBill ? subBillLabel(p.subcontractBill.workOrder.woNo, p.subcontractBill.billNo, p.subcontractBill.isFinal) : (p.purchaseOrder?.poNo ?? p.workOrder?.woNo ?? '');
-      const l = new Lines(name)
-        .dr(tallyVendorKey(p.vendorId), p.amount.add(p.tdsAmount).add(p.otherDeduction), { fallback: p.vendor.name, party: true })
-        .cr(moneyLedger(p.mode), p.amount)
-        .cr('TDS_PAYABLE', p.tdsAmount)
-        .cr('VENDOR_DEDUCTIONS', p.otherDeduction, cc);
-      add({
-        kind: 'PAYMENT',
-        sourceId: p.id,
-        date: p.paymentDate,
-        number,
-        reference: p.reference,
-        party: p.vendor.name,
-        projectCode: p.project.code,
-        projectName: p.project.name,
-        narration: `${advance ? `Advance to ${p.vendor.name} on ${billName}` : `Paid ${p.vendor.name} against ${billName}`} (${p.project.name})${p.reference ? `, ${p.reference}` : ''}${p.otherDeductionNote ? `; deducted: ${p.otherDeductionNote}` : ''}`,
-        billRef: advance ? { name: `Advance ${billName}`, type: 'Advance' } : { name: billName, type: 'Agst Ref' },
-        lines: l.lines,
-      });
-    }
-
-    // Site expenses: Dr the category (input GST apart when the vendor's GSTIN is known); Cr cash or bank, or the vendor
-    // when bought on credit.
-    for (const e of expenses) {
-      const credit = e.paymentMode === 'CREDIT';
-      const party = e.vendor ?? 'Site creditors';
-      const claimGst = !!e.vendorGstin && e.gstAmount.gt(0);
-      const l = new Lines(name).dr(tallyExpenseKey(e.category), claimGst ? e.amount : e.totalAmount, cc);
-      if (claimGst) gstLines(l, 'dr', 'INPUT', e.gstAmount, isInterState(cfg.stateCode, gstStateCode(e.vendorGstin)));
-      if (credit) l.cr(e.vendorId ? tallyVendorKey(e.vendorId) : 'SITE_CREDITORS', e.totalAmount, { fallback: party, party: true });
-      else l.cr(moneyLedger(e.paymentMode), e.totalAmount);
-      add({
-        kind: 'EXPENSE',
-        sourceId: e.id,
-        date: e.date,
-        number: e.expenseNo,
-        reference: e.billNo,
-        party: credit ? party : (e.vendor ?? EXPENSE_CATEGORY_LABELS[e.category]),
-        projectCode: e.project.code,
-        projectName: e.project.name,
-        narration: `${e.description} (${e.project.name})${e.vendor ? `, ${e.vendor}` : ''}${e.billNo ? `, bill ${e.billNo}` : ''}`,
-        billRef: credit && e.billNo ? { name: e.billNo, type: 'New Ref' } : null,
-        lines: l.lines,
-      });
-    }
-
-    // Oldest first, so Tally numbers and ages them in order.
-    vouchers.sort((a, b) => a.date.getTime() - b.date.getTime() || a.kind.localeCompare(b.kind) || a.number.localeCompare(b.number));
-    return { vouchers, held, awaitingCertification };
+    return { upTo, from };
   }
 
   private voucherDto(v: Voucher): TallyVoucherDto {
@@ -477,7 +193,7 @@ export class TallyService {
   async preview(user: RequestUser, q: TallyRangeQuery): Promise<TallyPreviewDto> {
     this.assertCan(user);
     const cfg = await this.config(this.prisma, user.organizationId);
-    const b = await this.build(this.prisma, user, cfg, q);
+    const b = await this.posting.build(this.prisma, user.organizationId, cfg, { unexported: true, range: this.range(q) });
     return { upTo: q.upTo, from: q.from ?? null, vouchers: b.vouchers.map((v) => this.voucherDto(v)), held: b.held, counts: this.counts(b.vouchers), awaitingCertification: b.awaitingCertification };
   }
 
@@ -499,7 +215,7 @@ export class TallyService {
     const id = await this.prisma.$transaction(async (tx) => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`TALLY:${user.organizationId}`}))`;
       const cfg = await this.config(tx, user.organizationId);
-      const { vouchers } = await this.build(tx, user, cfg, q);
+      const { vouchers } = await this.posting.build(tx, user.organizationId, cfg, { unexported: true, range: this.range(q) });
       if (!vouchers.length) throw new BadRequestException('Nothing new to export up to that date');
       const counts = this.counts(vouchers);
       const created = await tx.tallyExport.create({
@@ -522,6 +238,9 @@ export class TallyService {
       await tx.vendorPayment.updateMany({ where: { id: { in: ids('PAYMENT') }, tallyExportId: null }, data: mark });
       await tx.expense.updateMany({ where: { id: { in: ids('EXPENSE') }, tallyExportId: null }, data: mark });
       await tx.debitNote.updateMany({ where: { id: { in: ids('DEBIT_NOTE') }, tallyExportId: null }, data: mark });
+      await tx.payrollRun.updateMany({ where: { id: { in: ids('SALARY') }, tallyExportId: null }, data: mark });
+      await tx.staffLoan.updateMany({ where: { id: { in: ids('STAFF_LOAN') }, tallyExportId: null }, data: mark });
+      await tx.payrollRun.updateMany({ where: { id: { in: ids('SALARY_PAYMENT') }, tallyPaymentExportId: null }, data: { tallyPaymentExportId: created.id } });
       return created.id;
     });
     const row = await this.prisma.tallyExport.findUniqueOrThrow({ where: { id }, include: { createdBy: { select: { fullName: true } } } });

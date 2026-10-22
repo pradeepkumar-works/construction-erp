@@ -24,6 +24,8 @@ export interface Voucher {
   /** Supplier invoice, UTR or cheque */
   reference: string | null;
   party: string;
+  /** The project (cost centre); none for a company-wide salary run */
+  projectId: string | null;
   projectCode: string;
   projectName: string;
   narration: string;

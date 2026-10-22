@@ -7,6 +7,7 @@ import {
   canApprovePayroll,
   canPayPayroll,
   canViewPayroll,
+  canApproveVouchers,
   canManageStaff,
   canPurchase,
   canReportSafety,
@@ -35,6 +36,7 @@ import { ComplianceService } from '../compliance/compliance.service';
 import { StockService } from '../stock/stock.service';
 import { StaffService } from '../staff/staff.service';
 import { PayrollRunService } from '../payroll/payroll-run.service';
+import { BooksService } from '../books/books.service';
 
 type D = Prisma.Decimal;
 const ZERO = new Prisma.Decimal(0);
@@ -61,6 +63,7 @@ export class ModuleHomeService {
     private stock: StockService,
     private staff: StaffService,
     private payrollRuns: PayrollRunService,
+    private books: BooksService,
   ) {}
 
   async home(user: RequestUser, key: string, projectId?: string): Promise<ModuleHomeDto> {
@@ -113,6 +116,8 @@ export class ModuleHomeService {
         return this.purchases(user, projectId);
       case 'billing':
         return this.billing(user, projectId);
+      case 'accounts':
+        return this.accounts(user);
       case 'people':
         return this.people(user, today, projectId);
     }
@@ -226,6 +231,19 @@ export class ModuleHomeService {
       const { expiring, expired } = compliance.totals;
       out.push(count('expiring', 'Guarantees and licences expiring', expiring, '/compliance', { tone: expired ? 'danger' : expiring ? 'warning' : 'default', note: expired ? `${plural(expired, 'entry', 'entries')} already expired` : 'Within the next 30 days' }));
     }
+    return out;
+  }
+
+  /** The books are the company's, so these do not follow the header's project. */
+  private async accounts(user: RequestUser): Promise<ModuleFigureDto[]> {
+    const f = await this.books.figures(user);
+    if (!f) return [];
+    const out: ModuleFigureDto[] = [
+      rupees('cash', 'Cash in hand', f.cash, '/books?tab=cash', { note: 'In the books today, the whole company' }),
+      rupees('bank', 'In the bank', f.bank, '/books?tab=cash', { note: 'In the books today, before reconciliation' }),
+    ];
+    if (canApproveVouchers(user.roleKey)) out.push(count('toApprove', 'Vouchers to approve', f.toApprove, '/books?tab=vouchers', { tone: f.toApprove ? 'warning' : 'default', note: f.toApprove ? 'Made by accounts, waiting for you' : 'Nothing waiting' }));
+    out.push(count('held', 'Records not posted', f.held, '/books?tab=day', { tone: f.held ? 'warning' : 'default', note: f.held ? 'They do not balance; open the day book to see why' : 'Every record is in the books' }));
     return out;
   }
 
