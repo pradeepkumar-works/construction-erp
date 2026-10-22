@@ -588,8 +588,12 @@ Migrations stay additive. Design notes for each item are in the project's `roadm
     under Admin > Modules, off everywhere on the web, the phone and the API with the data kept; three plans (Essentials,
     Business, Enterprise) set from the console. Not built: switching off single pages inside a module, or a price per plan
     (the subscription price stays per unit).
-118. **Measure on drawings** (M). In the drawing viewer (item 109): scale from two points, length, area and count, saved as
-    measurement sheet lines or a BOQ quantity.
+118. ~~**Measure on drawings** (M). In the drawing viewer (item 109): scale from two points, length, area and count, saved as
+    measurement sheet lines or a BOQ quantity.~~ Done: a scale per sheet (two points, or a DXF's drawing units), lengths,
+    areas and counts (T1, T2… per document) worked out again when the scale changes, totals by kind, measures put into a
+    new measurement sheet (a rectangle as L × B) or set as a BOQ item's original or revised quantity times a factor.
+    ARCHITECTURE "Measuring on drawings". Not built: measuring on the phone, measures carried onto a later revision, a
+    scale per detail on one sheet.
 
 Items 110 to 118 come from the comparison with OpenConstructionERP (AGPL-3.0: its ideas only, never its code or cost data).
 

@@ -648,6 +648,8 @@ model Organization {
   materialApprovalRevs MaterialApprovalRevision[]
   comments             Comment[]
   approvedMakes        ApprovedMake[]
+  drawingScales        DrawingScale[]
+  drawingTakeoffs      DrawingTakeoff[]
 }
 
 model Role {
@@ -898,6 +900,8 @@ model User {
   commentsWritten       Comment[]                  @relation("CommentAuthor")
   commentsResolved      Comment[]                  @relation("CommentResolver")
   approvedMakesAdded    ApprovedMake[]             @relation("ApprovedMakeCreator")
+  drawingScalesSet      DrawingScale[]             @relation("DrawingScaleSetter")
+  drawingTakeoffs       DrawingTakeoff[]           @relation("DrawingTakeoffCreator")
 
   @@unique([organizationId, email])
   @@index([organizationId])
@@ -1067,6 +1071,7 @@ model Project {
   materialApprovals MaterialApproval[]
   comments          Comment[]
   approvedMakes     ApprovedMake[]
+  drawingTakeoffs   DrawingTakeoff[]
 
   @@unique([organizationId, code])
   @@index([organizationId, status])
@@ -2638,8 +2643,9 @@ model MeasurementSheet {
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
 
-  lines       MeasurementLine[]
-  attachments Attachment[]
+  lines           MeasurementLine[]
+  attachments     Attachment[]
+  drawingTakeoffs DrawingTakeoff[]
 
   @@unique([organizationId, mbNo])
   @@index([projectId, status])
@@ -3084,8 +3090,10 @@ model Attachment {
   textError          String?
   createdAt          DateTime           @default(now())
 
-  pages      DocumentPage[]
-  photoCheck PhotoCheck?
+  pages           DocumentPage[]
+  photoCheck      PhotoCheck?
+  drawingScales   DrawingScale[]
+  drawingTakeoffs DrawingTakeoff[]
 
   @@index([organizationId])
   // Every record lists its files: one index per parent column (item 83).
@@ -3484,6 +3492,8 @@ model Document {
   revisions DocumentRevision[] @relation("DocumentRevisions")
   rfis      Rfi[]
   markups   DrawingMarkup[]
+  scales    DrawingScale[]
+  takeoffs  DrawingTakeoff[]
 
   @@unique([projectId, docNo])
   @@index([organizationId, kind])
@@ -3509,6 +3519,7 @@ model DocumentRevision {
   transmittals TransmittalItem[]
   currentOf    Document?         @relation("CurrentRevision")
   markups      DrawingMarkup[]
+  takeoffs     DrawingTakeoff[]
 
   @@unique([documentId, revision])
   @@index([documentId, createdAt])
@@ -3554,6 +3565,71 @@ model DrawingMarkup {
   @@index([organizationId, status])
   @@index([revisionId])
   @@index([attachmentId])
+}
+
+/// The scale of one page of a drawing file (v6 item 118): two points on the sheet a known distance apart.
+model DrawingScale {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  documentId     String
+  document       Document     @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  attachmentId   String
+  attachment     Attachment   @relation(fields: [attachmentId], references: [id], onDelete: Cascade)
+  page           Int          @default(1)
+  /// [[x, y], [x, y]] from 0 to 1 of the page's width and height
+  points         Json
+  /// The real distance between the points, in metres
+  lengthM        Decimal      @db.Decimal(18, 3)
+  /// The page's width over its height when the scale was set
+  aspect         Float
+  setById        String
+  setBy          User         @relation("DrawingScaleSetter", fields: [setById], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([attachmentId, page])
+  @@index([documentId])
+}
+
+/// A length, area or count measured on a drawing (v6 item 118), T1, T2… per document.
+model DrawingTakeoff {
+  id             String            @id @default(uuid())
+  organizationId String
+  organization   Organization      @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  documentId     String
+  document       Document          @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  takeoffNo      Int
+  revisionId     String
+  revision       DocumentRevision  @relation(fields: [revisionId], references: [id], onDelete: Cascade)
+  attachmentId   String
+  attachment     Attachment        @relation(fields: [attachmentId], references: [id], onDelete: Cascade)
+  page           Int               @default(1)
+  kind           TakeoffKind
+  /// [[x, y], …] from 0 to 1 of the page's width and height
+  points         Json
+  label          String
+  /// Metres, square metres or a count, from the sheet's scale when saved (worked out again when the scale changes)
+  value          Decimal           @db.Decimal(18, 3)
+  /// The measurement sheet it was put in
+  measurementId  String?
+  measurement    MeasurementSheet? @relation(fields: [measurementId], references: [id], onDelete: SetNull)
+  createdById    String
+  createdBy      User              @relation("DrawingTakeoffCreator", fields: [createdById], references: [id])
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@unique([documentId, takeoffNo])
+  @@index([attachmentId, page])
+}
+
+/// What a measure on a drawing is (v6 item 118)
+enum TakeoffKind {
+  LENGTH
+  AREA
+  COUNT
 }
 
 /// A numbered cover sheet listing the revisions sent to someone, and their acknowledgement.

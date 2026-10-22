@@ -10,6 +10,11 @@ import {
   MARKUP_KINDS,
   MARKUP_MAX_POINTS,
   MARKUP_NOTE_MAX,
+  TAKEOFF_KINDS,
+  TAKEOFF_LABEL_MAX,
+  TAKEOFF_MAX_POINTS,
+  SCALE_MAX_M,
+  SCALE_MIN_M,
   REVISION_STATUSES,
   TRANSMITTAL_PURPOSES,
   type DocumentDiscipline,
@@ -20,6 +25,9 @@ import {
   type MarkupColor,
   type MarkupKind,
   type RevisionStatus,
+  TAKEOFF_BOQ_FIELDS,
+  type TakeoffBoqField,
+  type TakeoffKind,
   type TransmittalPurpose,
   type TransmittalSortField,
 } from '@erp/shared';
@@ -161,4 +169,48 @@ export class ResolveMarkupDto {
 
 export class LinkMarkupRfiDto {
   @ApiPropertyOptional({ nullable: true, description: 'The RFI raised from this mark; null removes the link' }) @IsOptional() @IsUUID() rfiId: string | null;
+}
+
+/* ---------- measuring on drawings (v6 item 118) ---------- */
+
+export class SetDrawingScaleDto {
+  @ApiProperty({ description: "One of the document's revision files" }) @IsUUID() attachmentId: string;
+  @ApiPropertyOptional({ default: 1 }) @IsOptional() @IsInt() @Min(1) @Max(5000) page?: number;
+  @ApiProperty({ example: [[0.1, 0.5], [0.6, 0.5]], description: 'Two points [x, y] from 0 to 1 of the page, a known distance apart' })
+  @IsArray()
+  @ArrayMinSize(2)
+  @ArrayMaxSize(2)
+  points: [number, number][];
+  @ApiProperty({ example: 12.5, description: 'The real distance between them, in metres' }) @Type(() => Number) @Min(SCALE_MIN_M) @Max(SCALE_MAX_M) lengthM: number;
+  @ApiProperty({ example: 1.414, description: "The page's width over its height" }) @Type(() => Number) @Min(0.01) @Max(100) aspect: number;
+}
+
+export class CreateTakeoffDto {
+  @ApiPropertyOptional(CLIENT_ID_DOC) @IsOptional() @IsUUID('4') id?: string;
+  @ApiProperty({ description: 'The revision it is measured on' }) @IsUUID() revisionId: string;
+  @ApiProperty({ description: "One of that revision's files" }) @IsUUID() attachmentId: string;
+  @ApiPropertyOptional({ default: 1 }) @IsOptional() @IsInt() @Min(1) @Max(5000) page?: number;
+  @ApiProperty({ enum: TAKEOFF_KINDS }) @IsIn(TAKEOFF_KINDS as unknown as string[]) kind: TakeoffKind;
+  @ApiProperty({ example: [[0.1, 0.2], [0.5, 0.2]], description: '[x, y] from 0 to 1 of the page: the points along a length, the corners of an area, or each thing counted' })
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(TAKEOFF_MAX_POINTS)
+  points: [number, number][];
+  @ApiProperty({ example: 'Plinth beam, grid A' }) @trim() @IsString() @MaxLength(TAKEOFF_LABEL_MAX) label: string;
+}
+
+export class UpdateTakeoffDto {
+  @ApiProperty() @trim() @IsString() @MaxLength(TAKEOFF_LABEL_MAX) label: string;
+}
+
+export class TakeoffsToBoqDto {
+  @ApiProperty({ type: [String], description: 'The measures to add up, all of one kind' }) @IsArray() @ArrayMinSize(1) @ArrayMaxSize(TAKEOFF_MAX_POINTS) @IsUUID('all', { each: true }) ids: string[];
+  @ApiProperty({ description: "A BOQ item of the document's project" }) @IsUUID() boqItemId: string;
+  @ApiProperty({ enum: TAKEOFF_BOQ_FIELDS, description: 'The original (tender) quantity or the revised one' }) @IsIn(TAKEOFF_BOQ_FIELDS as unknown as string[]) field: TakeoffBoqField;
+  @ApiPropertyOptional({ example: 0.15, default: 1, description: "Multiplies the total, e.g. a slab's thickness in metres" }) @IsOptional() @Type(() => Number) @Min(0.001) @Max(100000) factor?: number;
+}
+
+export class TakeoffsToMeasurementDto {
+  @ApiProperty({ type: [String], description: 'The measures put in the sheet' }) @IsArray() @ArrayMinSize(1) @ArrayMaxSize(TAKEOFF_MAX_POINTS) @IsUUID('all', { each: true }) ids: string[];
+  @ApiProperty({ description: 'The measurement sheet they went into' }) @IsUUID() measurementId: string;
 }

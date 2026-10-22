@@ -20,7 +20,7 @@ import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { QuantityInput } from '@/components/form/inputs';
 import { recordPage } from '@/components/approvals/queue';
 
-interface LineValues {
+export interface LineValues {
   description?: string;
   nos?: number | null;
   length?: number | null;
@@ -44,8 +44,30 @@ const LINE_GRID = { display: 'grid', gridTemplateColumns: '2.4fr 0.8fr 1fr 1fr 1
 const n = (v: string | null) => (v === null ? null : Number(v));
 const str = (v: number | null | undefined) => (v === null || v === undefined ? null : String(v));
 
+/** Lines and remarks a new sheet starts with, e.g. measures taken off a drawing (item 118). */
+export interface MeasurementPrefill {
+  lines: LineValues[];
+  remarks?: string;
+}
+
 /** Record a measurement sheet against a BOQ item, or (with `sheet`) fix a returned one and resubmit it. */
-export function MeasurementFormModal({ open, onClose, projectId, boqItemId, sheet }: { open: boolean; onClose: () => void; projectId?: string; boqItemId?: string; sheet?: MeasurementSheetDto | null }) {
+export function MeasurementFormModal({
+  open,
+  onClose,
+  projectId,
+  boqItemId,
+  sheet,
+  prefill,
+  onSaved,
+}: {
+  open: boolean;
+  onClose: () => void;
+  projectId?: string;
+  boqItemId?: string;
+  sheet?: MeasurementSheetDto | null;
+  prefill?: MeasurementPrefill | null;
+  onSaved?: (sheet: MeasurementSheetDto) => void;
+}) {
   const [form] = Form.useForm<FormValues>();
   const qc = useQueryClient();
   const notify = useNotify();
@@ -81,9 +103,9 @@ export function MeasurementFormModal({ open, onClose, projectId, boqItemId, shee
         photos: sheet.attachments,
       });
     } else {
-      form.setFieldsValue({ projectId, boqItemId, date: dayjs(), lines: [{ nos: 1 }] });
+      form.setFieldsValue({ projectId, boqItemId, date: dayjs(), lines: prefill?.lines.length ? prefill.lines : [{ nos: 1 }], remarks: prefill?.remarks });
     }
-  }, [open, projectId, boqItemId, sheet, form]);
+  }, [open, projectId, boqItemId, sheet, prefill, form]);
 
   const mutation = useMutation({
     mutationFn: async (v: FormValues) => {
@@ -103,6 +125,7 @@ export function MeasurementFormModal({ open, onClose, projectId, boqItemId, shee
     onSuccess: (x: MeasurementSheetDto) => {
       notify.saved(editing ? `${x.mbNo} resubmitted for approval` : `${x.mbNo} submitted for approval`, recordPage('MEASUREMENT', x.id));
       qc.invalidateQueries();
+      onSaved?.(x);
     },
     meta: FAIL_NOTICE,
   });
@@ -117,7 +140,8 @@ export function MeasurementFormModal({ open, onClose, projectId, boqItemId, shee
       title={sheet ? `${editActionLabel(sheet.status)} · ${sheet.mbNo}` : 'New measurement'}
       okText={editing ? 'Resubmit for approval' : 'Submit'}
       onSubmit={(v) => mutation.mutateAsync(v)}
-      draftKey={editing ? undefined : `measurement:${projectId ?? 'any'}`}
+      // Lines filled in from elsewhere are not a draft of their own.
+      draftKey={editing || prefill ? undefined : `measurement:${projectId ?? 'any'}`}
     >
       <Form form={form} layout="vertical">
         {sheet?.reviewNote && <Alert type="warning" showIcon style={{ marginBottom: 16 }} title={`Reviewer note from ${sheet.reviewedByName ?? 'approver'}`} description={sheet.reviewNote} />}
@@ -141,7 +165,7 @@ export function MeasurementFormModal({ open, onClose, projectId, boqItemId, shee
               />
             </Form.Item>
             <Form.Item name="date" label="Measured on" rules={[{ required: true, message: 'Pick the date' }]}>
-              <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
+              <DatePicker style={{ width: '100%' }} format="DD MMM YYYY" allowClear={false} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
             </Form.Item>
           </FormGrid>
           {woOptions.length > 0 && (
@@ -193,25 +217,25 @@ export function MeasurementFormModal({ open, onClose, projectId, boqItemId, shee
                   return (
                     <div key={f.key} style={LINE_GRID}>
                       <Form.Item name={[f.name, 'description']} rules={[{ required: true, whitespace: true, message: 'Describe the line' }]}>
-                        <Input maxLength={200} placeholder="e.g. Footing F1" />
+                        <Input maxLength={200} placeholder="e.g. Footing F1" aria-label={`Line ${f.name + 1} description`} />
                       </Form.Item>
                       <Form.Item name={[f.name, 'nos']}>
-                        <InputNumber style={{ width: '100%' }} min={0} />
+                        <InputNumber style={{ width: '100%' }} min={0} aria-label={`Line ${f.name + 1} nos`} />
                       </Form.Item>
                       <Form.Item name={[f.name, 'length']}>
-                        <QuantityInput />
+                        <QuantityInput aria-label={`Line ${f.name + 1} length`} />
                       </Form.Item>
                       <Form.Item name={[f.name, 'breadth']}>
-                        <QuantityInput />
+                        <QuantityInput aria-label={`Line ${f.name + 1} breadth`} />
                       </Form.Item>
                       <Form.Item
                         name={[f.name, 'depth']}
                         rules={[{ validator: async () => (hasDimensions(line) ? undefined : Promise.reject(new Error('Enter nos or a dimension'))) }]}
                       >
-                        <QuantityInput />
+                        <QuantityInput aria-label={`Line ${f.name + 1} depth or height`} />
                       </Form.Item>
                       <Form.Item name={[f.name, 'deduct']} valuePropName="checked">
-                        <Checkbox />
+                        <Checkbox aria-label={`Line ${f.name + 1} deduct`} />
                       </Form.Item>
                       <div className="mono" translate="no" style={{ textAlign: 'right', lineHeight: '32px', color: qty < 0 ? themeColor('colorErrorText') : undefined }}>
                         {formatQty(qty)}
