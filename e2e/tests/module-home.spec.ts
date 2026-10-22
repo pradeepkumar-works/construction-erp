@@ -30,7 +30,7 @@ test('each module has a home with its figures, what waits, and its pages', async
   const nav = page.getByRole('navigation', { name: /main/i }).or(page.locator('nav').first());
   await nav.getByRole('link', { name: 'Site overview' }).first().click();
   await expect(page).toHaveURL(/\/modules\/site$/);
-  await expect(page.getByRole('heading', { level: 1, name: 'Site' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'Site overview' })).toBeVisible();
   await expect(page).toHaveTitle(/^Site overview/);
   await expect(page.getByText('Daily reports today')).toBeVisible();
   await expect(page.getByText('Waiting for you')).toBeVisible();
