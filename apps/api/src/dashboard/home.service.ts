@@ -8,6 +8,8 @@ import {
   billLabel,
   canApprove,
   canPurchase,
+  canRecordMeetings,
+  canViewMeetings,
   canReportSafety,
   canViewLabourSummary,
   canKeepStock,
@@ -40,6 +42,7 @@ import { ProjectsService } from '../projects/projects.service';
 import { WarningsService } from '../warnings/warnings.service';
 import { FleetService } from '../machinery/fleet.service';
 import { toOrderOf } from '../purchasing/purchase-math';
+import { MeetingsService } from '../meetings/meetings.service';
 
 type D = Prisma.Decimal;
 const ZERO = new Prisma.Decimal(0);
@@ -97,13 +100,14 @@ export class HomeService {
     private projectsService: ProjectsService,
     private warnings: WarningsService,
     private fleet: FleetService,
+    private meetings: MeetingsService,
   ) {}
 
   async myWork(user: RequestUser): Promise<MyWorkDto> {
     const role = user.roleKey;
     const today = todayIn();
     const rights = await this.rights.rightsFor(user.organizationId, role);
-    const [pending, missing, sentBack, waiting, receivables, payables, expiring, expired, late, low, watch] = await Promise.all([
+    const [pending, missing, sentBack, waiting, receivables, payables, expiring, expired, late, low, watch, actions] = await Promise.all([
       rights.length ? this.lifecycle.pending(user) : null,
       canApprove(role) || submitsDpr(role) ? this.dprsMissing(user, today) : null,
       this.lifecycle.mine(user, ['REJECTED', 'CHANGES_REQUESTED']),
@@ -115,6 +119,7 @@ export class HomeService {
       canViewPurchaseOrders(role) ? this.purchaseOrders.status(user, { show: 'LATE' }) : null,
       canKeepStock(role) || canManageStore(role) ? this.stock.balances(user, { lowOnly: true, page: 1, pageSize: TOP }) : null,
       canSeeWatchList(role) ? this.warnings.open(user) : null,
+      canViewMeetings(role) ? this.meetings.actions(user, { mine: true, status: 'open' }) : null,
     ]);
 
     const out: MyWorkDto = {};
@@ -202,6 +207,22 @@ export class HomeService {
       out.lowStock = card(
         low.total,
         low.items.map((b) => ({ label: b.itemName, note: `${b.balance} ${b.unit} left, minimum ${b.minQty ?? '-'}`, projectName: b.projectName, amount: null, href: '/stock' })),
+      );
+    }
+    // Meeting actions (v6 item 112): for the roles that hold meetings always, for anyone else once they own one.
+    if (actions && (canRecordMeetings(role) || actions.items.length)) {
+      const open = actions.items;
+      out.meetingActions = card(
+        open.length,
+        open.map((a) => ({
+          label: a.text,
+          note: [a.meetingNo, a.daysOverdue ? `${days(a.daysOverdue)} overdue` : a.daysOverdue === 0 ? 'Due today' : a.daysLeft !== null ? `Due in ${days(a.daysLeft)}` : 'No date'].join(' · '),
+          projectName: a.projectName,
+          amount: null,
+          href: `/meetings/${a.meetingId}`,
+        })),
+        null,
+        most(open.filter((a) => a.dueOn).map((a) => a.daysOverdue ?? -(a.daysLeft ?? 0))),
       );
     }
     return out;

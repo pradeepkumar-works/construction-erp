@@ -633,6 +633,10 @@ model Organization {
   photoChecks          PhotoCheck[]
   billCheckSummaries   BillCheckSummary[]
   aiDocumentReads      AiDocumentRead[]
+  meetings             Meeting[]
+  meetingAttendees     MeetingAttendee[]
+  meetingPoints        MeetingPoint[]
+  meetingActions       MeetingAction[]
 }
 
 model Role {
@@ -872,6 +876,11 @@ model User {
   tendersCreated       Tender[]                 @relation("TenderCreator")
   posAccepted          PurchaseOrder[]          @relation("PoSupplierAccepter")
   wosAccepted          WorkOrder[]              @relation("WoSupplierAccepter")
+  meetingsCreated      Meeting[]                @relation("MeetingCreator")
+  meetingsIssued       Meeting[]                @relation("MeetingIssuer")
+  meetingAttendances   MeetingAttendee[]        @relation("MeetingAttendeeUser")
+  meetingActionsOwned  MeetingAction[]          @relation("MeetingActionOwner")
+  meetingActionsClosed MeetingAction[]          @relation("MeetingActionCloser")
 
   @@unique([organizationId, email])
   @@index([organizationId])
@@ -1034,7 +1043,9 @@ model Project {
   workPermits        WorkPermit[]
   maintenanceJobs    MaintenanceJob[]
 
-  pvComponents PriceVariationComponent[]
+  pvComponents   PriceVariationComponent[]
+  meetings       Meeting[]
+  meetingActions MeetingAction[]
 
   @@unique([organizationId, code])
   @@index([organizationId, status])
@@ -3379,7 +3390,8 @@ model Ncr {
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
 
-  attachments Attachment[]
+  attachments    Attachment[]
+  meetingActions MeetingAction[]
 
   @@unique([organizationId, ncrNo])
   @@index([projectId, status])
@@ -3929,9 +3941,10 @@ model Variation {
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 
-  lines       VariationLine[]
-  attachments Attachment[]
-  rfis        Rfi[]
+  lines          VariationLine[]
+  attachments    Attachment[]
+  rfis           Rfi[]
+  meetingActions MeetingAction[]
 
   @@unique([projectId, varNo])
   @@index([organizationId, status])
@@ -4093,8 +4106,9 @@ model Rfi {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
-  attachments Attachment[]
-  markups     DrawingMarkup[]
+  attachments    Attachment[]
+  markups        DrawingMarkup[]
+  meetingActions MeetingAction[]
 
   @@unique([organizationId, rfiNo])
   @@index([projectId, status])
@@ -6074,4 +6088,141 @@ model SubcontractQuoteLine {
   @@unique([quoteId, itemId])
   @@index([itemId])
   @@index([organizationId])
+}
+
+/// v6 item 112: a meeting's kind, for the register and the minutes' heading.
+enum MeetingKind {
+  PROGRESS
+  CLIENT
+  SUBCONTRACTOR
+  DESIGN
+  SAFETY
+  QUALITY
+  OTHER
+}
+
+/// Minutes are a draft until issued; issued minutes are fixed and sent to those present.
+enum MeetingStatus {
+  DRAFT
+  ISSUED
+}
+
+enum MeetingPointKind {
+  NOTE
+  DECISION
+}
+
+enum MeetingActionStatus {
+  OPEN
+  DONE
+  DROPPED
+}
+
+/// A meeting on a project and its minutes (v6 item 112): who came, what was noted and decided, and the actions.
+model Meeting {
+  id             String        @id @default(uuid())
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  /// MOM-2026-0001
+  meetingNo      String
+  title          String
+  kind           MeetingKind   @default(PROGRESS)
+  heldOn         DateTime      @db.Date
+  /// HH:mm
+  startTime      String?
+  venue          String?
+  chairedBy      String?
+  agenda         String?
+  /// The next meeting, printed at the foot of the minutes
+  nextOn         DateTime?     @db.Date
+  status         MeetingStatus @default(DRAFT)
+  issuedAt       DateTime?
+  issuedById     String?
+  issuedBy       User?         @relation("MeetingIssuer", fields: [issuedById], references: [id], onDelete: SetNull)
+  createdById    String
+  createdBy      User          @relation("MeetingCreator", fields: [createdById], references: [id])
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  attendees MeetingAttendee[]
+  points    MeetingPoint[]
+  actions   MeetingAction[]
+
+  @@unique([organizationId, meetingNo])
+  @@index([organizationId, projectId, heldOn])
+}
+
+/// Someone at (or asked to) the meeting: one of our users, or someone from outside with their organisation.
+model MeetingAttendee {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  meetingId      String
+  meeting        Meeting      @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  userId         String?
+  user           User?        @relation("MeetingAttendeeUser", fields: [userId], references: [id], onDelete: SetNull)
+  name           String
+  /// Their side: the client, the consultant, a subcontractor
+  organisation   String?
+  email          String?
+  phone          String?
+  present        Boolean      @default(true)
+  sortOrder      Int          @default(0)
+
+  @@index([meetingId])
+  @@index([organizationId])
+}
+
+/// A line of the minutes: something noted, or a decision.
+model MeetingPoint {
+  id             String           @id @default(uuid())
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  meetingId      String
+  meeting        Meeting          @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  kind           MeetingPointKind @default(NOTE)
+  text           String
+  sortOrder      Int              @default(0)
+
+  @@index([meetingId])
+  @@index([organizationId])
+}
+
+/// An action from a meeting: what, whose, by when, and what it is about. It stays open, and comes up at the next
+/// meetings, until it is done or dropped.
+model MeetingAction {
+  id             String              @id @default(uuid())
+  organizationId String
+  organization   Organization        @relation(fields: [organizationId], references: [id])
+  meetingId      String
+  meeting        Meeting             @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  projectId      String
+  project        Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  text           String
+  /// One of our users, who sees it in My work; or someone from outside, by name
+  ownerUserId    String?
+  ownerUser      User?               @relation("MeetingActionOwner", fields: [ownerUserId], references: [id], onDelete: SetNull)
+  ownerName      String
+  dueOn          DateTime?           @db.Date
+  status         MeetingActionStatus @default(OPEN)
+  doneOn         DateTime?           @db.Date
+  /// How it was closed, or why dropped
+  closeNote      String?
+  closedById     String?
+  closedBy       User?               @relation("MeetingActionCloser", fields: [closedById], references: [id], onDelete: SetNull)
+  rfiId          String?
+  rfi            Rfi?                @relation(fields: [rfiId], references: [id], onDelete: SetNull)
+  ncrId          String?
+  ncr            Ncr?                @relation(fields: [ncrId], references: [id], onDelete: SetNull)
+  variationId    String?
+  variation      Variation?          @relation(fields: [variationId], references: [id], onDelete: SetNull)
+  sortOrder      Int                 @default(0)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@index([organizationId, projectId, status])
+  @@index([ownerUserId, status])
+  @@index([meetingId])
 }

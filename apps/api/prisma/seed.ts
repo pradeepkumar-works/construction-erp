@@ -183,6 +183,7 @@ async function main() {
     await seedMachineLoans(org.id);
     await seedTenders(org.id);
     await seedScEnquiries(org.id);
+    await seedMeetings(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
   }
@@ -380,6 +381,7 @@ async function main() {
   await seedMachineLoans(org.id);
   await seedTenders(org.id);
   await seedScEnquiries(org.id);
+  await seedMeetings(org.id);
 
   console.log('Seed complete. Login with any of these (password: password123):');
   for (const u of USERS) console.log(`  ${u.email.padEnd(24)} ${u.role}`);
@@ -4129,5 +4131,143 @@ async function seedScEnquiries(organizationId: string) {
       audit.push({ action: 'AWARDED', note: `${e.award.vendor}${wo ? `, ${wo.woNo}` : ''}`, at: e.award.on });
     }
     await prisma.auditLog.createMany({ data: audit.map((a) => ({ organizationId, entityType: 'SC_ENQUIRY', entityId: enquiry.id, action: a.action, note: a.note, actorId: pm.id, createdAt: day(a.at) })) });
+  }
+}
+
+/**
+ * Meetings and action items (v6 item 112): the road's last two progress reviews and its monthly review with the
+ * client, a design meeting on the hospital, and this week's water scheme review still in draft. Some actions are done,
+ * one is overdue with the project manager, and some are about an RFI.
+ */
+async function seedMeetings(organizationId: string) {
+  if (await prisma.meeting.count({ where: { organizationId } })) return;
+  const users = new Map((await prisma.user.findMany({ where: { organizationId }, select: { id: true, email: true, fullName: true, phone: true } })).map((u) => [u.email, u]));
+  const pm = users.get('pm@demo.com') ?? users.get('admin@demo.com');
+  if (!pm) return;
+  const year = new Date().getUTCFullYear();
+  type Who = string | { name: string; org: string; email?: string; phone?: string; absent?: boolean };
+  type Act = { text: string; owner: Who; due: number | null; done?: number; dropped?: number; note?: string; rfi?: string };
+  const meetings: {
+    code: string; title: string; kind: 'PROGRESS' | 'CLIENT' | 'DESIGN'; held: number; time: string; venue: string; chair: string; agenda: string; next: number | null;
+    issued: boolean; by: string; who: Who[]; notes: [('NOTE' | 'DECISION'), string][]; actions: Act[];
+  }[] = [
+    {
+      code: 'RD-2026-01', title: 'Progress review, Km 12 to 20', kind: 'PROGRESS', held: -15, time: '10:00', venue: 'Site office, Km 14', chair: 'Suresh Nair', next: -8, issued: true, by: 'pm@demo.com',
+      agenda: 'Progress against the programme\nEarthwork and GSB in Km 16 to 20\nQuality: culvert at Km 17.4\nSafety',
+      who: ['pm@demo.com', 'engineer@demo.com', 'tl@demo.com', 'qaqc@demo.com', { name: 'P. K. Sahoo', org: 'Sri Jagannath Constructions', phone: '9437012345' }],
+      notes: [
+        ['NOTE', 'Earthwork in embankment is at 78% against 82% planned; the shortfall is in Km 18 to 20 where the borrow area was flooded.'],
+        ['NOTE', 'GSB is complete up to Km 16; WMM has started on the left carriageway.'],
+        ['DECISION', 'Borrow earth for Km 18 to 20 to come from the Pipili area till the flooded pit dries out.'],
+        ['DECISION', 'Night work on WMM allowed on the left carriageway with lighting and flagmen.'],
+      ],
+      actions: [
+        { text: 'Fix lighting and two flagmen for night work on the left carriageway', owner: 'tl@demo.com', due: -12, done: -12 },
+        { text: 'Get the borrow area at Pipili approved by the client', owner: 'pm@demo.com', due: -10, done: -9 },
+        { text: 'Cast cubes for the culvert top slab at Km 17.4 and test at 7 and 28 days', owner: 'qaqc@demo.com', due: -8, done: -8 },
+      ],
+    },
+    {
+      code: 'RD-2026-01', title: 'Progress review, Km 12 to 20', kind: 'PROGRESS', held: -8, time: '10:00', venue: 'Site office, Km 14', chair: 'Suresh Nair', next: -1, issued: true, by: 'pm@demo.com',
+      agenda: 'Actions from the last review\nProgress against the programme\nHT line crossing at Ch 14+100\nBills of Sri Jagannath',
+      who: ['pm@demo.com', 'engineer@demo.com', 'tl@demo.com', 'qs@demo.com', 'qaqc@demo.com', { name: 'P. K. Sahoo', org: 'Sri Jagannath Constructions', phone: '9437012345' }, { name: 'Deepak Kumar', org: 'Head office', absent: true }],
+      notes: [
+        ['NOTE', 'Earthwork is at 84% against 86% planned; the Pipili borrow area has closed most of the gap.'],
+        ['NOTE', 'The HT line at Ch 14+100 still stops the embankment over 60 m. TPCODL has not given its estimate for shifting.'],
+        ['DECISION', 'Work past the HT line to go on both sides, leaving the 60 m stretch for last.'],
+        ['DECISION', 'A second paver to be hired for DBM from 1 November rather than moving the one from the water scheme.'],
+        ['NOTE', 'Sri Jagannath asked for the shoulder dressing bill to be cleared before Diwali.'],
+      ],
+      actions: [
+        { text: 'Get the shifting estimate for the HT line at Ch 14+100 from TPCODL and send it to the client', owner: 'pm@demo.com', due: -3, rfi: 'HT line crossing at Ch 14+100' },
+        { text: 'Re-sequence WMM between Km 18 and 20 to keep one lane open to traffic', owner: 'tl@demo.com', due: -4, done: -5 },
+        { text: 'Send the 7-day cube results of the culvert slab to the client', owner: 'qaqc@demo.com', due: -2, done: -2 },
+        { text: 'Measure and certify the shoulder dressing bill of Sri Jagannath', owner: 'qs@demo.com', due: 2 },
+        { text: 'Line up a second paver for DBM from 1 November', owner: 'pm@demo.com', due: 6 },
+        { text: 'Move the batching plant to Km 22', owner: 'tl@demo.com', due: -1, dropped: -1, note: 'Not needed: DBM comes from the hot mix plant at Km 9' },
+      ],
+    },
+    {
+      code: 'RD-2026-01', title: 'Monthly review with the client', kind: 'CLIENT', held: -2, time: '11:30', venue: 'NH division office, Bhubaneswar', chair: 'Er. Bijay Kumar Panda', next: 28, issued: true, by: 'pm@demo.com',
+      agenda: 'Progress for the month\nDrawings and RFIs pending with the client\nRA bill 4\nUtility shifting',
+      who: [{ name: 'Er. Bijay Kumar Panda', org: 'Client, NH division', email: 'client@demo.com' }, 'md@demo.com', 'pm@demo.com', 'qs@demo.com'],
+      notes: [
+        ['NOTE', 'Physical progress is 61% against 64% planned; the client accepted the reasons for the gap in Km 18 to 20.'],
+        ['NOTE', 'Drawings for the cross drainage between Km 17 and 19 are still pending with the client.'],
+        ['DECISION', 'The client will take up the HT line shifting with TPCODL at its level.'],
+        ['DECISION', 'RA bill 4 to be checked jointly on site before submission.'],
+      ],
+      actions: [
+        { text: 'Issue the cross drainage drawings for Km 17 to 19', owner: { name: 'Er. Bijay Kumar Panda', org: 'Client, NH division' }, due: 8, rfi: 'Cross drainage between Km 17 and Km 19' },
+        { text: 'Send the revised programme for the bridge approaches', owner: 'pm@demo.com', due: 5 },
+        { text: 'Fix a date for the joint measurement of RA bill 4', owner: 'qs@demo.com', due: 3 },
+      ],
+    },
+    {
+      code: 'BL-2026-02', title: 'Design coordination with the architect and PMC', kind: 'DESIGN', held: -5, time: '15:00', venue: 'PMC office, Cuttack', chair: 'Lakshmi Menon', next: 9, issued: true, by: 'md@demo.com',
+      agenda: 'Stair core doors\nFooting F12\nMEP routing in the OT block',
+      who: ['md@demo.com', 'qs@demo.com', 'qaqc@demo.com', { name: 'Lakshmi Menon', org: 'PMC' }, { name: 'Ar. S. Mishra', org: 'Mishra Associates, architects', email: 'architect@example.com' }],
+      notes: [
+        ['NOTE', 'Footing F12 is to be built to the structural drawing; the architectural drawing will be corrected.'],
+        ['DECISION', 'Stair core doors to be 2-hour fire rated, as the fire NOC asks.'],
+        ['NOTE', 'MEP routing in the OT block needs a combined services drawing before the first floor slab.'],
+      ],
+      actions: [
+        { text: 'Price the 2-hour fire-rated doors and send a variation', owner: 'qs@demo.com', due: 4, rfi: 'Fire rating of the stair core doors' },
+        { text: 'Issue the combined services drawing for the OT block', owner: { name: 'Ar. S. Mishra', org: 'Mishra Associates, architects' }, due: 10 },
+      ],
+    },
+    {
+      code: 'WS-2026-03', title: 'Weekly progress review, zone 2', kind: 'PROGRESS', held: 0, time: '09:30', venue: 'Site office, Jajpur', chair: 'Suresh Nair', next: 7, issued: false, by: 'pm@demo.com',
+      agenda: 'Pipe laying in zone 2\nHouse connections\nOverhead tank',
+      who: ['pm@demo.com', 'engineer@demo.com', 'tl@demo.com'],
+      notes: [
+        ['NOTE', 'HDPE laying is at 7.2 km of 18 km in zone 2.'],
+        ['DECISION', 'House connections to start in the streets already pressure tested.'],
+      ],
+      actions: [{ text: 'Find a plumbing gang for house connections in zone 2', owner: 'tl@demo.com', due: 7 }],
+    },
+  ];
+  let n = 0;
+  for (const m of [...meetings].sort((a, b) => a.held - b.held)) {
+    const project = await prisma.project.findFirst({ where: { organizationId, code: m.code }, select: { id: true } });
+    const by = users.get(m.by) ?? pm;
+    if (!project) continue;
+    const rfis = await prisma.rfi.findMany({ where: { organizationId, projectId: project.id }, select: { id: true, subject: true } });
+    const person = (w: Who) => (typeof w === 'string' ? users.get(w) : null);
+    n += 1;
+    const meeting = await prisma.meeting.create({
+      data: {
+        organizationId, projectId: project.id, meetingNo: `MOM-${year}-${String(n).padStart(4, '0')}`, title: m.title, kind: m.kind, heldOn: day(m.held), startTime: m.time, venue: m.venue, chairedBy: m.chair,
+        agenda: m.agenda, nextOn: m.next === null ? null : day(m.next), status: m.issued ? 'ISSUED' : 'DRAFT', issuedAt: m.issued ? new Date(day(m.held).getTime() + 12.5 * 3_600_000) : null, issuedById: m.issued ? by.id : null, createdById: by.id, createdAt: day(m.held),
+        attendees: {
+          create: m.who.flatMap((w, i) => {
+            const u = person(w);
+            if (typeof w === 'string' && !u) return [];
+            return [u
+              ? { organizationId, userId: u.id, name: u.fullName, email: u.email, phone: u.phone, sortOrder: i }
+              : { organizationId, name: (w as Exclude<Who, string>).name, organisation: (w as Exclude<Who, string>).org, email: (w as Exclude<Who, string>).email ?? null, phone: (w as Exclude<Who, string>).phone ?? null, present: !(w as Exclude<Who, string>).absent, sortOrder: i }];
+          }),
+        },
+        points: { create: m.notes.map(([kind, text], i) => ({ organizationId, kind, text, sortOrder: i })) },
+        actions: {
+          create: m.actions.map((a, i) => {
+            const u = person(a.owner);
+            const closed = a.done ?? a.dropped;
+            return {
+              organizationId, projectId: project.id, text: a.text, ownerUserId: u?.id ?? null, ownerName: u?.fullName ?? (typeof a.owner === 'string' ? a.owner : a.owner.name), dueOn: a.due === null ? null : day(a.due),
+              status: a.done !== undefined ? 'DONE' as const : a.dropped !== undefined ? 'DROPPED' as const : 'OPEN' as const, doneOn: closed === undefined ? null : day(closed), closeNote: a.note ?? null, closedById: closed === undefined ? null : (u?.id ?? by.id),
+              rfiId: a.rfi ? (rfis.find((r) => r.subject === a.rfi)?.id ?? null) : null, sortOrder: i,
+            };
+          }),
+        },
+      },
+    });
+    await prisma.auditLog.createMany({
+      data: [
+        { organizationId, entityType: 'MEETING', entityId: meeting.id, action: 'CREATED', note: null, actorId: by.id, createdAt: day(m.held) },
+        ...(m.issued ? [{ organizationId, entityType: 'MEETING', entityId: meeting.id, action: 'ISSUED', note: null, actorId: by.id, createdAt: new Date(day(m.held).getTime() + 12.5 * 3_600_000) }] : []),
+      ],
+    });
   }
 }

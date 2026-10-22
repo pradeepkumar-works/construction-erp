@@ -159,6 +159,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/comparison-test.js
+      - name: Meeting actions fall due, issue and close by the rules
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/meetings-test.js
       - name: Early warnings forecast right, show each role its own kinds and backtest on the demo history
         if: matrix.suite == 'flows'
         working-directory: apps/api

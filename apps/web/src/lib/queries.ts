@@ -294,6 +294,10 @@ import type {
   TenderListDto,
   ScEnquiryDetailDto,
   ScEnquiryListDto,
+  MeetingListDto,
+  MeetingActionListDto,
+  MeetingDetailDto,
+  MeetingLinkOptionsDto,
   EquipmentLoanDetailDto,
   EquipmentLoanStatus,
   LoanPreviewDto,
@@ -582,11 +586,12 @@ export const useProjectsPage = (filters: ProjectFilters) =>
 
 export const useProject = (id: string | undefined) => useQuery({ ...recordQuery<ProjectDetail>('/projects', id), enabled: !!id });
 
-export const useUsersPage = (filters: UserFilters) =>
+export const useUsersPage = (filters: UserFilters, enabled = true) =>
   useQuery({
     queryKey: ['users', 'page', clean(filters)],
     queryFn: async () => (await api.get<Paginated<UserSummary>>('/users', { params: clean(filters) })).data,
     placeholderData: keepPreviousData,
+    enabled,
   });
 
 export const useRoles = () =>
@@ -757,6 +762,38 @@ export function useScEnquiryAction<T = ScEnquiryDetailDto>() {
       (method === 'delete' ? await api.delete<T>(path) : await api[method]<T>(path, body ?? {})).data,
     onSuccess: () => {
       for (const key of [['sc-enquiries'], ['work-orders']]) void qc.invalidateQueries({ queryKey: key });
+    },
+  });
+}
+
+/** Meetings and their actions (v6 item 112). */
+export const useMeetings = (filters?: { status?: string; projectId?: string; q?: string }, enabled = true) =>
+  useQuery({
+    queryKey: ['meetings', 'list', clean(filters)],
+    queryFn: async () => (await api.get<MeetingListDto>('/meetings', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+export const useMeetingActions = (filters?: { status?: string; projectId?: string; q?: string; mine?: boolean }, enabled = true) =>
+  useQuery({
+    queryKey: ['meetings', 'actions', clean(filters)],
+    queryFn: async () => (await api.get<MeetingActionListDto>('/meetings/actions', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+export const useMeeting = (id?: string) =>
+  useQuery({ queryKey: ['meetings', 'one', id], queryFn: async () => (await api.get<MeetingDetailDto>(`/meetings/${id}`)).data, enabled: !!id });
+/** The RFIs, NCRs and variations of a project an action can be about. */
+export const useMeetingLinkOptions = (projectId?: string) =>
+  useQuery({ queryKey: ['meetings', 'links', projectId], queryFn: async () => (await api.get<MeetingLinkOptionsDto>(`/meetings/link-options/${projectId}`)).data, enabled: !!projectId, staleTime: 60_000 });
+/** Any change to a meeting or an action; My work's card counts the caller's actions, so home refreshes too. */
+export function useMeetingAction<T = MeetingDetailDto>() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ method = 'post', path, body }: { method?: 'post' | 'patch' | 'delete'; path: string; body?: unknown }) =>
+      (method === 'delete' ? await api.delete<T>(path) : await api[method]<T>(path, body ?? {})).data,
+    onSuccess: () => {
+      for (const key of [['meetings'], ['dashboard']]) void qc.invalidateQueries({ queryKey: key });
     },
   });
 }

@@ -317,6 +317,18 @@ export const WORK_ORDER_VIEW_ROLES: RoleKey[] = [...WORK_ORDER_ROLES, 'SITE_ENGI
 export const canViewWorkOrders = (role: RoleKey) => WORK_ORDER_VIEW_ROLES.includes(role);
 /** Subcontract enquiries (v6 item 111): those who issue work orders ask for quotes and award them; quotes stay with them. */
 export const canRunSubcontractEnquiries = (role: RoleKey) => canIssueWorkOrder(role);
+/** Meetings (v6 item 112): anyone on a project reads its minutes and the actions; these roles record meetings. */
+export const MEETING_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER', 'TEAM_LEADER', 'SITE_ENGINEER', 'QUANTITY_SURVEYOR', 'QA_QC_ENGINEER', 'SAFETY_OFFICER', 'PROCUREMENT_MANAGER'];
+export const canRecordMeetings = (role: RoleKey) => MEETING_ROLES.includes(role);
+export const canViewMeetings = (role: RoleKey) => !isGuest(role);
+/** Change anyone's minutes, take issued minutes back to draft, and move any action: the managers. */
+export const MEETING_MANAGER_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER'];
+export const canManageMeetings = (role: RoleKey) => MEETING_MANAGER_ROLES.includes(role);
+/** Draft minutes change by whoever recorded them, or a manager. */
+export const canEditMeeting = (user: SubmissionActor, createdById: string) => canRecordMeetings(user.roleKey) && (createdById === user.id || canManageMeetings(user.roleKey));
+/** An action is closed, dropped, reopened or moved by its owner, whoever recorded its meeting, or a manager. */
+export const canUpdateMeetingAction = (user: SubmissionActor, a: { ownerUserId: string | null; meetingCreatedById: string }) =>
+  !isGuest(user.roleKey) && (a.ownerUserId === user.id || a.meetingCreatedById === user.id || canManageMeetings(user.roleKey));
 /** Prepare subcontractor bills and see the margin per BOQ item: the billing roles. */
 export const canPrepareSubcontractBill = (role: RoleKey) => BILLING_ROLES.includes(role);
 /** Add and edit vendors: admin, management, project managers, procurement, accounts and stores. */

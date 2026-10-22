@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import type { Paginated, SearchHitDto, SearchKind, SearchResultDto } from '@erp/shared';
-import { SEARCH_MIN_LENGTH, VENDOR_KIND_LABELS, canViewPaymentRequests, canRequestFunds, canEditContract, canEditVendors, canSeeVendorBank, canViewContract, canViewTenders, canRunSubcontractEnquiries } from '@erp/shared';
+import { SEARCH_MIN_LENGTH, VENDOR_KIND_LABELS, canViewPaymentRequests, canRequestFunds, canEditContract, canEditVendors, canSeeVendorBank, canViewContract, canViewTenders, canRunSubcontractEnquiries, canViewMeetings } from '@erp/shared';
 import type { RequestUser } from '../common/current-user';
 import { MaterialRequestsService } from '../material-requests/material-requests.service';
 import { PurchaseOrdersService } from '../purchasing/purchase-orders.service';
@@ -20,6 +20,7 @@ import { StockService } from '../stock/stock.service';
 import { StaffService } from '../staff/staff.service';
 import { PaymentRequestsService } from '../payables/payment-requests.service';
 import { TendersService } from '../tenders/tenders.service';
+import { MeetingsService } from '../meetings/meetings.service';
 import { ScEnquiriesService } from '../subcontracts/sc-enquiries.service';
 
 /** Hits per kind: enough to spot the one meant, few enough to keep the palette short. */
@@ -59,6 +60,7 @@ export class SearchService {
     paymentRequests: PaymentRequestsService,
     tenders: TendersService,
     scEnquiries: ScEnquiriesService,
+    meetings: MeetingsService,
   ) {
     const page = (q: string) => ({ q, page: 1, pageSize: PER_KIND });
     const sources: Source<any>[] = [
@@ -89,6 +91,15 @@ export class SearchService {
       { kind: 'risk', list: (u, q) => risks.list(u, page(q) as never), hit: (r) => ({ id: r.id, title: r.riskNo, subtitle: join(r.title, r.projectName), href: `/risks?id=${r.id}`, status: null }) },
       { kind: 'document', list: (u, q) => documents.listDocuments(u, page(q) as never), hit: (r) => ({ id: r.id, title: r.docNo, subtitle: join(r.title, r.projectName), href: `/documents?id=${r.id}`, status: null }) },
       { kind: 'rfi', list: (u, q) => rfis.list(u, page(q) as never), hit: (r) => ({ id: r.id, title: r.rfiNo, subtitle: join(r.subject, r.projectName), href: `/documents?tab=rfis&rfi=${r.id}`, status: null }) },
+      {
+        kind: 'meeting',
+        allowed: (u) => canViewMeetings(u.roleKey),
+        list: async (u, q) => {
+          const found = (await meetings.list(u, { q })).items;
+          return { items: found.slice(0, PER_KIND), total: found.length, page: 1, pageSize: PER_KIND };
+        },
+        hit: (r) => ({ id: r.id, title: r.meetingNo, subtitle: join(r.title, r.projectName), href: `/meetings/${r.id}`, status: null }),
+      },
       {
         kind: 'vendor',
         // The vendor master is readable by anyone for pickers, but its page is for these roles.

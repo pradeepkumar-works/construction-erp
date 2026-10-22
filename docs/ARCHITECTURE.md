@@ -1722,6 +1722,33 @@ export; the client portal and the phone app show the amount.
   figures; `/subcontract-enquiries/[id]` with the comparative statement, the subcontractors asked and their quotes, and
   the award).
 
+## Meetings and action items (v6 item 112)
+
+- **Tables.** `Meeting` (number from `nextDocNo('MOM')`, project, title, kind, day and time held, venue, chair, agenda, next
+  meeting, status DRAFT / ISSUED, who issued it and when), `MeetingAttendee` (one of our users, whose name, email and phone
+  come from the user master, or an outsider by name with their side, email and phone; present or absent), `MeetingPoint`
+  (NOTE or DECISION, in order) and `MeetingAction` (text, owner as a user or a name, due date, status OPEN / DONE / DROPPED
+  with the day closed, how or why, and who closed it, and at most one of an RFI, NCR or variation of the same project).
+  A CHECK keeps `doneOn` set exactly when the action is not open. All four have `tenant_isolation` policies.
+- **Rules.** Pure functions in `apps/api/src/meetings/meeting-rules.ts`, tested in `src/scripts/meetings-test.ts` (CI runs
+  it): where an action stands against its date (`actionTiming`: late from the day after it is due), what issuing needs
+  (`issueProblem`: someone present, something written, an owner and a date on every action), what closing needs
+  (`actionMoveProblem`: done on a day not ahead of today, dropped with a reason), the register's figures and the order to
+  take actions up (earliest due first, undated last).
+- **Life.** A meeting is recorded as a draft and changes only as a draft, by whoever recorded it or a manager; attendees
+  and points are replaced as wholes and actions keep their id. Issuing fixes the minutes, emails them (HTML in the body,
+  through `EmailService`) to every attendee with an address, and tells each of our owners once of their open actions
+  (`DOCUMENT_ISSUED` with entity `MEETING`, deduped per meeting). A manager can take issued minutes back to draft to
+  correct them. Actions live on after the meeting: their owner, whoever recorded the meeting and managers close, drop,
+  reopen or move them. A meeting's page shows the actions earlier meetings of the project left open. Audited as `MEETING`.
+- **Who.** `canViewMeetings` (everyone but guests) reads the meetings of the projects they can see; `canRecordMeetings`
+  records them; `canManageMeetings` (admin, management, project managers) edits anyone's drafts and revises issued minutes;
+  `canUpdateMeetingAction` for actions. Search kind `meeting`. My work's `meetingActions` card is the caller's open actions
+  (for the roles that record meetings always, for anyone else once they own one).
+- **Clients.** Web: Site → Meetings (`/meetings`, a Meetings tab and an Actions tab with Mine; `/meetings/[id]` with the
+  minutes, actions, who came, issue, print and WhatsApp). The phone shows the My work card and opens the notice; it has no
+  meetings screen yet.
+
 ## Company data (export and deletion)
 
 - **Export.** `CompanyDataService` works out every table and how its rows belong to an organisation from the Prisma
