@@ -120,7 +120,8 @@ export const NAV_ACCESS = {
   markStaff: (u: NavUser) => P.canMarkStaff(u.roleKey),
   staffAdmin: (u: NavUser) => P.canManageStaff(u.roleKey),
   biometric: (u: NavUser) => P.canManageBiometric(u.roleKey),
-  payrollInputs: (u: NavUser) => P.canViewPayroll(u.roleKey) || P.canViewLabourSummary(u.roleKey),
+  hrRecords: (u: NavUser) => P.canManageStaff(u.roleKey) || P.canViewEmployeePrivate(u.roleKey),
+  labourSummary: (u: NavUser) => P.canViewLabourSummary(u.roleKey),
   payroll: (u: NavUser) => P.canViewPayroll(u.roleKey),
   reports: (u: NavUser) => onSite(u) || P.canViewContract(u.roleKey),
   cost: (u: NavUser) => P.canViewCost(u.roleKey),
@@ -228,7 +229,7 @@ export const NAV_TREE: NavNode[] = [
   { id: 'subcontracts.bills', parent: 'subcontracts', label: 'Subcontractor bills', icon: 'receipt-text', route: '/subcontract-bills', access: 'subcontractBills', status: 'live', badge: 'scBillsWaiting', description: 'Running bills with retention and recoveries.', keywords: 'petty contractor', concord: ['p5-sub'] },
   { id: 'subcontracts.enquiries', parent: 'subcontracts', label: 'Enquiries and comparison', icon: 'scale', access: 'workOrders', status: 'planned', roadmap: 111, description: 'Quotes from several subcontractors, compared.' },
   { id: 'subcontracts.vendors', parent: 'subcontracts', label: 'Subcontractors', icon: 'contact', route: '/vendors?kind=SUBCONTRACTOR', access: 'vendors', status: 'live', description: 'Subcontractors with GST and bank details.' },
-  { id: 'subcontracts.labour', parent: 'subcontracts', label: 'Labour contractors', icon: 'pickaxe', route: '/payroll?tab=contractors', access: 'payrollInputs', status: 'live', description: "Labour contractors' man-days each month.", concord: ['p5-labour'] },
+  { id: 'subcontracts.labour', parent: 'subcontracts', label: 'Labour contractors', icon: 'pickaxe', shortcutOf: 'payroll.contractors', access: 'labourSummary', status: 'live', description: "Labour contractors' man-days each month.", concord: ['p5-labour'] },
 
   // ── Client billing ────────────────────────────────────────────────────────────────────────────────────────────
   { id: 'billing.bills', parent: 'billing', label: 'RA bills', icon: 'receipt-indian-rupee', route: '/bills', access: 'bills', status: 'live', badge: 'billsWaiting', description: 'Running account bills from the measurement book.', keywords: 'running account invoice client bill', concord: ['p5-billing', 'p4-bm'] },
@@ -258,23 +259,24 @@ export const NAV_TREE: NavNode[] = [
 
   // ── People ────────────────────────────────────────────────────────────────────────────────────────────────────
   { id: 'people.me', parent: 'people', label: 'My attendance and leave', icon: 'calendar-days', route: '/staff', nav: 'Staff and leave', access: 'internal', status: 'live', description: 'Check in, apply for leave, see your balance.', keywords: 'employees hr' },
-  { id: 'people.payslips', parent: 'people', label: 'My payslips', icon: 'receipt-text', access: 'internal', status: 'building', roadmap: 100, description: 'Your payslips by month.' },
+  { id: 'people.payslips', parent: 'people', label: 'My payslips', icon: 'receipt-text', route: '/staff?tab=payslips', access: 'internal', status: 'live', description: 'Your payslips by month, once the month is approved.', keywords: 'salary slip' },
   { id: 'people.leave', parent: 'people', label: 'Leave to decide', icon: 'calendar-check', route: '/staff?tab=leave', access: 'markStaff', status: 'live', badge: 'leaveToDecide', description: 'Leave and on-duty requests waiting on you.' },
   { id: 'people.overtime', parent: 'people', label: 'Overtime', icon: 'clock', route: '/staff?tab=overtime', access: 'markStaff', status: 'live', badge: 'overtimeToDecide', description: 'Overtime to approve.' },
   { id: 'people.register', parent: 'people', label: 'Staff register', icon: 'clipboard-list', route: '/staff?tab=register', access: 'markStaff', status: 'live', description: "Today's staff attendance at your sites." },
   { id: 'people.employees', parent: 'people', label: 'Employees', icon: 'id-card', route: '/staff?tab=staff', access: 'markStaff', status: 'live', description: 'Employee records, from joining to exit.', keywords: 'staff master', concord: ['p3-hr', 'p5-hrms'] },
-  { id: 'people.letters', parent: 'people', label: 'HR letters and changes', icon: 'mail', access: 'staffAdmin', status: 'building', roadmap: 99, description: 'Confirmation, transfer, increment and exit letters.' },
+  { id: 'people.letters', parent: 'people', label: 'Service records', icon: 'scroll-text', route: '/staff?tab=service', access: 'hrRecords', status: 'live', description: 'Confirmations, transfers, promotions, increments and exits, with their letters.', keywords: 'hr letters transfer promotion increment warning exit' },
   { id: 'people.holidays', parent: 'people', label: 'Holidays', icon: 'calendar', route: '/staff?tab=holidays', access: 'internal', status: 'live', description: 'Holidays by site.' },
   { id: 'people.biometric', parent: 'people', label: 'Biometric devices', icon: 'fingerprint-pattern', route: '/biometric', access: 'biometric', status: 'live', description: 'Fingerprint and face devices, who is enrolled on them, and their punches marking attendance.', keywords: 'fingerprint face punch attendance machine zkteco essl adms', concord: ['p7-bio'] },
 
   // ── Payroll ───────────────────────────────────────────────────────────────────────────────────────────────────
-  { id: 'payroll.inputs', parent: 'payroll', label: 'Payroll inputs', icon: 'clipboard-list', route: '/payroll', access: 'payrollInputs', status: 'live', description: 'Days, leave and overtime per person each month.', keywords: 'salary wages' },
-  { id: 'payroll.runs', parent: 'payroll', label: 'Salary runs', icon: 'banknote', access: 'payroll', status: 'building', roadmap: 100, description: 'Prepare, approve and pay a month, with the bank file.', concord: ['p4-payroll'] },
-  { id: 'payroll.payslips', parent: 'payroll', label: 'Payslips', icon: 'receipt-text', access: 'payroll', status: 'building', roadmap: 100, description: 'Everyone\'s payslips by month.', concord: ['p4-payroll'] },
-  { id: 'payroll.structures', parent: 'payroll', label: 'Salary structures', icon: 'layers', access: 'payroll', status: 'building', roadmap: 100, description: 'Pay heads and each person\'s salary.' },
-  { id: 'payroll.loans', parent: 'payroll', label: 'Loans and advances', icon: 'hand-coins', access: 'payroll', status: 'building', roadmap: 100, description: 'Staff loans recovered from salary.' },
-  { id: 'payroll.settlement', parent: 'payroll', label: 'Full and final', icon: 'user-minus', access: 'payroll', status: 'building', roadmap: 100, description: 'Settlement when someone leaves.' },
-  { id: 'payroll.statutory', parent: 'payroll', label: 'PF, ESI, PT and TDS', icon: 'landmark', access: 'payroll', status: 'building', roadmap: 100, description: 'Statutory returns and challans.' },
+  { id: 'payroll.runs', parent: 'payroll', label: 'Salary runs', icon: 'banknote', route: '/payroll?tab=runs', nav: 'Payroll', access: 'payroll', status: 'live', description: 'Prepare, approve and pay a month, with payslips, the bank file and the PF and ESI files.', keywords: 'salary wages payslip pf esi tds bank file', concord: ['p4-payroll'] },
+  { id: 'payroll.structures', parent: 'payroll', label: 'Salaries', icon: 'layers', route: '/payroll?tab=salaries', access: 'payroll', status: 'live', description: "Each person's salary from a date, with PF, ESI, PT and TDS and the CTC.", keywords: 'salary structure ctc' },
+  { id: 'payroll.loans', parent: 'payroll', label: 'Loans and advances', icon: 'hand-coins', route: '/payroll?tab=loans', access: 'payroll', status: 'live', description: 'Staff loans and advances recovered from salary.', keywords: 'advance recovery' },
+  { id: 'payroll.settlement', parent: 'payroll', label: 'Full and final', icon: 'user-minus', route: '/payroll?tab=settlements', access: 'payroll', status: 'live', description: 'Settlement when someone leaves: last salary, leave encashment, gratuity.', keywords: 'gratuity settlement exit' },
+  { id: 'payroll.inputs', parent: 'payroll', label: 'Staff inputs', icon: 'clipboard-list', route: '/payroll?tab=staff', access: 'payroll', status: 'live', description: 'Days, leave and overtime per person each month.', keywords: 'attendance inputs' },
+  { id: 'payroll.contractors', parent: 'payroll', label: 'Labour contractors', icon: 'hard-hat', route: '/payroll?tab=contractors', nav: 'Payroll', access: 'labourSummary', status: 'live', description: "Labour contractors' man-days each month.", keywords: 'labour man-days wages' },
+  { id: 'payroll.settings', parent: 'payroll', label: 'Payroll settings', icon: 'settings', route: '/payroll?tab=settings', access: 'payroll', status: 'live', description: 'PF and ESI rates, professional tax state, paid days and overtime.', keywords: 'pf esi pt rates' },
+  { id: 'payroll.statutory', parent: 'payroll', label: 'TDS returns', icon: 'landmark', access: 'payroll', status: 'planned', description: 'TDS returns (24Q) and Form 16; the PF and ESI files come with each salary run.' },
 
   // ── Tenders (item 110) ────────────────────────────────────────────────────────────────────────────────────────
   { id: 'tenders.register', parent: 'tenders', label: 'Tender register', icon: 'gavel', access: 'tenders', status: 'planned', roadmap: 110, description: 'Tenders, due dates, EMDs and results.', concord: ['p4-tendering', 'p3-tender', 'p5-bd'] },
