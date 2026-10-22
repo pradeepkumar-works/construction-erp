@@ -3,11 +3,14 @@ import { BadRequestException, ForbiddenException, Injectable, NotFoundException 
 import { Prisma } from '@prisma/client';
 import {
   ACCOUNT_GROUP_NATURE,
+  BOOK_OWN_SOURCES,
   TALLY_FIXED_LEDGERS,
   accountGroupOf,
   canApproveVouchers,
   canKeepBooks,
   isMoneyGroup,
+  statementLineFits,
+  STATEMENT_LINE_LABELS,
   type AccountGroup,
   type BookSource,
   type BookVoucherDto,
@@ -18,13 +21,14 @@ import {
   type LedgerAccountDto,
   type LedgerDto,
   type ManualVoucherType,
+  type StatementLine,
   type Paginated,
   type TallyVoucherKind,
 } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { AuditService } from '../common/audit.service';
-import { dateOnly, iso, money, parseDate } from '../common/serialize';
+import { dateOnly, formatDay, iso, money, parseDate } from '../common/serialize';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import { PostingService } from '../posting/posting.service';
 import { debits, type Voucher } from '../tally/vouchers';
@@ -89,10 +93,23 @@ export class BooksService {
     if (!canKeepBooks(user.roleKey)) throw new ForbiddenException('Only admin, management and accounts see the books');
   }
 
+  /** The day the books begin and the day they are locked up to, if set. */
+  async period(organizationId: string) {
+    const st = await this.prisma.booksState.findUnique({ where: { organizationId } });
+    return { booksFrom: dateOnly(st?.booksFrom), lockedUpTo: dateOnly(st?.lockedUpTo) };
+  }
+
+  /** Refuse a voucher dated in the locked period or before the books begin. */
+  private async assertOpen(organizationId: string, date: string) {
+    const { booksFrom, lockedUpTo } = await this.period(organizationId);
+    if (lockedUpTo && date <= lockedUpTo) throw new BadRequestException(`The books are locked up to ${formatDay(lockedUpTo)}. Date the voucher after that, or ask management to move the lock.`);
+    if (booksFrom && date < booksFrom) throw new BadRequestException(`The books begin on ${formatDay(booksFrom)}; what came before is in the opening balances. Date the voucher on or after that day.`);
+  }
+
   // ----- Posting -----
 
   /** Post every module record that changed since the last run, when that run is older than a minute. */
-  private async fresh(user: RequestUser) {
+  async fresh(user: RequestUser) {
     const st = await this.prisma.booksState.findUnique({ where: { organizationId: user.organizationId } });
     if (!st?.lastPostedAt || Date.now() - st.lastPostedAt.getTime() > FRESH_MS) await this.postAll(user.organizationId, FRESH_MS / 12);
   }
@@ -106,7 +123,7 @@ export class BooksService {
    * Bring the posted vouchers in line with the modules: new records are added, changed ones rewritten, and those that no
    * longer post (a payment deleted, a bill sent back) removed. A run that finished within `skipWithinMs` is enough.
    */
-  private async postAll(organizationId: string, skipWithinMs: number): Promise<BooksPostResultDto> {
+  async postAll(organizationId: string, skipWithinMs: number): Promise<BooksPostResultDto> {
     return this.prisma.$transaction(
       async (tx) => {
         await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`BOOKS:${organizationId}`}))`;
@@ -116,7 +133,17 @@ export class BooksService {
         const { vouchers, held } = await this.posting.build(tx, organizationId, cfg, { unexported: false });
         const accounts = await this.accountsFor(tx, organizationId, vouchers);
 
-        const existing = await tx.bookVoucher.findMany({ where: { organizationId, source: { not: 'MANUAL' } }, select: { id: true, source: true, sourceId: true, hash: true } });
+        const booksFrom = dateOnly(st?.booksFrom);
+        const lockedUpTo = dateOnly(st?.lockedUpTo);
+        const locked = (d: string) => !!lockedUpTo && d <= lockedUpTo;
+        const heldRows: BooksHeldDto[] = held.map((h) => ({ source: h.kind as BookSource, sourceId: h.sourceId, date: h.date, number: h.number, party: h.party, reason: h.reason }));
+        const lockedOut = (source: string, sourceId: string, date: string, number: string, party: string | null, what: string) =>
+          heldRows.push({ source: source as BookSource, sourceId, date, number, party: party ?? '', reason: `${what} after the books were locked up to ${formatDay(lockedUpTo)}. Move the lock back to post it, or undo the change.` });
+
+        const existing = await tx.bookVoucher.findMany({
+          where: { organizationId, source: { notIn: [...BOOK_OWN_SOURCES] } },
+          select: { id: true, source: true, sourceId: true, hash: true, date: true, voucherNo: true, party: true },
+        });
         const byKey = new Map(existing.map((e) => [`${e.source}:${e.sourceId}`, e]));
         const seen = new Set<string>();
         const created: Prisma.BookVoucherCreateManyInput[] = [];
@@ -124,6 +151,14 @@ export class BooksService {
         const changed: string[] = [];
         for (const v of vouchers) {
           const key = `${v.kind}:${v.sourceId}`;
+          const day = dateOnly(v.date)!;
+          const was = byKey.get(key);
+          const wasDay = was ? dateOnly(was.date)! : null;
+          if (!was && booksFrom && day < booksFrom) continue; // in the opening balances
+          if (!was && locked(day)) {
+            lockedOut(v.kind, v.sourceId, day, v.number, v.party, 'Recorded in the module');
+            continue;
+          }
           seen.add(key);
           const hash = voucherHash({
             date: dateOnly(v.date)!,
@@ -133,8 +168,15 @@ export class BooksService {
             projectId: v.projectId,
             lines: v.lines.map((l) => ({ key: l.ledgerKey, projectId: v.projectId, amount: l.amount.toFixed(2) })),
           });
-          const was = byKey.get(key);
           if (was?.hash === hash) continue;
+          if (was && (locked(wasDay!) || locked(day))) {
+            lockedOut(v.kind, v.sourceId, day, v.number, v.party, 'Changed in the module');
+            continue;
+          }
+          if (was && booksFrom && day < booksFrom) {
+            seen.delete(key);
+            continue;
+          }
           const id = was?.id ?? randomUUID();
           const data = { voucherNo: v.number, type: typeOf(v), date: v.date, reference: v.reference, party: v.party, narration: v.narration, projectId: v.projectId, amount: debits(v.lines), status: 'APPROVED' as const, hash };
           if (was) {
@@ -143,6 +185,7 @@ export class BooksService {
           } else created.push({ id, organizationId, source: v.kind, sourceId: v.sourceId, ...data });
           v.lines.forEach((l, i) =>
             lines.push({
+              id: randomUUID(),
               organizationId,
               voucherId: id,
               accountId: accounts.get(l.ledgerKey)!,
@@ -153,13 +196,28 @@ export class BooksService {
             }),
           );
         }
+        // A rewritten voucher keeps its bank statement matches where the same account still has the same amount.
+        const matches = changed.length
+          ? await tx.bankStatementLine.findMany({ where: { organizationId, bookLine: { voucherId: { in: changed } } }, select: { id: true, bookLine: { select: { voucherId: true, accountId: true, debit: true, credit: true } } } })
+          : [];
         if (changed.length) await tx.bookLine.deleteMany({ where: { voucherId: { in: changed } } });
         if (created.length) await tx.bookVoucher.createMany({ data: created });
         if (lines.length) await tx.bookLine.createMany({ data: lines });
-        const gone = existing.filter((e) => !seen.has(`${e.source}:${e.sourceId}`)).map((e) => e.id);
+        const taken = new Set<string>();
+        for (const m of matches) {
+          const b = m.bookLine!;
+          const again = lines.find((l) => !taken.has(l.id!) && l.voucherId === b.voucherId && l.accountId === b.accountId && D(l.debit as Prisma.Decimal.Value).eq(b.debit) && D(l.credit as Prisma.Decimal.Value).eq(b.credit));
+          if (!again) continue;
+          taken.add(again.id!);
+          await tx.bankStatementLine.update({ where: { id: m.id }, data: { bookLineId: again.id } });
+        }
+        const gone: string[] = [];
+        for (const e of existing) {
+          if (seen.has(`${e.source}:${e.sourceId}`)) continue;
+          if (locked(dateOnly(e.date)!)) lockedOut(e.source, e.sourceId!, dateOnly(e.date)!, e.voucherNo, e.party, 'Taken out of the module');
+          else gone.push(e.id);
+        }
         if (gone.length) await tx.bookVoucher.deleteMany({ where: { id: { in: gone } } });
-
-        const heldRows: BooksHeldDto[] = held.map((h) => ({ source: h.kind as BookSource, sourceId: h.sourceId, date: h.date, number: h.number, party: h.party, reason: h.reason }));
         const state = { lastPostedAt: new Date(), held: heldRows as unknown as Prisma.InputJsonValue };
         await tx.booksState.upsert({ where: { organizationId }, create: { organizationId, ...state }, update: state });
         return { added: created.length, changed: changed.length, removed: gone.length, held: heldRows.length };
@@ -232,12 +290,18 @@ export class BooksService {
         isSystem: a.isSystem,
         isActive: a.isActive,
         description: a.description,
+        statementLine: a.statementLine,
         debit: money(dr)!,
         credit: money(cr)!,
         balance: money(dr.sub(cr))!,
         entries: s?._count._all ?? 0,
       };
     });
+  }
+
+  private lineFits(line: StatementLine | null | undefined, group: AccountGroup) {
+    if (line && !statementLineFits(line, ACCOUNT_GROUP_NATURE[group]))
+      throw new BadRequestException(`${STATEMENT_LINE_LABELS[line]} is on the ${ACCOUNT_GROUP_NATURE[group] === 'INCOME' || ACCOUNT_GROUP_NATURE[group] === 'EXPENSE' ? 'balance sheet' : 'profit and loss account'}; choose a line that fits the account's group`);
   }
 
   private async nameFree(organizationId: string, name: string, exceptId?: string) {
@@ -249,7 +313,10 @@ export class BooksService {
     this.assertKeep(user);
     await this.nameFree(user.organizationId, dto.name);
     const id = randomUUID();
-    await this.prisma.ledgerAccount.create({ data: { id, organizationId: user.organizationId, key: `ACCOUNT:${id}`, name: dto.name, group: dto.group, code: dto.code || null, description: dto.description || null } });
+    this.lineFits(dto.statementLine, dto.group);
+    await this.prisma.ledgerAccount.create({
+      data: { id, organizationId: user.organizationId, key: `ACCOUNT:${id}`, name: dto.name, group: dto.group, code: dto.code || null, description: dto.description || null, statementLine: dto.statementLine ?? null },
+    });
     await this.audit.log(user, 'LEDGER_ACCOUNT', id, 'CREATED', dto.name);
     return (await this.accounts(user)).find((a) => a.id === id)!;
   }
@@ -259,6 +326,7 @@ export class BooksService {
     const a = await this.prisma.ledgerAccount.findFirst({ where: { id, organizationId: user.organizationId } });
     if (!a) throw new NotFoundException('Account not found');
     if (dto.name && dto.name !== a.name) await this.nameFree(user.organizationId, dto.name, id);
+    this.lineFits(dto.statementLine === undefined ? a.statementLine : dto.statementLine, dto.group ?? a.group);
     if (dto.isActive === false && a.isSystem) throw new BadRequestException('The modules post to this account, so it stays open. Rename it or change its group instead.');
     await this.prisma.ledgerAccount.update({
       where: { id },
@@ -268,6 +336,7 @@ export class BooksService {
         ...(dto.code !== undefined ? { code: dto.code || null } : {}),
         ...(dto.description !== undefined ? { description: dto.description || null } : {}),
         ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
+        ...(dto.statementLine !== undefined ? { statementLine: dto.statementLine } : {}),
       },
     });
     await this.audit.log(user, 'LEDGER_ACCOUNT', id, 'UPDATED', dto.name ?? a.name);
@@ -481,6 +550,7 @@ export class BooksService {
 
   async createVoucher(user: RequestUser, dto: SaveVoucherDto): Promise<BookVoucherDto> {
     this.assertKeep(user);
+    await this.assertOpen(user.organizationId, dto.date);
     const lines = await this.linesOf(user, dto);
     const id = await this.prisma.$transaction(async (tx) => {
       const voucherNo = await this.nextNumber(tx, user.organizationId, dto.type, dto.date);
@@ -517,6 +587,7 @@ export class BooksService {
     const v = await this.row(user, id);
     this.editable(user, v);
     if (dto.type !== v.type) throw new BadRequestException('The type of a voucher stays as made. Delete this one and make a new one.');
+    await this.assertOpen(user.organizationId, dto.date);
     const lines = await this.linesOf(user, dto);
     await this.prisma.$transaction(async (tx) => {
       // A new financial year gives a new number.
@@ -552,6 +623,7 @@ export class BooksService {
     this.assertKeep(user);
     const v = await this.row(user, id);
     this.editable(user, v);
+    await this.assertOpen(user.organizationId, dateOnly(v.date)!);
     await this.prisma.bookVoucher.update({ where: { id }, data: { status: 'SUBMITTED', submittedAt: new Date(), reviewNote: null } });
     await this.audit.log(user, 'BOOK_VOUCHER', id, 'SUBMITTED', v.voucherNo);
     return this.voucher(user, id);
@@ -568,6 +640,7 @@ export class BooksService {
 
   async approve(user: RequestUser, id: string, note?: string): Promise<BookVoucherDto> {
     const v = await this.decidable(user, id);
+    await this.assertOpen(user.organizationId, dateOnly(v.date)!);
     await this.prisma.bookVoucher.update({ where: { id }, data: { status: 'APPROVED', approvedById: user.id, approvedAt: new Date(), reviewNote: note || null } });
     await this.audit.log(user, 'BOOK_VOUCHER', id, 'APPROVED', note || v.voucherNo);
     return this.voucher(user, id);
@@ -586,7 +659,11 @@ export class BooksService {
     if (!canApproveVouchers(user.roleKey)) throw new ForbiddenException('Only management or an admin cancels an approved voucher');
     const v = await this.row(user, id);
     if (v.source !== 'MANUAL' || v.status !== 'APPROVED') throw new BadRequestException('Only an approved voucher made by hand can be cancelled');
-    await this.prisma.bookVoucher.update({ where: { id }, data: { status: 'CANCELLED', cancelledAt: new Date(), reviewNote: note } });
+    await this.assertOpen(user.organizationId, dateOnly(v.date)!);
+    await this.prisma.$transaction([
+      this.prisma.bankStatementLine.updateMany({ where: { organizationId: user.organizationId, bookLine: { voucherId: id } }, data: { bookLineId: null, matchedBy: null, matchedAt: null } }),
+      this.prisma.bookVoucher.update({ where: { id }, data: { status: 'CANCELLED', cancelledAt: new Date(), reviewNote: note } }),
+    ]);
     await this.audit.log(user, 'BOOK_VOUCHER', id, 'CANCELLED', `${v.voucherNo}: ${note}`);
     return this.voucher(user, id);
   }

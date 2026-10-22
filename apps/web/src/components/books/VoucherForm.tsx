@@ -38,8 +38,29 @@ function Totals({ form }: { form: FormInstance<Values> }) {
   );
 }
 
+/** What a new voucher starts with, such as a bank charge from the bank reconciliation. */
+export interface VoucherPrefill {
+  type: ManualVoucherType;
+  date: string;
+  reference?: string | null;
+  narration: string;
+  lines: { accountId?: string; debit?: number | null; credit?: number | null }[];
+}
+
 /** A journal, payment, receipt or contra made by hand: saved as a draft, or sent to management for approval. */
-export function VoucherForm({ open, onClose, voucher, initialType = 'JOURNAL' }: { open: boolean; onClose: () => void; voucher?: BookVoucherDto | null; initialType?: ManualVoucherType }) {
+export function VoucherForm({
+  open,
+  onClose,
+  voucher,
+  initialType = 'JOURNAL',
+  prefill,
+}: {
+  open: boolean;
+  onClose: () => void;
+  voucher?: BookVoucherDto | null;
+  initialType?: ManualVoucherType;
+  prefill?: VoucherPrefill | null;
+}) {
   const [form] = Form.useForm<Values>();
   const { message } = App.useApp();
   const save = useBooksAction<BookVoucherDto>();
@@ -56,7 +77,8 @@ export function VoucherForm({ open, onClose, voucher, initialType = 'JOURNAL' }:
         narration: voucher.narration,
         lines: voucher.lines.map((l) => ({ accountId: l.accountId, debit: l.debit ? Number(l.debit) : null, credit: l.credit ? Number(l.credit) : null })),
       });
-  }, [open, voucher, form]);
+    else if (prefill) form.setFieldsValue({ ...prefill, date: dayjs(prefill.date), reference: prefill.reference ?? undefined });
+  }, [open, voucher, prefill, form]);
   const options = (accounts ?? [])
     .filter((a) => a.isActive || voucher?.lines.some((l) => l.accountId === a.id))
     .map((a) => ({ value: a.id, label: a.name, title: ACCOUNT_GROUP_LABELS[a.group] }));
@@ -72,7 +94,7 @@ export function VoucherForm({ open, onClose, voucher, initialType = 'JOURNAL' }:
       title={editing ? `Change ${voucher.voucherNo}` : 'New voucher'}
       okText="Submit for approval"
       secondaryText="Save draft"
-      draftKey={editing ? undefined : 'book-voucher'}
+      draftKey={editing || prefill ? undefined : 'book-voucher'}
       footerExtra={<Totals form={form} />}
       onSubmit={async (v, draft) => {
         const body = {

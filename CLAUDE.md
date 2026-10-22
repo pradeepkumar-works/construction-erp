@@ -152,6 +152,11 @@ and the pre-delivery checklist.
   `PostingService` (`apps/api/src/posting`), shared by the Tally export and the books; a new kind of record that moves money
   is a block there (and its Tally mark), never a second set of rules. Hand-made vouchers go through `voucherProblem` in
   `books-rules.ts` (tested in `src/scripts/books-test.ts`, CI runs it) and need someone other than their maker to approve.
+- Statements (item 103, `apps/api/src/statements`, ARCHITECTURE "Financial statements"): where an account shows is
+  `statementLineOf` (`packages/shared/src/statements.ts`), the bank file reader, matching and reconciliation are pure functions in
+  `statements-rules.ts` tested in `src/scripts/statements-test.ts` (CI runs it). Vouchers the books make themselves (`OPENING`,
+  `YEAR_CLOSE`) are in `BOOK_OWN_SOURCES`, which the posting run leaves alone; nothing posts or changes on or before
+  `BooksState.lockedUpTo`, and module records dated before `booksFrom` stay out (the opening balances stand for them).
 - Mobile: screens in `app/`, shared UI in `src/components`, API in `src/api`, no new native deps
   without checking `node_modules/expo/bundledNativeModules.json` for the SDK-pinned version.
 - Mobile theme: `src/theme.ts` picks the light or dark palette once at start-up (Profile > Appearance, stored in

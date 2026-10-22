@@ -493,8 +493,13 @@ Migrations stay additive. Design notes for each item are in the project's `roadm
     the chart of accounts by Tally's groups, journal, payment, receipt and contra vouchers with approval and cancelling,
     the day book, cash and bank books and ledgers with running balances and projects as cost centres, and the Accounts
     module. Opening balances, the statements and the year close follow in 103.
-103. **Financial statements** (M). Opening balances, trial balance (also by project), profit and loss, balance sheet,
-    bank reconciliation, financial year close and lock.
+103. ~~**Financial statements** (M). Opening balances, trial balance (also by project), profit and loss, balance sheet,
+    bank reconciliation, financial year close and lock.~~
+    Done: the day the books begin with opening balances, the trial balance by group and by project, profit and loss
+    (also by project) and the balance sheet in Schedule III order beside the year before, with a line per account where
+    accounts choose; bank statements imported from CSV or Excel, matched automatically or by hand, and the bank
+    reconciliation statement; the lock date and closing (and reopening) a year. TDS returns (24Q, 26Q) and Form 16 are
+    not built.
 104. **RMC production and sales** (L). A plant, mix designs, quotations and sales orders, production schedule, batch
     reports drawing the plant's stock, delivery challans, cube tests, sales bills with GST and customer receipts.
 105. **Supplier portal** (L). Supplier and subcontractor logins: enquiries, POs and work orders to accept, dispatch notes,

@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsDateString, IsIn, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, Max, MaxLength, Min, ValidateIf, ValidateNested } from 'class-validator';
-import { ACCOUNT_GROUPS, BOOK_SOURCES, BOOK_VOUCHER_STATUSES, BOOK_VOUCHER_TYPES, MANUAL_VOUCHER_TYPES, type AccountGroup, type BookSource, type BookVoucherStatus, type BookVoucherType, type ManualVoucherType } from '@erp/shared';
+import { ACCOUNT_GROUPS, STATEMENT_LINES, type StatementLine, BOOK_SOURCES, BOOK_VOUCHER_STATUSES, BOOK_VOUCHER_TYPES, MANUAL_VOUCHER_TYPES, type AccountGroup, type BookSource, type BookVoucherStatus, type BookVoucherType, type ManualVoucherType } from '@erp/shared';
 import { PageQuery, QueryBool } from '../common/paging';
 
 const trim = () => Transform(({ value }) => (typeof value === 'string' ? value.trim() : value));
@@ -13,6 +13,7 @@ export class CreateAccountDto {
   @ApiProperty({ enum: ACCOUNT_GROUPS }) @IsIn(ACCOUNT_GROUPS as unknown as string[], { message: 'Choose the group' }) group: AccountGroup;
   @ApiPropertyOptional() @IsOptional() @trim() @opt() @IsString() @MaxLength(20) code?: string | null;
   @ApiPropertyOptional() @IsOptional() @trim() @opt() @IsString() @MaxLength(300) description?: string | null;
+  @ApiPropertyOptional({ enum: STATEMENT_LINES, description: 'Where the statements show it, when not its group\'s line; null for the group\'s' }) @IsOptional() @opt() @IsIn(STATEMENT_LINES as unknown as string[], { message: 'Choose a statement line' }) statementLine?: StatementLine | null;
 }
 
 export class UpdateAccountDto {
@@ -21,6 +22,7 @@ export class UpdateAccountDto {
   @ApiPropertyOptional() @IsOptional() @trim() @opt() @IsString() @MaxLength(20) code?: string | null;
   @ApiPropertyOptional() @IsOptional() @trim() @opt() @IsString() @MaxLength(300) description?: string | null;
   @ApiPropertyOptional() @IsOptional() @IsBoolean() isActive?: boolean;
+  @ApiPropertyOptional({ enum: STATEMENT_LINES, description: 'Where the statements show it, when not its group\'s line; null for the group\'s' }) @IsOptional() @opt() @IsIn(STATEMENT_LINES as unknown as string[], { message: 'Choose a statement line' }) statementLine?: StatementLine | null;
 }
 
 export class AccountQuery {

@@ -7,6 +7,7 @@ import {
   MoneyCollectOutlined,
   AccountBookOutlined,
   BookOutlined,
+  PieChartOutlined,
   AlertOutlined,
   AppstoreOutlined,
   AuditOutlined,
@@ -150,6 +151,7 @@ export const NAV_DESCRIPTIONS: Record<string, string> = {
   '/clients': 'Clients and their contacts.',
   '/compliance': 'Bank guarantees, EMDs, insurance and licences with renewals.',
   '/books': 'Day book, cash and bank books, ledgers, vouchers and the chart of accounts.',
+  '/statements': 'Trial balance, profit and loss, balance sheet, bank reconciliation and the year’s close.',
   '/gst': 'GST on sales and purchases: GSTR-1 and 2B.',
   '/tally': 'Vouchers for Tally, with projects as cost centres.',
   '/staff': 'Staff records and their service letters, attendance, leave, overtime and holidays.',
@@ -255,6 +257,7 @@ export function navFor(user: AuthUser): NavSection[] {
       icon: FundOutlined,
       items: [
         ...when(canKeepBooks(role), { href: '/books', label: 'Books', icon: BookOutlined, keywords: 'accounts day book cash book bank book ledger journal voucher contra chart of accounts' }),
+        ...when(canKeepBooks(role), { href: '/statements', label: 'Financial statements', icon: PieChartOutlined, keywords: 'trial balance profit and loss balance sheet schedule iii bank reconciliation brs opening balances year close lock' }),
         ...when(canViewGstRegisters(role), { href: '/gst', label: 'GST registers', icon: PercentageOutlined, keywords: 'tax gstr' }),
         ...when(canExportTally(role), { href: '/tally', label: 'Tally export', icon: ExportOutlined, keywords: 'accounts vouchers' }),
       ],

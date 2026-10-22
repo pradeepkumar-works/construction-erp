@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-statements',
+    date: '2026-11-09',
+    title: 'Financial statements',
+    points: [
+      'Accounts → Financial statements shows the trial balance, the profit and loss account and the balance sheet in Schedule III order, each beside the same period a year before, and every figure opens its ledger.',
+      'See the trial balance and profit and loss project by project, and download any of them to Excel.',
+      'Import the bank statement as CSV or Excel: lines that agree by amount and day are matched at once, you match the rest or make a voucher for bank charges and interest, and the bank reconciliation shows what is still in transit.',
+      'Enter the day your books begin with the balances from your old books, lock the books up to a day once returns are filed, and close a year when it ends.',
+    ],
+  },
+  {
     id: '2026-11-books',
     date: '2026-11-08',
     title: 'The books of account',

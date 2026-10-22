@@ -579,6 +579,7 @@ model Organization {
   bookVouchers         BookVoucher[]
   bookLines            BookLine[]
   booksState           BooksState?
+  bankStatementLines   BankStatementLine[]
   staffAttendance      StaffAttendance[]
   leaveRequests        LeaveRequest[]
   holidays             Holiday[]
@@ -5065,20 +5066,23 @@ enum BookVoucherStatus {
 /// An account in the chart of accounts. The posting service makes one for each ledger key a module posts to (the same
 /// keys and names as the Tally export); accounts add their own (key ACCOUNT:<id>).
 model LedgerAccount {
-  id             String       @id @default(uuid())
+  id             String              @id @default(uuid())
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  organization   Organization        @relation(fields: [organizationId], references: [id])
   /// PURCHASE, VENDOR:<id>, CLIENT:<id>, EXPENSE:<category>, ACCOUNT:<id> …
   key            String
   name           String
   code           String?
   group          AccountGroup
-  isSystem       Boolean      @default(false)
-  isActive       Boolean      @default(true)
+  isSystem       Boolean             @default(false)
+  isActive       Boolean             @default(true)
   description    String?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  /// Where the statements show it, when not its group's line (v6 item 103)
+  statementLine  StatementLine?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
   lines          BookLine[]
+  statementLines BankStatementLine[]
 
   @@unique([organizationId, key])
   @@unique([organizationId, name])
@@ -5124,19 +5128,20 @@ model BookVoucher {
 
 /// A debit or a credit to an account, with the project as cost centre.
 model BookLine {
-  id             String        @id @default(uuid())
+  id             String             @id @default(uuid())
   organizationId String
-  organization   Organization  @relation(fields: [organizationId], references: [id])
+  organization   Organization       @relation(fields: [organizationId], references: [id])
   voucherId      String
-  voucher        BookVoucher   @relation(fields: [voucherId], references: [id], onDelete: Cascade)
+  voucher        BookVoucher        @relation(fields: [voucherId], references: [id], onDelete: Cascade)
   accountId      String
-  account        LedgerAccount @relation(fields: [accountId], references: [id])
+  account        LedgerAccount      @relation(fields: [accountId], references: [id])
   projectId      String?
-  project        Project?      @relation(fields: [projectId], references: [id])
-  debit          Decimal       @default(0) @db.Decimal(18, 2)
-  credit         Decimal       @default(0) @db.Decimal(18, 2)
+  project        Project?           @relation(fields: [projectId], references: [id])
+  debit          Decimal            @default(0) @db.Decimal(18, 2)
+  credit         Decimal            @default(0) @db.Decimal(18, 2)
   narration      String?
-  sortOrder      Int           @default(0)
+  sortOrder      Int                @default(0)
+  statementLine  BankStatementLine?
 
   @@index([accountId])
   @@index([voucherId])
@@ -5150,4 +5155,66 @@ model BooksState {
   lastPostedAt   DateTime?
   /// Records that could not be posted, with why: [{ source, sourceId, date, number, party, reason }]
   held           Json         @default("[]")
+  /// The day the books begin: module records before it are in the opening balances instead (v6 item 103)
+  booksFrom      DateTime?    @db.Date
+  /// Nothing posts, changes or is cancelled on or before this day
+  lockedUpTo     DateTime?    @db.Date
+}
+
+enum StatementLine {
+  REVENUE
+  OTHER_INCOME
+  MATERIALS
+  INVENTORY_CHANGE
+  CONSTRUCTION
+  EMPLOYEE
+  FINANCE
+  DEPRECIATION
+  OTHER_EXPENSES
+  TAX
+  SHARE_CAPITAL
+  RESERVES
+  LONG_BORROWINGS
+  SHORT_BORROWINGS
+  TRADE_PAYABLES
+  OTHER_CURRENT_LIABILITIES
+  SHORT_PROVISIONS
+  PPE
+  CWIP
+  INVESTMENTS
+  LONG_LOANS
+  INVENTORIES
+  TRADE_RECEIVABLES
+  CASH
+  SHORT_LOANS
+  OTHER_CURRENT_ASSETS
+}
+
+/// A line of a bank account's statement, imported from the bank's file and matched to a line of the bank book
+/// (v6 item 103, bank reconciliation).
+model BankStatementLine {
+  id             String        @id @default(uuid())
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id])
+  accountId      String
+  account        LedgerAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  date           DateTime      @db.Date
+  description    String
+  reference      String?
+  withdrawal     Decimal       @default(0) @db.Decimal(18, 2)
+  deposit        Decimal       @default(0) @db.Decimal(18, 2)
+  balance        Decimal?      @db.Decimal(18, 2)
+  /// Its place in the bank's file, so lines of one day keep the bank's order
+  seq            Int           @default(0)
+  /// The row's date, amounts, balance and words, so importing the same file twice adds nothing
+  fingerprint    String
+  bookLineId     String?       @unique
+  bookLine       BookLine?     @relation(fields: [bookLineId], references: [id], onDelete: SetNull)
+  /// AUTO or HAND
+  matchedBy      String?
+  matchedAt      DateTime?
+  createdAt      DateTime      @default(now())
+
+  @@unique([organizationId, accountId, fingerprint])
+  @@index([organizationId, accountId, date])
 }

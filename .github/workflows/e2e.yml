@@ -135,6 +135,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/books-test.js
+      - name: Statements put accounts on the right Schedule III lines, close a year, read bank statements and reconcile
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/statements-test.js
       - name: Early warnings forecast right, show each role its own kinds and backtest on the demo history
         if: matrix.suite == 'flows'
         working-directory: apps/api

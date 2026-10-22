@@ -4,8 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { App, Button, DatePicker, Form, Input, Segmented, Select, Space, Switch, Table, Tag, Typography } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import type { AccountGroup, AccountNature, LedgerAccountDto } from '@erp/shared';
-import { ACCOUNT_GROUPS, ACCOUNT_GROUP_LABELS, ACCOUNT_GROUP_NATURE, ACCOUNT_NATURE_LABELS } from '@erp/shared';
+import type { AccountGroup, AccountNature, LedgerAccountDto, StatementLine } from '@erp/shared';
+import { ACCOUNT_GROUPS, ACCOUNT_GROUP_LABELS, ACCOUNT_GROUP_NATURE, ACCOUNT_NATURE_LABELS, STATEMENT_LINES, STATEMENT_LINE_LABELS, statementLineFits, statementLineOf } from '@erp/shared';
 import { useBooksAction, useLedgerAccounts } from '@/lib/queries';
 import { QueryError } from '@/components/common/QueryState';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
@@ -18,6 +18,7 @@ interface Values {
   code?: string;
   description?: string;
   isActive?: boolean;
+  statementLine?: StatementLine | null;
 }
 
 const NATURES: AccountNature[] = ['ASSET', 'LIABILITY', 'INCOME', 'EXPENSE'];
@@ -31,8 +32,11 @@ function AccountForm({ open, onClose, account }: { open: boolean; onClose: () =>
   const [form] = Form.useForm<Values>();
   const { message } = App.useApp();
   const save = useBooksAction<LedgerAccountDto>();
+  const group = Form.useWatch('group', form) ?? account?.group ?? 'INDIRECT_EXPENSES';
+  const usual = STATEMENT_LINE_LABELS[statementLineOf({ key: account?.key ?? '', group, statementLine: null }, 0)];
   useEffect(() => {
-    if (open && account) form.setFieldsValue({ name: account.name, group: account.group, code: account.code ?? undefined, description: account.description ?? undefined, isActive: account.isActive });
+    if (open && account)
+      form.setFieldsValue({ name: account.name, group: account.group, code: account.code ?? undefined, description: account.description ?? undefined, isActive: account.isActive, statementLine: account.statementLine });
   }, [open, account, form]);
   return (
     <FormShell
@@ -45,7 +49,8 @@ function AccountForm({ open, onClose, account }: { open: boolean; onClose: () =>
       title={account ? `Change ${account.name}` : 'New account'}
       okText={account ? 'Save account' : 'Add account'}
       onSubmit={async (v) => {
-        const body = { name: v.name.trim(), group: v.group, code: v.code?.trim() || null, description: v.description?.trim() || null, ...(account && !account.isSystem ? { isActive: v.isActive } : {}) };
+        const statementLine = v.statementLine && statementLineFits(v.statementLine, ACCOUNT_GROUP_NATURE[v.group]) ? v.statementLine : null;
+        const body = { name: v.name.trim(), group: v.group, code: v.code?.trim() || null, description: v.description?.trim() || null, statementLine, ...(account && !account.isSystem ? { isActive: v.isActive } : {}) };
         const a = await save.mutateAsync(account ? { method: 'patch', path: `/books/accounts/${account.id}`, body } : { path: '/books/accounts', body });
         message.success(account ? `${a.name} saved` : `${a.name} added under ${ACCOUNT_GROUP_LABELS[a.group]}`);
       }}
@@ -62,6 +67,14 @@ function AccountForm({ open, onClose, account }: { open: boolean; onClose: () =>
             <Input maxLength={20} translate="no" />
           </Form.Item>
         </FormGrid>
+        <Form.Item name="statementLine" label="Shows in the statements as" extra={`Left empty, it shows as ${usual}`}>
+          <Select
+            allowClear
+            placeholder={usual}
+            showSearch={{ optionFilterProp: 'label' }}
+            options={STATEMENT_LINES.filter((l) => statementLineFits(l, ACCOUNT_GROUP_NATURE[group])).map((l) => ({ value: l, label: STATEMENT_LINE_LABELS[l] }))}
+          />
+        </Form.Item>
         <Form.Item name="description" label="Notes">
           <Input.TextArea rows={2} maxLength={300} />
         </Form.Item>

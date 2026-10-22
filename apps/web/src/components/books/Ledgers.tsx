@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { DatePicker, Select, Space } from 'antd';
 import dayjs from 'dayjs';
 import { ACCOUNT_GROUP_LABELS, isMoneyGroup } from '@erp/shared';
@@ -21,8 +22,14 @@ const fyStart = () => {
  */
 export function Ledgers({ money = false }: { money?: boolean }) {
   const { data: accounts } = useLedgerAccounts();
-  const [picked, setPicked] = useState<string | undefined>();
-  const [range, setRange] = useState<[dayjs.Dayjs, dayjs.Dayjs]>(() => [fyStart(), dayjs()]);
+  // The statements open an account's ledger with ?account=…&from=…&to=….
+  const search = useSearchParams();
+  const [picked, setPicked] = useState<string | undefined>(() => (money ? undefined : (search.get('account') ?? undefined)));
+  const [range, setRange] = useState<[dayjs.Dayjs, dayjs.Dayjs]>(() => {
+    const from = search.get('from');
+    const to = search.get('to');
+    return !money && from && to && dayjs(from).isValid() && dayjs(to).isValid() ? [dayjs(from), dayjs(to)] : [fyStart(), dayjs()];
+  });
   const [projectId, setProjectId] = useProjectScope();
   const choices = (accounts ?? []).filter((a) => (money ? isMoneyGroup(a.group) : true));
   const accountId = picked ?? (money ? (choices.find((a) => a.group === 'CASH_IN_HAND') ?? choices[0])?.id : undefined);

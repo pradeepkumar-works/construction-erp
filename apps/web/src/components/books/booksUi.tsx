@@ -33,7 +33,7 @@ export function Balance({ value }: { value: string | number }) {
 
 /** Where a posted voucher came from, as a link to its record when the record has a page. */
 export function sourceHref(source: BookSource, sourceId: string | null): string | null {
-  if (!sourceId) return null;
+  if (!sourceId && source !== 'OPENING') return null;
   switch (source) {
     case 'SALES':
       return `/bills/${sourceId}`;
@@ -53,6 +53,9 @@ export function sourceHref(source: BookSource, sourceId: string | null): string 
     case 'PAYMENT':
     case 'DEBIT_NOTE':
       return '/payables';
+    case 'OPENING':
+    case 'YEAR_CLOSE':
+      return '/statements?tab=year';
     default:
       return null;
   }
