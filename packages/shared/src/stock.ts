@@ -1,4 +1,4 @@
-import type { StockEntryType } from './enums';
+import type { ProjectStatus, StockEntryType } from './enums';
 
 /** Entry number prefix per type: GRN-2026-0001, ISS-2026-0001, ADJ-2026-0001, TRO-, TRI-, RTV-, RFS-. */
 export const STOCK_ENTRY_PREFIX: Record<StockEntryType, string> = {
@@ -33,3 +33,33 @@ export function isLowStock(balance: string | number, minQty: string | number | n
 /** True when a stock change takes the balance from at-or-above the minimum to below it (the moment to alert). */
 export const crossesBelowMin = (before: string | number, after: string | number, minQty: string | number | null | undefined): boolean =>
   !isLowStock(before, minQty) && isLowStock(after, minQty);
+
+/** GET /stock/stores: a central store or yard (v6 item 106) with what it holds and what is on the road. */
+export interface StoreSummaryDto {
+  id: string;
+  code: string;
+  name: string;
+  location: string | null;
+  status: ProjectStatus;
+  /** Items with a balance above zero */
+  items: number;
+  /** At the item master rate; null when the user may not see stock value */
+  value: string | null;
+  /** Items below their minimum */
+  low: number;
+  lastMovement: string | null;
+  /** Transfers sent from the store and not yet received at the site */
+  outInTransit: number;
+  /** Transfers on their way to the store */
+  inInTransit: number;
+  /** The user keeps this store, so may receive, issue and send from it */
+  canKeep: boolean;
+}
+
+/** GET /stock/destinations: where a stock keeper can send material, every open site and store of the company. */
+export interface StockDestinationDto {
+  id: string;
+  code: string;
+  name: string;
+  store: boolean;
+}

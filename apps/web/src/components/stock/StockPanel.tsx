@@ -75,7 +75,7 @@ export function StockActions({ projectId }: { projectId?: string }) {
             items: [
               ...(keeper
                 ? [
-                    { key: "transfer", label: "Transfer to another project" },
+                    { key: "transfer", label: "Transfer to a site or store" },
                     { key: "site", label: "Return from site" },
                     { key: "vendor", label: "Return to supplier" },
                   ]

@@ -581,6 +581,17 @@ The store register per project, fed by approved material requests:
   count (`POST /stock/counts`) posts the differences between counted and book quantities as one adjustment and
   returns `{counted, entry}` (`entry` null when everything matched). Balances show transfers in their own
   column; returns from site net off issued, returns to vendor off received.
+- **Central store (v6 item 106).** A store or yard that is not a site is a project of type `STORE` (like the RMC
+  plant's `PLANT`), so GRNs against its own POs, issues, counts, valuation and transfers all work as for a site. It
+  has no DPR: stores are left out of the DPR reminder, the home "DPR missing" list and the watch list's DPR rules.
+  A site's material request lists what the stores hold even to someone who is not one of the store's people
+  (`ProjectAccessService.stockSourceWhere`: visible projects plus every `STORE`); only the store's keepers see
+  `canSend` and can send from it. `GET /stock/stores` (`canSeeStores`: store manager, procurement, accounts,
+  approvers) lists the visible stores with items, value (store managers and cost viewers), items below minimum,
+  last movement and transfers on the way out and in; `GET /stock/destinations` lists every open site and store a
+  transfer may go to, stores first. The web has Central stores (`/stores`, `/stores/[id]` with the project's stock
+  panel); a store's project page redirects there. Chosen over a separate `storeId` on stock rows so every stock
+  path stays one path.
 - **Valuation.** `GET /stock/valuation` values stock on hand at the item master rate and ages it first in,
   first out over the inward movements (0-30, 31-90, 91-180, over 180 days). Store managers, approvers and
   anyone who sees project cost.

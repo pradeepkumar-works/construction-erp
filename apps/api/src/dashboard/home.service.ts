@@ -446,7 +446,8 @@ export class HomeService {
 
   private async dprsMissing(user: RequestUser, today: string) {
     const projects = await this.prisma.project.findMany({
-      where: { ...this.access.projectWhere(user), status: 'ACTIVE', dailyReports: { none: { date: parseDate(today) } } },
+      // A central store files no DPR (v6 item 106).
+      where: { ...this.access.projectWhere(user), status: 'ACTIVE', type: { not: 'STORE' }, dailyReports: { none: { date: parseDate(today) } } },
       select: { id: true, name: true },
       orderBy: { code: 'asc' },
     });

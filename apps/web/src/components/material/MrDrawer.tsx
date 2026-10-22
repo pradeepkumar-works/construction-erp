@@ -176,19 +176,21 @@ function StockCell({ line, loading }: { line: RequestLineStockDto | undefined; l
         <div>
           <Popover
             trigger="click"
-            title={`${line.itemName} at other sites`}
+            title={`${line.itemName} at other sites and stores`}
             content={
               <ul style={{ margin: 0, paddingInlineStart: 16 }}>
                 {line.others.map((o) => (
                   <li key={o.projectId} translate="no">
-                    {o.projectName}: {formatQty(o.balance)} {line.unit}
+                    {o.projectName}
+                    {o.store ? ' (central store)' : ''}: {formatQty(o.balance)} {line.unit}
                   </li>
                 ))}
               </ul>
             }
           >
             <Button type="link" size="small" style={{ padding: 0, height: 'auto', minHeight: 24, fontSize: themeFontSize('fontSizeSM') }}>
-              {formatQty(elsewhere)} at {line.others.length} other site{line.others.length === 1 ? '' : 's'}
+              {formatQty(elsewhere)} at {line.others.length} {line.others.some((o) => o.store) ? 'other place' : 'other site'}
+              {line.others.length === 1 ? '' : 's'}
             </Button>
           </Popover>
         </div>

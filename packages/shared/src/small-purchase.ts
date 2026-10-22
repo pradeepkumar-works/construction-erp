@@ -16,6 +16,8 @@ export interface SiteStockDto {
   balance: string;
   /** This user keeps that site's store, so may send from it */
   canSend: boolean;
+  /** A central store (v6 item 106), listed to everyone who looks at a request */
+  store?: boolean;
 }
 
 export interface RequestLineStockDto {

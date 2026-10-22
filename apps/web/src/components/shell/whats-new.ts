@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-central-store',
+    date: '2026-11-12',
+    title: 'Central stores',
+    points: [
+      'Keep stock at a company store or yard that is not a site: add one from Materials and plant → Central stores (a project of type Central store or yard).',
+      'Order and receive into the store like any site. Send material to a site by transfer; it stays on the road until the site receives it, and sites send spare material back the same way.',
+      "Each store shows its stock, register, value and age, and what is on the road. When a site's material request needs something, the store's stock is listed beside the other sites'.",
+    ],
+  },
+  {
     id: '2026-11-supplier-portal',
     date: '2026-11-11',
     title: 'Supplier portal',

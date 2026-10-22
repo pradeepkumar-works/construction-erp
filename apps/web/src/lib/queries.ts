@@ -285,6 +285,8 @@ import type {
   MarkupColor,
   MarkupKind,
   MarkupPoint,
+  StoreSummaryDto,
+  StockDestinationDto,
 } from '@erp/shared';
 import { CAD_MIME_TYPES, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, NOTIFICATION_TYPES_VERSION, SEARCH_MIN_LENGTH } from '@erp/shared';
 import { api } from './api';
@@ -680,6 +682,11 @@ export const useWorkerOutput = (projectId: string | undefined, from: string | un
     enabled: !!projectId && !!from && !!to,
   });
 
+/** Central stores and yards (v6 item 106), each with its stock, value and transfers on the road. */
+export const useStores = (enabled = true) => useQuery({ queryKey: ['stock', 'stores'], queryFn: async () => (await api.get<StoreSummaryDto[]>('/stock/stores')).data, enabled });
+/** Every open site and store a stock keeper can send to, stores first. */
+export const useStockDestinations = (enabled = true) =>
+  useQuery({ queryKey: ['stock', 'destinations'], queryFn: async () => (await api.get<StockDestinationDto[]>('/stock/destinations')).data, enabled, staleTime: 60_000 });
 export const useStockBalances = (filters?: StockBalanceFilters, enabled = true) =>
   useQuery({
     queryKey: ['stock', 'balances', clean(filters)],

@@ -50,6 +50,8 @@ export const COMMON: Record<string, string> = {
   'Road / Infrastructure': 'सड़क / इंफ्रास्ट्रक्चर',
   Building: 'भवन',
   'Water Supply': 'जल आपूर्ति',
+  'RMC plant': 'RMC प्लांट',
+  'Central store or yard': 'केंद्रीय स्टोर या यार्ड',
   Planned: 'योजना में',
   Active: 'चालू',
   'On Hold': 'रुका हुआ',

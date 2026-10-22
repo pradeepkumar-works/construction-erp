@@ -51,8 +51,14 @@ export default function ProjectDetailPage() {
   const params = useParams<{ id: string }>();
   const id = params?.id;
   const { data: project, isLoading, error, refetch } = useProject(id);
+  const router = useRouter();
+  // A central store has no works; its page is the store's (v6 item 106).
+  const store = project?.type === 'STORE';
+  useEffect(() => {
+    if (store && id) router.replace(`/stores/${id}`);
+  }, [store, id, router]);
 
-  if (isLoading)
+  if (isLoading || store)
     return (
       <div className="page-container">
         <PageSkeleton shape="workspace" />

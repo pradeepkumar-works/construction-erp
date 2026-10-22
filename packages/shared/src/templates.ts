@@ -53,6 +53,8 @@ export const DEFAULT_ACTIVITY_TEMPLATES: Record<ProjectType, ActivityTemplateIte
   ],
   // An RMC plant runs, it is not built; its schedule is the day's orders (v6 item 104).
   PLANT: [],
+  // A central store holds stock; it has no works to schedule (v6 item 106).
+  STORE: [],
 };
 
 export const MAX_TEMPLATE_ITEMS = 60;

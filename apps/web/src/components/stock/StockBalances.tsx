@@ -140,6 +140,8 @@ export function StockBalances({ projectId: fixedProject, initialLow = false, ini
           align: 'right',
           width: 140,
           ...sort('balance'),
+          card: 'amount',
+          cardText: (r) => `${formatQty(r.balance)} ${r.unit}${r.low ? ', below minimum' : ''}`,
           render: (v: string, r) => (
             <Space size={4}>
               {r.low ? (
@@ -167,7 +169,7 @@ export function StockBalances({ projectId: fixedProject, initialLow = false, ini
             </Space>
           ),
         },
-        { title: 'Last movement', dataIndex: 'lastMovement', width: 130, ...sort('lastMovement'), render: (v) => formatDate(v) },
+        { title: 'Last movement', dataIndex: 'lastMovement', width: 130, ...sort('lastMovement'), card: 'date', render: (v) => formatDate(v) },
       ];
     },
   });

@@ -125,6 +125,18 @@ export class StockController {
     return this.stock.postCount(user, dto);
   }
 
+  @ApiOperation({ summary: 'Central stores and yards', description: 'v6 item 106. Each store the user sees with its items, value (store managers, approvers, accounts), low items and transfers on the road.' })
+  @Get('stores')
+  stores(@CurrentUser() user: RequestUser) {
+    return this.stock.stores(user);
+  }
+
+  @ApiOperation({ summary: 'Where a stock keeper can send material', description: 'Every open site and central store of the company, stores first.' })
+  @Get('destinations')
+  destinations(@CurrentUser() user: RequestUser) {
+    return this.stock.destinations(user);
+  }
+
   @ApiOperation({ summary: 'Stock valuation and ageing', description: 'Store managers, approvers and accounts. Balances at the item master rate, aged first in, first out.' })
   @Get('valuation')
   valuation(@CurrentUser() user: RequestUser, @Query() q: StockValuationQuery) {

@@ -168,6 +168,8 @@ export const canCloseDefect = (role: RoleKey) => role === 'QA_QC_ENGINEER' || AP
 export const canManageHandover = (role: RoleKey) => APPROVER_ROLES.includes(role);
 /** Record goods received and material issued. */
 export const canKeepStock = (role: RoleKey) => STOCK_KEEPER_ROLES.includes(role);
+/** See the central stores page (v6 item 106): store managers, buyers, accounts and approvers. A store's keepers are its members; a site sees store stock on its material requests. */
+export const canSeeStores = (role: RoleKey) => role === 'STORE_MANAGER' || role === 'PROCUREMENT_MANAGER' || role === 'ACCOUNTS_MANAGER' || canApprove(role);
 /** Store master data (item master, minimum stock levels): the store manager and approvers. */
 export const canManageStore = (role: RoleKey) => role === 'STORE_MANAGER' || canApprove(role);
 /** Adjust stock (opening balance, count correction), delete stock entries and edit the item master: approvers only. */
