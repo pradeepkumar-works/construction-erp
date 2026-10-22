@@ -4,9 +4,9 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Dropdown } from 'antd';
 import type { MenuProps } from 'antd';
-import { AccountBookOutlined, AlertOutlined, BankOutlined, CarOutlined, CommentOutlined, ContainerOutlined, FileDoneOutlined, FileSearchOutlined, FileTextOutlined, LineChartOutlined, MailOutlined, PlusOutlined, ShoppingCartOutlined, TrophyOutlined, WalletOutlined } from '@ant-design/icons';
+import { AccountBookOutlined, AlertOutlined, BankOutlined, CarOutlined, CommentOutlined, ContainerOutlined, FileDoneOutlined, FileSearchOutlined, FileTextOutlined, LineChartOutlined, MailOutlined, PlusOutlined, SafetyCertificateOutlined, ShoppingCartOutlined, TrophyOutlined, WalletOutlined } from '@ant-design/icons';
 import type { AuthUser } from '@erp/shared';
-import { canKeepBooks, canManageMachineLoans, canSellRmc, canPrepareBill, canPurchase, canRaiseRisk, canRequestFunds, canRequestPayment, canSubmitExpense, canManageTenders, canRunSubcontractEnquiries, canRecordMeetings, canViewLetters, canViewPayables, isGuest } from '@erp/shared';
+import { canKeepBooks, canManageMachineLoans, canSellRmc, canPrepareBill, canPurchase, canRaiseRisk, canRequestFunds, canRequestPayment, canSubmitExpense, canManageTenders, canRunSubcontractEnquiries, canRecordMeetings, canRaiseMaterialApprovals, canViewLetters, canViewPayables, isGuest } from '@erp/shared';
 import { requestNew, type NewKind } from '@/lib/new-intent';
 
 export interface NewEntry {
@@ -29,6 +29,7 @@ export function newEntriesFor(user: AuthUser): NewEntry[][] {
     ...(canSubmitExpense(role) ? [{ kind: 'expense' as const, label: 'Site expense', action: 'New site expense', href: '/expenses', icon: <WalletOutlined /> }] : []),
     ...(canRaiseRisk(role) ? [{ kind: 'risk' as const, label: 'Delay or risk', action: 'Record delay or risk', href: '/risks', icon: <AlertOutlined /> }] : []),
     ...(canRecordMeetings(role) ? [{ kind: 'meeting' as const, label: 'Meeting', action: 'Record meeting', href: '/meetings', icon: <CommentOutlined /> }] : []),
+    ...(canRaiseMaterialApprovals(role) ? [{ kind: 'material-approval' as const, label: 'Material approval', action: 'Request material approval', href: '/material-approvals', icon: <SafetyCertificateOutlined /> }] : []),
     ...(canRequestFunds(role) ? [{ kind: 'fund-request' as const, label: 'Fund request', action: 'Request funds', href: '/imprest?tab=funds', icon: <BankOutlined /> }] : []),
   ];
   const office: NewEntry[] = [

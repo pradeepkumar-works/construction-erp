@@ -298,6 +298,10 @@ import type {
   MeetingActionListDto,
   MeetingDetailDto,
   MeetingLinkOptionsDto,
+  MaterialApprovalListDto,
+  MaterialApprovalDetailDto,
+  ApprovedMakeDto,
+  MakeWarningDto,
   EquipmentLoanDetailDto,
   EquipmentLoanStatus,
   LoanPreviewDto,
@@ -795,6 +799,41 @@ export function useMeetingAction<T = MeetingDetailDto>() {
     onSuccess: () => {
       for (const key of [['meetings'], ['dashboard']]) void qc.invalidateQueries({ queryKey: key });
     },
+  });
+}
+
+/** Material approvals and each project's approved makes (v6 item 113). */
+export const useMaterialApprovals = (filters?: { status?: string; kind?: string; projectId?: string; q?: string }, enabled = true) =>
+  useQuery({
+    queryKey: ['material-approvals', 'list', clean(filters)],
+    queryFn: async () => (await api.get<MaterialApprovalListDto>('/material-approvals', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+export const useMaterialApproval = (id?: string) =>
+  useQuery({ queryKey: ['material-approvals', 'one', id], queryFn: async () => (await api.get<MaterialApprovalDetailDto>(`/material-approvals/${id}`)).data, enabled: !!id });
+export const useApprovedMakes = (filters?: { projectId?: string; q?: string }, enabled = true) =>
+  useQuery({
+    queryKey: ['material-approvals', 'makes', clean(filters)],
+    queryFn: async () => (await api.get<ApprovedMakeDto[]>('/material-approvals/makes', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+/** Order lines whose material has approved makes on the project but name another make, or none. */
+export const useMakeCheck = (projectId: string | undefined, lines: { itemName: string; make?: string | null }[]) =>
+  useQuery({
+    queryKey: ['material-approvals', 'check', projectId, lines],
+    queryFn: async () => (await api.post<MakeWarningDto[]>('/material-approvals/make-check', { projectId, lines })).data,
+    enabled: !!projectId && lines.some((l) => l.itemName.trim()),
+    placeholderData: keepPreviousData,
+    staleTime: 30_000,
+  });
+export function useMaterialApprovalAction<T = MaterialApprovalDetailDto>() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ method = 'post', path, body }: { method?: 'post' | 'patch' | 'delete'; path: string; body?: unknown }) =>
+      (method === 'delete' ? await api.delete<T>(path) : await api[method]<T>(path, body ?? {})).data,
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['material-approvals'] }),
   });
 }
 

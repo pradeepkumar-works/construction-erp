@@ -81,6 +81,7 @@ export class PoLineInput {
   @ApiPropertyOptional({ description: 'The material request line ordered; name, unit and specification come from it' }) @IsOptional() @IsUUID() materialRequestItemId?: string;
   @ApiPropertyOptional({ example: 'Cement OPC 53' }) @IsOptional() @trim() @IsString() @MaxLength(200) itemName?: string;
   @ApiPropertyOptional() @IsOptional() @trim() @IsString() @MaxLength(300) specification?: string | null;
+  @ApiPropertyOptional({ description: 'The make (brand) ordered, checked against the project’s approved makes' }) @IsOptional() @trim() @IsString() @MaxLength(120) make?: string | null;
   @ApiPropertyOptional({ example: 'Bag' }) @IsOptional() @trim() @IsString() @MaxLength(30) unit?: string;
   @ApiProperty({ example: '500' }) @num() @IsNumberString() quantity: string;
   @ApiProperty({ example: '385.00' }) @num() @IsNumberString() rate: string;

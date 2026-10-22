@@ -163,6 +163,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/meetings-test.js
+      - name: Order lines match approved makes, and approval requests go round by the rules
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/material-approvals-test.js
       - name: Early warnings forecast right, show each role its own kinds and backtest on the demo history
         if: matrix.suite == 'flows'
         working-directory: apps/api

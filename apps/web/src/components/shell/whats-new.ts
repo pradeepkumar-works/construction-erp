@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-material-approvals',
+    date: '2026-11-20',
+    title: 'Material approvals',
+    points: [
+      'Ask the client or consultant to approve a make or a sample from Materials and plant → Material approvals: the material, the make and model, where it is used, why this make, and the catalogue and test certificates.',
+      'Each submission is a revision (R0, R1…) with the outcome and comments that came back. Requests waiting past their reply date, and those back with you to revise, are counted at the top.',
+      'Each project keeps its approved makes, from the contract or approved on request. A purchase order line for one of those materials that names another make, or none, is flagged on the order.',
+    ],
+  },
+  {
     id: '2026-11-meetings',
     date: '2026-11-18',
     title: 'Meetings and action items',

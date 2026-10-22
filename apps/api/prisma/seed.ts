@@ -184,6 +184,7 @@ async function main() {
     await seedTenders(org.id);
     await seedScEnquiries(org.id);
     await seedMeetings(org.id);
+    await seedMaterialApprovals(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
   }
@@ -382,6 +383,7 @@ async function main() {
   await seedTenders(org.id);
   await seedScEnquiries(org.id);
   await seedMeetings(org.id);
+  await seedMaterialApprovals(org.id);
 
   console.log('Seed complete. Login with any of these (password: password123):');
   for (const u of USERS) console.log(`  ${u.email.padEnd(24)} ${u.role}`);
@@ -4269,5 +4271,130 @@ async function seedMeetings(organizationId: string) {
         ...(m.issued ? [{ organizationId, entityType: 'MEETING', entityId: meeting.id, action: 'ISSUED', note: null, actorId: by.id, createdAt: new Date(day(m.held).getTime() + 12.5 * 3_600_000) }] : []),
       ],
     });
+  }
+}
+
+/** Material approvals (v6 item 113): the contract's approved makes on the road and the hospital, and requests in every state. */
+async function seedMaterialApprovals(organizationId: string) {
+  if (await prisma.materialApproval.count({ where: { organizationId } })) return;
+  const users = new Map((await prisma.user.findMany({ where: { organizationId }, select: { id: true, email: true } })).map((u) => [u.email, u.id]));
+  const by = users.get('qaqc@demo.com') ?? users.get('pm@demo.com') ?? users.get('admin@demo.com');
+  const pmId = users.get('pm@demo.com') ?? by;
+  const mdId = users.get('md@demo.com') ?? by;
+  if (!by || !pmId || !mdId) return;
+  const projects = new Map((await prisma.project.findMany({ where: { organizationId, code: { in: ['RD-2026-01', 'BL-2026-02'] } }, select: { id: true, code: true } })).map((p) => [p.code, p.id]));
+  const items = new Map((await prisma.item.findMany({ where: { organizationId }, select: { id: true, name: true } })).map((i) => [i.name, i.id]));
+  const vendors = new Map((await prisma.vendor.findMany({ where: { organizationId }, select: { id: true, name: true } })).map((v) => [v.name, v.id]));
+  const year = new Date().getUTCFullYear();
+
+  // The makes the contract lists, as each project's particular specifications name them.
+  const listed: [code: string, material: string, item: string | null, makes: string[], note: string][] = [
+    ['RD-2026-01', 'Bitumen VG-30', 'Bitumen VG-30', ['IOCL', 'HPCL', 'BPCL'], 'Contract, Annexure 4: list of approved makes'],
+    ['RD-2026-01', 'Bitumen emulsion SS-1', 'Emulsion SS-1', ['IOCL', 'HPCL'], 'Contract, Annexure 4: list of approved makes'],
+    ['RD-2026-01', 'Cement OPC 53 grade', 'OPC 53 Grade Cement', ['UltraTech', 'ACC', 'Ramco'], 'Contract, Annexure 4: list of approved makes'],
+    ['RD-2026-01', 'TMT bars Fe500D', 'TMT Fe500D 12mm', ['Tata Tiscon', 'SAIL', 'JSW Neosteel'], 'Contract, Annexure 4: primary producers only'],
+    ['BL-2026-02', 'Cement OPC 53 grade', 'OPC 53 Grade Cement', ['UltraTech', 'ACC'], 'Particular specifications, clause 3.2'],
+    ['BL-2026-02', 'TMT bars Fe500D', 'TMT Fe500D 12mm', ['Tata Tiscon', 'SAIL'], 'Particular specifications, clause 3.4: primary producers only'],
+    ['BL-2026-02', 'Concrete admixture PCE', 'Admixture PCE (Master Glenium)', ['Master Builders', 'Fosroc', 'Sika'], 'Particular specifications, clause 3.7'],
+  ];
+  for (const [code, material, item, makes, note] of listed) {
+    const projectId = projects.get(code);
+    if (!projectId) continue;
+    await prisma.approvedMake.createMany({
+      data: makes.map((make) => ({ organizationId, projectId, material, itemId: item ? (items.get(item) ?? null) : null, make, source: 'CONTRACT' as const, note, createdById: mdId, createdAt: day(-60) })),
+    });
+  }
+
+  type Rev = { on: number; note?: string; outcome?: 'APPROVED' | 'APPROVED_AS_NOTED' | 'REVISE_RESUBMIT' | 'REJECTED'; reviewed?: number; reviewer?: string; comments?: string; ref?: string; make?: string };
+  const requests: {
+    code: string; kind: 'MATERIAL' | 'SAMPLE'; material: string; item?: string; boq?: string; make: string; model?: string; vendor?: string; usedFor?: string; note?: string; to: string;
+    created: number; replyBy?: number; revs: Rev[]; withdrawn?: [number, string]; by?: string;
+  }[] = [
+    {
+      code: 'BL-2026-02', kind: 'SAMPLE', material: 'Fly ash bricks 230 mm', item: 'Fly ash bricks 230mm', boq: '4.01', make: 'Maa Tarini Fly Ash Bricks', vendor: 'Kalinga Builders', usedFor: 'All 230 mm walls',
+      note: 'IS 12894 class 7.5; test report for compressive strength and water absorption attached.', to: 'Lakshmi Menon, PMC', created: -48,
+      revs: [{ on: -46, note: 'Twelve bricks left at the PMC office with the test report.', outcome: 'APPROVED', reviewed: -41, reviewer: 'Lakshmi Menon', ref: 'PMC/AIIMS/MA/014' }],
+    },
+    {
+      code: 'BL-2026-02', kind: 'MATERIAL', material: 'Vitrified floor tiles 600 x 600', boq: '6.01', make: 'Kajaria', model: 'Eternity series, double charge', usedFor: 'Wards and corridors, all floors',
+      note: 'Equal to the listed Somany range; slip resistance R10.', to: 'Lakshmi Menon, PMC', created: -32,
+      revs: [
+        { on: -30, note: 'Catalogue and two sample tiles in Ivory.', outcome: 'REVISE_RESUBMIT', reviewed: -24, reviewer: 'Lakshmi Menon', comments: 'Shade too dark for the wards. Send a lighter shade with the water absorption test certificate.', ref: 'PMC/AIIMS/MA/021' },
+        { on: -20, note: 'Lighter shade (Crema) with the test certificate from the plant.', outcome: 'APPROVED_AS_NOTED', reviewed: -14, reviewer: 'Lakshmi Menon', comments: 'Approved in the matt finish only. Glossy tiles are not to be used in wards or corridors.', ref: 'PMC/AIIMS/MA/027' },
+      ],
+    },
+    {
+      code: 'BL-2026-02', kind: 'MATERIAL', material: 'TMT bars Fe500D', item: 'TMT Fe500D 12mm', boq: '3.02', make: 'Kamdhenu', model: 'Fe 500D', vendor: 'Odisha Steel & Cement Depot', usedFor: 'Slabs and beams, first floor',
+      note: 'Available from stock at short notice; mill test certificate attached.', to: 'Lakshmi Menon, PMC', created: -16, by: 'pm@demo.com',
+      revs: [{ on: -15, outcome: 'REJECTED', reviewed: -10, reviewer: 'Lakshmi Menon', comments: 'Not a primary producer. Only makes on the contract list (Tata Tiscon, SAIL) are to be used.', ref: 'PMC/AIIMS/MA/031' }],
+    },
+    {
+      code: 'BL-2026-02', kind: 'MATERIAL', material: 'Fire-rated doors, 2 hours', make: 'Shakti Hormann', model: 'FD-120 steel door with vision panel', usedFor: 'Stair cores, all floors',
+      note: 'As decided at the design meeting: 2-hour rating for the fire NOC. Test certificate from CBRI attached.', to: 'Ar. S. Mishra, Mishra Associates', created: -7, replyBy: -1,
+      revs: [{ on: -6, note: 'Data sheet, CBRI fire test certificate and a door schedule.' }],
+    },
+    {
+      code: 'BL-2026-02', kind: 'MATERIAL', material: 'Waterproofing for the OT block terrace', make: 'Dr. Fixit', model: 'Newcoat, two coats with fibre mesh', usedFor: 'OT block terrace',
+      note: 'Specification calls for an elastomeric coating with ten years’ warranty.', to: 'Lakshmi Menon, PMC', created: -1, revs: [],
+    },
+    {
+      code: 'RD-2026-01', kind: 'MATERIAL', material: 'Metal beam crash barrier', boq: '6.01', make: 'Tata Steel', model: 'W-beam, 3 mm, hot-dip galvanised', vendor: 'Kalinga Safety Store', usedFor: 'Bridge approaches and high embankments',
+      note: 'MoRTH section 810; IRC 119.', to: 'Er. Bijay Kumar Panda, NH division', created: -4, replyBy: 7, by: 'pm@demo.com',
+      revs: [{ on: -3, note: 'Catalogue, galvanising test report and a drawing of the post spacing.' }],
+    },
+    {
+      code: 'RD-2026-01', kind: 'SAMPLE', material: 'Precast kerb stones', boq: '6.02', make: 'Utkal Precast', model: 'M30, 300 x 250 x 1000', usedFor: 'Bridge approaches',
+      note: 'Cast at the Km 9 yard; cube results attached.', to: 'Er. Bijay Kumar Panda, NH division', created: -12,
+      revs: [{ on: -9, note: 'Two kerb stones at the site office.', outcome: 'REVISE_RESUBMIT', reviewed: -2, reviewer: 'Er. Bijay Kumar Panda', comments: 'Edges chipped and honeycombing on one face. Recast with vibrating table and submit again.', ref: 'NH/BBSR/2026/1187' }],
+    },
+    {
+      code: 'RD-2026-01', kind: 'MATERIAL', material: 'Bitumen emulsion SS-1', item: 'Emulsion SS-1', boq: '4.01', make: 'Hindustan Colas', usedFor: 'Tack coat', to: 'Er. Bijay Kumar Panda, NH division', created: -26,
+      revs: [{ on: -25 }], withdrawn: [-20, 'IOCL emulsion is now available from the depot, and it is on the contract list.'],
+    },
+  ];
+
+  const boq = new Map((await prisma.boqItem.findMany({ where: { projectId: { in: [...projects.values()] } }, select: { id: true, itemNo: true, projectId: true } })).map((b) => [`${b.projectId}:${b.itemNo}`, b.id]));
+  let n = 0;
+  for (const r of [...requests].sort((a, b) => a.created - b.created)) {
+    const projectId = projects.get(r.code);
+    if (!projectId) continue;
+    const maker = (r.by && users.get(r.by)) || by;
+    const last = r.revs[r.revs.length - 1];
+    const status = r.withdrawn ? 'WITHDRAWN' : !last ? 'DRAFT' : (last.outcome ?? 'UNDER_REVIEW');
+    n += 1;
+    const m = await prisma.materialApproval.create({
+      data: {
+        organizationId, projectId, marNo: `MAR-${year}-${String(n).padStart(4, '0')}`, kind: r.kind, material: r.material, itemId: r.item ? (items.get(r.item) ?? null) : null,
+        boqItemId: r.boq ? (boq.get(`${projectId}:${r.boq}`) ?? null) : null, make: last?.make ?? r.make, model: r.model ?? null, vendorId: r.vendor ? (vendors.get(r.vendor) ?? null) : null,
+        usedFor: r.usedFor ?? null, note: r.note ?? null, toParty: r.to, replyBy: r.replyBy === undefined ? null : day(r.replyBy), status, revision: Math.max(0, r.revs.length - 1), createdById: maker, createdAt: day(r.created),
+        revisions: {
+          create: r.revs.map((v, i) => ({
+            organizationId, revision: i, submittedOn: day(v.on), submittedById: maker, submitNote: v.note ?? null, outcome: v.outcome ?? null, reviewedOn: v.reviewed === undefined ? null : day(v.reviewed),
+            reviewerName: v.reviewer ?? null, comments: v.comments ?? null, reviewRef: v.ref ?? null, recordedById: v.outcome ? maker : null, createdAt: day(v.on),
+          })),
+        },
+      },
+    });
+    if (last?.outcome === 'APPROVED' || last?.outcome === 'APPROVED_AS_NOTED')
+      await prisma.approvedMake.create({
+        data: { organizationId, projectId, material: r.material, itemId: m.itemId, make: m.make, model: m.model, source: 'APPROVAL', approvalId: m.id, note: last.outcome === 'APPROVED_AS_NOTED' ? (last.comments ?? null) : null, createdById: maker, createdAt: day(last.reviewed ?? 0) },
+      });
+    await prisma.auditLog.createMany({
+      data: [
+        { organizationId, entityType: 'MATERIAL_APPROVAL', entityId: m.id, action: 'CREATED', note: null, actorId: maker, createdAt: day(r.created) },
+        ...r.revs.flatMap((v, i) => [
+          { organizationId, entityType: 'MATERIAL_APPROVAL', entityId: m.id, action: i ? 'RESUBMITTED' : 'SUBMITTED', note: `R${i}`, actorId: maker, createdAt: day(v.on) },
+          ...(v.outcome ? [{ organizationId, entityType: 'MATERIAL_APPROVAL', entityId: m.id, action: `REVIEWED_${v.outcome}`, note: `R${i}`, actorId: maker, createdAt: day(v.reviewed ?? v.on) }] : []),
+        ]),
+        ...(r.withdrawn ? [{ organizationId, entityType: 'MATERIAL_APPROVAL', entityId: m.id, action: 'WITHDRAWN', note: r.withdrawn[1], actorId: maker, createdAt: day(r.withdrawn[0]) }] : []),
+      ],
+    });
+  }
+
+  // The hospital's first order names its makes: the cement is on the list, the steel (Kamdhenu, rejected) is not, so the order is flagged.
+  const po = await prisma.purchaseOrder.findFirst({ where: { organizationId, projectId: projects.get('BL-2026-02') }, orderBy: { poNo: 'asc' }, select: { id: true } });
+  if (po) {
+    await prisma.purchaseOrderLine.updateMany({ where: { purchaseOrderId: po.id, itemName: 'OPC 53 Grade Cement', make: null }, data: { make: 'UltraTech' } });
+    await prisma.purchaseOrderLine.updateMany({ where: { purchaseOrderId: po.id, itemName: 'TMT Fe500D 12mm', make: null }, data: { make: 'Kamdhenu' } });
   }
 }

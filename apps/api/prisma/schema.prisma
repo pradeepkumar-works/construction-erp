@@ -637,6 +637,9 @@ model Organization {
   meetingAttendees     MeetingAttendee[]
   meetingPoints        MeetingPoint[]
   meetingActions       MeetingAction[]
+  materialApprovals    MaterialApproval[]
+  materialApprovalRevs MaterialApprovalRevision[]
+  approvedMakes        ApprovedMake[]
 }
 
 model Role {
@@ -743,144 +746,148 @@ model User {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
-  savedViews           SavedView[]
-  aiThreads            AiThread[]
-  billChecksAccepted   BillCheckAcceptance[]    @relation("BillCheckAcceptedBy")
-  warningsDismissed    WarningDismissal[]       @relation("WarningDismissedBy")
-  aiBriefs             AiBrief[]
-  aiDocumentReads      AiDocumentRead[]
-  memberships          ProjectMember[]
-  managedProjects      Project[]                @relation("ProjectManager")
-  baselinedProjects    Project[]                @relation("ProjectBaselineBy")
-  responsibleFor       Activity[]               @relation("ActivityResponsible")
-  submittedProgress    ProgressEntry[]          @relation("ProgressSubmitter")
-  reviewedProgress     ProgressEntry[]          @relation("ProgressReviewer")
-  submittedReports     DailyReport[]            @relation("DprSubmitter")
-  reviewedReports      DailyReport[]            @relation("DprReviewer")
-  submittedRequests    MaterialRequest[]        @relation("MrSubmitter")
-  reviewedRequests     MaterialRequest[]        @relation("MrReviewer")
-  uploadedAttachments  Attachment[]
-  auditLogs            AuditLog[]
-  notifications        Notification[]
-  pushTokens           PushToken[]
-  outboundMessages     OutboundMessage[]
-  passwordTokens       PasswordToken[]
-  recordedAttendance   AttendanceSheet[]        @relation("AttendanceRecorder")
-  updatedAttendance    AttendanceSheet[]        @relation("AttendanceUpdater")
-  stockEntries         StockEntry[]
-  grnsChecked          StockEntry[]             @relation("GrnQcBy")
-  stockMinLevels       StockMinLevel[]
-  materialNorms        MaterialNorm[]
-  boqResources         BoqResource[]
-  excessRecoveries     ExcessMaterialRecovery[]
-  equipmentParts       EquipmentPart[]
-  approvalSteps        ApprovalStep[]           @relation("ApprovalStepActor")
-  enquiries            Enquiry[]                @relation("EnquiryCreator")
-  submittedMachinery   MachineryLog[]           @relation("MachinerySubmitter")
-  reviewedMachinery    MachineryLog[]           @relation("MachineryReviewer")
-  submittedExpenses    Expense[]                @relation("ExpenseSubmitter")
-  reviewedExpenses     Expense[]                @relation("ExpenseReviewer")
-  submittedMeasures    MeasurementSheet[]       @relation("MeasurementSubmitter")
-  reviewedMeasures     MeasurementSheet[]       @relation("MeasurementReviewer")
-  submittedBills       RaBill[]                 @relation("BillSubmitter")
-  reviewedBills        RaBill[]                 @relation("BillReviewer")
-  receiptsRecorded     Receipt[]                @relation("ReceiptCreator")
-  tallyExports         TallyExport[]
-  vendorPaymentsMade   VendorPayment[]          @relation("VendorPaymentCreator")
-  submittedPayRequests PaymentRequest[]         @relation("PayRequestSubmitter")
-  reviewedPayRequests  PaymentRequest[]         @relation("PayRequestReviewer")
-  quotationsEntered    Quotation[]              @relation("QuotationCreator")
-  submittedPos         PurchaseOrder[]          @relation("PoSubmitter")
-  reviewedPos          PurchaseOrder[]          @relation("PoReviewer")
-  submittedVendorBills VendorBill[]             @relation("VendorBillSubmitter")
-  createdDebitNotes    DebitNote[]              @relation("DebitNoteCreator")
-  cancelledDebitNotes  DebitNote[]              @relation("DebitNoteCanceller")
-  reviewedVendorBills  VendorBill[]             @relation("VendorBillReviewer")
-  submittedWorkOrders  WorkOrder[]              @relation("WorkOrderSubmitter")
-  reviewedWorkOrders   WorkOrder[]              @relation("WorkOrderReviewer")
-  submittedSubBills    SubcontractBill[]        @relation("SubBillSubmitter")
-  reviewedSubBills     SubcontractBill[]        @relation("SubBillReviewer")
-  requestedInspections Inspection[]             @relation("InspectionRequester")
-  inspectionsDone      Inspection[]             @relation("InspectionInspector")
-  inspectionsWitnessed Inspection[]             @relation("InspectionWitness")
-  qualityTests         QualityTest[]            @relation("TestCreator")
-  ncrsRaised           Ncr[]                    @relation("NcrRaiser")
-  ncrsToAct            Ncr[]                    @relation("NcrActionBy")
-  ncrsClosed           Ncr[]                    @relation("NcrCloser")
-  documentsCreated     Document[]               @relation("DocumentCreator")
-  revisionsIssued      DocumentRevision[]       @relation("RevisionIssuer")
-  markupsMade          DrawingMarkup[]          @relation("MarkupCreator")
-  markupsResolved      DrawingMarkup[]          @relation("MarkupResolver")
-  transmittalsSent     Transmittal[]            @relation("TransmittalSender")
-  lettersRecorded      Letter[]                 @relation("LetterRecorder")
-  variationsCreated    Variation[]              @relation("VariationCreator")
-  budgetsUpdated       ProjectBudget[]          @relation("BudgetUpdater")
-  incidentsReported    SafetyIncident[]         @relation("IncidentReporter")
-  incidentsClosed      SafetyIncident[]         @relation("IncidentCloser")
-  toolboxTalks         ToolboxTalk[]            @relation("ToolboxTalkRecorder")
-  ppeIssued            PpeIssue[]               @relation("PpeIssuer")
-  rfisRaised           Rfi[]                    @relation("RfiRaiser")
-  rfisAnswered         Rfi[]                    @relation("RfiAnswerer")
-  rfisClosed           Rfi[]                    @relation("RfiCloser")
-  ppeClosed            PpeIssue[]               @relation("PpeCloser")
-  permitsRequested     WorkPermit[]             @relation("PermitRequester")
-  permitsIssued        WorkPermit[]             @relation("PermitIssuer")
-  permitsClosed        WorkPermit[]             @relation("PermitCloser")
-  maintenanceReported  MaintenanceJob[]         @relation("MaintenanceReporter")
-  maintenanceClosed    MaintenanceJob[]         @relation("MaintenanceCloser")
-  employee             Employee?                @relation("EmployeeLogin")
-  employeeEvents       EmployeeEvent[]          @relation("EmployeeEventCreator")
-  salaryStructures     SalaryStructure[]        @relation("SalaryStructureCreator")
-  staffLoans           StaffLoan[]              @relation("StaffLoanCreator")
-  payrollPrepared      PayrollRun[]             @relation("PayrollPreparer")
-  payrollApproved      PayrollRun[]             @relation("PayrollApprover")
-  payrollPaid          PayrollRun[]             @relation("PayrollPayer")
-  settlementsPrepared  FinalSettlement[]        @relation("SettlementPreparer")
-  biometricDevices     BiometricDevice[]        @relation("BiometricDeviceCreator")
-  vouchersPrepared     BookVoucher[]            @relation("BookVoucherPreparer")
-  vouchersApproved     BookVoucher[]            @relation("BookVoucherApprover")
-  settlementsApproved  FinalSettlement[]        @relation("SettlementApprover")
-  staffMarked          StaffAttendance[]        @relation("StaffAttendanceMarker")
-  overtimeDecided      StaffAttendance[]        @relation("StaffOvertimeDecider")
-  workerDaysMarked     WorkerAttendance[]       @relation("WorkerAttendanceMarker")
-  imprestsHeld         Imprest[]                @relation("ImprestHolder")
-  imprestsOpened       Imprest[]                @relation("ImprestOpener")
-  imprestRequests      ImprestEntry[]           @relation("ImprestRequester")
-  imprestDecisions     ImprestEntry[]           @relation("ImprestDecider")
-  complianceDocs       ComplianceDoc[]
-  handoversRecorded    ProjectHandover[]
-  defectsReported      Defect[]                 @relation("DefectReporter")
-  defectsAssigned      Defect[]                 @relation("DefectAssignee")
-  defectsFixed         Defect[]                 @relation("DefectFixer")
-  defectsClosed        Defect[]                 @relation("DefectCloser")
-  closeoutItemsDone    CloseoutItem[]
-  leaveDecided         LeaveRequest[]           @relation("LeaveDecider")
-  leaveApplied         LeaveRequest[]           @relation("LeaveApplicant")
-  raisedRisks          Risk[]                   @relation("RiskRaiser")
-  ownedRisks           Risk[]                   @relation("RiskOwner")
-  mixDesignsApproved   MixDesign[]              @relation("MixDesignApprover")
-  mixDesignsCreated    MixDesign[]              @relation("MixDesignCreator")
-  rmcOrdersCreated     RmcOrder[]               @relation("RmcOrderCreator")
-  rmcBatchesCreated    RmcBatch[]               @relation("RmcBatchCreator")
-  rmcInvoicesCreated   RmcInvoice[]             @relation("RmcInvoiceCreator")
-  rmcReceiptsCreated   RmcReceipt[]             @relation("RmcReceiptCreator")
-  dispatchesCreated    SupplierDispatch[]       @relation("SupplierDispatchCreator")
-  supplierInvoicesSent SupplierInvoice[]        @relation("SupplierInvoiceSender")
-  supplierInvoicesDone SupplierInvoice[]        @relation("SupplierInvoiceDecider")
-  supplierChangesAsked SupplierChangeRequest[]  @relation("SupplierChangeAsker")
-  supplierChangesDone  SupplierChangeRequest[]  @relation("SupplierChangeDecider")
-  equipmentLoans       EquipmentLoan[]          @relation("EquipmentLoanCreator")
-  loanEmisPaid         LoanEmi[]                @relation("LoanEmiPayer")
-  sorBooksCreated      SorBook[]                @relation("SorBookCreator")
-  scEnquiriesCreated   SubcontractEnquiry[]     @relation("ScEnquiryCreator")
-  tendersCreated       Tender[]                 @relation("TenderCreator")
-  posAccepted          PurchaseOrder[]          @relation("PoSupplierAccepter")
-  wosAccepted          WorkOrder[]              @relation("WoSupplierAccepter")
-  meetingsCreated      Meeting[]                @relation("MeetingCreator")
-  meetingsIssued       Meeting[]                @relation("MeetingIssuer")
-  meetingAttendances   MeetingAttendee[]        @relation("MeetingAttendeeUser")
-  meetingActionsOwned  MeetingAction[]          @relation("MeetingActionOwner")
-  meetingActionsClosed MeetingAction[]          @relation("MeetingActionCloser")
+  savedViews            SavedView[]
+  aiThreads             AiThread[]
+  billChecksAccepted    BillCheckAcceptance[]      @relation("BillCheckAcceptedBy")
+  warningsDismissed     WarningDismissal[]         @relation("WarningDismissedBy")
+  aiBriefs              AiBrief[]
+  aiDocumentReads       AiDocumentRead[]
+  memberships           ProjectMember[]
+  managedProjects       Project[]                  @relation("ProjectManager")
+  baselinedProjects     Project[]                  @relation("ProjectBaselineBy")
+  responsibleFor        Activity[]                 @relation("ActivityResponsible")
+  submittedProgress     ProgressEntry[]            @relation("ProgressSubmitter")
+  reviewedProgress      ProgressEntry[]            @relation("ProgressReviewer")
+  submittedReports      DailyReport[]              @relation("DprSubmitter")
+  reviewedReports       DailyReport[]              @relation("DprReviewer")
+  submittedRequests     MaterialRequest[]          @relation("MrSubmitter")
+  reviewedRequests      MaterialRequest[]          @relation("MrReviewer")
+  uploadedAttachments   Attachment[]
+  auditLogs             AuditLog[]
+  notifications         Notification[]
+  pushTokens            PushToken[]
+  outboundMessages      OutboundMessage[]
+  passwordTokens        PasswordToken[]
+  recordedAttendance    AttendanceSheet[]          @relation("AttendanceRecorder")
+  updatedAttendance     AttendanceSheet[]          @relation("AttendanceUpdater")
+  stockEntries          StockEntry[]
+  grnsChecked           StockEntry[]               @relation("GrnQcBy")
+  stockMinLevels        StockMinLevel[]
+  materialNorms         MaterialNorm[]
+  boqResources          BoqResource[]
+  excessRecoveries      ExcessMaterialRecovery[]
+  equipmentParts        EquipmentPart[]
+  approvalSteps         ApprovalStep[]             @relation("ApprovalStepActor")
+  enquiries             Enquiry[]                  @relation("EnquiryCreator")
+  submittedMachinery    MachineryLog[]             @relation("MachinerySubmitter")
+  reviewedMachinery     MachineryLog[]             @relation("MachineryReviewer")
+  submittedExpenses     Expense[]                  @relation("ExpenseSubmitter")
+  reviewedExpenses      Expense[]                  @relation("ExpenseReviewer")
+  submittedMeasures     MeasurementSheet[]         @relation("MeasurementSubmitter")
+  reviewedMeasures      MeasurementSheet[]         @relation("MeasurementReviewer")
+  submittedBills        RaBill[]                   @relation("BillSubmitter")
+  reviewedBills         RaBill[]                   @relation("BillReviewer")
+  receiptsRecorded      Receipt[]                  @relation("ReceiptCreator")
+  tallyExports          TallyExport[]
+  vendorPaymentsMade    VendorPayment[]            @relation("VendorPaymentCreator")
+  submittedPayRequests  PaymentRequest[]           @relation("PayRequestSubmitter")
+  reviewedPayRequests   PaymentRequest[]           @relation("PayRequestReviewer")
+  quotationsEntered     Quotation[]                @relation("QuotationCreator")
+  submittedPos          PurchaseOrder[]            @relation("PoSubmitter")
+  reviewedPos           PurchaseOrder[]            @relation("PoReviewer")
+  submittedVendorBills  VendorBill[]               @relation("VendorBillSubmitter")
+  createdDebitNotes     DebitNote[]                @relation("DebitNoteCreator")
+  cancelledDebitNotes   DebitNote[]                @relation("DebitNoteCanceller")
+  reviewedVendorBills   VendorBill[]               @relation("VendorBillReviewer")
+  submittedWorkOrders   WorkOrder[]                @relation("WorkOrderSubmitter")
+  reviewedWorkOrders    WorkOrder[]                @relation("WorkOrderReviewer")
+  submittedSubBills     SubcontractBill[]          @relation("SubBillSubmitter")
+  reviewedSubBills      SubcontractBill[]          @relation("SubBillReviewer")
+  requestedInspections  Inspection[]               @relation("InspectionRequester")
+  inspectionsDone       Inspection[]               @relation("InspectionInspector")
+  inspectionsWitnessed  Inspection[]               @relation("InspectionWitness")
+  qualityTests          QualityTest[]              @relation("TestCreator")
+  ncrsRaised            Ncr[]                      @relation("NcrRaiser")
+  ncrsToAct             Ncr[]                      @relation("NcrActionBy")
+  ncrsClosed            Ncr[]                      @relation("NcrCloser")
+  documentsCreated      Document[]                 @relation("DocumentCreator")
+  revisionsIssued       DocumentRevision[]         @relation("RevisionIssuer")
+  markupsMade           DrawingMarkup[]            @relation("MarkupCreator")
+  markupsResolved       DrawingMarkup[]            @relation("MarkupResolver")
+  transmittalsSent      Transmittal[]              @relation("TransmittalSender")
+  lettersRecorded       Letter[]                   @relation("LetterRecorder")
+  variationsCreated     Variation[]                @relation("VariationCreator")
+  budgetsUpdated        ProjectBudget[]            @relation("BudgetUpdater")
+  incidentsReported     SafetyIncident[]           @relation("IncidentReporter")
+  incidentsClosed       SafetyIncident[]           @relation("IncidentCloser")
+  toolboxTalks          ToolboxTalk[]              @relation("ToolboxTalkRecorder")
+  ppeIssued             PpeIssue[]                 @relation("PpeIssuer")
+  rfisRaised            Rfi[]                      @relation("RfiRaiser")
+  rfisAnswered          Rfi[]                      @relation("RfiAnswerer")
+  rfisClosed            Rfi[]                      @relation("RfiCloser")
+  ppeClosed             PpeIssue[]                 @relation("PpeCloser")
+  permitsRequested      WorkPermit[]               @relation("PermitRequester")
+  permitsIssued         WorkPermit[]               @relation("PermitIssuer")
+  permitsClosed         WorkPermit[]               @relation("PermitCloser")
+  maintenanceReported   MaintenanceJob[]           @relation("MaintenanceReporter")
+  maintenanceClosed     MaintenanceJob[]           @relation("MaintenanceCloser")
+  employee              Employee?                  @relation("EmployeeLogin")
+  employeeEvents        EmployeeEvent[]            @relation("EmployeeEventCreator")
+  salaryStructures      SalaryStructure[]          @relation("SalaryStructureCreator")
+  staffLoans            StaffLoan[]                @relation("StaffLoanCreator")
+  payrollPrepared       PayrollRun[]               @relation("PayrollPreparer")
+  payrollApproved       PayrollRun[]               @relation("PayrollApprover")
+  payrollPaid           PayrollRun[]               @relation("PayrollPayer")
+  settlementsPrepared   FinalSettlement[]          @relation("SettlementPreparer")
+  biometricDevices      BiometricDevice[]          @relation("BiometricDeviceCreator")
+  vouchersPrepared      BookVoucher[]              @relation("BookVoucherPreparer")
+  vouchersApproved      BookVoucher[]              @relation("BookVoucherApprover")
+  settlementsApproved   FinalSettlement[]          @relation("SettlementApprover")
+  staffMarked           StaffAttendance[]          @relation("StaffAttendanceMarker")
+  overtimeDecided       StaffAttendance[]          @relation("StaffOvertimeDecider")
+  workerDaysMarked      WorkerAttendance[]         @relation("WorkerAttendanceMarker")
+  imprestsHeld          Imprest[]                  @relation("ImprestHolder")
+  imprestsOpened        Imprest[]                  @relation("ImprestOpener")
+  imprestRequests       ImprestEntry[]             @relation("ImprestRequester")
+  imprestDecisions      ImprestEntry[]             @relation("ImprestDecider")
+  complianceDocs        ComplianceDoc[]
+  handoversRecorded     ProjectHandover[]
+  defectsReported       Defect[]                   @relation("DefectReporter")
+  defectsAssigned       Defect[]                   @relation("DefectAssignee")
+  defectsFixed          Defect[]                   @relation("DefectFixer")
+  defectsClosed         Defect[]                   @relation("DefectCloser")
+  closeoutItemsDone     CloseoutItem[]
+  leaveDecided          LeaveRequest[]             @relation("LeaveDecider")
+  leaveApplied          LeaveRequest[]             @relation("LeaveApplicant")
+  raisedRisks           Risk[]                     @relation("RiskRaiser")
+  ownedRisks            Risk[]                     @relation("RiskOwner")
+  mixDesignsApproved    MixDesign[]                @relation("MixDesignApprover")
+  mixDesignsCreated     MixDesign[]                @relation("MixDesignCreator")
+  rmcOrdersCreated      RmcOrder[]                 @relation("RmcOrderCreator")
+  rmcBatchesCreated     RmcBatch[]                 @relation("RmcBatchCreator")
+  rmcInvoicesCreated    RmcInvoice[]               @relation("RmcInvoiceCreator")
+  rmcReceiptsCreated    RmcReceipt[]               @relation("RmcReceiptCreator")
+  dispatchesCreated     SupplierDispatch[]         @relation("SupplierDispatchCreator")
+  supplierInvoicesSent  SupplierInvoice[]          @relation("SupplierInvoiceSender")
+  supplierInvoicesDone  SupplierInvoice[]          @relation("SupplierInvoiceDecider")
+  supplierChangesAsked  SupplierChangeRequest[]    @relation("SupplierChangeAsker")
+  supplierChangesDone   SupplierChangeRequest[]    @relation("SupplierChangeDecider")
+  equipmentLoans        EquipmentLoan[]            @relation("EquipmentLoanCreator")
+  loanEmisPaid          LoanEmi[]                  @relation("LoanEmiPayer")
+  sorBooksCreated       SorBook[]                  @relation("SorBookCreator")
+  scEnquiriesCreated    SubcontractEnquiry[]       @relation("ScEnquiryCreator")
+  tendersCreated        Tender[]                   @relation("TenderCreator")
+  posAccepted           PurchaseOrder[]            @relation("PoSupplierAccepter")
+  wosAccepted           WorkOrder[]                @relation("WoSupplierAccepter")
+  meetingsCreated       Meeting[]                  @relation("MeetingCreator")
+  meetingsIssued        Meeting[]                  @relation("MeetingIssuer")
+  meetingAttendances    MeetingAttendee[]          @relation("MeetingAttendeeUser")
+  meetingActionsOwned   MeetingAction[]            @relation("MeetingActionOwner")
+  meetingActionsClosed  MeetingAction[]            @relation("MeetingActionCloser")
+  materialApprovalsMade MaterialApproval[]         @relation("MaterialApprovalCreator")
+  materialRevsSent      MaterialApprovalRevision[] @relation("MaterialRevSubmitter")
+  materialRevsRecorded  MaterialApprovalRevision[] @relation("MaterialRevRecorder")
+  approvedMakesAdded    ApprovedMake[]             @relation("ApprovedMakeCreator")
 
   @@unique([organizationId, email])
   @@index([organizationId])
@@ -1043,9 +1050,11 @@ model Project {
   workPermits        WorkPermit[]
   maintenanceJobs    MaintenanceJob[]
 
-  pvComponents   PriceVariationComponent[]
-  meetings       Meeting[]
-  meetingActions MeetingAction[]
+  pvComponents      PriceVariationComponent[]
+  meetings          Meeting[]
+  meetingActions    MeetingAction[]
+  materialApprovals MaterialApproval[]
+  approvedMakes     ApprovedMake[]
 
   @@unique([organizationId, code])
   @@index([organizationId, status])
@@ -1109,25 +1118,26 @@ model Vendor {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
-  expenses        Expense[]
-  equipment       Equipment[]
-  stockEntries    StockEntry[]
-  quotations      Quotation[]
-  purchaseOrders  PurchaseOrder[]
-  vendorBills     VendorBill[]
-  debitNotes      DebitNote[]
-  workOrders      WorkOrder[]
-  scQuotes        SubcontractQuote[]
-  attendance      AttendanceLine[]
-  workers         Worker[]
-  payments        VendorPayment[]
-  paymentRequests PaymentRequest[]
-  enquiryTokens   EnquiryToken[]
-  portalLogins    User[]                  @relation("VendorPortalLogins")
-  dispatches      SupplierDispatch[]
-  invoices        SupplierInvoice[]
-  changeRequests  SupplierChangeRequest[]
-  equipmentLoans  EquipmentLoan[]
+  expenses          Expense[]
+  equipment         Equipment[]
+  stockEntries      StockEntry[]
+  quotations        Quotation[]
+  purchaseOrders    PurchaseOrder[]
+  vendorBills       VendorBill[]
+  debitNotes        DebitNote[]
+  workOrders        WorkOrder[]
+  scQuotes          SubcontractQuote[]
+  attendance        AttendanceLine[]
+  workers           Worker[]
+  payments          VendorPayment[]
+  paymentRequests   PaymentRequest[]
+  enquiryTokens     EnquiryToken[]
+  portalLogins      User[]                  @relation("VendorPortalLogins")
+  dispatches        SupplierDispatch[]
+  invoices          SupplierInvoice[]
+  changeRequests    SupplierChangeRequest[]
+  equipmentLoans    EquipmentLoan[]
+  materialApprovals MaterialApproval[]
 
   @@unique([organizationId, name])
 }
@@ -1253,6 +1263,8 @@ model PurchaseOrderLine {
   materialRequestItem   MaterialRequestItem? @relation(fields: [materialRequestItemId], references: [id], onDelete: SetNull)
   itemName              String
   specification         String?
+  /// The make (brand) ordered, checked against the project's approved makes (v6 item 113)
+  make                  String?
   unit                  String
   quantity              Decimal              @db.Decimal(18, 3)
   rate                  Decimal              @db.Decimal(18, 2)
@@ -1714,15 +1726,16 @@ model BoqItem {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
-  activities     Activity[]
-  measurements   MeasurementSheet[]
-  billItems      RaBillItem[]
-  workOrderLines WorkOrderLine[]
-  scEnquiryItems SubcontractEnquiryItem[]
-  variationLines VariationLine[]
-  materialNorms  MaterialNorm[]
-  resources      BoqResource[]
-  rfis           Rfi[]
+  activities        Activity[]
+  measurements      MeasurementSheet[]
+  billItems         RaBillItem[]
+  workOrderLines    WorkOrderLine[]
+  scEnquiryItems    SubcontractEnquiryItem[]
+  variationLines    VariationLine[]
+  materialNorms     MaterialNorm[]
+  resources         BoqResource[]
+  rfis              Rfi[]
+  materialApprovals MaterialApproval[]
 
   @@unique([projectId, itemNo])
   @@index([organizationId])
@@ -2067,14 +2080,16 @@ model Item {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
-  txns             StockTxn[]
-  minLevels        StockMinLevel[]
-  recoveries       SubcontractBillMaterial[]
-  norms            MaterialNorm[]
-  excessRecoveries ExcessMaterialRecovery[]
-  mixDesignLines   MixDesignLine[]
-  rmcBatchLines    RmcBatchLine[]
-  tenderLines      TenderItemLine[]
+  txns              StockTxn[]
+  minLevels         StockMinLevel[]
+  recoveries        SubcontractBillMaterial[]
+  norms             MaterialNorm[]
+  excessRecoveries  ExcessMaterialRecovery[]
+  mixDesignLines    MixDesignLine[]
+  rmcBatchLines     RmcBatchLine[]
+  tenderLines       TenderItemLine[]
+  materialApprovals MaterialApproval[]
+  approvedMakes     ApprovedMake[]
 
   @@unique([organizationId, name, unit])
 }
@@ -2936,92 +2951,95 @@ model PaymentRequest {
 }
 
 model Attachment {
-  id                String             @id @default(uuid())
-  organizationId    String
-  organization      Organization       @relation(fields: [organizationId], references: [id])
-  fileName          String
-  mimeType          String
-  size              Int
+  id                 String             @id @default(uuid())
+  organizationId     String
+  organization       Organization       @relation(fields: [organizationId], references: [id])
+  fileName           String
+  mimeType           String
+  size               Int
   /// Storage key: absolute URL (object storage), "db:<id>" (stored in `data`), or relative path served under /uploads
-  storagePath       String
+  storagePath        String
   /// File bytes when stored in the database (serverless hosts without a disk or object store)
-  data              Bytes?
-  uploadedById      String
-  uploadedBy        User               @relation(fields: [uploadedById], references: [id])
-  progressEntryId   String?
-  progressEntry     ProgressEntry?     @relation(fields: [progressEntryId], references: [id], onDelete: Cascade)
-  dailyReportId     String?
-  dailyReport       DailyReport?       @relation(fields: [dailyReportId], references: [id], onDelete: Cascade)
-  materialRequestId String?
-  materialRequest   MaterialRequest?   @relation(fields: [materialRequestId], references: [id], onDelete: Cascade)
-  stockEntryId      String?
-  stockEntry        StockEntry?        @relation(fields: [stockEntryId], references: [id], onDelete: Cascade)
-  machineryLogId    String?
-  machineryLog      MachineryLog?      @relation(fields: [machineryLogId], references: [id], onDelete: Cascade)
-  expenseId         String?
-  expense           Expense?           @relation(fields: [expenseId], references: [id], onDelete: Cascade)
-  measurementId     String?
-  measurement       MeasurementSheet?  @relation(fields: [measurementId], references: [id], onDelete: Cascade)
-  riskId            String?
-  risk              Risk?              @relation(fields: [riskId], references: [id], onDelete: Cascade)
-  raBillId          String?
-  raBill            RaBill?            @relation(fields: [raBillId], references: [id], onDelete: Cascade)
-  purchaseOrderId   String?
-  purchaseOrder     PurchaseOrder?     @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
-  vendorBillId      String?
-  vendorBill        VendorBill?        @relation(fields: [vendorBillId], references: [id], onDelete: Cascade)
-  workOrderId       String?
-  workOrder         WorkOrder?         @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
-  subcontractBillId String?
-  subcontractBill   SubcontractBill?   @relation(fields: [subcontractBillId], references: [id], onDelete: Cascade)
-  inspectionId      String?
-  inspection        Inspection?        @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
-  qualityTestId     String?
-  qualityTest       QualityTest?       @relation(fields: [qualityTestId], references: [id], onDelete: Cascade)
-  ncrId             String?
-  ncr               Ncr?               @relation(fields: [ncrId], references: [id], onDelete: Cascade)
-  revisionId        String?
-  revision          DocumentRevision?  @relation(fields: [revisionId], references: [id], onDelete: Cascade)
-  drawingMarkups    DrawingMarkup[]
-  letterId          String?
-  letter            Letter?            @relation(fields: [letterId], references: [id], onDelete: Cascade)
-  variationId       String?
-  variation         Variation?         @relation(fields: [variationId], references: [id], onDelete: Cascade)
-  safetyIncidentId  String?
-  safetyIncident    SafetyIncident?    @relation(fields: [safetyIncidentId], references: [id], onDelete: Cascade)
-  toolboxTalkId     String?
-  toolboxTalk       ToolboxTalk?       @relation(fields: [toolboxTalkId], references: [id], onDelete: Cascade)
-  workPermitId      String?
-  workPermit        WorkPermit?        @relation(fields: [workPermitId], references: [id], onDelete: Cascade)
-  maintenanceJobId  String?
-  maintenanceJob    MaintenanceJob?    @relation(fields: [maintenanceJobId], references: [id], onDelete: Cascade)
-  equipmentDocId    String?
-  equipmentDoc      EquipmentDocument? @relation(fields: [equipmentDocId], references: [id], onDelete: Cascade)
-  complianceDocId   String?
-  complianceDoc     ComplianceDoc?     @relation(fields: [complianceDocId], references: [id], onDelete: Cascade)
-  tenderId          String?
-  tender            Tender?            @relation(fields: [tenderId], references: [id], onDelete: Cascade)
-  defectId          String?
-  defect            Defect?            @relation(fields: [defectId], references: [id], onDelete: Cascade)
-  handoverId        String?
-  handover          ProjectHandover?   @relation(fields: [handoverId], references: [id], onDelete: Cascade)
-  rfiId             String?
-  rfi               Rfi?               @relation(fields: [rfiId], references: [id], onDelete: Cascade)
-  paymentRequestId  String?
-  paymentRequest    PaymentRequest?    @relation(fields: [paymentRequestId], references: [id], onDelete: Cascade)
+  data               Bytes?
+  uploadedById       String
+  uploadedBy         User               @relation(fields: [uploadedById], references: [id])
+  progressEntryId    String?
+  progressEntry      ProgressEntry?     @relation(fields: [progressEntryId], references: [id], onDelete: Cascade)
+  dailyReportId      String?
+  dailyReport        DailyReport?       @relation(fields: [dailyReportId], references: [id], onDelete: Cascade)
+  materialRequestId  String?
+  materialRequest    MaterialRequest?   @relation(fields: [materialRequestId], references: [id], onDelete: Cascade)
+  stockEntryId       String?
+  stockEntry         StockEntry?        @relation(fields: [stockEntryId], references: [id], onDelete: Cascade)
+  machineryLogId     String?
+  machineryLog       MachineryLog?      @relation(fields: [machineryLogId], references: [id], onDelete: Cascade)
+  expenseId          String?
+  expense            Expense?           @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  measurementId      String?
+  measurement        MeasurementSheet?  @relation(fields: [measurementId], references: [id], onDelete: Cascade)
+  riskId             String?
+  risk               Risk?              @relation(fields: [riskId], references: [id], onDelete: Cascade)
+  raBillId           String?
+  raBill             RaBill?            @relation(fields: [raBillId], references: [id], onDelete: Cascade)
+  purchaseOrderId    String?
+  purchaseOrder      PurchaseOrder?     @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  vendorBillId       String?
+  vendorBill         VendorBill?        @relation(fields: [vendorBillId], references: [id], onDelete: Cascade)
+  workOrderId        String?
+  workOrder          WorkOrder?         @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  subcontractBillId  String?
+  subcontractBill    SubcontractBill?   @relation(fields: [subcontractBillId], references: [id], onDelete: Cascade)
+  inspectionId       String?
+  inspection         Inspection?        @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+  qualityTestId      String?
+  qualityTest        QualityTest?       @relation(fields: [qualityTestId], references: [id], onDelete: Cascade)
+  ncrId              String?
+  ncr                Ncr?               @relation(fields: [ncrId], references: [id], onDelete: Cascade)
+  revisionId         String?
+  revision           DocumentRevision?  @relation(fields: [revisionId], references: [id], onDelete: Cascade)
+  drawingMarkups     DrawingMarkup[]
+  letterId           String?
+  letter             Letter?            @relation(fields: [letterId], references: [id], onDelete: Cascade)
+  variationId        String?
+  variation          Variation?         @relation(fields: [variationId], references: [id], onDelete: Cascade)
+  safetyIncidentId   String?
+  safetyIncident     SafetyIncident?    @relation(fields: [safetyIncidentId], references: [id], onDelete: Cascade)
+  toolboxTalkId      String?
+  toolboxTalk        ToolboxTalk?       @relation(fields: [toolboxTalkId], references: [id], onDelete: Cascade)
+  workPermitId       String?
+  workPermit         WorkPermit?        @relation(fields: [workPermitId], references: [id], onDelete: Cascade)
+  maintenanceJobId   String?
+  maintenanceJob     MaintenanceJob?    @relation(fields: [maintenanceJobId], references: [id], onDelete: Cascade)
+  equipmentDocId     String?
+  equipmentDoc       EquipmentDocument? @relation(fields: [equipmentDocId], references: [id], onDelete: Cascade)
+  complianceDocId    String?
+  complianceDoc      ComplianceDoc?     @relation(fields: [complianceDocId], references: [id], onDelete: Cascade)
+  tenderId           String?
+  tender             Tender?            @relation(fields: [tenderId], references: [id], onDelete: Cascade)
+  defectId           String?
+  defect             Defect?            @relation(fields: [defectId], references: [id], onDelete: Cascade)
+  handoverId         String?
+  handover           ProjectHandover?   @relation(fields: [handoverId], references: [id], onDelete: Cascade)
+  rfiId              String?
+  rfi                Rfi?               @relation(fields: [rfiId], references: [id], onDelete: Cascade)
+  paymentRequestId   String?
+  paymentRequest     PaymentRequest?    @relation(fields: [paymentRequestId], references: [id], onDelete: Cascade)
   /// An employee's documents (v6 item 99): ID, certificates, signed letters
-  employeeId        String?
-  employee          Employee?          @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employeeId         String?
+  employee           Employee?          @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   /// A supplier's invoice sent on the supplier portal (v6 item 105)
-  supplierInvoiceId String?
-  supplierInvoice   SupplierInvoice?   @relation(fields: [supplierInvoiceId], references: [id], onDelete: Cascade)
+  supplierInvoiceId  String?
+  supplierInvoice    SupplierInvoice?   @relation(fields: [supplierInvoiceId], references: [id], onDelete: Cascade)
+  /// A material or sample approval request's catalogue, test certificates and photos (v6 item 113)
+  materialApprovalId String?
+  materialApproval   MaterialApproval?  @relation(fields: [materialApprovalId], references: [id], onDelete: Cascade)
   /// When the PDF's text was read into DocumentPage (Ask the contract); null = not yet
-  textIndexedAt     DateTime?
+  textIndexedAt      DateTime?
   /// Pages with text found; 0 for a scanned PDF or one that could not be read
-  textPages         Int?
+  textPages          Int?
   /// Why the PDF could not be read, when it could not (shown on its page view); null when it was read
-  textError         String?
-  createdAt         DateTime           @default(now())
+  textError          String?
+  createdAt          DateTime           @default(now())
 
   pages      DocumentPage[]
   photoCheck PhotoCheck?
@@ -3045,6 +3063,7 @@ model Attachment {
   @@index([qualityTestId])
   @@index([ncrId])
   @@index([revisionId])
+  @@index([materialApprovalId])
   @@index([letterId])
   @@index([variationId])
   @@index([safetyIncidentId])
@@ -6225,4 +6244,136 @@ model MeetingAction {
   @@index([organizationId, projectId, status])
   @@index([ownerUserId, status])
   @@index([meetingId])
+}
+
+/// Material approvals (v6 item 113): a material or a sample put up to the client's engineer or consultant for approval.
+enum MaterialApprovalKind {
+  /// Catalogue, data sheet and test certificates of a make
+  MATERIAL
+  /// A physical sample or mock-up, kept on site once approved
+  SAMPLE
+}
+
+enum MaterialApprovalStatus {
+  DRAFT
+  UNDER_REVIEW
+  APPROVED
+  APPROVED_AS_NOTED
+  REVISE_RESUBMIT
+  REJECTED
+  WITHDRAWN
+}
+
+/// What the reviewer said of one submission.
+enum MaterialReviewOutcome {
+  APPROVED
+  APPROVED_AS_NOTED
+  REVISE_RESUBMIT
+  REJECTED
+}
+
+/// Where an approved make comes from: the contract's list of approved makes, or an approval request.
+enum ApprovedMakeSource {
+  CONTRACT
+  APPROVAL
+}
+
+/// A request to approve a make (or a sample) for a material on a project. Each time it goes to the reviewer is a
+/// revision (R0, R1…) with its outcome; its status is the latest outcome.
+model MaterialApproval {
+  id             String                 @id @default(uuid())
+  organizationId String
+  organization   Organization           @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project                @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  /// MAR-2026-0001 per organisation
+  marNo          String
+  kind           MaterialApprovalKind   @default(MATERIAL)
+  /// The material, e.g. "Vitrified floor tiles 600 x 600"
+  material       String
+  itemId         String?
+  item           Item?                  @relation(fields: [itemId], references: [id], onDelete: SetNull)
+  boqItemId      String?
+  boqItem        BoqItem?               @relation(fields: [boqItemId], references: [id], onDelete: SetNull)
+  make           String
+  /// Model, grade or range, e.g. "Fe 550D", "Endura series"
+  model          String?
+  /// The supplier offering it
+  vendorId       String?
+  vendor         Vendor?                @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  /// Where it goes, e.g. "Wards and corridors, all floors"
+  usedFor        String?
+  /// Why this make, what it meets: specification clause, IS code, equal to a listed make
+  note           String?
+  /// Addressed to, as written: the client's engineer or the consultant
+  toParty        String
+  /// When the reviewer is asked to answer the current revision by
+  replyBy        DateTime?              @db.Date
+  status         MaterialApprovalStatus @default(DRAFT)
+  /// The current revision: 0 for the first submission
+  revision       Int                    @default(0)
+  createdById    String
+  createdBy      User                   @relation("MaterialApprovalCreator", fields: [createdById], references: [id])
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+
+  revisions     MaterialApprovalRevision[]
+  attachments   Attachment[]
+  approvedMakes ApprovedMake[]
+
+  @@unique([organizationId, marNo])
+  @@index([organizationId, projectId, status])
+}
+
+/// One submission of a request to the reviewer, and what came back.
+model MaterialApprovalRevision {
+  id             String                 @id @default(uuid())
+  organizationId String
+  organization   Organization           @relation(fields: [organizationId], references: [id])
+  approvalId     String
+  approval       MaterialApproval       @relation(fields: [approvalId], references: [id], onDelete: Cascade)
+  revision       Int
+  submittedOn    DateTime               @db.Date
+  submittedById  String
+  submittedBy    User                   @relation("MaterialRevSubmitter", fields: [submittedById], references: [id])
+  /// What changed from the last revision, or the covering note
+  submitNote     String?
+  outcome        MaterialReviewOutcome?
+  reviewedOn     DateTime?              @db.Date
+  /// Who reviewed, as written
+  reviewerName   String?
+  comments       String?
+  /// Their letter or mail reference
+  reviewRef      String?
+  recordedById   String?
+  recordedBy     User?                  @relation("MaterialRevRecorder", fields: [recordedById], references: [id], onDelete: SetNull)
+  createdAt      DateTime               @default(now())
+
+  @@unique([approvalId, revision])
+  @@index([organizationId])
+}
+
+/// A make approved for a material on a project: from the contract's list, or from an approval request. A purchase
+/// order line for that material in another make is flagged.
+model ApprovedMake {
+  id             String             @id @default(uuid())
+  organizationId String
+  organization   Organization       @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  material       String
+  itemId         String?
+  item           Item?              @relation(fields: [itemId], references: [id], onDelete: SetNull)
+  make           String
+  model          String?
+  source         ApprovedMakeSource @default(CONTRACT)
+  approvalId     String?
+  approval       MaterialApproval?  @relation(fields: [approvalId], references: [id], onDelete: Cascade)
+  note           String?
+  createdById    String
+  createdBy      User               @relation("ApprovedMakeCreator", fields: [createdById], references: [id])
+  createdAt      DateTime           @default(now())
+
+  @@index([organizationId, projectId])
+  @@index([approvalId])
 }

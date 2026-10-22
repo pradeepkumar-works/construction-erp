@@ -64,3 +64,4 @@ export * from './loans';
 export * from './tenders';
 export * from './subcontract-enquiries';
 export * from './meetings';
+export * from './material-approvals';

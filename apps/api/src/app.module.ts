@@ -61,6 +61,7 @@ import { RmcModule } from './rmc/rmc.module';
 import { MachineLoansModule } from './machine-loans/machine-loans.module';
 import { TendersModule } from './tenders/tenders.module';
 import { MeetingsModule } from './meetings/meetings.module';
+import { MaterialApprovalsModule } from './material-approvals/material-approvals.module';
 import { SupplierModule } from './supplier/supplier.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { WorkersModule } from './workers/workers.module';
@@ -123,6 +124,7 @@ import { VitalsController } from './vitals.controller';
     MachineLoansModule,
     TendersModule,
     MeetingsModule,
+    MaterialApprovalsModule,
     SupplierModule,
     CostModule,
     ReconciliationModule,

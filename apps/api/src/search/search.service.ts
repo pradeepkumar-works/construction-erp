@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import type { Paginated, SearchHitDto, SearchKind, SearchResultDto } from '@erp/shared';
-import { SEARCH_MIN_LENGTH, VENDOR_KIND_LABELS, canViewPaymentRequests, canRequestFunds, canEditContract, canEditVendors, canSeeVendorBank, canViewContract, canViewTenders, canRunSubcontractEnquiries, canViewMeetings } from '@erp/shared';
+import { SEARCH_MIN_LENGTH, VENDOR_KIND_LABELS, canViewPaymentRequests, canRequestFunds, canEditContract, canEditVendors, canSeeVendorBank, canViewContract, canViewTenders, canRunSubcontractEnquiries, canViewMeetings, canViewMaterialApprovals } from '@erp/shared';
 import type { RequestUser } from '../common/current-user';
 import { MaterialRequestsService } from '../material-requests/material-requests.service';
 import { PurchaseOrdersService } from '../purchasing/purchase-orders.service';
@@ -21,6 +21,7 @@ import { StaffService } from '../staff/staff.service';
 import { PaymentRequestsService } from '../payables/payment-requests.service';
 import { TendersService } from '../tenders/tenders.service';
 import { MeetingsService } from '../meetings/meetings.service';
+import { MaterialApprovalsService } from '../material-approvals/material-approvals.service';
 import { ScEnquiriesService } from '../subcontracts/sc-enquiries.service';
 
 /** Hits per kind: enough to spot the one meant, few enough to keep the palette short. */
@@ -61,6 +62,7 @@ export class SearchService {
     tenders: TendersService,
     scEnquiries: ScEnquiriesService,
     meetings: MeetingsService,
+    materialApprovals: MaterialApprovalsService,
   ) {
     const page = (q: string) => ({ q, page: 1, pageSize: PER_KIND });
     const sources: Source<any>[] = [
@@ -99,6 +101,15 @@ export class SearchService {
           return { items: found.slice(0, PER_KIND), total: found.length, page: 1, pageSize: PER_KIND };
         },
         hit: (r) => ({ id: r.id, title: r.meetingNo, subtitle: join(r.title, r.projectName), href: `/meetings/${r.id}`, status: null }),
+      },
+      {
+        kind: 'material_approval',
+        allowed: (u) => canViewMaterialApprovals(u.roleKey),
+        list: async (u, q) => {
+          const found = await materialApprovals.search(u, q);
+          return { items: found.slice(0, PER_KIND), total: found.length, page: 1, pageSize: PER_KIND };
+        },
+        hit: (r) => ({ id: r.id, title: r.marNo, subtitle: join(r.material, r.make, r.projectName), href: `/material-approvals/${r.id}`, status: null }),
       },
       {
         kind: 'vendor',

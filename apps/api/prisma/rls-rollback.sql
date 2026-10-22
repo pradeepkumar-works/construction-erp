@@ -454,5 +454,14 @@ DROP POLICY IF EXISTS tenant_isolation ON "MeetingPoint";
 ALTER TABLE "MeetingAction" NO FORCE ROW LEVEL SECURITY;
 ALTER TABLE "MeetingAction" DISABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS tenant_isolation ON "MeetingAction";
+ALTER TABLE "MaterialApproval" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "MaterialApproval" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "MaterialApproval";
+ALTER TABLE "MaterialApprovalRevision" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "MaterialApprovalRevision" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "MaterialApprovalRevision";
+ALTER TABLE "ApprovedMake" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "ApprovedMake" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "ApprovedMake";
 
 DROP FUNCTION IF EXISTS app_current_org();

@@ -16,11 +16,12 @@ import { StockModule } from '../stock/stock.module';
 import { StaffModule } from '../staff/staff.module';
 import { TendersModule } from '../tenders/tenders.module';
 import { MeetingsModule } from '../meetings/meetings.module';
+import { MaterialApprovalsModule } from '../material-approvals/material-approvals.module';
 import { SearchController } from './search.controller';
 import { SearchService } from './search.service';
 
 @Module({
-  imports: [MaterialRequestsModule, PurchasingModule, SubcontractsModule, RaBillsModule, MeasurementsModule, ExpensesModule, InspectionsModule, RisksModule, DocumentsModule, RfisModule, VendorsModule, ClientsModule, StockModule, StaffModule, PayablesModule, TendersModule, MeetingsModule],
+  imports: [MaterialRequestsModule, PurchasingModule, SubcontractsModule, RaBillsModule, MeasurementsModule, ExpensesModule, InspectionsModule, RisksModule, DocumentsModule, RfisModule, VendorsModule, ClientsModule, StockModule, StaffModule, PayablesModule, TendersModule, MeetingsModule, MaterialApprovalsModule],
   controllers: [SearchController],
   providers: [SearchService],
   exports: [SearchService],

@@ -90,8 +90,9 @@ test('the statements balance, and a bank statement reconciles to nothing', async
   await page.getByRole('tab', { name: 'Trial balance' }).click();
   await expect(page.getByText('Debits equal credits')).toBeVisible();
 
-  // Locked up to two days ago, a voucher dated then is refused; the lock comes off again.
-  const before = new Date(Date.parse(`${today}T00:00:00Z`) - 2 * 86_400_000).toISOString().slice(0, 10);
+  // Locked up to three days ago, a voucher dated then is refused; the lock comes off again. Three, not two: the seed dates
+  // the waiting electricity bill yesterday by UTC, which is two days before today in India between 6:30 pm and midnight UTC.
+  const before = new Date(Date.parse(`${today}T00:00:00Z`) - 3 * 86_400_000).toISOString().slice(0, 10);
   await api(md, '/statements/lock', { method: 'PUT', body: { lockedUpTo: before } });
   const refused = await fetch(`${API_URL}/books/vouchers`, {
     method: 'POST',
