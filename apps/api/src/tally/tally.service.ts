@@ -7,6 +7,9 @@ import {
   TALLY_EXPENSE_GROUP,
   TALLY_FIXED_LEDGERS,
   TALLY_VENDOR_GROUP,
+  TALLY_LOAN_GROUP,
+  loanLedgerName,
+  tallyLoanKey,
   canExportTally,
   tallyClientKey,
   tallyExpenseDefault,
@@ -82,9 +85,10 @@ export class TallyService {
   async settings(user: RequestUser): Promise<TallySettingsDto> {
     this.assertCan(user);
     const cfg = await this.config(this.prisma, user.organizationId);
-    const [clients, vendors] = await Promise.all([
+    const [clients, vendors, loans] = await Promise.all([
       this.prisma.client.findMany({ where: { organizationId: user.organizationId }, select: { id: true, name: true, department: true }, orderBy: { name: 'asc' } }),
       this.prisma.vendor.findMany({ where: { organizationId: user.organizationId }, select: { id: true, name: true }, orderBy: { name: 'asc' } }),
+      this.prisma.equipmentLoan.findMany({ where: { organizationId: user.organizationId }, select: { id: true, lenderName: true, loanNo: true, equipment: { select: { code: true } } }, orderBy: [{ lenderName: 'asc' }, { loanNo: 'asc' }] }),
     ]);
     const row = (key: string, kind: TallyLedgerRowDto['kind'], use: string, defaultName: string, group: string): TallyLedgerRowDto => ({ key, kind, use, defaultName, name: cfg.ledgers[key] ?? null, group });
     return {
@@ -96,6 +100,7 @@ export class TallyService {
         ...EXPENSE_CATEGORIES.map((c) => row(tallyExpenseKey(c), 'EXPENSE', `Site expenses: ${EXPENSE_CATEGORY_LABELS[c]}`, tallyExpenseDefault(c), TALLY_EXPENSE_GROUP)),
         ...clients.map((c) => row(tallyClientKey(c.id), 'CLIENT', c.department ? `Client · ${c.department}` : 'Client', c.name, TALLY_CLIENT_GROUP)),
         ...vendors.map((v) => row(tallyVendorKey(v.id), 'VENDOR', 'Vendor', v.name, TALLY_VENDOR_GROUP)),
+        ...loans.map((l) => row(tallyLoanKey(l.id), 'LOAN', `Machine loan on ${l.equipment.code}`, loanLedgerName(l), TALLY_LOAN_GROUP)),
       ],
     };
   }
@@ -242,6 +247,8 @@ export class TallyService {
       await tx.staffLoan.updateMany({ where: { id: { in: ids('STAFF_LOAN') }, tallyExportId: null }, data: mark });
       await tx.rmcInvoice.updateMany({ where: { id: { in: ids('RMC_SALE') }, tallyExportId: null }, data: mark });
       await tx.rmcReceipt.updateMany({ where: { id: { in: ids('RMC_RECEIPT') }, tallyExportId: null }, data: mark });
+      await tx.equipmentLoan.updateMany({ where: { id: { in: ids('MACHINE_LOAN') }, tallyExportId: null }, data: mark });
+      await tx.loanEmi.updateMany({ where: { id: { in: ids('LOAN_EMI') }, tallyExportId: null }, data: mark });
       await tx.payrollRun.updateMany({ where: { id: { in: ids('SALARY_PAYMENT') }, tallyPaymentExportId: null }, data: { tallyPaymentExportId: created.id } });
       return created.id;
     });

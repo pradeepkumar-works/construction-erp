@@ -9,6 +9,9 @@ import {
   tallyClientKey,
   tallyExpenseDefault,
   tallyExpenseKey,
+  tallyLoanKey,
+  loanLedgerName,
+  PAYMENT_MODE_LABELS,
   tallyVendorKey,
   type ExpenseCategory,
   type TallyHeldDto,
@@ -341,6 +344,7 @@ export class PostingService {
     await this.salaries(db, org, name, opts, range, add);
     await this.staffLoans(db, org, name, opts, range, add);
     await this.rmc(db, org, name, opts, range, add);
+    await this.machineLoans(db, org, name, opts, range, add);
 
     // Oldest first, so Tally numbers and ages them in order.
     vouchers.sort((a, b) => a.date.getTime() - b.date.getTime() || a.kind.localeCompare(b.kind) || a.number.localeCompare(b.number));
@@ -500,6 +504,57 @@ export class PostingService {
         narration: `Received for RMC${r.invoice ? ` against ${r.invoice.invoiceNo}` : ' on account'}${r.reference ? `, ${r.reference}` : ''}`,
         billRef: r.invoice ? { name: r.invoice.invoiceNo, type: 'Agst Ref' } : null,
         lines: new Lines(name).dr(moneyLedger(r.mode), r.amount).cr(client.key, r.amount, { fallback: client.name, party: true }).lines,
+      });
+    }
+  }
+
+  /**
+   * Machine finance (v6 item 108): a loan is a journal on its sanction date, Dr Plant and Machinery (the lender paid the
+   * dealer) or the bank (a loan against a machine already owned, a receipt in Tally), Cr the loan's own ledger under
+   * Secured Loans; each EMI paid is a payment, Dr the loan with the principal and interest on machinery loans (finance
+   * costs) with the interest, Cr bank or cash.
+   */
+  private async machineLoans(db: Tx, org: string, name: LedgerName, opts: PostingOptions, range: (field: string) => object, add: (v: Voucher) => void) {
+    const tally = opts.unexported;
+    const equipment = { select: { code: true, name: true } } as const;
+    const [loans, emis] = await Promise.all([
+      db.equipmentLoan.findMany({ where: { organizationId: org, ...(tally ? { tallyExportId: null } : {}), ...range('sanctionDate') }, include: { equipment } }),
+      db.loanEmi.findMany({
+        where: { organizationId: org, paidOn: { not: null }, ...(tally ? { tallyExportId: null } : {}), ...range('paidOn') },
+        include: { loan: { select: { id: true, lenderName: true, loanNo: true, tenureMonths: true, equipment } } },
+      }),
+    ]);
+    const none = { projectId: null, projectCode: '', projectName: '' };
+    for (const l of loans) {
+      const loan = { key: tallyLoanKey(l.id), name: loanLedgerName(l) };
+      const intoBank = l.disbursal === 'BANK';
+      add({
+        kind: 'MACHINE_LOAN',
+        sourceId: l.id,
+        date: l.sanctionDate,
+        number: `MLOAN/${shortId(l.id)}`,
+        reference: l.loanNo,
+        party: l.lenderName,
+        ...none,
+        narration: `Loan ${l.loanNo} from ${l.lenderName} on ${l.equipment.code} ${l.equipment.name}: ₹${l.amount.toFixed(2)} at ${l.ratePct.toFixed(2)}% for ${l.tenureMonths} months, EMI ₹${l.emi.toFixed(2)}${intoBank ? ', credited to the bank' : ', paid to the dealer'}`,
+        billRef: null,
+        lines: new Lines(name).dr(intoBank ? 'BANK' : 'MACHINERY', l.amount).cr(loan.key, l.amount, { fallback: loan.name }).lines,
+        ...(intoBank ? { voucherType: 'Receipt' } : {}),
+      });
+    }
+    for (const e of emis) {
+      const loan = { key: tallyLoanKey(e.loan.id), name: loanLedgerName(e.loan) };
+      add({
+        kind: 'LOAN_EMI',
+        sourceId: e.id,
+        date: e.paidOn!,
+        number: `EMI/${shortId(e.id)}`,
+        reference: e.reference,
+        party: e.loan.lenderName,
+        ...none,
+        narration: `EMI ${e.no} of ${e.loan.tenureMonths} on loan ${e.loan.loanNo} (${e.loan.equipment.code} ${e.loan.equipment.name}): principal ₹${e.principal.toFixed(2)}, interest ₹${e.interest.toFixed(2)}${e.mode ? `, by ${PAYMENT_MODE_LABELS[e.mode].toLowerCase()}` : ''}${e.reference ? `, ${e.reference}` : ''}`,
+        billRef: null,
+        lines: new Lines(name).dr(loan.key, e.principal, { fallback: loan.name }).dr('LOAN_INTEREST', e.interest).cr(moneyLedger(e.mode ?? 'BANK'), e.emi).lines,
       });
     }
   }

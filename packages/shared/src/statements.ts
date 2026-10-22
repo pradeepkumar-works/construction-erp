@@ -137,7 +137,7 @@ const GROUP_LINE: Record<AccountGroup, StatementLine> = {
   SUSPENSE: 'OTHER_CURRENT_LIABILITIES',
 };
 /** Ledgers the modules post that Schedule III shows on a line of their own, not their group's. */
-const KEY_LINE: Record<string, StatementLine> = { SALARIES: 'EMPLOYEE', EMPLOYER_PF: 'EMPLOYEE', EMPLOYER_ESI: 'EMPLOYEE' };
+const KEY_LINE: Record<string, StatementLine> = { SALARIES: 'EMPLOYEE', EMPLOYER_PF: 'EMPLOYEE', EMPLOYER_ESI: 'EMPLOYEE', LOAN_INTEREST: 'FINANCE' };
 
 /**
  * Where an account shows in the statements: the line accounts chose for it, else its group's, with a balance on the

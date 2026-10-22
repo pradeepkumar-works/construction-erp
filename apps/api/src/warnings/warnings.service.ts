@@ -23,6 +23,7 @@ import {
   cashWeeks,
   daysToPay,
   dprGap,
+  emiOverdue,
   fuelNormCheck,
   fuelStep,
   leadDays,
@@ -148,6 +149,7 @@ export class WarningsService {
         if (k === 'MACHINE') return this.machines(projects, today);
         if (k === 'MATERIAL_OVERUSE') return this.overuse(active, today);
         if (k === 'FUEL_NORM') return this.fuel(projects, today);
+        if (k === 'LOAN_EMI') return this.loanEmis(user.organizationId, today);
         // A central store files no DPR (v6 item 106).
         return this.dprs(active.filter((p) => p.type !== 'STORE'), today);
       }),
@@ -331,6 +333,45 @@ export class WarningsService {
       });
     }
     return out.sort((a, b) => b.off - a.off).map(({ off: _o, ...w }) => w);
+  }
+
+  /** Machine loans (v6 item 108): an EMI unpaid past its date, most overdue first. Company-wide, as the loans are. */
+  private async loanEmis(organizationId: string, today: string): Promise<Draft[]> {
+    const loans = await this.prisma.equipmentLoan.findMany({
+      where: { organizationId, status: 'ACTIVE', emis: { some: { paidOn: null, dueDate: { lt: parseDate(today) } } } },
+      select: {
+        id: true,
+        lenderName: true,
+        loanNo: true,
+        equipment: { select: { code: true, name: true } },
+        emis: { where: { dueDate: { lte: parseDate(today) } }, select: { no: true, dueDate: true, emi: true, paidOn: true }, orderBy: { no: 'asc' } },
+      },
+    });
+    const out: (Draft & { days: number })[] = [];
+    for (const l of loans) {
+      const o = emiOverdue(
+        l.emis.map((e) => ({ no: e.no, dueDate: dateOnly(e.dueDate)!, emi: n(e.emi), paidOn: dateOnly(e.paidOn) })),
+        today,
+      );
+      if (!o) continue;
+      out.push({
+        key: `emi:${l.id}:${o.oldestNo}:${o.count}`,
+        kind: 'LOAN_EMI',
+        title: `${plural(o.count, 'EMI')} unpaid on ${l.equipment.code} ${l.equipment.name}: ${rupees(o.amount)} to ${l.lenderName}`,
+        detail: `EMI ${o.oldestNo} of loan ${l.loanNo} fell due on ${day(o.oldestDue)}, ${o.days} days ago. A late EMI draws penal interest and a bounce charge, and marks the company's credit; pay it, or record it if it was paid.`,
+        facts: [
+          { label: 'Overdue', value: rupees(o.amount) },
+          { label: 'Oldest due', value: day(o.oldestDue) },
+          { label: 'Days late', value: String(o.days) },
+          { label: 'Lender', value: l.lenderName },
+        ],
+        links: [{ label: 'The loan', href: `/machine-loans/${l.id}` }],
+        projectId: null,
+        projectName: null,
+        days: o.days,
+      });
+    }
+    return out.sort((a, b) => b.days - a.days).map(({ days: _d, ...w }) => w);
   }
 
   private async dprs(projects: Project[], today: string): Promise<Draft[]> {

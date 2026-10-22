@@ -287,6 +287,10 @@ import type {
   MarkupPoint,
   StoreSummaryDto,
   StockDestinationDto,
+  EquipmentLoanListDto,
+  EquipmentLoanDetailDto,
+  EquipmentLoanStatus,
+  LoanPreviewDto,
 } from '@erp/shared';
 import { CAD_MIME_TYPES, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, NOTIFICATION_TYPES_VERSION, SEARCH_MIN_LENGTH } from '@erp/shared';
 import { api } from './api';
@@ -681,6 +685,29 @@ export const useWorkerOutput = (projectId: string | undefined, from: string | un
     queryFn: async () => (await api.get<OutputDto>('/workers/output', { params: { projectId, from, to } })).data,
     enabled: !!projectId && !!from && !!to,
   });
+
+/** Machine loans (v6 item 108): the loans with what each owes, and the running ones by lender. */
+export const useMachineLoans = (filters?: { status?: EquipmentLoanStatus; q?: string; equipmentId?: string }, enabled = true) =>
+  useQuery({
+    queryKey: ['machine-loans', 'list', clean(filters)],
+    queryFn: async () => (await api.get<EquipmentLoanListDto>('/machine-loans', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+/** A loan with its EMI schedule; `id` may be an EMI's (a posted EMI in the books links to its loan). */
+export const useMachineLoan = (id?: string) =>
+  useQuery({ queryKey: ['machine-loans', 'one', id], queryFn: async () => (await api.get<EquipmentLoanDetailDto>(`/machine-loans/${id}`)).data, enabled: !!id });
+/** The EMI and schedule the terms on a loan form give, as they are typed. */
+export const useLoanPreview = (terms: { amount?: number | null; ratePct?: number | null; tenureMonths?: number | null; emi?: number | null; firstEmiDate?: string; sanctionDate?: string }, enabled = true) => {
+  const ready = enabled && !!terms.amount && terms.ratePct !== null && terms.ratePct !== undefined && !!terms.tenureMonths && !!terms.firstEmiDate && !!terms.sanctionDate;
+  return useQuery({
+    queryKey: ['machine-loans', 'preview', clean(terms)],
+    queryFn: async () => (await api.get<LoanPreviewDto>('/machine-loans/preview', { params: clean(terms) })).data,
+    placeholderData: keepPreviousData,
+    enabled: ready,
+    staleTime: 60_000,
+  });
+};
 
 /** Central stores and yards (v6 item 106), each with its stock, value and transfers on the road. */
 export const useStores = (enabled = true) => useQuery({ queryKey: ['stock', 'stores'], queryFn: async () => (await api.get<StoreSummaryDto[]>('/stock/stores')).data, enabled });

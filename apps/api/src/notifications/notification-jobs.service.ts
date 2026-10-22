@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { COMPLIANCE_DOC_KIND_LABELS, COMPLIANCE_ROLES, DLP_ALERT_DAYS, DOC_ALERT_DAYS, EQUIPMENT_DOC_TYPE_LABELS, SERVICE_STATE_LABELS, expiryState, APPROVER_ROLES, DPR_SUBMITTER_ROLES, PAYMENT_ROLES, SPECIALIST_APPROVERS, SUBMISSION_TYPE_LABELS, TEST_KIND_LABELS, canSeeWatchList, type BriefLineDto, type NotificationJobResult, type PendingApprovalDto, type RoleKey, type SubmissionType } from '@erp/shared';
+import { EMI_DUE_DAYS, TALLY_ROLES, COMPLIANCE_DOC_KIND_LABELS, COMPLIANCE_ROLES, DLP_ALERT_DAYS, DOC_ALERT_DAYS, EQUIPMENT_DOC_TYPE_LABELS, SERVICE_STATE_LABELS, expiryState, APPROVER_ROLES, DPR_SUBMITTER_ROLES, PAYMENT_ROLES, SPECIALIST_APPROVERS, SUBMISSION_TYPE_LABELS, TEST_KIND_LABELS, canSeeWatchList, type BriefLineDto, type NotificationJobResult, type PendingApprovalDto, type RoleKey, type SubmissionType } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
 import { ApprovalRightsService } from '../common/approval-rights.service';
@@ -384,6 +384,48 @@ export class NotificationJobsService {
       result.skipped += r.skipped;
     }
     this.log.log(`Bills due ${date}: ${JSON.stringify(result)}`);
+    return result;
+  }
+
+  /**
+   * Machine loan EMIs (v6 item 108): each EMI of a running loan is reminded once when it falls due within EMI_DUE_DAYS and
+   * once more if it is still unpaid after its date, to admin, management and accounts (who keep the loans). In-app and
+   * push, under Payments due. Runs with the digest.
+   */
+  async loanEmisDue(date = todayIn()): Promise<NotificationJobResult> {
+    const result: NotificationJobResult = { job: 'LOAN_EMIS_DUE', date, created: 0, pushed: 0, emailed: 0, messaged: 0, skipped: 0 };
+    const today = parseDate(date);
+    const until = parseDate(date);
+    until.setUTCDate(until.getUTCDate() + EMI_DUE_DAYS);
+    const emis = await this.prisma.loanEmi.findMany({
+      where: { paidOn: null, dueDate: { lte: until }, loan: { status: 'ACTIVE' } },
+      include: { loan: { select: { id: true, organizationId: true, lenderName: true, loanNo: true, equipment: { select: { code: true, name: true } } } } },
+      orderBy: { dueDate: 'asc' },
+    });
+    const keepers = new Map<string, string[]>();
+    for (const e of emis) {
+      const org = e.loan.organizationId;
+      if (!keepers.has(org)) keepers.set(org, (await this.prisma.user.findMany({ where: { organizationId: org, isActive: true, role: { key: { in: TALLY_ROLES } } }, select: { id: true } })).map((u) => u.id));
+      const userIds = keepers.get(org)!;
+      if (!userIds.length) continue;
+      const overdue = e.dueDate < today;
+      const due = e.dueDate.toISOString().slice(0, 10);
+      const machine = `${e.loan.equipment.code} ${e.loan.equipment.name}`;
+      const r = await this.notifications.notify({
+        organizationId: org,
+        userIds,
+        type: 'BILLS_DUE',
+        title: overdue ? `EMI overdue: ${inr(e.emi.toNumber())} to ${e.loan.lenderName} on ${machine}` : `EMI due ${due === date ? 'today' : `on ${due}`}: ${inr(e.emi.toNumber())} to ${e.loan.lenderName}`,
+        body: `EMI ${e.no} of loan ${e.loan.loanNo} on ${machine}${overdue ? `, due on ${due}, is still unpaid. Pay it, or record it paid on the loan.` : '. Keep the money in the account it is debited from, and record it paid on the loan.'}`,
+        entityType: 'EQUIPMENT_LOAN',
+        entityId: e.loan.id,
+        dedupeKey: `LOAN_EMI:${e.id}:${overdue ? 'OVERDUE' : 'DUE'}`,
+      });
+      result.created += r.created;
+      result.pushed += r.pushed;
+      result.skipped += r.skipped;
+    }
+    this.log.log(`Loan EMIs due ${date}: ${JSON.stringify(result)}`);
     return result;
   }
 

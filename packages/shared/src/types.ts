@@ -512,7 +512,7 @@ export interface NotificationDto {
    * Set when the notification points at a submission (or, for SAFETY, an incident or permit; for MACHINERY, a machine
    * due for service, a job card, a vehicle paper or a driver); open it with entityType + entityId.
    */
-  entityType: SubmissionType | 'SAFETY_INCIDENT' | 'WORK_PERMIT' | 'EQUIPMENT' | 'MAINTENANCE_JOB' | 'EQUIPMENT_DOCUMENT' | 'DRIVER' | 'IMPREST' | 'COMPLIANCE_DOC' | 'DEFECT' | 'HANDOVER' | 'RFI' | SupplierNoticeEntity | null;
+  entityType: SubmissionType | 'SAFETY_INCIDENT' | 'WORK_PERMIT' | 'EQUIPMENT' | 'MAINTENANCE_JOB' | 'EQUIPMENT_DOCUMENT' | 'DRIVER' | 'IMPREST' | 'COMPLIANCE_DOC' | 'DEFECT' | 'HANDOVER' | 'RFI' | 'EQUIPMENT_LOAN' | SupplierNoticeEntity | null;
   entityId: string | null;
   readAt: string | null;
   createdAt: string;
@@ -536,7 +536,7 @@ export interface PushTokenDto {
 
 /** Result of a scheduled notification job (DPR reminder / approval digest). */
 export interface NotificationJobResult {
-  job: 'DPR_REMINDER' | 'APPROVAL_DIGEST' | 'TESTS_DUE' | 'BILLS_DUE' | 'MACHINERY_DUE' | 'COMPLIANCE_DUE' | 'HANDOVER_DUE' | 'WATCH_LIST' | 'MORNING_BRIEF' | 'WEEK_NARRATIVE' | 'APPROVAL_ESCALATION';
+  job: 'DPR_REMINDER' | 'APPROVAL_DIGEST' | 'TESTS_DUE' | 'BILLS_DUE' | 'LOAN_EMIS_DUE' | 'MACHINERY_DUE' | 'COMPLIANCE_DUE' | 'HANDOVER_DUE' | 'WATCH_LIST' | 'MORNING_BRIEF' | 'WEEK_NARRATIVE' | 'APPROVAL_ESCALATION';
   date: string;
   created: number;
   pushed: number;
@@ -782,6 +782,8 @@ export interface EquipmentDto {
   fuelNorm?: string | null;
   fuelNormUnit?: FuelNormUnit | null;
   fuelTolerancePct?: string | null;
+  /** Its running loan (v6 item 108), for those who keep machine loans */
+  loan?: { id: string; lenderName: string } | null;
   createdAt: string;
 }
 
@@ -2386,7 +2388,7 @@ export interface TallyExportDto {
   createdAt: string;
 }
 
-export type TallyLedgerKind = 'FIXED' | 'CLIENT' | 'VENDOR' | 'EXPENSE';
+export type TallyLedgerKind = 'FIXED' | 'CLIENT' | 'VENDOR' | 'EXPENSE' | 'LOAN';
 
 export interface TallyLedgerRowDto {
   key: string;

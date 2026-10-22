@@ -24,8 +24,8 @@ import { CardToolbar } from '@/components/common/CardToolbar';
 import { themeColor, themeFontSize } from '@/lib/theme';
 
 const money = (v: string | null) => (v ? <span className="mono" translate="no">{formatINR(v, true)}</span> : null);
-const KIND_COLORS: Record<TallyVoucherKind, string> = { SALES: 'green', RECEIPT: 'cyan', PURCHASE: 'orange', SUBCONTRACT: 'volcano', PAYMENT: 'purple', EXPENSE: 'gold', DEBIT_NOTE: 'magenta', SALARY: 'blue', SALARY_PAYMENT: 'geekblue', STAFF_LOAN: 'lime', RMC_SALE: 'green', RMC_RECEIPT: 'cyan' };
-const LEDGER_KIND_LABELS: Record<TallyLedgerKind, string> = { FIXED: 'Accounts', EXPENSE: 'Expense categories', CLIENT: 'Clients', VENDOR: 'Vendors' };
+const KIND_COLORS: Record<TallyVoucherKind, string> = { SALES: 'green', RECEIPT: 'cyan', PURCHASE: 'orange', SUBCONTRACT: 'volcano', PAYMENT: 'purple', EXPENSE: 'gold', DEBIT_NOTE: 'magenta', SALARY: 'blue', SALARY_PAYMENT: 'geekblue', STAFF_LOAN: 'lime', RMC_SALE: 'green', RMC_RECEIPT: 'cyan', MACHINE_LOAN: 'blue', LOAN_EMI: 'purple' };
+const LEDGER_KIND_LABELS: Record<TallyLedgerKind, string> = { FIXED: 'Accounts', EXPENSE: 'Expense categories', CLIENT: 'Clients', VENDOR: 'Vendors', LOAN: 'Machine loans' };
 
 /** Save an XML file the API sends (the file name header is not readable across origins, so the name is ours). */
 async function downloadXml(path: string, fileName: string) {

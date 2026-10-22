@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { App, Button, Checkbox, DatePicker, Form, Input, InputNumber, Select, Space, Tag, theme } from 'antd';
 import dayjs from 'dayjs';
 import { DeleteOutlined, EditOutlined, PlusOutlined, ToolOutlined } from '@ant-design/icons';
@@ -75,6 +76,7 @@ interface EquipmentForm {
 export function EquipmentTable({ projectId: fixedProject }: { projectId?: string }) {
   const { user } = useAuth();
   const { message } = App.useApp();
+  const router = useRouter();
   const qc = useQueryClient();
   const mayManage = !!user && canManageEquipment(user.roleKey);
   const { data: projects } = useProjects();
@@ -185,6 +187,13 @@ export function EquipmentTable({ projectId: fixedProject }: { projectId?: string
                 r.name
               )}{' '}
               {r.isActive ? null : <Tag style={{ marginLeft: 4 }}>Inactive</Tag>}
+              {r.loan ? (
+                <Tag style={{ marginLeft: 4 }}>
+                  <RecordLink href={`/machine-loans/${r.loan.id}`} onOpen={() => router.push(`/machine-loans/${r.loan!.id}`)}>
+                    {`Loan · ${r.loan.lenderName}`}
+                  </RecordLink>
+                </Tag>
+              ) : null}
               <Sub>{[r.registrationNo, r.supplier, r.fuelNorm && r.fuelNormUnit ? `Norm ${fuelNormText(r.fuelNorm, r.fuelNormUnit)}` : null].filter(Boolean).join(' · ') || ' '}</Sub>
             </div>
           ),

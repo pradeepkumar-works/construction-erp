@@ -10,7 +10,7 @@
 import assert from 'node:assert/strict';
 import type { RoleKey } from '@erp/shared';
 import { WARNING_KINDS, watchListKinds } from '@erp/shared';
-import { activityForecast, addDays, cashGap, cashWeeks, daysToPay, dprGap, leadDays, machineTrend, fuelNormCheck, fuelStep, materialOveruse, overuseStep, scheduleWarns, stockRunout, vendorTrend } from '../warnings/warning-rules';
+import { activityForecast, addDays, cashGap, cashWeeks, daysToPay, dprGap, emiOverdue, leadDays, machineTrend, fuelNormCheck, fuelStep, materialOveruse, overuseStep, scheduleWarns, stockRunout, vendorTrend } from '../warnings/warning-rules';
 
 const cases: [string, () => void][] = [];
 const test = (name: string, fn: () => void) => cases.push([name, fn]);
@@ -199,13 +199,30 @@ test('fuel: a vehicle short of its km a litre is thirsty; far over it warns the 
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
+// Machine loan EMIs (v6 item 108)
+
+test('emi: an EMI more than two days late warns, with the oldest, the count and the amount', () => {
+  const emis = [
+    { no: 5, dueDate: '2026-09-05', emi: 94968, paidOn: '2026-09-05' },
+    { no: 6, dueDate: '2026-10-05', emi: 94968, paidOn: null },
+    { no: 7, dueDate: '2026-11-05', emi: 94968, paidOn: null },
+  ];
+  assert.equal(emiOverdue(emis, '2026-10-06'), null, 'a day late is a cheque in clearing');
+  assert.equal(emiOverdue(emis, '2026-10-07'), null, 'two days too');
+  const w = emiOverdue(emis, '2026-10-22')!;
+  assert.deepEqual(w, { count: 1, amount: 94968, oldestNo: 6, oldestDue: '2026-10-05', days: 17 });
+  assert.equal(emiOverdue(emis, '2026-11-20')!.count, 2);
+  assert.equal(emiOverdue(emis.map((e) => ({ ...e, paidOn: e.dueDate })), '2026-11-20'), null);
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
 // Roles
 
 test('roles: each kind goes to the role that can act on it', () => {
-  assert.deepEqual(watchListKinds('MANAGEMENT'), ['SCHEDULE', 'CASH', 'VENDOR', 'STOCK', 'MACHINE', 'DPR', 'MATERIAL_OVERUSE', 'FUEL_NORM']);
+  assert.deepEqual(watchListKinds('MANAGEMENT'), ['SCHEDULE', 'CASH', 'VENDOR', 'STOCK', 'MACHINE', 'DPR', 'MATERIAL_OVERUSE', 'FUEL_NORM', 'LOAN_EMI']);
   assert.deepEqual(watchListKinds('QUANTITY_SURVEYOR'), ['MATERIAL_OVERUSE']);
   assert.deepEqual(watchListKinds('STORE_MANAGER'), ['STOCK', 'MACHINE', 'FUEL_NORM']);
-  assert.deepEqual(watchListKinds('ACCOUNTS_MANAGER'), ['CASH']);
+  assert.deepEqual(watchListKinds('ACCOUNTS_MANAGER'), ['CASH', 'LOAN_EMI']);
   assert.deepEqual(watchListKinds('PROCUREMENT_MANAGER'), ['VENDOR']);
   assert.deepEqual(watchListKinds('SITE_ENGINEER'), []);
 });

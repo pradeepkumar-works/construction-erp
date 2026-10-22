@@ -4,9 +4,9 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Dropdown } from 'antd';
 import type { MenuProps } from 'antd';
-import { AccountBookOutlined, AlertOutlined, BankOutlined, ContainerOutlined, FileDoneOutlined, FileTextOutlined, LineChartOutlined, MailOutlined, PlusOutlined, ShoppingCartOutlined, WalletOutlined } from '@ant-design/icons';
+import { AccountBookOutlined, AlertOutlined, BankOutlined, CarOutlined, ContainerOutlined, FileDoneOutlined, FileTextOutlined, LineChartOutlined, MailOutlined, PlusOutlined, ShoppingCartOutlined, WalletOutlined } from '@ant-design/icons';
 import type { AuthUser } from '@erp/shared';
-import { canKeepBooks, canSellRmc, canPrepareBill, canPurchase, canRaiseRisk, canRequestFunds, canRequestPayment, canSubmitExpense, canViewLetters, canViewPayables, isGuest } from '@erp/shared';
+import { canKeepBooks, canManageMachineLoans, canSellRmc, canPrepareBill, canPurchase, canRaiseRisk, canRequestFunds, canRequestPayment, canSubmitExpense, canViewLetters, canViewPayables, isGuest } from '@erp/shared';
 import { requestNew, type NewKind } from '@/lib/new-intent';
 
 export interface NewEntry {
@@ -36,6 +36,7 @@ export function newEntriesFor(user: AuthUser): NewEntry[][] {
     ...(canRequestPayment(role) && canViewPayables(role) ? [{ kind: 'payment-request' as const, label: 'Payment request', action: 'Request payment', href: '/payables?tab=requests', icon: <BankOutlined /> }] : []),
     ...(canSellRmc(role) ? [{ kind: 'rmc-order' as const, label: 'RMC quote', action: 'New RMC quote', href: '/rmc?tab=orders', icon: <FileDoneOutlined /> }] : []),
     ...(canKeepBooks(role) ? [{ kind: 'voucher' as const, label: 'Voucher', action: 'New voucher', href: '/books?tab=vouchers', icon: <AccountBookOutlined /> }] : []),
+    ...(canManageMachineLoans(role) ? [{ kind: 'machine-loan' as const, label: 'Machine loan', action: 'Record machine loan', href: '/machine-loans', icon: <CarOutlined /> }] : []),
     ...(canViewLetters(role) ? [{ kind: 'letter' as const, label: 'Letter', action: 'Record letter', href: '/documents?tab=letters', icon: <MailOutlined /> }] : []),
   ];
   return [site, office].filter((g) => g.length > 0);

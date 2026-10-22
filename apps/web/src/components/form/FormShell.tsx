@@ -498,6 +498,15 @@ export function FormShell<T>({ open, onClose, title, form, okText, onSubmit, sec
  * Fields side by side: `cols` columns on a laptop, one on a phone. Labels sit above the field and help text under it
  * (the Form's `layout="vertical"` and `extra`).
  */
+/**
+ * Runs `go` (e.g. opening the record just saved) once a closing form has taken its history entry back off; navigating
+ * before that would be undone by the form's Back. Call it from the form's `onClose`.
+ */
+export function afterFormLeaves(go: () => void) {
+  if ((window.history.state as { nirmaanForm?: string } | null)?.nirmaanForm) window.addEventListener('popstate', () => go(), { once: true });
+  else go();
+}
+
 export function FormGrid({ cols = 2, children }: { cols?: 2 | 3 | 4; children: React.ReactNode }) {
   const { token } = theme.useToken();
   const screens = Grid.useBreakpoint();

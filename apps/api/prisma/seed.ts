@@ -5,6 +5,7 @@ import * as bcrypt from 'bcryptjs';
 import { deflateSync } from 'zlib';
 import { dprTitle, progressTitle, titleDate } from '../src/common/submission-titles';
 import { DEMO_CONTRACTS, textPdf } from '../src/documents/demo-contracts';
+import { addMonths, schedule as loanSchedule } from '../src/machine-loans/loan-rules';
 import { DEFAULT_SETTINGS, computePayslip, structureCost, type RulesStructure } from '../src/payroll/payroll-rules';
 import { DEFAULT_CLOSEOUT_ITEMS, PAYSLIP_CODES, PERMIT_PRECAUTIONS, STANDARD_CHECKLISTS, gstinCheckChar, isWeeklyOff, leaveDays, ppeReplaceBy, type PpeKind } from '@erp/shared';
 
@@ -179,6 +180,7 @@ async function main() {
     await seedSupplierPortal(org.id);
     await seedCentralStore(org.id);
     await seedFundRequests(org.id);
+    await seedMachineLoans(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
   }
@@ -373,6 +375,7 @@ async function main() {
   await seedSupplierPortal(org.id);
   await seedCentralStore(org.id);
   await seedFundRequests(org.id);
+  await seedMachineLoans(org.id);
 
   console.log('Seed complete. Login with any of these (password: password123):');
   for (const u of USERS) console.log(`  ${u.email.padEnd(24)} ${u.role}`);
@@ -3864,4 +3867,60 @@ async function seedFundRequests(organizationId: string) {
       { organizationId, entityType: 'PAYMENT_REQUEST', entityId: onAccount.id, action: 'SUBMITTED', actorId: engineer, createdAt: day(-1) },
     ],
   });
+}
+
+/**
+ * Machine finance (v6 item 108): an excavator on a 48-month HDFC Bank loan, paid up to two months ago with last month's
+ * EMI unpaid (so the watch list and the reminders have one overdue), and the road project's tipper on a Tata Capital
+ * loan into the bank, every EMI paid and the next falling due within the week.
+ */
+async function seedMachineLoans(organizationId: string) {
+  if (await prisma.equipmentLoan.count({ where: { organizationId } })) return;
+  const accounts = (await prisma.user.findFirst({ where: { organizationId, email: 'accounts@demo.com' }, select: { id: true } }))?.id;
+  const excavator = await prisma.equipment.findFirst({ where: { organizationId, ownership: 'OWNED', category: 'Earthmoving' }, orderBy: { code: 'asc' }, select: { id: true } });
+  const tipper = await prisma.equipment.findFirst({ where: { organizationId, code: 'TIP-07' }, select: { id: true } });
+  if (!accounts) return;
+  const ymd = (d: Date) => d.toISOString().slice(0, 10);
+  const loans = [
+    { equipmentId: excavator?.id, lenderName: 'HDFC Bank', loanNo: 'CEL-55102938', amount: 3_800_000, ratePct: 9.25, tenureMonths: 48, sanction: -430, firstDue: [-17, -13], paidUpTo: -30, disbursal: 'MACHINE_COST' as const, note: 'Hypothecated to HDFC Bank; NACH from the current account' },
+    { equipmentId: tipper?.id, lenderName: 'Tata Capital', loanNo: 'TCL-EQ-778120', amount: 2_400_000, ratePct: 10.5, tenureMonths: 36, sanction: -150, firstDue: [3, -4], paidUpTo: -1, disbursal: 'BANK' as const, note: 'Loan against the tipper, credited to the current account' },
+  ];
+  for (const l of loans) {
+    if (!l.equipmentId) continue;
+    // [days, months]: the HDFC loan's EMI fell due 17 days ago (unpaid), the tipper's falls due in 3 days.
+    const first = new Date(`${addMonths(ymd(day(l.firstDue[0])), l.firstDue[1])}T00:00:00Z`);
+    const rows = loanSchedule({ amount: l.amount, ratePct: l.ratePct, tenureMonths: l.tenureMonths, firstEmiDate: ymd(first) });
+    const loan = await prisma.equipmentLoan.create({
+      data: {
+        organizationId, equipmentId: l.equipmentId, lenderName: l.lenderName, loanNo: l.loanNo, sanctionDate: day(l.sanction), amount: D(l.amount), ratePct: D(l.ratePct), tenureMonths: l.tenureMonths,
+        emi: rows[0].emi, firstEmiDate: first, disbursal: l.disbursal, note: l.note, createdById: accounts, createdAt: day(l.sanction),
+      },
+    });
+    const paidUpTo = ymd(day(l.paidUpTo));
+    await prisma.loanEmi.createMany({
+      data: rows.map((r) => ({
+        organizationId, loanId: loan.id, no: r.no, dueDate: new Date(`${r.dueDate}T00:00:00Z`), opening: r.opening, principal: r.principal, interest: r.interest, emi: r.emi, closing: r.closing,
+        ...(r.dueDate <= paidUpTo ? { paidOn: new Date(`${r.dueDate}T00:00:00Z`), mode: 'BANK' as const, reference: `NACH ${r.dueDate.replace(/-/g, '').slice(2)}`, paidById: accounts } : {}),
+      })),
+    });
+    await prisma.auditLog.create({ data: { organizationId, entityType: 'EQUIPMENT_LOAN', entityId: loan.id, action: 'CREATED', actorId: accounts, createdAt: day(l.sanction) } });
+    // A loan older than the books comes in with the opening balances: what it owed then, against the plant it bought.
+    const st = await prisma.booksState.findUnique({ where: { organizationId } });
+    const opening = await prisma.bookVoucher.findFirst({ where: { organizationId, source: 'OPENING' }, include: { lines: { select: { sortOrder: true } } } });
+    const plant = await prisma.ledgerAccount.findFirst({ where: { organizationId, key: 'ACCOUNT:demo-plant' }, select: { id: true } });
+    if (st?.booksFrom && loan.sanctionDate < st.booksFrom && opening && plant) {
+      const from = ymd(st.booksFrom);
+      const before = rows.filter((r) => r.dueDate < from);
+      const owed = before.length ? before[before.length - 1].closing : D(l.amount);
+      const ledger = await prisma.ledgerAccount.create({ data: { organizationId, key: `LOAN:${loan.id}`, name: `${l.lenderName} Loan ${l.loanNo}`, group: 'SECURED_LOANS', isSystem: true } });
+      const order = Math.max(0, ...opening.lines.map((x) => x.sortOrder)) + 1;
+      await prisma.bookLine.createMany({
+        data: [
+          { organizationId, voucherId: opening.id, accountId: plant.id, debit: owed, sortOrder: order },
+          { organizationId, voucherId: opening.id, accountId: ledger.id, credit: owed, sortOrder: order + 1 },
+        ],
+      });
+      await prisma.bookVoucher.update({ where: { id: opening.id }, data: { amount: opening.amount.add(owed) } });
+    }
+  }
 }

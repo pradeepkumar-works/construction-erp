@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-machine-loans',
+    date: '2026-11-14',
+    title: 'Machine loans',
+    points: [
+      'Record the loan on a financed machine from Accounts → Machine loans: the lender, the amount, rate and tenure, and the first EMI date. The EMI and its schedule are worked out, or use the lender’s EMI.',
+      'Record each EMI as it is paid, close a loan early, and see what is owed to each lender, what falls due in the next 30 days and any EMI overdue. EMIs falling due and overdue are reminded, and an overdue one is on the watch list.',
+      'The loan and every EMI go to the books and Tally by themselves: the loan to its own ledger under secured loans, the interest to finance costs. Each loan shows the interest it costs the machine for every hour it works.',
+    ],
+  },
+  {
     id: '2026-11-fund-requests',
     date: '2026-11-13',
     title: 'Fund requests from sites',
