@@ -337,6 +337,7 @@ export class PostingService {
 
     await this.salaries(db, org, name, opts, range, add);
     await this.staffLoans(db, org, name, opts, range, add);
+    await this.rmc(db, org, name, opts, range, add);
 
     // Oldest first, so Tally numbers and ages them in order.
     vouchers.sort((a, b) => a.date.getTime() - b.date.getTime() || a.kind.localeCompare(b.kind) || a.number.localeCompare(b.number));
@@ -442,6 +443,60 @@ export class PostingService {
         narration: `${what} to ${l.employee.fullName} (${l.employee.employeeCode}), recovered ₹${l.emi.toFixed(2)} a month from ${l.startMonth}${l.note ? `; ${l.note}` : ''}`,
         billRef: null,
         lines: new Lines(name).dr('STAFF_LOANS', l.amount).cr('BANK', l.amount).lines,
+      });
+    }
+  }
+
+  /**
+   * RMC (v6 item 104): a bill is a sale (Dr the customer, Cr sales of ready-mix concrete with the plant as cost centre,
+   * Cr output GST as billed); money received is a receipt (Dr bank or cash, Cr the customer). A cancelled bill posts
+   * nothing.
+   */
+  private async rmc(db: Tx, org: string, name: LedgerName, opts: PostingOptions, range: (field: string) => object, add: (v: Voucher) => void) {
+    const open = { organizationId: org, ...(opts.unexported ? { tallyExportId: null } : {}) };
+    const plant = { select: { id: true, code: true, name: true } } as const;
+    const [bills, receipts] = await Promise.all([
+      db.rmcInvoice.findMany({ where: { ...open, status: 'ISSUED', ...range('date') }, include: { plant, client: { select: { name: true } }, order: { select: { orderNo: true, site: true } } } }),
+      db.rmcReceipt.findMany({ where: { ...open, ...range('date') }, include: { client: { select: { name: true } }, invoice: { select: { invoiceNo: true, plant } } } }),
+    ]);
+    for (const b of bills) {
+      const client = { key: tallyClientKey(b.clientId), name: b.client.name };
+      const l = new Lines(name)
+        .dr(client.key, b.total, { fallback: client.name, party: true })
+        .cr('RMC_SALES', b.taxable, { costCentre: true })
+        .cr('OUTPUT_CGST', b.cgst)
+        .cr('OUTPUT_SGST', b.sgst)
+        .cr('OUTPUT_IGST', b.igst);
+      add({
+        kind: 'RMC_SALE',
+        sourceId: b.id,
+        date: b.date,
+        number: b.invoiceNo,
+        reference: b.order?.orderNo ?? null,
+        party: client.name,
+        projectId: b.plant.id,
+        projectCode: b.plant.code,
+        projectName: b.plant.name,
+        narration: `${b.quantity.toFixed(3).replace(/\.?0+$/, '')} m³ of ready-mix concrete${b.order ? ` on ${b.order.orderNo}` : ''}${b.order?.site ? ` to ${b.order.site}` : ''}: concrete ₹${b.concrete.toFixed(2)}${b.pumping.isZero() ? '' : ` + pumping ₹${b.pumping.toFixed(2)}`} + GST ₹${b.cgst.add(b.sgst).add(b.igst).toFixed(2)}`,
+        billRef: { name: b.invoiceNo, type: 'New Ref' },
+        lines: l.lines,
+      });
+    }
+    for (const r of receipts) {
+      const client = { key: tallyClientKey(r.clientId), name: r.client.name };
+      add({
+        kind: 'RMC_RECEIPT',
+        sourceId: r.id,
+        date: r.date,
+        number: `RMCR/${shortId(r.id)}`,
+        reference: r.reference,
+        party: client.name,
+        projectId: r.invoice?.plant.id ?? null,
+        projectCode: r.invoice?.plant.code ?? '',
+        projectName: r.invoice?.plant.name ?? '',
+        narration: `Received for RMC${r.invoice ? ` against ${r.invoice.invoiceNo}` : ' on account'}${r.reference ? `, ${r.reference}` : ''}`,
+        billRef: r.invoice ? { name: r.invoice.invoiceNo, type: 'Agst Ref' } : null,
+        lines: new Lines(name).dr(moneyLedger(r.mode), r.amount).cr(client.key, r.amount, { fallback: client.name, party: true }).lines,
       });
     }
   }

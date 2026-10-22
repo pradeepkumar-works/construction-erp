@@ -4,6 +4,7 @@
  */
 import type React from 'react';
 import {
+  ExperimentOutlined,
   MoneyCollectOutlined,
   AccountBookOutlined,
   BookOutlined,
@@ -63,6 +64,7 @@ import {
   canEditProjects,
   canEditVendors,
   canExportTally,
+  canViewRmc,
   canKeepBooks,
   canManageBilling,
   canManageCompanyData,
@@ -151,6 +153,7 @@ export const NAV_DESCRIPTIONS: Record<string, string> = {
   '/clients': 'Clients and their contacts.',
   '/compliance': 'Bank guarantees, EMDs, insurance and licences with renewals.',
   '/books': 'Day book, cash and bank books, ledgers, vouchers and the chart of accounts.',
+  '/rmc': 'The plant’s day, quotes and orders, trucks and challans, mix designs and bills for ready-mix concrete.',
   '/statements': 'Trial balance, profit and loss, balance sheet, bank reconciliation and the year’s close.',
   '/gst': 'GST on sales and purchases: GSTR-1 and 2B.',
   '/tally': 'Vouchers for Tally, with projects as cost centres.',
@@ -249,6 +252,13 @@ export function navFor(user: AuthUser): NavSection[] {
         ...when(canViewContract(role) || canEditContract(role), { href: '/clients', label: 'Clients', icon: BankOutlined, keywords: 'customers' }),
         ...when(canViewCompliance(role), { href: '/compliance', label: 'Guarantees and licences', icon: AuditOutlined, keywords: 'bank guarantee bg insurance car policy licence labour expiry' }),
       ],
+    },
+    {
+      key: 'rmc',
+      module: 'rmc',
+      title: 'RMC',
+      icon: ExperimentOutlined,
+      items: [...when(canViewRmc(role), { href: '/rmc', label: 'RMC plant', icon: ExperimentOutlined, keywords: 'ready mix concrete batching plant transit mixer challan cube mix design quote order m3' })],
     },
     {
       key: 'accounts',

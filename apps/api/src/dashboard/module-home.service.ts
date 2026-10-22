@@ -8,6 +8,9 @@ import {
   canPayPayroll,
   canViewPayroll,
   canApproveVouchers,
+  canApproveMixDesign,
+  canBillRmc,
+  canViewRmc,
   canManageStaff,
   canPurchase,
   canReportSafety,
@@ -118,6 +121,8 @@ export class ModuleHomeService {
         return this.purchases(user, projectId);
       case 'billing':
         return this.billing(user, projectId);
+      case 'rmc':
+        return this.rmc(user, today, projectId);
       case 'accounts':
         return this.accounts(user);
       case 'people':
@@ -237,6 +242,36 @@ export class ModuleHomeService {
   }
 
   /** The books are the company's, so these do not follow the header's project. */
+  /** RMC (v6 item 104): the plants the caller sees (or the one asked for). */
+  private async rmc(user: RequestUser, today: string, projectId?: string): Promise<ModuleFigureDto[]> {
+    const role = user.roleKey;
+    if (!canViewRmc(role)) return [];
+    const org = user.organizationId;
+    const plant = { ...this.access.projectWhere(user), type: 'PLANT' as const, ...(projectId ? { id: projectId } : {}) };
+    const day = parseDate(today);
+    const [poured, onTheWay, open, designs, unbilled, bills] = await Promise.all([
+      this.prisma.rmcBatch.aggregate({ where: { organizationId: org, plant, date: day, status: { not: 'REJECTED' } }, _sum: { quantity: true }, _count: { _all: true } }),
+      this.prisma.rmcBatch.count({ where: { organizationId: org, plant, status: 'DISPATCHED' } }),
+      this.prisma.rmcOrder.findMany({ where: { organizationId: org, plant, status: 'CONFIRMED' }, select: { pourDate: true } }),
+      this.prisma.mixDesign.count({ where: { organizationId: org, plant, status: 'DRAFT' } }),
+      this.prisma.rmcBatch.aggregate({ where: { organizationId: org, plant, status: 'DELIVERED', invoiceId: null, order: { clientId: { not: null } } }, _sum: { quantity: true }, _count: { _all: true } }),
+      this.prisma.rmcInvoice.findMany({ where: { organizationId: org, plant, status: 'ISSUED' }, select: { total: true, receipts: { select: { amount: true } } } }),
+    ]);
+    const m3 = (v: D | null) => (v ?? ZERO).toFixed(3).replace(/\.?0+$/, '') || '0';
+    const pourToday = open.filter((o) => o.pourDate && o.pourDate.getTime() === day.getTime()).length;
+    const out: ModuleFigureDto[] = [
+      count('poured', 'Concrete sent today (m³)', 0, '/rmc?tab=day', { value: m3(poured._sum.quantity), note: `${plural(poured._count._all, 'truck')}${onTheWay ? `, ${onTheWay} on the way` : ''}` }),
+      count('openOrders', 'Open orders', open.length, '/rmc?tab=orders', { note: pourToday ? `${pourToday} to pour today` : 'None due today' }),
+    ];
+    if (canApproveMixDesign(role)) out.push(count('designs', 'Mix designs to approve', designs, '/rmc?tab=designs', { tone: designs ? 'warning' : 'default', note: designs ? 'Waiting for quality' : 'Nothing waiting' }));
+    if (canBillRmc(role)) {
+      const due = bills.reduce((s, b) => s.add(b.receipts.reduce((r, x) => r.sub(x.amount), b.total)), ZERO);
+      out.push(count('unbilled', 'Challans not billed', unbilled._count._all, '/rmc?tab=bills', { tone: unbilled._count._all ? 'warning' : 'default', note: unbilled._count._all ? `${m3(unbilled._sum.quantity)} m³ delivered` : 'Every delivery is billed' }));
+      out.push(rupees('due', 'Due from RMC customers', due, '/rmc?tab=bills', { note: 'On bills issued, less money received' }));
+    }
+    return out;
+  }
+
   private async accounts(user: RequestUser): Promise<ModuleFigureDto[]> {
     const [f, s] = await Promise.all([this.books.figures(user), this.statements.figures(user)]);
     if (!f || !s) return [];

@@ -16,6 +16,7 @@ enum ProjectType {
   ROAD
   BUILDING
   WATER_SUPPLY
+  PLANT
 }
 
 enum ProjectStatus {
@@ -580,6 +581,13 @@ model Organization {
   bookLines            BookLine[]
   booksState           BooksState?
   bankStatementLines   BankStatementLine[]
+  mixDesigns           MixDesign[]
+  mixDesignLines       MixDesignLine[]
+  rmcOrders            RmcOrder[]
+  rmcBatches           RmcBatch[]
+  rmcBatchLines        RmcBatchLine[]
+  rmcInvoices          RmcInvoice[]
+  rmcReceipts          RmcReceipt[]
   staffAttendance      StaffAttendance[]
   leaveRequests        LeaveRequest[]
   holidays             Holiday[]
@@ -825,6 +833,12 @@ model User {
   leaveApplied         LeaveRequest[]           @relation("LeaveApplicant")
   raisedRisks          Risk[]                   @relation("RiskRaiser")
   ownedRisks           Risk[]                   @relation("RiskOwner")
+  mixDesignsApproved   MixDesign[]              @relation("MixDesignApprover")
+  mixDesignsCreated    MixDesign[]              @relation("MixDesignCreator")
+  rmcOrdersCreated     RmcOrder[]               @relation("RmcOrderCreator")
+  rmcBatchesCreated    RmcBatch[]               @relation("RmcBatchCreator")
+  rmcInvoicesCreated   RmcInvoice[]             @relation("RmcInvoiceCreator")
+  rmcReceiptsCreated   RmcReceipt[]             @relation("RmcReceiptCreator")
 
   @@unique([organizationId, email])
   @@index([organizationId])
@@ -967,6 +981,11 @@ model Project {
   biometricDevices   BiometricDevice[]
   bookVouchers       BookVoucher[]
   bookLines          BookLine[]
+  mixDesigns         MixDesign[]
+  rmcOrdersAtPlant   RmcOrder[]               @relation("RmcOrderPlant")
+  rmcOrdersForSite   RmcOrder[]               @relation("RmcOrderSite")
+  rmcBatches         RmcBatch[]
+  rmcInvoices        RmcInvoice[]
   staffAttendance    StaffAttendance[]
   holidays           Holiday[]
   variations         Variation[]
@@ -1005,7 +1024,10 @@ model Client {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
-  projects Project[]
+  projects    Project[]
+  rmcOrders   RmcOrder[]
+  rmcInvoices RmcInvoice[]
+  rmcReceipts RmcReceipt[]
 
   @@unique([organizationId, name])
 }
@@ -1979,6 +2001,8 @@ model Item {
   recoveries       SubcontractBillMaterial[]
   norms            MaterialNorm[]
   excessRecoveries ExcessMaterialRecovery[]
+  mixDesignLines   MixDesignLine[]
+  rmcBatchLines    RmcBatchLine[]
 
   @@unique([organizationId, name, unit])
 }
@@ -2066,6 +2090,7 @@ model StockEntry {
   attachments Attachment[]
   parts       EquipmentPart[]
   covers      MaterialRequestCover[]
+  rmcBatch    RmcBatch?
 
   @@unique([organizationId, entryNo])
   @@index([projectId, date])
@@ -3092,6 +3117,8 @@ model TallyExport {
   payrollRuns      PayrollRun[]      @relation("PayrollRunTally")
   payrollPayments  PayrollRun[]      @relation("PayrollRunPaymentTally")
   staffLoans       StaffLoan[]
+  rmcInvoices      RmcInvoice[]
+  rmcReceipts      RmcReceipt[]
 
   @@index([organizationId, createdAt])
 }
@@ -3185,6 +3212,9 @@ model QualityTest {
   remarks        String?
   createdById    String
   createdBy      User         @relation("TestCreator", fields: [createdById], references: [id])
+  /// Cubes taken from an RMC truck (v6 item 104)
+  rmcBatchId     String?      @unique
+  rmcBatch       RmcBatch?    @relation(fields: [rmcBatchId], references: [id], onDelete: SetNull)
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
@@ -5217,4 +5247,221 @@ model BankStatementLine {
 
   @@unique([organizationId, accountId, fingerprint])
   @@index([organizationId, accountId, date])
+}
+
+enum MixDesignStatus {
+  DRAFT
+  APPROVED
+  RETIRED
+}
+
+enum RmcOrderStatus {
+  QUOTED
+  CONFIRMED
+  CLOSED
+  CANCELLED
+}
+
+enum RmcBatchStatus {
+  DISPATCHED
+  DELIVERED
+  REJECTED
+}
+
+enum RmcInvoiceStatus {
+  ISSUED
+  CANCELLED
+}
+
+/// What goes into a cubic metre of a grade at a plant (v6 item 104), approved by quality before it is batched.
+model MixDesign {
+  id             String          @id @default(uuid())
+  organizationId String
+  organization   Organization    @relation(fields: [organizationId], references: [id])
+  plantId        String
+  plant          Project         @relation(fields: [plantId], references: [id], onDelete: Cascade)
+  /// M25-OPC-01
+  code           String
+  grade          String
+  description    String?
+  slumpMm        Int?
+  status         MixDesignStatus @default(DRAFT)
+  approvedById   String?
+  approvedBy     User?           @relation("MixDesignApprover", fields: [approvedById], references: [id])
+  approvedAt     DateTime?
+  createdById    String
+  createdBy      User            @relation("MixDesignCreator", fields: [createdById], references: [id])
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  lines          MixDesignLine[]
+  orders         RmcOrder[]
+  batches        RmcBatch[]
+
+  @@unique([organizationId, code])
+  @@index([plantId])
+}
+
+model MixDesignLine {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  mixDesignId    String
+  mixDesign      MixDesign    @relation(fields: [mixDesignId], references: [id], onDelete: Cascade)
+  itemId         String
+  item           Item         @relation(fields: [itemId], references: [id])
+  /// Per cubic metre of concrete, in the item's unit
+  quantity       Decimal      @db.Decimal(18, 3)
+  sortOrder      Int          @default(0)
+
+  @@index([mixDesignId])
+}
+
+/// A customer's quote and then order for concrete from a plant, or an own site supplied from it.
+model RmcOrder {
+  id             String         @id @default(uuid())
+  organizationId String
+  organization   Organization   @relation(fields: [organizationId], references: [id])
+  /// RMC-2026-0001
+  orderNo        String
+  plantId        String
+  plant          Project        @relation("RmcOrderPlant", fields: [plantId], references: [id], onDelete: Cascade)
+  date           DateTime       @db.Date
+  status         RmcOrderStatus @default(QUOTED)
+  clientId       String?
+  client         Client?        @relation(fields: [clientId], references: [id])
+  /// An own site the plant supplies (no GST bill)
+  projectId      String?
+  project        Project?       @relation("RmcOrderSite", fields: [projectId], references: [id], onDelete: SetNull)
+  site           String?
+  mixDesignId    String
+  mixDesign      MixDesign      @relation(fields: [mixDesignId], references: [id])
+  quantity       Decimal        @db.Decimal(18, 3)
+  rate           Decimal        @db.Decimal(18, 2)
+  pumpRate       Decimal?       @db.Decimal(18, 2)
+  pourDate       DateTime?      @db.Date
+  validUntil     DateTime?      @db.Date
+  notes          String?
+  confirmedAt    DateTime?
+  createdById    String
+  createdBy      User           @relation("RmcOrderCreator", fields: [createdById], references: [id])
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  batches        RmcBatch[]
+  invoices       RmcInvoice[]
+
+  @@unique([organizationId, orderNo])
+  @@index([plantId, status])
+}
+
+/// One truck of concrete: the batch made at the plant and its delivery challan. Dispatching it issues the materials
+/// from the plant's stock (`stockEntryId`).
+model RmcBatch {
+  id             String         @id @default(uuid())
+  organizationId String
+  organization   Organization   @relation(fields: [organizationId], references: [id])
+  /// DC-2026-0001, also the challan number
+  batchNo        String
+  plantId        String
+  plant          Project        @relation(fields: [plantId], references: [id], onDelete: Cascade)
+  orderId        String
+  order          RmcOrder       @relation(fields: [orderId], references: [id])
+  mixDesignId    String
+  mixDesign      MixDesign      @relation(fields: [mixDesignId], references: [id])
+  date           DateTime       @db.Date
+  dispatchedAt   DateTime
+  quantity       Decimal        @db.Decimal(18, 3)
+  truck          String?
+  driver         String?
+  pumped         Boolean        @default(false)
+  slumpMm        Int?
+  status         RmcBatchStatus @default(DISPATCHED)
+  deliveredAt    DateTime?
+  receivedBy     String?
+  note           String?
+  stockEntryId   String?        @unique
+  stockEntry     StockEntry?    @relation(fields: [stockEntryId], references: [id], onDelete: SetNull)
+  invoiceId      String?
+  invoice        RmcInvoice?    @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  createdById    String
+  createdBy      User           @relation("RmcBatchCreator", fields: [createdById], references: [id])
+  createdAt      DateTime       @default(now())
+  lines          RmcBatchLine[]
+  cubeTest       QualityTest?
+
+  @@unique([organizationId, batchNo])
+  @@index([plantId, date])
+  @@index([orderId])
+}
+
+model RmcBatchLine {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  batchId        String
+  batch          RmcBatch     @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  itemId         String
+  item           Item         @relation(fields: [itemId], references: [id])
+  designQty      Decimal      @db.Decimal(18, 3)
+  actualQty      Decimal      @db.Decimal(18, 3)
+
+  @@index([batchId])
+}
+
+/// A GST bill to a customer for delivered challans.
+model RmcInvoice {
+  id             String           @id @default(uuid())
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  /// RINV-2026-0001
+  invoiceNo      String
+  plantId        String
+  plant          Project          @relation(fields: [plantId], references: [id], onDelete: Cascade)
+  clientId       String
+  client         Client           @relation(fields: [clientId], references: [id])
+  orderId        String?
+  order          RmcOrder?        @relation(fields: [orderId], references: [id])
+  date           DateTime         @db.Date
+  status         RmcInvoiceStatus @default(ISSUED)
+  quantity       Decimal          @db.Decimal(18, 3)
+  concrete       Decimal          @db.Decimal(18, 2)
+  pumping        Decimal          @db.Decimal(18, 2)
+  taxable        Decimal          @db.Decimal(18, 2)
+  cgst           Decimal          @db.Decimal(18, 2)
+  sgst           Decimal          @db.Decimal(18, 2)
+  igst           Decimal          @db.Decimal(18, 2)
+  total          Decimal          @db.Decimal(18, 2)
+  cancelledAt    DateTime?
+  cancelNote     String?
+  tallyExportId  String?
+  tallyExport    TallyExport?     @relation(fields: [tallyExportId], references: [id], onDelete: SetNull)
+  createdById    String
+  createdBy      User             @relation("RmcInvoiceCreator", fields: [createdById], references: [id])
+  createdAt      DateTime         @default(now())
+  batches        RmcBatch[]
+  receipts       RmcReceipt[]
+
+  @@unique([organizationId, invoiceNo])
+  @@index([clientId])
+}
+
+/// Money an RMC customer paid, against a bill or on account.
+model RmcReceipt {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  clientId       String
+  client         Client       @relation(fields: [clientId], references: [id])
+  invoiceId      String?
+  invoice        RmcInvoice?  @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  date           DateTime     @db.Date
+  amount         Decimal      @db.Decimal(18, 2)
+  mode           PaymentMode
+  reference      String?
+  tallyExportId  String?
+  tallyExport    TallyExport? @relation(fields: [tallyExportId], references: [id], onDelete: SetNull)
+  createdById    String
+  createdBy      User         @relation("RmcReceiptCreator", fields: [createdById], references: [id])
+  createdAt      DateTime     @default(now())
+
+  @@index([clientId])
 }

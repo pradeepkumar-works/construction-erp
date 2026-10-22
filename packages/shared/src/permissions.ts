@@ -274,6 +274,18 @@ export const canViewGstRegisters = (role: RoleKey) => TALLY_ROLES.includes(role)
 /** The books (v6 item 102): accounts keep them and make vouchers; management approves what accounts makes by hand. */
 export const canKeepBooks = (role: RoleKey) => TALLY_ROLES.includes(role);
 export const canApproveVouchers = (role: RoleKey) => role === 'ADMIN' || role === 'MANAGEMENT';
+/** RMC (v6 item 104): quote and take orders from customers (sales), on the plants the caller sees. */
+export const RMC_SALES_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER', 'ACCOUNTS_MANAGER'];
+export const canSellRmc = (role: RoleKey) => RMC_SALES_ROLES.includes(role);
+/** Run the plant: batches and their delivery challans, which issue the materials from the plant's stock (so the stock keepers). */
+export const RMC_PLANT_ROLES: RoleKey[] = STOCK_KEEPER_ROLES;
+export const canRunRmcPlant = (role: RoleKey) => RMC_PLANT_ROLES.includes(role);
+/** Approve a mix design before it is batched: quality, or management. */
+export const canApproveMixDesign = (role: RoleKey) => role === 'ADMIN' || role === 'MANAGEMENT' || role === 'QA_QC_ENGINEER';
+/** Bill customers for RMC and record what they pay: accounts, management. */
+export const canBillRmc = (role: RoleKey) => TALLY_ROLES.includes(role);
+/** See the RMC pages at all. */
+export const canViewRmc = (role: RoleKey) => canSellRmc(role) || canRunRmcPlant(role) || canBillRmc(role) || canApproveMixDesign(role);
 /** Issue work orders to subcontractors and labour contractors. */
 export const WORK_ORDER_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER', 'PROCUREMENT_MANAGER', 'QUANTITY_SURVEYOR'];
 export const canIssueWorkOrder = (role: RoleKey) => WORK_ORDER_ROLES.includes(role);

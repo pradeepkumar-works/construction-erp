@@ -58,3 +58,4 @@ export * from './payroll';
 export * from './biometric';
 export * from './books';
 export * from './statements';
+export * from './rmc';

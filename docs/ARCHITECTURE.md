@@ -131,6 +131,29 @@ its period, each entry with what it was against and the running balance, and the
 (admin, management, accounts) sees them. The Accounts module (`/modules/accounts`) holds Books, GST registers and the
 Tally export, and leads with cash and bank in the books, vouchers to approve and records not posted.
 
+### RMC plant (v6 item 104)
+
+A ready-mix plant is a project of type `PLANT` (`apps/api/src/rmc`), so its materials are bought, received, counted and
+seen as at any site, and its RMC is seen by those who see the project (`projectWhere` with `type: 'PLANT'`). Roles:
+`canSellRmc` quotes and confirms orders, `canRunRmcPlant` (the stock keepers) dispatches trucks, `canApproveMixDesign`
+approves designs, `canBillRmc` (accounts) bills and records receipts, `canRecordTest` takes cubes; `canViewRmc` is any of
+them.
+
+`MixDesign` (DRAFT, APPROVED, RETIRED) holds a grade's materials per cubic metre. `RmcOrder` is a quote (QUOTED) until
+the customer accepts (CONFIRMED, needs an approved design), then CLOSED or CANCELLED; it is for a client, or an own site
+(`projectId`, never billed). `RmcBatch` is one truck and its challan (`DC-`): dispatching numbers the batch, then issues
+the materials from the plant's store through `StockService.issue` (which refuses what the store lacks, and then the
+batch is removed), at the design times the cubic metres or as weighed (`RmcBatchLine.designQty` / `actualQty`). An order
+takes up to 10% past its quantity (`dispatchable`). A truck is DELIVERED (with who received it) or REJECTED (not billed;
+its materials stay issued). Cubes are a `QualityTest` of kind `CONCRETE_CUBE` at the plant with `specMin` the grade's
+strength, linked by `QualityTest.rmcBatchId`. `RmcInvoice` (`RINV-`) bills an order's delivered unbilled challans:
+concrete at the order's rate, pumping on the trucks pumped, GST 18% split by `isInterState` (company's Tally state code
+against the client's GSTIN); cancelling one (not sent to Tally, nothing received) frees its challans. `RmcReceipt` is
+money received, against a bill (up to its due) or on account. The posting service books a bill as `RMC_SALE` (Dr the
+client, Cr Sales of Ready-Mix Concrete with the plant as cost centre, Cr output GST) and a receipt as `RMC_RECEIPT`, so
+both reach the books and the Tally export. The figures are pure functions in `rmc-rules.ts`, tested in
+`src/scripts/rmc-test.ts`.
+
 ### Financial statements (v6 item 103)
 
 The statements read the books' approved vouchers (`apps/api/src/statements`). Each account lands on a Schedule III
