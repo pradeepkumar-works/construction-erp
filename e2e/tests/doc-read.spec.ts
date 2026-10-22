@@ -101,7 +101,7 @@ test('a challan photo fills the GRN against the order', async ({ page }) => {
 
 test("a drawing's title block fills the register entry", async ({ page }) => {
   await signIn(page, 'pm@demo.com');
-  await page.getByRole('link', { name: 'Documents' }).click();
+  await page.getByRole('link', { name: 'Documents', exact: true }).click();
   await page.getByRole('button', { name: 'New document' }).click();
   const modal = formPanel(page, 'New drawing or document');
   const chooser = page.waitForEvent('filechooser');
