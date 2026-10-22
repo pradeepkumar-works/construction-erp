@@ -155,6 +155,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/tenders-test.js
+      - name: Subcontract quotes compare, rank and award by the rules
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/comparison-test.js
       - name: Early warnings forecast right, show each role its own kinds and backtest on the demo history
         if: matrix.suite == 'flows'
         working-directory: apps/api

@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import type { Paginated, SearchHitDto, SearchKind, SearchResultDto } from '@erp/shared';
-import { SEARCH_MIN_LENGTH, VENDOR_KIND_LABELS, canViewPaymentRequests, canRequestFunds, canEditContract, canEditVendors, canSeeVendorBank, canViewContract, canViewTenders } from '@erp/shared';
+import { SEARCH_MIN_LENGTH, VENDOR_KIND_LABELS, canViewPaymentRequests, canRequestFunds, canEditContract, canEditVendors, canSeeVendorBank, canViewContract, canViewTenders, canRunSubcontractEnquiries } from '@erp/shared';
 import type { RequestUser } from '../common/current-user';
 import { MaterialRequestsService } from '../material-requests/material-requests.service';
 import { PurchaseOrdersService } from '../purchasing/purchase-orders.service';
@@ -20,6 +20,7 @@ import { StockService } from '../stock/stock.service';
 import { StaffService } from '../staff/staff.service';
 import { PaymentRequestsService } from '../payables/payment-requests.service';
 import { TendersService } from '../tenders/tenders.service';
+import { ScEnquiriesService } from '../subcontracts/sc-enquiries.service';
 
 /** Hits per kind: enough to spot the one meant, few enough to keep the palette short. */
 const PER_KIND = 4;
@@ -57,6 +58,7 @@ export class SearchService {
     staff: StaffService,
     paymentRequests: PaymentRequestsService,
     tenders: TendersService,
+    scEnquiries: ScEnquiriesService,
   ) {
     const page = (q: string) => ({ q, page: 1, pageSize: PER_KIND });
     const sources: Source<any>[] = [
@@ -64,6 +66,15 @@ export class SearchService {
       { kind: 'purchase_order', list: (u, q) => purchaseOrders.list(u, page(q) as never), hit: (r) => ({ id: r.id, title: r.poNo, subtitle: join(r.vendorName, r.projectName), href: `/purchase-orders/${r.id}`, status: r.status }) },
       { kind: 'vendor_bill', list: (u, q) => vendorBills.list(u, page(q) as never), hit: (r) => ({ id: r.id, title: r.billNo, subtitle: join(r.vendorName, r.invoiceNo ? `invoice ${r.invoiceNo}` : null, r.projectName), href: `/vendor-bills/${r.id}`, status: r.status }) },
       { kind: 'work_order', list: (u, q) => workOrders.list(u, page(q) as never), hit: (r) => ({ id: r.id, title: r.woNo, subtitle: join(r.vendorName, r.title), href: `/work-orders/${r.id}`, status: r.status }) },
+      {
+        kind: 'subcontract_enquiry',
+        allowed: (u) => canRunSubcontractEnquiries(u.roleKey),
+        list: async (u, q) => {
+          const found = (await scEnquiries.list(u, { q, status: 'all' })).items;
+          return { items: found.slice(0, PER_KIND), total: found.length, page: 1, pageSize: PER_KIND };
+        },
+        hit: (r) => ({ id: r.id, title: r.enquiryNo, subtitle: join(r.title, r.projectName), href: `/subcontract-enquiries/${r.id}`, status: null }),
+      },
       { kind: 'subcontract_bill', list: (u, q) => subcontractBills.list(u, page(q) as never), hit: (r) => ({ id: r.id, title: r.label, subtitle: join(r.vendorName, r.projectName), href: `/subcontract-bills/${r.id}`, status: r.status }) },
       {
         kind: 'payment_request',

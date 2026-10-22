@@ -4,6 +4,7 @@
  */
 import type React from 'react';
 import {
+  FileSearchOutlined,
   ExperimentOutlined,
   TrophyOutlined,
   OrderedListOutlined,
@@ -75,6 +76,7 @@ import {
   canKeepBooks,
   canManageMachineLoans,
   canViewTenders,
+  canRunSubcontractEnquiries,
   canManageBilling,
   canManageCompanyData,
   canManageUsers,
@@ -158,6 +160,7 @@ export const NAV_DESCRIPTIONS: Record<string, string> = {
   '/purchase-orders': 'Quotations, comparisons, orders and what is still to come.',
   '/vendor-bills': 'Supplier bills checked against orders and receipts.',
   '/work-orders': 'Orders to subcontractors and petty contractors.',
+  '/subcontract-enquiries': 'Work sent to subcontractors to quote, their rates compared item by item, and the chosen quote made a work order.',
   '/subcontract-bills': "Subcontractors' running bills with recoveries.",
   '/payables': 'What we owe, payment requests, payments and debit notes.',
   '/vendors': 'Suppliers and subcontractors, with GST, MSME and bank details.',
@@ -271,6 +274,7 @@ export function navFor(user: AuthUser): NavSection[] {
         ...when(canViewPurchaseOrders(role), { href: '/purchase-orders', label: 'Purchase orders', icon: ContainerOutlined, keywords: 'po' }),
         ...when(canViewVendorBills(role), { href: '/vendor-bills', label: 'Vendor bills', icon: ReconciliationOutlined, keywords: 'supplier invoice' }),
         ...when(canViewWorkOrders(role), { href: '/work-orders', label: 'Work orders', icon: SolutionOutlined, keywords: 'wo subcontract' }),
+        ...when(canRunSubcontractEnquiries(role), { href: '/subcontract-enquiries', label: 'Subcontract enquiries', icon: FileSearchOutlined, keywords: 'quote quotation comparative statement cs rfq l1 subcontractor rates award tender' }),
         ...when(canPrepareSubcontractBill(role) || approves('SUBCONTRACT_BILL'), { href: '/subcontract-bills', label: 'Subcontractor bills', icon: ProfileOutlined, keywords: 'petty contractor' }),
         ...when(canViewPayables(role), { href: '/payables', label: 'Payables', icon: PayCircleOutlined, keywords: 'payments due msme' }),
         ...when(canEditVendors(role) || canSeeVendorBank(role), { href: '/vendors', label: 'Vendors', icon: ShopOutlined, keywords: 'suppliers' }),

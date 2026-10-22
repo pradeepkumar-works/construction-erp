@@ -292,6 +292,8 @@ import type {
   SorItemListDto,
   TenderDetailDto,
   TenderListDto,
+  ScEnquiryDetailDto,
+  ScEnquiryListDto,
   EquipmentLoanDetailDto,
   EquipmentLoanStatus,
   LoanPreviewDto,
@@ -731,6 +733,30 @@ export function useTenderAction<T = TenderDetailDto>() {
       (method === 'delete' ? await api.delete<T>(path) : await api[method]<T>(path, body ?? {})).data,
     onSuccess: () => {
       for (const key of [['tenders'], ['compliance'], ['projects']]) void qc.invalidateQueries({ queryKey: key });
+    },
+  });
+}
+
+/* ---------- subcontract enquiries (v6 item 111) ---------- */
+
+/** Enquiries to subcontractors: open ones by default (soonest closing first), with the year's figures. */
+export const useScEnquiries = (filters?: { status?: string; projectId?: string; q?: string }, enabled = true) =>
+  useQuery({
+    queryKey: ['sc-enquiries', 'list', clean(filters)],
+    queryFn: async () => (await api.get<ScEnquiryListDto>('/subcontract-enquiries', { params: clean(filters) })).data,
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+export const useScEnquiry = (id?: string) =>
+  useQuery({ queryKey: ['sc-enquiries', 'one', id], queryFn: async () => (await api.get<ScEnquiryDetailDto>(`/subcontract-enquiries/${id}`)).data, enabled: !!id });
+/** Any change to an enquiry or its quotes; an award makes a work order, so those refresh too. */
+export function useScEnquiryAction<T = ScEnquiryDetailDto>() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ method = 'post', path, body }: { method?: 'post' | 'patch' | 'put' | 'delete'; path: string; body?: unknown }) =>
+      (method === 'delete' ? await api.delete<T>(path) : await api[method]<T>(path, body ?? {})).data,
+    onSuccess: () => {
+      for (const key of [['sc-enquiries'], ['work-orders']]) void qc.invalidateQueries({ queryKey: key });
     },
   });
 }
@@ -1742,15 +1768,18 @@ export const useClientsPage = (filters: ClientFilters) =>
 /** Every active client (one large page) for pickers. */
 export interface VendorFilters extends PageParams {
   kind?: VendorKind;
+  /** Any of several kinds, comma-separated */
+  kinds?: string;
   msme?: MsmeCategory;
   includeInactive?: boolean;
 }
 
-export const useVendorsPage = (filters: VendorFilters) =>
+export const useVendorsPage = (filters: VendorFilters, enabled = true) =>
   useQuery({
     queryKey: ['vendors', 'page', clean(filters)],
     queryFn: async () => (await api.get<Paginated<VendorDto>>('/vendors', { params: clean(filters) })).data,
     placeholderData: keepPreviousData,
+    enabled,
   });
 
 export const useUnlistedVendors = (enabled = true) =>

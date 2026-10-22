@@ -430,5 +430,17 @@ DROP POLICY IF EXISTS tenant_isolation ON "TenderItemLine";
 ALTER TABLE "TenderBid" NO FORCE ROW LEVEL SECURITY;
 ALTER TABLE "TenderBid" DISABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS tenant_isolation ON "TenderBid";
+ALTER TABLE "SubcontractEnquiry" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "SubcontractEnquiry" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "SubcontractEnquiry";
+ALTER TABLE "SubcontractEnquiryItem" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "SubcontractEnquiryItem" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "SubcontractEnquiryItem";
+ALTER TABLE "SubcontractQuote" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "SubcontractQuote" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "SubcontractQuote";
+ALTER TABLE "SubcontractQuoteLine" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "SubcontractQuoteLine" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "SubcontractQuoteLine";
 
 DROP FUNCTION IF EXISTS app_current_org();

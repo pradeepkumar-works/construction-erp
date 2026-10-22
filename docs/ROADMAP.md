@@ -543,8 +543,13 @@ Migrations stay additive. Design notes for each item are in the project's `roadm
     rates with the margin shown, ranks the bids read out at opening, and makes a won tender a project with its BOQ, norms,
     resources, budget and guarantees. Billing → Schedule of rates keeps the SOR books, imported from Excel. Not built:
     e-tender portal downloads, corrigenda as versions, a bid's own documents checklist, and tenders on the phone.
-111. **Subcontract enquiries and comparison** (M). Quotes from several subcontractors on chosen BOQ items, a comparative
-    statement by item and total, and the chosen quote becoming the work order.
+111. ~~**Subcontract enquiries and comparison** (M). Quotes from several subcontractors on chosen BOQ items, a comparative
+    statement by item and total, and the chosen quote becoming the work order.~~
+    Done: Purchases → Subcontract enquiries sends chosen BOQ items (or the enquiry's own) to several subcontractors,
+    takes each quote as it comes, sets the rates side by side with the lowest of each item marked, ranks complete quotes
+    L1, L2… against the client's rates, and awards one as a draft work order (a reason needed when it is not L1). Not
+    built: sending the enquiry by email or WhatsApp from the app, subcontractors quoting through the supplier portal, and
+    enquiries on the phone.
 112. **Meetings and action items** (M). Attendees, minutes, decisions and actions (owner, due date, linked RFI, NCR or
     variation), the MOM as a PDF by email or WhatsApp, open actions in My work.
 113. **Material approvals** (M). The approved makes list, material and sample approval requests with review outcomes and

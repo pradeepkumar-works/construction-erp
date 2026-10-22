@@ -182,6 +182,7 @@ async function main() {
     await seedFundRequests(org.id);
     await seedMachineLoans(org.id);
     await seedTenders(org.id);
+    await seedScEnquiries(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
   }
@@ -378,6 +379,7 @@ async function main() {
   await seedFundRequests(org.id);
   await seedMachineLoans(org.id);
   await seedTenders(org.id);
+  await seedScEnquiries(org.id);
 
   console.log('Seed complete. Login with any of these (password: password123):');
   for (const u of USERS) console.log(`  ${u.email.padEnd(24)} ${u.role}`);
@@ -4040,5 +4042,92 @@ async function seedTenders(organizationId: string) {
       });
     }
     await prisma.auditLog.create({ data: { organizationId, entityType: 'TENDER', entityId: tender.id, action: 'CREATED', actorId: qs.id, createdAt: day(t.submitBy - 25) } });
+  }
+}
+
+/**
+ * Subcontract enquiries demo (v6 item 111). The road project's GSB and WMM went out to two subcontractors a month ago and
+ * the lower quote became its work order; the hospital's brickwork and plaster has two quotes in (L1 and L2 a few lakh
+ * apart) and one awaited; the water scheme's distribution lines have one partial quote. Only when the organisation has
+ * no enquiry yet.
+ */
+async function seedScEnquiries(organizationId: string) {
+  if (await prisma.subcontractEnquiry.count({ where: { organizationId } })) return;
+  const pm = (await prisma.user.findFirst({ where: { organizationId, email: 'pm@demo.com' }, select: { id: true } })) ?? (await prisma.user.findFirst({ where: { organizationId, email: 'admin@demo.com' }, select: { id: true } }));
+  if (!pm) return;
+  const vendors = new Map((await prisma.vendor.findMany({ where: { organizationId, kinds: { has: 'SUBCONTRACTOR' } }, select: { id: true, name: true } })).map((v) => [v.name, v.id]));
+  const year = new Date().getUTCFullYear();
+  type Own = { description: string; unit: string; qty: number };
+  type Quote = { vendor: string; received?: number; gst?: number; validFor?: number; rates: (number | null)[]; note?: string };
+  const enquiries: { code: string; title: string; scope: string; created: number; closes: number; boq: [string, number | null][]; own?: Own[]; quotes: Quote[]; award?: { vendor: string; on: number } }[] = [
+    {
+      code: '', title: 'GSB and WMM, Km 10 to 22', created: -32, closes: -24,
+      scope: 'Rates include labour, machinery and transport. Bitumen, cement and diesel issued from our store are recovered at the store rate.',
+      boq: [['3.01', null], ['3.02', null]], own: [{ description: 'Shoulder dressing and side slopes, both sides', unit: 'Km', qty: 12 }],
+      quotes: [
+        { vendor: 'Sri Jagannath Constructions', received: -25, rates: [1390, 1780, 18500] },
+        { vendor: 'Kalinga Builders', received: -24, rates: [1445, 1810, 21000], note: 'Can start only after the monsoon' },
+      ],
+      award: { vendor: 'Sri Jagannath Constructions', on: -20 },
+    },
+    {
+      code: 'BL-2026-02', title: 'Brickwork and plaster, first floor and above', created: -12, closes: 3,
+      scope: 'Rates include all materials, labour, scaffolding and curing. Water and power at one point per floor from us.',
+      boq: [['4.01', 420], ['5.01', 6200]], own: [{ description: 'Scaffolding for masonry and plaster, hire and erection', unit: 'LS', qty: 1 }],
+      quotes: [
+        { vendor: 'Kalinga Builders', received: -6, rates: [5380, 186, 42000], validFor: 30 },
+        { vendor: 'Sri Jagannath Constructions', received: -4, rates: [5290, 194, 38000], validFor: 45, note: 'Bricks from their own kiln at Athagarh' },
+        { vendor: 'Utkal Shuttering Works', rates: [] },
+      ],
+    },
+    {
+      code: 'WS-2026-03', title: 'HDPE distribution lines and house connections, zone 2', created: -5, closes: 6,
+      scope: 'Pipes and fittings issued free from our store; rates for laying, jointing, testing and trench restoration.',
+      boq: [['5.01', 18000], ['6.01', 2100]],
+      quotes: [
+        { vendor: 'Sri Jagannath Constructions', received: -1, gst: 12, rates: [96, null], note: 'House connections not quoted: no plumbers free till March' },
+        { vendor: 'Kalinga Builders', rates: [] },
+      ],
+    },
+  ];
+  for (const [n, e] of enquiries.entries()) {
+    const project = e.code
+      ? await prisma.project.findFirst({ where: { organizationId, code: e.code }, include: { boqItems: true } })
+      : await prisma.project.findFirst({ where: { organizationId, type: 'ROAD' }, include: { boqItems: true }, orderBy: { createdAt: 'asc' } });
+    if (!project) continue;
+    const rows = [
+      ...e.boq.map(([no, qty]) => {
+        const b = project.boqItems.find((x) => x.itemNo === no);
+        return b ? { boqItemId: b.id, description: b.description, unit: b.unit, quantity: qty === null ? (b.revisedQty ?? b.originalQty) : D(qty) } : null;
+      }),
+      ...(e.own ?? []).map((o) => ({ boqItemId: null, description: o.description, unit: o.unit, quantity: D(o.qty) })),
+    ];
+    if (rows.some((r) => !r) || e.quotes.some((q) => !vendors.has(q.vendor))) continue;
+    const wo = e.award ? await prisma.workOrder.findFirst({ where: { organizationId, projectId: project.id, title: e.title } }) : null;
+    const enquiry = await prisma.subcontractEnquiry.create({
+      data: {
+        organizationId, projectId: project.id, enquiryNo: `SCE-${year}-${String(n + 1).padStart(4, '0')}`, title: e.title, scope: e.scope, closesOn: day(e.closes), createdById: pm.id, createdAt: day(e.created),
+        items: { create: rows.map((r, i) => ({ ...r!, organizationId, sortOrder: i })) },
+      },
+      include: { items: { orderBy: { sortOrder: 'asc' } } },
+    });
+    const audit: { action: string; note: string | null; at: number }[] = [{ action: 'CREATED', note: null, at: e.created }];
+    let awarded: string | null = null;
+    for (const q of e.quotes) {
+      const quote = await prisma.subcontractQuote.create({
+        data: {
+          organizationId, enquiryId: enquiry.id, vendorId: vendors.get(q.vendor)!, receivedOn: q.received !== undefined ? day(q.received) : null, gstRate: D(q.gst ?? 18),
+          validUntil: q.received !== undefined && q.validFor ? day(q.received + q.validFor) : null, note: q.note ?? null, createdAt: day(e.created),
+          lines: { create: q.rates.flatMap((rate, i) => (rate === null ? [] : [{ organizationId, itemId: enquiry.items[i].id, rate: D(rate) }])) },
+        },
+      });
+      if (q.received !== undefined) audit.push({ action: 'QUOTE_ENTERED', note: q.vendor, at: q.received });
+      if (e.award?.vendor === q.vendor) awarded = quote.id;
+    }
+    if (e.award && awarded) {
+      await prisma.subcontractEnquiry.update({ where: { id: enquiry.id }, data: { status: 'AWARDED', awardedQuoteId: awarded, workOrderId: wo?.id ?? null, decidedAt: day(e.award.on) } });
+      audit.push({ action: 'AWARDED', note: `${e.award.vendor}${wo ? `, ${wo.woNo}` : ''}`, at: e.award.on });
+    }
+    await prisma.auditLog.createMany({ data: audit.map((a) => ({ organizationId, entityType: 'SC_ENQUIRY', entityId: enquiry.id, action: a.action, note: a.note, actorId: pm.id, createdAt: day(a.at) })) });
   }
 }
