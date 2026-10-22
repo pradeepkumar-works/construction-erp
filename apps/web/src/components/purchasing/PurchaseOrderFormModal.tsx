@@ -4,11 +4,12 @@ import React, { useEffect, useMemo } from 'react';
 import { Alert, DatePicker, Form, Input, InputNumber, Select, Table, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { AttachmentDto, PurchaseOrderDto } from '@erp/shared';
+import type { AttachmentDto, MakeWarningDto, PurchaseOrderDto } from '@erp/shared';
 import { GST_RATES, MSME_CATEGORY_LABELS, lastRateKey } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
-import { useLastRates, useProjects } from '@/lib/queries';
+import { useLastRates, useMakeCheck, useProjects } from '@/lib/queries';
+import { useDebounced } from '@/lib/debounce';
 import { VendorSelect, useVendor } from '@/components/common/SearchSelect';
 import { formatINR, toNumber } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
@@ -16,7 +17,7 @@ import { UnitInput } from '@/components/common/UnitInput';
 import { FormGrid, FormSection, FormShell } from '@/components/form/FormShell';
 import { LineTable } from '@/components/form/LineTable';
 import { MoneyInput, QuantityInput } from '@/components/form/inputs';
-import { themeFontSize } from '@/lib/theme';
+import { themeColor, themeFontSize } from '@/lib/theme';
 import { recordPage } from '@/components/approvals/queue';
 import { LastRates } from './LastRates';
 
@@ -24,6 +25,7 @@ export interface PoLineValue {
   materialRequestItemId?: string | null;
   itemName?: string;
   specification?: string | null;
+  make?: string | null;
   unit?: string;
   quantity?: number | null;
   rate?: number | null;
@@ -83,6 +85,12 @@ export function PurchaseOrderFormModal({
   const last = useLastRates((lines ?? []).map((l) => ({ itemName: l?.itemName ?? '', unit: l?.unit ?? '' })), open, order?.id);
   const freight = Form.useWatch('freight', form);
   const vendorId = Form.useWatch('vendorId', form);
+  const projectId = Form.useWatch('projectId', form) as string | undefined;
+  // Lines whose material has approved makes on the project but name another make, or none (v6 item 113).
+  const makeKey = useDebounced(JSON.stringify((lines ?? []).map((l) => ({ itemName: l?.itemName ?? '', make: l?.make ?? null }))), 400);
+  const makeLines = useMemo(() => JSON.parse(makeKey) as { itemName: string; make: string | null }[], [makeKey]);
+  const makeCheck = useMakeCheck(open ? projectId : undefined, makeLines);
+  const makeWarnings = makeCheck.data ?? [];
   const vendor = useVendor(open ? vendorId : undefined);
   const msme = vendor?.msmeCategory === 'MICRO' || vendor?.msmeCategory === 'SMALL';
   const fromRequest = order ? order.requestNo : start?.requestNo;
@@ -106,6 +114,7 @@ export function PurchaseOrderFormModal({
           materialRequestItemId: l.materialRequestItemId,
           itemName: l.itemName,
           specification: l.specification,
+          make: l.make,
           unit: l.unit,
           quantity: toNumber(l.quantity),
           rate: toNumber(l.rate),
@@ -145,8 +154,8 @@ export function PurchaseOrderFormModal({
         submit,
         lines: v.lines.map((l) =>
           l.materialRequestItemId
-            ? { materialRequestItemId: l.materialRequestItemId, quantity: String(l.quantity), rate: String(l.rate), gstRate: String(l.gstRate ?? 0) }
-            : { itemName: l.itemName?.trim(), specification: l.specification?.trim() || null, unit: l.unit?.trim(), quantity: String(l.quantity), rate: String(l.rate), gstRate: String(l.gstRate ?? 0) },
+            ? { materialRequestItemId: l.materialRequestItemId, make: l.make?.trim() || null, quantity: String(l.quantity), rate: String(l.rate), gstRate: String(l.gstRate ?? 0) }
+            : { itemName: l.itemName?.trim(), specification: l.specification?.trim() || null, make: l.make?.trim() || null, unit: l.unit?.trim(), quantity: String(l.quantity), rate: String(l.rate), gstRate: String(l.gstRate ?? 0) },
         ),
       };
       if (order) return (await api.patch<PurchaseOrderDto>(`/purchase-orders/${order.id}`, body)).data;
@@ -224,6 +233,21 @@ export function PurchaseOrderFormModal({
         </FormSection>
 
         <FormSection title="Items">
+          {makeWarnings.length ? (
+            <Alert
+              type="warning"
+              showIcon
+              style={{ marginBottom: 12 }}
+              title={`${makeWarnings.length === 1 ? '1 line is' : `${makeWarnings.length} lines are`} not in a make approved for this project`}
+              description={
+                <ul style={{ margin: 0, paddingLeft: 18 }}>
+                  {makeWarnings.map((w) => (
+                    <li key={w.index}>{makeWarningText(w)}</li>
+                  ))}
+                </ul>
+              }
+            />
+          ) : null}
           <LineTable
             name="lines"
             label="Item"
@@ -250,6 +274,26 @@ export function PurchaseOrderFormModal({
                       </Form.Item>
                     </div>
                   ),
+              },
+              {
+                title: 'Make',
+                key: 'make',
+                width: 150,
+                render: (f) => {
+                  const warn = makeWarnings.find((w) => w.index === f.name);
+                  return (
+                    <>
+                      <Form.Item name={[f.name, 'make']} noStyle>
+                        <Input placeholder="Make" aria-label={`Make of line ${f.name + 1}`} maxLength={120} status={warn ? 'warning' : undefined} translate="no" />
+                      </Form.Item>
+                      {warn ? (
+                        <Typography.Text style={{ display: 'block', fontSize: themeFontSize('fontSizeSM'), color: themeColor('colorWarningText') }}>
+                          {warn.reason === 'NO_MAKE' ? 'Name an approved make' : 'Not approved'}
+                        </Typography.Text>
+                      ) : null}
+                    </>
+                  );
+                },
               },
               {
                 title: 'Unit',
@@ -303,7 +347,7 @@ export function PurchaseOrderFormModal({
             ]}
             footer={() => (
               <Table.Summary.Row>
-                <Table.Summary.Cell index={0} colSpan={6} align="right">
+                <Table.Summary.Cell index={0} colSpan={7} align="right">
                   <Typography.Text type="secondary">Items before GST</Typography.Text>
                 </Table.Summary.Cell>
                 <Table.Summary.Cell index={1} align="right">
@@ -352,4 +396,12 @@ export function PurchaseOrderFormModal({
       </Form>
     </FormShell>
   );
+}
+
+/** One flagged line in words: "Line 2, TMT Fe500D 12mm: Kamdhenu is not approved; approved are Tata Tiscon, SAIL". */
+export function makeWarningText(w: MakeWarningDto): string {
+  const approved = `approved: ${w.approved.join(', ')}`;
+  const head = `Line ${w.index + 1}, ${w.itemName}`;
+  if (w.reason === 'NO_MAKE') return `${head}: no make named (${approved})`;
+  return `${head}: ${w.make} is not approved${w.pendingMarNo ? `, ${w.pendingMarNo} is with the reviewer` : ''} (${approved})`;
 }

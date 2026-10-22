@@ -66,6 +66,7 @@ interface LineData {
   materialRequestItemId: string | null;
   itemName: string;
   specification: string | null;
+  make: string | null;
   unit: string;
   quantity: Prisma.Decimal;
   rate: Prisma.Decimal;
@@ -99,6 +100,7 @@ export class PurchaseOrdersService {
       materialRequestItemId: l.materialRequestItemId,
       itemName: l.itemName,
       specification: l.specification,
+      make: l.make,
       unit: l.unit,
       quantity: dec(l.quantity)!,
       rate: money(l.rate)!,
@@ -462,7 +464,7 @@ export class PurchaseOrdersService {
       }
       const rate = parseRate(l.rate, itemName);
       const gstRate = parseGstRate(l.gstRate, itemName);
-      return { materialRequestItemId: item?.id ?? null, itemName, specification: item?.specification ?? (l.specification || null), unit, quantity, rate, gstRate, ...lineAmounts(quantity, rate, gstRate), sortOrder: i };
+      return { materialRequestItemId: item?.id ?? null, itemName, specification: item?.specification ?? (l.specification || null), make: l.make?.trim() || null, unit, quantity, rate, gstRate, ...lineAmounts(quantity, rate, gstRate), sortOrder: i };
     });
   }
 

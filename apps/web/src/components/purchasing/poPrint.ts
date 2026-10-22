@@ -16,7 +16,7 @@ const inr = (v: string) => esc(formatINR(v, true).replace(RUPEE, ''));
 export function buildPoPrintHtml(o: PurchaseOrderDto, orgName: string): string {
   const rows = o.lines
     .map(
-      (l, n) => `<tr><td class="c">${n + 1}</td><td>${esc(l.itemName)}${l.specification ? `<div class="muted">${esc(l.specification)}</div>` : ''}</td>
+      (l, n) => `<tr><td class="c">${n + 1}</td><td>${esc(l.itemName)}${l.make || l.specification ? `<div class="muted">${esc([l.make ? `Make: ${l.make}` : null, l.specification].filter(Boolean).join(' · '))}</div>` : ''}</td>
       <td class="c">${esc(l.unit)}</td><td class="num">${esc(formatQty(l.quantity))}</td><td class="num">${inr(l.rate)}</td><td class="num">${inr(l.amount)}</td>
       <td class="num">${esc(l.gstRate)}%</td><td class="num">${inr(l.gstAmount)}</td></tr>`,
     )

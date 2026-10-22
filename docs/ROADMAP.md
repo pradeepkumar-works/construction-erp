@@ -557,8 +557,15 @@ Migrations stay additive. Design notes for each item are in the project's `roadm
     address, our owners told), prints them (Save as PDF), shares them as a WhatsApp message, shows what earlier meetings
     left open, lists every action by due date and puts each owner's open ones in My work. Not built: the minutes as a PDF
     attachment, meetings on the phone (owners get the push and see the card on the phone's Home), and recurring meetings.
-113. **Material approvals** (M). The approved makes list, material and sample approval requests with review outcomes and
-    revisions, days outstanding, and a warning on a PO for a make not approved.
+113. ~~**Material approvals** (M). The approved makes list, material and sample approval requests with review outcomes and
+    revisions, days outstanding, and a warning on a PO for a make not approved.~~
+    Done: Materials and plant → Material approvals raises a request for a make or a sample (material, item, BOQ item, make,
+    model, supplier, why this make, files) to the client's engineer or the consultant, submits it as R0, records each
+    outcome (approved, approved as noted, revise and resubmit, rejected) with the comments and reference, resubmits it as
+    R1, R2… perhaps in another make, or withdraws it, and counts what waits past its reply date. Each project keeps its
+    approved makes (from the contract, or approved on request); a purchase order line now names its make, and a line for a
+    listed material in another make, or none, is flagged on the order form and the order. Not built: the client or
+    consultant answering in the client portal, a My work card, and requests on the phone.
 114. **Schedule links and critical path** (M). Finish-to-start and other links with lag, the critical path, a three-week
     look-ahead, Primavera XER and MS Project XML import and export.
 115. **Earned value** (M). Planned value from the baseline and BOQ, earned value from measured or certified work, actual

@@ -79,6 +79,7 @@ import {
   canViewTenders,
   canRunSubcontractEnquiries,
   canRecordMeetings,
+  canRaiseMaterialApprovals,
   canManageBilling,
   canManageCompanyData,
   canManageUsers,
@@ -157,6 +158,7 @@ export const NAV_DESCRIPTIONS: Record<string, string> = {
   '/risks': 'Delays and risks, extensions of time and liquidated damages.',
   '/safety': 'Incidents, permits to work, toolbox talks and PPE.',
   '/material-requests': 'What the sites need, approved and ordered or taken from stock.',
+  '/material-approvals': 'Makes and samples sent to the client or consultant for approval, and the makes each project may buy.',
   '/stock': 'Stock at each site: receipts, issues, transfers and counts.',
   '/stores': 'The company stores and yards: what each holds, its value and age, and what is on the road to the sites.',
   '/machinery': 'Machine logs, fuel, use, job cards, papers and drivers.',
@@ -264,6 +266,7 @@ export function navFor(user: AuthUser): NavSection[] {
       icon: InboxOutlined,
       items: [
         ...when(onSite || canPurchase(role), { href: '/material-requests', label: 'Material requests', icon: ShoppingCartOutlined, keywords: 'indent mr' }),
+        ...when(canRaiseMaterialApprovals(role), { href: '/material-approvals', label: 'Material approvals', icon: SafetyCertificateOutlined, keywords: 'mar make approval sample submittal approved makes brand list' }),
         ...when(onSite || canPurchase(role) || canViewCost(role), { href: '/stock', label: 'Stock', icon: InboxOutlined, keywords: 'inventory grn store issue' }),
         ...when(canSeeStores(role), { href: '/stores', label: 'Central stores', icon: HddOutlined, keywords: 'yard warehouse godown central store transfer' }),
         ...when(onSite || canPurchase(role), { href: '/machinery', label: 'Machinery', icon: ToolOutlined, keywords: 'plant equipment fuel hours' }),

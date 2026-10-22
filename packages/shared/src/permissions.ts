@@ -329,6 +329,14 @@ export const canEditMeeting = (user: SubmissionActor, createdById: string) => ca
 /** An action is closed, dropped, reopened or moved by its owner, whoever recorded its meeting, or a manager. */
 export const canUpdateMeetingAction = (user: SubmissionActor, a: { ownerUserId: string | null; meetingCreatedById: string }) =>
   !isGuest(user.roleKey) && (a.ownerUserId === user.id || a.meetingCreatedById === user.id || canManageMeetings(user.roleKey));
+/** Material approvals (v6 item 113): the site, quality, purchase and project roles raise, submit and record requests. */
+export const MATERIAL_APPROVAL_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER', 'TEAM_LEADER', 'SITE_ENGINEER', 'QA_QC_ENGINEER', 'QUANTITY_SURVEYOR', 'PROCUREMENT_MANAGER'];
+export const canRaiseMaterialApprovals = (role: RoleKey) => MATERIAL_APPROVAL_ROLES.includes(role);
+/** Anyone on a project but guests reads its requests and approved makes (stores and buyers check makes against them). */
+export const canViewMaterialApprovals = (role: RoleKey) => !isGuest(role);
+/** Keep a project's approved makes from the contract: project managers, quality and the managers over them. */
+export const APPROVED_MAKE_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER', 'QA_QC_ENGINEER'];
+export const canManageApprovedMakes = (role: RoleKey) => APPROVED_MAKE_ROLES.includes(role);
 /** Prepare subcontractor bills and see the margin per BOQ item: the billing roles. */
 export const canPrepareSubcontractBill = (role: RoleKey) => BILLING_ROLES.includes(role);
 /** Add and edit vendors: admin, management, project managers, procurement, accounts and stores. */

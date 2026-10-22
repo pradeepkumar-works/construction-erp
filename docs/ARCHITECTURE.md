@@ -1749,6 +1749,35 @@ export; the client portal and the phone app show the amount.
   minutes, actions, who came, issue, print and WhatsApp). The phone shows the My work card and opens the notice; it has no
   meetings screen yet.
 
+## Material approvals (v6 item 113)
+
+- **Tables.** `MaterialApproval` (number from `nextDocNo('MAR')`, project, kind MATERIAL / SAMPLE, material, optional item
+  of the item master, BOQ item and supplier, make, model, where it is used, why this make, to whom, reply-by date, status
+  DRAFT / UNDER_REVIEW / APPROVED / APPROVED_AS_NOTED / REVISE_RESUBMIT / REJECTED / WITHDRAWN and the current revision),
+  `MaterialApprovalRevision` (R0, R1…: submitted on and by, covering note, then the outcome, day reviewed, reviewer, comments
+  and reference; a CHECK keeps the outcome and its day set together) and `ApprovedMake` (project, material, optional item,
+  make, model, source CONTRACT or APPROVAL; an APPROVAL row belongs to its request, which a CHECK enforces). Files hang on
+  `Attachment.materialApprovalId`. `PurchaseOrderLine.make` is the make ordered. All three tables have `tenant_isolation`.
+- **Rules.** Pure functions in `apps/api/src/material-approvals/material-approval-rules.ts`, tested in
+  `src/scripts/material-approvals-test.ts` (CI runs it): matching a line's item to a listed material (`sameMaterial`: the
+  shorter name's words all in the longer, one-word names only exactly) and its make (`sameMake`: whole words, "Tata" is
+  "Tata Tiscon"), the order line check (`makeWarnings`: only materials with listed makes are checked; NO_MAKE or
+  NOT_APPROVED, naming a request for that make still under review), what an outcome and a (re)submission need, and the
+  days a request waits.
+- **Life.** A request is a draft until submitted (R0); while under review only its reply-by date changes. An outcome from
+  the reviewer's letter or mail is recorded against the current revision; approved or approved as noted lists the make on
+  the project as source APPROVAL (with the note). Revise-and-resubmit and rejected requests are back with us: resubmitting
+  opens the next revision and may change the make. Requests in play can be withdrawn (with why, kept in the audit trail);
+  only drafts are deleted. A make from the contract is added and removed by hand; one approved on request stays with it.
+  `POST /material-approvals/make-check` checks order lines; the PO form (as you type) and the PO record show its warnings,
+  and the PO print shows each line's make. Audited as `MATERIAL_APPROVAL` and `APPROVED_MAKE`.
+- **Who.** `canViewMaterialApprovals` (everyone but guests) reads them on their projects; `canRaiseMaterialApprovals`
+  (managers, engineers, team leaders, QA/QC, QS, procurement) raises, submits and records outcomes;
+  `canManageApprovedMakes` (admin, management, project managers, QA/QC) keeps the contract's list. Search kind
+  `material_approval`.
+- **Clients.** Web: Materials and plant → Material approvals (`/material-approvals`, a Requests tab and an Approved makes
+  tab; `/material-approvals/[id]` with the submissions, files and actions). No phone screen yet.
+
 ## Company data (export and deletion)
 
 - **Export.** `CompanyDataService` works out every table and how its rows belong to an organisation from the Prisma

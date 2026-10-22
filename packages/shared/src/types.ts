@@ -1745,6 +1745,8 @@ export interface PurchaseOrderLineDto {
   materialRequestItemId: string | null;
   itemName: string;
   specification: string | null;
+  /** The make ordered (v6 item 113) */
+  make: string | null;
   unit: string;
   quantity: string;
   rate: string;

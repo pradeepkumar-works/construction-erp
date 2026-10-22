@@ -6,11 +6,11 @@ import { Alert, App, Button, Divider, Form, Input, Progress, Table, Tag, Typogra
 import { ImportOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { PurchaseOrderDto, PurchaseOrderLineDto, SupplierDispatchStatus } from '@erp/shared';
-import { MSME_CATEGORY_LABELS, canEditSubmission, canKeepStock, canPurchase, canRecordVendorBill, canResubmit, canViewPaymentRequests, canViewVendorBills } from '@erp/shared';
+import { MSME_CATEGORY_LABELS, canViewMaterialApprovals, canEditSubmission, canKeepStock, canPurchase, canRecordVendorBill, canResubmit, canViewPaymentRequests, canViewVendorBills } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
-import { usePurchaseOrder } from '@/lib/queries';
+import { useMakeCheck, usePurchaseOrder } from '@/lib/queries';
 import { formatDate, formatDateTime, formatINR, formatPct, formatQty, toNumber } from '@/lib/format';
 import { DispatchStatusTag } from '@/components/supplier/supplierUi';
 import { StatusTag } from '@/components/common/StatusTag';
@@ -20,6 +20,7 @@ import { EditResubmitButton } from '@/components/common/EditResubmitButton';
 import { submissionMetaItems } from '@/components/common/SubmitterInfo';
 import { ReceiptModal } from '@/components/stock/ReceiptModal';
 import { VendorBillFormModal } from './VendorBillFormModal';
+import { makeWarningText } from './PurchaseOrderFormModal';
 import { openPoPrint } from './poPrint';
 import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
 import { submissionLifecycle } from '@/components/record/lifecycle';
@@ -51,6 +52,11 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
   const { message } = App.useApp();
   const qc = useQueryClient();
   const { data, isLoading, error, refetch } = usePurchaseOrder(id ?? undefined);
+  const makeCheck = useMakeCheck(
+    user && canViewMaterialApprovals(user.roleKey) ? data?.projectId : undefined,
+    (data?.lines ?? []).map((l) => ({ itemName: l.itemName, make: l.make })),
+  );
+  const makeWarnings = makeCheck.data ?? [];
   const [receiving, setReceiving] = useState(false);
   const [billing, setBilling] = useState(false);
   const [closing, setClosing] = useState(false);
@@ -169,6 +175,21 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
               count: data.lines.length,
               children: (
                 <>
+                  {makeWarnings.length ? (
+                    <Alert
+                      type="warning"
+                      showIcon
+                      style={{ marginBottom: 12 }}
+                      title={`${makeWarnings.length === 1 ? '1 line is' : `${makeWarnings.length} lines are`} not in a make approved for this project`}
+                      description={
+                        <ul style={{ margin: 0, paddingLeft: 18 }}>
+                          {makeWarnings.map((w) => (
+                            <li key={w.index}>{makeWarningText(w)}</li>
+                          ))}
+                        </ul>
+                      }
+                    />
+                  ) : null}
                   <Table<PurchaseOrderLineDto>
                     rowKey="id"
                     size="small"
@@ -176,7 +197,7 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
                     dataSource={data.lines}
                     scroll={{ x: 760 }}
                     columns={[
-                      { title: 'Item', render: (_, l) => <div>{l.itemName}{l.specification && <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{l.specification}</div>}</div> },
+                      { title: 'Item', render: (_, l) => <div>{l.itemName}{l.make || l.specification ? <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>{[l.make ? `Make: ${l.make}` : null, l.specification].filter(Boolean).join(' · ')}</div> : null}</div> },
                       { title: 'Quantity', dataIndex: 'quantity', width: 120, align: 'right', render: (v, l) => <span className="mono" translate="no">{formatQty(v)} {l.unit}</span> },
                       { title: 'Rate', dataIndex: 'rate', width: 110, align: 'right', render: (v) => money(v) },
                       { title: 'GST', dataIndex: 'gstRate', width: 60, align: 'right', render: (v) => formatPct(v) },
