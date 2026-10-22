@@ -20,6 +20,7 @@ import { SectorPanel, sectorTabLabel } from '@/components/sector/SectorPanel';
 import { BoqTab } from '@/components/boq/BoqTab';
 import { ActivitiesTab } from '@/components/activities/ActivitiesTab';
 import { GanttPanel } from '@/components/schedule/GanttPanel';
+import { LookaheadPanel } from '@/components/schedule/LookaheadPanel';
 import { ProgressList } from '@/components/progress/ProgressList';
 import { DprList } from '@/components/dpr/DprList';
 import { MachineryPanel } from '@/components/machinery/MachineryPanel';
@@ -89,6 +90,7 @@ function ProjectPage({ project }: { project: ProjectDetail }) {
     { key: 'boq', group: 'plan', label: 'BOQ', children: <BoqTab projectId={project.id} /> },
     { key: 'activities', group: 'plan', label: 'Activities', children: <ActivitiesTab projectId={project.id} members={project.members} project={project} /> },
     { key: 'schedule', group: 'plan', label: 'Gantt', children: <GanttPanel projectId={project.id} /> },
+    { key: 'lookahead', group: 'plan', label: 'Look-ahead', children: <LookaheadPanel projectId={project.id} /> },
     { key: 'sector', group: 'plan', label: sectorTabLabel(project.type), children: <SectorPanel project={project} editable={editor} /> },
     { key: 'progress', group: 'site', label: 'Progress', children: <ProgressList projectId={project.id} newLabel="New progress entry" /> },
     { key: 'dpr', group: 'site', label: 'Daily reports', children: <DprList projectId={project.id} newLabel="New daily report" /> },

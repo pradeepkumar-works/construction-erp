@@ -566,8 +566,14 @@ Migrations stay additive. Design notes for each item are in the project's `roadm
     approved makes (from the contract, or approved on request); a purchase order line now names its make, and a line for a
     listed material in another make, or none, is flagged on the order form and the order. Not built: the client or
     consultant answering in the client portal, a My work card, and requests on the phone.
-114. **Schedule links and critical path** (M). Finish-to-start and other links with lag, the critical path, a three-week
-    look-ahead, Primavera XER and MS Project XML import and export.
+114. ~~**Schedule links and critical path** (M). Finish-to-start and other links with lag, the critical path, a three-week
+    look-ahead, Primavera XER and MS Project XML import and export.~~
+    Done: on a project's Gantt each activity opens its links (finish to start, start to start, finish to finish, start to
+    finish, with a lag or lead), loops are refused, and the critical path, float and the earliest start the links allow
+    are drawn on the bars; activities planned before their links allow are counted with Move them. The Look-ahead tab
+    shows the next three weeks day by day with what is under way, ready to start or waiting, and on what. The schedule
+    goes out as MS Project XML or Primavera P6 XER and comes back in (previewed, matched by name). Not built: working
+    calendars and holidays (days are calendar days), resource levelling, and links on the phone.
 115. **Earned value** (M). Planned value from the baseline and BOQ, earned value from measured or certified work, actual
     cost from the books; SPI, CPI, EAC and the S-curve per project.
 116. **Comments and mentions** (S). Threaded comments on any record, @mentions that notify, resolved threads.

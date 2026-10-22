@@ -507,6 +507,7 @@ model Organization {
   boqItems             BoqItem[]
   activities           Activity[]
   milestones           Milestone[]
+  activityLinks        ActivityLink[]
   workers              Worker[]
   workerAttendance     WorkerAttendance[]
   imprests             Imprest[]
@@ -982,6 +983,7 @@ model Project {
   boqItems           BoqItem[]
   activities         Activity[]
   milestones         Milestone[]
+  activityLinks      ActivityLink[]
   workers            Worker[]
   workerAttendance   WorkerAttendance[]
   imprests           Imprest[]
@@ -1768,17 +1770,48 @@ model Activity {
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
 
-  progressEntries ProgressEntry[]
-  stockEntries    StockEntry[]
-  machineryLogs   MachineryLog[]
-  expenses        Expense[]
-  risks           Risk[]
-  inspections     Inspection[]
-  qualityTests    QualityTest[]
-  ncrs            Ncr[]
-  workerDays      WorkerAttendance[]
+  progressEntries  ProgressEntry[]
+  stockEntries     StockEntry[]
+  machineryLogs    MachineryLog[]
+  expenses         Expense[]
+  risks            Risk[]
+  inspections      Inspection[]
+  qualityTests     QualityTest[]
+  ncrs             Ncr[]
+  workerDays       WorkerAttendance[]
+  successorLinks   ActivityLink[]     @relation("LinkPredecessor")
+  predecessorLinks ActivityLink[]     @relation("LinkSuccessor")
 
   @@index([projectId])
+  @@index([organizationId])
+}
+
+enum ActivityLinkType {
+  FS
+  SS
+  FF
+  SF
+}
+
+/// The successor waits on the predecessor (v6 item 114): finish to start, start to start, finish to finish or start to
+/// finish, with a lag in calendar days (negative for a lead). Both activities are of the same project.
+model ActivityLink {
+  id             String           @id @default(uuid())
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  predecessorId  String
+  predecessor    Activity         @relation("LinkPredecessor", fields: [predecessorId], references: [id], onDelete: Cascade)
+  successorId    String
+  successor      Activity         @relation("LinkSuccessor", fields: [successorId], references: [id], onDelete: Cascade)
+  type           ActivityLinkType @default(FS)
+  lagDays        Int              @default(0)
+  createdAt      DateTime         @default(now())
+
+  @@unique([predecessorId, successorId])
+  @@index([projectId])
+  @@index([successorId])
   @@index([organizationId])
 }
 

@@ -290,7 +290,7 @@ export class AiToolsService {
         },
       },
       {
-        def: { name: 'schedule', description: "A project's activities with planned and baseline dates, progress, forecast finish and milestones (the Gantt).", input_schema: { type: 'object', properties: { projectId: { type: 'string' } }, required: ['projectId'] } },
+        def: { name: 'schedule', description: "A project's activities with planned and baseline dates, progress, forecast finish and milestones (the Gantt), with the links between activities, the critical path and each one's float.", input_schema: { type: 'object', properties: { projectId: { type: 'string' } }, required: ['projectId'] } },
         run: (user, i) => schedule.gantt(user, uuid(i.projectId, 'projectId')),
       },
       {

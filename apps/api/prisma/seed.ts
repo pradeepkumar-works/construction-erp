@@ -185,6 +185,7 @@ async function main() {
     await seedScEnquiries(org.id);
     await seedMeetings(org.id);
     await seedMaterialApprovals(org.id);
+    await seedActivityLinks(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
   }
@@ -384,6 +385,7 @@ async function main() {
   await seedScEnquiries(org.id);
   await seedMeetings(org.id);
   await seedMaterialApprovals(org.id);
+  await seedActivityLinks(org.id);
 
   console.log('Seed complete. Login with any of these (password: password123):');
   for (const u of USERS) console.log(`  ${u.email.padEnd(24)} ${u.role}`);
@@ -4397,4 +4399,37 @@ async function seedMaterialApprovals(organizationId: string) {
     await prisma.purchaseOrderLine.updateMany({ where: { purchaseOrderId: po.id, itemName: 'OPC 53 Grade Cement', make: null }, data: { make: 'UltraTech' } });
     await prisma.purchaseOrderLine.updateMany({ where: { purchaseOrderId: po.id, itemName: 'TMT Fe500D 12mm', make: null }, data: { make: 'Kamdhenu' } });
   }
+}
+
+/** Links between the road's and the hospital's activities (v6 item 114), so the Gantt has a critical path and one clash. */
+async function seedActivityLinks(organizationId: string) {
+  if (await prisma.activityLink.count({ where: { organizationId } })) return;
+  const plan: [code: string, pred: string, succ: string, type: 'FS' | 'SS' | 'FF' | 'SF', lag: number][] = [
+    ['RD-2026-01', 'Site clearance', 'Earthwork embankment', 'SS', 20],
+    ['RD-2026-01', 'Earthwork embankment', 'GSB laying', 'SS', 40],
+    ['RD-2026-01', 'GSB laying', 'WMM laying', 'SS', 20],
+    ['RD-2026-01', 'WMM laying', 'DBM paving', 'SS', 30],
+    ['RD-2026-01', 'DBM paving', 'BC paving', 'SS', 30],
+    ['RD-2026-01', 'BC paving', 'Road furniture', 'FF', 30],
+    ['RD-2026-01', 'Pipe culverts', 'BC paving', 'FS', 0],
+    ['BL-2026-02', 'Foundation excavation', 'PCC bed', 'SS', 20],
+    ['BL-2026-02', 'PCC bed', 'RCC footings and columns', 'SS', 10],
+    ['BL-2026-02', 'RCC footings and columns', 'RCC slab GF', 'SS', 30],
+    ['BL-2026-02', 'RCC slab GF', 'RCC slab FF', 'SS', 30],
+    ['BL-2026-02', 'RCC slab GF', 'Brick masonry', 'SS', 15],
+    // Planned to start the day the first floor slab ends, a day before the link allows: the Gantt shows the clash.
+    ['BL-2026-02', 'RCC slab FF', 'Internal plaster', 'FS', 0],
+    ['BL-2026-02', 'Internal plaster', 'Flooring', 'SS', 30],
+  ];
+  const projects = new Map((await prisma.project.findMany({ where: { organizationId, code: { in: ['RD-2026-01', 'BL-2026-02'] } }, select: { id: true, code: true } })).map((p) => [p.code, p.id]));
+  const activities = await prisma.activity.findMany({ where: { organizationId, projectId: { in: [...projects.values()] } }, select: { id: true, name: true, projectId: true } });
+  const id = (projectId: string, name: string) => activities.find((a) => a.projectId === projectId && a.name === name)?.id;
+  await prisma.activityLink.createMany({
+    data: plan.flatMap(([code, pred, succ, type, lagDays]) => {
+      const projectId = projects.get(code);
+      const p = projectId && id(projectId, pred);
+      const s = projectId && id(projectId, succ);
+      return projectId && p && s ? [{ organizationId, projectId, predecessorId: p, successorId: s, type, lagDays }] : [];
+    }),
+  });
 }

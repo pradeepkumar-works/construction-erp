@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useRef } from 'react';
 import { Tooltip, theme } from 'antd';
 import dayjs from 'dayjs';
 import type { GanttActivityDto, GanttDto, MilestoneDto, MilestoneState, ScheduleState } from '@erp/shared';
-import { MILESTONE_STATE_LABELS, SCHEDULE_STATE_LABELS, daysBetween } from '@erp/shared';
+import { ACTIVITY_LINK_TYPE_LABELS, MILESTONE_STATE_LABELS, SCHEDULE_STATE_LABELS, daysBetween, linkLabel } from '@erp/shared';
 import { BRAND } from '@/lib/brand';
 import { formatDate, formatPct } from '@/lib/format';
 
@@ -60,9 +60,22 @@ const slipText = (days: number | null) => (days === null ? null : days === 0 ? '
 /**
  * A plain Gantt (v4 item 43): one row per milestone and activity on a day scale, the current plan as a bar filled to
  * its progress, the frozen baseline as a thin grey bar under it, and a line for today. Names stay put while the
- * timeline scrolls sideways.
+ * timeline scrolls sideways. With links (v6 item 114) a critical activity's bar has a thick top edge, its float shows
+ * as a dotted line after the bar, and the row opens the activity's links.
  */
-export function GanttChart({ data, scale, showBaseline, onMilestone }: { data: GanttDto; scale: GanttScale; showBaseline: boolean; onMilestone?: (m: MilestoneDto) => void }) {
+export function GanttChart({
+  data,
+  scale,
+  showBaseline,
+  onMilestone,
+  onActivity,
+}: {
+  data: GanttDto;
+  scale: GanttScale;
+  showBaseline: boolean;
+  onMilestone?: (m: MilestoneDto) => void;
+  onActivity?: (a: GanttActivityDto) => void;
+}) {
   const { token } = theme.useToken();
   const range = useMemo(() => chartRange(data, showBaseline), [data, showBaseline]);
   const scroller = useRef<HTMLDivElement>(null);
@@ -171,8 +184,10 @@ export function GanttChart({ data, scale, showBaseline, onMilestone }: { data: G
     );
   };
 
+  const names = new Map(data.activities.map((x) => [x.id, x.name]));
   const activityRow = (a: GanttActivityDto) => {
     const color = stateColor(a.state, token);
+    const floatEnd = a.totalFloat && a.totalFloat > 0 && a.plannedEnd && a.lateFinish && a.lateFinish > a.plannedEnd ? a.lateFinish : null;
     const tip = (
       <div>
         <b>{a.name}</b>
@@ -185,24 +200,38 @@ export function GanttChart({ data, scale, showBaseline, onMilestone }: { data: G
         </div>
         {a.finishSlipDays ? <div>Finish {slipText(a.finishSlipDays)}</div> : null}
         <div>{SCHEDULE_STATE_LABELS[a.state]}</div>
+        {a.predecessors.length ? <div>After {a.predecessors.map((p) => `${names.get(p.activityId)} (${linkLabel(p.type, p.lagDays)}, ${ACTIVITY_LINK_TYPE_LABELS[p.type].toLowerCase()})`).join(', ')}</div> : null}
+        {a.totalFloat !== null ? <div>{a.critical ? 'Critical: ' : ''}{a.totalFloat < 0 ? `${-a.totalFloat} days behind what the finish needs` : `${a.totalFloat} days of float`}</div> : null}
+        {a.linkStartsOn ? <div>Its links let it start on {formatDate(a.linkStartsOn)} at the earliest</div> : null}
       </div>
     );
     return row(
       a.id,
-      label(a.name, [SCHEDULE_STATE_LABELS[a.state], formatPct(a.progressPct), a.finishSlipDays ? `${a.finishSlipDays > 0 ? '+' : ''}${a.finishSlipDays} d` : null].filter(Boolean).join(' · ')),
+      label(a.name, [a.critical ? 'Critical' : null, SCHEDULE_STATE_LABELS[a.state], formatPct(a.progressPct), a.finishSlipDays ? `${a.finishSlipDays > 0 ? '+' : ''}${a.finishSlipDays} d` : null].filter(Boolean).join(' · ')),
       <Tooltip title={tip}>
         <div style={{ position: 'absolute', inset: 0 }}>
           {showBaseline && a.baselineStart && a.baselineEnd ? (
             <div className="gantt-baseline" style={{ position: 'absolute', ...span(a.baselineStart, a.baselineEnd), top: ROW_H / 2 + 7, height: 5, borderRadius: 2, background: token.colorTextQuaternary }} />
           ) : null}
           {a.plannedStart && a.plannedEnd ? (
-            <div className="gantt-bar" style={{ position: 'absolute', ...span(a.plannedStart, a.plannedEnd), top: ROW_H / 2 - 12, height: 15, borderRadius: 3, overflow: 'hidden', background: token.colorFillSecondary, border: `1px solid ${color}` }}>
+            <div
+              className={a.critical ? 'gantt-bar gantt-critical' : 'gantt-bar'}
+              style={{ position: 'absolute', ...span(a.plannedStart, a.plannedEnd), top: ROW_H / 2 - 12, height: 15, borderRadius: 3, overflow: 'hidden', background: token.colorFillSecondary, border: `1px solid ${color}`, borderTop: a.critical ? `4px solid ${token.colorErrorText}` : undefined }}
+            >
               <div style={{ width: `${Math.min(a.progressPct, 100)}%`, height: '100%', background: color }} />
             </div>
+          ) : null}
+          {floatEnd && a.plannedEnd ? (
+            <div className="gantt-float" style={{ position: 'absolute', left: x(a.plannedEnd) + px, width: Math.max(daysBetween(a.plannedEnd, floatEnd) * px, 2), top: ROW_H / 2 - 5, borderTop: `2px dotted ${token.colorTextTertiary}` }} />
+          ) : null}
+          {a.linkStartsOn ? (
+            <div className="gantt-link-start" style={{ position: 'absolute', left: x(a.linkStartsOn), top: ROW_H / 2 - 14, height: 20, borderLeft: `2px solid ${token.colorWarningText}` }} />
           ) : null}
         </div>
       </Tooltip>,
       'gantt-row gantt-activity',
+      onActivity ? () => onActivity(a) : undefined,
+      `Links of ${a.name}`,
     );
   };
 
@@ -242,7 +271,7 @@ export function GanttChart({ data, scale, showBaseline, onMilestone }: { data: G
 }
 
 /** What the colours and shapes mean. */
-export function GanttLegend({ showBaseline }: { showBaseline: boolean }) {
+export function GanttLegend({ showBaseline, linked }: { showBaseline: boolean; linked?: boolean }) {
   const { token } = theme.useToken();
   const swatch = (bg: string, label: string, border?: string) => (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
@@ -256,6 +285,24 @@ export function GanttLegend({ showBaseline }: { showBaseline: boolean }) {
       {swatch(token.colorError, 'Behind plan or past its end')}
       {swatch(token.colorSuccess, 'Done')}
       {showBaseline ? swatch(token.colorTextQuaternary, 'Baseline') : null}
+      {linked ? (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ display: 'inline-block', width: 22, height: 10, borderRadius: 2, border: `1px solid ${BRAND.colors.primary}`, borderTop: `4px solid ${token.colorErrorText}` }} />
+          Critical path
+        </span>
+      ) : null}
+      {linked ? (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ display: 'inline-block', width: 22, borderTop: `2px dotted ${token.colorTextTertiary}` }} />
+          Float
+        </span>
+      ) : null}
+      {linked ? (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ display: 'inline-block', height: 12, borderLeft: `2px solid ${token.colorWarningText}` }} />
+          Earliest start its links allow
+        </span>
+      ) : null}
       <span>◆ Milestone{showBaseline ? ' (hollow: baseline date)' : ''}</span>
       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
         <span style={{ display: 'inline-block', height: 12, borderLeft: `2px dashed ${token.colorError}` }} />

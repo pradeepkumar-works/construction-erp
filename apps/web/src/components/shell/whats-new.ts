@@ -9,6 +9,17 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-schedule-links',
+    date: '2026-11-24',
+    title: 'Schedule links, critical path and look-ahead',
+    points: [
+      'On a project’s Gantt, click an activity to say what it waits on: finish to start, start to start, finish to finish or start to finish, with a lag. The critical path, each activity’s float and the earliest start its links allow are drawn on the bars.',
+      'Activities planned to start before their links allow are counted at the top, and Move them puts each on the day its links allow, its length kept.',
+      'The new Look-ahead tab shows the next three weeks day by day: what is under way, what is ready to start and what still waits, and on what.',
+      'Export the schedule to MS Project or Primavera P6, and import one back: you see what will change before anything is saved.',
+    ],
+  },
+  {
     id: '2026-11-material-approvals',
     date: '2026-11-20',
     title: 'Material approvals',
