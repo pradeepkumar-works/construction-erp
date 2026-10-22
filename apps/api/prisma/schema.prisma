@@ -977,6 +977,7 @@ model Project {
   receipts           Receipt[]
   vendorPayments     VendorPayment[]
   paymentRequests    PaymentRequest[]
+  fundRequestsRaised PaymentRequest[]         @relation("FundRequestRaisedAt")
   quotations         Quotation[]
   purchaseOrders     PurchaseOrder[]
   vendorBills        VendorBill[]
@@ -2815,6 +2816,17 @@ enum PaymentRequestKind {
   BILL
   PO_ADVANCE
   WO_ADVANCE
+  /// A site asks head office for money (v6 item 107): released into the site's imprest or paid to a party on account
+  FUND_REQUEST
+}
+
+/// What a site's fund request is for (v6 item 107).
+enum FundPurpose {
+  WAGES
+  LOCAL_PURCHASE
+  PETTY_CONTRACTOR
+  SITE_RUNNING
+  OTHER
 }
 
 /// A request to release money (v5 item 90): pay an approved vendor or subcontractor bill, or an advance against a
@@ -2824,10 +2836,19 @@ model PaymentRequest {
   id                String             @id @default(uuid())
   organizationId    String
   organization      Organization       @relation(fields: [organizationId], references: [id])
+  /// The site the money is for (its approvers decide; its cost)
   projectId         String
   project           Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  vendorId          String
-  vendor            Vendor             @relation(fields: [vendorId], references: [id])
+  /// The party paid; a fund request released into an imprest has none
+  vendorId          String?
+  vendor            Vendor?            @relation(fields: [vendorId], references: [id], onDelete: Restrict)
+  /// Fund requests (v6 item 107): what for, the imprest it tops up (else the party is paid on account), and the site
+  /// that asked when it asks on behalf of another
+  purpose           FundPurpose?
+  imprestId         String?
+  imprest           Imprest?           @relation(fields: [imprestId], references: [id], onDelete: NoAction)
+  raisedAtProjectId String?
+  raisedAtProject   Project?           @relation("FundRequestRaisedAt", fields: [raisedAtProjectId], references: [id], onDelete: SetNull)
   /// PR-<year>-0001 per organisation
   requestNo         String
   kind              PaymentRequestKind
@@ -2861,9 +2882,13 @@ model PaymentRequest {
   updatedAt         DateTime           @updatedAt
 
   payments    VendorPayment[]
+  /// Fund requests released into an imprest
+  releases    ImprestEntry[]
   attachments Attachment[]
 
   @@unique([organizationId, requestNo])
+  @@index([imprestId])
+  @@index([raisedAtProjectId])
   @@index([organizationId, status])
   @@index([projectId, status])
   @@index([vendorBillId])
@@ -4343,7 +4368,8 @@ model Imprest {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
-  entries ImprestEntry[]
+  entries      ImprestEntry[]
+  fundRequests PaymentRequest[]
 
   @@unique([projectId, holderId])
   @@index([organizationId, isActive])
@@ -4351,31 +4377,35 @@ model Imprest {
 }
 
 model ImprestEntry {
-  id             String             @id @default(uuid())
-  organizationId String
-  organization   Organization       @relation(fields: [organizationId], references: [id])
-  imprestId      String
-  imprest        Imprest            @relation(fields: [imprestId], references: [id], onDelete: Cascade)
-  kind           ImprestEntryKind
-  status         ImprestEntryStatus
-  amount         Decimal            @db.Decimal(18, 2)
+  id               String             @id @default(uuid())
+  organizationId   String
+  organization     Organization       @relation(fields: [organizationId], references: [id])
+  imprestId        String
+  imprest          Imprest            @relation(fields: [imprestId], references: [id], onDelete: Cascade)
+  kind             ImprestEntryKind
+  status           ImprestEntryStatus
+  amount           Decimal            @db.Decimal(18, 2)
   /// Asked for on (a request), else paid or returned on
-  date           DateTime           @db.Date
-  reason         String?
-  paidOn         DateTime?          @db.Date
-  paymentMode    PaymentMode?
+  date             DateTime           @db.Date
+  reason           String?
+  paidOn           DateTime?          @db.Date
+  paymentMode      PaymentMode?
   /// Cheque, UTR or voucher number
-  reference      String?
-  requestedById  String?
-  requestedBy    User?              @relation("ImprestRequester", fields: [requestedById], references: [id])
-  decidedById    String?
-  decidedBy      User?              @relation("ImprestDecider", fields: [decidedById], references: [id])
-  decidedAt      DateTime?
-  decisionNote   String?
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
+  reference        String?
+  requestedById    String?
+  requestedBy      User?              @relation("ImprestRequester", fields: [requestedById], references: [id])
+  decidedById      String?
+  decidedBy        User?              @relation("ImprestDecider", fields: [decidedById], references: [id])
+  decidedAt        DateTime?
+  decisionNote     String?
+  /// The fund request it releases (v6 item 107)
+  paymentRequestId String?
+  paymentRequest   PaymentRequest?    @relation(fields: [paymentRequestId], references: [id], onDelete: NoAction)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
 
   @@index([imprestId, status])
+  @@index([paymentRequestId])
   @@index([organizationId, status])
 }
 

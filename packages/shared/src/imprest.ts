@@ -59,6 +59,9 @@ export interface ImprestEntryDto {
   decidedByName: string | null;
   decidedAt: string | null;
   decisionNote: string | null;
+  /** The fund request (v6 item 107) this advance releases */
+  paymentRequestId: string | null;
+  requestNo: string | null;
   createdAt: string;
 }
 

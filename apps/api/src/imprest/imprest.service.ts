@@ -22,7 +22,7 @@ import { todayIn } from '../notifications/time';
 import { dateOnly, iso, money, parseDate } from '../common/serialize';
 import { AdvanceDto, ListImprestsQuery, OpenImprestDto, PayDto, RejectDto, RequestTopUpDto, ReturnDto, UpdateImprestDto } from './imprest.dto';
 
-const entryInclude = { requestedBy: { select: { fullName: true } }, decidedBy: { select: { fullName: true } } } satisfies Prisma.ImprestEntryInclude;
+const entryInclude = { requestedBy: { select: { fullName: true } }, decidedBy: { select: { fullName: true } }, paymentRequest: { select: { requestNo: true } } } satisfies Prisma.ImprestEntryInclude;
 const include = {
   project: { select: { name: true } },
   holder: { select: { fullName: true } },
@@ -64,6 +64,8 @@ export class ImprestService {
       decidedByName: e.decidedBy?.fullName ?? null,
       decidedAt: iso(e.decidedAt),
       decisionNote: e.decisionNote,
+      paymentRequestId: e.paymentRequestId,
+      requestNo: e.paymentRequest?.requestNo ?? null,
       createdAt: iso(e.createdAt)!,
     };
   }

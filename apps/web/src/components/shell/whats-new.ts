@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-11-fund-requests',
+    date: '2026-11-13',
+    title: 'Fund requests from sites',
+    points: [
+      'A site asks head office for money from Site imprest → Fund requests: for wages, a local purchase, a petty contractor or running costs, by a date, with the wage sheet or quotation attached.',
+      "The money goes into the site's imprest, or straight to a party on account. A site can also ask on behalf of another site it works with.",
+      'Requests are approved like payment requests, by the approval matrix. Accounts then release them into the imprest, or pay the party under Payables; both show on the request.',
+    ],
+  },
+  {
     id: '2026-11-central-store',
     date: '2026-11-12',
     title: 'Central stores',

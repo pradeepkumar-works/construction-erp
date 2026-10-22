@@ -583,7 +583,7 @@ export class SupplierService {
             ? `Advance on ${p.purchaseOrder.poNo}`
             : p.workOrder
               ? `Advance on ${p.workOrder.woNo}`
-              : 'Payment';
+              : 'On account';
     const entries: StatementEntry[] = [
       ...vbills
         .filter((b) => b.status === 'APPROVED')

@@ -64,22 +64,28 @@ const ORDER: Record<VendorPaymentSortField, (o: SortOrder) => Prisma.VendorPayme
   createdAt: (o) => [{ createdAt: o }],
 };
 
-/** The bill a payment is against, as payables sees it; or, for an advance (v5 item 90), the order. */
+/**
+ * The bill a payment is against, as payables sees it; or, for an advance (v5 item 90), the order; or, for a site's
+ * fund request paid to a party (v6 item 107), the request itself: a payment on account.
+ */
 interface Bill {
-  type: PayableBillType | 'ADVANCE';
+  type: PayableBillType | 'ADVANCE' | 'ON_ACCOUNT';
   id: string;
   label: string;
   projectId: string;
   vendorId: string;
   status: string;
   billDate: Date;
-  /** What the bill says is payable; null for an advance (its request caps it) */
+  /** What the bill says is payable; null for an advance or a payment on account (its request caps it) */
   payable: Prisma.Decimal | null;
   /** An advance's order */
   order?: { purchaseOrderId: string } | { workOrderId: string };
 }
 
 type Request = { id: string; requestNo: string; amount: Prisma.Decimal };
+
+/** A bill proper, whose paid amount follows its payments. */
+const isBill = (b: Bill): b is Bill & { type: PayableBillType } => b.type === 'VENDOR_BILL' || b.type === 'SUBCONTRACT_BILL';
 
 /**
  * Keep a bill's `paidAmount` and `paidDate` in step with its payments: paid in full (to the rupee) on the date of the
@@ -169,7 +175,7 @@ export class PayablesService {
       subcontractBillId: r.subcontractBillId,
       purchaseOrderId: r.purchaseOrderId,
       workOrderId: r.workOrderId,
-      billLabel: r.vendorBill || r.subcontractBill ? targetLabel(r) : `Advance on ${targetLabel(r)}`,
+      billLabel: r.vendorBill || r.subcontractBill ? targetLabel(r) : r.purchaseOrder || r.workOrder ? `Advance on ${targetLabel(r)}` : `On account (${r.paymentRequest?.requestNo ?? ''})`,
       paymentRequestId: r.paymentRequestId,
       requestNo: r.paymentRequest?.requestNo ?? null,
       paymentDate: dateOnly(r.paymentDate)!,
@@ -271,7 +277,16 @@ export class PayablesService {
     return bill;
   }
 
-  private async billOf(row: { vendorBillId: string | null; subcontractBillId: string | null; purchaseOrderId: string | null; workOrderId: string | null }, user: RequestUser) {
+  /** A fund request paid to a party (v6 item 107): the payment is on account, capped by the request. */
+  private async onAccount(user: RequestUser, r: { id: string; requestNo: string; projectId: string; vendorId: string | null; createdAt: Date }): Promise<Bill> {
+    if (!r.vendorId) throw new BadRequestException(`${r.requestNo} goes into the site's imprest: release it from the request instead`);
+    await this.access.assertCanAccessProject(user, r.projectId);
+    return { type: 'ON_ACCOUNT', id: r.id, label: `On account (${r.requestNo})`, projectId: r.projectId, vendorId: r.vendorId, status: 'APPROVED', billDate: new Date(r.createdAt.toISOString().slice(0, 10)), payable: null };
+  }
+
+  private async billOf(row: { vendorBillId: string | null; subcontractBillId: string | null; purchaseOrderId: string | null; workOrderId: string | null; paymentRequestId: string | null }, user: RequestUser) {
+    if (!row.vendorBillId && !row.subcontractBillId && !row.purchaseOrderId && !row.workOrderId && row.paymentRequestId)
+      return this.onAccount(user, await this.prisma.paymentRequest.findUniqueOrThrow({ where: { id: row.paymentRequestId } }));
     if (!row.vendorBillId && !row.subcontractBillId) return this.advance(user, row);
     return this.bill(user, { vendorBillId: row.vendorBillId ?? undefined, subcontractBillId: row.subcontractBillId ?? undefined });
   }
@@ -282,7 +297,8 @@ export class PayablesService {
     if (!r) throw new NotFoundException('Payment request not found');
     if (r.status !== 'APPROVED') throw new BadRequestException(`${r.requestNo} is not approved yet; payments draw only on approved requests`);
     if ((dto.vendorBillId && dto.vendorBillId !== r.vendorBillId) || (dto.subcontractBillId && dto.subcontractBillId !== r.subcontractBillId)) throw new BadRequestException(`${r.requestNo} is for another bill`);
-    return { request: { id: r.id, requestNo: r.requestNo, amount: r.amount }, bill: await this.billOf(r, user) };
+    const bill = r.kind === 'FUND_REQUEST' ? await this.onAccount(user, r) : await this.billOf({ ...r, paymentRequestId: null }, user);
+    return { request: { id: r.id, requestNo: r.requestNo, amount: r.amount }, bill };
   }
 
   /** A payment drawing on a request must not settle more than the request has left (other payments excluded). */
@@ -328,7 +344,7 @@ export class PayablesService {
 
   private checkDate(date: string, bill: Bill) {
     if (parseDate(date).getTime() > Date.now() + 36 * 3600 * 1000) throw new BadRequestException('The payment date cannot be in the future');
-    if (parseDate(date) < bill.billDate) throw new BadRequestException(`The payment date cannot be before the ${bill.type === 'ADVANCE' ? 'order' : 'bill'} (${dateOnly(bill.billDate)})`);
+    if (parseDate(date) < bill.billDate) throw new BadRequestException(`The payment date cannot be before the ${bill.type === 'ADVANCE' ? 'order' : bill.type === 'ON_ACCOUNT' ? 'request' : 'bill'} (${dateOnly(bill.billDate)})`);
   }
 
   /** A payment must not settle more than the bill has outstanding (other payments excluded). */
@@ -366,7 +382,7 @@ export class PayablesService {
       const org = await this.prisma.organization.findUniqueOrThrow({ where: { id: user.organizationId }, select: { paymentsNeedRequest: true } });
       if (org.paymentsNeedRequest) throw new BadRequestException(`Payments here need an approved payment request: ask for one on ${bill.label} (Request payment), then pay against it`);
     }
-    if (bill.type !== 'ADVANCE' && bill.status !== 'APPROVED') throw new BadRequestException(`${bill.label} is not approved yet; only approved bills are paid`);
+    if (isBill(bill) && bill.status !== 'APPROVED') throw new BadRequestException(`${bill.label} is not approved yet; only approved bills are paid`);
     this.checkDate(dto.paymentDate, bill);
     const a = this.amounts(bill, dto);
     let id: string;
@@ -396,7 +412,7 @@ export class PayablesService {
           },
           select: { id: true },
         });
-        if (bill.type !== 'ADVANCE') await syncPaid(tx, bill.type, bill.id);
+        if (isBill(bill)) await syncPaid(tx, bill.type, bill.id);
         if (request) await syncRequestPaid(tx, request.id);
         return row.id;
       });
@@ -409,7 +425,7 @@ export class PayablesService {
     }
     const paidOn = `₹${a.amount.toFixed(2)} paid on ${dto.paymentDate}${dto.reference ? ` (${dto.reference})` : ''}`;
     await this.audit.log(user, 'VENDOR_PAYMENT', id, 'CREATED', `₹${a.amount.toFixed(2)} paid against ${bill.label}${request ? ` (${request.requestNo})` : ''}`);
-    if (bill.type !== 'ADVANCE') await this.audit.log(user, bill.type, bill.id, 'PAYMENT_MADE', paidOn);
+    if (isBill(bill)) await this.audit.log(user, bill.type, bill.id, 'PAYMENT_MADE', paidOn);
     if (request) await this.audit.log(user, 'PAYMENT_REQUEST', request.id, 'PAYMENT_MADE', paidOn);
     // The supplier's portal logins (v6 item 105) see it on their statement.
     await this.notifications.notifyVendor(user.organizationId, bill.vendorId, {
@@ -449,7 +465,7 @@ export class PayablesService {
           ...(dto.remarks !== undefined ? { remarks: dto.remarks } : {}),
         },
       });
-      if (bill.type !== 'ADVANCE') await syncPaid(tx, bill.type, bill.id);
+      if (isBill(bill)) await syncPaid(tx, bill.type, bill.id);
       if (request) await syncRequestPaid(tx, request.id);
     });
     await this.audit.log(user, 'VENDOR_PAYMENT', id, 'UPDATED');
@@ -464,12 +480,12 @@ export class PayablesService {
       await this.lock(tx, bill);
       await this.checkAdvanceCovers(tx, bill, id, null);
       await tx.vendorPayment.delete({ where: { id } });
-      if (bill.type !== 'ADVANCE') await syncPaid(tx, bill.type, bill.id);
+      if (isBill(bill)) await syncPaid(tx, bill.type, bill.id);
       if (request) await syncRequestPaid(tx, request.id);
     });
     const takenOff = `₹${row.amount.toFixed(2)} of ${dateOnly(row.paymentDate)} taken off`;
     await this.audit.log(user, 'VENDOR_PAYMENT', id, 'DELETED', `₹${row.amount.toFixed(2)} of ${dateOnly(row.paymentDate)}`);
-    if (bill.type !== 'ADVANCE') await this.audit.log(user, bill.type, bill.id, 'PAYMENT_REMOVED', takenOff);
+    if (isBill(bill)) await this.audit.log(user, bill.type, bill.id, 'PAYMENT_REMOVED', takenOff);
     if (request) await this.audit.log(user, 'PAYMENT_REQUEST', request.id, 'PAYMENT_REMOVED', takenOff);
     return { ok: true };
   }
@@ -570,11 +586,12 @@ export class PayablesService {
       }
     }
     // Advances (v5 item 90) are not against a bill: they count as outstanding with the vendor until their order's
-    // approved bills take them off (adjusted on vendor bills, recovered on subcontractor bills).
+    // approved bills take them off (adjusted on vendor bills, recovered on subcontractor bills). A payment on account
+    // of a site's fund request (v6 item 107) counts as paid.
     const advances = new Map<string, { v: V; p: P; paid: Prisma.Decimal; taken: Prisma.Decimal }>();
     for (const r of payments) {
-      if (!r.vendorBillId && !r.subcontractBillId) {
-        const key = r.purchaseOrderId ?? r.workOrderId ?? '';
+      const key = r.vendorBillId || r.subcontractBillId ? null : (r.purchaseOrderId ?? r.workOrderId);
+      if (key) {
         const a = advances.get(key) ?? { v: r.vendor, p: r.project, paid: ZERO, taken: ZERO };
         a.paid = a.paid.add(settles(r));
         advances.set(key, a);

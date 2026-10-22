@@ -5,11 +5,12 @@ import Link from 'next/link';
 import { Button, Select, Space } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import type { PaymentRequestDto, PaymentRequestKind, PaymentRequestSortField, SubmissionStatus } from '@erp/shared';
-import { LIST_SORT_FIELDS, PAYMENT_REQUEST_KINDS, PAYMENT_REQUEST_KIND_LABELS, canRecordPayment, canRequestPayment } from '@erp/shared';
+import { FUND_PURPOSE_LABELS, LIST_SORT_FIELDS, PAYMENT_REQUEST_KINDS, PAYMENT_REQUEST_KIND_LABELS, canRecordPayment, canReleaseFunds, canRequestFunds, canRequestPayment } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { usePaymentRequests } from '@/lib/queries';
 import { useListPage } from '@/lib/listPage';
 import { useNewIntent } from '@/lib/new-intent';
+import { useProjectScope } from '@/lib/project-scope';
 import { downloadXlsx, exportFileName, fetchAllPages } from '@/lib/exportExcel';
 import { PAYMENT_REQUEST_EXPORT } from '@/lib/exportColumns';
 import { formatDate, formatINR, toNumber } from '@/lib/format';
@@ -22,8 +23,9 @@ import { EmptyArt } from '@/components/common/EmptyArt';
 import { DataTable, useColumnChoice, type ListColumn } from '@/components/list/DataTable';
 import { exportSelected } from '@/components/list/bulk';
 import { RecordLink } from '@/components/record/RecordLink';
-import { PaymentRequestDrawer, PayRequestModal, RequestPaidTag, requestTargetHref } from './PaymentRequestRecord';
+import { PaymentRequestDrawer, PayRequestModal, RequestPaidTag, requestPayee, requestReleases, requestTargetHref } from './PaymentRequestRecord';
 import { PaymentRequestFormModal } from './PaymentRequestFormModal';
+import { FundRequestFormModal } from './FundRequestFormModal';
 
 const NO_KEYS: string[] = [];
 const money = (v: string, strong?: boolean) =>
@@ -37,19 +39,26 @@ const money = (v: string, strong?: boolean) =>
     </span>
   );
 
+/** What a request is for, in the list: the bill or order, or a fund request's purpose. */
+const forLabel = (r: PaymentRequestDto) => (r.kind === 'FUND_REQUEST' && r.purpose ? FUND_PURPOSE_LABELS[r.purpose] : r.targetLabel);
+
 /**
  * Payment requests (v5 item 90) in the Payables page's tab: bills to pay and advances to release, waiting for approval
- * or for accounts to pay them.
+ * or for accounts to pay them. With `fund`, a site's fund requests (v6 item 107) on the Site imprest page: asked for by
+ * the site, released into its imprest or paid to a party.
  */
-export function PaymentRequestList({ projectId, vendorId }: { projectId?: string; vendorId?: string }) {
+export function PaymentRequestList({ projectId: given, vendorId, fund }: { projectId?: string; vendorId?: string; fund?: boolean }) {
   const { user } = useAuth();
+  // On Site imprest the list follows the header's project, with its own picker.
+  const [scope, setScope] = useProjectScope();
+  const projectId = fund ? scope : given;
   const page = useListPage<PaymentRequestSortField>({
     keys: NO_KEYS,
     sortBy: 'requestNo',
     sortOrder: 'desc',
     sortFields: LIST_SORT_FIELDS.paymentRequests,
     url: false,
-    scope: `${projectId}:${vendorId}`,
+    scope: `${projectId}:${vendorId}:${fund ? 'fund' : ''}`,
   });
   const [status, setStatus] = useState<SubmissionStatus | undefined>();
   const [kind, setKind] = useState<PaymentRequestKind | undefined>();
@@ -66,13 +75,15 @@ export function PaymentRequestList({ projectId, vendorId }: { projectId?: string
     projectId,
     vendorId,
     status,
-    kind,
+    kind: fund ? ('FUND_REQUEST' as const) : kind,
   };
   const { data, isLoading, isFetching, error, refetch } = usePaymentRequests(filters);
   const rows = data?.items ?? [];
-  const accounts = !!user && canRecordPayment(user.roleKey);
-  const requester = !!user && canRequestPayment(user.roleKey);
-  useNewIntent('payment-request', requester, () => setFormOpen(true));
+  const pays = !!user && canRecordPayment(user.roleKey);
+  const releases = !!user && canReleaseFunds(user.roleKey);
+  const accounts = pays || releases;
+  const requester = !!user && (fund ? canRequestFunds(user.roleKey) : canRequestPayment(user.roleKey));
+  useNewIntent(fund ? 'fund-request' : 'payment-request', requester, () => setFormOpen(true));
   const sort = (key: PaymentRequestSortField) => ({
     key,
     sorter: true,
@@ -83,7 +94,7 @@ export function PaymentRequestList({ projectId, vendorId }: { projectId?: string
     const all = await fetchAllPages<PaymentRequestDto>('/payment-requests', {
       ...filters,
     });
-    await downloadXlsx(exportFileName('payment-requests'), 'Payment requests', PAYMENT_REQUEST_EXPORT, all);
+    await downloadXlsx(exportFileName(fund ? 'fund-requests' : 'payment-requests'), fund ? 'Fund requests' : 'Payment requests', PAYMENT_REQUEST_EXPORT, all);
     return all.length;
   };
 
@@ -111,27 +122,36 @@ export function PaymentRequestList({ projectId, vendorId }: { projectId?: string
       title: 'For',
       width: 200,
       card: 'meta',
-      cardText: (r) => `${r.vendorName} · ${PAYMENT_REQUEST_KIND_LABELS[r.kind]} · ${r.targetLabel}`,
-      render: (_, r) => (
-        <div>
-          <Link href={requestTargetHref(r)} className="mono" translate="no">
-            {r.targetLabel}
-          </Link>
-          <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
-            {PAYMENT_REQUEST_KIND_LABELS[r.kind]}
+      cardText: (r) => `${requestPayee(r)} · ${PAYMENT_REQUEST_KIND_LABELS[r.kind]} · ${forLabel(r)}`,
+      render: (_, r) => {
+        const href = r.kind === 'FUND_REQUEST' ? null : requestTargetHref(r);
+        return (
+          <div>
+            {href ? (
+              <Link href={href} className="mono" translate="no">
+                {r.targetLabel}
+              </Link>
+            ) : (
+              forLabel(r)
+            )}
+            <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
+              {PAYMENT_REQUEST_KIND_LABELS[r.kind]}
+            </div>
           </div>
-        </div>
-      ),
+        );
+      },
     },
     {
-      title: 'Pay to',
+      title: fund ? 'Goes to' : 'Pay to',
       width: 280,
       ...sort('vendor'),
       render: (_, r) => (
         <div>
-          {r.vendorName}
+          {requestPayee(r)}
+          {r.kind === 'FUND_REQUEST' && r.vendorId ? <span className="text-muted"> · on account</span> : null}
           <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
             {r.projectCode} · {r.projectName}
+            {r.raisedAtProjectName ? `, asked from ${r.raisedAtProjectName}` : ''}
           </div>
         </div>
       ),
@@ -186,20 +206,20 @@ export function PaymentRequestList({ projectId, vendorId }: { projectId?: string
             fixed: 'right' as const,
             width: 90,
             render: (_: unknown, r: PaymentRequestDto) =>
-              r.status === 'APPROVED' && toNumber(r.outstanding) > 0 ? (
+              r.status === 'APPROVED' && toNumber(r.outstanding) > 0 && (requestReleases(r) ? releases : pays) ? (
                 <Button size="small" type="primary" onClick={() => setPaying(r)}>
-                  Pay
+                  {requestReleases(r) ? 'Release' : 'Pay'}
                 </Button>
               ) : null,
           } satisfies ListColumn<PaymentRequestDto>,
         ]
       : []),
   ];
-  const choice = useColumnChoice('payables-requests', columns);
+  const choice = useColumnChoice(fund ? 'fund-requests' : 'payables-requests', columns);
 
   const newButton = requester ? (
     <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
-      Request payment
+      {fund ? 'Request funds' : 'Request payment'}
     </Button>
   ) : null;
   const filtered = !!page.params.q || !!status || !!kind;
@@ -209,14 +229,14 @@ export function PaymentRequestList({ projectId, vendorId }: { projectId?: string
       {error && <QueryError error={error} onRetry={() => refetch()} />}
       <ListToolbar
         projectId={projectId}
-        onProject={() => undefined}
-        hideProject
+        onProject={setScope}
+        hideProject={!fund}
         status={status}
         onStatus={setStatus}
         search={page.search}
         onSearch={page.setSearch}
-        searchPlaceholder="Search request, bill, order, vendor"
-        searchLabel="Search payment requests"
+        searchPlaceholder={fund ? 'Search request, site, holder, party' : 'Search request, bill, order, vendor'}
+        searchLabel={fund ? 'Search fund requests' : 'Search payment requests'}
         filters={{
           count: (status ? 1 : 0) + (kind ? 1 : 0),
           clear: () => (setStatus(undefined), setKind(undefined)),
@@ -228,6 +248,7 @@ export function PaymentRequestList({ projectId, vendorId }: { projectId?: string
           </>
         }
       >
+        {fund ? null : (
         <Select
           allowClear
           placeholder="Any kind"
@@ -240,6 +261,7 @@ export function PaymentRequestList({ projectId, vendorId }: { projectId?: string
             label: PAYMENT_REQUEST_KIND_LABELS[k],
           }))}
         />
+        )}
       </ListToolbar>
       <DataTable<PaymentRequestDto>
         columns={columns}
@@ -250,17 +272,20 @@ export function PaymentRequestList({ projectId, vendorId }: { projectId?: string
         loading={isLoading || isFetching}
         table={page.tableProps<PaymentRequestDto>(data?.total)}
         onOpen={(id) => setOpened(id)}
-        bulk={[exportSelected<PaymentRequestDto>('payment-requests', 'Payment requests', PAYMENT_REQUEST_EXPORT)]}
+        bulk={[exportSelected<PaymentRequestDto>(fund ? 'fund-requests' : 'payment-requests', fund ? 'Fund requests' : 'Payment requests', PAYMENT_REQUEST_EXPORT)]}
         scrollX={1400}
         empty={{
           filtered,
           clear: () => (page.clear(), setStatus(undefined), setKind(undefined)),
         }}
-        emptyText={<EmptyArt art="entries" title={filtered ? 'No payment request matches these filters' : 'No payment requests yet'} />}
+        emptyText={<EmptyArt art="entries" title={filtered ? `No ${fund ? 'fund' : 'payment'} request matches these filters` : fund ? 'No fund requests yet' : 'No payment requests yet'} />}
         emptyAction={newButton}
       />
       <PaymentRequestDrawer id={opened} open={!!opened} onClose={() => setOpened(null)} onEdit={setEditing} />
-      <PaymentRequestFormModal open={formOpen || !!editing} request={editing} onClose={() => (setFormOpen(false), setEditing(null))} />
+      {fund ? (
+        <FundRequestFormModal open={formOpen} projectId={projectId} onClose={() => setFormOpen(false)} />
+      ) : null}
+      <PaymentRequestFormModal open={(!fund && formOpen) || !!editing} request={editing} onClose={() => (setFormOpen(false), setEditing(null))} />
       <PayRequestModal request={paying} onClose={() => setPaying(null)} />
     </>
   );

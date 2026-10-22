@@ -267,6 +267,14 @@ export const PAYMENT_REQUEST_ROLES: RoleKey[] = ['ADMIN', 'MANAGEMENT', 'PROJECT
 export const canRequestPayment = (role: RoleKey) => PAYMENT_REQUEST_ROLES.includes(role);
 export const canViewPaymentRequests = (role: RoleKey) => PAYMENT_REQUEST_ROLES.includes(role);
 /**
+ * Ask head office for money for a site (v6 item 107): anyone who pays site expenses (who may hold an imprest). Those
+ * outside the payment request roles see only fund requests.
+ */
+export const FUND_REQUEST_ROLES: RoleKey[] = EXPENSE_SUBMITTER_ROLES;
+export const canRequestFunds = (role: RoleKey) => FUND_REQUEST_ROLES.includes(role);
+/** Release an approved fund request into the site's imprest: those who pay top-ups. */
+export const canReleaseFunds = (role: RoleKey) => IMPREST_ADMIN_ROLES.includes(role);
+/**
  * Raise or cancel a debit note against an approved vendor or subcontract bill (v5 item 91): those who record vendor
  * bills. Those who see payables see the notes.
  */

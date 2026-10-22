@@ -171,9 +171,16 @@ export type MsmeCategory = (typeof MSME_CATEGORIES)[number];
 
 export const RECEIPT_MODES = ['BANK', 'UPI', 'CASH'] as const satisfies readonly PaymentMode[];
 
-/** What a payment request (v5 item 90) asks to pay: an approved bill, or an advance against a PO or a work order. */
-export const PAYMENT_REQUEST_KINDS = ['BILL', 'PO_ADVANCE', 'WO_ADVANCE'] as const;
+/**
+ * What a payment request (v5 item 90) asks to pay: an approved bill, or an advance against a PO or a work order; or
+ * (v6 item 107) a site's fund request, released into its imprest or paid to a party on account.
+ */
+export const PAYMENT_REQUEST_KINDS = ['BILL', 'PO_ADVANCE', 'WO_ADVANCE', 'FUND_REQUEST'] as const;
 export type PaymentRequestKind = (typeof PAYMENT_REQUEST_KINDS)[number];
+
+/** What a site's fund request (v6 item 107) is for. */
+export const FUND_PURPOSES = ['WAGES', 'LOCAL_PURCHASE', 'PETTY_CONTRACTOR', 'SITE_RUNNING', 'OTHER'] as const;
+export type FundPurpose = (typeof FUND_PURPOSES)[number];
 
 /**
  * What a vendor bill is against (v5 item 91): a purchase order (matched three ways), a hired machine's month from its

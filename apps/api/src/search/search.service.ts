@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import type { Paginated, SearchHitDto, SearchKind, SearchResultDto } from '@erp/shared';
-import { SEARCH_MIN_LENGTH, VENDOR_KIND_LABELS, canViewPaymentRequests, canEditContract, canEditVendors, canSeeVendorBank, canViewContract } from '@erp/shared';
+import { SEARCH_MIN_LENGTH, VENDOR_KIND_LABELS, canViewPaymentRequests, canRequestFunds, canEditContract, canEditVendors, canSeeVendorBank, canViewContract } from '@erp/shared';
 import type { RequestUser } from '../common/current-user';
 import { MaterialRequestsService } from '../material-requests/material-requests.service';
 import { PurchaseOrdersService } from '../purchasing/purchase-orders.service';
@@ -65,7 +65,7 @@ export class SearchService {
       { kind: 'subcontract_bill', list: (u, q) => subcontractBills.list(u, page(q) as never), hit: (r) => ({ id: r.id, title: r.label, subtitle: join(r.vendorName, r.projectName), href: `/subcontract-bills/${r.id}`, status: r.status }) },
       {
         kind: 'payment_request',
-        allowed: (u) => canViewPaymentRequests(u.roleKey),
+        allowed: (u) => canViewPaymentRequests(u.roleKey) || canRequestFunds(u.roleKey),
         list: (u, q) => paymentRequests.list(u, page(q) as never),
         hit: (r) => ({ id: r.id, title: r.requestNo, subtitle: join(r.vendorName, r.targetLabel, r.projectName), href: `/payment-requests/${r.id}`, status: r.status }),
       },

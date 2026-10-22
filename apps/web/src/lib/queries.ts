@@ -1631,6 +1631,8 @@ export interface PaymentRequestFilters extends PageParams {
   subcontractBillId?: string;
   purchaseOrderId?: string;
   workOrderId?: string;
+  /** Fund requests (v6 item 107) into this imprest */
+  imprestId?: string;
 }
 
 /** Payment requests (v5 item 90): asking for a bill to be paid or an advance released, approved before accounts pays. */
@@ -2687,11 +2689,12 @@ export const useDrivers = (filters?: DriverFilters) =>
   });
 
 /* Site imprest (v4 item 45) */
-export const useImprests = (filters?: { projectId?: string; active?: boolean; mine?: boolean }) =>
+export const useImprests = (filters?: { projectId?: string; active?: boolean; mine?: boolean }, enabled = true) =>
   useQuery({
     queryKey: ['imprests', 'list', clean(filters)],
     queryFn: async () => (await api.get<ImprestDto[]>('/imprests', { params: clean(filters) })).data,
     placeholderData: keepPreviousData,
+    enabled,
   });
 
 export const useImprest = (id: string | null | undefined) =>

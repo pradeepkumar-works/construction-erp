@@ -1,3 +1,5 @@
+import { FUND_PURPOSE_LABELS, subBillLabel, type FundPurpose, type PaymentRequestKind } from '@erp/shared';
+
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 /** "13 Oct 2026". Dates are stored as UTC midnight, so the UTC fields are the calendar day. */
@@ -47,3 +49,40 @@ export const inspectionTitle = (inspectionNo: string, activity: string, location
 /** "PR-2026-0003: ₹1,50,000.00 to Utkal Cement Traders against VB-2026-0004". */
 export const paymentRequestTitle = (requestNo: string, amount: string, vendor: string, target: string, advance: boolean) =>
   `${requestNo}: ${inr(amount)} to ${vendor} ${advance ? `as an advance on ${target}` : `against ${target}`}`;
+
+/** A fund request (v6 item 107): "PR-2026-0009: ₹50,000.00 for wages, into Ramesh Das's imprest". */
+export const fundRequestTitle = (requestNo: string, amount: string, purpose: FundPurpose | null, vendor: string | null, holder: string | null) =>
+  `${requestNo}: ${inr(amount)} for ${purpose ? FUND_PURPOSE_LABELS[purpose].toLowerCase() : 'the site'}, ${vendor ? `to ${vendor} on account` : `into ${holder ?? 'the site'}'s imprest`}`;
+
+/** The title of any payment request, loaded with `PAY_REQUEST_TITLE`. */
+export const payRequestTitle = (r: {
+  requestNo: string;
+  amount: { toFixed(n: number): string };
+  kind: PaymentRequestKind;
+  purpose: FundPurpose | null;
+  vendor: { name: string } | null;
+  imprest: { holder: { fullName: string } } | null;
+  vendorBill: { billNo: string } | null;
+  subcontractBill: { billNo: number; isFinal: boolean; workOrder: { woNo: string } } | null;
+  purchaseOrder: { poNo: string } | null;
+  workOrder: { woNo: string } | null;
+}) =>
+  r.kind === 'FUND_REQUEST'
+    ? fundRequestTitle(r.requestNo, r.amount.toFixed(2), r.purpose, r.vendor?.name ?? null, r.imprest?.holder.fullName ?? null)
+    : paymentRequestTitle(
+        r.requestNo,
+        r.amount.toFixed(2),
+        r.vendor?.name ?? '',
+        r.vendorBill?.billNo ?? (r.subcontractBill ? subBillLabel(r.subcontractBill.workOrder.woNo, r.subcontractBill.billNo, r.subcontractBill.isFinal) : (r.purchaseOrder?.poNo ?? r.workOrder?.woNo ?? '')),
+        r.kind !== 'BILL',
+      );
+
+/** What `payRequestTitle` reads of a payment request. */
+export const PAY_REQUEST_TITLE = {
+  vendor: { select: { name: true } },
+  imprest: { select: { holder: { select: { fullName: true } } } },
+  vendorBill: { select: { billNo: true } },
+  subcontractBill: { select: { billNo: true, isFinal: true, workOrder: { select: { woNo: true } } } },
+  purchaseOrder: { select: { poNo: true } },
+  workOrder: { select: { woNo: true } },
+} as const;

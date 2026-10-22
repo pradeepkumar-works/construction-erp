@@ -36,7 +36,7 @@ export function requestPayTarget(r: PaymentRequestDto, billOutstanding?: string)
     billType: r.vendorBillId ? 'VENDOR_BILL' : r.subcontractBillId ? 'SUBCONTRACT_BILL' : null,
     billId: r.vendorBillId ?? r.subcontractBillId ?? r.purchaseOrderId ?? r.workOrderId ?? r.id,
     billLabel: `${r.requestNo} · ${r.targetLabel}`,
-    vendorName: r.vendorName,
+    vendorName: r.vendorName ?? '',
     billDate: r.reviewedAt?.slice(0, 10) ?? r.createdAt.slice(0, 10),
     dueDate: r.neededBy ?? r.dueDate ?? r.createdAt.slice(0, 10),
     payable: r.amount,
@@ -64,7 +64,8 @@ export const PAYMENT_QUERY_KEYS = ['vendor-payments', 'payables', 'payment-reque
 
 /**
  * Pay a vendor or subcontractor against an approved bill (from the due list, or the bill given in `bill`), or against an
- * approved payment request (v5 item 90: a bill or an advance on an order), or correct a payment (`payment`). TDS at payment
+ * approved payment request (v5 item 90: a bill or an advance on an order; v6 item 107: a site's fund request, on account),
+ * or correct a payment (`payment`). TDS at payment
  * is for vendor bills and advances only: a subcontractor bill already deducts its TDS.
  */
 export function PaymentFormModal({ open, onClose, bill, payment }: { open: boolean; onClose: () => void; bill?: PayTarget | null; payment?: VendorPaymentDto | null }) {
@@ -77,7 +78,8 @@ export function PaymentFormModal({ open, onClose, bill, payment }: { open: boole
   const { data: toPay } = usePaymentRequests({ toPay: true, pageSize: 100, sortBy: 'neededBy', sortOrder: 'asc' }, choosing);
   // With requests required, only approved requests can be paid; otherwise any open bill too.
   const openBills: PayableBillDto[] = useMemo(() => (payables?.paymentsNeedRequest ? [] : (payables?.openBills ?? [])), [payables]);
-  const requests: PayTarget[] = useMemo(() => (toPay?.items ?? []).map((r) => requestPayTarget(r)), [toPay]);
+  // A fund request into an imprest (v6 item 107) is released from the request, not paid here.
+  const requests: PayTarget[] = useMemo(() => (toPay?.items ?? []).filter((r) => r.vendorId).map((r) => requestPayTarget(r)), [toPay]);
   const billKey = Form.useWatch('billKey', form) as string | undefined;
   const chosenBill = openBills.find((b) => keyOf(b) === billKey);
   const chosen: PayTarget | undefined = chosenBill ?? requests.find((r) => keyOf(r) === billKey);

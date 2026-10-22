@@ -114,6 +114,7 @@ export class PostingService {
           subcontractBill: { select: { billNo: true, isFinal: true, workOrder: { select: { woNo: true } } } },
           purchaseOrder: { select: { poNo: true } },
           workOrder: { select: { woNo: true } },
+          paymentRequest: { select: { requestNo: true } },
         },
       }),
       db.expense.findMany({ where: { ...open, status: 'APPROVED', ...range('date') }, include: { project: { select: projectSelect } } }),
@@ -283,11 +284,13 @@ export class PostingService {
 
     // Payments to vendors: Dr the vendor with what the payment settles; Cr bank or cash, TDS and other deductions. An
     // advance (v5 item 90) has no bill: it goes against the party ledger as an advance on the order, which Tally
-    // sets off when the bill is booked.
+    // sets off when the bill is booked. A site's fund request paid to a party (v6 item 107) is on account the same
+    // way, against the request.
     for (const p of payments) {
       const number = `PAY/${shortId(p.id)}`;
       const advance = !p.vendorBill && !p.subcontractBill;
-      const billName = p.vendorBill ? p.vendorBill.invoiceNo : p.subcontractBill ? subBillLabel(p.subcontractBill.workOrder.woNo, p.subcontractBill.billNo, p.subcontractBill.isFinal) : (p.purchaseOrder?.poNo ?? p.workOrder?.woNo ?? '');
+      const onAccount = advance && !p.purchaseOrder && !p.workOrder;
+      const billName = p.vendorBill ? p.vendorBill.invoiceNo : p.subcontractBill ? subBillLabel(p.subcontractBill.workOrder.woNo, p.subcontractBill.billNo, p.subcontractBill.isFinal) : (p.purchaseOrder?.poNo ?? p.workOrder?.woNo ?? p.paymentRequest?.requestNo ?? '');
       const l = new Lines(name)
         .dr(tallyVendorKey(p.vendorId), p.amount.add(p.tdsAmount).add(p.otherDeduction), { fallback: p.vendor.name, party: true })
         .cr(moneyLedger(p.mode), p.amount)
@@ -303,8 +306,8 @@ export class PostingService {
         projectId: p.project.id,
         projectCode: p.project.code,
         projectName: p.project.name,
-        narration: `${advance ? `Advance to ${p.vendor.name} on ${billName}` : `Paid ${p.vendor.name} against ${billName}`} (${p.project.name})${p.reference ? `, ${p.reference}` : ''}${p.otherDeductionNote ? `; deducted: ${p.otherDeductionNote}` : ''}`,
-        billRef: advance ? { name: `Advance ${billName}`, type: 'Advance' } : { name: billName, type: 'Agst Ref' },
+        narration: `${onAccount ? `Paid ${p.vendor.name} on account (${billName})` : advance ? `Advance to ${p.vendor.name} on ${billName}` : `Paid ${p.vendor.name} against ${billName}`} (${p.project.name})${p.reference ? `, ${p.reference}` : ''}${p.otherDeductionNote ? `; deducted: ${p.otherDeductionNote}` : ''}`,
+        billRef: onAccount ? { name: billName, type: 'On Account' } : advance ? { name: `Advance ${billName}`, type: 'Advance' } : { name: billName, type: 'Agst Ref' },
         lines: l.lines,
       });
     }

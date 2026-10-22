@@ -178,6 +178,7 @@ async function main() {
     await seedRmc(org.id);
     await seedSupplierPortal(org.id);
     await seedCentralStore(org.id);
+    await seedFundRequests(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
   }
@@ -371,6 +372,7 @@ async function main() {
   await seedRmc(org.id);
   await seedSupplierPortal(org.id);
   await seedCentralStore(org.id);
+  await seedFundRequests(org.id);
 
   console.log('Seed complete. Login with any of these (password: password123):');
   for (const u of USERS) console.log(`  ${u.email.padEnd(24)} ${u.role}`);
@@ -3807,4 +3809,59 @@ async function seedCentralStore(organizationId: string) {
   await entry('TRANSFER_OUT', cs.id, -1, store, { toProjectId: hospital.id, issuedTo: hospital.name, vehicleNo: 'OD-05-C-2290', challanNo: 'CS/DC/0031', remarks: 'Block B second-floor slab' }, [[steel.id, D(-5)], [wire.id, D(-80)]]);
   // Plywood the hospital no longer needs, on its way back to the yard
   await entry('TRANSFER_OUT', hospital.id, 0, store, { toProjectId: cs.id, issuedTo: cs.name, vehicleNo: 'OD-05-C-2290', remarks: 'Spare after the first-floor slab' }, [[ply.id, D(-30)]]);
+}
+
+/**
+ * Site fund requests demo (v6 item 107): the highway's engineer asked head office for ₹40,000 of wages money into
+ * their imprest, approved by the MD and released; and now asks ₹25,000 to be paid on account to a petty contractor
+ * for the culvert headwalls, on behalf of the highway from the water supply scheme, waiting for approval. Only when
+ * the organisation has no fund request yet.
+ */
+async function seedFundRequests(organizationId: string) {
+  if (await prisma.paymentRequest.count({ where: { organizationId, kind: 'FUND_REQUEST' } })) return;
+  const user = async (email: string) => (await prisma.user.findFirst({ where: { organizationId, email }, select: { id: true } }))?.id;
+  const [engineer, md, accounts] = await Promise.all(['engineer@demo.com', 'md@demo.com', 'accounts@demo.com'].map(user));
+  const road = await prisma.project.findFirst({ where: { organizationId, code: 'RD-2026-01' }, select: { id: true } });
+  const water = await prisma.project.findFirst({ where: { organizationId, type: 'WATER_SUPPLY' }, orderBy: { code: 'asc' }, select: { id: true } });
+  if (!engineer || !md || !accounts || !road) return;
+  const imprest = await prisma.imprest.findFirst({ where: { organizationId, projectId: road.id, holderId: engineer, isActive: true } });
+  if (!imprest) return;
+  const name = 'Maa Tarini Labour Group';
+  const petty =
+    (await prisma.vendor.findFirst({ where: { organizationId, name } })) ??
+    (await prisma.vendor.create({ data: { organizationId, name, kinds: ['LABOUR_CONTRACTOR'], pan: 'ABCPT6621K', stateCode: '21', contactPerson: 'Bhagaban Sethi', phone: '9437265510', address: 'Pipili, Puri' } }));
+  const year = new Date().getUTCFullYear();
+  const last = await prisma.paymentRequest.findFirst({ where: { organizationId, requestNo: { startsWith: `PR-${year}-` } }, orderBy: { requestNo: 'desc' }, select: { requestNo: true } });
+  let n = last ? parseInt(last.requestNo.slice(8), 10) : 0;
+  const no = () => `PR-${year}-${String(++n).padStart(4, '0')}`;
+
+  const wages = await prisma.paymentRequest.create({
+    data: {
+      organizationId, projectId: road.id, imprestId: imprest.id, requestNo: no(), kind: 'FUND_REQUEST', purpose: 'WAGES', amount: D('40000'), mode: 'BANK', neededBy: day(-6),
+      reason: 'Weekly wages of the local helpers on the WMM stretch', paidAmount: D('40000'), paidDate: day(-6),
+      status: 'APPROVED', submittedById: engineer, submittedAt: day(-8), reviewedById: md, reviewedAt: day(-7), createdAt: day(-8),
+    },
+  });
+  await prisma.imprestEntry.create({
+    data: {
+      organizationId, imprestId: imprest.id, kind: 'ADVANCE', status: 'PAID', amount: D('40000'), date: day(-6), paidOn: day(-6), paymentMode: 'BANK', reference: 'NEFT 0977',
+      reason: `${wages.requestNo}: wages, weekly wages of the local helpers on the WMM stretch`, requestedById: engineer, decidedById: accounts, decidedAt: day(-6), paymentRequestId: wages.id, createdAt: day(-6),
+    },
+  });
+  const onAccount = await prisma.paymentRequest.create({
+    data: {
+      organizationId, projectId: road.id, raisedAtProjectId: water?.id ?? null, vendorId: petty.id, requestNo: no(), kind: 'FUND_REQUEST', purpose: 'PETTY_CONTRACTOR', amount: D('25000'), mode: 'BANK', neededBy: day(2),
+      reason: 'Advance for the culvert headwall masonry gang; adjusted in their bill at month end', status: 'SUBMITTED', submittedById: engineer, submittedAt: day(-1), createdAt: day(-1),
+    },
+  });
+  await prisma.auditLog.createMany({
+    data: [
+      { organizationId, entityType: 'PAYMENT_REQUEST', entityId: wages.id, action: 'CREATED', actorId: engineer, createdAt: day(-8) },
+      { organizationId, entityType: 'PAYMENT_REQUEST', entityId: wages.id, action: 'SUBMITTED', actorId: engineer, createdAt: day(-8) },
+      { organizationId, entityType: 'PAYMENT_REQUEST', entityId: wages.id, action: 'APPROVED', actorId: md, createdAt: day(-7) },
+      { organizationId, entityType: 'PAYMENT_REQUEST', entityId: wages.id, action: 'PAYMENT_MADE', actorId: accounts, note: "₹40000.00 released into the imprest (NEFT 0977)", createdAt: day(-6) },
+      { organizationId, entityType: 'PAYMENT_REQUEST', entityId: onAccount.id, action: 'CREATED', actorId: engineer, createdAt: day(-1) },
+      { organizationId, entityType: 'PAYMENT_REQUEST', entityId: onAccount.id, action: 'SUBMITTED', actorId: engineer, createdAt: day(-1) },
+    ],
+  });
 }
