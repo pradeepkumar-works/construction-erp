@@ -3,10 +3,12 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { StatementsService } from './statements.service';
 import { AsOnQuery, BankAccountDto, BankImportDto, BankMatchDto, BankQuery, BankUnmatchDto, LockDto, PeriodQuery, ProfitLossQuery, SaveOpeningDto } from './statements.dto';
+import { ModuleSwitch } from '../common/decorators';
 
 /** Financial statements (v6 item 103): trial balance, profit and loss, balance sheet, bank reconciliation, year close. */
 @ApiTags('statements')
 @ApiBearerAuth()
+@ModuleSwitch('books')
 @Controller('statements')
 export class StatementsController {
   constructor(private statements: StatementsService) {}

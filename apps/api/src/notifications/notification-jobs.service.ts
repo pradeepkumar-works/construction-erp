@@ -16,6 +16,7 @@ import { JOB_TIMEZONE, todayIn } from './time';
 import { latestDocIds, serviceStatuses } from '../maintenance/service-status';
 import { WarningsService } from '../warnings/warnings.service';
 import { BriefsService, toBrief } from '../briefs/briefs.service';
+import { usesModuleWhere } from '../common/module-switch.guard';
 
 const WEB_URL = (process.env.WEB_URL || '').replace(/\/+$/, '');
 /** Bills falling due within this many days (today included) trigger the payments-due alert. */
@@ -398,7 +399,7 @@ export class NotificationJobsService {
     const until = parseDate(date);
     until.setUTCDate(until.getUTCDate() + EMI_DUE_DAYS);
     const emis = await this.prisma.loanEmi.findMany({
-      where: { paidOn: null, dueDate: { lte: until }, loan: { status: 'ACTIVE' } },
+      where: { paidOn: null, dueDate: { lte: until }, loan: { status: 'ACTIVE', organization: usesModuleWhere('machine_loans') } },
       include: { loan: { select: { id: true, organizationId: true, lenderName: true, loanNo: true, equipment: { select: { code: true, name: true } } } } },
       orderBy: { dueDate: 'asc' },
     });
@@ -524,7 +525,7 @@ export class NotificationJobsService {
     const soon = parseDate(date);
     soon.setUTCDate(soon.getUTCDate() + DOC_ALERT_DAYS);
     const docs = await this.prisma.complianceDoc.findMany({
-      where: { status: 'ACTIVE', expiresOn: { lte: soon } },
+      where: { status: 'ACTIVE', expiresOn: { lte: soon }, organization: usesModuleWhere('compliance') },
       include: { project: { select: { name: true, projectManagerId: true } } },
       orderBy: { expiresOn: 'asc' },
     });

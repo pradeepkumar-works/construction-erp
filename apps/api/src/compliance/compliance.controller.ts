@@ -3,9 +3,11 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { ComplianceService } from './compliance.service';
 import { CloseComplianceDocDto, CreateComplianceDocDto, ListComplianceQuery, RenewComplianceDocDto, UpdateComplianceDocDto } from './compliance.dto';
+import { ModuleSwitch } from '../common/decorators';
 
 @ApiTags('compliance')
 @ApiBearerAuth()
+@ModuleSwitch('compliance')
 @Controller('compliance-docs')
 export class ComplianceController {
   constructor(private compliance: ComplianceService) {}

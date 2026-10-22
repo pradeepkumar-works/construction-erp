@@ -1,5 +1,6 @@
 /** Platform admin: the console for Nirmaan staff (v3 item 35). */
 import type { BillingStateDto } from './types';
+import type { ModuleTier, SwitchableModule } from './module-switches';
 
 /** How long a company admin's consent lets Nirmaan support open the company read-only. */
 export const SUPPORT_ACCESS_DAYS = 7;
@@ -26,6 +27,10 @@ export interface PlatformCompanyDto {
   deletionScheduledFor: string | null;
   /** Trial or subscription (v3 item 34), only when billing is switched on */
   billing?: BillingStateDto;
+  /** The plan's module set (v6 item 117); null = every module */
+  moduleTier: ModuleTier | null;
+  /** The modules off for the company: turned off by its admin or left out of the plan */
+  modulesOff: SwitchableModule[];
 }
 
 export interface PlatformUserDto {

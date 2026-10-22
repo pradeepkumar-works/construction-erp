@@ -23,10 +23,12 @@ import {
   UpdateSorItemDto,
   UpdateTenderDto,
 } from './tenders.dto';
+import { ModuleSwitch } from '../common/decorators';
 
 /** Schedules of rates (v6 item 110): the books a bid is priced against, imported from Excel. */
 @ApiTags('tenders')
 @ApiBearerAuth()
+@ModuleSwitch('tenders')
 @Controller()
 export class SorController {
   constructor(private sor: SorService) {}
@@ -83,6 +85,7 @@ export class SorController {
 /** Tender bidding (v6 item 110): the register, the priced bid BOQ, the bids at opening, the result and the project. */
 @ApiTags('tenders')
 @ApiBearerAuth()
+@ModuleSwitch('tenders')
 @Controller('tenders')
 export class TendersController {
   constructor(private tenders: TendersService) {}

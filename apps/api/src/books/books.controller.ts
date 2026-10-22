@@ -3,10 +3,12 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { BooksService } from './books.service';
 import { AccountQuery, CreateAccountDto, DayBookQuery, LedgerQuery, SaveVoucherDto, UpdateAccountDto, VoucherNoteDto, VoucherQuery, VoucherReasonDto } from './books.dto';
+import { ModuleSwitch } from '../common/decorators';
 
 /** The books of account (v6 item 102): chart of accounts, vouchers, day book, cash and bank books, ledgers. */
 @ApiTags('books')
 @ApiBearerAuth()
+@ModuleSwitch('books')
 @Controller('books')
 export class BooksController {
   constructor(private books: BooksService) {}

@@ -3,9 +3,11 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { ImprestService } from './imprest.service';
 import { AdvanceDto, ListImprestsQuery, OpenImprestDto, PayDto, RejectDto, RequestTopUpDto, ReturnDto, UpdateImprestDto } from './imprest.dto';
+import { ModuleSwitch } from '../common/decorators';
 
 @ApiTags('imprest')
 @ApiBearerAuth()
+@ModuleSwitch('imprest')
 @Controller('imprests')
 export class ImprestController {
   constructor(private imprest: ImprestService) {}

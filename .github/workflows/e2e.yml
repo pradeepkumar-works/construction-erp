@@ -179,6 +179,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/comments-test.js
+      - name: Module switches leave out what a company turned off or its plan lacks, and pages map to their module
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/module-switches-test.js
       - name: Early warnings forecast right, show each role its own kinds and backtest on the demo history
         if: matrix.suite == 'flows'
         working-directory: apps/api

@@ -1086,6 +1086,31 @@ Nirmaan hands the payroll provider its inputs; PF, ESI, professional tax and sal
 - **Web.** `components/comments/CommentsSection.tsx`: `RecordFrame` adds it as the last section of every submission's record
   (with the open count), and `CommentsCard` on the meeting and material approval pages.
 
+## Module switches (v6 item 117)
+
+- **What can be off** (`SWITCHABLE_MODULES`, `packages/shared/src/module-switches.ts`): meetings, material approvals, safety
+  (with PPE), site imprest, guarantees and licences, tenders (with schedules of rates), subcontract enquiries, books (with
+  financial statements), payroll, biometric devices, the RMC plant and machine loans. The core (daily reports, progress,
+  requests, orders, bills, stock, documents…) is never switched off. Each module lists its pages (`paths`, web and phone),
+  so `moduleOfPath` says which module a page is.
+- **Columns.** `Organization.modulesOff` (what the admin turned off) and `moduleTier` (`ESSENTIALS` / `BUSINESS` /
+  `ENTERPRISE`, null = every module, set from the console). `modulesOffFor(org)` is both: turned off, or not in
+  `MODULE_TIER_MODULES[tier]`. Nothing is deleted when a module is off; turning it on brings everything back.
+- **API.** The JWT strategy puts `modulesOff` on the request user (and on the support session); `ModuleSwitchGuard` (an
+  app guard) refuses a route marked `@ModuleSwitch('…')` on its controller with 403 "<Module> is turned off for your
+  company…". Search leaves the kind out (`module` on its source), Ask leaves the tool or record kind out (`module` on the
+  tool and kind; refused with the same words if asked), the comments of a meeting or material approval are refused, My work
+  and the module homes leave the module's cards out, and the daily jobs (guarantee expiries, EMIs) skip companies without
+  it (`usesModuleWhere`). The device push (`/iclock`) is public and keeps taking punches.
+- **Admin.** `GET /module-switches`, `PUT /module-switches/:key { on }` (admins; a module outside the plan cannot be turned
+  on; audited as `MODULES`). Staff set the plan with `POST /platform/companies/:id/plan { tier }` (audited as
+  `MODULE_PLAN`). Rules in `apps/api/src/module-switches/module-switch-rules.ts`, tested in
+  `src/scripts/module-switches-test.ts` (CI runs it).
+- **Web.** `AuthUser.modulesOff`: `navFor` drops the pages (and a section left empty), `newEntriesFor` the New entries,
+  the app layout shows `ModuleOff` on a page of a module that is off, the project's Safety tab goes, and the make check on
+  orders is not asked. Admin > Modules (`/company-modules`) has a switch per module, grouped by sidebar section; the
+  console's company drawer has the plan. **Phone:** the Submit tiles and the project's Safety button follow the same list.
+
 ## Material reconciliation
 
 - **Table.** `MaterialNorm` (per project: a BOQ item, a store item, `qtyPerUnit` with six decimals, allowed `wastagePct`,

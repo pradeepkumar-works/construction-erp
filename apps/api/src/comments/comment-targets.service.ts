@@ -17,6 +17,7 @@ import { InspectionsService } from '../inspections/inspections.service';
 import { PaymentRequestsService } from '../payables/payment-requests.service';
 import { MeetingsService } from '../meetings/meetings.service';
 import { MaterialApprovalsService } from '../material-approvals/material-approvals.service';
+import { moduleOffMessage, moduleOn } from '../common/module-switch.guard';
 
 export interface CommentTarget {
   projectId: string | null;
@@ -71,6 +72,9 @@ export class CommentTargetsService {
 
   /** The record, as the user may see it; throws (403 or 404) when they may not. */
   async load(user: RequestUser, kind: CommentKind, id: string): Promise<CommentTarget> {
+    // A meeting or material approval while the company has that module off (v6 item 117) is out of reach.
+    const switchable = kind === 'MEETING' ? 'meetings' : kind === 'MATERIAL_APPROVAL' ? 'material_approvals' : null;
+    if (switchable && !moduleOn(user, switchable)) throw new ForbiddenException(moduleOffMessage(switchable));
     if (kind === 'MEETING') {
       const m = await this.meetings.get(user, id);
       return { projectId: m.projectId, title: `${m.meetingNo} ${m.title}` };

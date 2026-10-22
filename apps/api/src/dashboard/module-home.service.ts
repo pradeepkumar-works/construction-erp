@@ -41,6 +41,7 @@ import { StaffService } from '../staff/staff.service';
 import { PayrollRunService } from '../payroll/payroll-run.service';
 import { BooksService } from '../books/books.service';
 import { StatementsService } from '../statements/statements.service';
+import { moduleOn } from '../common/module-switch.guard';
 
 type D = Prisma.Decimal;
 const ZERO = new Prisma.Decimal(0);
@@ -148,7 +149,7 @@ export class ModuleHomeService {
       onSite || canViewWorkers(role) ? this.prisma.workerAttendance.count({ where: { ...where, date: day, status: { in: ['PRESENT', 'HALF_DAY'] } } }) : null,
       onSite || canViewContract(role) ? this.prisma.risk.groupBy({ by: ['kind'], where: { ...where, status: { not: 'CLOSED' } }, _count: { _all: true } }) : null,
       onSite ? this.prisma.ncr.count({ where: { ...where, status: { not: 'CLOSED' } } }) : null,
-      onSite ? this.prisma.safetyIncident.count({ where: { ...where, date: { gte: monthStart, lte: day } } }) : null,
+      onSite && moduleOn(user, 'safety') ? this.prisma.safetyIncident.count({ where: { ...where, date: { gte: monthStart, lte: day } } }) : null,
     ]);
     const out: ModuleFigureDto[] = [];
     if (reported) {
@@ -223,7 +224,7 @@ export class ModuleHomeService {
     const [receivables, variations, compliance] = await Promise.all([
       canViewContract(role) ? this.receivables.summary(user, projectId ? { projectId } : {}) : null,
       canViewVariations(role) ? this.prisma.variation.count({ where: { ...this.where(user, projectId), status: 'SUBMITTED' } }) : null,
-      canViewCompliance(role) ? this.compliance.list(user, projectId ? { projectId } : {}) : null,
+      canViewCompliance(role) && moduleOn(user, 'compliance') ? this.compliance.list(user, projectId ? { projectId } : {}) : null,
     ]);
     const out: ModuleFigureDto[] = [];
     if (receivables) {
@@ -245,7 +246,7 @@ export class ModuleHomeService {
   /** RMC (v6 item 104): the plants the caller sees (or the one asked for). */
   private async rmc(user: RequestUser, today: string, projectId?: string): Promise<ModuleFigureDto[]> {
     const role = user.roleKey;
-    if (!canViewRmc(role)) return [];
+    if (!canViewRmc(role) || !moduleOn(user, 'rmc')) return [];
     const org = user.organizationId;
     const plant = { ...this.access.projectWhere(user), type: 'PLANT' as const, ...(projectId ? { id: projectId } : {}) };
     const day = parseDate(today);
@@ -273,6 +274,7 @@ export class ModuleHomeService {
   }
 
   private async accounts(user: RequestUser): Promise<ModuleFigureDto[]> {
+    if (!moduleOn(user, 'books')) return [];
     const [f, s] = await Promise.all([this.books.figures(user), this.statements.figures(user)]);
     if (!f || !s) return [];
     const profit = Number(s.profitThisYear);
@@ -314,7 +316,7 @@ export class ModuleHomeService {
     if (summary.leaveToDecide !== undefined) out.push(count('leaveToDecide', 'Leave to decide', summary.leaveToDecide, '/staff?tab=leave', { tone: summary.leaveToDecide ? 'warning' : 'default', note: summary.leaveToDecide ? 'Waiting for your decision' : 'Nothing waiting' }));
     if (summary.overtimeToDecide !== undefined) out.push(count('overtimeToDecide', 'Overtime to decide', summary.overtimeToDecide, '/staff?tab=overtime', { tone: summary.overtimeToDecide ? 'warning' : 'default', note: summary.overtimeToDecide ? 'Waiting for your decision' : 'Nothing waiting' }));
     // Salary runs (v6 item 100): drafts for HR, submitted ones for management, approved ones for accounts.
-    if (canViewPayroll(role) && !projectId) {
+    if (canViewPayroll(role) && moduleOn(user, 'payroll') && !projectId) {
       const runs = await this.payrollRuns.waiting(user);
       const net = runs.reduce((t, r) => t + Number(r.net), 0);
       const step = canApprovePayroll(role) && runs.some((r) => r.status === 'SUBMITTED') ? 'to approve' : canPayPayroll(role) && runs.some((r) => r.status === 'APPROVED') ? 'to pay' : 'in draft';

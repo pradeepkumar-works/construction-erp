@@ -9,6 +9,7 @@ import type { DocumentDiscipline, DocumentKind, LetterDirection, RevisionStatus,
 import type { LeaveStatus, LeaveType, OvertimeStatus, StaffAttendanceStatus } from './staff';
 import type { CostHead } from './cost';
 import type { SupplierDispatchStatus, SupplierNoticeEntity } from './supplier';
+import type { SwitchableModule } from './module-switches';
 import type {
   FuelNormUnit,
   LdPeriod,
@@ -67,6 +68,8 @@ export interface AuthUser {
   ai?: boolean;
   /** A supplier-portal login (v6 item 105): the vendor it acts for */
   vendor?: { id: string; name: string };
+  /** The modules the company does not use (v6 item 117): turned off by an admin or left out of its plan. Empty when all are on. */
+  modulesOff?: SwitchableModule[];
 }
 
 /** Where a company stands with its subscription. READ_ONLY: trial over and nothing paid, so it can read but not write. */

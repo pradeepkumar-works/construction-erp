@@ -3,10 +3,12 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { MeetingsService } from './meetings.service';
 import { CreateMeetingDto, MeetingActionQuery, MeetingQuery, UpdateActionDto, UpdateMeetingDto } from './meetings.dto';
+import { ModuleSwitch } from '../common/decorators';
 
 /** Meetings and action items (v6 item 112): minutes of a project's meetings and the actions they leave open. */
 @ApiTags('meetings')
 @ApiBearerAuth()
+@ModuleSwitch('meetings')
 @Controller('meetings')
 export class MeetingsController {
   constructor(private meetings: MeetingsService) {}

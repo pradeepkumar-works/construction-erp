@@ -18,9 +18,11 @@ import {
   UpdateTalkDto,
 } from './safety.dto';
 import { CurrentUser, RequestUser } from '../common/current-user';
+import { ModuleSwitch } from '../common/decorators';
 
 @ApiTags('safety')
 @ApiBearerAuth()
+@ModuleSwitch('safety')
 @Controller('safety')
 export class SafetyController {
   constructor(private safety: SafetyService) {}

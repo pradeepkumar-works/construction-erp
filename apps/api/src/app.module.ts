@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ServerTimingInterceptor } from './common/server-timing';
 import { GuestGuard } from './common/guest.guard';
+import { ModuleSwitchGuard } from './common/module-switch.guard';
 import { SupportReadOnlyGuard } from './common/support.guard';
 import { BillingReadOnlyGuard } from './common/billing';
 import { PortalModule } from './portal/portal.module';
@@ -63,6 +64,7 @@ import { TendersModule } from './tenders/tenders.module';
 import { MeetingsModule } from './meetings/meetings.module';
 import { MaterialApprovalsModule } from './material-approvals/material-approvals.module';
 import { CommentsModule } from './comments/comments.module';
+import { ModuleSwitchesModule } from './module-switches/module-switches.module';
 import { SupplierModule } from './supplier/supplier.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { WorkersModule } from './workers/workers.module';
@@ -127,6 +129,7 @@ import { VitalsController } from './vitals.controller';
     MeetingsModule,
     MaterialApprovalsModule,
     CommentsModule,
+    ModuleSwitchesModule,
     SupplierModule,
     CostModule,
     ReconciliationModule,
@@ -159,6 +162,7 @@ import { VitalsController } from './vitals.controller';
     { provide: APP_GUARD, useClass: GuestGuard },
     { provide: APP_GUARD, useClass: SupportReadOnlyGuard },
     { provide: APP_GUARD, useClass: BillingReadOnlyGuard },
+    { provide: APP_GUARD, useClass: ModuleSwitchGuard },
     { provide: APP_INTERCEPTOR, useClass: ServerTimingInterceptor },
   ],
 })

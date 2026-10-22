@@ -2,11 +2,12 @@
 
 import React, { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { isGuest, isSupplier } from '@erp/shared';
+import { isGuest, isSupplier, moduleOfPath } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { AppShell } from '@/components/shell/AppShell';
 import { ShellSkeleton } from '@/components/shell/ShellSkeleton';
 import { AppearanceProvider } from '@/lib/appearance';
+import { ModuleOff } from '@/components/common/ModuleOff';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -29,9 +30,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   // While the sign-in is checked: the shell's outline and a page of placeholders, where the app will draw them.
   if (loading || !user || guestAway) return <ShellSkeleton />;
 
+  // A page of a module the company has turned off (v6 item 117) says so instead.
+  const pageModule = moduleOfPath(pathname);
+  const off = pageModule && user.modulesOff?.includes(pageModule) ? pageModule : null;
   return (
     <AppearanceProvider>
-      <AppShell user={user}>{children}</AppShell>
+      <AppShell user={user}>{off ? <ModuleOff module={off} user={user} /> : children}</AppShell>
     </AppearanceProvider>
   );
 }

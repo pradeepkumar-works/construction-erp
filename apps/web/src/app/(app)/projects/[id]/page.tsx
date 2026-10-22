@@ -98,7 +98,7 @@ function ProjectPage({ project }: { project: ProjectDetail }) {
     { key: 'attendance', group: 'site', label: 'Attendance', children: <AttendancePanel projectId={project.id} /> },
     { key: 'mb', group: 'site', label: 'Measurements', children: <MeasurementList projectId={project.id} /> },
     { key: 'inspections', group: 'site', label: 'Quality', children: <ProjectQualityTab projectId={project.id} /> },
-    { key: 'safety', group: 'site', label: 'Safety', children: <SafetyPanel projectId={project.id} /> },
+    can(!user?.modulesOff?.includes('safety')) && { key: 'safety', group: 'site', label: 'Safety', children: <SafetyPanel projectId={project.id} /> },
     { key: 'risks', group: 'site', label: 'Delays and risks', children: <RiskList projectId={project.id} /> },
     { key: 'documents', group: 'site', label: 'Documents', children: <ProjectDocumentsTab projectId={project.id} /> },
     { key: 'material', group: 'materials', label: 'Material requests', children: <MrList projectId={project.id} newLabel="New material request" /> },

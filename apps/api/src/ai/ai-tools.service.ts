@@ -1,6 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import type Anthropic from '@anthropic-ai/sdk';
-import type { Paginated } from '@erp/shared';
+import type { Paginated, SwitchableModule } from '@erp/shared';
 import { EXPENSE_CATEGORIES, MATERIAL_PRIORITIES, PAYMENT_MODES, PROJECT_STATUSES, SUBMISSION_STATUSES, WEATHER_OPTIONS, canSubmitExpense, canViewContract, canViewCost, canViewLetters, canViewPurchaseOrders, canViewReconciliation, submissionHref } from '@erp/shared';
 import type { AiDraftDto } from '@erp/shared';
 import type { RequestUser } from '../common/current-user';
@@ -40,6 +40,7 @@ import { QualityService } from '../quality/quality.service';
 import { MaintenanceService } from '../maintenance/maintenance.service';
 import { ScheduleService } from '../planning/schedule.service';
 import { AiDigestService } from './ai-digest.service';
+import { moduleOffMessage, moduleOn } from '../common/module-switch.guard';
 import { AiDraftsService } from './ai-drafts.service';
 import { DocumentTextService } from '../documents/document-text.service';
 
@@ -50,12 +51,16 @@ interface Tool {
   def: Anthropic.Beta.BetaTool;
   /** Roles that may use the tool at all; the service still applies its own rules. */
   allowed?: (user: RequestUser) => boolean;
+  /** The module it reads, left out while the company has it off (v6 item 117) */
+  module?: SwitchableModule;
   run: (user: RequestUser, input: Input) => Promise<unknown>;
 }
 
 /** A kind of record the assistant can list and open: its own list and detail methods, and its page on the web. */
 interface RecordKind {
   label: string;
+  /** The module it belongs to, refused while the company has it off (v6 item 117) */
+  module?: SwitchableModule;
   list: (user: RequestUser, q: Input) => Promise<Paginated<{ id: string }>>;
   get: (user: RequestUser, id: string) => Promise<{ id: string }>;
   href: (id: string) => string;
@@ -167,7 +172,7 @@ export class AiToolsService {
       machinery_log: { label: 'Machinery day logs (hours, idle, breakdown, diesel)', list: any(machinery.list.bind(machinery)), get: any(machinery.get.bind(machinery)), href: (id) => `/machinery/${id}`, statuses: SUBMISSION_STATUSES },
       risk: { label: 'Delays and risks register', list: any(risks.list.bind(risks)), get: any(risks.get.bind(risks)), href: (id) => `/risks?id=${id}` },
       variation: { label: 'Variations (extra items, changes to the contract)', list: any(variations.list.bind(variations)), get: any(variations.get.bind(variations)), href: (id) => `/variations?id=${id}` },
-      safety_incident: { label: 'Safety incidents and near misses', list: any(safety.listIncidents.bind(safety)), get: any(safety.getIncident.bind(safety)), href: (id) => `/safety?tab=incidents&id=${id}` },
+      safety_incident: { label: 'Safety incidents and near misses', module: 'safety', list: any(safety.listIncidents.bind(safety)), get: any(safety.getIncident.bind(safety)), href: (id) => `/safety?tab=incidents&id=${id}` },
       document: { label: 'Document register (drawings, specifications)', list: any(documents.listDocuments.bind(documents)), get: any(documents.getDocument.bind(documents)), href: (id) => `/documents?id=${id}` },
       attendance: { label: 'Daily labour attendance sheets', list: any(attendance.list.bind(attendance)), get: any(attendance.get.bind(attendance)), href: () => '/attendance', statuses: SUBMISSION_STATUSES },
       receipt: { label: 'Receipts from clients', list: any(receivables.list.bind(receivables)), get: any(receivables.get.bind(receivables)), href: () => '/receivables' },
@@ -286,7 +291,7 @@ export class AiToolsService {
           input_schema: { type: 'object', properties: { kind: { type: 'string', enum: kindNames }, id: { type: 'string' } }, required: ['kind', 'id'] },
         },
         run: async (user, i) => {
-          const kind = this.kind(i.kind);
+          const kind = this.kind(user, i.kind);
           const row = await kind.get(user, uuid(i.id, 'id'));
           return { ...row, href: kind.href(row.id) };
         },
@@ -396,6 +401,7 @@ export class AiToolsService {
       },
       {
         def: { name: 'safety_summary', description: 'Incidents and near misses this month, open incidents, toolbox talks, permits waiting and active.', input_schema: { type: 'object', properties: { projectId: projectIdProp } } },
+        module: 'safety',
         run: (user, i) => safety.summary(user, optUuid(i.projectId, 'projectId')),
       },
       {
@@ -545,7 +551,7 @@ export class AiToolsService {
 
   /** Tool definitions this user may call, in a fixed order so the prompt cache holds. */
   definitions(user: RequestUser): Anthropic.Beta.BetaTool[] {
-    return this.tools.filter((t) => !t.allowed || t.allowed(user)).map((t) => t.def);
+    return this.tools.filter((t) => (!t.module || moduleOn(user, t.module)) && (!t.allowed || t.allowed(user))).map((t) => t.def);
   }
 
   /** Every definition, for the cached prefix when the user's role does not matter. */
@@ -561,6 +567,7 @@ export class AiToolsService {
     const tool = this.tools.find((t) => t.def.name === name);
     try {
       if (!tool) throw new BadRequestException(`No tool called ${name}`);
+      if (tool.module && !moduleOn(user, tool.module)) throw new ForbiddenException(moduleOffMessage(tool.module));
       if (tool.allowed && !tool.allowed(user)) throw new ForbiddenException('Not available for your role');
       const raw = await tool.run(user, (input && typeof input === 'object' ? input : {}) as Input);
       const result = compact(raw) ?? (Array.isArray(raw) ? [] : {});
@@ -577,14 +584,15 @@ export class AiToolsService {
     }
   }
 
-  private kind(k: unknown): RecordKind {
+  private kind(user: RequestUser, k: unknown): RecordKind {
     const kind = typeof k === 'string' ? this.kinds[k] : undefined;
     if (!kind) throw new BadRequestException(`kind must be one of ${Object.keys(this.kinds).join(', ')}`);
+    if (kind.module && !moduleOn(user, kind.module)) throw new ForbiddenException(moduleOffMessage(kind.module));
     return kind;
   }
 
   private async listRecords(user: RequestUser, i: Input) {
-    const kind = this.kind(i.kind);
+    const kind = this.kind(user, i.kind);
     const status = optStatus(i.status);
     if (status && kind.statuses && !kind.statuses.includes(status)) throw new BadRequestException(`status must be one of ${kind.statuses.join(', ')}`);
     const q = {

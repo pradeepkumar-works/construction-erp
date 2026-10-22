@@ -493,14 +493,19 @@ model Organization {
   billingRemindedFor String?
 
   /// Ask Nirmaan (AI item 67): switched on by an admin; off until then
-  aiEnabled           Boolean  @default(false)
+  aiEnabled           Boolean     @default(false)
   /// Rupees per calendar month for the company's AI use; null = the server's AI_DEFAULT_MONTHLY_CAP_INR
   aiMonthlyCapInr     Int?
   /// Roles besides admins that may use Ask Nirmaan (AI item 77); empty = all staff
-  aiRoles             String[] @default([])
+  aiRoles             String[]    @default([])
   /// Payment requests (v5 item 90): accounts may pay a bill only against an approved payment request. Off for companies
   /// made before item 90, on for new sign-ups.
-  paymentsNeedRequest Boolean  @default(false)
+  paymentsNeedRequest Boolean     @default(false)
+  /// Module switches (v6 item 117): the switchable modules (SWITCHABLE_MODULES in @erp/shared) an admin turned off.
+  /// Their data stays; turning one on again brings it back.
+  modulesOff          String[]    @default([])
+  /// The plan's module set, set from the Nirmaan console; null = every module
+  moduleTier          ModuleTier?
 
   users                User[]
   roles                Role[]
@@ -6445,4 +6450,11 @@ model Comment {
 
   @@index([organizationId, entityType, entityId])
   @@index([parentId])
+}
+
+/// The plans' module sets (v6 item 117): MODULE_TIER_MODULES in @erp/shared
+enum ModuleTier {
+  ESSENTIALS
+  BUSINESS
+  ENTERPRISE
 }

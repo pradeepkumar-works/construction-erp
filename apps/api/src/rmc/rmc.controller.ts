@@ -20,10 +20,12 @@ import {
   UpdateMixDesignDto,
   UpdateRmcOrderDto,
 } from './rmc.dto';
+import { ModuleSwitch } from '../common/decorators';
 
 /** Ready-mix concrete (v6 item 104): plants, mix designs, orders, batches and challans, the plant's day, bills and money received. */
 @ApiTags('rmc')
 @ApiBearerAuth()
+@ModuleSwitch('rmc')
 @Controller('rmc')
 export class RmcController {
   constructor(private rmc: RmcService) {}

@@ -70,7 +70,9 @@ export default function ProjectScreen() {
       <Button title={t('Stock')} icon="cube-outline" variant="secondary" onPress={() => router.push(`/stock?projectId=${project.id}`)} style={styles.attendance} />
       <Button title={project.type === 'ROAD' ? t('Progress by chainage') : project.type === 'BUILDING' ? t('Progress by floor') : t('Villages & pipeline')} icon="map-outline" variant="secondary" onPress={() => router.push(`/sector?projectId=${project.id}`)} style={styles.attendance} />
       <Button title={t('Delays & risks')} icon="alert-circle-outline" variant="secondary" onPress={() => router.push(`/risks?projectId=${project.id}`)} style={styles.attendance} />
-      <Button title={t('Safety')} icon="medkit-outline" variant="secondary" onPress={() => router.push(`/safety?projectId=${project.id}`)} style={styles.attendance} />
+      {!user?.modulesOff?.includes('safety') ? (
+        <Button title={t('Safety')} icon="medkit-outline" variant="secondary" onPress={() => router.push(`/safety?projectId=${project.id}`)} style={styles.attendance} />
+      ) : null}
 
       <SectionTitle title={t('Activities')} right={<Text style={typography.caption}>{t('planned / executed')}</Text>} />
       {activities.length === 0 ? (
