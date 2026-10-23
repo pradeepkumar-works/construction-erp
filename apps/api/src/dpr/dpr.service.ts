@@ -232,6 +232,7 @@ export class DprService {
           parentActivity: { select: { name: true, sortOrder: true } },
           workElement: PLACE,
           boqItem: { select: { materialNorms: { select: { itemId: true, qtyPerUnit: true, item: { select: { name: true, unit: true } } }, orderBy: { createdAt: 'asc' } } } },
+          materialNorms: { select: { itemId: true, qtyPerUnit: true, item: { select: { name: true, unit: true } } }, orderBy: { createdAt: 'asc' } },
         },
         orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
       }),
@@ -266,7 +267,8 @@ export class DprService {
         doneQty: dec(new Prisma.Decimal(doneQty))!,
         lookAhead: started && notOver && (planned <= 0 || doneQty < planned),
         holdPoint: a.holdPoint,
-        norms: (a.boqItem?.materialNorms ?? []).map((n) => ({ itemId: n.itemId, itemName: n.item.name, unit: n.item.unit, qtyPerUnit: n.qtyPerUnit.toString() })),
+        // The activity's own norms (item 128) come before its BOQ item's
+        norms: (a.materialNorms.length ? a.materialNorms : (a.boqItem?.materialNorms ?? [])).map((n) => ({ itemId: n.itemId, itemName: n.item.name, unit: n.item.unit, qtyPerUnit: n.qtyPerUnit.toString() })),
         pipeStage,
         zoneId: pipeStage ? a.workElementId : null,
         order: place.subComponentCode ?? place.componentCode ?? '~',

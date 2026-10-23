@@ -1,8 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
-import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsDateString, IsIn, IsNumberString, IsOptional, IsString, IsUUID, Matches, MaxLength, MinLength, ValidateIf, ValidateNested } from 'class-validator';
+import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsNumberString, IsOptional, IsString, IsUUID, Matches, Max, MaxLength, Min, MinLength, ValidateIf, ValidateNested } from 'class-validator';
 import { VENDOR_ID_DOC } from '../vendors/vendors.dto';
-import { GRN_QC_STATUSES, LIST_SORT_FIELDS, STOCK_ADJUSTMENT_REASONS, STOCK_ENTRY_TYPES, type GrnQcStatus, type StockAdjustmentReason, type ItemSortField, type StockBalanceSortField, type StockEntrySortField, type StockEntryType } from '@erp/shared';
+import { GRN_QC_STATUSES, LIST_SORT_FIELDS, PIPE_MATERIALS, STOCK_ADJUSTMENT_REASONS, STOCK_ENTRY_TYPES, type GrnQcStatus, type PipeMaterial, type StockAdjustmentReason, type ItemSortField, type StockBalanceSortField, type StockEntrySortField, type StockEntryType } from '@erp/shared';
 import { PageQuery, QueryBool } from '../common/paging';
 import { CLIENT_ID_DOC } from '../common/idempotency';
 
@@ -67,6 +67,7 @@ export class CreateIssueDto {
   @IsUUID()
   workOrderId?: string;
   @ApiPropertyOptional({ description: 'Activity the material is used for' }) @IsOptional() @IsUUID() activityId?: string | null;
+  @ApiPropertyOptional({ description: "Component or pipe zone the material goes to (item 128); the activity's own when an activity is given" }) @IsOptional() @IsUUID() workElementId?: string | null;
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(1000) remarks?: string | null;
 
   @ApiProperty({ type: [IssueLineDto], description: 'Each quantity may not exceed the stock at the project.' })
@@ -180,6 +181,7 @@ export class CreateSiteReturnDto {
   @ApiProperty({ example: '2026-10-13' }) @IsDateString() @dateOnly() date: string;
   @ApiProperty({ example: 'Kalinga Builders (slab gang)', description: 'Who brought the material back' }) @IsString() @trim() @MinLength(1) @MaxLength(200) issuedTo: string;
   @ApiPropertyOptional({ description: 'Activity it had been issued for' }) @IsOptional() @IsUUID() activityId?: string | null;
+  @ApiPropertyOptional({ description: "Component or pipe zone it had been issued to (item 128); the activity's own when an activity is given" }) @IsOptional() @IsUUID() workElementId?: string | null;
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(1000) remarks?: string | null;
 
   @ApiProperty({ type: [IssueLineDto] })
@@ -260,6 +262,9 @@ export class CreateItemDto {
   @ApiPropertyOptional({ example: 'Cement' }) @IsOptional() @IsString() @trim() @MaxLength(60) category?: string | null;
   @ApiPropertyOptional({ example: '395.00', description: 'Standard rate per unit; values issues in the cost view' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsNumberString() rate?: string | null;
   @ApiPropertyOptional({ description: 'Diesel, petrol and the like: issued to machines and in the daily fuel position (v5 item 93)' }) @IsOptional() @IsBoolean() isFuel?: boolean;
+  @ApiPropertyOptional({ example: 110, description: 'Pipe (item 128): the outside or nominal diameter it lays as, when the name does not say it' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsInt() @Min(15) @Max(4000) pipeDiameterMm?: number | null;
+  @ApiPropertyOptional({ enum: PIPE_MATERIALS, nullable: true }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsIn(PIPE_MATERIALS) pipeMaterial?: PipeMaterial | null;
+  @ApiPropertyOptional({ example: '42.5', description: 'Pipe bought by weight: kg per metre, to turn issues into metres' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsNumberString() kgPerMetre?: string | null;
 }
 
 export class UpdateItemDto {
@@ -268,6 +273,9 @@ export class UpdateItemDto {
   @ApiPropertyOptional() @IsOptional() @IsString() @trim() @MaxLength(60) category?: string | null;
   @ApiPropertyOptional({ example: '395.00' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsNumberString() rate?: string | null;
   @ApiPropertyOptional() @IsOptional() @IsBoolean() isFuel?: boolean;
+  @ApiPropertyOptional({ example: 110, description: 'Pipe (item 128): the outside or nominal diameter it lays as, when the name does not say it' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsInt() @Min(15) @Max(4000) pipeDiameterMm?: number | null;
+  @ApiPropertyOptional({ enum: PIPE_MATERIALS, nullable: true }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsIn(PIPE_MATERIALS) pipeMaterial?: PipeMaterial | null;
+  @ApiPropertyOptional({ example: '42.5', description: 'Pipe bought by weight: kg per metre, to turn issues into metres' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsNumberString() kgPerMetre?: string | null;
 }
 
 export class SetMinLevelDto {

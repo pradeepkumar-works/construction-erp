@@ -8,6 +8,7 @@ import { DEMO_CONTRACTS, textPdf } from '../src/documents/demo-contracts';
 import { addMonths, schedule as loanSchedule } from '../src/machine-loans/loan-rules';
 import { seedTownDprs, seedWorkBreakdown } from './seed-structure';
 import { seedTownNetwork } from './seed-pipes';
+import { seedTownStock } from './seed-stock';
 import { DEFAULT_SETTINGS, computePayslip, structureCost, type RulesStructure } from '../src/payroll/payroll-rules';
 import { DEFAULT_CLOSEOUT_ITEMS, PAYSLIP_CODES, PERMIT_PRECAUTIONS, STANDARD_CHECKLISTS, gstinCheckChar, isWeeklyOff, leaveDays, ppeReplaceBy, scaleFrom, takeoffValue, type MarkupPoint, type PpeKind, type TakeoffKind } from '@erp/shared';
 
@@ -200,6 +201,7 @@ async function main() {
     await seedWorkBreakdown(prisma, org.id);
     await seedTownDprs(prisma, org.id);
     await seedTownNetwork(prisma, org.id);
+    await seedTownStock(prisma, org.id);
     await seedComments(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
@@ -408,6 +410,7 @@ async function main() {
   await seedWorkBreakdown(prisma, org.id);
   await seedTownDprs(prisma, org.id);
   await seedTownNetwork(prisma, org.id);
+  await seedTownStock(prisma, org.id);
   await seedComments(org.id);
 
   console.log('Seed complete. Login with any of these (password: password123):');
@@ -1514,7 +1517,7 @@ async function seedStock(organizationId: string) {
     for (let i = 3; i >= 1; i--) {
       const lines = openingItems.map((o) => ({ itemId: o.row.id, quantity: D(-o.perDay) }));
       if (received[0]) lines.push({ itemId: received[0].itemId, quantity: received[0].qty.div(4).toDecimalPlaces(0).neg() });
-      await entry('ISSUE', -i, keeper, { issuedTo: i === 2 ? 'Departmental (machinery)' : main, activityId: activity?.id ?? null, remarks: i === 2 ? 'Diesel for grader, roller and tippers' : null }, lines);
+      await entry('ISSUE', -i, keeper, { issuedTo: i === 2 ? 'Departmental (machinery)' : main, activityId: activity?.id ?? null, workElementId: activity?.workElementId ?? null, remarks: i === 2 ? 'Diesel for grader, roller and tippers' : null }, lines);
     }
 
     // Alert for whatever ended below its minimum

@@ -3,7 +3,8 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, RequestUser } from '../common/current-user';
 import { ReconciliationService } from './reconciliation.service';
 import { RateAnalysisService } from './rate-analysis.service';
-import { CopyRateAnalysisDto, EstimateTermsDto, ImportRateAnalysisDto, ReconciliationQuery, RecoverExcessDto, SaveBoqResourceDto, SaveMaterialNormDto } from './reconciliation.dto';
+import { StockViewsService } from './stock-views.service';
+import { CopyRateAnalysisDto, EstimateTermsDto, ImportRateAnalysisDto, ReconciliationQuery, RecoverExcessDto, SaveActivityNormDto, SaveBoqResourceDto, SaveMaterialNormDto } from './reconciliation.dto';
 
 @ApiTags('reconciliation')
 @ApiBearerAuth()
@@ -12,6 +13,7 @@ export class ReconciliationController {
   constructor(
     private reconciliation: ReconciliationService,
     private rates: RateAnalysisService,
+    private views: StockViewsService,
   ) {}
 
   @ApiOperation({
@@ -34,6 +36,51 @@ export class ReconciliationController {
   @Delete('projects/:id/norms/:normId')
   remove(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string, @Param('normId', ParseUUIDPipe) normId: string) {
     return this.reconciliation.remove(user, id, normId);
+  }
+
+  @ApiOperation({ summary: 'Add or change the norm of a store item on an activity', description: 'For work with no BOQ item of its own (item 128); it counts before the BOQ item\'s norms. QS, project manager, management or admin.' })
+  @Put('projects/:id/activity-norms')
+  saveActivityNorm(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: SaveActivityNormDto) {
+    return this.reconciliation.saveActivityNorm(user, id, dto);
+  }
+
+  @ApiOperation({ summary: "Remove an activity's norm", description: 'QS, project manager, management or admin.' })
+  @Delete('projects/:id/activity-norms/:normId')
+  removeActivityNorm(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string, @Param('normId', ParseUUIDPipe) normId: string) {
+    return this.reconciliation.removeActivityNorm(user, id, normId);
+  }
+
+  @ApiOperation({
+    summary: 'Material per component: needed by the approved DPR lines, used, issued to it',
+    description: 'Item 128. One row per component or sub-component and normed material: the design need (planned × norm), the need of the DPR lines approved in the period, what they say they used, what was issued to the component (or its activities) less returns, and the use per unit each activity achieved.',
+  })
+  @Get('projects/:id/structure')
+  structure(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string, @Query() q: ReconciliationQuery) {
+    return this.views.structure(user, id, q);
+  }
+
+  @ApiOperation({
+    summary: 'Pipe by size, over the project and per zone',
+    description: 'Item 128, since the start. Metres throughout (pipe bought by weight through the item\'s kg per metre): scope, ordered, received, issued, in store, laid, tested, cut wastage on the DPR lines that reported pipe, at site not laid, balance to lay and to buy.',
+  })
+  @Get('projects/:id/pipe')
+  pipe(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string) {
+    return this.views.pipe(user, id);
+  }
+
+  @ApiOperation({ summary: 'House-connection kits: connections done × the kit against what was issued', description: 'Item 128. A kit is the norms of a house-connection activity.' })
+  @Get('projects/:id/kits')
+  kits(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string) {
+    return this.views.kits(user, id);
+  }
+
+  @ApiOperation({
+    summary: 'The day-to-day exceptions between stock and the DPR',
+    description: 'Item 128. Use on a DPR with nothing issued to that component in the 7 days before; an issue to a component with no approved work there in the 3 days after; pipe laid on a zone above what was issued to it. The last 30 days when no period is given.',
+  })
+  @Get('projects/:id/exceptions')
+  exceptions(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string, @Query() q: ReconciliationQuery) {
+    return this.views.exceptions(user, id, q);
   }
 
   @ApiOperation({

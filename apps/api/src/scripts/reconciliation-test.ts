@@ -5,8 +5,22 @@
  */
 import assert from 'node:assert/strict';
 import { Prisma } from '@prisma/client';
-import { RATE_LIBRARY, equipmentHourlyRate, pickLibraryItem, sameUnit, suggestRateLibrary } from '@erp/shared';
-import { builtUpRate, movementsFrom, reconcile, reconciliationStatus, wastageGroups, type NormInput } from '../reconciliation/reconciliation-rules';
+import { PIPE_CUT_WASTAGE_PCT, RATE_LIBRARY, equipmentHourlyRate, pickLibraryItem, pipeMetres, pipeSizeOf, sameUnit, suggestRateLibrary } from '@erp/shared';
+import {
+  bookOf,
+  builtUpRate,
+  exceptionEvents,
+  executedBySource,
+  frontFlag,
+  kitRows,
+  movementsFrom,
+  pipeRow,
+  reconcile,
+  reconciliationStatus,
+  structureRows,
+  wastageGroups,
+  type NormInput,
+} from '../reconciliation/reconciliation-rules';
 
 const D = (v: number | string) => new Prisma.Decimal(v);
 const cases: [string, () => void][] = [];
@@ -175,6 +189,184 @@ test('library: a material picks the store item with the right unit and the most 
   const inTonnes = pickLibraryItem(cement, [{ name: 'OPC 53 Grade Cement', unit: 'MT' }], 'RCC M25');
   assert.equal(inTonnes.item, null);
   assert.equal(inTonnes.wrongUnit?.unit, 'MT');
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Stock against the DPR (item 128)
+
+test("activity norms: an activity with norms of its own counts under itself, not under its BOQ item's norms", () => {
+  const boqOf = new Map<string, string | null>([['conc-1', 'boq-rcc'], ['conc-2', 'boq-rcc'], ['hc', null], ['trench', null]]);
+  const executed = executedBySource(
+    [
+      { activityId: 'conc-1', quantity: D(10) },
+      { activityId: 'conc-2', quantity: D(5) },
+      { activityId: 'hc', quantity: D(18) },
+      { activityId: 'trench', quantity: D(96) },
+    ],
+    boqOf,
+    new Set(['conc-2', 'hc']),
+  );
+  assert.equal(executed.get('boq-rcc')?.toString(), '10');
+  assert.equal(executed.get('a:conc-2')?.toString(), '5');
+  assert.equal(executed.get('a:hc')?.toString(), '18');
+  assert.equal(executed.size, 3, 'work with no norm source is left out');
+  const result = reconcile(
+    [norm('n1', 'boq-rcc', 'cement', '8.2', 2), { id: 'n2', boqItemId: null, activityId: 'conc-2', itemId: 'cement', qtyPerUnit: D('7.6'), wastagePct: D(2) }, { id: 'n3', boqItemId: null, activityId: 'hc', itemId: 'saddle', qtyPerUnit: D(1), wastagePct: D(0) }],
+    executed,
+    new Map(),
+  );
+  const cement = result.find((r) => r.itemId === 'cement')!;
+  assert.equal(cement.theoretical.toString(), '120', '10 × 8.2 + 5 × 7.6');
+  assert.equal(cement.lines[1].activityId, 'conc-2');
+  assert.equal(result.find((r) => r.itemId === 'saddle')!.theoretical.toString(), '18');
+});
+
+test('work front: used beyond issued, issued and never reported, or nothing to say', () => {
+  assert.equal(frontFlag(D(100), D('100.5'), true), 'USED_NOT_ISSUED');
+  assert.equal(frontFlag(D(100), D(0), true), 'NOT_REPORTED');
+  assert.equal(frontFlag(D(100), D(92), true), null);
+  assert.equal(frontFlag(D(0), D(0), true), null);
+  assert.equal(frontFlag(D(100), D(0), false), null, 'a project that never reports material on its DPRs gets no flags');
+});
+
+test('book: opening before the period, received from receipts and transfers in, closing at its end', () => {
+  const b = bookOf(
+    [{ itemId: 'cement', quantity: D(200) }],
+    [
+      { itemId: 'cement', type: 'RECEIPT', quantity: D(500) },
+      { itemId: 'cement', type: 'TRANSFER_IN', quantity: D(50) },
+      { itemId: 'cement', type: 'ISSUE', quantity: D(-420) },
+      { itemId: 'cement', type: 'RETURN_FROM_SITE', quantity: D(10) },
+      { itemId: 'cement', type: 'ADJUSTMENT', quantity: D(-5) },
+    ],
+  ).get('cement')!;
+  assert.equal(b.opening.toString(), '200');
+  assert.equal(b.received.toString(), '550');
+  assert.equal(b.closing.toString(), '335');
+});
+
+test('structure: per element and material, the need of the DPR lines against their use and the issues to it', () => {
+  const rows = structureRows({
+    norms: [
+      { activityId: 'wall-conc', itemId: 'cement', qtyPerUnit: D(8), wastagePct: D(2) },
+      { activityId: 'wall-steel', itemId: 'tmt', qtyPerUnit: D('1.02'), wastagePct: D(3) },
+      { activityId: 'staging-conc', itemId: 'cement', qtyPerUnit: D(8), wastagePct: D(2) },
+    ],
+    activities: new Map([
+      ['wall-conc', { elementId: 'tank-2', planned: D(120) }],
+      ['wall-steel', { elementId: 'tank-2', planned: D(14) }],
+      ['staging-conc', { elementId: 'tank-3', planned: D(60) }],
+    ]),
+    placed: new Map([['wall-conc', D(12)], ['wall-steel', D('1.9')]]),
+    used: [
+      { activityId: 'wall-conc', itemId: 'cement', quantity: D(102) },
+      { activityId: 'wall-steel', itemId: 'tmt', quantity: D('1.94') },
+      { activityId: 'wall-conc', itemId: 'plywood', quantity: D(4) },
+    ],
+    issued: [
+      { elementId: 'tank-2', itemId: 'cement', quantity: D(110) },
+      { elementId: 'tank-2', itemId: 'cement', quantity: D(-2) },
+    ],
+    // The front since reporting began: an issue the week before, and use before the period too
+    front: {
+      issued: [{ elementId: 'tank-2', itemId: 'cement', quantity: D(120) }],
+      used: [
+        { activityId: 'wall-conc', itemId: 'cement', quantity: D(102) },
+        { activityId: 'wall-conc', itemId: 'cement', quantity: D(12) },
+      ],
+    },
+  });
+  const tank = rows.get('tank-2')!;
+  assert.equal(tank.length, 2, 'a material with no norm there stays in Materials');
+  const cement = tank.find((r) => r.itemId === 'cement')!;
+  assert.equal(cement.design.toString(), '960');
+  assert.equal(cement.needed.toString(), '96');
+  assert.equal(cement.allowed.toString(), '97.92');
+  assert.equal(cement.status, 'OVER');
+  assert.equal(cement.variancePct, 6.3);
+  assert.equal(cement.issued.toString(), '108');
+  assert.equal(cement.atFront?.toString(), '6', '120 issued since the week before reporting began, 114 used since');
+  assert.equal(cement.lines[0].achievedPerUnit?.toString(), '8.5', 'bags per m³ achieved against the mix of 8');
+  assert.equal(tank.find((r) => r.itemId === 'tmt')!.status, 'WITHIN');
+  const idle = rows.get('tank-3')![0];
+  assert.equal(idle.status, 'NO_WORK');
+  assert.equal(idle.design.toString(), '480');
+  assert.equal(idle.atFront?.toString(), '0');
+  const before = structureRows({ norms: [], activities: new Map(), placed: new Map(), used: [], issued: [], front: null });
+  assert.equal(before.size, 0);
+});
+
+test('pipe: sizes read from the name, fittings are not pipe, weights turned into metres', () => {
+  assert.deepEqual(pipeSizeOf({ name: 'HDPE PE100 110mm PN6' }), { diameterMm: 110, material: 'HDPE' });
+  assert.deepEqual(pipeSizeOf({ name: 'DI K7 pipe DN 250' }), { diameterMm: 250, material: 'DI' });
+  assert.deepEqual(pipeSizeOf({ name: 'MDPE service pipe 20mm' }), { diameterMm: 20, material: 'MDPE' });
+  assert.equal(pipeSizeOf({ name: 'HDPE electrofusion coupler 110mm' }), null);
+  assert.equal(pipeSizeOf({ name: 'Ball valve 50mm' }), null);
+  assert.equal(pipeSizeOf({ name: 'OPC 53 Grade Cement' }), null);
+  assert.deepEqual(pipeSizeOf({ name: 'MS pipe', pipeDiameterMm: 1200, pipeMaterial: 'MS' }), { diameterMm: 1200, material: 'MS' });
+  assert.equal(pipeMetres(84, 'Rmt', null), 84);
+  assert.equal(pipeMetres(2.95, 'MT', 295), 10);
+  assert.equal(pipeMetres(590, 'kg', 295), 2);
+  assert.equal(pipeMetres(3, 'MT', null), null, 'by weight with no weight per metre');
+  assert.equal(pipeMetres(3, 'Nos', 10), null);
+});
+
+test('pipe: cut wastage, pipe at site not laid, balances and flags', () => {
+  const zone = pipeRow('HDPE', { scope: 2400, laid: 444, tested: 0, used: 453.3, laidWithUse: 444, issued: 470 }, PIPE_CUT_WASTAGE_PCT.HDPE, false, true);
+  assert.equal(zone.wastagePct, 2.1);
+  assert.deepEqual(zone.flags, ['WASTAGE_ABOVE']);
+  assert.equal(zone.atSite, 16.7, '470 issued − 444 laid − 9.3 cut');
+  assert.equal(zone.balanceToLay, 1956);
+  assert.equal(zone.balanceToBuy, null);
+  const short = pipeRow('HDPE', { scope: 2400, laid: 500, tested: 0, used: 0, laidWithUse: 0, issued: 470 }, 1.5, false, true);
+  assert.deepEqual(short.flags, ['LAID_ABOVE_ISSUED']);
+  assert.equal(short.wastagePct, null);
+  assert.deepEqual(pipeRow('HDPE', { scope: 2400, laid: 500, tested: 0, used: 0, laidWithUse: 0, issued: 0 }, 1.5, false, false).flags, [], 'a zone with no issue tied to it is not checked');
+  const project = pipeRow('DI', { scope: 2000, laid: 0, tested: 0, used: 0, laidWithUse: 0, issued: 0, ordered: 1500, received: 1600 }, 1, true, true);
+  assert.equal(project.balanceToBuy, 420, '2000 × 1.01 − 1600');
+});
+
+test('kits: connections done × the kit against what was issued, in whole kits short', () => {
+  const rows = kitRows(D(412), [
+    { itemId: 'saddle', perKit: D(1), wastagePct: D(0), issued: D(408), used: D(400) },
+    { itemId: 'service', perKit: D(6), wastagePct: D(2), issued: D(2500), used: D(2480) },
+    { itemId: 'elbow', perKit: D(2), wastagePct: D(0), issued: D(824), used: D(820) },
+    { itemId: 'ferrule', perKit: D(1), wastagePct: D(0), issued: D(450), used: D(410) },
+  ]);
+  assert.equal(rows[0].status, 'SHORT');
+  assert.equal(rows[0].kitsShort, 4);
+  assert.equal(rows[1].status, 'OK', '2,472 needed, 2,521.44 allowed');
+  assert.equal(rows[2].status, 'OK');
+  assert.equal(rows[2].kitsShort, 0);
+  assert.equal(rows[3].status, 'OVER');
+  assert.equal(kitRows(D(3), [{ itemId: 'service', perKit: D(6), wastagePct: D(0), issued: D(13), used: D(13) }])[0].kitsShort, 1, 'part of a kit short is a kit short');
+});
+
+test('exceptions: use with nothing issued in the week before, an issue with no work in the three days after', () => {
+  const events = exceptionEvents(
+    [
+      { date: '2026-10-20', elementId: 'tank-2', itemId: 'cement', quantity: D(92), dprId: 'd1' },
+      { date: '2026-10-20', elementId: 'tank-2', itemId: 'cement', quantity: D(10), dprId: 'd1' },
+      { date: '2026-10-20', elementId: 'road', itemId: 'bitumen', quantity: D('0.65'), dprId: 'd1' },
+      { date: '2026-10-21', elementId: 'zone-2', itemId: 'hdpe', quantity: D(84), dprId: 'd2' },
+    ],
+    [
+      { date: '2026-10-14', elementId: 'tank-2', itemId: 'cement', quantity: D(110), entryId: 'e1', entryNo: 'ISS-1' },
+      { date: '2026-10-10', elementId: 'zone-2', itemId: 'hdpe', quantity: D(300), entryId: 'e2', entryNo: 'ISS-2' },
+      { date: '2026-10-16', elementId: 'tank-3', itemId: 'cement', quantity: D(40), entryId: 'e3', entryNo: 'ISS-3' },
+      { date: '2026-10-22', elementId: 'tank-4', itemId: 'cement', quantity: D(40), entryId: 'e4', entryNo: 'ISS-4' },
+    ],
+    [
+      { date: '2026-10-14', elementId: 'tank-2' },
+      { date: '2026-10-11', elementId: 'zone-2' },
+    ],
+    '2026-10-23',
+  );
+  const uses = events.filter((e) => e.kind === 'USE_WITHOUT_ISSUE');
+  assert.deepEqual(uses.map((e) => e.itemId).sort(), ['bitumen', 'hdpe'], 'cement on tank 2 was issued six days before; HDPE eleven');
+  const idle = events.filter((e) => e.kind === 'ISSUE_WITHOUT_WORK');
+  assert.deepEqual(idle.map((e) => e.entryNo), ['ISS-3'], 'ISS-4 is too recent to judge');
+  assert.equal(events[0].date, '2026-10-21', 'newest first');
 });
 
 let failed = 0;

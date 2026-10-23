@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
-import { App, Button, Checkbox, Form, Input, Space, Tag, Typography } from 'antd';
+import { App, Button, Checkbox, Form, Input, InputNumber, Select, Space, Tag, Typography } from 'antd';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { ItemDto, ItemSortField } from '@erp/shared';
-import { LIST_SORT_FIELDS, canManageStore } from '@erp/shared';
+import type { ItemDto, ItemSortField, PipeMaterial } from '@erp/shared';
+import { LIST_SORT_FIELDS, PIPE_MATERIALS, PIPE_MATERIAL_LABELS, canManageStore, pipeSizeLabel, pipeSizeOf } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
 import { useAuth } from '@/lib/auth';
@@ -18,7 +18,7 @@ import { CardToolbar } from '@/components/common/CardToolbar';
 import { EmptyArt } from '@/components/common/EmptyArt';
 import { DataTable, type ListColumn } from '@/components/list/DataTable';
 import { useListFrame } from '@/components/list/useListFrame';
-import { FormShell } from '@/components/form/FormShell';
+import { FormGrid, FormShell } from '@/components/form/FormShell';
 import { MoneyInput } from '@/components/form/inputs';
 import { ConfirmDelete } from '@/components/common/ConfirmDelete';
 
@@ -30,6 +30,9 @@ interface ItemForm {
   category?: string;
   rate?: number | null;
   isFuel?: boolean;
+  pipeDiameterMm?: number | null;
+  pipeMaterial?: PipeMaterial | null;
+  kgPerMetre?: number | null;
 }
 
 /** Item master. GRNs add items from the request lines; the store manager or an approver can add, rename and tidy them here. */
@@ -40,10 +43,16 @@ export function ItemsTable() {
   const mayManage = !!user && canManageStore(user.roleKey);
   const [editing, setEditing] = useState<ItemDto | 'new' | null>(null);
   const [form] = Form.useForm<ItemForm>();
+  const watchedName = Form.useWatch('name', form);
+  const readSize = watchedName ? pipeSizeOf({ name: watchedName }) : null;
 
   const save = useMutation({
     mutationFn: async (v: ItemForm) => {
-      const body = { name: v.name, unit: v.unit, category: v.category?.trim() || null, rate: v.rate === undefined || v.rate === null ? null : String(v.rate), isFuel: !!v.isFuel };
+      const body = { name: v.name, unit: v.unit, category: v.category?.trim() || null, rate: v.rate === undefined || v.rate === null ? null : String(v.rate), isFuel: !!v.isFuel,
+        pipeDiameterMm: v.pipeDiameterMm ?? null,
+        pipeMaterial: v.pipeMaterial ?? null,
+        kgPerMetre: v.kgPerMetre === undefined || v.kgPerMetre === null ? null : String(v.kgPerMetre),
+      };
       return editing && editing !== 'new' ? (await api.patch<ItemDto>(`/stock/items/${editing.id}`, body)).data : (await api.post<ItemDto>('/stock/items', body)).data;
     },
     onSuccess: (i) => {
@@ -64,7 +73,11 @@ export function ItemsTable() {
   const open = (i: ItemDto | 'new') => {
     setEditing(i);
     form.resetFields();
-    if (i !== 'new') form.setFieldsValue({ name: i.name, unit: i.unit, category: i.category ?? undefined, rate: i.rate === null ? undefined : Number(i.rate), isFuel: !!i.isFuel });
+    if (i !== 'new') form.setFieldsValue({ name: i.name, unit: i.unit, category: i.category ?? undefined, rate: i.rate === null ? undefined : Number(i.rate), isFuel: !!i.isFuel,
+        pipeDiameterMm: i.pipeDiameterMm ?? undefined,
+        pipeMaterial: i.pipeMaterial ?? undefined,
+        kgPerMetre: i.kgPerMetre ? Number(i.kgPerMetre) : undefined,
+      });
   };
 
   const frame = useListFrame<ItemSortField, ItemDto>({
@@ -192,6 +205,22 @@ export function ItemsTable() {
           <Form.Item name="isFuel" valuePropName="checked" extra="Fuel goes into machines with Fuel issue, and shows in Machinery > Fuel.">
             <Checkbox>Fuel (diesel, petrol)</Checkbox>
           </Form.Item>
+          <Typography.Paragraph type="secondary" style={{ marginBottom: 8 }}>
+            {readSize
+              ? `Pipe: read from the name as ${pipeSizeLabel(readSize)}. Fill these in only to correct it, or to give a weight per metre.`
+              : 'Pipe: fill these in when the name does not say the size, so pipe issued and laid compare by diameter.'}
+          </Typography.Paragraph>
+          <FormGrid cols={3}>
+            <Form.Item name="pipeDiameterMm" label="Diameter">
+              <InputNumber<number> min={15} max={4000} precision={0} controls={false} inputMode="numeric" suffix="mm" style={{ width: '100%' }} />
+            </Form.Item>
+            <Form.Item name="pipeMaterial" label="Material">
+              <Select allowClear placeholder="Pipe of" options={PIPE_MATERIALS.map((m) => ({ value: m, label: PIPE_MATERIAL_LABELS[m] }))} />
+            </Form.Item>
+            <Form.Item name="kgPerMetre" label="Weight per metre" extra="For pipe bought by weight">
+              <InputNumber<number> min={0.001} precision={3} controls={false} inputMode="decimal" suffix="kg/m" style={{ width: '100%' }} />
+            </Form.Item>
+          </FormGrid>
         </Form>
       </FormShell>
     </>

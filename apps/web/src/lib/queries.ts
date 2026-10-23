@@ -152,6 +152,11 @@ import type {
   ProjectCostDto,
   ProjectBudgetDto,
   ProjectReconciliationDto,
+  ProjectStructureReconDto,
+  ProjectPipeReconDto,
+  ProjectKitReconDto,
+  ProjectReconExceptionsDto,
+  ActivityNormDto,
   MaterialNormDto,
   BoqResourceDto,
   BoqResourceKind,
@@ -2314,6 +2319,65 @@ export const useSubconReconciliation = (projectId: string | undefined) =>
     queryFn: async () => (await api.get<ProjectSubconReconciliationDto>(`/reconciliation/projects/${projectId}/subcontractors`)).data,
     enabled: !!projectId,
   });
+
+/** Stock against the DPR (item 128): per component, per pipe size, per kit, and the exceptions. */
+export const useStructureRecon = (projectId: string | undefined, period: CostPeriod) =>
+  useQuery({
+    queryKey: ['reconciliation', projectId, 'structure', clean(period)],
+    queryFn: async () => (await api.get<ProjectStructureReconDto>(`/reconciliation/projects/${projectId}/structure`, { params: clean(period) })).data,
+    placeholderData: keepPreviousData,
+    enabled: !!projectId,
+  });
+
+export const usePipeRecon = (projectId: string | undefined) =>
+  useQuery({
+    queryKey: ['reconciliation', projectId, 'pipe'],
+    queryFn: async () => (await api.get<ProjectPipeReconDto>(`/reconciliation/projects/${projectId}/pipe`)).data,
+    enabled: !!projectId,
+  });
+
+export const useKitRecon = (projectId: string | undefined) =>
+  useQuery({
+    queryKey: ['reconciliation', projectId, 'kits'],
+    queryFn: async () => (await api.get<ProjectKitReconDto>(`/reconciliation/projects/${projectId}/kits`)).data,
+    enabled: !!projectId,
+  });
+
+export const useReconExceptions = (projectId: string | undefined, period: CostPeriod) =>
+  useQuery({
+    queryKey: ['reconciliation', projectId, 'exceptions', clean(period)],
+    queryFn: async () => (await api.get<ProjectReconExceptionsDto>(`/reconciliation/projects/${projectId}/exceptions`, { params: clean(period) })).data,
+    placeholderData: keepPreviousData,
+    enabled: !!projectId,
+  });
+
+export interface SaveActivityNormInput {
+  projectId: string;
+  activityId: string;
+  itemId: string;
+  qtyPerUnit: string;
+  wastagePct: string;
+  note: string | null;
+}
+
+export function useSaveActivityNorm() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ projectId, ...body }: SaveActivityNormInput) => (await api.put<ActivityNormDto>(`/reconciliation/projects/${projectId}/activity-norms`, body)).data,
+    onSuccess: (_, v) => {
+      qc.invalidateQueries({ queryKey: ['reconciliation', v.projectId] });
+      qc.invalidateQueries({ queryKey: ['activities', v.projectId, 'dpr-options'] });
+    },
+  });
+}
+
+export function useRemoveActivityNorm() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ projectId, normId }: { projectId: string; normId: string }) => (await api.delete<{ ok: true }>(`/reconciliation/projects/${projectId}/activity-norms/${normId}`)).data,
+    onSuccess: (_, v) => qc.invalidateQueries({ queryKey: ['reconciliation', v.projectId] }),
+  });
+}
 
 export const useWastageReport = (projectId: string | undefined, period: CostPeriod) =>
   useQuery({

@@ -11,6 +11,7 @@
  */
 import type { BoqResourceKind, EquipmentRateUnit, StockAdjustmentReason } from './enums';
 import { DAYS_PER_MONTH } from './cost';
+import type { ActivityNormDto, FrontFlag } from './stock-against-dpr';
 
 /** Consumption this far below theoretical is flagged too: progress may be over-reported or issues not recorded. */
 export const RECONCILIATION_UNDER_PCT = 5;
@@ -51,11 +52,15 @@ export interface MaterialNormDto {
   updatedAt: string;
 }
 
-/** One BOQ item's share of an item's theoretical consumption. */
+/** One BOQ item's (or, for an activity's own norm, one activity's) share of an item's theoretical consumption. */
 export interface ReconciliationLineDto {
   normId: string;
-  boqItemId: string;
+  /** null on an activity's own norm (item 128) */
+  boqItemId: string | null;
+  activityId: string | null;
+  /** The BOQ item number, or the activity's component code */
   itemNo: string;
+  /** The BOQ item's description, or the activity's name */
   description: string;
   unit: string;
   executedQty: string;
@@ -87,6 +92,27 @@ export interface ReconciliationItemDto {
   /** excessQty × rate; null without a rate or for viewers without cost */
   excessValue: string | null;
   lines: ReconciliationLineDto[];
+  /** The store's book for the period (item 128): before it, received in it (receipts and transfers in) and after it */
+  openingQty: string;
+  receivedQty: string;
+  closingQty: string;
+  /** What approved DPR lines in the period say they used (item 128) */
+  usedQty: string;
+  /** Approved DPR line quantities × the norms: what those lines should have used */
+  neededQty: string;
+  /** Needed plus the norms' wastage */
+  neededAllowedQty: string;
+  /** Used − needed, and in % of needed (one decimal; null with nothing needed) */
+  usedVarianceQty: string;
+  usedVariancePct: number | null;
+  /** Used against needed; null when no DPR in the period reports material */
+  usedStatus: ReconciliationStatus | null;
+  /**
+   * Should be lying at the work front at the period's end: issued − returned from a week before the first DPR that
+   * reported material, less all the DPRs say was used since; null until a DPR reports material
+   */
+  atFrontQty: string | null;
+  front: FrontFlag | null;
 }
 
 /** An item issued to site that no norm covers, so it cannot be reconciled yet. */
@@ -95,6 +121,10 @@ export interface UnreconciledItemDto {
   itemName: string;
   unit: string;
   consumedQty: string;
+  /** Used per approved DPR lines in the period (item 128) */
+  usedQty: string;
+  atFrontQty: string | null;
+  front: FrontFlag | null;
 }
 
 export interface ProjectReconciliationDto {
@@ -107,8 +137,15 @@ export interface ProjectReconciliationDto {
   items: ReconciliationItemDto[];
   unreconciled: UnreconciledItemDto[];
   norms: MaterialNormDto[];
+  /** Norms set on activities (item 128), for work with no BOQ item of its own */
+  activityNorms: ActivityNormDto[];
   /** BOQ items with approved progress in the period and no norm */
   boqItemsWithoutNorm: number;
+  /** The first day a DPR line reported material: the work front counts from it (issues from a week before) */
+  frontFrom: string | null;
+  /** Items issued and never reported used, and used beyond what was issued */
+  notReportedCount: number;
+  usedNotIssuedCount: number;
   overCount: number;
   underCount: number;
   /** Total excess value; null for viewers without cost */

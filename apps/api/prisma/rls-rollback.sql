@@ -521,5 +521,8 @@ DROP POLICY IF EXISTS tenant_isolation ON "PipeSegment";
 ALTER TABLE "PipeTestSegment" NO FORCE ROW LEVEL SECURITY;
 ALTER TABLE "PipeTestSegment" DISABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS tenant_isolation ON "PipeTestSegment";
+ALTER TABLE "ActivityMaterialNorm" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "ActivityMaterialNorm" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "ActivityMaterialNorm";
 
 DROP FUNCTION IF EXISTS app_current_org();
