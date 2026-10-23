@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { api, apiToken, PASSWORD } from './helpers';
+import { api, apiToken, homeHeading, PASSWORD } from './helpers';
 
 /** A new company signs up and gets the first-week checklist; creating a project ticks the first step. Needs ORG_SIGNUP=open on the API. */
 test('a new company sees its first-week checklist, and it follows what they do', async ({ page }) => {
@@ -31,6 +31,6 @@ test('a new company sees its first-week checklist, and it follows what they do',
   await card.getByRole('button', { name: 'Hide the setup checklist' }).click();
   await expect(card).toBeHidden();
   await page.reload();
-  await expect(page.getByText(/^Welcome, /)).toBeVisible();
+  await expect(homeHeading(page)).toBeVisible();
   await expect(card).toBeHidden();
 });

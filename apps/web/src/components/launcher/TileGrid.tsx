@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useId, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Form, Modal } from 'antd';
+import { Dropdown, Form, Modal, type MenuProps } from 'antd';
 import type { NavFamily, NavNode } from '@erp/shared';
 import { navDestination, navNode, navTarget, projectTabHref } from '@erp/shared';
 import { familyColors } from '@/lib/brand';
@@ -13,11 +13,23 @@ import { ProjectSelect } from '@/components/common/ProjectSelect';
 import { TreeIcon } from '@/components/shell/nav-icons';
 import s from './TileGrid.module.css';
 
-/** What a tile shows: the node, and the module's colour family (a page takes its module's). */
+/** What a tile shows: a node of the tree in its module's colour family (a page takes its module's), or a place of its own
+ *  (a pinned project or saved view) with its own name, icon and address. */
 export interface TileEntry {
-  node: NavNode;
+  key: string;
+  node?: NavNode;
   family?: NavFamily;
+  label?: string;
+  icon?: string;
+  description?: string;
+  /** Where it goes, for a tile that is not a node. */
+  href?: string;
+  /** What waits on the user there; the tile's name says it too ("Purchases, 3 waiting"). */
+  badge?: number;
 }
+
+/** A tile's menu (Pin to Home, Unpin, Move left…): drawn as ⋮ on the tile, and opened by right-click, a long press or Shift F10. */
+export type TileMenu = (entry: TileEntry, index: number) => MenuProps['items'];
 
 /** One tile: the icon in its family's colours, the name and a line on what it is for; the whole tile a link (or a button
  *  that asks for the project, for a project tab with no project chosen in the header). */
@@ -26,27 +38,52 @@ function Tile({ entry, tabIndex, onFocus, onKeyDown, onPickProject }: { entry: T
   const [projectId] = useProjectScope();
   const { node } = entry;
   const { fg, bg } = familyColors(entry.family, dark);
-  const to = navDestination(node);
+  const to = node ? navDestination(node) : null;
+  const label = entry.label ?? node?.label ?? '';
+  const description = entry.description ?? node?.description;
+  const descId = useId();
+  // The name is the label (and what waits); the line under it is the description, so a tile reads like its sidebar link.
+  const a11y = { 'aria-label': entry.badge ? `${label}, ${entry.badge} waiting` : label, 'aria-describedby': description ? descId : undefined };
   const body = (
     <>
       <span className={s.chip} style={{ color: fg, background: bg }}>
-        <TreeIcon name={node.icon} />
+        <TreeIcon name={entry.icon ?? node?.icon ?? 'layout-grid'} />
+        {!!entry.badge && (
+          <span className={s.badge} aria-hidden translate="no">
+            {entry.badge > 99 ? '99+' : entry.badge}
+          </span>
+        )}
       </span>
-      <span className={s.label}>{node.label}</span>
-      <span className={s.desc}>{node.description}</span>
+      <span className={s.label}>{label}</span>
+      {description && (
+        <span id={descId} className={s.desc}>
+          {description}
+        </span>
+      )}
     </>
   );
-  if (to?.kind === 'project' && !projectId)
+  if (node && to?.kind === 'project' && !projectId)
     return (
-      <button type="button" className={s.tile} tabIndex={tabIndex} onFocus={onFocus} onKeyDown={onKeyDown} onClick={() => onPickProject(node)} aria-haspopup="dialog">
+      <button type="button" className={s.tile} tabIndex={tabIndex} onFocus={onFocus} onKeyDown={onKeyDown} onClick={() => onPickProject(node)} aria-haspopup="dialog" {...a11y}>
         {body}
       </button>
     );
-  const href = !to ? '#' : to.kind === 'page' ? to.href : projectTabHref(projectId!, to.tab, to.query);
+  const href = entry.href ?? (!to ? '#' : to.kind === 'page' ? to.href : projectTabHref(projectId!, to.tab, to.query));
   return (
-    <Link href={href} className={s.tile} tabIndex={tabIndex} onFocus={onFocus} onKeyDown={onKeyDown}>
+    <Link href={href} className={s.tile} tabIndex={tabIndex} onFocus={onFocus} onKeyDown={onKeyDown} {...a11y}>
       {body}
     </Link>
+  );
+}
+
+/** The tile's ⋮ menu. The button is not a Tab stop (the tile is; Shift F10 opens this from it). */
+function TileMenuButton({ label, items, open, onOpenChange }: { label: string; items: MenuProps['items']; open: boolean; onOpenChange: (open: boolean) => void }) {
+  return (
+    <Dropdown menu={{ items, onClick: () => onOpenChange(false) }} trigger={['click']} open={open} onOpenChange={onOpenChange} placement="bottomRight">
+      <button type="button" className={s.more} tabIndex={-1} aria-label={`More for ${label}`} aria-haspopup="menu" aria-expanded={open}>
+        <TreeIcon name="ellipsis-vertical" />
+      </button>
+    </Dropdown>
   );
 }
 
@@ -92,14 +129,15 @@ const MOVES: Record<string, number | 'row-up' | 'row-down' | 'first' | 'last'> =
  * between tiles (Up and Down by row, as laid out), Home and End to the ends, Enter opens. Grouped tiles (Accounts) sit under
  * their headings, still one grid for the keys.
  */
-export function TileGrid({ entries, label }: { entries: TileEntry[]; label: string }) {
+export function TileGrid({ entries, label, menu, compact }: { entries: TileEntry[]; label: string; menu?: TileMenu; compact?: boolean }) {
   const [active, setActive] = useState(0);
+  const [menuAt, setMenuAt] = useState<number | null>(null);
   const [picking, setPicking] = useState<NavNode | null>(null);
   const root = useRef<HTMLDivElement>(null);
   const groups = useMemo(() => {
     const out: { title?: string; items: { entry: TileEntry; index: number }[] }[] = [];
     entries.forEach((entry, index) => {
-      const title = entry.node.group;
+      const title = entry.node?.group;
       const last = out[out.length - 1];
       if (last && last.title === title) last.items.push({ entry, index });
       else out.push({ title, items: [{ entry, index }] });
@@ -109,6 +147,15 @@ export function TileGrid({ entries, label }: { entries: TileEntry[]; label: stri
   const current = Math.min(active, entries.length - 1);
 
   const onKeyDown = (e: React.KeyboardEvent) => {
+    if (menu && ((e.shiftKey && e.key === 'F10') || e.key === 'ContextMenu')) {
+      const tiles = Array.from(root.current?.querySelectorAll<HTMLElement>(`.${s.tile}`) ?? []);
+      const at = tiles.indexOf(document.activeElement as HTMLElement);
+      if (at >= 0) {
+        e.preventDefault();
+        setMenuAt(at);
+      }
+      return;
+    }
     const move = MOVES[e.key];
     if (move === undefined) return;
     const tiles = Array.from(root.current?.querySelectorAll<HTMLElement>(`.${s.tile}`) ?? []);
@@ -140,12 +187,38 @@ export function TileGrid({ entries, label }: { entries: TileEntry[]; label: stri
       {groups.map((g, gi) => (
         <section key={g.title ?? gi} aria-label={g.title} style={{ marginTop: gi ? 'var(--ant-margin-lg)' : undefined }}>
           {g.title && <h2 className={s.groupTitle}>{g.title}</h2>}
-          <ul className={s.grid}>
-            {g.items.map(({ entry, index }) => (
-              <li key={entry.node.id}>
-                <Tile entry={entry} tabIndex={index === current ? 0 : -1} onFocus={() => setActive(index)} onKeyDown={onKeyDown} onPickProject={setPicking} />
-              </li>
-            ))}
+          <ul className={compact ? `${s.grid} ${s.compact}` : s.grid}>
+            {g.items.map(({ entry, index }) => {
+              const items = menu?.(entry, index);
+              return (
+                <li
+                  key={entry.key}
+                  className={s.cell}
+                  onContextMenu={
+                    items?.length
+                      ? (e) => {
+                          e.preventDefault();
+                          setMenuAt(index);
+                        }
+                      : undefined
+                  }
+                >
+                  <Tile entry={entry} tabIndex={index === current ? 0 : -1} onFocus={() => setActive(index)} onKeyDown={onKeyDown} onPickProject={setPicking} />
+                  {!!items?.length && (
+                    <TileMenuButton
+                      label={entry.label ?? entry.node?.label ?? ''}
+                      items={items}
+                      open={menuAt === index}
+                      onOpenChange={(open) => {
+                        setMenuAt(open ? index : null);
+                        // Back to the tile when the menu closes, as after any menu.
+                        if (!open) root.current?.querySelectorAll<HTMLElement>(`.${s.tile}`)[index]?.focus();
+                      }}
+                    />
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </section>
       ))}
@@ -161,4 +234,7 @@ const familyOf = (node: NavNode): NavFamily | undefined => {
 };
 
 /** Tiles in their module's colours (a shortcut in its own module's, where the page lives). */
-export const tileEntries = (nodes: NavNode[]): TileEntry[] => nodes.map((node) => ({ node, family: familyOf(navTarget(node)) }));
+export const tileEntries = (nodes: NavNode[], badges?: Record<string, number>): TileEntry[] =>
+  nodes.map((node) => ({ key: node.id, node, family: familyOf(navTarget(node)), badge: badges?.[node.id] }));
+
+export { familyOf };

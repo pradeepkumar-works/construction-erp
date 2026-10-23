@@ -631,6 +631,8 @@ model Organization {
   drivers              Driver[]
   pvComponents         PriceVariationComponent[]
   savedViews           SavedView[]
+  navPins              NavPin[]
+  navVisits            NavVisit[]
   aiThreads            AiThread[]
   aiMessages           AiMessage[]
   billCheckAcceptances BillCheckAcceptance[]
@@ -757,6 +759,8 @@ model User {
   updatedAt      DateTime     @updatedAt
 
   savedViews            SavedView[]
+  navPins               NavPin[]
+  navVisits             NavVisit[]
   aiThreads             AiThread[]
   billChecksAccepted    BillCheckAcceptance[]      @relation("BillCheckAcceptedBy")
   warningsDismissed     WarningDismissal[]         @relation("WarningDismissedBy")
@@ -6533,4 +6537,56 @@ enum ModuleTier {
   ESSENTIALS
   BUSINESS
   ENTERPRISE
+}
+
+/// Pinned on Home (launcher phase 2): a tile of the navigation tree (NAV_TREE in @erp/shared) or a project,
+/// in the user's own order. At most LAUNCHER_PIN_MAX per user. A pin to something the user can no longer open is hidden, not deleted.
+model NavPin {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind           NavPinKind
+  /// A node id or a project id.
+  target         String
+  label          String
+  /// Fractional index: pins sort by it as text, and a move rewrites only the moved pin.
+  position       String
+  createdAt      DateTime     @default(now())
+
+  @@unique([userId, kind, target])
+  @@index([organizationId])
+}
+
+/// Places a user opened (launcher phase 2), for Recent on Home and in Search. Node rows are kept (Discover reads "never opened"
+/// from them); project and record rows are trimmed to the latest LAUNCHER_VISITS_KEPT.
+model NavVisit {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind           NavVisitKind
+  target         String
+  label          String
+  href           String
+  firstAt        DateTime     @default(now())
+  lastAt         DateTime     @default(now())
+  count          Int          @default(1)
+
+  @@unique([userId, kind, target])
+  @@index([userId, lastAt])
+  @@index([organizationId])
+}
+
+enum NavPinKind {
+  NODE
+  PROJECT
+}
+
+enum NavVisitKind {
+  NODE
+  PROJECT
+  RECORD
 }

@@ -11,13 +11,16 @@ export const PASSWORD = 'password123';
 /** Today as the sites see it (the browser runs in Asia/Kolkata, as does the API's "today"), YYYY-MM-DD. */
 export const localToday = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
 
-/** Sign in through the login form and wait for the dashboard. */
+/** Home's heading: it greets the person by name ("Good morning, Suresh"). */
+export const homeHeading = (page: Page) => page.getByRole('heading', { level: 1, name: /^Good (morning|afternoon|evening), / });
+
+/** Sign in through the login form and wait for Home. */
 export async function signIn(page: Page, email: string, password = PASSWORD) {
   await page.goto('/login');
   await page.getByLabel('Email').fill(email);
   await page.getByLabel('Password', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page.getByText(/^Welcome, /)).toBeVisible();
+  await expect(homeHeading(page)).toBeVisible();
 }
 
 /** A bearer token for setting up or checking data through the API. */

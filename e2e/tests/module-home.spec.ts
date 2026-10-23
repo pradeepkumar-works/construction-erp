@@ -53,7 +53,7 @@ test('each module has a screen with its tiles, figures and what waits', async ({
   // A project tab tile with no project chosen asks for the project.
   await page.goto('/modules/projects');
   const projects = page.getByRole('group', { name: 'Pages in projects' });
-  await projects.getByRole('button', { name: /BOQ and activities/ }).click();
+  await projects.getByRole('button', { name: /^BOQ and activities/ }).click();
   const dialog = page.getByRole('dialog', { name: /for a project/ });
   await expect(dialog).toBeVisible();
   await dialog.getByRole('combobox', { name: 'Project' }).click();

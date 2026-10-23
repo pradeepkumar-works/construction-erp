@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { api, apiToken, signIn } from './helpers';
+import { api, apiToken, signIn, homeHeading } from './helpers';
 
 /**
  * Navigation and words (UX item 87): each role's sidebar holds its own modules, sections remember being closed, Recent
@@ -56,7 +56,7 @@ test('Search with nothing typed shows a record opened lately', async ({ page }) 
   expect(title.length).toBeGreaterThan(0);
 
   await page.goto('/');
-  await expect(page.getByText(/^Welcome, /)).toBeVisible();
+  await expect(homeHeading(page)).toBeVisible();
   await page.keyboard.press('Control+k');
   const list = page.locator('#palette-results');
   await expect(list.locator('li').first()).toHaveText('Recent');

@@ -16,7 +16,7 @@ test('the MD asks for the morning brief, sees three lines with links and turns i
   try {
     await signIn(page, 'md@demo.com');
     await page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('nirmaan.morningBrief.')).forEach((k) => localStorage.removeItem(k)));
-    await page.reload();
+    await page.goto('/my-work');
     await page.getByRole('button', { name: 'Get the morning brief' }).click();
 
     const card = page.locator('.ant-card').filter({ hasText: 'Your morning brief' });

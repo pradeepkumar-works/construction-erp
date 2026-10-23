@@ -40,6 +40,12 @@ export function formatDate(value: string | null | undefined): string {
   return d.isValid() ? d.format('DD MMM YYYY') : value;
 }
 
+/** A day in words, for a greeting: "Thursday 22 October". */
+export function formatLongDay(value: Date | string): string {
+  const d = dayjs(value);
+  return d.isValid() ? d.format('dddd D MMMM') : String(value);
+}
+
 export function formatDateTime(value: string | null | undefined): string {
   if (!value) return '-';
   const d = dayjs(value);

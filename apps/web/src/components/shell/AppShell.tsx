@@ -6,7 +6,7 @@ import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
 import { Avatar, Badge, Breadcrumb, Button, Drawer, Dropdown, Flex, Grid, Layout, Space, Tag, Tooltip, Typography, theme } from 'antd';
 import type { MenuProps } from 'antd';
-import { BgColorsOutlined, CheckOutlined, ColumnHeightOutlined, LogoutOutlined, MenuOutlined, QuestionCircleOutlined, SearchOutlined, StarFilled, StarOutlined, UserOutlined } from '@ant-design/icons';
+import { BgColorsOutlined, CheckOutlined, ColumnHeightOutlined, LogoutOutlined, MenuOutlined, QuestionCircleOutlined, SearchOutlined, UserOutlined } from '@ant-design/icons';
 import type { AuthUser } from '@erp/shared';
 import { PRODUCT_NAME, canUseAi, isGuest, mayApprove } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
@@ -26,8 +26,10 @@ import { MessageBar } from './MessageBar';
 import { NewMenu } from './NewMenu';
 import { ProjectSwitcher } from './ProjectSwitcher';
 import { navFor, navTrail } from './nav';
+import { TreeIcon } from './nav-icons';
 import { PageTrailProvider } from './page-trail';
-import { usePins } from './pins';
+import { useShellPins } from './pins';
+import { SEARCH_REQUEST } from './search-request';
 import { PREF_RAIL, Sidebar, searchShortcut } from './Sidebar';
 import { ProductTour, shouldAutoStartTour } from './ProductTour';
 import s from './Sidebar.module.css';
@@ -59,6 +61,7 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
   const [rail, setRail] = useState<boolean>(() => readPref<boolean | null>(PREF_RAIL, null) ?? window.innerWidth < 1100);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const approver = mayApprove(user);
   const { data: pending } = usePendingApprovals(approver);
   const pendingCount = approver ? (pending?.length ?? 0) : 0;
@@ -66,8 +69,8 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
   const trail = useMemo(() => navTrail(sections, pathname), [sections, pathname]);
   const guest = isGuest(user.roleKey);
   const { data: projects } = useProjects(!guest);
-  const { current: pinnable, isFavourite, toggleFavourite, pinSections, recentPages } = usePins(user.id, sections);
-  // Favourites sit under the top links; pages and records opened lately are in Search (Ctrl K).
+  const { place: pinnable, isPinned, togglePin, pinSections, recentPages } = useShellPins(user);
+  // Pinned sits under the top links; pages and records opened lately are in Search (Ctrl K).
   const sidebarSections = useMemo(() => [...sections.filter((x) => !x.title), ...pinSections, ...sections.filter((x) => x.title)], [sections, pinSections]);
   const projectCrumb = useMemo(() => {
     const id = pathname.match(/^\/projects\/([\w-]+)/)?.[1];
@@ -92,7 +95,19 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
   }, []);
   const takeAskQuestion = useCallback(() => setAskQuestion(null), []);
   // Stable, so the palette's targets (built with it) are not rebuilt on every render of the shell.
-  const closeSearch = useCallback(() => setSearchOpen(false), []);
+  const closeSearch = useCallback(() => {
+    setSearchOpen(false);
+    setSearchQuery('');
+  }, []);
+  // Home's "Search records for …" opens Search with its words.
+  useEffect(() => {
+    const onRequest = (e: Event) => {
+      setSearchQuery((e as CustomEvent<string>).detail ?? '');
+      setSearchOpen(true);
+    };
+    window.addEventListener(SEARCH_REQUEST, onRequest);
+    return () => window.removeEventListener(SEARCH_REQUEST, onRequest);
+  }, []);
   const askContext = useMemo(() => ({ available: askVisible && !!aiStatus?.enabled, ask: (q: string) => openAsk(q) }), [askVisible, aiStatus?.enabled, openAsk]);
 
   // The first time someone signs in on this browser, once the shell has laid out.
@@ -233,7 +248,7 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
           <Sidebar user={user} sections={sidebarSections} pendingCount={pendingCount} onNavigate={() => setMobileOpen(false)} />
         </Drawer>
       )}
-      {!guest && <CommandPalette open={searchOpen} onClose={closeSearch} sections={sections} recentPages={recentPages} withProjects user={user} onAsk={askVisible ? openAsk : undefined} />}
+      {!guest && <CommandPalette open={searchOpen} onClose={closeSearch} sections={sections} recentPages={recentPages} withProjects user={user} onAsk={askVisible ? openAsk : undefined} initialQuery={searchQuery} />}
       <ProductTour user={user} mobile={isMobile} open={touring} onClose={() => setTouring(false)} />
       <Layout>
         <Header
@@ -288,16 +303,16 @@ function Shell({ user, children }: { user: AuthUser; children: React.ReactNode }
                   />
                 )}
                 {pinnable && (
-                  <Tooltip title={isFavourite ? 'Remove from favourites' : 'Add to favourites'}>
+                  <Tooltip title={isPinned ? 'Unpin from Home' : 'Pin to Home'}>
                     <Button
                       type="text"
                       size="small"
-                      aria-label={isFavourite ? 'Remove from favourites' : 'Add to favourites'}
-                      aria-pressed={isFavourite}
-                      icon={isFavourite ? <StarFilled style={{ color: token.colorWarning }} /> : <StarOutlined />}
-                      onClick={() => toggleFavourite(pinnable)}
-                      // A long breadcrumb gives way first; the star keeps its 24 px target.
-                      style={{ flexShrink: 0 }}
+                      aria-label="Pin to Home"
+                      aria-pressed={isPinned}
+                      icon={<TreeIcon name={isPinned ? 'pin-off' : 'pin'} />}
+                      onClick={togglePin}
+                      // A long breadcrumb gives way first; the pin keeps its 24 px target.
+                      style={{ flexShrink: 0, color: isPinned ? token.colorPrimary : undefined }}
                     />
                   </Tooltip>
                 )}

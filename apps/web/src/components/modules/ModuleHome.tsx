@@ -18,6 +18,7 @@ import { KpiTile, kpiColumns } from '@/components/home/KpiTile';
 import { newEntriesFor } from '@/components/shell/NewMenu';
 import { HrDashboard } from '@/components/staff/HrDashboard';
 import { TileGrid, tileEntries } from '@/components/launcher/TileGrid';
+import { usePins } from '@/components/launcher/pins';
 
 const days = (n: number) => (n === 0 ? 'today' : `${n} day${n === 1 ? '' : 's'}`);
 
@@ -103,6 +104,7 @@ export function ModuleHome({ moduleKey }: { moduleKey: string }) {
   const tiles = visible ? navTilesFor(user, moduleKey) : [];
   const { data, isLoading, error, refetch } = useModuleHome(moduleKey, projectId, visible && tiles.length > 1);
   const screens = Grid.useBreakpoint();
+  const { tileMenu } = usePins(visible ? user : null);
 
   // One page only: no screen of one tile, that page opens instead.
   const only = tiles.length === 1 ? navDestination(tiles[0]) : null;
@@ -141,7 +143,7 @@ export function ModuleHome({ moduleKey }: { moduleKey: string }) {
     <div className="page-container">
       <PageHeader title={`${label} overview`} subtitle={MODULE_INTROS[key]} extra={actions} />
       <Flex vertical gap={24}>
-        <TileGrid entries={tileEntries(tiles)} label={`Pages in ${label.toLowerCase()}`} />
+        <TileGrid entries={tileEntries(tiles)} label={`Pages in ${label.toLowerCase()}`} menu={tileMenu} />
         {isLoading && <PageSkeleton shape="home" header={false} />}
         {error && <QueryError error={error} onRetry={() => refetch()} />}
         {data && (data.figures.length > 0 || waits) && (

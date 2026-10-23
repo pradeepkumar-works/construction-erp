@@ -82,8 +82,11 @@ export function CommandPalette({
   withProjects,
   user,
   onAsk,
+  initialQuery = '',
 }: {
   open: boolean;
+  /** What the box starts with (Home's "Search records for …"). */
+  initialQuery?: string;
   onClose: () => void;
   sections: NavSection[];
   /** Pages opened lately (from the sidebar's pins), newest first. */
@@ -218,11 +221,11 @@ export function CommandPalette({
   useEffect(() => setIndex(0), [query]);
   useEffect(() => {
     if (!open) return;
-    setQuery('');
+    setQuery(initialQuery);
     setRecent(recentRecords());
     const t = window.setTimeout(() => input.current?.focus(), 30);
     return () => window.clearTimeout(t);
-  }, [open]);
+  }, [open, initialQuery]);
   useEffect(() => {
     listRef.current?.querySelector(`[data-index="${index}"]`)?.scrollIntoView({ block: 'nearest' });
   }, [index]);

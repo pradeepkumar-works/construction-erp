@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { api, apiToken, signIn } from './helpers';
+import { api, apiToken, signIn, homeHeading } from './helpers';
 
 /** UX plan item 78: fixes found on the walk through the live site. */
 
@@ -12,7 +12,7 @@ test('the sign-in form starts empty, and a demo account fills it in', async ({ p
   await page.getByRole('group', { name: 'Demo accounts' }).getByRole('button', { name: 'Project Manager' }).click();
   await expect(email).toHaveValue('pm@demo.com');
   await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page.getByText(/^Welcome, /)).toBeVisible();
+  await expect(homeHeading(page)).toBeVisible();
 });
 
 test('a seeded DPR with no audit log still shows when it was submitted', async ({ page }) => {

@@ -1,0 +1,59 @@
+/* Pinned while it is arranged: one row per pin, in order. */
+.help {
+  margin: 0 0 var(--ant-margin-sm);
+  color: var(--ant-color-text-secondary);
+}
+
+.list {
+  list-style: none;
+  margin: 0 0 var(--ant-margin);
+  padding: 0;
+  display: grid;
+  gap: var(--ant-margin-xs);
+  max-width: 560px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--ant-margin-sm);
+  min-height: 52px;
+  padding: var(--ant-padding-xxs) var(--ant-padding-xs);
+  border: var(--ant-line-width) solid var(--ant-color-border-secondary);
+  border-radius: var(--ant-border-radius-lg);
+  background: var(--ant-color-bg-container);
+}
+
+.dragging {
+  opacity: 0.5;
+}
+
+.over {
+  border: 2px dashed var(--ant-color-primary);
+}
+
+.grip {
+  display: inline-flex;
+  font-size: 18px;
+  color: var(--ant-color-text-secondary);
+  cursor: grab;
+}
+
+.icon {
+  display: inline-flex;
+  font-size: 18px;
+}
+
+.label {
+  flex: 1;
+  min-width: 0;
+  font-weight: var(--ant-font-weight-strong);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.actions {
+  display: inline-flex;
+  flex: none;
+}

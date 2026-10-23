@@ -261,3 +261,9 @@ export type MarkupStatus = (typeof MARKUP_STATUSES)[number];
 /** Each app maps these to its own palette (web `BRAND.colors`, phone `theme.ts`). */
 export const MARKUP_COLORS = ['RED', 'BLUE', 'GREEN', 'ORANGE'] as const;
 export type MarkupColor = (typeof MARKUP_COLORS)[number];
+
+/** Launcher (phase 2, `launcher.ts`): what a pin on Home points at, and what kind of place a visit was. */
+export const NAV_PIN_KINDS = ['NODE', 'PROJECT'] as const;
+export type NavPinKind = (typeof NAV_PIN_KINDS)[number];
+export const NAV_VISIT_KINDS = ['NODE', 'PROJECT', 'RECORD'] as const;
+export type NavVisitKind = (typeof NAV_VISIT_KINDS)[number];

@@ -40,6 +40,7 @@ import { TemplatesModule } from './templates/templates.module';
 import { MeasurementsModule } from './measurements/measurements.module';
 import { ClientsModule } from './clients/clients.module';
 import { SavedViewsModule } from './saved-views/saved-views.module';
+import { LauncherModule } from './launcher/launcher.module';
 import { VariationsModule } from './variations/variations.module';
 import { ContractsModule } from './contracts/contracts.module';
 import { RaBillsModule } from './ra-bills/ra-bills.module';
@@ -105,6 +106,7 @@ import { VitalsController } from './vitals.controller';
     MeasurementsModule,
     ClientsModule,
     SavedViewsModule,
+    LauncherModule,
     VariationsModule,
     ContractsModule,
     RaBillsModule,

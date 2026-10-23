@@ -10,6 +10,7 @@ import { CommentsSection } from '@/components/comments/CommentsSection';
 import { useStickyTop } from '@/lib/sticky';
 import { useIsPhone } from '@/lib/screen';
 import { rememberRecord } from '@/lib/recent';
+import { recordVisit } from '@/components/shell/pins';
 import { PageSkeleton, QueryError } from '@/components/common/QueryState';
 import { PageHeader } from '@/components/common/PageHeader';
 import { LinkButton } from '@/components/common/LinkButton';
@@ -123,7 +124,10 @@ export function RecordFrame(props: RecordFrameProps) {
   const title = props.record?.title;
   useEffect(() => {
     if (!shown || !href) return;
-    rememberRecord({ href, title: typeof title === 'string' ? title : props.kind, kind: props.kind });
+    const name = typeof title === 'string' ? title : props.kind;
+    rememberRecord({ href, title: name, kind: props.kind });
+    // And Recent on Home, on every device.
+    recordVisit('RECORD', href, `${name} · ${props.kind}`, href);
   }, [shown, href, title, props.kind]);
   return props.mode === 'drawer' ? <RecordDrawer {...props} /> : props.mode === 'pane' ? <RecordPane {...props} /> : <RecordPage {...props} />;
 }

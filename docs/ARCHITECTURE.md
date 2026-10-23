@@ -110,6 +110,32 @@ A new page is one node in its module (and an `NAV_ACCESS` line if it needs a new
 node turns it `live` and gives it its route. A new module is a node with `parent: null`, its key in `MODULE_KEYS` with its
 submission types, and, if it has figures, a branch in `ModuleHomeService.figures`.
 
+### Launcher Home, pins and Recent (launcher phase 2)
+
+Home (`app/(app)/page.tsx`, `components/launcher/HomeLauncher.tsx`) is a launcher: a greeting (the page's `<h1>`), a search
+box over the navigation tree, the person's pinned tiles, Recent, and every module they can open as a `TileGrid`. The old
+dashboard is the My work page (`/my-work`, a tile of its own); `homeLayout(role)` and `HomeService` still decide what it
+shows. The `home` node has `tile: false`, so it is a sidebar link but never a tile.
+
+- **Search** filters the tree by label, keywords, description and module, every word matching, labels that start with the
+  text first (up to 12). Enter opens the first match; with none, "Search records for …" hands the text to Search (Ctrl K) through `requestSearch`
+  (`components/shell/search-request.ts`).
+- **Pins** are `NavPin` rows (`apps/api/src/launcher`), per user across devices: a node of the tree or a project, at most
+  `LAUNCHER_PIN_MAX` (12). Order is a fractional index (`positionBetween` in `@erp/shared/launcher.ts`), so a move rewrites
+  one row. `GET /launcher` drops pins the person can no longer open (a project they lost, a node `NAV_ACCESS` refuses) and
+  refreshes their labels; nothing is deleted. Records are not pinnable. A tile's menu (⋮, right-click, Shift F10) pins or
+  unpins; Edit pins reorders by drag or by Move left / Move right buttons. Unpinning offers Undo. The header's Pin to Home
+  button pins the page or project you are on, and pins are the sidebar's Pinned section.
+- **Recent** is `NavVisit` rows: every tree page, project and record page opened (`useShellPins`, and `RecordFrame` for
+  records), merged within `LAUNCHER_VISIT_GAP_MS`; project and record rows are trimmed to `LAUNCHER_VISITS_KEPT` (30), node
+  rows are kept for Discover (phase 3). Home shows the latest `LAUNCHER_RECENT_SHOWN` (5); Search shows them before you type.
+- **Badges** (`GET /launcher/badges`) come from `HomeService.myWork`, so they never count what My work would not show:
+  approvals waiting for the person on the Approvals tile and on each module by `MODULE_SUBMISSION_TYPES`, approvals plus
+  entries sent back plus missing daily reports on My work, and the watch list's count on Watch list.
+- **Old favourites.** The localStorage favourites and recent pages from before are sent once to `POST /launcher/import`.
+
+Both tables are tenant tables with `tenant_isolation` policies (migration `20261205090000_launcher_pins`).
+
 ### Books of account (v6 item 102)
 
 The books are kept from the same postings the Tally export sends. `PostingService` (`apps/api/src/posting`) turns each

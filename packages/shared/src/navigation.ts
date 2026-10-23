@@ -65,6 +65,8 @@ export interface NavNode {
   nav?: string | false;
   /** A sidebar link among the top ones (Home, Approvals) rather than under its module */
   top?: boolean;
+  /** In the sidebar but not a tile (Home itself) */
+  tile?: false;
   /** Defaults; companies will override them (phase 3) */
   isNew?: boolean;
   featured?: boolean;
@@ -151,7 +153,8 @@ export type NavAccessKey = keyof typeof NAV_ACCESS;
 
 export const NAV_TREE: NavNode[] = [
   // ── Home tiles ────────────────────────────────────────────────────────────────────────────────────────────────
-  { id: 'my-work', parent: null, label: 'My work', icon: 'list-todo', route: '/', family: 'work', nav: 'Home', access: 'internal', status: 'live', badge: 'myWork', description: 'Your day: what waits for you, your projects and their figures, in the order your role needs.', keywords: 'dashboard overview kpi my work today', concord: ['p4-dash'] },
+  { id: 'home', parent: null, label: 'Home', icon: 'house', route: '/', family: 'work', tile: false, access: 'internal', status: 'live', description: 'Pinned, Recent and every module you can open.', keywords: 'launcher start' },
+  { id: 'my-work', parent: null, label: 'My work', icon: 'list-todo', route: '/my-work', family: 'work', access: 'internal', status: 'live', badge: 'myWork', description: 'Your day: what waits for you, your projects and their figures, in the order your role needs.', keywords: 'dashboard overview kpi my work today', concord: ['p4-dash'] },
   { id: 'approvals', parent: null, label: 'Approvals', icon: 'inbox', route: '/approvals', family: 'work', access: 'approvals', status: 'live', badge: 'approvals', description: 'Everything waiting for your decision, oldest first.', keywords: 'pending queue approve inbox', concord: ['p7-workflow'] },
   { id: 'projects', parent: null, label: 'Projects', icon: 'folder-kanban', family: 'work', access: 'internal', status: 'live', description: 'Your projects, their schedule, BOQ, budget and handover.', keywords: 'sites boq contract', concord: ['p3-pm', 'p4-pm', 'p5-projects'] },
   { id: 'site', parent: null, label: 'Site', icon: 'hard-hat', family: 'work', access: 'internal', status: 'live', badge: 'module', description: 'Daily reports, labour, progress, measurements and site cash.', concord: ['p5-exec'] },
@@ -211,7 +214,7 @@ export const NAV_TREE: NavNode[] = [
   // ── Materials ─────────────────────────────────────────────────────────────────────────────────────────────────
   { id: 'materials.requests', parent: 'materials', label: 'Material requests', icon: 'shopping-basket', route: '/material-requests', access: 'materialRequests', status: 'live', badge: 'mrWaiting', description: 'What the sites need, approved and ordered or issued.', keywords: 'indent mr', concord: ['p5-mat', 'p3-mat'] },
   { id: 'materials.approvals', parent: 'materials', label: 'Material approvals', icon: 'award', route: '/material-approvals', access: 'materialApprovals', status: 'live', description: 'Makes and samples sent to the client or consultant for approval, and the makes each project may buy.', keywords: 'mar make approval sample submittal approved makes brand list' },
-  { id: 'materials.stock', parent: 'materials', label: 'Stock on hand', icon: 'boxes', route: '/stock', nav: 'Stock', access: 'stock', status: 'live', badge: 'lowStock', description: 'What each site holds, with low-stock alerts.', keywords: 'inventory grn store issue', concord: ['p4-stores'] },
+  { id: 'materials.stock', parent: 'materials', label: 'Stock on hand', icon: 'boxes', route: '/stock', nav: 'Stock', access: 'stock', status: 'live', badge: 'lowStock', description: 'What each site holds, with low-stock alerts.', keywords: 'inventory grn store issue cement steel sand aggregate diesel', concord: ['p4-stores'] },
   { id: 'materials.register', parent: 'materials', label: 'Receipts and issues', icon: 'arrow-left-right', route: '/stock?sub=register', access: 'stock', status: 'live', description: 'GRNs, issues, transfers, returns and counts.', keywords: 'grn issue transfer', concord: ['p4-stores'] },
   { id: 'materials.value', parent: 'materials', label: 'Value and ageing', icon: 'hourglass', route: '/stock?sub=valuation', access: 'stockValue', status: 'live', description: 'Stock value and idle material by age.', concord: ['p9-stockage', 'p9-notused'] },
   { id: 'materials.reconciliation', parent: 'materials', label: 'Material reconciliation', icon: 'scale', projectTab: 'reconciliation', access: 'reconciliation', status: 'live', description: 'Material used against the work done, wastage by reason.', keywords: 'wastage consumption theoretical', concord: ['p9-notused'] },
@@ -341,8 +344,45 @@ export function canSeeNav(user: NavUser, node: NavNode): boolean {
   return NAV_TREE.some((c) => c.parent === node.id && canSeeNav(user, c));
 }
 
+/** The nodes under a module (or at the top, for `null`) this user sees, in the tree's order, Home itself included. */
+const visibleChildren = (user: NavUser, parent: string | null): NavNode[] => NAV_TREE.filter((n) => n.parent === parent && canSeeNav(user, n));
+
 /** The tiles under a module (or Home's modules, for `null`) this user sees, in the tree's order. */
-export const navTilesFor = (user: NavUser, parent: string | null): NavNode[] => NAV_TREE.filter((n) => n.parent === parent && canSeeNav(user, n));
+export const navTilesFor = (user: NavUser, parent: string | null): NavNode[] => visibleChildren(user, parent).filter((n) => n.tile !== false);
+
+/**
+ * The node a page is, for pinning and Recent: the live node whose route has this path and whose query the address
+ * carries (the most specific wins), else the page's sidebar link (`/payroll` with no tab is Payroll). `/modules/<key>` is
+ * that module. `allowed` limits it to the nodes the user can open.
+ */
+export function navNodeAt(pathname: string, search = '', allowed: (n: NavNode) => boolean = () => true): NavNode | undefined {
+  const mod = /^\/modules\/([\w-]+)$/.exec(pathname)?.[1];
+  if (mod) {
+    const n = navNode(mod);
+    return n && !n.parent && !n.route && allowed(n) ? n : undefined;
+  }
+  const params = new URLSearchParams(search);
+  let best: NavNode | undefined;
+  let bestScore = -1;
+  let fallback: NavNode | undefined;
+  for (const n of NAV_TREE) {
+    if (n.status !== 'live' || !n.route || n.shortcutOf || !allowed(n)) continue;
+    const [path, query = ''] = n.route.split('?');
+    if (path !== pathname) continue;
+    if (!fallback && navPageLink(n)) fallback = n;
+    let score = 0;
+    let fits = true;
+    new URLSearchParams(query).forEach((v, k) => {
+      if (params.get(k) === v) score++;
+      else fits = false;
+    });
+    if (fits && score > bestScore) {
+      best = n;
+      bestScore = score;
+    }
+  }
+  return best ?? fallback;
+}
 
 /** Where a tile goes: a page, or a tab of the header's project. */
 export type NavDestination = { kind: 'page'; href: string } | { kind: 'project'; tab: string; query?: string };
@@ -410,7 +450,7 @@ export function navSidebar(user: NavUser): NavSidebarSection[] {
     seen.add(link.href);
     list.push(link);
   };
-  for (const mod of navTilesFor(user, null)) {
+  for (const mod of visibleChildren(user, null)) {
     if (mod.route) {
       add(top, mod);
       continue;

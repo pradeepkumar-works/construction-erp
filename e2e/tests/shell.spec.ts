@@ -38,14 +38,20 @@ test('+ New opens the form from any page, and on the list already open', async (
   await expect(formPanel(page, 'New material request')).toBeVisible();
 });
 
-test('a starred page is under Favourites, and the last pages opened lead Search', async ({ page }) => {
+test('a page pinned to Home is under Pinned, and the last pages opened lead Search', async ({ page }) => {
   await signIn(page, 'pm@demo.com');
   await page.goto('/stock');
-  await page.getByRole('button', { name: 'Add to favourites' }).click();
-  await expect(page.getByRole('button', { name: 'Remove from favourites' })).toBeVisible();
+  const pinButton = page.getByRole('button', { name: 'Pin to Home' });
+  if ((await pinButton.getAttribute('aria-pressed')) === 'true') await pinButton.click();
+  await expect(pinButton).toHaveAttribute('aria-pressed', 'false');
+  await pinButton.click();
+  await expect(pinButton).toHaveAttribute('aria-pressed', 'true');
   const nav = page.getByRole('navigation', { name: 'Main' });
-  await expect(nav.getByRole('button', { name: 'Favourites', exact: true })).toBeVisible();
-  await expect(nav.locator('#nav-favourites')).toContainText('Stock');
+  await expect(nav.getByRole('button', { name: 'Pinned', exact: true })).toBeVisible();
+  await expect(nav.locator('#nav-pinned')).toContainText('Stock');
+  // Unpinned again, so other tests start with the project manager's own pins.
+  await pinButton.click();
+  await expect(pinButton).toHaveAttribute('aria-pressed', 'false');
 
   await page.goto('/dpr');
   await expect(page.getByRole('heading', { name: 'Daily reports' })).toBeVisible();
