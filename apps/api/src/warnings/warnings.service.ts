@@ -33,6 +33,7 @@ import { PayablesService } from '../payables/payables.service';
 import { ReconciliationService } from '../reconciliation/reconciliation.service';
 import { moduleOn } from '../common/module-switch.guard';
 import { LeakageService } from '../leakage/leakage.service';
+import { AttendanceCheckService } from '../attendance-check/attendance-check.service';
 import { monthSpan } from '../leakage/leakage-rules';
 import { CashForecastService } from '../cash-forecast/cash-forecast.service';
 import { noticeClock } from '../hindrance/hindrance-rules';
@@ -119,6 +120,7 @@ export class WarningsService {
     private reconciliation: ReconciliationService,
     private leakage: LeakageService,
     private cashForecast: CashForecastService,
+    private attendance: AttendanceCheckService,
   ) {}
 
   async list(user: RequestUser): Promise<WatchListDto> {
@@ -247,6 +249,7 @@ export class WarningsService {
         if (k === 'LOAN_EMI') return this.loanEmis(user.organizationId, today);
         if (k in LEAK_SECTION) return leaks.then((ws) => ws.filter((w) => w.kind === k));
         if (k === 'NOTICE_DUE') return this.notices(active, today);
+        if (k === 'MANDAYS_ABOVE') return today === todayIn() ? this.manDays(user) : Promise.resolve([]);
         // A central store files no DPR (v6 item 106).
         return this.dprs(active.filter((p) => p.type !== 'STORE'), today);
       }),
@@ -596,6 +599,38 @@ export class WarningsService {
       });
     }
     return out;
+  }
+
+  /** Subcontractor bills waiting for approval that bill more man-days than the site's attendance supports (item 124). */
+  private async manDays(user: RequestUser): Promise<Draft[]> {
+    const bills = await this.attendance.waitingBills(user);
+    return bills.map((b) => {
+      const lines = b.lines.filter((l) => l.flagged);
+      const excess = Math.round(lines.reduce((t, l) => t + l.excess, 0) * 10) / 10;
+      const billed = lines.reduce((t, l) => t + l.billed, 0);
+      return {
+        key: `mandays:${b.billId}:${lines.map((l) => `${l.billed}-${l.supported ?? 'none'}`).join(':')}`,
+        kind: 'MANDAYS_ABOVE' as const,
+        title: `${b.label} from ${b.vendorName} bills ${plural(excess, 'man-day')} more than the site recorded`,
+        detail: `For ${day(b.from)} to ${day(b.to)} the bill's labour lines come to ${plural(billed, 'man-day')}; the head count and roll call support ${lines.map((l) => (l.supported === null ? 'none' : String(l.supported))).join(' and ')}.`,
+        action: `Hold ${plural(excess, 'man-day')} of ${b.label} until ${b.vendorName} shows the muster`,
+        impact: { text: `${rupees(b.excessInr)} billed above the records`, inr: b.excessInr, days: null },
+        working: lines.map(
+          (l) =>
+            `${l.description}: billed ${l.billed}; head count ${l.sources.headCount ?? 'not kept'}, roll call ${l.sources.rollCall ?? 'not kept'}${l.sources.punched !== null ? `, punched ${l.sources.punched}` : ''}; ${l.excess} above at ₹${Number(l.rate).toLocaleString('en-IN')}`,
+        ),
+        facts: [
+          { label: 'Man-days above the records', value: String(excess) },
+          { label: 'Days the bill covers', value: `${day(b.from)} to ${day(b.to)}` },
+        ],
+        links: [
+          { label: b.label, href: `/subcontract-bills/${b.billId}` },
+          { label: 'Attendance cross-check', href: `/attendance-check?month=${b.to.slice(0, 7)}&projectId=${b.projectId}` },
+        ],
+        projectId: b.projectId,
+        projectName: b.projectName,
+      };
+    });
   }
 
   private async dprs(projects: Project[], today: string): Promise<Draft[]> {

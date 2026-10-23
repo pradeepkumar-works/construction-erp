@@ -193,6 +193,7 @@ async function main() {
     await seedMeetings(org.id);
     await seedMaterialApprovals(org.id);
     await seedLeakage(org.id);
+    await seedAttendanceCheck(org.id);
     await seedActivityLinks(org.id);
     await seedComments(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
@@ -397,6 +398,7 @@ async function main() {
   await seedMeetings(org.id);
   await seedMaterialApprovals(org.id);
   await seedLeakage(org.id);
+  await seedAttendanceCheck(org.id);
   await seedActivityLinks(org.id);
   await seedComments(org.id);
 
@@ -4356,6 +4358,107 @@ async function seedLeakage(organizationId: string) {
     },
   });
   await prisma.auditLog.create({ data: { organizationId, entityType: 'STOCK', entityId: e.id, action: 'CREATED', actorId: keeper.id, note: e.entryNo, createdAt: date } });
+}
+
+/**
+ * Attendance cross-check demo (AI item 124) on the road project, over five days of its roll call before the latest:
+ * every named worker of Sri Jagannath Constructions enrolled on the gate terminal and punching in and out, except three
+ * helpers marked present on the middle day who did not punch. Two labour work orders billed in man-days, both bills
+ * waiting for approval: Sri Jagannath's asks 9 more helper man-days than the head count (the bill check and the watch
+ * list flag it; masons match), Maa Tarini Labour Supply's helpers match the head count. Only when no work order is
+ * billed in man-days yet.
+ */
+async function seedAttendanceCheck(organizationId: string) {
+  if (await prisma.workOrderLine.count({ where: { workOrder: { organizationId }, unit: 'Man-day' } })) return;
+  const project = await prisma.project.findFirst({ where: { organizationId, type: 'ROAD' }, orderBy: { code: 'asc' } });
+  const gate = project ? await prisma.biometricDevice.findFirst({ where: { organizationId, projectId: project.id } }) : null;
+  const sjc = await prisma.vendor.findFirst({ where: { organizationId, name: 'Sri Jagannath Constructions' } });
+  const md = await prisma.user.findFirst({ where: { organizationId, email: 'md@demo.com' }, select: { id: true } });
+  if (!project?.projectManagerId || !gate || !sjc || !md) return;
+  const pm = project.projectManagerId;
+  const roll = await prisma.workerAttendance.findMany({ where: { projectId: project.id, worker: { contractor: sjc.name } }, include: { worker: true }, orderBy: [{ date: 'asc' }, { worker: { workerNo: 'asc' } }] });
+  const iso = (d: Date) => d.toISOString().slice(0, 10);
+  // The roll call's last six days but the latest, which is left as the site marked it (the biometric test punches then).
+  const dates = [...new Set(roll.map((r) => iso(r.date)))].sort().slice(-6, -1);
+  if (dates.length < 4) return;
+
+  // Enrol the crew (the first five already are) and punch them in and out on the gate terminal.
+  const workers = [...new Map(roll.map((r) => [r.workerId, r.worker])).values()];
+  const enrolled = new Set((await prisma.biometricUser.findMany({ where: { organizationId, workerId: { in: workers.map((w) => w.id) } }, select: { workerId: true } })).map((b) => b.workerId));
+  const taken = new Set((await prisma.biometricUser.findMany({ where: { organizationId }, select: { pin: true } })).map((b) => b.pin));
+  const toEnrol = workers.filter((w) => !enrolled.has(w.id)).map((w) => ({ organizationId, workerId: w.id, pin: String(1000 + parseInt(w.workerNo.slice(2), 10)) })).filter((b) => !taken.has(b.pin));
+  if (toEnrol.length) await prisma.biometricUser.createMany({ data: toEnrol });
+  const pins = new Map((await prisma.biometricUser.findMany({ where: { organizationId, workerId: { in: workers.map((w) => w.id) } }, select: { pin: true, workerId: true } })).map((b) => [b.workerId!, b.pin]));
+  const skipDay = dates[dates.length - 3];
+  const skip = new Set(roll.filter((r) => iso(r.date) === skipDay && r.status === 'PRESENT' && r.worker.trade === 'Helper').slice(-3).map((r) => r.id));
+  const punches: Prisma.BiometricPunchCreateManyInput[] = [];
+  const punched: string[] = [];
+  for (const r of roll) {
+    const pin = pins.get(r.workerId);
+    if (!pin || !dates.includes(iso(r.date)) || r.status === 'ABSENT' || skip.has(r.id)) continue;
+    const n = parseInt(r.worker.workerNo.slice(2), 10);
+    const times = [`07:${String(48 + (n % 11)).padStart(2, '0')}`, r.outTime ?? '17:00'];
+    for (const time of times) {
+      const [h, m] = time.split(':').map(Number);
+      punches.push({ organizationId, deviceId: gate.id, pin, punchedAt: new Date(r.date.getTime() + (h * 60 + m - gate.utcOffsetMin) * 60_000), date: r.date, time, result: 'APPLIED' });
+    }
+    punched.push(r.id);
+  }
+  await prisma.biometricPunch.createMany({ data: punches, skipDuplicates: true });
+  await prisma.workerAttendance.updateMany({ where: { id: { in: punched } }, data: { biometricDeviceId: gate.id } });
+
+  // The head count each bill is checked against, over the same days.
+  const mtls =
+    (await prisma.vendor.findFirst({ where: { organizationId, name: 'Maa Tarini Labour Supply' } })) ??
+    (await prisma.vendor.create({ data: { organizationId, name: 'Maa Tarini Labour Supply', kinds: ['LABOUR_CONTRACTOR'], pan: 'BQTPM2231K', stateCode: '21', contactPerson: 'Bhagaban Mohanty', phone: '9437664120', address: 'Khordha, Odisha' } }));
+  await prisma.attendanceLine.updateMany({ where: { sheet: { projectId: project.id }, vendorId: null, contractor: { equals: mtls.name, mode: 'insensitive' } }, data: { vendorId: mtls.id } });
+  const range = { gte: new Date(`${dates[0]}T00:00:00Z`), lte: new Date(`${dates[dates.length - 1]}T00:00:00Z`) };
+  const heads = async (contractor: string, category: string) =>
+    (await prisma.attendanceLine.aggregate({ where: { sheet: { projectId: project.id, date: range }, contractor, category }, _sum: { count: true } }))._sum.count ?? 0;
+  const year = new Date().getUTCFullYear();
+  const upTo = range.lte;
+  const billDate = day(0);
+  for (const [vendor, title, invoiceNo, lines] of [
+    [sjc, 'Labour for culverts, WMM and DBM (man-days)', 'SJC/LAB/26/014', [['Mason (man-day)', 900, await heads(sjc.name, 'Mason')], ['Helper (man-day)', 550, (await heads(sjc.name, 'Helper')) + 9]]],
+    [mtls, 'Helpers for kerb and drain work (man-days)', 'MTLS/26/0088', [['Helper (man-day)', 520, await heads(mtls.name, 'Helper')]]],
+  ] as const) {
+    if (lines.some(([, , qty]) => !qty)) continue;
+    const last = await prisma.workOrder.findFirst({ where: { organizationId, woNo: { startsWith: `WO-${year}-` } }, orderBy: { woNo: 'desc' }, select: { woNo: true } });
+    const woLines = lines.map(([description, rate], i) => ({ boqItemId: null, description, unit: 'Man-day', quantity: D(600), rate: D(rate), amount: D(600 * rate), sortOrder: i }));
+    const wo = await prisma.workOrder.create({
+      data: {
+        organizationId, projectId: project.id, vendorId: vendor.id, woNo: `WO-${year}-${String((last ? parseInt(last.woNo.slice(8), 10) : 0) + 1).padStart(4, '0')}`, woDate: new Date(range.gte.getTime() - 2 * 86_400_000),
+        title, startDate: range.gte, endDate: day(90), gstRate: D(0), retentionPct: D(0), tdsPct: D(1), paymentDays: 7, value: woLines.reduce((t, l) => t.add(l.amount), D(0)),
+        terms: 'Labour supply at the man-day rates, paid on the head count kept at site. Tools and safety gear by the contractor.',
+        status: 'APPROVED', submittedById: pm, submittedAt: range.gte, reviewedById: md.id, reviewedAt: range.gte, createdAt: range.gte,
+        lines: { create: woLines },
+      },
+      include: { lines: { orderBy: { sortOrder: 'asc' } } },
+    });
+    const billLines = wo.lines.map((l, i) => {
+      const qty = D(lines[i][2]);
+      return { workOrderLineId: l.id, rate: l.rate, prevQty: D(0), thisQty: qty, uptoQty: qty, amount: qty.mul(l.rate).toDecimalPlaces(2), sortOrder: i };
+    });
+    const gross = billLines.reduce((t, l) => t.add(l.amount), D(0));
+    const tds = gross.mul(1).div(100).toDecimalPlaces(2);
+    const bill = await prisma.subcontractBill.create({
+      data: {
+        organizationId, projectId: project.id, workOrderId: wo.id, billNo: 1, billDate, measuredUpTo: upTo, invoiceNo, dueDate: day(7),
+        grossPrevious: D(0), grossAmount: gross, grossUpto: gross, gstRate: D(0), gstAmount: D(0), retentionPct: D(0), advanceRecoveryPct: D(0), tdsPct: D(1),
+        retentionAmount: D(0), advanceRecoveryAmount: D(0), tdsAmount: tds, materialRecovery: D(0), totalDeductions: tds, netPayable: gross.sub(tds),
+        status: 'SUBMITTED', submittedById: pm, submittedAt: billDate, createdAt: billDate,
+        lines: { create: billLines },
+      },
+    });
+    await prisma.auditLog.createMany({
+      data: [
+        { organizationId, entityType: 'WORK_ORDER', entityId: wo.id, action: 'CREATED', actorId: pm, createdAt: range.gte },
+        { organizationId, entityType: 'WORK_ORDER', entityId: wo.id, action: 'APPROVED', actorId: md.id, createdAt: range.gte },
+        { organizationId, entityType: 'SUBCONTRACT_BILL', entityId: bill.id, action: 'CREATED', actorId: pm, createdAt: billDate },
+        { organizationId, entityType: 'SUBCONTRACT_BILL', entityId: bill.id, action: 'SUBMITTED', actorId: pm, createdAt: billDate },
+      ],
+    });
+  }
 }
 
 async function seedMaterialApprovals(organizationId: string) {

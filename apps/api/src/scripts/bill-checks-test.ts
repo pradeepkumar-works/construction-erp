@@ -214,6 +214,17 @@ test('subcontract bill: advance recovery above its %', () => {
   f.netPayable = 29100;
   assert.match(flagged(subcontractBillChecks(f), 'totals')[0].detail!, /Advance recovery is ₹3,500, should be ₹3,000/);
 });
+test('subcontract bill: man-days above the attendance, counts only (item 124)', () => {
+  const f = clone(sb);
+  const line = { lineId: 'l1', no: 1, description: 'Helper (man-day)', billed: 96, supported: 87, excess: 9, excessInr: 4950, flagged: true, sources: 'head count 87, roll call 86, punched 83', span: '18 Oct to 23 Oct', link: { label: 'Attendance cross-check', href: '/attendance-check' } };
+  f.manDays = [line];
+  const found = flagged(subcontractBillChecks(f), 'mandays:');
+  assert.equal(found[0].title, "Line 1 bills 96 man-days; the site's attendance for 18 Oct to 23 Oct supports 87");
+  assert.equal(found[0].key, 'mandays:l1:96:87');
+  f.manDays = [{ ...line, billed: 87, excess: 0, excessInr: 0, flagged: false }];
+  assert.ok(subcontractBillChecks(f).some((c) => c.key === 'mandays' && c.ok));
+  assert.equal(subcontractBillChecks(sb).filter((c) => c.key.startsWith('mandays')).length, 0);
+});
 test('subcontract bill: invoice already billed', () => {
   const f = clone(sb);
   f.duplicates = [{ label: 'WO-2026-0002 bill 1', href: '/subcontract-bills/x' }];
@@ -324,12 +335,14 @@ function runRules(): number {
 }
 
 /** What each seeded anomaly must be flagged with (the rule's key prefix); found by invoice or description. */
-const ANOMALIES: { kind: 'vendor-bill' | 'expense'; find: string; expect: string[] }[] = [
+const ANOMALIES: { kind: 'vendor-bill' | 'expense' | 'subcontract-bill'; find: string; expect: string[] }[] = [
   { kind: 'vendor-bill', find: 'UCT/2026/551', expect: ['rate:'] },
   { kind: 'vendor-bill', find: 'KBA-26-27-0213', expect: ['qty:', 'duplicate:'] },
   { kind: 'expense', find: 'Hydraulic hose for grader GRD-01', expect: ['duplicate:'] },
   { kind: 'expense', find: 'JCB hire for trench backfilling, 1 day', expect: ['cash:'] },
   { kind: 'expense', find: 'Waterproofing compound, 2 buckets', expect: ['gstin:'] },
+  // Attendance cross-check (item 124): 9 more helper man-days than the head count.
+  { kind: 'subcontract-bill', find: 'SJC/LAB/26/014', expect: ['mandays:'] },
 ];
 
 async function runDemo(): Promise<number> {

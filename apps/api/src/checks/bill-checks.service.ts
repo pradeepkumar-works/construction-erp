@@ -12,9 +12,12 @@ import { AiService } from '../ai/ai.service';
 import { VendorBillsService } from '../purchasing/vendor-bills.service';
 import { PurchaseOrdersService } from '../purchasing/purchase-orders.service';
 import { SubcontractBillsService } from '../subcontracts/subcontract-bills.service';
+import { AttendanceCheckService } from '../attendance-check/attendance-check.service';
 import { ExpensesService } from '../expenses/expenses.service';
 import { RaBillsService } from '../ra-bills/ra-bills.service';
-import { type Check, type Link, expenseChecks, otherVendorBillChecks, raBillChecks, rulesSummary, subcontractBillChecks, vendorBillChecks } from './bill-rules';
+import { type Check, type Link, expenseChecks, otherVendorBillChecks, qty, raBillChecks, rulesSummary, subcontractBillChecks, vendorBillChecks } from './bill-rules';
+
+const day = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', timeZone: 'UTC' });
 
 const TYPE_OF: Record<CheckKind, SubmissionType> = { 'vendor-bill': 'VENDOR_BILL', 'subcontract-bill': 'SUBCONTRACT_BILL', expense: 'EXPENSE', 'ra-bill': 'BILL' };
 const n = (d: Prisma.Decimal | null | undefined) => (d ? d.toNumber() : 0);
@@ -47,6 +50,7 @@ export class BillChecksService {
     private subBills: SubcontractBillsService,
     private expenses: ExpensesService,
     private raBills: RaBillsService,
+    private attendance: AttendanceCheckService,
   ) {}
 
   async get(user: RequestUser, kind: CheckKind, id: string): Promise<BillChecksDto> {
@@ -356,13 +360,15 @@ export class BillChecksService {
       include: { workOrder: { select: { id: true, woNo: true, vendorId: true } }, lines: { include: { workOrderLine: true }, orderBy: { sortOrder: 'asc' } } },
     });
     const earlier = { workOrderId: bill.workOrderId, billNo: { lt: bill.billNo } };
-    const [billed, measured, dupBills] = await Promise.all([
+    const [billed, measured, dupBills, attendance] = await Promise.all([
       this.prisma.subcontractBillLine.groupBy({ by: ['workOrderLineId'], where: { bill: earlier }, _sum: { thisQty: true } }),
       this.prisma.measurementSheet.groupBy({ by: ['boqItemId'], where: { workOrderId: bill.workOrderId, OR: [{ subcontractBillId: id }, { subcontractBill: earlier }] }, _sum: { totalQty: true } }),
       bill.invoiceNo
         ? this.prisma.subcontractBill.findMany({ where: { organizationId: user.organizationId, id: { not: id }, ...notRejected, createdAt: { lt: bill.createdAt }, workOrder: { vendorId: bill.workOrder.vendorId }, invoiceNo: { not: null } }, include: { workOrder: { select: { woNo: true } } } })
         : Promise.resolve([]),
+      this.attendance.forBill(user.organizationId, id),
     ]);
+    const span = attendance ? (attendance.from === attendance.to ? day(attendance.from) : `${day(attendance.from)} to ${day(attendance.to)}`) : '';
     const checks = subcontractBillChecks({
       invoiceNo: bill.invoiceNo,
       duplicates: dupBills.filter((b) => norm(b.invoiceNo) === norm(bill.invoiceNo)).map((b) => ({ label: `${b.workOrder.woNo} bill ${b.billNo}`, href: `/subcontract-bills/${b.id}` })),
@@ -395,6 +401,23 @@ export class BillChecksService {
       otherDeduction: n(bill.otherDeduction),
       totalDeductions: n(bill.totalDeductions),
       netPayable: n(bill.netPayable),
+      manDays: attendance?.lines.map((l) => ({
+        lineId: l.lineId,
+        no: bill.lines.findIndex((x) => x.id === l.lineId) + 1,
+        description: l.description,
+        billed: l.billed,
+        supported: l.supported,
+        excess: l.excess,
+        excessInr: l.excessInr,
+        flagged: l.flagged,
+        sources: [
+          `head count ${l.sources.headCount === null ? 'not kept' : qty(l.sources.headCount)}`,
+          `roll call ${l.sources.rollCall === null ? 'not kept' : qty(l.sources.rollCall)}`,
+          ...(l.sources.punched === null ? [] : [`punched ${qty(l.sources.punched)}`]),
+        ].join(', '),
+        span,
+        link: { label: 'Attendance cross-check', href: `/attendance-check?month=${attendance.to.slice(0, 7)}&projectId=${attendance.projectId}` },
+      })),
     });
     return { type: 'SUBCONTRACT_BILL', projectId: dto.projectId, status: dto.status, label: `${bill.workOrder.woNo} bill ${bill.billNo}, gross ${bill.grossAmount.toFixed(2)}`, checks };
   }

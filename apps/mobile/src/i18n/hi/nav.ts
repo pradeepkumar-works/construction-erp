@@ -105,6 +105,8 @@ export const NAV: Record<string, string> = {
   'Material used against the work done, wastage by reason.': 'हुए काम के मुकाबले लगी सामग्री, कारण के अनुसार बर्बादी।',
   'Leakage checks': 'रिसाव (लीकेज) जाँच',
   "The month's material, rate, fuel and idle-hire flags, with the rupees at risk and the working behind each.": 'महीने की सामग्री, रेट, डीज़ल और खड़ी किराए की मशीनों की चेतावनियाँ, जोखिम वाले रुपये और हर एक का हिसाब।',
+  'Attendance cross-check': 'हाज़िरी का मिलान',
+  'Man-days labour contractors bill against the head count, roll call, biometric punches and DPR.': 'लेबर ठेकेदारों के बिल के मानव-दिवस, हेड काउंट, नाम से हाज़िरी, बायोमेट्रिक पंच और DPR के मुकाबले।',
   'Cash forecast': 'नकदी का अनुमान',
   'Bank and cash for the next 13 weeks as a range, why a week runs short, and what to chase or hold.': 'अगले 13 हफ़्तों का बैंक और नकद एक दायरे में, कोई हफ़्ता कम क्यों पड़ता है, और किसका पीछा करें या क्या रोकें।',
   'Billing readiness': 'बिलिंग की तैयारी',
