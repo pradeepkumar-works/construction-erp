@@ -52,6 +52,8 @@ function RootNavigator() {
         <Stack.Screen name="material-request/new" options={{ title: t('New Material Request') }} />
         <Stack.Screen name="material-request/[id]" options={{ title: t('Material Request') }} />
         <Stack.Screen name="submissions" options={{ title: t('My Submissions') }} />
+        <Stack.Screen name="my-work" options={{ title: t('My work') }} />
+        <Stack.Screen name="module/[key]" options={{ title: t('Module') }} />
         <Stack.Screen name="notifications" options={{ title: t('Notifications') }} />
         <Stack.Screen name="outbox" options={{ title: t('Outbox') }} />
         <Stack.Screen name="attendance" options={{ title: t('Attendance') }} />

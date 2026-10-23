@@ -10,5 +10,6 @@ import { QUALITY } from './quality';
 import { COMMERCIAL } from './commercial';
 import { AI } from './ai';
 import { HR } from './hr';
+import { NAV } from './nav';
 
-export const HI: Record<string, string> = { ...COMMON, ...CORE, ...SITE, ...QUALITY, ...COMMERCIAL, ...AI, ...HR };
+export const HI: Record<string, string> = { ...COMMON, ...CORE, ...SITE, ...QUALITY, ...COMMERCIAL, ...AI, ...HR, ...NAV };

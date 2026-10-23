@@ -75,6 +75,8 @@ export interface LauncherDto {
   requests: MyAccessRequestDto[];
   /** Discover also shows modules the user's role cannot open, greyed, with Request access (on unless an admin turns it off). */
   discoverLocked: boolean;
+  /** The web app's address, for the phone to open a page it has no screen of (phase 4); null when not configured. */
+  webUrl: string | null;
 }
 
 /** `GET /launcher/home-tiles`: Admin › Home tiles. */

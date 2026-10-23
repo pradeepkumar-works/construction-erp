@@ -36,6 +36,12 @@ for (const file of [...walk(join(root, 'app')), ...walk(join(root, 'src'))].filt
   }
 }
 
+// The navigation tree's names, descriptions and groups reach t() as values (Home's tiles, the module screens, launcher phase 4).
+const { NAV_TREE } = await import('@erp/shared');
+for (const n of NAV_TREE.filter((x) => x.status === 'live')) {
+  for (const en of [n.label, n.description, n.group, typeof n.nav === 'string' ? n.nav : undefined]) if (en && !dict.has(en)) missing.set(en, `NAV_TREE ${n.id}`);
+}
+
 for (const [en, file] of missing) console.log(`no Hindi: "${en}" (${file})`);
 for (const p of problems) console.log(p);
 console.log(`${dict.size} Hindi strings, ${missing.size} missing, ${problems.length} other problems`);

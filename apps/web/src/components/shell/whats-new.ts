@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-12-phone-home',
+    date: '2026-12-10',
+    title: 'The same Home on the phone',
+    points: [
+      'The phone app\'s Home tab now shows a tile for every module you can use, in Hindi too, with New entry still at the top. A module opens its pages; pages the phone has no screen for open on the web.',
+      'Your pins and recent pages are the same on the phone and the web. Long press a tile or a page to pin it, move it or unpin it.',
+      'What the phone\'s Home showed before is now the My work tile.',
+    ],
+  },
+  {
     id: '2026-12-discover',
     date: '2026-12-08',
     title: 'Discover on Home, and asking for a module',

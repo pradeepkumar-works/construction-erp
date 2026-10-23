@@ -22,6 +22,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ProjectAccessService } from '../common/project-access.service';
 import { RequestUser } from '../common/current-user';
 import { iso } from '../common/serialize';
+import { configuredWebUrl } from '../common/web-url';
 import { HomeService } from '../dashboard/home.service';
 import { CreatePinDto, ImportDto, VisitDto } from './launcher.dto';
 import { flagDto, myRequestDto } from './home-tiles.service';
@@ -83,6 +84,7 @@ export class LauncherService {
       opened,
       requests: [...latestRequest.values()].map(myRequestDto),
       discoverLocked: org.discoverLocked,
+      webUrl: configuredWebUrl(),
     };
   }
 

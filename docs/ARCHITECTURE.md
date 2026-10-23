@@ -162,6 +162,34 @@ it with a reason; the person gets an `ACCESS_REQUEST` notification (entity `ACCE
 each tile New (optionally until a day) or Featured, or back to as shipped (`PUT /launcher/flags/:nodeId`). Changes are
 audited on the company. `LauncherFlag` and `AccessRequest` are tenant tables (migration `20261206090000_launcher_discover`).
 
+### The launcher on the phone (launcher phase 4)
+
+The site app's **Home tab** (`apps/mobile/app/(tabs)/index.tsx`) is the launcher too, from the same tree:
+
+- **New entry** stays on top (Progress, DPR, Material, and Attendance or Stock): it is what a site fills in every day.
+- **Pinned** is the account's pins (`src/launcher/useLauncher.ts` over `GET /launcher`, cached on the phone with
+  `useFetch`'s `cacheKey`, so Home draws them offline). A long press on any tile or page opens its menu
+  (`src/launcher/TileMenu.tsx`: Pin to Home, or Move earlier, Move later and Unpin with Undo); screen readers get the same
+  menu as an action.
+- **Modules** are `navTilesFor(user, null)` as tiles (`NavTileGrid` in `src/components/NavTile.tsx`), two columns on a phone,
+  with the counts of `GET /launcher/badges`.
+- **Recent** is the latest five visits from any device.
+- **My work** (the old Home tab, unchanged) is a tile and the screen `app/my-work.tsx`.
+
+**Where a node opens** is `phoneTarget` in `src/launcher/routes.ts` (no React Native in it):
+
+- its phone screen from `PHONE_ROUTES` (node id to phone path, e.g. `site.dpr` to `/submissions?type=DPR`);
+- a module opens its screen `app/module/[key].tsx`, with its pages under their groups (`NavRow`);
+- a project tab asks which project and opens the page on the web;
+- anything else opens on the web at `LauncherDto.webUrl` (`configuredWebUrl()`: `WEB_URL`, else the first `CORS_ORIGINS`)
+  in the in-app browser, and its row says "Opens on the web".
+
+`useOpenNode` (`src/launcher/open.tsx`) records each page opened as a visit, so Recent stays one list on the web and the
+phone. The web's `scripts/nav-check.ts` checks that every `PHONE_ROUTES` entry is a live node and a phone screen, and that
+every icon of the tree is in the phone's `NAV_ICONS` (`src/components/NavIcon.tsx`, Lucide through `lucide-react-native` and
+`react-native-svg`, imported one by one). Every live node's name, description and group has its Hindi in
+`src/i18n/hi/nav.ts`, which `npm run i18n:check` checks against `NAV_TREE`.
+
 ### Books of account (v6 item 102)
 
 The books are kept from the same postings the Tally export sends. `PostingService` (`apps/api/src/posting`) turns each
