@@ -1,16 +1,34 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import type { DailyReportDto, DprSortField, ManpowerLine, MachineryLine, Paginated, SortOrder } from '@erp/shared';
+import {
+  compareCodes,
+  crewTotal,
+  dprLineProblem,
+  lineFigures,
+  workSummary,
+  type DailyReportDto,
+  type DprActivityOptionDto,
+  type DprLineDto,
+  type DprSortField,
+  type DprWorkOptionsDto,
+  type ManpowerLine,
+  type MachineryLine,
+  type Paginated,
+  type SortOrder,
+  type SubmissionStatus,
+} from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
 import { AttachmentsService, ATTACHMENT_FIELDS } from '../common/attachments.service';
-import { dateOnly, iso, parseDate } from '../common/serialize';
+import { dateOnly, dec, iso, parseDate } from '../common/serialize';
+import { locationOr, resolveSector } from '../common/sector';
+import { todayIn } from '../notifications/time';
 import { isUniqueViolation } from '../common/idempotency';
 import { ilike, pageArgs, paginated, searchWords, dateRange } from '../common/paging';
-import { CreateDprDto, ListDprQuery, UpdateDprDto } from './dpr.dto';
+import { CreateDprDto, DprLineInputDto, DprWorkOptionsQuery, ListDprQuery, UpdateDprDto } from './dpr.dto';
 import { AttendanceService } from '../attendance/attendance.service';
 
 const include = {
@@ -18,8 +36,26 @@ const include = {
   submittedBy: { select: { fullName: true } },
   reviewedBy: { select: { fullName: true } },
   attachments: { select: ATTACHMENT_FIELDS },
+  _count: { select: { lines: true } },
 } satisfies Prisma.DailyReportInclude;
 type Row = Prisma.DailyReportGetPayload<{ include: typeof include }>;
+
+/** Where an activity sits in the work breakdown (item 125): its component and sub-component. */
+const PLACE = { select: { code: true, name: true, level: true, parent: { select: { code: true, name: true } } } } as const;
+type Place = { code: string; name: string; level: string; parent: { code: string; name: string } | null } | null;
+const placeOf = (e: Place) => {
+  if (!e) return { componentCode: null, componentName: null, subComponentCode: null, subComponentName: null };
+  if (e.level === 'SUB_COMPONENT' && e.parent) return { componentCode: e.parent.code, componentName: e.parent.name, subComponentCode: e.code, subComponentName: e.name };
+  return { componentCode: e.code, componentName: e.name, subComponentCode: null, subComponentName: null };
+};
+
+const lineInclude = {
+  activity: { select: { name: true, unit: true, plannedQty: true, parentActivity: { select: { name: true } }, workElement: PLACE } },
+  workOrder: { select: { woNo: true } },
+  materials: { include: { item: { select: { name: true, unit: true } } }, orderBy: { sortOrder: 'asc' } },
+} satisfies Prisma.ProgressEntryInclude;
+
+type Tx = Prisma.TransactionClient;
 
 const ORDER: Record<DprSortField, (o: SortOrder) => Prisma.DailyReportOrderByWithRelationInput[]> = {
   date: (o) => [{ date: o }, { createdAt: o }],
@@ -40,7 +76,15 @@ export class DprService {
     private lifecycle: SubmissionLifecycleService,
     private attachments: AttachmentsService,
     private attendance: AttendanceService,
-  ) {}
+  ) {
+    // A DPR's work lines (item 127) are submitted, approved and sent back with it.
+    lifecycle.onStatus('DPR', (_user, id, status) => this.syncLines(id, status));
+  }
+
+  private async syncLines(id: string, status: SubmissionStatus) {
+    const dpr = await this.prisma.dailyReport.findUniqueOrThrow({ where: { id }, select: { submittedAt: true, reviewedById: true, reviewedAt: true, reviewNote: true } });
+    await this.prisma.progressEntry.updateMany({ where: { dailyReportId: id }, data: { status, ...dpr } });
+  }
 
   toDto(r: Row): DailyReportDto {
     const manpower = (r.manpower as unknown as ManpowerLine[]) ?? [];
@@ -61,6 +105,7 @@ export class DprService {
       issues: r.issues,
       nextDayPlan: r.nextDayPlan,
       totalManpower: manpower.reduce((s, m) => s + (Number(m.count) || 0), 0),
+      lineCount: r._count.lines,
       status: r.status,
       submittedById: r.submittedById,
       submittedByName: r.submittedBy.fullName,
@@ -100,7 +145,202 @@ export class DprService {
   async get(user: RequestUser, id: string): Promise<DailyReportDto> {
     const row = await this.prisma.dailyReport.findFirst({ where: { id, ...this.access.submissionWhere(user) }, include });
     if (!row) throw new NotFoundException('Daily report not found');
-    return this.toDto(row);
+    return { ...this.toDto(row), lines: await this.lineDtos(row.id, row.date) };
+  }
+
+  /**
+   * The work lines with their figures: scope is the activity's planned quantity, up to previous what was approved on it
+   * up to the report's day outside this report (and the report's earlier lines on it), then cumulative, % and balance.
+   */
+  private async lineDtos(id: string, date: Date): Promise<DprLineDto[]> {
+    const rows = await this.prisma.progressEntry.findMany({ where: { dailyReportId: id }, include: lineInclude, orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }] });
+    if (!rows.length) return [];
+    const activityIds = [...new Set(rows.map((r) => r.activityId))];
+    const before = await this.prisma.progressEntry.groupBy({
+      by: ['activityId'],
+      where: { activityId: { in: activityIds }, status: 'APPROVED', date: { lte: date }, OR: [{ dailyReportId: null }, { dailyReportId: { not: id } }] },
+      _sum: { quantity: true },
+    });
+    const previous = new Map(before.map((b) => [b.activityId, Number(b._sum.quantity ?? 0)]));
+    const scope = new Map(rows.map((r) => [r.activityId, Number(r.activity.plannedQty)]));
+    const figures = lineFigures(rows.map((r) => ({ activityId: r.activityId, quantity: r.quantity.toString() })), scope, previous);
+    return rows.map((r, i) => ({
+      id: r.id,
+      activityId: r.activityId,
+      activityName: r.activity.name,
+      parentActivityName: r.activity.parentActivity?.name ?? null,
+      unit: r.activity.unit,
+      ...placeOf(r.activity.workElement),
+      quantity: dec(r.quantity)!,
+      location: r.location,
+      chainageFrom: r.chainageFrom,
+      chainageTo: r.chainageTo,
+      floor: r.floor,
+      village: r.village,
+      labour: (r.labour as unknown as ManpowerLine[] | null) ?? [],
+      machines: (r.machines as unknown as MachineryLine[] | null) ?? [],
+      materials: r.materials.map((m) => ({ itemId: m.itemId, itemName: m.item.name, unit: m.item.unit, quantity: dec(m.quantity)! })),
+      workOrderId: r.workOrderId,
+      workOrderNo: r.workOrder?.woNo ?? null,
+      remarks: r.remarks,
+      scope: dec(r.activity.plannedQty)!,
+      ...figures[i],
+    }));
+  }
+
+  /**
+   * What a project's DPR form offers (item 127): the activities that take progress, look-ahead ones first, each with
+   * where it sits, its scope, what is done and its material norms; the store items; the open work orders.
+   */
+  async workOptions(user: RequestUser, q: DprWorkOptionsQuery): Promise<DprWorkOptionsDto> {
+    await this.access.assertCanAccessProject(user, q.projectId);
+    const day = parseDate(q.date ?? todayIn());
+    const weekOn = new Date(day.getTime() + 7 * 86_400_000);
+    const [org, activities, done, items, workOrders] = await Promise.all([
+      this.prisma.organization.findUniqueOrThrow({ where: { id: user.organizationId }, select: { progressFromDpr: true } }),
+      this.prisma.activity.findMany({
+        where: { projectId: q.projectId, subActivities: { none: {} } },
+        select: {
+          id: true,
+          name: true,
+          unit: true,
+          plannedQty: true,
+          plannedStart: true,
+          plannedEnd: true,
+          holdPoint: true,
+          sortOrder: true,
+          parentActivity: { select: { name: true, sortOrder: true } },
+          workElement: PLACE,
+          boqItem: { select: { materialNorms: { select: { itemId: true, qtyPerUnit: true, item: { select: { name: true, unit: true } } }, orderBy: { createdAt: 'asc' } } } },
+        },
+        orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+      }),
+      this.prisma.progressEntry.groupBy({ by: ['activityId'], where: { projectId: q.projectId, status: 'APPROVED' }, _sum: { quantity: true } }),
+      this.prisma.item.findMany({ where: { organizationId: user.organizationId }, select: { id: true, name: true, unit: true }, orderBy: { name: 'asc' } }),
+      this.prisma.workOrder.findMany({
+        where: { projectId: q.projectId, status: 'APPROVED', closedAt: null },
+        select: { id: true, woNo: true, title: true, vendor: { select: { name: true } } },
+        orderBy: { woDate: 'desc' },
+      }),
+    ]);
+    const doneOf = new Map(done.map((d) => [d.activityId, Number(d._sum.quantity ?? 0)]));
+    const options = activities.map((a): DprActivityOptionDto & { order: string } => {
+      const place = placeOf(a.workElement);
+      const doneQty = doneOf.get(a.id) ?? 0;
+      const planned = Number(a.plannedQty);
+      const started = a.plannedStart ? a.plannedStart <= weekOn : false;
+      const notOver = !a.plannedEnd || a.plannedEnd >= day;
+      return {
+        id: a.id,
+        name: a.name,
+        parentActivityName: a.parentActivity?.name ?? null,
+        unit: a.unit,
+        ...place,
+        plannedQty: dec(a.plannedQty)!,
+        doneQty: dec(new Prisma.Decimal(doneQty))!,
+        lookAhead: started && notOver && (planned <= 0 || doneQty < planned),
+        holdPoint: a.holdPoint,
+        norms: (a.boqItem?.materialNorms ?? []).map((n) => ({ itemId: n.itemId, itemName: n.item.name, unit: n.item.unit, qtyPerUnit: n.qtyPerUnit.toString() })),
+        order: place.subComponentCode ?? place.componentCode ?? '~',
+      };
+    });
+    // Look-ahead first, then by the breakdown's outline numbers, then the plan's order (kept by the stable sort).
+    options.sort((x, y) => Number(y.lookAhead) - Number(x.lookAhead) || compareCodes(x.order, y.order));
+    return {
+      activities: options.map(({ order: _order, ...o }) => o),
+      items,
+      workOrders: workOrders.map((w) => ({ id: w.id, woNo: w.woNo, title: w.title, vendorName: w.vendor.name })),
+      progressFromDpr: org.progressFromDpr,
+    };
+  }
+
+  /**
+   * Saves the report's work lines (item 127) as its progress entries: the complete list, so lines left out are removed.
+   * Each line takes the report's day, status and submitter, its crew total as the entry's manpower and its material.
+   */
+  private async saveLines(tx: Tx, user: RequestUser, dpr: { id: string; projectId: string; date: Date; status: SubmissionStatus; submittedById: string; submittedAt: Date | null }, lines: DprLineInputDto[]) {
+    lines.forEach((l, i) => {
+      const problem = dprLineProblem(l, i + 1);
+      if (problem) throw new BadRequestException(problem);
+    });
+    const activityIds = [...new Set(lines.map((l) => l.activityId))];
+    const itemIds = [...new Set(lines.flatMap((l) => (l.materials ?? []).map((m) => m.itemId)))];
+    const woIds = [...new Set(lines.flatMap((l) => (l.workOrderId ? [l.workOrderId] : [])))];
+    const [activities, items, workOrders, existing] = await Promise.all([
+      tx.activity.findMany({ where: { id: { in: activityIds }, projectId: dpr.projectId }, select: { id: true, name: true, _count: { select: { subActivities: true } } } }),
+      itemIds.length ? tx.item.findMany({ where: { id: { in: itemIds }, organizationId: user.organizationId }, select: { id: true } }) : [],
+      woIds.length ? tx.workOrder.findMany({ where: { id: { in: woIds }, projectId: dpr.projectId }, select: { id: true } }) : [],
+      tx.progressEntry.findMany({ where: { dailyReportId: dpr.id }, select: { id: true } }),
+    ]);
+    const activity = new Map(activities.map((a) => [a.id, a]));
+    const itemOk = new Set(items.map((i) => i.id));
+    const woOk = new Set(workOrders.map((w) => w.id));
+    lines.forEach((l, i) => {
+      const a = activity.get(l.activityId);
+      if (!a) throw new BadRequestException(`Line ${i + 1}: the activity is not in this project`);
+      if (a._count.subActivities) throw new BadRequestException(`Line ${i + 1}: ${a.name} is made of sub-activities; choose one of them`);
+      if ((l.materials ?? []).some((m) => !itemOk.has(m.itemId))) throw new BadRequestException(`Line ${i + 1}: choose material from the store items`);
+      if ((l.materials ?? []).some((m) => Number(m.quantity) < 0)) throw new BadRequestException(`Line ${i + 1}: material used cannot be less than 0`);
+      if (l.workOrderId && !woOk.has(l.workOrderId)) throw new BadRequestException(`Line ${i + 1}: the work order is not one of this project's`);
+    });
+    const mine = new Set(existing.map((e) => e.id));
+    const kept = new Set(lines.flatMap((l) => (l.id && mine.has(l.id) ? [l.id] : [])));
+    const gone = existing.filter((e) => !kept.has(e.id)).map((e) => e.id);
+    if (gone.length) await tx.progressEntry.deleteMany({ where: { id: { in: gone } } });
+    for (const [i, l] of lines.entries()) {
+      const sector = await resolveSector(this.prisma, dpr.projectId, l);
+      const labour = (l.labour ?? []).filter((m) => m.category?.trim() && m.count > 0);
+      const machines = (l.machines ?? []).filter((m) => m.name?.trim());
+      const data = {
+        activityId: l.activityId,
+        date: dpr.date,
+        quantity: new Prisma.Decimal(l.quantity),
+        remarks: l.remarks?.trim() || null,
+        location: locationOr(l.location, sector) ?? null,
+        chainageFrom: sector.chainageFrom ?? null,
+        chainageTo: sector.chainageTo ?? null,
+        floor: sector.floor ?? null,
+        village: sector.village ?? null,
+        labour: labour as unknown as Prisma.InputJsonValue,
+        machines: machines as unknown as Prisma.InputJsonValue,
+        manpowerCount: crewTotal(labour) || null,
+        machineryUsed: machines.map((m) => m.name.trim()).join(', ') || null,
+        workOrderId: l.workOrderId ?? null,
+        sortOrder: i,
+        status: dpr.status,
+        submittedById: dpr.submittedById,
+        submittedAt: dpr.submittedAt,
+      };
+      let entryId: string;
+      if (l.id && kept.has(l.id)) {
+        await tx.progressEntry.update({ where: { id: l.id }, data });
+        await tx.progressMaterial.deleteMany({ where: { progressEntryId: l.id } });
+        entryId = l.id;
+      } else {
+        // A line id from the phone is kept when it is new; one already used elsewhere starts a fresh entry.
+        const taken = l.id ? await tx.progressEntry.findUnique({ where: { id: l.id }, select: { id: true } }) : null;
+        const row = await tx.progressEntry.create({
+          data: { ...data, ...(l.id && !taken ? { id: l.id } : {}), organizationId: user.organizationId, projectId: dpr.projectId, dailyReportId: dpr.id },
+          select: { id: true },
+        });
+        entryId = row.id;
+      }
+      const materials = (l.materials ?? []).filter((m) => Number(m.quantity) > 0);
+      if (materials.length)
+        await tx.progressMaterial.createMany({
+          data: materials.map((m, k) => ({ organizationId: user.organizationId, progressEntryId: entryId, itemId: m.itemId, quantity: new Prisma.Decimal(m.quantity), sortOrder: k })),
+        });
+    }
+  }
+
+  /** "Work executed" written from the report's lines. */
+  private async summaryOf(tx: Tx | PrismaService, id: string): Promise<string> {
+    const rows = await tx.progressEntry.findMany({
+      where: { dailyReportId: id },
+      select: { quantity: true, location: true, activity: { select: { name: true, unit: true, parentActivity: { select: { name: true } } } } },
+      orderBy: { sortOrder: 'asc' },
+    });
+    return workSummary(rows.map((r) => ({ activityName: r.activity.name, parentActivityName: r.activity.parentActivity?.name ?? null, quantity: r.quantity.toString(), unit: r.activity.unit, location: r.location })));
   }
 
   /** One DPR per project per day (a rejected one may be replaced). */
@@ -126,28 +366,37 @@ export class DprService {
     await this.assertNoDuplicate(dto.projectId, parseDate(dto.date));
     // No manpower sent: take it from the day's attendance sheet, if the supervisor recorded one.
     const manpower = dto.manpower?.length ? dto.manpower : ((await this.attendance.manpowerFor(dto.projectId, parseDate(dto.date))) ?? []);
+    const text = dto.workExecuted?.trim() ?? '';
+    if (!text && !dto.lines?.length) throw new BadRequestException('Say what work was done today, or add a work line');
     let row: { id: string };
     try {
-      row = await this.prisma.dailyReport.create({
-        data: {
-          id: dto.id,
-          organizationId: user.organizationId,
-          projectId: dto.projectId,
-          date: parseDate(dto.date),
-          weather: dto.weather ?? null,
-          siteCondition: dto.siteCondition ?? null,
-          manpower: manpower as unknown as Prisma.InputJsonValue,
-          machinery: (dto.machinery ?? []) as unknown as Prisma.InputJsonValue,
-          materialReceived: dto.materialReceived ?? null,
-          workExecuted: dto.workExecuted,
-          testsConducted: dto.testsConducted ?? null,
-          safetyObservations: dto.safetyObservations ?? null,
-          issues: dto.issues ?? null,
-          nextDayPlan: dto.nextDayPlan ?? null,
-          submittedById: user.id,
-          status: 'DRAFT',
-        },
-        select: { id: true },
+      row = await this.prisma.$transaction(async (tx) => {
+        const created = await tx.dailyReport.create({
+          data: {
+            id: dto.id,
+            organizationId: user.organizationId,
+            projectId: dto.projectId,
+            date: parseDate(dto.date),
+            weather: dto.weather ?? null,
+            siteCondition: dto.siteCondition ?? null,
+            manpower: manpower as unknown as Prisma.InputJsonValue,
+            machinery: (dto.machinery ?? []) as unknown as Prisma.InputJsonValue,
+            materialReceived: dto.materialReceived ?? null,
+            workExecuted: text,
+            testsConducted: dto.testsConducted ?? null,
+            safetyObservations: dto.safetyObservations ?? null,
+            issues: dto.issues ?? null,
+            nextDayPlan: dto.nextDayPlan ?? null,
+            submittedById: user.id,
+            status: 'DRAFT',
+          },
+          select: { id: true, projectId: true, date: true, status: true, submittedById: true, submittedAt: true },
+        });
+        if (dto.lines?.length) {
+          await this.saveLines(tx, user, created, dto.lines);
+          if (!text) await tx.dailyReport.update({ where: { id: created.id }, data: { workExecuted: await this.summaryOf(tx, created.id) } });
+        }
+        return created;
       });
     } catch (e) {
       if (isUniqueViolation(e) && dto.id) {
@@ -165,6 +414,7 @@ export class DprService {
   async update(user: RequestUser, id: string, dto: UpdateDprDto): Promise<DailyReportDto> {
     const row = await this.lifecycle.load(user, 'DPR', id);
     await this.lifecycle.assertEditable(user, row);
+    const current = await this.prisma.dailyReport.findUniqueOrThrow({ where: { id }, select: { date: true, workExecuted: true, submittedAt: true } });
     const data: Prisma.DailyReportUncheckedUpdateInput = {};
     if (dto.date !== undefined) {
       await this.assertNoDuplicate(row.projectId, parseDate(dto.date), id);
@@ -175,12 +425,24 @@ export class DprService {
     if (dto.manpower !== undefined) data.manpower = dto.manpower as unknown as Prisma.InputJsonValue;
     if (dto.machinery !== undefined) data.machinery = dto.machinery as unknown as Prisma.InputJsonValue;
     if (dto.materialReceived !== undefined) data.materialReceived = dto.materialReceived;
-    if (dto.workExecuted !== undefined) data.workExecuted = dto.workExecuted;
+    if (dto.workExecuted !== undefined) data.workExecuted = dto.workExecuted.trim();
     if (dto.testsConducted !== undefined) data.testsConducted = dto.testsConducted;
     if (dto.safetyObservations !== undefined) data.safetyObservations = dto.safetyObservations;
     if (dto.issues !== undefined) data.issues = dto.issues;
     if (dto.nextDayPlan !== undefined) data.nextDayPlan = dto.nextDayPlan;
-    await this.prisma.dailyReport.update({ where: { id }, data });
+    await this.prisma.$transaction(async (tx) => {
+      // Text written from the lines is written again when they change; text of the user's own stays.
+      const before = await this.summaryOf(tx, id);
+      const auto = data.workExecuted === undefined ? current.workExecuted === before : data.workExecuted === '' || data.workExecuted === before;
+      await tx.dailyReport.update({ where: { id }, data });
+      const date = (data.date as Date | undefined) ?? current.date;
+      if (dto.lines !== undefined) await this.saveLines(tx, user, { id, projectId: row.projectId, date, status: row.status, submittedById: row.submittedById, submittedAt: current.submittedAt }, dto.lines);
+      else if (data.date) await tx.progressEntry.updateMany({ where: { dailyReportId: id }, data: { date } });
+      const lines = await tx.progressEntry.count({ where: { dailyReportId: id } });
+      if (auto && lines) await tx.dailyReport.update({ where: { id }, data: { workExecuted: await this.summaryOf(tx, id) } });
+      else if (!lines && !((data.workExecuted as string | undefined) ?? current.workExecuted).trim())
+        throw new BadRequestException('Say what work was done today, or add a work line');
+    });
     await this.attachments.sync(user, 'dailyReportId', id, dto.attachmentIds);
     await this.audit.log(user, 'DPR', id, 'UPDATED');
     if (dto.submit) await this.submit(user, id);

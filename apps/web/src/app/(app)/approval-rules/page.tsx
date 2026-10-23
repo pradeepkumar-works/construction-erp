@@ -98,6 +98,17 @@ export default function ApprovalRulesPage() {
     meta: FAIL_NOTICE,
   });
 
+  // Progress from the DPR only (item 127): progress is recorded as the DPR's work lines.
+  const dprRule = useMutation({
+    mutationFn: async (progressFromDpr: boolean) => (await api.put<ApprovalMatrixDto>('/approval-rules', { progressFromDpr })).data,
+    onSuccess: (m) => {
+      qc.setQueryData(['approval-rules'], (old: ApprovalMatrixDto | undefined) => (old ? { ...old, progressFromDpr: m.progressFromDpr } : m));
+      void qc.invalidateQueries({ queryKey: ['activities'] });
+      message.success(m.progressFromDpr ? 'Progress now comes from the DPR only' : 'Progress can also be recorded on its own');
+    },
+    meta: FAIL_NOTICE,
+  });
+
   const set = (role: string, t: SubmissionType, patch: Partial<Cell>) => {
     setGrid((g) => ({ ...g, [role]: { ...g[role], [t]: { ...g[role][t], ...patch } } }));
     setDirty(true);
@@ -252,6 +263,21 @@ export default function ApprovalRulesPage() {
               </Typography.Text>
               <Typography.Paragraph type="secondary" id="pay-request-rule-note" style={{ margin: 0 }}>
                 Accounts pays a bill only against a payment request approved under the {SUBMISSION_TYPE_LABELS.PAYMENT_REQUEST} column above. Off, accounts can also pay any approved bill directly. Advances always need a request.
+              </Typography.Paragraph>
+            </div>
+          </Flex>
+        </Card>
+      ) : null}
+      {data ? (
+        <Card size="small" style={{ marginTop: 16 }}>
+          <Flex gap={12} align="flex-start">
+            <Switch checked={data.progressFromDpr} loading={dprRule.isPending} onChange={(v) => dprRule.mutate(v)} aria-labelledby="dpr-progress-rule" aria-describedby="dpr-progress-rule-note" />
+            <div>
+              <Typography.Text strong id="dpr-progress-rule">
+                Progress comes from the DPR only
+              </Typography.Text>
+              <Typography.Paragraph type="secondary" id="dpr-progress-rule-note" style={{ margin: 0 }}>
+                Site staff record the day&apos;s work as the DPR&apos;s work lines, approved with the DPR under the {SUBMISSION_TYPE_LABELS.DPR} column above, so nobody types the work twice. Off, progress can also be recorded on its own. Entries already recorded stay as they are.
               </Typography.Paragraph>
             </div>
           </Flex>

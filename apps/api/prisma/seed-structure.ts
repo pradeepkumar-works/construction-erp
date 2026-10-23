@@ -7,9 +7,11 @@
  *   reinforcement, shuttering and concrete, planned dates and approved progress.
  * - BL-2026-02, the item-rate hospital block: its BOQ grouped in sections and its activities in three components
  *   weighed by BOQ value (no weights given).
+ * - Three days of the town scheme's DPRs with work lines (item 127): tank, pipe laying, backfill, house connections and
+ *   road restoration, each with its crew, machines and material; two approved, the latest waiting for the PM.
  */
 import { Prisma, PrismaClient, type WorkElementType } from '@prisma/client';
-import { elementPlan, type ElementActivityLine } from '@erp/shared';
+import { elementPlan, workSummary, type ElementActivityLine } from '@erp/shared';
 
 const D = (v: string | number) => new Prisma.Decimal(v);
 const day = (offset: number) => {
@@ -221,5 +223,121 @@ async function seedHospitalSections(prisma: PrismaClient, organizationId: string
     const items = await prisma.boqItem.findMany({ where: { projectId: hospital.id, itemNo: { in: g.items } }, select: { id: true } });
     await prisma.boqItem.updateMany({ where: { id: { in: items.map((b) => b.id) } }, data: { section: g.section, workElementId: element.id } });
     await prisma.activity.updateMany({ where: { projectId: hospital.id, boqItemId: { in: items.map((b) => b.id) } }, data: { workElementId: element.id } });
+  }
+}
+
+interface LineSeed {
+  element: string;
+  activity: string;
+  qty: number;
+  at: string;
+  crew: [string, number][];
+  machines?: [string, number][];
+  material?: [string, number][];
+}
+
+interface DprSeed {
+  offset: number;
+  approved: boolean;
+  weather: 'SUNNY' | 'CLOUDY';
+  headCount: [string, number][];
+  lines: LineSeed[];
+  issues?: string;
+  nextDayPlan: string;
+}
+
+const TOWN_DPRS: DprSeed[] = [
+  {
+    offset: -3,
+    approved: true,
+    weather: 'SUNNY',
+    headCount: [['Bar Bender', 6], ['Plumber', 5], ['Helper', 16], ['Operator', 1], ['Supervisor', 2]],
+    lines: [
+      { element: '8.2', activity: 'Container wall: reinforcement', qty: 0.8, at: 'Ring 1', crew: [['Bar Bender', 6], ['Helper', 4]], material: [['TMT Fe500D 12mm', 0.82], ['Binding wire', 9]] },
+      { element: '9.2', activity: 'Pipe lowering, laying and jointing', qty: 168, at: 'Station Road, J-41 to J-44', crew: [['Plumber', 2], ['Helper', 6]], machines: [['JCB 3DX', 4]], material: [['HDPE PE100 110mm PN6', 168], ['HDPE electrofusion coupler 110mm', 28]] },
+      { element: '11', activity: 'Tapping and saddle', qty: 14, at: 'Ward 3', crew: [['Plumber', 3], ['Helper', 3]], material: [['Ball valve 50mm', 14]] },
+    ],
+    nextDayPlan: 'Container wall ring 2 steel and ring 1 shuttering; pipe laying J-44 onwards; backfill in the market lane',
+  },
+  {
+    offset: -2,
+    approved: true,
+    weather: 'CLOUDY',
+    headCount: [['Bar Bender', 6], ['Carpenter', 6], ['Plumber', 2], ['Helper', 22], ['Operator', 2], ['Supervisor', 2]],
+    lines: [
+      { element: '8.2', activity: 'Container wall: reinforcement', qty: 1.1, at: 'Ring 2', crew: [['Bar Bender', 6], ['Helper', 4]], material: [['TMT Fe500D 12mm', 1.12], ['Binding wire', 12]] },
+      { element: '8.2', activity: 'Container wall: shuttering', qty: 66, at: 'Ring 1', crew: [['Carpenter', 6], ['Helper', 6]], material: [['Shuttering plywood 12mm', 4]] },
+      { element: '9.2', activity: 'Pipe lowering, laying and jointing', qty: 192, at: 'Station Road, J-44 to J-47', crew: [['Plumber', 2], ['Helper', 6]], machines: [['JCB 3DX', 5]], material: [['HDPE PE100 110mm PN6', 192], ['HDPE electrofusion coupler 110mm', 32]] },
+      { element: '9.2', activity: 'Backfilling and compaction', qty: 240, at: 'Market lane, J-30 to J-36', crew: [['Helper', 6], ['Operator', 1]], machines: [['JCB 3DX', 6], ['Plate compactor', 6]] },
+    ],
+    issues: 'Two hours lost in the afternoon to rain; trench at J-46 waterlogged and pumped out',
+    nextDayPlan: 'Container wall ring 1 concrete; pipe laying J-12 to J-13 in the market; tapping in Ward 3; road restoration on Station Road',
+  },
+  {
+    offset: -1,
+    approved: false,
+    weather: 'SUNNY',
+    headCount: [['Mason', 5], ['Plumber', 6], ['Helper', 32], ['Operator', 3], ['Supervisor', 2]],
+    lines: [
+      {
+        element: '8.2', activity: 'Container wall: concrete', qty: 11.5, at: 'Ring 1', crew: [['Mason', 4], ['Helper', 10]], machines: [['Concrete mixer', 6], ['Needle vibrator', 6]],
+        material: [['OPC 53 Grade Cement', 92], ['Aggregate 20mm', 9.2], ['River Sand (Zone II)', 5.1], ['Admixture PCE (Master Glenium)', 23]],
+      },
+      { element: '9.2', activity: 'Pipe lowering, laying and jointing', qty: 84, at: 'P-27, J-12 to J-13', crew: [['Plumber', 2], ['Helper', 6]], material: [['HDPE PE100 110mm PN6', 84], ['HDPE electrofusion coupler 110mm', 14]] },
+      { element: '9.2', activity: 'Backfilling and compaction', qty: 96, at: 'P-28, J-13 to J-14', crew: [['Helper', 4], ['Operator', 1]], machines: [['JCB 3DX', 7]] },
+      { element: '11', activity: 'Tapping and saddle', qty: 18, at: 'Ward 3', crew: [['Plumber', 3], ['Helper', 3]], material: [['Ball valve 50mm', 18]] },
+      { element: '10', activity: 'Bituminous road', qty: 120, at: 'Station Road, J-30 to J-36', crew: [['Helper', 8], ['Operator', 1]], machines: [['Road roller', 5]], material: [['Bitumen VG-30', 0.65], ['Emulsion SS-1', 60]] },
+    ],
+    nextDayPlan: 'Container wall ring 2 shuttering; pipe laying J-13 to J-16; backfill J-14 onwards; tapping in Ward 3',
+  },
+];
+
+/** Three days of DPRs with work lines on the town scheme (item 127); skipped once it has any DPR. */
+export async function seedTownDprs(prisma: PrismaClient, organizationId: string) {
+  const project = await prisma.project.findFirst({ where: { organizationId, code: 'WS-2026-04' }, select: { id: true } });
+  if (!project || (await prisma.dailyReport.count({ where: { projectId: project.id } }))) return;
+  const user = async (email: string) => (await prisma.user.findFirst({ where: { organizationId, email }, select: { id: true } }))?.id;
+  const [pm, engineer] = await Promise.all([user('pm@demo.com'), user('engineer@demo.com')]);
+  if (!pm || !engineer) return;
+  const items = new Map((await prisma.item.findMany({ where: { organizationId }, select: { id: true, name: true } })).map((i) => [i.name, i.id]));
+  const activities = await prisma.activity.findMany({ where: { projectId: project.id }, select: { id: true, name: true, unit: true, parentActivity: { select: { name: true } }, workElement: { select: { code: true } } } });
+  const crewOf = (c: [string, number][]) => c.map(([category, count]) => ({ category, count }));
+  const machinesOf = (m: [string, number][] = []) => m.map(([name, hours]) => ({ name, hours }));
+
+  for (const d of TOWN_DPRS) {
+    const date = day(d.offset);
+    const submittedAt = new Date(date.getTime() + 19 * 3_600_000);
+    const reviewedAt = d.approved ? new Date(date.getTime() + 33 * 3_600_000) : null;
+    const status = d.approved ? 'APPROVED' : 'SUBMITTED';
+    const review = { status, submittedById: engineer, submittedAt, reviewedById: d.approved ? pm : null, reviewedAt, reviewNote: d.approved ? 'Checked at site' : null } as const;
+    const lines = d.lines.flatMap((l) => {
+      const a = activities.find((x) => x.workElement?.code === l.element && x.name === l.activity);
+      return a ? [{ ...l, activityId: a.id, unit: a.unit, parentActivityName: a.parentActivity?.name ?? null }] : [];
+    });
+    const summary = workSummary(lines.map((l) => ({ activityName: l.activity, parentActivityName: l.parentActivityName, quantity: l.qty, unit: l.unit, location: l.at })));
+    const machinery = new Map<string, number>();
+    for (const l of lines) for (const [name, hours] of l.machines ?? []) machinery.set(name, (machinery.get(name) ?? 0) + hours);
+    const dpr = await prisma.dailyReport.create({
+      data: {
+        organizationId, projectId: project.id, date, weather: d.weather, siteCondition: 'Workable', manpower: crewOf(d.headCount), machinery: machinesOf([...machinery]),
+        workExecuted: summary, issues: d.issues ?? null, nextDayPlan: d.nextDayPlan, safetyObservations: 'Helmets and harness checked at the tank; trench edges barricaded', ...review,
+      },
+    });
+    for (const [i, l] of lines.entries()) {
+      const crew = crewOf(l.crew);
+      const machines = machinesOf(l.machines);
+      await prisma.progressEntry.create({
+        data: {
+          organizationId, projectId: project.id, activityId: l.activityId, dailyReportId: dpr.id, sortOrder: i, date, quantity: D(l.qty), location: l.at,
+          labour: crew, machines, manpowerCount: crew.reduce((n, c) => n + c.count, 0), machineryUsed: machines.map((m) => m.name).join(', ') || null, ...review,
+          materials: {
+            create: (l.material ?? []).flatMap(([name, qty], k) => {
+              const itemId = items.get(name);
+              return itemId ? [{ organizationId, itemId, quantity: D(qty), sortOrder: k }] : [];
+            }),
+          },
+        },
+      });
+    }
   }
 }

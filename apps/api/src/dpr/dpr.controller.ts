@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { DprService } from './dpr.service';
-import { CreateDprDto, ListDprQuery, UpdateDprDto } from './dpr.dto';
+import { CreateDprDto, DprWorkOptionsQuery, ListDprQuery, UpdateDprDto } from './dpr.dto';
 import { CurrentUser, RequestUser } from '../common/current-user';
 
 @ApiTags('dpr')
@@ -15,11 +15,24 @@ export class DprController {
     return this.dpr.list(user, q);
   }
 
+  @ApiOperation({
+    summary: "What a project's DPR form offers (item 127)",
+    description: 'The activities and sub-activities that take progress (look-ahead ones first), each with its component, scope, quantity done and material norms; the store items; the open work orders; and whether the company records progress only in the DPR.',
+  })
+  @Get('work-options')
+  workOptions(@CurrentUser() user: RequestUser, @Query() q: DprWorkOptionsQuery) {
+    return this.dpr.workOptions(user, q);
+  }
+
   @Get(':id')
   get(@CurrentUser() user: RequestUser, @Param('id') id: string) {
     return this.dpr.get(user, id);
   }
 
+  @ApiOperation({
+    summary: 'Record a DPR',
+    description: 'With `lines`, the work done line by line (item 127): each line becomes a progress entry of the DPR, submitted, approved and sent back with it. `workExecuted` is then written from the lines when left out.',
+  })
   @Post()
   create(@CurrentUser() user: RequestUser, @Body() dto: CreateDprDto) {
     return this.dpr.create(user, dto);

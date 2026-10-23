@@ -130,6 +130,10 @@ and the pre-delivery checklist.
   `physicalProgress` in `src/common/progress.ts`), never a sum of its own; an activity with sub-activities takes no
   progress. A new kind of component is a `WorkElementType` (schema + shared + label + Hindi) and its steps in
   `element-templates.ts`; keep `src/scripts/wbs-rollup-test.ts` passing.
+- Structured DPR (item 127, ARCHITECTURE "Structured DPR"): a DPR's work lines are its `ProgressEntry` rows
+  (`dailyReportId`), saved only through `DprService` and moved with the DPR by `SubmissionLifecycleService.onStatus`;
+  anything that counts or queues progress entries waiting for approval leaves them out (`dailyReportId: null`). Line
+  arithmetic is pure in `@erp/shared/dpr-lines.ts`; keep `src/scripts/dpr-lines-test.ts` passing.
 - Project page: a new project tab is one entry in `app/(app)/projects/[id]/page.tsx` with a `group` from `WORKSPACE_GROUPS`
   (`components/projects/ProjectWorkspace.tsx`); its `key` is the `?tab=` value, so never rename one. Anything sticky
   inside a page reads its top offset from `useStickyTop()` (`src/lib/sticky.tsx`), not a fixed 56.

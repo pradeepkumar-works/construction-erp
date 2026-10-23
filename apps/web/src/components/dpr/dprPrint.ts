@@ -1,9 +1,9 @@
-import type { DailyReportDto } from '@erp/shared';
-import { WEATHER_LABELS } from '@erp/shared';
+import type { DailyReportDto, DprLineDto } from '@erp/shared';
+import { WEATHER_LABELS, crewCheck, dprActivityLabel, lineLocation, materialUsed, workSummary } from '@erp/shared';
 import { fileUrl } from '@/lib/api';
 import { AUTO_PRINT_SCRIPT, brandFooter, PRINT_BRAND_CSS, PRINT_FONT_LINKS } from '@/components/print/printBrand';
 import { BRAND } from '@/lib/brand';
-import { formatDate, formatDateTime } from '@/lib/format';
+import { formatDate, formatDateTime, formatPct, formatQty } from '@/lib/format';
 
 const esc = (v: unknown) =>
   String(v ?? '')
@@ -13,7 +13,35 @@ const esc = (v: unknown) =>
 
 const para = (v: string | null | undefined) => (v ? esc(v).replace(/\n/g, '<br/>') : '<span class="muted">-</span>');
 
+/**
+ * The work lines in the site's DPR layout (item 127): S.No, component, sub-component, activity, unit, scope, up to
+ * previous, today, cumulative, %, balance and remark.
+ */
+function workTable(lines: DprLineDto[]): string {
+  const rows = lines
+    .map((l, i) => {
+      const where = [lineLocation(l), l.workOrderNo].filter(Boolean).join(' · ');
+      const remark = [where, l.remarks].filter(Boolean).join('. ');
+      return `<tr><td class="num">${i + 1}</td><td>${esc(l.componentName ?? '-')}</td><td>${esc(l.subComponentName ?? '-')}</td><td>${esc(dprActivityLabel({ name: l.activityName, parentActivityName: l.parentActivityName }))}</td><td>${esc(l.unit)}</td><td class="num">${esc(formatQty(l.scope))}</td><td class="num">${esc(formatQty(l.previous))}</td><td class="num"><b>${esc(formatQty(l.quantity))}</b></td><td class="num">${esc(formatQty(l.cumulative))}</td><td class="num">${l.pct === null ? '-' : esc(formatPct(l.pct))}</td><td class="num">${esc(formatQty(l.balance))}</td><td>${esc(remark)}</td></tr>`;
+    })
+    .join('');
+  const crew = lines
+    .filter((l) => l.labour.length || l.machines.length || l.materials.length)
+    .map((l) => {
+      const parts = [l.labour.map((m) => `${m.category} ${m.count}`).join(', '), l.machines.map((m) => `${m.name} ${m.hours} h`).join(', '), l.materials.map((m) => `${m.itemName} ${formatQty(m.quantity)} ${m.unit}`).join(', ')];
+      return `<tr><td class="num">${lines.indexOf(l) + 1}</td><td>${esc(parts[0] || '-')}</td><td>${esc(parts[1] || '-')}</td><td>${esc(parts[2] || '-')}</td></tr>`;
+    })
+    .join('');
+  const used = materialUsed(lines).map((m) => `<tr><td>${esc(m.itemName)}</td><td class="num">${esc(formatQty(m.quantity))} ${esc(m.unit)}</td></tr>`).join('');
+  return `<h2>Work done</h2>
+  <table class="lines"><thead><tr><th class="num">S.No</th><th>Component</th><th>Sub-component</th><th>Activity</th><th>Unit</th><th class="num">Scope</th><th class="num">Up to previous</th><th class="num">Today</th><th class="num">Cumulative</th><th class="num">%</th><th class="num">Balance</th><th>Remark</th></tr></thead><tbody>${rows}</tbody></table>
+  ${crew ? `<h2>Crew, machines and material by line</h2><table class="lines"><thead><tr><th class="num">S.No</th><th>Crew</th><th>Machines</th><th>Material used</th></tr></thead><tbody>${crew}</tbody></table>` : ''}
+  ${used ? `<h2>Material used</h2><table><thead><tr><th>Item</th><th class="num">Used</th></tr></thead><tbody>${used}</tbody></table>` : ''}`;
+}
+
 export function buildDprPrintHtml(d: DailyReportDto, orgName: string): string {
+  const lines = d.lines ?? [];
+  const crew = lines.length ? crewCheck(lines, d.manpower) : null;
   const manpowerRows = d.manpower.map((m) => `<tr><td>${esc(m.category)}</td><td class="num">${esc(m.count)}</td></tr>`).join('');
   const machineryRows = d.machinery.map((m) => `<tr><td>${esc(m.name)}</td><td class="num">${esc(m.hours)}</td></tr>`).join('');
   const photos = d.attachments
@@ -27,7 +55,9 @@ export function buildDprPrintHtml(d: DailyReportDto, orgName: string): string {
 ${PRINT_FONT_LINKS}
 <title>DPR ${esc(formatDate(d.date))} - ${esc(d.projectName)}</title>
 <style>
-  @page { size: A4; margin: 16mm; }
+  @page { size: A4${lines.length ? ' landscape' : ''}; margin: ${lines.length ? '12mm' : '16mm'}; }
+  table.lines { font-size: 10px; }
+  table.lines td.num, table.lines th.num { width: auto; white-space: nowrap; }
   * { box-sizing: border-box; }
   body { font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #111; font-size: 12px; margin: 0; padding: 24px; }
   .head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid ${BRAND.colors.ink}; padding-bottom: 10px; margin-bottom: 14px; }
@@ -65,11 +95,12 @@ ${PRINT_FONT_LINKS}
     <div><b>Submitted by</b>${esc(d.submittedByName)}</div>
     <div><b>Submitted at</b>${esc(formatDateTime(d.submittedAt))}</div>
     <div><b>Reviewed by</b>${esc(d.reviewedByName ?? '-')}</div>
-    <div><b>Total manpower</b>${esc(d.totalManpower)}</div>
+    <div><b>Total manpower</b>${esc(d.totalManpower)}${crew ? ` (${esc(crew.onLines)} on the work lines)` : ''}</div>
   </div>
 
-  <h2>Work executed</h2>
-  <p>${para(d.workExecuted)}</p>
+  ${lines.length ? workTable(lines) : `<h2>Work executed</h2>
+  <p>${para(d.workExecuted)}</p>`}
+  ${lines.length && d.workExecuted && d.workExecuted !== workSummary(lines) ? `<h2>Work executed</h2><p>${para(d.workExecuted)}</p>` : ''}
 
   <div class="cols">
     <div>

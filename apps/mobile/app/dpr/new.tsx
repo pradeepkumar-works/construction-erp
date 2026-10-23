@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { MANPOWER_CATEGORIES, WEATHER_LABELS, WEATHER_OPTIONS, attendanceToManpower, type AttendanceDayDto, type AttendanceLineInput, type DailyReportDto, type ManpowerLine, type Weather } from '@erp/shared';
+import { MANPOWER_CATEGORIES, WEATHER_LABELS, WEATHER_OPTIONS, attendanceToManpower, type AttendanceDayDto, type AttendanceLineInput, type DailyReportDto, type DprLineInput, type DprWorkOptionsDto, type ManpowerLine, type Paginated, type Weather } from '@erp/shared';
 import { useApi, useFetch } from '../../src/api/hooks';
 import { errorMessage } from '../../src/api/client';
 import { Button, Card, Chips, DatePicker, ErrorBanner, ErrorState, Input, Loading, PhotoPicker, Screen, Select, type LocalPhoto, IconButton } from '../../src/components';
@@ -16,6 +16,7 @@ import { AskDraftNotice } from '../../src/ai/AskDraftNotice';
 import { colors, fontSize, spacing, touch, typography } from '../../src/theme';
 import { formatDate, isIsoDate, today } from '../../src/utils/format';
 import { useFieldChain } from '../../src/forms/keyboard';
+import { DprLinesEditor, copiedRow, lineRowFrom, linesPayload, linesProblem, type DprLineRow } from '../../src/forms/dprLines';
 
 interface ManpowerRow {
   key: string;
@@ -73,11 +74,13 @@ export default function NewDprScreen() {
   const [created, setCreated] = useState<DailyReportDto | null>(null);
   const [queued, setQueued] = useState<OutboxItem | null>(null);
   const [manpowerEdited, setManpowerEdited] = useState(false);
+  const [lines, setLines] = useState<DprLineRow[]>([]);
 
   const draft = useFormDraft(
     editId || outboxId ? null : 'dpr',
-    { projectId, date, weather, siteCondition, manpower, machinery, materialReceived, workExecuted, tests, safety, issues, nextDayPlan, photos, manpowerEdited },
+    { projectId, date, weather, siteCondition, manpower, machinery, materialReceived, workExecuted, tests, safety, issues, nextDayPlan, photos, manpowerEdited, lines },
     (d) => {
+      setLines(d.lines ?? []);
       setProjectId(d.projectId);
       setDate(d.date);
       setWeather(d.weather);
@@ -110,6 +113,7 @@ export default function NewDprScreen() {
     setNextDayPlan('');
     setPhotos([]);
     setManpowerEdited(false);
+    setLines([]);
     setErrors({});
   };
 
@@ -124,7 +128,8 @@ export default function NewDprScreen() {
   const [refusedLoaded, setRefusedLoaded] = useState(false);
   useEffect(() => {
     if (!refused || refusedLoaded) return;
-    const p = refused.payload as { projectId: string; date: string; weather?: Weather | null; siteCondition?: string; manpower?: ManpowerLine[]; machinery?: { name: string; hours: number }[]; materialReceived?: string; workExecuted?: string; testsConducted?: string; safetyObservations?: string; issues?: string; nextDayPlan?: string };
+    const p = refused.payload as { projectId: string; date: string; weather?: Weather | null; siteCondition?: string; manpower?: ManpowerLine[]; machinery?: { name: string; hours: number }[]; materialReceived?: string; workExecuted?: string; testsConducted?: string; safetyObservations?: string; issues?: string; nextDayPlan?: string; lines?: DprLineInput[] };
+    setLines((p.lines ?? []).map((l) => lineRowFrom(l, newId())));
     setProjectId(p.projectId);
     setDate(p.date);
     setWeather(p.weather ?? null);
@@ -182,6 +187,7 @@ export default function NewDprScreen() {
     setIssues(e.issues ?? '');
     setNextDayPlan(e.nextDayPlan ?? '');
     setPhotos(attachmentsToPhotos(e.attachments));
+    setLines((e.lines ?? []).map((l) => lineRowFrom(l, newId())));
     draft.settle();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [existing.data]);
@@ -220,6 +226,36 @@ export default function NewDprScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [attendance, manpowerEdited, filledFrom]);
 
+  // Work lines (item 127): what the picker offers, kept on the phone for offline use.
+  const workOptions = useFetch<DprWorkOptionsDto>((a) => a.get('/dpr/work-options', { projectId: projectId!, date: isIsoDate(date) ? date : today() }), [projectId], {
+    enabled: !!projectId,
+    refetchOnFocus: false,
+    cacheKey: `dpr-options:${projectId}`,
+  });
+  const headCount = useMemo(() => manpower.filter((r) => r.category && /^\d+$/.test(r.count.trim())).map((r) => ({ category: r.category as string, count: Number(r.count) })), [manpower]);
+  const hasLines = lines.some((l) => l.activityId);
+  const [copying, setCopying] = useState(false);
+  const copyYesterday = async () => {
+    if (!projectId) return;
+    setCopying(true);
+    try {
+      const prev = new Date(`${date}T00:00:00Z`);
+      prev.setUTCDate(prev.getUTCDate() - 1);
+      const list = await api.get<Paginated<DailyReportDto>>('/dpr', { projectId, to: prev.toISOString().slice(0, 10), pageSize: 1 });
+      const last = list.items[0];
+      const full = last?.lineCount ? await api.get<DailyReportDto>(`/dpr/${last.id}`) : null;
+      if (!full?.lines?.length) {
+        setSubmitError(t('No work lines on the last DPR to copy'));
+        return;
+      }
+      setLines((rows) => [...rows.filter((r) => r.activityId), ...full.lines!.map((l) => copiedRow(l, newId()))]);
+    } catch (e) {
+      setSubmitError(errorMessage(e));
+    } finally {
+      setCopying(false);
+    }
+  };
+
   const updateMan = (key: string, patch: Partial<ManpowerRow>) => {
     setManpowerEdited(true);
     setManpower((rows) => rows.map((r) => (r.key === key ? { ...r, ...patch } : r)));
@@ -230,7 +266,9 @@ export default function NewDprScreen() {
     const e: Record<string, string> = {};
     if (!projectId) e.projectId = t('Choose a project');
     if (!isIsoDate(date)) e.date = t('Enter a valid date');
-    if (!workExecuted.trim()) e.workExecuted = t('Describe the work executed today');
+    if (!workExecuted.trim() && !hasLines) e.workExecuted = t('Describe the work executed today, or add a work line');
+    const lineProblem = linesProblem(lines, t);
+    if (lineProblem) e.lines = lineProblem;
     for (const r of manpower) {
       if ((r.category && r.count.trim()) || (!r.category && !r.count.trim())) continue;
       e.manpower = t('Choose a category and enter a count in each manpower row');
@@ -264,6 +302,7 @@ export default function NewDprScreen() {
         machinery: machinery.filter((r) => r.name.trim() && r.hours.trim()).map((r) => ({ name: r.name.trim(), hours: Number(r.hours) })),
         materialReceived: materialReceived.trim() || blank,
         workExecuted: workExecuted.trim(),
+        lines: linesPayload(lines),
         testsConducted: tests.trim() || blank,
         safetyObservations: safety.trim() || blank,
         issues: issues.trim() || blank,
@@ -394,8 +433,15 @@ export default function NewDprScreen() {
         <Button title={t('Add machine')} variant="ghost" size="sm" icon="add" onPress={() => setMachinery((rows) => [...rows, { key: newKey(), name: '', hours: '' }])} />
       </Card>
 
+      <Card
+        title={t('Work done')}
+        right={!editId && online && projectId ? <Button title={t('Copy yesterday')} variant="ghost" size="sm" icon="copy-outline" onPress={copyYesterday} loading={copying} /> : null}
+      >
+        <DprLinesEditor rows={lines} onChange={setLines} options={workOptions.data} headCount={headCount} newId={newId} error={errors.lines} />
+      </Card>
+
       <Card title={t('Work')}>
-        <Input {...field({ multiline: true })} label={t('Work executed')} required value={workExecuted} onChangeText={setWorkExecuted} multiline placeholder={t('What was done today, where, and how much')} error={errors.workExecuted} />
+        <Input {...field({ multiline: true })} label={hasLines ? t('Other work and notes') : t('Work executed')} required={!hasLines} value={workExecuted} onChangeText={setWorkExecuted} multiline placeholder={t('What was done today, where, and how much')} error={errors.workExecuted} />
         <Input {...field({ multiline: true })} label={t('Material received')} value={materialReceived} onChangeText={setMaterialReceived} multiline placeholder={t('e.g. 200 bags cement, 20 MT steel')} />
         <Input {...field({ multiline: true })} label={t('Tests conducted')} value={tests} onChangeText={setTests} multiline placeholder={t('e.g. Cube test, FDD')} />
         <Input {...field({ multiline: true })} label={t('Safety observations')} value={safety} onChangeText={setSafety} multiline placeholder={t('Toolbox talk, PPE, incidents')} />

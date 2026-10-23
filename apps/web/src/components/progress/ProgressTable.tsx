@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { theme } from 'antd';
 import type { ProgressEntryDto, ProgressSortField } from '@erp/shared';
 import { formatDate, formatQty } from '@/lib/format';
@@ -19,6 +20,12 @@ function ActivityCell({ row, onOpen }: { row: ProgressEntryDto; onOpen: (id: str
       {row.location && <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>{row.location}</div>}
     </div>
   );
+}
+
+/** A DPR work line's menu: open it, or its DPR, where it is changed and decided. */
+function DprLineActions({ row, onOpen }: { row: ProgressEntryDto; onOpen: (id: string) => void }) {
+  const router = useRouter();
+  return <RowActions type="progress" row={row} href={`/progress/${row.id}`} onOpen={onOpen} review={false} extra={[{ key: 'dpr', label: 'Open the DPR', onClick: () => router.push(`/dpr/${row.dailyReportId}`) }]} />;
 }
 
 /** The progress list's columns; keys of sortable ones are the API's sort fields. */
@@ -47,6 +54,12 @@ export function progressColumns({
     { defaultFrom: 1400, card: 'meta', title: 'Submitted by', dataIndex: 'submittedByName', width: 150, ellipsis: true, ...sort('submittedBy') },
     { title: 'Submitted on', dataIndex: 'submittedAt', width: 130, defaultHidden: true, render: (v) => (v ? formatDate(v) : '-'), ...sort('submittedAt') },
     { card: 'status', title: 'Status', fixed: 'right' as const, dataIndex: 'status', width: 150, render: (s) => <StatusTag status={s} />, ...sort('status') },
-    { key: 'actions', title: '', label: 'Actions', locked: true, fixed: 'right' as const, width: 56, render: (_, r) => <RowActions type="progress" row={r} href={`/progress/${r.id}`} onOpen={onOpen} onEdit={onEdit} /> },
+    { key: 'actions', title: '', label: 'Actions', locked: true, fixed: 'right' as const, width: 56, render: (_, r) =>
+        // A DPR's work line (item 127) is changed and decided in its DPR.
+        r.dailyReportId ? (
+          <DprLineActions row={r} onOpen={onOpen} />
+        ) : (
+          <RowActions type="progress" row={r} href={`/progress/${r.id}`} onOpen={onOpen} onEdit={onEdit} />
+        ) },
   ];
 }

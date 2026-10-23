@@ -55,7 +55,7 @@ export class ProjectsService {
       }),
       this.prisma.workElement.findMany({ where: { projectId: { in: ids } }, select: { id: true, projectId: true, parentId: true, weightPct: true } }),
       this.prisma.progressEntry.groupBy({ by: ['activityId'], where: { activity: { projectId: { in: ids } }, status: 'APPROVED' }, _sum: { quantity: true } }),
-      this.prisma.progressEntry.groupBy({ by: ['projectId'], where: waiting, _count: { _all: true } }),
+      this.prisma.progressEntry.groupBy({ by: ['projectId'], where: { ...waiting, dailyReportId: null }, _count: { _all: true } }),
       this.prisma.dailyReport.groupBy({ by: ['projectId'], where: waiting, _count: { _all: true } }),
       this.prisma.materialRequest.groupBy({ by: ['projectId'], where: waiting, _count: { _all: true } }),
       withContract.length

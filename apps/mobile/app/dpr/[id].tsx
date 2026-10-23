@@ -1,11 +1,11 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { WEATHER_LABELS, type DailyReportDto } from '@erp/shared';
+import { WEATHER_LABELS, crewCheck, dprActivityLabel, groupLines, lineLocation, type DailyReportDto } from '@erp/shared';
 import { useFetch } from '../../src/api/hooks';
 import { AttachmentGallery, PhotoChecks, Card, ErrorState, KeyValue, Loading, ReviewActions, Screen, SubmissionHeader, SubmitterActions } from '../../src/components';
 import { colors, spacing, typography } from '../../src/theme';
-import { formatDate } from '../../src/utils/format';
+import { formatDate, fmtQty } from '../../src/utils/format';
 import { useT } from '../../src/i18n/LanguageContext';
 
 export default function DprDetailScreen() {
@@ -31,8 +31,36 @@ export default function DprDetailScreen() {
       <Card title={t('Machinery')}>
         {data.machinery.length === 0 ? <Text style={typography.caption}>{t('No machinery recorded')}</Text> : data.machinery.map((m, i) => <KeyValue key={`${m.name}-${i}`} label={m.name} value={t('{h} h', { h: m.hours })} />)}
       </Card>
+      {data.lines?.length ? (
+        <Card title={t('Work done')}>
+          {groupLines(data.lines).map((g) => (
+            <View key={g.key} style={styles.group}>
+              <Text style={typography.label}>{g.label === 'Outside the breakdown' ? t('Outside the breakdown') : g.label}</Text>
+              {g.lines.map((l) => (
+                <View key={l.id} style={styles.line}>
+                  <Text style={typography.bodyStrong}>{dprActivityLabel({ name: l.activityName, parentActivityName: l.parentActivityName })}</Text>
+                  {lineLocation(l) ? <Text style={typography.caption}>{lineLocation(l)}</Text> : null}
+                  <Text style={typography.body}>
+                    {t('Today {q} {unit} · {cum} of {scope} ({pct}%)', { q: fmtQty(l.quantity), unit: l.unit, cum: fmtQty(l.cumulative), scope: fmtQty(l.scope), pct: l.pct ?? 0 })}
+                  </Text>
+                  {l.labour.length ? <Text style={typography.caption}>{l.labour.map((m) => `${t(m.category)} ${m.count}`).join(', ')}</Text> : null}
+                  {l.materials.length ? <Text style={typography.caption}>{l.materials.map((m) => `${m.itemName} ${fmtQty(m.quantity)} ${m.unit}`).join(', ')}</Text> : null}
+                </View>
+              ))}
+            </View>
+          ))}
+          {(() => {
+            const c = crewCheck(data.lines!, data.manpower);
+            return c.headCount !== null && c.difference ? (
+              <Text style={styles.muted}>
+                {c.difference > 0 ? t('{on} of the {n} on site are on a work line; {off} on none', { on: c.onLines, n: c.headCount, off: c.difference }) : t('The work lines name {on} people, {more} more than the {n} on site', { on: c.onLines, more: -c.difference, n: c.headCount })}
+              </Text>
+            ) : null;
+          })()}
+        </Card>
+      ) : null}
       <Card title={t('Work')}>
-        <Block label={t('Work executed')} value={data.workExecuted} />
+        <Block label={data.lines?.length ? t('Other work and notes') : t('Work executed')} value={data.workExecuted} />
         <Block label={t('Material received')} value={data.materialReceived} />
         <Block label={t('Tests conducted')} value={data.testsConducted} />
         <Block label={t('Safety observations')} value={data.safetyObservations} />
@@ -60,4 +88,6 @@ const styles = StyleSheet.create({
   total: { ...typography.bodyStrong, color: colors.primary },
   block: { marginBottom: spacing.md, gap: 2 },
   muted: { color: colors.textMuted },
+  group: { marginBottom: spacing.md, gap: spacing.xs },
+  line: { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: spacing.sm, gap: 2 },
 });

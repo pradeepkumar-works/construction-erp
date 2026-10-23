@@ -1,3 +1,4 @@
+import type { DprLineDto } from './dpr-lines';
 import type { EmployeePrivateDto, EmploymentType } from './hr';
 import type { NotificationTab } from './notifications';
 import type { InspectionCheck, NcrSeverity, NcrStatus, TestKind, TestResult } from './quality';
@@ -293,6 +294,8 @@ export interface ProgressEntryDto extends SubmissionBase {
   chainageTo: number | null;
   floor: string | null;
   village: string | null;
+  /** The DPR this entry is a work line of (item 127): it is changed, submitted and approved there */
+  dailyReportId: string | null;
 }
 
 export interface ManpowerLine {
@@ -318,6 +321,10 @@ export interface DailyReportDto extends SubmissionBase {
   issues: string | null;
   nextDayPlan: string | null;
   totalManpower: number;
+  /** Work lines (item 127) */
+  lineCount: number;
+  /** The work lines with their figures; on the single report (GET /dpr/:id), not in lists */
+  lines?: DprLineDto[];
 }
 
 export interface MaterialRequestItemDto {
@@ -1295,6 +1302,8 @@ export interface ApprovalMatrixDto {
   rules: ApprovalRuleDto[];
   /** Accounts pays a bill only against an approved payment request (v5 item 90) */
   paymentsNeedRequest: boolean;
+  /** Progress is recorded only as DPR work lines (item 127) */
+  progressFromDpr: boolean;
   /** Reminders and escalation per submission type (v5 item 94); types left out have neither */
   escalations: ApprovalEscalationDto[];
 }

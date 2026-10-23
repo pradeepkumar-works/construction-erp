@@ -3,7 +3,7 @@
 import React from 'react';
 import { App, Table, Tag, Typography } from 'antd';
 import type { DailyReportDto, ManpowerLine, MachineryLine } from '@erp/shared';
-import { WEATHER_LABELS, canReviewHindrances } from '@erp/shared';
+import { WEATHER_LABELS, canReviewHindrances, workSummary } from '@erp/shared';
 import { useDpr } from '@/lib/queries';
 import { useAuth } from '@/lib/auth';
 import { formatDate } from '@/lib/format';
@@ -18,6 +18,7 @@ import { submissionLifecycle } from '@/components/record/lifecycle';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { Section } from '@/components/common/Section';
 import { DprHindrance } from '@/components/risks/HindranceSuggestions';
+import { DprLineTotals, DprWorkLines, crewNote } from './DprLines';
 
 function Note({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -74,47 +75,70 @@ export function DprRecord({ id, mode, open, onClose, onEdit }: RecordProps & { m
           ],
           lifecycle: submissionLifecycle(data),
           sections: [
-            { key: 'work', title: 'Work executed', children: <div style={{ whiteSpace: 'pre-wrap' }}>{data.workExecuted || <span className="text-muted">-</span>}</div> },
+            data.lines?.length
+              ? {
+                  key: 'work',
+                  title: 'Work done',
+                  children: (
+                    <>
+                      <DprWorkLines lines={data.lines} />
+                      {data.workExecuted && data.workExecuted !== workSummary(data.lines) ? (
+                        <div style={{ marginTop: 12 }}>
+                          <Note title="Work executed">{data.workExecuted}</Note>
+                        </div>
+                      ) : null}
+                    </>
+                  ),
+                }
+              : { key: 'work', title: 'Work executed', children: <div style={{ whiteSpace: 'pre-wrap' }}>{data.workExecuted || <span className="text-muted">-</span>}</div> },
             {
               key: 'resources',
               title: 'Manpower and machinery',
               children: (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12 }}>
-                  <Section title="Manpower">
-                    <Table<ManpowerLine>
-                      size="small"
-                      rowKey={(r, i) => `${r.category}-${i}`}
-                      pagination={false}
-                      dataSource={data.manpower}
-                      columns={[
-                        { title: 'Category', dataIndex: 'category' },
-                        { title: 'Count', dataIndex: 'count', align: 'right', width: 80 },
-                      ]}
-                      summary={() => (
-                        <Table.Summary.Row>
-                          <Table.Summary.Cell index={0}>
-                            <strong>Total</strong>
-                          </Table.Summary.Cell>
-                          <Table.Summary.Cell index={1} align="right">
-                            <strong>{data.totalManpower}</strong>
-                          </Table.Summary.Cell>
-                        </Table.Summary.Row>
-                      )}
-                    />
-                  </Section>
-                  <Section title="Machinery">
-                    <Table<MachineryLine>
-                      size="small"
-                      rowKey={(r, i) => `${r.name}-${i}`}
-                      pagination={false}
-                      dataSource={data.machinery}
-                      columns={[
-                        { title: 'Equipment', dataIndex: 'name' },
-                        { title: 'Hours', dataIndex: 'hours', align: 'right', width: 80 },
-                      ]}
-                    />
-                  </Section>
-                </div>
+                <>
+                  {crewNote(data) ? <Typography.Paragraph style={{ marginBottom: 12 }}>{crewNote(data)}</Typography.Paragraph> : null}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12 }}>
+                    <Section title="Manpower">
+                      <Table<ManpowerLine>
+                        size="small"
+                        rowKey={(r, i) => `${r.category}-${i}`}
+                        pagination={false}
+                        dataSource={data.manpower}
+                        columns={[
+                          { title: 'Category', dataIndex: 'category' },
+                          { title: 'Count', dataIndex: 'count', align: 'right', width: 80 },
+                        ]}
+                        summary={() => (
+                          <Table.Summary.Row>
+                            <Table.Summary.Cell index={0}>
+                              <strong>Total</strong>
+                            </Table.Summary.Cell>
+                            <Table.Summary.Cell index={1} align="right">
+                              <strong>{data.totalManpower}</strong>
+                            </Table.Summary.Cell>
+                          </Table.Summary.Row>
+                        )}
+                      />
+                    </Section>
+                    <Section title="Machinery">
+                      <Table<MachineryLine>
+                        size="small"
+                        rowKey={(r, i) => `${r.name}-${i}`}
+                        pagination={false}
+                        dataSource={data.machinery}
+                        columns={[
+                          { title: 'Equipment', dataIndex: 'name' },
+                          { title: 'Hours', dataIndex: 'hours', align: 'right', width: 80 },
+                        ]}
+                      />
+                    </Section>
+                  </div>
+                  {data.lines?.length ? (
+                    <div style={{ marginTop: 12 }}>
+                      <DprLineTotals lines={data.lines} />
+                    </div>
+                  ) : null}
+                </>
               ),
             },
             {

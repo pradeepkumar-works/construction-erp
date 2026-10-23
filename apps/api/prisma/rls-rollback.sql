@@ -509,5 +509,8 @@ DROP POLICY IF EXISTS tenant_isolation ON "HindranceCheck";
 ALTER TABLE "WorkElement" NO FORCE ROW LEVEL SECURITY;
 ALTER TABLE "WorkElement" DISABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS tenant_isolation ON "WorkElement";
+ALTER TABLE "ProgressMaterial" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "ProgressMaterial" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "ProgressMaterial";
 
 DROP FUNCTION IF EXISTS app_current_org();

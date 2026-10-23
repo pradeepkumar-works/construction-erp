@@ -481,7 +481,7 @@ weighs each by its billing share.
   components and any activity outside the breakdown. Among siblings, given weights hold and the rest share what is
   left of 100 by value (BOQ amount, else planned quantity); with no weight given they are all weighed by value, which
   for a flat project is the old figure. `src/scripts/wbs-rollup-test.ts` (CI flows) holds it to that.
-- **Rules.** Progress goes only against an activity with no sub-activities (`ProgressService.assertTakesProgress`);
+- **Rules.** Progress goes only against an activity with no sub-activities (`assertTakesProgress` in `src/progress/progress.service.ts`);
   an activity with progress cannot take parts; a sub-activity sits in its activity's component (moving the activity
   moves its parts); deleting an activity with parts is refused; deleting a component deletes its sub-components and
   leaves their activities and BOQ items outside the breakdown.
@@ -503,6 +503,46 @@ weighs each by its billing share.
 - **Demo.** `prisma/seed-structure.ts`: WS-2026-04, a lump-sum town water scheme in month 9 (twelve components by
   billing share, 23 elements, about 390 activities with approved progress), and the hospital's BOQ in sections with
   three components weighed by BOQ value.
+
+### Structured DPR
+
+Item 127: the DPR is where the site reports the day's work, line by line against the work breakdown, so the BOQ,
+schedule, earned value, bills and the stock check all read the same approved quantities and nobody types them twice.
+
+- **Lines are progress entries.** A work line is a `ProgressEntry` with `dailyReportId` (cascade with the DPR),
+  `sortOrder`, `labour` (`[{ category, count }]`, its total in `manpowerCount`), `machines` (`[{ name, hours }]`, names in
+  `machineryUsed`), `workOrderId` (the subcontractor's work order, optional) and the usual location fields; material used
+  is `ProgressMaterial` rows (store item, quantity; `tenant_isolation` policy), which the stock check against the DPR
+  (item 128) reads. Lines take the DPR's day, status and submitter.
+- **One approval.** `DprService` saves the complete list of lines with the DPR (`saveLines`, in the DPR's transaction:
+  kept by id, new ones added, missing ones removed) and checks each: an activity of the project with no sub-activities,
+  store items, a work order of the project, a quantity above 0 (`dprLineProblem`). `SubmissionLifecycleService.onStatus`
+  moves the lines with the DPR (submitted, approved, rejected, sent back), and `partOf` refuses submitting or deciding a
+  line on its own; the approvals queue, counts and bulk approve leave lines out (`dailyReportId: null`). Hold points
+  are checked for every line before the DPR is approved (`InspectionsService`, `beforeApprove('DPR')`). The progress list
+  shows lines like any entry, opening their DPR for changes.
+- **Figures.** On `GET /dpr/:id` each line carries scope (planned), up to previous (approved on the activity up to the
+  DPR's day outside this DPR, plus this DPR's earlier lines on it), cumulative, % and balance (`lineFigures`). With no
+  text of its own, `workExecuted` is written from the lines (`workSummary`) and rewritten when they change, so lists,
+  search and AI read it as before. The arithmetic is pure in `packages/shared/src/dpr-lines.ts`, tested in
+  `src/scripts/dpr-lines-test.ts` (CI flows).
+- **Work options.** `GET /dpr/work-options?projectId&date` gives the form the activities that take progress (planned
+  within a week and unfinished first, then by component code), each with its component and sub-component, scope, done
+  and the BOQ item's material norms; the store items; the project's approved open work orders; and the company switch.
+  Material is filled from the norms for the line's quantity (`suggestMaterials`) until the user changes it.
+- **Progress from the DPR only.** `Organization.progressFromDpr`, on for companies made after item 127 and switched on
+  the Approval rules page: `POST /progress` is refused and the progress form points to Daily reports.
+- **Screens.** Web: the DPR form's Work done section (`components/dpr/DprLinesField.tsx`, a `LineTable` with the crew,
+  machines, material, work order and remark of each line in a dialog, Copy lines from the last DPR, the crew on the lines
+  against the head count); the record groups lines by component › sub-component (`DprLines.tsx`) and the print uses the
+  site's layout (S.No, component, sub-component, activity, unit, scope, up to previous, today, cumulative, %, balance,
+  remark) in landscape. Phone: `app/dpr/new.tsx` takes lines (`src/forms/dprLines.tsx`: activity picker with this week's
+  first, quantity, where, crew, material from the norms, Copy yesterday; offline through the outbox) and `app/dpr/[id].tsx`
+  shows them. Machines per line are on the web only; the phone keeps the day's machinery.
+- **Demo.** `seedTownDprs` in `prisma/seed-structure.ts`: three days of WS-2026-04 DPRs with tank, pipe laying,
+  backfill, house connection and road restoration lines, two approved and the latest waiting for the PM.
+- **Next.** Pipe segments junction to junction (item 126) give pipe lines a segment and the pipeline summary; the
+  look-ahead's planned quantities and a weekly and monthly report on the same tree follow.
 
 ### Activity templates
 

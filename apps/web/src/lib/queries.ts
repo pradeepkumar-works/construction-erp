@@ -2,6 +2,7 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
 import type {
+  DprWorkOptionsDto,
   CommentKind,
   ModuleSwitchesDto,
   ModuleTier,
@@ -701,6 +702,14 @@ export const useDprList = (filters?: ListFilters, enabled = true) =>
   });
 
 export const useDpr = (id: string | undefined) => useQuery({ ...recordQuery<DailyReportDto>('/dpr', id), enabled: !!id });
+
+/** What a project's DPR form offers (item 127): activities that take progress, store items, open work orders. */
+export const useDprWorkOptions = (projectId: string | undefined, date?: string) =>
+  useQuery({
+    queryKey: ['activities', projectId, 'dpr-options', date ?? null],
+    queryFn: async () => (await api.get<DprWorkOptionsDto>('/dpr/work-options', { params: { projectId, date } })).data,
+    enabled: !!projectId,
+  });
 
 export const useMaterialRequests = (filters?: ListFilters) =>
   useQuery({

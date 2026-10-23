@@ -63,6 +63,11 @@ export class InspectionsService {
       },
     });
     lifecycle.beforeApprove('PROGRESS', (_user, id) => this.assertHoldPointCleared(id));
+    // A DPR approves its work lines (item 127), so each line's hold point is checked first.
+    lifecycle.beforeApprove('DPR', async (_user, id) => {
+      const lines = await this.prisma.progressEntry.findMany({ where: { dailyReportId: id }, select: { id: true }, orderBy: { sortOrder: 'asc' } });
+      for (const l of lines) await this.assertHoldPointCleared(l.id);
+    });
   }
 
   toDto(r: Row): InspectionDto {

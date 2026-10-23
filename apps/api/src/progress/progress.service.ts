@@ -34,6 +34,16 @@ const ORDER: Record<ProgressSortField, (o: SortOrder) => Prisma.ProgressEntryOrd
 };
 const DESC_DEFAULT = new Set<string>(['date', 'createdAt', 'submittedAt', 'quantity']);
 
+/** Progress goes against an activity of the project that has no sub-activities (an RCC slab is its steel, shuttering and concrete). */
+export async function assertTakesProgress(prisma: PrismaService, activityId: string, projectId: string) {
+  const activity = await prisma.activity.findFirst({ where: { id: activityId, projectId }, select: { name: true, _count: { select: { subActivities: true } } } });
+  if (!activity) throw new NotFoundException('Activity not found in this project');
+  if (activity._count.subActivities) throw new BadRequestException(`${activity.name} is made of sub-activities; record progress against one of them`);
+}
+
+/** The refusal for changing a DPR's work line on its own (item 127). */
+export const DPR_LINE_NOTE = (date: Date) => `This entry is a work line of the DPR of ${dateOnly(date)}; change, submit or decide it in the DPR`;
+
 @Injectable()
 export class ProgressService {
   constructor(
@@ -42,7 +52,18 @@ export class ProgressService {
     private audit: AuditService,
     private lifecycle: SubmissionLifecycleService,
     private attachments: AttachmentsService,
-  ) {}
+  ) {
+    lifecycle.partOf('PROGRESS', async (id) => {
+      const row = await this.prisma.progressEntry.findUnique({ where: { id }, select: { dailyReport: { select: { date: true } } } });
+      return row?.dailyReport ? DPR_LINE_NOTE(row.dailyReport.date) : null;
+    });
+  }
+
+  /** A DPR's work line is changed only through its DPR. */
+  private async assertNotDprLine(id: string) {
+    const row = await this.prisma.progressEntry.findUnique({ where: { id }, select: { dailyReport: { select: { date: true } } } });
+    if (row?.dailyReport) throw new BadRequestException(DPR_LINE_NOTE(row.dailyReport.date));
+  }
 
   toDto(r: Row): ProgressEntryDto {
     return {
@@ -60,6 +81,7 @@ export class ProgressService {
       chainageTo: r.chainageTo,
       floor: r.floor,
       village: r.village,
+      dailyReportId: r.dailyReportId,
       manpowerCount: r.manpowerCount,
       machineryUsed: r.machineryUsed,
       status: r.status,
@@ -112,18 +134,13 @@ export class ProgressService {
     return row ? this.get(user, row.id) : null;
   }
 
-  /** Progress goes against an activity of the project that has no sub-activities (an RCC slab is its steel, shuttering and concrete). */
-  private async assertTakesProgress(activityId: string, projectId: string) {
-    const activity = await this.prisma.activity.findFirst({ where: { id: activityId, projectId }, select: { name: true, _count: { select: { subActivities: true } } } });
-    if (!activity) throw new NotFoundException('Activity not found in this project');
-    if (activity._count.subActivities) throw new BadRequestException(`${activity.name} is made of sub-activities; record progress against one of them`);
-  }
-
   async create(user: RequestUser, dto: CreateProgressDto): Promise<ProgressEntryDto> {
     const existing = await this.findExisting(user, dto.id);
     if (existing) return existing;
     await this.access.assertCanAccessProject(user, dto.projectId);
-    await this.assertTakesProgress(dto.activityId, dto.projectId);
+    const org = await this.prisma.organization.findUniqueOrThrow({ where: { id: user.organizationId }, select: { progressFromDpr: true } });
+    if (org.progressFromDpr) throw new BadRequestException("Your company records progress in the DPR: add a work line to the day's DPR instead");
+    await assertTakesProgress(this.prisma, dto.activityId, dto.projectId);
     const sector = await resolveSector(this.prisma, dto.projectId, dto);
     let row: { id: string };
     try {
@@ -161,10 +178,11 @@ export class ProgressService {
 
   async update(user: RequestUser, id: string, dto: UpdateProgressDto): Promise<ProgressEntryDto> {
     const row = await this.lifecycle.load(user, 'PROGRESS', id);
+    await this.assertNotDprLine(id);
     await this.lifecycle.assertEditable(user, row);
     const data: Prisma.ProgressEntryUncheckedUpdateInput = {};
     if (dto.activityId !== undefined) {
-      await this.assertTakesProgress(dto.activityId, row.projectId);
+      await assertTakesProgress(this.prisma, dto.activityId, row.projectId);
       data.activityId = dto.activityId;
     }
     if (dto.date !== undefined) data.date = parseDate(dto.date);
@@ -189,6 +207,7 @@ export class ProgressService {
 
   async remove(user: RequestUser, id: string) {
     const row = await this.lifecycle.load(user, 'PROGRESS', id);
+    await this.assertNotDprLine(id);
     await this.lifecycle.assertEditable(user, row);
     await this.prisma.progressEntry.delete({ where: { id } });
     await this.audit.log(user, 'PROGRESS', id, 'DELETED');
