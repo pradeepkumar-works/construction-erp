@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { chooseOption, signIn, formPanel, openNewMenu } from './helpers';
+import { chooseOption, signIn, formPanel, menuSettled, openNewMenu } from './helpers';
 
 /** The header (UI roadmap item 54): project switcher, + New, favourites, recent pages in Search, Help. */
 test('the project picked in the header filters every list and is kept after a reload', async ({ page }) => {
@@ -74,6 +74,7 @@ test('Help shows the keyboard shortcuts on ? and what is new', async ({ page }) 
   await expect(page.getByRole('dialog', { name: 'Keyboard shortcuts' })).toBeVisible();
   await page.keyboard.press('Escape');
   await page.getByRole('button', { name: 'Help' }).click();
+  await menuSettled(page);
   await page.getByRole('menuitem', { name: /What's new/ }).click();
   await expect(page.getByRole('dialog', { name: "What's new" })).toContainText('A new header');
 });

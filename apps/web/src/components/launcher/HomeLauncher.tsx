@@ -91,7 +91,8 @@ function useImportOnce(user: AuthUser | null) {
 function RecentLink({ visit, user }: { visit: NavVisitDto; user: AuthUser }) {
   const node = visit.kind === 'NODE' ? navNode(visit.target) : undefined;
   if (visit.kind === 'NODE' && (!node || !canSeeNav(user, node))) return null;
-  const where = node?.parent ? navNode(node.parent)?.label : NAV_VISIT_KIND_LABELS[visit.kind];
+  // Under its module's name; a module itself (no parent, no page of its own) says so.
+  const where = node?.parent ? navNode(node.parent)?.label : node && !node.route ? 'Module' : NAV_VISIT_KIND_LABELS[visit.kind];
   return (
     <li>
       <Link href={visit.href} className={s.recent}>
@@ -157,17 +158,18 @@ export function HomeLauncher() {
           {formatLongDay(new Date())}. {modules.length} modules you can open.
         </Typography.Text>
       </div>
-      <Input
-        className={s.search}
-        size="large"
-        allowClear
-        prefix={<TreeIcon name="search" />}
-        placeholder="Search modules and pages"
-        aria-label="Search modules and pages"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        onPressEnter={openFirst}
-      />
+      <div className={s.search}>
+        <Input
+          size="large"
+          allowClear
+          prefix={<TreeIcon name="search" />}
+          placeholder="Search modules and pages"
+          aria-label="Search modules and pages"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onPressEnter={openFirst}
+        />
+      </div>
       <GettingStartedCard state={gettingStarted} />
 
       {query.trim() ? (

@@ -14,6 +14,7 @@
   outline: none;
 }
 
+/* A block around the field, so its margin and the next section's overlap instead of adding up. */
 .search {
   max-width: 560px;
   margin-bottom: var(--ant-margin-lg);

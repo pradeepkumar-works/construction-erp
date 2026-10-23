@@ -23,11 +23,16 @@ export async function signIn(page: Page, email: string, password = PASSWORD) {
   await expect(homeHeading(page)).toBeVisible();
 }
 
-/** Opens + New and waits for its menu to finish sliding in, so a click lands on the item rather than the page under it
- *  (a click while the menu is still placing itself scrolls the page and can hover the header's Ask button instead). */
+/** Waits for an opened dropdown menu to finish sliding in, so a click lands on its item rather than the page under it
+ *  (a click while the menu is still placing itself scrolls the page and can land on the header or Home's tiles instead). */
+export async function menuSettled(page: Page) {
+  await expect(page.locator('.ant-dropdown:not(.ant-dropdown-hidden):not(.ant-slide-up)')).toBeVisible();
+}
+
+/** Opens + New and waits for its menu to settle. */
 export async function openNewMenu(page: Page) {
   await page.locator('[data-tour="new"]').click();
-  await expect(page.locator('.ant-dropdown:not(.ant-dropdown-hidden):not(.ant-slide-up)')).toBeVisible();
+  await menuSettled(page);
 }
 
 /** A bearer token for setting up or checking data through the API. */
