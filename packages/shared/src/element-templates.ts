@@ -97,7 +97,8 @@ const pipeline = (restore: boolean): Step[] => [
   plain('Valves, specials and chambers', 'Nos', 8),
   plain('Backfilling and compaction', 'Rmt', 9, { qtyFrom: 'lengthM' }),
   plain('Hydraulic testing', 'Rmt', 7, { qtyFrom: 'lengthM' }),
-  ...(restore ? [plain('Road and surface restoration', 'Sqm', 10)] : [plain('Thrust blocks and anchors', 'Cum', 10)]),
+  // Restoration is measured along the trench, so a pipe sheet's "restored" column and each segment can show it (item 126).
+  ...(restore ? [plain('Road restoration over the trench', 'Rmt', 10, { qtyFrom: 'lengthM' })] : [plain('Thrust blocks and anchors', 'Cum', 10)]),
   plain('Flushing, disinfection and commissioning', 'Rmt', 8, { qtyFrom: 'lengthM' }),
 ];
 

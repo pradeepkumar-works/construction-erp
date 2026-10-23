@@ -3,16 +3,20 @@
 import React from 'react';
 import { Flex, Table, Typography } from 'antd';
 import {
+  PIPE_STAGE_LABELS,
+  SEGMENT_STAGES,
   crewCheck,
   dprActivityLabel,
   groupLines,
   lineLocation,
   machineHours,
   materialUsed,
+  pipelineSummary,
   type DailyReportDto,
   type DprLineDto,
   type DprMaterialDto,
   type MachineryLine,
+  type PipelineSummaryRow,
 } from '@erp/shared';
 import { formatPct, formatQty } from '@/lib/format';
 import { Section } from '@/components/common/Section';
@@ -123,5 +127,39 @@ export function DprLineTotals({ lines }: { lines: DprLineDto[] }) {
         </Section>
       ) : null}
     </div>
+  );
+}
+
+/**
+ * Today's pipe work (item 126) in the shape of the site's pipeline sheet: metres per stage by zone and diameter, and
+ * valves fixed. Only the stages worked today get a column.
+ */
+export function DprPipelineSummary({ lines }: { lines: DprLineDto[] }) {
+  const rows = pipelineSummary(lines);
+  if (!rows.length) return null;
+  const stages = SEGMENT_STAGES.filter((s) => rows.some((r) => r.metres[s]));
+  const valves = rows.some((r) => r.valves);
+  return (
+    <Section title="Pipeline today">
+      <Table<PipelineSummaryRow>
+        size="small"
+        rowKey="key"
+        pagination={false}
+        dataSource={rows}
+        scroll={{ x: 320 + stages.length * 100 }}
+        columns={[
+          { key: 'zone', title: 'Zone', render: (_, r) => <span translate="no">{r.zone || '-'}</span> },
+          { key: 'dia', title: 'Diameter', width: 100, render: (_, r) => (r.diameterMm ? <span translate="no">{`${r.diameterMm} mm`}</span> : 'Valves') },
+          ...stages.map((s) => ({
+            key: s,
+            title: PIPE_STAGE_LABELS[s],
+            align: 'right' as const,
+            width: 100,
+            render: (_: unknown, r: PipelineSummaryRow) => (r.metres[s] ? <span translate="no">{`${formatQty(r.metres[s])} m`}</span> : <span className="text-muted">-</span>),
+          })),
+          ...(valves ? [{ key: 'valves', title: 'Valves fixed', align: 'right' as const, width: 100, render: (_: unknown, r: PipelineSummaryRow) => (r.valves ? <span translate="no">{formatQty(r.valves)}</span> : <span className="text-muted">-</span>) }] : []),
+        ]}
+      />
+    </Section>
   );
 }

@@ -2587,6 +2587,8 @@ export interface QualityTestDto {
   nextDueOn: string | null;
   overdue: boolean;
   openNcrs: number;
+  /** Pipe lengths this test covers (a hydraulic test of P-12 to P-15); a pass marks their TEST stage done */
+  segments: { id: string; code: string; label: string }[];
   createdById: string;
   createdByName: string;
   attachments: AttachmentDto[];

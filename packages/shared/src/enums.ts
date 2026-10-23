@@ -35,6 +35,17 @@ export const WORK_ELEMENT_TYPES = [
 ] as const;
 export type WorkElementType = (typeof WORK_ELEMENT_TYPES)[number];
 
+/** Pipe network (item 126): the points of a zone's or main's model, pipe materials, and proposed or existing lines. */
+export const PIPE_NODE_KINDS = ['JUNCTION', 'TANK', 'SOURCE', 'SLUICE_VALVE', 'AIR_VALVE', 'SCOUR', 'CHAMBER', 'END', 'CROSSING_PIT'] as const;
+export type PipeNodeKind = (typeof PIPE_NODE_KINDS)[number];
+export const PIPE_MATERIALS = ['HDPE', 'MDPE', 'DI', 'CI', 'MS', 'PVC', 'GRP', 'OTHER'] as const;
+export type PipeMaterial = (typeof PIPE_MATERIALS)[number];
+export const PIPE_SCOPES = ['PROPOSED', 'EXISTING'] as const;
+export type PipeScope = (typeof PIPE_SCOPES)[number];
+/** The stages of pipe work, in the order they are done; VALVES is counted on nodes, the rest in metres per segment. */
+export const PIPE_STAGES = ['TRENCH', 'BEDDING', 'LAY_JOINT', 'VALVES', 'BACKFILL', 'TEST', 'RESTORATION', 'COMMISSIONING'] as const;
+export type PipeStage = (typeof PIPE_STAGES)[number];
+
 export const PROJECT_STATUSES = ['PLANNED', 'ACTIVE', 'ON_HOLD', 'COMPLETED', 'CLOSED'] as const;
 export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
 

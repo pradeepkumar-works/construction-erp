@@ -19,8 +19,10 @@ test('a DPR with work lines: figures, one decision for all, and the Work done se
   const pm = await apiToken('pm@demo.com');
   const town = (await api<{ items: Project[] }>(engineer, '/projects?pageSize=100')).items.find((p) => p.code === 'WS-2026-04')!;
   const options = await api<DprWorkOptionsDto>(engineer, `/dpr/work-options?projectId=${town.id}`);
-  expect(options.activities.length).toBeGreaterThan(1);
-  const [first, second] = options.activities;
+  // Pipe work on a zone with its network loaded names a pipe (item 126, pipe-network.spec.ts); these lines are other work.
+  const plain = options.activities.filter((a) => !a.pipeStage || !options.segments.some((s) => s.zoneId === a.zoneId));
+  expect(plain.length).toBeGreaterThan(1);
+  const [first, second] = plain;
   const item = options.items[0];
 
   let dpr: DailyReportDto | undefined;

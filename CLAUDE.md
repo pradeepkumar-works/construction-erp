@@ -134,6 +134,10 @@ and the pre-delivery checklist.
   (`dailyReportId`), saved only through `DprService` and moved with the DPR by `SubmissionLifecycleService.onStatus`;
   anything that counts or queues progress entries waiting for approval leaves them out (`dailyReportId: null`). Line
   arithmetic is pure in `@erp/shared/dpr-lines.ts`; keep `src/scripts/dpr-lines-test.ts` passing.
+- Pipe network (item 126, ARCHITECTURE "Pipe network"): a pipe zone or main's nodes and segments come in only through the
+  import (matched by code, previewed, never deleting a pipe or cutting it below its work); a DPR line of a length stage names
+  its segment and is held to its length (`segmentCapProblem` over `heldOnSegments`); segment figures, readers and the import
+  plan are pure in `@erp/shared/pipe-network.ts`. Keep `src/scripts/pipe-network-test.ts` passing.
 - Project page: a new project tab is one entry in `app/(app)/projects/[id]/page.tsx` with a `group` from `WORKSPACE_GROUPS`
   (`components/projects/ProjectWorkspace.tsx`); its `key` is the `?tab=` value, so never rename one. Anything sticky
   inside a page reads its top offset from `useStickyTop()` (`src/lib/sticky.tsx`), not a fixed 56.

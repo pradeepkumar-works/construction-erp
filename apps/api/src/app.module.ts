@@ -16,6 +16,7 @@ import { UsersModule } from './users/users.module';
 import { ProjectsModule } from './projects/projects.module';
 import { PlanningModule } from './planning/planning.module';
 import { StructureModule } from './structure/structure.module';
+import { PipeNetworkModule } from './pipe-network/pipe-network.module';
 import { ProgressModule } from './progress/progress.module';
 import { DprModule } from './dpr/dpr.module';
 import { StockModule } from './stock/stock.module';
@@ -98,6 +99,7 @@ import { VitalsController } from './vitals.controller';
     ProjectsModule,
     PlanningModule,
     StructureModule,
+    PipeNetworkModule,
     ProgressModule,
     DprModule,
     AttendanceModule,

@@ -4,6 +4,7 @@
  * of the DPR: it is submitted, approved and sent back with the DPR. The arithmetic here is pure, so the API, the web
  * and the phone agree on it.
  */
+import type { PipeNodeKind, PipeStage } from './enums';
 import type { MachineryLine, ManpowerLine } from './types';
 
 export interface DprMaterialDto {
@@ -38,6 +39,14 @@ export interface DprLineDto {
   workOrderId: string | null;
   workOrderNo: string | null;
   remarks: string | null;
+  /** The pipe stage the activity stands for (item 126), and the segment or valve node the line was on */
+  pipeStage: PipeStage | null;
+  pipeSegmentId: string | null;
+  /** "P-27, J-12 to J-13" */
+  segmentLabel: string | null;
+  segmentDiameterMm: number | null;
+  pipeNodeId: string | null;
+  nodeCode: string | null;
   /** The activity's planned quantity */
   scope: string;
   /** Approved before this line: other entries up to the DPR's date, and earlier lines of this DPR on the same activity */
@@ -65,6 +74,9 @@ export interface DprLineInput {
   materials?: { itemId: string; quantity: string }[];
   workOrderId?: string | null;
   remarks?: string | null;
+  /** On a pipe stage activity (item 126): the segment worked on, and the valve fixed or the end the work started from */
+  pipeSegmentId?: string | null;
+  pipeNodeId?: string | null;
 }
 
 /** Material one unit of the activity's BOQ item uses (its reconciliation norm, v5 item 92). */
@@ -92,6 +104,31 @@ export interface DprActivityOptionDto {
   lookAhead: boolean;
   holdPoint: boolean;
   norms: DprNormDto[];
+  /** The pipe stage the activity stands for (item 126): its lines name a segment of `zoneId` (a valve node for VALVES) */
+  pipeStage: PipeStage | null;
+  zoneId: string | null;
+}
+
+/** A segment a DPR line can be on, with what its stages already hold (approved and waiting) so the form shows what is left. */
+export interface DprSegmentOptionDto {
+  id: string;
+  zoneId: string;
+  code: string;
+  fromNodeId: string;
+  fromCode: string;
+  toNodeId: string;
+  toCode: string;
+  lengthM: string;
+  diameterMm: number;
+  held: Partial<Record<PipeStage, number>>;
+}
+
+export interface DprValveOptionDto {
+  id: string;
+  zoneId: string;
+  code: string;
+  kind: PipeNodeKind;
+  fixed: boolean;
 }
 
 /** What a project's DPR form offers: GET /dpr/work-options. */
@@ -101,6 +138,9 @@ export interface DprWorkOptionsDto {
   workOrders: { id: string; woNo: string; title: string; vendorName: string }[];
   /** The company records progress only as DPR work lines */
   progressFromDpr: boolean;
+  /** Proposed pipe segments and valve points of the project's zones and mains (item 126) */
+  segments: DprSegmentOptionDto[];
+  valves: DprValveOptionDto[];
 }
 
 const num = (s: string | number | null | undefined) => {
@@ -188,7 +228,9 @@ export function materialUsed(lines: { materials: DprMaterialDto[] }[]): DprMater
 }
 
 /** Where a line was done, in words: the location, else the chainage, floor or village. */
-export function lineLocation(l: { location: string | null; chainageFrom: number | null; chainageTo: number | null; floor: string | null; village: string | null }): string | null {
+export function lineLocation(l: { location: string | null; chainageFrom: number | null; chainageTo: number | null; floor: string | null; village: string | null; segmentLabel?: string | null; nodeCode?: string | null }): string | null {
+  const pipe = l.segmentLabel ?? l.nodeCode ?? null;
+  if (pipe) return l.location?.trim() && !l.location.includes(pipe) ? `${pipe}, ${l.location.trim()}` : pipe;
   if (l.location?.trim()) return l.location.trim();
   if (l.chainageFrom !== null && l.chainageTo !== null) return `Ch ${l.chainageFrom} to ${l.chainageTo} m`;
   return l.floor?.trim() || l.village?.trim() || null;
@@ -206,6 +248,10 @@ export function workSummary(lines: { activityName: string; parentActivityName: s
     .map((l) => `${dprActivityLabel({ name: l.activityName, parentActivityName: l.parentActivityName })} ${amount(l.quantity, l.unit)}${l.location?.trim() ? ` at ${l.location.trim()}` : ''}`)
     .join('; ');
 }
+
+/** The summary a DPR writes of its own lines, each where `lineLocation` says (the segment first for pipe work). */
+export const linesSummary = (lines: DprLineDto[]) =>
+  workSummary(lines.map((l) => ({ activityName: l.activityName, parentActivityName: l.parentActivityName, quantity: l.quantity, unit: l.unit, location: lineLocation(l) })));
 
 /** Lines grouped by component › sub-component, in the order the groups first appear (the record and the print). */
 export function groupLines<T extends { componentCode: string | null; componentName: string | null; subComponentCode: string | null; subComponentName: string | null }>(

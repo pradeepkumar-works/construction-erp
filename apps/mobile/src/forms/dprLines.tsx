@@ -2,9 +2,13 @@ import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import {
   MANPOWER_CATEGORIES,
+  PIPE_NODE_KIND_LABELS,
+  PIPE_STAGE_LABELS,
+  comparePipeCodes,
   componentLabel,
   crewCheck,
   dprActivityLabel,
+  segmentLabel,
   suggestMaterials,
   type DprLineDto,
   type DprLineInput,
@@ -23,6 +27,9 @@ export interface DprLineRow {
   activityId: string | null;
   quantity: string;
   location: string;
+  /** The pipe segment, or for a valve line the valve, the work was on (item 126) */
+  pipeSegmentId: string | null;
+  pipeNodeId: string | null;
   crew: { key: string; category: string | null; count: string }[];
   materials: { key: string; itemId: string | null; quantity: string }[];
   /** Changed by hand, so the norms no longer fill it */
@@ -38,6 +45,8 @@ export const newLineRow = (id: string, over: Partial<DprLineRow> = {}): DprLineR
   activityId: null,
   quantity: '',
   location: '',
+  pipeSegmentId: null,
+  pipeNodeId: null,
   crew: [],
   materials: [],
   materialsEdited: false,
@@ -50,6 +59,8 @@ export const lineRowFrom = (l: DprLineDto | DprLineInput, id: string): DprLineRo
     activityId: l.activityId,
     quantity: l.quantity ? qty(l.quantity) : '',
     location: l.location ?? '',
+    pipeSegmentId: l.pipeSegmentId ?? null,
+    pipeNodeId: l.pipeNodeId ?? null,
     crew: (l.labour ?? []).map((m) => ({ key: newKey(), category: m.category, count: String(m.count) })),
     materials: (l.materials ?? []).map((m) => ({ key: newKey(), itemId: m.itemId, quantity: qty(m.quantity) })),
     materialsEdited: true,
@@ -57,7 +68,7 @@ export const lineRowFrom = (l: DprLineDto | DprLineInput, id: string): DprLineRo
 
 /** Yesterday's line as a start for today: the same work, place and crew; today's quantity and material to fill. */
 export const copiedRow = (l: DprLineDto, id: string): DprLineRow =>
-  newLineRow(id, { activityId: l.activityId, location: l.location ?? '', crew: l.labour.map((m) => ({ key: newKey(), category: m.category, count: String(m.count) })) });
+  newLineRow(id, { activityId: l.activityId, location: l.location ?? '', pipeSegmentId: l.pipeSegmentId, crew: l.labour.map((m) => ({ key: newKey(), category: m.category, count: String(m.count) })) });
 
 /** The lines as the API takes them. */
 export const linesPayload = (rows: DprLineRow[]): DprLineInput[] =>
@@ -68,12 +79,23 @@ export const linesPayload = (rows: DprLineRow[]): DprLineInput[] =>
       activityId: r.activityId!,
       quantity: r.quantity.trim(),
       location: r.location.trim() || null,
+      pipeSegmentId: r.pipeSegmentId,
+      pipeNodeId: r.pipeNodeId,
       labour: r.crew.filter((c) => c.category && /^\d+$/.test(c.count.trim()) && Number(c.count) > 0).map((c) => ({ category: c.category!, count: Number(c.count) })),
       materials: r.materials.filter((m) => m.itemId && Number(m.quantity) > 0).map((m) => ({ itemId: m.itemId!, quantity: m.quantity.trim() })),
     }));
 
 /** Why the lines cannot be sent, in words that say what to do; null when they can. */
-export function linesProblem(rows: DprLineRow[], t: ReturnType<typeof useT>): string | null {
+/** The segments or valves a line's activity may name: its zone's, when the activity is a stage of pipe work. */
+export function pipeChoices(options: DprWorkOptionsDto | null, activityId: string | null) {
+  const a = options?.activities.find((x) => x.id === activityId);
+  if (!a?.pipeStage || !a.zoneId) return { stage: null, segments: [], valves: [] };
+  const segments = a.pipeStage === 'VALVES' ? [] : (options?.segments ?? []).filter((s) => s.zoneId === a.zoneId).sort((x, y) => comparePipeCodes(x.code, y.code));
+  const valves = a.pipeStage === 'VALVES' ? (options?.valves ?? []).filter((v) => v.zoneId === a.zoneId).sort((x, y) => comparePipeCodes(x.code, y.code)) : [];
+  return { stage: a.pipeStage, segments, valves };
+}
+
+export function linesProblem(rows: DprLineRow[], t: ReturnType<typeof useT>, options: DprWorkOptionsDto | null = null): string | null {
   for (const [i, r] of rows.entries()) {
     const n = i + 1;
     if (!r.activityId) {
@@ -83,6 +105,8 @@ export function linesProblem(rows: DprLineRow[], t: ReturnType<typeof useT>): st
     const q = Number(r.quantity);
     if (!r.quantity.trim() || Number.isNaN(q)) return t('Line {n}: enter the quantity done today', { n });
     if (q <= 0) return t('Line {n}: the quantity must be more than 0', { n });
+    const pipe = pipeChoices(options, r.activityId);
+    if (pipe.segments.length && !r.pipeSegmentId) return t('Line {n}: choose the pipe segment the work was on', { n });
     if (r.crew.some((c) => c.count.trim() && !/^\d+$/.test(c.count.trim()))) return t('Line {n}: enter the crew as whole numbers', { n });
     if (r.materials.some((m) => m.quantity.trim() && Number.isNaN(Number(m.quantity)))) return t('Line {n}: enter material used as a number', { n });
   }
@@ -131,6 +155,12 @@ export function DprLinesEditor({
       rows.map((r) => {
         if (r.key !== key) return r;
         const next = { ...r, ...patch };
+        // A new activity lets go of a pipe or valve outside its zone.
+        if ('activityId' in patch) {
+          const pipe = pipeChoices(options, next.activityId);
+          if (next.pipeSegmentId && !pipe.segments.some((s) => s.id === next.pipeSegmentId)) next.pipeSegmentId = null;
+          if (next.pipeNodeId && !pipe.valves.some((v) => v.id === next.pipeNodeId)) next.pipeNodeId = null;
+        }
         // Material follows the norms for the activity and quantity until it is changed by hand.
         if (('activityId' in patch || 'quantity' in patch) && !next.materialsEdited) {
           const norms = byId.get(next.activityId ?? '')?.norms ?? [];
@@ -145,6 +175,7 @@ export function DprLinesEditor({
       {rows.map((r, i) => {
         const a = byId.get(r.activityId ?? '');
         const n = i + 1;
+        const pipe = pipeChoices(options, r.activityId);
         return (
           <View key={r.key} style={styles.line}>
             <View style={styles.head}>
@@ -164,6 +195,31 @@ export function DprLinesEditor({
               searchable
               emptyText={t('No activities in this project')}
             />
+            {pipe.segments.length ? (
+              <Select
+                label={t('Pipe segment')}
+                required
+                value={r.pipeSegmentId}
+                searchable
+                options={pipe.segments.map((sg) => ({
+                  value: sg.id,
+                  label: segmentLabel(sg),
+                  hint: t('{dia} mm · {held} of {length} m {stage}', { dia: sg.diameterMm, held: qty(sg.held[pipe.stage!] ?? 0), length: qty(sg.lengthM), stage: t(PIPE_STAGE_LABELS[pipe.stage!]).toLowerCase() }),
+                }))}
+                onChange={(v) => update(r.key, { pipeSegmentId: v, pipeNodeId: null })}
+                placeholder={t('Choose the pipe')}
+              />
+            ) : null}
+            {pipe.valves.length ? (
+              <Select
+                label={t('Valve or chamber')}
+                value={r.pipeNodeId}
+                searchable
+                options={pipe.valves.map((v) => ({ value: v.id, label: v.code, hint: `${t(PIPE_NODE_KIND_LABELS[v.kind])}${v.fixed ? ` · ${t('fixed')}` : ''}` }))}
+                onChange={(v) => update(r.key, { pipeNodeId: v })}
+                placeholder={t('Choose the valve')}
+              />
+            ) : null}
             {a?.holdPoint ? <Text style={styles.hold}>{t('Hold point: approved after a passed inspection here')}</Text> : null}
             <View style={styles.row}>
               <Input

@@ -1,11 +1,19 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import {
+  VALVE_NODE_KINDS,
+  activityPipeStage,
   compareCodes,
   crewTotal,
   dprLineProblem,
+  isLengthUnit,
   lineFigures,
+  lineLocation,
+  segmentCapProblem,
+  segmentLabel,
   workSummary,
+  type PipeStage,
+  type SegmentStage,
   type DailyReportDto,
   type DprActivityOptionDto,
   type DprLineDto,
@@ -30,6 +38,7 @@ import { isUniqueViolation } from '../common/idempotency';
 import { ilike, pageArgs, paginated, searchWords, dateRange } from '../common/paging';
 import { CreateDprDto, DprLineInputDto, DprWorkOptionsQuery, ListDprQuery, UpdateDprDto } from './dpr.dto';
 import { AttendanceService } from '../attendance/attendance.service';
+import { heldOnSegments } from '../pipe-network/pipe-network.service';
 
 const include = {
   project: { select: { name: true } },
@@ -41,7 +50,7 @@ const include = {
 type Row = Prisma.DailyReportGetPayload<{ include: typeof include }>;
 
 /** Where an activity sits in the work breakdown (item 125): its component and sub-component. */
-const PLACE = { select: { code: true, name: true, level: true, parent: { select: { code: true, name: true } } } } as const;
+const PLACE = { select: { code: true, name: true, level: true, elementType: true, parent: { select: { code: true, name: true } } } } as const;
 type Place = { code: string; name: string; level: string; parent: { code: string; name: string } | null } | null;
 const placeOf = (e: Place) => {
   if (!e) return { componentCode: null, componentName: null, subComponentCode: null, subComponentName: null };
@@ -49,8 +58,11 @@ const placeOf = (e: Place) => {
   return { componentCode: e.code, componentName: e.name, subComponentCode: null, subComponentName: null };
 };
 
+const SEGMENT = { select: { code: true, diameterMm: true, fromNode: { select: { code: true } }, toNode: { select: { code: true } } } } as const;
 const lineInclude = {
-  activity: { select: { name: true, unit: true, plannedQty: true, parentActivity: { select: { name: true } }, workElement: PLACE } },
+  activity: { select: { name: true, unit: true, plannedQty: true, pipeStage: true, parentActivity: { select: { name: true } }, workElement: PLACE } },
+  pipeSegment: SEGMENT,
+  pipeNode: { select: { code: true } },
   workOrder: { select: { woNo: true } },
   materials: { include: { item: { select: { name: true, unit: true } } }, orderBy: { sortOrder: 'asc' } },
 } satisfies Prisma.ProgressEntryInclude;
@@ -183,6 +195,12 @@ export class DprService {
       workOrderId: r.workOrderId,
       workOrderNo: r.workOrder?.woNo ?? null,
       remarks: r.remarks,
+      pipeStage: activityPipeStage({ pipeStage: r.activity.pipeStage, name: r.activity.name, elementType: r.activity.workElement?.elementType }),
+      pipeSegmentId: r.pipeSegmentId,
+      segmentLabel: r.pipeSegment ? segmentLabel({ code: r.pipeSegment.code, fromCode: r.pipeSegment.fromNode.code, toCode: r.pipeSegment.toNode.code }) : null,
+      segmentDiameterMm: r.pipeSegment?.diameterMm ?? null,
+      pipeNodeId: r.pipeNodeId,
+      nodeCode: r.pipeNode?.code ?? null,
       scope: dec(r.activity.plannedQty)!,
       ...figures[i],
     }));
@@ -196,7 +214,7 @@ export class DprService {
     await this.access.assertCanAccessProject(user, q.projectId);
     const day = parseDate(q.date ?? todayIn());
     const weekOn = new Date(day.getTime() + 7 * 86_400_000);
-    const [org, activities, done, items, workOrders] = await Promise.all([
+    const [org, activities, done, items, workOrders, segments, valves] = await Promise.all([
       this.prisma.organization.findUniqueOrThrow({ where: { id: user.organizationId }, select: { progressFromDpr: true } }),
       this.prisma.activity.findMany({
         where: { projectId: q.projectId, subActivities: { none: {} } },
@@ -209,6 +227,8 @@ export class DprService {
           plannedEnd: true,
           holdPoint: true,
           sortOrder: true,
+          pipeStage: true,
+          workElementId: true,
           parentActivity: { select: { name: true, sortOrder: true } },
           workElement: PLACE,
           boqItem: { select: { materialNorms: { select: { itemId: true, qtyPerUnit: true, item: { select: { name: true, unit: true } } }, orderBy: { createdAt: 'asc' } } } },
@@ -222,6 +242,11 @@ export class DprService {
         select: { id: true, woNo: true, title: true, vendor: { select: { name: true } } },
         orderBy: { woDate: 'desc' },
       }),
+      this.prisma.pipeSegment.findMany({
+        where: { projectId: q.projectId, scope: 'PROPOSED' },
+        select: { id: true, zoneId: true, code: true, lengthM: true, diameterMm: true, fromNodeId: true, toNodeId: true, fromNode: { select: { code: true } }, toNode: { select: { code: true } } },
+      }),
+      this.prisma.pipeNode.findMany({ where: { projectId: q.projectId, kind: { in: VALVE_NODE_KINDS } }, select: { id: true, zoneId: true, code: true, kind: true } }),
     ]);
     const doneOf = new Map(done.map((d) => [d.activityId, Number(d._sum.quantity ?? 0)]));
     const options = activities.map((a): DprActivityOptionDto & { order: string } => {
@@ -230,6 +255,7 @@ export class DprService {
       const planned = Number(a.plannedQty);
       const started = a.plannedStart ? a.plannedStart <= weekOn : false;
       const notOver = !a.plannedEnd || a.plannedEnd >= day;
+      const pipeStage = activityPipeStage({ pipeStage: a.pipeStage, name: a.name, elementType: a.workElement?.elementType });
       return {
         id: a.id,
         name: a.name,
@@ -241,16 +267,38 @@ export class DprService {
         lookAhead: started && notOver && (planned <= 0 || doneQty < planned),
         holdPoint: a.holdPoint,
         norms: (a.boqItem?.materialNorms ?? []).map((n) => ({ itemId: n.itemId, itemName: n.item.name, unit: n.item.unit, qtyPerUnit: n.qtyPerUnit.toString() })),
+        pipeStage,
+        zoneId: pipeStage ? a.workElementId : null,
         order: place.subComponentCode ?? place.componentCode ?? '~',
       };
     });
     // Look-ahead first, then by the breakdown's outline numbers, then the plan's order (kept by the stable sort).
     options.sort((x, y) => Number(y.lookAhead) - Number(x.lookAhead) || compareCodes(x.order, y.order));
+    // What each segment's stages already hold, so the form can say what is left (item 126).
+    const stageOf = new Map(options.flatMap((o) => (o.pipeStage ? [[o.id, o.pipeStage] as const] : [])));
+    const held = await heldOnSegments(this.prisma, segments.map((sg) => sg.id));
+    const heldOf = new Map<string, Partial<Record<PipeStage, number>>>();
+    for (const [key, m] of held) {
+      const [segmentId, activityId] = key.split('|');
+      const stage = stageOf.get(activityId);
+      if (!stage) continue;
+      const h = heldOf.get(segmentId) ?? {};
+      h[stage] = Math.round(((h[stage] ?? 0) + m) * 1000) / 1000;
+      heldOf.set(segmentId, h);
+    }
+    const valveIds = valves.map((v) => v.id);
+    const fixed = valveIds.length
+      ? new Set((await this.prisma.progressEntry.findMany({ where: { pipeNodeId: { in: valveIds }, status: 'APPROVED' }, select: { pipeNodeId: true }, distinct: ['pipeNodeId'] })).map((e) => e.pipeNodeId))
+      : new Set<string | null>();
     return {
       activities: options.map(({ order: _order, ...o }) => o),
       items,
       workOrders: workOrders.map((w) => ({ id: w.id, woNo: w.woNo, title: w.title, vendorName: w.vendor.name })),
       progressFromDpr: org.progressFromDpr,
+      segments: segments
+        .map((sg) => ({ id: sg.id, zoneId: sg.zoneId, code: sg.code, fromNodeId: sg.fromNodeId, fromCode: sg.fromNode.code, toNodeId: sg.toNodeId, toCode: sg.toNode.code, lengthM: dec(sg.lengthM)!, diameterMm: sg.diameterMm, held: heldOf.get(sg.id) ?? {} }))
+        .sort((a, b) => a.code.localeCompare(b.code, 'en', { numeric: true })),
+      valves: valves.map((v) => ({ id: v.id, zoneId: v.zoneId, code: v.code, kind: v.kind, fixed: fixed.has(v.id) })).sort((a, b) => a.code.localeCompare(b.code, 'en', { numeric: true })),
     };
   }
 
@@ -267,7 +315,10 @@ export class DprService {
     const itemIds = [...new Set(lines.flatMap((l) => (l.materials ?? []).map((m) => m.itemId)))];
     const woIds = [...new Set(lines.flatMap((l) => (l.workOrderId ? [l.workOrderId] : [])))];
     const [activities, items, workOrders, existing] = await Promise.all([
-      tx.activity.findMany({ where: { id: { in: activityIds }, projectId: dpr.projectId }, select: { id: true, name: true, _count: { select: { subActivities: true } } } }),
+      tx.activity.findMany({
+        where: { id: { in: activityIds }, projectId: dpr.projectId },
+        select: { id: true, name: true, unit: true, pipeStage: true, workElementId: true, workElement: { select: { elementType: true, _count: { select: { pipeSegments: true } } } }, _count: { select: { subActivities: true } } },
+      }),
       itemIds.length ? tx.item.findMany({ where: { id: { in: itemIds }, organizationId: user.organizationId }, select: { id: true } }) : [],
       woIds.length ? tx.workOrder.findMany({ where: { id: { in: woIds }, projectId: dpr.projectId }, select: { id: true } }) : [],
       tx.progressEntry.findMany({ where: { dailyReportId: dpr.id }, select: { id: true } }),
@@ -283,6 +334,7 @@ export class DprService {
       if ((l.materials ?? []).some((m) => Number(m.quantity) < 0)) throw new BadRequestException(`Line ${i + 1}: material used cannot be less than 0`);
       if (l.workOrderId && !woOk.has(l.workOrderId)) throw new BadRequestException(`Line ${i + 1}: the work order is not one of this project's`);
     });
+    await this.checkPipeLines(tx, dpr, lines, activity);
     const mine = new Set(existing.map((e) => e.id));
     const kept = new Set(lines.flatMap((l) => (l.id && mine.has(l.id) ? [l.id] : [])));
     const gone = existing.filter((e) => !kept.has(e.id)).map((e) => e.id);
@@ -306,6 +358,8 @@ export class DprService {
         manpowerCount: crewTotal(labour) || null,
         machineryUsed: machines.map((m) => m.name.trim()).join(', ') || null,
         workOrderId: l.workOrderId ?? null,
+        pipeSegmentId: l.pipeSegmentId ?? null,
+        pipeNodeId: l.pipeNodeId ?? null,
         sortOrder: i,
         status: dpr.status,
         submittedById: dpr.submittedById,
@@ -333,14 +387,83 @@ export class DprService {
     }
   }
 
+  /**
+   * Lines on a pipe zone's stages (item 126): once the zone has its network, each names the segment worked on (a valve
+   * or fitting for VALVES) of that zone, and the metres a stage holds on a segment never pass its length.
+   */
+  private async checkPipeLines(
+    tx: Tx,
+    dpr: { id: string; projectId: string },
+    lines: DprLineInputDto[],
+    activity: Map<string, { name: string; unit: string; pipeStage: PipeStage | null; workElementId: string | null; workElement: { elementType: Parameters<typeof activityPipeStage>[0]['elementType']; _count: { pipeSegments: number } } | null }>,
+  ) {
+    const segIds = [...new Set(lines.flatMap((l) => (l.pipeSegmentId ? [l.pipeSegmentId] : [])))];
+    const nodeIds = [...new Set(lines.flatMap((l) => (l.pipeNodeId ? [l.pipeNodeId] : [])))];
+    const [segments, nodes, held] = await Promise.all([
+      segIds.length ? tx.pipeSegment.findMany({ where: { id: { in: segIds }, projectId: dpr.projectId }, select: { id: true, zoneId: true, code: true, lengthM: true, scope: true, fromNodeId: true, toNodeId: true } }) : [],
+      nodeIds.length ? tx.pipeNode.findMany({ where: { id: { in: nodeIds }, projectId: dpr.projectId }, select: { id: true, zoneId: true, code: true, kind: true } }) : [],
+      heldOnSegments(tx, segIds, dpr.id),
+    ]);
+    const segOf = new Map(segments.map((sg) => [sg.id, sg]));
+    const nodeOf = new Map(nodes.map((n) => [n.id, n]));
+    const adding = new Map<string, number>();
+    lines.forEach((l, i) => {
+      const n = i + 1;
+      const a = activity.get(l.activityId)!;
+      const stage = activityPipeStage({ pipeStage: a.pipeStage, name: a.name, elementType: a.workElement?.elementType });
+      const seg = l.pipeSegmentId ? segOf.get(l.pipeSegmentId) : null;
+      const node = l.pipeNodeId ? nodeOf.get(l.pipeNodeId) : null;
+      if (l.pipeSegmentId && !seg) throw new BadRequestException(`Line ${n}: the pipe segment is not one of this project's`);
+      if (l.pipeNodeId && !node) throw new BadRequestException(`Line ${n}: the valve or junction is not one of this project's`);
+      if (!stage) {
+        if (seg || node) throw new BadRequestException(`Line ${n}: ${a.name} is not a stage of pipe work; leave the segment out`);
+        return;
+      }
+      if (stage === 'VALVES') {
+        if (seg) throw new BadRequestException(`Line ${n}: a valve line names the valve, not a segment`);
+        if (node && (node.zoneId !== a.workElementId || !VALVE_NODE_KINDS.includes(node.kind))) throw new BadRequestException(`Line ${n}: choose a valve or chamber of this zone`);
+        return;
+      }
+      if (!seg) {
+        if (a.workElement?._count.pipeSegments) throw new BadRequestException(`Line ${n}: choose the pipe segment the work was on`);
+        return;
+      }
+      if (seg.zoneId !== a.workElementId) throw new BadRequestException(`Line ${n}: ${seg.code} is not in the zone of ${a.name}`);
+      if (seg.scope !== 'PROPOSED') throw new BadRequestException(`Line ${n}: ${seg.code} is an existing line and takes no work`);
+      if (node && node.id !== seg.fromNodeId && node.id !== seg.toNodeId) throw new BadRequestException(`Line ${n}: the work starts from an end of ${seg.code}`);
+      if (!isLengthUnit(a.unit)) return;
+      const key = `${seg.id}|${l.activityId}`;
+      const before = (held.get(key) ?? 0) + (adding.get(key) ?? 0);
+      const problem = segmentCapProblem({ code: seg.code, lengthM: Number(seg.lengthM) }, stage as SegmentStage, before, Number(l.quantity), n);
+      if (problem) throw new BadRequestException(problem);
+      adding.set(key, (adding.get(key) ?? 0) + Number(l.quantity));
+    });
+  }
+
   /** "Work executed" written from the report's lines. */
   private async summaryOf(tx: Tx | PrismaService, id: string): Promise<string> {
     const rows = await tx.progressEntry.findMany({
       where: { dailyReportId: id },
-      select: { quantity: true, location: true, activity: { select: { name: true, unit: true, parentActivity: { select: { name: true } } } } },
+      select: { quantity: true, location: true, activity: { select: { name: true, unit: true, parentActivity: { select: { name: true } } } }, pipeSegment: SEGMENT, pipeNode: { select: { code: true } } },
       orderBy: { sortOrder: 'asc' },
     });
-    return workSummary(rows.map((r) => ({ activityName: r.activity.name, parentActivityName: r.activity.parentActivity?.name ?? null, quantity: r.quantity.toString(), unit: r.activity.unit, location: r.location })));
+    return workSummary(
+      rows.map((r) => ({
+        activityName: r.activity.name,
+        parentActivityName: r.activity.parentActivity?.name ?? null,
+        quantity: r.quantity.toString(),
+        unit: r.activity.unit,
+        location: lineLocation({
+          location: r.location,
+          chainageFrom: null,
+          chainageTo: null,
+          floor: null,
+          village: null,
+          segmentLabel: r.pipeSegment ? segmentLabel({ code: r.pipeSegment.code, fromCode: r.pipeSegment.fromNode.code, toCode: r.pipeSegment.toNode.code }) : null,
+          nodeCode: r.pipeNode?.code ?? null,
+        }),
+      })),
+    );
   }
 
   /** One DPR per project per day (a rejected one may be replaced). */

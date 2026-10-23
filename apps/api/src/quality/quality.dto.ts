@@ -63,6 +63,12 @@ export class CreateTestDto {
   result?: TestResult;
   @ApiPropertyOptional() @IsOptional() @trim() @IsString() @MaxLength(1000) remarks?: string | null;
   @ApiPropertyOptional({ type: [String] }) @IsOptional() @IsArray() @IsUUID('4', { each: true }) attachmentIds?: string[];
+  @ApiPropertyOptional({ type: [String], description: "Pipe lengths the test covers, from the project's pipe network; when given, the complete list" })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(200)
+  @IsUUID('all', { each: true })
+  segmentIds?: string[];
 }
 
 /** `readings`, when given, is the complete list: readings left out are removed. */

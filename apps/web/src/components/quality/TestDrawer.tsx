@@ -135,6 +135,7 @@ export function TestDrawer({ id, open, onClose, onOpenNcr }: { id: string | null
               { key: 'project', label: 'Project', children: data.projectName, span: 2 },
               { key: 'activity', label: 'Activity', children: data.activityName ?? '-' },
               { key: 'location', label: 'Location', children: data.location ?? '-' },
+              ...(data.segments.length ? [{ key: 'pipes', label: 'Pipes tested', children: <span translate="no">{data.segments.map((x) => x.label).join('; ')}</span>, span: 2 }] : []),
               { key: 'spec', label: 'Specification', children: data.specification ?? '-', span: 2 },
               { key: 'range', label: 'Passes at', children: spec ?? 'As judged by the tester' },
               { key: 'result', label: 'Result', children: <TestResultTag result={data.result} /> },

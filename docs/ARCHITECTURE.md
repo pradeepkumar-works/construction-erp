@@ -541,8 +541,55 @@ schedule, earned value, bills and the stock check all read the same approved qua
   shows them. Machines per line are on the web only; the phone keeps the day's machinery.
 - **Demo.** `seedTownDprs` in `prisma/seed-structure.ts`: three days of WS-2026-04 DPRs with tank, pipe laying,
   backfill, house connection and road restoration lines, two approved and the latest waiting for the PM.
-- **Next.** Pipe segments junction to junction (item 126) give pipe lines a segment and the pipeline summary; the
-  look-ahead's planned quantities and a weekly and monthly report on the same tree follow.
+- **Next.** The look-ahead's planned quantities and a weekly and monthly report on the same tree follow. Pipe lines
+  name their segment (item 126, "Pipe network" below).
+
+### Pipe network
+
+Item 126: a water supply or sewerage project's pipe zones and mains are reported the way the site keeps its pipe
+sheet: each pipe junction to junction, trenched, bedded, laid and jointed, backfilled, tested, restored and
+commissioned, with valves fixed at their points.
+
+- **Model.** A zone is a `WorkElement` of type `PIPE_ZONE`, `RISING_MAIN` or `FEEDER_MAIN` (`PIPE_ELEMENT_TYPES`). Its
+  `PipeNode` rows (code, `PipeNodeKind`: junction, tank, source, valves, scour, chamber, end, crossing pit; ground level,
+  x and y from the model, chainage) and `PipeSegment` rows (code, from and to node, length, diameter, `PipeMaterial`,
+  class, `PipeScope` proposed or existing, surface, crossing, BOQ item) carry `organizationId`, `projectId` and `zoneId`,
+  and codes are unique in a project. All three tables (with `PipeTestSegment`) have `tenant_isolation` policies.
+- **Stages.** `Activity.pipeStage` (`PipeStage`) says which stage an activity stands for; new pipe activities get it
+  from their name (`guessPipeStage`), and `activityPipeStage` guesses it for older ones on a pipe element. The zone
+  template measures every length stage, restoration included, in running metres along the trench.
+- **Work on a pipe.** A DPR line of a length stage on a zone with a network names its segment
+  (`ProgressEntry.pipeSegmentId`, and `pipeNodeId` for the end it started from or the valve fixed). `DprService`
+  refuses a line without one, a segment of another zone or an existing pipe, and a stage taken past the pipe's length
+  counting every entry not rejected (`heldOnSegments`, `segmentCapProblem`). Valve lines may name their valve (specials
+  have none). `lineLocation` puts the segment first ("P-27, J-12 to J-13, Market road"), so the summary, record, print
+  and search name it. The record and print add the day's pipeline table (`pipelineSummary`: metres per stage by zone
+  and diameter, valves fixed).
+- **Figures.** `GET /projects/:id/pipe-network` (`PipeNetworkService.get`) gives each segment's approved metres per
+  stage held to its length, its weighted % (`PIPE_STAGE_WEIGHTS`) and furthest stage (`segmentStatus`), what waits for
+  approval, and per zone the pipe sheet by diameter and material (`zoneTable`), the pipes ready to start from the tank or
+  a laid pipe (`workingFronts`), and metres recorded before the network was loaded (`unplacedM`). A passed test that
+  names segments (`PipeTestSegment`, the test form's Pipes tested on a hydraulic test) counts their testing done. The
+  zone's activities and the project's progress still come from the entries through `rollUp`.
+- **Import.** The network comes from the design office's model, read on the screen: an EPANET `.inp` file
+  (`parseEpanetInp`: junctions, reservoirs as sources, tanks, pipes, valves as valve points, coordinates, US units
+  converted, pumps left out and said so) or an Excel book of nodes and pipes with loose headers (`parseNetworkSheets`).
+  `POST /projects/:id/pipe-network/import` (project editors) checks it (`networkProblems`), previews what it would do
+  matched by code (`importPlan`: new, changed, kept; never a pipe cut below its work) with `dryRun`, and saves only
+  without problems: nodes and pipes upserted by code, nothing deleted, the zone's length stages planned at its proposed
+  length and its valve stage at its valve count (`planFromNetwork`), audited as `PIPE_NETWORK_IMPORTED`.
+  `PATCH .../segments/:id` corrects one pipe (not below its work).
+- **Screens.** Web: Project › Plan › Pipe network on water supply and sewerage projects (`components/pipes/`: the zone
+  map drawn from coordinates or as a tree from the tank, pipes in the state of their work and thicker by diameter, the
+  pipe sheet, ready to start, the pipe list with search, state filter, Export and Correct, and the import dialog); the
+  DPR form's Where picks the segment or valve (`DprLinesField`), the test form the pipes tested. Phone: the DPR line's
+  segment and valve pickers (`src/forms/dprLines.tsx`).
+- **Code.** The arithmetic and readers are pure in `packages/shared/src/pipe-network.ts`, tested in
+  `src/scripts/pipe-network-test.ts` (CI flows); `e2e/tests/pipe-network.spec.ts` covers a line held to its pipe, the
+  import preview and the tab.
+- **Demo.** `seedTownNetwork` (`prisma/seed-pipes.ts`): zone 2 of WS-2026-04, a tank, a 20-junction spine and six
+  branches with sluice valves, an air valve and a scour (53 pipes, 10.1 km), its approved work laid out pipe by pipe
+  from the tank, the town DPRs' pipe lines on the pipes past each stage's front, and a passed hydraulic test.
 
 ### Activity templates
 
