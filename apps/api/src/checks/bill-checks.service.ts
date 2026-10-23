@@ -15,6 +15,7 @@ import { SubcontractBillsService } from '../subcontracts/subcontract-bills.servi
 import { AttendanceCheckService } from '../attendance-check/attendance-check.service';
 import { ExpensesService } from '../expenses/expenses.service';
 import { RaBillsService } from '../ra-bills/ra-bills.service';
+import { boqBasis } from '../stage-billing/stage-plan';
 import { type Check, type Link, expenseChecks, otherVendorBillChecks, qty, raBillChecks, rulesSummary, subcontractBillChecks, vendorBillChecks } from './bill-rules';
 
 const day = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', timeZone: 'UTC' });
@@ -426,10 +427,14 @@ export class BillChecksService {
     const dto = await this.raBills.get(user, id);
     const bill = await this.prisma.raBill.findFirstOrThrow({ where: { id, organizationId: user.organizationId }, include: { items: { include: { boqItem: true }, orderBy: { sortOrder: 'asc' } } } });
     const earlier = { projectId: bill.projectId, billNo: { lt: bill.billNo } };
-    const [billed, measured] = await Promise.all([
+    const [billed, measured, project] = await Promise.all([
       this.prisma.raBillItem.findMany({ where: { bill: earlier }, select: { boqItemId: true, thisQty: true, certifiedQty: true } }),
       this.prisma.measurementSheet.groupBy({ by: ['boqItemId'], where: { OR: [{ raBillId: id }, { raBill: earlier }] }, _sum: { totalQty: true } }),
+      this.prisma.project.findUniqueOrThrow({ where: { id: bill.projectId }, select: { contractModel: true, tenderFactor: true } }),
     ]);
+    // A lump-sum contract's unit-rate items are paid at the BOQ rate × the tender factor (item 129).
+    const unitRate = project.contractModel === 'LUMP_SUM' ? (await boqBasis(this.prisma, bill.projectId)).unitRateBoqItemIds : new Set<string>();
+    const factor = project.tenderFactor ?? new Prisma.Decimal(1);
     const prev = new Map<string, number>();
     for (const b of billed) prev.set(b.boqItemId, (prev.get(b.boqItemId) ?? 0) + n(b.certifiedQty ?? b.thisQty));
     const checks = raBillChecks({
@@ -439,7 +444,7 @@ export class BillChecksService {
         unit: i.boqItem.unit,
         boqQty: n(i.boqItem.revisedQty ?? i.boqItem.originalQty),
         rate: n(i.rate),
-        boqRate: n(i.boqItem.rate),
+        boqRate: n(unitRate.has(i.boqItemId) ? i.boqItem.rate.mul(factor).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP) : i.boqItem.rate),
         prevQty: n(i.prevQty),
         thisQty: n(i.thisQty),
         uptoQty: n(i.uptoQty),

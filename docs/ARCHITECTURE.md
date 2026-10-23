@@ -1423,6 +1423,54 @@ What the store issued, set against what the approved DPR lines (item 127) say wa
 - **Waits.** A norm library and kit tables of their own, PO quantities by pipe size, the watch list and Ask, and the
   phone's view.
 
+### Stage billing (item 129)
+
+A lump-sum contract is paid by stages of its components' shares, not by measured items. Turned on per project: it is
+`LUMP_SUM` and has a billing break-up (`BillingBreakupDto.stageBilling`); every other project bills as before.
+
+- **Break-up.** `BillingComponent` (code, name, parent for a part, `sharePct` of the lump sum or of its parent, `basis`
+  STAGES or UNIT_RATE, the `WorkElement` it reads) and `BillingStage` (name, `pct` of its component, `trigger`, the
+  activities, items and scope it reads, the event's date and evidence). Tenant tables with RLS, as are `MilestoneTarget`
+  and `SlippageTier`. `Project` gains `lumpSumValue` (else the contract value), `tenderFactor`, and
+  `advanceRecoveryFromPct`/`ToPct`. Components and stages are set by `canPrepareBill`; terms, grid and tiers by
+  `canEditContract`. Nothing on a bill can be removed; `breakupProblems` names what does not add up to 100%.
+- **Standard break-up** (`createStandardBreakup` in `stage-plan.ts`): a component per component of the work breakdown,
+  shares from its weights (`sharesFromWeights`), parts for its sub-components; house connections, road restoration and
+  the HT feeder (`UNIT_RATE_ELEMENT_TYPES`) are unit-rate; each leaf takes `STAGE_TEMPLATES` for its kind, the
+  activities matched by name (`matchStageActivities`) and, for pipe, the pipe items of its sizes with the network's
+  length (else the specs) as its scope.
+- **Evidence** (`loadStageEvidence`, at a day): EVENT is 100 once its date has come; PROGRESS the approved physical % of
+  its activities (`progressRollup`, of the component when it names none); SUPPLY what was received at the project
+  against its scope, pipe by weight in metres (`pipeMetres`) and an item named by several stages shared by their scope
+  (`shareSupply`); TEST the network's pipe tested (approved TEST metres, or all of a segment once a passed test covers
+  it) against its length, else the progress of its activities.
+- **On a bill** (`stagePlan`, run by `RaBillsService.recompute` and the certificate): each stage's % is its evidence at
+  the measurements date less what earlier bills took (certified, else claimed); the amount is value × up to date less
+  value × previous, so the bills add up to the stage to the paisa (`stageLine`). The preparer may claim less by hand, or
+  more with a note (`PUT /ra-bills/:id/stages/:stageId`, empty goes back to the evidence). `RaBillStageLine` keeps the
+  previous, suggested, this and certified %, the amount and the evidence's words. BOQ items under a stages component
+  are in the lump sum and their measurements are not billed; those under a unit-rate component are measured and paid at
+  rate × tender factor (`boqBasis`; the bill checks expect that rate). The client can pass less of a stage than claimed.
+- **Slippage** (`slippage`): each top-level component's billed % against the grid's cumulative target for the last month
+  ended by the bill (`targetAt`); behind by a tier's range of the target withholds its % (default 2.5/5/7.5/10) of the
+  value not done. A bill deducts the total less what earlier bills withheld, so catching up releases it
+  (`RaBill.slippageWithheld`, `slippageLines`). The grid can be proposed from the schedule (`proposedGrid`).
+- **Advance window**: with both ends set, the mobilisation advance is recovered in proportion to the contract executed
+  between them, less what was recovered (`windowRecovery`), instead of a % of each bill.
+- **Pricing in one place.** `ra-bill-pricing.ts` (`measuredLines`, `billTotals`, `writeBill`) and `stage-plan.ts` take a
+  database client and no user, so the bills screen and the demo seed price a bill the same way.
+- **Web.** The Contract tab's Billing break-up (components and stages with what each has earned today and billed, the
+  standard break-up, terms), Milestone grid (target / billed by month, behind in the error colour) and tiers; the bill's
+  Payment stages (claim by hand) and Milestone slippage parts, stage %s in the certificate, and a stage table in the print.
+- **Tests.** The rules in `src/scripts/stage-billing-test.ts` (CI); `e2e/tests/stage-billing.spec.ts`.
+- **Demo** (`prisma/seed-billing.ts`): the town scheme's terms (80.7% lump sum, tender factor 1.0425, 5% advance
+  recovered from 10% to 80%), its road restoration, house connections and HT feeder as measured unit-rate items, pipe
+  received over the months, the standard break-up with its design approvals, a grid the treatment plant has fallen
+  behind, and RA bills 1 to 4 priced from the evidence at their dates (bill 3 with the 400 KL tank's staging cut by the
+  client, 1 to 3 paid). Bill 5 is the QS's to prepare.
+- **Waits.** Interest on advances, stage certification in the client portal, and the unit-rate items' total moving the
+  contract value.
+
 ### Rate analysis and the estimate (v5 item 92)
 
 - **Tables.** `BoqResource` (per BOQ item: `kind` LABOUR with a trade and man-days per unit, or EQUIPMENT with an

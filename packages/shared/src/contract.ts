@@ -55,5 +55,6 @@ export const BILL_DEDUCTION_LABELS = {
   tds: 'TDS (income tax)',
   gstTds: 'GST TDS',
   labourCess: 'Labour welfare cess',
+  slippage: 'Milestone slippage withheld',
   other: 'Other deduction',
 } as const;

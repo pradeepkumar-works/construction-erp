@@ -714,7 +714,12 @@ reconciliation: design". One pull request each, in this order.
      and the Structure, Pipe (scope to buy by size, cut wastage, laid above issued), Kits and Exceptions views with
      Excel; pipe items carry diameter, material and weight per metre. A norm library, kit tables, the watch list and
      the phone's view wait. ARCHITECTURE "Stock against the DPR".
-129. **Stage billing** (M): lump-sum and EPC bills by stage against the components' billing shares.
+129. ~~**Stage billing** (M): lump-sum and EPC bills by stage against the components' billing shares.~~ Done: the
+     billing break-up (components, parts and stages, the standard one from the work breakdown), each stage's evidence
+     (dated events, progress, supply, testing), stage lines on RA bills with claims by hand and the client's cut,
+     unit-rate items at rate × tender factor, the milestone grid with slippage withheld and released, and the advance
+     recovered in a window. Interest on advances, portal stage certification and the unit-rate total moving the
+     contract value wait. ARCHITECTURE "Stage billing".
 130. **EPC packages, deliverables and currency** (L).
 131. **Operation and maintenance** (M): a completed scheme's running, complaints and contract payments.
 

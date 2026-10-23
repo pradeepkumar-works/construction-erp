@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { BILL_DEDUCTION_LABELS, billLabel, canPrepareBill, isGuest, type BillDeductionKey, type BillSortField, type Paginated, type RaBillDeductionDto, type RaBillDto, type SortOrder } from '@erp/shared';
+import { BILL_DEDUCTION_LABELS, billLabel, canPrepareBill, isGuest, type BillDeductionKey, type BillSortField, type Paginated, type RaBillDeductionDto, type RaBillDto, type SlippageLineDto, type SortOrder } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -8,11 +8,14 @@ import { ApprovalRightsService } from '../common/approval-rights.service';
 import { AuditService } from '../common/audit.service';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
 import { AttachmentsService, ATTACHMENT_FIELDS } from '../common/attachments.service';
-import { BILLABLE_BOQ_ITEM, UNAPPROVED_EXTRA_ITEM } from '../variations/variations.service';
+import { UNAPPROVED_EXTRA_ITEM } from '../variations/variations.service';
 import { dateOnly, dec, iso, money, parseDate } from '../common/serialize';
 import { isUniqueViolation } from '../common/idempotency';
 import { ilike, pageArgs, paginated, searchWords, dateRange } from '../common/paging';
 import { BillDateDto, BillPriceVariationDto, CertifyBillDto, CreateRaBillDto, ListRaBillsQuery, UpdateRaBillDto } from './ra-bills.dto';
+import { StageBillingService } from '../stage-billing/stage-billing.service';
+import { BILL_TERMS_SELECT, PCT_DEDUCTIONS, TERMS_SELECT, billTotals, measuredLines, writeBill, type Line } from './ra-bill-pricing';
+import { ClaimStageDto } from '../stage-billing/stage-billing.dto';
 import { invoiceOf, RECEIPT_SUMS, settlement, syncBillStage } from '../receivables/bill-settlement';
 import { ReceivablesService } from '../receivables/receivables.service';
 import { assertNotExported } from '../tally/exported';
@@ -21,8 +24,8 @@ import { NotificationsService } from '../notifications/notifications.service';
 const D = (v: Prisma.Decimal.Value) => new Prisma.Decimal(v);
 const ZERO = D(0);
 const round2 = (v: Prisma.Decimal) => v.toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
-const pctOf = (base: Prisma.Decimal, pct: Prisma.Decimal) => round2(base.mul(pct).div(100));
 const pctStr = (d: Prisma.Decimal) => d.toFixed(2).replace(/\.?0+$/, '') || '0';
+const pct3 = (d: Prisma.Decimal) => d.toFixed(3).replace(/\.?0+$/, '') || '0';
 
 const include = {
   project: {
@@ -33,9 +36,11 @@ const include = {
       agreementNo: true,
       agreementDate: true,
       clientName: true,
+      tenderFactor: true,
       client: { select: { name: true, department: true, gstin: true, billingAddress: true, stateCode: true } },
     },
   },
+  stageLines: { include: { stage: { select: { name: true, pct: true, trigger: true, component: { select: { code: true, name: true } } } } }, orderBy: { sortOrder: 'asc' } },
   items: { include: { boqItem: { select: { itemNo: true, description: true, unit: true } } }, orderBy: { sortOrder: 'asc' } },
   pvLines: { orderBy: { sortOrder: 'asc' } },
   submittedBy: { select: { fullName: true } },
@@ -61,39 +66,7 @@ const ORDER: Record<BillSortField, (o: SortOrder) => Prisma.RaBillOrderByWithRel
 };
 const DESC_DEFAULT = new Set<string>(['billDate', 'billNo', 'grossAmount', 'netPayable', 'createdAt']);
 
-/** Deduction percentages of a bill, in the order the bill shows them. */
-const PCT_DEDUCTIONS = [
-  ['retention', 'retentionPct', 'retentionAmount'],
-  ['securityDeposit', 'securityDepositPct', 'securityDepositAmount'],
-  ['advanceRecovery', 'advanceRecoveryPct', 'advanceRecoveryAmount'],
-  ['tds', 'tdsPct', 'tdsAmount'],
-  ['gstTds', 'gstTdsPct', 'gstTdsAmount'],
-  ['labourCess', 'labourCessPct', 'labourCessAmount'],
-] as const;
-
-type Percentages = Record<(typeof PCT_DEDUCTIONS)[number][1] | 'gstRate', Prisma.Decimal>;
-
-/** One price variation component on a bill: a share of the work value that moves with an index. */
-interface PvLine {
-  sharePct: Prisma.Decimal;
-  baseIndex: Prisma.Decimal;
-  currentIndex: Prisma.Decimal;
-}
-
-/** Work value × share % × (current − base) / base, to the paisa. Negative when the index fell. */
-export const pvLineAmount = (work: Prisma.Decimal, l: PvLine) => round2(work.mul(l.sharePct).div(100).mul(l.currentIndex.sub(l.baseIndex)).div(l.baseIndex));
 const idx = (d: Prisma.Decimal) => d.toFixed(3).replace(/\.?0+$/, '');
-
-interface Line {
-  boqItemId: string;
-  boqQty: Prisma.Decimal;
-  rate: Prisma.Decimal;
-  prevQty: Prisma.Decimal;
-  thisQty: Prisma.Decimal;
-  uptoQty: Prisma.Decimal;
-  certifiedQty: Prisma.Decimal | null;
-  sortOrder: number;
-}
 
 /** A day can be at most 36 hours ahead of the server clock (time zones). */
 const checkNotFuture = (date: string, what: string) => {
@@ -119,6 +92,7 @@ export class RaBillsService {
     private attachments: AttachmentsService,
     private receivables: ReceivablesService,
     private notifications: NotificationsService,
+    private stageBilling: StageBillingService,
   ) {}
 
   toDto(r: Row, sheets?: SheetRow[], receipts?: RaBillDto['receipts']): RaBillDto {
@@ -128,6 +102,10 @@ export class RaBillsService {
     for (const [key, pctKey, amountKey] of PCT_DEDUCTIONS) {
       if (r[amountKey].isZero()) continue;
       deductions.push({ key, label: BILL_DEDUCTION_LABELS[key], pct: pctStr(r[pctKey]), amount: money(r[amountKey])! });
+    }
+    if (!r.slippageWithheld.isZero()) {
+      const key: BillDeductionKey = 'slippage';
+      deductions.push({ key, label: r.slippageWithheld.gt(0) ? BILL_DEDUCTION_LABELS.slippage : 'Milestone slippage released', pct: null, amount: money(r.slippageWithheld)! });
     }
     if (!r.otherDeduction.isZero()) {
       const key: BillDeductionKey = 'other';
@@ -156,6 +134,32 @@ export class RaBillsService {
       pvAmount: money(r.pvAmount)!,
       pvIndexMonth: dateOnly(r.pvIndexMonth),
       pvNote: r.pvNote,
+      stageLines: r.stageLines.map((l) => {
+        const prevAmount = round2(l.stageValue.mul(l.prevPct).div(100));
+        return {
+          id: l.id,
+          stageId: l.stageId,
+          componentCode: l.stage.component.code,
+          componentName: l.stage.component.name,
+          stageName: l.stage.name,
+          trigger: l.stage.trigger,
+          stagePct: pctStr(l.stage.pct),
+          stageValue: money(l.stageValue)!,
+          prevPct: pct3(l.prevPct),
+          suggestedPct: pct3(l.suggestedPct),
+          thisPct: pct3(l.thisPct),
+          uptoPct: pct3(l.prevPct.add(l.thisPct)),
+          claimedByHand: l.claimedByHand,
+          note: l.note,
+          certifiedPct: l.certifiedPct === null ? null : pct3(l.certifiedPct),
+          prevAmount: money(prevAmount)!,
+          amount: money(l.amount)!,
+          evidenceText: l.evidenceText,
+        };
+      }),
+      slippageWithheld: money(r.slippageWithheld)!,
+      slippageLines: (r.slippageLines as SlippageLineDto[] | null) ?? [],
+      tenderFactor: r.stageLines.length && r.project.tenderFactor ? r.project.tenderFactor.toFixed(6).replace(/\.?0+$/, '') : null,
       pvLines: r.pvLines.map((l) => ({ id: l.id, name: l.name, sharePct: pctStr(l.sharePct), baseIndex: idx(l.baseIndex), currentIndex: idx(l.currentIndex), amount: money(l.amount)! })),
       gstRate: pctStr(r.gstRate),
       gstAmount: money(r.gstAmount)!,
@@ -298,84 +302,23 @@ export class RaBillsService {
   }
 
   /**
-   * Work value, price variation, GST, deductions and net payable of a set of lines priced on certified (else claimed)
-   * quantities. GST and the deductions are on work value + price variation.
-   */
-  private async totals(tx: Prisma.TransactionClient, bill: { id: string; projectId: string; billNo: number; otherDeduction: Prisma.Decimal }, lines: Line[], pcts: Percentages, advance: Prisma.Decimal) {
-    const amounts = lines.map((l) => round2((l.certifiedQty ?? l.thisQty).mul(l.rate)));
-    const grossAmount = amounts.reduce((s, a) => s.add(a), ZERO);
-    const grossPrevious = lines.reduce((s, l) => s.add(round2(l.prevQty.mul(l.rate))), ZERO);
-    const [recovered, pvLines] = await Promise.all([
-      tx.raBill.aggregate({ where: { projectId: bill.projectId, billNo: { lt: bill.billNo } }, _sum: { advanceRecoveryAmount: true } }),
-      tx.raBillPvLine.findMany({ where: { billId: bill.id }, select: { id: true, sharePct: true, baseIndex: true, currentIndex: true } }),
-    ]);
-    const outstanding = Prisma.Decimal.max(advance.sub(recovered._sum.advanceRecoveryAmount ?? ZERO), ZERO);
-    const pvAmounts = pvLines.map((l) => ({ id: l.id, amount: pvLineAmount(grossAmount, l) }));
-    const pvAmount = pvAmounts.reduce((s, l) => s.add(l.amount), ZERO);
-    for (const l of pvAmounts) await tx.raBillPvLine.update({ where: { id: l.id }, data: { amount: l.amount } });
-    const base = Prisma.Decimal.max(grossAmount.add(pvAmount), ZERO);
-    const data = {
-      grossPrevious,
-      grossAmount,
-      grossUpto: grossPrevious.add(grossAmount),
-      pvAmount,
-      gstRate: pcts.gstRate,
-      gstAmount: pctOf(base, pcts.gstRate),
-      retentionPct: pcts.retentionPct,
-      securityDepositPct: pcts.securityDepositPct,
-      advanceRecoveryPct: pcts.advanceRecoveryPct,
-      tdsPct: pcts.tdsPct,
-      gstTdsPct: pcts.gstTdsPct,
-      labourCessPct: pcts.labourCessPct,
-      retentionAmount: pctOf(base, pcts.retentionPct),
-      securityDepositAmount: pctOf(base, pcts.securityDepositPct),
-      advanceRecoveryAmount: Prisma.Decimal.min(pctOf(base, pcts.advanceRecoveryPct), outstanding),
-      tdsAmount: pctOf(base, pcts.tdsPct),
-      gstTdsAmount: pctOf(base, pcts.gstTdsPct),
-      labourCessAmount: pctOf(base, pcts.labourCessPct),
-    };
-    const totalDeductions = PCT_DEDUCTIONS.reduce((s, [, , k]) => s.add(data[k]), ZERO).add(bill.otherDeduction);
-    return { amounts, data: { ...data, totalDeductions, netPayable: grossAmount.add(pvAmount).add(data.gstAmount).sub(totalDeductions) } };
-  }
-
-  /**
    * Re-take the bill's measurements and re-price it with the project's current BOQ and contract terms. Only for a bill
    * that is not approved; `strict` refuses a bill with nothing new in it.
    */
   private async recompute(tx: Prisma.TransactionClient, id: string, strict = true) {
-    const bill = await tx.raBill.findUniqueOrThrow({
-      where: { id },
-      include: { project: { select: { retentionPct: true, securityDepositPct: true, advanceRecoveryPct: true, tdsPct: true, gstTdsPct: true, labourCessPct: true, gstRate: true, mobilisationAdvance: true } } },
-    });
-    await tx.measurementSheet.updateMany({ where: { raBillId: id }, data: { raBillId: null } });
-    // Extra items (no BOQ quantity) wait for the client's approved variation before they are billed.
-    await tx.measurementSheet.updateMany({
-      where: { projectId: bill.projectId, status: 'APPROVED', raBillId: null, date: { lte: bill.measuredUpTo }, boqItem: BILLABLE_BOQ_ITEM },
-      data: { raBillId: id },
-    });
-    const earlier = { projectId: bill.projectId, billNo: { lt: bill.billNo } };
-    const [measured, billed, boq] = await Promise.all([
-      tx.measurementSheet.groupBy({ by: ['boqItemId'], where: { OR: [{ raBillId: id }, { raBill: earlier }] }, _sum: { totalQty: true } }),
-      tx.raBillItem.findMany({ where: { bill: earlier }, select: { boqItemId: true, thisQty: true, certifiedQty: true } }),
-      tx.boqItem.findMany({ where: { projectId: bill.projectId }, orderBy: [{ sortOrder: 'asc' }, { itemNo: 'asc' }] }),
-    ]);
-    const upto = new Map(measured.map((m) => [m.boqItemId, m._sum.totalQty ?? ZERO]));
-    const prev = new Map<string, Prisma.Decimal>();
-    for (const b of billed) prev.set(b.boqItemId, (prev.get(b.boqItemId) ?? ZERO).add(b.certifiedQty ?? b.thisQty));
-    const lines: Line[] = [];
-    boq.forEach((b, i) => {
-      const uptoQty = upto.get(b.id) ?? ZERO;
-      const prevQty = prev.get(b.id) ?? ZERO;
-      if (uptoQty.lte(0) && prevQty.isZero()) return;
-      lines.push({ boqItemId: b.id, boqQty: b.revisedQty ?? b.originalQty, rate: b.rate, prevQty, thisQty: uptoQty.sub(prevQty), uptoQty, certifiedQty: null, sortOrder: i });
-    });
-    const { amounts, data } = await this.totals(tx, bill, lines, bill.project, bill.project.mobilisationAdvance);
+    const bill = await tx.raBill.findUniqueOrThrow({ where: { id }, include: { project: { select: BILL_TERMS_SELECT } } });
+    // A lump-sum project with a billing break-up (item 129) bills its stages, and measures only its unit-rate items.
+    const plan = await this.stageBilling.planFor(tx, bill);
+    const lines = await measuredLines(tx, bill, plan);
+    const { amounts, data } = await billTotals(tx, bill, lines, bill.project, bill.project, plan);
     if (strict && data.grossAmount.lte(0)) {
-      throw new BadRequestException('Nothing new to bill: there are no approved measurements up to this date beyond what earlier bills took');
+      throw new BadRequestException(
+        plan
+          ? 'Nothing new to bill: no stage has moved and no unit-rate item has been measured since the last bill'
+          : 'Nothing new to bill: there are no approved measurements up to this date beyond what earlier bills took',
+      );
     }
-    await tx.raBillItem.deleteMany({ where: { billId: id } });
-    await tx.raBillItem.createMany({ data: lines.map((l, i) => ({ ...l, billId: id, amount: amounts[i] })) });
-    await tx.raBill.update({ where: { id }, data });
+    await writeBill(tx, id, lines, amounts, data, plan);
   }
 
   private checkDates(billDate: string, measuredUpTo: string) {
@@ -524,6 +467,24 @@ export class RaBillsService {
     return this.get(user, id);
   }
 
+  /**
+   * Claim a stage by hand on a bill being prepared (item 129): less than its evidence gives, or more with a note; an
+   * empty % goes back to the evidence. The bill is re-priced.
+   */
+  async claimStage(user: RequestUser, id: string, stageId: string, dto: ClaimStageDto) {
+    const row = await this.lifecycle.load(user, 'BILL', id);
+    await this.assertCanPrepare(user, row.projectId);
+    await this.lifecycle.assertEditable(user, row);
+    await this.prisma.$transaction(async (tx) => {
+      await this.stageBilling.checkClaim(tx, id, stageId, dto);
+      await this.recompute(tx, id, false);
+    });
+    const stage = await this.prisma.billingStage.findFirst({ where: { id: stageId }, select: { name: true, component: { select: { code: true } } } });
+    const what = stage ? `${stage.component.code} ${stage.name}` : 'A stage';
+    await this.audit.log(user, 'BILL', id, 'STAGE_CLAIMED', dto.pct === undefined || dto.pct === null ? `${what} back to the evidence` : `${what} claimed at ${dto.pct}%${dto.note ? `: ${dto.note}` : ''}`);
+    return this.get(user, id);
+  }
+
   async remove(user: RequestUser, id: string) {
     const row = await this.lifecycle.load(user, 'BILL', id);
     await this.assertCanPrepare(user, row.projectId);
@@ -538,7 +499,7 @@ export class RaBillsService {
     const row = await this.lifecycle.load(user, 'BILL', id);
     await this.assertCanPrepare(user, row.projectId);
     if (row.status !== 'APPROVED') throw new BadRequestException('Only an approved bill can be sent or certified');
-    return this.prisma.raBill.findUniqueOrThrow({ where: { id }, include: { items: true, project: { select: { mobilisationAdvance: true } } } });
+    return this.prisma.raBill.findUniqueOrThrow({ where: { id }, include: { items: true, stageLines: true, project: { select: TERMS_SELECT } } });
   }
 
   async send(user: RequestUser, id: string, dto: BillDateDto) {
@@ -603,7 +564,7 @@ export class RaBillsService {
     const row = await this.prisma.raBill.findFirst({ where: { id, ...this.clientWhere(user) }, select: { projectId: true } });
     if (!row) throw new NotFoundException('RA bill not found');
     await this.access.assertCanActAsClient(user, row.projectId);
-    const bill = await this.prisma.raBill.findUniqueOrThrow({ where: { id }, include: { items: true, project: { select: { mobilisationAdvance: true } } } });
+    const bill = await this.prisma.raBill.findUniqueOrThrow({ where: { id }, include: { items: true, stageLines: true, project: { select: TERMS_SELECT } } });
     if (bill.stage !== 'SENT') throw new BadRequestException(bill.stage === 'PAID' ? 'This bill is already paid' : 'This bill is already certified');
     await this.applyCertificate(user, bill, dto);
     const dtoOut = await this.getForClient(user, id);
@@ -637,8 +598,20 @@ export class RaBillsService {
       cut.set(c.boqItemId, q);
     }
     const lines: Line[] = bill.items.map((i) => ({ ...i, certifiedQty: cut.get(i.boqItemId) ?? i.thisQty }));
+    const passed = new Map<string, Prisma.Decimal>();
+    for (const c of dto.stages ?? []) {
+      const line = bill.stageLines.find((l) => l.stageId === c.stageId);
+      if (!line) throw new BadRequestException('A certified stage is not in this bill');
+      const p = D(c.certifiedPct);
+      if (p.lt(0)) throw new BadRequestException('A certified % cannot be negative');
+      if (p.gt(line.thisPct)) throw new BadRequestException('A certified % cannot be more than this bill claimed for the stage');
+      passed.set(c.stageId, p);
+    }
+    for (const l of bill.stageLines) if (!passed.has(l.stageId)) passed.set(l.stageId, l.thisPct);
     await this.prisma.$transaction(async (tx) => {
-      const { amounts, data } = await this.totals(tx, bill, lines, bill, bill.project.mobilisationAdvance);
+      const plan = bill.stageLines.length ? await this.stageBilling.planFor(tx, bill, { certified: passed }) : null;
+      if (plan) for (const l of plan.lines) await tx.raBillStageLine.update({ where: { billId_stageId: { billId: id, stageId: l.stageId } }, data: { certifiedPct: l.certifiedPct, amount: l.amount } });
+      const { amounts, data } = await billTotals(tx, bill, lines, bill, bill.project, plan);
       for (const [i, l] of lines.entries()) await tx.raBillItem.update({ where: { id: bill.items[i].id }, data: { certifiedQty: l.certifiedQty, amount: amounts[i] } });
       await tx.raBill.update({
         where: { id },

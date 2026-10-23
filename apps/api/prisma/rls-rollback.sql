@@ -524,5 +524,17 @@ DROP POLICY IF EXISTS tenant_isolation ON "PipeTestSegment";
 ALTER TABLE "ActivityMaterialNorm" NO FORCE ROW LEVEL SECURITY;
 ALTER TABLE "ActivityMaterialNorm" DISABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS tenant_isolation ON "ActivityMaterialNorm";
+ALTER TABLE "BillingComponent" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "BillingComponent" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "BillingComponent";
+ALTER TABLE "BillingStage" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "BillingStage" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "BillingStage";
+ALTER TABLE "MilestoneTarget" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "MilestoneTarget" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "MilestoneTarget";
+ALTER TABLE "SlippageTier" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "SlippageTier" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "SlippageTier";
 
 DROP FUNCTION IF EXISTS app_current_org();

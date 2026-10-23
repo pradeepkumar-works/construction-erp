@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-01-stage-billing',
+    date: '2027-01-08',
+    title: 'Stage billing for lump-sum contracts',
+    points: [
+      "A lump-sum project's Contract tab has its billing break-up: each component's share of the lump sum and its payment stages, made in one go from the project's structure. Each stage shows what it has earned today from a dated event, progress, pipe supplied or pipe tested, and what has been billed.",
+      'An RA bill on such a project takes its stages from that evidence at the measurements date, less what earlier bills took. The QS can claim a stage by hand (more needs a note), the client can pass less, and road restoration, house connections and the HT feeder are measured and paid at rate × the tender factor.',
+      'The milestone grid sets each component\'s target by month. A bill withholds for a component behind it, by tiers, and releases it as the work catches up. The mobilisation advance can be recovered between two % of the contract executed.',
+    ],
+  },
+  {
     id: '2027-01-stock-against-dpr',
     date: '2027-01-04',
     title: 'Stock against the DPR: what was issued, done and used, by component',

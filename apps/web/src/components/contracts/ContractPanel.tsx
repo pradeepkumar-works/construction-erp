@@ -13,6 +13,7 @@ import { QueryError } from '@/components/common/QueryState';
 import { ContractFormModal } from './ContractFormModal';
 import { LdExposureCard } from './LdExposure';
 import { PriceVariationCard } from './PriceVariation';
+import { BillingBreakup } from './BillingBreakup';
 import { themeFontSize } from '@/lib/theme';
 import { Section, SectionStack } from '@/components/common/Section';
 
@@ -93,6 +94,7 @@ export function ContractPanel({ projectId }: { projectId: string }) {
           ))}
         </Descriptions>
       </Section>
+      <BillingBreakup projectId={projectId} />
       <Section title="Extensions of time" extra={<Link href={`/projects/${projectId}?tab=risks`}>Delay register</Link>}>
         <Table<ContractExtensionDto>
           rowKey="riskId"

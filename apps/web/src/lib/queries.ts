@@ -120,6 +120,7 @@ import type {
   VendorDto,
   VendorKind,
   ProjectContractDto,
+  BillingBreakupDto,
   GettingStartedDto,
   EquipmentDto,
   EquipmentPartsDto,
@@ -2230,6 +2231,14 @@ export const useContract = (projectId: string | undefined, enabled = true) =>
   useQuery({
     queryKey: ['contract', projectId],
     queryFn: async () => (await api.get<ProjectContractDto>(`/projects/${projectId}/contract`)).data,
+    enabled: !!projectId && enabled,
+  });
+
+/** A lump-sum project's billing break-up (item 129): components, stages with today's evidence, the milestone grid and tiers. */
+export const useBillingBreakup = (projectId: string | undefined, enabled = true) =>
+  useQuery({
+    queryKey: ['contract', projectId, 'billing-breakup'],
+    queryFn: async () => (await api.get<BillingBreakupDto>(`/projects/${projectId}/billing-breakup`)).data,
     enabled: !!projectId && enabled,
   });
 

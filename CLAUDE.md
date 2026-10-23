@@ -143,6 +143,11 @@ and the pre-delivery checklist.
   (`StockEntry.workElementId`, through `StockService.placeOf`). The Structure, Pipe, Kits and Exceptions figures are pure in
   `reconciliation-rules.ts` (`structureRows`, `pipeRow`, `kitRows`, `exceptionEvents`); a pipe's size is `pipeSizeOf`.
   Keep `src/scripts/reconciliation-test.ts` passing.
+- Stage billing (item 129, `apps/api/src/stage-billing`, ARCHITECTURE "Stage billing"): a lump-sum bill's stage lines, slippage
+  and unit-rate pricing come only from `stagePlan` (`stage-plan.ts`) and its evidence from `loadStageEvidence`; a bill is priced
+  only through `ra-bill-pricing.ts` (`measuredLines`, `billTotals`), which the demo seed runs too. A new kind of stage evidence is
+  a `StageTrigger` (schema + shared + label) and a branch in `loadStageEvidence`; the arithmetic is pure in
+  `stage-billing-rules.ts`. Keep `src/scripts/stage-billing-test.ts` passing.
 - Project page: a new project tab is one entry in `app/(app)/projects/[id]/page.tsx` with a `group` from `WORKSPACE_GROUPS`
   (`components/projects/ProjectWorkspace.tsx`); its `key` is the `?tab=` value, so never rename one. Anything sticky
   inside a page reads its top offset from `useStickyTop()` (`src/lib/sticky.tsx`), not a fixed 56.

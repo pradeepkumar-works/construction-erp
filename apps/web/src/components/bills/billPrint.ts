@@ -52,6 +52,24 @@ export function buildBillPrintHtml(b: RaBillDto, orgName: string): string {
     </tr>`,
     )
     .join('');
+  // A lump-sum bill (item 129) pays its stages, then its measured unit-rate items, and shows the two totals apart.
+  const staged = b.stageLines.length > 0;
+  const sum = (xs: string[]) => String(xs.reduce((t, x) => t + toNumber(x), 0));
+  const stageRows = b.stageLines
+    .filter((l) => toNumber(l.thisPct) > 0 || toNumber(l.prevPct) > 0)
+    .map(
+      (l) => `<tr>
+      <td class="mono">${esc(l.componentCode)}</td><td>${esc(l.componentName)}: ${esc(l.stageName)}<div class="muted">${esc(l.evidenceText)}</div></td>
+      <td class="num">${esc(l.stagePct)}</td><td class="num">${inr(l.stageValue)}</td><td class="num">${esc(l.prevPct)}</td><td class="num">${esc(l.certifiedPct ?? l.thisPct)}</td><td class="num">${esc(l.uptoPct)}</td>
+      <td class="num">${inr(l.prevAmount)}</td><td class="num">${inr(l.amount)}</td><td class="num">${inr(String(toNumber(l.prevAmount) + toNumber(l.amount)))}</td>
+    </tr>`,
+    )
+    .join('');
+  const stagePrev = sum(b.stageLines.map((l) => l.prevAmount));
+  const stageThis = sum(b.stageLines.map((l) => l.amount));
+  const itemPrev = sum(b.items.map((i) => i.prevAmount));
+  const itemThis = sum(b.items.map((i) => i.amount));
+  const itemUpto = sum(b.items.map((i) => i.uptoAmount));
   const deductions = b.deductions
     .map((d) => `<tr><td>${esc(d.label)}${d.pct !== null ? ` @ ${esc(d.pct)}%` : ''}</td><td class="num">${inr(d.amount)}</td></tr>`)
     .join('');
@@ -123,7 +141,24 @@ ${PRINT_FONT_LINKS}
     <div><b>Certified</b>${esc(b.certifiedDate ? formatDate(b.certifiedDate) : '-')}${b.certificateNo ? ` (${esc(b.certificateNo)})` : ''}</div>
   </div>
 
-  <h2>Abstract of cost</h2>
+${
+  staged
+    ? `
+  <h2>Payment stages</h2>
+  <table>
+    <thead>
+      <tr><th rowspan="2">Comp.</th><th rowspan="2">Stage</th><th rowspan="2" class="num">% of comp.</th><th rowspan="2" class="num">Value (₹)</th>
+        <th colspan="3" style="text-align:center">% of the stage</th><th colspan="3" style="text-align:center">Amount (₹)</th></tr>
+      <tr><th class="num">Previous</th><th class="num">This bill</th><th class="num">Up to date</th><th class="num">Previous</th><th class="num">This bill</th><th class="num">Up to date</th></tr>
+    </thead>
+    <tbody>
+      ${stageRows || '<tr><td colspan="10" class="muted">No stage billed yet</td></tr>'}
+      <tr class="total"><td colspan="7">Stages</td><td class="num">${inr(stagePrev)}</td><td class="num">${inr(stageThis)}</td><td class="num">${inr(String(toNumber(stagePrev) + toNumber(stageThis)))}</td></tr>
+    </tbody>
+  </table>`
+    : ''
+}
+  <h2>${staged ? `Unit-rate items (rate × tender factor ${esc(b.tenderFactor ?? '1')})` : 'Abstract of cost'}</h2>
   <table>
     <thead>
       <tr><th rowspan="2" class="c">#</th><th rowspan="2">Item</th><th rowspan="2">Description</th><th rowspan="2">Unit</th><th rowspan="2" class="num">BOQ qty</th><th rowspan="2" class="num">Rate (₹)</th>
@@ -132,7 +167,8 @@ ${PRINT_FONT_LINKS}
     </thead>
     <tbody>
       ${rows || `<tr><td colspan="${cols}" class="muted">No items</td></tr>`}
-      <tr class="total"><td colspan="${cols - 3}">Value of work done</td><td class="num">${inr(b.grossPrevious)}</td><td class="num">${inr(b.grossAmount)}</td><td class="num">${inr(b.grossUpto)}</td></tr>
+      ${staged ? `<tr class="total"><td colspan="${cols - 3}">Unit-rate items</td><td class="num">${inr(itemPrev)}</td><td class="num">${inr(itemThis)}</td><td class="num">${inr(itemUpto)}</td></tr>` : ''}
+      <tr class="total"><td colspan="${cols - 3}">Value of work done${staged ? ' (stages and items)' : ''}</td><td class="num">${inr(b.grossPrevious)}</td><td class="num">${inr(b.grossAmount)}</td><td class="num">${inr(b.grossUpto)}</td></tr>
     </tbody>
   </table>
 ${
