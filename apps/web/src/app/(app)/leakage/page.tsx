@@ -120,7 +120,7 @@ function Leakage() {
             ))}
           </ol>
         ) : null}
-        <Flex gap={token.margin} wrap style={{ marginTop: token.marginSM }}>
+        <Flex gap={token.margin} wrap className="link-row" style={{ marginTop: token.marginSM }}>
           {f.links.map((l) => (
             <Link key={l.href} href={l.href}>
               {l.label}

@@ -170,7 +170,7 @@ export default function Page() {
           </div>
         ) : null}
         <Flex gap={token.margin} wrap align="center" justify="space-between" style={{ marginTop: token.marginSM }}>
-          <Flex gap={token.margin} wrap>
+          <Flex gap={token.margin} wrap className="link-row">
             {w.links.map((l) => (
               <Link key={l.href} href={l.href}>
                 {l.label}
