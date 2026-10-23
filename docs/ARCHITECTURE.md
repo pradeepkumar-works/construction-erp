@@ -150,7 +150,8 @@ over Home's top-level tiles but My work (`LAUNCHER_FLAG_NODES`):
 3. modules their role cannot open, greyed, with Request access: `canRequestNav` (a module, not Admin, with a page the
    company has not switched off), shown only while the company's `Organization.discoverLocked` is on (the default).
 
-At most `DISCOVER_SHOWN` (6). A tile opens a drawer with the module's line and its pages, then Open, or Request access (a
+At most `DISCOVER_SHOWN` (6); when New and Featured leave too little room, fewer never-opened modules show so that one
+module to ask for still fits. A tile opens a drawer with the module's line and its pages, then Open, or Request access (a
 `FormShell` modal with a note). **Requests** are `AccessRequest` rows (`HomeTilesService`, `POST /launcher/access-requests`):
 one waiting per person and module, refused for a module the role already opens or cannot ask for; each is audited and sends
 `ACCESS_REQUEST` to the company's admins, linking to Admin › Home tiles (`/home-tiles?request=<id>`). There is no grant of its

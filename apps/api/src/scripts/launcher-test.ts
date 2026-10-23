@@ -85,6 +85,11 @@ test('Featured leads after New; with the switch off a role sees only what it can
   assert.ok(!shown(closed).some((s) => s.startsWith('tenders:')));
 });
 
+test('New and Featured filling Discover still leave a place for a module to ask for', () => {
+  const full = discoverFor({ roleKey: 'SITE_ENGINEER' }, { ...none, flags: [flag('documents', { featured: true })] }, TODAY);
+  assert.deepEqual(shown(full), ['tenders:new', 'rmc:new', 'documents:featured', 'projects:unopened', 'site:unopened', 'billing:locked']);
+});
+
 test('a module the company turned off is neither shown nor asked for; Admin and single pages are never asked for', () => {
   const off = discoverFor({ roleKey: 'SITE_ENGINEER', modulesOff: ['rmc', 'tenders', 'payroll'] }, none, TODAY);
   assert.ok(!shown(off).some((s) => /^(rmc|tenders|payroll):/.test(s)));

@@ -125,6 +125,8 @@ export const byPosition = <T extends { position: string }>(pins: T[]): T[] => [.
 export const DISCOVER_SHOWN = 6;
 /** Of those, at most this many are modules the user can open but never has; the rest go to New, Featured and locked ones. */
 const DISCOVER_UNOPENED = 3;
+/** Slots kept, when there are any, for modules the role cannot open, so New and Featured never push them all out. */
+const DISCOVER_LOCKED_KEPT = 1;
 
 /** Why a tile is in Discover. */
 export type DiscoverReason = 'new' | 'featured' | 'unopened' | 'locked';
@@ -160,7 +162,7 @@ export const canRequestNav = (user: NavUser, node: NavNode): boolean =>
 /**
  * Discover on Home (launcher phase 3): modules marked New (until the user opens them) or Featured, then modules the user
  * can open but never has, then, when the company allows it, modules their role cannot open, greyed with Request access.
- * At most `DISCOVER_SHOWN`, each kind in the tree's order.
+ * At most `DISCOVER_SHOWN`, each kind in the tree's order; one place is kept for a module to ask for when there is one.
  */
 export function discoverFor(user: NavUser, launcher: Pick<LauncherDto, 'flags' | 'opened' | 'requests' | 'discoverLocked'>, today: string): DiscoverEntry[] {
   const flags = new Map(launcher.flags.map((f) => [f.nodeId, f]));
@@ -181,8 +183,9 @@ export function discoverFor(user: NavUser, launcher: Pick<LauncherDto, 'flags' |
     else if (!opened.has(node.id)) unopened.push(entry('unopened'));
   }
   marked.sort((a, b) => (a.reason === b.reason ? 0 : a.reason === 'new' ? -1 : 1));
-  const firstUnopened = unopened.slice(0, DISCOVER_UNOPENED);
-  return [...marked, ...firstUnopened, ...locked, ...unopened.slice(DISCOVER_UNOPENED)].slice(0, DISCOVER_SHOWN);
+  const room = DISCOVER_SHOWN - marked.length - Math.min(locked.length, DISCOVER_LOCKED_KEPT);
+  const first = Math.max(0, Math.min(DISCOVER_UNOPENED, room));
+  return [...marked, ...unopened.slice(0, first), ...locked, ...unopened.slice(first)].slice(0, DISCOVER_SHOWN);
 }
 
 /** The top-level tile a node is under (itself, for a module), for counting a visit to any page as opening its module. */
