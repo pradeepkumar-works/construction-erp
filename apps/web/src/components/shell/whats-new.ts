@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-12-leakage-checks',
+    date: '2026-12-16',
+    title: 'Leakage checks',
+    points: [
+      'Materials, Leakage checks lists the month\'s flags where material, money and fuel may be going missing, with the rupees at risk: material used over what the work allows or above your other sites, orders above what another site paid, fuel issued to a machine with no log that day or beyond its norm, and hired machines paid for hours they did not work.',
+      'Each flag shows its working and links to the records behind it. The purchase order form and the order itself now say when a rate is above what another site paid in the 30 days before.',
+      'Rates above another site, fuel with no log and idle hired machines also come to the Watch list.',
+    ],
+  },
+  {
     id: '2026-12-whatsapp-entries',
     date: '2026-12-14',
     title: 'Send entries from WhatsApp',

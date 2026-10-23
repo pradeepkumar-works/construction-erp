@@ -186,6 +186,7 @@ async function main() {
     await seedScEnquiries(org.id);
     await seedMeetings(org.id);
     await seedMaterialApprovals(org.id);
+    await seedLeakage(org.id);
     await seedActivityLinks(org.id);
     await seedComments(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
@@ -388,6 +389,7 @@ async function main() {
   await seedScEnquiries(org.id);
   await seedMeetings(org.id);
   await seedMaterialApprovals(org.id);
+  await seedLeakage(org.id);
   await seedActivityLinks(org.id);
   await seedComments(org.id);
 
@@ -4319,6 +4321,36 @@ async function seedMeetings(organizationId: string) {
 }
 
 /** Material approvals (v6 item 113): the contract's approved makes on the road and the hospital, and requests in every state. */
+/**
+ * Leakage checks (AI item 121) have machines to find: the hired grader is paid for 200 hours a month whatever it works
+ * (it works about six hours a day), and 60 litres of diesel went into the excavator eight days ago, a day it has no
+ * log. Material over the norms comes from the reconciliation seed. Once per organisation.
+ */
+async function seedLeakage(organizationId: string) {
+  const grader = await prisma.equipment.findFirst({ where: { organizationId, code: 'GRD-01', ownership: 'HIRED', rateUnit: 'HOUR' } });
+  if (!grader || grader.hireMinHours) return;
+  await prisma.equipment.update({ where: { id: grader.id }, data: { hireMinHours: D(200) } });
+
+  const excavator = await prisma.equipment.findFirst({ where: { organizationId, code: 'EXC-01' }, select: { id: true, code: true, name: true, projectId: true } });
+  const keeper = await prisma.user.findFirst({ where: { organizationId, email: 'store@demo.com' }, select: { id: true } });
+  if (!excavator?.projectId || !keeper) return;
+  const date = day(-8);
+  if (await prisma.machineryLog.count({ where: { equipmentId: excavator.id, date } })) return;
+  const fuel = await prisma.stockTxn.groupBy({ by: ['itemId'], where: { projectId: excavator.projectId, item: { isFuel: true } }, _sum: { quantity: true }, orderBy: { _sum: { quantity: 'desc' } }, take: 1 });
+  if (!fuel.length || Number(fuel[0]._sum.quantity ?? 0) < 60) return;
+  const year = day(0).getUTCFullYear();
+  const last = await prisma.stockEntry.findFirst({ where: { organizationId, entryNo: { startsWith: `ISS-${year}-` } }, orderBy: { entryNo: 'desc' }, select: { entryNo: true } });
+  const entryNo = `ISS-${year}-${String((last ? parseInt(last.entryNo.slice(9), 10) : 0) + 1).padStart(4, '0')}`;
+  const e = await prisma.stockEntry.create({
+    data: {
+      organizationId, projectId: excavator.projectId, type: 'ISSUE', entryNo, date, createdById: keeper.id, createdAt: date,
+      equipmentId: excavator.id, issuedTo: 'Ramesh Behera (operator)', remarks: `Into ${excavator.code} for the day`,
+      lines: { create: [{ organizationId, projectId: excavator.projectId, itemId: fuel[0].itemId, type: 'ISSUE', date, quantity: D(-60) }] },
+    },
+  });
+  await prisma.auditLog.create({ data: { organizationId, entityType: 'STOCK', entityId: e.id, action: 'CREATED', actorId: keeper.id, note: e.entryNo, createdAt: date } });
+}
+
 async function seedMaterialApprovals(organizationId: string) {
   if (await prisma.materialApproval.count({ where: { organizationId } })) return;
   const users = new Map((await prisma.user.findMany({ where: { organizationId }, select: { id: true, email: true } })).map((u) => [u.email, u.id]));

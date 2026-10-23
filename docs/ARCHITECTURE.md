@@ -2339,6 +2339,40 @@ export; the client portal and the phone app show the amount.
 - **Tests.** `src/scripts/whatsapp-capture-test.ts` (CI flows): the providers' payloads, replies and bodies, then the
   demo company end to end. `e2e/tests/whatsapp-capture.spec.ts` posts to WATI's webhook address (`WATI_WEBHOOK_SECRET=e2e-wati`).
 
+## Leakage checks
+
+- **What it is.** AI item 121: the month's flags where material, money and fuel may be going missing, each with the
+  rupees at risk, its working and links to the records it rests on. Page `/leakage` (Materials › Leakage checks,
+  `?month=YYYY-MM`); `GET /api/leakage?month=`. A flag is a reason to look, not proof, and nothing is blocked by one.
+- **Sections and who sees them** (`leakageSections` in `@erp/shared/leakage.ts`, built from the existing permission
+  helpers): material for the store, the QS, approvers and accounts; rates for purchasers and those who see cost; fuel
+  and idle hire for whoever runs the machines, and accounts. Rupees for material and fuel follow stock value
+  (`canSeeLeakageStockValue`), for idle hire the hire rates (`canSeeLeakageHireValue`). Projects are the caller's.
+- **Material** reads the reconciliation through `ReconciliationService.forPeriod(projectId, from, to)` (norm × the
+  month's approved progress × wastage, against issues less returns), so it follows the reconciliation as that changes
+  (the DPR work lines and stock reconciliation of items 127 and 128 feed it there). A site's item is flagged over the
+  allowance by `MATERIAL_OVERUSE_MIN_PCT`, or `SITE_RATIO_ABOVE_PTS` points above the company median of used ÷ allowed
+  over every active site with norms (`companyMedians`, `materialLeak`); the excess is valued at the item rate.
+- **Rates.** `rateAboveOthers` (shared, pure) compares a PO line with the lowest approved order of the same item (name and
+  unit, ignoring case) another project placed in the `RATE_WINDOW_DAYS` before it, flagged above `RATE_ABOVE_MIN_PCT`.
+  The same function runs on the PO form (`GET /purchase-orders/rate-check`, `RateAbove` under the rate), on the order's
+  record and approval pane (`PurchaseOrderLineDto.rateCheck`, set by `PurchaseOrdersService.get`), on this page and on
+  the watch list. Orders come from `PurchaseOrdersService.quotesFor`, scoped to what the caller may see.
+- **Fuel.** Fuel issued into a machine on a day with no log (any not rejected), from `FUEL_NO_LOG_MIN_LITRES` a day
+  (`fuelWithoutLog`), valued at the fuel's item rate; and the existing fuel norm check over the month's logs, its extra
+  litres priced at what the store charged for the machine's fuel.
+- **Idle hire** (`idleHire`): hourly hire with a monthly minimum is flagged while the hours worked are under the minimum
+  for the days gone (the hire bill tops them up to it), valued at the hourly rate; monthly hire from `IDLE_MIN_DAYS` idle
+  days between its first and last log of the month, each a day's share of the month's rate. Daily hire bills only the
+  days worked, so it is never flagged.
+- **Watch list.** `RATE_ABOVE` (purchasers), `FUEL_NO_LOG` and `IDLE_HIRE` (machine managers) are built by
+  `WarningsService` from `LeakageService.compute` for the month so far, so the page and the list agree; fuel off its
+  norm stays `FUEL_NORM` and material over the norm `MATERIAL_OVERUSE`. All are Checked.
+- **Tests.** `leakage-rules.ts` is pure; `src/scripts/leakage-test.ts` (CI) tests the rules, then puts one leak of each
+  kind into a month four months back on the demo company and must find every one with its rupees, the PO record's rate
+  check, the roles' sections, and this month's flags on the watch list. The seed gives the hired grader a 200-hour
+  minimum and diesel into the excavator on a day with no log.
+
 ## Money and quantities
 
 Decimal columns everywhere (`Decimal(18,2)` for money, `Decimal(18,3)` for quantities) and strings

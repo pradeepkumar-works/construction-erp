@@ -6,6 +6,7 @@ import * as P from './permissions';
 import { canManageAi } from './ai';
 import { canSeeWatchList } from './warnings';
 import { canUseWhatsappCapture } from './whatsapp';
+import { canSeeLeakage } from './leakage';
 import { canManageModules, pathIsOff } from './module-switches';
 
 /**
@@ -137,6 +138,7 @@ export const NAV_ACCESS = {
   companyData: (u: NavUser) => P.canManageCompanyData(u.roleKey),
   ai: (u: NavUser) => canManageAi(u.roleKey),
   whatsappCapture: (u: NavUser) => canUseWhatsappCapture(u.roleKey),
+  leakage: (u: NavUser) => canSeeLeakage(u.roleKey),
   subscription: (u: NavUser) => !!u.billing && P.canManageBilling(u.roleKey),
   platform: (u: NavUser) => !!u.platformAdmin,
   books: (u: NavUser) => P.canKeepBooks(u.roleKey),
@@ -222,6 +224,7 @@ export const NAV_TREE: NavNode[] = [
   { id: 'materials.register', parent: 'materials', label: 'Receipts and issues', icon: 'arrow-left-right', route: '/stock?sub=register', access: 'stock', status: 'live', description: 'GRNs, issues, transfers, returns and counts.', keywords: 'grn issue transfer', concord: ['p4-stores'] },
   { id: 'materials.value', parent: 'materials', label: 'Value and ageing', icon: 'hourglass', route: '/stock?sub=valuation', access: 'stockValue', status: 'live', description: 'Stock value and idle material by age.', concord: ['p9-stockage', 'p9-notused'] },
   { id: 'materials.reconciliation', parent: 'materials', label: 'Material reconciliation', icon: 'scale', projectTab: 'reconciliation', access: 'reconciliation', status: 'live', description: 'Material used against the work done, wastage by reason.', keywords: 'wastage consumption theoretical', concord: ['p9-notused'] },
+  { id: 'materials.leakage', parent: 'materials', label: 'Leakage checks', icon: 'scan-search', route: '/leakage', access: 'leakage', status: 'live', newUntil: '2027-03-31', description: "The month's material, rate, fuel and idle-hire flags, with the rupees at risk and the working behind each.", keywords: 'leakage theft pilferage wastage overuse rate fuel diesel idle hire loss' },
   { id: 'materials.store', parent: 'materials', label: 'Central stores', icon: 'warehouse', route: '/stores', access: 'stores', status: 'live', description: 'The company stores and yards: what each holds, its value and age, and what is on the road to the sites.', keywords: 'yard warehouse godown central store transfer' },
   { id: 'materials.items', parent: 'materials', label: 'Item master', icon: 'package', route: '/stock?sub=items', access: 'stock', status: 'live', description: 'Materials, units and minimum levels.' },
 

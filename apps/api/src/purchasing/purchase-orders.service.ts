@@ -5,8 +5,13 @@ import {
   canPurchase,
   canViewPurchaseOrders,
   LAST_RATES_COUNT,
+  RATE_WINDOW_DAYS,
   lastRateKey,
+  rateAboveOthers,
   type LastRatesDto,
+  type PoLineRateCheckDto,
+  type RateBenchmarksDto,
+  type RateQuote,
   type Paginated,
   type DeliveryState,
   type ProcurementStatusDto,
@@ -26,11 +31,18 @@ import { dateOnly, dec, iso, money, parseDate } from '../common/serialize';
 import { isUniqueViolation } from '../common/idempotency';
 import { nextDocNo } from '../common/doc-number';
 import { ilike, pageArgs, paginated, searchWords, dateRange } from '../common/paging';
-import { ClosePurchaseOrderDto, CreatePurchaseOrderDto, LastRatesQuery, ListPurchaseOrdersQuery, PoLineInput, ProcurementStatusQuery, ReceivableOrdersQuery, UpdatePurchaseOrderDto } from './purchasing.dto';
+import { ClosePurchaseOrderDto, CreatePurchaseOrderDto, LastRatesQuery, ListPurchaseOrdersQuery, RateCheckQuery, PoLineInput, ProcurementStatusQuery, ReceivableOrdersQuery, UpdatePurchaseOrderDto } from './purchasing.dto';
 import { todayIn } from '../notifications/time';
 import { MSME_MAX_PAYMENT_DAYS, ZERO, lineAmounts, orderedOn, parseFreight, parseGstRate, parseQty, parseRate, sum, totals } from './purchase-math';
 
 type Tx = Prisma.TransactionClient;
+
+/** The first day a rate is checked against: RATE_WINDOW_DAYS before the order. */
+const windowStart = (poDate: string) => {
+  const d = new Date(`${poDate}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - RATE_WINDOW_DAYS);
+  return d.toISOString().slice(0, 10);
+};
 
 const include = {
   project: { select: { name: true } },
@@ -242,6 +254,66 @@ export class PurchaseOrdersService {
     return out;
   }
 
+  /**
+   * Approved orders of the items (matched by name and unit, ignoring case) dated `from` to `to`, keyed by `lastRateKey`:
+   * what a rate is checked against (item 121). `scope` limits the orders to those the caller may see.
+   */
+  async quotesFor(scope: Prisma.PurchaseOrderWhereInput, items: { name: string; unit: string }[], from: string, to: string, excludePoId?: string): Promise<Map<string, RateQuote[]>> {
+    const wanted = new Map<string, { name: string; unit: string }>();
+    for (const i of items) if (i.name.trim() && i.unit.trim()) wanted.set(lastRateKey(i.name, i.unit), { name: i.name.trim(), unit: i.unit.trim() });
+    const out = new Map<string, RateQuote[]>();
+    if (!wanted.size) return out;
+    const rows = await this.prisma.purchaseOrderLine.findMany({
+      where: {
+        OR: [...wanted.values()].map((w) => ({ itemName: { equals: w.name, mode: 'insensitive' as const }, unit: { equals: w.unit, mode: 'insensitive' as const } })),
+        purchaseOrder: { ...scope, status: 'APPROVED', poDate: { gte: parseDate(from), lte: parseDate(to) }, ...(excludePoId ? { id: { not: excludePoId } } : {}) },
+      },
+      select: { itemName: true, unit: true, rate: true, purchaseOrder: { select: { id: true, poNo: true, poDate: true, projectId: true, project: { select: { name: true } }, vendor: { select: { name: true } } } } },
+    });
+    for (const r of rows) {
+      const key = lastRateKey(r.itemName, r.unit);
+      const o = r.purchaseOrder;
+      out.set(key, [...(out.get(key) ?? []), { purchaseOrderId: o.id, poNo: o.poNo, poDate: dateOnly(o.poDate)!, projectId: o.projectId, projectName: o.project.name, vendorName: o.vendor.name, rate: r.rate.toNumber() }]);
+    }
+    return out;
+  }
+
+  /** GET /purchase-orders/rate-check: other sites' approved orders of the items in the 30 days before the order. */
+  async rateCheck(user: RequestUser, q: RateCheckQuery): Promise<RateBenchmarksDto> {
+    if (!canViewPurchaseOrders(user.roleKey)) throw new ForbiddenException('Your role cannot see purchase orders');
+    const to = q.poDate ?? todayIn();
+    const items = q.item.map((raw) => {
+      const cut = raw.lastIndexOf('|');
+      return { name: cut < 0 ? raw : raw.slice(0, cut), unit: cut < 0 ? '' : raw.slice(cut + 1) };
+    });
+    const quotes = await this.quotesFor(this.access.submissionWhere(user), items, windowStart(to), to, q.excludePoId);
+    const out: RateBenchmarksDto = {};
+    for (const [key, list] of quotes) out[key] = list.filter((o) => o.projectId !== q.projectId);
+    return out;
+  }
+
+  /** Each line's check against other sites (item 121), for the order's record and the approval pane. */
+  private async lineRateChecks(user: RequestUser, r: { id: string; projectId: string; poDate: Date; lines: { id: string; itemName: string; unit: string; rate: Prisma.Decimal; quantity: Prisma.Decimal }[] }): Promise<Map<string, PoLineRateCheckDto>> {
+    const poDate = dateOnly(r.poDate)!;
+    const quotes = await this.quotesFor(this.access.submissionWhere(user), r.lines.map((l) => ({ name: l.itemName, unit: l.unit })), windowStart(poDate), poDate, r.id);
+    const out = new Map<string, PoLineRateCheckDto>();
+    for (const l of r.lines) {
+      const hit = rateAboveOthers({ rate: l.rate.toNumber(), projectId: r.projectId, poDate }, quotes.get(lastRateKey(l.itemName, l.unit)) ?? []);
+      if (!hit) continue;
+      out.set(l.id, {
+        bestRate: money(new Prisma.Decimal(hit.best.rate))!,
+        abovePct: Math.round(hit.abovePct * 10) / 10,
+        extra: money(l.rate.minus(hit.best.rate).mul(l.quantity).toDecimalPlaces(2))!,
+        purchaseOrderId: hit.best.purchaseOrderId,
+        poNo: hit.best.poNo,
+        poDate: hit.best.poDate,
+        projectName: hit.best.projectName,
+        vendorName: hit.best.vendorName,
+      });
+    }
+    return out;
+  }
+
   async get(user: RequestUser, id: string): Promise<PurchaseOrderDto> {
     this.assertCanView(user);
     const row = await this.prisma.purchaseOrder.findFirst({
@@ -254,8 +326,11 @@ export class PurchaseOrdersService {
       },
     });
     if (!row) throw new NotFoundException('Purchase order not found');
+    const dto = this.toDto(row);
+    const checks = await this.lineRateChecks(user, row);
     return {
-      ...this.toDto(row),
+      ...dto,
+      lines: dto.lines.map((l) => ({ ...l, rateCheck: checks.get(l.id) ?? null })),
       grns: row.stockEntries.map((e) => ({ id: e.id, entryNo: e.entryNo, date: dateOnly(e.date)!, lines: e._count.lines })),
       dispatches: row.dispatches.map((d) => ({ id: d.id, dispatchNo: d.dispatchNo, date: dateOnly(d.date)!, vehicleNo: d.vehicleNo, status: d.cancelledAt ? 'CANCELLED' : d.grn ? 'RECEIVED' : 'ON_THE_WAY', grnNo: d.grn?.entryNo ?? null })),
       bills: row.vendorBills.map((b) => ({ id: b.id, billNo: b.billNo, invoiceNo: b.invoiceNo, invoiceDate: dateOnly(b.invoiceDate)!, total: money(b.total)!, status: b.status, matched: b.matched })),

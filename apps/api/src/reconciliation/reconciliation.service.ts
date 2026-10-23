@@ -86,6 +86,14 @@ export class ReconciliationService {
     return this.build(projectId, { to }, true, false);
   }
 
+  /**
+   * A period's report without the caller's checks (item 121, leakage checks): the interface other modules read the
+   * reconciliation's figures through, so they follow it as it changes.
+   */
+  async forPeriod(projectId: string, from: string, to: string): Promise<ProjectReconciliationDto> {
+    return this.build(projectId, { from, to }, true, false);
+  }
+
   private async build(projectId: string, q: ReconciliationQuery, seeValues: boolean, canEditNorms: boolean): Promise<ProjectReconciliationDto> {
     const project = await this.prisma.project.findUnique({ where: { id: projectId }, select: { id: true, code: true, name: true } });
     if (!project) throw new NotFoundException('Project not found');

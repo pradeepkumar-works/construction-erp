@@ -660,8 +660,13 @@ intelligence: build plan". Rules first, models only to read what sites send; not
      form link that counts a changed save. Hold-ups go in the DPR's issues, for 123 to pick up; snags and safety
      observations wait for their own draft tools. Site staff use WhatsApp itself, so there is no phone screen.
      ARCHITECTURE "WhatsApp entries".
-121. **Material and fuel leakage checks** (M): material used against what approved work allows, month by month and site
-     against site, PO rates above another site's, fuel above norm or issued with no log, hired machines idle while paid.
+121. ~~**Material and fuel leakage checks** (M): material used against what approved work allows, month by month and site
+     against site, PO rates above another site's, fuel above norm or issued with no log, hired machines idle while paid.~~
+     Done: `/leakage` with the month's flags, rupees at risk and working (material from `ReconciliationService.forPeriod`
+     against the allowance and the company median, rates by `rateAboveOthers`, fuel with no log and off its norm, idle
+     hourly and monthly hire), the rate check on the PO form, record and approval pane, and the RATE_ABOVE, FUEL_NO_LOG
+     and IDLE_HIRE watch-list kinds. Per-activity material waits for the DPR work lines (item 127). ARCHITECTURE
+     "Leakage checks".
 122. **13-week cash forecast and billing readiness** (L): the bank balance and 13 weeks of money in and out as a range,
      why each short week is short, last month's error; measured work not billed and a drafted payment reminder.
 123. **Hindrance to notice** (M): a hindrance in a DPR or message suggested as a delay, the contract's notice clock on the

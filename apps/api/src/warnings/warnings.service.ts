@@ -28,6 +28,8 @@ import { ReceivablesService } from '../receivables/receivables.service';
 import { PayablesService } from '../payables/payables.service';
 import { ReconciliationService } from '../reconciliation/reconciliation.service';
 import { moduleOn } from '../common/module-switch.guard';
+import { LeakageService } from '../leakage/leakage.service';
+import { monthSpan } from '../leakage/leakage-rules';
 import {
   type Delivery,
   type MachineDay,
@@ -81,6 +83,9 @@ const pct = (v: number) => `${Math.round(v * 100)}%`;
 
 type Draft = Omit<WarningDto, 'dismissed' | 'confidence'>;
 
+/** The watch-list kinds built from the leakage checks (item 121), and the section each comes from. */
+const LEAK_SECTION = { RATE_ABOVE: 'rates', FUEL_NO_LOG: 'fuel', IDLE_HIRE: 'idle' } as const;
+
 interface Project {
   id: string;
   code: string;
@@ -106,6 +111,7 @@ export class WarningsService {
     private receivables: ReceivablesService,
     private payables: PayablesService,
     private reconciliation: ReconciliationService,
+    private leakage: LeakageService,
   ) {}
 
   async list(user: RequestUser): Promise<WatchListDto> {
@@ -221,6 +227,7 @@ export class WarningsService {
       orderBy: { code: 'asc' },
     });
     const active = projects.filter((p) => p.status === 'ACTIVE');
+    const leaks = kinds.some((k) => k in LEAK_SECTION) ? this.leaks(user, today, kinds) : Promise.resolve([]);
     const parts = await Promise.all(
       WARNING_KINDS.filter((k) => kinds.includes(k)).map((k) => {
         if (k === 'SCHEDULE') return this.schedule(active, today);
@@ -231,6 +238,7 @@ export class WarningsService {
         if (k === 'MATERIAL_OVERUSE') return this.overuse(active, today);
         if (k === 'FUEL_NORM') return this.fuel(projects, today);
         if (k === 'LOAN_EMI') return this.loanEmis(user.organizationId, today);
+        if (k in LEAK_SECTION) return leaks.then((ws) => ws.filter((w) => w.kind === k));
         // A central store files no DPR (v6 item 106).
         return this.dprs(active.filter((p) => p.type !== 'STORE'), today);
       }),
@@ -315,6 +323,38 @@ export class WarningsService {
   }
 
   /** Materials consumed beyond their norms' allowance at active projects with norms (v5 item 92), largest overuse first. */
+  /**
+   * Leakage checks (item 121) as warnings: rates above another site, fuel issued with no log and hired machines paid for
+   * idle time, from the month's flags in `LeakageService` so the watch list and the Leakage checks page agree. Fuel off
+   * its norm stays FUEL_NORM, and material over the norm MATERIAL_OVERUSE.
+   */
+  private async leaks(user: RequestUser, today: string, kinds: WarningKind[]): Promise<Draft[]> {
+    const sections = [...new Set(kinds.filter((k) => k in LEAK_SECTION).map((k) => LEAK_SECTION[k as keyof typeof LEAK_SECTION]))];
+    const { from, to } = monthSpan(today.slice(0, 7), today);
+    const { flags } = await this.leakage.compute(user, from, to, sections);
+    const kindOf = (f: (typeof flags)[number]): WarningKind | null =>
+      f.section === 'rates' ? 'RATE_ABOVE' : f.section === 'idle' ? 'IDLE_HIRE' : f.key.startsWith('fuel-no-log:') ? 'FUEL_NO_LOG' : null;
+    const out: Draft[] = [];
+    for (const f of flags) {
+      const kind = kindOf(f);
+      if (!kind || !kinds.includes(kind)) continue;
+      out.push({
+        key: f.warnKey,
+        kind,
+        title: f.title,
+        detail: f.detail,
+        action: f.action,
+        impact: { text: f.valueInr !== null ? `${rupees(f.valueInr)} at risk` : f.quantity, inr: f.valueInr, days: null },
+        working: f.working,
+        facts: [{ label: 'At risk', value: f.quantity }, ...(f.valueInr !== null ? [{ label: 'Value', value: rupees(f.valueInr) }] : [])],
+        links: [...f.links, { label: 'Leakage checks', href: '/leakage' }],
+        projectId: f.projectId,
+        projectName: f.projectName,
+      });
+    }
+    return out;
+  }
+
   private async overuse(projects: Project[], today: string): Promise<Draft[]> {
     if (!projects.length) return [];
     const withNorms = new Set((await this.prisma.materialNorm.groupBy({ by: ['projectId'], where: { projectId: { in: projects.map((p) => p.id) } } })).map((g) => g.projectId));
