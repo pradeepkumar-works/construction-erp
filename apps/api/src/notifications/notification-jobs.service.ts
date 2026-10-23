@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { EMI_DUE_DAYS, TALLY_ROLES, COMPLIANCE_DOC_KIND_LABELS, COMPLIANCE_ROLES, DLP_ALERT_DAYS, DOC_ALERT_DAYS, EQUIPMENT_DOC_TYPE_LABELS, SERVICE_STATE_LABELS, expiryState, APPROVER_ROLES, DPR_SUBMITTER_ROLES, PAYMENT_ROLES, SPECIALIST_APPROVERS, SUBMISSION_TYPE_LABELS, TEST_KIND_LABELS, canSeeWatchList, type BriefLineDto, type NotificationJobResult, type PendingApprovalDto, type RoleKey, type SubmissionType } from '@erp/shared';
+import { EMI_DUE_DAYS, TALLY_ROLES, COMPLIANCE_DOC_KIND_LABELS, COMPLIANCE_ROLES, DLP_ALERT_DAYS, DOC_ALERT_DAYS, EQUIPMENT_DOC_TYPE_LABELS, SERVICE_STATE_LABELS, expiryState, APPROVER_ROLES, DPR_SUBMITTER_ROLES, PAYMENT_ROLES, SPECIALIST_APPROVERS, SUBMISSION_TYPE_LABELS, TEST_KIND_LABELS, DAILY_WARNING_ALERTS, canSeeWatchList, type BriefLineDto, type NotificationJobResult, type PendingApprovalDto, type RoleKey, type SubmissionType } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { SubmissionLifecycleService } from '../common/submission-lifecycle.service';
 import { ApprovalRightsService } from '../common/approval-rights.service';
@@ -15,6 +15,7 @@ import { EMAIL_COLORS, emailButton, emailLayout } from './email-layout';
 import { JOB_TIMEZONE, todayIn } from './time';
 import { latestDocIds, serviceStatuses } from '../maintenance/service-status';
 import { WarningsService } from '../warnings/warnings.service';
+import { alertsToSend } from '../warnings/warning-rules';
 import { BriefsService, toBrief } from '../briefs/briefs.service';
 import { usesModuleWhere } from '../common/module-switch.guard';
 
@@ -22,6 +23,8 @@ const WEB_URL = (process.env.WEB_URL || '').replace(/\/+$/, '');
 /** Bills falling due within this many days (today included) trigger the payments-due alert. */
 const BILLS_DUE_DAYS = 3;
 const inr = (n: number) => `₹${n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+/** A person's first row in WarningAlert: their alerts have begun, and what was open then is not sent. */
+const ALERTS_START = '*start';
 const cut = (s: string, max: number) => (s.length > max ? `${s.slice(0, max - 3)}...` : s);
 
 /**
@@ -193,6 +196,53 @@ export class NotificationJobsService {
       });
       result.created += r.created;
       result.pushed += r.pushed;
+    }
+    return result;
+  }
+
+  /**
+   * New warnings as they appear (item 119): each day, each person with a watch list is told about the open warnings
+   * they have not been told about, most costly first and at most DAILY_WARNING_ALERTS (so WhatsApp alerts are capped
+   * too); the rest wait on the watch list, in the morning brief and the Monday round-up. A person's first run only
+   * records what is already open, so nobody gets a backlog.
+   */
+  async warningAlerts(date = todayIn()): Promise<NotificationJobResult> {
+    const result: NotificationJobResult = { job: 'WARNING_ALERTS', date, created: 0, pushed: 0, emailed: 0, skipped: 0 };
+    const users = await this.prisma.user.findMany({ where: { isActive: true }, include: { role: { select: { key: true } } } });
+    for (const u of users) {
+      const roleKey = u.role.key as RoleKey;
+      if (!canSeeWatchList(roleKey)) continue;
+      const user: RequestUser = { id: u.id, organizationId: u.organizationId, roleKey, email: u.email, fullName: u.fullName };
+      const open = await this.warnings.open(user).catch((e: Error) => {
+        this.log.warn(`warning alerts for ${u.id}: ${e.message}`);
+        return null;
+      });
+      if (!open) continue;
+      const told = new Set((await this.prisma.warningAlert.findMany({ where: { userId: u.id }, select: { warningKey: true } })).map((t) => t.warningKey));
+      if (!told.has(ALERTS_START)) {
+        await this.prisma.warningAlert.createMany({
+          data: [{ key: ALERTS_START, kind: '' }, ...open.map((w) => ({ key: w.key, kind: w.kind }))].map((w) => ({ organizationId: u.organizationId, userId: u.id, warningKey: w.key, kind: w.kind, alertedAt: null })),
+          skipDuplicates: true,
+        });
+        result.skipped++;
+        continue;
+      }
+      const send = alertsToSend(open, told, DAILY_WARNING_ALERTS);
+      for (const w of send) {
+        const r = await this.notifications.notify({
+          organizationId: u.organizationId,
+          userIds: [u.id],
+          type: 'WATCH_LIST',
+          title: w.title,
+          body: `${w.action}${w.impact ? ` (${w.impact.text})` : ''}`,
+          dedupeKey: `WARNING:${w.key}`,
+        });
+        result.created += r.created;
+        result.pushed += r.pushed;
+      }
+      if (send.length) {
+        await this.prisma.warningAlert.createMany({ data: send.map((w) => ({ organizationId: u.organizationId, userId: u.id, warningKey: w.key, kind: w.kind, alertedAt: new Date() })), skipDuplicates: true });
+      } else result.skipped++;
     }
     return result;
   }

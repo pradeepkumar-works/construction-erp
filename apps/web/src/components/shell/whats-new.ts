@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-12-watch-list-why',
+    date: '2026-12-12',
+    title: 'Warnings that say what to do, and why',
+    points: [
+      'Each warning on the Watch list now starts with what to do and what it costs, and says how sure it is: Checked, Likely or Check this. Open Why to see the rule and the numbers behind it.',
+      'When you dismiss a warning, say whether it was Fixed, Known and accepted, or Wrong. The Track record tab shows how often each check has been right in your company, and a check marked Wrong too often pauses itself until an admin resumes it.',
+      'New warnings now reach you each morning as notifications, five at most a day, most costly first. The rest stay on the Watch list.',
+    ],
+  },
+  {
     id: '2026-12-phone-home',
     date: '2026-12-10',
     title: 'The same Home on the phone',
