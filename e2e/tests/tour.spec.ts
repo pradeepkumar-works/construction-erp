@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { signIn, homeHeading } from './helpers';
+import { signIn, homeHeading, menuSettled } from './helpers';
 
 /**
  * The product tour (v4 item 51): it starts by itself the first time someone signs in on a browser, steps over the
@@ -28,6 +28,7 @@ test('the tour starts on first sign-in and can be taken again from Help', async 
 
   // Again from Help; closing it part-way is fine.
   await page.getByRole('button', { name: 'Help' }).click();
+  await menuSettled(page);
   await page.getByRole('menuitem', { name: 'Take the tour' }).click();
   await expect(tour.getByText(/^Welcome to Nirmaan, /)).toBeVisible();
   await tour.getByRole('button', { name: 'Close' }).click();
@@ -40,6 +41,7 @@ test('a site engineer, who approves nothing, gets the tour without the approvals
   await page.waitForTimeout(1200);
   await expect(page.locator('.product-tour').getByText(/^Welcome to Nirmaan, /)).toBeHidden();
   await page.getByRole('button', { name: 'Help' }).click();
+  await menuSettled(page);
   await page.getByRole('menuitem', { name: 'Take the tour' }).click();
   const tour = page.locator('.product-tour');
   await expect(tour.getByText(/^Welcome to Nirmaan, /)).toBeVisible();

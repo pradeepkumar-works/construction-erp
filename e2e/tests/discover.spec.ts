@@ -35,7 +35,8 @@ test('a site engineer asks for Client billing from Discover, and the admin decli
   await expect(billing).toHaveAccessibleDescription(/^Ask for access/);
   await billing.click();
   const drawer = page.getByRole('dialog', { name: 'Client billing' });
-  await expect(drawer).toContainText('Your role does not open it yet');
+  // A rerun on the same data finds the last run's declined request, which can be asked again.
+  await expect(drawer).toContainText(/Your role does not open it yet|You can ask again/);
   await expect(drawer.getByText('RA bills', { exact: true })).toBeVisible();
   await drawer.getByRole('button', { name: 'Request access' }).click();
   const ask = page.getByRole('dialog', { name: 'Request access to Client billing' });

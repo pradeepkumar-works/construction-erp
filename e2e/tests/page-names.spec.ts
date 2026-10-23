@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { api, apiToken, signIn } from './helpers';
+import { api, apiToken, menuSettled, signIn } from './helpers';
 
 /**
  * Every page named and reachable by keyboard (UX item 81): a tab title and one heading per page, one breadcrumb,
@@ -86,6 +86,7 @@ test('single-key shortcuts can be turned off, and Ask is on Alt J', async ({ pag
   // Still off after a reload, and back on from Help.
   await page.reload();
   await page.getByRole('button', { name: 'Help' }).click();
+  await menuSettled(page);
   await page.getByRole('menuitem', { name: /Keyboard shortcuts/ }).click();
   await expect(dialog.getByRole('switch', { name: 'Single-key shortcuts' })).not.toBeChecked();
   await dialog.getByRole('switch', { name: 'Single-key shortcuts' }).click();
