@@ -9,7 +9,7 @@ import type { AiDraftDto } from '@erp/shared';
 import { PRODUCT_NAME } from '@erp/shared';
 import { useAuth } from '@/lib/auth';
 import { SparkleIcon } from '@/components/ai/SparkleIcon';
-import { describeError } from '@/lib/api';
+import { api, describeError } from '@/lib/api';
 import { formatDateTime } from '@/lib/format';
 import { setLeaveGuard } from '@/lib/leave-guard';
 import { handledInPlace } from '@/lib/notify';
@@ -302,7 +302,10 @@ export function FormShell<T>({ open, onClose, title, form, okText, onSubmit, sec
     setSubmitting(secondary ? 'secondary' : 'primary');
     try {
       // The form says what went wrong itself (UX item 86), so the save gets no toast as well.
-      await handledInPlace(() => onSubmit(allValues ? (form.getFieldsValue(true) as T) : validated, secondary));
+      const saved = await handledInPlace(() => onSubmit(allValues ? (form.getFieldsValue(true) as T) : validated, secondary));
+      // A draft from a WhatsApp message (AI item 120), changed here and saved: that message is marked saved.
+      const recordId = (saved as { id?: unknown } | null)?.id;
+      if (aiDraft?.captureId && typeof recordId === 'string') void api.post(`/whatsapp/messages/${aiDraft.captureId}/saved-in-app`, { recordId }).catch(() => undefined);
       if (storageKey) clearDraft(storageKey);
       onClose();
     } catch (err) {
@@ -328,7 +331,7 @@ export function FormShell<T>({ open, onClose, title, form, okText, onSubmit, sec
     } finally {
       setSubmitting(false);
     }
-  }, [form, onSubmit, onClose, storageKey, submitting, okDisabled, allValues]);
+  }, [form, onSubmit, onClose, storageKey, submitting, okDisabled, allValues, aiDraft]);
 
   const requestClose = () => {
     if (submitting) return;

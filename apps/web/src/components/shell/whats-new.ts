@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-12-whatsapp-entries',
+    date: '2026-12-14',
+    title: 'Send entries from WhatsApp',
+    points: [
+      'Switch on WhatsApp entries under Site, then send the company number a text, a photo with a caption or a voice note, in English, Hindi or Hinglish. Nirmaan drafts the DPR, material request, expense or progress entry it describes and replies with it.',
+      'Reply 1 or tap Save to save it in your name and send it for approval, 2 to discard it, or open the link to change it first. Nothing is saved until you say so.',
+      'A voice note is written down before it is drafted, so check its figures. Every message and what became of it is on the WhatsApp entries page.',
+    ],
+  },
+  {
     id: '2026-12-watch-list-why',
     date: '2026-12-12',
     title: 'Warnings that say what to do, and why',

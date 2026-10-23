@@ -13,7 +13,7 @@ export interface OutgoingMessage {
   params: string[];
 }
 
-interface SendResult {
+export interface SendResult {
   ok: boolean;
   providerRef?: string | null;
   error?: string;
@@ -112,7 +112,9 @@ export class MessagingService {
     const sms = dto.sms ?? current.smsAlerts;
     if (phone && dto.phone !== undefined && !normalisePhone(phone)) throw new BadRequestException('Enter a 10-digit mobile number, or the full number with + and the country code');
     if ((whatsapp || sms) && !normalisePhone(phone)) throw new BadRequestException('Add your mobile number to get alerts on WhatsApp or SMS');
-    await this.prisma.user.update({ where: { id: user.id }, data: { phone, whatsappAlerts: whatsapp, smsAlerts: sms } });
+    // WhatsApp entries (AI item 120) are read from the number they were switched on with: a new number switches them off.
+    const captureOff = normalisePhone(phone) !== normalisePhone(current.phone) ? { captureFrom: null } : {};
+    await this.prisma.user.update({ where: { id: user.id }, data: { phone, whatsappAlerts: whatsapp, smsAlerts: sms, ...captureOff } });
     return this.prefs(user);
   }
 
@@ -280,6 +282,58 @@ export class MessagingService {
       return { ok: false, error: e ? `${e.code ?? res.status}: ${e.error_data?.details || e.message}` : `HTTP ${res.status}` };
     }
     return { ok: true, providerRef: json.messages[0].id };
+  }
+
+  /* ---------- replies inside a conversation (AI item 120) ---------- */
+
+  /**
+   * A free-text reply to someone who wrote in the last 24 hours (WhatsApp's service window: no template needed). On the
+   * Cloud API, `buttons` become reply buttons (at most 3, titles up to 20 characters); WATI gets the text alone.
+   */
+  async sendSession(to: string, text: string, buttons: { id: string; title: string }[] = []): Promise<SendResult> {
+    if (this.disabled || !this.whatsappProvider) return { ok: false, error: 'WhatsApp is not set up on this server' };
+    try {
+      if (this.whatsappProvider === 'WATI') {
+        const res = await fetch(`${this.watiApi}/api/v1/sendSessionMessage/${to}?messageText=${encodeURIComponent(text)}`, {
+          method: 'POST',
+          headers: { accept: 'application/json', authorization: `Bearer ${this.watiToken}` },
+          signal: AbortSignal.timeout(TIMEOUT_MS),
+        });
+        const json = (await res.json().catch(() => null)) as { result?: boolean | string; info?: string; message?: string } | null;
+        return res.ok && json?.result !== false ? { ok: true } : { ok: false, error: `${res.status}: ${json?.info || json?.message || 'no response'}` };
+      }
+      const body = buttons.length
+        ? { type: 'interactive', interactive: { type: 'button', body: { text }, action: { buttons: buttons.slice(0, 3).map((b) => ({ type: 'reply', reply: { id: b.id, title: b.title.slice(0, 20) } })) } } }
+        : { type: 'text', text: { body: text, preview_url: false } };
+      const res = await fetch(`${this.waApi}/${this.waPhoneId}/messages`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${this.waToken}` },
+        body: JSON.stringify({ messaging_product: 'whatsapp', recipient_type: 'individual', to, ...body }),
+        signal: AbortSignal.timeout(TIMEOUT_MS),
+      });
+      const json = (await res.json().catch(() => null)) as { messages?: { id: string }[]; error?: { message?: string; code?: number } } | null;
+      return res.ok && json?.messages?.[0]?.id ? { ok: true, providerRef: json.messages[0].id } : { ok: false, error: `${json?.error?.code ?? res.status}: ${json?.error?.message ?? 'no response'}` };
+    } catch (e) {
+      return { ok: false, error: (e as Error).message };
+    }
+  }
+
+  /** A photo or voice note someone sent: Cloud API media id → its address → the bytes; WATI by file name or address. */
+  async fetchMedia(ref: string): Promise<{ bytes: Buffer; mimeType: string }> {
+    const timeout = AbortSignal.timeout(30_000);
+    if (this.whatsappProvider === 'WATI') {
+      const url = /^https?:\/\//.test(ref) ? ref : `${this.watiApi}/api/v1/getMedia?fileName=${encodeURIComponent(ref)}`;
+      const res = await fetch(url, { headers: { authorization: `Bearer ${this.watiToken}` }, signal: timeout });
+      if (!res.ok) throw new Error(`WATI media ${res.status}`);
+      return { bytes: Buffer.from(await res.arrayBuffer()), mimeType: res.headers.get('content-type') || 'application/octet-stream' };
+    }
+    if (this.whatsappProvider !== 'META') throw new Error('WhatsApp is not set up on this server');
+    const meta = await fetch(`${this.waApi}/${encodeURIComponent(ref)}`, { headers: { authorization: `Bearer ${this.waToken}` }, signal: timeout });
+    const info = (await meta.json().catch(() => null)) as { url?: string; mime_type?: string } | null;
+    if (!meta.ok || !info?.url) throw new Error(`Meta media ${meta.status}`);
+    const res = await fetch(info.url, { headers: { authorization: `Bearer ${this.waToken}` }, signal: timeout });
+    if (!res.ok) throw new Error(`Meta media download ${res.status}`);
+    return { bytes: Buffer.from(await res.arrayBuffer()), mimeType: info.mime_type || res.headers.get('content-type') || 'application/octet-stream' };
   }
 
   /** MSG91 Flow API: the DLT-registered template by id, parameters as var1, var2… */

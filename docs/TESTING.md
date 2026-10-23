@@ -25,6 +25,8 @@ Playwright tests of the main web flows:
 - `discover.spec.ts`: Discover on Home (New, Featured and a greyed module to ask for), a request for access through to the
   admin's decline and the person's notification, the Discover switch, and Home tiles being admins' only. It resets the
   company's marks and waiting requests through the API first.
+- `whatsapp-capture.spec.ts`: WhatsApp entries (AI item 120): a message to WATI's webhook address becomes a draft that the
+  sender saves from the page, or changes in its form. Start the API with `AI_PROVIDER=fake WATI_WEBHOOK_SECRET=e2e-wati`.
 
 The tests add and approve entries, so run them against a local or CI database, never production.
 

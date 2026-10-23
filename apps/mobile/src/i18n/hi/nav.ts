@@ -67,6 +67,8 @@ export const NAV: Record<string, string> = {
   Meetings: 'मीटिंग',
   "Minutes of each project's meetings, and the actions they gave out until each is done.": 'हर प्रोजेक्ट की मीटिंग के मिनट्स, और उनमें दिए काम जब तक पूरे न हों।',
   'Site fund requests': 'साइट फ़ंड अनुरोध',
+  'WhatsApp entries': 'व्हाट्सऐप से एंट्री',
+  'Send a text, photo or voice note from site; Nirmaan drafts the entry for you to save.': 'साइट से मैसेज, फ़ोटो या वॉइस नोट भेजें; Nirmaan एंट्री तैयार करता है, आप सेव करते हैं।',
   'A site asks head office for money for wages, a local purchase or running costs.': 'साइट हेड ऑफ़िस से मज़दूरी, स्थानीय खरीद या रोज़ के खर्च के लिए पैसा माँगती है।',
   Inspections: 'निरीक्षण',
   'Inspection requests with hold points.': 'होल्ड पॉइंट वाले निरीक्षण अनुरोध।',

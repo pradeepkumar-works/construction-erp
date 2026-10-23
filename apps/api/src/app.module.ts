@@ -30,6 +30,7 @@ import { BillChecksModule } from './checks/bill-checks.module';
 import { WarningsModule } from './warnings/warnings.module';
 import { BriefsModule } from './briefs/briefs.module';
 import { PhotoChecksModule } from './photo-checks/photo-checks.module';
+import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { SafetyModule } from './safety/safety.module';
 import { PpeModule } from './ppe/ppe.module';
 import { RfisModule } from './rfis/rfis.module';
@@ -143,6 +144,7 @@ import { VitalsController } from './vitals.controller';
     WarningsModule,
     BriefsModule,
     PhotoChecksModule,
+    WhatsappModule,
     SafetyModule,
     PpeModule,
     RfisModule,

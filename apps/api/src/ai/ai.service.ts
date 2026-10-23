@@ -382,7 +382,7 @@ export class AiService {
     const record = first && RECORD_PATHS[first] && second && UUID.test(second) ? { kind: RECORD_PATHS[first], id: second } : null;
     const projectId = first === 'projects' && second && UUID.test(second) ? second : input.page?.projectId && UUID.test(input.page.projectId) ? input.page.projectId : null;
     const project = projectId ? await this.projects.get(user, projectId).catch(() => null) : null;
-    return contextNote({ fullName: user.fullName, roleName: ROLE_LABELS[user.roleKey], today: todayIn(), page: path, record, projectId: project?.id, projectName: project?.name, language: input.language, phone: input.client === 'phone' });
+    return contextNote({ fullName: user.fullName, roleName: ROLE_LABELS[user.roleKey], today: todayIn(), page: path, record, projectId: project?.id, projectName: project?.name, language: input.language, phone: input.client === 'phone', whatsapp: input.client === 'whatsapp' });
   }
 
   /** The company's own cap, never above what its plan includes; without a plan, its own or the server default. */
@@ -391,7 +391,7 @@ export class AiService {
     return own ?? aiConfig().defaultMonthlyCapInr;
   }
 
-  /** Answers, bill-check summaries, document reads, briefs and photo checks this calendar month, in paise. */
+  /** Answers, bill-check summaries, document reads, briefs, photo checks and voice notes this calendar month, in paise. */
   private async spentThisMonth(organizationId: string): Promise<number> {
     return (await this.spendByFeature(organizationId, monthRange(todayIn().slice(0, 7)))).reduce((s, f) => s + f.paise, 0);
   }
@@ -399,13 +399,14 @@ export class AiService {
   /** A calendar month's spend by what it went on: how many of each and their cost in paise. */
   private async spendByFeature(organizationId: string, createdAt: { gte: Date; lt: Date }): Promise<{ feature: AiFeature; count: number; paise: number }[]> {
     const where = { organizationId, createdAt };
-    const [answers, questions, summaries, reads, briefs, photos] = await Promise.all([
+    const [answers, questions, summaries, reads, briefs, photos, voice] = await Promise.all([
       this.prisma.aiMessage.aggregate({ where, _sum: { costPaise: true } }),
       this.prisma.aiMessage.count({ where: { ...where, role: 'user' } }),
       this.prisma.billCheckSummary.aggregate({ where, _sum: { costPaise: true }, _count: { _all: true } }),
       this.prisma.aiDocumentRead.aggregate({ where, _sum: { costPaise: true }, _count: { _all: true } }),
       this.prisma.aiBrief.aggregate({ where, _sum: { costPaise: true }, _count: { _all: true } }),
       this.prisma.photoCheck.aggregate({ where: { ...where, model: { not: null } }, _sum: { costPaise: true }, _count: { _all: true } }),
+      this.prisma.inboundMessage.aggregate({ where: { ...where, transcribeModel: { not: null } }, _sum: { costPaise: true }, _count: { _all: true } }),
     ]);
     return [
       { feature: 'QUESTIONS', count: questions, paise: answers._sum.costPaise ?? 0 },
@@ -413,6 +414,7 @@ export class AiService {
       { feature: 'DOCUMENT_READS', count: reads._count._all, paise: reads._sum.costPaise ?? 0 },
       { feature: 'BRIEFS', count: briefs._count._all, paise: briefs._sum.costPaise ?? 0 },
       { feature: 'PHOTO_CHECKS', count: photos._count._all, paise: photos._sum.costPaise ?? 0 },
+      { feature: 'VOICE_NOTES', count: voice._count._all, paise: voice._sum.costPaise ?? 0 },
     ];
   }
 

@@ -11,7 +11,7 @@ import { AI_DRAFT_LABELS, draftValueAt } from '@erp/shared';
 import { requestNew } from '@/lib/new-intent';
 
 /** The list page whose form each draft opens in. */
-const DRAFT_PAGES: Record<AiDraftKind, string> = {
+export const DRAFT_PAGES: Record<AiDraftKind, string> = {
   'material-request': '/material-requests',
   expense: '/expenses',
   progress: '/progress',

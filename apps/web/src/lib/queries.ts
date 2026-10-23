@@ -327,6 +327,10 @@ import type {
   EquipmentLoanDetailDto,
   EquipmentLoanStatus,
   LoanPreviewDto,
+  CaptureListDto,
+  CaptureSetupDto,
+  InboundMessageDto,
+  InboundState,
 } from '@erp/shared';
 import { CAD_MIME_TYPES, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, NOTIFICATION_TYPES_VERSION, SEARCH_MIN_LENGTH } from '@erp/shared';
 import { api } from './api';
@@ -3198,6 +3202,35 @@ export function useResumeWarningKind() {
       qc.setQueryData(['watch-list'], d);
       void qc.invalidateQueries({ queryKey: ['dashboard', 'my-work'] });
     },
+  });
+}
+
+// ---- WhatsApp entries (AI item 120) ----
+
+export const useCaptureSetup = (enabled = true) => useQuery({ queryKey: ['whatsapp', 'setup'], queryFn: async () => (await api.get<CaptureSetupDto>('/whatsapp/setup')).data, enabled });
+
+export function useUpdateCaptureSetup() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (enabled: boolean) => (await api.put<CaptureSetupDto>('/whatsapp/setup', { enabled })).data,
+    onSuccess: (d) => qc.setQueryData(['whatsapp', 'setup'], d),
+  });
+}
+
+export const useCaptureMessages = (q: { scope: 'mine' | 'company'; state?: InboundState; id?: string; page: number; pageSize: number }, enabled = true) =>
+  useQuery({
+    queryKey: ['whatsapp', 'messages', q],
+    queryFn: async () => (await api.get<CaptureListDto>('/whatsapp/messages', { params: { ...q, state: q.state || undefined, id: q.id || undefined } })).data,
+    enabled,
+    placeholderData: keepPreviousData,
+  });
+
+/** Save a WhatsApp draft as it is, or discard it. */
+export function useDecideCapture() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { id: string; action: 'save' | 'discard' }) => (await api.post<InboundMessageDto>(`/whatsapp/messages/${v.id}/${v.action}`)).data,
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['whatsapp', 'messages'] }),
   });
 }
 
