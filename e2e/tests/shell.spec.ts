@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { chooseOption, signIn, formPanel } from './helpers';
+import { chooseOption, signIn, formPanel, menuSettled, openNewMenu } from './helpers';
 
 /** The header (UI roadmap item 54): project switcher, + New, favourites, recent pages in Search, Help. */
 test('the project picked in the header filters every list and is kept after a reload', async ({ page }) => {
@@ -25,27 +25,33 @@ test('the project picked in the header filters every list and is kept after a re
 
 test('+ New opens the form from any page, and on the list already open', async ({ page }) => {
   await signIn(page, 'pm@demo.com');
-  await page.locator('[data-tour="new"]').click();
+  await openNewMenu(page);
   await page.getByRole('menuitem', { name: 'Daily report' }).click();
   await expect(page).toHaveURL(/\/dpr$/);
   await expect(page.getByRole('dialog')).toContainText('New daily report');
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toBeHidden();
 
-  await page.locator('[data-tour="new"]').click();
+  await openNewMenu(page);
   await page.getByRole('menuitem', { name: 'Material request' }).click();
   await expect(page).toHaveURL(/\/material-requests$/);
   await expect(formPanel(page, 'New material request')).toBeVisible();
 });
 
-test('a starred page is under Favourites, and the last pages opened lead Search', async ({ page }) => {
+test('a page pinned to Home is under Pinned, and the last pages opened lead Search', async ({ page }) => {
   await signIn(page, 'pm@demo.com');
   await page.goto('/stock');
-  await page.getByRole('button', { name: 'Add to favourites' }).click();
-  await expect(page.getByRole('button', { name: 'Remove from favourites' })).toBeVisible();
+  const pinButton = page.getByRole('button', { name: 'Pin to Home' });
+  if ((await pinButton.getAttribute('aria-pressed')) === 'true') await pinButton.click();
+  await expect(pinButton).toHaveAttribute('aria-pressed', 'false');
+  await pinButton.click();
+  await expect(pinButton).toHaveAttribute('aria-pressed', 'true');
   const nav = page.getByRole('navigation', { name: 'Main' });
-  await expect(nav.getByRole('button', { name: 'Favourites', exact: true })).toBeVisible();
-  await expect(nav.locator('#nav-favourites')).toContainText('Stock');
+  await expect(nav.getByRole('button', { name: 'Pinned', exact: true })).toBeVisible();
+  await expect(nav.locator('#nav-pinned')).toContainText('Stock');
+  // Unpinned again, so other tests start with the project manager's own pins.
+  await pinButton.click();
+  await expect(pinButton).toHaveAttribute('aria-pressed', 'false');
 
   await page.goto('/dpr');
   await expect(page.getByRole('heading', { name: 'Daily reports' })).toBeVisible();
@@ -68,6 +74,7 @@ test('Help shows the keyboard shortcuts on ? and what is new', async ({ page }) 
   await expect(page.getByRole('dialog', { name: 'Keyboard shortcuts' })).toBeVisible();
   await page.keyboard.press('Escape');
   await page.getByRole('button', { name: 'Help' }).click();
+  await menuSettled(page);
   await page.getByRole('menuitem', { name: /What's new/ }).click();
   await expect(page.getByRole('dialog', { name: "What's new" })).toContainText('A new header');
 });

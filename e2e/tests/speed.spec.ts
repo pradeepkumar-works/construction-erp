@@ -54,9 +54,9 @@ test('a picker searches as you type and never loads the whole master', async ({ 
   expect(asked.filter((u) => /pageSize=500/.test(u) && !/\/api\/projects\?/.test(u))).toEqual([]);
 });
 
-test('home draws without layout shift above the charts', async ({ page }) => {
+test('My work draws without layout shift above the charts', async ({ page }) => {
   await signIn(page, 'md@demo.com');
-  // A fresh load of home, with every layout shift counted from the first paint (as Chrome's CLS does, without scrolling).
+  // A fresh load of My work, with every layout shift counted from the first paint (as Chrome's CLS does, without scrolling).
   await page.addInitScript(() => {
     const w = window as unknown as { __cls: number };
     w.__cls = 0;
@@ -64,8 +64,8 @@ test('home draws without layout shift above the charts', async ({ page }) => {
       for (const e of list.getEntries() as (PerformanceEntry & { value: number; hadRecentInput: boolean })[]) if (!e.hadRecentInput) w.__cls += e.value;
     }).observe({ type: 'layout-shift', buffered: true });
   });
-  await page.goto('/');
-  await expect(page.getByText(/^Welcome, /)).toBeVisible();
+  await page.goto('/my-work');
+  await expect(page.getByRole('heading', { level: 1, name: 'My work' })).toBeVisible();
   await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
   await expect(page.getByText('Projects by type')).toBeVisible();
   await page.waitForLoadState('networkidle');

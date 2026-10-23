@@ -1,9 +1,10 @@
 import { expect, test } from '@playwright/test';
-import { signIn } from './helpers';
+import { homeHeading, signIn } from './helpers';
 
-test('a project manager signs in and sees the dashboard', async ({ page }) => {
+test('a project manager signs in and lands on Home', async ({ page }) => {
   await signIn(page, 'pm@demo.com');
-  await expect(page.getByText('My work', { exact: true })).toBeVisible();
+  await expect(homeHeading(page)).toBeVisible();
+  await expect(page.getByRole('group', { name: 'All modules' }).getByRole('link', { name: /^My work/ })).toBeVisible();
   await expect(page.getByText('NIRMAAN').first()).toBeVisible();
 });
 

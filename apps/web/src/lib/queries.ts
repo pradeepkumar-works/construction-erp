@@ -27,6 +27,10 @@ import type {
   RmcOrderStatus,
   RmcPlantDto,
   RmcReceiptDto,
+  LauncherBadgesDto,
+  LauncherDto,
+  NavPinDto,
+  NavPinKind,
   DocReadKind,
   DocReadResultDto,
   DraftChecksDto,
@@ -3354,3 +3358,49 @@ export function useSetModuleSwitch() {
     },
   });
 }
+/* Launcher Home (phase 2): pins and Recent from the server, badges by tile. Pin, move and unpin change the screen at once
+   and roll back if the server refuses. */
+const LAUNCHER_KEY = ['launcher'] as const;
+
+export const useLauncher = (enabled = true) =>
+  useQuery({ queryKey: LAUNCHER_KEY, queryFn: async () => (await api.get<LauncherDto>('/launcher')).data, enabled, staleTime: 30_000 });
+
+export const useLauncherBadges = (enabled = true) =>
+  useQuery({ queryKey: ['launcher', 'badges'], queryFn: async () => (await api.get<LauncherBadgesDto>('/launcher/badges')).data, enabled, staleTime: 60_000 });
+
+function useLauncherChange<V>(apply: (old: LauncherDto, vars: V) => LauncherDto, send: (vars: V) => Promise<unknown>) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: send,
+    onMutate: async (vars: V) => {
+      await qc.cancelQueries({ queryKey: LAUNCHER_KEY, exact: true });
+      const old = qc.getQueryData<LauncherDto>(LAUNCHER_KEY);
+      if (old) qc.setQueryData<LauncherDto>(LAUNCHER_KEY, apply(old, vars));
+      return { old };
+    },
+    onError: (_e, _v, ctx) => {
+      if (ctx?.old) qc.setQueryData(LAUNCHER_KEY, ctx.old);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: LAUNCHER_KEY, exact: true }),
+  });
+}
+
+/** Pin a page, project or saved view; `position` puts it back where it was (Undo). */
+export const usePin = () =>
+  useLauncherChange<{ kind: NavPinKind; target: string; label: string; position?: string }>(
+    (old, v) => (old.pins.some((p) => p.kind === v.kind && p.target === v.target) ? old : { ...old, pins: [...old.pins, { id: `new-${v.kind}-${v.target}`, kind: v.kind, target: v.target, label: v.label, position: v.position ?? '~' }].sort((a, b) => (a.position < b.position ? -1 : 1)) }),
+    async (v) => (await api.post<NavPinDto>('/launcher/pins', { kind: v.kind, target: v.target, position: v.position })).data,
+  );
+
+export const useUnpin = () =>
+  useLauncherChange<NavPinDto>(
+    (old, pin) => ({ ...old, pins: old.pins.filter((p) => p.id !== pin.id) }),
+    async (pin) => (await api.delete(`/launcher/pins/${pin.id}`)).data,
+  );
+
+export const useMovePin = () =>
+  useLauncherChange<{ id: string; position: string }>(
+    (old, v) => ({ ...old, pins: old.pins.map((p) => (p.id === v.id ? { ...p, position: v.position } : p)).sort((a, b) => (a.position < b.position ? -1 : 1)) }),
+    async (v) => (await api.patch<NavPinDto>(`/launcher/pins/${v.id}`, { position: v.position })).data,
+  );
+

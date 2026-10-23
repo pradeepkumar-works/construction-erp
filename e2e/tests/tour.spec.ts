@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { signIn } from './helpers';
+import { signIn, homeHeading } from './helpers';
 
 /**
  * The product tour (v4 item 51): it starts by itself the first time someone signs in on a browser, steps over the
@@ -22,7 +22,7 @@ test('the tour starts on first sign-in and can be taken again from Help', async 
 
   // Seen: not again on the next visit.
   await page.reload();
-  await expect(page.getByText(/^Welcome, /)).toBeVisible();
+  await expect(homeHeading(page)).toBeVisible();
   await page.waitForTimeout(1200);
   await expect(tour.getByText(/^Welcome to Nirmaan, /)).toBeHidden();
 

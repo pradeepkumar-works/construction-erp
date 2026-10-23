@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { API_URL, PASSWORD, api, apiToken, signIn } from './helpers';
+import { API_URL, PASSWORD, api, apiToken, openNewMenu, signIn } from './helpers';
 
 type Switches = { tier: string | null; modules: { key: string; label: string; inPlan: boolean; on: boolean }[] };
 
@@ -40,7 +40,7 @@ test('an admin turns a module off and on, and it leaves and comes back everywher
   // Gone from the sidebar and the New menu…
   await expect(sidebarLink('Meetings')).toHaveCount(0);
   await expect(sidebarLink('Daily reports')).toBeVisible();
-  await page.locator('[data-tour="new"]').click();
+  await openNewMenu(page);
   await expect(page.getByRole('menuitem', { name: 'Purchase order' })).toBeVisible();
   await expect(page.getByRole('menuitem', { name: 'Meeting', exact: true })).toHaveCount(0);
   await page.keyboard.press('Escape');

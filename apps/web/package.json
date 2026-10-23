@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start -p 3000",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint src --max-warnings=53"
+    "lint": "eslint src --max-warnings=52"
   },
   "dependencies": {
     "@ant-design/cssinjs": "^2.1.2",

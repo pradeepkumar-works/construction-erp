@@ -116,7 +116,11 @@ and the pre-delivery checklist.
   Fields side by side go in `FormGrid`; amounts are `MoneyInput`, quantities `QuantityInput unit=…`, phones/emails/GSTINs use
   `PHONE_INPUT`/`EMAIL_INPUT`/`CODE_INPUT` and their rules (`components/form/inputs.tsx`). Error messages say how to fix
   ("Choose the project"), never just "Required".
-- Home (`app/(app)/page.tsx`): what each role leads with is `homeLayout(role)` in `components/home/layout.ts` (order only;
+- Home (`app/(app)/page.tsx`) is the launcher (`components/launcher/HomeLauncher.tsx`, ARCHITECTURE "Launcher Home"): search over
+  the navigation tree, Pinned, Recent and the module tiles. Pins and visits are the user's (`apps/api/src/launcher`, `NavPin`,
+  `NavVisit`), never localStorage; a tile's menu comes from `usePins(user).tileMenu`, and a tile badge is a key of
+  `LauncherBadgesDto.nodes` built from `HomeService.myWork`. A record page records its visit through `RecordFrame`.
+- My work (`app/(app)/my-work/page.tsx`): what each role leads with is `homeLayout(role)` in `components/home/layout.ts` (order only;
   the API's `GET /dashboard/my-work` and `/dashboard/trends` in `HomeService` leave out what a role may not see). A new My work
   card is a key on `MyWorkDto`, a block in `HomeService.myWork` and a line in `MyWorkPanel`'s `CARDS`. Charts use
   `@ant-design/plots` from `components/home/charts.tsx`, loaded with `dynamic(..., { ssr: false })`.

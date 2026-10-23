@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-12-launcher-home',
+    date: '2026-12-06',
+    title: 'A new Home: your modules, pins and recent pages',
+    points: [
+      'Home now opens on a tile for every module you can use, with a count where something waits for you. Type in the search box to find any page or tab by name; press Enter to open the first one.',
+      'Pin the tiles you use most from a tile\'s ⋮ menu, or with Pin to Home at the top of any page or project. Pins follow you to every computer you sign in on, and Edit pins puts them in your order.',
+      'Recent shows the pages, projects and records you opened last. What used to be Home is now the My work tile.',
+    ],
+  },
+  {
     id: '2026-11-module-tiles',
     date: '2026-12-05',
     title: 'More modules in the menu, each with its own tiles',

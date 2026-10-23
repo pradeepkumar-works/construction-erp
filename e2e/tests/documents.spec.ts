@@ -21,7 +21,7 @@ test.describe.serial('drawings, transmittals and letters', () => {
 
   test('the project manager adds a drawing and issues a new revision', async ({ page }) => {
     await signIn(page, 'pm@demo.com');
-    await page.getByRole('link', { name: 'Documents', exact: true }).click();
+    await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Documents', exact: true }).click();
     await page.getByRole('button', { name: 'New document' }).click();
     const modal = formPanel(page, 'New drawing or document');
     await chooseOption(modal.getByLabel('Project'), 'RD-2026-01');

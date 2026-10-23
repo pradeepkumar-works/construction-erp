@@ -99,3 +99,85 @@
     display: none;
   }
 }
+
+.cell {
+  position: relative;
+}
+
+.chip {
+  position: relative;
+}
+
+/* What waits there, on the icon's corner (the tile's name says it too). */
+.badge {
+  position: absolute;
+  top: -6px;
+  inset-inline-end: -10px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  box-sizing: border-box;
+  border-radius: 10px;
+  /* As the sidebar's counts: brick orange with white reads at AA in both themes. */
+  background: var(--brand-pending);
+  color: var(--brand-on-accent);
+  font-size: var(--ant-font-size-sm);
+  font-weight: var(--ant-font-weight-strong);
+  line-height: 20px;
+  text-align: center;
+}
+
+/* The tile's menu, in its corner. Not on a touch screen, where a long press opens it. */
+.more {
+  position: absolute;
+  top: var(--ant-padding-xs);
+  inset-inline-end: var(--ant-padding-xs);
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--ant-border-radius);
+  background: transparent;
+  color: var(--ant-color-text-secondary);
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.more:hover,
+.more[aria-expanded='true'] {
+  background: var(--ant-color-fill-secondary);
+  color: var(--ant-color-text);
+}
+
+@media (pointer: coarse) {
+  .more {
+    display: none;
+  }
+}
+
+/* Pinned: name and icon only, so a row holds more. */
+.compact .tile {
+  min-height: 0;
+  flex-direction: row;
+  align-items: center;
+  padding-inline-end: 40px;
+}
+
+.compact .desc {
+  display: none;
+}
+
+@media (min-width: 992px) {
+  .compact {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1440px) {
+  .compact {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}

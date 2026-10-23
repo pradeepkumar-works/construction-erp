@@ -3,6 +3,15 @@
 import React from 'react';
 import type { LucideIcon } from 'lucide-react';
 import {
+  EllipsisVerticalIcon,
+  PinIcon,
+  PinOffIcon,
+  HistoryIcon,
+  GripVerticalIcon,
+  HouseIcon,
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  SearchIcon,
   ArrowLeftRightIcon,
   AwardIcon,
   BadgeIndianRupeeIcon,
@@ -225,6 +234,15 @@ export const NAV_ICONS: Record<string, LucideIcon> = {
   'wallet-cards': WalletCardsIcon,
   'warehouse': WarehouseIcon,
   'wrench': WrenchIcon,
+  'ellipsis-vertical': EllipsisVerticalIcon,
+  'pin': PinIcon,
+  'pin-off': PinOffIcon,
+  'history': HistoryIcon,
+  'grip-vertical': GripVerticalIcon,
+  'house': HouseIcon,
+  'arrow-left': ArrowLeftIcon,
+  'arrow-right': ArrowRightIcon,
+  'search': SearchIcon,
 };
 
 const made = new Map<string, NavIcon>();

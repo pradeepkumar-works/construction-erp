@@ -42,6 +42,7 @@ test('accounts lead with money due and see cash flow', async ({ page }) => {
   expect(trends.cost).toHaveLength(6);
 
   await signIn(page, 'accounts@demo.com');
+  await page.goto('/my-work');
   const mine = page.locator('.ant-card').filter({ has: page.getByText('My work', { exact: true }) });
   await expect(mine.getByRole('region').first()).toHaveAccessibleName('Payments due this week');
   await expect(section(page, 'Bills awaiting payment')).toContainText(String(work.receivables!.count));
@@ -59,6 +60,7 @@ test('a project manager sees approvals, missing DPRs and the progress curve', as
   expect(work.dprsMissing).toBeDefined();
 
   await signIn(page, 'pm@demo.com');
+  await page.goto('/my-work');
   const approvals = section(page, 'Waiting for your approval');
   await expect(approvals).toBeVisible();
   await expect(approvals.getByRole('link', { name: 'Waiting for your approval' })).toHaveAttribute('href', '/approvals');
@@ -79,6 +81,7 @@ test('the approvals count shows once on home outside the sidebar', async ({ page
   expect(total).toBeGreaterThan(0);
 
   await signIn(page, 'pm@demo.com');
+  await page.goto('/my-work');
   const main = page.locator('#main-content');
   await expect(section(page, 'Waiting for your approval')).toContainText(String(total));
   await expect(main.locator('.kpi-card').first()).toBeVisible();
@@ -99,6 +102,7 @@ test("my work leads with what waits longest for the project manager", async ({ p
   expect(urgency(expected[0])).toBeGreaterThan(urgency('approvals'));
 
   await signIn(page, 'pm@demo.com');
+  await page.goto('/my-work');
   const mine = page.locator('.ant-card').filter({ has: page.getByText('My work', { exact: true }) });
   const regions = mine.getByRole('region');
   await expect(regions.first()).toHaveAccessibleName(TITLES[expected[0]]);
@@ -124,6 +128,7 @@ test('a month with nothing billed yet says so in words, with no trend', async ({
   const month = monthName(trends.months[trends.months.length - 1]);
 
   await signIn(page, 'md@demo.com');
+  await page.goto('/my-work');
   const billed = page.locator('.kpi-card').filter({ hasText: `Billed in ${month}` });
   await expect(billed).toContainText(`No bills raised in ${month} yet`);
   await expect(billed).not.toContainText('%');
@@ -146,7 +151,8 @@ test('a site engineer sees no money', async ({ page }) => {
   expect(trends.cashIn ?? trends.cashOut ?? trends.cost).toBeUndefined();
 
   await signIn(page, 'engineer@demo.com');
-  await expect(page.getByText('My work', { exact: true })).toBeVisible();
+  await page.goto('/my-work');
+  await expect(page.locator('.ant-card').filter({ has: page.getByText('My work', { exact: true }) }).first()).toBeVisible();
   await expect(page.getByText('Delayed activities', { exact: true })).toBeVisible();
   await expect(page.locator('.kpi-card').filter({ hasText: 'Delayed activities' })).toContainText(/due to finish by today|None was due/);
   await expect(page.getByText('Vendor payable')).toHaveCount(0);

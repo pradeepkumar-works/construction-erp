@@ -19,6 +19,9 @@ Playwright tests of the main web flows:
 - `changes-requested.spec.ts`: an approver sends a material request back (a reason is required); the engineer
   sees the reason, edits and resubmits; the audit trail has both steps.
 - `progress-report.spec.ts`: the monthly progress report preview shows the organisation and the Nirmaan footer.
+- `launcher.spec.ts`: Home's module tiles and badges, pins that follow the user to another browser (reorder, unpin and
+  Undo), Recent and the search box, and Home drawing within a second. `signIn` waits for Home's greeting (`homeHeading`);
+  a test about My work opens `/my-work` itself.
 
 The tests add and approve entries, so run them against a local or CI database, never production.
 
