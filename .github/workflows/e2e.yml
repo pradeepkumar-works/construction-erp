@@ -45,9 +45,12 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: CI=true pnpm install --frozen-lockfile
+      # It reads the navigation tree from @erp/shared, so the package is built first (the build later on is then quick).
       - name: Phone app has Hindi for every string it shows
         if: matrix.suite == 'flows'
-        run: node apps/mobile/scripts/check-i18n.mjs
+        run: |
+          pnpm --filter @erp/shared build
+          node apps/mobile/scripts/check-i18n.mjs
       # The antd CLI's lint (deprecated props, antd's a11y and usage rules, against the installed antd; it needs no network
       # once fetched). It exits 0 whatever it finds, so its JSON is read: every issue is printed, and any fails the step.
       - name: antd lint on the web's components, app and lib

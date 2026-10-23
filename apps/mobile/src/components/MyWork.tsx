@@ -104,13 +104,14 @@ interface Row {
  * the user's role leads with, each with its count and up to three items. `GET /dashboard/my-work` only returns what
  * the role may see.
  */
-export function MyWorkPanel({ data, loading }: { data: MyWorkDto | null; loading: boolean }) {
+/** `title` false where the screen itself is My work (its header says it). */
+export function MyWorkPanel({ data, loading, title = true }: { data: MyWorkDto | null; loading: boolean; title?: boolean }) {
   const { user } = useAuth();
   const t = useT();
   if (loading && !data) {
     return (
       <>
-        <SectionTitle title={t('My work')} />
+        {title ? <SectionTitle title={t('My work')} /> : null}
         <Skeleton variant="card" rows={2} label={t('Loading…')} />
       </>
     );
@@ -123,7 +124,7 @@ export function MyWorkPanel({ data, loading }: { data: MyWorkDto | null; loading
 
   return (
     <>
-      <SectionTitle title={t('My work')} />
+      {title ? <SectionTitle title={t('My work')} /> : null}
       {busy.length === 0 ? (
         <Card>
           <View style={styles.clear}>

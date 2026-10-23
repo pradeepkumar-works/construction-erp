@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { NCR_SEVERITY_LABELS, NCR_STATUS_LABELS, TEST_KIND_LABELS, TEST_RESULT_LABELS, type NcrDto, type Paginated, type QualityTestDto } from '@erp/shared';
 import { useFetch } from '../src/api/hooks';
 import { useT } from '../src/i18n/LanguageContext';
@@ -15,7 +15,8 @@ type Show = 'ncrs' | 'tests';
 export default function QualityScreen() {
   const router = useRouter();
   const t = useT();
-  const [show, setShow] = useState<Show>('ncrs');
+  const params = useLocalSearchParams<{ show?: Show }>();
+  const [show, setShow] = useState<Show>(params.show === 'tests' ? 'tests' : 'ncrs');
   const ncrs = useFetch<Paginated<NcrDto>>((a) => a.get('/quality/ncrs', { active: true, sortBy: 'dueDate', sortOrder: 'asc', pageSize: 100 }), [], { cacheKey: 'ncrs:active' });
   const tests = useFetch<Paginated<QualityTestDto>>((a) => a.get('/quality/tests', { result: 'PENDING', pageSize: 100 }), [], { cacheKey: 'tests:pending', enabled: show === 'tests' });
   const list = show === 'ncrs' ? ncrs : tests;

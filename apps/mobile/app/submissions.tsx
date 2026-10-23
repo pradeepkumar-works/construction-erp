@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { FlatList, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { DailyReportDto, ExpenseDto, InspectionDto, MeasurementSheetDto, MachineryLogDto, MaterialRequestDto, Paginated, ProgressEntryDto, SubmissionType, WaitingEntryDto } from '@erp/shared';
 import { useApi, useFetch, type Api } from '../src/api/hooks';
 import { errorMessage } from '../src/api/client';
@@ -63,7 +63,9 @@ export default function SubmissionsScreen() {
   const router = useRouter();
   const t = useT();
   const api = useApi();
-  const [type, setType] = useState<SubmissionType>('PROGRESS');
+  // Home's tiles open a type (?type=DPR, launcher phase 4).
+  const params = useLocalSearchParams<{ type?: string }>();
+  const [type, setType] = useState<SubmissionType>(SEGMENTS.find((s) => s.type === params.type)?.type ?? 'PROGRESS');
   const [text, setText] = useState('');
   const [q, setQ] = useState('');
   const { syncedCount } = useOffline();

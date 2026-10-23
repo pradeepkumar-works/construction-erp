@@ -7,6 +7,7 @@ import { EmailService, escapeHtml } from '../notifications/email.service';
 import { MessagingService } from '../messaging/messaging.service';
 import { EMAIL_COLORS, emailButton, emailLayout } from '../notifications/email-layout';
 import { PRODUCT_NAME } from '@erp/shared';
+import { configuredWebUrl } from '../common/web-url';
 
 const hash = (token: string) => createHash('sha256').update(token).digest('hex');
 const trimUrl = (u: string) => u.trim().replace(/\/+$/, '');
@@ -23,9 +24,7 @@ export class PasswordLinksService {
 
   /** The web address links point at, from configuration only (safe for public endpoints). */
   configuredWebUrl(): string | null {
-    if (process.env.WEB_URL) return trimUrl(process.env.WEB_URL);
-    const first = (process.env.CORS_ORIGINS || '').split(',').map((o) => o.trim()).find(Boolean);
-    return first ? trimUrl(first) : null;
+    return configuredWebUrl();
   }
 
   get canEmail(): boolean {

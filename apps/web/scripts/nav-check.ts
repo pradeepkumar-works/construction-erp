@@ -5,13 +5,16 @@
  * - every access key has its check in `NAV_ACCESS`, and every icon is in `NAV_ICONS` (`components/shell/nav-icons.tsx`);
  * - a live node opens something: a route that is a page of the app, a tab of the project page, or a live node it is a
  *   shortcut of; a live module has a live page;
- * - every Concord brochure item (`concord-items.ts`) has its node, which lists it, or says why it is not a tile.
+ * - every Concord brochure item (`concord-items.ts`) has its node, which lists it, or says why it is not a tile;
+ * - the phone (launcher phase 4): every icon is in its `NAV_ICONS` too (`apps/mobile/src/components/NavIcon.tsx`), and each
+ *   of its `PHONE_ROUTES` is a live node and a screen of the phone app.
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import { MODULE_KEYS, NAV_ACCESS, NAV_TREE, navNode } from '@erp/shared';
 import { NAV_ICONS } from '../src/components/shell/nav-icons';
 import { CONCORD_ITEMS } from './concord-items';
+import { PHONE_ROUTES } from '../../mobile/src/launcher/routes';
 
 const APP = path.resolve(__dirname, '../src/app');
 const problems: string[] = [];
@@ -35,6 +38,28 @@ const routes = appRoutes();
 const isPage = (pathname: string) => routes.some((r) => r === pathname || (r.includes('*') && new RegExp(`^${r.replace(/\*/g, '[^/]+')}$`).test(pathname)));
 const projectTabs = new Set([...fs.readFileSync(path.join(APP, '(app)/projects/[id]/page.tsx'), 'utf8').matchAll(/\{\s*key:\s*'([\w-]+)',\s*group:/g)].map((m) => m[1]));
 
+/** The phone's screens (expo-router), as for the web; and the icons its `NAV_ICONS` maps. */
+const PHONE_APP = path.resolve(__dirname, '../../mobile/app');
+const phoneRoutes: string[] = [];
+const walkPhone = (dir: string, segs: string[]) => {
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (e.isDirectory()) {
+      const seg = /^\(.*\)$/.test(e.name) ? null : /^\[.*\]$/.test(e.name) ? '*' : e.name;
+      walkPhone(path.join(dir, e.name), seg ? [...segs, seg] : segs);
+    } else if (/\.tsx$/.test(e.name) && !e.name.startsWith('_')) {
+      const name = e.name.replace(/\.tsx$/, '');
+      phoneRoutes.push('/' + [...segs, ...(name === 'index' ? [] : [/^\[.*\]$/.test(name) ? '*' : name])].join('/'));
+    }
+  }
+};
+walkPhone(PHONE_APP, []);
+const phoneIcons = new Set([...fs.readFileSync(path.resolve(__dirname, '../../mobile/src/components/NavIcon.tsx'), 'utf8').matchAll(/^\s*'([\w-]+)':/gm)].map((m) => m[1]));
+for (const [id, to] of Object.entries(PHONE_ROUTES)) {
+  const n = navNode(id);
+  if (!n || n.status !== 'live') fail(`PHONE_ROUTES ${id}: not a live node of the tree`);
+  if (!phoneRoutes.includes(to.split('?')[0])) fail(`PHONE_ROUTES ${id}: ${to} is not a screen of the phone app`);
+}
+
 const ids = new Set<string>();
 for (const n of NAV_TREE) {
   if (ids.has(n.id)) fail(`${n.id}: the id is used twice`);
@@ -46,6 +71,7 @@ for (const n of NAV_TREE) {
   if (n.parent && navNode(n.parent)?.parent) fail(`${at}: tiles go two levels deep at most (Home, then a module)`);
   if (!(n.access in NAV_ACCESS)) fail(`${at}: access '${n.access}' has no check in NAV_ACCESS`);
   if (!NAV_ICONS[n.icon]) fail(`${at}: icon '${n.icon}' is not in NAV_ICONS (components/shell/nav-icons.tsx)`);
+  if (!phoneIcons.has(n.icon)) fail(`${at}: icon '${n.icon}' is not in the phone's NAV_ICONS (apps/mobile/src/components/NavIcon.tsx)`);
   if (n.status !== 'live') {
     if (!n.roadmap && n.status === 'building') fail(`${at}: a building node names its roadmap item`);
     continue;
