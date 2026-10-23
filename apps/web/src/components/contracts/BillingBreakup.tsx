@@ -20,6 +20,7 @@ import { MoneyInput } from '@/components/form/inputs';
 
 const money = (v: string | null) => (v ? <span className="mono" translate="no">{formatINR(v)}</span> : '-');
 const TRIGGER_COLORS: Record<StageTrigger, string> = { EVENT: 'purple', PROGRESS: 'blue', SUPPLY: 'cyan', TEST: 'geekblue' };
+const VISUALLY_HIDDEN: React.CSSProperties = { position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap' };
 const numOrNull = (v: number | null | undefined) => (v === null || v === undefined ? null : String(v));
 
 /** A % bar with its figure, for billed and evidence columns. */
@@ -336,7 +337,7 @@ function MilestoneGrid({ data }: { data: BillingBreakupDto }) {
   if (!set) return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={data.canEditTerms ? 'No targets yet. Edit targets to propose them from the schedule.' : 'No targets set yet'} />;
   return (
     <>
-      <Typography.Paragraph type="secondary">Cumulative target / billed by the end of each month, % of the component.</Typography.Paragraph>
+      <Typography.Paragraph type="secondary">Cumulative target / billed by the end of each month, % of the component. ▼ marks a month that ended behind its target.</Typography.Paragraph>
       <Table<MilestoneRowDto>
         rowKey="componentId"
         size="small"
@@ -370,7 +371,12 @@ function MilestoneGrid({ data }: { data: BillingBreakupDto }) {
                 <span className="mono" translate="no" style={{ whiteSpace: 'nowrap', color: behind ? themeColor('colorErrorText') : undefined }}>
                   {target === null ? '–' : Math.round(target)}
                   {actual !== null ? ` / ${Math.round(actual)}` : ''}
-                  {behind ? <span className="sr-only"> behind</span> : null}
+                  {behind ? (
+                    <>
+                      <span aria-hidden> ▼</span>
+                      <span style={VISUALLY_HIDDEN}> behind</span>
+                    </>
+                  ) : null}
                 </span>
               );
             },
