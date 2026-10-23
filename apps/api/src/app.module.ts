@@ -15,6 +15,7 @@ import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { UsersModule } from './users/users.module';
 import { ProjectsModule } from './projects/projects.module';
 import { PlanningModule } from './planning/planning.module';
+import { StructureModule } from './structure/structure.module';
 import { ProgressModule } from './progress/progress.module';
 import { DprModule } from './dpr/dpr.module';
 import { StockModule } from './stock/stock.module';
@@ -96,6 +97,7 @@ import { VitalsController } from './vitals.controller';
     UsersModule,
     ProjectsModule,
     PlanningModule,
+    StructureModule,
     ProgressModule,
     DprModule,
     AttendanceModule,

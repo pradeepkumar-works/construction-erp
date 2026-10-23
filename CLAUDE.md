@@ -126,6 +126,10 @@ and the pre-delivery checklist.
   the API's `GET /dashboard/my-work` and `/dashboard/trends` in `HomeService` leave out what a role may not see). A new My work
   card is a key on `MyWorkDto`, a block in `HomeService.myWork` and a line in `MyWorkPanel`'s `CARDS`. Charts use
   `@ant-design/plots` from `components/home/charts.tsx`, loaded with `dynamic(..., { ssr: false })`.
+- Work breakdown (item 125, ARCHITECTURE "Work breakdown"): project progress is `rollUp` in `@erp/shared/wbs.ts` (through
+  `physicalProgress` in `src/common/progress.ts`), never a sum of its own; an activity with sub-activities takes no
+  progress. A new kind of component is a `WorkElementType` (schema + shared + label + Hindi) and its steps in
+  `element-templates.ts`; keep `src/scripts/wbs-rollup-test.ts` passing.
 - Project page: a new project tab is one entry in `app/(app)/projects/[id]/page.tsx` with a `group` from `WORKSPACE_GROUPS`
   (`components/projects/ProjectWorkspace.tsx`); its `key` is the `?tab=` value, so never rename one. Anything sticky
   inside a page reads its top offset from `useStickyTop()` (`src/lib/sticky.tsx`), not a fixed 56.

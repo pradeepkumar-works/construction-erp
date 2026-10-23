@@ -122,7 +122,7 @@ export function ProgressFormModal({ open, onClose, projectId, defaultProjectId, 
               loading={actLoading}
               disabled={!selectedProject}
               placeholder={selectedProject ? 'Select activity' : 'Select a project first'}
-              options={(activities ?? []).map((a) => ({ value: a.id, label: `${a.name} (${a.unit})` }))}
+              options={(activities ?? []).filter((a) => !a.isSummary).map((a) => ({ value: a.id, label: `${a.name} (${a.unit})` }))}
             />
           </Form.Item>
           <Form.Item name="date" label="Date" rules={[{ required: true, message: 'Pick the date' }]} {...aiFlagItem(draft, 'date', date)}>

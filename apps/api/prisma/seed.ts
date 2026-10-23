@@ -6,6 +6,7 @@ import { deflateSync } from 'zlib';
 import { dprTitle, progressTitle, titleDate } from '../src/common/submission-titles';
 import { DEMO_CONTRACTS, textPdf } from '../src/documents/demo-contracts';
 import { addMonths, schedule as loanSchedule } from '../src/machine-loans/loan-rules';
+import { seedWorkBreakdown } from './seed-structure';
 import { DEFAULT_SETTINGS, computePayslip, structureCost, type RulesStructure } from '../src/payroll/payroll-rules';
 import { DEFAULT_CLOSEOUT_ITEMS, PAYSLIP_CODES, PERMIT_PRECAUTIONS, STANDARD_CHECKLISTS, gstinCheckChar, isWeeklyOff, leaveDays, ppeReplaceBy, scaleFrom, takeoffValue, type MarkupPoint, type PpeKind, type TakeoffKind } from '@erp/shared';
 
@@ -195,6 +196,7 @@ async function main() {
     await seedLeakage(org.id);
     await seedAttendanceCheck(org.id);
     await seedActivityLinks(org.id);
+    await seedWorkBreakdown(prisma, org.id);
     await seedComments(org.id);
     console.log('Projects already seeded; users/roles refreshed. Run `pnpm db:reset` for a clean slate.');
     return;
@@ -400,6 +402,7 @@ async function main() {
   await seedLeakage(org.id);
   await seedAttendanceCheck(org.id);
   await seedActivityLinks(org.id);
+  await seedWorkBreakdown(prisma, org.id);
   await seedComments(org.id);
 
   console.log('Seed complete. Login with any of these (password: password123):');

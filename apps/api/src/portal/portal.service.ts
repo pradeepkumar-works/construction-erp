@@ -5,7 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { DprService } from '../dpr/dpr.service';
-import { weightedProgress } from '../common/progress';
+import { physicalProgress } from '../common/progress';
 import { dateOnly, dec, money, parseDate, pct } from '../common/serialize';
 import { pageArgs, paginated } from '../common/paging';
 import { todayIn } from '../notifications/time';
@@ -19,6 +19,7 @@ const projectInclude = {
     orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
     include: { boqItem: { select: { rate: true } }, progressEntries: { where: { status: 'APPROVED' }, select: { quantity: true } } },
   },
+  workElements: { select: { id: true, parentId: true, weightPct: true } },
   dailyReports: { where: { status: 'APPROVED' }, orderBy: { date: 'desc' }, take: 1, select: { date: true } },
   _count: { select: { raBills: { where: { status: 'APPROVED', stage: 'SENT' } }, inspections: { where: { status: 'SUBMITTED' } } } },
 } satisfies Prisma.ProjectInclude;
@@ -59,8 +60,9 @@ export class PortalService {
       endDate: dateOnly(end),
       contractValue: money(p.contractValue),
       projectManagerName: p.projectManager?.fullName ?? null,
-      physicalProgressPct: weightedProgress(
-        p.activities.map((a) => ({ plannedQty: a.plannedQty, rate: a.boqItem?.rate ?? null, executed: a.progressEntries.reduce((s, e) => s.add(e.quantity), new Prisma.Decimal(0)) })),
+      physicalProgressPct: physicalProgress(
+        p.activities.map((a) => ({ ...a, rate: a.boqItem?.rate ?? null, executed: a.progressEntries.reduce((s, e) => s.add(e.quantity), new Prisma.Decimal(0)) })),
+        p.workElements,
       ),
       timeElapsedPct: start && end && end > start ? Math.round(Math.min(100, Math.max(0, ((today.getTime() - start.getTime() + DAY) / (end.getTime() - start.getTime() + DAY)) * 100)) * 10) / 10 : null,
       lastDprDate: dateOnly(p.dailyReports[0]?.date ?? null),

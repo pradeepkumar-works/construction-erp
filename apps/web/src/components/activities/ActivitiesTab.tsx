@@ -45,8 +45,8 @@ export function ActivitiesTab({ projectId, members, project }: { projectId: stri
       title: 'Activity',
       dataIndex: 'name',
       render: (v, r) => (
-        <div>
-          <strong>{v}</strong>{' '}
+        <div style={r.parentActivityId ? { paddingInlineStart: 20 } : undefined}>
+          {r.parentActivityId ? <>{v}</> : <strong>{v}</strong>}{' '}
           {r.isDelayed && (
             <Tag color="red" icon={<WarningOutlined />} style={{ marginLeft: 4 }}>
               Delayed
@@ -66,9 +66,17 @@ export function ActivitiesTab({ projectId, members, project }: { projectId: stri
               Hold point
             </Tag>
           )}
-          {(r.boqItemNo || r.checklistName) && (
+          {(r.boqItemNo || r.checklistName || (r.workElementName && !r.parentActivityId) || r.isSummary || r.weightPct) && (
             <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM') }}>
-              {[r.boqItemNo && `BOQ ${r.boqItemNo}`, r.checklistName && `Checklist: ${r.checklistName}`].filter(Boolean).join(' · ')}
+              {[
+                !r.parentActivityId && r.workElementName,
+                r.isSummary && 'Made of the parts below',
+                r.weightPct && `Weight ${Number(r.weightPct)}%`,
+                r.boqItemNo && `BOQ ${r.boqItemNo}`,
+                r.checklistName && `Checklist: ${r.checklistName}`,
+              ]
+                .filter(Boolean)
+                .join(' · ')}
             </div>
           )}
         </div>
@@ -76,7 +84,7 @@ export function ActivitiesTab({ projectId, members, project }: { projectId: stri
     },
     { title: 'Unit', dataIndex: 'unit', width: 70 },
     { title: 'Planned', dataIndex: 'plannedQty', width: 110, align: 'right', className: 'mono', render: (v) => formatQty(v) },
-    { title: 'Executed', dataIndex: 'executedQty', width: 110, align: 'right', className: 'mono', render: (v) => formatQty(v) },
+    { title: 'Executed', dataIndex: 'executedQty', width: 110, align: 'right', className: 'mono', render: (v, r) => (r.isSummary ? <span className="text-muted">-</span> : formatQty(v)) },
     {
       title: 'Progress',
       dataIndex: 'progressPct',

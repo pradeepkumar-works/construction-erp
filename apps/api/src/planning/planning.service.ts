@@ -6,9 +6,20 @@ import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
 import { dateOnly, dec, money, parseDate, pct } from '../common/serialize';
+import { progressRollup } from '../common/progress';
 import { BulkBoqDto, CreateActivityDto, CreateBoqItemDto, UpdateActivityDto, UpdateBoqItemDto } from './planning.dto';
 
 const D = (v: string | number | Prisma.Decimal) => new Prisma.Decimal(v);
+
+/** A weight, % (0 to 100), or null to share what is left by value. */
+export const weightOf = (v: string | null | undefined): Prisma.Decimal | null => {
+  if (v === null || v === undefined || v === '') return null;
+  const d = D(v);
+  if (d.lt(0) || d.gt(100)) throw new BadRequestException('Give a weight from 0 to 100 %');
+  return d;
+};
+
+const elementName = (e: { code: string; name: string } | null) => (e ? `${e.code} ${e.name}` : null);
 
 const EXTRA_QTY = 'An extra item gets its quantity from a variation the client approves (Billing > Variations), not from the BOQ';
 
@@ -25,6 +36,7 @@ export class PlanningService {
       include: {
         activities: { include: { progressEntries: { where: { status: 'APPROVED' }, select: { quantity: true } } } },
         measurements: { where: { status: { in: ['APPROVED', 'SUBMITTED'] } }, select: { status: true, totalQty: true } },
+        workElement: { select: { code: true, name: true } },
       },
       orderBy: [{ sortOrder: 'asc' }, { itemNo: 'asc' }],
     });
@@ -49,6 +61,11 @@ export class PlanningService {
         measuredAmount: money(i.rate.mul(measured))!,
         pendingMeasuredQty: dec(pendingMeasured)!,
         sortOrder: i.sortOrder,
+        section: i.section,
+        workElementId: i.workElementId,
+        workElementName: elementName(i.workElement),
+        sorItemId: i.sorItemId,
+        sorRef: i.sorRef,
       };
     });
   }
@@ -58,6 +75,7 @@ export class PlanningService {
     const dup = await this.prisma.boqItem.findFirst({ where: { projectId, itemNo: dto.itemNo } });
     if (dup) throw new ConflictException(`BOQ item ${dto.itemNo} already exists`);
     if (D(dto.originalQty).isZero() && dto.revisedQty && !D(dto.revisedQty).isZero()) throw new BadRequestException(EXTRA_QTY);
+    await this.assertBoqLinks(user, projectId, dto);
     const row = await this.prisma.boqItem.create({
       data: {
         organizationId: user.organizationId,
@@ -69,6 +87,10 @@ export class PlanningService {
         originalQty: D(dto.originalQty),
         revisedQty: dto.revisedQty ? D(dto.revisedQty) : null,
         sortOrder: dto.sortOrder ?? 0,
+        section: dto.section?.trim() || null,
+        workElementId: dto.workElementId ?? null,
+        sorItemId: dto.sorItemId ?? null,
+        sorRef: dto.sorRef?.trim() || null,
       },
     });
     await this.audit.log(user, 'BOQ_ITEM', row.id, 'CREATED', dto.itemNo);
@@ -80,6 +102,7 @@ export class PlanningService {
     await this.access.assertCanAccessProject(user, projectId);
     const existing = new Set((await this.prisma.boqItem.findMany({ where: { projectId }, select: { itemNo: true } })).map((i) => i.itemNo));
     const toCreate = dto.items.filter((i) => !existing.has(i.itemNo));
+    for (const i of toCreate) await this.assertBoqLinks(user, projectId, i);
     await this.prisma.boqItem.createMany({
       data: toCreate.map((i, idx) => ({
         organizationId: user.organizationId,
@@ -91,6 +114,10 @@ export class PlanningService {
         originalQty: D(i.originalQty),
         revisedQty: i.revisedQty ? D(i.revisedQty) : null,
         sortOrder: i.sortOrder ?? existing.size + idx,
+        section: i.section?.trim() || null,
+        workElementId: i.workElementId ?? null,
+        sorItemId: i.sorItemId ?? null,
+        sorRef: i.sorRef?.trim() || null,
       })),
     });
     await this.audit.log(user, 'PROJECT', projectId, 'BOQ_IMPORTED', `${toCreate.length} items`);
@@ -109,6 +136,11 @@ export class PlanningService {
     if (dto.originalQty !== undefined) data.originalQty = D(dto.originalQty);
     if (dto.revisedQty !== undefined) data.revisedQty = dto.revisedQty ? D(dto.revisedQty) : null;
     if (dto.sortOrder !== undefined) data.sortOrder = dto.sortOrder;
+    await this.assertBoqLinks(user, projectId, dto);
+    if (dto.section !== undefined) data.section = dto.section?.trim() || null;
+    if (dto.workElementId !== undefined) data.workElement = dto.workElementId ? { connect: { id: dto.workElementId } } : { disconnect: true };
+    if (dto.sorItemId !== undefined) data.sorItem = dto.sorItemId ? { connect: { id: dto.sorItemId } } : { disconnect: true };
+    if (dto.sorRef !== undefined) data.sorRef = dto.sorRef?.trim() || null;
     // An extra item (no original quantity) gets its quantity only from an approved variation.
     const original = dto.originalQty !== undefined ? D(dto.originalQty) : item.originalQty;
     const revised = dto.revisedQty !== undefined ? (dto.revisedQty ? D(dto.revisedQty) : null) : item.revisedQty;
@@ -117,6 +149,12 @@ export class PlanningService {
     await this.prisma.boqItem.update({ where: { id }, data });
     await this.audit.log(user, 'BOQ_ITEM', id, 'UPDATED');
     return (await this.listBoq(user, projectId)).find((i) => i.id === id);
+  }
+
+  /** A BOQ item's component is of its project, its rate item of the company's schedules of rates. */
+  private async assertBoqLinks(user: RequestUser, projectId: string, dto: { workElementId?: string | null; sorItemId?: string | null }) {
+    if (dto.workElementId && !(await this.prisma.workElement.count({ where: { id: dto.workElementId, projectId } }))) throw new NotFoundException('Component not found in this project');
+    if (dto.sorItemId && !(await this.prisma.sorItem.count({ where: { id: dto.sorItemId, organizationId: user.organizationId } }))) throw new NotFoundException('Schedule of rates item not found');
   }
 
   async deleteBoq(user: RequestUser, projectId: string, id: string) {
@@ -131,9 +169,10 @@ export class PlanningService {
 
   // ---------- Activities ----------
 
-  private toActivityDto(a: Prisma.ActivityGetPayload<{ include: { boqItem: true; responsible: true; checklistTemplate: { select: { name: true } }; progressEntries: { select: { quantity: true } } } }>): ActivityDto {
-    const executed = a.progressEntries.reduce((s, e) => s.add(e.quantity), D(0));
-    const progressPct = pct(executed, a.plannedQty);
+  private toActivityDto(a: ActivityRow, rolled: { pct: Map<string, number>; summaries: Set<string> }): ActivityDto {
+    const isSummary = rolled.summaries.has(a.id);
+    const executed = isSummary ? D(0) : a.progressEntries.reduce((s, e) => s.add(e.quantity), D(0));
+    const progressPct = isSummary ? (rolled.pct.get(a.id) ?? 0) : pct(executed, a.plannedQty);
     const today = new Date();
     const isDelayed = !!a.plannedEnd && a.plannedEnd < today && progressPct < 100;
     return {
@@ -157,20 +196,75 @@ export class PlanningService {
       holdPoint: a.holdPoint,
       baselineStart: dateOnly(a.baselineStart),
       baselineEnd: dateOnly(a.baselineEnd),
+      workElementId: a.workElementId,
+      workElementName: elementName(a.workElement),
+      parentActivityId: a.parentActivityId,
+      weightPct: a.weightPct ? a.weightPct.toString() : null,
+      isSummary,
     };
   }
 
-  private activityInclude = { boqItem: true, responsible: true, checklistTemplate: { select: { name: true } }, progressEntries: { where: { status: 'APPROVED' as const }, select: { quantity: true } } };
-
+  /**
+   * A project's activities in order, sub-activities straight after their activity; an activity with sub-activities
+   * shows their weighted progress (the work breakdown roll-up), not its own.
+   */
   async listActivities(user: RequestUser, projectId: string): Promise<ActivityDto[]> {
     await this.access.assertCanAccessProject(user, projectId);
-    const rows = await this.prisma.activity.findMany({ where: { projectId }, include: this.activityInclude, orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }] });
-    return rows.map((r) => this.toActivityDto(r));
+    const [rows, elements] = await Promise.all([
+      this.prisma.activity.findMany({ where: { projectId }, include: activityInclude, orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }] }),
+      this.prisma.workElement.findMany({ where: { projectId }, select: { id: true, parentId: true, weightPct: true } }),
+    ]);
+    const rolled = progressRollup(
+      rows.map((a) => ({ ...a, rate: a.boqItem?.rate ?? null, executed: a.progressEntries.reduce((s, e) => s.add(e.quantity), D(0)) })),
+      elements,
+    );
+    const ids = new Set(rows.map((r) => r.id));
+    const subsOf = new Map<string, ActivityRow[]>();
+    for (const r of rows) if (r.parentActivityId && ids.has(r.parentActivityId)) subsOf.set(r.parentActivityId, [...(subsOf.get(r.parentActivityId) ?? []), r]);
+    const ordered = rows.filter((r) => !r.parentActivityId || !ids.has(r.parentActivityId)).flatMap((r) => [r, ...(subsOf.get(r.id) ?? [])]);
+    return ordered.map((r) => this.toActivityDto(r, rolled));
+  }
+
+  private async getActivity(user: RequestUser, projectId: string, id: string): Promise<ActivityDto> {
+    const found = (await this.listActivities(user, projectId)).find((a) => a.id === id);
+    if (!found) throw new NotFoundException('Activity not found');
+    return found;
+  }
+
+  /**
+   * The breakdown links of a new or changed activity: its component is of the project; its parent is a top-level
+   * activity of the project with no progress of its own, and an activity with sub-activities cannot become one. A
+   * sub-activity always sits in its activity's component.
+   */
+  private async treeLinks(projectId: string, id: string | null, dto: CreateActivityDto | UpdateActivityDto, current?: { workElementId: string | null; parentActivityId: string | null }) {
+    const data: { workElementId?: string | null; parentActivityId?: string | null; weightPct?: Prisma.Decimal | null } = {};
+    if (dto.weightPct !== undefined) data.weightPct = weightOf(dto.weightPct);
+    const parentId = dto.parentActivityId !== undefined ? dto.parentActivityId : (current?.parentActivityId ?? null);
+    if (dto.parentActivityId !== undefined) {
+      if (parentId) {
+        if (parentId === id) throw new BadRequestException('An activity cannot be a sub-activity of itself');
+        const parent = await this.prisma.activity.findFirst({ where: { id: parentId, projectId }, select: { name: true, parentActivityId: true, _count: { select: { progressEntries: true } } } });
+        if (!parent) throw new NotFoundException('Parent activity not found in this project');
+        if (parent.parentActivityId) throw new BadRequestException(`${parent.name} is itself a sub-activity; choose a top-level activity`);
+        if (parent._count.progressEntries) throw new BadRequestException(`Progress is already recorded against ${parent.name}; an activity with sub-activities takes none of its own, so choose another`);
+        if (id && (await this.prisma.activity.count({ where: { parentActivityId: id } }))) throw new BadRequestException('This activity has sub-activities of its own; move them first');
+      }
+      data.parentActivityId = parentId;
+    }
+    if (parentId) {
+      const parent = await this.prisma.activity.findUniqueOrThrow({ where: { id: parentId }, select: { workElementId: true } });
+      data.workElementId = parent.workElementId;
+    } else if (dto.workElementId !== undefined) {
+      if (dto.workElementId && !(await this.prisma.workElement.count({ where: { id: dto.workElementId, projectId } }))) throw new NotFoundException('Component not found in this project');
+      data.workElementId = dto.workElementId;
+    }
+    return data;
   }
 
   async createActivity(user: RequestUser, projectId: string, dto: CreateActivityDto): Promise<ActivityDto> {
     await this.access.assertCanAccessProject(user, projectId);
     await this.assertChecklist(user, dto.checklistTemplateId);
+    const links = await this.treeLinks(projectId, null, dto);
     const row = await this.prisma.activity.create({
       data: {
         organizationId: user.organizationId,
@@ -185,11 +279,12 @@ export class PlanningService {
         checklistTemplateId: dto.checklistTemplateId ?? null,
         holdPoint: dto.holdPoint ?? false,
         sortOrder: dto.sortOrder ?? 0,
+        ...links,
       },
-      include: this.activityInclude,
+      select: { id: true },
     });
     await this.audit.log(user, 'ACTIVITY', row.id, 'CREATED', dto.name);
-    return this.toActivityDto(row);
+    return this.getActivity(user, projectId, row.id);
   }
 
   async updateActivity(user: RequestUser, projectId: string, id: string, dto: UpdateActivityDto): Promise<ActivityDto> {
@@ -197,7 +292,7 @@ export class PlanningService {
     const existing = await this.prisma.activity.findFirst({ where: { id, projectId } });
     if (!existing) throw new NotFoundException('Activity not found');
     await this.assertChecklist(user, dto.checklistTemplateId);
-    const data: Prisma.ActivityUncheckedUpdateInput = {};
+    const data: Prisma.ActivityUncheckedUpdateInput = { ...(await this.treeLinks(projectId, id, dto, existing)) };
     if (dto.name !== undefined) data.name = dto.name;
     if (dto.unit !== undefined) data.unit = dto.unit;
     if (dto.plannedQty !== undefined) data.plannedQty = D(dto.plannedQty);
@@ -208,9 +303,13 @@ export class PlanningService {
     if (dto.checklistTemplateId !== undefined) data.checklistTemplateId = dto.checklistTemplateId;
     if (dto.holdPoint !== undefined) data.holdPoint = dto.holdPoint;
     if (dto.sortOrder !== undefined) data.sortOrder = dto.sortOrder;
-    const row = await this.prisma.activity.update({ where: { id }, data, include: this.activityInclude });
+    await this.prisma.$transaction(async (tx) => {
+      await tx.activity.update({ where: { id }, data });
+      // Sub-activities follow their activity into its component.
+      if (data.workElementId !== undefined) await tx.activity.updateMany({ where: { parentActivityId: id }, data: { workElementId: data.workElementId as string | null } });
+    });
     await this.audit.log(user, 'ACTIVITY', id, 'UPDATED');
-    return this.toActivityDto(row);
+    return this.getActivity(user, projectId, id);
   }
 
   private async assertChecklist(user: RequestUser, id: string | null | undefined) {
@@ -219,8 +318,18 @@ export class PlanningService {
 
   async deleteActivity(user: RequestUser, projectId: string, id: string) {
     await this.access.assertCanAccessProject(user, projectId);
+    if (await this.prisma.activity.count({ where: { parentActivityId: id, projectId } })) throw new ConflictException('This activity has sub-activities; delete or move them first');
     await this.prisma.activity.deleteMany({ where: { id, projectId } });
     await this.audit.log(user, 'ACTIVITY', id, 'DELETED');
     return { ok: true };
   }
 }
+
+const activityInclude = {
+  boqItem: true,
+  responsible: true,
+  checklistTemplate: { select: { name: true } },
+  workElement: { select: { code: true, name: true } },
+  progressEntries: { where: { status: 'APPROVED' as const }, select: { quantity: true } },
+} satisfies Prisma.ActivityInclude;
+type ActivityRow = Prisma.ActivityGetPayload<{ include: typeof activityInclude }>;

@@ -43,7 +43,7 @@ export const sectorLocation = (f: Partial<SectorFields>): string | null => {
 
 /** Which structured location a project type asks for on progress and measurements. */
 export const sectorKinds = (type: ProjectType): { chainage: boolean; floor: boolean; village: boolean } => ({
-  chainage: type === 'ROAD' || type === 'WATER_SUPPLY',
+  chainage: type === 'ROAD' || type === 'WATER_SUPPLY' || type === 'SEWERAGE',
   floor: type === 'BUILDING',
   village: type === 'WATER_SUPPLY',
 });

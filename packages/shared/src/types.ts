@@ -31,6 +31,7 @@ import type {
   NotificationType,
   ProjectStatus,
   ProjectType,
+  ContractModel,
   PushPlatform,
   RoleKey,
   StockEntryType,
@@ -153,6 +154,8 @@ export interface ProjectSummary {
   name: string;
   type: ProjectType;
   status: ProjectStatus;
+  /** Item rate, lump sum or EPC (item 125) */
+  contractModel: ContractModel;
   clientName: string | null;
   location: string | null;
   startDate: string | null;
@@ -208,6 +211,13 @@ export interface BoqItemDto {
   /** Measurements waiting for approval. */
   pendingMeasuredQty: string;
   sortOrder: number;
+  /** Bill section or cost centre (item 125) */
+  section: string | null;
+  workElementId: string | null;
+  /** Code and name of its component, e.g. "8.1 OHT 650 KL" */
+  workElementName: string | null;
+  sorItemId: string | null;
+  sorRef: string | null;
 }
 
 export interface ActivityDto {
@@ -234,6 +244,13 @@ export interface ActivityDto {
   /** Planned dates when the baseline was frozen; null if added after it */
   baselineStart: string | null;
   baselineEnd: string | null;
+  /** Work breakdown (item 125): its component, the activity it is part of, and its share of that, % */
+  workElementId: string | null;
+  workElementName: string | null;
+  parentActivityId: string | null;
+  weightPct: string | null;
+  /** Has sub-activities: progress is recorded against them, and this one's % is theirs weighted */
+  isSummary: boolean;
 }
 
 export interface AttachmentDto {

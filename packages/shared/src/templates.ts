@@ -51,6 +51,18 @@ export const DEFAULT_ACTIVITY_TEMPLATES: Record<ProjectType, ActivityTemplateIte
     { name: 'House connections', unit: 'Nos', startDay: 240, durationDays: 150 },
     { name: 'Trial run and commissioning', unit: 'LS', startDay: 330, durationDays: 60 },
   ],
+  SEWERAGE: [
+    { name: 'Survey, levels and design approval', unit: 'LS', startDay: 0, durationDays: 45 },
+    { name: 'Sewer trench excavation', unit: 'Rmt', startDay: 45, durationDays: 300 },
+    { name: 'Sewer pipe laying and jointing', unit: 'Rmt', startDay: 60, durationDays: 300 },
+    { name: 'Manholes', unit: 'Nos', startDay: 60, durationDays: 300 },
+    { name: 'Pumping station civil works', unit: 'LS', startDay: 90, durationDays: 210 },
+    { name: 'STP civil works', unit: 'LS', startDay: 90, durationDays: 270 },
+    { name: 'Electrical and mechanical works', unit: 'LS', startDay: 270, durationDays: 120 },
+    { name: 'Property connections', unit: 'Nos', startDay: 240, durationDays: 150 },
+    { name: 'Road restoration', unit: 'Sqm', startDay: 120, durationDays: 300 },
+    { name: 'Trial run and commissioning', unit: 'LS', startDay: 390, durationDays: 60 },
+  ],
   // An RMC plant runs, it is not built; its schedule is the day's orders (v6 item 104).
   PLANT: [],
   // A central store holds stock; it has no works to schedule (v6 item 106).

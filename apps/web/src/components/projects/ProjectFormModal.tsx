@@ -4,8 +4,8 @@ import React, { useEffect, useRef } from 'react';
 import { App, Button, Checkbox, DatePicker, Form, Input, InputNumber, Select, Typography } from 'antd';
 import { AimOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import type { ProjectDetail, ProjectStatus, ProjectType } from '@erp/shared';
-import { DEFAULT_SITE_RADIUS_M, PROJECT_STATUSES, PROJECT_STATUS_LABELS, PROJECT_TYPES, PROJECT_TYPE_LABELS } from '@erp/shared';
+import type { ContractModel, ProjectDetail, ProjectStatus, ProjectType } from '@erp/shared';
+import { CONTRACT_MODELS, CONTRACT_MODEL_LABELS, DEFAULT_SITE_RADIUS_M, PROJECT_STATUSES, PROJECT_STATUS_LABELS, PROJECT_TYPES, PROJECT_TYPE_LABELS } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
@@ -21,6 +21,7 @@ interface FormValues {
   name: string;
   type: ProjectType;
   status?: ProjectStatus;
+  contractModel?: ContractModel;
   clientId?: string | null;
   consultantName?: string;
   location?: string;
@@ -73,6 +74,7 @@ export function ProjectFormModal({
         name: project.name,
         type: project.type,
         status: project.status,
+        contractModel: project.contractModel,
         clientId: project.clientId,
         consultantName: project.consultantName ?? undefined,
         location: project.location ?? undefined,
@@ -99,6 +101,7 @@ export function ProjectFormModal({
         name: values.name.trim(),
         type: values.type,
         status: values.status,
+        contractModel: values.contractModel,
         // Without a client from the master an older free-text client name is left as it is.
         ...(values.clientId ? { clientId: values.clientId } : isEdit && project?.clientId ? { clientId: null } : {}),
         consultantName: values.consultantName || undefined,
@@ -189,6 +192,9 @@ export function ProjectFormModal({
             </Form.Item>
             <Form.Item name="contractValue" label="Contract value">
               <MoneyInput />
+            </Form.Item>
+            <Form.Item name="contractModel" label="Contract type" tooltip="Item rate pays measured BOQ quantities. Lump sum and EPC pay in stages; their components are weighed by the billing breakup.">
+              <Select options={CONTRACT_MODELS.map((m) => ({ value: m, label: CONTRACT_MODEL_LABELS[m] }))} placeholder="Item rate" />
             </Form.Item>
           </FormGrid>
           {!isEdit && type !== 'STORE' ? (

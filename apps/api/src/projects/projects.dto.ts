@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { ArrayMaxSize, IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsNumber, IsNumberString, IsOptional, IsString, IsUUID, Max, MaxLength, Min, MinLength, ValidateIf } from 'class-validator';
-import { MAX_CHAINAGE_M, MAX_SECTOR_NAMES, LIST_SORT_FIELDS, PROJECT_STATUSES, PROJECT_TYPES, ProjectStatus, ProjectType, type ProjectSortField } from '@erp/shared';
+import { CONTRACT_MODELS, type ContractModel, MAX_CHAINAGE_M, MAX_SECTOR_NAMES, LIST_SORT_FIELDS, PROJECT_STATUSES, PROJECT_TYPES, ProjectStatus, ProjectType, type ProjectSortField } from '@erp/shared';
 import { PageQuery } from '../common/paging';
 
 /** `q` matches code, name, client, location and work order no. */
@@ -16,6 +16,7 @@ export class CreateProjectDto {
   @ApiProperty() @IsString() @MinLength(2) name: string;
   @ApiProperty({ enum: PROJECT_TYPES }) @IsIn(PROJECT_TYPES as unknown as string[]) type: ProjectType;
   @ApiPropertyOptional({ enum: PROJECT_STATUSES }) @IsOptional() @IsIn(PROJECT_STATUSES as unknown as string[]) status?: ProjectStatus;
+  @ApiPropertyOptional({ enum: CONTRACT_MODELS, description: 'Item rate (default), lump sum or EPC' }) @IsOptional() @IsIn(CONTRACT_MODELS as unknown as string[]) contractModel?: ContractModel;
   @ApiPropertyOptional({ description: 'Client from the client master; sets clientName to its name' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsUUID() clientId?: string | null;
   @ApiPropertyOptional({ description: 'Free-text client name, used when no clientId is given' }) @IsOptional() @IsString() clientName?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() consultantName?: string;
