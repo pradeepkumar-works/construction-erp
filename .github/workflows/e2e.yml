@@ -87,7 +87,7 @@ jobs:
         working-directory: apps/api
         run: |
           pnpm build
-          DATABASE_URL="$RUNTIME_URL" JWT_SECRET=e2e-secret PORT=4000 STORAGE_MODE=db ORG_SIGNUP=open PUSH_DISABLED=true EMAIL_DISABLED=true PLATFORM_ADMIN_EMAILS=admin@demo.com AI_PROVIDER=fake \
+          DATABASE_URL="$RUNTIME_URL" JWT_SECRET=e2e-secret PORT=4000 STORAGE_MODE=db ORG_SIGNUP=open PUSH_DISABLED=true EMAIL_DISABLED=true PLATFORM_ADMIN_EMAILS=admin@demo.com AI_PROVIDER=fake WATI_WEBHOOK_SECRET=e2e-wati \
             RAZORPAY_KEY_ID=rzp_test_e2e RAZORPAY_KEY_SECRET=e2e-razorpay-secret RAZORPAY_WEBHOOK_SECRET=e2e-webhook-secret RAZORPAY_API_URL=http://localhost:4010/v1 \
             BILLING_PRICE=1500 BILLING_SELLER_NAME="Nirmaan Software Pvt Ltd" BILLING_SELLER_GSTIN=21AAACN1234F1Z5 BILLING_SELLER_ADDRESS="Bhubaneswar, Odisha" \
             nohup node dist/main.js > /tmp/api.log 2>&1 &
@@ -210,6 +210,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: DATABASE_URL="$RUNTIME_URL" node dist/scripts/contract-search-test.js
+      - name: WhatsApp entries read each provider's webhook, draft from text, voice and photos, and save only on the sender's Save
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: DATABASE_URL="$RUNTIME_URL" node dist/scripts/whatsapp-capture-test.js
       - name: Site photo checks keep the confidence bar, the 50 labelled photos and the safety officer's switch
         working-directory: apps/api
         run: DATABASE_URL="$RUNTIME_URL" node dist/scripts/photo-checks-test.js

@@ -652,8 +652,14 @@ intelligence: build plan". Rules first, models only to read what sites send; not
      10"; a kind marked Wrong too often pauses; at most 5 new warnings a person a day.~~ Done: `action`, `impact`,
      `confidence` and `working` on every warning, outcomes in `WarningOutcomeLog`, the Track record tab, pauses and
      Resume (admin and management), the daily alerts (`warningAlerts`). ARCHITECTURE "Early warnings".
-120. **WhatsApp and voice capture** (L): a WhatsApp text, photo or Hindi voice note becomes a draft DPR line, material
-     request, expense, snag, hindrance or safety observation, saved in the sender's name on one tap.
+120. ~~**WhatsApp and voice capture** (L): a WhatsApp text, photo or Hindi voice note becomes a draft DPR line, material
+     request, expense, snag, hindrance or safety observation, saved in the sender's name on one tap.~~ Done for DPRs,
+     material requests, expenses and progress entries (the draft tools Ask Nirmaan already has): the Cloud API and WATI
+     webhooks, voice notes heard by `TRANSCRIBE_PROVIDER` (OpenRouter audio model or Sarvam), Save and Discard by
+     button or "1"/"2"/"haan"/"nahi", `/whatsapp-capture` with the go-live figure (saved as drafted, aim 70%), and the
+     form link that counts a changed save. Hold-ups go in the DPR's issues, for 123 to pick up; snags and safety
+     observations wait for their own draft tools. Site staff use WhatsApp itself, so there is no phone screen.
+     ARCHITECTURE "WhatsApp entries".
 121. **Material and fuel leakage checks** (M): material used against what approved work allows, month by month and site
      against site, PO rates above another site's, fuel above norm or issued with no log, hired machines idle while paid.
 122. **13-week cash forecast and billing readiness** (L): the bank balance and 13 weeks of money in and out as a range,

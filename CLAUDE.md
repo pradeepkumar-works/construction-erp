@@ -152,6 +152,10 @@ and the pre-delivery checklist.
 - AI controls (item 77, ARCHITECTURE "Ask Nirmaan", Usage, roles and pricing): every AI call is gated by `AiService.status(user)`
   (company on, `aiRoles`, read-only billing state, the cap held under the plan's allowance from `aiPlanAllowanceInr`); never
   check `aiEnabled` on its own. The admins' conversation log is audited on open and export. Keep `src/scripts/ai-billing-test.ts` passing.
+- WhatsApp entries (item 120, `apps/api/src/whatsapp`, ARCHITECTURE "WhatsApp entries"): a message is read as the user whose
+  `captureFrom` is its number, drafted by `AiService.ask` (`client: 'whatsapp'`) and saved only on the sender's Save, through
+  the kind's own `create` with the create DTO's validation; a new saveable kind is a line in `CAPTURE_SAVE_KINDS` and `create`.
+  Parsing and replies are pure in `whatsapp-rules.ts`; keep `src/scripts/whatsapp-capture-test.ts` passing.
 - Payroll (item 100, `apps/api/src/payroll`, ARCHITECTURE "Payroll"): every figure is a pure function in `payroll-rules.ts`
   with a test in `src/scripts/payroll-test.ts` (CI runs it); a run has its own approval (prepare, approve, pay), not
   `SubmissionLifecycleService`. Professional tax per state is `PT_RULES` in `packages/shared/src/payroll.ts`.

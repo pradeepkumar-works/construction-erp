@@ -102,6 +102,8 @@ export class UsersService {
     const data: any = {};
     if (dto.fullName !== undefined) data.fullName = dto.fullName;
     if (dto.phone !== undefined) data.phone = dto.phone;
+    // WhatsApp entries (AI item 120) are read from the number they were switched on with: a new number switches them off.
+    if (dto.phone !== undefined && dto.phone !== existing.phone) data.captureFrom = null;
     if (dto.isActive !== undefined) data.isActive = dto.isActive;
     if (dto.email !== undefined) {
       data.email = dto.email.toLowerCase();

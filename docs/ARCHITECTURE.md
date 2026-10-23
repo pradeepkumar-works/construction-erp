@@ -2307,6 +2307,38 @@ export; the client portal and the phone app show the amount.
   real model on a folder of labelled real photos through a deployed API. Web uploads shrink photos over 1.5 MB to
   1600 px JPEG (`src/lib/shrink-photo.ts`), as the phone app does.
 
+## WhatsApp entries
+
+- **What it is.** AI item 120: a site person sends a text, a photo with a caption or a voice note to the company's
+  WhatsApp number; Ask Nirmaan drafts the DPR, material request, expense or progress entry it describes and replies with
+  the draft and Save / Discard. Nothing is saved until the sender says so, and then it is saved in their name and
+  submitted for approval exactly as the form would (the kind's own `create`, its validation and its audit).
+- **Who a message is.** `User.captureFrom` holds the normalised number (from the profile's mobile) while the person has
+  entries switched on, unique across all companies; a new number on the profile switches them off. The webhook finds
+  the user with `withoutTenant`, then sets the tenant and builds the same `RequestUser` the JWT strategy would (billing
+  read-only, modules off). A number nobody switched on gets one line back and is not kept.
+- **Webhooks** (`apps/api/src/whatsapp`, parsing in `whatsapp-rules.ts`): the Cloud API at `GET/POST /api/whatsapp/inbound`
+  (verify token `WHATSAPP_VERIFY_TOKEN`, `X-Hub-Signature-256` over the raw body with `WHATSAPP_APP_SECRET`) and WATI at
+  `POST /api/whatsapp/inbound/wati/<WATI_WEBHOOK_SECRET>`. Each message is one `InboundMessage`; the provider's message
+  id makes a retried webhook a no-op, so the message is read inline (no background work on Vercel).
+- **Reading.** Media is fetched from the provider (`MessagingService.fetchMedia`) and kept as an `Attachment` of the
+  sender. A voice note is written down by `transcribe.ts` (`TRANSCRIBE_PROVIDER` fake, openrouter or sarvam; its cost is
+  the `VOICE_NOTES` line in the AI spend) and marked Check this wherever it shows. Then `AiService.ask` runs as the
+  sender with `client: 'whatsapp'` (one conversation per person per day, their one active project picked if they have
+  one); `AiService.status` gates it like any question. The first draft WhatsApp can save (`CAPTURE_SAVE_KINDS`) is kept
+  on the message with `captureId`; a letter is only opened in the app.
+- **Deciding.** A button `save:<id>` / `discard:<id>`, or a reply that is only a Save or Discard word (`replyIntent`:
+  1, haan, हाँ / 2, nahi, नहीं) acts on that draft or the latest one waiting, for `CAPTURE_SAVE_HOURS`. Save turns the
+  draft's values into the create body (`createBody`: decimals as strings, the message's `recordClientId` as the client
+  id, the photo as an attachment), validates it with the create DTO and calls the kind's service. Opening the draft
+  in its form from `/whatsapp-capture` and saving there calls `POST /whatsapp/messages/:id/saved-in-app` (from
+  `FormShell`, through `AiDraftDto.captureId`), which counts as Changed.
+- **The page.** `/whatsapp-capture` (Site): the person's switch, the server's state, examples, and their messages with
+  Save / Open form / Discard; admins see everyone's and the webhook address. The go-live figure is drafts saved as
+  drafted out of those decided in 30 days, against `CAPTURE_GO_LIVE_SHARE` (70%).
+- **Tests.** `src/scripts/whatsapp-capture-test.ts` (CI flows): the providers' payloads, replies and bodies, then the
+  demo company end to end. `e2e/tests/whatsapp-capture.spec.ts` posts to WATI's webhook address (`WATI_WEBHOOK_SECRET=e2e-wati`).
+
 ## Money and quantities
 
 Decimal columns everywhere (`Decimal(18,2)` for money, `Decimal(18,3)` for quantities) and strings

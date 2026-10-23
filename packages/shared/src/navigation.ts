@@ -5,6 +5,7 @@ import type { RoleKey } from './enums';
 import * as P from './permissions';
 import { canManageAi } from './ai';
 import { canSeeWatchList } from './warnings';
+import { canUseWhatsappCapture } from './whatsapp';
 import { canManageModules, pathIsOff } from './module-switches';
 
 /**
@@ -135,6 +136,7 @@ export const NAV_ACCESS = {
   users: (u: NavUser) => P.canManageUsers(u.roleKey),
   companyData: (u: NavUser) => P.canManageCompanyData(u.roleKey),
   ai: (u: NavUser) => canManageAi(u.roleKey),
+  whatsappCapture: (u: NavUser) => canUseWhatsappCapture(u.roleKey),
   subscription: (u: NavUser) => !!u.billing && P.canManageBilling(u.roleKey),
   platform: (u: NavUser) => !!u.platformAdmin,
   books: (u: NavUser) => P.canKeepBooks(u.roleKey),
@@ -194,6 +196,7 @@ export const NAV_TREE: NavNode[] = [
   { id: 'site.expenses', parent: 'site', label: 'Site expenses', icon: 'wallet', route: '/expenses', access: 'expenses', status: 'live', description: 'Petty expenses with bills and approval.', keywords: 'petty cash imprest' },
   { id: 'site.imprest', parent: 'site', label: 'Site imprest', icon: 'hand-coins', route: '/imprest', access: 'imprest', status: 'live', description: 'Cash floats at the sites, top-ups and the cash book.', keywords: 'petty cash float top-up' },
   { id: 'site.meetings', parent: 'site', label: 'Meetings', icon: 'calendar-check', route: '/meetings', access: 'meetings', status: 'live', description: "Minutes of each project's meetings, and the actions they gave out until each is done.", keywords: 'mom minutes of meeting action items progress review client meeting decisions' },
+  { id: 'site.whatsapp', parent: 'site', label: 'WhatsApp entries', icon: 'message-circle', route: '/whatsapp-capture', access: 'whatsappCapture', status: 'live', newUntil: '2027-03-31', description: 'Send a text, photo or voice note from site; Nirmaan drafts the entry for you to save.', keywords: 'whatsapp voice note dictate message capture hindi' },
   { id: 'site.funds', parent: 'site', label: 'Site fund requests', icon: 'piggy-bank', route: '/imprest?tab=funds', access: 'funds', status: 'live', description: 'A site asks head office for money for wages, a local purchase or running costs.', keywords: 'fund request money wages advance' },
 
   // ── Quality and safety (split out of Site) ────────────────────────────────────────────────────────────────────

@@ -67,6 +67,8 @@ export interface AiDraftDto {
   projectName: string;
   values: Record<string, unknown>;
   flags: { field: string; note: string }[];
+  /** Drafted from a WhatsApp message (item 120): saving the form marks that message saved */
+  captureId?: string;
 }
 
 /** A drafted value at a path like `items.0.itemName`. */
@@ -200,8 +202,8 @@ export interface AiAskInput {
   page?: AiPageContext;
   /** The language to answer in: the site app's (AI item 72). English when left out. */
   language?: AiLanguage;
-  /** Where the question is asked from: the site app's Ask tab keeps answers short and links to its own screens. */
-  client?: 'web' | 'phone';
+  /** Where the question is asked from: the site app's Ask tab keeps answers short and links to its own screens; WhatsApp (item 120) drafts what is described. */
+  client?: 'web' | 'phone' | 'whatsapp';
   /** Model comparison only: one of the server's AI_EVAL_MODELS (ignored by the app) */
   model?: string;
 }

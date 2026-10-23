@@ -497,5 +497,8 @@ DROP POLICY IF EXISTS tenant_isolation ON "WarningKindResume";
 ALTER TABLE "WarningAlert" NO FORCE ROW LEVEL SECURITY;
 ALTER TABLE "WarningAlert" DISABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS tenant_isolation ON "WarningAlert";
+ALTER TABLE "InboundMessage" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "InboundMessage" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "InboundMessage";
 
 DROP FUNCTION IF EXISTS app_current_org();

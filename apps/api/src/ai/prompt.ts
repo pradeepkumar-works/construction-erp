@@ -52,12 +52,17 @@ export function contextNote(args: {
   projectId?: string | null;
   language?: 'en' | 'hi';
   phone?: boolean;
+  whatsapp?: boolean;
 }): string {
   const lines = [`Today is ${args.today} (India time). The user is ${args.fullName}, ${args.roleName}.`];
   if (args.page) lines.push(`They are on the page ${args.page}.`);
   if (args.record) lines.push(`That page shows one record: get_record with kind "${args.record.kind}" and id "${args.record.id}"; "this bill", "this order" and the like mean it.`);
   if (args.projectId && args.projectName) lines.push(`They have picked the project "${args.projectName}" (id ${args.projectId}); "this project" means it.`);
   if (args.phone) lines.push('They are asking from the site app on a phone: keep the answer to a few short lines, five at most; for a long list give the count, the three oldest or largest, and a link to the whole list.');
+  if (args.whatsapp)
+    lines.push(
+      'They are writing on WhatsApp from site (item 120), often from a voice note written down by a machine: when they say what was done, what material is needed, money spent or progress on an activity, fill it in with the matching draft tool (one draft, the project they name or the one picked for them) and say in two lines what you filled and what to check; for a day\'s work with hold-ups, put the hold-ups in the DPR\'s issues. Otherwise answer in three short lines at most. Plain text: no tables, no headings.',
+    );
   if (args.language === 'hi') lines.push('Their app is in Hindi: answer a question in Hindi or English in Hindi, in Devanagari script, and a question in Hinglish (Hindi in Roman letters) in the same Hinglish, the way a site engineer speaks; keep record numbers, codes, names of items, people and places, and links as they are, and write every figure with the digits 0-9.');
   return lines.join(' ');
 }

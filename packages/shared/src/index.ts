@@ -71,3 +71,4 @@ export * from './material-approvals';
 export * from './takeoff';
 export * from './navigation';
 export * from './launcher';
+export * from './whatsapp';
