@@ -9,7 +9,7 @@ import type { StockEntryDto } from '@erp/shared';
 import { MAX_PAGE_SIZE, canViewWorkOrders } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
-import { useActivities, useAttendanceSuggestions, useProjects, useStockBalances, useWorkOrders } from '@/lib/queries';
+import { useActivities, useAttendanceSuggestions, useProjects, useStockBalances, useStructure, useWorkOrders } from '@/lib/queries';
 import { useAuth } from '@/lib/auth';
 import { formatQty } from '@/lib/format';
 import { FormGrid, FormShell } from '@/components/form/FormShell';
@@ -26,11 +26,16 @@ interface FormValues {
   issuedTo?: string;
   workOrderId?: string;
   activityId?: string;
+  workElementId?: string;
   remarks?: string;
   lines?: LineValue[];
 }
 
-/** Issue slip: material handed out at site. Items and quantities are limited to what the project has in stock. */
+/**
+ * Issue slip: material handed out at site. Items and quantities are limited to what the project has in stock. On a
+ * project with a work breakdown the slip names the component or pipe zone it goes to (item 128), the activity's own
+ * when an activity is chosen, so the reconciliation can check it against that component's DPR lines.
+ */
 export function IssueModal({ open, onClose, projectId }: { open: boolean; onClose: () => void; projectId?: string }) {
   const [form] = Form.useForm<FormValues>();
   const { message } = App.useApp();
@@ -41,6 +46,8 @@ export function IssueModal({ open, onClose, projectId }: { open: boolean; onClos
   const scope = projectId ?? watchedProject;
   const stock = useStockBalances({ projectId: scope, inStock: true, pageSize: MAX_PAGE_SIZE, sortBy: 'item', sortOrder: 'asc' }, open && !!scope);
   const activities = useActivities(open ? scope : undefined);
+  const structure = useStructure(open ? scope : undefined);
+  const elements = structure.data?.elements ?? [];
   const suggestions = useAttendanceSuggestions(open ? scope : undefined);
   const items = useMemo(() => stock.data?.items ?? [], [stock.data]);
   const { user } = useAuth();
@@ -57,7 +64,7 @@ export function IssueModal({ open, onClose, projectId }: { open: boolean; onClos
     mutationFn: async (v: FormValues) => {
       const lines = (v.lines ?? []).filter((l) => l?.itemId && l.quantity && Number(l.quantity) > 0).map((l) => ({ itemId: l.itemId!, quantity: l.quantity! }));
       if (!lines.length) throw new Error('Add at least one item with a quantity.');
-      const body = { projectId: v.projectId, date: v.date.format('YYYY-MM-DD'), issuedTo: v.issuedTo?.trim() || undefined, workOrderId: v.workOrderId, activityId: v.activityId ?? null, remarks: v.remarks?.trim() || null, lines };
+      const body = { projectId: v.projectId, date: v.date.format('YYYY-MM-DD'), issuedTo: v.issuedTo?.trim() || undefined, workOrderId: v.workOrderId, activityId: v.activityId ?? null, workElementId: v.workElementId ?? null, remarks: v.remarks?.trim() || null, lines };
       return (await api.post<StockEntryDto>('/stock/issues', body)).data;
     },
     onSuccess: (e) => {
@@ -76,7 +83,7 @@ export function IssueModal({ open, onClose, projectId }: { open: boolean; onClos
           <Select
             showSearch={{ optionFilterProp: 'label' }}
             placeholder="Select project"
-            onChange={() => form.setFieldsValue({ lines: [{}], activityId: undefined, workOrderId: undefined })}
+            onChange={() => form.setFieldsValue({ lines: [{}], activityId: undefined, workElementId: undefined, workOrderId: undefined })}
             options={(projects ?? []).map((p) => ({ value: p.id, label: `${p.code} - ${p.name}` }))}
           />
         </Form.Item>
@@ -105,8 +112,30 @@ export function IssueModal({ open, onClose, projectId }: { open: boolean; onClos
             />
           </Form.Item>
           <Form.Item name="activityId" label="For activity">
-            <Select allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="Optional" disabled={!scope} options={(activities.data ?? []).map((a) => ({ value: a.id, label: a.name }))} />
+            <Select
+              allowClear
+              showSearch={{ optionFilterProp: 'label' }}
+              placeholder="Optional"
+              disabled={!scope}
+              options={(activities.data ?? []).map((a) => ({ value: a.id, label: a.name }))}
+              onChange={(id?: string) => {
+                const element = (activities.data ?? []).find((a) => a.id === id)?.workElementId;
+                if (element) form.setFieldValue('workElementId', element);
+              }}
+            />
           </Form.Item>
+          {elements.length ? (
+            <Form.Item name="workElementId" label="To component" extra="The structure or pipe zone it goes to, so it is checked against that work's DPR lines.">
+              <Select
+                allowClear
+                showSearch={{ optionFilterProp: 'label' }}
+                placeholder="Optional"
+                options={[...elements]
+                  .sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }))
+                  .map((e) => ({ value: e.id, label: `${e.code} ${e.name}` }))}
+              />
+            </Form.Item>
+          ) : null}
         </FormGrid>
 
         {scope && !stock.isLoading && !items.length ? (

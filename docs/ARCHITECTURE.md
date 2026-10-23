@@ -1378,9 +1378,50 @@ Nirmaan hands the payroll provider its inputs; PF, ESI, professional tax and sal
   by `MATERIAL_NORM_ROLES` (QS, PM, management, admin). Every change is in the project's audit log.
 - **API.** `GET /reconciliation/projects/:id?from&to`, `PUT /reconciliation/projects/:id/norms` (adds or changes by BOQ
   item + store item), `DELETE /reconciliation/projects/:id/norms/:normId`.
-- **Web.** Project > Materials > Reconciliation (`components/reconciliation/`), with four views under `?sub=`:
+- **Web.** Project > Materials > Reconciliation (`components/reconciliation/`), with views under `?sub=`:
   Materials (period picker, the reconciliation with each item's BOQ lines, items without a norm, the norms with
-  add/edit/remove, and an Excel export), Subcontractors, Wastage and Estimate (below).
+  add/edit/remove, and an Excel export), Structure, Pipe and Kits, Exceptions (below), Subcontractors, Wastage and
+  Estimate (below). Pipe and Kits show on water supply and sewerage projects only.
+
+### Stock against the DPR (item 128)
+
+What the store issued, set against what the approved DPR lines (item 127) say was done and used, by component.
+
+- **Norms on activities.** `ActivityMaterialNorm` (per activity and store item: `qtyPerUnit`, `wastagePct`, note; tenant
+  table with RLS). An activity's own norms come before its BOQ item's (`normSource`: `a:<activityId>`, else the
+  boqItemId); an activity with sub-activities takes none (its sub-activities do). The DPR form fills a line's material
+  from the same norms (`DprService` work options). Set by the norm setters, audited.
+- **Issues to a place.** `StockEntry.workElementId`: an issue or a return from site names its component (or takes its
+  activity's, `StockService.placeOf`). The migration backfills it from the activity.
+- **Materials view.** Besides consumed against theoretical: *used per DPR* is the material the approved lines in the
+  period report (`ProgressMaterial`) against what those lines needed by the norms (OVER past the wastage allowance), and
+  *at the work front* is a position, not a period figure: issued less returned from `USE_ISSUE_DAYS` (7) before the first
+  approved DPR that reported material (`frontFrom`), less all the DPR use since (`frontFlag`: issued and never reported,
+  used beyond what was issued).
+- **Structure** (`StockViewsService.structure`, `structureRows`): per component or sub-component and normed material, the
+  design need (planned × norm), the period's need and use, what was issued to it net of returns, what is still there
+  (the same front position) and, per activity, the use per unit achieved against the norm. Issues to no component are
+  counted.
+- **Pipe** (`pipe`, `pipeRow`): per size (`pipeSizeOf` reads `Item.pipeDiameterMm`/`pipeMaterial`, else the item's
+  name; fittings are not pipe) with network scope: scope, ordered, received, in store, issued, laid and tested (from the
+  pipe network, item 126), cut wastage (DPR use on the lines that laid it, against `PIPE_CUT_WASTAGE_PCT` by
+  material), at site not laid, to lay and to buy; the same per zone. Pipe bought by weight becomes metres through
+  `Item.kgPerMetre` (`pipeMetres`); one without it is listed as unconverted. Flags: LAID_ABOVE_ISSUED, WASTAGE_ABOVE.
+- **Kits** (`kits`, `kitRows`): the activities of house connection components with norms; per component of the kit,
+  needed for the connections done, issued, used and the kits it is short.
+- **Exceptions** (`exceptions`, `exceptionEvents`, default the last 30 days): a DPR use of a material at a component
+  with nothing of it issued there in the 7 days before (only once issues name components); an issue to a component
+  with no approved work there in the `ISSUE_WORK_DAYS` (3) after (judged once those days pass); a zone with more pipe
+  laid than issued. Each opens its DPR or its issue.
+- **API.** `PUT/DELETE /reconciliation/projects/:id/activity-norms[/:normId]`, `GET .../structure`, `.../pipe`,
+  `.../kits`, `.../exceptions`. The arithmetic is pure in `reconciliation-rules.ts` and the DTOs and pipe helpers in
+  `@erp/shared/stock-against-dpr.ts`; tested in `src/scripts/reconciliation-test.ts`.
+- **Demo.** The town scheme (`prisma/seed-stock.ts`) has the norms on the tanks' concrete and steel, the coupler on the
+  zone 2 laying and the service kit, and plants one of each case: cement over the mix on the 400 KL tank, HDPE 110 cut
+  above 1.5%, DI laid above issued, four connections without a saddle issued, cement issued to a tank with no work,
+  and bitumen used on road restoration with none issued.
+- **Waits.** A norm library and kit tables of their own, PO quantities by pipe size, the watch list and Ask, and the
+  phone's view.
 
 ### Rate analysis and the estimate (v5 item 92)
 

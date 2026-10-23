@@ -629,6 +629,7 @@ model Organization {
   stockTxns            StockTxn[]
   stockMinLevels       StockMinLevel[]
   materialNorms        MaterialNorm[]
+  activityNorms        ActivityMaterialNorm[]
   boqResources         BoqResource[]
   excessRecoveries     ExcessMaterialRecovery[]
   equipmentParts       EquipmentPart[]
@@ -899,6 +900,7 @@ model User {
   grnsChecked           StockEntry[]               @relation("GrnQcBy")
   stockMinLevels        StockMinLevel[]
   materialNorms         MaterialNorm[]
+  activityNorms         ActivityMaterialNorm[]
   boqResources          BoqResource[]
   excessRecoveries      ExcessMaterialRecovery[]
   equipmentParts        EquipmentPart[]
@@ -1136,6 +1138,7 @@ model Project {
   stockTxns          StockTxn[]
   stockMinLevels     StockMinLevel[]
   materialNorms      MaterialNorm[]
+  activityNorms      ActivityMaterialNorm[]
   boqResources       BoqResource[]
   excessRecoveries   ExcessMaterialRecovery[]
   equipment          Equipment[]
@@ -1921,6 +1924,7 @@ model WorkElement {
   boqItems     BoqItem[]
   pipeNodes    PipeNode[]
   pipeSegments PipeSegment[]
+  stockEntries StockEntry[]
 
   @@unique([projectId, code])
   @@index([projectId])
@@ -1967,6 +1971,7 @@ model Activity {
 
   progressEntries  ProgressEntry[]
   stockEntries     StockEntry[]
+  materialNorms    ActivityMaterialNorm[]
   machineryLogs    MachineryLog[]
   expenses         Expense[]
   risks            Risk[]
@@ -1974,9 +1979,9 @@ model Activity {
   qualityTests     QualityTest[]
   ncrs             Ncr[]
   workerDays       WorkerAttendance[]
-  successorLinks   ActivityLink[]     @relation("LinkPredecessor")
-  predecessorLinks ActivityLink[]     @relation("LinkSuccessor")
-  subActivities    Activity[]         @relation("ActivityTree")
+  successorLinks   ActivityLink[]         @relation("LinkPredecessor")
+  predecessorLinks ActivityLink[]         @relation("LinkSuccessor")
+  subActivities    Activity[]             @relation("ActivityTree")
 
   @@index([projectId])
   @@index([organizationId])
@@ -2132,6 +2137,31 @@ model ProgressMaterial {
 
   @@index([progressEntryId])
   @@index([organizationId, itemId])
+}
+
+/// A material norm on an activity (item 128): store item per unit of the activity's work, for work with no BOQ item of
+/// its own (a lump-sum or EPC component's activities). An activity's own norms come before its BOQ item's.
+model ActivityMaterialNorm {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  activityId     String
+  activity       Activity     @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  itemId         String
+  item           Item         @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  qtyPerUnit     Decimal      @db.Decimal(18, 6)
+  wastagePct     Decimal      @default(0) @db.Decimal(5, 2)
+  note           String?
+  updatedById    String
+  updatedBy      User         @relation(fields: [updatedById], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([activityId, itemId])
+  @@index([projectId])
+  @@index([organizationId])
 }
 
 // ---------- Pipe network (item 126) ----------
@@ -2429,18 +2459,24 @@ model AttendanceLine {
 
 /// Material master per organisation. Receipts create items from the material request lines (same name and unit).
 model Item {
-  id             String       @id @default(uuid())
+  id             String        @id @default(uuid())
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  organization   Organization  @relation(fields: [organizationId], references: [id])
   name           String
   unit           String
   category       String?
   /// Standard rate per unit; values issues in the project cost view
-  rate           Decimal?     @db.Decimal(18, 2)
+  rate           Decimal?      @db.Decimal(18, 2)
   /// Diesel, petrol and the like (v5 item 93): issued to machines and counted in the daily fuel position
-  isFuel         Boolean      @default(false)
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  isFuel         Boolean       @default(false)
+  /// Pipe items (item 128): the size and material it lays as, so pipe issued and laid compare by diameter; null when
+  /// the name says it ("HDPE PE100 110mm PN6") or it is not pipe
+  pipeDiameterMm Int?
+  pipeMaterial   PipeMaterial?
+  /// Pipe bought by weight (MS, DI by the tonne): kg per metre, to turn issues into metres
+  kgPerMetre     Decimal?      @db.Decimal(10, 3)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
   txns              StockTxn[]
   minLevels         StockMinLevel[]
@@ -2453,6 +2489,7 @@ model Item {
   materialApprovals MaterialApproval[]
   approvedMakes     ApprovedMake[]
   progressUses      ProgressMaterial[]
+  activityNorms     ActivityMaterialNorm[]
 
   @@unique([organizationId, name, unit])
 }
@@ -2504,6 +2541,9 @@ model StockEntry {
   /// Issues: the activity the material is for
   activityId         String?
   activity           Activity?              @relation(fields: [activityId], references: [id], onDelete: SetNull)
+  /// Issues (item 128): the component or pipe zone it went to; the activity's own when an activity is given
+  workElementId      String?
+  workElement        WorkElement?           @relation(fields: [workElementId], references: [id], onDelete: SetNull)
   /// Issues: the subcontractor's work order the material went to; recovered in their next bill
   workOrderId        String?
   workOrder          WorkOrder?             @relation(fields: [workOrderId], references: [id])
@@ -2550,6 +2590,7 @@ model StockEntry {
   @@index([equipmentId, date])
   @@index([organizationId, type, date])
   @@index([toProjectId])
+  @@index([workElementId])
 }
 
 /// Stock movement of one item in one project. Quantity is signed: receipts positive, issues negative.

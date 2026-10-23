@@ -80,6 +80,11 @@ export class PipeNetworkService {
 
   async get(user: RequestUser, projectId: string): Promise<PipeNetworkDto> {
     await this.access.assertCanAccessProject(user, projectId);
+    return this.network(projectId, canEditProjects(user.roleKey));
+  }
+
+  /** The network and its figures without the caller's checks, for the reconciliation's pipe view (item 128), which has made them. */
+  async network(projectId: string, canEdit = false): Promise<PipeNetworkDto> {
     const [{ zones, stageOf }, nodes, segments, tested] = await Promise.all([
       stageActivities(this.prisma, { projectId }),
       this.prisma.pipeNode.findMany({ where: { projectId } }),
@@ -177,7 +182,7 @@ export class PipeNetworkService {
         .map((n) => ({ id: n.id, zoneId: n.zoneId, code: n.code, kind: n.kind, groundLevel: dec(n.groundLevel), x: n.x, y: n.y, chainage: n.chainage, fixed: fixedIds.has(n.id) }))
         .sort((a, b) => comparePipeCodes(a.code, b.code)),
       segments: segmentDtos,
-      canEdit: canEditProjects(user.roleKey),
+      canEdit,
     };
   }
 

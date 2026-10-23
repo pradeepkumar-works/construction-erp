@@ -27,6 +27,7 @@ import {
   type StockEntryDto,
   type StockEntrySortField,
   subBillLabel,
+  type PipeMaterial,
 } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
@@ -75,6 +76,7 @@ const include = {
   materialRequest: { select: { requestNo: true } },
   purchaseOrder: { select: { poNo: true } },
   activity: { select: { name: true } },
+  workElement: { select: { code: true, name: true } },
   workOrder: { select: { woNo: true } },
   toProject: { select: { name: true } },
   transferIn: { select: { id: true, entryNo: true } },
@@ -127,6 +129,7 @@ interface Header {
   vehicleNo?: string | null;
   issuedTo?: string | null;
   activityId?: string | null;
+  workElementId?: string | null;
   workOrderId?: string | null;
   toProjectId?: string | null;
   transferOutId?: string | null;
@@ -144,6 +147,7 @@ interface Header {
 type IssueLink = { maintenanceJobId?: string; equipmentId?: string; meterReading?: Decimal | null };
 
 const blank = (s: string | null | undefined) => s?.trim() || null;
+const pipeFields = (r: { pipeDiameterMm: number | null; pipeMaterial: PipeMaterial | null; kgPerMetre: Decimal | null }) => ({ pipeDiameterMm: r.pipeDiameterMm, pipeMaterial: r.pipeMaterial, kgPerMetre: r.kgPerMetre ? r.kgPerMetre.toString() : null });
 const key = (projectId: string, itemId: string) => `${projectId}|${itemId}`;
 
 /**
@@ -188,6 +192,8 @@ export class StockService {
       issuedTo: r.issuedTo,
       activityId: r.activityId,
       activityName: r.activity?.name ?? null,
+      workElementId: r.workElementId,
+      workElementLabel: r.workElement ? `${r.workElement.code} ${r.workElement.name}` : null,
       workOrderId: r.workOrderId,
       woNo: r.workOrder?.woNo ?? null,
       subcontractBillId: r.subcontractBillId,
@@ -313,6 +319,7 @@ export class StockService {
         vehicleNo: blank(h.vehicleNo),
         issuedTo: blank(h.issuedTo),
         activityId: h.activityId ?? null,
+        workElementId: h.workElementId ?? null,
         workOrderId: h.workOrderId ?? null,
         toProjectId: h.toProjectId ?? null,
         transferOutId: h.transferOutId ?? null,
@@ -538,10 +545,7 @@ export class StockService {
     if (existing) return existing;
     await this.access.assertCanKeepStock(user, dto.projectId);
     const date = this.entryDate(dto.date);
-    if (dto.activityId) {
-      const activity = await this.prisma.activity.findFirst({ where: { id: dto.activityId, projectId: dto.projectId }, select: { id: true } });
-      if (!activity) throw new BadRequestException('The activity is not part of this project');
-    }
+    const workElementId = await this.placeOf(dto.projectId, dto.activityId, dto.workElementId);
     const issuedTo = dto.workOrderId ? dto.issuedTo || (await assertOpenWorkOrder(this.prisma, user.organizationId, dto.workOrderId, dto.projectId)).vendorName : dto.issuedTo;
     if (!issuedTo) throw new BadRequestException('Say who took the material');
     const items = await this.prisma.item.findMany({ where: { id: { in: dto.lines.map((l) => l.itemId) }, organizationId: user.organizationId }, select: { id: true, name: true, unit: true } });
@@ -563,7 +567,7 @@ export class StockService {
             throw new ConflictException(have.lte(0) ? `${item.name} is out of stock at this project.` : `Only ${dec(have)} ${item.unit} of ${item.name} is in stock at this project.`);
           }
         }
-        return this.insertEntry(tx, user, { ...dto, ...link, issuedTo, type: 'ISSUE', date }, lines.map((l) => ({ ...l, quantity: l.quantity.neg() })));
+        return this.insertEntry(tx, user, { ...dto, ...link, issuedTo, workElementId, type: 'ISSUE', date }, lines.map((l) => ({ ...l, quantity: l.quantity.neg() })));
       }),
     );
     if ('existing' in saved) return this.get(user, saved.id);
@@ -836,16 +840,29 @@ export class StockService {
     return this.get(user, saved.id);
   }
 
+  /**
+   * Where an issue or a return goes (item 128): the activity's component when an activity is given, else the component
+   * or pipe zone chosen. Both must be of the project.
+   */
+  private async placeOf(projectId: string, activityId: string | null | undefined, workElementId: string | null | undefined): Promise<string | null> {
+    if (activityId) {
+      const activity = await this.prisma.activity.findFirst({ where: { id: activityId, projectId }, select: { workElementId: true } });
+      if (!activity) throw new BadRequestException('The activity is not part of this project');
+      if (activity.workElementId) return activity.workElementId;
+    }
+    if (!workElementId) return null;
+    const element = await this.prisma.workElement.findFirst({ where: { id: workElementId, projectId }, select: { id: true } });
+    if (!element) throw new BadRequestException('Choose a component of this project');
+    return element.id;
+  }
+
   /** Issued material that came back unused: it returns to stock and comes off the project's material cost. */
   async returnFromSite(user: RequestUser, dto: CreateSiteReturnDto): Promise<StockEntryDto> {
     const existing = await this.findExisting(user, dto.id);
     if (existing) return existing;
     await this.access.assertCanKeepStock(user, dto.projectId);
     const date = this.entryDate(dto.date);
-    if (dto.activityId) {
-      const activity = await this.prisma.activity.findFirst({ where: { id: dto.activityId, projectId: dto.projectId }, select: { id: true } });
-      if (!activity) throw new BadRequestException('The activity is not part of this project');
-    }
+    const workElementId = await this.placeOf(dto.projectId, dto.activityId, dto.workElementId);
     const { items, lines } = await this.itemLines(user, dto.lines);
     const saved = await this.createGuarded(user, dto.id, () =>
       this.inLock(user.organizationId, async (tx) => {
@@ -858,7 +875,7 @@ export class StockService {
             throw new ConflictException(out.lte(0) ? `No ${item.name} has been issued at this project.` : `Only ${dec(out)} ${item.unit} of ${item.name} is out on site.`);
           }
         }
-        return this.insertEntry(tx, user, { ...dto, type: 'RETURN_FROM_SITE', date }, lines);
+        return this.insertEntry(tx, user, { ...dto, workElementId, type: 'RETURN_FROM_SITE', date }, lines);
       }),
     );
     if ('existing' in saved) return this.get(user, saved.id);
@@ -1345,7 +1362,7 @@ export class StockService {
       ? await this.prisma.stockTxn.groupBy({ by: ['itemId', 'projectId'], where: { itemId: { in: rows.map((r) => r.id) } } })
       : [];
     return paginated(
-      rows.map((r) => ({ id: r.id, name: r.name, unit: r.unit, category: r.category, rate: money(r.rate), isFuel: r.isFuel, projectCount: used.filter((u) => u.itemId === r.id).length, createdAt: iso(r.createdAt)! })),
+      rows.map((r) => ({ id: r.id, name: r.name, unit: r.unit, category: r.category, rate: money(r.rate), isFuel: r.isFuel, ...pipeFields(r), projectCount: used.filter((u) => u.itemId === r.id).length, createdAt: iso(r.createdAt)! })),
       total,
       args,
     );
@@ -1357,6 +1374,17 @@ export class StockService {
     const d = new Prisma.Decimal(v);
     if (d.isNegative()) throw new BadRequestException('Rate cannot be negative');
     return d.toDecimalPlaces(2);
+  }
+
+  /** The pipe fields of a create or change (item 128); left out, unchanged. */
+  private pipeData(dto: { pipeDiameterMm?: number | null; pipeMaterial?: PipeMaterial | null; kgPerMetre?: string | null }): { pipeDiameterMm?: number | null; pipeMaterial?: PipeMaterial | null; kgPerMetre?: Decimal | null } {
+    const kg = dto.kgPerMetre === undefined ? undefined : dto.kgPerMetre === null || dto.kgPerMetre === '' ? null : new Prisma.Decimal(dto.kgPerMetre).toDecimalPlaces(3);
+    if (kg && kg.lte(0)) throw new BadRequestException('Enter a weight per metre above zero');
+    return {
+      ...(dto.pipeDiameterMm !== undefined ? { pipeDiameterMm: dto.pipeDiameterMm } : {}),
+      ...(dto.pipeMaterial !== undefined ? { pipeMaterial: dto.pipeMaterial } : {}),
+      ...(kg !== undefined ? { kgPerMetre: kg } : {}),
+    };
   }
 
   private async assertItemUnique(organizationId: string, name: string, unit: string, excludeId?: string) {
@@ -1371,14 +1399,14 @@ export class StockService {
     const r = await this.prisma.item.findFirst({ where: { id, organizationId: user.organizationId } });
     if (!r) throw new NotFoundException('Item not found');
     const used = await this.prisma.stockTxn.groupBy({ by: ['projectId'], where: { itemId: id } });
-    return { id: r.id, name: r.name, unit: r.unit, category: r.category, rate: money(r.rate), isFuel: r.isFuel, projectCount: used.length, createdAt: iso(r.createdAt)! };
+    return { id: r.id, name: r.name, unit: r.unit, category: r.category, rate: money(r.rate), isFuel: r.isFuel, ...pipeFields(r), projectCount: used.length, createdAt: iso(r.createdAt)! };
   }
 
   async createItem(user: RequestUser, dto: CreateItemDto): Promise<ItemDto> {
     await this.access.assertCanManageStore(user);
     await this.assertItemUnique(user.organizationId, dto.name, dto.unit);
     try {
-      const row = await this.prisma.item.create({ data: { organizationId: user.organizationId, name: dto.name, unit: dto.unit, category: blank(dto.category), rate: this.rate(dto.rate) ?? null, isFuel: dto.isFuel ?? false } });
+      const row = await this.prisma.item.create({ data: { organizationId: user.organizationId, name: dto.name, unit: dto.unit, category: blank(dto.category), rate: this.rate(dto.rate) ?? null, isFuel: dto.isFuel ?? false, ...this.pipeData(dto) } });
       await this.audit.log(user, 'ITEM', row.id, 'CREATED', `${row.name} (${row.unit})`);
       return this.getItem(user, row.id);
     } catch (e) {
@@ -1397,7 +1425,7 @@ export class StockService {
       throw new ConflictException('The unit cannot change once the item has stock movements');
     await this.assertItemUnique(user.organizationId, name, unit, id);
     try {
-      await this.prisma.item.update({ where: { id }, data: { name, unit, ...(dto.category !== undefined ? { category: blank(dto.category) } : {}), ...(dto.rate !== undefined ? { rate: this.rate(dto.rate) } : {}), ...(dto.isFuel !== undefined ? { isFuel: dto.isFuel } : {}) } });
+      await this.prisma.item.update({ where: { id }, data: { name, unit, ...(dto.category !== undefined ? { category: blank(dto.category) } : {}), ...(dto.rate !== undefined ? { rate: this.rate(dto.rate) } : {}), ...(dto.isFuel !== undefined ? { isFuel: dto.isFuel } : {}), ...this.pipeData(dto) } });
     } catch (e) {
       if (isUniqueViolation(e)) throw new ConflictException(`${name} (${unit}) is already in the item master`);
       throw e;

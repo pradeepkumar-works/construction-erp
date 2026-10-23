@@ -17,6 +17,14 @@ export class SaveMaterialNormDto {
   @ApiPropertyOptional({ nullable: true, example: 'CPWD DAR, design mix' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsString() @MaxLength(500) note?: string | null;
 }
 
+export class SaveActivityNormDto {
+  @ApiProperty({ description: 'Activity of the project that takes progress' }) @IsUUID() activityId: string;
+  @ApiProperty({ description: 'Store item it uses' }) @IsUUID() itemId: string;
+  @ApiProperty({ example: '1', description: "Item units per unit of the activity's work, up to six decimals" }) @Transform(numberString) @IsNumberString() qtyPerUnit: string;
+  @ApiPropertyOptional({ example: '2', description: 'Allowed wastage in % (0 to 100); left out: 0 on a new norm, unchanged on an existing one' }) @IsOptional() @Transform(numberString) @IsNumberString() wastagePct?: string;
+  @ApiPropertyOptional({ nullable: true, example: 'House connection kit' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsString() @MaxLength(500) note?: string | null;
+}
+
 const KINDS = ['LABOUR', 'EQUIPMENT'] as const;
 const IMPORT_KINDS = ['MATERIAL', 'LABOUR', 'EQUIPMENT'] as const;
 

@@ -79,7 +79,7 @@ export interface DprLineInput {
   pipeNodeId?: string | null;
 }
 
-/** Material one unit of the activity's BOQ item uses (its reconciliation norm, v5 item 92). */
+/** Material one unit of the activity uses: its own norm (item 128), else its BOQ item's reconciliation norm (v5 item 92). */
 export interface DprNormDto {
   itemId: string;
   itemName: string;

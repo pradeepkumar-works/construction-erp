@@ -46,6 +46,7 @@ import type {
   HireFuelBy,
   DebitNoteReason,
   StockAdjustmentReason,
+  PipeMaterial,
 } from './enums';
 
 /** API response shapes. Decimal columns are serialised as strings to preserve precision. */
@@ -633,6 +634,10 @@ export interface ItemDto {
   rate: string | null;
   /** Fuel (v5 item 93): issued to machines and counted in the daily fuel position */
   isFuel?: boolean;
+  /** Pipe (item 128): the size it lays as when the name does not say it, and kg per metre for pipe bought by weight */
+  pipeDiameterMm?: number | null;
+  pipeMaterial?: PipeMaterial | null;
+  kgPerMetre?: string | null;
   /** Projects in which this item has stock movements. */
   projectCount: number;
   createdAt: string;
@@ -670,6 +675,9 @@ export interface StockEntryDto {
   issuedTo: string | null;
   activityId: string | null;
   activityName: string | null;
+  /** Issues and returns (item 128): the component or pipe zone the material went to, "9.2 Zone 2" */
+  workElementId?: string | null;
+  workElementLabel?: string | null;
   /** Issues to a subcontractor: their work order, and the bill that recovered the material */
   workOrderId: string | null;
   woNo: string | null;

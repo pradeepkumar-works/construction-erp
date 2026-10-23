@@ -709,7 +709,11 @@ reconciliation: design". One pull request each, in this order.
      `ProgressMaterial`), submitted and approved with it, hold points checked per line; scope, up to previous,
      cumulative and balance per line; the form and record on the web and the phone, the print in the site's layout,
      material from the norms, Copy yesterday, and the "progress from the DPR only" switch. ARCHITECTURE "Structured DPR".
-128. **Stock against the DPR** (M): material issued against what the DPR lines' quantities allow, per activity.
+128. ~~**Stock against the DPR** (M): material issued against what the DPR lines' quantities allow, per activity.~~ Done:
+     norms on activities, issues and returns to a component, used per DPR and the work-front position in Materials,
+     and the Structure, Pipe (scope to buy by size, cut wastage, laid above issued), Kits and Exceptions views with
+     Excel; pipe items carry diameter, material and weight per metre. A norm library, kit tables, the watch list and
+     the phone's view wait. ARCHITECTURE "Stock against the DPR".
 129. **Stage billing** (M): lump-sum and EPC bills by stage against the components' billing shares.
 130. **EPC packages, deliverables and currency** (L).
 131. **Operation and maintenance** (M): a completed scheme's running, complaints and contract payments.

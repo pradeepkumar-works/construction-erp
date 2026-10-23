@@ -699,6 +699,10 @@ kbd {
   :root .statement-table .ant-table-tbody > tr > td {
     height: 44px;
   }
+  /* Any other row that opens its detail is a 44 px row too, for the same reason. */
+  :root .ant-table-tbody > tr.ant-table-row:has(> td > .ant-table-row-expand-icon:not(.ant-table-row-expand-icon-spaced)) > td {
+    height: 44px;
+  }
 }
 
 /* A Space and its items are never wider than what holds them, so what is inside can give way; on a phone a Segmented

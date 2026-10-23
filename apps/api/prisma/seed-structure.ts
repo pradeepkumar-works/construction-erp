@@ -237,7 +237,7 @@ interface LineSeed {
   material?: [string, number][];
 }
 
-interface DprSeed {
+export interface DprSeed {
   offset: number;
   approved: boolean;
   weather: 'SUNNY' | 'CLOUDY';
@@ -297,6 +297,15 @@ const TOWN_DPRS: DprSeed[] = [
 export async function seedTownDprs(prisma: PrismaClient, organizationId: string) {
   const project = await prisma.project.findFirst({ where: { organizationId, code: 'WS-2026-04' }, select: { id: true } });
   if (!project || (await prisma.dailyReport.count({ where: { projectId: project.id } }))) return;
+  for (const d of TOWN_DPRS) await addTownDpr(prisma, organizationId, d);
+}
+
+/** One DPR with its work lines on the town scheme, unless the day already has one. Used by the stock seed too (item 128). */
+export async function addTownDpr(prisma: PrismaClient, organizationId: string, d: DprSeed) {
+  const project = await prisma.project.findFirst({ where: { organizationId, code: 'WS-2026-04' }, select: { id: true } });
+  if (!project) return;
+  const date = day(d.offset);
+  if (await prisma.dailyReport.count({ where: { projectId: project.id, date } })) return;
   const user = async (email: string) => (await prisma.user.findFirst({ where: { organizationId, email }, select: { id: true } }))?.id;
   const [pm, engineer] = await Promise.all([user('pm@demo.com'), user('engineer@demo.com')]);
   if (!pm || !engineer) return;
@@ -305,40 +314,37 @@ export async function seedTownDprs(prisma: PrismaClient, organizationId: string)
   const crewOf = (c: [string, number][]) => c.map(([category, count]) => ({ category, count }));
   const machinesOf = (m: [string, number][] = []) => m.map(([name, hours]) => ({ name, hours }));
 
-  for (const d of TOWN_DPRS) {
-    const date = day(d.offset);
-    const submittedAt = new Date(date.getTime() + 19 * 3_600_000);
-    const reviewedAt = d.approved ? new Date(date.getTime() + 33 * 3_600_000) : null;
-    const status = d.approved ? 'APPROVED' : 'SUBMITTED';
-    const review = { status, submittedById: engineer, submittedAt, reviewedById: d.approved ? pm : null, reviewedAt, reviewNote: d.approved ? 'Checked at site' : null } as const;
-    const lines = d.lines.flatMap((l) => {
-      const a = activities.find((x) => x.workElement?.code === l.element && x.name === l.activity);
-      return a ? [{ ...l, activityId: a.id, unit: a.unit, parentActivityName: a.parentActivity?.name ?? null }] : [];
-    });
-    const summary = workSummary(lines.map((l) => ({ activityName: l.activity, parentActivityName: l.parentActivityName, quantity: l.qty, unit: l.unit, location: l.at })));
-    const machinery = new Map<string, number>();
-    for (const l of lines) for (const [name, hours] of l.machines ?? []) machinery.set(name, (machinery.get(name) ?? 0) + hours);
-    const dpr = await prisma.dailyReport.create({
+  const submittedAt = new Date(date.getTime() + 19 * 3_600_000);
+  const reviewedAt = d.approved ? new Date(date.getTime() + 33 * 3_600_000) : null;
+  const status = d.approved ? 'APPROVED' : 'SUBMITTED';
+  const review = { status, submittedById: engineer, submittedAt, reviewedById: d.approved ? pm : null, reviewedAt, reviewNote: d.approved ? 'Checked at site' : null } as const;
+  const lines = d.lines.flatMap((l) => {
+    const a = activities.find((x) => x.workElement?.code === l.element && x.name === l.activity);
+    return a ? [{ ...l, activityId: a.id, unit: a.unit, parentActivityName: a.parentActivity?.name ?? null }] : [];
+  });
+  const summary = workSummary(lines.map((l) => ({ activityName: l.activity, parentActivityName: l.parentActivityName, quantity: l.qty, unit: l.unit, location: l.at })));
+  const machinery = new Map<string, number>();
+  for (const l of lines) for (const [name, hours] of l.machines ?? []) machinery.set(name, (machinery.get(name) ?? 0) + hours);
+  const dpr = await prisma.dailyReport.create({
+    data: {
+      organizationId, projectId: project.id, date, weather: d.weather, siteCondition: 'Workable', manpower: crewOf(d.headCount), machinery: machinesOf([...machinery]),
+      workExecuted: summary, issues: d.issues ?? null, nextDayPlan: d.nextDayPlan, safetyObservations: 'Helmets and harness checked at the tank; trench edges barricaded', ...review,
+    },
+  });
+  for (const [i, l] of lines.entries()) {
+    const crew = crewOf(l.crew);
+    const machines = machinesOf(l.machines);
+    await prisma.progressEntry.create({
       data: {
-        organizationId, projectId: project.id, date, weather: d.weather, siteCondition: 'Workable', manpower: crewOf(d.headCount), machinery: machinesOf([...machinery]),
-        workExecuted: summary, issues: d.issues ?? null, nextDayPlan: d.nextDayPlan, safetyObservations: 'Helmets and harness checked at the tank; trench edges barricaded', ...review,
+        organizationId, projectId: project.id, activityId: l.activityId, dailyReportId: dpr.id, sortOrder: i, date, quantity: D(l.qty), location: l.at,
+        labour: crew, machines, manpowerCount: crew.reduce((n, c) => n + c.count, 0), machineryUsed: machines.map((m) => m.name).join(', ') || null, ...review,
+        materials: {
+          create: (l.material ?? []).flatMap(([name, qty], k) => {
+            const itemId = items.get(name);
+            return itemId ? [{ organizationId, itemId, quantity: D(qty), sortOrder: k }] : [];
+          }),
+        },
       },
     });
-    for (const [i, l] of lines.entries()) {
-      const crew = crewOf(l.crew);
-      const machines = machinesOf(l.machines);
-      await prisma.progressEntry.create({
-        data: {
-          organizationId, projectId: project.id, activityId: l.activityId, dailyReportId: dpr.id, sortOrder: i, date, quantity: D(l.qty), location: l.at,
-          labour: crew, machines, manpowerCount: crew.reduce((n, c) => n + c.count, 0), machineryUsed: machines.map((m) => m.name).join(', ') || null, ...review,
-          materials: {
-            create: (l.material ?? []).flatMap(([name, qty], k) => {
-              const itemId = items.get(name);
-              return itemId ? [{ organizationId, itemId, quantity: D(qty), sortOrder: k }] : [];
-            }),
-          },
-        },
-      });
-    }
   }
 }

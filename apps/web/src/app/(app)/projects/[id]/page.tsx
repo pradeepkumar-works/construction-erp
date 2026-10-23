@@ -108,7 +108,7 @@ function ProjectPage({ project }: { project: ProjectDetail }) {
     { key: 'material', group: 'materials', label: 'Material requests', children: <MrList projectId={project.id} newLabel="New material request" /> },
     can(!!user && canViewPurchaseOrders(user.roleKey)) && { key: 'po', group: 'materials', label: 'Purchase orders', children: <PurchaseOrderList projectId={project.id} /> },
     { key: 'stock', group: 'materials', label: 'Stock', children: <StockPanel projectId={project.id} /> },
-    can(!!user && canViewReconciliation(user.roleKey)) && { key: 'reconciliation', group: 'materials', label: 'Reconciliation', children: <ReconciliationPanel projectId={project.id} /> },
+    can(!!user && canViewReconciliation(user.roleKey)) && { key: 'reconciliation', group: 'materials', label: 'Reconciliation', children: <ReconciliationPanel projectId={project.id} projectType={project.type} /> },
     { key: 'machinery', group: 'materials', label: 'Machinery', children: <MachineryPanel projectId={project.id} /> },
     can(!!user && canViewContract(user.roleKey)) && { key: 'contract', group: 'money', label: 'Contract', children: <ContractPanel projectId={project.id} /> },
     can(!!user && canViewContract(user.roleKey)) && { key: 'bills', group: 'money', label: 'RA bills', children: <BillList projectId={project.id} /> },

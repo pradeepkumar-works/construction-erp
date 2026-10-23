@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2027-01-stock-against-dpr',
+    date: '2027-01-04',
+    title: 'Stock against the DPR: what was issued, done and used, by component',
+    points: [
+      "Reconciliation's Materials view adds what the approved DPR lines say they used against what their work needed, and what should still be at the work front. Norms can now sit on an activity (a tank's concrete, a house connection's kit) as well as a BOQ item.",
+      'Structure shows each component with its design need, need and use, what was issued to it and what is still there. On water and sewerage projects, Pipe gives each size from scope to laid with cut wastage and what is left to buy, and Kits counts house connections short of a part.',
+      'Exceptions lists material used with nothing issued there, issues with no work after them, and pipe laid above what was issued. An issue from the store can now name its component, and pipe items take their diameter, material and weight per metre.',
+    ],
+  },
+  {
     id: '2026-12-pipe-network',
     date: '2026-12-31',
     title: 'Pipe network: every pipe junction to junction',
