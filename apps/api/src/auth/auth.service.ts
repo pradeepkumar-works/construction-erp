@@ -59,8 +59,9 @@ export class AuthService {
     const userId = await this.prisma.$transaction(async (tx) => {
       const billing = billingConfig();
       const trialEndsAt = billing ? new Date(Date.parse(`${todayIn()}T00:00:00Z`) + billing.trialDays * 86_400_000) : null;
-      // New companies pay bills only against approved payment requests (v5 item 90); older ones switch it on themselves.
-      const org = await tx.organization.create({ data: { name: dto.organizationName.trim(), code, trialEndsAt, paymentsNeedRequest: true } });
+      // New companies pay bills only against approved payment requests (v5 item 90) and record progress only in the DPR
+      // (item 127); older ones switch these on themselves.
+      const org = await tx.organization.create({ data: { name: dto.organizationName.trim(), code, trialEndsAt, paymentsNeedRequest: true, progressFromDpr: true } });
       await tx.role.createMany({ data: ROLE_KEYS.map((key) => ({ organizationId: org.id, key, name: ROLE_LABELS[key] })) });
       const admin = await tx.role.findUniqueOrThrow({ where: { organizationId_key: { organizationId: org.id, key: 'ADMIN' } } });
       const u = await tx.user.create({ data: { organizationId: org.id, roleId: admin.id, email, fullName: dto.fullName.trim(), phone: dto.phone?.trim() || null, passwordHash } });

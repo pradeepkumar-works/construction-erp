@@ -41,7 +41,8 @@ interface SubmissionRow {
  * One state machine for every site submission:
  *   DRAFT / REJECTED / CHANGES_REQUESTED --submit--> SUBMITTED --review--> APPROVED | REJECTED | CHANGES_REQUESTED
  * A rejected or changes-requested entry is edited in place and resubmitted (audit action RESUBMITTED), so the
- * review history stays on one record. Every submission type (progress, DPRs, material requests, machinery logs, expenses, measurements, bills, orders, inspections, payment requests) goes through here.
+ * review history stays on one record. A DPR's work lines (item 127) are progress entries that follow their DPR (`onStatus`,
+ * `partOf`). Every submission type (progress, DPRs, material requests, machinery logs, expenses, measurements, bills, orders, inspections, payment requests) goes through here.
  */
 /** The queue's line reads only the project's and the submitter's names. */
 const NAME = { select: { name: true } } as const;
@@ -51,6 +52,8 @@ const BY = { select: { fullName: true } } as const;
 export class SubmissionLifecycleService {
   private readonly approvedHooks = new Map<SubmissionType, (user: RequestUser, id: string) => Promise<void>>();
   private readonly beforeApproveHooks = new Map<SubmissionType, (user: RequestUser, id: string) => Promise<void>>();
+  private readonly statusHooks = new Map<SubmissionType, (user: RequestUser, id: string, status: SubmissionStatus) => Promise<void>>();
+  private readonly partOfHooks = new Map<SubmissionType, (id: string) => Promise<string | null>>();
 
   constructor(private prisma: PrismaService, private access: ProjectAccessService, private audit: AuditService, private notifications: NotificationsService, private rights: ApprovalRightsService) {}
 
@@ -68,6 +71,27 @@ export class SubmissionLifecycleService {
     this.beforeApproveHooks.set(type, check);
   }
 
+  /**
+   * Run `hook` after an entry of `type` moves to SUBMITTED or a final decision (approved, rejected, sent back); a DPR's
+   * work lines follow the DPR this way (item 127). One per type.
+   */
+  onStatus(type: SubmissionType, hook: (user: RequestUser, id: string, status: SubmissionStatus) => Promise<void>) {
+    this.statusHooks.set(type, hook);
+  }
+
+  /**
+   * `check` says, for an entry of `type`, the record it is part of and is submitted and decided with (a DPR's work line,
+   * item 127), as the message refusing it on its own; null when the entry stands on its own. One per type.
+   */
+  partOf(type: SubmissionType, check: (id: string) => Promise<string | null>) {
+    this.partOfHooks.set(type, check);
+  }
+
+  private async assertStandsAlone(type: SubmissionType, id: string) {
+    const owner = await this.partOfHooks.get(type)?.(id);
+    if (owner) throw new BadRequestException(owner);
+  }
+
   async load(user: RequestUser, type: SubmissionType, id: string): Promise<SubmissionRow> {
     const row = await this.delegate(type).findFirst({ where: { id, organizationId: user.organizationId } });
     if (!row) throw new NotFoundException(`${type} not found`);
@@ -78,11 +102,13 @@ export class SubmissionLifecycleService {
   /** Owner (or an approver) moves a draft, rejected or changes-requested entry to SUBMITTED. */
   async submit(user: RequestUser, type: SubmissionType, id: string) {
     const row = await this.load(user, type, id);
+    await this.assertStandsAlone(type, id);
     if (row.submittedById !== user.id && !canApprove(user.roleKey)) throw new ForbiddenException('Only the author can submit this entry');
     if (!canResubmit(user, row)) throw new BadRequestException(`Cannot submit an entry in status ${row.status}`);
     const resubmit = row.status === 'REJECTED' || row.status === 'CHANGES_REQUESTED';
     await this.delegate(type).update({ where: { id }, data: { status: 'SUBMITTED', submittedAt: new Date(), reviewedById: null, reviewedAt: null, reviewNote: null } });
     await this.audit.log(user, type, id, resubmit ? 'RESUBMITTED' : 'SUBMITTED');
+    await this.statusHooks.get(type)?.(user, id, 'SUBMITTED');
     await this.notifications.onSubmitted(user, type, id);
   }
 
@@ -94,6 +120,7 @@ export class SubmissionLifecycleService {
   async review(user: RequestUser, type: SubmissionType, id: string, decision: ReviewDecision, note?: string | null): Promise<Omit<ReviewResultDto, 'ok'>> {
     const row = await this.load(user, type, id);
     if (row.status !== 'SUBMITTED') throw new BadRequestException(`Only submitted entries can be reviewed (current status ${row.status})`);
+    await this.assertStandsAlone(type, id);
     const { stage } = await this.access.assertCanApproveSubmission(user, type, id, row.projectId);
     const round = row.submittedAt ?? row.createdAt;
     if (decision === 'APPROVE') await this.beforeApproveHooks.get(type)?.(user, id);
@@ -108,6 +135,7 @@ export class SubmissionLifecycleService {
       await this.prisma.approvalStep.create({ data: { organizationId: user.organizationId, entityType: type, entityId: id, level: stage.level, action: 'APPROVED', round, actorId: user.id, note: note ?? null } });
     await this.delegate(type).update({ where: { id }, data: { status, reviewedById: user.id, reviewedAt: new Date(), reviewNote: note ?? null } });
     await this.audit.log(user, type, id, status, note);
+    await this.statusHooks.get(type)?.(user, id, status);
     if (status === 'APPROVED') await this.approvedHooks.get(type)?.(user, id);
     await this.notifications.onReviewed(user, type, id, status, note);
     return { status, level: stage.level, levels: stage.levels };
@@ -244,7 +272,8 @@ export class SubmissionLifecycleService {
     const allowed = (t: SubmissionType) => whereFor(t) !== null;
     const where = (t: SubmissionType) => whereFor(t) as any;
     const [progress, dprs, mrs, logs, expenses, mbs, bills, pos, vbills, wos, sbills, inspections, payRequests] = await Promise.all([
-      allowed('PROGRESS') ? this.prisma.progressEntry.findMany({ where: where('PROGRESS'), include: { project: NAME, activity: { include: { boqItem: { select: { rate: true } } } }, submittedBy: BY }, orderBy: { submittedAt: 'asc' } }) : none,
+      // A DPR's work lines (item 127) wait and are decided with their DPR, not on their own.
+      allowed('PROGRESS') ? this.prisma.progressEntry.findMany({ where: { ...where('PROGRESS'), dailyReportId: null }, include: { project: NAME, activity: { include: { boqItem: { select: { rate: true } } } }, submittedBy: BY }, orderBy: { submittedAt: 'asc' } }) : none,
       allowed('DPR') ? this.prisma.dailyReport.findMany({ where: where('DPR'), include: { project: NAME, submittedBy: BY }, orderBy: { submittedAt: 'asc' } }) : none,
       allowed('MATERIAL_REQUEST') ? this.prisma.materialRequest.findMany({ where: where('MATERIAL_REQUEST'), include: { project: NAME, submittedBy: BY, items: { select: { id: true } } }, orderBy: { submittedAt: 'asc' } }) : none,
       allowed('MACHINERY') ? this.prisma.machineryLog.findMany({ where: where('MACHINERY'), include: { project: NAME, submittedBy: BY, equipment: { select: { code: true, name: true, rate: true, rateUnit: true } } }, orderBy: { submittedAt: 'asc' } }) : none,

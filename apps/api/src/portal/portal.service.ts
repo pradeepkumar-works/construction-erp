@@ -89,7 +89,7 @@ export class PortalService {
     if (q.from || q.to) where.date = { ...(q.from ? { gte: parseDate(q.from) } : {}), ...(q.to ? { lte: parseDate(q.to) } : {}) };
     const args = pageArgs(q);
     const [rows, total] = await Promise.all([
-      this.prisma.dailyReport.findMany({ where, include: { project: { select: { name: true } }, submittedBy: { select: { fullName: true } }, reviewedBy: { select: { fullName: true } }, attachments: { select: ATTACHMENT_FIELDS } }, orderBy: [{ date: 'desc' }, { id: 'asc' }], skip: args.skip, take: args.take }),
+      this.prisma.dailyReport.findMany({ where, include: { project: { select: { name: true } }, submittedBy: { select: { fullName: true } }, reviewedBy: { select: { fullName: true } }, attachments: { select: ATTACHMENT_FIELDS }, _count: { select: { lines: true } } }, orderBy: [{ date: 'desc' }, { id: 'asc' }], skip: args.skip, take: args.take }),
       this.prisma.dailyReport.count({ where }),
     ]);
     return paginated(

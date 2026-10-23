@@ -1,9 +1,10 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsNumber, IsOptional, IsString, IsUUID, Min, ValidateNested } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsNumber, IsNumberString, IsOptional, IsString, IsUUID, MaxLength, Min, ValidateNested } from 'class-validator';
 import { LIST_SORT_FIELDS, SUBMISSION_STATUSES, SubmissionStatus, WEATHER_OPTIONS, Weather, type DprSortField } from '@erp/shared';
 import { PageQuery, QueryBool } from '../common/paging';
 import { CLIENT_ID_DOC } from '../common/idempotency';
+import { ChainageField, FloorField, VillageField } from '../common/sector';
 
 export class ManpowerLineDto {
   @ApiProperty({ example: 'Mason' }) @IsString() category: string;
@@ -15,6 +16,28 @@ export class MachineryLineDto {
   @ApiProperty({ example: 8 }) @IsNumber() @Min(0) hours: number;
 }
 
+export class DprMaterialInputDto {
+  @ApiProperty({ description: 'A store item' }) @IsUUID() itemId: string;
+  @ApiProperty({ example: '92' }) @IsNumberString() quantity: string;
+}
+
+/** A work line (item 127): it becomes a progress entry of the DPR. */
+export class DprLineInputDto {
+  @ApiPropertyOptional({ description: "The line's progress entry, to keep it when the DPR is edited; a new id (uuid v4) for a new line" }) @IsOptional() @IsUUID('4') id?: string;
+  @ApiProperty({ description: 'An activity or sub-activity with no sub-activities of its own' }) @IsUUID() activityId: string;
+  @ApiProperty({ example: '11.5' }) @IsNumberString() quantity: string;
+  @ApiPropertyOptional({ example: 'Lift 4 of 6', description: 'Free text; made from the chainage, floor or village when left out' }) @IsOptional() @IsString() @MaxLength(200) location?: string | null;
+  @ChainageField('Road / pipeline: metres from 0+000 where the work starts') chainageFrom?: number | null;
+  @ChainageField('Where it ends (same as the start for work at one point)') chainageTo?: number | null;
+  @FloorField() floor?: string | null;
+  @VillageField() village?: string | null;
+  @ApiPropertyOptional({ type: [ManpowerLineDto], description: 'The crew on this line' }) @IsOptional() @IsArray() @ArrayMaxSize(30) @ValidateNested({ each: true }) @Type(() => ManpowerLineDto) labour?: ManpowerLineDto[];
+  @ApiPropertyOptional({ type: [MachineryLineDto], description: 'Machines on this line' }) @IsOptional() @IsArray() @ArrayMaxSize(30) @ValidateNested({ each: true }) @Type(() => MachineryLineDto) machines?: MachineryLineDto[];
+  @ApiPropertyOptional({ type: [DprMaterialInputDto], description: 'Material used, from the store items' }) @IsOptional() @IsArray() @ArrayMaxSize(30) @ValidateNested({ each: true }) @Type(() => DprMaterialInputDto) materials?: DprMaterialInputDto[];
+  @ApiPropertyOptional({ description: "A work order of the project the line was done under", nullable: true }) @IsOptional() @IsUUID() workOrderId?: string | null;
+  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(500) remarks?: string | null;
+}
+
 export class CreateDprDto {
   @ApiPropertyOptional(CLIENT_ID_DOC) @IsOptional() @IsUUID('4') id?: string;
   @ApiProperty() @IsUUID() projectId: string;
@@ -24,7 +47,14 @@ export class CreateDprDto {
   @ApiPropertyOptional({ type: [ManpowerLineDto], description: 'On create, omit or send [] to take manpower from that day\'s attendance sheet.' }) @IsOptional() @IsArray() @ValidateNested({ each: true }) @Type(() => ManpowerLineDto) manpower?: ManpowerLineDto[];
   @ApiPropertyOptional({ type: [MachineryLineDto] }) @IsOptional() @IsArray() @ValidateNested({ each: true }) @Type(() => MachineryLineDto) machinery?: MachineryLineDto[];
   @ApiPropertyOptional() @IsOptional() @IsString() materialReceived?: string;
-  @ApiProperty() @IsString() workExecuted: string;
+  @ApiPropertyOptional({ description: 'Required without work lines; written from the lines when left out' }) @IsOptional() @IsString() workExecuted?: string;
+  @ApiPropertyOptional({ type: [DprLineInputDto], description: 'The work done, line by line (item 127). On an edit, when sent, the complete list: lines left out are removed.' })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(200)
+  @ValidateNested({ each: true })
+  @Type(() => DprLineInputDto)
+  lines?: DprLineInputDto[];
   @ApiPropertyOptional() @IsOptional() @IsString() testsConducted?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() safetyObservations?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() issues?: string;
@@ -43,4 +73,9 @@ export class ListDprQuery extends PageQuery {
   @ApiPropertyOptional({ enum: LIST_SORT_FIELDS.dpr, default: 'date' }) @IsOptional() @IsIn(LIST_SORT_FIELDS.dpr as unknown as string[]) sortBy?: DprSortField;
   @ApiPropertyOptional({ example: '2026-10-01', description: 'From this day (inclusive)' }) @IsOptional() @IsDateString() from?: string;
   @ApiPropertyOptional({ example: '2026-10-31', description: 'Up to this day (inclusive)' }) @IsOptional() @IsDateString() to?: string;
+}
+
+export class DprWorkOptionsQuery {
+  @ApiProperty() @IsUUID() projectId: string;
+  @ApiPropertyOptional({ example: '2026-10-13', description: "The report's day, for the look-ahead (today when left out)" }) @IsOptional() @IsDateString() date?: string;
 }

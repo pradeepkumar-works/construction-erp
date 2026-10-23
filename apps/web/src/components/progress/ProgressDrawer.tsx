@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import type { ProgressEntryDto } from '@erp/shared';
 import { sectorLocation } from '@erp/shared';
 import { useProgressEntry } from '@/lib/queries';
@@ -12,6 +13,7 @@ import { EditResubmitButton } from '@/components/common/EditResubmitButton';
 import { submissionMetaItems } from '@/components/common/SubmitterInfo';
 import { RecordFrame, type RecordMode } from '@/components/record/RecordFrame';
 import { submissionLifecycle } from '@/components/record/lifecycle';
+import { LinkButton } from '@/components/common/LinkButton';
 
 interface RecordProps {
   id: string | null;
@@ -43,6 +45,7 @@ export function ProgressRecord({ id, mode, open, onClose, onEdit }: RecordProps 
             { key: 'date', label: 'Date', children: formatDate(data.date) },
             { key: 'qty', label: 'Quantity', children: `${formatQty(data.quantity)} ${data.unit}` },
             { key: 'activity', label: 'Activity', children: data.activityName },
+            ...(data.dailyReportId ? [{ key: 'dpr', label: 'Daily report', children: <Link href={`/dpr/${data.dailyReportId}`}>DPR of {formatDate(data.date)}</Link> }] : []),
             { key: 'location', label: 'Location / chainage', children: [data.location, sectorLocation(data)].filter((x, i, a) => x && a.indexOf(x) === i).join(' · ') || '-' },
             { key: 'manpower', label: 'Manpower', children: data.manpowerCount ?? '-' },
             { key: 'machinery', label: 'Machinery used', children: data.machineryUsed ?? '-' },
@@ -54,12 +57,18 @@ export function ProgressRecord({ id, mode, open, onClose, onEdit }: RecordProps 
             photosSection('progress', data.id, data.attachments),
           ],
           activity: { type: 'progress', id: data.id, submission: data },
-          actions: (size) => (
-            <>
-              <EditResubmitButton entry={data} onEdit={onEdit} size={size} />
-              <ReviewActions type="progress" id={data.id} status={data.status} size={size} />
-            </>
-          ),
+          // A DPR's work line (item 127) is changed and decided in its DPR.
+          actions: (size) =>
+            data.dailyReportId ? (
+              <LinkButton href={`/dpr/${data.dailyReportId}`} size={size}>
+                Open the DPR
+              </LinkButton>
+            ) : (
+              <>
+                <EditResubmitButton entry={data} onEdit={onEdit} size={size} />
+                <ReviewActions type="progress" id={data.id} status={data.status} size={size} />
+              </>
+            ),
         }
       }
     />

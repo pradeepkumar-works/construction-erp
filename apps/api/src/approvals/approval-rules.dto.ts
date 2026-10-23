@@ -59,6 +59,8 @@ export class SaveApprovalRulesDto {
 
   @ApiPropertyOptional({ description: 'Accounts pays a bill only against an approved payment request (v5 item 90)' }) @IsOptional() @IsBoolean() paymentsNeedRequest?: boolean;
 
+  @ApiPropertyOptional({ description: 'Progress is recorded only as DPR work lines (item 127)' }) @IsOptional() @IsBoolean() progressFromDpr?: boolean;
+
   @ApiPropertyOptional({ type: [ApprovalEscalationItemDto], description: 'Reminders and escalation per type (v5 item 94), the whole list; types left out have neither. Left out: they stay as they are.' })
   @IsOptional()
   @IsArray()

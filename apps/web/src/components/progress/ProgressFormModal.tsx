@@ -9,7 +9,8 @@ import { QuantityInput } from '@/components/form/inputs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
-import { useActivities, useProjects } from '@/lib/queries';
+import { useActivities, useDprWorkOptions, useProjects } from '@/lib/queries';
+import { LinkButton } from '@/components/common/LinkButton';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { editActionLabel } from '@/components/common/EditResubmitButton';
 import { aiFlagItem, draftDate } from '@/components/ai/drafts';
@@ -41,6 +42,9 @@ export function ProgressFormModal({ open, onClose, projectId, defaultProjectId, 
   const fixedProject = entry?.projectId ?? projectId;
   const selectedProject = Form.useWatch('projectId', form) ?? fixedProject;
   const { data: activities, isLoading: actLoading } = useActivities(selectedProject);
+  // Progress from the DPR only (item 127): a new entry is a line of the day's DPR instead.
+  const workOptions = useDprWorkOptions(open && !entry ? selectedProject : undefined).data;
+  const dprOnly = !entry && !!workOptions?.progressFromDpr;
   const selectedActivity = Form.useWatch('activityId', form);
   const activity = activities?.find((a) => a.id === selectedActivity);
   const draft = entry ? null : prefill;
@@ -107,8 +111,23 @@ export function ProgressFormModal({ open, onClose, projectId, defaultProjectId, 
       width={640}
       draftKey={editing ? undefined : `progress:${projectId ?? 'any'}`}
       aiDraft={draft}
+      okDisabled={dprOnly}
     >
       <Form form={form} layout="vertical">
+        {dprOnly ? (
+          <Alert
+            type="info"
+            showIcon
+            style={{ marginBottom: 16 }}
+            title="Your company records progress in the DPR"
+            description="Add this work as a line of the day's DPR; it is approved with the DPR."
+            action={
+              <LinkButton href="/dpr" size="small">
+                Daily reports
+              </LinkButton>
+            }
+          />
+        ) : null}
         {entry?.reviewNote && (
           <Alert type="warning" showIcon style={{ marginBottom: 16 }} title={`Reviewer note from ${entry.reviewedByName ?? 'approver'}`} description={entry.reviewNote} />
         )}

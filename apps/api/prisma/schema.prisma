@@ -541,6 +541,9 @@ model Organization {
   /// Payment requests (v5 item 90): accounts may pay a bill only against an approved payment request. Off for companies
   /// made before item 90, on for new sign-ups.
   paymentsNeedRequest Boolean     @default(false)
+  /// Progress from the DPR only (item 127): progress is recorded as the DPR's work lines, not on its own. Off for
+  /// companies made before item 127, on for new sign-ups.
+  progressFromDpr     Boolean     @default(false)
   /// Module switches (v6 item 117): the switchable modules (SWITCHABLE_MODULES in @erp/shared) an admin turned off.
   /// Their data stays; turning one on again brings it back.
   modulesOff          String[]    @default([])
@@ -555,6 +558,7 @@ model Organization {
   boqItems             BoqItem[]
   activities           Activity[]
   workElements         WorkElement[]
+  progressMaterials    ProgressMaterial[]
   milestones           Milestone[]
   activityLinks        ActivityLink[]
   workers              Worker[]
@@ -1638,6 +1642,7 @@ model WorkOrder {
   paymentRequests  PaymentRequest[]
   advances         VendorPayment[]
   excessRecoveries ExcessMaterialRecovery[]
+  progressLines    ProgressEntry[]
   supplierInvoices SupplierInvoice[]
   scEnquiry        SubcontractEnquiry?
 
@@ -2017,6 +2022,18 @@ model ProgressEntry {
   village        String?
   manpowerCount  Int?
   machineryUsed  String?
+  /// A work line of this DPR (item 127): it is submitted, approved and sent back with the DPR, never on its own
+  dailyReportId  String?
+  dailyReport    DailyReport?     @relation(fields: [dailyReportId], references: [id], onDelete: Cascade)
+  /// [{ category: string, count: number }]: the crew on this line; manpowerCount is their total
+  labour         Json?
+  /// [{ name: string, hours: number }]: machines on this line; machineryUsed is their names
+  machines       Json?
+  /// The subcontractor's work order the line was done under
+  workOrderId    String?
+  workOrder      WorkOrder?       @relation(fields: [workOrderId], references: [id], onDelete: SetNull)
+  /// Order of the line in its DPR
+  sortOrder      Int              @default(0)
   status         SubmissionStatus @default(DRAFT)
   submittedById  String
   submittedBy    User             @relation("ProgressSubmitter", fields: [submittedById], references: [id])
@@ -2029,12 +2046,31 @@ model ProgressEntry {
   updatedAt      DateTime         @updatedAt
 
   attachments Attachment[]
+  materials   ProgressMaterial[]
 
   @@index([projectId, status])
   @@index([activityId, status])
   @@index([organizationId, status])
   @@index([organizationId, date])
   @@index([projectId, date])
+  @@index([dailyReportId])
+}
+
+/// Material a DPR work line used (item 127), suggested from the BOQ item's norms; the stock check against the DPR
+/// (item 128) reads it.
+model ProgressMaterial {
+  id              String        @id @default(uuid())
+  organizationId  String
+  organization    Organization  @relation(fields: [organizationId], references: [id])
+  progressEntryId String
+  progressEntry   ProgressEntry @relation(fields: [progressEntryId], references: [id], onDelete: Cascade)
+  itemId          String
+  item            Item          @relation(fields: [itemId], references: [id])
+  quantity        Decimal       @db.Decimal(18, 3)
+  sortOrder       Int           @default(0)
+
+  @@index([progressEntryId])
+  @@index([organizationId, itemId])
 }
 
 model DailyReport {
@@ -2069,6 +2105,8 @@ model DailyReport {
 
   attachments Attachment[]
   hindrance   HindranceCheck?
+  /// The work done, line by line (item 127)
+  lines       ProgressEntry[]
 
   @@index([projectId, date])
   @@index([organizationId, status])
@@ -2263,6 +2301,7 @@ model Item {
   tenderLines       TenderItemLine[]
   materialApprovals MaterialApproval[]
   approvedMakes     ApprovedMake[]
+  progressUses      ProgressMaterial[]
 
   @@unique([organizationId, name, unit])
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Alert, Button, DatePicker, Form, Input, InputNumber, Select, Typography } from 'antd';
 import dayjs from 'dayjs';
 import type { AiDraftDto, AttachmentDto, DailyReportDto, Weather } from '@erp/shared';
@@ -8,7 +8,7 @@ import { MANPOWER_CATEGORIES, WEATHER_LABELS, WEATHER_OPTIONS } from '@erp/share
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
-import { useAttendanceDay, useDprList, useProjects } from '@/lib/queries';
+import { useAttendanceDay, useDpr, useDprList, useDprWorkOptions, useProjects } from '@/lib/queries';
 import { formatDate } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { editActionLabel } from '@/components/common/EditResubmitButton';
@@ -17,6 +17,7 @@ import { LineTable } from '@/components/form/LineTable';
 import { aiFlagItem, draftDate } from '@/components/ai/drafts';
 import { themeFontSize } from '@/lib/theme';
 import { recordPage } from '@/components/approvals/queue';
+import { DprLinesField, copiedLine, followNorms, lineValues, linesBody, type DprLineValues } from './DprLinesField';
 
 interface FormValues {
   projectId: string;
@@ -32,6 +33,8 @@ interface FormValues {
   issues?: string;
   nextDayPlan?: string;
   photos?: AttachmentDto[];
+  /** The work done, line by line (item 127) */
+  lines?: DprLineValues[];
 }
 
 /** Create a DPR, or (with `entry`) edit a draft / rejected / changes-requested one and resubmit it. */
@@ -50,6 +53,22 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
   const watchedDate = Form.useWatch('date', form);
   const dayStr = watchedDate ? dayjs(watchedDate).format('YYYY-MM-DD') : undefined;
   const attendance = useAttendanceDay(open && !editing ? watchedProject : undefined, open && !editing ? dayStr : undefined);
+  const options = useDprWorkOptions(open ? watchedProject : undefined, dayStr).data;
+  const headCount = Form.useWatch('manpower', form) as FormValues['manpower'];
+  // An entry opened from a list has no lines yet: they load before the form can save them.
+  const full = useDpr(open && entry && !entry.lines ? entry.id : undefined).data;
+  const withLines = entry?.lines ? entry : full;
+  const linesReady = !editing || !!withLines;
+  // The edit's lines go in once they are known: with the entry (opened from its page) or when the full report loads. The
+  // reset below fills them too, as it empties the form after this effect has run.
+  const linesFor = useRef<string | null>(null);
+  const withLinesNow = useRef(withLines);
+  useEffect(() => {
+    withLinesNow.current = withLines;
+    if (!open || !withLines || linesFor.current === withLines.id) return;
+    form.setFieldsValue({ lines: (withLines.lines ?? []).map(lineValues) });
+    linesFor.current = withLines.id;
+  }, [open, withLines, form]);
   const attendanceSheet = attendance.data?.sheet ?? null;
   const [manpowerEdited, setManpowerEdited] = useState(false);
   const [filledFrom, setFilledFrom] = useState<string | null>(null);
@@ -69,6 +88,12 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
   // day's attendance still wins for manpower.
   const prevDay = dayStr ? dayjs(dayStr).subtract(1, 'day').format('YYYY-MM-DD') : undefined;
   const previous = useDprList({ projectId: watchedProject, to: prevDay, pageSize: 1 }, open && !editing && !!watchedProject && !!prevDay).data?.items[0];
+  const previousFull = useDpr(open && !editing && previous && previous.lineCount > 0 ? previous.id : undefined).data;
+  const watchedLines = Form.useWatch('lines', { form, preserve: true }) as DprLineValues[] | undefined;
+  const copyLines = () => {
+    if (!previousFull?.lines) return;
+    form.setFieldsValue({ lines: [...(watchedLines ?? []).filter((l) => l?.activityId), ...previousFull.lines.map(copiedLine)] });
+  };
   const [copiedFrom, setCopiedFrom] = useState<DailyReportDto | null>(null);
   const [copyCleared, setCopyCleared] = useState(false);
   useEffect(() => {
@@ -97,8 +122,14 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
     setFilledFrom(null);
     setCopiedFrom(null);
     setCopyCleared(false);
+    linesFor.current = null;
     form.resetFields();
     if (entry) {
+      const known = withLinesNow.current;
+      if (known?.id === entry.id) {
+        form.setFieldsValue({ lines: (known.lines ?? []).map(lineValues) });
+        linesFor.current = known.id;
+      }
       form.setFieldsValue({
         projectId: entry.projectId,
         date: dayjs(entry.date),
@@ -122,6 +153,7 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
         siteCondition: 'Workable',
         manpower: [],
         machinery: [],
+        lines: [],
       });
       if (prefill) {
         const v = prefill.values as Partial<Omit<FormValues, 'date'>> & { date?: string };
@@ -153,7 +185,9 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
         manpower: (v.manpower ?? []).filter((m) => m && m.category),
         machinery: (v.machinery ?? []).filter((m) => m && m.name),
         materialReceived: v.materialReceived || blank,
-        workExecuted: v.workExecuted,
+        workExecuted: v.workExecuted?.trim() ?? '',
+        // On an edit the lines are the complete list, so they are sent only once they have loaded.
+        ...(linesReady ? { lines: linesBody(v.lines) } : {}),
         testsConducted: v.testsConducted || blank,
         safetyObservations: v.safetyObservations || blank,
         issues: v.issues || blank,
@@ -180,13 +214,16 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
       onSubmit={(v) => mutation.mutateAsync(v)}
       draftKey={editing ? undefined : `dpr:${projectId ?? 'any'}`}
       aiDraft={draft}
-      width={820}
+      width={980}
+      allValues
+      okDisabled={!linesReady}
     >
       <Form
         form={form}
         layout="vertical"
         onValuesChange={(changed) => {
           if ('manpower' in changed) setManpowerEdited(true);
+          followNorms(form, changed, options);
         }}
       >
         {entry?.reviewNote && (
@@ -207,7 +244,36 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
               <Input placeholder="Workable / Waterlogged" />
             </Form.Item>
           </FormGrid>
-          <Form.Item name="workExecuted" label="Work executed" rules={[{ required: true, whitespace: true, message: 'Say what work was done today' }]} {...aiFlagItem(draft, 'workExecuted', now?.workExecuted)}>
+        </FormSection>
+
+        <FormSection
+          title="Work done"
+          extra={
+            !editing && previousFull?.lines?.length ? (
+              <Button type="link" size="small" onClick={copyLines} style={{ padding: 0, fontSize: themeFontSize('fontSizeSM') }}>
+                Copy {previousFull.lines.length} lines from {formatDate(previousFull.date)}
+              </Button>
+            ) : null
+          }
+        >
+          <Typography.Paragraph type="secondary">
+            One line for each activity worked on: where, how much today, and its crew and material. Activities planned for this week come first.
+          </Typography.Paragraph>
+          <DprLinesField options={options} headCount={headCount} />
+          <Form.Item
+            name="workExecuted"
+            label={watchedLines?.some((l) => l?.activityId) ? 'Other work and notes' : 'Work executed'}
+            extra={watchedLines?.some((l) => l?.activityId) ? 'Left empty, it is written from the lines.' : undefined}
+            style={{ marginTop: 16 }}
+            dependencies={['lines']}
+            rules={[
+              ({ getFieldValue }) => ({
+                validator: (_, v: string | undefined) =>
+                  v?.trim() || ((getFieldValue('lines') ?? []) as DprLineValues[]).some((l) => l?.activityId) ? Promise.resolve() : Promise.reject(new Error('Say what work was done today, or add a work line')),
+              }),
+            ]}
+            {...aiFlagItem(draft, 'workExecuted', now?.workExecuted)}
+          >
             <Input.TextArea rows={3} placeholder="Summary of work done today" />
           </Form.Item>
         </FormSection>
@@ -258,7 +324,7 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
                     title: 'Category',
                     render: (f) => (
                       <Form.Item name={[f.name, 'category']} noStyle rules={[{ required: true, message: '' }]}>
-                        <Select style={{ width: '100%', minWidth: 120 }} placeholder="Category" options={MANPOWER_CATEGORIES.map((c) => ({ value: c, label: c }))} />
+                        <Select style={{ width: '100%', minWidth: 120 }} placeholder="Category" aria-label={`Manpower category ${f.name + 1}`} options={MANPOWER_CATEGORIES.map((c) => ({ value: c, label: c }))} />
                       </Form.Item>
                     ),
                   },
@@ -269,7 +335,7 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
                     align: 'right',
                     render: (f) => (
                       <Form.Item name={[f.name, 'count']} noStyle rules={[{ required: true, message: '' }]}>
-                        <InputNumber min={0} precision={0} placeholder="Nos" inputMode="numeric" style={{ width: '100%' }} />
+                        <InputNumber min={0} precision={0} placeholder="Nos" inputMode="numeric" aria-label={`Number of manpower category ${f.name + 1}`} style={{ width: '100%' }} />
                       </Form.Item>
                     ),
                   },
@@ -288,7 +354,7 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
                     title: 'Equipment',
                     render: (f) => (
                       <Form.Item name={[f.name, 'name']} noStyle rules={[{ required: true, message: '' }]}>
-                        <Input placeholder="Equipment" style={{ minWidth: 120 }} />
+                        <Input placeholder="Equipment" aria-label={`Equipment ${f.name + 1}`} style={{ minWidth: 120 }} />
                       </Form.Item>
                     ),
                   },
@@ -299,7 +365,7 @@ export function DprFormModal({ open, onClose, projectId, defaultProjectId, entry
                     align: 'right',
                     render: (f) => (
                       <Form.Item name={[f.name, 'hours']} noStyle rules={[{ required: true, message: '' }]}>
-                        <InputNumber min={0} max={24} placeholder="Hrs" inputMode="decimal" style={{ width: '100%' }} />
+                        <InputNumber min={0} max={24} placeholder="Hrs" inputMode="decimal" aria-label={`Hours of equipment ${f.name + 1}`} style={{ width: '100%' }} />
                       </Form.Item>
                     ),
                   },

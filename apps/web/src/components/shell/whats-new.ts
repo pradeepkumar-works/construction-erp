@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-12-structured-dpr',
+    date: '2026-12-28',
+    title: 'DPR work lines: progress by component, activity and sub-activity',
+    points: [
+      "The DPR's Work done section takes one line for each activity or sub-activity worked on: where, how much today, the crew, machines and material, and the work order. This week's planned activities come first, material is filled from the norms, and Copy lines brings back the last DPR's work.",
+      'Approving the DPR approves its lines as progress, with hold points checked for each line. The DPR and its print show each line under its component with scope, up to previous, cumulative, % and balance, and the crew on the lines against the head count.',
+      'Admins can make the DPR the only way progress is recorded (Approval rules). It is on for new companies. On the phone, the DPR takes work lines too, offline as well.',
+    ],
+  },
+  {
     id: '2026-12-work-breakdown',
     date: '2026-12-24',
     title: 'Project structure: components, sub-components and sub-activities',
