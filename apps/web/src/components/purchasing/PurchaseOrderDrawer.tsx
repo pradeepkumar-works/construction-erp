@@ -57,6 +57,8 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
     (data?.lines ?? []).map((l) => ({ itemName: l.itemName, make: l.make })),
   );
   const makeWarnings = makeCheck.data ?? [];
+  // Leakage checks (item 121): lines above what another site paid for the item in the 30 days before the order
+  const rateChecks = (data?.lines ?? []).flatMap((line) => (line.rateCheck ? [{ line, check: line.rateCheck }] : []));
   const [receiving, setReceiving] = useState(false);
   const [billing, setBilling] = useState(false);
   const [closing, setClosing] = useState(false);
@@ -185,6 +187,27 @@ export function PurchaseOrderRecord({ id, mode, open, onClose, onEdit }: RecordP
                         <ul style={{ margin: 0, paddingLeft: 18 }}>
                           {makeWarnings.map((w) => (
                             <li key={w.index}>{makeWarningText(w)}</li>
+                          ))}
+                        </ul>
+                      }
+                    />
+                  ) : null}
+                  {rateChecks.length ? (
+                    <Alert
+                      type="warning"
+                      showIcon
+                      style={{ marginBottom: 12 }}
+                      title={`${rateChecks.length === 1 ? '1 line is' : `${rateChecks.length} lines are`} above what another site paid in the 30 days before`}
+                      description={
+                        <ul style={{ margin: 0, paddingLeft: 18 }}>
+                          {rateChecks.map(({ line: l, check: c }) => (
+                            <li key={l.id}>
+                              <span translate="no">{l.itemName}</span>: {formatINR(l.rate, true)} against {formatINR(c.bestRate, true)} paid by <span translate="no">{c.projectName}</span> to <span translate="no">{c.vendorName}</span> on {formatDate(c.poDate)} (
+                              <Link href={`/purchase-orders/${c.purchaseOrderId}`} className="text-link" translate="no">
+                                {c.poNo}
+                              </Link>
+                              ), {formatPct(c.abovePct)} more: <span translate="no">{formatINR(c.extra)}</span> on this order
+                            </li>
                           ))}
                         </ul>
                       }

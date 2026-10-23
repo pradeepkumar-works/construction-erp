@@ -103,6 +103,8 @@ export const NAV: Record<string, string> = {
   'Stock value and idle material by age.': 'स्टॉक का मूल्य और उम्र के अनुसार पड़ी सामग्री।',
   'Material reconciliation': 'सामग्री मिलान',
   'Material used against the work done, wastage by reason.': 'हुए काम के मुकाबले लगी सामग्री, कारण के अनुसार बर्बादी।',
+  'Leakage checks': 'रिसाव (लीकेज) जाँच',
+  "The month's material, rate, fuel and idle-hire flags, with the rupees at risk and the working behind each.": 'महीने की सामग्री, रेट, डीज़ल और खड़ी किराए की मशीनों की चेतावनियाँ, जोखिम वाले रुपये और हर एक का हिसाब।',
   'Central stores': 'केंद्रीय स्टोर',
   'The company stores and yards: what each holds, its value and age, and what is on the road to the sites.': 'कंपनी के स्टोर और यार्ड: हर एक में क्या है, उसका मूल्य और उम्र, और साइटों के रास्ते में क्या है।',
   'Item master': 'आइटम मास्टर',

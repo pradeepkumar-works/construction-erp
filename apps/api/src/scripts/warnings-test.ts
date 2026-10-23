@@ -219,11 +219,11 @@ test('emi: an EMI more than two days late warns, with the oldest, the count and 
 // Roles
 
 test('roles: each kind goes to the role that can act on it', () => {
-  assert.deepEqual(watchListKinds('MANAGEMENT'), ['SCHEDULE', 'CASH', 'VENDOR', 'STOCK', 'MACHINE', 'DPR', 'MATERIAL_OVERUSE', 'FUEL_NORM', 'LOAN_EMI']);
+  assert.deepEqual(watchListKinds('MANAGEMENT'), ['SCHEDULE', 'CASH', 'VENDOR', 'STOCK', 'MACHINE', 'DPR', 'MATERIAL_OVERUSE', 'FUEL_NORM', 'LOAN_EMI', 'RATE_ABOVE', 'FUEL_NO_LOG', 'IDLE_HIRE']);
   assert.deepEqual(watchListKinds('QUANTITY_SURVEYOR'), ['MATERIAL_OVERUSE']);
-  assert.deepEqual(watchListKinds('STORE_MANAGER'), ['STOCK', 'MACHINE', 'FUEL_NORM']);
+  assert.deepEqual(watchListKinds('STORE_MANAGER'), ['STOCK', 'MACHINE', 'FUEL_NORM', 'FUEL_NO_LOG', 'IDLE_HIRE']);
   assert.deepEqual(watchListKinds('ACCOUNTS_MANAGER'), ['CASH', 'LOAN_EMI']);
-  assert.deepEqual(watchListKinds('PROCUREMENT_MANAGER'), ['VENDOR']);
+  assert.deepEqual(watchListKinds('PROCUREMENT_MANAGER'), ['VENDOR', 'RATE_ABOVE']);
   assert.deepEqual(watchListKinds('SITE_ENGINEER'), []);
 });
 

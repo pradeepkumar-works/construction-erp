@@ -683,6 +683,12 @@ kbd {
     min-width: 44px;
     min-height: 44px;
   }
+  /* A row of links under a card (watch list, leakage checks): each a 44 px target, as they wrap onto lines of their own. */
+  :root .link-row > a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
   /* A statement's rows open and close their accounts, so each is a 44 px row and the small expand buttons sit a row apart. */
   :root .statement-table .ant-table-tbody > tr > td {
     height: 44px;

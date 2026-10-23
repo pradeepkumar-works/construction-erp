@@ -156,6 +156,11 @@ and the pre-delivery checklist.
   `captureFrom` is its number, drafted by `AiService.ask` (`client: 'whatsapp'`) and saved only on the sender's Save, through
   the kind's own `create` with the create DTO's validation; a new saveable kind is a line in `CAPTURE_SAVE_KINDS` and `create`.
   Parsing and replies are pure in `whatsapp-rules.ts`; keep `src/scripts/whatsapp-capture-test.ts` passing.
+- Leakage checks (item 121, `apps/api/src/leakage`, ARCHITECTURE "Leakage checks"): material reads the reconciliation only
+  through `ReconciliationService.forPeriod`, rates go through `rateAboveOthers` in `@erp/shared/leakage.ts` (the PO form,
+  record, page and watch list share it), and the arithmetic is pure in `leakage-rules.ts`. Who sees a section is
+  `leakageSections(role)`; the watch list's RATE_ABOVE, FUEL_NO_LOG and IDLE_HIRE come from `LeakageService.compute`.
+  Keep `src/scripts/leakage-test.ts` passing.
 - Payroll (item 100, `apps/api/src/payroll`, ARCHITECTURE "Payroll"): every figure is a pure function in `payroll-rules.ts`
   with a test in `src/scripts/payroll-test.ts` (CI runs it); a run has its own approval (prepare, approve, pay), not
   `SubmissionLifecycleService`. Professional tax per state is `PT_RULES` in `packages/shared/src/payroll.ts`.

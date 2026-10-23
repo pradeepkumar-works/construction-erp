@@ -12,6 +12,7 @@ import {
   CreateVendorBillDto,
   HirePreviewQuery,
   LastRatesQuery,
+  RateCheckQuery,
   ListPurchaseOrdersQuery,
   ListVendorBillsQuery,
   ProcurementStatusQuery,
@@ -88,6 +89,12 @@ export class PurchasingController {
   @Get('purchase-orders/last-rates')
   lastRates(@CurrentUser() user: RequestUser, @Query() q: LastRatesQuery) {
     return this.orders.lastRates(user, q);
+  }
+
+  @ApiOperation({ summary: 'What other sites paid for items in the 30 days before an order', description: 'Item 121. Approved orders of other projects, keyed by `name|unit` in lower case; the form checks its rates with `rateAboveOthers`.' })
+  @Get('purchase-orders/rate-check')
+  rateCheck(@CurrentUser() user: RequestUser, @Query() q: RateCheckQuery) {
+    return this.orders.rateCheck(user, q);
   }
 
   @Get('purchase-orders/:id')

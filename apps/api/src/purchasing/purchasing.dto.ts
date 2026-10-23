@@ -135,6 +135,12 @@ export class LastRatesQuery {
   @ApiPropertyOptional({ description: 'Leave out this order (the one being edited)' }) @IsOptional() @IsUUID() excludePoId?: string;
 }
 
+/** What other sites paid for items (item 121). */
+export class RateCheckQuery extends LastRatesQuery {
+  @ApiPropertyOptional({ description: 'The project ordering: its own orders are left out' }) @IsOptional() @IsUUID() projectId?: string;
+  @ApiPropertyOptional({ example: '2026-10-23', description: 'The order date; the window is the 30 days before it (default today)' }) @IsOptional() @IsDateString() poDate?: string;
+}
+
 export class ListPurchaseOrdersQuery extends PageQuery {
   @ApiPropertyOptional() @IsOptional() @IsUUID() projectId?: string;
   @ApiPropertyOptional() @IsOptional() @IsUUID() vendorId?: string;

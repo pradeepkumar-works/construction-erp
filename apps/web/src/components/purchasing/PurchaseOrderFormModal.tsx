@@ -8,7 +8,7 @@ import type { AttachmentDto, MakeWarningDto, PurchaseOrderDto } from '@erp/share
 import { GST_RATES, MSME_CATEGORY_LABELS, lastRateKey } from '@erp/shared';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE, useNotify } from '@/lib/notify';
-import { useLastRates, useMakeCheck, useProjects } from '@/lib/queries';
+import { useLastRates, useMakeCheck, useProjects, useRateCheck } from '@/lib/queries';
 import { useDebounced } from '@/lib/debounce';
 import { VendorSelect, useVendor } from '@/components/common/SearchSelect';
 import { formatINR, toNumber } from '@/lib/format';
@@ -19,7 +19,7 @@ import { LineTable } from '@/components/form/LineTable';
 import { MoneyInput, QuantityInput } from '@/components/form/inputs';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { recordPage } from '@/components/approvals/queue';
-import { LastRates } from './LastRates';
+import { LastRates, RateAbove } from './LastRates';
 
 export interface PoLineValue {
   materialRequestItemId?: string | null;
@@ -86,6 +86,9 @@ export function PurchaseOrderFormModal({
   const freight = Form.useWatch('freight', form);
   const vendorId = Form.useWatch('vendorId', form);
   const projectId = Form.useWatch('projectId', form) as string | undefined;
+  const poDateValue = Form.useWatch('poDate', form) as dayjs.Dayjs | undefined;
+  const poDate = (poDateValue ?? dayjs()).format('YYYY-MM-DD');
+  const others = useRateCheck((lines ?? []).map((l) => ({ itemName: l?.itemName ?? '', unit: l?.unit ?? '' })), projectId, poDate, open, order?.id);
   // Lines whose material has approved makes on the project but name another make, or none (v6 item 113).
   const makeKey = useDebounced(JSON.stringify((lines ?? []).map((l) => ({ itemName: l?.itemName ?? '', make: l?.make ?? null }))), 400);
   const makeLines = useMemo(() => JSON.parse(makeKey) as { itemName: string; make: string | null }[], [makeKey]);
@@ -328,7 +331,10 @@ export function PurchaseOrderFormModal({
                       <MoneyInput aria-label={`Rate of line ${f.name + 1}`} />
                     </Form.Item>
                     {lines?.[f.name]?.itemName && lines[f.name].unit ? (
-                      <LastRates itemName={lines[f.name].itemName!} rates={last.data?.[lastRateKey(lines[f.name].itemName!, lines[f.name].unit!)]} loading={last.isLoading} />
+                      <>
+                        <LastRates itemName={lines[f.name].itemName!} rates={last.data?.[lastRateKey(lines[f.name].itemName!, lines[f.name].unit!)]} loading={last.isLoading} />
+                        <RateAbove rate={lines[f.name].rate} quantity={lines[f.name].quantity} projectId={projectId} poDate={poDate} quotes={others.data?.[lastRateKey(lines[f.name].itemName!, lines[f.name].unit!)]} />
+                      </>
                     ) : null}
                   </>
                 ),

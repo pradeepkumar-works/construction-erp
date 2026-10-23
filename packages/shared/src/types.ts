@@ -8,6 +8,7 @@ import type { ProgressNarrativeDto } from './briefs';
 import type { DocumentDiscipline, DocumentKind, LetterDirection, RevisionStatus, TransmittalPurpose } from './documents';
 import type { LeaveStatus, LeaveType, OvertimeStatus, StaffAttendanceStatus } from './staff';
 import type { CostHead } from './cost';
+import type { PoLineRateCheckDto } from './leakage';
 import type { SupplierDispatchStatus, SupplierNoticeEntity } from './supplier';
 import type { SwitchableModule } from './module-switches';
 import type {
@@ -1760,6 +1761,11 @@ export interface PurchaseOrderLineDto {
   receivedQty: string;
   /** On vendor bills against this line that are not rejected */
   billedQty: string;
+  /**
+   * On the order's own record only (item 121): another site paid less for this item in the 30 days before the order;
+   * null when nobody did, absent in lists.
+   */
+  rateCheck?: PoLineRateCheckDto | null;
 }
 
 export interface PurchaseOrderDto extends SubmissionBase {

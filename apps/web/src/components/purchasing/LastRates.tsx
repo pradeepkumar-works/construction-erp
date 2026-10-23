@@ -2,9 +2,9 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Button, Popover, Table, Typography } from 'antd';
-import { HistoryOutlined } from '@ant-design/icons';
-import { LAST_RATES_COUNT, type LastRateDto } from '@erp/shared';
+import { Button, Popover, Table, Typography, theme } from 'antd';
+import { HistoryOutlined, WarningOutlined } from '@ant-design/icons';
+import { LAST_RATES_COUNT, rateAboveOthers, type LastRateDto, type RateQuote } from '@erp/shared';
 import { formatDate, formatINR, formatQty } from '@/lib/format';
 import { themeFontSize } from '@/lib/theme';
 
@@ -46,5 +46,28 @@ export function LastRates({ itemName, rates, loading }: { itemName: string; rate
         Last order <span translate="no">{formatINR(last.rate, true)} · {last.vendorName}</span>
       </Button>
     </Popover>
+  );
+}
+
+/**
+ * Leakage checks (item 121) on the order form: the rate typed is above the lowest another site paid for the item in the
+ * 30 days before the order. The same rule as the order's record, the leakage page and the watch list.
+ */
+export function RateAbove({ rate, quantity, projectId, poDate, quotes }: { rate: number | string | null | undefined; quantity?: number | string | null; projectId: string | undefined; poDate: string; quotes: RateQuote[] | undefined }) {
+  const { token } = theme.useToken();
+  const r = Number(rate);
+  if (!projectId || !quotes?.length || !(r > 0)) return null;
+  const hit = rateAboveOthers({ rate: r, projectId, poDate }, quotes);
+  if (!hit) return null;
+  const q = Number(quantity);
+  return (
+    <div style={{ color: token.colorWarningText, fontSize: themeFontSize('fontSizeSM') }} role="note">
+      <WarningOutlined aria-hidden /> {Math.round(hit.abovePct)}% above the <span translate="no">{formatINR(hit.best.rate, true)}</span>{' '}
+      <Link href={`/purchase-orders/${hit.best.purchaseOrderId}`} className="text-link" translate="no">
+        {hit.best.projectName}
+      </Link>{' '}
+      paid on {formatDate(hit.best.poDate)}
+      {q > 0 ? <span translate="no">: {formatINR((r - hit.best.rate) * q)} more</span> : null}
+    </div>
   );
 }

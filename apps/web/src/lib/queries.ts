@@ -40,6 +40,8 @@ import type {
   DraftChecksDto,
   BillChecksDto,
   WatchListDto,
+  LeakageDto,
+  RateBenchmarksDto,
   WarningKind,
   WarningOutcome,
   BriefStatusDto,
@@ -2034,6 +2036,23 @@ export function useCoverRequest(materialRequestId: string) {
 }
 
 /** The last approved orders of items (`name|unit` each), keyed by `lastRateKey`. */
+/** What other sites paid for the items in the 30 days before the order (item 121), for the PO form's rate check. */
+export const useRateCheck = (items: { itemName: string; unit: string }[], projectId: string | undefined, poDate: string | undefined, enabled = true, excludePoId?: string) => {
+  const keys = [...new Set(items.filter((i) => i.itemName?.trim() && i.unit?.trim()).map((i) => `${i.itemName.trim()}|${i.unit.trim()}`))].sort();
+  return useQuery({
+    queryKey: ['purchase-orders', 'rate-check', keys, projectId ?? null, poDate ?? null, excludePoId ?? null],
+    queryFn: async () => {
+      const q = new URLSearchParams(keys.map((k) => ['item', k]));
+      if (projectId) q.set('projectId', projectId);
+      if (poDate) q.set('poDate', poDate);
+      if (excludePoId) q.set('excludePoId', excludePoId);
+      return (await api.get<RateBenchmarksDto>(`/purchase-orders/rate-check?${q}`)).data;
+    },
+    enabled: enabled && keys.length > 0 && !!projectId,
+    staleTime: 60_000,
+  });
+};
+
 export const useLastRates = (items: { itemName: string; unit: string }[], enabled = true, excludePoId?: string) => {
   const keys = [...new Set(items.filter((i) => i.itemName?.trim() && i.unit?.trim()).map((i) => `${i.itemName.trim()}|${i.unit.trim()}`))].sort();
   return useQuery({
@@ -3176,6 +3195,10 @@ export const useSnagDraft = () =>
   useMutation({ mutationFn: async (v: { attachmentId: string; projectId: string }) => (await api.post<SnagDraftDto>('/photo-checks/snag-draft', v)).data });
 
 // ---- Early warnings, the watch list (AI item 73) ----
+
+/** Leakage checks (item 121) for a month, YYYY-MM. */
+export const useLeakage = (month: string, enabled = true) =>
+  useQuery({ queryKey: ['leakage', month], queryFn: async () => (await api.get<LeakageDto>(`/leakage?month=${month}`)).data, enabled });
 
 export const useWatchList = (enabled = true) =>
   useQuery({ queryKey: ['watch-list'], queryFn: async () => (await api.get<WatchListDto>('/warnings')).data, enabled });

@@ -70,6 +70,7 @@ import ListTodo from 'lucide-react-native/icons/list-todo';
 import Lock from 'lucide-react-native/icons/lock';
 import Mail from 'lucide-react-native/icons/mail';
 import MessageCircle from 'lucide-react-native/icons/message-circle';
+import ScanSearch from 'lucide-react-native/icons/scan-search';
 import MessageSquareText from 'lucide-react-native/icons/message-square-text';
 import Network from 'lucide-react-native/icons/network';
 import NotebookPen from 'lucide-react-native/icons/notebook-pen';
@@ -185,6 +186,7 @@ export const NAV_ICONS: Record<string, LucideIcon> = {
   'lock': Lock,
   'mail': Mail,
   'message-circle': MessageCircle,
+  'scan-search': ScanSearch,
   'message-square-text': MessageSquareText,
   'network': Network,
   'notebook-pen': NotebookPen,
