@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { chooseOption, signIn, formPanel } from './helpers';
+import { chooseOption, signIn, formPanel, openNewMenu } from './helpers';
 
 /** The header (UI roadmap item 54): project switcher, + New, favourites, recent pages in Search, Help. */
 test('the project picked in the header filters every list and is kept after a reload', async ({ page }) => {
@@ -25,14 +25,14 @@ test('the project picked in the header filters every list and is kept after a re
 
 test('+ New opens the form from any page, and on the list already open', async ({ page }) => {
   await signIn(page, 'pm@demo.com');
-  await page.locator('[data-tour="new"]').click();
+  await openNewMenu(page);
   await page.getByRole('menuitem', { name: 'Daily report' }).click();
   await expect(page).toHaveURL(/\/dpr$/);
   await expect(page.getByRole('dialog')).toContainText('New daily report');
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toBeHidden();
 
-  await page.locator('[data-tour="new"]').click();
+  await openNewMenu(page);
   await page.getByRole('menuitem', { name: 'Material request' }).click();
   await expect(page).toHaveURL(/\/material-requests$/);
   await expect(formPanel(page, 'New material request')).toBeVisible();

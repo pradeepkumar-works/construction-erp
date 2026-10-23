@@ -16,7 +16,7 @@ test('HR exports the payroll inputs and sees the labour contractors month', asyn
   expect(priya.paidDays).toBe(priya.calendarDays - priya.lopDays);
 
   await signIn(page, 'hr@demo.com');
-  await page.getByRole('link', { name: 'Payroll', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Payroll', exact: true }).click();
   await page.getByRole('tab', { name: 'Staff inputs' }).click();
   await page.getByLabel('Month').click();
   await page.getByLabel('Month').fill(monthLabel);

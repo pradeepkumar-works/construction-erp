@@ -9,8 +9,8 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
-    id: '2026-11-launcher-home',
-    date: '2026-11-10',
+    id: '2026-12-launcher-home',
+    date: '2026-12-06',
     title: 'A new Home: your modules, pins and recent pages',
     points: [
       'Home now opens on a tile for every module you can use, with a count where something waits for you. Type in the search box to find any page or tab by name; press Enter to open the first one.',

@@ -391,6 +391,8 @@ export function navDestination(node: NavNode): NavDestination | null {
   const target = navTarget(node);
   if (target.route) return { kind: 'page', href: target.route };
   if (target.projectTab) return { kind: 'project', tab: target.projectTab, query: target.projectQuery };
+  // A module opens its screen.
+  if (target.parent === null) return { kind: 'page', href: `/modules/${target.id}` };
   return null;
 }
 

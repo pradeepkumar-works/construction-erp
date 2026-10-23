@@ -23,6 +23,13 @@ export async function signIn(page: Page, email: string, password = PASSWORD) {
   await expect(homeHeading(page)).toBeVisible();
 }
 
+/** Opens + New and waits for its menu to finish sliding in, so a click lands on the item rather than the page under it
+ *  (a click while the menu is still placing itself scrolls the page and can hover the header's Ask button instead). */
+export async function openNewMenu(page: Page) {
+  await page.locator('[data-tour="new"]').click();
+  await expect(page.locator('.ant-dropdown:not(.ant-dropdown-hidden):not(.ant-slide-up)')).toBeVisible();
+}
+
 /** A bearer token for setting up or checking data through the API. */
 export async function apiToken(email: string, password = PASSWORD): Promise<string> {
   const res = await fetch(`${API_URL}/auth/login`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email, password }) });
