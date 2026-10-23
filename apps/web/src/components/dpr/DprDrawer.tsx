@@ -3,7 +3,7 @@
 import React from 'react';
 import { App, Table, Tag, Typography } from 'antd';
 import type { DailyReportDto, ManpowerLine, MachineryLine } from '@erp/shared';
-import { WEATHER_LABELS, canReviewHindrances, workSummary } from '@erp/shared';
+import { WEATHER_LABELS, canReviewHindrances, linesSummary } from '@erp/shared';
 import { useDpr } from '@/lib/queries';
 import { useAuth } from '@/lib/auth';
 import { formatDate } from '@/lib/format';
@@ -18,7 +18,7 @@ import { submissionLifecycle } from '@/components/record/lifecycle';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { Section } from '@/components/common/Section';
 import { DprHindrance } from '@/components/risks/HindranceSuggestions';
-import { DprLineTotals, DprWorkLines, crewNote } from './DprLines';
+import { DprLineTotals, DprPipelineSummary, DprWorkLines, crewNote } from './DprLines';
 
 function Note({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -81,8 +81,9 @@ export function DprRecord({ id, mode, open, onClose, onEdit }: RecordProps & { m
                   title: 'Work done',
                   children: (
                     <>
+                      <DprPipelineSummary lines={data.lines} />
                       <DprWorkLines lines={data.lines} />
-                      {data.workExecuted && data.workExecuted !== workSummary(data.lines) ? (
+                      {data.workExecuted && data.workExecuted !== linesSummary(data.lines) ? (
                         <div style={{ marginTop: 12 }}>
                           <Note title="Work executed">{data.workExecuted}</Note>
                         </div>

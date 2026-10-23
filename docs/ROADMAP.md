@@ -699,13 +699,16 @@ reconciliation: design". One pull request each, in this order.
      roll-up in `@erp/shared/wbs.ts`, built-in component templates (RCC as reinforcement, shuttering and concrete,
      lifts from heights), the Structure tab with Excel in and out, BOQ by section, the phone's read-only tree, and the
      demo town scheme. A company's own component templates wait. ARCHITECTURE "Work breakdown".
-126. **Pipe network** (L): junctions and segments, laid, jointed, tested and commissioned junction to junction.
+126. ~~**Pipe network** (L): junctions and segments, laid, jointed, tested and commissioned junction to junction.~~ Done:
+     `PipeNode` and `PipeSegment` per zone or main, imported from EPANET or Excel with a preview matched by code; DPR
+     lines name their segment and are held to its length; segment status, the pipe sheet by diameter and working
+     fronts; hydraulic tests that name their pipes; the Pipe network tab with its map, the DPR's pipeline table, the
+     phone's segment picker and the demo zone. Drawing a network by hand and GIS layers wait. ARCHITECTURE "Pipe network".
 127. ~~**Structured DPR** (L): DPR work lines against activities and sub-activities, with location, manpower, machines and
      material used per line.~~ Done: a DPR's lines are its progress entries (crew, machines, work order, material in
      `ProgressMaterial`), submitted and approved with it, hold points checked per line; scope, up to previous,
      cumulative and balance per line; the form and record on the web and the phone, the print in the site's layout,
-     material from the norms, Copy yesterday, and the "progress from the DPR only" switch. Pipe segments on lines wait
-     for item 126. ARCHITECTURE "Structured DPR".
+     material from the norms, Copy yesterday, and the "progress from the DPR only" switch. ARCHITECTURE "Structured DPR".
 128. **Stock against the DPR** (M): material issued against what the DPR lines' quantities allow, per activity.
 129. **Stage billing** (M): lump-sum and EPC bills by stage against the components' billing shares.
 130. **EPC packages, deliverables and currency** (L).

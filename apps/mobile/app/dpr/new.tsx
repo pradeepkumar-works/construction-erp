@@ -267,7 +267,7 @@ export default function NewDprScreen() {
     if (!projectId) e.projectId = t('Choose a project');
     if (!isIsoDate(date)) e.date = t('Enter a valid date');
     if (!workExecuted.trim() && !hasLines) e.workExecuted = t('Describe the work executed today, or add a work line');
-    const lineProblem = linesProblem(lines, t);
+    const lineProblem = linesProblem(lines, t, workOptions.data ?? null);
     if (lineProblem) e.lines = lineProblem;
     for (const r of manpower) {
       if ((r.category && r.count.trim()) || (!r.category && !r.count.trim())) continue;

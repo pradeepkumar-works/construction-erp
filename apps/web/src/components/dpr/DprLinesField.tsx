@@ -6,9 +6,13 @@ import type { FormInstance, FormListFieldData } from 'antd';
 import {
   MANPOWER_CATEGORIES,
   OUTSIDE_BREAKDOWN,
+  PIPE_NODE_KIND_LABELS,
+  PIPE_STAGE_LABELS,
+  comparePipeCodes,
   componentLabel,
   crewCheck,
   dprActivityLabel,
+  segmentLabel,
   suggestMaterials,
   type DprActivityOptionDto,
   type DprLineDto,
@@ -28,6 +32,9 @@ export interface DprLineValues {
   activityId?: string;
   quantity?: number | null;
   location?: string;
+  /** The pipe segment (item 126), or for a valve line the valve, the work was on */
+  pipeSegmentId?: string | null;
+  pipeNodeId?: string | null;
   labour?: ManpowerLine[];
   machines?: MachineryLine[];
   materials?: { itemId?: string; quantity?: number | null }[];
@@ -45,6 +52,8 @@ export const lineValues = (l: DprLineDto): DprLineValues => ({
   activityId: l.activityId,
   quantity: Number(l.quantity),
   location: l.location ?? undefined,
+  pipeSegmentId: l.pipeSegmentId,
+  pipeNodeId: l.pipeNodeId,
   labour: l.labour.map((m) => ({ ...m })),
   machines: l.machines.map((m) => ({ ...m })),
   materials: l.materials.map((m) => ({ itemId: m.itemId, quantity: Number(m.quantity) })),
@@ -55,7 +64,7 @@ export const lineValues = (l: DprLineDto): DprLineValues => ({
 
 /** Yesterday's lines as a start for today: the same work and crew, today's quantities and material to fill. */
 export const copiedLine = (l: DprLineDto): DprLineValues =>
-  newLine({ activityId: l.activityId, location: l.location ?? undefined, labour: l.labour.map((m) => ({ ...m })), machines: l.machines.map((m) => ({ ...m })), workOrderId: l.workOrderId });
+  newLine({ activityId: l.activityId, location: l.location ?? undefined, pipeSegmentId: l.pipeSegmentId, labour: l.labour.map((m) => ({ ...m })), machines: l.machines.map((m) => ({ ...m })), workOrderId: l.workOrderId });
 
 /** The lines as the API takes them. */
 export const linesBody = (lines: DprLineValues[] | undefined): DprLineInput[] =>
@@ -66,6 +75,8 @@ export const linesBody = (lines: DprLineValues[] | undefined): DprLineInput[] =>
       activityId: l.activityId!,
       quantity: String(l.quantity ?? ''),
       location: l.location?.trim() || null,
+      pipeSegmentId: l.pipeSegmentId || null,
+      pipeNodeId: l.pipeNodeId || null,
       labour: (l.labour ?? []).filter((m) => m && m.category && Number(m.count) > 0).map((m) => ({ category: m.category, count: Math.round(Number(m.count)) })),
       machines: (l.machines ?? []).filter((m) => m && m.name?.trim()).map((m) => ({ name: m.name.trim(), hours: Number(m.hours) || 0 })),
       materials: (l.materials ?? []).filter((m) => m && m.itemId && Number(m.quantity) > 0).map((m) => ({ itemId: m.itemId!, quantity: String(m.quantity) })),
@@ -75,7 +86,8 @@ export const linesBody = (lines: DprLineValues[] | undefined): DprLineInput[] =>
 
 /**
  * Keeps each line's material filled from its activity's norms as the activity and quantity change, until the
- * planner changes the material by hand. Call from the form's `onValuesChange`.
+ * planner changes the material by hand, and lets go of a pipe segment or valve that is not in the new activity's zone.
+ * Call from the form's `onValuesChange`.
  */
 export function followNorms(form: FormInstance, changed: Record<string, unknown>, options: DprWorkOptionsDto | undefined) {
   const touched = changed.lines as (Partial<DprLineValues> | undefined)[] | undefined;
@@ -87,8 +99,15 @@ export function followNorms(form: FormInstance, changed: Record<string, unknown>
       form.setFieldValue(['lines', i, 'materialsEdited'], true);
       return;
     }
+    const activity = options.activities.find((a) => a.id === lines[i].activityId);
+    if ('activityId' in t) {
+      const seg = options.segments.find((s) => s.id === lines[i].pipeSegmentId);
+      if (seg && (seg.zoneId !== activity?.zoneId || !activity?.pipeStage || activity.pipeStage === 'VALVES')) form.setFieldValue(['lines', i, 'pipeSegmentId'], null);
+      const valve = options.valves.find((v) => v.id === lines[i].pipeNodeId);
+      if (lines[i].pipeNodeId && (!valve || valve.zoneId !== activity?.zoneId || activity?.pipeStage !== 'VALVES')) form.setFieldValue(['lines', i, 'pipeNodeId'], null);
+    }
     if (!('activityId' in t || 'quantity' in t) || lines[i].materialsEdited) return;
-    const norms = options.activities.find((a) => a.id === lines[i].activityId)?.norms ?? [];
+    const norms = activity?.norms ?? [];
     form.setFieldValue(['lines', i, 'materials'], suggestMaterials(lines[i].quantity ?? 0, norms).map((m) => ({ itemId: m.itemId, quantity: Number(m.quantity) })));
   });
 }
@@ -159,12 +178,8 @@ export function DprLinesField({ options, headCount }: { options: DprWorkOptionsD
         {
           key: 'location',
           title: 'Where',
-          width: 180,
-          render: (f) => (
-            <Form.Item name={[f.name, 'location']} noStyle>
-              <Input placeholder="Lift 4, P-27 J-12 to J-13" aria-label={`Where work line ${f.name + 1} was done`} />
-            </Form.Item>
-          ),
+          width: 200,
+          render: (f) => <WhereField field={f} activity={byId.get(lines[f.name]?.activityId ?? '')} options={options} />,
         },
         {
           key: 'quantity',
@@ -205,6 +220,83 @@ export function DprLinesField({ options, headCount }: { options: DprWorkOptionsD
 }
 
 /** Activities for the line's picker: this week's first, then by component › sub-component. */
+/**
+ * Where the line's work was. Pipe work (item 126) names the segment from the zone's network, junction to junction, or
+ * the valve for a valve line; the server writes the segment into the location and holds each stage to the pipe's length.
+ * Anything else, or a zone with no network loaded, is free text.
+ */
+function WhereField({ field: f, activity: a, options }: { field: FormListFieldData; activity: DprActivityOptionDto | undefined; options: DprWorkOptionsDto | undefined }) {
+  const form = Form.useFormInstance();
+  const stage = a?.pipeStage ?? null;
+  const zoneId = a?.zoneId ?? null;
+  const segments = useMemo(
+    () => (stage && stage !== 'VALVES' && zoneId ? (options?.segments ?? []).filter((s) => s.zoneId === zoneId).sort((x, y) => comparePipeCodes(x.code, y.code)) : []),
+    [options, stage, zoneId],
+  );
+  const valves = useMemo(() => (stage === 'VALVES' && zoneId ? (options?.valves ?? []).filter((v) => v.zoneId === zoneId).sort((x, y) => comparePipeCodes(x.code, y.code)) : []), [options, stage, zoneId]);
+  const n = f.name + 1;
+  const note = (
+    <Form.Item name={[f.name, 'location']} noStyle>
+      <Input placeholder={segments.length || valves.length ? 'Chainage or note' : 'Lift 4, P-27 J-12 to J-13'} aria-label={`Where work line ${n} was done`} style={segments.length || valves.length ? { marginTop: 4 } : undefined} />
+    </Form.Item>
+  );
+  if (segments.length && stage !== 'VALVES') {
+    const verb = PIPE_STAGE_LABELS[stage!].toLowerCase();
+    return (
+      <>
+        <Form.Item name={[f.name, 'pipeSegmentId']} noStyle rules={[{ required: true, message: 'Choose the pipe segment the work was on' }]}>
+          <Select
+            showSearch={{ optionFilterProp: 'search' }}
+            placeholder="Pipe segment"
+            aria-label={`Pipe segment of work line ${n}`}
+            style={{ width: '100%' }}
+            popupMatchSelectWidth={360}
+            onChange={() => form.setFieldValue(['lines', f.name, 'pipeNodeId'], null)}
+            optionRender={(o) => (
+              <>
+                <div translate="no">{o.label}</div>
+                <Typography.Text type="secondary" translate="no">
+                  {o.data.detail}
+                </Typography.Text>
+              </>
+            )}
+            options={segments.map((s) => {
+              const held = s.held[stage!] ?? 0;
+              const len = Number(s.lengthM);
+              return {
+                value: s.id,
+                search: `${s.code} ${s.fromCode} ${s.toCode}`,
+                disabled: held >= len - 0.001,
+                label: segmentLabel(s),
+                detail: `${s.diameterMm} mm · ${formatQty(held)} of ${formatQty(s.lengthM)} m ${verb}`,
+              };
+            })}
+          />
+        </Form.Item>
+        {note}
+      </>
+    );
+  }
+  if (valves.length) {
+    return (
+      <>
+        <Form.Item name={[f.name, 'pipeNodeId']} noStyle>
+          <Select
+            allowClear
+            showSearch={{ optionFilterProp: 'search' }}
+            placeholder="Valve (optional)"
+            aria-label={`Valve of work line ${n}`}
+            style={{ width: '100%' }}
+            options={valves.map((v) => ({ value: v.id, search: v.code, label: `${v.code} · ${PIPE_NODE_KIND_LABELS[v.kind]}${v.fixed ? ' · fixed' : ''}` }))}
+          />
+        </Form.Item>
+        {note}
+      </>
+    );
+  }
+  return note;
+}
+
 function groupedOptions(activities: DprActivityOptionDto[]) {
   const option = (a: DprActivityOptionDto) => ({ value: a.id, label: dprActivityLabel(a), search: `${componentLabel(a)} ${dprActivityLabel(a)}` });
   const week = activities.filter((a) => a.lookAhead);

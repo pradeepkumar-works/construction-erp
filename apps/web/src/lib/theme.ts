@@ -142,7 +142,8 @@ export function makeTheme({ dark, compact }: Appearance): ThemeConfig {
       // Initials avatars: antd fills them with the placeholder grey, which white initials fail AA on in dark mode.
       Avatar: { colorTextPlaceholder: c.muted },
       // The selected tab's text is primary-coloured, which in dark mode needs the lighter blue to read.
-      ...(dark ? { Badge: { colorError: c.danger }, Tabs: { itemSelectedColor: c.nightLink, itemActiveColor: c.nightLink, itemHoverColor: c.accentLight, inkBarColor: c.nightLink } } : {}),
+      // A record's stage bar names a sent-back or rejected step in red, which needs the lighter red to read at night.
+      ...(dark ? { Badge: { colorError: c.danger }, Steps: { colorError: c.nightDanger }, Tabs: { itemSelectedColor: c.nightLink, itemActiveColor: c.nightLink, itemHoverColor: c.accentLight, inkBarColor: c.nightLink } } : {}),
     },
   };
 }

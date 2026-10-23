@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { compareCodes, effectiveWeights, nextCode, parentCodeOf, type StructureActivityDto, type StructureDto, type WorkElementDto } from '@erp/shared';
+import { compareCodes, effectiveWeights, guessPipeStage, isPipeElement, nextCode, parentCodeOf, type StructureActivityDto, type StructureDto, type WorkElementDto } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -190,6 +190,8 @@ export class StructureService {
             unit: line.unit.trim(),
             plannedQty: line.plannedQty ? D(line.plannedQty) : D(0),
             weightPct: weightOf(line.weightPct),
+            // A pipe zone's or main's stages (item 126): its lines name a segment of the zone's network.
+            pipeStage: isPipeElement(dto.elementType) ? guessPipeStage(line.name) : null,
             sortOrder: firstSort + lines.indexOf(line),
           },
           select: { id: true },

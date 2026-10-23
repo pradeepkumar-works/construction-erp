@@ -90,7 +90,7 @@ export const STANDARD_CHECKLISTS: { name: string; items: string[] }[] = [
 
 /* ---------- tests and non-conformance reports ---------- */
 
-export const TEST_KINDS = ['CONCRETE_CUBE', 'FIELD_DENSITY', 'SOIL', 'AGGREGATE', 'BITUMEN', 'BRICK', 'STEEL', 'WATER', 'OTHER'] as const;
+export const TEST_KINDS = ['CONCRETE_CUBE', 'FIELD_DENSITY', 'SOIL', 'AGGREGATE', 'BITUMEN', 'BRICK', 'STEEL', 'WATER', 'HYDRAULIC', 'OTHER'] as const;
 export type TestKind = (typeof TEST_KINDS)[number];
 
 export const TEST_KIND_LABELS: Record<TestKind, string> = {
@@ -102,6 +102,7 @@ export const TEST_KIND_LABELS: Record<TestKind, string> = {
   BRICK: 'Bricks and blocks',
   STEEL: 'Reinforcement steel',
   WATER: 'Water',
+  HYDRAULIC: 'Hydraulic pressure test',
   OTHER: 'Other',
 };
 
@@ -115,6 +116,7 @@ export const TEST_KIND_DEFAULTS: Record<TestKind, { unit: string; readings: { la
   BRICK: { unit: 'N/mm²', readings: [{ label: 'Result', days: 3 }] },
   STEEL: { unit: 'N/mm²', readings: [{ label: 'Result', days: 3 }] },
   WATER: { unit: 'pH', readings: [{ label: 'Result', days: 1 }] },
+  HYDRAULIC: { unit: 'kg/cm²', readings: [{ label: 'Pressure held', days: 0 }] },
   OTHER: { unit: '', readings: [{ label: 'Result', days: 0 }] },
 };
 

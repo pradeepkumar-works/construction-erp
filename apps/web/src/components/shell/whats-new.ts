@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-12-pipe-network',
+    date: '2026-12-31',
+    title: 'Pipe network: every pipe junction to junction',
+    points: [
+      "Project › Plan › Pipe network loads a zone's network from the design office's EPANET (.inp) file or an Excel sheet of nodes and pipes. You see what it adds or changes before saving, and pipes keep their work when it is loaded again.",
+      "The tab draws the zone with each pipe in the state of its work, gives the pipe sheet by diameter (scope, trenched, laid, tested, balance) and lists the pipes ready to start.",
+      'On the DPR, pipe work names its pipe (P-27, J-12 to J-13) and can\'t go past the pipe\'s length. The DPR and its print add the day\'s pipeline table, a hydraulic test names the pipes it covers, and the phone picks the pipe too.',
+    ],
+  },
+  {
     id: '2026-12-structured-dpr',
     date: '2026-12-28',
     title: 'DPR work lines: progress by component, activity and sub-activity',

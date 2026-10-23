@@ -1,4 +1,4 @@
-import type { ContractModel, WorkElementLevel, WorkElementType, LdPeriod, GrnQcStatus, ComplianceDocKind, ComplianceDocStatus, DefectPhase, DefectPriority, DefectStatus, ImprestEntryKind, ImprestEntryStatus, WorkerIdType, WorkerSkill, EquipmentDocType, MaintenanceKind, MaintenanceStatus, BillStage, ReceiptKind, VendorKind, MsmeCategory, EquipmentOwnership, ExpenseCategory, PaymentMode, EquipmentRateUnit, MaterialPriority, NotificationType, ProjectStatus, ProjectType, DelayParty, PasswordTokenPurpose, RiskCategory, RiskKind, RiskStatus, RoleKey, SafetyIncidentStatus, SafetyIncidentType, StockEntryType, SubmissionStatus, SubmissionType, Weather, WorkPermitStatus, WorkPermitType, PpeKind, PpeIssueStatus, RfiStatus, RfiPriority, PaymentRequestKind, FundPurpose, VendorBillKind, HireFuelBy, DebitNoteReason, BoqResourceKind, StockAdjustmentReason, FuelNormUnit, EquipmentPartKind, ApprovalStepAction, MarkupKind, MarkupStatus, MarkupColor, NavPinKind, NavVisitKind, AccessRequestStatus } from './enums';
+import type { ContractModel, WorkElementLevel, WorkElementType, PipeNodeKind, PipeMaterial, PipeScope, PipeStage, LdPeriod, GrnQcStatus, ComplianceDocKind, ComplianceDocStatus, DefectPhase, DefectPriority, DefectStatus, ImprestEntryKind, ImprestEntryStatus, WorkerIdType, WorkerSkill, EquipmentDocType, MaintenanceKind, MaintenanceStatus, BillStage, ReceiptKind, VendorKind, MsmeCategory, EquipmentOwnership, ExpenseCategory, PaymentMode, EquipmentRateUnit, MaterialPriority, NotificationType, ProjectStatus, ProjectType, DelayParty, PasswordTokenPurpose, RiskCategory, RiskKind, RiskStatus, RoleKey, SafetyIncidentStatus, SafetyIncidentType, StockEntryType, SubmissionStatus, SubmissionType, Weather, WorkPermitStatus, WorkPermitType, PpeKind, PpeIssueStatus, RfiStatus, RfiPriority, PaymentRequestKind, FundPurpose, VendorBillKind, HireFuelBy, DebitNoteReason, BoqResourceKind, StockAdjustmentReason, FuelNormUnit, EquipmentPartKind, ApprovalStepAction, MarkupKind, MarkupStatus, MarkupColor, NavPinKind, NavVisitKind, AccessRequestStatus } from './enums';
 
 export const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {
   ROAD: 'Road / Infrastructure',
@@ -38,6 +38,34 @@ export const WORK_ELEMENT_TYPE_LABELS: Record<WorkElementType, string> = {
   ROAD_STRETCH: 'Road stretch',
   CROSSING: 'Crossing',
   GENERAL: 'Other',
+};
+
+export const PIPE_NODE_KIND_LABELS: Record<PipeNodeKind, string> = {
+  JUNCTION: 'Junction',
+  TANK: 'Tank',
+  SOURCE: 'Source',
+  SLUICE_VALVE: 'Sluice valve',
+  AIR_VALVE: 'Air valve',
+  SCOUR: 'Scour valve',
+  CHAMBER: 'Chamber',
+  END: 'Dead end',
+  CROSSING_PIT: 'Crossing pit',
+};
+
+export const PIPE_MATERIAL_LABELS: Record<PipeMaterial, string> = { HDPE: 'HDPE', MDPE: 'MDPE', DI: 'DI', CI: 'CI', MS: 'MS', PVC: 'PVC', GRP: 'GRP', OTHER: 'Other' };
+
+export const PIPE_SCOPE_LABELS: Record<PipeScope, string> = { PROPOSED: 'Proposed', EXISTING: 'Existing' };
+
+/** What a stage's done figure is called ("Laid 1,240 m"). */
+export const PIPE_STAGE_LABELS: Record<PipeStage, string> = {
+  TRENCH: 'Trenched',
+  BEDDING: 'Bedded',
+  LAY_JOINT: 'Laid and jointed',
+  VALVES: 'Valves fixed',
+  BACKFILL: 'Backfilled',
+  TEST: 'Tested',
+  RESTORATION: 'Restored',
+  COMMISSIONING: 'Commissioned',
 };
 
 export const PROJECT_STATUS_LABELS: Record<ProjectStatus, string> = {

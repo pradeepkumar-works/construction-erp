@@ -1,5 +1,5 @@
 import type { DailyReportDto, DprLineDto } from '@erp/shared';
-import { WEATHER_LABELS, crewCheck, dprActivityLabel, lineLocation, materialUsed, workSummary } from '@erp/shared';
+import { PIPE_STAGE_LABELS, SEGMENT_STAGES, WEATHER_LABELS, crewCheck, dprActivityLabel, lineLocation, materialUsed, linesSummary, pipelineSummary } from '@erp/shared';
 import { fileUrl } from '@/lib/api';
 import { AUTO_PRINT_SCRIPT, brandFooter, PRINT_BRAND_CSS, PRINT_FONT_LINKS } from '@/components/print/printBrand';
 import { BRAND } from '@/lib/brand';
@@ -33,10 +33,23 @@ function workTable(lines: DprLineDto[]): string {
     })
     .join('');
   const used = materialUsed(lines).map((m) => `<tr><td>${esc(m.itemName)}</td><td class="num">${esc(formatQty(m.quantity))} ${esc(m.unit)}</td></tr>`).join('');
-  return `<h2>Work done</h2>
+  return `${pipeTable(lines)}<h2>Work done</h2>
   <table class="lines"><thead><tr><th class="num">S.No</th><th>Component</th><th>Sub-component</th><th>Activity</th><th>Unit</th><th class="num">Scope</th><th class="num">Up to previous</th><th class="num">Today</th><th class="num">Cumulative</th><th class="num">%</th><th class="num">Balance</th><th>Remark</th></tr></thead><tbody>${rows}</tbody></table>
   ${crew ? `<h2>Crew, machines and material by line</h2><table class="lines"><thead><tr><th class="num">S.No</th><th>Crew</th><th>Machines</th><th>Material used</th></tr></thead><tbody>${crew}</tbody></table>` : ''}
   ${used ? `<h2>Material used</h2><table><thead><tr><th>Item</th><th class="num">Used</th></tr></thead><tbody>${used}</tbody></table>` : ''}`;
+}
+
+/** Today's pipe work (item 126): metres per stage by zone and diameter, and valves fixed. */
+function pipeTable(lines: DprLineDto[]): string {
+  const rows = pipelineSummary(lines);
+  if (!rows.length) return '';
+  const stages = SEGMENT_STAGES.filter((s) => rows.some((r) => r.metres[s]));
+  const valves = rows.some((r) => r.valves);
+  const head = `<th>Zone</th><th>Diameter</th>${stages.map((s) => `<th class="num">${esc(PIPE_STAGE_LABELS[s])}, m</th>`).join('')}${valves ? '<th class="num">Valves fixed</th>' : ''}`;
+  const body = rows
+    .map((r) => `<tr><td>${esc(r.zone || '-')}</td><td>${r.diameterMm ? `${r.diameterMm} mm` : 'Valves'}</td>${stages.map((s) => `<td class="num">${r.metres[s] ? esc(formatQty(r.metres[s])) : '-'}</td>`).join('')}${valves ? `<td class="num">${r.valves ? esc(formatQty(r.valves)) : '-'}</td>` : ''}</tr>`)
+    .join('');
+  return `<h2>Pipeline today</h2><table class="lines"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
 }
 
 export function buildDprPrintHtml(d: DailyReportDto, orgName: string): string {
@@ -100,7 +113,7 @@ ${PRINT_FONT_LINKS}
 
   ${lines.length ? workTable(lines) : `<h2>Work executed</h2>
   <p>${para(d.workExecuted)}</p>`}
-  ${lines.length && d.workExecuted && d.workExecuted !== workSummary(lines) ? `<h2>Work executed</h2><p>${para(d.workExecuted)}</p>` : ''}
+  ${lines.length && d.workExecuted && d.workExecuted !== linesSummary(lines) ? `<h2>Work executed</h2><p>${para(d.workExecuted)}</p>` : ''}
 
   <div class="cols">
     <div>

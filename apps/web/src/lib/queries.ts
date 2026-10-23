@@ -174,6 +174,7 @@ import type {
   StockValuationDto,
   ActivityDto,
   StructureDto,
+  PipeNetworkDto,
   AttendanceDayDto,
   AttendanceSheetDto,
   AttendanceSuggestionsDto,
@@ -660,6 +661,14 @@ export const useStructure = (projectId: string | undefined) =>
   useQuery({
     queryKey: ['activities', projectId, 'structure'],
     queryFn: async () => (await api.get<StructureDto>(`/projects/${projectId}/structure`)).data,
+    enabled: !!projectId,
+  });
+
+/** Pipe zones and mains with their segments and stage progress (item 126); under the activities key so a change to the plan refreshes it. */
+export const usePipeNetwork = (projectId: string | undefined) =>
+  useQuery({
+    queryKey: ['activities', projectId, 'pipe-network'],
+    queryFn: async () => (await api.get<PipeNetworkDto>(`/projects/${projectId}/pipe-network`)).data,
     enabled: !!projectId,
   });
 

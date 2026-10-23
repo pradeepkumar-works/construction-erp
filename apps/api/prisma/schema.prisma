@@ -60,6 +60,48 @@ enum WorkElementType {
   GENERAL
 }
 
+/// A point of a pipe network (item 126): a junction of the hydraulic model, a tank or source, or a fitting placed on the line
+enum PipeNodeKind {
+  JUNCTION
+  TANK
+  SOURCE
+  SLUICE_VALVE
+  AIR_VALVE
+  SCOUR
+  CHAMBER
+  END
+  CROSSING_PIT
+}
+
+enum PipeMaterial {
+  HDPE
+  MDPE
+  DI
+  CI
+  MS
+  PVC
+  GRP
+  OTHER
+}
+
+/// Existing lines are drawn with the network but carry no work
+enum PipeScope {
+  PROPOSED
+  EXISTING
+}
+
+/// The stage of pipe work an activity of a pipe zone or main stands for (item 126); valves are counted on nodes
+enum PipeStage {
+  TRENCH
+  BEDDING
+  LAY_JOINT
+  VALVES
+  BACKFILL
+  TEST
+  RESTORATION
+  COMMISSIONING
+}
+
 enum ProjectStatus {
   PLANNED
   ACTIVE
@@ -209,6 +251,8 @@ enum TestKind {
   BRICK
   STEEL
   WATER
+  /// Hydraulic pressure test of a pipeline stretch (item 126)
+  HYDRAULIC
   OTHER
 }
 
@@ -559,6 +603,9 @@ model Organization {
   activities           Activity[]
   workElements         WorkElement[]
   progressMaterials    ProgressMaterial[]
+  pipeNodes            PipeNode[]
+  pipeSegments         PipeSegment[]
+  pipeTestSegments     PipeTestSegment[]
   milestones           Milestone[]
   activityLinks        ActivityLink[]
   workers              Worker[]
@@ -1068,6 +1115,8 @@ model Project {
   boqItems           BoqItem[]
   activities         Activity[]
   workElements       WorkElement[]
+  pipeNodes          PipeNode[]
+  pipeSegments       PipeSegment[]
   milestones         Milestone[]
   activityLinks      ActivityLink[]
   workers            Worker[]
@@ -1827,6 +1876,7 @@ model BoqItem {
   updatedAt      DateTime     @updatedAt
 
   activities        Activity[]
+  pipeSegments      PipeSegment[]
   measurements      MeasurementSheet[]
   billItems         RaBillItem[]
   workOrderLines    WorkOrderLine[]
@@ -1866,9 +1916,11 @@ model WorkElement {
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
 
-  children   WorkElement[] @relation("WorkElementTree")
-  activities Activity[]
-  boqItems   BoqItem[]
+  children     WorkElement[] @relation("WorkElementTree")
+  activities   Activity[]
+  boqItems     BoqItem[]
+  pipeNodes    PipeNode[]
+  pipeSegments PipeSegment[]
 
   @@unique([projectId, code])
   @@index([projectId])
@@ -1907,6 +1959,8 @@ model Activity {
   checklistTemplate   ChecklistTemplate? @relation(fields: [checklistTemplateId], references: [id], onDelete: SetNull)
   /// Hold point: progress is approved only after a passed inspection (at the same location, when the entry gives one)
   holdPoint           Boolean            @default(false)
+  /// The stage of pipe work this activity of a pipe zone or main stands for (item 126); its lines name a segment (a node for VALVES)
+  pipeStage           PipeStage?
   sortOrder           Int                @default(0)
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
@@ -2034,6 +2088,12 @@ model ProgressEntry {
   workOrder      WorkOrder?       @relation(fields: [workOrderId], references: [id], onDelete: SetNull)
   /// Order of the line in its DPR
   sortOrder      Int              @default(0)
+  /// The pipe segment the work was on (item 126): metres per segment and stage are held to its length
+  pipeSegmentId  String?
+  pipeSegment    PipeSegment?     @relation(fields: [pipeSegmentId], references: [id], onDelete: SetNull)
+  /// The valve or fitting fixed (VALVES stage), or the end of the segment the day's work started from
+  pipeNodeId     String?
+  pipeNode       PipeNode?        @relation(fields: [pipeNodeId], references: [id], onDelete: SetNull)
   status         SubmissionStatus @default(DRAFT)
   submittedById  String
   submittedBy    User             @relation("ProgressSubmitter", fields: [submittedById], references: [id])
@@ -2054,6 +2114,7 @@ model ProgressEntry {
   @@index([organizationId, date])
   @@index([projectId, date])
   @@index([dailyReportId])
+  @@index([pipeSegmentId])
 }
 
 /// Material a DPR work line used (item 127), suggested from the BOQ item's norms; the stock check against the DPR
@@ -2071,6 +2132,96 @@ model ProgressMaterial {
 
   @@index([progressEntryId])
   @@index([organizationId, itemId])
+}
+
+// ---------- Pipe network (item 126) ----------
+
+/// A point of a zone's or main's hydraulic model: junction J-12, tank, source, or a valve or chamber on the line
+model PipeNode {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  /// The pipe zone or main (a work element) the node belongs to
+  zoneId         String
+  zone           WorkElement  @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  /// J-12, as in the model; unique in the project
+  code           String
+  kind           PipeNodeKind @default(JUNCTION)
+  /// Ground level, m
+  groundLevel    Decimal?     @db.Decimal(10, 3)
+  /// Position from the model's coordinates, drawn as given
+  x              Float?
+  y              Float?
+  /// Chainage on a main, m
+  chainage       Int?
+  remarks        String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  segmentsFrom PipeSegment[]   @relation("SegmentFrom")
+  segmentsTo   PipeSegment[]   @relation("SegmentTo")
+  progress     ProgressEntry[]
+
+  @@unique([projectId, code])
+  @@index([zoneId])
+  @@index([organizationId])
+}
+
+/// A pipe between two nodes (P-27, J-12 to J-13): each stage of work on it is held to its length
+model PipeSegment {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  zoneId         String
+  zone           WorkElement  @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  /// P-27, as in the model; unique in the project
+  code           String
+  fromNodeId     String
+  fromNode       PipeNode     @relation("SegmentFrom", fields: [fromNodeId], references: [id], onDelete: Cascade)
+  toNodeId       String
+  toNode         PipeNode     @relation("SegmentTo", fields: [toNodeId], references: [id], onDelete: Cascade)
+  /// m
+  lengthM        Decimal      @db.Decimal(18, 3)
+  diameterMm     Int
+  material       PipeMaterial @default(HDPE)
+  /// PN6, K7, K9 or a wall thickness
+  pipeClass      String?
+  scope          PipeScope    @default(PROPOSED)
+  /// Bituminous, WBM, concrete or unpaved: what is dug up and restored
+  surface        String?
+  /// Road, rail or drain crossing, open cut or HDD
+  crossing       String?
+  boqItemId      String?
+  boqItem        BoqItem?     @relation(fields: [boqItemId], references: [id], onDelete: SetNull)
+  sortOrder      Int          @default(0)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  progress ProgressEntry[]
+  tests    PipeTestSegment[]
+
+  @@unique([projectId, code])
+  @@index([zoneId])
+  @@index([organizationId])
+}
+
+/// A hydraulic test covering a segment: a passed test counts the segment as tested
+model PipeTestSegment {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  qualityTestId  String
+  qualityTest    QualityTest  @relation(fields: [qualityTestId], references: [id], onDelete: Cascade)
+  segmentId      String
+  segment        PipeSegment  @relation(fields: [segmentId], references: [id], onDelete: Cascade)
+
+  @@unique([qualityTestId, segmentId])
+  @@index([segmentId])
+  @@index([organizationId])
 }
 
 model DailyReport {
@@ -3627,9 +3778,10 @@ model QualityTest {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
-  readings    QualityTestReading[]
-  attachments Attachment[]
-  ncrs        Ncr[]
+  readings     QualityTestReading[]
+  attachments  Attachment[]
+  ncrs         Ncr[]
+  pipeSegments PipeTestSegment[]
 
   @@unique([organizationId, testNo])
   @@index([projectId, result])

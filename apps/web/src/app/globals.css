@@ -650,6 +650,12 @@ kbd {
     min-width: 44px;
     justify-content: center;
   }
+  /* A record's section links (RecordFrame's Anchor). */
+  :root .ant-anchor .ant-anchor-link-title {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
   /* A clickable filter tag (Tag.CheckableTag: the category chips on expenses and risks). */
   :root .ant-tag.ant-tag-checkable {
     display: inline-flex;

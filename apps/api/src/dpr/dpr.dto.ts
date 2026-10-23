@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { ArrayMaxSize, IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsNumber, IsNumberString, IsOptional, IsString, IsUUID, MaxLength, Min, ValidateNested } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsNumber, IsNumberString, IsOptional, IsString, IsUUID, MaxLength, ValidateIf, Min, ValidateNested } from 'class-validator';
 import { LIST_SORT_FIELDS, SUBMISSION_STATUSES, SubmissionStatus, WEATHER_OPTIONS, Weather, type DprSortField } from '@erp/shared';
 import { PageQuery, QueryBool } from '../common/paging';
 import { CLIENT_ID_DOC } from '../common/idempotency';
@@ -34,6 +34,8 @@ export class DprLineInputDto {
   @ApiPropertyOptional({ type: [ManpowerLineDto], description: 'The crew on this line' }) @IsOptional() @IsArray() @ArrayMaxSize(30) @ValidateNested({ each: true }) @Type(() => ManpowerLineDto) labour?: ManpowerLineDto[];
   @ApiPropertyOptional({ type: [MachineryLineDto], description: 'Machines on this line' }) @IsOptional() @IsArray() @ArrayMaxSize(30) @ValidateNested({ each: true }) @Type(() => MachineryLineDto) machines?: MachineryLineDto[];
   @ApiPropertyOptional({ type: [DprMaterialInputDto], description: 'Material used, from the store items' }) @IsOptional() @IsArray() @ArrayMaxSize(30) @ValidateNested({ each: true }) @Type(() => DprMaterialInputDto) materials?: DprMaterialInputDto[];
+  @ApiPropertyOptional({ nullable: true, description: 'On a pipe stage activity (item 126): the segment worked on' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsUUID() pipeSegmentId?: string | null;
+  @ApiPropertyOptional({ nullable: true, description: 'The valve fixed (VALVES stage), or the end of the segment the work started from' }) @IsOptional() @ValidateIf((_, v) => v !== null) @IsUUID() pipeNodeId?: string | null;
   @ApiPropertyOptional({ description: "A work order of the project the line was done under", nullable: true }) @IsOptional() @IsUUID() workOrderId?: string | null;
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(500) remarks?: string | null;
 }

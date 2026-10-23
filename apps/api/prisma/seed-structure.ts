@@ -8,7 +8,8 @@
  * - BL-2026-02, the item-rate hospital block: its BOQ grouped in sections and its activities in three components
  *   weighed by BOQ value (no weights given).
  * - Three days of the town scheme's DPRs with work lines (item 127): tank, pipe laying, backfill, house connections and
- *   road restoration, each with its crew, machines and material; two approved, the latest waiting for the PM.
+ *   road restoration, each with its crew, machines and material; two approved, the latest waiting for the PM. Their pipe
+ *   lines move onto zone 2's network in `seed-pipes.ts` (item 126).
  */
 import { Prisma, PrismaClient, type WorkElementType } from '@prisma/client';
 import { elementPlan, workSummary, type ElementActivityLine } from '@erp/shared';
@@ -254,10 +255,10 @@ const TOWN_DPRS: DprSeed[] = [
     headCount: [['Bar Bender', 6], ['Plumber', 5], ['Helper', 16], ['Operator', 1], ['Supervisor', 2]],
     lines: [
       { element: '8.2', activity: 'Container wall: reinforcement', qty: 0.8, at: 'Ring 1', crew: [['Bar Bender', 6], ['Helper', 4]], material: [['TMT Fe500D 12mm', 0.82], ['Binding wire', 9]] },
-      { element: '9.2', activity: 'Pipe lowering, laying and jointing', qty: 168, at: 'Station Road, J-41 to J-44', crew: [['Plumber', 2], ['Helper', 6]], machines: [['JCB 3DX', 4]], material: [['HDPE PE100 110mm PN6', 168], ['HDPE electrofusion coupler 110mm', 28]] },
+      { element: '9.2', activity: 'Pipe lowering, laying and jointing', qty: 168, at: 'Station Road', crew: [['Plumber', 2], ['Helper', 6]], machines: [['JCB 3DX', 4]], material: [['HDPE PE100 110mm PN6', 168], ['HDPE electrofusion coupler 110mm', 28]] },
       { element: '11', activity: 'Tapping and saddle', qty: 14, at: 'Ward 3', crew: [['Plumber', 3], ['Helper', 3]], material: [['Ball valve 50mm', 14]] },
     ],
-    nextDayPlan: 'Container wall ring 2 steel and ring 1 shuttering; pipe laying J-44 onwards; backfill in the market lane',
+    nextDayPlan: 'Container wall ring 2 steel and ring 1 shuttering; pipe laying onwards from Station Road; backfill in the market lane',
   },
   {
     offset: -2,
@@ -267,11 +268,11 @@ const TOWN_DPRS: DprSeed[] = [
     lines: [
       { element: '8.2', activity: 'Container wall: reinforcement', qty: 1.1, at: 'Ring 2', crew: [['Bar Bender', 6], ['Helper', 4]], material: [['TMT Fe500D 12mm', 1.12], ['Binding wire', 12]] },
       { element: '8.2', activity: 'Container wall: shuttering', qty: 66, at: 'Ring 1', crew: [['Carpenter', 6], ['Helper', 6]], material: [['Shuttering plywood 12mm', 4]] },
-      { element: '9.2', activity: 'Pipe lowering, laying and jointing', qty: 192, at: 'Station Road, J-44 to J-47', crew: [['Plumber', 2], ['Helper', 6]], machines: [['JCB 3DX', 5]], material: [['HDPE PE100 110mm PN6', 192], ['HDPE electrofusion coupler 110mm', 32]] },
-      { element: '9.2', activity: 'Backfilling and compaction', qty: 240, at: 'Market lane, J-30 to J-36', crew: [['Helper', 6], ['Operator', 1]], machines: [['JCB 3DX', 6], ['Plate compactor', 6]] },
+      { element: '9.2', activity: 'Pipe lowering, laying and jointing', qty: 192, at: 'Station Road', crew: [['Plumber', 2], ['Helper', 6]], machines: [['JCB 3DX', 5]], material: [['HDPE PE100 110mm PN6', 192], ['HDPE electrofusion coupler 110mm', 32]] },
+      { element: '9.2', activity: 'Backfilling and compaction', qty: 186, at: 'Market lane', crew: [['Helper', 6], ['Operator', 1]], machines: [['JCB 3DX', 6], ['Plate compactor', 6]] },
     ],
-    issues: 'Two hours lost in the afternoon to rain; trench at J-46 waterlogged and pumped out',
-    nextDayPlan: 'Container wall ring 1 concrete; pipe laying J-12 to J-13 in the market; tapping in Ward 3; road restoration on Station Road',
+    issues: 'Two hours lost in the afternoon to rain; trench on Station Road waterlogged and pumped out',
+    nextDayPlan: 'Container wall ring 1 concrete; pipe laying on the market road; tapping in Ward 3; road restoration on Station Road',
   },
   {
     offset: -1,
@@ -283,12 +284,12 @@ const TOWN_DPRS: DprSeed[] = [
         element: '8.2', activity: 'Container wall: concrete', qty: 11.5, at: 'Ring 1', crew: [['Mason', 4], ['Helper', 10]], machines: [['Concrete mixer', 6], ['Needle vibrator', 6]],
         material: [['OPC 53 Grade Cement', 92], ['Aggregate 20mm', 9.2], ['River Sand (Zone II)', 5.1], ['Admixture PCE (Master Glenium)', 23]],
       },
-      { element: '9.2', activity: 'Pipe lowering, laying and jointing', qty: 84, at: 'P-27, J-12 to J-13', crew: [['Plumber', 2], ['Helper', 6]], material: [['HDPE PE100 110mm PN6', 84], ['HDPE electrofusion coupler 110mm', 14]] },
-      { element: '9.2', activity: 'Backfilling and compaction', qty: 96, at: 'P-28, J-13 to J-14', crew: [['Helper', 4], ['Operator', 1]], machines: [['JCB 3DX', 7]] },
+      { element: '9.2', activity: 'Pipe lowering, laying and jointing', qty: 84, at: 'Market road', crew: [['Plumber', 2], ['Helper', 6]], material: [['HDPE PE100 110mm PN6', 84], ['HDPE electrofusion coupler 110mm', 14]] },
+      { element: '9.2', activity: 'Backfilling and compaction', qty: 96, at: 'Market road', crew: [['Helper', 4], ['Operator', 1]], machines: [['JCB 3DX', 7]] },
       { element: '11', activity: 'Tapping and saddle', qty: 18, at: 'Ward 3', crew: [['Plumber', 3], ['Helper', 3]], material: [['Ball valve 50mm', 18]] },
-      { element: '10', activity: 'Bituminous road', qty: 120, at: 'Station Road, J-30 to J-36', crew: [['Helper', 8], ['Operator', 1]], machines: [['Road roller', 5]], material: [['Bitumen VG-30', 0.65], ['Emulsion SS-1', 60]] },
+      { element: '10', activity: 'Bituminous road', qty: 120, at: 'Station Road', crew: [['Helper', 8], ['Operator', 1]], machines: [['Road roller', 5]], material: [['Bitumen VG-30', 0.65], ['Emulsion SS-1', 60]] },
     ],
-    nextDayPlan: 'Container wall ring 2 shuttering; pipe laying J-13 to J-16; backfill J-14 onwards; tapping in Ward 3',
+    nextDayPlan: 'Container wall ring 2 shuttering; pipe laying on along the market road; backfill behind it; tapping in Ward 3',
   },
 ];
 

@@ -4,11 +4,11 @@ import React, { useEffect } from 'react';
 import { App, DatePicker, Form, Input, InputNumber, Segmented, Select, Typography } from 'antd';
 import dayjs from 'dayjs';
 import type { AttachmentDto, QualityTestDto, TestKind, TestResult } from '@erp/shared';
-import { TEST_KINDS, TEST_KIND_DEFAULTS, TEST_KIND_LABELS } from '@erp/shared';
+import { TEST_KINDS, TEST_KIND_DEFAULTS, TEST_KIND_LABELS, comparePipeCodes, segmentLabel } from '@erp/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FAIL_NOTICE } from '@/lib/notify';
-import { useActivities, useProjects } from '@/lib/queries';
+import { useActivities, usePipeNetwork, useProjects } from '@/lib/queries';
 import { formatDate } from '@/lib/format';
 import { PhotoUpload } from '@/components/common/PhotoUpload';
 import { UnitInput } from '@/components/common/UnitInput';
@@ -28,6 +28,7 @@ interface FormValues {
   result?: TestResult;
   remarks?: string;
   photos?: AttachmentDto[];
+  segmentIds?: string[];
 }
 
 const num = (v: string | number | null | undefined) => (v === null || v === undefined || v === '' ? null : String(v));
@@ -46,6 +47,12 @@ export function TestFormModal({ open, onClose, projectId, test }: { open: boolea
   const sampledOn = Form.useWatch('sampledOn', form);
   const specMin = Form.useWatch('specMin', form);
   const specMax = Form.useWatch('specMax', form);
+  // A hydraulic test names the pipes it covers (item 126); a pass marks their testing done.
+  const { data: network } = usePipeNetwork(open && kind === 'HYDRAULIC' ? selectedProject : undefined);
+  const pipeOptions = (network?.segments ?? [])
+    .filter((s) => s.scope === 'PROPOSED')
+    .sort((a, b) => comparePipeCodes(a.code, b.code))
+    .map((s) => ({ value: s.id, label: segmentLabel(s) }));
   const hasSpec = num(specMin) !== null || num(specMax) !== null;
 
   useEffect(() => {
@@ -66,6 +73,7 @@ export function TestFormModal({ open, onClose, projectId, test }: { open: boolea
         result: test.result,
         remarks: test.remarks ?? undefined,
         photos: test.attachments,
+        segmentIds: test.segments.map((x) => x.id),
       });
     } else {
       form.setFieldsValue({ projectId, kind: 'CONCRETE_CUBE', sampledOn: dayjs(), unit: TEST_KIND_DEFAULTS.CONCRETE_CUBE.unit, result: 'PENDING' });
@@ -89,6 +97,7 @@ export function TestFormModal({ open, onClose, projectId, test }: { open: boolea
         ...(num(v.specMin) === null && num(v.specMax) === null ? { result: v.result ?? 'PENDING' } : {}),
         remarks: t(v.remarks),
         attachmentIds: (v.photos ?? []).map((p) => p.id),
+        ...(v.segmentIds !== undefined ? { segmentIds: v.segmentIds ?? [] } : {}),
       };
       return test ? (await api.patch<QualityTestDto>(`/quality/tests/${test.id}`, body)).data : (await api.post<QualityTestDto>('/quality/tests', { projectId: v.projectId, ...body })).data;
     },
@@ -138,6 +147,11 @@ export function TestFormModal({ open, onClose, projectId, test }: { open: boolea
               <Input maxLength={200} placeholder="Chainage, grid, floor or pour" />
             </Form.Item>
           </FormGrid>
+          {kind === 'HYDRAULIC' && pipeOptions.length ? (
+            <Form.Item name="segmentIds" label="Pipes tested" extra="A pass marks these pipes tested on the pipe network.">
+              <Select mode="multiple" allowClear showSearch={{ optionFilterProp: 'label' }} placeholder="P-12, P-13…" options={pipeOptions} maxTagCount="responsive" />
+            </Form.Item>
+          ) : null}
         </FormSection>
         <FormSection title="Specification and result">
           <Form.Item name="specification" label="Specification">

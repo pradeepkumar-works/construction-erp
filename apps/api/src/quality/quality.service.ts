@@ -8,8 +8,10 @@ import {
   canApprove,
   canEditTest,
   canRaiseNcr,
+  comparePipeCodes,
   isCompanyWide,
   judgeTest,
+  segmentLabel,
   specRange,
   type NcrDto,
   type NcrSortField,
@@ -41,6 +43,7 @@ const testInclude = {
   readings: { orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }] },
   attachments: { select: ATTACHMENT_FIELDS, orderBy: { createdAt: 'asc' } },
   _count: { select: { ncrs: { where: { status: { not: 'CLOSED' } } } } },
+  pipeSegments: { select: { segment: { select: { id: true, code: true, fromNode: { select: { code: true } }, toNode: { select: { code: true } } } } } },
 } satisfies Prisma.QualityTestInclude;
 type TestRow = Prisma.QualityTestGetPayload<{ include: typeof testInclude }>;
 
@@ -125,6 +128,9 @@ export class QualityService {
       nextDueOn: open.length ? open.sort()[0] : null,
       overdue: readings.some((x) => x.overdue),
       openNcrs: r._count.ncrs,
+      segments: r.pipeSegments
+        .map(({ segment: g }) => ({ id: g.id, code: g.code, label: segmentLabel({ code: g.code, fromCode: g.fromNode.code, toCode: g.toNode.code }) }))
+        .sort((a, b) => comparePipeCodes(a.code, b.code)),
       createdById: r.createdById,
       createdByName: r.createdBy.fullName,
       attachments: r.attachments.map((a) => this.attachments.toDto(a)),
@@ -171,6 +177,14 @@ export class QualityService {
     if (!(await this.prisma.activity.count({ where: { id: activityId, projectId } }))) throw new NotFoundException('Activity not found in this project');
   }
 
+  /** Pipe lengths a test covers must be proposed pipes of the test's own project. */
+  private async assertSegments(projectId: string, segmentIds: string[] | undefined) {
+    if (!segmentIds?.length) return;
+    const ids = [...new Set(segmentIds)];
+    const found = await this.prisma.pipeSegment.count({ where: { id: { in: ids }, projectId } });
+    if (found !== ids.length) throw new NotFoundException("Choose pipes from this project's pipe network");
+  }
+
   private checkSpec(min: string | null, max: string | null) {
     if (min !== null && max !== null && Number(min) > Number(max)) throw new BadRequestException('The lowest passing value is above the highest');
   }
@@ -200,6 +214,7 @@ export class QualityService {
     if (existing) return existing;
     await this.access.assertCanRecordTest(user, dto.projectId);
     await this.assertActivity(dto.projectId, dto.activityId);
+    await this.assertSegments(dto.projectId, dto.segmentIds);
     if (dto.sampledOn > todayIn()) throw new BadRequestException('The sample date cannot be in the future');
     const specMin = dto.specMin ?? null;
     const specMax = dto.specMax ?? null;
@@ -244,6 +259,7 @@ export class QualityService {
                 sortOrder: i,
               })),
             },
+            pipeSegments: dto.segmentIds?.length ? { create: [...new Set(dto.segmentIds)].map((segmentId) => ({ segmentId, organizationId: user.organizationId })) } : undefined,
           },
           select: { id: true },
         });
@@ -280,6 +296,8 @@ export class QualityService {
     const touchesSpec = [dto.kind, dto.title, dto.specification, dto.specMin, dto.specMax, dto.result, dto.sampledOn, dto.activityId].some((v) => v !== undefined);
     if (touchesSpec && !canEditTest(user, cur)) throw new ForbiddenException('Only whoever recorded the test, QA/QC or an approver can change its specification or result');
     if (dto.activityId !== undefined) await this.assertActivity(cur.projectId, dto.activityId);
+    if (dto.segmentIds !== undefined && !canEditTest(user, cur)) throw new ForbiddenException('Only whoever recorded the test, QA/QC or an approver can change the pipes it covers');
+    await this.assertSegments(cur.projectId, dto.segmentIds);
     const sampledOn = dto.sampledOn ?? dateOnly(cur.sampledOn)!;
     if (sampledOn > todayIn()) throw new BadRequestException('The sample date cannot be in the future');
     const specMin = dto.specMin !== undefined ? dto.specMin : dec(cur.specMin);
@@ -305,6 +323,11 @@ export class QualityService {
     if (dto.remarks !== undefined) data.remarks = dto.remarks || null;
     await this.prisma.$transaction(async (tx) => {
       await tx.qualityTest.update({ where: { id }, data });
+      if (dto.segmentIds) {
+        const keepSegments = [...new Set(dto.segmentIds)];
+        await tx.pipeTestSegment.deleteMany({ where: { qualityTestId: id, segmentId: { notIn: keepSegments } } });
+        await tx.pipeTestSegment.createMany({ data: keepSegments.map((segmentId) => ({ qualityTestId: id, segmentId, organizationId: user.organizationId })), skipDuplicates: true });
+      }
       if (!dto.readings) return;
       const keep = readings.filter((r) => r.id).map((r) => r.id!);
       await tx.qualityTestReading.deleteMany({ where: { testId: id, id: { notIn: keep } } });
