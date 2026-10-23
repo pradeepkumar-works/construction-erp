@@ -139,5 +139,5 @@ export function usePins(user: AuthUser | null) {
     [pins, pinOf, pin, unpin, move],
   );
 
-  return { pins, ready: !isPending, pinOf, pin, unpin, move, moveTo, tileMenu, recent: data?.recent ?? [] };
+  return { pins, ready: !isPending, pinOf, pin, unpin, move, moveTo, tileMenu, recent: data?.recent ?? [], launcher: data };
 }

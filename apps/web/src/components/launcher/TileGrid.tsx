@@ -26,6 +26,12 @@ export interface TileEntry {
   href?: string;
   /** What waits on the user there; the tile's name says it too ("Purchases, 3 waiting"). */
   badge?: number;
+  /** A short mark in the tile's corner (Discover: New, Featured, Not opened yet, Ask for access). */
+  tag?: { text: string; tone?: 'new' | 'featured' };
+  /** Opens a dialog about the tile instead of going there (Discover). */
+  onOpen?: () => void;
+  /** Greyed: the user's role cannot open it (Discover offers Request access). */
+  locked?: boolean;
 }
 
 /** A tile's menu (Pin to Home, Unpin, Move left…): drawn as ⋮ on the tile, and opened by right-click, a long press or Shift F10. */
@@ -42,11 +48,19 @@ function Tile({ entry, tabIndex, onFocus, onKeyDown, onPickProject }: { entry: T
   const label = entry.label ?? node?.label ?? '';
   const description = entry.description ?? node?.description;
   const descId = useId();
-  // The name is the label (and what waits); the line under it is the description, so a tile reads like its sidebar link.
-  const a11y = { 'aria-label': entry.badge ? `${label}, ${entry.badge} waiting` : label, 'aria-describedby': description ? descId : undefined };
+  const tagId = useId();
+  // The name is the label (and what waits); the mark and the line under it describe it, so a tile reads like its sidebar link.
+  const describedBy = [entry.tag && tagId, description && descId].filter(Boolean).join(' ') || undefined;
+  const a11y = { 'aria-label': entry.badge ? `${label}, ${entry.badge} waiting` : label, 'aria-describedby': describedBy };
+  const className = entry.locked ? `${s.tile} ${s.locked}` : s.tile;
   const body = (
     <>
-      <span className={s.chip} style={{ color: fg, background: bg }}>
+      {entry.tag && (
+        <span id={tagId} className={`${s.tag} ${entry.tag.tone ? s[entry.tag.tone] : ''}`}>
+          {entry.tag.text}
+        </span>
+      )}
+      <span className={s.chip} style={entry.locked ? undefined : { color: fg, background: bg }}>
         <TreeIcon name={entry.icon ?? node?.icon ?? 'layout-grid'} />
         {!!entry.badge && (
           <span className={s.badge} aria-hidden translate="no">
@@ -62,6 +76,12 @@ function Tile({ entry, tabIndex, onFocus, onKeyDown, onPickProject }: { entry: T
       )}
     </>
   );
+  if (entry.onOpen)
+    return (
+      <button type="button" className={className} tabIndex={tabIndex} onFocus={onFocus} onKeyDown={onKeyDown} onClick={entry.onOpen} aria-haspopup="dialog" {...a11y}>
+        {body}
+      </button>
+    );
   if (node && to?.kind === 'project' && !projectId)
     return (
       <button type="button" className={s.tile} tabIndex={tabIndex} onFocus={onFocus} onKeyDown={onKeyDown} onClick={() => onPickProject(node)} aria-haspopup="dialog" {...a11y}>

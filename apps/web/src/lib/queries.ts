@@ -29,6 +29,10 @@ import type {
   RmcReceiptDto,
   LauncherBadgesDto,
   LauncherDto,
+  LauncherFlagDto,
+  HomeTilesDto,
+  AccessRequestDto,
+  MyAccessRequestDto,
   NavPinDto,
   NavPinKind,
   DocReadKind,
@@ -3403,4 +3407,49 @@ export const useMovePin = () =>
     (old, v) => ({ ...old, pins: old.pins.map((p) => (p.id === v.id ? { ...p, position: v.position } : p)).sort((a, b) => (a.position < b.position ? -1 : 1)) }),
     async (v) => (await api.patch<NavPinDto>(`/launcher/pins/${v.id}`, { position: v.position })).data,
   );
+
+/* Launcher phase 3: Discover's requests for access, and Admin › Home tiles (New and Featured marks, the Discover switch,
+   answering requests). */
+const HOME_TILES_KEY = ['launcher', 'home-tiles'] as const;
+
+export const useHomeTiles = (enabled = true) =>
+  useQuery({ queryKey: HOME_TILES_KEY, queryFn: async () => (await api.get<HomeTilesDto>('/launcher/home-tiles')).data, enabled });
+
+export function useRequestAccess() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (d: { nodeId: string; note?: string }) => (await api.post<MyAccessRequestDto>('/launcher/access-requests', d)).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: LAUNCHER_KEY, exact: true }),
+  });
+}
+
+export function useSetLauncherFlag() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (d: LauncherFlagDto) => (await api.put<LauncherFlagDto>(`/launcher/flags/${d.nodeId}`, { isNew: d.isNew, newUntil: d.newUntil, featured: d.featured })).data,
+    onSuccess: (flag) => {
+      qc.setQueryData<HomeTilesDto>(HOME_TILES_KEY, (old) => (old ? { ...old, flags: [...old.flags.filter((f) => f.nodeId !== flag.nodeId), flag] } : old));
+      void qc.invalidateQueries({ queryKey: LAUNCHER_KEY, exact: true });
+    },
+  });
+}
+
+export function useSetHomeTilesSettings() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (d: { discoverLocked: boolean }) => (await api.patch<HomeTilesDto>('/launcher/settings', d)).data,
+    onSuccess: (data) => {
+      qc.setQueryData(HOME_TILES_KEY, data);
+      void qc.invalidateQueries({ queryKey: LAUNCHER_KEY, exact: true });
+    },
+  });
+}
+
+export function useDecideAccess() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (d: { id: string; status: 'GRANTED' | 'DECLINED'; reply?: string }) => (await api.patch<AccessRequestDto>(`/launcher/access-requests/${d.id}`, { status: d.status, reply: d.reply })).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: HOME_TILES_KEY }),
+  });
+}
 

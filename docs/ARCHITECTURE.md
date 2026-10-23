@@ -136,6 +136,32 @@ shows. The `home` node has `tile: false`, so it is a sidebar link but never a ti
 
 Both tables are tenant tables with `tenant_isolation` policies (migration `20261205090000_launcher_pins`).
 
+### Discover and access requests (launcher phase 3)
+
+Home's **Discover** section (`components/launcher/Discover.tsx`) sits between Recent and All modules. What it shows is
+`discoverFor(user, launcher, today)` in `@erp/shared/launcher.ts` (pure, tested in `src/scripts/launcher-test.ts`, CI runs it),
+over Home's top-level tiles but My work (`LAUNCHER_FLAG_NODES`):
+
+1. tiles marked **New** (until the person opens that module) or **Featured**: `launcherMarks` takes the company's
+   `LauncherFlag` row when it has one (a `null` column keeps the default) and otherwise the node's `newUntil` / `featured`
+   in the tree (Tenders and RMC plant are New until 31 March 2027);
+2. up to three modules the person can open but never has: `GET /launcher` returns `opened`, the top-level tiles of every node
+   they visited (`navRootOf` over their `NavVisit` node rows);
+3. modules their role cannot open, greyed, with Request access: `canRequestNav` (a module, not Admin, with a page the
+   company has not switched off), shown only while the company's `Organization.discoverLocked` is on (the default).
+
+At most `DISCOVER_SHOWN` (6); when New and Featured leave too little room, fewer never-opened modules show so that one
+module to ask for still fits. A tile opens a drawer with the module's line and its pages, then Open, or Request access (a
+`FormShell` modal with a note). **Requests** are `AccessRequest` rows (`HomeTilesService`, `POST /launcher/access-requests`):
+one waiting per person and module, refused for a module the role already opens or cannot ask for; each is audited and sends
+`ACCESS_REQUEST` to the company's admins, linking to Admin › Home tiles (`/home-tiles?request=<id>`). There is no grant of its
+own: an admin changes the person's role (Users) or turns the module on (Modules), then marks the request granted, or declines
+it with a reason; the person gets an `ACCESS_REQUEST` notification (entity `ACCESS_DECISION`, opening Home) either way.
+
+**Admin › Home tiles** (`app/(app)/home-tiles`, `canManageUsers`) answers requests, holds the Discover switch, and marks
+each tile New (optionally until a day) or Featured, or back to as shipped (`PUT /launcher/flags/:nodeId`). Changes are
+audited on the company. `LauncherFlag` and `AccessRequest` are tenant tables (migration `20261206090000_launcher_discover`).
+
 ### Books of account (v6 item 102)
 
 The books are kept from the same postings the Tally export sends. `PostingService` (`apps/api/src/posting`) turns each

@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { ArrayMaxSize, IsArray, IsIn, IsInt, IsOptional, IsString, Matches, MaxLength, MinLength, ValidateNested } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsOptional, IsString, Matches, MaxLength, MinLength, ValidateNested } from 'class-validator';
 import { LAUNCHER_PIN_MAX, LAUNCHER_VISITS_KEPT, NAV_PIN_KINDS, NAV_VISIT_KINDS, type NavPinKind, type NavVisitKind } from '@erp/shared';
 
 const POSITION = /^[0-9a-z]{1,40}$/;
@@ -40,4 +40,24 @@ class ImportVisitDto extends VisitDto {
 export class ImportDto {
   @ApiProperty({ type: [ImportPinDto] }) @IsArray() @ArrayMaxSize(LAUNCHER_PIN_MAX * 2) @ValidateNested({ each: true }) @Type(() => ImportPinDto) pins!: ImportPinDto[];
   @ApiProperty({ type: [ImportVisitDto] }) @IsArray() @ArrayMaxSize(LAUNCHER_VISITS_KEPT) @ValidateNested({ each: true }) @Type(() => ImportVisitDto) visits!: ImportVisitDto[];
+}
+
+export class LauncherFlagSetDto {
+  @ApiPropertyOptional({ nullable: true, description: 'Show as New; null keeps the default from the navigation tree' }) @IsOptional() @IsBoolean() isNew?: boolean | null;
+  @ApiPropertyOptional({ nullable: true, description: 'With isNew, the last day it shows as New (YYYY-MM-DD)' }) @IsOptional() @IsDateString({ strict: true }) newUntil?: string | null;
+  @ApiPropertyOptional({ nullable: true, description: 'Show as Featured; null keeps the default' }) @IsOptional() @IsBoolean() featured?: boolean | null;
+}
+
+export class HomeTilesSettingsDto {
+  @ApiProperty({ description: 'Discover also shows modules a role cannot open, with Request access' }) @IsBoolean() discoverLocked!: boolean;
+}
+
+export class AccessRequestCreateDto {
+  @ApiProperty({ description: 'A module of the navigation tree' }) @IsString() @MinLength(1) @MaxLength(80) nodeId!: string;
+  @ApiPropertyOptional({ description: 'What they need it for' }) @IsOptional() @IsString() @MaxLength(500) note?: string;
+}
+
+export class AccessDecisionDto {
+  @ApiProperty({ enum: ['GRANTED', 'DECLINED'] }) @IsIn(['GRANTED', 'DECLINED']) status!: 'GRANTED' | 'DECLINED';
+  @ApiPropertyOptional({ description: 'A line for the person; needed to decline' }) @IsOptional() @IsString() @MaxLength(500) reply?: string;
 }

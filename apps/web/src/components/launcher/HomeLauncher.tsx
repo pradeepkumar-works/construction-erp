@@ -19,6 +19,7 @@ import { requestSearch } from '@/components/shell/search-request';
 import { TileGrid, tileEntries } from './TileGrid';
 import { pinEntry, usePins } from './pins';
 import { EditPins } from './EditPins';
+import { DiscoverSection } from './Discover';
 import s from './HomeLauncher.module.css';
 
 const greeting = (hour: number) => (hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening');
@@ -121,7 +122,7 @@ export function HomeLauncher() {
   const [query, setQuery] = useState('');
   const [editing, setEditing] = useState(false);
   const gettingStarted = useGettingStarted();
-  const { pins, ready, pin, tileMenu, recent } = usePins(user);
+  const { pins, ready, pin, tileMenu, recent, launcher } = usePins(user);
   const { data: badges } = useLauncherBadges(!!user);
   useImportOnce(user);
   usePageTitle('Home');
@@ -246,6 +247,8 @@ export function HomeLauncher() {
               <p className={s.emptyText}>The last 5 pages you open show here, on every device you sign in on.</p>
             )}
           </section>
+
+          <DiscoverSection user={user} launcher={launcher} />
 
           <section aria-labelledby="home-modules" className={s.section}>
             <h2 id="home-modules" className={s.sectionTitle}>

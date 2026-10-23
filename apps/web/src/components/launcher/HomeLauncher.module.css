@@ -122,3 +122,31 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Discover's drawer: the module's pages, each with its line. */
+.drawerTitle {
+  margin: var(--ant-margin) 0 var(--ant-margin-xs);
+  font-size: var(--ant-font-size);
+  font-weight: var(--ant-font-weight-strong);
+}
+
+.pageList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.pageItem {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ant-margin-sm);
+  padding-block: var(--ant-padding-xs);
+}
+
+.pageItem .recentIcon {
+  margin-top: 2px;
+}
+
+.pageItem .recentLabel {
+  white-space: normal;
+}

@@ -70,6 +70,7 @@ export const NOTIFICATION_TYPES = [
   'MORNING_BRIEF',
   'SUPPLIER',
   'COMMENT',
+  'ACCESS_REQUEST',
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
@@ -267,3 +268,7 @@ export const NAV_PIN_KINDS = ['NODE', 'PROJECT'] as const;
 export type NavPinKind = (typeof NAV_PIN_KINDS)[number];
 export const NAV_VISIT_KINDS = ['NODE', 'PROJECT', 'RECORD'] as const;
 export type NavVisitKind = (typeof NAV_VISIT_KINDS)[number];
+/** Launcher phase 3: someone asks for a module their role cannot open; an admin grants it (by changing the role or
+ *  turning the module on) or declines it. */
+export const ACCESS_REQUEST_STATUSES = ['OPEN', 'GRANTED', 'DECLINED'] as const;
+export type AccessRequestStatus = (typeof ACCESS_REQUEST_STATUSES)[number];
