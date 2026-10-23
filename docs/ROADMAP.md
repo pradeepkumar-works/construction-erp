@@ -640,6 +640,29 @@ job is Pradeep's call once item 67's evaluation (`apps/api/scripts/ai-eval.ts`) 
 77. **AI usage, controls and pricing** (S): usage by feature, an admin conversation log, roles allowed, and the AI
     allowance in Plans and billing.
 
+## AI for site problems (items 119 to 124)
+
+Asked by Pradeep on 23 Oct 2026: build the AI strategy for construction site problems (the doc "Nirmaan AI strategy for
+site problems", copy in the project's `roadmap/ai-strategy/`). Its top five come first, in its order, on the AI items
+above, each one pull request merged once CI and the browser tests are green. The build plan is the doc "Nirmaan AI site
+intelligence: build plan". Rules first, models only to read what sites send; nothing writes without a named person.
+
+119. ~~**AI flags: why, how sure, track record** (S). Every watch-list warning leads with the action and its cost, opens its
+     working, says Checked, Likely or Check this, is dismissed as Fixed, Known or Wrong, and shows "right 7 of the last
+     10"; a kind marked Wrong too often pauses; at most 5 new warnings a person a day.~~ Done: `action`, `impact`,
+     `confidence` and `working` on every warning, outcomes in `WarningOutcomeLog`, the Track record tab, pauses and
+     Resume (admin and management), the daily alerts (`warningAlerts`). ARCHITECTURE "Early warnings".
+120. **WhatsApp and voice capture** (L): a WhatsApp text, photo or Hindi voice note becomes a draft DPR line, material
+     request, expense, snag, hindrance or safety observation, saved in the sender's name on one tap.
+121. **Material and fuel leakage checks** (M): material used against what approved work allows, month by month and site
+     against site, PO rates above another site's, fuel above norm or issued with no log, hired machines idle while paid.
+122. **13-week cash forecast and billing readiness** (L): the bank balance and 13 weeks of money in and out as a range,
+     why each short week is short, last month's error; measured work not billed and a drafted payment reminder.
+123. **Hindrance to notice** (M): a hindrance in a DPR or message suggested as a delay, the contract's notice clock on the
+     watch list, and the notice letter drafted for the PM.
+124. **Attendance cross-check** (M): man-days billed against biometric punches, roll call, head-count sheet and DPR
+     manpower, as a bill check and a page for HR and the PM.
+
 ## Definition of done for every item
 Prisma migration, API endpoints with Swagger, shared types, web screen, mobile screen where site
 staff use it, seed data updated, `pnpm typecheck` + `next build` + mobile `tsc` clean, smoke test

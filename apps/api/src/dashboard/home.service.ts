@@ -131,7 +131,7 @@ export class HomeService {
       // `pending` is oldest first: how long the first has waited is how pressing the approvals are.
       out.approvalsWaitingDays = pending.length ? Math.max(0, daysBetween(todayIn(undefined, new Date(pending[0].submittedAt)), today)) : null;
     }
-    if (watch) out.watchList = card(watch.length, watch.map((w) => ({ label: w.title, note: w.detail, projectName: w.projectName, amount: null, href: '/watch-list' })));
+    if (watch) out.watchList = card(watch.length, watch.map((w) => ({ label: w.title, note: w.action, projectName: w.projectName, amount: null, href: '/watch-list' })));
     if (missing) out.dprsMissing = card(missing.length, missing.map((p) => ({ label: p.name, note: `No DPR for today`, projectName: null, amount: null, href: `/projects/${p.id}?tab=dpr` })));
     out.sentBack = card(
       sentBack.length,

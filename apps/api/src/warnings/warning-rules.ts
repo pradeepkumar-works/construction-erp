@@ -364,3 +364,48 @@ export function emiOverdue(emis: { no: number; dueDate: string; emi: number; pai
   if (days <= EMI_GRACE_DAYS) return null;
   return { count: late.length, amount: late.reduce((s, e) => s + e.emi, 0), oldestNo: late[0].no, oldestDue: late[0].dueDate, days };
 }
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Track record and pauses (item 119): what people said about a kind's warnings when they dismissed them.
+
+export interface OutcomeFact {
+  outcome: 'FIXED' | 'KNOWN' | 'WRONG';
+  /** YYYY-MM-DD */
+  date: string;
+}
+
+/** Of the latest `size` outcomes, how many were right (Fixed or Known). Outcomes in any order. */
+export function trackRecord(outcomes: OutcomeFact[], size: number): { right: number; of: number } {
+  const latest = [...outcomes].sort((a, b) => b.date.localeCompare(a.date)).slice(0, size);
+  return { right: latest.filter((o) => o.outcome !== 'WRONG').length, of: latest.length };
+}
+
+/**
+ * A kind pauses when, over the outcomes in the last `windowDays`, at least `minOutcomes` were given and more than
+ * `wrongShare` of them were Wrong. The caller leaves out outcomes from before an admin last resumed the kind. `since` is
+ * the day the pause began: the day of the outcome that first tipped it over.
+ */
+export function pauseState(outcomes: OutcomeFact[], today: string, rules: { windowDays: number; minOutcomes: number; wrongShare: number }): { since: string; wrong: number; of: number } | null {
+  const from = addDays(today, -rules.windowDays + 1);
+  const counted = outcomes.filter((o) => o.date >= from && o.date <= today).sort((a, b) => a.date.localeCompare(b.date));
+  let wrong = 0;
+  let since: string | null = null;
+  counted.forEach((o, i) => {
+    if (o.outcome === 'WRONG') wrong++;
+    const of = i + 1;
+    if (!since && of >= rules.minOutcomes && wrong / of > rules.wrongShare) since = o.date;
+  });
+  if (counted.length < rules.minOutcomes || wrong / counted.length <= rules.wrongShare) return null;
+  return { since: since ?? counted[counted.length - 1].date, wrong, of: counted.length };
+}
+
+/** The warnings to tell a person about today: not told before, most costly first (rupees, then days), at most `cap`. */
+export function alertsToSend<W extends { key: string; impact: { inr: number | null; days: number | null } | null }>(open: W[], told: Set<string>, cap: number): W[] {
+  const weight = (w: W) => [w.impact?.inr ?? 0, w.impact?.days ?? 0] as const;
+  return open
+    .filter((w) => !told.has(w.key))
+    .map((w, i) => ({ w, i }))
+    .sort((a, b) => weight(b.w)[0] - weight(a.w)[0] || weight(b.w)[1] - weight(a.w)[1] || a.i - b.i)
+    .slice(0, cap)
+    .map((x) => x.w);
+}

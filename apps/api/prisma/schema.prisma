@@ -642,6 +642,9 @@ model Organization {
   aiMessages           AiMessage[]
   billCheckAcceptances BillCheckAcceptance[]
   warningDismissals    WarningDismissal[]
+  warningOutcomes      WarningOutcomeLog[]
+  warningResumes       WarningKindResume[]
+  warningAlerts        WarningAlert[]
   aiBriefs             AiBrief[]
   documentPages        DocumentPage[]
   photoChecks          PhotoCheck[]
@@ -771,6 +774,9 @@ model User {
   aiThreads             AiThread[]
   billChecksAccepted    BillCheckAcceptance[]      @relation("BillCheckAcceptedBy")
   warningsDismissed     WarningDismissal[]         @relation("WarningDismissedBy")
+  warningOutcomes       WarningOutcomeLog[]        @relation("WarningOutcomeBy")
+  warningResumes        WarningKindResume[]        @relation("WarningResumedBy")
+  warningAlerts         WarningAlert[]             @relation("WarningAlertTo")
   aiBriefs              AiBrief[]
   aiDocumentReads       AiDocumentRead[]
   memberships           ProjectMember[]
@@ -4918,12 +4924,68 @@ model WarningDismissal {
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
   warningKey     String
+  /// What became of it (item 119); dismissals from before item 119 are KNOWN
+  outcome        WarningOutcome @default(KNOWN)
   reason         String
   dismissedById  String
   dismissedBy    User         @relation("WarningDismissedBy", fields: [dismissedById], references: [id])
   createdAt      DateTime     @default(now())
 
   @@unique([organizationId, warningKey])
+}
+
+/// What became of a dismissed warning (item 119). FIXED and KNOWN count as right in a kind's track record.
+enum WarningOutcome {
+  FIXED
+  KNOWN
+  WRONG
+}
+
+/// Every outcome given to a warning (item 119), kept when the dismissal is undone, so a kind's track record ("right 7
+/// of the last 10") and its pause read the whole history.
+model WarningOutcomeLog {
+  id             String         @id @default(uuid())
+  organizationId String
+  organization   Organization   @relation(fields: [organizationId], references: [id])
+  /// A WARNING_KINDS key
+  kind           String
+  warningKey     String
+  outcome        WarningOutcome
+  note           String?
+  userId         String
+  user           User           @relation("WarningOutcomeBy", fields: [userId], references: [id])
+  createdAt      DateTime       @default(now())
+
+  @@index([organizationId, kind, createdAt])
+}
+
+/// A paused warning kind resumed by an admin (item 119): outcomes from before `resumedAt` no longer count to a pause.
+model WarningKindResume {
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  kind           String
+  resumedAt      DateTime
+  resumedById    String
+  resumedBy      User         @relation("WarningResumedBy", fields: [resumedById], references: [id])
+
+  @@id([organizationId, kind])
+}
+
+/// A warning a person has been told about (item 119), so each goes out once and at most DAILY_WARNING_ALERTS a day.
+/// `alertedAt` is null for warnings that were already open when the person's alerts began, which are never sent.
+model WarningAlert {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  userId         String
+  user           User         @relation("WarningAlertTo", fields: [userId], references: [id], onDelete: Cascade)
+  warningKey     String
+  kind           String
+  alertedAt      DateTime?
+  createdAt      DateTime     @default(now())
+
+  @@unique([userId, warningKey])
+  @@index([organizationId])
 }
 
 /// Written by Ask Nirmaan in the overnight batch (AI item 74): a user's morning brief (MORNING, for `date`) or a

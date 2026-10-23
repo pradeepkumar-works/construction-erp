@@ -2208,13 +2208,29 @@ export; the client portal and the phone app show the amount.
 - **Who sees what.** `watchListKinds(role)` in `packages/shared/src/warnings.ts`: schedule and DPRs for approvers, cash
   for those who see cost, vendors for purchase, stock for stores, machines for maintenance. Projects come from
   `ProjectAccessService.projectWhere`, so a PM sees only their own.
-- **Dismissing.** `POST /warnings/dismiss {key, reason}` needs a reason and holds for the whole company
-  (`WarningDismissal`, audited). The key carries the warning's figures in coarse form (the slip in 14-day steps, the
-  month, the week), so a dismissed warning comes back when things get worse. `POST /warnings/restore` undoes it.
-- **Weekly notification.** `NotificationJobsService.watchList` runs on Mondays with the daily digest (and the in-process
-  scheduler), once per week per user.
-- **Tests.** `src/scripts/warnings-test.ts` (CI runs it): the forecast unit tests, each role's kinds and projects on the
-  demo data, dismissals, and a 60-day backtest over the demo history printing the day each warning would first have fired.
+- **The card (item 119).** Each warning leads with `action` (what to do, a few words) and `impact` (what it costs:
+  `text`, plus `inr` or `days` to sort by), says how sure it is (`confidence`: CHECKED, a rule over records; LIKELY, a
+  forecast; CHECK_THIS, read by the model from a photo, voice note or message; `WARNING_CONFIDENCE_OF` per kind), and
+  carries `working`, the rule and its numbers a line each ("58 m³ done × 7.1 bags = 412 bags"), shown under Why with the
+  facts. A new kind fills all four; `warnings-test.ts` fails a demo warning without them. My work's card shows the action.
+- **Dismissing.** `POST /warnings/dismiss {key, outcome, reason?}` says what became of it: FIXED (acted on), KNOWN (true,
+  left for a reason; the note is required) or WRONG. It holds for the whole company (`WarningDismissal`, audited). The key
+  carries the warning's figures in coarse form (the slip in 14-day steps, the month, the week), so a dismissed warning
+  comes back when things get worse. `POST /warnings/restore` undoes it.
+- **Track record and pauses (item 119).** Every outcome is also written to `WarningOutcomeLog`, which a restore leaves
+  alone. `WatchListDto.records` gives each kind "right N of the last 10" (FIXED and KNOWN are right) and whether it is
+  paused: more than half of at least four outcomes in the last 30 days were WRONG (`pauseState`). A paused kind's warnings
+  leave the list, My work, the alerts and the brief until an admin or management resumes it (`POST /warnings/resume
+  {kind}`, `WarningKindResume`, audited); outcomes from before the resume stop counting. The page's Track record tab shows it.
+- **Notifications.** New warnings go out each day with the digest (`NotificationJobsService.warningAlerts`, also in the
+  in-process scheduler): each person is told about open warnings they have not been told about, most rupees first, then
+  days, at most `DAILY_WARNING_ALERTS` (5), so WhatsApp alerts are capped too; the rest wait on the list and in the morning
+  brief. `WarningAlert` keeps what each person was told; their first run records what is already open and sends nothing.
+  `NotificationJobsService.watchList` still sends the Monday round-up, once per week per user.
+- **Tests.** `src/scripts/warnings-test.ts` (CI runs it): the forecast unit tests, the track record, pause and alert
+  rules, each role's kinds and projects on the demo data, every warning's action and working, dismissals with outcomes,
+  a pause and its resume, the alerts' first run and a new warning sent once, and a 60-day backtest over the demo history
+  printing the day each warning would first have fired.
 
 ## Morning brief and weekly narrative
 

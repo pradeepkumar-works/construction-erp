@@ -9,8 +9,8 @@
  */
 import assert from 'node:assert/strict';
 import type { RoleKey } from '@erp/shared';
-import { WARNING_KINDS, watchListKinds } from '@erp/shared';
-import { activityForecast, addDays, cashGap, cashWeeks, daysToPay, dprGap, emiOverdue, leadDays, machineTrend, fuelNormCheck, fuelStep, materialOveruse, overuseStep, scheduleWarns, stockRunout, vendorTrend } from '../warnings/warning-rules';
+import { PAUSE_MIN_OUTCOMES, PAUSE_WINDOW_DAYS, PAUSE_WRONG_SHARE, WARNING_KINDS, trackRecordText, watchListKinds } from '@erp/shared';
+import { alertsToSend, pauseState, trackRecord, activityForecast, addDays, cashGap, cashWeeks, daysToPay, dprGap, emiOverdue, leadDays, machineTrend, fuelNormCheck, fuelStep, materialOveruse, overuseStep, scheduleWarns, stockRunout, vendorTrend } from '../warnings/warning-rules';
 
 const cases: [string, () => void][] = [];
 const test = (name: string, fn: () => void) => cases.push([name, fn]);
@@ -228,6 +228,33 @@ test('roles: each kind goes to the role that can act on it', () => {
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
+// Track record, pauses and the daily alerts (item 119)
+
+const RULES = { windowDays: PAUSE_WINDOW_DAYS, minOutcomes: PAUSE_MIN_OUTCOMES, wrongShare: PAUSE_WRONG_SHARE };
+const o = (outcome: 'FIXED' | 'KNOWN' | 'WRONG', date: string) => ({ outcome, date });
+
+test('track record: the latest ten, Fixed and Known count as right', () => {
+  const outcomes = [...Array.from({ length: 8 }, (_, i) => o('FIXED', addDays(T, -i))), o('WRONG', addDays(T, -20)), o('WRONG', addDays(T, -21)), o('WRONG', addDays(T, -60))];
+  assert.deepEqual(trackRecord(outcomes, 10), { right: 8, of: 10 }, 'the oldest Wrong falls outside the ten');
+  assert.deepEqual(trackRecord([], 10), { right: 0, of: 0 });
+  assert.equal(trackRecordText({ right: 8, of: 10 }), 'Right 8 of the last 10');
+  assert.equal(trackRecordText({ right: 0, of: 0 }), null);
+});
+test('pause: more than half Wrong over at least four outcomes in 30 days', () => {
+  assert.equal(pauseState([o('WRONG', T), o('WRONG', addDays(T, -1)), o('WRONG', addDays(T, -2))], T, RULES), null, 'three is too few to judge');
+  const p = pauseState([o('KNOWN', addDays(T, -9)), o('WRONG', addDays(T, -6)), o('WRONG', addDays(T, -4)), o('WRONG', addDays(T, -2))], T, RULES);
+  assert.deepEqual(p, { since: addDays(T, -2), wrong: 3, of: 4 });
+  assert.equal(pauseState([o('KNOWN', T), o('FIXED', T), o('WRONG', T), o('WRONG', T)], T, RULES), null, 'half is not more than half');
+  assert.equal(pauseState([o('WRONG', addDays(T, -40)), o('WRONG', addDays(T, -35)), o('WRONG', addDays(T, -31)), o('WRONG', addDays(T, -30))], T, RULES), null, 'older than 30 days');
+});
+test('alerts: only warnings not told before, most rupees first, then days, at most the cap', () => {
+  const w = (key: string, inr: number | null, days: number | null) => ({ key, impact: inr === null && days === null ? null : { inr, days } });
+  const open = [w('a', null, null), w('b', 50_000, null), w('c', null, 12), w('d', 900_000, null), w('e', 50_000, null), w('f', null, 30)];
+  assert.deepEqual(alertsToSend(open, new Set(['d']), 3).map((x) => x.key), ['b', 'e', 'f']);
+  assert.deepEqual(alertsToSend(open, new Set(), 10).map((x) => x.key), ['d', 'b', 'e', 'f', 'c', 'a']);
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
 
 let failed = 0;
 for (const [name, fn] of cases) {
@@ -246,6 +273,7 @@ async function demo(): Promise<number> {
   const { AppModule } = await import('../app.module');
   const { PrismaService } = await import('../prisma/prisma.service');
   const { WarningsService } = await import('../warnings/warnings.service');
+  const { NotificationJobsService } = await import('../notifications/notification-jobs.service');
   const { setTenant, tenantMiddleware } = await import('../prisma/tenant-context');
   const { todayIn } = await import('../notifications/time');
   const app = await NestFactory.createApplicationContext(AppModule, { logger: ['error'] });
@@ -285,22 +313,73 @@ async function demo(): Promise<number> {
         await warnings.list(as('engineer@demo.com')).catch(() => (engineerRefused = true));
         check('a site engineer has no watch list', engineerRefused);
 
-        // Dismissing takes a reason, hides the warning for everyone, and restoring brings it back.
+        // Item 119: every warning leads with an action, carries its working and how sure it is.
+        for (const w of md.open) {
+          check(`${w.key} has an action`, w.action.length > 10, w.action);
+          check(`${w.key} has its working`, w.working.length > 0 && w.working.every((l) => l.length > 5));
+          check(`${w.key} says how sure it is`, ['CHECKED', 'LIKELY', 'CHECK_THIS'].includes(w.confidence));
+        }
+        check('one track record per kind', md.records.length === md.kinds.length);
+
+        // Dismissing says what became of it (Known needs a note), hides it for everyone, and restoring brings it back.
         const first = md.open[0];
+        const mdUser = as('md@demo.com');
+        const startedAt = new Date();
         if (first) {
           let refused = false;
-          await warnings.dismiss(as('md@demo.com'), first.key, 'ok').catch(() => (refused = true));
-          check('a dismissal needs a reason of three letters or more', refused);
-          const after = await warnings.dismiss(as('md@demo.com'), first.key, 'Known; second crew starts Monday');
-          check('a dismissed warning leaves the open list', !after.open.some((w) => w.key === first.key) && after.dismissed.some((w) => w.key === first.key && w.dismissed?.reason.startsWith('Known')));
+          await warnings.dismiss(mdUser, first.key, 'KNOWN', 'ok').catch(() => (refused = true));
+          check('Known and accepted needs a note of three letters or more', refused);
+          const after = await warnings.dismiss(mdUser, first.key, 'KNOWN', 'Known; second crew starts Monday');
+          check('a dismissed warning leaves the open list', !after.open.some((w) => w.key === first.key) && after.dismissed.some((w) => w.key === first.key && w.dismissed?.reason.startsWith('Known') && w.dismissed.outcome === 'KNOWN'));
+          const rec = after.records.find((r) => r.kind === first.kind)!;
+          check('the outcome counts in the track record', rec.of >= 1 && rec.right >= 1, JSON.stringify(rec));
           const admin = await warnings.list(as('admin@demo.com'));
           check('a dismissal holds for the whole company', admin.dismissed.some((w) => w.key === first.key));
-          const back = await warnings.restore(as('md@demo.com'), first.key);
+          const back = await warnings.restore(mdUser, first.key);
           check('restoring brings it back', back.open.some((w) => w.key === first.key));
+          check('the outcome stays in the record after a restore', back.records.find((r) => r.kind === first.kind)!.of === rec.of);
+          // Wrong needs no note; four Wrongs in a row pause the kind until management resumes it.
+          const kind = first.kind;
+          await prisma.warningOutcomeLog.createMany({
+            data: [0, 1, 2].map(() => ({ organizationId: org.id, kind, warningKey: `${kind}:test`, outcome: 'WRONG' as const, userId: mdUser.id })),
+          });
+          const wrong = await warnings.dismiss(mdUser, first.key, 'WRONG');
+          const row = await prisma.warningDismissal.findUnique({ where: { organizationId_warningKey: { organizationId: org.id, warningKey: first.key } } });
+          check('Wrong needs no note', row?.outcome === 'WRONG' && row.reason === 'Wrong', JSON.stringify(row));
+          const paused = wrong.records.find((r) => r.kind === kind)!;
+          check('a kind marked Wrong too often pauses', !!paused.paused, JSON.stringify(paused));
+          check("a paused kind's warnings leave the list", !wrong.open.some((w) => w.kind === kind) && !wrong.dismissed.some((w) => w.kind === kind));
+          let pmRefused = false;
+          await warnings.resume(as('pm@demo.com'), kind).catch(() => (pmRefused = true));
+          check('a project manager cannot resume a kind', pmRefused);
+          const resumed = await warnings.resume(mdUser, kind);
+          check('management resumes it', !resumed.records.find((r) => r.kind === kind)!.paused && resumed.dismissed.some((w) => w.key === first.key));
+          await warnings.restore(mdUser, first.key);
         }
         let unknown = false;
-        await warnings.dismiss(as('md@demo.com'), 'stock:nothing', 'not a warning').catch(() => (unknown = true));
+        await warnings.dismiss(mdUser, 'stock:nothing', 'FIXED').catch(() => (unknown = true));
         check('only a warning on the list can be dismissed', unknown);
+
+        // Daily alerts: the first run records what is open and sends nothing; a new warning is sent once.
+        const jobs = app.get(NotificationJobsService);
+        await prisma.warningAlert.deleteMany({ where: { userId: mdUser.id } });
+        const firstRun = await jobs.warningAlerts(today);
+        const baseline = await prisma.warningAlert.count({ where: { userId: mdUser.id, alertedAt: null } });
+        check('the first run records what is open without sending it', baseline === md.open.length + 1, `${baseline} rows, ${md.open.length} open`);
+        if (first) {
+          await prisma.warningAlert.deleteMany({ where: { userId: mdUser.id, warningKey: first.key } });
+          await jobs.warningAlerts(today);
+          const sent = await prisma.notification.count({ where: { userId: mdUser.id, dedupeKey: `WARNING:${first.key}` } });
+          check('a warning not told before is sent', sent === 1, String(sent));
+          await jobs.warningAlerts(today);
+          check('and only once', (await prisma.notification.count({ where: { userId: mdUser.id, dedupeKey: `WARNING:${first.key}` } })) === 1);
+        }
+        void firstRun;
+        // Leave the demo company as it was for the browser tests.
+        await prisma.warningOutcomeLog.deleteMany({ where: { organizationId: org.id, createdAt: { gte: startedAt } } });
+        await prisma.warningKindResume.deleteMany({ where: { organizationId: org.id } });
+        await prisma.warningAlert.deleteMany({ where: { organizationId: org.id } });
+        await prisma.notification.deleteMany({ where: { userId: mdUser.id, dedupeKey: { startsWith: 'WARNING:' } } });
 
         // Backtest: the day each warning would first have fired over the last 60 days (cash is as of today only).
         const first60 = new Map<string, { day: string; title: string }>();

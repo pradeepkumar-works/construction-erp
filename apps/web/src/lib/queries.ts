@@ -40,6 +40,8 @@ import type {
   DraftChecksDto,
   BillChecksDto,
   WatchListDto,
+  WarningKind,
+  WarningOutcome,
   BriefStatusDto,
   BillCheckSummaryDto,
   CheckKind,
@@ -3174,12 +3176,24 @@ export const useSnagDraft = () =>
 export const useWatchList = (enabled = true) =>
   useQuery({ queryKey: ['watch-list'], queryFn: async () => (await api.get<WatchListDto>('/warnings')).data, enabled });
 
-/** Dismiss a warning with a reason, or bring a dismissed one back (`restore`). */
+/** Dismiss a warning saying what became of it (item 119), or bring a dismissed one back (`restore`). */
 export function useDismissWarning() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (v: { key: string; reason?: string; restore?: boolean }) =>
-      (await api.post<WatchListDto>(`/warnings/${v.restore ? 'restore' : 'dismiss'}`, v.restore ? { key: v.key } : { key: v.key, reason: v.reason })).data,
+    mutationFn: async (v: { key: string; outcome?: WarningOutcome; reason?: string; restore?: boolean }) =>
+      (await api.post<WatchListDto>(`/warnings/${v.restore ? 'restore' : 'dismiss'}`, v.restore ? { key: v.key } : { key: v.key, outcome: v.outcome, reason: v.reason || undefined })).data,
+    onSuccess: (d) => {
+      qc.setQueryData(['watch-list'], d);
+      void qc.invalidateQueries({ queryKey: ['dashboard', 'my-work'] });
+    },
+  });
+}
+
+/** Resume a paused kind of warning (admins and management, item 119). */
+export function useResumeWarningKind() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (kind: WarningKind) => (await api.post<WatchListDto>('/warnings/resume', { kind })).data,
     onSuccess: (d) => {
       qc.setQueryData(['watch-list'], d);
       void qc.invalidateQueries({ queryKey: ['dashboard', 'my-work'] });
