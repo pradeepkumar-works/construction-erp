@@ -17,6 +17,7 @@ import { ProjectFormModal } from '@/components/projects/ProjectFormModal';
 import { ProjectHealth, useProjectHealth } from '@/components/projects/ProjectHealth';
 import { CompactTitle, ProjectWorkspace, type WorkspaceTab } from '@/components/projects/ProjectWorkspace';
 import { SectorPanel, sectorTabLabel } from '@/components/sector/SectorPanel';
+import { StructurePanel } from '@/components/structure/StructurePanel';
 import { BoqTab } from '@/components/boq/BoqTab';
 import { ActivitiesTab } from '@/components/activities/ActivitiesTab';
 import { GanttPanel } from '@/components/schedule/GanttPanel';
@@ -88,6 +89,7 @@ function ProjectPage({ project }: { project: ProjectDetail }) {
 
   const all: (WorkspaceTab | false)[] = [
     { key: 'overview', group: 'overview', label: 'Overview', children: <ProjectOverview project={project} /> },
+    { key: 'structure', group: 'plan', label: 'Structure', children: <StructurePanel project={project} /> },
     { key: 'boq', group: 'plan', label: 'BOQ', children: <BoqTab projectId={project.id} /> },
     { key: 'activities', group: 'plan', label: 'Activities', children: <ActivitiesTab projectId={project.id} members={project.members} project={project} /> },
     { key: 'schedule', group: 'plan', label: 'Gantt', children: <GanttPanel projectId={project.id} /> },

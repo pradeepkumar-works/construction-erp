@@ -38,6 +38,8 @@ test('Back closes an edited form only after asking, and stays on the page', asyn
   await signIn(page, 'md@demo.com');
   await page.goto(`/projects/${road.id}`);
   await openProjectTab(page, 'Plan', 'BOQ');
+  // Plan opens on Structure first; wait for the BOQ tab to reach the address before keeping it.
+  await expect(page).toHaveURL(/[?&]tab=boq\b/);
   const url = page.url();
   await page.getByRole('button', { name: /^Edit BOQ item / }).first().click();
   const form = formPanel(page, /^Edit BOQ item /);

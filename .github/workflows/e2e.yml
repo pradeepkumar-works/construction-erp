@@ -114,6 +114,10 @@ jobs:
         if: matrix.suite == 'flows'
         working-directory: apps/api
         run: node dist/scripts/reconciliation-test.js
+      - name: Work breakdown rolls progress up from sub-activities to components to the project, and its templates add up
+        if: matrix.suite == 'flows'
+        working-directory: apps/api
+        run: node dist/scripts/wbs-rollup-test.js
       - name: PPE replace-by dates and what each worker lacks
         if: matrix.suite == 'flows'
         working-directory: apps/api

@@ -1,11 +1,43 @@
-import type { LdPeriod, GrnQcStatus, ComplianceDocKind, ComplianceDocStatus, DefectPhase, DefectPriority, DefectStatus, ImprestEntryKind, ImprestEntryStatus, WorkerIdType, WorkerSkill, EquipmentDocType, MaintenanceKind, MaintenanceStatus, BillStage, ReceiptKind, VendorKind, MsmeCategory, EquipmentOwnership, ExpenseCategory, PaymentMode, EquipmentRateUnit, MaterialPriority, NotificationType, ProjectStatus, ProjectType, DelayParty, PasswordTokenPurpose, RiskCategory, RiskKind, RiskStatus, RoleKey, SafetyIncidentStatus, SafetyIncidentType, StockEntryType, SubmissionStatus, SubmissionType, Weather, WorkPermitStatus, WorkPermitType, PpeKind, PpeIssueStatus, RfiStatus, RfiPriority, PaymentRequestKind, FundPurpose, VendorBillKind, HireFuelBy, DebitNoteReason, BoqResourceKind, StockAdjustmentReason, FuelNormUnit, EquipmentPartKind, ApprovalStepAction, MarkupKind, MarkupStatus, MarkupColor, NavPinKind, NavVisitKind, AccessRequestStatus } from './enums';
+import type { ContractModel, WorkElementLevel, WorkElementType, LdPeriod, GrnQcStatus, ComplianceDocKind, ComplianceDocStatus, DefectPhase, DefectPriority, DefectStatus, ImprestEntryKind, ImprestEntryStatus, WorkerIdType, WorkerSkill, EquipmentDocType, MaintenanceKind, MaintenanceStatus, BillStage, ReceiptKind, VendorKind, MsmeCategory, EquipmentOwnership, ExpenseCategory, PaymentMode, EquipmentRateUnit, MaterialPriority, NotificationType, ProjectStatus, ProjectType, DelayParty, PasswordTokenPurpose, RiskCategory, RiskKind, RiskStatus, RoleKey, SafetyIncidentStatus, SafetyIncidentType, StockEntryType, SubmissionStatus, SubmissionType, Weather, WorkPermitStatus, WorkPermitType, PpeKind, PpeIssueStatus, RfiStatus, RfiPriority, PaymentRequestKind, FundPurpose, VendorBillKind, HireFuelBy, DebitNoteReason, BoqResourceKind, StockAdjustmentReason, FuelNormUnit, EquipmentPartKind, ApprovalStepAction, MarkupKind, MarkupStatus, MarkupColor, NavPinKind, NavVisitKind, AccessRequestStatus } from './enums';
 
 export const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {
   ROAD: 'Road / Infrastructure',
   BUILDING: 'Building',
   WATER_SUPPLY: 'Water Supply',
+  SEWERAGE: 'Sewerage',
   PLANT: 'RMC plant',
   STORE: 'Central store or yard',
+};
+
+export const CONTRACT_MODEL_LABELS: Record<ContractModel, string> = {
+  ITEM_RATE: 'Item rate',
+  LUMP_SUM: 'Lump sum',
+  EPC: 'EPC (design and build)',
+};
+
+export const WORK_ELEMENT_LEVEL_LABELS: Record<WorkElementLevel, string> = { COMPONENT: 'Component', SUB_COMPONENT: 'Sub-component' };
+
+export const WORK_ELEMENT_TYPE_LABELS: Record<WorkElementType, string> = {
+  INTAKE_WELL: 'Intake well',
+  PUMP_HOUSE: 'Pump house',
+  APPROACH_BRIDGE: 'Approach bridge',
+  RISING_MAIN: 'Rising main',
+  FEEDER_MAIN: 'Feeder main',
+  WTP: 'Water treatment plant',
+  WTP_UNIT: 'Treatment plant unit',
+  SUMP: 'Sump',
+  OHT: 'Overhead tank',
+  PIPE_ZONE: 'Pipe network zone',
+  HOUSE_CONNECTIONS: 'House connections',
+  ROAD_RESTORATION: 'Road restoration',
+  HT_FEEDER: 'HT feeder line',
+  EM_PACKAGE: 'Electrical and mechanical package',
+  STP_UNIT: 'Sewage treatment unit',
+  BLOCK: 'Building block',
+  FLOOR: 'Floor',
+  ROAD_STRETCH: 'Road stretch',
+  CROSSING: 'Crossing',
+  GENERAL: 'Other',
 };
 
 export const PROJECT_STATUS_LABELS: Record<ProjectStatus, string> = {

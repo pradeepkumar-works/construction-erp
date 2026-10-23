@@ -1,7 +1,39 @@
 /** String-literal unions that mirror the Prisma enums in apps/api. Keep both in sync. */
 
-export const PROJECT_TYPES = ['ROAD', 'BUILDING', 'WATER_SUPPLY', 'PLANT', 'STORE'] as const;
+export const PROJECT_TYPES = ['ROAD', 'BUILDING', 'WATER_SUPPLY', 'SEWERAGE', 'PLANT', 'STORE'] as const;
 export type ProjectType = (typeof PROJECT_TYPES)[number];
+
+/** How the contract pays (item 125): measured BOQ quantities, a lump sum paid in stages, or design and build. */
+export const CONTRACT_MODELS = ['ITEM_RATE', 'LUMP_SUM', 'EPC'] as const;
+export type ContractModel = (typeof CONTRACT_MODELS)[number];
+
+/** A project's work breakdown (item 125): components, and sub-components inside them. */
+export const WORK_ELEMENT_LEVELS = ['COMPONENT', 'SUB_COMPONENT'] as const;
+export type WorkElementLevel = (typeof WORK_ELEMENT_LEVELS)[number];
+
+export const WORK_ELEMENT_TYPES = [
+  'INTAKE_WELL',
+  'PUMP_HOUSE',
+  'APPROACH_BRIDGE',
+  'RISING_MAIN',
+  'FEEDER_MAIN',
+  'WTP',
+  'WTP_UNIT',
+  'SUMP',
+  'OHT',
+  'PIPE_ZONE',
+  'HOUSE_CONNECTIONS',
+  'ROAD_RESTORATION',
+  'HT_FEEDER',
+  'EM_PACKAGE',
+  'STP_UNIT',
+  'BLOCK',
+  'FLOOR',
+  'ROAD_STRETCH',
+  'CROSSING',
+  'GENERAL',
+] as const;
+export type WorkElementType = (typeof WORK_ELEMENT_TYPES)[number];
 
 export const PROJECT_STATUSES = ['PLANNED', 'ACTIVE', 'ON_HOLD', 'COMPLETED', 'CLOSED'] as const;
 export type ProjectStatus = (typeof PROJECT_STATUSES)[number];

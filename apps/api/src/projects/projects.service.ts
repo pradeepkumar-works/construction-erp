@@ -2,7 +2,7 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import { Prisma } from '@prisma/client';
 import type { Paginated, ProjectDetail, ProjectSortField, ProjectSummary, RoleKey, SortOrder } from '@erp/shared';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
-import { weightedProgress } from '../common/progress';
+import { physicalProgress } from '../common/progress';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
@@ -48,8 +48,12 @@ export class ProjectsService {
     const ids = rows.map((r) => r.id);
     const waiting = { projectId: { in: ids }, status: 'SUBMITTED' as const };
     const withContract = rows.filter((r) => r.contractValue).map((r) => r.id);
-    const [activities, executed, progress, dprs, mrs, variations] = await Promise.all([
-      this.prisma.activity.findMany({ where: { projectId: { in: ids } }, select: { id: true, projectId: true, plannedQty: true, boqItem: { select: { rate: true } } } }),
+    const [activities, elements, executed, progress, dprs, mrs, variations] = await Promise.all([
+      this.prisma.activity.findMany({
+        where: { projectId: { in: ids } },
+        select: { id: true, projectId: true, plannedQty: true, workElementId: true, parentActivityId: true, weightPct: true, boqItem: { select: { rate: true } } },
+      }),
+      this.prisma.workElement.findMany({ where: { projectId: { in: ids } }, select: { id: true, projectId: true, parentId: true, weightPct: true } }),
       this.prisma.progressEntry.groupBy({ by: ['activityId'], where: { activity: { projectId: { in: ids } }, status: 'APPROVED' }, _sum: { quantity: true } }),
       this.prisma.progressEntry.groupBy({ by: ['projectId'], where: waiting, _count: { _all: true } }),
       this.prisma.dailyReport.groupBy({ by: ['projectId'], where: waiting, _count: { _all: true } }),
@@ -61,6 +65,8 @@ export class ProjectsService {
     const done = new Map(executed.map((e) => [e.activityId, e._sum.quantity ?? new Prisma.Decimal(0)]));
     const byProject = new Map<string, typeof activities>();
     for (const a of activities) byProject.set(a.projectId, [...(byProject.get(a.projectId) ?? []), a]);
+    const elementsOf = new Map<string, typeof elements>();
+    for (const e of elements) elementsOf.set(e.projectId, [...(elementsOf.get(e.projectId) ?? []), e]);
     const pending = new Map<string, number>();
     for (const g of [...progress, ...dprs, ...mrs]) pending.set(g.projectId, (pending.get(g.projectId) ?? 0) + g._count._all);
     const varied = new Map(variations.map((v) => [v.projectId, v._sum.approvedAmount]));
@@ -70,6 +76,7 @@ export class ProjectsService {
       name: p.name,
       type: p.type,
       status: p.status,
+      contractModel: p.contractModel,
       clientName: p.clientName,
       location: p.location,
       startDate: dateOnly(p.startDate),
@@ -78,8 +85,9 @@ export class ProjectsService {
       revisedContractValue: p.contractValue ? money(p.contractValue.add(varied.get(p.id) ?? 0)) : null,
       projectManagerId: p.projectManagerId,
       projectManagerName: p.projectManager?.fullName ?? null,
-      physicalProgressPct: weightedProgress(
-        (byProject.get(p.id) ?? []).map((a) => ({ plannedQty: a.plannedQty, rate: a.boqItem?.rate ?? null, executed: done.get(a.id) ?? new Prisma.Decimal(0) })),
+      physicalProgressPct: physicalProgress(
+        (byProject.get(p.id) ?? []).map((a) => ({ ...a, rate: a.boqItem?.rate ?? null, executed: done.get(a.id) ?? new Prisma.Decimal(0) })),
+        elementsOf.get(p.id) ?? [],
       ),
       pendingApprovals: pending.get(p.id) ?? 0,
     }));
@@ -142,6 +150,7 @@ export class ProjectsService {
     if (dto.name !== undefined) data.name = dto.name;
     if (dto.type !== undefined) data.type = dto.type;
     if (dto.status !== undefined) data.status = dto.status;
+    if (dto.contractModel !== undefined) data.contractModel = dto.contractModel;
     if (dto.clientName !== undefined) data.clientName = dto.clientName;
     if (dto.consultantName !== undefined) data.consultantName = dto.consultantName;
     if (dto.location !== undefined) data.location = dto.location;

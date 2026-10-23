@@ -68,7 +68,8 @@ export default function ProjectScreen() {
         <Button title={t('Roll call')} icon="checkbox-outline" variant="secondary" onPress={() => router.push(`/roll-call?projectId=${project.id}`)} style={styles.attendance} />
       ) : null}
       <Button title={t('Stock')} icon="cube-outline" variant="secondary" onPress={() => router.push(`/stock?projectId=${project.id}`)} style={styles.attendance} />
-      <Button title={project.type === 'ROAD' ? t('Progress by chainage') : project.type === 'BUILDING' ? t('Progress by floor') : t('Villages & pipeline')} icon="map-outline" variant="secondary" onPress={() => router.push(`/sector?projectId=${project.id}`)} style={styles.attendance} />
+      <Button title={project.type === 'ROAD' || project.type === 'SEWERAGE' ? t('Progress by chainage') : project.type === 'BUILDING' ? t('Progress by floor') : t('Villages & pipeline')} icon="map-outline" variant="secondary" onPress={() => router.push(`/sector?projectId=${project.id}`)} style={styles.attendance} />
+      <Button title={t('Structure')} icon="git-network-outline" variant="secondary" onPress={() => router.push(`/structure?projectId=${project.id}`)} style={styles.attendance} />
       <Button title={t('Delays & risks')} icon="alert-circle-outline" variant="secondary" onPress={() => router.push(`/risks?projectId=${project.id}`)} style={styles.attendance} />
       {!user?.modulesOff?.includes('safety') ? (
         <Button title={t('Safety')} icon="medkit-outline" variant="secondary" onPress={() => router.push(`/safety?projectId=${project.id}`)} style={styles.attendance} />
@@ -87,7 +88,7 @@ export default function ProjectScreen() {
                   {a.name}
                 </Text>
                 <Text style={typography.caption}>
-                  {fmtQty(a.plannedQty)} / {fmtQty(a.executedQty)} {a.unit}
+                  {a.isSummary ? t('Made of {n} parts', { n: activities.filter((p) => p.parentActivityId === a.id).length }) : `${fmtQty(a.plannedQty)} / ${fmtQty(a.executedQty)} ${a.unit}`}
                   {a.plannedEnd ? ` · ${t('due {date}', { date: formatDate(a.plannedEnd) })}` : ''}
                 </Text>
               </View>
@@ -101,7 +102,10 @@ export default function ProjectScreen() {
             <View style={styles.actBar}>
               <ProgressBar value={a.progressPct} color={a.isDelayed ? colors.danger : undefined} />
             </View>
-            <Button title={t('Add progress for this activity')} size="sm" variant="secondary" icon="add" onPress={() => router.push(`/progress/new?projectId=${project.id}&activityId=${a.id}`)} />
+            {/* An activity made of parts takes its progress through them (item 125). */}
+            {!a.isSummary ? (
+              <Button title={t('Add progress for this activity')} size="sm" variant="secondary" icon="add" onPress={() => router.push(`/progress/new?projectId=${project.id}&activityId=${a.id}`)} />
+            ) : null}
           </Card>
         ))
       )}

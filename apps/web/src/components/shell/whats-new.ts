@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-12-work-breakdown',
+    date: '2026-12-24',
+    title: 'Project structure: components, sub-components and sub-activities',
+    points: [
+      'Project › Plan › Structure splits a project into its components (an intake well, the treatment plant and its units, each overhead tank, each pipe zone) with their weights, and rolls progress up from the activities under each to the project. A lump-sum contract weighs components by its billing breakup; with no weights, by BOQ value.',
+      'New component lays out the activities for its kind: an overhead tank gets its staging lift by lift, and every RCC item is reported as reinforcement, shuttering and concrete. Fill the planned quantities you know; the rest can wait. Excel import and export work on the structure too.',
+      'BOQ items take a section (cost centre), a component and their SOR item, and the BOQ tab shows section totals. Sewerage is a project type, and a project records whether it is item rate, lump sum or EPC.',
+    ],
+  },
+  {
     id: '2026-12-attendance-check',
     date: '2026-12-22',
     title: 'Attendance cross-check for labour bills',

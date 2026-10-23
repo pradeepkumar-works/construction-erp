@@ -456,11 +456,53 @@ and payments are not undoable: their deletes have side effects (measurements fre
   optionally links to a BOQ item.
 - `ProgressEntry` records executed quantity against an activity. Only APPROVED entries count.
 - BOQ executed quantity = sum of approved progress on its linked activities.
-- Physical progress % of a project = activity completion weighted by BOQ value (rate × planned
-  quantity), falling back to planned quantity when an activity has no BOQ link.
+- Physical progress % of a project = the work breakdown roll-up (below): with no breakdown, activity completion
+  weighted by BOQ value (rate × planned quantity), falling back to planned quantity when an activity has no BOQ link.
 - Project-type differences (chainage for roads, floors for buildings, connections for water) are
   carried by free-text `location` and the activity list, not by schema. A per-type activity template
   is the planned next step so new projects start from a standard list.
+
+### Work breakdown
+
+Item 125: a project split into what it is made of, so a turnkey scheme reports by component and a lump-sum contract
+weighs each by its billing share.
+
+- **Tables.** `WorkElement` (with a `tenant_isolation` policy): project, `parentId`, `level` (COMPONENT, or
+  SUB_COMPONENT inside one; two levels, no deeper), outline `code` (unique per project, `3`, `3.2`), name,
+  `elementType` (`WorkElementType`: intake well, treatment plant unit, overhead tank, pipe zone, house connections,
+  building block…), `specs` (a few numbers its template reads: capacity, staging height, length), `weightPct`, sort
+  order. `Activity` gained `workElementId`, `parentActivityId` (a sub-activity; one level) and `weightPct`. `BoqItem`
+  gained `section` (bill section or cost centre), `workElementId`, `sorItemId` and `sorRef`. `Project` gained
+  `contractModel` (ITEM_RATE, LUMP_SUM, EPC) and `ProjectType` gained SEWERAGE.
+- **Roll-up** (`rollUp` in `packages/shared/src/wbs.ts`, pure, used by the API through `progressRollup` /
+  `physicalProgress` in `src/common/progress.ts` for the project list, the client portal, the progress report and the
+  Structure tab): a leaf activity is approved ÷ planned (0 to 100); an activity with sub-activities has no progress of
+  its own and is its parts weighted; an element is its sub-components and activities weighted; the project is its
+  components and any activity outside the breakdown. Among siblings, given weights hold and the rest share what is
+  left of 100 by value (BOQ amount, else planned quantity); with no weight given they are all weighed by value, which
+  for a flat project is the old figure. `src/scripts/wbs-rollup-test.ts` (CI flows) holds it to that.
+- **Rules.** Progress goes only against an activity with no sub-activities (`ProgressService.assertTakesProgress`);
+  an activity with progress cannot take parts; a sub-activity sits in its activity's component (moving the activity
+  moves its parts); deleting an activity with parts is refused; deleting a component deletes its sub-components and
+  leaves their activities and BOQ items outside the breakdown.
+- **Templates.** `elementPlan(type, specs)` in `packages/shared/src/element-templates.ts` lays out a component's
+  activities with weights adding up to 100. Every RCC item is three sub-activities, reinforcement (MT) 35, shuttering
+  (m²) 25 and concrete (m³) 40; a staging, steining or wall is one RCC activity per lift (height ÷ lift, at most 20), a
+  building block one frame per floor. Quantities come from the specs where they say (pipe length, connections, one per
+  lump sum) and are otherwise left for the planner. Built-in only for now; a company's own element templates are a
+  follow-up.
+- **API.** `GET /projects/:id/structure` (`StructureDto`: elements in outline order with progress, effective weight and
+  BOQ amount, activities with their parts), `POST …/structure/elements` (with the template's `activities`),
+  `PATCH|DELETE …/structure/elements/:id`, `POST …/structure/elements/reorder` and `…/import` (Excel rows; `3.2` goes
+  under `3`). Editing is `PROJECT_EDITOR_ROLES`, like the BOQ.
+- **Screens.** Project › Plan › Structure (`components/structure/`): the tree folded to its components, weights (worked
+  out ones in grey), progress and BOQ amount, New component with its template's lines and planned quantities, Excel in
+  and out. The BOQ tab filters by section and shows section totals; the activity form takes the component, the parent
+  activity and the weight; the progress form offers only activities without parts. Phone: project › Structure, read
+  only (`app/structure.tsx`).
+- **Demo.** `prisma/seed-structure.ts`: WS-2026-04, a lump-sum town water scheme in month 9 (twelve components by
+  billing share, 23 elements, about 390 activities with approved progress), and the hospital's BOQ in sections with
+  three components weighed by BOQ value.
 
 ### Activity templates
 

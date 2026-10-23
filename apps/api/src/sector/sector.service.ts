@@ -65,7 +65,7 @@ export class SectorService {
     const water = project.type === 'WATER_SUPPLY';
     const hasRange = project.chainageStart !== null && project.chainageEnd !== null;
     let strip: ChainageLayer[] | null = null;
-    if (project.type === 'ROAD' || (water && hasRange)) {
+    if (project.type === 'ROAD' || ((water || project.type === 'SEWERAGE') && hasRange)) {
       strip = activities
         .filter((a) => {
           const placed = (byActivity.get(a.id) ?? []).some((e) => e.chainageFrom !== null);

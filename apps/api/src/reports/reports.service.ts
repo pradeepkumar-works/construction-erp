@@ -5,7 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AttachmentsService } from '../common/attachments.service';
-import { weightedProgress } from '../common/progress';
+import { physicalProgress } from '../common/progress';
 import { dateOnly, dec, money, parseDate, pct } from '../common/serialize';
 import { ProgressReportQuery } from './reports.dto';
 
@@ -37,7 +37,7 @@ export class ReportsService {
     const inPeriod = { gte: from, lte: to };
     const nextEnd = new Date(to.getTime() + days * DAY);
 
-    const [project, org, activities, boqItems, sheets, attendance, logs, txns, dprs, photos, register] = await Promise.all([
+    const [project, org, activities, boqItems, sheets, attendance, logs, txns, dprs, photos, register, elements] = await Promise.all([
       this.prisma.project.findUniqueOrThrow({ where: { id: projectId }, include: { projectManager: { select: { fullName: true } } } }),
       this.prisma.organization.findUniqueOrThrow({ where: { id: user.organizationId }, select: { name: true } }),
       this.prisma.activity.findMany({
@@ -72,6 +72,7 @@ export class ReportsService {
         orderBy: [{ score: 'desc' }, { riskNo: 'asc' }],
         include: { activity: { select: { name: true } }, owner: { select: { fullName: true } } },
       }),
+      this.prisma.workElement.findMany({ where: { projectId }, select: { id: true, parentId: true, weightPct: true } }),
     ]);
 
     const todayUtc = parseDate(new Date().toISOString().slice(0, 10));
@@ -87,8 +88,8 @@ export class ReportsService {
       return { a, cumulative, period, before, pct: p };
     });
     const physical = {
-      atStartPct: weightedProgress(activityRows.map((r) => ({ plannedQty: r.a.plannedQty, rate: r.a.boqItem?.rate ?? null, executed: r.before }))),
-      atEndPct: weightedProgress(activityRows.map((r) => ({ plannedQty: r.a.plannedQty, rate: r.a.boqItem?.rate ?? null, executed: r.cumulative }))),
+      atStartPct: physicalProgress(activityRows.map((r) => ({ ...r.a, rate: r.a.boqItem?.rate ?? null, executed: r.before })), elements),
+      atEndPct: physicalProgress(activityRows.map((r) => ({ ...r.a, rate: r.a.boqItem?.rate ?? null, executed: r.cumulative })), elements),
     };
 
     // BOQ: executed (approved progress through linked activities) and measured, valued at the BOQ rate.

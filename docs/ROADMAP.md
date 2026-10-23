@@ -687,6 +687,26 @@ intelligence: build plan". Rules first, models only to read what sites send; not
      DPR; workers named to HR and the PM only. Backtest on 24 labelled crews: 9 of 11 flags real, every padding the
      records show caught. ARCHITECTURE "Attendance cross-check".
 
+## Project kinds, structured DPR and stock reconciliation (items 125 to 131)
+
+Asked by Pradeep on 23 Oct 2026, from a client's project documents (kept out of the repo): make every kind of project
+the client runs work end to end, with component and sub-component progress, activity and sub-activity, pipe laid
+junction to junction, and stock against the DPR. The design is the doc "Project kinds, DPR format and stock
+reconciliation: design". One pull request each, in this order.
+
+125. ~~**Work breakdown** (L): components and sub-components with weights, activities and sub-activities, progress rolled
+     up to the project; BOQ sections and SOR references; SEWERAGE and the contract model.~~ Done: `WorkElement`, the
+     roll-up in `@erp/shared/wbs.ts`, built-in component templates (RCC as reinforcement, shuttering and concrete,
+     lifts from heights), the Structure tab with Excel in and out, BOQ by section, the phone's read-only tree, and the
+     demo town scheme. A company's own component templates wait. ARCHITECTURE "Work breakdown".
+126. **Pipe network** (L): junctions and segments, laid, jointed, tested and commissioned junction to junction.
+127. **Structured DPR** (L): DPR work lines against activities and sub-activities, with location, manpower, machines and
+     material used per line.
+128. **Stock against the DPR** (M): material issued against what the DPR lines' quantities allow, per activity.
+129. **Stage billing** (M): lump-sum and EPC bills by stage against the components' billing shares.
+130. **EPC packages, deliverables and currency** (L).
+131. **Operation and maintenance** (M): a completed scheme's running, complaints and contract payments.
+
 ## Definition of done for every item
 Prisma migration, API endpoints with Swagger, shared types, web screen, mobile screen where site
 staff use it, seed data updated, `pnpm typecheck` + `next build` + mobile `tsc` clean, smoke test

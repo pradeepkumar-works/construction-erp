@@ -506,5 +506,8 @@ DROP POLICY IF EXISTS tenant_isolation ON "CashForecastSnapshot";
 ALTER TABLE "HindranceCheck" NO FORCE ROW LEVEL SECURITY;
 ALTER TABLE "HindranceCheck" DISABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS tenant_isolation ON "HindranceCheck";
+ALTER TABLE "WorkElement" NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE "WorkElement" DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON "WorkElement";
 
 DROP FUNCTION IF EXISTS app_current_org();

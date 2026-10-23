@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { Button, Input, Progress, Space, Statistic, Table, Tooltip, Typography } from 'antd';
+import { Button, Input, Progress, Segmented, Select, Space, Statistic, Table, Tooltip, Typography } from 'antd';
 import type { TableProps } from 'antd';
 import { CalculatorOutlined, DeleteOutlined, DownloadOutlined, EditOutlined, FileExcelOutlined, PlusOutlined } from '@ant-design/icons';
 import type { BoqItemDto } from '@erp/shared';
@@ -27,6 +27,9 @@ export function BoqTab({ projectId }: { projectId: string }) {
   const qc = useQueryClient();
   const { data, isLoading, error, refetch } = useBoq(projectId);
   const [search, setSearch] = useState('');
+  // Bill sections or cost centres (item 125): filter by one, or see their subtotals.
+  const [section, setSection] = useState<string | null>(null);
+  const [view, setView] = useState<'items' | 'sections'>('items');
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<BoqItemDto | null>(null);
   const [importOpen, setImportOpen] = useState(false);
@@ -46,10 +49,22 @@ export function BoqTab({ projectId }: { projectId: string }) {
     meta: FAIL_NOTICE,
   });
 
+  const sections = useMemo(() => [...new Set((data ?? []).map((i) => i.section).filter((x): x is string => !!x))], [data]);
+  const bySection = useMemo(() => {
+    const total = (data ?? []).reduce((s, i) => s + toNumber(i.amount), 0);
+    const rows = [...sections, null].map((name) => {
+      const items = (data ?? []).filter((i) => i.section === name);
+      const amount = items.reduce((s, i) => s + toNumber(i.amount), 0);
+      const executed = items.reduce((s, i) => s + toNumber(i.executedQty) * toNumber(i.rate), 0);
+      return { key: name ?? '', name, count: items.length, amount, executed, share: total > 0 ? (amount / total) * 100 : 0 };
+    });
+    return rows.filter((r) => r.count > 0);
+  }, [data, sections]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return (data ?? []).filter((i) => !q || i.itemNo.toLowerCase().includes(q) || i.description.toLowerCase().includes(q));
-  }, [data, search]);
+    return (data ?? []).filter((i) => (!section || i.section === section) && (!q || i.itemNo.toLowerCase().includes(q) || i.description.toLowerCase().includes(q)));
+  }, [data, search, section]);
 
   const totals = useMemo(() => {
     const items = data ?? [];
@@ -75,6 +90,9 @@ export function BoqTab({ projectId }: { projectId: string }) {
         'Measured awaiting approval': toNumber(i.pendingMeasuredQty),
         'Measured value': toNumber(i.measuredAmount),
         Amount: toNumber(i.amount),
+        Section: i.section ?? '',
+        Component: i.workElementName ?? '',
+        'SOR item': i.sorRef ?? '',
       })),
     );
     const wb = XLSX.utils.book_new();
@@ -84,7 +102,21 @@ export function BoqTab({ projectId }: { projectId: string }) {
 
   const columns: TableProps<BoqItemDto>['columns'] = [
     { title: 'Item', dataIndex: 'itemNo', width: 70, fixed: 'left', sorter: (a, b) => a.sortOrder - b.sortOrder || a.itemNo.localeCompare(b.itemNo, undefined, { numeric: true }) },
-    { title: 'Description', dataIndex: 'description', ellipsis: { showTitle: false }, render: (v) => <Tooltip title={v}>{v}</Tooltip> },
+    {
+      title: 'Description',
+      dataIndex: 'description',
+      ellipsis: { showTitle: false },
+      render: (v, r) => (
+        <>
+          <Tooltip title={v}>{v}</Tooltip>
+          {r.section || r.workElementName || r.sorRef ? (
+            <div className="text-muted" style={{ fontSize: themeFontSize('fontSizeSM'), overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {[r.section, r.workElementName, r.sorRef && `SOR ${r.sorRef}`].filter(Boolean).join(' · ')}
+            </div>
+          ) : null}
+        </>
+      ),
+    },
     { title: 'Unit', dataIndex: 'unit', width: 60 },
     { title: 'Rate (₹)', dataIndex: 'rate', width: 120, align: 'right', className: 'mono', render: (v) => formatINR(v, true).replace(RUPEE, '') },
     { title: 'Original qty', dataIndex: 'originalQty', width: 100, align: 'right', className: 'mono', render: (v) => formatQty(v) },
@@ -172,6 +204,28 @@ export function BoqTab({ projectId }: { projectId: string }) {
           <Statistic title="Measured value (approved MB)" value={formatINR(totals.measured)} styles={{ content: { fontSize: themeFontSize('fontSizeXL') } }} />
         </Space>
         <Space wrap>
+          {sections.length ? (
+            <Segmented
+              aria-label="Show BOQ items or section totals"
+              value={view}
+              onChange={(v) => setView(v as 'items' | 'sections')}
+              options={[
+                { value: 'items', label: 'Items' },
+                { value: 'sections', label: 'By section' },
+              ]}
+            />
+          ) : null}
+          {sections.length ? (
+            <Select
+              aria-label="Filter by section"
+              allowClear
+              placeholder="All sections"
+              value={section ?? undefined}
+              onChange={(v) => setSection(v ?? null)}
+              options={sections.map((x) => ({ value: x, label: x }))}
+              style={{ width: 200 }}
+            />
+          ) : null}
           <Input.Search placeholder="Search item / description" aria-label="Search BOQ items" allowClear value={search} onChange={(e) => setSearch(e.target.value)} style={{ width: 240 }} />
           <Button icon={<DownloadOutlined />} onClick={exportExcel} disabled={!data || data.length === 0}>
             Export
@@ -201,6 +255,47 @@ export function BoqTab({ projectId }: { projectId: string }) {
         </Space>
       </div>
       {error && <QueryError error={error} onRetry={() => refetch()} />}
+      {view === 'sections' && sections.length ? (
+        <Table
+          rowKey="key"
+          size="small"
+          pagination={false}
+          dataSource={bySection}
+          onRow={(r) => ({
+            onClick: () => {
+              setSection(r.name);
+              setView('items');
+            },
+            style: { cursor: r.name ? 'pointer' : undefined },
+          })}
+          columns={[
+            {
+              title: 'Section',
+              dataIndex: 'name',
+              render: (v: string | null) =>
+                v ? (
+                  <Button type="link" style={{ padding: 0 }} onClick={() => setSection(v)}>
+                    {v}
+                  </Button>
+                ) : (
+                  <span className="text-muted">No section</span>
+                ),
+            },
+            { title: 'Items', dataIndex: 'count', width: 80, align: 'right' },
+            { title: 'Amount', dataIndex: 'amount', width: 160, align: 'right', className: 'mono', render: (v: number) => formatINR(v) },
+            { title: 'Share', dataIndex: 'share', width: 90, align: 'right', className: 'mono', render: (v: number) => `${v.toFixed(1)}%` },
+            {
+              title: 'Executed value',
+              dataIndex: 'executed',
+              width: 200,
+              render: (v: number, r) => {
+                const pct = r.amount > 0 ? Math.min(100, Math.round((v / r.amount) * 1000) / 10) : 0;
+                return <Progress percent={pct} size="small" aria-label={`${r.name ?? 'No section'}: ${pct}% executed`} format={() => formatINR(v)} />;
+              },
+            },
+          ]}
+        />
+      ) : (
       <Table<BoqItemDto>
         rowKey="id"
         loading={isLoading}
@@ -240,7 +335,8 @@ export function BoqTab({ projectId }: { projectId: string }) {
           ) : null
         }
       />
-      <BoqFormModal open={formOpen} onClose={() => setFormOpen(false)} projectId={projectId} item={editing} />
+      )}
+      <BoqFormModal open={formOpen} onClose={() => setFormOpen(false)} projectId={projectId} item={editing} sections={sections} />
       <BoqImportModal open={importOpen} onClose={() => setImportOpen(false)} projectId={projectId} />
       {analyst ? <RateAnalysisDrawer projectId={projectId} boqItemId={analysis} open={!!analysis} onClose={() => setAnalysis(null)} /> : null}
       {rateSetter ? <RateAnalysisImportModal open={importRates} onClose={() => setImportRates(false)} projectId={projectId} /> : null}

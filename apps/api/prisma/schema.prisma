@@ -16,9 +16,48 @@ enum ProjectType {
   ROAD
   BUILDING
   WATER_SUPPLY
+  /// Sewer network, pumping stations and a sewage treatment plant (item 125)
+  SEWERAGE
   PLANT
   /// A central store or yard (v6 item 106): holds stock and sends it to sites; no works of its own
   STORE
+}
+
+/// How the contract pays (item 125): by measured BOQ quantities, a lump sum paid in stages, or design and build (EPC)
+enum ContractModel {
+  ITEM_RATE
+  LUMP_SUM
+  EPC
+}
+
+/// A component (an intake well, a treatment plant, a tank) or a sub-component inside one (a WTP unit, a pipe zone)
+enum WorkElementLevel {
+  COMPONENT
+  SUB_COMPONENT
+}
+
+/// What a component or sub-component is; picks its built-in activity template (packages/shared element-templates.ts)
+enum WorkElementType {
+  INTAKE_WELL
+  PUMP_HOUSE
+  APPROACH_BRIDGE
+  RISING_MAIN
+  FEEDER_MAIN
+  WTP
+  WTP_UNIT
+  SUMP
+  OHT
+  PIPE_ZONE
+  HOUSE_CONNECTIONS
+  ROAD_RESTORATION
+  HT_FEEDER
+  EM_PACKAGE
+  STP_UNIT
+  BLOCK
+  FLOOR
+  ROAD_STRETCH
+  CROSSING
+  GENERAL
 }
 
 enum ProjectStatus {
@@ -515,6 +554,7 @@ model Organization {
   projects             Project[]
   boqItems             BoqItem[]
   activities           Activity[]
+  workElements         WorkElement[]
   milestones           Milestone[]
   activityLinks        ActivityLink[]
   workers              Worker[]
@@ -948,6 +988,8 @@ model Project {
   name                  String
   type                  ProjectType
   status                ProjectStatus  @default(PLANNED)
+  /// Item rate, lump sum or EPC (item 125): lump sum and EPC projects weigh their components by billing share
+  contractModel         ContractModel  @default(ITEM_RATE)
   clientName            String?
   consultantName        String?
   location              String?
@@ -1021,6 +1063,7 @@ model Project {
   members            ProjectMember[]
   boqItems           BoqItem[]
   activities         Activity[]
+  workElements       WorkElement[]
   milestones         Milestone[]
   activityLinks      ActivityLink[]
   workers            Worker[]
@@ -1765,6 +1808,15 @@ model BoqItem {
   revisedQty     Decimal?     @db.Decimal(18, 3)
   /// Budgeted cost per unit (our cost, not the client's rate): the item's planned margin and its share of the budget
   budgetRate     Decimal?     @db.Decimal(18, 2)
+  /// Bill section or cost centre the item is grouped under, e.g. "Civil works", "Electrical works" (item 125)
+  section        String?
+  /// The component or sub-component the item is for (item 125)
+  workElementId  String?
+  workElement    WorkElement? @relation(fields: [workElementId], references: [id], onDelete: SetNull)
+  /// The schedule of rates item the rate comes from, and its number as printed in the BOQ (e.g. "SOR 4.1.3")
+  sorItemId      String?
+  sorItem        SorItem?     @relation(fields: [sorItemId], references: [id], onDelete: SetNull)
+  sorRef         String?
   sortOrder      Int          @default(0)
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
@@ -1782,6 +1834,41 @@ model BoqItem {
 
   @@unique([projectId, itemNo])
   @@index([organizationId])
+  @@index([workElementId])
+}
+
+/// One node of a project's work breakdown (item 125): a component such as an intake well, a treatment plant or a tank,
+/// or a sub-component inside one. Activities and BOQ items hang under it; its progress is the weighted progress of what
+/// is under it, and the project's is its components' by weight.
+model WorkElement {
+  id             String           @id @default(uuid())
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  projectId      String
+  project        Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  parentId       String?
+  parent         WorkElement?     @relation("WorkElementTree", fields: [parentId], references: [id], onDelete: Cascade)
+  level          WorkElementLevel
+  /// Outline number, e.g. 3 or 3.2
+  code           String
+  name           String
+  elementType    WorkElementType  @default(GENERAL)
+  /// What the template needs to know, e.g. { capacityKl: 650, stagingM: 16, liftM: 3 } for a tank
+  specs          Json?
+  /// Share of its parent (or of the project for a component), %; null shares what is left by BOQ value
+  weightPct      Decimal?         @db.Decimal(6, 3)
+  sortOrder      Int              @default(0)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  children   WorkElement[] @relation("WorkElementTree")
+  activities Activity[]
+  boqItems   BoqItem[]
+
+  @@unique([projectId, code])
+  @@index([projectId])
+  @@index([parentId])
+  @@index([organizationId])
 }
 
 model Activity {
@@ -1792,6 +1879,14 @@ model Activity {
   project             Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
   boqItemId           String?
   boqItem             BoqItem?           @relation(fields: [boqItemId], references: [id], onDelete: SetNull)
+  /// Component or sub-component the activity belongs to (item 125)
+  workElementId       String?
+  workElement         WorkElement?       @relation(fields: [workElementId], references: [id], onDelete: SetNull)
+  /// The activity this is a sub-activity of; an activity with sub-activities takes no progress of its own (item 125)
+  parentActivityId    String?
+  parentActivity      Activity?          @relation("ActivityTree", fields: [parentActivityId], references: [id], onDelete: SetNull)
+  /// Share of its parent activity or element, %; null shares what is left by BOQ value
+  weightPct           Decimal?           @db.Decimal(6, 3)
   name                String
   unit                String
   plannedQty          Decimal            @db.Decimal(18, 3)
@@ -1822,9 +1917,12 @@ model Activity {
   workerDays       WorkerAttendance[]
   successorLinks   ActivityLink[]     @relation("LinkPredecessor")
   predecessorLinks ActivityLink[]     @relation("LinkSuccessor")
+  subActivities    Activity[]         @relation("ActivityTree")
 
   @@index([projectId])
   @@index([organizationId])
+  @@index([workElementId])
+  @@index([parentActivityId])
 }
 
 enum ActivityLinkType {
@@ -6161,6 +6259,7 @@ model SorItem {
   updatedAt      DateTime     @updatedAt
 
   tenderItems TenderItem[]
+  boqItems    BoqItem[]
 
   @@unique([bookId, code])
   @@index([organizationId])

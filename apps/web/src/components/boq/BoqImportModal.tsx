@@ -10,7 +10,7 @@ import { FAIL_NOTICE } from '@/lib/notify';
 import { themeColor, themeFontSize } from '@/lib/theme';
 import { loadXlsx } from '@/lib/exportExcel';
 
-type Field = 'itemNo' | 'description' | 'unit' | 'rate' | 'originalQty' | 'revisedQty';
+type Field = 'itemNo' | 'description' | 'unit' | 'rate' | 'originalQty' | 'revisedQty' | 'section' | 'sorRef';
 
 const FIELDS: { key: Field; label: string; required: boolean; aliases: string[] }[] = [
   { key: 'itemNo', label: 'Item no.', required: true, aliases: ['itemno', 'item', 'sno', 'slno', 'sl', 'no', 'srno', 'itemcode', 'code'] },
@@ -19,6 +19,8 @@ const FIELDS: { key: Field; label: string; required: boolean; aliases: string[] 
   { key: 'rate', label: 'Rate', required: true, aliases: ['rate', 'unitrate', 'rateinr', 'rate(rs)', 'price'] },
   { key: 'originalQty', label: 'Quantity', required: true, aliases: ['qty', 'quantity', 'originalqty', 'boqqty', 'contractqty'] },
   { key: 'revisedQty', label: 'Revised qty (optional)', required: false, aliases: ['revisedqty', 'revised', 'revisedquantity'] },
+  { key: 'section', label: 'Section or cost centre (optional)', required: false, aliases: ['section', 'costcentre', 'costcenter', 'billsection', 'head', 'subhead', 'part', 'schedule'] },
+  { key: 'sorRef', label: 'Schedule of rates item (optional)', required: false, aliases: ['sor', 'sorref', 'sorno', 'sorcode', 'soritem', 'dsr', 'dsrno', 'ratereference'] },
 ];
 
 const norm = (s: unknown) => String(s ?? '').toLowerCase().replace(/[^a-z0-9()]/g, '');
@@ -31,17 +33,19 @@ interface ParsedRow {
   rate: string;
   originalQty: string;
   revisedQty?: string;
+  section?: string;
+  sorRef?: string;
   error?: string;
 }
 
 export async function downloadBoqTemplate() {
   const XLSX = await loadXlsx();
   const ws = XLSX.utils.aoa_to_sheet([
-    ['Item no.', 'Description', 'Unit', 'Rate', 'Quantity', 'Revised qty'],
-    ['1.01', 'Clearing and grubbing including removal of vegetation', 'Sqm', 18.5, 85000, ''],
-    ['1.02', 'Earthwork in embankment with borrowed earth', 'Cum', 245, 42000, ''],
+    ['Item no.', 'Description', 'Unit', 'Rate', 'Quantity', 'Revised qty', 'Section', 'SOR item'],
+    ['1.01', 'Clearing and grubbing including removal of vegetation', 'Sqm', 18.5, 85000, '', 'Site works', '2.1'],
+    ['1.02', 'Earthwork in embankment with borrowed earth', 'Cum', 245, 42000, '', 'Site works', '2.14'],
   ]);
-  ws['!cols'] = [{ wch: 10 }, { wch: 60 }, { wch: 8 }, { wch: 12 }, { wch: 12 }, { wch: 12 }];
+  ws['!cols'] = [{ wch: 10 }, { wch: 60 }, { wch: 8 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 18 }, { wch: 10 }];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'BOQ');
   XLSX.writeFile(wb, 'BOQ-import-template.xlsx');
@@ -112,6 +116,8 @@ export function BoqImportModal({ open, onClose, projectId }: { open: boolean; on
           rate: get(r, 'rate').replace(/[,₹\s]/g, ''),
           originalQty: get(r, 'originalQty').replace(/[,\s]/g, ''),
           revisedQty: get(r, 'revisedQty').replace(/[,\s]/g, '') || undefined,
+          section: get(r, 'section') || undefined,
+          sorRef: get(r, 'sorRef') || undefined,
         };
         const problems: string[] = [];
         if (!row.itemNo) problems.push('item no');
@@ -140,6 +146,8 @@ export function BoqImportModal({ open, onClose, projectId }: { open: boolean; on
             rate: r.rate,
             originalQty: r.originalQty,
             revisedQty: r.revisedQty,
+            section: r.section,
+            sorRef: r.sorRef,
           })),
         })
       ).data,
@@ -235,6 +243,7 @@ export function BoqImportModal({ open, onClose, projectId }: { open: boolean; on
               { title: 'Rate', dataIndex: 'rate', width: 100, align: 'right' },
               { title: 'Qty', dataIndex: 'originalQty', width: 100, align: 'right' },
               { title: 'Revised', dataIndex: 'revisedQty', width: 90, align: 'right', render: (v) => v ?? '-' },
+              { title: 'Section', dataIndex: 'section', width: 130, render: (v) => v ?? '-' },
               { title: 'Check', dataIndex: 'error', width: 180, render: (e?: string) => (e ? <Typography.Text type="danger">{e}</Typography.Text> : <Typography.Text type="success">OK</Typography.Text>) },
             ]}
           />

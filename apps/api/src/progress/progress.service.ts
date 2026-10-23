@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import type { Paginated, ProgressEntryDto, ProgressSortField, SortOrder } from '@erp/shared';
 import { PrismaService } from '../prisma/prisma.service';
@@ -112,12 +112,18 @@ export class ProgressService {
     return row ? this.get(user, row.id) : null;
   }
 
+  /** Progress goes against an activity of the project that has no sub-activities (an RCC slab is its steel, shuttering and concrete). */
+  private async assertTakesProgress(activityId: string, projectId: string) {
+    const activity = await this.prisma.activity.findFirst({ where: { id: activityId, projectId }, select: { name: true, _count: { select: { subActivities: true } } } });
+    if (!activity) throw new NotFoundException('Activity not found in this project');
+    if (activity._count.subActivities) throw new BadRequestException(`${activity.name} is made of sub-activities; record progress against one of them`);
+  }
+
   async create(user: RequestUser, dto: CreateProgressDto): Promise<ProgressEntryDto> {
     const existing = await this.findExisting(user, dto.id);
     if (existing) return existing;
     await this.access.assertCanAccessProject(user, dto.projectId);
-    const activity = await this.prisma.activity.findFirst({ where: { id: dto.activityId, projectId: dto.projectId } });
-    if (!activity) throw new NotFoundException('Activity not found in this project');
+    await this.assertTakesProgress(dto.activityId, dto.projectId);
     const sector = await resolveSector(this.prisma, dto.projectId, dto);
     let row: { id: string };
     try {
@@ -158,8 +164,7 @@ export class ProgressService {
     await this.lifecycle.assertEditable(user, row);
     const data: Prisma.ProgressEntryUncheckedUpdateInput = {};
     if (dto.activityId !== undefined) {
-      const activity = await this.prisma.activity.findFirst({ where: { id: dto.activityId, projectId: row.projectId } });
-      if (!activity) throw new NotFoundException('Activity not found in this project');
+      await this.assertTakesProgress(dto.activityId, row.projectId);
       data.activityId = dto.activityId;
     }
     if (dto.date !== undefined) data.date = parseDate(dto.date);

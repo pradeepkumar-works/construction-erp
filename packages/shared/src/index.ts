@@ -12,6 +12,8 @@ export * from './contract';
 export * from './cost';
 export * from './risk';
 export * from './templates';
+export * from './element-templates';
+export * from './wbs';
 export * from './approvals';
 export * from './onboarding';
 export * from './brand';

@@ -172,6 +172,7 @@ import type {
   StockEntryType,
   StockValuationDto,
   ActivityDto,
+  StructureDto,
   AttendanceDayDto,
   AttendanceSheetDto,
   AttendanceSuggestionsDto,
@@ -650,6 +651,14 @@ export const useActivities = (projectId: string | undefined) =>
   useQuery({
     queryKey: ['activities', projectId],
     queryFn: async () => (await api.get<ActivityDto[]>(`/projects/${projectId}/activities`)).data,
+    enabled: !!projectId,
+  });
+
+/** Work breakdown with rolled-up progress (item 125); under the activities key so any activity change refreshes it. */
+export const useStructure = (projectId: string | undefined) =>
+  useQuery({
+    queryKey: ['activities', projectId, 'structure'],
+    queryFn: async () => (await api.get<StructureDto>(`/projects/${projectId}/structure`)).data,
     enabled: !!projectId,
   });
 
