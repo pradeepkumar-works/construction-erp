@@ -5,6 +5,7 @@ import type { RoleKey } from './enums';
 import * as P from './permissions';
 import { canManageAi } from './ai';
 import { canSeeWatchList } from './warnings';
+import { canManageModules, pathIsOff } from './module-switches';
 
 /**
  * The navigation tree (launcher, phase 1): one list of every module and every page in it. The sidebar, its rail, quick-jump
@@ -77,6 +78,8 @@ export interface NavUser {
   approvalRights?: ApprovalRightDto[];
   platformAdmin?: boolean;
   billing?: unknown;
+  /** The company's modules turned off (v6 item 117): their pages leave the menu, Home and Search. */
+  modulesOff?: readonly string[];
 }
 
 const onSite = (u: NavUser) => P.canReportSafety(u.roleKey);
@@ -132,9 +135,15 @@ export const NAV_ACCESS = {
   subscription: (u: NavUser) => !!u.billing && P.canManageBilling(u.roleKey),
   platform: (u: NavUser) => !!u.platformAdmin,
   books: (u: NavUser) => P.canKeepBooks(u.roleKey),
-  machineFinance: roles('ADMIN', 'MANAGEMENT', 'ACCOUNTS_MANAGER'),
-  supplierPortal: roles('ADMIN', 'MANAGEMENT', 'PROCUREMENT_MANAGER'),
-  tenders: roles('ADMIN', 'MANAGEMENT', 'PROJECT_MANAGER', 'QUANTITY_SURVEYOR'),
+  machineFinance: (u: NavUser) => P.canManageMachineLoans(u.roleKey),
+  supplierPortal: (u: NavUser) => P.canCheckSupplierInvoices(u.roleKey) || P.canManageSupplierLogins(u.roleKey),
+  tenders: (u: NavUser) => P.canViewTenders(u.roleKey),
+  meetings: (u: NavUser) => onSite(u) || P.canRecordMeetings(u.roleKey),
+  materialApprovals: (u: NavUser) => P.canRaiseMaterialApprovals(u.roleKey),
+  stores: (u: NavUser) => P.canSeeStores(u.roleKey),
+  enquiries: (u: NavUser) => P.canRunSubcontractEnquiries(u.roleKey),
+  funds: (u: NavUser) => P.canRequestFunds(u.roleKey) || P.canViewPaymentRequests(u.roleKey),
+  modules: (u: NavUser) => canManageModules(u.roleKey),
   rmc: (u: NavUser) => P.canViewRmc(u.roleKey),
   rmcBills: (u: NavUser) => P.canSellRmc(u.roleKey) || P.canBillRmc(u.roleKey),
 } satisfies Record<string, (u: NavUser) => boolean>;
@@ -156,7 +165,7 @@ export const NAV_TREE: NavNode[] = [
   { id: 'accounts', parent: null, label: 'Accounts', icon: 'landmark', family: 'money', access: 'internal', status: 'live', description: 'Payables and payments, books, statements, GST and Tally.', keywords: 'finance', concord: ['p3-fa', 'p4-fa', 'p5-fa'] },
   { id: 'people', parent: null, label: 'People', icon: 'users', family: 'people', access: 'internal', status: 'live', badge: 'module', description: 'Your attendance and leave, staff records, holidays.', keywords: 'hr staff employees', concord: ['p3-hr', 'p5-hrms'] },
   { id: 'payroll', parent: null, label: 'Payroll', icon: 'banknote', family: 'people', access: 'internal', status: 'live', description: 'Salary runs, payslips, PF, ESI, PT and TDS, loans.', keywords: 'salary wages', concord: ['p4-payroll'] },
-  { id: 'tenders', parent: null, label: 'Tenders', icon: 'gavel', family: 'business', access: 'internal', status: 'planned', roadmap: 110, description: 'Tenders you are bidding for, priced from the SOR.', keywords: 'bid boq sor', concord: ['p3-tender', 'p4-tendering'] },
+  { id: 'tenders', parent: null, label: 'Tenders', icon: 'gavel', family: 'business', access: 'tenders', status: 'live', description: 'Tenders being priced and bid, and the schedules of rates they are priced from.', keywords: 'bid boq sor', concord: ['p3-tender', 'p4-tendering'] },
   { id: 'rmc', parent: null, label: 'RMC plant', icon: 'factory', family: 'business', access: 'rmc', status: 'live', description: 'Ready-mix concrete: quotes and orders, the plant\'s day, trucks and challans, cubes and bills.', keywords: 'ready mix batching plant concrete', concord: ['p4-plantperf'] },
   { id: 'reports', parent: null, label: 'Reports', icon: 'chart-column', family: 'insight', access: 'internal', status: 'live', description: 'Progress reports, project cost, cash flow and more.', keywords: 'mis dashboard', concord: ['p7-finrep'] },
   { id: 'watch', parent: null, label: 'Watch list', icon: 'eye', route: '/watch-list', family: 'insight', access: 'watchList', status: 'live', badge: 'watchOpen', description: 'Early warnings: slipping work, cash gaps, stock running out.', keywords: 'early warnings alerts forecast risk slipping cash gap running out' },
@@ -165,10 +174,10 @@ export const NAV_TREE: NavNode[] = [
   // ── Projects ──────────────────────────────────────────────────────────────────────────────────────────────────
   { id: 'projects.all', parent: 'projects', label: 'All projects', icon: 'folder-kanban', route: '/projects', nav: 'Projects', top: true, access: 'internal', status: 'live', description: 'Every project you work on, by stage.', keywords: 'sites boq contract', concord: ['p5-projects', 'p11-projdash'] },
   { id: 'projects.schedule', parent: 'projects', label: 'Schedule', icon: 'chart-gantt', projectTab: 'schedule', access: 'internal', status: 'live', description: 'Gantt chart with the baseline and milestones.', keywords: 'gantt plan critical path look-ahead', concord: ['p4-pce'] },
+  { id: 'projects.lookahead', parent: 'projects', label: 'Look-ahead', icon: 'calendar-range', projectTab: 'lookahead', access: 'internal', status: 'live', description: 'The next three weeks: what is ready to start and what still waits.', keywords: 'three week lookahead critical path float' },
   { id: 'projects.boq', parent: 'projects', label: 'BOQ and activities', icon: 'list-checks', projectTab: 'boq', access: 'internal', status: 'live', description: 'Bill of quantities and the activities under it.', keywords: 'boq items', concord: ['p4-pce'] },
   { id: 'projects.budget', parent: 'projects', label: 'Budget and cash flow', icon: 'calculator', projectTab: 'budget', access: 'cost', status: 'live', description: 'Budget per cost head and the planned cash flow.', concord: ['p5-plan'] },
-  { id: 'projects.earned', parent: 'projects', label: 'Earned value', icon: 'gauge', projectTab: 'earned-value', access: 'cost', status: 'planned', roadmap: 115, description: 'Planned, earned and actual value; SPI, CPI and the S-curve.' },
-  { id: 'projects.meetings', parent: 'projects', label: 'Meetings and actions', icon: 'calendar-check', projectTab: 'meetings', access: 'internal', status: 'planned', roadmap: 112, description: 'Minutes, decisions and actions with owner and due date.', keywords: 'mom minutes' },
+  { id: 'projects.earned', parent: 'projects', label: 'Earned value', icon: 'gauge', projectTab: 'earned-value', access: 'cost', status: 'live', description: 'Planned, earned and actual value; SPI, CPI, the forecast finish and the S-curve.', keywords: 'evm spi cpi eac s-curve' },
   { id: 'projects.handover', parent: 'projects', label: 'Handover and closure', icon: 'file-check', projectTab: 'handover', access: 'internal', status: 'live', description: 'Snags, completion, defect liability and close-out.', keywords: 'closure snags dlp', concord: ['p5-closure'] },
   { id: 'projects.templates', parent: 'projects', label: 'Activity templates', icon: 'layers', route: '/templates', access: 'templates', status: 'live', description: 'Standard activities per project type.', keywords: 'wbs' },
 
@@ -180,14 +189,14 @@ export const NAV_TREE: NavNode[] = [
   { id: 'site.risks', parent: 'site', label: 'Delays and risks', icon: 'triangle-alert', route: '/risks', access: 'risks', status: 'live', description: 'Hindrances, extensions of time and liquidated damages.', keywords: 'hindrance issues eot ld' },
   { id: 'site.expenses', parent: 'site', label: 'Site expenses', icon: 'wallet', route: '/expenses', access: 'expenses', status: 'live', description: 'Petty expenses with bills and approval.', keywords: 'petty cash imprest' },
   { id: 'site.imprest', parent: 'site', label: 'Site imprest', icon: 'hand-coins', route: '/imprest', access: 'imprest', status: 'live', description: 'Cash floats at the sites, top-ups and the cash book.', keywords: 'petty cash float top-up' },
-  { id: 'site.funds', parent: 'site', label: 'Site fund requests', icon: 'piggy-bank', route: '/payables?tab=requests&kind=FUND', access: 'imprest', status: 'planned', roadmap: 107, description: 'A site asks head office for money.' },
+  { id: 'site.meetings', parent: 'site', label: 'Meetings', icon: 'calendar-check', route: '/meetings', access: 'meetings', status: 'live', description: "Minutes of each project's meetings, and the actions they gave out until each is done.", keywords: 'mom minutes of meeting action items progress review client meeting decisions' },
+  { id: 'site.funds', parent: 'site', label: 'Site fund requests', icon: 'piggy-bank', route: '/imprest?tab=funds', access: 'funds', status: 'live', description: 'A site asks head office for money for wages, a local purchase or running costs.', keywords: 'fund request money wages advance' },
 
   // ── Quality and safety (split out of Site) ────────────────────────────────────────────────────────────────────
   { id: 'quality.inspections', parent: 'quality', label: 'Inspections', icon: 'clipboard-check', route: '/inspections?tab=inspections', nav: 'Quality', access: 'onSite', status: 'live', badge: 'qualityWaiting', description: 'Inspection requests with hold points.', keywords: 'qa qc inspections tests ncr hold point', concord: ['p5-safety'] },
   { id: 'quality.tests', parent: 'quality', label: 'Material tests', icon: 'flask-conical', route: '/inspections?tab=tests', access: 'onSite', status: 'live', description: 'Cube, slump and other tests with results due.', concord: ['p5-safety'] },
   { id: 'quality.ncrs', parent: 'quality', label: 'NCRs', icon: 'shield-alert', route: '/inspections?tab=ncrs', access: 'onSite', status: 'live', badge: 'ncrsOpen', description: 'Non-conformance reports until closed.', concord: ['p5-safety'] },
   { id: 'quality.checklists', parent: 'quality', label: 'Checklists', icon: 'list-checks', route: '/inspections?tab=checklists', access: 'checklists', status: 'live', description: "The company's inspection checklists." },
-  { id: 'quality.approvals', parent: 'quality', label: 'Material approvals', icon: 'award', access: 'onSite', status: 'planned', roadmap: 113, description: 'Approved makes and sample approvals.' },
   { id: 'quality.incidents', parent: 'quality', label: 'Incidents', icon: 'siren', route: '/safety?tab=incidents', nav: 'Safety', access: 'onSite', status: 'live', description: 'Incidents and near misses.', keywords: 'incident near miss toolbox talk permit to work ppe accident', concord: ['p5-safety'] },
   { id: 'quality.permits', parent: 'quality', label: 'Permits to work', icon: 'file-pen-line', route: '/safety?tab=permits', access: 'onSite', status: 'live', badge: 'permitsWaiting', description: 'Permits for height, hot and confined work.', concord: ['p5-safety'] },
   { id: 'quality.talks', parent: 'quality', label: 'Toolbox talks', icon: 'message-square-text', route: '/safety?tab=talks', access: 'onSite', status: 'live', description: 'Talks held at the sites and who attended.', concord: ['p5-safety'] },
@@ -201,11 +210,12 @@ export const NAV_TREE: NavNode[] = [
 
   // ── Materials ─────────────────────────────────────────────────────────────────────────────────────────────────
   { id: 'materials.requests', parent: 'materials', label: 'Material requests', icon: 'shopping-basket', route: '/material-requests', access: 'materialRequests', status: 'live', badge: 'mrWaiting', description: 'What the sites need, approved and ordered or issued.', keywords: 'indent mr', concord: ['p5-mat', 'p3-mat'] },
+  { id: 'materials.approvals', parent: 'materials', label: 'Material approvals', icon: 'award', route: '/material-approvals', access: 'materialApprovals', status: 'live', description: 'Makes and samples sent to the client or consultant for approval, and the makes each project may buy.', keywords: 'mar make approval sample submittal approved makes brand list' },
   { id: 'materials.stock', parent: 'materials', label: 'Stock on hand', icon: 'boxes', route: '/stock', nav: 'Stock', access: 'stock', status: 'live', badge: 'lowStock', description: 'What each site holds, with low-stock alerts.', keywords: 'inventory grn store issue', concord: ['p4-stores'] },
   { id: 'materials.register', parent: 'materials', label: 'Receipts and issues', icon: 'arrow-left-right', route: '/stock?sub=register', access: 'stock', status: 'live', description: 'GRNs, issues, transfers, returns and counts.', keywords: 'grn issue transfer', concord: ['p4-stores'] },
   { id: 'materials.value', parent: 'materials', label: 'Value and ageing', icon: 'hourglass', route: '/stock?sub=valuation', access: 'stockValue', status: 'live', description: 'Stock value and idle material by age.', concord: ['p9-stockage', 'p9-notused'] },
   { id: 'materials.reconciliation', parent: 'materials', label: 'Material reconciliation', icon: 'scale', projectTab: 'reconciliation', access: 'reconciliation', status: 'live', description: 'Material used against the work done, wastage by reason.', keywords: 'wastage consumption theoretical', concord: ['p9-notused'] },
-  { id: 'materials.store', parent: 'materials', label: 'Central store', icon: 'warehouse', access: 'stock', status: 'planned', roadmap: 106, description: 'Stock at a store or yard, issued and sent to sites.' },
+  { id: 'materials.store', parent: 'materials', label: 'Central stores', icon: 'warehouse', route: '/stores', access: 'stores', status: 'live', description: 'The company stores and yards: what each holds, its value and age, and what is on the road to the sites.', keywords: 'yard warehouse godown central store transfer' },
   { id: 'materials.items', parent: 'materials', label: 'Item master', icon: 'package', route: '/stock?sub=items', access: 'stock', status: 'live', description: 'Materials, units and minimum levels.' },
 
   // ── Plant and machinery ───────────────────────────────────────────────────────────────────────────────────────
@@ -215,19 +225,19 @@ export const NAV_TREE: NavNode[] = [
   { id: 'plant.maintenance', parent: 'plant', label: 'Maintenance', icon: 'wrench', route: '/machinery?tab=maintenance', access: 'machinery', status: 'live', badge: 'machinesDown', description: 'Job cards, services due and breakdowns.', keywords: 'job card service breakdown' },
   { id: 'plant.papers', parent: 'plant', label: 'Papers and drivers', icon: 'id-card', route: '/machinery?tab=papers', access: 'machinery', status: 'live', badge: 'papersDue', description: 'Insurance, fitness, permits and licences due.' },
   { id: 'plant.equipment', parent: 'plant', label: 'Equipment register', icon: 'construction', route: '/machinery?tab=equipment', access: 'machinery', status: 'live', description: 'Own and hired machines, tyres and batteries.', concord: ['p3-asset'] },
-  { id: 'plant.finance', parent: 'plant', label: 'Machine finance', icon: 'badge-indian-rupee', access: 'machineFinance', status: 'planned', roadmap: 108, description: 'Loans on machines, EMIs paid and due.' },
+  { id: 'plant.finance', parent: 'plant', label: 'Machine loans', icon: 'badge-indian-rupee', shortcutOf: 'accounts.machineLoans', access: 'machineFinance', status: 'live', description: 'Loans on financed machines, EMIs paid and due.' },
 
   // ── Purchases ─────────────────────────────────────────────────────────────────────────────────────────────────
   { id: 'purchases.orders', parent: 'purchases', label: 'Purchase orders', icon: 'file-text', route: '/purchase-orders', access: 'purchaseOrders', status: 'live', badge: 'poWaiting', description: 'Quotations, comparison and orders.', keywords: 'po', concord: ['p4-proc'] },
   { id: 'purchases.delivery', parent: 'purchases', label: 'Delivery status', icon: 'truck', route: '/purchase-orders?tab=status', access: 'purchaseOrders', status: 'live', description: 'What is still to come on each order.' },
   { id: 'purchases.bills', parent: 'purchases', label: 'Vendor bills', icon: 'receipt', route: '/vendor-bills', access: 'vendorBills', status: 'live', badge: 'vendorBillsWaiting', description: 'Supplier, hire and service bills checked against orders.', keywords: 'supplier invoice' },
   { id: 'purchases.suppliers', parent: 'purchases', label: 'Suppliers', icon: 'contact', route: '/vendors?kind=SUPPLIER', nav: 'Vendors', access: 'vendors', status: 'live', description: 'Suppliers with GST, MSME and bank details.', keywords: 'suppliers' },
-  { id: 'purchases.portal', parent: 'purchases', label: 'Supplier portal', icon: 'globe', access: 'supplierPortal', status: 'planned', roadmap: 105, description: 'Supplier logins, their quotes, dispatches and changes to approve.', concord: ['p7-portals'] },
+  { id: 'purchases.portal', parent: 'purchases', label: 'Supplier inbox', icon: 'mail', route: '/supplier-inbox', access: 'supplierPortal', status: 'live', description: 'Invoices suppliers sent on their portal, and the changes to their details they asked for.', keywords: 'supplier portal invoices bank change logins', concord: ['p7-portals'] },
 
   // ── Subcontracts (out of Purchases) ───────────────────────────────────────────────────────────────────────────
   { id: 'subcontracts.orders', parent: 'subcontracts', label: 'Work orders', icon: 'hammer', route: '/work-orders', access: 'workOrders', status: 'live', description: 'Orders to subcontractors and petty contractors.', keywords: 'wo subcontract', concord: ['p5-sub'] },
   { id: 'subcontracts.bills', parent: 'subcontracts', label: 'Subcontractor bills', icon: 'receipt-text', route: '/subcontract-bills', access: 'subcontractBills', status: 'live', badge: 'scBillsWaiting', description: 'Running bills with retention and recoveries.', keywords: 'petty contractor', concord: ['p5-sub'] },
-  { id: 'subcontracts.enquiries', parent: 'subcontracts', label: 'Enquiries and comparison', icon: 'scale', access: 'workOrders', status: 'planned', roadmap: 111, description: 'Quotes from several subcontractors, compared.' },
+  { id: 'subcontracts.enquiries', parent: 'subcontracts', label: 'Subcontract enquiries', icon: 'scale', route: '/subcontract-enquiries', access: 'enquiries', status: 'live', description: 'Work sent to subcontractors to quote, their rates compared item by item, and the chosen quote made a work order.', keywords: 'quote quotation comparative statement cs rfq l1 subcontractor rates award' },
   { id: 'subcontracts.vendors', parent: 'subcontracts', label: 'Subcontractors', icon: 'contact', route: '/vendors?kind=SUBCONTRACTOR', access: 'vendors', status: 'live', description: 'Subcontractors with GST and bank details.' },
   { id: 'subcontracts.labour', parent: 'subcontracts', label: 'Labour contractors', icon: 'pickaxe', shortcutOf: 'payroll.contractors', access: 'labourSummary', status: 'live', description: "Labour contractors' man-days each month.", concord: ['p5-labour'] },
 
@@ -256,6 +266,7 @@ export const NAV_TREE: NavNode[] = [
   { id: 'accounts.yearClose', parent: 'accounts', group: 'Statements', label: 'Opening and year close', icon: 'lock', route: '/statements?tab=year', access: 'books', status: 'live', description: 'Opening balances, locking a period and closing a financial year.', keywords: 'opening balance lock year end' },
   { id: 'accounts.gst', parent: 'accounts', group: 'Tax and Tally', label: 'GST registers', icon: 'percent', route: '/gst', access: 'gst', status: 'live', description: 'GSTR-1 and 2B.', keywords: 'tax gstr' },
   { id: 'accounts.tally', parent: 'accounts', group: 'Tax and Tally', label: 'Tally export', icon: 'file-spreadsheet', route: '/tally', access: 'tally', status: 'live', description: 'Vouchers for Tally with projects as cost centres.', keywords: 'accounts vouchers', concord: ['p7-legacy'] },
+  { id: 'accounts.machineLoans', parent: 'accounts', label: 'Machine loans', icon: 'badge-indian-rupee', route: '/machine-loans', access: 'machineFinance', status: 'live', description: 'Loans on financed machines: EMI schedules, EMIs paid and due, and what is owed to each lender.', keywords: 'equipment finance emi hypothecation lender bank nbfc loan schedule interest' },
 
   // ── People ────────────────────────────────────────────────────────────────────────────────────────────────────
   { id: 'people.me', parent: 'people', label: 'My attendance and leave', icon: 'calendar-days', route: '/staff', nav: 'Staff and leave', access: 'internal', status: 'live', description: 'Check in, apply for leave, see your balance.', keywords: 'employees hr' },
@@ -279,9 +290,8 @@ export const NAV_TREE: NavNode[] = [
   { id: 'payroll.statutory', parent: 'payroll', label: 'TDS returns', icon: 'landmark', access: 'payroll', status: 'planned', description: 'TDS returns (24Q) and Form 16; the PF and ESI files come with each salary run.' },
 
   // ── Tenders (item 110) ────────────────────────────────────────────────────────────────────────────────────────
-  { id: 'tenders.register', parent: 'tenders', label: 'Tender register', icon: 'gavel', access: 'tenders', status: 'planned', roadmap: 110, description: 'Tenders, due dates, EMDs and results.', concord: ['p4-tendering', 'p3-tender', 'p5-bd'] },
-  { id: 'tenders.sor', parent: 'tenders', label: 'SOR library', icon: 'library', access: 'tenders', status: 'planned', roadmap: 110, description: 'Schedules of rates imported from Excel.' },
-  { id: 'tenders.results', parent: 'tenders', label: 'Bid results', icon: 'trophy', access: 'tenders', status: 'planned', roadmap: 110, description: "Others' bids, L1 and L2, won and lost." },
+  { id: 'tenders.register', parent: 'tenders', label: 'Tenders', icon: 'gavel', route: '/tenders', access: 'tenders', status: 'live', description: 'Tenders being priced and bid: the bid BOQ from rate analysis, the quote on the SOR, bids at opening and the result.', keywords: 'bid bidding nit emd l1 quote estimate rate analysis results', concord: ['p4-tendering', 'p3-tender', 'p5-bd'] },
+  { id: 'tenders.sor', parent: 'tenders', label: 'Schedule of rates', icon: 'library', route: '/schedule-of-rates', access: 'tenders', status: 'live', description: 'State SORs, the CPWD DSR and own rates that bids are priced against, imported from Excel.', keywords: 'sor dsr cpwd pwd rates book item code analysis' },
 
   // ── RMC plant (item 104) ──────────────────────────────────────────────────────────────────────────────────────
   { id: 'rmc.schedule', parent: 'rmc', label: 'The day at the plant', icon: 'calendar-clock', route: '/rmc?tab=day', nav: 'RMC plant', access: 'rmc', status: 'live', description: 'Pours planned for the day, trucks out and the plant\'s stock.', keywords: 'production schedule batching', concord: ['p4-plantperf'] },
@@ -304,7 +314,7 @@ export const NAV_TREE: NavNode[] = [
   // ── Admin ─────────────────────────────────────────────────────────────────────────────────────────────────────
   { id: 'admin.users', parent: 'admin', label: 'Users', icon: 'user-cog', route: '/users', access: 'users', status: 'live', description: 'Invite people and set their role.', keywords: 'invite roles access' },
   { id: 'admin.rules', parent: 'admin', label: 'Approval rules', icon: 'git-branch', route: '/approval-rules', access: 'users', status: 'live', description: 'Who approves what, levels, limits and escalation.', keywords: 'matrix limits', concord: ['p7-workflow'] },
-  { id: 'admin.modules', parent: 'admin', label: 'Modules', icon: 'toggle-right', access: 'users', status: 'planned', roadmap: 117, description: 'Turn modules on or off for the company.' },
+  { id: 'admin.modules', parent: 'admin', label: 'Modules', icon: 'toggle-right', route: '/company-modules', access: 'modules', status: 'live', description: 'Turn off the modules the company does not use; their data is kept.', keywords: 'switch on off turn features plan hide' },
   { id: 'admin.home', parent: 'admin', label: 'Home tiles', icon: 'layout-grid', route: '/admin/home-tiles', access: 'users', status: 'planned', description: 'Mark modules as new or featured; see access requests.' },
   { id: 'admin.data', parent: 'admin', label: 'Data and privacy', icon: 'database', route: '/company-data', access: 'companyData', status: 'live', description: 'Export or delete company data.', keywords: 'export delete' },
   { id: 'admin.ai', parent: 'admin', label: `Ask ${PRODUCT_NAME}`, icon: 'sparkles', route: '/ai-settings', access: 'ai', status: 'live', description: 'Who may ask, allowance and the conversation log.', keywords: 'ai assistant chat allowance' },
@@ -322,6 +332,7 @@ export const navTarget = (node: NavNode): NavNode => (node.shortcutOf ? (BY_ID.g
 /** Whether this user sees the node: live, allowed, and (a module) with a page they see. */
 export function canSeeNav(user: NavUser, node: NavNode): boolean {
   if (node.status !== 'live' || !NAV_ACCESS[node.access](user)) return false;
+  if (node.route && pathIsOff(node.route, user.modulesOff)) return false;
   if (node.shortcutOf) {
     const target = BY_ID.get(node.shortcutOf);
     return !!target && target !== node && canSeeNav(user, target);

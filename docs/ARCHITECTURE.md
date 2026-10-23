@@ -91,6 +91,8 @@ keys in `MODULE_KEYS`, which `MODULE_LABELS` and `MODULE_INTROS` take from the t
 
 - **Access.** `access` names a check in `NAV_ACCESS`, which wraps the same `@erp/shared` helper the page uses, so a tile or
   link never shows more than the page lets in. A module shows when any of its pages does (`canSeeNav`, `navTilesFor`).
+  A page of a module the company has switched off (`pathIsOff` on `user.modulesOff`, v6 item 117) is hidden the same way,
+  so it leaves the sidebar, the module screens and Search together.
 - **Sidebar.** `navSidebar(user)` (shared, so the route walk reads it too) gives the top links, then each module with its
   pages: a node with a plain route is a link under its label, one whose route is a tab or a filter (`/inspections?tab=tests`)
   only when `nav` names the page it stands for ('Quality'), and a page is one link, under the first node that names it. A

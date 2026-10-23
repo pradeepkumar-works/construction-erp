@@ -7,7 +7,7 @@ import { NAV_TREE } from './navigation';
  * `GET /dashboard/modules/:key`. Each figure is left out for a role that may not see its list, and covers only the projects
  * the caller sees (or the header's project). The keys are the modules' ids in `NAV_TREE`.
  */
-export const MODULE_KEYS = ['projects', 'site', 'quality', 'documents', 'materials', 'plant', 'purchases', 'subcontracts', 'billing', 'rmc', 'accounts', 'people', 'payroll', 'reports', 'admin'] as const;
+export const MODULE_KEYS = ['projects', 'site', 'quality', 'documents', 'materials', 'plant', 'purchases', 'subcontracts', 'billing', 'tenders', 'rmc', 'accounts', 'people', 'payroll', 'reports', 'admin'] as const;
 export type ModuleKey = (typeof MODULE_KEYS)[number];
 
 const moduleNode = (key: ModuleKey) => {
@@ -33,6 +33,7 @@ export const MODULE_SUBMISSION_TYPES: Record<ModuleKey, SubmissionType[]> = {
   purchases: ['PURCHASE_ORDER', 'VENDOR_BILL'],
   subcontracts: ['WORK_ORDER', 'SUBCONTRACT_BILL'],
   billing: ['BILL'],
+  tenders: [],
   rmc: [],
   accounts: ['PAYMENT_REQUEST'],
   people: [],
