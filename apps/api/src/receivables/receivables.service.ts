@@ -21,6 +21,7 @@ import { RequestUser } from '../common/current-user';
 import { ProjectAccessService } from '../common/project-access.service';
 import { AuditService } from '../common/audit.service';
 import { dateOnly, iso, money, parseDate } from '../common/serialize';
+import { todayIn } from '../notifications/time';
 import { isUniqueViolation } from '../common/idempotency';
 import { ilike, pageArgs, paginated, searchWords } from '../common/paging';
 import { deductedOn, invoiceOf, RECEIPT_SUMS, settlement, syncBillStage } from './bill-settlement';
@@ -364,7 +365,8 @@ export class ReceivablesService {
   /** Receivables as of today, for the projects the user can see. */
   async summary(user: RequestUser, q: ReceivablesQuery = {}): Promise<ReceivablesDto> {
     this.assertCanSee(user);
-    const asOf = new Date().toISOString().slice(0, 10);
+    // The sites' day (India), as the rest of the app counts it: the UTC date is a day behind from 18:30 UTC to midnight.
+    const asOf = todayIn();
     const today = parseDate(asOf).getTime();
     const projects = await this.prisma.project.findMany({
       where: { ...this.access.projectWhere(user), ...(q.projectId ? { id: q.projectId } : {}) },
