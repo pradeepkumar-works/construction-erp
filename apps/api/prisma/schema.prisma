@@ -662,6 +662,7 @@ model Organization {
   drawingTakeoffs      DrawingTakeoff[]
   inboundMessages      InboundMessage[]
   cashSnapshots        CashForecastSnapshot[]
+  hindranceChecks      HindranceCheck[]
 }
 
 model Role {
@@ -998,6 +999,8 @@ model Project {
   labourCessPct         Decimal        @default(0) @db.Decimal(5, 2)
   /// Days the client takes to pay a bill once it is sent; the cash-flow forecast assumes 30 when not set
   clientPaymentDays     Int?
+  /// Days the contract allows to give notice of a hindrance; the notice clock assumes 14 when not set (AI item 123)
+  noticeDays            Int?
   /// When the schedule baseline was last frozen (activity planned dates and milestone due dates copied to their baseline)
   baselineAt            DateTime?
   baselineById          String?
@@ -1967,6 +1970,7 @@ model DailyReport {
   updatedAt          DateTime         @updatedAt
 
   attachments Attachment[]
+  hindrance   HindranceCheck?
 
   @@index([projectId, date])
   @@index([organizationId, status])
@@ -2616,6 +2620,7 @@ model Risk {
 
   attachments Attachment[]
   letters     Letter[]
+  hindrances  HindranceCheck[]
   rfis        Rfi[]
 
   @@unique([organizationId, riskNo])
@@ -6791,4 +6796,39 @@ enum AccessRequestStatus {
   OPEN
   GRANTED
   DECLINED
+}
+
+/// A DPR's hindrance remark as read for a delay (AI item 123): what the rules or the model made of it, and what the
+/// project manager did with it (recorded it as a delay, or dismissed it). Read again when the remark is changed.
+model HindranceCheck {
+  id             String        @id @default(uuid())
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id])
+  dailyReportId  String        @unique
+  dailyReport    DailyReport   @relation(fields: [dailyReportId], references: [id], onDelete: Cascade)
+  projectId      String
+  /// The remark as read, so a changed remark is read again
+  remark         String
+  /// HINDRANCE, NONE (nothing to record) or UNSURE (no cause found, and the model was not asked)
+  verdict        String
+  category       RiskCategory?
+  party          DelayParty?
+  title          String?
+  delayStart     DateTime?     @db.Date
+  /// The words that gave it away
+  matched        String[]      @default([])
+  /// RULES or MODEL
+  source         String
+  /// PENDING, RECORDED or DISMISSED
+  decision       String        @default("PENDING")
+  riskId         String?
+  risk           Risk?         @relation(fields: [riskId], references: [id], onDelete: SetNull)
+  decidedById    String?
+  decidedAt      DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([organizationId, decision])
+  @@index([projectId])
+  @@index([riskId])
 }

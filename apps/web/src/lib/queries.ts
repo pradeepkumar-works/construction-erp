@@ -44,6 +44,11 @@ import type {
   CashForecastDto,
   AiDraftDto,
   BillingReadinessDto,
+  HindranceSuggestionDto,
+  NoticeClockDto,
+  NoticePeriodDto,
+  DelayRegisterDto,
+  DelayParty,
   RateBenchmarksDto,
   WarningKind,
   WarningOutcome,
@@ -3213,6 +3218,44 @@ export const useBillingReadiness = (projectId: string | undefined, enabled = tru
 
 /** A payment reminder for a sent bill, drafted from its figures and the contract's payment clause; nothing is saved. */
 export const usePaymentReminder = () => useMutation({ mutationFn: async (billId: string) => (await api.get<AiDraftDto>(`/billing-readiness/reminder/${billId}`)).data });
+
+// ---- Hindrance register to notice (AI item 123) ----
+
+/** DPR remarks read as hindrances, for the project manager to record or dismiss; one project or all. */
+export const useHindranceSuggestions = (projectId: string | undefined, enabled = true) =>
+  useQuery({ queryKey: ['risks', 'hindrances', projectId ?? 'all'], queryFn: async () => (await api.get<HindranceSuggestionDto[]>('/hindrances/suggestions', { params: clean({ projectId }) })).data, enabled });
+
+/** The hindrance a DPR's remark reads as, or null. */
+export const useDprHindrance = (dprId: string | undefined, enabled = true) =>
+  useQuery({ queryKey: ['risks', 'hindrances', 'dpr', dprId], queryFn: async () => (await api.get<HindranceSuggestionDto | null>(`/hindrances/dpr/${dprId}`)).data, enabled: enabled && !!dprId });
+
+/** Record a DPR hindrance as a new delay, or into an open one (`riskId`); dismiss one with `dismiss`. */
+export function useDecideHindrance() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { id: string; dismiss?: boolean; riskId?: string; category?: RiskCategory; party?: DelayParty | null }) =>
+      v.dismiss ? (await api.post<{ ok: true }>(`/hindrances/${v.id}/dismiss`)).data : (await api.post<RiskDto>(`/hindrances/${v.id}/record`, clean({ riskId: v.riskId, category: v.category, party: v.party }))).data,
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['risks'] });
+      void qc.invalidateQueries({ queryKey: ['watch-list'] });
+    },
+    meta: FAIL_NOTICE,
+  });
+}
+
+/** A delay's notice clock: due date, days left and the letter that stopped it. */
+export const useNoticeClock = (riskId: string | undefined, enabled = true) =>
+  useQuery({ queryKey: ['risks', 'notice', riskId], queryFn: async () => (await api.get<NoticeClockDto>(`/hindrances/notice/${riskId}`)).data, enabled: enabled && !!riskId });
+
+/** The notice letter for a delay, drafted from its facts and the contract; nothing is saved. */
+export const useNoticeDraft = () => useMutation({ mutationFn: async (riskId: string) => (await api.get<AiDraftDto>(`/hindrances/notice/${riskId}/draft`)).data });
+
+/** A project's hindrance notice period, with the clause found in its filed contract. */
+export const useNoticePeriod = (projectId: string | undefined, enabled = true) =>
+  useQuery({ queryKey: ['contract', 'notice-period', projectId], queryFn: async () => (await api.get<NoticePeriodDto>(`/hindrances/notice-period/${projectId}`)).data, enabled: enabled && !!projectId });
+
+/** The delay register for an extension-of-time claim, fetched when printed. */
+export const useDelayRegister = () => useMutation({ mutationFn: async (projectId: string) => (await api.get<DelayRegisterDto>(`/hindrances/register/${projectId}`)).data });
 
 export const useWatchList = (enabled = true) =>
   useQuery({ queryKey: ['watch-list'], queryFn: async () => (await api.get<WatchListDto>('/warnings')).data, enabled });

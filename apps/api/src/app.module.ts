@@ -33,6 +33,7 @@ import { PhotoChecksModule } from './photo-checks/photo-checks.module';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { LeakageModule } from './leakage/leakage.module';
 import { CashForecastModule } from './cash-forecast/cash-forecast.module';
+import { HindranceModule } from './hindrance/hindrance.module';
 import { SafetyModule } from './safety/safety.module';
 import { PpeModule } from './ppe/ppe.module';
 import { RfisModule } from './rfis/rfis.module';
@@ -149,6 +150,7 @@ import { VitalsController } from './vitals.controller';
     WhatsappModule,
     LeakageModule,
     CashForecastModule,
+    HindranceModule,
     SafetyModule,
     PpeModule,
     RfisModule,

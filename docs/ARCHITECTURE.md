@@ -2413,6 +2413,43 @@ export; the client portal and the phone app show the amount.
   against the books, the watch list agreeing, readiness and the reminder quoting clause 7.2, and replays the past
   twelve Mondays (with a year of the road client's bills put in and taken out) against what was received and paid.
 
+## Hindrance register to notice
+
+- **What it is.** AI item 123. What a site writes under a DPR's issues is read for hindrances; the project manager
+  records each as a delay, adds it to the open delay it belongs to, or dismisses it; and a delay the contractor is not
+  answerable for runs a notice clock against the contract until a letter to the client is linked to it.
+- **Reading** (`classifyRemark` in `apps/api/src/hindrance/hindrance-rules.ts`, pure): English, Hinglish and Hindi
+  keyword rules, narrowest cause first (land not handed over, encroachment, drawings, payments, permissions, utilities,
+  client decisions, weather, bandh, safety, labour, material, machines), with the party each implies (client-supplied
+  material is the client's, a mining ban a third party's). Material, labour, drawings, permits and utilities also need
+  a word saying work was held up. "Nil" and a few hours lost to our own supply or a shower are nothing. A remark that
+  says work stopped but not why is UNSURE: with Ask Nirmaan on for the reader (`AiService.status`) the model reads it
+  (`singleTurn`, JSON back, at most five a load), else it is kept as cause not clear. `startDateFrom` reads "since 12
+  Oct", "3 din se", "kal se", "since Monday". `hindrance-cases.ts` is 100 labelled remarks; the test needs 9 in 10.
+- **Kept once** (`HindranceCheck`, one per DPR, RLS): the remark as read, the verdict, cause, party, start, the words
+  matched, RULES or MODEL, and the decision (PENDING, RECORDED with its `riskId`, DISMISSED). A changed remark is read
+  again while pending. DPRs sent (submitted or approved) in the last `HINDRANCE_LOOKBACK_DAYS` on active projects are
+  read when the suggestions or a DPR's page are opened (`GET /api/hindrances/suggestions`, `/hindrances/dpr/:id`), for
+  `canReviewHindrances` (approvers who raise delays). Recording (`POST /hindrances/:id/record`) goes through
+  `RisksService.create` (or links an open delay on the same project, `riskId`); `POST /hindrances/:id/dismiss`.
+- **Notice period.** `Project.noticeDays`, set on the Contract tab; the form suggests the clause found in the filed
+  contract (`GET /hindrances/notice-period/:projectId`: `DocumentTextService.search`, then `noticeClause`, which takes a
+  clause asking for notice within N days of a hindrance before one asking to apply, and never a claim after it ends).
+  Unset, `DEFAULT_NOTICE_DAYS` (14).
+- **Clock** (`noticeClock`): due on the delay's start plus the notice days; running while the delay is open, its party
+  is in `NOTICE_PARTIES` (client, third party, force majeure) and no OUT letter is linked (`GET /hindrances/notice/:riskId`,
+  shown on the delay). The watch list's `NOTICE_DUE` (approvers who raise delays) fires at 7, 3 and 0 days or fewer
+  (`NOTICE_STAGES`), keyed `notice:<risk>:<stage>`, from the same rule in `WarningsService.notices`.
+- **Draft notice** (`GET /hindrances/notice/:riskId/draft`): an OUT letter as an `AiDraftDto` with `riskId`, written by
+  `noticeLetter` from the delay, the DPR remarks recorded into it, its photos and the contract's notice and
+  extension-of-time clauses (`eotClause`); it says so when the notice is late. Nothing is saved; the letter form opens
+  through `requestNew('letter', …)` with the delay already chosen.
+- **Register** (`GET /hindrances/register/:projectId`, printed from Delays and risks): each delay with its dates, days
+  lost, party, the notice given (or due), its letters and DPR entries, for an extension-of-time claim.
+- **Tests.** `src/scripts/hindrance-test.ts` (CI flows): the 100 remarks, start dates, the demo contracts' clauses, the
+  clock and the letter; on the demo company the seeded remarks, record, link, dismiss, the model's path, the notice
+  periods, NOTICE_DUE moving with the contract's days and stopping when a letter is linked, Draft notice and the register.
+
 ## Money and quantities
 
 Decimal columns everywhere (`Decimal(18,2)` for money, `Decimal(18,3)` for quantities) and strings

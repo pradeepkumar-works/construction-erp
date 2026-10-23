@@ -64,6 +64,12 @@ const GUEST_PROJECTS: [string, string][] = [
   ['pmc@demo.com', 'BL-2026-02'],
 ];
 
+
+/** DPR remarks that read as hindrances (AI item 123), by project type and days ago. */
+const HINDRANCE_REMARKS: Record<string, Record<number, string>> = {
+  ROAD: { 1: 'Villagers again stopped embankment work at Ch 12+650, encroachment not cleared', 2: 'HT line at Ch 14+100 still not shifted, embankment beyond Ch 14+000 held up since 2 days' },
+  BUILDING: { 2: 'First-floor column drawings revised by the architect, waiting for the GFC' },
+};
 async function seedGuests(organizationId: string) {
   for (const [email, code] of GUEST_PROJECTS) {
     const [user, project] = await Promise.all([prisma.user.findFirst({ where: { organizationId, email } }), prisma.project.findFirst({ where: { organizationId, code } })]);
@@ -268,7 +274,8 @@ async function main() {
           workExecuted: inProgress.map((a) => `${a.name} continued`).join('; ') || 'General site works',
           testsConducted: i === 1 ? 'Cube test samples taken (3 nos), FDD test at Ch. 14+300' : null,
           safetyObservations: 'Toolbox talk conducted. PPE compliance 100%.',
-          issues: i === 3 ? 'Diesel delivery delayed by 4 hours' : null,
+          // Two remarks read as hindrances for the delay register (AI item 123): one belongs to an open delay, one is new.
+          issues: i === 3 ? 'Diesel delivery delayed by 4 hours' : (HINDRANCE_REMARKS[p.type]?.[i] ?? null),
           nextDayPlan: 'Continue current activities; shuttering for next pour',
           status: i === 0 ? 'SUBMITTED' : 'APPROVED', submittedById: engineerId, submittedAt: date, reviewedById: i === 0 ? null : pmId, reviewedAt: i === 0 ? null : date,
         },

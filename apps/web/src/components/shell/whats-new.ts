@@ -9,6 +9,16 @@ export interface WhatsNew {
 
 export const WHATS_NEW: WhatsNew[] = [
   {
+    id: '2026-12-hindrance-notice',
+    date: '2026-12-20',
+    title: 'Hindrances from the DPRs, and the notice clock',
+    points: [
+      'Delays and risks now lists what the DPRs say held up work (villagers stopping work, drawings awaited, a pole not shifted, rain), read from the issues each site writes, in English, Hindi or Hinglish. Record one as a delay, add it to the open delay it belongs to, or dismiss it.',
+      'A delay the client or a third party is answerable for runs a notice clock: the contract\'s notice days (set on the Contract tab, where the filed contract\'s clause is suggested) from the day work was held up. The Watch list warns 7, 3 and 0 days before the notice is due, until a letter to the client is linked to the delay.',
+      'Draft notice on a delay opens a letter filled in from its dates, the DPR entries and the contract\'s clause. Delay register prints every delay with its notice, letters and DPR entries for an extension-of-time claim.',
+    ],
+  },
+  {
     id: '2026-12-cash-forecast',
     date: '2026-12-18',
     title: 'Cash forecast and billing readiness',
